@@ -20,8 +20,7 @@ func (s *FakeWorkspace) JobsCreate(req Request) Response {
 
 	defer s.LockUnlock()()
 
-	jobId := s.nextJobId
-	s.nextJobId++
+	jobId := nextID()
 
 	jobSettings := jobs.JobSettings{}
 	if err := jsonConvert(request, &jobSettings); err != nil {
@@ -31,7 +30,17 @@ func (s *FakeWorkspace) JobsCreate(req Request) Response {
 		}
 	}
 
-	s.Jobs[jobId] = jobs.Job{JobId: jobId, Settings: &jobSettings}
+	jobFixUps(&jobSettings)
+
+	// CreatorUserName field is used by TF to check if the resource exists or not. CreatorUserName should be non-empty for the resource to be considered as "exists"
+	// https://github.com/databricks/terraform-provider-databricks/blob/main/permissions/permission_definitions.go#L108
+	s.Jobs[jobId] = jobs.Job{
+		JobId:           jobId,
+		Settings:        &jobSettings,
+		CreatorUserName: s.CurrentUser().UserName,
+		RunAsUserName:   s.CurrentUser().UserName,
+		CreatedTime:     nowMilli(),
+	}
 	return Response{Body: jobs.CreateResponse{JobId: jobId}}
 }
 
@@ -46,13 +55,34 @@ func (s *FakeWorkspace) JobsReset(req Request) Response {
 
 	defer s.LockUnlock()()
 
+	jobFixUps(&request.NewSettings)
+
 	jobId := request.JobId
-	if _, ok := s.Jobs[jobId]; !ok {
+	prevjob, ok := s.Jobs[jobId]
+	if !ok {
 		return Response{StatusCode: 403, Body: "{}"}
 	}
 
-	s.Jobs[jobId] = jobs.Job{JobId: jobId, Settings: &request.NewSettings}
+	s.Jobs[jobId] = jobs.Job{
+		JobId:           jobId,
+		CreatorUserName: prevjob.CreatorUserName,
+		RunAsUserName:   prevjob.RunAsUserName,
+		CreatedTime:     prevjob.CreatedTime,
+		Settings:        &request.NewSettings,
+	}
 	return Response{Body: ""}
+}
+
+func jobFixUps(jobSettings *jobs.JobSettings) {
+	if jobSettings.EmailNotifications == nil {
+		jobSettings.EmailNotifications = &jobs.JobEmailNotifications{}
+	}
+
+	if jobSettings.WebhookNotifications == nil {
+		jobSettings.WebhookNotifications = &jobs.WebhookNotifications{}
+	}
+
+	jobSettings.ForceSendFields = append(jobSettings.ForceSendFields, "TimeoutSeconds")
 }
 
 func (s *FakeWorkspace) JobsGet(req Request) Response {
@@ -111,8 +141,7 @@ func (s *FakeWorkspace) JobsRunNow(req Request) Response {
 		return Response{StatusCode: 404}
 	}
 
-	runId := s.nextJobRunId
-	s.nextJobRunId++
+	runId := nextID()
 	s.JobRuns[runId] = jobs.Run{
 		RunId:      runId,
 		State:      &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning},

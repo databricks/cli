@@ -1,13 +1,12 @@
 package bundle
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/config/validate"
+	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
@@ -20,12 +19,11 @@ func newPlanCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "plan",
 		Short: "Show deployment plan",
-		Args:  root.NoArgs,
+		Long: `Show the deployment plan for the current bundle configuration.
 
-		// Output format may change without notice; main use case is in acceptance tests.
-		// Today, this command also uploads libraries, which is not the intent here. We need to refactor
-		// libraries.Upload() mutator to separate config mutation with actual upload.
-		Hidden: true,
+This command builds the bundle and displays the actions which will be done on resources that would be deployed, without making any changes.
+It is useful for previewing changes before running 'bundle deploy'.`,
+		Args: root.NoArgs,
 	}
 
 	var force bool
@@ -36,57 +34,80 @@ func newPlanCommand() *cobra.Command {
 	cmd.Flags().MarkDeprecated("compute-id", "use --cluster-id instead")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		ctx := logdiag.InitContext(cmd.Context())
-		cmd.SetContext(ctx)
-
-		b := utils.ConfigureBundleWithVariables(cmd)
-		if b == nil || logdiag.HasError(ctx) {
-			return root.ErrAlreadyPrinted
+		opts := utils.ProcessOptions{
+			AlwaysPull:    true,
+			FastValidate:  true,
+			Build:         true,
+			DeployPrepare: true,
 		}
 
-		bundle.ApplyFuncContext(ctx, b, func(context.Context, *bundle.Bundle) {
-			b.Config.Bundle.Force = force
+		// Only add InitFunc if we need to set force or cluster ID
+		if force || cmd.Flag("compute-id").Changed || cmd.Flag("cluster-id").Changed {
+			opts.InitFunc = func(b *bundle.Bundle) {
+				b.Config.Bundle.Force = force
 
-			if cmd.Flag("compute-id").Changed {
-				b.Config.Bundle.ClusterId = clusterId
+				if cmd.Flag("compute-id").Changed {
+					b.Config.Bundle.ClusterId = clusterId
+				}
+
+				if cmd.Flag("cluster-id").Changed {
+					b.Config.Bundle.ClusterId = clusterId
+				}
 			}
+		}
 
-			if cmd.Flag("cluster-id").Changed {
-				b.Config.Bundle.ClusterId = clusterId
+		b, stateDesc, err := utils.ProcessBundleRet(cmd, opts)
+		if err != nil {
+			return err
+		}
+		ctx := cmd.Context()
+
+		plan := phases.RunPlan(ctx, b, stateDesc.Engine)
+		if logdiag.HasError(ctx) {
+			return root.ErrAlreadyPrinted
+		}
+
+		// Count actions by type and collect formatted actions
+		createCount := 0
+		updateCount := 0
+		deleteCount := 0
+		unchangedCount := 0
+
+		for _, change := range plan.GetActions() {
+			switch change.ActionType {
+			case deployplan.ActionTypeCreate:
+				createCount++
+			case deployplan.ActionTypeUpdate, deployplan.ActionTypeUpdateWithID, deployplan.ActionTypeResize:
+				updateCount++
+			case deployplan.ActionTypeDelete:
+				deleteCount++
+			case deployplan.ActionTypeRecreate:
+				// A recreate counts as both a delete and a create
+				deleteCount++
+				createCount++
+			case deployplan.ActionTypeSkip, deployplan.ActionTypeUndefined:
+				unchangedCount++
 			}
-		})
-
-		phases.Initialize(ctx, b)
-
-		if logdiag.HasError(ctx) {
-			return root.ErrAlreadyPrinted
-		}
-
-		bundle.ApplyContext(ctx, b, validate.FastValidate())
-
-		if logdiag.HasError(ctx) {
-			return root.ErrAlreadyPrinted
-		}
-
-		phases.Build(ctx, b)
-
-		if logdiag.HasError(ctx) {
-			return root.ErrAlreadyPrinted
-		}
-
-		plan := phases.Plan(ctx, b)
-		if logdiag.HasError(ctx) {
-			return root.ErrAlreadyPrinted
 		}
 
 		out := cmd.OutOrStdout()
 
 		switch root.OutputType(cmd) {
 		case flags.OutputText:
-			for _, action := range plan.GetActions() {
-				key := strings.TrimPrefix(action.ResourceKey, "resources.")
-				fmt.Fprintf(out, "%s %s\n", action.ActionType.StringShort(), key)
+			// Print summary line and actions to stdout
+			totalChanges := createCount + updateCount + deleteCount
+			if totalChanges > 0 {
+				// Print all actions in the order they were processed
+				for _, action := range plan.GetActions() {
+					if action.ActionType == deployplan.ActionTypeSkip {
+						continue
+					}
+					key := strings.TrimPrefix(action.ResourceKey, "resources.")
+					fmt.Fprintf(out, "%s %s\n", action.ActionType.StringShort(), key)
+				}
+				fmt.Fprintln(out)
 			}
+			fmt.Fprintf(out, "Plan: %d to add, %d to change, %d to delete, %d unchanged\n", createCount, updateCount, deleteCount, unchangedCount)
 		case flags.OutputJSON:
 			buf, err := json.MarshalIndent(plan, "", "  ")
 			if err != nil {

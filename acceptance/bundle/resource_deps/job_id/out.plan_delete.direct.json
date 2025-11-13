@@ -1,0 +1,62 @@
+{
+  "plan": {
+    "resources.jobs.bar": {
+      "action": "delete",
+      "remote_state": {
+        "created_time": [UNIX_TIME_MILLIS][0],
+        "creator_user_name": "[USERNAME]",
+        "job_id": [BAR_ID],
+        "run_as_user_name": "[USERNAME]",
+        "settings": {
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+          },
+          "edit_mode": "UI_LOCKED",
+          "email_notifications": {},
+          "format": "MULTI_TASK",
+          "max_concurrent_runs": 1,
+          "name": "job bar",
+          "queue": {
+            "enabled": true
+          },
+          "timeout_seconds": 0,
+          "webhook_notifications": {}
+        }
+      }
+    },
+    "resources.jobs.foo": {
+      "action": "delete",
+      "remote_state": {
+        "created_time": [UNIX_TIME_MILLIS][1],
+        "creator_user_name": "[USERNAME]",
+        "job_id": [FOO_ID],
+        "run_as_user_name": "[USERNAME]",
+        "settings": {
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+          },
+          "edit_mode": "UI_LOCKED",
+          "email_notifications": {},
+          "format": "MULTI_TASK",
+          "max_concurrent_runs": 1,
+          "name": "job foo",
+          "queue": {
+            "enabled": true
+          },
+          "tasks": [
+            {
+              "run_job_task": {
+                "job_id": [BAR_ID]
+              },
+              "task_key": "job_task"
+            }
+          ],
+          "timeout_seconds": 0,
+          "webhook_notifications": {}
+        }
+      }
+    }
+  }
+}

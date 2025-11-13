@@ -1,13 +1,5 @@
 
 >>> [CLI] bundle validate -o json
-Warning: required field "catalog_name" is not set
-  at resources.registered_models.model_two
-  in databricks.yml:50:7
-
-Warning: required field "schema_name" is not set
-  at resources.registered_models.model_two
-  in databricks.yml:50:7
-
 
 >>> jq .run_as
 {
@@ -34,28 +26,18 @@ Warning: required field "schema_name" is not set
 >>> jq .resources.experiments
 {
   "experiment_one": {
-    "name": "experiment_one",
-    "permissions": []
+    "name": "experiment_one"
   }
 }
 
 >>> jq .resources.models
 {
   "model_one": {
-    "name": "skynet",
-    "permissions": []
+    "name": "skynet"
   }
 }
 
 >>> [CLI] bundle validate -o json -t development
-Warning: required field "catalog_name" is not set
-  at resources.registered_models.model_two
-  in databricks.yml:50:7
-
-Warning: required field "schema_name" is not set
-  at resources.registered_models.model_two
-  in databricks.yml:50:7
-
 
 >>> jq .run_as
 {
@@ -83,7 +65,6 @@ Warning: required field "schema_name" is not set
 {
   "experiment_one": {
     "name": "[dev [USERNAME]] experiment_one",
-    "permissions": [],
     "tags": [
       {
         "key": "dev",
@@ -97,7 +78,6 @@ Warning: required field "schema_name" is not set
 {
   "model_one": {
     "name": "[dev [USERNAME]] skynet",
-    "permissions": [],
     "tags": [
       {
         "key": "dev",

@@ -29,7 +29,8 @@ resources:
 
 >>> [CLI] bundle deployment bind endpoint1 test-endpoint-[UUID]
 Updating deployment state...
-Successfully bound model_serving_endpoint with an id 'test-endpoint-[UUID]'. Run 'bundle deploy' to deploy changes to your workspace
+Successfully bound model_serving_endpoint with an id 'test-endpoint-[UUID]'
+Run 'bundle deploy' to deploy changes to your workspace
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...

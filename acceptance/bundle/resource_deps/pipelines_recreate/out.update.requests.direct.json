@@ -1,0 +1,39 @@
+{
+  "method": "DELETE",
+  "path": "/api/2.0/pipelines/[FOO_ID]"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/pipelines",
+  "body": {
+    "catalog": "mynewcatalog",
+    "channel": "CURRENT",
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+    },
+    "edition": "ADVANCED",
+    "name": "pipeline foo"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/reset",
+  "body": {
+    "job_id": [BAR_ID],
+    "new_settings": {
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+      },
+      "description": "depends on foo id [UUID]",
+      "edit_mode": "UI_LOCKED",
+      "format": "MULTI_TASK",
+      "max_concurrent_runs": 1,
+      "name": "job bar",
+      "queue": {
+        "enabled": true
+      }
+    }
+  }
+}

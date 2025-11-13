@@ -1,6 +1,0 @@
-Local = true
-Cloud = false
-CloudSlow = false
-
-[EnvMatrix]
-  DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct-exp"]

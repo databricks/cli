@@ -1,13 +1,32 @@
 
+>>> [CLI] bundle validate
+Name: outside_of_bundle_root
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/outside_of_bundle_root/default
+
+Validation OK!
+
 >>> [CLI] bundle validate -o json
 [
   {
-    "whl": "../*.whl"
+    "whl": "../lib/*.whl"
   }
 ]
 
+>>> [CLI] bundle validate -o json
+[
+  "../lib/*.whl"
+]
+
+>>> [CLI] bundle validate -o json
+[
+  "../lib/*.whl"
+]
+
 >>> [CLI] bundle deploy
-Uploading ../test.whl...
+Uploading ../lib/test.whl...
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/outside_of_bundle_root/default/files...
 Deploying resources...
 Updating deployment state...
@@ -22,7 +41,20 @@ Deployment complete!
 ]
 
 >>> cat out.requests.txt
+[
+  "/Workspace/Users/[USERNAME]/.bundle/outside_of_bundle_root/default/artifacts/.internal/test.whl"
+]
+
+>>> cat out.requests.txt
+[
+  "/Workspace/Users/[USERNAME]/.bundle/outside_of_bundle_root/default/artifacts/.internal/test.whl"
+]
+
+>>> cat out.requests.txt
 {
   "method": "POST",
-  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/outside_of_bundle_root/default/artifacts/.internal/test.whl"
+  "path": "/api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/outside_of_bundle_root/default/artifacts/.internal/test.whl",
+  "q": {
+    "overwrite": "true"
+  }
 }

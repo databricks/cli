@@ -6,7 +6,7 @@
   "browse_only": false,
   "catalog_name": "main",
   "catalog_type": "MANAGED_CATALOG",
-  "created_at": [UNIX_TIME_MILLIS],
+  "created_at": [UNIX_TIME_MILLIS][0],
   "created_by": "[USERNAME]",
   "effective_predictive_optimization_flag": {
     "inherited_from_type": "METASTORE",
@@ -18,7 +18,7 @@
   "name": "schema-[UNIQUE_NAME]",
   "owner": "[USERNAME]",
   "schema_id": "[UUID]",
-  "updated_at": [UNIX_TIME_MILLIS],
+  "updated_at": [UNIX_TIME_MILLIS][0],
   "updated_by": "[USERNAME]"
 }
 
@@ -27,7 +27,5 @@ Error: volume main.schema-[UNIQUE_NAME].doesnotexist does not exist
   at workspace.artifact_path
   in databricks.yml:6:18
 
-
-Exit code (musterr): 1
 
 >>> [CLI] schemas delete main.schema-[UNIQUE_NAME]

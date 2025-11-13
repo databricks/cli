@@ -1,13 +1,15 @@
 package direct
 
 import (
+	"context"
 	"fmt"
 	"reflect"
+	"sync"
 
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/direct/dstate"
-	"github.com/databricks/cli/libs/dagrun"
+	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
 )
 
 // How many parallel operations (API calls) are allowed
@@ -33,9 +35,10 @@ type DeploymentUnit struct {
 
 // DeploymentBundle holds everything needed to deploy a bundle
 type DeploymentBundle struct {
-	StateDB  dstate.DeploymentState
-	Graph    *dagrun.Graph
-	Adapters map[string]*dresources.Adapter
+	StateDB          dstate.DeploymentState
+	Adapters         map[string]*dresources.Adapter
+	Plan             *deployplan.Plan
+	RemoteStateCache sync.Map
 }
 
 // SetRemoteState updates the remote state with type validation and marks as fresh.
@@ -54,4 +57,12 @@ func (d *DeploymentUnit) SetRemoteState(remoteState any) error {
 
 	d.RemoteState = remoteState
 	return nil
+}
+
+func (b *DeploymentBundle) ExportState(ctx context.Context, path string) (resourcestate.ExportedResourcesMap, error) {
+	err := b.StateDB.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	return b.StateDB.ExportState(ctx), nil
 }

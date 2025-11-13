@@ -2,6 +2,8 @@
 >>> [CLI] bundle plan
 create apps.mykey
 
+Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Deploying resources...
@@ -15,7 +17,10 @@ Deployment complete!
     "name": "myappname"
   },
   "method": "POST",
-  "path": "/api/2.0/apps"
+  "path": "/api/2.0/apps",
+  "q": {
+    "no_compute": "true"
+  }
 }
 
 >>> [CLI] bundle summary
@@ -35,6 +40,8 @@ Resources:
 
 >>> [CLI] bundle plan
 update apps.mykey
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
@@ -70,6 +77,8 @@ Resources:
 >>> [CLI] bundle plan
 recreate apps.mykey
 
+Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged
+
 >>> [CLI] bundle summary
 Name: test-bundle
 Target: default
@@ -100,10 +109,14 @@ Deployment complete!
     "name": "mynewappname"
   },
   "method": "POST",
-  "path": "/api/2.0/apps"
+  "path": "/api/2.0/apps",
+  "q": {
+    "no_compute": "true"
+  }
 }
 
 >>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 >>> [CLI] bundle summary
 Name: test-bundle

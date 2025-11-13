@@ -1,0 +1,7 @@
+resources:
+  dashboards:
+    foobar:
+      display_name: foobar
+      etag: "1234567890"
+      warehouse_id: "my-warehouse-1234"
+      serialized_dashboard: "{}"

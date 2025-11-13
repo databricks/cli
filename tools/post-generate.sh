@@ -26,7 +26,7 @@ else
     # Linux (GNU sed)
     sed -i 's|python tagging.py|python internal/genkit/tagging.py|g' .github/workflows/tagging.yml
 fi
-./tools/yamlfmt .github/workflows/tagging.yml
+go tool -modfile=tools/go.mod yamlfmt .github/workflows/tagging.yml
 
 # Generate PyDABs code.
-make -C experimental/python codegen
+make -C python codegen

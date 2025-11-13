@@ -1,0 +1,50 @@
+from databricks.bundles.pipelines import Pipeline
+
+"""
+The main pipeline for {{.project_name}}
+"""
+
+{{- $serverless := (eq .serverless "yes")}}
+
+{{.project_name}}_etl = Pipeline.from_dict(
+    {
+{{- /* Note that pipeline names must be unique in a worskspace, so we use the project name as part as the name. */}}
+        "name": "{{.project_name}}_etl",
+{{- if or (eq .default_catalog "") (eq .default_catalog "hive_metastore")}}
+  {{- if $serverless}}
+        {{- /* This is an unsupported configuration: Unity Catalog disabled, serverless enabled.
+             * To make tests pass and to offer some user guidance we hardcode 'main' here, since
+             * because ${var.catalog} would resolve to 'hive_metastore', which is rejected by the API.
+             * Setting 'main' also leads to a clear "catalog not found" error for users.
+             */}}
+        # Catalog is required for serverless compute
+        "catalog": "main",
+  {{- else}}
+        ## Specify the 'catalog' field to configure this pipeline to make use of Unity Catalog:
+        # "catalog": "${var.catalog}",
+  {{- end}}
+{{- else}}
+        "catalog": "${var.catalog}",
+{{- end}}
+        "schema": "${var.schema}",
+{{- if $serverless }}
+        "serverless": True,
+{{- end}}
+        "root_path": "src/{{.project_name}}_etl",
+        "libraries": [
+            {
+                "glob": {
+                    "include": "src/{{.project_name}}_etl/transformations/**",
+                },
+            },
+        ],
+        "environment": {
+            "dependencies": [
+                # We include every dependency defined by pyproject.toml by defining an editable environment
+                # that points to the folder where pyproject.toml is deployed.
+{{- /* We avoid a relative path here to work around https://github.com/databricks/cli/issues/3674 */}}
+                "--editable ${workspace.file_path}",
+            ],
+        },
+    }
+)

@@ -1,0 +1,2 @@
+Error: cycle detected: resources.jobs.foo refers to itself via ${resources.jobs.foo.id}
+

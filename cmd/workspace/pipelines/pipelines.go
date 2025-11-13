@@ -964,6 +964,7 @@ func newUpdate() *cobra.Command {
 	// TODO: map via StringToStringVar: tags
 	cmd.Flags().StringVar(&updateReq.Target, "target", updateReq.Target, `Target schema (database) to add tables in this pipeline to.`)
 	// TODO: complex arg: trigger
+	cmd.Flags().StringVar(&updateReq.UsagePolicyId, "usage-policy-id", updateReq.UsagePolicyId, `Usage policy of this pipeline.`)
 
 	cmd.Use = "update PIPELINE_ID"
 	cmd.Short = `Edit a pipeline.`

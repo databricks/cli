@@ -390,6 +390,7 @@ func newPatchStatus() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid STATUS: %s", args[1])
 			}
+
 		}
 
 		err = a.LogDelivery.PatchStatus(ctx, patchStatusReq)

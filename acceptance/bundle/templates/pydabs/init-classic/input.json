@@ -1,0 +1,7 @@
+{
+  "project_name": "my_pydabs",
+  "include_job": "yes",
+  "include_pipeline": "yes",
+  "include_python": "yes",
+  "serverless": "no"
+}

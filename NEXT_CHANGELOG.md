@@ -1,6 +1,6 @@
 # NEXT CHANGELOG
 
-## Release v0.270.0
+## Release v0.278.0
 
 ### Notable Changes
 
@@ -9,7 +9,7 @@
 ### Dependency updates
 
 ### Bundles
-* Add new Lakeflow Pipelines support for bundle generate ([#3568](https://github.com/databricks/cli/pull/3568))
-* Introduce new bundle variable: `${workspace.current_user.domain_friendly_name}` ([#3623](https://github.com/databricks/cli/pull/3623))
+* Add a language prompt to the `default-minimal` template ([#3918](https://github.com/databricks/cli/pull/3918))
+* Add `default-scala` template for Scala projects with SBT build configuration and example code ([#3906](https://github.com/databricks/cli/pull/3906))
 
 ### API Changes

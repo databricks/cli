@@ -1,0 +1,7 @@
+Cloud = true
+Local = true
+RecordRequests = false
+
+[[Repls]]
+Old = '\d{3,}'
+New = "[NUMID]"

@@ -1,0 +1,42 @@
+{
+  "plan": {
+    "resources.volumes.volume1": {
+      "action": "update_id",
+      "new_state": {
+        "config": {
+          "catalog_name": "main",
+          "comment": "COMMENT1",
+          "name": "mynewvolume",
+          "schema_name": "myschema",
+          "volume_type": "MANAGED"
+        }
+      },
+      "remote_state": {
+        "catalog_name": "main",
+        "comment": "COMMENT1",
+        "created_at": [UNIX_TIME_MILLIS][0],
+        "created_by": "[USERNAME]",
+        "full_name": "main.myschema.myvolume",
+        "name": "myvolume",
+        "owner": "[USERNAME]",
+        "schema_name": "myschema",
+        "storage_location": "s3://deco-uc-prod-isolated-aws-us-east-1/metastore/[UUID]/volumes/[UUID]",
+        "updated_at": [UNIX_TIME_MILLIS][0],
+        "volume_type": "MANAGED"
+      },
+      "changes": {
+        "local": {
+          "name": {
+            "action": "update_id"
+          }
+        },
+        "remote": {
+          "storage_location": {
+            "action": "skip",
+            "reason": "server_side_default"
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,28 +1,22 @@
 {
-  "completely_empty": {
-    "embed_credentials": false,
-    "parent_path": "/Workspace/foo/bar",
-    "permissions": []
-  },
   "empty_string": {
     "embed_credentials": false,
-    "parent_path": "",
-    "permissions": []
+    "parent_path": ""
+  },
+  "neither_parent_path_nor_embed_credentials": {
+    "embed_credentials": false,
+    "parent_path": "/Workspace/foo/bar"
   },
   "non_empty_string": {
     "embed_credentials": false,
-    "parent_path": "already-set",
-    "permissions": []
+    "parent_path": "already-set"
   },
   "other_fields": {
-    "display_name": "hello",
     "embed_credentials": false,
-    "parent_path": "/Workspace/foo/bar",
-    "permissions": []
+    "parent_path": "/Workspace/foo/bar"
   },
   "set_to_true": {
     "embed_credentials": true,
-    "parent_path": "/Workspace/foo/bar",
-    "permissions": []
+    "parent_path": "/Workspace/foo/bar"
   }
 }

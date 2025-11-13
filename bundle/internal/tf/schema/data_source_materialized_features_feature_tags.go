@@ -8,6 +8,8 @@ type DataSourceMaterializedFeaturesFeatureTagsFeatureTags struct {
 }
 
 type DataSourceMaterializedFeaturesFeatureTags struct {
+	FeatureName string                                                 `json:"feature_name"`
 	FeatureTags []DataSourceMaterializedFeaturesFeatureTagsFeatureTags `json:"feature_tags,omitempty"`
-	WorkspaceId string                                                 `json:"workspace_id,omitempty"`
+	PageSize    int                                                    `json:"page_size,omitempty"`
+	TableName   string                                                 `json:"table_name"`
 }

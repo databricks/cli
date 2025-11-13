@@ -1,17 +1,15 @@
-print_requests() {
-    jq --sort-keys 'select(.path | contains("/unity"))' < out.requests.txt
-    rm out.requests.txt
-}
-
 cleanup() {
-    trace $CLI bundle destroy --auto-approve
-    rm out.requests.txt
+    $CLI bundle destroy --auto-approve &> out.destroy.$DATABRICKS_BUNDLE_ENGINE.txt
+    print_requests.py --sort //unity &> out.destroy_requests.$DATABRICKS_BUNDLE_ENGINE.json
 }
 
 envsubst < databricks.yml.tmpl > databricks.yml
 trace $CLI bundle validate -o json | jq .resources
 trace $CLI bundle plan
-trace print_requests
+trace print_requests.py --get //unity
 trap cleanup EXIT
-trace $CLI bundle deploy
-trace print_requests
+trace errcode $CLI bundle deploy &> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt
+print_requests.py --get //unity &> out.deploy.requests.$DATABRICKS_BUNDLE_ENGINE.json
+
+# Should show empty plan for direct, but shows update in volumes.foo (permanent drift)
+$CLI bundle plan &> out.plan_after_deploy.$DATABRICKS_BUNDLE_ENGINE.txt

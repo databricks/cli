@@ -3,66 +3,18 @@
 create jobs.bar
 create jobs.foo
 
+Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> print_requests
-{
-  "body": {
-    "deployment": {
-      "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
-    },
-    "edit_mode": "UI_LOCKED",
-    "format": "MULTI_TASK",
-    "job_clusters": [
-      {
-        "job_cluster_key": "key",
-        "new_cluster": {
-          "num_workers": 0,
-          "spark_version": "13.3.x-scala2.12"
-        }
-      }
-    ],
-    "max_concurrent_runs": 1,
-    "name": "foo",
-    "queue": {
-      "enabled": true
-    },
-    "trigger": {
-      "pause_status": "UNPAUSED",
-      "periodic": {
-        "interval": 1,
-        "unit": "DAYS"
-      }
-    }
-  },
-  "method": "POST",
-  "path": "/api/2.2/jobs/create"
-}
-{
-  "body": {
-    "deployment": {
-      "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
-    },
-    "description": "depends on foo id [FOO_ID]",
-    "edit_mode": "UI_LOCKED",
-    "format": "MULTI_TASK",
-    "max_concurrent_runs": 1,
-    "name": "bar",
-    "queue": {
-      "enabled": true
-    }
-  },
-  "method": "POST",
-  "path": "/api/2.2/jobs/create"
-}
+>>> print_requests.py //jobs
 
 >>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 === Update trigger.periodic.unit and re-deploy; jobs.bar is unchanged
 >>> update_file.py databricks.yml DAYS HOURS
@@ -70,90 +22,28 @@ Deployment complete!
 >>> [CLI] bundle plan
 update jobs.foo
 
+Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> print_requests
-{
-  "body": {
-    "job_id": [FOO_ID],
-    "new_settings": {
-      "deployment": {
-        "kind": "BUNDLE",
-        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
-      },
-      "edit_mode": "UI_LOCKED",
-      "format": "MULTI_TASK",
-      "job_clusters": [
-        {
-          "job_cluster_key": "key",
-          "new_cluster": {
-            "num_workers": 0,
-            "spark_version": "13.3.x-scala2.12"
-          }
-        }
-      ],
-      "max_concurrent_runs": 1,
-      "name": "foo",
-      "queue": {
-        "enabled": true
-      },
-      "trigger": {
-        "pause_status": "UNPAUSED",
-        "periodic": {
-          "interval": 1,
-          "unit": "HOURS"
-        }
-      }
-    }
-  },
-  "method": "POST",
-  "path": "/api/2.2/jobs/reset"
-}
+>>> print_requests.py //jobs
 
 >>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 === Fetch job ID and verify remote state
 >>> [CLI] jobs get [FOO_ID]
-{
-  "job_id":[FOO_ID],
-  "settings": {
-    "deployment": {
-      "kind":"BUNDLE",
-      "metadata_file_path":"/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
-    },
-    "edit_mode":"UI_LOCKED",
-    "format":"MULTI_TASK",
-    "job_clusters": [
-      {
-        "job_cluster_key":"key",
-        "new_cluster": {
-          "num_workers":0,
-          "spark_version":"13.3.x-scala2.12"
-        }
-      }
-    ],
-    "max_concurrent_runs":1,
-    "name":"foo",
-    "queue": {
-      "enabled":true
-    },
-    "trigger": {
-      "pause_status":"UNPAUSED",
-      "periodic": {
-        "interval":1,
-        "unit":"HOURS"
-      }
-    }
-  }
-}
 
 >>> [CLI] jobs get [BAR_ID]
 {
+  "created_time":[UNIX_TIME_MILLIS],
+  "creator_user_name":"[USERNAME]",
   "job_id":[BAR_ID],
+  "run_as_user_name":"[USERNAME]",
   "settings": {
     "deployment": {
       "kind":"BUNDLE",
@@ -161,12 +51,15 @@ Deployment complete!
     },
     "description":"depends on foo id [FOO_ID]",
     "edit_mode":"UI_LOCKED",
+    "email_notifications": {},
     "format":"MULTI_TASK",
     "max_concurrent_runs":1,
     "name":"bar",
     "queue": {
       "enabled":true
-    }
+    },
+    "timeout_seconds":0,
+    "webhook_notifications": {}
   }
 }
 
@@ -180,28 +73,24 @@ All files and directories at the following location will be deleted: /Workspace/
 Deleting files...
 Destroy complete!
 
->>> print_sorted_requests
+>>> print_requests.py --sort //jobs
 {
+  "method": "POST",
+  "path": "/api/2.2/jobs/delete",
   "body": {
     "job_id": [FOO_ID]
-  },
-  "method": "POST",
-  "path": "/api/2.2/jobs/delete"
+  }
 }
 {
+  "method": "POST",
+  "path": "/api/2.2/jobs/delete",
   "body": {
     "job_id": [BAR_ID]
-  },
-  "method": "POST",
-  "path": "/api/2.2/jobs/delete"
+  }
 }
 
 >>> musterr [CLI] jobs get [FOO_ID]
 Error: Not Found
 
-Exit code (musterr): 1
-
 >>> musterr [CLI] jobs get [BAR_ID]
 Error: Not Found
-
-Exit code (musterr): 1

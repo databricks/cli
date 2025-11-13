@@ -19,19 +19,14 @@ func (a Action) String() string {
 	return fmt.Sprintf("  %s %s", a.ActionType.StringShort(), key)
 }
 
-// Implements cmdio.Event for cmdio.Log
-func (a Action) IsInplaceSupported() bool {
-	return false
-}
-
 type ActionType int
 
 // Actions are ordered in increasing severity.
 // If case of several options, action with highest severity wins.
 // Note, Create/Delete are handled explicitly and never compared.
 const (
-	ActionTypeUnset ActionType = iota
-	ActionTypeNoop
+	ActionTypeUndefined ActionType = iota
+	ActionTypeSkip
 	ActionTypeResize
 	ActionTypeUpdate
 	ActionTypeUpdateWithID
@@ -40,11 +35,13 @@ const (
 	ActionTypeDelete
 )
 
+const ActionTypeSkipString = "skip"
+
 var actionName = map[ActionType]string{
-	ActionTypeNoop:         "noop",
+	ActionTypeSkip:         ActionTypeSkipString,
 	ActionTypeResize:       "resize",
-	ActionTypeUpdate:       "update(id_stable)",
-	ActionTypeUpdateWithID: "update(id_changes)",
+	ActionTypeUpdate:       "update",
+	ActionTypeUpdateWithID: "update_id",
 	ActionTypeCreate:       "create",
 	ActionTypeRecreate:     "recreate",
 	ActionTypeDelete:       "delete",
@@ -61,10 +58,6 @@ func init() {
 	}
 }
 
-func (a ActionType) IsNoop() bool {
-	return a == ActionTypeNoop
-}
-
 func (a ActionType) KeepsID() bool {
 	switch a {
 	case ActionTypeCreate, ActionTypeUpdateWithID, ActionTypeRecreate, ActionTypeDelete:
@@ -74,21 +67,21 @@ func (a ActionType) KeepsID() bool {
 	}
 }
 
-// StringShort short version of action string, without part in parens.
+// StringShort short version of action string, without suffix
 func (a ActionType) StringShort() string {
-	items := strings.SplitN(actionName[a], "(", 2)
+	items := strings.SplitN(actionName[a], "_", 2)
 	return items[0]
 }
 
-// StringFull returns the string representation of the action type.
-func (a ActionType) StringFull() string {
+// String returns the string representation of the action type.
+func (a ActionType) String() string {
 	return actionName[a]
 }
 
 func ActionTypeFromString(s string) ActionType {
 	actionType, ok := nameToAction[s]
 	if !ok {
-		return ActionTypeUnset
+		return ActionTypeUndefined
 	}
 	return actionType
 }

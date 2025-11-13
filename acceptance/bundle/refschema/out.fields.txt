@@ -5,7 +5,7 @@ resources.alerts.*.display_name	string	ALL
 resources.alerts.*.effective_run_as	*sql.AlertV2RunAs	ALL
 resources.alerts.*.effective_run_as.service_principal_name	string	ALL
 resources.alerts.*.effective_run_as.user_name	string	ALL
-resources.alerts.*.evaluation	*sql.AlertV2Evaluation	ALL
+resources.alerts.*.evaluation	sql.AlertV2Evaluation	ALL
 resources.alerts.*.evaluation.comparison_operator	sql.ComparisonOperator	ALL
 resources.alerts.*.evaluation.empty_result_state	sql.AlertEvaluationState	ALL
 resources.alerts.*.evaluation.last_evaluated_at	string	ALL
@@ -16,7 +16,7 @@ resources.alerts.*.evaluation.notification.subscriptions	[]sql.AlertV2Subscripti
 resources.alerts.*.evaluation.notification.subscriptions[*]	sql.AlertV2Subscription	ALL
 resources.alerts.*.evaluation.notification.subscriptions[*].destination_id	string	ALL
 resources.alerts.*.evaluation.notification.subscriptions[*].user_email	string	ALL
-resources.alerts.*.evaluation.source	*sql.AlertV2OperandColumn	ALL
+resources.alerts.*.evaluation.source	sql.AlertV2OperandColumn	ALL
 resources.alerts.*.evaluation.source.aggregation	sql.Aggregation	ALL
 resources.alerts.*.evaluation.source.display	string	ALL
 resources.alerts.*.evaluation.source.name	string	ALL
@@ -33,14 +33,14 @@ resources.alerts.*.evaluation.threshold.value.string_value	string	ALL
 resources.alerts.*.id	string	ALL
 resources.alerts.*.lifecycle	resources.Lifecycle	INPUT
 resources.alerts.*.lifecycle.prevent_destroy	bool	INPUT
-resources.alerts.*.lifecycle_state	sql.LifecycleState	ALL
+resources.alerts.*.lifecycle_state	sql.AlertLifecycleState	ALL
 resources.alerts.*.modified_status	string	INPUT
 resources.alerts.*.owner_user_name	string	ALL
 resources.alerts.*.parent_path	string	ALL
 resources.alerts.*.permissions	[]resources.AlertPermission	INPUT
 resources.alerts.*.permissions[*]	resources.AlertPermission	INPUT
 resources.alerts.*.permissions[*].group_name	string	INPUT
-resources.alerts.*.permissions[*].level	string	INPUT
+resources.alerts.*.permissions[*].level	resources.AlertPermissionLevel	INPUT
 resources.alerts.*.permissions[*].service_principal_name	string	INPUT
 resources.alerts.*.permissions[*].user_name	string	INPUT
 resources.alerts.*.query_text	string	ALL
@@ -48,7 +48,7 @@ resources.alerts.*.run_as	*sql.AlertV2RunAs	ALL
 resources.alerts.*.run_as.service_principal_name	string	ALL
 resources.alerts.*.run_as.user_name	string	ALL
 resources.alerts.*.run_as_user_name	string	ALL
-resources.alerts.*.schedule	*sql.CronSchedule	ALL
+resources.alerts.*.schedule	sql.CronSchedule	ALL
 resources.alerts.*.schedule.pause_status	sql.SchedulePauseStatus	ALL
 resources.alerts.*.schedule.quartz_cron_schedule	string	ALL
 resources.alerts.*.schedule.timezone_id	string	ALL
@@ -71,11 +71,10 @@ resources.apps.*.app_status	*apps.ApplicationStatus	ALL
 resources.apps.*.app_status.message	string	ALL
 resources.apps.*.app_status.state	apps.ApplicationState	ALL
 resources.apps.*.budget_policy_id	string	ALL
+resources.apps.*.compute_size	apps.ComputeSize	ALL
 resources.apps.*.compute_status	*apps.ComputeStatus	ALL
 resources.apps.*.compute_status.message	string	ALL
 resources.apps.*.compute_status.state	apps.ComputeState	ALL
-resources.apps.*.config	map[string]any	INPUT
-resources.apps.*.config[*]	any	INPUT
 resources.apps.*.create_time	string	ALL
 resources.apps.*.creator	string	ALL
 resources.apps.*.default_source_code_path	string	ALL
@@ -115,6 +114,10 @@ resources.apps.*.resources[*].database.database_name	string	ALL
 resources.apps.*.resources[*].database.instance_name	string	ALL
 resources.apps.*.resources[*].database.permission	apps.AppResourceDatabaseDatabasePermission	ALL
 resources.apps.*.resources[*].description	string	ALL
+resources.apps.*.resources[*].genie_space	*apps.AppResourceGenieSpace	ALL
+resources.apps.*.resources[*].genie_space.name	string	ALL
+resources.apps.*.resources[*].genie_space.permission	apps.AppResourceGenieSpaceGenieSpacePermission	ALL
+resources.apps.*.resources[*].genie_space.space_id	string	ALL
 resources.apps.*.resources[*].job	*apps.AppResourceJob	ALL
 resources.apps.*.resources[*].job.id	string	ALL
 resources.apps.*.resources[*].job.permission	apps.AppResourceJobJobPermission	ALL
@@ -142,6 +145,300 @@ resources.apps.*.updater	string	ALL
 resources.apps.*.url	string	ALL
 resources.apps.*.user_api_scopes	[]string	ALL
 resources.apps.*.user_api_scopes[*]	string	ALL
+resources.apps.*.permissions.object_id	string	ALL
+resources.apps.*.permissions.permissions	[]iam.AccessControlRequest	ALL
+resources.apps.*.permissions.permissions[*]	iam.AccessControlRequest	ALL
+resources.apps.*.permissions.permissions[*].group_name	string	ALL
+resources.apps.*.permissions.permissions[*].permission_level	iam.PermissionLevel	ALL
+resources.apps.*.permissions.permissions[*].service_principal_name	string	ALL
+resources.apps.*.permissions.permissions[*].user_name	string	ALL
+resources.clusters.*.apply_policy_default_values	bool	INPUT	STATE
+resources.clusters.*.autoscale	*compute.AutoScale	ALL
+resources.clusters.*.autoscale.max_workers	int	ALL
+resources.clusters.*.autoscale.min_workers	int	ALL
+resources.clusters.*.autotermination_minutes	int	ALL
+resources.clusters.*.aws_attributes	*compute.AwsAttributes	ALL
+resources.clusters.*.aws_attributes.availability	compute.AwsAvailability	ALL
+resources.clusters.*.aws_attributes.ebs_volume_count	int	ALL
+resources.clusters.*.aws_attributes.ebs_volume_iops	int	ALL
+resources.clusters.*.aws_attributes.ebs_volume_size	int	ALL
+resources.clusters.*.aws_attributes.ebs_volume_throughput	int	ALL
+resources.clusters.*.aws_attributes.ebs_volume_type	compute.EbsVolumeType	ALL
+resources.clusters.*.aws_attributes.first_on_demand	int	ALL
+resources.clusters.*.aws_attributes.instance_profile_arn	string	ALL
+resources.clusters.*.aws_attributes.spot_bid_price_percent	int	ALL
+resources.clusters.*.aws_attributes.zone_id	string	ALL
+resources.clusters.*.azure_attributes	*compute.AzureAttributes	ALL
+resources.clusters.*.azure_attributes.availability	compute.AzureAvailability	ALL
+resources.clusters.*.azure_attributes.first_on_demand	int	ALL
+resources.clusters.*.azure_attributes.log_analytics_info	*compute.LogAnalyticsInfo	ALL
+resources.clusters.*.azure_attributes.log_analytics_info.log_analytics_primary_key	string	ALL
+resources.clusters.*.azure_attributes.log_analytics_info.log_analytics_workspace_id	string	ALL
+resources.clusters.*.azure_attributes.spot_bid_max_price	float64	ALL
+resources.clusters.*.cluster_cores	float64	REMOTE
+resources.clusters.*.cluster_id	string	REMOTE
+resources.clusters.*.cluster_log_conf	*compute.ClusterLogConf	ALL
+resources.clusters.*.cluster_log_conf.dbfs	*compute.DbfsStorageInfo	ALL
+resources.clusters.*.cluster_log_conf.dbfs.destination	string	ALL
+resources.clusters.*.cluster_log_conf.s3	*compute.S3StorageInfo	ALL
+resources.clusters.*.cluster_log_conf.s3.canned_acl	string	ALL
+resources.clusters.*.cluster_log_conf.s3.destination	string	ALL
+resources.clusters.*.cluster_log_conf.s3.enable_encryption	bool	ALL
+resources.clusters.*.cluster_log_conf.s3.encryption_type	string	ALL
+resources.clusters.*.cluster_log_conf.s3.endpoint	string	ALL
+resources.clusters.*.cluster_log_conf.s3.kms_key	string	ALL
+resources.clusters.*.cluster_log_conf.s3.region	string	ALL
+resources.clusters.*.cluster_log_conf.volumes	*compute.VolumesStorageInfo	ALL
+resources.clusters.*.cluster_log_conf.volumes.destination	string	ALL
+resources.clusters.*.cluster_log_status	*compute.LogSyncStatus	REMOTE
+resources.clusters.*.cluster_log_status.last_attempted	int64	REMOTE
+resources.clusters.*.cluster_log_status.last_exception	string	REMOTE
+resources.clusters.*.cluster_memory_mb	int64	REMOTE
+resources.clusters.*.cluster_name	string	ALL
+resources.clusters.*.cluster_source	compute.ClusterSource	REMOTE
+resources.clusters.*.creator_user_name	string	REMOTE
+resources.clusters.*.custom_tags	map[string]string	ALL
+resources.clusters.*.custom_tags.*	string	ALL
+resources.clusters.*.data_security_mode	compute.DataSecurityMode	ALL
+resources.clusters.*.default_tags	map[string]string	REMOTE
+resources.clusters.*.default_tags.*	string	REMOTE
+resources.clusters.*.docker_image	*compute.DockerImage	ALL
+resources.clusters.*.docker_image.basic_auth	*compute.DockerBasicAuth	ALL
+resources.clusters.*.docker_image.basic_auth.password	string	ALL
+resources.clusters.*.docker_image.basic_auth.username	string	ALL
+resources.clusters.*.docker_image.url	string	ALL
+resources.clusters.*.driver	*compute.SparkNode	REMOTE
+resources.clusters.*.driver.host_private_ip	string	REMOTE
+resources.clusters.*.driver.instance_id	string	REMOTE
+resources.clusters.*.driver.node_aws_attributes	*compute.SparkNodeAwsAttributes	REMOTE
+resources.clusters.*.driver.node_aws_attributes.is_spot	bool	REMOTE
+resources.clusters.*.driver.node_id	string	REMOTE
+resources.clusters.*.driver.private_ip	string	REMOTE
+resources.clusters.*.driver.public_dns	string	REMOTE
+resources.clusters.*.driver.start_timestamp	int64	REMOTE
+resources.clusters.*.driver_instance_pool_id	string	ALL
+resources.clusters.*.driver_node_type_id	string	ALL
+resources.clusters.*.enable_elastic_disk	bool	ALL
+resources.clusters.*.enable_local_disk_encryption	bool	ALL
+resources.clusters.*.executors	[]compute.SparkNode	REMOTE
+resources.clusters.*.executors[*]	compute.SparkNode	REMOTE
+resources.clusters.*.executors[*].host_private_ip	string	REMOTE
+resources.clusters.*.executors[*].instance_id	string	REMOTE
+resources.clusters.*.executors[*].node_aws_attributes	*compute.SparkNodeAwsAttributes	REMOTE
+resources.clusters.*.executors[*].node_aws_attributes.is_spot	bool	REMOTE
+resources.clusters.*.executors[*].node_id	string	REMOTE
+resources.clusters.*.executors[*].private_ip	string	REMOTE
+resources.clusters.*.executors[*].public_dns	string	REMOTE
+resources.clusters.*.executors[*].start_timestamp	int64	REMOTE
+resources.clusters.*.gcp_attributes	*compute.GcpAttributes	ALL
+resources.clusters.*.gcp_attributes.availability	compute.GcpAvailability	ALL
+resources.clusters.*.gcp_attributes.boot_disk_size	int	ALL
+resources.clusters.*.gcp_attributes.first_on_demand	int	ALL
+resources.clusters.*.gcp_attributes.google_service_account	string	ALL
+resources.clusters.*.gcp_attributes.local_ssd_count	int	ALL
+resources.clusters.*.gcp_attributes.use_preemptible_executors	bool	ALL
+resources.clusters.*.gcp_attributes.zone_id	string	ALL
+resources.clusters.*.id	string	INPUT
+resources.clusters.*.init_scripts	[]compute.InitScriptInfo	ALL
+resources.clusters.*.init_scripts[*]	compute.InitScriptInfo	ALL
+resources.clusters.*.init_scripts[*].abfss	*compute.Adlsgen2Info	ALL
+resources.clusters.*.init_scripts[*].abfss.destination	string	ALL
+resources.clusters.*.init_scripts[*].dbfs	*compute.DbfsStorageInfo	ALL
+resources.clusters.*.init_scripts[*].dbfs.destination	string	ALL
+resources.clusters.*.init_scripts[*].file	*compute.LocalFileInfo	ALL
+resources.clusters.*.init_scripts[*].file.destination	string	ALL
+resources.clusters.*.init_scripts[*].gcs	*compute.GcsStorageInfo	ALL
+resources.clusters.*.init_scripts[*].gcs.destination	string	ALL
+resources.clusters.*.init_scripts[*].s3	*compute.S3StorageInfo	ALL
+resources.clusters.*.init_scripts[*].s3.canned_acl	string	ALL
+resources.clusters.*.init_scripts[*].s3.destination	string	ALL
+resources.clusters.*.init_scripts[*].s3.enable_encryption	bool	ALL
+resources.clusters.*.init_scripts[*].s3.encryption_type	string	ALL
+resources.clusters.*.init_scripts[*].s3.endpoint	string	ALL
+resources.clusters.*.init_scripts[*].s3.kms_key	string	ALL
+resources.clusters.*.init_scripts[*].s3.region	string	ALL
+resources.clusters.*.init_scripts[*].volumes	*compute.VolumesStorageInfo	ALL
+resources.clusters.*.init_scripts[*].volumes.destination	string	ALL
+resources.clusters.*.init_scripts[*].workspace	*compute.WorkspaceStorageInfo	ALL
+resources.clusters.*.init_scripts[*].workspace.destination	string	ALL
+resources.clusters.*.instance_pool_id	string	ALL
+resources.clusters.*.is_single_node	bool	ALL
+resources.clusters.*.jdbc_port	int	REMOTE
+resources.clusters.*.kind	compute.Kind	ALL
+resources.clusters.*.last_restarted_time	int64	REMOTE
+resources.clusters.*.last_state_loss_time	int64	REMOTE
+resources.clusters.*.lifecycle	resources.Lifecycle	INPUT
+resources.clusters.*.lifecycle.prevent_destroy	bool	INPUT
+resources.clusters.*.modified_status	string	INPUT
+resources.clusters.*.node_type_id	string	ALL
+resources.clusters.*.num_workers	int	ALL
+resources.clusters.*.permissions	[]resources.ClusterPermission	INPUT
+resources.clusters.*.permissions[*]	resources.ClusterPermission	INPUT
+resources.clusters.*.permissions[*].group_name	string	INPUT
+resources.clusters.*.permissions[*].level	resources.ClusterPermissionLevel	INPUT
+resources.clusters.*.permissions[*].service_principal_name	string	INPUT
+resources.clusters.*.permissions[*].user_name	string	INPUT
+resources.clusters.*.policy_id	string	ALL
+resources.clusters.*.remote_disk_throughput	int	ALL
+resources.clusters.*.runtime_engine	compute.RuntimeEngine	ALL
+resources.clusters.*.single_user_name	string	ALL
+resources.clusters.*.spark_conf	map[string]string	ALL
+resources.clusters.*.spark_conf.*	string	ALL
+resources.clusters.*.spark_context_id	int64	REMOTE
+resources.clusters.*.spark_env_vars	map[string]string	ALL
+resources.clusters.*.spark_env_vars.*	string	ALL
+resources.clusters.*.spark_version	string	ALL
+resources.clusters.*.spec	*compute.ClusterSpec	REMOTE
+resources.clusters.*.spec.apply_policy_default_values	bool	REMOTE
+resources.clusters.*.spec.autoscale	*compute.AutoScale	REMOTE
+resources.clusters.*.spec.autoscale.max_workers	int	REMOTE
+resources.clusters.*.spec.autoscale.min_workers	int	REMOTE
+resources.clusters.*.spec.autotermination_minutes	int	REMOTE
+resources.clusters.*.spec.aws_attributes	*compute.AwsAttributes	REMOTE
+resources.clusters.*.spec.aws_attributes.availability	compute.AwsAvailability	REMOTE
+resources.clusters.*.spec.aws_attributes.ebs_volume_count	int	REMOTE
+resources.clusters.*.spec.aws_attributes.ebs_volume_iops	int	REMOTE
+resources.clusters.*.spec.aws_attributes.ebs_volume_size	int	REMOTE
+resources.clusters.*.spec.aws_attributes.ebs_volume_throughput	int	REMOTE
+resources.clusters.*.spec.aws_attributes.ebs_volume_type	compute.EbsVolumeType	REMOTE
+resources.clusters.*.spec.aws_attributes.first_on_demand	int	REMOTE
+resources.clusters.*.spec.aws_attributes.instance_profile_arn	string	REMOTE
+resources.clusters.*.spec.aws_attributes.spot_bid_price_percent	int	REMOTE
+resources.clusters.*.spec.aws_attributes.zone_id	string	REMOTE
+resources.clusters.*.spec.azure_attributes	*compute.AzureAttributes	REMOTE
+resources.clusters.*.spec.azure_attributes.availability	compute.AzureAvailability	REMOTE
+resources.clusters.*.spec.azure_attributes.first_on_demand	int	REMOTE
+resources.clusters.*.spec.azure_attributes.log_analytics_info	*compute.LogAnalyticsInfo	REMOTE
+resources.clusters.*.spec.azure_attributes.log_analytics_info.log_analytics_primary_key	string	REMOTE
+resources.clusters.*.spec.azure_attributes.log_analytics_info.log_analytics_workspace_id	string	REMOTE
+resources.clusters.*.spec.azure_attributes.spot_bid_max_price	float64	REMOTE
+resources.clusters.*.spec.cluster_log_conf	*compute.ClusterLogConf	REMOTE
+resources.clusters.*.spec.cluster_log_conf.dbfs	*compute.DbfsStorageInfo	REMOTE
+resources.clusters.*.spec.cluster_log_conf.dbfs.destination	string	REMOTE
+resources.clusters.*.spec.cluster_log_conf.s3	*compute.S3StorageInfo	REMOTE
+resources.clusters.*.spec.cluster_log_conf.s3.canned_acl	string	REMOTE
+resources.clusters.*.spec.cluster_log_conf.s3.destination	string	REMOTE
+resources.clusters.*.spec.cluster_log_conf.s3.enable_encryption	bool	REMOTE
+resources.clusters.*.spec.cluster_log_conf.s3.encryption_type	string	REMOTE
+resources.clusters.*.spec.cluster_log_conf.s3.endpoint	string	REMOTE
+resources.clusters.*.spec.cluster_log_conf.s3.kms_key	string	REMOTE
+resources.clusters.*.spec.cluster_log_conf.s3.region	string	REMOTE
+resources.clusters.*.spec.cluster_log_conf.volumes	*compute.VolumesStorageInfo	REMOTE
+resources.clusters.*.spec.cluster_log_conf.volumes.destination	string	REMOTE
+resources.clusters.*.spec.cluster_name	string	REMOTE
+resources.clusters.*.spec.custom_tags	map[string]string	REMOTE
+resources.clusters.*.spec.custom_tags.*	string	REMOTE
+resources.clusters.*.spec.data_security_mode	compute.DataSecurityMode	REMOTE
+resources.clusters.*.spec.docker_image	*compute.DockerImage	REMOTE
+resources.clusters.*.spec.docker_image.basic_auth	*compute.DockerBasicAuth	REMOTE
+resources.clusters.*.spec.docker_image.basic_auth.password	string	REMOTE
+resources.clusters.*.spec.docker_image.basic_auth.username	string	REMOTE
+resources.clusters.*.spec.docker_image.url	string	REMOTE
+resources.clusters.*.spec.driver_instance_pool_id	string	REMOTE
+resources.clusters.*.spec.driver_node_type_id	string	REMOTE
+resources.clusters.*.spec.enable_elastic_disk	bool	REMOTE
+resources.clusters.*.spec.enable_local_disk_encryption	bool	REMOTE
+resources.clusters.*.spec.gcp_attributes	*compute.GcpAttributes	REMOTE
+resources.clusters.*.spec.gcp_attributes.availability	compute.GcpAvailability	REMOTE
+resources.clusters.*.spec.gcp_attributes.boot_disk_size	int	REMOTE
+resources.clusters.*.spec.gcp_attributes.first_on_demand	int	REMOTE
+resources.clusters.*.spec.gcp_attributes.google_service_account	string	REMOTE
+resources.clusters.*.spec.gcp_attributes.local_ssd_count	int	REMOTE
+resources.clusters.*.spec.gcp_attributes.use_preemptible_executors	bool	REMOTE
+resources.clusters.*.spec.gcp_attributes.zone_id	string	REMOTE
+resources.clusters.*.spec.init_scripts	[]compute.InitScriptInfo	REMOTE
+resources.clusters.*.spec.init_scripts[*]	compute.InitScriptInfo	REMOTE
+resources.clusters.*.spec.init_scripts[*].abfss	*compute.Adlsgen2Info	REMOTE
+resources.clusters.*.spec.init_scripts[*].abfss.destination	string	REMOTE
+resources.clusters.*.spec.init_scripts[*].dbfs	*compute.DbfsStorageInfo	REMOTE
+resources.clusters.*.spec.init_scripts[*].dbfs.destination	string	REMOTE
+resources.clusters.*.spec.init_scripts[*].file	*compute.LocalFileInfo	REMOTE
+resources.clusters.*.spec.init_scripts[*].file.destination	string	REMOTE
+resources.clusters.*.spec.init_scripts[*].gcs	*compute.GcsStorageInfo	REMOTE
+resources.clusters.*.spec.init_scripts[*].gcs.destination	string	REMOTE
+resources.clusters.*.spec.init_scripts[*].s3	*compute.S3StorageInfo	REMOTE
+resources.clusters.*.spec.init_scripts[*].s3.canned_acl	string	REMOTE
+resources.clusters.*.spec.init_scripts[*].s3.destination	string	REMOTE
+resources.clusters.*.spec.init_scripts[*].s3.enable_encryption	bool	REMOTE
+resources.clusters.*.spec.init_scripts[*].s3.encryption_type	string	REMOTE
+resources.clusters.*.spec.init_scripts[*].s3.endpoint	string	REMOTE
+resources.clusters.*.spec.init_scripts[*].s3.kms_key	string	REMOTE
+resources.clusters.*.spec.init_scripts[*].s3.region	string	REMOTE
+resources.clusters.*.spec.init_scripts[*].volumes	*compute.VolumesStorageInfo	REMOTE
+resources.clusters.*.spec.init_scripts[*].volumes.destination	string	REMOTE
+resources.clusters.*.spec.init_scripts[*].workspace	*compute.WorkspaceStorageInfo	REMOTE
+resources.clusters.*.spec.init_scripts[*].workspace.destination	string	REMOTE
+resources.clusters.*.spec.instance_pool_id	string	REMOTE
+resources.clusters.*.spec.is_single_node	bool	REMOTE
+resources.clusters.*.spec.kind	compute.Kind	REMOTE
+resources.clusters.*.spec.node_type_id	string	REMOTE
+resources.clusters.*.spec.num_workers	int	REMOTE
+resources.clusters.*.spec.policy_id	string	REMOTE
+resources.clusters.*.spec.remote_disk_throughput	int	REMOTE
+resources.clusters.*.spec.runtime_engine	compute.RuntimeEngine	REMOTE
+resources.clusters.*.spec.single_user_name	string	REMOTE
+resources.clusters.*.spec.spark_conf	map[string]string	REMOTE
+resources.clusters.*.spec.spark_conf.*	string	REMOTE
+resources.clusters.*.spec.spark_env_vars	map[string]string	REMOTE
+resources.clusters.*.spec.spark_env_vars.*	string	REMOTE
+resources.clusters.*.spec.spark_version	string	REMOTE
+resources.clusters.*.spec.ssh_public_keys	[]string	REMOTE
+resources.clusters.*.spec.ssh_public_keys[*]	string	REMOTE
+resources.clusters.*.spec.total_initial_remote_disk_size	int	REMOTE
+resources.clusters.*.spec.use_ml_runtime	bool	REMOTE
+resources.clusters.*.spec.workload_type	*compute.WorkloadType	REMOTE
+resources.clusters.*.spec.workload_type.clients	compute.ClientsTypes	REMOTE
+resources.clusters.*.spec.workload_type.clients.jobs	bool	REMOTE
+resources.clusters.*.spec.workload_type.clients.notebooks	bool	REMOTE
+resources.clusters.*.ssh_public_keys	[]string	ALL
+resources.clusters.*.ssh_public_keys[*]	string	ALL
+resources.clusters.*.start_time	int64	REMOTE
+resources.clusters.*.state	compute.State	REMOTE
+resources.clusters.*.state_message	string	REMOTE
+resources.clusters.*.terminated_time	int64	REMOTE
+resources.clusters.*.termination_reason	*compute.TerminationReason	REMOTE
+resources.clusters.*.termination_reason.code	compute.TerminationReasonCode	REMOTE
+resources.clusters.*.termination_reason.parameters	map[string]string	REMOTE
+resources.clusters.*.termination_reason.parameters.*	string	REMOTE
+resources.clusters.*.termination_reason.type	compute.TerminationReasonType	REMOTE
+resources.clusters.*.total_initial_remote_disk_size	int	ALL
+resources.clusters.*.url	string	INPUT
+resources.clusters.*.use_ml_runtime	bool	ALL
+resources.clusters.*.workload_type	*compute.WorkloadType	ALL
+resources.clusters.*.workload_type.clients	compute.ClientsTypes	ALL
+resources.clusters.*.workload_type.clients.jobs	bool	ALL
+resources.clusters.*.workload_type.clients.notebooks	bool	ALL
+resources.clusters.*.permissions.object_id	string	ALL
+resources.clusters.*.permissions.permissions	[]iam.AccessControlRequest	ALL
+resources.clusters.*.permissions.permissions[*]	iam.AccessControlRequest	ALL
+resources.clusters.*.permissions.permissions[*].group_name	string	ALL
+resources.clusters.*.permissions.permissions[*].permission_level	iam.PermissionLevel	ALL
+resources.clusters.*.permissions.permissions[*].service_principal_name	string	ALL
+resources.clusters.*.permissions.permissions[*].user_name	string	ALL
+resources.dashboards.*.create_time	string	ALL
+resources.dashboards.*.dashboard_id	string	ALL
+resources.dashboards.*.display_name	string	ALL
+resources.dashboards.*.embed_credentials	bool	ALL
+resources.dashboards.*.etag	string	ALL
+resources.dashboards.*.file_path	string	INPUT
+resources.dashboards.*.id	string	INPUT
+resources.dashboards.*.lifecycle	resources.Lifecycle	INPUT
+resources.dashboards.*.lifecycle.prevent_destroy	bool	INPUT
+resources.dashboards.*.lifecycle_state	dashboards.LifecycleState	ALL
+resources.dashboards.*.modified_status	string	INPUT
+resources.dashboards.*.parent_path	string	ALL
+resources.dashboards.*.path	string	ALL
+resources.dashboards.*.permissions	[]resources.DashboardPermission	INPUT
+resources.dashboards.*.permissions[*]	resources.DashboardPermission	INPUT
+resources.dashboards.*.permissions[*].group_name	string	INPUT
+resources.dashboards.*.permissions[*].level	resources.DashboardPermissionLevel	INPUT
+resources.dashboards.*.permissions[*].service_principal_name	string	INPUT
+resources.dashboards.*.permissions[*].user_name	string	INPUT
+resources.dashboards.*.serialized_dashboard	any	ALL
+resources.dashboards.*.serialized_dashboard	string	ALL
+resources.dashboards.*.update_time	string	ALL
+resources.dashboards.*.url	string	INPUT
+resources.dashboards.*.warehouse_id	string	ALL
 resources.database_catalogs.*.create_database_if_not_exists	bool	ALL
 resources.database_catalogs.*.database_instance_name	string	ALL
 resources.database_catalogs.*.database_name	string	ALL
@@ -162,11 +459,21 @@ resources.database_instances.*.child_instance_refs[*].name	string	ALL
 resources.database_instances.*.child_instance_refs[*].uid	string	ALL
 resources.database_instances.*.creation_time	string	ALL
 resources.database_instances.*.creator	string	ALL
+resources.database_instances.*.custom_tags	[]database.CustomTag	ALL
+resources.database_instances.*.custom_tags[*]	database.CustomTag	ALL
+resources.database_instances.*.custom_tags[*].key	string	ALL
+resources.database_instances.*.custom_tags[*].value	string	ALL
+resources.database_instances.*.effective_capacity	string	ALL
+resources.database_instances.*.effective_custom_tags	[]database.CustomTag	ALL
+resources.database_instances.*.effective_custom_tags[*]	database.CustomTag	ALL
+resources.database_instances.*.effective_custom_tags[*].key	string	ALL
+resources.database_instances.*.effective_custom_tags[*].value	string	ALL
 resources.database_instances.*.effective_enable_pg_native_login	bool	ALL
 resources.database_instances.*.effective_enable_readable_secondaries	bool	ALL
 resources.database_instances.*.effective_node_count	int	ALL
 resources.database_instances.*.effective_retention_window_in_days	int	ALL
 resources.database_instances.*.effective_stopped	bool	ALL
+resources.database_instances.*.effective_usage_policy_id	string	ALL
 resources.database_instances.*.enable_pg_native_login	bool	ALL
 resources.database_instances.*.enable_readable_secondaries	bool	ALL
 resources.database_instances.*.id	string	INPUT
@@ -195,6 +502,42 @@ resources.database_instances.*.state	database.DatabaseInstanceState	ALL
 resources.database_instances.*.stopped	bool	ALL
 resources.database_instances.*.uid	string	ALL
 resources.database_instances.*.url	string	INPUT
+resources.database_instances.*.usage_policy_id	string	ALL
+resources.database_instances.*.permissions.object_id	string	ALL
+resources.database_instances.*.permissions.permissions	[]iam.AccessControlRequest	ALL
+resources.database_instances.*.permissions.permissions[*]	iam.AccessControlRequest	ALL
+resources.database_instances.*.permissions.permissions[*].group_name	string	ALL
+resources.database_instances.*.permissions.permissions[*].permission_level	iam.PermissionLevel	ALL
+resources.database_instances.*.permissions.permissions[*].service_principal_name	string	ALL
+resources.database_instances.*.permissions.permissions[*].user_name	string	ALL
+resources.experiments.*.artifact_location	string	ALL
+resources.experiments.*.creation_time	int64	REMOTE
+resources.experiments.*.experiment_id	string	REMOTE
+resources.experiments.*.id	string	INPUT
+resources.experiments.*.last_update_time	int64	REMOTE
+resources.experiments.*.lifecycle	resources.Lifecycle	INPUT
+resources.experiments.*.lifecycle.prevent_destroy	bool	INPUT
+resources.experiments.*.lifecycle_stage	string	REMOTE
+resources.experiments.*.modified_status	string	INPUT
+resources.experiments.*.name	string	ALL
+resources.experiments.*.permissions	[]resources.MlflowExperimentPermission	INPUT
+resources.experiments.*.permissions[*]	resources.MlflowExperimentPermission	INPUT
+resources.experiments.*.permissions[*].group_name	string	INPUT
+resources.experiments.*.permissions[*].level	resources.MlflowExperimentPermissionLevel	INPUT
+resources.experiments.*.permissions[*].service_principal_name	string	INPUT
+resources.experiments.*.permissions[*].user_name	string	INPUT
+resources.experiments.*.tags	[]ml.ExperimentTag	ALL
+resources.experiments.*.tags[*]	ml.ExperimentTag	ALL
+resources.experiments.*.tags[*].key	string	ALL
+resources.experiments.*.tags[*].value	string	ALL
+resources.experiments.*.url	string	INPUT
+resources.experiments.*.permissions.object_id	string	ALL
+resources.experiments.*.permissions.permissions	[]iam.AccessControlRequest	ALL
+resources.experiments.*.permissions.permissions[*]	iam.AccessControlRequest	ALL
+resources.experiments.*.permissions.permissions[*].group_name	string	ALL
+resources.experiments.*.permissions.permissions[*].permission_level	iam.PermissionLevel	ALL
+resources.experiments.*.permissions.permissions[*].service_principal_name	string	ALL
+resources.experiments.*.permissions.permissions[*].user_name	string	ALL
 resources.jobs.*.budget_policy_id	string	INPUT	STATE
 resources.jobs.*.continuous	*jobs.Continuous	INPUT	STATE
 resources.jobs.*.continuous.pause_status	jobs.PauseStatus	INPUT	STATE
@@ -228,8 +571,8 @@ resources.jobs.*.environments[*].spec.client	string	INPUT	STATE
 resources.jobs.*.environments[*].spec.dependencies	[]string	INPUT	STATE
 resources.jobs.*.environments[*].spec.dependencies[*]	string	INPUT	STATE
 resources.jobs.*.environments[*].spec.environment_version	string	INPUT	STATE
-resources.jobs.*.environments[*].spec.jar_dependencies	[]string	INPUT	STATE
-resources.jobs.*.environments[*].spec.jar_dependencies[*]	string	INPUT	STATE
+resources.jobs.*.environments[*].spec.java_dependencies	[]string	INPUT	STATE
+resources.jobs.*.environments[*].spec.java_dependencies[*]	string	INPUT	STATE
 resources.jobs.*.format	jobs.Format	INPUT	STATE
 resources.jobs.*.git_source	*jobs.GitSource	INPUT	STATE
 resources.jobs.*.git_source.git_branch	string	INPUT	STATE
@@ -293,7 +636,7 @@ resources.jobs.*.job_clusters[*].new_cluster.cluster_log_conf.volumes	*compute.V
 resources.jobs.*.job_clusters[*].new_cluster.cluster_log_conf.volumes.destination	string	INPUT	STATE
 resources.jobs.*.job_clusters[*].new_cluster.cluster_name	string	INPUT	STATE
 resources.jobs.*.job_clusters[*].new_cluster.custom_tags	map[string]string	INPUT	STATE
-resources.jobs.*.job_clusters[*].new_cluster.custom_tags[*]	string	INPUT	STATE
+resources.jobs.*.job_clusters[*].new_cluster.custom_tags.*	string	INPUT	STATE
 resources.jobs.*.job_clusters[*].new_cluster.data_security_mode	compute.DataSecurityMode	INPUT	STATE
 resources.jobs.*.job_clusters[*].new_cluster.docker_image	*compute.DockerImage	INPUT	STATE
 resources.jobs.*.job_clusters[*].new_cluster.docker_image.basic_auth	*compute.DockerBasicAuth	INPUT	STATE
@@ -344,9 +687,9 @@ resources.jobs.*.job_clusters[*].new_cluster.remote_disk_throughput	int	INPUT	ST
 resources.jobs.*.job_clusters[*].new_cluster.runtime_engine	compute.RuntimeEngine	INPUT	STATE
 resources.jobs.*.job_clusters[*].new_cluster.single_user_name	string	INPUT	STATE
 resources.jobs.*.job_clusters[*].new_cluster.spark_conf	map[string]string	INPUT	STATE
-resources.jobs.*.job_clusters[*].new_cluster.spark_conf[*]	string	INPUT	STATE
+resources.jobs.*.job_clusters[*].new_cluster.spark_conf.*	string	INPUT	STATE
 resources.jobs.*.job_clusters[*].new_cluster.spark_env_vars	map[string]string	INPUT	STATE
-resources.jobs.*.job_clusters[*].new_cluster.spark_env_vars[*]	string	INPUT	STATE
+resources.jobs.*.job_clusters[*].new_cluster.spark_env_vars.*	string	INPUT	STATE
 resources.jobs.*.job_clusters[*].new_cluster.spark_version	string	INPUT	STATE
 resources.jobs.*.job_clusters[*].new_cluster.ssh_public_keys	[]string	INPUT	STATE
 resources.jobs.*.job_clusters[*].new_cluster.ssh_public_keys[*]	string	INPUT	STATE
@@ -417,8 +760,8 @@ resources.jobs.*.settings.environments[*].spec.client	string	REMOTE
 resources.jobs.*.settings.environments[*].spec.dependencies	[]string	REMOTE
 resources.jobs.*.settings.environments[*].spec.dependencies[*]	string	REMOTE
 resources.jobs.*.settings.environments[*].spec.environment_version	string	REMOTE
-resources.jobs.*.settings.environments[*].spec.jar_dependencies	[]string	REMOTE
-resources.jobs.*.settings.environments[*].spec.jar_dependencies[*]	string	REMOTE
+resources.jobs.*.settings.environments[*].spec.java_dependencies	[]string	REMOTE
+resources.jobs.*.settings.environments[*].spec.java_dependencies[*]	string	REMOTE
 resources.jobs.*.settings.format	jobs.Format	REMOTE
 resources.jobs.*.settings.git_source	*jobs.GitSource	REMOTE
 resources.jobs.*.settings.git_source.git_branch	string	REMOTE
@@ -480,7 +823,7 @@ resources.jobs.*.settings.job_clusters[*].new_cluster.cluster_log_conf.volumes	*
 resources.jobs.*.settings.job_clusters[*].new_cluster.cluster_log_conf.volumes.destination	string	REMOTE
 resources.jobs.*.settings.job_clusters[*].new_cluster.cluster_name	string	REMOTE
 resources.jobs.*.settings.job_clusters[*].new_cluster.custom_tags	map[string]string	REMOTE
-resources.jobs.*.settings.job_clusters[*].new_cluster.custom_tags[*]	string	REMOTE
+resources.jobs.*.settings.job_clusters[*].new_cluster.custom_tags.*	string	REMOTE
 resources.jobs.*.settings.job_clusters[*].new_cluster.data_security_mode	compute.DataSecurityMode	REMOTE
 resources.jobs.*.settings.job_clusters[*].new_cluster.docker_image	*compute.DockerImage	REMOTE
 resources.jobs.*.settings.job_clusters[*].new_cluster.docker_image.basic_auth	*compute.DockerBasicAuth	REMOTE
@@ -531,9 +874,9 @@ resources.jobs.*.settings.job_clusters[*].new_cluster.remote_disk_throughput	int
 resources.jobs.*.settings.job_clusters[*].new_cluster.runtime_engine	compute.RuntimeEngine	REMOTE
 resources.jobs.*.settings.job_clusters[*].new_cluster.single_user_name	string	REMOTE
 resources.jobs.*.settings.job_clusters[*].new_cluster.spark_conf	map[string]string	REMOTE
-resources.jobs.*.settings.job_clusters[*].new_cluster.spark_conf[*]	string	REMOTE
+resources.jobs.*.settings.job_clusters[*].new_cluster.spark_conf.*	string	REMOTE
 resources.jobs.*.settings.job_clusters[*].new_cluster.spark_env_vars	map[string]string	REMOTE
-resources.jobs.*.settings.job_clusters[*].new_cluster.spark_env_vars[*]	string	REMOTE
+resources.jobs.*.settings.job_clusters[*].new_cluster.spark_env_vars.*	string	REMOTE
 resources.jobs.*.settings.job_clusters[*].new_cluster.spark_version	string	REMOTE
 resources.jobs.*.settings.job_clusters[*].new_cluster.ssh_public_keys	[]string	REMOTE
 resources.jobs.*.settings.job_clusters[*].new_cluster.ssh_public_keys[*]	string	REMOTE
@@ -563,14 +906,14 @@ resources.jobs.*.settings.schedule.pause_status	jobs.PauseStatus	REMOTE
 resources.jobs.*.settings.schedule.quartz_cron_expression	string	REMOTE
 resources.jobs.*.settings.schedule.timezone_id	string	REMOTE
 resources.jobs.*.settings.tags	map[string]string	REMOTE
-resources.jobs.*.settings.tags[*]	string	REMOTE
+resources.jobs.*.settings.tags.*	string	REMOTE
 resources.jobs.*.settings.tasks	[]jobs.Task	REMOTE
 resources.jobs.*.settings.tasks[*]	jobs.Task	REMOTE
 resources.jobs.*.settings.tasks[*].clean_rooms_notebook_task	*jobs.CleanRoomsNotebookTask	REMOTE
 resources.jobs.*.settings.tasks[*].clean_rooms_notebook_task.clean_room_name	string	REMOTE
 resources.jobs.*.settings.tasks[*].clean_rooms_notebook_task.etag	string	REMOTE
 resources.jobs.*.settings.tasks[*].clean_rooms_notebook_task.notebook_base_parameters	map[string]string	REMOTE
-resources.jobs.*.settings.tasks[*].clean_rooms_notebook_task.notebook_base_parameters[*]	string	REMOTE
+resources.jobs.*.settings.tasks[*].clean_rooms_notebook_task.notebook_base_parameters.*	string	REMOTE
 resources.jobs.*.settings.tasks[*].clean_rooms_notebook_task.notebook_name	string	REMOTE
 resources.jobs.*.settings.tasks[*].condition_task	*jobs.ConditionTask	REMOTE
 resources.jobs.*.settings.tasks[*].condition_task.left	string	REMOTE
@@ -607,6 +950,7 @@ resources.jobs.*.settings.tasks[*].depends_on[*].outcome	string	REMOTE
 resources.jobs.*.settings.tasks[*].depends_on[*].task_key	string	REMOTE
 resources.jobs.*.settings.tasks[*].description	string	REMOTE
 resources.jobs.*.settings.tasks[*].disable_auto_optimization	bool	REMOTE
+resources.jobs.*.settings.tasks[*].disabled	bool	REMOTE
 resources.jobs.*.settings.tasks[*].email_notifications	*jobs.TaskEmailNotifications	REMOTE
 resources.jobs.*.settings.tasks[*].email_notifications.no_alert_for_skipped_runs	bool	REMOTE
 resources.jobs.*.settings.tasks[*].email_notifications.on_duration_warning_threshold_exceeded	[]string	REMOTE
@@ -629,7 +973,7 @@ resources.jobs.*.settings.tasks[*].for_each_task.task.clean_rooms_notebook_task	
 resources.jobs.*.settings.tasks[*].for_each_task.task.clean_rooms_notebook_task.clean_room_name	string	REMOTE
 resources.jobs.*.settings.tasks[*].for_each_task.task.clean_rooms_notebook_task.etag	string	REMOTE
 resources.jobs.*.settings.tasks[*].for_each_task.task.clean_rooms_notebook_task.notebook_base_parameters	map[string]string	REMOTE
-resources.jobs.*.settings.tasks[*].for_each_task.task.clean_rooms_notebook_task.notebook_base_parameters[*]	string	REMOTE
+resources.jobs.*.settings.tasks[*].for_each_task.task.clean_rooms_notebook_task.notebook_base_parameters.*	string	REMOTE
 resources.jobs.*.settings.tasks[*].for_each_task.task.clean_rooms_notebook_task.notebook_name	string	REMOTE
 resources.jobs.*.settings.tasks[*].for_each_task.task.condition_task	*jobs.ConditionTask	REMOTE
 resources.jobs.*.settings.tasks[*].for_each_task.task.condition_task.left	string	REMOTE
@@ -666,6 +1010,7 @@ resources.jobs.*.settings.tasks[*].for_each_task.task.depends_on[*].outcome	stri
 resources.jobs.*.settings.tasks[*].for_each_task.task.depends_on[*].task_key	string	REMOTE
 resources.jobs.*.settings.tasks[*].for_each_task.task.description	string	REMOTE
 resources.jobs.*.settings.tasks[*].for_each_task.task.disable_auto_optimization	bool	REMOTE
+resources.jobs.*.settings.tasks[*].for_each_task.task.disabled	bool	REMOTE
 resources.jobs.*.settings.tasks[*].for_each_task.task.email_notifications	*jobs.TaskEmailNotifications	REMOTE
 resources.jobs.*.settings.tasks[*].for_each_task.task.email_notifications.no_alert_for_skipped_runs	bool	REMOTE
 resources.jobs.*.settings.tasks[*].for_each_task.task.email_notifications.on_duration_warning_threshold_exceeded	[]string	REMOTE
@@ -761,7 +1106,7 @@ resources.jobs.*.settings.tasks[*].for_each_task.task.new_cluster.cluster_log_co
 resources.jobs.*.settings.tasks[*].for_each_task.task.new_cluster.cluster_log_conf.volumes.destination	string	REMOTE
 resources.jobs.*.settings.tasks[*].for_each_task.task.new_cluster.cluster_name	string	REMOTE
 resources.jobs.*.settings.tasks[*].for_each_task.task.new_cluster.custom_tags	map[string]string	REMOTE
-resources.jobs.*.settings.tasks[*].for_each_task.task.new_cluster.custom_tags[*]	string	REMOTE
+resources.jobs.*.settings.tasks[*].for_each_task.task.new_cluster.custom_tags.*	string	REMOTE
 resources.jobs.*.settings.tasks[*].for_each_task.task.new_cluster.data_security_mode	compute.DataSecurityMode	REMOTE
 resources.jobs.*.settings.tasks[*].for_each_task.task.new_cluster.docker_image	*compute.DockerImage	REMOTE
 resources.jobs.*.settings.tasks[*].for_each_task.task.new_cluster.docker_image.basic_auth	*compute.DockerBasicAuth	REMOTE
@@ -812,9 +1157,9 @@ resources.jobs.*.settings.tasks[*].for_each_task.task.new_cluster.remote_disk_th
 resources.jobs.*.settings.tasks[*].for_each_task.task.new_cluster.runtime_engine	compute.RuntimeEngine	REMOTE
 resources.jobs.*.settings.tasks[*].for_each_task.task.new_cluster.single_user_name	string	REMOTE
 resources.jobs.*.settings.tasks[*].for_each_task.task.new_cluster.spark_conf	map[string]string	REMOTE
-resources.jobs.*.settings.tasks[*].for_each_task.task.new_cluster.spark_conf[*]	string	REMOTE
+resources.jobs.*.settings.tasks[*].for_each_task.task.new_cluster.spark_conf.*	string	REMOTE
 resources.jobs.*.settings.tasks[*].for_each_task.task.new_cluster.spark_env_vars	map[string]string	REMOTE
-resources.jobs.*.settings.tasks[*].for_each_task.task.new_cluster.spark_env_vars[*]	string	REMOTE
+resources.jobs.*.settings.tasks[*].for_each_task.task.new_cluster.spark_env_vars.*	string	REMOTE
 resources.jobs.*.settings.tasks[*].for_each_task.task.new_cluster.spark_version	string	REMOTE
 resources.jobs.*.settings.tasks[*].for_each_task.task.new_cluster.ssh_public_keys	[]string	REMOTE
 resources.jobs.*.settings.tasks[*].for_each_task.task.new_cluster.ssh_public_keys[*]	string	REMOTE
@@ -826,7 +1171,7 @@ resources.jobs.*.settings.tasks[*].for_each_task.task.new_cluster.workload_type.
 resources.jobs.*.settings.tasks[*].for_each_task.task.new_cluster.workload_type.clients.notebooks	bool	REMOTE
 resources.jobs.*.settings.tasks[*].for_each_task.task.notebook_task	*jobs.NotebookTask	REMOTE
 resources.jobs.*.settings.tasks[*].for_each_task.task.notebook_task.base_parameters	map[string]string	REMOTE
-resources.jobs.*.settings.tasks[*].for_each_task.task.notebook_task.base_parameters[*]	string	REMOTE
+resources.jobs.*.settings.tasks[*].for_each_task.task.notebook_task.base_parameters.*	string	REMOTE
 resources.jobs.*.settings.tasks[*].for_each_task.task.notebook_task.notebook_path	string	REMOTE
 resources.jobs.*.settings.tasks[*].for_each_task.task.notebook_task.source	jobs.Source	REMOTE
 resources.jobs.*.settings.tasks[*].for_each_task.task.notebook_task.warehouse_id	string	REMOTE
@@ -856,7 +1201,7 @@ resources.jobs.*.settings.tasks[*].for_each_task.task.power_bi_task.warehouse_id
 resources.jobs.*.settings.tasks[*].for_each_task.task.python_wheel_task	*jobs.PythonWheelTask	REMOTE
 resources.jobs.*.settings.tasks[*].for_each_task.task.python_wheel_task.entry_point	string	REMOTE
 resources.jobs.*.settings.tasks[*].for_each_task.task.python_wheel_task.named_parameters	map[string]string	REMOTE
-resources.jobs.*.settings.tasks[*].for_each_task.task.python_wheel_task.named_parameters[*]	string	REMOTE
+resources.jobs.*.settings.tasks[*].for_each_task.task.python_wheel_task.named_parameters.*	string	REMOTE
 resources.jobs.*.settings.tasks[*].for_each_task.task.python_wheel_task.package_name	string	REMOTE
 resources.jobs.*.settings.tasks[*].for_each_task.task.python_wheel_task.parameters	[]string	REMOTE
 resources.jobs.*.settings.tasks[*].for_each_task.task.python_wheel_task.parameters[*]	string	REMOTE
@@ -869,19 +1214,19 @@ resources.jobs.*.settings.tasks[*].for_each_task.task.run_job_task.jar_params	[]
 resources.jobs.*.settings.tasks[*].for_each_task.task.run_job_task.jar_params[*]	string	REMOTE
 resources.jobs.*.settings.tasks[*].for_each_task.task.run_job_task.job_id	int64	REMOTE
 resources.jobs.*.settings.tasks[*].for_each_task.task.run_job_task.job_parameters	map[string]string	REMOTE
-resources.jobs.*.settings.tasks[*].for_each_task.task.run_job_task.job_parameters[*]	string	REMOTE
+resources.jobs.*.settings.tasks[*].for_each_task.task.run_job_task.job_parameters.*	string	REMOTE
 resources.jobs.*.settings.tasks[*].for_each_task.task.run_job_task.notebook_params	map[string]string	REMOTE
-resources.jobs.*.settings.tasks[*].for_each_task.task.run_job_task.notebook_params[*]	string	REMOTE
+resources.jobs.*.settings.tasks[*].for_each_task.task.run_job_task.notebook_params.*	string	REMOTE
 resources.jobs.*.settings.tasks[*].for_each_task.task.run_job_task.pipeline_params	*jobs.PipelineParams	REMOTE
 resources.jobs.*.settings.tasks[*].for_each_task.task.run_job_task.pipeline_params.full_refresh	bool	REMOTE
 resources.jobs.*.settings.tasks[*].for_each_task.task.run_job_task.python_named_params	map[string]string	REMOTE
-resources.jobs.*.settings.tasks[*].for_each_task.task.run_job_task.python_named_params[*]	string	REMOTE
+resources.jobs.*.settings.tasks[*].for_each_task.task.run_job_task.python_named_params.*	string	REMOTE
 resources.jobs.*.settings.tasks[*].for_each_task.task.run_job_task.python_params	[]string	REMOTE
 resources.jobs.*.settings.tasks[*].for_each_task.task.run_job_task.python_params[*]	string	REMOTE
 resources.jobs.*.settings.tasks[*].for_each_task.task.run_job_task.spark_submit_params	[]string	REMOTE
 resources.jobs.*.settings.tasks[*].for_each_task.task.run_job_task.spark_submit_params[*]	string	REMOTE
 resources.jobs.*.settings.tasks[*].for_each_task.task.run_job_task.sql_params	map[string]string	REMOTE
-resources.jobs.*.settings.tasks[*].for_each_task.task.run_job_task.sql_params[*]	string	REMOTE
+resources.jobs.*.settings.tasks[*].for_each_task.task.run_job_task.sql_params.*	string	REMOTE
 resources.jobs.*.settings.tasks[*].for_each_task.task.spark_jar_task	*jobs.SparkJarTask	REMOTE
 resources.jobs.*.settings.tasks[*].for_each_task.task.spark_jar_task.jar_uri	string	REMOTE
 resources.jobs.*.settings.tasks[*].for_each_task.task.spark_jar_task.main_class_name	string	REMOTE
@@ -916,7 +1261,7 @@ resources.jobs.*.settings.tasks[*].for_each_task.task.sql_task.file	*jobs.SqlTas
 resources.jobs.*.settings.tasks[*].for_each_task.task.sql_task.file.path	string	REMOTE
 resources.jobs.*.settings.tasks[*].for_each_task.task.sql_task.file.source	jobs.Source	REMOTE
 resources.jobs.*.settings.tasks[*].for_each_task.task.sql_task.parameters	map[string]string	REMOTE
-resources.jobs.*.settings.tasks[*].for_each_task.task.sql_task.parameters[*]	string	REMOTE
+resources.jobs.*.settings.tasks[*].for_each_task.task.sql_task.parameters.*	string	REMOTE
 resources.jobs.*.settings.tasks[*].for_each_task.task.sql_task.query	*jobs.SqlTaskQuery	REMOTE
 resources.jobs.*.settings.tasks[*].for_each_task.task.sql_task.query.query_id	string	REMOTE
 resources.jobs.*.settings.tasks[*].for_each_task.task.sql_task.warehouse_id	string	REMOTE
@@ -1015,7 +1360,7 @@ resources.jobs.*.settings.tasks[*].new_cluster.cluster_log_conf.volumes	*compute
 resources.jobs.*.settings.tasks[*].new_cluster.cluster_log_conf.volumes.destination	string	REMOTE
 resources.jobs.*.settings.tasks[*].new_cluster.cluster_name	string	REMOTE
 resources.jobs.*.settings.tasks[*].new_cluster.custom_tags	map[string]string	REMOTE
-resources.jobs.*.settings.tasks[*].new_cluster.custom_tags[*]	string	REMOTE
+resources.jobs.*.settings.tasks[*].new_cluster.custom_tags.*	string	REMOTE
 resources.jobs.*.settings.tasks[*].new_cluster.data_security_mode	compute.DataSecurityMode	REMOTE
 resources.jobs.*.settings.tasks[*].new_cluster.docker_image	*compute.DockerImage	REMOTE
 resources.jobs.*.settings.tasks[*].new_cluster.docker_image.basic_auth	*compute.DockerBasicAuth	REMOTE
@@ -1066,9 +1411,9 @@ resources.jobs.*.settings.tasks[*].new_cluster.remote_disk_throughput	int	REMOTE
 resources.jobs.*.settings.tasks[*].new_cluster.runtime_engine	compute.RuntimeEngine	REMOTE
 resources.jobs.*.settings.tasks[*].new_cluster.single_user_name	string	REMOTE
 resources.jobs.*.settings.tasks[*].new_cluster.spark_conf	map[string]string	REMOTE
-resources.jobs.*.settings.tasks[*].new_cluster.spark_conf[*]	string	REMOTE
+resources.jobs.*.settings.tasks[*].new_cluster.spark_conf.*	string	REMOTE
 resources.jobs.*.settings.tasks[*].new_cluster.spark_env_vars	map[string]string	REMOTE
-resources.jobs.*.settings.tasks[*].new_cluster.spark_env_vars[*]	string	REMOTE
+resources.jobs.*.settings.tasks[*].new_cluster.spark_env_vars.*	string	REMOTE
 resources.jobs.*.settings.tasks[*].new_cluster.spark_version	string	REMOTE
 resources.jobs.*.settings.tasks[*].new_cluster.ssh_public_keys	[]string	REMOTE
 resources.jobs.*.settings.tasks[*].new_cluster.ssh_public_keys[*]	string	REMOTE
@@ -1080,7 +1425,7 @@ resources.jobs.*.settings.tasks[*].new_cluster.workload_type.clients.jobs	bool	R
 resources.jobs.*.settings.tasks[*].new_cluster.workload_type.clients.notebooks	bool	REMOTE
 resources.jobs.*.settings.tasks[*].notebook_task	*jobs.NotebookTask	REMOTE
 resources.jobs.*.settings.tasks[*].notebook_task.base_parameters	map[string]string	REMOTE
-resources.jobs.*.settings.tasks[*].notebook_task.base_parameters[*]	string	REMOTE
+resources.jobs.*.settings.tasks[*].notebook_task.base_parameters.*	string	REMOTE
 resources.jobs.*.settings.tasks[*].notebook_task.notebook_path	string	REMOTE
 resources.jobs.*.settings.tasks[*].notebook_task.source	jobs.Source	REMOTE
 resources.jobs.*.settings.tasks[*].notebook_task.warehouse_id	string	REMOTE
@@ -1110,7 +1455,7 @@ resources.jobs.*.settings.tasks[*].power_bi_task.warehouse_id	string	REMOTE
 resources.jobs.*.settings.tasks[*].python_wheel_task	*jobs.PythonWheelTask	REMOTE
 resources.jobs.*.settings.tasks[*].python_wheel_task.entry_point	string	REMOTE
 resources.jobs.*.settings.tasks[*].python_wheel_task.named_parameters	map[string]string	REMOTE
-resources.jobs.*.settings.tasks[*].python_wheel_task.named_parameters[*]	string	REMOTE
+resources.jobs.*.settings.tasks[*].python_wheel_task.named_parameters.*	string	REMOTE
 resources.jobs.*.settings.tasks[*].python_wheel_task.package_name	string	REMOTE
 resources.jobs.*.settings.tasks[*].python_wheel_task.parameters	[]string	REMOTE
 resources.jobs.*.settings.tasks[*].python_wheel_task.parameters[*]	string	REMOTE
@@ -1123,19 +1468,19 @@ resources.jobs.*.settings.tasks[*].run_job_task.jar_params	[]string	REMOTE
 resources.jobs.*.settings.tasks[*].run_job_task.jar_params[*]	string	REMOTE
 resources.jobs.*.settings.tasks[*].run_job_task.job_id	int64	REMOTE
 resources.jobs.*.settings.tasks[*].run_job_task.job_parameters	map[string]string	REMOTE
-resources.jobs.*.settings.tasks[*].run_job_task.job_parameters[*]	string	REMOTE
+resources.jobs.*.settings.tasks[*].run_job_task.job_parameters.*	string	REMOTE
 resources.jobs.*.settings.tasks[*].run_job_task.notebook_params	map[string]string	REMOTE
-resources.jobs.*.settings.tasks[*].run_job_task.notebook_params[*]	string	REMOTE
+resources.jobs.*.settings.tasks[*].run_job_task.notebook_params.*	string	REMOTE
 resources.jobs.*.settings.tasks[*].run_job_task.pipeline_params	*jobs.PipelineParams	REMOTE
 resources.jobs.*.settings.tasks[*].run_job_task.pipeline_params.full_refresh	bool	REMOTE
 resources.jobs.*.settings.tasks[*].run_job_task.python_named_params	map[string]string	REMOTE
-resources.jobs.*.settings.tasks[*].run_job_task.python_named_params[*]	string	REMOTE
+resources.jobs.*.settings.tasks[*].run_job_task.python_named_params.*	string	REMOTE
 resources.jobs.*.settings.tasks[*].run_job_task.python_params	[]string	REMOTE
 resources.jobs.*.settings.tasks[*].run_job_task.python_params[*]	string	REMOTE
 resources.jobs.*.settings.tasks[*].run_job_task.spark_submit_params	[]string	REMOTE
 resources.jobs.*.settings.tasks[*].run_job_task.spark_submit_params[*]	string	REMOTE
 resources.jobs.*.settings.tasks[*].run_job_task.sql_params	map[string]string	REMOTE
-resources.jobs.*.settings.tasks[*].run_job_task.sql_params[*]	string	REMOTE
+resources.jobs.*.settings.tasks[*].run_job_task.sql_params.*	string	REMOTE
 resources.jobs.*.settings.tasks[*].spark_jar_task	*jobs.SparkJarTask	REMOTE
 resources.jobs.*.settings.tasks[*].spark_jar_task.jar_uri	string	REMOTE
 resources.jobs.*.settings.tasks[*].spark_jar_task.main_class_name	string	REMOTE
@@ -1170,7 +1515,7 @@ resources.jobs.*.settings.tasks[*].sql_task.file	*jobs.SqlTaskFile	REMOTE
 resources.jobs.*.settings.tasks[*].sql_task.file.path	string	REMOTE
 resources.jobs.*.settings.tasks[*].sql_task.file.source	jobs.Source	REMOTE
 resources.jobs.*.settings.tasks[*].sql_task.parameters	map[string]string	REMOTE
-resources.jobs.*.settings.tasks[*].sql_task.parameters[*]	string	REMOTE
+resources.jobs.*.settings.tasks[*].sql_task.parameters.*	string	REMOTE
 resources.jobs.*.settings.tasks[*].sql_task.query	*jobs.SqlTaskQuery	REMOTE
 resources.jobs.*.settings.tasks[*].sql_task.query.query_id	string	REMOTE
 resources.jobs.*.settings.tasks[*].sql_task.warehouse_id	string	REMOTE
@@ -1202,12 +1547,6 @@ resources.jobs.*.settings.trigger.pause_status	jobs.PauseStatus	REMOTE
 resources.jobs.*.settings.trigger.periodic	*jobs.PeriodicTriggerConfiguration	REMOTE
 resources.jobs.*.settings.trigger.periodic.interval	int	REMOTE
 resources.jobs.*.settings.trigger.periodic.unit	jobs.PeriodicTriggerConfigurationTimeUnit	REMOTE
-resources.jobs.*.settings.trigger.table	*jobs.TableUpdateTriggerConfiguration	REMOTE
-resources.jobs.*.settings.trigger.table.condition	jobs.Condition	REMOTE
-resources.jobs.*.settings.trigger.table.min_time_between_triggers_seconds	int	REMOTE
-resources.jobs.*.settings.trigger.table.table_names	[]string	REMOTE
-resources.jobs.*.settings.trigger.table.table_names[*]	string	REMOTE
-resources.jobs.*.settings.trigger.table.wait_after_last_change_seconds	int	REMOTE
 resources.jobs.*.settings.trigger.table_update	*jobs.TableUpdateTriggerConfiguration	REMOTE
 resources.jobs.*.settings.trigger.table_update.condition	jobs.Condition	REMOTE
 resources.jobs.*.settings.trigger.table_update.min_time_between_triggers_seconds	int	REMOTE
@@ -1232,14 +1571,14 @@ resources.jobs.*.settings.webhook_notifications.on_success	[]jobs.Webhook	REMOTE
 resources.jobs.*.settings.webhook_notifications.on_success[*]	jobs.Webhook	REMOTE
 resources.jobs.*.settings.webhook_notifications.on_success[*].id	string	REMOTE
 resources.jobs.*.tags	map[string]string	INPUT	STATE
-resources.jobs.*.tags[*]	string	INPUT	STATE
+resources.jobs.*.tags.*	string	INPUT	STATE
 resources.jobs.*.tasks	[]jobs.Task	INPUT	STATE
 resources.jobs.*.tasks[*]	jobs.Task	INPUT	STATE
 resources.jobs.*.tasks[*].clean_rooms_notebook_task	*jobs.CleanRoomsNotebookTask	INPUT	STATE
 resources.jobs.*.tasks[*].clean_rooms_notebook_task.clean_room_name	string	INPUT	STATE
 resources.jobs.*.tasks[*].clean_rooms_notebook_task.etag	string	INPUT	STATE
 resources.jobs.*.tasks[*].clean_rooms_notebook_task.notebook_base_parameters	map[string]string	INPUT	STATE
-resources.jobs.*.tasks[*].clean_rooms_notebook_task.notebook_base_parameters[*]	string	INPUT	STATE
+resources.jobs.*.tasks[*].clean_rooms_notebook_task.notebook_base_parameters.*	string	INPUT	STATE
 resources.jobs.*.tasks[*].clean_rooms_notebook_task.notebook_name	string	INPUT	STATE
 resources.jobs.*.tasks[*].condition_task	*jobs.ConditionTask	INPUT	STATE
 resources.jobs.*.tasks[*].condition_task.left	string	INPUT	STATE
@@ -1276,6 +1615,7 @@ resources.jobs.*.tasks[*].depends_on[*].outcome	string	INPUT	STATE
 resources.jobs.*.tasks[*].depends_on[*].task_key	string	INPUT	STATE
 resources.jobs.*.tasks[*].description	string	INPUT	STATE
 resources.jobs.*.tasks[*].disable_auto_optimization	bool	INPUT	STATE
+resources.jobs.*.tasks[*].disabled	bool	INPUT	STATE
 resources.jobs.*.tasks[*].email_notifications	*jobs.TaskEmailNotifications	INPUT	STATE
 resources.jobs.*.tasks[*].email_notifications.no_alert_for_skipped_runs	bool	INPUT	STATE
 resources.jobs.*.tasks[*].email_notifications.on_duration_warning_threshold_exceeded	[]string	INPUT	STATE
@@ -1298,7 +1638,7 @@ resources.jobs.*.tasks[*].for_each_task.task.clean_rooms_notebook_task	*jobs.Cle
 resources.jobs.*.tasks[*].for_each_task.task.clean_rooms_notebook_task.clean_room_name	string	INPUT	STATE
 resources.jobs.*.tasks[*].for_each_task.task.clean_rooms_notebook_task.etag	string	INPUT	STATE
 resources.jobs.*.tasks[*].for_each_task.task.clean_rooms_notebook_task.notebook_base_parameters	map[string]string	INPUT	STATE
-resources.jobs.*.tasks[*].for_each_task.task.clean_rooms_notebook_task.notebook_base_parameters[*]	string	INPUT	STATE
+resources.jobs.*.tasks[*].for_each_task.task.clean_rooms_notebook_task.notebook_base_parameters.*	string	INPUT	STATE
 resources.jobs.*.tasks[*].for_each_task.task.clean_rooms_notebook_task.notebook_name	string	INPUT	STATE
 resources.jobs.*.tasks[*].for_each_task.task.condition_task	*jobs.ConditionTask	INPUT	STATE
 resources.jobs.*.tasks[*].for_each_task.task.condition_task.left	string	INPUT	STATE
@@ -1335,6 +1675,7 @@ resources.jobs.*.tasks[*].for_each_task.task.depends_on[*].outcome	string	INPUT	
 resources.jobs.*.tasks[*].for_each_task.task.depends_on[*].task_key	string	INPUT	STATE
 resources.jobs.*.tasks[*].for_each_task.task.description	string	INPUT	STATE
 resources.jobs.*.tasks[*].for_each_task.task.disable_auto_optimization	bool	INPUT	STATE
+resources.jobs.*.tasks[*].for_each_task.task.disabled	bool	INPUT	STATE
 resources.jobs.*.tasks[*].for_each_task.task.email_notifications	*jobs.TaskEmailNotifications	INPUT	STATE
 resources.jobs.*.tasks[*].for_each_task.task.email_notifications.no_alert_for_skipped_runs	bool	INPUT	STATE
 resources.jobs.*.tasks[*].for_each_task.task.email_notifications.on_duration_warning_threshold_exceeded	[]string	INPUT	STATE
@@ -1430,7 +1771,7 @@ resources.jobs.*.tasks[*].for_each_task.task.new_cluster.cluster_log_conf.volume
 resources.jobs.*.tasks[*].for_each_task.task.new_cluster.cluster_log_conf.volumes.destination	string	INPUT	STATE
 resources.jobs.*.tasks[*].for_each_task.task.new_cluster.cluster_name	string	INPUT	STATE
 resources.jobs.*.tasks[*].for_each_task.task.new_cluster.custom_tags	map[string]string	INPUT	STATE
-resources.jobs.*.tasks[*].for_each_task.task.new_cluster.custom_tags[*]	string	INPUT	STATE
+resources.jobs.*.tasks[*].for_each_task.task.new_cluster.custom_tags.*	string	INPUT	STATE
 resources.jobs.*.tasks[*].for_each_task.task.new_cluster.data_security_mode	compute.DataSecurityMode	INPUT	STATE
 resources.jobs.*.tasks[*].for_each_task.task.new_cluster.docker_image	*compute.DockerImage	INPUT	STATE
 resources.jobs.*.tasks[*].for_each_task.task.new_cluster.docker_image.basic_auth	*compute.DockerBasicAuth	INPUT	STATE
@@ -1481,9 +1822,9 @@ resources.jobs.*.tasks[*].for_each_task.task.new_cluster.remote_disk_throughput	
 resources.jobs.*.tasks[*].for_each_task.task.new_cluster.runtime_engine	compute.RuntimeEngine	INPUT	STATE
 resources.jobs.*.tasks[*].for_each_task.task.new_cluster.single_user_name	string	INPUT	STATE
 resources.jobs.*.tasks[*].for_each_task.task.new_cluster.spark_conf	map[string]string	INPUT	STATE
-resources.jobs.*.tasks[*].for_each_task.task.new_cluster.spark_conf[*]	string	INPUT	STATE
+resources.jobs.*.tasks[*].for_each_task.task.new_cluster.spark_conf.*	string	INPUT	STATE
 resources.jobs.*.tasks[*].for_each_task.task.new_cluster.spark_env_vars	map[string]string	INPUT	STATE
-resources.jobs.*.tasks[*].for_each_task.task.new_cluster.spark_env_vars[*]	string	INPUT	STATE
+resources.jobs.*.tasks[*].for_each_task.task.new_cluster.spark_env_vars.*	string	INPUT	STATE
 resources.jobs.*.tasks[*].for_each_task.task.new_cluster.spark_version	string	INPUT	STATE
 resources.jobs.*.tasks[*].for_each_task.task.new_cluster.ssh_public_keys	[]string	INPUT	STATE
 resources.jobs.*.tasks[*].for_each_task.task.new_cluster.ssh_public_keys[*]	string	INPUT	STATE
@@ -1495,7 +1836,7 @@ resources.jobs.*.tasks[*].for_each_task.task.new_cluster.workload_type.clients.j
 resources.jobs.*.tasks[*].for_each_task.task.new_cluster.workload_type.clients.notebooks	bool	INPUT	STATE
 resources.jobs.*.tasks[*].for_each_task.task.notebook_task	*jobs.NotebookTask	INPUT	STATE
 resources.jobs.*.tasks[*].for_each_task.task.notebook_task.base_parameters	map[string]string	INPUT	STATE
-resources.jobs.*.tasks[*].for_each_task.task.notebook_task.base_parameters[*]	string	INPUT	STATE
+resources.jobs.*.tasks[*].for_each_task.task.notebook_task.base_parameters.*	string	INPUT	STATE
 resources.jobs.*.tasks[*].for_each_task.task.notebook_task.notebook_path	string	INPUT	STATE
 resources.jobs.*.tasks[*].for_each_task.task.notebook_task.source	jobs.Source	INPUT	STATE
 resources.jobs.*.tasks[*].for_each_task.task.notebook_task.warehouse_id	string	INPUT	STATE
@@ -1525,7 +1866,7 @@ resources.jobs.*.tasks[*].for_each_task.task.power_bi_task.warehouse_id	string	I
 resources.jobs.*.tasks[*].for_each_task.task.python_wheel_task	*jobs.PythonWheelTask	INPUT	STATE
 resources.jobs.*.tasks[*].for_each_task.task.python_wheel_task.entry_point	string	INPUT	STATE
 resources.jobs.*.tasks[*].for_each_task.task.python_wheel_task.named_parameters	map[string]string	INPUT	STATE
-resources.jobs.*.tasks[*].for_each_task.task.python_wheel_task.named_parameters[*]	string	INPUT	STATE
+resources.jobs.*.tasks[*].for_each_task.task.python_wheel_task.named_parameters.*	string	INPUT	STATE
 resources.jobs.*.tasks[*].for_each_task.task.python_wheel_task.package_name	string	INPUT	STATE
 resources.jobs.*.tasks[*].for_each_task.task.python_wheel_task.parameters	[]string	INPUT	STATE
 resources.jobs.*.tasks[*].for_each_task.task.python_wheel_task.parameters[*]	string	INPUT	STATE
@@ -1538,19 +1879,19 @@ resources.jobs.*.tasks[*].for_each_task.task.run_job_task.jar_params	[]string	IN
 resources.jobs.*.tasks[*].for_each_task.task.run_job_task.jar_params[*]	string	INPUT	STATE
 resources.jobs.*.tasks[*].for_each_task.task.run_job_task.job_id	int64	INPUT	STATE
 resources.jobs.*.tasks[*].for_each_task.task.run_job_task.job_parameters	map[string]string	INPUT	STATE
-resources.jobs.*.tasks[*].for_each_task.task.run_job_task.job_parameters[*]	string	INPUT	STATE
+resources.jobs.*.tasks[*].for_each_task.task.run_job_task.job_parameters.*	string	INPUT	STATE
 resources.jobs.*.tasks[*].for_each_task.task.run_job_task.notebook_params	map[string]string	INPUT	STATE
-resources.jobs.*.tasks[*].for_each_task.task.run_job_task.notebook_params[*]	string	INPUT	STATE
+resources.jobs.*.tasks[*].for_each_task.task.run_job_task.notebook_params.*	string	INPUT	STATE
 resources.jobs.*.tasks[*].for_each_task.task.run_job_task.pipeline_params	*jobs.PipelineParams	INPUT	STATE
 resources.jobs.*.tasks[*].for_each_task.task.run_job_task.pipeline_params.full_refresh	bool	INPUT	STATE
 resources.jobs.*.tasks[*].for_each_task.task.run_job_task.python_named_params	map[string]string	INPUT	STATE
-resources.jobs.*.tasks[*].for_each_task.task.run_job_task.python_named_params[*]	string	INPUT	STATE
+resources.jobs.*.tasks[*].for_each_task.task.run_job_task.python_named_params.*	string	INPUT	STATE
 resources.jobs.*.tasks[*].for_each_task.task.run_job_task.python_params	[]string	INPUT	STATE
 resources.jobs.*.tasks[*].for_each_task.task.run_job_task.python_params[*]	string	INPUT	STATE
 resources.jobs.*.tasks[*].for_each_task.task.run_job_task.spark_submit_params	[]string	INPUT	STATE
 resources.jobs.*.tasks[*].for_each_task.task.run_job_task.spark_submit_params[*]	string	INPUT	STATE
 resources.jobs.*.tasks[*].for_each_task.task.run_job_task.sql_params	map[string]string	INPUT	STATE
-resources.jobs.*.tasks[*].for_each_task.task.run_job_task.sql_params[*]	string	INPUT	STATE
+resources.jobs.*.tasks[*].for_each_task.task.run_job_task.sql_params.*	string	INPUT	STATE
 resources.jobs.*.tasks[*].for_each_task.task.spark_jar_task	*jobs.SparkJarTask	INPUT	STATE
 resources.jobs.*.tasks[*].for_each_task.task.spark_jar_task.jar_uri	string	INPUT	STATE
 resources.jobs.*.tasks[*].for_each_task.task.spark_jar_task.main_class_name	string	INPUT	STATE
@@ -1585,7 +1926,7 @@ resources.jobs.*.tasks[*].for_each_task.task.sql_task.file	*jobs.SqlTaskFile	INP
 resources.jobs.*.tasks[*].for_each_task.task.sql_task.file.path	string	INPUT	STATE
 resources.jobs.*.tasks[*].for_each_task.task.sql_task.file.source	jobs.Source	INPUT	STATE
 resources.jobs.*.tasks[*].for_each_task.task.sql_task.parameters	map[string]string	INPUT	STATE
-resources.jobs.*.tasks[*].for_each_task.task.sql_task.parameters[*]	string	INPUT	STATE
+resources.jobs.*.tasks[*].for_each_task.task.sql_task.parameters.*	string	INPUT	STATE
 resources.jobs.*.tasks[*].for_each_task.task.sql_task.query	*jobs.SqlTaskQuery	INPUT	STATE
 resources.jobs.*.tasks[*].for_each_task.task.sql_task.query.query_id	string	INPUT	STATE
 resources.jobs.*.tasks[*].for_each_task.task.sql_task.warehouse_id	string	INPUT	STATE
@@ -1684,7 +2025,7 @@ resources.jobs.*.tasks[*].new_cluster.cluster_log_conf.volumes	*compute.VolumesS
 resources.jobs.*.tasks[*].new_cluster.cluster_log_conf.volumes.destination	string	INPUT	STATE
 resources.jobs.*.tasks[*].new_cluster.cluster_name	string	INPUT	STATE
 resources.jobs.*.tasks[*].new_cluster.custom_tags	map[string]string	INPUT	STATE
-resources.jobs.*.tasks[*].new_cluster.custom_tags[*]	string	INPUT	STATE
+resources.jobs.*.tasks[*].new_cluster.custom_tags.*	string	INPUT	STATE
 resources.jobs.*.tasks[*].new_cluster.data_security_mode	compute.DataSecurityMode	INPUT	STATE
 resources.jobs.*.tasks[*].new_cluster.docker_image	*compute.DockerImage	INPUT	STATE
 resources.jobs.*.tasks[*].new_cluster.docker_image.basic_auth	*compute.DockerBasicAuth	INPUT	STATE
@@ -1735,9 +2076,9 @@ resources.jobs.*.tasks[*].new_cluster.remote_disk_throughput	int	INPUT	STATE
 resources.jobs.*.tasks[*].new_cluster.runtime_engine	compute.RuntimeEngine	INPUT	STATE
 resources.jobs.*.tasks[*].new_cluster.single_user_name	string	INPUT	STATE
 resources.jobs.*.tasks[*].new_cluster.spark_conf	map[string]string	INPUT	STATE
-resources.jobs.*.tasks[*].new_cluster.spark_conf[*]	string	INPUT	STATE
+resources.jobs.*.tasks[*].new_cluster.spark_conf.*	string	INPUT	STATE
 resources.jobs.*.tasks[*].new_cluster.spark_env_vars	map[string]string	INPUT	STATE
-resources.jobs.*.tasks[*].new_cluster.spark_env_vars[*]	string	INPUT	STATE
+resources.jobs.*.tasks[*].new_cluster.spark_env_vars.*	string	INPUT	STATE
 resources.jobs.*.tasks[*].new_cluster.spark_version	string	INPUT	STATE
 resources.jobs.*.tasks[*].new_cluster.ssh_public_keys	[]string	INPUT	STATE
 resources.jobs.*.tasks[*].new_cluster.ssh_public_keys[*]	string	INPUT	STATE
@@ -1749,7 +2090,7 @@ resources.jobs.*.tasks[*].new_cluster.workload_type.clients.jobs	bool	INPUT	STAT
 resources.jobs.*.tasks[*].new_cluster.workload_type.clients.notebooks	bool	INPUT	STATE
 resources.jobs.*.tasks[*].notebook_task	*jobs.NotebookTask	INPUT	STATE
 resources.jobs.*.tasks[*].notebook_task.base_parameters	map[string]string	INPUT	STATE
-resources.jobs.*.tasks[*].notebook_task.base_parameters[*]	string	INPUT	STATE
+resources.jobs.*.tasks[*].notebook_task.base_parameters.*	string	INPUT	STATE
 resources.jobs.*.tasks[*].notebook_task.notebook_path	string	INPUT	STATE
 resources.jobs.*.tasks[*].notebook_task.source	jobs.Source	INPUT	STATE
 resources.jobs.*.tasks[*].notebook_task.warehouse_id	string	INPUT	STATE
@@ -1779,7 +2120,7 @@ resources.jobs.*.tasks[*].power_bi_task.warehouse_id	string	INPUT	STATE
 resources.jobs.*.tasks[*].python_wheel_task	*jobs.PythonWheelTask	INPUT	STATE
 resources.jobs.*.tasks[*].python_wheel_task.entry_point	string	INPUT	STATE
 resources.jobs.*.tasks[*].python_wheel_task.named_parameters	map[string]string	INPUT	STATE
-resources.jobs.*.tasks[*].python_wheel_task.named_parameters[*]	string	INPUT	STATE
+resources.jobs.*.tasks[*].python_wheel_task.named_parameters.*	string	INPUT	STATE
 resources.jobs.*.tasks[*].python_wheel_task.package_name	string	INPUT	STATE
 resources.jobs.*.tasks[*].python_wheel_task.parameters	[]string	INPUT	STATE
 resources.jobs.*.tasks[*].python_wheel_task.parameters[*]	string	INPUT	STATE
@@ -1792,19 +2133,19 @@ resources.jobs.*.tasks[*].run_job_task.jar_params	[]string	INPUT	STATE
 resources.jobs.*.tasks[*].run_job_task.jar_params[*]	string	INPUT	STATE
 resources.jobs.*.tasks[*].run_job_task.job_id	int64	INPUT	STATE
 resources.jobs.*.tasks[*].run_job_task.job_parameters	map[string]string	INPUT	STATE
-resources.jobs.*.tasks[*].run_job_task.job_parameters[*]	string	INPUT	STATE
+resources.jobs.*.tasks[*].run_job_task.job_parameters.*	string	INPUT	STATE
 resources.jobs.*.tasks[*].run_job_task.notebook_params	map[string]string	INPUT	STATE
-resources.jobs.*.tasks[*].run_job_task.notebook_params[*]	string	INPUT	STATE
+resources.jobs.*.tasks[*].run_job_task.notebook_params.*	string	INPUT	STATE
 resources.jobs.*.tasks[*].run_job_task.pipeline_params	*jobs.PipelineParams	INPUT	STATE
 resources.jobs.*.tasks[*].run_job_task.pipeline_params.full_refresh	bool	INPUT	STATE
 resources.jobs.*.tasks[*].run_job_task.python_named_params	map[string]string	INPUT	STATE
-resources.jobs.*.tasks[*].run_job_task.python_named_params[*]	string	INPUT	STATE
+resources.jobs.*.tasks[*].run_job_task.python_named_params.*	string	INPUT	STATE
 resources.jobs.*.tasks[*].run_job_task.python_params	[]string	INPUT	STATE
 resources.jobs.*.tasks[*].run_job_task.python_params[*]	string	INPUT	STATE
 resources.jobs.*.tasks[*].run_job_task.spark_submit_params	[]string	INPUT	STATE
 resources.jobs.*.tasks[*].run_job_task.spark_submit_params[*]	string	INPUT	STATE
 resources.jobs.*.tasks[*].run_job_task.sql_params	map[string]string	INPUT	STATE
-resources.jobs.*.tasks[*].run_job_task.sql_params[*]	string	INPUT	STATE
+resources.jobs.*.tasks[*].run_job_task.sql_params.*	string	INPUT	STATE
 resources.jobs.*.tasks[*].spark_jar_task	*jobs.SparkJarTask	INPUT	STATE
 resources.jobs.*.tasks[*].spark_jar_task.jar_uri	string	INPUT	STATE
 resources.jobs.*.tasks[*].spark_jar_task.main_class_name	string	INPUT	STATE
@@ -1839,7 +2180,7 @@ resources.jobs.*.tasks[*].sql_task.file	*jobs.SqlTaskFile	INPUT	STATE
 resources.jobs.*.tasks[*].sql_task.file.path	string	INPUT	STATE
 resources.jobs.*.tasks[*].sql_task.file.source	jobs.Source	INPUT	STATE
 resources.jobs.*.tasks[*].sql_task.parameters	map[string]string	INPUT	STATE
-resources.jobs.*.tasks[*].sql_task.parameters[*]	string	INPUT	STATE
+resources.jobs.*.tasks[*].sql_task.parameters.*	string	INPUT	STATE
 resources.jobs.*.tasks[*].sql_task.query	*jobs.SqlTaskQuery	INPUT	STATE
 resources.jobs.*.tasks[*].sql_task.query.query_id	string	INPUT	STATE
 resources.jobs.*.tasks[*].sql_task.warehouse_id	string	INPUT	STATE
@@ -1871,12 +2212,6 @@ resources.jobs.*.trigger.pause_status	jobs.PauseStatus	INPUT	STATE
 resources.jobs.*.trigger.periodic	*jobs.PeriodicTriggerConfiguration	INPUT	STATE
 resources.jobs.*.trigger.periodic.interval	int	INPUT	STATE
 resources.jobs.*.trigger.periodic.unit	jobs.PeriodicTriggerConfigurationTimeUnit	INPUT	STATE
-resources.jobs.*.trigger.table	*jobs.TableUpdateTriggerConfiguration	INPUT	STATE
-resources.jobs.*.trigger.table.condition	jobs.Condition	INPUT	STATE
-resources.jobs.*.trigger.table.min_time_between_triggers_seconds	int	INPUT	STATE
-resources.jobs.*.trigger.table.table_names	[]string	INPUT	STATE
-resources.jobs.*.trigger.table.table_names[*]	string	INPUT	STATE
-resources.jobs.*.trigger.table.wait_after_last_change_seconds	int	INPUT	STATE
 resources.jobs.*.trigger.table_update	*jobs.TableUpdateTriggerConfiguration	INPUT	STATE
 resources.jobs.*.trigger.table_update.condition	jobs.Condition	INPUT	STATE
 resources.jobs.*.trigger.table_update.min_time_between_triggers_seconds	int	INPUT	STATE
@@ -1910,6 +2245,59 @@ resources.jobs.*.webhook_notifications.on_streaming_backlog_exceeded[*].id	strin
 resources.jobs.*.webhook_notifications.on_success	[]jobs.Webhook	INPUT	STATE
 resources.jobs.*.webhook_notifications.on_success[*]	jobs.Webhook	INPUT	STATE
 resources.jobs.*.webhook_notifications.on_success[*].id	string	INPUT	STATE
+resources.jobs.*.permissions.object_id	string	ALL
+resources.jobs.*.permissions.permissions	[]iam.AccessControlRequest	ALL
+resources.jobs.*.permissions.permissions[*]	iam.AccessControlRequest	ALL
+resources.jobs.*.permissions.permissions[*].group_name	string	ALL
+resources.jobs.*.permissions.permissions[*].permission_level	iam.PermissionLevel	ALL
+resources.jobs.*.permissions.permissions[*].service_principal_name	string	ALL
+resources.jobs.*.permissions.permissions[*].user_name	string	ALL
+resources.models.*.creation_timestamp	int64	REMOTE
+resources.models.*.description	string	ALL
+resources.models.*.id	string	INPUT	REMOTE
+resources.models.*.last_updated_timestamp	int64	REMOTE
+resources.models.*.latest_versions	[]ml.ModelVersion	REMOTE
+resources.models.*.latest_versions[*]	ml.ModelVersion	REMOTE
+resources.models.*.latest_versions[*].creation_timestamp	int64	REMOTE
+resources.models.*.latest_versions[*].current_stage	string	REMOTE
+resources.models.*.latest_versions[*].description	string	REMOTE
+resources.models.*.latest_versions[*].last_updated_timestamp	int64	REMOTE
+resources.models.*.latest_versions[*].name	string	REMOTE
+resources.models.*.latest_versions[*].run_id	string	REMOTE
+resources.models.*.latest_versions[*].run_link	string	REMOTE
+resources.models.*.latest_versions[*].source	string	REMOTE
+resources.models.*.latest_versions[*].status	ml.ModelVersionStatus	REMOTE
+resources.models.*.latest_versions[*].status_message	string	REMOTE
+resources.models.*.latest_versions[*].tags	[]ml.ModelVersionTag	REMOTE
+resources.models.*.latest_versions[*].tags[*]	ml.ModelVersionTag	REMOTE
+resources.models.*.latest_versions[*].tags[*].key	string	REMOTE
+resources.models.*.latest_versions[*].tags[*].value	string	REMOTE
+resources.models.*.latest_versions[*].user_id	string	REMOTE
+resources.models.*.latest_versions[*].version	string	REMOTE
+resources.models.*.lifecycle	resources.Lifecycle	INPUT
+resources.models.*.lifecycle.prevent_destroy	bool	INPUT
+resources.models.*.modified_status	string	INPUT
+resources.models.*.name	string	ALL
+resources.models.*.permission_level	ml.PermissionLevel	REMOTE
+resources.models.*.permissions	[]resources.MlflowModelPermission	INPUT
+resources.models.*.permissions[*]	resources.MlflowModelPermission	INPUT
+resources.models.*.permissions[*].group_name	string	INPUT
+resources.models.*.permissions[*].level	resources.MlflowModelPermissionLevel	INPUT
+resources.models.*.permissions[*].service_principal_name	string	INPUT
+resources.models.*.permissions[*].user_name	string	INPUT
+resources.models.*.tags	[]ml.ModelTag	ALL
+resources.models.*.tags[*]	ml.ModelTag	ALL
+resources.models.*.tags[*].key	string	ALL
+resources.models.*.tags[*].value	string	ALL
+resources.models.*.url	string	INPUT
+resources.models.*.user_id	string	REMOTE
+resources.models.*.permissions.object_id	string	ALL
+resources.models.*.permissions.permissions	[]iam.AccessControlRequest	ALL
+resources.models.*.permissions.permissions[*]	iam.AccessControlRequest	ALL
+resources.models.*.permissions.permissions[*].group_name	string	ALL
+resources.models.*.permissions.permissions[*].permission_level	iam.PermissionLevel	ALL
+resources.models.*.permissions.permissions[*].service_principal_name	string	ALL
+resources.models.*.permissions.permissions[*].user_name	string	ALL
 resources.pipelines.*.allow_duplicate_names	bool	INPUT	STATE
 resources.pipelines.*.budget_policy_id	string	INPUT	STATE
 resources.pipelines.*.catalog	string	INPUT	STATE
@@ -1955,7 +2343,7 @@ resources.pipelines.*.clusters[*].cluster_log_conf.s3.region	string	INPUT	STATE
 resources.pipelines.*.clusters[*].cluster_log_conf.volumes	*compute.VolumesStorageInfo	INPUT	STATE
 resources.pipelines.*.clusters[*].cluster_log_conf.volumes.destination	string	INPUT	STATE
 resources.pipelines.*.clusters[*].custom_tags	map[string]string	INPUT	STATE
-resources.pipelines.*.clusters[*].custom_tags[*]	string	INPUT	STATE
+resources.pipelines.*.clusters[*].custom_tags.*	string	INPUT	STATE
 resources.pipelines.*.clusters[*].driver_instance_pool_id	string	INPUT	STATE
 resources.pipelines.*.clusters[*].driver_node_type_id	string	INPUT	STATE
 resources.pipelines.*.clusters[*].enable_local_disk_encryption	bool	INPUT	STATE
@@ -1995,13 +2383,13 @@ resources.pipelines.*.clusters[*].node_type_id	string	INPUT	STATE
 resources.pipelines.*.clusters[*].num_workers	int	INPUT	STATE
 resources.pipelines.*.clusters[*].policy_id	string	INPUT	STATE
 resources.pipelines.*.clusters[*].spark_conf	map[string]string	INPUT	STATE
-resources.pipelines.*.clusters[*].spark_conf[*]	string	INPUT	STATE
+resources.pipelines.*.clusters[*].spark_conf.*	string	INPUT	STATE
 resources.pipelines.*.clusters[*].spark_env_vars	map[string]string	INPUT	STATE
-resources.pipelines.*.clusters[*].spark_env_vars[*]	string	INPUT	STATE
+resources.pipelines.*.clusters[*].spark_env_vars.*	string	INPUT	STATE
 resources.pipelines.*.clusters[*].ssh_public_keys	[]string	INPUT	STATE
 resources.pipelines.*.clusters[*].ssh_public_keys[*]	string	INPUT	STATE
 resources.pipelines.*.configuration	map[string]string	INPUT	STATE
-resources.pipelines.*.configuration[*]	string	INPUT	STATE
+resources.pipelines.*.configuration.*	string	INPUT	STATE
 resources.pipelines.*.continuous	bool	INPUT	STATE
 resources.pipelines.*.creator_user_name	string	REMOTE
 resources.pipelines.*.deployment	*pipelines.PipelineDeployment	INPUT	STATE
@@ -2034,6 +2422,7 @@ resources.pipelines.*.id	string	INPUT	STATE
 resources.pipelines.*.ingestion_definition	*pipelines.IngestionPipelineDefinition	INPUT	STATE
 resources.pipelines.*.ingestion_definition.connection_name	string	INPUT	STATE
 resources.pipelines.*.ingestion_definition.ingestion_gateway_id	string	INPUT	STATE
+resources.pipelines.*.ingestion_definition.netsuite_jar_path	string	INPUT	STATE
 resources.pipelines.*.ingestion_definition.objects	[]pipelines.IngestionConfig	INPUT	STATE
 resources.pipelines.*.ingestion_definition.objects[*]	pipelines.IngestionConfig	INPUT	STATE
 resources.pipelines.*.ingestion_definition.objects[*].report	*pipelines.ReportSpec	INPUT	STATE
@@ -2057,6 +2446,14 @@ resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration
 resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.scd_type	pipelines.TableSpecificConfigScdType	INPUT	STATE
 resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.sequence_by	[]string	INPUT	STATE
 resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.sequence_by[*]	string	INPUT	STATE
+resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.workday_report_parameters	*pipelines.IngestionPipelineDefinitionWorkdayReportParameters	INPUT	STATE
+resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.workday_report_parameters.incremental	bool	INPUT	STATE
+resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.workday_report_parameters.parameters	map[string]string	INPUT	STATE
+resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.workday_report_parameters.parameters.*	string	INPUT	STATE
+resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.workday_report_parameters.report_parameters	[]pipelines.IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValue	INPUT	STATE
+resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.workday_report_parameters.report_parameters[*]	pipelines.IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValue	INPUT	STATE
+resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.workday_report_parameters.report_parameters[*].key	string	INPUT	STATE
+resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.workday_report_parameters.report_parameters[*].value	string	INPUT	STATE
 resources.pipelines.*.ingestion_definition.objects[*].schema	*pipelines.SchemaSpec	INPUT	STATE
 resources.pipelines.*.ingestion_definition.objects[*].schema.destination_catalog	string	INPUT	STATE
 resources.pipelines.*.ingestion_definition.objects[*].schema.destination_schema	string	INPUT	STATE
@@ -2078,6 +2475,14 @@ resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration
 resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.scd_type	pipelines.TableSpecificConfigScdType	INPUT	STATE
 resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.sequence_by	[]string	INPUT	STATE
 resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.sequence_by[*]	string	INPUT	STATE
+resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.workday_report_parameters	*pipelines.IngestionPipelineDefinitionWorkdayReportParameters	INPUT	STATE
+resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.workday_report_parameters.incremental	bool	INPUT	STATE
+resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.workday_report_parameters.parameters	map[string]string	INPUT	STATE
+resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.workday_report_parameters.parameters.*	string	INPUT	STATE
+resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.workday_report_parameters.report_parameters	[]pipelines.IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValue	INPUT	STATE
+resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.workday_report_parameters.report_parameters[*]	pipelines.IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValue	INPUT	STATE
+resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.workday_report_parameters.report_parameters[*].key	string	INPUT	STATE
+resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.workday_report_parameters.report_parameters[*].value	string	INPUT	STATE
 resources.pipelines.*.ingestion_definition.objects[*].table	*pipelines.TableSpec	INPUT	STATE
 resources.pipelines.*.ingestion_definition.objects[*].table.destination_catalog	string	INPUT	STATE
 resources.pipelines.*.ingestion_definition.objects[*].table.destination_schema	string	INPUT	STATE
@@ -2101,6 +2506,14 @@ resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.
 resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.scd_type	pipelines.TableSpecificConfigScdType	INPUT	STATE
 resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.sequence_by	[]string	INPUT	STATE
 resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.sequence_by[*]	string	INPUT	STATE
+resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.workday_report_parameters	*pipelines.IngestionPipelineDefinitionWorkdayReportParameters	INPUT	STATE
+resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.workday_report_parameters.incremental	bool	INPUT	STATE
+resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.workday_report_parameters.parameters	map[string]string	INPUT	STATE
+resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.workday_report_parameters.parameters.*	string	INPUT	STATE
+resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.workday_report_parameters.report_parameters	[]pipelines.IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValue	INPUT	STATE
+resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.workday_report_parameters.report_parameters[*]	pipelines.IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValue	INPUT	STATE
+resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.workday_report_parameters.report_parameters[*].key	string	INPUT	STATE
+resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.workday_report_parameters.report_parameters[*].value	string	INPUT	STATE
 resources.pipelines.*.ingestion_definition.source_configurations	[]pipelines.SourceConfig	INPUT	STATE
 resources.pipelines.*.ingestion_definition.source_configurations[*]	pipelines.SourceConfig	INPUT	STATE
 resources.pipelines.*.ingestion_definition.source_configurations[*].catalog	*pipelines.SourceCatalogConfig	INPUT	STATE
@@ -2126,6 +2539,14 @@ resources.pipelines.*.ingestion_definition.table_configuration.salesforce_includ
 resources.pipelines.*.ingestion_definition.table_configuration.scd_type	pipelines.TableSpecificConfigScdType	INPUT	STATE
 resources.pipelines.*.ingestion_definition.table_configuration.sequence_by	[]string	INPUT	STATE
 resources.pipelines.*.ingestion_definition.table_configuration.sequence_by[*]	string	INPUT	STATE
+resources.pipelines.*.ingestion_definition.table_configuration.workday_report_parameters	*pipelines.IngestionPipelineDefinitionWorkdayReportParameters	INPUT	STATE
+resources.pipelines.*.ingestion_definition.table_configuration.workday_report_parameters.incremental	bool	INPUT	STATE
+resources.pipelines.*.ingestion_definition.table_configuration.workday_report_parameters.parameters	map[string]string	INPUT	STATE
+resources.pipelines.*.ingestion_definition.table_configuration.workday_report_parameters.parameters.*	string	INPUT	STATE
+resources.pipelines.*.ingestion_definition.table_configuration.workday_report_parameters.report_parameters	[]pipelines.IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValue	INPUT	STATE
+resources.pipelines.*.ingestion_definition.table_configuration.workday_report_parameters.report_parameters[*]	pipelines.IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValue	INPUT	STATE
+resources.pipelines.*.ingestion_definition.table_configuration.workday_report_parameters.report_parameters[*].key	string	INPUT	STATE
+resources.pipelines.*.ingestion_definition.table_configuration.workday_report_parameters.report_parameters[*].value	string	INPUT	STATE
 resources.pipelines.*.last_modified	int64	REMOTE
 resources.pipelines.*.latest_updates	[]pipelines.UpdateStateInfo	REMOTE
 resources.pipelines.*.latest_updates[*]	pipelines.UpdateStateInfo	REMOTE
@@ -2220,7 +2641,7 @@ resources.pipelines.*.spec.clusters[*].cluster_log_conf.s3.region	string	REMOTE
 resources.pipelines.*.spec.clusters[*].cluster_log_conf.volumes	*compute.VolumesStorageInfo	REMOTE
 resources.pipelines.*.spec.clusters[*].cluster_log_conf.volumes.destination	string	REMOTE
 resources.pipelines.*.spec.clusters[*].custom_tags	map[string]string	REMOTE
-resources.pipelines.*.spec.clusters[*].custom_tags[*]	string	REMOTE
+resources.pipelines.*.spec.clusters[*].custom_tags.*	string	REMOTE
 resources.pipelines.*.spec.clusters[*].driver_instance_pool_id	string	REMOTE
 resources.pipelines.*.spec.clusters[*].driver_node_type_id	string	REMOTE
 resources.pipelines.*.spec.clusters[*].enable_local_disk_encryption	bool	REMOTE
@@ -2260,13 +2681,13 @@ resources.pipelines.*.spec.clusters[*].node_type_id	string	REMOTE
 resources.pipelines.*.spec.clusters[*].num_workers	int	REMOTE
 resources.pipelines.*.spec.clusters[*].policy_id	string	REMOTE
 resources.pipelines.*.spec.clusters[*].spark_conf	map[string]string	REMOTE
-resources.pipelines.*.spec.clusters[*].spark_conf[*]	string	REMOTE
+resources.pipelines.*.spec.clusters[*].spark_conf.*	string	REMOTE
 resources.pipelines.*.spec.clusters[*].spark_env_vars	map[string]string	REMOTE
-resources.pipelines.*.spec.clusters[*].spark_env_vars[*]	string	REMOTE
+resources.pipelines.*.spec.clusters[*].spark_env_vars.*	string	REMOTE
 resources.pipelines.*.spec.clusters[*].ssh_public_keys	[]string	REMOTE
 resources.pipelines.*.spec.clusters[*].ssh_public_keys[*]	string	REMOTE
 resources.pipelines.*.spec.configuration	map[string]string	REMOTE
-resources.pipelines.*.spec.configuration[*]	string	REMOTE
+resources.pipelines.*.spec.configuration.*	string	REMOTE
 resources.pipelines.*.spec.continuous	bool	REMOTE
 resources.pipelines.*.spec.deployment	*pipelines.PipelineDeployment	REMOTE
 resources.pipelines.*.spec.deployment.kind	pipelines.DeploymentKind	REMOTE
@@ -2295,6 +2716,7 @@ resources.pipelines.*.spec.id	string	REMOTE
 resources.pipelines.*.spec.ingestion_definition	*pipelines.IngestionPipelineDefinition	REMOTE
 resources.pipelines.*.spec.ingestion_definition.connection_name	string	REMOTE
 resources.pipelines.*.spec.ingestion_definition.ingestion_gateway_id	string	REMOTE
+resources.pipelines.*.spec.ingestion_definition.netsuite_jar_path	string	REMOTE
 resources.pipelines.*.spec.ingestion_definition.objects	[]pipelines.IngestionConfig	REMOTE
 resources.pipelines.*.spec.ingestion_definition.objects[*]	pipelines.IngestionConfig	REMOTE
 resources.pipelines.*.spec.ingestion_definition.objects[*].report	*pipelines.ReportSpec	REMOTE
@@ -2318,6 +2740,14 @@ resources.pipelines.*.spec.ingestion_definition.objects[*].report.table_configur
 resources.pipelines.*.spec.ingestion_definition.objects[*].report.table_configuration.scd_type	pipelines.TableSpecificConfigScdType	REMOTE
 resources.pipelines.*.spec.ingestion_definition.objects[*].report.table_configuration.sequence_by	[]string	REMOTE
 resources.pipelines.*.spec.ingestion_definition.objects[*].report.table_configuration.sequence_by[*]	string	REMOTE
+resources.pipelines.*.spec.ingestion_definition.objects[*].report.table_configuration.workday_report_parameters	*pipelines.IngestionPipelineDefinitionWorkdayReportParameters	REMOTE
+resources.pipelines.*.spec.ingestion_definition.objects[*].report.table_configuration.workday_report_parameters.incremental	bool	REMOTE
+resources.pipelines.*.spec.ingestion_definition.objects[*].report.table_configuration.workday_report_parameters.parameters	map[string]string	REMOTE
+resources.pipelines.*.spec.ingestion_definition.objects[*].report.table_configuration.workday_report_parameters.parameters.*	string	REMOTE
+resources.pipelines.*.spec.ingestion_definition.objects[*].report.table_configuration.workday_report_parameters.report_parameters	[]pipelines.IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValue	REMOTE
+resources.pipelines.*.spec.ingestion_definition.objects[*].report.table_configuration.workday_report_parameters.report_parameters[*]	pipelines.IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValue	REMOTE
+resources.pipelines.*.spec.ingestion_definition.objects[*].report.table_configuration.workday_report_parameters.report_parameters[*].key	string	REMOTE
+resources.pipelines.*.spec.ingestion_definition.objects[*].report.table_configuration.workday_report_parameters.report_parameters[*].value	string	REMOTE
 resources.pipelines.*.spec.ingestion_definition.objects[*].schema	*pipelines.SchemaSpec	REMOTE
 resources.pipelines.*.spec.ingestion_definition.objects[*].schema.destination_catalog	string	REMOTE
 resources.pipelines.*.spec.ingestion_definition.objects[*].schema.destination_schema	string	REMOTE
@@ -2339,6 +2769,14 @@ resources.pipelines.*.spec.ingestion_definition.objects[*].schema.table_configur
 resources.pipelines.*.spec.ingestion_definition.objects[*].schema.table_configuration.scd_type	pipelines.TableSpecificConfigScdType	REMOTE
 resources.pipelines.*.spec.ingestion_definition.objects[*].schema.table_configuration.sequence_by	[]string	REMOTE
 resources.pipelines.*.spec.ingestion_definition.objects[*].schema.table_configuration.sequence_by[*]	string	REMOTE
+resources.pipelines.*.spec.ingestion_definition.objects[*].schema.table_configuration.workday_report_parameters	*pipelines.IngestionPipelineDefinitionWorkdayReportParameters	REMOTE
+resources.pipelines.*.spec.ingestion_definition.objects[*].schema.table_configuration.workday_report_parameters.incremental	bool	REMOTE
+resources.pipelines.*.spec.ingestion_definition.objects[*].schema.table_configuration.workday_report_parameters.parameters	map[string]string	REMOTE
+resources.pipelines.*.spec.ingestion_definition.objects[*].schema.table_configuration.workday_report_parameters.parameters.*	string	REMOTE
+resources.pipelines.*.spec.ingestion_definition.objects[*].schema.table_configuration.workday_report_parameters.report_parameters	[]pipelines.IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValue	REMOTE
+resources.pipelines.*.spec.ingestion_definition.objects[*].schema.table_configuration.workday_report_parameters.report_parameters[*]	pipelines.IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValue	REMOTE
+resources.pipelines.*.spec.ingestion_definition.objects[*].schema.table_configuration.workday_report_parameters.report_parameters[*].key	string	REMOTE
+resources.pipelines.*.spec.ingestion_definition.objects[*].schema.table_configuration.workday_report_parameters.report_parameters[*].value	string	REMOTE
 resources.pipelines.*.spec.ingestion_definition.objects[*].table	*pipelines.TableSpec	REMOTE
 resources.pipelines.*.spec.ingestion_definition.objects[*].table.destination_catalog	string	REMOTE
 resources.pipelines.*.spec.ingestion_definition.objects[*].table.destination_schema	string	REMOTE
@@ -2362,6 +2800,14 @@ resources.pipelines.*.spec.ingestion_definition.objects[*].table.table_configura
 resources.pipelines.*.spec.ingestion_definition.objects[*].table.table_configuration.scd_type	pipelines.TableSpecificConfigScdType	REMOTE
 resources.pipelines.*.spec.ingestion_definition.objects[*].table.table_configuration.sequence_by	[]string	REMOTE
 resources.pipelines.*.spec.ingestion_definition.objects[*].table.table_configuration.sequence_by[*]	string	REMOTE
+resources.pipelines.*.spec.ingestion_definition.objects[*].table.table_configuration.workday_report_parameters	*pipelines.IngestionPipelineDefinitionWorkdayReportParameters	REMOTE
+resources.pipelines.*.spec.ingestion_definition.objects[*].table.table_configuration.workday_report_parameters.incremental	bool	REMOTE
+resources.pipelines.*.spec.ingestion_definition.objects[*].table.table_configuration.workday_report_parameters.parameters	map[string]string	REMOTE
+resources.pipelines.*.spec.ingestion_definition.objects[*].table.table_configuration.workday_report_parameters.parameters.*	string	REMOTE
+resources.pipelines.*.spec.ingestion_definition.objects[*].table.table_configuration.workday_report_parameters.report_parameters	[]pipelines.IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValue	REMOTE
+resources.pipelines.*.spec.ingestion_definition.objects[*].table.table_configuration.workday_report_parameters.report_parameters[*]	pipelines.IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValue	REMOTE
+resources.pipelines.*.spec.ingestion_definition.objects[*].table.table_configuration.workday_report_parameters.report_parameters[*].key	string	REMOTE
+resources.pipelines.*.spec.ingestion_definition.objects[*].table.table_configuration.workday_report_parameters.report_parameters[*].value	string	REMOTE
 resources.pipelines.*.spec.ingestion_definition.source_configurations	[]pipelines.SourceConfig	REMOTE
 resources.pipelines.*.spec.ingestion_definition.source_configurations[*]	pipelines.SourceConfig	REMOTE
 resources.pipelines.*.spec.ingestion_definition.source_configurations[*].catalog	*pipelines.SourceCatalogConfig	REMOTE
@@ -2387,6 +2833,14 @@ resources.pipelines.*.spec.ingestion_definition.table_configuration.salesforce_i
 resources.pipelines.*.spec.ingestion_definition.table_configuration.scd_type	pipelines.TableSpecificConfigScdType	REMOTE
 resources.pipelines.*.spec.ingestion_definition.table_configuration.sequence_by	[]string	REMOTE
 resources.pipelines.*.spec.ingestion_definition.table_configuration.sequence_by[*]	string	REMOTE
+resources.pipelines.*.spec.ingestion_definition.table_configuration.workday_report_parameters	*pipelines.IngestionPipelineDefinitionWorkdayReportParameters	REMOTE
+resources.pipelines.*.spec.ingestion_definition.table_configuration.workday_report_parameters.incremental	bool	REMOTE
+resources.pipelines.*.spec.ingestion_definition.table_configuration.workday_report_parameters.parameters	map[string]string	REMOTE
+resources.pipelines.*.spec.ingestion_definition.table_configuration.workday_report_parameters.parameters.*	string	REMOTE
+resources.pipelines.*.spec.ingestion_definition.table_configuration.workday_report_parameters.report_parameters	[]pipelines.IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValue	REMOTE
+resources.pipelines.*.spec.ingestion_definition.table_configuration.workday_report_parameters.report_parameters[*]	pipelines.IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValue	REMOTE
+resources.pipelines.*.spec.ingestion_definition.table_configuration.workday_report_parameters.report_parameters[*].key	string	REMOTE
+resources.pipelines.*.spec.ingestion_definition.table_configuration.workday_report_parameters.report_parameters[*].value	string	REMOTE
 resources.pipelines.*.spec.libraries	[]pipelines.PipelineLibrary	REMOTE
 resources.pipelines.*.spec.libraries[*]	pipelines.PipelineLibrary	REMOTE
 resources.pipelines.*.spec.libraries[*].file	*pipelines.FileLibrary	REMOTE
@@ -2420,17 +2874,18 @@ resources.pipelines.*.spec.schema	string	REMOTE
 resources.pipelines.*.spec.serverless	bool	REMOTE
 resources.pipelines.*.spec.storage	string	REMOTE
 resources.pipelines.*.spec.tags	map[string]string	REMOTE
-resources.pipelines.*.spec.tags[*]	string	REMOTE
+resources.pipelines.*.spec.tags.*	string	REMOTE
 resources.pipelines.*.spec.target	string	REMOTE
 resources.pipelines.*.spec.trigger	*pipelines.PipelineTrigger	REMOTE
 resources.pipelines.*.spec.trigger.cron	*pipelines.CronTrigger	REMOTE
 resources.pipelines.*.spec.trigger.cron.quartz_cron_schedule	string	REMOTE
 resources.pipelines.*.spec.trigger.cron.timezone_id	string	REMOTE
 resources.pipelines.*.spec.trigger.manual	*pipelines.ManualTrigger	REMOTE
+resources.pipelines.*.spec.usage_policy_id	string	REMOTE
 resources.pipelines.*.state	pipelines.PipelineState	REMOTE
 resources.pipelines.*.storage	string	INPUT	STATE
 resources.pipelines.*.tags	map[string]string	INPUT	STATE
-resources.pipelines.*.tags[*]	string	INPUT	STATE
+resources.pipelines.*.tags.*	string	INPUT	STATE
 resources.pipelines.*.target	string	INPUT	STATE
 resources.pipelines.*.trigger	*pipelines.PipelineTrigger	INPUT	STATE
 resources.pipelines.*.trigger.cron	*pipelines.CronTrigger	INPUT	STATE
@@ -2438,6 +2893,52 @@ resources.pipelines.*.trigger.cron.quartz_cron_schedule	string	INPUT	STATE
 resources.pipelines.*.trigger.cron.timezone_id	string	INPUT	STATE
 resources.pipelines.*.trigger.manual	*pipelines.ManualTrigger	INPUT	STATE
 resources.pipelines.*.url	string	INPUT
+resources.pipelines.*.usage_policy_id	string	INPUT	STATE
+resources.pipelines.*.permissions.object_id	string	ALL
+resources.pipelines.*.permissions.permissions	[]iam.AccessControlRequest	ALL
+resources.pipelines.*.permissions.permissions[*]	iam.AccessControlRequest	ALL
+resources.pipelines.*.permissions.permissions[*].group_name	string	ALL
+resources.pipelines.*.permissions.permissions[*].permission_level	iam.PermissionLevel	ALL
+resources.pipelines.*.permissions.permissions[*].service_principal_name	string	ALL
+resources.pipelines.*.permissions.permissions[*].user_name	string	ALL
+resources.registered_models.*.aliases	[]catalog.RegisteredModelAlias	ALL
+resources.registered_models.*.aliases[*]	catalog.RegisteredModelAlias	ALL
+resources.registered_models.*.aliases[*].alias_name	string	ALL
+resources.registered_models.*.aliases[*].catalog_name	string	ALL
+resources.registered_models.*.aliases[*].id	string	ALL
+resources.registered_models.*.aliases[*].model_name	string	ALL
+resources.registered_models.*.aliases[*].schema_name	string	ALL
+resources.registered_models.*.aliases[*].version_num	int	ALL
+resources.registered_models.*.browse_only	bool	ALL
+resources.registered_models.*.catalog_name	string	ALL
+resources.registered_models.*.comment	string	ALL
+resources.registered_models.*.created_at	int64	ALL
+resources.registered_models.*.created_by	string	ALL
+resources.registered_models.*.full_name	string	ALL
+resources.registered_models.*.grants	[]resources.Grant	INPUT
+resources.registered_models.*.grants[*]	resources.Grant	INPUT
+resources.registered_models.*.grants[*].principal	string	INPUT
+resources.registered_models.*.grants[*].privileges	[]string	INPUT
+resources.registered_models.*.grants[*].privileges[*]	string	INPUT
+resources.registered_models.*.id	string	INPUT
+resources.registered_models.*.lifecycle	resources.Lifecycle	INPUT
+resources.registered_models.*.lifecycle.prevent_destroy	bool	INPUT
+resources.registered_models.*.metastore_id	string	ALL
+resources.registered_models.*.modified_status	string	INPUT
+resources.registered_models.*.name	string	ALL
+resources.registered_models.*.owner	string	ALL
+resources.registered_models.*.schema_name	string	ALL
+resources.registered_models.*.storage_location	string	ALL
+resources.registered_models.*.updated_at	int64	ALL
+resources.registered_models.*.updated_by	string	ALL
+resources.registered_models.*.url	string	INPUT
+resources.registered_models.*.grants.full_name	string	ALL
+resources.registered_models.*.grants.grants	[]dresources.GrantAssignment	ALL
+resources.registered_models.*.grants.grants[*]	dresources.GrantAssignment	ALL
+resources.registered_models.*.grants.grants[*].principal	string	ALL
+resources.registered_models.*.grants.grants[*].privileges	[]catalog.Privilege	ALL
+resources.registered_models.*.grants.grants[*].privileges[*]	catalog.Privilege	ALL
+resources.registered_models.*.grants.securable_type	string	ALL
 resources.schemas.*.browse_only	bool	REMOTE
 resources.schemas.*.catalog_name	string	ALL
 resources.schemas.*.catalog_type	catalog.CatalogType	REMOTE
@@ -2463,13 +2964,20 @@ resources.schemas.*.modified_status	string	INPUT
 resources.schemas.*.name	string	ALL
 resources.schemas.*.owner	string	REMOTE
 resources.schemas.*.properties	map[string]string	ALL
-resources.schemas.*.properties[*]	string	ALL
+resources.schemas.*.properties.*	string	ALL
 resources.schemas.*.schema_id	string	REMOTE
 resources.schemas.*.storage_location	string	REMOTE
 resources.schemas.*.storage_root	string	ALL
 resources.schemas.*.updated_at	int64	REMOTE
 resources.schemas.*.updated_by	string	REMOTE
 resources.schemas.*.url	string	INPUT
+resources.schemas.*.grants.full_name	string	ALL
+resources.schemas.*.grants.grants	[]dresources.GrantAssignment	ALL
+resources.schemas.*.grants.grants[*]	dresources.GrantAssignment	ALL
+resources.schemas.*.grants.grants[*].principal	string	ALL
+resources.schemas.*.grants.grants[*].privileges	[]catalog.Privilege	ALL
+resources.schemas.*.grants.grants[*].privileges[*]	catalog.Privilege	ALL
+resources.schemas.*.grants.securable_type	string	ALL
 resources.sql_warehouses.*.auto_stop_mins	int	ALL
 resources.sql_warehouses.*.channel	*sql.Channel	ALL
 resources.sql_warehouses.*.channel.dbsql_version	string	ALL
@@ -2483,7 +2991,7 @@ resources.sql_warehouses.*.health.details	string	REMOTE
 resources.sql_warehouses.*.health.failure_reason	*sql.TerminationReason	REMOTE
 resources.sql_warehouses.*.health.failure_reason.code	sql.TerminationReasonCode	REMOTE
 resources.sql_warehouses.*.health.failure_reason.parameters	map[string]string	REMOTE
-resources.sql_warehouses.*.health.failure_reason.parameters[*]	string	REMOTE
+resources.sql_warehouses.*.health.failure_reason.parameters.*	string	REMOTE
 resources.sql_warehouses.*.health.failure_reason.type	sql.TerminationReasonType	REMOTE
 resources.sql_warehouses.*.health.message	string	REMOTE
 resources.sql_warehouses.*.health.status	sql.Status	REMOTE
@@ -2520,6 +3028,13 @@ resources.sql_warehouses.*.tags.custom_tags[*].value	string	ALL
 resources.sql_warehouses.*.url	string	INPUT
 resources.sql_warehouses.*.warehouse_type	sql.CreateWarehouseRequestWarehouseType	INPUT	STATE
 resources.sql_warehouses.*.warehouse_type	sql.GetWarehouseResponseWarehouseType	REMOTE
+resources.sql_warehouses.*.permissions.object_id	string	ALL
+resources.sql_warehouses.*.permissions.permissions	[]iam.AccessControlRequest	ALL
+resources.sql_warehouses.*.permissions.permissions[*]	iam.AccessControlRequest	ALL
+resources.sql_warehouses.*.permissions.permissions[*].group_name	string	ALL
+resources.sql_warehouses.*.permissions.permissions[*].permission_level	iam.PermissionLevel	ALL
+resources.sql_warehouses.*.permissions.permissions[*].service_principal_name	string	ALL
+resources.sql_warehouses.*.permissions.permissions[*].user_name	string	ALL
 resources.synced_database_tables.*.data_synchronization_status	*database.SyncedTableStatus	ALL
 resources.synced_database_tables.*.data_synchronization_status.continuous_update_status	*database.SyncedTableContinuousUpdateStatus	ALL
 resources.synced_database_tables.*.data_synchronization_status.continuous_update_status.initial_pipeline_sync_progress	*database.SyncedTablePipelineProgress	ALL
@@ -2613,3 +3128,10 @@ resources.volumes.*.updated_by	string	REMOTE
 resources.volumes.*.url	string	INPUT
 resources.volumes.*.volume_id	string	REMOTE
 resources.volumes.*.volume_type	catalog.VolumeType	ALL
+resources.volumes.*.grants.full_name	string	ALL
+resources.volumes.*.grants.grants	[]dresources.GrantAssignment	ALL
+resources.volumes.*.grants.grants[*]	dresources.GrantAssignment	ALL
+resources.volumes.*.grants.grants[*].principal	string	ALL
+resources.volumes.*.grants.grants[*].privileges	[]catalog.Privilege	ALL
+resources.volumes.*.grants.grants[*].privileges[*]	catalog.Privilege	ALL
+resources.volumes.*.grants.securable_type	string	ALL

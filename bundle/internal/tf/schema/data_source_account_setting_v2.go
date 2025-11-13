@@ -43,10 +43,6 @@ type DataSourceAccountSettingV2BooleanVal struct {
 	Value bool `json:"value,omitempty"`
 }
 
-type DataSourceAccountSettingV2DefaultDataSecurityMode struct {
-	Status string `json:"status"`
-}
-
 type DataSourceAccountSettingV2EffectiveAibiDashboardEmbeddingAccessPolicy struct {
 	AccessPolicyType string `json:"access_policy_type"`
 }
@@ -88,10 +84,6 @@ type DataSourceAccountSettingV2EffectiveBooleanVal struct {
 	Value bool `json:"value,omitempty"`
 }
 
-type DataSourceAccountSettingV2EffectiveDefaultDataSecurityMode struct {
-	Status string `json:"status"`
-}
-
 type DataSourceAccountSettingV2EffectiveIntegerVal struct {
 	Value int `json:"value,omitempty"`
 }
@@ -129,18 +121,16 @@ type DataSourceAccountSettingV2 struct {
 	AibiDashboardEmbeddingApprovedDomains          *DataSourceAccountSettingV2AibiDashboardEmbeddingApprovedDomains          `json:"aibi_dashboard_embedding_approved_domains,omitempty"`
 	AutomaticClusterUpdateWorkspace                *DataSourceAccountSettingV2AutomaticClusterUpdateWorkspace                `json:"automatic_cluster_update_workspace,omitempty"`
 	BooleanVal                                     *DataSourceAccountSettingV2BooleanVal                                     `json:"boolean_val,omitempty"`
-	DefaultDataSecurityMode                        *DataSourceAccountSettingV2DefaultDataSecurityMode                        `json:"default_data_security_mode,omitempty"`
 	EffectiveAibiDashboardEmbeddingAccessPolicy    *DataSourceAccountSettingV2EffectiveAibiDashboardEmbeddingAccessPolicy    `json:"effective_aibi_dashboard_embedding_access_policy,omitempty"`
 	EffectiveAibiDashboardEmbeddingApprovedDomains *DataSourceAccountSettingV2EffectiveAibiDashboardEmbeddingApprovedDomains `json:"effective_aibi_dashboard_embedding_approved_domains,omitempty"`
 	EffectiveAutomaticClusterUpdateWorkspace       *DataSourceAccountSettingV2EffectiveAutomaticClusterUpdateWorkspace       `json:"effective_automatic_cluster_update_workspace,omitempty"`
 	EffectiveBooleanVal                            *DataSourceAccountSettingV2EffectiveBooleanVal                            `json:"effective_boolean_val,omitempty"`
-	EffectiveDefaultDataSecurityMode               *DataSourceAccountSettingV2EffectiveDefaultDataSecurityMode               `json:"effective_default_data_security_mode,omitempty"`
 	EffectiveIntegerVal                            *DataSourceAccountSettingV2EffectiveIntegerVal                            `json:"effective_integer_val,omitempty"`
 	EffectivePersonalCompute                       *DataSourceAccountSettingV2EffectivePersonalCompute                       `json:"effective_personal_compute,omitempty"`
 	EffectiveRestrictWorkspaceAdmins               *DataSourceAccountSettingV2EffectiveRestrictWorkspaceAdmins               `json:"effective_restrict_workspace_admins,omitempty"`
 	EffectiveStringVal                             *DataSourceAccountSettingV2EffectiveStringVal                             `json:"effective_string_val,omitempty"`
 	IntegerVal                                     *DataSourceAccountSettingV2IntegerVal                                     `json:"integer_val,omitempty"`
-	Name                                           string                                                                    `json:"name,omitempty"`
+	Name                                           string                                                                    `json:"name"`
 	PersonalCompute                                *DataSourceAccountSettingV2PersonalCompute                                `json:"personal_compute,omitempty"`
 	RestrictWorkspaceAdmins                        *DataSourceAccountSettingV2RestrictWorkspaceAdmins                        `json:"restrict_workspace_admins,omitempty"`
 	StringVal                                      *DataSourceAccountSettingV2StringVal                                      `json:"string_val,omitempty"`

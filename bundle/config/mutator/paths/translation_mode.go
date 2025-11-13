@@ -30,6 +30,6 @@ const (
 	// This allows for disambiguating between paths and PyPI package names.
 	TranslateModeLocalRelativeWithPrefix
 
-	// TranslateModeEnvironmentRequirements translates a local requirements file path to be absolute.
-	TranslateModeEnvironmentRequirements
+	// TranslateModeEnvironmentPipFlag translates a local file path in a pip flag to be absolute.
+	TranslateModeEnvironmentPipFlag
 )

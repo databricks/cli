@@ -21,7 +21,6 @@ Validation OK!
       "id": "123",
       "max_concurrent_runs": 1,
       "name": "Untitled",
-      "permissions": [],
       "queue": {
         "enabled": true
       }
@@ -32,14 +31,18 @@ Validation OK!
 >>> [CLI] bundle plan
 create jobs.foo
 
+Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> print_requests
+>>> print_requests.py //jobs
 {
+  "method": "POST",
+  "path": "/api/2.2/jobs/create",
   "body": {
     "deployment": {
       "kind": "BUNDLE",
@@ -52,9 +55,7 @@ Deployment complete!
     "queue": {
       "enabled": true
     }
-  },
-  "method": "POST",
-  "path": "/api/2.2/jobs/create"
+  }
 }
 
 >>> [CLI] bundle summary
@@ -78,11 +79,11 @@ All files and directories at the following location will be deleted: /Workspace/
 Deleting files...
 Destroy complete!
 
->>> print_requests
+>>> print_requests.py //jobs
 {
+  "method": "POST",
+  "path": "/api/2.2/jobs/delete",
   "body": {
     "job_id": [NUMID]
-  },
-  "method": "POST",
-  "path": "/api/2.2/jobs/delete"
+  }
 }

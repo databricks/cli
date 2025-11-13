@@ -1,0 +1,7 @@
+$CLI bundle plan -o json > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle deploy
+
+trace $CLI volumes update mycatalog.myschema.myname --json '{"new_name": "my_new_name"}'
+trace $CLI volumes read mycatalog.myschema.my_new_name
+# Updating the name means we no longer track the resource, so the action will be create:
+trace $CLI bundle plan

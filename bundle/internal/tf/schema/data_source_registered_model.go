@@ -3,8 +3,12 @@
 package schema
 
 type DataSourceRegisteredModelModelInfoAliases struct {
-	AliasName  string `json:"alias_name,omitempty"`
-	VersionNum int    `json:"version_num,omitempty"`
+	AliasName   string `json:"alias_name,omitempty"`
+	CatalogName string `json:"catalog_name,omitempty"`
+	Id          string `json:"id,omitempty"`
+	ModelName   string `json:"model_name,omitempty"`
+	SchemaName  string `json:"schema_name,omitempty"`
+	VersionNum  int    `json:"version_num,omitempty"`
 }
 
 type DataSourceRegisteredModelModelInfo struct {
@@ -24,9 +28,14 @@ type DataSourceRegisteredModelModelInfo struct {
 	UpdatedBy       string                                      `json:"updated_by,omitempty"`
 }
 
+type DataSourceRegisteredModelProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type DataSourceRegisteredModel struct {
-	FullName       string                               `json:"full_name"`
-	IncludeAliases bool                                 `json:"include_aliases,omitempty"`
-	IncludeBrowse  bool                                 `json:"include_browse,omitempty"`
-	ModelInfo      []DataSourceRegisteredModelModelInfo `json:"model_info,omitempty"`
+	FullName       string                                   `json:"full_name"`
+	IncludeAliases bool                                     `json:"include_aliases,omitempty"`
+	IncludeBrowse  bool                                     `json:"include_browse,omitempty"`
+	ModelInfo      []DataSourceRegisteredModelModelInfo     `json:"model_info,omitempty"`
+	ProviderConfig *DataSourceRegisteredModelProviderConfig `json:"provider_config,omitempty"`
 }

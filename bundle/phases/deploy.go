@@ -5,9 +5,9 @@ import (
 	"errors"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/apps"
 	"github.com/databricks/cli/bundle/artifacts"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/deploy"
 	"github.com/databricks/cli/bundle/deploy/files"
 	"github.com/databricks/cli/bundle/deploy/lock"
@@ -93,12 +93,12 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.P
 	return approved, nil
 }
 
-func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) {
+func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, targetEngine engine.EngineType) {
 	// Core mutators that CRUD resources and modify deployment state. These
 	// mutators need informed consent if they are potentially destructive.
 	cmdio.LogString(ctx, "Deploying resources...")
 
-	if b.DirectDeployment {
+	if targetEngine.IsDirect() {
 		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(), &b.Config, plan)
 	} else {
 		bundle.ApplyContext(ctx, b, terraform.Apply())
@@ -106,21 +106,14 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) {
 
 	// Even if deployment failed, there might be updates in states that we need to upload
 	bundle.ApplyContext(ctx, b,
-		statemgmt.StatePush(),
+		statemgmt.StatePush(targetEngine),
 	)
 	if logdiag.HasError(ctx) {
 		return
 	}
 
 	bundle.ApplySeqContext(ctx, b,
-		statemgmt.Load(),
-
-		// TODO: this does terraform specific transformation.
-		apps.InterpolateVariables(),
-
-		// TODO: this should either be part of app resource or separate AppConfig resource that depends on main resource.
-		apps.UploadConfig(),
-
+		statemgmt.Load(targetEngine),
 		metadata.Compute(),
 		metadata.Upload(),
 	)
@@ -141,7 +134,7 @@ func uploadLibraries(ctx context.Context, b *bundle.Bundle, libs map[string][]li
 }
 
 // The deploy phase deploys artifacts and resources.
-func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHandler) {
+func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHandler, engine engine.EngineType) {
 	log.Info(ctx, "Phase: deploy")
 
 	// Core mutators that CRUD resources and modify deployment state. These
@@ -161,7 +154,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDeploy))
 	}()
 
-	libs := deployPrepare(ctx, b)
+	libs := DeployPrepare(ctx, b, false, engine)
 	if logdiag.HasError(ctx) {
 		return
 	}
@@ -184,7 +177,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		return
 	}
 
-	plan := planWithoutPrepare(ctx, b)
+	plan := RunPlan(ctx, b, engine)
 	if logdiag.HasError(ctx) {
 		return
 	}
@@ -195,7 +188,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		return
 	}
 	if haveApproval {
-		deployCore(ctx, b, plan)
+		deployCore(ctx, b, plan, engine)
 	} else {
 		cmdio.LogString(ctx, "Deployment cancelled!")
 		return
@@ -209,15 +202,10 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	bundle.ApplyContext(ctx, b, scripts.Execute(config.ScriptPostDeploy))
 }
 
-// planWithoutPrepare builds a deployment plan without running deployPrepare.
-// This is used when deployPrepare has already been called.
-func planWithoutPrepare(ctx context.Context, b *bundle.Bundle) *deployplan.Plan {
-	if b.DirectDeployment {
-		if err := b.OpenStateFile(ctx); err != nil {
-			logdiag.LogError(ctx, err)
-			return nil
-		}
-		plan, err := b.DeploymentBundle.CalculatePlanForDeploy(ctx, b.WorkspaceClient(), &b.Config)
+func RunPlan(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) *deployplan.Plan {
+	if engine.IsDirect() {
+		_, localPath := b.StateFilenameDirect(ctx)
+		plan, err := b.DeploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(), &b.Config, localPath)
 		if err != nil {
 			logdiag.LogError(ctx, err)
 			return nil
@@ -247,16 +235,18 @@ func planWithoutPrepare(ctx context.Context, b *bundle.Bundle) *deployplan.Plan 
 		return nil
 	}
 
-	return plan
-}
-
-func Plan(ctx context.Context, b *bundle.Bundle) *deployplan.Plan {
-	deployPrepare(ctx, b)
-	if logdiag.HasError(ctx) {
-		return nil
+	for _, group := range b.Config.Resources.AllResources() {
+		for rKey := range group.Resources {
+			resourceKey := "resources." + group.Description.PluralName + "." + rKey
+			if _, ok := plan.Plan[resourceKey]; !ok {
+				plan.Plan[resourceKey] = &deployplan.PlanEntry{
+					Action: deployplan.ActionTypeSkip.String(),
+				}
+			}
+		}
 	}
 
-	return planWithoutPrepare(ctx, b)
+	return plan
 }
 
 // If there are more than 1 thousand of a resource type, do not

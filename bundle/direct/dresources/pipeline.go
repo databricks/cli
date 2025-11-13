@@ -5,6 +5,7 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 )
@@ -42,7 +43,8 @@ func (*ResourcePipeline) RemapState(p *pipelines.GetPipelineResponse) *pipelines
 		EventLog:            spec.EventLog,
 		Filters:             spec.Filters,
 		GatewayDefinition:   spec.GatewayDefinition,
-		Id:                  spec.Id,
+		// Clear "id" field, otherwise it shows up in changes.remote
+		Id:                  "",
 		IngestionDefinition: spec.IngestionDefinition,
 		Libraries:           spec.Libraries,
 		Name:                spec.Name,
@@ -57,7 +59,8 @@ func (*ResourcePipeline) RemapState(p *pipelines.GetPipelineResponse) *pipelines
 		Tags:                spec.Tags,
 		Target:              spec.Target,
 		Trigger:             spec.Trigger,
-		ForceSendFields:     filterFields[pipelines.CreatePipeline](spec.ForceSendFields, "AllowDuplicateNames", "DryRun", "RunAs"),
+		UsagePolicyId:       spec.UsagePolicyId,
+		ForceSendFields:     utils.FilterFields[pipelines.CreatePipeline](spec.ForceSendFields, "AllowDuplicateNames", "DryRun", "RunAs", "Id"),
 	}
 }
 
@@ -105,8 +108,9 @@ func (r *ResourcePipeline) DoUpdate(ctx context.Context, id string, config *pipe
 		Tags:                 config.Tags,
 		Target:               config.Target,
 		Trigger:              config.Trigger,
+		UsagePolicyId:        config.UsagePolicyId,
 		PipelineId:           id,
-		ForceSendFields:      filterFields[pipelines.EditPipeline](config.ForceSendFields),
+		ForceSendFields:      utils.FilterFields[pipelines.EditPipeline](config.ForceSendFields),
 	}
 
 	return r.client.Pipelines.Update(ctx, request)
@@ -116,7 +120,7 @@ func (r *ResourcePipeline) DoDelete(ctx context.Context, id string) error {
 	return r.client.Pipelines.DeleteByPipelineId(ctx, id)
 }
 
-func (*ResourcePipeline) FieldTriggers() map[string]deployplan.ActionType {
+func (*ResourcePipeline) FieldTriggers(_ bool) map[string]deployplan.ActionType {
 	return map[string]deployplan.ActionType{
 		"storage":                              deployplan.ActionTypeRecreate,
 		"catalog":                              deployplan.ActionTypeRecreate,

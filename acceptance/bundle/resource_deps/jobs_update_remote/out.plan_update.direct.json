@@ -1,0 +1,143 @@
+{
+  "plan": {
+    "resources.jobs.bar": {
+      "depends_on": [
+        {
+          "node": "resources.jobs.foo",
+          "label": "${resources.jobs.foo.id}"
+        }
+      ],
+      "action": "skip",
+      "remote_state": {
+        "created_time": [UNIX_TIME_MILLIS][0],
+        "creator_user_name": "[USERNAME]",
+        "job_id": [BAR_ID],
+        "run_as_user_name": "[USERNAME]",
+        "settings": {
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+          },
+          "description": "depends on foo id [FOO_ID]",
+          "edit_mode": "UI_LOCKED",
+          "email_notifications": {},
+          "format": "MULTI_TASK",
+          "max_concurrent_runs": 1,
+          "name": "bar",
+          "queue": {
+            "enabled": true
+          },
+          "timeout_seconds": 0,
+          "webhook_notifications": {}
+        }
+      },
+      "changes": {
+        "remote": {
+          "email_notifications": {
+            "action": "skip",
+            "reason": "server_side_default"
+          },
+          "timeout_seconds": {
+            "action": "skip",
+            "reason": "server_side_default"
+          },
+          "webhook_notifications": {
+            "action": "skip",
+            "reason": "server_side_default"
+          }
+        }
+      }
+    },
+    "resources.jobs.foo": {
+      "action": "update",
+      "new_state": {
+        "config": {
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+          },
+          "edit_mode": "UI_LOCKED",
+          "format": "MULTI_TASK",
+          "job_clusters": [
+            {
+              "job_cluster_key": "key",
+              "new_cluster": {
+                "num_workers": 0,
+                "spark_version": "13.3.x-scala2.12"
+              }
+            }
+          ],
+          "max_concurrent_runs": 1,
+          "name": "foo",
+          "queue": {
+            "enabled": true
+          },
+          "trigger": {
+            "pause_status": "UNPAUSED",
+            "periodic": {
+              "interval": 1,
+              "unit": "DAYS"
+            }
+          }
+        }
+      },
+      "remote_state": {
+        "created_time": [UNIX_TIME_MILLIS][1],
+        "creator_user_name": "[USERNAME]",
+        "job_id": [FOO_ID],
+        "run_as_user_name": "[USERNAME]",
+        "settings": {
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+          },
+          "edit_mode": "UI_LOCKED",
+          "email_notifications": {},
+          "format": "MULTI_TASK",
+          "job_clusters": [
+            {
+              "job_cluster_key": "key",
+              "new_cluster": {
+                "num_workers": 0,
+                "spark_version": "13.3.x-scala2.12"
+              }
+            }
+          ],
+          "max_concurrent_runs": 1,
+          "name": "foo",
+          "queue": {
+            "enabled": true
+          },
+          "timeout_seconds": 0,
+          "trigger": {
+            "pause_status": "UNPAUSED",
+            "periodic": {
+              "interval": 1,
+              "unit": "HOURS"
+            }
+          },
+          "webhook_notifications": {}
+        }
+      },
+      "changes": {
+        "remote": {
+          "email_notifications": {
+            "action": "skip",
+            "reason": "server_side_default"
+          },
+          "timeout_seconds": {
+            "action": "skip",
+            "reason": "server_side_default"
+          },
+          "trigger.periodic.unit": {
+            "action": "update"
+          },
+          "webhook_notifications": {
+            "action": "skip",
+            "reason": "server_side_default"
+          }
+        }
+      }
+    }
+  }
+}

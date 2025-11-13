@@ -3,7 +3,6 @@
 package schema
 
 type DataSourceMaterializedFeaturesFeatureTag struct {
-	Key         string `json:"key"`
-	Value       string `json:"value,omitempty"`
-	WorkspaceId string `json:"workspace_id,omitempty"`
+	Key   string `json:"key"`
+	Value string `json:"value,omitempty"`
 }

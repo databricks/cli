@@ -1,0 +1,82 @@
+{
+  "plan": {
+    "resources.jobs.job_with_permissions": {
+      "action": "skip",
+      "remote_state": {
+        "created_time": [UNIX_TIME_MILLIS],
+        "creator_user_name": "[USERNAME]",
+        "job_id": [JOB_ID],
+        "run_as_user_name": "[USERNAME]",
+        "settings": {
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/jobs-permissions-test/default/state/metadata.json"
+          },
+          "edit_mode": "UI_LOCKED",
+          "email_notifications": {},
+          "format": "MULTI_TASK",
+          "max_concurrent_runs": 1,
+          "name": "job with permissions",
+          "queue": {
+            "enabled": true
+          },
+          "tasks": [
+            {
+              "notebook_task": {
+                "notebook_path": "/Workspace/Users/user@example.com/notebook",
+                "source": "WORKSPACE"
+              },
+              "task_key": "main"
+            }
+          ],
+          "timeout_seconds": 0,
+          "webhook_notifications": {}
+        }
+      },
+      "changes": {
+        "remote": {
+          "email_notifications": {
+            "action": "skip",
+            "reason": "server_side_default"
+          },
+          "timeout_seconds": {
+            "action": "skip",
+            "reason": "server_side_default"
+          },
+          "webhook_notifications": {
+            "action": "skip",
+            "reason": "server_side_default"
+          }
+        }
+      }
+    },
+    "resources.jobs.job_with_permissions.permissions": {
+      "depends_on": [
+        {
+          "node": "resources.jobs.job_with_permissions",
+          "label": "${resources.jobs.job_with_permissions.id}"
+        }
+      ],
+      "action": "create",
+      "new_state": {
+        "config": {
+          "object_id": "/jobs/[JOB_ID]",
+          "permissions": [
+            {
+              "permission_level": "CAN_VIEW",
+              "user_name": "viewer@example.com"
+            },
+            {
+              "group_name": "data-team",
+              "permission_level": "CAN_MANAGE"
+            },
+            {
+              "permission_level": "IS_OWNER",
+              "user_name": "[USERNAME]"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

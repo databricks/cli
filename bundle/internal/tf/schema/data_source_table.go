@@ -2,6 +2,10 @@
 
 package schema
 
+type DataSourceTableProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type DataSourceTableTableInfoColumnsMask struct {
 	FunctionName     string   `json:"function_name,omitempty"`
 	UsingColumnNames []string `json:"using_column_names,omitempty"`
@@ -160,7 +164,8 @@ type DataSourceTableTableInfo struct {
 }
 
 type DataSourceTable struct {
-	Id        string                    `json:"id,omitempty"`
-	Name      string                    `json:"name"`
-	TableInfo *DataSourceTableTableInfo `json:"table_info,omitempty"`
+	Id             string                         `json:"id,omitempty"`
+	Name           string                         `json:"name"`
+	ProviderConfig *DataSourceTableProviderConfig `json:"provider_config,omitempty"`
+	TableInfo      *DataSourceTableTableInfo      `json:"table_info,omitempty"`
 }

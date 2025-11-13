@@ -46,22 +46,34 @@ the SSH server and handling the connection proxy.
 	cmd.Flags().StringVar(&releasesDir, "releases-dir", "", "Directory for local SSH tunnel development releases")
 	cmd.Flags().MarkHidden("releases-dir")
 
-	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
+		// CLI in the proxy mode is executed by the ssh client and can't prompt for input
+		if proxyMode {
+			cmd.SetContext(root.SkipPrompt(cmd.Context()))
+		}
+		// We want to avoid the situation where the connect command works because it pulls the auth config from a bundle,
+		// but fails if it's executed outside of it (which will happen when using remote development IDE features).
+		cmd.SetContext(root.SkipLoadBundle(cmd.Context()))
+		return root.MustWorkspaceClient(cmd, args)
+	}
+
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		wsClient := cmdctx.WorkspaceClient(ctx)
 		opts := client.ClientOptions{
-			ClusterID:           clusterID,
-			ProxyMode:           proxyMode,
-			ServerMetadata:      serverMetadata,
-			ShutdownDelay:       shutdownDelay,
-			MaxClients:          maxClients,
-			HandoverTimeout:     handoverTimeout,
-			ReleasesDir:         releasesDir,
-			AdditionalArgs:      args,
-			ClientPublicKeyName: defaultClientPublicKeyName,
-			ServerTimeout:       serverTimeout,
-			AutoStartCluster:    autoStartCluster,
+			Profile:              wsClient.Config.Profile,
+			ClusterID:            clusterID,
+			ProxyMode:            proxyMode,
+			ServerMetadata:       serverMetadata,
+			ShutdownDelay:        shutdownDelay,
+			MaxClients:           maxClients,
+			HandoverTimeout:      handoverTimeout,
+			ReleasesDir:          releasesDir,
+			ServerTimeout:        serverTimeout,
+			AutoStartCluster:     autoStartCluster,
+			ClientPublicKeyName:  clientPublicKeyName,
+			ClientPrivateKeyName: clientPrivateKeyName,
+			AdditionalArgs:       args,
 		}
 		return client.Run(ctx, wsClient, opts)
 	}

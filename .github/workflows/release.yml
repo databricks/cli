@@ -8,7 +8,9 @@ on:
   workflow_dispatch:
 
 jobs:
-  goreleaser:
+  # Build and publish Unix (Linux/macOS) binaries and Docker images.
+  # This job creates the GitHub release that goreleaser-windows will upload to.
+  goreleaser-unix:
     runs-on:
       group: databricks-deco-testing-runner-group
       labels: ubuntu-latest-deco
@@ -24,20 +26,16 @@ jobs:
           fetch-tags: true
 
       - name: Setup Go
-        uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
+        uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
         with:
           go-version-file: go.mod
-
-          # The default cache key for this action considers only the `go.sum` file.
-          # We include .goreleaser.yaml here to differentiate from the cache used by the push action
-          # that runs unit tests. This job produces and uses a different cache.
           cache-dependency-path: |
             go.sum
-            .goreleaser.yaml
+            .goreleaser-unix.yaml
 
       # Log into the GitHub Container Registry. The goreleaser action will create
       # the docker images and push them to the GitHub Container Registry.
-      - uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3.4.0
+      - uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef # v3.6.0
         with:
           registry: "ghcr.io"
           username: "${{ github.actor }}"
@@ -48,12 +46,134 @@ jobs:
       - name: Set up QEMU dependency
         uses: docker/setup-qemu-action@29109295f81e9208d7d86ff1c6c12d2833863392 # v3.6.0
 
-      - name: Run GoReleaser
+      - name: Run GoReleaser for Unix
         id: releaser
-        uses: goreleaser/goreleaser-action@9c156ee8a17a598857849441385a2041ef570552 # v6.3.0
+        uses: goreleaser/goreleaser-action@e435ccd777264be153ace6237001ef4d979d3a7a # v6.4.0
         with:
           version: ~> v2
-          args: release
+          args: release -f .goreleaser-unix.yaml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Build and sign Windows binaries using AzureSignTool with Azure Key Vault.
+  # Runs on GitHub-hosted windows-latest runner (has signtool and Windows SDK).
+  # Uses --skip=publish to avoid creating duplicate GitHub release.
+  # Waits for goreleaser-unix to create the release first.
+  goreleaser-windows:
+    environment: sign
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository and submodules
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Setup Go
+        uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
+        with:
+          go-version-file: go.mod
+          cache-dependency-path: |
+            go.sum
+            .goreleaser-windows.yaml
+
+      - name: Azure Login and get Key Vault token
+        shell: pwsh
+        run: |
+          az login --service-principal `
+            -u ${{ secrets.DECO_SIGN_AZURE_CLIENT_ID }} `
+            -p ${{ secrets.DECO_SIGN_AZURE_CLIENT_SECRET }} `
+            --tenant ${{ secrets.DECO_SIGN_AZURE_TENANT_ID }}
+
+          $accessToken = az account get-access-token --resource https://vault.azure.net --query accessToken -o tsv
+          echo "::add-mask::$accessToken"
+          echo "AZURE_VAULT_TOKEN=$accessToken" >> $env:GITHUB_ENV
+
+      - name: Install AzureSignTool
+        shell: pwsh
+        run: |
+          dotnet tool install --global AzureSignTool
+
+      - name: Run GoReleaser for Windows
+        uses: goreleaser/goreleaser-action@e435ccd777264be153ace6237001ef4d979d3a7a # v6.4.0
+        with:
+          version: ~> v2
+          args: release -f .goreleaser-windows.yaml --skip=publish
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          AZURE_TENANT_ID: ${{ secrets.DECO_SIGN_AZURE_TENANT_ID }}
+          AZURE_CLIENT_ID: ${{ secrets.DECO_SIGN_AZURE_CLIENT_ID }}
+          AZURE_CLIENT_SECRET: ${{ secrets.DECO_SIGN_AZURE_CLIENT_SECRET }}
+
+      - name: Upload Windows artifacts to GitHub Actions
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-artifacts
+          path: |
+            dist/*.zip
+            dist/*SHA256SUMS*
+          retention-days: 1
+
+  # Upload Windows artifacts to the GitHub release.
+  # Separated from goreleaser-windows because GitHub-hosted runners are not allowlisted
+  # for GitHub API access due to IP restrictions. Self-hosted runners have allowlisted IPs.
+  # Flow: goreleaser-windows (build) -> GitHub Actions artifacts -> self-hosted runner (upload)
+  upload-windows-to-release:
+    runs-on:
+      group: databricks-deco-testing-runner-group
+      labels: ubuntu-latest-deco
+    needs: [goreleaser-windows, goreleaser-unix]
+
+    steps:
+      - name: Download Windows artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-artifacts
+          path: dist
+
+      - name: Download Unix checksum file from release
+        run: |
+          VERSION=${{ github.ref_name }}
+          VERSION_NO_V=${VERSION:1}
+
+          echo "Downloading Unix checksum file..."
+          gh release download ${{ github.ref_name }} \
+            --pattern "databricks_cli_${VERSION_NO_V}_SHA256SUMS_unix" \
+            --dir dist \
+            --repo ${{ github.repository }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Merge checksum files
+        run: |
+          VERSION=${{ github.ref_name }}
+          VERSION_NO_V=${VERSION:1}
+
+          echo "Merging Unix and Windows checksum files..."
+          cat dist/databricks_cli_${VERSION_NO_V}_SHA256SUMS_unix > dist/databricks_cli_${VERSION_NO_V}_SHA256SUMS
+          cat dist/databricks_cli_${VERSION_NO_V}_SHA256SUMS_windows >> dist/databricks_cli_${VERSION_NO_V}_SHA256SUMS
+
+          echo "Merged SHA256SUMS file contents:"
+          cat dist/databricks_cli_${VERSION_NO_V}_SHA256SUMS
+
+      - name: Verify checksums after download
+        run: |
+          echo "Verifying Windows artifact checksums after download..."
+          for file in dist/*.zip; do
+            if [ -f "$file" ]; then
+              sha256sum "$file"
+            fi
+          done
+
+      - name: Upload to GitHub release
+        run: |
+          for file in dist/*.zip dist/*SHA256SUMS; do
+            if [ -f "$file" ]; then
+              echo "Uploading $(basename $file)"
+              gh release upload ${{ github.ref_name }} "$file" --repo ${{ github.repository }}
+            fi
+          done
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -62,7 +182,7 @@ jobs:
       group: databricks-deco-testing-runner-group
       labels: ubuntu-latest-deco
 
-    needs: goreleaser
+    needs: upload-windows-to-release
 
     steps:
       - name: Set VERSION variable from tag
@@ -71,7 +191,7 @@ jobs:
           echo "VERSION=${VERSION:1}" >> $GITHUB_ENV
 
       - name: Update setup-cli
-        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
         with:
           github-token: ${{ secrets.DECO_GITHUB_TOKEN }}
           script: |
@@ -90,7 +210,7 @@ jobs:
       group: databricks-deco-testing-runner-group
       labels: ubuntu-latest-deco
 
-    needs: goreleaser
+    needs: [goreleaser-unix, upload-windows-to-release]
 
     steps:
       - name: Set VERSION variable from tag
@@ -99,11 +219,11 @@ jobs:
           echo "VERSION=${VERSION:1}" >> $GITHUB_ENV
 
       - name: Update homebrew-tap
-        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
         with:
           github-token: ${{ secrets.DECO_GITHUB_TOKEN }}
           script: |
-            let artifacts = ${{ needs.goreleaser.outputs.artifacts }}
+            let artifacts = ${{ needs.goreleaser-unix.outputs.artifacts }}
             artifacts = artifacts.filter(a => a.type == "Archive")
             artifacts = new Map(
               artifacts.map(a => [
@@ -131,7 +251,7 @@ jobs:
       group: databricks-deco-testing-runner-group
       labels: ubuntu-latest-deco
 
-    needs: goreleaser
+    needs: upload-windows-to-release
 
     steps:
       - name: Set VERSION variable from tag
@@ -140,7 +260,7 @@ jobs:
           echo "VERSION=${VERSION:1}" >> $GITHUB_ENV
 
       - name: Update CLI version in the VSCode extension
-        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
         with:
           github-token: ${{ secrets.DECO_GITHUB_TOKEN }}
           script: |
@@ -159,7 +279,7 @@ jobs:
       group: databricks-deco-testing-runner-group
       labels: ubuntu-latest-deco
 
-    needs: goreleaser
+    needs: upload-windows-to-release
 
     # IMPORTANT:
     # - 'id-token: write' is mandatory for OIDC and trusted publishing to PyPi
@@ -178,15 +298,82 @@ jobs:
           fetch-tags: true
 
       - name: Install uv
-        uses: astral-sh/setup-uv@e92bafb6253dcd438e0484186d7669ea7a8ca1cc # v6.4.3
+        uses: astral-sh/setup-uv@85856786d1ce8acfbcc2f13a5f3fbd6b938f9f41 # v7.1.2
         with:
           version: "0.6.5"
 
       - name: Build wheel
-        working-directory: experimental/python
+        working-directory: python
         run: make build
 
       - name: Publish package distributions to PyPI
-        uses: pypa/gh-action-pypi-publish@76f52bc884231f62b9a034ebfe128415bbaabdfc # v1.12.4
+        uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e # v1.13.0
         with:
-          packages-dir: experimental/python/dist
+          packages-dir: python/dist
+
+  publish-to-winget-pkgs:
+    runs-on:
+      group: databricks-deco-testing-runner-group
+      labels: ubuntu-latest-deco
+
+    needs: upload-windows-to-release
+
+    environment: release
+
+    steps:
+      - name: Checkout repository and submodules
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+        # When updating the version of komac, make sure to update the checksum in the next step.
+        # Find both at https://github.com/russellbanks/Komac/releases.
+      - name: Download komac binary
+        run: |
+          curl -s -L -o $RUNNER_TEMP/komac-2.9.0-x86_64-unknown-linux-gnu.tar.gz https://github.com/russellbanks/Komac/releases/download/v2.9.0/komac-2.9.0-x86_64-unknown-linux-gnu.tar.gz
+
+      - name: Verify komac binary
+        run: |
+          echo "d07a12831ad5418fee715488542a98ce3c0e591d05c850dd149fe78432be8c4c  $RUNNER_TEMP/komac-2.9.0-x86_64-unknown-linux-gnu.tar.gz" | sha256sum -c -
+
+      - name: Untar komac binary to temporary path
+        run: |
+          mkdir -p $RUNNER_TEMP/komac
+          tar -xzf $RUNNER_TEMP/komac-2.9.0-x86_64-unknown-linux-gnu.tar.gz -C $RUNNER_TEMP/komac
+
+      - name: Add komac to PATH
+        run: echo "$RUNNER_TEMP/komac" >> $GITHUB_PATH
+
+      - name: Confirm komac version
+        run: komac --version
+
+        # Use the tag from the input, or the ref name if the input is not provided.
+        # The ref name is equal to the tag name when this workflow is triggered by the "sign-cli" command.
+      - name: Strip "v" prefix from version
+        id: strip_version
+        run: echo "version=$(echo ${{ github.ref_name }} | sed 's/^v//')" >> "$GITHUB_OUTPUT"
+
+      - name: Get URLs of signed Windows binaries
+        id: get_windows_urls
+        run: |
+          urls=$(
+            gh api https://api.github.com/repos/databricks/cli/releases/tags/${{ github.ref_name }} | \
+            jq -r .assets[].browser_download_url | \
+            grep -E '_windows_.*\.zip$' | \
+            tr '\n' ' '
+          )
+          if [ -z "$urls" ]; then
+            echo "No signed Windows binaries found" >&2
+            exit 1
+          fi
+          echo "urls=$urls" >> "$GITHUB_OUTPUT"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish to Winget
+        run: |
+          komac update Databricks.DatabricksCLI \
+            --version ${{ steps.strip_version.outputs.version }} \
+            --submit \
+            --urls ${{ steps.get_windows_urls.outputs.urls }} \
+        env:
+          KOMAC_FORK_OWNER: eng-dev-ecosystem-bot
+          GITHUB_TOKEN: ${{ secrets.ENG_DEV_ECOSYSTEM_BOT_TOKEN }}

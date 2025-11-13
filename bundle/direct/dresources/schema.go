@@ -6,6 +6,7 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
@@ -29,7 +30,7 @@ func (*ResourceSchema) RemapState(info *catalog.SchemaInfo) *catalog.CreateSchem
 		Name:            info.Name,
 		Properties:      info.Properties,
 		StorageRoot:     info.StorageRoot,
-		ForceSendFields: filterFields[catalog.CreateSchema](info.ForceSendFields),
+		ForceSendFields: utils.FilterFields[catalog.CreateSchema](info.ForceSendFields),
 	}
 }
 
@@ -54,7 +55,7 @@ func (r *ResourceSchema) DoUpdate(ctx context.Context, id string, config *catalo
 		NewName:                      "", // We recreate schemas on name change intentionally.
 		Owner:                        "", // Not supported by DABs
 		Properties:                   config.Properties,
-		ForceSendFields:              filterFields[catalog.UpdateSchema](config.ForceSendFields, "EnablePredictiveOptimization", "NewName", "Owner"),
+		ForceSendFields:              utils.FilterFields[catalog.UpdateSchema](config.ForceSendFields, "EnablePredictiveOptimization", "NewName", "Owner"),
 	}
 
 	response, err := r.client.Schemas.Update(ctx, updateRequest)
@@ -77,7 +78,7 @@ func (r *ResourceSchema) DoDelete(ctx context.Context, id string) error {
 	})
 }
 
-func (*ResourceSchema) FieldTriggers() map[string]deployplan.ActionType {
+func (*ResourceSchema) FieldTriggers(_ bool) map[string]deployplan.ActionType {
 	return map[string]deployplan.ActionType{
 		"name":         deployplan.ActionTypeRecreate,
 		"catalog_name": deployplan.ActionTypeRecreate,

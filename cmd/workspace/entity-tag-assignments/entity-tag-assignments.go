@@ -304,6 +304,11 @@ func newList() *cobra.Command {
 	cmd.Long = `List entity tag assignments.
   
   List tag assignments for an Unity Catalog entity
+  
+  PAGINATION BEHAVIOR: The API is by default paginated, a page may contain zero
+  results while still providing a next_page_token. Clients must continue reading
+  pages until next_page_token is absent, which is the only indication that the
+  end of results has been reached.
 
   Arguments:
     ENTITY_TYPE: The type of the entity to which the tag is assigned. Allowed values are:

@@ -1,0 +1,48 @@
+
+=== Create a pre-defined job:
+Created job with ID: [NUMID]
+
+>>> [CLI] workspace mkdirs /Workspace/Users/[USERNAME]/python-[UNIQUE_NAME]
+
+>>> [CLI] workspace import /Workspace/Users/[USERNAME]/python-[UNIQUE_NAME]/test --file test.py --language PYTHON
+
+=== Generate and bind in one step:
+>>> [CLI] bundle generate job --key test_job --existing-job-id [NUMID] --config-dir resources --source-dir src --bind
+File successfully saved to src/test.py
+Job configuration successfully saved to resources/test_job.job.yml
+Updating deployment state...
+Successfully bound job with an id '[NUMID]'
+
+>>> ls src/
+test.py
+
+>>> cat resources/test_job.job.yml
+      name: auto-bind-job-[UNIQUE_NAME]
+
+=== Deploy the bound job:
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/tmp/[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Destroy the bundle:
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete job test_job
+
+All files and directories at the following location will be deleted: /Workspace/tmp/[UNIQUE_NAME]
+
+Deleting files...
+Destroy complete!
+
+=== Check that job is bound and does not exist after bundle is destroyed:
+>>> errcode [CLI] jobs get [NUMID] --output json
+Error: Job [NUMID] does not exist.
+
+Exit code: 1
+
+=== Delete the tmp folder:
+>>> [CLI] workspace delete /Workspace/Users/[USERNAME]/python-[UNIQUE_NAME]/test
+
+>>> [CLI] workspace delete /Workspace/Users/[USERNAME]/python-[UNIQUE_NAME]

@@ -1,0 +1,20 @@
+echo "*" > .gitignore
+$CLI bundle plan -o json > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle deploy
+trace print_requests.py //jobs
+
+foo_id=`read_id.py jobs foo`
+echo "$foo_id:FOO_ID" >> ACC_REPLS
+export foo_id
+
+bar_id=`read_id.py jobs bar`
+echo "$bar_id:BAR_ID" >> ACC_REPLS
+
+title "Update trigger.periodic.unit remotely and re-deploy; jobs.bar is unchanged"
+trace envsubst < job_update.json > tmp.json && mv tmp.json job_update.json
+trace $CLI jobs reset --json @job_update.json
+$CLI bundle plan -o json > out.plan_update.$DATABRICKS_BUNDLE_ENGINE.json
+
+trace $CLI bundle destroy --auto-approve
+# Sort, because the order of requests is different. TODO: remember deps in order to delete in reverse deployment order.
+trace print_requests.py --sort //jobs

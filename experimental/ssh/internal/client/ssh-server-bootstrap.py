@@ -13,7 +13,7 @@ import time
 SSH_TUNNEL_BASENAME = "databricks_cli"
 
 dbutils.widgets.text("version", "")
-dbutils.widgets.text("keysSecretScopeName", "")
+dbutils.widgets.text("secretScopeName", "")
 dbutils.widgets.text("authorizedKeySecretName", "")
 dbutils.widgets.text("maxClients", "10")
 dbutils.widgets.text("shutdownDelay", "10m")
@@ -71,13 +71,22 @@ def setup_exit_handler():
 
 
 def run_ssh_server():
-    # Start the SSH tunnel
     ctx = get_context()
-    client = WorkspaceClient()
+
+    # Old DBRs require explicit WorkspaceClient arguments
+    try:
+        client = WorkspaceClient()
+    except Exception as e:
+        client = WorkspaceClient(
+            host=ctx.workspaceUrl or spark.conf.get("spark.databricks.workspaceUrl"), token=ctx.apiToken
+        )
+
     workspace_url = ctx.workspaceUrl or client.config.host or spark.conf.get("spark.databricks.workspaceUrl")
     user_name = client.current_user.me().user_name
 
-    os.environ["DATABRICKS_HOST"] = workspace_url if workspace_url.startswith("https://") else f"https://{workspace_url}"
+    os.environ["DATABRICKS_HOST"] = (
+        workspace_url if workspace_url.startswith("https://") else f"https://{workspace_url}"
+    )
     os.environ["DATABRICKS_TOKEN"] = ctx.apiToken
     os.environ["DATABRICKS_CLUSTER_ID"] = ctx.clusterId
     os.environ["DATABRICKS_VIRTUAL_ENV"] = sys.executable
@@ -86,13 +95,15 @@ def run_ssh_server():
     if os.environ.get("VIRTUAL_ENV") is None:
         os.environ["VIRTUAL_ENV"] = sys.executable
 
-    secrets_scope = dbutils.widgets.get("keysSecretScopeName")
+    secrets_scope = dbutils.widgets.get("secretScopeName")
     if not secrets_scope:
         raise RuntimeError("Secrets scope is required. Please provide it using the 'keysSecretScopeName' widget.")
 
     public_key_secret_name = dbutils.widgets.get("authorizedKeySecretName")
     if not public_key_secret_name:
-        raise RuntimeError("Public key secret name is required. Please provide it using the 'authorizedKeySecretName' widget.")
+        raise RuntimeError(
+            "Public key secret name is required. Please provide it using the 'authorizedKeySecretName' widget."
+        )
 
     version = dbutils.widgets.get("version")
     if not version:
@@ -123,7 +134,7 @@ def run_ssh_server():
                 "ssh",
                 "server",
                 f"--cluster={ctx.clusterId}",
-                f"--keys-secret-scope-name={secrets_scope}",
+                f"--secret-scope-name={secrets_scope}",
                 f"--authorized-key-secret-name={public_key_secret_name}",
                 f"--max-clients={max_clients}",
                 f"--shutdown-delay={shutdown_delay}",

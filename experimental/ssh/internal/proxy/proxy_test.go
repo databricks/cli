@@ -8,9 +8,11 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/libs/log"
 	"github.com/gorilla/websocket"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -18,19 +20,21 @@ import (
 
 type testBuffer struct {
 	t       *testing.T
+	m       sync.Mutex
 	buff    *bytes.Buffer
 	OnWrite chan []byte
 }
 
 const (
-	MESSAGE_CHUNKS      = 5
-	MESSAGES_PER_CHUNK  = 1024
+	MESSAGE_CHUNKS      = 4
+	MESSAGES_PER_CHUNK  = 512
 	TOTAL_MESSAGE_COUNT = MESSAGE_CHUNKS * MESSAGES_PER_CHUNK
 )
 
 func newTestBuffer(t *testing.T) *testBuffer {
 	return &testBuffer{
 		t:       t,
+		m:       sync.Mutex{},
 		buff:    new(bytes.Buffer),
 		OnWrite: make(chan []byte, TOTAL_MESSAGE_COUNT),
 	}
@@ -45,7 +49,9 @@ func (tb *testBuffer) Read(p []byte) (n int, err error) {
 }
 
 func (tb *testBuffer) Write(p []byte) (n int, err error) {
+	tb.m.Lock()
 	n, err = tb.buff.Write(p)
+	tb.m.Unlock()
 	require.NoError(tb.t, err)
 	tb.OnWrite <- p
 	return n, err
@@ -56,17 +62,27 @@ func (tb *testBuffer) AssertWrite(expected []byte) error {
 	case data := <-tb.OnWrite:
 		assert.Equal(tb.t, expected, data)
 		return nil
-	case <-time.After(2 * time.Second):
+	case <-time.After(3 * time.Second):
 		return errors.New("timeout waiting for write, was expecting: " + string(expected))
 	}
 }
 
-func (tb *testBuffer) WaitForWrite() ([]byte, error) {
-	select {
-	case data := <-tb.OnWrite:
-		return data, nil
-	case <-time.After(2 * time.Second):
-		return nil, errors.New("timeout waiting for write")
+func (tb *testBuffer) Contains(data []byte) bool {
+	tb.m.Lock()
+	defer tb.m.Unlock()
+	return bytes.Contains(tb.buff.Bytes(), data)
+}
+
+func (tb *testBuffer) WaitForWrite(expected []byte) error {
+	for {
+		select {
+		case <-tb.OnWrite:
+			if tb.Contains(expected) {
+				return nil
+			}
+		case <-time.After(3 * time.Second):
+			return errors.New("timeout waiting for write")
+		}
 	}
 }
 
@@ -83,6 +99,7 @@ func setupTestServer(ctx context.Context, t *testing.T) *TestProxy {
 	serverOutput := newTestBuffer(t)
 	var serverProxy *proxyConnection
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := log.NewContext(ctx, log.GetLogger(ctx).With("Server", true))
 		if serverProxy != nil {
 			err := serverProxy.acceptHandover(ctx, w, r)
 			if err != nil {
@@ -123,6 +140,7 @@ func createTestWebsocketConnection(url string) (*websocket.Conn, error) {
 }
 
 func setupTestClient(ctx context.Context, t *testing.T, serverURL string) *TestProxy {
+	ctx = log.NewContext(ctx, log.GetLogger(ctx).With("Client", true))
 	clientInput, clientInputWriter := io.Pipe()
 	clientOutput := newTestBuffer(t)
 	wsURL := "ws" + serverURL[4:]
@@ -206,7 +224,7 @@ func TestConnectionHandover(t *testing.T) {
 		for i := range TOTAL_MESSAGE_COUNT {
 			client.Input.Write(createTestMessage("client", i)) // nolint:errcheck
 			server.Input.Write(createTestMessage("server", i)) // nolint:errcheck
-			if i > 0 && i%MESSAGES_PER_CHUNK == 0 {
+			if i > 0 && i%MESSAGES_PER_CHUNK == 0 && i < TOTAL_MESSAGE_COUNT-1 {
 				handoverChan <- struct{}{}
 			}
 		}

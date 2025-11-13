@@ -1,0 +1,43 @@
+title 'Terraform state is present, env var must not disagree, we select terraform\n'
+mkdir -p .databricks/bundle/default/terraform
+echo '{"version": 4, "serial": 1}' > .databricks/bundle/default/terraform/terraform.tfstate
+
+trace DATABRICKS_BUNDLE_ENGINE=direct musterr $CLI bundle deploy
+trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+trace print_requests.py //api/2.1/unity-catalog/schemas | jq '.headers["User-Agent"][0]' | contains.py 'terraform' 'tf-provider' '!direct'
+
+# empty is the same as "terraform" here
+trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle deploy
+trace print_requests.py --get //api/2.1/unity-catalog/schemas | jq '.headers["User-Agent"][0]' | contains.py 'terraform' '!direct'
+
+title 'Adding resources.json with lower serial does not change anything'
+rm .databricks/bundle/default/terraform/terraform.tfstate
+echo "{}" > .databricks/bundle/default/resources.json
+trace DATABRICKS_BUNDLE_ENGINE=direct musterr $CLI bundle plan
+trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle plan
+trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle plan
+
+rm out.requests.txt
+title 'Adding resources.json with higher serial now requires DATABRICKS_BUNDLE_ENGINE=direct or empty\n'
+echo '{"serial": 10}' > .databricks/bundle/default/resources.json
+trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle plan
+#trace print_requests.py --get //api/2.1/unity-catalog/schemas | jq '.headers["User-Agent"][0]' | contains.py 'engine/direct' '!terraform' '!tf-provider'
+
+trace DATABRICKS_BUNDLE_ENGINE=terraform musterr $CLI bundle plan
+trace DATABRICKS_BUNDLE_ENGINE=terraform musterr $CLI bundle deploy
+trace DATABRICKS_BUNDLE_ENGINE=terraform musterr $CLI bundle destroy --auto-approve
+
+rm out.requests.txt
+trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle deploy
+trace print_requests.py //api/2.1/unity-catalog/schemas | jq '.headers["User-Agent"][0]' | contains.py 'engine/direct' '!terraform' '!tf-provider'
+
+trace DATABRICKS_BUNDLE_ENGINE=terraform musterr $CLI bundle deploy
+#trace print_requests.py --get //api/2.1/unity-catalog/schemas | jq '.headers["User-Agent"][0]' | contains.py 'engine/direct' '!terraform' '!tf-provider'
+
+trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle deploy
+trace print_requests.py --get //api/2.1/unity-catalog/schemas | jq '.headers["User-Agent"][0]' | contains.py 'engine/direct' '!terraform' '!tf-provider'
+
+trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle debug states
+trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle debug states --force-pull
+
+rm out.requests.txt

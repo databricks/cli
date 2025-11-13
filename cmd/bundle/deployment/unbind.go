@@ -1,8 +1,6 @@
 package deployment
 
 import (
-	"context"
-
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/phases"
@@ -54,30 +52,25 @@ To re-bind the resource later, use:
 	cmd.Flags().BoolVar(&forceLock, "force-lock", false, "Force acquisition of deployment lock.")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		ctx := logdiag.InitContext(cmd.Context())
-		cmd.SetContext(ctx)
-
-		b := utils.ConfigureBundleWithVariables(cmd)
-		if b == nil || logdiag.HasError(ctx) {
-			return root.ErrAlreadyPrinted
+		b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{
+			InitFunc: func(b *bundle.Bundle) {
+				b.Config.Bundle.Deployment.Lock.Force = forceLock
+			},
+			AlwaysPull: true,
+		})
+		if err != nil {
+			return err
 		}
-
-		phases.Initialize(ctx, b)
-		if logdiag.HasError(ctx) {
-			return root.ErrAlreadyPrinted
-		}
+		ctx := cmd.Context()
 
 		resource, err := b.Config.Resources.FindResourceByConfigKey(args[0])
 		if err != nil {
 			return err
 		}
 
-		bundle.ApplyFuncContext(ctx, b, func(context.Context, *bundle.Bundle) {
-			b.Config.Bundle.Deployment.Lock.Force = forceLock
-		})
-
-		tfName := terraform.GroupToTerraformName[resource.ResourceDescription().PluralName]
-		phases.Unbind(ctx, b, tfName, args[0])
+		rd := resource.ResourceDescription()
+		tfName := terraform.GroupToTerraformName[rd.PluralName]
+		phases.Unbind(ctx, b, rd.SingularName, tfName, args[0])
 		if logdiag.HasError(ctx) {
 			return root.ErrAlreadyPrinted
 		}

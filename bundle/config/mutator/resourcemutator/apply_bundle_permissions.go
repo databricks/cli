@@ -15,8 +15,6 @@ import (
 	"github.com/databricks/cli/libs/dyn/convert"
 )
 
-var unsupportedResources = []string{"clusters", "volumes", "schemas", "quality_monitors", "registered_models", "database_catalogs", "synced_database_tables"}
-
 var (
 	allowedLevels = []string{permissions.CAN_MANAGE, permissions.CAN_VIEW, permissions.CAN_RUN}
 	levelsMap     = map[string](map[string]string){
@@ -69,6 +67,12 @@ var (
 			permissions.CAN_MANAGE: "CAN_MANAGE",
 			permissions.CAN_VIEW:   "CAN_USE",
 		},
+		"clusters": {
+			// https://docs.databricks.com/aws/en/security/auth/access-control/#compute-acls
+			permissions.CAN_MANAGE: "CAN_MANAGE",
+			permissions.CAN_VIEW:   "CAN_ATTACH_TO",
+			permissions.CAN_RUN:    "CAN_RESTART",
+		},
 	}
 )
 
@@ -115,6 +119,10 @@ func (m *bundlePermissions) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 					key,
 					levelsMap[key],
 				)...)
+
+				if len(permissions) == 0 {
+					permissions = nil
+				}
 
 				pv, err = convert.FromTyped(permissions, dyn.NilValue)
 				if err != nil {

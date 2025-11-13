@@ -5,8 +5,12 @@ create jobs.baz
 create jobs.foo
 create jobs.independent
 
->>> print_sorted_requests
+Plan: 4 to add, 0 to change, 0 to delete, 0 unchanged
+
+>>> print_requests.py --sort //jobs
 {
+  "method": "POST",
+  "path": "/api/2.2/jobs/create",
   "body": {
     "deployment": {
       "kind": "BUNDLE",
@@ -20,11 +24,11 @@ create jobs.independent
     "queue": {
       "enabled": true
     }
-  },
-  "method": "POST",
-  "path": "/api/2.2/jobs/create"
+  }
 }
 {
+  "method": "POST",
+  "path": "/api/2.2/jobs/create",
   "body": {
     "deployment": {
       "kind": "BUNDLE",
@@ -38,9 +42,7 @@ create jobs.independent
     "queue": {
       "enabled": true
     }
-  },
-  "method": "POST",
-  "path": "/api/2.2/jobs/create"
+  }
 }
 
 >>> [CLI] bundle summary
@@ -70,9 +72,13 @@ create jobs.bar
 create jobs.baz
 create jobs.foo
 
+Plan: 3 to add, 0 to change, 0 to delete, 1 unchanged
+
 === Expecting no difference in the output between first and second deploy
->>> print_requests
+>>> print_requests.py //jobs
 {
+  "method": "POST",
+  "path": "/api/2.2/jobs/create",
   "body": {
     "deployment": {
       "kind": "BUNDLE",
@@ -86,9 +92,7 @@ create jobs.foo
     "queue": {
       "enabled": true
     }
-  },
-  "method": "POST",
-  "path": "/api/2.2/jobs/create"
+  }
 }
 
 >>> [CLI] bundle destroy --auto-approve
@@ -100,11 +104,11 @@ All files and directories at the following location will be deleted: /Workspace/
 Deleting files...
 Destroy complete!
 
->>> print_requests
+>>> print_requests.py //jobs
 {
+  "method": "POST",
+  "path": "/api/2.2/jobs/delete",
   "body": {
     "job_id": [IND_ID]
-  },
-  "method": "POST",
-  "path": "/api/2.2/jobs/delete"
+  }
 }

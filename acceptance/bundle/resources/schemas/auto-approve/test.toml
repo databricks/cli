@@ -1,0 +1,10 @@
+Local = true
+Cloud = true
+RecordRequests = false
+RequiresUnityCatalog = true
+
+Ignore = [
+    ".databricks",
+    "databricks.yml",
+    "test-file-*.txt",
+]

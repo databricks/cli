@@ -1,2 +1,0 @@
-create pipelines.bar
-create pipelines.foo

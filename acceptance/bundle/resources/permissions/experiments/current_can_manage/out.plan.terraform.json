@@ -1,0 +1,7 @@
+{
+  "plan": {
+    "resources.experiments.foo": {
+      "action": "create"
+    }
+  }
+}

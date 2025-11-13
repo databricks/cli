@@ -58,6 +58,12 @@ type DataSourceAppAppResourcesDatabase struct {
 	Permission   string `json:"permission"`
 }
 
+type DataSourceAppAppResourcesGenieSpace struct {
+	Name       string `json:"name"`
+	Permission string `json:"permission"`
+	SpaceId    string `json:"space_id"`
+}
+
 type DataSourceAppAppResourcesJob struct {
 	Id         string `json:"id"`
 	Permission string `json:"permission"`
@@ -88,6 +94,7 @@ type DataSourceAppAppResourcesUcSecurable struct {
 type DataSourceAppAppResources struct {
 	Database        *DataSourceAppAppResourcesDatabase        `json:"database,omitempty"`
 	Description     string                                    `json:"description,omitempty"`
+	GenieSpace      *DataSourceAppAppResourcesGenieSpace      `json:"genie_space,omitempty"`
 	Job             *DataSourceAppAppResourcesJob             `json:"job,omitempty"`
 	Name            string                                    `json:"name"`
 	Secret          *DataSourceAppAppResourcesSecret          `json:"secret,omitempty"`
@@ -100,6 +107,7 @@ type DataSourceAppApp struct {
 	ActiveDeployment         *DataSourceAppAppActiveDeployment  `json:"active_deployment,omitempty"`
 	AppStatus                *DataSourceAppAppAppStatus         `json:"app_status,omitempty"`
 	BudgetPolicyId           string                             `json:"budget_policy_id,omitempty"`
+	ComputeSize              string                             `json:"compute_size,omitempty"`
 	ComputeStatus            *DataSourceAppAppComputeStatus     `json:"compute_status,omitempty"`
 	CreateTime               string                             `json:"create_time,omitempty"`
 	Creator                  string                             `json:"creator,omitempty"`
@@ -122,7 +130,12 @@ type DataSourceAppApp struct {
 	UserApiScopes            []string                           `json:"user_api_scopes,omitempty"`
 }
 
+type DataSourceAppProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type DataSourceApp struct {
-	App  *DataSourceAppApp `json:"app,omitempty"`
-	Name string            `json:"name"`
+	App            *DataSourceAppApp            `json:"app,omitempty"`
+	Name           string                       `json:"name"`
+	ProviderConfig *DataSourceAppProviderConfig `json:"provider_config,omitempty"`
 }

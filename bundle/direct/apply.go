@@ -32,13 +32,7 @@ func (d *DeploymentUnit) Destroy(ctx context.Context, db *dstate.DeploymentState
 	return nil
 }
 
-func (d *DeploymentUnit) Deploy(ctx context.Context, db *dstate.DeploymentState, inputConfig any, actionType deployplan.ActionType) error {
-	// Note, newState may be different between plan and deploy due to resolved $resource references
-	newState, err := d.Adapter.PrepareState(inputConfig)
-	if err != nil {
-		return fmt.Errorf("reading config: %w", err)
-	}
-
+func (d *DeploymentUnit) Deploy(ctx context.Context, db *dstate.DeploymentState, newState any, actionType deployplan.ActionType, changes *deployplan.Changes) error {
 	if actionType == deployplan.ActionTypeCreate {
 		return d.Create(ctx, db, newState)
 	}
@@ -57,9 +51,11 @@ func (d *DeploymentUnit) Deploy(ctx context.Context, db *dstate.DeploymentState,
 	case deployplan.ActionTypeRecreate:
 		return d.Recreate(ctx, db, oldID, newState)
 	case deployplan.ActionTypeUpdate:
-		return d.Update(ctx, db, oldID, newState)
+		return d.Update(ctx, db, oldID, newState, changes)
 	case deployplan.ActionTypeUpdateWithID:
 		return d.UpdateWithID(ctx, db, oldID, newState)
+	case deployplan.ActionTypeResize:
+		return d.Resize(ctx, db, oldID, newState)
 	default:
 		return fmt.Errorf("internal error: unexpected actionType: %#v", actionType)
 	}
@@ -99,7 +95,7 @@ func (d *DeploymentUnit) Create(ctx context.Context, db *dstate.DeploymentState,
 
 func (d *DeploymentUnit) Recreate(ctx context.Context, db *dstate.DeploymentState, oldID string, newState any) error {
 	err := d.Adapter.DoDelete(ctx, oldID)
-	if err != nil {
+	if err != nil && !isResourceGone(err) {
 		return fmt.Errorf("deleting old id=%s: %w", oldID, err)
 	}
 
@@ -111,8 +107,16 @@ func (d *DeploymentUnit) Recreate(ctx context.Context, db *dstate.DeploymentStat
 	return d.Create(ctx, db, newState)
 }
 
-func (d *DeploymentUnit) Update(ctx context.Context, db *dstate.DeploymentState, id string, newState any) error {
-	remoteState, err := d.Adapter.DoUpdate(ctx, id, newState)
+func (d *DeploymentUnit) Update(ctx context.Context, db *dstate.DeploymentState, id string, newState any, changes *deployplan.Changes) error {
+	var remoteState any
+	var err error
+
+	if d.Adapter.HasDoUpdateWithChanges() && changes != nil {
+		remoteState, err = d.Adapter.DoUpdateWithChanges(ctx, id, newState, changes)
+	} else {
+		remoteState, err = d.Adapter.DoUpdate(ctx, id, newState)
+	}
+
 	if err != nil {
 		return fmt.Errorf("updating id=%s: %w", id, err)
 	}
@@ -178,15 +182,28 @@ func (d *DeploymentUnit) UpdateWithID(ctx context.Context, db *dstate.Deployment
 }
 
 func (d *DeploymentUnit) Delete(ctx context.Context, db *dstate.DeploymentState, oldID string) error {
-	// TODO: recognize 404 and 403 as "deleted" and proceed to removing state
 	err := d.Adapter.DoDelete(ctx, oldID)
-	if err != nil {
+	if err != nil && !isResourceGone(err) {
 		return fmt.Errorf("deleting id=%s: %w", oldID, err)
 	}
 
 	err = db.DeleteState(d.ResourceKey)
 	if err != nil {
 		return fmt.Errorf("deleting state id=%s: %w", oldID, err)
+	}
+
+	return nil
+}
+
+func (d *DeploymentUnit) Resize(ctx context.Context, db *dstate.DeploymentState, id string, newState any) error {
+	err := d.Adapter.DoResize(ctx, id, newState)
+	if err != nil {
+		return fmt.Errorf("resizing id=%s: %w", id, err)
+	}
+
+	err = db.SaveState(d.ResourceKey, id, newState)
+	if err != nil {
+		return fmt.Errorf("saving state id=%s: %w", id, err)
 	}
 
 	return nil
@@ -206,4 +223,15 @@ func typeConvert(destType reflect.Type, src any) (any, error) {
 	}
 
 	return reflect.ValueOf(destPtr).Elem().Interface(), nil
+}
+
+func (d *DeploymentUnit) refreshRemoteState(ctx context.Context, id string) error {
+	if d.RemoteState != nil {
+		return nil
+	}
+	remoteState, err := d.Adapter.DoRefresh(ctx, id)
+	if err != nil {
+		return fmt.Errorf("failed to refresh remote state id=%s: %w", id, err)
+	}
+	return d.SetRemoteState(remoteState)
 }

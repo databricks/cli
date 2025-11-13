@@ -1,0 +1,7 @@
+{
+  "plan": {
+    "resources.apps.foo": {
+      "action": "create"
+    }
+  }
+}

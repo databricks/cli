@@ -43,14 +43,14 @@ type DataSourceAppsSettingsCustomTemplatesTemplatesManifest struct {
 type DataSourceAppsSettingsCustomTemplatesTemplates struct {
 	Creator     string                                                  `json:"creator,omitempty"`
 	Description string                                                  `json:"description,omitempty"`
-	GitProvider string                                                  `json:"git_provider"`
-	GitRepo     string                                                  `json:"git_repo"`
+	GitProvider string                                                  `json:"git_provider,omitempty"`
+	GitRepo     string                                                  `json:"git_repo,omitempty"`
 	Manifest    *DataSourceAppsSettingsCustomTemplatesTemplatesManifest `json:"manifest,omitempty"`
 	Name        string                                                  `json:"name"`
-	Path        string                                                  `json:"path"`
+	Path        string                                                  `json:"path,omitempty"`
 }
 
 type DataSourceAppsSettingsCustomTemplates struct {
-	Templates   []DataSourceAppsSettingsCustomTemplatesTemplates `json:"templates,omitempty"`
-	WorkspaceId string                                           `json:"workspace_id,omitempty"`
+	PageSize  int                                              `json:"page_size,omitempty"`
+	Templates []DataSourceAppsSettingsCustomTemplatesTemplates `json:"templates,omitempty"`
 }

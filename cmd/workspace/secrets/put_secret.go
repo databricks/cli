@@ -4,7 +4,6 @@ import (
 	"encoding/base64"
 	"errors"
 	"io"
-	"os"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
@@ -117,9 +116,9 @@ func newPutSecret() *cobra.Command {
 }
 
 func promptSecret(cmd *cobra.Command) ([]byte, error) {
-	// If stdin is a TTY, prompt for the secret.
-	if !cmdio.IsInTTY(cmd.Context()) {
-		return io.ReadAll(os.Stdin)
+	// If prompting is not supported, read secret from stdin.
+	if !cmdio.IsPromptSupported(cmd.Context()) {
+		return io.ReadAll(cmd.InOrStdin())
 	}
 
 	value, err := cmdio.Secret(cmd.Context(), "Please enter your secret value")

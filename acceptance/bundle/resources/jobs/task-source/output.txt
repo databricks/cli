@@ -1,0 +1,29 @@
+
+>>> [CLI] bundle deploy
+Warning: invalid value "github" for enum field. Valid values are [awsCodeCommit azureDevOpsServices bitbucketCloud bitbucketServer gitHub gitHubEnterprise gitLab gitLabEnterpriseEdition]
+  at resources.jobs.git_job.git_source.git_provider
+  in databricks.yml:8:19
+
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/task-source/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> jq -s .[] | select(.path=="/api/2.2/jobs/create") | select(.body.name=="git_job") | .body out.requests.txt
+
+>>> jq -s .[] | select(.path=="/api/2.2/jobs/create") | select(.body.name=="workspace_job") | .body out.requests.txt
+
+>>> [CLI] bundle plan
+update jobs.git_job
+
+Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/task-source/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> jq -s .[] | select(.path=="/api/2.2/jobs/reset") | select(.body.new_settings.name=="git_job") | .body out.requests.txt
+
+>>> jq -s .[] | select(.path=="/api/2.2/jobs/reset") | select(.body.new_settings.name=="workspace_job") | .body out.requests.txt

@@ -3,47 +3,18 @@
 create jobs.bar
 create pipelines.foo
 
+Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> print_requests
-{
-  "body": {
-    "catalog": "mycatalog",
-    "channel": "CURRENT",
-    "deployment": {
-      "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
-    },
-    "edition": "ADVANCED",
-    "name": "pipeline foo"
-  },
-  "method": "POST",
-  "path": "/api/2.0/pipelines"
-}
-{
-  "body": {
-    "deployment": {
-      "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
-    },
-    "description": "depends on foo id [FOO_ID]",
-    "edit_mode": "UI_LOCKED",
-    "format": "MULTI_TASK",
-    "max_concurrent_runs": 1,
-    "name": "job bar",
-    "queue": {
-      "enabled": true
-    }
-  },
-  "method": "POST",
-  "path": "/api/2.2/jobs/create"
-}
+>>> print_requests.py //jobs //pipelines
 
 >>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 === Update catalog, triggering recreate for pipeline; this means updating downstream deps
 >>> update_file.py databricks.yml mycatalog mynewcatalog
@@ -51,6 +22,8 @@ Deployment complete!
 >>> [CLI] bundle plan
 update jobs.bar
 recreate pipelines.foo
+
+Plan: 1 to add, 1 to change, 1 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
@@ -64,57 +37,16 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> print_requests
-{
-  "method": "DELETE",
-  "path": "/api/2.0/pipelines/[FOO_ID]"
-}
-{
-  "body": {
-    "catalog": "mynewcatalog",
-    "channel": "CURRENT",
-    "deployment": {
-      "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
-    },
-    "edition": "ADVANCED",
-    "name": "pipeline foo"
-  },
-  "method": "POST",
-  "path": "/api/2.0/pipelines"
-}
-{
-  "body": {
-    "job_id": [BAR_ID],
-    "new_settings": {
-      "deployment": {
-        "kind": "BUNDLE",
-        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
-      },
-      "description": "depends on foo id [UUID]",
-      "edit_mode": "UI_LOCKED",
-      "format": "MULTI_TASK",
-      "max_concurrent_runs": 1,
-      "name": "job bar",
-      "queue": {
-        "enabled": true
-      }
-    }
-  },
-  "method": "POST",
-  "path": "/api/2.2/jobs/reset"
-}
+>>> print_requests.py //jobs //pipelines
 
 === Fetch resource IDs and verify remote state
 >>> musterr [CLI] pipelines get [FOO_ID]
 Error: The specified pipeline [FOO_ID] was not found.
 
-Exit code (musterr): 1
-
 >>> [CLI] pipelines get [UUID]
 {
   "creator_user_name":"[USERNAME]",
-  "last_modified":[UNIX_TIME_MILLIS],
+  "last_modified":[UNIX_TIME_MILLIS][0],
   "name":"pipeline foo",
   "pipeline_id":"[UUID]",
   "run_as_user_name":"[USERNAME]",
@@ -134,25 +66,32 @@ Exit code (musterr): 1
 
 >>> [CLI] jobs get [BAR_ID]
 {
-  "job_id":[BAR_ID],
+  "created_time": [UNIX_TIME_MILLIS][1],
+  "creator_user_name": "[USERNAME]",
+  "job_id": [BAR_ID],
+  "run_as_user_name": "[USERNAME]",
   "settings": {
     "deployment": {
-      "kind":"BUNDLE",
-      "metadata_file_path":"/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
     },
-    "description":"depends on foo id [UUID]",
-    "edit_mode":"UI_LOCKED",
-    "format":"MULTI_TASK",
-    "max_concurrent_runs":1,
-    "name":"job bar",
+    "description": "depends on foo id [UUID]",
+    "edit_mode": "UI_LOCKED",
+    "email_notifications": {},
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "job bar",
     "queue": {
-      "enabled":true
-    }
+      "enabled": true
+    },
+    "timeout_seconds": 0,
+    "webhook_notifications": {}
   }
 }
 
 === Follow up plan & deploy do nothing
 >>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
@@ -160,7 +99,7 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> print_requests
+>>> print_requests.py //jobs //pipelines
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
@@ -176,30 +115,24 @@ All files and directories at the following location will be deleted: /Workspace/
 Deleting files...
 Destroy complete!
 
->>> print_sorted_requests
+>>> print_requests.py --sort //jobs //pipelines
 {
   "method": "DELETE",
   "path": "/api/2.0/pipelines/[UUID]"
 }
 {
+  "method": "POST",
+  "path": "/api/2.2/jobs/delete",
   "body": {
     "job_id": [BAR_ID]
-  },
-  "method": "POST",
-  "path": "/api/2.2/jobs/delete"
+  }
 }
 
 >>> musterr [CLI] pipelines get [FOO_ID]
 Error: The specified pipeline [FOO_ID] was not found.
 
-Exit code (musterr): 1
-
 >>> musterr [CLI] pipelines get [UUID]
 Error: The specified pipeline [UUID] was not found.
 
-Exit code (musterr): 1
-
 >>> musterr [CLI] jobs get [BAR_ID]
 Error: Not Found
-
-Exit code (musterr): 1

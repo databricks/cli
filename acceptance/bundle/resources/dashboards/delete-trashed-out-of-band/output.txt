@@ -1,0 +1,27 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/delete-trashed-out-of-band-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] lakeview get [DASHBOARD_ID]
+{
+  "lifecycle_state": "ACTIVE",
+  "parent_path": "/Users/[USERNAME]/.bundle/delete-trashed-out-of-band-[UNIQUE_NAME]/default/resources"
+}
+
+>>> [CLI] lakeview trash [DASHBOARD_ID]
+
+>>> [CLI] bundle plan
+create dashboards.dashboard1
+
+Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle plan -o json
+
+>>> [CLI] bundle destroy --auto-approve
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/delete-trashed-out-of-band-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!

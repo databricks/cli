@@ -1,0 +1,20 @@
+# This test verifies that bundles can use the 'definitions' field for YAML anchors
+# without triggering the OSS Spark Pipelines validation error. This was a regression
+# patched in https://github.com/databricks/cli/pull/3889
+
+definitions:
+  common_cluster_settings: &common_cluster_settings
+    spark_version: "13.3.x-scala2.12"
+    node_type_id: "i3.xlarge"
+    num_workers: 2
+
+resources:
+  jobs:
+    my_job:
+      name: "test job with anchors"
+      tasks:
+        - task_key: "main"
+          new_cluster:
+            <<: *common_cluster_settings
+          notebook_task:
+            notebook_path: "/some/notebook"

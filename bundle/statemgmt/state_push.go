@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/deploy"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
@@ -16,10 +17,11 @@ import (
 
 type statePush struct {
 	filerFactory deploy.FilerFactory
+	engine       engine.EngineType
 }
 
 func (l *statePush) Name() string {
-	return "terraform:state-push"
+	return "statemgmt.Push"
 }
 
 func (l *statePush) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
@@ -28,16 +30,19 @@ func (l *statePush) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 		return diag.FromErr(err)
 	}
 
-	path, err := b.StateLocalPath(ctx)
-	if err != nil {
-		return diag.FromErr(err)
+	var remotePath, localPath string
+
+	if l.engine.IsDirect() {
+		remotePath, localPath = b.StateFilenameDirect(ctx)
+	} else {
+		remotePath, localPath = b.StateFilenameTerraform(ctx)
 	}
 
-	local, err := os.Open(path)
+	local, err := os.Open(localPath)
 	if errors.Is(err, fs.ErrNotExist) {
 		// The state file can be absent if terraform apply is skipped because
 		// there are no changes to apply in the plan.
-		log.Debugf(ctx, "Local terraform state file does not exist.")
+		log.Debugf(ctx, "Local state file does not exist: %s", localPath)
 		return nil
 	}
 	if err != nil {
@@ -47,7 +52,7 @@ func (l *statePush) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 
 	// Upload state file from local cache directory to filer.
 	cmdio.LogString(ctx, "Updating deployment state...")
-	err = f.Write(ctx, b.StateFilename(), local, filer.CreateParentDirectories, filer.OverwriteIfExists)
+	err = f.Write(ctx, remotePath, local, filer.CreateParentDirectories, filer.OverwriteIfExists)
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -55,6 +60,6 @@ func (l *statePush) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 	return nil
 }
 
-func StatePush() bundle.Mutator {
-	return &statePush{deploy.StateFiler}
+func StatePush(engine engine.EngineType) bundle.Mutator {
+	return &statePush{filerFactory: deploy.StateFiler, engine: engine}
 }

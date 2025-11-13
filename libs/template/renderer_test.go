@@ -90,9 +90,6 @@ func assertBuiltinTemplateValid(t *testing.T, template string, settings map[stri
 	// Apply initialize / validation mutators
 	bundle.ApplyFuncContext(ctx, b, func(ctx context.Context, b *bundle.Bundle) {
 		b.Config.Workspace.CurrentUser = &bundleConfig.User{User: cachedUser}
-		b.Config.Bundle.Terraform = &bundleConfig.Terraform{
-			ExecPath: "sh",
-		}
 	})
 
 	b.Tagging = tags.ForCloud(w.Config)
@@ -135,15 +132,18 @@ func TestBuiltinDbtTemplateValid(t *testing.T) {
 	for _, personal_schemas := range []string{"yes", "no"} {
 		for _, target := range []string{"dev", "prod"} {
 			for _, isServicePrincipal := range []bool{true, false} {
-				config := map[string]any{
-					"project_name":     "my_project",
-					"http_path":        "/sql/1.0/warehouses/123",
-					"default_catalog":  "hive_metastore",
-					"personal_schemas": personal_schemas,
-					"shared_schema":    "lennart",
+				for _, serverless := range []string{"yes", "no"} {
+					config := map[string]any{
+						"project_name":     "my_project",
+						"http_path":        "/sql/1.0/warehouses/123",
+						"default_catalog":  "hive_metastore",
+						"personal_schemas": personal_schemas,
+						"shared_schema":    "lennart",
+						"serverless":       serverless,
+					}
+					build := false
+					assertBuiltinTemplateValid(t, "dbt-sql", config, target, isServicePrincipal, build, t.TempDir())
 				}
-				build := false
-				assertBuiltinTemplateValid(t, "dbt-sql", config, target, isServicePrincipal, build, t.TempDir())
 			}
 		}
 	}
@@ -452,7 +452,8 @@ func TestRendererSkip(t *testing.T) {
 	// These files have been skipped
 	assert.NoFileExists(t, filepath.Join(tmpDir, "file3"))
 	assert.NoFileExists(t, filepath.Join(tmpDir, "dir1/file4"))
-	assert.NoDirExists(t, filepath.Join(tmpDir, "dir2"))
+	// dir2 exists (visited during walk) even though all its files were skipped
+	assert.DirExists(t, filepath.Join(tmpDir, "dir2"))
 	assert.NoFileExists(t, filepath.Join(tmpDir, "dir2/file6"))
 }
 

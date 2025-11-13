@@ -15,7 +15,12 @@ type DataSourceDashboardsDashboards struct {
 	WarehouseId         string `json:"warehouse_id,omitempty"`
 }
 
+type DataSourceDashboardsProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type DataSourceDashboards struct {
-	DashboardNameContains string                           `json:"dashboard_name_contains,omitempty"`
-	Dashboards            []DataSourceDashboardsDashboards `json:"dashboards,omitempty"`
+	DashboardNameContains string                              `json:"dashboard_name_contains,omitempty"`
+	Dashboards            []DataSourceDashboardsDashboards    `json:"dashboards,omitempty"`
+	ProviderConfig        *DataSourceDashboardsProviderConfig `json:"provider_config,omitempty"`
 }

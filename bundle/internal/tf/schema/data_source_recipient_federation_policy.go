@@ -10,11 +10,10 @@ type DataSourceRecipientFederationPolicyOidcPolicy struct {
 }
 
 type DataSourceRecipientFederationPolicy struct {
-	Comment     string                                         `json:"comment,omitempty"`
-	CreateTime  string                                         `json:"create_time,omitempty"`
-	Id          string                                         `json:"id,omitempty"`
-	Name        string                                         `json:"name,omitempty"`
-	OidcPolicy  *DataSourceRecipientFederationPolicyOidcPolicy `json:"oidc_policy,omitempty"`
-	UpdateTime  string                                         `json:"update_time,omitempty"`
-	WorkspaceId string                                         `json:"workspace_id,omitempty"`
+	Comment    string                                         `json:"comment,omitempty"`
+	CreateTime string                                         `json:"create_time,omitempty"`
+	Id         string                                         `json:"id,omitempty"`
+	Name       string                                         `json:"name,omitempty"`
+	OidcPolicy *DataSourceRecipientFederationPolicyOidcPolicy `json:"oidc_policy,omitempty"`
+	UpdateTime string                                         `json:"update_time,omitempty"`
 }

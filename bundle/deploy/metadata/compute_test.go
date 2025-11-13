@@ -2,6 +2,7 @@ package metadata
 
 import (
 	"context"
+	"runtime"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
@@ -10,7 +11,9 @@ import (
 	"github.com/databricks/cli/bundle/internal/bundletest"
 	"github.com/databricks/cli/bundle/metadata"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/vfs"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -49,7 +52,18 @@ func TestComputeMetadataMutator(t *testing.T) {
 					},
 				},
 				Pipelines: map[string]*resources.Pipeline{
-					"my-pipeline": {},
+					"my-pipeline-1": {
+						BaseResource: resources.BaseResource{ID: "3333"},
+						CreatePipeline: pipelines.CreatePipeline{
+							Name: "My Pipeline One",
+						},
+					},
+					"my-pipeline-2": {
+						BaseResource: resources.BaseResource{ID: "4444"},
+						CreatePipeline: pipelines.CreatePipeline{
+							Name: "My Pipeline Two",
+						},
+					},
 				},
 			},
 		},
@@ -57,7 +71,8 @@ func TestComputeMetadataMutator(t *testing.T) {
 
 	bundletest.SetLocation(b, "resources.jobs.my-job-1", []dyn.Location{{File: "a/b/c"}})
 	bundletest.SetLocation(b, "resources.jobs.my-job-2", []dyn.Location{{File: "d/e/f"}})
-	bundletest.SetLocation(b, "resources.pipelines.my-pipeline", []dyn.Location{{File: "abc"}})
+	bundletest.SetLocation(b, "resources.pipelines.my-pipeline-1", []dyn.Location{{File: "x/y/z"}})
+	bundletest.SetLocation(b, "resources.pipelines.my-pipeline-2", []dyn.Location{{File: "u/v/w"}})
 
 	expectedMetadata := metadata.Metadata{
 		Version: metadata.Version,
@@ -74,7 +89,7 @@ func TestComputeMetadataMutator(t *testing.T) {
 				},
 			},
 			Resources: metadata.Resources{
-				Jobs: map[string]*metadata.Job{
+				Jobs: map[string]*metadata.Resource{
 					"my-job-1": {
 						RelativePath: "a/b/c",
 						ID:           "1111",
@@ -82,6 +97,16 @@ func TestComputeMetadataMutator(t *testing.T) {
 					"my-job-2": {
 						RelativePath: "d/e/f",
 						ID:           "2222",
+					},
+				},
+				Pipelines: map[string]*metadata.Resource{
+					"my-pipeline-1": {
+						RelativePath: "x/y/z",
+						ID:           "3333",
+					},
+					"my-pipeline-2": {
+						RelativePath: "u/v/w",
+						ID:           "4444",
 					},
 				},
 			},
@@ -113,4 +138,24 @@ func TestComputeMetadataMutatorSourceLinked(t *testing.T) {
 	require.NoError(t, diags.Error())
 
 	assert.Equal(t, syncRootPath, b.Metadata.Config.Workspace.FilePath)
+	assert.True(t, b.Metadata.Config.Presets.SourceLinkedDeployment)
+}
+
+func TestComputeMetadataMutatorGitFolderPath(t *testing.T) {
+	// The native path of the worktree root on Windows will never match the /Workspace prefix,
+	// so `GitFolderPath` will never be set and this test will never pass
+	if runtime.GOOS == "windows" {
+		t.Skip("this test is not applicable on Windows")
+	}
+	gitFolderPath := "/Workspace/Users/test.user@databricks.com/git_folder"
+	path := vfs.MustNew(gitFolderPath)
+	b := &bundle.Bundle{
+		Config:       config.Root{},
+		WorktreeRoot: path,
+	}
+
+	diags := bundle.Apply(context.Background(), b, Compute())
+	require.NoError(t, diags.Error())
+
+	assert.Equal(t, gitFolderPath, b.Metadata.Extra.GitFolderPath)
 }

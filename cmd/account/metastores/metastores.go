@@ -63,8 +63,8 @@ func newCreate() *cobra.Command {
 	// TODO: complex arg: metastore_info
 
 	cmd.Use = "create"
-	cmd.Short = `Create metastore.`
-	cmd.Long = `Create metastore.
+	cmd.Short = `Create Metastore.`
+	cmd.Long = `Create Metastore.
   
   Creates a Unity Catalog metastore.`
 
@@ -151,11 +151,11 @@ func newDelete() *cobra.Command {
 
 		deleteReq.MetastoreId = args[0]
 
-		err = a.Metastores.Delete(ctx, deleteReq)
+		response, err := a.Metastores.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.

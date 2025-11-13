@@ -1,0 +1,54 @@
+print_requests() {
+    jq 'select(.path | contains("/pipeline")) | select(.method != "GET")' < out.requests.txt
+    rm out.requests.txt
+}
+
+print_sorted_requests() {
+    jq -c < out.requests.txt | sort | jq --sort-keys 'select(.path | contains("/pipeline")) | select(.method != "GET")'
+    rm out.requests.txt
+}
+
+
+cp databricks.yml databricks.yml.saved
+trace $CLI bundle plan -o json > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle deploy
+trace print_requests > out.requests_create.json
+trace $CLI bundle plan
+
+pipeline_id="$(read_id.py pipelines foo)"
+echo "$pipeline_id:PIPELINE_ID" >> ACC_REPLS
+
+trace $CLI permissions get pipelines "$pipeline_id"
+rm -f out.requests.txt
+
+title "Update one permission and deploy again\n"
+update_file.py databricks.yml CAN_VIEW CAN_MANAGE
+trace $CLI bundle plan -o json > out.plan_update.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle deploy
+trace print_requests > out.requests_update.json
+trace $CLI bundle plan
+
+title "Delete one permission and deploy again\n"
+grep -v DELETE_ONE databricks.yml > tmp.yml && mv tmp.yml databricks.yml
+trace $CLI bundle plan -o json > out.plan_delete_one.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle deploy
+trace print_requests > out.requests_delete_one.json
+trace $CLI bundle plan
+
+title "Delete the whole block and deploy again\n"
+grep -v PERMISSIONS databricks.yml > tmp.yml && mv tmp.yml databricks.yml
+trace cat databricks.yml
+trace $CLI bundle plan -o json > out.plan_delete_all.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle deploy
+trace print_sorted_requests > out.requests_delete_all.json
+trace $CLI bundle plan
+
+title "Restore original config\n"
+mv databricks.yml.saved databricks.yml
+trace $CLI bundle plan -o json > out.plan_restore.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle deploy
+trace print_requests > out.requests_restore_original.json
+trace $CLI bundle plan
+
+trace $CLI bundle destroy --auto-approve
+print_requests > out.requests_destroy.json
