@@ -13,7 +13,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/fatih/color"
 	"github.com/gorilla/websocket"
 )
 
@@ -46,7 +45,6 @@ type Config struct {
 	Prefetch      time.Duration
 	Writer        io.Writer
 	UserAgent     string
-	Colorize      bool
 }
 
 // Run connects to the log stream described by cfg and copies frames to the writer.
@@ -68,7 +66,6 @@ func Run(ctx context.Context, cfg Config) error {
 		prefetch:      cfg.Prefetch,
 		writer:        cfg.Writer,
 		userAgent:     cfg.UserAgent,
-		colorize:      cfg.Colorize,
 	}
 	if streamer.userAgent == "" {
 		streamer.userAgent = defaultUserAgent
@@ -90,7 +87,6 @@ type logStreamer struct {
 	writer        io.Writer
 	tailFlushed   bool
 	userAgent     string
-	colorize      bool
 }
 
 // Run establishes the websocket connection and manages reconnections.
@@ -274,7 +270,7 @@ func (s *logStreamer) consume(ctx context.Context, conn *websocket.Conn) (retErr
 				continue
 			}
 		}
-		line := s.formatLogEntry(entry)
+		line := formatLogEntry(entry)
 		stop, err := s.flushOrBufferLine(line, buffer, &flushed, &flushDeadline)
 		if err != nil {
 			return err
@@ -325,17 +321,8 @@ func parseLogEntry(raw []byte) (*wsEntry, error) {
 	return &entry, nil
 }
 
-func (s *logStreamer) formatLogEntry(entry *wsEntry) string {
-	timestamp := formatTimestamp(entry.Timestamp)
-	source := strings.ToUpper(entry.Source)
-	message := strings.TrimRight(entry.Message, "\r\n")
-
-	if s.colorize {
-		timestamp = color.HiBlackString(timestamp)
-		source = color.HiBlueString(source)
-	}
-
-	return fmt.Sprintf("%s [%s] %s", timestamp, source, message)
+func formatLogEntry(entry *wsEntry) string {
+	return fmt.Sprintf("%s [%s] %s", formatTimestamp(entry.Timestamp), entry.Source, strings.TrimRight(entry.Message, "\r\n"))
 }
 
 func formatPlainMessage(raw []byte) string {
