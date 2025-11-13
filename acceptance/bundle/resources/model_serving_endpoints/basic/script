@@ -1,0 +1,39 @@
+export ENDPOINT_NAME="test-endpoint-$UNIQUE_NAME-1"
+
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm out.requests.txt
+}
+trap cleanup EXIT
+
+trace $CLI bundle plan -o json > out.first-plan.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle deploy
+trace print_requests.py //serving-endpoints > out.first-requests.$DATABRICKS_BUNDLE_ENGINE.json
+
+echo "$ENDPOINT_NAME:ENDPOINT_NAME_1" >> ACC_REPLS
+
+# Record the endpoint ID for the first endpoint
+get_output=$($CLI serving-endpoints get $ENDPOINT_NAME)
+endpoint_id=$(echo "$get_output" | jq -r '.id')
+echo "$endpoint_id:ENDPOINT_ID_1" >> ACC_REPLS
+
+title "Print the GET endpoint details\n"
+echo "$get_output" | jq '{name, creator}'
+
+export ENDPOINT_NAME="test-endpoint-$UNIQUE_NAME-2"
+envsubst < databricks.yml.tmpl > databricks.yml
+trace $CLI bundle plan -o json > out.second-plan.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle deploy
+trace print_requests.py //serving-endpoints > out.second-requests.$DATABRICKS_BUNDLE_ENGINE.json
+
+echo "$ENDPOINT_NAME:ENDPOINT_NAME_2" >> ACC_REPLS
+
+# Record the endpoint ID for the second endpoint
+get_output=$($CLI serving-endpoints get $ENDPOINT_NAME)
+endpoint_id=$(echo "$get_output" | jq -r '.id')
+echo "$endpoint_id:ENDPOINT_ID_2" >> ACC_REPLS
+
+title "Print the GET endpoint details\n"
+echo "$get_output" | jq '{name, creator}'

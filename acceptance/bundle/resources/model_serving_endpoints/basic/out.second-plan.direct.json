@@ -1,0 +1,66 @@
+{
+  "plan": {
+    "resources.model_serving_endpoints.my_endpoint": {
+      "action": "recreate",
+      "new_state": {
+        "config": {
+          "name": "[ENDPOINT_NAME_2]"
+        }
+      },
+      "changes": {
+        "local": {
+          "name": {
+            "action": "recreate"
+          }
+        }
+      }
+    },
+    "resources.model_serving_endpoints.my_endpoint.permissions": {
+      "depends_on": [
+        {
+          "node": "resources.model_serving_endpoints.my_endpoint",
+          "label": "${resources.model_serving_endpoints.my_endpoint.endpoint_id}"
+        }
+      ],
+      "action": "update",
+      "new_state": {
+        "config": {
+          "object_id": "",
+          "permissions": [
+            {
+              "permission_level": "CAN_VIEW",
+              "user_name": "deco-test-user@databricks.com"
+            },
+            {
+              "permission_level": "CAN_MANAGE",
+              "service_principal_name": "[USERNAME]"
+            }
+          ]
+        },
+        "vars": {
+          "object_id": "/serving-endpoints/${resources.model_serving_endpoints.my_endpoint.endpoint_id}"
+        }
+      },
+      "remote_state": {
+        "object_id": "/serving-endpoints/[ENDPOINT_ID_1]",
+        "permissions": [
+          {
+            "permission_level": "CAN_VIEW",
+            "user_name": "deco-test-user@databricks.com"
+          },
+          {
+            "permission_level": "CAN_MANAGE",
+            "service_principal_name": "[USERNAME]"
+          }
+        ]
+      },
+      "changes": {
+        "local": {
+          "object_id": {
+            "action": "update"
+          }
+        }
+      }
+    }
+  }
+}

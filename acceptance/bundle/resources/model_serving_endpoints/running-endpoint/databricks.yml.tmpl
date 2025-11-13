@@ -1,0 +1,14 @@
+bundle:
+  name: acc-$UNIQUE_NAME
+
+resources:
+  model_serving_endpoints:
+    my_endpoint:
+      name: test-endpoint-$UNIQUE_NAME
+      config:
+        served_entities:
+          - name: "llama"
+            entity_name: system.ai.llama_v3_2_1b_instruct
+            entity_version: $VERSION
+            workload_size: Small
+            scale_to_zero_enabled: true
