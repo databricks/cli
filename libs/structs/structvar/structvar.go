@@ -12,7 +12,7 @@ import (
 
 // StructVar is a container holding a struct and a map of unresolved references inside this struct
 type StructVar struct {
-	Value any `json:"config"`
+	Value any `json:"value"`
 
 	// Refs holds unresolved references. Key is serialized PathNode pointing inside a struct (e.g. "name")
 	// and value is either pure or multiple references string: "${resources.foo.jobs.id}" or "${a} ${b}"
