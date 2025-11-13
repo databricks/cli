@@ -9,8 +9,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"runtime"
-	"strings"
 
 	"github.com/databricks/databricks-sdk-go"
 	"golang.org/x/crypto/ssh"
@@ -68,61 +66,6 @@ func SaveSSHKeyPair(keyPath string, privateKeyBytes, publicKeyBytes []byte) erro
 	}
 
 	return nil
-}
-
-func checkSSHKeyPairPermissions(keyPath string) error {
-	dir := filepath.Dir(keyPath)
-	dirInfo, err := os.Stat(dir)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return fmt.Errorf("key directory does not exist: %s", dir)
-		} else {
-			return fmt.Errorf("failed to stat key directory: %w", err)
-		}
-	}
-	if runtime.GOOS != "windows" && dirInfo.Mode().Perm() != 0o700 {
-		return fmt.Errorf("key directory permissions are not set to 0700, current permissions: %o", dirInfo.Mode().Perm())
-	}
-
-	info, err := os.Stat(keyPath)
-	if err != nil {
-		return fmt.Errorf("failed to stat key file: %w", err)
-	}
-
-	if runtime.GOOS != "windows" && info.Mode().Perm() != 0o600 {
-		return fmt.Errorf("private key permissions are not set to 0600, current permissions: %o", info.Mode().Perm())
-	}
-
-	pubKeyPath := keyPath + ".pub"
-	pubInfo, err := os.Stat(pubKeyPath)
-	if err != nil {
-		return fmt.Errorf("failed to stat public key file: %w", err)
-	}
-
-	if runtime.GOOS != "windows" && pubInfo.Mode().Perm() != 0o644 {
-		return fmt.Errorf("public key permissions are not set to 0644, current permissions: %o", pubInfo.Mode().Perm())
-	}
-
-	return nil
-}
-
-func CheckAndGenerateSSHKeyPair(ctx context.Context, keyPath string) (string, string, error) {
-	if err := checkSSHKeyPairPermissions(keyPath); err != nil {
-		privateKeyBytes, publicKeyBytes, err := generateSSHKeyPair()
-		if err != nil {
-			return "", "", err
-		}
-		if err := SaveSSHKeyPair(keyPath, privateKeyBytes, publicKeyBytes); err != nil {
-			return "", "", err
-		}
-	}
-
-	publicKeyBytes, err := os.ReadFile(keyPath + ".pub")
-	if err != nil {
-		return "", "", fmt.Errorf("failed to read public key: %w", err)
-	}
-
-	return keyPath, strings.TrimSpace(string(publicKeyBytes)), nil
 }
 
 func CheckAndGenerateSSHKeyPairFromSecrets(ctx context.Context, client *databricks.WorkspaceClient, clusterID, secretScopeName, privateKeyName, publicKeyName string) ([]byte, []byte, error) {

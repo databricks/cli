@@ -34,17 +34,22 @@ type ResourceShareObject struct {
 	Partition                         []ResourceShareObjectPartition `json:"partition,omitempty"`
 }
 
+type ResourceShareProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type ResourceShare struct {
-	Comment         string                `json:"comment,omitempty"`
-	CreatedAt       int                   `json:"created_at,omitempty"`
-	CreatedBy       string                `json:"created_by,omitempty"`
-	EffectiveOwner  string                `json:"effective_owner,omitempty"`
-	Id              string                `json:"id,omitempty"`
-	Name            string                `json:"name"`
-	Owner           string                `json:"owner,omitempty"`
-	StorageLocation string                `json:"storage_location,omitempty"`
-	StorageRoot     string                `json:"storage_root,omitempty"`
-	UpdatedAt       int                   `json:"updated_at,omitempty"`
-	UpdatedBy       string                `json:"updated_by,omitempty"`
-	Object          []ResourceShareObject `json:"object,omitempty"`
+	Comment         string                        `json:"comment,omitempty"`
+	CreatedAt       int                           `json:"created_at,omitempty"`
+	CreatedBy       string                        `json:"created_by,omitempty"`
+	EffectiveOwner  string                        `json:"effective_owner,omitempty"`
+	Id              string                        `json:"id,omitempty"`
+	Name            string                        `json:"name"`
+	Owner           string                        `json:"owner,omitempty"`
+	StorageLocation string                        `json:"storage_location,omitempty"`
+	StorageRoot     string                        `json:"storage_root,omitempty"`
+	UpdatedAt       int                           `json:"updated_at,omitempty"`
+	UpdatedBy       string                        `json:"updated_by,omitempty"`
+	Object          []ResourceShareObject         `json:"object,omitempty"`
+	ProviderConfig  []ResourceShareProviderConfig `json:"provider_config,omitempty"`
 }

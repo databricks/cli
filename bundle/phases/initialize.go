@@ -2,8 +2,6 @@ package phases
 
 import (
 	"context"
-	"errors"
-	"path/filepath"
 
 	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
 
@@ -18,9 +16,7 @@ import (
 	"github.com/databricks/cli/bundle/permissions"
 	"github.com/databricks/cli/bundle/scripts"
 	"github.com/databricks/cli/bundle/trampoline"
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/cli/libs/logdiag"
 )
 
 // The initialize phase fills in defaults and connects to the workspace.
@@ -28,11 +24,6 @@ import (
 // happens upon completion of this phase.
 func Initialize(ctx context.Context, b *bundle.Bundle) {
 	log.Info(ctx, "Phase: initialize")
-
-	rejectDefinitions(ctx, b)
-	if logdiag.HasError(ctx) {
-		return
-	}
 
 	bundle.ApplySeqContext(ctx, b,
 		// Reads (dynamic): resource.*.*
@@ -205,18 +196,4 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// Executes the post_init script hook defined in the bundle configuration
 		scripts.Execute(config.ScriptPostInit),
 	)
-}
-
-func rejectDefinitions(ctx context.Context, b *bundle.Bundle) {
-	if b.Config.Definitions != nil {
-		v := dyn.GetValue(b.Config.Value(), "definitions")
-		loc := v.Locations()
-		filename := "input yaml"
-		if len(loc) > 0 {
-			filename = filepath.ToSlash(loc[0].File)
-		}
-		logdiag.LogError(ctx, errors.New(filename+` seems to be formatted for open-source Spark Declarative Pipelines.
-Pipelines CLI currently only supports Lakeflow Declarative Pipelines development.
-To see an example of a supported pipelines template, create a new Pipelines CLI project with "pipelines init".`))
-	}
 }

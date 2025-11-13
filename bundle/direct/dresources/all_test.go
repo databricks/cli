@@ -137,7 +137,7 @@ var testDeps = map[string]prepareWorkspace{
 		return &PermissionsState{
 			ObjectID: "/jobs/" + strconv.FormatInt(resp.JobId, 10),
 			Permissions: []iam.AccessControlRequest{{
-				PermissionLevel: "CAN_MANAGE",
+				PermissionLevel: "IS_OWNER",
 				UserName:        "user@example.com",
 			}},
 		}, nil
@@ -252,6 +252,39 @@ var testDeps = map[string]prepareWorkspace{
 			}},
 		}, nil
 	},
+
+	"schemas.grants": func(client *databricks.WorkspaceClient) (any, error) {
+		return &GrantsState{
+			SecurableType: "schema",
+			FullName:      "main.myschema",
+			Grants: []GrantAssignment{{
+				Privileges: []catalog.Privilege{catalog.PrivilegeCreateView},
+				Principal:  "user@example.com",
+			}},
+		}, nil
+	},
+
+	"volumes.grants": func(client *databricks.WorkspaceClient) (any, error) {
+		return &GrantsState{
+			SecurableType: "volume",
+			FullName:      "main.myschema.myvolume",
+			Grants: []GrantAssignment{{
+				Privileges: []catalog.Privilege{catalog.PrivilegeCreateView},
+				Principal:  "user@example.com",
+			}},
+		}, nil
+	},
+
+	"registered_models.grants": func(client *databricks.WorkspaceClient) (any, error) {
+		return &GrantsState{
+			SecurableType: "registered-model",
+			FullName:      "modelid",
+			Grants: []GrantAssignment{{
+				Privileges: []catalog.Privilege{catalog.PrivilegeCreateView},
+				Principal:  "user@example.com",
+			}},
+		}, nil
+	},
 }
 
 func TestAll(t *testing.T) {
@@ -312,8 +345,15 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	remote, err = adapter.DoRefresh(ctx, createdID)
 	require.NoError(t, err)
 	require.NotNil(t, remote)
+
+	remappedState, err := adapter.RemapState(remote)
+	require.NoError(t, err)
+	require.NotNil(t, remappedState)
+
 	if remoteStateFromCreate != nil {
-		require.Equal(t, remoteStateFromCreate, remote)
+		remappedRemoteStateFromCreate, err := adapter.RemapState(remoteStateFromCreate)
+		require.NoError(t, err)
+		require.Equal(t, remappedState, remappedRemoteStateFromCreate)
 	}
 
 	remoteStateFromWaitCreate, err := adapter.WaitAfterCreate(ctx, newState)
@@ -321,10 +361,6 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	if remoteStateFromWaitCreate != nil {
 		require.Equal(t, remote, remoteStateFromWaitCreate)
 	}
-
-	remappedState, err := adapter.RemapState(remote)
-	require.NoError(t, err)
-	require.NotNil(t, remappedState)
 
 	remoteStateFromUpdate, err := adapter.DoUpdate(ctx, createdID, newState)
 	require.NoError(t, err, "DoUpdate failed")
@@ -393,7 +429,7 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	}, remote, false)
 	require.NoError(t, err)
 
-	deleteIsNoop := strings.HasSuffix(group, "permissions")
+	deleteIsNoop := strings.HasSuffix(group, "permissions") || strings.HasSuffix(group, "grants")
 
 	remoteAfterDelete, err := adapter.DoRefresh(ctx, createdID)
 	if deleteIsNoop {

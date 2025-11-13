@@ -27,6 +27,15 @@ main = "{{.project_name}}.main:main"
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+{{- $has_python_package_dir := and (or (eq .include_python "yes") (eq .include_job "yes") (eq .include_pipeline "yes")) (not (eq .lakeflow_only "yes")) }}
+{{- if not $has_python_package_dir }}
+{{- /* Hatch can normally automatically detect the package directory,
+     * but requires an explicit setting when the package directory is empty.
+     */}}
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
+{{- end }}
 
 [tool.black]
 line-length = 125

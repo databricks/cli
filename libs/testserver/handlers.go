@@ -236,7 +236,9 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.DashboardUpdate(req)
 	})
 	server.Handle("DELETE", "/api/2.0/lakeview/dashboards/{dashboard_id}", func(req Request) any {
-		return MapDelete(req.Workspace, req.Workspace.Dashboards, req.Vars["dashboard_id"])
+		// Calling DELETE on a dashboard does not delete the record immediately. Instead, the dashboard
+		// is marked as trashed and moved to the trash.
+		return req.Workspace.DashboardTrash(req)
 	})
 	server.Handle("GET", "/api/2.0/lakeview/dashboards/{dashboard_id}/published", func(req Request) any {
 		return MapGet(req.Workspace, req.Workspace.PublishedDashboards, req.Vars["dashboard_id"])
@@ -330,12 +332,14 @@ func AddDefaultHandlers(server *Server) {
 		return MapDelete(req.Workspace, req.Workspace.Schemas, req.Vars["full_name"])
 	})
 
-	server.Handle("PATCH", "/api/2.1/unity-catalog/permissions/schema/{full_name}", func(req Request) any {
-		return req.Workspace.SchemasUpdateGrants(req, req.Vars["full_name"])
+	// Grants:
+
+	server.Handle("PATCH", "/api/2.1/unity-catalog/permissions/{securable_type}/{full_name}", func(req Request) any {
+		return req.Workspace.GrantsUpdate(req, req.Vars["securable_type"], req.Vars["full_name"])
 	})
 
-	server.Handle("GET", "/api/2.1/unity-catalog/permissions/schema/{full_name}", func(req Request) any {
-		return req.Workspace.SchemasGetGrants(req, req.Vars["full_name"])
+	server.Handle("GET", "/api/2.1/unity-catalog/permissions/{securable_type}/{full_name}", func(req Request) any {
+		return req.Workspace.GrantsGet(req, req.Vars["securable_type"], req.Vars["full_name"])
 	})
 
 	// Catalogs:

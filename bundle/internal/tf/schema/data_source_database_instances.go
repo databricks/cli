@@ -59,4 +59,5 @@ type DataSourceDatabaseInstancesDatabaseInstances struct {
 
 type DataSourceDatabaseInstances struct {
 	DatabaseInstances []DataSourceDatabaseInstancesDatabaseInstances `json:"database_instances,omitempty"`
+	PageSize          int                                            `json:"page_size,omitempty"`
 }

@@ -32,6 +32,11 @@ func (s *FakeWorkspace) VolumesCreate(req Request) Response {
 	// QQQ first UUID should be constant per workspace?
 	volume.StorageLocation = fmt.Sprintf("s3://deco-uc-prod-isolated-aws-us-east-1/metastore/%s/volumes/%s", nextUUID(), nextUUID())
 
+	volume.CreatedAt = nowMilli()
+	volume.UpdatedAt = volume.CreatedAt
+	volume.CreatedBy = s.CurrentUser().UserName
+	volume.Owner = s.CurrentUser().UserName
+
 	defer s.LockUnlock()()
 
 	s.Volumes[volume.FullName] = volume
@@ -72,6 +77,9 @@ func (s *FakeWorkspace) VolumesUpdate(req Request, fullname string) Response {
 		existing.Name = request.NewName
 		existing.FullName = existing.CatalogName + "." + existing.SchemaName + "." + request.NewName
 	}
+
+	existing.UpdatedAt = nowMilli()
+	existing.UpdatedBy = s.CurrentUser().UserName
 
 	s.Volumes[existing.FullName] = existing
 	return Response{
