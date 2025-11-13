@@ -1,8 +1,20 @@
 
 >>> [CLI] bundle validate -o json
+Recommendation: permissions section should explicitly include the current deployment identity '[USERNAME]' or one of its groups
+If it is not included, CAN_MANAGE permissions are only applied if the present identity is used to deploy.
+
+Consider using a adding a top-level permissions section such as the following:
+
+  permissions:
+    - user_name: [USERNAME]
+      level: CAN_MANAGE
+
+See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more about permission configuration.
+  in databricks.yml:15:7
+
 {
   "clusters": {
-    "kevo_cluster": {
+    "cluster1": {
       "autotermination_minutes": 60,
       "cluster_name": "[dev [USERNAME]] test-cluster",
       "custom_tags": {
@@ -10,29 +22,45 @@
       },
       "node_type_id": "[NODE_TYPE_ID]",
       "num_workers": 1,
+      "permissions": [
+        {
+          "level": "CAN_ATTACH_TO",
+          "service_principal_name": "[UUID]"
+        },
+        {
+          "level": "CAN_RESTART",
+          "service_principal_name": "[UUID]"
+        },
+        {
+          "level": "CAN_MANAGE",
+          "service_principal_name": "[UUID]"
+        },
+        {
+          "level": "CAN_MANAGE",
+          "user_name": "[USERNAME]"
+        }
+      ],
       "spark_version": "15.4.x-scala2.12"
     }
   }
 }
 
 >>> [CLI] bundle deploy
+Recommendation: permissions section should explicitly include the current deployment identity '[USERNAME]' or one of its groups
+If it is not included, CAN_MANAGE permissions are only applied if the present identity is used to deploy.
+
+Consider using a adding a top-level permissions section such as the following:
+
+  permissions:
+    - user_name: [USERNAME]
+      level: CAN_MANAGE
+
+See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more about permission configuration.
+  in databricks.yml:15:7
+
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/dev/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
 
 >>> print_requests.py //clusters
-{
-  "method": "POST",
-  "path": "/api/2.1/clusters/create",
-  "body": {
-    "autotermination_minutes": 60,
-    "cluster_name": "[dev [USERNAME]] test-cluster",
-    "custom_tags": {
-      "dev": "[USERNAME]"
-    },
-    "node_type_id": "[NODE_TYPE_ID]",
-    "num_workers": 1,
-    "spark_version": "15.4.x-scala2.12"
-  }
-}

@@ -3,9 +3,13 @@ targets:
     mode: development
     default: true
     permissions:
+    - level: CAN_VIEW
+      service_principal_name: 6a6ffa73-af58-4f47-94cd-bed9ffcc1234
+    - level: CAN_RUN
+      service_principal_name: 6a6ffa73-af58-4f47-94cd-bed9ffcc3456
     - level: CAN_MANAGE
-      service_principal_name: 6a6ffa73-af58-4f47-94cd-bed9ffcc9eb4
-    - level: CAN_MANAGE
+      service_principal_name: 6a6ffa73-af58-4f47-94cd-bed9ffcc4567
+    - level: CAN_RUN
       user_name: tester@databricks.com
 
 resources:
@@ -15,6 +19,3 @@ resources:
       spark_version: 15.4.x-scala2.12
       node_type_id: i3.xlarge
       num_workers: 1
-  jobs:
-    job1:
-      name: job1
