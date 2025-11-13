@@ -1,0 +1,5 @@
+Local = false
+Cloud = true
+RecordRequests = false
+CloudEnvs.gcp = false
+CloudEnvs.azure = false

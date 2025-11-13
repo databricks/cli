@@ -1,0 +1,37 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+envsubst < take_ownership.json.tmpl > take_ownership.json
+trace cat take_ownership.json
+
+as-test-sp() {
+    if [[ -z "$TEST_SP_TOKEN" ]]; then
+        echo "Error: TEST_SP_TOKEN is not set." >&2
+        return 1
+    fi
+
+    DATABRICKS_TOKEN="$TEST_SP_TOKEN" \
+    DATABRICKS_CLIENT_SECRET="" \
+    DATABRICKS_CLIENT_ID="" \
+    DATABRICKS_AUTH_TYPE="" \
+    "$@"
+}
+
+trace as-test-sp $CLI current-user me | jq .displayName
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+cleanup EXIT
+
+trace as-test-sp $CLI bundle deploy
+
+job_id=$($CLI bundle summary --output json | jq -r '.resources.jobs.foo.id')
+
+trace $CLI permissions set jobs $job_id --json @take_ownership.json > /dev/null
+ 
+trace musterr as-test-sp $CLI bundle destroy --auto-approve &> out.destroy1.$DATABRICKS_BUNDLE_ENGINE.txt
+
+trace $CLI jobs delete $job_id
+trace musterr $CLI jobs get $job_id
+
+# This shows that even if job is deleted, you still get permission error when trying to delete it.
+trace errcode as-test-sp $CLI bundle destroy --auto-approve &> out.destroy2.$DATABRICKS_BUNDLE_ENGINE.txt

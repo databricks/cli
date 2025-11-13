@@ -1,0 +1,9 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+resources:
+  jobs:
+    foo:
+      permissions:
+        - service_principal_name: $CURRENT_USER_NAME
+          level: CAN_MANAGE
