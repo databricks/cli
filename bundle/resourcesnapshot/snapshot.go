@@ -22,7 +22,7 @@ const snapshotFileName = "resource_snapshots.json"
 
 // Snapshot stores the state of resources from the last successful deploy.
 type Snapshot struct {
-	Jobs      map[string]*jobs.Job                     `json:"jobs"`
+	Jobs      map[string]*jobs.Job                      `json:"jobs"`
 	Pipelines map[string]*pipelines.GetPipelineResponse `json:"pipelines"`
 }
 

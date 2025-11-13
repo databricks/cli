@@ -24,6 +24,8 @@ type DiffOutput struct {
 }
 
 func NewExpDiffCommand() *cobra.Command {
+	var save bool
+
 	cmd := &cobra.Command{
 		Use:   "exp-diff",
 		Short: "Show differences between current remote state and last deploy snapshot (experimental)",
@@ -36,6 +38,8 @@ changes or external modifications.
 Note: This command is experimental and may change without notice.`,
 		Args: root.NoArgs,
 	}
+
+	cmd.Flags().BoolVar(&save, "save", false, "Save the diff back to the bundle YAML files")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
@@ -66,6 +70,12 @@ Note: This command is experimental and may change without notice.`,
 		}
 
 		w := b.WorkspaceClient()
+
+		// Create diff writer if save flag is set
+		var writer *DiffWriter
+		if save {
+			writer = NewDiffWriter(b)
+		}
 
 		// Compare jobs
 		for key, job := range b.Config.Resources.Jobs {
@@ -109,6 +119,14 @@ Note: This command is experimental and may change without notice.`,
 					Changes: changelog,
 				}
 				log.Debugf(ctx, "Found %d changes for job %s", len(changelog), key)
+
+				// Save changes back to YAML if save flag is set
+				if writer != nil {
+					err = writer.WriteJobDiff(ctx, key, currentJob)
+					if err != nil {
+						log.Warnf(ctx, "Failed to save job %s changes: %v", key, err)
+					}
+				}
 			}
 		}
 
@@ -148,6 +166,14 @@ Note: This command is experimental and may change without notice.`,
 					Changes: changelog,
 				}
 				log.Debugf(ctx, "Found %d changes for pipeline %s", len(changelog), key)
+
+				// Save changes back to YAML if save flag is set
+				if writer != nil {
+					err = writer.WritePipelineDiff(ctx, key, currentPipeline)
+					if err != nil {
+						log.Warnf(ctx, "Failed to save pipeline %s changes: %v", key, err)
+					}
+				}
 			}
 		}
 

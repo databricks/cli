@@ -8,13 +8,13 @@ resources:
       email_notifications: {}
       format: MULTI_TASK
       max_concurrent_runs: 4
-      name: '[dev ilya_kuznetsov] test_exp_diff_job'
+      name: '[dev ilya_kuznetsov]'
       queue:
         enabled: true
       run_as:
         user_name: ilya.kuznetsov@databricks.com
       tags:
         dev: ilya_kuznetsov
-        my_tag: my_value3
+        my_tag: new_tag_2
       timeout_seconds: 0
       webhook_notifications: {}
