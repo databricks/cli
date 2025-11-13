@@ -1,17 +1,11 @@
 bundle:
   name: databricks-bundle-test
-
 targets:
   dev:
     mode: development
     default: true
-
     workspace:
       host: https://e2-dogfood.staging.cloud.databricks.com
 
-resources:
-  jobs:
-    test_exp_diff_job:
-      name: test_exp_diff_job
-      tags:
-        my_tag: my_value
+include:
+  - job.yaml
