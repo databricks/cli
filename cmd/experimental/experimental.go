@@ -2,7 +2,7 @@ package experimental
 
 import (
 	"github.com/databricks/cli/experimental/aitools"
-	mcp "github.com/databricks/cli/experimental/mcp/cmd"
+	mcp "github.com/databricks/cli/experimental/apps-mcp/cmd"
 	"github.com/spf13/cobra"
 )
 

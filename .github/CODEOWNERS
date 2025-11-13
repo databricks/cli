@@ -8,4 +8,4 @@
 /libs/apps/               @databricks/eng-app-devex
 /acceptance/apps/         @databricks/eng-app-devex
 /experimental/aitools/    @databricks/eng-app-devex @lennartkats-db
-/experimental/mcp/   @databricks/eng-app-devex @pietern
+/experimental/apps-mcp/   @databricks/eng-app-devex @pietern
