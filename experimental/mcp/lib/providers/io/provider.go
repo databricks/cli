@@ -6,8 +6,7 @@ import (
 	mcp "github.com/databricks/cli/experimental/mcp/lib"
 	"github.com/databricks/cli/experimental/mcp/lib/providers"
 	"github.com/databricks/cli/experimental/mcp/lib/session"
-	pkgtemplates "github.com/databricks/cli/experimental/mcp/lib/templates"
-	"github.com/databricks/cli/internal/mcp/templates"
+	"github.com/databricks/cli/experimental/mcp/lib/templates"
 	"github.com/databricks/cli/libs/log"
 	mcpsdk "github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -25,7 +24,7 @@ type Provider struct {
 	config          *mcp.IoConfig
 	session         *session.Session
 	ctx             context.Context
-	defaultTemplate pkgtemplates.Template
+	defaultTemplate templates.Template
 }
 
 // NewProvider creates a new I/O provider
