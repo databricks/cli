@@ -14,7 +14,7 @@ trace as-test-sp $CLI bundle deploy
 job_id=$($CLI bundle summary --output json | jq -r '.resources.jobs.foo.id')
 
 trace $CLI permissions set jobs $job_id --json @take_ownership.json > /dev/null
- 
+
 trace musterr as-test-sp $CLI bundle destroy --auto-approve &> out.destroy1.$DATABRICKS_BUNDLE_ENGINE.txt
 
 trace $CLI jobs delete $job_id
