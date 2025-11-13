@@ -29,6 +29,9 @@ const (
 	defaultTailLines      = 200
 	defaultPrefetchWindow = 2 * time.Second
 	tokenAcquireTimeout   = time.Minute
+	sourceApp             = "APP"
+	sourceSystem          = "SYSTEM"
+	sourceAny             = "ANY"
 )
 
 func newLogsCommand() *cobra.Command {
@@ -205,12 +208,12 @@ func buildSourceFilter(values []string) (map[string]struct{}, error) {
 	for _, v := range values {
 		trimmed := strings.ToUpper(strings.TrimSpace(v))
 		switch trimmed {
-		case "", "ANY":
+		case "", sourceAny:
 			continue
-		case "APP", "SYSTEM":
+		case sourceApp, sourceSystem:
 			filter[trimmed] = struct{}{}
 		default:
-			return nil, fmt.Errorf("invalid --source value %q (valid: APP, SYSTEM)", v)
+			return nil, fmt.Errorf("invalid --source value %q (valid: %s, %s)", v, sourceApp, sourceSystem)
 		}
 	}
 	if len(filter) == 0 {
