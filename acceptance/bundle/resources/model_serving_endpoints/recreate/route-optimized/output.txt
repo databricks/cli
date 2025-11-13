@@ -1,5 +1,5 @@
 
->>> [CLI] bundle debug plan
+>>> [CLI] bundle plan -o json
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
@@ -11,7 +11,7 @@ Deployment complete!
 
 >>> update_file.py databricks.yml route_optimized: false route_optimized: true
 
->>> [CLI] bundle debug plan
+>>> [CLI] bundle plan -o json
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...

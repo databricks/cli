@@ -1,5 +1,5 @@
 
->>> [CLI] bundle debug plan
+>>> [CLI] bundle plan -o json
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
@@ -41,7 +41,7 @@ Deployment complete!
 
 >>> update_file.py databricks.yml schema_name: default schema_name: other_schema
 
->>> [CLI] bundle debug plan
+>>> [CLI] bundle plan -o json
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
