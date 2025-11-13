@@ -83,15 +83,8 @@ Use --follow to continue streaming logs until cancelled.`,
 				return errors.New("missing workspace configuration")
 			}
 			authArgs := &auth.AuthArguments{Host: cfg.Host, AccountID: cfg.AccountID}
-			oauthArg, err := authArgs.ToOAuthArgument()
-			if err != nil {
-				return err
-			}
-
 			tokenRequest := auth.AcquireTokenRequest{
-				OAuthArgument: oauthArg,
-				Host:          authArgs.Host,
-				AccountID:     authArgs.AccountID,
+				AuthArguments: authArgs,
 				ProfileName:   cfg.Profile,
 				Timeout:       tokenAcquireTimeout,
 			}
