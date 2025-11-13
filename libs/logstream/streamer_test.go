@@ -14,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/fatih/color"
 	"github.com/gorilla/websocket"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -209,6 +210,23 @@ func TestLogStreamerFiltersSources(t *testing.T) {
 	output := strings.TrimSpace(buf.String())
 	assert.Contains(t, output, "app")
 	assert.NotContains(t, output, "sys")
+}
+
+func TestFormatLogEntryColorizesWhenEnabled(t *testing.T) {
+	original := color.NoColor
+	color.NoColor = false
+	defer func() { color.NoColor = original }()
+
+	entry := &wsEntry{Source: "app", Timestamp: 1, Message: "hello\n"}
+	streamer := &logStreamer{colorize: true}
+	colored := streamer.formatLogEntry(entry)
+	assert.Contains(t, colored, "\x1b[")
+	assert.Contains(t, colored, fmt.Sprintf("[%s]", color.HiBlueString("APP")))
+
+	streamer.colorize = false
+	plain := streamer.formatLogEntry(entry)
+	assert.NotContains(t, plain, "\x1b[")
+	assert.Contains(t, plain, "[APP]")
 }
 
 func mustJSON(entry wsEntry) []byte {
