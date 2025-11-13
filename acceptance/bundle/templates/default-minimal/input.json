@@ -1,0 +1,6 @@
+{
+    "project_name": "my_default_minimal",
+    "include_job": "no",
+    "include_pipeline": "no",
+    "include_python": "no"
+}

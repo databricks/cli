@@ -3,7 +3,7 @@ echo "*" > .gitignore
 trace $CLI bundle plan
 $CLI bundle debug plan > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
-trace print_requests.py //jobs //pipelines
+trace print_requests.py //jobs //pipelines > out.create.requests.json
 
 foo_id=`read_id.py pipelines foo`
 echo "$foo_id:FOO_ID" >> ACC_REPLS
@@ -18,7 +18,7 @@ trace update_file.py databricks.yml mycatalog mynewcatalog
 trace $CLI bundle plan
 $CLI bundle debug plan > out.plan_update.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy --auto-approve
-trace print_requests.py //jobs //pipelines
+trace print_requests.py //jobs //pipelines > out.update.requests.$DATABRICKS_BUNDLE_ENGINE.json
 
 foo_id_2=`read_id.py pipelines foo`
 echo "$foo_id:FOO_ID_2" >> ACC_REPLS
@@ -27,7 +27,7 @@ title "Fetch resource IDs and verify remote state"
 
 trace musterr $CLI pipelines get $foo_id
 trace $CLI pipelines get $foo_id_2
-trace $CLI jobs get $bar_id
+trace $CLI jobs get $bar_id | jq 'del(.settings.run_as)'
 rm out.requests.txt
 
 title "Follow up plan & deploy do nothing"

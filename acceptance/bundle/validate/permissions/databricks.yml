@@ -1,0 +1,42 @@
+resources:
+  jobs:
+    can_manage_run_wins:
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Workspace/Users/user@example.com/notebook
+            source: WORKSPACE
+      permissions:
+        - level: CAN_VIEW
+          user_name: can_manage_run@example.com
+        - level: CAN_MANAGE_RUN
+          user_name: can_manage_run@example.com
+
+    can_manage_run_wins_reverse_order:
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Workspace/Users/user@example.com/notebook
+            source: WORKSPACE
+      permissions:
+        - level: CAN_MANAGE_RUN
+          user_name: can_manage_run@example.com
+        - level: CAN_VIEW
+          user_name: can_manage_run@example.com
+
+  pipelines:
+    can_run_wins:
+      permissions:
+        - level: CAN_RUN
+          service_principal_name: can_run@example.com
+        - level: CAN_VIEW
+          service_principal_name: can_run@example.com
+
+    can_manage_wins:
+      permissions:
+        - level: CAN_RUN
+          group_name: can_manage@example.com
+        - level: CAN_MANAGE
+          group_name: can_manage@example.com
+        - level: CAN_VIEW
+          group_name: can_manage@example.com

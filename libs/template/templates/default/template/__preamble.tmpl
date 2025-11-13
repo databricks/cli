@@ -20,12 +20,7 @@ This file only contains template directives; it is skipped for the actual output
   {{skip "{{.project_name}}/src/{{.project_name}}"}}
 {{end}}
 
-{{if or $python_package $notebook_job $pipeline}}
-  # Remove .gitkeep files for a non-empty project
-  {{skip "{{.project_name}}/src/.gitkeep"}}
-  {{skip "{{.project_name}}/resources/.gitkeep"}}
-{{else}}
-  # Fully empty project, even remove the sample job
+{{if not (or $python_package $notebook_job $pipeline)}}
   {{skip "{{.project_name}}/resources/sample_job.job.yml"}}
   {{skip "{{.project_name}}/resources/sample_job.py"}}
 {{end}}
@@ -41,10 +36,10 @@ This file only contains template directives; it is skipped for the actual output
 {{end}}
 
 {{if or $sql_language $lakeflow_only}}
-  # Do not include tests when using SQL or when created from the Lakeflow workspace UI
-  # (until we have better UI support for tests)
   {{skip "{{.project_name}}/tests"}}
   {{skip "{{.project_name}}/fixtures"}}
+{{else if not (or $python_package $notebook_job $pipeline)}}
+  {{skip "{{.project_name}}/tests/sample_*.py"}}
 {{end}}
 
 {{if $pydabs}}
