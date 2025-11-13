@@ -172,9 +172,9 @@ func (fc *FileCache[T]) GetOrCompute(ctx context.Context, fingerprint any, compu
 		fc.memCache[cacheKey] = result
 		fc.mu.Unlock()
 
-		// Async write to disk cache
-		log.Debugf(ctx, "[Local Cache] async writing to cache\n")
-		go fc.writeToCache(cachePath, result)
+		// Write to disk cache synchronously to ensure it persists before process exits
+		log.Debugf(ctx, "[Local Cache] writing to cache\n")
+		fc.writeToCache(cachePath, result)
 
 		log.Debugf(ctx, "[Local Cache] cache miss, computed and stored result\n")
 		fc.addTelemetryMetric("local.cache.miss")
