@@ -133,6 +133,12 @@ func hasTrailingDirSeparator(path string) bool {
 	return strings.HasSuffix(path, "/") || strings.HasSuffix(path, "\\")
 }
 
+// trimTrailingDirSeparators removes all trailing directory separators from a path.
+// It handles both Unix-style (/) and Windows-style (\) separators.
+func trimTrailingDirSeparators(path string) string {
+	return strings.TrimRight(strings.TrimRight(path, "/"), "\\")
+}
+
 func newCpCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "cp SOURCE_PATH TARGET_PATH",
@@ -202,9 +208,7 @@ func newCpCommand() *cobra.Command {
 		normalizedTargetPathForCheck := filepath.ToSlash(targetPath)
 		if hasTrailingDirSeparator(fullTargetPath) || hasTrailingDirSeparator(normalizedTargetPathForCheck) {
 			// Normalize the target path by removing all trailing separators for Stat check.
-			// Use the original targetPath (not normalized) for the Stat call, as filers expect
-			// the appropriate separator for their platform.
-			normalizedTargetPath := strings.TrimRight(strings.TrimRight(targetPath, "/"), "\\")
+			normalizedTargetPath := trimTrailingDirSeparators(targetPath)
 			targetInfo, err := targetFiler.Stat(ctx, normalizedTargetPath)
 			if err != nil {
 				return fmt.Errorf("directory %s does not exist", fullTargetPath)
