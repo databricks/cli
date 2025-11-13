@@ -196,6 +196,15 @@ func (w *DiffWriter) writeResourceDiff(ctx context.Context, resourceType, resour
 	// Apply each change from the changelog
 	updatedFileValue := fileValue
 	for _, change := range changelog {
+		// Skip read-only fields (EditMode, Deployment, Format)
+		if len(change.Path) > 0 {
+			fieldName := change.Path[0]
+			if fieldName == "EditMode" || fieldName == "Deployment" || fieldName == "Format" {
+				log.Debugf(ctx, "Skipping read-only field: %v", change.Path)
+				continue
+			}
+		}
+
 		// Unwrap Settings/Spec wrapper from the path
 		unwrappedPath := unwrapSettingsPath(change.Path)
 		if len(unwrappedPath) == 0 {
