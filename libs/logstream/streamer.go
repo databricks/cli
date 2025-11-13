@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"slices"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -498,16 +499,26 @@ func drainTimer(timer *time.Timer) {
 }
 
 func watchContext(ctx context.Context, conn *websocket.Conn) func() {
+	var once sync.Once
 	closeCh := make(chan struct{})
+
+	closeConn := func() {
+		once.Do(func() {
+			_ = conn.WriteControl(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, "context canceled"), time.Now().Add(time.Second))
+			_ = conn.Close()
+		})
+	}
+
 	go func() {
 		select {
 		case <-ctx.Done():
-			_ = conn.WriteControl(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, "context canceled"), time.Now().Add(time.Second))
-			_ = conn.Close()
+			closeConn()
 		case <-closeCh:
 		}
 	}()
+
 	return func() {
 		close(closeCh)
+		closeConn()
 	}
 }
