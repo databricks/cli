@@ -8,28 +8,29 @@ import (
 
 // ShowCustomInstructions displays instructions for manually installing the MCP server.
 func ShowCustomInstructions(ctx context.Context) error {
-	cmdio.LogString(ctx, "\nTo install the Databricks CLI MCP server in your coding agent:")
-	cmdio.LogString(ctx, "")
-	cmdio.LogString(ctx, "1. Add a new MCP server to your coding agent's configuration")
-	cmdio.LogString(ctx, "2. Set the command to: databricks experimental mcp server")
-	cmdio.LogString(ctx, "3. No environment variables or additional configuration needed")
-	cmdio.LogString(ctx, "")
-	cmdio.LogString(ctx, "Example MCP server configuration:")
-	cmdio.LogString(ctx, `{
+	instructions := `
+To install the Databricks CLI MCP server in your coding agent:
+
+1. Add a new MCP server to your coding agent's configuration
+2. Set the command to: databricks experimental mcp server
+3. No environment variables or additional configuration needed
+
+Example MCP server configuration:
+{
   "mcpServers": {
     "databricks": {
       "command": "databricks",
       "args": ["experimental", "mcp", "server"]
     }
   }
-}`)
-	cmdio.LogString(ctx, "")
+}
+`
+	cmdio.LogString(ctx, instructions)
 
-	// Ask for acknowledgment
 	_, err := cmdio.Ask(ctx, "Press Enter to continue", "")
 	if err != nil {
 		return err
 	}
-
+	cmdio.LogString(ctx, "")
 	return nil
 }

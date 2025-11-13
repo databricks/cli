@@ -6,12 +6,14 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/databricks/cli/experimental/mcp/tools/prompts"
 )
 
-type AppHandler struct{}
+type appHandler struct{}
 
-func (h *AppHandler) AddToProject(ctx context.Context, args AddProjectResourceArgs) (string, error) {
-	// FIXME: This should rely on the databricks bundle generate command
+func (h *appHandler) AddToProject(ctx context.Context, args AddProjectResourceArgs) (string, error) {
+	// FIXME: This should rely on the databricks bundle generate command to handle all template scaffolding.
 
 	tmpDir, cleanup, err := CloneTemplateRepo(ctx, "https://github.com/databricks/app-templates")
 	if err != nil {
@@ -33,9 +35,13 @@ func (h *AppHandler) AddToProject(ctx context.Context, args AddProjectResourceAr
 			}
 		}
 
-		templateListStr := FormatTemplateList(templateList)
-		return "", fmt.Errorf("template parameter was not specified for the app\n\nYou have two options:\n\n1. Ask the user which template they want to use from this list:\n%s\n2. If the user described what they want the app to do, call add_project_resource again with template='nodejs-fastapi-hello-world-app' as a sensible default\n\nExample: add_project_resource(project_path='%s', type='app', name='%s', template='nodejs-fastapi-hello-world-app')",
-			templateListStr, args.ProjectPath, args.Name)
+		templateListStr := formatTemplateList(templateList)
+		errorMsg := prompts.MustExecuteTemplate("apps_pick_a_template.tmpl", map[string]string{
+			"TemplateList": templateListStr,
+			"ProjectPath":  args.ProjectPath,
+			"Name":         args.Name,
+		})
+		return "", fmt.Errorf("%s", errorMsg)
 	}
 
 	templateSrc := filepath.Join(tmpDir, args.Template)
@@ -71,19 +77,19 @@ func (h *AppHandler) AddToProject(ctx context.Context, args AddProjectResourceAr
 	return "", nil
 }
 
-func (h *AppHandler) GetGuidancePrompt(projectPath string, warehouse *Warehouse) string {
-	warehouseNote := ""
-	if warehouse != nil {
-		warehouseNote = fmt.Sprintf(`
-- For apps that need a SQL warehouse, use warehouse ID: %s (%s) as a reasonable default
-  (users can change this in resources/*.yml files if needed)`, warehouse.ID, warehouse.Name)
+func (h *appHandler) GetGuidancePrompt(projectPath, warehouseID, warehouseName string) string {
+	return prompts.MustExecuteTemplate("apps.tmpl", map[string]string{
+		"WarehouseID":   warehouseID,
+		"WarehouseName": warehouseName,
+	})
+}
+
+func formatTemplateList(templates []string) string {
+	var result strings.Builder
+	for _, t := range templates {
+		result.WriteString("- ")
+		result.WriteString(t)
+		result.WriteString("\n")
 	}
-	return fmt.Sprintf(`
-Working with Apps
-----------------
-- Apps are interactive applications that can be deployed to Databricks workspaces
-- App source code is typically in a subdirectory matching the app name
-- Before deployment, test apps locally using: invoke_databricks_cli(command="apps run-local --source-dir <app_dir>", working_directory="<project_path>")%s
-- MANDATORY: Always deploy apps using: invoke_databricks_cli(command="bundle deploy --target dev", working_directory="<project_path>")
-- MANDATORY: Never use 'apps deploy' directly - always use 'bundle deploy'`, warehouseNote)
+	return result.String()
 }

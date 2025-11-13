@@ -1,0 +1,67 @@
+Databricks Data Exploration Guide
+=====================================
+
+{{.WorkspaceInfo}}
+Default SQL Warehouse: {{.WarehouseName}} ({{.WarehouseID}}){{.ProfilesInfo}}
+
+IMPORTANT: Use the invoke_databricks_cli tool to run all commands below!
+
+
+1. EXECUTING SQL QUERIES
+   Run SQL queries using the Statement Execution API with inline JSON:
+     invoke_databricks_cli 'api post /api/2.0/sql/statements --json {"warehouse_id":"<warehouse_id>","statement":"SELECT * FROM <catalog>.<schema>.<table> LIMIT 10","wait_timeout":"30s"}'
+
+   Examples:
+     - Simple query: {"warehouse_id":"<id>","statement":"SELECT 42 as answer","wait_timeout":"10s"}
+     - Table query: {"warehouse_id":"<id>","statement":"SELECT * FROM catalog.schema.table LIMIT 10","wait_timeout":"30s"}
+
+   Note: Use the warehouse ID shown above. Results are returned in JSON format.
+
+
+2. EXPLORING JOBS AND WORKFLOWS
+   List all jobs:
+     invoke_databricks_cli 'jobs list'
+
+   Get job details:
+     invoke_databricks_cli 'jobs get <job_id>'
+
+   List job runs:
+     invoke_databricks_cli 'jobs list-runs --job-id <job_id>'
+
+
+3. EXPLORING CLUSTERS
+   List all clusters:
+     invoke_databricks_cli 'clusters list'
+
+   Get cluster details:
+     invoke_databricks_cli 'clusters get <cluster_id>'
+
+
+4. EXPLORING UNITY CATALOG DATA
+   Unity Catalog uses a three-level namespace: catalog.schema.table
+
+   List all catalogs:
+     invoke_databricks_cli 'catalogs list'
+
+   List schemas in a catalog:
+     invoke_databricks_cli 'schemas list <catalog_name>'
+
+   List tables in a schema:
+     invoke_databricks_cli 'tables list <catalog_name> <schema_name>'
+
+   Get table details (schema, columns, properties):
+     invoke_databricks_cli 'tables get <catalog>.<schema>.<table>'
+
+
+5. EXPLORING WORKSPACE FILES
+   List workspace files and notebooks:
+     invoke_databricks_cli 'workspace list <path>'
+
+   Export a notebook:
+     invoke_databricks_cli 'workspace export <path>'
+
+
+Getting Started:
+- Use the commands above to explore what resources exist in the workspace
+- All commands support --output json for programmatic access
+- Remember to add --profile <name> when working with non-default workspaces

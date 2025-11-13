@@ -1,0 +1,9 @@
+template parameter was not specified for the app
+
+You have two options:
+
+1. Ask the user which template they want to use from this list:
+{{.TemplateList}}
+2. If the user described what they want the app to do, call add_project_resource again with template='nodejs-fastapi-hello-world-app' as a sensible default
+
+Example: add_project_resource(project_path='{{.ProjectPath}}', type='app', name='{{.Name}}', template='nodejs-fastapi-hello-world-app')

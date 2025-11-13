@@ -26,24 +26,21 @@ func newServerCmd() *cobra.Command {
 	return cmd
 }
 
-// JSONRPCRequest represents a JSON-RPC 2.0 request.
-type JSONRPCRequest struct {
+type jsonrpcRequest struct {
 	JSONRPC string          `json:"jsonrpc"`
 	ID      any             `json:"id,omitempty"`
 	Method  string          `json:"method"`
 	Params  json.RawMessage `json:"params,omitempty"`
 }
 
-// JSONRPCResponse represents a JSON-RPC 2.0 response.
-type JSONRPCResponse struct {
+type jsonrpcResponse struct {
 	JSONRPC string    `json:"jsonrpc"`
 	ID      any       `json:"id,omitempty"`
 	Result  any       `json:"result,omitempty"`
-	Error   *RPCError `json:"error,omitempty"`
+	Error   *rpcError `json:"error,omitempty"`
 }
 
-// RPCError represents a JSON-RPC 2.0 error.
-type RPCError struct {
+type rpcError struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`
 	Data    any    `json:"data,omitempty"`
@@ -58,8 +55,7 @@ const (
 	jsonRPCInternalError  = -32603
 )
 
-// MCPServer implements the Model Context Protocol server.
-type MCPServer struct {
+type mcpServer struct {
 	ctx        context.Context
 	in         io.Reader
 	out        io.Writer
@@ -79,14 +75,14 @@ func getAllTools() []tools.Tool {
 }
 
 // NewMCPServer creates a new MCP server instance.
-func NewMCPServer(ctx context.Context) *MCPServer {
+func NewMCPServer(ctx context.Context) *mcpServer {
 	allTools := getAllTools()
 	toolsMap := make(map[string]tools.ToolHandler, len(allTools))
 	for _, tool := range allTools {
 		toolsMap[tool.Definition.Name] = tool.Handler
 	}
 
-	return &MCPServer{
+	return &mcpServer{
 		ctx:      ctx,
 		in:       os.Stdin,
 		out:      os.Stdout,
@@ -96,7 +92,7 @@ func NewMCPServer(ctx context.Context) *MCPServer {
 
 // Start starts the MCP server and processes requests.
 // Note: No logging in server mode as it interferes with JSON-RPC over stdout/stdin.
-func (s *MCPServer) Start() error {
+func (s *mcpServer) Start() error {
 	scanner := bufio.NewScanner(s.in)
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -104,7 +100,7 @@ func (s *MCPServer) Start() error {
 			continue
 		}
 
-		var req JSONRPCRequest
+		var req jsonrpcRequest
 		if err := json.Unmarshal([]byte(line), &req); err != nil {
 			s.sendError(nil, jsonRPCParseError, "Parse error", nil)
 			continue
@@ -121,7 +117,7 @@ func (s *MCPServer) Start() error {
 }
 
 // handleRequest processes an incoming JSON-RPC request.
-func (s *MCPServer) handleRequest(req *JSONRPCRequest) {
+func (s *mcpServer) handleRequest(req *jsonrpcRequest) {
 	switch req.Method {
 	case "initialize":
 		s.handleInitialize(req)
@@ -135,7 +131,7 @@ func (s *MCPServer) handleRequest(req *JSONRPCRequest) {
 }
 
 // handleInitialize handles the initialize request.
-func (s *MCPServer) handleInitialize(req *JSONRPCRequest) {
+func (s *mcpServer) handleInitialize(req *jsonrpcRequest) {
 	// Parse clientInfo from the request
 	var params struct {
 		ClientInfo struct {
@@ -163,7 +159,7 @@ func (s *MCPServer) handleInitialize(req *JSONRPCRequest) {
 }
 
 // handleToolsList handles the tools/list request.
-func (s *MCPServer) handleToolsList(req *JSONRPCRequest) {
+func (s *mcpServer) handleToolsList(req *jsonrpcRequest) {
 	allTools := getAllTools()
 	mcpTools := make([]map[string]any, len(allTools))
 	for i, tool := range allTools {
@@ -178,7 +174,7 @@ func (s *MCPServer) handleToolsList(req *JSONRPCRequest) {
 }
 
 // handleToolsCall handles the tools/call request.
-func (s *MCPServer) handleToolsCall(req *JSONRPCRequest) {
+func (s *mcpServer) handleToolsCall(req *jsonrpcRequest) {
 	var params struct {
 		Name      string         `json:"name"`
 		Arguments map[string]any `json:"arguments"`
@@ -215,8 +211,8 @@ func (s *MCPServer) handleToolsCall(req *JSONRPCRequest) {
 }
 
 // sendResponse sends a JSON-RPC response.
-func (s *MCPServer) sendResponse(id, result any) {
-	resp := JSONRPCResponse{
+func (s *mcpServer) sendResponse(id, result any) {
+	resp := jsonrpcResponse{
 		JSONRPC: "2.0",
 		ID:      id,
 		Result:  result,
@@ -232,11 +228,11 @@ func (s *MCPServer) sendResponse(id, result any) {
 }
 
 // sendError sends a JSON-RPC error response.
-func (s *MCPServer) sendError(id any, code int, message string, data any) {
-	resp := JSONRPCResponse{
+func (s *mcpServer) sendError(id any, code int, message string, data any) {
+	resp := jsonrpcResponse{
 		JSONRPC: "2.0",
 		ID:      id,
-		Error: &RPCError{
+		Error: &rpcError{
 			Code:    code,
 			Message: message,
 			Data:    data,

@@ -9,6 +9,7 @@ import (
 	"slices"
 
 	"github.com/databricks/cli/experimental/mcp/auth"
+	"github.com/databricks/cli/experimental/mcp/tools/prompts"
 	"github.com/databricks/cli/experimental/mcp/tools/resources"
 )
 
@@ -86,44 +87,16 @@ func AddProjectResource(ctx context.Context, args resources.AddProjectResourceAr
 		return "", err
 	}
 
-	return buildSuccessResponse(args.Type, args.Name, args.ProjectPath), nil
-}
+	analyzeArgs := analyzeProjectArgs{ProjectPath: args.ProjectPath}
+	guidance, analyzeErr := AnalyzeProject(ctx, analyzeArgs)
 
-func buildSuccessResponse(resourceType, name, projectPath string) string {
-	// Get guidance from analyze_project
-	ctx := context.Background()
-	analyzeArgs := AnalyzeProjectArgs{ProjectPath: projectPath}
-	guidance, err := AnalyzeProject(ctx, analyzeArgs)
-	if err != nil {
-		// If analyze_project fails, provide a basic response
-		guidance = fmt.Sprintf(`Project Analysis
-================
-
-Failed to analyze project: %v
-
-Guidance for Working with this Project
---------------------------------------
-
-Below is guidance for how to work with this project.
-
-IMPORTANT: Most interactions are done with the Databricks CLI. YOU (the AI) must use the invoke_databricks_cli tool to run commands - never suggest the user runs CLI commands directly!
-IMPORTANT: To add new resources to a project, use the 'add_project_resource' MCP tool. You can add:
-  - Apps (interactive applications)
-  - Jobs (Python or SQL workflows)
-  - Pipelines (Python or SQL data pipelines)
-  - Dashboards (data visualizations)
-MANDATORY: Always deploy with invoke_databricks_cli 'bundle deploy', never with 'apps deploy'
-
-Note that Databricks resources are defined in resources/*.yml files. See https://docs.databricks.com/dev-tools/bundles/settings for a reference!`, err)
+	data := map[string]string{
+		"ResourceType": args.Type,
+		"Name":         args.Name,
+		"Guidance":     guidance,
 	}
-
-	return fmt.Sprintf(`Successfully added %s '%s' to the project!
-
-IMPORTANT: This is just a starting point! You need to iterate over the generated files to complete the setup.
-
-Use the analyze_project tool to learn about the current project structure and how to use it.
-
----
-
-%s`, resourceType, name, guidance)
+	if analyzeErr != nil {
+		data["AnalyzeError"] = analyzeErr.Error()
+	}
+	return prompts.MustExecuteTemplate("add_project_resource.tmpl", data), nil
 }

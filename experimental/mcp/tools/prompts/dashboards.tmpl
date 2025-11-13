@@ -1,0 +1,6 @@
+Working with Dashboards
+------------------------
+- Dashboards are data visualizations built with Databricks SQL
+- Dashboard definitions are in src/*.lvdash.json files
+- Preview dashboards after deployment using: invoke_databricks_cli(command="bundle open <dashboard_name>", working_directory="<project_path>")
+- Deploy dashboards using: invoke_databricks_cli(command="bundle deploy --target dev", working_directory="<project_path>")

@@ -8,20 +8,17 @@ import (
 	"runtime"
 )
 
-// CursorConfig represents the structure of Cursor's mcp.json file.
-type CursorConfig struct {
-	McpServers map[string]McpServer `json:"mcpServers"`
+type cursorConfig struct {
+	McpServers map[string]mcpServer `json:"mcpServers"`
 }
 
-// McpServer represents an MCP server configuration in Cursor.
-type McpServer struct {
+type mcpServer struct {
 	Command string            `json:"command"`
 	Args    []string          `json:"args,omitempty"`
 	Env     map[string]string `json:"env,omitempty"`
 }
 
-// GetCursorConfigPath returns the path to Cursor's MCP config file based on OS.
-func GetCursorConfigPath() (string, error) {
+func getCursorConfigPath() (string, error) {
 	if runtime.GOOS == "windows" {
 		userProfile := os.Getenv("USERPROFILE")
 		if userProfile == "" {
@@ -30,7 +27,7 @@ func GetCursorConfigPath() (string, error) {
 		return filepath.Join(userProfile, ".cursor", "mcp.json"), nil
 	}
 
-	home, err := GetHomeDir()
+	home, err := os.UserHomeDir()
 	if err != nil {
 		return "", err
 	}
@@ -39,47 +36,48 @@ func GetCursorConfigPath() (string, error) {
 
 // DetectCursor checks if Cursor is installed by looking for its config directory.
 func DetectCursor() bool {
-	configPath, err := GetCursorConfigPath()
+	configPath, err := getCursorConfigPath()
 	if err != nil {
 		return false
 	}
 	// Check if the .cursor directory exists (not just the mcp.json file)
 	cursorDir := filepath.Dir(configPath)
-	return FileExists(cursorDir)
+	_, err = os.Stat(cursorDir)
+	return err == nil
 }
 
 // InstallCursor installs the Databricks MCP server in Cursor.
 func InstallCursor() error {
-	configPath, err := GetCursorConfigPath()
+	configPath, err := getCursorConfigPath()
 	if err != nil {
 		return fmt.Errorf("failed to determine Cursor config path: %w", err)
 	}
 
 	// Check if .cursor directory exists (not the file, we'll create that if needed)
 	cursorDir := filepath.Dir(configPath)
-	if !FileExists(cursorDir) {
+	if _, err := os.Stat(cursorDir); err != nil {
 		return fmt.Errorf("cursor directory not found at: %s\n\nPlease install Cursor from: https://cursor.sh", cursorDir)
 	}
 
 	// Read existing config
-	var config CursorConfig
+	var config cursorConfig
 	data, err := os.ReadFile(configPath)
 	if err != nil {
 		// If file doesn't exist or can't be read, start with empty config
-		config = CursorConfig{
-			McpServers: make(map[string]McpServer),
+		config = cursorConfig{
+			McpServers: make(map[string]mcpServer),
 		}
 	} else {
 		if err := json.Unmarshal(data, &config); err != nil {
 			return fmt.Errorf("failed to parse Cursor config: %w", err)
 		}
 		if config.McpServers == nil {
-			config.McpServers = make(map[string]McpServer)
+			config.McpServers = make(map[string]mcpServer)
 		}
 	}
 
 	// Add or update the Databricks MCP server entry
-	config.McpServers["databricks"] = McpServer{
+	config.McpServers["databricks"] = mcpServer{
 		Command: "databricks",
 		Args:    []string{"experimental", "mcp", "server"},
 	}
@@ -95,15 +93,4 @@ func InstallCursor() error {
 	}
 
 	return nil
-}
-
-// NewCursorAgent creates an Agent instance for Cursor.
-func NewCursorAgent() *Agent {
-	detected := DetectCursor()
-	return &Agent{
-		Name:        "cursor",
-		DisplayName: "Cursor",
-		Detected:    detected,
-		Installer:   InstallCursor,
-	}
 }

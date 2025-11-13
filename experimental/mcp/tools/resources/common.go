@@ -22,14 +22,8 @@ type ResourceHandler interface {
 	// AddToProject adds the resource to a project.
 	AddToProject(ctx context.Context, args AddProjectResourceArgs) (string, error)
 	// GetGuidancePrompt returns resource-specific guidance for the AI agent.
-	// warehouse parameter is optional (can be nil) - used by apps to suggest default warehouse.
-	GetGuidancePrompt(projectPath string, warehouse *Warehouse) string
-}
-
-// Warehouse represents a SQL warehouse (re-exported from tools package to avoid import cycle).
-type Warehouse struct {
-	ID   string
-	Name string
+	// warehouseID and warehouseName are optional (empty strings if not available).
+	GetGuidancePrompt(projectPath, warehouseID, warehouseName string) string
 }
 
 // CloneTemplateRepo clones a GitHub repository to a temporary directory.
@@ -74,17 +68,6 @@ func CopyResourceFile(resourceSrc, projectPath, resourceName, suffix string, rep
 		}
 	}
 	return fmt.Errorf("no %s file found in template", suffix)
-}
-
-// FormatTemplateList formats a list of templates as a bullet list.
-func FormatTemplateList(templates []string) string {
-	var result strings.Builder
-	for _, t := range templates {
-		result.WriteString("- ")
-		result.WriteString(t)
-		result.WriteString("\n")
-	}
-	return result.String()
 }
 
 // ReplaceInDirectory walks through a directory and replaces strings in all text files.
@@ -173,13 +156,13 @@ func ValidateLanguageTemplate(template, resourceType string) error {
 func GetResourceHandler(resourceType string) ResourceHandler {
 	switch resourceType {
 	case "app":
-		return &AppHandler{}
+		return &appHandler{}
 	case "job":
-		return &JobHandler{}
+		return &jobHandler{}
 	case "pipeline":
-		return &PipelineHandler{}
+		return &pipelineHandler{}
 	case "dashboard":
-		return &DashboardHandler{}
+		return &dashboardHandler{}
 	default:
 		return nil
 	}

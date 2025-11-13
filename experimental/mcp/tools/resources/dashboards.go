@@ -6,12 +6,14 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/databricks/cli/experimental/mcp/tools/prompts"
 )
 
-type DashboardHandler struct{}
+type dashboardHandler struct{}
 
-func (h *DashboardHandler) AddToProject(ctx context.Context, args AddProjectResourceArgs) (string, error) {
-	// FIXME: This should rely on the databricks bundle generate command
+func (h *dashboardHandler) AddToProject(ctx context.Context, args AddProjectResourceArgs) (string, error) {
+	// FIXME: This should rely on the databricks bundle generate command to handle all template scaffolding.
 
 	tmpDir, cleanup, err := CloneTemplateRepo(ctx, "https://github.com/databricks/bundle-examples")
 	if err != nil {
@@ -72,12 +74,6 @@ func (h *DashboardHandler) AddToProject(ctx context.Context, args AddProjectReso
 	return "", nil
 }
 
-func (h *DashboardHandler) GetGuidancePrompt(projectPath string, warehouse *Warehouse) string {
-	return `
-Working with Dashboards
-------------------------
-- Dashboards are data visualizations built with Databricks SQL
-- Dashboard definitions are in src/*.lvdash.json files
-- Preview dashboards after deployment using: invoke_databricks_cli(command="bundle open <dashboard_name>", working_directory="<project_path>")
-- Deploy dashboards using: invoke_databricks_cli(command="bundle deploy --target dev", working_directory="<project_path>")`
+func (h *dashboardHandler) GetGuidancePrompt(projectPath, warehouseID, warehouseName string) string {
+	return prompts.MustLoadTemplate("dashboards.tmpl")
 }

@@ -29,7 +29,7 @@ var InvokeDatabricksCLITool = Tool{
 		},
 	},
 	Handler: func(ctx context.Context, args map[string]any) (string, error) {
-		var typedArgs InvokeDatabricksCLIArgs
+		var typedArgs invokeDatabricksCLIArgs
 		if err := UnmarshalArgs(args, &typedArgs); err != nil {
 			return "", err
 		}
@@ -37,14 +37,13 @@ var InvokeDatabricksCLITool = Tool{
 	},
 }
 
-// InvokeDatabricksCLIArgs represents the arguments for the invoke_databricks_cli tool.
-type InvokeDatabricksCLIArgs struct {
+type invokeDatabricksCLIArgs struct {
 	Command          string `json:"command"`
 	WorkingDirectory string `json:"working_directory,omitempty"`
 }
 
 // InvokeDatabricksCLI runs a Databricks CLI command and returns the output.
-func InvokeDatabricksCLI(ctx context.Context, args InvokeDatabricksCLIArgs) (string, error) {
+func InvokeDatabricksCLI(ctx context.Context, args invokeDatabricksCLIArgs) (string, error) {
 	if args.Command == "" {
 		return "", errors.New("command is required")
 	}

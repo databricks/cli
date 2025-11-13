@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/experimental/mcp/auth"
+	"github.com/databricks/cli/experimental/mcp/tools/prompts"
 )
 
 // InitProjectTool initializes a new Databricks project.
@@ -34,7 +35,7 @@ var InitProjectTool = Tool{
 		},
 	},
 	Handler: func(ctx context.Context, args map[string]any) (string, error) {
-		var typedArgs InitProjectArgs
+		var typedArgs initProjectArgs
 		if err := UnmarshalArgs(args, &typedArgs); err != nil {
 			return "", err
 		}
@@ -42,14 +43,13 @@ var InitProjectTool = Tool{
 	},
 }
 
-// InitProjectArgs represents the arguments for the init_project tool.
-type InitProjectArgs struct {
+type initProjectArgs struct {
 	ProjectName string `json:"project_name"`
 	ProjectPath string `json:"project_path"`
 }
 
 // InitProject initializes a new Databricks project using the default-minimal template.
-func InitProject(ctx context.Context, args InitProjectArgs) (string, error) {
+func InitProject(ctx context.Context, args initProjectArgs) (string, error) {
 	if args.ProjectPath == "" {
 		return "", errors.New("project_path is required")
 	}
@@ -138,39 +138,24 @@ func InitProject(ctx context.Context, args InitProjectArgs) (string, error) {
 	if strings.Contains(strings.ToLower(clientName), "claude") {
 		filename = "CLAUDE.md"
 	}
-	instructionsContent := `# Agent instructions
-
-This file can be used for any project-specific instructions!
-
-## Prerequisites
-
-If the Databricks CLI MCP server is not yet installed, install it by:
-1. Installing the Databricks CLI: https://docs.databricks.com/dev-tools/cli/install
-2. Running: ` + "`databricks experimental mcp install`" + `
-
-## Working with this project
-
-General agent guidance: always use the mcp__databricks-mcp__analyze_project tool whenever you open this project!
-It makes sure you have more context on the current project and what actions you can perform on it.
-`
+	// Write instructions file (with project info included)
+	instructionsContent := prompts.MustExecuteTemplate("init_project.tmpl", map[string]string{
+		"ProjectName": args.ProjectName,
+		"ProjectPath": args.ProjectPath,
+	})
 	instructionsPath := filepath.Join(args.ProjectPath, filename)
 	if err := os.WriteFile(instructionsPath, []byte(instructionsContent), 0o644); err != nil {
 		return "", fmt.Errorf("failed to create %s: %w", filename, err)
 	}
 
 	// Return the same guidance as analyze_project
-	result := fmt.Sprintf(`Project '%s' initialized successfully at: %s
-
-⚠️  IMPORTANT: This is an EMPTY project with NO resources (no apps, jobs, pipelines, or dashboards)!
-
-If the user asked you to create a specific resource (like "create an app" or "create a job"), you MUST now call the add_project_resource tool to add it!
-
-Example: add_project_resource(project_path="%s", type="app", name="my_app", template="nodejs-fastapi-hello-world-app")
-
-`, args.ProjectName, args.ProjectPath, args.ProjectPath)
+	result := prompts.MustExecuteTemplate("init_project.tmpl", map[string]string{
+		"ProjectName": args.ProjectName,
+		"ProjectPath": args.ProjectPath,
+	})
 
 	// Get project analysis and guidance
-	analysis, err := AnalyzeProject(ctx, AnalyzeProjectArgs{ProjectPath: args.ProjectPath})
+	analysis, err := AnalyzeProject(ctx, analyzeProjectArgs{ProjectPath: args.ProjectPath})
 	if err != nil {
 		return "", fmt.Errorf("failed to analyze initialized project: %w", err)
 	}

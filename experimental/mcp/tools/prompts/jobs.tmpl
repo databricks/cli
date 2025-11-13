@@ -1,0 +1,6 @@
+Working with Jobs
+-----------------
+- Jobs are scheduled workflows that can run Python notebooks or SQL queries
+- Job source code is in src/<job_name>/ for Python jobs or src/*.sql for SQL jobs
+- Run jobs using: invoke_databricks_cli(command="bundle run <job_name>", working_directory="<project_path>")
+- Deploy jobs using: invoke_databricks_cli(command="bundle deploy --target dev", working_directory="<project_path>")

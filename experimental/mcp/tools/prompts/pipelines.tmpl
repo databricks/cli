@@ -1,0 +1,6 @@
+Working with Pipelines
+----------------------
+- Pipelines are Lakeflow Spark Declarative pipelines (data processing workflows)
+- Pipeline source code is in src/<pipeline_name>/
+- Validate pipeline definitions before deployment using: invoke_databricks_cli(command="bundle run <pipeline_name> --validate-only", working_directory="<project_path>")
+- Deploy pipelines using: invoke_databricks_cli(command="bundle deploy --target dev", working_directory="<project_path>")

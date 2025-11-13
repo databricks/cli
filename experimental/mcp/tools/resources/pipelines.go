@@ -5,12 +5,14 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+
+	"github.com/databricks/cli/experimental/mcp/tools/prompts"
 )
 
-type PipelineHandler struct{}
+type pipelineHandler struct{}
 
-func (h *PipelineHandler) AddToProject(ctx context.Context, args AddProjectResourceArgs) (string, error) {
-	// FIXME: This should rely on the databricks bundle generate command
+func (h *pipelineHandler) AddToProject(ctx context.Context, args AddProjectResourceArgs) (string, error) {
+	// FIXME: This should rely on the databricks bundle generate command to handle all template scaffolding.
 
 	if err := ValidateLanguageTemplate(args.Template, "pipeline"); err != nil {
 		return "", err
@@ -65,12 +67,6 @@ func (h *PipelineHandler) AddToProject(ctx context.Context, args AddProjectResou
 	return "", nil
 }
 
-func (h *PipelineHandler) GetGuidancePrompt(projectPath string, warehouse *Warehouse) string {
-	return `
-Working with Pipelines
-----------------------
-- Pipelines are Lakeflow Spark Declarative pipelines (data processing workflows)
-- Pipeline source code is in src/<pipeline_name>/
-- Validate pipeline definitions before deployment using: invoke_databricks_cli(command="bundle run <pipeline_name> --validate-only", working_directory="<project_path>")
-- Deploy pipelines using: invoke_databricks_cli(command="bundle deploy --target dev", working_directory="<project_path>")`
+func (h *pipelineHandler) GetGuidancePrompt(projectPath, warehouseID, warehouseName string) string {
+	return prompts.MustLoadTemplate("pipelines.tmpl")
 }

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 )
 
@@ -56,6 +57,27 @@ func UnmarshalArgs(args map[string]any, target any) error {
 // This supports development testing with ./cli.
 func GetCLIPath() string {
 	return os.Args[0]
+}
+
+// GetDatabricksPath returns the path to the databricks executable.
+// Returns the current executable if it appears to be a dev build, otherwise looks up "databricks" on PATH.
+func GetDatabricksPath() (string, error) {
+	currentExe, err := os.Executable()
+	if err != nil {
+		return "", err
+	}
+
+	// Use current executable for dev builds
+	if filepath.Base(currentExe) == "cli" || filepath.Base(currentExe) == "v0.0.0-dev" {
+		return currentExe, nil
+	}
+
+	// Look up databricks on PATH for production usage
+	path, err := exec.LookPath("databricks")
+	if err != nil {
+		return "", fmt.Errorf("databricks CLI not found on PATH: %w", err)
+	}
+	return path, nil
 }
 
 // ValidateDatabricksProject checks if a directory is a valid Databricks project.

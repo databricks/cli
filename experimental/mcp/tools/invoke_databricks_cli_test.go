@@ -36,7 +36,7 @@ func TestInvokeDatabricksCLI(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
-			args := InvokeDatabricksCLIArgs{
+			args := invokeDatabricksCLIArgs{
 				Command:          tt.command,
 				WorkingDirectory: "",
 			}
@@ -59,7 +59,7 @@ func TestInvokeDatabricksCLIWithQuotedArgs(t *testing.T) {
 
 func TestInvokeDatabricksCLIRequiresCommand(t *testing.T) {
 	ctx := context.Background()
-	args := InvokeDatabricksCLIArgs{
+	args := invokeDatabricksCLIArgs{
 		Command: "",
 	}
 
@@ -77,7 +77,7 @@ func TestInvokeDatabricksCLIWorkingDirectory(t *testing.T) {
 	require.NoError(t, err)
 
 	// This command should succeed with the working directory set
-	args := InvokeDatabricksCLIArgs{
+	args := invokeDatabricksCLIArgs{
 		Command:          "--help",
 		WorkingDirectory: tmpDir,
 	}

@@ -3,6 +3,8 @@ package mcp
 import (
 	"context"
 	"fmt"
+	"os"
+	"time"
 
 	"github.com/databricks/cli/experimental/mcp/agents"
 	"github.com/databricks/cli/libs/cmdio"
@@ -36,61 +38,51 @@ func runInstall(ctx context.Context) error {
 	cmdio.LogString(ctx, yellow("╚════════════════════════════════════════════════════════════════╝"))
 	cmdio.LogString(ctx, "")
 
-	claudeAgent := agents.NewClaudeAgent()
-	cursorAgent := agents.NewCursorAgent()
-
 	cmdio.LogString(ctx, "Which coding agents would you like to install the MCP server for?")
 	cmdio.LogString(ctx, "")
 
-	var selectedAgents []*agents.Agent
+	anySuccess := false
 
-	if claudeAgent.Detected {
-		ans, err := cmdio.Ask(ctx, fmt.Sprintf("Install for %s? (y/n)", claudeAgent.DisplayName), "y")
-		if err != nil {
-			return err
-		}
-		if ans == "y" {
-			selectedAgents = append(selectedAgents, claudeAgent)
-		}
-	}
-
-	if cursorAgent.Detected {
-		ans, err := cmdio.Ask(ctx, fmt.Sprintf("Install for %s? (y/n)", cursorAgent.DisplayName), "y")
-		if err != nil {
-			return err
-		}
-		if ans == "y" {
-			selectedAgents = append(selectedAgents, cursorAgent)
-		}
-	}
-
-	ans, err := cmdio.Ask(ctx, "Show manual installation instructions for other agents? (y/n)", "n")
+	ans, err := cmdio.AskSelect(ctx, "Install for Claude Code?", []string{"yes", "no"})
 	if err != nil {
 		return err
 	}
-	if ans == "y" {
+	if ans == "yes" {
+		fmt.Fprint(os.Stderr, "Installing MCP server for Claude Code...")
+		if err := agents.InstallClaude(); err != nil {
+			fmt.Fprint(os.Stderr, "\r"+color.YellowString("⊘ Skipped Claude Code: "+err.Error())+"\n")
+		} else {
+			fmt.Fprint(os.Stderr, "\r"+color.GreenString("✓ Installed for Claude Code")+"                 \n")
+			anySuccess = true
+		}
+		cmdio.LogString(ctx, "")
+	}
+
+	ans, err = cmdio.AskSelect(ctx, "Install for Cursor?", []string{"yes", "no"})
+	if err != nil {
+		return err
+	}
+	if ans == "yes" {
+		fmt.Fprint(os.Stderr, "Installing MCP server for Cursor...")
+		if err := agents.InstallCursor(); err != nil {
+			fmt.Fprint(os.Stderr, "\r"+color.YellowString("⊘ Skipped Cursor: "+err.Error())+"\n")
+		} else {
+			// Brief delay so users see the "Installing..." message before it's replaced
+			time.Sleep(1 * time.Second)
+			fmt.Fprint(os.Stderr, "\r"+color.GreenString("✓ Installed for Cursor")+"                 \n")
+			anySuccess = true
+		}
+		cmdio.LogString(ctx, "")
+	}
+
+	ans, err = cmdio.AskSelect(ctx, "Show manual installation instructions for other agents?", []string{"yes", "no"})
+	if err != nil {
+		return err
+	}
+	if ans == "yes" {
 		if err := agents.ShowCustomInstructions(ctx); err != nil {
 			return err
 		}
-	}
-
-	if len(selectedAgents) == 0 {
-		cmdio.LogString(ctx, "\nNo agents selected for installation.")
-		return nil
-	}
-
-	cmdio.LogString(ctx, "")
-	anySuccess := false
-	for _, agent := range selectedAgents {
-		cmdio.LogString(ctx, fmt.Sprintf("Installing MCP server for %s...", agent.DisplayName))
-		if err := agent.Installer(); err != nil {
-			cmdio.LogString(ctx, color.RedString(fmt.Sprintf("✗ Failed to install for %s: %v", agent.DisplayName, err)))
-			cmdio.LogString(ctx, "")
-			continue
-		}
-		cmdio.LogString(ctx, color.GreenString("✓ Installed for "+agent.DisplayName))
-		cmdio.LogString(ctx, "")
-		anySuccess = true
 	}
 
 	if anySuccess {

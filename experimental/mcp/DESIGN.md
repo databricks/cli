@@ -5,7 +5,7 @@ Add a 'databricks experimental mcp' command that behaves as follows:
 * databricks experimental mcp install: installs the server in coding agents
 * databricks experimental mcp server: starts the mcp server (subcommand)
 * databricks experimental mcp uninstall: uninstalls the server from coding agents (subcommand - not implemented; errors out and tells the user to ask their local coding agent to uninstall the Databricks CLI MCP server)
-* databricks experimental mcp tool <tool_name> --config-file <file>: runs a specific MCP tool for acceptance testing (hidden subcommand)
+* databricks experimental mcp tool <tool_name> --json <json>: runs a specific MCP tool for acceptance testing (hidden subcommand)
 
 non-functional requirements:
 - any errors that these commands give should be friendly, concise, actionable.
@@ -14,7 +14,7 @@ non-functional requirements:
   modules for inspiration
 - take AGENTS.md into account when building this
 - MANDATORY: never invoke the databricks cli directly, instead use the invoke_databricks_cli tool!
-- MANDATORY: always deploy with invoke_databricks_cli 'bundle deploy', never with 'apps deploy'
+- all AI-facing prompts and guidance text must be stored in .tmpl files in the tools/prompts/ directory (not hardcoded in Go files)
 - Resource-specific code is modularized in cmd/mcp/tools/resources/ directory. Each resource type (app, job, pipeline, dashboard) has its own file (apps.go, jobs.go, etc.) that implements:
   - Add* function: handles adding the resource to a project
   - AnalyzeGuidance* function: returns resource-specific guidance for the AI agent
@@ -39,7 +39,7 @@ non-functional requirements:
 - MANDATORY: at the very end, compare what you built again to the instructions in this doc; go over each point, does it work, is it complete?
 
 
-To illustrate how the install command should work:
+To illustrate how the install command works:
 
 ```
 $ databricks experimental mcp install
@@ -48,46 +48,39 @@ $ databricks experimental mcp install
   ██▌  ▐██   MCP Server
   ▀▀▀▀▀▀▀▀
 
-Welcome to the Databricks CLI MCP server!
-
 ╔════════════════════════════════════════════════════════════════╗
 ║  ⚠️  EXPERIMENTAL: This command may change in future versions  ║
 ╚════════════════════════════════════════════════════════════════╝
 
-<we should do a sanity check to see if 'databricks' is on the system path => if it is not we should ask the user to go to https://docs.databricks.com/dev-tools/cli/install and fatally error>
+Which coding agents would you like to install the MCP server for?
 
-<prompts for each coding agent:>
+Install for Claude Code? [Use arrows to move]
+> yes
+  no
 
-Install the server in the following coding agents:
-- Claude Code (defaults to "yes" if detected)
-- Cursor (defaults to "yes" if detected)
-- Another coding agent (defaults to "no")
+Install for Cursor? [Use arrows to move]
+> yes
+  no
 
-<we should detect if claude code is installed by checking if it is on the path. if it is, then it should default to "yes" and be preselected! if it is not detected, we don't prompt for it. if the user still selected it manually somehow, we fatally error out: the user needs to make sure claude code is installed and may ask claude code about installing itself on the system PATH.
+Show manual installation instructions for other agents? [Use arrows to move]
+> no
+  yes
 
-note that if the mcp is already installed, the command should gracefully accept that and not throw an error>
+Installing MCP server for Claude Code...
+✓ Installed for Claude Code
 
-<we should detect that cursor is installed, but it may not be on the path. so instead we check
-if the config files exist, t ~/.cursor/mcp.json on macOS/Linux or %USERPROFILE%\.cursor\mcp.json on Windows.
-if it is installed, it should default to "yes" and be preselected! if it is not detected, we don't prompt for it. if the user still selected it manually somehow, we fatally error out: the user needs to make sure cursor is installed
+Installing MCP server for Cursor...
+✓ Installed for Cursor
 
-note that if the mcp is already installed, the command should gracefully accept that and not throw an error>
-
-<if they selected claude code: use the claude cli to install the server in claude code. it should start
-databricks experimental mcp server; no env vars needed>
-
-<if they selected cursor: use the cursor cli to install the server in cursor. it should start
-databricks experimental mcp server; no env vars needed>
-
-<if they selected custom: we just tell them that they can install the databricks cli mcp server
-      by adding a new mcp server to their coding agent, using 'databricks experimental mcp server' as the command.
-no environment variables or other configuration is needed. we should ask them to acknowledge these instructions
->
-
-<only applicable if they selected claude code and/or cursor:>
-<newline>
-✨ The Databricks CLI MCP has been installed successfully for <Claude Code and/or Cursor>!
+You can now use your coding agent to interact with Databricks.
+Try asking: 'Create a new Databricks project with a job or an app'
 ```
+
+Implementation notes:
+- Uses cmdio.AskSelect (arrow keys, all default to "yes" for easy Enter×3)
+- Always prompts for both Claude Code and Cursor (no detection filtering)
+- Gracefully skips missing agents with yellow warning instead of erroring
+- Line replacement: "Installing..." → "✓ Installed" (or "⊘ Skipped") using \r
 
 Now databricks experimental mcp server should actually start an MCP server that we actually use to describe
 the system as a whole a bit (btw each tool should be defined in a separate .go file, right!):
@@ -155,7 +148,7 @@ the system as a whole a bit (btw each tool should be defined in a separate .go f
              - Note that Databricks resources are defined in resources/*.yml files. See https://docs.databricks.com/dev-tools/bundles/settings for a reference!
 
           - Common guidance about getting started and using the CLI (should draw inspiration from the original default_python_template_readme.md file, extracting common instructions that are not app-specific)
-          - <contents of the <project-dir>/README.md (if it exists), skipping heading + first paragraph. This provides project-specific guidance that complements the common guidance>
+          - <contents of the <project-dir>/README.md (if it exists). This provides project-specific guidance that complements the common guidance>
 
 - the "add_project_resource" tool:
    - description: extend the current project with a new app, job, pipeline, or dashboard
@@ -197,7 +190,7 @@ the system as a whole a bit (btw each tool should be defined in a separate .go f
             for a pipeline, it can also use the invoke_databricks_cli tool to run 'bundle run <pipeline_name> --validate-only' to
             validate that the pipeline is correct.
   - further implementation guidance: i want acceptance tests for each of these project types (app, dashboard, job, pipeline);
-    this means they should be exposed as a hidden command like 'databricks experimental mcp tool add_project_resource --config-file <file which has the tool parameters in json format>'. having these tests will be instrumental for iterating on them; the initing should not fail! note that the tool subcommand should just assume that the cwd is the current project dir.
+    this means they should be exposed as a hidden command like 'databricks experimental mcp tool add_project_resource --json <json>'. having these tests will be instrumental for iterating on them; the initing should not fail! note that the tool subcommand should just assume that the cwd is the current project dir.
 
 - the "explore" tool:
     - description: CALL THIS FIRST when user mentions a workspace by name or asks about workspace resources. Shows available workspaces/profiles, default warehouse, and provides guidance on exploring jobs, clusters, catalogs, and other Databricks resources. Use this to discover what's available before running CLI commands.
@@ -215,7 +208,6 @@ the system as a whole a bit (btw each tool should be defined in a separate .go f
         4. Provides guidance on using --profile flag to switch workspaces:
            - Example: invoke_databricks_cli '--profile prod catalogs list'
         5. Only shows profile list if multiple profiles exist (saves tokens for single-profile setups)
-      - Checks if Genie spaces are available using checkGenieAvailable()
       - Returns concise guidance text that explains:
         1. Current workspace profile and host
         2. Available workspace profiles (if multiple exist)
@@ -229,9 +221,7 @@ the system as a whole a bit (btw each tool should be defined in a separate .go f
            - Unity Catalog: invoke_databricks_cli 'catalogs list', 'schemas list', 'tables list', 'tables get'
            - Workspace files: invoke_databricks_cli 'workspace list <path>'
         6. Reminder to use --profile flag for non-default workspaces
-        7. If Genie spaces exist: One-line note that Genie is available (not detailed commands)
       - Key design: Single concise endpoint that provides guidance, not many separate tools
-      - Genie approach: Only mention it exists if spaces are available; don't show commands unless user asks
     - output: Guidance text with workspace/profile info, warehouse info, and commands for exploring jobs, clusters, data, and other resources
-    - implementation: Single explore.go file with GetDefaultWarehouse, getCurrentProfile, getAvailableProfiles, and checkGenieAvailable helpers
+    - implementation: Single explore.go file with GetDefaultWarehouse, getCurrentProfile, and getAvailableProfiles helpers
     - key use case: When user asks about a specific workspace (e.g., "what jobs do I have in my dogfood workspace"), agent should call this FIRST to see available workspaces and get the correct profile name
