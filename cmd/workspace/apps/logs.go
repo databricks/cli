@@ -144,7 +144,7 @@ Use --follow to continue streaming logs until cancelled.`,
 
 	filterGroup := cmdgroup.NewFlagGroup("Filtering")
 	filterGroup.FlagSet().StringVar(&searchTerm, "search", "", "Send a search term to the log service before streaming.")
-	filterGroup.FlagSet().StringSliceVar(&sourceFilters, "source", nil, "Restrict logs to APP and/or SYSTEM sources (repeat for multiple).")
+	filterGroup.FlagSet().StringSliceVar(&sourceFilters, "source", nil, "Restrict logs to APP and/or SYSTEM sources.")
 
 	wrappedCmd := cmdgroup.NewCommandWithGroupFlag(cmd)
 	wrappedCmd.AddFlagGroup(streamGroup)
