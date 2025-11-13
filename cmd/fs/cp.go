@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"path"
 	"path/filepath"
+	"strings"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
@@ -126,6 +127,12 @@ func (c *copy) emitFileCopiedEvent(sourcePath, targetPath string) error {
 	return cmdio.RenderWithTemplate(c.ctx, event, "", template)
 }
 
+// hasTrailingDirSeparator checks if a path ends with a directory separator.
+// It handles both Unix-style (/) and Windows-style (\) separators.
+func hasTrailingDirSeparator(path string) bool {
+	return strings.HasSuffix(path, "/") || strings.HasSuffix(path, "\\")
+}
+
 func newCpCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "cp SOURCE_PATH TARGET_PATH",
@@ -188,6 +195,25 @@ func newCpCommand() *cobra.Command {
 		// case 1: source path is a directory, then recursively create files at target path
 		if sourceInfo.IsDir() {
 			return c.cpDirToDir(sourcePath, targetPath)
+		}
+
+		// Check if the target path has a trailing directory separator, indicating it should be a directory.
+		// If it has a trailing separator, verify the directory exists
+		normalizedTargetPathForCheck := filepath.ToSlash(targetPath)
+		if hasTrailingDirSeparator(fullTargetPath) || hasTrailingDirSeparator(normalizedTargetPathForCheck) {
+			// Normalize the target path by removing all trailing separators for Stat check.
+			// Use the original targetPath (not normalized) for the Stat call, as filers expect
+			// the appropriate separator for their platform.
+			normalizedTargetPath := strings.TrimRight(strings.TrimRight(targetPath, "/"), "\\")
+			targetInfo, err := targetFiler.Stat(ctx, normalizedTargetPath)
+			if err != nil {
+				return fmt.Errorf("directory %s does not exist", fullTargetPath)
+			}
+			if !targetInfo.IsDir() {
+				return fmt.Errorf("directory %s does not exist", fullTargetPath)
+			}
+
+			return c.cpFileToDir(sourcePath, normalizedTargetPath)
 		}
 
 		// case 2: source path is a file, and target path is a directory. In this case
