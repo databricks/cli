@@ -47,10 +47,20 @@ func newLogsCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "logs NAME",
 		Short: "Show Databricks app logs",
-		Long: `Show stdout/stderr logs for a Databricks app by connecting to its log stream.
+		Long: `Stream stdout/stderr logs for a Databricks app via its log stream.
 
-By default this command fetches the most recent logs (up to --tail-lines) and exits.
-Use --follow to continue streaming logs until cancelled.`,
+By default the command fetches the most recent logs (up to --tail-lines, default 200) and exits.
+Use --follow to continue streaming logs until cancelled, optionally bounding the duration with --timeout.
+Server-side filtering is available through --search (same semantics as the Databricks UI) and client-side filtering
+via --source APP|SYSTEM. Use --output-file to mirror the stream to a local file (created with 0600 permissions).`,
+		Example: `  # Fetch the last 50 log lines
+  databricks apps logs my-app --tail-lines 50
+
+  # Follow logs until interrupted, searching for "ERROR" messages from app sources only
+  databricks apps logs my-app --follow --search ERROR --source APP
+
+  # Mirror streamed logs to a local file while following for up to 5 minutes
+  databricks apps logs my-app --follow --timeout 5m --output-file /tmp/my-app.log`,
 		Args:    root.ExactArgs(1),
 		PreRunE: root.MustWorkspaceClient,
 		RunE: func(cmd *cobra.Command, args []string) error {
