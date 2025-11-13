@@ -9,6 +9,6 @@
 ### Dependency updates
 
 ### Bundles
-* Add language selection prompt to `default-python` and `default-minimal` templates to choose between Python, SQL, or other languages ([#XXXX](https://github.com/databricks/cli/pull/XXXX))
+* Add a language prompt to the default-minimal template ([#3918](https://github.com/databricks/cli/pull/3918))
 
 ### API Changes
