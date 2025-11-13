@@ -4,6 +4,9 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 
+  workflow_dispatch:
+
+
 permissions:
   id-token: write
   contents: read
@@ -14,7 +17,7 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        
+
       - name: Test Databricks OIDC
         uses: ./.github/actions/foo/bar
         with:
