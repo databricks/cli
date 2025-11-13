@@ -155,8 +155,11 @@ func (s *logStreamer) connectAndConsume(ctx context.Context) (*http.Response, er
 		_ = resp.Body.Close()
 	}
 
+	stopWatch := watchContext(ctx, conn)
+	defer stopWatch()
+	defer conn.Close()
+
 	err = s.consume(ctx, conn)
-	_ = conn.Close()
 	return nil, err
 }
 
@@ -190,16 +193,6 @@ func (s *logStreamer) consume(ctx context.Context, conn *websocket.Conn) (retErr
 		}
 	}()
 
-	closeCh := make(chan struct{})
-	defer close(closeCh)
-	go func() {
-		select {
-		case <-ctx.Done():
-			_ = conn.WriteControl(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, "context canceled"), time.Now().Add(time.Second))
-			_ = conn.Close()
-		case <-closeCh:
-		}
-	}()
 	for {
 		if ctx.Err() != nil {
 			return ctx.Err()
@@ -501,5 +494,20 @@ func drainTimer(timer *time.Timer) {
 	select {
 	case <-timer.C:
 	default:
+	}
+}
+
+func watchContext(ctx context.Context, conn *websocket.Conn) func() {
+	closeCh := make(chan struct{})
+	go func() {
+		select {
+		case <-ctx.Done():
+			_ = conn.WriteControl(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, "context canceled"), time.Now().Add(time.Second))
+			_ = conn.Close()
+		case <-closeCh:
+		}
+	}()
+	return func() {
+		close(closeCh)
 	}
 }
