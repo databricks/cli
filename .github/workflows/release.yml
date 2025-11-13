@@ -176,7 +176,7 @@ jobs:
       group: databricks-deco-testing-runner-group
       labels: ubuntu-latest-deco
 
-    needs: upload-windows-to-release
+    needs: [goreleaser-unix, upload-windows-to-release]
 
     steps:
       - name: Set VERSION variable from tag
