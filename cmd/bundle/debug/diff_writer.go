@@ -69,37 +69,6 @@ func extractPipelineSpec(state any) (any, error) {
 	return pipeline.Spec, nil
 }
 
-// filterReadOnlyFields filters out read-only fields from the changelog
-func filterReadOnlyFields(ctx context.Context, changelog diff.Changelog) diff.Changelog {
-	var filtered diff.Changelog
-	for _, change := range changelog {
-		if len(change.Path) == 0 {
-			continue
-		}
-
-		// Skip read-only job fields
-		if len(change.Path) >= 2 && change.Path[0] == "Settings" {
-			fieldName := change.Path[1]
-			if fieldName == "EditMode" || fieldName == "Deployment" || fieldName == "Format" {
-				log.Debugf(ctx, "Skipping read-only field: %v", change.Path)
-				continue
-			}
-		}
-
-		// Skip read-only pipeline fields
-		if len(change.Path) >= 2 && change.Path[0] == "Spec" {
-			fieldName := change.Path[1]
-			if fieldName == "Deployment" {
-				log.Debugf(ctx, "Skipping read-only field: %v", change.Path)
-				continue
-			}
-		}
-
-		filtered = append(filtered, change)
-	}
-	return filtered
-}
-
 // unwrapSettingsPath removes the "Settings" or "Spec" wrapper from the path
 // SDK responses have job.Settings.Field, but YAML has jobs.my_job.field
 func unwrapSettingsPath(path []string) []string {
@@ -148,6 +117,28 @@ func convertChangePathToDynPath(path []string, structType reflect.Type) (dyn.Pat
 	}
 
 	return dynPath, nil
+}
+
+// ensurePathExists ensures all intermediate path segments exist before setting a value
+// If an intermediate path doesn't exist, it creates an empty mapping at that location
+func ensurePathExists(ctx context.Context, v dyn.Value, path dyn.Path) (dyn.Value, error) {
+	// Build the path incrementally and ensure each level exists
+	for i := range path {
+		intermediatePath := path[:i+1]
+
+		// Check if this path exists
+		item, err := dyn.GetByPath(v, intermediatePath)
+		if err != nil || !item.IsValid() {
+			// Path doesn't exist, create an empty mapping
+			log.Debugf(ctx, "Creating intermediate path: %s", intermediatePath)
+			v, err = dyn.SetByPath(v, intermediatePath, dyn.V(dyn.NewMapping()))
+			if err != nil {
+				return dyn.InvalidValue, fmt.Errorf("failed to create intermediate path %s: %w", intermediatePath, err)
+			}
+		}
+	}
+
+	return v, nil
 }
 
 // writeResourceDiff writes resource diff changes back to the YAML file
@@ -231,6 +222,13 @@ func (w *DiffWriter) writeResourceDiff(ctx context.Context, resourceType, resour
 			fieldValue, err := dyn.GetByPath(remoteValue, dynPath)
 			if err != nil {
 				log.Warnf(ctx, "Failed to get value at path %s: %v", dynPath, err)
+				continue
+			}
+
+			// Ensure all intermediate paths exist before setting the value
+			updatedFileValue, err = ensurePathExists(ctx, updatedFileValue, fullPath)
+			if err != nil {
+				log.Warnf(ctx, "Failed to ensure path exists %s: %v", fullPath, err)
 				continue
 			}
 

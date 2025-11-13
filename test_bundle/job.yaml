@@ -3,3 +3,6 @@ resources:
     test_exp_diff_job:
       queue:
         enabled: true
+      edit_mode: EDITABLE
+      tags:
+        my_tag: new_tag_2
