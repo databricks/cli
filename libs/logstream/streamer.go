@@ -92,53 +92,16 @@ func (s *logStreamer) Run(ctx context.Context) error {
 	if s.dialer == nil {
 		s.dialer = &websocket.Dialer{}
 	}
+
 	backoff := initialReconnectBackoff
 	timer := time.NewTimer(time.Hour)
 	stopTimer(timer)
 	defer timer.Stop()
+
 	for {
-		if err := s.ensureToken(ctx); err != nil {
-			return err
-		}
-
-		headers := http.Header{}
-		headers.Set("Authorization", "Bearer "+s.token)
-		headers.Set("User-Agent", s.userAgent)
-		if s.origin != "" {
-			headers.Set("Origin", s.origin)
-		}
-
-		conn, resp, err := s.dialer.DialContext(ctx, s.url, headers)
-		if err != nil {
-			err = decorateDialError(err, resp)
-		} else if resp != nil && resp.Body != nil {
-			_ = resp.Body.Close()
-		}
-		if err != nil {
-			if ctx.Err() != nil {
-				return ctx.Err()
-			}
-			if s.follow && s.shouldRefreshForStatus(resp) {
-				if err := s.refreshToken(ctx); err != nil {
-					return err
-				}
-				backoff = time.Second
-				continue
-			}
-			if !s.follow {
-				return err
-			}
-			if err := waitForBackoff(ctx, timer, backoff); err != nil {
-				return err
-			}
-			backoff = min(backoff*2, maxReconnectBackoff)
-			continue
-		}
-
-		backoff = time.Second
-		err = s.consume(ctx, conn)
-		_ = conn.Close()
+		resp, err := s.connectAndConsume(ctx)
 		if err == nil {
+			backoff = time.Second
 			if !s.follow {
 				return nil
 			}
@@ -148,12 +111,15 @@ func (s *logStreamer) Run(ctx context.Context) error {
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}
-		if s.follow && s.shouldRefreshForError(err) {
+
+		if s.follow && (s.shouldRefreshForStatus(resp) || s.shouldRefreshForError(err)) {
 			if err := s.refreshToken(ctx); err != nil {
 				return err
 			}
+			backoff = time.Second
 			continue
 		}
+
 		if !s.follow {
 			return err
 		}
@@ -163,6 +129,35 @@ func (s *logStreamer) Run(ctx context.Context) error {
 		}
 		backoff = min(backoff*2, maxReconnectBackoff)
 	}
+}
+
+func (s *logStreamer) connectAndConsume(ctx context.Context) (*http.Response, error) {
+	if err := s.ensureToken(ctx); err != nil {
+		return nil, err
+	}
+
+	headers := http.Header{}
+	headers.Set("Authorization", "Bearer "+s.token)
+	headers.Set("User-Agent", s.userAgent)
+	if s.origin != "" {
+		headers.Set("Origin", s.origin)
+	}
+
+	conn, resp, err := s.dialer.DialContext(ctx, s.url, headers)
+	if err != nil {
+		err = decorateDialError(err, resp)
+		if resp != nil && resp.Body != nil {
+			_ = resp.Body.Close()
+		}
+		return resp, err
+	}
+	if resp != nil && resp.Body != nil {
+		_ = resp.Body.Close()
+	}
+
+	err = s.consume(ctx, conn)
+	_ = conn.Close()
+	return nil, err
 }
 
 func (s *logStreamer) consume(ctx context.Context, conn *websocket.Conn) (retErr error) {
