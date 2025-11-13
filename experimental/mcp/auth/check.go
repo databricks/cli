@@ -14,7 +14,7 @@ func CheckAuthentication(ctx context.Context) error {
 		return nil
 	}
 
-	// Use a non-existent job ID: 404 means authenticated, 401 means not authenticated
+	// Use a non-existent job ID to check authentication
 	cliPath := os.Args[0]
 	cmd := exec.CommandContext(ctx, cliPath, "jobs", "get", "999999999")
 	err := cmd.Run()

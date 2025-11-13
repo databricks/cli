@@ -27,9 +27,10 @@ func newInstallCmd() *cobra.Command {
 
 func runInstall(ctx context.Context) error {
 	cmdio.LogString(ctx, "")
-	cmdio.LogString(ctx, "  ▄▄▄▄▄▄▄▄   Databricks CLI")
-	cmdio.LogString(ctx, "  ██▌  ▐██   MCP Server")
-	cmdio.LogString(ctx, "  ▀▀▀▀▀▀▀▀")
+	green := color.New(color.FgGreen).SprintFunc()
+	cmdio.LogString(ctx, " "+green("[")+"████████"+green("]")+"  Databricks Experimental MCP Server")
+	cmdio.LogString(ctx, " "+green("[")+"██▌  ▐██"+green("]"))
+	cmdio.LogString(ctx, " "+green("[")+"████████"+green("]")+"  AI-powered Databricks development and exploration")
 	cmdio.LogString(ctx, "")
 
 	yellow := color.New(color.FgYellow).SprintFunc()
