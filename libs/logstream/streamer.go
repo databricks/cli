@@ -89,6 +89,8 @@ type logStreamer struct {
 	userAgent     string
 }
 
+// Run establishes the websocket connection and manages reconnections.
+// It is not safe to call Run concurrently on the same logStreamer instance.
 func (s *logStreamer) Run(ctx context.Context) error {
 	if s.dialer == nil {
 		s.dialer = &websocket.Dialer{}
