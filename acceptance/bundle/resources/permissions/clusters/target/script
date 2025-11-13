@@ -1,0 +1,3 @@
+trace $CLI bundle validate -o json | jq .resources
+trace $CLI bundle deploy
+trace print_requests.py //clusters //jobs

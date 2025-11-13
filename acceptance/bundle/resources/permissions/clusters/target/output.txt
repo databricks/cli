@@ -1,0 +1,38 @@
+
+>>> [CLI] bundle validate -o json
+{
+  "clusters": {
+    "kevo_cluster": {
+      "autotermination_minutes": 60,
+      "cluster_name": "[dev [USERNAME]] test-cluster",
+      "custom_tags": {
+        "dev": "[USERNAME]"
+      },
+      "node_type_id": "[NODE_TYPE_ID]",
+      "num_workers": 1,
+      "spark_version": "15.4.x-scala2.12"
+    }
+  }
+}
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/dev/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py //clusters
+{
+  "method": "POST",
+  "path": "/api/2.1/clusters/create",
+  "body": {
+    "autotermination_minutes": 60,
+    "cluster_name": "[dev [USERNAME]] test-cluster",
+    "custom_tags": {
+      "dev": "[USERNAME]"
+    },
+    "node_type_id": "[NODE_TYPE_ID]",
+    "num_workers": 1,
+    "spark_version": "15.4.x-scala2.12"
+  }
+}
