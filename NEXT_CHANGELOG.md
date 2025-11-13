@@ -9,5 +9,6 @@
 ### Dependency updates
 
 ### Bundles
+* Add `default-scala` template for Scala projects with SBT build configuration and example code ([#3906](https://github.com/databricks/cli/pull/3906))
 
 ### API Changes
