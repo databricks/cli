@@ -12,7 +12,7 @@ import (
 
 // StructVar is a container holding a struct and a map of unresolved references inside this struct
 type StructVar struct {
-	Config any `json:"config"`
+	Value any `json:"config"`
 
 	// Refs holds unresolved references. Key is serialized PathNode pointing inside a struct (e.g. "name")
 	// and value is either pure or multiple references string: "${resources.foo.jobs.id}" or "${a} ${b}"
@@ -46,9 +46,9 @@ func (sv *StructVar) ResolveRef(reference string, value any) error {
 		// Check if this is a pure reference (reference equals the entire value)
 		if refValue == reference {
 			// Pure reference - use original typed value
-			err = structaccess.Set(sv.Config, pathNode, value)
+			err = structaccess.Set(sv.Value, pathNode, value)
 			if err != nil {
-				return fmt.Errorf("cannot set (%T).%s to %T (%#v): %w", sv.Config, pathNode.String(), value, value, err)
+				return fmt.Errorf("cannot set (%T).%s to %T (%#v): %w", sv.Value, pathNode.String(), value, value, err)
 			}
 			// Remove the fully resolved reference
 			delete(sv.Refs, pathKey)
@@ -61,7 +61,7 @@ func (sv *StructVar) ResolveRef(reference string, value any) error {
 			newValue := strings.ReplaceAll(refValue, reference, valueStr)
 
 			// Set the updated string value
-			err = structaccess.Set(sv.Config, pathNode, newValue)
+			err = structaccess.Set(sv.Value, pathNode, newValue)
 			if err != nil {
 				return fmt.Errorf("cannot update %s to string: %w", pathNode.String(), err)
 			}

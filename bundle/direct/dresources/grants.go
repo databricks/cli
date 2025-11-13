@@ -95,7 +95,7 @@ func PrepareGrantsInputConfig(inputConfig any, node string) (*structvar.StructVa
 	}
 
 	return &structvar.StructVar{
-		Config: &GrantsState{
+		Value: &GrantsState{
 			SecurableType: securableType,
 			FullName:      "",
 			Grants:        grants,
