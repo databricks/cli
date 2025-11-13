@@ -1,0 +1,6 @@
+export DATABRICKS_BUNDLE_ENGINE=abc
+trace musterr $CLI bundle plan
+trace musterr $CLI bundle deploy
+trace musterr $CLI bundle summary
+trace musterr $CLI bundle destroy --auto-approve
+trace musterr $CLI bundle validate

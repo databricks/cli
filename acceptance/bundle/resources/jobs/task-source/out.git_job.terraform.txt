@@ -66,11 +66,15 @@
       "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/task-source/default/state/metadata.json"
     },
     "edit_mode": "UI_LOCKED",
+    "email_notifications": {},
     "format": "MULTI_TASK",
     "max_concurrent_runs": 1,
     "name": "git_job",
     "queue": {
       "enabled": true
+    },
+    "run_as": {
+      "user_name": "[USERNAME]"
     },
     "tasks": [
       {
@@ -113,6 +117,7 @@
         },
         "task_key": "test_task_source_workspace"
       }
-    ]
+    ],
+    "webhook_notifications": {}
   }
 }

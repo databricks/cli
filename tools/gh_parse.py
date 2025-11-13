@@ -40,6 +40,12 @@ KNOWN_SKIP = "🙈\u200bSKIP"
 INTERESTING_ACTIONS = (PANIC, BUG, FAIL, KNOWN_FAILURE, MISSING, FLAKY, RECOVERED, KNOWN_SKIP)
 ACTIONS_WITH_ICON = INTERESTING_ACTIONS + (PASS, SKIP)
 
+# Minimum elapsed time for test to be in slowest tests table.
+SLOWEST_MIN_MINUTES = 2
+
+# Maximum number of tests in slowest tests table
+SLOWEST_MAX_ENTRIES = 50
+
 ACTION_MESSAGES = {
     "fail": FAIL,
     "pass": PASS,
@@ -277,6 +283,8 @@ def iter_paths(paths):
 def parse_file(path, filter):
     results = {}
     outputs = {}
+    durations = {}  # test_key -> elapsed time in seconds
+    timestamps = []  # list of all timestamps from this file
     for line in path.open():
         if not line.strip():
             continue
@@ -285,6 +293,12 @@ def parse_file(path, filter):
         except Exception as ex:
             print(f"{path}: {ex}\n{line!r}\n")
             break
+
+        # Collect timestamp
+        timestamp = data.get("Time")
+        if timestamp:
+            timestamps.append(timestamp)
+
         testname = data.get("Test")
         if not testname:
             continue
@@ -304,6 +318,11 @@ def parse_file(path, filter):
             else:
                 results[test_key] = action
 
+            # Store elapsed time if available
+            elapsed = data.get("Elapsed")
+            if elapsed and action == PASS:
+                durations[test_key] = elapsed
+
         out = data.get("Output")
         if out:
             outputs.setdefault(test_key, []).append(out.rstrip())
@@ -316,7 +335,7 @@ def parse_file(path, filter):
         else:
             results.setdefault(test_key, MISSING)
 
-    return results, outputs
+    return results, outputs, durations, timestamps
 
 
 def mark_known_failures(results, known_failures_config):
@@ -338,6 +357,8 @@ def print_report(filenames, filter, filter_env, show_output, markdown=False, omi
     known_failures_config = load_known_failures()
     outputs = {}  # test_key -> env -> [output]
     per_test_per_env_stats = {}  # test_key -> env -> action -> count
+    durations_by_env = {}  # env -> test_key -> duration
+    timestamps_by_env = {}  # env -> list of timestamps
     all_test_keys = set()
     all_envs = set()
     count_files = 0
@@ -351,7 +372,7 @@ def print_report(filenames, filter, filter_env, show_output, markdown=False, omi
         if filter_env and filter_env not in env:
             continue
         all_envs.add(env)
-        test_results, test_outputs = parse_file(p, filter)
+        test_results, test_outputs, test_durations, test_timestamps = parse_file(p, filter)
         test_results = mark_known_failures(test_results, known_failures_config)
         count_files += 1
         count_results += len(test_results)
@@ -359,6 +380,9 @@ def print_report(filenames, filter, filter_env, show_output, markdown=False, omi
             per_test_per_env_stats.setdefault(test_key, {}).setdefault(env, Counter())[action] += 1
         for test_key, output in test_outputs.items():
             outputs.setdefault(test_key, {}).setdefault(env, []).extend(output)
+        for test_key, duration in test_durations.items():
+            durations_by_env.setdefault(env, {})[test_key] = duration
+        timestamps_by_env.setdefault(env, []).extend(test_timestamps)
         all_test_keys.update(test_results)
 
     print(f"Parsed {count_files} files: {count_results} results", file=sys.stderr, flush=True)
@@ -420,10 +444,32 @@ def print_report(filenames, filter, filter_env, show_output, markdown=False, omi
                 status = action[:2]
                 break
 
+        # Find slowest test, mean duration, and time span for this environment
+        env_durations = durations_by_env.get(env, {})
+        time_span = ""
+
+        # Calculate time span (max timestamp - min timestamp)
+        env_timestamps = timestamps_by_env.get(env, [])
+        if env_timestamps:
+            from datetime import datetime
+
+            # Parse timestamps and find span
+            parsed_timestamps = []
+            for ts in env_timestamps:
+                try:
+                    parsed_timestamps.append(datetime.fromisoformat(ts.replace("Z", "+00:00")))
+                except Exception:
+                    continue
+
+            if parsed_timestamps:
+                time_span_seconds = (max(parsed_timestamps) - min(parsed_timestamps)).total_seconds()
+                time_span = format_duration(time_span_seconds)
+
         table.append(
             {
                 " ": status,
                 "Env": env,
+                "Time": time_span,
                 **stats,
             }
         )
@@ -432,10 +478,12 @@ def print_report(filenames, filter, filter_env, show_output, markdown=False, omi
     def key(column):
         try:
             return (ACTIONS_WITH_ICON.index(column), "")
-        except:
+        except Exception:
             return (-1, str(column))
 
     columns = sorted(columns, key=key)
+    columns.append("Time")
+
     print(format_table(table, markdown=markdown, columns=columns))
 
     interesting_envs = set()
@@ -484,6 +532,28 @@ def print_report(filenames, filter, filter_env, show_output, markdown=False, omi
         table_txt = wrap_in_details(table_txt, f"{len(table)} failing tests:")
     if table_txt:
         print(table_txt)
+
+    # Generate slowest tests table (tests slower than 10 minutes)
+    all_durations = []  # [(env, package, testname, duration), ...]
+    for env, env_durations in durations_by_env.items():
+        for test_key, duration in env_durations.items():
+            package_name, testname = test_key
+            if duration >= SLOWEST_MIN_MINUTES * 60:
+                all_durations.append((env, package_name, testname, duration))
+
+    all_durations.sort(key=lambda x: x[3], reverse=True)
+    top_slowest = all_durations[:SLOWEST_MAX_ENTRIES]
+
+    if top_slowest:
+        slowest_table = []
+        for env, package_name, testname, duration in top_slowest:
+            slowest_table.append({"duration": format_duration(duration), "env": env, "testname": testname})
+
+        slowest_table_txt = format_table(slowest_table, columns=["duration", "env", "testname"], markdown=markdown)
+        slowest_table_txt = wrap_in_details(
+            slowest_table_txt, f"Top {len(top_slowest)} slowest tests (at least {SLOWEST_MIN_MINUTES} minutes):"
+        )
+        print(slowest_table_txt)
 
     if show_output:
         for test_key, stats in simplified_results.items():
@@ -582,6 +652,15 @@ def autojust(value, width):
 
 def wrap_in_details(txt, summary):
     return f"<details><summary>{summary}</summary>\n\n{txt}\n\n</details>"
+
+
+def format_duration(seconds):
+    """Format duration from seconds to MM:SS format."""
+    if seconds is None:
+        return ""
+    minutes = int(seconds // 60)
+    secs = int(seconds % 60)
+    return f"{minutes}:{secs:02d}"
 
 
 def main():

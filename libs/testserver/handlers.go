@@ -332,12 +332,14 @@ func AddDefaultHandlers(server *Server) {
 		return MapDelete(req.Workspace, req.Workspace.Schemas, req.Vars["full_name"])
 	})
 
-	server.Handle("PATCH", "/api/2.1/unity-catalog/permissions/schema/{full_name}", func(req Request) any {
-		return req.Workspace.SchemasUpdateGrants(req, req.Vars["full_name"])
+	// Grants:
+
+	server.Handle("PATCH", "/api/2.1/unity-catalog/permissions/{securable_type}/{full_name}", func(req Request) any {
+		return req.Workspace.GrantsUpdate(req, req.Vars["securable_type"], req.Vars["full_name"])
 	})
 
-	server.Handle("GET", "/api/2.1/unity-catalog/permissions/schema/{full_name}", func(req Request) any {
-		return req.Workspace.SchemasGetGrants(req, req.Vars["full_name"])
+	server.Handle("GET", "/api/2.1/unity-catalog/permissions/{securable_type}/{full_name}", func(req Request) any {
+		return req.Workspace.GrantsGet(req, req.Vars["securable_type"], req.Vars["full_name"])
 	})
 
 	// Catalogs:
@@ -599,6 +601,35 @@ func AddDefaultHandlers(server *Server) {
 
 	server.Handle("DELETE", "/api/2.0/mlflow/registered-models/delete", func(req Request) any {
 		return MapDelete(req.Workspace, req.Workspace.ModelRegistryModels, req.URL.Query().Get("name"))
+	})
+
+	// Serving Endpoints:
+	server.Handle("GET", "/api/2.0/serving-endpoints/{name}", func(req Request) any {
+		return MapGet(req.Workspace, req.Workspace.ServingEndpoints, req.Vars["name"])
+	})
+
+	server.Handle("POST", "/api/2.0/serving-endpoints", func(req Request) any {
+		return req.Workspace.ServingEndpointCreate(req)
+	})
+
+	server.Handle("PUT", "/api/2.0/serving-endpoints/{name}/config", func(req Request) any {
+		return req.Workspace.ServingEndpointUpdate(req, req.Vars["name"])
+	})
+
+	server.Handle("DELETE", "/api/2.0/serving-endpoints/{name}", func(req Request) any {
+		return MapDelete(req.Workspace, req.Workspace.ServingEndpoints, req.Vars["name"])
+	})
+
+	server.Handle("PUT", "/api/2.0/serving-endpoints/{name}/ai-gateway", func(req Request) any {
+		return req.Workspace.ServingEndpointPutAiGateway(req, req.Vars["name"])
+	})
+
+	server.Handle("PATCH", "/api/2.0/serving-endpoints/{name}/notifications", func(req Request) any {
+		return req.Workspace.ServingEndpointUpdateNotifications(req, req.Vars["name"])
+	})
+
+	server.Handle("PATCH", "/api/2.0/serving-endpoints/{name}/tags", func(req Request) any {
+		return req.Workspace.ServingEndpointPatchTags(req, req.Vars["name"])
 	})
 
 	// Generic permissions endpoints

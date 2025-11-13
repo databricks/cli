@@ -12,38 +12,6 @@ Updating deployment state...
 Deployment complete!
 
 >>> print_requests.py //jobs //pipelines
-{
-  "method": "POST",
-  "path": "/api/2.0/pipelines",
-  "body": {
-    "catalog": "mycatalog",
-    "channel": "CURRENT",
-    "deployment": {
-      "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
-    },
-    "edition": "ADVANCED",
-    "name": "pipeline foo"
-  }
-}
-{
-  "method": "POST",
-  "path": "/api/2.2/jobs/create",
-  "body": {
-    "deployment": {
-      "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
-    },
-    "description": "depends on foo id [FOO_ID]",
-    "edit_mode": "UI_LOCKED",
-    "format": "MULTI_TASK",
-    "max_concurrent_runs": 1,
-    "name": "job bar",
-    "queue": {
-      "enabled": true
-    }
-  }
-}
 
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
@@ -70,45 +38,6 @@ Updating deployment state...
 Deployment complete!
 
 >>> print_requests.py //jobs //pipelines
-{
-  "method": "DELETE",
-  "path": "/api/2.0/pipelines/[FOO_ID]"
-}
-{
-  "method": "POST",
-  "path": "/api/2.0/pipelines",
-  "body": {
-    "catalog": "mynewcatalog",
-    "channel": "CURRENT",
-    "deployment": {
-      "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
-    },
-    "edition": "ADVANCED",
-    "name": "pipeline foo"
-  }
-}
-{
-  "method": "POST",
-  "path": "/api/2.2/jobs/reset",
-  "body": {
-    "job_id": [BAR_ID],
-    "new_settings": {
-      "deployment": {
-        "kind": "BUNDLE",
-        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
-      },
-      "description": "depends on foo id [UUID]",
-      "edit_mode": "UI_LOCKED",
-      "format": "MULTI_TASK",
-      "max_concurrent_runs": 1,
-      "name": "job bar",
-      "queue": {
-        "enabled": true
-      }
-    }
-  }
-}
 
 === Fetch resource IDs and verify remote state
 >>> musterr [CLI] pipelines get [FOO_ID]
@@ -117,7 +46,7 @@ Error: The specified pipeline [FOO_ID] was not found.
 >>> [CLI] pipelines get [UUID]
 {
   "creator_user_name":"[USERNAME]",
-  "last_modified":[UNIX_TIME_MILLIS],
+  "last_modified":[UNIX_TIME_MILLIS][0],
   "name":"pipeline foo",
   "pipeline_id":"[UUID]",
   "run_as_user_name":"[USERNAME]",
@@ -137,20 +66,26 @@ Error: The specified pipeline [FOO_ID] was not found.
 
 >>> [CLI] jobs get [BAR_ID]
 {
-  "job_id":[BAR_ID],
+  "created_time": [UNIX_TIME_MILLIS][1],
+  "creator_user_name": "[USERNAME]",
+  "job_id": [BAR_ID],
+  "run_as_user_name": "[USERNAME]",
   "settings": {
     "deployment": {
-      "kind":"BUNDLE",
-      "metadata_file_path":"/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
     },
-    "description":"depends on foo id [UUID]",
-    "edit_mode":"UI_LOCKED",
-    "format":"MULTI_TASK",
-    "max_concurrent_runs":1,
-    "name":"job bar",
+    "description": "depends on foo id [UUID]",
+    "edit_mode": "UI_LOCKED",
+    "email_notifications": {},
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "job bar",
     "queue": {
-      "enabled":true
-    }
+      "enabled": true
+    },
+    "timeout_seconds": 0,
+    "webhook_notifications": {}
   }
 }
 

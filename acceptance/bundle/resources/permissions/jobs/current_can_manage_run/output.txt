@@ -1,0 +1,42 @@
+
+>>> [CLI] bundle validate -t green -o json
+{
+  "jobs": {
+    "interim_gold_layer_job": {
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/green/state/metadata.json"
+      },
+      "edit_mode": "UI_LOCKED",
+      "format": "MULTI_TASK",
+      "max_concurrent_runs": 1,
+      "name": "Untitled",
+      "permissions": [
+        {
+          "level": "IS_OWNER",
+          "service_principal_name": "[USERNAME]"
+        }
+      ],
+      "queue": {
+        "enabled": true
+      }
+    }
+  }
+}
+
+>>> errcode [CLI] bundle deploy -t green
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/green/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] bundle plan -o json -t green
+
+>>> errcode [CLI] bundle destroy -t green --auto-approve
+The following resources will be deleted:
+  delete job interim_gold_layer_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/green
+
+Deleting files...
+Destroy complete!

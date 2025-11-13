@@ -55,6 +55,7 @@ DIFF  clusters/current_can_manage/out.requests.destroy.direct.json
 +    "path": "/api/2.0/permissions/clusters/[UUID]"
 +  }
 +]
+<<<<<<< HEAD
 MATCH dashboards/create/out.requests.deploy.direct.json
 DIFF  dashboards/create/out.requests.destroy.direct.json
 --- dashboards/create/out.requests.destroy.direct.json
@@ -67,6 +68,9 @@ DIFF  dashboards/create/out.requests.destroy.direct.json
 +    "path": "/api/2.0/permissions/dashboards/[DASHBOARD_ID]"
 +  }
 +]
+=======
+MATCH clusters/target/out.requests.direct.json
+>>>>>>> origin
 MATCH database_instances/current_can_manage/out.requests.deploy.direct.json
 DIFF  database_instances/current_can_manage/out.requests.destroy.direct.json
 --- database_instances/current_can_manage/out.requests.destroy.direct.json
@@ -117,6 +121,26 @@ DIFF  jobs/current_can_manage/out.requests.destroy.direct.json
 +    "path": "/api/2.0/permissions/jobs/[NUMID]"
 +  }
 +]
+DIFF  jobs/current_can_manage_run/out.destroy.requests.direct.json
+--- jobs/current_can_manage_run/out.destroy.requests.direct.json
++++ jobs/current_can_manage_run/out.destroy.requests.terraform.json
+@@ -1,4 +1,16 @@
+ [
++  {
++    "body": {
++      "access_control_list": [
++        {
++          "permission_level": "IS_OWNER",
++          "user_name": "[USERNAME]"
++        }
++      ]
++    },
++    "method": "PUT",
++    "path": "/api/2.0/permissions/jobs/[NUMID]"
++  },
+   {
+     "body": {
+       "job_id": "[NUMID]"
 EXACT jobs/current_is_owner/out.requests.deploy.direct.json
 DIFF  jobs/current_is_owner/out.requests.destroy.direct.json
 --- jobs/current_is_owner/out.requests.destroy.direct.json
@@ -201,6 +225,26 @@ DIFF  jobs/other_can_manage/out.requests.destroy.direct.json
 +    "path": "/api/2.0/permissions/jobs/[NUMID]"
 +  }
 +]
+DIFF  jobs/other_can_manage_run/out.destroy.requests.direct.json
+--- jobs/other_can_manage_run/out.destroy.requests.direct.json
++++ jobs/other_can_manage_run/out.destroy.requests.terraform.json
+@@ -1,4 +1,16 @@
+ [
++  {
++    "body": {
++      "access_control_list": [
++        {
++          "permission_level": "IS_OWNER",
++          "user_name": "[USERNAME]"
++        }
++      ]
++    },
++    "method": "PUT",
++    "path": "/api/2.0/permissions/jobs/[NUMID]"
++  },
+   {
+     "body": {
+       "job_id": "[NUMID]"
 EXACT jobs/other_is_owner/out.requests.deploy.direct.json
 DIFF  jobs/other_is_owner/out.requests.destroy.direct.json
 --- jobs/other_is_owner/out.requests.destroy.direct.json

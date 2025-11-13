@@ -1,0 +1,106 @@
+{
+  "jobs": {
+    "can_manage_run_wins": {
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+      },
+      "edit_mode": "UI_LOCKED",
+      "format": "MULTI_TASK",
+      "max_concurrent_runs": 1,
+      "name": "Untitled",
+      "permissions": [
+        {
+          "level": "CAN_MANAGE_RUN",
+          "user_name": "can_manage_run@example.com"
+        },
+        {
+          "level": "IS_OWNER",
+          "user_name": "[USERNAME]"
+        }
+      ],
+      "queue": {
+        "enabled": true
+      },
+      "tasks": [
+        {
+          "notebook_task": {
+            "notebook_path": "/Workspace/Users/user@example.com/notebook",
+            "source": "WORKSPACE"
+          },
+          "task_key": "main"
+        }
+      ]
+    },
+    "can_manage_run_wins_reverse_order": {
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+      },
+      "edit_mode": "UI_LOCKED",
+      "format": "MULTI_TASK",
+      "max_concurrent_runs": 1,
+      "name": "Untitled",
+      "permissions": [
+        {
+          "level": "CAN_MANAGE_RUN",
+          "user_name": "can_manage_run@example.com"
+        },
+        {
+          "level": "IS_OWNER",
+          "user_name": "[USERNAME]"
+        }
+      ],
+      "queue": {
+        "enabled": true
+      },
+      "tasks": [
+        {
+          "notebook_task": {
+            "notebook_path": "/Workspace/Users/user@example.com/notebook",
+            "source": "WORKSPACE"
+          },
+          "task_key": "main"
+        }
+      ]
+    }
+  },
+  "pipelines": {
+    "can_manage_wins": {
+      "channel": "CURRENT",
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+      },
+      "edition": "ADVANCED",
+      "permissions": [
+        {
+          "group_name": "can_manage@example.com",
+          "level": "CAN_MANAGE"
+        },
+        {
+          "level": "IS_OWNER",
+          "user_name": "[USERNAME]"
+        }
+      ]
+    },
+    "can_run_wins": {
+      "channel": "CURRENT",
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+      },
+      "edition": "ADVANCED",
+      "permissions": [
+        {
+          "level": "CAN_RUN",
+          "service_principal_name": "can_run@example.com"
+        },
+        {
+          "level": "IS_OWNER",
+          "user_name": "[USERNAME]"
+        }
+      ]
+    }
+  }
+}

@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 )
@@ -41,8 +42,8 @@ func collectDashboardsFromState(ctx context.Context, b *bundle.Bundle, directDep
 }
 
 type checkDashboardsModifiedRemotely struct {
-	isPlan           bool
-	directDeployment bool
+	isPlan bool
+	engine engine.EngineType
 }
 
 func (l *checkDashboardsModifiedRemotely) Name() string {
@@ -60,7 +61,7 @@ func (l *checkDashboardsModifiedRemotely) Apply(ctx context.Context, b *bundle.B
 		return nil
 	}
 
-	dashboards, err := collectDashboardsFromState(ctx, b, l.directDeployment)
+	dashboards, err := collectDashboardsFromState(ctx, b, l.engine.IsDirect())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -118,6 +119,6 @@ func (l *checkDashboardsModifiedRemotely) Apply(ctx context.Context, b *bundle.B
 	return diags
 }
 
-func CheckDashboardsModifiedRemotely(isPlan, directDeployment bool) *checkDashboardsModifiedRemotely {
-	return &checkDashboardsModifiedRemotely{isPlan: isPlan, directDeployment: directDeployment}
+func CheckDashboardsModifiedRemotely(isPlan bool, engine engine.EngineType) *checkDashboardsModifiedRemotely {
+	return &checkDashboardsModifiedRemotely{isPlan: isPlan, engine: engine}
 }

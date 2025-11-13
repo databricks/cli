@@ -1,0 +1,6 @@
+title 'If serial is the same, refuse to proceed'
+mkdir -p .databricks/bundle/default/terraform
+echo '{"version": 4, "serial": 20}' > .databricks/bundle/default/terraform/terraform.tfstate
+echo '{"serial": 20}' > .databricks/bundle/default/resources.json
+#trace musterr $CLI bundle plan
+trace musterr $CLI bundle deploy

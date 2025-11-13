@@ -22,6 +22,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	"github.com/databricks/databricks-sdk-go/service/serving"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
@@ -43,26 +44,45 @@ var TestUserSP = iam.User{
 }
 
 var (
-	idMutex sync.Mutex
-	lastID  int64
+	idMutex      sync.Mutex
+	lastNowNano  int64
+	lastNowMilli int64
 )
 
-// nextID returns nanosecond timestamp but strictly incremental
-// (saves last value, protects with mutex and ensures next value is at least last+1)
 // IDs are prefixed with 7 and padded to avoid matching regex 1[78]\d{14}
 func nextID() int64 {
+	// offset enough so that it does not match UNIX_TIME_NANO regex
+	return nowNano() + 7000000000000000000
+}
+
+// nextID returns nanosecond timestamp but offset but strictly incremental
+// (saves last value, protects with mutex and ensures next value is at least last+1)
+func nowNano() int64 {
 	idMutex.Lock()
 	defer idMutex.Unlock()
 
-	// offset enough so that it does not match UNIX_TIME_NANO regex
-	newid := time.Now().UnixNano() + 7000000000000000000
-	if newid <= lastID {
-		lastID++
+	newTime := time.Now().UnixNano()
+	if newTime <= lastNowNano {
+		lastNowNano++
 	} else {
-		lastID = newid
+		lastNowNano = newTime
 	}
 
-	return lastID
+	return lastNowNano
+}
+
+func nowMilli() int64 {
+	idMutex.Lock()
+	defer idMutex.Unlock()
+
+	newTime := time.Now().UnixMilli()
+	if newTime <= lastNowMilli {
+		lastNowMilli++
+	} else {
+		lastNowMilli = newTime
+	}
+
+	return lastNowMilli
 }
 
 func nextUUID() string {
@@ -98,13 +118,12 @@ type FakeWorkspace struct {
 
 	Jobs                map[int64]jobs.Job
 	JobRuns             map[int64]jobs.Run
-	JobPermissions      map[string][]jobs.JobAccessControlRequest
 	Pipelines           map[string]pipelines.GetPipelineResponse
 	PipelineUpdates     map[string]bool
 	Monitors            map[string]catalog.MonitorInfo
 	Apps                map[string]apps.App
 	Schemas             map[string]catalog.SchemaInfo
-	SchemasGrants       map[string][]catalog.PrivilegeAssignment
+	Grants              map[string][]catalog.PrivilegeAssignment
 	Volumes             map[string]catalog.VolumeInfo
 	Dashboards          map[string]fakeDashboard
 	PublishedDashboards map[string]dashboards.PublishedDashboard
@@ -115,6 +134,7 @@ type FakeWorkspace struct {
 	Clusters            map[string]compute.ClusterDetails
 	Catalogs            map[string]catalog.CatalogInfo
 	RegisteredModels    map[string]catalog.RegisteredModelInfo
+	ServingEndpoints    map[string]serving.ServingEndpointDetailed
 
 	Acls map[string][]workspace.AclItem
 
@@ -200,8 +220,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 
 		Jobs:                 map[int64]jobs.Job{},
 		JobRuns:              map[int64]jobs.Run{},
-		JobPermissions:       map[string][]jobs.JobAccessControlRequest{},
-		SchemasGrants:        map[string][]catalog.PrivilegeAssignment{},
+		Grants:               map[string][]catalog.PrivilegeAssignment{},
 		Pipelines:            map[string]pipelines.GetPipelineResponse{},
 		PipelineUpdates:      map[string]bool{},
 		Monitors:             map[string]catalog.MonitorInfo{},
@@ -213,6 +232,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		Dashboards:           map[string]fakeDashboard{},
 		PublishedDashboards:  map[string]dashboards.PublishedDashboard{},
 		SqlWarehouses:        map[string]sql.GetWarehouseResponse{},
+		ServingEndpoints:     map[string]serving.ServingEndpointDetailed{},
 		Repos:                map[string]workspace.RepoInfo{},
 		Acls:                 map[string][]workspace.AclItem{},
 		Permissions:          map[string]iam.ObjectPermissions{},
