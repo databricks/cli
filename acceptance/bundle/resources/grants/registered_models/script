@@ -1,6 +1,6 @@
 envsubst < databricks.yml.tmpl > databricks.yml
 
-trace $CLI bundle debug plan > out.plan1.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle plan -o json > out.plan1.$DATABRICKS_BUNDLE_ENGINE.json
 trace print_requests.py --get //permissions
 trace $CLI bundle deploy
 trace print_requests.py //permissions > out.deploy1.requests.$DATABRICKS_BUNDLE_ENGINE.json
