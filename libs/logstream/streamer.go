@@ -19,6 +19,8 @@ const handshakeErrorBodyLimit = 4 * 1024
 const defaultUserAgent = "databricks-cli logstream"
 const initialReconnectBackoff = 200 * time.Millisecond
 const maxReconnectBackoff = 5 * time.Second
+const closeCodeUnauthorized = 4401
+const closeCodeForbidden = 4403
 
 // Dialer defines the subset of websocket.Dialer used by the streamer.
 type Dialer interface {
@@ -444,7 +446,7 @@ func (s *logStreamer) shouldRefreshForError(err error) bool {
 	var closeErr *websocket.CloseError
 	if errors.As(err, &closeErr) {
 		switch closeErr.Code {
-		case 4401, 4403:
+		case closeCodeUnauthorized, closeCodeForbidden:
 			return true
 		}
 	}
