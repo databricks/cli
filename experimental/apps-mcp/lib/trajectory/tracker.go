@@ -26,7 +26,7 @@ func NewTracker(ctx context.Context, sess *session.Session, cfg *mcp.Config) (*T
 		return nil, fmt.Errorf("failed to get home directory: %w", err)
 	}
 
-	historyPath := filepath.Join(homeDir, ".go-mcp", "history.jsonl")
+	historyPath := filepath.Join(homeDir, ".databricks", "apps-mcp", "history.jsonl")
 
 	writer, err := NewWriter(historyPath)
 	if err != nil {

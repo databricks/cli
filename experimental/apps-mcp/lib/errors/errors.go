@@ -178,7 +178,7 @@ func ConfigInvalid(message string) *Error {
 // ConfigMissing creates an error for missing configuration.
 func ConfigMissing(param string) *Error {
 	err := NewWithCode(CodeConfigMissing, "missing required configuration: "+param)
-	return WithSuggestion(err, "Check your ~/.go-mcp/config.json or environment variables")
+	return WithSuggestion(err, "Check your ~/.databricks/apps-mcp/config.json or environment variables")
 }
 
 // ConfigWorkDir creates an error for workspace directory issues.
