@@ -42,6 +42,10 @@ This file only contains template directives; it is skipped for the actual output
   {{skip "{{.project_name}}/tests/sample_*.py"}}
 {{end}}
 
+{{if $sql_language}}
+  {{skip "{{.project_name}}/pyproject.toml"}}
+{{end}}
+
 {{if $pydabs}}
   # When PyDABs is enabled, there is always resources/__init__.py and we don't need .gitkeep
   {{skip "{{.project_name}}/resources/.gitkeep"}}
