@@ -11,6 +11,15 @@ import (
 	"golang.org/x/oauth2"
 )
 
+type persistentAuth interface {
+	Token() (*oauth2.Token, error)
+	Close() error
+}
+
+var persistentAuthFactory = func(ctx context.Context, opts ...u2m.PersistentAuthOption) (persistentAuth, error) {
+	return u2m.NewPersistentAuth(ctx, opts...)
+}
+
 // AcquireTokenRequest describes the information needed to load or refresh a token
 // from the persistent auth cache.
 type AcquireTokenRequest struct {
@@ -39,7 +48,7 @@ func AcquireToken(ctx context.Context, req AcquireTokenRequest) (*oauth2.Token, 
 
 	allOpts := append([]u2m.PersistentAuthOption{}, req.PersistentAuthOpts...)
 	allOpts = append(allOpts, u2m.WithOAuthArgument(oauthArgument))
-	persistentAuth, err := u2m.NewPersistentAuth(ctx, allOpts...)
+	persistentAuth, err := persistentAuthFactory(ctx, allOpts...)
 	if err != nil {
 		return nil, fmt.Errorf("%w. %s", err, buildHelpfulLoginMessage(ctx, req.ProfileName, oauthArgument))
 	}

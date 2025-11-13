@@ -11,7 +11,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/credentials/u2m"
 	"github.com/databricks/databricks-sdk-go/httpclient/fixtures"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
 )
 
@@ -229,47 +228,4 @@ func TestToken_loadToken(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestLoadTokenDoesNotMutatePersistentAuthOpts(t *testing.T) {
-	profiler := profile.InMemoryProfiler{
-		Profiles: profile.Profiles{
-			{
-				Name:      "active",
-				Host:      "https://accounts.cloud.databricks.com",
-				AccountID: "active",
-			},
-		},
-	}
-	tokenCache := &inMemoryTokenCache{
-		Tokens: map[string]*oauth2.Token{
-			"https://accounts.cloud.databricks.com/oidc/accounts/active": {
-				RefreshToken: "active",
-				Expiry:       time.Now().Add(1 * time.Hour),
-			},
-		},
-	}
-	opts := []u2m.PersistentAuthOption{
-		u2m.WithTokenCache(tokenCache),
-		u2m.WithOAuthEndpointSupplier(&MockApiClient{}),
-		u2m.WithHttpClient(&http.Client{Transport: fixtures.SliceTransport{refreshSuccessTokenResponse}}),
-	}
-	initialLen := len(opts)
-
-	args := loadTokenArgs{
-		authArguments:      &auth.AuthArguments{},
-		profileName:        "active",
-		args:               []string{},
-		tokenTimeout:       1 * time.Hour,
-		profiler:           profiler,
-		persistentAuthOpts: opts,
-	}
-
-	_, err := loadToken(context.Background(), args)
-	require.NoError(t, err)
-	require.Len(t, opts, initialLen)
-
-	_, err = loadToken(context.Background(), args)
-	require.NoError(t, err)
-	require.Len(t, opts, initialLen)
 }
