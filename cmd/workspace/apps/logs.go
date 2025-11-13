@@ -222,12 +222,6 @@ func buildSourceFilter(values []string) (map[string]struct{}, error) {
 	return filter, nil
 }
 
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newLogsCommand())
-	})
-}
-
 func newLogStreamDialer(cfg *config.Config) *websocket.Dialer {
 	dialer := &websocket.Dialer{
 		Proxy:            http.ProxyFromEnvironment,
