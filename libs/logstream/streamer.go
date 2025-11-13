@@ -17,6 +17,8 @@ import (
 
 const handshakeErrorBodyLimit = 4 * 1024
 const defaultUserAgent = "databricks-cli logstream"
+const initialReconnectBackoff = 200 * time.Millisecond
+const maxReconnectBackoff = 5 * time.Second
 
 // Dialer defines the subset of websocket.Dialer used by the streamer.
 type Dialer interface {
@@ -88,7 +90,7 @@ func (s *logStreamer) Run(ctx context.Context) error {
 	if s.dialer == nil {
 		s.dialer = &websocket.Dialer{}
 	}
-	backoff := 200 * time.Millisecond
+	backoff := initialReconnectBackoff
 	timer := time.NewTimer(time.Hour)
 	stopTimer(timer)
 	defer timer.Stop()
@@ -127,7 +129,7 @@ func (s *logStreamer) Run(ctx context.Context) error {
 			if err := waitForBackoff(ctx, timer, backoff); err != nil {
 				return err
 			}
-			backoff = min(backoff*2, 5*time.Second)
+			backoff = min(backoff*2, maxReconnectBackoff)
 			continue
 		}
 
@@ -157,7 +159,7 @@ func (s *logStreamer) Run(ctx context.Context) error {
 		if err := waitForBackoff(ctx, timer, backoff); err != nil {
 			return err
 		}
-		backoff = min(backoff*2, 5*time.Second)
+		backoff = min(backoff*2, maxReconnectBackoff)
 	}
 }
 
