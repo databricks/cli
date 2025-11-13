@@ -15,11 +15,3 @@ resources:
       name: test_exp_diff_job
       tags:
         my_tag: my_value
-      tasks:
-        - task_key: main
-          notebook_task:
-            notebook_path: /Workspace/Users/${workspace.current_user.userName}/test_notebook
-          new_cluster:
-            num_workers: 0
-            spark_version: 13.3.x-scala2.12
-            node_type_id: i3.xlarge
