@@ -11,6 +11,7 @@ jobs:
   # Build and publish Unix (Linux/macOS) binaries and Docker images.
   # This job creates the GitHub release that goreleaser-windows will upload to.
   goreleaser-unix:
+    if: false  # Temporarily disabled for testing
     runs-on:
       group: databricks-deco-testing-runner-group
       labels: ubuntu-latest-deco
@@ -60,6 +61,7 @@ jobs:
   # Uses --skip=publish to avoid creating duplicate GitHub release.
   # Waits for goreleaser-unix to create the release first.
   goreleaser-windows:
+    if: false  # Temporarily disabled for testing
     environment: sign
     runs-on: windows-latest
 
@@ -123,7 +125,6 @@ jobs:
     runs-on:
       group: databricks-deco-testing-runner-group
       labels: ubuntu-latest-deco
-    needs: [goreleaser-windows, goreleaser-unix]
 
     steps:
       - name: Download Windows artifacts
@@ -137,13 +138,14 @@ jobs:
           for file in dist/*.zip dist/*SHA256SUMS*; do
             if [ -f "$file" ]; then
               echo "Uploading $(basename $file)"
-              gh release upload ${{ github.ref_name }} "$file" --repo ${{ github.repository }}
+              gh release upload v0.277.0 "$file" --repo ${{ github.repository }}
             fi
           done
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   create-setup-cli-release-pr:
+    if: false  # Temporarily disabled for testing
     runs-on:
       group: databricks-deco-testing-runner-group
       labels: ubuntu-latest-deco
@@ -172,6 +174,7 @@ jobs:
             });
 
   create-homebrew-tap-release-pr:
+    if: false  # Temporarily disabled for testing
     runs-on:
       group: databricks-deco-testing-runner-group
       labels: ubuntu-latest-deco
@@ -213,6 +216,7 @@ jobs:
             });
 
   create-vscode-extension-update-pr:
+    if: false  # Temporarily disabled for testing
     runs-on:
       group: databricks-deco-testing-runner-group
       labels: ubuntu-latest-deco
@@ -241,6 +245,7 @@ jobs:
             });
 
   pypi-publish:
+    if: false  # Temporarily disabled for testing
     runs-on:
       group: databricks-deco-testing-runner-group
       labels: ubuntu-latest-deco
@@ -315,13 +320,13 @@ jobs:
         # The ref name is equal to the tag name when this workflow is triggered by the "sign-cli" command.
       - name: Strip "v" prefix from version
         id: strip_version
-        run: echo "version=$(echo ${{ github.ref_name }} | sed 's/^v//')" >> "$GITHUB_OUTPUT"
+        run: echo "version=$(echo v0.277.0 | sed 's/^v//')" >> "$GITHUB_OUTPUT"
 
       - name: Get URLs of signed Windows binaries
         id: get_windows_urls
         run: |
           urls=$(
-            gh api https://api.github.com/repos/databricks/cli/releases/tags/${{ github.ref_name }} | \
+            gh api https://api.github.com/repos/databricks/cli/releases/tags/v0.277.0 | \
             jq -r .assets[].browser_download_url | \
             grep -E '_windows_.*\.zip$' | \
             tr '\n' ' '
