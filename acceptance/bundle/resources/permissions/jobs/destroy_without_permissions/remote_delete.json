@@ -1,3 +1,0 @@
-{
-  "access_control_list": [{"permission_level": "IS_OWNER", "user_name": "DATABRICKS_CLIENT_ID"}]
-}

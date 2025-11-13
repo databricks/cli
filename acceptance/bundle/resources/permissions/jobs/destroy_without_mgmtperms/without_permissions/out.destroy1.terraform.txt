@@ -1,0 +1,12 @@
+
+>>> musterr as-test-sp [CLI] bundle destroy --auto-approve
+Error: exit status 1
+
+Error: cannot read job: User [UUID] does not have View or Admin or Manage Run or Owner permissions on job [NUMID]
+
+  with databricks_job.foo,
+  on bundle.tf.json line 27, in resource.databricks_job.foo:
+  27:       }
+
+
+
