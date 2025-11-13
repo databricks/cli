@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"strconv"
 
+	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/resourcesnapshot"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
@@ -106,8 +107,12 @@ Note: This command is experimental and may change without notice.`,
 				continue
 			}
 
+			job := dresources.ResourceJob{}
+			currentJobComparable := job.RemapState(currentJob)
+			previousJobComparable := job.RemapState(previousJob)
+
 			// Compare previous and current state
-			changelog, err := diff.Diff(previousJob, currentJob)
+			changelog, err := diff.Diff(previousJobComparable, currentJobComparable)
 			if err != nil {
 				log.Warnf(ctx, "Failed to diff job %s: %v", key, err)
 				continue
@@ -122,7 +127,8 @@ Note: This command is experimental and may change without notice.`,
 
 				// Save changes back to YAML if save flag is set
 				if writer != nil {
-					err = writer.WriteJobDiff(ctx, key, currentJob)
+					// Filter out read-only fields before saving
+					err = writer.WriteJobDiff(ctx, key, currentJob, changelog)
 					if err != nil {
 						log.Warnf(ctx, "Failed to save job %s changes: %v", key, err)
 					}
@@ -153,8 +159,12 @@ Note: This command is experimental and may change without notice.`,
 				continue
 			}
 
+			pipeline := dresources.ResourcePipeline{}
+			currentPipelineComparable := pipeline.RemapState(currentPipeline)
+			previousPipelineComparable := pipeline.RemapState(previousPipeline)
+
 			// Compare previous and current state
-			changelog, err := diff.Diff(previousPipeline, currentPipeline)
+			changelog, err := diff.Diff(previousPipelineComparable, currentPipelineComparable)
 			if err != nil {
 				log.Warnf(ctx, "Failed to diff pipeline %s: %v", key, err)
 				continue
@@ -169,7 +179,7 @@ Note: This command is experimental and may change without notice.`,
 
 				// Save changes back to YAML if save flag is set
 				if writer != nil {
-					err = writer.WritePipelineDiff(ctx, key, currentPipeline)
+					err = writer.WritePipelineDiff(ctx, key, currentPipeline, changelog)
 					if err != nil {
 						log.Warnf(ctx, "Failed to save pipeline %s changes: %v", key, err)
 					}

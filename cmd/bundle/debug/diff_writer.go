@@ -7,7 +7,9 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strconv"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/dyn"
@@ -16,6 +18,7 @@ import (
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	"github.com/r3labs/diff/v3"
 	"gopkg.in/yaml.v3"
 )
 
@@ -30,13 +33,13 @@ func NewDiffWriter(b *bundle.Bundle) *DiffWriter {
 }
 
 // WriteJobDiff writes job diff changes back to the YAML file
-func (w *DiffWriter) WriteJobDiff(ctx context.Context, jobKey string, currentState any) error {
-	return w.writeResourceDiff(ctx, "jobs", jobKey, currentState, extractJobSettings)
+func (w *DiffWriter) WriteJobDiff(ctx context.Context, jobKey string, currentState any, changelog diff.Changelog) error {
+	return w.writeResourceDiff(ctx, "jobs", jobKey, currentState, changelog, extractJobSettings)
 }
 
 // WritePipelineDiff writes pipeline diff changes back to the YAML file
-func (w *DiffWriter) WritePipelineDiff(ctx context.Context, pipelineKey string, currentState any) error {
-	return w.writeResourceDiff(ctx, "pipelines", pipelineKey, currentState, extractPipelineSpec)
+func (w *DiffWriter) WritePipelineDiff(ctx context.Context, pipelineKey string, currentState any, changelog diff.Changelog) error {
+	return w.writeResourceDiff(ctx, "pipelines", pipelineKey, currentState, changelog, extractPipelineSpec)
 }
 
 // extractorFunc extracts the relevant settings from the full API response
@@ -66,8 +69,89 @@ func extractPipelineSpec(state any) (any, error) {
 	return pipeline.Spec, nil
 }
 
+// filterReadOnlyFields filters out read-only fields from the changelog
+func filterReadOnlyFields(ctx context.Context, changelog diff.Changelog) diff.Changelog {
+	var filtered diff.Changelog
+	for _, change := range changelog {
+		if len(change.Path) == 0 {
+			continue
+		}
+
+		// Skip read-only job fields
+		if len(change.Path) >= 2 && change.Path[0] == "Settings" {
+			fieldName := change.Path[1]
+			if fieldName == "EditMode" || fieldName == "Deployment" || fieldName == "Format" {
+				log.Debugf(ctx, "Skipping read-only field: %v", change.Path)
+				continue
+			}
+		}
+
+		// Skip read-only pipeline fields
+		if len(change.Path) >= 2 && change.Path[0] == "Spec" {
+			fieldName := change.Path[1]
+			if fieldName == "Deployment" {
+				log.Debugf(ctx, "Skipping read-only field: %v", change.Path)
+				continue
+			}
+		}
+
+		filtered = append(filtered, change)
+	}
+	return filtered
+}
+
+// unwrapSettingsPath removes the "Settings" or "Spec" wrapper from the path
+// SDK responses have job.Settings.Field, but YAML has jobs.my_job.field
+func unwrapSettingsPath(path []string) []string {
+	if len(path) > 0 && (path[0] == "Settings" || path[0] == "Spec") {
+		return path[1:]
+	}
+	return path
+}
+
+// convertChangePathToDynPath converts a changelog path to a dyn.Path
+// It handles converting SDK struct field names to JSON tag names using reflection
+func convertChangePathToDynPath(path []string, structType reflect.Type) (dyn.Path, error) {
+	var dynPath dyn.Path
+	currentType := structType
+
+	for _, segment := range path {
+		if currentType.Kind() == reflect.Ptr {
+			currentType = currentType.Elem()
+		}
+
+		if currentType.Kind() != reflect.Struct {
+			// For non-struct types (maps, slices, etc.), use the segment as-is
+			dynPath = dynPath.Append(dyn.Key(segment))
+			continue
+		}
+
+		// Find the field in the struct
+		field, found := currentType.FieldByName(segment)
+		if !found {
+			return nil, fmt.Errorf("field %s not found in type %s", segment, currentType.Name())
+		}
+
+		// Get the JSON tag name
+		jsonTag := field.Tag.Get("json")
+		if jsonTag == "" {
+			// No JSON tag, use lowercase field name
+			jsonTag = strings.ToLower(segment)
+		} else {
+			// Parse the JSON tag (it may have options like "omitempty")
+			parts := strings.Split(jsonTag, ",")
+			jsonTag = parts[0]
+		}
+
+		dynPath = dynPath.Append(dyn.Key(jsonTag))
+		currentType = field.Type
+	}
+
+	return dynPath, nil
+}
+
 // writeResourceDiff writes resource diff changes back to the YAML file
-func (w *DiffWriter) writeResourceDiff(ctx context.Context, resourceType, resourceKey string, currentState any, extractor extractorFunc) error {
+func (w *DiffWriter) writeResourceDiff(ctx context.Context, resourceType, resourceKey string, currentState any, changelog diff.Changelog, extractor extractorFunc) error {
 	// Build the path to the resource in the bundle config
 	resourcePath := dyn.MustPathFromString(fmt.Sprintf("resources.%s.%s", resourceType, resourceKey))
 
@@ -83,7 +167,7 @@ func (w *DiffWriter) writeResourceDiff(ctx context.Context, resourceType, resour
 		return fmt.Errorf("resource %s.%s has no file location", resourceType, resourceKey)
 	}
 
-	log.Infof(ctx, "Updating %s.%s in %s", resourceType, resourceKey, location.File)
+	log.Infof(ctx, "Updating %s.%s in %s with %d changes", resourceType, resourceKey, location.File, len(changelog))
 
 	// Extract the relevant settings from the API response
 	// (e.g., JobSettings from Job, PipelineSpec from Pipeline)
@@ -92,47 +176,92 @@ func (w *DiffWriter) writeResourceDiff(ctx context.Context, resourceType, resour
 		return fmt.Errorf("failed to extract settings from current state: %w", err)
 	}
 
-	// Convert the settings to dyn.Value, using the current resource value as reference
-	// to preserve locations and structure
-	updatedValue, err := convert.FromTyped(settings, resourceValue)
+	// Convert the entire remote settings to dyn.Value so we can extract specific field values
+	remoteValue, err := convert.FromTyped(settings, resourceValue)
 	if err != nil {
 		return fmt.Errorf("failed to convert settings to dyn.Value: %w", err)
 	}
 
 	log.Debugf(ctx, "Converted remote state to dyn.Value")
 
-	// Update the YAML file with the new resource value
-	return w.updateYAMLFile(ctx, location.File, resourcePath, updatedValue)
-}
-
-// updateYAMLFile updates a specific resource in a YAML file
-func (w *DiffWriter) updateYAMLFile(ctx context.Context, filePath string, resourcePath dyn.Path, newValue dyn.Value) error {
-	// Read the existing file
-	content, err := os.ReadFile(filePath)
+	// Read the YAML file
+	content, err := os.ReadFile(location.File)
 	if err != nil {
-		return fmt.Errorf("failed to read file %s: %w", filePath, err)
+		return fmt.Errorf("failed to read file %s: %w", location.File, err)
 	}
 
 	// Parse the YAML file to dyn.Value
-	fileValue, err := yamlloader.LoadYAML(filePath, bytes.NewReader(content))
+	fileValue, err := yamlloader.LoadYAML(location.File, bytes.NewReader(content))
 	if err != nil {
-		return fmt.Errorf("failed to parse YAML file %s: %w", filePath, err)
+		return fmt.Errorf("failed to parse YAML file %s: %w", location.File, err)
 	}
 
-	// Update the resource in the file value
-	updatedFileValue, err := dyn.SetByPath(fileValue, resourcePath, newValue)
-	if err != nil {
-		return fmt.Errorf("failed to update resource at path %s: %w", resourcePath, err)
+	// Get the struct type for path conversion
+	settingsType := reflect.TypeOf(settings)
+	if settingsType.Kind() == reflect.Ptr {
+		settingsType = settingsType.Elem()
 	}
 
-	// Write back to the file using the internal encode method
-	// We need to write the file manually since SaveAsYAML expects .AsAny()
-	// but our value may contain types that dyn.V() can't handle
-	err = os.MkdirAll(filepath.Dir(filePath), 0o755)
+	// Apply each change from the changelog
+	updatedFileValue := fileValue
+	for _, change := range changelog {
+		// Unwrap Settings/Spec wrapper from the path
+		unwrappedPath := unwrapSettingsPath(change.Path)
+		if len(unwrappedPath) == 0 {
+			log.Debugf(ctx, "Skipping empty path after unwrapping")
+			continue
+		}
+
+		// Convert to dyn.Path with JSON tag names
+		dynPath, err := convertChangePathToDynPath(unwrappedPath, settingsType)
+		if err != nil {
+			log.Warnf(ctx, "Failed to convert path %v: %v", change.Path, err)
+			continue
+		}
+
+		// Prepend the resource path
+		fullPath := resourcePath.Append(dynPath...)
+
+		log.Debugf(ctx, "Applying change %s at path %s", change.Type, fullPath)
+
+		// Apply the change based on type
+		switch change.Type {
+		case "create", "update":
+			// Extract the value from the remote state
+			fieldValue, err := dyn.GetByPath(remoteValue, dynPath)
+			if err != nil {
+				log.Warnf(ctx, "Failed to get value at path %s: %v", dynPath, err)
+				continue
+			}
+
+			// Update the file value
+			updatedFileValue, err = dyn.SetByPath(updatedFileValue, fullPath, fieldValue)
+			if err != nil {
+				log.Warnf(ctx, "Failed to set value at path %s: %v", fullPath, err)
+				continue
+			}
+
+		case "delete":
+			// For delete operations, we need to manually manipulate the mapping
+			// since dyn doesn't have a DeleteByPath function
+			log.Debugf(ctx, "Skipping delete operation for path %s (not yet implemented)", fullPath)
+			// TODO: Implement deletion by reconstructing the parent mapping without the key
+		}
+	}
+
+	// Write the updated file
+	return w.writeYAMLFile(ctx, location.File, updatedFileValue)
+}
+
+// writeYAMLFile writes a dyn.Value to a YAML file
+func (w *DiffWriter) writeYAMLFile(ctx context.Context, filePath string, fileValue dyn.Value) error {
+	// Create directory if needed
+	err := os.MkdirAll(filepath.Dir(filePath), 0o755)
 	if err != nil {
 		return fmt.Errorf("failed to create directory: %w", err)
 	}
 
+	// Create the file
 	file, err := os.Create(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to create file %s: %w", filePath, err)
@@ -140,11 +269,12 @@ func (w *DiffWriter) updateYAMLFile(ctx context.Context, filePath string, resour
 	defer file.Close()
 
 	// Convert to yaml.Node directly from dyn.Value
-	yamlNode, err := dynValueToYamlNode(updatedFileValue)
+	yamlNode, err := dynValueToYamlNode(fileValue)
 	if err != nil {
 		return fmt.Errorf("failed to convert to YAML node: %w", err)
 	}
 
+	// Write the YAML
 	enc := yaml.NewEncoder(file)
 	enc.SetIndent(2)
 	err = enc.Encode(yamlNode)

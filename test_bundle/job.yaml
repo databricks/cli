@@ -1,20 +1,5 @@
 resources:
   jobs:
     test_exp_diff_job:
-      deployment:
-        kind: BUNDLE
-        metadata_file_path: /Workspace/Users/ilya.kuznetsov@databricks.com/.bundle/databricks-bundle-test/dev/state/metadata.json
-      edit_mode: EDITABLE
-      email_notifications: {}
-      format: MULTI_TASK
-      max_concurrent_runs: 4
-      name: '[dev ilya_kuznetsov]'
       queue:
         enabled: true
-      run_as:
-        user_name: ilya.kuznetsov@databricks.com
-      tags:
-        dev: ilya_kuznetsov
-        my_tag: new_tag_2
-      timeout_seconds: 0
-      webhook_notifications: {}
