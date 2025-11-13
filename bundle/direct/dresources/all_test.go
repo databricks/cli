@@ -137,7 +137,7 @@ var testDeps = map[string]prepareWorkspace{
 		return &PermissionsState{
 			ObjectID: "/jobs/" + strconv.FormatInt(resp.JobId, 10),
 			Permissions: []iam.AccessControlRequest{{
-				PermissionLevel: "CAN_MANAGE",
+				PermissionLevel: "IS_OWNER",
 				UserName:        "user@example.com",
 			}},
 		}, nil
@@ -249,6 +249,39 @@ var testDeps = map[string]prepareWorkspace{
 			Permissions: []iam.AccessControlRequest{{
 				PermissionLevel: "CAN_MANAGE",
 				UserName:        "user@example.com",
+			}},
+		}, nil
+	},
+
+	"schemas.grants": func(client *databricks.WorkspaceClient) (any, error) {
+		return &GrantsState{
+			SecurableType: "schema",
+			FullName:      "main.myschema",
+			Grants: []GrantAssignment{{
+				Privileges: []catalog.Privilege{catalog.PrivilegeCreateView},
+				Principal:  "user@example.com",
+			}},
+		}, nil
+	},
+
+	"volumes.grants": func(client *databricks.WorkspaceClient) (any, error) {
+		return &GrantsState{
+			SecurableType: "volume",
+			FullName:      "main.myschema.myvolume",
+			Grants: []GrantAssignment{{
+				Privileges: []catalog.Privilege{catalog.PrivilegeCreateView},
+				Principal:  "user@example.com",
+			}},
+		}, nil
+	},
+
+	"registered_models.grants": func(client *databricks.WorkspaceClient) (any, error) {
+		return &GrantsState{
+			SecurableType: "registered-model",
+			FullName:      "modelid",
+			Grants: []GrantAssignment{{
+				Privileges: []catalog.Privilege{catalog.PrivilegeCreateView},
+				Principal:  "user@example.com",
 			}},
 		}, nil
 	},
@@ -396,7 +429,7 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	}, remote, false)
 	require.NoError(t, err)
 
-	deleteIsNoop := strings.HasSuffix(group, "permissions")
+	deleteIsNoop := strings.HasSuffix(group, "permissions") || strings.HasSuffix(group, "grants")
 
 	remoteAfterDelete, err := adapter.DoRefresh(ctx, createdID)
 	if deleteIsNoop {

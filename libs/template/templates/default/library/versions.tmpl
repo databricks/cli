@@ -20,8 +20,6 @@
   >=15.4,<15.5
 {{- end}}
 
-{{define "latest_databricks_bundles_version" -}}0.276.0{{- end}}
-
 {{/* The serverless environment version to use.
    * See https://docs.databricks.com/release-notes/runtime/index.html for available versions.
    */}}
@@ -48,3 +46,5 @@
 {{define "default_python_version" -}}
   3.12
 {{- end}}
+
+{{define "latest_databricks_bundles_version" -}}0.277.0{{- end}}

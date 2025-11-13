@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/deploy"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
@@ -15,8 +16,8 @@ import (
 )
 
 type statePush struct {
-	filerFactory     deploy.FilerFactory
-	directDeployment bool
+	filerFactory deploy.FilerFactory
+	engine       engine.EngineType
 }
 
 func (l *statePush) Name() string {
@@ -31,7 +32,7 @@ func (l *statePush) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 
 	var remotePath, localPath string
 
-	if l.directDeployment {
+	if l.engine.IsDirect() {
 		remotePath, localPath = b.StateFilenameDirect(ctx)
 	} else {
 		remotePath, localPath = b.StateFilenameTerraform(ctx)
@@ -59,6 +60,6 @@ func (l *statePush) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 	return nil
 }
 
-func StatePush(directDeployment bool) bundle.Mutator {
-	return &statePush{filerFactory: deploy.StateFiler, directDeployment: directDeployment}
+func StatePush(engine engine.EngineType) bundle.Mutator {
+	return &statePush{filerFactory: deploy.StateFiler, engine: engine}
 }

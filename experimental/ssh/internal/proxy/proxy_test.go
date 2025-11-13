@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/libs/log"
 	"github.com/gorilla/websocket"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -98,6 +99,7 @@ func setupTestServer(ctx context.Context, t *testing.T) *TestProxy {
 	serverOutput := newTestBuffer(t)
 	var serverProxy *proxyConnection
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := log.NewContext(ctx, log.GetLogger(ctx).With("Server", true))
 		if serverProxy != nil {
 			err := serverProxy.acceptHandover(ctx, w, r)
 			if err != nil {
@@ -138,6 +140,7 @@ func createTestWebsocketConnection(url string) (*websocket.Conn, error) {
 }
 
 func setupTestClient(ctx context.Context, t *testing.T, serverURL string) *TestProxy {
+	ctx = log.NewContext(ctx, log.GetLogger(ctx).With("Client", true))
 	clientInput, clientInputWriter := io.Pipe()
 	clientOutput := newTestBuffer(t)
 	wsURL := "ws" + serverURL[4:]
@@ -221,7 +224,7 @@ func TestConnectionHandover(t *testing.T) {
 		for i := range TOTAL_MESSAGE_COUNT {
 			client.Input.Write(createTestMessage("client", i)) // nolint:errcheck
 			server.Input.Write(createTestMessage("server", i)) // nolint:errcheck
-			if i > 0 && i%MESSAGES_PER_CHUNK == 0 {
+			if i > 0 && i%MESSAGES_PER_CHUNK == 0 && i < TOTAL_MESSAGE_COUNT-1 {
 				handoverChan <- struct{}{}
 			}
 		}
