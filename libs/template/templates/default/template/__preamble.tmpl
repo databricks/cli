@@ -38,9 +38,12 @@ This file only contains template directives; it is skipped for the actual output
 {{if or $sql_language $lakeflow_only}}
   {{skip "{{.project_name}}/tests"}}
   {{skip "{{.project_name}}/fixtures"}}
-  {{skip "{{.project_name}}/pyproject.toml"}}
 {{else if not (or $python_package $notebook_job $pipeline)}}
   {{skip "{{.project_name}}/tests/sample_*.py"}}
+{{end}}
+
+{{if $sql_language}}
+  {{skip "{{.project_name}}/pyproject.toml"}}
 {{end}}
 
 {{if $pydabs}}

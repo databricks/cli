@@ -56,24 +56,17 @@
             ],
             "order": 7
         },
-        "language_choice": {
+        "language": {
+            "//": "This property is always set to 'python'",
+            "skip_prompt_if": {},
             "type": "string",
             "default": "python",
             "description": "Initial language for this project",
             "enum": [
                 "python",
-                "sql",
-                "other"
+                "sql"
             ],
             "order": 8
-        },
-        "language": {
-            "//": "Derived from language_choice: for Python, pyproject.toml and tests are included; for others they are excluded",
-            "skip_prompt_if": {},
-            "type": "string",
-            "default": "{{if eq .language_choice \"python\"}}python{{else}}sql{{end}}",
-            "description": "Derived language property for template logic",
-            "order": 9
         },
         "lakeflow_only": {
             "//": "This property is always set to 'no' for default-python",
@@ -81,7 +74,7 @@
             "type": "string",
             "default": "no",
             "description": "Internal flag for lakeflow-only templates",
-            "order": 10
+            "order": 9
         },
         "enable_pydabs": {
             "//": "This property is always set to 'no' for default-python",
@@ -89,7 +82,7 @@
             "type": "string",
             "default": "no",
             "description": "Use Python instead of YAML for resource definitions",
-            "order": 11
+            "order": 10
         }
     },
     "success_message": "\n✨ Your new project has been created in the '{{.project_name}}' directory!\n\nTo get started, refer to the project README.md file and the documentation at https://docs.databricks.com/dev-tools/bundles/index.html."
