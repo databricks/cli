@@ -36,17 +36,17 @@ This CLI follows the Databricks Unified Authentication principles.
 
 You can find a detailed description at https://github.com/databricks/databricks-sdk-go#authentication.
 
-## Apps Commands
+## Experimental Commands
 
 ### MCP (Model Context Protocol)
 
-The `databricks apps mcp` command starts an MCP server that provides AI agents with tools to interact with Databricks.
+The `databricks experimental mcp` command starts an MCP server that provides AI agents with tools to interact with Databricks.
 
 #### Features
 
 - **Databricks Integration**: Query catalogs, schemas, tables, and execute SQL
 - **Project Scaffolding**: Generate full-stack TypeScript applications from templates
-- **Workspace Tools**: File operations, bash execution, grep, and glob in project directories
+- **Workspace Tools**: File operations, bash execution, grep, and glob in project directories (optional)
 - **Sandboxed Execution**: Isolated file and command execution
 
 #### Usage
@@ -54,13 +54,13 @@ The `databricks apps mcp` command starts an MCP server that provides AI agents w
 Start the MCP server:
 
 ```bash
-databricks apps mcp start --warehouse-id <warehouse-id>
+databricks experimental mcp --warehouse-id <warehouse-id>
 ```
 
 Check your environment:
 
 ```bash
-databricks apps mcp check
+databricks experimental mcp check
 ```
 
 #### Configuration
@@ -70,6 +70,7 @@ The MCP server requires:
 - **Databricks Authentication**: Via standard CLI auth (profile, environment variables)
 
 Optional flags:
+- `--with-workspace-tools`: Enable workspace tools (file operations, bash, grep, glob)
 - `--allow-deployment`: Enable deployment operations
 - `--docker-image`: Docker image for validation (default: node:20-alpine)
 - `--use-dagger`: Use Dagger for containerized validation (default: true)
@@ -78,13 +79,19 @@ Optional flags:
 
 ```bash
 # Basic usage
-databricks apps mcp start --warehouse-id abc123
+databricks experimental mcp --warehouse-id abc123
+
+# With workspace tools enabled
+databricks experimental mcp --warehouse-id abc123 --with-workspace-tools
 
 # With deployment enabled
-databricks apps mcp start --warehouse-id abc123 --allow-deployment
+databricks experimental mcp --warehouse-id abc123 --allow-deployment
 
 # With custom Docker image
-databricks apps mcp start --warehouse-id abc123 --docker-image node:20-alpine
+databricks experimental mcp --warehouse-id abc123 --docker-image node:20-alpine
+
+# Without containerized validation
+databricks experimental mcp --warehouse-id abc123 --use-dagger=false
 ```
 
 ## Privacy Notice
