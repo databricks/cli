@@ -5,6 +5,15 @@
     ]
   },
   "method": "GET",
+  "path": "/api/2.0/preview/scim/v2/Me"
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_run cmd-exec-id/[UUID] upstream/databricks-vscode-terminal upstream-version/2.10.3 auth/pat"
+    ]
+  },
+  "method": "GET",
   "path": "/api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/terraform.tfstate"
 }
 {
