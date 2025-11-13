@@ -137,7 +137,7 @@ jobs:
           for file in dist/*.zip dist/*SHA256SUMS*; do
             if [ -f "$file" ]; then
               echo "Uploading $(basename $file)"
-              gh release upload ${{ github.ref_name }} "$file"
+              gh release upload ${{ github.ref_name }} "$file" --repo ${{ github.repository }}
             fi
           done
         env:
@@ -148,7 +148,7 @@ jobs:
       group: databricks-deco-testing-runner-group
       labels: ubuntu-latest-deco
 
-    needs: [goreleaser-windows, goreleaser-unix]
+    needs: upload-windows-to-release
 
     steps:
       - name: Set VERSION variable from tag
@@ -176,7 +176,7 @@ jobs:
       group: databricks-deco-testing-runner-group
       labels: ubuntu-latest-deco
 
-    needs: goreleaser-unix
+    needs: upload-windows-to-release
 
     steps:
       - name: Set VERSION variable from tag
@@ -217,7 +217,7 @@ jobs:
       group: databricks-deco-testing-runner-group
       labels: ubuntu-latest-deco
 
-    needs: [goreleaser-windows, goreleaser-unix]
+    needs: upload-windows-to-release
 
     steps:
       - name: Set VERSION variable from tag
@@ -245,7 +245,7 @@ jobs:
       group: databricks-deco-testing-runner-group
       labels: ubuntu-latest-deco
 
-    needs: [goreleaser-windows, goreleaser-unix]
+    needs: upload-windows-to-release
 
     # IMPORTANT:
     # - 'id-token: write' is mandatory for OIDC and trusted publishing to PyPi
