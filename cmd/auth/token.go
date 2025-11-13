@@ -96,14 +96,8 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 		return nil, err
 	}
 
-	oauthArgument, err := args.authArguments.ToOAuthArgument()
-	if err != nil {
-		return nil, err
-	}
 	return auth.AcquireToken(ctx, auth.AcquireTokenRequest{
-		OAuthArgument:      oauthArgument,
-		Host:               args.authArguments.Host,
-		AccountID:          args.authArguments.AccountID,
+		AuthArguments:      args.authArguments,
 		ProfileName:        args.profileName,
 		Timeout:            args.tokenTimeout,
 		PersistentAuthOpts: args.persistentAuthOpts,

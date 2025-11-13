@@ -14,9 +14,7 @@ import (
 // AcquireTokenRequest describes the information needed to load or refresh a token
 // from the persistent auth cache.
 type AcquireTokenRequest struct {
-	OAuthArgument      u2m.OAuthArgument
-	Host               string
-	AccountID          string
+	AuthArguments      *AuthArguments
 	ProfileName        string
 	Timeout            time.Duration
 	PersistentAuthOpts []u2m.PersistentAuthOption
@@ -24,6 +22,15 @@ type AcquireTokenRequest struct {
 
 // AcquireToken obtains an OAuth token from the persistent auth cache, refreshing it if needed.
 func AcquireToken(ctx context.Context, req AcquireTokenRequest) (*oauth2.Token, error) {
+	if req.AuthArguments == nil {
+		return nil, errors.New("auth arguments are required")
+	}
+
+	oauthArgument, err := req.AuthArguments.ToOAuthArgument()
+	if err != nil {
+		return nil, err
+	}
+
 	var cancel context.CancelFunc
 	if req.Timeout > 0 {
 		ctx, cancel = context.WithTimeout(ctx, req.Timeout)
@@ -31,10 +38,10 @@ func AcquireToken(ctx context.Context, req AcquireTokenRequest) (*oauth2.Token, 
 	}
 
 	allOpts := append([]u2m.PersistentAuthOption{}, req.PersistentAuthOpts...)
-	allOpts = append(allOpts, u2m.WithOAuthArgument(req.OAuthArgument))
+	allOpts = append(allOpts, u2m.WithOAuthArgument(oauthArgument))
 	persistentAuth, err := u2m.NewPersistentAuth(ctx, allOpts...)
 	if err != nil {
-		return nil, fmt.Errorf("%w. %s", err, buildHelpfulLoginMessage(ctx, req.ProfileName, req.OAuthArgument))
+		return nil, fmt.Errorf("%w. %s", err, buildHelpfulLoginMessage(ctx, req.ProfileName, oauthArgument))
 	}
 	defer persistentAuth.Close()
 
@@ -52,10 +59,10 @@ func AcquireToken(ctx context.Context, req AcquireTokenRequest) (*oauth2.Token, 
 			// This is captured in an acceptance test under "cmd/auth/token".
 			err = errors.New("cache: databricks OAuth is not configured for this host")
 		}
-		if rewritten, rewrittenErr := RewriteAuthError(ctx, req.Host, req.AccountID, req.ProfileName, err); rewritten {
+		if rewritten, rewrittenErr := RewriteAuthError(ctx, req.AuthArguments.Host, req.AuthArguments.AccountID, req.ProfileName, err); rewritten {
 			return nil, rewrittenErr
 		}
-		return nil, fmt.Errorf("%w. %s", err, buildHelpfulLoginMessage(ctx, req.ProfileName, req.OAuthArgument))
+		return nil, fmt.Errorf("%w. %s", err, buildHelpfulLoginMessage(ctx, req.ProfileName, oauthArgument))
 	}
 
 	return token, nil
