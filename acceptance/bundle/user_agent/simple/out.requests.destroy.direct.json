@@ -1,7 +1,7 @@
 {
   "headers": {
     "User-Agent": [
-      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_destroy cmd-exec-id/[UUID] upstream/databricks-vscode-terminal upstream-version/2.10.3 auth/pat"
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_destroy cmd-exec-id/[UUID] engine/direct auth/patupstream-version/2.10.3 auth/pat"
     ]
   },
   "method": "GET",
@@ -10,7 +10,7 @@
 {
   "headers": {
     "User-Agent": [
-      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_destroy cmd-exec-id/[UUID] upstream/databricks-vscode-terminal upstream-version/2.10.3 auth/pat"
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_destroy cmd-exec-id/[UUID] engine/direct auth/patupstream-version/2.10.3 auth/pat"
     ]
   },
   "method": "GET",
@@ -19,7 +19,7 @@
 {
   "headers": {
     "User-Agent": [
-      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_destroy cmd-exec-id/[UUID] upstream/databricks-vscode-terminal upstream-version/2.10.3 auth/pat"
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_destroy cmd-exec-id/[UUID] engine/direct auth/patupstream-version/2.10.3 auth/pat"
     ]
   },
   "method": "GET",
@@ -32,7 +32,7 @@
 {
   "headers": {
     "User-Agent": [
-      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_destroy cmd-exec-id/[UUID] upstream/databricks-vscode-terminal upstream-version/2.10.3 auth/pat"
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_destroy cmd-exec-id/[UUID] engine/direct auth/patupstream-version/2.10.3 auth/pat"
     ]
   },
   "method": "GET",
@@ -45,7 +45,7 @@
 {
   "headers": {
     "User-Agent": [
-      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_destroy cmd-exec-id/[UUID] upstream/databricks-vscode-terminal upstream-version/2.10.3 engine/direct auth/pat"
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_destroy cmd-exec-id/[UUID] engine/direct auth/patupstream-version/2.10.3 engine/direct auth/pat"
     ]
   },
   "method": "DELETE",
@@ -57,7 +57,7 @@
 {
   "headers": {
     "User-Agent": [
-      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_destroy cmd-exec-id/[UUID] upstream/databricks-vscode-terminal upstream-version/2.10.3 engine/direct auth/pat"
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_destroy cmd-exec-id/[UUID] engine/direct auth/patupstream-version/2.10.3 engine/direct auth/pat"
     ]
   },
   "method": "GET",
@@ -70,7 +70,7 @@
 {
   "headers": {
     "User-Agent": [
-      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_destroy cmd-exec-id/[UUID] upstream/databricks-vscode-terminal upstream-version/2.10.3 engine/direct auth/pat"
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_destroy cmd-exec-id/[UUID] engine/direct auth/patupstream-version/2.10.3 engine/direct auth/pat"
     ]
   },
   "method": "GET",
@@ -82,7 +82,7 @@
 {
   "headers": {
     "User-Agent": [
-      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_destroy cmd-exec-id/[UUID] upstream/databricks-vscode-terminal upstream-version/2.10.3 engine/direct auth/pat"
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_destroy cmd-exec-id/[UUID] engine/direct auth/patupstream-version/2.10.3 engine/direct auth/pat"
     ]
   },
   "method": "GET",
@@ -95,7 +95,7 @@
 {
   "headers": {
     "User-Agent": [
-      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_destroy cmd-exec-id/[UUID] upstream/databricks-vscode-terminal upstream-version/2.10.3 engine/direct auth/pat"
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_destroy cmd-exec-id/[UUID] engine/direct auth/patupstream-version/2.10.3 engine/direct auth/pat"
     ]
   },
   "method": "GET",
@@ -108,7 +108,7 @@
 {
   "headers": {
     "User-Agent": [
-      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_destroy cmd-exec-id/[UUID] upstream/databricks-vscode-terminal upstream-version/2.10.3 engine/direct auth/pat"
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_destroy cmd-exec-id/[UUID] engine/direct auth/patupstream-version/2.10.3 engine/direct auth/pat"
     ]
   },
   "method": "GET",
@@ -117,7 +117,7 @@
 {
   "headers": {
     "User-Agent": [
-      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_destroy cmd-exec-id/[UUID] upstream/databricks-vscode-terminal upstream-version/2.10.3 engine/direct auth/pat"
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_destroy cmd-exec-id/[UUID] engine/direct auth/patupstream-version/2.10.3 engine/direct auth/pat"
     ]
   },
   "method": "POST",
@@ -135,7 +135,7 @@
 {
   "headers": {
     "User-Agent": [
-      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_destroy cmd-exec-id/[UUID] upstream/databricks-vscode-terminal upstream-version/2.10.3 engine/direct auth/pat"
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_destroy cmd-exec-id/[UUID] engine/direct auth/patupstream-version/2.10.3 engine/direct auth/pat"
     ]
   },
   "method": "POST",
