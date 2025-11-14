@@ -1,0 +1,24 @@
+
+>>> cat take_ownership.json
+{
+  "access_control_list": [{"permission_level": "IS_OWNER", "service_principal_name": "[USERNAME]"}]
+}
+
+>>> as-test-sp [CLI] current-user me
+"deco-test-spn"
+
+>>> [CLI] bundle destroy --auto-approve
+No active deployment found to destroy!
+
+>>> as-test-sp [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[UUID]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] permissions set jobs [NUMID] --json @take_ownership.json
+
+>>> [CLI] jobs delete [NUMID]
+
+>>> musterr [CLI] jobs get [NUMID]
+Error: Job [NUMID] does not exist.
