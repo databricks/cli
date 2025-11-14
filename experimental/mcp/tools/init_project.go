@@ -32,8 +32,8 @@ var InitProjectTool = Tool{
 				},
 				"language": map[string]any{
 					"type":        "string",
-					"description": "Language: 'python' (includes pyproject.toml) or 'non-python' (recommended for apps). Default: 'python'.",
-					"enum":        []string{"python", "non-python"},
+					"description": "Language: 'python' (includes pyproject.toml) or 'other' (recommended for apps). Default: 'python'.",
+					"enum":        []string{"python", "other"},
 				},
 			},
 			"required": []string{"project_name", "project_path"},
@@ -59,125 +59,90 @@ func InitProject(ctx context.Context, args initProjectArgs) (string, error) {
 	if args.ProjectPath == "" {
 		return "", errors.New("project_path is required")
 	}
-
 	if args.ProjectName == "" {
 		return "", errors.New("project_name is required")
 	}
-
 	if err := auth.CheckAuthentication(ctx); err != nil {
 		return "", err
 	}
 
-	pathInfo, err := os.Stat(args.ProjectPath)
-	if err != nil {
-		if os.IsNotExist(err) {
-			if err := os.MkdirAll(args.ProjectPath, 0o755); err != nil {
-				return "", fmt.Errorf("failed to create project directory: %w", err)
-			}
-		} else {
-			return "", fmt.Errorf("failed to access project path: %w", err)
-		}
-	} else if !pathInfo.IsDir() {
-		return "", fmt.Errorf("project path exists but is not a directory: %s", args.ProjectPath)
+	if err := os.MkdirAll(args.ProjectPath, 0o755); err != nil {
+		return "", fmt.Errorf("failed to create project directory: %w", err)
 	}
 
-	// Check if a Databricks project already exists
-	databricksYml := filepath.Join(args.ProjectPath, "databricks.yml")
-	if _, err := os.Stat(databricksYml); err == nil {
+	if _, err := os.Stat(filepath.Join(args.ProjectPath, "databricks.yml")); err == nil {
 		return "", fmt.Errorf("project already initialized: databricks.yml exists in %s\n\nUse the add_project_resource tool to add resources to this existing project", args.ProjectPath)
 	}
 
-	// Default language to python if not specified
 	if args.Language == "" {
 		args.Language = "python"
 	}
 
-	// Map MCP language parameter to template's language_choice parameter
-	// MCP uses "python" or "non-python", template uses "python", "sql", "other"
-	languageChoice := "python"
-	if args.Language == "non-python" {
-		languageChoice = "other"
+	if err := runBundleInit(ctx, args.ProjectPath, args.ProjectName, args.Language); err != nil {
+		return "", err
 	}
 
-	configData := map[string]string{
-		"project_name":     args.ProjectName,
-		"default_catalog":  "main",
-		"personal_schemas": "yes",
-		"language_choice":  languageChoice,
-	}
-
-	configJSON, err := json.Marshal(configData)
-	if err != nil {
-		return "", fmt.Errorf("failed to create config JSON: %w", err)
-	}
-
-	tmpDir := os.TempDir()
-	configFile := filepath.Join(tmpDir, fmt.Sprintf("databricks-init-%s.json", args.ProjectName))
-	if err := os.WriteFile(configFile, configJSON, 0o644); err != nil {
-		return "", fmt.Errorf("failed to write config file: %w", err)
-	}
-	defer os.Remove(configFile)
-
-	cmd := exec.CommandContext(ctx, GetCLIPath(), "bundle", "init",
-		"--config-file", configFile,
-		"--output-dir", args.ProjectPath,
-		"default-minimal")
-
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return "", fmt.Errorf("failed to initialize project: %w\nOutput: %s", err, string(output))
-	}
-
-	// The template creates a subdirectory with the project name
-	// We need to move everything up one level to args.ProjectPath
+	// Template creates a nested directory - move contents to project root
 	nestedPath := filepath.Join(args.ProjectPath, args.ProjectName)
-
-	// Move all contents from nestedPath to args.ProjectPath
 	entries, err := os.ReadDir(nestedPath)
 	if err != nil {
 		return "", fmt.Errorf("failed to read nested project directory: %w", err)
 	}
 
 	for _, entry := range entries {
-		srcPath := filepath.Join(nestedPath, entry.Name())
-		dstPath := filepath.Join(args.ProjectPath, entry.Name())
-
-		if err := os.Rename(srcPath, dstPath); err != nil {
-			return "", fmt.Errorf("failed to move %s to project root: %w", entry.Name(), err)
+		if err := os.Rename(filepath.Join(nestedPath, entry.Name()), filepath.Join(args.ProjectPath, entry.Name())); err != nil {
+			return "", fmt.Errorf("failed to move %s: %w", entry.Name(), err)
 		}
 	}
+	os.Remove(nestedPath)
 
-	if err := os.Remove(nestedPath); err != nil {
-		return "", fmt.Errorf("failed to remove nested directory: %w", err)
-	}
-
-	// Create agent instructions file based on the calling client
 	filename := "AGENTS.md"
-	clientName := GetClientName(ctx)
-	if strings.Contains(strings.ToLower(clientName), "claude") {
+	if strings.Contains(strings.ToLower(GetClientName(ctx)), "claude") {
 		filename = "CLAUDE.md"
 	}
-	// Write instructions file (with project info included)
-	instructionsContent := prompts.MustExecuteTemplate("AGENTS.tmpl", map[string]string{
+
+	templateData := map[string]string{
 		"ProjectName": args.ProjectName,
 		"ProjectPath": args.ProjectPath,
-	})
-	instructionsPath := filepath.Join(args.ProjectPath, filename)
-	if err := os.WriteFile(instructionsPath, []byte(instructionsContent), 0o644); err != nil {
+	}
+	instructionsContent := prompts.MustExecuteTemplate("AGENTS.tmpl", templateData)
+	if err := os.WriteFile(filepath.Join(args.ProjectPath, filename), []byte(instructionsContent), 0o644); err != nil {
 		return "", fmt.Errorf("failed to create %s: %w", filename, err)
 	}
 
-	// Return the same guidance as analyze_project
-	result := prompts.MustExecuteTemplate("AGENTS.tmpl", map[string]string{
-		"ProjectName": args.ProjectName,
-		"ProjectPath": args.ProjectPath,
-	})
-
-	// Get project analysis and guidance
 	analysis, err := AnalyzeProject(ctx, analyzeProjectArgs{ProjectPath: args.ProjectPath})
 	if err != nil {
 		return "", fmt.Errorf("failed to analyze initialized project: %w", err)
 	}
 
-	return result + analysis, nil
+	return instructionsContent + analysis, nil
+}
+
+func runBundleInit(ctx context.Context, projectPath, projectName, language string) error {
+	configJSON, err := json.Marshal(map[string]string{
+		"project_name":     projectName,
+		"default_catalog":  "main",
+		"personal_schemas": "yes",
+		"language_choice":  language,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create config JSON: %w", err)
+	}
+
+	configFile := filepath.Join(os.TempDir(), fmt.Sprintf("databricks-init-%s.json", projectName))
+	if err := os.WriteFile(configFile, configJSON, 0o644); err != nil {
+		return fmt.Errorf("failed to write config file: %w", err)
+	}
+	defer os.Remove(configFile)
+
+	cmd := exec.CommandContext(ctx, GetCLIPath(), "bundle", "init",
+		"--config-file", configFile,
+		"--output-dir", projectPath,
+		"default-minimal")
+
+	if output, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("failed to initialize project: %w\nOutput: %s", err, string(output))
+	}
+
+	return nil
 }
