@@ -53,7 +53,7 @@ links:
 checks: tidy ws links
 
 test:
-	${GOTESTSUM_CMD} ${PACKAGES} -- -timeout=${LOCAL_TIMEOUT} -short -parallel 16
+	${GOTESTSUM_CMD} ${PACKAGES} -- -timeout=${LOCAL_TIMEOUT} -short -p 16
 
 test-slow:
 	${GOTESTSUM_CMD} ${PACKAGES} -- -timeout=${LOCAL_TIMEOUT}
