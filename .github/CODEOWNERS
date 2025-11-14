@@ -4,3 +4,5 @@
 /acceptance/pipelines/    @jefferycheng1 @kanterov @lennartkats-db
 /cmd/pipelines/           @jefferycheng1 @kanterov @lennartkats-db
 /cmd/labs/                @alexott @nfx
+/cmd/workspace/apps/      @fjakobs @arsenyinfo @keugenek @igrekun @MarioCadenas @victor-ditadi_data @pkosiec
+/libs/apps/               @fjakobs @arsenyinfo @keugenek @igrekun @MarioCadenas @victor-ditadi_data @pkosiec
