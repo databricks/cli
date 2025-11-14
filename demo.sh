@@ -117,6 +117,8 @@ echo -e " ${GREEN}[${NC}████████${GREEN}]${NC}  Databricks Exper
 echo -e " ${GREEN}[${NC}██▌  ▐██${GREEN}]${NC}"
 echo -e " ${GREEN}[${NC}████████${GREEN}]${NC}  AI-powered Databricks development and exploration"
 echo ""
+echo "Databricks CLI installed at: $dir/databricks"
+echo ""
 echo "To get started, run:"
 echo "  databricks experimental mcp install"
 echo ""
