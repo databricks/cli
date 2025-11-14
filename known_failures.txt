@@ -13,3 +13,7 @@
 
 # This test is consistently failing in nightlies timing out when trying to stop an app (Oct 16 2025):
 acceptance TestAccept/bundle/run/app-with-job/
+
+# Error: Invalid access token. [ReqId: [UUID]] on aws-prod, but not on aws-prod-ucws
+# Cannot reproduce it locally though - works for me via "deco env run -i -n aws-prod"
+acceptance TestAccept/bundle/resources/permissions/jobs/destroy_without_mgmtperms/
