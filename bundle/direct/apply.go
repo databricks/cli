@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/databricks-sdk-go/apierr"
 )
 
 func (d *DeploymentUnit) Destroy(ctx context.Context, db *dstate.DeploymentState) error {
@@ -184,7 +185,11 @@ func (d *DeploymentUnit) UpdateWithID(ctx context.Context, db *dstate.Deployment
 func (d *DeploymentUnit) Delete(ctx context.Context, db *dstate.DeploymentState, oldID string) error {
 	err := d.Adapter.DoDelete(ctx, oldID)
 	if err != nil && !isResourceGone(err) {
-		return fmt.Errorf("deleting id=%s: %w", oldID, err)
+		if errors.Is(err, apierr.ErrPermissionDenied) {
+			log.Warnf(ctx, "Ignoring permission error when deleting %s id=%s: %w", d.ResourceKey, oldID, err)
+		} else {
+			return fmt.Errorf("deleting id=%s: %w", oldID, err)
+		}
 	}
 
 	err = db.DeleteState(d.ResourceKey)
