@@ -3,33 +3,65 @@ package auth
 import (
 	"context"
 	"errors"
-	"fmt"
+	"net/http"
 	"os"
-	"os/exec"
+	"sync"
+
+	"github.com/databricks/cli/experimental/mcp/tools/prompts"
+	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
+	"github.com/databricks/databricks-sdk-go/config"
+	"github.com/databricks/databricks-sdk-go/service/jobs"
+)
+
+var (
+	authCheckOnce   sync.Once
+	authCheckResult error
 )
 
 // CheckAuthentication checks if the user is authenticated to a Databricks workspace.
+// It caches the result so the check only runs once per process.
 func CheckAuthentication(ctx context.Context) error {
+	authCheckOnce.Do(func() {
+		authCheckResult = checkAuth(ctx)
+	})
+	return authCheckResult
+}
+
+func checkAuth(ctx context.Context) error {
 	if os.Getenv("DATABRICKS_MCP_SKIP_AUTH_CHECK") == "1" {
 		return nil
 	}
 
-	// Use a non-existent job ID to check authentication
-	cliPath := os.Args[0]
-	cmd := exec.CommandContext(ctx, cliPath, "jobs", "get", "999999999")
-	err := cmd.Run()
+	w, err := databricks.NewWorkspaceClient()
+	if err != nil {
+		return wrapAuthError(err)
+	}
 
+	// Use Jobs API for auth check (fast). Expected: 404 (authenticated), 401/403 (not authenticated).
+	_, err = w.Jobs.Get(ctx, jobs.GetJobRequest{JobId: 999999999})
 	if err == nil {
 		return nil
 	}
 
-	var exitErr *exec.ExitError
-	if errors.As(err, &exitErr) {
-		if exitErr.ExitCode() == 1 {
-			return errors.New("not authenticated to Databricks\n\nTo authenticate, please run:\n  databricks auth login --profile DEFAULT --host <your-workspace-url>\n\nReplace <your-workspace-url> with your Databricks workspace URL (e.g., mycompany.cloud.databricks.com).\n\nDon't have a Databricks account? You can set up a fully free account for experimentation at:\nhttps://docs.databricks.com/getting-started/free-edition\n\nOnce authenticated, you can use this tool again")
+	var apiErr *apierr.APIError
+	if errors.As(err, &apiErr) {
+		switch apiErr.StatusCode {
+		case http.StatusNotFound:
+			return nil
+		case http.StatusUnauthorized, http.StatusForbidden:
+			return errors.New(prompts.MustExecuteTemplate("auth_error.tmpl", nil))
+		default:
+			return nil
 		}
-		return nil
 	}
 
-	return fmt.Errorf("failed to check authentication: %w", err)
+	return wrapAuthError(err)
+}
+
+func wrapAuthError(err error) error {
+	if errors.Is(err, config.ErrCannotConfigureDefault) {
+		return errors.New(prompts.MustExecuteTemplate("auth_error.tmpl", nil))
+	}
+	return err
 }
