@@ -79,7 +79,7 @@ func InstallCursor() error {
 	// Add or update the Databricks MCP server entry
 	config.McpServers["databricks"] = mcpServer{
 		Command: "databricks",
-		Args:    []string{"experimental", "mcp", "server"},
+		Args:    []string{"experimental", "aitools", "server"},
 	}
 
 	// Write back to file with pretty printing

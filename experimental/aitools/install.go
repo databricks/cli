@@ -1,4 +1,4 @@
-package mcp
+package aitools
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/databricks/cli/experimental/mcp/agents"
+	"github.com/databricks/cli/experimental/aitools/agents"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
@@ -28,7 +28,7 @@ func newInstallCmd() *cobra.Command {
 func runInstall(ctx context.Context) error {
 	cmdio.LogString(ctx, "")
 	green := color.New(color.FgGreen).SprintFunc()
-	cmdio.LogString(ctx, " "+green("[")+"████████"+green("]")+"  Databricks Experimental MCP Server")
+	cmdio.LogString(ctx, " "+green("[")+"████████"+green("]")+"  Databricks Experimental AI agent skills & MCP")
 	cmdio.LogString(ctx, " "+green("[")+"██▌  ▐██"+green("]"))
 	cmdio.LogString(ctx, " "+green("[")+"████████"+green("]")+"  AI-powered Databricks development and exploration")
 	cmdio.LogString(ctx, "")

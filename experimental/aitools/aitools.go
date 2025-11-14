@@ -1,4 +1,4 @@
-package mcp
+package aitools
 
 import (
 	"github.com/spf13/cobra"
@@ -6,12 +6,12 @@ import (
 
 func New() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:    "mcp",
-		Short:  "Manage the Databricks CLI MCP server for coding agents",
+		Use:    "aitools",
+		Short:  "Manage AI agent skills and MCP server for coding agents",
 		Hidden: true,
-		Long: `Manage the Databricks CLI MCP (Model Context Protocol) server.
+		Long: `Manage Databricks AI agent skills and MCP server.
 
-The MCP server enables coding agents like Claude Code and Cursor to interact
+This provides AI agents like Claude Code and Cursor with capabilities to interact
 with Databricks, create projects, deploy bundles, run jobs, etc.
 
 ╔════════════════════════════════════════════════════════════════╗
@@ -19,10 +19,10 @@ with Databricks, create projects, deploy bundles, run jobs, etc.
 ╚════════════════════════════════════════════════════════════════╝
 
 Common workflows:
-  databricks experimental mcp install   # Install in Claude Code or Cursor
-  databricks experimental mcp server    # Start server (used by agents)
+  databricks experimental aitools install   # Install in Claude Code or Cursor
+  databricks experimental aitools server    # Start server (used by agents)
 
-Online documentation: https://docs.databricks.com/dev-tools/cli/mcp.html`,
+Online documentation: https://docs.databricks.com/dev-tools/cli/aitools.html`,
 	}
 
 	cmd.AddCommand(newInstallCmd())

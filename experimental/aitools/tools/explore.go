@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/databricks/cli/experimental/mcp/tools/prompts"
+	"github.com/databricks/cli/experimental/aitools/tools/prompts"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/exec"

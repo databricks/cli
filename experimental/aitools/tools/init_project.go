@@ -10,8 +10,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/databricks/cli/experimental/mcp/auth"
-	"github.com/databricks/cli/experimental/mcp/tools/prompts"
+	"github.com/databricks/cli/experimental/aitools/auth"
+	"github.com/databricks/cli/experimental/aitools/tools/prompts"
 )
 
 // InitProjectTool initializes a new Databricks project.

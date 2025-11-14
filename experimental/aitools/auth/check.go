@@ -7,7 +7,7 @@ import (
 	"os"
 	"sync"
 
-	"github.com/databricks/cli/experimental/mcp/tools/prompts"
+	"github.com/databricks/cli/experimental/aitools/tools/prompts"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/config"

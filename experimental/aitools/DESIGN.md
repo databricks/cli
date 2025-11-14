@@ -1,11 +1,11 @@
-Add a 'databricks experimental mcp' command that behaves as follows:
+Add a 'databricks experimental aitools' command that behaves as follows:
 
-* databricks experimental mcp --help: shows help
-* databricks experimental mcp: shows help (like other command groups)
-* databricks experimental mcp install: installs the server in coding agents
-* databricks experimental mcp server: starts the mcp server (subcommand)
-* databricks experimental mcp uninstall: uninstalls the server from coding agents (subcommand - not implemented; errors out and tells the user to ask their local coding agent to uninstall the Databricks CLI MCP server)
-* databricks experimental mcp tool <tool_name> --json <json>: runs a specific MCP tool for acceptance testing (hidden subcommand)
+* databricks experimental aitools --help: shows help
+* databricks experimental aitools: shows help (like other command groups)
+* databricks experimental aitools install: installs the server in coding agents
+* databricks experimental aitools server: starts the mcp server (subcommand)
+* databricks experimental aitools uninstall: uninstalls the server from coding agents (subcommand - not implemented; errors out and tells the user to ask their local coding agent to uninstall the Databricks CLI MCP server)
+* databricks experimental aitools tool <tool_name> --json <json>: runs a specific MCP tool for acceptance testing (hidden subcommand)
 
 non-functional requirements:
 - any errors that these commands give should be friendly, concise, actionable.
@@ -25,7 +25,7 @@ non-functional requirements:
   Example test command:
   ```bash
   rm -rf /tmp/blank; mkdir -p /tmp/blank; cd /tmp/blank;
-  claude --allow-dangerously-skip-permissions "Create a new Databricks app that shows a dashboard with taxi trip fares per city, then preview it and open it in my browser. If the databricks-mcp MCP fails, stop immediately and ask for my guidance."
+  claude --allow-dangerously-skip-permissions "Create a new Databricks app that shows a dashboard with taxi trip fares per city, then preview it and open it in my browser. If the databricks-aitools MCP fails, stop immediately and ask for my guidance."
   ```
 
   You should test multiple scenarios:
@@ -42,7 +42,7 @@ non-functional requirements:
 To illustrate how the install command works:
 
 ```
-$ databricks experimental mcp install
+$ databricks experimental aitools install
 
   ▄▄▄▄▄▄▄▄   Databricks CLI
   ██▌  ▐██   MCP Server
@@ -82,7 +82,7 @@ Implementation notes:
 - Gracefully skips missing agents with yellow warning instead of erroring
 - Line replacement: "Installing..." → "✓ Installed" (or "⊘ Skipped") using \r
 
-Now databricks experimental mcp server should actually start an MCP server that we actually use to describe
+Now databricks experimental aitools server should actually start an MCP server that we actually use to describe
 the system as a whole a bit (btw each tool should be defined in a separate .go file, right!):
 - when starting up it should do a the 'roots/list' to the agent.
   - if that doesn't work or if there is more than one root => error out
@@ -123,7 +123,7 @@ the system as a whole a bit (btw each tool should be defined in a separate .go f
       after initialization, creates a CLAUDE.md file (if the calling MCP client is Claude Code) or AGENTS.md file (otherwise)
       with project-specific agent instructions. The file includes:
       - Installation instructions for the Databricks CLI MCP server (if not yet installed)
-      - Guidance to use the mcp__databricks-mcp__analyze_project tool when opening the project
+      - Guidance to use the mcp__databricks-aitools__analyze_project tool when opening the project
       The client is detected at runtime from the MCP initialize request's clientInfo field.
     - guidance on how to implement this: do some trial and error to make the init command work.
       do a non-forward merge of origin/add-default-minimal to get the minimal template!
@@ -190,7 +190,7 @@ the system as a whole a bit (btw each tool should be defined in a separate .go f
             for a pipeline, it can also use the invoke_databricks_cli tool to run 'bundle run <pipeline_name> --validate-only' to
             validate that the pipeline is correct.
   - further implementation guidance: i want acceptance tests for each of these project types (app, dashboard, job, pipeline);
-    this means they should be exposed as a hidden command like 'databricks experimental mcp tool add_project_resource --json <json>'. having these tests will be instrumental for iterating on them; the initing should not fail! note that the tool subcommand should just assume that the cwd is the current project dir.
+    this means they should be exposed as a hidden command like 'databricks experimental aitools tool add_project_resource --json <json>'. having these tests will be instrumental for iterating on them; the initing should not fail! note that the tool subcommand should just assume that the cwd is the current project dir.
 
 - the "explore" tool:
     - description: CALL THIS FIRST when user mentions a workspace by name or asks about workspace resources. Shows available workspaces/profiles, default warehouse, and provides guidance on exploring jobs, clusters, catalogs, and other Databricks resources. Use this to discover what's available before running CLI commands.

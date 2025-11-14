@@ -7,9 +7,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/databricks/cli/experimental/mcp/auth"
-	"github.com/databricks/cli/experimental/mcp/tools/prompts"
-	"github.com/databricks/cli/experimental/mcp/tools/resources"
+	"github.com/databricks/cli/experimental/aitools/auth"
+	"github.com/databricks/cli/experimental/aitools/tools/prompts"
+	"github.com/databricks/cli/experimental/aitools/tools/resources"
 )
 
 // AnalyzeProjectTool analyzes a Databricks project and returns guidance.

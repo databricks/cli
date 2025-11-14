@@ -1,4 +1,4 @@
-package mcp
+package aitools
 
 import (
 	"fmt"
@@ -17,7 +17,7 @@ func newUninstallCmd() *cobra.Command {
 To uninstall the Databricks CLI MCP server, please ask your coding agent to remove it.
 
 For Claude Code, you can also use:
-  claude mcp remove databricks-mcp
+  claude mcp remove databricks-aitools
 
 For Cursor, you can also manually remove the entry from:
   ~/.cursor/mcp.json

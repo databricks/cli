@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/databricks/cli/experimental/mcp/tools/prompts"
+	"github.com/databricks/cli/experimental/aitools/tools/prompts"
 )
 
 type pipelineHandler struct{}

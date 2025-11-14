@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os/exec"
 
-	"github.com/databricks/cli/experimental/mcp/tools"
+	"github.com/databricks/cli/experimental/aitools/tools"
 )
 
 // DetectClaude checks if Claude Code CLI is installed and available on PATH.
@@ -25,15 +25,15 @@ func InstallClaude() error {
 		return err
 	}
 
-	removeCmd := exec.Command("claude", "mcp", "remove", "--scope", "user", "databricks-mcp")
+	removeCmd := exec.Command("claude", "aitools", "remove", "--scope", "user", "databricks-aitools")
 	_ = removeCmd.Run()
 
-	cmd := exec.Command("claude", "mcp", "add",
+	cmd := exec.Command("claude", "aitools", "add",
 		"--scope", "user",
 		"--transport", "stdio",
-		"databricks-mcp",
+		"databricks-aitools",
 		"--",
-		databricksPath, "experimental", "mcp", "server")
+		databricksPath, "experimental", "aitools", "server")
 
 	output, err := cmd.CombinedOutput()
 	if err != nil {

@@ -1,4 +1,4 @@
-package mcp
+package aitools
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/databricks/cli/experimental/mcp/tools"
+	"github.com/databricks/cli/experimental/aitools/tools"
 	"github.com/spf13/cobra"
 )
 

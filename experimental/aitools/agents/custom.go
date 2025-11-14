@@ -12,7 +12,7 @@ func ShowCustomInstructions(ctx context.Context) error {
 To install the Databricks CLI MCP server in your coding agent:
 
 1. Add a new MCP server to your coding agent's configuration
-2. Set the command to: databricks experimental mcp server
+2. Set the command to: databricks experimental aitools server
 3. No environment variables or additional configuration needed
 
 Example MCP server configuration:
@@ -20,7 +20,7 @@ Example MCP server configuration:
   "mcpServers": {
     "databricks": {
       "command": "databricks",
-      "args": ["experimental", "mcp", "server"]
+      "args": ["experimental", "aitools", "server"]
     }
   }
 }

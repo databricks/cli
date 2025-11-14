@@ -1,4 +1,4 @@
-package mcp
+package aitools
 
 import (
 	"bufio"
@@ -8,7 +8,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/databricks/cli/experimental/mcp/tools"
+	"github.com/databricks/cli/experimental/aitools/tools"
 	"github.com/databricks/cli/libs/log"
 	"github.com/spf13/cobra"
 )
@@ -147,7 +147,7 @@ func (s *mcpServer) handleInitialize(req *jsonrpcRequest) {
 	result := map[string]any{
 		"protocolVersion": "2024-11-05",
 		"serverInfo": map[string]string{
-			"name":    "databricks-mcp",
+			"name":    "databricks-aitools",
 			"version": "1.0.0",
 		},
 		"capabilities": map[string]any{

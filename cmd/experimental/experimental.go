@@ -1,7 +1,7 @@
 package experimental
 
 import (
-	"github.com/databricks/cli/experimental/mcp"
+	"github.com/databricks/cli/experimental/aitools"
 	"github.com/spf13/cobra"
 )
 
@@ -20,7 +20,7 @@ These commands provide early access to new features that are still under
 development. They may change or be removed in future versions without notice.`,
 	}
 
-	cmd.AddCommand(mcp.New())
+	cmd.AddCommand(aitools.New())
 
 	return cmd
 }
