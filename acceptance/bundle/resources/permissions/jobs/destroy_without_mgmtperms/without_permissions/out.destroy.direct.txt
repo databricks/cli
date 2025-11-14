@@ -6,12 +6,6 @@ The following resources will be deleted:
 
 All files and directories at the following location will be deleted: /Workspace/Users/[UUID]/.bundle/test-bundle-[UNIQUE_NAME]/default
 
-Error: cannot delete resources.jobs.foo: deleting id=[NUMID]: User [UUID] does not have Admin or Owner permissions on job [NUMID] (403 PERMISSION_DENIED)
-
-Endpoint: POST [DATABRICKS_URL]/api/2.2/jobs/delete
-HTTP Status: 403 Forbidden
-API error_code: PERMISSION_DENIED
-API message: User [UUID] does not have Admin or Owner permissions on job [NUMID]
-
-
-Exit code: 1
+Warn: Ignoring permission error when deleting resources.jobs.foo id=[NUMID]: User [UUID] does not have Admin or Owner permissions on job [NUMID]
+Deleting files...
+Destroy complete!
