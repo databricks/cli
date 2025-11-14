@@ -136,17 +136,17 @@ func (r *ResourceGrants) DoRefresh(ctx context.Context, id string) (*GrantsState
 	}, nil
 }
 
-func (r *ResourceGrants) DoCreate(ctx context.Context, state *GrantsState) (string, error) {
+func (r *ResourceGrants) DoCreate(ctx context.Context, state *GrantsState) (string, *GrantsState, error) {
 	err := r.applyGrants(ctx, state)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 
-	return makeGrantsID(state.SecurableType, state.FullName), nil
+	return makeGrantsID(state.SecurableType, state.FullName), nil, nil
 }
 
-func (r *ResourceGrants) DoUpdate(ctx context.Context, _ string, state *GrantsState) error {
-	return r.applyGrants(ctx, state)
+func (r *ResourceGrants) DoUpdate(ctx context.Context, _ string, state *GrantsState) (*GrantsState, error) {
+	return nil, r.applyGrants(ctx, state)
 }
 
 func (r *ResourceGrants) DoDelete(ctx context.Context, id string) error {

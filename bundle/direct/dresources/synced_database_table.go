@@ -24,17 +24,17 @@ func (r *ResourceSyncedDatabaseTable) DoRefresh(ctx context.Context, name string
 	return r.client.Database.GetSyncedDatabaseTableByName(ctx, name)
 }
 
-func (r *ResourceSyncedDatabaseTable) DoCreate(ctx context.Context, config *database.SyncedDatabaseTable) (string, error) {
+func (r *ResourceSyncedDatabaseTable) DoCreate(ctx context.Context, config *database.SyncedDatabaseTable) (string, *database.SyncedDatabaseTable, error) {
 	result, err := r.client.Database.CreateSyncedDatabaseTable(ctx, database.CreateSyncedDatabaseTableRequest{
 		SyncedTable: *config,
 	})
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
-	return result.Name, nil
+	return result.Name, nil, nil
 }
 
-func (r *ResourceSyncedDatabaseTable) DoUpdate(ctx context.Context, id string, config *database.SyncedDatabaseTable) error {
+func (r *ResourceSyncedDatabaseTable) DoUpdate(ctx context.Context, id string, config *database.SyncedDatabaseTable) (*database.SyncedDatabaseTable, error) {
 	request := database.UpdateSyncedDatabaseTableRequest{
 		SyncedTable: *config,
 		Name:        id,
@@ -42,7 +42,7 @@ func (r *ResourceSyncedDatabaseTable) DoUpdate(ctx context.Context, id string, c
 	}
 
 	_, err := r.client.Database.UpdateSyncedDatabaseTable(ctx, request)
-	return err
+	return nil, err
 }
 
 func (r *ResourceSyncedDatabaseTable) DoDelete(ctx context.Context, id string) error {
