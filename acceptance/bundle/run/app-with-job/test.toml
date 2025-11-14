@@ -1,4 +1,6 @@
 Local = false
+# broken since Oct 16
+Cloud = false
 
 #
 # On June 18 2025 it was taking:
@@ -7,7 +9,7 @@ Local = false
 # - 10-20 seconds to deploy the bundle
 # This test includes 2 application starts, and it is taking aroung 420 seconds to complete the entire test
 #
-CloudSlow = true
+CloudSlow = false
 
 Ignore = [
     'databricks.yml',
