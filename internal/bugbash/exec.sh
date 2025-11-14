@@ -122,4 +122,5 @@ echo ""
 
 # Exec into a new shell.
 # Note: don't use zsh because on macOS it _always_ overwrites PS1.
-exec /usr/bin/env bash
+# Use --norc and --noprofile to prevent sourcing config files that would reset PATH/PS1.
+exec /usr/bin/env bash --norc --noprofile
