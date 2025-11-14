@@ -30,6 +30,11 @@ var InitProjectTool = Tool{
 					"type":        "string",
 					"description": "A fully qualified path of the project directory. Usually this should be in the current directory! But if it already has a lot of other things then it should be a subdirectory. Files will be created directly at this path.",
 				},
+				"language": map[string]any{
+					"type":        "string",
+					"description": "Language: 'python' (includes pyproject.toml) or 'non-python' (recommended for apps). Default: 'python'.",
+					"enum":        []string{"python", "non-python"},
+				},
 			},
 			"required": []string{"project_name", "project_path"},
 		},
@@ -46,6 +51,7 @@ var InitProjectTool = Tool{
 type initProjectArgs struct {
 	ProjectName string `json:"project_name"`
 	ProjectPath string `json:"project_path"`
+	Language    string `json:"language"`
 }
 
 // InitProject initializes a new Databricks project using the default-minimal template.
@@ -81,10 +87,23 @@ func InitProject(ctx context.Context, args initProjectArgs) (string, error) {
 		return "", fmt.Errorf("project already initialized: databricks.yml exists in %s\n\nUse the add_project_resource tool to add resources to this existing project", args.ProjectPath)
 	}
 
+	// Default language to python if not specified
+	if args.Language == "" {
+		args.Language = "python"
+	}
+
+	// Map MCP language parameter to template's language_choice parameter
+	// MCP uses "python" or "non-python", template uses "python", "sql", "other"
+	languageChoice := "python"
+	if args.Language == "non-python" {
+		languageChoice = "other"
+	}
+
 	configData := map[string]string{
 		"project_name":     args.ProjectName,
 		"default_catalog":  "main",
 		"personal_schemas": "yes",
+		"language_choice":  languageChoice,
 	}
 
 	configJSON, err := json.Marshal(configData)
