@@ -41,7 +41,7 @@ jobs:
         os:
           - macos-latest
           - group: databricks-protected-runner-group-large
-            label: linux-ubuntu-latest-large
+            labels: linux-ubuntu-latest-large
           - windows-latest
         deployment:
           - "terraform"
