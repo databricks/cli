@@ -1,21 +1,3 @@
-# Agent instructions
-
-This file can be used for any project-specific instructions!
-
-## Prerequisites
-
-If the Databricks CLI MCP server is not yet installed, install it by:
-1. Installing the Databricks CLI: https://docs.databricks.com/dev-tools/cli/install
-2. Running: `databricks experimental aitools install`
-
-## Working with this project
-
-General agent guidance: always use the mcp__databricks-aitools__analyze_project tool whenever you open this project!
-It makes sure you have more context on the current project and what actions you can perform on it.
-
-{{if .ProjectName}}
-## Project Initialization
-
 Project '{{.ProjectName}}' initialized successfully at: {{.ProjectPath}}
 
 ⚠️  IMPORTANT: This is an EMPTY project with NO resources (no apps, jobs, pipelines, or dashboards)!
@@ -23,4 +5,3 @@ Project '{{.ProjectName}}' initialized successfully at: {{.ProjectPath}}
 If the user asked you to create a specific resource (like "create an app" or "create a job"), you MUST now call the add_project_resource tool to add it!
 
 Example: add_project_resource(project_path="{{.ProjectPath}}", type="app", name="my_app", template="nodejs-fastapi-hello-world-app")
-{{end}}

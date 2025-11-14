@@ -105,17 +105,22 @@ func InitProject(ctx context.Context, args initProjectArgs) (string, error) {
 		"ProjectName": args.ProjectName,
 		"ProjectPath": args.ProjectPath,
 	}
-	instructionsContent := prompts.MustExecuteTemplate("AGENTS.tmpl", templateData)
-	if err := os.WriteFile(filepath.Join(args.ProjectPath, filename), []byte(instructionsContent), 0o644); err != nil {
+
+	// Write AGENTS.md/CLAUDE.md file
+	agentsContent := prompts.MustExecuteTemplate("AGENTS.tmpl", templateData)
+	if err := os.WriteFile(filepath.Join(args.ProjectPath, filename), []byte(agentsContent), 0o644); err != nil {
 		return "", fmt.Errorf("failed to create %s: %w", filename, err)
 	}
+
+	// Generate MCP response (separate from file content)
+	responseMessage := prompts.MustExecuteTemplate("init_project.tmpl", templateData)
 
 	analysis, err := AnalyzeProject(ctx, analyzeProjectArgs{ProjectPath: args.ProjectPath})
 	if err != nil {
 		return "", fmt.Errorf("failed to analyze initialized project: %w", err)
 	}
 
-	return instructionsContent + analysis, nil
+	return responseMessage + "\n\n" + analysis, nil
 }
 
 func runBundleInit(ctx context.Context, projectPath, projectName, language string) error {
