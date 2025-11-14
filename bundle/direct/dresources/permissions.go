@@ -57,13 +57,22 @@ func PreparePermissionsInputConfig(inputConfig any, node string) (*structvar.Str
 		})
 	}
 
+	objectIdRef := prefix + "${" + baseNode + ".id}"
+	// For permissions, model serving endpoint uses it's internal ID, which is different
+	// from its CRUD APIs which use the name.
+	// We have a wrapper struct [RefreshOutput] from which we read the internal ID
+	// in order to set the appropriate permissions.
+	if strings.HasPrefix(baseNode, "resources.model_serving_endpoints.") {
+		objectIdRef = prefix + "${" + baseNode + ".endpoint_id}"
+	}
+
 	return &structvar.StructVar{
 		Config: &PermissionsState{
 			ObjectID:    "", // Always a reference, defined in Refs below
 			Permissions: permissions,
 		},
 		Refs: map[string]string{
-			"object_id": prefix + "${" + baseNode + ".id}",
+			"object_id": objectIdRef,
 		},
 	}, nil
 }

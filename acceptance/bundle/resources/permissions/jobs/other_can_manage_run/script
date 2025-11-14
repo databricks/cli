@@ -1,0 +1,8 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+trace $CLI bundle validate -t green -o json | jq .resources
+trace errcode $CLI bundle deploy -t green
+print_requests.py //jobs &> out.deploy.requests.json
+
+trace errcode $CLI bundle destroy -t green --auto-approve
+print_requests.py //jobs &> out.destroy.requests.$DATABRICKS_BUNDLE_ENGINE.json

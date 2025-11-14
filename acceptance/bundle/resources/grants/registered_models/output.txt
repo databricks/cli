@@ -1,5 +1,5 @@
 
->>> [CLI] bundle debug plan
+>>> [CLI] bundle plan -o json
 
 >>> print_requests.py --get //permissions
 

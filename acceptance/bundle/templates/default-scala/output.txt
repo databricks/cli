@@ -1,0 +1,8 @@
+
+>>> [CLI] bundle init default-scala --config-file ./input.json --output-dir output
+
+Welcome to the default-scala template for Databricks Asset Bundles!
+
+A workspace was selected based on your current profile. For information about how to change this, see https://docs.databricks.com/dev-tools/cli/profiles.html.
+workspace_host: [DATABRICKS_URL]
+✨ Successfully initialized template

@@ -1,6 +1,6 @@
 envsubst < databricks.yml.tmpl > databricks.yml
 
-errcode $CLI bundle debug plan &> out.plan1.$DATABRICKS_BUNDLE_ENGINE.txt
+errcode $CLI bundle plan -o json &> out.plan1.$DATABRICKS_BUNDLE_ENGINE.txt
 print_requests.py --get //permissions
 errcode $CLI bundle deploy &> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt
 print_requests.py //permissions > out.deploy1.requests.$DATABRICKS_BUNDLE_ENGINE.json
