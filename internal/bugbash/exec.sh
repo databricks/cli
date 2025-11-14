@@ -104,8 +104,8 @@ fi
 chmod +x "$dir/databricks"
 export PATH="$dir:$PATH"
 
-# Set the prompt to indicate the bugbash environment and exec.
-export PS1="(bugbash $BRANCH) \[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ "
+# Set the prompt to indicate the demo environment and exec.
+export PS1="(demo) \[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ "
 
 # Display welcome message for MCP demo.
 GREEN='\033[0;32m'
