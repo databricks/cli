@@ -1,0 +1,38 @@
+{
+  "method": "POST",
+  "path": "/api/2.1/clusters/create",
+  "body": {
+    "autotermination_minutes": 60,
+    "cluster_name": "[dev [USERNAME]] test-cluster",
+    "custom_tags": {
+      "dev": "[USERNAME]"
+    },
+    "node_type_id": "[NODE_TYPE_ID]",
+    "num_workers": 1,
+    "spark_version": "15.4.x-scala2.12"
+  }
+}
+{
+  "method": "PUT",
+  "path": "/api/2.0/permissions/clusters/[UUID]",
+  "body": {
+    "access_control_list": [
+      {
+        "permission_level": "CAN_MANAGE",
+        "service_principal_name": "[UUID]"
+      },
+      {
+        "permission_level": "CAN_ATTACH_TO",
+        "service_principal_name": "[UUID]"
+      },
+      {
+        "permission_level": "CAN_RESTART",
+        "service_principal_name": "[UUID]"
+      },
+      {
+        "permission_level": "CAN_MANAGE",
+        "user_name": "[USERNAME]"
+      }
+    ]
+  }
+}

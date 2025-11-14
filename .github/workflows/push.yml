@@ -40,7 +40,8 @@ jobs:
       matrix:
         os:
           - macos-latest
-          - ubuntu-latest
+          - group: databricks-protected-runner-group-large
+            labels: linux-ubuntu-latest-large
           - windows-latest
         deployment:
           - "terraform"

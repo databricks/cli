@@ -132,9 +132,43 @@ jobs:
           name: windows-artifacts
           path: dist
 
+      - name: Download Unix checksum file from release
+        run: |
+          VERSION=${{ github.ref_name }}
+          VERSION_NO_V=${VERSION:1}
+
+          echo "Downloading Unix checksum file..."
+          gh release download ${{ github.ref_name }} \
+            --pattern "databricks_cli_${VERSION_NO_V}_SHA256SUMS_unix" \
+            --dir dist \
+            --repo ${{ github.repository }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Merge checksum files
+        run: |
+          VERSION=${{ github.ref_name }}
+          VERSION_NO_V=${VERSION:1}
+
+          echo "Merging Unix and Windows checksum files..."
+          cat dist/databricks_cli_${VERSION_NO_V}_SHA256SUMS_unix > dist/databricks_cli_${VERSION_NO_V}_SHA256SUMS
+          cat dist/databricks_cli_${VERSION_NO_V}_SHA256SUMS_windows >> dist/databricks_cli_${VERSION_NO_V}_SHA256SUMS
+
+          echo "Merged SHA256SUMS file contents:"
+          cat dist/databricks_cli_${VERSION_NO_V}_SHA256SUMS
+
+      - name: Verify checksums after download
+        run: |
+          echo "Verifying Windows artifact checksums after download..."
+          for file in dist/*.zip; do
+            if [ -f "$file" ]; then
+              sha256sum "$file"
+            fi
+          done
+
       - name: Upload to GitHub release
         run: |
-          for file in dist/*.zip dist/*SHA256SUMS*; do
+          for file in dist/*.zip dist/*SHA256SUMS; do
             if [ -f "$file" ]; then
               echo "Uploading $(basename $file)"
               gh release upload ${{ github.ref_name }} "$file" --repo ${{ github.repository }}
@@ -176,7 +210,7 @@ jobs:
       group: databricks-deco-testing-runner-group
       labels: ubuntu-latest-deco
 
-    needs: upload-windows-to-release
+    needs: [goreleaser-unix, upload-windows-to-release]
 
     steps:
       - name: Set VERSION variable from tag

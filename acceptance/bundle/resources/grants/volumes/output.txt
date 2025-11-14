@@ -1,5 +1,5 @@
 
->>> [CLI] bundle debug plan
+>>> [CLI] bundle plan -o json
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/schema-grants-[UNIQUE_NAME]/default/files...
@@ -22,7 +22,7 @@ Deployment complete!
   ]
 }
 
->>> [CLI] bundle debug plan
+>>> [CLI] bundle plan -o json
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/schema-grants-[UNIQUE_NAME]/default/files...

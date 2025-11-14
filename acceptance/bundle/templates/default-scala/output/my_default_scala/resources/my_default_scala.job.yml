@@ -1,0 +1,27 @@
+# The main job for my_default_scala
+
+resources:
+  jobs:
+    my_default_scala:
+      name: my_default_scala
+      parameters:
+        - name: catalog
+          default: ${var.catalog}
+        - name: schema
+          default: ${var.schema}
+      tasks:
+        - task_key: main_task
+          spark_jar_task:
+            main_class_name: com.examples.Main
+            parameters:
+              - "--catalog"
+              - "{{job.parameters.catalog}}"
+              - "--schema"
+              - "{{job.parameters.schema}}"
+          environment_key: default
+      environments:
+        - environment_key: default
+          spec:
+            environment_version: "4-scala-preview"
+            java_dependencies:
+              - ${workspace.artifact_path}/.internal/my_default_scala-assembly-0.1.jar

@@ -5,7 +5,7 @@ create jobs.foo
 
 Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
 
->>> [CLI] bundle debug plan
+>>> [CLI] bundle plan -o json
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
@@ -57,7 +57,7 @@ Deployment complete!
   }
 }
 
->>> [CLI] bundle debug plan
+>>> [CLI] bundle plan -o json
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
