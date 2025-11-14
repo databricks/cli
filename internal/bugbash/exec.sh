@@ -44,12 +44,10 @@ function cli_snapshot_directory() {
     echo $dir
 }
 
-BRANCH=$1
-shift
-
-# Default to main branch if branch is not specified.
-if [ -z "$BRANCH" ]; then
-  BRANCH=main
+# Default to demo-add-mcp branch if branch is not specified.
+BRANCH=${1:-demo-add-mcp}
+if [ $# -gt 0 ]; then
+  shift
 fi
 
 if [ -z "$BRANCH" ]; then
@@ -109,29 +107,17 @@ export PATH="$dir:$PATH"
 # Set the prompt to indicate the bugbash environment and exec.
 export PS1="(bugbash $BRANCH) \[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ "
 
-# Display completion instructions.
-echo ""
-echo "=================================================================="
-
-if [[ ${BASH_VERSINFO[0]} -lt 5 ]]; then
-    echo -en "\033[31m"
-    echo "You have Bash version < 5 installed... completion won't work."
-    echo -en "\033[0m"
-    echo ""
-    echo "Install it with:"
-    echo ""
-    echo "  brew install bash bash-completion"
-    echo ""
-    echo "=================================================================="
-fi
+# Display welcome message for MCP demo.
+GREEN='\033[0;32m'
+NC='\033[0m' # No Color
 
 echo ""
-echo "To load completions in your current shell session:"
+echo -e " ${GREEN}[${NC}████████${GREEN}]${NC}  Databricks Experimental AI agent skills & MCP"
+echo -e " ${GREEN}[${NC}██▌  ▐██${GREEN}]${NC}"
+echo -e " ${GREEN}[${NC}████████${GREEN}]${NC}  AI-powered Databricks development and exploration"
 echo ""
-echo "  source /opt/homebrew/etc/profile.d/bash_completion.sh"
-echo "  source <(databricks completion bash)"
-echo ""
-echo "=================================================================="
+echo "To get started, run:"
+echo "  databricks experimental mcp install"
 echo ""
 
 # Exec into a new shell.
