@@ -13,7 +13,7 @@ Deployment complete!
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
->>> [CLI] bundle debug plan
+>>> [CLI] bundle plan -o json
 
 >>> print_requests.py //jobs
 

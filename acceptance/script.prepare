@@ -107,3 +107,16 @@ sethome() {
     # For Windows, use USERPROFILE.
     export USERPROFILE="$home"
 }
+
+as-test-sp() {
+    if [[ -z "$TEST_SP_TOKEN" ]]; then
+        echo "Error: TEST_SP_TOKEN is not set." >&2
+        return 1
+    fi
+
+    DATABRICKS_TOKEN="$TEST_SP_TOKEN" \
+    DATABRICKS_CLIENT_SECRET="" \
+    DATABRICKS_CLIENT_ID="" \
+    DATABRICKS_AUTH_TYPE="" \
+    "$@"
+}

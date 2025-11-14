@@ -24,6 +24,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	"github.com/databricks/databricks-sdk-go/service/serving"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -97,6 +98,50 @@ var testConfig map[string]any = map[string]any{
 			},
 		},
 	},
+
+	"model_serving_endpoints": &resources.ModelServingEndpoint{
+		CreateServingEndpoint: serving.CreateServingEndpoint{
+			Name: "my-endpoint",
+			Config: &serving.EndpointCoreConfigInput{
+				Name: "my-endpoint",
+				AutoCaptureConfig: &serving.AutoCaptureConfigInput{
+					CatalogName:     "main",
+					SchemaName:      "myschema",
+					TableNamePrefix: "my_table",
+					Enabled:         true,
+					ForceSendFields: nil,
+				},
+				ServedModels: nil,
+				ServedEntities: []serving.ServedEntityInput{
+					{
+						EntityName:                "entity-name",
+						EntityVersion:             "1",
+						WorkloadSize:              "Small",
+						ScaleToZeroEnabled:        true,
+						WorkloadType:              serving.ServingModelWorkloadTypeCpu,
+						EnvironmentVars:           map[string]string{"key": "value"},
+						InstanceProfileArn:        "arn:aws:iam::123456789012:instance-profile/my-instance-profile",
+						MaxProvisionedConcurrency: 10,
+						MaxProvisionedThroughput:  100,
+						MinProvisionedConcurrency: 1,
+						MinProvisionedThroughput:  10,
+						Name:                      "entity-name",
+						ProvisionedModelUnits:     100,
+						ExternalModel:             nil,
+						ForceSendFields:           nil,
+					},
+				},
+				TrafficConfig: &serving.TrafficConfig{
+					Routes: []serving.Route{
+						{
+							ServedModelName:   "model-name-1",
+							TrafficPercentage: 100,
+						},
+					},
+				},
+			},
+		},
+	},
 }
 
 type prepareWorkspace func(client *databricks.WorkspaceClient) (any, error)
@@ -137,7 +182,7 @@ var testDeps = map[string]prepareWorkspace{
 		return &PermissionsState{
 			ObjectID: "/jobs/" + strconv.FormatInt(resp.JobId, 10),
 			Permissions: []iam.AccessControlRequest{{
-				PermissionLevel: "CAN_MANAGE",
+				PermissionLevel: "IS_OWNER",
 				UserName:        "user@example.com",
 			}},
 		}, nil
@@ -246,6 +291,33 @@ var testDeps = map[string]prepareWorkspace{
 
 		return &PermissionsState{
 			ObjectID: "/database-instances/" + waiter.Response.Name,
+			Permissions: []iam.AccessControlRequest{{
+				PermissionLevel: "CAN_MANAGE",
+				UserName:        "user@example.com",
+			}},
+		}, nil
+	},
+
+	"model_serving_endpoints.permissions": func(client *databricks.WorkspaceClient) (any, error) {
+		waiter, err := client.ServingEndpoints.Create(context.Background(), serving.CreateServingEndpoint{
+			Name: "endpoint-permissions",
+			Config: &serving.EndpointCoreConfigInput{
+				ServedModels: []serving.ServedModelInput{
+					{
+						ModelName:          "model-name",
+						ModelVersion:       "1",
+						WorkloadSize:       "Small",
+						ScaleToZeroEnabled: true,
+					},
+				},
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return &PermissionsState{
+			ObjectID: "/serving-endpoints/" + waiter.Response.Name,
 			Permissions: []iam.AccessControlRequest{{
 				PermissionLevel: "CAN_MANAGE",
 				UserName:        "user@example.com",

@@ -1,17 +1,17 @@
 echo "*" > .gitignore
 trace $CLI bundle plan
-$CLI bundle debug plan > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
+$CLI bundle plan -o json > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
 print_state.py > out.state.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle plan
-trace $CLI bundle debug plan > out.plan_skip.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle plan -o json > out.plan_skip.$DATABRICKS_BUNDLE_ENGINE.json
 
 trace print_requests.py //jobs > out.create.requests.json
 
 title "Update trigger.periodic.unit and re-deploy"
 trace update_file.py databricks.yml DAYS HOURS
 trace $CLI bundle plan
-$CLI bundle debug plan > out.plan_update.$DATABRICKS_BUNDLE_ENGINE.json
+$CLI bundle plan -o json > out.plan_update.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
 trace $CLI bundle plan
 trace print_requests.py //jobs | jq 'del(.body.new_settings.run_as, .body.new_settings.webhook_notifications, .body.new_settings.email_notifications)' > out.update.requests.json
