@@ -87,6 +87,7 @@ func runInstall(ctx context.Context) error {
 	}
 
 	if anySuccess {
+		cmdio.LogString(ctx, "")
 		cmdio.LogString(ctx, "You can now use your coding agent to interact with Databricks.")
 		cmdio.LogString(ctx, "Try asking: 'Create a new Databricks project with a job or an app'")
 	}
