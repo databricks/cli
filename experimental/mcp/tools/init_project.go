@@ -158,7 +158,7 @@ func InitProject(ctx context.Context, args initProjectArgs) (string, error) {
 		filename = "CLAUDE.md"
 	}
 	// Write instructions file (with project info included)
-	instructionsContent := prompts.MustExecuteTemplate("init_project.tmpl", map[string]string{
+	instructionsContent := prompts.MustExecuteTemplate("AGENTS.tmpl", map[string]string{
 		"ProjectName": args.ProjectName,
 		"ProjectPath": args.ProjectPath,
 	})
@@ -168,7 +168,7 @@ func InitProject(ctx context.Context, args initProjectArgs) (string, error) {
 	}
 
 	// Return the same guidance as analyze_project
-	result := prompts.MustExecuteTemplate("init_project.tmpl", map[string]string{
+	result := prompts.MustExecuteTemplate("AGENTS.tmpl", map[string]string{
 		"ProjectName": args.ProjectName,
 		"ProjectPath": args.ProjectPath,
 	})
