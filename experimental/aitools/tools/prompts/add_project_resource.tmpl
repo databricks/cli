@@ -1,3 +1,12 @@
+{{- /*
+     * Success message shown after adding a resource to a project.
+     *
+     * This template is used when add_project_resource successfully adds a new
+     * app, job, dashboard, etc. to a project. It provides the user with
+     * next steps and supplemental guidance from analyze_project.tmpl.
+     *
+     */ -}}
+
 Successfully added {{.ResourceType}} '{{.Name}}' to the project!
 
 IMPORTANT: This is just a starting point! You need to iterate over the generated files to complete the setup.
