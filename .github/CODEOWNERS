@@ -4,4 +4,4 @@
 /acceptance/pipelines/    @jefferycheng1 @kanterov @lennartkats-db
 /cmd/pipelines/           @jefferycheng1 @kanterov @lennartkats-db
 /cmd/labs/                @alexott @nfx
-/experimental/aitools/    @arsenyinfo @fjakobs @igrekun @keugenek @lennartkats-db @MarioCadenas @pkosiec @victor-ditadi_data
+/experimental/aitools/    @databricks/eng-app-devex @lennartkats-db
