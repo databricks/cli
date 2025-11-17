@@ -44,7 +44,6 @@ require (
 require (
 	dagger.io/dagger v0.19.6 // Apache 2.0
 	github.com/google/jsonschema-go v0.3.0 // BSD-3-Clause
-	github.com/zeebo/blake3 v0.2.4 // CC0-1.0
 )
 
 require (
@@ -71,7 +70,6 @@ require (
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-retryablehttp v0.7.7 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
-	github.com/klauspost/cpuid/v2 v2.0.12 // indirect
 	github.com/mattn/go-colorable v0.1.14 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect

@@ -1,6 +1,7 @@
 package io
 
 import (
+	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -11,7 +12,6 @@ import (
 	"time"
 
 	"github.com/databricks/cli/experimental/apps-mcp/lib/fileutil"
-	"github.com/zeebo/blake3"
 )
 
 const StateFileName = ".edda_state"
@@ -251,7 +251,7 @@ func ComputeChecksum(workDir string) (string, error) {
 		return "", errors.New("no files to hash - project structure appears invalid")
 	}
 
-	hasher := blake3.New()
+	hasher := sha256.New()
 
 	for _, filePath := range filesToHash {
 		content, err := os.ReadFile(filePath)
