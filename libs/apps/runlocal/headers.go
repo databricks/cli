@@ -1,4 +1,4 @@
-package apps
+package runlocal
 
 import (
 	"github.com/databricks/databricks-sdk-go/service/iam"
