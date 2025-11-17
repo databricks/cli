@@ -30,7 +30,7 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> [CLI] bundle debug plan -t green
+>>> [CLI] bundle plan -o json -t green
 
 >>> errcode [CLI] bundle destroy -t green --auto-approve
 The following resources will be deleted:

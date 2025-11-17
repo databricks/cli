@@ -1,0 +1,95 @@
+
+>>> [CLI] bundle plan -o json
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py //serving-endpoints
+{
+  "method": "POST",
+  "path": "/api/2.0/serving-endpoints",
+  "body": {
+    "config": {
+      "auto_capture_config": {
+        "catalog_name": "main",
+        "schema_name": "default",
+        "table_name_prefix": "my_table"
+      },
+      "served_entities": [
+        {
+          "external_model": {
+            "name": "gpt-4o-mini",
+            "openai_config": {
+              "openai_api_key": "{{secrets/test-scope/openai-key}}"
+            },
+            "provider": "openai",
+            "task": "llm/v1/chat"
+          },
+          "name": "prod"
+        }
+      ]
+    },
+    "name": "[ORIGINAL_ENDPOINT_ID]"
+  }
+}
+
+>>> [CLI] serving-endpoints get [ORIGINAL_ENDPOINT_ID]
+"my_table"
+
+>>> update_file.py databricks.yml table_name_prefix: my_table table_name_prefix: other_table
+
+>>> [CLI] bundle plan -o json
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py //serving-endpoints
+{
+  "method": "DELETE",
+  "path": "/api/2.0/serving-endpoints/[ORIGINAL_ENDPOINT_ID]"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/serving-endpoints",
+  "body": {
+    "config": {
+      "auto_capture_config": {
+        "catalog_name": "main",
+        "schema_name": "default",
+        "table_name_prefix": "other_table"
+      },
+      "served_entities": [
+        {
+          "external_model": {
+            "name": "gpt-4o-mini",
+            "openai_config": {
+              "openai_api_key": "{{secrets/test-scope/openai-key}}"
+            },
+            "provider": "openai",
+            "task": "llm/v1/chat"
+          },
+          "name": "prod"
+        }
+      ]
+    },
+    "name": "[ORIGINAL_ENDPOINT_ID]"
+  }
+}
+
+>>> [CLI] serving-endpoints get [ORIGINAL_ENDPOINT_ID]
+"other_table"
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete model_serving_endpoint test_endpoint
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+
+Deleting files...
+Destroy complete!

@@ -16,6 +16,17 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// This list exists to ensure that this mutator is updated when new resource is added.
+// These resources are there because they use grants, not permissions:
+var unsupportedResources = []string{
+	"volumes",
+	"schemas",
+	"quality_monitors",
+	"registered_models",
+	"database_catalogs",
+	"synced_database_tables",
+}
+
 func TestApplyBundlePermissions(t *testing.T) {
 	b := &bundle.Bundle{
 		Config: config.Root{

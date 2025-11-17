@@ -60,7 +60,7 @@ resources:
       environments:
         - environment_key: default
           spec:
-            environment_version: "2"
+            environment_version: "{{template "serverless_environment_version"}}"
             dependencies:
               - dbt-databricks>=1.8.0,<2.0.0
       {{- end }}
