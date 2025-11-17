@@ -3,14 +3,14 @@
 [DEBUG_TIMESTAMP] Debug: [Local Cache] found authorization header with length: 45
 [DEBUG_TIMESTAMP] Debug: [Local Cache] local cache is enabled
 [DEBUG_TIMESTAMP] Debug: [Local Cache] using cache key: [SHA256_HASH]
-[DEBUG_TIMESTAMP] Debug: [Local Cache] writing to cache
-[DEBUG_TIMESTAMP] Debug: [Local Cache] cache miss, computed and stored result
+[DEBUG_TIMESTAMP] Debug: [Local Cache] cache miss, computing
+[DEBUG_TIMESTAMP] Debug: [Local Cache] computed and stored result
 
 === Second call in a session is expected to be a cache hit
 [DEBUG_TIMESTAMP] Debug: [Local Cache] found authorization header with length: 45
 [DEBUG_TIMESTAMP] Debug: [Local Cache] local cache is enabled
 [DEBUG_TIMESTAMP] Debug: [Local Cache] using cache key: [SHA256_HASH]
-[DEBUG_TIMESTAMP] Debug: [Local Cache] cache hit: disk-read
+[DEBUG_TIMESTAMP] Debug: [Local Cache] cache hit
 
 >>> [CLI] cache clear
 Cache cleared successfully from [TEST_TMP_DIR]/.cache
@@ -19,5 +19,5 @@ Cache cleared successfully from [TEST_TMP_DIR]/.cache
 [DEBUG_TIMESTAMP] Debug: [Local Cache] found authorization header with length: 45
 [DEBUG_TIMESTAMP] Debug: [Local Cache] local cache is enabled
 [DEBUG_TIMESTAMP] Debug: [Local Cache] using cache key: [SHA256_HASH]
-[DEBUG_TIMESTAMP] Debug: [Local Cache] writing to cache
-[DEBUG_TIMESTAMP] Debug: [Local Cache] cache miss, computed and stored result
+[DEBUG_TIMESTAMP] Debug: [Local Cache] cache miss, computing
+[DEBUG_TIMESTAMP] Debug: [Local Cache] computed and stored result

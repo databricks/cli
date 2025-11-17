@@ -2,57 +2,87 @@ package cache
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"sync"
 	"time"
 
-	"github.com/databricks/cli/bundle"
-
+	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/log"
 )
+
+// Metrics is a local interface for tracking cache telemetry.
+type Metrics interface {
+	SetBoolValue(key string, value bool)
+}
 
 // FileCache implements the Cache interface using local disk storage.
 type FileCache[T any] struct {
 	baseDir       string
 	expiryMinutes int
-	mu            sync.RWMutex
-	computeOnce   map[string]*sync.Once // Ensure only one goroutine computes per key
-	memCache      map[string]T          // In-memory cache for immediate access
-	cleanupMgr    *CleanupManager       // Background cleanup manager
-	metrics       *bundle.Metrics       // Telemetry metrics
+	mu            sync.Mutex
+	metrics       Metrics
 }
 
 // newFileCacheWithBaseDir creates a new file-based cache that stores data in the specified directory.
 func newFileCacheWithBaseDir[T any](baseDir string, expiryMinutes int) (*FileCache[T], error) {
-	if err := os.MkdirAll(baseDir, 0o755); err != nil {
+	if err := os.MkdirAll(baseDir, 0o700); err != nil {
 		return nil, fmt.Errorf("failed to create cache directory: %w", err)
 	}
-
-	cleanupMgr := NewCleanupManager(DefaultCleanupConfig())
 
 	fc := &FileCache[T]{
 		baseDir:       baseDir,
 		expiryMinutes: expiryMinutes,
-		computeOnce:   make(map[string]*sync.Once),
-		memCache:      make(map[string]T),
-		cleanupMgr:    cleanupMgr,
 	}
 
-	// Start background cleanup (non-blocking)
-	cleanupMgr.Start(context.Background(), baseDir)
+	// Clean up expired files synchronously
+	fc.cleanupExpiredFiles()
 
 	return fc, nil
 }
 
+// cleanupExpiredFiles removes expired cache files from disk.
+// This runs synchronously once when the cache is created.
+func (fc *FileCache[T]) cleanupExpiredFiles() {
+	now := time.Now()
+
+	_ = filepath.Walk(fc.baseDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil || info.IsDir() {
+			return nil
+		}
+
+		// Only process .json cache files
+		if filepath.Ext(info.Name()) != ".json" {
+			return nil
+		}
+
+		// Try to read the cache entry
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return nil
+		}
+
+		var entry cacheEntry
+		if err := json.Unmarshal(data, &entry); err != nil {
+			// Delete corrupted files
+			_ = os.Remove(path)
+			return nil
+		}
+
+		// Delete if expired
+		if !entry.Expiry.IsZero() && now.After(entry.Expiry) {
+			_ = os.Remove(path)
+		}
+
+		return nil
+	})
+}
+
 func getCacheBaseDir() (string, error) {
 	// Check if user has configured a custom cache directory
-	if customCacheDir := os.Getenv("DATABRICKS_CACHE_FOLDER"); customCacheDir != "" {
+	if customCacheDir := os.Getenv("DATABRICKS_CACHE_DIR"); customCacheDir != "" {
 		return customCacheDir, nil
 	}
 
@@ -64,14 +94,17 @@ func getCacheBaseDir() (string, error) {
 	return filepath.Join(userCacheDir, "databricks"), nil
 }
 
-// NewFileCache creates a new file-based cache using UserCacheDir() + "databricks" + cached component name.
-func NewFileCache[T any](component string, expiryMinutes int, metrics *bundle.Metrics) (*FileCache[T], error) {
+// NewFileCache creates a new file-based cache using UserCacheDir() + "databricks" + version + cached component name.
+// Including the CLI version in the path ensures cache isolation across different CLI versions.
+func NewFileCache[T any](component string, expiryMinutes int, metrics Metrics) (*FileCache[T], error) {
 	cacheBaseDir, err := getCacheBaseDir()
 	if err != nil {
 		return nil, err
 	}
 
-	baseDir := filepath.Join(cacheBaseDir, component)
+	// Include CLI version in cache path to avoid issues across versions
+	version := build.GetInfo().Version
+	baseDir := filepath.Join(cacheBaseDir, version, component)
 	fc, err := newFileCacheWithBaseDir[T](baseDir, expiryMinutes)
 	if err != nil {
 		return nil, err
@@ -82,9 +115,8 @@ func NewFileCache[T any](component string, expiryMinutes int, metrics *bundle.Me
 
 // cacheEntry represents the structure of a cached item on disk.
 type cacheEntry struct {
-	Data      json.RawMessage `json:"data"`
-	Expiry    time.Time       `json:"expiry"`
-	Timestamp time.Time       `json:"timestamp,omitempty"` // For backward compatibility
+	Data   json.RawMessage `json:"data"`
+	Expiry time.Time       `json:"expiry"`
 }
 
 func (fc *FileCache[T]) addTelemetryMetric(key string) {
@@ -94,13 +126,14 @@ func (fc *FileCache[T]) addTelemetryMetric(key string) {
 }
 
 // GetOrCompute retrieves cached content or computes it using the provided function.
+// Cache operations fail open: if caching fails, the compute function is still called.
 func (fc *FileCache[T]) GetOrCompute(ctx context.Context, fingerprint any, compute func(ctx context.Context) (T, error)) (T, error) {
-	var zero T
-
 	// Convert fingerprint to deterministic hash - this is our cache key
 	cacheKey, err := fingerprintToHash(fingerprint)
 	if err != nil {
-		return zero, fmt.Errorf("failed to convert fingerprint to string: %w", err)
+		// Fail open: if we can't generate cache key, just compute directly
+		log.Debugf(ctx, "[Local Cache] failed to generate cache key, computing without cache: %v\n", err)
+		return compute(ctx)
 	}
 
 	log.Debugf(ctx, "[Local Cache] using cache key: %s\n", cacheKey)
@@ -108,92 +141,37 @@ func (fc *FileCache[T]) GetOrCompute(ctx context.Context, fingerprint any, compu
 
 	cachePath := fc.getCachePath(cacheKey)
 
-	// Check in-memory cache first (fast path)
-	fc.mu.RLock()
-	if data, found := fc.memCache[cacheKey]; found {
-		fc.mu.RUnlock()
-		log.Debugf(ctx, "[Local Cache] cache hit: in-memory\n")
-		fc.addTelemetryMetric("local.cache.hit")
-		return data, nil
-	}
-	fc.mu.RUnlock()
-
 	// Try to read from disk cache
 	if data, found := fc.readFromCache(cachePath); found {
-		// Store in memory cache for faster future access
-		fc.mu.Lock()
-		fc.memCache[cacheKey] = data
-		fc.mu.Unlock()
-		log.Debugf(ctx, "[Local Cache] cache hit: disk-read\n")
+		log.Debugf(ctx, "[Local Cache] cache hit\n")
 		fc.addTelemetryMetric("local.cache.hit")
 		return data, nil
 	}
 
-	// Get or create sync.Once for this cache key
-	// Check cache again under write lock to avoid race condition
+	// Cache miss - acquire lock to compute
 	fc.mu.Lock()
-	if data, found := fc.memCache[cacheKey]; found {
-		fc.mu.Unlock()
-		log.Debugf(ctx, "[Local Cache] cache hit: in-memory (race avoided)\n")
+	defer fc.mu.Unlock()
+
+	// Check again after acquiring lock (another goroutine might have computed it)
+	if data, found := fc.readFromCache(cachePath); found {
+		log.Debugf(ctx, "[Local Cache] cache hit after lock\n")
 		fc.addTelemetryMetric("local.cache.hit")
 		return data, nil
 	}
-	once, exists := fc.computeOnce[cacheKey]
-	if !exists {
-		once = &sync.Once{}
-		fc.computeOnce[cacheKey] = once
-	}
-	fc.mu.Unlock()
 
-	// Use sync.Once to ensure only one goroutine computes the value
-	// Store error in a separate variable that all goroutines can access
-	var computeErr error
-	once.Do(func() {
-		// Check if context is already cancelled before computing
-		select {
-		case <-ctx.Done():
-			log.Debugf(ctx, "[Local Cache] context cancelled before compute\n")
-			computeErr = ctx.Err()
-			return
-		default:
-		}
-
-		// Compute the value
-		result, err := compute(ctx)
-		if err != nil {
-			log.Debugf(ctx, "[Local Cache] error while computing: %v\n", err)
-			fc.addTelemetryMetric("local.cache.error")
-			computeErr = err
-			return
-		}
-
-		// Store in memory cache immediately
-		fc.mu.Lock()
-		fc.memCache[cacheKey] = result
-		fc.mu.Unlock()
-
-		// Write to disk cache synchronously to ensure it persists before process exits
-		log.Debugf(ctx, "[Local Cache] writing to cache\n")
-		fc.writeToCache(cachePath, result)
-
-		log.Debugf(ctx, "[Local Cache] cache miss, computed and stored result\n")
-		fc.addTelemetryMetric("local.cache.miss")
-	})
-
-	// Check if computation failed
-	if computeErr != nil {
-		return zero, computeErr
+	// Compute the value
+	log.Debugf(ctx, "[Local Cache] cache miss, computing\n")
+	result, err := compute(ctx)
+	if err != nil {
+		log.Debugf(ctx, "[Local Cache] error while computing: %v\n", err)
+		fc.addTelemetryMetric("local.cache.error")
+		return result, err
 	}
 
-	// All goroutines retrieve the result from memCache after sync.Once completes
-	fc.mu.RLock()
-	result, found := fc.memCache[cacheKey]
-	fc.mu.RUnlock()
-
-	if !found {
-		// This should never happen unless there was an error
-		return zero, errors.New("cache inconsistency: value not found after computation")
-	}
+	// Write to disk cache (failures are silent - cache write errors don't affect the result)
+	fc.writeToCache(cachePath, result)
+	log.Debugf(ctx, "[Local Cache] computed and stored result\n")
+	fc.addTelemetryMetric("local.cache.miss")
 
 	return result, nil
 }
@@ -225,7 +203,7 @@ func (fc *FileCache[T]) readFromCache(cachePath string) (T, bool) {
 	return result, true
 }
 
-// writeToCache serializes and writes data to the cache file asynchronously.
+// writeToCache serializes and writes data to the cache file.
 func (fc *FileCache[T]) writeToCache(cachePath string, data any) {
 	// Serialize the data
 	serializedData, err := json.Marshal(data)
@@ -244,43 +222,15 @@ func (fc *FileCache[T]) writeToCache(cachePath string, data any) {
 	}
 
 	// Ensure directory exists
-	if err := os.MkdirAll(filepath.Dir(cachePath), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(cachePath), 0o700); err != nil {
 		return
 	}
 
-	// Write to temporary file first, then rename for atomic operation
-	tempPath, err := generateTempPath(cachePath)
-	if err != nil {
-		return
-	}
-
-	if err := os.WriteFile(tempPath, entryData, 0o644); err != nil {
-		return
-	}
-
-	// Atomic rename
-	_ = os.Rename(tempPath, cachePath)
-}
-
-// generateTempPath creates a temporary file path with a random component to prevent collisions.
-func generateTempPath(cachePath string) (string, error) {
-	randomBytes := make([]byte, 8)
-	if _, err := rand.Read(randomBytes); err != nil {
-		return "", err
-	}
-	randomSuffix := hex.EncodeToString(randomBytes)
-	return cachePath + ".tmp." + randomSuffix, nil
+	// Write to cache file
+	_ = os.WriteFile(cachePath, entryData, 0o600)
 }
 
 // getCachePath returns the full path to the cache file for a given cache key.
 func (fc *FileCache[T]) getCachePath(cacheKey string) string {
 	return filepath.Join(fc.baseDir, cacheKey+".json")
-}
-
-// StopCleanup stops the background cleanup process.
-// This is non-blocking and will not wait for cleanup to complete.
-func (fc *FileCache[T]) StopCleanup() {
-	if fc.cleanupMgr != nil {
-		fc.cleanupMgr.Stop()
-	}
 }

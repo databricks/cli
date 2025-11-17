@@ -1,4 +1,4 @@
-export DATABRICKS_CACHE_FOLDER=$(pwd)/.cache
+export DATABRICKS_CACHE_DIR=$(pwd)/.cache
 
 $CLI cache clear &> /dev/null
 
@@ -13,4 +13,4 @@ trace $CLI bundle deploy -p dogfood
 
 trace print_telemetry_bool_values | grep "local.cache"
 rm out.requests.txt
-rm -rf "${DATABRICKS_CACHE_FOLDER}"
+rm -rf "${DATABRICKS_CACHE_DIR}"

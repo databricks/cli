@@ -2,6 +2,7 @@ package cache
 
 import (
 	"context"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -17,11 +18,10 @@ func TestNewFileCache(t *testing.T) {
 	tempDir := t.TempDir()
 	cacheDir := filepath.Join(tempDir, "cache")
 
-	cache, err := newFileCacheWithBaseDir[string](cacheDir, 60) // 1 hour for tests
+	cache, err := newFileCacheWithBaseDir[string](cacheDir, 60)
 	require.NoError(t, err)
 	assert.NotNil(t, cache)
 	assert.Equal(t, cacheDir, cache.baseDir)
-	assert.NotNil(t, cache.computeOnce)
 
 	// Verify directory was created
 	info, err := os.Stat(cacheDir)
@@ -30,14 +30,14 @@ func TestNewFileCache(t *testing.T) {
 
 	// Check permissions - Windows has different permission semantics
 	if runtime.GOOS != "windows" {
-		assert.Equal(t, os.FileMode(0o755), info.Mode().Perm())
+		assert.Equal(t, os.FileMode(0o700), info.Mode().Perm())
 	} else {
 		// On Windows, verify directory is accessible by trying to create a test file
 		testFile := filepath.Join(cacheDir, "test_access")
-		err := os.WriteFile(testFile, []byte("test"), 0o644)
+		err := os.WriteFile(testFile, []byte("test"), 0o600)
 		assert.NoError(t, err)
 		if err == nil {
-			_ = os.Remove(testFile) // Clean up (ignore removal error)
+			_ = os.Remove(testFile)
 		}
 	}
 }
@@ -102,9 +102,6 @@ func TestFileCacheGetOrCompute(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, expectedValue, result2)
 	assert.Equal(t, int32(1), atomic.LoadInt32(&computeCalls))
-
-	// Allow time for async writes to complete before test cleanup
-	time.Sleep(50 * time.Millisecond)
 }
 
 func TestFileCacheGetOrComputeError(t *testing.T) {
@@ -168,39 +165,66 @@ func TestFileCacheGetOrComputeConcurrency(t *testing.T) {
 		assert.Equal(t, expectedValue, result)
 	}
 
-	// With sync.Once, compute should only be called once even with concurrent requests
+	// With locking, compute should only be called once even with concurrent requests
 	assert.Equal(t, int32(1), atomic.LoadInt32(&computeCalls))
-
-	// Allow time for async writes to complete before test cleanup
-	time.Sleep(50 * time.Millisecond)
 }
 
-func TestFileCacheGetOrComputeContextCancellation(t *testing.T) {
+func TestFileCacheCleanupExpiredFiles(t *testing.T) {
 	tempDir := t.TempDir()
-	cache, err := newFileCacheWithBaseDir[string](tempDir, 60) // 1 hour for tests
+
+	// Create some cache files manually - one expired, one valid, one corrupted
+	now := time.Now()
+
+	// Expired file
+	expiredEntry := cacheEntry{
+		Data:   json.RawMessage(`"expired-value"`),
+		Expiry: now.Add(-time.Hour), // Expired 1 hour ago
+	}
+	expiredData, err := json.Marshal(expiredEntry)
+	require.NoError(t, err)
+	expiredFile := filepath.Join(tempDir, "expired.json")
+	require.NoError(t, os.WriteFile(expiredFile, expiredData, 0o644))
+
+	// Valid file
+	validEntry := cacheEntry{
+		Data:   json.RawMessage(`"valid-value"`),
+		Expiry: now.Add(time.Hour), // Expires in 1 hour
+	}
+	validData, err := json.Marshal(validEntry)
+	require.NoError(t, err)
+	validFile := filepath.Join(tempDir, "valid.json")
+	require.NoError(t, os.WriteFile(validFile, validData, 0o644))
+
+	// Corrupted file
+	corruptedFile := filepath.Join(tempDir, "corrupted.json")
+	require.NoError(t, os.WriteFile(corruptedFile, []byte("invalid json"), 0o644))
+
+	// Non-cache file (should be ignored)
+	nonCacheFile := filepath.Join(tempDir, "readme.txt")
+	require.NoError(t, os.WriteFile(nonCacheFile, []byte("readme"), 0o644))
+
+	// Create cache - this should trigger cleanup
+	_, err = newFileCacheWithBaseDir[string](tempDir, 60)
 	require.NoError(t, err)
 
-	ctx, cancel := context.WithCancel(context.Background())
-	cancel() // Cancel immediately
+	// Check results
+	_, err = os.Stat(expiredFile)
+	assert.True(t, os.IsNotExist(err), "Expired file should be deleted")
 
-	fingerprint := struct {
-		Key string `json:"key"`
-	}{
-		Key: "cancelled-key",
-	}
+	_, err = os.Stat(validFile)
+	assert.False(t, os.IsNotExist(err), "Valid file should still exist")
 
-	result, err := cache.GetOrCompute(ctx, fingerprint, func(ctx context.Context) (string, error) {
-		return "should-not-be-reached", nil
-	})
+	_, err = os.Stat(corruptedFile)
+	assert.True(t, os.IsNotExist(err), "Corrupted file should be deleted")
 
-	assert.Empty(t, result)
-	assert.Equal(t, context.Canceled, err)
+	_, err = os.Stat(nonCacheFile)
+	assert.False(t, os.IsNotExist(err), "Non-cache file should be ignored")
 }
 
 func TestFingerprintDeterministic(t *testing.T) {
 	ctx := context.Background()
 	tempDir := t.TempDir()
-	cache, err := newFileCacheWithBaseDir[string](tempDir, 60) // 1 hour for tests
+	cache, err := newFileCacheWithBaseDir[string](tempDir, 60)
 	require.NoError(t, err)
 
 	// Create two identical structs with fields in different JSON order
@@ -245,7 +269,4 @@ func TestFingerprintDeterministic(t *testing.T) {
 
 	assert.Equal(t, expectedValue, result2)
 	assert.Equal(t, int32(1), atomic.LoadInt32(&computeCalls)) // Should still be 1
-
-	// Allow time for async writes to complete before test cleanup
-	time.Sleep(50 * time.Millisecond)
 }
