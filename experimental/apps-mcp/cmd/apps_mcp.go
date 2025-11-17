@@ -17,8 +17,9 @@ func NewMcpCmd() *cobra.Command {
 	var useDagger bool
 
 	cmd := &cobra.Command{
-		Use:   "apps-mcp",
-		Short: "Model Context Protocol server for AI agents",
+		Use:    "apps-mcp",
+		Hidden: true,
+		Short:  "Model Context Protocol server for AI agents",
 		Long: `Start and manage an MCP server that provides AI agents with tools to interact with Databricks.
 
 The MCP server exposes the following capabilities:
