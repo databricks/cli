@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -94,6 +95,18 @@ func getCacheBaseDir() (string, error) {
 	return filepath.Join(userCacheDir, "databricks"), nil
 }
 
+// sanitizeVersion removes characters from version string that might be problematic in file paths.
+// Particularly important for Windows which has restrictions on certain characters.
+func sanitizeVersion(version string) string {
+	// Replace + with - (used in version metadata like "1.0.0+abc123")
+	version = strings.ReplaceAll(version, "+", "-")
+	// Remove any other potentially problematic characters
+	version = strings.ReplaceAll(version, ":", "-")
+	version = strings.ReplaceAll(version, "/", "-")
+	version = strings.ReplaceAll(version, "\\", "-")
+	return version
+}
+
 // NewFileCache creates a new file-based cache using UserCacheDir() + "databricks" + version + cached component name.
 // Including the CLI version in the path ensures cache isolation across different CLI versions.
 func NewFileCache[T any](component string, expiryMinutes int, metrics Metrics) (*FileCache[T], error) {
@@ -103,7 +116,8 @@ func NewFileCache[T any](component string, expiryMinutes int, metrics Metrics) (
 	}
 
 	// Include CLI version in cache path to avoid issues across versions
-	version := build.GetInfo().Version
+	// Sanitize version string for use in file paths
+	version := sanitizeVersion(build.GetInfo().Version)
 	baseDir := filepath.Join(cacheBaseDir, version, component)
 	fc, err := newFileCacheWithBaseDir[T](baseDir, expiryMinutes)
 	if err != nil {
