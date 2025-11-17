@@ -4,7 +4,7 @@ import (
 	"context"
 	_ "embed"
 
-	"github.com/modelcontextprotocol/go-sdk/mcp"
+	"github.com/databricks/cli/experimental/apps-mcp/lib/mcp"
 )
 
 //go:embed initialization_message.md

@@ -5,6 +5,7 @@ import (
 	"context"
 
 	mcp "github.com/databricks/cli/experimental/apps-mcp/lib"
+	mcpsdk "github.com/databricks/cli/experimental/apps-mcp/lib/mcp"
 	"github.com/databricks/cli/experimental/apps-mcp/lib/providers/databricks"
 	"github.com/databricks/cli/experimental/apps-mcp/lib/providers/deployment"
 	"github.com/databricks/cli/experimental/apps-mcp/lib/providers/io"
@@ -13,7 +14,6 @@ import (
 	"github.com/databricks/cli/experimental/apps-mcp/lib/trajectory"
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/log"
-	mcpsdk "github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 // Server manages the MCP server lifecycle, provider registration, and session tracking.
@@ -171,7 +171,7 @@ func (s *Server) registerDeploymentProvider(ctx context.Context) error {
 func (s *Server) Run(ctx context.Context) error {
 	log.Info(ctx, "Starting MCP server with STDIO transport")
 
-	transport := &mcpsdk.StdioTransport{}
+	transport := mcpsdk.NewStdioTransport()
 	if err := s.server.Run(ctx, transport); err != nil {
 		log.Errorf(ctx, "Server failed: error=%v", err)
 		return err

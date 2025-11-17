@@ -8,9 +8,9 @@ import (
 	"path/filepath"
 
 	mcp "github.com/databricks/cli/experimental/apps-mcp/lib"
+	mcpsdk "github.com/databricks/cli/experimental/apps-mcp/lib/mcp"
 	"github.com/databricks/cli/experimental/apps-mcp/lib/session"
 	"github.com/databricks/cli/libs/log"
-	mcpsdk "github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 type Tracker struct {
