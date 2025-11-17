@@ -30,7 +30,7 @@ func (r *repositoryCache) Load(ctx context.Context) (Repositories, error) {
 	})
 }
 
-// getRepositories is considered to be privata API, as we want the usage to go through a cache
+// getRepositories is considered to be private API, as we want the usage to go through a cache
 func getRepositories(ctx context.Context, org string) (Repositories, error) {
 	var repos Repositories
 	log.Debugf(ctx, "Loading repositories for %s from GitHub API", org)
@@ -44,7 +44,7 @@ type Repositories []ghRepo
 type ghRepo struct {
 	Name          string   `json:"name"`
 	Description   string   `json:"description"`
-	Langauge      string   `json:"language"`
+	Language      string   `json:"language"`
 	DefaultBranch string   `json:"default_branch"`
 	Stars         int      `json:"stargazers_count"`
 	IsFork        bool     `json:"fork"`
