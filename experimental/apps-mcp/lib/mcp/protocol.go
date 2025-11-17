@@ -27,11 +27,11 @@ type JSONRPCError struct {
 
 // MCP protocol constants.
 const (
-	MethodInitialize    = "initialize"
-	MethodToolsList     = "tools/list"
-	MethodToolsCall     = "tools/call"
-	MethodPing          = "ping"
-	MethodNotification  = "notifications/initialized"
+	MethodInitialize   = "initialize"
+	MethodToolsList    = "tools/list"
+	MethodToolsCall    = "tools/call"
+	MethodPing         = "ping"
+	MethodNotification = "notifications/initialized"
 )
 
 // InitializeRequest represents an initialize request.
@@ -43,14 +43,14 @@ type InitializeRequest struct {
 
 // InitializeResult represents an initialize response.
 type InitializeResult struct {
-	ProtocolVersion string                `json:"protocolVersion"`
-	Capabilities    ServerCapabilities    `json:"capabilities"`
-	ServerInfo      Implementation        `json:"serverInfo"`
+	ProtocolVersion string             `json:"protocolVersion"`
+	Capabilities    ServerCapabilities `json:"capabilities"`
+	ServerInfo      Implementation     `json:"serverInfo"`
 }
 
 // ServerCapabilities describes server capabilities.
 type ServerCapabilities struct {
-	Tools    *ToolsCapability    `json:"tools,omitempty"`
+	Tools *ToolsCapability `json:"tools,omitempty"`
 }
 
 // ToolsCapability describes tool capabilities.

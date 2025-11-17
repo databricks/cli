@@ -10,10 +10,10 @@ import (
 
 // Server is an MCP server that manages tools and handles requests.
 type Server struct {
-	impl       *Implementation
-	tools      map[string]*serverTool
-	toolsMu    sync.RWMutex
-	transport  *StdioTransport
+	impl        *Implementation
+	tools       map[string]*serverTool
+	toolsMu     sync.RWMutex
+	transport   *StdioTransport
 	initialized bool
 }
 
@@ -92,7 +92,7 @@ func (s *Server) handleRequest(ctx context.Context, req *JSONRPCRequest) *JSONRP
 			ID:      req.ID,
 			Error: &JSONRPCError{
 				Code:    -32601,
-				Message: fmt.Sprintf("method not found: %s", req.Method),
+				Message: "method not found: " + req.Method,
 			},
 		}
 	}
@@ -186,7 +186,7 @@ func (s *Server) handleToolsCall(ctx context.Context, req *JSONRPCRequest) *JSON
 			ID:      req.ID,
 			Error: &JSONRPCError{
 				Code:    -32602,
-				Message: fmt.Sprintf("tool not found: %s", params.Name),
+				Message: "tool not found: " + params.Name,
 			},
 		}
 	}

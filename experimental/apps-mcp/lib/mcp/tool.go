@@ -40,7 +40,6 @@ func AddTool[In, Out any](
 
 		// Call the typed handler
 		result, output, err := handler(ctx, req, input)
-
 		// If there's an error, wrap it in a tool result
 		if err != nil {
 			content := &TextContent{
