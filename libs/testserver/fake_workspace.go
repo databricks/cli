@@ -22,6 +22,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	"github.com/databricks/databricks-sdk-go/service/serving"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
@@ -133,6 +134,7 @@ type FakeWorkspace struct {
 	Clusters            map[string]compute.ClusterDetails
 	Catalogs            map[string]catalog.CatalogInfo
 	RegisteredModels    map[string]catalog.RegisteredModelInfo
+	ServingEndpoints    map[string]serving.ServingEndpointDetailed
 
 	Acls map[string][]workspace.AclItem
 
@@ -230,6 +232,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		Dashboards:           map[string]fakeDashboard{},
 		PublishedDashboards:  map[string]dashboards.PublishedDashboard{},
 		SqlWarehouses:        map[string]sql.GetWarehouseResponse{},
+		ServingEndpoints:     map[string]serving.ServingEndpointDetailed{},
 		Repos:                map[string]workspace.RepoInfo{},
 		Acls:                 map[string][]workspace.AclItem{},
 		Permissions:          map[string]iam.ObjectPermissions{},

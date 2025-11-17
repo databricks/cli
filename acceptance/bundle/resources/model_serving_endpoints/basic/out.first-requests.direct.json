@@ -1,0 +1,23 @@
+{
+  "method": "POST",
+  "path": "/api/2.0/serving-endpoints",
+  "body": {
+    "name": "[ENDPOINT_NAME_1]"
+  }
+}
+{
+  "method": "PUT",
+  "path": "/api/2.0/permissions/serving-endpoints/[ENDPOINT_ID_1]",
+  "body": {
+    "access_control_list": [
+      {
+        "permission_level": "CAN_VIEW",
+        "user_name": "deco-test-user@databricks.com"
+      },
+      {
+        "permission_level": "CAN_MANAGE",
+        "service_principal_name": "[USERNAME]"
+      }
+    ]
+  }
+}

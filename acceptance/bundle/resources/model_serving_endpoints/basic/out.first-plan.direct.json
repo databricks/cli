@@ -1,0 +1,39 @@
+{
+  "plan": {
+    "resources.model_serving_endpoints.my_endpoint": {
+      "action": "create",
+      "new_state": {
+        "config": {
+          "name": "[ENDPOINT_NAME_1]"
+        }
+      }
+    },
+    "resources.model_serving_endpoints.my_endpoint.permissions": {
+      "depends_on": [
+        {
+          "node": "resources.model_serving_endpoints.my_endpoint",
+          "label": "${resources.model_serving_endpoints.my_endpoint.endpoint_id}"
+        }
+      ],
+      "action": "create",
+      "new_state": {
+        "config": {
+          "object_id": "",
+          "permissions": [
+            {
+              "permission_level": "CAN_VIEW",
+              "user_name": "deco-test-user@databricks.com"
+            },
+            {
+              "permission_level": "CAN_MANAGE",
+              "service_principal_name": "[USERNAME]"
+            }
+          ]
+        },
+        "vars": {
+          "object_id": "/serving-endpoints/${resources.model_serving_endpoints.my_endpoint.endpoint_id}"
+        }
+      }
+    }
+  }
+}
