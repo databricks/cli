@@ -34,7 +34,7 @@ func (r *repositoryCache) Load(ctx context.Context) (Repositories, error) {
 func getRepositories(ctx context.Context, org string) (Repositories, error) {
 	var allRepos Repositories
 	log.Debugf(ctx, "Loading repositories for %s from GitHub API", org)
-	url := fmt.Sprintf("%s/users/%s/repos?per_page=10", gitHubAPI, org)
+	url := fmt.Sprintf("%s/users/%s/repos?per_page=100", gitHubAPI, org)
 
 	for url != "" {
 		var repos Repositories

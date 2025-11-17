@@ -84,9 +84,9 @@ func TestRepositoriesPagination(t *testing.T) {
 		names = append(names, repo.Name)
 	}
 	assert.Equal(t, []string{
-		"/users/databrickslabs/repos?per_page=10",
-		"/users/databrickslabs/repos?page=2&per_page=10",
-		"/users/databrickslabs/repos?page=3&per_page=10",
+		"/users/databrickslabs/repos?per_page=100",
+		"/users/databrickslabs/repos?page=2&per_page=100",
+		"/users/databrickslabs/repos?page=3&per_page=100",
 	}, requestedURLs)
 	assert.Equal(t, []string{"repo1", "repo2", "repo3", "repo4", "repo5"}, names)
 }
