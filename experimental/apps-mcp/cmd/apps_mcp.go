@@ -13,8 +13,6 @@ func NewMcpCmd() *cobra.Command {
 	var warehouseID string
 	var allowDeployment bool
 	var withWorkspaceTools bool
-	var dockerImage string
-	var useDagger bool
 
 	cmd := &cobra.Command{
 		Use:    "apps-mcp",
@@ -35,13 +33,7 @@ The server communicates via stdio using the Model Context Protocol.`,
   databricks experimental apps-mcp --warehouse-id abc123 --with-workspace-tools
 
   # Start with deployment tools enabled
-  databricks experimental apps-mcp --warehouse-id abc123 --allow-deployment
-
-  # Start with custom Docker image for validation
-  databricks experimental apps-mcp --warehouse-id abc123 --docker-image node:20-alpine
-
-  # Start without containerized validation
-  databricks experimental apps-mcp --warehouse-id abc123 --use-dagger=false`,
+  databricks experimental apps-mcp --warehouse-id abc123 --allow-deployment`,
 		PreRunE: root.MustWorkspaceClient,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
@@ -55,10 +47,7 @@ The server communicates via stdio using the Model Context Protocol.`,
 				WarehouseID:        warehouseID,
 				DatabricksHost:     w.Config.Host,
 				IoConfig: &mcplib.IoConfig{
-					Validation: &mcplib.ValidationConfig{
-						DockerImage: dockerImage,
-						UseDagger:   useDagger,
-					},
+					Validation: &mcplib.ValidationConfig{},
 				},
 			}
 
@@ -82,10 +71,6 @@ The server communicates via stdio using the Model Context Protocol.`,
 	cmd.Flags().StringVar(&warehouseID, "warehouse-id", "", "Databricks SQL Warehouse ID")
 	cmd.Flags().BoolVar(&allowDeployment, "allow-deployment", false, "Enable deployment tools")
 	cmd.Flags().BoolVar(&withWorkspaceTools, "with-workspace-tools", false, "Enable workspace tools (file operations, bash, grep, glob)")
-	cmd.Flags().StringVar(&dockerImage, "docker-image", "node:20-alpine", "Docker image for validation")
-	cmd.Flags().BoolVar(&useDagger, "use-dagger", true, "Use Dagger for containerized validation")
-
-	cmd.AddCommand(newCheckCmd())
 
 	return cmd
 }

@@ -12,8 +12,8 @@ type ExecResult struct {
 }
 
 // Sandbox defines the interface for executing commands and managing files
-// in an isolated environment. Implementations may use local filesystem,
-// containers (e.g., Dagger), or other isolation mechanisms.
+// in an isolated environment. Implementations may use local filesystem
+// or other isolation mechanisms.
 type Sandbox interface {
 	// Exec executes a command in the sandbox and returns the result.
 	// The command is executed in the current working directory.

@@ -7,9 +7,6 @@ import (
 	"os"
 	"path/filepath"
 
-	mcp "github.com/databricks/cli/experimental/apps-mcp/lib"
-	"github.com/databricks/cli/experimental/apps-mcp/lib/sandbox"
-	"github.com/databricks/cli/experimental/apps-mcp/lib/sandbox/dagger"
 	"github.com/databricks/cli/experimental/apps-mcp/lib/sandbox/local"
 	"github.com/databricks/cli/libs/log"
 )
@@ -47,7 +44,7 @@ func (p *Provider) Validate(ctx context.Context, args *ValidateArgs) (*ValidateR
 		valConfig := p.config.Validation
 		if valConfig.Command != "" {
 			log.Infof(ctx, "using custom validation command: command=%s", valConfig.Command)
-			validation = NewValidationCmd(valConfig.Command, valConfig.DockerImage)
+			validation = NewValidationCmd(valConfig.Command, "")
 		}
 	}
 
@@ -56,45 +53,12 @@ func (p *Provider) Validate(ctx context.Context, args *ValidateArgs) (*ValidateR
 		validation = NewValidationTRPC()
 	}
 
-	validationCfg := p.config.Validation
-	if validationCfg == nil {
-		validationCfg = &mcp.ValidationConfig{}
-		validationCfg.SetDefaults()
-	} else {
-		validationCfg.SetDefaults()
+	log.Info(ctx, "using local sandbox for validation")
+	sb, err := p.createLocalSandbox(workDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create local sandbox: %w", err)
 	}
-
-	var sb sandbox.Sandbox
-	var sandboxType string
-	if validationCfg.UseDagger {
-		log.Info(ctx, "attempting to create Dagger sandbox")
-		daggerSb, err := p.createDaggerSandbox(ctx, workDir, validationCfg)
-		if err != nil {
-			log.Warnf(ctx, "failed to create Dagger sandbox, falling back to local: error=%s", err.Error())
-			sb, err = p.createLocalSandbox(workDir)
-			if err != nil {
-				return nil, fmt.Errorf("failed to create local sandbox: %w", err)
-			}
-			sandboxType = "local"
-		} else {
-			sb = daggerSb
-			sandboxType = "dagger"
-		}
-	} else {
-		log.Info(ctx, "using local sandbox")
-		sb, err = p.createLocalSandbox(workDir)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create local sandbox: %w", err)
-		}
-		sandboxType = "local"
-	}
-
-	// Log which sandbox is being used for transparency
-	if sandboxType == "dagger" {
-		log.Info(ctx, "✓ Using Dagger sandbox for validation (containerized, isolated environment)")
-	} else {
-		log.Info(ctx, "Using local sandbox for validation (host filesystem)")
-	}
+	sandboxType := "local"
 
 	defer func() {
 		if closeErr := sb.Close(); closeErr != nil {
@@ -137,62 +101,7 @@ func (p *Provider) Validate(ctx context.Context, args *ValidateArgs) (*ValidateR
 	return result, nil
 }
 
-func (p *Provider) createDaggerSandbox(ctx context.Context, workDir string, cfg *mcp.ValidationConfig) (sandbox.Sandbox, error) {
-	log.Infof(ctx, "creating Dagger sandbox: image=%s, timeout=%d, workDir=%s",
-		cfg.DockerImage, cfg.Timeout, workDir)
-
-	sb, err := dagger.NewDaggerSandbox(ctx, dagger.Config{
-		Image:          cfg.DockerImage,
-		ExecuteTimeout: cfg.Timeout,
-		BaseDir:        "/workspace",
-	})
-	if err != nil {
-		log.Errorf(ctx, "failed to create Dagger sandbox: error=%s, image=%s",
-			err.Error(), cfg.DockerImage)
-		return nil, err
-	}
-
-	log.Debug(ctx, "propagating environment variables")
-	if err := p.propagateEnvironment(sb); err != nil {
-		log.Errorf(ctx, "failed to propagate environment: error=%s", err.Error())
-		sb.Close()
-		return nil, fmt.Errorf("failed to set environment: %w", err)
-	}
-
-	log.Debugf(ctx, "syncing files from host to container: workDir=%s", workDir)
-	if err := sb.RefreshFromHost(ctx, workDir, "/workspace"); err != nil {
-		log.Errorf(ctx, "failed to sync files: error=%s", err.Error())
-		sb.Close()
-		return nil, fmt.Errorf("failed to sync files: %w", err)
-	}
-
-	log.Info(ctx, "Dagger sandbox created successfully")
-	return sb, nil
-}
-
-func (p *Provider) createLocalSandbox(workDir string) (sandbox.Sandbox, error) {
+func (p *Provider) createLocalSandbox(workDir string) (*local.LocalSandbox, error) {
 	log.Infof(p.ctx, "creating local sandbox: workDir=%s", workDir)
 	return local.NewLocalSandbox(workDir)
-}
-
-func (p *Provider) propagateEnvironment(sb sandbox.Sandbox) error {
-	daggerSb, ok := sb.(*dagger.DaggerSandbox)
-	if !ok {
-		return nil
-	}
-
-	envVars := []string{
-		"DATABRICKS_HOST",
-		"DATABRICKS_TOKEN",
-		"DATABRICKS_WAREHOUSE_ID",
-	}
-
-	for _, key := range envVars {
-		if value := os.Getenv(key); value != "" {
-			daggerSb.WithEnv(key, value)
-			log.Debugf(p.ctx, "propagated environment variable: key=%s", key)
-		}
-	}
-
-	return nil
 }

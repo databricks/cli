@@ -74,7 +74,6 @@ func New(ctx context.Context) *cobra.Command {
 	cli.AddCommand(experimental.New())
 	cli.AddCommand(psql.New())
 	cli.AddCommand(configure.New())
-	cli.AddCommand(experimental.New())
 	cli.AddCommand(fs.New())
 	cli.AddCommand(labs.New(ctx))
 	cli.AddCommand(sync.New())
