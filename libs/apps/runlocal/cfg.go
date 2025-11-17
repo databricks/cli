@@ -1,4 +1,4 @@
-package apps
+package runlocal
 
 import "fmt"
 
