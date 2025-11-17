@@ -5,3 +5,10 @@
 {{define "latest_lts_db_connect_version_spec" -}}
   >=15.4,<15.5
 {{- end}}
+
+{{/* The serverless environment version to use.
+   * See https://docs.databricks.com/aws/en/release-notes/serverless/environment-version/
+   */}}
+{{define "serverless_environment_version" -}}
+  4
+{{- end}}
