@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"os"
 	"path"
 	"path/filepath"
 	"strings"
@@ -128,15 +129,13 @@ func (c *copy) emitFileCopiedEvent(sourcePath, targetPath string) error {
 }
 
 // hasTrailingDirSeparator checks if a path ends with a directory separator.
-// It handles both Unix-style (/) and Windows-style (\) separators.
 func hasTrailingDirSeparator(path string) bool {
-	return strings.HasSuffix(path, "/") || strings.HasSuffix(path, "\\")
+	return strings.HasSuffix(path, string(os.PathSeparator))
 }
 
 // trimTrailingDirSeparators removes all trailing directory separators from a path.
-// It handles both Unix-style (/) and Windows-style (\) separators.
 func trimTrailingDirSeparators(path string) string {
-	return strings.TrimRight(strings.TrimRight(path, "/"), "\\")
+	return strings.TrimRight(path, string(os.PathSeparator))
 }
 
 func newCpCommand() *cobra.Command {
@@ -203,21 +202,9 @@ func newCpCommand() *cobra.Command {
 			return c.cpDirToDir(sourcePath, targetPath)
 		}
 
-		// Check if the target path has a trailing directory separator, indicating it should be a directory.
-		// If it has a trailing separator, verify the directory exists
-		normalizedTargetPathForCheck := filepath.ToSlash(targetPath)
-		if hasTrailingDirSeparator(fullTargetPath) || hasTrailingDirSeparator(normalizedTargetPathForCheck) {
-			// Normalize the target path by removing all trailing separators for Stat check.
-			normalizedTargetPath := trimTrailingDirSeparators(targetPath)
-			targetInfo, err := targetFiler.Stat(ctx, normalizedTargetPath)
-			if err != nil {
-				return fmt.Errorf("directory %s does not exist", fullTargetPath)
-			}
-			if !targetInfo.IsDir() {
-				return fmt.Errorf("directory %s does not exist", fullTargetPath)
-			}
-
-			return c.cpFileToDir(sourcePath, normalizedTargetPath)
+		// If target path has a trailing separator, trim it and let case 2 handle it
+		if hasTrailingDirSeparator(fullTargetPath) {
+			targetPath = trimTrailingDirSeparators(targetPath)
 		}
 
 		// case 2: source path is a file, and target path is a directory. In this case
