@@ -624,7 +624,7 @@ func runTest(t *testing.T,
 	userCacheDir, err := os.UserCacheDir()
 	require.NoError(t, err)
 	uniqueCacheDir := filepath.Join(userCacheDir, strings.ReplaceAll(dir, string(os.PathSeparator), "--"))
-	cmd.Env = append(cmd.Env, "DATABRICKS_CACHE_FOLDER="+uniqueCacheDir)
+	cmd.Env = append(cmd.Env, "DATABRICKS_CACHE_DIR="+uniqueCacheDir)
 
 	for _, key := range utils.SortedKeys(config.Env) {
 		if hasKey(customEnv, key) {
