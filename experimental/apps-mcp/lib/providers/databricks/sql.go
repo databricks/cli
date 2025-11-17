@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 
+	mcp "github.com/databricks/cli/experimental/apps-mcp/lib"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 )
 
@@ -14,16 +16,18 @@ type ExecuteQueryArgs struct {
 }
 
 // ExecuteQuery executes a SQL query and returns the results
-func (c *Client) ExecuteQuery(ctx context.Context, query string) ([]map[string]any, error) {
+func ExecuteQuery(ctx context.Context, cfg *mcp.Config, query string) ([]map[string]any, error) {
 	// Get warehouse ID from config
-	if c.config.WarehouseID == "" {
+	if cfg.WarehouseID == "" {
 		return nil, errors.New("DATABRICKS_WAREHOUSE_ID not configured")
 	}
 
+	w := cmdctx.WorkspaceClient(ctx)
+
 	// Execute statement
-	result, err := c.workspace.StatementExecution.ExecuteStatement(ctx, sql.ExecuteStatementRequest{
+	result, err := w.StatementExecution.ExecuteStatement(ctx, sql.ExecuteStatementRequest{
 		Statement:   query,
-		WarehouseId: c.config.WarehouseID,
+		WarehouseId: cfg.WarehouseID,
 		WaitTimeout: "30s",
 		Format:      sql.FormatJsonArray,
 	})

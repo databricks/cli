@@ -20,20 +20,15 @@ func init() {
 
 // Provider represents the Databricks provider that registers MCP tools
 type Provider struct {
-	client  *Client
+	config  *mcp.Config
 	session *session.Session
 	ctx     context.Context
 }
 
 // NewProvider creates a new Databricks provider
 func NewProvider(ctx context.Context, cfg *mcp.Config, sess *session.Session) (*Provider, error) {
-	client, err := NewClient(ctx, cfg)
-	if err != nil {
-		return nil, err
-	}
-
 	return &Provider{
-		client:  client,
+		config:  cfg,
 		session: sess,
 		ctx:     ctx,
 	}, nil
@@ -57,7 +52,7 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 		session.WrapToolHandler(p.session, func(ctx context.Context, req *mcpsdk.CallToolRequest, args struct{}) (*mcpsdk.CallToolResult, any, error) {
 			log.Debug(ctx, "databricks_list_catalogs called")
 
-			result, err := p.client.ListCatalogs(ctx)
+			result, err := ListCatalogs(ctx, p.config)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -94,7 +89,7 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 				Offset:      args.Offset,
 			}
 
-			result, err := p.client.ListSchemas(ctx, listArgs)
+			result, err := ListSchemas(ctx, p.config, listArgs)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -129,7 +124,7 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 				ExcludeInaccessible: args.ExcludeInaccessible,
 			}
 
-			result, err := p.client.ListTables(ctx, listArgs)
+			result, err := ListTables(ctx, p.config, listArgs)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -162,7 +157,7 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 				SampleSize:    args.SampleSize,
 			}
 
-			result, err := p.client.DescribeTable(ctx, descArgs)
+			result, err := DescribeTable(ctx, p.config, descArgs)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -189,7 +184,7 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 		session.WrapToolHandler(p.session, func(ctx context.Context, req *mcpsdk.CallToolRequest, args ExecuteQueryInput) (*mcpsdk.CallToolResult, any, error) {
 			log.Debugf(ctx, "databricks_execute_query called: query=%s", args.Query)
 
-			result, err := p.client.ExecuteQuery(ctx, args.Query)
+			result, err := ExecuteQuery(ctx, p.config, args.Query)
 			if err != nil {
 				return nil, nil, err
 			}

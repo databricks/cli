@@ -8,6 +8,8 @@ import (
 	"os/exec"
 	"time"
 
+	mcp "github.com/databricks/cli/experimental/apps-mcp/lib"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 )
@@ -91,8 +93,9 @@ type UserInfo struct {
 	UserName    string `json:"userName"`
 }
 
-func GetAppInfo(ctx context.Context, client *Client, name string) (*AppInfo, error) {
-	app, err := client.workspace.Apps.GetByName(ctx, name)
+func GetAppInfo(ctx context.Context, cfg *mcp.Config, name string) (*AppInfo, error) {
+	w := cmdctx.WorkspaceClient(ctx)
+	app, err := w.Apps.GetByName(ctx, name)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get app info: %w", err)
 	}
@@ -160,7 +163,9 @@ func convertAppDeploymentToDeployment(dep *apps.AppDeployment) *Deployment {
 	return deployment
 }
 
-func CreateApp(ctx context.Context, client *Client, app *CreateAppRequest) (*AppInfo, error) {
+func CreateApp(ctx context.Context, cfg *mcp.Config, app *CreateAppRequest) (*AppInfo, error) {
+	w := cmdctx.WorkspaceClient(ctx)
+
 	sdkApp := apps.App{
 		Name:        app.Name,
 		Description: app.Description,
@@ -189,7 +194,7 @@ func CreateApp(ctx context.Context, client *Client, app *CreateAppRequest) (*App
 		App: sdkApp,
 	}
 
-	wait, err := client.workspace.Apps.Create(ctx, req)
+	wait, err := w.Apps.Create(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create app: %w", err)
 	}
@@ -202,8 +207,9 @@ func CreateApp(ctx context.Context, client *Client, app *CreateAppRequest) (*App
 	return convertAppToAppInfo(createdApp), nil
 }
 
-func GetUserInfo(ctx context.Context, client *Client) (*UserInfo, error) {
-	user, err := client.workspace.CurrentUser.Me(ctx)
+func GetUserInfo(ctx context.Context, cfg *mcp.Config) (*UserInfo, error) {
+	w := cmdctx.WorkspaceClient(ctx)
+	user, err := w.CurrentUser.Me(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user info: %w", err)
 	}
@@ -241,7 +247,8 @@ func SyncWorkspace(appInfo *AppInfo, sourceDir string) error {
 	return nil
 }
 
-func DeployApp(ctx context.Context, client *Client, appInfo *AppInfo) error {
+func DeployApp(ctx context.Context, cfg *mcp.Config, appInfo *AppInfo) error {
+	w := cmdctx.WorkspaceClient(ctx)
 	sourcePath := appInfo.SourcePath()
 
 	req := apps.CreateAppDeploymentRequest{
@@ -252,7 +259,7 @@ func DeployApp(ctx context.Context, client *Client, appInfo *AppInfo) error {
 		},
 	}
 
-	wait, err := client.workspace.Apps.Deploy(ctx, req)
+	wait, err := w.Apps.Deploy(ctx, req)
 	if err != nil {
 		return fmt.Errorf("failed to deploy app: %w", err)
 	}

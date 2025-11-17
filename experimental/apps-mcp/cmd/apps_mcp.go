@@ -46,7 +46,6 @@ The server communicates via stdio using the Model Context Protocol.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
-			// Get Databricks client from context
 			w := cmdctx.WorkspaceClient(ctx)
 
 			// Build MCP config from flags
@@ -65,7 +64,7 @@ The server communicates via stdio using the Model Context Protocol.`,
 
 			log.Infof(ctx, "Starting MCP server")
 
-			// Create and start server
+			// Create and start server with workspace client in context
 			srv := server.NewServer(ctx, cfg)
 
 			// Register tools

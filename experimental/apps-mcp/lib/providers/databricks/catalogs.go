@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	mcp "github.com/databricks/cli/experimental/apps-mcp/lib"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
@@ -14,8 +16,9 @@ type ListCatalogsResult struct {
 }
 
 // ListCatalogs lists all available Databricks Unity Catalog catalogs
-func (c *Client) ListCatalogs(ctx context.Context) (*ListCatalogsResult, error) {
-	catalogs, err := c.workspace.Catalogs.ListAll(ctx, catalog.ListCatalogsRequest{})
+func ListCatalogs(ctx context.Context, cfg *mcp.Config) (*ListCatalogsResult, error) {
+	w := cmdctx.WorkspaceClient(ctx)
+	catalogs, err := w.Catalogs.ListAll(ctx, catalog.ListCatalogsRequest{})
 	if err != nil {
 		return nil, fmt.Errorf("failed to list catalogs: %w", err)
 	}
@@ -46,12 +49,13 @@ type ListSchemasResult struct {
 }
 
 // ListSchemas lists schemas in a catalog with optional filtering and pagination
-func (c *Client) ListSchemas(ctx context.Context, args *ListSchemasArgs) (*ListSchemasResult, error) {
+func ListSchemas(ctx context.Context, cfg *mcp.Config, args *ListSchemasArgs) (*ListSchemasResult, error) {
 	if args.Limit == 0 {
 		args.Limit = 1000
 	}
 
-	schemas, err := c.workspace.Schemas.ListAll(ctx, catalog.ListSchemasRequest{
+	w := cmdctx.WorkspaceClient(ctx)
+	schemas, err := w.Schemas.ListAll(ctx, catalog.ListSchemasRequest{
 		CatalogName: args.CatalogName,
 	})
 	if err != nil {
@@ -123,8 +127,9 @@ type ListTablesResult struct {
 }
 
 // ListTables lists tables in a schema
-func (c *Client) ListTables(ctx context.Context, args *ListTablesArgs) (*ListTablesResult, error) {
-	tables, err := c.workspace.Tables.ListAll(ctx, catalog.ListTablesRequest{
+func ListTables(ctx context.Context, cfg *mcp.Config, args *ListTablesArgs) (*ListTablesResult, error) {
+	w := cmdctx.WorkspaceClient(ctx)
+	tables, err := w.Tables.ListAll(ctx, catalog.ListTablesRequest{
 		CatalogName:   args.CatalogName,
 		SchemaName:    args.SchemaName,
 		IncludeBrowse: !args.ExcludeInaccessible,

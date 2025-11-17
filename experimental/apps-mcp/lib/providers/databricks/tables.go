@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	mcp "github.com/databricks/cli/experimental/apps-mcp/lib"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
@@ -34,13 +36,15 @@ type TableDetails struct {
 }
 
 // DescribeTable retrieves detailed information about a table including metadata and sample data
-func (c *Client) DescribeTable(ctx context.Context, args *DescribeTableArgs) (*TableDetails, error) {
+func DescribeTable(ctx context.Context, cfg *mcp.Config, args *DescribeTableArgs) (*TableDetails, error) {
 	if args.SampleSize == 0 {
 		args.SampleSize = 5
 	}
 
+	w := cmdctx.WorkspaceClient(ctx)
+
 	// Get table metadata
-	tableInfo, err := c.workspace.Tables.Get(ctx, catalog.GetTableRequest{
+	tableInfo, err := w.Tables.Get(ctx, catalog.GetTableRequest{
 		FullName: args.TableFullName,
 	})
 	if err != nil {
@@ -89,7 +93,7 @@ func (c *Client) DescribeTable(ctx context.Context, args *DescribeTableArgs) (*T
 	// Get sample data if requested
 	if args.SampleSize > 0 {
 		query := fmt.Sprintf("SELECT * FROM %s LIMIT %d", args.TableFullName, args.SampleSize)
-		sampleData, err := c.ExecuteQuery(ctx, query)
+		sampleData, err := ExecuteQuery(ctx, cfg, query)
 		if err == nil && len(sampleData) > 0 {
 			details.SampleData = sampleData
 		}
@@ -99,7 +103,7 @@ func (c *Client) DescribeTable(ctx context.Context, args *DescribeTableArgs) (*T
 
 	// Get row count
 	countQuery := "SELECT COUNT(*) as count FROM " + args.TableFullName
-	countData, err := c.ExecuteQuery(ctx, countQuery)
+	countData, err := ExecuteQuery(ctx, cfg, countQuery)
 	if err == nil && len(countData) > 0 {
 		if count, ok := countData[0]["count"].(int64); ok {
 			details.RowCount = &count

@@ -35,7 +35,6 @@ type Provider struct {
 	config  *mcp.Config
 	session *session.Session
 	ctx     context.Context
-	client  *databricks.Client
 }
 
 // DeployDatabricksAppInput contains parameters for deploying a Databricks app.
@@ -47,16 +46,10 @@ type DeployDatabricksAppInput struct {
 }
 
 func NewProvider(ctx context.Context, cfg *mcp.Config, sess *session.Session) (*Provider, error) {
-	client, err := databricks.NewClient(ctx, cfg)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create databricks client: %w", err)
-	}
-
 	return &Provider{
 		config:  cfg,
 		session: sess,
 		ctx:     ctx,
-		client:  client,
 	}, nil
 }
 
@@ -228,7 +221,7 @@ func (p *Provider) deployDatabricksApp(ctx context.Context, args *DeployDatabric
 
 	var deployErr error
 	for attempt := 1; attempt <= deployRetries; attempt++ {
-		deployErr = databricks.DeployApp(ctx, p.client, appInfo)
+		deployErr = databricks.DeployApp(ctx, p.config, appInfo)
 		if deployErr == nil {
 			break
 		}
@@ -275,12 +268,12 @@ func (p *Provider) deployDatabricksApp(ctx context.Context, args *DeployDatabric
 }
 
 func (p *Provider) getOrCreateApp(ctx context.Context, name, description string, force bool) (*databricks.AppInfo, error) {
-	appInfo, err := databricks.GetAppInfo(ctx, p.client, name)
+	appInfo, err := databricks.GetAppInfo(ctx, p.config, name)
 	if err == nil {
 		log.Infof(ctx, "Found existing app: name=%s", name)
 
 		if !force {
-			userInfo, err := databricks.GetUserInfo(ctx, p.client)
+			userInfo, err := databricks.GetUserInfo(ctx, p.config)
 			if err != nil {
 				return nil, fmt.Errorf("failed to get user info: %w", err)
 			}
@@ -310,7 +303,7 @@ func (p *Provider) getOrCreateApp(ctx context.Context, name, description string,
 		Resources:   []databricks.Resources{*resources},
 	}
 
-	return databricks.CreateApp(ctx, p.client, createApp)
+	return databricks.CreateApp(ctx, p.config, createApp)
 }
 
 func (p *Provider) runCommand(dir, name string, args ...string) error {
