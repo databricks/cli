@@ -91,7 +91,17 @@ func convertChangePathToDynPath(path []string, structType reflect.Type) (dyn.Pat
 		}
 
 		if currentType.Kind() != reflect.Struct {
-			// For non-struct types (maps, slices, etc.), use the segment as-is
+			// Check if segment is a numeric index (for arrays/slices)
+			if index, err := strconv.Atoi(segment); err == nil {
+				// It's a numeric index - use Index instead of Key
+				dynPath = dynPath.Append(dyn.Index(index))
+				// Update currentType to element type for arrays/slices
+				if currentType.Kind() == reflect.Slice || currentType.Kind() == reflect.Array {
+					currentType = currentType.Elem()
+				}
+				continue
+			}
+			// For non-numeric segments in non-structs (e.g., map keys), use the segment as-is
 			dynPath = dynPath.Append(dyn.Key(segment))
 			continue
 		}
