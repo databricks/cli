@@ -67,7 +67,7 @@ func PreparePermissionsInputConfig(inputConfig any, node string) (*structvar.Str
 	}
 
 	return &structvar.StructVar{
-		Config: &PermissionsState{
+		Value: &PermissionsState{
 			ObjectID:    "", // Always a reference, defined in Refs below
 			Permissions: permissions,
 		},

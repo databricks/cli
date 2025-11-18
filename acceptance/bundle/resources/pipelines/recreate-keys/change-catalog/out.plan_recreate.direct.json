@@ -3,7 +3,7 @@
     "resources.pipelines.my": {
       "action": "recreate",
       "new_state": {
-        "config": {
+        "value": {
           "catalog": "mycatalog2",
           "channel": "CURRENT",
           "deployment": {
