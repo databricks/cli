@@ -104,7 +104,7 @@ type RefreshOutput struct {
 	EndpointId      string                           `json:"endpoint_id"`
 }
 
-func (r *ResourceModelServingEndpoint) DoRefresh(ctx context.Context, id string) (*RefreshOutput, error) {
+func (r *ResourceModelServingEndpoint) DoRead(ctx context.Context, id string) (*RefreshOutput, error) {
 	endpoint, err := r.client.ServingEndpoints.GetByName(ctx, id)
 	if err != nil {
 		return nil, err

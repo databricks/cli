@@ -29,7 +29,7 @@ func (*ResourceJob) RemapState(jobs *jobs.Job) *jobs.JobSettings {
 	return jobs.Settings
 }
 
-func (r *ResourceJob) DoRefresh(ctx context.Context, id string) (*jobs.Job, error) {
+func (r *ResourceJob) DoRead(ctx context.Context, id string) (*jobs.Job, error) {
 	idInt, err := parseJobID(id)
 	if err != nil {
 		return nil, err

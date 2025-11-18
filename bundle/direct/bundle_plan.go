@@ -99,7 +99,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 				return false
 			}
 
-			remoteState, err := adapter.DoRefresh(ctx, dbentry.ID)
+			remoteState, err := adapter.DoRead(ctx, dbentry.ID)
 			if err != nil {
 				if isResourceGone(err) {
 					// no such resource
@@ -150,7 +150,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			return false
 		}
 
-		remoteState, err := adapter.DoRefresh(ctx, dbentry.ID)
+		remoteState, err := adapter.DoRead(ctx, dbentry.ID)
 		if err != nil {
 			if isResourceGone(err) {
 				remoteState = nil

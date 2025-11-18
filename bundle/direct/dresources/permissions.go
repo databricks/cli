@@ -106,7 +106,7 @@ func parsePermissionsID(id string) (extractedType, extractedID string, err error
 	return extractedType, extractedID, nil
 }
 
-func (r *ResourcePermissions) DoRefresh(ctx context.Context, id string) (*PermissionsState, error) {
+func (r *ResourcePermissions) DoRead(ctx context.Context, id string) (*PermissionsState, error) {
 	extractedType, extractedID, err := parsePermissionsID(id)
 	if err != nil {
 		return nil, err

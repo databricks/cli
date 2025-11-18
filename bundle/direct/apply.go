@@ -234,7 +234,7 @@ func (d *DeploymentUnit) refreshRemoteState(ctx context.Context, id string) erro
 	if d.RemoteState != nil {
 		return nil
 	}
-	remoteState, err := d.Adapter.DoRefresh(ctx, id)
+	remoteState, err := d.Adapter.DoRead(ctx, id)
 	if err != nil {
 		return fmt.Errorf("failed to refresh remote state id=%s: %w", id, err)
 	}

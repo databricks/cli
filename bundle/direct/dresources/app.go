@@ -24,7 +24,7 @@ func (*ResourceApp) PrepareState(input *resources.App) *apps.App {
 	return &input.App
 }
 
-func (r *ResourceApp) DoRefresh(ctx context.Context, id string) (*apps.App, error) {
+func (r *ResourceApp) DoRead(ctx context.Context, id string) (*apps.App, error) {
 	return r.client.Apps.GetByName(ctx, id)
 }
 
