@@ -27,8 +27,9 @@ import (
 )
 
 const (
-	defaultTailLines      = 200
-	defaultPrefetchWindow = 2 * time.Second
+	defaultTailLines           = 200
+	defaultPrefetchWindow      = 2 * time.Second
+	defaultHandshakeTimeout    = 30 * time.Second
 )
 
 var allowedSources = []string{"APP", "SYSTEM"}
@@ -236,7 +237,7 @@ func buildSourceFilter(values []string) (map[string]struct{}, error) {
 func newLogStreamDialer(cfg *config.Config) *websocket.Dialer {
 	dialer := &websocket.Dialer{
 		Proxy:            http.ProxyFromEnvironment,
-		HandshakeTimeout: 30 * time.Second,
+		HandshakeTimeout: defaultHandshakeTimeout,
 	}
 
 	if cfg == nil {
