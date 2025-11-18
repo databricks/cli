@@ -85,7 +85,7 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 
 			return &mcpsdk.CallToolResult{
 				Content: []mcpsdk.Content{
-					&mcpsdk.TextContent{Text: content},
+					&mcpsdk.TextContent{Type: "text", Text: content},
 				},
 			}, nil, nil
 		}),
@@ -117,7 +117,7 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 
 			return &mcpsdk.CallToolResult{
 				Content: []mcpsdk.Content{
-					&mcpsdk.TextContent{Text: "File written successfully: " + args.FilePath},
+					&mcpsdk.TextContent{Type: "text", Text: "File written successfully: " + args.FilePath},
 				},
 			}, nil, nil
 		}),
@@ -151,7 +151,7 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 
 			return &mcpsdk.CallToolResult{
 				Content: []mcpsdk.Content{
-					&mcpsdk.TextContent{Text: "File edited successfully: " + args.FilePath},
+					&mcpsdk.TextContent{Type: "text", Text: "File edited successfully: " + args.FilePath},
 				},
 			}, nil, nil
 		}),
@@ -186,7 +186,7 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 
 			return &mcpsdk.CallToolResult{
 				Content: []mcpsdk.Content{
-					&mcpsdk.TextContent{Text: string(resultJSON)},
+					&mcpsdk.TextContent{Type: "text", Text: string(resultJSON)},
 				},
 			}, nil, nil
 		}),
@@ -225,7 +225,7 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 
 			return &mcpsdk.CallToolResult{
 				Content: []mcpsdk.Content{
-					&mcpsdk.TextContent{Text: string(resultJSON)},
+					&mcpsdk.TextContent{Type: "text", Text: string(resultJSON)},
 				},
 			}, nil, nil
 		}),
@@ -258,7 +258,7 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 
 			return &mcpsdk.CallToolResult{
 				Content: []mcpsdk.Content{
-					&mcpsdk.TextContent{Text: string(resultJSON)},
+					&mcpsdk.TextContent{Type: "text", Text: string(resultJSON)},
 				},
 			}, nil, nil
 		}),

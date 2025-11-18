@@ -80,7 +80,7 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 			text := formatScaffoldResult(result)
 			return &mcpsdk.CallToolResult{
 				Content: []mcpsdk.Content{
-					&mcpsdk.TextContent{Text: text},
+					&mcpsdk.TextContent{Type: "text", Text: text},
 				},
 			}, nil, nil
 		}),
@@ -111,7 +111,7 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 			text := formatValidateResult(result)
 			return &mcpsdk.CallToolResult{
 				Content: []mcpsdk.Content{
-					&mcpsdk.TextContent{Text: text},
+					&mcpsdk.TextContent{Type: "text", Text: text},
 				},
 				IsError: !result.Success,
 			}, nil, nil

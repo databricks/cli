@@ -87,7 +87,7 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 			text := formatDeployResult(result)
 			return &mcpsdk.CallToolResult{
 				Content: []mcpsdk.Content{
-					&mcpsdk.TextContent{Text: text},
+					&mcpsdk.TextContent{Type: "text", Text: text},
 				},
 			}, nil, nil
 		}),

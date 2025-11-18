@@ -60,7 +60,7 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 			text := formatCatalogsResult(result)
 			return &mcpsdk.CallToolResult{
 				Content: []mcpsdk.Content{
-					&mcpsdk.TextContent{Text: text},
+					&mcpsdk.TextContent{Type: "text", Text: text},
 				},
 			}, nil, nil
 		}),
@@ -97,7 +97,7 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 			text := formatSchemasResult(result)
 			return &mcpsdk.CallToolResult{
 				Content: []mcpsdk.Content{
-					&mcpsdk.TextContent{Text: text},
+					&mcpsdk.TextContent{Type: "text", Text: text},
 				},
 			}, nil, nil
 		}),
@@ -132,7 +132,7 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 			text := formatTablesResult(result)
 			return &mcpsdk.CallToolResult{
 				Content: []mcpsdk.Content{
-					&mcpsdk.TextContent{Text: text},
+					&mcpsdk.TextContent{Type: "text", Text: text},
 				},
 			}, nil, nil
 		}),
@@ -165,7 +165,7 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 			text := formatTableDetails(result)
 			return &mcpsdk.CallToolResult{
 				Content: []mcpsdk.Content{
-					&mcpsdk.TextContent{Text: text},
+					&mcpsdk.TextContent{Type: "text", Text: text},
 				},
 			}, nil, nil
 		}),
@@ -192,7 +192,7 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 			text := formatQueryResult(result)
 			return &mcpsdk.CallToolResult{
 				Content: []mcpsdk.Content{
-					&mcpsdk.TextContent{Text: text},
+					&mcpsdk.TextContent{Type: "text", Text: text},
 				},
 			}, nil, nil
 		}),
