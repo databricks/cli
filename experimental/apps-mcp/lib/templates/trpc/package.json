@@ -1,0 +1,10 @@
+{
+  "name": "template-trpc",
+  "private": true,
+  "scripts": {
+    "install:all": "cd server && npm install && cd ../client && npm install",
+    "build": "npm run install:all && cd server && npm run check && cd .. && cd client && npm run build && cd .. && rm -rf server/public && mv client/dist server/public",
+    "start": "cd server && npm start",
+    "test": "cd server && npm test"
+  }
+}

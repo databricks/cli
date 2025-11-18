@@ -625,6 +625,35 @@ func AddDefaultHandlers(server *Server) {
 		return MapDelete(req.Workspace, req.Workspace.ModelRegistryModels, req.URL.Query().Get("name"))
 	})
 
+	// Serving Endpoints:
+	server.Handle("GET", "/api/2.0/serving-endpoints/{name}", func(req Request) any {
+		return MapGet(req.Workspace, req.Workspace.ServingEndpoints, req.Vars["name"])
+	})
+
+	server.Handle("POST", "/api/2.0/serving-endpoints", func(req Request) any {
+		return req.Workspace.ServingEndpointCreate(req)
+	})
+
+	server.Handle("PUT", "/api/2.0/serving-endpoints/{name}/config", func(req Request) any {
+		return req.Workspace.ServingEndpointUpdate(req, req.Vars["name"])
+	})
+
+	server.Handle("DELETE", "/api/2.0/serving-endpoints/{name}", func(req Request) any {
+		return MapDelete(req.Workspace, req.Workspace.ServingEndpoints, req.Vars["name"])
+	})
+
+	server.Handle("PUT", "/api/2.0/serving-endpoints/{name}/ai-gateway", func(req Request) any {
+		return req.Workspace.ServingEndpointPutAiGateway(req, req.Vars["name"])
+	})
+
+	server.Handle("PATCH", "/api/2.0/serving-endpoints/{name}/notifications", func(req Request) any {
+		return req.Workspace.ServingEndpointUpdateNotifications(req, req.Vars["name"])
+	})
+
+	server.Handle("PATCH", "/api/2.0/serving-endpoints/{name}/tags", func(req Request) any {
+		return req.Workspace.ServingEndpointPatchTags(req, req.Vars["name"])
+	})
+
 	// Generic permissions endpoints
 	server.Handle("GET", "/api/2.0/permissions/{object_type}/{object_id}", func(req Request) any {
 		return req.Workspace.GetPermissions(req)

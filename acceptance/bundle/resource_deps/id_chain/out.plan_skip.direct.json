@@ -3,7 +3,10 @@
     "resources.jobs.a": {
       "action": "skip",
       "remote_state": {
+        "created_time": [UNIX_TIME_MILLIS][0],
+        "creator_user_name": "[USERNAME]",
         "job_id": [NUMID],
+        "run_as_user_name": "[USERNAME]",
         "settings": {
           "deployment": {
             "kind": "BUNDLE",
@@ -11,11 +14,30 @@
           },
           "description": "aa_new_desc",
           "edit_mode": "UI_LOCKED",
+          "email_notifications": {},
           "format": "MULTI_TASK",
           "max_concurrent_runs": 1,
           "name": "aa",
           "queue": {
             "enabled": true
+          },
+          "timeout_seconds": 0,
+          "webhook_notifications": {}
+        }
+      },
+      "changes": {
+        "remote": {
+          "email_notifications": {
+            "action": "skip",
+            "reason": "server_side_default"
+          },
+          "timeout_seconds": {
+            "action": "skip",
+            "reason": "server_side_default"
+          },
+          "webhook_notifications": {
+            "action": "skip",
+            "reason": "server_side_default"
           }
         }
       }
@@ -29,7 +51,10 @@
       ],
       "action": "skip",
       "remote_state": {
+        "created_time": [UNIX_TIME_MILLIS][1],
+        "creator_user_name": "[USERNAME]",
         "job_id": [NUMID],
+        "run_as_user_name": "[USERNAME]",
         "settings": {
           "deployment": {
             "kind": "BUNDLE",
@@ -37,11 +62,30 @@
           },
           "description": "new_prefix [NUMID]",
           "edit_mode": "UI_LOCKED",
+          "email_notifications": {},
           "format": "MULTI_TASK",
           "max_concurrent_runs": 1,
           "name": "bb",
           "queue": {
             "enabled": true
+          },
+          "timeout_seconds": 0,
+          "webhook_notifications": {}
+        }
+      },
+      "changes": {
+        "remote": {
+          "email_notifications": {
+            "action": "skip",
+            "reason": "server_side_default"
+          },
+          "timeout_seconds": {
+            "action": "skip",
+            "reason": "server_side_default"
+          },
+          "webhook_notifications": {
+            "action": "skip",
+            "reason": "server_side_default"
           }
         }
       }
@@ -55,7 +99,10 @@
       ],
       "action": "skip",
       "remote_state": {
+        "created_time": [UNIX_TIME_MILLIS][2],
+        "creator_user_name": "[USERNAME]",
         "job_id": [NUMID],
+        "run_as_user_name": "[USERNAME]",
         "settings": {
           "deployment": {
             "kind": "BUNDLE",
@@ -63,11 +110,30 @@
           },
           "description": "new_prefix [NUMID]",
           "edit_mode": "UI_LOCKED",
+          "email_notifications": {},
           "format": "MULTI_TASK",
           "max_concurrent_runs": 1,
           "name": "cc",
           "queue": {
             "enabled": true
+          },
+          "timeout_seconds": 0,
+          "webhook_notifications": {}
+        }
+      },
+      "changes": {
+        "remote": {
+          "email_notifications": {
+            "action": "skip",
+            "reason": "server_side_default"
+          },
+          "timeout_seconds": {
+            "action": "skip",
+            "reason": "server_side_default"
+          },
+          "webhook_notifications": {
+            "action": "skip",
+            "reason": "server_side_default"
           }
         }
       }
@@ -81,7 +147,10 @@
       ],
       "action": "skip",
       "remote_state": {
+        "created_time": [UNIX_TIME_MILLIS][3],
+        "creator_user_name": "[USERNAME]",
         "job_id": [NUMID],
+        "run_as_user_name": "[USERNAME]",
         "settings": {
           "deployment": {
             "kind": "BUNDLE",
@@ -89,11 +158,30 @@
           },
           "description": "new_prefix [NUMID]",
           "edit_mode": "UI_LOCKED",
+          "email_notifications": {},
           "format": "MULTI_TASK",
           "max_concurrent_runs": 1,
           "name": "dd",
           "queue": {
             "enabled": true
+          },
+          "timeout_seconds": 0,
+          "webhook_notifications": {}
+        }
+      },
+      "changes": {
+        "remote": {
+          "email_notifications": {
+            "action": "skip",
+            "reason": "server_side_default"
+          },
+          "timeout_seconds": {
+            "action": "skip",
+            "reason": "server_side_default"
+          },
+          "webhook_notifications": {
+            "action": "skip",
+            "reason": "server_side_default"
           }
         }
       }
@@ -107,7 +195,10 @@
       ],
       "action": "skip",
       "remote_state": {
+        "created_time": [UNIX_TIME_MILLIS][4],
+        "creator_user_name": "[USERNAME]",
         "job_id": [NUMID],
+        "run_as_user_name": "[USERNAME]",
         "settings": {
           "deployment": {
             "kind": "BUNDLE",
@@ -115,11 +206,30 @@
           },
           "description": "new_prefix [NUMID]",
           "edit_mode": "UI_LOCKED",
+          "email_notifications": {},
           "format": "MULTI_TASK",
           "max_concurrent_runs": 1,
           "name": "ee",
           "queue": {
             "enabled": true
+          },
+          "timeout_seconds": 0,
+          "webhook_notifications": {}
+        }
+      },
+      "changes": {
+        "remote": {
+          "email_notifications": {
+            "action": "skip",
+            "reason": "server_side_default"
+          },
+          "timeout_seconds": {
+            "action": "skip",
+            "reason": "server_side_default"
+          },
+          "webhook_notifications": {
+            "action": "skip",
+            "reason": "server_side_default"
           }
         }
       }
