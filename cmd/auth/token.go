@@ -4,14 +4,21 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m"
+	"github.com/databricks/databricks-sdk-go/credentials/u2m/cache"
 	"github.com/spf13/cobra"
 	"golang.org/x/oauth2"
 )
+
+func helpfulError(ctx context.Context, profile string, persistentAuth u2m.OAuthArgument) string {
+	loginMsg := auth.BuildLoginCommand(ctx, profile, persistentAuth)
+	return fmt.Sprintf("Try logging in again with `%s` before retrying. If this fails, please report this issue to the Databricks CLI maintainers at https://github.com/databricks/cli/issues/new", loginMsg)
+}
 
 func newTokenCommand(authArguments *auth.AuthArguments) *cobra.Command {
 	cmd := &cobra.Command{
@@ -96,10 +103,37 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 		return nil, err
 	}
 
-	return auth.AcquireToken(ctx, auth.AcquireTokenRequest{
-		AuthArguments:      args.authArguments,
-		ProfileName:        args.profileName,
-		Timeout:            args.tokenTimeout,
-		PersistentAuthOpts: args.persistentAuthOpts,
-	})
+	ctx, cancel := context.WithTimeout(ctx, args.tokenTimeout)
+	defer cancel()
+	oauthArgument, err := args.authArguments.ToOAuthArgument()
+	if err != nil {
+		return nil, err
+	}
+	allArgs := append(args.persistentAuthOpts, u2m.WithOAuthArgument(oauthArgument))
+	persistentAuth, err := u2m.NewPersistentAuth(ctx, allArgs...)
+	if err != nil {
+		helpMsg := helpfulError(ctx, args.profileName, oauthArgument)
+		return nil, fmt.Errorf("%w. %s", err, helpMsg)
+	}
+	t, err := persistentAuth.Token()
+	if err != nil {
+		if errors.Is(err, cache.ErrNotFound) {
+			// The error returned by the SDK when the token cache doesn't exist or doesn't contain a token
+			// for the given host changed in SDK v0.77.0: https://github.com/databricks/databricks-sdk-go/pull/1250.
+			// This was released as part of CLI v0.264.0.
+			//
+			// Older SDK versions check for a particular substring to determine if
+			// the OAuth authentication type can fall through or if it is a real error.
+			// This means we need to keep this error message constant for backwards compatibility.
+			//
+			// This is captured in an acceptance test under "cmd/auth/token".
+			err = errors.New("cache: databricks OAuth is not configured for this host")
+		}
+		if rewritten, rewrittenErr := auth.RewriteAuthError(ctx, args.authArguments.Host, args.authArguments.AccountID, args.profileName, err); rewritten {
+			return nil, rewrittenErr
+		}
+		helpMsg := helpfulError(ctx, args.profileName, oauthArgument)
+		return nil, fmt.Errorf("%w. %s", err, helpMsg)
+	}
+	return t, nil
 }

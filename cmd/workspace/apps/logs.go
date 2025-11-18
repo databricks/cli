@@ -15,7 +15,6 @@ import (
 	"time"
 
 	"github.com/databricks/cli/cmd/root"
-	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdgroup"
 	"github.com/databricks/cli/libs/cmdio"
@@ -30,7 +29,6 @@ import (
 const (
 	defaultTailLines      = 200
 	defaultPrefetchWindow = 2 * time.Second
-	tokenAcquireTimeout   = time.Minute
 )
 
 var allowedSources = []string{"APP", "SYSTEM"}
@@ -96,18 +94,19 @@ via --source APP|SYSTEM. Use --output-file to mirror the stream to a local file 
 			if cfg == nil {
 				return errors.New("missing workspace configuration")
 			}
-			authArgs := &auth.AuthArguments{Host: cfg.Host, AccountID: cfg.AccountID}
-			tokenRequest := auth.AcquireTokenRequest{
-				AuthArguments: authArgs,
-				ProfileName:   cfg.Profile,
-				Timeout:       tokenAcquireTimeout,
+
+			tokenSource := cfg.GetTokenSource()
+			if tokenSource == nil {
+				return errors.New("configuration does not support OAuth tokens")
 			}
-			token, err := auth.AcquireToken(ctx, tokenRequest)
+
+			initialToken, err := tokenSource.Token(ctx)
 			if err != nil {
 				return err
 			}
+
 			tokenProvider := func(ctx context.Context) (string, error) {
-				tok, err := auth.AcquireToken(ctx, tokenRequest)
+				tok, err := tokenSource.Token(ctx)
 				if err != nil {
 					return "", err
 				}
@@ -136,7 +135,7 @@ via --source APP|SYSTEM. Use --output-file to mirror the stream to a local file 
 				Dialer:        newLogStreamDialer(cfg),
 				URL:           wsURL,
 				Origin:        normalizeOrigin(app.Url),
-				Token:         token.AccessToken,
+				Token:         initialToken.AccessToken,
 				TokenProvider: tokenProvider,
 				Search:        searchTerm,
 				Sources:       sourceMap,
