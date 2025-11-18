@@ -105,15 +105,18 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 
 	// Register databricks_list_tables
 	type ListTablesInput struct {
-		CatalogName         string `json:"catalog_name" jsonschema:"required" jsonschema_description:"Name of the catalog"`
-		SchemaName          string `json:"schema_name" jsonschema:"required" jsonschema_description:"Name of the schema"`
-		ExcludeInaccessible bool   `json:"exclude_inaccessible,omitempty" jsonschema_description:"Exclude inaccessible tables (default: false)"`
+		CatalogName         string  `json:"catalog_name" jsonschema:"required" jsonschema_description:"Name of the catalog"`
+		SchemaName          string  `json:"schema_name" jsonschema:"required" jsonschema_description:"Name of the schema"`
+		ExcludeInaccessible bool    `json:"exclude_inaccessible,omitempty" jsonschema_description:"Exclude inaccessible tables (default: false)"`
+		PageSize            *int    `json:"page_size,omitempty" jsonschema_description:"Number of tables to return (default: 100, max: 1000)"`
+		PageToken           *string `json:"page_token,omitempty" jsonschema_description:"Token for next page of results"`
+		Filter              *string `json:"filter,omitempty" jsonschema_description:"Optional filter pattern for table names (supports wildcards)"`
 	}
 
 	mcpsdk.AddTool(server,
 		&mcpsdk.Tool{
 			Name:        "databricks_list_tables",
-			Description: "List tables in a Databricks catalog and schema",
+			Description: "List tables in a Databricks catalog and schema with pagination support",
 		},
 		session.WrapToolHandler(p.session, func(ctx context.Context, req *mcpsdk.CallToolRequest, args ListTablesInput) (*mcpsdk.CallToolResult, any, error) {
 			log.Debugf(ctx, "databricks_list_tables called: catalog=%s, schema=%s", args.CatalogName, args.SchemaName)
@@ -122,6 +125,9 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 				CatalogName:         args.CatalogName,
 				SchemaName:          args.SchemaName,
 				ExcludeInaccessible: args.ExcludeInaccessible,
+				PageSize:            args.PageSize,
+				PageToken:           args.PageToken,
+				Filter:              args.Filter,
 			}
 
 			result, err := ListTables(ctx, p.config, listArgs)

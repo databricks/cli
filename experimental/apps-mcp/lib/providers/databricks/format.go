@@ -47,11 +47,21 @@ func formatSchemasResult(result *ListSchemasResult) string {
 
 // formatTablesResult formats the tables result into a readable string
 func formatTablesResult(result *ListTablesResult) string {
+	var header string
+	if result.NextPageToken != nil {
+		header = fmt.Sprintf("Found %d tables (more results available - use page_token to fetch next page):", result.TotalCount)
+	} else {
+		header = fmt.Sprintf("Found %d tables:", result.TotalCount)
+	}
+
 	if len(result.Tables) == 0 {
+		if result.NextPageToken != nil {
+			return header + "\n(No tables on this page, but more results may be available)"
+		}
 		return "No tables found."
 	}
 
-	lines := []string{fmt.Sprintf("Found %d tables:", len(result.Tables)), ""}
+	lines := []string{header, ""}
 	for _, table := range result.Tables {
 		info := fmt.Sprintf("• %s (%s)", table.FullName, table.TableType)
 		if table.Owner != nil {
@@ -62,6 +72,12 @@ func formatTablesResult(result *ListTablesResult) string {
 		}
 		lines = append(lines, info)
 	}
+
+	if result.NextPageToken != nil {
+		lines = append(lines, "")
+		lines = append(lines, "Next page token: "+*result.NextPageToken)
+	}
+
 	return strings.Join(lines, "\n")
 }
 

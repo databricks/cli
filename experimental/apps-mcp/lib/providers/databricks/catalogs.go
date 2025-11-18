@@ -3,10 +3,13 @@ package databricks
 import (
 	"context"
 	"fmt"
+	"net/url"
+	"strconv"
 	"strings"
 
 	mcp "github.com/databricks/cli/experimental/apps-mcp/lib"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/databricks-sdk-go/httpclient"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
 
@@ -57,6 +60,7 @@ func ListSchemas(ctx context.Context, cfg *mcp.Config, args *ListSchemasArgs) (*
 	w := cmdctx.WorkspaceClient(ctx)
 	schemas, err := w.Schemas.ListAll(ctx, catalog.ListSchemasRequest{
 		CatalogName: args.CatalogName,
+		MaxResults:  args.Limit,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to list schemas: %w", err)
@@ -105,9 +109,12 @@ func ListSchemas(ctx context.Context, cfg *mcp.Config, args *ListSchemasArgs) (*
 
 // ListTablesArgs represents arguments for listing tables
 type ListTablesArgs struct {
-	CatalogName         string `json:"catalog_name"`
-	SchemaName          string `json:"schema_name"`
-	ExcludeInaccessible bool   `json:"exclude_inaccessible"`
+	CatalogName         string  `json:"catalog_name"`
+	SchemaName          string  `json:"schema_name"`
+	ExcludeInaccessible bool    `json:"exclude_inaccessible"`
+	PageSize            *int    `json:"page_size,omitempty"`
+	PageToken           *string `json:"page_token,omitempty"`
+	Filter              *string `json:"filter,omitempty"`
 }
 
 // TableInfo represents information about a table
@@ -123,23 +130,89 @@ type TableInfo struct {
 
 // ListTablesResult represents the result of listing tables
 type ListTablesResult struct {
-	Tables []TableInfo `json:"tables"`
+	Tables        []TableInfo `json:"tables"`
+	NextPageToken *string     `json:"next_page_token,omitempty"`
+	TotalCount    int         `json:"total_count"`
 }
 
-// ListTables lists tables in a schema
+// matchFilter checks if a name matches a filter pattern (supports wildcards)
+func matchFilter(name, filter string) bool {
+	// Convert to lowercase for case-insensitive matching
+	name = strings.ToLower(name)
+	filter = strings.ToLower(filter)
+
+	// Simple wildcard matching: * matches any sequence of characters
+	if strings.Contains(filter, "*") {
+		parts := strings.Split(filter, "*")
+		pos := 0
+		for i, part := range parts {
+			if part == "" {
+				continue
+			}
+			idx := strings.Index(name[pos:], part)
+			if idx == -1 {
+				return false
+			}
+			// First part must match at the beginning
+			if i == 0 && idx != 0 {
+				return false
+			}
+			pos += idx + len(part)
+		}
+		// Last part must match at the end
+		if !strings.HasSuffix(filter, "*") && !strings.HasSuffix(name, parts[len(parts)-1]) {
+			return false
+		}
+		return true
+	}
+
+	// No wildcards - simple substring match
+	return strings.Contains(name, filter)
+}
+
+// ListTables lists tables in a schema with pagination support
 func ListTables(ctx context.Context, cfg *mcp.Config, args *ListTablesArgs) (*ListTablesResult, error) {
+	pageSize := 100
+	if args.PageSize != nil {
+		pageSize = min(*args.PageSize, 1000)
+	}
+
 	w := cmdctx.WorkspaceClient(ctx)
-	tables, err := w.Tables.ListAll(ctx, catalog.ListTablesRequest{
-		CatalogName:   args.CatalogName,
-		SchemaName:    args.SchemaName,
-		IncludeBrowse: !args.ExcludeInaccessible,
-	})
+
+	// Build API URL with query parameters
+	apiPath := "/api/2.1/unity-catalog/tables"
+	params := url.Values{}
+	params.Add("catalog_name", args.CatalogName)
+	params.Add("schema_name", args.SchemaName)
+	if !args.ExcludeInaccessible {
+		params.Add("include_browse", "true")
+	}
+	params.Add("max_results", strconv.Itoa(pageSize))
+	if args.PageToken != nil && *args.PageToken != "" {
+		params.Add("page_token", *args.PageToken)
+	}
+
+	fullPath := apiPath + "?" + params.Encode()
+	// Create API client and make request
+	apiClient, err := w.Config.NewApiClient()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create API client: %w", err)
+	}
+
+	var response catalog.ListTablesResponse
+	err = apiClient.Do(ctx, "GET", fullPath, httpclient.WithResponseUnmarshal(&response))
 	if err != nil {
 		return nil, fmt.Errorf("failed to list tables: %w", err)
 	}
 
-	infos := make([]TableInfo, len(tables))
-	for i, table := range tables {
+	// Process tables and apply filter
+	var infos []TableInfo
+	for _, table := range response.Tables {
+		// Apply filter if provided
+		if args.Filter != nil && !matchFilter(table.Name, *args.Filter) {
+			continue
+		}
+
 		var owner, comment *string
 		if table.Owner != "" {
 			owner = &table.Owner
@@ -147,7 +220,8 @@ func ListTables(ctx context.Context, cfg *mcp.Config, args *ListTablesArgs) (*Li
 		if table.Comment != "" {
 			comment = &table.Comment
 		}
-		infos[i] = TableInfo{
+
+		infos = append(infos, TableInfo{
 			Name:        table.Name,
 			CatalogName: table.CatalogName,
 			SchemaName:  table.SchemaName,
@@ -155,8 +229,18 @@ func ListTables(ctx context.Context, cfg *mcp.Config, args *ListTablesArgs) (*Li
 			TableType:   string(table.TableType),
 			Owner:       owner,
 			Comment:     comment,
-		}
+		})
 	}
 
-	return &ListTablesResult{Tables: infos}, nil
+	// Set next page token if available
+	var nextToken *string
+	if response.NextPageToken != "" {
+		nextToken = &response.NextPageToken
+	}
+
+	return &ListTablesResult{
+		Tables:        infos,
+		NextPageToken: nextToken,
+		TotalCount:    len(infos),
+	}, nil
 }
