@@ -103,7 +103,8 @@ func (s *logStreamer) Run(ctx context.Context) error {
 	}
 
 	backoff := initialReconnectBackoff
-	timer := &time.Timer{}
+	timer := time.NewTimer(0)
+	stopTimer(timer, 0)
 
 	for {
 		resp, err := s.connectAndConsume(ctx)
@@ -490,12 +491,20 @@ func stopTimer(timer *time.Timer, d time.Duration) {
 	if timer == nil {
 		return
 	}
+	if d <= 0 {
+		// For a zero duration we only need to stop and drain.
+		if timer.Stop() {
+			return
+		}
+		drainTimer(timer)
+		return
+	}
+	// For a positive duration, either stop an already-started timer or
+	// just initialize it when it is still in the zero state.
 	if !timer.Stop() {
 		drainTimer(timer)
 	}
-	if d > 0 {
-		timer.Reset(d)
-	}
+	timer.Reset(d)
 }
 
 func drainTimer(timer *time.Timer) {
