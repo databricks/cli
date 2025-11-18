@@ -60,7 +60,7 @@ func newGet() *cobra.Command {
 
 	var getReq compute.GetPolicyFamilyRequest
 
-	cmd.Flags().Int64Var(&getReq.Version, "version", getReq.Version, `The version number for the family to fetch.`)
+	cmd.Flags().Int64Var(&getReq.Version, "version", getReq.Version, `The version number for the family to fetch. Wire name: 'version'.`)
 
 	cmd.Use = "get POLICY_FAMILY_ID"
 	cmd.Short = `Get policy family information.`
@@ -119,8 +119,8 @@ func newList() *cobra.Command {
 
 	var listReq compute.ListPolicyFamiliesRequest
 
-	cmd.Flags().Int64Var(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of policy families to return.`)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `A token that can be used to get the next page of results.`)
+	cmd.Flags().Int64Var(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of policy families to return. Wire name: 'max_results'.`)
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `A token that can be used to get the next page of results. Wire name: 'page_token'.`)
 
 	cmd.Use = "list"
 	cmd.Short = `List policy families.`

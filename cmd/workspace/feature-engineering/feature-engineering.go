@@ -70,8 +70,8 @@ func newCreateFeature() *cobra.Command {
 
 	cmd.Flags().Var(&createFeatureJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createFeatureReq.Feature.Description, "description", createFeatureReq.Feature.Description, `The description of the feature.`)
-	cmd.Flags().StringVar(&createFeatureReq.Feature.FilterCondition, "filter-condition", createFeatureReq.Feature.FilterCondition, `The filter condition applied to the source data before aggregation.`)
+	cmd.Flags().StringVar(&createFeatureReq.Feature.Description, "description", createFeatureReq.Feature.Description, `The description of the feature. Wire name: 'description'.`)
+	cmd.Flags().StringVar(&createFeatureReq.Feature.FilterCondition, "filter-condition", createFeatureReq.Feature.FilterCondition, `The filter condition applied to the source data before aggregation. Wire name: 'filter_condition'.`)
 
 	cmd.Use = "create-feature FULL_NAME SOURCE INPUTS FUNCTION TIME_WINDOW"
 	cmd.Short = `Create a feature.`
@@ -188,7 +188,7 @@ func newCreateMaterializedFeature() *cobra.Command {
 
 	// TODO: complex arg: offline_store_config
 	// TODO: complex arg: online_store_config
-	cmd.Flags().Var(&createMaterializedFeatureReq.MaterializedFeature.PipelineScheduleState, "pipeline-schedule-state", `The schedule state of the materialization pipeline. Supported values: [ACTIVE, PAUSED, SNAPSHOT]`)
+	cmd.Flags().Var(&createMaterializedFeatureReq.MaterializedFeature.PipelineScheduleState, "pipeline-schedule-state", `The schedule state of the materialization pipeline. Supported values: [ACTIVE, PAUSED, SNAPSHOT]. Wire name: 'pipeline_schedule_state'.`)
 
 	cmd.Use = "create-materialized-feature FEATURE_NAME"
 	cmd.Short = `Create a materialized feature.`
@@ -485,8 +485,8 @@ func newListFeatures() *cobra.Command {
 
 	var listFeaturesReq ml.ListFeaturesRequest
 
-	cmd.Flags().IntVar(&listFeaturesReq.PageSize, "page-size", listFeaturesReq.PageSize, `The maximum number of results to return.`)
-	cmd.Flags().StringVar(&listFeaturesReq.PageToken, "page-token", listFeaturesReq.PageToken, `Pagination token to go to the next page based on a previous query.`)
+	cmd.Flags().IntVar(&listFeaturesReq.PageSize, "page-size", listFeaturesReq.PageSize, `The maximum number of results to return. Wire name: 'page_size'.`)
+	cmd.Flags().StringVar(&listFeaturesReq.PageToken, "page-token", listFeaturesReq.PageToken, `Pagination token to go to the next page based on a previous query. Wire name: 'page_token'.`)
 
 	cmd.Use = "list-features"
 	cmd.Short = `List features.`
@@ -536,9 +536,9 @@ func newListMaterializedFeatures() *cobra.Command {
 
 	var listMaterializedFeaturesReq ml.ListMaterializedFeaturesRequest
 
-	cmd.Flags().StringVar(&listMaterializedFeaturesReq.FeatureName, "feature-name", listMaterializedFeaturesReq.FeatureName, `Filter by feature name.`)
-	cmd.Flags().IntVar(&listMaterializedFeaturesReq.PageSize, "page-size", listMaterializedFeaturesReq.PageSize, `The maximum number of results to return.`)
-	cmd.Flags().StringVar(&listMaterializedFeaturesReq.PageToken, "page-token", listMaterializedFeaturesReq.PageToken, `Pagination token to go to the next page based on a previous query.`)
+	cmd.Flags().StringVar(&listMaterializedFeaturesReq.FeatureName, "feature-name", listMaterializedFeaturesReq.FeatureName, `Filter by feature name. Wire name: 'feature_name'.`)
+	cmd.Flags().IntVar(&listMaterializedFeaturesReq.PageSize, "page-size", listMaterializedFeaturesReq.PageSize, `The maximum number of results to return. Wire name: 'page_size'.`)
+	cmd.Flags().StringVar(&listMaterializedFeaturesReq.PageToken, "page-token", listMaterializedFeaturesReq.PageToken, `Pagination token to go to the next page based on a previous query. Wire name: 'page_token'.`)
 
 	cmd.Use = "list-materialized-features"
 	cmd.Short = `List materialized features.`
@@ -590,8 +590,8 @@ func newUpdateFeature() *cobra.Command {
 
 	cmd.Flags().Var(&updateFeatureJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateFeatureReq.Feature.Description, "description", updateFeatureReq.Feature.Description, `The description of the feature.`)
-	cmd.Flags().StringVar(&updateFeatureReq.Feature.FilterCondition, "filter-condition", updateFeatureReq.Feature.FilterCondition, `The filter condition applied to the source data before aggregation.`)
+	cmd.Flags().StringVar(&updateFeatureReq.Feature.Description, "description", updateFeatureReq.Feature.Description, `The description of the feature. Wire name: 'description'.`)
+	cmd.Flags().StringVar(&updateFeatureReq.Feature.FilterCondition, "filter-condition", updateFeatureReq.Feature.FilterCondition, `The filter condition applied to the source data before aggregation. Wire name: 'filter_condition'.`)
 
 	cmd.Use = "update-feature FULL_NAME UPDATE_MASK SOURCE INPUTS FUNCTION TIME_WINDOW"
 	cmd.Short = `Update a feature's description (all other fields are immutable).`
@@ -708,7 +708,7 @@ func newUpdateMaterializedFeature() *cobra.Command {
 
 	// TODO: complex arg: offline_store_config
 	// TODO: complex arg: online_store_config
-	cmd.Flags().Var(&updateMaterializedFeatureReq.MaterializedFeature.PipelineScheduleState, "pipeline-schedule-state", `The schedule state of the materialization pipeline. Supported values: [ACTIVE, PAUSED, SNAPSHOT]`)
+	cmd.Flags().Var(&updateMaterializedFeatureReq.MaterializedFeature.PipelineScheduleState, "pipeline-schedule-state", `The schedule state of the materialization pipeline. Supported values: [ACTIVE, PAUSED, SNAPSHOT]. Wire name: 'pipeline_schedule_state'.`)
 
 	cmd.Use = "update-materialized-feature MATERIALIZED_FEATURE_ID UPDATE_MASK FEATURE_NAME"
 	cmd.Short = `Update a materialized feature.`

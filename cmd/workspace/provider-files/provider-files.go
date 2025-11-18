@@ -61,7 +61,7 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createReq.DisplayName, "display-name", createReq.DisplayName, ``)
+	cmd.Flags().StringVar(&createReq.DisplayName, "display-name", createReq.DisplayName, `Wire name: 'display_name'.`)
 
 	cmd.Use = "create"
 	cmd.Short = `Create a file.`
@@ -258,8 +258,8 @@ func newList() *cobra.Command {
 
 	cmd.Flags().Var(&listJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, ``)
+	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `Wire name: 'page_size'.`)
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Wire name: 'page_token'.`)
 
 	cmd.Use = "list"
 	cmd.Short = `List files.`

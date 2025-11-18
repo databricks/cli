@@ -68,7 +68,7 @@ func newEnforceCompliance() *cobra.Command {
 
 	cmd.Flags().Var(&enforceComplianceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&enforceComplianceReq.ValidateOnly, "validate-only", enforceComplianceReq.ValidateOnly, `If set, previews the changes that would be made to a cluster to enforce compliance but does not update the cluster.`)
+	cmd.Flags().BoolVar(&enforceComplianceReq.ValidateOnly, "validate-only", enforceComplianceReq.ValidateOnly, `If set, previews the changes that would be made to a cluster to enforce compliance but does not update the cluster. Wire name: 'validate_only'.`)
 
 	cmd.Use = "enforce-compliance CLUSTER_ID"
 	cmd.Short = `Enforce cluster policy compliance.`
@@ -216,8 +216,8 @@ func newListCompliance() *cobra.Command {
 
 	var listComplianceReq compute.ListClusterCompliancesRequest
 
-	cmd.Flags().IntVar(&listComplianceReq.PageSize, "page-size", listComplianceReq.PageSize, `Use this field to specify the maximum number of results to be returned by the server.`)
-	cmd.Flags().StringVar(&listComplianceReq.PageToken, "page-token", listComplianceReq.PageToken, `A page token that can be used to navigate to the next page or previous page as returned by next_page_token or prev_page_token.`)
+	cmd.Flags().IntVar(&listComplianceReq.PageSize, "page-size", listComplianceReq.PageSize, `Use this field to specify the maximum number of results to be returned by the server. Wire name: 'page_size'.`)
+	cmd.Flags().StringVar(&listComplianceReq.PageToken, "page-token", listComplianceReq.PageToken, `A page token that can be used to navigate to the next page or previous page as returned by next_page_token or prev_page_token. Wire name: 'page_token'.`)
 
 	cmd.Use = "list-compliance POLICY_ID"
 	cmd.Short = `List cluster policy compliance.`

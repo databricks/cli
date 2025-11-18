@@ -70,11 +70,11 @@ func newCreatePolicy() *cobra.Command {
 	cmd.Flags().Var(&createPolicyJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: column_mask
-	cmd.Flags().StringVar(&createPolicyReq.PolicyInfo.Comment, "comment", createPolicyReq.PolicyInfo.Comment, `Optional description of the policy.`)
+	cmd.Flags().StringVar(&createPolicyReq.PolicyInfo.Comment, "comment", createPolicyReq.PolicyInfo.Comment, `Optional description of the policy. Wire name: 'comment'.`)
 	// TODO: array: except_principals
 	// TODO: array: match_columns
-	cmd.Flags().StringVar(&createPolicyReq.PolicyInfo.Name, "name", createPolicyReq.PolicyInfo.Name, `Name of the policy.`)
-	cmd.Flags().StringVar(&createPolicyReq.PolicyInfo.OnSecurableFullname, "on-securable-fullname", createPolicyReq.PolicyInfo.OnSecurableFullname, `Full name of the securable on which the policy is defined.`)
+	cmd.Flags().StringVar(&createPolicyReq.PolicyInfo.Name, "name", createPolicyReq.PolicyInfo.Name, `Name of the policy. Wire name: 'name'.`)
+	cmd.Flags().StringVar(&createPolicyReq.PolicyInfo.OnSecurableFullname, "on-securable-fullname", createPolicyReq.PolicyInfo.OnSecurableFullname, `Full name of the securable on which the policy is defined. Wire name: 'on_securable_fullname'.`)
 	cmd.Flags().Var(&createPolicyReq.PolicyInfo.OnSecurableType, "on-securable-type", `Type of the securable on which the policy is defined. Supported values: [
   CATALOG,
   CLEAN_ROOM,
@@ -93,9 +93,9 @@ func newCreatePolicy() *cobra.Command {
   STORAGE_CREDENTIAL,
   TABLE,
   VOLUME,
-]`)
+]. Wire name: 'on_securable_type'.`)
 	// TODO: complex arg: row_filter
-	cmd.Flags().StringVar(&createPolicyReq.PolicyInfo.WhenCondition, "when-condition", createPolicyReq.PolicyInfo.WhenCondition, `Optional condition when the policy should take effect.`)
+	cmd.Flags().StringVar(&createPolicyReq.PolicyInfo.WhenCondition, "when-condition", createPolicyReq.PolicyInfo.WhenCondition, `Optional condition when the policy should take effect. Wire name: 'when_condition'.`)
 
 	cmd.Use = "create-policy TO_PRINCIPALS FOR_SECURABLE_TYPE POLICY_TYPE"
 	cmd.Short = `Create an ABAC policy.`
@@ -338,9 +338,9 @@ func newListPolicies() *cobra.Command {
 
 	var listPoliciesReq catalog.ListPoliciesRequest
 
-	cmd.Flags().BoolVar(&listPoliciesReq.IncludeInherited, "include-inherited", listPoliciesReq.IncludeInherited, `Optional.`)
-	cmd.Flags().IntVar(&listPoliciesReq.MaxResults, "max-results", listPoliciesReq.MaxResults, `Optional.`)
-	cmd.Flags().StringVar(&listPoliciesReq.PageToken, "page-token", listPoliciesReq.PageToken, `Optional.`)
+	cmd.Flags().BoolVar(&listPoliciesReq.IncludeInherited, "include-inherited", listPoliciesReq.IncludeInherited, `Optional. Wire name: 'include_inherited'.`)
+	cmd.Flags().IntVar(&listPoliciesReq.MaxResults, "max-results", listPoliciesReq.MaxResults, `Optional. Wire name: 'max_results'.`)
+	cmd.Flags().StringVar(&listPoliciesReq.PageToken, "page-token", listPoliciesReq.PageToken, `Optional. Wire name: 'page_token'.`)
 
 	cmd.Use = "list-policies ON_SECURABLE_TYPE ON_SECURABLE_FULLNAME"
 	cmd.Short = `List ABAC policies.`
@@ -407,13 +407,13 @@ func newUpdatePolicy() *cobra.Command {
 
 	cmd.Flags().Var(&updatePolicyJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updatePolicyReq.UpdateMask, "update-mask", updatePolicyReq.UpdateMask, `Optional.`)
+	cmd.Flags().StringVar(&updatePolicyReq.UpdateMask, "update-mask", updatePolicyReq.UpdateMask, `Optional. Wire name: 'update_mask'.`)
 	// TODO: complex arg: column_mask
-	cmd.Flags().StringVar(&updatePolicyReq.PolicyInfo.Comment, "comment", updatePolicyReq.PolicyInfo.Comment, `Optional description of the policy.`)
+	cmd.Flags().StringVar(&updatePolicyReq.PolicyInfo.Comment, "comment", updatePolicyReq.PolicyInfo.Comment, `Optional description of the policy. Wire name: 'comment'.`)
 	// TODO: array: except_principals
 	// TODO: array: match_columns
-	cmd.Flags().StringVar(&updatePolicyReq.PolicyInfo.Name, "name", updatePolicyReq.PolicyInfo.Name, `Name of the policy.`)
-	cmd.Flags().StringVar(&updatePolicyReq.PolicyInfo.OnSecurableFullname, "on-securable-fullname", updatePolicyReq.PolicyInfo.OnSecurableFullname, `Full name of the securable on which the policy is defined.`)
+	cmd.Flags().StringVar(&updatePolicyReq.PolicyInfo.Name, "name", updatePolicyReq.PolicyInfo.Name, `Name of the policy. Wire name: 'name'.`)
+	cmd.Flags().StringVar(&updatePolicyReq.PolicyInfo.OnSecurableFullname, "on-securable-fullname", updatePolicyReq.PolicyInfo.OnSecurableFullname, `Full name of the securable on which the policy is defined. Wire name: 'on_securable_fullname'.`)
 	cmd.Flags().Var(&updatePolicyReq.PolicyInfo.OnSecurableType, "on-securable-type", `Type of the securable on which the policy is defined. Supported values: [
   CATALOG,
   CLEAN_ROOM,
@@ -432,9 +432,9 @@ func newUpdatePolicy() *cobra.Command {
   STORAGE_CREDENTIAL,
   TABLE,
   VOLUME,
-]`)
+]. Wire name: 'on_securable_type'.`)
 	// TODO: complex arg: row_filter
-	cmd.Flags().StringVar(&updatePolicyReq.PolicyInfo.WhenCondition, "when-condition", updatePolicyReq.PolicyInfo.WhenCondition, `Optional condition when the policy should take effect.`)
+	cmd.Flags().StringVar(&updatePolicyReq.PolicyInfo.WhenCondition, "when-condition", updatePolicyReq.PolicyInfo.WhenCondition, `Optional condition when the policy should take effect. Wire name: 'when_condition'.`)
 
 	cmd.Use = "update-policy ON_SECURABLE_TYPE ON_SECURABLE_FULLNAME NAME TO_PRINCIPALS FOR_SECURABLE_TYPE POLICY_TYPE"
 	cmd.Short = `Update an ABAC policy.`

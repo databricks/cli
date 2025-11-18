@@ -73,11 +73,11 @@ func newCreateCredential() *cobra.Command {
 	// TODO: complex arg: aws_iam_role
 	// TODO: complex arg: azure_managed_identity
 	// TODO: complex arg: azure_service_principal
-	cmd.Flags().StringVar(&createCredentialReq.Comment, "comment", createCredentialReq.Comment, `Comment associated with the credential.`)
+	cmd.Flags().StringVar(&createCredentialReq.Comment, "comment", createCredentialReq.Comment, `Comment associated with the credential. Wire name: 'comment'.`)
 	// TODO: complex arg: databricks_gcp_service_account
-	cmd.Flags().Var(&createCredentialReq.Purpose, "purpose", `Indicates the purpose of the credential. Supported values: [SERVICE, STORAGE]`)
-	cmd.Flags().BoolVar(&createCredentialReq.ReadOnly, "read-only", createCredentialReq.ReadOnly, `Whether the credential is usable only for read operations.`)
-	cmd.Flags().BoolVar(&createCredentialReq.SkipValidation, "skip-validation", createCredentialReq.SkipValidation, `Optional.`)
+	cmd.Flags().Var(&createCredentialReq.Purpose, "purpose", `Indicates the purpose of the credential. Supported values: [SERVICE, STORAGE]. Wire name: 'purpose'.`)
+	cmd.Flags().BoolVar(&createCredentialReq.ReadOnly, "read-only", createCredentialReq.ReadOnly, `Whether the credential is usable only for read operations. Wire name: 'read_only'.`)
+	cmd.Flags().BoolVar(&createCredentialReq.SkipValidation, "skip-validation", createCredentialReq.SkipValidation, `Optional. Wire name: 'skip_validation'.`)
 
 	cmd.Use = "create-credential NAME"
 	cmd.Short = `Create a credential.`
@@ -162,7 +162,7 @@ func newDeleteCredential() *cobra.Command {
 
 	var deleteCredentialReq catalog.DeleteCredentialRequest
 
-	cmd.Flags().BoolVar(&deleteCredentialReq.Force, "force", deleteCredentialReq.Force, `Force an update even if there are dependent services (when purpose is **SERVICE**) or dependent external locations and external tables (when purpose is **STORAGE**).`)
+	cmd.Flags().BoolVar(&deleteCredentialReq.Force, "force", deleteCredentialReq.Force, `Force an update even if there are dependent services (when purpose is **SERVICE**) or dependent external locations and external tables (when purpose is **STORAGE**). Wire name: 'force'.`)
 
 	cmd.Use = "delete-credential NAME_ARG"
 	cmd.Short = `Delete a credential.`
@@ -364,10 +364,10 @@ func newListCredentials() *cobra.Command {
 
 	var listCredentialsReq catalog.ListCredentialsRequest
 
-	cmd.Flags().BoolVar(&listCredentialsReq.IncludeUnbound, "include-unbound", listCredentialsReq.IncludeUnbound, `Whether to include credentials not bound to the workspace.`)
-	cmd.Flags().IntVar(&listCredentialsReq.MaxResults, "max-results", listCredentialsReq.MaxResults, `Maximum number of credentials to return.`)
-	cmd.Flags().StringVar(&listCredentialsReq.PageToken, "page-token", listCredentialsReq.PageToken, `Opaque token to retrieve the next page of results.`)
-	cmd.Flags().Var(&listCredentialsReq.Purpose, "purpose", `Return only credentials for the specified purpose. Supported values: [SERVICE, STORAGE]`)
+	cmd.Flags().BoolVar(&listCredentialsReq.IncludeUnbound, "include-unbound", listCredentialsReq.IncludeUnbound, `Whether to include credentials not bound to the workspace. Wire name: 'include_unbound'.`)
+	cmd.Flags().IntVar(&listCredentialsReq.MaxResults, "max-results", listCredentialsReq.MaxResults, `Maximum number of credentials to return. Wire name: 'max_results'.`)
+	cmd.Flags().StringVar(&listCredentialsReq.PageToken, "page-token", listCredentialsReq.PageToken, `Opaque token to retrieve the next page of results. Wire name: 'page_token'.`)
+	cmd.Flags().Var(&listCredentialsReq.Purpose, "purpose", `Return only credentials for the specified purpose. Supported values: [SERVICE, STORAGE]. Wire name: 'purpose'.`)
 
 	cmd.Use = "list-credentials"
 	cmd.Short = `List credentials.`
@@ -433,14 +433,14 @@ func newUpdateCredential() *cobra.Command {
 	// TODO: complex arg: aws_iam_role
 	// TODO: complex arg: azure_managed_identity
 	// TODO: complex arg: azure_service_principal
-	cmd.Flags().StringVar(&updateCredentialReq.Comment, "comment", updateCredentialReq.Comment, `Comment associated with the credential.`)
+	cmd.Flags().StringVar(&updateCredentialReq.Comment, "comment", updateCredentialReq.Comment, `Comment associated with the credential. Wire name: 'comment'.`)
 	// TODO: complex arg: databricks_gcp_service_account
-	cmd.Flags().BoolVar(&updateCredentialReq.Force, "force", updateCredentialReq.Force, `Force an update even if there are dependent services (when purpose is **SERVICE**) or dependent external locations and external tables (when purpose is **STORAGE**).`)
-	cmd.Flags().Var(&updateCredentialReq.IsolationMode, "isolation-mode", `Whether the current securable is accessible from all workspaces or a specific set of workspaces. Supported values: [ISOLATION_MODE_ISOLATED, ISOLATION_MODE_OPEN]`)
-	cmd.Flags().StringVar(&updateCredentialReq.NewName, "new-name", updateCredentialReq.NewName, `New name of credential.`)
-	cmd.Flags().StringVar(&updateCredentialReq.Owner, "owner", updateCredentialReq.Owner, `Username of current owner of credential.`)
-	cmd.Flags().BoolVar(&updateCredentialReq.ReadOnly, "read-only", updateCredentialReq.ReadOnly, `Whether the credential is usable only for read operations.`)
-	cmd.Flags().BoolVar(&updateCredentialReq.SkipValidation, "skip-validation", updateCredentialReq.SkipValidation, `Supply true to this argument to skip validation of the updated credential.`)
+	cmd.Flags().BoolVar(&updateCredentialReq.Force, "force", updateCredentialReq.Force, `Force an update even if there are dependent services (when purpose is **SERVICE**) or dependent external locations and external tables (when purpose is **STORAGE**). Wire name: 'force'.`)
+	cmd.Flags().Var(&updateCredentialReq.IsolationMode, "isolation-mode", `Whether the current securable is accessible from all workspaces or a specific set of workspaces. Supported values: [ISOLATION_MODE_ISOLATED, ISOLATION_MODE_OPEN]. Wire name: 'isolation_mode'.`)
+	cmd.Flags().StringVar(&updateCredentialReq.NewName, "new-name", updateCredentialReq.NewName, `New name of credential. Wire name: 'new_name'.`)
+	cmd.Flags().StringVar(&updateCredentialReq.Owner, "owner", updateCredentialReq.Owner, `Username of current owner of credential. Wire name: 'owner'.`)
+	cmd.Flags().BoolVar(&updateCredentialReq.ReadOnly, "read-only", updateCredentialReq.ReadOnly, `Whether the credential is usable only for read operations. Wire name: 'read_only'.`)
+	cmd.Flags().BoolVar(&updateCredentialReq.SkipValidation, "skip-validation", updateCredentialReq.SkipValidation, `Supply true to this argument to skip validation of the updated credential. Wire name: 'skip_validation'.`)
 
 	cmd.Use = "update-credential NAME_ARG"
 	cmd.Short = `Update a credential.`
@@ -519,12 +519,12 @@ func newValidateCredential() *cobra.Command {
 
 	// TODO: complex arg: aws_iam_role
 	// TODO: complex arg: azure_managed_identity
-	cmd.Flags().StringVar(&validateCredentialReq.CredentialName, "credential-name", validateCredentialReq.CredentialName, `Required.`)
+	cmd.Flags().StringVar(&validateCredentialReq.CredentialName, "credential-name", validateCredentialReq.CredentialName, `Required. Wire name: 'credential_name'.`)
 	// TODO: complex arg: databricks_gcp_service_account
-	cmd.Flags().StringVar(&validateCredentialReq.ExternalLocationName, "external-location-name", validateCredentialReq.ExternalLocationName, `The name of an existing external location to validate.`)
-	cmd.Flags().Var(&validateCredentialReq.Purpose, "purpose", `The purpose of the credential. Supported values: [SERVICE, STORAGE]`)
-	cmd.Flags().BoolVar(&validateCredentialReq.ReadOnly, "read-only", validateCredentialReq.ReadOnly, `Whether the credential is only usable for read operations.`)
-	cmd.Flags().StringVar(&validateCredentialReq.Url, "url", validateCredentialReq.Url, `The external location url to validate.`)
+	cmd.Flags().StringVar(&validateCredentialReq.ExternalLocationName, "external-location-name", validateCredentialReq.ExternalLocationName, `The name of an existing external location to validate. Wire name: 'external_location_name'.`)
+	cmd.Flags().Var(&validateCredentialReq.Purpose, "purpose", `The purpose of the credential. Supported values: [SERVICE, STORAGE]. Wire name: 'purpose'.`)
+	cmd.Flags().BoolVar(&validateCredentialReq.ReadOnly, "read-only", validateCredentialReq.ReadOnly, `Whether the credential is only usable for read operations. Wire name: 'read_only'.`)
+	cmd.Flags().StringVar(&validateCredentialReq.Url, "url", validateCredentialReq.Url, `The external location url to validate. Wire name: 'url'.`)
 
 	cmd.Use = "validate-credential"
 	cmd.Short = `Validate a credential.`
