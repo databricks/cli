@@ -15,6 +15,7 @@ import (
 	"github.com/databricks/cli/experimental/apps-mcp/lib/providers/io"
 	"github.com/databricks/cli/experimental/apps-mcp/lib/session"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/databricks-sdk-go/service/apps"
 )
 
 func init() {
@@ -204,7 +205,7 @@ func (p *Provider) deployDatabricksApp(ctx context.Context, args *DeployDatabric
 
 	serverDir := filepath.Join(workPath, "server")
 	syncStart := time.Now()
-	log.Infof(ctx, "Syncing workspace: source=%s, target=%s", serverDir, appInfo.SourcePath())
+	log.Infof(ctx, "Syncing workspace: source=%s, target=%s", serverDir, databricks.GetSourcePath(appInfo))
 
 	if err := databricks.SyncWorkspace(appInfo, serverDir); err != nil {
 		return &DeployResult{
@@ -257,17 +258,17 @@ func (p *Provider) deployDatabricksApp(ctx context.Context, args *DeployDatabric
 
 	totalDuration := time.Since(startTime)
 	log.Infof(ctx, "Full deployment completed: duration_seconds=%.2f, app_url=%s",
-		totalDuration.Seconds(), appInfo.URL)
+		totalDuration.Seconds(), appInfo.Url)
 
 	return &DeployResult{
 		Success: true,
 		Message: "Deployment completed successfully",
-		AppURL:  appInfo.URL,
+		AppURL:  appInfo.Url,
 		AppName: args.Name,
 	}, nil
 }
 
-func (p *Provider) getOrCreateApp(ctx context.Context, name, description string, force bool) (*databricks.AppInfo, error) {
+func (p *Provider) getOrCreateApp(ctx context.Context, name, description string, force bool) (*apps.App, error) {
 	appInfo, err := databricks.GetAppInfo(ctx, p.config, name)
 	if err == nil {
 		log.Infof(ctx, "Found existing app: name=%s", name)
@@ -297,10 +298,12 @@ func (p *Provider) getOrCreateApp(ctx context.Context, name, description string,
 		return nil, err
 	}
 
-	createApp := &databricks.CreateAppRequest{
-		Name:        name,
-		Description: description,
-		Resources:   []databricks.Resources{*resources},
+	createApp := &apps.CreateAppRequest{
+		App: apps.App{
+			Name:        name,
+			Description: description,
+			Resources:   []apps.AppResource{*resources},
+		},
 	}
 
 	return databricks.CreateApp(ctx, p.config, createApp)
