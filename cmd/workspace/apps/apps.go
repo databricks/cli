@@ -49,7 +49,6 @@ func New() *cobra.Command {
 	cmd.AddCommand(newStop())
 	cmd.AddCommand(newUpdate())
 	cmd.AddCommand(newUpdatePermissions())
-	cmd.AddCommand(newLogsCommand())
 
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
