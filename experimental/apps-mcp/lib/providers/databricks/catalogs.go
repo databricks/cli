@@ -67,13 +67,11 @@ func ListSchemas(ctx context.Context, cfg *mcp.Config, args *ListSchemasArgs) (*
 		return nil, fmt.Errorf("failed to list schemas: %w", err)
 	}
 
-	// Extract names
 	names := make([]string, len(schemas))
 	for i, schema := range schemas {
 		names[i] = schema.Name
 	}
 
-	// Apply filter if provided
 	if args.Filter != "" {
 		var filtered []string
 		filterLower := strings.ToLower(args.Filter)
@@ -84,8 +82,6 @@ func ListSchemas(ctx context.Context, cfg *mcp.Config, args *ListSchemasArgs) (*
 		}
 		names = filtered
 	}
-
-	// Apply pagination
 	totalCount := len(names)
 	start := args.Offset
 	end := start + args.Limit
@@ -138,11 +134,9 @@ type ListTablesResult struct {
 
 // matchFilter checks if a name matches a filter pattern (supports wildcards)
 func matchFilter(name, filter string) bool {
-	// Convert to lowercase for case-insensitive matching
 	name = strings.ToLower(name)
 	filter = strings.ToLower(filter)
 
-	// Simple wildcard matching: * matches any sequence of characters
 	if strings.Contains(filter, "*") {
 		parts := strings.Split(filter, "*")
 		pos := 0
@@ -154,20 +148,17 @@ func matchFilter(name, filter string) bool {
 			if idx == -1 {
 				return false
 			}
-			// First part must match at the beginning
 			if i == 0 && idx != 0 {
 				return false
 			}
 			pos += idx + len(part)
 		}
-		// Last part must match at the end
 		if !strings.HasSuffix(filter, "*") && !strings.HasSuffix(name, parts[len(parts)-1]) {
 			return false
 		}
 		return true
 	}
 
-	// No wildcards - simple substring match
 	return strings.Contains(name, filter)
 }
 
@@ -180,7 +171,6 @@ func ListTables(ctx context.Context, cfg *mcp.Config, args *ListTablesArgs) (*Li
 
 	w := cmdctx.WorkspaceClient(ctx)
 
-	// Build API URL with query parameters
 	apiPath := "/api/2.1/unity-catalog/tables"
 	params := url.Values{}
 	params.Add("catalog_name", args.CatalogName)
@@ -194,7 +184,6 @@ func ListTables(ctx context.Context, cfg *mcp.Config, args *ListTablesArgs) (*Li
 	}
 
 	fullPath := apiPath + "?" + params.Encode()
-	// Create API client and make request
 	clientCfg, err := config.HTTPClientConfigFromConfig(w.Config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create HTTP client config: %w", err)
@@ -207,10 +196,8 @@ func ListTables(ctx context.Context, cfg *mcp.Config, args *ListTablesArgs) (*Li
 		return nil, fmt.Errorf("failed to list tables: %w", err)
 	}
 
-	// Process tables and apply filter
 	var infos []TableInfo
 	for _, table := range response.Tables {
-		// Apply filter if provided
 		if args.Filter != nil && !matchFilter(table.Name, *args.Filter) {
 			continue
 		}
@@ -234,7 +221,6 @@ func ListTables(ctx context.Context, cfg *mcp.Config, args *ListTablesArgs) (*Li
 		})
 	}
 
-	// Set next page token if available
 	var nextToken *string
 	if response.NextPageToken != "" {
 		nextToken = &response.NextPageToken

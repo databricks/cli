@@ -149,7 +149,6 @@ func formatValue(v any) string {
 func formatQueryResult(result *ExecuteQueryResult) string {
 	var lines []string
 
-	// Add execution time
 	lines = append(lines, fmt.Sprintf("Query executed in %.2f seconds", result.ExecutionTime))
 	lines = append(lines, "")
 
@@ -158,7 +157,6 @@ func formatQueryResult(result *ExecuteQueryResult) string {
 		return strings.Join(lines, "\n")
 	}
 
-	// Add row count information
 	if result.Truncated {
 		lines = append(lines, fmt.Sprintf("Query returned %d rows (showing first %d of more results - use max_rows parameter to adjust):", result.RowCount, result.RowCount))
 	} else {
@@ -166,13 +164,11 @@ func formatQueryResult(result *ExecuteQueryResult) string {
 	}
 	lines = append(lines, "")
 
-	// Add column names
 	if len(result.Columns) > 0 {
 		lines = append(lines, "Columns: "+strings.Join(result.Columns, ", "))
 		lines = append(lines, "")
 		lines = append(lines, "Results:")
 
-		// Display up to 100 rows in the formatted output
 		displayLimit := min(100, result.RowCount)
 
 		for i := range displayLimit {
