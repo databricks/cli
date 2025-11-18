@@ -3,7 +3,7 @@
     "resources.jobs.a": {
       "action": "update",
       "new_state": {
-        "config": {
+        "value": {
           "deployment": {
             "kind": "BUNDLE",
             "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
@@ -72,7 +72,7 @@
       ],
       "action": "update",
       "new_state": {
-        "config": {
+        "value": {
           "deployment": {
             "kind": "BUNDLE",
             "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
@@ -141,7 +141,7 @@
       ],
       "action": "update",
       "new_state": {
-        "config": {
+        "value": {
           "deployment": {
             "kind": "BUNDLE",
             "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
@@ -210,7 +210,7 @@
       ],
       "action": "update",
       "new_state": {
-        "config": {
+        "value": {
           "deployment": {
             "kind": "BUNDLE",
             "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
@@ -279,7 +279,7 @@
       ],
       "action": "update",
       "new_state": {
-        "config": {
+        "value": {
           "deployment": {
             "kind": "BUNDLE",
             "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"

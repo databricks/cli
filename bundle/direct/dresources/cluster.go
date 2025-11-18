@@ -73,19 +73,19 @@ func (r *ResourceCluster) RemapState(input *compute.ClusterDetails) *compute.Clu
 	return spec
 }
 
-func (r *ResourceCluster) DoRefresh(ctx context.Context, id string) (*compute.ClusterDetails, error) {
+func (r *ResourceCluster) DoRead(ctx context.Context, id string) (*compute.ClusterDetails, error) {
 	return r.client.Clusters.GetByClusterId(ctx, id)
 }
 
-func (r *ResourceCluster) DoCreate(ctx context.Context, config *compute.ClusterSpec) (string, error) {
+func (r *ResourceCluster) DoCreate(ctx context.Context, config *compute.ClusterSpec) (string, *compute.ClusterDetails, error) {
 	wait, err := r.client.Clusters.Create(ctx, makeCreateCluster(config))
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
-	return wait.ClusterId, nil
+	return wait.ClusterId, nil, nil
 }
 
-func (r *ResourceCluster) DoUpdate(ctx context.Context, id string, config *compute.ClusterSpec) error {
+func (r *ResourceCluster) DoUpdate(ctx context.Context, id string, config *compute.ClusterSpec) (*compute.ClusterDetails, error) {
 	// Same retry as in TF provider logic
 	// https://github.com/databricks/terraform-provider-databricks/blob/3eecd0f90cf99d7777e79a3d03c41f9b2aafb004/clusters/resource_cluster.go#L624
 	timeout := 15 * time.Minute
@@ -103,7 +103,7 @@ func (r *ResourceCluster) DoUpdate(ctx context.Context, id string, config *compu
 		}
 		return nil, retries.Halt(err)
 	})
-	return err
+	return nil, err
 }
 
 func (r *ResourceCluster) DoResize(ctx context.Context, id string, config *compute.ClusterSpec) error {

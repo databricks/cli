@@ -3,7 +3,7 @@
     "resources.volumes.volume1": {
       "action": "update_id",
       "new_state": {
-        "config": {
+        "value": {
           "catalog_name": "main",
           "comment": "COMMENT1",
           "name": "mynewvolume",
