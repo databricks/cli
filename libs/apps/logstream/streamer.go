@@ -17,12 +17,14 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-const handshakeErrorBodyLimit = 4 * 1024
-const defaultUserAgent = "databricks-cli logstream"
-const initialReconnectBackoff = 200 * time.Millisecond
-const maxReconnectBackoff = 5 * time.Second
-const closeCodeUnauthorized = 4401
-const closeCodeForbidden = 4403
+const (
+	handshakeErrorBodyLimit = 4 * 1024
+	defaultUserAgent        = "databricks-cli logstream"
+	initialReconnectBackoff = 200 * time.Millisecond
+	maxReconnectBackoff     = 5 * time.Second
+	closeCodeUnauthorized   = 4401
+	closeCodeForbidden      = 4403
+)
 
 // Dialer defines the subset of websocket.Dialer used by the streamer.
 type Dialer interface {
