@@ -18,7 +18,7 @@ import (
 var InitProjectTool = Tool{
 	Definition: ToolDefinition{
 		Name:        "init_project",
-		Description: "Initialize a new Databricks project structure. Use this to create a new project. After initialization, use add_project_resource to add specific resources (apps, jobs, pipelines, dashboards) as needed.",
+		Description: "MANDATORY - USE THIS TO CREATE NEW PROJECTS: Initialize a new Databricks project. Use this to create a new Databricks project. After initialization, use add_project_resource to add specific resources (apps, jobs, DLT pipelines, dashboards) as needed.",
 		InputSchema: map[string]any{
 			"type": "object",
 			"properties": map[string]any{

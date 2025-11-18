@@ -17,7 +17,7 @@ import (
 var AddProjectResourceTool = Tool{
 	Definition: ToolDefinition{
 		Name:        "add_project_resource",
-		Description: "Add a new resource (app, job, pipeline, dashboard, ...) to an existing Databricks project. Use this when the user wants to add a new resource to an existing project.",
+		Description: "MANDATORY - USE THIS TO ADD RESOURCES: Add a new resource (app, job, DLT pipeline, dashboard) to an existing Databricks project. Use this when the user wants to add a new resource to an existing project.",
 		InputSchema: map[string]any{
 			"type": "object",
 			"properties": map[string]any{
