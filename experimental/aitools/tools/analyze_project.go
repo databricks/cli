@@ -17,7 +17,7 @@ import (
 var AnalyzeProjectTool = Tool{
 	Definition: ToolDefinition{
 		Name:        "analyze_project",
-		Description: "MANDATORY - REQUIRED FIRST STEP: If databricks.yml exists in the directory, you MUST call this tool before using Read, Glob, or any other tools. Databricks projects require specialized commands that differ from standard Python/Node.js workflows - attempting standard approaches will fail. This tool is fast and provides the correct commands for preview/deploy/run operations.",
+		Description: "📋 DURING PLAN MODE: Include this as your FIRST step if you see a databricks.yml file exists, task involves deploying to workspaces, validating configurations, or working with an existing Databricks project.\n\nMANDATORY - REQUIRED FIRST STEP: If databricks.yml exists in the directory, you MUST call this tool before using Read, Glob, or any other tools. Databricks projects require specialized commands that differ from standard Python/Node.js workflows - attempting standard approaches will fail. This tool is fast and provides the correct commands for preview/deploy/run operations.",
 		InputSchema: map[string]any{
 			"type": "object",
 			"properties": map[string]any{

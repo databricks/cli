@@ -17,7 +17,7 @@ import (
 var ExploreTool = Tool{
 	Definition: ToolDefinition{
 		Name:        "explore",
-		Description: "CALL THIS FIRST when user mentions a workspace by name or asks about workspace resources. Shows available workspaces/profiles, default warehouse, and provides guidance on exploring jobs, clusters, catalogs, and other Databricks resources. Use this to discover what's available before running CLI commands.",
+		Description: "**REQUIRED DURING PLAN MODE** - Call this FIRST when planning ANY Databricks work. Use this to discover available workspaces, warehouses, and get workflow recommendations for your specific task. Even if you're just reading an assignment document, call this first. Especially important when task involves: creating Databricks projects/apps/pipelines/jobs, SQL pipelines or data transformation workflows, deploying code to multiple environments (dev/prod), or working with databricks.yml files. You DON'T need a workspace name - call this when starting ANY Databricks planning to understand workspace capabilities and recommended tooling before you create your plan.",
 		InputSchema: map[string]any{
 			"type":       "object",
 			"properties": map[string]any{},

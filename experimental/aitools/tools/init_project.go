@@ -18,7 +18,7 @@ import (
 var InitProjectTool = Tool{
 	Definition: ToolDefinition{
 		Name:        "init_project",
-		Description: "MANDATORY - USE THIS TO CREATE NEW PROJECTS: Initialize a new Databricks project. Use this to create a new Databricks project. After initialization, use add_project_resource to add specific resources (apps, jobs, DLT pipelines, dashboards) as needed.",
+		Description: "📋 DURING PLAN MODE: Include this tool in your plan if task mentions ANY of: creating a 'new project' / 'Databricks project' / 'project structure', deploying to 'multiple environments' / 'dev and prod' / 'dev/staging/prod', building 'from scratch', or working with 'databricks.yml' files. DO NOT manually create project files - use this tool instead to get proper structure and templates.\n\nMANDATORY - USE THIS TO CREATE NEW PROJECTS: Initialize a new Databricks project. Use this to create a new Databricks project. After initialization, use add_project_resource to add specific resources (apps, jobs, pipelines, dashboards) as needed.",
 		InputSchema: map[string]any{
 			"type": "object",
 			"properties": map[string]any{
