@@ -27,7 +27,16 @@
             ],
             "description": null,
             "edit_mode": "UI_LOCKED",
-            "email_notifications": [],
+            "email_notifications": [
+              {
+                "no_alert_for_skipped_runs": false,
+                "on_duration_warning_threshold_exceeded": [],
+                "on_failure": [],
+                "on_start": [],
+                "on_streaming_backlog_exceeded": [],
+                "on_success": []
+              }
+            ],
             "environment": [],
             "existing_cluster_id": null,
             "format": "MULTI_TASK",
@@ -54,7 +63,12 @@
               }
             ],
             "retry_on_timeout": false,
-            "run_as": null,
+            "run_as": [
+              {
+                "service_principal_name": "",
+                "user_name": "[USERNAME]"
+              }
+            ],
             "run_job_task": [],
             "schedule": [],
             "spark_jar_task": [],
@@ -113,7 +127,15 @@
             "trigger": [],
             "url": "[DATABRICKS_URL]/#job/[NUMID]",
             "usage_policy_id": null,
-            "webhook_notifications": []
+            "webhook_notifications": [
+              {
+                "on_duration_warning_threshold_exceeded": [],
+                "on_failure": [],
+                "on_start": [],
+                "on_streaming_backlog_exceeded": [],
+                "on_success": []
+              }
+            ]
           },
           "sensitive_attributes": [],
           "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxODAwMDAwMDAwMDAwLCJ1cGRhdGUiOjE4MDAwMDAwMDAwMDB9LCJzY2hlbWFfdmVyc2lvbiI6IjIifQ=="
@@ -218,7 +240,7 @@
             "comment": null,
             "id": "mycat.myschema.myvol",
             "name": "myvol",
-            "owner": null,
+            "owner": "[USERNAME]",
             "schema_name": "myschema",
             "storage_location": "s3://deco-uc-prod-isolated-aws-us-east-1/metastore/[UUID]/volumes/[UUID]",
             "volume_path": "/Volumes/mycat/myschema/myvol",
