@@ -54,7 +54,10 @@ func (d *ResourceDatabaseInstance) WaitAfterCreate(ctx context.Context, config *
 			return d.client.Database.WaitGetDatabaseInstanceDatabaseAvailable(ctx, config.Name, timeout, callback)
 		},
 	}
-	return waiter.GetWithTimeout(20 * time.Minute)
+
+	// _ is remoteState, should we return it here?
+	_, err := waiter.GetWithTimeout(20 * time.Minute)
+	return nil, err
 }
 
 func (d *ResourceDatabaseInstance) DoDelete(ctx context.Context, name string) error {

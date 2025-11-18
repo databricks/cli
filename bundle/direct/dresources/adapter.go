@@ -490,6 +490,10 @@ func (a *Adapter) HasDoUpdateWithChanges() bool {
 // DoUpdateWithChanges updates the resource with information about changes computed during plan.
 // Returns remote state if available, otherwise nil.
 func (a *Adapter) DoUpdateWithChanges(ctx context.Context, id string, newState any, changes *deployplan.Changes) (any, error) {
+	if a.doUpdateWithChanges == nil {
+		return nil, errors.New("internal error: DoUpdateWithChanges not found")
+	}
+
 	outs, err := a.doUpdateWithChanges.Call(ctx, id, newState, changes)
 	if err != nil {
 		return nil, err
@@ -506,6 +510,10 @@ func (a *Adapter) HasDoUpdateWithID() bool {
 
 // DoUpdateWithID updates the resource and may change its ID. Returns newID and remoteState if available.
 func (a *Adapter) DoUpdateWithID(ctx context.Context, oldID string, newState any) (string, any, error) {
+	if a.doUpdateWithID == nil {
+		return "", nil, errors.New("internal error: DoUpdateWithID not found")
+	}
+
 	outs, err := a.doUpdateWithID.Call(ctx, oldID, newState)
 	if err != nil {
 		return "", nil, err
