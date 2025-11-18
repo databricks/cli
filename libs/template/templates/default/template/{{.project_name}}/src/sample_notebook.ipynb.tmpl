@@ -77,7 +77,7 @@
      {{- /* Make sure that this file always gets any library dependencies (when using serverless)*/}}
      "--editable .."
     ],
-    "environment_version": "2"
+    "environment_version": "{{template "serverless_environment_version"}}"
    },
    "language": "python",
    "notebookMetadata": {
@@ -146,7 +146,7 @@
   },
   "language_info": {
    "name": "python",
-   "version": "3.11.4"
+   "version": "{{template "default_python_version"}}"
   }
  },
  "nbformat": 4,

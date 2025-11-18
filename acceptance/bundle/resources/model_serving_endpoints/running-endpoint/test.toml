@@ -17,5 +17,5 @@ Response.Body = '''
 '''
 
 [[Repls]]
-Old = '"entity_version": "1",'
+Old = '"entity_version": "\d+",'
 New = '"entity_version": "[VERSION]",'
