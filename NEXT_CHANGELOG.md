@@ -5,6 +5,7 @@
 ### Notable Changes
 
 ### CLI
+* Bump Alpine Linux to 3.22 in the released Docker image (Alpine 3.19 is end of life; Alpine 3.22 remains supported until May 2027)
 
 ### Dependency updates
 
