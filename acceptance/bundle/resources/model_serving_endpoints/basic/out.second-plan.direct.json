@@ -3,7 +3,7 @@
     "resources.model_serving_endpoints.my_endpoint": {
       "action": "recreate",
       "new_state": {
-        "config": {
+        "value": {
           "name": "[ENDPOINT_NAME_2]"
         }
       },
@@ -24,7 +24,7 @@
       ],
       "action": "update",
       "new_state": {
-        "config": {
+        "value": {
           "object_id": "",
           "permissions": [
             {
