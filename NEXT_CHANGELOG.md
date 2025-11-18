@@ -5,9 +5,9 @@
 ### Notable Changes
 
 ### CLI
-* Bump Alpine Linux to 3.22 in the released Docker image (Alpine 3.19 is end of life; Alpine 3.22 remains supported until May 2027)
 
 ### Dependency updates
+* Bump Alpine Linux to 3.22 in the Docker image ([#3942](https://github.com/databricks/cli/pull/3942))
 
 ### Bundles
 * Update templates to use serverless environment version 4 and matching Python version ([#3897](https://github.com/databricks/cli/pull/3897))
