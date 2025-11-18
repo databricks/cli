@@ -57,6 +57,14 @@ if [ -z "$BRANCH" ]; then
   exit 1
 fi
 
+# CI only builds binaries for branches prefixed with "demo-" or "bugbash-".
+if [[ ! "$BRANCH" =~ ^(demo-|bugbash-) ]]; then
+  echo "Error: This script only works with branches that start with 'demo-' or 'bugbash-'."
+  echo "CI builds snapshot binaries only for these branch prefixes."
+  echo "Provided branch: $BRANCH"
+  exit 1
+fi
+
 # Check if the "gh" command is available.
 if ! command -v gh &> /dev/null; then
   echo "The GitHub CLI (gh) is required to download the snapshot build."
@@ -106,8 +114,31 @@ fi
 chmod +x "$dir/databricks"
 export PATH="$dir:$PATH"
 
-# Set the prompt to indicate the bugbash environment and exec.
-export PS1="(bugbash $BRANCH) \[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ "
+databricks_bin="$dir/databricks"
+
+if [[ "$BRANCH" == demo-* ]]; then
+  prompt_prefix="demo"
+else
+  prompt_prefix="bugbash"
+fi
+
+# Shell functions have higher precedence than PATH in bash. Define a function
+# that calls the snapshot binary to ensure it's used even if dotfiles modify PATH.
+init_file=$(mktemp)
+cat > "$init_file" << EOF
+if [ -f ~/.bashrc ]; then
+  source ~/.bashrc
+fi
+
+export PS1="($prompt_prefix $BRANCH) \[\033[01;32m\]\u@\h\[\033[00m\]:\[\033[01;34m\]\w\[\033[00m\]\$ "
+
+databricks() {
+  "$databricks_bin" "\$@"
+}
+export -f databricks
+
+trap 'rm -f "$init_file"' EXIT
+EOF
 
 # Display completion instructions.
 echo ""
@@ -134,6 +165,5 @@ echo ""
 echo "=================================================================="
 echo ""
 
-# Exec into a new shell.
 # Note: don't use zsh because on macOS it _always_ overwrites PS1.
-exec /usr/bin/env bash
+exec /usr/bin/env bash --init-file "$init_file"
