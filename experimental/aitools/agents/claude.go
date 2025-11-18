@@ -38,10 +38,6 @@ func InstallClaude() error {
 
 	output, err := cmd.CombinedOutput()
 	if err != nil {
-		// Ignore "already exists" errors - installation should be reentrant
-		if strings.Contains(string(output), "already exists") {
-			return nil
-		}
 		return fmt.Errorf("failed to install MCP server in Claude Code: %w\nOutput: %s", err, string(output))
 	}
 
