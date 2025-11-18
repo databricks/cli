@@ -199,7 +199,7 @@ func newList() *cobra.Command {
 
 	var listReq oauth2.ListServicePrincipalSecretsRequest
 
-	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `Wire name: 'page_size'.`)
+	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)
 	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `An opaque page token which was the next_page_token in the response of the previous request to list the secrets for this service principal.`)
 
 	cmd.Use = "list SERVICE_PRINCIPAL_ID"

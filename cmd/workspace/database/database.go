@@ -82,7 +82,7 @@ func newCreateDatabaseCatalog() *cobra.Command {
 
 	cmd.Flags().Var(&createDatabaseCatalogJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&createDatabaseCatalogReq.Catalog.CreateDatabaseIfNotExists, "create-database-if-not-exists", createDatabaseCatalogReq.Catalog.CreateDatabaseIfNotExists, `Wire name: 'create_database_if_not_exists'.`)
+	cmd.Flags().BoolVar(&createDatabaseCatalogReq.Catalog.CreateDatabaseIfNotExists, "create-database-if-not-exists", createDatabaseCatalogReq.Catalog.CreateDatabaseIfNotExists, ``)
 
 	cmd.Use = "create-database-catalog NAME DATABASE_INSTANCE_NAME DATABASE_NAME"
 	cmd.Short = `Create a Database Catalog.`
@@ -281,11 +281,11 @@ func newCreateDatabaseInstanceRole() *cobra.Command {
 
 	cmd.Flags().Var(&createDatabaseInstanceRoleJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createDatabaseInstanceRoleReq.DatabaseInstanceName, "database-instance-name", createDatabaseInstanceRoleReq.DatabaseInstanceName, `Wire name: 'database_instance_name'.`)
+	cmd.Flags().StringVar(&createDatabaseInstanceRoleReq.DatabaseInstanceName, "database-instance-name", createDatabaseInstanceRoleReq.DatabaseInstanceName, ``)
 	// TODO: complex arg: attributes
 	// TODO: complex arg: effective_attributes
 	cmd.Flags().Var(&createDatabaseInstanceRoleReq.DatabaseInstanceRole.IdentityType, "identity-type", `The type of the role. Supported values: [GROUP, PG_ONLY, SERVICE_PRINCIPAL, USER].`)
-	cmd.Flags().StringVar(&createDatabaseInstanceRoleReq.DatabaseInstanceRole.InstanceName, "instance-name", createDatabaseInstanceRoleReq.DatabaseInstanceRole.InstanceName, `Wire name: 'instance_name'.`)
+	cmd.Flags().StringVar(&createDatabaseInstanceRoleReq.DatabaseInstanceRole.InstanceName, "instance-name", createDatabaseInstanceRoleReq.DatabaseInstanceRole.InstanceName, ``)
 	cmd.Flags().Var(&createDatabaseInstanceRoleReq.DatabaseInstanceRole.MembershipRole, "membership-role", `An enum value for a standard role that this role is a member of. Supported values: [DATABRICKS_SUPERUSER].`)
 
 	cmd.Use = "create-database-instance-role INSTANCE_NAME NAME"
@@ -648,7 +648,7 @@ func newDeleteDatabaseInstanceRole() *cobra.Command {
 	var deleteDatabaseInstanceRoleReq database.DeleteDatabaseInstanceRoleRequest
 
 	cmd.Flags().BoolVar(&deleteDatabaseInstanceRoleReq.AllowMissing, "allow-missing", deleteDatabaseInstanceRoleReq.AllowMissing, `This is the AIP standard name for the equivalent of Postgres' IF EXISTS option.`)
-	cmd.Flags().StringVar(&deleteDatabaseInstanceRoleReq.ReassignOwnedTo, "reassign-owned-to", deleteDatabaseInstanceRoleReq.ReassignOwnedTo, `Wire name: 'reassign_owned_to'.`)
+	cmd.Flags().StringVar(&deleteDatabaseInstanceRoleReq.ReassignOwnedTo, "reassign-owned-to", deleteDatabaseInstanceRoleReq.ReassignOwnedTo, ``)
 
 	cmd.Use = "delete-database-instance-role INSTANCE_NAME NAME"
 	cmd.Short = `Delete a role for a Database Instance.`
@@ -865,7 +865,7 @@ func newGenerateDatabaseCredential() *cobra.Command {
 
 	// TODO: array: claims
 	// TODO: array: instance_names
-	cmd.Flags().StringVar(&generateDatabaseCredentialReq.RequestId, "request-id", generateDatabaseCredentialReq.RequestId, `Wire name: 'request_id'.`)
+	cmd.Flags().StringVar(&generateDatabaseCredentialReq.RequestId, "request-id", generateDatabaseCredentialReq.RequestId, ``)
 
 	cmd.Use = "generate-database-credential"
 	cmd.Short = `Generates a credential that can be used to access database instances.`
@@ -1424,7 +1424,7 @@ func newUpdateDatabaseCatalog() *cobra.Command {
 
 	cmd.Flags().Var(&updateDatabaseCatalogJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&updateDatabaseCatalogReq.DatabaseCatalog.CreateDatabaseIfNotExists, "create-database-if-not-exists", updateDatabaseCatalogReq.DatabaseCatalog.CreateDatabaseIfNotExists, `Wire name: 'create_database_if_not_exists'.`)
+	cmd.Flags().BoolVar(&updateDatabaseCatalogReq.DatabaseCatalog.CreateDatabaseIfNotExists, "create-database-if-not-exists", updateDatabaseCatalogReq.DatabaseCatalog.CreateDatabaseIfNotExists, ``)
 
 	cmd.Use = "update-database-catalog NAME UPDATE_MASK DATABASE_INSTANCE_NAME DATABASE_NAME"
 	cmd.Short = `Update a Database Catalog.`

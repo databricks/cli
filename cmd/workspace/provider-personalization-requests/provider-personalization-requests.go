@@ -56,8 +56,8 @@ func newList() *cobra.Command {
 
 	var listReq marketplace.ListAllPersonalizationRequestsRequest
 
-	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `Wire name: 'page_size'.`)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Wire name: 'page_token'.`)
+	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, ``)
 
 	cmd.Use = "list"
 	cmd.Short = `All personalization requests across all listings.`
@@ -111,7 +111,7 @@ func newUpdate() *cobra.Command {
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateReq.Reason, "reason", updateReq.Reason, `Wire name: 'reason'.`)
+	cmd.Flags().StringVar(&updateReq.Reason, "reason", updateReq.Reason, ``)
 	// TODO: complex arg: share
 
 	cmd.Use = "update LISTING_ID REQUEST_ID STATUS"

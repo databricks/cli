@@ -66,7 +66,7 @@ func newCreateTagPolicy() *cobra.Command {
 
 	cmd.Flags().Var(&createTagPolicyJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createTagPolicyReq.TagPolicy.Description, "description", createTagPolicyReq.TagPolicy.Description, `Wire name: 'description'.`)
+	cmd.Flags().StringVar(&createTagPolicyReq.TagPolicy.Description, "description", createTagPolicyReq.TagPolicy.Description, ``)
 	// TODO: array: values
 
 	cmd.Use = "create-tag-policy TAG_KEY"
@@ -305,7 +305,7 @@ func newUpdateTagPolicy() *cobra.Command {
 
 	cmd.Flags().Var(&updateTagPolicyJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateTagPolicyReq.TagPolicy.Description, "description", updateTagPolicyReq.TagPolicy.Description, `Wire name: 'description'.`)
+	cmd.Flags().StringVar(&updateTagPolicyReq.TagPolicy.Description, "description", updateTagPolicyReq.TagPolicy.Description, ``)
 	// TODO: array: values
 
 	cmd.Use = "update-tag-policy TAG_KEY UPDATE_MASK"

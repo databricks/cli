@@ -75,7 +75,7 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createReq.AwsRegion, "aws-region", createReq.AwsRegion, `Wire name: 'aws_region'.`)
+	cmd.Flags().StringVar(&createReq.AwsRegion, "aws-region", createReq.AwsRegion, ``)
 	cmd.Flags().StringVar(&createReq.Cloud, "cloud", createReq.Cloud, `The cloud name.`)
 	// TODO: complex arg: cloud_resource_container
 	cmd.Flags().Var(&createReq.ComputeMode, "compute-mode", `If the compute mode is SERVERLESS, a serverless workspace is created that comes pre-configured with serverless compute and default storage, providing a fully-managed, enterprise-ready SaaS experience. Supported values: [HYBRID, SERVERLESS].`)
@@ -385,13 +385,13 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateReq.UpdateMask, "update-mask", updateReq.UpdateMask, `The field mask must be a single string, with multiple fields separated by commas (no spaces).`)
-	cmd.Flags().StringVar(&updateReq.CustomerFacingWorkspace.AwsRegion, "aws-region", updateReq.CustomerFacingWorkspace.AwsRegion, `Wire name: 'aws_region'.`)
+	cmd.Flags().StringVar(&updateReq.CustomerFacingWorkspace.AwsRegion, "aws-region", updateReq.CustomerFacingWorkspace.AwsRegion, ``)
 	// TODO: complex arg: azure_workspace_info
 	cmd.Flags().StringVar(&updateReq.CustomerFacingWorkspace.Cloud, "cloud", updateReq.CustomerFacingWorkspace.Cloud, `The cloud name.`)
 	// TODO: complex arg: cloud_resource_container
 	cmd.Flags().StringVar(&updateReq.CustomerFacingWorkspace.CredentialsId, "credentials-id", updateReq.CustomerFacingWorkspace.CredentialsId, `ID of the workspace's credential configuration object.`)
 	// TODO: map via StringToStringVar: custom_tags
-	cmd.Flags().StringVar(&updateReq.CustomerFacingWorkspace.DeploymentName, "deployment-name", updateReq.CustomerFacingWorkspace.DeploymentName, `Wire name: 'deployment_name'.`)
+	cmd.Flags().StringVar(&updateReq.CustomerFacingWorkspace.DeploymentName, "deployment-name", updateReq.CustomerFacingWorkspace.DeploymentName, ``)
 	cmd.Flags().Var(&updateReq.CustomerFacingWorkspace.ExpectedWorkspaceStatus, "expected-workspace-status", `A client owned field used to indicate the workspace status that the client expects to be in. Supported values: [
   BANNED,
   CANCELLING,

@@ -67,7 +67,7 @@ func newCreateFeatureTag() *cobra.Command {
 
 	cmd.Flags().Var(&createFeatureTagJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createFeatureTagReq.FeatureTag.Value, "value", createFeatureTagReq.FeatureTag.Value, `Wire name: 'value'.`)
+	cmd.Flags().StringVar(&createFeatureTagReq.FeatureTag.Value, "value", createFeatureTagReq.FeatureTag.Value, ``)
 
 	cmd.Use = "create-feature-tag TABLE_NAME FEATURE_NAME KEY"
 	cmd.Short = `Create a feature tag.`
@@ -375,7 +375,7 @@ func newUpdateFeatureTag() *cobra.Command {
 	cmd.Flags().Var(&updateFeatureTagJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateFeatureTagReq.UpdateMask, "update-mask", updateFeatureTagReq.UpdateMask, `The list of fields to update.`)
-	cmd.Flags().StringVar(&updateFeatureTagReq.FeatureTag.Value, "value", updateFeatureTagReq.FeatureTag.Value, `Wire name: 'value'.`)
+	cmd.Flags().StringVar(&updateFeatureTagReq.FeatureTag.Value, "value", updateFeatureTagReq.FeatureTag.Value, ``)
 
 	cmd.Use = "update-feature-tag TABLE_NAME FEATURE_NAME KEY"
 	cmd.Short = `Update a feature tag.`

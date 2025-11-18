@@ -182,8 +182,8 @@ func newList() *cobra.Command {
 	cmd.Flags().BoolVar(&listReq.IsFree, "is-free", listReq.IsFree, `Filters each listing based on if it is free.`)
 	cmd.Flags().BoolVar(&listReq.IsPrivateExchange, "is-private-exchange", listReq.IsPrivateExchange, `Filters each listing based on if it is a private exchange.`)
 	cmd.Flags().BoolVar(&listReq.IsStaffPick, "is-staff-pick", listReq.IsStaffPick, `Filters each listing based on whether it is a staff pick.`)
-	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `Wire name: 'page_size'.`)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Wire name: 'page_token'.`)
+	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, ``)
 	// TODO: array: provider_ids
 	// TODO: array: tags
 
@@ -238,10 +238,10 @@ func newSearch() *cobra.Command {
 
 	// TODO: array: assets
 	// TODO: array: categories
-	cmd.Flags().BoolVar(&searchReq.IsFree, "is-free", searchReq.IsFree, `Wire name: 'is_free'.`)
-	cmd.Flags().BoolVar(&searchReq.IsPrivateExchange, "is-private-exchange", searchReq.IsPrivateExchange, `Wire name: 'is_private_exchange'.`)
-	cmd.Flags().IntVar(&searchReq.PageSize, "page-size", searchReq.PageSize, `Wire name: 'page_size'.`)
-	cmd.Flags().StringVar(&searchReq.PageToken, "page-token", searchReq.PageToken, `Wire name: 'page_token'.`)
+	cmd.Flags().BoolVar(&searchReq.IsFree, "is-free", searchReq.IsFree, ``)
+	cmd.Flags().BoolVar(&searchReq.IsPrivateExchange, "is-private-exchange", searchReq.IsPrivateExchange, ``)
+	cmd.Flags().IntVar(&searchReq.PageSize, "page-size", searchReq.PageSize, ``)
+	cmd.Flags().StringVar(&searchReq.PageToken, "page-token", searchReq.PageToken, ``)
 	// TODO: array: provider_ids
 
 	cmd.Use = "search QUERY"

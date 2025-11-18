@@ -63,10 +63,10 @@ func newCreate() *cobra.Command {
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: accepted_consumer_terms
-	cmd.Flags().StringVar(&createReq.CatalogName, "catalog-name", createReq.CatalogName, `Wire name: 'catalog_name'.`)
+	cmd.Flags().StringVar(&createReq.CatalogName, "catalog-name", createReq.CatalogName, ``)
 	cmd.Flags().Var(&createReq.RecipientType, "recipient-type", `Supported values: [DELTA_SHARING_RECIPIENT_TYPE_DATABRICKS, DELTA_SHARING_RECIPIENT_TYPE_OPEN].`)
 	// TODO: complex arg: repo_detail
-	cmd.Flags().StringVar(&createReq.ShareName, "share-name", createReq.ShareName, `Wire name: 'share_name'.`)
+	cmd.Flags().StringVar(&createReq.ShareName, "share-name", createReq.ShareName, ``)
 
 	cmd.Use = "create LISTING_ID"
 	cmd.Short = `Install from a listing.`
@@ -187,8 +187,8 @@ func newList() *cobra.Command {
 
 	var listReq marketplace.ListAllInstallationsRequest
 
-	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `Wire name: 'page_size'.`)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Wire name: 'page_token'.`)
+	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, ``)
 
 	cmd.Use = "list"
 	cmd.Short = `List all installations.`
@@ -238,8 +238,8 @@ func newListListingInstallations() *cobra.Command {
 
 	var listListingInstallationsReq marketplace.ListInstallationsRequest
 
-	cmd.Flags().IntVar(&listListingInstallationsReq.PageSize, "page-size", listListingInstallationsReq.PageSize, `Wire name: 'page_size'.`)
-	cmd.Flags().StringVar(&listListingInstallationsReq.PageToken, "page-token", listListingInstallationsReq.PageToken, `Wire name: 'page_token'.`)
+	cmd.Flags().IntVar(&listListingInstallationsReq.PageSize, "page-size", listListingInstallationsReq.PageSize, ``)
+	cmd.Flags().StringVar(&listListingInstallationsReq.PageToken, "page-token", listListingInstallationsReq.PageToken, ``)
 
 	cmd.Use = "list-listing-installations LISTING_ID"
 	cmd.Short = `List installations for a listing.`
@@ -294,7 +294,7 @@ func newUpdate() *cobra.Command {
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&updateReq.RotateToken, "rotate-token", updateReq.RotateToken, `Wire name: 'rotate_token'.`)
+	cmd.Flags().BoolVar(&updateReq.RotateToken, "rotate-token", updateReq.RotateToken, ``)
 
 	cmd.Use = "update LISTING_ID INSTALLATION_ID"
 	cmd.Short = `Update an installation.`

@@ -238,8 +238,8 @@ func newList() *cobra.Command {
 
 	var listReq oauth2.ListPublishedAppIntegrationsRequest
 
-	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `Wire name: 'page_size'.`)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Wire name: 'page_token'.`)
+	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, ``)
 
 	cmd.Use = "list"
 	cmd.Short = `Get published oauth app integrations.`

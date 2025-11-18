@@ -245,9 +245,9 @@ func newList() *cobra.Command {
 
 	var listReq oauth2.ListCustomAppIntegrationsRequest
 
-	cmd.Flags().BoolVar(&listReq.IncludeCreatorUsername, "include-creator-username", listReq.IncludeCreatorUsername, `Wire name: 'include_creator_username'.`)
-	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `Wire name: 'page_size'.`)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Wire name: 'page_token'.`)
+	cmd.Flags().BoolVar(&listReq.IncludeCreatorUsername, "include-creator-username", listReq.IncludeCreatorUsername, ``)
+	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, ``)
 
 	cmd.Use = "list"
 	cmd.Short = `Get custom oauth app integrations.`

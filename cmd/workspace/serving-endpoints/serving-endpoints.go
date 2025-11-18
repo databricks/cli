@@ -159,7 +159,7 @@ func newCreate() *cobra.Command {
 	// TODO: complex arg: ai_gateway
 	cmd.Flags().StringVar(&createReq.BudgetPolicyId, "budget-policy-id", createReq.BudgetPolicyId, `The budget policy to be applied to the serving endpoint.`)
 	// TODO: complex arg: config
-	cmd.Flags().StringVar(&createReq.Description, "description", createReq.Description, `Wire name: 'description'.`)
+	cmd.Flags().StringVar(&createReq.Description, "description", createReq.Description, ``)
 	// TODO: complex arg: email_notifications
 	// TODO: array: rate_limits
 	cmd.Flags().BoolVar(&createReq.RouteOptimized, "route-optimized", createReq.RouteOptimized, `Enable route optimization for the serving endpoint.`)

@@ -67,7 +67,7 @@ func newCreate() *cobra.Command {
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createReq.DisplayName, "display-name", createReq.DisplayName, `String that represents a human-readable group name.`)
-	cmd.Flags().StringVar(&createReq.ExternalId, "external-id", createReq.ExternalId, `Wire name: 'externalId'.`)
+	cmd.Flags().StringVar(&createReq.ExternalId, "external-id", createReq.ExternalId, ``)
 	cmd.Flags().StringVar(&createReq.Id, "id", createReq.Id, `Databricks group ID.`)
 	// TODO: array: members
 	// TODO: complex arg: meta
@@ -386,7 +386,7 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateReq.DisplayName, "display-name", updateReq.DisplayName, `String that represents a human-readable group name.`)
-	cmd.Flags().StringVar(&updateReq.ExternalId, "external-id", updateReq.ExternalId, `Wire name: 'externalId'.`)
+	cmd.Flags().StringVar(&updateReq.ExternalId, "external-id", updateReq.ExternalId, ``)
 	// TODO: array: members
 	// TODO: complex arg: meta
 	// TODO: array: roles

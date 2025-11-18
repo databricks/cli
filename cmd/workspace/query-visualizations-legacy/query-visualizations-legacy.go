@@ -202,14 +202,14 @@ func newUpdate() *cobra.Command {
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateReq.CreatedAt, "created-at", updateReq.CreatedAt, `Wire name: 'created_at'.`)
+	cmd.Flags().StringVar(&updateReq.CreatedAt, "created-at", updateReq.CreatedAt, ``)
 	cmd.Flags().StringVar(&updateReq.Description, "description", updateReq.Description, `A short description of this visualization.`)
 	cmd.Flags().StringVar(&updateReq.Id, "id", updateReq.Id, `The UUID for this visualization.`)
 	cmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `The name of the visualization that appears on dashboards and the query screen.`)
 	// TODO: any: options
 	// TODO: complex arg: query
 	cmd.Flags().StringVar(&updateReq.Type, "type", updateReq.Type, `The type of visualization: chart, table, pivot table, and so on.`)
-	cmd.Flags().StringVar(&updateReq.UpdatedAt, "updated-at", updateReq.UpdatedAt, `Wire name: 'updated_at'.`)
+	cmd.Flags().StringVar(&updateReq.UpdatedAt, "updated-at", updateReq.UpdatedAt, ``)
 
 	cmd.Use = "update"
 	cmd.Short = `Edit existing visualization.`

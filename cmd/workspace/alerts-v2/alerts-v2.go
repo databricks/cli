@@ -235,8 +235,8 @@ func newListAlerts() *cobra.Command {
 
 	var listAlertsReq sql.ListAlertsV2Request
 
-	cmd.Flags().IntVar(&listAlertsReq.PageSize, "page-size", listAlertsReq.PageSize, `Wire name: 'page_size'.`)
-	cmd.Flags().StringVar(&listAlertsReq.PageToken, "page-token", listAlertsReq.PageToken, `Wire name: 'page_token'.`)
+	cmd.Flags().IntVar(&listAlertsReq.PageSize, "page-size", listAlertsReq.PageSize, ``)
+	cmd.Flags().StringVar(&listAlertsReq.PageToken, "page-token", listAlertsReq.PageToken, ``)
 
 	cmd.Use = "list-alerts"
 	cmd.Short = `List alerts.`

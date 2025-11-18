@@ -60,11 +60,11 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `Wire name: 'comment'.`)
-	cmd.Flags().StringVar(&createReq.Company, "company", createReq.Company, `Wire name: 'company'.`)
-	cmd.Flags().StringVar(&createReq.FirstName, "first-name", createReq.FirstName, `Wire name: 'first_name'.`)
-	cmd.Flags().BoolVar(&createReq.IsFromLighthouse, "is-from-lighthouse", createReq.IsFromLighthouse, `Wire name: 'is_from_lighthouse'.`)
-	cmd.Flags().StringVar(&createReq.LastName, "last-name", createReq.LastName, `Wire name: 'last_name'.`)
+	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, ``)
+	cmd.Flags().StringVar(&createReq.Company, "company", createReq.Company, ``)
+	cmd.Flags().StringVar(&createReq.FirstName, "first-name", createReq.FirstName, ``)
+	cmd.Flags().BoolVar(&createReq.IsFromLighthouse, "is-from-lighthouse", createReq.IsFromLighthouse, ``)
+	cmd.Flags().StringVar(&createReq.LastName, "last-name", createReq.LastName, ``)
 	cmd.Flags().Var(&createReq.RecipientType, "recipient-type", `Supported values: [DELTA_SHARING_RECIPIENT_TYPE_DATABRICKS, DELTA_SHARING_RECIPIENT_TYPE_OPEN].`)
 
 	cmd.Use = "create LISTING_ID"
@@ -188,8 +188,8 @@ func newList() *cobra.Command {
 
 	var listReq marketplace.ListAllPersonalizationRequestsRequest
 
-	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `Wire name: 'page_size'.`)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Wire name: 'page_token'.`)
+	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, ``)
 
 	cmd.Use = "list"
 	cmd.Short = `List all personalization requests.`

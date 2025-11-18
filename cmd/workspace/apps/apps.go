@@ -85,7 +85,7 @@ func newCreate() *cobra.Command {
 	cmd.Flags().BoolVar(&createReq.NoCompute, "no-compute", createReq.NoCompute, `If true, the app will not be started after creation.`)
 	// TODO: complex arg: active_deployment
 	// TODO: complex arg: app_status
-	cmd.Flags().StringVar(&createReq.App.BudgetPolicyId, "budget-policy-id", createReq.App.BudgetPolicyId, `Wire name: 'budget_policy_id'.`)
+	cmd.Flags().StringVar(&createReq.App.BudgetPolicyId, "budget-policy-id", createReq.App.BudgetPolicyId, ``)
 	cmd.Flags().Var(&createReq.App.ComputeSize, "compute-size", `Supported values: [LARGE, LIQUID, MEDIUM].`)
 	// TODO: complex arg: compute_status
 	cmd.Flags().StringVar(&createReq.App.Description, "description", createReq.App.Description, `The description of the app.`)
@@ -1105,7 +1105,7 @@ func newUpdate() *cobra.Command {
 
 	// TODO: complex arg: active_deployment
 	// TODO: complex arg: app_status
-	cmd.Flags().StringVar(&updateReq.App.BudgetPolicyId, "budget-policy-id", updateReq.App.BudgetPolicyId, `Wire name: 'budget_policy_id'.`)
+	cmd.Flags().StringVar(&updateReq.App.BudgetPolicyId, "budget-policy-id", updateReq.App.BudgetPolicyId, ``)
 	cmd.Flags().Var(&updateReq.App.ComputeSize, "compute-size", `Supported values: [LARGE, LIQUID, MEDIUM].`)
 	// TODO: complex arg: compute_status
 	cmd.Flags().StringVar(&updateReq.App.Description, "description", updateReq.App.Description, `The description of the app.`)

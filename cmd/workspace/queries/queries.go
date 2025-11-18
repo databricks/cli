@@ -265,8 +265,8 @@ func newList() *cobra.Command {
 
 	var listReq sql.ListQueriesRequest
 
-	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `Wire name: 'page_size'.`)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Wire name: 'page_token'.`)
+	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, ``)
 
 	cmd.Use = "list"
 	cmd.Short = `List queries.`
@@ -318,8 +318,8 @@ func newListVisualizations() *cobra.Command {
 
 	var listVisualizationsReq sql.ListVisualizationsForQueryRequest
 
-	cmd.Flags().IntVar(&listVisualizationsReq.PageSize, "page-size", listVisualizationsReq.PageSize, `Wire name: 'page_size'.`)
-	cmd.Flags().StringVar(&listVisualizationsReq.PageToken, "page-token", listVisualizationsReq.PageToken, `Wire name: 'page_token'.`)
+	cmd.Flags().IntVar(&listVisualizationsReq.PageSize, "page-size", listVisualizationsReq.PageSize, ``)
+	cmd.Flags().StringVar(&listVisualizationsReq.PageToken, "page-token", listVisualizationsReq.PageToken, ``)
 
 	cmd.Use = "list-visualizations ID"
 	cmd.Short = `List visualizations on a query.`

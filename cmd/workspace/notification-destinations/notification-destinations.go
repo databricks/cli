@@ -236,8 +236,8 @@ func newList() *cobra.Command {
 
 	var listReq settings.ListNotificationDestinationsRequest
 
-	cmd.Flags().Int64Var(&listReq.PageSize, "page-size", listReq.PageSize, `Wire name: 'page_size'.`)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Wire name: 'page_token'.`)
+	cmd.Flags().Int64Var(&listReq.PageSize, "page-size", listReq.PageSize, ``)
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, ``)
 
 	cmd.Use = "list"
 	cmd.Short = `List notification destinations.`

@@ -1529,7 +1529,7 @@ func newListWebhooks() *cobra.Command {
 	var listWebhooksReq ml.ListWebhooksRequest
 
 	// TODO: array: events
-	cmd.Flags().Int64Var(&listWebhooksReq.MaxResults, "max-results", listWebhooksReq.MaxResults, `Wire name: 'max_results'.`)
+	cmd.Flags().Int64Var(&listWebhooksReq.MaxResults, "max-results", listWebhooksReq.MaxResults, ``)
 	cmd.Flags().StringVar(&listWebhooksReq.ModelName, "model-name", listWebhooksReq.ModelName, `Registered model name If not specified, all webhooks associated with the specified events are listed, regardless of their associated model.`)
 	cmd.Flags().StringVar(&listWebhooksReq.PageToken, "page-token", listWebhooksReq.PageToken, `Token indicating the page of artifact results to fetch.`)
 

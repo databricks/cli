@@ -346,7 +346,7 @@ func newUpdate() *cobra.Command {
 	// TODO: array: aliases
 	cmd.Flags().StringVar(&updateReq.CatalogName, "catalog-name", updateReq.CatalogName, `The name of the catalog containing the model version.`)
 	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `The comment attached to the model version.`)
-	cmd.Flags().Int64Var(&updateReq.CreatedAt, "created-at", updateReq.CreatedAt, `Wire name: 'created_at'.`)
+	cmd.Flags().Int64Var(&updateReq.CreatedAt, "created-at", updateReq.CreatedAt, ``)
 	cmd.Flags().StringVar(&updateReq.CreatedBy, "created-by", updateReq.CreatedBy, `The identifier of the user who created the model version.`)
 	cmd.Flags().StringVar(&updateReq.Id, "id", updateReq.Id, `The unique identifier of the model version.`)
 	cmd.Flags().StringVar(&updateReq.MetastoreId, "metastore-id", updateReq.MetastoreId, `The unique identifier of the metastore containing the model version.`)
@@ -358,7 +358,7 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().StringVar(&updateReq.Source, "source", updateReq.Source, `URI indicating the location of the source artifacts (files) for the model version.`)
 	cmd.Flags().Var(&updateReq.Status, "status", `Current status of the model version. Supported values: [FAILED_REGISTRATION, MODEL_VERSION_STATUS_UNKNOWN, PENDING_REGISTRATION, READY].`)
 	cmd.Flags().StringVar(&updateReq.StorageLocation, "storage-location", updateReq.StorageLocation, `The storage location on the cloud under which model version data files are stored.`)
-	cmd.Flags().Int64Var(&updateReq.UpdatedAt, "updated-at", updateReq.UpdatedAt, `Wire name: 'updated_at'.`)
+	cmd.Flags().Int64Var(&updateReq.UpdatedAt, "updated-at", updateReq.UpdatedAt, ``)
 	cmd.Flags().StringVar(&updateReq.UpdatedBy, "updated-by", updateReq.UpdatedBy, `The identifier of the user who updated the model version last time.`)
 
 	cmd.Use = "update FULL_NAME VERSION"

@@ -68,7 +68,7 @@ func newCreate() *cobra.Command {
 	cmd.Flags().BoolVar(&createReq.Active, "active", createReq.Active, `If this user is active.`)
 	cmd.Flags().StringVar(&createReq.ApplicationId, "application-id", createReq.ApplicationId, `UUID relating to the service principal.`)
 	cmd.Flags().StringVar(&createReq.DisplayName, "display-name", createReq.DisplayName, `String that represents a concatenation of given and family names.`)
-	cmd.Flags().StringVar(&createReq.ExternalId, "external-id", createReq.ExternalId, `Wire name: 'externalId'.`)
+	cmd.Flags().StringVar(&createReq.ExternalId, "external-id", createReq.ExternalId, ``)
 	cmd.Flags().StringVar(&createReq.Id, "id", createReq.Id, `Databricks service principal ID.`)
 	// TODO: array: roles
 
@@ -386,7 +386,7 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().BoolVar(&updateReq.Active, "active", updateReq.Active, `If this user is active.`)
 	cmd.Flags().StringVar(&updateReq.ApplicationId, "application-id", updateReq.ApplicationId, `UUID relating to the service principal.`)
 	cmd.Flags().StringVar(&updateReq.DisplayName, "display-name", updateReq.DisplayName, `String that represents a concatenation of given and family names.`)
-	cmd.Flags().StringVar(&updateReq.ExternalId, "external-id", updateReq.ExternalId, `Wire name: 'externalId'.`)
+	cmd.Flags().StringVar(&updateReq.ExternalId, "external-id", updateReq.ExternalId, ``)
 	// TODO: array: roles
 
 	cmd.Use = "update ID"

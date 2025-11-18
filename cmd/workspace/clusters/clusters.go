@@ -1392,7 +1392,7 @@ func newRestart() *cobra.Command {
 
 	cmd.Flags().Var(&restartJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&restartReq.RestartUser, "restart-user", restartReq.RestartUser, `Wire name: 'restart_user'.`)
+	cmd.Flags().StringVar(&restartReq.RestartUser, "restart-user", restartReq.RestartUser, ``)
 
 	cmd.Use = "restart CLUSTER_ID"
 	cmd.Short = `Restart cluster.`
