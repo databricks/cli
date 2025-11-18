@@ -34,21 +34,26 @@ type Dialer interface {
 // TokenProvider refreshes tokens when the streamer needs a new bearer token.
 type TokenProvider func(context.Context) (string, error)
 
+// AppStatusChecker checks if the app is still running.
+// Returns nil if app is running, or an error if the app is stopped/unavailable.
+type AppStatusChecker func(context.Context) error
+
 // Config holds the options for running a log stream.
 type Config struct {
-	Dialer        Dialer
-	URL           string
-	Origin        string
-	Token         string
-	TokenProvider TokenProvider
-	Search        string
-	Sources       map[string]struct{}
-	Tail          int
-	Follow        bool
-	Prefetch      time.Duration
-	Writer        io.Writer
-	UserAgent     string
-	Colorize      bool
+	Dialer           Dialer
+	URL              string
+	Origin           string
+	Token            string
+	TokenProvider    TokenProvider
+	AppStatusChecker AppStatusChecker
+	Search           string
+	Sources          map[string]struct{}
+	Tail             int
+	Follow           bool
+	Prefetch         time.Duration
+	Writer           io.Writer
+	UserAgent        string
+	Colorize         bool
 }
 
 // Run connects to the log stream described by cfg and copies frames to the writer.
@@ -58,19 +63,20 @@ func Run(ctx context.Context, cfg Config) error {
 	}
 
 	streamer := &logStreamer{
-		dialer:        cfg.Dialer,
-		url:           cfg.URL,
-		origin:        cfg.Origin,
-		token:         cfg.Token,
-		tokenProvider: cfg.TokenProvider,
-		search:        cfg.Search,
-		sources:       cfg.Sources,
-		tail:          cfg.Tail,
-		follow:        cfg.Follow,
-		prefetch:      cfg.Prefetch,
-		writer:        cfg.Writer,
-		userAgent:     cfg.UserAgent,
-		colorize:      cfg.Colorize,
+		dialer:           cfg.Dialer,
+		url:              cfg.URL,
+		origin:           cfg.Origin,
+		token:            cfg.Token,
+		tokenProvider:    cfg.TokenProvider,
+		appStatusChecker: cfg.AppStatusChecker,
+		search:           cfg.Search,
+		sources:          cfg.Sources,
+		tail:             cfg.Tail,
+		follow:           cfg.Follow,
+		prefetch:         cfg.Prefetch,
+		writer:           cfg.Writer,
+		userAgent:        cfg.UserAgent,
+		colorize:         cfg.Colorize,
 	}
 	if streamer.userAgent == "" {
 		streamer.userAgent = defaultUserAgent
@@ -79,20 +85,21 @@ func Run(ctx context.Context, cfg Config) error {
 }
 
 type logStreamer struct {
-	dialer        Dialer
-	url           string
-	origin        string
-	token         string
-	tokenProvider TokenProvider
-	search        string
-	sources       map[string]struct{}
-	tail          int
-	follow        bool
-	prefetch      time.Duration
-	writer        io.Writer
-	tailFlushed   bool
-	userAgent     string
-	colorize      bool
+	dialer           Dialer
+	url              string
+	origin           string
+	token            string
+	tokenProvider    TokenProvider
+	appStatusChecker AppStatusChecker
+	search           string
+	sources          map[string]struct{}
+	tail             int
+	follow           bool
+	prefetch         time.Duration
+	writer           io.Writer
+	tailFlushed      bool
+	userAgent        string
+	colorize         bool
 }
 
 // Run establishes the websocket connection and manages reconnections.
@@ -114,6 +121,12 @@ func (s *logStreamer) Run(ctx context.Context) error {
 			if !s.follow {
 				return nil
 			}
+			// Connection closed normally while following - check if app is still running.
+			if s.appStatusChecker != nil {
+				if statusErr := s.appStatusChecker(ctx); statusErr != nil {
+					return fmt.Errorf("app is no longer available: %w", statusErr)
+				}
+			}
 			continue
 		}
 
@@ -131,6 +144,13 @@ func (s *logStreamer) Run(ctx context.Context) error {
 
 		if !s.follow {
 			return err
+		}
+
+		// Before retrying, check if the app is still running (if checker is provided).
+		if s.appStatusChecker != nil {
+			if statusErr := s.appStatusChecker(ctx); statusErr != nil {
+				return fmt.Errorf("app is no longer available: %w", statusErr)
+			}
 		}
 
 		if err := waitForBackoff(ctx, timer, backoff); err != nil {
