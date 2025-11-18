@@ -16,6 +16,7 @@ type Config struct {
 type IoConfig struct {
 	Template   *TemplateConfig
 	Validation *ValidationConfig
+	Dagger     *DaggerConfig
 }
 
 // TemplateConfig specifies which template to use for scaffolding new projects.
@@ -24,17 +25,28 @@ type TemplateConfig struct {
 	Path string
 }
 
-// ValidationConfig defines custom validation commands for project validation.
+// ValidationConfig defines custom validation commands and docker images for project validation.
 type ValidationConfig struct {
-	Command string
-	Timeout int
+	Command     string
+	DockerImage string
+	UseDagger   bool
+	Timeout     int
 }
 
 // SetDefaults applies default values to ValidationConfig if not explicitly set.
 func (v *ValidationConfig) SetDefaults() {
+	if v.DockerImage == "" {
+		v.DockerImage = "node:20-alpine"
+	}
 	if v.Timeout == 0 {
 		v.Timeout = 600
 	}
+}
+
+// DaggerConfig configures the Dagger sandbox when use_dagger is enabled.
+type DaggerConfig struct {
+	Image          string
+	ExecuteTimeout int
 }
 
 // DefaultConfig returns a Config with sensible default values.
@@ -51,6 +63,10 @@ func DefaultConfig() *Config {
 				Path: "",
 			},
 			Validation: validationCfg,
+			Dagger: &DaggerConfig{
+				Image:          "node:20-alpine",
+				ExecuteTimeout: 600,
+			},
 		},
 		WarehouseID: "",
 	}

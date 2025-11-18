@@ -16,7 +16,7 @@ Interface:
 Implementations:
 
 - local: Direct filesystem and shell access with security constraints
-- dagger: Not implemented (stub only)
+- dagger: Containerized execution (stub, future implementation)
 
 Security:
 

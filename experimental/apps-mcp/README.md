@@ -12,12 +12,13 @@ extensive validation to ensure high-quality outputs.
 1. **Explore your data** - Query Databricks catalogs, schemas, and tables to understand your data
 2. **Generate the app** - Scaffold a full-stack TypeScript application (tRPC + React) with proper structure
 3. **Customize with AI** - Use workspace tools to read, write, and edit files naturally through conversation
-4. **Validate rigorously** - Run builds, type checks, and tests to ensure quality
+4. **Validate rigorously** - Run builds, type checks, and tests in isolated containers (Dagger)
 5. **Deploy confidently** - Push validated apps directly to Databricks Apps platform
 
 **Why use it:**
 - **Speed**: Go from concept to deployed Databricks app in minutes, not hours or days
 - **Quality**: Extensive validation ensures your app builds, passes tests, and is production-ready
+- **Safety**: Containerized validation prevents breaking changes from reaching production
 - **Simplicity**: One natural language conversation handles the entire workflow
 
 Perfect for data engineers and developers who want to build Databricks apps without the manual overhead of project setup, configuration, testing infrastructure, and deployment pipelines.
@@ -103,10 +104,11 @@ Create the application structure:
 
 Ensure production-readiness before deployment:
 
-- **`validate_data_app`** - Comprehensive validation
+- **`validate_data_app`** - Comprehensive validation in isolated containers
   - Build verification (npm build)
   - Type checking (TypeScript compiler)
   - Test execution (full test suite)
+  - Containerized with Dagger (Docker)
 
 *This step guarantees your application is tested and ready for production before deployment.*
 
@@ -258,12 +260,17 @@ Deploy the app to Databricks as "orders-dashboard"
 - Every change is validated before deployment
 - No broken builds reach production
 
-**2. Natural Language = Productivity**
+**2. Containerized Validation = Safety**
+- Dagger containers ensure reproducible builds
+- Isolated testing prevents environment issues
+- Consistent behavior from development to production
+
+**3. Natural Language = Productivity**
 - Describe what you want, not how to build it
 - AI handles implementation details
 - Focus on requirements, not configuration
 
-**3. End-to-End Workflow = Simplicity**
+**4. End-to-End Workflow = Simplicity**
 - Single tool for entire lifecycle
 - No context switching between tools
 - Seamless progression from idea to deployment
@@ -276,6 +283,7 @@ The Databricks MCP server doesn't just generate code—it ensures quality:
 - ✅ **Build verification** - Ensures code compiles
 - ✅ **Test suite** - Validates functionality
 - ✅ **Linting** - Enforces code quality
+- ✅ **Containerization** - Reproducible environments
 - ✅ **Databricks integration** - Native SDK usage
 
 ---
@@ -293,6 +301,15 @@ databricks experimental apps-mcp --warehouse-id <warehouse-id> --with-workspace-
 
 # Enable deployment
 databricks experimental apps-mcp --warehouse-id <warehouse-id> --allow-deployment
+
+# With custom Docker image
+databricks experimental apps-mcp --warehouse-id <warehouse-id> --docker-image node:20-alpine
+
+# Without containerized validation
+databricks experimental apps-mcp --warehouse-id <warehouse-id> --use-dagger=false
+
+# Check configuration
+databricks experimental apps-mcp check
 ```
 
 ### CLI Flags
@@ -302,6 +319,8 @@ databricks experimental apps-mcp --warehouse-id <warehouse-id> --allow-deploymen
 | `--warehouse-id` | Databricks SQL Warehouse ID (required) | - |
 | `--with-workspace-tools` | Enable workspace file operations | `false` |
 | `--allow-deployment` | Enable deployment operations | `false` |
+| `--docker-image` | Docker image for validation | `node:20-alpine` |
+| `--use-dagger` | Use Dagger for containerized validation | `true` |
 | `--help` | Show help | - |
 
 ### Environment Variables
@@ -314,6 +333,7 @@ databricks experimental apps-mcp --warehouse-id <warehouse-id> --allow-deploymen
 | `DATABRICKS_WAREHOUSE_ID` | Alternative name for warehouse ID | `abc123def456` |
 | `ALLOW_DEPLOYMENT` | Enable deployment operations | `true` or `false` |
 | `WITH_WORKSPACE_TOOLS` | Enable workspace tools | `true` or `false` |
+| `USE_DAGGER` | Enable Dagger sandbox for validation | `true` or `false` |
 
 ### Authentication
 
@@ -328,6 +348,7 @@ For more details, see the [Databricks authentication documentation](https://docs
 ### Requirements
 
 - **Databricks CLI** (this package)
+- **Docker** (optional, for Dagger-based validation)
 - **Databricks workspace** with a SQL warehouse
 - **MCP-compatible client** (Claude Desktop, Continue, etc.)
 
