@@ -65,9 +65,9 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `User-provided free-form text description. Wire name: 'comment'.`)
+	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `User-provided free-form text description.`)
 	// TODO: map via StringToStringVar: properties
-	cmd.Flags().StringVar(&createReq.StorageRoot, "storage-root", createReq.StorageRoot, `Storage root URL for managed tables within schema. Wire name: 'storage_root'.`)
+	cmd.Flags().StringVar(&createReq.StorageRoot, "storage-root", createReq.StorageRoot, `Storage root URL for managed tables within schema.`)
 
 	cmd.Use = "create NAME CATALOG_NAME"
 	cmd.Short = `Create a schema.`
@@ -152,7 +152,7 @@ func newDelete() *cobra.Command {
 
 	var deleteReq catalog.DeleteSchemaRequest
 
-	cmd.Flags().BoolVar(&deleteReq.Force, "force", deleteReq.Force, `Force deletion even if the schema is not empty. Wire name: 'force'.`)
+	cmd.Flags().BoolVar(&deleteReq.Force, "force", deleteReq.Force, `Force deletion even if the schema is not empty.`)
 
 	cmd.Use = "delete FULL_NAME"
 	cmd.Short = `Delete a schema.`
@@ -211,7 +211,7 @@ func newGet() *cobra.Command {
 
 	var getReq catalog.GetSchemaRequest
 
-	cmd.Flags().BoolVar(&getReq.IncludeBrowse, "include-browse", getReq.IncludeBrowse, `Whether to include schemas in the response for which the principal can only access selective metadata for. Wire name: 'include_browse'.`)
+	cmd.Flags().BoolVar(&getReq.IncludeBrowse, "include-browse", getReq.IncludeBrowse, `Whether to include schemas in the response for which the principal can only access selective metadata for.`)
 
 	cmd.Use = "get FULL_NAME"
 	cmd.Short = `Get a schema.`
@@ -271,9 +271,9 @@ func newList() *cobra.Command {
 
 	var listReq catalog.ListSchemasRequest
 
-	cmd.Flags().BoolVar(&listReq.IncludeBrowse, "include-browse", listReq.IncludeBrowse, `Whether to include schemas in the response for which the principal can only access selective metadata for. Wire name: 'include_browse'.`)
-	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of schemas to return. Wire name: 'max_results'.`)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on previous query. Wire name: 'page_token'.`)
+	cmd.Flags().BoolVar(&listReq.IncludeBrowse, "include-browse", listReq.IncludeBrowse, `Whether to include schemas in the response for which the principal can only access selective metadata for.`)
+	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of schemas to return.`)
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
 
 	cmd.Use = "list CATALOG_NAME"
 	cmd.Short = `List schemas.`
@@ -343,10 +343,10 @@ func newUpdate() *cobra.Command {
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `User-provided free-form text description. Wire name: 'comment'.`)
-	cmd.Flags().Var(&updateReq.EnablePredictiveOptimization, "enable-predictive-optimization", `Whether predictive optimization should be enabled for this object and objects under it. Supported values: [DISABLE, ENABLE, INHERIT]. Wire name: 'enable_predictive_optimization'.`)
-	cmd.Flags().StringVar(&updateReq.NewName, "new-name", updateReq.NewName, `New name for the schema. Wire name: 'new_name'.`)
-	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of current owner of schema. Wire name: 'owner'.`)
+	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `User-provided free-form text description.`)
+	cmd.Flags().Var(&updateReq.EnablePredictiveOptimization, "enable-predictive-optimization", `Whether predictive optimization should be enabled for this object and objects under it. Supported values: [DISABLE, ENABLE, INHERIT].`)
+	cmd.Flags().StringVar(&updateReq.NewName, "new-name", updateReq.NewName, `New name for the schema.`)
+	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of current owner of schema.`)
 	// TODO: map via StringToStringVar: properties
 
 	cmd.Use = "update FULL_NAME"

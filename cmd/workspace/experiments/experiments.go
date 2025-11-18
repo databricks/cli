@@ -103,7 +103,7 @@ func newCreateExperiment() *cobra.Command {
 
 	cmd.Flags().Var(&createExperimentJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createExperimentReq.ArtifactLocation, "artifact-location", createExperimentReq.ArtifactLocation, `Location where all artifacts for the experiment are stored. Wire name: 'artifact_location'.`)
+	cmd.Flags().StringVar(&createExperimentReq.ArtifactLocation, "artifact-location", createExperimentReq.ArtifactLocation, `Location where all artifacts for the experiment are stored.`)
 	// TODO: array: tags
 
 	cmd.Use = "create-experiment NAME"
@@ -191,10 +191,10 @@ func newCreateLoggedModel() *cobra.Command {
 
 	cmd.Flags().Var(&createLoggedModelJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createLoggedModelReq.ModelType, "model-type", createLoggedModelReq.ModelType, `The type of the model, such as "Agent", "Classifier", "LLM". Wire name: 'model_type'.`)
-	cmd.Flags().StringVar(&createLoggedModelReq.Name, "name", createLoggedModelReq.Name, `The name of the model (optional). Wire name: 'name'.`)
+	cmd.Flags().StringVar(&createLoggedModelReq.ModelType, "model-type", createLoggedModelReq.ModelType, `The type of the model, such as "Agent", "Classifier", "LLM".`)
+	cmd.Flags().StringVar(&createLoggedModelReq.Name, "name", createLoggedModelReq.Name, `The name of the model (optional).`)
 	// TODO: array: params
-	cmd.Flags().StringVar(&createLoggedModelReq.SourceRunId, "source-run-id", createLoggedModelReq.SourceRunId, `The ID of the run that created the model. Wire name: 'source_run_id'.`)
+	cmd.Flags().StringVar(&createLoggedModelReq.SourceRunId, "source-run-id", createLoggedModelReq.SourceRunId, `The ID of the run that created the model.`)
 	// TODO: array: tags
 
 	cmd.Use = "create-logged-model EXPERIMENT_ID"
@@ -275,11 +275,11 @@ func newCreateRun() *cobra.Command {
 
 	cmd.Flags().Var(&createRunJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createRunReq.ExperimentId, "experiment-id", createRunReq.ExperimentId, `ID of the associated experiment. Wire name: 'experiment_id'.`)
-	cmd.Flags().StringVar(&createRunReq.RunName, "run-name", createRunReq.RunName, `The name of the run. Wire name: 'run_name'.`)
-	cmd.Flags().Int64Var(&createRunReq.StartTime, "start-time", createRunReq.StartTime, `Unix timestamp in milliseconds of when the run started. Wire name: 'start_time'.`)
+	cmd.Flags().StringVar(&createRunReq.ExperimentId, "experiment-id", createRunReq.ExperimentId, `ID of the associated experiment.`)
+	cmd.Flags().StringVar(&createRunReq.RunName, "run-name", createRunReq.RunName, `The name of the run.`)
+	cmd.Flags().Int64Var(&createRunReq.StartTime, "start-time", createRunReq.StartTime, `Unix timestamp in milliseconds of when the run started.`)
 	// TODO: array: tags
-	cmd.Flags().StringVar(&createRunReq.UserId, "user-id", createRunReq.UserId, `ID of the user executing the run. Wire name: 'user_id'.`)
+	cmd.Flags().StringVar(&createRunReq.UserId, "user-id", createRunReq.UserId, `ID of the user executing the run.`)
 
 	cmd.Use = "create-run"
 	cmd.Short = `Create a run.`
@@ -623,7 +623,7 @@ func newDeleteRuns() *cobra.Command {
 
 	cmd.Flags().Var(&deleteRunsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().IntVar(&deleteRunsReq.MaxRuns, "max-runs", deleteRunsReq.MaxRuns, `An optional positive integer indicating the maximum number of runs to delete. Wire name: 'max_runs'.`)
+	cmd.Flags().IntVar(&deleteRunsReq.MaxRuns, "max-runs", deleteRunsReq.MaxRuns, `An optional positive integer indicating the maximum number of runs to delete.`)
 
 	cmd.Use = "delete-runs EXPERIMENT_ID MAX_TIMESTAMP_MILLIS"
 	cmd.Short = `Delete runs by creation time.`
@@ -1006,10 +1006,10 @@ func newGetHistory() *cobra.Command {
 
 	var getHistoryReq ml.GetHistoryRequest
 
-	cmd.Flags().IntVar(&getHistoryReq.MaxResults, "max-results", getHistoryReq.MaxResults, `Maximum number of Metric records to return per paginated request. Wire name: 'max_results'.`)
-	cmd.Flags().StringVar(&getHistoryReq.PageToken, "page-token", getHistoryReq.PageToken, `Token indicating the page of metric histories to fetch. Wire name: 'page_token'.`)
-	cmd.Flags().StringVar(&getHistoryReq.RunId, "run-id", getHistoryReq.RunId, `ID of the run from which to fetch metric values. Wire name: 'run_id'.`)
-	cmd.Flags().StringVar(&getHistoryReq.RunUuid, "run-uuid", getHistoryReq.RunUuid, `[Deprecated, use run_id instead] ID of the run from which to fetch metric values. Wire name: 'run_uuid'.`)
+	cmd.Flags().IntVar(&getHistoryReq.MaxResults, "max-results", getHistoryReq.MaxResults, `Maximum number of Metric records to return per paginated request.`)
+	cmd.Flags().StringVar(&getHistoryReq.PageToken, "page-token", getHistoryReq.PageToken, `Token indicating the page of metric histories to fetch.`)
+	cmd.Flags().StringVar(&getHistoryReq.RunId, "run-id", getHistoryReq.RunId, `ID of the run from which to fetch metric values.`)
+	cmd.Flags().StringVar(&getHistoryReq.RunUuid, "run-uuid", getHistoryReq.RunUuid, `[Deprecated, use run_id instead] ID of the run from which to fetch metric values.`)
 
 	cmd.Use = "get-history METRIC_KEY"
 	cmd.Short = `Get metric history for a run.`
@@ -1231,7 +1231,7 @@ func newGetRun() *cobra.Command {
 
 	var getRunReq ml.GetRunRequest
 
-	cmd.Flags().StringVar(&getRunReq.RunUuid, "run-uuid", getRunReq.RunUuid, `[Deprecated, use run_id instead] ID of the run to fetch. Wire name: 'run_uuid'.`)
+	cmd.Flags().StringVar(&getRunReq.RunUuid, "run-uuid", getRunReq.RunUuid, `[Deprecated, use run_id instead] ID of the run to fetch.`)
 
 	cmd.Use = "get-run RUN_ID"
 	cmd.Short = `Get a run.`
@@ -1294,10 +1294,10 @@ func newListArtifacts() *cobra.Command {
 
 	var listArtifactsReq ml.ListArtifactsRequest
 
-	cmd.Flags().StringVar(&listArtifactsReq.PageToken, "page-token", listArtifactsReq.PageToken, `The token indicating the page of artifact results to fetch. Wire name: 'page_token'.`)
-	cmd.Flags().StringVar(&listArtifactsReq.Path, "path", listArtifactsReq.Path, `Filter artifacts matching this path (a relative path from the root artifact directory). Wire name: 'path'.`)
-	cmd.Flags().StringVar(&listArtifactsReq.RunId, "run-id", listArtifactsReq.RunId, `ID of the run whose artifacts to list. Wire name: 'run_id'.`)
-	cmd.Flags().StringVar(&listArtifactsReq.RunUuid, "run-uuid", listArtifactsReq.RunUuid, `[Deprecated, use run_id instead] ID of the run whose artifacts to list. Wire name: 'run_uuid'.`)
+	cmd.Flags().StringVar(&listArtifactsReq.PageToken, "page-token", listArtifactsReq.PageToken, `The token indicating the page of artifact results to fetch.`)
+	cmd.Flags().StringVar(&listArtifactsReq.Path, "path", listArtifactsReq.Path, `Filter artifacts matching this path (a relative path from the root artifact directory).`)
+	cmd.Flags().StringVar(&listArtifactsReq.RunId, "run-id", listArtifactsReq.RunId, `ID of the run whose artifacts to list.`)
+	cmd.Flags().StringVar(&listArtifactsReq.RunUuid, "run-uuid", listArtifactsReq.RunUuid, `[Deprecated, use run_id instead] ID of the run whose artifacts to list.`)
 
 	cmd.Use = "list-artifacts"
 	cmd.Short = `List artifacts.`
@@ -1352,9 +1352,9 @@ func newListExperiments() *cobra.Command {
 
 	var listExperimentsReq ml.ListExperimentsRequest
 
-	cmd.Flags().Int64Var(&listExperimentsReq.MaxResults, "max-results", listExperimentsReq.MaxResults, `Maximum number of experiments desired. Wire name: 'max_results'.`)
-	cmd.Flags().StringVar(&listExperimentsReq.PageToken, "page-token", listExperimentsReq.PageToken, `Token indicating the page of experiments to fetch. Wire name: 'page_token'.`)
-	cmd.Flags().Var(&listExperimentsReq.ViewType, "view-type", `Qualifier for type of experiments to be returned. Supported values: [ACTIVE_ONLY, ALL, DELETED_ONLY]. Wire name: 'view_type'.`)
+	cmd.Flags().Int64Var(&listExperimentsReq.MaxResults, "max-results", listExperimentsReq.MaxResults, `Maximum number of experiments desired.`)
+	cmd.Flags().StringVar(&listExperimentsReq.PageToken, "page-token", listExperimentsReq.PageToken, `Token indicating the page of experiments to fetch.`)
+	cmd.Flags().Var(&listExperimentsReq.ViewType, "view-type", `Qualifier for type of experiments to be returned. Supported values: [ACTIVE_ONLY, ALL, DELETED_ONLY].`)
 
 	cmd.Use = "list-experiments"
 	cmd.Short = `List experiments.`
@@ -1409,7 +1409,7 @@ func newLogBatch() *cobra.Command {
 
 	// TODO: array: metrics
 	// TODO: array: params
-	cmd.Flags().StringVar(&logBatchReq.RunId, "run-id", logBatchReq.RunId, `ID of the run to log under. Wire name: 'run_id'.`)
+	cmd.Flags().StringVar(&logBatchReq.RunId, "run-id", logBatchReq.RunId, `ID of the run to log under.`)
 	// TODO: array: tags
 
 	cmd.Use = "log-batch"
@@ -1680,12 +1680,12 @@ func newLogMetric() *cobra.Command {
 
 	cmd.Flags().Var(&logMetricJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&logMetricReq.DatasetDigest, "dataset-digest", logMetricReq.DatasetDigest, `Dataset digest of the dataset associated with the metric, e.g. Wire name: 'dataset_digest'.`)
-	cmd.Flags().StringVar(&logMetricReq.DatasetName, "dataset-name", logMetricReq.DatasetName, `The name of the dataset associated with the metric. Wire name: 'dataset_name'.`)
-	cmd.Flags().StringVar(&logMetricReq.ModelId, "model-id", logMetricReq.ModelId, `ID of the logged model associated with the metric, if applicable. Wire name: 'model_id'.`)
-	cmd.Flags().StringVar(&logMetricReq.RunId, "run-id", logMetricReq.RunId, `ID of the run under which to log the metric. Wire name: 'run_id'.`)
-	cmd.Flags().StringVar(&logMetricReq.RunUuid, "run-uuid", logMetricReq.RunUuid, `[Deprecated, use run_id instead] ID of the run under which to log the metric. Wire name: 'run_uuid'.`)
-	cmd.Flags().Int64Var(&logMetricReq.Step, "step", logMetricReq.Step, `Step at which to log the metric. Wire name: 'step'.`)
+	cmd.Flags().StringVar(&logMetricReq.DatasetDigest, "dataset-digest", logMetricReq.DatasetDigest, `Dataset digest of the dataset associated with the metric, e.g.`)
+	cmd.Flags().StringVar(&logMetricReq.DatasetName, "dataset-name", logMetricReq.DatasetName, `The name of the dataset associated with the metric.`)
+	cmd.Flags().StringVar(&logMetricReq.ModelId, "model-id", logMetricReq.ModelId, `ID of the logged model associated with the metric, if applicable.`)
+	cmd.Flags().StringVar(&logMetricReq.RunId, "run-id", logMetricReq.RunId, `ID of the run under which to log the metric.`)
+	cmd.Flags().StringVar(&logMetricReq.RunUuid, "run-uuid", logMetricReq.RunUuid, `[Deprecated, use run_id instead] ID of the run under which to log the metric.`)
+	cmd.Flags().Int64Var(&logMetricReq.Step, "step", logMetricReq.Step, `Step at which to log the metric.`)
 
 	cmd.Use = "log-metric KEY VALUE TIMESTAMP"
 	cmd.Short = `Log a metric for a run.`
@@ -1785,8 +1785,8 @@ func newLogModel() *cobra.Command {
 
 	cmd.Flags().Var(&logModelJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&logModelReq.ModelJson, "model-json", logModelReq.ModelJson, `MLmodel file in json format. Wire name: 'model_json'.`)
-	cmd.Flags().StringVar(&logModelReq.RunId, "run-id", logModelReq.RunId, `ID of the run to log under. Wire name: 'run_id'.`)
+	cmd.Flags().StringVar(&logModelReq.ModelJson, "model-json", logModelReq.ModelJson, `MLmodel file in json format.`)
+	cmd.Flags().StringVar(&logModelReq.RunId, "run-id", logModelReq.RunId, `ID of the run to log under.`)
 
 	cmd.Use = "log-model"
 	cmd.Short = `Log a model.`
@@ -1941,8 +1941,8 @@ func newLogParam() *cobra.Command {
 
 	cmd.Flags().Var(&logParamJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&logParamReq.RunId, "run-id", logParamReq.RunId, `ID of the run under which to log the param. Wire name: 'run_id'.`)
-	cmd.Flags().StringVar(&logParamReq.RunUuid, "run-uuid", logParamReq.RunUuid, `[Deprecated, use run_id instead] ID of the run under which to log the param. Wire name: 'run_uuid'.`)
+	cmd.Flags().StringVar(&logParamReq.RunId, "run-id", logParamReq.RunId, `ID of the run under which to log the param.`)
+	cmd.Flags().StringVar(&logParamReq.RunUuid, "run-uuid", logParamReq.RunUuid, `[Deprecated, use run_id instead] ID of the run under which to log the param.`)
 
 	cmd.Use = "log-param KEY VALUE"
 	cmd.Short = `Log a param for a run.`
@@ -2200,7 +2200,7 @@ func newRestoreRuns() *cobra.Command {
 
 	cmd.Flags().Var(&restoreRunsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().IntVar(&restoreRunsReq.MaxRuns, "max-runs", restoreRunsReq.MaxRuns, `An optional positive integer indicating the maximum number of runs to restore. Wire name: 'max_runs'.`)
+	cmd.Flags().IntVar(&restoreRunsReq.MaxRuns, "max-runs", restoreRunsReq.MaxRuns, `An optional positive integer indicating the maximum number of runs to restore.`)
 
 	cmd.Use = "restore-runs EXPERIMENT_ID MIN_TIMESTAMP_MILLIS"
 	cmd.Short = `Restore runs by deletion time.`
@@ -2294,11 +2294,11 @@ func newSearchExperiments() *cobra.Command {
 
 	cmd.Flags().Var(&searchExperimentsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&searchExperimentsReq.Filter, "filter", searchExperimentsReq.Filter, `String representing a SQL filter condition (e.g. Wire name: 'filter'.`)
-	cmd.Flags().Int64Var(&searchExperimentsReq.MaxResults, "max-results", searchExperimentsReq.MaxResults, `Maximum number of experiments desired. Wire name: 'max_results'.`)
+	cmd.Flags().StringVar(&searchExperimentsReq.Filter, "filter", searchExperimentsReq.Filter, `String representing a SQL filter condition (e.g.`)
+	cmd.Flags().Int64Var(&searchExperimentsReq.MaxResults, "max-results", searchExperimentsReq.MaxResults, `Maximum number of experiments desired.`)
 	// TODO: array: order_by
-	cmd.Flags().StringVar(&searchExperimentsReq.PageToken, "page-token", searchExperimentsReq.PageToken, `Token indicating the page of experiments to fetch. Wire name: 'page_token'.`)
-	cmd.Flags().Var(&searchExperimentsReq.ViewType, "view-type", `Qualifier for type of experiments to be returned. Supported values: [ACTIVE_ONLY, ALL, DELETED_ONLY]. Wire name: 'view_type'.`)
+	cmd.Flags().StringVar(&searchExperimentsReq.PageToken, "page-token", searchExperimentsReq.PageToken, `Token indicating the page of experiments to fetch.`)
+	cmd.Flags().Var(&searchExperimentsReq.ViewType, "view-type", `Qualifier for type of experiments to be returned. Supported values: [ACTIVE_ONLY, ALL, DELETED_ONLY].`)
 
 	cmd.Use = "search-experiments"
 	cmd.Short = `Search experiments.`
@@ -2366,10 +2366,10 @@ func newSearchLoggedModels() *cobra.Command {
 
 	// TODO: array: datasets
 	// TODO: array: experiment_ids
-	cmd.Flags().StringVar(&searchLoggedModelsReq.Filter, "filter", searchLoggedModelsReq.Filter, `A filter expression over logged model info and data that allows returning a subset of logged models. Wire name: 'filter'.`)
-	cmd.Flags().IntVar(&searchLoggedModelsReq.MaxResults, "max-results", searchLoggedModelsReq.MaxResults, `The maximum number of Logged Models to return. Wire name: 'max_results'.`)
+	cmd.Flags().StringVar(&searchLoggedModelsReq.Filter, "filter", searchLoggedModelsReq.Filter, `A filter expression over logged model info and data that allows returning a subset of logged models.`)
+	cmd.Flags().IntVar(&searchLoggedModelsReq.MaxResults, "max-results", searchLoggedModelsReq.MaxResults, `The maximum number of Logged Models to return.`)
 	// TODO: array: order_by
-	cmd.Flags().StringVar(&searchLoggedModelsReq.PageToken, "page-token", searchLoggedModelsReq.PageToken, `The token indicating the page of logged models to fetch. Wire name: 'page_token'.`)
+	cmd.Flags().StringVar(&searchLoggedModelsReq.PageToken, "page-token", searchLoggedModelsReq.PageToken, `The token indicating the page of logged models to fetch.`)
 
 	cmd.Use = "search-logged-models"
 	cmd.Short = `Search logged models.`
@@ -2439,11 +2439,11 @@ func newSearchRuns() *cobra.Command {
 	cmd.Flags().Var(&searchRunsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: experiment_ids
-	cmd.Flags().StringVar(&searchRunsReq.Filter, "filter", searchRunsReq.Filter, `A filter expression over params, metrics, and tags, that allows returning a subset of runs. Wire name: 'filter'.`)
-	cmd.Flags().IntVar(&searchRunsReq.MaxResults, "max-results", searchRunsReq.MaxResults, `Maximum number of runs desired. Wire name: 'max_results'.`)
+	cmd.Flags().StringVar(&searchRunsReq.Filter, "filter", searchRunsReq.Filter, `A filter expression over params, metrics, and tags, that allows returning a subset of runs.`)
+	cmd.Flags().IntVar(&searchRunsReq.MaxResults, "max-results", searchRunsReq.MaxResults, `Maximum number of runs desired.`)
 	// TODO: array: order_by
-	cmd.Flags().StringVar(&searchRunsReq.PageToken, "page-token", searchRunsReq.PageToken, `Token for the current page of runs. Wire name: 'page_token'.`)
-	cmd.Flags().Var(&searchRunsReq.RunViewType, "run-view-type", `Whether to display only active, only deleted, or all runs. Supported values: [ACTIVE_ONLY, ALL, DELETED_ONLY]. Wire name: 'run_view_type'.`)
+	cmd.Flags().StringVar(&searchRunsReq.PageToken, "page-token", searchRunsReq.PageToken, `Token for the current page of runs.`)
+	cmd.Flags().Var(&searchRunsReq.RunViewType, "run-view-type", `Whether to display only active, only deleted, or all runs. Supported values: [ACTIVE_ONLY, ALL, DELETED_ONLY].`)
 
 	cmd.Use = "search-runs"
 	cmd.Short = `Search for runs.`
@@ -2746,8 +2746,8 @@ func newSetTag() *cobra.Command {
 
 	cmd.Flags().Var(&setTagJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&setTagReq.RunId, "run-id", setTagReq.RunId, `ID of the run under which to log the tag. Wire name: 'run_id'.`)
-	cmd.Flags().StringVar(&setTagReq.RunUuid, "run-uuid", setTagReq.RunUuid, `[Deprecated, use run_id instead] ID of the run under which to log the tag. Wire name: 'run_uuid'.`)
+	cmd.Flags().StringVar(&setTagReq.RunId, "run-id", setTagReq.RunId, `ID of the run under which to log the tag.`)
+	cmd.Flags().StringVar(&setTagReq.RunUuid, "run-uuid", setTagReq.RunUuid, `[Deprecated, use run_id instead] ID of the run under which to log the tag.`)
 
 	cmd.Use = "set-tag KEY VALUE"
 	cmd.Short = `Set a tag for a run.`
@@ -2835,7 +2835,7 @@ func newUpdateExperiment() *cobra.Command {
 
 	cmd.Flags().Var(&updateExperimentJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateExperimentReq.NewName, "new-name", updateExperimentReq.NewName, `If provided, the experiment's name is changed to the new name. Wire name: 'new_name'.`)
+	cmd.Flags().StringVar(&updateExperimentReq.NewName, "new-name", updateExperimentReq.NewName, `If provided, the experiment's name is changed to the new name.`)
 
 	cmd.Use = "update-experiment EXPERIMENT_ID"
 	cmd.Short = `Update an experiment.`
@@ -2991,11 +2991,11 @@ func newUpdateRun() *cobra.Command {
 
 	cmd.Flags().Var(&updateRunJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().Int64Var(&updateRunReq.EndTime, "end-time", updateRunReq.EndTime, `Unix timestamp in milliseconds of when the run ended. Wire name: 'end_time'.`)
-	cmd.Flags().StringVar(&updateRunReq.RunId, "run-id", updateRunReq.RunId, `ID of the run to update. Wire name: 'run_id'.`)
-	cmd.Flags().StringVar(&updateRunReq.RunName, "run-name", updateRunReq.RunName, `Updated name of the run. Wire name: 'run_name'.`)
-	cmd.Flags().StringVar(&updateRunReq.RunUuid, "run-uuid", updateRunReq.RunUuid, `[Deprecated, use run_id instead] ID of the run to update. Wire name: 'run_uuid'.`)
-	cmd.Flags().Var(&updateRunReq.Status, "status", `Updated status of the run. Supported values: [FAILED, FINISHED, KILLED, RUNNING, SCHEDULED]. Wire name: 'status'.`)
+	cmd.Flags().Int64Var(&updateRunReq.EndTime, "end-time", updateRunReq.EndTime, `Unix timestamp in milliseconds of when the run ended.`)
+	cmd.Flags().StringVar(&updateRunReq.RunId, "run-id", updateRunReq.RunId, `ID of the run to update.`)
+	cmd.Flags().StringVar(&updateRunReq.RunName, "run-name", updateRunReq.RunName, `Updated name of the run.`)
+	cmd.Flags().StringVar(&updateRunReq.RunUuid, "run-uuid", updateRunReq.RunUuid, `[Deprecated, use run_id instead] ID of the run to update.`)
+	cmd.Flags().Var(&updateRunReq.Status, "status", `Updated status of the run. Supported values: [FAILED, FINISHED, KILLED, RUNNING, SCHEDULED].`)
 
 	cmd.Use = "update-run"
 	cmd.Short = `Update a run.`

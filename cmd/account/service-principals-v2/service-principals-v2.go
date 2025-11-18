@@ -65,11 +65,11 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&createReq.Active, "active", createReq.Active, `If this user is active. Wire name: 'active'.`)
-	cmd.Flags().StringVar(&createReq.ApplicationId, "application-id", createReq.ApplicationId, `UUID relating to the service principal. Wire name: 'applicationId'.`)
-	cmd.Flags().StringVar(&createReq.DisplayName, "display-name", createReq.DisplayName, `String that represents a concatenation of given and family names. Wire name: 'displayName'.`)
+	cmd.Flags().BoolVar(&createReq.Active, "active", createReq.Active, `If this user is active.`)
+	cmd.Flags().StringVar(&createReq.ApplicationId, "application-id", createReq.ApplicationId, `UUID relating to the service principal.`)
+	cmd.Flags().StringVar(&createReq.DisplayName, "display-name", createReq.DisplayName, `String that represents a concatenation of given and family names.`)
 	cmd.Flags().StringVar(&createReq.ExternalId, "external-id", createReq.ExternalId, `Wire name: 'externalId'.`)
-	cmd.Flags().StringVar(&createReq.Id, "id", createReq.Id, `Databricks service principal ID. Wire name: 'id'.`)
+	cmd.Flags().StringVar(&createReq.Id, "id", createReq.Id, `Databricks service principal ID.`)
 	// TODO: array: roles
 
 	cmd.Use = "create"
@@ -249,13 +249,13 @@ func newList() *cobra.Command {
 
 	var listReq iam.ListAccountServicePrincipalsRequest
 
-	cmd.Flags().StringVar(&listReq.Attributes, "attributes", listReq.Attributes, `Comma-separated list of attributes to return in response. Wire name: 'attributes'.`)
-	cmd.Flags().Int64Var(&listReq.Count, "count", listReq.Count, `Desired number of results per page. Wire name: 'count'.`)
-	cmd.Flags().StringVar(&listReq.ExcludedAttributes, "excluded-attributes", listReq.ExcludedAttributes, `Comma-separated list of attributes to exclude in response. Wire name: 'excludedAttributes'.`)
-	cmd.Flags().StringVar(&listReq.Filter, "filter", listReq.Filter, `Query by which the results have to be filtered. Wire name: 'filter'.`)
-	cmd.Flags().StringVar(&listReq.SortBy, "sort-by", listReq.SortBy, `Attribute to sort the results. Wire name: 'sortBy'.`)
-	cmd.Flags().Var(&listReq.SortOrder, "sort-order", `The order to sort the results. Supported values: [ascending, descending]. Wire name: 'sortOrder'.`)
-	cmd.Flags().Int64Var(&listReq.StartIndex, "start-index", listReq.StartIndex, `Specifies the index of the first result. Wire name: 'startIndex'.`)
+	cmd.Flags().StringVar(&listReq.Attributes, "attributes", listReq.Attributes, `Comma-separated list of attributes to return in response.`)
+	cmd.Flags().Int64Var(&listReq.Count, "count", listReq.Count, `Desired number of results per page.`)
+	cmd.Flags().StringVar(&listReq.ExcludedAttributes, "excluded-attributes", listReq.ExcludedAttributes, `Comma-separated list of attributes to exclude in response.`)
+	cmd.Flags().StringVar(&listReq.Filter, "filter", listReq.Filter, `Query by which the results have to be filtered.`)
+	cmd.Flags().StringVar(&listReq.SortBy, "sort-by", listReq.SortBy, `Attribute to sort the results.`)
+	cmd.Flags().Var(&listReq.SortOrder, "sort-order", `The order to sort the results. Supported values: [ascending, descending].`)
+	cmd.Flags().Int64Var(&listReq.StartIndex, "start-index", listReq.StartIndex, `Specifies the index of the first result.`)
 
 	cmd.Use = "list"
 	cmd.Short = `List service principals.`
@@ -383,9 +383,9 @@ func newUpdate() *cobra.Command {
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&updateReq.Active, "active", updateReq.Active, `If this user is active. Wire name: 'active'.`)
-	cmd.Flags().StringVar(&updateReq.ApplicationId, "application-id", updateReq.ApplicationId, `UUID relating to the service principal. Wire name: 'applicationId'.`)
-	cmd.Flags().StringVar(&updateReq.DisplayName, "display-name", updateReq.DisplayName, `String that represents a concatenation of given and family names. Wire name: 'displayName'.`)
+	cmd.Flags().BoolVar(&updateReq.Active, "active", updateReq.Active, `If this user is active.`)
+	cmd.Flags().StringVar(&updateReq.ApplicationId, "application-id", updateReq.ApplicationId, `UUID relating to the service principal.`)
+	cmd.Flags().StringVar(&updateReq.DisplayName, "display-name", updateReq.DisplayName, `String that represents a concatenation of given and family names.`)
 	cmd.Flags().StringVar(&updateReq.ExternalId, "external-id", updateReq.ExternalId, `Wire name: 'externalId'.`)
 	// TODO: array: roles
 

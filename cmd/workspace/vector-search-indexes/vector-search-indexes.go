@@ -299,7 +299,7 @@ func newGetIndex() *cobra.Command {
 
 	var getIndexReq vectorsearch.GetIndexRequest
 
-	cmd.Flags().BoolVar(&getIndexReq.EnsureRerankerCompatible, "ensure-reranker-compatible", getIndexReq.EnsureRerankerCompatible, `If true, the URL returned for the index is guaranteed to be compatible with the reranker. Wire name: 'ensure_reranker_compatible'.`)
+	cmd.Flags().BoolVar(&getIndexReq.EnsureRerankerCompatible, "ensure-reranker-compatible", getIndexReq.EnsureRerankerCompatible, `If true, the URL returned for the index is guaranteed to be compatible with the reranker.`)
 
 	cmd.Use = "get-index INDEX_NAME"
 	cmd.Short = `Get an index.`
@@ -355,7 +355,7 @@ func newListIndexes() *cobra.Command {
 
 	var listIndexesReq vectorsearch.ListIndexesRequest
 
-	cmd.Flags().StringVar(&listIndexesReq.PageToken, "page-token", listIndexesReq.PageToken, `Token for pagination. Wire name: 'page_token'.`)
+	cmd.Flags().StringVar(&listIndexesReq.PageToken, "page-token", listIndexesReq.PageToken, `Token for pagination.`)
 
 	cmd.Use = "list-indexes ENDPOINT_NAME"
 	cmd.Short = `List indexes.`
@@ -414,13 +414,13 @@ func newQueryIndex() *cobra.Command {
 	cmd.Flags().Var(&queryIndexJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: columns_to_rerank
-	cmd.Flags().StringVar(&queryIndexReq.FiltersJson, "filters-json", queryIndexReq.FiltersJson, `JSON string representing query filters. Wire name: 'filters_json'.`)
-	cmd.Flags().IntVar(&queryIndexReq.NumResults, "num-results", queryIndexReq.NumResults, `Number of results to return. Wire name: 'num_results'.`)
-	cmd.Flags().StringVar(&queryIndexReq.QueryText, "query-text", queryIndexReq.QueryText, `Query text. Wire name: 'query_text'.`)
-	cmd.Flags().StringVar(&queryIndexReq.QueryType, "query-type", queryIndexReq.QueryType, `The query type to use. Wire name: 'query_type'.`)
+	cmd.Flags().StringVar(&queryIndexReq.FiltersJson, "filters-json", queryIndexReq.FiltersJson, `JSON string representing query filters.`)
+	cmd.Flags().IntVar(&queryIndexReq.NumResults, "num-results", queryIndexReq.NumResults, `Number of results to return.`)
+	cmd.Flags().StringVar(&queryIndexReq.QueryText, "query-text", queryIndexReq.QueryText, `Query text.`)
+	cmd.Flags().StringVar(&queryIndexReq.QueryType, "query-type", queryIndexReq.QueryType, `The query type to use.`)
 	// TODO: array: query_vector
 	// TODO: complex arg: reranker
-	cmd.Flags().Float64Var(&queryIndexReq.ScoreThreshold, "score-threshold", queryIndexReq.ScoreThreshold, `Threshold for the approximate nearest neighbor search. Wire name: 'score_threshold'.`)
+	cmd.Flags().Float64Var(&queryIndexReq.ScoreThreshold, "score-threshold", queryIndexReq.ScoreThreshold, `Threshold for the approximate nearest neighbor search.`)
 
 	cmd.Use = "query-index INDEX_NAME"
 	cmd.Short = `Query an index.`
@@ -495,8 +495,8 @@ func newQueryNextPage() *cobra.Command {
 
 	cmd.Flags().Var(&queryNextPageJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&queryNextPageReq.EndpointName, "endpoint-name", queryNextPageReq.EndpointName, `Name of the endpoint. Wire name: 'endpoint_name'.`)
-	cmd.Flags().StringVar(&queryNextPageReq.PageToken, "page-token", queryNextPageReq.PageToken, `Page token returned from previous QueryVectorIndex or QueryVectorIndexNextPage API. Wire name: 'page_token'.`)
+	cmd.Flags().StringVar(&queryNextPageReq.EndpointName, "endpoint-name", queryNextPageReq.EndpointName, `Name of the endpoint.`)
+	cmd.Flags().StringVar(&queryNextPageReq.PageToken, "page-token", queryNextPageReq.PageToken, `Page token returned from previous QueryVectorIndex or QueryVectorIndexNextPage API.`)
 
 	cmd.Use = "query-next-page INDEX_NAME"
 	cmd.Short = `Query next page.`
@@ -570,8 +570,8 @@ func newScanIndex() *cobra.Command {
 
 	cmd.Flags().Var(&scanIndexJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&scanIndexReq.LastPrimaryKey, "last-primary-key", scanIndexReq.LastPrimaryKey, `Primary key of the last entry returned in the previous scan. Wire name: 'last_primary_key'.`)
-	cmd.Flags().IntVar(&scanIndexReq.NumResults, "num-results", scanIndexReq.NumResults, `Number of results to return. Wire name: 'num_results'.`)
+	cmd.Flags().StringVar(&scanIndexReq.LastPrimaryKey, "last-primary-key", scanIndexReq.LastPrimaryKey, `Primary key of the last entry returned in the previous scan.`)
+	cmd.Flags().IntVar(&scanIndexReq.NumResults, "num-results", scanIndexReq.NumResults, `Number of results to return.`)
 
 	cmd.Use = "scan-index INDEX_NAME"
 	cmd.Short = `Scan an index.`

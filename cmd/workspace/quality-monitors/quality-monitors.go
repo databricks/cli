@@ -136,18 +136,18 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createReq.BaselineTableName, "baseline-table-name", createReq.BaselineTableName, `[Create:OPT Update:OPT] Baseline table name. Wire name: 'baseline_table_name'.`)
+	cmd.Flags().StringVar(&createReq.BaselineTableName, "baseline-table-name", createReq.BaselineTableName, `[Create:OPT Update:OPT] Baseline table name.`)
 	// TODO: array: custom_metrics
 	// TODO: complex arg: data_classification_config
 	// TODO: complex arg: inference_log
-	cmd.Flags().StringVar(&createReq.LatestMonitorFailureMsg, "latest-monitor-failure-msg", createReq.LatestMonitorFailureMsg, `[Create:ERR Update:IGN] The latest error message for a monitor failure. Wire name: 'latest_monitor_failure_msg'.`)
+	cmd.Flags().StringVar(&createReq.LatestMonitorFailureMsg, "latest-monitor-failure-msg", createReq.LatestMonitorFailureMsg, `[Create:ERR Update:IGN] The latest error message for a monitor failure.`)
 	// TODO: complex arg: notifications
 	// TODO: complex arg: schedule
-	cmd.Flags().BoolVar(&createReq.SkipBuiltinDashboard, "skip-builtin-dashboard", createReq.SkipBuiltinDashboard, `Whether to skip creating a default dashboard summarizing data quality metrics. Wire name: 'skip_builtin_dashboard'.`)
+	cmd.Flags().BoolVar(&createReq.SkipBuiltinDashboard, "skip-builtin-dashboard", createReq.SkipBuiltinDashboard, `Whether to skip creating a default dashboard summarizing data quality metrics.`)
 	// TODO: array: slicing_exprs
 	// TODO: complex arg: snapshot
 	// TODO: complex arg: time_series
-	cmd.Flags().StringVar(&createReq.WarehouseId, "warehouse-id", createReq.WarehouseId, `Optional argument to specify the warehouse for dashboard creation. Wire name: 'warehouse_id'.`)
+	cmd.Flags().StringVar(&createReq.WarehouseId, "warehouse-id", createReq.WarehouseId, `Optional argument to specify the warehouse for dashboard creation.`)
 
 	cmd.Use = "create TABLE_NAME OUTPUT_SCHEMA_NAME ASSETS_DIR"
 	cmd.Short = `Create a table monitor.`
@@ -523,7 +523,7 @@ func newRegenerateDashboard() *cobra.Command {
 
 	cmd.Flags().Var(&regenerateDashboardJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&regenerateDashboardReq.WarehouseId, "warehouse-id", regenerateDashboardReq.WarehouseId, `Optional argument to specify the warehouse for dashboard regeneration. Wire name: 'warehouse_id'.`)
+	cmd.Flags().StringVar(&regenerateDashboardReq.WarehouseId, "warehouse-id", regenerateDashboardReq.WarehouseId, `Optional argument to specify the warehouse for dashboard regeneration.`)
 
 	cmd.Use = "regenerate-dashboard TABLE_NAME"
 	cmd.Short = `Regenerate a monitoring dashboard.`
@@ -677,12 +677,12 @@ func newUpdate() *cobra.Command {
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateReq.BaselineTableName, "baseline-table-name", updateReq.BaselineTableName, `[Create:OPT Update:OPT] Baseline table name. Wire name: 'baseline_table_name'.`)
+	cmd.Flags().StringVar(&updateReq.BaselineTableName, "baseline-table-name", updateReq.BaselineTableName, `[Create:OPT Update:OPT] Baseline table name.`)
 	// TODO: array: custom_metrics
-	cmd.Flags().StringVar(&updateReq.DashboardId, "dashboard-id", updateReq.DashboardId, `[Create:ERR Update:OPT] Id of dashboard that visualizes the computed metrics. Wire name: 'dashboard_id'.`)
+	cmd.Flags().StringVar(&updateReq.DashboardId, "dashboard-id", updateReq.DashboardId, `[Create:ERR Update:OPT] Id of dashboard that visualizes the computed metrics.`)
 	// TODO: complex arg: data_classification_config
 	// TODO: complex arg: inference_log
-	cmd.Flags().StringVar(&updateReq.LatestMonitorFailureMsg, "latest-monitor-failure-msg", updateReq.LatestMonitorFailureMsg, `[Create:ERR Update:IGN] The latest error message for a monitor failure. Wire name: 'latest_monitor_failure_msg'.`)
+	cmd.Flags().StringVar(&updateReq.LatestMonitorFailureMsg, "latest-monitor-failure-msg", updateReq.LatestMonitorFailureMsg, `[Create:ERR Update:IGN] The latest error message for a monitor failure.`)
 	// TODO: complex arg: notifications
 	// TODO: complex arg: schedule
 	// TODO: array: slicing_exprs

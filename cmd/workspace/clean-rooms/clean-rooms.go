@@ -73,9 +73,9 @@ func newCreate() *cobra.Command {
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createReq.CleanRoom.Comment, "comment", createReq.CleanRoom.Comment, `Wire name: 'comment'.`)
-	cmd.Flags().StringVar(&createReq.CleanRoom.Name, "name", createReq.CleanRoom.Name, `The name of the clean room. Wire name: 'name'.`)
+	cmd.Flags().StringVar(&createReq.CleanRoom.Name, "name", createReq.CleanRoom.Name, `The name of the clean room.`)
 	// TODO: complex arg: output_catalog
-	cmd.Flags().StringVar(&createReq.CleanRoom.Owner, "owner", createReq.CleanRoom.Owner, `This is the Databricks username of the owner of the local clean room securable for permission management. Wire name: 'owner'.`)
+	cmd.Flags().StringVar(&createReq.CleanRoom.Owner, "owner", createReq.CleanRoom.Owner, `This is the Databricks username of the owner of the local clean room securable for permission management.`)
 	// TODO: complex arg: remote_detailed_info
 
 	cmd.Use = "create"
@@ -167,7 +167,7 @@ func newCreateOutputCatalog() *cobra.Command {
 
 	cmd.Flags().Var(&createOutputCatalogJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createOutputCatalogReq.OutputCatalog.CatalogName, "catalog-name", createOutputCatalogReq.OutputCatalog.CatalogName, `The name of the output catalog in UC. Wire name: 'catalog_name'.`)
+	cmd.Flags().StringVar(&createOutputCatalogReq.OutputCatalog.CatalogName, "catalog-name", createOutputCatalogReq.OutputCatalog.CatalogName, `The name of the output catalog in UC.`)
 
 	cmd.Use = "create-output-catalog CLEAN_ROOM_NAME"
 	cmd.Short = `Create an output catalog.`
@@ -349,8 +349,8 @@ func newList() *cobra.Command {
 
 	var listReq cleanrooms.ListCleanRoomsRequest
 
-	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `Maximum number of clean rooms to return (i.e., the page length). Wire name: 'page_size'.`)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on previous query. Wire name: 'page_token'.`)
+	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `Maximum number of clean rooms to return (i.e., the page length).`)
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
 
 	cmd.Use = "list"
 	cmd.Short = `List clean rooms.`

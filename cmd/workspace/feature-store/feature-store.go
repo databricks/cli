@@ -72,7 +72,7 @@ func newCreateOnlineStore() *cobra.Command {
 
 	cmd.Flags().Var(&createOnlineStoreJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().IntVar(&createOnlineStoreReq.OnlineStore.ReadReplicaCount, "read-replica-count", createOnlineStoreReq.OnlineStore.ReadReplicaCount, `The number of read replicas for the online store. Wire name: 'read_replica_count'.`)
+	cmd.Flags().IntVar(&createOnlineStoreReq.OnlineStore.ReadReplicaCount, "read-replica-count", createOnlineStoreReq.OnlineStore.ReadReplicaCount, `The number of read replicas for the online store.`)
 
 	cmd.Use = "create-online-store NAME CAPACITY"
 	cmd.Short = `Create an Online Feature Store.`
@@ -263,8 +263,8 @@ func newListOnlineStores() *cobra.Command {
 
 	var listOnlineStoresReq ml.ListOnlineStoresRequest
 
-	cmd.Flags().IntVar(&listOnlineStoresReq.PageSize, "page-size", listOnlineStoresReq.PageSize, `The maximum number of results to return. Wire name: 'page_size'.`)
-	cmd.Flags().StringVar(&listOnlineStoresReq.PageToken, "page-token", listOnlineStoresReq.PageToken, `Pagination token to go to the next page based on a previous query. Wire name: 'page_token'.`)
+	cmd.Flags().IntVar(&listOnlineStoresReq.PageSize, "page-size", listOnlineStoresReq.PageSize, `The maximum number of results to return.`)
+	cmd.Flags().StringVar(&listOnlineStoresReq.PageToken, "page-token", listOnlineStoresReq.PageToken, `Pagination token to go to the next page based on a previous query.`)
 
 	cmd.Use = "list-online-stores"
 	cmd.Short = `List Online Feature Stores.`
@@ -387,7 +387,7 @@ func newUpdateOnlineStore() *cobra.Command {
 
 	cmd.Flags().Var(&updateOnlineStoreJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().IntVar(&updateOnlineStoreReq.OnlineStore.ReadReplicaCount, "read-replica-count", updateOnlineStoreReq.OnlineStore.ReadReplicaCount, `The number of read replicas for the online store. Wire name: 'read_replica_count'.`)
+	cmd.Flags().IntVar(&updateOnlineStoreReq.OnlineStore.ReadReplicaCount, "read-replica-count", updateOnlineStoreReq.OnlineStore.ReadReplicaCount, `The number of read replicas for the online store.`)
 
 	cmd.Use = "update-online-store NAME UPDATE_MASK CAPACITY"
 	cmd.Short = `Update an Online Feature Store.`

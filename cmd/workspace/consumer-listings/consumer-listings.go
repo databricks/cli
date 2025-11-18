@@ -179,9 +179,9 @@ func newList() *cobra.Command {
 
 	// TODO: array: assets
 	// TODO: array: categories
-	cmd.Flags().BoolVar(&listReq.IsFree, "is-free", listReq.IsFree, `Filters each listing based on if it is free. Wire name: 'is_free'.`)
-	cmd.Flags().BoolVar(&listReq.IsPrivateExchange, "is-private-exchange", listReq.IsPrivateExchange, `Filters each listing based on if it is a private exchange. Wire name: 'is_private_exchange'.`)
-	cmd.Flags().BoolVar(&listReq.IsStaffPick, "is-staff-pick", listReq.IsStaffPick, `Filters each listing based on whether it is a staff pick. Wire name: 'is_staff_pick'.`)
+	cmd.Flags().BoolVar(&listReq.IsFree, "is-free", listReq.IsFree, `Filters each listing based on if it is free.`)
+	cmd.Flags().BoolVar(&listReq.IsPrivateExchange, "is-private-exchange", listReq.IsPrivateExchange, `Filters each listing based on if it is a private exchange.`)
+	cmd.Flags().BoolVar(&listReq.IsStaffPick, "is-staff-pick", listReq.IsStaffPick, `Filters each listing based on whether it is a staff pick.`)
 	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `Wire name: 'page_size'.`)
 	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Wire name: 'page_token'.`)
 	// TODO: array: provider_ids

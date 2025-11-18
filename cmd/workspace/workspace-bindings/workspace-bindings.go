@@ -130,8 +130,8 @@ func newGetBindings() *cobra.Command {
 
 	var getBindingsReq catalog.GetBindingsRequest
 
-	cmd.Flags().IntVar(&getBindingsReq.MaxResults, "max-results", getBindingsReq.MaxResults, `Maximum number of workspace bindings to return. Wire name: 'max_results'.`)
-	cmd.Flags().StringVar(&getBindingsReq.PageToken, "page-token", getBindingsReq.PageToken, `Opaque pagination token to go to next page based on previous query. Wire name: 'page_token'.`)
+	cmd.Flags().IntVar(&getBindingsReq.MaxResults, "max-results", getBindingsReq.MaxResults, `Maximum number of workspace bindings to return.`)
+	cmd.Flags().StringVar(&getBindingsReq.PageToken, "page-token", getBindingsReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
 
 	cmd.Use = "get-bindings SECURABLE_TYPE SECURABLE_NAME"
 	cmd.Short = `Get securable workspace bindings.`

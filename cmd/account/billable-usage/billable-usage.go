@@ -52,7 +52,7 @@ func newDownload() *cobra.Command {
 
 	var downloadReq billing.DownloadRequest
 
-	cmd.Flags().BoolVar(&downloadReq.PersonalData, "personal-data", downloadReq.PersonalData, `Specify whether to include personally identifiable information in the billable usage logs, for example the email addresses of cluster creators. Wire name: 'personal_data'.`)
+	cmd.Flags().BoolVar(&downloadReq.PersonalData, "personal-data", downloadReq.PersonalData, `Specify whether to include personally identifiable information in the billable usage logs, for example the email addresses of cluster creators.`)
 
 	cmd.Use = "download START_MONTH END_MONTH"
 	cmd.Short = `Return billable usage logs.`

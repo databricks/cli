@@ -54,7 +54,7 @@ func newGet() *cobra.Command {
 
 	var getReq settings.GetLlmProxyPartnerPoweredAccountRequest
 
-	cmd.Flags().StringVar(&getReq.Etag, "etag", getReq.Etag, `etag used for versioning. Wire name: 'etag'.`)
+	cmd.Flags().StringVar(&getReq.Etag, "etag", getReq.Etag, `etag used for versioning.`)
 
 	cmd.Use = "get"
 	cmd.Short = `Get the enable partner powered AI features account setting.`

@@ -65,7 +65,7 @@ func newCreate() *cobra.Command {
 	cmd.Flags().StringVar(&createReq.FirstName, "first-name", createReq.FirstName, `Wire name: 'first_name'.`)
 	cmd.Flags().BoolVar(&createReq.IsFromLighthouse, "is-from-lighthouse", createReq.IsFromLighthouse, `Wire name: 'is_from_lighthouse'.`)
 	cmd.Flags().StringVar(&createReq.LastName, "last-name", createReq.LastName, `Wire name: 'last_name'.`)
-	cmd.Flags().Var(&createReq.RecipientType, "recipient-type", `Supported values: [DELTA_SHARING_RECIPIENT_TYPE_DATABRICKS, DELTA_SHARING_RECIPIENT_TYPE_OPEN]. Wire name: 'recipient_type'.`)
+	cmd.Flags().Var(&createReq.RecipientType, "recipient-type", `Supported values: [DELTA_SHARING_RECIPIENT_TYPE_DATABRICKS, DELTA_SHARING_RECIPIENT_TYPE_OPEN].`)
 
 	cmd.Use = "create LISTING_ID"
 	cmd.Short = `Create a personalization request.`

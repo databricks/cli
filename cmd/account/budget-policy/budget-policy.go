@@ -60,7 +60,7 @@ func newCreate() *cobra.Command {
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: policy
-	cmd.Flags().StringVar(&createReq.RequestId, "request-id", createReq.RequestId, `A unique identifier for this request. Wire name: 'request_id'.`)
+	cmd.Flags().StringVar(&createReq.RequestId, "request-id", createReq.RequestId, `A unique identifier for this request.`)
 
 	cmd.Use = "create"
 	cmd.Short = `Create a budget policy.`
@@ -239,8 +239,8 @@ func newList() *cobra.Command {
 	var listReq billing.ListBudgetPoliciesRequest
 
 	// TODO: complex arg: filter_by
-	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `The maximum number of budget policies to return. Wire name: 'page_size'.`)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `A page token, received from a previous ListServerlessPolicies call. Wire name: 'page_token'.`)
+	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `The maximum number of budget policies to return.`)
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `A page token, received from a previous ListServerlessPolicies call.`)
 	// TODO: complex arg: sort_spec
 
 	cmd.Use = "list"
@@ -299,7 +299,7 @@ func newUpdate() *cobra.Command {
 	// TODO: complex arg: limit_config
 	// TODO: array: binding_workspace_ids
 	// TODO: array: custom_tags
-	cmd.Flags().StringVar(&updateReq.Policy.PolicyName, "policy-name", updateReq.Policy.PolicyName, `The name of the policy. Wire name: 'policy_name'.`)
+	cmd.Flags().StringVar(&updateReq.Policy.PolicyName, "policy-name", updateReq.Policy.PolicyName, `The name of the policy.`)
 
 	cmd.Use = "update POLICY_ID"
 	cmd.Short = `Update a budget policy.`

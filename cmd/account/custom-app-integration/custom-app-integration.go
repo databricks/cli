@@ -61,8 +61,8 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&createReq.Confidential, "confidential", createReq.Confidential, `This field indicates whether an OAuth client secret is required to authenticate this client. Wire name: 'confidential'.`)
-	cmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `Name of the custom OAuth app. Wire name: 'name'.`)
+	cmd.Flags().BoolVar(&createReq.Confidential, "confidential", createReq.Confidential, `This field indicates whether an OAuth client secret is required to authenticate this client.`)
+	cmd.Flags().StringVar(&createReq.Name, "name", createReq.Name, `Name of the custom OAuth app.`)
 	// TODO: array: redirect_urls
 	// TODO: array: scopes
 	// TODO: complex arg: token_access_policy

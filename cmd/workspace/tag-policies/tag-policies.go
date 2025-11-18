@@ -250,8 +250,8 @@ func newListTagPolicies() *cobra.Command {
 
 	var listTagPoliciesReq tags.ListTagPoliciesRequest
 
-	cmd.Flags().IntVar(&listTagPoliciesReq.PageSize, "page-size", listTagPoliciesReq.PageSize, `The maximum number of results to return in this request. Wire name: 'page_size'.`)
-	cmd.Flags().StringVar(&listTagPoliciesReq.PageToken, "page-token", listTagPoliciesReq.PageToken, `An optional page token received from a previous list tag policies call. Wire name: 'page_token'.`)
+	cmd.Flags().IntVar(&listTagPoliciesReq.PageSize, "page-size", listTagPoliciesReq.PageSize, `The maximum number of results to return in this request.`)
+	cmd.Flags().StringVar(&listTagPoliciesReq.PageToken, "page-token", listTagPoliciesReq.PageToken, `An optional page token received from a previous list tag policies call.`)
 
 	cmd.Use = "list-tag-policies"
 	cmd.Short = `List tag policies.`

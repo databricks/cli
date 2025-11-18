@@ -126,7 +126,7 @@ func newDelete() *cobra.Command {
 
 	var deleteReq catalog.DeleteAccountMetastoreRequest
 
-	cmd.Flags().BoolVar(&deleteReq.Force, "force", deleteReq.Force, `Force deletion even if the metastore is not empty. Wire name: 'force'.`)
+	cmd.Flags().BoolVar(&deleteReq.Force, "force", deleteReq.Force, `Force deletion even if the metastore is not empty.`)
 
 	cmd.Use = "delete METASTORE_ID"
 	cmd.Short = `Delete a metastore.`

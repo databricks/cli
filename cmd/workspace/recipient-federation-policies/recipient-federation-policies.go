@@ -83,8 +83,8 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createReq.Policy.Comment, "comment", createReq.Policy.Comment, `Description of the policy. Wire name: 'comment'.`)
-	cmd.Flags().StringVar(&createReq.Policy.Name, "name", createReq.Policy.Name, `Name of the federation policy. Wire name: 'name'.`)
+	cmd.Flags().StringVar(&createReq.Policy.Comment, "comment", createReq.Policy.Comment, `Description of the policy.`)
+	cmd.Flags().StringVar(&createReq.Policy.Name, "name", createReq.Policy.Name, `Name of the federation policy.`)
 	// TODO: complex arg: oidc_policy
 
 	cmd.Use = "create RECIPIENT_NAME"

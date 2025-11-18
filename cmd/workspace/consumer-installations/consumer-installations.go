@@ -64,7 +64,7 @@ func newCreate() *cobra.Command {
 
 	// TODO: complex arg: accepted_consumer_terms
 	cmd.Flags().StringVar(&createReq.CatalogName, "catalog-name", createReq.CatalogName, `Wire name: 'catalog_name'.`)
-	cmd.Flags().Var(&createReq.RecipientType, "recipient-type", `Supported values: [DELTA_SHARING_RECIPIENT_TYPE_DATABRICKS, DELTA_SHARING_RECIPIENT_TYPE_OPEN]. Wire name: 'recipient_type'.`)
+	cmd.Flags().Var(&createReq.RecipientType, "recipient-type", `Supported values: [DELTA_SHARING_RECIPIENT_TYPE_DATABRICKS, DELTA_SHARING_RECIPIENT_TYPE_OPEN].`)
 	// TODO: complex arg: repo_detail
 	cmd.Flags().StringVar(&createReq.ShareName, "share-name", createReq.ShareName, `Wire name: 'share_name'.`)
 

@@ -176,9 +176,9 @@ func newCreatePrivateEndpointRule() *cobra.Command {
 	cmd.Flags().Var(&createPrivateEndpointRuleJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: domain_names
-	cmd.Flags().StringVar(&createPrivateEndpointRuleReq.PrivateEndpointRule.EndpointService, "endpoint-service", createPrivateEndpointRuleReq.PrivateEndpointRule.EndpointService, `The full target AWS endpoint service name that connects to the destination resources of the private endpoint. Wire name: 'endpoint_service'.`)
-	cmd.Flags().StringVar(&createPrivateEndpointRuleReq.PrivateEndpointRule.GroupId, "group-id", createPrivateEndpointRuleReq.PrivateEndpointRule.GroupId, `Not used by customer-managed private endpoint services. Wire name: 'group_id'.`)
-	cmd.Flags().StringVar(&createPrivateEndpointRuleReq.PrivateEndpointRule.ResourceId, "resource-id", createPrivateEndpointRuleReq.PrivateEndpointRule.ResourceId, `The Azure resource ID of the target resource. Wire name: 'resource_id'.`)
+	cmd.Flags().StringVar(&createPrivateEndpointRuleReq.PrivateEndpointRule.EndpointService, "endpoint-service", createPrivateEndpointRuleReq.PrivateEndpointRule.EndpointService, `The full target AWS endpoint service name that connects to the destination resources of the private endpoint.`)
+	cmd.Flags().StringVar(&createPrivateEndpointRuleReq.PrivateEndpointRule.GroupId, "group-id", createPrivateEndpointRuleReq.PrivateEndpointRule.GroupId, `Not used by customer-managed private endpoint services.`)
+	cmd.Flags().StringVar(&createPrivateEndpointRuleReq.PrivateEndpointRule.ResourceId, "resource-id", createPrivateEndpointRuleReq.PrivateEndpointRule.ResourceId, `The Azure resource ID of the target resource.`)
 	// TODO: array: resource_names
 
 	cmd.Use = "create-private-endpoint-rule NETWORK_CONNECTIVITY_CONFIG_ID"
@@ -491,7 +491,7 @@ func newListNetworkConnectivityConfigurations() *cobra.Command {
 
 	var listNetworkConnectivityConfigurationsReq settings.ListNetworkConnectivityConfigurationsRequest
 
-	cmd.Flags().StringVar(&listNetworkConnectivityConfigurationsReq.PageToken, "page-token", listNetworkConnectivityConfigurationsReq.PageToken, `Pagination token to go to next page based on previous query. Wire name: 'page_token'.`)
+	cmd.Flags().StringVar(&listNetworkConnectivityConfigurationsReq.PageToken, "page-token", listNetworkConnectivityConfigurationsReq.PageToken, `Pagination token to go to next page based on previous query.`)
 
 	cmd.Use = "list-network-connectivity-configurations"
 	cmd.Short = `List network connectivity configurations.`
@@ -541,7 +541,7 @@ func newListPrivateEndpointRules() *cobra.Command {
 
 	var listPrivateEndpointRulesReq settings.ListPrivateEndpointRulesRequest
 
-	cmd.Flags().StringVar(&listPrivateEndpointRulesReq.PageToken, "page-token", listPrivateEndpointRulesReq.PageToken, `Pagination token to go to next page based on previous query. Wire name: 'page_token'.`)
+	cmd.Flags().StringVar(&listPrivateEndpointRulesReq.PageToken, "page-token", listPrivateEndpointRulesReq.PageToken, `Pagination token to go to next page based on previous query.`)
 
 	cmd.Use = "list-private-endpoint-rules NETWORK_CONNECTIVITY_CONFIG_ID"
 	cmd.Short = `List private endpoint rules.`
@@ -601,7 +601,7 @@ func newUpdatePrivateEndpointRule() *cobra.Command {
 	cmd.Flags().Var(&updatePrivateEndpointRuleJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: domain_names
-	cmd.Flags().BoolVar(&updatePrivateEndpointRuleReq.PrivateEndpointRule.Enabled, "enabled", updatePrivateEndpointRuleReq.PrivateEndpointRule.Enabled, `Only used by private endpoints towards an AWS S3 service. Wire name: 'enabled'.`)
+	cmd.Flags().BoolVar(&updatePrivateEndpointRuleReq.PrivateEndpointRule.Enabled, "enabled", updatePrivateEndpointRuleReq.PrivateEndpointRule.Enabled, `Only used by private endpoints towards an AWS S3 service.`)
 	// TODO: array: resource_names
 
 	cmd.Use = "update-private-endpoint-rule NETWORK_CONNECTIVITY_CONFIG_ID PRIVATE_ENDPOINT_RULE_ID UPDATE_MASK"

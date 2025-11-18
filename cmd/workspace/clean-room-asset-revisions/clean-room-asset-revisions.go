@@ -123,8 +123,8 @@ func newList() *cobra.Command {
 
 	var listReq cleanrooms.ListCleanRoomAssetRevisionsRequest
 
-	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `Maximum number of asset revisions to return. Wire name: 'page_size'.`)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on the previous query. Wire name: 'page_token'.`)
+	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `Maximum number of asset revisions to return.`)
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on the previous query.`)
 
 	cmd.Use = "list CLEAN_ROOM_NAME ASSET_TYPE NAME"
 	cmd.Short = `List asset revisions.`

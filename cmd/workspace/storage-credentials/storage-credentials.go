@@ -78,10 +78,10 @@ func newCreate() *cobra.Command {
 	// TODO: complex arg: azure_managed_identity
 	// TODO: complex arg: azure_service_principal
 	// TODO: complex arg: cloudflare_api_token
-	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `Comment associated with the credential. Wire name: 'comment'.`)
+	cmd.Flags().StringVar(&createReq.Comment, "comment", createReq.Comment, `Comment associated with the credential.`)
 	// TODO: complex arg: databricks_gcp_service_account
-	cmd.Flags().BoolVar(&createReq.ReadOnly, "read-only", createReq.ReadOnly, `Whether the credential is usable only for read operations. Wire name: 'read_only'.`)
-	cmd.Flags().BoolVar(&createReq.SkipValidation, "skip-validation", createReq.SkipValidation, `Supplying true to this argument skips validation of the created credential. Wire name: 'skip_validation'.`)
+	cmd.Flags().BoolVar(&createReq.ReadOnly, "read-only", createReq.ReadOnly, `Whether the credential is usable only for read operations.`)
+	cmd.Flags().BoolVar(&createReq.SkipValidation, "skip-validation", createReq.SkipValidation, `Supplying true to this argument skips validation of the created credential.`)
 
 	cmd.Use = "create NAME"
 	cmd.Short = `Create a storage credential.`
@@ -164,7 +164,7 @@ func newDelete() *cobra.Command {
 
 	var deleteReq catalog.DeleteStorageCredentialRequest
 
-	cmd.Flags().BoolVar(&deleteReq.Force, "force", deleteReq.Force, `Force an update even if there are dependent external locations or external tables (when purpose is **STORAGE**) or dependent services (when purpose is **SERVICE**). Wire name: 'force'.`)
+	cmd.Flags().BoolVar(&deleteReq.Force, "force", deleteReq.Force, `Force an update even if there are dependent external locations or external tables (when purpose is **STORAGE**) or dependent services (when purpose is **SERVICE**).`)
 
 	cmd.Use = "delete NAME"
 	cmd.Short = `Delete a credential.`
@@ -281,9 +281,9 @@ func newList() *cobra.Command {
 
 	var listReq catalog.ListStorageCredentialsRequest
 
-	cmd.Flags().BoolVar(&listReq.IncludeUnbound, "include-unbound", listReq.IncludeUnbound, `Whether to include credentials not bound to the workspace. Wire name: 'include_unbound'.`)
-	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of storage credentials to return. Wire name: 'max_results'.`)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on previous query. Wire name: 'page_token'.`)
+	cmd.Flags().BoolVar(&listReq.IncludeUnbound, "include-unbound", listReq.IncludeUnbound, `Whether to include credentials not bound to the workspace.`)
+	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of storage credentials to return.`)
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
 
 	cmd.Use = "list"
 	cmd.Short = `List credentials.`
@@ -352,14 +352,14 @@ func newUpdate() *cobra.Command {
 	// TODO: complex arg: azure_managed_identity
 	// TODO: complex arg: azure_service_principal
 	// TODO: complex arg: cloudflare_api_token
-	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `Comment associated with the credential. Wire name: 'comment'.`)
+	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `Comment associated with the credential.`)
 	// TODO: complex arg: databricks_gcp_service_account
-	cmd.Flags().BoolVar(&updateReq.Force, "force", updateReq.Force, `Force update even if there are dependent external locations or external tables. Wire name: 'force'.`)
-	cmd.Flags().Var(&updateReq.IsolationMode, "isolation-mode", `Whether the current securable is accessible from all workspaces or a specific set of workspaces. Supported values: [ISOLATION_MODE_ISOLATED, ISOLATION_MODE_OPEN]. Wire name: 'isolation_mode'.`)
-	cmd.Flags().StringVar(&updateReq.NewName, "new-name", updateReq.NewName, `New name for the storage credential. Wire name: 'new_name'.`)
-	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of current owner of credential. Wire name: 'owner'.`)
-	cmd.Flags().BoolVar(&updateReq.ReadOnly, "read-only", updateReq.ReadOnly, `Whether the credential is usable only for read operations. Wire name: 'read_only'.`)
-	cmd.Flags().BoolVar(&updateReq.SkipValidation, "skip-validation", updateReq.SkipValidation, `Supplying true to this argument skips validation of the updated credential. Wire name: 'skip_validation'.`)
+	cmd.Flags().BoolVar(&updateReq.Force, "force", updateReq.Force, `Force update even if there are dependent external locations or external tables.`)
+	cmd.Flags().Var(&updateReq.IsolationMode, "isolation-mode", `Whether the current securable is accessible from all workspaces or a specific set of workspaces. Supported values: [ISOLATION_MODE_ISOLATED, ISOLATION_MODE_OPEN].`)
+	cmd.Flags().StringVar(&updateReq.NewName, "new-name", updateReq.NewName, `New name for the storage credential.`)
+	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of current owner of credential.`)
+	cmd.Flags().BoolVar(&updateReq.ReadOnly, "read-only", updateReq.ReadOnly, `Whether the credential is usable only for read operations.`)
+	cmd.Flags().BoolVar(&updateReq.SkipValidation, "skip-validation", updateReq.SkipValidation, `Supplying true to this argument skips validation of the updated credential.`)
 
 	cmd.Use = "update NAME"
 	cmd.Short = `Update a credential.`
@@ -440,10 +440,10 @@ func newValidate() *cobra.Command {
 	// TODO: complex arg: azure_service_principal
 	// TODO: complex arg: cloudflare_api_token
 	// TODO: complex arg: databricks_gcp_service_account
-	cmd.Flags().StringVar(&validateReq.ExternalLocationName, "external-location-name", validateReq.ExternalLocationName, `The name of an existing external location to validate. Wire name: 'external_location_name'.`)
-	cmd.Flags().BoolVar(&validateReq.ReadOnly, "read-only", validateReq.ReadOnly, `Whether the storage credential is only usable for read operations. Wire name: 'read_only'.`)
-	cmd.Flags().StringVar(&validateReq.StorageCredentialName, "storage-credential-name", validateReq.StorageCredentialName, `Required. Wire name: 'storage_credential_name'.`)
-	cmd.Flags().StringVar(&validateReq.Url, "url", validateReq.Url, `The external location url to validate. Wire name: 'url'.`)
+	cmd.Flags().StringVar(&validateReq.ExternalLocationName, "external-location-name", validateReq.ExternalLocationName, `The name of an existing external location to validate.`)
+	cmd.Flags().BoolVar(&validateReq.ReadOnly, "read-only", validateReq.ReadOnly, `Whether the storage credential is only usable for read operations.`)
+	cmd.Flags().StringVar(&validateReq.StorageCredentialName, "storage-credential-name", validateReq.StorageCredentialName, `Required.`)
+	cmd.Flags().StringVar(&validateReq.Url, "url", validateReq.Url, `The external location url to validate.`)
 
 	cmd.Use = "validate"
 	cmd.Short = `Validate a storage credential.`

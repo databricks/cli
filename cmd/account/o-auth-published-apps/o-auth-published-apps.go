@@ -54,8 +54,8 @@ func newList() *cobra.Command {
 
 	var listReq oauth2.ListOAuthPublishedAppsRequest
 
-	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `The max number of OAuth published apps to return in one page. Wire name: 'page_size'.`)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `A token that can be used to get the next page of results. Wire name: 'page_token'.`)
+	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `The max number of OAuth published apps to return in one page.`)
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `A token that can be used to get the next page of results.`)
 
 	cmd.Use = "list"
 	cmd.Short = `Get all the published OAuth apps.`

@@ -64,7 +64,7 @@ func newCreate() *cobra.Command {
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: config
-	cmd.Flags().StringVar(&createReq.DisplayName, "display-name", createReq.DisplayName, `The display name for the notification destination. Wire name: 'display_name'.`)
+	cmd.Flags().StringVar(&createReq.DisplayName, "display-name", createReq.DisplayName, `The display name for the notification destination.`)
 
 	cmd.Use = "create"
 	cmd.Short = `Create a notification destination.`
@@ -291,7 +291,7 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: config
-	cmd.Flags().StringVar(&updateReq.DisplayName, "display-name", updateReq.DisplayName, `The display name for the notification destination. Wire name: 'display_name'.`)
+	cmd.Flags().StringVar(&updateReq.DisplayName, "display-name", updateReq.DisplayName, `The display name for the notification destination.`)
 
 	cmd.Use = "update ID"
 	cmd.Short = `Update a notification destination.`

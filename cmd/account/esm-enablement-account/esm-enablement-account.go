@@ -55,7 +55,7 @@ func newGet() *cobra.Command {
 
 	var getReq settings.GetEsmEnablementAccountSettingRequest
 
-	cmd.Flags().StringVar(&getReq.Etag, "etag", getReq.Etag, `etag used for versioning. Wire name: 'etag'.`)
+	cmd.Flags().StringVar(&getReq.Etag, "etag", getReq.Etag, `etag used for versioning.`)
 
 	cmd.Use = "get"
 	cmd.Short = `Get the enhanced security monitoring setting for new workspaces.`

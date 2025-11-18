@@ -56,7 +56,7 @@ func newDelete() *cobra.Command {
 
 	var deleteReq settings.DeleteLlmProxyPartnerPoweredWorkspaceRequest
 
-	cmd.Flags().StringVar(&deleteReq.Etag, "etag", deleteReq.Etag, `etag used for versioning. Wire name: 'etag'.`)
+	cmd.Flags().StringVar(&deleteReq.Etag, "etag", deleteReq.Etag, `etag used for versioning.`)
 
 	cmd.Use = "delete"
 	cmd.Short = `Delete the enable partner powered AI features workspace setting.`
@@ -110,7 +110,7 @@ func newGet() *cobra.Command {
 
 	var getReq settings.GetLlmProxyPartnerPoweredWorkspaceRequest
 
-	cmd.Flags().StringVar(&getReq.Etag, "etag", getReq.Etag, `etag used for versioning. Wire name: 'etag'.`)
+	cmd.Flags().StringVar(&getReq.Etag, "etag", getReq.Etag, `etag used for versioning.`)
 
 	cmd.Use = "get"
 	cmd.Short = `Get the enable partner powered AI features workspace setting.`

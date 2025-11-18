@@ -60,7 +60,7 @@ func newDelete() *cobra.Command {
 
 	var deleteReq settings.DeleteDisableLegacyDbfsRequest
 
-	cmd.Flags().StringVar(&deleteReq.Etag, "etag", deleteReq.Etag, `etag used for versioning. Wire name: 'etag'.`)
+	cmd.Flags().StringVar(&deleteReq.Etag, "etag", deleteReq.Etag, `etag used for versioning.`)
 
 	cmd.Use = "delete"
 	cmd.Short = `Delete the disable legacy DBFS setting.`
@@ -114,7 +114,7 @@ func newGet() *cobra.Command {
 
 	var getReq settings.GetDisableLegacyDbfsRequest
 
-	cmd.Flags().StringVar(&getReq.Etag, "etag", getReq.Etag, `etag used for versioning. Wire name: 'etag'.`)
+	cmd.Flags().StringVar(&getReq.Etag, "etag", getReq.Etag, `etag used for versioning.`)
 
 	cmd.Use = "get"
 	cmd.Short = `Get the disable legacy DBFS setting.`

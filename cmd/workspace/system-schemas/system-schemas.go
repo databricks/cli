@@ -118,7 +118,7 @@ func newEnable() *cobra.Command {
 
 	cmd.Flags().Var(&enableJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&enableReq.CatalogName, "catalog-name", enableReq.CatalogName, `the catalog for which the system schema is to enabled in. Wire name: 'catalog_name'.`)
+	cmd.Flags().StringVar(&enableReq.CatalogName, "catalog-name", enableReq.CatalogName, `the catalog for which the system schema is to enabled in.`)
 
 	cmd.Use = "enable METASTORE_ID SCHEMA_NAME"
 	cmd.Short = `Enable a system schema.`
@@ -191,8 +191,8 @@ func newList() *cobra.Command {
 
 	var listReq catalog.ListSystemSchemasRequest
 
-	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of schemas to return. Wire name: 'max_results'.`)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on previous query. Wire name: 'page_token'.`)
+	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of schemas to return.`)
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
 
 	cmd.Use = "list METASTORE_ID"
 	cmd.Short = `List system schemas.`

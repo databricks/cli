@@ -61,7 +61,7 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createReq.AppId, "app-id", createReq.AppId, `App id of the OAuth published app integration. Wire name: 'app_id'.`)
+	cmd.Flags().StringVar(&createReq.AppId, "app-id", createReq.AppId, `App id of the OAuth published app integration.`)
 	// TODO: complex arg: token_access_policy
 
 	cmd.Use = "create"

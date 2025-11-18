@@ -60,11 +60,11 @@ func newCreate() *cobra.Command {
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: gcp_network_info
-	cmd.Flags().StringVar(&createReq.NetworkName, "network-name", createReq.NetworkName, `The human-readable name of the network configuration. Wire name: 'network_name'.`)
+	cmd.Flags().StringVar(&createReq.NetworkName, "network-name", createReq.NetworkName, `The human-readable name of the network configuration.`)
 	// TODO: array: security_group_ids
 	// TODO: array: subnet_ids
 	// TODO: complex arg: vpc_endpoints
-	cmd.Flags().StringVar(&createReq.VpcId, "vpc-id", createReq.VpcId, `The ID of the VPC associated with this network configuration. Wire name: 'vpc_id'.`)
+	cmd.Flags().StringVar(&createReq.VpcId, "vpc-id", createReq.VpcId, `The ID of the VPC associated with this network configuration.`)
 
 	cmd.Use = "create"
 	cmd.Short = `Create network configuration.`

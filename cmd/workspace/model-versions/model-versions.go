@@ -131,8 +131,8 @@ func newGet() *cobra.Command {
 
 	var getReq catalog.GetModelVersionRequest
 
-	cmd.Flags().BoolVar(&getReq.IncludeAliases, "include-aliases", getReq.IncludeAliases, `Whether to include aliases associated with the model version in the response. Wire name: 'include_aliases'.`)
-	cmd.Flags().BoolVar(&getReq.IncludeBrowse, "include-browse", getReq.IncludeBrowse, `Whether to include model versions in the response for which the principal can only access selective metadata for. Wire name: 'include_browse'.`)
+	cmd.Flags().BoolVar(&getReq.IncludeAliases, "include-aliases", getReq.IncludeAliases, `Whether to include aliases associated with the model version in the response.`)
+	cmd.Flags().BoolVar(&getReq.IncludeBrowse, "include-browse", getReq.IncludeBrowse, `Whether to include model versions in the response for which the principal can only access selective metadata for.`)
 
 	cmd.Use = "get FULL_NAME VERSION"
 	cmd.Short = `Get a Model Version.`
@@ -200,7 +200,7 @@ func newGetByAlias() *cobra.Command {
 
 	var getByAliasReq catalog.GetByAliasRequest
 
-	cmd.Flags().BoolVar(&getByAliasReq.IncludeAliases, "include-aliases", getByAliasReq.IncludeAliases, `Whether to include aliases associated with the model version in the response. Wire name: 'include_aliases'.`)
+	cmd.Flags().BoolVar(&getByAliasReq.IncludeAliases, "include-aliases", getByAliasReq.IncludeAliases, `Whether to include aliases associated with the model version in the response.`)
 
 	cmd.Use = "get-by-alias FULL_NAME ALIAS"
 	cmd.Short = `Get Model Version By Alias.`
@@ -265,9 +265,9 @@ func newList() *cobra.Command {
 
 	var listReq catalog.ListModelVersionsRequest
 
-	cmd.Flags().BoolVar(&listReq.IncludeBrowse, "include-browse", listReq.IncludeBrowse, `Whether to include model versions in the response for which the principal can only access selective metadata for. Wire name: 'include_browse'.`)
-	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of model versions to return. Wire name: 'max_results'.`)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on previous query. Wire name: 'page_token'.`)
+	cmd.Flags().BoolVar(&listReq.IncludeBrowse, "include-browse", listReq.IncludeBrowse, `Whether to include model versions in the response for which the principal can only access selective metadata for.`)
+	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of model versions to return.`)
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
 
 	cmd.Use = "list FULL_NAME"
 	cmd.Short = `List Model Versions.`
@@ -344,22 +344,22 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: aliases
-	cmd.Flags().StringVar(&updateReq.CatalogName, "catalog-name", updateReq.CatalogName, `The name of the catalog containing the model version. Wire name: 'catalog_name'.`)
-	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `The comment attached to the model version. Wire name: 'comment'.`)
+	cmd.Flags().StringVar(&updateReq.CatalogName, "catalog-name", updateReq.CatalogName, `The name of the catalog containing the model version.`)
+	cmd.Flags().StringVar(&updateReq.Comment, "comment", updateReq.Comment, `The comment attached to the model version.`)
 	cmd.Flags().Int64Var(&updateReq.CreatedAt, "created-at", updateReq.CreatedAt, `Wire name: 'created_at'.`)
-	cmd.Flags().StringVar(&updateReq.CreatedBy, "created-by", updateReq.CreatedBy, `The identifier of the user who created the model version. Wire name: 'created_by'.`)
-	cmd.Flags().StringVar(&updateReq.Id, "id", updateReq.Id, `The unique identifier of the model version. Wire name: 'id'.`)
-	cmd.Flags().StringVar(&updateReq.MetastoreId, "metastore-id", updateReq.MetastoreId, `The unique identifier of the metastore containing the model version. Wire name: 'metastore_id'.`)
-	cmd.Flags().StringVar(&updateReq.ModelName, "model-name", updateReq.ModelName, `The name of the parent registered model of the model version, relative to parent schema. Wire name: 'model_name'.`)
+	cmd.Flags().StringVar(&updateReq.CreatedBy, "created-by", updateReq.CreatedBy, `The identifier of the user who created the model version.`)
+	cmd.Flags().StringVar(&updateReq.Id, "id", updateReq.Id, `The unique identifier of the model version.`)
+	cmd.Flags().StringVar(&updateReq.MetastoreId, "metastore-id", updateReq.MetastoreId, `The unique identifier of the metastore containing the model version.`)
+	cmd.Flags().StringVar(&updateReq.ModelName, "model-name", updateReq.ModelName, `The name of the parent registered model of the model version, relative to parent schema.`)
 	// TODO: complex arg: model_version_dependencies
-	cmd.Flags().StringVar(&updateReq.RunId, "run-id", updateReq.RunId, `MLflow run ID used when creating the model version, if source was generated by an experiment run stored in an MLflow tracking server. Wire name: 'run_id'.`)
-	cmd.Flags().IntVar(&updateReq.RunWorkspaceId, "run-workspace-id", updateReq.RunWorkspaceId, `ID of the Databricks workspace containing the MLflow run that generated this model version, if applicable. Wire name: 'run_workspace_id'.`)
-	cmd.Flags().StringVar(&updateReq.SchemaName, "schema-name", updateReq.SchemaName, `The name of the schema containing the model version, relative to parent catalog. Wire name: 'schema_name'.`)
-	cmd.Flags().StringVar(&updateReq.Source, "source", updateReq.Source, `URI indicating the location of the source artifacts (files) for the model version. Wire name: 'source'.`)
-	cmd.Flags().Var(&updateReq.Status, "status", `Current status of the model version. Supported values: [FAILED_REGISTRATION, MODEL_VERSION_STATUS_UNKNOWN, PENDING_REGISTRATION, READY]. Wire name: 'status'.`)
-	cmd.Flags().StringVar(&updateReq.StorageLocation, "storage-location", updateReq.StorageLocation, `The storage location on the cloud under which model version data files are stored. Wire name: 'storage_location'.`)
+	cmd.Flags().StringVar(&updateReq.RunId, "run-id", updateReq.RunId, `MLflow run ID used when creating the model version, if source was generated by an experiment run stored in an MLflow tracking server.`)
+	cmd.Flags().IntVar(&updateReq.RunWorkspaceId, "run-workspace-id", updateReq.RunWorkspaceId, `ID of the Databricks workspace containing the MLflow run that generated this model version, if applicable.`)
+	cmd.Flags().StringVar(&updateReq.SchemaName, "schema-name", updateReq.SchemaName, `The name of the schema containing the model version, relative to parent catalog.`)
+	cmd.Flags().StringVar(&updateReq.Source, "source", updateReq.Source, `URI indicating the location of the source artifacts (files) for the model version.`)
+	cmd.Flags().Var(&updateReq.Status, "status", `Current status of the model version. Supported values: [FAILED_REGISTRATION, MODEL_VERSION_STATUS_UNKNOWN, PENDING_REGISTRATION, READY].`)
+	cmd.Flags().StringVar(&updateReq.StorageLocation, "storage-location", updateReq.StorageLocation, `The storage location on the cloud under which model version data files are stored.`)
 	cmd.Flags().Int64Var(&updateReq.UpdatedAt, "updated-at", updateReq.UpdatedAt, `Wire name: 'updated_at'.`)
-	cmd.Flags().StringVar(&updateReq.UpdatedBy, "updated-by", updateReq.UpdatedBy, `The identifier of the user who updated the model version last time. Wire name: 'updated_by'.`)
+	cmd.Flags().StringVar(&updateReq.UpdatedBy, "updated-by", updateReq.UpdatedBy, `The identifier of the user who updated the model version last time.`)
 
 	cmd.Use = "update FULL_NAME VERSION"
 	cmd.Short = `Update a Model Version.`
