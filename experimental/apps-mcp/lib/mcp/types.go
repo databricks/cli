@@ -7,15 +7,15 @@ import (
 
 // Implementation represents server or client implementation details.
 type Implementation struct {
-	Name    string
-	Version string
+	Name    string `json:"name"`
+	Version string `json:"version"`
 }
 
 // Tool represents an MCP tool definition.
 type Tool struct {
-	Name        string
-	Description string
-	InputSchema any
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	InputSchema any    `json:"inputSchema"`
 }
 
 // CallToolRequest represents a request to call a tool.
