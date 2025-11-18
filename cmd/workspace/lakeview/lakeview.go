@@ -150,7 +150,7 @@ func newCreateSchedule() *cobra.Command {
 	cmd.Flags().Var(&createScheduleJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&createScheduleReq.Schedule.DisplayName, "display-name", createScheduleReq.Schedule.DisplayName, `The display name for schedule.`)
-	cmd.Flags().Var(&createScheduleReq.Schedule.PauseStatus, "pause-status", `The status indicates whether this schedule is paused or not. Supported values: [PAUSED, UNPAUSED].`)
+	cmd.Flags().Var(&createScheduleReq.Schedule.PauseStatus, "pause-status", `The status indicates whether this schedule is paused or not. Supported values: [PAUSED, UNPAUSED]`)
 	cmd.Flags().StringVar(&createScheduleReq.Schedule.WarehouseId, "warehouse-id", createScheduleReq.Schedule.WarehouseId, `The warehouse id to run the dashboard with for the schedule.`)
 
 	cmd.Use = "create-schedule DASHBOARD_ID CRON_SCHEDULE"
@@ -670,7 +670,7 @@ func newList() *cobra.Command {
 	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `The number of dashboards to return per page.`)
 	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `A page token, received from a previous ListDashboards call.`)
 	cmd.Flags().BoolVar(&listReq.ShowTrashed, "show-trashed", listReq.ShowTrashed, `The flag to include dashboards located in the trash.`)
-	cmd.Flags().Var(&listReq.View, "view", `DASHBOARD_VIEW_BASIConly includes summary metadata from the dashboard. Supported values: [DASHBOARD_VIEW_BASIC].`)
+	cmd.Flags().Var(&listReq.View, "view", `DASHBOARD_VIEW_BASIConly includes summary metadata from the dashboard. Supported values: [DASHBOARD_VIEW_BASIC]`)
 
 	cmd.Use = "list"
 	cmd.Short = `List dashboards.`
@@ -1179,7 +1179,7 @@ func newUpdateSchedule() *cobra.Command {
 	cmd.Flags().Var(&updateScheduleJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().StringVar(&updateScheduleReq.Schedule.DisplayName, "display-name", updateScheduleReq.Schedule.DisplayName, `The display name for schedule.`)
-	cmd.Flags().Var(&updateScheduleReq.Schedule.PauseStatus, "pause-status", `The status indicates whether this schedule is paused or not. Supported values: [PAUSED, UNPAUSED].`)
+	cmd.Flags().Var(&updateScheduleReq.Schedule.PauseStatus, "pause-status", `The status indicates whether this schedule is paused or not. Supported values: [PAUSED, UNPAUSED]`)
 	cmd.Flags().StringVar(&updateScheduleReq.Schedule.WarehouseId, "warehouse-id", updateScheduleReq.Schedule.WarehouseId, `The warehouse id to run the dashboard with for the schedule.`)
 
 	cmd.Use = "update-schedule DASHBOARD_ID SCHEDULE_ID CRON_SCHEDULE"

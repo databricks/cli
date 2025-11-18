@@ -78,7 +78,7 @@ func newCreate() *cobra.Command {
 	cmd.Flags().StringVar(&createReq.AwsRegion, "aws-region", createReq.AwsRegion, ``)
 	cmd.Flags().StringVar(&createReq.Cloud, "cloud", createReq.Cloud, `The cloud name.`)
 	// TODO: complex arg: cloud_resource_container
-	cmd.Flags().Var(&createReq.ComputeMode, "compute-mode", `If the compute mode is SERVERLESS, a serverless workspace is created that comes pre-configured with serverless compute and default storage, providing a fully-managed, enterprise-ready SaaS experience. Supported values: [HYBRID, SERVERLESS].`)
+	cmd.Flags().Var(&createReq.ComputeMode, "compute-mode", `If the compute mode is SERVERLESS, a serverless workspace is created that comes pre-configured with serverless compute and default storage, providing a fully-managed, enterprise-ready SaaS experience. Supported values: [HYBRID, SERVERLESS]`)
 	cmd.Flags().StringVar(&createReq.CredentialsId, "credentials-id", createReq.CredentialsId, `ID of the workspace's credential configuration object.`)
 	// TODO: map via StringToStringVar: custom_tags
 	cmd.Flags().StringVar(&createReq.DeploymentName, "deployment-name", createReq.DeploymentName, `The deployment name defines part of the subdomain for the workspace.`)

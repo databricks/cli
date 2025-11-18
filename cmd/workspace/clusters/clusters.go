@@ -225,12 +225,12 @@ func newCreate() *cobra.Command {
 	// TODO: array: init_scripts
 	cmd.Flags().StringVar(&createReq.InstancePoolId, "instance-pool-id", createReq.InstancePoolId, `The optional ID of the instance pool to which the cluster belongs.`)
 	cmd.Flags().BoolVar(&createReq.IsSingleNode, "is-single-node", createReq.IsSingleNode, `This field can only be used when kind = CLASSIC_PREVIEW.`)
-	cmd.Flags().Var(&createReq.Kind, "kind", `Supported values: [CLASSIC_PREVIEW].`)
+	cmd.Flags().Var(&createReq.Kind, "kind", `Supported values: [CLASSIC_PREVIEW]`)
 	cmd.Flags().StringVar(&createReq.NodeTypeId, "node-type-id", createReq.NodeTypeId, `This field encodes, through a single value, the resources available to each of the Spark nodes in this cluster.`)
 	cmd.Flags().IntVar(&createReq.NumWorkers, "num-workers", createReq.NumWorkers, `Number of worker nodes that this cluster should have.`)
 	cmd.Flags().StringVar(&createReq.PolicyId, "policy-id", createReq.PolicyId, `The ID of the cluster policy used to create the cluster if applicable.`)
 	cmd.Flags().IntVar(&createReq.RemoteDiskThroughput, "remote-disk-throughput", createReq.RemoteDiskThroughput, `If set, what the configurable throughput (in Mb/s) for the remote disk is.`)
-	cmd.Flags().Var(&createReq.RuntimeEngine, "runtime-engine", `Determines the cluster's runtime engine, either standard or Photon. Supported values: [NULL, PHOTON, STANDARD].`)
+	cmd.Flags().Var(&createReq.RuntimeEngine, "runtime-engine", `Determines the cluster's runtime engine, either standard or Photon. Supported values: [NULL, PHOTON, STANDARD]`)
 	cmd.Flags().StringVar(&createReq.SingleUserName, "single-user-name", createReq.SingleUserName, `Single user name if data_security_mode is SINGLE_USER.`)
 	// TODO: map via StringToStringVar: spark_conf
 	// TODO: map via StringToStringVar: spark_env_vars
@@ -500,12 +500,12 @@ func newEdit() *cobra.Command {
 	// TODO: array: init_scripts
 	cmd.Flags().StringVar(&editReq.InstancePoolId, "instance-pool-id", editReq.InstancePoolId, `The optional ID of the instance pool to which the cluster belongs.`)
 	cmd.Flags().BoolVar(&editReq.IsSingleNode, "is-single-node", editReq.IsSingleNode, `This field can only be used when kind = CLASSIC_PREVIEW.`)
-	cmd.Flags().Var(&editReq.Kind, "kind", `Supported values: [CLASSIC_PREVIEW].`)
+	cmd.Flags().Var(&editReq.Kind, "kind", `Supported values: [CLASSIC_PREVIEW]`)
 	cmd.Flags().StringVar(&editReq.NodeTypeId, "node-type-id", editReq.NodeTypeId, `This field encodes, through a single value, the resources available to each of the Spark nodes in this cluster.`)
 	cmd.Flags().IntVar(&editReq.NumWorkers, "num-workers", editReq.NumWorkers, `Number of worker nodes that this cluster should have.`)
 	cmd.Flags().StringVar(&editReq.PolicyId, "policy-id", editReq.PolicyId, `The ID of the cluster policy used to create the cluster if applicable.`)
 	cmd.Flags().IntVar(&editReq.RemoteDiskThroughput, "remote-disk-throughput", editReq.RemoteDiskThroughput, `If set, what the configurable throughput (in Mb/s) for the remote disk is.`)
-	cmd.Flags().Var(&editReq.RuntimeEngine, "runtime-engine", `Determines the cluster's runtime engine, either standard or Photon. Supported values: [NULL, PHOTON, STANDARD].`)
+	cmd.Flags().Var(&editReq.RuntimeEngine, "runtime-engine", `Determines the cluster's runtime engine, either standard or Photon. Supported values: [NULL, PHOTON, STANDARD]`)
 	cmd.Flags().StringVar(&editReq.SingleUserName, "single-user-name", editReq.SingleUserName, `Single user name if data_security_mode is SINGLE_USER.`)
 	// TODO: map via StringToStringVar: spark_conf
 	// TODO: map via StringToStringVar: spark_env_vars
@@ -627,7 +627,7 @@ func newEvents() *cobra.Command {
 	// TODO: array: event_types
 	cmd.Flags().Int64Var(&eventsReq.Limit, "limit", eventsReq.Limit, `Deprecated: use page_token in combination with page_size instead.`)
 	cmd.Flags().Int64Var(&eventsReq.Offset, "offset", eventsReq.Offset, `Deprecated: use page_token in combination with page_size instead.`)
-	cmd.Flags().Var(&eventsReq.Order, "order", `The order to list events in; either "ASC" or "DESC". Supported values: [ASC, DESC].`)
+	cmd.Flags().Var(&eventsReq.Order, "order", `The order to list events in; either "ASC" or "DESC". Supported values: [ASC, DESC]`)
 	cmd.Flags().IntVar(&eventsReq.PageSize, "page-size", eventsReq.PageSize, `The maximum number of events to include in a page of events.`)
 	cmd.Flags().StringVar(&eventsReq.PageToken, "page-token", eventsReq.PageToken, `Use next_page_token or prev_page_token returned from the previous request to list the next or previous page of events respectively.`)
 	cmd.Flags().Int64Var(&eventsReq.StartTime, "start-time", eventsReq.StartTime, `The start time in epoch milliseconds.`)

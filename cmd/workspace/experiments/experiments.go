@@ -1354,7 +1354,7 @@ func newListExperiments() *cobra.Command {
 
 	cmd.Flags().Int64Var(&listExperimentsReq.MaxResults, "max-results", listExperimentsReq.MaxResults, `Maximum number of experiments desired.`)
 	cmd.Flags().StringVar(&listExperimentsReq.PageToken, "page-token", listExperimentsReq.PageToken, `Token indicating the page of experiments to fetch.`)
-	cmd.Flags().Var(&listExperimentsReq.ViewType, "view-type", `Qualifier for type of experiments to be returned. Supported values: [ACTIVE_ONLY, ALL, DELETED_ONLY].`)
+	cmd.Flags().Var(&listExperimentsReq.ViewType, "view-type", `Qualifier for type of experiments to be returned. Supported values: [ACTIVE_ONLY, ALL, DELETED_ONLY]`)
 
 	cmd.Use = "list-experiments"
 	cmd.Short = `List experiments.`
@@ -2298,7 +2298,7 @@ func newSearchExperiments() *cobra.Command {
 	cmd.Flags().Int64Var(&searchExperimentsReq.MaxResults, "max-results", searchExperimentsReq.MaxResults, `Maximum number of experiments desired.`)
 	// TODO: array: order_by
 	cmd.Flags().StringVar(&searchExperimentsReq.PageToken, "page-token", searchExperimentsReq.PageToken, `Token indicating the page of experiments to fetch.`)
-	cmd.Flags().Var(&searchExperimentsReq.ViewType, "view-type", `Qualifier for type of experiments to be returned. Supported values: [ACTIVE_ONLY, ALL, DELETED_ONLY].`)
+	cmd.Flags().Var(&searchExperimentsReq.ViewType, "view-type", `Qualifier for type of experiments to be returned. Supported values: [ACTIVE_ONLY, ALL, DELETED_ONLY]`)
 
 	cmd.Use = "search-experiments"
 	cmd.Short = `Search experiments.`
@@ -2443,7 +2443,7 @@ func newSearchRuns() *cobra.Command {
 	cmd.Flags().IntVar(&searchRunsReq.MaxResults, "max-results", searchRunsReq.MaxResults, `Maximum number of runs desired.`)
 	// TODO: array: order_by
 	cmd.Flags().StringVar(&searchRunsReq.PageToken, "page-token", searchRunsReq.PageToken, `Token for the current page of runs.`)
-	cmd.Flags().Var(&searchRunsReq.RunViewType, "run-view-type", `Whether to display only active, only deleted, or all runs. Supported values: [ACTIVE_ONLY, ALL, DELETED_ONLY].`)
+	cmd.Flags().Var(&searchRunsReq.RunViewType, "run-view-type", `Whether to display only active, only deleted, or all runs. Supported values: [ACTIVE_ONLY, ALL, DELETED_ONLY]`)
 
 	cmd.Use = "search-runs"
 	cmd.Short = `Search for runs.`
@@ -2995,7 +2995,7 @@ func newUpdateRun() *cobra.Command {
 	cmd.Flags().StringVar(&updateRunReq.RunId, "run-id", updateRunReq.RunId, `ID of the run to update.`)
 	cmd.Flags().StringVar(&updateRunReq.RunName, "run-name", updateRunReq.RunName, `Updated name of the run.`)
 	cmd.Flags().StringVar(&updateRunReq.RunUuid, "run-uuid", updateRunReq.RunUuid, `[Deprecated, use run_id instead] ID of the run to update.`)
-	cmd.Flags().Var(&updateRunReq.Status, "status", `Updated status of the run. Supported values: [FAILED, FINISHED, KILLED, RUNNING, SCHEDULED].`)
+	cmd.Flags().Var(&updateRunReq.Status, "status", `Updated status of the run. Supported values: [FAILED, FINISHED, KILLED, RUNNING, SCHEDULED]`)
 
 	cmd.Use = "update-run"
 	cmd.Short = `Update a run.`

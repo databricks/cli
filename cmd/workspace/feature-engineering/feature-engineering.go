@@ -188,7 +188,7 @@ func newCreateMaterializedFeature() *cobra.Command {
 
 	// TODO: complex arg: offline_store_config
 	// TODO: complex arg: online_store_config
-	cmd.Flags().Var(&createMaterializedFeatureReq.MaterializedFeature.PipelineScheduleState, "pipeline-schedule-state", `The schedule state of the materialization pipeline. Supported values: [ACTIVE, PAUSED, SNAPSHOT].`)
+	cmd.Flags().Var(&createMaterializedFeatureReq.MaterializedFeature.PipelineScheduleState, "pipeline-schedule-state", `The schedule state of the materialization pipeline. Supported values: [ACTIVE, PAUSED, SNAPSHOT]`)
 
 	cmd.Use = "create-materialized-feature FEATURE_NAME"
 	cmd.Short = `Create a materialized feature.`
@@ -708,7 +708,7 @@ func newUpdateMaterializedFeature() *cobra.Command {
 
 	// TODO: complex arg: offline_store_config
 	// TODO: complex arg: online_store_config
-	cmd.Flags().Var(&updateMaterializedFeatureReq.MaterializedFeature.PipelineScheduleState, "pipeline-schedule-state", `The schedule state of the materialization pipeline. Supported values: [ACTIVE, PAUSED, SNAPSHOT].`)
+	cmd.Flags().Var(&updateMaterializedFeatureReq.MaterializedFeature.PipelineScheduleState, "pipeline-schedule-state", `The schedule state of the materialization pipeline. Supported values: [ACTIVE, PAUSED, SNAPSHOT]`)
 
 	cmd.Use = "update-materialized-feature MATERIALIZED_FEATURE_ID UPDATE_MASK FEATURE_NAME"
 	cmd.Short = `Update a materialized feature.`

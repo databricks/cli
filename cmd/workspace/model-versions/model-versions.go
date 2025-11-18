@@ -356,7 +356,7 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().IntVar(&updateReq.RunWorkspaceId, "run-workspace-id", updateReq.RunWorkspaceId, `ID of the Databricks workspace containing the MLflow run that generated this model version, if applicable.`)
 	cmd.Flags().StringVar(&updateReq.SchemaName, "schema-name", updateReq.SchemaName, `The name of the schema containing the model version, relative to parent catalog.`)
 	cmd.Flags().StringVar(&updateReq.Source, "source", updateReq.Source, `URI indicating the location of the source artifacts (files) for the model version.`)
-	cmd.Flags().Var(&updateReq.Status, "status", `Current status of the model version. Supported values: [FAILED_REGISTRATION, MODEL_VERSION_STATUS_UNKNOWN, PENDING_REGISTRATION, READY].`)
+	cmd.Flags().Var(&updateReq.Status, "status", `Current status of the model version. Supported values: [FAILED_REGISTRATION, MODEL_VERSION_STATUS_UNKNOWN, PENDING_REGISTRATION, READY]`)
 	cmd.Flags().StringVar(&updateReq.StorageLocation, "storage-location", updateReq.StorageLocation, `The storage location on the cloud under which model version data files are stored.`)
 	cmd.Flags().Int64Var(&updateReq.UpdatedAt, "updated-at", updateReq.UpdatedAt, ``)
 	cmd.Flags().StringVar(&updateReq.UpdatedBy, "updated-by", updateReq.UpdatedBy, `The identifier of the user who updated the model version last time.`)

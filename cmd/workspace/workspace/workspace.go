@@ -445,7 +445,7 @@ func newImport() *cobra.Command {
   R_MARKDOWN,
   SOURCE,
 ].`)
-	cmd.Flags().Var(&importReq.Language, "language", `The language of the object. Supported values: [PYTHON, R, SCALA, SQL].`)
+	cmd.Flags().Var(&importReq.Language, "language", `The language of the object. Supported values: [PYTHON, R, SCALA, SQL]`)
 	cmd.Flags().BoolVar(&importReq.Overwrite, "overwrite", importReq.Overwrite, `The flag that specifies whether to overwrite existing object.`)
 
 	cmd.Use = "import PATH"

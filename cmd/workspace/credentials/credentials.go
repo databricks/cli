@@ -75,7 +75,7 @@ func newCreateCredential() *cobra.Command {
 	// TODO: complex arg: azure_service_principal
 	cmd.Flags().StringVar(&createCredentialReq.Comment, "comment", createCredentialReq.Comment, `Comment associated with the credential.`)
 	// TODO: complex arg: databricks_gcp_service_account
-	cmd.Flags().Var(&createCredentialReq.Purpose, "purpose", `Indicates the purpose of the credential. Supported values: [SERVICE, STORAGE].`)
+	cmd.Flags().Var(&createCredentialReq.Purpose, "purpose", `Indicates the purpose of the credential. Supported values: [SERVICE, STORAGE]`)
 	cmd.Flags().BoolVar(&createCredentialReq.ReadOnly, "read-only", createCredentialReq.ReadOnly, `Whether the credential is usable only for read operations.`)
 	cmd.Flags().BoolVar(&createCredentialReq.SkipValidation, "skip-validation", createCredentialReq.SkipValidation, `Optional.`)
 
@@ -367,7 +367,7 @@ func newListCredentials() *cobra.Command {
 	cmd.Flags().BoolVar(&listCredentialsReq.IncludeUnbound, "include-unbound", listCredentialsReq.IncludeUnbound, `Whether to include credentials not bound to the workspace.`)
 	cmd.Flags().IntVar(&listCredentialsReq.MaxResults, "max-results", listCredentialsReq.MaxResults, `Maximum number of credentials to return.`)
 	cmd.Flags().StringVar(&listCredentialsReq.PageToken, "page-token", listCredentialsReq.PageToken, `Opaque token to retrieve the next page of results.`)
-	cmd.Flags().Var(&listCredentialsReq.Purpose, "purpose", `Return only credentials for the specified purpose. Supported values: [SERVICE, STORAGE].`)
+	cmd.Flags().Var(&listCredentialsReq.Purpose, "purpose", `Return only credentials for the specified purpose. Supported values: [SERVICE, STORAGE]`)
 
 	cmd.Use = "list-credentials"
 	cmd.Short = `List credentials.`
@@ -436,7 +436,7 @@ func newUpdateCredential() *cobra.Command {
 	cmd.Flags().StringVar(&updateCredentialReq.Comment, "comment", updateCredentialReq.Comment, `Comment associated with the credential.`)
 	// TODO: complex arg: databricks_gcp_service_account
 	cmd.Flags().BoolVar(&updateCredentialReq.Force, "force", updateCredentialReq.Force, `Force an update even if there are dependent services (when purpose is **SERVICE**) or dependent external locations and external tables (when purpose is **STORAGE**).`)
-	cmd.Flags().Var(&updateCredentialReq.IsolationMode, "isolation-mode", `Whether the current securable is accessible from all workspaces or a specific set of workspaces. Supported values: [ISOLATION_MODE_ISOLATED, ISOLATION_MODE_OPEN].`)
+	cmd.Flags().Var(&updateCredentialReq.IsolationMode, "isolation-mode", `Whether the current securable is accessible from all workspaces or a specific set of workspaces. Supported values: [ISOLATION_MODE_ISOLATED, ISOLATION_MODE_OPEN]`)
 	cmd.Flags().StringVar(&updateCredentialReq.NewName, "new-name", updateCredentialReq.NewName, `New name of credential.`)
 	cmd.Flags().StringVar(&updateCredentialReq.Owner, "owner", updateCredentialReq.Owner, `Username of current owner of credential.`)
 	cmd.Flags().BoolVar(&updateCredentialReq.ReadOnly, "read-only", updateCredentialReq.ReadOnly, `Whether the credential is usable only for read operations.`)
@@ -522,7 +522,7 @@ func newValidateCredential() *cobra.Command {
 	cmd.Flags().StringVar(&validateCredentialReq.CredentialName, "credential-name", validateCredentialReq.CredentialName, `Required.`)
 	// TODO: complex arg: databricks_gcp_service_account
 	cmd.Flags().StringVar(&validateCredentialReq.ExternalLocationName, "external-location-name", validateCredentialReq.ExternalLocationName, `The name of an existing external location to validate.`)
-	cmd.Flags().Var(&validateCredentialReq.Purpose, "purpose", `The purpose of the credential. Supported values: [SERVICE, STORAGE].`)
+	cmd.Flags().Var(&validateCredentialReq.Purpose, "purpose", `The purpose of the credential. Supported values: [SERVICE, STORAGE]`)
 	cmd.Flags().BoolVar(&validateCredentialReq.ReadOnly, "read-only", validateCredentialReq.ReadOnly, `Whether the credential is only usable for read operations.`)
 	cmd.Flags().StringVar(&validateCredentialReq.Url, "url", validateCredentialReq.Url, `The external location url to validate.`)
 

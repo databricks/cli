@@ -478,7 +478,7 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().BoolVar(&updateReq.Enabled, "enabled", updateReq.Enabled, `Specifies whether this IP access list is enabled.`)
 	// TODO: array: ip_addresses
 	cmd.Flags().StringVar(&updateReq.Label, "label", updateReq.Label, `Label for the IP access list.`)
-	cmd.Flags().Var(&updateReq.ListType, "list-type", `Supported values: [ALLOW, BLOCK].`)
+	cmd.Flags().Var(&updateReq.ListType, "list-type", `Supported values: [ALLOW, BLOCK]`)
 
 	cmd.Use = "update IP_ACCESS_LIST_ID"
 	cmd.Short = `Update access list.`

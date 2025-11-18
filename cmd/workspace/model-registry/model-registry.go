@@ -572,7 +572,7 @@ func newCreateWebhook() *cobra.Command {
 	// TODO: complex arg: http_url_spec
 	// TODO: complex arg: job_spec
 	cmd.Flags().StringVar(&createWebhookReq.ModelName, "model-name", createWebhookReq.ModelName, `If model name is not specified, a registry-wide webhook is created that listens for the specified events across all versions of all registered models.`)
-	cmd.Flags().Var(&createWebhookReq.Status, "status", `Enable or disable triggering the webhook, or put the webhook into test mode. Supported values: [ACTIVE, DISABLED, TEST_MODE].`)
+	cmd.Flags().Var(&createWebhookReq.Status, "status", `Enable or disable triggering the webhook, or put the webhook into test mode. Supported values: [ACTIVE, DISABLED, TEST_MODE]`)
 
 	cmd.Use = "create-webhook"
 	cmd.Short = `Create a webhook.`
@@ -2671,7 +2671,7 @@ func newUpdateWebhook() *cobra.Command {
 	// TODO: array: events
 	// TODO: complex arg: http_url_spec
 	// TODO: complex arg: job_spec
-	cmd.Flags().Var(&updateWebhookReq.Status, "status", `Supported values: [ACTIVE, DISABLED, TEST_MODE].`)
+	cmd.Flags().Var(&updateWebhookReq.Status, "status", `Supported values: [ACTIVE, DISABLED, TEST_MODE]`)
 
 	cmd.Use = "update-webhook ID"
 	cmd.Short = `Update a webhook.`
