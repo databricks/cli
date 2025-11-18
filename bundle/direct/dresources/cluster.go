@@ -73,7 +73,7 @@ func (r *ResourceCluster) RemapState(input *compute.ClusterDetails) *compute.Clu
 	return spec
 }
 
-func (r *ResourceCluster) DoRefresh(ctx context.Context, id string) (*compute.ClusterDetails, error) {
+func (r *ResourceCluster) DoRead(ctx context.Context, id string) (*compute.ClusterDetails, error) {
 	return r.client.Clusters.GetByClusterId(ctx, id)
 }
 
