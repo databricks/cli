@@ -73,7 +73,6 @@ type Executor struct {
 	shell         shell
 	dir           string
 	inheritOutput bool
-	env           []string
 }
 
 // NewCommandExecutor creates an Executor with default output behavior (no inheritance)
@@ -91,12 +90,6 @@ func NewCommandExecutor(dir string) (*Executor, error) {
 
 func (e *Executor) WithInheritOutput() {
 	e.inheritOutput = true
-}
-
-// WithEnv sets custom environment variables for the executor.
-// If not set, the command will inherit the parent process environment.
-func (e *Executor) WithEnv(env []string) {
-	e.env = env
 }
 
 func NewCommandExecutorWithExecutable(dir string, execType ExecutableType) (*Executor, error) {
@@ -122,9 +115,6 @@ func (e *Executor) prepareCommand(ctx context.Context, command string) (*osexec.
 	}
 	cmd := osexec.CommandContext(ctx, ec.executable, ec.args...)
 	cmd.Dir = e.dir
-	if len(e.env) > 0 {
-		cmd.Env = e.env
-	}
 	return cmd, ec, nil
 }
 
