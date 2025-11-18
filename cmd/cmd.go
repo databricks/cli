@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/cmd/psql"
+	ssh "github.com/databricks/cli/experimental/ssh/cmd"
 
 	"github.com/databricks/cli/cmd/account"
 	"github.com/databricks/cli/cmd/api"
@@ -20,7 +21,6 @@ import (
 	"github.com/databricks/cli/cmd/sync"
 	"github.com/databricks/cli/cmd/version"
 	"github.com/databricks/cli/cmd/workspace"
-	ssh "github.com/databricks/cli/experimental/ssh/cmd"
 	"github.com/databricks/cli/libs/cmdgroup"
 	"github.com/spf13/cobra"
 )
