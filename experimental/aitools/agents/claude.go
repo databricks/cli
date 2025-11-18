@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os/exec"
+	"strings"
 
 	"github.com/databricks/cli/experimental/aitools/tools"
 )
@@ -25,10 +26,11 @@ func InstallClaude() error {
 		return err
 	}
 
-	removeCmd := exec.Command("claude", "mcp", "remove", "databricks-aitools")
+	removeCmd := exec.Command("claude", "mcp", "remove", "--scope", "user", "databricks-aitools")
 	_ = removeCmd.Run()
 
 	cmd := exec.Command("claude", "mcp", "add",
+		"--scope", "user",
 		"--transport", "stdio",
 		"databricks-aitools",
 		"--",
@@ -36,6 +38,10 @@ func InstallClaude() error {
 
 	output, err := cmd.CombinedOutput()
 	if err != nil {
+		// Ignore "already exists" errors - installation should be reentrant
+		if strings.Contains(string(output), "already exists") {
+			return nil
+		}
 		return fmt.Errorf("failed to install MCP server in Claude Code: %w\nOutput: %s", err, string(output))
 	}
 
