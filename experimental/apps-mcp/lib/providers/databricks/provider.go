@@ -179,18 +179,28 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 
 	// Register databricks_execute_query
 	type ExecuteQueryInput struct {
-		Query string `json:"query" jsonschema:"required" jsonschema_description:"SQL query to execute"`
+		Query       string  `json:"query" jsonschema:"required" jsonschema_description:"SQL query to execute"`
+		WarehouseID *string `json:"warehouse_id,omitempty" jsonschema_description:"SQL warehouse ID (uses default from config if not provided)"`
+		MaxRows     *int    `json:"max_rows,omitempty" jsonschema_description:"Maximum rows to return (default: 1000, max: 10000)"`
+		Timeout     *int    `json:"timeout,omitempty" jsonschema_description:"Query timeout in seconds (default: 60)"`
 	}
 
 	mcpsdk.AddTool(server,
 		&mcpsdk.Tool{
 			Name:        "databricks_execute_query",
-			Description: "Execute SQL query in Databricks. Only single SQL statements are supported - do not send multiple statements separated by semicolons. For multiple statements, call this tool separately for each one. DO NOT create catalogs, schemas or tables - requires metastore admin privileges. Query existing data instead. Timeout: 60 seconds for query execution.",
+			Description: "Execute SQL query in Databricks. Only single SQL statements are supported - do not send multiple statements separated by semicolons. For multiple statements, call this tool separately for each one. DO NOT create catalogs, schemas or tables - requires metastore admin privileges. Query existing data instead. Returns execution time and supports configurable timeouts and row limits.",
 		},
 		session.WrapToolHandler(p.session, func(ctx context.Context, req *mcpsdk.CallToolRequest, args ExecuteQueryInput) (*mcpsdk.CallToolResult, any, error) {
 			log.Debugf(ctx, "databricks_execute_query called: query=%s", args.Query)
 
-			result, err := ExecuteQuery(ctx, p.config, args.Query)
+			queryArgs := &ExecuteQueryArgs{
+				Query:       args.Query,
+				WarehouseID: args.WarehouseID,
+				MaxRows:     args.MaxRows,
+				Timeout:     args.Timeout,
+			}
+
+			result, err := ExecuteQuery(ctx, p.config, queryArgs)
 			if err != nil {
 				return nil, nil, err
 			}

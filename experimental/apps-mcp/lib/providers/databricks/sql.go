@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	mcp "github.com/databricks/cli/experimental/apps-mcp/lib"
 	"github.com/databricks/cli/libs/cmdctx"
@@ -12,23 +13,62 @@ import (
 
 // ExecuteQueryArgs represents arguments for executing a SQL query
 type ExecuteQueryArgs struct {
-	Query string `json:"query"`
+	Query       string  `json:"query"`
+	WarehouseID *string `json:"warehouse_id,omitempty"`
+	MaxRows     *int    `json:"max_rows,omitempty"`
+	Timeout     *int    `json:"timeout,omitempty"`
+}
+
+// ExecuteQueryResult represents the result of a SQL query execution
+type ExecuteQueryResult struct {
+	Columns       []string `json:"columns"`
+	Rows          [][]any  `json:"rows"`
+	RowCount      int      `json:"row_count"`
+	Truncated     bool     `json:"truncated"`
+	ExecutionTime float64  `json:"execution_time_seconds"`
 }
 
 // ExecuteQuery executes a SQL query and returns the results
-func ExecuteQuery(ctx context.Context, cfg *mcp.Config, query string) ([]map[string]any, error) {
-	// Get warehouse ID from config
-	if cfg.WarehouseID == "" {
+func ExecuteQuery(ctx context.Context, cfg *mcp.Config, args *ExecuteQueryArgs) (*ExecuteQueryResult, error) {
+	// Determine warehouse ID
+	warehouseID := cfg.WarehouseID
+	if args.WarehouseID != nil {
+		warehouseID = *args.WarehouseID
+	}
+	if warehouseID == "" {
 		return nil, errors.New("DATABRICKS_WAREHOUSE_ID not configured")
 	}
 
+	// Set max rows with default and limit
+	maxRows := 1000
+	if args.MaxRows != nil {
+		maxRows = min(*args.MaxRows, 10000)
+	}
+
+	// Set timeout with default
+	timeout := 60 * time.Second
+	if args.Timeout != nil {
+		timeout = time.Duration(*args.Timeout) * time.Second
+	}
+
+	// Create context with timeout
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	startTime := time.Now()
 	w := cmdctx.WorkspaceClient(ctx)
+
+	// Calculate wait timeout for the query (slightly less than context timeout)
+	waitTimeout := fmt.Sprintf("%ds", int(timeout.Seconds())-5)
+	if timeout < 10*time.Second {
+		waitTimeout = fmt.Sprintf("%ds", max(int(timeout.Seconds())-1, 1))
+	}
 
 	// Execute statement
 	result, err := w.StatementExecution.ExecuteStatement(ctx, sql.ExecuteStatementRequest{
-		Statement:   query,
-		WarehouseId: cfg.WarehouseID,
-		WaitTimeout: "30s",
+		Statement:   args.Query,
+		WarehouseId: warehouseID,
+		WaitTimeout: waitTimeout,
 		Format:      sql.FormatJsonArray,
 	})
 	if err != nil {
@@ -44,9 +84,17 @@ func ExecuteQuery(ctx context.Context, cfg *mcp.Config, query string) ([]map[str
 		return nil, fmt.Errorf("query failed: %s", errMsg)
 	}
 
+	executionTime := time.Since(startTime).Seconds()
+
 	// Parse results
 	if result.Result == nil || result.Result.DataArray == nil {
-		return []map[string]any{}, nil
+		return &ExecuteQueryResult{
+			Columns:       []string{},
+			Rows:          [][]any{},
+			RowCount:      0,
+			Truncated:     false,
+			ExecutionTime: executionTime,
+		}, nil
 	}
 
 	// Get column names
@@ -55,17 +103,25 @@ func ExecuteQuery(ctx context.Context, cfg *mcp.Config, query string) ([]map[str
 		columns[i] = col.Name
 	}
 
-	// Convert data array to map
-	rows := make([]map[string]any, len(result.Result.DataArray))
-	for i, row := range result.Result.DataArray {
-		rowMap := make(map[string]any)
-		for j, val := range row {
-			if j < len(columns) {
-				rowMap[columns[j]] = val
-			}
+	// Convert data array and apply row limit
+	totalRows := len(result.Result.DataArray)
+	truncated := totalRows > maxRows
+	rowCount := min(totalRows, maxRows)
+
+	rows := make([][]any, rowCount)
+	for i := range rowCount {
+		sourceRow := result.Result.DataArray[i]
+		rows[i] = make([]any, len(sourceRow))
+		for j, val := range sourceRow {
+			rows[i][j] = val
 		}
-		rows[i] = rowMap
 	}
 
-	return rows, nil
+	return &ExecuteQueryResult{
+		Columns:       columns,
+		Rows:          rows,
+		RowCount:      rowCount,
+		Truncated:     truncated,
+		ExecutionTime: executionTime,
+	}, nil
 }

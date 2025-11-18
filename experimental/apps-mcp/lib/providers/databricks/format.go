@@ -121,10 +121,7 @@ func formatTableDetails(details *TableDetails) string {
 
 	if len(details.SampleData) > 0 {
 		lines = append(lines, fmt.Sprintf("\nSample Data (%d rows):", len(details.SampleData)))
-		sampleLimit := 5
-		if len(details.SampleData) < sampleLimit {
-			sampleLimit = len(details.SampleData)
-		}
+		sampleLimit := min(5, len(details.SampleData))
 		for i := range sampleLimit {
 			row := details.SampleData[i]
 			var rowParts []string
@@ -149,44 +146,48 @@ func formatValue(v any) string {
 }
 
 // formatQueryResult formats query results into a readable string
-func formatQueryResult(rows []map[string]any) string {
-	if len(rows) == 0 {
-		return "Query executed successfully but returned no results."
-	}
-
+func formatQueryResult(result *ExecuteQueryResult) string {
 	var lines []string
-	lines = append(lines, fmt.Sprintf("Query returned %d rows:", len(rows)))
+
+	// Add execution time
+	lines = append(lines, fmt.Sprintf("Query executed in %.2f seconds", result.ExecutionTime))
 	lines = append(lines, "")
 
-	if len(rows) > 0 {
-		// Get column names from first row
-		var columns []string
-		for key := range rows[0] {
-			columns = append(columns, key)
-		}
+	if result.RowCount == 0 {
+		lines = append(lines, "Query executed successfully but returned no results.")
+		return strings.Join(lines, "\n")
+	}
 
-		lines = append(lines, "Columns: "+strings.Join(columns, ", "))
+	// Add row count information
+	if result.Truncated {
+		lines = append(lines, fmt.Sprintf("Query returned %d rows (showing first %d of more results - use max_rows parameter to adjust):", result.RowCount, result.RowCount))
+	} else {
+		lines = append(lines, fmt.Sprintf("Query returned %d rows:", result.RowCount))
+	}
+	lines = append(lines, "")
+
+	// Add column names
+	if len(result.Columns) > 0 {
+		lines = append(lines, "Columns: "+strings.Join(result.Columns, ", "))
 		lines = append(lines, "")
 		lines = append(lines, "Results:")
 
-		limit := 100
-		if len(rows) < limit {
-			limit = len(rows)
-		}
+		// Display up to 100 rows in the formatted output
+		displayLimit := min(100, result.RowCount)
 
-		for i := range limit {
-			row := rows[i]
+		for i := range displayLimit {
+			row := result.Rows[i]
 			var rowParts []string
-			for _, col := range columns {
-				if val, ok := row[col]; ok {
-					rowParts = append(rowParts, fmt.Sprintf("%s: %s", col, formatValue(val)))
+			for j, val := range row {
+				if j < len(result.Columns) {
+					rowParts = append(rowParts, fmt.Sprintf("%s: %s", result.Columns[j], formatValue(val)))
 				}
 			}
 			lines = append(lines, fmt.Sprintf("  Row %d: %s", i+1, strings.Join(rowParts, ", ")))
 		}
 
-		if len(rows) > 100 {
-			lines = append(lines, fmt.Sprintf("\n... showing first 100 of %d total rows", len(rows)))
+		if result.RowCount > 100 {
+			lines = append(lines, fmt.Sprintf("\n... showing first 100 of %d returned rows", result.RowCount))
 		}
 	}
 

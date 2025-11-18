@@ -93,8 +93,19 @@ func DescribeTable(ctx context.Context, cfg *mcp.Config, args *DescribeTableArgs
 	// Get sample data if requested
 	if args.SampleSize > 0 {
 		query := fmt.Sprintf("SELECT * FROM %s LIMIT %d", args.TableFullName, args.SampleSize)
-		sampleData, err := ExecuteQuery(ctx, cfg, query)
-		if err == nil && len(sampleData) > 0 {
+		sampleResult, err := ExecuteQuery(ctx, cfg, &ExecuteQueryArgs{Query: query})
+		if err == nil && sampleResult.RowCount > 0 {
+			// Convert [][]any to []map[string]any
+			sampleData := make([]map[string]any, sampleResult.RowCount)
+			for i, row := range sampleResult.Rows {
+				rowMap := make(map[string]any)
+				for j, val := range row {
+					if j < len(sampleResult.Columns) {
+						rowMap[sampleResult.Columns[j]] = val
+					}
+				}
+				sampleData[i] = rowMap
+			}
 			details.SampleData = sampleData
 		}
 		// Note: We intentionally don't return error for sample data failures
@@ -103,10 +114,16 @@ func DescribeTable(ctx context.Context, cfg *mcp.Config, args *DescribeTableArgs
 
 	// Get row count
 	countQuery := "SELECT COUNT(*) as count FROM " + args.TableFullName
-	countData, err := ExecuteQuery(ctx, cfg, countQuery)
-	if err == nil && len(countData) > 0 {
-		if count, ok := countData[0]["count"].(int64); ok {
-			details.RowCount = &count
+	countResult, err := ExecuteQuery(ctx, cfg, &ExecuteQueryArgs{Query: countQuery})
+	if err == nil && countResult.RowCount > 0 {
+		// The count is in the first row, first column
+		if len(countResult.Rows) > 0 && len(countResult.Rows[0]) > 0 {
+			if count, ok := countResult.Rows[0][0].(int64); ok {
+				details.RowCount = &count
+			} else if countFloat, ok := countResult.Rows[0][0].(float64); ok {
+				count := int64(countFloat)
+				details.RowCount = &count
+			}
 		}
 	}
 	// Note: We intentionally don't return error for row count failures
