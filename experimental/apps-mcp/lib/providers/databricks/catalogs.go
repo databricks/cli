@@ -9,6 +9,7 @@ import (
 
 	mcp "github.com/databricks/cli/experimental/apps-mcp/lib"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/httpclient"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
@@ -194,10 +195,11 @@ func ListTables(ctx context.Context, cfg *mcp.Config, args *ListTablesArgs) (*Li
 
 	fullPath := apiPath + "?" + params.Encode()
 	// Create API client and make request
-	apiClient, err := w.Config.NewApiClient()
+	clientCfg, err := config.HTTPClientConfigFromConfig(w.Config)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create API client: %w", err)
+		return nil, fmt.Errorf("failed to create HTTP client config: %w", err)
 	}
+	apiClient := httpclient.NewApiClient(clientCfg)
 
 	var response catalog.ListTablesResponse
 	err = apiClient.Do(ctx, "GET", fullPath, httpclient.WithResponseUnmarshal(&response))
