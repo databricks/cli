@@ -29,7 +29,7 @@
           "permissions": [
             {
               "permission_level": "CAN_VIEW",
-              "user_name": "deco-test-user@databricks.com"
+              "user_name": "[TEST_USER_EMAIL]"
             },
             {
               "permission_level": "CAN_MANAGE",
@@ -46,7 +46,7 @@
         "permissions": [
           {
             "permission_level": "CAN_VIEW",
-            "user_name": "deco-test-user@databricks.com"
+            "user_name": "[TEST_USER_EMAIL]"
           },
           {
             "permission_level": "CAN_MANAGE",

@@ -4,7 +4,7 @@
   "body": {
     "changes": [
       {
-        "principal": "deco-test-user@databricks.com",
+        "principal": "[TEST_USER_EMAIL]",
         "remove": [
           "READ_VOLUME",
           "MANAGE"

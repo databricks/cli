@@ -55,7 +55,7 @@
           "full_name": "main.schema_grants_[UNIQUE_NAME].volume_name",
           "grants": [
             {
-              "principal": "deco-test-user@databricks.com",
+              "principal": "[TEST_USER_EMAIL]",
               "privileges": [
                 "MANAGE",
                 "READ_VOLUME"
@@ -69,7 +69,7 @@
         "full_name": "main.schema_grants_[UNIQUE_NAME].volume_name",
         "grants": [
           {
-            "principal": "deco-test-user@databricks.com",
+            "principal": "[TEST_USER_EMAIL]",
             "privileges": [
               "READ_VOLUME",
               "WRITE_VOLUME"

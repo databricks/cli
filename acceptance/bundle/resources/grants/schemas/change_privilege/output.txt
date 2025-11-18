@@ -15,7 +15,7 @@ Deployment complete!
 {
   "privilege_assignments": [
     {
-      "principal": "deco-test-user@databricks.com",
+      "principal": "[TEST_USER_EMAIL]",
       "privileges": [
         "CREATE_TABLE",
         "USE_SCHEMA"
@@ -48,7 +48,7 @@ Deployment complete!
 {
   "privilege_assignments": [
     {
-      "principal": "deco-test-user@databricks.com",
+      "principal": "[TEST_USER_EMAIL]",
       "privileges": [
         "APPLY_TAG",
         "CREATE_TABLE"

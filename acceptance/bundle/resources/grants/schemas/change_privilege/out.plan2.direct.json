@@ -27,7 +27,7 @@
           "full_name": "main.schema_grants_[UNIQUE_NAME]",
           "grants": [
             {
-              "principal": "deco-test-user@databricks.com",
+              "principal": "[TEST_USER_EMAIL]",
               "privileges": [
                 "APPLY_TAG",
                 "CREATE_TABLE"
@@ -41,7 +41,7 @@
         "full_name": "main.schema_grants_[UNIQUE_NAME]",
         "grants": [
           {
-            "principal": "deco-test-user@databricks.com",
+            "principal": "[TEST_USER_EMAIL]",
             "privileges": [
               "CREATE_TABLE",
               "USE_SCHEMA"

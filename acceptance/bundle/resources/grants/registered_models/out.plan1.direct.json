@@ -31,7 +31,7 @@
           "full_name": "",
           "grants": [
             {
-              "principal": "deco-test-user@databricks.com",
+              "principal": "[TEST_USER_EMAIL]",
               "privileges": [
                 "APPLY_TAG"
               ]

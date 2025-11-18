@@ -7,7 +7,7 @@ Error: Missing required argument
   on bundle.tf.json line 17, in resource.databricks_grants.schema_grants_schema:
   17:         "grant": [
   18:           {
-  19:             "principal": "deco-test-user@databricks.com",
+  19:             "principal": "[TEST_USER_EMAIL]",
   20:             "privileges": null
   21:           }
   22:         ]

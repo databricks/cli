@@ -8,7 +8,7 @@
           "MANAGE",
           "READ_VOLUME"
         ],
-        "principal": "deco-test-user@databricks.com",
+        "principal": "[TEST_USER_EMAIL]",
         "remove": [
           "ALL_PRIVILEGES"
         ]
