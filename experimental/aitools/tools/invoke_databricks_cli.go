@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 
 	"github.com/databricks/cli/libs/exec"
 )
@@ -57,6 +58,8 @@ func InvokeDatabricksCLI(ctx context.Context, args invokeDatabricksCLIArgs) (str
 	if err != nil {
 		return "", fmt.Errorf("failed to create command executor: %w", err)
 	}
+
+	executor.WithEnv(append(os.Environ(), "DATABRICKS_CLI_UPSTREAM=aitools"))
 
 	fullCommand := fmt.Sprintf(`"%s" %s`, GetCLIPath(), args.Command)
 	output, err := executor.Exec(ctx, fullCommand)
