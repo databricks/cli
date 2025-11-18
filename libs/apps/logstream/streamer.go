@@ -103,6 +103,7 @@ func (s *logStreamer) Run(ctx context.Context) error {
 	}
 
 	backoff := initialReconnectBackoff
+	// Backoff timer starts as a zero-value timer; stopTimer handles the first initialization safely.
 	timer := time.NewTimer(0)
 	stopTimer(timer, 0)
 
