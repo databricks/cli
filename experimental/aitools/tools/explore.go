@@ -45,22 +45,26 @@ type warehouse struct {
 }
 
 // GetDefaultWarehouse finds a suitable SQL warehouse for queries.
-// It prefers RUNNING warehouses, then falls back to STOPPED ones (which auto-start).
+// It filters out warehouses the user cannot access and prefers RUNNING warehouses,
+// then falls back to STOPPED ones (which auto-start).
 func GetDefaultWarehouse(ctx context.Context) (*warehouse, error) {
 	executor, err := exec.NewCommandExecutor("")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create command executor: %w", err)
 	}
 
-	output, err := executor.Exec(ctx, fmt.Sprintf(`"%s" warehouses list --output json`, GetCLIPath()))
+	output, err := executor.Exec(ctx, fmt.Sprintf(`"%s" api get "/api/2.0/sql/warehouses?skip_cannot_use=true" --output json`, GetCLIPath()))
 	if err != nil {
 		return nil, fmt.Errorf("failed to list warehouses: %w\nOutput: %s", err, output)
 	}
 
-	var warehouses []warehouse
-	if err := json.Unmarshal(output, &warehouses); err != nil {
+	var response struct {
+		Warehouses []warehouse `json:"warehouses"`
+	}
+	if err := json.Unmarshal(output, &response); err != nil {
 		return nil, fmt.Errorf("failed to parse warehouses: %w", err)
 	}
+	warehouses := response.Warehouses
 
 	if len(warehouses) == 0 {
 		return nil, errors.New("no SQL warehouses found in workspace")
