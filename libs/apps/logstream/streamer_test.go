@@ -659,3 +659,50 @@ func (n *notifyBuffer) hasWrite() bool {
 		return false
 	}
 }
+
+func TestAppStatusCheckerStopsFollowing(t *testing.T) {
+	t.Parallel()
+
+	var connectionCount atomic.Int32
+	server := newTestLogServer(t, func(id int, conn *websocket.Conn) {
+		defer conn.Close()
+		connectionCount.Add(1)
+		_, _, _ = conn.ReadMessage() // search token
+
+		// Send a couple messages then close
+		require.NoError(t, sendEntry(conn, 1.0, "message before stop"))
+		time.Sleep(10 * time.Millisecond)
+		_ = conn.WriteControl(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""), time.Now().Add(time.Second))
+	})
+	defer server.Close()
+
+	buf := &bytes.Buffer{}
+	checkCount := atomic.Int32{}
+	appStatusChecker := func(ctx context.Context) error {
+		count := checkCount.Add(1)
+		// Simulate app being stopped after first reconnect attempt
+		if count > 1 {
+			return fmt.Errorf("app stopped")
+		}
+		return nil
+	}
+
+	streamer := &logStreamer{
+		dialer:           &websocket.Dialer{},
+		url:              toWebSocketURL(server.URL),
+		token:            "test",
+		follow:           true,
+		writer:           buf,
+		appStatusChecker: appStatusChecker,
+	}
+
+	err := streamer.Run(context.Background())
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "app is no longer available")
+	assert.Contains(t, err.Error(), "app stopped")
+
+	// Should have connected twice: initial connection + one reconnect attempt
+	assert.Equal(t, int32(2), connectionCount.Load())
+	// Should have checked app status once (before second reconnect)
+	assert.GreaterOrEqual(t, checkCount.Load(), int32(1))
+}

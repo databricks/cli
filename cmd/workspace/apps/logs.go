@@ -114,6 +114,22 @@ via --source APP|SYSTEM. Use --output-file to mirror the stream to a local file 
 				return tok.AccessToken, nil
 			}
 
+			appStatusChecker := func(ctx context.Context) error {
+				app, err := w.Apps.Get(ctx, apps.GetAppRequest{Name: name})
+				if err != nil {
+					return err
+				}
+				if app.ComputeStatus == nil {
+					return fmt.Errorf("app status unavailable")
+				}
+				// Check if app is in a terminal/stopped state
+				switch app.ComputeStatus.State {
+				case apps.ComputeStateStopped, apps.ComputeStateDeleting, apps.ComputeStateError:
+					return fmt.Errorf("app is %s", app.ComputeStatus.State)
+				}
+				return nil
+			}
+
 			var writer io.Writer = cmd.OutOrStdout()
 			var file *os.File
 			if outputPath != "" {
@@ -133,19 +149,20 @@ via --source APP|SYSTEM. Use --output-file to mirror the stream to a local file 
 
 			log.Infof(ctx, "Streaming logs for %s (%s)", name, wsURL)
 			return logstream.Run(ctx, logstream.Config{
-				Dialer:        newLogStreamDialer(cfg),
-				URL:           wsURL,
-				Origin:        normalizeOrigin(app.Url),
-				Token:         initialToken.AccessToken,
-				TokenProvider: tokenProvider,
-				Search:        searchTerm,
-				Sources:       sourceMap,
-				Tail:          tailLines,
-				Follow:        follow,
-				Prefetch:      defaultPrefetchWindow,
-				Writer:        writer,
-				UserAgent:     "databricks-cli apps logs",
-				Colorize:      colorizeLogs,
+				Dialer:           newLogStreamDialer(cfg),
+				URL:              wsURL,
+				Origin:           normalizeOrigin(app.Url),
+				Token:            initialToken.AccessToken,
+				TokenProvider:    tokenProvider,
+				AppStatusChecker: appStatusChecker,
+				Search:           searchTerm,
+				Sources:          sourceMap,
+				Tail:             tailLines,
+				Follow:           follow,
+				Prefetch:         defaultPrefetchWindow,
+				Writer:           writer,
+				UserAgent:        "databricks-cli apps logs",
+				Colorize:         colorizeLogs,
 			})
 		},
 	}
