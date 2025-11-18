@@ -103,14 +103,12 @@ func (s *logStreamer) Run(ctx context.Context) error {
 	}
 
 	backoff := initialReconnectBackoff
-	timer := time.NewTimer(time.Hour)
-	stopTimer(timer)
-	defer timer.Stop()
+	timer := &time.Timer{}
 
 	for {
 		resp, err := s.connectAndConsume(ctx)
 		if err == nil {
-			backoff = time.Second
+			backoff = initialReconnectBackoff
 			if !s.follow {
 				return nil
 			}
@@ -125,7 +123,7 @@ func (s *logStreamer) Run(ctx context.Context) error {
 			if err := s.refreshToken(ctx); err != nil {
 				return err
 			}
-			backoff = time.Second
+			backoff = initialReconnectBackoff
 			continue
 		}
 
@@ -166,7 +164,6 @@ func (s *logStreamer) connectAndConsume(ctx context.Context) (*http.Response, er
 
 	stopWatch := watchContext(ctx, conn)
 	defer stopWatch()
-	defer conn.Close()
 
 	err = s.consume(ctx, conn)
 	return nil, err
@@ -479,33 +476,26 @@ func waitForBackoff(ctx context.Context, timer *time.Timer, d time.Duration) err
 			return nil
 		}
 	}
-	resetTimer(timer, d)
+	stopTimer(timer, d)
 	select {
 	case <-ctx.Done():
-		stopTimer(timer)
+		stopTimer(timer, 0)
 		return ctx.Err()
 	case <-timer.C:
 		return nil
 	}
 }
 
-func stopTimer(timer *time.Timer) {
+func stopTimer(timer *time.Timer, d time.Duration) {
 	if timer == nil {
 		return
 	}
 	if !timer.Stop() {
 		drainTimer(timer)
 	}
-}
-
-func resetTimer(timer *time.Timer, d time.Duration) {
-	if timer == nil {
-		return
+	if d > 0 {
+		timer.Reset(d)
 	}
-	if !timer.Stop() {
-		drainTimer(timer)
-	}
-	timer.Reset(d)
 }
 
 func drainTimer(timer *time.Timer) {
