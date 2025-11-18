@@ -65,7 +65,7 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&createReq.AutoResolveDisplayName, "auto-resolve-display-name", createReq.AutoResolveDisplayName, `If true, automatically resolve query display name conflicts. Wire name: 'auto_resolve_display_name'.`)
+	cmd.Flags().BoolVar(&createReq.AutoResolveDisplayName, "auto-resolve-display-name", createReq.AutoResolveDisplayName, `If true, automatically resolve query display name conflicts.`)
 	// TODO: complex arg: query
 
 	cmd.Use = "create"
@@ -265,8 +265,8 @@ func newList() *cobra.Command {
 
 	var listReq sql.ListQueriesRequest
 
-	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `Wire name: 'page_size'.`)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Wire name: 'page_token'.`)
+	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, ``)
 
 	cmd.Use = "list"
 	cmd.Short = `List queries.`
@@ -318,8 +318,8 @@ func newListVisualizations() *cobra.Command {
 
 	var listVisualizationsReq sql.ListVisualizationsForQueryRequest
 
-	cmd.Flags().IntVar(&listVisualizationsReq.PageSize, "page-size", listVisualizationsReq.PageSize, `Wire name: 'page_size'.`)
-	cmd.Flags().StringVar(&listVisualizationsReq.PageToken, "page-token", listVisualizationsReq.PageToken, `Wire name: 'page_token'.`)
+	cmd.Flags().IntVar(&listVisualizationsReq.PageSize, "page-size", listVisualizationsReq.PageSize, ``)
+	cmd.Flags().StringVar(&listVisualizationsReq.PageToken, "page-token", listVisualizationsReq.PageToken, ``)
 
 	cmd.Use = "list-visualizations ID"
 	cmd.Short = `List visualizations on a query.`
@@ -389,7 +389,7 @@ func newUpdate() *cobra.Command {
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&updateReq.AutoResolveDisplayName, "auto-resolve-display-name", updateReq.AutoResolveDisplayName, `If true, automatically resolve alert display name conflicts. Wire name: 'auto_resolve_display_name'.`)
+	cmd.Flags().BoolVar(&updateReq.AutoResolveDisplayName, "auto-resolve-display-name", updateReq.AutoResolveDisplayName, `If true, automatically resolve alert display name conflicts.`)
 	// TODO: complex arg: query
 
 	cmd.Use = "update ID UPDATE_MASK"

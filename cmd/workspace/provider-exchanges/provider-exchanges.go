@@ -364,8 +364,8 @@ func newList() *cobra.Command {
 
 	var listReq marketplace.ListExchangesRequest
 
-	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `Wire name: 'page_size'.`)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Wire name: 'page_token'.`)
+	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, ``)
 
 	cmd.Use = "list"
 	cmd.Short = `List exchanges.`
@@ -415,8 +415,8 @@ func newListExchangesForListing() *cobra.Command {
 
 	var listExchangesForListingReq marketplace.ListExchangesForListingRequest
 
-	cmd.Flags().IntVar(&listExchangesForListingReq.PageSize, "page-size", listExchangesForListingReq.PageSize, `Wire name: 'page_size'.`)
-	cmd.Flags().StringVar(&listExchangesForListingReq.PageToken, "page-token", listExchangesForListingReq.PageToken, `Wire name: 'page_token'.`)
+	cmd.Flags().IntVar(&listExchangesForListingReq.PageSize, "page-size", listExchangesForListingReq.PageSize, ``)
+	cmd.Flags().StringVar(&listExchangesForListingReq.PageToken, "page-token", listExchangesForListingReq.PageToken, ``)
 
 	cmd.Use = "list-exchanges-for-listing LISTING_ID"
 	cmd.Short = `List exchanges for listing.`
@@ -468,8 +468,8 @@ func newListListingsForExchange() *cobra.Command {
 
 	var listListingsForExchangeReq marketplace.ListListingsForExchangeRequest
 
-	cmd.Flags().IntVar(&listListingsForExchangeReq.PageSize, "page-size", listListingsForExchangeReq.PageSize, `Wire name: 'page_size'.`)
-	cmd.Flags().StringVar(&listListingsForExchangeReq.PageToken, "page-token", listListingsForExchangeReq.PageToken, `Wire name: 'page_token'.`)
+	cmd.Flags().IntVar(&listListingsForExchangeReq.PageSize, "page-size", listListingsForExchangeReq.PageSize, ``)
+	cmd.Flags().StringVar(&listListingsForExchangeReq.PageToken, "page-token", listListingsForExchangeReq.PageToken, ``)
 
 	cmd.Use = "list-listings-for-exchange EXCHANGE_ID"
 	cmd.Short = `List listings for exchange.`

@@ -261,8 +261,8 @@ func newListQualityMonitor() *cobra.Command {
 
 	var listQualityMonitorReq qualitymonitorv2.ListQualityMonitorRequest
 
-	cmd.Flags().IntVar(&listQualityMonitorReq.PageSize, "page-size", listQualityMonitorReq.PageSize, `Wire name: 'page_size'.`)
-	cmd.Flags().StringVar(&listQualityMonitorReq.PageToken, "page-token", listQualityMonitorReq.PageToken, `Wire name: 'page_token'.`)
+	cmd.Flags().IntVar(&listQualityMonitorReq.PageSize, "page-size", listQualityMonitorReq.PageSize, ``)
+	cmd.Flags().StringVar(&listQualityMonitorReq.PageToken, "page-token", listQualityMonitorReq.PageToken, ``)
 
 	cmd.Use = "list-quality-monitor"
 	cmd.Short = `List quality monitors.`

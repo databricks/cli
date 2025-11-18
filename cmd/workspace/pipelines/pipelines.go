@@ -470,10 +470,10 @@ func newListPipelineEvents() *cobra.Command {
 
 	var listPipelineEventsReq pipelines.ListPipelineEventsRequest
 
-	cmd.Flags().StringVar(&listPipelineEventsReq.Filter, "filter", listPipelineEventsReq.Filter, `Criteria to select a subset of results, expressed using a SQL-like syntax. Wire name: 'filter'.`)
-	cmd.Flags().IntVar(&listPipelineEventsReq.MaxResults, "max-results", listPipelineEventsReq.MaxResults, `Max number of entries to return in a single page. Wire name: 'max_results'.`)
+	cmd.Flags().StringVar(&listPipelineEventsReq.Filter, "filter", listPipelineEventsReq.Filter, `Criteria to select a subset of results, expressed using a SQL-like syntax.`)
+	cmd.Flags().IntVar(&listPipelineEventsReq.MaxResults, "max-results", listPipelineEventsReq.MaxResults, `Max number of entries to return in a single page.`)
 	// TODO: array: order_by
-	cmd.Flags().StringVar(&listPipelineEventsReq.PageToken, "page-token", listPipelineEventsReq.PageToken, `Page token returned by previous call. Wire name: 'page_token'.`)
+	cmd.Flags().StringVar(&listPipelineEventsReq.PageToken, "page-token", listPipelineEventsReq.PageToken, `Page token returned by previous call.`)
 
 	cmd.Use = "list-pipeline-events PIPELINE_ID"
 	cmd.Short = `List pipeline events.`
@@ -540,10 +540,10 @@ func newListPipelines() *cobra.Command {
 
 	var listPipelinesReq pipelines.ListPipelinesRequest
 
-	cmd.Flags().StringVar(&listPipelinesReq.Filter, "filter", listPipelinesReq.Filter, `Select a subset of results based on the specified criteria. Wire name: 'filter'.`)
-	cmd.Flags().IntVar(&listPipelinesReq.MaxResults, "max-results", listPipelinesReq.MaxResults, `The maximum number of entries to return in a single page. Wire name: 'max_results'.`)
+	cmd.Flags().StringVar(&listPipelinesReq.Filter, "filter", listPipelinesReq.Filter, `Select a subset of results based on the specified criteria.`)
+	cmd.Flags().IntVar(&listPipelinesReq.MaxResults, "max-results", listPipelinesReq.MaxResults, `The maximum number of entries to return in a single page.`)
 	// TODO: array: order_by
-	cmd.Flags().StringVar(&listPipelinesReq.PageToken, "page-token", listPipelinesReq.PageToken, `Page token returned by previous call. Wire name: 'page_token'.`)
+	cmd.Flags().StringVar(&listPipelinesReq.PageToken, "page-token", listPipelinesReq.PageToken, `Page token returned by previous call.`)
 
 	cmd.Use = "list-pipelines"
 	cmd.Short = `List pipelines.`
@@ -593,9 +593,9 @@ func newListUpdates() *cobra.Command {
 
 	var listUpdatesReq pipelines.ListUpdatesRequest
 
-	cmd.Flags().IntVar(&listUpdatesReq.MaxResults, "max-results", listUpdatesReq.MaxResults, `Max number of entries to return in a single page. Wire name: 'max_results'.`)
-	cmd.Flags().StringVar(&listUpdatesReq.PageToken, "page-token", listUpdatesReq.PageToken, `Page token returned by previous call. Wire name: 'page_token'.`)
-	cmd.Flags().StringVar(&listUpdatesReq.UntilUpdateId, "until-update-id", listUpdatesReq.UntilUpdateId, `If present, returns updates until and including this update_id. Wire name: 'until_update_id'.`)
+	cmd.Flags().IntVar(&listUpdatesReq.MaxResults, "max-results", listUpdatesReq.MaxResults, `Max number of entries to return in a single page.`)
+	cmd.Flags().StringVar(&listUpdatesReq.PageToken, "page-token", listUpdatesReq.PageToken, `Page token returned by previous call.`)
+	cmd.Flags().StringVar(&listUpdatesReq.UntilUpdateId, "until-update-id", listUpdatesReq.UntilUpdateId, `If present, returns updates until and including this update_id.`)
 
 	cmd.Use = "list-updates PIPELINE_ID"
 	cmd.Short = `List pipeline updates.`
@@ -763,11 +763,11 @@ func newStartUpdate() *cobra.Command {
   SCHEMA_CHANGE,
   SERVICE_UPGRADE,
   USER_ACTION,
-]. Wire name: 'cause'.`)
-	cmd.Flags().BoolVar(&startUpdateReq.FullRefresh, "full-refresh", startUpdateReq.FullRefresh, `If true, this update will reset all tables before running. Wire name: 'full_refresh'.`)
+].`)
+	cmd.Flags().BoolVar(&startUpdateReq.FullRefresh, "full-refresh", startUpdateReq.FullRefresh, `If true, this update will reset all tables before running.`)
 	// TODO: array: full_refresh_selection
 	// TODO: array: refresh_selection
-	cmd.Flags().BoolVar(&startUpdateReq.ValidateOnly, "validate-only", startUpdateReq.ValidateOnly, `If true, this update only validates the correctness of pipeline source code but does not materialize or publish any datasets. Wire name: 'validate_only'.`)
+	cmd.Flags().BoolVar(&startUpdateReq.ValidateOnly, "validate-only", startUpdateReq.ValidateOnly, `If true, this update only validates the correctness of pipeline source code but does not materialize or publish any datasets.`)
 
 	cmd.Use = "start-update PIPELINE_ID"
 	cmd.Short = `Start a pipeline.`
@@ -934,37 +934,37 @@ func newUpdate() *cobra.Command {
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&updateReq.AllowDuplicateNames, "allow-duplicate-names", updateReq.AllowDuplicateNames, `If false, deployment will fail if name has changed and conflicts the name of another pipeline. Wire name: 'allow_duplicate_names'.`)
-	cmd.Flags().StringVar(&updateReq.BudgetPolicyId, "budget-policy-id", updateReq.BudgetPolicyId, `Budget policy of this pipeline. Wire name: 'budget_policy_id'.`)
-	cmd.Flags().StringVar(&updateReq.Catalog, "catalog", updateReq.Catalog, `A catalog in Unity Catalog to publish data from this pipeline to. Wire name: 'catalog'.`)
-	cmd.Flags().StringVar(&updateReq.Channel, "channel", updateReq.Channel, `DLT Release Channel that specifies which version to use. Wire name: 'channel'.`)
+	cmd.Flags().BoolVar(&updateReq.AllowDuplicateNames, "allow-duplicate-names", updateReq.AllowDuplicateNames, `If false, deployment will fail if name has changed and conflicts the name of another pipeline.`)
+	cmd.Flags().StringVar(&updateReq.BudgetPolicyId, "budget-policy-id", updateReq.BudgetPolicyId, `Budget policy of this pipeline.`)
+	cmd.Flags().StringVar(&updateReq.Catalog, "catalog", updateReq.Catalog, `A catalog in Unity Catalog to publish data from this pipeline to.`)
+	cmd.Flags().StringVar(&updateReq.Channel, "channel", updateReq.Channel, `DLT Release Channel that specifies which version to use.`)
 	// TODO: array: clusters
 	// TODO: map via StringToStringVar: configuration
-	cmd.Flags().BoolVar(&updateReq.Continuous, "continuous", updateReq.Continuous, `Whether the pipeline is continuous or triggered. Wire name: 'continuous'.`)
+	cmd.Flags().BoolVar(&updateReq.Continuous, "continuous", updateReq.Continuous, `Whether the pipeline is continuous or triggered.`)
 	// TODO: complex arg: deployment
-	cmd.Flags().BoolVar(&updateReq.Development, "development", updateReq.Development, `Whether the pipeline is in Development mode. Wire name: 'development'.`)
-	cmd.Flags().StringVar(&updateReq.Edition, "edition", updateReq.Edition, `Pipeline product edition. Wire name: 'edition'.`)
+	cmd.Flags().BoolVar(&updateReq.Development, "development", updateReq.Development, `Whether the pipeline is in Development mode.`)
+	cmd.Flags().StringVar(&updateReq.Edition, "edition", updateReq.Edition, `Pipeline product edition.`)
 	// TODO: complex arg: environment
 	// TODO: complex arg: event_log
-	cmd.Flags().Int64Var(&updateReq.ExpectedLastModified, "expected-last-modified", updateReq.ExpectedLastModified, `If present, the last-modified time of the pipeline settings before the edit. Wire name: 'expected_last_modified'.`)
+	cmd.Flags().Int64Var(&updateReq.ExpectedLastModified, "expected-last-modified", updateReq.ExpectedLastModified, `If present, the last-modified time of the pipeline settings before the edit.`)
 	// TODO: complex arg: filters
 	// TODO: complex arg: gateway_definition
-	cmd.Flags().StringVar(&updateReq.Id, "id", updateReq.Id, `Unique identifier for this pipeline. Wire name: 'id'.`)
+	cmd.Flags().StringVar(&updateReq.Id, "id", updateReq.Id, `Unique identifier for this pipeline.`)
 	// TODO: complex arg: ingestion_definition
 	// TODO: array: libraries
-	cmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `Friendly identifier for this pipeline. Wire name: 'name'.`)
+	cmd.Flags().StringVar(&updateReq.Name, "name", updateReq.Name, `Friendly identifier for this pipeline.`)
 	// TODO: array: notifications
-	cmd.Flags().BoolVar(&updateReq.Photon, "photon", updateReq.Photon, `Whether Photon is enabled for this pipeline. Wire name: 'photon'.`)
+	cmd.Flags().BoolVar(&updateReq.Photon, "photon", updateReq.Photon, `Whether Photon is enabled for this pipeline.`)
 	// TODO: complex arg: restart_window
-	cmd.Flags().StringVar(&updateReq.RootPath, "root-path", updateReq.RootPath, `Root path for this pipeline. Wire name: 'root_path'.`)
+	cmd.Flags().StringVar(&updateReq.RootPath, "root-path", updateReq.RootPath, `Root path for this pipeline.`)
 	// TODO: complex arg: run_as
-	cmd.Flags().StringVar(&updateReq.Schema, "schema", updateReq.Schema, `The default schema (database) where tables are read from or published to. Wire name: 'schema'.`)
-	cmd.Flags().BoolVar(&updateReq.Serverless, "serverless", updateReq.Serverless, `Whether serverless compute is enabled for this pipeline. Wire name: 'serverless'.`)
-	cmd.Flags().StringVar(&updateReq.Storage, "storage", updateReq.Storage, `DBFS root directory for storing checkpoints and tables. Wire name: 'storage'.`)
+	cmd.Flags().StringVar(&updateReq.Schema, "schema", updateReq.Schema, `The default schema (database) where tables are read from or published to.`)
+	cmd.Flags().BoolVar(&updateReq.Serverless, "serverless", updateReq.Serverless, `Whether serverless compute is enabled for this pipeline.`)
+	cmd.Flags().StringVar(&updateReq.Storage, "storage", updateReq.Storage, `DBFS root directory for storing checkpoints and tables.`)
 	// TODO: map via StringToStringVar: tags
-	cmd.Flags().StringVar(&updateReq.Target, "target", updateReq.Target, `Target schema (database) to add tables in this pipeline to. Wire name: 'target'.`)
+	cmd.Flags().StringVar(&updateReq.Target, "target", updateReq.Target, `Target schema (database) to add tables in this pipeline to.`)
 	// TODO: complex arg: trigger
-	cmd.Flags().StringVar(&updateReq.UsagePolicyId, "usage-policy-id", updateReq.UsagePolicyId, `Usage policy of this pipeline. Wire name: 'usage_policy_id'.`)
+	cmd.Flags().StringVar(&updateReq.UsagePolicyId, "usage-policy-id", updateReq.UsagePolicyId, `Usage policy of this pipeline.`)
 
 	cmd.Use = "update PIPELINE_ID"
 	cmd.Short = `Edit a pipeline.`

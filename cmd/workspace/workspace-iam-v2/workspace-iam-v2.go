@@ -58,7 +58,7 @@ func newGetWorkspaceAccessDetailLocal() *cobra.Command {
 
 	var getWorkspaceAccessDetailLocalReq iamv2.GetWorkspaceAccessDetailLocalRequest
 
-	cmd.Flags().Var(&getWorkspaceAccessDetailLocalReq.View, "view", `Controls what fields are returned. Supported values: [BASIC, FULL]. Wire name: 'view'.`)
+	cmd.Flags().Var(&getWorkspaceAccessDetailLocalReq.View, "view", `Controls what fields are returned. Supported values: [BASIC, FULL].`)
 
 	cmd.Use = "get-workspace-access-detail-local PRINCIPAL_ID"
 	cmd.Short = `Get workspace access details for a principal.`

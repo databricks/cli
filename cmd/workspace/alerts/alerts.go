@@ -66,7 +66,7 @@ func newCreate() *cobra.Command {
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: alert
-	cmd.Flags().BoolVar(&createReq.AutoResolveDisplayName, "auto-resolve-display-name", createReq.AutoResolveDisplayName, `If true, automatically resolve alert display name conflicts. Wire name: 'auto_resolve_display_name'.`)
+	cmd.Flags().BoolVar(&createReq.AutoResolveDisplayName, "auto-resolve-display-name", createReq.AutoResolveDisplayName, `If true, automatically resolve alert display name conflicts.`)
 
 	cmd.Use = "create"
 	cmd.Short = `Create an alert.`
@@ -264,8 +264,8 @@ func newList() *cobra.Command {
 
 	var listReq sql.ListAlertsRequest
 
-	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `Wire name: 'page_size'.`)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Wire name: 'page_token'.`)
+	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, ``)
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, ``)
 
 	cmd.Use = "list"
 	cmd.Short = `List alerts.`
@@ -321,7 +321,7 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: alert
-	cmd.Flags().BoolVar(&updateReq.AutoResolveDisplayName, "auto-resolve-display-name", updateReq.AutoResolveDisplayName, `If true, automatically resolve alert display name conflicts. Wire name: 'auto_resolve_display_name'.`)
+	cmd.Flags().BoolVar(&updateReq.AutoResolveDisplayName, "auto-resolve-display-name", updateReq.AutoResolveDisplayName, `If true, automatically resolve alert display name conflicts.`)
 
 	cmd.Use = "update ID UPDATE_MASK"
 	cmd.Short = `Update an alert.`

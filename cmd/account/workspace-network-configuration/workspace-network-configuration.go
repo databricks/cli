@@ -126,8 +126,8 @@ func newUpdateWorkspaceNetworkOptionRpc() *cobra.Command {
 
 	cmd.Flags().Var(&updateWorkspaceNetworkOptionRpcJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateWorkspaceNetworkOptionRpcReq.WorkspaceNetworkOption.NetworkPolicyId, "network-policy-id", updateWorkspaceNetworkOptionRpcReq.WorkspaceNetworkOption.NetworkPolicyId, `The network policy ID to apply to the workspace. Wire name: 'network_policy_id'.`)
-	cmd.Flags().Int64Var(&updateWorkspaceNetworkOptionRpcReq.WorkspaceNetworkOption.WorkspaceId, "workspace-id", updateWorkspaceNetworkOptionRpcReq.WorkspaceNetworkOption.WorkspaceId, `The workspace ID. Wire name: 'workspace_id'.`)
+	cmd.Flags().StringVar(&updateWorkspaceNetworkOptionRpcReq.WorkspaceNetworkOption.NetworkPolicyId, "network-policy-id", updateWorkspaceNetworkOptionRpcReq.WorkspaceNetworkOption.NetworkPolicyId, `The network policy ID to apply to the workspace.`)
+	cmd.Flags().Int64Var(&updateWorkspaceNetworkOptionRpcReq.WorkspaceNetworkOption.WorkspaceId, "workspace-id", updateWorkspaceNetworkOptionRpcReq.WorkspaceNetworkOption.WorkspaceId, `The workspace ID.`)
 
 	cmd.Use = "update-workspace-network-option-rpc WORKSPACE_ID"
 	cmd.Short = `Update workspace network option.`

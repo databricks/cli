@@ -195,14 +195,14 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&createReq.ApplyPolicyDefaultValues, "apply-policy-default-values", createReq.ApplyPolicyDefaultValues, `When set to true, fixed and default values from the policy will be used for fields that are omitted. Wire name: 'apply_policy_default_values'.`)
+	cmd.Flags().BoolVar(&createReq.ApplyPolicyDefaultValues, "apply-policy-default-values", createReq.ApplyPolicyDefaultValues, `When set to true, fixed and default values from the policy will be used for fields that are omitted.`)
 	// TODO: complex arg: autoscale
-	cmd.Flags().IntVar(&createReq.AutoterminationMinutes, "autotermination-minutes", createReq.AutoterminationMinutes, `Automatically terminates the cluster after it is inactive for this time in minutes. Wire name: 'autotermination_minutes'.`)
+	cmd.Flags().IntVar(&createReq.AutoterminationMinutes, "autotermination-minutes", createReq.AutoterminationMinutes, `Automatically terminates the cluster after it is inactive for this time in minutes.`)
 	// TODO: complex arg: aws_attributes
 	// TODO: complex arg: azure_attributes
 	// TODO: complex arg: clone_from
 	// TODO: complex arg: cluster_log_conf
-	cmd.Flags().StringVar(&createReq.ClusterName, "cluster-name", createReq.ClusterName, `Cluster name requested by the user. Wire name: 'cluster_name'.`)
+	cmd.Flags().StringVar(&createReq.ClusterName, "cluster-name", createReq.ClusterName, `Cluster name requested by the user.`)
 	// TODO: map via StringToStringVar: custom_tags
 	cmd.Flags().Var(&createReq.DataSecurityMode, "data-security-mode", `Supported values: [
   DATA_SECURITY_MODE_AUTO,
@@ -215,28 +215,28 @@ func newCreate() *cobra.Command {
   NONE,
   SINGLE_USER,
   USER_ISOLATION,
-]. Wire name: 'data_security_mode'.`)
+].`)
 	// TODO: complex arg: docker_image
-	cmd.Flags().StringVar(&createReq.DriverInstancePoolId, "driver-instance-pool-id", createReq.DriverInstancePoolId, `The optional ID of the instance pool for the driver of the cluster belongs. Wire name: 'driver_instance_pool_id'.`)
-	cmd.Flags().StringVar(&createReq.DriverNodeTypeId, "driver-node-type-id", createReq.DriverNodeTypeId, `The node type of the Spark driver. Wire name: 'driver_node_type_id'.`)
-	cmd.Flags().BoolVar(&createReq.EnableElasticDisk, "enable-elastic-disk", createReq.EnableElasticDisk, `Autoscaling Local Storage: when enabled, this cluster will dynamically acquire additional disk space when its Spark workers are running low on disk space. Wire name: 'enable_elastic_disk'.`)
-	cmd.Flags().BoolVar(&createReq.EnableLocalDiskEncryption, "enable-local-disk-encryption", createReq.EnableLocalDiskEncryption, `Whether to enable LUKS on cluster VMs' local disks. Wire name: 'enable_local_disk_encryption'.`)
+	cmd.Flags().StringVar(&createReq.DriverInstancePoolId, "driver-instance-pool-id", createReq.DriverInstancePoolId, `The optional ID of the instance pool for the driver of the cluster belongs.`)
+	cmd.Flags().StringVar(&createReq.DriverNodeTypeId, "driver-node-type-id", createReq.DriverNodeTypeId, `The node type of the Spark driver.`)
+	cmd.Flags().BoolVar(&createReq.EnableElasticDisk, "enable-elastic-disk", createReq.EnableElasticDisk, `Autoscaling Local Storage: when enabled, this cluster will dynamically acquire additional disk space when its Spark workers are running low on disk space.`)
+	cmd.Flags().BoolVar(&createReq.EnableLocalDiskEncryption, "enable-local-disk-encryption", createReq.EnableLocalDiskEncryption, `Whether to enable LUKS on cluster VMs' local disks.`)
 	// TODO: complex arg: gcp_attributes
 	// TODO: array: init_scripts
-	cmd.Flags().StringVar(&createReq.InstancePoolId, "instance-pool-id", createReq.InstancePoolId, `The optional ID of the instance pool to which the cluster belongs. Wire name: 'instance_pool_id'.`)
-	cmd.Flags().BoolVar(&createReq.IsSingleNode, "is-single-node", createReq.IsSingleNode, `This field can only be used when kind = CLASSIC_PREVIEW. Wire name: 'is_single_node'.`)
-	cmd.Flags().Var(&createReq.Kind, "kind", `Supported values: [CLASSIC_PREVIEW]. Wire name: 'kind'.`)
-	cmd.Flags().StringVar(&createReq.NodeTypeId, "node-type-id", createReq.NodeTypeId, `This field encodes, through a single value, the resources available to each of the Spark nodes in this cluster. Wire name: 'node_type_id'.`)
-	cmd.Flags().IntVar(&createReq.NumWorkers, "num-workers", createReq.NumWorkers, `Number of worker nodes that this cluster should have. Wire name: 'num_workers'.`)
-	cmd.Flags().StringVar(&createReq.PolicyId, "policy-id", createReq.PolicyId, `The ID of the cluster policy used to create the cluster if applicable. Wire name: 'policy_id'.`)
-	cmd.Flags().IntVar(&createReq.RemoteDiskThroughput, "remote-disk-throughput", createReq.RemoteDiskThroughput, `If set, what the configurable throughput (in Mb/s) for the remote disk is. Wire name: 'remote_disk_throughput'.`)
-	cmd.Flags().Var(&createReq.RuntimeEngine, "runtime-engine", `Determines the cluster's runtime engine, either standard or Photon. Supported values: [NULL, PHOTON, STANDARD]. Wire name: 'runtime_engine'.`)
-	cmd.Flags().StringVar(&createReq.SingleUserName, "single-user-name", createReq.SingleUserName, `Single user name if data_security_mode is SINGLE_USER. Wire name: 'single_user_name'.`)
+	cmd.Flags().StringVar(&createReq.InstancePoolId, "instance-pool-id", createReq.InstancePoolId, `The optional ID of the instance pool to which the cluster belongs.`)
+	cmd.Flags().BoolVar(&createReq.IsSingleNode, "is-single-node", createReq.IsSingleNode, `This field can only be used when kind = CLASSIC_PREVIEW.`)
+	cmd.Flags().Var(&createReq.Kind, "kind", `Supported values: [CLASSIC_PREVIEW].`)
+	cmd.Flags().StringVar(&createReq.NodeTypeId, "node-type-id", createReq.NodeTypeId, `This field encodes, through a single value, the resources available to each of the Spark nodes in this cluster.`)
+	cmd.Flags().IntVar(&createReq.NumWorkers, "num-workers", createReq.NumWorkers, `Number of worker nodes that this cluster should have.`)
+	cmd.Flags().StringVar(&createReq.PolicyId, "policy-id", createReq.PolicyId, `The ID of the cluster policy used to create the cluster if applicable.`)
+	cmd.Flags().IntVar(&createReq.RemoteDiskThroughput, "remote-disk-throughput", createReq.RemoteDiskThroughput, `If set, what the configurable throughput (in Mb/s) for the remote disk is.`)
+	cmd.Flags().Var(&createReq.RuntimeEngine, "runtime-engine", `Determines the cluster's runtime engine, either standard or Photon. Supported values: [NULL, PHOTON, STANDARD].`)
+	cmd.Flags().StringVar(&createReq.SingleUserName, "single-user-name", createReq.SingleUserName, `Single user name if data_security_mode is SINGLE_USER.`)
 	// TODO: map via StringToStringVar: spark_conf
 	// TODO: map via StringToStringVar: spark_env_vars
 	// TODO: array: ssh_public_keys
-	cmd.Flags().IntVar(&createReq.TotalInitialRemoteDiskSize, "total-initial-remote-disk-size", createReq.TotalInitialRemoteDiskSize, `If set, what the total initial volume size (in GB) of the remote disks should be. Wire name: 'total_initial_remote_disk_size'.`)
-	cmd.Flags().BoolVar(&createReq.UseMlRuntime, "use-ml-runtime", createReq.UseMlRuntime, `This field can only be used when kind = CLASSIC_PREVIEW. Wire name: 'use_ml_runtime'.`)
+	cmd.Flags().IntVar(&createReq.TotalInitialRemoteDiskSize, "total-initial-remote-disk-size", createReq.TotalInitialRemoteDiskSize, `If set, what the total initial volume size (in GB) of the remote disks should be.`)
+	cmd.Flags().BoolVar(&createReq.UseMlRuntime, "use-ml-runtime", createReq.UseMlRuntime, `This field can only be used when kind = CLASSIC_PREVIEW.`)
 	// TODO: complex arg: workload_type
 
 	cmd.Use = "create SPARK_VERSION"
@@ -471,13 +471,13 @@ func newEdit() *cobra.Command {
 
 	cmd.Flags().Var(&editJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&editReq.ApplyPolicyDefaultValues, "apply-policy-default-values", editReq.ApplyPolicyDefaultValues, `When set to true, fixed and default values from the policy will be used for fields that are omitted. Wire name: 'apply_policy_default_values'.`)
+	cmd.Flags().BoolVar(&editReq.ApplyPolicyDefaultValues, "apply-policy-default-values", editReq.ApplyPolicyDefaultValues, `When set to true, fixed and default values from the policy will be used for fields that are omitted.`)
 	// TODO: complex arg: autoscale
-	cmd.Flags().IntVar(&editReq.AutoterminationMinutes, "autotermination-minutes", editReq.AutoterminationMinutes, `Automatically terminates the cluster after it is inactive for this time in minutes. Wire name: 'autotermination_minutes'.`)
+	cmd.Flags().IntVar(&editReq.AutoterminationMinutes, "autotermination-minutes", editReq.AutoterminationMinutes, `Automatically terminates the cluster after it is inactive for this time in minutes.`)
 	// TODO: complex arg: aws_attributes
 	// TODO: complex arg: azure_attributes
 	// TODO: complex arg: cluster_log_conf
-	cmd.Flags().StringVar(&editReq.ClusterName, "cluster-name", editReq.ClusterName, `Cluster name requested by the user. Wire name: 'cluster_name'.`)
+	cmd.Flags().StringVar(&editReq.ClusterName, "cluster-name", editReq.ClusterName, `Cluster name requested by the user.`)
 	// TODO: map via StringToStringVar: custom_tags
 	cmd.Flags().Var(&editReq.DataSecurityMode, "data-security-mode", `Supported values: [
   DATA_SECURITY_MODE_AUTO,
@@ -490,28 +490,28 @@ func newEdit() *cobra.Command {
   NONE,
   SINGLE_USER,
   USER_ISOLATION,
-]. Wire name: 'data_security_mode'.`)
+].`)
 	// TODO: complex arg: docker_image
-	cmd.Flags().StringVar(&editReq.DriverInstancePoolId, "driver-instance-pool-id", editReq.DriverInstancePoolId, `The optional ID of the instance pool for the driver of the cluster belongs. Wire name: 'driver_instance_pool_id'.`)
-	cmd.Flags().StringVar(&editReq.DriverNodeTypeId, "driver-node-type-id", editReq.DriverNodeTypeId, `The node type of the Spark driver. Wire name: 'driver_node_type_id'.`)
-	cmd.Flags().BoolVar(&editReq.EnableElasticDisk, "enable-elastic-disk", editReq.EnableElasticDisk, `Autoscaling Local Storage: when enabled, this cluster will dynamically acquire additional disk space when its Spark workers are running low on disk space. Wire name: 'enable_elastic_disk'.`)
-	cmd.Flags().BoolVar(&editReq.EnableLocalDiskEncryption, "enable-local-disk-encryption", editReq.EnableLocalDiskEncryption, `Whether to enable LUKS on cluster VMs' local disks. Wire name: 'enable_local_disk_encryption'.`)
+	cmd.Flags().StringVar(&editReq.DriverInstancePoolId, "driver-instance-pool-id", editReq.DriverInstancePoolId, `The optional ID of the instance pool for the driver of the cluster belongs.`)
+	cmd.Flags().StringVar(&editReq.DriverNodeTypeId, "driver-node-type-id", editReq.DriverNodeTypeId, `The node type of the Spark driver.`)
+	cmd.Flags().BoolVar(&editReq.EnableElasticDisk, "enable-elastic-disk", editReq.EnableElasticDisk, `Autoscaling Local Storage: when enabled, this cluster will dynamically acquire additional disk space when its Spark workers are running low on disk space.`)
+	cmd.Flags().BoolVar(&editReq.EnableLocalDiskEncryption, "enable-local-disk-encryption", editReq.EnableLocalDiskEncryption, `Whether to enable LUKS on cluster VMs' local disks.`)
 	// TODO: complex arg: gcp_attributes
 	// TODO: array: init_scripts
-	cmd.Flags().StringVar(&editReq.InstancePoolId, "instance-pool-id", editReq.InstancePoolId, `The optional ID of the instance pool to which the cluster belongs. Wire name: 'instance_pool_id'.`)
-	cmd.Flags().BoolVar(&editReq.IsSingleNode, "is-single-node", editReq.IsSingleNode, `This field can only be used when kind = CLASSIC_PREVIEW. Wire name: 'is_single_node'.`)
-	cmd.Flags().Var(&editReq.Kind, "kind", `Supported values: [CLASSIC_PREVIEW]. Wire name: 'kind'.`)
-	cmd.Flags().StringVar(&editReq.NodeTypeId, "node-type-id", editReq.NodeTypeId, `This field encodes, through a single value, the resources available to each of the Spark nodes in this cluster. Wire name: 'node_type_id'.`)
-	cmd.Flags().IntVar(&editReq.NumWorkers, "num-workers", editReq.NumWorkers, `Number of worker nodes that this cluster should have. Wire name: 'num_workers'.`)
-	cmd.Flags().StringVar(&editReq.PolicyId, "policy-id", editReq.PolicyId, `The ID of the cluster policy used to create the cluster if applicable. Wire name: 'policy_id'.`)
-	cmd.Flags().IntVar(&editReq.RemoteDiskThroughput, "remote-disk-throughput", editReq.RemoteDiskThroughput, `If set, what the configurable throughput (in Mb/s) for the remote disk is. Wire name: 'remote_disk_throughput'.`)
-	cmd.Flags().Var(&editReq.RuntimeEngine, "runtime-engine", `Determines the cluster's runtime engine, either standard or Photon. Supported values: [NULL, PHOTON, STANDARD]. Wire name: 'runtime_engine'.`)
-	cmd.Flags().StringVar(&editReq.SingleUserName, "single-user-name", editReq.SingleUserName, `Single user name if data_security_mode is SINGLE_USER. Wire name: 'single_user_name'.`)
+	cmd.Flags().StringVar(&editReq.InstancePoolId, "instance-pool-id", editReq.InstancePoolId, `The optional ID of the instance pool to which the cluster belongs.`)
+	cmd.Flags().BoolVar(&editReq.IsSingleNode, "is-single-node", editReq.IsSingleNode, `This field can only be used when kind = CLASSIC_PREVIEW.`)
+	cmd.Flags().Var(&editReq.Kind, "kind", `Supported values: [CLASSIC_PREVIEW].`)
+	cmd.Flags().StringVar(&editReq.NodeTypeId, "node-type-id", editReq.NodeTypeId, `This field encodes, through a single value, the resources available to each of the Spark nodes in this cluster.`)
+	cmd.Flags().IntVar(&editReq.NumWorkers, "num-workers", editReq.NumWorkers, `Number of worker nodes that this cluster should have.`)
+	cmd.Flags().StringVar(&editReq.PolicyId, "policy-id", editReq.PolicyId, `The ID of the cluster policy used to create the cluster if applicable.`)
+	cmd.Flags().IntVar(&editReq.RemoteDiskThroughput, "remote-disk-throughput", editReq.RemoteDiskThroughput, `If set, what the configurable throughput (in Mb/s) for the remote disk is.`)
+	cmd.Flags().Var(&editReq.RuntimeEngine, "runtime-engine", `Determines the cluster's runtime engine, either standard or Photon. Supported values: [NULL, PHOTON, STANDARD].`)
+	cmd.Flags().StringVar(&editReq.SingleUserName, "single-user-name", editReq.SingleUserName, `Single user name if data_security_mode is SINGLE_USER.`)
 	// TODO: map via StringToStringVar: spark_conf
 	// TODO: map via StringToStringVar: spark_env_vars
 	// TODO: array: ssh_public_keys
-	cmd.Flags().IntVar(&editReq.TotalInitialRemoteDiskSize, "total-initial-remote-disk-size", editReq.TotalInitialRemoteDiskSize, `If set, what the total initial volume size (in GB) of the remote disks should be. Wire name: 'total_initial_remote_disk_size'.`)
-	cmd.Flags().BoolVar(&editReq.UseMlRuntime, "use-ml-runtime", editReq.UseMlRuntime, `This field can only be used when kind = CLASSIC_PREVIEW. Wire name: 'use_ml_runtime'.`)
+	cmd.Flags().IntVar(&editReq.TotalInitialRemoteDiskSize, "total-initial-remote-disk-size", editReq.TotalInitialRemoteDiskSize, `If set, what the total initial volume size (in GB) of the remote disks should be.`)
+	cmd.Flags().BoolVar(&editReq.UseMlRuntime, "use-ml-runtime", editReq.UseMlRuntime, `This field can only be used when kind = CLASSIC_PREVIEW.`)
 	// TODO: complex arg: workload_type
 
 	cmd.Use = "edit CLUSTER_ID SPARK_VERSION"
@@ -623,14 +623,14 @@ func newEvents() *cobra.Command {
 
 	cmd.Flags().Var(&eventsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().Int64Var(&eventsReq.EndTime, "end-time", eventsReq.EndTime, `The end time in epoch milliseconds. Wire name: 'end_time'.`)
+	cmd.Flags().Int64Var(&eventsReq.EndTime, "end-time", eventsReq.EndTime, `The end time in epoch milliseconds.`)
 	// TODO: array: event_types
-	cmd.Flags().Int64Var(&eventsReq.Limit, "limit", eventsReq.Limit, `Deprecated: use page_token in combination with page_size instead. Wire name: 'limit'.`)
-	cmd.Flags().Int64Var(&eventsReq.Offset, "offset", eventsReq.Offset, `Deprecated: use page_token in combination with page_size instead. Wire name: 'offset'.`)
-	cmd.Flags().Var(&eventsReq.Order, "order", `The order to list events in; either "ASC" or "DESC". Supported values: [ASC, DESC]. Wire name: 'order'.`)
-	cmd.Flags().IntVar(&eventsReq.PageSize, "page-size", eventsReq.PageSize, `The maximum number of events to include in a page of events. Wire name: 'page_size'.`)
-	cmd.Flags().StringVar(&eventsReq.PageToken, "page-token", eventsReq.PageToken, `Use next_page_token or prev_page_token returned from the previous request to list the next or previous page of events respectively. Wire name: 'page_token'.`)
-	cmd.Flags().Int64Var(&eventsReq.StartTime, "start-time", eventsReq.StartTime, `The start time in epoch milliseconds. Wire name: 'start_time'.`)
+	cmd.Flags().Int64Var(&eventsReq.Limit, "limit", eventsReq.Limit, `Deprecated: use page_token in combination with page_size instead.`)
+	cmd.Flags().Int64Var(&eventsReq.Offset, "offset", eventsReq.Offset, `Deprecated: use page_token in combination with page_size instead.`)
+	cmd.Flags().Var(&eventsReq.Order, "order", `The order to list events in; either "ASC" or "DESC". Supported values: [ASC, DESC].`)
+	cmd.Flags().IntVar(&eventsReq.PageSize, "page-size", eventsReq.PageSize, `The maximum number of events to include in a page of events.`)
+	cmd.Flags().StringVar(&eventsReq.PageToken, "page-token", eventsReq.PageToken, `Use next_page_token or prev_page_token returned from the previous request to list the next or previous page of events respectively.`)
+	cmd.Flags().Int64Var(&eventsReq.StartTime, "start-time", eventsReq.StartTime, `The start time in epoch milliseconds.`)
 
 	cmd.Use = "events CLUSTER_ID"
 	cmd.Short = `List cluster activity events.`
@@ -931,8 +931,8 @@ func newList() *cobra.Command {
 	var listReq compute.ListClustersRequest
 
 	// TODO: complex arg: filter_by
-	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `Use this field to specify the maximum number of results to be returned by the server. Wire name: 'page_size'.`)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Use next_page_token or prev_page_token returned from the previous request to list the next or previous page of clusters respectively. Wire name: 'page_token'.`)
+	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `Use this field to specify the maximum number of results to be returned by the server.`)
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Use next_page_token or prev_page_token returned from the previous request to list the next or previous page of clusters respectively.`)
 	// TODO: complex arg: sort_by
 
 	cmd.Use = "list"
@@ -1275,7 +1275,7 @@ func newResize() *cobra.Command {
 	cmd.Flags().Var(&resizeJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: autoscale
-	cmd.Flags().IntVar(&resizeReq.NumWorkers, "num-workers", resizeReq.NumWorkers, `Number of worker nodes that this cluster should have. Wire name: 'num_workers'.`)
+	cmd.Flags().IntVar(&resizeReq.NumWorkers, "num-workers", resizeReq.NumWorkers, `Number of worker nodes that this cluster should have.`)
 
 	cmd.Use = "resize CLUSTER_ID"
 	cmd.Short = `Resize cluster.`
@@ -1392,7 +1392,7 @@ func newRestart() *cobra.Command {
 
 	cmd.Flags().Var(&restartJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&restartReq.RestartUser, "restart-user", restartReq.RestartUser, `Wire name: 'restart_user'.`)
+	cmd.Flags().StringVar(&restartReq.RestartUser, "restart-user", restartReq.RestartUser, ``)
 
 	cmd.Use = "restart CLUSTER_ID"
 	cmd.Short = `Restart cluster.`

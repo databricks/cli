@@ -66,7 +66,7 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createReq.TagAssignment.TagValue, "tag-value", createReq.TagAssignment.TagValue, `The value of the tag. Wire name: 'tag_value'.`)
+	cmd.Flags().StringVar(&createReq.TagAssignment.TagValue, "tag-value", createReq.TagAssignment.TagValue, `The value of the tag.`)
 
 	cmd.Use = "create ENTITY_NAME TAG_KEY ENTITY_TYPE"
 	cmd.Short = `Create an entity tag assignment.`
@@ -296,8 +296,8 @@ func newList() *cobra.Command {
 
 	var listReq catalog.ListEntityTagAssignmentsRequest
 
-	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Optional. Wire name: 'max_results'.`)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Optional. Wire name: 'page_token'.`)
+	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Optional.`)
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Optional.`)
 
 	cmd.Use = "list ENTITY_TYPE ENTITY_NAME"
 	cmd.Short = `List entity tag assignments.`
@@ -364,7 +364,7 @@ func newUpdate() *cobra.Command {
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateReq.TagAssignment.TagValue, "tag-value", updateReq.TagAssignment.TagValue, `The value of the tag. Wire name: 'tag_value'.`)
+	cmd.Flags().StringVar(&updateReq.TagAssignment.TagValue, "tag-value", updateReq.TagAssignment.TagValue, `The value of the tag.`)
 
 	cmd.Use = "update ENTITY_TYPE ENTITY_NAME TAG_KEY UPDATE_MASK"
 	cmd.Short = `Update an entity tag assignment.`

@@ -82,7 +82,7 @@ func newGenerateTemporaryPathCredentials() *cobra.Command {
 
 	cmd.Flags().Var(&generateTemporaryPathCredentialsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&generateTemporaryPathCredentialsReq.DryRun, "dry-run", generateTemporaryPathCredentialsReq.DryRun, `Optional. Wire name: 'dry_run'.`)
+	cmd.Flags().BoolVar(&generateTemporaryPathCredentialsReq.DryRun, "dry-run", generateTemporaryPathCredentialsReq.DryRun, `Optional.`)
 
 	cmd.Use = "generate-temporary-path-credentials URL OPERATION"
 	cmd.Short = `Generate a temporary path credential.`

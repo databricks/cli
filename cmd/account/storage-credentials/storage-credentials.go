@@ -60,7 +60,7 @@ func newCreate() *cobra.Command {
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: credential_info
-	cmd.Flags().BoolVar(&createReq.SkipValidation, "skip-validation", createReq.SkipValidation, `Optional, default false. Wire name: 'skip_validation'.`)
+	cmd.Flags().BoolVar(&createReq.SkipValidation, "skip-validation", createReq.SkipValidation, `Optional, default false.`)
 
 	cmd.Use = "create METASTORE_ID"
 	cmd.Short = `Create a storage credential.`
@@ -135,7 +135,7 @@ func newDelete() *cobra.Command {
 
 	var deleteReq catalog.DeleteAccountStorageCredentialRequest
 
-	cmd.Flags().BoolVar(&deleteReq.Force, "force", deleteReq.Force, `Force deletion even if the Storage Credential is not empty. Wire name: 'force'.`)
+	cmd.Flags().BoolVar(&deleteReq.Force, "force", deleteReq.Force, `Force deletion even if the Storage Credential is not empty.`)
 
 	cmd.Use = "delete METASTORE_ID STORAGE_CREDENTIAL_NAME"
 	cmd.Short = `Delete a storage credential.`
@@ -314,7 +314,7 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: credential_info
-	cmd.Flags().BoolVar(&updateReq.SkipValidation, "skip-validation", updateReq.SkipValidation, `Optional. Wire name: 'skip_validation'.`)
+	cmd.Flags().BoolVar(&updateReq.SkipValidation, "skip-validation", updateReq.SkipValidation, `Optional.`)
 
 	cmd.Use = "update METASTORE_ID STORAGE_CREDENTIAL_NAME"
 	cmd.Short = `Updates a storage credential.`

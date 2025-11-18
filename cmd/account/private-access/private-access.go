@@ -60,10 +60,10 @@ func newCreate() *cobra.Command {
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: allowed_vpc_endpoint_ids
-	cmd.Flags().Var(&createReq.PrivateAccessLevel, "private-access-level", `The private access level controls which VPC endpoints can connect to the UI or API of any workspace that attaches this private access settings object. Supported values: [ACCOUNT, ENDPOINT]. Wire name: 'private_access_level'.`)
-	cmd.Flags().StringVar(&createReq.PrivateAccessSettingsName, "private-access-settings-name", createReq.PrivateAccessSettingsName, `The human-readable name of the private access settings object. Wire name: 'private_access_settings_name'.`)
-	cmd.Flags().BoolVar(&createReq.PublicAccessEnabled, "public-access-enabled", createReq.PublicAccessEnabled, `Determines if the workspace can be accessed over public internet. Wire name: 'public_access_enabled'.`)
-	cmd.Flags().StringVar(&createReq.Region, "region", createReq.Region, `The AWS region for workspaces attached to this private access settings object. Wire name: 'region'.`)
+	cmd.Flags().Var(&createReq.PrivateAccessLevel, "private-access-level", `The private access level controls which VPC endpoints can connect to the UI or API of any workspace that attaches this private access settings object. Supported values: [ACCOUNT, ENDPOINT].`)
+	cmd.Flags().StringVar(&createReq.PrivateAccessSettingsName, "private-access-settings-name", createReq.PrivateAccessSettingsName, `The human-readable name of the private access settings object.`)
+	cmd.Flags().BoolVar(&createReq.PublicAccessEnabled, "public-access-enabled", createReq.PublicAccessEnabled, `Determines if the workspace can be accessed over public internet.`)
+	cmd.Flags().StringVar(&createReq.Region, "region", createReq.Region, `The AWS region for workspaces attached to this private access settings object.`)
 
 	cmd.Use = "create"
 	cmd.Short = `Create private access settings.`
@@ -286,10 +286,10 @@ func newReplace() *cobra.Command {
 	cmd.Flags().Var(&replaceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: array: allowed_vpc_endpoint_ids
-	cmd.Flags().Var(&replaceReq.CustomerFacingPrivateAccessSettings.PrivateAccessLevel, "private-access-level", `The private access level controls which VPC endpoints can connect to the UI or API of any workspace that attaches this private access settings object. Supported values: [ACCOUNT, ENDPOINT]. Wire name: 'private_access_level'.`)
-	cmd.Flags().StringVar(&replaceReq.CustomerFacingPrivateAccessSettings.PrivateAccessSettingsName, "private-access-settings-name", replaceReq.CustomerFacingPrivateAccessSettings.PrivateAccessSettingsName, `The human-readable name of the private access settings object. Wire name: 'private_access_settings_name'.`)
-	cmd.Flags().BoolVar(&replaceReq.CustomerFacingPrivateAccessSettings.PublicAccessEnabled, "public-access-enabled", replaceReq.CustomerFacingPrivateAccessSettings.PublicAccessEnabled, `Determines if the workspace can be accessed over public internet. Wire name: 'public_access_enabled'.`)
-	cmd.Flags().StringVar(&replaceReq.CustomerFacingPrivateAccessSettings.Region, "region", replaceReq.CustomerFacingPrivateAccessSettings.Region, `The AWS region for workspaces attached to this private access settings object. Wire name: 'region'.`)
+	cmd.Flags().Var(&replaceReq.CustomerFacingPrivateAccessSettings.PrivateAccessLevel, "private-access-level", `The private access level controls which VPC endpoints can connect to the UI or API of any workspace that attaches this private access settings object. Supported values: [ACCOUNT, ENDPOINT].`)
+	cmd.Flags().StringVar(&replaceReq.CustomerFacingPrivateAccessSettings.PrivateAccessSettingsName, "private-access-settings-name", replaceReq.CustomerFacingPrivateAccessSettings.PrivateAccessSettingsName, `The human-readable name of the private access settings object.`)
+	cmd.Flags().BoolVar(&replaceReq.CustomerFacingPrivateAccessSettings.PublicAccessEnabled, "public-access-enabled", replaceReq.CustomerFacingPrivateAccessSettings.PublicAccessEnabled, `Determines if the workspace can be accessed over public internet.`)
+	cmd.Flags().StringVar(&replaceReq.CustomerFacingPrivateAccessSettings.Region, "region", replaceReq.CustomerFacingPrivateAccessSettings.Region, `The AWS region for workspaces attached to this private access settings object.`)
 
 	cmd.Use = "replace PRIVATE_ACCESS_SETTINGS_ID"
 	cmd.Short = `Update private access settings.`

@@ -69,16 +69,16 @@ func newCreateExperiment() *cobra.Command {
 
 	cmd.Flags().Var(&createExperimentJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createExperimentReq.CustomWeightsColumn, "custom-weights-column", createExperimentReq.CustomWeightsColumn, `The column in the training table used to customize weights for each time series. Wire name: 'custom_weights_column'.`)
-	cmd.Flags().StringVar(&createExperimentReq.ExperimentPath, "experiment-path", createExperimentReq.ExperimentPath, `The path in the workspace to store the created experiment. Wire name: 'experiment_path'.`)
-	cmd.Flags().StringVar(&createExperimentReq.FutureFeatureDataPath, "future-feature-data-path", createExperimentReq.FutureFeatureDataPath, `The fully qualified path of a Unity Catalog table, formatted as catalog_name.schema_name.table_name, used to store future feature data for predictions. Wire name: 'future_feature_data_path'.`)
+	cmd.Flags().StringVar(&createExperimentReq.CustomWeightsColumn, "custom-weights-column", createExperimentReq.CustomWeightsColumn, `The column in the training table used to customize weights for each time series.`)
+	cmd.Flags().StringVar(&createExperimentReq.ExperimentPath, "experiment-path", createExperimentReq.ExperimentPath, `The path in the workspace to store the created experiment.`)
+	cmd.Flags().StringVar(&createExperimentReq.FutureFeatureDataPath, "future-feature-data-path", createExperimentReq.FutureFeatureDataPath, `The fully qualified path of a Unity Catalog table, formatted as catalog_name.schema_name.table_name, used to store future feature data for predictions.`)
 	// TODO: array: holiday_regions
 	// TODO: array: include_features
-	cmd.Flags().Int64Var(&createExperimentReq.MaxRuntime, "max-runtime", createExperimentReq.MaxRuntime, `The maximum duration for the experiment in minutes. Wire name: 'max_runtime'.`)
-	cmd.Flags().StringVar(&createExperimentReq.PredictionDataPath, "prediction-data-path", createExperimentReq.PredictionDataPath, `The fully qualified path of a Unity Catalog table, formatted as catalog_name.schema_name.table_name, used to store predictions. Wire name: 'prediction_data_path'.`)
-	cmd.Flags().StringVar(&createExperimentReq.PrimaryMetric, "primary-metric", createExperimentReq.PrimaryMetric, `The evaluation metric used to optimize the forecasting model. Wire name: 'primary_metric'.`)
-	cmd.Flags().StringVar(&createExperimentReq.RegisterTo, "register-to", createExperimentReq.RegisterTo, `The fully qualified path of a Unity Catalog model, formatted as catalog_name.schema_name.model_name, used to store the best model. Wire name: 'register_to'.`)
-	cmd.Flags().StringVar(&createExperimentReq.SplitColumn, "split-column", createExperimentReq.SplitColumn, `// The column in the training table used for custom data splits. Wire name: 'split_column'.`)
+	cmd.Flags().Int64Var(&createExperimentReq.MaxRuntime, "max-runtime", createExperimentReq.MaxRuntime, `The maximum duration for the experiment in minutes.`)
+	cmd.Flags().StringVar(&createExperimentReq.PredictionDataPath, "prediction-data-path", createExperimentReq.PredictionDataPath, `The fully qualified path of a Unity Catalog table, formatted as catalog_name.schema_name.table_name, used to store predictions.`)
+	cmd.Flags().StringVar(&createExperimentReq.PrimaryMetric, "primary-metric", createExperimentReq.PrimaryMetric, `The evaluation metric used to optimize the forecasting model.`)
+	cmd.Flags().StringVar(&createExperimentReq.RegisterTo, "register-to", createExperimentReq.RegisterTo, `The fully qualified path of a Unity Catalog model, formatted as catalog_name.schema_name.model_name, used to store the best model.`)
+	cmd.Flags().StringVar(&createExperimentReq.SplitColumn, "split-column", createExperimentReq.SplitColumn, `// The column in the training table used for custom data splits.`)
 	// TODO: array: timeseries_identifier_columns
 	// TODO: array: training_frameworks
 

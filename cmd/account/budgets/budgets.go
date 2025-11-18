@@ -240,7 +240,7 @@ func newList() *cobra.Command {
 
 	var listReq billing.ListBudgetConfigurationsRequest
 
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `A page token received from a previous get all budget configurations call. Wire name: 'page_token'.`)
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `A page token received from a previous get all budget configurations call.`)
 
 	cmd.Use = "list"
 	cmd.Short = `Get all budgets.`

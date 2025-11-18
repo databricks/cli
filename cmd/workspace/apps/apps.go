@@ -82,13 +82,13 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().BoolVar(&createReq.NoCompute, "no-compute", createReq.NoCompute, `If true, the app will not be started after creation. Wire name: 'no_compute'.`)
+	cmd.Flags().BoolVar(&createReq.NoCompute, "no-compute", createReq.NoCompute, `If true, the app will not be started after creation.`)
 	// TODO: complex arg: active_deployment
 	// TODO: complex arg: app_status
-	cmd.Flags().StringVar(&createReq.App.BudgetPolicyId, "budget-policy-id", createReq.App.BudgetPolicyId, `Wire name: 'budget_policy_id'.`)
-	cmd.Flags().Var(&createReq.App.ComputeSize, "compute-size", `Supported values: [LARGE, LIQUID, MEDIUM]. Wire name: 'compute_size'.`)
+	cmd.Flags().StringVar(&createReq.App.BudgetPolicyId, "budget-policy-id", createReq.App.BudgetPolicyId, ``)
+	cmd.Flags().Var(&createReq.App.ComputeSize, "compute-size", `Supported values: [LARGE, LIQUID, MEDIUM].`)
 	// TODO: complex arg: compute_status
-	cmd.Flags().StringVar(&createReq.App.Description, "description", createReq.App.Description, `The description of the app. Wire name: 'description'.`)
+	cmd.Flags().StringVar(&createReq.App.Description, "description", createReq.App.Description, `The description of the app.`)
 	// TODO: array: effective_user_api_scopes
 	// TODO: complex arg: pending_deployment
 	// TODO: array: resources
@@ -379,9 +379,9 @@ func newDeploy() *cobra.Command {
 	cmd.Flags().Var(&deployJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: deployment_artifacts
-	cmd.Flags().StringVar(&deployReq.AppDeployment.DeploymentId, "deployment-id", deployReq.AppDeployment.DeploymentId, `The unique id of the deployment. Wire name: 'deployment_id'.`)
-	cmd.Flags().Var(&deployReq.AppDeployment.Mode, "mode", `The mode of which the deployment will manage the source code. Supported values: [AUTO_SYNC, SNAPSHOT]. Wire name: 'mode'.`)
-	cmd.Flags().StringVar(&deployReq.AppDeployment.SourceCodePath, "source-code-path", deployReq.AppDeployment.SourceCodePath, `The workspace file system path of the source code used to create the app deployment. Wire name: 'source_code_path'.`)
+	cmd.Flags().StringVar(&deployReq.AppDeployment.DeploymentId, "deployment-id", deployReq.AppDeployment.DeploymentId, `The unique id of the deployment.`)
+	cmd.Flags().Var(&deployReq.AppDeployment.Mode, "mode", `The mode of which the deployment will manage the source code. Supported values: [AUTO_SYNC, SNAPSHOT].`)
+	cmd.Flags().StringVar(&deployReq.AppDeployment.SourceCodePath, "source-code-path", deployReq.AppDeployment.SourceCodePath, `The workspace file system path of the source code used to create the app deployment.`)
 	// TODO: complex arg: status
 
 	cmd.Use = "deploy APP_NAME"
@@ -755,8 +755,8 @@ func newList() *cobra.Command {
 
 	var listReq apps.ListAppsRequest
 
-	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `Upper bound for items returned. Wire name: 'page_size'.`)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token to go to the next page of apps. Wire name: 'page_token'.`)
+	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `Upper bound for items returned.`)
+	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token to go to the next page of apps.`)
 
 	cmd.Use = "list"
 	cmd.Short = `List apps.`
@@ -806,8 +806,8 @@ func newListDeployments() *cobra.Command {
 
 	var listDeploymentsReq apps.ListAppDeploymentsRequest
 
-	cmd.Flags().IntVar(&listDeploymentsReq.PageSize, "page-size", listDeploymentsReq.PageSize, `Upper bound for items returned. Wire name: 'page_size'.`)
-	cmd.Flags().StringVar(&listDeploymentsReq.PageToken, "page-token", listDeploymentsReq.PageToken, `Pagination token to go to the next page of apps. Wire name: 'page_token'.`)
+	cmd.Flags().IntVar(&listDeploymentsReq.PageSize, "page-size", listDeploymentsReq.PageSize, `Upper bound for items returned.`)
+	cmd.Flags().StringVar(&listDeploymentsReq.PageToken, "page-token", listDeploymentsReq.PageToken, `Pagination token to go to the next page of apps.`)
 
 	cmd.Use = "list-deployments APP_NAME"
 	cmd.Short = `List app deployments.`
@@ -1105,10 +1105,10 @@ func newUpdate() *cobra.Command {
 
 	// TODO: complex arg: active_deployment
 	// TODO: complex arg: app_status
-	cmd.Flags().StringVar(&updateReq.App.BudgetPolicyId, "budget-policy-id", updateReq.App.BudgetPolicyId, `Wire name: 'budget_policy_id'.`)
-	cmd.Flags().Var(&updateReq.App.ComputeSize, "compute-size", `Supported values: [LARGE, LIQUID, MEDIUM]. Wire name: 'compute_size'.`)
+	cmd.Flags().StringVar(&updateReq.App.BudgetPolicyId, "budget-policy-id", updateReq.App.BudgetPolicyId, ``)
+	cmd.Flags().Var(&updateReq.App.ComputeSize, "compute-size", `Supported values: [LARGE, LIQUID, MEDIUM].`)
 	// TODO: complex arg: compute_status
-	cmd.Flags().StringVar(&updateReq.App.Description, "description", updateReq.App.Description, `The description of the app. Wire name: 'description'.`)
+	cmd.Flags().StringVar(&updateReq.App.Description, "description", updateReq.App.Description, `The description of the app.`)
 	// TODO: array: effective_user_api_scopes
 	// TODO: complex arg: pending_deployment
 	// TODO: array: resources

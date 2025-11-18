@@ -66,7 +66,7 @@ func newCreateCustomTemplate() *cobra.Command {
 
 	cmd.Flags().Var(&createCustomTemplateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createCustomTemplateReq.Template.Description, "description", createCustomTemplateReq.Template.Description, `The description of the template. Wire name: 'description'.`)
+	cmd.Flags().StringVar(&createCustomTemplateReq.Template.Description, "description", createCustomTemplateReq.Template.Description, `The description of the template.`)
 
 	cmd.Use = "create-custom-template NAME GIT_REPO PATH MANIFEST GIT_PROVIDER"
 	cmd.Short = `Create a template.`
@@ -280,8 +280,8 @@ func newListCustomTemplates() *cobra.Command {
 
 	var listCustomTemplatesReq apps.ListCustomTemplatesRequest
 
-	cmd.Flags().IntVar(&listCustomTemplatesReq.PageSize, "page-size", listCustomTemplatesReq.PageSize, `Upper bound for items returned. Wire name: 'page_size'.`)
-	cmd.Flags().StringVar(&listCustomTemplatesReq.PageToken, "page-token", listCustomTemplatesReq.PageToken, `Pagination token to go to the next page of custom templates. Wire name: 'page_token'.`)
+	cmd.Flags().IntVar(&listCustomTemplatesReq.PageSize, "page-size", listCustomTemplatesReq.PageSize, `Upper bound for items returned.`)
+	cmd.Flags().StringVar(&listCustomTemplatesReq.PageToken, "page-token", listCustomTemplatesReq.PageToken, `Pagination token to go to the next page of custom templates.`)
 
 	cmd.Use = "list-custom-templates"
 	cmd.Short = `List templates.`
@@ -335,7 +335,7 @@ func newUpdateCustomTemplate() *cobra.Command {
 
 	cmd.Flags().Var(&updateCustomTemplateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateCustomTemplateReq.Template.Description, "description", updateCustomTemplateReq.Template.Description, `The description of the template. Wire name: 'description'.`)
+	cmd.Flags().StringVar(&updateCustomTemplateReq.Template.Description, "description", updateCustomTemplateReq.Template.Description, `The description of the template.`)
 
 	cmd.Use = "update-custom-template NAME GIT_REPO PATH MANIFEST GIT_PROVIDER"
 	cmd.Short = `Update a template.`

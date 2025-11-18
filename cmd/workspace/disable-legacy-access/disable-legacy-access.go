@@ -57,7 +57,7 @@ func newDelete() *cobra.Command {
 
 	var deleteReq settings.DeleteDisableLegacyAccessRequest
 
-	cmd.Flags().StringVar(&deleteReq.Etag, "etag", deleteReq.Etag, `etag used for versioning. Wire name: 'etag'.`)
+	cmd.Flags().StringVar(&deleteReq.Etag, "etag", deleteReq.Etag, `etag used for versioning.`)
 
 	cmd.Use = "delete"
 	cmd.Short = `Delete Legacy Access Disablement Status.`
@@ -110,7 +110,7 @@ func newGet() *cobra.Command {
 
 	var getReq settings.GetDisableLegacyAccessRequest
 
-	cmd.Flags().StringVar(&getReq.Etag, "etag", getReq.Etag, `etag used for versioning. Wire name: 'etag'.`)
+	cmd.Flags().StringVar(&getReq.Etag, "etag", getReq.Etag, `etag used for versioning.`)
 
 	cmd.Use = "get"
 	cmd.Short = `Retrieve Legacy Access Disablement Status.`

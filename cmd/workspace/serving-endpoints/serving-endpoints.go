@@ -157,12 +157,12 @@ func newCreate() *cobra.Command {
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: ai_gateway
-	cmd.Flags().StringVar(&createReq.BudgetPolicyId, "budget-policy-id", createReq.BudgetPolicyId, `The budget policy to be applied to the serving endpoint. Wire name: 'budget_policy_id'.`)
+	cmd.Flags().StringVar(&createReq.BudgetPolicyId, "budget-policy-id", createReq.BudgetPolicyId, `The budget policy to be applied to the serving endpoint.`)
 	// TODO: complex arg: config
-	cmd.Flags().StringVar(&createReq.Description, "description", createReq.Description, `Wire name: 'description'.`)
+	cmd.Flags().StringVar(&createReq.Description, "description", createReq.Description, ``)
 	// TODO: complex arg: email_notifications
 	// TODO: array: rate_limits
-	cmd.Flags().BoolVar(&createReq.RouteOptimized, "route-optimized", createReq.RouteOptimized, `Enable route optimization for the serving endpoint. Wire name: 'route_optimized'.`)
+	cmd.Flags().BoolVar(&createReq.RouteOptimized, "route-optimized", createReq.RouteOptimized, `Enable route optimization for the serving endpoint.`)
 	// TODO: array: tags
 
 	cmd.Use = "create NAME"
@@ -265,7 +265,7 @@ func newCreateProvisionedThroughputEndpoint() *cobra.Command {
 	cmd.Flags().Var(&createProvisionedThroughputEndpointJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: ai_gateway
-	cmd.Flags().StringVar(&createProvisionedThroughputEndpointReq.BudgetPolicyId, "budget-policy-id", createProvisionedThroughputEndpointReq.BudgetPolicyId, `The budget policy associated with the endpoint. Wire name: 'budget_policy_id'.`)
+	cmd.Flags().StringVar(&createProvisionedThroughputEndpointReq.BudgetPolicyId, "budget-policy-id", createProvisionedThroughputEndpointReq.BudgetPolicyId, `The budget policy associated with the endpoint.`)
 	// TODO: complex arg: email_notifications
 	// TODO: array: tags
 
@@ -680,9 +680,9 @@ func newHttpRequest() *cobra.Command {
 
 	var httpRequestReq serving.ExternalFunctionRequest
 
-	cmd.Flags().StringVar(&httpRequestReq.Headers, "headers", httpRequestReq.Headers, `Additional headers for the request. Wire name: 'headers'.`)
-	cmd.Flags().StringVar(&httpRequestReq.Json, "json", httpRequestReq.Json, `The JSON payload to send in the request body. Wire name: 'json'.`)
-	cmd.Flags().StringVar(&httpRequestReq.Params, "params", httpRequestReq.Params, `Query parameters for the request. Wire name: 'params'.`)
+	cmd.Flags().StringVar(&httpRequestReq.Headers, "headers", httpRequestReq.Headers, `Additional headers for the request.`)
+	cmd.Flags().StringVar(&httpRequestReq.Json, "json", httpRequestReq.Json, `The JSON payload to send in the request body.`)
+	cmd.Flags().StringVar(&httpRequestReq.Params, "params", httpRequestReq.Params, `Query parameters for the request.`)
 
 	cmd.Use = "http-request CONNECTION_NAME METHOD PATH"
 	cmd.Short = `Make external services call using the credentials stored in UC Connection.`
@@ -1082,20 +1082,20 @@ func newQuery() *cobra.Command {
 
 	cmd.Flags().Var(&queryJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&queryReq.ClientRequestId, "client-request-id", queryReq.ClientRequestId, `Optional user-provided request identifier that will be recorded in the inference table and the usage tracking table. Wire name: 'client_request_id'.`)
+	cmd.Flags().StringVar(&queryReq.ClientRequestId, "client-request-id", queryReq.ClientRequestId, `Optional user-provided request identifier that will be recorded in the inference table and the usage tracking table.`)
 	// TODO: array: dataframe_records
 	// TODO: complex arg: dataframe_split
 	// TODO: map via StringToStringVar: extra_params
 	// TODO: any: input
 	// TODO: any: inputs
 	// TODO: array: instances
-	cmd.Flags().IntVar(&queryReq.MaxTokens, "max-tokens", queryReq.MaxTokens, `The max tokens field used ONLY for __completions__ and __chat external & foundation model__ serving endpoints. Wire name: 'max_tokens'.`)
+	cmd.Flags().IntVar(&queryReq.MaxTokens, "max-tokens", queryReq.MaxTokens, `The max tokens field used ONLY for __completions__ and __chat external & foundation model__ serving endpoints.`)
 	// TODO: array: messages
-	cmd.Flags().IntVar(&queryReq.N, "n", queryReq.N, `The n (number of candidates) field used ONLY for __completions__ and __chat external & foundation model__ serving endpoints. Wire name: 'n'.`)
+	cmd.Flags().IntVar(&queryReq.N, "n", queryReq.N, `The n (number of candidates) field used ONLY for __completions__ and __chat external & foundation model__ serving endpoints.`)
 	// TODO: any: prompt
 	// TODO: array: stop
-	cmd.Flags().BoolVar(&queryReq.Stream, "stream", queryReq.Stream, `The stream field used ONLY for __completions__ and __chat external & foundation model__ serving endpoints. Wire name: 'stream'.`)
-	cmd.Flags().Float64Var(&queryReq.Temperature, "temperature", queryReq.Temperature, `The temperature field used ONLY for __completions__ and __chat external & foundation model__ serving endpoints. Wire name: 'temperature'.`)
+	cmd.Flags().BoolVar(&queryReq.Stream, "stream", queryReq.Stream, `The stream field used ONLY for __completions__ and __chat external & foundation model__ serving endpoints.`)
+	cmd.Flags().Float64Var(&queryReq.Temperature, "temperature", queryReq.Temperature, `The temperature field used ONLY for __completions__ and __chat external & foundation model__ serving endpoints.`)
 	// TODO: map via StringToStringVar: usage_context
 
 	cmd.Use = "query NAME"

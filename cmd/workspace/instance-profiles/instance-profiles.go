@@ -65,9 +65,9 @@ func newAdd() *cobra.Command {
 
 	cmd.Flags().Var(&addJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&addReq.IamRoleArn, "iam-role-arn", addReq.IamRoleArn, `The AWS IAM role ARN of the role associated with the instance profile. Wire name: 'iam_role_arn'.`)
-	cmd.Flags().BoolVar(&addReq.IsMetaInstanceProfile, "is-meta-instance-profile", addReq.IsMetaInstanceProfile, `Boolean flag indicating whether the instance profile should only be used in credential passthrough scenarios. Wire name: 'is_meta_instance_profile'.`)
-	cmd.Flags().BoolVar(&addReq.SkipValidation, "skip-validation", addReq.SkipValidation, `By default, Databricks validates that it has sufficient permissions to launch instances with the instance profile. Wire name: 'skip_validation'.`)
+	cmd.Flags().StringVar(&addReq.IamRoleArn, "iam-role-arn", addReq.IamRoleArn, `The AWS IAM role ARN of the role associated with the instance profile.`)
+	cmd.Flags().BoolVar(&addReq.IsMetaInstanceProfile, "is-meta-instance-profile", addReq.IsMetaInstanceProfile, `Boolean flag indicating whether the instance profile should only be used in credential passthrough scenarios.`)
+	cmd.Flags().BoolVar(&addReq.SkipValidation, "skip-validation", addReq.SkipValidation, `By default, Databricks validates that it has sufficient permissions to launch instances with the instance profile.`)
 
 	cmd.Use = "add INSTANCE_PROFILE_ARN"
 	cmd.Short = `Register an instance profile.`
@@ -153,8 +153,8 @@ func newEdit() *cobra.Command {
 
 	cmd.Flags().Var(&editJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&editReq.IamRoleArn, "iam-role-arn", editReq.IamRoleArn, `The AWS IAM role ARN of the role associated with the instance profile. Wire name: 'iam_role_arn'.`)
-	cmd.Flags().BoolVar(&editReq.IsMetaInstanceProfile, "is-meta-instance-profile", editReq.IsMetaInstanceProfile, `Boolean flag indicating whether the instance profile should only be used in credential passthrough scenarios. Wire name: 'is_meta_instance_profile'.`)
+	cmd.Flags().StringVar(&editReq.IamRoleArn, "iam-role-arn", editReq.IamRoleArn, `The AWS IAM role ARN of the role associated with the instance profile.`)
+	cmd.Flags().BoolVar(&editReq.IsMetaInstanceProfile, "is-meta-instance-profile", editReq.IsMetaInstanceProfile, `Boolean flag indicating whether the instance profile should only be used in credential passthrough scenarios.`)
 
 	cmd.Use = "edit INSTANCE_PROFILE_ARN"
 	cmd.Short = `Edit an instance profile.`

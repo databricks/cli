@@ -64,8 +64,8 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createReq.Text, "text", createReq.Text, `If this is a textbox widget, the application displays this text. Wire name: 'text'.`)
-	cmd.Flags().StringVar(&createReq.VisualizationId, "visualization-id", createReq.VisualizationId, `Query Vizualization ID returned by :method:queryvisualizations/create. Wire name: 'visualization_id'.`)
+	cmd.Flags().StringVar(&createReq.Text, "text", createReq.Text, `If this is a textbox widget, the application displays this text.`)
+	cmd.Flags().StringVar(&createReq.VisualizationId, "visualization-id", createReq.VisualizationId, `Query Vizualization ID returned by :method:queryvisualizations/create.`)
 
 	cmd.Use = "create"
 	cmd.Short = `Add widget to a dashboard.`
@@ -187,8 +187,8 @@ func newUpdate() *cobra.Command {
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateReq.Text, "text", updateReq.Text, `If this is a textbox widget, the application displays this text. Wire name: 'text'.`)
-	cmd.Flags().StringVar(&updateReq.VisualizationId, "visualization-id", updateReq.VisualizationId, `Query Vizualization ID returned by :method:queryvisualizations/create. Wire name: 'visualization_id'.`)
+	cmd.Flags().StringVar(&updateReq.Text, "text", updateReq.Text, `If this is a textbox widget, the application displays this text.`)
+	cmd.Flags().StringVar(&updateReq.VisualizationId, "visualization-id", updateReq.VisualizationId, `Query Vizualization ID returned by :method:queryvisualizations/create.`)
 
 	cmd.Use = "update ID"
 	cmd.Short = `Update existing widget.`
