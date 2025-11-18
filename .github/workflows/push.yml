@@ -42,10 +42,12 @@ jobs:
           - macos-latest
           - group: databricks-protected-runner-group-large
             labels: linux-ubuntu-latest-large
-          - windows-latest
+          - ${{ github.event_name != 'merge_group' && 'windows-latest' || null }}
         deployment:
           - "terraform"
           - "direct"
+        exclude:
+          - os: null
 
     steps:
       - name: Checkout repository and submodules
