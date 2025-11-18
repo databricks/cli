@@ -17,14 +17,16 @@ IMPORTANT: Use the invoke_databricks_cli tool to run all commands below!
 
 
 1. EXECUTING SQL QUERIES
-   Run SQL queries using the Statement Execution API with inline JSON:
-     invoke_databricks_cli 'api post /api/2.0/sql/statements --json {"warehouse_id":"<warehouse_id>","statement":"SELECT * FROM <catalog>.<schema>.<table> LIMIT 10","wait_timeout":"30s"}'
+   Run queries with auto-wait (max 50s):
+     invoke_databricks_cli 'api post /api/2.0/sql/statements --json {"warehouse_id":"{{.WarehouseID}}","statement":"SELECT * FROM <catalog>.<schema>.<table> LIMIT 10","wait_timeout":"50s"}'
 
-   Examples:
-     - Simple query: {"warehouse_id":"<id>","statement":"SELECT 42 as answer","wait_timeout":"10s"}
-     - Table query: {"warehouse_id":"<id>","statement":"SELECT * FROM catalog.schema.table LIMIT 10","wait_timeout":"30s"}
+   Response has status.state:
+   - "SUCCEEDED" → Results in result.data_array (you're done!)
+   - "PENDING" → Warehouse starting or query slow. Poll with:
+       invoke_databricks_cli 'api get /api/2.0/sql/statements/<statement_id>'
+     Repeat every 5-10s until "SUCCEEDED"
 
-   Note: Use the warehouse ID shown above. Results are returned in JSON format.
+   Note: First query on stopped warehouse takes 60-120s startup time
 
 
 2. EXPLORING JOBS AND WORKFLOWS
