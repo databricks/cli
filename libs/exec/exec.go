@@ -6,6 +6,8 @@ import (
 	"io"
 	"os"
 	osexec "os/exec"
+
+	"github.com/databricks/cli/libs/env"
 )
 
 type ExecutableType string
@@ -115,6 +117,14 @@ func (e *Executor) prepareCommand(ctx context.Context, command string) (*osexec.
 	}
 	cmd := osexec.CommandContext(ctx, ec.executable, ec.args...)
 	cmd.Dir = e.dir
+
+	envMap := env.All(ctx)
+	var envSlice []string
+	for k, v := range envMap {
+		envSlice = append(envSlice, k+"="+v)
+	}
+	cmd.Env = envSlice
+
 	return cmd, ec, nil
 }
 
