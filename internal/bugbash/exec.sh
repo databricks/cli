@@ -84,7 +84,13 @@ last_successful_run_id=$(
       jq 'limit(1; .[] | select(.conclusion == "success")) | .databaseId'
 )
 if [ -z "$last_successful_run_id" ]; then
-  echo "Unable to find last successful build of the release-snapshot workflow for branch $BRANCH."
+  build_status=$(gh run list -b "$BRANCH" -w release-snapshot --limit 1 --json status | jq -r '.[0].status // ""')
+  if [ "$build_status" = "in_progress" ] || [ "$build_status" = "queued" ]; then
+    echo "Error: Snapshot build is in progress for branch $BRANCH. Wait ~5-10 minutes and try again."
+  else
+    echo "Error: No successful snapshot build found for branch $BRANCH."
+  fi
+  echo "Check status: https://github.com/databricks/cli/actions/workflows/release-snapshot.yml"
   exit 1
 fi
 
