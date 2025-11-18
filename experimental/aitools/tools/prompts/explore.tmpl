@@ -10,15 +10,16 @@
 Databricks Data Exploration Guide
 =====================================
 
-{{.WorkspaceInfo}}
-Default SQL Warehouse: {{.WarehouseName}} ({{.WarehouseID}}){{.ProfilesInfo}}
+{{.WorkspaceInfo}}{{if .WarehouseName}}
+Default SQL Warehouse: {{.WarehouseName}} ({{.WarehouseID}}){{else}}
+Note: No SQL warehouse detected. SQL queries will require warehouse_id to be specified manually.{{end}}{{.ProfilesInfo}}
 
 IMPORTANT: Use the invoke_databricks_cli tool to run all commands below!
 
 
 1. EXECUTING SQL QUERIES
    Run queries with auto-wait (max 50s):
-     invoke_databricks_cli 'api post /api/2.0/sql/statements --json {"warehouse_id":"{{.WarehouseID}}","statement":"SELECT * FROM <catalog>.<schema>.<table> LIMIT 10","wait_timeout":"50s"}'
+     invoke_databricks_cli 'api post /api/2.0/sql/statements --json {"warehouse_id":"{{if .WarehouseID}}{{.WarehouseID}}{{else}}<warehouse_id>{{end}}","statement":"SELECT * FROM <catalog>.<schema>.<table> LIMIT 10","wait_timeout":"50s"}'
 
    Response has status.state:
    - "SUCCEEDED" → Results in result.data_array (you're done!)

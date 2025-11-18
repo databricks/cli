@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"os/exec"
-	"strings"
 
 	"github.com/databricks/cli/experimental/aitools/tools"
 )

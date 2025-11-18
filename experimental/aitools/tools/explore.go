@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/exec"
+	"github.com/databricks/cli/libs/log"
 )
 
 // ExploreTool provides guidance on exploring Databricks workspaces and resources.
@@ -26,7 +27,8 @@ var ExploreTool = Tool{
 	Handler: func(ctx context.Context, params map[string]any) (string, error) {
 		warehouse, err := GetDefaultWarehouse(ctx)
 		if err != nil {
-			return "", fmt.Errorf("failed to get default warehouse: %w\n\nTo use data exploration features, you need a SQL warehouse. You can create one in the Databricks workspace UI under 'SQL Warehouses'", err)
+			log.Debugf(ctx, "Failed to get default warehouse (non-fatal): %v", err)
+			warehouse = nil
 		}
 
 		currentProfile := getCurrentProfile(ctx)
@@ -143,10 +145,18 @@ func generateExploreGuidance(warehouse *warehouse, currentProfile string, profil
 		profilesInfo += "    invoke_databricks_cli '--profile prod catalogs list'\n"
 	}
 
+	// Handle warehouse information (may be nil if lookup failed)
+	warehouseName := ""
+	warehouseID := ""
+	if warehouse != nil {
+		warehouseName = warehouse.Name
+		warehouseID = warehouse.ID
+	}
+
 	return prompts.MustExecuteTemplate("explore.tmpl", map[string]string{
 		"WorkspaceInfo": workspaceInfo,
-		"WarehouseName": warehouse.Name,
-		"WarehouseID":   warehouse.ID,
+		"WarehouseName": warehouseName,
+		"WarehouseID":   warehouseID,
 		"ProfilesInfo":  profilesInfo,
 	})
 }
