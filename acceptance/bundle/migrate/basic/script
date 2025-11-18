@@ -33,3 +33,5 @@ title "Different target, still on terraform"
 trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle deploy -t prod
 trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle debug states -t prod
 trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle debug states -t prod --force-pull
+
+rm out.requests.txt
