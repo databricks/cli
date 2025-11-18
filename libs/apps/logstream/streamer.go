@@ -291,7 +291,7 @@ func (s *logStreamer) flushOrBufferLine(line string, buffer *tailBuffer, flushed
 	if s.tail > 0 && !*flushed {
 		buffer.Add(line)
 		ready := buffer.Len() >= s.tail
-		if !s.follow && !flushDeadline.IsZero() {
+		if !flushDeadline.IsZero() {
 			ready = false
 		}
 		if ready {
