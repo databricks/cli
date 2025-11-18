@@ -68,15 +68,15 @@ func (r *ResourcePipeline) DoRefresh(ctx context.Context, id string) (*pipelines
 	return r.client.Pipelines.GetByPipelineId(ctx, id)
 }
 
-func (r *ResourcePipeline) DoCreate(ctx context.Context, config *pipelines.CreatePipeline) (string, error) {
+func (r *ResourcePipeline) DoCreate(ctx context.Context, config *pipelines.CreatePipeline) (string, *pipelines.GetPipelineResponse, error) {
 	response, err := r.client.Pipelines.Create(ctx, *config)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
-	return response.PipelineId, nil
+	return response.PipelineId, nil, nil
 }
 
-func (r *ResourcePipeline) DoUpdate(ctx context.Context, id string, config *pipelines.CreatePipeline) error {
+func (r *ResourcePipeline) DoUpdate(ctx context.Context, id string, config *pipelines.CreatePipeline) (*pipelines.GetPipelineResponse, error) {
 	request := pipelines.EditPipeline{
 		AllowDuplicateNames:  config.AllowDuplicateNames,
 		BudgetPolicyId:       config.BudgetPolicyId,
@@ -113,7 +113,7 @@ func (r *ResourcePipeline) DoUpdate(ctx context.Context, id string, config *pipe
 		ForceSendFields:      utils.FilterFields[pipelines.EditPipeline](config.ForceSendFields),
 	}
 
-	return r.client.Pipelines.Update(ctx, request)
+	return nil, r.client.Pipelines.Update(ctx, request)
 }
 
 func (r *ResourcePipeline) DoDelete(ctx context.Context, id string) error {

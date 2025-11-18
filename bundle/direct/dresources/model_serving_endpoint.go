@@ -115,13 +115,13 @@ func (r *ResourceModelServingEndpoint) DoRefresh(ctx context.Context, id string)
 	}, nil
 }
 
-func (r *ResourceModelServingEndpoint) DoCreate(ctx context.Context, config *serving.CreateServingEndpoint) (string, error) {
+func (r *ResourceModelServingEndpoint) DoCreate(ctx context.Context, config *serving.CreateServingEndpoint) (string, *RefreshOutput, error) {
 	waiter, err := r.client.ServingEndpoints.Create(ctx, *config)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 
-	return waiter.Response.Name, nil
+	return waiter.Response.Name, nil, nil
 }
 
 // waitForEndpointReady waits for the serving endpoint to be ready (not updating)
@@ -273,7 +273,7 @@ func (r *ResourceModelServingEndpoint) updateTags(ctx context.Context, id string
 	return nil
 }
 
-func (r *ResourceModelServingEndpoint) DoUpdate(ctx context.Context, id string, config *serving.CreateServingEndpoint) error {
+func (r *ResourceModelServingEndpoint) DoUpdate(ctx context.Context, id string, config *serving.CreateServingEndpoint) (*RefreshOutput, error) {
 	errGroup := errgroup.Group{}
 	errGroup.Go(func() error {
 		return r.updateAiGateway(ctx, id, config.AiGateway)
@@ -287,7 +287,7 @@ func (r *ResourceModelServingEndpoint) DoUpdate(ctx context.Context, id string, 
 	errGroup.Go(func() error {
 		return r.updateTags(ctx, id, config.Tags)
 	})
-	return errGroup.Wait()
+	return nil, errGroup.Wait()
 }
 
 func (r *ResourceModelServingEndpoint) WaitAfterUpdate(ctx context.Context, config *serving.CreateServingEndpoint) (*RefreshOutput, error) {

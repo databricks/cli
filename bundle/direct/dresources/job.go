@@ -37,24 +37,24 @@ func (r *ResourceJob) DoRefresh(ctx context.Context, id string) (*jobs.Job, erro
 	return r.client.Jobs.GetByJobId(ctx, idInt)
 }
 
-func (r *ResourceJob) DoCreate(ctx context.Context, config *jobs.JobSettings) (string, error) {
+func (r *ResourceJob) DoCreate(ctx context.Context, config *jobs.JobSettings) (string, *jobs.Job, error) {
 	request, err := makeCreateJob(*config)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 	response, err := r.client.Jobs.Create(ctx, request)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
-	return strconv.FormatInt(response.JobId, 10), nil
+	return strconv.FormatInt(response.JobId, 10), nil, nil
 }
 
-func (r *ResourceJob) DoUpdate(ctx context.Context, id string, config *jobs.JobSettings) error {
+func (r *ResourceJob) DoUpdate(ctx context.Context, id string, config *jobs.JobSettings) (*jobs.Job, error) {
 	request, err := makeResetJob(*config, id)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return r.client.Jobs.Reset(ctx, request)
+	return nil, r.client.Jobs.Reset(ctx, request)
 }
 
 func (r *ResourceJob) DoDelete(ctx context.Context, id string) error {

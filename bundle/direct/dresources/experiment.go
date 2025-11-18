@@ -48,22 +48,22 @@ func (r *ResourceExperiment) DoRefresh(ctx context.Context, id string) (*ml.Expe
 	return result.Experiment, nil
 }
 
-func (r *ResourceExperiment) DoCreate(ctx context.Context, config *ml.CreateExperiment) (string, error) {
+func (r *ResourceExperiment) DoCreate(ctx context.Context, config *ml.CreateExperiment) (string, *ml.Experiment, error) {
 	result, err := r.client.Experiments.CreateExperiment(ctx, *config)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
-	return result.ExperimentId, nil
+	return result.ExperimentId, nil, nil
 }
 
-func (r *ResourceExperiment) DoUpdate(ctx context.Context, id string, config *ml.CreateExperiment) error {
+func (r *ResourceExperiment) DoUpdate(ctx context.Context, id string, config *ml.CreateExperiment) (*ml.Experiment, error) {
 	updateReq := ml.UpdateExperiment{
 		ExperimentId:    id,
 		NewName:         config.Name,
 		ForceSendFields: utils.FilterFields[ml.UpdateExperiment](config.ForceSendFields),
 	}
 
-	return r.client.Experiments.UpdateExperiment(ctx, updateReq)
+	return nil, r.client.Experiments.UpdateExperiment(ctx, updateReq)
 }
 
 func (r *ResourceExperiment) DoDelete(ctx context.Context, id string) error {
