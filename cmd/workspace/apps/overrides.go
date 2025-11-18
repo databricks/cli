@@ -23,6 +23,10 @@ func listDeploymentsOverride(listDeploymentsCmd *cobra.Command, listDeploymentsR
 }
 
 func init() {
+
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newLogsCommand())
+	})
 	listOverrides = append(listOverrides, listOverride)
 	listDeploymentsOverrides = append(listDeploymentsOverrides, listDeploymentsOverride)
 }
