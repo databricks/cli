@@ -29,7 +29,7 @@ type DeploymentUnit struct {
 	// Remote state (pointer to adapter.RemoteType()) or nil if remote state was not fetched yet.
 	// Remote state will be eagerly populated by (withRefresh) DoCreate/DoUpdate/WaitForCreate/WaitForUpdate.
 	// If the resource does not implement withRefresh variants of those methods, remoteState remains nil and
-	// will be populated lazily by calling DoRefresh().
+	// will be populated lazily by calling DoRead().
 	RemoteState any
 }
 

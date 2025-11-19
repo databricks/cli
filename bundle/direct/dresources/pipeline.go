@@ -64,7 +64,7 @@ func (*ResourcePipeline) RemapState(p *pipelines.GetPipelineResponse) *pipelines
 	}
 }
 
-func (r *ResourcePipeline) DoRefresh(ctx context.Context, id string) (*pipelines.GetPipelineResponse, error) {
+func (r *ResourcePipeline) DoRead(ctx context.Context, id string) (*pipelines.GetPipelineResponse, error) {
 	return r.client.Pipelines.GetByPipelineId(ctx, id)
 }
 

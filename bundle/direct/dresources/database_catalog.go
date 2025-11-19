@@ -20,7 +20,7 @@ func (*ResourceDatabaseCatalog) PrepareState(input *resources.DatabaseCatalog) *
 	return &input.DatabaseCatalog
 }
 
-func (r *ResourceDatabaseCatalog) DoRefresh(ctx context.Context, id string) (*database.DatabaseCatalog, error) {
+func (r *ResourceDatabaseCatalog) DoRead(ctx context.Context, id string) (*database.DatabaseCatalog, error) {
 	return r.client.Database.GetDatabaseCatalogByName(ctx, id)
 }
 

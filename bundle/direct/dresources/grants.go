@@ -95,7 +95,7 @@ func PrepareGrantsInputConfig(inputConfig any, node string) (*structvar.StructVa
 	}
 
 	return &structvar.StructVar{
-		Config: &GrantsState{
+		Value: &GrantsState{
 			SecurableType: securableType,
 			FullName:      "",
 			Grants:        grants,
@@ -118,7 +118,7 @@ func (*ResourceGrants) PrepareState(state *GrantsState) *GrantsState {
 	return state
 }
 
-func (r *ResourceGrants) DoRefresh(ctx context.Context, id string) (*GrantsState, error) {
+func (r *ResourceGrants) DoRead(ctx context.Context, id string) (*GrantsState, error) {
 	securableType, fullName, err := parseGrantsID(id)
 	if err != nil {
 		return nil, err

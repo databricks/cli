@@ -39,7 +39,7 @@
       ],
       "action": "create",
       "new_state": {
-        "config": {
+        "value": {
           "object_id": "/pipelines/[PIPELINE_ID]",
           "permissions": [
             {

@@ -18,7 +18,7 @@ type TestObj struct {
 // newTestStructVar creates a fresh StructVar instance for testing
 func newTestStructVar() *structvar.StructVar {
 	return &structvar.StructVar{
-		Config: &TestObj{
+		Value: &TestObj{
 			Name: "OldName",
 			Age:  25,
 			Tags: map[string]string{
@@ -102,7 +102,7 @@ func TestResolveRef(t *testing.T) {
 			name: "error on invalid path",
 			setup: func() *structvar.StructVar {
 				return &structvar.StructVar{
-					Config: &TestObj{},
+					Value: &TestObj{},
 					Refs: map[string]string{
 						"invalid[path": "${var.test}",
 					},
@@ -133,7 +133,7 @@ func TestResolveRef(t *testing.T) {
 			}
 
 			require.NoError(t, err)
-			assert.Equal(t, tt.expectedObj, sv.Config)
+			assert.Equal(t, tt.expectedObj, sv.Value)
 			assert.Equal(t, tt.expectedRefs, sv.Refs)
 		})
 	}
@@ -141,7 +141,7 @@ func TestResolveRef(t *testing.T) {
 
 func TestResolveRefMultiReference(t *testing.T) {
 	sv := &structvar.StructVar{
-		Config: &TestObj{
+		Value: &TestObj{
 			Name: "OldName",
 		},
 		Refs: map[string]string{
@@ -154,7 +154,7 @@ func TestResolveRefMultiReference(t *testing.T) {
 	require.NoError(t, err)
 
 	// The value should be partially resolved
-	assert.Equal(t, "Hello ${var.suffix}", sv.Config.(*TestObj).Name)
+	assert.Equal(t, "Hello ${var.suffix}", sv.Value.(*TestObj).Name)
 	assert.Equal(t, map[string]string{
 		"name": "Hello ${var.suffix}", // partially resolved
 	}, sv.Refs)
@@ -164,7 +164,7 @@ func TestResolveRefMultiReference(t *testing.T) {
 	require.NoError(t, err)
 
 	// Now it should be fully resolved
-	assert.Equal(t, "Hello World", sv.Config.(*TestObj).Name)
+	assert.Equal(t, "Hello World", sv.Value.(*TestObj).Name)
 	assert.Equal(t, map[string]string{}, sv.Refs) // fully resolved, reference removed
 }
 
@@ -183,7 +183,7 @@ func TestResolveRefJobSettings(t *testing.T) {
 	}
 
 	sv := &structvar.StructVar{
-		Config: &jobSettings,
+		Value: &jobSettings,
 		Refs: map[string]string{
 			"tasks[0].run_job_task.job_id": "${resources.jobs.bar.id}",
 		},
@@ -194,7 +194,7 @@ func TestResolveRefJobSettings(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify the job ID was set correctly
-	updatedSettings := sv.Config.(*jobs.JobSettings)
+	updatedSettings := sv.Value.(*jobs.JobSettings)
 	assert.Equal(t, "job foo", updatedSettings.Name)
 	assert.Len(t, updatedSettings.Tasks, 1)
 	assert.Equal(t, "job_task", updatedSettings.Tasks[0].TaskKey)

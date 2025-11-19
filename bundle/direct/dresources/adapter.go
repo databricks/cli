@@ -33,9 +33,9 @@ type IResource interface {
 	// Example: func (*ResourceJob) RemapState(jobs *jobs.Job) *jobs.JobSettings
 	RemapState(input any) any
 
-	// DoRefresh reads and returns remote state from the backend. The return type defines schema for remote field resolution.
-	// Example: func (r *ResourceJob) DoRefresh(ctx context.Context, id string) (*jobs.Job, error)
-	DoRefresh(ctx context.Context, id string) (remoteState any, e error)
+	// DoRead reads and returns remote state from the backend. The return type defines schema for remote field resolution.
+	// Example: func (r *ResourceJob) DoRead(ctx context.Context, id string) (*jobs.Job, error)
+	DoRead(ctx context.Context, id string) (remoteState any, e error)
 
 	// DoDelete deletes the resource.
 	// Example: func (r *ResourceJob) DoDelete(ctx context.Context, id string) error
@@ -210,7 +210,7 @@ func (a *Adapter) initMethods(resource any) error {
 		return err
 	}
 
-	a.doRefresh, err = prepareCallRequired(resource, "DoRefresh")
+	a.doRefresh, err = prepareCallRequired(resource, "DoRead")
 	if err != nil {
 		return err
 	}
@@ -431,7 +431,7 @@ func (a *Adapter) RemapState(remoteState any) (any, error) {
 	return outs[0], nil
 }
 
-func (a *Adapter) DoRefresh(ctx context.Context, id string) (any, error) {
+func (a *Adapter) DoRead(ctx context.Context, id string) (any, error) {
 	outs, err := a.doRefresh.Call(ctx, id)
 	if err != nil {
 		return nil, err

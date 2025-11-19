@@ -20,7 +20,7 @@ func (*ResourceSyncedDatabaseTable) PrepareState(input *resources.SyncedDatabase
 	return &input.SyncedDatabaseTable
 }
 
-func (r *ResourceSyncedDatabaseTable) DoRefresh(ctx context.Context, name string) (*database.SyncedDatabaseTable, error) {
+func (r *ResourceSyncedDatabaseTable) DoRead(ctx context.Context, name string) (*database.SyncedDatabaseTable, error) {
 	return r.client.Database.GetSyncedDatabaseTableByName(ctx, name)
 }
 

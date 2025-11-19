@@ -43,8 +43,8 @@ func (*ResourceSqlWarehouse) RemapState(warehouse *sql.GetWarehouseResponse) *sq
 	}
 }
 
-// DoRefresh reads the warehouse by id.
-func (r *ResourceSqlWarehouse) DoRefresh(ctx context.Context, id string) (*sql.GetWarehouseResponse, error) {
+// DoRead reads the warehouse by id.
+func (r *ResourceSqlWarehouse) DoRead(ctx context.Context, id string) (*sql.GetWarehouseResponse, error) {
 	return r.client.Warehouses.GetById(ctx, id)
 }
 
