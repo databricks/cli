@@ -83,11 +83,7 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 				return nil, nil, err
 			}
 
-			return &mcpsdk.CallToolResult{
-				Content: []mcpsdk.Content{
-					&mcpsdk.TextContent{Type: "text", Text: content},
-				},
-			}, nil, nil
+			return mcpsdk.CreateNewTextContentResult(content), nil, nil
 		}),
 	)
 
@@ -115,11 +111,7 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 				return nil, nil, err
 			}
 
-			return &mcpsdk.CallToolResult{
-				Content: []mcpsdk.Content{
-					&mcpsdk.TextContent{Type: "text", Text: "File written successfully: " + args.FilePath},
-				},
-			}, nil, nil
+			return mcpsdk.CreateNewTextContentResult("File written successfully: " + args.FilePath), nil, nil
 		}),
 	)
 
@@ -149,11 +141,7 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 				return nil, nil, err
 			}
 
-			return &mcpsdk.CallToolResult{
-				Content: []mcpsdk.Content{
-					&mcpsdk.TextContent{Type: "text", Text: "File edited successfully: " + args.FilePath},
-				},
-			}, nil, nil
+			return mcpsdk.CreateNewTextContentResult("File edited successfully: " + args.FilePath), nil, nil
 		}),
 	)
 
@@ -184,11 +172,7 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 			// Format result as JSON
 			resultJSON, _ := json.Marshal(result)
 
-			return &mcpsdk.CallToolResult{
-				Content: []mcpsdk.Content{
-					&mcpsdk.TextContent{Type: "text", Text: string(resultJSON)},
-				},
-			}, nil, nil
+			return mcpsdk.CreateNewTextContentResult(string(resultJSON)), nil, nil
 		}),
 	)
 
@@ -223,11 +207,7 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 			// Format result as JSON
 			resultJSON, _ := json.Marshal(result)
 
-			return &mcpsdk.CallToolResult{
-				Content: []mcpsdk.Content{
-					&mcpsdk.TextContent{Type: "text", Text: string(resultJSON)},
-				},
-			}, nil, nil
+			return mcpsdk.CreateNewTextContentResult(string(resultJSON)), nil, nil
 		}),
 	)
 
@@ -256,14 +236,8 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 			// Format result as JSON
 			resultJSON, _ := json.Marshal(result)
 
-			return &mcpsdk.CallToolResult{
-				Content: []mcpsdk.Content{
-					&mcpsdk.TextContent{Type: "text", Text: string(resultJSON)},
-				},
-			}, nil, nil
+			return mcpsdk.CreateNewTextContentResult(string(resultJSON)), nil, nil
 		}),
 	)
-
-	log.Infof(p.ctx, "Registered workspace tools: count=%d", 6)
 	return nil
 }
