@@ -76,11 +76,8 @@ To start using direct engine, deploy with DATABRICKS_BUNDLE_ENGINE=direct env va
 		}
 
 		state := make(map[string]dstate.ResourceEntry)
-		for groupName, group := range terraformResources {
-			for key, resourceEntry := range group {
-				newKey := fmt.Sprintf("resources.%s.%s", groupName, key)
-				state[newKey] = dstate.ResourceEntry{ID: resourceEntry.ID}
-			}
+		for key, resourceEntry := range terraformResources {
+			state[key] = dstate.ResourceEntry{ID: resourceEntry.ID}
 		}
 
 		deploymentBundle := &direct.DeploymentBundle{
