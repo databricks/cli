@@ -19,6 +19,7 @@ func (a AuthArguments) ToOAuthArgument() (u2m.OAuthArgument, error) {
 		AccountID: a.AccountID,
 	}
 	host := cfg.CanonicalHostName()
+	//nolint:staticcheck // SA1019: IsAccountClient is deprecated but is still used here to avoid breaking changes
 	if cfg.IsAccountClient() {
 		return u2m.NewBasicAccountOAuthArgument(host, cfg.AccountID)
 	}
