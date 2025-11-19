@@ -635,7 +635,9 @@ func (c *DatabricksRestClient) ListTables(ctx context.Context, request *ListTabl
 			filterLower := strings.ToLower(*request.Filter)
 			var filtered []TableInfoResponse
 			for _, t := range tables {
-				if strings.Contains(strings.ToLower(t.Name), filterLower) {
+				// Match against both table name and schema name
+				if strings.Contains(strings.ToLower(t.Name), filterLower) ||
+					strings.Contains(strings.ToLower(t.SchemaName), filterLower) {
 					filtered = append(filtered, t)
 				}
 			}
@@ -712,7 +714,8 @@ func (c *DatabricksRestClient) listTablesViaInformationSchema(ctx context.Contex
 			pattern = "%" + pattern + "%"
 		}
 
-		conditions = append(conditions, "table_name LIKE :pattern ESCAPE '\\\\'")
+		// Match against both table name and schema name
+		conditions = append(conditions, "(table_name LIKE :pattern ESCAPE '\\\\' OR table_schema LIKE :pattern ESCAPE '\\\\')")
 		parameters = append(parameters, sql.StatementParameterListItem{
 			Name:  "pattern",
 			Value: pattern,

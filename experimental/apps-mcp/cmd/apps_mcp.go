@@ -82,5 +82,8 @@ The server communicates via stdio using the Model Context Protocol.`,
 	cmd.Flags().BoolVar(&allowDeployment, "allow-deployment", false, "Enable deployment tools")
 	cmd.Flags().BoolVar(&withWorkspaceTools, "with-workspace-tools", false, "Enable workspace tools (file operations, bash, grep, glob)")
 
+	// Add tool subcommands
+	cmd.AddCommand(newToolFindTablesCmd())
+
 	return cmd
 }
