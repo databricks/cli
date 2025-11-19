@@ -53,8 +53,10 @@ func validateIdentifier(id string) error {
 
 	// Allow alphanumeric, underscore, hyphen, and dot for qualified names
 	for _, ch := range id {
-		if !((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') ||
-			(ch >= '0' && ch <= '9') || ch == '_' || ch == '-' || ch == '.') {
+		isValid := (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') ||
+			(ch >= '0' && ch <= '9') || ch == '_' || ch == '-' || ch == '.'
+
+		if !isValid {
 			return fmt.Errorf("invalid identifier '%s': contains unsafe characters", id)
 		}
 	}
