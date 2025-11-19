@@ -115,7 +115,7 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 			Description: "Find tables in Databricks Unity Catalog. Supports searching within a specific catalog and schema, across all schemas in a catalog, or across all catalogs. Supports wildcard patterns (* for multiple characters, ? for single character) in table name filtering.",
 		},
 		session.WrapToolHandler(p.session, func(ctx context.Context, req *mcpsdk.CallToolRequest, args FindTablesInput) (*mcpsdk.CallToolResult, any, error) {
-			log.Debugf(ctx, "databricks_find_tables called: catalog=%s, schema=%s", args.CatalogName, args.SchemaName)
+			log.Debugf(ctx, "databricks_find_tables called: catalog=%s, schema=%s", *args.CatalogName, *args.SchemaName)
 
 			client, err := NewDatabricksRestClient(ctx, p.config)
 			if err != nil {

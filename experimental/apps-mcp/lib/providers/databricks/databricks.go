@@ -423,6 +423,8 @@ func (c *DatabricksRestClient) executeSqlWithParams(ctx context.Context, query s
 				errMsg = result.Status.Error.Message
 			}
 			return nil, fmt.Errorf("SQL execution failed: %s", errMsg)
+		case sql.StatementStateCanceled, sql.StatementStateClosed, sql.StatementStateSucceeded:
+			break
 		}
 	}
 
@@ -455,6 +457,8 @@ func (c *DatabricksRestClient) executeSqlImpl(ctx context.Context, query string)
 				errMsg = result.Status.Error.Message
 			}
 			return nil, fmt.Errorf("SQL execution failed: %s", errMsg)
+		case sql.StatementStateCanceled, sql.StatementStateClosed, sql.StatementStateSucceeded:
+			break
 		}
 	}
 
