@@ -12,8 +12,6 @@ Note that [DATABRICKS_URL] is used for initialization.
 
 To get started, refer to the project README.md file and the documentation at https://docs.databricks.com/dev-tools/bundles/python/index.html.
 
->>> find my_pydabs -mindepth 1 ! -name pyproject.toml ! -regex .*/resources.* -delete
-
->>> ruff format --quiet --diff --check my_pydabs
+>>> ruff format --isolated --quiet --diff --check my_pydabs
 
 >>> yamlcheck.py
