@@ -81,7 +81,7 @@ Understand your Databricks data before building:
 
 - **`databricks_list_catalogs`** - Discover available data catalogs
 - **`databricks_list_schemas`** - Browse schemas in a catalog
-- **`databricks_list_tables`** - Find tables in a schema
+- **`databricks_find_tables`** - Find tables in a schema
 - **`databricks_describe_table`** - Get table details, columns, and sample data
 - **`databricks_execute_query`** - Test queries and preview data
 

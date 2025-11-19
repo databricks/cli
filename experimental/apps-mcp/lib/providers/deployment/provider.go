@@ -85,11 +85,7 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 			}
 
 			text := formatDeployResult(result)
-			return &mcpsdk.CallToolResult{
-				Content: []mcpsdk.Content{
-					&mcpsdk.TextContent{Type: "text", Text: text},
-				},
-			}, nil, nil
+			return mcpsdk.CreateNewTextContentResult(text), nil, nil
 		}),
 	)
 
@@ -293,7 +289,7 @@ func (p *Provider) getOrCreateApp(ctx context.Context, name, description string,
 
 	log.Infof(ctx, "App not found, creating new app: name=%s", name)
 
-	resources, err := databricks.ResourcesFromEnv()
+	resources, err := databricks.ResourcesFromEnv(p.config)
 	if err != nil {
 		return nil, err
 	}
