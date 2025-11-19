@@ -16,17 +16,18 @@ import (
 // - myfile.txt
 // - ./myfile.txt
 // - ../myfile.txt
-// - file:///foo/bar/myfile.txt
 //
 // The following paths are considered remote:
 //
+// - file:///opt/spark/jars/myfile.jar
 // - dbfs:/mnt/myfile.txt
 // - s3:/mybucket/myfile.txt
 // - /Users/jane@doe.com/myfile.txt
 func IsLocalPath(p string) bool {
-	// If the path has the explicit file scheme, it's a local path.
+	// If the path has the file:// scheme, it's a runtime path (remote).
+	// Users should use relative paths without scheme for local files to upload.
 	if strings.HasPrefix(p, "file://") {
-		return true
+		return false
 	}
 
 	// If the path has another scheme, it's a remote path.
