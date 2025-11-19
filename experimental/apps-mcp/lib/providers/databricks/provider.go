@@ -39,6 +39,14 @@ func (p *Provider) Name() string {
 	return "databricks"
 }
 
+type FindTablesInput struct {
+	CatalogName *string `json:"catalog_name,omitempty" jsonschema_description:"Name of the catalog (optional - searches all catalogs if not provided)"`
+	SchemaName  *string `json:"schema_name,omitempty" jsonschema_description:"Name of the schema (optional - searches all schemas if not provided)"`
+	Filter      *string `json:"filter,omitempty" jsonschema_description:"Filter pattern for table names (supports * and ? wildcards)"`
+	Limit       int     `json:"limit,omitempty" jsonschema_description:"Maximum number of tables to return (default: 1000)"`
+	Offset      int     `json:"offset,omitempty" jsonschema_description:"Offset for pagination (default: 0)"`
+}
+
 // RegisterTools registers all Databricks tools with the MCP server
 func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 	log.Info(p.ctx, "Registering Databricks tools")
@@ -51,18 +59,17 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 		},
 		session.WrapToolHandler(p.session, func(ctx context.Context, req *mcpsdk.CallToolRequest, args struct{}) (*mcpsdk.CallToolResult, any, error) {
 			log.Debug(ctx, "databricks_list_catalogs called")
-
-			result, err := ListCatalogs(ctx, p.config)
+			client, err := NewDatabricksRestClient(ctx, p.config)
 			if err != nil {
 				return nil, nil, err
 			}
 
-			text := formatCatalogsResult(result)
-			return &mcpsdk.CallToolResult{
-				Content: []mcpsdk.Content{
-					&mcpsdk.TextContent{Type: "text", Text: text},
-				},
-			}, nil, nil
+			result, err := client.ListCatalogs(ctx)
+			if err != nil {
+				return nil, nil, err
+			}
+
+			return mcpsdk.CreateNewTextContentResult(result.Display()), nil, nil
 		}),
 	)
 
@@ -82,65 +89,58 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 		session.WrapToolHandler(p.session, func(ctx context.Context, req *mcpsdk.CallToolRequest, args ListSchemasInput) (*mcpsdk.CallToolResult, any, error) {
 			log.Debugf(ctx, "databricks_list_schemas called: catalog=%s", args.CatalogName)
 
-			listArgs := &ListSchemasArgs{
-				CatalogName: args.CatalogName,
-				Filter:      args.Filter,
-				Limit:       args.Limit,
-				Offset:      args.Offset,
-			}
-
-			result, err := ListSchemas(ctx, p.config, listArgs)
+			client, err := NewDatabricksRestClient(ctx, p.config)
 			if err != nil {
 				return nil, nil, err
 			}
 
-			text := formatSchemasResult(result)
-			return &mcpsdk.CallToolResult{
-				Content: []mcpsdk.Content{
-					&mcpsdk.TextContent{Type: "text", Text: text},
-				},
-			}, nil, nil
+			result, err := client.ListSchemas(ctx, &ListSchemasRequest{
+				CatalogName: args.CatalogName,
+				Filter:      &args.Filter,
+				Limit:       args.Limit,
+				Offset:      args.Offset,
+			})
+			if err != nil {
+				return nil, nil, err
+			}
+
+			return mcpsdk.CreateNewTextContentResult(result.Display()), nil, nil
 		}),
 	)
 
-	// Register databricks_list_tables
-	type ListTablesInput struct {
-		CatalogName         string  `json:"catalog_name" jsonschema:"required" jsonschema_description:"Name of the catalog"`
-		SchemaName          string  `json:"schema_name" jsonschema:"required" jsonschema_description:"Name of the schema"`
-		ExcludeInaccessible bool    `json:"exclude_inaccessible,omitempty" jsonschema_description:"Exclude inaccessible tables (default: false)"`
-		PageSize            *int    `json:"page_size,omitempty" jsonschema_description:"Number of tables to return (default: 100, max: 1000)"`
-		PageToken           *string `json:"page_token,omitempty" jsonschema_description:"Token for next page of results"`
-		Filter              *string `json:"filter,omitempty" jsonschema_description:"Optional filter pattern for table names (supports wildcards)"`
-	}
-
+	// Register databricks_find_tables
 	mcpsdk.AddTool(server,
 		&mcpsdk.Tool{
-			Name:        "databricks_list_tables",
-			Description: "List tables in a Databricks catalog and schema with pagination support",
+			Name:        "databricks_find_tables",
+			Description: "Find tables in Databricks Unity Catalog. Supports searching within a specific catalog and schema, across all schemas in a catalog, or across all catalogs. Supports wildcard patterns (* for multiple characters, ? for single character) in table name filtering.",
 		},
-		session.WrapToolHandler(p.session, func(ctx context.Context, req *mcpsdk.CallToolRequest, args ListTablesInput) (*mcpsdk.CallToolResult, any, error) {
-			log.Debugf(ctx, "databricks_list_tables called: catalog=%s, schema=%s", args.CatalogName, args.SchemaName)
-
-			listArgs := &ListTablesArgs{
-				CatalogName:         args.CatalogName,
-				SchemaName:          args.SchemaName,
-				ExcludeInaccessible: args.ExcludeInaccessible,
-				PageSize:            args.PageSize,
-				PageToken:           args.PageToken,
-				Filter:              args.Filter,
+		session.WrapToolHandler(p.session, func(ctx context.Context, req *mcpsdk.CallToolRequest, args FindTablesInput) (*mcpsdk.CallToolResult, any, error) {
+			catalogStr := "<all>"
+			if args.CatalogName != nil {
+				catalogStr = *args.CatalogName
 			}
+			schemaStr := "<all>"
+			if args.SchemaName != nil {
+				schemaStr = *args.SchemaName
+			}
+			log.Debugf(ctx, "databricks_find_tables called: catalog=%s, schema=%s", catalogStr, schemaStr)
 
-			result, err := ListTables(ctx, p.config, listArgs)
+			client, err := NewDatabricksRestClient(ctx, p.config)
 			if err != nil {
 				return nil, nil, err
 			}
 
-			text := formatTablesResult(result)
-			return &mcpsdk.CallToolResult{
-				Content: []mcpsdk.Content{
-					&mcpsdk.TextContent{Type: "text", Text: text},
-				},
-			}, nil, nil
+			result, err := client.ListTables(ctx, &ListTablesRequest{
+				CatalogName: &catalogStr,
+				SchemaName:  &schemaStr,
+				Filter:      args.Filter,
+				Limit:       args.Limit,
+				Offset:      args.Offset,
+			})
+			if err != nil {
+				return nil, nil, err
+			}
+			return mcpsdk.CreateNewTextContentResult(result.Display()), nil, nil
 		}),
 	)
 
@@ -157,23 +157,20 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 		},
 		session.WrapToolHandler(p.session, func(ctx context.Context, req *mcpsdk.CallToolRequest, args DescribeTableInput) (*mcpsdk.CallToolResult, any, error) {
 			log.Debugf(ctx, "databricks_describe_table called: table=%s", args.TableFullName)
-
-			descArgs := &DescribeTableArgs{
-				TableFullName: args.TableFullName,
-				SampleSize:    args.SampleSize,
-			}
-
-			result, err := DescribeTable(ctx, p.config, descArgs)
+			client, err := NewDatabricksRestClient(ctx, p.config)
 			if err != nil {
 				return nil, nil, err
 			}
 
-			text := formatTableDetails(result)
-			return &mcpsdk.CallToolResult{
-				Content: []mcpsdk.Content{
-					&mcpsdk.TextContent{Type: "text", Text: text},
-				},
-			}, nil, nil
+			result, err := client.DescribeTable(ctx, &DescribeTableRequest{
+				TableFullName: args.TableFullName,
+				SampleSize:    args.SampleSize,
+			})
+			if err != nil {
+				return nil, nil, err
+			}
+
+			return mcpsdk.CreateNewTextContentResult(result.Display()), nil, nil
 		}),
 	)
 
@@ -192,25 +189,19 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 		},
 		session.WrapToolHandler(p.session, func(ctx context.Context, req *mcpsdk.CallToolRequest, args ExecuteQueryInput) (*mcpsdk.CallToolResult, any, error) {
 			log.Debugf(ctx, "databricks_execute_query called: query=%s", args.Query)
-
-			queryArgs := &ExecuteQueryArgs{
-				Query:       args.Query,
-				WarehouseID: args.WarehouseID,
-				MaxRows:     args.MaxRows,
-				Timeout:     args.Timeout,
-			}
-
-			result, err := ExecuteQuery(ctx, p.config, queryArgs)
+			client, err := NewDatabricksRestClient(ctx, p.config)
 			if err != nil {
 				return nil, nil, err
 			}
 
-			text := formatQueryResult(result)
-			return &mcpsdk.CallToolResult{
-				Content: []mcpsdk.Content{
-					&mcpsdk.TextContent{Type: "text", Text: text},
-				},
-			}, nil, nil
+			result, err := client.ExecuteSql(ctx, &ExecuteSqlRequest{
+				Query: args.Query,
+			})
+			if err != nil {
+				return nil, nil, err
+			}
+
+			return mcpsdk.CreateNewTextContentResult(result.Display()), nil, nil
 		}),
 	)
 
