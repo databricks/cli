@@ -34,6 +34,6 @@ Sandbox:
 
 Tools execute in a sandbox abstraction that can be:
 - Local: Direct filesystem and shell access
-- Dagger: Not implemented (stub only)
+- Dagger: Containerized execution (future)
 */
 package server
