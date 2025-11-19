@@ -2148,7 +2148,7 @@ func newTestRegistryWebhook() *cobra.Command {
   TRANSITION_REQUEST_TO_ARCHIVED_CREATED,
   TRANSITION_REQUEST_TO_PRODUCTION_CREATED,
   TRANSITION_REQUEST_TO_STAGING_CREATED,
-]`)
+].`)
 
 	cmd.Use = "test-registry-webhook ID"
 	cmd.Short = `Test a webhook.`

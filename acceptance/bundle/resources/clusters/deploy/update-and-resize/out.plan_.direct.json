@@ -3,7 +3,7 @@
     "resources.clusters.test_cluster": {
       "action": "create",
       "new_state": {
-        "config": {
+        "value": {
           "autotermination_minutes": 60,
           "cluster_name": "test-cluster-[UNIQUE_NAME]",
           "node_type_id": "[NODE_TYPE_ID]",
@@ -22,7 +22,7 @@
     "resources.clusters.test_cluster": {
       "action": "update",
       "new_state": {
-        "config": {
+        "value": {
           "autotermination_minutes": 60,
           "cluster_name": "test-cluster-[UNIQUE_NAME]",
           "node_type_id": "[NODE_TYPE_ID]",
@@ -59,7 +59,7 @@
     "resources.clusters.test_cluster": {
       "action": "resize",
       "new_state": {
-        "config": {
+        "value": {
           "autotermination_minutes": 60,
           "cluster_name": "test-cluster-[UNIQUE_NAME]",
           "node_type_id": "[NODE_TYPE_ID]",
@@ -97,7 +97,7 @@
     "resources.clusters.test_cluster": {
       "action": "update",
       "new_state": {
-        "config": {
+        "value": {
           "autotermination_minutes": 60,
           "cluster_name": "test-cluster-[UNIQUE_NAME]",
           "node_type_id": "[NODE_TYPE_ID]",

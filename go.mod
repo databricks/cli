@@ -9,7 +9,7 @@ require (
 	github.com/BurntSushi/toml v1.5.0 // MIT
 	github.com/Masterminds/semver/v3 v3.4.0 // MIT
 	github.com/briandowns/spinner v1.23.1 // Apache 2.0
-	github.com/databricks/databricks-sdk-go v0.89.0 // Apache 2.0
+	github.com/databricks/databricks-sdk-go v0.91.0 // Apache 2.0
 	github.com/fatih/color v1.18.0 // MIT
 	github.com/google/uuid v1.6.0 // BSD-3-Clause
 	github.com/gorilla/mux v1.8.1 // BSD 3-Clause
@@ -39,6 +39,9 @@ require (
 	gopkg.in/ini.v1 v1.67.0 // Apache 2.0
 	gopkg.in/yaml.v3 v3.0.1
 )
+
+// Dependencies for experimental MCP commands
+require github.com/google/jsonschema-go v0.3.0 // MIT
 
 require (
 	cloud.google.com/go/auth v0.16.5 // indirect

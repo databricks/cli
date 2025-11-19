@@ -7,6 +7,9 @@
 ### CLI
 
 ### Dependency updates
+* Upgrade Go SDK to 0.91.0 ([#3948](https://github.com/databricks/cli/pull/3948))
+* Bump Alpine Linux to 3.22 in the Docker image ([#3942](https://github.com/databricks/cli/pull/3942))
+
 
 ### Bundles
 * Update templates to use serverless environment version 4 and matching Python version ([#3897](https://github.com/databricks/cli/pull/3897))
