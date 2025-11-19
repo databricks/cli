@@ -2,8 +2,20 @@ envsubst < input.json.tmpl > input.json
 
 trace $CLI bundle init pydabs --config-file ./input.json
 
-# use --isolated not to inherit ruff.toml in the repo root
-trace ruff format --isolated --quiet --diff --check my_pydabs
+# Use --isolated not to inherit ruff.toml in the repo root.
+#
+# Format both with line-length 88 to cover default formatter settings
+# and 120 to cover default formatter settings in Workspace editor.
+#
+# You can use trailing comma to force line breaks to make formatting consistent
+# with different line-length settings.
+
+echo "Checking code formatting with ruff format --line-length 88"
+trace ruff format --isolated --line-length 88 --quiet --diff --check my_pydabs
+
+echo "Checking code formatting with ruff format --line-length 120"
+trace ruff format --isolated --line-length 120 --quiet --diff --check my_pydabs
+
 trace yamlcheck.py
 
 rm -rf my_pydabs input.json
