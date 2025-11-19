@@ -2,6 +2,7 @@ package databricks
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/url"
 	"strconv"
@@ -47,7 +48,7 @@ func applyPagination[T any](items []T, limit, offset int) ([]T, int, int) {
 // Allows alphanumeric, underscore, hyphen, and dot (for qualified names).
 func validateIdentifier(id string) error {
 	if id == "" {
-		return fmt.Errorf("identifier cannot be empty")
+		return errors.New("identifier cannot be empty")
 	}
 
 	// Allow alphanumeric, underscore, hyphen, and dot for qualified names
@@ -209,7 +210,7 @@ func (r *ListCatalogsResultResponse) Display() string {
 	lines = append(lines, "")
 
 	for _, catalog := range r.Catalogs {
-		lines = append(lines, fmt.Sprintf("• %s", catalog))
+		lines = append(lines, "• "+catalog)
 	}
 
 	return strings.Join(lines, "\n")
@@ -227,7 +228,7 @@ func (r *ListSchemasResultResponse) Display() string {
 	lines = append(lines, "")
 
 	for _, schema := range r.Schemas {
-		lines = append(lines, fmt.Sprintf("• %s", schema))
+		lines = append(lines, "• "+schema)
 	}
 
 	return strings.Join(lines, "\n")
@@ -247,10 +248,10 @@ func (r *ListTablesResultResponse) Display() string {
 	for _, table := range r.Tables {
 		info := fmt.Sprintf("• %s (%s)", table.FullName, table.TableType)
 		if table.Owner != nil {
-			info += fmt.Sprintf(" - Owner: %s", *table.Owner)
+			info += " - Owner: " + *table.Owner
 		}
 		if table.Comment != nil {
-			info += fmt.Sprintf(" - %s", *table.Comment)
+			info += " - " + *table.Comment
 		}
 		lines = append(lines, info)
 	}
@@ -261,23 +262,23 @@ func (r *ListTablesResultResponse) Display() string {
 func (r *TableDetailsResponse) Display() string {
 	var lines []string
 
-	lines = append(lines, fmt.Sprintf("Table: %s", r.FullName))
-	lines = append(lines, fmt.Sprintf("Table Type: %s", r.TableType))
+	lines = append(lines, "Table: "+r.FullName)
+	lines = append(lines, "Table Type: "+r.TableType)
 
 	if r.Owner != nil {
-		lines = append(lines, fmt.Sprintf("Owner: %s", *r.Owner))
+		lines = append(lines, "Owner: "+*r.Owner)
 	}
 	if r.Comment != nil {
-		lines = append(lines, fmt.Sprintf("Comment: %s", *r.Comment))
+		lines = append(lines, "Comment: "+*r.Comment)
 	}
 	if r.RowCount != nil {
 		lines = append(lines, fmt.Sprintf("Row Count: %d", *r.RowCount))
 	}
 	if r.StorageLocation != nil {
-		lines = append(lines, fmt.Sprintf("Storage Location: %s", *r.StorageLocation))
+		lines = append(lines, "Storage Location: "+*r.StorageLocation)
 	}
 	if r.DataSourceFormat != nil {
-		lines = append(lines, fmt.Sprintf("Data Source Format: %s", *r.DataSourceFormat))
+		lines = append(lines, "Data Source Format: "+*r.DataSourceFormat)
 	}
 
 	if len(r.Columns) > 0 {
@@ -289,7 +290,7 @@ func (r *TableDetailsResponse) Display() string {
 			}
 			colInfo := fmt.Sprintf("  - %s: %s (%s)", col.Name, col.DataType, nullableStr)
 			if col.Comment != nil {
-				colInfo += fmt.Sprintf(" - %s", *col.Comment)
+				colInfo += " - " + *col.Comment
 			}
 			lines = append(lines, colInfo)
 		}
@@ -328,7 +329,7 @@ func (r *ExecuteSqlResultResponse) Display() string {
 		for k := range r.Rows[0] {
 			columns = append(columns, k)
 		}
-		lines = append(lines, fmt.Sprintf("Columns: %s", strings.Join(columns, ", ")))
+		lines = append(lines, "Columns: "+strings.Join(columns, ", "))
 		lines = append(lines, "")
 		lines = append(lines, "Results:")
 	}
@@ -376,7 +377,7 @@ func NewDatabricksRestClient(ctx context.Context, cfg *mcp.Config) (*DatabricksR
 
 	warehouseID := cfg.WarehouseID
 	if warehouseID == "" {
-		return nil, fmt.Errorf("DATABRICKS_WAREHOUSE_ID not configured")
+		return nil, errors.New("DATABRICKS_WAREHOUSE_ID not configured")
 	}
 
 	return &DatabricksRestClient{
@@ -411,9 +412,10 @@ func (c *DatabricksRestClient) executeSqlWithParams(ctx context.Context, query s
 	// Check if we need to poll for results
 	if result.Status != nil {
 		state := result.Status.State
-		if state == sql.StatementStatePending || state == sql.StatementStateRunning {
+		switch state {
+		case sql.StatementStatePending, sql.StatementStateRunning:
 			return c.pollForResults(ctx, result.StatementId)
-		} else if state == sql.StatementStateFailed {
+		case sql.StatementStateFailed:
 			errMsg := "unknown error"
 			if result.Status.Error != nil && result.Status.Error.Message != "" {
 				errMsg = result.Status.Error.Message
@@ -442,9 +444,10 @@ func (c *DatabricksRestClient) executeSqlImpl(ctx context.Context, query string)
 	// Check if we need to poll for results
 	if result.Status != nil {
 		state := result.Status.State
-		if state == sql.StatementStatePending || state == sql.StatementStateRunning {
+		switch state {
+		case sql.StatementStatePending, sql.StatementStateRunning:
 			return c.pollForResults(ctx, result.StatementId)
-		} else if state == sql.StatementStateFailed {
+		case sql.StatementStateFailed:
 			errMsg := "unknown error"
 			if result.Status.Error != nil && result.Status.Error.Message != "" {
 				errMsg = result.Status.Error.Message
@@ -494,7 +497,7 @@ func (c *DatabricksRestClient) processStatementResult(ctx context.Context, resul
 
 	if result.Manifest == nil || result.Manifest.Schema == nil {
 		log.Debugf(ctx, "No schema in response")
-		return nil, fmt.Errorf("no schema in response")
+		return nil, errors.New("no schema in response")
 	}
 
 	schema := result.Manifest.Schema
@@ -657,7 +660,7 @@ func (c *DatabricksRestClient) ListTables(ctx context.Context, request *ListTabl
 func (c *DatabricksRestClient) listTablesViaInformationSchema(ctx context.Context, request *ListTablesRequest) (*ListTablesResultResponse, error) {
 	// Validate invalid combination
 	if request.CatalogName == nil && request.SchemaName != nil {
-		return nil, fmt.Errorf("schema_name requires catalog_name to be specified")
+		return nil, errors.New("schema_name requires catalog_name to be specified")
 	}
 
 	// Validate identifiers for SQL safety
@@ -741,25 +744,25 @@ func (c *DatabricksRestClient) listTablesViaInformationSchema(ctx context.Contex
 	for _, row := range rows {
 		catalogVal, ok := row["table_catalog"]
 		if !ok {
-			return nil, fmt.Errorf("missing table_catalog in row")
+			return nil, errors.New("missing table_catalog in row")
 		}
 		catalog := fmt.Sprintf("%v", catalogVal)
 
 		schemaVal, ok := row["table_schema"]
 		if !ok {
-			return nil, fmt.Errorf("missing table_schema in row")
+			return nil, errors.New("missing table_schema in row")
 		}
 		schema := fmt.Sprintf("%v", schemaVal)
 
 		nameVal, ok := row["table_name"]
 		if !ok {
-			return nil, fmt.Errorf("missing table_name in row")
+			return nil, errors.New("missing table_name in row")
 		}
 		name := fmt.Sprintf("%v", nameVal)
 
 		tableTypeVal, ok := row["table_type"]
 		if !ok {
-			return nil, fmt.Errorf("missing table_type in row")
+			return nil, errors.New("missing table_type in row")
 		}
 		tableType := fmt.Sprintf("%v", tableTypeVal)
 
@@ -786,7 +789,7 @@ func (c *DatabricksRestClient) listTablesViaInformationSchema(ctx context.Contex
 }
 
 func (c *DatabricksRestClient) listTablesImpl(ctx context.Context, catalogName, schemaName string, excludeInaccessible bool) ([]TableInfoResponse, error) {
-	tables := []TableInfoResponse{}
+	var tables []TableInfoResponse
 
 	w := cmdctx.WorkspaceClient(ctx)
 	clientCfg, err := config.HTTPClientConfigFromConfig(w.Config)
@@ -880,7 +883,7 @@ func (c *DatabricksRestClient) DescribeTable(ctx context.Context, request *Descr
 	}
 
 	var rowCount *int64
-	countQuery := fmt.Sprintf("SELECT COUNT(*) as count FROM %s", tableName)
+	countQuery := "SELECT COUNT(*) as count FROM " + tableName
 	if rows, err := c.executeSqlImpl(ctx, countQuery); err == nil && len(rows) > 0 {
 		if countVal, ok := rows[0]["count"]; ok {
 			switch v := countVal.(type) {
