@@ -44,16 +44,17 @@ type ViteBridgeMessage struct {
 }
 
 type ViteBridge struct {
-	ctx        context.Context
-	w          *databricks.WorkspaceClient
-	appName    string
-	tunnelConn *websocket.Conn
-	hmrConn    *websocket.Conn
-	tunnelID   string
-	mu         sync.Mutex
-	stopChan   chan struct{}
-	stopOnce   sync.Once
-	httpClient *http.Client
+	ctx                context.Context
+	w                  *databricks.WorkspaceClient
+	appName            string
+	tunnelConn         *websocket.Conn
+	hmrConn            *websocket.Conn
+	tunnelID           string
+	mu                 sync.Mutex
+	stopChan           chan struct{}
+	stopOnce           sync.Once
+	httpClient         *http.Client
+	connectionRequests chan *ViteBridgeMessage
 }
 
 func NewViteBridge(ctx context.Context, w *databricks.WorkspaceClient, appName string) *ViteBridge {
@@ -74,7 +75,8 @@ func NewViteBridge(ctx context.Context, w *databricks.WorkspaceClient, appName s
 			Timeout:   30 * time.Second,
 			Transport: transport,
 		},
-		stopChan: make(chan struct{}),
+		stopChan:           make(chan struct{}),
+		connectionRequests: make(chan *ViteBridgeMessage, 10),
 	}
 }
 
@@ -202,7 +204,8 @@ func (vb *ViteBridge) handleMessage(msg *ViteBridgeMessage) error {
 		return nil
 
 	case "connection:request":
-		return vb.handleConnectionRequest(msg)
+		vb.connectionRequests <- msg
+		return nil
 
 	case "fetch":
 		go func(fetchMsg ViteBridgeMessage) {
@@ -538,6 +541,19 @@ func (vb *ViteBridge) Start() error {
 
 	var wg sync.WaitGroup
 	errChan := make(chan error, 2)
+
+	go func() {
+		for {
+			select {
+			case msg := <-vb.connectionRequests:
+				if err := vb.handleConnectionRequest(msg); err != nil {
+					log.Errorf(vb.ctx, "[vite_bridge] Error handling connection request: %v", err)
+				}
+			case <-vb.stopChan:
+				return
+			}
+		}
+	}()
 
 	wg.Add(2)
 	go func() {
