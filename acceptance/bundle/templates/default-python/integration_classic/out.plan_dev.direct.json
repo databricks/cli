@@ -9,7 +9,7 @@
       ],
       "action": "create",
       "new_state": {
-        "config": {
+        "value": {
           "deployment": {
             "kind": "BUNDLE",
             "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/dev/state/metadata.json"
@@ -114,7 +114,7 @@
     "resources.pipelines.project_name_[UNIQUE_NAME]_etl": {
       "action": "create",
       "new_state": {
-        "config": {
+        "value": {
           "channel": "CURRENT",
           "deployment": {
             "kind": "BUNDLE",

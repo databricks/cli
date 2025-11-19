@@ -22,8 +22,8 @@ func (*ResourceAlert) PrepareState(input *resources.Alert) *sql.AlertV2 {
 	return &input.AlertV2
 }
 
-// DoRefresh reads the alert by id.
-func (r *ResourceAlert) DoRefresh(ctx context.Context, id string) (*sql.AlertV2, error) {
+// DoRead reads the alert by id.
+func (r *ResourceAlert) DoRead(ctx context.Context, id string) (*sql.AlertV2, error) {
 	return r.client.AlertsV2.GetAlertById(ctx, id)
 }
 
