@@ -1,0 +1,87 @@
+
+>>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] bundle deployment migrate
+Migrated 4 resources to direct engine state file: [TEST_TMP_DIR]/.databricks/bundle/default/resources.json
+Validate the migration by running "bundle debug plan", there should be no actions.
+
+The state file is not synchronized to the workspace yet. To do that, run "bundle deploy".
+
+To finalize deployment, run "bundle deploy".
+
+>>> DATABRICKS_BUNDLE_ENGINE=terraform musterr [CLI] bundle plan
+Error: Required engine "terraform" does not match present state files. Set required engine via "DATABRICKS_BUNDLE_ENGINE" env var.
+
+Available state files:
+- terraform.tfstate: remote terraform state serial=5 lineage="[UUID]"
+- [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=6 lineage="[UUID]"
+
+
+>>> DATABRICKS_BUNDLE_ENGINE=terraform musterr [CLI] bundle deploy
+Error: Required engine "terraform" does not match present state files. Set required engine via "DATABRICKS_BUNDLE_ENGINE" env var.
+
+Available state files:
+- terraform.tfstate: remote terraform state serial=5 lineage="[UUID]"
+- [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=6 lineage="[UUID]"
+
+
+>>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 4 unchanged
+contains error: '2 unchanged' not found in the output.
+
+>>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 4 unchanged
+contains error: '2 unchanged' not found in the output.
+
+>>> print_requests.py --get //jobs/get
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] engine/direct auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.2/jobs/get",
+  "q": {
+    "job_id": "[NUMID]"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] engine/direct auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.2/jobs/get",
+  "q": {
+    "job_id": "[NUMID]"
+  }
+}
+
+>>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py --get //jobs/get
+"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] engine/direct auth/pat"
+"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] engine/direct auth/pat"
+
+=== Should show that it's already migrated
+>>> musterr [CLI] bundle deployment migrate
+Error: already using direct engine
+Details: [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=6 lineage="[UUID]"
+
+>>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle debug states
+[TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=6 lineage="[UUID]"
+
+>>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle debug states --force-pull
+terraform.tfstate: remote terraform state serial=5 lineage="[UUID]"
+resources.json: remote direct state serial=6 lineage="[UUID]"
+[TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=6 lineage="[UUID]"

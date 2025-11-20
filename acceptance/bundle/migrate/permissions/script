@@ -1,0 +1,25 @@
+trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+print_state.py > out.original_state.json
+
+trace $CLI bundle deployment migrate 2>&1 | contains.py 'Migrated 4 resources'
+print_state.py > out.new_state.json
+
+# this is expected to fail because state does not match env var
+trace DATABRICKS_BUNDLE_ENGINE=terraform musterr $CLI bundle plan
+trace DATABRICKS_BUNDLE_ENGINE=terraform musterr $CLI bundle deploy
+
+rm out.requests.txt
+# Both DATABRICKS_BUNDLE_ENGINE=direct and DATABRICKS_BUNDLE_ENGINE= work
+trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle plan | contains.py "2 unchanged"  # should be "3 unchanged" once permanent drift is fixed
+trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle plan | contains.py "2 unchanged"
+trace print_requests.py --get //jobs/get | contains.py 'engine/direct'
+
+trace DATABRICKS_BUNDLE_ENGINE="" $CLI bundle deploy
+trace print_requests.py --get //jobs/get | jq '.headers["User-Agent"][0]' | contains.py 'engine/direct'
+
+title "Should show that it's already migrated"
+trace musterr $CLI bundle deployment migrate
+trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle debug states
+trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle debug states --force-pull
+
+rm out.requests.txt
