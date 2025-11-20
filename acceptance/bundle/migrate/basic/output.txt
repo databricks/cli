@@ -96,6 +96,23 @@ terraform.tfstate: remote terraform state serial=4 lineage="[UUID]"
 resources.json: remote direct state serial=5 lineage="[UUID]"
 [TEST_TMP_DIR]/.databricks/bundle/dev/resources.json: local direct state serial=5 lineage="[UUID]"
 
+=== Update databricks.yml, run plan & update
+>>> update_file.py databricks.yml Migration Migrated
+
+>>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle plan
+update jobs.test_job
+update pipelines.test_pipeline
+
+Plan: 0 to add, 2 to change, 0 to delete, 1 unchanged
+
+>>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle plan -o json
+
+>>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
 === Different target, still on terraform
 >>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle deploy -t prod
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/prod/files...
