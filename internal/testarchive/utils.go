@@ -1,4 +1,4 @@
-package testarchive
+package main
 
 import (
 	"archive/tar"
@@ -36,8 +36,8 @@ func downloadFile(url, outputPath string) error {
 	return nil
 }
 
-// ExtractTarGz extracts a tar.gz file to the specified directory
-func ExtractTarGz(archivePath, destDir string) error {
+// extractTarGz extracts a tar.gz file to the specified directory
+func extractTarGz(archivePath, destDir string) error {
 	fmt.Printf("Extracting %s to %s\n", archivePath, destDir)
 
 	file, err := os.Open(archivePath)
