@@ -20,3 +20,8 @@ New = "[ALPHANUMID]"
 Old = '\?o=\[(NUMID|ALPHANUMID)\]'
 New = ''
 Order = 1000
+
+[[Repls]]
+Old = '2\d\d\d-\d\d-\d\d(T| )\d\d:\d\d:\d\d(\.\d+(Z|\+\d\d:\d\d)?)?Z'
+New = "[TIMESTAMP]"
+Order = 9

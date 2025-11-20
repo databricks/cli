@@ -99,5 +99,7 @@ type DataSourceDatabaseSyncedDatabaseTablesSyncedTables struct {
 }
 
 type DataSourceDatabaseSyncedDatabaseTables struct {
+	InstanceName string                                               `json:"instance_name"`
+	PageSize     int                                                  `json:"page_size,omitempty"`
 	SyncedTables []DataSourceDatabaseSyncedDatabaseTablesSyncedTables `json:"synced_tables,omitempty"`
 }

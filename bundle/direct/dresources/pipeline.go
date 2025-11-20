@@ -5,6 +5,7 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 )
@@ -59,23 +60,23 @@ func (*ResourcePipeline) RemapState(p *pipelines.GetPipelineResponse) *pipelines
 		Target:              spec.Target,
 		Trigger:             spec.Trigger,
 		UsagePolicyId:       spec.UsagePolicyId,
-		ForceSendFields:     filterFields[pipelines.CreatePipeline](spec.ForceSendFields, "AllowDuplicateNames", "DryRun", "RunAs", "Id"),
+		ForceSendFields:     utils.FilterFields[pipelines.CreatePipeline](spec.ForceSendFields, "AllowDuplicateNames", "DryRun", "RunAs", "Id"),
 	}
 }
 
-func (r *ResourcePipeline) DoRefresh(ctx context.Context, id string) (*pipelines.GetPipelineResponse, error) {
+func (r *ResourcePipeline) DoRead(ctx context.Context, id string) (*pipelines.GetPipelineResponse, error) {
 	return r.client.Pipelines.GetByPipelineId(ctx, id)
 }
 
-func (r *ResourcePipeline) DoCreate(ctx context.Context, config *pipelines.CreatePipeline) (string, error) {
+func (r *ResourcePipeline) DoCreate(ctx context.Context, config *pipelines.CreatePipeline) (string, *pipelines.GetPipelineResponse, error) {
 	response, err := r.client.Pipelines.Create(ctx, *config)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
-	return response.PipelineId, nil
+	return response.PipelineId, nil, nil
 }
 
-func (r *ResourcePipeline) DoUpdate(ctx context.Context, id string, config *pipelines.CreatePipeline) error {
+func (r *ResourcePipeline) DoUpdate(ctx context.Context, id string, config *pipelines.CreatePipeline) (*pipelines.GetPipelineResponse, error) {
 	request := pipelines.EditPipeline{
 		AllowDuplicateNames:  config.AllowDuplicateNames,
 		BudgetPolicyId:       config.BudgetPolicyId,
@@ -109,10 +110,10 @@ func (r *ResourcePipeline) DoUpdate(ctx context.Context, id string, config *pipe
 		Trigger:              config.Trigger,
 		UsagePolicyId:        config.UsagePolicyId,
 		PipelineId:           id,
-		ForceSendFields:      filterFields[pipelines.EditPipeline](config.ForceSendFields),
+		ForceSendFields:      utils.FilterFields[pipelines.EditPipeline](config.ForceSendFields),
 	}
 
-	return r.client.Pipelines.Update(ctx, request)
+	return nil, r.client.Pipelines.Update(ctx, request)
 }
 
 func (r *ResourcePipeline) DoDelete(ctx context.Context, id string) error {

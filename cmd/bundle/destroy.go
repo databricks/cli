@@ -65,12 +65,12 @@ func CommandBundleDestroy(cmd *cobra.Command, args []string, autoApprove, forceD
 		// Do we need initialize phase here?
 	}
 
-	b, isDirectEngine, err := utils.ProcessBundleRet(cmd, opts)
+	b, stateDesc, err := utils.ProcessBundleRet(cmd, opts)
 	if err != nil {
 		return err
 	}
 
-	phases.Destroy(cmd.Context(), b, isDirectEngine)
+	phases.Destroy(cmd.Context(), b, stateDesc.Engine)
 	if logdiag.HasError(cmd.Context()) {
 		return root.ErrAlreadyPrinted
 	}

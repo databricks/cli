@@ -94,7 +94,7 @@ resources:
       environments:
         - environment_key: default
           spec:
-            environment_version: "2"
+            environment_version: "{{template "serverless_environment_version"}}"
   {{- if $python_package}}
             dependencies:
               # By default we just include the .whl file generated for the {{.project_name}} package.

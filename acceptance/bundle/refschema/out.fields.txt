@@ -415,6 +415,30 @@ resources.clusters.*.permissions.permissions[*].group_name	string	ALL
 resources.clusters.*.permissions.permissions[*].permission_level	iam.PermissionLevel	ALL
 resources.clusters.*.permissions.permissions[*].service_principal_name	string	ALL
 resources.clusters.*.permissions.permissions[*].user_name	string	ALL
+resources.dashboards.*.create_time	string	ALL
+resources.dashboards.*.dashboard_id	string	ALL
+resources.dashboards.*.display_name	string	ALL
+resources.dashboards.*.embed_credentials	bool	ALL
+resources.dashboards.*.etag	string	ALL
+resources.dashboards.*.file_path	string	INPUT
+resources.dashboards.*.id	string	INPUT
+resources.dashboards.*.lifecycle	resources.Lifecycle	INPUT
+resources.dashboards.*.lifecycle.prevent_destroy	bool	INPUT
+resources.dashboards.*.lifecycle_state	dashboards.LifecycleState	ALL
+resources.dashboards.*.modified_status	string	INPUT
+resources.dashboards.*.parent_path	string	ALL
+resources.dashboards.*.path	string	ALL
+resources.dashboards.*.permissions	[]resources.DashboardPermission	INPUT
+resources.dashboards.*.permissions[*]	resources.DashboardPermission	INPUT
+resources.dashboards.*.permissions[*].group_name	string	INPUT
+resources.dashboards.*.permissions[*].level	resources.DashboardPermissionLevel	INPUT
+resources.dashboards.*.permissions[*].service_principal_name	string	INPUT
+resources.dashboards.*.permissions[*].user_name	string	INPUT
+resources.dashboards.*.serialized_dashboard	any	ALL
+resources.dashboards.*.serialized_dashboard	string	ALL
+resources.dashboards.*.update_time	string	ALL
+resources.dashboards.*.url	string	INPUT
+resources.dashboards.*.warehouse_id	string	ALL
 resources.database_catalogs.*.create_database_if_not_exists	bool	ALL
 resources.database_catalogs.*.database_instance_name	string	ALL
 resources.database_catalogs.*.database_name	string	ALL
@@ -2228,6 +2252,475 @@ resources.jobs.*.permissions.permissions[*].group_name	string	ALL
 resources.jobs.*.permissions.permissions[*].permission_level	iam.PermissionLevel	ALL
 resources.jobs.*.permissions.permissions[*].service_principal_name	string	ALL
 resources.jobs.*.permissions.permissions[*].user_name	string	ALL
+resources.model_serving_endpoints.*.ai_gateway	*serving.AiGatewayConfig	INPUT	STATE
+resources.model_serving_endpoints.*.ai_gateway.fallback_config	*serving.FallbackConfig	INPUT	STATE
+resources.model_serving_endpoints.*.ai_gateway.fallback_config.enabled	bool	INPUT	STATE
+resources.model_serving_endpoints.*.ai_gateway.guardrails	*serving.AiGatewayGuardrails	INPUT	STATE
+resources.model_serving_endpoints.*.ai_gateway.guardrails.input	*serving.AiGatewayGuardrailParameters	INPUT	STATE
+resources.model_serving_endpoints.*.ai_gateway.guardrails.input.invalid_keywords	[]string	INPUT	STATE
+resources.model_serving_endpoints.*.ai_gateway.guardrails.input.invalid_keywords[*]	string	INPUT	STATE
+resources.model_serving_endpoints.*.ai_gateway.guardrails.input.pii	*serving.AiGatewayGuardrailPiiBehavior	INPUT	STATE
+resources.model_serving_endpoints.*.ai_gateway.guardrails.input.pii.behavior	serving.AiGatewayGuardrailPiiBehaviorBehavior	INPUT	STATE
+resources.model_serving_endpoints.*.ai_gateway.guardrails.input.safety	bool	INPUT	STATE
+resources.model_serving_endpoints.*.ai_gateway.guardrails.input.valid_topics	[]string	INPUT	STATE
+resources.model_serving_endpoints.*.ai_gateway.guardrails.input.valid_topics[*]	string	INPUT	STATE
+resources.model_serving_endpoints.*.ai_gateway.guardrails.output	*serving.AiGatewayGuardrailParameters	INPUT	STATE
+resources.model_serving_endpoints.*.ai_gateway.guardrails.output.invalid_keywords	[]string	INPUT	STATE
+resources.model_serving_endpoints.*.ai_gateway.guardrails.output.invalid_keywords[*]	string	INPUT	STATE
+resources.model_serving_endpoints.*.ai_gateway.guardrails.output.pii	*serving.AiGatewayGuardrailPiiBehavior	INPUT	STATE
+resources.model_serving_endpoints.*.ai_gateway.guardrails.output.pii.behavior	serving.AiGatewayGuardrailPiiBehaviorBehavior	INPUT	STATE
+resources.model_serving_endpoints.*.ai_gateway.guardrails.output.safety	bool	INPUT	STATE
+resources.model_serving_endpoints.*.ai_gateway.guardrails.output.valid_topics	[]string	INPUT	STATE
+resources.model_serving_endpoints.*.ai_gateway.guardrails.output.valid_topics[*]	string	INPUT	STATE
+resources.model_serving_endpoints.*.ai_gateway.inference_table_config	*serving.AiGatewayInferenceTableConfig	INPUT	STATE
+resources.model_serving_endpoints.*.ai_gateway.inference_table_config.catalog_name	string	INPUT	STATE
+resources.model_serving_endpoints.*.ai_gateway.inference_table_config.enabled	bool	INPUT	STATE
+resources.model_serving_endpoints.*.ai_gateway.inference_table_config.schema_name	string	INPUT	STATE
+resources.model_serving_endpoints.*.ai_gateway.inference_table_config.table_name_prefix	string	INPUT	STATE
+resources.model_serving_endpoints.*.ai_gateway.rate_limits	[]serving.AiGatewayRateLimit	INPUT	STATE
+resources.model_serving_endpoints.*.ai_gateway.rate_limits[*]	serving.AiGatewayRateLimit	INPUT	STATE
+resources.model_serving_endpoints.*.ai_gateway.rate_limits[*].calls	int64	INPUT	STATE
+resources.model_serving_endpoints.*.ai_gateway.rate_limits[*].key	serving.AiGatewayRateLimitKey	INPUT	STATE
+resources.model_serving_endpoints.*.ai_gateway.rate_limits[*].principal	string	INPUT	STATE
+resources.model_serving_endpoints.*.ai_gateway.rate_limits[*].renewal_period	serving.AiGatewayRateLimitRenewalPeriod	INPUT	STATE
+resources.model_serving_endpoints.*.ai_gateway.rate_limits[*].tokens	int64	INPUT	STATE
+resources.model_serving_endpoints.*.ai_gateway.usage_tracking_config	*serving.AiGatewayUsageTrackingConfig	INPUT	STATE
+resources.model_serving_endpoints.*.ai_gateway.usage_tracking_config.enabled	bool	INPUT	STATE
+resources.model_serving_endpoints.*.budget_policy_id	string	INPUT	STATE
+resources.model_serving_endpoints.*.config	*serving.EndpointCoreConfigInput	INPUT	STATE
+resources.model_serving_endpoints.*.config.auto_capture_config	*serving.AutoCaptureConfigInput	INPUT	STATE
+resources.model_serving_endpoints.*.config.auto_capture_config.catalog_name	string	INPUT	STATE
+resources.model_serving_endpoints.*.config.auto_capture_config.enabled	bool	INPUT	STATE
+resources.model_serving_endpoints.*.config.auto_capture_config.schema_name	string	INPUT	STATE
+resources.model_serving_endpoints.*.config.auto_capture_config.table_name_prefix	string	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_entities	[]serving.ServedEntityInput	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_entities[*]	serving.ServedEntityInput	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_entities[*].entity_name	string	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_entities[*].entity_version	string	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_entities[*].environment_vars	map[string]string	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_entities[*].environment_vars.*	string	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_entities[*].external_model	*serving.ExternalModel	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.ai21labs_config	*serving.Ai21LabsConfig	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.ai21labs_config.ai21labs_api_key	string	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.ai21labs_config.ai21labs_api_key_plaintext	string	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.amazon_bedrock_config	*serving.AmazonBedrockConfig	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.amazon_bedrock_config.aws_access_key_id	string	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.amazon_bedrock_config.aws_access_key_id_plaintext	string	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.amazon_bedrock_config.aws_region	string	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.amazon_bedrock_config.aws_secret_access_key	string	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.amazon_bedrock_config.aws_secret_access_key_plaintext	string	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.amazon_bedrock_config.bedrock_provider	serving.AmazonBedrockConfigBedrockProvider	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.amazon_bedrock_config.instance_profile_arn	string	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.anthropic_config	*serving.AnthropicConfig	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.anthropic_config.anthropic_api_key	string	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.anthropic_config.anthropic_api_key_plaintext	string	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.cohere_config	*serving.CohereConfig	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.cohere_config.cohere_api_base	string	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.cohere_config.cohere_api_key	string	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.cohere_config.cohere_api_key_plaintext	string	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.custom_provider_config	*serving.CustomProviderConfig	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.custom_provider_config.api_key_auth	*serving.ApiKeyAuth	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.custom_provider_config.api_key_auth.key	string	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.custom_provider_config.api_key_auth.value	string	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.custom_provider_config.api_key_auth.value_plaintext	string	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.custom_provider_config.bearer_token_auth	*serving.BearerTokenAuth	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.custom_provider_config.bearer_token_auth.token	string	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.custom_provider_config.bearer_token_auth.token_plaintext	string	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.custom_provider_config.custom_provider_url	string	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.databricks_model_serving_config	*serving.DatabricksModelServingConfig	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.databricks_model_serving_config.databricks_api_token	string	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.databricks_model_serving_config.databricks_api_token_plaintext	string	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.databricks_model_serving_config.databricks_workspace_url	string	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.google_cloud_vertex_ai_config	*serving.GoogleCloudVertexAiConfig	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.google_cloud_vertex_ai_config.private_key	string	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.google_cloud_vertex_ai_config.private_key_plaintext	string	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.google_cloud_vertex_ai_config.project_id	string	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.google_cloud_vertex_ai_config.region	string	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.name	string	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.openai_config	*serving.OpenAiConfig	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.openai_config.microsoft_entra_client_id	string	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.openai_config.microsoft_entra_client_secret	string	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.openai_config.microsoft_entra_client_secret_plaintext	string	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.openai_config.microsoft_entra_tenant_id	string	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.openai_config.openai_api_base	string	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.openai_config.openai_api_key	string	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.openai_config.openai_api_key_plaintext	string	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.openai_config.openai_api_type	string	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.openai_config.openai_api_version	string	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.openai_config.openai_deployment_name	string	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.openai_config.openai_organization	string	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.palm_config	*serving.PaLmConfig	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.palm_config.palm_api_key	string	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.palm_config.palm_api_key_plaintext	string	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.provider	serving.ExternalModelProvider	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_entities[*].external_model.task	string	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_entities[*].instance_profile_arn	string	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_entities[*].max_provisioned_concurrency	int	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_entities[*].max_provisioned_throughput	int	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_entities[*].min_provisioned_concurrency	int	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_entities[*].min_provisioned_throughput	int	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_entities[*].name	string	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_entities[*].provisioned_model_units	int64	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_entities[*].scale_to_zero_enabled	bool	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_entities[*].workload_size	string	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_entities[*].workload_type	serving.ServingModelWorkloadType	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_models	[]serving.ServedModelInput	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_models[*]	serving.ServedModelInput	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_models[*].environment_vars	map[string]string	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_models[*].environment_vars.*	string	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_models[*].instance_profile_arn	string	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_models[*].max_provisioned_concurrency	int	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_models[*].max_provisioned_throughput	int	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_models[*].min_provisioned_concurrency	int	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_models[*].min_provisioned_throughput	int	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_models[*].model_name	string	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_models[*].model_version	string	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_models[*].name	string	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_models[*].provisioned_model_units	int64	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_models[*].scale_to_zero_enabled	bool	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_models[*].workload_size	string	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_models[*].workload_type	serving.ServedModelInputWorkloadType	INPUT	STATE
+resources.model_serving_endpoints.*.config.traffic_config	*serving.TrafficConfig	INPUT	STATE
+resources.model_serving_endpoints.*.config.traffic_config.routes	[]serving.Route	INPUT	STATE
+resources.model_serving_endpoints.*.config.traffic_config.routes[*]	serving.Route	INPUT	STATE
+resources.model_serving_endpoints.*.config.traffic_config.routes[*].served_entity_name	string	INPUT	STATE
+resources.model_serving_endpoints.*.config.traffic_config.routes[*].served_model_name	string	INPUT	STATE
+resources.model_serving_endpoints.*.config.traffic_config.routes[*].traffic_percentage	int	INPUT	STATE
+resources.model_serving_endpoints.*.description	string	INPUT	STATE
+resources.model_serving_endpoints.*.email_notifications	*serving.EmailNotifications	INPUT	STATE
+resources.model_serving_endpoints.*.email_notifications.on_update_failure	[]string	INPUT	STATE
+resources.model_serving_endpoints.*.email_notifications.on_update_failure[*]	string	INPUT	STATE
+resources.model_serving_endpoints.*.email_notifications.on_update_success	[]string	INPUT	STATE
+resources.model_serving_endpoints.*.email_notifications.on_update_success[*]	string	INPUT	STATE
+resources.model_serving_endpoints.*.endpoint_details	*serving.ServingEndpointDetailed	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.ai_gateway	*serving.AiGatewayConfig	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.ai_gateway.fallback_config	*serving.FallbackConfig	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.ai_gateway.fallback_config.enabled	bool	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.ai_gateway.guardrails	*serving.AiGatewayGuardrails	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.ai_gateway.guardrails.input	*serving.AiGatewayGuardrailParameters	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.ai_gateway.guardrails.input.invalid_keywords	[]string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.ai_gateway.guardrails.input.invalid_keywords[*]	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.ai_gateway.guardrails.input.pii	*serving.AiGatewayGuardrailPiiBehavior	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.ai_gateway.guardrails.input.pii.behavior	serving.AiGatewayGuardrailPiiBehaviorBehavior	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.ai_gateway.guardrails.input.safety	bool	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.ai_gateway.guardrails.input.valid_topics	[]string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.ai_gateway.guardrails.input.valid_topics[*]	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.ai_gateway.guardrails.output	*serving.AiGatewayGuardrailParameters	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.ai_gateway.guardrails.output.invalid_keywords	[]string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.ai_gateway.guardrails.output.invalid_keywords[*]	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.ai_gateway.guardrails.output.pii	*serving.AiGatewayGuardrailPiiBehavior	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.ai_gateway.guardrails.output.pii.behavior	serving.AiGatewayGuardrailPiiBehaviorBehavior	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.ai_gateway.guardrails.output.safety	bool	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.ai_gateway.guardrails.output.valid_topics	[]string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.ai_gateway.guardrails.output.valid_topics[*]	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.ai_gateway.inference_table_config	*serving.AiGatewayInferenceTableConfig	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.ai_gateway.inference_table_config.catalog_name	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.ai_gateway.inference_table_config.enabled	bool	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.ai_gateway.inference_table_config.schema_name	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.ai_gateway.inference_table_config.table_name_prefix	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.ai_gateway.rate_limits	[]serving.AiGatewayRateLimit	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.ai_gateway.rate_limits[*]	serving.AiGatewayRateLimit	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.ai_gateway.rate_limits[*].calls	int64	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.ai_gateway.rate_limits[*].key	serving.AiGatewayRateLimitKey	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.ai_gateway.rate_limits[*].principal	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.ai_gateway.rate_limits[*].renewal_period	serving.AiGatewayRateLimitRenewalPeriod	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.ai_gateway.rate_limits[*].tokens	int64	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.ai_gateway.usage_tracking_config	*serving.AiGatewayUsageTrackingConfig	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.ai_gateway.usage_tracking_config.enabled	bool	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.budget_policy_id	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config	*serving.EndpointCoreConfigOutput	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.auto_capture_config	*serving.AutoCaptureConfigOutput	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.auto_capture_config.catalog_name	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.auto_capture_config.enabled	bool	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.auto_capture_config.schema_name	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.auto_capture_config.state	*serving.AutoCaptureState	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.auto_capture_config.state.payload_table	*serving.PayloadTable	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.auto_capture_config.state.payload_table.name	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.auto_capture_config.state.payload_table.status	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.auto_capture_config.state.payload_table.status_message	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.auto_capture_config.table_name_prefix	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.config_version	int64	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities	[]serving.ServedEntityOutput	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*]	serving.ServedEntityOutput	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].creation_timestamp	int64	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].creator	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].entity_name	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].entity_version	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].environment_vars	map[string]string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].environment_vars.*	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].external_model	*serving.ExternalModel	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].external_model.ai21labs_config	*serving.Ai21LabsConfig	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].external_model.ai21labs_config.ai21labs_api_key	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].external_model.ai21labs_config.ai21labs_api_key_plaintext	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].external_model.amazon_bedrock_config	*serving.AmazonBedrockConfig	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].external_model.amazon_bedrock_config.aws_access_key_id	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].external_model.amazon_bedrock_config.aws_access_key_id_plaintext	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].external_model.amazon_bedrock_config.aws_region	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].external_model.amazon_bedrock_config.aws_secret_access_key	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].external_model.amazon_bedrock_config.aws_secret_access_key_plaintext	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].external_model.amazon_bedrock_config.bedrock_provider	serving.AmazonBedrockConfigBedrockProvider	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].external_model.amazon_bedrock_config.instance_profile_arn	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].external_model.anthropic_config	*serving.AnthropicConfig	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].external_model.anthropic_config.anthropic_api_key	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].external_model.anthropic_config.anthropic_api_key_plaintext	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].external_model.cohere_config	*serving.CohereConfig	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].external_model.cohere_config.cohere_api_base	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].external_model.cohere_config.cohere_api_key	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].external_model.cohere_config.cohere_api_key_plaintext	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].external_model.custom_provider_config	*serving.CustomProviderConfig	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].external_model.custom_provider_config.api_key_auth	*serving.ApiKeyAuth	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].external_model.custom_provider_config.api_key_auth.key	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].external_model.custom_provider_config.api_key_auth.value	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].external_model.custom_provider_config.api_key_auth.value_plaintext	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].external_model.custom_provider_config.bearer_token_auth	*serving.BearerTokenAuth	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].external_model.custom_provider_config.bearer_token_auth.token	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].external_model.custom_provider_config.bearer_token_auth.token_plaintext	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].external_model.custom_provider_config.custom_provider_url	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].external_model.databricks_model_serving_config	*serving.DatabricksModelServingConfig	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].external_model.databricks_model_serving_config.databricks_api_token	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].external_model.databricks_model_serving_config.databricks_api_token_plaintext	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].external_model.databricks_model_serving_config.databricks_workspace_url	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].external_model.google_cloud_vertex_ai_config	*serving.GoogleCloudVertexAiConfig	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].external_model.google_cloud_vertex_ai_config.private_key	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].external_model.google_cloud_vertex_ai_config.private_key_plaintext	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].external_model.google_cloud_vertex_ai_config.project_id	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].external_model.google_cloud_vertex_ai_config.region	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].external_model.name	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].external_model.openai_config	*serving.OpenAiConfig	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].external_model.openai_config.microsoft_entra_client_id	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].external_model.openai_config.microsoft_entra_client_secret	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].external_model.openai_config.microsoft_entra_client_secret_plaintext	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].external_model.openai_config.microsoft_entra_tenant_id	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].external_model.openai_config.openai_api_base	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].external_model.openai_config.openai_api_key	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].external_model.openai_config.openai_api_key_plaintext	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].external_model.openai_config.openai_api_type	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].external_model.openai_config.openai_api_version	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].external_model.openai_config.openai_deployment_name	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].external_model.openai_config.openai_organization	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].external_model.palm_config	*serving.PaLmConfig	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].external_model.palm_config.palm_api_key	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].external_model.palm_config.palm_api_key_plaintext	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].external_model.provider	serving.ExternalModelProvider	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].external_model.task	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].foundation_model	*serving.FoundationModel	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].foundation_model.description	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].foundation_model.display_name	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].foundation_model.docs	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].foundation_model.name	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].instance_profile_arn	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].max_provisioned_concurrency	int	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].max_provisioned_throughput	int	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].min_provisioned_concurrency	int	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].min_provisioned_throughput	int	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].name	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].provisioned_model_units	int64	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].scale_to_zero_enabled	bool	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].state	*serving.ServedModelState	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].state.deployment	serving.ServedModelStateDeployment	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].state.deployment_state_message	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].workload_size	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].workload_type	serving.ServingModelWorkloadType	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_models	[]serving.ServedModelOutput	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_models[*]	serving.ServedModelOutput	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_models[*].creation_timestamp	int64	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_models[*].creator	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_models[*].environment_vars	map[string]string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_models[*].environment_vars.*	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_models[*].instance_profile_arn	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_models[*].max_provisioned_concurrency	int	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_models[*].min_provisioned_concurrency	int	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_models[*].model_name	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_models[*].model_version	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_models[*].name	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_models[*].provisioned_model_units	int64	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_models[*].scale_to_zero_enabled	bool	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_models[*].state	*serving.ServedModelState	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_models[*].state.deployment	serving.ServedModelStateDeployment	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_models[*].state.deployment_state_message	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_models[*].workload_size	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_models[*].workload_type	serving.ServingModelWorkloadType	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.traffic_config	*serving.TrafficConfig	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.traffic_config.routes	[]serving.Route	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.traffic_config.routes[*]	serving.Route	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.traffic_config.routes[*].served_entity_name	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.traffic_config.routes[*].served_model_name	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.traffic_config.routes[*].traffic_percentage	int	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.creation_timestamp	int64	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.creator	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.data_plane_info	*serving.ModelDataPlaneInfo	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.data_plane_info.query_info	*serving.DataPlaneInfo	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.data_plane_info.query_info.authorization_details	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.data_plane_info.query_info.endpoint_url	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.description	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.email_notifications	*serving.EmailNotifications	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.email_notifications.on_update_failure	[]string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.email_notifications.on_update_failure[*]	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.email_notifications.on_update_success	[]string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.email_notifications.on_update_success[*]	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.endpoint_url	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.id	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.last_updated_timestamp	int64	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.name	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config	*serving.EndpointPendingConfig	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.auto_capture_config	*serving.AutoCaptureConfigOutput	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.auto_capture_config.catalog_name	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.auto_capture_config.enabled	bool	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.auto_capture_config.schema_name	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.auto_capture_config.state	*serving.AutoCaptureState	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.auto_capture_config.state.payload_table	*serving.PayloadTable	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.auto_capture_config.state.payload_table.name	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.auto_capture_config.state.payload_table.status	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.auto_capture_config.state.payload_table.status_message	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.auto_capture_config.table_name_prefix	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.config_version	int	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities	[]serving.ServedEntityOutput	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*]	serving.ServedEntityOutput	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].creation_timestamp	int64	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].creator	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].entity_name	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].entity_version	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].environment_vars	map[string]string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].environment_vars.*	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].external_model	*serving.ExternalModel	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].external_model.ai21labs_config	*serving.Ai21LabsConfig	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].external_model.ai21labs_config.ai21labs_api_key	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].external_model.ai21labs_config.ai21labs_api_key_plaintext	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].external_model.amazon_bedrock_config	*serving.AmazonBedrockConfig	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].external_model.amazon_bedrock_config.aws_access_key_id	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].external_model.amazon_bedrock_config.aws_access_key_id_plaintext	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].external_model.amazon_bedrock_config.aws_region	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].external_model.amazon_bedrock_config.aws_secret_access_key	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].external_model.amazon_bedrock_config.aws_secret_access_key_plaintext	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].external_model.amazon_bedrock_config.bedrock_provider	serving.AmazonBedrockConfigBedrockProvider	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].external_model.amazon_bedrock_config.instance_profile_arn	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].external_model.anthropic_config	*serving.AnthropicConfig	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].external_model.anthropic_config.anthropic_api_key	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].external_model.anthropic_config.anthropic_api_key_plaintext	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].external_model.cohere_config	*serving.CohereConfig	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].external_model.cohere_config.cohere_api_base	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].external_model.cohere_config.cohere_api_key	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].external_model.cohere_config.cohere_api_key_plaintext	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].external_model.custom_provider_config	*serving.CustomProviderConfig	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].external_model.custom_provider_config.api_key_auth	*serving.ApiKeyAuth	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].external_model.custom_provider_config.api_key_auth.key	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].external_model.custom_provider_config.api_key_auth.value	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].external_model.custom_provider_config.api_key_auth.value_plaintext	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].external_model.custom_provider_config.bearer_token_auth	*serving.BearerTokenAuth	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].external_model.custom_provider_config.bearer_token_auth.token	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].external_model.custom_provider_config.bearer_token_auth.token_plaintext	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].external_model.custom_provider_config.custom_provider_url	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].external_model.databricks_model_serving_config	*serving.DatabricksModelServingConfig	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].external_model.databricks_model_serving_config.databricks_api_token	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].external_model.databricks_model_serving_config.databricks_api_token_plaintext	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].external_model.databricks_model_serving_config.databricks_workspace_url	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].external_model.google_cloud_vertex_ai_config	*serving.GoogleCloudVertexAiConfig	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].external_model.google_cloud_vertex_ai_config.private_key	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].external_model.google_cloud_vertex_ai_config.private_key_plaintext	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].external_model.google_cloud_vertex_ai_config.project_id	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].external_model.google_cloud_vertex_ai_config.region	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].external_model.name	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].external_model.openai_config	*serving.OpenAiConfig	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].external_model.openai_config.microsoft_entra_client_id	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].external_model.openai_config.microsoft_entra_client_secret	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].external_model.openai_config.microsoft_entra_client_secret_plaintext	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].external_model.openai_config.microsoft_entra_tenant_id	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].external_model.openai_config.openai_api_base	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].external_model.openai_config.openai_api_key	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].external_model.openai_config.openai_api_key_plaintext	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].external_model.openai_config.openai_api_type	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].external_model.openai_config.openai_api_version	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].external_model.openai_config.openai_deployment_name	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].external_model.openai_config.openai_organization	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].external_model.palm_config	*serving.PaLmConfig	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].external_model.palm_config.palm_api_key	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].external_model.palm_config.palm_api_key_plaintext	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].external_model.provider	serving.ExternalModelProvider	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].external_model.task	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].foundation_model	*serving.FoundationModel	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].foundation_model.description	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].foundation_model.display_name	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].foundation_model.docs	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].foundation_model.name	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].instance_profile_arn	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].max_provisioned_concurrency	int	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].max_provisioned_throughput	int	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].min_provisioned_concurrency	int	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].min_provisioned_throughput	int	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].name	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].provisioned_model_units	int64	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].scale_to_zero_enabled	bool	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].state	*serving.ServedModelState	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].state.deployment	serving.ServedModelStateDeployment	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].state.deployment_state_message	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].workload_size	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].workload_type	serving.ServingModelWorkloadType	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_models	[]serving.ServedModelOutput	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_models[*]	serving.ServedModelOutput	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_models[*].creation_timestamp	int64	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_models[*].creator	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_models[*].environment_vars	map[string]string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_models[*].environment_vars.*	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_models[*].instance_profile_arn	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_models[*].max_provisioned_concurrency	int	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_models[*].min_provisioned_concurrency	int	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_models[*].model_name	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_models[*].model_version	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_models[*].name	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_models[*].provisioned_model_units	int64	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_models[*].scale_to_zero_enabled	bool	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_models[*].state	*serving.ServedModelState	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_models[*].state.deployment	serving.ServedModelStateDeployment	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_models[*].state.deployment_state_message	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_models[*].workload_size	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_models[*].workload_type	serving.ServingModelWorkloadType	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.start_time	int64	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.traffic_config	*serving.TrafficConfig	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.traffic_config.routes	[]serving.Route	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.traffic_config.routes[*]	serving.Route	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.traffic_config.routes[*].served_entity_name	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.traffic_config.routes[*].served_model_name	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.traffic_config.routes[*].traffic_percentage	int	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.permission_level	serving.ServingEndpointDetailedPermissionLevel	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.route_optimized	bool	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.state	*serving.EndpointState	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.state.config_update	serving.EndpointStateConfigUpdate	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.state.ready	serving.EndpointStateReady	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.tags	[]serving.EndpointTag	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.tags[*]	serving.EndpointTag	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.tags[*].key	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.tags[*].value	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.task	string	REMOTE
+resources.model_serving_endpoints.*.endpoint_id	string	REMOTE
+resources.model_serving_endpoints.*.id	string	INPUT
+resources.model_serving_endpoints.*.lifecycle	resources.Lifecycle	INPUT
+resources.model_serving_endpoints.*.lifecycle.prevent_destroy	bool	INPUT
+resources.model_serving_endpoints.*.modified_status	string	INPUT
+resources.model_serving_endpoints.*.name	string	INPUT	STATE
+resources.model_serving_endpoints.*.permissions	[]resources.ModelServingEndpointPermission	INPUT
+resources.model_serving_endpoints.*.permissions[*]	resources.ModelServingEndpointPermission	INPUT
+resources.model_serving_endpoints.*.permissions[*].group_name	string	INPUT
+resources.model_serving_endpoints.*.permissions[*].level	resources.ModelServingEndpointPermissionLevel	INPUT
+resources.model_serving_endpoints.*.permissions[*].service_principal_name	string	INPUT
+resources.model_serving_endpoints.*.permissions[*].user_name	string	INPUT
+resources.model_serving_endpoints.*.rate_limits	[]serving.RateLimit	INPUT	STATE
+resources.model_serving_endpoints.*.rate_limits[*]	serving.RateLimit	INPUT	STATE
+resources.model_serving_endpoints.*.rate_limits[*].calls	int64	INPUT	STATE
+resources.model_serving_endpoints.*.rate_limits[*].key	serving.RateLimitKey	INPUT	STATE
+resources.model_serving_endpoints.*.rate_limits[*].renewal_period	serving.RateLimitRenewalPeriod	INPUT	STATE
+resources.model_serving_endpoints.*.route_optimized	bool	INPUT	STATE
+resources.model_serving_endpoints.*.tags	[]serving.EndpointTag	INPUT	STATE
+resources.model_serving_endpoints.*.tags[*]	serving.EndpointTag	INPUT	STATE
+resources.model_serving_endpoints.*.tags[*].key	string	INPUT	STATE
+resources.model_serving_endpoints.*.tags[*].value	string	INPUT	STATE
+resources.model_serving_endpoints.*.url	string	INPUT
+resources.model_serving_endpoints.*.permissions.object_id	string	ALL
+resources.model_serving_endpoints.*.permissions.permissions	[]iam.AccessControlRequest	ALL
+resources.model_serving_endpoints.*.permissions.permissions[*]	iam.AccessControlRequest	ALL
+resources.model_serving_endpoints.*.permissions.permissions[*].group_name	string	ALL
+resources.model_serving_endpoints.*.permissions.permissions[*].permission_level	iam.PermissionLevel	ALL
+resources.model_serving_endpoints.*.permissions.permissions[*].service_principal_name	string	ALL
+resources.model_serving_endpoints.*.permissions.permissions[*].user_name	string	ALL
 resources.models.*.creation_timestamp	int64	REMOTE
 resources.models.*.description	string	ALL
 resources.models.*.id	string	INPUT	REMOTE
@@ -2908,6 +3401,13 @@ resources.registered_models.*.storage_location	string	ALL
 resources.registered_models.*.updated_at	int64	ALL
 resources.registered_models.*.updated_by	string	ALL
 resources.registered_models.*.url	string	INPUT
+resources.registered_models.*.grants.full_name	string	ALL
+resources.registered_models.*.grants.grants	[]dresources.GrantAssignment	ALL
+resources.registered_models.*.grants.grants[*]	dresources.GrantAssignment	ALL
+resources.registered_models.*.grants.grants[*].principal	string	ALL
+resources.registered_models.*.grants.grants[*].privileges	[]catalog.Privilege	ALL
+resources.registered_models.*.grants.grants[*].privileges[*]	catalog.Privilege	ALL
+resources.registered_models.*.grants.securable_type	string	ALL
 resources.schemas.*.browse_only	bool	REMOTE
 resources.schemas.*.catalog_name	string	ALL
 resources.schemas.*.catalog_type	catalog.CatalogType	REMOTE
@@ -2940,6 +3440,13 @@ resources.schemas.*.storage_root	string	ALL
 resources.schemas.*.updated_at	int64	REMOTE
 resources.schemas.*.updated_by	string	REMOTE
 resources.schemas.*.url	string	INPUT
+resources.schemas.*.grants.full_name	string	ALL
+resources.schemas.*.grants.grants	[]dresources.GrantAssignment	ALL
+resources.schemas.*.grants.grants[*]	dresources.GrantAssignment	ALL
+resources.schemas.*.grants.grants[*].principal	string	ALL
+resources.schemas.*.grants.grants[*].privileges	[]catalog.Privilege	ALL
+resources.schemas.*.grants.grants[*].privileges[*]	catalog.Privilege	ALL
+resources.schemas.*.grants.securable_type	string	ALL
 resources.sql_warehouses.*.auto_stop_mins	int	ALL
 resources.sql_warehouses.*.channel	*sql.Channel	ALL
 resources.sql_warehouses.*.channel.dbsql_version	string	ALL
@@ -3090,3 +3597,10 @@ resources.volumes.*.updated_by	string	REMOTE
 resources.volumes.*.url	string	INPUT
 resources.volumes.*.volume_id	string	REMOTE
 resources.volumes.*.volume_type	catalog.VolumeType	ALL
+resources.volumes.*.grants.full_name	string	ALL
+resources.volumes.*.grants.grants	[]dresources.GrantAssignment	ALL
+resources.volumes.*.grants.grants[*]	dresources.GrantAssignment	ALL
+resources.volumes.*.grants.grants[*].principal	string	ALL
+resources.volumes.*.grants.grants[*].privileges	[]catalog.Privilege	ALL
+resources.volumes.*.grants.grants[*].privileges[*]	catalog.Privilege	ALL
+resources.volumes.*.grants.securable_type	string	ALL

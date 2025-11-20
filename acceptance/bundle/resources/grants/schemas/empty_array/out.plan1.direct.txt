@@ -1,0 +1,36 @@
+{
+  "plan": {
+    "resources.schemas.grants_schema": {
+      "action": "create",
+      "new_state": {
+        "value": {
+          "catalog_name": "main",
+          "name": "schema_grants_[UNIQUE_NAME]"
+        }
+      }
+    },
+    "resources.schemas.grants_schema.grants": {
+      "depends_on": [
+        {
+          "node": "resources.schemas.grants_schema",
+          "label": "${resources.schemas.grants_schema.id}"
+        }
+      ],
+      "action": "create",
+      "new_state": {
+        "value": {
+          "securable_type": "schema",
+          "full_name": "",
+          "grants": [
+            {
+              "principal": "deco-test-user@databricks.com"
+            }
+          ]
+        },
+        "vars": {
+          "full_name": "${resources.schemas.grants_schema.id}"
+        }
+      }
+    }
+  }
+}

@@ -5,6 +5,7 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
@@ -30,7 +31,7 @@ func (*ResourceRegisteredModel) RemapState(model *catalog.RegisteredModelInfo) *
 		Name:            model.Name,
 		SchemaName:      model.SchemaName,
 		StorageLocation: model.StorageLocation,
-		ForceSendFields: filterFields[catalog.CreateRegisteredModelRequest](model.ForceSendFields),
+		ForceSendFields: utils.FilterFields[catalog.CreateRegisteredModelRequest](model.ForceSendFields),
 
 		Aliases:     model.Aliases,
 		BrowseOnly:  model.BrowseOnly,
@@ -44,7 +45,7 @@ func (*ResourceRegisteredModel) RemapState(model *catalog.RegisteredModelInfo) *
 	}
 }
 
-func (r *ResourceRegisteredModel) DoRefresh(ctx context.Context, id string) (*catalog.RegisteredModelInfo, error) {
+func (r *ResourceRegisteredModel) DoRead(ctx context.Context, id string) (*catalog.RegisteredModelInfo, error) {
 	return r.client.RegisteredModels.Get(ctx, catalog.GetRegisteredModelRequest{
 		FullName:        id,
 		IncludeAliases:  false,
@@ -66,7 +67,7 @@ func (r *ResourceRegisteredModel) DoUpdate(ctx context.Context, id string, confi
 	updateRequest := catalog.UpdateRegisteredModelRequest{
 		FullName:        id,
 		Comment:         config.Comment,
-		ForceSendFields: filterFields[catalog.UpdateRegisteredModelRequest](config.ForceSendFields, "Owner", "NewName"),
+		ForceSendFields: utils.FilterFields[catalog.UpdateRegisteredModelRequest](config.ForceSendFields, "Owner", "NewName"),
 
 		// Owner is not part of the configuration tree
 		Owner: "",

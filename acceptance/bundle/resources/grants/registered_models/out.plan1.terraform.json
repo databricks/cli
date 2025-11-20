@@ -1,0 +1,10 @@
+{
+  "plan": {
+    "resources.registered_models.my_registered_model": {
+      "action": "create"
+    },
+    "resources.schemas.my_schema": {
+      "action": "create"
+    }
+  }
+}

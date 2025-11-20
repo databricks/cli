@@ -1,7 +1,7 @@
 default: checks fmt lint
 
 # gotestsum: when go test args are used with --rerun-fails the list of packages to test must be specified by the --packages flag
-PACKAGES=--packages "./acceptance/... ./libs/... ./internal/... ./cmd/... ./bundle/... ./experimental/ssh/... ."
+PACKAGES=--packages "./acceptance/... ./libs/... ./internal/... ./cmd/... ./bundle/... ./experimental/aitools/... ./experimental/ssh/... ."
 
 GO_TOOL ?= go tool -modfile=tools/go.mod
 GOTESTSUM_FORMAT ?= pkgname-and-test-fails

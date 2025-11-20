@@ -157,6 +157,10 @@ type ResourceClusterLibrary struct {
 	Pypi         *ResourceClusterLibraryPypi  `json:"pypi,omitempty"`
 }
 
+type ResourceClusterProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type ResourceClusterWorkloadTypeClients struct {
 	Jobs      bool `json:"jobs,omitempty"`
 	Notebooks bool `json:"notebooks,omitempty"`
@@ -208,5 +212,6 @@ type ResourceCluster struct {
 	GcpAttributes              *ResourceClusterGcpAttributes     `json:"gcp_attributes,omitempty"`
 	InitScripts                []ResourceClusterInitScripts      `json:"init_scripts,omitempty"`
 	Library                    []ResourceClusterLibrary          `json:"library,omitempty"`
+	ProviderConfig             *ResourceClusterProviderConfig    `json:"provider_config,omitempty"`
 	WorkloadType               *ResourceClusterWorkloadType      `json:"workload_type,omitempty"`
 }

@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
@@ -28,7 +29,7 @@ func (*ResourceJob) RemapState(jobs *jobs.Job) *jobs.JobSettings {
 	return jobs.Settings
 }
 
-func (r *ResourceJob) DoRefresh(ctx context.Context, id string) (*jobs.Job, error) {
+func (r *ResourceJob) DoRead(ctx context.Context, id string) (*jobs.Job, error) {
 	idInt, err := parseJobID(id)
 	if err != nil {
 		return nil, err
@@ -36,24 +37,24 @@ func (r *ResourceJob) DoRefresh(ctx context.Context, id string) (*jobs.Job, erro
 	return r.client.Jobs.GetByJobId(ctx, idInt)
 }
 
-func (r *ResourceJob) DoCreate(ctx context.Context, config *jobs.JobSettings) (string, error) {
+func (r *ResourceJob) DoCreate(ctx context.Context, config *jobs.JobSettings) (string, *jobs.Job, error) {
 	request, err := makeCreateJob(*config)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 	response, err := r.client.Jobs.Create(ctx, request)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
-	return strconv.FormatInt(response.JobId, 10), nil
+	return strconv.FormatInt(response.JobId, 10), nil, nil
 }
 
-func (r *ResourceJob) DoUpdate(ctx context.Context, id string, config *jobs.JobSettings) error {
+func (r *ResourceJob) DoUpdate(ctx context.Context, id string, config *jobs.JobSettings) (*jobs.Job, error) {
 	request, err := makeResetJob(*config, id)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return r.client.Jobs.Reset(ctx, request)
+	return nil, r.client.Jobs.Reset(ctx, request)
 }
 
 func (r *ResourceJob) DoDelete(ctx context.Context, id string) error {
@@ -94,7 +95,7 @@ func makeCreateJob(config jobs.JobSettings) (jobs.CreateJob, error) {
 		Trigger:              config.Trigger,
 		UsagePolicyId:        config.UsagePolicyId,
 		WebhookNotifications: config.WebhookNotifications,
-		ForceSendFields:      filterFields[jobs.CreateJob](config.ForceSendFields, "AccessControlList"),
+		ForceSendFields:      utils.FilterFields[jobs.CreateJob](config.ForceSendFields, "AccessControlList"),
 	}
 
 	return result, nil

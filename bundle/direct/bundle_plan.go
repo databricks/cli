@@ -27,7 +27,7 @@ import (
 
 var errDelayed = errors.New("must be resolved after apply")
 
-func (b *DeploymentBundle) Init(client *databricks.WorkspaceClient) error {
+func (b *DeploymentBundle) init(client *databricks.WorkspaceClient) error {
 	if b.Adapters != nil {
 		return nil
 	}
@@ -42,7 +42,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		return nil, fmt.Errorf("failed to read state from %s: %w", statePath, err)
 	}
 
-	err = b.Init(client)
+	err = b.init(client)
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +99,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 				return false
 			}
 
-			remoteState, err := adapter.DoRefresh(ctx, dbentry.ID)
+			remoteState, err := adapter.DoRead(ctx, dbentry.ID)
 			if err != nil {
 				if isResourceGone(err) {
 					// no such resource
@@ -144,13 +144,13 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		// for integers: compare 0 with actual object ID. As long as real object IDs are never 0 we're good.
 		// Once we add non-id fields or add per-field details to "bundle plan", we must read dynamic data and deal with references as first class citizen.
 		// This means distinguishing between 0 that are actually object ids and 0 that are there because typed struct integer cannot contain ${...} string.
-		localDiff, err := structdiff.GetStructDiff(savedState, entry.NewState.Config)
+		localDiff, err := structdiff.GetStructDiff(savedState, entry.NewState.Value)
 		if err != nil {
 			logdiag.LogError(ctx, fmt.Errorf("%s: diffing local state: %w", errorPrefix, err))
 			return false
 		}
 
-		remoteState, err := adapter.DoRefresh(ctx, dbentry.ID)
+		remoteState, err := adapter.DoRead(ctx, dbentry.ID)
 		if err != nil {
 			if isResourceGone(err) {
 				remoteState = nil
@@ -321,7 +321,7 @@ func (b *DeploymentBundle) LookupReferenceLocal(ctx context.Context, path *struc
 		return nil, errDelayed
 	}
 
-	localConfig := targetEntry.NewState.Config
+	localConfig := targetEntry.NewState.Value
 
 	targetGroup := config.GetResourceTypeFromKey(targetResourceKey)
 	adapter := b.Adapters[targetGroup]
@@ -479,7 +479,14 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 			if err != nil {
 				return nil, err
 			}
-			inputConfig = inputConfigStructVar.Config
+			inputConfig = inputConfigStructVar.Value
+			baseRefs = inputConfigStructVar.Refs
+		} else if strings.HasSuffix(node, ".grants") {
+			inputConfigStructVar, err := dresources.PrepareGrantsInputConfig(inputConfig, node)
+			if err != nil {
+				return nil, err
+			}
+			inputConfig = inputConfigStructVar.Value
 			baseRefs = inputConfigStructVar.Refs
 		}
 
@@ -543,8 +550,8 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 		e := deployplan.PlanEntry{
 			DependsOn: dependsOn,
 			NewState: &structvar.StructVar{
-				Config: newStateConfig,
-				Refs:   refs,
+				Value: newStateConfig,
+				Refs:  refs,
 			},
 		}
 

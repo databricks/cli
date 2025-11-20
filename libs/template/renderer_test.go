@@ -452,7 +452,8 @@ func TestRendererSkip(t *testing.T) {
 	// These files have been skipped
 	assert.NoFileExists(t, filepath.Join(tmpDir, "file3"))
 	assert.NoFileExists(t, filepath.Join(tmpDir, "dir1/file4"))
-	assert.NoDirExists(t, filepath.Join(tmpDir, "dir2"))
+	// dir2 exists (visited during walk) even though all its files were skipped
+	assert.DirExists(t, filepath.Join(tmpDir, "dir2"))
 	assert.NoFileExists(t, filepath.Join(tmpDir, "dir2/file6"))
 }
 

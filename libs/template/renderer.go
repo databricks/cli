@@ -50,6 +50,16 @@ type renderer struct {
 	// do not match any glob patterns from this list
 	skipPatterns []string
 
+	// Directories visited during the template walk. These directories will be created
+	// during persistToDisk even if they end up empty (all their files were skipped).
+	//
+	// WHY: The template's directory structure is part of its design and should be
+	// preserved even when empty. For example, an empty 'src/' directory shows users
+	// where to put their source code, and an empty 'resources/' directory indicates
+	// where to define bundle resources. Empty directories are only omitted if there's
+	// an explicit {{skip}} directive for that directory in the template.
+	visitedDirs []string
+
 	// [fs.FS] that holds the template's file tree.
 	srcFS fs.FS
 }
@@ -94,6 +104,7 @@ func newRenderer(
 		baseTemplate: tmpl,
 		files:        make([]file, 0),
 		skipPatterns: make([]string, 0),
+		visitedDirs:  make([]string, 0),
 		srcFS:        srcFS,
 	}, nil
 }
@@ -213,6 +224,10 @@ func (r *renderer) computeFile(relPathTemplate string) (file, error) {
 //
 // This is not possible using the std library WalkDir which processes the files in
 // lexical order which is why this function implements BFS.
+//
+// BFS order (breadth-first search) also ensures that parent directories are visited
+// before their children, which is important for creating empty directories during
+// persistToDisk - parent directories must exist before we can create subdirectories.
 func (r *renderer) walk() error {
 	directories := []string{"."}
 	var currentDirectory string
@@ -233,6 +248,11 @@ func (r *renderer) walk() error {
 			logger.Infof(r.ctx, "skipping directory: %s", instanceDirectory)
 			continue
 		}
+
+		// Track visited directory so it can be created even if empty.
+		// We preserve the directory structure because it's part of the template's design,
+		// guiding users where to place their files (e.g., src/ for source code).
+		r.visitedDirs = append(r.visitedDirs, instanceDirectory)
 
 		// Add skip function, which accumulates skip patterns relative to current
 		// directory
@@ -326,6 +346,36 @@ func (r *renderer) persistToDisk(ctx context.Context, out filer.Filer) error {
 			return err
 		}
 	}
+
+	// Ensure all visited directories exist, preserving the template's directory structure.
+	// Empty directories (where all files were skipped) are still created because:
+	// 1. The directory structure is part of the template's design
+	// 2. Empty directories guide users on where to put their own files (e.g., src/, resources/)
+	// 3. Only explicit {{skip}} directives should prevent directory creation
+	for _, dir := range r.visitedDirs {
+		// Skip the root directory (current working directory)
+		if dir == "." {
+			continue
+		}
+
+		// Check if directory already exists (may have been created during file writes)
+		_, err := out.Stat(ctx, dir)
+		if err == nil {
+			// Directory already exists, nothing to do
+			continue
+		}
+		if !errors.Is(err, fs.ErrNotExist) {
+			return fmt.Errorf("error checking if directory %s exists: %w", dir, err)
+		}
+
+		// Create the directory. Since visitedDirs is in BFS order (parents before children),
+		// parent directories are guaranteed to exist by the time we create children.
+		err = out.Mkdir(ctx, dir)
+		if err != nil {
+			return fmt.Errorf("failed to create directory %s: %w", dir, err)
+		}
+	}
+
 	return nil
 }
 

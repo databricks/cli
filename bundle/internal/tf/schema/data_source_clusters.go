@@ -9,9 +9,14 @@ type DataSourceClustersFilterBy struct {
 	PolicyId       string   `json:"policy_id,omitempty"`
 }
 
+type DataSourceClustersProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type DataSourceClusters struct {
-	ClusterNameContains string                      `json:"cluster_name_contains,omitempty"`
-	Id                  string                      `json:"id,omitempty"`
-	Ids                 []string                    `json:"ids,omitempty"`
-	FilterBy            *DataSourceClustersFilterBy `json:"filter_by,omitempty"`
+	ClusterNameContains string                            `json:"cluster_name_contains,omitempty"`
+	Id                  string                            `json:"id,omitempty"`
+	Ids                 []string                          `json:"ids,omitempty"`
+	FilterBy            *DataSourceClustersFilterBy       `json:"filter_by,omitempty"`
+	ProviderConfig      *DataSourceClustersProviderConfig `json:"provider_config,omitempty"`
 }

@@ -1,0 +1,67 @@
+
+>>> [CLI] bundle plan -o json
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/schema-grants-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py //permissions
+
+>>> [CLI] grants get volume main.schema_grants_[UNIQUE_NAME].volume_name
+{
+  "privilege_assignments": [
+    {
+      "principal": "deco-test-user@databricks.com",
+      "privileges": [
+        "READ_VOLUME",
+        "WRITE_VOLUME"
+      ]
+    }
+  ]
+}
+
+>>> [CLI] bundle plan -o json
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/schema-grants-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py //permissions
+
+>>> [CLI] grants get volume main.schema_grants_[UNIQUE_NAME].volume_name
+{
+  "privilege_assignments": [
+    {
+      "principal": "deco-test-user@databricks.com",
+      "privileges": [
+        "MANAGE",
+        "READ_VOLUME"
+      ]
+    }
+  ]
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete schema grants_schema
+  delete volume grants_volume
+
+This action will result in the deletion of the following UC schemas. Any underlying data may be lost:
+  delete schema grants_schema
+
+This action will result in the deletion of the following volumes.
+For managed volumes, the files stored in the volume are also deleted from your
+cloud tenant within 30 days. For external volumes, the metadata about the volume
+is removed from the catalog, but the underlying files are not deleted:
+  delete volume grants_volume
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/schema-grants-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!
+
+>>> print_requests.py //permissions

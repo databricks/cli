@@ -153,9 +153,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	// Consistent behavior of locale-dependent tools, such as 'sort'
 	t.Setenv("LC_ALL", "C")
 
-	buildDir := filepath.Join(cwd, "build", fmt.Sprintf("%s_%s", runtime.GOOS, runtime.GOARCH))
-	err = os.MkdirAll(buildDir, os.ModePerm)
-	require.NoError(t, err)
+	buildDir := getBuildDir(t, cwd, runtime.GOOS, runtime.GOARCH)
 
 	terraformDir := TerraformDir
 	if terraformDir == "" {
@@ -163,7 +161,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	}
 
 	// Download terraform and provider and create config.
-	RunCommand(t, []string{"python3", filepath.Join(cwd, "install_terraform.py"), "--targetdir", terraformDir}, ".")
+	RunCommand(t, []string{"python3", filepath.Join(cwd, "install_terraform.py"), "--targetdir", terraformDir}, ".", []string{})
 
 	wheelPath := buildDatabricksBundlesWheel(t, buildDir)
 	if wheelPath != "" {
@@ -190,7 +188,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 		if UseVersion != "" {
 			execPath = DownloadCLI(t, buildDir, UseVersion)
 		} else {
-			execPath = BuildCLI(t, buildDir, coverDir)
+			execPath = BuildCLI(t, buildDir, coverDir, runtime.GOOS, runtime.GOARCH)
 		}
 	}
 
@@ -232,6 +230,12 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 		if os.Getenv("TEST_DEFAULT_WAREHOUSE_ID") == "" {
 			t.Setenv("TEST_DEFAULT_WAREHOUSE_ID", "8ec9edc1-db0c-40df-af8d-7580020fe61e")
 		}
+	}
+
+	if cloudEnv != "" && UseVersion == "" {
+		// Create linux release artifacts, to be used by the cloud-only ssh tunnel tests
+		releasesDir := CreateReleaseArtifacts(t, cwd, coverDir, "linux")
+		t.Setenv("CLI_RELEASES_DIR", releasesDir)
 	}
 
 	testDefaultWarehouseId := os.Getenv("TEST_DEFAULT_WAREHOUSE_ID")
@@ -871,9 +875,20 @@ func readMergedScriptContents(t *testing.T, dir string) string {
 	return strings.Join(prepares, "\n")
 }
 
-func BuildCLI(t *testing.T, buildDir, coverDir string) string {
+func getBuildDirRoot(cwd string) string {
+	return filepath.Join(cwd, "build")
+}
+
+func getBuildDir(t *testing.T, cwd, osName, arch string) string {
+	buildDir := filepath.Join(getBuildDirRoot(cwd), fmt.Sprintf("%s_%s", osName, arch))
+	err := os.MkdirAll(buildDir, os.ModePerm)
+	require.NoError(t, err)
+	return buildDir
+}
+
+func BuildCLI(t *testing.T, buildDir, coverDir, osName, arch string) string {
 	execPath := filepath.Join(buildDir, "databricks")
-	if runtime.GOOS == "windows" {
+	if osName == "windows" {
 		execPath += ".exe"
 	}
 
@@ -885,15 +900,60 @@ func BuildCLI(t *testing.T, buildDir, coverDir string) string {
 		args = append(args, "-cover")
 	}
 
-	if runtime.GOOS == "windows" {
+	if osName == "windows" {
 		// Get this error on my local Windows:
 		// error obtaining VCS status: exit status 128
 		// Use -buildvcs=false to disable VCS stamping.
 		args = append(args, "-buildvcs=false")
 	}
 
-	RunCommand(t, args, "..")
+	RunCommand(t, args, "..", []string{"GOOS=" + osName, "GOARCH=" + arch})
 	return execPath
+}
+
+// CreateReleaseArtifacts builds release artifacts for the given OS using amd64 and arm64 architectures,
+// archives them into zip files, and returns the directory containing the release artifacts.
+func CreateReleaseArtifacts(t *testing.T, cwd, coverDir, osName string) string {
+	releasesDir := filepath.Join(getBuildDirRoot(cwd), "releases")
+	require.NoError(t, os.MkdirAll(releasesDir, os.ModePerm))
+	for _, arch := range []string{"amd64", "arm64"} {
+		CreateReleaseArtifact(t, cwd, releasesDir, coverDir, osName, arch)
+	}
+	return releasesDir
+}
+
+func CreateReleaseArtifact(t *testing.T, cwd, releasesDir, coverDir, osName, arch string) {
+	buildDir := getBuildDir(t, cwd, osName, arch)
+	execPath := BuildCLI(t, buildDir, coverDir, osName, arch)
+	execInfo, err := os.Stat(execPath)
+	require.NoError(t, err)
+
+	zipName := fmt.Sprintf("databricks_cli_%s_%s.zip", osName, arch)
+	zipPath := filepath.Join(releasesDir, zipName)
+
+	zipFile, err := os.Create(zipPath)
+	require.NoError(t, err)
+	defer zipFile.Close()
+
+	zipWriter := zip.NewWriter(zipFile)
+	defer zipWriter.Close()
+
+	header, err := zip.FileInfoHeader(execInfo)
+	require.NoError(t, err)
+	header.Name = "databricks"
+	header.Method = zip.Deflate
+
+	writer, err := zipWriter.CreateHeader(header)
+	require.NoError(t, err)
+
+	binaryFile, err := os.Open(execPath)
+	require.NoError(t, err)
+	defer binaryFile.Close()
+
+	_, err = io.Copy(writer, binaryFile)
+	require.NoError(t, err)
+
+	t.Logf("Created %s %s release: %s", osName, arch, zipPath)
 }
 
 // DownloadCLI downloads a released CLI binary archive for the given version,
@@ -1116,10 +1176,11 @@ func getUVDefaultCacheDir(t *testing.T) string {
 	}
 }
 
-func RunCommand(t *testing.T, args []string, dir string) {
+func RunCommand(t *testing.T, args []string, dir string, env []string) {
 	start := time.Now()
 	cmd := exec.Command(args[0], args[1:]...)
 	cmd.Dir = dir
+	cmd.Env = append(os.Environ(), env...)
 	out, err := cmd.CombinedOutput()
 	elapsed := time.Since(start)
 	t.Logf("%s took %s", args, elapsed)
@@ -1241,7 +1302,7 @@ func buildDatabricksBundlesWheel(t *testing.T, buildDir string) string {
 	// so we prepare here by keeping only one.
 	_ = prepareWheelBuildDirectory(t, buildDir)
 
-	RunCommand(t, []string{"uv", "build", "--no-cache", "-q", "--wheel", "--out-dir", buildDir}, "../experimental/python")
+	RunCommand(t, []string{"uv", "build", "--no-cache", "-q", "--wheel", "--out-dir", buildDir}, "../python", []string{})
 
 	latestWheel := prepareWheelBuildDirectory(t, buildDir)
 	if latestWheel == "" {
@@ -1369,7 +1430,7 @@ func BuildYamlfmt(t *testing.T) {
 	args := []string{
 		"make", "-s", "tools/yamlfmt" + exeSuffix,
 	}
-	RunCommand(t, args, "..")
+	RunCommand(t, args, "..", []string{})
 }
 
 func loadUserReplacements(t *testing.T, repls *testdiff.ReplacementsContext, tmpDir string) {

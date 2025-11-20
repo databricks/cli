@@ -1,0 +1,23 @@
+{{- /*
+     * Template for the AGENTS.md / CLAUDE.md file created in new projects.
+     *
+     * Goal for this file is to reinforce with agents that they need to call the analyze_project tool.
+     * A secondary goal is to offer a placeholder to users to extend with their own instructions.
+     * It is a non-goal to inline all instructions.
+     *
+     */ -}}
+
+# Agent instructions
+
+This file can be used for any project-specific instructions!
+
+## Prerequisites
+
+If the Databricks CLI MCP server is not yet installed, install it by:
+1. Installing the Databricks CLI: https://docs.databricks.com/dev-tools/cli/install
+2. Running: `databricks experimental aitools install`
+
+## Working with this project
+
+General agent guidance: always use the mcp__databricks-aitools__analyze_project tool whenever you open this project!
+It makes sure you have more context on the current project and what actions you can perform on it.

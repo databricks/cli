@@ -1,0 +1,9 @@
+
+=== If serial is the same, refuse to proceed
+>>> musterr [CLI] bundle deploy
+Error: same serial number in terraform and direct states
+
+Available state files:
+- [TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfstate: local terraform state serial=20 lineage=""
+- [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=20 lineage=""
+

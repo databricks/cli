@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 )
@@ -15,9 +16,16 @@ type dashboardState struct {
 	ETag string
 }
 
-func collectDashboardsFromState(ctx context.Context, b *bundle.Bundle) ([]dashboardState, error) {
-	state, err := ParseResourcesState(ctx, b)
-	if err != nil && state == nil {
+func collectDashboardsFromState(ctx context.Context, b *bundle.Bundle, directDeployment bool) ([]dashboardState, error) {
+	var state ExportedResourcesMap
+	var err error
+	if directDeployment {
+		_, localPath := b.StateFilenameDirect(ctx)
+		state, err = b.DeploymentBundle.ExportState(ctx, localPath)
+	} else {
+		state, err = ParseResourcesState(ctx, b)
+	}
+	if err != nil {
 		return nil, err
 	}
 
@@ -34,8 +42,8 @@ func collectDashboardsFromState(ctx context.Context, b *bundle.Bundle) ([]dashbo
 }
 
 type checkDashboardsModifiedRemotely struct {
-	isPlan           bool
-	directDeployment bool
+	isPlan bool
+	engine engine.EngineType
 }
 
 func (l *checkDashboardsModifiedRemotely) Name() string {
@@ -48,17 +56,12 @@ func (l *checkDashboardsModifiedRemotely) Apply(ctx context.Context, b *bundle.B
 		return nil
 	}
 
-	if l.directDeployment {
-		// TODO: not implemented yet
-		return nil
-	}
-
 	// If the user has forced the deployment, skip this check.
 	if b.Config.Bundle.Force {
 		return nil
 	}
 
-	dashboards, err := collectDashboardsFromState(ctx, b)
+	dashboards, err := collectDashboardsFromState(ctx, b, l.engine.IsDirect())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -116,6 +119,6 @@ func (l *checkDashboardsModifiedRemotely) Apply(ctx context.Context, b *bundle.B
 	return diags
 }
 
-func CheckDashboardsModifiedRemotely(isPlan, directDeployment bool) *checkDashboardsModifiedRemotely {
-	return &checkDashboardsModifiedRemotely{isPlan: isPlan, directDeployment: directDeployment}
+func CheckDashboardsModifiedRemotely(isPlan bool, engine engine.EngineType) *checkDashboardsModifiedRemotely {
+	return &checkDashboardsModifiedRemotely{isPlan: isPlan, engine: engine}
 }

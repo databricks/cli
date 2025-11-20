@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/structs/structdiff"
+	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/retries"
@@ -64,7 +65,7 @@ func (r *ResourceCluster) RemapState(input *compute.ClusterDetails) *compute.Clu
 		TotalInitialRemoteDiskSize: input.TotalInitialRemoteDiskSize,
 		UseMlRuntime:               input.UseMlRuntime,
 		WorkloadType:               input.WorkloadType,
-		ForceSendFields:            filterFields[compute.ClusterSpec](input.ForceSendFields),
+		ForceSendFields:            utils.FilterFields[compute.ClusterSpec](input.ForceSendFields),
 	}
 	if input.Spec != nil {
 		spec.ApplyPolicyDefaultValues = input.Spec.ApplyPolicyDefaultValues
@@ -72,19 +73,19 @@ func (r *ResourceCluster) RemapState(input *compute.ClusterDetails) *compute.Clu
 	return spec
 }
 
-func (r *ResourceCluster) DoRefresh(ctx context.Context, id string) (*compute.ClusterDetails, error) {
+func (r *ResourceCluster) DoRead(ctx context.Context, id string) (*compute.ClusterDetails, error) {
 	return r.client.Clusters.GetByClusterId(ctx, id)
 }
 
-func (r *ResourceCluster) DoCreate(ctx context.Context, config *compute.ClusterSpec) (string, error) {
+func (r *ResourceCluster) DoCreate(ctx context.Context, config *compute.ClusterSpec) (string, *compute.ClusterDetails, error) {
 	wait, err := r.client.Clusters.Create(ctx, makeCreateCluster(config))
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
-	return wait.ClusterId, nil
+	return wait.ClusterId, nil, nil
 }
 
-func (r *ResourceCluster) DoUpdate(ctx context.Context, id string, config *compute.ClusterSpec) error {
+func (r *ResourceCluster) DoUpdate(ctx context.Context, id string, config *compute.ClusterSpec) (*compute.ClusterDetails, error) {
 	// Same retry as in TF provider logic
 	// https://github.com/databricks/terraform-provider-databricks/blob/3eecd0f90cf99d7777e79a3d03c41f9b2aafb004/clusters/resource_cluster.go#L624
 	timeout := 15 * time.Minute
@@ -98,11 +99,11 @@ func (r *ResourceCluster) DoUpdate(ctx context.Context, id string, config *compu
 		// Only Running and Terminated clusters can be modified. In particular, autoscaling clusters cannot be modified
 		// while the resizing is ongoing. We retry in this case. Scaling can take several minutes.
 		if errors.As(err, &apiErr) && apiErr.ErrorCode == "INVALID_STATE" {
-			return nil, retries.Continues(fmt.Sprintf("cluster %s cannot be modified in its current state", id))
+			return nil, retries.Continues(fmt.Sprintf("cluster %s cannot be modified in its current state: %s", id, apiErr.Message))
 		}
 		return nil, retries.Halt(err)
 	})
-	return err
+	return nil, err
 }
 
 func (r *ResourceCluster) DoResize(ctx context.Context, id string, config *compute.ClusterSpec) error {
@@ -110,7 +111,7 @@ func (r *ResourceCluster) DoResize(ctx context.Context, id string, config *compu
 		ClusterId:       id,
 		NumWorkers:      config.NumWorkers,
 		Autoscale:       config.Autoscale,
-		ForceSendFields: filterFields[compute.ResizeCluster](config.ForceSendFields),
+		ForceSendFields: utils.FilterFields[compute.ResizeCluster](config.ForceSendFields),
 	})
 	return err
 }
@@ -182,7 +183,7 @@ func makeCreateCluster(config *compute.ClusterSpec) compute.CreateCluster {
 		TotalInitialRemoteDiskSize: config.TotalInitialRemoteDiskSize,
 		UseMlRuntime:               config.UseMlRuntime,
 		WorkloadType:               config.WorkloadType,
-		ForceSendFields:            filterFields[compute.CreateCluster](config.ForceSendFields),
+		ForceSendFields:            utils.FilterFields[compute.CreateCluster](config.ForceSendFields),
 	}
 
 	// If autoscale is not set, we need to send NumWorkers because one of them is required.
@@ -229,7 +230,7 @@ func makeEditCluster(id string, config *compute.ClusterSpec) compute.EditCluster
 		TotalInitialRemoteDiskSize: config.TotalInitialRemoteDiskSize,
 		UseMlRuntime:               config.UseMlRuntime,
 		WorkloadType:               config.WorkloadType,
-		ForceSendFields:            filterFields[compute.EditCluster](config.ForceSendFields),
+		ForceSendFields:            utils.FilterFields[compute.EditCluster](config.ForceSendFields),
 	}
 
 	// If autoscale is not set, we need to send NumWorkers because one of them is required.

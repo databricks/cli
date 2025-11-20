@@ -215,7 +215,7 @@ func newCreate() *cobra.Command {
   NONE,
   SINGLE_USER,
   USER_ISOLATION,
-]`)
+].`)
 	// TODO: complex arg: docker_image
 	cmd.Flags().StringVar(&createReq.DriverInstancePoolId, "driver-instance-pool-id", createReq.DriverInstancePoolId, `The optional ID of the instance pool for the driver of the cluster belongs.`)
 	cmd.Flags().StringVar(&createReq.DriverNodeTypeId, "driver-node-type-id", createReq.DriverNodeTypeId, `The node type of the Spark driver.`)
@@ -490,7 +490,7 @@ func newEdit() *cobra.Command {
   NONE,
   SINGLE_USER,
   USER_ISOLATION,
-]`)
+].`)
 	// TODO: complex arg: docker_image
 	cmd.Flags().StringVar(&editReq.DriverInstancePoolId, "driver-instance-pool-id", editReq.DriverInstancePoolId, `The optional ID of the instance pool for the driver of the cluster belongs.`)
 	cmd.Flags().StringVar(&editReq.DriverNodeTypeId, "driver-node-type-id", editReq.DriverNodeTypeId, `The node type of the Spark driver.`)

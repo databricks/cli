@@ -1,0 +1,9 @@
+Local = true
+CloudSlow = true
+RecordRequests = false
+
+# I get this error, not sure why:
+#   -=== Since we take the most recent level, IS_OWNER is lost, which results in the error due to lack of owner defined
+#   -jobs IS_OWNER,CAN_MANAGE => SET ERROR Error: The job must have exactly one owner.
+#   +jobs CAN_VIEW,CAN_MANAGE_RUN => SET ERROR Error: [USERNAME]: Service[USERNAME]Name([USERNAME]) does not exist
+CloudEnvs.gcp = false

@@ -1,0 +1,57 @@
+{
+  "plan": {
+    "resources.schemas.grants_schema": {
+      "action": "create",
+      "new_state": {
+        "value": {
+          "catalog_name": "main",
+          "name": "schema_grants_[UNIQUE_NAME]"
+        }
+      }
+    },
+    "resources.volumes.grants_volume": {
+      "depends_on": [
+        {
+          "node": "resources.schemas.grants_schema",
+          "label": "${resources.schemas.grants_schema.name}"
+        }
+      ],
+      "action": "create",
+      "new_state": {
+        "value": {
+          "catalog_name": "main",
+          "name": "volume_name",
+          "schema_name": "schema_grants_[UNIQUE_NAME]",
+          "volume_type": "MANAGED"
+        }
+      }
+    },
+    "resources.volumes.grants_volume.grants": {
+      "depends_on": [
+        {
+          "node": "resources.volumes.grants_volume",
+          "label": "${resources.volumes.grants_volume.id}"
+        }
+      ],
+      "action": "create",
+      "new_state": {
+        "value": {
+          "securable_type": "volume",
+          "full_name": "",
+          "grants": [
+            {
+              "principal": "deco-test-user@databricks.com",
+              "privileges": [
+                "READ_VOLUME",
+                "WRITE_VOLUME"
+              ]
+            }
+          ]
+        },
+        "vars": {
+          "full_name": "${resources.volumes.grants_volume.id}"
+        }
+      }
+    }
+  }
+}

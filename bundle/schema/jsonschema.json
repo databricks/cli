@@ -64,57 +64,15 @@
                   {
                     "type": "object",
                     "properties": {
-                      "active_deployment": {
-                        "description": "The active deployment of the app. A deployment is considered active when it has been deployed\nto the app compute.",
-                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppDeployment",
-                        "doNotSuggest": true
-                      },
-                      "app_status": {
-                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.ApplicationStatus",
-                        "doNotSuggest": true
-                      },
                       "budget_policy_id": {
                         "$ref": "#/$defs/string"
                       },
                       "compute_size": {
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.ComputeSize"
                       },
-                      "compute_status": {
-                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.ComputeStatus",
-                        "doNotSuggest": true
-                      },
-                      "create_time": {
-                        "description": "The creation time of the app. Formatted timestamp in ISO 6801.",
-                        "$ref": "#/$defs/string",
-                        "doNotSuggest": true
-                      },
-                      "creator": {
-                        "description": "The email of the user that created the app.",
-                        "$ref": "#/$defs/string",
-                        "doNotSuggest": true
-                      },
-                      "default_source_code_path": {
-                        "description": "The default workspace file system path of the source code from which app deployment are\ncreated. This field tracks the workspace source code path of the last active deployment.",
-                        "$ref": "#/$defs/string",
-                        "doNotSuggest": true
-                      },
                       "description": {
                         "description": "The description of the app.",
                         "$ref": "#/$defs/string"
-                      },
-                      "effective_budget_policy_id": {
-                        "$ref": "#/$defs/string",
-                        "doNotSuggest": true
-                      },
-                      "effective_user_api_scopes": {
-                        "description": "The effective api scopes granted to the user access token.",
-                        "$ref": "#/$defs/slice/string",
-                        "doNotSuggest": true
-                      },
-                      "id": {
-                        "description": "The unique identifier of the app.",
-                        "$ref": "#/$defs/string",
-                        "doNotSuggest": true
                       },
                       "lifecycle": {
                         "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
@@ -124,19 +82,6 @@
                         "description": "The name of the app. The name must contain only lowercase alphanumeric characters and hyphens.\nIt must be unique within the workspace.",
                         "$ref": "#/$defs/string"
                       },
-                      "oauth2_app_client_id": {
-                        "$ref": "#/$defs/string",
-                        "doNotSuggest": true
-                      },
-                      "oauth2_app_integration_id": {
-                        "$ref": "#/$defs/string",
-                        "doNotSuggest": true
-                      },
-                      "pending_deployment": {
-                        "description": "The pending deployment of the app. A deployment is considered pending when it is being prepared\nfor deployment to the app compute.",
-                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppDeployment",
-                        "doNotSuggest": true
-                      },
                       "permissions": {
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.AppPermission"
                       },
@@ -144,35 +89,8 @@
                         "description": "Resources for the app.",
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/apps.AppResource"
                       },
-                      "service_principal_client_id": {
-                        "$ref": "#/$defs/string",
-                        "doNotSuggest": true
-                      },
-                      "service_principal_id": {
-                        "$ref": "#/$defs/int64",
-                        "doNotSuggest": true
-                      },
-                      "service_principal_name": {
-                        "$ref": "#/$defs/string",
-                        "doNotSuggest": true
-                      },
                       "source_code_path": {
                         "$ref": "#/$defs/string"
-                      },
-                      "update_time": {
-                        "description": "The update time of the app. Formatted timestamp in ISO 6801.",
-                        "$ref": "#/$defs/string",
-                        "doNotSuggest": true
-                      },
-                      "updater": {
-                        "description": "The email of the user that last updated the app.",
-                        "$ref": "#/$defs/string",
-                        "doNotSuggest": true
-                      },
-                      "url": {
-                        "description": "The URL of the app once it is deployed.",
-                        "$ref": "#/$defs/string",
-                        "doNotSuggest": true
                       },
                       "user_api_scopes": {
                         "$ref": "#/$defs/slice/string"
@@ -562,10 +480,6 @@
                       "name": {
                         "description": "The name of the catalog in UC.",
                         "$ref": "#/$defs/string"
-                      },
-                      "uid": {
-                        "$ref": "#/$defs/string",
-                        "doNotSuggest": true
                       }
                     },
                     "additionalProperties": false,
@@ -591,65 +505,9 @@
                         "description": "The sku of the instance. Valid values are \"CU_1\", \"CU_2\", \"CU_4\", \"CU_8\".",
                         "$ref": "#/$defs/string"
                       },
-                      "child_instance_refs": {
-                        "description": "The refs of the child instances. This is only available if the instance is\nparent instance.",
-                        "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/database.DatabaseInstanceRef",
-                        "doNotSuggest": true
-                      },
-                      "creation_time": {
-                        "description": "The timestamp when the instance was created.",
-                        "$ref": "#/$defs/string",
-                        "doNotSuggest": true
-                      },
-                      "creator": {
-                        "description": "The email of the creator of the instance.",
-                        "$ref": "#/$defs/string",
-                        "doNotSuggest": true
-                      },
                       "custom_tags": {
                         "description": "Custom tags associated with the instance. This field is only included on create and update responses.",
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/database.CustomTag"
-                      },
-                      "effective_capacity": {
-                        "$ref": "#/$defs/string",
-                        "deprecationMessage": "This field is deprecated",
-                        "doNotSuggest": true,
-                        "deprecated": true
-                      },
-                      "effective_custom_tags": {
-                        "description": "The recorded custom tags associated with the instance.",
-                        "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/database.CustomTag",
-                        "doNotSuggest": true
-                      },
-                      "effective_enable_pg_native_login": {
-                        "description": "Whether the instance has PG native password login enabled.",
-                        "$ref": "#/$defs/bool",
-                        "doNotSuggest": true
-                      },
-                      "effective_enable_readable_secondaries": {
-                        "description": "Whether secondaries serving read-only traffic are enabled. Defaults to false.",
-                        "$ref": "#/$defs/bool",
-                        "doNotSuggest": true
-                      },
-                      "effective_node_count": {
-                        "description": "The number of nodes in the instance, composed of 1 primary and 0 or more secondaries. Defaults to\n1 primary and 0 secondaries.",
-                        "$ref": "#/$defs/int",
-                        "doNotSuggest": true
-                      },
-                      "effective_retention_window_in_days": {
-                        "description": "The retention window for the instance. This is the time window in days\nfor which the historical data is retained.",
-                        "$ref": "#/$defs/int",
-                        "doNotSuggest": true
-                      },
-                      "effective_stopped": {
-                        "description": "Whether the instance is stopped.",
-                        "$ref": "#/$defs/bool",
-                        "doNotSuggest": true
-                      },
-                      "effective_usage_policy_id": {
-                        "description": "The policy that is applied to the instance.",
-                        "$ref": "#/$defs/string",
-                        "doNotSuggest": true
                       },
                       "enable_pg_native_login": {
                         "description": "Whether to enable PG native password login on the instance. Defaults to false.",
@@ -678,38 +536,13 @@
                       "permissions": {
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.DatabaseInstancePermission"
                       },
-                      "pg_version": {
-                        "description": "The version of Postgres running on the instance.",
-                        "$ref": "#/$defs/string",
-                        "doNotSuggest": true
-                      },
-                      "read_only_dns": {
-                        "description": "The DNS endpoint to connect to the instance for read only access. This is only available if\nenable_readable_secondaries is true.",
-                        "$ref": "#/$defs/string",
-                        "doNotSuggest": true
-                      },
-                      "read_write_dns": {
-                        "description": "The DNS endpoint to connect to the instance for read+write access.",
-                        "$ref": "#/$defs/string",
-                        "doNotSuggest": true
-                      },
                       "retention_window_in_days": {
                         "description": "The retention window for the instance. This is the time window in days\nfor which the historical data is retained. The default value is 7 days.\nValid values are 2 to 35 days.",
                         "$ref": "#/$defs/int"
                       },
-                      "state": {
-                        "description": "The current state of the instance.",
-                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.DatabaseInstanceState",
-                        "doNotSuggest": true
-                      },
                       "stopped": {
                         "description": "Whether to stop the instance. An input only param, see effective_stopped for the output.",
                         "$ref": "#/$defs/bool"
-                      },
-                      "uid": {
-                        "description": "An immutable UUID identifier for the instance.",
-                        "$ref": "#/$defs/string",
-                        "doNotSuggest": true
                       },
                       "usage_policy_id": {
                         "description": "The desired usage policy to associate with the instance.",
@@ -1940,20 +1773,8 @@
                     "type": "object",
                     "description": "Next field marker: 18",
                     "properties": {
-                      "data_synchronization_status": {
-                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.SyncedTableStatus",
-                        "doNotSuggest": true
-                      },
                       "database_instance_name": {
                         "$ref": "#/$defs/string"
-                      },
-                      "effective_database_instance_name": {
-                        "$ref": "#/$defs/string",
-                        "doNotSuggest": true
-                      },
-                      "effective_logical_database_name": {
-                        "$ref": "#/$defs/string",
-                        "doNotSuggest": true
                       },
                       "lifecycle": {
                         "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
@@ -1967,10 +1788,6 @@
                       },
                       "spec": {
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.SyncedTableSpec"
-                      },
-                      "unity_catalog_provisioning_state": {
-                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.ProvisioningInfoState",
-                        "doNotSuggest": true
                       }
                     },
                     "additionalProperties": false,
@@ -2815,18 +2632,6 @@
                 {
                   "type": "object",
                   "properties": {
-                    "create_time": {
-                      "$ref": "#/$defs/string",
-                      "doNotSuggest": true
-                    },
-                    "creator": {
-                      "$ref": "#/$defs/string",
-                      "doNotSuggest": true
-                    },
-                    "deployment_artifacts": {
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppDeploymentArtifacts",
-                      "doNotSuggest": true
-                    },
                     "deployment_id": {
                       "$ref": "#/$defs/string"
                     },
@@ -2835,14 +2640,6 @@
                     },
                     "source_code_path": {
                       "$ref": "#/$defs/string"
-                    },
-                    "status": {
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppDeploymentStatus",
-                      "doNotSuggest": true
-                    },
-                    "update_time": {
-                      "$ref": "#/$defs/string",
-                      "doNotSuggest": true
                     }
                   },
                   "additionalProperties": false
@@ -2906,16 +2703,6 @@
               "oneOf": [
                 {
                   "type": "object",
-                  "properties": {
-                    "message": {
-                      "$ref": "#/$defs/string",
-                      "doNotSuggest": true
-                    },
-                    "state": {
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppDeploymentState",
-                      "doNotSuggest": true
-                    }
-                  },
                   "additionalProperties": false
                 },
                 {
@@ -3301,16 +3088,6 @@
               "oneOf": [
                 {
                   "type": "object",
-                  "properties": {
-                    "message": {
-                      "$ref": "#/$defs/string",
-                      "doNotSuggest": true
-                    },
-                    "state": {
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.ApplicationState",
-                      "doNotSuggest": true
-                    }
-                  },
                   "additionalProperties": false
                 },
                 {
@@ -3359,17 +3136,6 @@
               "oneOf": [
                 {
                   "type": "object",
-                  "properties": {
-                    "message": {
-                      "$ref": "#/$defs/string",
-                      "doNotSuggest": true
-                    },
-                    "state": {
-                      "description": "State of the app compute.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.ComputeState",
-                      "doNotSuggest": true
-                    }
-                  },
                   "additionalProperties": false
                 },
                 {
@@ -4673,11 +4439,6 @@
                       "description": "Branch time of the ref database instance.\nFor a parent ref instance, this is the point in time on the parent instance from which the\ninstance was created.\nFor a child ref instance, this is the point in time on the instance from which the child\ninstance was created.\nInput: For specifying the point in time to create a child instance. Optional.\nOutput: Only populated if provided as input to create a child instance.",
                       "$ref": "#/$defs/string"
                     },
-                    "effective_lsn": {
-                      "description": "For a parent ref instance, this is the LSN on the parent instance from which the\ninstance was created.\nFor a child ref instance, this is the LSN on the instance from which the child instance\nwas created.",
-                      "$ref": "#/$defs/string",
-                      "doNotSuggest": true
-                    },
                     "lsn": {
                       "description": "User-specified WAL LSN of the ref database instance.\n\nInput: For specifying the WAL LSN to create a child instance. Optional.\nOutput: Only populated if provided as input to create a child instance.",
                       "$ref": "#/$defs/string"
@@ -4685,11 +4446,6 @@
                     "name": {
                       "description": "Name of the ref database instance.",
                       "$ref": "#/$defs/string"
-                    },
-                    "uid": {
-                      "description": "Id of the ref database instance.",
-                      "$ref": "#/$defs/string",
-                      "doNotSuggest": true
                     }
                   },
                   "additionalProperties": false
@@ -4723,18 +4479,6 @@
               "oneOf": [
                 {
                   "type": "object",
-                  "properties": {
-                    "delta_commit_timestamp": {
-                      "description": "The timestamp when the above Delta version was committed in the source Delta table.\nNote: This is the Delta commit time, not the time the data was written to the synced table.",
-                      "$ref": "#/$defs/string",
-                      "doNotSuggest": true
-                    },
-                    "delta_commit_version": {
-                      "description": "The Delta Lake commit version that was last successfully synced.",
-                      "$ref": "#/$defs/int64",
-                      "doNotSuggest": true
-                    }
-                  },
                   "additionalProperties": false
                 },
                 {
@@ -4806,23 +4550,6 @@
                 {
                   "type": "object",
                   "description": "Detailed status of a synced table. Shown if the synced table is in the SYNCED_CONTINUOUS_UPDATE\nor the SYNCED_UPDATING_PIPELINE_RESOURCES state.",
-                  "properties": {
-                    "initial_pipeline_sync_progress": {
-                      "description": "Progress of the initial data synchronization.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.SyncedTablePipelineProgress",
-                      "doNotSuggest": true
-                    },
-                    "last_processed_commit_version": {
-                      "description": "The last source table Delta version that was successfully synced to the synced table.",
-                      "$ref": "#/$defs/int64",
-                      "doNotSuggest": true
-                    },
-                    "timestamp": {
-                      "description": "The end timestamp of the last time any data was synchronized from the source table to the synced\ntable. This is when the data is available in the synced table.",
-                      "$ref": "#/$defs/string",
-                      "doNotSuggest": true
-                    }
-                  },
                   "additionalProperties": false
                 },
                 {
@@ -4836,18 +4563,6 @@
                 {
                   "type": "object",
                   "description": "Detailed status of a synced table. Shown if the synced table is in the OFFLINE_FAILED or the\nSYNCED_PIPELINE_FAILED state.",
-                  "properties": {
-                    "last_processed_commit_version": {
-                      "description": "The last source table Delta version that was successfully synced to the synced table.\nThe last source table Delta version that was synced to the synced table.\nOnly populated if the table is still\nsynced and available for serving.",
-                      "$ref": "#/$defs/int64",
-                      "doNotSuggest": true
-                    },
-                    "timestamp": {
-                      "description": "The end timestamp of the last time any data was synchronized from the source table to the synced\ntable. Only populated if the table is still synced and available for serving.",
-                      "$ref": "#/$defs/string",
-                      "doNotSuggest": true
-                    }
-                  },
                   "additionalProperties": false
                 },
                 {
@@ -4861,38 +4576,6 @@
                 {
                   "type": "object",
                   "description": "Progress information of the Synced Table data synchronization pipeline.",
-                  "properties": {
-                    "estimated_completion_time_seconds": {
-                      "description": "The estimated time remaining to complete this update in seconds.",
-                      "$ref": "#/$defs/float64",
-                      "doNotSuggest": true
-                    },
-                    "latest_version_currently_processing": {
-                      "description": "The source table Delta version that was last processed by the pipeline. The pipeline may not\nhave completely processed this version yet.",
-                      "$ref": "#/$defs/int64",
-                      "doNotSuggest": true
-                    },
-                    "provisioning_phase": {
-                      "description": "The current phase of the data synchronization pipeline.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.ProvisioningPhase",
-                      "doNotSuggest": true
-                    },
-                    "sync_progress_completion": {
-                      "description": "The completion ratio of this update. This is a number between 0 and 1.",
-                      "$ref": "#/$defs/float64",
-                      "doNotSuggest": true
-                    },
-                    "synced_row_count": {
-                      "description": "The number of rows that have been synced in this update.",
-                      "$ref": "#/$defs/int64",
-                      "doNotSuggest": true
-                    },
-                    "total_row_count": {
-                      "description": "The total number of rows that need to be synced in this update. This number may be an estimate.",
-                      "$ref": "#/$defs/int64",
-                      "doNotSuggest": true
-                    }
-                  },
                   "additionalProperties": false
                 },
                 {
@@ -4905,22 +4588,6 @@
               "oneOf": [
                 {
                   "type": "object",
-                  "properties": {
-                    "delta_table_sync_info": {
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.DeltaTableSyncInfo",
-                      "doNotSuggest": true
-                    },
-                    "sync_end_timestamp": {
-                      "description": "The end timestamp of the most recent successful synchronization.\nThis is the time when the data is available in the synced table.",
-                      "$ref": "#/$defs/string",
-                      "doNotSuggest": true
-                    },
-                    "sync_start_timestamp": {
-                      "description": "The starting timestamp of the most recent successful synchronization from the source table\nto the destination (synced) table.\nNote this is the starting timestamp of the sync operation, not the end time.\nE.g., for a batch, this is the time when the sync operation started.",
-                      "$ref": "#/$defs/string",
-                      "doNotSuggest": true
-                    }
-                  },
                   "additionalProperties": false
                 },
                 {
@@ -4934,13 +4601,6 @@
                 {
                   "type": "object",
                   "description": "Detailed status of a synced table. Shown if the synced table is in the\nPROVISIONING_PIPELINE_RESOURCES or the PROVISIONING_INITIAL_SNAPSHOT state.",
-                  "properties": {
-                    "initial_pipeline_sync_progress": {
-                      "description": "Details about initial data synchronization. Only populated when in the\nPROVISIONING_INITIAL_SNAPSHOT state.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.SyncedTablePipelineProgress",
-                      "doNotSuggest": true
-                    }
-                  },
                   "additionalProperties": false
                 },
                 {
@@ -5043,29 +4703,9 @@
                       "description": "Detailed status of a synced table. Shown if the synced table is in the SYNCED_CONTINUOUS_UPDATE\nor the SYNCED_UPDATING_PIPELINE_RESOURCES state.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.SyncedTableContinuousUpdateStatus"
                     },
-                    "detailed_state": {
-                      "description": "The state of the synced table.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.SyncedTableState",
-                      "doNotSuggest": true
-                    },
                     "failed_status": {
                       "description": "Detailed status of a synced table. Shown if the synced table is in the OFFLINE_FAILED or the\nSYNCED_PIPELINE_FAILED state.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.SyncedTableFailedStatus"
-                    },
-                    "last_sync": {
-                      "description": "Summary of the last successful synchronization from source to destination.\n\nWill always be present if there has been a successful sync. Even if the most recent syncs have failed.\n\nLimitation:\nThe only exception is if the synced table is doing a FULL REFRESH, then the last sync information\nwill not be available until the full refresh is complete. This limitation will be addressed in a future version.\n\nThis top-level field is a convenience for consumers who want easy access to last sync information\nwithout having to traverse detailed_status.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.SyncedTablePosition",
-                      "doNotSuggest": true
-                    },
-                    "message": {
-                      "description": "A text description of the current state of the synced table.",
-                      "$ref": "#/$defs/string",
-                      "doNotSuggest": true
-                    },
-                    "pipeline_id": {
-                      "description": "ID of the associated pipeline. The pipeline ID may have been provided by the client\n(in the case of bin packing), or generated by the server (when creating a new pipeline).",
-                      "$ref": "#/$defs/string",
-                      "doNotSuggest": true
                     },
                     "provisioning_status": {
                       "description": "Detailed status of a synced table. Shown if the synced table is in the\nPROVISIONING_PIPELINE_RESOURCES or the PROVISIONING_INITIAL_SNAPSHOT state.",
@@ -5089,23 +4729,6 @@
                 {
                   "type": "object",
                   "description": "Detailed status of a synced table. Shown if the synced table is in the SYNCED_TRIGGERED_UPDATE\nor the SYNCED_NO_PENDING_UPDATE state.",
-                  "properties": {
-                    "last_processed_commit_version": {
-                      "description": "The last source table Delta version that was successfully synced to the synced table.",
-                      "$ref": "#/$defs/int64",
-                      "doNotSuggest": true
-                    },
-                    "timestamp": {
-                      "description": "The end timestamp of the last time any data was synchronized from the source table to the synced\ntable. This is when the data is available in the synced table.",
-                      "$ref": "#/$defs/string",
-                      "doNotSuggest": true
-                    },
-                    "triggered_update_progress": {
-                      "description": "Progress of the active data synchronization pipeline.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.SyncedTablePipelineProgress",
-                      "doNotSuggest": true
-                    }
-                  },
                   "additionalProperties": false
                 },
                 {
@@ -6400,7 +6023,7 @@
                   "type": "object",
                   "properties": {
                     "jar_uri": {
-                      "description": "Deprecated since 04/2016. Provide a `jar` through the `libraries` field instead. For an example, see :method:jobs/create.",
+                      "description": "Deprecated since 04/2016. For classic compute, provide a `jar` through the `libraries` field instead. For serverless compute, provide a `jar` though the `java_dependencies` field inside the `environments` list.\n\nSee the examples of classic and serverless compute usage at the top of the page.",
                       "$ref": "#/$defs/string",
                       "deprecationMessage": "This field is deprecated",
                       "deprecated": true
@@ -7362,11 +6985,6 @@
                       "x-databricks-preview": "PRIVATE",
                       "doNotSuggest": true
                     },
-                    "source_type": {
-                      "description": "The type of the foreign source.\nThe source type will be inferred from the source connection or ingestion gateway.\nThis field is output only and will be ignored if provided.",
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.IngestionSourceType",
-                      "doNotSuggest": true
-                    },
                     "table_configuration": {
                       "description": "Configuration settings to control the ingestion of tables. These settings are applied to all tables in the pipeline.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.TableSpecificConfig"
@@ -7488,6 +7106,13 @@
                     "DYNAMICS365",
                     "CONFLUENCE",
                     "META_MARKETING",
+                    "GOOGLE_ADS",
+                    "TIKTOK_ADS",
+                    "SALESFORCE_MARKETING_CLOUD",
+                    "HUBSPOT",
+                    "WORKDAY_HCM",
+                    "GUIDEWIRE",
+                    "ZENDESK",
                     "FOREIGN_CATALOG"
                   ]
                 },

@@ -1,0 +1,8 @@
+trace $CLI bundle init default-scala --config-file ./input.json --output-dir output
+
+cd output/my_default_scala
+
+# Do not affect this repository's git behaviour #2318
+mv .gitignore out.gitignore
+
+cd ../../

@@ -130,7 +130,12 @@ type DataSourceAppApp struct {
 	UserApiScopes            []string                           `json:"user_api_scopes,omitempty"`
 }
 
+type DataSourceAppProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type DataSourceApp struct {
-	App  *DataSourceAppApp `json:"app,omitempty"`
-	Name string            `json:"name"`
+	App            *DataSourceAppApp            `json:"app,omitempty"`
+	Name           string                       `json:"name"`
+	ProviderConfig *DataSourceAppProviderConfig `json:"provider_config,omitempty"`
 }

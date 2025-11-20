@@ -27,14 +27,14 @@ and proxies them to local SSH daemon processes.
 	var shutdownDelay time.Duration
 	var clusterID string
 	var version string
-	var keysSecretScopeName string
-	var authorizedKeyName string
+	var secretScopeName string
+	var authorizedKeySecretName string
 
 	cmd.Flags().StringVar(&clusterID, "cluster", "", "Databricks cluster ID")
 	cmd.MarkFlagRequired("cluster")
-	cmd.Flags().StringVar(&keysSecretScopeName, "keys-secret-scope-name", "", "Databricks secret scope name to store SSH keys")
-	cmd.MarkFlagRequired("keys-secret-scope-name")
-	cmd.Flags().StringVar(&authorizedKeyName, "authorized-key-secret-name", "", "Authorized key secret name in the secret scope")
+	cmd.Flags().StringVar(&secretScopeName, "secret-scope-name", "", "Databricks secret scope name to store SSH keys")
+	cmd.MarkFlagRequired("secret-scope-name")
+	cmd.Flags().StringVar(&authorizedKeySecretName, "authorized-key-secret-name", "", "Name of the secret containing the client public key")
 	cmd.MarkFlagRequired("authorized-key-secret-name")
 
 	cmd.Flags().IntVar(&maxClients, "max-clients", defaultMaxClients, "Maximum number of SSH clients")
@@ -55,17 +55,17 @@ and proxies them to local SSH daemon processes.
 		ctx := cmd.Context()
 		wsc := cmdctx.WorkspaceClient(ctx)
 		opts := server.ServerOptions{
-			ClusterID:            clusterID,
-			MaxClients:           maxClients,
-			ShutdownDelay:        shutdownDelay,
-			Version:              version,
-			ConfigDir:            serverConfigDir,
-			KeysSecretScopeName:  keysSecretScopeName,
-			AuthorizedKeyName:    authorizedKeyName,
-			ServerPrivateKeyName: serverPrivateKeyName,
-			ServerPublicKeyName:  serverPublicKeyName,
-			DefaultPort:          defaultServerPort,
-			PortRange:            serverPortRange,
+			ClusterID:               clusterID,
+			MaxClients:              maxClients,
+			ShutdownDelay:           shutdownDelay,
+			Version:                 version,
+			ConfigDir:               serverConfigDir,
+			SecretScopeName:         secretScopeName,
+			ServerPrivateKeyName:    serverPrivateKeyName,
+			ServerPublicKeyName:     serverPublicKeyName,
+			AuthorizedKeySecretName: authorizedKeySecretName,
+			DefaultPort:             defaultServerPort,
+			PortRange:               serverPortRange,
 		}
 		return server.Run(ctx, wsc, opts)
 	}

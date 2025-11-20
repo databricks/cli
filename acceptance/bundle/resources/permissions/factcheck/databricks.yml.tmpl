@@ -1,0 +1,22 @@
+bundle:
+  name: test_bundle_$UNIQUE_NAME
+
+resources:
+  jobs:
+    job:
+      name: job1
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Workspace/Users/user@example.com/notebook
+            source: WORKSPACE
+          new_cluster:
+            num_workers: 1
+            num_workers: 1
+            spark_version: $DEFAULT_SPARK_VERSION
+            node_type_id: $NODE_TYPE_ID
+
+  sql_warehouses:
+    warehouse:
+      name: foo_$UNIQUE_NAME
+      cluster_size: Small
