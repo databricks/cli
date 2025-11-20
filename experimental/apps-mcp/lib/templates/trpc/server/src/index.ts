@@ -7,9 +7,6 @@ import path from "node:path";
 import { z } from "zod";
 import { DatabricksClient } from "./databricks";
 
-import dotenv from 'dotenv'
-dotenv.config({ path: path.join(__dirname, '../../.env') })
-
 const STATIC_DIR = path.join(__dirname, "..", "public");
 
 const t = initTRPC.create({
@@ -32,6 +29,7 @@ const appRouter = router({
   // }),
 });
 
+export { appRouter };
 export type AppRouter = typeof appRouter;
 
 export const app = express();
