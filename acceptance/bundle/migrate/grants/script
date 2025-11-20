@@ -12,10 +12,10 @@ rm out.requests.txt
 # Both DATABRICKS_BUNDLE_ENGINE=direct and DATABRICKS_BUNDLE_ENGINE= work
 trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle plan | contains.py "6 unchanged"
 trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle plan | contains.py "6 unchanged"
-trace print_requests.py --get //unity-catalog/permissions | contains.py 'engine/direct'
+trace print_requests.py --get //unity-catalog/permissions | contains.py 'engine/direct' > /dev/null
 
 trace DATABRICKS_BUNDLE_ENGINE="" $CLI bundle deploy
-trace print_requests.py --get //unity-catalog/permissions | jq '.headers["User-Agent"][0]' | contains.py 'engine/direct'
+trace print_requests.py --get //unity-catalog/permissions | jq '.headers["User-Agent"][0]' | contains.py 'engine/direct' > LOG.requests_deploy.txt
 
 title "Should show that it's already migrated"
 trace musterr $CLI bundle deployment migrate
