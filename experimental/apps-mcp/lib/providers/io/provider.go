@@ -90,7 +90,7 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 	mcpsdk.AddTool(server,
 		&mcpsdk.Tool{
 			Name:        "validate_data_app",
-			Description: "Validate a project by copying files to a sandbox and running validation checks. Project should be scaffolded first. Returns validation result with success status and details.",
+			Description: "Validate a project by running validation checks. Project should be scaffolded first. Returns validation result with success status and details.",
 		},
 		session.WrapToolHandler(p.session, func(ctx context.Context, req *mcpsdk.CallToolRequest, args ValidateInput) (*mcpsdk.CallToolResult, any, error) {
 			log.Debugf(ctx, "validate_data_app called: work_dir=%s", args.WorkDir)

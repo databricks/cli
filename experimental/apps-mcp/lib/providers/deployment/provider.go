@@ -129,7 +129,7 @@ func (p *Provider) deployDatabricksApp(ctx context.Context, args *DeployDatabric
 		}, nil
 	}
 
-	projectState, err := io.LoadState(workPath)
+	projectState, err := io.LoadState(ctx, workPath)
 	if err != nil {
 		return &DeployResult{
 			Success: false,
@@ -155,7 +155,7 @@ func (p *Provider) deployDatabricksApp(ctx context.Context, args *DeployDatabric
 		}, nil
 	}
 
-	checksumValid, err := io.VerifyChecksum(workPath, expectedChecksum)
+	checksumValid, err := io.VerifyChecksum(ctx, workPath, expectedChecksum)
 	if err != nil {
 		return &DeployResult{
 			Success: false,
@@ -248,7 +248,7 @@ func (p *Provider) deployDatabricksApp(ctx context.Context, args *DeployDatabric
 		}, nil
 	}
 
-	if err := io.SaveState(workPath, deployedState); err != nil {
+	if err := io.SaveState(ctx, workPath, deployedState); err != nil {
 		log.Warnf(ctx, "Failed to save deployed state: error=%v", err)
 	}
 
