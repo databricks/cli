@@ -25,10 +25,6 @@
 }
 {
   "method": "GET",
-  "path": "/api/2.0/preview/scim/v2/Me"
-}
-{
-  "method": "GET",
   "path": "/api/2.0/workspace/get-status",
   "q": {
     "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/resources.json",

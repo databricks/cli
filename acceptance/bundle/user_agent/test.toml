@@ -1,3 +1,6 @@
 RecordRequests = true
 Local = true
 IncludeRequestHeaders = ["User-Agent"]
+
+[Env]
+DATABRICKS_CACHE_DISABLED = 'true'
