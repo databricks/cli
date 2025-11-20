@@ -49,12 +49,12 @@ Deployment complete!
 === Destroy bundle
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
-  delete job foo
-  delete pipeline bar
+  delete resources.jobs.foo
+  delete resources.pipelines.bar
 
 This action will result in the deletion of the following Lakeflow Declarative Pipelines along with the
 Streaming Tables (STs) and Materialized Views (MVs) managed by them:
-  delete pipeline bar
+  delete resources.pipelines.bar
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 

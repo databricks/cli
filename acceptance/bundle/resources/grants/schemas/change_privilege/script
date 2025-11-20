@@ -1,9 +1,13 @@
 envsubst < databricks.yml.tmpl > databricks.yml
 
+trace $CLI bundle plan
 trace $CLI bundle plan -o json > out.plan1.$DATABRICKS_BUNDLE_ENGINE.json
 trace print_requests.py --get //permissions
 trace $CLI bundle deploy
 trace print_requests.py //permissions > out.deploy1.requests.$DATABRICKS_BUNDLE_ENGINE.json
+
+trace $CLI bundle plan
+trace $CLI bundle plan -o json > out.plan_post_create.$DATABRICKS_BUNDLE_ENGINE.json
 
 # Since we're sending different requests between terraform and direct, assert that the end result is the same:
 trace $CLI grants get schema main.schema_grants_$UNIQUE_NAME | jq --sort-keys

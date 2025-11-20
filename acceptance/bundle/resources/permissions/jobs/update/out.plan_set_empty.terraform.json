@@ -2,6 +2,9 @@
   "plan": {
     "resources.jobs.job_with_permissions": {
       "action": "skip"
+    },
+    "resources.jobs.job_with_permissions.permissions": {
+      "action": "skip"
     }
   }
 }

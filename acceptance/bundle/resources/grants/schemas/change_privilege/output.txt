@@ -1,4 +1,10 @@
 
+>>> [CLI] bundle plan
+create schemas.grants_schema
+create schemas.grants_schema.grants
+
+Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
+
 >>> [CLI] bundle plan -o json
 
 >>> print_requests.py --get //permissions
@@ -10,6 +16,11 @@ Updating deployment state...
 Deployment complete!
 
 >>> print_requests.py //permissions
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
+>>> [CLI] bundle plan -o json
 
 >>> [CLI] grants get schema main.schema_grants_[UNIQUE_NAME]
 {
@@ -27,6 +38,14 @@ Deployment complete!
 >>> [CLI] bundle plan -o json
 
 >>> print_requests.py --get //permissions
+{
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/permissions/schema/main.schema_grants_[UNIQUE_NAME]"
+}
+{
+  "method": "GET",
+  "path": "/api/2.1/unity-catalog/permissions/schema/main.schema_grants_[UNIQUE_NAME]"
+}
 {
   "method": "GET",
   "path": "/api/2.1/unity-catalog/permissions/schema/main.schema_grants_[UNIQUE_NAME]"
@@ -59,10 +78,10 @@ Deployment complete!
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
-  delete schema grants_schema
+  delete resources.schemas.grants_schema
 
 This action will result in the deletion of the following UC schemas. Any underlying data may be lost:
-  delete schema grants_schema
+  delete resources.schemas.grants_schema
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/schema-grants-[UNIQUE_NAME]/default
 
