@@ -3,6 +3,7 @@ package databricks
 import (
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
 	"time"
 
@@ -102,7 +103,7 @@ func DeployApp(ctx context.Context, cfg *mcp.Config, appInfo *apps.App) error {
 }
 
 func ResourcesFromEnv(cfg *mcp.Config) (*apps.AppResource, error) {
-	warehouseID := cfg.WarehouseID
+	warehouseID := os.Getenv("DATABRICKS_WAREHOUSE_ID")
 
 	return &apps.AppResource{
 		Name:        "base",
