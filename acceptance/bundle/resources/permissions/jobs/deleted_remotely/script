@@ -3,7 +3,7 @@ print_requests() {
     rm out.requests.txt
 }
 
-trace $CLI bundle debug plan > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle plan -o json > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
 trace print_requests > out.requests_create.json
 
@@ -17,10 +17,7 @@ title "Delete permissions remotely"
 trace $CLI permissions set jobs "$job_id" --json @remote_delete.json
 trace print_requests
 
-trace $CLI permissions get jobs "$job_id"
-rm -f out.requests.txt
-
-trace $CLI bundle debug plan > out.plan_restore.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle plan -o json > out.plan_restore.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
 trace print_requests > out.requests_restore.json
 

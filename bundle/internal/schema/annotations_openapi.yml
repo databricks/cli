@@ -3176,7 +3176,9 @@ github.com/databricks/databricks-sdk-go/service/jobs.Source:
 github.com/databricks/databricks-sdk-go/service/jobs.SparkJarTask:
   "jar_uri":
     "description": |-
-      Deprecated since 04/2016. Provide a `jar` through the `libraries` field instead. For an example, see :method:jobs/create.
+      Deprecated since 04/2016. For classic compute, provide a `jar` through the `libraries` field instead. For serverless compute, provide a `jar` though the `java_dependencies` field inside the `environments` list.
+
+      See the examples of classic and serverless compute usage at the top of the page.
     "deprecation_message": |-
       This field is deprecated
   "main_class_name":
@@ -3791,6 +3793,20 @@ github.com/databricks/databricks-sdk-go/service/pipelines.IngestionSourceType:
         CONFLUENCE
       - |-
         META_MARKETING
+      - |-
+        GOOGLE_ADS
+      - |-
+        TIKTOK_ADS
+      - |-
+        SALESFORCE_MARKETING_CLOUD
+      - |-
+        HUBSPOT
+      - |-
+        WORKDAY_HCM
+      - |-
+        GUIDEWIRE
+      - |-
+        ZENDESK
       - |-
         FOREIGN_CATALOG
 github.com/databricks/databricks-sdk-go/service/pipelines.ManualTrigger: {}

@@ -1,0 +1,53 @@
+# This is a Databricks asset bundle definition for my_default_scala.
+# See https://docs.databricks.com/dev-tools/bundles/index.html for documentation.
+bundle:
+  name: my_default_scala
+  uuid: [UUID]
+
+include:
+  - resources/*.yml
+
+variables:
+  catalog:
+    description: The catalog to use
+  schema:
+    description: The schema to use
+
+workspace:
+  host: [DATABRICKS_URL]
+  artifact_path: /Volumes/test-folder/${bundle.name}/${bundle.target}/${workspace.current_user.short_name}
+
+artifacts:
+  default:
+    type: jar
+    build: sbt package && sbt assembly
+    path: .
+    files:
+      - source: ./target/scala-2.13/my_default_scala-assembly-0.1.jar
+
+targets:
+  dev:
+    # The default target uses 'mode: development' to create a development copy.
+    # - Deployed resources get prefixed with '[dev my_user_name]'
+    # - Any job schedules and triggers are paused by default.
+    # See also https://docs.databricks.com/dev-tools/bundles/deployment-modes.html.
+    mode: development
+    default: true
+    workspace:
+      host: [DATABRICKS_URL]
+    variables:
+      catalog: main
+      schema: ${workspace.current_user.short_name}
+
+  prod:
+    mode: production
+    workspace:
+      host: [DATABRICKS_URL]
+      # We explicitly deploy to /Workspace/Users/[USERNAME] to make sure we only have a single copy.
+      root_path: /Workspace/Users/[USERNAME]/.bundle/${bundle.name}/${bundle.target}
+    permissions:
+      - user_name: [USERNAME]
+        level: CAN_MANAGE
+    variables:
+      catalog: main
+      schema: default

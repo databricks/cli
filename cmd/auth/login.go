@@ -261,6 +261,7 @@ func setHostAndAccountId(ctx context.Context, existingProfile *profile.Profile, 
 
 	// If the account-id was not provided as a cmd line flag, try to read it from
 	// the specified profile.
+	//nolint:staticcheck // SA1019: IsAccountClient is deprecated but is still used here to avoid breaking changes
 	isAccountClient := (&config.Config{Host: authArguments.Host}).IsAccountClient()
 	accountID := authArguments.AccountID
 	if isAccountClient && accountID == "" {

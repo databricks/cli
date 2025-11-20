@@ -180,7 +180,7 @@ func newExport() *cobra.Command {
   RAW,
   R_MARKDOWN,
   SOURCE,
-]`)
+].`)
 
 	cmd.Use = "export PATH"
 	cmd.Short = `Export a workspace object.`
@@ -444,7 +444,7 @@ func newImport() *cobra.Command {
   RAW,
   R_MARKDOWN,
   SOURCE,
-]`)
+].`)
 	cmd.Flags().Var(&importReq.Language, "language", `The language of the object. Supported values: [PYTHON, R, SCALA, SQL]`)
 	cmd.Flags().BoolVar(&importReq.Overwrite, "overwrite", importReq.Overwrite, `The flag that specifies whether to overwrite existing object.`)
 

@@ -1,0 +1,18 @@
+bundle:
+  name: test-mse-route-$UNIQUE_NAME
+
+workspace:
+  root_path: ~/.bundle/$UNIQUE_NAME
+
+resources:
+  model_serving_endpoints:
+    test_endpoint:
+      name: test-endpoint-$UNIQUE_NAME
+      config:
+        served_entities:
+          - name: "llama"
+            entity_name: system.ai.llama_v3_2_1b_instruct
+            entity_version: 1
+            workload_size: Small
+            scale_to_zero_enabled: true
+      route_optimized: false

@@ -9,7 +9,7 @@
       ],
       "action": "create",
       "new_state": {
-        "config": {
+        "value": {
           "deployment": {
             "kind": "BUNDLE",
             "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/state/metadata.json"
@@ -117,7 +117,7 @@
       ],
       "action": "create",
       "new_state": {
-        "config": {
+        "value": {
           "object_id": "",
           "permissions": [
             {
@@ -134,7 +134,7 @@
     "resources.pipelines.project_name_[UNIQUE_NAME]_etl": {
       "action": "create",
       "new_state": {
-        "config": {
+        "value": {
           "channel": "CURRENT",
           "deployment": {
             "kind": "BUNDLE",
@@ -168,7 +168,7 @@
       ],
       "action": "create",
       "new_state": {
-        "config": {
+        "value": {
           "object_id": "",
           "permissions": [
             {

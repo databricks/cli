@@ -61,18 +61,19 @@ the SSH server and handling the connection proxy.
 		ctx := cmd.Context()
 		wsClient := cmdctx.WorkspaceClient(ctx)
 		opts := client.ClientOptions{
-			ClusterID:           clusterID,
-			ProxyMode:           proxyMode,
-			ServerMetadata:      serverMetadata,
-			ShutdownDelay:       shutdownDelay,
-			MaxClients:          maxClients,
-			HandoverTimeout:     handoverTimeout,
-			ReleasesDir:         releasesDir,
-			AdditionalArgs:      args,
-			ClientPublicKeyName: defaultClientPublicKeyName,
-			ServerTimeout:       serverTimeout,
-			AutoStartCluster:    autoStartCluster,
-			Profile:             wsClient.Config.Profile,
+			Profile:              wsClient.Config.Profile,
+			ClusterID:            clusterID,
+			ProxyMode:            proxyMode,
+			ServerMetadata:       serverMetadata,
+			ShutdownDelay:        shutdownDelay,
+			MaxClients:           maxClients,
+			HandoverTimeout:      handoverTimeout,
+			ReleasesDir:          releasesDir,
+			ServerTimeout:        serverTimeout,
+			AutoStartCluster:     autoStartCluster,
+			ClientPublicKeyName:  clientPublicKeyName,
+			ClientPrivateKeyName: clientPrivateKeyName,
+			AdditionalArgs:       args,
 		}
 		return client.Run(ctx, wsClient, opts)
 	}

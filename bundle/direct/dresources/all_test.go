@@ -24,6 +24,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	"github.com/databricks/databricks-sdk-go/service/serving"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -97,6 +98,50 @@ var testConfig map[string]any = map[string]any{
 			},
 		},
 	},
+
+	"model_serving_endpoints": &resources.ModelServingEndpoint{
+		CreateServingEndpoint: serving.CreateServingEndpoint{
+			Name: "my-endpoint",
+			Config: &serving.EndpointCoreConfigInput{
+				Name: "my-endpoint",
+				AutoCaptureConfig: &serving.AutoCaptureConfigInput{
+					CatalogName:     "main",
+					SchemaName:      "myschema",
+					TableNamePrefix: "my_table",
+					Enabled:         true,
+					ForceSendFields: nil,
+				},
+				ServedModels: nil,
+				ServedEntities: []serving.ServedEntityInput{
+					{
+						EntityName:                "entity-name",
+						EntityVersion:             "1",
+						WorkloadSize:              "Small",
+						ScaleToZeroEnabled:        true,
+						WorkloadType:              serving.ServingModelWorkloadTypeCpu,
+						EnvironmentVars:           map[string]string{"key": "value"},
+						InstanceProfileArn:        "arn:aws:iam::123456789012:instance-profile/my-instance-profile",
+						MaxProvisionedConcurrency: 10,
+						MaxProvisionedThroughput:  100,
+						MinProvisionedConcurrency: 1,
+						MinProvisionedThroughput:  10,
+						Name:                      "entity-name",
+						ProvisionedModelUnits:     100,
+						ExternalModel:             nil,
+						ForceSendFields:           nil,
+					},
+				},
+				TrafficConfig: &serving.TrafficConfig{
+					Routes: []serving.Route{
+						{
+							ServedModelName:   "model-name-1",
+							TrafficPercentage: 100,
+						},
+					},
+				},
+			},
+		},
+	},
 }
 
 type prepareWorkspace func(client *databricks.WorkspaceClient) (any, error)
@@ -137,7 +182,7 @@ var testDeps = map[string]prepareWorkspace{
 		return &PermissionsState{
 			ObjectID: "/jobs/" + strconv.FormatInt(resp.JobId, 10),
 			Permissions: []iam.AccessControlRequest{{
-				PermissionLevel: "CAN_MANAGE",
+				PermissionLevel: "IS_OWNER",
 				UserName:        "user@example.com",
 			}},
 		}, nil
@@ -253,6 +298,33 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
+	"model_serving_endpoints.permissions": func(client *databricks.WorkspaceClient) (any, error) {
+		waiter, err := client.ServingEndpoints.Create(context.Background(), serving.CreateServingEndpoint{
+			Name: "endpoint-permissions",
+			Config: &serving.EndpointCoreConfigInput{
+				ServedModels: []serving.ServedModelInput{
+					{
+						ModelName:          "model-name",
+						ModelVersion:       "1",
+						WorkloadSize:       "Small",
+						ScaleToZeroEnabled: true,
+					},
+				},
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return &PermissionsState{
+			ObjectID: "/serving-endpoints/" + waiter.Response.Name,
+			Permissions: []iam.AccessControlRequest{{
+				PermissionLevel: "CAN_MANAGE",
+				UserName:        "user@example.com",
+			}},
+		}, nil
+	},
+
 	"schemas.grants": func(client *databricks.WorkspaceClient) (any, error) {
 		return &GrantsState{
 			SecurableType: "schema",
@@ -332,8 +404,8 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 
 	ctx := context.Background()
 
-	// initial DoRefresh() cannot find the resource
-	remote, err := adapter.DoRefresh(ctx, "1234")
+	// initial DoRead() cannot find the resource
+	remote, err := adapter.DoRead(ctx, "1234")
 	require.Nil(t, remote)
 	require.Error(t, err)
 	// TODO: if errors.Is(err, databricks.ErrResourceDoesNotExist) {... }
@@ -342,7 +414,7 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	require.NoError(t, err, "DoCreate failed state=%v", newState)
 	require.NotEmpty(t, createdID, "ID returned from DoCreate was empty")
 
-	remote, err = adapter.DoRefresh(ctx, createdID)
+	remote, err = adapter.DoRead(ctx, createdID)
 	require.NoError(t, err)
 	require.NotNil(t, remote)
 
@@ -431,7 +503,7 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 
 	deleteIsNoop := strings.HasSuffix(group, "permissions") || strings.HasSuffix(group, "grants")
 
-	remoteAfterDelete, err := adapter.DoRefresh(ctx, createdID)
+	remoteAfterDelete, err := adapter.DoRead(ctx, createdID)
 	if deleteIsNoop {
 		require.NoError(t, err)
 	} else {
