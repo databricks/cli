@@ -1,0 +1,24 @@
+bundle:
+  name: migrate-basic-test
+
+resources:
+  jobs:
+    test_job:
+      name: "Test Migration Job"
+      tasks:
+        - task_key: "main"
+          notebook_task:
+            notebook_path: "./notebook.py"
+      permissions:
+        - level: CAN_VIEW
+          user_name: viewer@databricks.com
+
+  pipelines:
+    test_pipeline:
+      name: "Test Migration Pipeline"
+      libraries:
+        - notebook:
+            path: "./pipeline.py"
+      permissions:
+        - level: CAN_MANAGE
+          user_name: manager@databricks.com
