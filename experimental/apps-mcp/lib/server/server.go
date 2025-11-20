@@ -6,6 +6,7 @@ import (
 
 	mcp "github.com/databricks/cli/experimental/apps-mcp/lib"
 	mcpsdk "github.com/databricks/cli/experimental/apps-mcp/lib/mcp"
+	"github.com/databricks/cli/experimental/apps-mcp/lib/middlewares"
 	"github.com/databricks/cli/experimental/apps-mcp/lib/providers/databricks"
 	"github.com/databricks/cli/experimental/apps-mcp/lib/providers/deployment"
 	"github.com/databricks/cli/experimental/apps-mcp/lib/providers/io"
@@ -40,6 +41,10 @@ func NewServer(ctx context.Context, cfg *mcp.Config) *Server {
 		log.Warnf(ctx, "failed to create trajectory tracker: %v", err)
 		tracker = nil
 	}
+
+	server.AddMiddleware(middlewares.NewToolCounterMiddleware(sess))
+	server.AddMiddleware(middlewares.NewEngineGuideMiddleware())
+	server.AddMiddleware(middlewares.NewTrajectoryMiddleware(tracker))
 
 	sess.Tracker = tracker
 
@@ -196,10 +201,4 @@ func (s *Server) Shutdown(ctx context.Context) error {
 // GetServer returns the underlying MCP SDK server instance for testing purposes.
 func (s *Server) GetServer() *mcpsdk.Server {
 	return s.server
-}
-
-// GetTracker returns the trajectory tracker used for recording tool calls.
-// Providers use this to wrap their tool handlers for automatic trajectory logging.
-func (s *Server) GetTracker() *trajectory.Tracker {
-	return s.tracker
 }

@@ -15,6 +15,9 @@ type Server struct {
 	toolsMu     sync.RWMutex
 	transport   *StdioTransport
 	initialized bool
+	middlewares []Middleware
+	mwMu        sync.RWMutex
+	sessionData *SessionData
 }
 
 // serverTool represents a registered tool with its handler.
@@ -26,9 +29,29 @@ type serverTool struct {
 // NewServer creates a new MCP server.
 func NewServer(impl *Implementation, options any) *Server {
 	return &Server{
-		impl:  impl,
-		tools: make(map[string]*serverTool),
+		impl:        impl,
+		tools:       make(map[string]*serverTool),
+		sessionData: NewSessionData(),
 	}
+}
+
+// AddMiddleware registers middleware to be applied to all tool calls.
+// Middleware is executed in the order it is registered.
+func (s *Server) AddMiddleware(mw Middleware) {
+	s.mwMu.Lock()
+	defer s.mwMu.Unlock()
+	s.middlewares = append(s.middlewares, mw)
+}
+
+// AddMiddlewareFunc is a convenience method to register a middleware function.
+func (s *Server) AddMiddlewareFunc(fn MiddlewareFunc) {
+	s.AddMiddleware(NewMiddleware(fn))
+}
+
+// GetSessionData returns the server's SessionData.
+// This persists across all tool calls during the server's lifetime.
+func (s *Server) GetSessionData() *SessionData {
+	return s.sessionData
 }
 
 // AddTool registers a tool with a low-level handler.
@@ -37,9 +60,14 @@ func (s *Server) AddTool(tool *Tool, handler ToolHandler) {
 	s.toolsMu.Lock()
 	defer s.toolsMu.Unlock()
 
+	// Wrap the handler with middleware chain using server's session data
+	s.mwMu.RLock()
+	wrappedHandler := Chain(s.middlewares, s.sessionData, handler)
+	s.mwMu.RUnlock()
+
 	s.tools[tool.Name] = &serverTool{
 		tool:    tool,
-		handler: handler,
+		handler: wrappedHandler,
 	}
 }
 
