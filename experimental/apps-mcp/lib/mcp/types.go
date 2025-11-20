@@ -21,6 +21,7 @@ type Tool struct {
 
 // CallToolRequest represents a request to call a tool.
 type CallToolRequest struct {
+	Tool   *Tool
 	Params CallToolParams
 }
 
