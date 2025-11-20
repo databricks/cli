@@ -21,6 +21,10 @@ Deployment complete!
   }
 }
 
+=== Verify not drift right after deploy
+
+>>> [CLI] bundle plan
+
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete dashboard dashboard1
