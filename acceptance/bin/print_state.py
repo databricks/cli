@@ -22,6 +22,11 @@ def main():
     parser.add_argument("-t", "--target", default="default")
     args = parser.parse_args()
 
+    if args.target:
+        target_dir = f".databricks/bundle/{args.target}"
+        if not os.path.exists(target_dir):
+            raise SystemExit(f"Invalid target {args.target!r}: {target_dir} does not exist")
+
     filename = f".databricks/bundle/{args.target}/terraform/terraform.tfstate"
     if os.path.exists(filename):
         write(filename)

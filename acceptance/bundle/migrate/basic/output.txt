@@ -12,11 +12,10 @@ Deployment complete!
 
 >>> [CLI] bundle deployment migrate
 Migrated 3 resources to direct engine state file: [TEST_TMP_DIR]/.databricks/bundle/dev/resources.json
-Validate the migration by running "bundle debug plan", there should be no actions.
+Validate the migration by running "bundle debug plan", there should be no actions planned.
 
-The state file is not synchronized to the workspace yet. To do that, run "bundle deploy".
+The state file is not synchronized to the workspace yet. To do that and finalize the migration, run "bundle deploy".
 
-To finalize deployment, run "bundle deploy".
 
 >>> jq .state."resources.pipelines.test_pipeline".state.tags.volume_storage_location out.new_state.json
 "s3://deco-uc-prod-isolated-aws-us-east-1/metastore/[UUID]/volumes/[UUID]"

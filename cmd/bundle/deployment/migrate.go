@@ -11,6 +11,8 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/libs/structs/structaccess"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/spf13/cobra"
 )
 
@@ -75,9 +77,15 @@ To start using direct engine, deploy with DATABRICKS_BUNDLE_ENGINE=direct env va
 			return fmt.Errorf("state file %s already exists", localPath)
 		}
 
+		etags := map[string]string{}
+
 		state := make(map[string]dstate.ResourceEntry)
 		for key, resourceEntry := range terraformResources {
 			state[key] = dstate.ResourceEntry{ID: resourceEntry.ID}
+			if resourceEntry.ETag != "" {
+				// dashboard:
+				etags[key] = resourceEntry.ETag
+			}
 		}
 
 		deploymentBundle := &direct.DeploymentBundle{
@@ -96,6 +104,17 @@ To start using direct engine, deploy with DATABRICKS_BUNDLE_ENGINE=direct env va
 			return err
 		}
 
+		for key, planEntry := range plan.Plan {
+			etag := etags[key]
+			if etag == "" {
+				continue
+			}
+			err := structaccess.Set(planEntry.NewState.Value, structpath.NewStringKey(nil, "etag"), etag)
+			if err != nil {
+				return fmt.Errorf("failed to set etag on %s: %w", key, err)
+			}
+		}
+
 		deploymentBundle.Apply(ctx, b.WorkspaceClient(), &b.Config, plan, direct.MigrateMode(true))
 
 		if err := os.Rename(tempStatePath, localPath); err != nil {
@@ -108,11 +127,10 @@ To start using direct engine, deploy with DATABRICKS_BUNDLE_ENGINE=direct env va
 		}
 
 		cmdio.LogString(ctx, fmt.Sprintf(`Migrated %d resources to direct engine state file: %s
-Validate the migration by running "bundle debug plan", there should be no actions.
+Validate the migration by running "bundle debug plan", there should be no actions planned.
 
-The state file is not synchronized to the workspace yet. To do that, run "bundle deploy".
-
-To finalize deployment, run "bundle deploy".`, len(deploymentBundle.StateDB.Data.State), localPath))
+The state file is not synchronized to the workspace yet. To do that and finalize the migration, run "bundle deploy".
+`, len(deploymentBundle.StateDB.Data.State), localPath))
 		return nil
 	}
 
