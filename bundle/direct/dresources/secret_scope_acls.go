@@ -82,7 +82,7 @@ func (*ResourceSecretScopeAcls) PrepareState(s *SecretScopeAclsState) *SecretSco
 	return s
 }
 
-func (r *ResourceSecretScopeAcls) DoRefresh(ctx context.Context, id string) (*SecretScopeAclsState, error) {
+func (r *ResourceSecretScopeAcls) DoRead(ctx context.Context, id string) (*SecretScopeAclsState, error) {
 	// id is the scope name
 	currentAcls, err := r.client.Secrets.ListAclsAll(ctx, workspace.ListAclsRequest{
 		Scope: id,
@@ -106,19 +106,27 @@ func (r *ResourceSecretScopeAcls) RemapState(remote *SecretScopeAclsState) *Secr
 	return remote
 }
 
-func (r *ResourceSecretScopeAcls) DoCreate(ctx context.Context, state *SecretScopeAclsState) (string, error) {
-	return r.setACLs(ctx, state.ScopeName, state.Acls)
+func (r *ResourceSecretScopeAcls) DoCreate(ctx context.Context, state *SecretScopeAclsState) (string, *SecretScopeAclsState, error) {
+	scopeName, err := r.setACLs(ctx, state.ScopeName, state.Acls)
+	if err != nil {
+		return "", nil, err
+	}
+	return scopeName, nil, nil
 }
 
-func (r *ResourceSecretScopeAcls) DoUpdate(ctx context.Context, id string, state *SecretScopeAclsState) error {
+func (r *ResourceSecretScopeAcls) DoUpdate(ctx context.Context, id string, state *SecretScopeAclsState) (*SecretScopeAclsState, error) {
 	_, err := r.setACLs(ctx, state.ScopeName, state.Acls)
-	return err
+	return nil, err
 }
 
-func (r *ResourceSecretScopeAcls) DoUpdateWithID(ctx context.Context, oldID string, state *SecretScopeAclsState) (string, error) {
+func (r *ResourceSecretScopeAcls) DoUpdateWithID(ctx context.Context, oldID string, state *SecretScopeAclsState) (string, *SecretScopeAclsState, error) {
 	// Use state.ScopeName instead of oldID because when the parent scope is recreated,
 	// state.ScopeName will have the new (resolved) scope name, while oldID still has the old name
-	return r.setACLs(ctx, state.ScopeName, state.Acls)
+	scopeName, err := r.setACLs(ctx, state.ScopeName, state.Acls)
+	if err != nil {
+		return "", nil, err
+	}
+	return scopeName, nil, nil
 }
 
 func (r *ResourceSecretScopeAcls) FieldTriggers(_ bool) map[string]deployplan.ActionType {

@@ -28,6 +28,9 @@ envsubst < databricks.yml.tmpl > databricks.yml
 trace $CLI bundle plan
 trace $CLI bundle deploy
 
+# Capture API requests for verification. Terraform cleans up ACLs before deleting the scope, but direct does not, hence the difference in requests.
+trace print_requests.py //secrets > out.recreate-requests.$DATABRICKS_BUNDLE_ENGINE.txt
+
 scope_name=$($CLI bundle summary --output json | jq -r '.resources.secret_scopes.my_scope.name')
 trace $CLI secrets list-scopes -o json | jq ".[] | select(.name == \"$scope_name\")"
 
@@ -35,5 +38,4 @@ title "put and get secret in recreated scope"
 trace $CLI secrets put-secret $scope_name another-key --string-value "another-secret-value"
 trace $CLI secrets get-secret $scope_name another-key
 
-# Capture API requests for verification. Terraform cleans up ACLs before deleting the scope, but direct does not, hence the difference in requests.
-trace print_requests.py //secrets > out.second-requests.$DATABRICKS_BUNDLE_ENGINE.txt
+trace print_requests.py //secrets

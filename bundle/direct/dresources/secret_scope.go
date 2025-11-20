@@ -49,10 +49,10 @@ func (*ResourceSecretScope) RemapState(remote *workspace.SecretScope) *SecretSco
 	}
 }
 
-// DoRefresh fetches the secret scope by name. Since the Secrets API does not provide
+// DoRead fetches the secret scope by name. Since the Secrets API does not provide
 // a "get by name" endpoint (see https://docs.databricks.com/api/workspace/secrets),
 // we must list all scopes and filter by name to check if the scope still exists.
-func (r *ResourceSecretScope) DoRefresh(ctx context.Context, id string) (*workspace.SecretScope, error) {
+func (r *ResourceSecretScope) DoRead(ctx context.Context, id string) (*workspace.SecretScope, error) {
 	scopes, err := r.client.Secrets.ListScopesAll(ctx)
 	if err != nil {
 		return nil, err
@@ -67,20 +67,20 @@ func (r *ResourceSecretScope) DoRefresh(ctx context.Context, id string) (*worksp
 	return nil, fmt.Errorf("secret scope %q not found", id)
 }
 
-func (r *ResourceSecretScope) DoCreate(ctx context.Context, state *SecretScopeConfig) (string, error) {
+func (r *ResourceSecretScope) DoCreate(ctx context.Context, state *SecretScopeConfig) (string, *workspace.SecretScope, error) {
 	err := r.client.Secrets.CreateScope(ctx, state.CreateScope)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 
-	return state.Scope, nil
+	return state.Scope, nil, nil
 }
 
 // TODO(shreyas): Remove the DoUpdate method here. Make the framework smart enough to not allow / error
 // on update triggers when a DoUpdate method is not implemented.
-func (r *ResourceSecretScope) DoUpdate(ctx context.Context, id string, state *SecretScopeConfig) error {
+func (r *ResourceSecretScope) DoUpdate(ctx context.Context, id string, state *SecretScopeConfig) (*workspace.SecretScope, error) {
 	// Secret scopes themselves are immutable. All fields are set to a recreate trigger.
-	return nil
+	return nil, nil
 }
 
 func (r *ResourceSecretScope) DoDelete(ctx context.Context, id string) error {

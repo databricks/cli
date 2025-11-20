@@ -30,12 +30,3 @@
     "scope": "test-scope-[UNIQUE_NAME]-2"
   }
 }
-{
-  "method": "POST",
-  "path": "/api/2.0/secrets/put",
-  "body": {
-    "key": "another-key",
-    "scope": "test-scope-[UNIQUE_NAME]-2",
-    "string_value": "another-secret-value"
-  }
-}

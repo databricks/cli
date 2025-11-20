@@ -66,6 +66,8 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
+>>> print_requests.py //secrets
+
 >>> [CLI] secrets list-scopes -o json
 {
   "backend_type": "DATABRICKS",
@@ -82,6 +84,15 @@ Deployment complete!
 }
 
 >>> print_requests.py //secrets
+{
+  "method": "POST",
+  "path": "/api/2.0/secrets/put",
+  "body": {
+    "key": "another-key",
+    "scope": "test-scope-[UNIQUE_NAME]-2",
+    "string_value": "another-secret-value"
+  }
+}
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
