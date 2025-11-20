@@ -1,3 +1,4 @@
+Badness = "num_workers value 0 is not sent in the direct deployment"
 Local = true
 Cloud = false
 RecordRequests = true
