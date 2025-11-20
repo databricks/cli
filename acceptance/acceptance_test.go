@@ -3,6 +3,7 @@ package acceptance_test
 import (
 	"archive/zip"
 	"bufio"
+	"bytes"
 	"context"
 	"encoding/base32"
 	"encoding/json"
@@ -661,11 +662,7 @@ func runTest(t *testing.T,
 	cmd.Env = append(cmd.Env, "CURRENT_USER_NAME="+user.UserName)
 	cmd.Dir = tmpDir
 
-	outputPath := filepath.Join(tmpDir, "output.txt")
-	out, err := os.Create(outputPath)
-	require.NoError(t, err)
-	defer out.Close()
-
+	out := bytes.NewBuffer(nil)
 	skipReason, err := runWithLog(t, cmd, out, tailOutput)
 
 	if skipReason != "" {
@@ -674,7 +671,11 @@ func runTest(t *testing.T,
 
 	// Include exit code in output (if non-zero)
 	formatOutput(out, err)
-	require.NoError(t, out.Close())
+
+	// Write the output from the script execution to output.txt.
+	outputPath := filepath.Join(tmpDir, "output.txt")
+	err = os.WriteFile(outputPath, out.Bytes(), 0o644)
+	require.NoError(t, err)
 
 	loadUserReplacements(t, &repls, tmpDir)
 
@@ -1203,7 +1204,7 @@ func isTruePtr(value *bool) bool {
 	return value != nil && *value
 }
 
-func runWithLog(t *testing.T, cmd *exec.Cmd, out *os.File, tail bool) (string, error) {
+func runWithLog(t *testing.T, cmd *exec.Cmd, out *bytes.Buffer, tail bool) (string, error) {
 	r, w := io.Pipe()
 	cmd.Stdout = w
 	cmd.Stderr = w
