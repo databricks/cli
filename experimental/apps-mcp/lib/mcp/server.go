@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"io"
 	"sync"
+
+	"github.com/databricks/cli/experimental/apps-mcp/lib/session"
 )
 
 // Server is an MCP server that manages tools and handles requests.
@@ -17,7 +19,7 @@ type Server struct {
 	initialized bool
 	middlewares []Middleware
 	mwMu        sync.RWMutex
-	sessionData *SessionData
+	session     *session.Session
 }
 
 // serverTool represents a registered tool with its handler.
@@ -29,9 +31,9 @@ type serverTool struct {
 // NewServer creates a new MCP server.
 func NewServer(impl *Implementation, options any) *Server {
 	return &Server{
-		impl:        impl,
-		tools:       make(map[string]*serverTool),
-		sessionData: NewSessionData(),
+		impl:    impl,
+		tools:   make(map[string]*serverTool),
+		session: session.NewSession(),
 	}
 }
 
@@ -48,10 +50,10 @@ func (s *Server) AddMiddlewareFunc(fn MiddlewareFunc) {
 	s.AddMiddleware(NewMiddleware(fn))
 }
 
-// GetSessionData returns the server's SessionData.
+// GetSession returns the server's Session.
 // This persists across all tool calls during the server's lifetime.
-func (s *Server) GetSessionData() *SessionData {
-	return s.sessionData
+func (s *Server) GetSession() *session.Session {
+	return s.session
 }
 
 // AddTool registers a tool with a low-level handler.
@@ -60,9 +62,9 @@ func (s *Server) AddTool(tool *Tool, handler ToolHandler) {
 	s.toolsMu.Lock()
 	defer s.toolsMu.Unlock()
 
-	// Wrap the handler with middleware chain using server's session data
+	// Wrap the handler with middleware chain using server's session
 	s.mwMu.RLock()
-	wrappedHandler := Chain(s.middlewares, s.sessionData, handler)
+	wrappedHandler := Chain(s.middlewares, s.session, handler)
 	s.mwMu.RUnlock()
 
 	s.tools[tool.Name] = &serverTool{
@@ -232,6 +234,7 @@ func (s *Server) handleToolsCall(ctx context.Context, req *JSONRPCRequest) *JSON
 	}
 
 	toolReq := &CallToolRequest{
+		Tool:   st.tool,
 		Params: params,
 	}
 

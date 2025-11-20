@@ -2,61 +2,15 @@ package mcp
 
 import (
 	"context"
-	"sync"
+
+	"github.com/databricks/cli/experimental/apps-mcp/lib/session"
 )
-
-// SessionData provides thread-safe storage for session-scoped data that middleware can read/write.
-type SessionData struct {
-	mu   sync.RWMutex
-	data map[string]any
-}
-
-// NewSessionData creates a new SessionData instance.
-func NewSessionData() *SessionData {
-	return &SessionData{
-		data: make(map[string]any),
-	}
-}
-
-// Get retrieves a value from session data.
-func (sd *SessionData) Get(key string) (any, bool) {
-	sd.mu.RLock()
-	defer sd.mu.RUnlock()
-	valRaw, ok := sd.data[key]
-	if !ok {
-		return nil, ok
-	}
-	return valRaw, true
-}
-
-// GetBool retrieves a value from session data and casts it to a boolean.
-func (sd *SessionData) GetBool(key string) (bool, bool) {
-	val, ok := sd.Get(key)
-	if !ok {
-		return false, ok
-	}
-	return val.(bool), true
-}
-
-// Set stores a value in session data.
-func (sd *SessionData) Set(key string, value any) {
-	sd.mu.Lock()
-	defer sd.mu.Unlock()
-	sd.data[key] = value
-}
-
-// Delete removes a value from session data.
-func (sd *SessionData) Delete(key string) {
-	sd.mu.Lock()
-	defer sd.mu.Unlock()
-	delete(sd.data, key)
-}
 
 // MiddlewareContext provides context for middleware execution.
 type MiddlewareContext struct {
-	Ctx         context.Context
-	Request     *CallToolRequest
-	SessionData *SessionData
+	Ctx     context.Context
+	Request *CallToolRequest
+	Session *session.Session
 }
 
 // MiddlewareFunc is a function that processes a tool call request.
@@ -90,14 +44,17 @@ func NewMiddleware(fn MiddlewareFunc) Middleware {
 	return &MiddlewareFuncAdapter{fn: fn}
 }
 
-// Chain executes a chain of middleware with an existing SessionData followed by a final handler.
-// The SessionData persists across multiple tool calls (server session scope).
-func Chain(middlewares []Middleware, sessionData *SessionData, handler ToolHandler) ToolHandler {
+// Chain executes a chain of middleware with an existing Session followed by a final handler.
+// The Session persists across multiple tool calls (server session scope).
+func Chain(middlewares []Middleware, sess *session.Session, handler ToolHandler) ToolHandler {
 	return func(ctx context.Context, req *CallToolRequest) (*CallToolResult, error) {
+		// Add session to context
+		ctx = session.WithSession(ctx, sess)
+
 		mwCtx := &MiddlewareContext{
-			Ctx:         ctx,
-			Request:     req,
-			SessionData: sessionData,
+			Ctx:     ctx,
+			Request: req,
+			Session: sess,
 		}
 
 		// Build the chain from the end

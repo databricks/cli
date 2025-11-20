@@ -6,12 +6,13 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/experimental/apps-mcp/lib/mcp"
+	"github.com/databricks/cli/experimental/apps-mcp/lib/session"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestSessionData(t *testing.T) {
-	sd := mcp.NewSessionData()
+func TestSession(t *testing.T) {
+	sd := session.NewSession()
 
 	// Test Set and Get
 	sd.Set("key1", "value1")
@@ -76,7 +77,7 @@ func TestMiddlewareChain(t *testing.T) {
 		}, nil
 	}
 
-	sessionData := mcp.NewSessionData()
+	sessionData := session.NewSession()
 	chain := mcp.Chain([]mcp.Middleware{mw1, mw2}, sessionData, handler)
 
 	req := &mcp.CallToolRequest{}
@@ -116,7 +117,7 @@ func TestMiddlewareShortCircuit(t *testing.T) {
 		}, nil
 	}
 
-	sessionData := mcp.NewSessionData()
+	sessionData := session.NewSession()
 	chain := mcp.Chain([]mcp.Middleware{mw1, mw2}, sessionData, handler)
 
 	req := &mcp.CallToolRequest{}
@@ -140,7 +141,7 @@ func TestMiddlewareError(t *testing.T) {
 		return nil, nil
 	}
 
-	sessionData := mcp.NewSessionData()
+	sessionData := session.NewSession()
 	chain := mcp.Chain([]mcp.Middleware{mw}, sessionData, handler)
 
 	req := &mcp.CallToolRequest{}
@@ -150,21 +151,21 @@ func TestMiddlewareError(t *testing.T) {
 	assert.Equal(t, expectedErr, err)
 }
 
-func TestMiddlewareSessionData(t *testing.T) {
-	var capturedData *mcp.SessionData
+func TestMiddlewareSession(t *testing.T) {
+	var capturedData *session.Session
 
 	mw1 := mcp.NewMiddleware(func(ctx *mcp.MiddlewareContext, next mcp.NextFunc) (*mcp.CallToolResult, error) {
-		ctx.SessionData.Set("key1", "value1")
+		ctx.Session.Set("key1", "value1")
 		return next()
 	})
 
 	mw2 := mcp.NewMiddleware(func(ctx *mcp.MiddlewareContext, next mcp.NextFunc) (*mcp.CallToolResult, error) {
-		val, ok := ctx.SessionData.Get("key1")
+		val, ok := ctx.Session.Get("key1")
 		require.True(t, ok)
 		assert.Equal(t, "value1", val)
 
-		ctx.SessionData.Set("key2", "value2")
-		capturedData = ctx.SessionData
+		ctx.Session.Set("key2", "value2")
+		capturedData = ctx.Session
 		return next()
 	})
 
@@ -174,7 +175,7 @@ func TestMiddlewareSessionData(t *testing.T) {
 		}, nil
 	}
 
-	sessionData := mcp.NewSessionData()
+	sessionData := session.NewSession()
 	chain := mcp.Chain([]mcp.Middleware{mw1, mw2}, sessionData, handler)
 
 	req := &mcp.CallToolRequest{}
@@ -209,7 +210,7 @@ func TestMiddlewareContextAccess(t *testing.T) {
 		}, nil
 	}
 
-	sessionData := mcp.NewSessionData()
+	sessionData := session.NewSession()
 	chain := mcp.Chain([]mcp.Middleware{mw}, sessionData, handler)
 
 	req := &mcp.CallToolRequest{}
@@ -258,7 +259,7 @@ func TestServerMiddleware(t *testing.T) {
 	assert.Equal(t, "test-tool", tools[0].Name)
 }
 
-func TestServerSessionDataPersistence(t *testing.T) {
+func TestServerSessionPersistence(t *testing.T) {
 	impl := &mcp.Implementation{
 		Name:    "test-server",
 		Version: "1.0.0",
@@ -268,11 +269,11 @@ func TestServerSessionDataPersistence(t *testing.T) {
 	// Add middleware that increments a counter
 	server.AddMiddlewareFunc(func(ctx *mcp.MiddlewareContext, next mcp.NextFunc) (*mcp.CallToolResult, error) {
 		count := 0
-		if val, ok := ctx.SessionData.Get("counter"); ok {
+		if val, ok := ctx.Session.Get("counter"); ok {
 			count = val.(int)
 		}
 		count++
-		ctx.SessionData.Set("counter", count)
+		ctx.Session.Set("counter", count)
 		return next()
 	})
 
@@ -296,7 +297,7 @@ func TestServerSessionDataPersistence(t *testing.T) {
 	// Execute the tool multiple times
 	// Note: We need to get the actual handler from the server's internal state
 	// For this test, we'll verify through the server's session data
-	sessionData := server.GetSessionData()
+	sessionData := server.GetSession()
 
 	// Simulate tool calls by creating a chain and calling it
 	// In the real server, this would happen through handleToolsCall
@@ -304,11 +305,11 @@ func TestServerSessionDataPersistence(t *testing.T) {
 		[]mcp.Middleware{
 			mcp.NewMiddleware(func(ctx *mcp.MiddlewareContext, next mcp.NextFunc) (*mcp.CallToolResult, error) {
 				count := 0
-				if val, ok := ctx.SessionData.Get("counter"); ok {
+				if val, ok := ctx.Session.Get("counter"); ok {
 					count = val.(int)
 				}
 				count++
-				ctx.SessionData.Set("counter", count)
+				ctx.Session.Set("counter", count)
 				return next()
 			}),
 		},
