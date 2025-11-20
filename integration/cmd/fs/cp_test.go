@@ -77,11 +77,11 @@ func copyTests() []cpTest {
 			setupSource: setupLocalFiler,
 			setupTarget: setupLocalFiler,
 		},
-		// {
-		// 	name:        "local to dbfs",
-		// 	setupSource: setupLocalFiler,
-		// 	setupTarget: setupDbfsFiler,
-		// },
+		{
+			name:        "local to dbfs",
+			setupSource: setupLocalFiler,
+			setupTarget: setupDbfsFiler,
+		},
 		{
 			name:        "local to uc-volumes",
 			setupSource: setupLocalFiler,
@@ -89,21 +89,21 @@ func copyTests() []cpTest {
 		},
 
 		// source: dbfs
-		// {
-		// 	name:        "dbfs to local",
-		// 	setupSource: setupDbfsFiler,
-		// 	setupTarget: setupLocalFiler,
-		// },
-		// {
-		// 	name:        "dbfs to dbfs",
-		// 	setupSource: setupDbfsFiler,
-		// 	setupTarget: setupDbfsFiler,
-		// },
-		// {
-		// 	name:        "dbfs to uc-volumes",
-		// 	setupSource: setupDbfsFiler,
-		// 	setupTarget: setupUcVolumesFiler,
-		// },
+		{
+			name:        "dbfs to local",
+			setupSource: setupDbfsFiler,
+			setupTarget: setupLocalFiler,
+		},
+		{
+			name:        "dbfs to dbfs",
+			setupSource: setupDbfsFiler,
+			setupTarget: setupDbfsFiler,
+		},
+		{
+			name:        "dbfs to uc-volumes",
+			setupSource: setupDbfsFiler,
+			setupTarget: setupUcVolumesFiler,
+		},
 
 		// source: uc-volumes
 		{
@@ -111,11 +111,11 @@ func copyTests() []cpTest {
 			setupSource: setupUcVolumesFiler,
 			setupTarget: setupLocalFiler,
 		},
-		// {
-		// 	name:        "uc-volumes to dbfs",
-		// 	setupSource: setupUcVolumesFiler,
-		// 	setupTarget: setupDbfsFiler,
-		// },
+		{
+			name:        "uc-volumes to dbfs",
+			setupSource: setupUcVolumesFiler,
+			setupTarget: setupDbfsFiler,
+		},
 		{
 			name:        "uc-volumes to uc-volumes",
 			setupSource: setupUcVolumesFiler,
