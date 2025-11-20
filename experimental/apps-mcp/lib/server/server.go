@@ -6,6 +6,7 @@ import (
 
 	mcp "github.com/databricks/cli/experimental/apps-mcp/lib"
 	mcpsdk "github.com/databricks/cli/experimental/apps-mcp/lib/mcp"
+	"github.com/databricks/cli/experimental/apps-mcp/lib/middlewares"
 	"github.com/databricks/cli/experimental/apps-mcp/lib/providers/databricks"
 	"github.com/databricks/cli/experimental/apps-mcp/lib/providers/deployment"
 	"github.com/databricks/cli/experimental/apps-mcp/lib/providers/io"
@@ -41,6 +42,11 @@ func NewServer(ctx context.Context, cfg *mcp.Config) *Server {
 		tracker = nil
 	}
 
+	server.AddMiddleware(middlewares.NewToolCounterMiddleware(sess))
+	server.AddMiddleware(middlewares.NewDatabricksClientMiddleware([]string{"databricks_configure_auth"}))
+	server.AddMiddleware(middlewares.NewEngineGuideMiddleware())
+	server.AddMiddleware(middlewares.NewTrajectoryMiddleware(tracker))
+
 	sess.SetTracker(tracker)
 
 	return &Server{
@@ -56,6 +62,16 @@ func NewServer(ctx context.Context, cfg *mcp.Config) *Server {
 // providers are conditional based on configuration flags.
 func (s *Server) RegisterTools(ctx context.Context) error {
 	log.Info(ctx, "Registering tools")
+
+	// Add session to context for early initialization
+	ctx = session.WithSession(ctx, s.session)
+
+	// Eagerly initialize Databricks authentication if possible
+	// This makes the first tool call faster by pre-authenticating
+	if err := s.initializeDatabricksAuth(ctx); err != nil {
+		log.Debugf(ctx, "Databricks authentication not initialized during startup: %v", err)
+		// Don't fail - authentication will be attempted on first tool call via middleware
+	}
 
 	// Always register databricks provider
 	if err := s.registerDatabricksProvider(ctx); err != nil {
@@ -198,8 +214,22 @@ func (s *Server) GetServer() *mcpsdk.Server {
 	return s.server
 }
 
-// GetTracker returns the trajectory tracker used for recording tool calls.
-// Providers use this to wrap their tool handlers for automatic trajectory logging.
-func (s *Server) GetTracker() *trajectory.Tracker {
-	return s.tracker
+// initializeDatabricksAuth attempts to eagerly authenticate with Databricks during startup.
+// This improves the user experience by making the first tool call faster.
+// If authentication fails, tools will still work via lazy authentication in the middleware.
+func (s *Server) initializeDatabricksAuth(ctx context.Context) error {
+	client, err := databricks.ConfigureAuth(ctx, s.session, nil, nil)
+	if err != nil {
+		return err
+	}
+
+	// Get current user info for logging
+	if client != nil {
+		me, err := client.CurrentUser.Me(ctx)
+		if err == nil && me.UserName != "" {
+			log.Infof(ctx, "Authenticated with Databricks as: %s", me.UserName)
+		}
+	}
+
+	return nil
 }
