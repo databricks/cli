@@ -1,6 +1,12 @@
 import { test } from "node:test";
 import { strict as assert } from "node:assert";
 import type { Server } from "node:http";
+import dotenv from "dotenv";
+import path from "node:path";
+import superjson from "superjson";
+
+// Load environment variables before any other imports
+dotenv.config({ path: path.join(__dirname, "../../.env") });
 
 test("server starts and responds to healthcheck", async () => {
   // dynamic import to ensure env vars are set first
@@ -38,7 +44,7 @@ test("server starts and responds to healthcheck", async () => {
 //   const { initTRPC } = await import("@trpc/server");
 //
 //   // create tRPC caller - no HTTP server needed
-//   const t = initTRPC.create();
+//   const t = initTRPC.create({transformer: superjson});
 //   const caller = t.createCallerFactory(appRouter)({});
 //
 //   const result = await caller.getUsers();
@@ -58,7 +64,7 @@ test("server starts and responds to healthcheck", async () => {
 //   const t = initTRPC.create();
 //   const caller = t.createCallerFactory(appRouter)({});
 //
-//   const result = await caller.getMetrics({ category: "sales" });
+//   const result = await caller['getMetrics']({ category: "sales" });
 //
 //   assert.ok(Array.isArray(result));
 //   // add assertions for your expected data structure
