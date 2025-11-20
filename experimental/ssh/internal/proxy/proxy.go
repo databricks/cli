@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -15,7 +16,11 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-var errProxyEOF = errors.New("proxy EOF error")
+var (
+	errProxyEOF             = errors.New("proxy EOF error")
+	errSendingLoopStopped   = errors.New("sending loop stopped")
+	errReceivingLoopStopped = errors.New("receiving loop stopped")
+)
 
 const (
 	// Same as gorilla/websocket default read/write buffer sizes. Bigger payloads will be split into multiple ws frames.
@@ -105,13 +110,27 @@ func newProxyConnection(createConn createWebsocketConnectionFunc) *proxyConnecti
 	}
 }
 
-func (pc *proxyConnection) start(ctx context.Context, src io.Reader, dst io.Writer) error {
+func (pc *proxyConnection) start(ctx context.Context, src io.ReadCloser, dst io.Writer) error {
 	g, gCtx := errgroup.WithContext(ctx)
 	g.Go(func() error {
-		return pc.runSendingLoop(gCtx, src)
+		err := pc.runSendingLoop(gCtx, src)
+		// Always return a non nil error to cancel the errgroup context
+		return errors.Join(err, errSendingLoopStopped)
 	})
 	g.Go(func() error {
-		return pc.runReceivingLoop(gCtx, dst)
+		err := pc.runReceivingLoop(gCtx, dst)
+		// Always return a non nil error to cancel the errgroup context
+		return errors.Join(err, errReceivingLoopStopped)
+	})
+	g.Go(func() error {
+		// Wait for the context to be cancelled. There can be multiple reasons:
+		// - Sending loop finished (e.g. EOF from source)
+		// - Receiving loop finished (e.g. connection closed)
+		// - Parent context cancelled
+		// Both loops can still be stuck on conn.ReadMessage or src.Read and won't notice context cancellation,
+		// so we close the connection and the source (sshd stdout pipe or ssh client stdio) to unblock them.
+		<-gCtx.Done()
+		return errors.Join(pc.close(), pc.closeSource(src))
 	})
 	err := g.Wait()
 	if err == nil || isNormalClosure(err) {
@@ -234,6 +253,14 @@ func (pc *proxyConnection) close() error {
 		}
 	}
 	return nil
+}
+
+func (pc *proxyConnection) closeSource(src io.ReadCloser) error {
+	err := src.Close()
+	if err != nil && (errors.Is(err, os.ErrClosed) || errors.Is(err, io.ErrClosedPipe)) {
+		return nil
+	}
+	return err
 }
 
 func (pc *proxyConnection) initiateHandover(ctx context.Context) error {
