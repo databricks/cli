@@ -5,5 +5,10 @@ Cloud = false
   linux = false
   windows = false
 
+[Env]
+  PYTHONDONTWRITEBYTECODE = "1"
+  PYTHONUNBUFFERED = "1"
+  PYTHONUTF8 = "1"
+
 [EnvMatrix]
   DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]

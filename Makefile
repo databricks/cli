@@ -64,6 +64,10 @@ test-update:
 	@# at the moment second pass is required because some tests show diff against output of another test for easier review
 	-go test ./acceptance -run '^TestAccept$$' -update -timeout=${LOCAL_TIMEOUT}
 
+# Regenerate out.test.toml files without running tests
+test-generate-out-test-toml:
+	go test ./acceptance -run '^TestAccept$$' -only-out-test-toml -timeout=${LOCAL_TIMEOUT}
+
 # Updates acceptance test output for template tests only
 test-update-templates:
 	-go test ./acceptance -run '^TestAccept/bundle/templates' -update -timeout=${LOCAL_TIMEOUT}
@@ -147,4 +151,4 @@ generate:
 	$(GENKIT_BINARY) update-sdk
 
 
-.PHONY: lint lintfull tidy lintcheck fmt fmtfull test cover showcover build snapshot snapshot-release schema integration integration-short acc-cover acc-showcover docs ws links checks test-update test-update-templates test-update-aws test-update-all generate-validation
+.PHONY: lint lintfull tidy lintcheck fmt fmtfull test cover showcover build snapshot snapshot-release schema integration integration-short acc-cover acc-showcover docs ws links checks test-update test-update-templates test-update-aws test-update-all generate-validation test-generate-out-test-toml

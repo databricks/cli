@@ -1,6 +1,13 @@
 Local = true
 Cloud = true
 
+[Env]
+  PYTHONDONTWRITEBYTECODE = "1"
+  PYTHONUNBUFFERED = "1"
+  PYTHONUTF8 = "1"
+  SERVERLESS = "no"
+  UV_PYTHON = "3.10"
+
 [EnvMatrix]
   DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
   DLT = ["yes", "no"]

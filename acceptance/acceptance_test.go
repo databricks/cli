@@ -37,17 +37,18 @@ import (
 )
 
 var (
-	KeepTmp         bool
-	NoRepl          bool
-	VerboseTest     bool = os.Getenv("VERBOSE_TEST") != ""
-	Tail            bool
-	Forcerun        bool
-	LogRequests     bool
-	LogConfig       bool
-	SkipLocal       bool
-	UseVersion      string
-	WorkspaceTmpDir bool
-	TerraformDir    string
+	KeepTmp             bool
+	NoRepl              bool
+	VerboseTest         bool = os.Getenv("VERBOSE_TEST") != ""
+	Tail                bool
+	Forcerun            bool
+	LogRequests         bool
+	LogConfig           bool
+	SkipLocal           bool
+	UseVersion          string
+	WorkspaceTmpDir     bool
+	TerraformDir        string
+	OnlyOutTestTomlMode bool
 )
 
 // In order to debug CLI running under acceptance test, search for TestInprocessMode and update
@@ -78,6 +79,8 @@ func init() {
 	// creates these symlinks when a file_mirror is used for a provider (in .terraformrc). This flag
 	// allows us to download the provider to the workspace file system on DBR enabling DBR integration testing.
 	flag.StringVar(&TerraformDir, "terraform-dir", "", "Directory to download the terraform provider to")
+
+	flag.BoolVar(&OnlyOutTestTomlMode, "only-out-test-toml", false, "Only regenerate out.test.toml files without running tests")
 }
 
 const (
@@ -299,12 +302,17 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 			config, configPath := internal.LoadConfig(t, dir)
 			skipReason := getSkipReason(&config, configPath)
 
-			if testdiff.OverwriteMode {
+			if testdiff.OverwriteMode || OnlyOutTestTomlMode {
 				// Generate materialized config for this test
 				// We do this before skipping the test, so the configs are generated for all tests.
 				materializedConfig, err := internal.GenerateMaterializedConfig(config)
 				require.NoError(t, err)
 				testutil.WriteFile(t, filepath.Join(dir, internal.MaterializedConfigFile), materializedConfig)
+			}
+
+			// If only regenerating out.test.toml, skip the actual test execution
+			if OnlyOutTestTomlMode {
+				t.Skip("Skipping test execution (only regenerating out.test.toml)")
 			}
 
 			if skipReason != "" {
