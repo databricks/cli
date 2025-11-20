@@ -1,0 +1,78 @@
+{
+ "lineage": "[UUID]",
+ "serial": 8,
+ "state": {
+  "resources.registered_models.my_registered_model": {
+   "__id__": "main.schema_grants.mymodel",
+   "state": {
+    "catalog_name": "main",
+    "comment": "mycomment",
+    "name": "mymodel",
+    "schema_name": "schema_grants"
+   }
+  },
+  "resources.registered_models.my_registered_model.grants": {
+   "__id__": "function/main.schema_grants.mymodel",
+   "state": {
+    "securable_type": "function",
+    "full_name": "main.schema_grants.mymodel",
+    "grants": [
+     {
+      "principal": "deco-test-user@databricks.com",
+      "privileges": [
+       "APPLY_TAG"
+      ]
+     }
+    ]
+   }
+  },
+  "resources.schemas.my_schema": {
+   "__id__": "main.schema_grants",
+   "state": {
+    "catalog_name": "main",
+    "name": "schema_grants"
+   }
+  },
+  "resources.schemas.my_schema.grants": {
+   "__id__": "schema/main.schema_grants",
+   "state": {
+    "securable_type": "schema",
+    "full_name": "main.schema_grants",
+    "grants": [
+     {
+      "principal": "deco-test-user@databricks.com",
+      "privileges": [
+       "CREATE_TABLE",
+       "USE_SCHEMA"
+      ]
+     }
+    ]
+   }
+  },
+  "resources.volumes.my_volume": {
+   "__id__": "main.schema_grants.volume_name",
+   "state": {
+    "catalog_name": "main",
+    "name": "volume_name",
+    "schema_name": "schema_grants",
+    "volume_type": "MANAGED"
+   }
+  },
+  "resources.volumes.my_volume.grants": {
+   "__id__": "volume/main.schema_grants.volume_name",
+   "state": {
+    "securable_type": "volume",
+    "full_name": "main.schema_grants.volume_name",
+    "grants": [
+     {
+      "principal": "deco-test-user@databricks.com",
+      "privileges": [
+       "READ_VOLUME",
+       "WRITE_VOLUME"
+      ]
+     }
+    ]
+   }
+  }
+ }
+}

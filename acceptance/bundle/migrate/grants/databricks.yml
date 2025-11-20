@@ -1,0 +1,34 @@
+bundle:
+  name: test-bundle
+
+resources:
+  schemas:
+    my_schema:
+      catalog_name: main
+      name: schema_grants
+      grants:
+      - principal: deco-test-user@databricks.com
+        privileges:
+          - CREATE_TABLE
+          - USE_SCHEMA
+
+  volumes:
+    my_volume:
+      catalog_name: main
+      schema_name: schema_grants
+      name: volume_name
+      grants:
+        - principal: deco-test-user@databricks.com
+          privileges:
+            - READ_VOLUME
+            - WRITE_VOLUME
+
+  registered_models:
+    my_registered_model:
+      name: mymodel
+      comment: mycomment
+      catalog_name: main
+      schema_name: ${resources.schemas.my_schema.name}
+      grants:
+        - principal: deco-test-user@databricks.com
+          privileges: ["APPLY_TAG"]

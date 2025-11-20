@@ -1,0 +1,223 @@
+{
+  "version": 4,
+  "terraform_version": "1.5.5",
+  "serial": 7,
+  "lineage": "[UUID]",
+  "outputs": {},
+  "resources": [
+    {
+      "mode": "managed",
+      "type": "databricks_grants",
+      "name": "registered_model_my_registered_model",
+      "provider": "provider[\"registry.terraform.io/databricks/databricks\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "catalog": null,
+            "credential": null,
+            "external_location": null,
+            "foreign_connection": null,
+            "function": "main.schema_grants.mymodel",
+            "grant": [
+              {
+                "principal": "deco-test-user@databricks.com",
+                "privileges": [
+                  "APPLY_TAG"
+                ]
+              }
+            ],
+            "id": "function/main.schema_grants.mymodel",
+            "metastore": null,
+            "model": null,
+            "pipeline": null,
+            "recipient": null,
+            "schema": null,
+            "share": null,
+            "storage_credential": null,
+            "table": null,
+            "volume": null
+          },
+          "sensitive_attributes": [],
+          "private": "bnVsbA==",
+          "dependencies": [
+            "databricks_registered_model.my_registered_model",
+            "databricks_schema.my_schema"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "databricks_grants",
+      "name": "schema_my_schema",
+      "provider": "provider[\"registry.terraform.io/databricks/databricks\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "catalog": null,
+            "credential": null,
+            "external_location": null,
+            "foreign_connection": null,
+            "function": null,
+            "grant": [
+              {
+                "principal": "deco-test-user@databricks.com",
+                "privileges": [
+                  "CREATE_TABLE",
+                  "USE_SCHEMA"
+                ]
+              }
+            ],
+            "id": "schema/main.schema_grants",
+            "metastore": null,
+            "model": null,
+            "pipeline": null,
+            "recipient": null,
+            "schema": "main.schema_grants",
+            "share": null,
+            "storage_credential": null,
+            "table": null,
+            "volume": null
+          },
+          "sensitive_attributes": [],
+          "private": "bnVsbA==",
+          "dependencies": [
+            "databricks_schema.my_schema"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "databricks_grants",
+      "name": "volume_my_volume",
+      "provider": "provider[\"registry.terraform.io/databricks/databricks\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "catalog": null,
+            "credential": null,
+            "external_location": null,
+            "foreign_connection": null,
+            "function": null,
+            "grant": [
+              {
+                "principal": "deco-test-user@databricks.com",
+                "privileges": [
+                  "READ_VOLUME",
+                  "WRITE_VOLUME"
+                ]
+              }
+            ],
+            "id": "volume/main.schema_grants.volume_name",
+            "metastore": null,
+            "model": null,
+            "pipeline": null,
+            "recipient": null,
+            "schema": null,
+            "share": null,
+            "storage_credential": null,
+            "table": null,
+            "volume": "main.schema_grants.volume_name"
+          },
+          "sensitive_attributes": [],
+          "private": "bnVsbA==",
+          "dependencies": [
+            "databricks_schema.my_schema",
+            "databricks_volume.my_volume"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "databricks_registered_model",
+      "name": "my_registered_model",
+      "provider": "provider[\"registry.terraform.io/databricks/databricks\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "aliases": [],
+            "browse_only": false,
+            "catalog_name": "main",
+            "comment": "mycomment",
+            "created_at": [UNIX_TIME_MILLIS][0],
+            "created_by": "[USERNAME]",
+            "full_name": "main.schema_grants.mymodel",
+            "id": "main.schema_grants.mymodel",
+            "metastore_id": "[UUID]",
+            "name": "mymodel",
+            "owner": "[USERNAME]",
+            "schema_name": "schema_grants",
+            "storage_location": null,
+            "updated_at": [UNIX_TIME_MILLIS][0],
+            "updated_by": "[USERNAME]"
+          },
+          "sensitive_attributes": [],
+          "private": "bnVsbA==",
+          "dependencies": [
+            "databricks_schema.my_schema"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "databricks_schema",
+      "name": "my_schema",
+      "provider": "provider[\"registry.terraform.io/databricks/databricks\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "catalog_name": "main",
+            "comment": null,
+            "enable_predictive_optimization": null,
+            "force_destroy": true,
+            "id": "main.schema_grants",
+            "metastore_id": null,
+            "name": "schema_grants",
+            "owner": "[USERNAME]",
+            "properties": null,
+            "schema_id": "",
+            "storage_root": null
+          },
+          "sensitive_attributes": [],
+          "private": "bnVsbA=="
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "databricks_volume",
+      "name": "my_volume",
+      "provider": "provider[\"registry.terraform.io/databricks/databricks\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "catalog_name": "main",
+            "comment": null,
+            "id": "main.schema_grants.volume_name",
+            "name": "volume_name",
+            "owner": "[USERNAME]",
+            "schema_name": "schema_grants",
+            "storage_location": "s3://deco-uc-prod-isolated-aws-us-east-1/metastore/[UUID]/volumes/[UUID]",
+            "volume_path": "/Volumes/main/schema_grants/volume_name",
+            "volume_type": "MANAGED"
+          },
+          "sensitive_attributes": [],
+          "private": "bnVsbA==",
+          "dependencies": [
+            "databricks_schema.my_schema"
+          ]
+        }
+      ]
+    }
+  ],
+  "check_results": null
+}
