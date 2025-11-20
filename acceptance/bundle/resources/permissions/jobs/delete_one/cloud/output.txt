@@ -8,7 +8,9 @@ Updating deployment state...
 Deployment complete!
 
 >>> [CLI] bundle plan
-Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+update jobs.job_with_permissions.permissions
+
+Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
 
 === Delete one permission and deploy again
 
