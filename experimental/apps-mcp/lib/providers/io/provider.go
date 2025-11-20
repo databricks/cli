@@ -48,21 +48,19 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 
 	// Register scaffold_data_app
 	type ScaffoldInput struct {
-		WorkDir      string `json:"work_dir" jsonschema:"required" jsonschema_description:"Absolute path to the work directory"`
-		ForceRewrite bool   `json:"force_rewrite,omitempty" jsonschema_description:"Overwrite existing files if directory is not empty"`
+		WorkDir string `json:"work_dir" jsonschema:"required" jsonschema_description:"Absolute path to the work directory"`
 	}
 
 	mcpsdk.AddTool(server,
 		&mcpsdk.Tool{
 			Name:        "scaffold_data_app",
-			Description: "Initialize a project by copying template files from the default TypeScript (tRPC + React) template to a work directory. Supports force rewrite to wipe and recreate the directory. It sets up a basic project structure, and should be ALWAYS used as the first step in creating a new data or web app.",
+			Description: "Initialize a project by copying template files from the default TypeScript (tRPC + React) template to a work directory. It sets up a basic project structure, and should be ALWAYS used as the first step in creating a new data or web app.",
 		},
 		func(ctx context.Context, req *mcpsdk.CallToolRequest, args ScaffoldInput) (*mcpsdk.CallToolResult, any, error) {
 			log.Debugf(ctx, "scaffold_data_app called: work_dir=%s", args.WorkDir)
 
 			scaffoldArgs := &ScaffoldArgs{
-				WorkDir:      args.WorkDir,
-				ForceRewrite: args.ForceRewrite,
+				WorkDir: args.WorkDir,
 			}
 
 			result, err := p.Scaffold(ctx, scaffoldArgs)

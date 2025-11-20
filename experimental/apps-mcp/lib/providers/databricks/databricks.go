@@ -70,7 +70,7 @@ func ConfigureAuth(ctx context.Context, sess *session.Session, host, profile *st
 
 	_, err = client.CurrentUser.Me(ctx)
 	if err != nil {
-		if profile == nil {
+		if profile == nil && host != nil {
 			return nil, errors.New(prompts.MustExecuteTemplate("auth_u2m.tmpl", map[string]string{
 				"WorkspaceURL": *host,
 			}))

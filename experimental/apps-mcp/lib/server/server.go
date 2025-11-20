@@ -63,6 +63,16 @@ func NewServer(ctx context.Context, cfg *mcp.Config) *Server {
 func (s *Server) RegisterTools(ctx context.Context) error {
 	log.Info(ctx, "Registering tools")
 
+	// Add session to context for early initialization
+	ctx = session.WithSession(ctx, s.session)
+
+	// Eagerly initialize Databricks authentication if possible
+	// This makes the first tool call faster by pre-authenticating
+	if err := s.initializeDatabricksAuth(ctx); err != nil {
+		log.Debugf(ctx, "Databricks authentication not initialized during startup: %v", err)
+		// Don't fail - authentication will be attempted on first tool call via middleware
+	}
+
 	// Always register databricks provider
 	if err := s.registerDatabricksProvider(ctx); err != nil {
 		return err
@@ -202,4 +212,24 @@ func (s *Server) Shutdown(ctx context.Context) error {
 // GetServer returns the underlying MCP SDK server instance for testing purposes.
 func (s *Server) GetServer() *mcpsdk.Server {
 	return s.server
+}
+
+// initializeDatabricksAuth attempts to eagerly authenticate with Databricks during startup.
+// This improves the user experience by making the first tool call faster.
+// If authentication fails, tools will still work via lazy authentication in the middleware.
+func (s *Server) initializeDatabricksAuth(ctx context.Context) error {
+	client, err := databricks.ConfigureAuth(ctx, s.session, nil, nil)
+	if err != nil {
+		return err
+	}
+
+	// Get current user info for logging
+	if client != nil {
+		me, err := client.CurrentUser.Me(ctx)
+		if err == nil && me.UserName != "" {
+			log.Infof(ctx, "Authenticated with Databricks as: %s", me.UserName)
+		}
+	}
+
+	return nil
 }
