@@ -1,0 +1,2 @@
+[DEFAULT]
+cli.allow_destructive_sql = true
