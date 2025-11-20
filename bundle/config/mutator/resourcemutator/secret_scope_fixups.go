@@ -41,6 +41,19 @@ func (m *secretScopeFixups) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 
 		currentUser := b.Config.Workspace.CurrentUser.User
 
+		// Check if current user already has a permission configured
+		hasManageForCurrentUser := false
+		for _, perm := range scope.Permissions {
+			if (perm.UserName == currentUser.UserName || perm.ServicePrincipalName == currentUser.UserName) && perm.Level == resources.SecretScopePermissionLevelManage {
+				hasManageForCurrentUser = true
+				break
+			}
+		}
+
+		if hasManageForCurrentUser {
+			continue
+		}
+
 		acl := resources.SecretScopePermission{
 			Level: resources.SecretScopePermissionLevelManage,
 		}
@@ -49,7 +62,6 @@ func (m *secretScopeFixups) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 		} else {
 			acl.UserName = currentUser.UserName
 		}
-
 		scope.Permissions = append(scope.Permissions, acl)
 	}
 
