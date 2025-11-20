@@ -3,7 +3,6 @@ package databricks
 import (
 	"context"
 	"fmt"
-	"os"
 	"os/exec"
 	"time"
 
