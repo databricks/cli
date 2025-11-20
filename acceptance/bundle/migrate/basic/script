@@ -29,6 +29,12 @@ trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle debug states --force-pull
 
 rm out.requests.txt
 
+title "Update databricks.yml, run plan & update"
+trace update_file.py databricks.yml Migration Migrated
+trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle plan
+trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle plan -o json > out.plan_update.json
+trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle deploy
+
 title "Different target, still on terraform"
 trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle deploy -t prod
 trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle debug states -t prod
