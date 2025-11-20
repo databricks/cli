@@ -90,5 +90,5 @@ func getDefaultWarehouse(ctx context.Context) (*sql.EndpointInfo, error) {
 }
 
 func errNoWarehouses() error {
-	return errors.New("No warehouse found. You can explicitly set the warehouse ID using the DATABRICKS_WAREHOUSE_ID environment variable.")
+	return errors.New("no warehouse found. You can explicitly set the warehouse ID using the DATABRICKS_WAREHOUSE_ID environment variable")
 }
