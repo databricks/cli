@@ -10,21 +10,24 @@
 Databricks Data Exploration Guide
 =====================================
 
-{{.WorkspaceInfo}}
-Default SQL Warehouse: {{.WarehouseName}} ({{.WarehouseID}}){{.ProfilesInfo}}
+{{.WorkspaceInfo}}{{if .WarehouseName}}
+Default SQL Warehouse: {{.WarehouseName}} ({{.WarehouseID}}){{else}}
+Note: No SQL warehouse detected. SQL queries will require warehouse_id to be specified manually.{{end}}{{.ProfilesInfo}}
 
 IMPORTANT: Use the invoke_databricks_cli tool to run all commands below!
 
 
 1. EXECUTING SQL QUERIES
-   Run SQL queries using the Statement Execution API with inline JSON:
-     invoke_databricks_cli 'api post /api/2.0/sql/statements --json {"warehouse_id":"<warehouse_id>","statement":"SELECT * FROM <catalog>.<schema>.<table> LIMIT 10","wait_timeout":"30s"}'
+   Run queries with auto-wait (max 50s):
+     invoke_databricks_cli 'api post /api/2.0/sql/statements --json {"warehouse_id":"{{if .WarehouseID}}{{.WarehouseID}}{{else}}<warehouse_id>{{end}}","statement":"SELECT * FROM <catalog>.<schema>.<table> LIMIT 10","wait_timeout":"50s"}'
 
-   Examples:
-     - Simple query: {"warehouse_id":"<id>","statement":"SELECT 42 as answer","wait_timeout":"10s"}
-     - Table query: {"warehouse_id":"<id>","statement":"SELECT * FROM catalog.schema.table LIMIT 10","wait_timeout":"30s"}
+   Response has status.state:
+   - "SUCCEEDED" → Results in result.data_array (you're done!)
+   - "PENDING" → Warehouse starting or query slow. Poll with:
+       invoke_databricks_cli 'api get /api/2.0/sql/statements/<statement_id>'
+     Repeat every 5-10s until "SUCCEEDED"
 
-   Note: Use the warehouse ID shown above. Results are returned in JSON format.
+   Note: First query on stopped warehouse takes 60-120s startup time
 
 
 2. EXPLORING JOBS AND WORKFLOWS
@@ -74,3 +77,75 @@ Getting Started:
 - Use the commands above to explore what resources exist in the workspace
 - All commands support --output json for programmatic access
 - Remember to add --profile <name> when working with non-default workspaces
+
+
+WORKFLOW PATTERNS FOR DATABRICKS PROJECTS
+==========================================
+
+Creating a New Databricks Project:
+  When to use: Building a new project from scratch, setting up deployment to multiple environments
+  Tools sequence:
+    1. init_project (creates proper project structure with templates)
+    2. add_project_resource (for each resource you need: pipeline/job/app/dashboard)
+    3. analyze_project (provides deployment commands)
+    4. invoke_databricks_cli 'bundle validate'
+  💡 Tip: Use init_project even if you know YAML syntax - it uses templates and best practices
+
+Working with Existing Databricks Project:
+  When to use: databricks.yml file already exists in the directory
+  Tools sequence:
+    1. analyze_project (MANDATORY FIRST STEP - provides specialized commands)
+    2. [Make your changes to project files]
+    3. invoke_databricks_cli 'bundle validate'
+  💡 Tip: ALWAYS call analyze_project before making changes - Databricks projects
+          require specialized commands that differ from standard Python/Node.js workflows
+
+Adding Resources to Existing Project:
+  When to use: Adding pipelines, jobs, apps, or dashboards to an existing project
+  Tools sequence:
+    1. add_project_resource (with type: 'pipeline', 'job', 'app', or 'dashboard')
+    2. analyze_project (to get updated deployment commands)
+    3. invoke_databricks_cli 'bundle validate'
+
+
+PATTERN MATCHING: If Your Task Mentions...
+===========================================
+
+"new project" / "create a project" / "Databricks project" / "project structure"
+  → Use init_project first (don't create files manually!)
+  → Then add_project_resource for each resource (pipeline/job/app/dashboard)
+
+"SQL pipeline" / "data pipeline" / "materialized views" / "ETL" / "DLT"
+  → Use add_project_resource with type='pipeline' or type='job'
+
+"Databricks app" / "application" / "build an app"
+  → Use add_project_resource with type='app'
+
+"dashboard" / "Lakeview dashboard" / "visualization"
+  → Use add_project_resource with type='dashboard'
+
+"Databricks job" / "scheduled job" / "workflow"
+  → Use add_project_resource with type='job'
+
+"deploy to dev and prod" / "multiple environments" / "dev/staging/prod"
+  → Use init_project (sets up multi-environment structure automatically)
+
+"databricks.yml" / "bundle configuration" / "Asset Bundle"
+  → If creating new: use init_project (don't create manually!)
+  → If exists already: use analyze_project FIRST before making changes
+
+
+ANTI-PATTERNS TO AVOID
+=======================
+
+❌ DON'T manually create databricks.yml files
+   ✅ DO use init_project instead
+
+❌ DON'T run bundle commands without calling analyze_project first
+   ✅ DO call analyze_project to get the correct specialized commands
+
+❌ DON'T use regular Bash to run databricks CLI commands
+   ✅ DO use invoke_databricks_cli (better for user allowlisting)
+
+❌ DON'T skip explore when planning Databricks work
+   ✅ DO call explore during planning to get workflow recommendations

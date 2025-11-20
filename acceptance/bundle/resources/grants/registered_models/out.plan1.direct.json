@@ -9,7 +9,7 @@
       ],
       "action": "create",
       "new_state": {
-        "config": {
+        "value": {
           "catalog_name": "main",
           "comment": "mycomment",
           "name": "mymodel",
@@ -26,7 +26,7 @@
       ],
       "action": "create",
       "new_state": {
-        "config": {
+        "value": {
           "securable_type": "function",
           "full_name": "",
           "grants": [
@@ -46,7 +46,7 @@
     "resources.schemas.my_schema": {
       "action": "create",
       "new_state": {
-        "config": {
+        "value": {
           "catalog_name": "main",
           "name": "myschema_[UNIQUE_NAME]"
         }

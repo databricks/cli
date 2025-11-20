@@ -1,0 +1,22 @@
+bundle:
+  name: no-git-provider-$UNIQUE_NAME
+
+workspace:
+  root_path: ~/.bundle/$UNIQUE_NAME
+
+resources:
+  jobs:
+    foo:
+      name: foo-$UNIQUE_NAME
+      git_source:
+        git_url: https://github.com/databricks/cli.git
+        git_branch: main
+
+      tasks:
+        - task_key: test_task
+          notebook_task:
+            notebook_path: some/test/notebook.py
+          new_cluster:
+            num_workers: 1
+            spark_version: $DEFAULT_SPARK_VERSION
+            node_type_id: $NODE_TYPE_ID

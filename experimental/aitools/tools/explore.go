@@ -11,13 +11,14 @@ import (
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/exec"
+	"github.com/databricks/cli/libs/log"
 )
 
 // ExploreTool provides guidance on exploring Databricks workspaces and resources.
 var ExploreTool = Tool{
 	Definition: ToolDefinition{
 		Name:        "explore",
-		Description: "CALL THIS FIRST when user mentions a workspace by name or asks about workspace resources. Shows available workspaces/profiles, default warehouse, and provides guidance on exploring jobs, clusters, catalogs, and other Databricks resources. Use this to discover what's available before running CLI commands.",
+		Description: "**REQUIRED DURING PLAN MODE** - Call this FIRST when planning ANY Databricks work. Use this to discover available workspaces, warehouses, and get workflow recommendations for your specific task. Even if you're just reading an assignment document, call this first. Especially important when task involves: creating Databricks projects/apps/pipelines/jobs, SQL pipelines or data transformation workflows, deploying code to multiple environments (dev/prod), or working with databricks.yml files. You DON'T need a workspace name - call this when starting ANY Databricks planning to understand workspace capabilities and recommended tooling before you create your plan.",
 		InputSchema: map[string]any{
 			"type":       "object",
 			"properties": map[string]any{},
@@ -26,7 +27,8 @@ var ExploreTool = Tool{
 	Handler: func(ctx context.Context, params map[string]any) (string, error) {
 		warehouse, err := GetDefaultWarehouse(ctx)
 		if err != nil {
-			return "", fmt.Errorf("failed to get default warehouse: %w\n\nTo use data exploration features, you need a SQL warehouse. You can create one in the Databricks workspace UI under 'SQL Warehouses'", err)
+			log.Debugf(ctx, "Failed to get default warehouse (non-fatal): %v", err)
+			warehouse = nil
 		}
 
 		currentProfile := getCurrentProfile(ctx)
@@ -43,22 +45,26 @@ type warehouse struct {
 }
 
 // GetDefaultWarehouse finds a suitable SQL warehouse for queries.
-// It prefers RUNNING warehouses, then falls back to STOPPED ones (which auto-start).
+// It filters out warehouses the user cannot access and prefers RUNNING warehouses,
+// then falls back to STOPPED ones (which auto-start).
 func GetDefaultWarehouse(ctx context.Context) (*warehouse, error) {
 	executor, err := exec.NewCommandExecutor("")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create command executor: %w", err)
 	}
 
-	output, err := executor.Exec(ctx, fmt.Sprintf(`"%s" warehouses list --output json`, GetCLIPath()))
+	output, err := executor.Exec(ctx, fmt.Sprintf(`"%s" api get "/api/2.0/sql/warehouses?skip_cannot_use=true" --output json`, GetCLIPath()))
 	if err != nil {
 		return nil, fmt.Errorf("failed to list warehouses: %w\nOutput: %s", err, output)
 	}
 
-	var warehouses []warehouse
-	if err := json.Unmarshal(output, &warehouses); err != nil {
+	var response struct {
+		Warehouses []warehouse `json:"warehouses"`
+	}
+	if err := json.Unmarshal(output, &response); err != nil {
 		return nil, fmt.Errorf("failed to parse warehouses: %w", err)
 	}
+	warehouses := response.Warehouses
 
 	if len(warehouses) == 0 {
 		return nil, errors.New("no SQL warehouses found in workspace")
@@ -143,10 +149,18 @@ func generateExploreGuidance(warehouse *warehouse, currentProfile string, profil
 		profilesInfo += "    invoke_databricks_cli '--profile prod catalogs list'\n"
 	}
 
+	// Handle warehouse information (may be nil if lookup failed)
+	warehouseName := ""
+	warehouseID := ""
+	if warehouse != nil {
+		warehouseName = warehouse.Name
+		warehouseID = warehouse.ID
+	}
+
 	return prompts.MustExecuteTemplate("explore.tmpl", map[string]string{
 		"WorkspaceInfo": workspaceInfo,
-		"WarehouseName": warehouse.Name,
-		"WarehouseID":   warehouse.ID,
+		"WarehouseName": warehouseName,
+		"WarehouseID":   warehouseID,
 		"ProfilesInfo":  profilesInfo,
 	})
 }

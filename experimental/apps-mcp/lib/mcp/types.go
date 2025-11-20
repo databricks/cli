@@ -3,6 +3,7 @@ package mcp
 
 import (
 	"context"
+	"fmt"
 )
 
 // Implementation represents server or client implementation details.
@@ -41,3 +42,16 @@ type ToolHandler func(context.Context, *CallToolRequest) (*CallToolResult, error
 
 // ToolHandlerFor is a typed handler for tool calls with automatic marshaling.
 type ToolHandlerFor[In, Out any] func(context.Context, *CallToolRequest, In) (*CallToolResult, Out, error)
+
+func CreateNewTextContentResult(text string) *CallToolResult {
+	return &CallToolResult{
+		Content: []Content{&TextContent{Type: "text", Text: text}},
+	}
+}
+
+func CreateNewTextContentResultError(err error) *CallToolResult {
+	return &CallToolResult{
+		Content: []Content{&TextContent{Type: "text", Text: fmt.Sprintf("Error: %v", err)}},
+		IsError: true,
+	}
+}

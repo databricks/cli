@@ -1,4 +1,4 @@
-FROM alpine:3.19 as builder
+FROM alpine:3.22 as builder
 
 RUN ["apk", "add", "jq"]
 RUN ["apk", "add", "bash"]
@@ -13,7 +13,7 @@ ARG ARCH
 RUN /build/docker/setup.sh
 
 # Start from a fresh base image, to remove any build artifacts and scripts.
-FROM alpine:3.19
+FROM alpine:3.22
 
 ENV DATABRICKS_TF_EXEC_PATH "/app/bin/terraform"
 ENV DATABRICKS_TF_CLI_CONFIG_FILE "/app/config/config.tfrc"
