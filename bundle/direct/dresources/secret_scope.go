@@ -76,6 +76,8 @@ func (r *ResourceSecretScope) DoCreate(ctx context.Context, state *SecretScopeCo
 	return state.Scope, nil
 }
 
+// TODO(shreyas): Remove the DoUpdate method here. Make the framework smart enough to not allow / error
+// on update triggers when a DoUpdate method is not implemented.
 func (r *ResourceSecretScope) DoUpdate(ctx context.Context, id string, state *SecretScopeConfig) error {
 	// Secret scopes themselves are immutable. All fields are set to a recreate trigger.
 	return nil
