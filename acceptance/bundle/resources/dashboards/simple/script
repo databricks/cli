@@ -19,5 +19,5 @@ echo "$DASHBOARD_ID:DASHBOARD_ID" >> ACC_REPLS
 
 trace $CLI lakeview get $DASHBOARD_ID | jq '{lifecycle_state, parent_path, path, serialized_dashboard: (.serialized_dashboard | fromjson | {pages: (.pages | map({name, displayName, pageType}))})}'
 
-title "Verify not drift right after deploy\n"
-trace $CLI bundle plan > out.plan.$DATABRICKS_BUNDLE_ENGINE.txt
+# Verify that there is no drift right after deploy
+$CLI bundle plan > out.plan.$DATABRICKS_BUNDLE_ENGINE.txt
