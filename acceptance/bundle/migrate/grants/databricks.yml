@@ -7,10 +7,10 @@ resources:
       catalog_name: main
       name: schema_grants
       grants:
-      - principal: deco-test-user@databricks.com
-        privileges:
-          - CREATE_TABLE
-          - USE_SCHEMA
+        - principal: deco-test-user@databricks.com
+          privileges:
+            - CREATE_TABLE
+            - USE_SCHEMA
 
   volumes:
     my_volume:
