@@ -1,6 +1,9 @@
 package mcp
 
 import (
+	"errors"
+	"os"
+
 	"github.com/databricks/cli/cmd/root"
 	mcplib "github.com/databricks/cli/experimental/apps-mcp/lib"
 	"github.com/databricks/cli/experimental/apps-mcp/lib/server"
@@ -37,6 +40,13 @@ The server communicates via stdio using the Model Context Protocol.`,
 		PreRunE: root.MustWorkspaceClient,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
+
+			if warehouseID == "" {
+				warehouseID = os.Getenv("DATABRICKS_WAREHOUSE_ID")
+				if warehouseID == "" {
+					return errors.New("DATABRICKS_WAREHOUSE_ID environment variable is required")
+				}
+			}
 
 			w := cmdctx.WorkspaceClient(ctx)
 

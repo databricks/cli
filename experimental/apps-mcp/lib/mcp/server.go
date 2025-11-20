@@ -43,6 +43,18 @@ func (s *Server) AddTool(tool *Tool, handler ToolHandler) {
 	}
 }
 
+// GetTools returns all registered tools.
+func (s *Server) GetTools() []*Tool {
+	s.toolsMu.RLock()
+	defer s.toolsMu.RUnlock()
+
+	tools := make([]*Tool, 0, len(s.tools))
+	for _, st := range s.tools {
+		tools = append(tools, st.tool)
+	}
+	return tools
+}
+
 // Run starts the MCP server with the given transport.
 func (s *Server) Run(ctx context.Context, transport *StdioTransport) error {
 	s.transport = transport

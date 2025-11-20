@@ -1,0 +1,7 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace errcode $CLI bundle destroy --auto-approve > out.destroy.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1
+}
+trap cleanup EXIT
+trace errcode $CLI bundle deploy --force-lock > out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1

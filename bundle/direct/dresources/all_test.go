@@ -444,8 +444,8 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 
 	ctx := context.Background()
 
-	// initial DoRefresh() cannot find the resource
-	remote, err := adapter.DoRefresh(ctx, "1234")
+	// initial DoRead() cannot find the resource
+	remote, err := adapter.DoRead(ctx, "1234")
 	require.Nil(t, remote)
 	require.Error(t, err)
 	// TODO: if errors.Is(err, databricks.ErrResourceDoesNotExist) {... }
@@ -454,7 +454,7 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	require.NoError(t, err, "DoCreate failed state=%v", newState)
 	require.NotEmpty(t, createdID, "ID returned from DoCreate was empty")
 
-	remote, err = adapter.DoRefresh(ctx, createdID)
+	remote, err = adapter.DoRead(ctx, createdID)
 	require.NoError(t, err)
 	require.NotNil(t, remote)
 
@@ -543,7 +543,7 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 
 	deleteIsNoop := strings.HasSuffix(group, "permissions") || strings.HasSuffix(group, "grants")
 
-	remoteAfterDelete, err := adapter.DoRefresh(ctx, createdID)
+	remoteAfterDelete, err := adapter.DoRead(ctx, createdID)
 	if deleteIsNoop {
 		require.NoError(t, err)
 	} else {
