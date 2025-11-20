@@ -9,10 +9,6 @@ resources:
         - task_key: "main"
           notebook_task:
             notebook_path: "./notebook.py"
-            # permissions dont work yet
-            #permissions:
-            #  - level: CAN_VIEW
-            #    user_name: viewer@databricks.com
   volumes:
     test_volume:
       catalog_name: "mycat"
@@ -40,9 +36,6 @@ resources:
       libraries:
         - notebook:
             path: "./pipeline.py"
-            #permissions:
-            #  - level: CAN_MANAGE
-            #    user_name: manager@databricks.com
 
 targets:
   dev:
