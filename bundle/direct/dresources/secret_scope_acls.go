@@ -64,7 +64,7 @@ func PrepareSecretScopeAclsInputConfig(inputConfig any, node string) (*structvar
 	})
 
 	return &structvar.StructVar{
-		Config: &SecretScopeAclsState{
+		Value: &SecretScopeAclsState{
 			ScopeName: "", // Always a reference, defined in Refs below
 			Acls:      acls,
 		},
