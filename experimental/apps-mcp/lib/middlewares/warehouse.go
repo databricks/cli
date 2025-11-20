@@ -7,6 +7,7 @@ import (
 	"net/url"
 
 	"github.com/databricks/cli/experimental/apps-mcp/lib/session"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/databricks-sdk-go/httpclient"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 )
@@ -30,6 +31,21 @@ func GetWarehouseID(ctx context.Context) (string, error) {
 }
 
 func getDefaultWarehouse(ctx context.Context) (*sql.EndpointInfo, error) {
+	// first resolve DATABRICKS_WAREHOUSE_ID env variable
+	warehouseID := env.Get(ctx, "DATABRICKS_WAREHOUSE_ID")
+	if warehouseID != "" {
+		w := MustGetDatabricksClient(ctx)
+		warehouse, err := w.Warehouses.Get(ctx, sql.GetWarehouseRequest{
+			Id: warehouseID,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("get warehouse: %w", err)
+		}
+		return &sql.EndpointInfo{
+			Id: warehouse.Id,
+		}, nil
+	}
+
 	apiClient, err := MustGetApiClient(ctx)
 	if err != nil {
 		return nil, err
