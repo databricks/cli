@@ -17,7 +17,7 @@
     "@trpc/server": "^11.6.0",
     "@types/express": "^5.0.3",
     "cors": "2.8.5",
-    "dotenv": "16.4.7",
+    "dotenv": "^16.4.7",
     "drizzle-orm": "0.40.0",
     "express": "^5.1.0",
     "pg": "8.14.0",
