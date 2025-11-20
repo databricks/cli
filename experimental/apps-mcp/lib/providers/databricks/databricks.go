@@ -31,6 +31,7 @@ const (
 	MaxMaxRows         = 10000
 	PollInterval       = 2 * time.Second
 	MaxRowDisplayLimit = 100
+	SessionClientKey   = "databricks_client"
 )
 
 // ============================================================================
@@ -435,9 +436,9 @@ type DatabricksRestClient struct {
 func NewDatabricksRestClient(ctx context.Context, cfg *mcp.Config) (*DatabricksRestClient, error) {
 	client := middlewares.MustGetDatabricksClient(ctx)
 
-	warehouseID := os.Getenv("DATABRICKS_WAREHOUSE_ID")
-	if warehouseID == "" {
-		return nil, errors.New("DATABRICKS_WAREHOUSE_ID not configured")
+	warehouseID, err := middlewares.GetWarehouseID(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get warehouse ID: %w", err)
 	}
 
 	return &DatabricksRestClient{
@@ -858,12 +859,10 @@ func (c *DatabricksRestClient) listTablesViaInformationSchema(ctx context.Contex
 func (c *DatabricksRestClient) listTablesImpl(ctx context.Context, catalogName, schemaName string, excludeInaccessible bool) ([]TableInfoResponse, error) {
 	var tables []TableInfoResponse
 
-	w := middlewares.MustGetDatabricksClient(ctx)
-	clientCfg, err := config.HTTPClientConfigFromConfig(w.Config)
+	apiClient, err := middlewares.MustGetApiClient(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create HTTP client config: %w", err)
+		return nil, err
 	}
-	apiClient := httpclient.NewApiClient(clientCfg)
 
 	nextPageToken := ""
 	for {

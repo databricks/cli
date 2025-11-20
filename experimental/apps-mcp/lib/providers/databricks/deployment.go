@@ -8,7 +8,7 @@ import (
 	"time"
 
 	mcp "github.com/databricks/cli/experimental/apps-mcp/lib"
-	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/experimental/apps-mcp/lib/middlewares"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 )
@@ -21,7 +21,7 @@ func GetSourcePath(app *apps.App) string {
 }
 
 func GetAppInfo(ctx context.Context, cfg *mcp.Config, name string) (*apps.App, error) {
-	w := cmdctx.WorkspaceClient(ctx)
+	w := middlewares.MustGetDatabricksClient(ctx)
 	app, err := w.Apps.GetByName(ctx, name)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get app info: %w", err)
@@ -31,7 +31,7 @@ func GetAppInfo(ctx context.Context, cfg *mcp.Config, name string) (*apps.App, e
 }
 
 func CreateApp(ctx context.Context, cfg *mcp.Config, createAppRequest *apps.CreateAppRequest) (*apps.App, error) {
-	w := cmdctx.WorkspaceClient(ctx)
+	w := middlewares.MustGetDatabricksClient(ctx)
 
 	wait, err := w.Apps.Create(ctx, *createAppRequest)
 	if err != nil {
@@ -47,7 +47,7 @@ func CreateApp(ctx context.Context, cfg *mcp.Config, createAppRequest *apps.Crea
 }
 
 func GetUserInfo(ctx context.Context, cfg *mcp.Config) (*iam.User, error) {
-	w := cmdctx.WorkspaceClient(ctx)
+	w := middlewares.MustGetDatabricksClient(ctx)
 	user, err := w.CurrentUser.Me(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user info: %w", err)
@@ -78,7 +78,7 @@ func SyncWorkspace(appInfo *apps.App, sourceDir string) error {
 }
 
 func DeployApp(ctx context.Context, cfg *mcp.Config, appInfo *apps.App) error {
-	w := cmdctx.WorkspaceClient(ctx)
+	w := middlewares.MustGetDatabricksClient(ctx)
 	sourcePath := GetSourcePath(appInfo)
 
 	req := apps.CreateAppDeploymentRequest{
@@ -102,8 +102,11 @@ func DeployApp(ctx context.Context, cfg *mcp.Config, appInfo *apps.App) error {
 	return nil
 }
 
-func ResourcesFromEnv(cfg *mcp.Config) (*apps.AppResource, error) {
-	warehouseID := os.Getenv("DATABRICKS_WAREHOUSE_ID")
+func ResourcesFromEnv(ctx context.Context) (*apps.AppResource, error) {
+	warehouseID, err := middlewares.GetWarehouseID(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get warehouse ID: %w", err)
+	}
 
 	return &apps.AppResource{
 		Name:        "base",
