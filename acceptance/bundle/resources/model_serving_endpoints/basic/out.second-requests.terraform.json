@@ -32,7 +32,7 @@
       },
       {
         "permission_level": "CAN_VIEW",
-        "user_name": "[TEST_USER_EMAIL]"
+        "user_name": "deco-test-user@databricks.com"
       }
     ]
   }

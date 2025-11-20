@@ -3,15 +3,15 @@
 [
   {
     "level": "CAN_READ",
-    "user_name": "[TEST_USER_EMAIL]"
+    "user_name": "deco-test-user@databricks.com"
   },
   {
-    "group_name": "[TEST_GROUP_NAME]",
+    "group_name": "deco-test-group",
     "level": "CAN_MANAGE"
   },
   {
     "level": "CAN_MANAGE",
-    "service_principal_name": "[TEST_SP_APPLICATION_ID]"
+    "service_principal_name": "[UUID]"
   },
   {
     "level": "CAN_MANAGE",

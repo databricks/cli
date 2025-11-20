@@ -1,11 +1,7 @@
 if [ -z "$CLOUD_ENV" ]; then
-    export TEST_USER_EMAIL="viewer@databricks.com"
-    export TEST_GROUP_NAME="data-team"
-    export TEST_SP_APPLICATION_ID="f37d18cd-98a8-4db5-8112-12dd0a6bfe38"
-
-    echo "$TEST_USER_EMAIL:TEST_USER_EMAIL" >> ACC_REPLS
-    echo "$TEST_GROUP_NAME:TEST_GROUP_NAME" >> ACC_REPLS
-    echo "$TEST_SP_APPLICATION_ID:TEST_SP_APPLICATION_ID" >> ACC_REPLS
+    export TEST_USER_EMAIL="deco-test-user@databricks.com"
+    export TEST_GROUP_NAME="deco-test-group"
+    export TEST_SP_APPLICATION_ID="b16c7331-5226-468e-b082-8f5a8046e7b0"
 fi
 
 envsubst < databricks.yml.tmpl > databricks.yml
@@ -13,7 +9,7 @@ envsubst < databricks.yml.tmpl > databricks.yml
 trace $CLI bundle validate -o json | jq .resources.dashboards.foo.permissions
 rm out.requests.txt
 
-$CLI bundle debug plan > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+$CLI bundle plan --output json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 
 rm out.requests.txt
 trace $CLI bundle deploy

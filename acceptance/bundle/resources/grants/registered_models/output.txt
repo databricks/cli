@@ -15,7 +15,7 @@ Deployment complete!
 {
   "privilege_assignments": [
     {
-      "principal": "[TEST_USER_EMAIL]",
+      "principal": "deco-test-user@databricks.com",
       "privileges": [
         "APPLY_TAG"
       ]

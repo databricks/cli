@@ -8,7 +8,7 @@
           "APPLY_TAG",
           "CREATE_TABLE"
         ],
-        "principal": "[TEST_USER_EMAIL]",
+        "principal": "deco-test-user@databricks.com",
         "remove": [
           "ALL_PRIVILEGES"
         ]

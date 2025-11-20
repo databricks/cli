@@ -8,7 +8,7 @@
           "CREATE_TABLE",
           "USE_SCHEMA"
         ],
-        "principal": "[TEST_USER_EMAIL]"
+        "principal": "deco-test-user@databricks.com"
       }
     ]
   }

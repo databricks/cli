@@ -13,7 +13,7 @@ Deployment complete!
 {
   "privilege_assignments": [
     {
-      "principal": "[TEST_USER_EMAIL]",
+      "principal": "deco-test-user@databricks.com",
       "privileges": [
         "READ_VOLUME",
         "WRITE_VOLUME"
@@ -36,7 +36,7 @@ Deployment complete!
 {
   "privilege_assignments": [
     {
-      "principal": "[TEST_USER_EMAIL]",
+      "principal": "deco-test-user@databricks.com",
       "privileges": [
         "MANAGE",
         "READ_VOLUME"

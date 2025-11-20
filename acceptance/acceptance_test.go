@@ -148,9 +148,6 @@ func TestInprocessMode(t *testing.T) {
 // Configure replacements for environment variables we read from test environments.
 func setReplsForTestEnvVars(t *testing.T, repls *testdiff.ReplacementsContext) {
 	envVars := []string{
-		"TEST_USER_EMAIL",
-		"TEST_GROUP_NAME",
-		"TEST_SP_APPLICATION_ID",
 		"TEST_DEFAULT_WAREHOUSE_ID",
 		"TEST_INSTANCE_POOL_ID",
 	}

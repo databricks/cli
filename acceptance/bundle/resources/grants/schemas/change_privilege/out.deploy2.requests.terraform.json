@@ -7,7 +7,7 @@
         "add": [
           "APPLY_TAG"
         ],
-        "principal": "[TEST_USER_EMAIL]",
+        "principal": "deco-test-user@databricks.com",
         "remove": [
           "USE_SCHEMA"
         ]

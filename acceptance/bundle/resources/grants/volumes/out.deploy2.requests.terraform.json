@@ -7,7 +7,7 @@
         "add": [
           "MANAGE"
         ],
-        "principal": "[TEST_USER_EMAIL]",
+        "principal": "deco-test-user@databricks.com",
         "remove": [
           "WRITE_VOLUME"
         ]
