@@ -83,7 +83,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 		if at == deployplan.ActionTypeDelete {
 			if migrateMode {
 				logdiag.LogError(ctx, fmt.Errorf("%s: Unexpected delete action during migration", errorPrefix))
-				return true
+				return false
 			}
 			err = d.Destroy(ctx, &b.StateDB)
 			if err != nil {
@@ -106,7 +106,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 			}
 
 			if migrateMode {
-				// In migration mode we're going through deploy so that we have fully resolved config snapshots stored
+				// In migration mode we're reading resources in DAG order so that we have fully resolved config snapshots stored
 				dbentry, hasEntry := b.StateDB.GetResourceEntry(resourceKey)
 				if !hasEntry || dbentry.ID == "" {
 					logdiag.LogError(ctx, fmt.Errorf("state entry not found for %q", resourceKey))
