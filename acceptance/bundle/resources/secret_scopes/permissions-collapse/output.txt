@@ -1,0 +1,33 @@
+
+=== create secret scope with duplicate permissions
+>>> [CLI] bundle plan
+create secret_scopes.my_scope
+
+Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/secret-scope-collapse-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] secrets list-scopes -o json
+{
+  "backend_type": "DATABRICKS",
+  "name": "test-scope-collapse-[UNIQUE_NAME]"
+}
+
+=== verify permissions are collapsed correctly
+>>> [CLI] secrets list-acls test-scope-collapse-[UNIQUE_NAME]
+{"permission":"READ","principal":"[USERNAME]"}
+{"permission":"WRITE","principal":"deco-test-user@databricks.com"}
+{"permission":"WRITE","principal":"users"}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete secret_scope my_scope
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/secret-scope-collapse-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!

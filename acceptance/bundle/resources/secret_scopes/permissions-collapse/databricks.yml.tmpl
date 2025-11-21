@@ -1,0 +1,22 @@
+bundle:
+  name: secret-scope-collapse-$UNIQUE_NAME
+
+resources:
+  secret_scopes:
+    my_scope:
+      name: $SECRET_SCOPE_NAME
+      backend_type: "DATABRICKS"
+      permissions:
+        # Current user gets READ (should be overridden to MANAGE by fixup in direct mode)
+        - user_name: ${workspace.current_user.userName}
+          level: READ
+        # Test user gets both READ and WRITE (should collapse to WRITE)
+        - user_name: deco-test-user@databricks.com
+          level: READ
+        - user_name: deco-test-user@databricks.com
+          level: WRITE
+        # Group gets both WRITE and READ (should collapse to WRITE)
+        - group_name: users
+          level: READ
+        - group_name: users
+          level: WRITE
