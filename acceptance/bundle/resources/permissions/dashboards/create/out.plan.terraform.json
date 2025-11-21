@@ -2,6 +2,9 @@
   "plan": {
     "resources.dashboards.foo": {
       "action": "create"
+    },
+    "resources.dashboards.foo.permissions": {
+      "action": "create"
     }
   }
 }
