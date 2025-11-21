@@ -93,7 +93,7 @@ func newCreatePolicy() *cobra.Command {
   STORAGE_CREDENTIAL,
   TABLE,
   VOLUME,
-].`)
+]`)
 	// TODO: complex arg: row_filter
 	cmd.Flags().StringVar(&createPolicyReq.PolicyInfo.WhenCondition, "when-condition", createPolicyReq.PolicyInfo.WhenCondition, `Optional condition when the policy should take effect.`)
 
@@ -432,7 +432,7 @@ func newUpdatePolicy() *cobra.Command {
   STORAGE_CREDENTIAL,
   TABLE,
   VOLUME,
-].`)
+]`)
 	// TODO: complex arg: row_filter
 	cmd.Flags().StringVar(&updatePolicyReq.PolicyInfo.WhenCondition, "when-condition", updatePolicyReq.PolicyInfo.WhenCondition, `Optional condition when the policy should take effect.`)
 
