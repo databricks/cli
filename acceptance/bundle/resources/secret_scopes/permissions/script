@@ -17,7 +17,7 @@ bundle:
 resources:
   secret_scopes:
     my_scope:
-      name: $SECRET_SCOPE_NAME
+      name: \$SECRET_SCOPE_NAME
       backend_type: "DATABRICKS"
       permissions:
         - service_principal_name: $TEST_SP_APPLICATION_ID
@@ -52,7 +52,7 @@ bundle:
 resources:
   secret_scopes:
     my_scope:
-      name: $SECRET_SCOPE_NAME
+      name: \$SECRET_SCOPE_NAME
       backend_type: "DATABRICKS"
       permissions:
         - user_name: deco-test-user@databricks.com
