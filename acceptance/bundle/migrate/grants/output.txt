@@ -7,20 +7,23 @@ Deployment complete!
 
 >>> [CLI] bundle deployment migrate
 Migrated 6 resources to direct engine state file: [TEST_TMP_DIR]/.databricks/bundle/default/resources.json
-Validate the migration by running "bundle debug plan", there should be no actions planned.
+
+Validate the migration by running "bundle plan", there should be no actions planned.
 
 The state file is not synchronized to the workspace yet. To do that and finalize the migration, run "bundle deploy".
 
+To undo the migration, remove [TEST_TMP_DIR]/.databricks/bundle/default/resources.json and rename [TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfstate.backup to [TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfstate
+
 
 >>> DATABRICKS_BUNDLE_ENGINE=terraform musterr [CLI] bundle plan
-Error: Required engine "terraform" does not match present state files. Set required engine via "DATABRICKS_BUNDLE_ENGINE" env var.
+Error: Required engine "terraform" does not match present state files. Clear "DATABRICKS_BUNDLE_ENGINE" env var to use engine appropriate for the state.
 
 Available state files:
 - [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=8 lineage="[UUID]"
 
 
 >>> DATABRICKS_BUNDLE_ENGINE=terraform musterr [CLI] bundle deploy
-Error: Required engine "terraform" does not match present state files. Set required engine via "DATABRICKS_BUNDLE_ENGINE" env var.
+Error: Required engine "terraform" does not match present state files. Clear "DATABRICKS_BUNDLE_ENGINE" env var to use engine appropriate for the state.
 
 Available state files:
 - [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=8 lineage="[UUID]"
