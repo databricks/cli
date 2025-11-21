@@ -1,7 +1,5 @@
 if [ -z "$CLOUD_ENV" ]; then
     export TEST_USER_EMAIL="deco-test-user@databricks.com"
-    export TEST_GROUP_NAME="deco-test-group"
-    export TEST_SP_APPLICATION_ID="b16c7331-5226-468e-b082-8f5a8046e7b0"
 fi
 
 envsubst < databricks.yml.tmpl > databricks.yml

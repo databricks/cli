@@ -27,16 +27,8 @@
               "user_name": "deco-test-user@databricks.com"
             },
             {
-              "group_name": "deco-test-group",
-              "permission_level": "CAN_MANAGE"
-            },
-            {
               "permission_level": "CAN_MANAGE",
-              "service_principal_name": "[UUID]"
-            },
-            {
-              "permission_level": "CAN_MANAGE",
-              "user_name": "[USERNAME]"
+              "service_principal_name": "[USERNAME]"
             }
           ]
         },
