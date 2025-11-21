@@ -63,7 +63,7 @@ func newGetWorkspaceAccessDetail() *cobra.Command {
 	cmd.Use = "get-workspace-access-detail WORKSPACE_ID PRINCIPAL_ID"
 	cmd.Short = `Get workspace access details for a principal.`
 	cmd.Long = `Get workspace access details for a principal.
-  
+
   Returns the access details for a principal in a workspace. Allows for checking
   access details for any provisioned principal (user, service principal, or
   group) in a workspace. * Provisioned principal here refers to one that has
@@ -138,7 +138,7 @@ func newResolveGroup() *cobra.Command {
 	cmd.Use = "resolve-group EXTERNAL_ID"
 	cmd.Short = `Resolve an external group in the Databricks account.`
 	cmd.Long = `Resolve an external group in the Databricks account.
-  
+
   Resolves a group with the given external ID from the customer's IdP. If the
   group does not exist, it will be created in the account. If the customer is
   not onboarded onto Automatic Identity Management (AIM), this will return an
@@ -221,7 +221,7 @@ func newResolveServicePrincipal() *cobra.Command {
 	cmd.Use = "resolve-service-principal EXTERNAL_ID"
 	cmd.Short = `Resolve an external service principal in the Databricks account.`
 	cmd.Long = `Resolve an external service principal in the Databricks account.
-  
+
   Resolves an SP with the given external ID from the customer's IdP. If the SP
   does not exist, it will be created. If the customer is not onboarded onto
   Automatic Identity Management (AIM), this will return an error.
@@ -303,7 +303,7 @@ func newResolveUser() *cobra.Command {
 	cmd.Use = "resolve-user EXTERNAL_ID"
 	cmd.Short = `Resolve an external user in the Databricks account.`
 	cmd.Long = `Resolve an external user in the Databricks account.
-  
+
   Resolves a user with the given external ID from the customer's IdP. If the
   user does not exist, it will be created. If the customer is not onboarded onto
   Automatic Identity Management (AIM), this will return an error.

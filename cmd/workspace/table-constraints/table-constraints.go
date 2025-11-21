@@ -23,14 +23,14 @@ func New() *cobra.Command {
 		Short: `Primary key and foreign key constraints encode relationships between fields in tables.`,
 		Long: `Primary key and foreign key constraints encode relationships between fields in
   tables.
-  
+
   Primary and foreign keys are informational only and are not enforced. Foreign
   keys must reference a primary key in another table. This primary key is the
   parent constraint of the foreign key and the table this primary key is on is
   the parent table of the foreign key. Similarly, the foreign key is the child
   constraint of its referenced primary key; the table of the foreign key is the
   child table of the primary key.
-  
+
   You can declare primary keys and foreign keys as part of the table
   specification during table creation. You can also add or drop constraints on
   existing tables.`,
@@ -73,9 +73,9 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create"
 	cmd.Short = `Create a table constraint.`
 	cmd.Long = `Create a table constraint.
-  
+
   Creates a new table constraint.
-  
+
   For the table constraint creation to succeed, the user must satisfy both of
   these conditions: - the user must have the **USE_CATALOG** privilege on the
   table's parent catalog, the **USE_SCHEMA** privilege on the table's parent
@@ -143,9 +143,9 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete FULL_NAME CONSTRAINT_NAME CASCADE"
 	cmd.Short = `Delete a table constraint.`
 	cmd.Long = `Delete a table constraint.
-  
+
   Deletes a table constraint.
-  
+
   For the table constraint deletion to succeed, the user must satisfy both of
   these conditions: - the user must have the **USE_CATALOG** privilege on the
   table's parent catalog, the **USE_SCHEMA** privilege on the table's parent

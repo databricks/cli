@@ -64,7 +64,7 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create"
 	cmd.Short = `Create a provider.`
 	cmd.Long = `Create a provider.
-  
+
   Create a provider`
 
 	cmd.Annotations = make(map[string]string)
@@ -125,7 +125,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete ID"
 	cmd.Short = `Delete provider.`
 	cmd.Long = `Delete provider.
-  
+
   Delete provider`
 
 	cmd.Annotations = make(map[string]string)
@@ -190,7 +190,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get ID"
 	cmd.Short = `Get provider.`
 	cmd.Long = `Get provider.
-  
+
   Get provider profile`
 
 	cmd.Annotations = make(map[string]string)
@@ -258,7 +258,7 @@ func newList() *cobra.Command {
 	cmd.Use = "list"
 	cmd.Short = `List providers.`
 	cmd.Long = `List providers.
-  
+
   List provider profiles for account.`
 
 	cmd.Annotations = make(map[string]string)
@@ -309,7 +309,7 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update ID"
 	cmd.Short = `Update provider.`
 	cmd.Long = `Update provider.
-  
+
   Update provider profile`
 
 	cmd.Annotations = make(map[string]string)

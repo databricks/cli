@@ -59,7 +59,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get"
 	cmd.Short = `Get the enable partner powered AI features account setting.`
 	cmd.Long = `Get the enable partner powered AI features account setting.
-  
+
   Gets the enable partner powered AI features account setting.`
 
 	cmd.Annotations = make(map[string]string)
@@ -113,7 +113,7 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update"
 	cmd.Short = `Update the enable partner powered AI features account setting.`
 	cmd.Long = `Update the enable partner powered AI features account setting.
-  
+
   Updates the enable partner powered AI features account setting.`
 
 	cmd.Annotations = make(map[string]string)

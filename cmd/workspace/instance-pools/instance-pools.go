@@ -24,7 +24,7 @@ func New() *cobra.Command {
 		Long: `Instance Pools API are used to create, edit, delete and list instance pools by
   using ready-to-use cloud instances which reduces a cluster start and
   auto-scaling times.
-  
+
   Databricks pools reduce cluster start and auto-scaling times by maintaining a
   set of idle, ready-to-use instances. When a cluster is attached to a pool,
   cluster nodes are created using the pool’s idle instances. If the pool has
@@ -33,10 +33,10 @@ func New() *cobra.Command {
   cluster releases an instance, it returns to the pool and is free for another
   cluster to use. Only clusters attached to a pool can use that pool’s idle
   instances.
-  
+
   You can specify a different pool for the driver node and worker nodes, or use
   the same pool for both.
-  
+
   Databricks does not charge DBUs while instances are idle in the pool. Instance
   provider billing does apply. See pricing.`,
 		GroupID: "compute",
@@ -99,7 +99,7 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create INSTANCE_POOL_NAME NODE_TYPE_ID"
 	cmd.Short = `Create a new instance pool.`
 	cmd.Long = `Create a new instance pool.
-  
+
   Creates a new instance pool using idle and ready-to-use cloud instances.
 
   Arguments:
@@ -188,7 +188,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete INSTANCE_POOL_ID"
 	cmd.Short = `Delete an instance pool.`
 	cmd.Long = `Delete an instance pool.
-  
+
   Deletes the instance pool permanently. The idle instances in the pool are
   terminated asynchronously.
 
@@ -291,7 +291,7 @@ func newEdit() *cobra.Command {
 	cmd.Use = "edit INSTANCE_POOL_ID INSTANCE_POOL_NAME NODE_TYPE_ID"
 	cmd.Short = `Edit an existing instance pool.`
 	cmd.Long = `Edit an existing instance pool.
-  
+
   Modifies the configuration of an existing instance pool.
 
   Arguments:
@@ -381,7 +381,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get INSTANCE_POOL_ID"
 	cmd.Short = `Get instance pool information.`
 	cmd.Long = `Get instance pool information.
-  
+
   Retrieve the information for an instance pool based on its identifier.
 
   Arguments:
@@ -449,7 +449,7 @@ func newGetPermissionLevels() *cobra.Command {
 	cmd.Use = "get-permission-levels INSTANCE_POOL_ID"
 	cmd.Short = `Get instance pool permission levels.`
 	cmd.Long = `Get instance pool permission levels.
-  
+
   Gets the permission levels that a user can have on an object.
 
   Arguments:
@@ -517,7 +517,7 @@ func newGetPermissions() *cobra.Command {
 	cmd.Use = "get-permissions INSTANCE_POOL_ID"
 	cmd.Short = `Get instance pool permissions.`
 	cmd.Long = `Get instance pool permissions.
-  
+
   Gets the permissions of an instance pool. Instance pools can inherit
   permissions from their root object.
 
@@ -583,7 +583,7 @@ func newList() *cobra.Command {
 	cmd.Use = "list"
 	cmd.Short = `List instance pool info.`
 	cmd.Long = `List instance pool info.
-  
+
   Gets a list of instance pools with their statistics.`
 
 	cmd.Annotations = make(map[string]string)
@@ -630,7 +630,7 @@ func newSetPermissions() *cobra.Command {
 	cmd.Use = "set-permissions INSTANCE_POOL_ID"
 	cmd.Short = `Set instance pool permissions.`
 	cmd.Long = `Set instance pool permissions.
-  
+
   Sets permissions on an object, replacing existing permissions if they exist.
   Deletes all direct permissions if none are specified. Objects can inherit
   permissions from their root object.
@@ -717,7 +717,7 @@ func newUpdatePermissions() *cobra.Command {
 	cmd.Use = "update-permissions INSTANCE_POOL_ID"
 	cmd.Short = `Update instance pool permissions.`
 	cmd.Long = `Update instance pool permissions.
-  
+
   Updates the permissions on an instance pool. Instance pools can inherit
   permissions from their root object.
 
