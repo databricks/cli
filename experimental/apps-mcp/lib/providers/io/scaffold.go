@@ -1,13 +1,15 @@
 package io
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
-	"os"
+	"io/fs"
 	"path/filepath"
 
 	"github.com/databricks/cli/experimental/apps-mcp/lib/templates"
+	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
 )
 
@@ -33,14 +35,19 @@ func (p *Provider) Scaffold(ctx context.Context, args *ScaffoldArgs) (*ScaffoldR
 		return nil, fmt.Errorf("invalid work directory: %w", err)
 	}
 
+	f, err := filer.NewLocalClient(workDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create filer: %w", err)
+	}
+
 	// Check if directory exists
-	if stat, err := os.Stat(workDir); err == nil {
+	if stat, err := f.Stat(ctx, "."); err == nil {
 		if !stat.IsDir() {
 			return nil, errors.New("work_dir exists but is not a directory")
 		}
 
 		// Check if empty
-		entries, err := os.ReadDir(workDir)
+		entries, err := f.ReadDir(ctx, ".")
 		if err != nil {
 			return nil, err
 		}
@@ -51,14 +58,20 @@ func (p *Provider) Scaffold(ctx context.Context, args *ScaffoldArgs) (*ScaffoldR
 
 		// Clear directory if force_rewrite
 		if args.ForceRewrite {
-			if err := os.RemoveAll(workDir); err != nil {
-				return nil, fmt.Errorf("failed to clear directory: %w", err)
+			for _, entry := range entries {
+				if err := f.Delete(ctx, entry.Name(), filer.DeleteRecursively); err != nil {
+					return nil, fmt.Errorf("failed to delete %s: %w", entry.Name(), err)
+				}
 			}
 		}
+	} else if !errors.Is(err, fs.ErrNotExist) {
+		// Some other error
+		// filer.FileDoesNotExistError implements Is(fs.ErrNotExist)
+		return nil, fmt.Errorf("failed to check work directory: %w", err)
 	}
 
 	// Create directory
-	if err := os.MkdirAll(workDir, 0o755); err != nil {
+	if err := f.Mkdir(ctx, "."); err != nil {
 		return nil, fmt.Errorf("failed to create directory: %w", err)
 	}
 
@@ -72,15 +85,8 @@ func (p *Provider) Scaffold(ctx context.Context, args *ScaffoldArgs) (*ScaffoldR
 	// Copy files
 	filesCopied := 0
 	for path, content := range files {
-		targetPath := filepath.Join(workDir, path)
-
-		// Create parent directories
-		if err := os.MkdirAll(filepath.Dir(targetPath), 0o755); err != nil {
-			return nil, fmt.Errorf("failed to create directory for %s: %w", path, err)
-		}
-
-		// Write file
-		if err := os.WriteFile(targetPath, []byte(content), 0o644); err != nil {
+		// filer.Write handles creating parent directories if requested
+		if err := f.Write(ctx, path, bytes.NewReader([]byte(content)), filer.CreateParentDirectories); err != nil {
 			return nil, fmt.Errorf("failed to write %s: %w", path, err)
 		}
 

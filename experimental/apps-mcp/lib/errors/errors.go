@@ -29,12 +29,6 @@ const (
 	CodeConfigMissing = -32101
 	CodeConfigWorkDir = -32102
 
-	// Sandbox errors (-32110 to -32119)
-	CodeSandboxFailed   = -32110
-	CodeSandboxNotFound = -32111
-	CodeSandboxExec     = -32112
-	CodeSandboxDocker   = -32113
-
 	// Databricks errors (-32120 to -32129)
 	CodeDatabricksAuth      = -32120
 	CodeDatabricksQuery     = -32121
@@ -184,20 +178,6 @@ func ConfigMissing(param string) *Error {
 // ConfigWorkDir creates an error for workspace directory issues.
 func ConfigWorkDir(message string) *Error {
 	return NewWithCode(CodeConfigWorkDir, message)
-}
-
-// Sandbox error helpers
-
-// SandboxFailed creates an error for sandbox operation failures.
-func SandboxFailed(operation, message string) *Error {
-	err := NewWithCode(CodeSandboxFailed, fmt.Sprintf("sandbox %s failed: %s", operation, message))
-	return err.WithDetail("operation", operation)
-}
-
-// SandboxDocker creates an error for Docker-related issues.
-func SandboxDocker(message string) *Error {
-	err := NewWithCode(CodeSandboxDocker, message)
-	return WithSuggestion(err, "Ensure Docker is running: docker info")
 }
 
 // Databricks error helpers
