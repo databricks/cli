@@ -95,7 +95,7 @@ func newCreate() *cobra.Command {
   PREMIUM,
   STANDARD,
   UNKNOWN,
-].`)
+]`)
 	cmd.Flags().StringVar(&createReq.PrivateAccessSettingsId, "private-access-settings-id", createReq.PrivateAccessSettingsId, `ID of the workspace's private access settings object.`)
 	cmd.Flags().StringVar(&createReq.StorageConfigurationId, "storage-configuration-id", createReq.StorageConfigurationId, `ID of the workspace's storage configuration object.`)
 	cmd.Flags().StringVar(&createReq.StorageCustomerManagedKeyId, "storage-customer-managed-key-id", createReq.StorageCustomerManagedKeyId, `The ID of the workspace's storage encryption key configuration object.`)
@@ -399,7 +399,7 @@ func newUpdate() *cobra.Command {
   NOT_PROVISIONED,
   PROVISIONING,
   RUNNING,
-].`)
+]`)
 	// TODO: complex arg: gcp_managed_network_config
 	// TODO: complex arg: gke_config
 	cmd.Flags().StringVar(&updateReq.CustomerFacingWorkspace.Location, "location", updateReq.CustomerFacingWorkspace.Location, `The Google Cloud region of the workspace data plane in your Google account (for example, us-east4).`)

@@ -763,7 +763,7 @@ func newStartUpdate() *cobra.Command {
   SCHEMA_CHANGE,
   SERVICE_UPGRADE,
   USER_ACTION,
-].`)
+]`)
 	cmd.Flags().BoolVar(&startUpdateReq.FullRefresh, "full-refresh", startUpdateReq.FullRefresh, `If true, this update will reset all tables before running.`)
 	// TODO: array: full_refresh_selection
 	// TODO: array: refresh_selection
