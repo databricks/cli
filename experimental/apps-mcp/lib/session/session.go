@@ -157,12 +157,11 @@ func (s *Session) Get(key string) (any, bool) {
 }
 
 // GetBool retrieves a value from session data and casts it to a boolean.
-func (s *Session) GetBool(key string) (bool, bool) {
-	val, ok := s.Get(key)
-	if !ok {
-		return false, ok
+func (s *Session) GetBool(key string, defaultValue bool) bool {
+	if val, ok := s.Get(key); ok {
+		return val.(bool)
 	}
-	return val.(bool), true
+	return defaultValue
 }
 
 // Set stores a value in session data.
