@@ -5,8 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"os"
 	"path"
 	"path/filepath"
+	"strings"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
@@ -126,6 +128,16 @@ func (c *copy) emitFileCopiedEvent(sourcePath, targetPath string) error {
 	return cmdio.RenderWithTemplate(c.ctx, event, "", template)
 }
 
+// hasTrailingDirSeparator checks if a path ends with a directory separator.
+func hasTrailingDirSeparator(path string) bool {
+	return strings.HasSuffix(path, string(os.PathSeparator))
+}
+
+// trimTrailingDirSeparators removes all trailing directory separators from a path.
+func trimTrailingDirSeparators(path string) string {
+	return strings.TrimRight(path, string(os.PathSeparator))
+}
+
 func newCpCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "cp SOURCE_PATH TARGET_PATH",
@@ -188,6 +200,11 @@ func newCpCommand() *cobra.Command {
 		// case 1: source path is a directory, then recursively create files at target path
 		if sourceInfo.IsDir() {
 			return c.cpDirToDir(sourcePath, targetPath)
+		}
+
+		// If target path has a trailing separator, trim it and let case 2 handle it
+		if hasTrailingDirSeparator(fullTargetPath) {
+			targetPath = trimTrailingDirSeparators(targetPath)
 		}
 
 		// case 2: source path is a file, and target path is a directory. In this case
