@@ -20,8 +20,6 @@ Deployment complete!
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
->>> [CLI] bundle plan -o json
-
 >>> [CLI] grants get schema main.schema_grants_[UNIQUE_NAME]
 {
   "privilege_assignments": [
@@ -38,10 +36,6 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 >>> [CLI] bundle plan -o json
 
 >>> print_requests.py --get //permissions
-{
-  "method": "GET",
-  "path": "/api/2.1/unity-catalog/permissions/schema/main.schema_grants_[UNIQUE_NAME]"
-}
 {
   "method": "GET",
   "path": "/api/2.1/unity-catalog/permissions/schema/main.schema_grants_[UNIQUE_NAME]"
