@@ -21,6 +21,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const backupSuffix = ".backup"
+
 func newMigrateCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "migrate",
@@ -127,7 +129,9 @@ To start using direct engine, deploy with DATABRICKS_BUNDLE_ENGINE=direct env va
 			return fmt.Errorf("renaming %s to %s: %w", tempStatePath, localPath, err)
 		}
 
-		err = os.Rename(localTerraformPath, localTerraformPath+".backup")
+		localTerraformBackupPath := localTerraformPath + backupSuffix
+
+		err = os.Rename(localTerraformPath, localTerraformBackupPath)
 		if err != nil {
 			// not fatal, since we've increased serial
 			logdiag.LogError(ctx, err)
@@ -139,10 +143,13 @@ To start using direct engine, deploy with DATABRICKS_BUNDLE_ENGINE=direct env va
 		}
 
 		cmdio.LogString(ctx, fmt.Sprintf(`Migrated %d resources to direct engine state file: %s
-Validate the migration by running "bundle debug plan", there should be no actions planned.
+
+Validate the migration by running "bundle plan", there should be no actions planned.
 
 The state file is not synchronized to the workspace yet. To do that and finalize the migration, run "bundle deploy".
-`, len(deploymentBundle.StateDB.Data.State), localPath))
+
+To undo the migration, remove %s and rename %s to %s
+`, len(deploymentBundle.StateDB.Data.State), localPath, localPath, localTerraformBackupPath, localTerraformPath))
 		return nil
 	}
 
@@ -170,7 +177,7 @@ func backupRemoteTerraformState(ctx context.Context, b *bundle.Bundle, winner *s
 		return err
 	}
 
-	err = filer.Write(ctx, remoteTF.SourcePath+".backup", bytes.NewReader(remoteTF.Content))
+	err = filer.Write(ctx, remoteTF.SourcePath+backupSuffix, bytes.NewReader(remoteTF.Content))
 	if err != nil {
 		return fmt.Errorf("saving backup of TF state to %q: %w", remoteTF.SourcePath, err)
 	}
