@@ -435,9 +435,9 @@ type DatabricksRestClient struct {
 func NewDatabricksRestClient(ctx context.Context, cfg *mcp.Config) (*DatabricksRestClient, error) {
 	client := middlewares.MustGetDatabricksClient(ctx)
 
-	warehouseID := os.Getenv("DATABRICKS_WAREHOUSE_ID")
-	if warehouseID == "" {
-		return nil, errors.New("DATABRICKS_WAREHOUSE_ID not configured")
+	warehouseID, err := middlewares.GetWarehouseID(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get warehouse ID: %w", err)
 	}
 
 	return &DatabricksRestClient{
