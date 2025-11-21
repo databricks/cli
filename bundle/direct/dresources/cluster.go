@@ -120,13 +120,27 @@ func (r *ResourceCluster) DoDelete(ctx context.Context, id string) error {
 	return r.client.Clusters.PermanentDeleteByClusterId(ctx, id)
 }
 
-func (r *ResourceCluster) ClassifyChange(change structdiff.Change, remoteState *compute.ClusterDetails, _ bool) (deployplan.ActionType, error) {
+func (r *ResourceCluster) ClassifyChange(change structdiff.Change, remoteState *compute.ClusterDetails, isLocal bool) (deployplan.ActionType, error) {
+	changedPath := change.Path.String()
+	if changedPath == "data_security_mode" && !isLocal {
+		// We do change skip here in the same way TF provider does suppress diff if the alias is used.
+		// https://github.com/databricks/terraform-provider-databricks/blob/main/clusters/resource_cluster.go#L109-L117
+		if change.Old == compute.DataSecurityModeDataSecurityModeStandard && change.New == compute.DataSecurityModeUserIsolation {
+			return deployplan.ActionTypeSkip, nil
+		}
+		if change.Old == compute.DataSecurityModeDataSecurityModeDedicated && change.New == compute.DataSecurityModeSingleUser {
+			return deployplan.ActionTypeSkip, nil
+		}
+		if change.Old == compute.DataSecurityModeDataSecurityModeAuto && (change.New == compute.DataSecurityModeSingleUser || change.New == compute.DataSecurityModeUserIsolation) {
+			return deployplan.ActionTypeSkip, nil
+		}
+	}
+
 	// Always update if the cluster is not running.
 	if remoteState.State != compute.StateRunning {
 		return deployplan.ActionTypeUpdate, nil
 	}
 
-	changedPath := change.Path.String()
 	if changedPath == "num_workers" || strings.HasPrefix(changedPath, "autoscale") {
 		return deployplan.ActionTypeResize, nil
 	}

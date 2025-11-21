@@ -22,7 +22,7 @@ func New() *cobra.Command {
 		Use:     "quality-monitor-v2",
 		Short:   `Manage data quality of UC objects (currently support schema).`,
 		Long:    `Manage data quality of UC objects (currently support schema)`,
-		GroupID: "qualitymonitorv2",
+		GroupID: "qualitymonitor",
 		Annotations: map[string]string{
 			"package": "qualitymonitorv2",
 		},

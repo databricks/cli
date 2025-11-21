@@ -12,11 +12,14 @@ type Action struct {
 }
 
 func (a Action) String() string {
-	// Backward compatible format: "resources.jobs.foo" -> "job foo"
-	key := strings.TrimPrefix(a.ResourceKey, "resources.")
-	key = strings.ReplaceAll(key, "s.", " ")
-	key = strings.ReplaceAll(key, ".", " ")
-	return fmt.Sprintf("  %s %s", a.ActionType.StringShort(), key)
+	return fmt.Sprintf("  %s %s", a.ActionType.StringShort(), a.ResourceKey)
+}
+
+func (a Action) IsChildResource() bool {
+	// Note, strictly speaking ResourceKey could be resources.jobs["my.job"] but
+	// we have an assumption in many other places that it's always looks like "resources.jobs.my_job"
+	items := strings.Split(a.ResourceKey, ".")
+	return len(items) == 4
 }
 
 type ActionType int
