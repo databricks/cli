@@ -10,7 +10,7 @@ Deployment complete!
 >>> print_requests
 
 >>> [CLI] bundle plan
-Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 >>> [CLI] permissions get pipelines [PIPELINE_ID]
 {
@@ -62,7 +62,7 @@ Deployment complete!
 >>> print_requests
 
 >>> [CLI] bundle plan
-Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 === Delete one permission and deploy again
 
@@ -77,7 +77,7 @@ Deployment complete!
 >>> print_requests
 
 >>> [CLI] bundle plan
-Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 === Delete the whole block and deploy again
 
@@ -116,15 +116,15 @@ Deployment complete!
 >>> print_requests
 
 >>> [CLI] bundle plan
-Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
-  delete pipeline foo
+  delete resources.pipelines.foo
 
 This action will result in the deletion of the following Lakeflow Declarative Pipelines along with the
 Streaming Tables (STs) and Materialized Views (MVs) managed by them:
-  delete pipeline foo
+  delete resources.pipelines.foo
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/permissions-test/default
 

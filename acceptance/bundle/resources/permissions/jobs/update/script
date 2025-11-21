@@ -4,10 +4,12 @@ print_requests() {
 }
 
 cp databricks.yml databricks.yml.saved
+trace $CLI bundle plan
 trace $CLI bundle plan -o json > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
 trace print_requests > out.requests_create.json
 trace $CLI bundle plan
+trace $CLI bundle plan -o json > out.plan_post_create.$DATABRICKS_BUNDLE_ENGINE.json
 
 job_id="$(read_id.py jobs job_with_permissions)"
 echo "$job_id:JOB_ID" >> ACC_REPLS

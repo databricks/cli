@@ -34,7 +34,7 @@ Writing dashboard to "dashboard.lvdash.json"
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
-  delete dashboard already_exists
+  delete resources.dashboards.already_exists
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/dashboard-replace-[UNIQUE_NAME]/default
 
