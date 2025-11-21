@@ -6,6 +6,10 @@ print_state.py -t dev > out.original_state.json
 
 trace $CLI bundle deployment migrate 2>&1 | contains.py 'Migrated 3 resources'
 print_state.py -t dev > out.new_state.json
+print_state.py -t dev --backup > out.backup_state.json
+trace diff out.original_state.json out.backup_state.json
+rm out.backup_state.json
+
 # check that this is stored as resolved value, not as reference:
 trace jq '.state."resources.pipelines.test_pipeline".state.tags.volume_storage_location' out.new_state.json | contains.py 's3://'
 

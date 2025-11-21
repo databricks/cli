@@ -16,7 +16,6 @@ The state file is not synchronized to the workspace yet. To do that and finalize
 Error: Required engine "terraform" does not match present state files. Set required engine via "DATABRICKS_BUNDLE_ENGINE" env var.
 
 Available state files:
-- terraform.tfstate: remote terraform state serial=1 lineage="[UUID]"
 - [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=2 lineage="[UUID]"
 
 
@@ -24,7 +23,6 @@ Available state files:
 Error: Required engine "terraform" does not match present state files. Set required engine via "DATABRICKS_BUNDLE_ENGINE" env var.
 
 Available state files:
-- terraform.tfstate: remote terraform state serial=1 lineage="[UUID]"
 - [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=2 lineage="[UUID]"
 
 
@@ -65,6 +63,5 @@ Details: [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct 
 [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=2 lineage="[UUID]"
 
 >>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle debug states --force-pull
-terraform.tfstate: remote terraform state serial=1 lineage="[UUID]"
 resources.json: remote direct state serial=2 lineage="[UUID]"
 [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=2 lineage="[UUID]"
