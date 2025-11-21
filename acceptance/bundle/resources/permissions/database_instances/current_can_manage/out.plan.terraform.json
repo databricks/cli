@@ -2,6 +2,9 @@
   "plan": {
     "resources.database_instances.foo": {
       "action": "create"
+    },
+    "resources.database_instances.foo.permissions": {
+      "action": "create"
     }
   }
 }

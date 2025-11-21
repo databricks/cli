@@ -1,0 +1,36 @@
+
+>>> errcode jq -s .[] | select(.method == "POST" and (.path | contains("/pipelines"))) out.requests.txt
+{
+  "method": "POST",
+  "path": "/api/2.0/pipelines",
+  "body": {
+    "channel": "CURRENT",
+    "clusters": [
+      {
+        "custom_tags": {
+          "ResourceClass": "SingleNode"
+        },
+        "label": "default",
+        "node_type_id": "[NODE_TYPE_ID]",
+        "num_workers": 0,
+        "spark_conf": {
+          "spark.databricks.cluster.profile": "singleNode",
+          "spark.master": "local[*]"
+        }
+      }
+    ],
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/num-workers-zero/default/state/metadata.json"
+    },
+    "edition": "ADVANCED",
+    "libraries": [
+      {
+        "file": {
+          "path": "/Workspace/Users/[USERNAME]/.bundle/num-workers-zero/default/files/foo.py"
+        }
+      }
+    ],
+    "name": "test-pipeline"
+  }
+}

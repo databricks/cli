@@ -23,7 +23,7 @@ func New() *cobra.Command {
 		Short: `These APIs are used to manage identities and the workspace access of these identities in <Databricks>.`,
 		Long: `These APIs are used to manage identities and the workspace access of these
   identities in <Databricks>.`,
-		GroupID: "iamv2",
+		GroupID: "iam",
 		Annotations: map[string]string{
 			"package": "iamv2",
 		},

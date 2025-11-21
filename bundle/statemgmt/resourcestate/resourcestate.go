@@ -10,5 +10,5 @@ type ResourceState struct {
 }
 
 // ExportedResourcesMap stores relevant attributes from terraform/direct state for all resources
-// Maps group (e.g. "jobs") -> resource name -> ResourceState
-type ExportedResourcesMap map[string]map[string]ResourceState
+// Maps resource key (e.g. "resources.jobs.foo", "resources.jobs.foo.permissions") -> ResourceState
+type ExportedResourcesMap map[string]ResourceState

@@ -5,6 +5,9 @@
     },
     "resources.volumes.grants_volume": {
       "action": "skip"
+    },
+    "resources.volumes.grants_volume.grants": {
+      "action": "update"
     }
   }
 }

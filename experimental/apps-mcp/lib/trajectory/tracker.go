@@ -52,13 +52,6 @@ func (t *Tracker) writeSessionEntry(cfg *mcp.Config) error {
 	configMap["allow_deployment"] = cfg.AllowDeployment
 	configMap["with_workspace_tools"] = cfg.WithWorkspaceTools
 
-	if cfg.WarehouseID != "" {
-		configMap["warehouse_id"] = "***"
-	}
-	if cfg.DatabricksHost != "" {
-		configMap["databricks_host"] = "***"
-	}
-
 	if cfg.IoConfig != nil {
 		ioConfigMap := make(map[string]any)
 		if cfg.IoConfig.Template != nil {
@@ -114,20 +107,4 @@ func (t *Tracker) Close() error {
 		return nil
 	}
 	return t.writer.Close()
-}
-
-func WrapToolHandlerWithTrajectory[T any](
-	tracker *Tracker,
-	toolName string,
-	handler func(ctx context.Context, req *mcpsdk.CallToolRequest, args T) (*mcpsdk.CallToolResult, any, error),
-) func(ctx context.Context, req *mcpsdk.CallToolRequest, args T) (*mcpsdk.CallToolResult, any, error) {
-	return func(ctx context.Context, req *mcpsdk.CallToolRequest, args T) (*mcpsdk.CallToolResult, any, error) {
-		result, data, err := handler(ctx, req, args)
-
-		if tracker != nil && tracker.enabled {
-			tracker.RecordToolCall(toolName, args, result, err)
-		}
-
-		return result, data, err
-	}
 }

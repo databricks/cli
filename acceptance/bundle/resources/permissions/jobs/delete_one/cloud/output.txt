@@ -8,7 +8,6 @@ Updating deployment state...
 Deployment complete!
 
 >>> [CLI] bundle plan
-Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 === Delete one permission and deploy again
 
@@ -20,7 +19,7 @@ Deployment complete!
 
 >>> errcode [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
-  delete job job_with_permissions
+  delete resources.jobs.job_with_permissions
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
 
