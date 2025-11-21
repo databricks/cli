@@ -20,7 +20,7 @@ func New() *cobra.Command {
 		Use:     "workspace-settings-v2",
 		Short:   `APIs to manage workspace level settings.`,
 		Long:    `APIs to manage workspace level settings`,
-		GroupID: "settingsv2",
+		GroupID: "settings",
 		Annotations: map[string]string{
 			"package": "settingsv2",
 		},

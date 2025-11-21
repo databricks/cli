@@ -1,9 +1,11 @@
+// Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+
 package account
 
-import "github.com/spf13/cobra"
+import (
+	"github.com/spf13/cobra"
+)
 
-// Groups returns an ordered list of command groups.
-// The order matches the order used in the Databricks API explorer.
 func Groups() []cobra.Group {
 	return []cobra.Group{
 		{
@@ -19,10 +21,6 @@ func Groups() []cobra.Group {
 			Title: "Settings",
 		},
 		{
-			ID:    "settingsv2",
-			Title: "Settings (v2)",
-		},
-		{
 			ID:    "provisioning",
 			Title: "Provisioning",
 		},
@@ -33,10 +31,6 @@ func Groups() []cobra.Group {
 		{
 			ID:    "oauth2",
 			Title: "OAuth",
-		},
-		{
-			ID:    "iamv2",
-			Title: "Identity and Access Management (v2)",
 		},
 	}
 }
