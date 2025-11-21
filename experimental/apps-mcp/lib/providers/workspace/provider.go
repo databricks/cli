@@ -69,7 +69,7 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 			Name:        "read_file",
 			Description: "Read file contents with line numbers. Default: reads up to 2000 lines from beginning. Lines >2000 chars truncated.",
 		},
-		session.WrapToolHandler(p.session, func(ctx context.Context, req *mcpsdk.CallToolRequest, args ReadFileInput) (*mcpsdk.CallToolResult, any, error) {
+		func(ctx context.Context, req *mcpsdk.CallToolRequest, args ReadFileInput) (*mcpsdk.CallToolResult, any, error) {
 			log.Debugf(ctx, "read_file called: file_path=%s", args.FilePath)
 
 			readArgs := &ReadFileArgs{
@@ -84,7 +84,7 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 			}
 
 			return mcpsdk.CreateNewTextContentResult(content), nil, nil
-		}),
+		},
 	)
 
 	// Register write_file
@@ -98,7 +98,7 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 			Name:        "write_file",
 			Description: "Write content to a file",
 		},
-		session.WrapToolHandler(p.session, func(ctx context.Context, req *mcpsdk.CallToolRequest, args WriteFileInput) (*mcpsdk.CallToolResult, any, error) {
+		func(ctx context.Context, req *mcpsdk.CallToolRequest, args WriteFileInput) (*mcpsdk.CallToolResult, any, error) {
 			log.Debugf(ctx, "write_file called: file_path=%s", args.FilePath)
 
 			writeArgs := &WriteFileArgs{
@@ -112,7 +112,7 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 			}
 
 			return mcpsdk.CreateNewTextContentResult("File written successfully: " + args.FilePath), nil, nil
-		}),
+		},
 	)
 
 	// Register edit_file
@@ -127,7 +127,7 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 			Name:        "edit_file",
 			Description: "Edit file by replacing old_string with new_string. Fails if old_string not unique unless replace_all=true.",
 		},
-		session.WrapToolHandler(p.session, func(ctx context.Context, req *mcpsdk.CallToolRequest, args EditFileInput) (*mcpsdk.CallToolResult, any, error) {
+		func(ctx context.Context, req *mcpsdk.CallToolRequest, args EditFileInput) (*mcpsdk.CallToolResult, any, error) {
 			log.Debugf(ctx, "edit_file called: file_path=%s", args.FilePath)
 
 			editArgs := &EditFileArgs{
@@ -142,7 +142,7 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 			}
 
 			return mcpsdk.CreateNewTextContentResult("File edited successfully: " + args.FilePath), nil, nil
-		}),
+		},
 	)
 
 	// Register bash
@@ -156,7 +156,7 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 			Name:        "bash",
 			Description: "Execute bash command in workspace directory. Use for terminal operations (npm, git, etc). Output truncated at 30000 chars.",
 		},
-		session.WrapToolHandler(p.session, func(ctx context.Context, req *mcpsdk.CallToolRequest, args BashInput) (*mcpsdk.CallToolResult, any, error) {
+		func(ctx context.Context, req *mcpsdk.CallToolRequest, args BashInput) (*mcpsdk.CallToolResult, any, error) {
 			log.Debugf(ctx, "bash called: command=%s", args.Command)
 
 			bashArgs := &BashArgs{
@@ -173,7 +173,7 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 			resultJSON, _ := json.Marshal(result)
 
 			return mcpsdk.CreateNewTextContentResult(string(resultJSON)), nil, nil
-		}),
+		},
 	)
 
 	// Register grep
@@ -189,7 +189,7 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 			Name:        "grep",
 			Description: "Search file contents with regex. Returns file:line:content by default. Limit results with head_limit.",
 		},
-		session.WrapToolHandler(p.session, func(ctx context.Context, req *mcpsdk.CallToolRequest, args GrepInput) (*mcpsdk.CallToolResult, any, error) {
+		func(ctx context.Context, req *mcpsdk.CallToolRequest, args GrepInput) (*mcpsdk.CallToolResult, any, error) {
 			log.Debugf(ctx, "grep called: pattern=%s", args.Pattern)
 
 			grepArgs := &GrepArgs{
@@ -208,7 +208,7 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 			resultJSON, _ := json.Marshal(result)
 
 			return mcpsdk.CreateNewTextContentResult(string(resultJSON)), nil, nil
-		}),
+		},
 	)
 
 	// Register glob
@@ -221,7 +221,7 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 			Name:        "glob",
 			Description: "Find files matching a glob pattern",
 		},
-		session.WrapToolHandler(p.session, func(ctx context.Context, req *mcpsdk.CallToolRequest, args GlobInput) (*mcpsdk.CallToolResult, any, error) {
+		func(ctx context.Context, req *mcpsdk.CallToolRequest, args GlobInput) (*mcpsdk.CallToolResult, any, error) {
 			log.Debugf(ctx, "glob called: pattern=%s", args.Pattern)
 
 			globArgs := &GlobArgs{
@@ -237,7 +237,7 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 			resultJSON, _ := json.Marshal(result)
 
 			return mcpsdk.CreateNewTextContentResult(string(resultJSON)), nil, nil
-		}),
+		},
 	)
 	return nil
 }

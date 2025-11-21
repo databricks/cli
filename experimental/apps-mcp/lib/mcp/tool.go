@@ -42,14 +42,7 @@ func AddTool[In, Out any](
 		result, output, err := handler(ctx, req, input)
 		// If there's an error, wrap it in a tool result
 		if err != nil {
-			content := &TextContent{
-				Type: "text",
-				Text: fmt.Sprintf("Error: %v", err),
-			}
-			return &CallToolResult{
-				Content: []Content{content},
-				IsError: true,
-			}, nil
+			return CreateNewTextContentResultError(err), nil
 		}
 
 		// If result is nil, create a default result from output

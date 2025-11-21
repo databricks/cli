@@ -520,9 +520,15 @@ def print_report(filenames, filter, filter_env, show_output, markdown=False, omi
     table = []
     for test_key, items in simplified_results.items():
         package_name, testname = test_key
+        status = "??"
+        for action in ACTIONS_WITH_ICON:
+            if action in items.values():
+                status = action[:2]
+                break
         items_proc = dict((k, short_action(v)) for (k, v) in items.items())
         table.append(
             {
+                " ": status,
                 "Test Name": testname,
                 **items_proc,
             }

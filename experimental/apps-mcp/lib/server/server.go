@@ -41,7 +41,7 @@ func NewServer(ctx context.Context, cfg *mcp.Config) *Server {
 		tracker = nil
 	}
 
-	sess.Tracker = tracker
+	sess.SetTracker(tracker)
 
 	return &Server{
 		server:  server,

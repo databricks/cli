@@ -67,7 +67,7 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 			Name:        "deploy_databricks_app",
 			Description: "Deploy a generated app to Databricks Apps. Creates the app if it doesn't exist, syncs local files to workspace, and deploys the app. Returns deployment status and app URL. Only use after direct user request and running validation.",
 		},
-		session.WrapToolHandler(p.session, func(ctx context.Context, req *mcpsdk.CallToolRequest, args DeployDatabricksAppInput) (*mcpsdk.CallToolResult, any, error) {
+		func(ctx context.Context, req *mcpsdk.CallToolRequest, args DeployDatabricksAppInput) (*mcpsdk.CallToolResult, any, error) {
 			log.Debugf(ctx, "deploy_databricks_app called: work_dir=%s, name=%s, force=%v",
 				args.WorkDir, args.Name, args.Force)
 
@@ -86,7 +86,7 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 
 			text := formatDeployResult(result)
 			return mcpsdk.CreateNewTextContentResult(text), nil, nil
-		}),
+		},
 	)
 
 	return nil
