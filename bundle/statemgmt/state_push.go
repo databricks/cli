@@ -15,24 +15,16 @@ import (
 	"github.com/databricks/cli/libs/log"
 )
 
-type statePush struct {
-	filerFactory deploy.FilerFactory
-	engine       engine.EngineType
-}
-
-func (l *statePush) Name() string {
-	return "statemgmt.Push"
-}
-
-func (l *statePush) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	f, err := l.filerFactory(b)
+// PushResourcesState uploads the local state file to the remote location.
+func PushResourcesState(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) diag.Diagnostics {
+	f, err := deploy.StateFiler(b)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
 	var remotePath, localPath string
 
-	if l.engine.IsDirect() {
+	if engine.IsDirect() {
 		remotePath, localPath = b.StateFilenameDirect(ctx)
 	} else {
 		remotePath, localPath = b.StateFilenameTerraform(ctx)
@@ -58,8 +50,4 @@ func (l *statePush) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostic
 	}
 
 	return nil
-}
-
-func StatePush(engine engine.EngineType) bundle.Mutator {
-	return &statePush{filerFactory: deploy.StateFiler, engine: engine}
 }
