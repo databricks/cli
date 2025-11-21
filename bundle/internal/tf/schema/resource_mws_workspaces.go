@@ -51,6 +51,7 @@ type ResourceMwsWorkspaces struct {
 	IsNoPublicIpEnabled                 bool                                          `json:"is_no_public_ip_enabled,omitempty"`
 	Location                            string                                        `json:"location,omitempty"`
 	ManagedServicesCustomerManagedKeyId string                                        `json:"managed_services_customer_managed_key_id,omitempty"`
+	NetworkConnectivityConfigId         string                                        `json:"network_connectivity_config_id,omitempty"`
 	NetworkId                           string                                        `json:"network_id,omitempty"`
 	PricingTier                         string                                        `json:"pricing_tier,omitempty"`
 	PrivateAccessSettingsId             string                                        `json:"private_access_settings_id,omitempty"`

@@ -2,6 +2,14 @@
     "template_dir": "../default",
     "welcome_message": "Welcome to the minimal Databricks Asset Bundle template!\n\nThis template creates a minimal project structure without sample code, ideal for advanced users.\n(For getting started with Python or SQL code, use the default-python or default-sql templates instead.)\n\nYour workspace at {{workspace_host}} is used for initialization.\n(See https://docs.databricks.com/dev-tools/cli/profiles.html for how to change your profile.)",
     "properties": {
+        "template_name": {
+            "//": "This property is always set to 'default-minimal'",
+            "skip_prompt_if": {},
+            "type": "string",
+            "default": "default-minimal",
+            "description": "Template name for documentation",
+            "order": 0
+        },
         "project_name": {
             "type": "string",
             "default": "my_project",

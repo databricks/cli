@@ -1,0 +1,3 @@
+trace $CLI bundle deploy > out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1
+trace errcode jq -s '.[] | select(.method == "POST" and (.path | contains("/pipelines")))' out.requests.txt > out.requests.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1
+rm out.requests.txt

@@ -3,7 +3,7 @@
     "resources.models.foo": {
       "action": "create",
       "new_state": {
-        "config": {
+        "value": {
           "name": "test-model"
         }
       }
@@ -17,7 +17,7 @@
       ],
       "action": "create",
       "new_state": {
-        "config": {
+        "value": {
           "object_id": "",
           "permissions": [
             {

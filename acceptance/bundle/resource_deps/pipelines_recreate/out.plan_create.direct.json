@@ -9,7 +9,7 @@
       ],
       "action": "create",
       "new_state": {
-        "config": {
+        "value": {
           "deployment": {
             "kind": "BUNDLE",
             "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
@@ -31,7 +31,7 @@
     "resources.pipelines.foo": {
       "action": "create",
       "new_state": {
-        "config": {
+        "value": {
           "catalog": "mycatalog",
           "channel": "CURRENT",
           "deployment": {
