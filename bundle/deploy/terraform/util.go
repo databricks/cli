@@ -49,7 +49,7 @@ type stateInstanceAttributes struct {
 	ETag string `json:"etag,omitempty"`
 }
 
-// Returns a mapping group -> name -> stateInstanceAttributes
+// Returns a mapping resourceKey -> stateInstanceAttributes
 func parseResourcesState(ctx context.Context, path string) (ExportedResourcesMap, error) {
 	rawState, err := os.ReadFile(path)
 	if err != nil {
@@ -76,34 +76,48 @@ func parseResourcesState(ctx context.Context, path string) (ExportedResourcesMap
 		}
 		for _, instance := range resource.Instances {
 			groupName, ok := TerraformToGroupName[resource.Type]
+
 			if !ok {
-				// permissions, grants, secret_acls
+				// secret_acls
 				continue
 			}
 
-			group, present := result[groupName]
-			if !present {
-				group = make(map[string]ResourceState)
-				result[groupName] = group
-			}
+			var resourceKey string
+			var resourceState ResourceState
 
 			switch groupName {
 			case "apps":
-				group[resource.Name] = ResourceState{ID: instance.Attributes.Name}
+				resourceKey = "resources." + groupName + "." + resource.Name
+				resourceState = ResourceState{ID: instance.Attributes.Name}
 			case "secret_scopes":
-				group[resource.Name] = ResourceState{ID: instance.Attributes.Name}
+				resourceKey = "resources." + groupName + "." + resource.Name
+				resourceState = ResourceState{ID: instance.Attributes.Name}
 			case "dashboards":
-				group[resource.Name] = ResourceState{ID: instance.Attributes.ID, ETag: instance.Attributes.ETag}
+				resourceKey = "resources." + groupName + "." + resource.Name
+				resourceState = ResourceState{ID: instance.Attributes.ID, ETag: instance.Attributes.ETag}
+			case "permissions":
+				resourceKey = convertPermissionsResourceNameToKey(resource.Name)
+				resourceState = ResourceState{ID: instance.Attributes.ID}
+			case "grants":
+				resourceKey = convertGrantsResourceNameToKey(resource.Name)
+				resourceState = ResourceState{ID: instance.Attributes.ID}
 			default:
-				group[resource.Name] = ResourceState{ID: instance.Attributes.ID}
+				resourceKey = "resources." + groupName + "." + resource.Name
+				resourceState = ResourceState{ID: instance.Attributes.ID}
 			}
+
+			if resourceKey == "" {
+				return nil, fmt.Errorf("cannot calculate resource key for type=%q name=%q id=%q", resource.Type, resource.Name, instance.Attributes.ID)
+			}
+
+			result[resourceKey] = resourceState
 		}
 	}
 
 	return result, nil
 }
 
-// Returns a mapping group -> name -> stateInstanceAttributes
+// Returns a mapping resourceKey -> stateInstanceAttributes
 func ParseResourcesState(ctx context.Context, b *bundle.Bundle) (ExportedResourcesMap, error) {
 	cacheDir, err := Dir(ctx, b)
 	if err != nil {

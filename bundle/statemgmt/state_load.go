@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
@@ -63,8 +64,19 @@ func (l *load) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	}
 
 	// Merge dashboard etags into configuration.
-	for k, dstate := range state["dashboards"] {
-		dconfig, ok := b.Config.Resources.Dashboards[k]
+	for resourceKey, dstate := range state {
+		// Check if this is a dashboard resource key
+		if !strings.HasPrefix(resourceKey, "resources.dashboards.") {
+			continue
+		}
+		// Extract dashboard name from "resources.dashboards.name"
+		parts := strings.Split(resourceKey, ".")
+		if len(parts) != 3 {
+			continue
+		}
+		dashboardName := parts[2]
+
+		dconfig, ok := b.Config.Resources.Dashboards[dashboardName]
 
 		// Case: A dashboard is defined in state but not in configuration.
 		// In this case the dashboard has been deleted and we do not need to load the etag.
@@ -98,31 +110,43 @@ func StateToBundle(ctx context.Context, state ExportedResourcesMap, config *conf
 			return v, err
 		}
 
-		for groupName, group := range state {
+		for resourceKey, attrs := range state {
+			// Parse resource key like "resources.jobs.foo" or "resources.jobs.foo.permissions"
+			parts := strings.Split(resourceKey, ".")
+			if len(parts) < 3 || parts[0] != "resources" {
+				continue // Skip invalid resource keys
+			}
+
+			groupName := parts[1]
+			resourceName := parts[2]
+
+			// Skip permissions for now as they are sub-resources
+			if len(parts) > 3 {
+				continue
+			}
+
 			var err error
 			v, err = ensureMap(v, dyn.Path{dyn.Key("resources"), dyn.Key(groupName)})
 			if err != nil {
 				return v, err
 			}
 
-			for resourceName, attrs := range group {
-				path := dyn.Path{dyn.Key("resources"), dyn.Key(groupName), dyn.Key(resourceName)}
-				resource, err := dyn.GetByPath(v, path)
-				if !resource.IsValid() {
-					m := dyn.NewMapping()
-					m.SetLoc("id", nil, dyn.V(attrs.ID))
-					m.SetLoc("modified_status", nil, dyn.V(resources.ModifiedStatusDeleted))
-					v, err = dyn.SetByPath(v, path, dyn.V(m))
-					if err != nil {
-						return dyn.InvalidValue, err
-					}
-				} else if err != nil {
+			path := dyn.Path{dyn.Key("resources"), dyn.Key(groupName), dyn.Key(resourceName)}
+			resource, err := dyn.GetByPath(v, path)
+			if !resource.IsValid() {
+				m := dyn.NewMapping()
+				m.SetLoc("id", nil, dyn.V(attrs.ID))
+				m.SetLoc("modified_status", nil, dyn.V(resources.ModifiedStatusDeleted))
+				v, err = dyn.SetByPath(v, path, dyn.V(m))
+				if err != nil {
 					return dyn.InvalidValue, err
-				} else {
-					v, err = dyn.SetByPath(v, dyn.Path{dyn.Key("resources"), dyn.Key(groupName), dyn.Key(resourceName), dyn.Key("id")}, dyn.V(attrs.ID))
-					if err != nil {
-						return dyn.InvalidValue, err
-					}
+				}
+			} else if err != nil {
+				return dyn.InvalidValue, err
+			} else {
+				v, err = dyn.SetByPath(v, dyn.Path{dyn.Key("resources"), dyn.Key(groupName), dyn.Key(resourceName), dyn.Key("id")}, dyn.V(attrs.ID))
+				if err != nil {
+					return dyn.InvalidValue, err
 				}
 			}
 		}

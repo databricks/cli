@@ -21,9 +21,7 @@ func TestIsAnyResourceRunningWithEmptyState(t *testing.T) {
 func TestIsAnyResourceRunningWithJob(t *testing.T) {
 	m := mocks.NewMockWorkspaceClient(t)
 	resources := ExportedResourcesMap{
-		"jobs": map[string]ResourceState{
-			"job1": {ID: "123"},
-		},
+		"resources.jobs.job1": {ID: "123"},
 	}
 
 	jobsApi := m.GetMockJobsAPI()
@@ -49,9 +47,7 @@ func TestIsAnyResourceRunningWithJob(t *testing.T) {
 func TestIsAnyResourceRunningWithPipeline(t *testing.T) {
 	m := mocks.NewMockWorkspaceClient(t)
 	resources := ExportedResourcesMap{
-		"pipelines": map[string]ResourceState{
-			"pipeline1": {ID: "123"},
-		},
+		"resources.pipelines.pipeline1": {ID: "123"},
 	}
 
 	pipelineApi := m.GetMockPipelinesAPI()
@@ -79,9 +75,7 @@ func TestIsAnyResourceRunningWithAPIFailure(t *testing.T) {
 	m := mocks.NewMockWorkspaceClient(t)
 
 	resources := ExportedResourcesMap{
-		"pipelines": map[string]ResourceState{
-			"pipeline1": {ID: "123"},
-		},
+		"resources.pipelines.pipeline1": {ID: "123"},
 	}
 
 	pipelineApi := m.GetMockPipelinesAPI()

@@ -3,6 +3,7 @@ package terraform
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/engine"
@@ -30,7 +31,18 @@ func collectDashboardsFromState(ctx context.Context, b *bundle.Bundle, directDep
 	}
 
 	var dashboards []dashboardState
-	for resourceName, instance := range state["dashboards"] {
+	for resourceKey, instance := range state {
+		// Check if this is a dashboard resource key
+		if !strings.HasPrefix(resourceKey, "resources.dashboards.") {
+			continue
+		}
+		// Extract dashboard name from "resources.dashboards.name"
+		parts := strings.Split(resourceKey, ".")
+		if len(parts) != 3 {
+			continue
+		}
+		resourceName := parts[2]
+
 		dashboards = append(dashboards, dashboardState{
 			Name: resourceName,
 			ID:   instance.ID,
