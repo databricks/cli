@@ -99,6 +99,9 @@ type proxyConnection struct {
 	handoverMutex sync.Mutex
 	// Atomic that holds the current handover coordination channels, or nil if no handover is in progress.
 	handoverState atomic.Pointer[handoverCoordination]
+	// Channel that is closed when the initial connection is established (or failed).
+	// Prevents race conditions where handover is accepted before the initial connection is ready.
+	ready chan struct{}
 }
 
 type createWebsocketConnectionFunc func(ctx context.Context, connID string) (*websocket.Conn, error)
@@ -107,6 +110,7 @@ func newProxyConnection(createConn createWebsocketConnectionFunc) *proxyConnecti
 	return &proxyConnection{
 		connID:                    uuid.NewString(),
 		createWebsocketConnection: createConn,
+		ready:                     make(chan struct{}),
 	}
 }
 
@@ -140,6 +144,7 @@ func (pc *proxyConnection) start(ctx context.Context, src io.ReadCloser, dst io.
 }
 
 func (pc *proxyConnection) connect(ctx context.Context) error {
+	defer close(pc.ready)
 	conn, err := pc.createWebsocketConnection(ctx, pc.connID)
 	if err != nil {
 		return err
@@ -149,6 +154,7 @@ func (pc *proxyConnection) connect(ctx context.Context) error {
 }
 
 func (pc *proxyConnection) accept(w http.ResponseWriter, r *http.Request) error {
+	defer close(pc.ready)
 	conn, err := pc.acceptWebsocketConnection(w, r)
 	if err != nil {
 		return err
@@ -310,6 +316,13 @@ func (pc *proxyConnection) acceptHandover(ctx context.Context, w http.ResponseWr
 	pc.handoverMutex.Lock()
 	defer pc.handoverMutex.Unlock()
 
+	// Wait for the initial connection to be ready
+	select {
+	case <-pc.ready:
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+
 	handoverCtx, cancel := context.WithTimeout(ctx, proxyHandoverAcceptTimeout)
 	defer cancel()
 	handoverState := &handoverCoordination{
@@ -330,6 +343,10 @@ func (pc *proxyConnection) acceptHandover(ctx context.Context, w http.ResponseWr
 	// Signal the client to complete handover by closing the old connection.
 	// Not using pc.sendMessage here, because it's blocked by the handover mutex.
 	currentConn := pc.conn.Load()
+	if currentConn == nil {
+		newConn.Close()
+		return errors.New("initial connection not established")
+	}
 	err = currentConn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, "handover"))
 	if err != nil {
 		newConn.Close()
