@@ -20,12 +20,27 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/gorilla/websocket"
+	"golang.org/x/sync/errgroup"
 )
 
 const (
 	localViteURL    = "http://localhost:5173"
 	localViteHMRURL = "ws://localhost:5173/dev-hmr"
 	viteHMRProtocol = "vite-hmr"
+
+	// WebSocket timeouts
+	wsHandshakeTimeout  = 45 * time.Second
+	wsKeepaliveInterval = 20 * time.Second
+	wsWriteTimeout      = 5 * time.Second
+
+	// HTTP client timeouts
+	httpRequestTimeout  = 60 * time.Second
+	httpIdleConnTimeout = 90 * time.Second
+
+	// Bridge operation timeouts
+	bridgeFetchTimeout       = 30 * time.Second
+	bridgeConnTimeout        = 60 * time.Second
+	bridgeTunnelReadyTimeout = 30 * time.Second
 )
 
 type ViteBridgeMessage struct {
@@ -43,6 +58,13 @@ type ViteBridgeMessage struct {
 	Error     string         `json:"error,omitempty"`
 }
 
+// prioritizedMessage represents a message to send through the tunnel websocket
+type prioritizedMessage struct {
+	messageType int
+	data        []byte
+	priority    int // 0 = high (HMR), 1 = normal (fetch)
+}
+
 type ViteBridge struct {
 	ctx                context.Context
 	w                  *databricks.WorkspaceClient
@@ -50,7 +72,7 @@ type ViteBridge struct {
 	tunnelConn         *websocket.Conn
 	hmrConn            *websocket.Conn
 	tunnelID           string
-	mu                 sync.Mutex
+	tunnelWriteChan    chan prioritizedMessage
 	stopChan           chan struct{}
 	stopOnce           sync.Once
 	httpClient         *http.Client
@@ -62,7 +84,7 @@ func NewViteBridge(ctx context.Context, w *databricks.WorkspaceClient, appName s
 	transport := &http.Transport{
 		MaxIdleConns:        100,
 		MaxIdleConnsPerHost: 100,
-		IdleConnTimeout:     90 * time.Second,
+		IdleConnTimeout:     httpIdleConnTimeout,
 		DisableKeepAlives:   false,
 		DisableCompression:  false,
 	}
@@ -72,10 +94,11 @@ func NewViteBridge(ctx context.Context, w *databricks.WorkspaceClient, appName s
 		w:       w,
 		appName: appName,
 		httpClient: &http.Client{
-			Timeout:   30 * time.Second,
+			Timeout:   httpRequestTimeout,
 			Transport: transport,
 		},
 		stopChan:           make(chan struct{}),
+		tunnelWriteChan:    make(chan prioritizedMessage, 100), // Buffered channel for async writes
 		connectionRequests: make(chan *ViteBridgeMessage, 10),
 	}
 }
@@ -118,21 +141,55 @@ func (vb *ViteBridge) connectToTunnel(appDomain *url.URL) error {
 	}
 
 	dialer := websocket.Dialer{
-		HandshakeTimeout: 45 * time.Second,
-		ReadBufferSize:   32 * 1024, // 32KB read buffer
-		WriteBufferSize:  32 * 1024, // 32KB write buffer for large assets
+		HandshakeTimeout: wsHandshakeTimeout,
+		ReadBufferSize:   256 * 1024, // 256KB read buffer for large assets
+		WriteBufferSize:  256 * 1024, // 256KB write buffer for large assets
 	}
 
 	conn, resp, err := dialer.Dial(wsURL, headers)
 	if err != nil {
 		if resp != nil {
 			body, _ := io.ReadAll(resp.Body)
+			resp.Body.Close()
 			return fmt.Errorf("failed to connect to tunnel (status %d): %w, body: %s", resp.StatusCode, err, string(body))
 		}
 		return fmt.Errorf("failed to connect to tunnel: %w", err)
 	}
+	if resp != nil && resp.Body != nil {
+		resp.Body.Close()
+	}
+
+	// Configure keepalive to prevent server timeout
+	_ = conn.SetReadDeadline(time.Time{})  // No read timeout
+	_ = conn.SetWriteDeadline(time.Time{}) // No write timeout
+
+	// Enable pong handler to respond to server pongs (response to our pings)
+	conn.SetPongHandler(func(appData string) error {
+		log.Debugf(vb.ctx, "[vite_bridge] Received pong from server")
+		return nil
+	})
+
+	// Enable ping handler to respond to server pings with pongs
+	conn.SetPingHandler(func(appData string) error {
+		log.Debugf(vb.ctx, "[vite_bridge] Received ping from server, sending pong")
+		// Send pong response
+		select {
+		case vb.tunnelWriteChan <- prioritizedMessage{
+			messageType: websocket.PongMessage,
+			data:        []byte(appData),
+			priority:    0, // High priority
+		}:
+		case <-time.After(wsWriteTimeout):
+			log.Warnf(vb.ctx, "[vite_bridge] Failed to send pong response")
+		}
+		return nil
+	})
 
 	vb.tunnelConn = conn
+
+	// Start keepalive ping goroutine
+	go vb.tunnelKeepalive()
+
 	return nil
 }
 
@@ -141,9 +198,15 @@ func (vb *ViteBridge) connectToViteHMR() error {
 		Subprotocols: []string{viteHMRProtocol},
 	}
 
-	conn, _, err := dialer.Dial(localViteHMRURL, nil)
+	conn, resp, err := dialer.Dial(localViteHMRURL, nil)
 	if err != nil {
+		if resp != nil && resp.Body != nil {
+			resp.Body.Close()
+		}
 		return fmt.Errorf("failed to connect to Vite HMR: %w", err)
+	}
+	if resp != nil && resp.Body != nil {
+		resp.Body.Close()
 	}
 
 	vb.hmrConn = conn
@@ -151,9 +214,55 @@ func (vb *ViteBridge) connectToViteHMR() error {
 	return nil
 }
 
-func (vb *ViteBridge) handleTunnelMessages() error {
+// tunnelKeepalive sends periodic pings to keep the connection alive
+// Remote servers often have 30-60s idle timeouts
+func (vb *ViteBridge) tunnelKeepalive() {
+	ticker := time.NewTicker(wsKeepaliveInterval)
+	defer ticker.Stop()
+
 	for {
 		select {
+		case <-vb.stopChan:
+			return
+		case <-ticker.C:
+			// Send ping through the write channel to avoid race conditions
+			select {
+			case vb.tunnelWriteChan <- prioritizedMessage{
+				messageType: websocket.PingMessage,
+				data:        []byte{},
+				priority:    0, // High priority to ensure keepalive
+			}:
+				log.Debugf(vb.ctx, "[vite_bridge] Sent keepalive ping")
+			case <-time.After(wsWriteTimeout):
+				log.Warnf(vb.ctx, "[vite_bridge] Failed to send keepalive ping (channel full)")
+			}
+		}
+	}
+}
+
+// tunnelWriter handles all writes to the tunnel websocket in a single goroutine
+// This eliminates mutex contention and ensures ordered delivery
+func (vb *ViteBridge) tunnelWriter(ctx context.Context) error {
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-vb.stopChan:
+			return nil
+		case msg := <-vb.tunnelWriteChan:
+			if err := vb.tunnelConn.WriteMessage(msg.messageType, msg.data); err != nil {
+				log.Errorf(vb.ctx, "[vite_bridge] Failed to write message: %v", err)
+				return fmt.Errorf("failed to write to tunnel: %w", err)
+			}
+		}
+	}
+}
+
+func (vb *ViteBridge) handleTunnelMessages(ctx context.Context) error {
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
 		case <-vb.stopChan:
 			return nil
 		default:
@@ -239,13 +348,31 @@ func (vb *ViteBridge) handleConnectionRequest(msg *ViteBridgeMessage) error {
 	cmdio.LogString(vb.ctx, "   User: "+msg.Viewer)
 	cmdio.LogString(vb.ctx, "   Approve this connection? (y/n)")
 
-	reader := bufio.NewReader(os.Stdin)
-	input, err := reader.ReadString('\n')
-	if err != nil {
-		return fmt.Errorf("failed to read user input: %w", err)
-	}
+	// Read from stdin with timeout to prevent indefinite blocking
+	inputChan := make(chan string, 1)
+	errChan := make(chan error, 1)
 
-	approved := strings.ToLower(strings.TrimSpace(input)) == "y"
+	go func() {
+		reader := bufio.NewReader(os.Stdin)
+		input, err := reader.ReadString('\n')
+		if err != nil {
+			errChan <- err
+			return
+		}
+		inputChan <- input
+	}()
+
+	var approved bool
+	select {
+	case input := <-inputChan:
+		approved = strings.ToLower(strings.TrimSpace(input)) == "y"
+	case err := <-errChan:
+		return fmt.Errorf("failed to read user input: %w", err)
+	case <-time.After(bridgeConnTimeout):
+		// Default to denying after timeout
+		cmdio.LogString(vb.ctx, "⏱️  Timeout waiting for response, denying connection")
+		approved = false
+	}
 
 	response := ViteBridgeMessage{
 		Type:      "connection:response",
@@ -259,11 +386,15 @@ func (vb *ViteBridge) handleConnectionRequest(msg *ViteBridgeMessage) error {
 		return fmt.Errorf("failed to marshal connection response: %w", err)
 	}
 
-	vb.mu.Lock()
-	defer vb.mu.Unlock()
-
-	if err := vb.tunnelConn.WriteMessage(websocket.TextMessage, responseData); err != nil {
-		return fmt.Errorf("failed to send connection response: %w", err)
+	// Send through channel instead of direct write
+	select {
+	case vb.tunnelWriteChan <- prioritizedMessage{
+		messageType: websocket.TextMessage,
+		data:        responseData,
+		priority:    1,
+	}:
+	case <-time.After(wsWriteTimeout):
+		return errors.New("timeout sending connection response")
 	}
 
 	if approved {
@@ -317,21 +448,28 @@ func (vb *ViteBridge) handleFetchRequest(msg *ViteBridgeMessage) error {
 		return fmt.Errorf("failed to marshal metadata: %w", err)
 	}
 
-	vb.mu.Lock()
-
-	if err := vb.tunnelConn.WriteMessage(websocket.TextMessage, responseData); err != nil {
-		vb.mu.Unlock()
-		return fmt.Errorf("failed to send metadata: %w", err)
+	select {
+	case vb.tunnelWriteChan <- prioritizedMessage{
+		messageType: websocket.TextMessage,
+		data:        responseData,
+		priority:    1, // Normal priority
+	}:
+	case <-time.After(bridgeFetchTimeout):
+		return errors.New("timeout sending fetch metadata")
 	}
 
 	if len(body) > 0 {
-		if err := vb.tunnelConn.WriteMessage(websocket.BinaryMessage, body); err != nil {
-			vb.mu.Unlock()
-			return fmt.Errorf("failed to send binary body: %w", err)
+		select {
+		case vb.tunnelWriteChan <- prioritizedMessage{
+			messageType: websocket.BinaryMessage,
+			data:        body,
+			priority:    1, // Normal priority
+		}:
+		case <-time.After(bridgeFetchTimeout):
+			return errors.New("timeout sending fetch body")
 		}
 	}
 
-	vb.mu.Unlock()
 	return nil
 }
 
@@ -368,10 +506,17 @@ func (vb *ViteBridge) handleFileReadRequest(msg *ViteBridgeMessage) error {
 		return fmt.Errorf("failed to marshal file read response: %w", err)
 	}
 
-	vb.mu.Lock()
-	defer vb.mu.Unlock()
+	select {
+	case vb.tunnelWriteChan <- prioritizedMessage{
+		messageType: websocket.TextMessage,
+		data:        responseData,
+		priority:    1,
+	}:
+	case <-time.After(wsWriteTimeout):
+		return errors.New("timeout sending file read response")
+	}
 
-	return vb.tunnelConn.WriteMessage(websocket.TextMessage, responseData)
+	return nil
 }
 
 func validateFilePath(requestedPath string) error {
@@ -394,7 +539,9 @@ func validateFilePath(requestedPath string) error {
 	allowedDir := filepath.Join(cwd, allowedBasePath)
 
 	// Ensure the resolved path is within the allowed directory
-	if !strings.HasPrefix(absPath, allowedDir) {
+	// Add trailing separator to prevent prefix attacks (e.g., queries-malicious/)
+	allowedDirWithSep := allowedDir + string(filepath.Separator)
+	if absPath != allowedDir && !strings.HasPrefix(absPath, allowedDirWithSep) {
 		return fmt.Errorf("path %s is outside allowed directory %s", absPath, allowedBasePath)
 	}
 
@@ -405,7 +552,7 @@ func validateFilePath(requestedPath string) error {
 
 	// Additional check: no hidden files
 	if strings.HasPrefix(filepath.Base(absPath), ".") {
-		return fmt.Errorf("hidden files are not allowed")
+		return errors.New("hidden files are not allowed")
 	}
 
 	return nil
@@ -424,10 +571,17 @@ func (vb *ViteBridge) sendFileReadError(requestID, errorMsg string) error {
 		return fmt.Errorf("failed to marshal error response: %w", err)
 	}
 
-	vb.mu.Lock()
-	defer vb.mu.Unlock()
+	select {
+	case vb.tunnelWriteChan <- prioritizedMessage{
+		messageType: websocket.TextMessage,
+		data:        responseData,
+		priority:    1,
+	}:
+	case <-time.After(wsWriteTimeout):
+		return errors.New("timeout sending file read error")
+	}
 
-	return vb.tunnelConn.WriteMessage(websocket.TextMessage, responseData)
+	return nil
 }
 
 func (vb *ViteBridge) handleHMRMessage(msg *ViteBridgeMessage) error {
@@ -443,14 +597,25 @@ func (vb *ViteBridge) handleHMRMessage(msg *ViteBridgeMessage) error {
 		return fmt.Errorf("failed to marshal HMR message: %w", err)
 	}
 
-	vb.mu.Lock()
-	defer vb.mu.Unlock()
-	return vb.tunnelConn.WriteMessage(websocket.TextMessage, responseData)
+	// Send HMR with HIGH priority so it doesn't get blocked by fetch requests
+	select {
+	case vb.tunnelWriteChan <- prioritizedMessage{
+		messageType: websocket.TextMessage,
+		data:        responseData,
+		priority:    0, // HIGH PRIORITY for HMR!
+	}:
+	case <-time.After(wsWriteTimeout):
+		return errors.New("timeout sending HMR message")
+	}
+
+	return nil
 }
 
-func (vb *ViteBridge) handleViteHMRMessages() error {
+func (vb *ViteBridge) handleViteHMRMessages(ctx context.Context) error {
 	for {
 		select {
+		case <-ctx.Done():
+			return ctx.Err()
 		case <-vb.stopChan:
 			return nil
 		default:
@@ -480,12 +645,14 @@ func (vb *ViteBridge) handleViteHMRMessages() error {
 			continue
 		}
 
-		vb.mu.Lock()
-		err = vb.tunnelConn.WriteMessage(websocket.TextMessage, responseData)
-		vb.mu.Unlock()
-
-		if err != nil {
-			log.Errorf(vb.ctx, "[vite_bridge] Failed to send Vite HMR message to tunnel: %v", err)
+		select {
+		case vb.tunnelWriteChan <- prioritizedMessage{
+			messageType: websocket.TextMessage,
+			data:        responseData,
+			priority:    0,
+		}:
+		case <-time.After(wsWriteTimeout):
+			log.Errorf(vb.ctx, "[vite_bridge] Timeout sending Vite HMR message")
 		}
 	}
 }
@@ -528,7 +695,7 @@ func (vb *ViteBridge) Start() error {
 		if err != nil {
 			return fmt.Errorf("failed waiting for tunnel ready: %w", err)
 		}
-	case <-time.After(30 * time.Second):
+	case <-time.After(bridgeTunnelReadyTimeout):
 		return errors.New("timeout waiting for tunnel ready")
 	}
 
@@ -539,9 +706,17 @@ func (vb *ViteBridge) Start() error {
 	cmdio.LogString(vb.ctx, fmt.Sprintf("\n🌐 App URL:\n%s?dev=true\n", appDomain.String()))
 	cmdio.LogString(vb.ctx, fmt.Sprintf("\n🔗 Shareable URL:\n%s?dev=%s\n", appDomain.String(), vb.tunnelID))
 
-	var wg sync.WaitGroup
-	errChan := make(chan error, 2)
+	g, gCtx := errgroup.WithContext(vb.ctx)
 
+	// Start dedicated tunnel writer goroutine
+	g.Go(func() error {
+		if err := vb.tunnelWriter(gCtx); err != nil {
+			return fmt.Errorf("tunnel writer error: %w", err)
+		}
+		return nil
+	})
+
+	// Connection request handler - not in errgroup to avoid blocking other handlers
 	go func() {
 		for {
 			select {
@@ -549,37 +724,31 @@ func (vb *ViteBridge) Start() error {
 				if err := vb.handleConnectionRequest(msg); err != nil {
 					log.Errorf(vb.ctx, "[vite_bridge] Error handling connection request: %v", err)
 				}
+			case <-gCtx.Done():
+				return
 			case <-vb.stopChan:
 				return
 			}
 		}
 	}()
 
-	wg.Add(2)
-	go func() {
-		defer wg.Done()
-		if err := vb.handleTunnelMessages(); err != nil {
-			errChan <- fmt.Errorf("tunnel message handler error: %w", err)
+	g.Go(func() error {
+		if err := vb.handleTunnelMessages(gCtx); err != nil {
+			return fmt.Errorf("tunnel message handler error: %w", err)
 		}
-	}()
+		return nil
+	})
 
-	go func() {
-		defer wg.Done()
-		if err := vb.handleViteHMRMessages(); err != nil {
-			errChan <- fmt.Errorf("Vite HMR message handler error: %w", err)
+	g.Go(func() error {
+		if err := vb.handleViteHMRMessages(gCtx); err != nil {
+			return fmt.Errorf("vite HMR message handler error: %w", err)
 		}
-	}()
+		return nil
+	})
 
-	select {
-	case err := <-errChan:
-		vb.Stop()
-		wg.Wait()
-		return err
-	case <-vb.ctx.Done():
-		vb.Stop()
-		wg.Wait()
-		return vb.ctx.Err()
-	}
+	<-gCtx.Done()
+	vb.Stop()
+	return g.Wait()
 }
 
 func (vb *ViteBridge) Stop() {
@@ -587,12 +756,12 @@ func (vb *ViteBridge) Stop() {
 		close(vb.stopChan)
 
 		if vb.tunnelConn != nil {
-			vb.tunnelConn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
+			_ = vb.tunnelConn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 			vb.tunnelConn.Close()
 		}
 
 		if vb.hmrConn != nil {
-			vb.hmrConn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
+			_ = vb.hmrConn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""))
 			vb.hmrConn.Close()
 		}
 	})

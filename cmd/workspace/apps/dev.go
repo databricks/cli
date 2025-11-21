@@ -22,10 +22,17 @@ import (
 var viteServerScript []byte
 
 // TODO: Handle multiple ports
-const vitePort = "5173"
+const (
+	vitePort = "5173"
+
+	// Vite server
+	viteReadyCheckInterval = 100 * time.Millisecond
+	viteReadyMaxAttempts   = 50
+	viteScriptCleanupDelay = 100 * time.Millisecond
+)
 
 func isViteReady() bool {
-	conn, err := net.DialTimeout("tcp", "localhost:"+vitePort, 100*time.Millisecond)
+	conn, err := net.DialTimeout("tcp", "localhost:"+vitePort, viteReadyCheckInterval)
 	if err != nil {
 		return false
 	}
@@ -70,15 +77,13 @@ func startViteDevServer(ctx context.Context, appURL string) (*exec.Cmd, string, 
 	viteErr := make(chan error, 1)
 	go func() {
 		if err := viteCmd.Wait(); err != nil {
-			viteErr <- fmt.Errorf("Vite server exited with error: %w", err)
+			viteErr <- fmt.Errorf("vite server exited with error: %w", err)
 		} else {
-			viteErr <- errors.New("Vite server exited unexpectedly")
+			viteErr <- errors.New("vite server exited unexpectedly")
 		}
 	}()
 
-	maxAttempts := 50
-
-	for range maxAttempts {
+	for range viteReadyMaxAttempts {
 		select {
 		case err := <-viteErr:
 			os.Remove(scriptPath)
@@ -87,11 +92,11 @@ func startViteDevServer(ctx context.Context, appURL string) (*exec.Cmd, string, 
 			if isViteReady() {
 				return viteCmd, scriptPath, viteErr, nil
 			}
-			time.Sleep(100 * time.Millisecond)
+			time.Sleep(viteReadyCheckInterval)
 		}
 	}
 
-	viteCmd.Process.Kill()
+	_ = viteCmd.Process.Kill()
 	os.Remove(scriptPath)
 	return nil, "", nil, errors.New("timeout waiting for Vite server to be ready")
 }
@@ -143,7 +148,8 @@ func newRunDevCommand() *cobra.Command {
 		}
 
 		defer func() {
-			time.Sleep(100 * time.Millisecond)
+			// Give the process time to fully release the file handle
+			time.Sleep(viteScriptCleanupDelay)
 			os.Remove(scriptPath)
 		}()
 
@@ -163,7 +169,7 @@ func newRunDevCommand() *cobra.Command {
 		case err := <-done:
 			cmdio.LogString(ctx, "Bridge stopped")
 			if viteCmd.Process != nil {
-				viteCmd.Process.Signal(os.Interrupt)
+				_ = viteCmd.Process.Signal(os.Interrupt)
 				<-viteErr
 			}
 			return err
@@ -174,7 +180,7 @@ func newRunDevCommand() *cobra.Command {
 			if viteCmd.Process != nil {
 				if err := viteCmd.Process.Signal(os.Interrupt); err != nil {
 					cmdio.LogString(ctx, fmt.Sprintf("Failed to interrupt Vite: %v", err))
-					viteCmd.Process.Kill()
+					_ = viteCmd.Process.Kill()
 				}
 				<-viteErr
 			}
