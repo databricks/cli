@@ -44,7 +44,7 @@ This action will result in the deletion or recreation of the following volumes.
 For managed volumes, the files stored in the volume are also deleted from your
 cloud tenant within 30 days. For external volumes, the metadata about the volume
 is removed from the catalog, but the underlying files are not deleted:
-  recreate volume foo
+  recreate resources.volumes.foo
 Error: the deployment requires destructive actions, but current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed
 
 
@@ -58,26 +58,26 @@ This action will result in the deletion or recreation of the following volumes.
 For managed volumes, the files stored in the volume are also deleted from your
 cloud tenant within 30 days. For external volumes, the metadata about the volume
 is removed from the catalog, but the underlying files are not deleted:
-  recreate volume foo
+  recreate resources.volumes.foo
 Deploying resources...
 Updating deployment state...
 Deployment complete!
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
-  delete schema schema1
-  delete schema schema2
-  delete volume foo
+  delete resources.schemas.schema1
+  delete resources.schemas.schema2
+  delete resources.volumes.foo
 
 This action will result in the deletion of the following UC schemas. Any underlying data may be lost:
-  delete schema schema1
-  delete schema schema2
+  delete resources.schemas.schema1
+  delete resources.schemas.schema2
 
 This action will result in the deletion of the following volumes.
 For managed volumes, the files stored in the volume are also deleted from your
 cloud tenant within 30 days. For external volumes, the metadata about the volume
 is removed from the catalog, but the underlying files are not deleted:
-  delete volume foo
+  delete resources.volumes.foo
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-uc-volumes-[UNIQUE_NAME]/default
 
