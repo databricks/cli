@@ -5,8 +5,9 @@
 === create secret scope with permissions
 >>> [CLI] bundle plan
 create secret_scopes.my_scope
+create secret_scopes.my_scope.permissions
 
-Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
+Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/secret-scope-permissions-[UNIQUE_NAME]/default/files...
@@ -28,7 +29,9 @@ Deployment complete!
 
 === update permissions (remove sp, change permission for user, add users and remove deco-test-group)
 >>> [CLI] bundle plan
-Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+update secret_scopes.my_scope.permissions
+
+Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/secret-scope-permissions-[UNIQUE_NAME]/default/files...
@@ -44,8 +47,9 @@ Deployment complete!
 === change scope name (should recreate scope and update permissions)
 >>> [CLI] bundle plan
 recreate secret_scopes.my_scope
+update secret_scopes.my_scope.permissions
 
-Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged
+Plan: 1 to add, 1 to change, 1 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/secret-scope-permissions-[UNIQUE_NAME]/default/files...
@@ -66,7 +70,7 @@ Deployment complete!
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
-  delete secret_scope my_scope
+  delete resources.secret_scopes.my_scope
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/secret-scope-permissions-[UNIQUE_NAME]/default
 

@@ -2,8 +2,9 @@
 === create secret scope with duplicate permissions
 >>> [CLI] bundle plan
 create secret_scopes.my_scope
+create secret_scopes.my_scope.permissions
 
-Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
+Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/secret-scope-collapse-[UNIQUE_NAME]/default/files...
@@ -25,7 +26,7 @@ Deployment complete!
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
-  delete secret_scope my_scope
+  delete resources.secret_scopes.my_scope
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/secret-scope-collapse-[UNIQUE_NAME]/default
 
