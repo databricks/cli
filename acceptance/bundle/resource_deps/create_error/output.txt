@@ -97,7 +97,7 @@ Plan: 3 to add, 0 to change, 0 to delete, 1 unchanged
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
-  delete job independent
+  delete resources.jobs.independent
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 

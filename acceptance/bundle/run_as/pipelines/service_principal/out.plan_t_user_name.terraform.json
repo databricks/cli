@@ -2,6 +2,9 @@
   "plan": {
     "resources.pipelines.nyc_taxi_pipeline": {
       "action": "create"
+    },
+    "resources.pipelines.nyc_taxi_pipeline.permissions": {
+      "action": "create"
     }
   }
 }

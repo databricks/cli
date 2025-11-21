@@ -1,4 +1,10 @@
 
+>>> [CLI] bundle plan
+create jobs.job_with_permissions
+create jobs.job_with_permissions.permissions
+
+Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
+
 >>> [CLI] bundle plan -o json
 
 >>> [CLI] bundle deploy
@@ -10,7 +16,9 @@ Deployment complete!
 >>> print_requests
 
 >>> [CLI] bundle plan
-Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
+>>> [CLI] bundle plan -o json
 
 >>> [CLI] permissions get jobs [JOB_ID]
 {
@@ -74,7 +82,7 @@ Deployment complete!
 >>> print_requests
 
 >>> [CLI] bundle plan
-Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 === Delete one permission and deploy again
 
@@ -89,7 +97,7 @@ Deployment complete!
 >>> print_requests
 
 >>> [CLI] bundle plan
-Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 === Delete the whole block and deploy again
 
@@ -132,7 +140,7 @@ Deployment complete!
 >>> print_requests
 
 >>> [CLI] bundle plan
-Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 === Set permissions: []
 
@@ -160,7 +168,7 @@ Warning: unknown field: permissions
   in databricks.yml:18:11
 
 The following resources will be deleted:
-  delete job job_with_permissions
+  delete resources.jobs.job_with_permissions
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/jobs-permissions-test/default
 

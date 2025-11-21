@@ -30,7 +30,7 @@ Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/change-parent-path
 
 This action will result in the deletion or recreation of the following dashboards.
 This will result in changed IDs and permanent URLs of the dashboards that will be recreated:
-  recreate dashboard my_dashboard
+  recreate resources.dashboards.my_dashboard
 Deploying resources...
 Updating deployment state...
 Deployment complete!
@@ -47,7 +47,7 @@ Deployment complete!
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
-  delete dashboard my_dashboard
+  delete resources.dashboards.my_dashboard
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/change-parent-path-[UNIQUE_NAME]/default
 

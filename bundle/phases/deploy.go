@@ -48,6 +48,9 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.P
 	if len(schemaActions) != 0 {
 		cmdio.LogString(ctx, deleteOrRecreateSchemaMessage)
 		for _, action := range schemaActions {
+			if action.IsChildResource() {
+				continue
+			}
 			cmdio.Log(ctx, action)
 		}
 	}

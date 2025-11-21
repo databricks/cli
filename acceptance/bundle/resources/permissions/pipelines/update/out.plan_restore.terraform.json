@@ -2,6 +2,9 @@
   "plan": {
     "resources.pipelines.foo": {
       "action": "skip"
+    },
+    "resources.pipelines.foo.permissions": {
+      "action": "create"
     }
   }
 }

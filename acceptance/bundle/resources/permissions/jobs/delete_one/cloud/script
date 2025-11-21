@@ -32,7 +32,9 @@ trace $CLI bundle deploy
 # Terraform always puts group permissions after user permissions in the request, so we store requests in a different file
 # although they are semantically the same. We're not doing the same transformation in direct, because permissions get endpoint uses a different order.
 print_requests | sort_acl_requests > out.requests_create.json
-trace $CLI bundle plan
+
+# Badness: because of remote reordering we have drift in direct there
+trace $CLI bundle plan > out.plan.$DATABRICKS_BUNDLE_ENGINE.txt
 
 job_id=$($CLI bundle summary --output json | jq -r '.resources.jobs.job_with_permissions.id')
 

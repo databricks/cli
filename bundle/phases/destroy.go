@@ -42,6 +42,9 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.
 	if len(deleteActions) > 0 {
 		cmdio.LogString(ctx, "The following resources will be deleted:")
 		for _, a := range deleteActions {
+			if a.IsChildResource() {
+				continue
+			}
 			cmdio.Log(ctx, a)
 		}
 		cmdio.LogString(ctx, "")

@@ -5,6 +5,9 @@
     },
     "resources.volumes.grants_volume": {
       "action": "create"
+    },
+    "resources.volumes.grants_volume.grants": {
+      "action": "create"
     }
   }
 }

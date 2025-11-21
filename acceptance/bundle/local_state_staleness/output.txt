@@ -30,7 +30,7 @@ Deployment complete!
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
-  delete job test_job
+  delete resources.jobs.test_job
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/local-state-staleness-test-[UNIQUE_NAME]
 

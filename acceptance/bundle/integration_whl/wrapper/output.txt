@@ -49,7 +49,7 @@ Got arguments:
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
-  delete job some_other_job
+  delete resources.jobs.some_other_job
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 

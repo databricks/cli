@@ -61,8 +61,8 @@ Run URL: [DATABRICKS_URL]/?o=[NUMID]#job/[NUMID]/run/[NUMID]
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
-  delete cluster test_cluster
-  delete job some_other_job
+  delete resources.clusters.test_cluster
+  delete resources.jobs.some_other_job
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 

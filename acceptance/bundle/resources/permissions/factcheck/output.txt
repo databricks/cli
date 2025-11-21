@@ -24,8 +24,8 @@ sql/warehouses CAN_USE,CAN_VIEW => CAN_VIEW
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
-  delete job job
-  delete sql_warehouse warehouse
+  delete resources.jobs.job
+  delete resources.sql_warehouses.warehouse
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test_bundle_[UNIQUE_NAME]/default
 

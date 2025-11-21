@@ -110,7 +110,7 @@ Resources:
 === Destroy the warehouse
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
-  delete sql_warehouse test_sql_warehouse
+  delete resources.sql_warehouses.test_sql_warehouse
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test_sql_warehouse/default
 

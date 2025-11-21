@@ -18,8 +18,8 @@ Hello World!
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
-  delete cluster test_cluster
-  delete job foo
+  delete resources.clusters.test_cluster
+  delete resources.jobs.foo
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 

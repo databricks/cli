@@ -29,7 +29,7 @@ Deployment complete!
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
-  delete job test_job_key
+  delete resources.jobs.test_job_key
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-generate-bind-[UNIQUE_NAME]
 

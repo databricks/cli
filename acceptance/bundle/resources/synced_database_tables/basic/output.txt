@@ -42,9 +42,9 @@ Deployment complete!
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
-  delete database_catalog my_catalog
-  delete database_instance my_instance
-  delete synced_database_table my_synced_table
+  delete resources.database_catalogs.my_catalog
+  delete resources.database_instances.my_instance
+  delete resources.synced_database_tables.my_synced_table
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-lakebase-synced-table-[UNIQUE_NAME]/default
 

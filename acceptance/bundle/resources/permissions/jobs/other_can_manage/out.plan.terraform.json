@@ -2,6 +2,9 @@
   "plan": {
     "resources.jobs.foo": {
       "action": "create"
+    },
+    "resources.jobs.foo.permissions": {
+      "action": "create"
     }
   }
 }

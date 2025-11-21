@@ -90,8 +90,8 @@ Deployment complete!
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
-  delete app test_app
-  delete job foo
+  delete resources.apps.test_app
+  delete resources.jobs.foo
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/app-with-job-[UNIQUE_NAME]
 

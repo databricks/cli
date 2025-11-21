@@ -102,6 +102,7 @@ func NewTerraformMetadata(ctx context.Context) (*TerraformMetadata, error) {
 }
 
 var GroupToTerraformName = map[string]string{
+	// 2 level groups: resources.GROUP
 	"jobs":                    "databricks_job",
 	"pipelines":               "databricks_pipeline",
 	"models":                  "databricks_mlflow_model",
@@ -120,6 +121,10 @@ var GroupToTerraformName = map[string]string{
 	"database_instances":      "databricks_database_instance",
 	"database_catalogs":       "databricks_database_database_catalog",
 	"synced_database_tables":  "databricks_database_synced_database_table",
+
+	// 3 level groups: resources.*.GROUP
+	"permissions": "databricks_permissions",
+	"grants":      "databricks_grants",
 }
 
 var TerraformToGroupName = func() map[string]string {

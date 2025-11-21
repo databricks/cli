@@ -31,10 +31,10 @@ Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
-  delete schema myschema
+  delete resources.schemas.myschema
 
 This action will result in the deletion of the following UC schemas. Any underlying data may be lost:
-  delete schema myschema
+  delete resources.schemas.myschema
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/testbundle-[UNIQUE_NAME]/default
 

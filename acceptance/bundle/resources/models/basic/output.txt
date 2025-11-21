@@ -102,7 +102,7 @@ Deployment complete!
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
-  delete model my_model
+  delete resources.models.my_model
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-models-basic-[UNIQUE_NAME]/default
 

@@ -190,7 +190,7 @@ Deployment complete!
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
-  delete experiment my_experiment
+  delete resources.experiments.my_experiment
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/experiment-basic-[UNIQUE_NAME]/default
 

@@ -59,7 +59,7 @@ Warning: unknown field: instance_profile_arn
   in databricks.yml:7:7
 
 The following resources will be deleted:
-  delete database_instance foo
+  delete resources.database_instances.foo
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 

@@ -120,7 +120,7 @@ Deployment complete!
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
-  delete registered_model my_registered_model
+  delete resources.registered_models.my_registered_model
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-registered-models-basic-[UNIQUE_NAME]/default
 

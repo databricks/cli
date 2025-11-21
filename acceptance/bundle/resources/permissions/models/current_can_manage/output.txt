@@ -21,7 +21,7 @@
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
-  delete model foo
+  delete resources.models.foo
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 

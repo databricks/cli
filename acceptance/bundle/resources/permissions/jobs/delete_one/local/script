@@ -24,6 +24,7 @@ rm -f out.requests.txt
 
 title "Delete one permission and deploy again\n"
 grep -v DELETE databricks.yml > tmp.yml && mv tmp.yml databricks.yml
+trace $CLI bundle plan
 trace $CLI bundle plan -o json > out.plan_update.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
 print_requests > out.requests_update.$DATABRICKS_BUNDLE_ENGINE.json
