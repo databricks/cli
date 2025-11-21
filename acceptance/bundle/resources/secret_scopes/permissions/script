@@ -6,6 +6,10 @@ echo "$TEST_SP_APPLICATION_ID:TEST_SP_APPLICATION_ID" >> ACC_REPLS
 
 export SECRET_SCOPE_NAME="test-scope-permissions-$UNIQUE_NAME"
 
+export NEW_GROUP_NAME="scopes-permissions-group-$UNIQUE_NAME"
+
+trace $CLI groups-v2 create --display-name $NEW_GROUP_NAME --output json | jq '.displayName'
+
 cat > databricks.yml.tmpl <<EOF
 bundle:
   name: secret-scope-permissions-$UNIQUE_NAME
@@ -20,8 +24,8 @@ resources:
           level: WRITE
         - user_name: deco-test-user@databricks.com
           level: READ
-        - group_name: deco-test-group
-          level: MANAGE
+        - group_name: $NEW_GROUP_NAME
+          level: WRITE
 EOF
 
 envsubst < databricks.yml.tmpl > databricks.yml

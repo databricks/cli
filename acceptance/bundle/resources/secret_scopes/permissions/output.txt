@@ -1,4 +1,7 @@
 
+>>> [CLI] groups-v2 create --display-name scopes-permissions-group-[UNIQUE_NAME] --output json
+"scopes-permissions-group-[UNIQUE_NAME]"
+
 === create secret scope with permissions
 >>> [CLI] bundle plan
 create secret_scopes.my_scope
@@ -19,9 +22,9 @@ Deployment complete!
 
 >>> [CLI] secrets list-acls test-scope-permissions-[UNIQUE_NAME]
 {"permission":"MANAGE","principal":"[USERNAME]"}
-{"permission":"MANAGE","principal":"deco-test-group"}
 {"permission":"READ","principal":"deco-test-user@databricks.com"}
 {"permission":"WRITE","principal":"[TEST_SP_APPLICATION_ID]"}
+{"permission":"WRITE","principal":"scopes-permissions-group-[UNIQUE_NAME]"}
 
 === update permissions (remove sp, change permission for user, add users and remove deco-test-group)
 >>> [CLI] bundle plan
