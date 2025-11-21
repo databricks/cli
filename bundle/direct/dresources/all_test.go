@@ -540,7 +540,7 @@ func TestFieldTriggers(t *testing.T) {
 			validateFields(t, adapter.StateType(), adapter.fieldTriggersLocal)
 		})
 		t.Run(resourceName+"_remote", func(t *testing.T) {
-			validateFields(t, adapter.InputConfigType(), adapter.fieldTriggersRemote)
+			validateFields(t, adapter.StateType(), adapter.fieldTriggersRemote)
 		})
 	}
 }
