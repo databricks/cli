@@ -80,7 +80,7 @@ To start using direct engine, deploy with DATABRICKS_BUNDLE_ENGINE=direct env va
 		_, localPath := b.StateFilenameDirect(ctx)
 		tempStatePath := localPath + ".temp-migration"
 		if _, err = os.Stat(tempStatePath); err == nil {
-			return fmt.Errorf("temporary state file %s already exists, another migration is in progress or was interrupated. In the latter case, delete the file", tempStatePath)
+			return fmt.Errorf("temporary state file %s already exists, another migration is in progress or was interrupted. In the latter case, delete the file", tempStatePath)
 		}
 		if _, err = os.Stat(localPath); err == nil {
 			return fmt.Errorf("state file %s already exists", localPath)
