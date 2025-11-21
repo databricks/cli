@@ -10,7 +10,16 @@ To authenticate, please run:
 
 Replace <your-workspace-url> with your Databricks workspace URL (e.g., mycompany.cloud.databricks.com).
 
+Alternatives:
+
+1. Run `databricks auth profiles` to list available profiles and set the `DATABRICKS_CONFIG_PROFILE` to the profile you want to use.
+2. Set the `DATABRICKS_CONFIG_HOST` to the host of the workspace you want to use.
+
+You might have to leave the coding agent to set these environment variables and then come back to it.
+
 Don't have a Databricks account? You can set up a fully free account for experimentation at:
 https://docs.databricks.com/getting-started/free-edition
+
+Do not run anything else before authenticating successfully.
 
 Once authenticated, you can use this tool again
