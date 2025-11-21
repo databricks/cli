@@ -20,6 +20,7 @@ def write(filename):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-t", "--target", default="default")
+    parser.add_argument("--backup", action="store_true")
     args = parser.parse_args()
 
     if args.target:
@@ -27,13 +28,18 @@ def main():
         if not os.path.exists(target_dir):
             raise SystemExit(f"Invalid target {args.target!r}: {target_dir} does not exist")
 
-    filename = f".databricks/bundle/{args.target}/terraform/terraform.tfstate"
-    if os.path.exists(filename):
-        write(filename)
+    if args.backup:
+        filename = f".databricks/bundle/{args.target}/terraform/terraform.tfstate.backup"
+        if os.path.exists(filename):
+            write(filename)
+    else:
+        filename = f".databricks/bundle/{args.target}/terraform/terraform.tfstate"
+        if os.path.exists(filename):
+            write(filename)
 
-    filename = f".databricks/bundle/{args.target}/resources.json"
-    if os.path.exists(filename):
-        write(filename)
+        filename = f".databricks/bundle/{args.target}/resources.json"
+        if os.path.exists(filename):
+            write(filename)
 
 
 if __name__ == "__main__":

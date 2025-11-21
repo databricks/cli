@@ -1,12 +1,17 @@
 package deployment
 
 import (
+	"bytes"
+	"context"
 	"fmt"
 	"os"
 
+	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/deploy"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/direct/dstate"
+	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
@@ -37,8 +42,9 @@ WARNING: Both direct deployment engine and this command are experimental and not
 		opts := utils.ProcessOptions{
 			SkipEngineEnvVar: true,
 			AlwaysPull:       true,
-			FastValidate:     true,
-			Build:            true,
+			// Same options as regular deploy, to ensure bundle config is in the same state
+			FastValidate: true,
+			Build:        true,
 		}
 
 		b, stateDesc, err := utils.ProcessBundleRet(cmd, opts)
@@ -120,9 +126,15 @@ To start using direct engine, deploy with DATABRICKS_BUNDLE_ENGINE=direct env va
 		if err := os.Rename(tempStatePath, localPath); err != nil {
 			return fmt.Errorf("renaming %s to %s: %w", tempStatePath, localPath, err)
 		}
-		err = os.Remove(localTerraformPath)
+
+		err = os.Rename(localTerraformPath, localTerraformPath+".backup")
 		if err != nil {
 			// not fatal, since we've increased serial
+			logdiag.LogError(ctx, err)
+		}
+
+		err = backupRemoteTerraformState(ctx, b, stateDesc)
+		if err != nil {
 			logdiag.LogError(ctx, err)
 		}
 
@@ -135,4 +147,38 @@ The state file is not synchronized to the workspace yet. To do that and finalize
 	}
 
 	return cmd
+}
+
+func findRemoteTerraformState(states []*statemgmt.StateDesc) *statemgmt.StateDesc {
+	for _, st := range states {
+		if !st.Engine.IsDirect() && !st.IsLocal {
+			return st
+		}
+	}
+
+	return nil
+}
+
+func backupRemoteTerraformState(ctx context.Context, b *bundle.Bundle, winner *statemgmt.StateDesc) error {
+	remoteTF := findRemoteTerraformState(winner.AllStates)
+	if remoteTF == nil {
+		return nil
+	}
+
+	filer, err := deploy.StateFiler(b)
+	if err != nil {
+		return err
+	}
+
+	err = filer.Write(ctx, remoteTF.SourcePath+".backup", bytes.NewReader(remoteTF.Content))
+	if err != nil {
+		return fmt.Errorf("saving backup of TF state to %q: %w", remoteTF.SourcePath, err)
+	}
+
+	err = filer.Delete(ctx, remoteTF.SourcePath)
+	if err != nil {
+		return fmt.Errorf("deleting remote tf state at %q: %w", remoteTF.SourcePath, err)
+	}
+
+	return nil
 }
