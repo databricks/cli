@@ -279,7 +279,7 @@ func ComputeChecksum(ctx context.Context, workDir string) (string, error) {
 		if err != nil {
 			return "", fmt.Errorf("failed to read %s: %w", filePath, err)
 		}
-		
+
 		if _, err := io.Copy(hasher, r); err != nil {
 			r.Close()
 			return "", fmt.Errorf("failed to hash %s: %w", filePath, err)
