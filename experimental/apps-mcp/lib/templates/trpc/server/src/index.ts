@@ -29,6 +29,7 @@ const appRouter = router({
   // }),
 });
 
+export { appRouter };
 export type AppRouter = typeof appRouter;
 
 export const app = express();

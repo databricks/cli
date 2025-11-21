@@ -7,14 +7,14 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/databricks/cli/experimental/apps-mcp/lib/middlewares"
 	"github.com/databricks/cli/experimental/apps-mcp/lib/templates"
 	"github.com/databricks/cli/libs/log"
 )
 
 // ScaffoldArgs contains arguments for scaffolding operation
 type ScaffoldArgs struct {
-	WorkDir      string `json:"work_dir"`
-	ForceRewrite bool   `json:"force_rewrite,omitempty"`
+	WorkDir string `json:"work_dir"`
 }
 
 // ScaffoldResult contains the result of a scaffold operation
@@ -45,15 +45,8 @@ func (p *Provider) Scaffold(ctx context.Context, args *ScaffoldArgs) (*ScaffoldR
 			return nil, err
 		}
 
-		if len(entries) > 0 && !args.ForceRewrite {
-			return nil, errors.New("work_dir is not empty (use force_rewrite to overwrite)")
-		}
-
-		// Clear directory if force_rewrite
-		if args.ForceRewrite {
-			if err := os.RemoveAll(workDir); err != nil {
-				return nil, fmt.Errorf("failed to clear directory: %w", err)
-			}
+		if len(entries) > 0 {
+			return nil, errors.New("work_dir is not empty")
 		}
 	}
 
@@ -85,6 +78,19 @@ func (p *Provider) Scaffold(ctx context.Context, args *ScaffoldArgs) (*ScaffoldR
 		}
 
 		filesCopied++
+	}
+
+	// write .env file
+	warehouseID, err := middlewares.GetWarehouseID(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get warehouse ID: %w", err)
+	}
+	host := middlewares.MustGetDatabricksClient(ctx).Config.Host
+
+	envContent := fmt.Sprintf("DATABRICKS_WAREHOUSE_ID=%s\nDATABRICKS_HOST=%s", warehouseID, host)
+	envPath := filepath.Join(workDir, ".env")
+	if err := os.WriteFile(envPath, []byte(envContent), 0o644); err != nil {
+		return nil, fmt.Errorf("failed to write .env file: %w", err)
 	}
 
 	log.Infof(ctx, "scaffolded project (template=%s, work_dir=%s, files=%d)",
