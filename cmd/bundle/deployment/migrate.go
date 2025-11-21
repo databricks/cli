@@ -3,6 +3,7 @@ package deployment
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"os"
 
@@ -124,6 +125,10 @@ To start using direct engine, deploy with DATABRICKS_BUNDLE_ENGINE=direct env va
 		}
 
 		deploymentBundle.Apply(ctx, b.WorkspaceClient(), &b.Config, plan, direct.MigrateMode(true))
+		if logdiag.HasError(ctx) {
+			logdiag.LogError(ctx, errors.New("migration failed; ensure you have done full deploy before the migration"))
+			return root.ErrAlreadyPrinted
+		}
 
 		if err := os.Rename(tempStatePath, localPath); err != nil {
 			return fmt.Errorf("renaming %s to %s: %w", tempStatePath, localPath, err)
