@@ -109,9 +109,10 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, ta
 	}
 
 	// Even if deployment failed, there might be updates in states that we need to upload
-	bundle.ApplyContext(ctx, b,
-		statemgmt.StatePush(targetEngine),
-	)
+	diags := statemgmt.PushResourcesState(ctx, b, targetEngine)
+	for _, d := range diags {
+		logdiag.LogDiag(ctx, d)
+	}
 	if logdiag.HasError(ctx) {
 		return
 	}
