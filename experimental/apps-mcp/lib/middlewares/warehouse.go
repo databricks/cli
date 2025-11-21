@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"sort"
 
 	"github.com/databricks/cli/experimental/apps-mcp/lib/session"
 	"github.com/databricks/cli/libs/env"
@@ -62,26 +63,32 @@ func getDefaultWarehouse(ctx context.Context) (*sql.EndpointInfo, error) {
 		return nil, err
 	}
 
+	priorities := map[sql.State]int{
+		sql.StateRunning:  1,
+		sql.StateStarting: 2,
+		sql.StateStopped:  3,
+		sql.StateStopping: 4,
+		sql.StateDeleted:  99,
+		sql.StateDeleting: 99,
+	}
+
 	warehouses := response.Warehouses
+	sort.Slice(warehouses, func(i, j int) bool {
+		return priorities[warehouses[i].State] < priorities[warehouses[j].State]
+	})
 
 	if len(warehouses) == 0 {
-		return nil, errors.New("no warehouses found")
+		return nil, errNoWarehouses()
 	}
 
-	// Prefer RUNNING warehouses
-	for i := range warehouses {
-		if warehouses[i].State == sql.StateRunning {
-			return &warehouses[i], nil
-		}
+	firstWarehouse := warehouses[0]
+	if firstWarehouse.State == sql.StateDeleted || firstWarehouse.State == sql.StateDeleting {
+		return nil, errNoWarehouses()
 	}
 
-	// Fall back to STOPPED warehouses (they auto-start when queried)
-	for i := range warehouses {
-		if warehouses[i].State == sql.StateStopped {
-			return &warehouses[i], nil
-		}
-	}
+	return &firstWarehouse, nil
+}
 
-	// Return first available warehouse regardless of state
-	return &warehouses[0], nil
+func errNoWarehouses() error {
+	return errors.New("No warehouse found. You can explicitly set the warehouse ID using the DATABRICKS_WAREHOUSE_ID environment variable.")
 }
