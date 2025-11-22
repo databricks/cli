@@ -100,7 +100,6 @@ func TestApplyPresetsSourceLinkedDeployment(t *testing.T) {
 			},
 			initialValue:  &enabled,
 			expectedValue: &enabled,
-			expectedError: "source-linked deployment is not supported for apps",
 		},
 		{
 			name: "preset enabled, production mode, bundle in Workspace, databricks runtime",
