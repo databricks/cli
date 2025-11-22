@@ -25,7 +25,7 @@ func New() *cobra.Command {
   to enable it for new workspaces. By default, this account-level setting is
   disabled for new workspaces. After workspace creation, account admins can
   enable the compliance security profile individually for each workspace.
-  
+
   This settings can be disabled so that new workspaces do not have compliance
   security profile enabled by default.`,
 		RunE: root.ReportUnknownSubcommand,
@@ -62,7 +62,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get"
 	cmd.Short = `Get the compliance security profile setting for new workspaces.`
 	cmd.Long = `Get the compliance security profile setting for new workspaces.
-  
+
   Gets the compliance security profile setting for new workspaces.`
 
 	cmd.Annotations = make(map[string]string)
@@ -116,7 +116,7 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update"
 	cmd.Short = `Update the compliance security profile setting for new workspaces.`
 	cmd.Long = `Update the compliance security profile setting for new workspaces.
-  
+
   Updates the value of the compliance security profile setting for new
   workspaces.`
 

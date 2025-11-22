@@ -22,7 +22,7 @@ func New() *cobra.Command {
 		Use:   "disable-legacy-access",
 		Short: `'Disabling legacy access' has the following impacts: 1.`,
 		Long: `'Disabling legacy access' has the following impacts:
-  
+
   1. Disables direct access to Hive Metastores from the workspace. However, you
   can still access a Hive Metastore through Hive Metastore federation. 2.
   Disables fallback mode on external location access from the workspace. 3.
@@ -62,7 +62,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete"
 	cmd.Short = `Delete Legacy Access Disablement Status.`
 	cmd.Long = `Delete Legacy Access Disablement Status.
-  
+
   Deletes legacy access disablement status.`
 
 	cmd.Annotations = make(map[string]string)
@@ -115,7 +115,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get"
 	cmd.Short = `Retrieve Legacy Access Disablement Status.`
 	cmd.Long = `Retrieve Legacy Access Disablement Status.
-  
+
   Retrieves legacy access disablement Status.`
 
 	cmd.Annotations = make(map[string]string)
@@ -169,7 +169,7 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update"
 	cmd.Short = `Update Legacy Access Disablement Status.`
 	cmd.Long = `Update Legacy Access Disablement Status.
-  
+
   Updates legacy access disablement status.`
 
 	cmd.Annotations = make(map[string]string)

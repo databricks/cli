@@ -30,3 +30,6 @@ go tool -modfile=tools/go.mod yamlfmt .github/workflows/tagging.yml
 
 # Generate PyDABs code.
 make -C python codegen
+
+# Fix whitespace issues in the generated code.
+make wsfix

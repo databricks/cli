@@ -66,7 +66,7 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create"
 	cmd.Short = `Create a file.`
 	cmd.Long = `Create a file.
-  
+
   Create a file. Currently, only provider icons and attached notebooks are
   supported.`
 
@@ -128,7 +128,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete FILE_ID"
 	cmd.Short = `Delete a file.`
 	cmd.Long = `Delete a file.
-  
+
   Delete a file`
 
 	cmd.Annotations = make(map[string]string)
@@ -193,7 +193,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get FILE_ID"
 	cmd.Short = `Get a file.`
 	cmd.Long = `Get a file.
-  
+
   Get a file`
 
 	cmd.Annotations = make(map[string]string)
@@ -264,7 +264,7 @@ func newList() *cobra.Command {
 	cmd.Use = "list"
 	cmd.Short = `List files.`
 	cmd.Long = `List files.
-  
+
   List files attached to a parent entity.`
 
 	cmd.Annotations = make(map[string]string)

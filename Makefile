@@ -46,6 +46,9 @@ tools/golangci-lint: tools/go.mod tools/go.sum
 ws:
 	./tools/validate_whitespace.py
 
+wsfix:
+	./tools/validate_whitespace.py --fix
+
 links:
 	./tools/update_github_links.py
 
@@ -147,4 +150,4 @@ generate:
 	$(GENKIT_BINARY) update-sdk
 
 
-.PHONY: lint lintfull tidy lintcheck fmt fmtfull test cover showcover build snapshot snapshot-release schema integration integration-short acc-cover acc-showcover docs ws links checks test-update test-update-templates test-update-aws test-update-all generate-validation
+.PHONY: lint lintfull tidy lintcheck fmt fmtfull test cover showcover build snapshot snapshot-release schema integration integration-short acc-cover acc-showcover docs ws wsfix links checks test-update test-update-templates test-update-aws test-update-all generate-validation

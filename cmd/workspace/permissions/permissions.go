@@ -48,7 +48,7 @@ func New() *cobra.Command {
   and other important information, see [Access Control]. Note that to manage
   access control on service principals, use **[Account Access Control
   Proxy](:service:accountaccesscontrolproxy)**.
-  
+
   [Access Control]: https://docs.databricks.com/security/auth-authz/access-control/index.html`,
 		GroupID: "iam",
 		Annotations: map[string]string{
@@ -88,7 +88,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get REQUEST_OBJECT_TYPE REQUEST_OBJECT_ID"
 	cmd.Short = `Get object permissions.`
 	cmd.Long = `Get object permissions.
-  
+
   Gets the permissions of an object. Objects can inherit permissions from their
   parent objects or root object.
 
@@ -151,7 +151,7 @@ func newGetPermissionLevels() *cobra.Command {
 	cmd.Use = "get-permission-levels REQUEST_OBJECT_TYPE REQUEST_OBJECT_ID"
 	cmd.Short = `Get object permission levels.`
 	cmd.Long = `Get object permission levels.
-  
+
   Gets the permission levels that a user can have on an object.
 
   Arguments:
@@ -218,7 +218,7 @@ func newSet() *cobra.Command {
 	cmd.Use = "set REQUEST_OBJECT_TYPE REQUEST_OBJECT_ID"
 	cmd.Short = `Set object permissions.`
 	cmd.Long = `Set object permissions.
-  
+
   Sets permissions on an object, replacing existing permissions if they exist.
   Deletes all direct permissions if none are specified. Objects can inherit
   permissions from their parent objects or root object.
@@ -299,7 +299,7 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update REQUEST_OBJECT_TYPE REQUEST_OBJECT_ID"
 	cmd.Short = `Update object permissions.`
 	cmd.Long = `Update object permissions.
-  
+
   Updates the permissions on an object. Objects can inherit permissions from
   their parent objects or root object.
 

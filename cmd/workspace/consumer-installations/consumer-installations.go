@@ -71,7 +71,7 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create LISTING_ID"
 	cmd.Short = `Install from a listing.`
 	cmd.Long = `Install from a listing.
-  
+
   Install payload associated with a Databricks Marketplace listing.`
 
 	cmd.Annotations = make(map[string]string)
@@ -136,7 +136,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete LISTING_ID INSTALLATION_ID"
 	cmd.Short = `Uninstall from a listing.`
 	cmd.Long = `Uninstall from a listing.
-  
+
   Uninstall an installation associated with a Databricks Marketplace listing.`
 
 	cmd.Annotations = make(map[string]string)
@@ -193,7 +193,7 @@ func newList() *cobra.Command {
 	cmd.Use = "list"
 	cmd.Short = `List all installations.`
 	cmd.Long = `List all installations.
-  
+
   List all installations across all listings.`
 
 	cmd.Annotations = make(map[string]string)
@@ -244,7 +244,7 @@ func newListListingInstallations() *cobra.Command {
 	cmd.Use = "list-listing-installations LISTING_ID"
 	cmd.Short = `List installations for a listing.`
 	cmd.Long = `List installations for a listing.
-  
+
   List all installations for a particular listing.`
 
 	cmd.Annotations = make(map[string]string)
@@ -299,7 +299,7 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update LISTING_ID INSTALLATION_ID"
 	cmd.Short = `Update an installation.`
 	cmd.Long = `Update an installation.
-  
+
   This is a update API that will update the part of the fields defined in the
   installation table as well as interact with external services according to the
   fields not included in the installation table 1. the token will be rotate if

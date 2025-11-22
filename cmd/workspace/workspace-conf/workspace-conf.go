@@ -58,7 +58,7 @@ func newGetStatus() *cobra.Command {
 	cmd.Use = "get-status KEYS"
 	cmd.Short = `Check configuration status.`
 	cmd.Long = `Check configuration status.
-  
+
   Gets the configuration status for a workspace.`
 
 	cmd.Annotations = make(map[string]string)
@@ -114,7 +114,7 @@ func newSetStatus() *cobra.Command {
 	cmd.Use = "set-status"
 	cmd.Short = `Enable/disable features.`
 	cmd.Long = `Enable/disable features.
-  
+
   Sets the configuration status for a workspace, including enabling or disabling
   it.`
 

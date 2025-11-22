@@ -23,7 +23,7 @@ func New() *cobra.Command {
 		Short: `**Index**: An efficient representation of your embedding vectors that supports real-time and efficient approximate nearest neighbor (ANN) search queries.`,
 		Long: `**Index**: An efficient representation of your embedding vectors that supports
   real-time and efficient approximate nearest neighbor (ANN) search queries.
-  
+
   There are 2 types of Vector Search indexes: - **Delta Sync Index**: An index
   that automatically syncs with a source Delta Table, automatically and
   incrementally updating the index as the underlying data in the Delta Table
@@ -80,14 +80,14 @@ func newCreateIndex() *cobra.Command {
 	cmd.Use = "create-index NAME ENDPOINT_NAME PRIMARY_KEY INDEX_TYPE"
 	cmd.Short = `Create an index.`
 	cmd.Long = `Create an index.
-  
+
   Create a new index.
 
   Arguments:
     NAME: Name of the index
     ENDPOINT_NAME: Name of the endpoint to be used for serving the index
     PRIMARY_KEY: Primary key of the index
-    INDEX_TYPE:  
+    INDEX_TYPE:
       Supported values: [DELTA_SYNC, DIRECT_ACCESS]`
 
 	cmd.Annotations = make(map[string]string)
@@ -177,7 +177,7 @@ func newDeleteDataVectorIndex() *cobra.Command {
 	cmd.Use = "delete-data-vector-index INDEX_NAME"
 	cmd.Short = `Delete data from index.`
 	cmd.Long = `Delete data from index.
-  
+
   Handles the deletion of data from a specified vector index.
 
   Arguments:
@@ -360,7 +360,7 @@ func newListIndexes() *cobra.Command {
 	cmd.Use = "list-indexes ENDPOINT_NAME"
 	cmd.Short = `List indexes.`
 	cmd.Long = `List indexes.
-  
+
   List all indexes in the given endpoint.
 
   Arguments:
@@ -425,7 +425,7 @@ func newQueryIndex() *cobra.Command {
 	cmd.Use = "query-index INDEX_NAME"
 	cmd.Short = `Query an index.`
 	cmd.Long = `Query an index.
-  
+
   Query the specified vector index.
 
   Arguments:
@@ -501,7 +501,7 @@ func newQueryNextPage() *cobra.Command {
 	cmd.Use = "query-next-page INDEX_NAME"
 	cmd.Short = `Query next page.`
 	cmd.Long = `Query next page.
-  
+
   Use next_page_token returned from previous QueryVectorIndex or
   QueryVectorIndexNextPage request to fetch next page of results.
 
@@ -576,7 +576,7 @@ func newScanIndex() *cobra.Command {
 	cmd.Use = "scan-index INDEX_NAME"
 	cmd.Short = `Scan an index.`
 	cmd.Long = `Scan an index.
-  
+
   Scan the specified vector index and return the first num_results entries
   after the exclusive primary_key.
 
@@ -645,7 +645,7 @@ func newSyncIndex() *cobra.Command {
 	cmd.Use = "sync-index INDEX_NAME"
 	cmd.Short = `Synchronize an index.`
 	cmd.Long = `Synchronize an index.
-  
+
   Triggers a synchronization process for a specified vector index.
 
   Arguments:
@@ -704,7 +704,7 @@ func newUpsertDataVectorIndex() *cobra.Command {
 	cmd.Use = "upsert-data-vector-index INDEX_NAME INPUTS_JSON"
 	cmd.Short = `Upsert data into an index.`
 	cmd.Long = `Upsert data into an index.
-  
+
   Handles the upserting of data into a specified vector index.
 
   Arguments:

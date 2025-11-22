@@ -66,7 +66,7 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create"
 	cmd.Short = `Create a user token.`
 	cmd.Long = `Create a user token.
-  
+
   Creates and returns a token for a user. If this call is made through token
   authentication, it creates a token with the same client ID as the
   authenticated token. If the user's token quota is exceeded, this call returns
@@ -136,9 +136,9 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete TOKEN_ID"
 	cmd.Short = `Revoke token.`
 	cmd.Long = `Revoke token.
-  
+
   Revokes an access token.
-  
+
   If a token with the specified ID is not valid, this call returns an error
   **RESOURCE_DOES_NOT_EXIST**.
 
@@ -228,7 +228,7 @@ func newList() *cobra.Command {
 	cmd.Use = "list"
 	cmd.Short = `List tokens.`
 	cmd.Long = `List tokens.
-  
+
   Lists all the valid tokens for a user-workspace pair.`
 
 	cmd.Annotations = make(map[string]string)

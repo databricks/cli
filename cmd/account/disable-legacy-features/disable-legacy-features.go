@@ -22,7 +22,7 @@ func New() *cobra.Command {
 		Use:   "disable-legacy-features",
 		Short: `Disable legacy features for new Databricks workspaces.`,
 		Long: `Disable legacy features for new Databricks workspaces.
-  
+
   For newly created workspaces: 1. Disables the use of DBFS root and mounts. 2.
   Hive Metastore will not be provisioned. 3. Disables the use of ‘No-isolation
   clusters’. 4. Disables Databricks Runtime versions prior to 13.3LTS.`,
@@ -61,7 +61,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete"
 	cmd.Short = `Delete the disable legacy features setting.`
 	cmd.Long = `Delete the disable legacy features setting.
-  
+
   Deletes the disable legacy features setting.`
 
 	cmd.Annotations = make(map[string]string)
@@ -114,7 +114,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get"
 	cmd.Short = `Get the disable legacy features setting.`
 	cmd.Long = `Get the disable legacy features setting.
-  
+
   Gets the value of the disable legacy features setting.`
 
 	cmd.Annotations = make(map[string]string)
@@ -168,7 +168,7 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update"
 	cmd.Short = `Update the disable legacy features setting.`
 	cmd.Long = `Update the disable legacy features setting.
-  
+
   Updates the value of the disable legacy features setting.`
 
 	cmd.Annotations = make(map[string]string)
