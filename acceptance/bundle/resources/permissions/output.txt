@@ -56,6 +56,18 @@ DIFF  clusters/current_can_manage/out.requests.destroy.direct.json
 +  }
 +]
 MATCH clusters/target/out.requests.direct.json
+MATCH dashboards/create/out.requests.deploy.direct.json
+DIFF  dashboards/create/out.requests.destroy.direct.json
+--- dashboards/create/out.requests.destroy.direct.json
++++ dashboards/create/out.requests.destroy.terraform.json
+@@ -1 +1,7 @@
+-[]+[
++  {
++    "body": {},
++    "method": "PUT",
++    "path": "/api/2.0/permissions/dashboards/[DASHBOARD_ID]"
++  }
++]
 MATCH database_instances/current_can_manage/out.requests.deploy.direct.json
 DIFF  database_instances/current_can_manage/out.requests.destroy.direct.json
 --- database_instances/current_can_manage/out.requests.destroy.direct.json

@@ -1,0 +1,13 @@
+bundle:
+  name: dashboard-perm-$UNIQUE_NAME
+
+resources:
+  dashboards:
+    foo:
+      display_name: test-dashboard-$UNIQUE_NAME
+      warehouse_id: $TEST_DEFAULT_WAREHOUSE_ID
+      parent_path: /Users/$CURRENT_USER_NAME/folder1
+      serialized_dashboard: '{"pages":[{"name":"page1","displayName":"Page 1"}]}'
+      permissions:
+        - level: CAN_READ
+          user_name: $TEST_USER_EMAIL

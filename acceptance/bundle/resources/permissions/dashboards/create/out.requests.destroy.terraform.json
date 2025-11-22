@@ -1,0 +1,5 @@
+{
+  "method": "PUT",
+  "path": "/api/2.0/permissions/dashboards/[DASHBOARD_ID]",
+  "body": {}
+}

@@ -1,0 +1,16 @@
+{
+  "method": "PUT",
+  "path": "/api/2.0/permissions/dashboards/[DASHBOARD_ID]",
+  "body": {
+    "access_control_list": [
+      {
+        "permission_level": "CAN_READ",
+        "user_name": "deco-test-user@databricks.com"
+      },
+      {
+        "permission_level": "CAN_MANAGE",
+        "service_principal_name": "[USERNAME]"
+      }
+    ]
+  }
+}
