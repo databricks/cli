@@ -2,8 +2,8 @@
   "name": "server",
   "private": true,
   "scripts": {
-    "build": "tsc -p tsconfig.json",
-    "check": "tsc -p tsconfig.json --noEmit",
+    "build": "tsc",
+    "check": "tsc --noEmit",
     "start": "tsx src/index.ts",
     "dev": "tsx watch src/index.ts",
     "db:push": "drizzle-kit push --force",
