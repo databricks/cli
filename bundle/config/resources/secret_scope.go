@@ -11,6 +11,12 @@ import (
 
 type SecretScopePermissionLevel string
 
+const (
+	SecretScopePermissionLevelRead   SecretScopePermissionLevel = "READ"
+	SecretScopePermissionLevelManage SecretScopePermissionLevel = "MANAGE"
+	SecretScopePermissionLevelWrite  SecretScopePermissionLevel = "WRITE"
+)
+
 // SecretScopePermission holds the permission level setting for a single principal.
 // Multiple of these can be defined on any secret scope.
 // Secret scopes permissions are mapped to Secret ACLs
