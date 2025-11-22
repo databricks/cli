@@ -43,13 +43,13 @@ func (p *Provider) Validate(ctx context.Context, args *ValidateArgs) (*ValidateR
 		valConfig := p.config.Validation
 		if valConfig.Command != "" {
 			log.Infof(ctx, "using custom validation command: command=%s", valConfig.Command)
-			validation = NewValidationCmd(valConfig.Command, "")
+			validation = NewValidationCmd(valConfig.Command)
 		}
 	}
 
 	if validation == nil {
-		log.Info(ctx, "using default tRPC validation strategy")
-		validation = NewValidationTRPC()
+		log.Info(ctx, "using default Node.js validation strategy")
+		validation = NewValidationNodeJs()
 	}
 
 	result, err := validation.Validate(ctx, workDir)
