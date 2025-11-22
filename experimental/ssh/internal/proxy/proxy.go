@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -15,7 +16,11 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-var errProxyEOF = errors.New("proxy EOF error")
+var (
+	errProxyEOF             = errors.New("proxy EOF error")
+	errSendingLoopStopped   = errors.New("sending loop stopped")
+	errReceivingLoopStopped = errors.New("receiving loop stopped")
+)
 
 const (
 	// Same as gorilla/websocket default read/write buffer sizes. Bigger payloads will be split into multiple ws frames.
@@ -94,6 +99,9 @@ type proxyConnection struct {
 	handoverMutex sync.Mutex
 	// Atomic that holds the current handover coordination channels, or nil if no handover is in progress.
 	handoverState atomic.Pointer[handoverCoordination]
+	// Channel that is closed when the initial connection is established (or failed).
+	// Prevents race conditions where handover is accepted before the initial connection is ready.
+	ready chan struct{}
 }
 
 type createWebsocketConnectionFunc func(ctx context.Context, connID string) (*websocket.Conn, error)
@@ -102,16 +110,31 @@ func newProxyConnection(createConn createWebsocketConnectionFunc) *proxyConnecti
 	return &proxyConnection{
 		connID:                    uuid.NewString(),
 		createWebsocketConnection: createConn,
+		ready:                     make(chan struct{}),
 	}
 }
 
-func (pc *proxyConnection) start(ctx context.Context, src io.Reader, dst io.Writer) error {
+func (pc *proxyConnection) start(ctx context.Context, src io.ReadCloser, dst io.Writer) error {
 	g, gCtx := errgroup.WithContext(ctx)
 	g.Go(func() error {
-		return pc.runSendingLoop(gCtx, src)
+		err := pc.runSendingLoop(gCtx, src)
+		// Always return a non nil error to cancel the errgroup context
+		return errors.Join(err, errSendingLoopStopped)
 	})
 	g.Go(func() error {
-		return pc.runReceivingLoop(gCtx, dst)
+		err := pc.runReceivingLoop(gCtx, dst)
+		// Always return a non nil error to cancel the errgroup context
+		return errors.Join(err, errReceivingLoopStopped)
+	})
+	g.Go(func() error {
+		// Wait for the context to be cancelled. There can be multiple reasons:
+		// - Sending loop finished (e.g. EOF from source)
+		// - Receiving loop finished (e.g. connection closed)
+		// - Parent context cancelled
+		// Both loops can still be stuck on conn.ReadMessage or src.Read and won't notice context cancellation,
+		// so we close the connection and the source (sshd stdout pipe or ssh client stdio) to unblock them.
+		<-gCtx.Done()
+		return errors.Join(pc.close(), pc.closeSource(src))
 	})
 	err := g.Wait()
 	if err == nil || isNormalClosure(err) {
@@ -121,6 +144,7 @@ func (pc *proxyConnection) start(ctx context.Context, src io.Reader, dst io.Writ
 }
 
 func (pc *proxyConnection) connect(ctx context.Context) error {
+	defer close(pc.ready)
 	conn, err := pc.createWebsocketConnection(ctx, pc.connID)
 	if err != nil {
 		return err
@@ -130,6 +154,7 @@ func (pc *proxyConnection) connect(ctx context.Context) error {
 }
 
 func (pc *proxyConnection) accept(w http.ResponseWriter, r *http.Request) error {
+	defer close(pc.ready)
 	conn, err := pc.acceptWebsocketConnection(w, r)
 	if err != nil {
 		return err
@@ -236,6 +261,14 @@ func (pc *proxyConnection) close() error {
 	return nil
 }
 
+func (pc *proxyConnection) closeSource(src io.ReadCloser) error {
+	err := src.Close()
+	if err != nil && (errors.Is(err, os.ErrClosed) || errors.Is(err, io.ErrClosedPipe)) {
+		return nil
+	}
+	return err
+}
+
 func (pc *proxyConnection) initiateHandover(ctx context.Context) error {
 	// Blocks proxying any outgoing messages during the entire handover
 	pc.handoverMutex.Lock()
@@ -283,6 +316,13 @@ func (pc *proxyConnection) acceptHandover(ctx context.Context, w http.ResponseWr
 	pc.handoverMutex.Lock()
 	defer pc.handoverMutex.Unlock()
 
+	// Wait for the initial connection to be ready
+	select {
+	case <-pc.ready:
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+
 	handoverCtx, cancel := context.WithTimeout(ctx, proxyHandoverAcceptTimeout)
 	defer cancel()
 	handoverState := &handoverCoordination{
@@ -303,6 +343,10 @@ func (pc *proxyConnection) acceptHandover(ctx context.Context, w http.ResponseWr
 	// Signal the client to complete handover by closing the old connection.
 	// Not using pc.sendMessage here, because it's blocked by the handover mutex.
 	currentConn := pc.conn.Load()
+	if currentConn == nil {
+		newConn.Close()
+		return errors.New("initial connection not established")
+	}
 	err = currentConn.WriteMessage(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, "handover"))
 	if err != nil {
 		newConn.Close()
