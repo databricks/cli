@@ -147,7 +147,7 @@ func PullResourcesState(ctx context.Context, b *bundle.Bundle, alwaysPull Always
 	}
 
 	if requiredEngine != engine.EngineNotSet && requiredEngine != winner.Engine {
-		logStatesError(ctx, fmt.Sprintf("Required engine %q does not match present state files. Set required engine via %q env var.", requiredEngine, engine.EnvVar), states)
+		logStatesError(ctx, fmt.Sprintf("Required engine %q does not match present state files. Clear %q env var to use engine appropriate for the state.", requiredEngine, engine.EnvVar), states)
 	}
 
 	// Set the engine in the user agent

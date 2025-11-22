@@ -1,0 +1,341 @@
+{
+  "version": 4,
+  "terraform_version": "1.5.5",
+  "serial": 5,
+  "lineage": "[UUID]",
+  "outputs": {},
+  "resources": [
+    {
+      "mode": "managed",
+      "type": "databricks_job",
+      "name": "test_job",
+      "provider": "provider[\"registry.terraform.io/databricks/databricks\"]",
+      "instances": [
+        {
+          "schema_version": 2,
+          "attributes": {
+            "always_running": false,
+            "budget_policy_id": null,
+            "continuous": [],
+            "control_run_state": false,
+            "dbt_task": [],
+            "deployment": [
+              {
+                "kind": "BUNDLE",
+                "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/default/state/metadata.json"
+              }
+            ],
+            "description": null,
+            "edit_mode": "UI_LOCKED",
+            "email_notifications": [
+              {
+                "no_alert_for_skipped_runs": false,
+                "on_duration_warning_threshold_exceeded": [],
+                "on_failure": [],
+                "on_start": [],
+                "on_streaming_backlog_exceeded": [],
+                "on_success": []
+              }
+            ],
+            "environment": [],
+            "existing_cluster_id": null,
+            "format": "MULTI_TASK",
+            "git_source": [],
+            "health": [],
+            "id": "[NUMID]",
+            "job_cluster": [],
+            "library": [],
+            "max_concurrent_runs": 1,
+            "max_retries": 0,
+            "min_retry_interval_millis": 0,
+            "name": "Test Migration Job",
+            "new_cluster": [],
+            "notebook_task": [],
+            "notification_settings": [],
+            "parameter": [],
+            "performance_target": null,
+            "pipeline_task": [],
+            "provider_config": [],
+            "python_wheel_task": [],
+            "queue": [
+              {
+                "enabled": true
+              }
+            ],
+            "retry_on_timeout": false,
+            "run_as": [
+              {
+                "service_principal_name": "",
+                "user_name": "[USERNAME]"
+              }
+            ],
+            "run_job_task": [],
+            "schedule": [],
+            "spark_jar_task": [],
+            "spark_python_task": [],
+            "spark_submit_task": [],
+            "tags": null,
+            "task": [
+              {
+                "clean_rooms_notebook_task": [],
+                "condition_task": [],
+                "dashboard_task": [],
+                "dbt_cloud_task": [],
+                "dbt_platform_task": [],
+                "dbt_task": [],
+                "depends_on": [],
+                "description": "",
+                "disable_auto_optimization": false,
+                "disabled": false,
+                "email_notifications": [],
+                "environment_key": "",
+                "existing_cluster_id": "",
+                "for_each_task": [],
+                "gen_ai_compute_task": [],
+                "health": [],
+                "job_cluster_key": "",
+                "library": [],
+                "max_retries": 0,
+                "min_retry_interval_millis": 0,
+                "new_cluster": [],
+                "notebook_task": [
+                  {
+                    "base_parameters": null,
+                    "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/default/files/notebook",
+                    "source": "WORKSPACE",
+                    "warehouse_id": ""
+                  }
+                ],
+                "notification_settings": [],
+                "pipeline_task": [],
+                "power_bi_task": [],
+                "python_wheel_task": [],
+                "retry_on_timeout": false,
+                "run_if": "",
+                "run_job_task": [],
+                "spark_jar_task": [],
+                "spark_python_task": [],
+                "spark_submit_task": [],
+                "sql_task": [],
+                "task_key": "main",
+                "timeout_seconds": 0,
+                "webhook_notifications": []
+              }
+            ],
+            "timeout_seconds": 0,
+            "timeouts": null,
+            "trigger": [],
+            "url": "[DATABRICKS_URL]/#job/[NUMID]",
+            "usage_policy_id": null,
+            "webhook_notifications": [
+              {
+                "on_duration_warning_threshold_exceeded": [],
+                "on_failure": [],
+                "on_start": [],
+                "on_streaming_backlog_exceeded": [],
+                "on_success": []
+              }
+            ]
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxODAwMDAwMDAwMDAwLCJ1cGRhdGUiOjE4MDAwMDAwMDAwMDB9LCJzY2hlbWFfdmVyc2lvbiI6IjIifQ=="
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "databricks_permissions",
+      "name": "job_test_job",
+      "provider": "provider[\"registry.terraform.io/databricks/databricks\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "access_control": [
+              {
+                "group_name": "",
+                "permission_level": "CAN_VIEW",
+                "service_principal_name": "",
+                "user_name": "viewer@databricks.com"
+              },
+              {
+                "group_name": "",
+                "permission_level": "IS_OWNER",
+                "service_principal_name": "",
+                "user_name": "[USERNAME]"
+              }
+            ],
+            "alert_v2_id": null,
+            "app_name": null,
+            "authorization": null,
+            "cluster_id": null,
+            "cluster_policy_id": null,
+            "dashboard_id": null,
+            "database_instance_name": null,
+            "directory_id": null,
+            "directory_path": null,
+            "experiment_id": null,
+            "id": "/jobs/[NUMID]",
+            "instance_pool_id": null,
+            "job_id": "[NUMID]",
+            "notebook_id": null,
+            "notebook_path": null,
+            "object_type": "job",
+            "pipeline_id": null,
+            "registered_model_id": null,
+            "repo_id": null,
+            "repo_path": null,
+            "serving_endpoint_id": null,
+            "sql_alert_id": null,
+            "sql_dashboard_id": null,
+            "sql_endpoint_id": null,
+            "sql_query_id": null,
+            "vector_search_endpoint_id": null,
+            "workspace_file_id": null,
+            "workspace_file_path": null
+          },
+          "sensitive_attributes": [],
+          "private": "bnVsbA==",
+          "dependencies": [
+            "databricks_job.test_job"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "databricks_permissions",
+      "name": "pipeline_test_pipeline",
+      "provider": "provider[\"registry.terraform.io/databricks/databricks\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "access_control": [
+              {
+                "group_name": "",
+                "permission_level": "CAN_MANAGE",
+                "service_principal_name": "",
+                "user_name": "manager@databricks.com"
+              },
+              {
+                "group_name": "",
+                "permission_level": "IS_OWNER",
+                "service_principal_name": "",
+                "user_name": "[USERNAME]"
+              }
+            ],
+            "alert_v2_id": null,
+            "app_name": null,
+            "authorization": null,
+            "cluster_id": null,
+            "cluster_policy_id": null,
+            "dashboard_id": null,
+            "database_instance_name": null,
+            "directory_id": null,
+            "directory_path": null,
+            "experiment_id": null,
+            "id": "/pipelines/[UUID]",
+            "instance_pool_id": null,
+            "job_id": null,
+            "notebook_id": null,
+            "notebook_path": null,
+            "object_type": "pipelines",
+            "pipeline_id": "[UUID]",
+            "registered_model_id": null,
+            "repo_id": null,
+            "repo_path": null,
+            "serving_endpoint_id": null,
+            "sql_alert_id": null,
+            "sql_dashboard_id": null,
+            "sql_endpoint_id": null,
+            "sql_query_id": null,
+            "vector_search_endpoint_id": null,
+            "workspace_file_id": null,
+            "workspace_file_path": null
+          },
+          "sensitive_attributes": [],
+          "private": "bnVsbA==",
+          "dependencies": [
+            "databricks_pipeline.test_pipeline"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "databricks_pipeline",
+      "name": "test_pipeline",
+      "provider": "provider[\"registry.terraform.io/databricks/databricks\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "allow_duplicate_names": false,
+            "budget_policy_id": null,
+            "catalog": null,
+            "cause": null,
+            "channel": "CURRENT",
+            "cluster": [],
+            "cluster_id": null,
+            "configuration": null,
+            "continuous": false,
+            "creator_user_name": "[USERNAME]",
+            "deployment": [
+              {
+                "kind": "BUNDLE",
+                "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/default/state/metadata.json"
+              }
+            ],
+            "development": false,
+            "edition": "ADVANCED",
+            "environment": [],
+            "event_log": [],
+            "expected_last_modified": 0,
+            "filters": [],
+            "gateway_definition": [],
+            "health": null,
+            "id": "[UUID]",
+            "ingestion_definition": [],
+            "last_modified": [UNIX_TIME_MILLIS],
+            "latest_updates": null,
+            "library": [
+              {
+                "file": [],
+                "glob": [],
+                "jar": "",
+                "maven": [],
+                "notebook": [
+                  {
+                    "path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/default/files/pipeline"
+                  }
+                ],
+                "whl": ""
+              }
+            ],
+            "name": "Test Migration Pipeline",
+            "notification": [],
+            "photon": false,
+            "restart_window": [],
+            "root_path": null,
+            "run_as": [],
+            "run_as_user_name": "[USERNAME]",
+            "schema": null,
+            "serverless": false,
+            "state": "IDLE",
+            "storage": "dbfs:/pipelines/[UUID]",
+            "tags": null,
+            "target": null,
+            "timeouts": null,
+            "trigger": [],
+            "url": "[DATABRICKS_URL]/#joblist/pipelines/[UUID]",
+            "usage_policy_id": null
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxMjAwMDAwMDAwMDAwLCJkZWZhdWx0IjoxMjAwMDAwMDAwMDAwLCJkZWxldGUiOjEyMDAwMDAwMDAwMDAsInJlYWQiOjEyMDAwMDAwMDAwMDAsInVwZGF0ZSI6MTIwMDAwMDAwMDAwMH19"
+        }
+      ]
+    }
+  ],
+  "check_results": null
+}
