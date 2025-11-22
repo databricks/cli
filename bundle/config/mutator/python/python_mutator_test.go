@@ -36,6 +36,12 @@ func TestPythonMutator_Name_applyMutators(t *testing.T) {
 	assert.Equal(t, "PythonMutator(apply_mutators)", mutator.Name())
 }
 
+func TestPythonMutator_Name_postDeploy(t *testing.T) {
+	mutator := PythonMutator(PythonMutatorPhasePostDeploy)
+
+	assert.Equal(t, "PythonMutator(post_deploy)", mutator.Name())
+}
+
 func TestPythonMutator_loadResources(t *testing.T) {
 	withFakeVEnv(t, ".venv")
 
@@ -239,6 +245,113 @@ resources:
 	assert.Equal(t, int64(1), b.Metrics.PythonUpdatedResourcesCount)
 }
 
+func TestPythonMutator_postDeploy(t *testing.T) {
+	withFakeVEnv(t, ".venv")
+	b := loadYaml("databricks.yml", `
+experimental:
+  python:
+    venv_path: .venv
+    post_deploy:
+      - "callbacks:on_deploy_complete"
+resources:
+  jobs:
+    job0:
+      name: job_0
+      id: "12345"`)
+
+	ctx := withProcessStub(
+		t,
+		[]string{
+			interpreterPath(".venv"),
+			"-m",
+			"databricks.bundles.build",
+			"--phase",
+			"post_deploy",
+		},
+		`{
+			"experimental": {
+				"python": {
+					"venv_path": ".venv",
+					"post_deploy": ["callbacks:on_deploy_complete"]
+				}
+			},
+			"resources": {
+				"jobs": {
+					"job0": {
+						name: "job_0",
+						id: "12345"
+					}
+				}
+			}
+		}`,
+		`{"severity": "info", "summary": "Post-deploy callback executed successfully"}`,
+		"")
+
+	mutator := PythonMutator(PythonMutatorPhasePostDeploy)
+	diag := bundle.Apply(ctx, b, mutator)
+
+	assert.NoError(t, diag.Error())
+
+	// Post-deploy should not modify resources
+	assert.ElementsMatch(t, []string{"job0"}, maps.Keys(b.Config.Resources.Jobs))
+
+	// Verify diagnostic from post-deploy callback
+	assert.Equal(t, 1, len(diag))
+	assert.Equal(t, "Post-deploy callback executed successfully", diag[0].Summary)
+
+	// Post-deploy doesn't add or update resources
+	assert.Equal(t, int64(0), b.Metrics.PythonAddedResourcesCount)
+	assert.Equal(t, int64(0), b.Metrics.PythonUpdatedResourcesCount)
+}
+
+func TestPythonMutator_postDeploy_error(t *testing.T) {
+	withFakeVEnv(t, ".venv")
+	b := loadYaml("databricks.yml", `
+experimental:
+  python:
+    venv_path: .venv
+    post_deploy:
+      - "callbacks:failing_callback"
+resources:
+  jobs:
+    job0:
+      name: job_0`)
+
+	ctx := withProcessStub(
+		t,
+		[]string{
+			interpreterPath(".venv"),
+			"-m",
+			"databricks.bundles.build",
+			"--phase",
+			"post_deploy",
+		},
+		`{
+			"experimental": {
+				"python": {
+					"venv_path": ".venv",
+					"post_deploy": ["callbacks:failing_callback"]
+				}
+			},
+			"resources": {
+				"jobs": {
+					"job0": {
+						name: "job_0"
+					}
+				}
+			}
+		}`,
+		`{"severity": "error", "summary": "Post-deploy callback failed", "detail": "Connection timeout"}`,
+		"")
+
+	mutator := PythonMutator(PythonMutatorPhasePostDeploy)
+	diag := bundle.Apply(ctx, b, mutator)
+
+	// Errors in post-deploy callbacks should be reported
+	assert.Error(t, diag.Error())
+	assert.Contains(t, diag.Error().Error(), "Post-deploy callback failed")
+}
+
 func TestPythonMutator_badOutput(t *testing.T) {
 	withFakeVEnv(t, ".venv")
 	b := loadYaml("databricks.yml", `
@@ -314,6 +427,24 @@ func TestGetOps_Python(t *testing.T) {
 			},
 		},
 	}, PythonMutatorPhaseLoadResources)
+
+	assert.NoError(t, err)
+	assert.Equal(t, opts{venvPath: ".venv", enabled: true, loadLocations: true}, actual)
+}
+
+func TestGetOps_Python_PostDeploy(t *testing.T) {
+	actual, err := getOpts(&bundle.Bundle{
+		Config: config.Root{
+			Experimental: &config.Experimental{
+				Python: config.Python{
+					VEnvPath: ".venv",
+					PostDeploy: []string{
+						"callbacks:on_deploy_complete",
+					},
+				},
+			},
+		},
+	}, PythonMutatorPhasePostDeploy)
 
 	assert.NoError(t, err)
 	assert.Equal(t, opts{venvPath: ".venv", enabled: true, loadLocations: true}, actual)
@@ -402,41 +533,6 @@ func TestGetOps_empty(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t, opts{enabled: false}, actual)
-}
-
-func TestApplyBackwardCompatibilityFixes(t *testing.T) {
-	b := &bundle.Bundle{
-		Config: config.Root{
-			Python: config.Python{
-				VEnvPath: ".venv",
-			},
-		},
-	}
-
-	err := applyBackwardsCompatibilityFixes(b)
-
-	assert.NoError(t, err)
-	assert.Equal(t, config.Python{VEnvPath: ".venv"}, b.Config.Experimental.Python)
-}
-
-func TestApplyBackwardCompatibilityFixes_unchanged(t *testing.T) {
-	b := &bundle.Bundle{
-		Config: config.Root{
-			Python: config.Python{
-				VEnvPath: ".venv",
-			},
-			Experimental: &config.Experimental{
-				Python: config.Python{
-					VEnvPath: "should_remain_unchanged",
-				},
-			},
-		},
-	}
-
-	err := applyBackwardsCompatibilityFixes(b)
-
-	assert.NoError(t, err)
-	assert.Equal(t, config.Python{VEnvPath: "should_remain_unchanged"}, b.Config.Experimental.Python)
 }
 
 func TestLoadDiagnosticsFile_nonExistent(t *testing.T) {
