@@ -7,6 +7,7 @@
     "dev": "vite --host",
     "build": "tsc -b && vite build -l info",
     "lint": "eslint .",
+    "check": "tsc --noEmit",
     "preview": "vite preview"
   },
   "dependencies": {
