@@ -51,6 +51,48 @@ type FindTablesInput struct {
 func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 	log.Info(p.ctx, "Registering Databricks tools")
 
+	// Register databricks_configure_auth
+	type ConfigureAuthInput struct {
+		Host    *string `json:"host,omitempty" jsonschema_description:"Databricks workspace URL (e.g., https://example.cloud.databricks.com). If not provided, uses default from environment or config file"`
+		Profile *string `json:"profile,omitempty" jsonschema_description:"Profile name from ~/.databrickscfg. If not provided, uses default profile"`
+	}
+
+	mcpsdk.AddTool(server,
+		&mcpsdk.Tool{
+			Name:        "databricks_configure_auth",
+			Description: "Configure authentication for Databricks. Validates credentials and stores the authenticated client in the session. Must be called before using other Databricks tools if using non-default host or profile.",
+		},
+		func(ctx context.Context, req *mcpsdk.CallToolRequest, args ConfigureAuthInput) (*mcpsdk.CallToolResult, any, error) {
+			log.Debug(ctx, "databricks_configure_auth called")
+
+			sess, err := session.GetSession(ctx)
+			if err != nil {
+				return nil, nil, err
+			}
+
+			client, err := ConfigureAuth(ctx, sess, args.Host, args.Profile)
+			if err != nil {
+				return nil, nil, err
+			}
+
+			message := "Authentication configured successfully"
+			if args.Host != nil {
+				message += " for host: " + *args.Host
+			}
+			if args.Profile != nil {
+				message += " using profile: " + *args.Profile
+			}
+
+			// Get user info to confirm auth
+			me, err := client.CurrentUser.Me(ctx)
+			if err == nil && me.UserName != "" {
+				message += "\nAuthenticated as: " + me.UserName
+			}
+
+			return mcpsdk.CreateNewTextContentResult(message), nil, nil
+		},
+	)
+
 	// Register databricks_list_catalogs
 	mcpsdk.AddTool(server,
 		&mcpsdk.Tool{
