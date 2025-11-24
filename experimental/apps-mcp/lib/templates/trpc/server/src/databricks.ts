@@ -22,7 +22,6 @@ import { type HeadersInit, Headers, ApiClient, Config } from "@databricks/sdk-ex
 import { DBSQLClient } from "@databricks/sql";
 import { z } from "zod";
 
-// Environment variables
 const warehouseId: string = process.env["DATABRICKS_WAREHOUSE_ID"] || "";
 const httpPath = `/sql/1.0/warehouses/${warehouseId}`;
 
