@@ -17,6 +17,7 @@ cli
 *.log
 coverage.txt
 coverage-acceptance.txt
+.coverage
 
 __pycache__
 *.pyc

@@ -6,6 +6,9 @@ import (
 	"fmt"
 	"io"
 	"sync"
+
+	"github.com/databricks/cli/experimental/apps-mcp/lib/errors"
+	"github.com/databricks/cli/experimental/apps-mcp/lib/session"
 )
 
 // Server is an MCP server that manages tools and handles requests.
@@ -15,6 +18,9 @@ type Server struct {
 	toolsMu     sync.RWMutex
 	transport   *StdioTransport
 	initialized bool
+	middlewares []Middleware
+	mwMu        sync.RWMutex
+	session     *session.Session
 }
 
 // serverTool represents a registered tool with its handler.
@@ -26,9 +32,29 @@ type serverTool struct {
 // NewServer creates a new MCP server.
 func NewServer(impl *Implementation, options any) *Server {
 	return &Server{
-		impl:  impl,
-		tools: make(map[string]*serverTool),
+		impl:    impl,
+		tools:   make(map[string]*serverTool),
+		session: session.NewSession(),
 	}
+}
+
+// AddMiddleware registers middleware to be applied to all tool calls.
+// Middleware is executed in the order it is registered.
+func (s *Server) AddMiddleware(mw Middleware) {
+	s.mwMu.Lock()
+	defer s.mwMu.Unlock()
+	s.middlewares = append(s.middlewares, mw)
+}
+
+// AddMiddlewareFunc is a convenience method to register a middleware function.
+func (s *Server) AddMiddlewareFunc(fn MiddlewareFunc) {
+	s.AddMiddleware(NewMiddleware(fn))
+}
+
+// GetSession returns the server's Session.
+// This persists across all tool calls during the server's lifetime.
+func (s *Server) GetSession() *session.Session {
+	return s.session
 }
 
 // AddTool registers a tool with a low-level handler.
@@ -37,10 +63,27 @@ func (s *Server) AddTool(tool *Tool, handler ToolHandler) {
 	s.toolsMu.Lock()
 	defer s.toolsMu.Unlock()
 
+	// Wrap the handler with middleware chain using server's session
+	s.mwMu.RLock()
+	wrappedHandler := Chain(s.middlewares, s.session, handler)
+	s.mwMu.RUnlock()
+
 	s.tools[tool.Name] = &serverTool{
 		tool:    tool,
-		handler: handler,
+		handler: wrappedHandler,
 	}
+}
+
+// GetTools returns all registered tools.
+func (s *Server) GetTools() []*Tool {
+	s.toolsMu.RLock()
+	defer s.toolsMu.RUnlock()
+
+	tools := make([]*Tool, 0, len(s.tools))
+	for _, st := range s.tools {
+		tools = append(tools, st.tool)
+	}
+	return tools
 }
 
 // Run starts the MCP server with the given transport.
@@ -91,7 +134,7 @@ func (s *Server) handleRequest(ctx context.Context, req *JSONRPCRequest) *JSONRP
 			JSONRPC: "2.0",
 			ID:      req.ID,
 			Error: &JSONRPCError{
-				Code:    -32601,
+				Code:    errors.CodeMethodNotFound,
 				Message: "method not found: " + req.Method,
 			},
 		}
@@ -116,7 +159,7 @@ func (s *Server) handleInitialize(req *JSONRPCRequest) *JSONRPCResponse {
 			JSONRPC: "2.0",
 			ID:      req.ID,
 			Error: &JSONRPCError{
-				Code:    -32603,
+				Code:    errors.CodeInternalError,
 				Message: fmt.Sprintf("failed to marshal result: %v", err),
 			},
 		}
@@ -145,14 +188,7 @@ func (s *Server) handleToolsList(req *JSONRPCRequest) *JSONRPCResponse {
 
 	data, err := json.Marshal(result)
 	if err != nil {
-		return &JSONRPCResponse{
-			JSONRPC: "2.0",
-			ID:      req.ID,
-			Error: &JSONRPCError{
-				Code:    -32603,
-				Message: fmt.Sprintf("failed to marshal result: %v", err),
-			},
-		}
+		return CreateNewErrorResponse(req.ID, errors.CodeInternalError, fmt.Sprintf("failed to marshal result: %v", err))
 	}
 
 	return &JSONRPCResponse{
@@ -166,14 +202,7 @@ func (s *Server) handleToolsList(req *JSONRPCRequest) *JSONRPCResponse {
 func (s *Server) handleToolsCall(ctx context.Context, req *JSONRPCRequest) *JSONRPCResponse {
 	var params CallToolParams
 	if err := json.Unmarshal(req.Params, &params); err != nil {
-		return &JSONRPCResponse{
-			JSONRPC: "2.0",
-			ID:      req.ID,
-			Error: &JSONRPCError{
-				Code:    -32602,
-				Message: fmt.Sprintf("invalid params: %v", err),
-			},
-		}
+		return CreateNewErrorResponse(req.ID, errors.CodeInvalidParams, fmt.Sprintf("invalid params: %v", err))
 	}
 
 	s.toolsMu.RLock()
@@ -181,30 +210,18 @@ func (s *Server) handleToolsCall(ctx context.Context, req *JSONRPCRequest) *JSON
 	s.toolsMu.RUnlock()
 
 	if !ok {
-		return &JSONRPCResponse{
-			JSONRPC: "2.0",
-			ID:      req.ID,
-			Error: &JSONRPCError{
-				Code:    -32602,
-				Message: "tool not found: " + params.Name,
-			},
-		}
+		return CreateNewErrorResponse(req.ID, errors.CodeInvalidParams, "tool not found: "+params.Name)
 	}
 
 	toolReq := &CallToolRequest{
+		ID:     req.ID,
+		Tool:   st.tool,
 		Params: params,
 	}
 
 	result, err := st.handler(ctx, toolReq)
 	if err != nil {
-		return &JSONRPCResponse{
-			JSONRPC: "2.0",
-			ID:      req.ID,
-			Error: &JSONRPCError{
-				Code:    -32603,
-				Message: fmt.Sprintf("tool execution error: %v", err),
-			},
-		}
+		result = CreateNewTextContentResultError(err)
 	}
 
 	// Convert Content slice to []any for JSON marshaling
@@ -223,14 +240,7 @@ func (s *Server) handleToolsCall(ctx context.Context, req *JSONRPCRequest) *JSON
 
 	data, err := json.Marshal(resultData)
 	if err != nil {
-		return &JSONRPCResponse{
-			JSONRPC: "2.0",
-			ID:      req.ID,
-			Error: &JSONRPCError{
-				Code:    -32603,
-				Message: fmt.Sprintf("failed to marshal result: %v", err),
-			},
-		}
+		return CreateNewErrorResponse(req.ID, errors.CodeInternalError, fmt.Sprintf("failed to marshal result: %v", err))
 	}
 
 	return &JSONRPCResponse{

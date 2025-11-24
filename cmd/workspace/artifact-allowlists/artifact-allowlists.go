@@ -60,12 +60,12 @@ func newGet() *cobra.Command {
 	cmd.Use = "get ARTIFACT_TYPE"
 	cmd.Short = `Get an artifact allowlist.`
 	cmd.Long = `Get an artifact allowlist.
-  
+
   Get the artifact allowlist of a certain artifact type. The caller must be a
   metastore admin or have the **MANAGE ALLOWLIST** privilege on the metastore.
 
   Arguments:
-    ARTIFACT_TYPE: The artifact type of the allowlist. 
+    ARTIFACT_TYPE: The artifact type of the allowlist.
       Supported values: [INIT_SCRIPT, LIBRARY_JAR, LIBRARY_MAVEN]`
 
 	cmd.Annotations = make(map[string]string)
@@ -124,13 +124,13 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update ARTIFACT_TYPE"
 	cmd.Short = `Set an artifact allowlist.`
 	cmd.Long = `Set an artifact allowlist.
-  
+
   Set the artifact allowlist of a certain artifact type. The whole artifact
   allowlist is replaced with the new allowlist. The caller must be a metastore
   admin or have the **MANAGE ALLOWLIST** privilege on the metastore.
 
   Arguments:
-    ARTIFACT_TYPE: The artifact type of the allowlist. 
+    ARTIFACT_TYPE: The artifact type of the allowlist.
       Supported values: [INIT_SCRIPT, LIBRARY_JAR, LIBRARY_MAVEN]`
 
 	cmd.Annotations = make(map[string]string)

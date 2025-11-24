@@ -59,7 +59,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete"
 	cmd.Short = `Delete the AI/BI dashboard embedding access policy.`
 	cmd.Long = `Delete the AI/BI dashboard embedding access policy.
-  
+
   Delete the AI/BI dashboard embedding access policy, reverting back to the
   default.`
 
@@ -113,7 +113,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get"
 	cmd.Short = `Retrieve the AI/BI dashboard embedding access policy.`
 	cmd.Long = `Retrieve the AI/BI dashboard embedding access policy.
-  
+
   Retrieves the AI/BI dashboard embedding access policy. The default setting is
   ALLOW_APPROVED_DOMAINS, permitting AI/BI dashboards to be embedded on approved
   domains.`
@@ -169,7 +169,7 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update"
 	cmd.Short = `Update the AI/BI dashboard embedding access policy.`
 	cmd.Long = `Update the AI/BI dashboard embedding access policy.
-  
+
   Updates the AI/BI dashboard embedding access policy at the workspace level.`
 
 	cmd.Annotations = make(map[string]string)

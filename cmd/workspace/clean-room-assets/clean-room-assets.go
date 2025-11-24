@@ -77,7 +77,7 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create CLEAN_ROOM_NAME NAME ASSET_TYPE"
 	cmd.Short = `Create an asset.`
 	cmd.Long = `Create an asset.
-  
+
   Create a clean room asset —share an asset like a notebook or table into the
   clean room. For each UC asset that is added through this method, the clean
   room owner must also have enough privilege on the asset to consume it. The
@@ -89,13 +89,13 @@ func newCreate() *cobra.Command {
       for create operations and populated by the server for responses.
     NAME: A fully qualified name that uniquely identifies the asset within the clean
       room. This is also the name displayed in the clean room UI.
-      
+
       For UC securable assets (tables, volumes, etc.), the format is
       *shared_catalog*.*shared_schema*.*asset_name*
-      
+
       For notebooks, the name is the notebook file name. For jar analyses, the
       name is the jar analysis name.
-    ASSET_TYPE: The type of the asset. 
+    ASSET_TYPE: The type of the asset.
       Supported values: [FOREIGN_TABLE, NOTEBOOK_FILE, TABLE, VIEW, VOLUME]`
 
 	cmd.Annotations = make(map[string]string)
@@ -182,12 +182,12 @@ func newCreateCleanRoomAssetReview() *cobra.Command {
 	cmd.Use = "create-clean-room-asset-review CLEAN_ROOM_NAME ASSET_TYPE NAME"
 	cmd.Short = `Create a review (e.g. approval) for an asset.`
 	cmd.Long = `Create a review (e.g. approval) for an asset.
-  
+
   Submit an asset review
 
   Arguments:
     CLEAN_ROOM_NAME: Name of the clean room
-    ASSET_TYPE: Asset type. Can either be NOTEBOOK_FILE or JAR_ANALYSIS. 
+    ASSET_TYPE: Asset type. Can either be NOTEBOOK_FILE or JAR_ANALYSIS.
       Supported values: [FOREIGN_TABLE, NOTEBOOK_FILE, TABLE, VIEW, VOLUME]
     NAME: Name of the asset`
 
@@ -259,12 +259,12 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete CLEAN_ROOM_NAME ASSET_TYPE NAME"
 	cmd.Short = `Delete an asset.`
 	cmd.Long = `Delete an asset.
-  
+
   Delete a clean room asset - unshare/remove the asset from the clean room
 
   Arguments:
     CLEAN_ROOM_NAME: Name of the clean room.
-    ASSET_TYPE: The type of the asset. 
+    ASSET_TYPE: The type of the asset.
       Supported values: [FOREIGN_TABLE, NOTEBOOK_FILE, TABLE, VIEW, VOLUME]
     NAME: The fully qualified name of the asset, it is same as the name field in
       CleanRoomAsset.`
@@ -325,12 +325,12 @@ func newGet() *cobra.Command {
 	cmd.Use = "get CLEAN_ROOM_NAME ASSET_TYPE NAME"
 	cmd.Short = `Get an asset.`
 	cmd.Long = `Get an asset.
-  
+
   Get the details of a clean room asset by its type and full name.
 
   Arguments:
     CLEAN_ROOM_NAME: Name of the clean room.
-    ASSET_TYPE: The type of the asset. 
+    ASSET_TYPE: The type of the asset.
       Supported values: [FOREIGN_TABLE, NOTEBOOK_FILE, TABLE, VIEW, VOLUME]
     NAME: The fully qualified name of the asset, it is same as the name field in
       CleanRoomAsset.`
@@ -458,20 +458,20 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update CLEAN_ROOM_NAME ASSET_TYPE NAME"
 	cmd.Short = `Update an asset.`
 	cmd.Long = `Update an asset.
-  
+
   Update a clean room asset. For example, updating the content of a notebook;
   changing the shared partitions of a table; etc.
 
   Arguments:
     CLEAN_ROOM_NAME: Name of the clean room.
-    ASSET_TYPE: The type of the asset. 
+    ASSET_TYPE: The type of the asset.
       Supported values: [FOREIGN_TABLE, NOTEBOOK_FILE, TABLE, VIEW, VOLUME]
     NAME: A fully qualified name that uniquely identifies the asset within the clean
       room. This is also the name displayed in the clean room UI.
-      
+
       For UC securable assets (tables, volumes, etc.), the format is
       *shared_catalog*.*shared_schema*.*asset_name*
-      
+
       For notebooks, the name is the notebook file name. For jar analyses, the
       name is the jar analysis name.`
 

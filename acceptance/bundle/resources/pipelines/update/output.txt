@@ -68,11 +68,11 @@ Deployment complete!
 === Destroy the pipeline and verify that it's removed from the state and from remote
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
-  delete pipeline my
+  delete resources.pipelines.my
 
 This action will result in the deletion of the following Lakeflow Declarative Pipelines along with the
 Streaming Tables (STs) and Materialized Views (MVs) managed by them:
-  delete pipeline my
+  delete resources.pipelines.my
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default
 

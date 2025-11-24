@@ -293,7 +293,7 @@ func newCreateDatabaseInstanceRole() *cobra.Command {
 	cmd.Long = `Create a role for a Database Instance.
 
   Arguments:
-    INSTANCE_NAME: 
+    INSTANCE_NAME:
     NAME: The name of the role. This is the unique identifier for the role in an
       instance.`
 
@@ -379,7 +379,7 @@ func newCreateDatabaseTable() *cobra.Command {
 	cmd.Use = "create-database-table NAME"
 	cmd.Short = `Create a Database Table.`
 	cmd.Long = `Create a Database Table.
-  
+
   Create a Database Table. Useful for registering pre-existing PG tables in UC.
   See CreateSyncedDatabaseTable for creating synced tables in PG from a source
   table in UC.
@@ -653,7 +653,7 @@ func newDeleteDatabaseInstanceRole() *cobra.Command {
 	cmd.Use = "delete-database-instance-role INSTANCE_NAME NAME"
 	cmd.Short = `Delete a role for a Database Instance.`
 	cmd.Long = `Delete a role for a Database Instance.
-  
+
   Deletes a role for a Database Instance.`
 
 	// This command is being previewed; hide from help output.
@@ -1037,7 +1037,7 @@ func newGetDatabaseInstanceRole() *cobra.Command {
 	cmd.Use = "get-database-instance-role INSTANCE_NAME NAME"
 	cmd.Short = `Get a role for a Database Instance.`
 	cmd.Long = `Get a role for a Database Instance.
-  
+
   Gets a role for a Database Instance.`
 
 	// This command is being previewed; hide from help output.
@@ -1199,7 +1199,7 @@ func newListDatabaseCatalogs() *cobra.Command {
 	cmd.Use = "list-database-catalogs INSTANCE_NAME"
 	cmd.Short = `List all Database Catalogs in a Database Instance.`
 	cmd.Long = `List all Database Catalogs in a Database Instance.
-  
+
   This API is currently unimplemented, but exposed for Terraform support.
 
   Arguments:
@@ -1258,7 +1258,7 @@ func newListDatabaseInstanceRoles() *cobra.Command {
 	cmd.Use = "list-database-instance-roles INSTANCE_NAME"
 	cmd.Short = `List roles for a Database Instance.`
 	cmd.Long = `List roles for a Database Instance.
-  
+
   START OF PG ROLE APIs Section These APIs are marked a PUBLIC with stage <
   PUBLIC_PREVIEW. With more recent Lakebase V2 plans, we don't plan to ever
   advance these to PUBLIC_PREVIEW. These APIs will remain effectively
@@ -1367,7 +1367,7 @@ func newListSyncedDatabaseTables() *cobra.Command {
 	cmd.Use = "list-synced-database-tables INSTANCE_NAME"
 	cmd.Short = `List all synced database tables in a Database Instance.`
 	cmd.Long = `List all synced database tables in a Database Instance.
-  
+
   This API is currently unimplemented, but exposed for Terraform support.
 
   Arguments:
@@ -1429,7 +1429,7 @@ func newUpdateDatabaseCatalog() *cobra.Command {
 	cmd.Use = "update-database-catalog NAME UPDATE_MASK DATABASE_INSTANCE_NAME DATABASE_NAME"
 	cmd.Short = `Update a Database Catalog.`
 	cmd.Long = `Update a Database Catalog.
-  
+
   This API is currently unimplemented, but exposed for Terraform support.
 
   Arguments:
@@ -1612,7 +1612,7 @@ func newUpdateSyncedDatabaseTable() *cobra.Command {
 	cmd.Use = "update-synced-database-table NAME UPDATE_MASK"
 	cmd.Short = `Update a Synced Database Table.`
 	cmd.Long = `Update a Synced Database Table.
-  
+
   This API is currently unimplemented, but exposed for Terraform support.
 
   Arguments:

@@ -51,6 +51,7 @@ func (c *profileMetadata) Load(ctx context.Context, configFilePath string, skipV
 		return
 	}
 
+	//nolint:staticcheck // SA1019: IsAccountClient is deprecated but is still used here to avoid breaking changes
 	if cfg.IsAccountClient() {
 		a, err := databricks.NewAccountClient((*databricks.Config)(cfg))
 		if err != nil {

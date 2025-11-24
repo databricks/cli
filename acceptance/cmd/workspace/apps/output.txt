@@ -64,7 +64,7 @@ Usage:
 
 Flags:
       --budget-policy-id string    
-      --compute-size ComputeSize   Supported values: [LARGE, LIQUID, MEDIUM]
+      --compute-size ComputeSize   Supported values: [LARGE, MEDIUM]
       --description string         The description of the app.
   -h, --help                       help for update
       --json JSON                  either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))

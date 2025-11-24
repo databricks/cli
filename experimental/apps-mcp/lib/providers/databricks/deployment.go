@@ -2,13 +2,12 @@ package databricks
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"os"
 	"os/exec"
 	"time"
 
 	mcp "github.com/databricks/cli/experimental/apps-mcp/lib"
+	"github.com/databricks/cli/experimental/apps-mcp/lib/middlewares"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/iam"
@@ -103,10 +102,10 @@ func DeployApp(ctx context.Context, cfg *mcp.Config, appInfo *apps.App) error {
 	return nil
 }
 
-func ResourcesFromEnv() (*apps.AppResource, error) {
-	warehouseID := os.Getenv("DATABRICKS_WAREHOUSE_ID")
-	if warehouseID == "" {
-		return nil, errors.New("DATABRICKS_WAREHOUSE_ID environment variable is required for app deployment. Set this to your Databricks SQL warehouse ID")
+func ResourcesFromEnv(ctx context.Context, cfg *mcp.Config) (*apps.AppResource, error) {
+	warehouseID, err := middlewares.GetWarehouseID(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get warehouse ID: %w", err)
 	}
 
 	return &apps.AppResource{

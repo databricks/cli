@@ -1,10 +1,8 @@
 package mcp
 
 import (
-	"github.com/databricks/cli/cmd/root"
 	mcplib "github.com/databricks/cli/experimental/apps-mcp/lib"
 	"github.com/databricks/cli/experimental/apps-mcp/lib/server"
-	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/log"
 	"github.com/spf13/cobra"
 )
@@ -34,18 +32,13 @@ The server communicates via stdio using the Model Context Protocol.`,
 
   # Start with deployment tools enabled
   databricks experimental apps-mcp --warehouse-id abc123 --allow-deployment`,
-		PreRunE: root.MustWorkspaceClient,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
-
-			w := cmdctx.WorkspaceClient(ctx)
 
 			// Build MCP config from flags
 			cfg := &mcplib.Config{
 				AllowDeployment:    allowDeployment,
 				WithWorkspaceTools: withWorkspaceTools,
-				WarehouseID:        warehouseID,
-				DatabricksHost:     w.Config.Host,
 				IoConfig: &mcplib.IoConfig{
 					Validation: &mcplib.ValidationConfig{},
 				},
@@ -71,6 +64,8 @@ The server communicates via stdio using the Model Context Protocol.`,
 	cmd.Flags().StringVar(&warehouseID, "warehouse-id", "", "Databricks SQL Warehouse ID")
 	cmd.Flags().BoolVar(&allowDeployment, "allow-deployment", false, "Enable deployment tools")
 	cmd.Flags().BoolVar(&withWorkspaceTools, "with-workspace-tools", false, "Enable workspace tools (file operations, bash, grep, glob)")
+
+	cmd.AddCommand(newInstallCmd())
 
 	return cmd
 }

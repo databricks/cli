@@ -91,9 +91,7 @@ func TestParseResourcesStateWithExistingStateFile(t *testing.T) {
 	state, err := parseResourcesState(ctx, localPath)
 	assert.NoError(t, err)
 	expected := ExportedResourcesMap{
-		"pipelines": map[string]ResourceState{
-			"test_pipeline": {ID: "123"},
-		},
+		"resources.pipelines.test_pipeline": {ID: "123"},
 	}
 	assert.Equal(t, expected, state)
 }

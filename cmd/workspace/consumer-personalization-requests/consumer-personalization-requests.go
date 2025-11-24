@@ -70,7 +70,7 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create LISTING_ID"
 	cmd.Short = `Create a personalization request.`
 	cmd.Long = `Create a personalization request.
-  
+
   Create a personalization request for a listing.`
 
 	cmd.Annotations = make(map[string]string)
@@ -137,7 +137,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get LISTING_ID"
 	cmd.Short = `Get the personalization request for a listing.`
 	cmd.Long = `Get the personalization request for a listing.
-  
+
   Get the personalization request for a listing. Each consumer can make at
   *most* one personalization request for a listing.`
 
@@ -194,7 +194,7 @@ func newList() *cobra.Command {
 	cmd.Use = "list"
 	cmd.Short = `List all personalization requests.`
 	cmd.Long = `List all personalization requests.
-  
+
   List personalization requests for a consumer across all listings.`
 
 	cmd.Annotations = make(map[string]string)

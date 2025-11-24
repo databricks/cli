@@ -64,7 +64,7 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create"
 	cmd.Short = `Create new usage dashboard.`
 	cmd.Long = `Create new usage dashboard.
-  
+
   Create a usage dashboard specified by workspaceId, accountId, and dashboard
   type.`
 
@@ -132,7 +132,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get"
 	cmd.Short = `Get usage dashboard.`
 	cmd.Long = `Get usage dashboard.
-  
+
   Get a usage dashboard specified by workspaceId, accountId, and dashboard type.`
 
 	cmd.Annotations = make(map[string]string)

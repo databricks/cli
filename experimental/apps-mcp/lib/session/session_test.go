@@ -13,15 +13,12 @@ func TestNewSession(t *testing.T) {
 		t.Error("Session ID should not be empty")
 	}
 
-	if s.workDir != "" {
+	// Check data fields using Get
+	if workDir, ok := s.Get(WorkDirDataKey); ok && workDir != nil && workDir != "" {
 		t.Error("workDir should be empty initially")
 	}
 
-	if !s.firstTool {
-		t.Error("firstTool should be true initially")
-	}
-
-	if s.toolCalls != 0 {
+	if s.GetToolCalls() != 0 {
 		t.Error("toolCalls should be 0 initially")
 	}
 }
@@ -60,24 +57,6 @@ func TestSession_GetWorkDir_NotSet(t *testing.T) {
 	_, err := GetWorkDir(ctx)
 	if err == nil {
 		t.Error("GetWorkDir should fail when work dir is not set")
-	}
-}
-
-func TestSession_IsFirstTool(t *testing.T) {
-	s := NewSession()
-
-	// First call should return true
-	if !s.IsFirstTool() {
-		t.Error("First IsFirstTool call should return true")
-	}
-
-	// Subsequent calls should return false
-	if s.IsFirstTool() {
-		t.Error("Second IsFirstTool call should return false")
-	}
-
-	if s.IsFirstTool() {
-		t.Error("Third IsFirstTool call should return false")
 	}
 }
 

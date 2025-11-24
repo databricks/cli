@@ -2,13 +2,6 @@ import { test } from "node:test";
 import { strict as assert } from "node:assert";
 import type { Server } from "node:http";
 
-// set dummy env vars before importing index (only if not already set)
-process.env["DATABRICKS_HOST"] =
-  process.env["DATABRICKS_HOST"] || "https://dummy.databricks.com";
-process.env["DATABRICKS_TOKEN"] = process.env["DATABRICKS_TOKEN"] || "dummy_token";
-process.env["DATABRICKS_WAREHOUSE_ID"] =
-  process.env["DATABRICKS_WAREHOUSE_ID"] || "dummy_warehouse_id";
-
 test("server starts and responds to healthcheck", async () => {
   // dynamic import to ensure env vars are set first
   const { startServer } = await import("./index");

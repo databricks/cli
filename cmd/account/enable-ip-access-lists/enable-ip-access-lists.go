@@ -61,7 +61,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete"
 	cmd.Short = `Delete the account IP access toggle setting.`
 	cmd.Long = `Delete the account IP access toggle setting.
-  
+
   Reverts the value of the account IP access toggle setting to default (ON)`
 
 	cmd.Annotations = make(map[string]string)
@@ -114,7 +114,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get"
 	cmd.Short = `Get the account IP access toggle setting.`
 	cmd.Long = `Get the account IP access toggle setting.
-  
+
   Gets the value of the account IP access toggle setting.`
 
 	cmd.Annotations = make(map[string]string)
@@ -168,7 +168,7 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update"
 	cmd.Short = `Update the account IP access toggle setting.`
 	cmd.Long = `Update the account IP access toggle setting.
-  
+
   Updates the value of the account IP access toggle setting.`
 
 	cmd.Annotations = make(map[string]string)

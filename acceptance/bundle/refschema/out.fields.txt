@@ -439,6 +439,13 @@ resources.dashboards.*.serialized_dashboard	string	ALL
 resources.dashboards.*.update_time	string	ALL
 resources.dashboards.*.url	string	INPUT
 resources.dashboards.*.warehouse_id	string	ALL
+resources.dashboards.*.permissions.object_id	string	ALL
+resources.dashboards.*.permissions.permissions	[]iam.AccessControlRequest	ALL
+resources.dashboards.*.permissions.permissions[*]	iam.AccessControlRequest	ALL
+resources.dashboards.*.permissions.permissions[*].group_name	string	ALL
+resources.dashboards.*.permissions.permissions[*].permission_level	iam.PermissionLevel	ALL
+resources.dashboards.*.permissions.permissions[*].service_principal_name	string	ALL
+resources.dashboards.*.permissions.permissions[*].user_name	string	ALL
 resources.database_catalogs.*.create_database_if_not_exists	bool	ALL
 resources.database_catalogs.*.database_instance_name	string	ALL
 resources.database_catalogs.*.database_name	string	ALL

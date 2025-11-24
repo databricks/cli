@@ -25,12 +25,12 @@ func New() *cobra.Command {
   A key configuration encapsulates the AWS KMS key information and some
   information about how the key configuration can be used. There are two
   possible uses for key configurations:
-  
+
   * Managed services: A key configuration can be used to encrypt a workspace's
   notebook and secret data in the control plane, as well as Databricks SQL
   queries and query history. * Storage: A key configuration can be used to
   encrypt a workspace's DBFS and EBS data in the data plane.
-  
+
   In both of these cases, the key configuration's ID is used when creating a new
   workspace. This Preview feature is available if your account is on the E2
   version of the platform. Updating a running workspace with workspace storage
@@ -81,7 +81,7 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create"
 	cmd.Short = `Create encryption key configuration.`
 	cmd.Long = `Create encryption key configuration.
-  
+
   Creates a customer-managed key configuration object for an account, specified
   by ID. This operation uploads a reference to a customer-managed key to
   Databricks. If the key is assigned as a workspace's customer-managed key for
@@ -91,11 +91,11 @@ func newCreate() *cobra.Command {
   workspace storage, the key encrypts the workspace's root S3 bucket (which
   contains the workspace's root DBFS and system data) and, optionally, cluster
   EBS volume data.
-  
+
   **Important**: Customer-managed keys are supported only for some deployment
   types, subscription types, and AWS regions that currently support creation of
   Databricks workspaces.
-  
+
   This operation is available only if your account is on the E2 version of the
   platform or on a select custom plan that allows multiple workspaces per
   account.`
@@ -158,7 +158,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete CUSTOMER_MANAGED_KEY_ID"
 	cmd.Short = `Delete encryption key configuration.`
 	cmd.Long = `Delete encryption key configuration.
-  
+
   Deletes a customer-managed key configuration object for an account. You cannot
   delete a configuration that is associated with a running workspace.
 
@@ -215,7 +215,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get CUSTOMER_MANAGED_KEY_ID"
 	cmd.Short = `Get encryption key configuration.`
 	cmd.Long = `Get encryption key configuration.
-  
+
   Gets a customer-managed key configuration object for an account, specified by
   ID. This operation uploads a reference to a customer-managed key to
   Databricks. If assigned as a workspace's customer-managed key for managed
@@ -225,10 +225,10 @@ func newGet() *cobra.Command {
   the key encrypts the workspace's root S3 bucket (which contains the
   workspace's root DBFS and system data) and, optionally, cluster EBS volume
   data.
-  
+
   **Important**: Customer-managed keys are supported only for some deployment
   types, subscription types, and AWS regions.
-  
+
   This operation is available only if your account is on the E2 version of the
   platform.",
 
@@ -282,7 +282,7 @@ func newList() *cobra.Command {
 	cmd.Use = "list"
 	cmd.Short = `List encryption key configuration.`
 	cmd.Long = `List encryption key configuration.
-  
+
   Lists Databricks customer-managed key configurations for an account.`
 
 	cmd.Annotations = make(map[string]string)

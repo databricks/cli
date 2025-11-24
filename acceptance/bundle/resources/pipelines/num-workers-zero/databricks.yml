@@ -1,0 +1,17 @@
+bundle:
+  name: num-workers-zero
+
+resources:
+  pipelines:
+    my:
+      name: test-pipeline
+      libraries:
+        - file:
+            path: "./foo.py"
+      clusters:
+        - node_type_id: i3.xlarge
+          spark_conf:
+            "spark.databricks.cluster.profile": "singleNode"
+            "spark.master": "local[*]"
+          custom_tags:
+            "ResourceClass": "SingleNode"
