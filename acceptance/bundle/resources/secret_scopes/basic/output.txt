@@ -1,9 +1,6 @@
 
 === create the secret scope
->>> [CLI] bundle plan
-create secret_scopes.my_scope
-
-Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
+>>> [CLI] bundle plan -o json
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/secret-scope-basic-[UNIQUE_NAME]/default/files...
@@ -55,10 +52,7 @@ Deployment complete!
 }
 
 === update the name of the scope (should recreate)
->>> [CLI] bundle plan
-recreate secret_scopes.my_scope
-
-Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged
+>>> [CLI] bundle plan -o json
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/secret-scope-basic-[UNIQUE_NAME]/default/files...
