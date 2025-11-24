@@ -31,6 +31,9 @@ func NewDatabricksClientMiddleware(unauthorizedToolNames []string) mcp.Middlewar
 				return mcp.CreateNewTextContentResultError(err), nil
 			}
 			ctx.Session.Set(DatabricksClientKey, w)
+
+			// Start background warehouse loading once client is initialized
+			go loadWarehouseInBackground(ctx.Ctx)
 		}
 
 		return next()

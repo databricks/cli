@@ -60,7 +60,7 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 	mcpsdk.AddTool(server,
 		&mcpsdk.Tool{
 			Name:        "databricks_configure_auth",
-			Description: "Configure authentication for Databricks. Validates credentials and stores the authenticated client in the session. Must be called before using other Databricks tools if using non-default host or profile.",
+			Description: "Configure authentication for Databricks. Only call when Databricks authentication has has failed to authenticate automatically or when the user explicitly asks for using a specific host or profile. Validates credentials and stores the authenticated client in the session.",
 		},
 		func(ctx context.Context, req *mcpsdk.CallToolRequest, args ConfigureAuthInput) (*mcpsdk.CallToolResult, any, error) {
 			log.Debug(ctx, "databricks_configure_auth called")
