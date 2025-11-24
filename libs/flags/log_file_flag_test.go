@@ -12,35 +12,35 @@ import (
 func TestLogFileFlagDefault(t *testing.T) {
 	f := NewLogFileFlag()
 	assert.Equal(t, os.Stderr, f.Writer())
-	assert.Equal(t, "stderr", f.String())
+	assert.Equal(t, LogFileStderr, f.String())
 }
 
 func TestLogFileFlagSetStdout(t *testing.T) {
 	var err error
 
 	f := NewLogFileFlag()
-	err = f.Set("stdout")
+	err = f.Set(LogFileStdout)
 	require.NoError(t, err)
 	assert.Equal(t, os.Stdout, f.Writer())
-	assert.Equal(t, "stdout", f.String())
+	assert.Equal(t, LogFileStdout, f.String())
 	err = f.Set("STDOUT")
 	require.NoError(t, err)
 	assert.Equal(t, os.Stdout, f.Writer())
-	assert.Equal(t, "stdout", f.String())
+	assert.Equal(t, LogFileStdout, f.String())
 }
 
 func TestLogFileFlagSetStderr(t *testing.T) {
 	var err error
 
 	f := NewLogFileFlag()
-	err = f.Set("stderr")
+	err = f.Set(LogFileStderr)
 	require.NoError(t, err)
 	assert.Equal(t, os.Stderr, f.Writer())
-	assert.Equal(t, "stderr", f.String())
+	assert.Equal(t, LogFileStderr, f.String())
 	err = f.Set("STDERR")
 	require.NoError(t, err)
 	assert.Equal(t, os.Stderr, f.Writer())
-	assert.Equal(t, "stderr", f.String())
+	assert.Equal(t, LogFileStderr, f.String())
 }
 
 func TestLogFileFlagSetNewFile(t *testing.T) {
