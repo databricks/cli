@@ -53,8 +53,15 @@ func (p *Provider) Scaffold(ctx context.Context, args *ScaffoldArgs) (*ScaffoldR
 			return nil, err
 		}
 
-		if len(entries) > 0 {
-			return nil, errors.New("work_dir is not empty")
+		allowedEntries := map[string]bool{
+			".git":    true,
+			".claude": true,
+		}
+
+		for _, entry := range entries {
+			if !allowedEntries[entry.Name()] {
+				return nil, fmt.Errorf("work_dir is not empty: %s", entry.Name())
+			}
 		}
 	} else if !errors.Is(err, fs.ErrNotExist) {
 		// Some other error
