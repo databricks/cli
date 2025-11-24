@@ -2,7 +2,7 @@
 name = "my_pydabs"
 version = "0.0.1"
 authors = [{ name = "[USERNAME]" }]
-requires-python = ">=3.10,<=3.13"
+requires-python = ">=3.10,<3.13"
 dependencies = [
     # Any dependencies for jobs and pipelines in this project can be added here
     # See also https://docs.databricks.com/dev-tools/bundles/library-dependencies

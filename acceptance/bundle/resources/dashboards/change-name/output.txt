@@ -43,7 +43,7 @@ Deployment complete!
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
-  delete dashboard my_dashboard
+  delete resources.dashboards.my_dashboard
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/change-name-[UNIQUE_NAME]/default
 

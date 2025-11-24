@@ -1,0 +1,7 @@
+{
+    "project_name": "my_default_scala",
+    "compute_type": "serverless",
+    "artifacts_dest_path": "/Volumes/test-folder",
+    "default_catalog": "main",
+    "personal_schemas": "yes, use a schema based on the current user name during development"
+}

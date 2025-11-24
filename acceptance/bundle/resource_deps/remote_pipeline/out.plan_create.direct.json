@@ -3,7 +3,7 @@
     "resources.pipelines.foo1": {
       "action": "create",
       "new_state": {
-        "config": {
+        "value": {
           "channel": "CURRENT",
           "deployment": {
             "kind": "BUNDLE",
@@ -23,7 +23,7 @@
       ],
       "action": "create",
       "new_state": {
-        "config": {
+        "value": {
           "channel": "CURRENT",
           "deployment": {
             "kind": "BUNDLE",
@@ -46,7 +46,7 @@
       ],
       "action": "create",
       "new_state": {
-        "config": {
+        "value": {
           "channel": "CURRENT",
           "deployment": {
             "kind": "BUNDLE",
@@ -69,7 +69,7 @@
       ],
       "action": "create",
       "new_state": {
-        "config": {
+        "value": {
           "channel": "CURRENT",
           "deployment": {
             "kind": "BUNDLE",

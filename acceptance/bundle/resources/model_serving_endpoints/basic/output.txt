@@ -1,0 +1,41 @@
+
+>>> [CLI] bundle plan -o json
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py //serving-endpoints
+
+=== Print the GET endpoint details
+{
+  "name": "[ENDPOINT_NAME_1]",
+  "creator": "[USERNAME]"
+}
+
+>>> [CLI] bundle plan -o json
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py //serving-endpoints
+
+=== Print the GET endpoint details
+{
+  "name": "[ENDPOINT_NAME_2]",
+  "creator": "[USERNAME]"
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.model_serving_endpoints.my_endpoint
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!

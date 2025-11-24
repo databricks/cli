@@ -1,5 +1,6 @@
-Local = false
+Local = true
 Cloud = true
+CloudSlow = true
 
 [CloudEnvs]
   gcp = false

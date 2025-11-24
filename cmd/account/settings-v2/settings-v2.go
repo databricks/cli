@@ -20,7 +20,7 @@ func New() *cobra.Command {
 		Use:     "settings-v2",
 		Short:   `APIs to manage account level settings.`,
 		Long:    `APIs to manage account level settings`,
-		GroupID: "settingsv2",
+		GroupID: "settings",
 		Annotations: map[string]string{
 			"package": "settingsv2",
 		},
@@ -57,7 +57,7 @@ func newGetPublicAccountSetting() *cobra.Command {
 	cmd.Use = "get-public-account-setting NAME"
 	cmd.Short = `Get an account setting.`
 	cmd.Long = `Get an account setting.
-  
+
   Get a setting value at account level. See
   :method:settingsv2/listaccountsettingsmetadata for list of setting available
   via public APIs at account level.`
@@ -115,7 +115,7 @@ func newListAccountSettingsMetadata() *cobra.Command {
 	cmd.Use = "list-account-settings-metadata"
 	cmd.Short = `List valid setting keys and their metadata.`
 	cmd.Long = `List valid setting keys and their metadata.
-  
+
   List valid setting keys and metadata. These settings are available to be
   referenced via GET :method:settingsv2/getpublicaccountsetting and PATCH
   :method:settingsv2/patchpublicaccountsetting APIs`
@@ -187,7 +187,7 @@ func newPatchPublicAccountSetting() *cobra.Command {
 	cmd.Use = "patch-public-account-setting NAME"
 	cmd.Short = `Update an account setting.`
 	cmd.Long = `Update an account setting.
-  
+
   Patch a setting value at account level. See
   :method:settingsv2/listaccountsettingsmetadata for list of setting available
   via public APIs at account level.`

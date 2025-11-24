@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/databricks-sdk-go/apierr"
 )
 
 func (d *DeploymentUnit) Destroy(ctx context.Context, db *dstate.DeploymentState) error {
@@ -24,12 +25,7 @@ func (d *DeploymentUnit) Destroy(ctx context.Context, db *dstate.DeploymentState
 		return errors.New("invalid state: empty id")
 	}
 
-	err := d.Delete(ctx, db, entry.ID)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return d.Delete(ctx, db, entry.ID)
 }
 
 func (d *DeploymentUnit) Deploy(ctx context.Context, db *dstate.DeploymentState, newState any, actionType deployplan.ActionType, changes *deployplan.Changes) error {
@@ -94,6 +90,7 @@ func (d *DeploymentUnit) Create(ctx context.Context, db *dstate.DeploymentState,
 }
 
 func (d *DeploymentUnit) Recreate(ctx context.Context, db *dstate.DeploymentState, oldID string, newState any) error {
+	// Note, unlike Delete(), we hard error on 403 here intentionally
 	err := d.Adapter.DoDelete(ctx, oldID)
 	if err != nil && !isResourceGone(err) {
 		return fmt.Errorf("deleting old id=%s: %w", oldID, err)
@@ -184,7 +181,15 @@ func (d *DeploymentUnit) UpdateWithID(ctx context.Context, db *dstate.Deployment
 func (d *DeploymentUnit) Delete(ctx context.Context, db *dstate.DeploymentState, oldID string) error {
 	err := d.Adapter.DoDelete(ctx, oldID)
 	if err != nil && !isResourceGone(err) {
-		return fmt.Errorf("deleting id=%s: %w", oldID, err)
+		// Rather than failing delete and requiring user to unbind, we perform unbind automatically there.
+		// Some services, e.g. jobs, return 403 for missing resources if caller did not have permissions to it when job existed.
+		// In those cases 403 hides 404. In other cases, user not having permissions to resource but having in the bundle might
+		// mean configuration error that user is trying to fix by removing resource from their bundle.
+		if errors.Is(err, apierr.ErrPermissionDenied) {
+			log.Warnf(ctx, "Ignoring permission error when deleting %s id=%s: %s", d.ResourceKey, oldID, err)
+		} else {
+			return fmt.Errorf("deleting id=%s: %w", oldID, err)
+		}
 	}
 
 	err = db.DeleteState(d.ResourceKey)
@@ -229,7 +234,7 @@ func (d *DeploymentUnit) refreshRemoteState(ctx context.Context, id string) erro
 	if d.RemoteState != nil {
 		return nil
 	}
-	remoteState, err := d.Adapter.DoRefresh(ctx, id)
+	remoteState, err := d.Adapter.DoRead(ctx, id)
 	if err != nil {
 		return fmt.Errorf("failed to refresh remote state id=%s: %w", id, err)
 	}

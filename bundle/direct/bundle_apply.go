@@ -25,6 +25,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 	}
 
 	b.StateDB.AssertOpened()
+	b.RemoteStateCache.Clear()
 
 	g, err := makeGraph(plan)
 	if err != nil {
@@ -97,7 +98,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 
 			// TODO: redo calcDiff to downgrade planned action if possible (?)
 
-			err = d.Deploy(ctx, &b.StateDB, entry.NewState.Config, at, entry.Changes)
+			err = d.Deploy(ctx, &b.StateDB, entry.NewState.Value, at, entry.Changes)
 			if err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 				return false

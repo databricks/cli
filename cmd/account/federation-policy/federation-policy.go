@@ -20,23 +20,23 @@ func New() *cobra.Command {
 		Use:   "federation-policy",
 		Short: `These APIs manage account federation policies.`,
 		Long: `These APIs manage account federation policies.
-  
+
   Account federation policies allow users and service principals in your
   Databricks account to securely access Databricks APIs using tokens from your
   trusted identity providers (IdPs).
-  
+
   With token federation, your users and service principals can exchange tokens
   from your IdP for Databricks OAuth tokens, which can be used to access
   Databricks APIs. Token federation eliminates the need to manage Databricks
   secrets, and allows you to centralize management of token issuance policies in
   your IdP. Databricks token federation is typically used in combination with
   [SCIM], so users in your IdP are synchronized into your Databricks account.
-  
+
   Token federation is configured in your Databricks account using an account
   federation policy. An account federation policy specifies: * which IdP, or
   issuer, your Databricks account should accept tokens from * how to determine
   which Databricks user, or subject, a token is issued for
-  
+
   To configure a federation policy, you provide the following: * The required
   token __issuer__, as specified in the “iss” claim of your tokens. The
   issuer is an https URL that identifies your IdP. * The allowed token
@@ -51,22 +51,22 @@ func New() *cobra.Command {
   (recommended), Databricks automatically fetches the public keys from your
   issuer’s well known endpoint. Databricks strongly recommends relying on your
   issuer’s well known endpoint for discovering public keys.
-  
+
   An example federation policy is:  issuer: "https://idp.mycompany.com/oidc"
-  audiences: ["databricks"] subject_claim: "sub" 
-  
+  audiences: ["databricks"] subject_claim: "sub"
+
   An example JWT token body that matches this policy and could be used to
   authenticate to Databricks as user username@mycompany.com is:  { "iss":
   "https://idp.mycompany.com/oidc", "aud": "databricks", "sub":
-  "username@mycompany.com" } 
-  
+  "username@mycompany.com" }
+
   You may also need to configure your IdP to generate tokens for your users to
   exchange with Databricks, if your users do not already have the ability to
   generate tokens that are compatible with your federation policy.
-  
+
   You do not need to configure an OAuth application in Databricks to use token
   federation.
-  
+
   [SCIM]: https://docs.databricks.com/admin/users-groups/scim/index.html`,
 		GroupID: "oauth2",
 		Annotations: map[string]string{

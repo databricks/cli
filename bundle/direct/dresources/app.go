@@ -24,11 +24,11 @@ func (*ResourceApp) PrepareState(input *resources.App) *apps.App {
 	return &input.App
 }
 
-func (r *ResourceApp) DoRefresh(ctx context.Context, id string) (*apps.App, error) {
+func (r *ResourceApp) DoRead(ctx context.Context, id string) (*apps.App, error) {
 	return r.client.Apps.GetByName(ctx, id)
 }
 
-func (r *ResourceApp) DoCreate(ctx context.Context, config *apps.App) (string, error) {
+func (r *ResourceApp) DoCreate(ctx context.Context, config *apps.App) (string, *apps.App, error) {
 	request := apps.CreateAppRequest{
 		App:             *config,
 		NoCompute:       true,
@@ -36,27 +36,27 @@ func (r *ResourceApp) DoCreate(ctx context.Context, config *apps.App) (string, e
 	}
 	waiter, err := r.client.Apps.Create(ctx, request)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 
-	return waiter.Response.Name, nil
+	return waiter.Response.Name, nil, nil
 }
 
-func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *apps.App) error {
+func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *apps.App) (*apps.App, error) {
 	request := apps.UpdateAppRequest{
 		App:  *config,
 		Name: id,
 	}
 	response, err := r.client.Apps.Update(ctx, request)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if response.Name != id {
 		log.Warnf(ctx, "apps: response contains unexpected name=%#v (expected %#v)", response.Name, id)
 	}
 
-	return nil
+	return nil, nil
 }
 
 func (r *ResourceApp) DoDelete(ctx context.Context, id string) error {

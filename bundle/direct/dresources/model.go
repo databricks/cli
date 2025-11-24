@@ -31,7 +31,7 @@ func (*ResourceMlflowModel) RemapState(model *ml.ModelDatabricks) *ml.CreateMode
 	}
 }
 
-func (r *ResourceMlflowModel) DoRefresh(ctx context.Context, id string) (*ml.ModelDatabricks, error) {
+func (r *ResourceMlflowModel) DoRead(ctx context.Context, id string) (*ml.ModelDatabricks, error) {
 	response, err := r.client.ModelRegistry.GetModel(ctx, ml.GetModelRequest{
 		Name: id,
 	})
@@ -46,7 +46,7 @@ func (r *ResourceMlflowModel) DoCreate(ctx context.Context, config *ml.CreateMod
 	if err != nil {
 		return "", nil, err
 	}
-	// Create API call returns [ml.Model] while DoRefresh returns [ml.ModelDatabricks].
+	// Create API call returns [ml.Model] while DoRead returns [ml.ModelDatabricks].
 	// Thus we need to convert the response to the expected type.
 	modelDatabricks := &ml.ModelDatabricks{
 		Name:            response.RegisteredModel.Name,
@@ -80,7 +80,7 @@ func (r *ResourceMlflowModel) DoUpdate(ctx context.Context, id string, config *m
 		return nil, err
 	}
 
-	// Update API call returns [ml.Model] while DoRefresh returns [ml.ModelDatabricks].
+	// Update API call returns [ml.Model] while DoRead returns [ml.ModelDatabricks].
 	// Thus we need to convert the response to the expected type.
 	modelDatabricks := &ml.ModelDatabricks{
 		Name:            response.RegisteredModel.Name,

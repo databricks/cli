@@ -1,5 +1,5 @@
 
->>> [CLI] bundle debug plan
+>>> [CLI] bundle plan -o json
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/permissions-test/default/files...
@@ -10,7 +10,7 @@ Deployment complete!
 >>> print_requests
 
 >>> [CLI] bundle plan
-Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 >>> [CLI] permissions get pipelines [PIPELINE_ID]
 {
@@ -51,7 +51,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 === Update one permission and deploy again
 
->>> [CLI] bundle debug plan
+>>> [CLI] bundle plan -o json
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/permissions-test/default/files...
@@ -62,11 +62,11 @@ Deployment complete!
 >>> print_requests
 
 >>> [CLI] bundle plan
-Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 === Delete one permission and deploy again
 
->>> [CLI] bundle debug plan
+>>> [CLI] bundle plan -o json
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/permissions-test/default/files...
@@ -77,7 +77,7 @@ Deployment complete!
 >>> print_requests
 
 >>> [CLI] bundle plan
-Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 === Delete the whole block and deploy again
 
@@ -90,7 +90,7 @@ resources:
     foo:
       name: foo
 
->>> [CLI] bundle debug plan
+>>> [CLI] bundle plan -o json
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/permissions-test/default/files...
@@ -105,7 +105,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 === Restore original config
 
->>> [CLI] bundle debug plan
+>>> [CLI] bundle plan -o json
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/permissions-test/default/files...
@@ -116,15 +116,15 @@ Deployment complete!
 >>> print_requests
 
 >>> [CLI] bundle plan
-Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
-  delete pipeline foo
+  delete resources.pipelines.foo
 
 This action will result in the deletion of the following Lakeflow Declarative Pipelines along with the
 Streaming Tables (STs) and Materialized Views (MVs) managed by them:
-  delete pipeline foo
+  delete resources.pipelines.foo
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/permissions-test/default
 

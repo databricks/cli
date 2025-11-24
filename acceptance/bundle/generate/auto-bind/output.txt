@@ -29,7 +29,7 @@ Deployment complete!
 === Destroy the bundle:
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
-  delete job test_job
+  delete resources.jobs.test_job
 
 All files and directories at the following location will be deleted: /Workspace/tmp/[UNIQUE_NAME]
 

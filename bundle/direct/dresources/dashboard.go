@@ -85,7 +85,7 @@ func (r *ResourceDashboard) RemapState(state *resources.DashboardConfig) *resour
 	}
 }
 
-func (r *ResourceDashboard) DoRefresh(ctx context.Context, id string) (*resources.DashboardConfig, error) {
+func (r *ResourceDashboard) DoRead(ctx context.Context, id string) (*resources.DashboardConfig, error) {
 	var dashboard *dashboards.Dashboard
 	var publishedDashboard *dashboards.PublishedDashboard
 

@@ -374,3 +374,68 @@ func TestFsCpSourceIsDirectoryButTargetIsFile(t *testing.T) {
 		})
 	}
 }
+
+func TestFsCpFileToNonExistentDir(t *testing.T) {
+	t.Parallel()
+
+	for _, testCase := range copyTests() {
+		t.Run(testCase.name, func(t *testing.T) {
+			t.Parallel()
+
+			ctx := context.Background()
+			sourceFiler, sourceDir := testCase.setupSource(t)
+			targetFiler, targetDir := testCase.setupTarget(t)
+			setupSourceFile(t, ctx, sourceFiler)
+
+			// Create a directory in the target
+			err := targetFiler.Mkdir(ctx, "existingdir")
+			require.NoError(t, err)
+
+			// Copy file to existing directory with trailing slash - should succeed
+			existingDir := path.Join(targetDir, "existingdir") + "/"
+			testcli.RequireSuccessfulRun(t, ctx, "fs", "cp", path.Join(sourceDir, "foo.txt"), existingDir)
+			assertTargetFile(t, ctx, targetFiler, "existingdir/foo.txt")
+
+			// Try to copy file to a non-existent directory with trailing slash - should fail
+			nonExistentDir := path.Join(targetDir, "nonexistent", "mydir") + "/"
+			_, _, err = testcli.RequireErrorRun(t, ctx, "fs", "cp", path.Join(sourceDir, "foo.txt"), nonExistentDir)
+			assert.Error(t, err)
+			assert.Contains(t, err.Error(), "directory")
+			assert.Contains(t, err.Error(), "no such directory")
+		})
+	}
+}
+
+func TestFsCpFileToNonExistentDirWindowsPaths(t *testing.T) {
+	if runtime.GOOS != "windows" {
+		t.Skip("Skipping test on non-windows OS")
+	}
+
+	ctx := context.Background()
+	sourceFiler, sourceDir := setupLocalFiler(t)
+	targetFiler, targetDir := setupLocalFiler(t)
+	setupSourceFile(t, ctx, sourceFiler)
+
+	// Create a directory in the target
+	err := targetFiler.Mkdir(ctx, "existingdir")
+	require.NoError(t, err)
+
+	// Copy file to existing directory with trailing backslash (Windows style) - should succeed
+	windowsExistingDir := filepath.Join(filepath.FromSlash(targetDir), "existingdir") + "\\"
+	testcli.RequireSuccessfulRun(t, ctx, "fs", "cp", filepath.Join(filepath.FromSlash(sourceDir), "foo.txt"), windowsExistingDir)
+	assertTargetFile(t, ctx, targetFiler, "existingdir/foo.txt")
+
+	// Try to copy file to a non-existent directory with trailing backslash - should fail
+	windowsNonExistentDir := filepath.Join(filepath.FromSlash(targetDir), "nonexistent", "mydir") + "\\"
+	_, _, err = testcli.RequireErrorRun(t, ctx, "fs", "cp", filepath.Join(filepath.FromSlash(sourceDir), "foo.txt"), windowsNonExistentDir)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "directory")
+	assert.Contains(t, err.Error(), "no such directory")
+
+	// Also test with forward slash on Windows (should also work)
+	forwardSlashDir := path.Join(targetDir, "nonexistent2", "mydir2") + "/"
+	_, _, err = testcli.RequireErrorRun(t, ctx, "fs", "cp", path.Join(sourceDir, "foo.txt"), forwardSlashDir)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "directory")
+	assert.Contains(t, err.Error(), "no such directory")
+}

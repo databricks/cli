@@ -1,0 +1,46 @@
+# The main job for {{.project_name}}
+
+resources:
+  jobs:
+    {{.project_name}}:
+      name: {{.project_name}}
+      parameters:
+        - name: catalog
+          default: ${var.catalog}
+        - name: schema
+          default: ${var.schema}
+      tasks:
+        - task_key: main_task
+{{- if eq .compute_type "standard cluster"}}
+          job_cluster_key: job_cluster
+{{- end}}
+          spark_jar_task:
+            main_class_name: {{template `main_class_name` .}}
+            parameters:
+              - "--catalog"
+              - "{{`{{job.parameters.catalog}}`}}"
+              - "--schema"
+              - "{{`{{job.parameters.schema}}`}}"
+{{- if eq .compute_type "serverless"}}
+          environment_key: default
+{{- else}}
+          libraries:
+            - jar: ${workspace.artifact_path}/.internal/{{.project_name}}-assembly-{{template `version` .}}.jar
+{{- end}}
+{{- if eq .compute_type "serverless"}}
+      environments:
+        - environment_key: default
+          spec:
+            environment_version: "4-scala-preview"
+            java_dependencies:
+              - ${workspace.artifact_path}/.internal/{{.project_name}}-assembly-{{template `version` .}}.jar
+{{- else}}
+      job_clusters:
+        - job_cluster_key: job_cluster
+          new_cluster:
+            spark_version: 17.3.x-scala2.13
+            node_type_id: i3.xlarge
+            autoscale:
+              min_workers: 1
+              max_workers: 4
+{{- end}}

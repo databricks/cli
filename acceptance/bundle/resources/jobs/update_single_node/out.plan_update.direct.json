@@ -3,7 +3,7 @@
     "resources.jobs.foo": {
       "action": "update",
       "new_state": {
-        "config": {
+        "value": {
           "deployment": {
             "kind": "BUNDLE",
             "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
@@ -41,14 +41,17 @@
         }
       },
       "remote_state": {
+        "created_time": [UNIX_TIME_MILLIS],
         "creator_user_name": "[USERNAME]",
         "job_id": [JOB_ID],
+        "run_as_user_name": "[USERNAME]",
         "settings": {
           "deployment": {
             "kind": "BUNDLE",
             "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
           },
           "edit_mode": "UI_LOCKED",
+          "email_notifications": {},
           "format": "MULTI_TASK",
           "job_clusters": [
             {
@@ -71,19 +74,35 @@
           "queue": {
             "enabled": true
           },
+          "timeout_seconds": 0,
           "trigger": {
             "pause_status": "UNPAUSED",
             "periodic": {
               "interval": 1,
               "unit": "DAYS"
             }
-          }
+          },
+          "webhook_notifications": {}
         }
       },
       "changes": {
         "local": {
           "trigger.periodic.unit": {
             "action": "update"
+          }
+        },
+        "remote": {
+          "email_notifications": {
+            "action": "skip",
+            "reason": "server_side_default"
+          },
+          "timeout_seconds": {
+            "action": "skip",
+            "reason": "server_side_default"
+          },
+          "webhook_notifications": {
+            "action": "skip",
+            "reason": "server_side_default"
           }
         }
       }

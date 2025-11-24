@@ -52,7 +52,7 @@ func newGetEnableResultsDownloading() *cobra.Command {
 	cmd.Use = "get-enable-results-downloading"
 	cmd.Short = `Get the Notebook results download setting.`
 	cmd.Long = `Get the Notebook results download setting.
-  
+
   Gets the Notebook results download setting.`
 
 	cmd.Annotations = make(map[string]string)
@@ -100,7 +100,7 @@ func newPatchEnableResultsDownloading() *cobra.Command {
 	cmd.Use = "patch-enable-results-downloading"
 	cmd.Short = `Update the Notebook results download setting.`
 	cmd.Long = `Update the Notebook results download setting.
-  
+
   Updates the Notebook results download setting. The model follows eventual
   consistency, which means the get after the update operation might receive
   stale values for some time.`

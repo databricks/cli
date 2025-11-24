@@ -23,7 +23,7 @@ func New() *cobra.Command {
 		Short: `The Workspace API allows you to list, import, export, and delete notebooks and folders.`,
 		Long: `The Workspace API allows you to list, import, export, and delete notebooks and
   folders.
-  
+
   A notebook is a web-based interface to a document that contains runnable code,
   visualizations, and explanatory text.`,
 		GroupID: "workspace",
@@ -75,13 +75,13 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete PATH"
 	cmd.Short = `Delete a workspace object.`
 	cmd.Long = `Delete a workspace object.
-  
+
   Deletes an object or a directory (and optionally recursively deletes all
   objects in the directory). * If path does not exist, this call returns an
   error RESOURCE_DOES_NOT_EXIST. * If path is a non-empty directory and
   recursive is set to false, this call returns an error
   DIRECTORY_NOT_EMPTY.
-  
+
   Object deletion cannot be undone and deleting a directory recursively is not
   atomic.
 
@@ -185,12 +185,12 @@ func newExport() *cobra.Command {
 	cmd.Use = "export PATH"
 	cmd.Short = `Export a workspace object.`
 	cmd.Long = `Export a workspace object.
-  
+
   Exports an object or the contents of an entire directory.
-  
+
   If path does not exist, this call returns an error
   RESOURCE_DOES_NOT_EXIST.
-  
+
   If the exported data would exceed size limit, this call returns
   MAX_NOTEBOOK_SIZE_EXCEEDED. Currently, this API does not support exporting a
   library.
@@ -261,7 +261,7 @@ func newGetPermissionLevels() *cobra.Command {
 	cmd.Use = "get-permission-levels WORKSPACE_OBJECT_TYPE WORKSPACE_OBJECT_ID"
 	cmd.Short = `Get workspace object permission levels.`
 	cmd.Long = `Get workspace object permission levels.
-  
+
   Gets the permission levels that a user can have on an object.
 
   Arguments:
@@ -319,7 +319,7 @@ func newGetPermissions() *cobra.Command {
 	cmd.Use = "get-permissions WORKSPACE_OBJECT_TYPE WORKSPACE_OBJECT_ID"
 	cmd.Short = `Get workspace object permissions.`
 	cmd.Long = `Get workspace object permissions.
-  
+
   Gets the permissions of a workspace object. Workspace objects can inherit
   permissions from their parent objects or root object.
 
@@ -378,7 +378,7 @@ func newGetStatus() *cobra.Command {
 	cmd.Use = "get-status PATH"
 	cmd.Short = `Get status.`
 	cmd.Long = `Get status.
-  
+
   Gets the status of an object or a directory. If path does not exist, this
   call returns an error RESOURCE_DOES_NOT_EXIST.
 
@@ -451,7 +451,7 @@ func newImport() *cobra.Command {
 	cmd.Use = "import PATH"
 	cmd.Short = `Import a workspace object.`
 	cmd.Long = `Import a workspace object.
-  
+
   Imports a workspace object (for example, a notebook or file) or the contents
   of an entire directory. If path already exists and overwrite is set to
   false, this call returns an error RESOURCE_ALREADY_EXISTS. To import a
@@ -536,7 +536,7 @@ func newList() *cobra.Command {
 	cmd.Use = "list PATH"
 	cmd.Short = `List contents.`
 	cmd.Long = `List contents.
-  
+
   Lists the contents of a directory, or the object if it is not a directory. If
   the input path does not exist, this call returns an error
   RESOURCE_DOES_NOT_EXIST.
@@ -594,11 +594,11 @@ func newMkdirs() *cobra.Command {
 	cmd.Use = "mkdirs PATH"
 	cmd.Short = `Create a directory.`
 	cmd.Long = `Create a directory.
-  
+
   Creates the specified directory (and necessary parent directories if they do
   not exist). If there is an object (not a directory) at any prefix of the input
   path, this call returns an error RESOURCE_ALREADY_EXISTS.
-  
+
   Note that if this operation fails it may have succeeded in creating some of
   the necessary parent directories.
 
@@ -698,7 +698,7 @@ func newSetPermissions() *cobra.Command {
 	cmd.Use = "set-permissions WORKSPACE_OBJECT_TYPE WORKSPACE_OBJECT_ID"
 	cmd.Short = `Set workspace object permissions.`
 	cmd.Long = `Set workspace object permissions.
-  
+
   Sets permissions on an object, replacing existing permissions if they exist.
   Deletes all direct permissions if none are specified. Objects can inherit
   permissions from their parent objects or root object.
@@ -775,7 +775,7 @@ func newUpdatePermissions() *cobra.Command {
 	cmd.Use = "update-permissions WORKSPACE_OBJECT_TYPE WORKSPACE_OBJECT_ID"
 	cmd.Short = `Update workspace object permissions.`
 	cmd.Long = `Update workspace object permissions.
-  
+
   Updates the permissions on a workspace object. Workspace objects can inherit
   permissions from their parent objects or root object.
 

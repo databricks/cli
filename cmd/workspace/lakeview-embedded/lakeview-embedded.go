@@ -57,7 +57,7 @@ func newGetPublishedDashboardTokenInfo() *cobra.Command {
 	cmd.Use = "get-published-dashboard-token-info DASHBOARD_ID"
 	cmd.Short = `Read information of a published dashboard to mint an OAuth token.`
 	cmd.Long = `Read information of a published dashboard to mint an OAuth token.
-  
+
   Get a required authorization details and scopes of a published dashboard to
   mint an OAuth token.
 
