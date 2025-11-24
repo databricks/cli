@@ -372,11 +372,8 @@ func (b *DeploymentBundle) resolveReferences(ctx context.Context, entry *deployp
 	for fieldPathStr, refString := range entry.NewState.Refs {
 		refs, ok := dynvar.NewRef(dyn.V(refString))
 		if !ok {
-			if !isLocal {
-				logdiag.LogError(ctx, fmt.Errorf("%s: cannot parse %q", errorPrefix, refString))
-				return false
-			}
-			continue
+			logdiag.LogError(ctx, fmt.Errorf("%s: cannot parse %q", errorPrefix, refString))
+			return false
 		}
 
 		for _, pathString := range refs.References() {
