@@ -1,5 +1,5 @@
 {
-  "name": "template-trpc",
+  "name": "{{.project_name}}",
   "private": true,
   "scripts": {
     "install:all": "cd server && npm install && cd ../client && npm install",

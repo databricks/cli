@@ -1,0 +1,18 @@
+{
+  "properties": {
+    "project_name": {
+      "type": "string",
+      "default": "my_trpc_app",
+      "description": "Project Name",
+      "order": 1,
+      "pattern": "^[A-Za-z0-9_-]+$",
+      "pattern_match_failure_message": "Name must consist of letters, numbers, underscores, or hyphens."
+    },
+    "sql_warehouse_id": {
+      "type": "string",
+      "description": "SQL Warehouse ID (Optional)",
+      "order": 2
+    }
+  },
+  "success_message": "\nYour new project has been created in the '{{.project_name}}' directory!"
+}

@@ -1,0 +1,12 @@
+resources:
+  apps:
+    {{.project_name}}_app:
+      name: {{.project_name}}
+      description: "tRPC App"
+      source_code_path: ..
+      resources:
+        - name: "sql-warehouse"
+          description: "SQL Warehouse for the app"
+          sql_warehouse:
+            id: "{{.sql_warehouse_id}}"
+            permission: "CAN_USE"
