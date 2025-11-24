@@ -13,3 +13,4 @@ print_requests.py --get //unity &> out.deploy.requests.$DATABRICKS_BUNDLE_ENGINE
 
 # Should show empty plan for direct, but shows update in volumes.foo (permanent drift)
 $CLI bundle plan &> out.plan_after_deploy.$DATABRICKS_BUNDLE_ENGINE.txt
+$CLI bundle plan -o json &> out.plan_after_deploy.$DATABRICKS_BUNDLE_ENGINE.json

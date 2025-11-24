@@ -1,0 +1,82 @@
+{
+  "plan": {
+    "resources.schemas.my": {
+      "action": "skip",
+      "remote_state": {
+        "browse_only": false,
+        "catalog_name": "main",
+        "catalog_type": "MANAGED_CATALOG",
+        "created_at": [UNIX_TIME_MILLIS][0],
+        "created_by": "[USERNAME]",
+        "full_name": "main.myschema-[UNIQUE_NAME]",
+        "name": "myschema-[UNIQUE_NAME]",
+        "owner": "[USERNAME]",
+        "updated_at": [UNIX_TIME_MILLIS][0],
+        "updated_by": "[USERNAME]"
+      }
+    },
+    "resources.volumes.bar": {
+      "depends_on": [
+        {
+          "node": "resources.schemas.my",
+          "label": "${resources.schemas.my.name}"
+        }
+      ],
+      "action": "skip",
+      "remote_state": {
+        "catalog_name": "main",
+        "created_at": [UNIX_TIME_MILLIS][1],
+        "created_by": "[USERNAME]",
+        "full_name": "main.myschema-[UNIQUE_NAME].volumebar-[UNIQUE_NAME]",
+        "name": "volumebar-[UNIQUE_NAME]",
+        "owner": "[USERNAME]",
+        "schema_name": "myschema-[UNIQUE_NAME]",
+        "storage_location": "s3://deco-uc-prod-isolated-aws-us-east-1/metastore/[UUID]/volumes/[UUID]",
+        "updated_at": [UNIX_TIME_MILLIS][1],
+        "volume_type": "MANAGED"
+      },
+      "changes": {
+        "remote": {
+          "storage_location": {
+            "action": "skip",
+            "reason": "server_side_default"
+          }
+        }
+      }
+    },
+    "resources.volumes.foo": {
+      "depends_on": [
+        {
+          "node": "resources.schemas.my",
+          "label": "${resources.schemas.my.name}"
+        },
+        {
+          "node": "resources.volumes.bar",
+          "label": "${resources.volumes.bar.storage_location}"
+        }
+      ],
+      "action": "skip",
+      "remote_state": {
+        "catalog_name": "main",
+        "comment": "s3://deco-uc-prod-isolated-aws-us-east-1/metastore/[UUID]/volumes/[UUID]",
+        "created_at": [UNIX_TIME_MILLIS][2],
+        "created_by": "[USERNAME]",
+        "full_name": "main.myschema-[UNIQUE_NAME].volumefoo-[UNIQUE_NAME]",
+        "name": "volumefoo-[UNIQUE_NAME]",
+        "owner": "[USERNAME]",
+        "schema_name": "myschema-[UNIQUE_NAME]",
+        "storage_location": "s3://deco-uc-prod-isolated-aws-us-east-1/metastore/[UUID]/volumes/[UUID]",
+        "updated_at": [UNIX_TIME_MILLIS][2],
+        "volume_type": "MANAGED"
+      },
+      "changes": {
+        "remote": {
+          "storage_location": {
+            "action": "skip",
+            "reason": "server_side_default"
+          }
+        }
+      }
+    }
+  }
+}
