@@ -4,12 +4,12 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "check": "tsc -p tsconfig.json --noEmit",
-    "start": "tsx src/index.ts",
-    "dev": "tsx watch src/index.ts",
-    "db:push": "drizzle-kit push --force",
+    "start": "tsx --env-file-if-exists=../.env src/index.ts",
+    "dev": "tsx --env-file-if-exists=../.env watch src/index.ts",
+    "db:push": "drizzle-kit --env-file-if-exists=../.env push --force",
     "db:push-ci": "yes | npm run db:push",
     "lint": "eslint --cache src/index.ts",
-    "test": "node --test --import tsx src/*.test.ts"
+    "test": "node --env-file-if-exists=../.env --test --import tsx src/*.test.ts"
   },
   "dependencies": {
     "@databricks/sdk-experimental": "^0.14.2",
@@ -17,7 +17,6 @@
     "@trpc/server": "^11.6.0",
     "@types/express": "^5.0.3",
     "cors": "2.8.5",
-    "dotenv": "^16.4.7",
     "drizzle-orm": "0.40.0",
     "express": "^5.1.0",
     "pg": "8.14.0",

@@ -20,12 +20,8 @@
 
 import { type HeadersInit, Headers, ApiClient, Config } from "@databricks/sdk-experimental";
 import { DBSQLClient } from "@databricks/sql";
-import dotenv from 'dotenv'
-import path from "node:path";
 import { z } from "zod";
 
-// Environment variables
-dotenv.config({ path: path.join(__dirname, '../../.env') })
 const warehouseId: string = process.env["DATABRICKS_WAREHOUSE_ID"] || "";
 const httpPath = `/sql/1.0/warehouses/${warehouseId}`;
 
