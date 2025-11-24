@@ -273,25 +273,46 @@ func (r *ResourceModelServingEndpoint) updateTags(ctx context.Context, id string
 	return nil
 }
 
-func (r *ResourceModelServingEndpoint) DoUpdateWithChanges(ctx context.Context, id string, config *serving.CreateServingEndpoint, _ *deployplan.Changes) (*RefreshOutput, error) {
-	errGroup := errgroup.Group{}
-	errGroup.Go(func() error {
-		return r.updateAiGateway(ctx, id, config.AiGateway)
-	})
-	errGroup.Go(func() error {
-		return r.updateConfig(ctx, id, config.Config)
-	})
-	errGroup.Go(func() error {
-		return r.updateNotifications(ctx, id, config.EmailNotifications)
-	})
-	errGroup.Go(func() error {
-		return r.updateTags(ctx, id, config.Tags)
-	})
-	return nil, errGroup.Wait()
+func (r *ResourceModelServingEndpoint) hasFieldChange(changes *deployplan.Changes, fieldPath string) bool {
+	if changes == nil {
+		return false
+	}
+	_, ok := changes.Local[fieldPath]
+	return ok
 }
 
-func (r *ResourceModelServingEndpoint) WaitAfterUpdate(ctx context.Context, config *serving.CreateServingEndpoint) (*RefreshOutput, error) {
-	return r.waitForEndpointReady(ctx, config.Name)
+func (r *ResourceModelServingEndpoint) DoUpdateWithChanges(ctx context.Context, id string, config *serving.CreateServingEndpoint, changes *deployplan.Changes) (*RefreshOutput, error) {
+	errGroup := errgroup.Group{}
+
+	if r.hasFieldChange(changes, "ai_gateway") {
+		errGroup.Go(func() error {
+			return r.updateAiGateway(ctx, id, config.AiGateway)
+		})
+	}
+
+	if r.hasFieldChange(changes, "config") {
+		errGroup.Go(func() error {
+			return r.updateConfig(ctx, id, config.Config)
+		})
+	}
+
+	if r.hasFieldChange(changes, "email_notifications") {
+		errGroup.Go(func() error {
+			return r.updateNotifications(ctx, id, config.EmailNotifications)
+		})
+	}
+
+	if r.hasFieldChange(changes, "tags") {
+		errGroup.Go(func() error {
+			return r.updateTags(ctx, id, config.Tags)
+		})
+	}
+
+	if err := errGroup.Wait(); err != nil {
+		return nil, err
+	}
+
+	return r.waitForEndpointReady(ctx, id)
 }
 
 func (r *ResourceModelServingEndpoint) DoDelete(ctx context.Context, id string) error {
