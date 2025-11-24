@@ -10,13 +10,13 @@ resources:
         # Current user gets READ (should be overridden to MANAGE by fixup in direct mode)
         - user_name: ${workspace.current_user.userName}
           level: READ
-        # Test user gets both READ and WRITE (should collapse to WRITE)
-        - user_name: deco-test-user@databricks.com
-          level: READ
+        # Test user gets WRITE first, then READ (direct: collapses to highest, i.e. WRITE)
         - user_name: deco-test-user@databricks.com
           level: WRITE
-        # Group gets both WRITE and READ (should collapse to WRITE)
-        - group_name: users
+        - user_name: deco-test-user@databricks.com
           level: READ
+        # Group gets WRITE first, then READ (direct: collapses to highest, i.e. WRITE)
         - group_name: users
           level: WRITE
+        - group_name: users
+          level: READ
