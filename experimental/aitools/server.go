@@ -66,6 +66,7 @@ type mcpServer struct {
 // getAllTools returns all tools (definitions + handlers) for the MCP server.
 func getAllTools() []tools.Tool {
 	return []tools.Tool{
+		tools.WorkspaceInfoTool,
 		tools.InvokeDatabricksCLITool,
 		tools.InitProjectTool,
 		tools.AnalyzeProjectTool,

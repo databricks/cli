@@ -2,6 +2,7 @@ package tools
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -10,6 +11,7 @@ import (
 	"github.com/databricks/cli/experimental/aitools/auth"
 	"github.com/databricks/cli/experimental/aitools/tools/prompts"
 	"github.com/databricks/cli/experimental/aitools/tools/resources"
+	"github.com/databricks/cli/libs/log"
 )
 
 // AnalyzeProjectTool analyzes a Databricks project and returns guidance.
@@ -70,14 +72,23 @@ func AnalyzeProject(ctx context.Context, args analyzeProjectArgs) (string, error
 			string(content)
 	}
 
+	// Get current workspace context
+	currentProfile := getCurrentProfile(ctx)
+	workspaceContext, err := getWorkspaceDetails(ctx, currentProfile)
+	if err != nil {
+		log.Debugf(ctx, "Failed to get workspace details (non-fatal): %v", err)
+		workspaceContext = fmt.Sprintf("Current Profile: %s\n(Unable to load detailed workspace information)", currentProfile)
+	}
+
 	// Get default warehouse for apps and other resources that need it
-	warehouse, err := GetDefaultWarehouse(ctx)
+	warehouse, err := GetDefaultWarehouse(ctx, currentProfile)
 	resourceGuidance := getResourceGuidance(args.ProjectPath, warehouse)
 
 	data := map[string]string{
 		"Summary":          summary,
 		"ReadmeContent":    readmeContent,
 		"ResourceGuidance": resourceGuidance,
+		"WorkspaceContext": workspaceContext,
 	}
 
 	if err == nil && warehouse != nil {
