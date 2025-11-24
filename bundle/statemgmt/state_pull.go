@@ -47,6 +47,15 @@ func (s *StateDesc) String() string {
 	return fmt.Sprintf("%s: %s %s state serial=%d lineage=%q", s.SourcePath, source, s.Engine, s.Serial, s.Lineage)
 }
 
+func (s *StateDesc) HasRemoteTerraformState() bool {
+	for _, s := range s.AllStates {
+		if !s.Engine.IsDirect() && !s.IsLocal {
+			return true
+		}
+	}
+	return false
+}
+
 func localRead(ctx context.Context, fullPath string, engine engine.EngineType) *StateDesc {
 	content, err := os.ReadFile(fullPath)
 	if err != nil {

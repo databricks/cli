@@ -39,10 +39,7 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions) {
 		return
 	}
 
-	diags := statemgmt.PushResourcesState(ctx, b, engine)
-	for _, d := range diags {
-		logdiag.LogDiag(ctx, d)
-	}
+	statemgmt.PushResourcesState(ctx, b, engine)
 }
 
 func Unbind(ctx context.Context, b *bundle.Bundle, bundleType, tfResourceType, resourceKey string) {
@@ -72,8 +69,5 @@ func Unbind(ctx context.Context, b *bundle.Bundle, bundleType, tfResourceType, r
 		return
 	}
 
-	diags := statemgmt.PushResourcesState(ctx, b, engine)
-	for _, d := range diags {
-		logdiag.LogDiag(ctx, d)
-	}
+	statemgmt.PushResourcesState(ctx, b, engine)
 }

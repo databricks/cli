@@ -88,7 +88,6 @@ Deployment complete!
 Error: Required engine "terraform" does not match present state files. Clear "DATABRICKS_BUNDLE_ENGINE" env var to use engine appropriate for the state.
 
 Available state files:
-- terraform.tfstate: remote terraform state serial=3 lineage=""
 - [TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfstate: local terraform state serial=3 lineage=""
 - resources.json: remote direct state serial=10 lineage=""
 - [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=10 lineage=""
@@ -108,7 +107,6 @@ Deployment complete!
 [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=10 lineage=""
 
 >>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle debug states --force-pull
-terraform.tfstate: remote terraform state serial=3 lineage=""
 [TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfstate: local terraform state serial=3 lineage=""
 resources.json: remote direct state serial=10 lineage=""
 [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=10 lineage=""

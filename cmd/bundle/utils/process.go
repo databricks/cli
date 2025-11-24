@@ -65,6 +65,9 @@ type ProcessOptions struct {
 	DeployPrepare bool
 	Deploy        bool
 
+	// If true, perform backup of remote terraform state (only if current engine is direct):
+	BackupRemoteTerraformState bool
+
 	// Indicate whether the bundle operation originates from the pipelines CLI
 	IsPipelinesCLI bool
 }
@@ -241,6 +244,14 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, 
 			Key:   "phases.Deploy",
 			Value: time.Since(t3).Milliseconds(),
 		})
+
+		if logdiag.HasError(ctx) {
+			return b, stateDesc, root.ErrAlreadyPrinted
+		}
+	}
+
+	if opts.BackupRemoteTerraformState && b != nil && stateDesc != nil && stateDesc.Engine.IsDirect() && stateDesc.HasRemoteTerraformState() {
+		statemgmt.BackupRemoteTerraformState(ctx, b)
 
 		if logdiag.HasError(ctx) {
 			return b, stateDesc, root.ErrAlreadyPrinted

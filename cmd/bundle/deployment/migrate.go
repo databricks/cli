@@ -1,18 +1,13 @@
 package deployment
 
 import (
-	"bytes"
-	"context"
 	"errors"
 	"fmt"
 	"os"
 
-	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/deploy"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/direct/dstate"
-	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
@@ -142,11 +137,6 @@ To start using direct engine, deploy with DATABRICKS_BUNDLE_ENGINE=direct env va
 			logdiag.LogError(ctx, err)
 		}
 
-		err = backupRemoteTerraformState(ctx, b, stateDesc)
-		if err != nil {
-			logdiag.LogError(ctx, err)
-		}
-
 		cmdio.LogString(ctx, fmt.Sprintf(`Migrated %d resources to direct engine state file: %s
 
 Validate the migration by running "bundle plan", there should be no actions planned.
@@ -159,38 +149,4 @@ To undo the migration, remove %s and rename %s to %s
 	}
 
 	return cmd
-}
-
-func findRemoteTerraformState(states []*statemgmt.StateDesc) *statemgmt.StateDesc {
-	for _, st := range states {
-		if !st.Engine.IsDirect() && !st.IsLocal {
-			return st
-		}
-	}
-
-	return nil
-}
-
-func backupRemoteTerraformState(ctx context.Context, b *bundle.Bundle, winner *statemgmt.StateDesc) error {
-	remoteTF := findRemoteTerraformState(winner.AllStates)
-	if remoteTF == nil {
-		return nil
-	}
-
-	filer, err := deploy.StateFiler(b)
-	if err != nil {
-		return err
-	}
-
-	err = filer.Write(ctx, remoteTF.SourcePath+backupSuffix, bytes.NewReader(remoteTF.Content))
-	if err != nil {
-		return fmt.Errorf("saving backup of TF state to %q: %w", remoteTF.SourcePath, err)
-	}
-
-	err = filer.Delete(ctx, remoteTF.SourcePath)
-	if err != nil {
-		return fmt.Errorf("deleting remote tf state at %q: %w", remoteTF.SourcePath, err)
-	}
-
-	return nil
 }

@@ -29,6 +29,7 @@ To undo the migration, remove [TEST_TMP_DIR]/.databricks/bundle/dev/resources.js
 Error: Required engine "terraform" does not match present state files. Clear "DATABRICKS_BUNDLE_ENGINE" env var to use engine appropriate for the state.
 
 Available state files:
+- terraform.tfstate: remote terraform state serial=4 lineage="[UUID]"
 - [TEST_TMP_DIR]/.databricks/bundle/dev/resources.json: local direct state serial=5 lineage="[UUID]"
 
 
@@ -36,6 +37,7 @@ Available state files:
 Error: Required engine "terraform" does not match present state files. Clear "DATABRICKS_BUNDLE_ENGINE" env var to use engine appropriate for the state.
 
 Available state files:
+- terraform.tfstate: remote terraform state serial=4 lineage="[UUID]"
 - [TEST_TMP_DIR]/.databricks/bundle/dev/resources.json: local direct state serial=5 lineage="[UUID]"
 
 
