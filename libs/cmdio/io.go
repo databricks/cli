@@ -319,8 +319,12 @@ func Spinner(ctx context.Context) chan string {
 // CoordinatedWriter returns a writer that coordinates with the spinner
 // to avoid interference between spinner updates and log messages.
 func CoordinatedWriter(ctx context.Context) io.Writer {
-	c := fromContext(ctx)
-	return c.coordErr
+	io, ok := ctx.Value(cmdIOKey).(*cmdIO)
+	if !ok {
+		// cmdIO not yet initialized (e.g., during early logger setup)
+		return os.Stderr
+	}
+	return io.coordErr
 }
 
 type cmdIOType int

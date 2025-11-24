@@ -62,3 +62,12 @@ func TestCoordinatedWriterConcurrent(t *testing.T) {
 	// All messages should be written
 	assert.Equal(t, 10, bytes.Count(buf.Bytes(), []byte("message\n")))
 }
+
+func TestCoordinatedWriterBeforeCmdIOInitialized(t *testing.T) {
+	// Test that CoordinatedWriter returns a fallback writer when cmdIO
+	// is not yet in the context (e.g., during early logger initialization)
+	ctx := context.Background()
+	w := CoordinatedWriter(ctx)
+	require.NotNil(t, w)
+	// Should return os.Stderr as fallback, not panic
+}
