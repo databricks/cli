@@ -58,6 +58,9 @@ Deployment complete!
   }
 }
 
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
 === Update trigger.periodic.unit remotely and re-deploy; jobs.bar is unchanged
 >>> envsubst
 

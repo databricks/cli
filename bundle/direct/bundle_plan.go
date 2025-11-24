@@ -196,7 +196,13 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			remoteAction, remoteChangeMap = interpretOldStateVsRemoteState(ctx, adapter, remoteDiff, remoteState)
 		}
 
-		entry.Action = max(localAction, remoteAction).String()
+		action := max(localAction, remoteAction)
+		if action == deployplan.ActionTypeSkip {
+			// resource is not going to change, can use remoteState to resolve references
+			b.RemoteStateCache.Store(resourceKey, remoteState)
+		}
+
+		entry.Action = action.String()
 
 		if len(localChangeMap) > 0 || len(remoteChangeMap) > 0 {
 			entry.Changes = &deployplan.Changes{
@@ -276,9 +282,11 @@ func interpretOldStateVsRemoteState(ctx context.Context, adapter *dresources.Ada
 	return action, m
 }
 
+// TODO: calling this "Local" is not right, it can resolve "id" and remote refrences for "skip" targets
 func (b *DeploymentBundle) LookupReferenceLocal(ctx context.Context, path *structpath.PathNode) (any, error) {
 	// TODO: Prefix(3) assumes resources.jobs.foo but not resources.jobs.foo.permissions
 	targetResourceKey := path.Prefix(3).String()
+
 	fieldPath := path.SkipPrefix(3)
 	fieldPathS := fieldPath.String()
 
@@ -349,17 +357,30 @@ func (b *DeploymentBundle) LookupReferenceLocal(ctx context.Context, path *struc
 
 	if configValidErr != nil && remoteValidErr == nil {
 		// The field is only present in remote state schema.
-		// TODO: If resource is unchanged in this plan, we can proceed with resolution.
-		// If resource is going to change, we need to postpone this until deploy.
+		if targetAction != deployplan.ActionTypeSkip {
+			// The resource is going to be updated, so remoteState can change
+			return nil, errDelayed
+		}
+		remoteState, ok := b.RemoteStateCache.Load(targetResourceKey)
+		if ok {
+			return structaccess.Get(remoteState, fieldPath)
+		}
 		return nil, errDelayed
 	}
 
-	// Field is present in both: try local, fallback to delayed.
+	// Field is present in both: try local, fallback to remote (if skip) then delayed.
 
 	value, err := structaccess.Get(localConfig, fieldPath)
 
 	if err == nil && value != nil {
 		return value, nil
+	}
+
+	if targetAction == deployplan.ActionTypeSkip {
+		remoteState, ok := b.RemoteStateCache.Load(targetResourceKey)
+		if ok {
+			return structaccess.Get(remoteState, fieldPath)
+		}
 	}
 
 	return nil, errDelayed
