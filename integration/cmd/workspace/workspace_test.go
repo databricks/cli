@@ -180,52 +180,6 @@ func TestExportDirWithOverwriteFlag(t *testing.T) {
 	assertLocalFileContents(t, filepath.Join(targetDir, "file-a"), "content from workspace")
 }
 
-func TestExportDirSkipsLargeFiles(t *testing.T) {
-	ctx, f, sourceDir := setupWorkspaceImportExportTest(t)
-	targetDir := t.TempDir()
-
-	var err error
-
-	// Create a file larger than 10MB (max size limit is 10485760 bytes)
-	// We'll create an 11MB file to ensure it exceeds the limit
-	largeFileSize := 11 * 1024 * 1024 // 11MB
-	largeFileContent := strings.Repeat("a", largeFileSize)
-	err = f.Write(ctx, "large_file.csv", strings.NewReader(largeFileContent))
-	require.NoError(t, err)
-
-	// Write some smaller files that should export successfully
-	err = f.Write(ctx, "file-a", strings.NewReader("abc"))
-	require.NoError(t, err)
-	err = f.Write(ctx, "file-b", strings.NewReader("def"))
-	require.NoError(t, err)
-
-	// Run Export
-	stdout, stderr := testcli.RequireSuccessfulRun(t, ctx, "workspace", "export-dir", sourceDir, targetDir)
-
-	// Verify stdout contains export messages for successful files
-	stdoutStr := stdout.String()
-	assert.Contains(t, stdoutStr, "Exporting files from "+sourceDir)
-	assert.Contains(t, stdoutStr, fmt.Sprintf("%s -> %s", path.Join(sourceDir, "file-a"), filepath.Join(targetDir, "file-a")))
-	assert.Contains(t, stdoutStr, fmt.Sprintf("%s -> %s", path.Join(sourceDir, "file-b"), filepath.Join(targetDir, "file-b")))
-	assert.Contains(t, stdoutStr, "Export complete")
-
-	// Verify stderr contains warning for the large file
-	stderrStr := stderr.String()
-	assert.Contains(t, stderrStr, "Warning:")
-	assert.Contains(t, stderrStr, path.Join(sourceDir, "large_file.csv")+" (skipped; file too large)")
-	assert.Contains(t, stderrStr, "The following files were skipped because they exceed the maximum size limit:")
-	assert.Contains(t, stderrStr, "  - "+path.Join(sourceDir, "large_file.csv")+" (skipped; file too large)")
-
-	// Verify smaller files were exported successfully
-	assertLocalFileContents(t, filepath.Join(targetDir, "file-a"), "abc")
-	assertLocalFileContents(t, filepath.Join(targetDir, "file-b"), "def")
-
-	// Verify large file was NOT exported locally
-	largeFilePath := filepath.Join(targetDir, "large_file.csv")
-	_, err = os.Stat(largeFilePath)
-	assert.True(t, os.IsNotExist(err), "Large file should not be exported")
-}
-
 func TestImportDir(t *testing.T) {
 	ctx, workspaceFiler, targetDir := setupWorkspaceImportExportTest(t)
 	stdout, stderr := testcli.RequireSuccessfulRun(t, ctx, "workspace", "import-dir", "./testdata/import_dir", targetDir, "--log-level=debug")

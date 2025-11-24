@@ -9,7 +9,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"strings"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
@@ -69,12 +68,29 @@ func (opts *exportDirOptions) callback(ctx context.Context, workspaceFiler filer
 		if err != nil {
 			// Check if this is a file size limit error
 			var aerr *apierr.APIError
-			if errors.As(err, &aerr) && aerr.StatusCode == http.StatusBadRequest && strings.Contains(aerr.Message, "exceeded max size") {
-				// Log warning and continue
-				warning := sourcePath + " (skipped; file too large)"
-				cmdio.LogString(ctx, "Warning: "+warning)
-				opts.warnings = append(opts.warnings, warning)
-				return nil
+			if errors.As(err, &aerr) && aerr.StatusCode == http.StatusBadRequest {
+				isFileSizeError := false
+
+				if aerr.ErrorCode == "MAX_NOTEBOOK_SIZE_EXCEEDED" || aerr.ErrorCode == "MAX_READ_SIZE_EXCEEDED" {
+					isFileSizeError = true
+				}
+
+				if !isFileSizeError {
+					details := aerr.ErrorDetails()
+					if details.ErrorInfo != nil {
+						reason := details.ErrorInfo.Reason
+						if reason == "MAX_NOTEBOOK_SIZE_EXCEEDED" || reason == "MAX_READ_SIZE_EXCEEDED" {
+							isFileSizeError = true
+						}
+					}
+				}
+
+				if isFileSizeError {
+					warning := sourcePath + " (skipped; file too large)"
+					cmdio.LogString(ctx, "Warning: "+warning)
+					opts.warnings = append(opts.warnings, warning)
+					return nil
+				}
 			}
 			return err
 		}
