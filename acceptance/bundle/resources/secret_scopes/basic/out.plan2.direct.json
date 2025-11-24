@@ -29,12 +29,12 @@
           "scope_name": "",
           "acls": [
             {
-              "permission": "WRITE",
-              "principal": "deco-test-user@databricks.com"
-            },
-            {
               "permission": "MANAGE",
               "principal": "[USERNAME]"
+            },
+            {
+              "permission": "WRITE",
+              "principal": "deco-test-user@databricks.com"
             }
           ]
         },
@@ -46,12 +46,12 @@
         "scope_name": "test-scope-[UNIQUE_NAME]-1",
         "acls": [
           {
-            "permission": "WRITE",
-            "principal": "deco-test-user@databricks.com"
-          },
-          {
             "permission": "MANAGE",
             "principal": "[USERNAME]"
+          },
+          {
+            "permission": "WRITE",
+            "principal": "deco-test-user@databricks.com"
           }
         ]
       },

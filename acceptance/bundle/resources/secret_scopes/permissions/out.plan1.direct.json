@@ -22,12 +22,12 @@
           "scope_name": "",
           "acls": [
             {
-              "permission": "WRITE",
-              "principal": "[TEST_SP_APPLICATION_ID]"
-            },
-            {
               "permission": "MANAGE",
               "principal": "[USERNAME]"
+            },
+            {
+              "permission": "WRITE",
+              "principal": "[TEST_SP_APPLICATION_ID]"
             },
             {
               "permission": "READ",

@@ -22,12 +22,12 @@
           "scope_name": "",
           "acls": [
             {
-              "permission": "WRITE",
-              "principal": "deco-test-user@databricks.com"
-            },
-            {
               "permission": "MANAGE",
               "principal": "[USERNAME]"
+            },
+            {
+              "permission": "WRITE",
+              "principal": "deco-test-user@databricks.com"
             }
           ]
         },
