@@ -3102,8 +3102,7 @@
                   "type": "string",
                   "enum": [
                     "MEDIUM",
-                    "LARGE",
-                    "LIQUID"
+                    "LARGE"
                   ]
                 },
                 {
@@ -7090,8 +7089,6 @@
                   "enum": [
                     "MYSQL",
                     "POSTGRESQL",
-                    "REDSHIFT",
-                    "SQLDW",
                     "SQLSERVER",
                     "SALESFORCE",
                     "BIGQUERY",
@@ -7103,17 +7100,7 @@
                     "ORACLE",
                     "TERADATA",
                     "SHAREPOINT",
-                    "DYNAMICS365",
-                    "CONFLUENCE",
-                    "META_MARKETING",
-                    "GOOGLE_ADS",
-                    "TIKTOK_ADS",
-                    "SALESFORCE_MARKETING_CLOUD",
-                    "HUBSPOT",
-                    "WORKDAY_HCM",
-                    "GUIDEWIRE",
-                    "ZENDESK",
-                    "FOREIGN_CATALOG"
+                    "DYNAMICS365"
                   ]
                 },
                 {

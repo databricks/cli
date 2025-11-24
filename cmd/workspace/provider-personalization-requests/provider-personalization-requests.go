@@ -62,7 +62,7 @@ func newList() *cobra.Command {
 	cmd.Use = "list"
 	cmd.Short = `All personalization requests across all listings.`
 	cmd.Long = `All personalization requests across all listings.
-  
+
   List personalization requests to this provider. This will return all
   personalization requests, regardless of which listing they are for.`
 
@@ -117,7 +117,7 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update LISTING_ID REQUEST_ID STATUS"
 	cmd.Short = `Update personalization request status.`
 	cmd.Long = `Update personalization request status.
-  
+
   Update personalization request. This method only permits updating the status
   of the request.`
 

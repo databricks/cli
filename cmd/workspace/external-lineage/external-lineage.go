@@ -25,7 +25,7 @@ func New() *cobra.Command {
   between Databricks objects and external systems. These APIs allow users to
   capture data flows connecting Databricks tables, models, and file paths with
   external metadata objects.
-  
+
   With these APIs, users can create, update, delete, and list lineage
   relationships with support for column-level mappings and custom properties.`,
 		GroupID: "catalog",
@@ -73,7 +73,7 @@ func newCreateExternalLineageRelationship() *cobra.Command {
 	cmd.Use = "create-external-lineage-relationship SOURCE TARGET"
 	cmd.Short = `Create an external lineage relationship.`
 	cmd.Long = `Create an external lineage relationship.
-  
+
   Creates an external lineage relationship between a Databricks or external
   metadata object and another external metadata object.
 
@@ -166,7 +166,7 @@ func newDeleteExternalLineageRelationship() *cobra.Command {
 	cmd.Use = "delete-external-lineage-relationship"
 	cmd.Short = `Delete an external lineage relationship.`
 	cmd.Long = `Delete an external lineage relationship.
-  
+
   Deletes an external lineage relationship between a Databricks or external
   metadata object and another external metadata object.`
 
@@ -234,7 +234,7 @@ func newListExternalLineageRelationships() *cobra.Command {
 	cmd.Use = "list-external-lineage-relationships"
 	cmd.Short = `List external lineage relationships.`
 	cmd.Long = `List external lineage relationships.
-  
+
   Lists external lineage relationships of a Databricks object or external
   metadata given a supplied direction.`
 
@@ -300,7 +300,7 @@ func newUpdateExternalLineageRelationship() *cobra.Command {
 	cmd.Use = "update-external-lineage-relationship UPDATE_MASK SOURCE TARGET"
 	cmd.Short = `Update an external lineage relationship.`
 	cmd.Long = `Update an external lineage relationship.
-  
+
   Updates an external lineage relationship between a Databricks or external
   metadata object and another external metadata object.
 
@@ -311,7 +311,7 @@ func newUpdateExternalLineageRelationship() *cobra.Command {
       Specification of elements in sequence or map fields is not allowed, as
       only the entire collection field can be specified. Field names must
       exactly match the resource field names.
-      
+
       A field mask of * indicates full replacement. It’s recommended to
       always explicitly list the fields being updated and avoid using *
       wildcards, as it can lead to unintended results if the API changes in the

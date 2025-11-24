@@ -1192,8 +1192,6 @@ github.com/databricks/databricks-sdk-go/service/apps.ComputeSize:
         MEDIUM
       - |-
         LARGE
-      - |-
-        LIQUID
 github.com/databricks/databricks-sdk-go/service/apps.ComputeState:
   "_":
     "enum":
@@ -3762,10 +3760,6 @@ github.com/databricks/databricks-sdk-go/service/pipelines.IngestionSourceType:
       - |-
         POSTGRESQL
       - |-
-        REDSHIFT
-      - |-
-        SQLDW
-      - |-
         SQLSERVER
       - |-
         SALESFORCE
@@ -3789,26 +3783,6 @@ github.com/databricks/databricks-sdk-go/service/pipelines.IngestionSourceType:
         SHAREPOINT
       - |-
         DYNAMICS365
-      - |-
-        CONFLUENCE
-      - |-
-        META_MARKETING
-      - |-
-        GOOGLE_ADS
-      - |-
-        TIKTOK_ADS
-      - |-
-        SALESFORCE_MARKETING_CLOUD
-      - |-
-        HUBSPOT
-      - |-
-        WORKDAY_HCM
-      - |-
-        GUIDEWIRE
-      - |-
-        ZENDESK
-      - |-
-        FOREIGN_CATALOG
 github.com/databricks/databricks-sdk-go/service/pipelines.ManualTrigger: {}
 github.com/databricks/databricks-sdk-go/service/pipelines.NotebookLibrary:
   "path":

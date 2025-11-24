@@ -1,0 +1,21 @@
+if [ -z "$CLOUD_ENV" ]; then
+    export TEST_USER_EMAIL="deco-test-user@databricks.com"
+fi
+
+envsubst < databricks.yml.tmpl > databricks.yml
+
+trace $CLI bundle validate -o json | jq .resources.dashboards.foo.permissions
+rm out.requests.txt
+
+$CLI bundle plan --output json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+
+rm out.requests.txt
+trace $CLI bundle deploy
+
+dashboard_id=$($CLI bundle summary --output json | jq -r '.resources.dashboards.foo.id')
+echo "$dashboard_id:DASHBOARD_ID" >> ACC_REPLS
+
+print_requests.py //permissions > out.requests.deploy.$DATABRICKS_BUNDLE_ENGINE.json
+
+trace $CLI bundle destroy --auto-approve
+print_requests.py //permissions > out.requests.destroy.$DATABRICKS_BUNDLE_ENGINE.json

@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/databricks/cli/experimental/apps-mcp/lib/sandbox/local"
 	"github.com/databricks/cli/libs/log"
 )
 
@@ -29,7 +28,7 @@ func (p *Provider) Validate(ctx context.Context, args *ValidateArgs) (*ValidateR
 		return nil, errors.New("work directory does not exist")
 	}
 
-	state, err := LoadState(workDir)
+	state, err := LoadState(ctx, workDir)
 	if err != nil {
 		log.Warnf(ctx, "failed to load project state: error=%v", err)
 	}
@@ -53,20 +52,7 @@ func (p *Provider) Validate(ctx context.Context, args *ValidateArgs) (*ValidateR
 		validation = NewValidationTRPC()
 	}
 
-	log.Info(ctx, "using local sandbox for validation")
-	sb, err := p.createLocalSandbox(workDir)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create local sandbox: %w", err)
-	}
-	sandboxType := "local"
-
-	defer func() {
-		if closeErr := sb.Close(); closeErr != nil {
-			log.Warnf(ctx, "failed to close sandbox: error=%s", closeErr.Error())
-		}
-	}()
-
-	result, err := validation.Validate(ctx, sb)
+	result, err := validation.Validate(ctx, workDir)
 	if err != nil {
 		return nil, fmt.Errorf("validation execution failed: %w", err)
 	}
@@ -76,7 +62,7 @@ func (p *Provider) Validate(ctx context.Context, args *ValidateArgs) (*ValidateR
 		return result, nil
 	}
 
-	checksum, err := ComputeChecksum(workDir)
+	checksum, err := ComputeChecksum(ctx, workDir)
 	if err != nil {
 		log.Warnf(ctx, "failed to compute checksum: error=%s", err.Error())
 		return &ValidateResult{
@@ -86,7 +72,7 @@ func (p *Provider) Validate(ctx context.Context, args *ValidateArgs) (*ValidateR
 	}
 
 	validatedState := state.Validate(checksum)
-	if err := SaveState(workDir, validatedState); err != nil {
+	if err := SaveState(ctx, workDir, validatedState); err != nil {
 		log.Warnf(ctx, "failed to save state: error=%s", err.Error())
 		return &ValidateResult{
 			Success: false,
@@ -94,14 +80,8 @@ func (p *Provider) Validate(ctx context.Context, args *ValidateArgs) (*ValidateR
 		}, nil
 	}
 
-	log.Infof(ctx, "validation successful: checksum=%s, state=%s, sandbox_type=%s",
-		checksum, string(validatedState.State), sandboxType)
+	log.Infof(ctx, "validation successful: checksum=%s, state=%s",
+		checksum, string(validatedState.State))
 
-	result.SandboxType = sandboxType
 	return result, nil
-}
-
-func (p *Provider) createLocalSandbox(workDir string) (*local.LocalSandbox, error) {
-	log.Infof(p.ctx, "creating local sandbox: workDir=%s", workDir)
-	return local.NewLocalSandbox(workDir)
 }

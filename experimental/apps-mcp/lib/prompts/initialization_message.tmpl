@@ -3,7 +3,7 @@ Your session in Databricks MCP has been successfully initialized. Here are the g
 ## Project State Management:
 This project uses a state file (`.edda_state`) managed by edda MCP to enforce the correct workflow order:
 1. **Scaffolded**: `scaffold_data_app` creates project structure from template (starts in this state)
-2. **Validated**: `validate_data_app` runs build + tests in sandbox, computes BLAKE3 checksum of package.json and all core source files
+2. **Validated**: `validate_data_app` runs build + tests, computes BLAKE3 checksum of package.json and all core source files
 3. **Deployed**: `deploy_databricks_app` deploys to Databricks Apps, but ONLY if checksum hasn't changed since validation
 
 Re-validation is allowed (Deployed → Validated) to update the checksum after intentional changes. The databricks_mcp tools enforce these state transitions and prevent invalid state changes.
