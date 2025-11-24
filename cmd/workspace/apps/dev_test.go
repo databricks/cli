@@ -15,13 +15,13 @@ import (
 func TestIsViteReady(t *testing.T) {
 	t.Run("vite not running", func(t *testing.T) {
 		// Assuming nothing is running on port 5173
-		ready := isViteReady()
+		ready := isViteReady(5173)
 		assert.False(t, ready)
 	})
 
 	t.Run("vite is running", func(t *testing.T) {
 		// Start a mock server on the Vite port
-		listener, err := net.Listen("tcp", "localhost:"+vitePort)
+		listener, err := net.Listen("tcp", "localhost:5173")
 		require.NoError(t, err)
 		defer listener.Close()
 
@@ -39,27 +39,17 @@ func TestIsViteReady(t *testing.T) {
 		// Give the listener a moment to start
 		time.Sleep(50 * time.Millisecond)
 
-		ready := isViteReady()
+		ready := isViteReady(5173)
 		assert.True(t, ready)
 	})
 }
 
-func TestCreateViteServerScript(t *testing.T) {
-	scriptPath, err := createViteServerScript()
-	require.NoError(t, err)
-	defer os.Remove(scriptPath)
+func TestViteServerScriptContent(t *testing.T) {
+	// Verify the embedded script is not empty
+	assert.NotEmpty(t, viteServerScript)
 
-	// Verify the file exists
-	_, err = os.Stat(scriptPath)
-	assert.NoError(t, err)
-
-	// Verify the file contains the embedded script
-	content, err := os.ReadFile(scriptPath)
-	require.NoError(t, err)
-	assert.NotEmpty(t, content)
-
-	// Verify it's a JavaScript file
-	assert.Contains(t, string(content), "startViteServer")
+	// Verify it's a JavaScript file with expected content
+	assert.Contains(t, string(viteServerScript), "startViteServer")
 }
 
 func TestStartViteDevServerNoNode(t *testing.T) {
@@ -86,12 +76,8 @@ func TestStartViteDevServerNoNode(t *testing.T) {
 
 	// Try to start Vite server with invalid app URL (will fail fast)
 	// This test mainly verifies the function signature and error handling
-	_, _, _, err = startViteDevServer(ctx, "")
+	_, _, err = startViteDevServer(ctx, "", 5173)
 	assert.Error(t, err)
-}
-
-func TestVitePortConstant(t *testing.T) {
-	assert.Equal(t, "5173", vitePort)
 }
 
 func TestViteServerScriptEmbedded(t *testing.T) {

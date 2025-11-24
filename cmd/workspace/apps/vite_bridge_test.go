@@ -159,7 +159,7 @@ func TestViteBridgeHandleMessage(t *testing.T) {
 
 	w := &databricks.WorkspaceClient{}
 
-	vb := NewViteBridge(ctx, w, "test-app")
+	vb := NewViteBridge(ctx, w, "test-app", 5173)
 
 	tests := []struct {
 		name        string
@@ -250,7 +250,7 @@ func TestViteBridgeHandleFileReadRequest(t *testing.T) {
 		defer resp.Body.Close()
 		defer conn.Close()
 
-		vb := NewViteBridge(ctx, w, "test-app")
+		vb := NewViteBridge(ctx, w, "test-app", 5173)
 		vb.tunnelConn = conn
 
 		go func() { _ = vb.tunnelWriter(ctx) }()
@@ -307,7 +307,7 @@ func TestViteBridgeHandleFileReadRequest(t *testing.T) {
 		defer resp.Body.Close()
 		defer conn.Close()
 
-		vb := NewViteBridge(ctx, w, "test-app")
+		vb := NewViteBridge(ctx, w, "test-app", 5173)
 		vb.tunnelConn = conn
 
 		go func() { _ = vb.tunnelWriter(ctx) }()
@@ -338,7 +338,7 @@ func TestViteBridgeStop(t *testing.T) {
 	ctx := cmdio.MockDiscard(context.Background())
 	w := &databricks.WorkspaceClient{}
 
-	vb := NewViteBridge(ctx, w, "test-app")
+	vb := NewViteBridge(ctx, w, "test-app", 5173)
 
 	// Call Stop multiple times to ensure it's idempotent
 	vb.Stop()
@@ -359,7 +359,7 @@ func TestNewViteBridge(t *testing.T) {
 	w := &databricks.WorkspaceClient{}
 	appName := "test-app"
 
-	vb := NewViteBridge(ctx, w, appName)
+	vb := NewViteBridge(ctx, w, appName, 5173)
 
 	assert.NotNil(t, vb)
 	assert.Equal(t, appName, vb.appName)

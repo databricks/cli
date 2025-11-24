@@ -24,8 +24,8 @@ import (
 )
 
 const (
-	localViteURL    = "http://localhost:5173"
-	localViteHMRURL = "ws://localhost:5173/dev-hmr"
+	localViteURL    = "http://localhost:%d"
+	localViteHMRURL = "ws://localhost:%d/dev-hmr"
 	viteHMRProtocol = "vite-hmr"
 
 	// WebSocket timeouts
@@ -77,9 +77,10 @@ type ViteBridge struct {
 	stopOnce           sync.Once
 	httpClient         *http.Client
 	connectionRequests chan *ViteBridgeMessage
+	port               int
 }
 
-func NewViteBridge(ctx context.Context, w *databricks.WorkspaceClient, appName string) *ViteBridge {
+func NewViteBridge(ctx context.Context, w *databricks.WorkspaceClient, appName string, port int) *ViteBridge {
 	// Configure HTTP client optimized for local high-volume requests
 	transport := &http.Transport{
 		MaxIdleConns:        100,
@@ -100,6 +101,7 @@ func NewViteBridge(ctx context.Context, w *databricks.WorkspaceClient, appName s
 		stopChan:           make(chan struct{}),
 		tunnelWriteChan:    make(chan prioritizedMessage, 100), // Buffered channel for async writes
 		connectionRequests: make(chan *ViteBridgeMessage, 10),
+		port:               port,
 	}
 }
 
@@ -198,7 +200,7 @@ func (vb *ViteBridge) connectToViteHMR() error {
 		Subprotocols: []string{viteHMRProtocol},
 	}
 
-	conn, resp, err := dialer.Dial(localViteHMRURL, nil)
+	conn, resp, err := dialer.Dial(fmt.Sprintf(localViteHMRURL, vb.port), nil)
 	if err != nil {
 		if resp != nil && resp.Body != nil {
 			resp.Body.Close()
@@ -407,7 +409,7 @@ func (vb *ViteBridge) handleConnectionRequest(msg *ViteBridgeMessage) error {
 }
 
 func (vb *ViteBridge) handleFetchRequest(msg *ViteBridgeMessage) error {
-	targetURL := fmt.Sprintf("%s%s", localViteURL, msg.Path)
+	targetURL := fmt.Sprintf(localViteURL, vb.port) + msg.Path
 	log.Debugf(vb.ctx, "[vite_bridge] Fetch request: %s %s", msg.Method, msg.Path)
 
 	req, err := http.NewRequestWithContext(vb.ctx, msg.Method, targetURL, nil)

@@ -1,6 +1,7 @@
 package apps
 
 import (
+	"bytes"
 	"context"
 	_ "embed"
 	"errors"
@@ -9,6 +10,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -21,18 +23,14 @@ import (
 //go:embed vite-server.js
 var viteServerScript []byte
 
-// TODO: Handle multiple ports
 const (
-	vitePort = "5173"
-
-	// Vite server
+	vitePort               = 5173
 	viteReadyCheckInterval = 100 * time.Millisecond
 	viteReadyMaxAttempts   = 50
-	viteScriptCleanupDelay = 100 * time.Millisecond
 )
 
-func isViteReady() bool {
-	conn, err := net.DialTimeout("tcp", "localhost:"+vitePort, viteReadyCheckInterval)
+func isViteReady(port int) bool {
+	conn, err := net.DialTimeout("tcp", "localhost:"+strconv.Itoa(port), viteReadyCheckInterval)
 	if err != nil {
 		return false
 	}
@@ -40,39 +38,19 @@ func isViteReady() bool {
 	return true
 }
 
-func createViteServerScript() (string, error) {
-	tmpFile, err := os.CreateTemp("", "vite-server-*.js")
-	if err != nil {
-		return "", fmt.Errorf("failed to create temporary file for vite-server.js: %w", err)
-	}
-	defer tmpFile.Close()
-
-	if _, err := tmpFile.Write(viteServerScript); err != nil {
-		os.Remove(tmpFile.Name())
-		return "", fmt.Errorf("failed to write vite-server.js: %w", err)
-	}
-
-	return tmpFile.Name(), nil
-}
-
-func startViteDevServer(ctx context.Context, appURL string) (*exec.Cmd, string, chan error, error) {
-	scriptPath, err := createViteServerScript()
-	if err != nil {
-		return nil, "", nil, err
-	}
-
-	// Arguments: node vite-server.js <appURL>
-	viteCmd := exec.Command("node", scriptPath, appURL)
+func startViteDevServer(ctx context.Context, appURL string, port int) (*exec.Cmd, chan error, error) {
+	// Pass script through stdin, and pass arguments in order <appURL> <port (optional)>
+	viteCmd := exec.Command("node", "-", appURL, strconv.Itoa(port))
+	viteCmd.Stdin = bytes.NewReader(viteServerScript)
 	viteCmd.Stdout = os.Stdout
 	viteCmd.Stderr = os.Stderr
 
-	err = viteCmd.Start()
+	err := viteCmd.Start()
 	if err != nil {
-		os.Remove(scriptPath)
-		return nil, "", nil, fmt.Errorf("failed to start Vite server: %w", err)
+		return nil, nil, fmt.Errorf("failed to start Vite server: %w", err)
 	}
 
-	cmdio.LogString(ctx, "🚀 Starting Vite development server...")
+	cmdio.LogString(ctx, fmt.Sprintf("🚀 Starting Vite development server on port %d...", port))
 
 	viteErr := make(chan error, 1)
 	go func() {
@@ -86,25 +64,24 @@ func startViteDevServer(ctx context.Context, appURL string) (*exec.Cmd, string, 
 	for range viteReadyMaxAttempts {
 		select {
 		case err := <-viteErr:
-			os.Remove(scriptPath)
-			return nil, "", nil, err
+			return nil, nil, err
 		default:
-			if isViteReady() {
-				return viteCmd, scriptPath, viteErr, nil
+			if isViteReady(port) {
+				return viteCmd, viteErr, nil
 			}
 			time.Sleep(viteReadyCheckInterval)
 		}
 	}
 
 	_ = viteCmd.Process.Kill()
-	os.Remove(scriptPath)
-	return nil, "", nil, errors.New("timeout waiting for Vite server to be ready")
+	return nil, nil, errors.New("timeout waiting for Vite server to be ready")
 }
 
 func newRunDevCommand() *cobra.Command {
 	var (
 		appName    string
 		clientPath string
+		port       int
 	)
 
 	cmd := &cobra.Command{}
@@ -122,6 +99,7 @@ func newRunDevCommand() *cobra.Command {
 
 	cmd.Flags().StringVar(&appName, "app-name", "", "Name of the app to connect to (required)")
 	cmd.Flags().StringVar(&clientPath, "client-path", "./client", "Path to the Vite client directory")
+	cmd.Flags().IntVar(&port, "port", vitePort, "Port to run the Vite server on")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
@@ -135,23 +113,17 @@ func newRunDevCommand() *cobra.Command {
 			return fmt.Errorf("client directory not found: %s", clientPath)
 		}
 
-		bridge := NewViteBridge(ctx, w, appName)
+		bridge := NewViteBridge(ctx, w, appName, port)
 
 		appDomain, err := bridge.GetAppDomain()
 		if err != nil {
 			return fmt.Errorf("failed to get app domain: %w", err)
 		}
 
-		viteCmd, scriptPath, viteErr, err := startViteDevServer(ctx, appDomain.String())
+		viteCmd, viteErr, err := startViteDevServer(ctx, appDomain.String(), port)
 		if err != nil {
 			return err
 		}
-
-		defer func() {
-			// Give the process time to fully release the file handle
-			time.Sleep(viteScriptCleanupDelay)
-			os.Remove(scriptPath)
-		}()
 
 		done := make(chan error, 1)
 		sigChan := make(chan os.Signal, 1)
