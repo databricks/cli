@@ -110,8 +110,10 @@ func (d *DeploymentUnit) Update(ctx context.Context, db *dstate.DeploymentState,
 
 	if d.Adapter.HasDoUpdateWithChanges() && changes != nil {
 		remoteState, err = d.Adapter.DoUpdateWithChanges(ctx, id, newState, changes)
-	} else {
+	} else if d.Adapter.HasDoUpdate() {
 		remoteState, err = d.Adapter.DoUpdate(ctx, id, newState)
+	} else {
+		return fmt.Errorf("internal error: DoUpdate not implemented for resource %s", d.ResourceKey)
 	}
 
 	if err != nil {
