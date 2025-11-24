@@ -25,7 +25,7 @@ func New() *cobra.Command {
   workspace. If the compliance security profile is enabled, this is
   automatically enabled. By default, it is disabled. However, if the compliance
   security profile is enabled, this is automatically enabled.
-  
+
   If the compliance security profile is disabled, you can enable or disable this
   setting and it is not permanent.`,
 		RunE: root.ReportUnknownSubcommand,
@@ -62,7 +62,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get"
 	cmd.Short = `Get the enhanced security monitoring setting.`
 	cmd.Long = `Get the enhanced security monitoring setting.
-  
+
   Gets the enhanced security monitoring setting.`
 
 	cmd.Annotations = make(map[string]string)
@@ -116,7 +116,7 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update"
 	cmd.Short = `Update the enhanced security monitoring setting.`
 	cmd.Long = `Update the enhanced security monitoring setting.
-  
+
   Updates the enhanced security monitoring setting for the workspace. A fresh
   etag needs to be provided in PATCH requests (as part of the setting field).
   The etag can be retrieved by making a GET request before the PATCH

@@ -25,13 +25,13 @@ func New() *cobra.Command {
   represent an organization which you want to allow access shares. The way how
   sharing works differs depending on whether or not your recipient has access to
   a Databricks workspace that is enabled for Unity Catalog:
-  
+
   - For recipients with access to a Databricks workspace that is enabled for
   Unity Catalog, you can create a recipient object along with a unique sharing
   identifier you get from the recipient. The sharing identifier is the key
   identifier that enables the secure connection. This sharing mode is called
   **Databricks-to-Databricks sharing**.
-  
+
   - For recipients without access to a Databricks workspace that is enabled for
   Unity Catalog, when you create a recipient object, Databricks generates an
   activation link you can send to the recipient. The recipient follows the
@@ -90,14 +90,14 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create NAME AUTHENTICATION_TYPE"
 	cmd.Short = `Create a share recipient.`
 	cmd.Long = `Create a share recipient.
-  
+
   Creates a new recipient with the delta sharing authentication type in the
   metastore. The caller must be a metastore admin or have the
   **CREATE_RECIPIENT** privilege on the metastore.
 
   Arguments:
     NAME: Name of Recipient.
-    AUTHENTICATION_TYPE:  
+    AUTHENTICATION_TYPE:
       Supported values: [DATABRICKS, OAUTH_CLIENT_CREDENTIALS, OIDC_FEDERATION, TOKEN]`
 
 	cmd.Annotations = make(map[string]string)
@@ -178,7 +178,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete NAME"
 	cmd.Short = `Delete a share recipient.`
 	cmd.Long = `Delete a share recipient.
-  
+
   Deletes the specified recipient from the metastore. The caller must be the
   owner of the recipient.
 
@@ -235,9 +235,9 @@ func newGet() *cobra.Command {
 	cmd.Use = "get NAME"
 	cmd.Short = `Get a share recipient.`
 	cmd.Long = `Get a share recipient.
-  
+
   Gets a share recipient from the metastore if:
-  
+
   * the caller is the owner of the share recipient, or: * is a metastore admin
 
   Arguments:
@@ -297,9 +297,9 @@ func newList() *cobra.Command {
 	cmd.Use = "list"
 	cmd.Short = `List share recipients.`
 	cmd.Long = `List share recipients.
-  
+
   Gets an array of all share recipients within the current metastore where:
-  
+
   * the caller is a metastore admin, or * the caller is the owner. There is no
   guarantee of a specific ordering of the elements in the array.`
 
@@ -351,7 +351,7 @@ func newRotateToken() *cobra.Command {
 	cmd.Use = "rotate-token NAME EXISTING_TOKEN_EXPIRE_IN_SECONDS"
 	cmd.Short = `Rotate a token.`
 	cmd.Long = `Rotate a token.
-  
+
   Refreshes the specified recipient's delta sharing authentication token with
   the provided token info. The caller must be the owner of the recipient.
 
@@ -441,7 +441,7 @@ func newSharePermissions() *cobra.Command {
 	cmd.Use = "share-permissions NAME"
 	cmd.Short = `Get recipient share permissions.`
 	cmd.Long = `Get recipient share permissions.
-  
+
   Gets the share permissions for the specified Recipient. The caller must have
   the USE_RECIPIENT privilege on the metastore or be the owner of the Recipient.
 
@@ -508,7 +508,7 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update NAME"
 	cmd.Short = `Update a share recipient.`
 	cmd.Long = `Update a share recipient.
-  
+
   Updates an existing recipient in the metastore. The caller must be a metastore
   admin or the owner of the recipient. If the recipient name will be updated,
   the user must be both a metastore admin and the owner of the recipient.

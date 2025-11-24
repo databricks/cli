@@ -60,7 +60,7 @@ func newList() *cobra.Command {
 	cmd.Use = "list"
 	cmd.Short = `Get all the published OAuth apps.`
 	cmd.Long = `Get all the published OAuth apps.
-  
+
   Get all the available published OAuth apps in Databricks.`
 
 	cmd.Annotations = make(map[string]string)

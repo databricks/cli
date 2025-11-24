@@ -60,9 +60,9 @@ func newList() *cobra.Command {
 	cmd.Use = "list"
 	cmd.Short = `List Queries.`
 	cmd.Long = `List Queries.
-  
+
   List the history of queries through SQL warehouses, and serverless compute.
-  
+
   You can filter by user ID, warehouse ID, status, and time range. Most recently
   started queries are returned first (up to max_results in request). The
   pagination token returned in response can be used to list subsequent query
