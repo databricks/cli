@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/url"
 	"sort"
+	"sync"
 
 	"github.com/databricks/cli/experimental/apps-mcp/lib/session"
 	"github.com/databricks/cli/libs/env"
@@ -13,13 +14,56 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/sql"
 )
 
+const (
+	warehouseLoadingKey = "warehouse_loading"
+	warehouseErrorKey   = "warehouse_error"
+)
+
+// loadWarehouseInBackground loads the default warehouse in a background goroutine.
+func loadWarehouseInBackground(ctx context.Context) {
+	sess, err := session.GetSession(ctx)
+	if err != nil {
+		return
+	}
+
+	// Create a WaitGroup to track loading state
+	var wg sync.WaitGroup
+	wg.Add(1)
+	sess.Set(warehouseLoadingKey, &wg)
+
+	defer wg.Done()
+
+	warehouse, err := getDefaultWarehouse(ctx)
+	if err != nil {
+		sess.Set(warehouseErrorKey, err)
+		return
+	}
+
+	sess.Set("warehouse_id", warehouse.Id)
+}
+
 func GetWarehouseID(ctx context.Context) (string, error) {
 	sess, err := session.GetSession(ctx)
 	if err != nil {
 		return "", err
 	}
+
+	// Wait for background loading if in progress
+	if wgRaw, ok := sess.Get(warehouseLoadingKey); ok {
+		wg := wgRaw.(*sync.WaitGroup)
+		wg.Wait()
+		sess.Delete(warehouseLoadingKey)
+
+		// Check if there was an error during background loading
+		if errRaw, ok := sess.Get(warehouseErrorKey); ok {
+			sess.Delete(warehouseErrorKey)
+			return "", errRaw.(error)
+		}
+	}
+
 	warehouseID, ok := sess.Get("warehouse_id")
 	if !ok {
+		// Fallback: synchronously load if background loading didn't happen
 		warehouse, err := getDefaultWarehouse(ctx)
 		if err != nil {
 			return "", err
