@@ -97,7 +97,7 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create NAME"
 	cmd.Short = `Create an app.`
 	cmd.Long = `Create an app.
-
+  
   Creates a new app.
 
   Arguments:
@@ -205,20 +205,20 @@ func newCreateUpdate() *cobra.Command {
 	cmd.Use = "create-update APP_NAME UPDATE_MASK"
 	cmd.Short = `Create an app update.`
 	cmd.Long = `Create an app update.
-
+  
   Creates an app update and starts the update process. The update process is
   asynchronous and the status of the update can be checked with the GetAppUpdate
   method.
 
   Arguments:
-    APP_NAME:
+    APP_NAME: 
     UPDATE_MASK: The field mask must be a single string, with multiple fields separated by
       commas (no spaces). The field path is relative to the resource object,
       using a dot (.) to navigate sub-fields (e.g., author.given_name).
       Specification of elements in sequence or map fields is not allowed, as
       only the entire collection field can be specified. Field names must
       exactly match the resource field names.
-
+      
       A field mask of * indicates full replacement. It’s recommended to
       always explicitly list the fields being updated and avoid using *
       wildcards, as it can lead to unintended results if the API changes in the
@@ -315,7 +315,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete NAME"
 	cmd.Short = `Delete an app.`
 	cmd.Long = `Delete an app.
-
+  
   Deletes an app.
 
   Arguments:
@@ -387,7 +387,7 @@ func newDeploy() *cobra.Command {
 	cmd.Use = "deploy APP_NAME"
 	cmd.Short = `Create an app deployment.`
 	cmd.Long = `Create an app deployment.
-
+  
   Creates an app deployment for the app with the supplied name.
 
   Arguments:
@@ -474,7 +474,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get NAME"
 	cmd.Short = `Get an app.`
 	cmd.Long = `Get an app.
-
+  
   Retrieves information for the app with the supplied name.
 
   Arguments:
@@ -530,7 +530,7 @@ func newGetDeployment() *cobra.Command {
 	cmd.Use = "get-deployment APP_NAME DEPLOYMENT_ID"
 	cmd.Short = `Get an app deployment.`
 	cmd.Long = `Get an app deployment.
-
+  
   Retrieves information for the app deployment with the supplied name and
   deployment id.
 
@@ -589,7 +589,7 @@ func newGetPermissionLevels() *cobra.Command {
 	cmd.Use = "get-permission-levels APP_NAME"
 	cmd.Short = `Get app permission levels.`
 	cmd.Long = `Get app permission levels.
-
+  
   Gets the permission levels that a user can have on an object.
 
   Arguments:
@@ -645,7 +645,7 @@ func newGetPermissions() *cobra.Command {
 	cmd.Use = "get-permissions APP_NAME"
 	cmd.Short = `Get app permissions.`
 	cmd.Long = `Get app permissions.
-
+  
   Gets the permissions of an app. Apps can inherit permissions from their root
   object.
 
@@ -702,7 +702,7 @@ func newGetUpdate() *cobra.Command {
 	cmd.Use = "get-update APP_NAME"
 	cmd.Short = `Get an app update.`
 	cmd.Long = `Get an app update.
-
+  
   Gets the status of an app update.
 
   Arguments:
@@ -761,7 +761,7 @@ func newList() *cobra.Command {
 	cmd.Use = "list"
 	cmd.Short = `List apps.`
 	cmd.Long = `List apps.
-
+  
   Lists all apps in the workspace.`
 
 	cmd.Annotations = make(map[string]string)
@@ -812,7 +812,7 @@ func newListDeployments() *cobra.Command {
 	cmd.Use = "list-deployments APP_NAME"
 	cmd.Short = `List app deployments.`
 	cmd.Long = `List app deployments.
-
+  
   Lists all app deployments for the app with the supplied name.
 
   Arguments:
@@ -870,7 +870,7 @@ func newSetPermissions() *cobra.Command {
 	cmd.Use = "set-permissions APP_NAME"
 	cmd.Short = `Set app permissions.`
 	cmd.Long = `Set app permissions.
-
+  
   Sets permissions on an object, replacing existing permissions if they exist.
   Deletes all direct permissions if none are specified. Objects can inherit
   permissions from their root object.
@@ -946,7 +946,7 @@ func newStart() *cobra.Command {
 	cmd.Use = "start NAME"
 	cmd.Short = `Start an app.`
 	cmd.Long = `Start an app.
-
+  
   Start the last active deployment of the app in the workspace.
 
   Arguments:
@@ -1027,7 +1027,7 @@ func newStop() *cobra.Command {
 	cmd.Use = "stop NAME"
 	cmd.Short = `Stop an app.`
 	cmd.Long = `Stop an app.
-
+  
   Stops the active deployment of the app in the workspace.
 
   Arguments:
@@ -1117,7 +1117,7 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update NAME"
 	cmd.Short = `Update an app.`
 	cmd.Long = `Update an app.
-
+  
   Updates the app with the supplied name.
 
   Arguments:
@@ -1191,7 +1191,7 @@ func newUpdatePermissions() *cobra.Command {
 	cmd.Use = "update-permissions APP_NAME"
 	cmd.Short = `Update app permissions.`
 	cmd.Long = `Update app permissions.
-
+  
   Updates the permissions on an app. Apps can inherit permissions from their
   root object.
 

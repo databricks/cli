@@ -9,7 +9,6 @@ import (
 	"github.com/databricks/cli/experimental/apps-mcp/lib/providers/databricks"
 	"github.com/databricks/cli/experimental/apps-mcp/lib/providers/deployment"
 	"github.com/databricks/cli/experimental/apps-mcp/lib/providers/io"
-	"github.com/databricks/cli/experimental/apps-mcp/lib/providers/workspace"
 	"github.com/databricks/cli/experimental/apps-mcp/lib/session"
 	"github.com/databricks/cli/experimental/apps-mcp/lib/trajectory"
 	"github.com/databricks/cli/internal/build"
@@ -67,16 +66,6 @@ func (s *Server) RegisterTools(ctx context.Context) error {
 		return err
 	}
 
-	// Register workspace provider if enabled
-	if s.config.WithWorkspaceTools {
-		log.Info(ctx, "Workspace provider enabled")
-		if err := s.registerWorkspaceProvider(ctx); err != nil {
-			return err
-		}
-	} else {
-		log.Info(ctx, "Workspace provider disabled (enable with --with-workspace-tools)")
-	}
-
 	// Register deployment provider if enabled
 	if s.config.AllowDeployment {
 		log.Info(ctx, "Deployment provider enabled")
@@ -117,25 +106,6 @@ func (s *Server) registerIOProvider(ctx context.Context) error {
 	ctx = session.WithSession(ctx, s.session)
 
 	provider, err := io.NewProvider(ctx, s.config.IoConfig, s.session)
-	if err != nil {
-		return err
-	}
-
-	if err := provider.RegisterTools(s.server); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-// registerWorkspaceProvider registers the workspace provider
-func (s *Server) registerWorkspaceProvider(ctx context.Context) error {
-	log.Info(ctx, "Registering workspace provider")
-
-	// Add session to context
-	ctx = session.WithSession(ctx, s.session)
-
-	provider, err := workspace.NewProvider(ctx, s.session)
 	if err != nil {
 		return err
 	}

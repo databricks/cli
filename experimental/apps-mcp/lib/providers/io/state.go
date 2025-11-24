@@ -1,17 +1,21 @@
 package io
 
 import (
+	"bytes"
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
+	"io"
+	"io/fs"
+	"path"
 	"path/filepath"
 	"sort"
 	"time"
 
-	"github.com/databricks/cli/experimental/apps-mcp/lib/fileutil"
+	"github.com/databricks/cli/libs/filer"
 )
 
 const StateFileName = ".edda_state"
@@ -193,16 +197,24 @@ func (ps *ProjectState) TransitionTo(next StateType) error {
 	return nil
 }
 
-func LoadState(workDir string) (*ProjectState, error) {
-	statePath := filepath.Join(workDir, StateFileName)
-
-	if _, err := os.Stat(statePath); os.IsNotExist(err) {
-		return nil, nil
+func LoadState(ctx context.Context, workDir string) (*ProjectState, error) {
+	f, err := filer.NewLocalClient(workDir)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create filer: %w", err)
 	}
 
-	content, err := os.ReadFile(statePath)
+	r, err := f.Read(ctx, StateFileName)
 	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) || errors.As(err, &filer.FileDoesNotExistError{}) {
+			return nil, nil
+		}
 		return nil, fmt.Errorf("failed to read state file: %w", err)
+	}
+	defer r.Close()
+
+	content, err := io.ReadAll(r)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read state file content: %w", err)
 	}
 
 	var state ProjectState
@@ -213,35 +225,44 @@ func LoadState(workDir string) (*ProjectState, error) {
 	return &state, nil
 }
 
-func SaveState(workDir string, state *ProjectState) error {
-	statePath := filepath.Join(workDir, StateFileName)
+func SaveState(ctx context.Context, workDir string, state *ProjectState) error {
+	f, err := filer.NewLocalClient(workDir)
+	if err != nil {
+		return fmt.Errorf("failed to create filer: %w", err)
+	}
 
 	content, err := json.MarshalIndent(state, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to serialize state: %w", err)
 	}
 
-	if err := fileutil.AtomicWriteFile(statePath, content, 0o644); err != nil {
+	if err := f.Write(ctx, StateFileName, bytes.NewReader(content), filer.OverwriteIfExists); err != nil {
 		return fmt.Errorf("failed to write state file: %w", err)
 	}
 
 	return nil
 }
 
-func ComputeChecksum(workDir string) (string, error) {
+func ComputeChecksum(ctx context.Context, workDir string) (string, error) {
+	f, err := filer.NewLocalClient(workDir)
+	if err != nil {
+		return "", fmt.Errorf("failed to create filer: %w", err)
+	}
+
 	var filesToHash []string
 
 	for _, dir := range []string{"client", "server"} {
-		dirPath := filepath.Join(workDir, dir)
-		if info, err := os.Stat(dirPath); err == nil && info.IsDir() {
-			if err := collectSourceFiles(dirPath, &filesToHash); err != nil {
+		// Check if directory exists
+		info, err := f.Stat(ctx, dir)
+		if err == nil && info.IsDir() {
+			if err := collectSourceFiles(ctx, f, dir, &filesToHash); err != nil {
 				return "", err
 			}
 		}
 	}
 
-	packageJSON := filepath.Join(workDir, "package.json")
-	if _, err := os.Stat(packageJSON); err == nil {
+	packageJSON := "package.json"
+	if _, err := f.Stat(ctx, packageJSON); err == nil {
 		filesToHash = append(filesToHash, packageJSON)
 	}
 
@@ -254,26 +275,31 @@ func ComputeChecksum(workDir string) (string, error) {
 	hasher := sha256.New()
 
 	for _, filePath := range filesToHash {
-		content, err := os.ReadFile(filePath)
+		r, err := f.Read(ctx, filePath)
 		if err != nil {
 			return "", fmt.Errorf("failed to read %s: %w", filePath, err)
 		}
-		_, _ = hasher.Write(content)
+
+		if _, err := io.Copy(hasher, r); err != nil {
+			r.Close()
+			return "", fmt.Errorf("failed to hash %s: %w", filePath, err)
+		}
+		r.Close()
 	}
 
 	return hex.EncodeToString(hasher.Sum(nil)), nil
 }
 
-func VerifyChecksum(workDir, expected string) (bool, error) {
-	current, err := ComputeChecksum(workDir)
+func VerifyChecksum(ctx context.Context, workDir, expected string) (bool, error) {
+	current, err := ComputeChecksum(ctx, workDir)
 	if err != nil {
 		return false, err
 	}
 	return current == expected, nil
 }
 
-func collectSourceFiles(dir string, files *[]string) error {
-	entries, err := os.ReadDir(dir)
+func collectSourceFiles(ctx context.Context, f filer.Filer, dir string, files *[]string) error {
+	entries, err := f.ReadDir(ctx, dir)
 	if err != nil {
 		return fmt.Errorf("failed to read directory %s: %w", dir, err)
 	}
@@ -299,19 +325,22 @@ func collectSourceFiles(dir string, files *[]string) error {
 	}
 
 	for _, entry := range entries {
-		path := filepath.Join(dir, entry.Name())
+		// Use path.Join for forward slashes in relative paths (filer compatible)
+		// filepath.Join might use backslashes on Windows, but here we are in CLI running on darwin.
+		// Ideally use path.Join for abstract filesystem paths.
+		relativePath := path.Join(dir, entry.Name())
 
 		if entry.IsDir() {
 			if excludedDirs[entry.Name()] {
 				continue
 			}
-			if err := collectSourceFiles(path, files); err != nil {
+			if err := collectSourceFiles(ctx, f, relativePath, files); err != nil {
 				return err
 			}
 		} else {
-			ext := filepath.Ext(path)
+			ext := filepath.Ext(entry.Name())
 			if validExtensions[ext] {
-				*files = append(*files, path)
+				*files = append(*files, relativePath)
 			}
 		}
 	}
