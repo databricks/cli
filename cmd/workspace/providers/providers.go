@@ -25,10 +25,7 @@ func New() *cobra.Command {
   who shares the data. A provider contains shares which further contain the
   shared data.`,
 		GroupID: "sharing",
-		Annotations: map[string]string{
-			"package": "sharing",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

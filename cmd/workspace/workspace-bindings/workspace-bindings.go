@@ -39,10 +39,7 @@ func New() *cobra.Command {
   Securable types that support binding: - catalog - storage_credential -
   credential - external_location`,
 		GroupID: "catalog",
-		Annotations: map[string]string{
-			"package": "catalog",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

@@ -29,10 +29,7 @@ func New() *cobra.Command {
   users with appropriate permissions can view and manage external metadata
   objects.`,
 		GroupID: "catalog",
-		Annotations: map[string]string{
-			"package": "catalog",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

@@ -25,10 +25,7 @@ func New() *cobra.Command {
   Admins can either get every token, get a specific token by ID, or get all
   tokens for a particular user.`,
 		GroupID: "settings",
-		Annotations: map[string]string{
-			"package": "settings",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

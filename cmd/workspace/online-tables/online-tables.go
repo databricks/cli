@@ -25,10 +25,7 @@ func New() *cobra.Command {
 		Long: `Online tables provide lower latency and higher QPS access to data from Delta
   tables.`,
 		GroupID: "catalog",
-		Annotations: map[string]string{
-			"package": "catalog",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

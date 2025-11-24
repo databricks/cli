@@ -29,10 +29,7 @@ func New() *cobra.Command {
   Unity Catalog. For more details, see the [registered models API
   docs](/api/workspace/registeredmodels).`,
 		GroupID: "catalog",
-		Annotations: map[string]string{
-			"package": "catalog",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

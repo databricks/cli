@@ -27,10 +27,7 @@ func New() *cobra.Command {
   A notebook is a web-based interface to a document that contains runnable code,
   visualizations, and explanatory text.`,
 		GroupID: "workspace",
-		Annotations: map[string]string{
-			"package": "workspace",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

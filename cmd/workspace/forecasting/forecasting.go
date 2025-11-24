@@ -25,9 +25,6 @@ func New() *cobra.Command {
 		Long: `The Forecasting API allows you to create and get serverless forecasting
   experiments`,
 		GroupID: "ml",
-		Annotations: map[string]string{
-			"package": "ml",
-		},
 
 		// This service is being previewed; hide from help output.
 		Hidden: true,

@@ -28,10 +28,7 @@ func New() *cobra.Command {
   encapsulates this bucket information, and its ID is used when creating a new
   workspace.`,
 		GroupID: "provisioning",
-		Annotations: map[string]string{
-			"package": "provisioning",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

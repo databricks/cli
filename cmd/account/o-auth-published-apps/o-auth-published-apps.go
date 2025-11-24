@@ -23,10 +23,7 @@ func New() *cobra.Command {
   applications to their account through the OAuth Published App Integration
   APIs.`,
 		GroupID: "oauth2",
-		Annotations: map[string]string{
-			"package": "oauth2",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

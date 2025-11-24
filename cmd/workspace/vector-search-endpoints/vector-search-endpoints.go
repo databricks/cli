@@ -24,10 +24,7 @@ func New() *cobra.Command {
 		Short:   `**Endpoint**: Represents the compute resources to host vector search indexes.`,
 		Long:    `**Endpoint**: Represents the compute resources to host vector search indexes.`,
 		GroupID: "vectorsearch",
-		Annotations: map[string]string{
-			"package": "vectorsearch",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

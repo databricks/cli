@@ -22,10 +22,7 @@ func New() *cobra.Command {
 		Long: `These APIs manage Unity Catalog metastores for an account. A metastore
   contains catalogs that can be associated with workspaces`,
 		GroupID: "catalog",
-		Annotations: map[string]string{
-			"package": "catalog",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
