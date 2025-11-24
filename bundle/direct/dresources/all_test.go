@@ -19,6 +19,7 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
+	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/databricks/databricks-sdk-go/service/database"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -307,6 +308,36 @@ var testDeps = map[string]prepareWorkspace{
 
 		return &PermissionsState{
 			ObjectID: "/database-instances/" + waiter.Response.Name,
+			Permissions: []iam.AccessControlRequest{{
+				PermissionLevel: "CAN_MANAGE",
+				UserName:        "user@example.com",
+			}},
+		}, nil
+	},
+
+	"dashboards.permissions": func(client *databricks.WorkspaceClient) (any, error) {
+		ctx := context.Background()
+		parentPath := "/Workspace/Users/user@example.com"
+
+		// Create parent directory if it doesn't exist
+		err := client.Workspace.MkdirsByPath(ctx, parentPath)
+		if err != nil {
+			return nil, err
+		}
+
+		resp, err := client.Lakeview.Create(ctx, dashboards.CreateDashboardRequest{
+			Dashboard: dashboards.Dashboard{
+				DisplayName:         "dashboard-permissions",
+				ParentPath:          parentPath,
+				SerializedDashboard: `{"pages":[{"name":"page1","displayName":"Page 1"}]}`,
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return &PermissionsState{
+			ObjectID: "/dashboards/" + resp.DashboardId,
 			Permissions: []iam.AccessControlRequest{{
 				PermissionLevel: "CAN_MANAGE",
 				UserName:        "user@example.com",

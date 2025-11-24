@@ -59,7 +59,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete"
 	cmd.Short = `Delete the SQL Results Download setting.`
 	cmd.Long = `Delete the SQL Results Download setting.
-  
+
   Reverts the SQL Results Download setting to its default value.`
 
 	cmd.Annotations = make(map[string]string)
@@ -112,7 +112,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get"
 	cmd.Short = `Get the SQL Results Download setting.`
 	cmd.Long = `Get the SQL Results Download setting.
-  
+
   Gets the SQL Results Download setting.`
 
 	cmd.Annotations = make(map[string]string)
@@ -166,7 +166,7 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update"
 	cmd.Short = `Update the SQL Results Download setting.`
 	cmd.Long = `Update the SQL Results Download setting.
-  
+
   Updates the SQL Results Download setting.`
 
 	cmd.Annotations = make(map[string]string)
