@@ -36,7 +36,7 @@ cleanup() {
 trap cleanup EXIT
 
 title "create secret scope with permissions"
-trace $CLI bundle plan
+trace $CLI bundle plan -o json > out.plan1.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
 scope_name=$($CLI bundle summary --output json | jq -r '.resources.secret_scopes.my_scope.name')
 
@@ -61,14 +61,14 @@ resources:
           level: MANAGE
 EOF
 envsubst < databricks.yml.tmpl > databricks.yml
-trace $CLI bundle plan
+trace $CLI bundle plan -o json > out.plan2.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
 trace $CLI secrets list-acls $scope_name | jq -c '.[]' | sort
 
 title "change scope name (should recreate scope and update permissions)"
 export SECRET_SCOPE_NAME="test-scope-permissions-$UNIQUE_NAME-2"
 envsubst < databricks.yml.tmpl > databricks.yml
-trace $CLI bundle plan
+trace $CLI bundle plan -o json > out.plan3.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
 scope_name=$($CLI bundle summary --output json | jq -r '.resources.secret_scopes.my_scope.name')
 trace $CLI secrets list-scopes -o json | jq ".[] | select(.name == \"$scope_name\")"

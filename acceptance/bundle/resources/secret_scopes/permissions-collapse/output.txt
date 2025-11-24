@@ -1,10 +1,6 @@
 
 === create secret scope with duplicate permissions
->>> [CLI] bundle plan
-create secret_scopes.my_scope
-create secret_scopes.my_scope.permissions
-
-Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
+>>> [CLI] bundle plan -o json
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/secret-scope-collapse-[UNIQUE_NAME]/default/files...
