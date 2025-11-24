@@ -23,13 +23,13 @@ func New() *cobra.Command {
 		Short: `The default namespace setting API allows users to configure the default namespace for a Databricks workspace.`,
 		Long: `The default namespace setting API allows users to configure the default
   namespace for a Databricks workspace.
-  
+
   Through this API, users can retrieve, set, or modify the default namespace
   used when queries do not reference a fully qualified three-level name. For
   example, if you use the API to set 'retail_prod' as the default catalog, then
   a query 'SELECT * FROM myTable' would reference the object
   'retail_prod.default.myTable' (the schema 'default' is always assumed).
-  
+
   This setting requires a restart of clusters and SQL warehouses to take effect.
   Additionally, the default namespace only applies when using Unity
   Catalog-enabled compute.`,
@@ -68,7 +68,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete"
 	cmd.Short = `Delete the default namespace setting.`
 	cmd.Long = `Delete the default namespace setting.
-  
+
   Deletes the default namespace setting for the workspace. A fresh etag needs to
   be provided in DELETE requests (as a query parameter). The etag can be
   retrieved by making a GET request before the DELETE request. If the
@@ -125,7 +125,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get"
 	cmd.Short = `Get the default namespace setting.`
 	cmd.Long = `Get the default namespace setting.
-  
+
   Gets the default namespace setting.`
 
 	cmd.Annotations = make(map[string]string)
@@ -179,7 +179,7 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update"
 	cmd.Short = `Update the default namespace setting.`
 	cmd.Long = `Update the default namespace setting.
-  
+
   Updates the default namespace setting for the workspace. A fresh etag needs to
   be provided in PATCH requests (as part of the setting field). The etag can
   be retrieved by making a GET request before the PATCH request. Note that

@@ -7,6 +7,7 @@ import (
 	"io"
 	"sync"
 
+	"github.com/databricks/cli/experimental/apps-mcp/lib/errors"
 	"github.com/databricks/cli/experimental/apps-mcp/lib/session"
 )
 
@@ -133,7 +134,7 @@ func (s *Server) handleRequest(ctx context.Context, req *JSONRPCRequest) *JSONRP
 			JSONRPC: "2.0",
 			ID:      req.ID,
 			Error: &JSONRPCError{
-				Code:    -32601,
+				Code:    errors.CodeMethodNotFound,
 				Message: "method not found: " + req.Method,
 			},
 		}
@@ -158,7 +159,7 @@ func (s *Server) handleInitialize(req *JSONRPCRequest) *JSONRPCResponse {
 			JSONRPC: "2.0",
 			ID:      req.ID,
 			Error: &JSONRPCError{
-				Code:    -32603,
+				Code:    errors.CodeInternalError,
 				Message: fmt.Sprintf("failed to marshal result: %v", err),
 			},
 		}
@@ -187,14 +188,7 @@ func (s *Server) handleToolsList(req *JSONRPCRequest) *JSONRPCResponse {
 
 	data, err := json.Marshal(result)
 	if err != nil {
-		return &JSONRPCResponse{
-			JSONRPC: "2.0",
-			ID:      req.ID,
-			Error: &JSONRPCError{
-				Code:    -32603,
-				Message: fmt.Sprintf("failed to marshal result: %v", err),
-			},
-		}
+		return CreateNewErrorResponse(req.ID, errors.CodeInternalError, fmt.Sprintf("failed to marshal result: %v", err))
 	}
 
 	return &JSONRPCResponse{
@@ -208,14 +202,7 @@ func (s *Server) handleToolsList(req *JSONRPCRequest) *JSONRPCResponse {
 func (s *Server) handleToolsCall(ctx context.Context, req *JSONRPCRequest) *JSONRPCResponse {
 	var params CallToolParams
 	if err := json.Unmarshal(req.Params, &params); err != nil {
-		return &JSONRPCResponse{
-			JSONRPC: "2.0",
-			ID:      req.ID,
-			Error: &JSONRPCError{
-				Code:    -32602,
-				Message: fmt.Sprintf("invalid params: %v", err),
-			},
-		}
+		return CreateNewErrorResponse(req.ID, errors.CodeInvalidParams, fmt.Sprintf("invalid params: %v", err))
 	}
 
 	s.toolsMu.RLock()
@@ -223,31 +210,18 @@ func (s *Server) handleToolsCall(ctx context.Context, req *JSONRPCRequest) *JSON
 	s.toolsMu.RUnlock()
 
 	if !ok {
-		return &JSONRPCResponse{
-			JSONRPC: "2.0",
-			ID:      req.ID,
-			Error: &JSONRPCError{
-				Code:    -32602,
-				Message: "tool not found: " + params.Name,
-			},
-		}
+		return CreateNewErrorResponse(req.ID, errors.CodeInvalidParams, "tool not found: "+params.Name)
 	}
 
 	toolReq := &CallToolRequest{
+		ID:     req.ID,
 		Tool:   st.tool,
 		Params: params,
 	}
 
 	result, err := st.handler(ctx, toolReq)
 	if err != nil {
-		return &JSONRPCResponse{
-			JSONRPC: "2.0",
-			ID:      req.ID,
-			Error: &JSONRPCError{
-				Code:    -32603,
-				Message: fmt.Sprintf("tool execution error: %v", err),
-			},
-		}
+		result = CreateNewTextContentResultError(err)
 	}
 
 	// Convert Content slice to []any for JSON marshaling
@@ -266,14 +240,7 @@ func (s *Server) handleToolsCall(ctx context.Context, req *JSONRPCRequest) *JSON
 
 	data, err := json.Marshal(resultData)
 	if err != nil {
-		return &JSONRPCResponse{
-			JSONRPC: "2.0",
-			ID:      req.ID,
-			Error: &JSONRPCError{
-				Code:    -32603,
-				Message: fmt.Sprintf("failed to marshal result: %v", err),
-			},
-		}
+		return CreateNewErrorResponse(req.ID, errors.CodeInternalError, fmt.Sprintf("failed to marshal result: %v", err))
 	}
 
 	return &JSONRPCResponse{

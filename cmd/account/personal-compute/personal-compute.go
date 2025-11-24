@@ -25,7 +25,7 @@ func New() *cobra.Command {
   the Personal Compute default policy to create compute resources. By default
   all users in all workspaces have access (ON), but you can change the setting
   to instead let individual workspaces configure access control (DELEGATE).
-  
+
   There is only one instance of this setting per account. Since this setting has
   a default value, this setting is present on all accounts even though it's
   never set on a given account. Deletion reverts the value of the setting back
@@ -68,7 +68,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete"
 	cmd.Short = `Delete Personal Compute setting.`
 	cmd.Long = `Delete Personal Compute setting.
-  
+
   Reverts back the Personal Compute setting value to default (ON)`
 
 	cmd.Annotations = make(map[string]string)
@@ -121,7 +121,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get"
 	cmd.Short = `Get Personal Compute setting.`
 	cmd.Long = `Get Personal Compute setting.
-  
+
   Gets the value of the Personal Compute setting.`
 
 	cmd.Annotations = make(map[string]string)
@@ -175,7 +175,7 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update"
 	cmd.Short = `Update Personal Compute setting.`
 	cmd.Long = `Update Personal Compute setting.
-  
+
   Updates the value of the Personal Compute setting.`
 
 	cmd.Annotations = make(map[string]string)

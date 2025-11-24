@@ -58,7 +58,7 @@ func newList() *cobra.Command {
 	cmd.Use = "list CLEAN_ROOM_NAME"
 	cmd.Short = `List notebook task runs.`
 	cmd.Long = `List notebook task runs.
-  
+
   List all the historical notebook task runs in a clean room.
 
   Arguments:

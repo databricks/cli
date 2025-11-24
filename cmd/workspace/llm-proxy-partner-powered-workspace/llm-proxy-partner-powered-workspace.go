@@ -61,7 +61,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete"
 	cmd.Short = `Delete the enable partner powered AI features workspace setting.`
 	cmd.Long = `Delete the enable partner powered AI features workspace setting.
-  
+
   Reverts the enable partner powered AI features workspace setting to its
   default value.`
 
@@ -115,7 +115,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get"
 	cmd.Short = `Get the enable partner powered AI features workspace setting.`
 	cmd.Long = `Get the enable partner powered AI features workspace setting.
-  
+
   Gets the enable partner powered AI features workspace setting.`
 
 	cmd.Annotations = make(map[string]string)
@@ -169,7 +169,7 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update"
 	cmd.Short = `Update the enable partner powered AI features workspace setting.`
 	cmd.Long = `Update the enable partner powered AI features workspace setting.
-  
+
   Updates the enable partner powered AI features workspace setting.`
 
 	cmd.Annotations = make(map[string]string)

@@ -51,7 +51,7 @@ func newMe() *cobra.Command {
 	cmd.Use = "me"
 	cmd.Short = `Get current user info.`
 	cmd.Long = `Get current user info.
-  
+
   Get details about the current method caller's identity.`
 
 	cmd.Annotations = make(map[string]string)

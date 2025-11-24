@@ -52,7 +52,7 @@ func newGetEnableNotebookTableClipboard() *cobra.Command {
 	cmd.Use = "get-enable-notebook-table-clipboard"
 	cmd.Short = `Get the Results Table Clipboard features setting.`
 	cmd.Long = `Get the Results Table Clipboard features setting.
-  
+
   Gets the Results Table Clipboard features setting.`
 
 	cmd.Annotations = make(map[string]string)
@@ -100,7 +100,7 @@ func newPatchEnableNotebookTableClipboard() *cobra.Command {
 	cmd.Use = "patch-enable-notebook-table-clipboard"
 	cmd.Short = `Update the Results Table Clipboard features setting.`
 	cmd.Long = `Update the Results Table Clipboard features setting.
-  
+
   Updates the Results Table Clipboard features setting. The model follows
   eventual consistency, which means the get after the update operation might
   receive stale values for some time.`

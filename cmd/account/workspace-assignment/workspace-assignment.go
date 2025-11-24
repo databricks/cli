@@ -61,7 +61,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete WORKSPACE_ID PRINCIPAL_ID"
 	cmd.Short = `Delete permissions assignment.`
 	cmd.Long = `Delete permissions assignment.
-  
+
   Deletes the workspace permissions assignment in a given account and workspace
   for the specified principal.
 
@@ -127,7 +127,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get WORKSPACE_ID"
 	cmd.Short = `List workspace permissions.`
 	cmd.Long = `List workspace permissions.
-  
+
   Get an array of workspace permissions for the specified account and workspace.
 
   Arguments:
@@ -186,7 +186,7 @@ func newList() *cobra.Command {
 	cmd.Use = "list WORKSPACE_ID"
 	cmd.Short = `Get permission assignments.`
 	cmd.Long = `Get permission assignments.
-  
+
   Get the permission assignments for the specified Databricks account and
   Databricks workspace.
 
@@ -248,7 +248,7 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update WORKSPACE_ID PRINCIPAL_ID"
 	cmd.Short = `Create or update permissions assignment.`
 	cmd.Long = `Create or update permissions assignment.
-  
+
   Creates or updates the workspace permissions assignment in a given account and
   workspace for the specified principal.
 

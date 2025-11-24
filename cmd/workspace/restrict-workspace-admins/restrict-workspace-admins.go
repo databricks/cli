@@ -68,7 +68,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete"
 	cmd.Short = `Delete the restrict workspace admins setting.`
 	cmd.Long = `Delete the restrict workspace admins setting.
-  
+
   Reverts the restrict workspace admins setting status for the workspace. A
   fresh etag needs to be provided in DELETE requests (as a query parameter).
   The etag can be retrieved by making a GET request before the DELETE request.
@@ -125,7 +125,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get"
 	cmd.Short = `Get the restrict workspace admins setting.`
 	cmd.Long = `Get the restrict workspace admins setting.
-  
+
   Gets the restrict workspace admins setting.`
 
 	cmd.Annotations = make(map[string]string)
@@ -179,7 +179,7 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update"
 	cmd.Short = `Update the restrict workspace admins setting.`
 	cmd.Long = `Update the restrict workspace admins setting.
-  
+
   Updates the restrict workspace admins setting for the workspace. A fresh etag
   needs to be provided in PATCH requests (as part of the setting field). The
   etag can be retrieved by making a GET request before the PATCH request. If

@@ -21,6 +21,7 @@ type Tool struct {
 
 // CallToolRequest represents a request to call a tool.
 type CallToolRequest struct {
+	ID     any
 	Tool   *Tool
 	Params CallToolParams
 }
@@ -54,5 +55,16 @@ func CreateNewTextContentResultError(err error) *CallToolResult {
 	return &CallToolResult{
 		Content: []Content{&TextContent{Type: "text", Text: fmt.Sprintf("Error: %v", err)}},
 		IsError: true,
+	}
+}
+
+func CreateNewErrorResponse(id any, code int, message string) *JSONRPCResponse {
+	return &JSONRPCResponse{
+		JSONRPC: "2.0",
+		ID:      id,
+		Error: &JSONRPCError{
+			Code:    code,
+			Message: message,
+		},
 	}
 }

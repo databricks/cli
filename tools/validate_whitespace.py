@@ -60,13 +60,41 @@ def validate_contents(data):
         yield f" {newlines} newlines at the end"
 
 
+def fix_contents(data):
+    """Fix whitespace issues in file contents."""
+    if not data:
+        return data
+    try:
+        text = data.decode("utf")
+    except Exception:
+        # Can't decode, return as-is
+        return data
+
+    # Split into lines and fix each one
+    lines = text.split("\n")
+    fixed_lines = []
+    for line in lines:
+        # Remove trailing whitespace and whitespace-only lines
+        fixed_lines.append(line.rstrip())
+
+    # Join lines back together
+    fixed_text = "\n".join(fixed_lines)
+
+    # Ensure file ends with exactly one newline
+    fixed_text = fixed_text.rstrip("\n") + "\n"
+
+    return fixed_text.encode("utf")
+
+
 def main():
     quiet = "-q" in sys.argv
+    fix_mode = "--fix" in sys.argv
     files = subprocess.check_output(["git", "ls-files"], encoding="utf-8").split()
     ignores = load_ignores()
     n_checked = 0
     n_skipped = 0
     n_errored = 0
+    n_fixed = 0
     for f in files:
         if not os.path.isfile(f):
             n_skipped += 1
@@ -76,15 +104,30 @@ def main():
             continue
         with open(f, "rb") as file:
             data = file.read()
-        error = False
-        for msg in validate_contents(data):
-            print(f"{f}:{msg}")
-            error = True
-        n_checked += 1
-        n_errored += 1 if error else 0
+
+        if fix_mode:
+            # Fix whitespace issues
+            fixed_data = fix_contents(data)
+            if fixed_data != data:
+                with open(f, "wb") as file:
+                    file.write(fixed_data)
+                print(f"{f}: Fixed")
+                n_fixed += 1
+            n_checked += 1
+        else:
+            # Validate mode
+            error = False
+            for msg in validate_contents(data):
+                print(f"{f}:{msg}")
+                error = True
+            n_checked += 1
+            n_errored += 1 if error else 0
 
     if not quiet:
-        sys.stderr.write(f"{n_checked} checked, {n_skipped} skipped, {n_errored} failed.\n")
+        if fix_mode:
+            sys.stderr.write(f"{n_checked} checked, {n_skipped} skipped, {n_fixed} fixed.\n")
+        else:
+            sys.stderr.write(f"{n_checked} checked, {n_skipped} skipped, {n_errored} failed.\n")
     sys.exit(1 if n_errored else 0)
 
 

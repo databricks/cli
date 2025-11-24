@@ -34,6 +34,7 @@ var SupportedResources = map[string]any{
 	"models.permissions":                  (*ResourcePermissions)(nil),
 	"sql_warehouses.permissions":          (*ResourcePermissions)(nil),
 	"model_serving_endpoints.permissions": (*ResourcePermissions)(nil),
+	"dashboards.permissions":              (*ResourcePermissions)(nil),
 
 	// Grants
 	"schemas.grants":           (*ResourceGrants)(nil),

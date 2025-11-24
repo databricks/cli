@@ -74,12 +74,12 @@ func newCreateEndpoint() *cobra.Command {
 	cmd.Use = "create-endpoint NAME ENDPOINT_TYPE"
 	cmd.Short = `Create an endpoint.`
 	cmd.Long = `Create an endpoint.
-  
+
   Create a new endpoint.
 
   Arguments:
     NAME: Name of the vector search endpoint
-    ENDPOINT_TYPE: Type of endpoint 
+    ENDPOINT_TYPE: Type of endpoint
       Supported values: [STANDARD]`
 
 	cmd.Annotations = make(map[string]string)
@@ -179,7 +179,7 @@ func newDeleteEndpoint() *cobra.Command {
 	cmd.Use = "delete-endpoint ENDPOINT_NAME"
 	cmd.Short = `Delete an endpoint.`
 	cmd.Long = `Delete an endpoint.
-  
+
   Delete a vector search endpoint.
 
   Arguments:
@@ -235,7 +235,7 @@ func newGetEndpoint() *cobra.Command {
 	cmd.Use = "get-endpoint ENDPOINT_NAME"
 	cmd.Short = `Get an endpoint.`
 	cmd.Long = `Get an endpoint.
-  
+
   Get details for a single vector search endpoint.
 
   Arguments:
@@ -293,7 +293,7 @@ func newListEndpoints() *cobra.Command {
 	cmd.Use = "list-endpoints"
 	cmd.Short = `List all endpoints.`
 	cmd.Long = `List all endpoints.
-  
+
   List all vector search endpoints in the workspace.`
 
 	cmd.Annotations = make(map[string]string)
@@ -344,7 +344,7 @@ func newUpdateEndpointBudgetPolicy() *cobra.Command {
 	cmd.Use = "update-endpoint-budget-policy ENDPOINT_NAME BUDGET_POLICY_ID"
 	cmd.Short = `Update the budget policy of an endpoint.`
 	cmd.Long = `Update the budget policy of an endpoint.
-  
+
   Update the budget policy of an endpoint
 
   Arguments:

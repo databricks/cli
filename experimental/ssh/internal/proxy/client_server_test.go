@@ -48,7 +48,7 @@ func createTestClient(t *testing.T, serverURL string, requestHandoverTick func()
 	}
 	go func() {
 		err := RunClientProxy(ctx, clientInput, clientOutput, requestHandoverTick, createConn)
-		if err != nil && !isNormalClosure(err) && !errors.Is(err, context.Canceled) {
+		if err != nil && !errors.Is(err, context.Canceled) {
 			if errChan != nil {
 				errChan <- err
 			} else {

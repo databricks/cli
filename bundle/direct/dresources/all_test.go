@@ -19,6 +19,7 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
+	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/databricks/databricks-sdk-go/service/database"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -298,6 +299,36 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
+	"dashboards.permissions": func(client *databricks.WorkspaceClient) (any, error) {
+		ctx := context.Background()
+		parentPath := "/Workspace/Users/user@example.com"
+
+		// Create parent directory if it doesn't exist
+		err := client.Workspace.MkdirsByPath(ctx, parentPath)
+		if err != nil {
+			return nil, err
+		}
+
+		resp, err := client.Lakeview.Create(ctx, dashboards.CreateDashboardRequest{
+			Dashboard: dashboards.Dashboard{
+				DisplayName:         "dashboard-permissions",
+				ParentPath:          parentPath,
+				SerializedDashboard: `{"pages":[{"name":"page1","displayName":"Page 1"}]}`,
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return &PermissionsState{
+			ObjectID: "/dashboards/" + resp.DashboardId,
+			Permissions: []iam.AccessControlRequest{{
+				PermissionLevel: "CAN_MANAGE",
+				UserName:        "user@example.com",
+			}},
+		}, nil
+	},
+
 	"model_serving_endpoints.permissions": func(client *databricks.WorkspaceClient) (any, error) {
 		waiter, err := client.ServingEndpoints.Create(context.Background(), serving.CreateServingEndpoint{
 			Name: "endpoint-permissions",
@@ -537,10 +568,10 @@ func TestFieldTriggers(t *testing.T) {
 		require.NoError(t, err)
 
 		t.Run(resourceName+"_local", func(t *testing.T) {
-			validateFields(t, adapter.InputConfigType(), adapter.fieldTriggersLocal)
+			validateFields(t, adapter.StateType(), adapter.fieldTriggersLocal)
 		})
 		t.Run(resourceName+"_remote", func(t *testing.T) {
-			validateFields(t, adapter.InputConfigType(), adapter.fieldTriggersRemote)
+			validateFields(t, adapter.StateType(), adapter.fieldTriggersRemote)
 		})
 	}
 }

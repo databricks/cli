@@ -65,7 +65,7 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create"
 	cmd.Short = `Create a budget policy.`
 	cmd.Long = `Create a budget policy.
-  
+
   Creates a new policy.`
 
 	cmd.Annotations = make(map[string]string)
@@ -129,7 +129,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete POLICY_ID"
 	cmd.Short = `Delete a budget policy.`
 	cmd.Long = `Delete a budget policy.
-  
+
   Deletes a policy
 
   Arguments:
@@ -185,7 +185,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get POLICY_ID"
 	cmd.Short = `Get a budget policy.`
 	cmd.Long = `Get a budget policy.
-  
+
   Retrieves a policy by it's ID.
 
   Arguments:
@@ -246,7 +246,7 @@ func newList() *cobra.Command {
 	cmd.Use = "list"
 	cmd.Short = `List policies.`
 	cmd.Long = `List policies.
-  
+
   Lists all policies. Policies are returned in the alphabetically ascending
   order of their names.`
 
@@ -304,7 +304,7 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update POLICY_ID"
 	cmd.Short = `Update a budget policy.`
 	cmd.Long = `Update a budget policy.
-  
+
   Updates a policy
 
   Arguments:

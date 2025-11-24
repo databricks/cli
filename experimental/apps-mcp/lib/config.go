@@ -7,8 +7,6 @@ package mcp
 type Config struct {
 	AllowDeployment    bool
 	WithWorkspaceTools bool
-	WarehouseID        string
-	DatabricksHost     string
 	IoConfig           *IoConfig
 }
 
@@ -52,6 +50,5 @@ func DefaultConfig() *Config {
 			},
 			Validation: validationCfg,
 		},
-		WarehouseID: "",
 	}
 }

@@ -59,7 +59,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete"
 	cmd.Short = `Delete the Dashboard Email Subscriptions setting.`
 	cmd.Long = `Delete the Dashboard Email Subscriptions setting.
-  
+
   Reverts the Dashboard Email Subscriptions setting to its default value.`
 
 	cmd.Annotations = make(map[string]string)
@@ -112,7 +112,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get"
 	cmd.Short = `Get the Dashboard Email Subscriptions setting.`
 	cmd.Long = `Get the Dashboard Email Subscriptions setting.
-  
+
   Gets the Dashboard Email Subscriptions setting.`
 
 	cmd.Annotations = make(map[string]string)
@@ -166,7 +166,7 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update"
 	cmd.Short = `Update the Dashboard Email Subscriptions setting.`
 	cmd.Long = `Update the Dashboard Email Subscriptions setting.
-  
+
   Updates the Dashboard Email Subscriptions setting.`
 
 	cmd.Annotations = make(map[string]string)

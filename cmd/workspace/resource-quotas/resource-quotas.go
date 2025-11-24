@@ -24,7 +24,7 @@ func New() *cobra.Command {
   catalog). The resource quota APIs enable you to monitor your current usage and
   limits. For more information on resource quotas see the [Unity Catalog
   documentation].
-  
+
   [Unity Catalog documentation]: https://docs.databricks.com/en/data-governance/unity-catalog/index.html#resource-quotas`,
 		GroupID: "catalog",
 		Annotations: map[string]string{
@@ -62,7 +62,7 @@ func newGetQuota() *cobra.Command {
 	cmd.Use = "get-quota PARENT_SECURABLE_TYPE PARENT_FULL_NAME QUOTA_NAME"
 	cmd.Short = `Get information for a single resource quota.`
 	cmd.Long = `Get information for a single resource quota.
-  
+
   The GetQuota API returns usage information for a single resource quota,
   defined as a child-parent pair. This API also refreshes the quota count if it
   is out of date. Refreshes are triggered asynchronously. The updated count
@@ -130,11 +130,11 @@ func newListQuotas() *cobra.Command {
 	cmd.Use = "list-quotas"
 	cmd.Short = `List all resource quotas under a metastore.`
 	cmd.Long = `List all resource quotas under a metastore.
-  
+
   ListQuotas returns all quota values under the metastore. There are no SLAs on
   the freshness of the counts returned. This API does not trigger a refresh of
   quota counts.
-  
+
   PAGINATION BEHAVIOR: The API is by default paginated, a page may contain zero
   results while still providing a next_page_token. Clients must continue reading
   pages until next_page_token is absent, which is the only indication that the

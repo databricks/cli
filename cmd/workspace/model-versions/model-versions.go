@@ -24,7 +24,7 @@ func New() *cobra.Command {
 		Long: `Databricks provides a hosted version of MLflow Model Registry in Unity
   Catalog. Models in Unity Catalog provide centralized access control, auditing,
   lineage, and discovery of ML models across Databricks workspaces.
-  
+
   This API reference documents the REST endpoints for managing model versions in
   Unity Catalog. For more details, see the [registered models API
   docs](/api/workspace/registeredmodels).`,
@@ -67,10 +67,10 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete FULL_NAME VERSION"
 	cmd.Short = `Delete a Model Version.`
 	cmd.Long = `Delete a Model Version.
-  
+
   Deletes a model version from the specified registered model. Any aliases
   assigned to the model version will also be deleted.
-  
+
   The caller must be a metastore admin or an owner of the parent registered
   model. For the latter case, the caller must also be the owner or have the
   **USE_CATALOG** privilege on the parent catalog and the **USE_SCHEMA**
@@ -137,9 +137,9 @@ func newGet() *cobra.Command {
 	cmd.Use = "get FULL_NAME VERSION"
 	cmd.Short = `Get a Model Version.`
 	cmd.Long = `Get a Model Version.
-  
+
   Get a model version.
-  
+
   The caller must be a metastore admin or an owner of (or have the **EXECUTE**
   privilege on) the parent registered model. For the latter case, the caller
   must also be the owner or have the **USE_CATALOG** privilege on the parent
@@ -205,9 +205,9 @@ func newGetByAlias() *cobra.Command {
 	cmd.Use = "get-by-alias FULL_NAME ALIAS"
 	cmd.Short = `Get Model Version By Alias.`
 	cmd.Long = `Get Model Version By Alias.
-  
+
   Get a model version by alias.
-  
+
   The caller must be a metastore admin or an owner of (or have the **EXECUTE**
   privilege on) the registered model. For the latter case, the caller must also
   be the owner or have the **USE_CATALOG** privilege on the parent catalog and
@@ -272,10 +272,10 @@ func newList() *cobra.Command {
 	cmd.Use = "list FULL_NAME"
 	cmd.Short = `List Model Versions.`
 	cmd.Long = `List Model Versions.
-  
+
   List model versions. You can list model versions under a particular schema, or
   list all model versions in the current metastore.
-  
+
   The returned models are filtered based on the privileges of the calling user.
   For example, the metastore admin is able to list all the model versions. A
   regular user needs to be the owner or have the **EXECUTE** privilege on the
@@ -283,10 +283,10 @@ func newList() *cobra.Command {
   latter case, the caller must also be the owner or have the **USE_CATALOG**
   privilege on the parent catalog and the **USE_SCHEMA** privilege on the parent
   schema.
-  
+
   There is no guarantee of a specific ordering of the elements in the response.
   The elements in the response will not contain any aliases or tags.
-  
+
   PAGINATION BEHAVIOR: The API is by default paginated, a page may contain zero
   results while still providing a next_page_token. Clients must continue reading
   pages until next_page_token is absent, which is the only indication that the
@@ -364,14 +364,14 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update FULL_NAME VERSION"
 	cmd.Short = `Update a Model Version.`
 	cmd.Long = `Update a Model Version.
-  
+
   Updates the specified model version.
-  
+
   The caller must be a metastore admin or an owner of the parent registered
   model. For the latter case, the caller must also be the owner or have the
   **USE_CATALOG** privilege on the parent catalog and the **USE_SCHEMA**
   privilege on the parent schema.
-  
+
   Currently only the comment of the model version can be updated.
 
   Arguments:

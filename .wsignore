@@ -20,10 +20,6 @@ acceptance/selftest/record_cloud/volume-io/hello.txt
 # bundle commands leave empty lines at the end; too many to list individually:
 acceptance/**/out*.txt
 
-# Extra whitespace in generated commands:
-cmd/workspace/**/*.go
-cmd/account/**/*.go
-
 # Extra whitespace in generated Python models
 python/databricks/bundles/*/_models/*.py
 

@@ -69,7 +69,7 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create"
 	cmd.Short = `Create network configuration.`
 	cmd.Long = `Create network configuration.
-  
+
   Creates a Databricks network configuration that represents an VPC and its
   resources. The VPC will be used for new Databricks clusters. This requires a
   pre-existing VPC and subnets.`
@@ -135,11 +135,11 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete NETWORK_ID"
 	cmd.Short = `Delete a network configuration.`
 	cmd.Long = `Delete a network configuration.
-  
+
   Deletes a Databricks network configuration, which represents a cloud VPC and
   its resources. You cannot delete a network that is associated with a
   workspace.
-  
+
   This operation is available only if your account is on the E2 version of the
   platform.
 
@@ -196,7 +196,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get NETWORK_ID"
 	cmd.Short = `Get a network configuration.`
 	cmd.Long = `Get a network configuration.
-  
+
   Gets a Databricks network configuration, which represents a cloud VPC and its
   resources.
 
@@ -250,7 +250,7 @@ func newList() *cobra.Command {
 	cmd.Use = "list"
 	cmd.Short = `List network configurations.`
 	cmd.Long = `List network configurations.
-  
+
   Lists Databricks network configurations for an account.`
 
 	cmd.Annotations = make(map[string]string)

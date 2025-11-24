@@ -24,7 +24,7 @@ func New() *cobra.Command {
 		Long: `The Global Init Scripts API enables Workspace administrators to configure
   global initialization scripts for their workspace. These scripts run on every
   node in every cluster in the workspace.
-  
+
   **Important:** Existing clusters must be restarted to pick up any changes made
   to global init scripts. Global init scripts are run in order. If the init
   script returns with a bad exit code, the Apache Spark container fails to
@@ -75,7 +75,7 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create NAME SCRIPT"
 	cmd.Short = `Create init script.`
 	cmd.Long = `Create init script.
-  
+
   Creates a new global init script in this workspace.
 
   Arguments:
@@ -156,7 +156,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete SCRIPT_ID"
 	cmd.Short = `Delete init script.`
 	cmd.Long = `Delete init script.
-  
+
   Deletes a global init script.
 
   Arguments:
@@ -224,7 +224,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get SCRIPT_ID"
 	cmd.Short = `Get an init script.`
 	cmd.Long = `Get an init script.
-  
+
   Gets all the details of a script, including its Base64-encoded contents.
 
   Arguments:
@@ -289,7 +289,7 @@ func newList() *cobra.Command {
 	cmd.Use = "list"
 	cmd.Short = `Get init scripts.`
 	cmd.Long = `Get init scripts.
-  
+
   Get a list of all global init scripts for this workspace. This returns all
   properties for each script but **not** the script contents. To retrieve the
   contents of a script, use the [get a global init
@@ -340,7 +340,7 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update SCRIPT_ID NAME SCRIPT"
 	cmd.Short = `Update init script.`
 	cmd.Long = `Update init script.
-  
+
   Updates a global init script, specifying only the fields to change. All fields
   are optional. Unspecified fields retain their current value.
 

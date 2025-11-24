@@ -59,7 +59,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete"
 	cmd.Short = `Delete AI/BI dashboard embedding approved domains.`
 	cmd.Long = `Delete AI/BI dashboard embedding approved domains.
-  
+
   Delete the list of domains approved to host embedded AI/BI dashboards,
   reverting back to the default empty list.`
 
@@ -113,7 +113,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get"
 	cmd.Short = `Retrieve the list of domains approved to host embedded AI/BI dashboards.`
 	cmd.Long = `Retrieve the list of domains approved to host embedded AI/BI dashboards.
-  
+
   Retrieves the list of domains approved to host embedded AI/BI dashboards.`
 
 	cmd.Annotations = make(map[string]string)
@@ -167,7 +167,7 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update"
 	cmd.Short = `Update the list of domains approved to host embedded AI/BI dashboards.`
 	cmd.Long = `Update the list of domains approved to host embedded AI/BI dashboards.
-  
+
   Updates the list of domains approved to host embedded AI/BI dashboards. This
   update will fail if the current workspace access policy is not
   ALLOW_APPROVED_DOMAINS.`

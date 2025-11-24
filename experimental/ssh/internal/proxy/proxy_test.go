@@ -115,7 +115,7 @@ func setupTestServer(ctx context.Context, t *testing.T) *TestProxy {
 		}
 		defer serverProxy.close()
 		err = serverProxy.start(ctx, serverInput, serverOutput)
-		if err != nil && !errors.Is(err, errProxyEOF) {
+		if err != nil && !errors.Is(err, context.Canceled) {
 			t.Errorf("server error: %v", err)
 			return
 		}
@@ -152,7 +152,7 @@ func setupTestClient(ctx context.Context, t *testing.T, serverURL string) *TestP
 
 	go func() {
 		err := clientProxy.start(ctx, clientInput, clientOutput)
-		if err != nil && !errors.Is(err, errProxyEOF) {
+		if err != nil && !errors.Is(err, context.Canceled) {
 			t.Errorf("proxy error: %v", err)
 		}
 	}()

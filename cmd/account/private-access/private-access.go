@@ -68,7 +68,7 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create"
 	cmd.Short = `Create private access settings.`
 	cmd.Long = `Create private access settings.
-  
+
   Creates a private access settings configuration, which represents network
   access restrictions for workspace resources. Private access settings configure
   whether workspaces can be accessed from the public internet or only from
@@ -135,7 +135,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete PRIVATE_ACCESS_SETTINGS_ID"
 	cmd.Short = `Delete private access settings.`
 	cmd.Long = `Delete private access settings.
-  
+
   Deletes a Databricks private access settings configuration, both specified by
   ID.`
 
@@ -189,7 +189,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get PRIVATE_ACCESS_SETTINGS_ID"
 	cmd.Short = `Get private access settings.`
 	cmd.Long = `Get private access settings.
-  
+
   Gets a Databricks private access settings configuration, both specified by ID.`
 
 	cmd.Annotations = make(map[string]string)
@@ -239,7 +239,7 @@ func newList() *cobra.Command {
 	cmd.Use = "list"
 	cmd.Short = `List private access settings.`
 	cmd.Long = `List private access settings.
-  
+
   Lists Databricks private access settings for an account.`
 
 	cmd.Annotations = make(map[string]string)
@@ -294,7 +294,7 @@ func newReplace() *cobra.Command {
 	cmd.Use = "replace PRIVATE_ACCESS_SETTINGS_ID"
 	cmd.Short = `Update private access settings.`
 	cmd.Long = `Update private access settings.
-  
+
   Updates an existing private access settings object, which specifies how your
   workspace is accessed over AWS PrivateLink. To use AWS PrivateLink, a
   workspace must have a private access settings object referenced by ID in the

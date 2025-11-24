@@ -5,12 +5,15 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 	"time"
 
 	mcp "github.com/databricks/cli/experimental/apps-mcp/lib"
-	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/experimental/apps-mcp/lib/middlewares"
+	"github.com/databricks/cli/experimental/apps-mcp/lib/prompts"
+	"github.com/databricks/cli/experimental/apps-mcp/lib/session"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
@@ -29,6 +32,64 @@ const (
 	PollInterval       = 2 * time.Second
 	MaxRowDisplayLimit = 100
 )
+
+// ============================================================================
+// Authentication Functions
+// ============================================================================
+
+// ConfigureAuth creates and validates a Databricks workspace client with optional host and profile.
+// The authenticated client is stored in the session data for reuse across tool calls.
+func ConfigureAuth(ctx context.Context, sess *session.Session, host, profile *string) (*databricks.WorkspaceClient, error) {
+	// Skip auth check if testing
+	if os.Getenv("DATABRICKS_MCP_SKIP_AUTH_CHECK") == "1" {
+		return nil, nil
+	}
+
+	var cfg *databricks.Config
+	if host != nil || profile != nil {
+		cfg = &databricks.Config{}
+		if host != nil {
+			cfg.Host = *host
+		}
+		if profile != nil {
+			cfg.Profile = *profile
+		}
+	}
+
+	var client *databricks.WorkspaceClient
+	var err error
+	if cfg != nil {
+		client, err = databricks.NewWorkspaceClient(cfg)
+	} else {
+		client, err = databricks.NewWorkspaceClient()
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = client.CurrentUser.Me(ctx)
+	if err != nil {
+		if profile == nil && host != nil {
+			return nil, errors.New(prompts.MustExecuteTemplate("auth_u2m.tmpl", map[string]string{
+				"WorkspaceURL": *host,
+			}))
+		}
+		return nil, wrapAuthError(err)
+	}
+
+	// Store client in session data
+	sess.Set(middlewares.DatabricksClientKey, client)
+
+	return client, nil
+}
+
+// wrapAuthError wraps configuration errors with helpful messages
+func wrapAuthError(err error) error {
+	if errors.Is(err, config.ErrCannotConfigureDefault) {
+		return errors.New(prompts.MustExecuteTemplate("auth_error.tmpl", nil))
+	}
+	return err
+}
 
 // ============================================================================
 // Helper Functions
@@ -372,12 +433,9 @@ type DatabricksRestClient struct {
 
 // NewDatabricksRestClient creates a new Databricks REST client using the SDK
 func NewDatabricksRestClient(ctx context.Context, cfg *mcp.Config) (*DatabricksRestClient, error) {
-	client, err := databricks.NewWorkspaceClient()
-	if err != nil {
-		return nil, fmt.Errorf("failed to create workspace client: %w", err)
-	}
+	client := middlewares.MustGetDatabricksClient(ctx)
 
-	warehouseID := cfg.WarehouseID
+	warehouseID := os.Getenv("DATABRICKS_WAREHOUSE_ID")
 	if warehouseID == "" {
 		return nil, errors.New("DATABRICKS_WAREHOUSE_ID not configured")
 	}
@@ -800,7 +858,7 @@ func (c *DatabricksRestClient) listTablesViaInformationSchema(ctx context.Contex
 func (c *DatabricksRestClient) listTablesImpl(ctx context.Context, catalogName, schemaName string, excludeInaccessible bool) ([]TableInfoResponse, error) {
 	var tables []TableInfoResponse
 
-	w := cmdctx.WorkspaceClient(ctx)
+	w := middlewares.MustGetDatabricksClient(ctx)
 	clientCfg, err := config.HTTPClientConfigFromConfig(w.Config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create HTTP client config: %w", err)

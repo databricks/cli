@@ -10,7 +10,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-func RunClientProxy(ctx context.Context, src io.Reader, dst io.Writer, requestHandoverTick func() <-chan time.Time, createConn createWebsocketConnectionFunc) error {
+func RunClientProxy(ctx context.Context, src io.ReadCloser, dst io.Writer, requestHandoverTick func() <-chan time.Time, createConn createWebsocketConnectionFunc) error {
 	proxy := newProxyConnection(createConn)
 	cmdio.LogString(ctx, "Establishing SSH proxy connection...")
 	g, gCtx := errgroup.WithContext(ctx)

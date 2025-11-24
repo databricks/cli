@@ -75,7 +75,7 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create"
 	cmd.Short = `Create an Online Table.`
 	cmd.Long = `Create an Online Table.
-  
+
   Create a new Online Table.`
 
 	cmd.Annotations = make(map[string]string)
@@ -152,7 +152,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete NAME"
 	cmd.Short = `Delete an Online Table.`
 	cmd.Long = `Delete an Online Table.
-  
+
   Delete an online table. Warning: This will delete all the data in the online
   table. If the source Delta table was deleted or modified since this Online
   Table was created, this will lose the data forever!
@@ -210,7 +210,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get NAME"
 	cmd.Short = `Get an Online Table.`
 	cmd.Long = `Get an Online Table.
-  
+
   Get information about an existing online table and its status.
 
   Arguments:

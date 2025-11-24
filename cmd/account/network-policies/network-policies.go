@@ -73,7 +73,7 @@ func newCreateNetworkPolicyRpc() *cobra.Command {
 	cmd.Use = "create-network-policy-rpc"
 	cmd.Short = `Create a network policy.`
 	cmd.Long = `Create a network policy.
-  
+
   Creates a new network policy to manage which network destinations can be
   accessed from the Databricks environment.`
 
@@ -138,7 +138,7 @@ func newDeleteNetworkPolicyRpc() *cobra.Command {
 	cmd.Use = "delete-network-policy-rpc NETWORK_POLICY_ID"
 	cmd.Short = `Delete a network policy.`
 	cmd.Long = `Delete a network policy.
-  
+
   Deletes a network policy. Cannot be called on 'default-policy'.
 
   Arguments:
@@ -194,7 +194,7 @@ func newGetNetworkPolicyRpc() *cobra.Command {
 	cmd.Use = "get-network-policy-rpc NETWORK_POLICY_ID"
 	cmd.Short = `Get a network policy.`
 	cmd.Long = `Get a network policy.
-  
+
   Gets a network policy.
 
   Arguments:
@@ -252,7 +252,7 @@ func newListNetworkPoliciesRpc() *cobra.Command {
 	cmd.Use = "list-network-policies-rpc"
 	cmd.Short = `List network policies.`
 	cmd.Long = `List network policies.
-  
+
   Gets an array of network policies.`
 
 	cmd.Annotations = make(map[string]string)
@@ -308,7 +308,7 @@ func newUpdateNetworkPolicyRpc() *cobra.Command {
 	cmd.Use = "update-network-policy-rpc NETWORK_POLICY_ID"
 	cmd.Short = `Update a network policy.`
 	cmd.Long = `Update a network policy.
-  
+
   Updates a network policy. This allows you to modify the configuration of a
   network policy.
 

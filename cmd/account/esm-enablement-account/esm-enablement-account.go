@@ -60,7 +60,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get"
 	cmd.Short = `Get the enhanced security monitoring setting for new workspaces.`
 	cmd.Long = `Get the enhanced security monitoring setting for new workspaces.
-  
+
   Gets the enhanced security monitoring setting for new workspaces.`
 
 	cmd.Annotations = make(map[string]string)
@@ -114,7 +114,7 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update"
 	cmd.Short = `Update the enhanced security monitoring setting for new workspaces.`
 	cmd.Long = `Update the enhanced security monitoring setting for new workspaces.
-  
+
   Updates the value of the enhanced security monitoring setting for new
   workspaces.`
 

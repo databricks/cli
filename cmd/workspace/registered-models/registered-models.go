@@ -24,19 +24,19 @@ func New() *cobra.Command {
 		Long: `Databricks provides a hosted version of MLflow Model Registry in Unity
   Catalog. Models in Unity Catalog provide centralized access control, auditing,
   lineage, and discovery of ML models across Databricks workspaces.
-  
+
   An MLflow registered model resides in the third layer of Unity Catalog’s
   three-level namespace. Registered models contain model versions, which
   correspond to actual ML models (MLflow models). Creating new model versions
   currently requires use of the MLflow Python client. Once model versions are
   created, you can load them for batch inference using MLflow Python client
   APIs, or deploy them for real-time serving using Databricks Model Serving.
-  
+
   All operations on registered models and model versions require USE_CATALOG
   permissions on the enclosing catalog and USE_SCHEMA permissions on the
   enclosing schema. In addition, the following additional privileges are
   required for various operations:
-  
+
   * To create a registered model, users must additionally have the CREATE_MODEL
   permission on the target schema. * To view registered model or model version
   metadata, model version data files, or invoke a model version, users must
@@ -46,7 +46,7 @@ func New() *cobra.Command {
   model version metadata (comments, aliases) create a new model version, or
   update permissions on the registered model, users must be owners of the
   registered model.
-  
+
   Note: The securable type for models is FUNCTION. When using REST APIs (e.g.
   tagging, grants) that specify a securable type, use FUNCTION as the securable
   type.`,
@@ -109,13 +109,13 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create"
 	cmd.Short = `Create a Registered Model.`
 	cmd.Long = `Create a Registered Model.
-  
+
   Creates a new registered model in Unity Catalog.
-  
+
   File storage for model versions in the registered model will be located in the
   default location which is specified by the parent schema, or the parent
   catalog, or the Metastore.
-  
+
   For registered model creation to succeed, the user must satisfy the following
   conditions: - The caller must be a metastore admin, or be the owner of the
   parent catalog and schema, or have the **USE_CATALOG** privilege on the parent
@@ -184,10 +184,10 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete FULL_NAME"
 	cmd.Short = `Delete a Registered Model.`
 	cmd.Long = `Delete a Registered Model.
-  
+
   Deletes a registered model and all its model versions from the specified
   parent catalog and schema.
-  
+
   The caller must be a metastore admin or an owner of the registered model. For
   the latter case, the caller must also be the owner or have the **USE_CATALOG**
   privilege on the parent catalog and the **USE_SCHEMA** privilege on the parent
@@ -258,9 +258,9 @@ func newDeleteAlias() *cobra.Command {
 	cmd.Use = "delete-alias FULL_NAME ALIAS"
 	cmd.Short = `Delete a Registered Model Alias.`
 	cmd.Long = `Delete a Registered Model Alias.
-  
+
   Deletes a registered model alias.
-  
+
   The caller must be a metastore admin or an owner of the registered model. For
   the latter case, the caller must also be the owner or have the **USE_CATALOG**
   privilege on the parent catalog and the **USE_SCHEMA** privilege on the parent
@@ -324,9 +324,9 @@ func newGet() *cobra.Command {
 	cmd.Use = "get FULL_NAME"
 	cmd.Short = `Get a Registered Model.`
 	cmd.Long = `Get a Registered Model.
-  
+
   Get a registered model.
-  
+
   The caller must be a metastore admin or an owner of (or have the **EXECUTE**
   privilege on) the registered model. For the latter case, the caller must also
   be the owner or have the **USE_CATALOG** privilege on the parent catalog and
@@ -403,10 +403,10 @@ func newList() *cobra.Command {
 	cmd.Use = "list"
 	cmd.Short = `List Registered Models.`
 	cmd.Long = `List Registered Models.
-  
+
   List registered models. You can list registered models under a particular
   schema, or list all registered models in the current metastore.
-  
+
   The returned models are filtered based on the privileges of the calling user.
   For example, the metastore admin is able to list all the registered models. A
   regular user needs to be the owner or have the **EXECUTE** privilege on the
@@ -414,9 +414,9 @@ func newList() *cobra.Command {
   latter case, the caller must also be the owner or have the **USE_CATALOG**
   privilege on the parent catalog and the **USE_SCHEMA** privilege on the parent
   schema.
-  
+
   There is no guarantee of a specific ordering of the elements in the response.
-  
+
   PAGINATION BEHAVIOR: The API is by default paginated, a page may contain zero
   results while still providing a next_page_token. Clients must continue reading
   pages until next_page_token is absent, which is the only indication that the
@@ -470,9 +470,9 @@ func newSetAlias() *cobra.Command {
 	cmd.Use = "set-alias FULL_NAME ALIAS VERSION_NUM"
 	cmd.Short = `Set a Registered Model Alias.`
 	cmd.Long = `Set a Registered Model Alias.
-  
+
   Set an alias on the specified registered model.
-  
+
   The caller must be a metastore admin or an owner of the registered model. For
   the latter case, the caller must also be the owner or have the **USE_CATALOG**
   privilege on the parent catalog and the **USE_SCHEMA** privilege on the parent
@@ -578,14 +578,14 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update FULL_NAME"
 	cmd.Short = `Update a Registered Model.`
 	cmd.Long = `Update a Registered Model.
-  
+
   Updates the specified registered model.
-  
+
   The caller must be a metastore admin or an owner of the registered model. For
   the latter case, the caller must also be the owner or have the **USE_CATALOG**
   privilege on the parent catalog and the **USE_SCHEMA** privilege on the parent
   schema.
-  
+
   Currently only the name, the owner or the comment of the registered model can
   be updated.
 
