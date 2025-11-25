@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 )
@@ -39,8 +40,8 @@ func (r *ResourceAlert) DoCreate(ctx context.Context, config *sql.AlertV2) (stri
 	return response.Id, response, nil
 }
 
-// DoUpdate updates the alert in place.
-func (r *ResourceAlert) DoUpdate(ctx context.Context, id string, config *sql.AlertV2) (*sql.AlertV2, error) {
+// DoUpdateWithChanges updates the alert in place.
+func (r *ResourceAlert) DoUpdateWithChanges(ctx context.Context, id string, config *sql.AlertV2, _ *deployplan.Changes) (*sql.AlertV2, error) {
 	request := sql.UpdateAlertV2Request{
 		Id:         id,
 		Alert:      *config,

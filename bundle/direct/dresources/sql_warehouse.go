@@ -3,6 +3,8 @@ package dresources
 import (
 	"context"
 
+	"github.com/databricks/cli/bundle/deployplan"
+
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/utils"
@@ -57,8 +59,8 @@ func (r *ResourceSqlWarehouse) DoCreate(ctx context.Context, config *sql.CreateW
 	return waiter.Id, nil, nil
 }
 
-// DoUpdate updates the warehouse in place.
-func (r *ResourceSqlWarehouse) DoUpdate(ctx context.Context, id string, config *sql.CreateWarehouseRequest) (*sql.GetWarehouseResponse, error) {
+// DoUpdateWithChanges updates the warehouse in place.
+func (r *ResourceSqlWarehouse) DoUpdateWithChanges(ctx context.Context, id string, config *sql.CreateWarehouseRequest, _ *deployplan.Changes) (*sql.GetWarehouseResponse, error) {
 	request := sql.EditWarehouseRequest{
 		AutoStopMins:            config.AutoStopMins,
 		Channel:                 config.Channel,

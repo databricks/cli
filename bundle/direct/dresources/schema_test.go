@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestResourceSchema_DoUpdate_WithUnsupportedForceSendFields(t *testing.T) {
+func TestResourceSchema_DoUpdateWithChanges_WithUnsupportedForceSendFields(t *testing.T) {
 	_, client := setupTestServerClient(t)
 
 	adapter := (*ResourceSchema)(nil).New(client)
@@ -38,7 +38,7 @@ func TestResourceSchema_DoUpdate_WithUnsupportedForceSendFields(t *testing.T) {
 		"Owner",                        // Unsupported - should be filtered out
 	}
 
-	_, err = adapter.DoUpdate(ctx, id, config)
+	_, err = adapter.DoUpdateWithChanges(ctx, id, config, nil)
 	require.NoError(t, err)
 
 	result, err := adapter.DoRead(ctx, id)

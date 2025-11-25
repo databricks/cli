@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/databricks/cli/bundle/deployplan"
+
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/database"
@@ -35,7 +37,7 @@ func (d *ResourceDatabaseInstance) DoCreate(ctx context.Context, config *databas
 	return waiter.Response.Name, nil, nil
 }
 
-func (d *ResourceDatabaseInstance) DoUpdate(ctx context.Context, id string, config *database.DatabaseInstance) (*database.DatabaseInstance, error) {
+func (d *ResourceDatabaseInstance) DoUpdateWithChanges(ctx context.Context, id string, config *database.DatabaseInstance, _ *deployplan.Changes) (*database.DatabaseInstance, error) {
 	request := database.UpdateDatabaseInstanceRequest{
 		DatabaseInstance: *config,
 		Name:             config.Name,

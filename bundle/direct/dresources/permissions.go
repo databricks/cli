@@ -6,6 +6,8 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/databricks/cli/bundle/deployplan"
+
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/databricks-sdk-go"
@@ -147,7 +149,7 @@ func (r *ResourcePermissions) DoRead(ctx context.Context, id string) (*Permissio
 // DoCreate calls https://docs.databricks.com/api/workspace/jobs/setjobpermissions.
 func (r *ResourcePermissions) DoCreate(ctx context.Context, newState *PermissionsState) (string, *PermissionsState, error) {
 	// should we remember the default here?
-	_, err := r.DoUpdate(ctx, newState.ObjectID, newState)
+	_, err := r.DoUpdateWithChanges(ctx, newState.ObjectID, newState, nil)
 	if err != nil {
 		return "", nil, err
 	}
@@ -155,8 +157,8 @@ func (r *ResourcePermissions) DoCreate(ctx context.Context, newState *Permission
 	return newState.ObjectID, nil, nil
 }
 
-// DoUpdate calls https://docs.databricks.com/api/workspace/jobs/setjobpermissions.
-func (r *ResourcePermissions) DoUpdate(ctx context.Context, _ string, newState *PermissionsState) (*PermissionsState, error) {
+// DoUpdateWithChanges calls https://docs.databricks.com/api/workspace/jobs/setjobpermissions.
+func (r *ResourcePermissions) DoUpdateWithChanges(ctx context.Context, _ string, newState *PermissionsState, _ *deployplan.Changes) (*PermissionsState, error) {
 	extractedType, extractedID, err := parsePermissionsID(newState.ObjectID)
 	if err != nil {
 		return nil, err

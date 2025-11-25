@@ -56,7 +56,7 @@ func (r *ResourceExperiment) DoCreate(ctx context.Context, config *ml.CreateExpe
 	return result.ExperimentId, nil, nil
 }
 
-func (r *ResourceExperiment) DoUpdate(ctx context.Context, id string, config *ml.CreateExperiment) (*ml.Experiment, error) {
+func (r *ResourceExperiment) DoUpdateWithChanges(ctx context.Context, id string, config *ml.CreateExperiment, _ *deployplan.Changes) (*ml.Experiment, error) {
 	updateReq := ml.UpdateExperiment{
 		ExperimentId:    id,
 		NewName:         config.Name,
