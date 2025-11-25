@@ -41,12 +41,12 @@
         "scope_name": "test-scope-permissions-[UNIQUE_NAME]",
         "acls": [
           {
-            "permission": "MANAGE",
-            "principal": "[USERNAME]"
-          },
-          {
             "permission": "WRITE",
             "principal": "[TEST_SP_APPLICATION_ID]"
+          },
+          {
+            "permission": "MANAGE",
+            "principal": "[USERNAME]"
           },
           {
             "permission": "READ",
