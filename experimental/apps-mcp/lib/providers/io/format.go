@@ -1,6 +1,9 @@
 package io
 
-import "fmt"
+import (
+	"fmt"
+	"path/filepath"
+)
 
 // formatScaffoldResult formats a ScaffoldResult for display
 func formatScaffoldResult(result *ScaffoldResult) string {
@@ -8,11 +11,13 @@ func formatScaffoldResult(result *ScaffoldResult) string {
 		"Successfully scaffolded %s template to %s\n\n"+
 			"Files copied: %d\n\n"+
 			"Template: %s\n\n"+
+			"Make sure to read %s before proceeding with the project\n\n"+
 			"%s",
 		result.TemplateName,
 		result.WorkDir,
 		result.FilesCopied,
 		result.TemplateName,
+		filepath.Join(result.WorkDir, "CLAUDE.md"),
 		result.TemplateDescription,
 	)
 }

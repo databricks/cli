@@ -33,7 +33,7 @@ func NewProvider(ctx context.Context, cfg *mcp.IoConfig, sess *session.Session) 
 		config:          cfg,
 		session:         sess,
 		ctx:             ctx,
-		defaultTemplate: templates.GetTRPCTemplate(),
+		defaultTemplate: templates.GetAppKitTemplate(),
 	}, nil
 }
 
@@ -48,7 +48,9 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 
 	// Register scaffold_data_app
 	type ScaffoldInput struct {
-		WorkDir string `json:"work_dir" jsonschema:"required" jsonschema_description:"Absolute path to the work directory"`
+		WorkDir        string `json:"work_dir" jsonschema:"required" jsonschema_description:"Absolute path to the work directory"`
+		AppName        string `json:"app_name" jsonschema:"required" jsonschema_description:"Name of the app (alphanumeric and dash characters only)"`
+		AppDescription string `json:"app_description,omitempty" jsonschema_description:"Description of the app (max 100 characters)"`
 	}
 
 	mcpsdk.AddTool(server,
@@ -60,7 +62,9 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 			log.Debugf(ctx, "scaffold_data_app called: work_dir=%s", args.WorkDir)
 
 			scaffoldArgs := &ScaffoldArgs{
-				WorkDir: args.WorkDir,
+				WorkDir:        args.WorkDir,
+				AppName:        args.AppName,
+				AppDescription: args.AppDescription,
 			}
 
 			result, err := p.Scaffold(ctx, scaffoldArgs)

@@ -8,16 +8,22 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"regexp"
+	"strings"
+	"text/template"
 
 	"github.com/databricks/cli/experimental/apps-mcp/lib/middlewares"
 	"github.com/databricks/cli/experimental/apps-mcp/lib/templates"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/textutil"
 )
 
 // ScaffoldArgs contains arguments for scaffolding operation
 type ScaffoldArgs struct {
-	WorkDir string `json:"work_dir"`
+	WorkDir        string `json:"work_dir"`
+	AppName        string `json:"app_name"`
+	AppDescription string `json:"app_description"`
 }
 
 // ScaffoldResult contains the result of a scaffold operation
@@ -30,6 +36,23 @@ type ScaffoldResult struct {
 
 // Scaffold copies template files to the work directory
 func (p *Provider) Scaffold(ctx context.Context, args *ScaffoldArgs) (*ScaffoldResult, error) {
+	if args.AppName == "" {
+		return nil, fmt.Errorf("app name is required")
+	}
+
+	// validate that AppName only contains letters, numbers, and hyphens
+	if !regexp.MustCompile(`^[a-z0-9-]+$`).MatchString(args.AppName) {
+		return nil, fmt.Errorf("app name must only contain letters, numbers, and hyphens")
+	}
+
+	// to lowercase and replace all non-alphanumeric characters with a hyphen, e.g. "My App" -> "my-app"
+	normalizedAppName := textutil.NormalizeString(args.AppName)
+	normalizedAppName = strings.ToLower(normalizedAppName)
+
+	if args.AppDescription == "" {
+		return nil, fmt.Errorf("app description is required")
+	}
+
 	// Validate work directory
 	workDir, err := filepath.Abs(args.WorkDir)
 	if err != nil {
@@ -75,29 +98,67 @@ func (p *Provider) Scaffold(ctx context.Context, args *ScaffoldArgs) (*ScaffoldR
 	}
 
 	// Get template
-	template := p.getTemplate()
-	files, err := template.Files()
+	tmpl := p.getTemplate()
+	files, err := tmpl.Files()
 	if err != nil {
 		return nil, fmt.Errorf("failed to read template: %w", err)
 	}
 
-	// Copy files
-	filesCopied := 0
-	for path, content := range files {
-		// filer.Write handles creating parent directories if requested
-		if err := f.Write(ctx, path, bytes.NewReader([]byte(content)), filer.CreateParentDirectories); err != nil {
-			return nil, fmt.Errorf("failed to write %s: %w", path, err)
-		}
-
-		filesCopied++
-	}
-
-	// write .env file
+	// Get template data
 	warehouseID, err := middlewares.GetWarehouseID(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get warehouse ID: %w", err)
 	}
 	host := middlewares.MustGetDatabricksClient(ctx).Config.Host
+
+	templateData := map[string]string{
+		"WarehouseID":    warehouseID,
+		"WorkspaceURL":   host,
+		"AppName":        normalizedAppName,
+		"AppDescription": args.AppDescription,
+	}
+
+	// Copy files
+	filesCopied := 0
+	for path, content := range files {
+		// Check if there's a corresponding .tmpl file for this path
+		tmplPath := path + ".tmpl"
+		if _, hasTmpl := files[tmplPath]; hasTmpl {
+			// Skip this file, the .tmpl version will be processed instead
+			continue
+		}
+
+		// Determine final path and content
+		var finalPath string
+		var finalContent string
+		if strings.HasSuffix(path, ".tmpl") {
+			// This is a template file, process it
+			finalPath = strings.TrimSuffix(path, ".tmpl")
+
+			// Parse and execute the template
+			t, err := template.New(path).Parse(content)
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse template %s: %w", path, err)
+			}
+
+			var buf bytes.Buffer
+			if err := t.Execute(&buf, templateData); err != nil {
+				return nil, fmt.Errorf("failed to execute template %s: %w", path, err)
+			}
+			finalContent = buf.String()
+		} else {
+			// Regular file, use as-is
+			finalPath = path
+			finalContent = content
+		}
+
+		// filer.Write handles creating parent directories if requested
+		if err := f.Write(ctx, finalPath, bytes.NewReader([]byte(finalContent)), filer.CreateParentDirectories); err != nil {
+			return nil, fmt.Errorf("failed to write %s: %w", finalPath, err)
+		}
+
+		filesCopied++
+	}
 
 	envContent := fmt.Sprintf("DATABRICKS_WAREHOUSE_ID=%s\nDATABRICKS_HOST=%s", warehouseID, host)
 	envPath := filepath.Join(workDir, ".env")
@@ -106,13 +167,13 @@ func (p *Provider) Scaffold(ctx context.Context, args *ScaffoldArgs) (*ScaffoldR
 	}
 
 	log.Infof(ctx, "scaffolded project (template=%s, work_dir=%s, files=%d)",
-		template.Name(), workDir, filesCopied)
+		tmpl.Name(), workDir, filesCopied)
 
 	return &ScaffoldResult{
 		FilesCopied:         filesCopied,
 		WorkDir:             workDir,
-		TemplateName:        template.Name(),
-		TemplateDescription: template.Description(),
+		TemplateName:        tmpl.Name(),
+		TemplateDescription: tmpl.Description(),
 	}, nil
 }
 
