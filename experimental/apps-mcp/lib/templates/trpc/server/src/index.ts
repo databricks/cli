@@ -1,7 +1,6 @@
 import { initTRPC } from "@trpc/server";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import express from "express";
-import "dotenv/config";
 import superjson from "superjson";
 import path from "node:path";
 import { z } from "zod";
@@ -29,6 +28,7 @@ const appRouter = router({
   // }),
 });
 
+export { appRouter };
 export type AppRouter = typeof appRouter;
 
 export const app = express();
