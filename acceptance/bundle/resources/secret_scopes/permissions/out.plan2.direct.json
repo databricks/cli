@@ -14,10 +14,10 @@
           "label": "${resources.secret_scopes.my_scope.name}"
         }
       ],
-      "action": "update_id",
+      "action": "update",
       "new_state": {
         "value": {
-          "scope_name": "",
+          "scope_name": "test-scope-permissions-[UNIQUE_NAME]",
           "acls": [
             {
               "permission": "MANAGE",
@@ -32,9 +32,6 @@
               "principal": "users"
             }
           ]
-        },
-        "vars": {
-          "scope_name": "${resources.secret_scopes.my_scope.name}"
         }
       },
       "remote_state": {
@@ -62,9 +59,6 @@
         "local": {
           "acls": {
             "action": "update"
-          },
-          "scope_name": {
-            "action": "update_id"
           }
         }
       }
