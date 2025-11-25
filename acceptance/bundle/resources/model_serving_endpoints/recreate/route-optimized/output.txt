@@ -68,7 +68,7 @@ Deployment complete!
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
-  delete model_serving_endpoint test_endpoint
+  delete resources.model_serving_endpoints.test_endpoint
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 

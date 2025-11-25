@@ -40,7 +40,7 @@ func New() *cobra.Command {
   of short-lived, expiring tokens. It is designed for strong identity
   governance, secure cross-platform data sharing, and reduced operational
   overhead for credential management.
-  
+
   For more information, see
   https://www.databricks.com/blog/announcing-oidc-token-federation-enhanced-delta-sharing-security
   and https://docs.databricks.com/en/delta-sharing/create-recipient-oidc-fed`,
@@ -90,7 +90,7 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create RECIPIENT_NAME"
 	cmd.Short = `Create recipient federation policy.`
 	cmd.Long = `Create recipient federation policy.
-  
+
   Create a federation policy for an OIDC_FEDERATION recipient for sharing data
   from Databricks to non-Databricks recipients. The caller must be the owner of
   the recipient. When sharing data from Databricks to non-Databricks clients,
@@ -98,16 +98,16 @@ func newCreate() *cobra.Command {
   The federation policy validates OIDC claims in federated tokens and is defined
   at the recipient level. This enables secretless sharing clients to
   authenticate using OIDC tokens.
-  
+
   Supported scenarios for federation policies: 1. **User-to-Machine (U2M) flow**
   (e.g., PowerBI): A user accesses a resource using their own identity. 2.
   **Machine-to-Machine (M2M) flow** (e.g., OAuth App): An OAuth App accesses a
   resource using its own identity, typically for tasks like running nightly
   jobs.
-  
+
   For an overview, refer to: - Blog post: Overview of feature:
   https://www.databricks.com/blog/announcing-oidc-token-federation-enhanced-delta-sharing-security
-  
+
   For detailed configuration guides based on your use case: - Creating a
   Federation Policy as a provider:
   https://docs.databricks.com/en/delta-sharing/create-recipient-oidc-fed -
@@ -184,7 +184,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete RECIPIENT_NAME NAME"
 	cmd.Short = `Delete recipient federation policy.`
 	cmd.Long = `Delete recipient federation policy.
-  
+
   Deletes an existing federation policy for an OIDC_FEDERATION recipient. The
   caller must be the owner of the recipient.
 
@@ -244,7 +244,7 @@ func newGetFederationPolicy() *cobra.Command {
 	cmd.Use = "get-federation-policy RECIPIENT_NAME NAME"
 	cmd.Short = `Get recipient federation policy.`
 	cmd.Long = `Get recipient federation policy.
-  
+
   Reads an existing federation policy for an OIDC_FEDERATION recipient for
   sharing data from Databricks to non-Databricks recipients. The caller must
   have read access to the recipient.
@@ -308,7 +308,7 @@ func newList() *cobra.Command {
 	cmd.Use = "list RECIPIENT_NAME"
 	cmd.Short = `List recipient federation policies.`
 	cmd.Long = `List recipient federation policies.
-  
+
   Lists federation policies for an OIDC_FEDERATION recipient for sharing data
   from Databricks to non-Databricks recipients. The caller must have read access
   to the recipient.

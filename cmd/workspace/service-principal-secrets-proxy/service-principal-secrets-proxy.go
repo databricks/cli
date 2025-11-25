@@ -22,16 +22,16 @@ func New() *cobra.Command {
 		Long: `These APIs enable administrators to manage service principal secrets at the
   workspace level. To use these APIs, the service principal must be first added
   to the current workspace.
-  
+
   You can use the generated secrets to obtain OAuth access tokens for a service
   principal, which can then be used to access Databricks Accounts and Workspace
   APIs. For more information, see [Authentication using OAuth tokens for service
   principals].
-  
+
   In addition, the generated secrets can be used to configure the Databricks
   Terraform Providerto authenticate with the service principal. For more
   information, see [Databricks Terraform Provider].
-  
+
   [Authentication using OAuth tokens for service principals]: https://docs.databricks.com/dev-tools/authentication-oauth.html
   [Databricks Terraform Provider]: https://github.com/databricks/terraform-provider-databricks/blob/master/docs/index.md#authenticating-with-service-principal`,
 		GroupID: "oauth2",
@@ -76,7 +76,7 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create SERVICE_PRINCIPAL_ID"
 	cmd.Short = `Create service principal secret.`
 	cmd.Long = `Create service principal secret.
-  
+
   Create a secret for the given service principal.
 
   Arguments:
@@ -144,7 +144,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete SERVICE_PRINCIPAL_ID SECRET_ID"
 	cmd.Short = `Delete service principal secret.`
 	cmd.Long = `Delete service principal secret.
-  
+
   Delete a secret from the given service principal.
 
   Arguments:
@@ -205,7 +205,7 @@ func newList() *cobra.Command {
 	cmd.Use = "list SERVICE_PRINCIPAL_ID"
 	cmd.Short = `List service principal secrets.`
 	cmd.Long = `List service principal secrets.
-  
+
   List all secrets associated with the given service principal. This operation
   only returns information about the secrets themselves and does not include the
   secret values.

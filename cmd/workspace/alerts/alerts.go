@@ -71,7 +71,7 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create"
 	cmd.Short = `Create an alert.`
 	cmd.Long = `Create an alert.
-  
+
   Creates an alert.`
 
 	cmd.Annotations = make(map[string]string)
@@ -135,7 +135,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete ID"
 	cmd.Short = `Delete an alert.`
 	cmd.Long = `Delete an alert.
-  
+
   Moves an alert to the trash. Trashed alerts immediately disappear from
   searches and list views, and can no longer trigger. You can restore a trashed
   alert through the UI. A trashed alert is permanently deleted after 30 days.`
@@ -202,7 +202,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get ID"
 	cmd.Short = `Get an alert.`
 	cmd.Long = `Get an alert.
-  
+
   Gets an alert.`
 
 	cmd.Annotations = make(map[string]string)
@@ -270,7 +270,7 @@ func newList() *cobra.Command {
 	cmd.Use = "list"
 	cmd.Short = `List alerts.`
 	cmd.Long = `List alerts.
-  
+
   Gets a list of alerts accessible to the user, ordered by creation time.
   **Warning:** Calling this API concurrently 10 or more times could result in
   throttling, service degradation, or a temporary ban.`
@@ -326,18 +326,18 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update ID UPDATE_MASK"
 	cmd.Short = `Update an alert.`
 	cmd.Long = `Update an alert.
-  
+
   Updates an alert.
 
   Arguments:
-    ID: 
+    ID:
     UPDATE_MASK: The field mask must be a single string, with multiple fields separated by
       commas (no spaces). The field path is relative to the resource object,
       using a dot (.) to navigate sub-fields (e.g., author.given_name).
       Specification of elements in sequence or map fields is not allowed, as
       only the entire collection field can be specified. Field names must
       exactly match the resource field names.
-      
+
       A field mask of * indicates full replacement. It’s recommended to
       always explicitly list the fields being updated and avoid using *
       wildcards, as it can lead to unintended results if the API changes in the

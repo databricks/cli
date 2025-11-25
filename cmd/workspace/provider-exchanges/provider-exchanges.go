@@ -69,7 +69,7 @@ func newAddListingToExchange() *cobra.Command {
 	cmd.Use = "add-listing-to-exchange LISTING_ID EXCHANGE_ID"
 	cmd.Short = `Add an exchange for listing.`
 	cmd.Long = `Add an exchange for listing.
-  
+
   Associate an exchange with a listing`
 
 	cmd.Annotations = make(map[string]string)
@@ -149,7 +149,7 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create"
 	cmd.Short = `Create an exchange.`
 	cmd.Long = `Create an exchange.
-  
+
   Create an exchange`
 
 	cmd.Annotations = make(map[string]string)
@@ -210,7 +210,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete ID"
 	cmd.Short = `Delete an exchange.`
 	cmd.Long = `Delete an exchange.
-  
+
   This removes a listing from marketplace.`
 
 	cmd.Annotations = make(map[string]string)
@@ -263,7 +263,7 @@ func newDeleteListingFromExchange() *cobra.Command {
 	cmd.Use = "delete-listing-from-exchange ID"
 	cmd.Short = `Remove an exchange for listing.`
 	cmd.Long = `Remove an exchange for listing.
-  
+
   Disassociate an exchange with a listing`
 
 	cmd.Annotations = make(map[string]string)
@@ -370,7 +370,7 @@ func newList() *cobra.Command {
 	cmd.Use = "list"
 	cmd.Short = `List exchanges.`
 	cmd.Long = `List exchanges.
-  
+
   List exchanges visible to provider`
 
 	cmd.Annotations = make(map[string]string)
@@ -421,7 +421,7 @@ func newListExchangesForListing() *cobra.Command {
 	cmd.Use = "list-exchanges-for-listing LISTING_ID"
 	cmd.Short = `List exchanges for listing.`
 	cmd.Long = `List exchanges for listing.
-  
+
   List exchanges associated with a listing`
 
 	cmd.Annotations = make(map[string]string)
@@ -474,7 +474,7 @@ func newListListingsForExchange() *cobra.Command {
 	cmd.Use = "list-listings-for-exchange EXCHANGE_ID"
 	cmd.Short = `List listings for exchange.`
 	cmd.Long = `List listings for exchange.
-  
+
   List listings associated with an exchange`
 
 	cmd.Annotations = make(map[string]string)
@@ -527,7 +527,7 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update ID"
 	cmd.Short = `Update exchange.`
 	cmd.Long = `Update exchange.
-  
+
   Update an exchange`
 
 	cmd.Annotations = make(map[string]string)

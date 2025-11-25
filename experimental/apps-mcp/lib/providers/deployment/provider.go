@@ -67,7 +67,7 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 			Name:        "deploy_databricks_app",
 			Description: "Deploy a generated app to Databricks Apps. Creates the app if it doesn't exist, syncs local files to workspace, and deploys the app. Returns deployment status and app URL. Only use after direct user request and running validation.",
 		},
-		session.WrapToolHandler(p.session, func(ctx context.Context, req *mcpsdk.CallToolRequest, args DeployDatabricksAppInput) (*mcpsdk.CallToolResult, any, error) {
+		func(ctx context.Context, req *mcpsdk.CallToolRequest, args DeployDatabricksAppInput) (*mcpsdk.CallToolResult, any, error) {
 			log.Debugf(ctx, "deploy_databricks_app called: work_dir=%s, name=%s, force=%v",
 				args.WorkDir, args.Name, args.Force)
 
@@ -86,7 +86,7 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 
 			text := formatDeployResult(result)
 			return mcpsdk.CreateNewTextContentResult(text), nil, nil
-		}),
+		},
 	)
 
 	return nil
@@ -129,7 +129,7 @@ func (p *Provider) deployDatabricksApp(ctx context.Context, args *DeployDatabric
 		}, nil
 	}
 
-	projectState, err := io.LoadState(workPath)
+	projectState, err := io.LoadState(ctx, workPath)
 	if err != nil {
 		return &DeployResult{
 			Success: false,
@@ -155,7 +155,7 @@ func (p *Provider) deployDatabricksApp(ctx context.Context, args *DeployDatabric
 		}, nil
 	}
 
-	checksumValid, err := io.VerifyChecksum(workPath, expectedChecksum)
+	checksumValid, err := io.VerifyChecksum(ctx, workPath, expectedChecksum)
 	if err != nil {
 		return &DeployResult{
 			Success: false,
@@ -248,7 +248,7 @@ func (p *Provider) deployDatabricksApp(ctx context.Context, args *DeployDatabric
 		}, nil
 	}
 
-	if err := io.SaveState(workPath, deployedState); err != nil {
+	if err := io.SaveState(ctx, workPath, deployedState); err != nil {
 		log.Warnf(ctx, "Failed to save deployed state: error=%v", err)
 	}
 
@@ -289,7 +289,7 @@ func (p *Provider) getOrCreateApp(ctx context.Context, name, description string,
 
 	log.Infof(ctx, "App not found, creating new app: name=%s", name)
 
-	resources, err := databricks.ResourcesFromEnv(p.config)
+	resources, err := databricks.ResourcesFromEnv(ctx, p.config)
 	if err != nil {
 		return nil, err
 	}

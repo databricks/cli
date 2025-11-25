@@ -58,6 +58,9 @@ Deployment complete!
   }
 }
 
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
 === Update trigger.periodic.unit remotely and re-deploy; jobs.bar is unchanged
 >>> envsubst
 
@@ -65,8 +68,8 @@ Deployment complete!
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
-  delete job bar
-  delete job foo
+  delete resources.jobs.bar
+  delete resources.jobs.foo
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
