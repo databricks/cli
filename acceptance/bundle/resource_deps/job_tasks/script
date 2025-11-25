@@ -1,4 +1,5 @@
 if [ "$DATABRICKS_BUNDLE_ENGINE" == "direct" ]; then
+    # terraform has its own schema, direct uses bundle schema; here we replace TF syntax with bundle syntax:
     update_file.py databricks.yml 'task[0].python_wheel_task[0].' 'tasks[0].python_wheel_task.'
 fi
 
