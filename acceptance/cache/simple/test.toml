@@ -2,15 +2,3 @@ Cloud=false
 Local=true
 
 RecordRequests = true
-
-[[Repls]]
-Old = '\d\d:\d\d:\d\d'
-New = "[DEBUG_TIMESTAMP]"
-
-[[Repls]]
-Old = '[a-f0-9]{64}'
-New = "[SHA256_HASH]"
-
-[[Repls]]
-Old = '[a-f0-9]{12}'
-New = "[CACHE_KEY]"
