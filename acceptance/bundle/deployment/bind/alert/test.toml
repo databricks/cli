@@ -1,4 +1,4 @@
 Cloud = false
-Local = false # Enable when releasing support for alerts.
+Local = true
 
 BundleConfigTarget = "databricks.yml"

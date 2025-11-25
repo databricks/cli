@@ -1,22 +1,81 @@
 
 >>> [CLI] bundle deploy
-Warning: unknown field: alerts
-  at resources
-  in databricks.yml:5:3
-
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/alerts-basic-[UNIQUE_NAME]/default/files...
 Deploying resources...
+Updating deployment state...
 Deployment complete!
-Warning: unknown field: alerts
-  at resources
-  in databricks.yml:5:3
 
+>>> [CLI] alerts-v2 get-alert [ALERT_ID]
+{
+  "display_name": "My alert",
+  "lifecycle_state": "ACTIVE",
+  "custom_summary": "My alert",
+  "evaluation": {
+    "comparison_operator": "EQUAL",
+    "notification": {
+      "notify_on_ok": false,
+      "retrigger_seconds": 1
+    },
+    "source": {
+      "aggregation": "MAX",
+      "display": "1",
+      "name": "1"
+    },
+    "threshold": {
+      "value": {
+        "double_value": 2
+      }
+    }
+  },
+  "query_text": "select 2",
+  "schedule": {
+    "pause_status": "UNPAUSED",
+    "quartz_cron_schedule": "44 19 */1 * * ?",
+    "timezone_id": "Europe/Amsterdam"
+  },
+  "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
+}
 
->>> [CLI] alerts-v2 get-alert null
-Warning: unknown field: alerts
-  at resources
-  in databricks.yml:5:3
+>>> [CLI] permissions get alertsv2 [ALERT_ID]
+{
+  "access_control_list": [
+    {
+      "all_permissions": [
+        {
+          "inherited": false,
+          "permission_level": "CAN_RUN"
+        }
+      ],
+      "group_name": "users"
+    }
+  ],
+  "object_id": "/alertsv2/[ALERT_ID]",
+  "object_type": "alertv2"
+}
 
-Error: Resource sql.AlertV2 not found: null
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete alert myalert
 
-Exit code: 1
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/alerts-basic-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!
+
+>>> [CLI] alerts-v2 get-alert [ALERT_ID]
+{
+  "display_name": "My alert",
+  "lifecycle_state": "DELETED"
+}
+
+>>> [CLI] bundle summary
+Name: alerts-basic-[UNIQUE_NAME]
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/alerts-basic-[UNIQUE_NAME]/default
+Resources:
+  Alerts:
+    myalert:
+      Name: My alert
+      URL:  (not deployed)
