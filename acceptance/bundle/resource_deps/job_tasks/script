@@ -1,4 +1,8 @@
+if [ "$DATABRICKS_BUNDLE_ENGINE" == "direct" ]; then
+    update_file.py databricks.yml 'task[0].python_wheel_task[0].' 'tasks[0].python_wheel_task.'
+fi
+
 touch hello.whl
 trace $CLI bundle deploy
-trace print_telemetry_bool_values
+trace print_telemetry_bool_values > out.telemetry.$DATABRICKS_BUNDLE_ENGINE.txt
 rm out.requests.txt hello.whl
