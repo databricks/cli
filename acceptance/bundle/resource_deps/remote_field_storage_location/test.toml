@@ -1,5 +1,3 @@
-Badness = "Terraform cannot deploy; permanent drift in direct"
-
 Local = true
 Cloud = true
 RequiresUnityCatalog = true
