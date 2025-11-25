@@ -132,11 +132,8 @@
             "myjob_timeout": "",
             "myvolume_id": "mycat.myschema.myvol",
             "volume_catalog_name": "mycat",
-            "volume_storage_location": "${resources.volumes.test_volume.storage_location}"
+            "volume_storage_location": "s3://deco-uc-prod-isolated-aws-us-east-1/metastore/[UUID]/volumes/[UUID]"
           }
-        },
-        "vars": {
-          "tags.volume_storage_location": "${resources.volumes.test_volume.storage_location}"
         }
       },
       "remote_state": {
@@ -179,9 +176,6 @@
             "action": "update"
           },
           "tags.myjob_name": {
-            "action": "update"
-          },
-          "tags.volume_storage_location": {
             "action": "update"
           }
         },

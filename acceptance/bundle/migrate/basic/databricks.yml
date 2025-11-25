@@ -27,7 +27,6 @@ resources:
         myjob_name: ${resources.jobs.test_job.name}
         volume_catalog_name: ${resources.volumes.test_volume.catalog_name}
 
-        # Remote fields cause permanent drift (unrelated to migration)
         # remote field, int, null
         myjob_timeout: ${resources.jobs.test_job.timeout_seconds}
 
