@@ -1,7 +1,7 @@
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { analytics, createApp, server } from '@databricks/app-kit';
-import { appRouterMiddleware } from './trpc';
+import { appRouterMiddleware } from './trpc.js';
 import type { Application } from 'express';
 
 // Define __dirname equivalent for ES modules

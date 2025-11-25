@@ -15,7 +15,6 @@ import (
 	"github.com/databricks/cli/experimental/apps-mcp/lib/templates"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/cli/libs/textutil"
 )
 
 // ScaffoldArgs contains arguments for scaffolding operation
@@ -44,9 +43,7 @@ func (p *Provider) Scaffold(ctx context.Context, args *ScaffoldArgs) (*ScaffoldR
 		return nil, fmt.Errorf("app name must only contain letters, numbers, and hyphens")
 	}
 
-	// to lowercase and replace all non-alphanumeric characters with a hyphen, e.g. "My App" -> "my-app"
-	normalizedAppName := textutil.NormalizeString(args.AppName)
-	normalizedAppName = strings.ToLower(normalizedAppName)
+	normalizedAppName := strings.ToLower(args.AppName)
 
 	if args.AppDescription == "" {
 		return nil, fmt.Errorf("app description is required")

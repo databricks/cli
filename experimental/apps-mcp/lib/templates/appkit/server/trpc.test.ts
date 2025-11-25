@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { appRouter } from './trpc';
+import { appRouter } from './trpc.js';
 
 describe('tRPC Handler', () => {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
