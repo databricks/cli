@@ -1,4 +1,1 @@
 RecordRequests = true
-
-# direct fails with Error: schema mismatch for ${resources.jobs.test_job.task[0].python_wheel_task[0].entry_point}: task: field "task" not found in resources.Job
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform"]  # uses TF-specific syntax task[0].python_wheel_task[0]
