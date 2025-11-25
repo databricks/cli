@@ -19,4 +19,4 @@ acceptance TestAccept/bundle/run/app-with-job/
 acceptance TestAccept/bundle/resources/permissions/jobs/destroy_without_mgmtperms/
 
 # Fails on GCP due to user_name / service_principal_name diff (Nov 25)
-acceptance TestAccept/bundle/resources/permissions/dashboards/create
+acceptance TestAccept/bundle/resources/permissions/dashboards/create/
