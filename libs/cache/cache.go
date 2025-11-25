@@ -23,28 +23,15 @@ type Cache[T any] interface {
 }
 
 // fingerprintToHash converts any struct to a deterministic string representation for use as a cache key.
-// For structs, json.Marshal uses struct field order, not JSON tag order. To ensure deterministic
-// hashing regardless of struct field order, we convert to a map which json.Marshal sorts by key.
 func fingerprintToHash(fingerprint any) (string, error) {
-	// Marshal to JSON
+	// Marshal map - json.Marshal sorts map keys alphabetically
 	data, err := json.Marshal(fingerprint)
-	if err != nil {
-		return "", fmt.Errorf("failed to marshal fingerprint: %w", err)
-	}
-
-	// Unmarshal to map to ensure key ordering
-	var m map[string]any
-	if err := json.Unmarshal(data, &m); err != nil {
-		return "", fmt.Errorf("failed to unmarshal fingerprint: %w", err)
-	}
-
-	// Marshal map (map keys are sorted by json.Marshal)
-	normalizedData, err := json.Marshal(m)
 	if err != nil {
 		return "", fmt.Errorf("failed to marshal normalized fingerprint: %w", err)
 	}
 
-	// Hash for consistent, reasonably-sized key
-	hash := sha256.Sum256(normalizedData)
+	// Hash for consistent, reasonably-sized key.
+	// hash[:] converts the [32]byte array returned by Sum256 to a []byte slice.
+	hash := sha256.Sum256(data)
 	return hex.EncodeToString(hash[:]), nil
 }

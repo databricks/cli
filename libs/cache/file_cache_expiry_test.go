@@ -2,7 +2,6 @@ package cache
 
 import (
 	"context"
-	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
@@ -12,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// TestFileCacheExpiryBehavior tests that the cache writes files with correct expiry
+// TestFileCacheExpiryBehavior tests that the cache writes files and respects expiry based on mtime
 func TestFileCacheExpiryBehavior(t *testing.T) {
 	ctx := context.Background()
 	tempDir := t.TempDir()
@@ -34,58 +33,43 @@ func TestFileCacheExpiryBehavior(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "test-value", result)
 
-	// Find the cache file and verify it has the correct expiry
+	// Find the cache file and verify it was created
 	cacheFiles, err := filepath.Glob(filepath.Join(tempDir, "*.json"))
 	require.NoError(t, err)
 	require.Len(t, cacheFiles, 1)
 
-	// Read the cache file and check expiry
+	// Verify the file contains the expected data (stored directly, not wrapped)
 	data, err := os.ReadFile(cacheFiles[0])
 	require.NoError(t, err)
+	assert.Equal(t, `"test-value"`, string(data))
 
-	var entry cacheEntry
-	err = json.Unmarshal(data, &entry)
+	// Verify mtime is recent (within last 10 seconds)
+	info, err := os.Stat(cacheFiles[0])
 	require.NoError(t, err)
-
-	// Verify expiry is set and is approximately 1 minute from now
-	assert.False(t, entry.Expiry.IsZero(), "Expiry should be set")
-	expectedExpiry := time.Now().Add(time.Minute)
-	timeDiff := entry.Expiry.Sub(expectedExpiry).Abs()
-	assert.Less(t, timeDiff, 10*time.Second, "Expiry should be approximately 1 minute from creation time")
+	age := time.Since(info.ModTime())
+	assert.Less(t, age, 10*time.Second, "File should have been created recently")
 }
 
-// TestReadFromCacheRespectsExpiry tests that readFromCache returns false for expired entries
+// TestReadFromCacheRespectsExpiry tests that readFromCache returns false for expired entries based on mtime
 func TestReadFromCacheRespectsExpiry(t *testing.T) {
 	tempDir := t.TempDir()
-	cache, err := newFileCacheWithBaseDir[string](tempDir, 1)
+	cache, err := newFileCacheWithBaseDir[string](tempDir, 1) // 1 minute expiry
 	require.NoError(t, err)
 
-	// Create an expired cache file
-	expiredEntry := cacheEntry{
-		Data:   json.RawMessage(`"expired-value"`),
-		Expiry: time.Now().Add(-time.Hour), // Expired 1 hour ago
-	}
-	expiredData, err := json.Marshal(expiredEntry)
-	require.NoError(t, err)
-
+	// Create an expired cache file by setting its mtime to 2 hours ago
 	expiredFile := filepath.Join(tempDir, "expired.json")
-	require.NoError(t, os.WriteFile(expiredFile, expiredData, 0o644))
+	require.NoError(t, os.WriteFile(expiredFile, []byte(`"expired-value"`), 0o644))
+	oldTime := time.Now().Add(-2 * time.Hour)
+	require.NoError(t, os.Chtimes(expiredFile, oldTime, oldTime))
 
 	// Try to read from expired cache - should return false
 	result, found := cache.readFromCache(expiredFile)
 	assert.False(t, found, "Should not find expired cache entry")
 	assert.Equal(t, "", result, "Result should be zero value for expired entry")
 
-	// Create a valid (non-expired) cache file
-	validEntry := cacheEntry{
-		Data:   json.RawMessage(`"valid-value"`),
-		Expiry: time.Now().Add(time.Hour), // Expires in 1 hour
-	}
-	validData, err := json.Marshal(validEntry)
-	require.NoError(t, err)
-
+	// Create a valid (non-expired) cache file with recent mtime
 	validFile := filepath.Join(tempDir, "valid.json")
-	require.NoError(t, os.WriteFile(validFile, validData, 0o644))
+	require.NoError(t, os.WriteFile(validFile, []byte(`"valid-value"`), 0o644))
 
 	// Try to read from valid cache - should return true
 	result, found = cache.readFromCache(validFile)

@@ -2,7 +2,6 @@ package cache
 
 import (
 	"context"
-	"encoding/json"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -171,40 +170,28 @@ func TestFileCacheGetOrComputeConcurrency(t *testing.T) {
 
 func TestFileCacheCleanupExpiredFiles(t *testing.T) {
 	tempDir := t.TempDir()
+	expiryMinutes := 60
 
-	// Create some cache files manually - one expired, one valid, one corrupted
+	// Create some cache files manually - one expired, one valid
 	now := time.Now()
 
-	// Expired file
-	expiredEntry := cacheEntry{
-		Data:   json.RawMessage(`"expired-value"`),
-		Expiry: now.Add(-time.Hour), // Expired 1 hour ago
-	}
-	expiredData, err := json.Marshal(expiredEntry)
-	require.NoError(t, err)
+	// Expired file - create it and set mtime to make it appear old
 	expiredFile := filepath.Join(tempDir, "expired.json")
-	require.NoError(t, os.WriteFile(expiredFile, expiredData, 0o644))
+	require.NoError(t, os.WriteFile(expiredFile, []byte(`"expired-value"`), 0o644))
+	// Set mtime to 2 hours ago (older than expiry)
+	oldTime := now.Add(-2 * time.Hour)
+	require.NoError(t, os.Chtimes(expiredFile, oldTime, oldTime))
 
-	// Valid file
-	validEntry := cacheEntry{
-		Data:   json.RawMessage(`"valid-value"`),
-		Expiry: now.Add(time.Hour), // Expires in 1 hour
-	}
-	validData, err := json.Marshal(validEntry)
-	require.NoError(t, err)
+	// Valid file - recently created
 	validFile := filepath.Join(tempDir, "valid.json")
-	require.NoError(t, os.WriteFile(validFile, validData, 0o644))
-
-	// Corrupted file
-	corruptedFile := filepath.Join(tempDir, "corrupted.json")
-	require.NoError(t, os.WriteFile(corruptedFile, []byte("invalid json"), 0o644))
+	require.NoError(t, os.WriteFile(validFile, []byte(`"valid-value"`), 0o644))
 
 	// Non-cache file (should be ignored)
 	nonCacheFile := filepath.Join(tempDir, "readme.txt")
 	require.NoError(t, os.WriteFile(nonCacheFile, []byte("readme"), 0o644))
 
 	// Create cache - this should trigger cleanup
-	_, err = newFileCacheWithBaseDir[string](tempDir, 60)
+	_, err := newFileCacheWithBaseDir[string](tempDir, expiryMinutes)
 	require.NoError(t, err)
 
 	// Check results
@@ -213,9 +200,6 @@ func TestFileCacheCleanupExpiredFiles(t *testing.T) {
 
 	_, err = os.Stat(validFile)
 	assert.False(t, os.IsNotExist(err), "Valid file should still exist")
-
-	_, err = os.Stat(corruptedFile)
-	assert.True(t, os.IsNotExist(err), "Corrupted file should be deleted")
 
 	_, err = os.Stat(nonCacheFile)
 	assert.False(t, os.IsNotExist(err), "Non-cache file should be ignored")

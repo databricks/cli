@@ -44,13 +44,21 @@ func newFileCacheWithBaseDir[T any](baseDir string, expiryMinutes int) (*FileCac
 	return fc, nil
 }
 
-// cleanupExpiredFiles removes expired cache files from disk.
+// cleanupExpiredFiles removes expired cache files from disk based on file modification time.
 // This runs synchronously once when the cache is created.
+// Files older than expiryMinutes are deleted.
 func (fc *FileCache[T]) cleanupExpiredFiles() {
 	now := time.Now()
+	expiryDuration := time.Duration(fc.expiryMinutes) * time.Minute
 
-	_ = filepath.Walk(fc.baseDir, func(path string, info os.FileInfo, err error) error {
-		if err != nil || info.IsDir() {
+	err := filepath.Walk(fc.baseDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			// Log walk errors but continue cleanup
+			log.Debugf(context.Background(), "[Local Cache] cleanup: failed to access path %s: %v", path, err)
+			return nil
+		}
+
+		if info.IsDir() {
 			return nil
 		}
 
@@ -59,26 +67,21 @@ func (fc *FileCache[T]) cleanupExpiredFiles() {
 			return nil
 		}
 
-		// Try to read the cache entry
-		data, err := os.ReadFile(path)
-		if err != nil {
-			return nil
-		}
-
-		var entry cacheEntry
-		if err := json.Unmarshal(data, &entry); err != nil {
-			// Delete corrupted files
-			_ = os.Remove(path)
-			return nil
-		}
-
-		// Delete if expired
-		if !entry.Expiry.IsZero() && now.After(entry.Expiry) {
-			_ = os.Remove(path)
+		// Check if file is expired based on modification time
+		age := now.Sub(info.ModTime())
+		if age > expiryDuration {
+			if err := os.Remove(path); err != nil {
+				log.Debugf(context.Background(), "[Local Cache] cleanup: failed to remove expired file %s: %v", path, err)
+			} else {
+				log.Debugf(context.Background(), "[Local Cache] cleanup: removed expired file %s (age: %v)", path, age)
+			}
 		}
 
 		return nil
 	})
+	if err != nil {
+		log.Warnf(context.Background(), "[Local Cache] cleanup: failed to walk cache directory: %v", err)
+	}
 }
 
 func getCacheBaseDir() (string, error) {
@@ -127,11 +130,8 @@ func NewFileCache[T any](component string, expiryMinutes int, metrics Metrics) (
 	return fc, nil
 }
 
-// cacheEntry represents the structure of a cached item on disk.
-type cacheEntry struct {
-	Data   json.RawMessage `json:"data"`
-	Expiry time.Time       `json:"expiry"`
-}
+// Cache files are stored as JSON directly without metadata wrapper.
+// Expiry is tracked using file modification time, not stored in the file itself.
 
 func (fc *FileCache[T]) addTelemetryMetric(key string) {
 	if fc.metrics != nil {
@@ -191,26 +191,33 @@ func (fc *FileCache[T]) GetOrCompute(ctx context.Context, fingerprint any, compu
 }
 
 // readFromCache attempts to read and deserialize data from the cache file.
+// Expiry is checked using file modification time for consistency with cleanup.
 func (fc *FileCache[T]) readFromCache(cachePath string) (T, bool) {
 	var zero T
 
+	// Check file modification time for expiry
+	info, err := os.Stat(cachePath)
+	if err != nil {
+		log.Debugf(context.Background(), "[Local Cache] failed to stat cache file: %v\n", err)
+		return zero, false
+	}
+
+	age := time.Since(info.ModTime())
+	expiryDuration := time.Duration(fc.expiryMinutes) * time.Minute
+	if age > expiryDuration {
+		return zero, false
+	}
+
+	// Read and deserialize the data
 	data, err := os.ReadFile(cachePath)
 	if err != nil {
-		return zero, false
-	}
-
-	var entry cacheEntry
-	if err := json.Unmarshal(data, &entry); err != nil {
-		return zero, false
-	}
-
-	// Check if cache entry has expired
-	if time.Now().After(entry.Expiry) {
+		log.Debugf(context.Background(), "[Local Cache] failed to read cache file: %v\n", err)
 		return zero, false
 	}
 
 	var result T
-	if err := json.Unmarshal(entry.Data, &result); err != nil {
+	if err := json.Unmarshal(data, &result); err != nil {
+		log.Debugf(context.Background(), "[Local Cache] failed to deserialize data: %v\n", err)
 		return zero, false
 	}
 
@@ -218,30 +225,26 @@ func (fc *FileCache[T]) readFromCache(cachePath string) (T, bool) {
 }
 
 // writeToCache serializes and writes data to the cache file.
+// Expiry is tracked by file modification time, not stored in the file.
 func (fc *FileCache[T]) writeToCache(cachePath string, data any) {
-	// Serialize the data
+	// Serialize the data directly
 	serializedData, err := json.Marshal(data)
 	if err != nil {
-		return // Silently fail on serialization errors
-	}
-
-	entry := cacheEntry{
-		Data:   serializedData,
-		Expiry: time.Now().Add(time.Duration(fc.expiryMinutes) * time.Minute),
-	}
-
-	entryData, err := json.Marshal(entry)
-	if err != nil {
+		log.Debugf(context.Background(), "[Local Cache] failed to serialize data: %v\n", err)
 		return // Silently fail on serialization errors
 	}
 
 	// Ensure directory exists
 	if err := os.MkdirAll(filepath.Dir(cachePath), 0o700); err != nil {
+		log.Debugf(context.Background(), "[Local Cache] failed to create directory: %v\n", err)
 		return
 	}
 
-	// Write to cache file
-	_ = os.WriteFile(cachePath, entryData, 0o600)
+	// Write to cache file - the mtime will be used to track expiry
+	err = os.WriteFile(cachePath, serializedData, 0o600)
+	if err != nil {
+		log.Debugf(context.Background(), "[Local Cache] failed to write to cache file: %v\n", err)
+	}
 }
 
 // getCachePath returns the full path to the cache file for a given cache key.
