@@ -8,8 +8,9 @@ Not authenticated to Databricks
 I need to know either the Databricks workspace URL or the Databricks profile name.
 You can list the available profiles by running `databricks auth profiles`.
 
-ASK the user which of the configured profiles or databricks workspace URL they want to use.
-Only then call the `databricks_configure_auth` tool to configure the authentication.
+Please configure your authentication using one of these methods:
+1. Set environment variables: DATABRICKS_HOST and DATABRICKS_TOKEN
+2. Use Databricks CLI profiles: Set DATABRICKS_PROFILE or use the default profile
+3. Provide authentication details in your MCP client configuration
 
-Do not run anything else before authenticating successfully.
 Once authenticated, you can use this tool again

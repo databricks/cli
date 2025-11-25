@@ -1,0 +1,197 @@
+package clitools
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"strings"
+
+	"github.com/databricks/cli/experimental/apps-mcp/lib/common"
+	"github.com/databricks/cli/experimental/apps-mcp/lib/prompts"
+	"github.com/databricks/cli/experimental/apps-mcp/lib/session"
+	"github.com/databricks/cli/libs/databrickscfg/profile"
+	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/exec"
+	"github.com/databricks/cli/libs/log"
+)
+
+type warehouse struct {
+	ID    string `json:"id"`
+	Name  string `json:"name"`
+	State string `json:"state"`
+}
+
+// Explore provides guidance on exploring Databricks workspaces and resources.
+func Explore(ctx context.Context) (string, error) {
+	warehouse, err := GetDefaultWarehouse(ctx)
+	if err != nil {
+		log.Debugf(ctx, "Failed to get default warehouse (non-fatal): %v", err)
+		warehouse = nil
+	}
+
+	currentProfile := getCurrentProfile(ctx)
+	profiles := getAvailableProfiles(ctx)
+
+	return generateExploreGuidance(ctx, warehouse, currentProfile, profiles), nil
+}
+
+// GetDefaultWarehouse finds a suitable SQL warehouse for queries.
+// It filters out warehouses the user cannot access and prefers RUNNING warehouses,
+// then falls back to STOPPED ones (which auto-start).
+func GetDefaultWarehouse(ctx context.Context) (*warehouse, error) {
+	executor, err := exec.NewCommandExecutor("")
+	if err != nil {
+		return nil, fmt.Errorf("failed to create command executor: %w", err)
+	}
+
+	cliPath := common.GetCLIPath()
+	output, err := executor.Exec(ctx, fmt.Sprintf(`"%s" api get "/api/2.0/sql/warehouses?skip_cannot_use=true" --output json`, cliPath))
+	if err != nil {
+		return nil, fmt.Errorf("failed to list warehouses: %w\nOutput: %s", err, output)
+	}
+
+	var response struct {
+		Warehouses []warehouse `json:"warehouses"`
+	}
+	if err := json.Unmarshal(output, &response); err != nil {
+		return nil, fmt.Errorf("failed to parse warehouses: %w", err)
+	}
+	warehouses := response.Warehouses
+
+	if len(warehouses) == 0 {
+		return nil, errors.New("no SQL warehouses found in workspace")
+	}
+
+	// Prefer RUNNING warehouses
+	for i := range warehouses {
+		if strings.ToUpper(warehouses[i].State) == "RUNNING" {
+			return &warehouses[i], nil
+		}
+	}
+
+	// Fall back to STOPPED warehouses (they auto-start when queried)
+	for i := range warehouses {
+		if strings.ToUpper(warehouses[i].State) == "STOPPED" {
+			return &warehouses[i], nil
+		}
+	}
+
+	// Return first available warehouse regardless of state
+	return &warehouses[0], nil
+}
+
+// getCurrentProfile returns the currently active profile name.
+func getCurrentProfile(ctx context.Context) string {
+	// Check DATABRICKS_CONFIG_PROFILE env var
+	profileName := env.Get(ctx, "DATABRICKS_CONFIG_PROFILE")
+	if profileName == "" {
+		return "DEFAULT"
+	}
+	return profileName
+}
+
+// getAvailableProfiles returns all available profiles from ~/.databrickscfg.
+func getAvailableProfiles(ctx context.Context) profile.Profiles {
+	profiles, err := profile.DefaultProfiler.LoadProfiles(ctx, profile.MatchAllProfiles)
+	if err != nil {
+		// If we can't load profiles, return empty list (config file might not exist)
+		return profile.Profiles{}
+	}
+	return profiles
+}
+
+// generateExploreGuidance creates comprehensive guidance for data exploration.
+func generateExploreGuidance(ctx context.Context, warehouse *warehouse, currentProfile string, profiles profile.Profiles) string {
+	// Build workspace/profile information
+	workspaceInfo := "Current Workspace Profile: " + currentProfile
+	if len(profiles) > 0 {
+		// Find current profile details
+		var currentHost string
+		for _, p := range profiles {
+			if p.Name == currentProfile {
+				currentHost = p.Host
+				if cloud := p.Cloud(); cloud != "" {
+					currentHost = fmt.Sprintf("%s (%s)", currentHost, cloud)
+				}
+				break
+			}
+		}
+		if currentHost != "" {
+			workspaceInfo = fmt.Sprintf("Current Workspace Profile: %s - %s", currentProfile, currentHost)
+		}
+	}
+
+	// Build available profiles list
+	profilesInfo := ""
+	if len(profiles) > 1 {
+		profilesInfo = "\n\nAvailable Workspace Profiles:\n"
+		for _, p := range profiles {
+			marker := ""
+			if p.Name == currentProfile {
+				marker = " (current)"
+			}
+			cloud := p.Cloud()
+			if cloud != "" {
+				profilesInfo += fmt.Sprintf("  - %s: %s (%s)%s\n", p.Name, p.Host, cloud, marker)
+			} else {
+				profilesInfo += fmt.Sprintf("  - %s: %s%s\n", p.Name, p.Host, marker)
+			}
+		}
+		profilesInfo += "\n  To use a different workspace, add --profile <name> to any command:\n"
+		profilesInfo += "    invoke_databricks_cli '--profile prod catalogs list'\n"
+	}
+
+	// Handle warehouse information (may be nil if lookup failed)
+	warehouseName := ""
+	warehouseID := ""
+	if warehouse != nil {
+		warehouseName = warehouse.Name
+		warehouseID = warehouse.ID
+	}
+
+	// Prepare template data
+	data := map[string]string{
+		"WorkspaceInfo": workspaceInfo,
+		"WarehouseName": warehouseName,
+		"WarehouseID":   warehouseID,
+		"ProfilesInfo":  profilesInfo,
+	}
+
+	// Render base explore template
+	result := prompts.MustExecuteTemplate("explore.tmpl", data)
+
+	// Get session and check for enabled capabilities
+	sess, err := session.GetSession(ctx)
+	if err != nil {
+		log.Debugf(ctx, "No session found, skipping capability-based instructions: %v", err)
+		return result
+	}
+
+	capabilities, ok := sess.Get(session.CapabilitiesDataKey)
+	if !ok {
+		log.Debugf(ctx, "No capabilities set in session")
+		return result
+	}
+
+	capList, ok := capabilities.([]string)
+	if !ok {
+		log.Warnf(ctx, "Capabilities is not a string slice, skipping")
+		return result
+	}
+
+	// Inject additional templates based on enabled capabilities
+	for _, cap := range capList {
+		switch cap {
+		case "apps":
+			// Render and append apps template
+			appsContent := prompts.MustExecuteTemplate("apps.tmpl", data)
+			result = result + "\n\n" + appsContent
+			log.Debugf(ctx, "Injected apps instructions based on capability")
+		default:
+			log.Debugf(ctx, "Unknown capability: %s", cap)
+		}
+	}
+
+	return result
+}
