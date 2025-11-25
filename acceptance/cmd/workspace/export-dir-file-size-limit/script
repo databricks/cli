@@ -1,7 +1,4 @@
-echo "print('hello')" > test_file.py
 $CLI workspace import /test-dir/file.py --file test_file.py --format AUTO --language PYTHON
-rm test_file.py
 
-rm -rf "$TEST_TMP_DIR/export"
 mkdir -p "$TEST_TMP_DIR/export"
 trace $CLI workspace export-dir /test-dir "$TEST_TMP_DIR/export"

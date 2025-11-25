@@ -27,6 +27,30 @@ type exportDirOptions struct {
 	warnings  []string
 }
 
+// isFileSizeError checks if the error is due to file size limits.
+func isFileSizeError(err error) bool {
+	var aerr *apierr.APIError
+	if !errors.As(err, &aerr) || aerr.StatusCode != http.StatusBadRequest {
+		return false
+	}
+
+	// Check ErrorCode field
+	if aerr.ErrorCode == "MAX_NOTEBOOK_SIZE_EXCEEDED" || aerr.ErrorCode == "MAX_READ_SIZE_EXCEEDED" {
+		return true
+	}
+
+	// Check ErrorInfo.Reason field
+	details := aerr.ErrorDetails()
+	if details.ErrorInfo != nil {
+		reason := details.ErrorInfo.Reason
+		if reason == "MAX_NOTEBOOK_SIZE_EXCEEDED" || reason == "MAX_READ_SIZE_EXCEEDED" {
+			return true
+		}
+	}
+
+	return false
+}
+
 // The callback function exports the file specified at relPath. This function is
 // meant to be used in conjunction with fs.WalkDir
 func (opts *exportDirOptions) callback(ctx context.Context, workspaceFiler filer.Filer) func(string, fs.DirEntry, error) error {
@@ -67,30 +91,11 @@ func (opts *exportDirOptions) callback(ctx context.Context, workspaceFiler filer
 		r, err := workspaceFiler.Read(ctx, relPath)
 		if err != nil {
 			// Check if this is a file size limit error
-			var aerr *apierr.APIError
-			if errors.As(err, &aerr) && aerr.StatusCode == http.StatusBadRequest {
-				isFileSizeError := false
-
-				if aerr.ErrorCode == "MAX_NOTEBOOK_SIZE_EXCEEDED" || aerr.ErrorCode == "MAX_READ_SIZE_EXCEEDED" {
-					isFileSizeError = true
-				}
-
-				if !isFileSizeError {
-					details := aerr.ErrorDetails()
-					if details.ErrorInfo != nil {
-						reason := details.ErrorInfo.Reason
-						if reason == "MAX_NOTEBOOK_SIZE_EXCEEDED" || reason == "MAX_READ_SIZE_EXCEEDED" {
-							isFileSizeError = true
-						}
-					}
-				}
-
-				if isFileSizeError {
-					warning := sourcePath + " (skipped; file too large)"
-					cmdio.LogString(ctx, "Warning: "+warning)
-					opts.warnings = append(opts.warnings, warning)
-					return nil
-				}
+			if isFileSizeError(err) {
+				warning := sourcePath + " (skipped; file too large)"
+				cmdio.LogString(ctx, "Warning: "+warning)
+				opts.warnings = append(opts.warnings, warning)
+				return nil
 			}
 			return err
 		}

@@ -1,6 +1,9 @@
 Local = true
 Cloud = false
 
+[Env]
+MSYS_NO_PATHCONV = "1"
+
 [[Server]]
 Pattern = "GET /api/2.0/workspace/list"
 Response.Body = '''
