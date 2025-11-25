@@ -2,5 +2,8 @@ Local = false
 Cloud = true
 RecordRequests = false
 
+# Deploying identity on gcp is a SP which causes diverging output.
+CloudEnvs.gcp = false
+
 [EnvMatrix]
   DATABRICKS_BUNDLE_ENGINE = ["direct"]
