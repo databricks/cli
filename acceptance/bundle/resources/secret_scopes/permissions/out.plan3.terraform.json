@@ -1,7 +1,0 @@
-{
-  "plan": {
-    "resources.secret_scopes.my_scope": {
-      "action": "recreate"
-    }
-  }
-}
