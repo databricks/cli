@@ -8,3 +8,7 @@ New = "[DEBUG_TIMESTAMP]"
 [[Repls]]
 Old = '[a-f0-9]{64}'
 New = "[SHA256_HASH]"
+
+[[Repls]]
+Old = '[a-f0-9]{12}'
+New = "[CACHE_KEY]"
