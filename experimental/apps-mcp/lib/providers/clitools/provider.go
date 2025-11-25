@@ -43,6 +43,48 @@ func (p *Provider) Name() string {
 func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 	log.Info(p.ctx, "Registering CLI tools")
 
+	// Register databricks_configure_auth
+	type ConfigureAuthInput struct {
+		Host    *string `json:"host,omitempty" jsonschema_description:"Databricks workspace URL (e.g., https://example.cloud.databricks.com). If not provided, uses default from environment or config file"`
+		Profile *string `json:"profile,omitempty" jsonschema_description:"Profile name from ~/.databrickscfg. If not provided, uses default profile"`
+	}
+
+	mcpsdk.AddTool(server,
+		&mcpsdk.Tool{
+			Name:        "databricks_configure_auth",
+			Description: "Configure authentication for Databricks. Only call when Databricks authentication has has failed to authenticate automatically or when the user explicitly asks for using a specific host or profile. Validates credentials and stores the authenticated client in the session.",
+		},
+		func(ctx context.Context, req *mcpsdk.CallToolRequest, args ConfigureAuthInput) (*mcpsdk.CallToolResult, any, error) {
+			log.Debug(ctx, "databricks_configure_auth called")
+
+			sess, err := session.GetSession(ctx)
+			if err != nil {
+				return nil, nil, err
+			}
+
+			client, err := ConfigureAuth(ctx, sess, args.Host, args.Profile)
+			if err != nil {
+				return nil, nil, err
+			}
+
+			message := "Authentication configured successfully"
+			if args.Host != nil {
+				message += " for host: " + *args.Host
+			}
+			if args.Profile != nil {
+				message += " using profile: " + *args.Profile
+			}
+
+			// Get user info to confirm auth
+			me, err := client.CurrentUser.Me(ctx)
+			if err == nil && me.UserName != "" {
+				message += "\nAuthenticated as: " + me.UserName
+			}
+
+			return mcpsdk.CreateNewTextContentResult(message), nil, nil
+		},
+	)
+
 	// Register explore tool
 	mcpsdk.AddTool(server,
 		&mcpsdk.Tool{
@@ -80,6 +122,6 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 		},
 	)
 
-	log.Infof(p.ctx, "Registered CLI tools: count=%d", 2)
+	log.Infof(p.ctx, "Registered CLI tools: count=%d", 3)
 	return nil
 }
