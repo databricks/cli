@@ -17,7 +17,7 @@ func TestFileCacheExpiryBehavior(t *testing.T) {
 	tempDir := t.TempDir()
 
 	// Create cache with 1 minute expiry
-	cache, err := newFileCacheWithBaseDir[string](tempDir, 1)
+	cache, err := newFileCacheWithBaseDir[string](ctx, tempDir, 1)
 	require.NoError(t, err)
 
 	fingerprint := struct {
@@ -52,8 +52,9 @@ func TestFileCacheExpiryBehavior(t *testing.T) {
 
 // TestReadFromCacheRespectsExpiry tests that readFromCache returns false for expired entries based on mtime
 func TestReadFromCacheRespectsExpiry(t *testing.T) {
+	ctx := context.Background()
 	tempDir := t.TempDir()
-	cache, err := newFileCacheWithBaseDir[string](tempDir, 1) // 1 minute expiry
+	cache, err := newFileCacheWithBaseDir[string](ctx, tempDir, 1) // 1 minute expiry
 	require.NoError(t, err)
 
 	// Create an expired cache file by setting its mtime to 2 hours ago
@@ -63,7 +64,7 @@ func TestReadFromCacheRespectsExpiry(t *testing.T) {
 	require.NoError(t, os.Chtimes(expiredFile, oldTime, oldTime))
 
 	// Try to read from expired cache - should return false
-	result, found := cache.readFromCache(expiredFile)
+	result, found := cache.readFromCache(ctx, expiredFile)
 	assert.False(t, found, "Should not find expired cache entry")
 	assert.Equal(t, "", result, "Result should be zero value for expired entry")
 
@@ -72,7 +73,7 @@ func TestReadFromCacheRespectsExpiry(t *testing.T) {
 	require.NoError(t, os.WriteFile(validFile, []byte(`"valid-value"`), 0o644))
 
 	// Try to read from valid cache - should return true
-	result, found = cache.readFromCache(validFile)
+	result, found = cache.readFromCache(ctx, validFile)
 	assert.True(t, found, "Should find valid cache entry")
 	assert.Equal(t, "valid-value", result, "Should return correct value for valid entry")
 }

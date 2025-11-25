@@ -14,10 +14,11 @@ import (
 )
 
 func TestNewFileCache(t *testing.T) {
+	ctx := context.Background()
 	tempDir := t.TempDir()
 	cacheDir := filepath.Join(tempDir, "cache")
 
-	cache, err := newFileCacheWithBaseDir[string](cacheDir, 60)
+	cache, err := newFileCacheWithBaseDir[string](ctx, cacheDir, 60)
 	require.NoError(t, err)
 	assert.NotNil(t, cache)
 	assert.Equal(t, cacheDir, cache.baseDir)
@@ -42,6 +43,7 @@ func TestNewFileCache(t *testing.T) {
 }
 
 func TestNewFileCacheWithExistingDirectory(t *testing.T) {
+	ctx := context.Background()
 	tempDir := t.TempDir()
 	cacheDir := filepath.Join(tempDir, "existing")
 
@@ -49,17 +51,18 @@ func TestNewFileCacheWithExistingDirectory(t *testing.T) {
 	err := os.MkdirAll(cacheDir, 0o700)
 	require.NoError(t, err)
 
-	cache, err := newFileCacheWithBaseDir[string](cacheDir, 60) // 1 hour for tests
+	cache, err := newFileCacheWithBaseDir[string](ctx, cacheDir, 60) // 1 hour for tests
 	require.NoError(t, err)
 	assert.NotNil(t, cache)
 	assert.Equal(t, cacheDir, cache.baseDir)
 }
 
 func TestNewFileCacheInvalidPath(t *testing.T) {
+	ctx := context.Background()
 	// Try to create cache in a location that should fail
 	invalidPath := "/root/invalid/path/that/should/not/exist"
 
-	cache, err := newFileCacheWithBaseDir[string](invalidPath, 60) // 1 hour for tests
+	cache, err := newFileCacheWithBaseDir[string](ctx, invalidPath, 60) // 1 hour for tests
 	if err != nil {
 		assert.Nil(t, cache)
 		assert.Contains(t, err.Error(), "failed to create cache directory")
@@ -69,7 +72,7 @@ func TestNewFileCacheInvalidPath(t *testing.T) {
 func TestFileCacheGetOrCompute(t *testing.T) {
 	ctx := context.Background()
 	tempDir := t.TempDir()
-	cache, err := newFileCacheWithBaseDir[string](tempDir, 60) // 1 hour for tests
+	cache, err := newFileCacheWithBaseDir[string](ctx, tempDir, 60) // 1 hour for tests
 	require.NoError(t, err)
 
 	fingerprint := struct {
@@ -106,7 +109,7 @@ func TestFileCacheGetOrCompute(t *testing.T) {
 func TestFileCacheGetOrComputeError(t *testing.T) {
 	ctx := context.Background()
 	tempDir := t.TempDir()
-	cache, err := newFileCacheWithBaseDir[string](tempDir, 60) // 1 hour for tests
+	cache, err := newFileCacheWithBaseDir[string](ctx, tempDir, 60) // 1 hour for tests
 	require.NoError(t, err)
 
 	fingerprint := struct {
@@ -128,7 +131,7 @@ func TestFileCacheGetOrComputeError(t *testing.T) {
 func TestFileCacheGetOrComputeConcurrency(t *testing.T) {
 	ctx := context.Background()
 	tempDir := t.TempDir()
-	cache, err := newFileCacheWithBaseDir[string](tempDir, 60) // 1 hour for tests
+	cache, err := newFileCacheWithBaseDir[string](ctx, tempDir, 60) // 1 hour for tests
 	require.NoError(t, err)
 
 	fingerprint := struct {
@@ -169,6 +172,7 @@ func TestFileCacheGetOrComputeConcurrency(t *testing.T) {
 }
 
 func TestFileCacheCleanupExpiredFiles(t *testing.T) {
+	ctx := context.Background()
 	tempDir := t.TempDir()
 	expiryMinutes := 60
 
@@ -191,7 +195,7 @@ func TestFileCacheCleanupExpiredFiles(t *testing.T) {
 	require.NoError(t, os.WriteFile(nonCacheFile, []byte("readme"), 0o644))
 
 	// Create cache - this should trigger cleanup
-	_, err := newFileCacheWithBaseDir[string](tempDir, expiryMinutes)
+	_, err := newFileCacheWithBaseDir[string](ctx, tempDir, expiryMinutes)
 	require.NoError(t, err)
 
 	// Check results

@@ -28,7 +28,7 @@ type FileCache[T any] struct {
 }
 
 // newFileCacheWithBaseDir creates a new file-based cache that stores data in the specified directory.
-func newFileCacheWithBaseDir[T any](baseDir string, expiryMinutes int) (*FileCache[T], error) {
+func newFileCacheWithBaseDir[T any](ctx context.Context, baseDir string, expiryMinutes int) (*FileCache[T], error) {
 	if err := os.MkdirAll(baseDir, 0o700); err != nil {
 		return nil, fmt.Errorf("failed to create cache directory: %w", err)
 	}
@@ -39,7 +39,7 @@ func newFileCacheWithBaseDir[T any](baseDir string, expiryMinutes int) (*FileCac
 	}
 
 	// Clean up expired files synchronously
-	fc.cleanupExpiredFiles()
+	fc.cleanupExpiredFiles(ctx)
 
 	return fc, nil
 }
@@ -47,14 +47,14 @@ func newFileCacheWithBaseDir[T any](baseDir string, expiryMinutes int) (*FileCac
 // cleanupExpiredFiles removes expired cache files from disk based on file modification time.
 // This runs synchronously once when the cache is created.
 // Files older than expiryMinutes are deleted.
-func (fc *FileCache[T]) cleanupExpiredFiles() {
+func (fc *FileCache[T]) cleanupExpiredFiles(ctx context.Context) {
 	now := time.Now()
 	expiryDuration := time.Duration(fc.expiryMinutes) * time.Minute
 
 	err := filepath.Walk(fc.baseDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			// Log walk errors but continue cleanup
-			log.Debugf(context.Background(), "[Local Cache] cleanup: failed to access path %s: %v", path, err)
+			log.Debugf(ctx, "[Local Cache] cleanup: failed to access path %s: %v", path, err)
 			return nil
 		}
 
@@ -71,16 +71,16 @@ func (fc *FileCache[T]) cleanupExpiredFiles() {
 		age := now.Sub(info.ModTime())
 		if age > expiryDuration {
 			if err := os.Remove(path); err != nil {
-				log.Debugf(context.Background(), "[Local Cache] cleanup: failed to remove expired file %s: %v", path, err)
+				log.Debugf(ctx, "[Local Cache] cleanup: failed to remove expired file %s: %v", path, err)
 			} else {
-				log.Debugf(context.Background(), "[Local Cache] cleanup: removed expired file %s (age: %v)", path, age)
+				log.Debugf(ctx, "[Local Cache] cleanup: removed expired file %s (age: %v)", path, age)
 			}
 		}
 
 		return nil
 	})
 	if err != nil {
-		log.Warnf(context.Background(), "[Local Cache] cleanup: failed to walk cache directory: %v", err)
+		log.Warnf(ctx, "[Local Cache] cleanup: failed to walk cache directory: %v", err)
 	}
 }
 
@@ -112,7 +112,7 @@ func sanitizeVersion(version string) string {
 
 // NewFileCache creates a new file-based cache using UserCacheDir() + "databricks" + version + cached component name.
 // Including the CLI version in the path ensures cache isolation across different CLI versions.
-func NewFileCache[T any](component string, expiryMinutes int, metrics Metrics) (*FileCache[T], error) {
+func NewFileCache[T any](ctx context.Context, component string, expiryMinutes int, metrics Metrics) (*FileCache[T], error) {
 	cacheBaseDir, err := getCacheBaseDir()
 	if err != nil {
 		return nil, err
@@ -122,7 +122,7 @@ func NewFileCache[T any](component string, expiryMinutes int, metrics Metrics) (
 	// Sanitize version string for use in file paths
 	version := sanitizeVersion(build.GetInfo().Version)
 	baseDir := filepath.Join(cacheBaseDir, version, component)
-	fc, err := newFileCacheWithBaseDir[T](baseDir, expiryMinutes)
+	fc, err := newFileCacheWithBaseDir[T](ctx, baseDir, expiryMinutes)
 	if err != nil {
 		return nil, err
 	}
@@ -156,7 +156,7 @@ func (fc *FileCache[T]) GetOrCompute(ctx context.Context, fingerprint any, compu
 	cachePath := fc.getCachePath(cacheKey)
 
 	// Try to read from disk cache
-	if data, found := fc.readFromCache(cachePath); found {
+	if data, found := fc.readFromCache(ctx, cachePath); found {
 		log.Debugf(ctx, "[Local Cache] cache hit\n")
 		fc.addTelemetryMetric("local.cache.hit")
 		return data, nil
@@ -167,7 +167,7 @@ func (fc *FileCache[T]) GetOrCompute(ctx context.Context, fingerprint any, compu
 	defer fc.mu.Unlock()
 
 	// Check again after acquiring lock (another goroutine might have computed it)
-	if data, found := fc.readFromCache(cachePath); found {
+	if data, found := fc.readFromCache(ctx, cachePath); found {
 		log.Debugf(ctx, "[Local Cache] cache hit after lock\n")
 		fc.addTelemetryMetric("local.cache.hit")
 		return data, nil
@@ -183,7 +183,7 @@ func (fc *FileCache[T]) GetOrCompute(ctx context.Context, fingerprint any, compu
 	}
 
 	// Write to disk cache (failures are silent - cache write errors don't affect the result)
-	fc.writeToCache(cachePath, result)
+	fc.writeToCache(ctx, cachePath, result)
 	log.Debugf(ctx, "[Local Cache] computed and stored result\n")
 	fc.addTelemetryMetric("local.cache.miss")
 
@@ -192,13 +192,13 @@ func (fc *FileCache[T]) GetOrCompute(ctx context.Context, fingerprint any, compu
 
 // readFromCache attempts to read and deserialize data from the cache file.
 // Expiry is checked using file modification time for consistency with cleanup.
-func (fc *FileCache[T]) readFromCache(cachePath string) (T, bool) {
+func (fc *FileCache[T]) readFromCache(ctx context.Context, cachePath string) (T, bool) {
 	var zero T
 
 	// Check file modification time for expiry
 	info, err := os.Stat(cachePath)
 	if err != nil {
-		log.Debugf(context.Background(), "[Local Cache] failed to stat cache file: %v\n", err)
+		log.Debugf(ctx, "[Local Cache] failed to stat cache file: %v\n", err)
 		return zero, false
 	}
 
@@ -211,13 +211,13 @@ func (fc *FileCache[T]) readFromCache(cachePath string) (T, bool) {
 	// Read and deserialize the data
 	data, err := os.ReadFile(cachePath)
 	if err != nil {
-		log.Debugf(context.Background(), "[Local Cache] failed to read cache file: %v\n", err)
+		log.Debugf(ctx, "[Local Cache] failed to read cache file: %v\n", err)
 		return zero, false
 	}
 
 	var result T
 	if err := json.Unmarshal(data, &result); err != nil {
-		log.Debugf(context.Background(), "[Local Cache] failed to deserialize data: %v\n", err)
+		log.Debugf(ctx, "[Local Cache] failed to deserialize data: %v\n", err)
 		return zero, false
 	}
 
@@ -226,24 +226,24 @@ func (fc *FileCache[T]) readFromCache(cachePath string) (T, bool) {
 
 // writeToCache serializes and writes data to the cache file.
 // Expiry is tracked by file modification time, not stored in the file.
-func (fc *FileCache[T]) writeToCache(cachePath string, data any) {
+func (fc *FileCache[T]) writeToCache(ctx context.Context, cachePath string, data any) {
 	// Serialize the data directly
 	serializedData, err := json.Marshal(data)
 	if err != nil {
-		log.Debugf(context.Background(), "[Local Cache] failed to serialize data: %v\n", err)
+		log.Debugf(ctx, "[Local Cache] failed to serialize data: %v\n", err)
 		return // Silently fail on serialization errors
 	}
 
 	// Ensure directory exists
 	if err := os.MkdirAll(filepath.Dir(cachePath), 0o700); err != nil {
-		log.Debugf(context.Background(), "[Local Cache] failed to create directory: %v\n", err)
+		log.Debugf(ctx, "[Local Cache] failed to create directory: %v\n", err)
 		return
 	}
 
 	// Write to cache file - the mtime will be used to track expiry
 	err = os.WriteFile(cachePath, serializedData, 0o600)
 	if err != nil {
-		log.Debugf(context.Background(), "[Local Cache] failed to write to cache file: %v\n", err)
+		log.Debugf(ctx, "[Local Cache] failed to write to cache file: %v\n", err)
 	}
 }
 
