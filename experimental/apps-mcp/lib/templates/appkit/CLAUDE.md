@@ -51,6 +51,7 @@ interface QueryResult {
 
 function MyComponent() {
   // Reference SQL file by name (without .sql extension)
+  // Second parameter is for query parameters (see Query Parameterization section)
   const { data, loading, error } = useAnalyticsQuery<QueryResult[]>('query_name', {});
 
   if (loading) return <div>Loading...</div>;
@@ -69,6 +70,169 @@ function MyComponent() {
 - Reference by filename (without extension) in `useAnalyticsQuery`
 - App Kit automatically executes queries against configured Databricks warehouse
 - Benefits: Built-in caching, proper connection pooling, better performance
+
+### Query Parameterization:
+
+SQL queries can accept parameters to make them dynamic and reusable. Parameters allow filtering, sorting, and customizing queries based on user input or application state.
+
+#### SQL Parameter Syntax:
+
+Use the `:parameter_name` syntax in SQL files:
+
+```sql
+-- config/queries/filtered_data.sql
+SELECT *
+FROM my_table
+WHERE column_value >= :min_value
+  AND column_value <= :max_value
+  AND category = :category
+  AND (:optional_filter = '' OR status = :optional_filter)
+```
+
+**Key Points:**
+- Parameters use colon prefix: `:parameter_name`
+- Databricks infers types from values automatically
+- For optional parameters, use pattern: `(:param = '' OR column = :param)`
+
+#### Frontend Parameter Passing:
+
+Pass parameters as the second argument to `useAnalyticsQuery`:
+
+```typescript
+import { useState } from 'react';
+import { useAnalyticsQuery } from '@databricks/app-kit/react';
+
+function FilteredComponent() {
+  const [minValue, setMinValue] = useState('0');
+  const [maxValue, setMaxValue] = useState('100');
+  const [category, setCategory] = useState('electronics');
+  const [optionalFilter, setOptionalFilter] = useState('');
+
+  // Build parameters object
+  const queryParams = {
+    min_value: minValue,
+    max_value: maxValue,
+    category: category,
+    optional_filter: optionalFilter || '', // Default for optional params
+  };
+
+  // Pass parameters to query
+  const { data, loading, error } = useAnalyticsQuery<ResultType[]>(
+    'filtered_data',
+    queryParams
+  );
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error}</div>;
+  return <div>{/* render data */}</div>;
+}
+```
+
+#### Date Parameters:
+
+**IMPORTANT**: For date parameters, use `YYYY-MM-DD` format with `DATE()` function in SQL.
+
+**Frontend - Date Formatting:**
+```typescript
+const getDateParam = (daysAgo: number): string => {
+  const date = new Date();
+  date.setDate(date.getDate() - daysAgo);
+  // Format as YYYY-MM-DD
+  return date.toISOString().split("T")[0];
+};
+
+const queryParams = {
+  start_date: getDateParam(7), // 7 days ago
+};
+```
+
+**SQL - Date Comparison:**
+```sql
+-- Use DATE() function for timestamp comparisons
+WHERE DATE(timestamp_column) >= :start_date
+```
+
+#### Complete Example:
+
+**SQL Query** (`config/queries/trip_statistics.sql`):
+```sql
+SELECT
+  COUNT(*) as total_trips,
+  ROUND(AVG(trip_distance), 2) as avg_distance,
+  ROUND(AVG(fare_amount), 2) as avg_fare
+FROM samples.nyctaxi.trips
+WHERE fare_amount > 0
+  AND DATE(tpep_pickup_datetime) >= :start_date
+  AND fare_amount >= :min_fare
+  AND fare_amount <= :max_fare
+  AND (:zip_code = '' OR pickup_zip = :zip_code)
+```
+
+**TypeScript Component:**
+```typescript
+import { useState } from 'react';
+import { useAnalyticsQuery } from '@databricks/app-kit/react';
+
+interface TripStatistics {
+  total_trips: number;
+  avg_distance: number;
+  avg_fare: number;
+}
+
+function TripDashboard() {
+  const [dateFilter, setDateFilter] = useState<'week' | 'month' | 'all'>('all');
+  const [minFare, setMinFare] = useState('');
+  const [maxFare, setMaxFare] = useState('');
+  const [zipCode, setZipCode] = useState('');
+
+  const getStartDate = (): string => {
+    const now = new Date();
+    const startDate = dateFilter === 'week'
+      ? new Date(now.setDate(now.getDate() - 7))
+      : dateFilter === 'month'
+      ? new Date(now.setMonth(now.getMonth() - 1))
+      : new Date('2000-01-01');
+    return startDate.toISOString().split("T")[0];
+  };
+
+  const queryParams = {
+    start_date: getStartDate(),
+    min_fare: minFare || '0',
+    max_fare: maxFare || '999999',
+    zip_code: zipCode || '',
+  };
+
+  const { data, loading, error } = useAnalyticsQuery<TripStatistics[]>(
+    'trip_statistics',
+    queryParams
+  );
+
+  return (
+    <div>
+      {/* Filter UI */}
+      <select value={dateFilter} onChange={(e) => setDateFilter(e.target.value as any)}>
+        <option value="week">Last Week</option>
+        <option value="month">Last Month</option>
+        <option value="all">All Time</option>
+      </select>
+      {/* Display results */}
+      {data && data[0] && (
+        <div>
+          <p>Total Trips: {data[0].total_trips}</p>
+          <p>Avg Distance: {data[0].avg_distance} mi</p>
+          <p>Avg Fare: ${data[0].avg_fare}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+```
+
+**Parameter Types Reference:**
+- **Strings**: `status: 'active'` → Use directly in SQL: `:status`
+- **Numbers**: `min_value: 100` → Use directly: `:min_value`
+- **Dates**: Format as `YYYY-MM-DD` → Use with `DATE()` in SQL
+- **Optional**: Provide empty string default → Check with `(:param = '' OR ...)`
 
 ## tRPC for Custom Endpoints:
 
@@ -194,6 +358,10 @@ describe('Feature Name', () => {
 - Use `it` for individual test cases
 - Use `expect` for assertions
 - Tests run with `npm test` (runs `vitest run`)
+
+❌ **Do not write unit tests for query files:**
+- writing unit tests for serving sql files under `config/queries` has little value
+- do not write unit tests to types associated with queries
 
 ## Frontend Styling Guidelines:
 

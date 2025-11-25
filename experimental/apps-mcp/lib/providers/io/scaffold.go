@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
-	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -158,12 +157,6 @@ func (p *Provider) Scaffold(ctx context.Context, args *ScaffoldArgs) (*ScaffoldR
 		}
 
 		filesCopied++
-	}
-
-	envContent := fmt.Sprintf("DATABRICKS_WAREHOUSE_ID=%s\nDATABRICKS_HOST=%s", warehouseID, host)
-	envPath := filepath.Join(workDir, ".env")
-	if err := os.WriteFile(envPath, []byte(envContent), 0o644); err != nil {
-		return nil, fmt.Errorf("failed to write .env file: %w", err)
 	}
 
 	log.Infof(ctx, "scaffolded project (template=%s, work_dir=%s, files=%d)",
