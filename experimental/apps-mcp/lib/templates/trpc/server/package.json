@@ -5,7 +5,7 @@
     "build": "tsc -p tsconfig.json",
     "check": "tsc -p tsconfig.json --noEmit",
     "start": "tsx --env-file-if-exists=../.env src/index.ts",
-    "dev": "tsx --env-file-if-exists=../.env watch src/index.ts",
+    "dev": "tsx watch --env-file-if-exists=../.env src/index.ts",
     "db:push": "drizzle-kit --env-file-if-exists=../.env push --force",
     "db:push-ci": "yes | npm run db:push",
     "lint": "eslint --cache src/index.ts",
