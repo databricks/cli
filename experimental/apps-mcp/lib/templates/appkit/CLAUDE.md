@@ -42,6 +42,7 @@ await app.server.start();
 
 ```typescript
 import { useAnalyticsQuery } from '@databricks/app-kit/react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 // Define result type matching your SQL query structure
 interface QueryResult {
@@ -54,7 +55,12 @@ function MyComponent() {
   // Second parameter is for query parameters (see Query Parameterization section)
   const { data, loading, error } = useAnalyticsQuery<QueryResult[]>('query_name', {});
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) return (
+    <div className="space-y-2">
+      <Skeleton className="h-4 w-3/4" />
+      <Skeleton className="h-4 w-1/2" />
+    </div>
+  );
   if (error) return <div>Error: {error}</div>;
 
   return <div>{data?.map(row => row.column_name)}</div>;
@@ -443,6 +449,7 @@ File structure:
 - Use shadcn/radix components (Button, Input, Card, etc.) for consistent UI
 - Forms should have loading states: `disabled={isLoading}`
 - Show empty states with helpful text when no data exists
+- **Use skeleton loaders**: Always use `<Skeleton>` components instead of plain "Loading..." text for better UX
 
 ### Best Practices:
 - **SQL queries**: ALWAYS use `config/queries/*.sql` + `useAnalyticsQuery()` (never use tRPC for data retrieval)
@@ -451,8 +458,9 @@ File structure:
   2. Define result type in `shared/types.ts`
   3. Use `useAnalyticsQuery<MyType[]>('my_query', {})` in component
 - **Custom APIs**: Use tRPC ONLY for non-SQL operations (mutations, external APIs, complex business logic)
+- **Loading states**: Use `<Skeleton>` components for visual placeholders that match content shape (never plain "Loading..." text)
 - Handle nullable fields: `value={field || ''}` for inputs
-- Type all callbacks explicitly: `onChange={(e: React.ChangeEvent<HTMLInputElement>) => ...}`
+- Type all callbacks explicitly: `onChange={(e: React.ChangeEvent<HTMLInputElement>) => ...)`
 - Define result types in `shared/types.ts` for reuse between frontend and backend
 
 ## Data Visualization with Recharts
@@ -481,7 +489,11 @@ function MyDashboard() {
         <CardTitle>My Metrics</CardTitle>
       </CardHeader>
       <CardContent>
-        {loading && <div>Loading metrics...</div>}
+        {loading && (
+          <div className="space-y-2">
+            <Skeleton className="h-[300px] w-full" />
+          </div>
+        )}
         {error && <div className="text-destructive">Error: {error}</div>}
         {data && (
           <ResponsiveContainer width="100%" height={300}>
