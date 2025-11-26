@@ -6,7 +6,9 @@ import { trpc } from './lib/trpc';
 import { useState, useEffect } from 'react';
 
 function App() {
-  const { data, loading, error } = useAnalyticsQuery<QueryResult[]>('hello_world', {});
+  const { data, loading, error } = useAnalyticsQuery<QueryResult[]>('hello_world', {
+    message: 'hello world',
+  });
 
   const [health, setHealth] = useState<{
     status: string;
@@ -68,7 +70,7 @@ function App() {
             {error && <div className="text-destructive bg-destructive/10 p-3 rounded-md">Error: {error}</div>}
             {data && data.length > 0 && (
               <div className="space-y-2">
-                <div className="text-sm text-muted-foreground">Query: SELECT &apos;hello world&apos; AS value</div>
+                <div className="text-sm text-muted-foreground">Query: SELECT :message AS value</div>
                 <div className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
                   {data[0].value}
                 </div>

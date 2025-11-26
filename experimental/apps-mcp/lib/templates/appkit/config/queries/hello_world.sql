@@ -1,1 +1,1 @@
-SELECT 'hello world' AS value;
+SELECT :message AS value;
