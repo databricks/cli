@@ -10,7 +10,7 @@ extensive validation to ensure high-quality outputs.
 
 **How it works:**
 1. **Explore your data** - Query Databricks catalogs, schemas, and tables to understand your data
-2. **Generate the app** - Scaffold a full-stack TypeScript application (tRPC + React) with proper structure
+2. **Generate the app** - Scaffold a full-stack TypeScript application with proper structure
 3. **Customize with AI** - Use workspace tools to read, write, and edit files naturally through conversation
 4. **Validate rigorously** - Run builds, type checks, and tests to ensure quality
 5. **Deploy confidently** - Push validated apps directly to Databricks Apps platform

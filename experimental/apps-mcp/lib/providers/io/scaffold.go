@@ -171,6 +171,6 @@ func (p *Provider) getTemplate() templates.Template {
 	// TODO: Support custom templates by checking p.config.Template.Path
 	// and loading from filesystem. Not yet implemented.
 
-	// Default to TRPC template
+	// Default to AppKit template
 	return p.defaultTemplate
 }
