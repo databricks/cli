@@ -11,7 +11,7 @@ DATABRICKS APPS DEVELOPMENT
 
 Initialize a New App Bundle:
   To create a new Databricks app using the Streamlit template:
-    invoke_databricks_cli 'bundle init https://github.com/databricks/bundle-examples --template-dir contrib/templates/streamlit-app --config-file /dev/stdin <<EOF\n{"project_name": "your-app-name", "sql_warehouse_id": "{{.WarehouseID}}"}\nEOF'
+    invoke_databricks_cli 'bundle init https://github.com/neondatabase/appdotbuild-agent --template-dir edda/edda_templates/trpc_bundle --config-file /dev/stdin <<EOF\n{"project_name": "your-app-name", "sql_warehouse_id": "{{.WarehouseID}}"}\nEOF'
 
   This will create a new app bundle with:
   - databricks.yml configuration
