@@ -28,7 +28,8 @@ type SliceKeyFunc = any
 
 // sliceKeyFuncCaller wraps a SliceKeyFunc and provides a type-checked Call method.
 type sliceKeyFuncCaller struct {
-	fn reflect.Value
+	fn      reflect.Value
+	argType reflect.Type
 }
 
 func newSliceKeyFuncCaller(fn any) (*sliceKeyFuncCaller, error) {
@@ -50,12 +51,15 @@ func newSliceKeyFuncCaller(fn any) (*sliceKeyFuncCaller, error) {
 	if !t.Out(2).Implements(errType) && t.Out(2) != errType {
 		return nil, fmt.Errorf("SliceKeyFunc third return must be error, got %v", t.Out(2))
 	}
-	return &sliceKeyFuncCaller{fn: v}, nil
+	return &sliceKeyFuncCaller{fn: v, argType: t.In(0)}, nil
 }
 
 func (c *sliceKeyFuncCaller) call(elem any) (string, string, error) {
-	in := []reflect.Value{reflect.ValueOf(elem)}
-	out := c.fn.Call(in)
+	elemValue := reflect.ValueOf(elem)
+	if !elemValue.Type().AssignableTo(c.argType) {
+		return "", "", fmt.Errorf("SliceKeyFunc expects %v, got %T", c.argType, elem)
+	}
+	out := c.fn.Call([]reflect.Value{elemValue})
 	keyField := out[0].String()
 	keyValue := out[1].String()
 	var err error

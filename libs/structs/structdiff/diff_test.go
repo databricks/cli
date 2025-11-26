@@ -576,3 +576,70 @@ func TestGetStructDiffNestedSliceKeys(t *testing.T) {
 		})
 	}
 }
+
+func TestGetStructDiffSliceKeysInvalidFunc(t *testing.T) {
+	tests := []struct {
+		name    string
+		keyFunc any
+		errMsg  string
+	}{
+		{
+			name:    "not a function",
+			keyFunc: "not a function",
+			errMsg:  "SliceKeyFunc must be a function, got string",
+		},
+		{
+			name:    "wrong number of parameters",
+			keyFunc: func() (string, string, error) { return "", "", nil },
+			errMsg:  "SliceKeyFunc must have exactly 1 parameter, got 0",
+		},
+		{
+			name:    "too many parameters",
+			keyFunc: func(a, b Task) (string, string, error) { return "", "", nil },
+			errMsg:  "SliceKeyFunc must have exactly 1 parameter, got 2",
+		},
+		{
+			name:    "wrong number of returns",
+			keyFunc: func(t Task) string { return "" },
+			errMsg:  "SliceKeyFunc must return exactly 3 values, got 1",
+		},
+		{
+			name:    "wrong first return type",
+			keyFunc: func(t Task) (int, string, error) { return 0, "", nil },
+			errMsg:  "SliceKeyFunc must return (string, string, error), got (int, string, error)",
+		},
+		{
+			name:    "wrong second return type",
+			keyFunc: func(t Task) (string, int, error) { return "", 0, nil },
+			errMsg:  "SliceKeyFunc must return (string, string, error), got (string, int, error)",
+		},
+		{
+			name:    "wrong third return type",
+			keyFunc: func(t Task) (string, string, string) { return "", "", "" },
+			errMsg:  "SliceKeyFunc third return must be error, got string",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sliceKeys := map[string]SliceKeyFunc{"tasks": tt.keyFunc}
+			a := Job{Tasks: []Task{{TaskKey: "a"}}}
+			b := Job{Tasks: []Task{{TaskKey: "a"}}}
+			_, err := GetStructDiff(a, b, sliceKeys)
+			assert.EqualError(t, err, tt.errMsg)
+		})
+	}
+}
+
+func TestGetStructDiffSliceKeysWrongArgType(t *testing.T) {
+	// Function expects Item but slice contains Task
+	sliceKeys := map[string]SliceKeyFunc{
+		"tasks": func(item Item) (string, string, error) {
+			return "id", item.ID, nil
+		},
+	}
+	a := Job{Tasks: []Task{{TaskKey: "a"}}}
+	b := Job{Tasks: []Task{{TaskKey: "b"}}}
+	_, err := GetStructDiff(a, b, sliceKeys)
+	assert.EqualError(t, err, "SliceKeyFunc expects structdiff.Item, got structdiff.Task")
+}
