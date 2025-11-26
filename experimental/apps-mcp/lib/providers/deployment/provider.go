@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"time"
 
@@ -168,24 +167,6 @@ func (p *Provider) deployDatabricksApp(ctx context.Context, args *DeployDatabric
 		}, nil
 	}
 
-	log.Infof(ctx, "Installing dependencies: work_dir=%s", workPath)
-	if err := p.runCommand(workPath, "npm", "install"); err != nil {
-		return &DeployResult{
-			Success: false,
-			Message: fmt.Sprintf("Failed to install dependencies: %v", err),
-			AppName: args.Name,
-		}, nil
-	}
-
-	log.Infof(ctx, "Building frontend: work_dir=%s", workPath)
-	if err := p.runCommand(workPath, "npm", "run", "build"); err != nil {
-		return &DeployResult{
-			Success: false,
-			Message: fmt.Sprintf("Failed to build frontend: %v", err),
-			AppName: args.Name,
-		}, nil
-	}
-
 	appInfo, err := p.getOrCreateApp(ctx, args.Name, args.Description, args.Force)
 	if err != nil {
 		return &DeployResult{
@@ -195,11 +176,10 @@ func (p *Provider) deployDatabricksApp(ctx context.Context, args *DeployDatabric
 		}, nil
 	}
 
-	serverDir := filepath.Join(workPath, "server")
 	syncStart := time.Now()
-	log.Infof(ctx, "Syncing workspace: source=%s, target=%s", serverDir, databricks.GetSourcePath(appInfo))
+	log.Infof(ctx, "Syncing workspace: source=%s, target=%s", workPath, databricks.GetSourcePath(appInfo))
 
-	if err := databricks.SyncWorkspace(appInfo, serverDir); err != nil {
+	if err := databricks.SyncWorkspace(appInfo, workPath); err != nil {
 		return &DeployResult{
 			Success: false,
 			Message: fmt.Sprintf("Failed to sync workspace: %v", err),
@@ -299,18 +279,6 @@ func (p *Provider) getOrCreateApp(ctx context.Context, name, description string,
 	}
 
 	return databricks.CreateApp(ctx, createApp)
-}
-
-func (p *Provider) runCommand(dir, name string, args ...string) error {
-	cmd := exec.Command(name, args...)
-	cmd.Dir = dir
-
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("%s failed: %w (output: %s)", name, err, string(output))
-	}
-
-	return nil
 }
 
 func formatDeployResult(result *DeployResult) string {
