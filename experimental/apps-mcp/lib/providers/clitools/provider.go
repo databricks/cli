@@ -103,8 +103,7 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 
 	// Register invoke_databricks_cli tool
 	type InvokeDatabricksCLIInput struct {
-		Command          string  `json:"command" jsonschema:"required" jsonschema_description:"The full Databricks CLI command to run, e.g. 'bundle deploy' or 'bundle validate'. Do not include the 'databricks' prefix."`
-		WorkingDirectory *string `json:"working_directory,omitempty" jsonschema_description:"Optional. The directory to run the command in. Defaults to the current directory."`
+		Command string `json:"command" jsonschema:"required" jsonschema_description:"The full Databricks CLI command to run, e.g. 'bundle deploy' or 'bundle validate'. Do not include the 'databricks' prefix."`
 	}
 
 	mcpsdk.AddTool(server,
@@ -114,7 +113,7 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 		},
 		func(ctx context.Context, req *mcpsdk.CallToolRequest, args InvokeDatabricksCLIInput) (*mcpsdk.CallToolResult, any, error) {
 			log.Debugf(ctx, "invoke_databricks_cli called: command=%s", args.Command)
-			result, err := InvokeDatabricksCLI(ctx, args.Command, args.WorkingDirectory)
+			result, err := InvokeDatabricksCLI(ctx, args.Command)
 			if err != nil {
 				return nil, nil, err
 			}

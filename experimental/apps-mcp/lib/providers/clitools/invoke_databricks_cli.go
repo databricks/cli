@@ -10,17 +10,12 @@ import (
 )
 
 // InvokeDatabricksCLI runs a Databricks CLI command and returns the output.
-func InvokeDatabricksCLI(ctx context.Context, command string, workingDirectory *string) (string, error) {
+func InvokeDatabricksCLI(ctx context.Context, command string) (string, error) {
 	if command == "" {
 		return "", errors.New("command is required")
 	}
 
-	workDir := "."
-	if workingDirectory != nil && *workingDirectory != "" {
-		workDir = *workingDirectory
-	}
-
-	executor, err := exec.NewCommandExecutor(workDir)
+	executor, err := exec.NewCommandExecutor(".")
 	if err != nil {
 		return "", fmt.Errorf("failed to create command executor: %w", err)
 	}

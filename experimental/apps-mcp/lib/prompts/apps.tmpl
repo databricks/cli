@@ -9,25 +9,13 @@
 DATABRICKS APPS DEVELOPMENT
 ============================
 
-Initialize a New App Bundle:
-  To create a new Databricks app using the Streamlit template:
-    invoke_databricks_cli 'bundle init https://github.com/neondatabase/appdotbuild-agent --template-dir edda/edda_templates/trpc_bundle --config-file /dev/stdin <<EOF\n{"project_name": "your-app-name", "sql_warehouse_id": "{{.WarehouseID}}"}\nEOF'
+# Initialization
 
-  This will create a new app bundle with:
-  - databricks.yml configuration
-  - Streamlit application template
-  - Environment-specific deployment settings (dev/prod)
+ALWAYS start by scaffolding a new app using command:
 
-  After initialization:
-    1. Navigate to the created directory
-    2. Validate the bundle:
-       invoke_databricks_cli 'bundle validate'
-    3. Deploy to development:
-       invoke_databricks_cli 'bundle deploy --target dev'
-    4. View and manage your app:
-       invoke_databricks_cli 'apps list'
-       invoke_databricks_cli 'apps get <app_name>'
+invoke_databricks_cli 'bundle init https://github.com/neondatabase/appdotbuild-agent --template-dir edda/edda_templates/trpc_bundle --config-file /dev/stdin <<EOF\n{"project_name": "your-app-name", "sql_warehouse_id": "{{.WarehouseID}}"}\nEOF'
 
-Deploying Apps:
-  If you have an app with app.yaml configuration:
-    invoke_databricks_cli 'bundle deploy'
+# View and manage your app:
+
+invoke_databricks_cli 'apps list'
+invoke_databricks_cli 'apps get <app_name>'
