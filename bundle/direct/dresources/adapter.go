@@ -63,7 +63,7 @@ type IResource interface {
 	// Example: func (r *ResourceVolume) DoCreate(ctx context.Context, newState *catalog.CreateVolumeRequestContent) (string, *catalog.VolumeInfo, error)
 	DoCreate(ctx context.Context, newState any) (id string, remoteState any, e error)
 
-	// [Optional] DoUpdate updates the resource with information about changes computed during plan. Returns optionally remote state.
+	// [Optional] DoUpdate updates the resource. ID must not change as a result of this operation. Returns optionally remote state.
 	// If remote state is available as part of the operation, return it; otherwise return nil.
 	// Example: func (r *ResourceSchema) DoUpdate(ctx context.Context, id string, newState *catalog.CreateSchema, changes *deployplan.Changes) (*catalog.SchemaInfo, error)
 	DoUpdate(ctx context.Context, id string, newState any, changes *deployplan.Changes) (remoteState any, e error)
