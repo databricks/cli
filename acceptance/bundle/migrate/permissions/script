@@ -10,8 +10,8 @@ trace DATABRICKS_BUNDLE_ENGINE=terraform musterr $CLI bundle deploy
 
 rm out.requests.txt
 # Both DATABRICKS_BUNDLE_ENGINE=direct and DATABRICKS_BUNDLE_ENGINE= work
-trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle plan | contains.py "2 unchanged"  # should be "3 unchanged" once permanent drift is fixed
-trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle plan | contains.py "2 unchanged"
+trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle plan | contains.py "4 unchanged"
+trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle plan | contains.py "4 unchanged"
 trace print_requests.py --get //jobs/get | contains.py 'engine/direct'
 
 trace DATABRICKS_BUNDLE_ENGINE="" $CLI bundle deploy

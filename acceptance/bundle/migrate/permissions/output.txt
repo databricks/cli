@@ -33,11 +33,9 @@ Available state files:
 
 >>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 4 unchanged
-contains error: '2 unchanged' not found in the output.
 
 >>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 4 unchanged
-contains error: '2 unchanged' not found in the output.
 
 >>> print_requests.py --get //jobs/get
 {
