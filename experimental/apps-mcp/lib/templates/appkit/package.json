@@ -14,7 +14,7 @@
     "lint:fix": "eslint . --fix",
     "format": "prettier --check .",
     "format:fix": "prettier --write .",
-    "test": "vitest run",
+    "test": "vitest run && npm run test:smoke",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:smoke": "playwright install chromium && playwright test tests/smoke.spec.ts",

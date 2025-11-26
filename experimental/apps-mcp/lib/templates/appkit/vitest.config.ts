@@ -5,6 +5,7 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
+    exclude: ['**/node_modules/**', '**/dist/**', '**/*.spec.ts', '**/.smoke-test/**', '**/.databricks/**'],
   },
   resolve: {
     alias: {

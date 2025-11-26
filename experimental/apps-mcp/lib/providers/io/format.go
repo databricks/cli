@@ -11,15 +11,13 @@ func formatScaffoldResult(result *ScaffoldResult) string {
 		"Successfully scaffolded %s template to %s\n\n"+
 			"Files copied: %d\n\n"+
 			"Template: %s\n\n"+
-			"Make sure to read %s before proceeding with the project\n\n"+
-			"It is recomended to run the app in the background immediately after scaffolding using `npm install && npm run dev` and open it in the browser so the user can follow the changes to the app.\n\n"+
-			"%s",
+			"It is recomended to run the app in the background immediately after scaffolding using `npm install && npm run dev`. Then open http://localhost:8000 in the browser so the user can follow the progress.\n\n"+
+			"IMPORTANT: Make sure to read %s before proceeding with the project!!!\n\n",
 		result.TemplateName,
 		result.WorkDir,
 		result.FilesCopied,
 		result.TemplateName,
 		filepath.Join(result.WorkDir, "CLAUDE.md"),
-		result.TemplateDescription,
 	)
 }
 
