@@ -59,6 +59,113 @@
         "cli": {
           "bundle": {
             "config": {
+              "resources.Alert": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "create_time": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "custom_description": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "custom_summary": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "display_name": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "effective_run_as": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertV2RunAs"
+                      },
+                      "evaluation": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertV2Evaluation"
+                      },
+                      "id": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "lifecycle": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
+                      },
+                      "lifecycle_state": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertLifecycleState"
+                      },
+                      "owner_user_name": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "parent_path": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "permissions": {
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.AlertPermission"
+                      },
+                      "query_text": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "run_as": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertV2RunAs"
+                      },
+                      "run_as_user_name": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "schedule": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.CronSchedule"
+                      },
+                      "update_time": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "warehouse_id": {
+                        "$ref": "#/$defs/string"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "display_name",
+                      "evaluation",
+                      "query_text",
+                      "schedule",
+                      "warehouse_id"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "resources.AlertPermission": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "group_name": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "level": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.AlertPermissionLevel"
+                      },
+                      "service_principal_name": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "user_name": {
+                        "$ref": "#/$defs/string"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "level"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "resources.AlertPermissionLevel": {
+                "type": "string"
+              },
               "resources.App": {
                 "oneOf": [
                   {
@@ -2332,6 +2439,9 @@
                 {
                   "type": "object",
                   "properties": {
+                    "alerts": {
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Alert"
+                    },
                     "apps": {
                       "description": "The app resource defines a Databricks app.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.App",
@@ -8862,6 +8972,186 @@
                 }
               ]
             },
+            "sql.Aggregation": {
+              "type": "string"
+            },
+            "sql.AlertEvaluationState": {
+              "type": "string"
+            },
+            "sql.AlertLifecycleState": {
+              "type": "string"
+            },
+            "sql.AlertV2Evaluation": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "comparison_operator": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.ComparisonOperator"
+                    },
+                    "empty_result_state": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertEvaluationState"
+                    },
+                    "last_evaluated_at": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "notification": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertV2Notification"
+                    },
+                    "source": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertV2OperandColumn"
+                    },
+                    "state": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertEvaluationState"
+                    },
+                    "threshold": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertV2Operand"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "comparison_operator",
+                    "source"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "sql.AlertV2Notification": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "notify_on_ok": {
+                      "$ref": "#/$defs/bool"
+                    },
+                    "retrigger_seconds": {
+                      "$ref": "#/$defs/int"
+                    },
+                    "subscriptions": {
+                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/sql.AlertV2Subscription"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "sql.AlertV2Operand": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "column": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertV2OperandColumn"
+                    },
+                    "value": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertV2OperandValue"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "sql.AlertV2OperandColumn": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "aggregation": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.Aggregation"
+                    },
+                    "display": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "name": {
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "name"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "sql.AlertV2OperandValue": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "bool_value": {
+                      "$ref": "#/$defs/bool"
+                    },
+                    "double_value": {
+                      "$ref": "#/$defs/float64"
+                    },
+                    "string_value": {
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "sql.AlertV2RunAs": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "service_principal_name": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "user_name": {
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "sql.AlertV2Subscription": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "destination_id": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "user_email": {
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
             "sql.Channel": {
               "oneOf": [
                 {
@@ -8900,6 +9190,9 @@
                 }
               ]
             },
+            "sql.ComparisonOperator": {
+              "type": "string"
+            },
             "sql.CreateWarehouseRequestWarehouseType": {
               "oneOf": [
                 {
@@ -8908,6 +9201,33 @@
                     "TYPE_UNSPECIFIED",
                     "CLASSIC",
                     "PRO"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "sql.CronSchedule": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "pause_status": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.SchedulePauseStatus"
+                    },
+                    "quartz_cron_schedule": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "timezone_id": {
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "quartz_cron_schedule",
+                    "timezone_id"
                   ]
                 },
                 {
@@ -8952,6 +9272,9 @@
                   "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
                 }
               ]
+            },
+            "sql.SchedulePauseStatus": {
+              "type": "string"
             },
             "sql.SpotInstancePolicy": {
               "oneOf": [
@@ -9078,6 +9401,20 @@
           "cli": {
             "bundle": {
               "config": {
+                "resources.Alert": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Alert"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
                 "resources.App": {
                   "oneOf": [
                     {
@@ -9426,6 +9763,20 @@
           "cli": {
             "bundle": {
               "config": {
+                "resources.AlertPermission": {
+                  "oneOf": [
+                    {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.AlertPermission"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
                 "resources.AppPermission": {
                   "oneOf": [
                     {
@@ -10123,6 +10474,20 @@
                     "type": "array",
                     "items": {
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.ServedModelInput"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "sql.AlertV2Subscription": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertV2Subscription"
                     }
                   },
                   {
