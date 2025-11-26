@@ -104,6 +104,10 @@ Details: [TEST_TMP_DIR]/.databricks/bundle/dev/resources.json: local direct stat
 resources.json: remote direct state serial=5 lineage="[UUID]"
 [TEST_TMP_DIR]/.databricks/bundle/dev/resources.json: local direct state serial=5 lineage="[UUID]"
 
+=== Extra plan: should have no drift
+>>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 3 unchanged
+
 === Update databricks.yml, run plan & update
 >>> update_file.py databricks.yml Migration Migrated
 

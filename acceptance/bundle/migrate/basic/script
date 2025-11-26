@@ -34,6 +34,9 @@ trace musterr $CLI bundle deployment migrate
 trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle debug states
 trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle debug states --force-pull
 
+title "Extra plan: should have no drift"
+trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle plan | contains.py "3 unchanged"
+
 rm out.requests.txt
 
 title "Update databricks.yml, run plan & update"
