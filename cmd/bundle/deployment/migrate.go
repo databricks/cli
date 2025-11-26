@@ -77,6 +77,14 @@ To start using direct engine, deploy with DATABRICKS_BUNDLE_ENGINE=direct env va
 		if _, err = os.Stat(tempStatePath); err == nil {
 			return fmt.Errorf("temporary state file %s already exists, another migration is in progress or was interrupted. In the latter case, delete the file", tempStatePath)
 		}
+		tempStatePathAutoRemove := true
+
+		defer func() {
+			if tempStatePathAutoRemove {
+				_ = os.Remove(tempStatePath)
+			}
+		}()
+
 		if _, err = os.Stat(localPath); err == nil {
 			return fmt.Errorf("state file %s already exists", localPath)
 		}
@@ -128,6 +136,7 @@ To start using direct engine, deploy with DATABRICKS_BUNDLE_ENGINE=direct env va
 		if err := os.Rename(tempStatePath, localPath); err != nil {
 			return fmt.Errorf("renaming %s to %s: %w", tempStatePath, localPath, err)
 		}
+		tempStatePathAutoRemove = false
 
 		localTerraformBackupPath := localTerraformPath + backupSuffix
 
