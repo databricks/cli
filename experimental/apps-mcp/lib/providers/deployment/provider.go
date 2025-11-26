@@ -261,7 +261,7 @@ func (p *Provider) deployDatabricksApp(ctx context.Context, args *DeployDatabric
 }
 
 func (p *Provider) getOrCreateApp(ctx context.Context, name, description string, force bool) (*apps.App, error) {
-	appInfo, err := databricks.GetAppInfo(ctx, p.config, name)
+	appInfo, err := databricks.GetAppInfo(ctx, name)
 	if err == nil {
 		log.Infof(ctx, "Found existing app: name=%s", name)
 
@@ -298,7 +298,7 @@ func (p *Provider) getOrCreateApp(ctx context.Context, name, description string,
 		},
 	}
 
-	return databricks.CreateApp(ctx, p.config, createApp)
+	return databricks.CreateApp(ctx, createApp)
 }
 
 func (p *Provider) runCommand(dir, name string, args ...string) error {
