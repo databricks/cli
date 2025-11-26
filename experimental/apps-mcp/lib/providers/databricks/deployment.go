@@ -109,8 +109,8 @@ func ResourcesFromEnv(ctx context.Context, cfg *mcp.Config) (*apps.AppResource, 
 	}
 
 	return &apps.AppResource{
-		Name:        "base",
-		Description: "template resources",
+		Name:        "warehouse",
+		Description: "Warehouse to use for the app",
 		SqlWarehouse: &apps.AppResourceSqlWarehouse{
 			Id:         warehouseID,
 			Permission: apps.AppResourceSqlWarehouseSqlWarehousePermissionCanUse,
