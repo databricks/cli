@@ -73,12 +73,12 @@ func BackupRemoteTerraformState(ctx context.Context, b *bundle.Bundle) {
 	backupPath := remotePath + ".backup"
 	err = f.Write(ctx, backupPath, reader)
 	if err != nil {
-		log.Warnf(ctx, "backup up terraform state: could not write %s: %s", backupPath, err)
+		log.Warnf(ctx, "backing up terraform state: could not write %s: %s", backupPath, err)
 		return
 	}
 
 	err = f.Delete(ctx, remotePath)
 	if err != nil {
-		log.Warnf(ctx, "backing up terraform state: could not delete %s: %s", backupPath, err)
+		log.Warnf(ctx, "backing up terraform state: could not delete %s: %s", remotePath, err)
 	}
 }
