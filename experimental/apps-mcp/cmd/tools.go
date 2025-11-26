@@ -14,6 +14,7 @@ func newToolsCmd() *cobra.Command {
 	cmd.AddCommand(newQueryCmd())
 	cmd.AddCommand(newDiscoverSchemaCmd())
 	cmd.AddCommand(newInitTemplateCmd())
+	cmd.AddCommand(newValidateCmd())
 
 	return cmd
 }
