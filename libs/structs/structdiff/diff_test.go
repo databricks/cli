@@ -391,7 +391,7 @@ func TestGetStructDiff(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := GetStructDiff(tt.a, tt.b)
+			got, err := GetStructDiff(tt.a, tt.b, nil)
 
 			assert.Equal(t, tt.want, resolveChanges(got))
 
@@ -403,7 +403,7 @@ func TestGetStructDiff(t *testing.T) {
 		})
 
 		t.Run(tt.name+" mirror", func(t *testing.T) {
-			got, err := GetStructDiff(tt.b, tt.a)
+			got, err := GetStructDiff(tt.b, tt.a, nil)
 
 			var mirrorWant []ResolvedChange
 			for _, ch := range tt.want {
@@ -424,15 +424,155 @@ func TestGetStructDiff(t *testing.T) {
 		})
 
 		t.Run(tt.name+" equal A", func(t *testing.T) {
-			got, err := GetStructDiff(tt.a, tt.a)
+			got, err := GetStructDiff(tt.a, tt.a, nil)
 			assert.NoError(t, err)
 			assert.Nil(t, got)
 		})
 
 		t.Run(tt.name+" equal B", func(t *testing.T) {
-			got, err := GetStructDiff(tt.b, tt.b)
+			got, err := GetStructDiff(tt.b, tt.b, nil)
 			assert.NoError(t, err)
 			assert.Nil(t, got)
+		})
+	}
+}
+
+type Task struct {
+	TaskKey     string `json:"task_key,omitempty"`
+	Description string `json:"description,omitempty"`
+	Timeout     int    `json:"timeout,omitempty"`
+}
+
+type Job struct {
+	Name  string `json:"name,omitempty"`
+	Tasks []Task `json:"tasks,omitempty"`
+}
+
+func taskKeyFunc(task Task) (string, string, error) {
+	return "task_key", task.TaskKey, nil
+}
+
+func TestGetStructDiffSliceKeys(t *testing.T) {
+	sliceKeys := map[string]SliceKeyFunc{
+		"tasks": taskKeyFunc,
+	}
+
+	tests := []struct {
+		name string
+		a, b any
+		want []ResolvedChange
+	}{
+		{
+			name: "slice with same keys same order",
+			a:    Job{Tasks: []Task{{TaskKey: "a", Description: "one"}, {TaskKey: "b", Description: "two"}}},
+			b:    Job{Tasks: []Task{{TaskKey: "a", Description: "one"}, {TaskKey: "b", Description: "two"}}},
+			want: nil,
+		},
+		{
+			name: "slice with same keys different order",
+			a:    Job{Tasks: []Task{{TaskKey: "a", Description: "one"}, {TaskKey: "b", Description: "two"}}},
+			b:    Job{Tasks: []Task{{TaskKey: "b", Description: "two"}, {TaskKey: "a", Description: "one"}}},
+			want: nil,
+		},
+		{
+			name: "slice with same keys field change",
+			a:    Job{Tasks: []Task{{TaskKey: "a", Description: "one"}}},
+			b:    Job{Tasks: []Task{{TaskKey: "a", Description: "changed"}}},
+			want: []ResolvedChange{{Field: "tasks[task_key='a'].description", Old: "one", New: "changed"}},
+		},
+		{
+			name: "slice element added",
+			a:    Job{Tasks: []Task{{TaskKey: "a", Description: "one"}}},
+			b:    Job{Tasks: []Task{{TaskKey: "a", Description: "one"}, {TaskKey: "b", Description: "two"}}},
+			want: []ResolvedChange{{Field: "tasks[task_key='b']", Old: nil, New: Task{TaskKey: "b", Description: "two"}}},
+		},
+		{
+			name: "slice element removed",
+			a:    Job{Tasks: []Task{{TaskKey: "a", Description: "one"}, {TaskKey: "b", Description: "two"}}},
+			b:    Job{Tasks: []Task{{TaskKey: "a", Description: "one"}}},
+			want: []ResolvedChange{{Field: "tasks[task_key='b']", Old: Task{TaskKey: "b", Description: "two"}, New: nil}},
+		},
+		{
+			name: "slice element replaced",
+			a:    Job{Tasks: []Task{{TaskKey: "a", Description: "one"}}},
+			b:    Job{Tasks: []Task{{TaskKey: "b", Description: "two"}}},
+			want: []ResolvedChange{
+				{Field: "tasks[task_key='a']", Old: Task{TaskKey: "a", Description: "one"}, New: nil},
+				{Field: "tasks[task_key='b']", Old: nil, New: Task{TaskKey: "b", Description: "two"}},
+			},
+		},
+		{
+			name: "multiple changes with reorder",
+			a:    Job{Tasks: []Task{{TaskKey: "a", Description: "one"}, {TaskKey: "b", Description: "two"}, {TaskKey: "c", Description: "three"}}},
+			b:    Job{Tasks: []Task{{TaskKey: "c", Description: "changed"}, {TaskKey: "a", Description: "one"}}},
+			want: []ResolvedChange{
+				{Field: "tasks[task_key='b']", Old: Task{TaskKey: "b", Description: "two"}, New: nil},
+				{Field: "tasks[task_key='c'].description", Old: "three", New: "changed"},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := GetStructDiff(tt.a, tt.b, sliceKeys)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.want, resolveChanges(got))
+		})
+	}
+}
+
+type Nested struct {
+	Items []Item `json:"items,omitempty"`
+}
+
+type Item struct {
+	ID    string `json:"id,omitempty"`
+	Value int    `json:"value,omitempty"`
+}
+
+type Root struct {
+	Nested []Nested `json:"nested,omitempty"`
+}
+
+func itemKeyFunc(item Item) (string, string, error) {
+	return "id", item.ID, nil
+}
+
+func TestGetStructDiffNestedSliceKeys(t *testing.T) {
+	sliceKeys := map[string]SliceKeyFunc{
+		"nested[*].items": itemKeyFunc,
+	}
+
+	tests := []struct {
+		name string
+		a, b any
+		want []ResolvedChange
+	}{
+		{
+			name: "nested slice with same keys different order",
+			a:    Root{Nested: []Nested{{Items: []Item{{ID: "x", Value: 1}, {ID: "y", Value: 2}}}}},
+			b:    Root{Nested: []Nested{{Items: []Item{{ID: "y", Value: 2}, {ID: "x", Value: 1}}}}},
+			want: nil,
+		},
+		{
+			name: "nested slice field change",
+			a:    Root{Nested: []Nested{{Items: []Item{{ID: "x", Value: 1}}}}},
+			b:    Root{Nested: []Nested{{Items: []Item{{ID: "x", Value: 99}}}}},
+			want: []ResolvedChange{{Field: "nested[0].items[id='x'].value", Old: 1, New: 99}},
+		},
+		{
+			name: "nested slice element added",
+			a:    Root{Nested: []Nested{{Items: []Item{{ID: "x", Value: 1}}}}},
+			b:    Root{Nested: []Nested{{Items: []Item{{ID: "x", Value: 1}, {ID: "y", Value: 2}}}}},
+			want: []ResolvedChange{{Field: "nested[0].items[id='y']", Old: nil, New: Item{ID: "y", Value: 2}}},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := GetStructDiff(tt.a, tt.b, sliceKeys)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.want, resolveChanges(got))
 		})
 	}
 }

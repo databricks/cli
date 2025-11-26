@@ -419,17 +419,18 @@ func Parse(s string) (*PathNode, error) {
 			}
 
 		case stateKeyValueValueQuote:
-			if ch == keyValueQuote {
+			switch ch {
+			case keyValueQuote:
 				// Escaped quote - add single quote to value and continue
 				currentToken.WriteByte(ch)
 				state = stateKeyValueValue
-			} else if ch == ']' {
+			case ']':
 				// End of key-value
 				result = NewKeyValue(result, keyValueKey, currentToken.String())
 				currentToken.Reset()
 				keyValueKey = ""
 				state = stateExpectDotOrEnd
-			} else {
+			default:
 				return nil, fmt.Errorf("unexpected character '%c' after quote in key-value at position %d", ch, pos)
 			}
 
