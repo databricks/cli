@@ -68,6 +68,7 @@ func BackupRemoteTerraformState(ctx context.Context, b *bundle.Bundle) {
 
 	if err != nil {
 		log.Warnf(ctx, "backing up terraform state: could not read %s: %s", remotePath, err)
+		return
 	}
 
 	backupPath := remotePath + ".backup"
