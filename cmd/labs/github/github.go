@@ -97,8 +97,11 @@ func parseNextLink(linkHeader string) string {
 			continue
 		}
 		if strings.Contains(parts[1], `rel="next"`) {
-			url := strings.TrimLeft(strings.TrimRight(strings.TrimSpace(parts[0]), ">"), "<")
-			return url
+			urlField := strings.TrimSpace(parts[0])
+			if strings.HasPrefix(urlField, "<") && strings.HasSuffix(urlField, ">") {
+				url := urlField[1 : len(urlField)-1]
+				return url
+			}
 		}
 	}
 	return ""
