@@ -59,8 +59,8 @@ func (r *ResourceSqlWarehouse) DoCreate(ctx context.Context, config *sql.CreateW
 	return waiter.Id, nil, nil
 }
 
-// DoUpdateWithChanges updates the warehouse in place.
-func (r *ResourceSqlWarehouse) DoUpdateWithChanges(ctx context.Context, id string, config *sql.CreateWarehouseRequest, _ *deployplan.Changes) (*sql.GetWarehouseResponse, error) {
+// DoUpdate updates the warehouse in place.
+func (r *ResourceSqlWarehouse) DoUpdate(ctx context.Context, id string, config *sql.CreateWarehouseRequest, _ *deployplan.Changes) (*sql.GetWarehouseResponse, error) {
 	request := sql.EditWarehouseRequest{
 		AutoStopMins:            config.AutoStopMins,
 		Channel:                 config.Channel,

@@ -68,7 +68,7 @@ func (r *ResourceMlflowModel) DoCreate(ctx context.Context, config *ml.CreateMod
 	return response.RegisteredModel.Name, modelDatabricks, nil
 }
 
-func (r *ResourceMlflowModel) DoUpdateWithChanges(ctx context.Context, id string, config *ml.CreateModelRequest, _ *deployplan.Changes) (*ml.ModelDatabricks, error) {
+func (r *ResourceMlflowModel) DoUpdate(ctx context.Context, id string, config *ml.CreateModelRequest, _ *deployplan.Changes) (*ml.ModelDatabricks, error) {
 	updateRequest := ml.UpdateModelRequest{
 		Name:            id,
 		Description:     config.Description,

@@ -37,7 +37,7 @@ func (d *ResourceDatabaseInstance) DoCreate(ctx context.Context, config *databas
 	return waiter.Response.Name, nil, nil
 }
 
-func (d *ResourceDatabaseInstance) DoUpdateWithChanges(ctx context.Context, id string, config *database.DatabaseInstance, _ *deployplan.Changes) (*database.DatabaseInstance, error) {
+func (d *ResourceDatabaseInstance) DoUpdate(ctx context.Context, id string, config *database.DatabaseInstance, _ *deployplan.Changes) (*database.DatabaseInstance, error) {
 	request := database.UpdateDatabaseInstanceRequest{
 		DatabaseInstance: *config,
 		Name:             config.Name,

@@ -273,7 +273,7 @@ func (r *ResourceModelServingEndpoint) updateTags(ctx context.Context, id string
 	return nil
 }
 
-func (r *ResourceModelServingEndpoint) DoUpdateWithChanges(ctx context.Context, id string, config *serving.CreateServingEndpoint, _ *deployplan.Changes) (*RefreshOutput, error) {
+func (r *ResourceModelServingEndpoint) DoUpdate(ctx context.Context, id string, config *serving.CreateServingEndpoint, _ *deployplan.Changes) (*RefreshOutput, error) {
 	errGroup := errgroup.Group{}
 	errGroup.Go(func() error {
 		return r.updateAiGateway(ctx, id, config.AiGateway)

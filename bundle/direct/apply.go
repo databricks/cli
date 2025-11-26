@@ -105,11 +105,11 @@ func (d *DeploymentUnit) Recreate(ctx context.Context, db *dstate.DeploymentStat
 }
 
 func (d *DeploymentUnit) Update(ctx context.Context, db *dstate.DeploymentState, id string, newState any, changes *deployplan.Changes) error {
-	if !d.Adapter.HasDoUpdateWithChanges() {
-		return fmt.Errorf("internal error: DoUpdateWithChanges not implemented for resource %s", d.ResourceKey)
+	if !d.Adapter.HasDoUpdate() {
+		return fmt.Errorf("internal error: DoUpdate not implemented for resource %s", d.ResourceKey)
 	}
 
-	remoteState, err := d.Adapter.DoUpdateWithChanges(ctx, id, newState, changes)
+	remoteState, err := d.Adapter.DoUpdate(ctx, id, newState, changes)
 	if err != nil {
 		return fmt.Errorf("updating id=%s: %w", id, err)
 	}

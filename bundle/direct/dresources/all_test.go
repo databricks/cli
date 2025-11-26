@@ -465,8 +465,8 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 		require.Equal(t, remote, remoteStateFromWaitCreate)
 	}
 
-	remoteStateFromUpdate, err := adapter.DoUpdateWithChanges(ctx, createdID, newState, nil)
-	require.NoError(t, err, "DoUpdateWithChanges failed")
+	remoteStateFromUpdate, err := adapter.DoUpdate(ctx, createdID, newState, nil)
+	require.NoError(t, err, "DoUpdate failed")
 	if remoteStateFromUpdate != nil {
 		remappedStateFromUpdate, err := adapter.RemapState(remoteStateFromUpdate)
 		require.NoError(t, err)

@@ -36,7 +36,7 @@ func (r *ResourceDatabaseCatalog) DoCreate(ctx context.Context, config *database
 	return result.Name, nil, nil
 }
 
-func (r *ResourceDatabaseCatalog) DoUpdateWithChanges(ctx context.Context, id string, config *database.DatabaseCatalog, _ *deployplan.Changes) (*database.DatabaseCatalog, error) {
+func (r *ResourceDatabaseCatalog) DoUpdate(ctx context.Context, id string, config *database.DatabaseCatalog, _ *deployplan.Changes) (*database.DatabaseCatalog, error) {
 	request := database.UpdateDatabaseCatalogRequest{
 		DatabaseCatalog: *config,
 		Name:            id,
