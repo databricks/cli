@@ -86,13 +86,13 @@ my_project_pipeline_2 has been stopped.
 === Destroy project
 >>> [PIPELINES] destroy --auto-approve
 The following resources will be deleted:
-  delete pipeline my_project_pipeline
-  delete pipeline my_project_pipeline_2
+  delete resources.pipelines.my_project_pipeline
+  delete resources.pipelines.my_project_pipeline_2
 
 This action will result in the deletion of the following Lakeflow Declarative Pipelines along with the
 Streaming Tables (STs) and Materialized Views (MVs) managed by them:
-  delete pipeline my_project_pipeline
-  delete pipeline my_project_pipeline_2
+  delete resources.pipelines.my_project_pipeline
+  delete resources.pipelines.my_project_pipeline_2
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/my_project/dev
 

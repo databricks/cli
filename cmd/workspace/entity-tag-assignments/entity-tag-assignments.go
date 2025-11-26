@@ -71,17 +71,17 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create ENTITY_NAME TAG_KEY ENTITY_TYPE"
 	cmd.Short = `Create an entity tag assignment.`
 	cmd.Long = `Create an entity tag assignment.
-  
+
   Creates a tag assignment for an Unity Catalog entity.
-  
+
   To add tags to Unity Catalog entities, you must own the entity or have the
   following privileges: - **APPLY TAG** on the entity - **USE SCHEMA** on the
   entity's parent schema - **USE CATALOG** on the entity's parent catalog
-  
+
   To add a governed tag to Unity Catalog entities, you must also have the
   **ASSIGN** or **MANAGE** permission on the tag policy. See [Manage tag policy
   permissions].
-  
+
   [Manage tag policy permissions]: https://docs.databricks.com/aws/en/admin/tag-policies/manage-permissions
 
   Arguments:
@@ -167,17 +167,17 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete ENTITY_TYPE ENTITY_NAME TAG_KEY"
 	cmd.Short = `Delete an entity tag assignment.`
 	cmd.Long = `Delete an entity tag assignment.
-  
+
   Deletes a tag assignment for an Unity Catalog entity by its key.
-  
+
   To delete tags from Unity Catalog entities, you must own the entity or have
   the following privileges: - **APPLY TAG** on the entity - **USE_SCHEMA** on
   the entity's parent schema - **USE_CATALOG** on the entity's parent catalog
-  
+
   To delete a governed tag from Unity Catalog entities, you must also have the
   **ASSIGN** or **MANAGE** permission on the tag policy. See [Manage tag policy
   permissions].
-  
+
   [Manage tag policy permissions]: https://docs.databricks.com/aws/en/admin/tag-policies/manage-permissions
 
   Arguments:
@@ -238,7 +238,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get ENTITY_TYPE ENTITY_NAME TAG_KEY"
 	cmd.Short = `Get an entity tag assignment.`
 	cmd.Long = `Get an entity tag assignment.
-  
+
   Gets a tag assignment for an Unity Catalog entity by tag key.
 
   Arguments:
@@ -302,9 +302,9 @@ func newList() *cobra.Command {
 	cmd.Use = "list ENTITY_TYPE ENTITY_NAME"
 	cmd.Short = `List entity tag assignments.`
 	cmd.Long = `List entity tag assignments.
-  
+
   List tag assignments for an Unity Catalog entity
-  
+
   PAGINATION BEHAVIOR: The API is by default paginated, a page may contain zero
   results while still providing a next_page_token. Clients must continue reading
   pages until next_page_token is absent, which is the only indication that the
@@ -369,17 +369,17 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update ENTITY_TYPE ENTITY_NAME TAG_KEY UPDATE_MASK"
 	cmd.Short = `Update an entity tag assignment.`
 	cmd.Long = `Update an entity tag assignment.
-  
+
   Updates an existing tag assignment for an Unity Catalog entity.
-  
+
   To update tags to Unity Catalog entities, you must own the entity or have the
   following privileges: - **APPLY TAG** on the entity - **USE SCHEMA** on the
   entity's parent schema - **USE CATALOG** on the entity's parent catalog
-  
+
   To update a governed tag to Unity Catalog entities, you must also have the
   **ASSIGN** or **MANAGE** permission on the tag policy. See [Manage tag policy
   permissions].
-  
+
   [Manage tag policy permissions]: https://docs.databricks.com/aws/en/admin/tag-policies/manage-permissions
 
   Arguments:
@@ -393,7 +393,7 @@ func newUpdate() *cobra.Command {
       Specification of elements in sequence or map fields is not allowed, as
       only the entire collection field can be specified. Field names must
       exactly match the resource field names.
-      
+
       A field mask of * indicates full replacement. It’s recommended to
       always explicitly list the fields being updated and avoid using *
       wildcards, as it can lead to unintended results if the API changes in the

@@ -37,7 +37,10 @@ func (r *ReleaseCache) Load(ctx context.Context) (Versions, error) {
 		})
 	}
 	cached, err := r.cache.LoadCache()
-	return cached.Data, err
+	if err != nil {
+		return nil, err
+	}
+	return cached.Data, nil
 }
 
 // getVersions is considered to be a private API, as we want the usage go through a cache

@@ -72,22 +72,6 @@ func (m *applySourceLinkedDeploymentPreset) Apply(ctx context.Context, b *bundle
 		b.Config.Presets.SourceLinkedDeployment = &enabled
 	}
 
-	if len(b.Config.Resources.Apps) > 0 && config.IsExplicitlyEnabled(b.Config.Presets.SourceLinkedDeployment) {
-		path := dyn.NewPath(dyn.Key("targets"), dyn.Key(target), dyn.Key("presets"), dyn.Key("source_linked_deployment"))
-		diags = diags.Append(
-			diag.Diagnostic{
-				Severity: diag.Error,
-				Summary:  "source-linked deployment is not supported for apps",
-				Paths: []dyn.Path{
-					path,
-				},
-				Locations: b.Config.GetLocations(path[2:].String()),
-			},
-		)
-
-		return diags
-	}
-
 	// This mutator runs before workspace paths are defaulted so it's safe to check for the user-defined value
 	if b.Config.Workspace.FilePath != "" && config.IsExplicitlyEnabled(b.Config.Presets.SourceLinkedDeployment) {
 		path := dyn.NewPath(dyn.Key("workspace"), dyn.Key("file_path"))

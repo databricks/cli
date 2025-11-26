@@ -23,6 +23,7 @@ type Config struct {
 	DatabricksIdTokenFilepath  string `json:"databricks_id_token_filepath,omitempty"`
 	DebugHeaders               bool   `json:"debug_headers,omitempty"`
 	DebugTruncateBytes         int    `json:"debug_truncate_bytes,omitempty"`
+	ExperimentalIsUnifiedHost  bool   `json:"experimental_is_unified_host,omitempty"`
 	GoogleCredentials          string `json:"google_credentials,omitempty"`
 	GoogleServiceAccount       string `json:"google_service_account,omitempty"`
 	Host                       string `json:"host,omitempty"`
@@ -39,4 +40,5 @@ type Config struct {
 	Token                      string `json:"token,omitempty"`
 	Username                   string `json:"username,omitempty"`
 	WarehouseId                string `json:"warehouse_id,omitempty"`
+	WorkspaceId                string `json:"workspace_id,omitempty"`
 }

@@ -51,13 +51,55 @@ type FindTablesInput struct {
 func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 	log.Info(p.ctx, "Registering Databricks tools")
 
+	// Register databricks_configure_auth
+	type ConfigureAuthInput struct {
+		Host    *string `json:"host,omitempty" jsonschema_description:"Databricks workspace URL (e.g., https://example.cloud.databricks.com). If not provided, uses default from environment or config file"`
+		Profile *string `json:"profile,omitempty" jsonschema_description:"Profile name from ~/.databrickscfg. If not provided, uses default profile"`
+	}
+
+	mcpsdk.AddTool(server,
+		&mcpsdk.Tool{
+			Name:        "databricks_configure_auth",
+			Description: "Configure authentication for Databricks. Only call when Databricks authentication has has failed to authenticate automatically or when the user explicitly asks for using a specific host or profile. Validates credentials and stores the authenticated client in the session.",
+		},
+		func(ctx context.Context, req *mcpsdk.CallToolRequest, args ConfigureAuthInput) (*mcpsdk.CallToolResult, any, error) {
+			log.Debug(ctx, "databricks_configure_auth called")
+
+			sess, err := session.GetSession(ctx)
+			if err != nil {
+				return nil, nil, err
+			}
+
+			client, err := ConfigureAuth(ctx, sess, args.Host, args.Profile)
+			if err != nil {
+				return nil, nil, err
+			}
+
+			message := "Authentication configured successfully"
+			if args.Host != nil {
+				message += " for host: " + *args.Host
+			}
+			if args.Profile != nil {
+				message += " using profile: " + *args.Profile
+			}
+
+			// Get user info to confirm auth
+			me, err := client.CurrentUser.Me(ctx)
+			if err == nil && me.UserName != "" {
+				message += "\nAuthenticated as: " + me.UserName
+			}
+
+			return mcpsdk.CreateNewTextContentResult(message), nil, nil
+		},
+	)
+
 	// Register databricks_list_catalogs
 	mcpsdk.AddTool(server,
 		&mcpsdk.Tool{
 			Name:        "databricks_list_catalogs",
 			Description: "List all available Databricks catalogs",
 		},
-		session.WrapToolHandler(p.session, func(ctx context.Context, req *mcpsdk.CallToolRequest, args struct{}) (*mcpsdk.CallToolResult, any, error) {
+		func(ctx context.Context, req *mcpsdk.CallToolRequest, args struct{}) (*mcpsdk.CallToolResult, any, error) {
 			log.Debug(ctx, "databricks_list_catalogs called")
 			client, err := NewDatabricksRestClient(ctx, p.config)
 			if err != nil {
@@ -70,7 +112,7 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 			}
 
 			return mcpsdk.CreateNewTextContentResult(result.Display()), nil, nil
-		}),
+		},
 	)
 
 	// Register databricks_list_schemas
@@ -86,7 +128,7 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 			Name:        "databricks_list_schemas",
 			Description: "List all schemas in a Databricks catalog with pagination support",
 		},
-		session.WrapToolHandler(p.session, func(ctx context.Context, req *mcpsdk.CallToolRequest, args ListSchemasInput) (*mcpsdk.CallToolResult, any, error) {
+		func(ctx context.Context, req *mcpsdk.CallToolRequest, args ListSchemasInput) (*mcpsdk.CallToolResult, any, error) {
 			log.Debugf(ctx, "databricks_list_schemas called: catalog=%s", args.CatalogName)
 
 			client, err := NewDatabricksRestClient(ctx, p.config)
@@ -105,17 +147,25 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 			}
 
 			return mcpsdk.CreateNewTextContentResult(result.Display()), nil, nil
-		}),
+		},
 	)
 
 	// Register databricks_find_tables
 	mcpsdk.AddTool(server,
 		&mcpsdk.Tool{
 			Name:        "databricks_find_tables",
-			Description: "Find tables in Databricks Unity Catalog. Supports searching within a specific catalog and schema, across all schemas in a catalog, or across all catalogs. Supports wildcard patterns (* for multiple characters, ? for single character) in table name filtering.",
+			Description: "Find tables in Databricks Unity Catalog. Supports searching within a specific catalog and schema, across all schemas in a catalog, or across all catalogs. Supports wildcard patterns (* for multiple characters, ? for single character) in table name and schema name filtering.",
 		},
-		session.WrapToolHandler(p.session, func(ctx context.Context, req *mcpsdk.CallToolRequest, args FindTablesInput) (*mcpsdk.CallToolResult, any, error) {
-			log.Debugf(ctx, "databricks_find_tables called: catalog=%s, schema=%s", *args.CatalogName, *args.SchemaName)
+		func(ctx context.Context, req *mcpsdk.CallToolRequest, args FindTablesInput) (*mcpsdk.CallToolResult, any, error) {
+			catalogName := "<all>"
+			if args.CatalogName != nil {
+				catalogName = *args.CatalogName
+			}
+			schemaName := "<all>"
+			if args.SchemaName != nil {
+				schemaName = *args.SchemaName
+			}
+			log.Debugf(ctx, "databricks_find_tables called: catalog=%s, schema=%s", catalogName, schemaName)
 
 			client, err := NewDatabricksRestClient(ctx, p.config)
 			if err != nil {
@@ -133,7 +183,7 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 				return nil, nil, err
 			}
 			return mcpsdk.CreateNewTextContentResult(result.Display()), nil, nil
-		}),
+		},
 	)
 
 	// Register databricks_describe_table
@@ -147,7 +197,7 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 			Name:        "databricks_describe_table",
 			Description: "Get detailed information about a Databricks table including schema and optional sample data",
 		},
-		session.WrapToolHandler(p.session, func(ctx context.Context, req *mcpsdk.CallToolRequest, args DescribeTableInput) (*mcpsdk.CallToolResult, any, error) {
+		func(ctx context.Context, req *mcpsdk.CallToolRequest, args DescribeTableInput) (*mcpsdk.CallToolResult, any, error) {
 			log.Debugf(ctx, "databricks_describe_table called: table=%s", args.TableFullName)
 			client, err := NewDatabricksRestClient(ctx, p.config)
 			if err != nil {
@@ -163,7 +213,7 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 			}
 
 			return mcpsdk.CreateNewTextContentResult(result.Display()), nil, nil
-		}),
+		},
 	)
 
 	// Register databricks_execute_query
@@ -179,7 +229,7 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 			Name:        "databricks_execute_query",
 			Description: "Execute SQL query in Databricks. Only single SQL statements are supported - do not send multiple statements separated by semicolons. For multiple statements, call this tool separately for each one. DO NOT create catalogs, schemas or tables - requires metastore admin privileges. Query existing data instead. Returns execution time and supports configurable timeouts and row limits.",
 		},
-		session.WrapToolHandler(p.session, func(ctx context.Context, req *mcpsdk.CallToolRequest, args ExecuteQueryInput) (*mcpsdk.CallToolResult, any, error) {
+		func(ctx context.Context, req *mcpsdk.CallToolRequest, args ExecuteQueryInput) (*mcpsdk.CallToolResult, any, error) {
 			log.Debugf(ctx, "databricks_execute_query called: query=%s", args.Query)
 			client, err := NewDatabricksRestClient(ctx, p.config)
 			if err != nil {
@@ -194,7 +244,7 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 			}
 
 			return mcpsdk.CreateNewTextContentResult(result.Display()), nil, nil
-		}),
+		},
 	)
 
 	log.Info(p.ctx, "Registered Databricks tools")

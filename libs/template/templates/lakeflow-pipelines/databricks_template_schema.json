@@ -2,6 +2,14 @@
     "template_dir": "../default",
     "welcome_message": "Welcome to the template for Lakeflow Declarative Pipelines!\n\nPlease answer the below to tailor your project to your preferences.\nYou can always change your mind and change your configuration in the databricks.yml file later.\n\nNote that {{workspace_host}} is used for initialization\n(see https://docs.databricks.com/dev-tools/cli/profiles.html for how to change your profile).",
     "properties": {
+        "template_name": {
+            "//": "This property is always set to 'lakeflow-pipelines'",
+            "skip_prompt_if": {},
+            "type": "string",
+            "default": "lakeflow-pipelines",
+            "description": "Template name for documentation",
+            "order": -1
+        },
         "lakeflow_only": {
             "//": "This property is set by default to adjust this template for Lakeflow Pipelines",
             "skip_prompt_if": {},

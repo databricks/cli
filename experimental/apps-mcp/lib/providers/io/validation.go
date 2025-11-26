@@ -1,11 +1,12 @@
 package io
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"os/exec"
 	"time"
 
-	"github.com/databricks/cli/experimental/apps-mcp/lib/sandbox"
 	"github.com/databricks/cli/libs/log"
 )
 
@@ -27,7 +28,6 @@ type ValidateResult struct {
 	Message     string            `json:"message"`
 	Details     *ValidationDetail `json:"details,omitempty"`
 	ProgressLog []string          `json:"progress_log,omitempty"`
-	SandboxType string            `json:"sandbox_type,omitempty"`
 }
 
 func (vr *ValidateResult) String() string {
@@ -56,81 +56,73 @@ func (vr *ValidateResult) String() string {
 
 // Validation defines the interface for project validation strategies.
 type Validation interface {
-	Validate(ctx context.Context, sb sandbox.Sandbox) (*ValidateResult, error)
-	DockerImage() string
+	Validate(ctx context.Context, workDir string) (*ValidateResult, error)
 }
 
-// ValidationTRPC implements validation for tRPC-based projects using build, type check, and tests.
-type ValidationTRPC struct{}
+// ValidationNodeJs implements validation for Node.js-based projects using build, type check, and tests.
+type ValidationNodeJs struct{}
 
-func NewValidationTRPC() Validation {
-	return &ValidationTRPC{}
+func NewValidationNodeJs() Validation {
+	return &ValidationNodeJs{}
 }
 
-func (v *ValidationTRPC) DockerImage() string {
-	return "node:20-alpine3.22"
+type validationStep struct {
+	name        string
+	command     string
+	errorPrefix string
+	displayName string
 }
 
-func (v *ValidationTRPC) Validate(ctx context.Context, sb sandbox.Sandbox) (*ValidateResult, error) {
-	log.Info(ctx, "starting tRPC validation (build + type check + tests)")
+func (v *ValidationNodeJs) Validate(ctx context.Context, workDir string) (*ValidateResult, error) {
+	log.Info(ctx, "Starting Node.js validation: build + typecheck + tests")
 	startTime := time.Now()
 	var progressLog []string
 
-	progressLog = append(progressLog, "🔄 Starting validation: build + type check + tests")
+	progressLog = append(progressLog, "🔄 Starting Node.js validation: build + typecheck + tests")
 
-	log.Info(ctx, "step 1/3: running build...")
-	progressLog = append(progressLog, "⏳ Step 1/3: Running build...")
-	buildStart := time.Now()
-	if err := v.runBuild(ctx, sb); err != nil {
-		buildDuration := time.Since(buildStart)
-		log.Errorf(ctx, "build failed (duration: %.1fs)", buildDuration.Seconds())
-		progressLog = append(progressLog, fmt.Sprintf("❌ Build failed (%.1fs)", buildDuration.Seconds()))
-		return &ValidateResult{
-			Success:     false,
-			Message:     "Build failed",
-			Details:     err,
-			ProgressLog: progressLog,
-		}, nil
+	steps := []validationStep{
+		{
+			name:        "build",
+			command:     "npm run build --if-present",
+			errorPrefix: "Failed to run npm build",
+			displayName: "Build",
+		},
+		{
+			name:        "typecheck",
+			command:     "npm run typecheck --if-present",
+			errorPrefix: "Failed to run client typecheck",
+			displayName: "Type check",
+		},
+		{
+			name:        "tests",
+			command:     "npm run test --if-present",
+			errorPrefix: "Failed to run tests",
+			displayName: "Tests",
+		},
 	}
-	buildDuration := time.Since(buildStart)
-	log.Infof(ctx, "✓ build passed: duration=%.1fs", buildDuration.Seconds())
-	progressLog = append(progressLog, fmt.Sprintf("✅ Build passed (%.1fs)", buildDuration.Seconds()))
 
-	log.Info(ctx, "step 2/3: running type check...")
-	progressLog = append(progressLog, "⏳ Step 2/3: Running type check...")
-	typeCheckStart := time.Now()
-	if err := v.runClientTypeCheck(ctx, sb); err != nil {
-		typeCheckDuration := time.Since(typeCheckStart)
-		log.Errorf(ctx, "type check failed (duration: %.1fs)", typeCheckDuration.Seconds())
-		progressLog = append(progressLog, fmt.Sprintf("❌ Type check failed (%.1fs)", typeCheckDuration.Seconds()))
-		return &ValidateResult{
-			Success:     false,
-			Message:     "Type check failed",
-			Details:     err,
-			ProgressLog: progressLog,
-		}, nil
-	}
-	typeCheckDuration := time.Since(typeCheckStart)
-	log.Infof(ctx, "✓ type check passed: duration=%.1fs", typeCheckDuration.Seconds())
-	progressLog = append(progressLog, fmt.Sprintf("✅ Type check passed (%.1fs)", typeCheckDuration.Seconds()))
+	for i, step := range steps {
+		stepNum := fmt.Sprintf("%d/%d", i+1, len(steps))
+		log.Infof(ctx, "step %s: running %s...", stepNum, step.name)
+		progressLog = append(progressLog, fmt.Sprintf("⏳ Step %s: Running %s...", stepNum, step.displayName))
 
-	log.Info(ctx, "step 3/3: running tests...")
-	progressLog = append(progressLog, "⏳ Step 3/3: Running tests...")
-	testStart := time.Now()
-	if err := v.runTests(ctx, sb); err != nil {
-		testDuration := time.Since(testStart)
-		log.Errorf(ctx, "tests failed (duration: %.1fs)", testDuration.Seconds())
-		progressLog = append(progressLog, fmt.Sprintf("❌ Tests failed (%.1fs)", testDuration.Seconds()))
-		return &ValidateResult{
-			Success:     false,
-			Message:     "Tests failed",
-			Details:     err,
-			ProgressLog: progressLog,
-		}, nil
+		stepStart := time.Now()
+		err := runCommand(ctx, workDir, step.command)
+		if err != nil {
+			stepDuration := time.Since(stepStart)
+			log.Errorf(ctx, "%s failed (duration: %.1fs)", step.name, stepDuration.Seconds())
+			progressLog = append(progressLog, fmt.Sprintf("❌ %s failed (%.1fs)", step.displayName, stepDuration.Seconds()))
+			return &ValidateResult{
+				Success:     false,
+				Message:     step.errorPrefix,
+				Details:     err,
+				ProgressLog: progressLog,
+			}, nil
+		}
+		stepDuration := time.Since(stepStart)
+		log.Infof(ctx, "✓ %s passed: duration=%.1fs", step.name, stepDuration.Seconds())
+		progressLog = append(progressLog, fmt.Sprintf("✅ %s passed (%.1fs)", step.displayName, stepDuration.Seconds()))
 	}
-	testDuration := time.Since(testStart)
-	log.Infof(ctx, "✓ tests passed: duration=%.1fs", testDuration.Seconds())
-	progressLog = append(progressLog, fmt.Sprintf("✅ Tests passed (%.1fs)", testDuration.Seconds()))
 
 	totalDuration := time.Since(startTime)
 	log.Infof(ctx, "✓ all validation checks passed: total_duration=%.1fs, steps=%s",
@@ -139,68 +131,39 @@ func (v *ValidationTRPC) Validate(ctx context.Context, sb sandbox.Sandbox) (*Val
 
 	return &ValidateResult{
 		Success:     true,
-		Message:     "All validation checks passed (build + type check + tests)",
+		Message:     "All validation checks passed",
 		ProgressLog: progressLog,
 	}, nil
 }
 
-func (v *ValidationTRPC) runBuild(ctx context.Context, sb sandbox.Sandbox) *ValidationDetail {
-	result, err := sb.Exec(ctx, "npm run build")
+// runCommand executes a shell command in the specified directory
+func runCommand(ctx context.Context, workDir, command string) *ValidationDetail {
+	cmd := exec.CommandContext(ctx, "sh", "-c", command)
+	cmd.Dir = workDir
+
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	err := cmd.Run()
+	exitCode := 0
 	if err != nil {
-		return &ValidationDetail{
-			ExitCode: -1,
-			Stdout:   "",
-			Stderr:   fmt.Sprintf("Failed to run npm build: %v", err),
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			exitCode = exitErr.ExitCode()
+		} else {
+			return &ValidationDetail{
+				ExitCode: -1,
+				Stdout:   stdout.String(),
+				Stderr:   fmt.Sprintf("Failed to execute command: %v\nStderr: %s", err, stderr.String()),
+			}
 		}
 	}
 
-	if result.ExitCode != 0 {
+	if exitCode != 0 {
 		return &ValidationDetail{
-			ExitCode: result.ExitCode,
-			Stdout:   result.Stdout,
-			Stderr:   result.Stderr,
-		}
-	}
-
-	return nil
-}
-
-func (v *ValidationTRPC) runClientTypeCheck(ctx context.Context, sb sandbox.Sandbox) *ValidationDetail {
-	result, err := sb.Exec(ctx, "cd client && npx tsc --noEmit")
-	if err != nil {
-		return &ValidationDetail{
-			ExitCode: -1,
-			Stdout:   "",
-			Stderr:   fmt.Sprintf("Failed to run client type check: %v", err),
-		}
-	}
-
-	if result.ExitCode != 0 {
-		return &ValidationDetail{
-			ExitCode: result.ExitCode,
-			Stdout:   result.Stdout,
-			Stderr:   result.Stderr,
-		}
-	}
-
-	return nil
-}
-
-func (v *ValidationTRPC) runTests(ctx context.Context, sb sandbox.Sandbox) *ValidationDetail {
-	result, err := sb.Exec(ctx, "npm test")
-	if err != nil {
-		return &ValidationDetail{
-			ExitCode: -1,
-			Stdout:   "",
-			Stderr:   fmt.Sprintf("Failed to run npm test: %v", err),
-		}
-	}
-
-	if result.ExitCode != 0 {
-		return &ValidationDetail{
-			ExitCode: result.ExitCode,
-			Stdout:   result.Stdout,
-			Stderr:   result.Stderr,
+			ExitCode: exitCode,
+			Stdout:   stdout.String(),
+			Stderr:   stderr.String(),
 		}
 	}
 
@@ -209,25 +172,16 @@ func (v *ValidationTRPC) runTests(ctx context.Context, sb sandbox.Sandbox) *Vali
 
 // ValidationCmd implements validation using a custom command specified by the user.
 type ValidationCmd struct {
-	Command   string
-	DockerImg string
+	Command string
 }
 
-func NewValidationCmd(command, dockerImage string) Validation {
-	if dockerImage == "" {
-		dockerImage = "node:20-alpine3.22"
-	}
+func NewValidationCmd(command string) Validation {
 	return &ValidationCmd{
-		Command:   command,
-		DockerImg: dockerImage,
+		Command: command,
 	}
 }
 
-func (v *ValidationCmd) DockerImage() string {
-	return v.DockerImg
-}
-
-func (v *ValidationCmd) Validate(ctx context.Context, sb sandbox.Sandbox) (*ValidateResult, error) {
+func (v *ValidationCmd) Validate(ctx context.Context, workDir string) (*ValidateResult, error) {
 	log.Infof(ctx, "starting custom validation: command=%s", v.Command)
 	startTime := time.Now()
 	var progressLog []string
@@ -235,7 +189,7 @@ func (v *ValidationCmd) Validate(ctx context.Context, sb sandbox.Sandbox) (*Vali
 	progressLog = append(progressLog, "🔄 Starting custom validation: "+v.Command)
 
 	fullCommand := v.Command
-	result, err := sb.Exec(ctx, fullCommand)
+	err := runCommand(ctx, workDir, fullCommand)
 	if err != nil {
 		duration := time.Since(startTime)
 		log.Errorf(ctx, "custom validation command failed (duration: %.1fs, error: %v)", duration.Seconds(), err)
@@ -247,22 +201,6 @@ func (v *ValidationCmd) Validate(ctx context.Context, sb sandbox.Sandbox) (*Vali
 				ExitCode: -1,
 				Stdout:   "",
 				Stderr:   fmt.Sprintf("Failed to run validation command: %v", err),
-			},
-			ProgressLog: progressLog,
-		}, nil
-	}
-
-	if result.ExitCode != 0 {
-		duration := time.Since(startTime)
-		log.Errorf(ctx, "custom validation failed (duration: %.1fs, exit_code: %d)", duration.Seconds(), result.ExitCode)
-		progressLog = append(progressLog, fmt.Sprintf("❌ Validation failed (%.1fs) - exit code: %d", duration.Seconds(), result.ExitCode))
-		return &ValidateResult{
-			Success: false,
-			Message: "Custom validation command failed",
-			Details: &ValidationDetail{
-				ExitCode: result.ExitCode,
-				Stdout:   result.Stdout,
-				Stderr:   result.Stderr,
 			},
 			ProgressLog: progressLog,
 		}, nil

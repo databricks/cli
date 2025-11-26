@@ -65,11 +65,11 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create METASTORE_ID"
 	cmd.Short = `Create a storage credential.`
 	cmd.Long = `Create a storage credential.
-  
+
   Creates a new storage credential. The request object is specific to the cloud:
   - **AwsIamRole** for AWS credentials - **AzureServicePrincipal** for Azure
   credentials - **GcpServiceAccountKey** for GCP credentials
-  
+
   The caller must be a metastore admin and have the CREATE_STORAGE_CREDENTIAL
   privilege on the metastore.
 
@@ -140,7 +140,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete METASTORE_ID STORAGE_CREDENTIAL_NAME"
 	cmd.Short = `Delete a storage credential.`
 	cmd.Long = `Delete a storage credential.
-  
+
   Deletes a storage credential from the metastore. The caller must be an owner
   of the storage credential.
 
@@ -199,7 +199,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get METASTORE_ID STORAGE_CREDENTIAL_NAME"
 	cmd.Short = `Gets the named storage credential.`
 	cmd.Long = `Gets the named storage credential.
-  
+
   Gets a storage credential from the metastore. The caller must be a metastore
   admin, the owner of the storage credential, or have a level of privilege on
   the storage credential.
@@ -259,7 +259,7 @@ func newList() *cobra.Command {
 	cmd.Use = "list METASTORE_ID"
 	cmd.Short = `Get all storage credentials assigned to a metastore.`
 	cmd.Long = `Get all storage credentials assigned to a metastore.
-  
+
   Gets a list of all storage credentials that have been assigned to given
   metastore.
 
@@ -319,7 +319,7 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update METASTORE_ID STORAGE_CREDENTIAL_NAME"
 	cmd.Short = `Updates a storage credential.`
 	cmd.Long = `Updates a storage credential.
-  
+
   Updates a storage credential on the metastore. The caller must be the owner of
   the storage credential. If the caller is a metastore admin, only the **owner**
   credential can be changed.

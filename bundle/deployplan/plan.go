@@ -4,7 +4,6 @@ import (
 	"cmp"
 	"fmt"
 	"slices"
-	"strings"
 	"sync"
 
 	"github.com/databricks/cli/libs/structs/structvar"
@@ -58,12 +57,6 @@ func (p *Plan) GetActions() []Action {
 	actions := make([]Action, 0, len(p.Plan))
 	for key, entry := range p.Plan {
 		at := ActionTypeFromString(entry.Action)
-		parts := strings.Split(key, ".")
-		if len(parts) == 4 {
-			// Example: "resources.jobs.foo.permissions"
-			// For compatibility between terraform and direct output filter out permissions and grants
-			continue
-		}
 		actions = append(actions, Action{
 			ResourceKey: key,
 			ActionType:  at,

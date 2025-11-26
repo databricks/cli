@@ -20,7 +20,7 @@ func New() *cobra.Command {
 		Use:     "workspace-settings-v2",
 		Short:   `APIs to manage workspace level settings.`,
 		Long:    `APIs to manage workspace level settings`,
-		GroupID: "settingsv2",
+		GroupID: "settings",
 		Annotations: map[string]string{
 			"package": "settingsv2",
 		},
@@ -57,7 +57,7 @@ func newGetPublicWorkspaceSetting() *cobra.Command {
 	cmd.Use = "get-public-workspace-setting NAME"
 	cmd.Short = `Get a workspace setting.`
 	cmd.Long = `Get a workspace setting.
-  
+
   Get a setting value at workspace level. See
   :method:settingsv2/listworkspacesettingsmetadata for list of setting available
   via public APIs.`
@@ -115,7 +115,7 @@ func newListWorkspaceSettingsMetadata() *cobra.Command {
 	cmd.Use = "list-workspace-settings-metadata"
 	cmd.Short = `List valid setting keys and their metadata.`
 	cmd.Long = `List valid setting keys and their metadata.
-  
+
   List valid setting keys and metadata. These settings are available to be
   referenced via GET :method:settingsv2/getpublicworkspacesetting and PATCH
   :method:settingsv2/patchpublicworkspacesetting APIs`
@@ -187,7 +187,7 @@ func newPatchPublicWorkspaceSetting() *cobra.Command {
 	cmd.Use = "patch-public-workspace-setting NAME"
 	cmd.Short = `Update a workspace setting.`
 	cmd.Long = `Update a workspace setting.
-  
+
   Patch a setting value at workspace level. See
   :method:settingsv2/listworkspacesettingsmetadata for list of setting available
   via public APIs at workspace level.`

@@ -23,7 +23,7 @@ func New() *cobra.Command {
 		Short: `External Metadata objects enable customers to register and manage metadata about external systems within Unity Catalog.`,
 		Long: `External Metadata objects enable customers to register and manage metadata
   about external systems within Unity Catalog.
-  
+
   These APIs provide a standardized way to create, update, retrieve, list, and
   delete external metadata objects. Fine-grained authorization ensures that only
   users with appropriate permissions can view and manage external metadata
@@ -77,14 +77,14 @@ func newCreateExternalMetadata() *cobra.Command {
 	cmd.Use = "create-external-metadata NAME SYSTEM_TYPE ENTITY_TYPE"
 	cmd.Short = `Create an external metadata object.`
 	cmd.Long = `Create an external metadata object.
-  
+
   Creates a new external metadata object in the parent metastore if the caller
   is a metastore admin or has the **CREATE_EXTERNAL_METADATA** privilege. Grants
   **BROWSE** to all account users upon creation by default.
 
   Arguments:
     NAME: Name of the external metadata object.
-    SYSTEM_TYPE: Type of external system. 
+    SYSTEM_TYPE: Type of external system.
       Supported values: [
         AMAZON_REDSHIFT,
         AZURE_SYNAPSE,
@@ -193,7 +193,7 @@ func newDeleteExternalMetadata() *cobra.Command {
 	cmd.Use = "delete-external-metadata NAME"
 	cmd.Short = `Delete an external metadata object.`
 	cmd.Long = `Delete an external metadata object.
-  
+
   Deletes the external metadata object that matches the supplied name. The
   caller must be a metastore admin, the owner of the external metadata object,
   or a user that has the **MANAGE** privilege.`
@@ -248,7 +248,7 @@ func newGetExternalMetadata() *cobra.Command {
 	cmd.Use = "get-external-metadata NAME"
 	cmd.Short = `Get an external metadata object.`
 	cmd.Long = `Get an external metadata object.
-  
+
   Gets the specified external metadata object in a metastore. The caller must be
   a metastore admin, the owner of the external metadata object, or a user that
   has the **BROWSE** privilege.`
@@ -306,7 +306,7 @@ func newListExternalMetadata() *cobra.Command {
 	cmd.Use = "list-external-metadata"
 	cmd.Short = `List external metadata objects.`
 	cmd.Long = `List external metadata objects.
-  
+
   Gets an array of external metadata objects in the metastore. If the caller is
   the metastore admin, all external metadata objects will be retrieved.
   Otherwise, only external metadata objects that the caller has **BROWSE** on
@@ -368,7 +368,7 @@ func newUpdateExternalMetadata() *cobra.Command {
 	cmd.Use = "update-external-metadata NAME UPDATE_MASK SYSTEM_TYPE ENTITY_TYPE"
 	cmd.Short = `Update an external metadata object.`
 	cmd.Long = `Update an external metadata object.
-  
+
   Updates the external metadata object that matches the supplied name. The
   caller can only update either the owner or other metadata fields in one
   request. The caller must be a metastore admin, the owner of the external
@@ -383,12 +383,12 @@ func newUpdateExternalMetadata() *cobra.Command {
       Specification of elements in sequence or map fields is not allowed, as
       only the entire collection field can be specified. Field names must
       exactly match the resource field names.
-      
+
       A field mask of * indicates full replacement. It’s recommended to
       always explicitly list the fields being updated and avoid using *
       wildcards, as it can lead to unintended results if the API changes in the
       future.
-    SYSTEM_TYPE: Type of external system. 
+    SYSTEM_TYPE: Type of external system.
       Supported values: [
         AMAZON_REDSHIFT,
         AZURE_SYNAPSE,

@@ -86,7 +86,7 @@ func newCreateMessage() *cobra.Command {
 	cmd.Use = "create-message SPACE_ID CONVERSATION_ID CONTENT"
 	cmd.Short = `Create conversation message.`
 	cmd.Long = `Create conversation message.
-  
+
   Create new message in a [conversation](:method:genie/startconversation). The
   AI response uses all previously created messages in the conversation to
   respond.
@@ -182,7 +182,7 @@ func newDeleteConversation() *cobra.Command {
 	cmd.Use = "delete-conversation SPACE_ID CONVERSATION_ID"
 	cmd.Short = `Delete conversation.`
 	cmd.Long = `Delete conversation.
-  
+
   Delete a conversation.
 
   Arguments:
@@ -240,7 +240,7 @@ func newDeleteConversationMessage() *cobra.Command {
 	cmd.Use = "delete-conversation-message SPACE_ID CONVERSATION_ID MESSAGE_ID"
 	cmd.Short = `Delete conversation message.`
 	cmd.Long = `Delete conversation message.
-  
+
   Delete a conversation message.
 
   Arguments:
@@ -300,7 +300,7 @@ func newExecuteMessageAttachmentQuery() *cobra.Command {
 	cmd.Use = "execute-message-attachment-query SPACE_ID CONVERSATION_ID MESSAGE_ID ATTACHMENT_ID"
 	cmd.Short = `Execute message attachment SQL query.`
 	cmd.Long = `Execute message attachment SQL query.
-  
+
   Execute the SQL for a message query attachment. Use this API when the query
   attachment has expired and needs to be re-executed.
 
@@ -363,7 +363,7 @@ func newExecuteMessageQuery() *cobra.Command {
 	cmd.Use = "execute-message-query SPACE_ID CONVERSATION_ID MESSAGE_ID"
 	cmd.Short = `[Deprecated] Execute SQL query in a conversation message.`
 	cmd.Long = `[Deprecated] Execute SQL query in a conversation message.
-  
+
   DEPRECATED: Use [Execute Message Attachment
   Query](:method:genie/executemessageattachmentquery) instead.
 
@@ -427,7 +427,7 @@ func newGetMessage() *cobra.Command {
 	cmd.Use = "get-message SPACE_ID CONVERSATION_ID MESSAGE_ID"
 	cmd.Short = `Get conversation message.`
 	cmd.Long = `Get conversation message.
-  
+
   Get message from conversation.
 
   Arguments:
@@ -489,7 +489,7 @@ func newGetMessageAttachmentQueryResult() *cobra.Command {
 	cmd.Use = "get-message-attachment-query-result SPACE_ID CONVERSATION_ID MESSAGE_ID ATTACHMENT_ID"
 	cmd.Short = `Get message attachment SQL query result.`
 	cmd.Long = `Get message attachment SQL query result.
-  
+
   Get the result of SQL query if the message has a query attachment. This is
   only available if a message has a query attachment and the message status is
   EXECUTING_QUERY OR COMPLETED.
@@ -553,7 +553,7 @@ func newGetMessageQueryResult() *cobra.Command {
 	cmd.Use = "get-message-query-result SPACE_ID CONVERSATION_ID MESSAGE_ID"
 	cmd.Short = `[Deprecated] Get conversation message SQL query result.`
 	cmd.Long = `[Deprecated] Get conversation message SQL query result.
-  
+
   DEPRECATED: Use [Get Message Attachment Query
   Result](:method:genie/getmessageattachmentqueryresult) instead.
 
@@ -617,7 +617,7 @@ func newGetMessageQueryResultByAttachment() *cobra.Command {
 	cmd.Use = "get-message-query-result-by-attachment SPACE_ID CONVERSATION_ID MESSAGE_ID ATTACHMENT_ID"
 	cmd.Short = `[Deprecated] Get conversation message SQL query result.`
 	cmd.Long = `[Deprecated] Get conversation message SQL query result.
-  
+
   DEPRECATED: Use [Get Message Attachment Query
   Result](:method:genie/getmessageattachmentqueryresult) instead.
 
@@ -683,7 +683,7 @@ func newGetSpace() *cobra.Command {
 	cmd.Use = "get-space SPACE_ID"
 	cmd.Short = `Get Genie Space.`
 	cmd.Long = `Get Genie Space.
-  
+
   Get details of a Genie Space.
 
   Arguments:
@@ -742,7 +742,7 @@ func newListConversationMessages() *cobra.Command {
 	cmd.Use = "list-conversation-messages SPACE_ID CONVERSATION_ID"
 	cmd.Short = `List conversation messages.`
 	cmd.Long = `List conversation messages.
-  
+
   List messages in a conversation
 
   Arguments:
@@ -804,7 +804,7 @@ func newListConversations() *cobra.Command {
 	cmd.Use = "list-conversations SPACE_ID"
 	cmd.Short = `List conversations in a Genie Space.`
 	cmd.Long = `List conversations in a Genie Space.
-  
+
   Get a list of conversations in a Genie Space.
 
   Arguments:
@@ -863,7 +863,7 @@ func newListSpaces() *cobra.Command {
 	cmd.Use = "list-spaces"
 	cmd.Short = `List Genie spaces.`
 	cmd.Long = `List Genie spaces.
-  
+
   Get list of Genie Spaces.`
 
 	cmd.Annotations = make(map[string]string)
@@ -917,14 +917,14 @@ func newSendMessageFeedback() *cobra.Command {
 	cmd.Use = "send-message-feedback SPACE_ID CONVERSATION_ID MESSAGE_ID RATING"
 	cmd.Short = `Send message feedback.`
 	cmd.Long = `Send message feedback.
-  
+
   Send feedback for a message.
 
   Arguments:
     SPACE_ID: The ID associated with the Genie space where the message is located.
     CONVERSATION_ID: The ID associated with the conversation.
     MESSAGE_ID: The ID associated with the message to provide feedback for.
-    RATING: The rating (POSITIVE, NEGATIVE, or NONE). 
+    RATING: The rating (POSITIVE, NEGATIVE, or NONE).
       Supported values: [NEGATIVE, NONE, POSITIVE]`
 
 	cmd.Annotations = make(map[string]string)
@@ -1014,7 +1014,7 @@ func newStartConversation() *cobra.Command {
 	cmd.Use = "start-conversation SPACE_ID CONTENT"
 	cmd.Short = `Start conversation.`
 	cmd.Long = `Start conversation.
-  
+
   Start a new conversation.
 
   Arguments:
@@ -1107,7 +1107,7 @@ func newTrashSpace() *cobra.Command {
 	cmd.Use = "trash-space SPACE_ID"
 	cmd.Short = `Trash Genie Space.`
 	cmd.Long = `Trash Genie Space.
-  
+
   Move a Genie Space to the trash.
 
   Arguments:
