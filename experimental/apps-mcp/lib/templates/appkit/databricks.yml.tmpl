@@ -11,7 +11,7 @@ resources:
   apps:
     {{.AppName}}:
       name: ${bundle.target}-{{.AppName}}
-      description: A minimal Databricks App powered by the Databricks Apps SDK
+      description: {{.AppDescription}}
       source_code_path: ./
 
       # Uncomment to enable on behalf of user API scopes. Available scopes: sql, dashboards.genie, files.files

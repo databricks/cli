@@ -1,0 +1,5 @@
+appkit/node_modules/
+appkit/dist/
+appkit/build/
+appkit/.env
+appkit/.databricks/
