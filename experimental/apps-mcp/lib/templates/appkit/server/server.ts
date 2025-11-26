@@ -19,7 +19,7 @@ const app = await createApp({
       autoStart: false,
     }),
     analytics({
-      timeout: 10000,
+      timeout: 20_000,
     }),
   ],
 });
