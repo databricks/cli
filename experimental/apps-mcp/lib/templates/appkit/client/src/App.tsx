@@ -30,7 +30,7 @@ function App() {
           Minimal Databricks App
         </h1>
         <p className="text-lg text-muted-foreground max-w-md">
-          A minimal Databricks App powered by the Databricks Apps SDK
+          A minimal Databricks App powered by Databricks AppKit
         </p>
       </div>
 

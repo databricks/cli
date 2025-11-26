@@ -1,6 +1,6 @@
 # Minimal Databricks App
 
-A minimal Databricks App powered by the Databricks Apps SDK, featuring React, TypeScript, tRPC, and Tailwind CSS.
+A minimal Databricks App powered by Databricks AppKit, featuring React, TypeScript, tRPC, and Tailwind CSS.
 
 ## Prerequisites
 

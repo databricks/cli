@@ -1,4 +1,4 @@
-TypeScript full-stack template powered by the **Databricks Apps SDK** with tRPC for additional custom API endpoints. Use this when building Databricks Apps with the following structure:
+TypeScript full-stack template powered by **Databricks AppKit** with tRPC for additional custom API endpoints. Use this when building Databricks Apps with the following structure:
 - server/: Node.js backend with App Kit and tRPC
 - client/: React frontend with App Kit hooks and tRPC client
 - config/queries/: SQL query files for analytics
