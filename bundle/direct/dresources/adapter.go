@@ -220,8 +220,7 @@ func (a *Adapter) initMethods(resource any) error {
 		return err
 	}
 
-	// Optional methods with varying signatures:
-
+	// Optional methods:
 	a.doUpdateWithChanges, err = calladapt.PrepareCall(resource, calladapt.TypeOf[IResource](), "DoUpdateWithChanges")
 	if err != nil {
 		return err

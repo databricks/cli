@@ -10,7 +10,6 @@ import (
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/serving"
-	"golang.org/x/sync/errgroup"
 )
 
 type ResourceModelServingEndpoint struct {
@@ -138,6 +137,10 @@ func (r *ResourceModelServingEndpoint) waitForEndpointReady(ctx context.Context,
 }
 
 func (r *ResourceModelServingEndpoint) WaitAfterCreate(ctx context.Context, config *serving.CreateServingEndpoint) (*RefreshOutput, error) {
+	return r.waitForEndpointReady(ctx, config.Name)
+}
+
+func (r *ResourceModelServingEndpoint) WaitAfterUpdate(ctx context.Context, config *serving.CreateServingEndpoint) (*RefreshOutput, error) {
 	return r.waitForEndpointReady(ctx, config.Name)
 }
 
@@ -277,42 +280,42 @@ func (r *ResourceModelServingEndpoint) hasFieldChange(changes *deployplan.Change
 	if changes == nil {
 		return false
 	}
-	_, ok := changes.Local[fieldPath]
-	return ok
+	_, localChange := changes.Local[fieldPath]
+	_, remoteChange := changes.Remote[fieldPath]
+	return localChange || remoteChange
 }
 
 func (r *ResourceModelServingEndpoint) DoUpdateWithChanges(ctx context.Context, id string, config *serving.CreateServingEndpoint, changes *deployplan.Changes) (*RefreshOutput, error) {
-	errGroup := errgroup.Group{}
-
+	var err error
 	if r.hasFieldChange(changes, "ai_gateway") {
-		errGroup.Go(func() error {
-			return r.updateAiGateway(ctx, id, config.AiGateway)
-		})
+		err = r.updateAiGateway(ctx, id, config.AiGateway)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if r.hasFieldChange(changes, "config") {
-		errGroup.Go(func() error {
-			return r.updateConfig(ctx, id, config.Config)
-		})
+		err = r.updateConfig(ctx, id, config.Config)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if r.hasFieldChange(changes, "email_notifications") {
-		errGroup.Go(func() error {
-			return r.updateNotifications(ctx, id, config.EmailNotifications)
-		})
+		err = r.updateNotifications(ctx, id, config.EmailNotifications)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if r.hasFieldChange(changes, "tags") {
-		errGroup.Go(func() error {
-			return r.updateTags(ctx, id, config.Tags)
-		})
+		err = r.updateTags(ctx, id, config.Tags)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	if err := errGroup.Wait(); err != nil {
-		return nil, err
-	}
-
-	return r.waitForEndpointReady(ctx, id)
+	return nil, nil
 }
 
 func (r *ResourceModelServingEndpoint) DoDelete(ctx context.Context, id string) error {
