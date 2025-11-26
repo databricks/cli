@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/databricks/cli/bundle/deployplan"
-
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
@@ -51,7 +49,7 @@ func (r *ResourceJob) DoCreate(ctx context.Context, config *jobs.JobSettings) (s
 	return strconv.FormatInt(response.JobId, 10), nil, nil
 }
 
-func (r *ResourceJob) DoUpdate(ctx context.Context, id string, config *jobs.JobSettings, _ *deployplan.Changes) (*jobs.Job, error) {
+func (r *ResourceJob) DoUpdate(ctx context.Context, id string, config *jobs.JobSettings, _ *Changes) (*jobs.Job, error) {
 	request, err := makeResetJob(*config, id)
 	if err != nil {
 		return nil, err

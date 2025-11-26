@@ -218,6 +218,24 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		return nil, errors.New("planning failed")
 	}
 
+	// Validate that resources without DoUpdate don't have update actions
+	for resourceKey, entry := range plan.Plan {
+		if entry.Action == deployplan.ActionTypeUpdate.String() {
+			adapter, err := b.getAdapterForKey(resourceKey)
+			if err != nil {
+				logdiag.LogError(ctx, fmt.Errorf("internal error: %s: %w", resourceKey, err))
+				continue
+			}
+			if !adapter.HasDoUpdate() {
+				logdiag.LogError(ctx, fmt.Errorf("internal error: %s: resource does not support update action but plan produced update", resourceKey))
+			}
+		}
+	}
+
+	if logdiag.HasError(ctx) {
+		return nil, errors.New("planning failed")
+	}
+
 	for _, entry := range plan.Plan {
 		if entry.Action == deployplan.ActionTypeSkipString {
 			entry.NewState = nil

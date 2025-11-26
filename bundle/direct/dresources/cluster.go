@@ -85,7 +85,7 @@ func (r *ResourceCluster) DoCreate(ctx context.Context, config *compute.ClusterS
 	return wait.ClusterId, nil, nil
 }
 
-func (r *ResourceCluster) DoUpdate(ctx context.Context, id string, config *compute.ClusterSpec, _ *deployplan.Changes) (*compute.ClusterDetails, error) {
+func (r *ResourceCluster) DoUpdate(ctx context.Context, id string, config *compute.ClusterSpec, _ *Changes) (*compute.ClusterDetails, error) {
 	// Same retry as in TF provider logic
 	// https://github.com/databricks/terraform-provider-databricks/blob/3eecd0f90cf99d7777e79a3d03c41f9b2aafb004/clusters/resource_cluster.go#L624
 	timeout := 15 * time.Minute

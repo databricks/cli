@@ -8,8 +8,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/databricks/cli/bundle/deployplan"
-
 	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
@@ -147,7 +145,7 @@ func (r *ResourceGrants) DoCreate(ctx context.Context, state *GrantsState) (stri
 	return makeGrantsID(state.SecurableType, state.FullName), nil, nil
 }
 
-func (r *ResourceGrants) DoUpdate(ctx context.Context, _ string, state *GrantsState, _ *deployplan.Changes) (*GrantsState, error) {
+func (r *ResourceGrants) DoUpdate(ctx context.Context, _ string, state *GrantsState, _ *Changes) (*GrantsState, error) {
 	return nil, r.applyGrants(ctx, state)
 }
 

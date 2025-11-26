@@ -9,6 +9,8 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/sql"
 )
 
+type Changes = deployplan.Changes
+
 type ResourceAlert struct {
 	client *databricks.WorkspaceClient
 }
@@ -41,7 +43,7 @@ func (r *ResourceAlert) DoCreate(ctx context.Context, config *sql.AlertV2) (stri
 }
 
 // DoUpdate updates the alert in place.
-func (r *ResourceAlert) DoUpdate(ctx context.Context, id string, config *sql.AlertV2, _ *deployplan.Changes) (*sql.AlertV2, error) {
+func (r *ResourceAlert) DoUpdate(ctx context.Context, id string, config *sql.AlertV2, _ *Changes) (*sql.AlertV2, error) {
 	request := sql.UpdateAlertV2Request{
 		Id:         id,
 		Alert:      *config,
