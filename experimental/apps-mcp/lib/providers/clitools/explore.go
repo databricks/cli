@@ -2,29 +2,20 @@ package clitools
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
 	"fmt"
-	"strings"
 
-	"github.com/databricks/cli/experimental/apps-mcp/lib/common"
+	"github.com/databricks/cli/experimental/apps-mcp/lib/middlewares"
 	"github.com/databricks/cli/experimental/apps-mcp/lib/prompts"
 	"github.com/databricks/cli/experimental/apps-mcp/lib/session"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
-	"github.com/databricks/cli/libs/exec"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/databricks-sdk-go/service/sql"
 )
-
-type warehouse struct {
-	ID    string `json:"id"`
-	Name  string `json:"name"`
-	State string `json:"state"`
-}
 
 // Explore provides guidance on exploring Databricks workspaces and resources.
 func Explore(ctx context.Context) (string, error) {
-	warehouse, err := GetDefaultWarehouse(ctx)
+	warehouse, err := middlewares.GetWarehouseEndpoint(ctx)
 	if err != nil {
 		log.Debugf(ctx, "Failed to get default warehouse (non-fatal): %v", err)
 		warehouse = nil
@@ -34,51 +25,6 @@ func Explore(ctx context.Context) (string, error) {
 	profiles := getAvailableProfiles(ctx)
 
 	return generateExploreGuidance(ctx, warehouse, currentProfile, profiles), nil
-}
-
-// GetDefaultWarehouse finds a suitable SQL warehouse for queries.
-// It filters out warehouses the user cannot access and prefers RUNNING warehouses,
-// then falls back to STOPPED ones (which auto-start).
-func GetDefaultWarehouse(ctx context.Context) (*warehouse, error) {
-	executor, err := exec.NewCommandExecutor("")
-	if err != nil {
-		return nil, fmt.Errorf("failed to create command executor: %w", err)
-	}
-
-	cliPath := common.GetCLIPath()
-	output, err := executor.Exec(ctx, fmt.Sprintf(`"%s" api get "/api/2.0/sql/warehouses?skip_cannot_use=true" --output json`, cliPath))
-	if err != nil {
-		return nil, fmt.Errorf("failed to list warehouses: %w\nOutput: %s", err, output)
-	}
-
-	var response struct {
-		Warehouses []warehouse `json:"warehouses"`
-	}
-	if err := json.Unmarshal(output, &response); err != nil {
-		return nil, fmt.Errorf("failed to parse warehouses: %w", err)
-	}
-	warehouses := response.Warehouses
-
-	if len(warehouses) == 0 {
-		return nil, errors.New("no SQL warehouses found in workspace")
-	}
-
-	// Prefer RUNNING warehouses
-	for i := range warehouses {
-		if strings.ToUpper(warehouses[i].State) == "RUNNING" {
-			return &warehouses[i], nil
-		}
-	}
-
-	// Fall back to STOPPED warehouses (they auto-start when queried)
-	for i := range warehouses {
-		if strings.ToUpper(warehouses[i].State) == "STOPPED" {
-			return &warehouses[i], nil
-		}
-	}
-
-	// Return first available warehouse regardless of state
-	return &warehouses[0], nil
 }
 
 // getCurrentProfile returns the currently active profile name.
@@ -102,7 +48,7 @@ func getAvailableProfiles(ctx context.Context) profile.Profiles {
 }
 
 // generateExploreGuidance creates comprehensive guidance for data exploration.
-func generateExploreGuidance(ctx context.Context, warehouse *warehouse, currentProfile string, profiles profile.Profiles) string {
+func generateExploreGuidance(ctx context.Context, warehouse *sql.EndpointInfo, currentProfile string, profiles profile.Profiles) string {
 	// Build workspace/profile information
 	workspaceInfo := "Current Workspace Profile: " + currentProfile
 	if len(profiles) > 0 {
@@ -147,7 +93,7 @@ func generateExploreGuidance(ctx context.Context, warehouse *warehouse, currentP
 	warehouseID := ""
 	if warehouse != nil {
 		warehouseName = warehouse.Name
-		warehouseID = warehouse.ID
+		warehouseID = warehouse.Id
 	}
 
 	// Prepare template data
