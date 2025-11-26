@@ -337,6 +337,8 @@ function MyComponent() {
 
 ## Testing Guidelines:
 
+### Unit Tests (Vitest)
+
 **CRITICAL**: Use vitest for all tests. Put tests next to the code (e.g. src/*.test.ts)
 
 ```typescript
@@ -362,6 +364,39 @@ describe('Feature Name', () => {
 ❌ **Do not write unit tests for query files:**
 - writing unit tests for serving sql files under `config/queries` has little value
 - do not write unit tests to types associated with queries
+
+### Smoke Test (Playwright)
+
+**CRITICAL**: Keep the smoke test simple - it verifies the app loads and displays data correctly.
+
+The template includes a smoke test at `tests/smoke.spec.ts` that:
+- Opens the app
+- Waits for data to load (SQL query results and health check)
+- Captures screenshots and console logs to `.smoke-test/` directory
+- Always captures artifacts, even on test failure (using try-finally)
+
+**When to update the smoke test:**
+- When you change what data is displayed on the initial page load
+- When you modify the main App component's loading behavior
+- When you add/remove data sources that should be validated on startup
+
+**Keep smoke tests simple:**
+- Only verify that the app loads and displays initial data
+- Wait for key elements to appear (page title, main content)
+- Capture artifacts for debugging
+- Run quickly (< 5 seconds)
+
+**For extended E2E tests:**
+- Create separate test files in `tests/` directory (e.g., `tests/user-flow.spec.ts`)
+- Use `npm run test:e2e` to run all Playwright tests
+- Keep complex user flows, interactions, and edge cases out of the smoke test
+
+**Running tests:**
+```bash
+npm run test:smoke      # Run smoke test only
+npm run test:e2e        # Run all E2E tests
+npm run test:e2e:ui     # Run with Playwright UI
+```
 
 ## Frontend Styling Guidelines:
 

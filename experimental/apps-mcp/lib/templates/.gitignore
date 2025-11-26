@@ -3,3 +3,6 @@ appkit/dist/
 appkit/build/
 appkit/.env
 appkit/.databricks/
+appkit/.smoke-test/
+appkit/test-results/
+appkit/playwright-report/

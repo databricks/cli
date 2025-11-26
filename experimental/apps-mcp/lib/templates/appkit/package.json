@@ -15,7 +15,10 @@
     "format": "prettier --check .",
     "format:fix": "prettier --write .",
     "test": "vitest run",
-    "clean": "rm -rf client/dist build node_modules"
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:smoke": "playwright install chromium && playwright test tests/smoke.spec.ts",
+    "clean": "rm -rf client/dist build node_modules .smoke-test test-results playwright-report"
   },
   "keywords": [],
   "author": "",
@@ -65,6 +68,7 @@
   "devDependencies": {
     "@eslint/compat": "^2.0.0",
     "@eslint/js": "^9.39.1",
+    "@playwright/test": "^1.57.0",
     "@radix-ui/react-slot": "^1.2.3",
     "@tailwindcss/postcss": "^4.1.17",
     "@tailwindcss/vite": "^4.1.17",
