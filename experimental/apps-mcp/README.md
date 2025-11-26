@@ -112,7 +112,7 @@ Ensure production-readiness before deployment:
 
 ### 4. Deployment (Production Release)
 
-Deploy validated applications to Databricks (enable with `--allow-deployment`):
+Deploy validated applications to Databricks:
 
 - **`deploy_databricks_app`** - Push to Databricks Apps platform
   - Automatic deployment configuration
@@ -290,9 +290,6 @@ databricks experimental apps-mcp --warehouse-id <warehouse-id>
 
 # Enable workspace tools
 databricks experimental apps-mcp --warehouse-id <warehouse-id> --with-workspace-tools
-
-# Enable deployment
-databricks experimental apps-mcp --warehouse-id <warehouse-id> --allow-deployment
 ```
 
 ### CLI Flags
@@ -301,7 +298,6 @@ databricks experimental apps-mcp --warehouse-id <warehouse-id> --allow-deploymen
 |------|-------------|---------|
 | `--warehouse-id` | Databricks SQL Warehouse ID (required) | - |
 | `--with-workspace-tools` | Enable workspace file operations | `false` |
-| `--allow-deployment` | Enable deployment operations | `false` |
 | `--help` | Show help | - |
 
 ### Environment Variables
@@ -312,7 +308,6 @@ databricks experimental apps-mcp --warehouse-id <warehouse-id> --allow-deploymen
 | `DATABRICKS_TOKEN` | Databricks personal access token | `dapi...` |
 | `WAREHOUSE_ID` | Databricks SQL warehouse ID (preferred) | `abc123def456` |
 | `DATABRICKS_WAREHOUSE_ID` | Alternative name for warehouse ID | `abc123def456` |
-| `ALLOW_DEPLOYMENT` | Enable deployment operations | `true` or `false` |
 | `WITH_WORKSPACE_TOOLS` | Enable workspace tools | `true` or `false` |
 
 ### Authentication

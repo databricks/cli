@@ -19,14 +19,10 @@ import (
 )
 
 func init() {
-	// Register deployment provider with conditional enablement based on AllowDeployment
+	// Register deployment provider
 	providers.Register("deployment", func(ctx context.Context, cfg *mcp.Config, sess *session.Session) (providers.Provider, error) {
 		return NewProvider(ctx, cfg, sess)
-	}, providers.ProviderConfig{
-		EnabledWhen: func(cfg *mcp.Config) bool {
-			return cfg.AllowDeployment
-		},
-	})
+	}, providers.ProviderConfig{})
 }
 
 const deployRetries = 3

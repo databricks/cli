@@ -35,18 +35,18 @@ type ScaffoldResult struct {
 // Scaffold copies template files to the work directory
 func (p *Provider) Scaffold(ctx context.Context, args *ScaffoldArgs) (*ScaffoldResult, error) {
 	if args.AppName == "" {
-		return nil, fmt.Errorf("app name is required")
+		return nil, errors.New("app name is required")
 	}
 
 	// validate that AppName only contains letters, numbers, and hyphens
 	if !regexp.MustCompile(`^[a-z0-9-]+$`).MatchString(args.AppName) {
-		return nil, fmt.Errorf("app name must only contain letters, numbers, and hyphens")
+		return nil, errors.New("app name must only contain letters, numbers, and hyphens")
 	}
 
 	normalizedAppName := strings.ToLower(args.AppName)
 
 	if args.AppDescription == "" {
-		return nil, fmt.Errorf("app description is required")
+		return nil, errors.New("app description is required")
 	}
 
 	// Validate work directory

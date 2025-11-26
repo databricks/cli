@@ -49,7 +49,6 @@ func NewTracker(ctx context.Context, sess *session.Session, cfg *mcp.Config) (*T
 
 func (t *Tracker) writeSessionEntry(cfg *mcp.Config) error {
 	configMap := make(map[string]any)
-	configMap["allow_deployment"] = cfg.AllowDeployment
 	configMap["with_workspace_tools"] = cfg.WithWorkspaceTools
 
 	if cfg.IoConfig != nil {
