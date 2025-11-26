@@ -3,6 +3,7 @@ package databricks
 import (
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
 	"time"
 
@@ -53,8 +54,9 @@ func GetUserInfo(ctx context.Context, cfg *mcp.Config) (*iam.User, error) {
 	return user, nil
 }
 
-func SyncWorkspace(appInfo *apps.App, sourceDir string) error {
+func SyncWorkspace(ctx context.Context, appInfo *apps.App, sourceDir string) error {
 	targetPath := GetSourcePath(appInfo)
+	host := middlewares.MustGetDatabricksClient(ctx).Config.Host
 
 	cmd := exec.Command(
 		"databricks",
@@ -65,6 +67,9 @@ func SyncWorkspace(appInfo *apps.App, sourceDir string) error {
 		targetPath,
 	)
 	cmd.Dir = sourceDir
+	env := os.Environ()
+	env = append(env, "DATABRICKS_HOST="+host)
+	cmd.Env = env
 
 	output, err := cmd.CombinedOutput()
 	if err != nil {

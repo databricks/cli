@@ -179,7 +179,7 @@ func (p *Provider) deployDatabricksApp(ctx context.Context, args *DeployDatabric
 	syncStart := time.Now()
 	log.Infof(ctx, "Syncing workspace: source=%s, target=%s", workPath, databricks.GetSourcePath(appInfo))
 
-	if err := databricks.SyncWorkspace(appInfo, workPath); err != nil {
+	if err := databricks.SyncWorkspace(ctx, appInfo, workPath); err != nil {
 		return &DeployResult{
 			Success: false,
 			Message: fmt.Sprintf("Failed to sync workspace: %v", err),
