@@ -145,7 +145,7 @@ func (p *Provider) deployDatabricksApp(ctx context.Context, args *DeployDatabric
 	if !hasChecksum {
 		return &DeployResult{
 			Success: false,
-			Message: "Project must be validated before deployment. Run validate_data_app first.",
+			Message: "Project must be validated before deployment. Run validate_databricks_app first.",
 			AppName: args.Name,
 		}, nil
 	}
@@ -162,7 +162,7 @@ func (p *Provider) deployDatabricksApp(ctx context.Context, args *DeployDatabric
 	if !checksumValid {
 		return &DeployResult{
 			Success: false,
-			Message: "Project files changed since validation. Re-run validate_data_app before deployment.",
+			Message: "Project files changed since validation. Re-run validate_databricks_app before deployment.",
 			AppName: args.Name,
 		}, nil
 	}

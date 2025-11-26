@@ -50,9 +50,7 @@ function App() {
         <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent">
           Minimal Databricks App
         </h1>
-        <p className="text-lg text-muted-foreground max-w-md">
-          A minimal Databricks App powered by Databricks AppKit
-        </p>
+        <p className="text-lg text-muted-foreground max-w-md">A minimal Databricks App powered by Databricks AppKit</p>
       </div>
 
       <div className="flex flex-col gap-6 w-full max-w-md">
@@ -125,9 +123,7 @@ function App() {
                 </div>
               </div>
             )}
-            {modelError && (
-              <div className="text-destructive bg-destructive/10 p-3 rounded-md">Error: {modelError}</div>
-            )}
+            {modelError && <div className="text-destructive bg-destructive/10 p-3 rounded-md">Error: {modelError}</div>}
             {modelResponse && (
               <div className="space-y-2">
                 <div className="text-sm text-muted-foreground">Prompt: &quot;How are you today?&quot;</div>

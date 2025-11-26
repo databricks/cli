@@ -91,7 +91,7 @@ Understand your Databricks data before building:
 
 Create the application structure:
 
-- **`scaffold_data_app`** - Generate a full-stack TypeScript application
+- **`scaffold_databricks_app`** - Generate a full-stack TypeScript application
   - Modern stack: Node.js, TypeScript, React, tRPC
   - Pre-configured build system, linting, and testing
   - Production-ready project structure
@@ -103,7 +103,7 @@ Create the application structure:
 
 Ensure production-readiness before deployment:
 
-- **`validate_data_app`** - Comprehensive validation
+- **`validate_databricks_app`** - Comprehensive validation
   - Build verification (npm build)
   - Type checking (TypeScript compiler)
   - Test execution (full test suite)

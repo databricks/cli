@@ -47,9 +47,7 @@ export class ErrorBoundary extends Component<Props, State> {
               <div className="space-y-4">
                 <div>
                   <h3 className="font-semibold mb-2">Error Message:</h3>
-                  <pre className="bg-muted p-3 rounded text-sm overflow-auto">
-                    {this.state.error?.toString()}
-                  </pre>
+                  <pre className="bg-muted p-3 rounded text-sm overflow-auto">{this.state.error?.toString()}</pre>
                 </div>
                 {this.state.errorInfo && (
                   <div>
@@ -62,9 +60,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 {this.state.error?.stack && (
                   <div>
                     <h3 className="font-semibold mb-2">Stack Trace:</h3>
-                    <pre className="bg-muted p-3 rounded text-sm overflow-auto max-h-96">
-                      {this.state.error.stack}
-                    </pre>
+                    <pre className="bg-muted p-3 rounded text-sm overflow-auto max-h-96">{this.state.error.stack}</pre>
                   </div>
                 )}
               </div>

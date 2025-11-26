@@ -1,4 +1,5 @@
 TypeScript full-stack template powered by **Databricks AppKit** with tRPC for additional custom API endpoints. Use this when building Databricks Apps with the following structure:
+
 - server/: Node.js backend with App Kit and tRPC
 - client/: React frontend with App Kit hooks and tRPC client
 - config/queries/: SQL query files for analytics
@@ -7,6 +8,7 @@ TypeScript full-stack template powered by **Databricks AppKit** with tRPC for ad
 ## Databricks App Kit SDK:
 
 This template uses `@databricks/app-kit` which provides:
+
 - **Server setup**: `createApp()` with `server()` and `analytics()` plugins
 - **SQL queries**: Store SQL files in `config/queries/` directory
 - **React hooks**: `useAnalyticsQuery<T>()` for executing SQL queries from frontend
@@ -96,6 +98,7 @@ WHERE column_value >= :min_value
 ```
 
 **Key Points:**
+
 - Parameters use colon prefix: `:parameter_name`
 - Databricks infers types from values automatically
 - For optional parameters, use pattern: `(:param = '' OR column = :param)`
@@ -139,12 +142,13 @@ function FilteredComponent() {
 **IMPORTANT**: For date parameters, use `YYYY-MM-DD` format with `DATE()` function in SQL.
 
 **Frontend - Date Formatting:**
+
 ```typescript
 const getDateParam = (daysAgo: number): string => {
   const date = new Date();
   date.setDate(date.getDate() - daysAgo);
   // Format as YYYY-MM-DD
-  return date.toISOString().split("T")[0];
+  return date.toISOString().split('T')[0];
 };
 
 const queryParams = {
@@ -153,6 +157,7 @@ const queryParams = {
 ```
 
 **SQL - Date Comparison:**
+
 ```sql
 -- Use DATE() function for timestamp comparisons
 WHERE DATE(timestamp_column) >= :start_date
@@ -161,6 +166,7 @@ WHERE DATE(timestamp_column) >= :start_date
 #### Complete Example:
 
 **SQL Query** (`config/queries/trip_statistics.sql`):
+
 ```sql
 SELECT
   COUNT(*) as total_trips,
@@ -175,6 +181,7 @@ WHERE fare_amount > 0
 ```
 
 **TypeScript Component:**
+
 ```typescript
 import { useState } from 'react';
 import { useAnalyticsQuery } from '@databricks/app-kit/react';
@@ -235,6 +242,7 @@ function TripDashboard() {
 ```
 
 **Parameter Types Reference:**
+
 - **Strings**: `status: 'active'` → Use directly in SQL: `:status`
 - **Numbers**: `min_value: 100` → Use directly: `:min_value`
 - **Dates**: Format as `YYYY-MM-DD` → Use with `DATE()` in SQL
@@ -245,6 +253,7 @@ function TripDashboard() {
 **CRITICAL**: Do NOT use tRPC for SQL queries or data retrieval. Use `config/queries/` + `useAnalyticsQuery` instead.
 
 Use tRPC ONLY for:
+
 - **Mutations**: Creating, updating, or deleting data (INSERT, UPDATE, DELETE)
 - **External APIs**: Calling Databricks APIs (serving endpoints, jobs, MLflow, etc.)
 - **Complex business logic**: Multi-step operations that cannot be expressed in SQL
@@ -264,24 +273,20 @@ const publicProcedure = t.procedure;
 
 export const appRouter = t.router({
   // Example: Query a serving endpoint
-  queryModel: publicProcedure
-    .input(z.object({ prompt: z.string() }))
-    .query(async ({ input: { prompt } }) => {
-      const { serviceDatabricksClient: client } = getRequestContext();
-      const response = await client.servingEndpoints.query({
-        name: "your-endpoint-name",
-        messages: [{ role: "user", content: prompt }],
-      });
-      return response;
-    }),
+  queryModel: publicProcedure.input(z.object({ prompt: z.string() })).query(async ({ input: { prompt } }) => {
+    const { serviceDatabricksClient: client } = getRequestContext();
+    const response = await client.servingEndpoints.query({
+      name: 'your-endpoint-name',
+      messages: [{ role: 'user', content: prompt }],
+    });
+    return response;
+  }),
 
   // Example: Mutation
-  createRecord: publicProcedure
-    .input(z.object({ name: z.string() }))
-    .mutation(async ({ input }) => {
-      // Custom logic here
-      return { success: true, id: 123 };
-    }),
+  createRecord: publicProcedure.input(z.object({ name: z.string() })).mutation(async ({ input }) => {
+    // Custom logic here
+    return { success: true, id: 123 };
+  }),
 });
 ```
 
@@ -337,6 +342,7 @@ function MyComponent() {
    - Complex computations in TypeScript
 
 ❌ **NEVER use tRPC for:**
+
 - Simple data retrieval that can be done with SQL
 - Wrapping SQL queries in tRPC endpoints
 - SELECT statements of any kind
@@ -345,7 +351,7 @@ function MyComponent() {
 
 ### Unit Tests (Vitest)
 
-**CRITICAL**: Use vitest for all tests. Put tests next to the code (e.g. src/*.test.ts)
+**CRITICAL**: Use vitest for all tests. Put tests next to the code (e.g. src/\*.test.ts)
 
 ```typescript
 import { describe, it, expect } from 'vitest';
@@ -368,6 +374,7 @@ describe('Feature Name', () => {
 - Tests run with `npm test` (runs `vitest run`)
 
 ❌ **Do not write unit tests for query files:**
+
 - writing unit tests for serving sql files under `config/queries` has little value
 - do not write unit tests to types associated with queries
 
@@ -376,28 +383,33 @@ describe('Feature Name', () => {
 **CRITICAL**: Keep the smoke test simple - it verifies the app loads and displays data correctly.
 
 The template includes a smoke test at `tests/smoke.spec.ts` that:
+
 - Opens the app
 - Waits for data to load (SQL query results and health check)
 - Captures screenshots and console logs to `.smoke-test/` directory
 - Always captures artifacts, even on test failure (using try-finally)
 
 **When to update the smoke test:**
+
 - When you change what data is displayed on the initial page load
 - When you modify the main App component's loading behavior
 - When you add/remove data sources that should be validated on startup
 
 **Keep smoke tests simple:**
+
 - Only verify that the app loads and displays initial data
 - Wait for key elements to appear (page title, main content)
 - Capture artifacts for debugging
 - Run quickly (< 5 seconds)
 
 **For extended E2E tests:**
+
 - Create separate test files in `tests/` directory (e.g., `tests/user-flow.spec.ts`)
 - Use `npm run test:e2e` to run all Playwright tests
 - Keep complex user flows, interactions, and edge cases out of the smoke test
 
 **Running tests:**
+
 ```bash
 npm run test:smoke      # Run smoke test only
 npm run test:e2e        # Run all E2E tests
@@ -407,6 +419,7 @@ npm run test:e2e:ui     # Run with Playwright UI
 ## Frontend Styling Guidelines:
 
 ### Component Structure Pattern:
+
 - Use container with proper spacing: `<div className="container mx-auto p-4">`
 - Page titles: `<h1 className="text-2xl font-bold mb-4">Title</h1>`
 - Forms: Use `space-y-4` for vertical spacing between inputs
@@ -414,6 +427,7 @@ npm run test:e2e:ui     # Run with Playwright UI
 - Grids: Use `grid gap-4` for list layouts
 
 ### Example App Structure:
+
 ```tsx
 <div className="container mx-auto p-4">
   <h1 className="text-2xl font-bold mb-4">Page Title</h1>
@@ -423,12 +437,14 @@ npm run test:e2e:ui     # Run with Playwright UI
 ```
 
 ### Tailwind Usage:
+
 - Use Tailwind classes directly in JSX
 - Avoid @apply unless creating reusable component styles
 - When using @apply, only in @layer components (never @layer base)
 - Template has CSS variables defined - use via Tailwind (bg-background, text-foreground, etc.)
 
 ### Typography & Spacing:
+
 - Headings: text-2xl font-bold with mb-4
 - Secondary text: text-foreground/70
 - Card titles: text-xl font-semibold
@@ -436,15 +452,18 @@ npm run test:e2e:ui     # Run with Playwright UI
 - Grid/list spacing: gap-4 for consistent item spacing
 
 ### Component Organization:
+
 Create separate components when:
+
 - Logic exceeds ~100 lines
 - Component is reused in multiple places
 - Component has distinct responsibility (e.g., ProductForm, ProductList)
-File structure:
+  File structure:
 - Shared UI: client/src/components/ui/
 - Feature components: client/src/components/FeatureName.tsx
 
 ### Visual Design:
+
 - Adjust visual mood to match user prompt, prefer clean and modern visually appealing aesthetics, but avoid overly flashy designs - keep it professional and user-friendly;
 - Use shadcn/radix components (Button, Input, Card, etc.) for consistent UI
 - Forms should have loading states: `disabled={isLoading}`
@@ -452,6 +471,7 @@ File structure:
 - **Use skeleton loaders**: Always use `<Skeleton>` components instead of plain "Loading..." text for better UX
 
 ### Best Practices:
+
 - **SQL queries**: ALWAYS use `config/queries/*.sql` + `useAnalyticsQuery()` (never use tRPC for data retrieval)
 - **Data retrieval workflow**:
   1. Create SQL file in `config/queries/my_query.sql`
@@ -468,6 +488,7 @@ File structure:
 The template includes Recharts for data visualization. Use Databricks brand colors for chart elements: `['#40d1f5', '#4462c9', '#EB1600', '#0B2026', '#4A4A4A', '#353a4a']` (apply via `stroke` or `fill` props).
 
 ### Basic Chart Pattern:
+
 ```tsx
 import { useAnalyticsQuery } from '@databricks/app-kit/react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';

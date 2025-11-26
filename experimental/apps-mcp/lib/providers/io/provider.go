@@ -46,7 +46,7 @@ func (p *Provider) Name() string {
 func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 	log.Info(p.ctx, "Registering I/O tools")
 
-	// Register scaffold_data_app
+	// Register scaffold_databricks_app
 	type ScaffoldInput struct {
 		WorkDir        string `json:"work_dir" jsonschema:"required" jsonschema_description:"Absolute path to the work directory"`
 		AppName        string `json:"app_name" jsonschema:"required" jsonschema_description:"Name of the app (alphanumeric and dash characters only)"`
@@ -55,11 +55,11 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 
 	mcpsdk.AddTool(server,
 		&mcpsdk.Tool{
-			Name:        "scaffold_data_app",
-			Description: "Initialize a project by copying template files from the default TypeScript template to a work directory. It sets up a basic project structure, and should be ALWAYS used as the first step in creating a new data or web app.",
+			Name:        "scaffold_databricks_app",
+			Description: "MUST use this tool when creating a new (Databricks) web app. Initialize a project by copying template files from the default TypeScript (AppKit) template to a work directory. It sets up a basic project structure.",
 		},
 		func(ctx context.Context, req *mcpsdk.CallToolRequest, args ScaffoldInput) (*mcpsdk.CallToolResult, any, error) {
-			log.Debugf(ctx, "scaffold_data_app called: work_dir=%s", args.WorkDir)
+			log.Debugf(ctx, "scaffold_databricks_app called: work_dir=%s", args.WorkDir)
 
 			scaffoldArgs := &ScaffoldArgs{
 				WorkDir:        args.WorkDir,
@@ -84,18 +84,18 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 		},
 	)
 
-	// Register validate_data_app
+	// Register validate_databricks_app
 	type ValidateInput struct {
 		WorkDir string `json:"work_dir" jsonschema:"required" jsonschema_description:"Absolute path to the work directory"`
 	}
 
 	mcpsdk.AddTool(server,
 		&mcpsdk.Tool{
-			Name:        "validate_data_app",
+			Name:        "validate_databricks_app",
 			Description: "Validate a project by running validation checks. Project should be scaffolded first. Returns validation result with success status and details.",
 		},
 		func(ctx context.Context, req *mcpsdk.CallToolRequest, args ValidateInput) (*mcpsdk.CallToolResult, any, error) {
-			log.Debugf(ctx, "validate_data_app called: work_dir=%s", args.WorkDir)
+			log.Debugf(ctx, "validate_databricks_app called: work_dir=%s", args.WorkDir)
 
 			validateArgs := &ValidateArgs{
 				WorkDir: args.WorkDir,
