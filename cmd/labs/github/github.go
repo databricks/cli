@@ -86,8 +86,10 @@ func parseNextLink(linkHeader string) string {
 	if linkHeader == "" {
 		return ""
 	}
-	// Example link header to handle:
-	// link: <https://api.github.com/repositories/1300192/issues?page=2>; rel="prev", <https://api.github.com/repositories/1300192/issues?page=4>; rel="next", <https://api.github.com/repositories/1300192/issues?page=515>; rel="last", <https://api.github.com/repositories/1300192/issues?page=1>; rel="first"
+	// Pagination and link headers are documented here:
+	//   https://docs.github.com/en/rest/using-the-rest-api/using-pagination-in-the-rest-api?apiVersion=2022-11-28#using-link-headers
+	// An example link header to handle:
+	//   link: <https://api.github.com/repositories/1300192/issues?page=2>; rel="prev", <https://api.github.com/repositories/1300192/issues?page=4>; rel="next", <https://api.github.com/repositories/1300192/issues?page=515>; rel="last", <https://api.github.com/repositories/1300192/issues?page=1>; rel="first"
 	links := strings.Split(linkHeader, ",")
 	for _, link := range links {
 		parts := strings.Split(strings.TrimSpace(link), ";")
