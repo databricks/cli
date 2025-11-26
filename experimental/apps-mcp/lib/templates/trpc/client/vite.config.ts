@@ -12,9 +12,8 @@ export default defineConfig({
     allowedHosts: ['debughost', 'localhost'],
     proxy: {
       '/api': {
-        target: 'http://localhost:2022',
+        target: 'http://localhost:8000',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, ''),
       },
     },
   },
