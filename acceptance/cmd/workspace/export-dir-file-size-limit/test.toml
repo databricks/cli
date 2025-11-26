@@ -1,0 +1,33 @@
+Local = true
+Cloud = false
+
+[Env]
+MSYS_NO_PATHCONV = "1"
+
+[[Server]]
+Pattern = "GET /api/2.0/workspace/list"
+Response.Body = '''
+{
+  "objects": [
+    {
+      "path": "/test-dir/file.py",
+      "object_type": "NOTEBOOK",
+      "language": "PYTHON",
+      "object_id": 123,
+      "size": 1000,
+      "created_at": 1609459200000,
+      "modified_at": 1609459200000
+    }
+  ]
+}
+'''
+
+[[Server]]
+Pattern = "GET /api/2.0/workspace/export"
+Response.StatusCode = 400
+Response.Body = '''
+{
+  "error_code": "MAX_NOTEBOOK_SIZE_EXCEEDED",
+  "message": "Notebook size exceeds maximum allowed size"
+}
+'''
