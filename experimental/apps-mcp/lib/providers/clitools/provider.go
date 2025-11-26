@@ -108,8 +108,33 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 
 	mcpsdk.AddTool(server,
 		&mcpsdk.Tool{
-			Name:        "invoke_databricks_cli",
-			Description: "Run any Databricks CLI command. Use this tool whenever you need to run databricks CLI commands like 'bundle deploy', 'bundle validate', 'bundle run', 'auth login', etc. The reason this tool exists (instead of invoking the databricks CLI directly) is to make it easier for users to allow-list commands.",
+			Name: "invoke_databricks_cli",
+			Description: `Execute Databricks CLI command. Pass all arguments as a single string.
+
+## ⚡ EFFICIENT DATA DISCOVERY (Recommended):
+1. 'catalogs list' → find available catalogs
+2. 'schemas list CATALOG' → find schemas in catalog
+3. 'tables list CATALOG SCHEMA' → find tables in schema
+4. 'experimental apps-mcp tools discover-schema TABLE1 TABLE2 TABLE3' → **BATCH discover multiple tables in ONE call** ⚡
+
+## Data Commands:
+- Execute SQL: 'experimental apps-mcp tools query "SELECT * FROM table LIMIT 5"' (returns JSON + row count)
+- Discover schema: 'experimental apps-mcp tools discover-schema TABLE1 TABLE2 ...' (columns, types, samples, nulls)
+  ↳ ALWAYS use batch mode: 'experimental apps-mcp tools discover-schema tbl1 tbl2 tbl3' instead of 3 separate calls
+  ↳ Table format: CATALOG.SCHEMA.TABLE (e.g., samples.nyctaxi.trips)
+
+## Project Commands:
+- Init template: 'experimental apps-mcp tools init-template PROJECT_NAME' → create new app from tRPC template
+- Bundle commands: 'bundle deploy', 'bundle validate', 'bundle run JOB_NAME'
+
+## Common Errors:
+❌ 'tables list samples.tpcds_sf1' → Wrong format!
+✅ 'tables list samples tpcds_sf1' → Correct (CATALOG SCHEMA as separate args)
+
+## Best Practices:
+✅ Use batch discover-schema for multiple tables (faster)
+✅ Test SQL with 'experimental apps-mcp tools query' before implementing in code
+✅ Use 'experimental apps-mcp tools init-template' to scaffold new projects`,
 		},
 		func(ctx context.Context, req *mcpsdk.CallToolRequest, args InvokeDatabricksCLIInput) (*mcpsdk.CallToolResult, any, error) {
 			log.Debugf(ctx, "invoke_databricks_cli called: command=%s", args.Command)
