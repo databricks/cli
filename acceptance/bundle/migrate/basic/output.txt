@@ -41,6 +41,11 @@ Available state files:
 - [TEST_TMP_DIR]/.databricks/bundle/dev/resources.json: local direct state serial=5 lineage="[UUID]"
 
 
+=== Should show that it's already migrated
+>>> musterr [CLI] bundle deployment migrate
+Error: already using direct engine
+Details: [TEST_TMP_DIR]/.databricks/bundle/dev/resources.json: local direct state serial=5 lineage="[UUID]"
+
 >>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle plan
 update pipelines.test_pipeline
 

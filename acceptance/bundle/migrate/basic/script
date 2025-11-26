@@ -17,6 +17,9 @@ trace jq '.state."resources.pipelines.test_pipeline".state.tags.volume_storage_l
 trace DATABRICKS_BUNDLE_ENGINE=terraform musterr $CLI bundle plan
 trace DATABRICKS_BUNDLE_ENGINE=terraform musterr $CLI bundle deploy
 
+title "Should show that it's already migrated"
+trace musterr $CLI bundle deployment migrate
+
 rm out.requests.txt
 # Both DATABRICKS_BUNDLE_ENGINE=direct and DATABRICKS_BUNDLE_ENGINE= work
 trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle plan | contains.py "2 unchanged"  # should be "3 unchanged" once permanent drift is fixed
