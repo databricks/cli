@@ -11,14 +11,17 @@ import (
 )
 
 const (
-	// Encodes string key, which is encoded as .field or as ['spark.conf']x
+	// Encodes string key, which is encoded as .field or as ['spark.conf']
 	tagStringKey = -1
 
+	// Encodes key/value index, which is encoded as [key='value'] or [key="value"]
+	tagKeyValue = -2
+
 	// Encodes wildcard after a dot: foo.*
-	tagDotStar = -2
+	tagDotStar = -3
 
 	// Encodes wildcard in brackets: foo[*]
-	tagBracketStar = -3
+	tagBracketStar = -4
 )
 
 // PathNode represents a node in a path for struct diffing.
@@ -29,6 +32,7 @@ type PathNode struct {
 	// If index >= 0, the node specifies a slice/array index in index.
 	// If index < 0, this describes the type of node
 	index int
+	value string // Used for tagKeyValue: stores the value part of [key='value']
 }
 
 func (p *PathNode) IsRoot() bool {
@@ -57,6 +61,16 @@ func (p *PathNode) BracketStar() bool {
 		return false
 	}
 	return p.index == tagBracketStar
+}
+
+func (p *PathNode) KeyValue() (key, value string, ok bool) {
+	if p == nil {
+		return "", "", false
+	}
+	if p.index == tagKeyValue {
+		return p.key, p.value, true
+	}
+	return "", "", false
 }
 
 // StringKey returns either Field() or MapKey() if either is available
@@ -128,6 +142,15 @@ func NewBracketStar(prev *PathNode) *PathNode {
 	}
 }
 
+func NewKeyValue(prev *PathNode, key, value string) *PathNode {
+	return &PathNode{
+		prev:  prev,
+		key:   key,
+		index: tagKeyValue,
+		value: value,
+	}
+}
+
 // String returns the string representation of the path.
 // The string keys are encoded in dot syntax (foo.bar) if they don't have any reserved characters (so can be parsed as fields).
 // Otherwise they are encoded in brackets + single quotes: tags['name']. Single quote can escaped by placing two single quotes.
@@ -160,6 +183,12 @@ func (p *PathNode) String() string {
 			}
 		} else if node.index == tagBracketStar {
 			result.WriteString("[*]")
+		} else if node.index == tagKeyValue {
+			result.WriteString("[")
+			result.WriteString(node.key)
+			result.WriteString("=")
+			result.WriteString(EncodeMapKey(node.value))
+			result.WriteString("]")
 		} else if isValidField(node.key) {
 			// Valid field name
 			if i != 0 {
@@ -191,11 +220,15 @@ func EncodeMapKey(s string) string {
 //   - FIELD_START: After a dot, expects field name or "*"
 //   - FIELD: Reading field name characters
 //   - DOT_STAR: Encountered "*" (at start or after dot), expects ".", "[", or EOF
-//   - BRACKET_OPEN: Just encountered "[", expects digit, "'" or "*"
+//   - BRACKET_OPEN: Just encountered "[", expects digit, "'", "*", or identifier for key-value
 //   - INDEX: Reading array index digits, expects more digits or "]"
 //   - MAP_KEY: Reading map key content, expects any char or "'"
 //   - MAP_KEY_QUOTE: Encountered "'" in map key, expects "'" (escape) or "]" (end)
 //   - WILDCARD: Reading "*" in brackets, expects "]"
+//   - KEYVALUE_KEY: Reading key part of [key='value'], expects identifier chars or "="
+//   - KEYVALUE_EQUALS: After key, expecting "'" or '"' to start value
+//   - KEYVALUE_VALUE: Reading value content, expects any char or quote
+//   - KEYVALUE_VALUE_QUOTE: Encountered quote in value, expects same quote (escape) or "]" (end)
 //   - EXPECT_DOT_OR_END: After bracket close, expects ".", "[" or end of string
 //   - END: Successfully completed parsing
 //
@@ -204,11 +237,15 @@ func EncodeMapKey(s string) string {
 //   - FIELD_START: [a-zA-Z_-] -> FIELD, "*" -> DOT_STAR, other -> ERROR
 //   - FIELD: [a-zA-Z0-9_-] -> FIELD, "." -> FIELD_START, "[" -> BRACKET_OPEN, EOF -> END
 //   - DOT_STAR: "." -> FIELD_START, "[" -> BRACKET_OPEN, EOF -> END, other -> ERROR
-//   - BRACKET_OPEN: [0-9] -> INDEX, "'" -> MAP_KEY, "*" -> WILDCARD
+//   - BRACKET_OPEN: [0-9] -> INDEX, "'" -> MAP_KEY, "*" -> WILDCARD, identifier -> KEYVALUE_KEY
 //   - INDEX: [0-9] -> INDEX, "]" -> EXPECT_DOT_OR_END
 //   - MAP_KEY: (any except "'") -> MAP_KEY, "'" -> MAP_KEY_QUOTE
 //   - MAP_KEY_QUOTE: "'" -> MAP_KEY (escape), "]" -> EXPECT_DOT_OR_END (end key)
 //   - WILDCARD: "]" -> EXPECT_DOT_OR_END
+//   - KEYVALUE_KEY: identifier -> KEYVALUE_KEY, "=" -> KEYVALUE_EQUALS
+//   - KEYVALUE_EQUALS: "'" or '"' -> KEYVALUE_VALUE
+//   - KEYVALUE_VALUE: (any except quote) -> KEYVALUE_VALUE, quote -> KEYVALUE_VALUE_QUOTE
+//   - KEYVALUE_VALUE_QUOTE: quote -> KEYVALUE_VALUE (escape), "]" -> EXPECT_DOT_OR_END
 //   - EXPECT_DOT_OR_END: "." -> FIELD_START, "[" -> BRACKET_OPEN, EOF -> END
 func Parse(s string) (*PathNode, error) {
 	if s == "" {
@@ -226,6 +263,10 @@ func Parse(s string) (*PathNode, error) {
 		stateMapKey
 		stateMapKeyQuote
 		stateWildcard
+		stateKeyValueKey
+		stateKeyValueEquals
+		stateKeyValueValue
+		stateKeyValueValueQuote
 		stateExpectDotOrEnd
 		stateEnd
 	)
@@ -233,6 +274,8 @@ func Parse(s string) (*PathNode, error) {
 	state := stateStart
 	var result *PathNode
 	var currentToken strings.Builder
+	var keyValueKey string // Stores the key part of [key='value']
+	var keyValueQuote byte // Stores the quote character used (' or ")
 	pos := 0
 
 	for pos < len(s) {
@@ -296,6 +339,9 @@ func Parse(s string) (*PathNode, error) {
 				state = stateMapKey
 			} else if ch == '*' {
 				state = stateWildcard
+			} else if isKeyValueKeyChar(ch) {
+				currentToken.WriteByte(ch)
+				state = stateKeyValueKey
 			} else {
 				return nil, fmt.Errorf("unexpected character '%c' after '[' at position %d", ch, pos)
 			}
@@ -346,6 +392,47 @@ func Parse(s string) (*PathNode, error) {
 				return nil, fmt.Errorf("unexpected character '%c' after '*' at position %d", ch, pos)
 			}
 
+		case stateKeyValueKey:
+			if ch == '=' {
+				keyValueKey = currentToken.String()
+				currentToken.Reset()
+				state = stateKeyValueEquals
+			} else if isKeyValueKeyChar(ch) {
+				currentToken.WriteByte(ch)
+			} else {
+				return nil, fmt.Errorf("unexpected character '%c' in key-value key at position %d", ch, pos)
+			}
+
+		case stateKeyValueEquals:
+			if ch == '\'' || ch == '"' {
+				keyValueQuote = ch
+				state = stateKeyValueValue
+			} else {
+				return nil, fmt.Errorf("expected quote after '=' but got '%c' at position %d", ch, pos)
+			}
+
+		case stateKeyValueValue:
+			if ch == keyValueQuote {
+				state = stateKeyValueValueQuote
+			} else {
+				currentToken.WriteByte(ch)
+			}
+
+		case stateKeyValueValueQuote:
+			if ch == keyValueQuote {
+				// Escaped quote - add single quote to value and continue
+				currentToken.WriteByte(ch)
+				state = stateKeyValueValue
+			} else if ch == ']' {
+				// End of key-value
+				result = NewKeyValue(result, keyValueKey, currentToken.String())
+				currentToken.Reset()
+				keyValueKey = ""
+				state = stateExpectDotOrEnd
+			} else {
+				return nil, fmt.Errorf("unexpected character '%c' after quote in key-value at position %d", ch, pos)
+			}
+
 		case stateExpectDotOrEnd:
 			switch ch {
 			case '.':
@@ -390,11 +477,24 @@ func Parse(s string) (*PathNode, error) {
 		return nil, errors.New("unexpected end of input after quote in map key")
 	case stateWildcard:
 		return nil, errors.New("unexpected end of input after wildcard '*'")
+	case stateKeyValueKey:
+		return nil, errors.New("unexpected end of input while parsing key-value key")
+	case stateKeyValueEquals:
+		return nil, errors.New("unexpected end of input after '=' in key-value")
+	case stateKeyValueValue:
+		return nil, errors.New("unexpected end of input while parsing key-value value")
+	case stateKeyValueValueQuote:
+		return nil, errors.New("unexpected end of input after quote in key-value value")
 	case stateEnd:
 		return result, nil
 	default:
 		return nil, fmt.Errorf("parser error at position %d", pos)
 	}
+}
+
+// isKeyValueKeyChar checks if character is valid for key-value key (identifier-like)
+func isKeyValueKeyChar(ch byte) bool {
+	return (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9') || ch == '_'
 }
 
 // isReservedFieldChar checks if character is reserved and cannot be used in field names
