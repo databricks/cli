@@ -15,7 +15,7 @@ var errSkip = errors.New("skip")
 //   - packages: list of packages to unit test (empty means test all)
 //   - acceptancePrefixes: list of acceptance test prefixes (empty means test all)
 //   - error: errSkip to skip these files, or nil/other error
-type RuleFunc func(files []string) (packages []string, acceptancePrefixes []string, err error)
+type RuleFunc func(files []string) (packages, acceptancePrefixes []string, err error)
 
 func main() {
 	baseRef := os.Getenv("GITHUB_BASE_REF")
