@@ -7,7 +7,6 @@ import (
 	mcpsdk "github.com/databricks/cli/experimental/apps-mcp/lib/mcp"
 	"github.com/databricks/cli/experimental/apps-mcp/lib/providers"
 	"github.com/databricks/cli/experimental/apps-mcp/lib/session"
-	"github.com/databricks/cli/experimental/apps-mcp/lib/templates"
 	"github.com/databricks/cli/libs/log"
 )
 
@@ -21,19 +20,17 @@ func init() {
 
 // Provider implements the I/O provider for scaffolding and validation
 type Provider struct {
-	config          *mcp.IoConfig
-	session         *session.Session
-	ctx             context.Context
-	defaultTemplate templates.Template
+	config  *mcp.IoConfig
+	session *session.Session
+	ctx     context.Context
 }
 
 // NewProvider creates a new I/O provider
 func NewProvider(ctx context.Context, cfg *mcp.IoConfig, sess *session.Session) (*Provider, error) {
 	return &Provider{
-		config:          cfg,
-		session:         sess,
-		ctx:             ctx,
-		defaultTemplate: templates.GetAppKitTemplate(),
+		config:  cfg,
+		session: sess,
+		ctx:     ctx,
 	}, nil
 }
 
@@ -50,7 +47,7 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 	type ScaffoldInput struct {
 		WorkDir        string `json:"work_dir" jsonschema:"required" jsonschema_description:"Absolute path to the work directory"`
 		AppName        string `json:"app_name" jsonschema:"required" jsonschema_description:"Name of the app (alphanumeric and dash characters only)"`
-		AppDescription string `json:"app_description,omitempty" jsonschema_description:"Description of the app (max 100 characters)"`
+		AppDescription string `json:"app_description" jsonschema:"required" jsonschema_description:"Description of the app (max 100 characters)"`
 	}
 
 	mcpsdk.AddTool(server,

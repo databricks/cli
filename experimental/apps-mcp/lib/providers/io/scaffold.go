@@ -1,20 +1,26 @@
 package io
 
 import (
-	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/fs"
+	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
-	"text/template"
 
 	"github.com/databricks/cli/experimental/apps-mcp/lib/middlewares"
-	"github.com/databricks/cli/experimental/apps-mcp/lib/templates"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
+)
+
+const (
+	defaultTemplateRepo = "https://github.com/databricks/cli"
+	defaultTemplateDir  = "experimental/apps-mcp/templates/appkit"
+	defaultTemplateTag  = "main"
 )
 
 // ScaffoldArgs contains arguments for scaffolding operation
@@ -26,10 +32,9 @@ type ScaffoldArgs struct {
 
 // ScaffoldResult contains the result of a scaffold operation
 type ScaffoldResult struct {
-	FilesCopied         int    `json:"files_copied"`
-	WorkDir             string `json:"work_dir"`
-	TemplateName        string `json:"template_name"`
-	TemplateDescription string `json:"template_description"`
+	WorkDir      string `json:"work_dir"`
+	TemplateName string `json:"template_name"`
+	AppName      string `json:"app_name"`
 }
 
 // Scaffold copies template files to the work directory
@@ -93,13 +98,6 @@ func (p *Provider) Scaffold(ctx context.Context, args *ScaffoldArgs) (*ScaffoldR
 		return nil, fmt.Errorf("failed to create directory: %w", err)
 	}
 
-	// Get template
-	tmpl := p.getTemplate()
-	files, err := tmpl.Files()
-	if err != nil {
-		return nil, fmt.Errorf("failed to read template: %w", err)
-	}
-
 	// Get template data
 	warehouseID, err := middlewares.GetWarehouseID(ctx)
 	if err != nil {
@@ -107,70 +105,53 @@ func (p *Provider) Scaffold(ctx context.Context, args *ScaffoldArgs) (*ScaffoldR
 	}
 	host := middlewares.MustGetDatabricksClient(ctx).Config.Host
 
-	templateData := map[string]string{
-		"WarehouseID":    warehouseID,
-		"WorkspaceURL":   host,
-		"AppName":        normalizedAppName,
-		"AppDescription": args.AppDescription,
+	// create temp config file with parameters
+	configMap := map[string]string{
+		"project_name":     normalizedAppName,
+		"sql_warehouse_id": warehouseID,
+		"app_description":  args.AppDescription,
+		"workspace_host":   host,
 	}
 
-	// Copy files
-	filesCopied := 0
-	for path, content := range files {
-		// Check if there's a corresponding .tmpl file for this path
-		tmplPath := path + ".tmpl"
-		if _, hasTmpl := files[tmplPath]; hasTmpl {
-			// Skip this file, the .tmpl version will be processed instead
-			continue
-		}
-
-		// Determine final path and content
-		var finalPath string
-		var finalContent string
-		if strings.HasSuffix(path, ".tmpl") {
-			// This is a template file, process it
-			finalPath = strings.TrimSuffix(path, ".tmpl")
-
-			// Parse and execute the template
-			t, err := template.New(path).Parse(content)
-			if err != nil {
-				return nil, fmt.Errorf("failed to parse template %s: %w", path, err)
-			}
-
-			var buf bytes.Buffer
-			if err := t.Execute(&buf, templateData); err != nil {
-				return nil, fmt.Errorf("failed to execute template %s: %w", path, err)
-			}
-			finalContent = buf.String()
-		} else {
-			// Regular file, use as-is
-			finalPath = path
-			finalContent = content
-		}
-
-		// filer.Write handles creating parent directories if requested
-		if err := f.Write(ctx, finalPath, bytes.NewReader([]byte(finalContent)), filer.CreateParentDirectories); err != nil {
-			return nil, fmt.Errorf("failed to write %s: %w", finalPath, err)
-		}
-
-		filesCopied++
+	configBytes, err := json.Marshal(configMap)
+	if err != nil {
+		return nil, fmt.Errorf("marshal config: %w", err)
 	}
 
-	log.Infof(ctx, "scaffolded project (template=%s, work_dir=%s, files=%d)",
-		tmpl.Name(), workDir, filesCopied)
+	tmpFile, err := os.CreateTemp("", "mcp-template-config-*.json")
+	if err != nil {
+		return nil, fmt.Errorf("create temp config file: %w", err)
+	}
+	defer os.Remove(tmpFile.Name())
+
+	if _, err := tmpFile.Write(configBytes); err != nil {
+		return nil, fmt.Errorf("write config file: %w", err)
+	}
+	if err := tmpFile.Close(); err != nil {
+		return nil, fmt.Errorf("close config file: %w", err)
+	}
+
+	// Invoke databricks CLI to initialize the bundle
+	cmd := exec.CommandContext(ctx, os.Args[0], "bundle", "init",
+		defaultTemplateRepo,
+		"--template-dir", defaultTemplateDir,
+		"--tag", defaultTemplateTag,
+		"--config-file", tmpFile.Name(),
+		"--output-dir", workDir,
+	)
+	cmd.Env = append(os.Environ(), "DATABRICKS_HOST="+host, "DATABRICKS_BUNDLE_ENGINE=direct-exp")
+
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return nil, fmt.Errorf("databricks bundle init failed: %w\nOutput: %s", err, string(output))
+	}
+
+	log.Infof(ctx, "scaffolded project (template=%s, work_dir=%s)",
+		defaultTemplateRepo+"/"+defaultTemplateDir, workDir)
 
 	return &ScaffoldResult{
-		FilesCopied:         filesCopied,
-		WorkDir:             workDir,
-		TemplateName:        tmpl.Name(),
-		TemplateDescription: tmpl.Description(),
+		WorkDir:      workDir,
+		TemplateName: defaultTemplateRepo + "/" + defaultTemplateDir,
+		AppName:      args.AppName,
 	}, nil
-}
-
-func (p *Provider) getTemplate() templates.Template {
-	// TODO: Support custom templates by checking p.config.Template.Path
-	// and loading from filesystem. Not yet implemented.
-
-	// Default to AppKit template
-	return p.defaultTemplate
 }

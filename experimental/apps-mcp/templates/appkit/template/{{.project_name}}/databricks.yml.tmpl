@@ -1,5 +1,5 @@
 bundle:
-  name: {{.AppName}}
+  name: {{.project_name}}
 
 variables:
   warehouse_id:
@@ -9,9 +9,9 @@ variables:
 
 resources:
   apps:
-    {{.AppName}}:
-      name: ${bundle.target}-{{.AppName}}
-      description: {{.AppDescription}}
+    app:
+      name: ${bundle.target}-{{.project_name}}
+      description: {{.app_description}}
       source_code_path: ./
 
       # Uncomment to enable on behalf of user API scopes. Available scopes: sql, dashboards.genie, files.files
@@ -30,10 +30,10 @@ targets:
     mode: development
     default: true
     workspace:
-      host: {{.WorkspaceURL}}
+      host: {{workspace_host}}
 
     variables:
-      warehouse_id: {{.WarehouseID}}
+      warehouse_id: {{.sql_warehouse_id}}
 
   prod:
     mode: production
@@ -43,5 +43,5 @@ targets:
     #   warehouse_id: ...
     resources:
       apps:
-        {{.AppName}}:
-          name: {{.AppName}}
+        app:
+          name: {{.project_name}}
