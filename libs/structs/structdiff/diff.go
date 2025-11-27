@@ -287,6 +287,7 @@ func (ctx *diffContext) findKeyFunc(path *structpath.PathNode) KeyFunc {
 		return nil
 	}
 	pathStr := pathToPattern(path)
+	fmt.Printf("looking up %q\n", pathStr)
 	return ctx.sliceKeys[pathStr]
 }
 

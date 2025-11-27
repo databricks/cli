@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"sort"
 	"strings"
 
 	"github.com/databricks/cli/libs/structs/structvar"
@@ -85,9 +84,6 @@ func PrepareGrantsInputConfig(inputConfig any, node string) (*structvar.StructVa
 			privileges = append(privileges, catalog.Privilege(item.String()))
 		}
 
-		// Backend sorts privileges, so we sort here as well.
-		sortPriviliges(privileges)
-
 		grants = append(grants, GrantAssignment{
 			Principal:  principal,
 			Privileges: privileges,
@@ -116,6 +112,21 @@ func (*ResourceGrants) New(client *databricks.WorkspaceClient) *ResourceGrants {
 
 func (*ResourceGrants) PrepareState(state *GrantsState) *GrantsState {
 	return state
+}
+
+func privilegeKey(x catalog.Privilege) (string, string, error) {
+	return "", string(x), nil
+}
+
+func grantAssignmentKey(x GrantAssignment) (string, string, error) {
+	return "principal", x.Principal, nil
+}
+
+func (*ResourceGrants) KeyedSlices(s *GrantsState) map[string]any {
+	return map[string]any{
+		"grants":               grantAssignmentKey,
+		"grants[*].privileges": privilegeKey,
+	}
 }
 
 func (r *ResourceGrants) DoRead(ctx context.Context, id string) (*GrantsState, error) {
@@ -212,12 +223,6 @@ func (r *ResourceGrants) listGrants(ctx context.Context, securableType, fullName
 		pageToken = resp.NextPageToken
 	}
 	return assignments, nil
-}
-
-func sortPriviliges(privileges []catalog.Privilege) {
-	sort.Slice(privileges, func(i, j int) bool {
-		return privileges[i] < privileges[j]
-	})
 }
 
 func extractGrantResourceType(node string) (string, error) {
