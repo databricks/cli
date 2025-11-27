@@ -14,14 +14,14 @@ const (
 	// Encodes string key, which is encoded as .field or as ['spark.conf']
 	tagStringKey = -1
 
-	// Encodes key/value index, which is encoded as [key='value'] or [key="value"]
-	tagKeyValue = -2
-
 	// Encodes wildcard after a dot: foo.*
-	tagDotStar = -3
+	tagDotStar = -2
 
 	// Encodes wildcard in brackets: foo[*]
-	tagBracketStar = -4
+	tagBracketStar = -3
+
+	// Encodes key/value index, which is encoded as [key='value'] or [key="value"]
+	tagKeyValue = -4
 )
 
 // PathNode represents a node in a path for struct diffing.
@@ -226,7 +226,7 @@ func EncodeMapKey(s string) string {
 //   - MAP_KEY_QUOTE: Encountered "'" in map key, expects "'" (escape) or "]" (end)
 //   - WILDCARD: Reading "*" in brackets, expects "]"
 //   - KEYVALUE_KEY: Reading key part of [key='value'], expects identifier chars or "="
-//   - KEYVALUE_EQUALS: After key, expecting "'" or '"' to start value
+//   - KEYVALUE_EQUALS: After key, expecting "'" to start value
 //   - KEYVALUE_VALUE: Reading value content, expects any char or quote
 //   - KEYVALUE_VALUE_QUOTE: Encountered quote in value, expects same quote (escape) or "]" (end)
 //   - EXPECT_DOT_OR_END: After bracket close, expects ".", "[" or end of string
@@ -275,7 +275,6 @@ func Parse(s string) (*PathNode, error) {
 	var result *PathNode
 	var currentToken strings.Builder
 	var keyValueKey string // Stores the key part of [key='value']
-	var keyValueQuote byte // Stores the quote character used (' or ")
 	pos := 0
 
 	for pos < len(s) {
@@ -404,15 +403,14 @@ func Parse(s string) (*PathNode, error) {
 			}
 
 		case stateKeyValueEquals:
-			if ch == '\'' || ch == '"' {
-				keyValueQuote = ch
+			if ch == '\'' {
 				state = stateKeyValueValue
 			} else {
 				return nil, fmt.Errorf("expected quote after '=' but got '%c' at position %d", ch, pos)
 			}
 
 		case stateKeyValueValue:
-			if ch == keyValueQuote {
+			if ch == '\'' {
 				state = stateKeyValueValueQuote
 			} else {
 				currentToken.WriteByte(ch)
@@ -420,7 +418,7 @@ func Parse(s string) (*PathNode, error) {
 
 		case stateKeyValueValueQuote:
 			switch ch {
-			case keyValueQuote:
+			case '\'':
 				// Escaped quote - add single quote to value and continue
 				currentToken.WriteByte(ch)
 				state = stateKeyValueValue

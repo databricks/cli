@@ -216,27 +216,6 @@ func TestPathNode(t *testing.T) {
 		},
 	}
 
-	// Additional test for parsing double-quoted key-value
-	t.Run("key value with double quotes parses correctly", func(t *testing.T) {
-		parsed, err := Parse(`[name="foo"]`)
-		assert.NoError(t, err)
-		key, value, ok := parsed.KeyValue()
-		assert.True(t, ok)
-		assert.Equal(t, "name", key)
-		assert.Equal(t, "foo", value)
-		// Serializes with single quotes
-		assert.Equal(t, "[name='foo']", parsed.String())
-	})
-
-	t.Run("key value with double quotes and escaped double quote", func(t *testing.T) {
-		parsed, err := Parse(`[name="it""s"]`)
-		assert.NoError(t, err)
-		key, value, ok := parsed.KeyValue()
-		assert.True(t, ok)
-		assert.Equal(t, "name", key)
-		assert.Equal(t, `it"s`, value)
-	})
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Test String() method
@@ -488,6 +467,16 @@ func TestParseErrors(t *testing.T) {
 			name:  "key-value invalid char after value quote",
 			input: "[name='value'x]",
 			error: "unexpected character 'x' after quote in key-value at position 13",
+		},
+		{
+			name:  "double quotes are not supported a.t.m",
+			input: "[name=\"value\"]",
+			error: "expected quote after '=' but got '\"' at position 6",
+		},
+		{
+			name:  "mixed quotes never going to be supported",
+			input: "[name='value\"]",
+			error: "unexpected end of input while parsing key-value value",
 		},
 	}
 
