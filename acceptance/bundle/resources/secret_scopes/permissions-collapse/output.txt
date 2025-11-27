@@ -16,7 +16,7 @@ Deployment complete!
 
 === verify permissions are collapsed correctly
 >>> [CLI] secrets list-acls test-scope-collapse-[UNIQUE_NAME]
-{"permission":"READ","principal":"[USERNAME]"}
+{"permission":"MANAGE","principal":"[USERNAME]"}
 {"permission":"WRITE","principal":"deco-test-user@databricks.com"}
 {"permission":"WRITE","principal":"users"}
 
