@@ -25,8 +25,8 @@
             {
               "principal": "deco-test-user@databricks.com",
               "privileges": [
-                "CREATE_TABLE",
-                "USE_SCHEMA"
+                "USE_SCHEMA",
+                "CREATE_TABLE"
               ]
             }
           ]
