@@ -202,6 +202,12 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			b.RemoteStateCache.Store(resourceKey, remoteState)
 		}
 
+		// Validate that resources without DoUpdate don't have update actions
+		if action == deployplan.ActionTypeUpdate && !adapter.HasDoUpdate() {
+			logdiag.LogError(ctx, fmt.Errorf("%s: resource does not support update action but plan produced update", errorPrefix))
+			return false
+		}
+
 		entry.Action = action.String()
 
 		if len(localChangeMap) > 0 || len(remoteChangeMap) > 0 {
