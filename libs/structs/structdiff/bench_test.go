@@ -19,7 +19,7 @@ func bench(b *testing.B, job1, job2 string) {
 
 	b.ResetTimer()
 	for range b.N {
-		changes, err := GetStructDiff(&x, &y)
+		changes, err := GetStructDiff(&x, &y, nil)
 		if err != nil {
 			b.Fatalf("error: %s", err)
 		}

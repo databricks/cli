@@ -460,7 +460,7 @@ func TestSet(t *testing.T) {
 			require.NoError(t, err)
 
 			// Compare the actual changes using structdiff
-			changes, err := structdiff.GetStructDiff(original, target)
+			changes, err := structdiff.GetStructDiff(original, target, nil)
 			require.NoError(t, err)
 			assert.Equal(t, tt.expectedChanges, changes)
 		})

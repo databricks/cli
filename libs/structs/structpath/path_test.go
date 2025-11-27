@@ -13,6 +13,7 @@ func TestPathNode(t *testing.T) {
 		String      string
 		Index       any
 		StringKey   any
+		KeyValue    []string // [key, value] or nil
 		Root        any
 		DotStar     bool
 		BracketStar bool
@@ -47,6 +48,12 @@ func TestPathNode(t *testing.T) {
 			node:        NewBracketStar(nil),
 			String:      "[*]",
 			BracketStar: true,
+		},
+		{
+			name:     "key value",
+			node:     NewKeyValue(nil, "name", "foo"),
+			String:   "[name='foo']",
+			KeyValue: []string{"name", "foo"},
 		},
 
 		// Two node tests
@@ -175,6 +182,38 @@ func TestPathNode(t *testing.T) {
 			String:      "bla.*[*]",
 			BracketStar: true,
 		},
+
+		// Key-value tests
+		{
+			name:     "key value with parent",
+			node:     NewKeyValue(NewStringKey(nil, "tasks"), "task_key", "my_task"),
+			String:   "tasks[task_key='my_task']",
+			KeyValue: []string{"task_key", "my_task"},
+		},
+		{
+			name:      "key value then field",
+			node:      NewStringKey(NewKeyValue(nil, "name", "foo"), "id"),
+			String:    "[name='foo'].id",
+			StringKey: "id",
+		},
+		{
+			name:     "key value with quote in value",
+			node:     NewKeyValue(nil, "name", "it's"),
+			String:   "[name='it''s']",
+			KeyValue: []string{"name", "it's"},
+		},
+		{
+			name:     "key value with empty value",
+			node:     NewKeyValue(nil, "key", ""),
+			String:   "[key='']",
+			KeyValue: []string{"key", ""},
+		},
+		{
+			name:      "complex path with key value",
+			node:      NewStringKey(NewKeyValue(NewStringKey(NewStringKey(nil, "resources"), "jobs"), "task_key", "my_task"), "notebook_task"),
+			String:    "resources.jobs[task_key='my_task'].notebook_task",
+			StringKey: "notebook_task",
+		},
 	}
 
 	for _, tt := range tests {
@@ -210,6 +249,18 @@ func TestPathNode(t *testing.T) {
 				expected := tt.StringKey.(string)
 				assert.Equal(t, expected, gotStringKey)
 				assert.True(t, isStringKey)
+			}
+
+			// KeyValue
+			gotKey, gotValue, isKeyValue := tt.node.KeyValue()
+			if tt.KeyValue == nil {
+				assert.Equal(t, "", gotKey)
+				assert.Equal(t, "", gotValue)
+				assert.False(t, isKeyValue)
+			} else {
+				assert.Equal(t, tt.KeyValue[0], gotKey)
+				assert.Equal(t, tt.KeyValue[1], gotValue)
+				assert.True(t, isKeyValue)
 			}
 
 			// IsRoot
@@ -266,12 +317,12 @@ func TestParseErrors(t *testing.T) {
 		{
 			name:  "invalid array index",
 			input: "[abc]",
-			error: "unexpected character 'a' after '[' at position 1",
+			error: "unexpected character ']' in key-value key at position 4",
 		},
 		{
 			name:  "negative array index",
 			input: "[-1]",
-			error: "unexpected character '-' after '[' at position 1",
+			error: "unexpected character ']' in key-value key at position 3",
 		},
 		{
 			name:  "unclosed map key quote",
@@ -331,7 +382,7 @@ func TestParseErrors(t *testing.T) {
 		{
 			name:  "invalid character in bracket",
 			input: "field[name",
-			error: "unexpected character 'n' after '[' at position 6",
+			error: "unexpected end of input while parsing key-value key",
 		},
 		{
 			name:  "unexpected character after valid path",
@@ -379,6 +430,53 @@ func TestParseErrors(t *testing.T) {
 			name:  "dot star followed by field name",
 			input: "bla.*foo",
 			error: "unexpected character 'f' after '.*' at position 5",
+		},
+
+		// Invalid key-value patterns
+		{
+			name:  "key-value missing equals",
+			input: "[name'value']",
+			error: "unexpected character ''' in key-value key at position 5",
+		},
+		{
+			name:  "key-value missing value quote",
+			input: "[name=value]",
+			error: "expected quote after '=' but got 'v' at position 6",
+		},
+		{
+			name:  "key-value incomplete key",
+			input: "[name",
+			error: "unexpected end of input while parsing key-value key",
+		},
+		{
+			name:  "key-value incomplete after equals",
+			input: "[name=",
+			error: "unexpected end of input after '=' in key-value",
+		},
+		{
+			name:  "key-value incomplete value",
+			input: "[name='value",
+			error: "unexpected end of input while parsing key-value value",
+		},
+		{
+			name:  "key-value incomplete after value quote",
+			input: "[name='value'",
+			error: "unexpected end of input after quote in key-value value",
+		},
+		{
+			name:  "key-value invalid char after value quote",
+			input: "[name='value'x]",
+			error: "unexpected character 'x' after quote in key-value at position 13",
+		},
+		{
+			name:  "double quotes are not supported a.t.m",
+			input: "[name=\"value\"]",
+			error: "expected quote after '=' but got '\"' at position 6",
+		},
+		{
+			name:  "mixed quotes never going to be supported",
+			input: "[name='value\"]",
+			error: "unexpected end of input while parsing key-value value",
 		},
 	}
 
