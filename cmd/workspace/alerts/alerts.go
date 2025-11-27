@@ -27,10 +27,7 @@ func New() *cobra.Command {
   the condition was met. Alerts can be scheduled using the sql_task type of
   the Jobs API, e.g. :method:jobs/create.`,
 		GroupID: "sql",
-		Annotations: map[string]string{
-			"package": "sql",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

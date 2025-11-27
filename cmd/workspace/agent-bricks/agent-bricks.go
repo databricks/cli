@@ -24,9 +24,6 @@ func New() *cobra.Command {
 		Long: `The Custom LLMs service manages state and powers the UI for the Custom LLM
   product.`,
 		GroupID: "agentbricks",
-		Annotations: map[string]string{
-			"package": "agentbricks",
-		},
 
 		// This service is being previewed; hide from help output.
 		Hidden: true,

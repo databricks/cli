@@ -27,10 +27,7 @@ func New() *cobra.Command {
   data permission on the schema and its parent catalog, and they must have the
   SELECT permission on the table or view.`,
 		GroupID: "catalog",
-		Annotations: map[string]string{
-			"package": "catalog",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

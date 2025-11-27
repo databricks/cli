@@ -22,10 +22,7 @@ func New() *cobra.Command {
 		Long: `These APIs manage network configurations for customer-managed VPCs (optional).
   Its ID is used when creating a new workspace if you use customer-managed VPCs.`,
 		GroupID: "provisioning",
-		Annotations: map[string]string{
-			"package": "provisioning",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

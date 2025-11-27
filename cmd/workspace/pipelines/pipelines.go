@@ -37,10 +37,7 @@ func New() *cobra.Command {
   expected data quality and specify how to handle records that fail those
   expectations.`,
 		GroupID: "pipelines",
-		Annotations: map[string]string{
-			"package": "pipelines",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

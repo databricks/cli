@@ -49,10 +49,7 @@ func New() *cobra.Command {
   it has been terminated for more than 30 days, an administrator can pin a
   cluster to the cluster list.`,
 		GroupID: "compute",
-		Annotations: map[string]string{
-			"package": "compute",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

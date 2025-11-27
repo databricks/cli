@@ -82,14 +82,10 @@ func (s *Server) RegisterTools(ctx context.Context) error {
 		return err
 	}
 
-	// Register deployment provider if enabled
-	if s.config.AllowDeployment {
-		log.Info(ctx, "Deployment provider enabled")
-		if err := s.registerDeploymentProvider(ctx); err != nil {
-			return err
-		}
-	} else {
-		log.Info(ctx, "Deployment provider disabled (enable with allow_deployment: true)")
+	// Always register deployment provider
+	log.Info(ctx, "Deployment provider enabled")
+	if err := s.registerDeploymentProvider(ctx); err != nil {
+		return err
 	}
 
 	return nil
