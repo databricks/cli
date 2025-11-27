@@ -302,6 +302,7 @@ func (ctx *diffContext) findSliceKeyFunc(path *structpath.PathNode) SliceKeyFunc
 
 // pathToPattern converts a PathNode to a pattern string for matching.
 // Slice indices are converted to [*] wildcard.
+// XXX why indices are special; why do we need this; if we need this, should it be in structpath instead?
 func pathToPattern(path *structpath.PathNode) string {
 	if path == nil {
 		return ""
@@ -337,45 +338,46 @@ func pathToPattern(path *structpath.PathNode) string {
 type sliceElement struct {
 	keyField string
 	keyValue string
-	index    int
 	value    reflect.Value
 }
 
 // diffSliceByKey compares two slices using the provided key function.
 // Elements are matched by their (keyField, keyValue) pairs instead of by index.
+// Duplicate keys are allowed and matched in order.
 func diffSliceByKey(ctx *diffContext, path *structpath.PathNode, v1, v2 reflect.Value, keyFunc SliceKeyFunc, changes *[]Change) error {
 	caller, err := newSliceKeyFuncCaller(keyFunc)
 	if err != nil {
 		return err
 	}
 
-	elements1 := make(map[string]sliceElement)
-	elements2 := make(map[string]sliceElement)
+	// Build lists of elements grouped by key, preserving order within each key
+	elements1 := make(map[string][]sliceElement)
+	elements2 := make(map[string][]sliceElement)
 	seen := make(map[string]bool)
 	var orderedKeys []string
 
-	// Build map from first slice, collecting keys in order
+	// Build from first slice
 	for i := range v1.Len() {
 		elem := v1.Index(i)
 		keyField, keyValue, err := caller.call(elem.Interface())
 		if err != nil {
 			return err
 		}
-		elements1[keyValue] = sliceElement{keyField: keyField, keyValue: keyValue, index: i, value: elem}
+		elements1[keyValue] = append(elements1[keyValue], sliceElement{keyField: keyField, keyValue: keyValue, value: elem})
 		if !seen[keyValue] {
 			seen[keyValue] = true
 			orderedKeys = append(orderedKeys, keyValue)
 		}
 	}
 
-	// Build map from second slice, adding new keys in order
+	// Build from second slice
 	for i := range v2.Len() {
 		elem := v2.Index(i)
 		keyField, keyValue, err := caller.call(elem.Interface())
 		if err != nil {
 			return err
 		}
-		elements2[keyValue] = sliceElement{keyField: keyField, keyValue: keyValue, index: i, value: elem}
+		elements2[keyValue] = append(elements2[keyValue], sliceElement{keyField: keyField, keyValue: keyValue, value: elem})
 		if !seen[keyValue] {
 			seen[keyValue] = true
 			orderedKeys = append(orderedKeys, keyValue)
@@ -384,25 +386,35 @@ func diffSliceByKey(ctx *diffContext, path *structpath.PathNode, v1, v2 reflect.
 
 	// Compare elements by key in original order
 	for _, keyValue := range orderedKeys {
-		elem1, has1 := elements1[keyValue]
-		elem2, has2 := elements2[keyValue]
+		list1 := elements1[keyValue]
+		list2 := elements2[keyValue]
 
 		var keyField string
-		if has1 {
-			keyField = elem1.keyField
+		if len(list1) > 0 {
+			keyField = list1[0].keyField
 		} else {
-			keyField = elem2.keyField
+			keyField = list2[0].keyField
 		}
-		node := structpath.NewKeyValue(path, keyField, keyValue)
 
-		if has1 && has2 {
-			if err := diffValues(ctx, node, elem1.value, elem2.value, changes); err != nil {
+		// Match elements in order
+		minLen := min(len(list1), len(list2))
+		for i := range minLen {
+			node := structpath.NewKeyValue(path, keyField, keyValue)
+			if err := diffValues(ctx, node, list1[i].value, list2[i].value, changes); err != nil {
 				return err
 			}
-		} else if has1 {
-			*changes = append(*changes, Change{Path: node, Old: elem1.value.Interface(), New: nil})
-		} else {
-			*changes = append(*changes, Change{Path: node, Old: nil, New: elem2.value.Interface()})
+		}
+
+		// Handle extra elements in old (deleted)
+		for i := minLen; i < len(list1); i++ {
+			node := structpath.NewKeyValue(path, keyField, keyValue)
+			*changes = append(*changes, Change{Path: node, Old: list1[i].value.Interface(), New: nil})
+		}
+
+		// Handle extra elements in new (added)
+		for i := minLen; i < len(list2); i++ {
+			node := structpath.NewKeyValue(path, keyField, keyValue)
+			*changes = append(*changes, Change{Path: node, Old: nil, New: list2[i].value.Interface()})
 		}
 	}
 	return nil

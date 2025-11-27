@@ -643,3 +643,57 @@ func TestGetStructDiffSliceKeysWrongArgType(t *testing.T) {
 	_, err := GetStructDiff(a, b, sliceKeys)
 	assert.EqualError(t, err, "SliceKeyFunc expects structdiff.Item, got structdiff.Task")
 }
+
+func TestGetStructDiffSliceKeysDuplicates(t *testing.T) {
+	sliceKeys := map[string]SliceKeyFunc{
+		"tasks": taskKeyFunc,
+	}
+
+	tests := []struct {
+		name string
+		a, b Job
+		want []ResolvedChange
+	}{
+		{
+			name: "same duplicates no change",
+			a:    Job{Tasks: []Task{{TaskKey: "a", Description: "1"}, {TaskKey: "a", Description: "2"}}},
+			b:    Job{Tasks: []Task{{TaskKey: "a", Description: "1"}, {TaskKey: "a", Description: "2"}}},
+			want: nil,
+		},
+		{
+			name: "duplicates with field change",
+			a:    Job{Tasks: []Task{{TaskKey: "a", Description: "1"}, {TaskKey: "a", Description: "2"}}},
+			b:    Job{Tasks: []Task{{TaskKey: "a", Description: "1"}, {TaskKey: "a", Description: "changed"}}},
+			want: []ResolvedChange{{Field: "tasks[task_key='a'].description", Old: "2", New: "changed"}},
+		},
+		{
+			name: "extra in old is deleted",
+			a:    Job{Tasks: []Task{{TaskKey: "a", Description: "1"}, {TaskKey: "a", Description: "2"}}},
+			b:    Job{Tasks: []Task{{TaskKey: "a", Description: "1"}}},
+			want: []ResolvedChange{{Field: "tasks[task_key='a']", Old: Task{TaskKey: "a", Description: "2"}, New: nil}},
+		},
+		{
+			name: "extra in new is added",
+			a:    Job{Tasks: []Task{{TaskKey: "a", Description: "1"}}},
+			b:    Job{Tasks: []Task{{TaskKey: "a", Description: "1"}, {TaskKey: "a", Description: "2"}}},
+			want: []ResolvedChange{{Field: "tasks[task_key='a']", Old: nil, New: Task{TaskKey: "a", Description: "2"}}},
+		},
+		{
+			name: "two in old one in new with change",
+			a:    Job{Tasks: []Task{{TaskKey: "a", Description: "1"}, {TaskKey: "a", Description: "2"}}},
+			b:    Job{Tasks: []Task{{TaskKey: "a", Description: "changed"}}},
+			want: []ResolvedChange{
+				{Field: "tasks[task_key='a'].description", Old: "1", New: "changed"},
+				{Field: "tasks[task_key='a']", Old: Task{TaskKey: "a", Description: "2"}, New: nil},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := GetStructDiff(tt.a, tt.b, sliceKeys)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.want, resolveChanges(got))
+		})
+	}
+}
