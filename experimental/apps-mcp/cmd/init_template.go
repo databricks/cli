@@ -1,16 +1,58 @@
 package mcp
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/template"
 	"github.com/spf13/cobra"
 )
+
+func readClaudeMd(ctx context.Context, configFile string) {
+	showFallback := func() {
+		cmdio.LogString(ctx, "\nConsult with CLAUDE.md provided in the bundle if present.")
+	}
+
+	if configFile == "" {
+		showFallback()
+		return
+	}
+
+	configBytes, err := os.ReadFile(configFile)
+	if err != nil {
+		showFallback()
+		return
+	}
+
+	var config map[string]any
+	if err := json.Unmarshal(configBytes, &config); err != nil {
+		showFallback()
+		return
+	}
+
+	projectName, ok := config["project_name"].(string)
+	if !ok || projectName == "" {
+		showFallback()
+		return
+	}
+
+	claudePath := filepath.Join(".", projectName, "CLAUDE.md")
+	content, err := os.ReadFile(claudePath)
+	if err != nil {
+		showFallback()
+		return
+	}
+
+	cmdio.LogString(ctx, "\n=== CLAUDE.md ===")
+	cmdio.LogString(ctx, string(content))
+	cmdio.LogString(ctx, "=================\n")
+}
 
 func newInitTemplateCmd() *cobra.Command {
 	cmd := &cobra.Command{
@@ -109,7 +151,6 @@ See https://docs.databricks.com/en/dev-tools/bundles/templates.html for more inf
 			return nil
 		}
 
-		// NEW: Handle config_json by creating temp config file
 		if configJSON != "" {
 			var userConfigMap map[string]any
 			if err := json.Unmarshal([]byte(configJSON), &userConfigMap); err != nil {
@@ -162,6 +203,10 @@ See https://docs.databricks.com/en/dev-tools/bundles/templates.html for more inf
 			return err
 		}
 		tmpl.Writer.LogTelemetry(ctx)
+
+		// Try to read and display CLAUDE.md if present
+		readClaudeMd(ctx, configFile)
+
 		return nil
 	}
 	return cmd
