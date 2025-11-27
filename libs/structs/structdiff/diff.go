@@ -83,6 +83,7 @@ type diffContext struct {
 // paths are compared as maps keyed by (keyField, keyValue) instead of by index.
 // Path patterns use dot notation (e.g., "tasks" or "job.tasks").
 // The [*] wildcard matches any slice index in the path.
+// Note, key wildcard is not supported yet ("a.*.c")
 // Pass nil if no slice key functions are needed.
 func GetStructDiff(a, b any, sliceKeys map[string]KeyFunc) ([]Change, error) {
 	v1 := reflect.ValueOf(a)
