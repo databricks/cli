@@ -84,7 +84,7 @@ type IResource interface {
 	// [Optional] WaitAfterUpdate waits for the resource to become ready after update. Returns optionally updated remote state.
 	WaitAfterUpdate(ctx context.Context, newState any) (remoteState any, e error)
 
-	// [Optional] KeyedSlices returns a map from path patterns to SliceKeyFunc for comparing slices by key instead of by index.
+	// [Optional] KeyedSlices returns a map from path patterns to KeyFunc for comparing slices by key instead of by index.
 	// Example: func (*ResourcePermissions) KeyedSlices(state *PermissionsState) map[string]any
 	KeyedSlices(state any) map[string]any
 }
@@ -648,7 +648,7 @@ func (a *Adapter) ClassifyChange(change structdiff.Change, remoteState any, isLo
 	return actionType, nil
 }
 
-// KeyedSlices returns a map from path patterns to SliceKeyFunc for comparing slices by key.
+// KeyedSlices returns a map from path patterns to KeyFunc for comparing slices by key.
 // If the resource doesn't implement KeyedSlices, returns nil.
 func (a *Adapter) KeyedSlices() map[string]any {
 	return a.keyedSlices

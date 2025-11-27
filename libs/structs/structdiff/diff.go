@@ -17,47 +17,47 @@ type Change struct {
 	New  any
 }
 
-// SliceKeyFunc extracts a key field name and value from a slice element.
+// KeyFunc extracts a key field name and value from a slice element.
 // It can be either:
 //   - func(T) (string, string, error) - typed function for specific element type T
 //   - func(any) (string, string, error) - generic function accepting any element
 //
 // The function returns (keyField, keyValue, error). The keyField is typically a field name
 // like "task_key", and keyValue is the value that uniquely identifies the element.
-type SliceKeyFunc = any
+type KeyFunc = any
 
-// sliceKeyFuncCaller wraps a SliceKeyFunc and provides a type-checked Call method.
-type sliceKeyFuncCaller struct {
+// keyFuncCaller wraps a KeyFunc and provides a type-checked Call method.
+type keyFuncCaller struct {
 	fn      reflect.Value
 	argType reflect.Type
 }
 
-func newSliceKeyFuncCaller(fn any) (*sliceKeyFuncCaller, error) {
+func newKeyFuncCaller(fn any) (*keyFuncCaller, error) {
 	v := reflect.ValueOf(fn)
 	if v.Kind() != reflect.Func {
-		return nil, fmt.Errorf("SliceKeyFunc must be a function, got %T", fn)
+		return nil, fmt.Errorf("KeyFunc must be a function, got %T", fn)
 	}
 	t := v.Type()
 	if t.NumIn() != 1 {
-		return nil, fmt.Errorf("SliceKeyFunc must have exactly 1 parameter, got %d", t.NumIn())
+		return nil, fmt.Errorf("KeyFunc must have exactly 1 parameter, got %d", t.NumIn())
 	}
 	if t.NumOut() != 3 {
-		return nil, fmt.Errorf("SliceKeyFunc must return exactly 3 values, got %d", t.NumOut())
+		return nil, fmt.Errorf("KeyFunc must return exactly 3 values, got %d", t.NumOut())
 	}
 	if t.Out(0).Kind() != reflect.String || t.Out(1).Kind() != reflect.String {
-		return nil, fmt.Errorf("SliceKeyFunc must return (string, string, error), got (%v, %v, %v)", t.Out(0), t.Out(1), t.Out(2))
+		return nil, fmt.Errorf("KeyFunc must return (string, string, error), got (%v, %v, %v)", t.Out(0), t.Out(1), t.Out(2))
 	}
 	errType := reflect.TypeOf((*error)(nil)).Elem()
 	if !t.Out(2).Implements(errType) && t.Out(2) != errType {
-		return nil, fmt.Errorf("SliceKeyFunc third return must be error, got %v", t.Out(2))
+		return nil, fmt.Errorf("KeyFunc third return must be error, got %v", t.Out(2))
 	}
-	return &sliceKeyFuncCaller{fn: v, argType: t.In(0)}, nil
+	return &keyFuncCaller{fn: v, argType: t.In(0)}, nil
 }
 
-func (c *sliceKeyFuncCaller) call(elem any) (string, string, error) {
+func (c *keyFuncCaller) call(elem any) (string, string, error) {
 	elemValue := reflect.ValueOf(elem)
 	if !elemValue.Type().AssignableTo(c.argType) {
-		return "", "", fmt.Errorf("SliceKeyFunc expects %v, got %T", c.argType, elem)
+		return "", "", fmt.Errorf("KeyFunc expects %v, got %T", c.argType, elem)
 	}
 	out := c.fn.Call([]reflect.Value{elemValue})
 	keyField := out[0].String()
@@ -71,7 +71,7 @@ func (c *sliceKeyFuncCaller) call(elem any) (string, string, error) {
 
 // diffContext holds configuration for the diff operation.
 type diffContext struct {
-	sliceKeys map[string]SliceKeyFunc
+	sliceKeys map[string]KeyFunc
 }
 
 // GetStructDiff compares two Go structs and returns a list of Changes or an error.
@@ -84,7 +84,7 @@ type diffContext struct {
 // Path patterns use dot notation (e.g., "tasks" or "job.tasks").
 // The [*] wildcard matches any slice index in the path.
 // Pass nil if no slice key functions are needed.
-func GetStructDiff(a, b any, sliceKeys map[string]SliceKeyFunc) ([]Change, error) {
+func GetStructDiff(a, b any, sliceKeys map[string]KeyFunc) ([]Change, error) {
 	v1 := reflect.ValueOf(a)
 	v2 := reflect.ValueOf(b)
 
@@ -159,7 +159,7 @@ func diffValues(ctx *diffContext, path *structpath.PathNode, v1, v2 reflect.Valu
 	case reflect.Struct:
 		return diffStruct(ctx, path, v1, v2, changes)
 	case reflect.Slice, reflect.Array:
-		if keyFunc := ctx.findSliceKeyFunc(path); keyFunc != nil {
+		if keyFunc := ctx.findKeyFunc(path); keyFunc != nil {
 			return diffSliceByKey(ctx, path, v1, v2, keyFunc, changes)
 		} else if v1.Len() != v2.Len() {
 			*changes = append(*changes, Change{Path: path, Old: v1.Interface(), New: v2.Interface()})
@@ -290,9 +290,9 @@ func getForceSendFields(v reflect.Value) []string {
 	return nil
 }
 
-// findSliceKeyFunc returns the SliceKeyFunc for the given path, or nil if none matches.
+// findKeyFunc returns the KeyFunc for the given path, or nil if none matches.
 // Path patterns support [*] to match any slice index.
-func (ctx *diffContext) findSliceKeyFunc(path *structpath.PathNode) SliceKeyFunc {
+func (ctx *diffContext) findKeyFunc(path *structpath.PathNode) KeyFunc {
 	if ctx.sliceKeys == nil {
 		return nil
 	}
@@ -344,8 +344,8 @@ type sliceElement struct {
 // diffSliceByKey compares two slices using the provided key function.
 // Elements are matched by their (keyField, keyValue) pairs instead of by index.
 // Duplicate keys are allowed and matched in order.
-func diffSliceByKey(ctx *diffContext, path *structpath.PathNode, v1, v2 reflect.Value, keyFunc SliceKeyFunc, changes *[]Change) error {
-	caller, err := newSliceKeyFuncCaller(keyFunc)
+func diffSliceByKey(ctx *diffContext, path *structpath.PathNode, v1, v2 reflect.Value, keyFunc KeyFunc, changes *[]Change) error {
+	caller, err := newKeyFuncCaller(keyFunc)
 	if err != nil {
 		return err
 	}
