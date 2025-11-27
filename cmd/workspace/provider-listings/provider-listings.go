@@ -24,10 +24,7 @@ func New() *cobra.Command {
 		Long: `Listings are the core entities in the Marketplace. They represent the products
   that are available for consumption.`,
 		GroupID: "marketplace",
-		Annotations: map[string]string{
-			"package": "marketplace",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -65,7 +62,7 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create"
 	cmd.Short = `Create a listing.`
 	cmd.Long = `Create a listing.
-  
+
   Create a new listing`
 
 	cmd.Annotations = make(map[string]string)
@@ -126,7 +123,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete ID"
 	cmd.Short = `Delete a listing.`
 	cmd.Long = `Delete a listing.
-  
+
   Delete a listing`
 
 	cmd.Annotations = make(map[string]string)
@@ -191,7 +188,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get ID"
 	cmd.Short = `Get a listing.`
 	cmd.Long = `Get a listing.
-  
+
   Get a listing`
 
 	cmd.Annotations = make(map[string]string)
@@ -259,7 +256,7 @@ func newList() *cobra.Command {
 	cmd.Use = "list"
 	cmd.Short = `List listings.`
 	cmd.Long = `List listings.
-  
+
   List listings owned by this provider`
 
 	cmd.Annotations = make(map[string]string)
@@ -310,7 +307,7 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update ID"
 	cmd.Short = `Update listing.`
 	cmd.Long = `Update listing.
-  
+
   Update a listing`
 
 	cmd.Annotations = make(map[string]string)

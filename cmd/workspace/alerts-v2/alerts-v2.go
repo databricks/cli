@@ -23,10 +23,7 @@ func New() *cobra.Command {
 		Short:   `New version of SQL Alerts.`,
 		Long:    `New version of SQL Alerts`,
 		GroupID: "sql",
-		Annotations: map[string]string{
-			"package": "sql",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -72,14 +69,14 @@ func newCreateAlert() *cobra.Command {
 	cmd.Use = "create-alert DISPLAY_NAME QUERY_TEXT WAREHOUSE_ID EVALUATION SCHEDULE"
 	cmd.Short = `Create an alert.`
 	cmd.Long = `Create an alert.
-  
+
   Create Alert
 
   Arguments:
     DISPLAY_NAME: The display name of the alert.
     QUERY_TEXT: Text of the query to be run.
     WAREHOUSE_ID: ID of the SQL warehouse attached to the alert.
-    EVALUATION: 
+    EVALUATION:
     SCHEDULE: `
 
 	cmd.Annotations = make(map[string]string)
@@ -173,7 +170,7 @@ func newGetAlert() *cobra.Command {
 	cmd.Use = "get-alert ID"
 	cmd.Short = `Get an alert.`
 	cmd.Long = `Get an alert.
-  
+
   Gets an alert.`
 
 	cmd.Annotations = make(map[string]string)
@@ -241,7 +238,7 @@ func newListAlerts() *cobra.Command {
 	cmd.Use = "list-alerts"
 	cmd.Short = `List alerts.`
 	cmd.Long = `List alerts.
-  
+
   Gets a list of alerts accessible to the user, ordered by creation time.`
 
 	cmd.Annotations = make(map[string]string)
@@ -289,7 +286,7 @@ func newTrashAlert() *cobra.Command {
 	cmd.Use = "trash-alert ID"
 	cmd.Short = `Delete an alert (legacy TrashAlert).`
 	cmd.Long = `Delete an alert (legacy TrashAlert).
-  
+
   Moves an alert to the trash. Trashed alerts immediately disappear from list
   views, and can no longer trigger. You can restore a trashed alert through the
   UI. A trashed alert is permanently deleted after 30 days.`
@@ -367,7 +364,7 @@ func newUpdateAlert() *cobra.Command {
 	cmd.Use = "update-alert ID UPDATE_MASK DISPLAY_NAME QUERY_TEXT WAREHOUSE_ID EVALUATION SCHEDULE"
 	cmd.Short = `Update an alert.`
 	cmd.Long = `Update an alert.
-  
+
   Update alert
 
   Arguments:
@@ -378,7 +375,7 @@ func newUpdateAlert() *cobra.Command {
       Specification of elements in sequence or map fields is not allowed, as
       only the entire collection field can be specified. Field names must
       exactly match the resource field names.
-      
+
       A field mask of * indicates full replacement. It’s recommended to
       always explicitly list the fields being updated and avoid using *
       wildcards, as it can lead to unintended results if the API changes in the
@@ -386,7 +383,7 @@ func newUpdateAlert() *cobra.Command {
     DISPLAY_NAME: The display name of the alert.
     QUERY_TEXT: Text of the query to be run.
     WAREHOUSE_ID: ID of the SQL warehouse attached to the alert.
-    EVALUATION: 
+    EVALUATION:
     SCHEDULE: `
 
 	cmd.Annotations = make(map[string]string)

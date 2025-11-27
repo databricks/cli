@@ -21,10 +21,7 @@ func New() *cobra.Command {
 		Short:   `These APIs manage VPC endpoint configurations for this account.`,
 		Long:    `These APIs manage VPC endpoint configurations for this account.`,
 		GroupID: "provisioning",
-		Annotations: map[string]string{
-			"package": "provisioning",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -66,16 +63,16 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create"
 	cmd.Short = `Create a VPC endpoint configuration.`
 	cmd.Long = `Create a VPC endpoint configuration.
-  
+
   Creates a VPC endpoint configuration, which represents a [VPC endpoint] object
   in AWS used to communicate privately with Databricks over [AWS PrivateLink].
-  
+
   After you create the VPC endpoint configuration, the Databricks [endpoint
   service] automatically accepts the VPC endpoint.
-  
+
   Before configuring PrivateLink, read the [Databricks article about
   PrivateLink].
-  
+
   [AWS PrivateLink]: https://aws.amazon.com/privatelink
   [Databricks article about PrivateLink]: https://docs.databricks.com/administration-guide/cloud-configurations/aws/privatelink.html
   [VPC endpoint]: https://docs.aws.amazon.com/vpc/latest/privatelink/vpc-endpoints.html
@@ -142,7 +139,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete VPC_ENDPOINT_ID"
 	cmd.Short = `Delete a VPC endpoint configuration.`
 	cmd.Long = `Delete a VPC endpoint configuration.
-  
+
   Deletes a Databricks VPC endpoint configuration. You cannot delete a VPC
   endpoint configuration that is associated with any workspace.`
 
@@ -196,10 +193,10 @@ func newGet() *cobra.Command {
 	cmd.Use = "get VPC_ENDPOINT_ID"
 	cmd.Short = `Get a VPC endpoint configuration.`
 	cmd.Long = `Get a VPC endpoint configuration.
-  
+
   Gets a VPC endpoint configuration, which represents a [VPC endpoint] object in
   AWS used to communicate privately with Databricks over [AWS PrivateLink].
-  
+
   [AWS PrivateLink]: https://aws.amazon.com/privatelink
   [VPC endpoint]: https://docs.aws.amazon.com/vpc/latest/privatelink/concepts.html
 
@@ -253,7 +250,7 @@ func newList() *cobra.Command {
 	cmd.Use = "list"
 	cmd.Short = `List VPC endpoint configurations.`
 	cmd.Long = `List VPC endpoint configurations.
-  
+
   Lists Databricks VPC endpoint configurations for an account.`
 
 	cmd.Annotations = make(map[string]string)

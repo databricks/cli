@@ -23,19 +23,16 @@ func New() *cobra.Command {
 		Short: `The policy compliance APIs allow you to view and manage the policy compliance status of clusters in your workspace.`,
 		Long: `The policy compliance APIs allow you to view and manage the policy compliance
   status of clusters in your workspace.
-  
+
   A cluster is compliant with its policy if its configuration satisfies all its
   policy rules. Clusters could be out of compliance if their policy was updated
   after the cluster was last edited.
-  
+
   The get and list compliance APIs allow you to view the policy compliance
   status of a cluster. The enforce compliance API allows you to update a cluster
   to be compliant with the current version of its policy.`,
 		GroupID: "compute",
-		Annotations: map[string]string{
-			"package": "compute",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -73,17 +70,17 @@ func newEnforceCompliance() *cobra.Command {
 	cmd.Use = "enforce-compliance CLUSTER_ID"
 	cmd.Short = `Enforce cluster policy compliance.`
 	cmd.Long = `Enforce cluster policy compliance.
-  
+
   Updates a cluster to be compliant with the current version of its policy. A
   cluster can be updated if it is in a RUNNING or TERMINATED state.
-  
+
   If a cluster is updated while in a RUNNING state, it will be restarted so
   that the new attributes can take effect.
-  
+
   If a cluster is updated while in a TERMINATED state, it will remain
   TERMINATED. The next time the cluster is started, the new attributes will
   take effect.
-  
+
   Clusters created by the Databricks Jobs, DLT, or Models services cannot be
   enforced by this API. Instead, use the "Enforce job policy compliance" API to
   enforce policy compliance on jobs.
@@ -162,7 +159,7 @@ func newGetCompliance() *cobra.Command {
 	cmd.Use = "get-compliance CLUSTER_ID"
 	cmd.Short = `Get cluster policy compliance.`
 	cmd.Long = `Get cluster policy compliance.
-  
+
   Returns the policy compliance status of a cluster. Clusters could be out of
   compliance if their policy was updated after the cluster was last edited.
 
@@ -222,7 +219,7 @@ func newListCompliance() *cobra.Command {
 	cmd.Use = "list-compliance POLICY_ID"
 	cmd.Short = `List cluster policy compliance.`
 	cmd.Long = `List cluster policy compliance.
-  
+
   Returns the policy compliance status of all clusters that use a given policy.
   Clusters could be out of compliance if their policy was updated after the
   cluster was last edited.

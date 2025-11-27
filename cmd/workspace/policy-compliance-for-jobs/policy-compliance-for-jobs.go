@@ -24,21 +24,18 @@ func New() *cobra.Command {
 		Long: `The compliance APIs allow you to view and manage the policy compliance status
   of jobs in your workspace. This API currently only supports compliance
   controls for cluster policies.
-  
+
   A job is in compliance if its cluster configurations satisfy the rules of all
   their respective cluster policies. A job could be out of compliance if a
   cluster policy it uses was updated after the job was last edited. The job is
   considered out of compliance if any of its clusters no longer comply with
   their updated policies.
-  
+
   The get and list compliance APIs allow you to view the policy compliance
   status of a job. The enforce compliance API allows you to update a job so that
   it becomes compliant with all of its policies.`,
 		GroupID: "jobs",
-		Annotations: map[string]string{
-			"package": "jobs",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -76,7 +73,7 @@ func newEnforceCompliance() *cobra.Command {
 	cmd.Use = "enforce-compliance JOB_ID"
 	cmd.Short = `Enforce job policy compliance.`
 	cmd.Long = `Enforce job policy compliance.
-  
+
   Updates a job so the job clusters that are created when running the job
   (specified in new_cluster) are compliant with the current versions of their
   respective cluster policies. All-purpose clusters used in the job will not be
@@ -160,7 +157,7 @@ func newGetCompliance() *cobra.Command {
 	cmd.Use = "get-compliance JOB_ID"
 	cmd.Short = `Get job policy compliance.`
 	cmd.Long = `Get job policy compliance.
-  
+
   Returns the policy compliance status of a job. Jobs could be out of compliance
   if a cluster policy they use was updated after the job was last edited and
   some of its job clusters no longer comply with their updated policies.
@@ -224,7 +221,7 @@ func newListCompliance() *cobra.Command {
 	cmd.Use = "list-compliance POLICY_ID"
 	cmd.Short = `List job policy compliance.`
 	cmd.Long = `List job policy compliance.
-  
+
   Returns the policy compliance status of all jobs that use a given policy. Jobs
   could be out of compliance if a cluster policy they use was updated after the
   job was last edited and its job clusters no longer comply with the updated

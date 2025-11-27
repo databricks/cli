@@ -29,10 +29,7 @@ func New() *cobra.Command {
   to have **SELECT** privileges on the table (along with **USE_SCHEMA** and
   **USE_CATALOG**).`,
 		GroupID: "catalog",
-		Annotations: map[string]string{
-			"package": "catalog",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -71,7 +68,7 @@ func newCancelRefresh() *cobra.Command {
 	cmd.Use = "cancel-refresh TABLE_NAME REFRESH_ID"
 	cmd.Short = `Cancel refresh.`
 	cmd.Long = `Cancel refresh.
-  
+
   Cancels an already-initiated refresh job.
 
   Arguments:
@@ -152,16 +149,16 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create TABLE_NAME OUTPUT_SCHEMA_NAME ASSETS_DIR"
 	cmd.Short = `Create a table monitor.`
 	cmd.Long = `Create a table monitor.
-  
+
   Creates a new monitor for the specified table.
-  
+
   The caller must either: 1. be an owner of the table's parent catalog, have
   **USE_SCHEMA** on the table's parent schema, and have **SELECT** access on the
   table 2. have **USE_CATALOG** on the table's parent catalog, be an owner of
   the table's parent schema, and have **SELECT** access on the table. 3. have
   the following permissions: - **USE_CATALOG** on the table's parent catalog -
   **USE_SCHEMA** on the table's parent schema - be an owner of the table.
-  
+
   Workspace assets, such as the dashboard, will be created in the workspace
   where this call was made.
 
@@ -249,18 +246,18 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete TABLE_NAME"
 	cmd.Short = `Delete a table monitor.`
 	cmd.Long = `Delete a table monitor.
-  
+
   Deletes a monitor for the specified table.
-  
+
   The caller must either: 1. be an owner of the table's parent catalog 2. have
   **USE_CATALOG** on the table's parent catalog and be an owner of the table's
   parent schema 3. have the following permissions: - **USE_CATALOG** on the
   table's parent catalog - **USE_SCHEMA** on the table's parent schema - be an
   owner of the table.
-  
+
   Additionally, the call must be made from the workspace where the monitor was
   created.
-  
+
   Note that the metric tables and dashboard will not be deleted as part of this
   call; those assets must be manually cleaned up (if desired).
 
@@ -318,15 +315,15 @@ func newGet() *cobra.Command {
 	cmd.Use = "get TABLE_NAME"
 	cmd.Short = `Get a table monitor.`
 	cmd.Long = `Get a table monitor.
-  
+
   Gets a monitor for the specified table.
-  
+
   The caller must either: 1. be an owner of the table's parent catalog 2. have
   **USE_CATALOG** on the table's parent catalog and be an owner of the table's
   parent schema. 3. have the following permissions: - **USE_CATALOG** on the
   table's parent catalog - **USE_SCHEMA** on the table's parent schema -
   **SELECT** privilege on the table.
-  
+
   The returned information includes configuration values, as well as information
   on assets created by the monitor. Some information (e.g., dashboard) may be
   filtered out if the caller is in a different workspace than where the monitor
@@ -386,15 +383,15 @@ func newGetRefresh() *cobra.Command {
 	cmd.Use = "get-refresh TABLE_NAME REFRESH_ID"
 	cmd.Short = `Get refresh.`
 	cmd.Long = `Get refresh.
-  
+
   Gets info about a specific monitor refresh using the given refresh ID.
-  
+
   The caller must either: 1. be an owner of the table's parent catalog 2. have
   **USE_CATALOG** on the table's parent catalog and be an owner of the table's
   parent schema 3. have the following permissions: - **USE_CATALOG** on the
   table's parent catalog - **USE_SCHEMA** on the table's parent schema -
   **SELECT** privilege on the table.
-  
+
   Additionally, the call must be made from the workspace where the monitor was
   created.
 
@@ -456,16 +453,16 @@ func newListRefreshes() *cobra.Command {
 	cmd.Use = "list-refreshes TABLE_NAME"
 	cmd.Short = `List refreshes.`
 	cmd.Long = `List refreshes.
-  
+
   Gets an array containing the history of the most recent refreshes (up to 25)
   for this table.
-  
+
   The caller must either: 1. be an owner of the table's parent catalog 2. have
   **USE_CATALOG** on the table's parent catalog and be an owner of the table's
   parent schema 3. have the following permissions: - **USE_CATALOG** on the
   table's parent catalog - **USE_SCHEMA** on the table's parent schema -
   **SELECT** privilege on the table.
-  
+
   Additionally, the call must be made from the workspace where the monitor was
   created.
 
@@ -528,15 +525,15 @@ func newRegenerateDashboard() *cobra.Command {
 	cmd.Use = "regenerate-dashboard TABLE_NAME"
 	cmd.Short = `Regenerate a monitoring dashboard.`
 	cmd.Long = `Regenerate a monitoring dashboard.
-  
+
   Regenerates the monitoring dashboard for the specified table.
-  
+
   The caller must either: 1. be an owner of the table's parent catalog 2. have
   **USE_CATALOG** on the table's parent catalog and be an owner of the table's
   parent schema 3. have the following permissions: - **USE_CATALOG** on the
   table's parent catalog - **USE_SCHEMA** on the table's parent schema - be an
   owner of the table
-  
+
   The call must be made from the workspace where the monitor was created. The
   dashboard will be regenerated in the assets directory that was specified when
   the monitor was created.
@@ -610,16 +607,16 @@ func newRunRefresh() *cobra.Command {
 	cmd.Use = "run-refresh TABLE_NAME"
 	cmd.Short = `Run refresh.`
 	cmd.Long = `Run refresh.
-  
+
   Queues a metric refresh on the monitor for the specified table. The refresh
   will execute in the background.
-  
+
   The caller must either: 1. be an owner of the table's parent catalog 2. have
   **USE_CATALOG** on the table's parent catalog and be an owner of the table's
   parent schema 3. have the following permissions: - **USE_CATALOG** on the
   table's parent catalog - **USE_SCHEMA** on the table's parent schema - be an
   owner of the table
-  
+
   Additionally, the call must be made from the workspace where the monitor was
   created.
 
@@ -692,18 +689,18 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update TABLE_NAME OUTPUT_SCHEMA_NAME"
 	cmd.Short = `Update a table monitor.`
 	cmd.Long = `Update a table monitor.
-  
+
   Updates a monitor for the specified table.
-  
+
   The caller must either: 1. be an owner of the table's parent catalog 2. have
   **USE_CATALOG** on the table's parent catalog and be an owner of the table's
   parent schema 3. have the following permissions: - **USE_CATALOG** on the
   table's parent catalog - **USE_SCHEMA** on the table's parent schema - be an
   owner of the table.
-  
+
   Additionally, the call must be made from the workspace where the monitor was
   created, and the caller must be the original creator of the monitor.
-  
+
   Certain configuration fields, such as output asset identifiers, cannot be
   updated.
 

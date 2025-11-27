@@ -50,7 +50,7 @@
       ],
       "action": "update",
       "new_state": {
-        "config": {
+        "value": {
           "securable_type": "volume",
           "full_name": "main.schema_grants_[UNIQUE_NAME].volume_name",
           "grants": [

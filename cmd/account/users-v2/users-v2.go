@@ -20,7 +20,7 @@ func New() *cobra.Command {
 		Use:   "users-v2",
 		Short: `User identities recognized by Databricks and represented by email addresses.`,
 		Long: `User identities recognized by Databricks and represented by email addresses.
-  
+
   Databricks recommends using SCIM provisioning to sync users and groups
   automatically from your identity provider to your Databricks account. SCIM
   streamlines onboarding a new employee or team by using your identity provider
@@ -31,10 +31,7 @@ func New() *cobra.Command {
   account. This ensures a consistent offboarding process and prevents
   unauthorized users from accessing sensitive data.`,
 		GroupID: "iam",
-		Annotations: map[string]string{
-			"package": "iam",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -82,7 +79,7 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create"
 	cmd.Short = `Create a new user.`
 	cmd.Long = `Create a new user.
-  
+
   Creates a new user in the Databricks account. This new user will also be added
   to the Databricks account.`
 
@@ -147,7 +144,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete ID"
 	cmd.Short = `Delete a user.`
 	cmd.Long = `Delete a user.
-  
+
   Deletes a user. Deleting a user from a Databricks account also removes objects
   associated with the user.
 
@@ -212,7 +209,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get ID"
 	cmd.Short = `Get user details.`
 	cmd.Long = `Get user details.
-  
+
   Gets information for a specific user in Databricks account.
 
   Arguments:
@@ -276,7 +273,7 @@ func newList() *cobra.Command {
 	cmd.Use = "list"
 	cmd.Short = `List users.`
 	cmd.Long = `List users.
-  
+
   Gets details for all the users associated with a Databricks account.`
 
 	cmd.Annotations = make(map[string]string)
@@ -330,7 +327,7 @@ func newPatch() *cobra.Command {
 	cmd.Use = "patch ID"
 	cmd.Short = `Update user details.`
 	cmd.Long = `Update user details.
-  
+
   Partially updates a user resource by applying the supplied operations on
   specific user attributes.
 
@@ -410,7 +407,7 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update ID"
 	cmd.Short = `Replace a user.`
 	cmd.Long = `Replace a user.
-  
+
   Replaces a user's information with the data supplied in request.
 
   Arguments:

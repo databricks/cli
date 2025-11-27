@@ -14,7 +14,9 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 )
 
-func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root, plan *deployplan.Plan) {
+type MigrateMode bool
+
+func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root, plan *deployplan.Plan, migrateMode MigrateMode) {
 	if plan == nil {
 		panic("Planning is not done")
 	}
@@ -25,6 +27,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 	}
 
 	b.StateDB.AssertOpened()
+	b.RemoteStateCache.Clear()
 
 	g, err := makeGraph(plan)
 	if err != nil {
@@ -48,6 +51,9 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 
 		action := entry.Action
 		errorPrefix := fmt.Sprintf("cannot %s %s", action, resourceKey)
+		if migrateMode {
+			errorPrefix = "cannot migrate " + resourceKey
+		}
 
 		at := deployplan.ActionTypeFromString(action)
 		if at == deployplan.ActionTypeUndefined {
@@ -75,6 +81,10 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 		}
 
 		if at == deployplan.ActionTypeDelete {
+			if migrateMode {
+				logdiag.LogError(ctx, fmt.Errorf("%s: Unexpected delete action during migration", errorPrefix))
+				return false
+			}
 			err = d.Destroy(ctx, &b.StateDB)
 			if err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
@@ -95,9 +105,19 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 				return false
 			}
 
-			// TODO: redo calcDiff to downgrade planned action if possible (?)
+			if migrateMode {
+				// In migration mode we're reading resources in DAG order so that we have fully resolved config snapshots stored
+				dbentry, hasEntry := b.StateDB.GetResourceEntry(resourceKey)
+				if !hasEntry || dbentry.ID == "" {
+					logdiag.LogError(ctx, fmt.Errorf("state entry not found for %q", resourceKey))
+					return false
+				}
+				err = b.StateDB.SaveState(resourceKey, dbentry.ID, entry.NewState.Value)
+			} else {
+				// TODO: redo calcDiff to downgrade planned action if possible (?)
+				err = d.Deploy(ctx, &b.StateDB, entry.NewState.Value, at, entry.Changes)
+			}
 
-			err = d.Deploy(ctx, &b.StateDB, entry.NewState.Config, at, entry.Changes)
 			if err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 				return false

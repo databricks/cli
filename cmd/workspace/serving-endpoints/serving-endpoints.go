@@ -24,7 +24,7 @@ func New() *cobra.Command {
 		Short: `The Serving Endpoints API allows you to create, update, and delete model serving endpoints.`,
 		Long: `The Serving Endpoints API allows you to create, update, and delete model
   serving endpoints.
-  
+
   You can use a serving endpoint to serve models from the Databricks Model
   Registry or from Unity Catalog. Endpoints expose the underlying models as
   scalable REST API endpoints using serverless compute. This means the endpoints
@@ -36,10 +36,7 @@ func New() *cobra.Command {
   entities behind an endpoint. Additionally, you can configure the scale of
   resources that should be applied to each served entity.`,
 		GroupID: "serving",
-		Annotations: map[string]string{
-			"package": "serving",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -90,7 +87,7 @@ func newBuildLogs() *cobra.Command {
 	cmd.Use = "build-logs NAME SERVED_MODEL_NAME"
 	cmd.Short = `Get build logs for a served model.`
 	cmd.Long = `Get build logs for a served model.
-  
+
   Retrieves the build logs associated with the provided served model.
 
   Arguments:
@@ -395,7 +392,7 @@ func newExportMetrics() *cobra.Command {
 	cmd.Use = "export-metrics NAME"
 	cmd.Short = `Get metrics of a serving endpoint.`
 	cmd.Long = `Get metrics of a serving endpoint.
-  
+
   Retrieves the metrics associated with the provided serving endpoint in either
   Prometheus or OpenMetrics exposition format.
 
@@ -454,7 +451,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get NAME"
 	cmd.Short = `Get a single serving endpoint.`
 	cmd.Long = `Get a single serving endpoint.
-  
+
   Retrieves the details for a single serving endpoint.
 
   Arguments:
@@ -510,7 +507,7 @@ func newGetOpenApi() *cobra.Command {
 	cmd.Use = "get-open-api NAME"
 	cmd.Short = `Get the schema for a serving endpoint.`
 	cmd.Long = `Get the schema for a serving endpoint.
-  
+
   Get the query schema of the serving endpoint in OpenAPI format. The schema
   contains information for the supported paths, input and output format and
   datatypes.
@@ -570,7 +567,7 @@ func newGetPermissionLevels() *cobra.Command {
 	cmd.Use = "get-permission-levels SERVING_ENDPOINT_ID"
 	cmd.Short = `Get serving endpoint permission levels.`
 	cmd.Long = `Get serving endpoint permission levels.
-  
+
   Gets the permission levels that a user can have on an object.
 
   Arguments:
@@ -626,7 +623,7 @@ func newGetPermissions() *cobra.Command {
 	cmd.Use = "get-permissions SERVING_ENDPOINT_ID"
 	cmd.Short = `Get serving endpoint permissions.`
 	cmd.Long = `Get serving endpoint permissions.
-  
+
   Gets the permissions of a serving endpoint. Serving endpoints can inherit
   permissions from their root object.
 
@@ -691,7 +688,7 @@ func newHttpRequest() *cobra.Command {
   Arguments:
     CONNECTION_NAME: The connection name to use. This is required to identify the external
       connection.
-    METHOD: The HTTP method to use (e.g., 'GET', 'POST'). 
+    METHOD: The HTTP method to use (e.g., 'GET', 'POST').
       Supported values: [DELETE, GET, PATCH, POST, PUT]
     PATH: The relative path for the API endpoint. This is required.`
 
@@ -792,7 +789,7 @@ func newLogs() *cobra.Command {
 	cmd.Use = "logs NAME SERVED_MODEL_NAME"
 	cmd.Short = `Get the latest logs for a served model.`
 	cmd.Long = `Get the latest logs for a served model.
-  
+
   Retrieves the service logs associated with the provided served model.
 
   Arguments:
@@ -858,7 +855,7 @@ func newPatch() *cobra.Command {
 	cmd.Use = "patch NAME"
 	cmd.Short = `Update tags of a serving endpoint.`
 	cmd.Long = `Update tags of a serving endpoint.
-  
+
   Used to batch add and delete tags from a serving endpoint with a single API
   call.
 
@@ -933,7 +930,7 @@ func newPut() *cobra.Command {
 	cmd.Use = "put NAME"
 	cmd.Short = `Update rate limits of a serving endpoint.`
 	cmd.Long = `Update rate limits of a serving endpoint.
-  
+
   Deprecated: Please use AI Gateway to manage rate limits instead.
 
   Arguments:
@@ -1011,7 +1008,7 @@ func newPutAiGateway() *cobra.Command {
 	cmd.Use = "put-ai-gateway NAME"
 	cmd.Short = `Update AI Gateway of a serving endpoint.`
 	cmd.Long = `Update AI Gateway of a serving endpoint.
-  
+
   Used to update the AI Gateway of a serving endpoint. NOTE: External model,
   provisioned throughput, and pay-per-token endpoints are fully supported; agent
   endpoints currently only support inference tables.
@@ -1101,7 +1098,7 @@ func newQuery() *cobra.Command {
 	cmd.Use = "query NAME"
 	cmd.Short = `Query a serving endpoint.`
 	cmd.Long = `Query a serving endpoint.
-  
+
   Query a serving endpoint
 
   Arguments:
@@ -1175,7 +1172,7 @@ func newSetPermissions() *cobra.Command {
 	cmd.Use = "set-permissions SERVING_ENDPOINT_ID"
 	cmd.Short = `Set serving endpoint permissions.`
 	cmd.Long = `Set serving endpoint permissions.
-  
+
   Sets permissions on an object, replacing existing permissions if they exist.
   Deletes all direct permissions if none are specified. Objects can inherit
   permissions from their root object.
@@ -1259,7 +1256,7 @@ func newUpdateConfig() *cobra.Command {
 	cmd.Use = "update-config NAME"
 	cmd.Short = `Update config of a serving endpoint.`
 	cmd.Long = `Update config of a serving endpoint.
-  
+
   Updates any combination of the serving endpoint's served entities, the compute
   configuration of those served entities, and the endpoint's traffic config. An
   endpoint that already has an update in progress can not be updated until the
@@ -1348,7 +1345,7 @@ func newUpdateNotifications() *cobra.Command {
 	cmd.Use = "update-notifications NAME"
 	cmd.Short = `Update the email and webhook notification settings for an endpoint.`
 	cmd.Long = `Update the email and webhook notification settings for an endpoint.
-  
+
   Updates the email and webhook notification settings for an endpoint.
 
   Arguments:
@@ -1422,7 +1419,7 @@ func newUpdatePermissions() *cobra.Command {
 	cmd.Use = "update-permissions SERVING_ENDPOINT_ID"
 	cmd.Short = `Update serving endpoint permissions.`
 	cmd.Long = `Update serving endpoint permissions.
-  
+
   Updates the permissions on a serving endpoint. Serving endpoints can inherit
   permissions from their root object.
 
@@ -1500,7 +1497,7 @@ func newUpdateProvisionedThroughputEndpointConfig() *cobra.Command {
 	cmd.Use = "update-provisioned-throughput-endpoint-config NAME"
 	cmd.Short = `Update config of a PT serving endpoint.`
 	cmd.Long = `Update config of a PT serving endpoint.
-  
+
   Updates any combination of the pt endpoint's served entities, the compute
   configuration of those served entities, and the endpoint's traffic config.
   Updates are instantaneous and endpoint should be updated instantly

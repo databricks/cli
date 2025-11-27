@@ -23,11 +23,8 @@ func New() *cobra.Command {
 		Short: `These APIs are used to manage identities and the workspace access of these identities in <Databricks>.`,
 		Long: `These APIs are used to manage identities and the workspace access of these
   identities in <Databricks>.`,
-		GroupID: "iamv2",
-		Annotations: map[string]string{
-			"package": "iamv2",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		GroupID: "iam",
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -63,7 +60,7 @@ func newGetWorkspaceAccessDetailLocal() *cobra.Command {
 	cmd.Use = "get-workspace-access-detail-local PRINCIPAL_ID"
 	cmd.Short = `Get workspace access details for a principal.`
 	cmd.Long = `Get workspace access details for a principal.
-  
+
   Returns the access details for a principal in the current workspace. Allows
   for checking access details for any provisioned principal (user, service
   principal, or group) in the current workspace. * Provisioned principal here
@@ -131,7 +128,7 @@ func newResolveGroupProxy() *cobra.Command {
 	cmd.Use = "resolve-group-proxy EXTERNAL_ID"
 	cmd.Short = `Resolve an external group in the Databricks account.`
 	cmd.Long = `Resolve an external group in the Databricks account.
-  
+
   Resolves a group with the given external ID from the customer's IdP. If the
   group does not exist, it will be created in the account. If the customer is
   not onboarded onto Automatic Identity Management (AIM), this will return an
@@ -214,7 +211,7 @@ func newResolveServicePrincipalProxy() *cobra.Command {
 	cmd.Use = "resolve-service-principal-proxy EXTERNAL_ID"
 	cmd.Short = `Resolve an external service principal in the Databricks account.`
 	cmd.Long = `Resolve an external service principal in the Databricks account.
-  
+
   Resolves an SP with the given external ID from the customer's IdP. If the SP
   does not exist, it will be created. If the customer is not onboarded onto
   Automatic Identity Management (AIM), this will return an error.
@@ -296,7 +293,7 @@ func newResolveUserProxy() *cobra.Command {
 	cmd.Use = "resolve-user-proxy EXTERNAL_ID"
 	cmd.Short = `Resolve an external user in the Databricks account.`
 	cmd.Long = `Resolve an external user in the Databricks account.
-  
+
   Resolves a user with the given external ID from the customer's IdP. If the
   user does not exist, it will be created. If the customer is not onboarded onto
   Automatic Identity Management (AIM), this will return an error.

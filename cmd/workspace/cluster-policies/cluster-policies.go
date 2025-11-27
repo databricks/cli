@@ -25,14 +25,14 @@ func New() *cobra.Command {
   based on a set of rules. These rules specify which attributes or attribute
   values can be used during cluster creation. Cluster policies have ACLs that
   limit their use to specific users and groups.
-  
+
   With cluster policies, you can: - Auto-install cluster libraries on the next
   restart by listing them in the policy's "libraries" field (Public Preview). -
   Limit users to creating clusters with the prescribed settings. - Simplify the
   user interface, enabling more users to create clusters, by fixing and hiding
   some fields. - Manage costs by setting limits on attributes that impact the
   hourly rate.
-  
+
   Cluster policy permissions limit which policies a user can select in the
   Policy drop-down when the user creates a cluster: - A user who has
   unrestricted cluster create permission can select the Unrestricted policy and
@@ -40,15 +40,12 @@ func New() *cobra.Command {
   create permission and access to cluster policies can select the Unrestricted
   policy and policies they have access to. - A user that has access to only
   cluster policies, can select the policies they have access to.
-  
+
   If no policies exist in the workspace, the Policy drop-down doesn't appear.
   Only admin users can create, edit, and delete policies. Admin users also have
   access to all policies.`,
 		GroupID: "compute",
-		Annotations: map[string]string{
-			"package": "compute",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -98,7 +95,7 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create"
 	cmd.Short = `Create a new policy.`
 	cmd.Long = `Create a new policy.
-  
+
   Creates a new policy with prescribed settings.`
 
 	cmd.Annotations = make(map[string]string)
@@ -165,7 +162,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete POLICY_ID"
 	cmd.Short = `Delete a cluster policy.`
 	cmd.Long = `Delete a cluster policy.
-  
+
   Delete a policy for a cluster. Clusters governed by this policy can still run,
   but cannot be edited.
 
@@ -269,7 +266,7 @@ func newEdit() *cobra.Command {
 	cmd.Use = "edit POLICY_ID"
 	cmd.Short = `Update a cluster policy.`
 	cmd.Long = `Update a cluster policy.
-  
+
   Update an existing policy for cluster. This operation may make some clusters
   governed by the previous policy invalid.
 
@@ -363,7 +360,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get POLICY_ID"
 	cmd.Short = `Get a cluster policy.`
 	cmd.Long = `Get a cluster policy.
-  
+
   Get a cluster policy entity. Creation and editing is available to admins only.
 
   Arguments:
@@ -431,7 +428,7 @@ func newGetPermissionLevels() *cobra.Command {
 	cmd.Use = "get-permission-levels CLUSTER_POLICY_ID"
 	cmd.Short = `Get cluster policy permission levels.`
 	cmd.Long = `Get cluster policy permission levels.
-  
+
   Gets the permission levels that a user can have on an object.
 
   Arguments:
@@ -499,7 +496,7 @@ func newGetPermissions() *cobra.Command {
 	cmd.Use = "get-permissions CLUSTER_POLICY_ID"
 	cmd.Short = `Get cluster policy permissions.`
 	cmd.Long = `Get cluster policy permissions.
-  
+
   Gets the permissions of a cluster policy. Cluster policies can inherit
   permissions from their root object.
 
@@ -571,7 +568,7 @@ func newList() *cobra.Command {
 	cmd.Use = "list"
 	cmd.Short = `List cluster policies.`
 	cmd.Long = `List cluster policies.
-  
+
   Returns a list of policies accessible by the requesting user.`
 
 	cmd.Annotations = make(map[string]string)
@@ -624,7 +621,7 @@ func newSetPermissions() *cobra.Command {
 	cmd.Use = "set-permissions CLUSTER_POLICY_ID"
 	cmd.Short = `Set cluster policy permissions.`
 	cmd.Long = `Set cluster policy permissions.
-  
+
   Sets permissions on an object, replacing existing permissions if they exist.
   Deletes all direct permissions if none are specified. Objects can inherit
   permissions from their root object.
@@ -711,7 +708,7 @@ func newUpdatePermissions() *cobra.Command {
 	cmd.Use = "update-permissions CLUSTER_POLICY_ID"
 	cmd.Short = `Update cluster policy permissions.`
 	cmd.Long = `Update cluster policy permissions.
-  
+
   Updates the permissions on a cluster policy. Cluster policies can inherit
   permissions from their root object.
 

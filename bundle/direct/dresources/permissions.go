@@ -67,7 +67,7 @@ func PreparePermissionsInputConfig(inputConfig any, node string) (*structvar.Str
 	}
 
 	return &structvar.StructVar{
-		Config: &PermissionsState{
+		Value: &PermissionsState{
 			ObjectID:    "", // Always a reference, defined in Refs below
 			Permissions: permissions,
 		},
@@ -106,7 +106,7 @@ func parsePermissionsID(id string) (extractedType, extractedID string, err error
 	return extractedType, extractedID, nil
 }
 
-func (r *ResourcePermissions) DoRefresh(ctx context.Context, id string) (*PermissionsState, error) {
+func (r *ResourcePermissions) DoRead(ctx context.Context, id string) (*PermissionsState, error) {
 	extractedType, extractedID, err := parsePermissionsID(id)
 	if err != nil {
 		return nil, err
@@ -145,21 +145,21 @@ func (r *ResourcePermissions) DoRefresh(ctx context.Context, id string) (*Permis
 }
 
 // DoCreate calls https://docs.databricks.com/api/workspace/jobs/setjobpermissions.
-func (r *ResourcePermissions) DoCreate(ctx context.Context, newState *PermissionsState) (string, error) {
+func (r *ResourcePermissions) DoCreate(ctx context.Context, newState *PermissionsState) (string, *PermissionsState, error) {
 	// should we remember the default here?
-	err := r.DoUpdate(ctx, newState.ObjectID, newState)
+	_, err := r.DoUpdate(ctx, newState.ObjectID, newState, nil)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 
-	return newState.ObjectID, nil
+	return newState.ObjectID, nil, nil
 }
 
 // DoUpdate calls https://docs.databricks.com/api/workspace/jobs/setjobpermissions.
-func (r *ResourcePermissions) DoUpdate(ctx context.Context, _ string, newState *PermissionsState) error {
+func (r *ResourcePermissions) DoUpdate(ctx context.Context, _ string, newState *PermissionsState, _ *Changes) (*PermissionsState, error) {
 	extractedType, extractedID, err := parsePermissionsID(newState.ObjectID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	_, err = r.client.Permissions.Set(ctx, iam.SetObjectPermissions{
@@ -168,7 +168,7 @@ func (r *ResourcePermissions) DoUpdate(ctx context.Context, _ string, newState *
 		AccessControlList: newState.Permissions,
 	})
 
-	return err
+	return nil, err
 }
 
 // DoDelete is activated in 2 distinct cases:

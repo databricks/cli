@@ -27,7 +27,7 @@ func New() *cobra.Command {
   via AWS Security Token Service (STS), Azure utilizes Shared Access Signatures
   (SAS) for its data storage services, and Google Cloud supports temporary
   credentials through OAuth 2.0.
-  
+
   Temporary table credentials ensure that data access is limited in scope and
   duration, reducing the risk of unauthorized access or misuse. To use the
   temporary table credentials API, a metastore admin needs to enable the
@@ -37,10 +37,7 @@ func New() *cobra.Command {
   can only be granted by catalog admin explicitly and is not included in schema
   ownership or ALL PRIVILEGES on the schema for security reasons.`,
 		GroupID: "catalog",
-		Annotations: map[string]string{
-			"package": "catalog",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -77,7 +74,7 @@ func newGenerateTemporaryTableCredentials() *cobra.Command {
 	cmd.Use = "generate-temporary-table-credentials"
 	cmd.Short = `Generate a temporary table credential.`
 	cmd.Long = `Generate a temporary table credential.
-  
+
   Get a short-lived credential for directly accessing the table data on cloud
   storage. The metastore must have **external_access_enabled** flag set to true
   (default false). The caller must have the **EXTERNAL_USE_SCHEMA** privilege on

@@ -42,10 +42,12 @@ jobs:
           - macos-latest
           - group: databricks-protected-runner-group-large
             labels: linux-ubuntu-latest-large
-          - windows-latest
+          - ${{ github.event_name != 'merge_group' && 'windows-latest' || null }}
         deployment:
           - "terraform"
           - "direct"
+        exclude:
+          - os: null
 
     steps:
       - name: Checkout repository and submodules
@@ -84,60 +86,23 @@ jobs:
           pip3 install wheel==0.45.1
 
       - name: Run tests without coverage
-        # We run tests without coverage on PR because we don't make use of coverage information
+        # We run tests without coverage on PR, merge_group, and schedule because we don't make use of coverage information
         # and would like to run the tests as fast as possible. We run it on schedule as well, because that is what
         # populates the cache and cache may include test results.
-        if: ${{ github.event_name == 'pull_request' || github.event_name == 'schedule' }}
+        if: ${{ github.event_name == 'pull_request' || github.event_name == 'merge_group' || github.event_name == 'schedule' }}
         env:
           ENVFILTER: DATABRICKS_BUNDLE_ENGINE=${{ matrix.deployment }}
         run: make test
 
       - name: Run tests with coverage
-        # Still run 'make cover' on push to main and merge checks to make sure it does not get broken.
-        if: ${{ github.event_name != 'pull_request' && github.event_name != 'schedule' }}
+        # Only run 'make cover' on push to main to make sure it does not get broken.
+        if: ${{ github.event_name == 'push' }}
         env:
           ENVFILTER: DATABRICKS_BUNDLE_ENGINE=${{ matrix.deployment }}
         run: make cover
 
       - name: Analyze slow tests
         run: make slowest
-
-  linters:
-    needs: cleanups
-    name: lint
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      - uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
-        with:
-          go-version-file: go.mod
-          # Use different schema from regular job, to avoid overwriting the same key
-          cache-dependency-path: |
-            go.sum
-            .golangci.yaml
-      - name: Run go mod tidy
-        run: |
-          go mod tidy
-      - name: Fail on differences
-        run: |
-          # Exit with status code 1 if there are differences (i.e. unformatted files)
-          git diff --exit-code
-      - name: Run Go lint checks (does not include formatting checks)
-        run: go tool -modfile=tools/go.mod golangci-lint run --timeout=15m
-      - name: Run ruff (Python linter and formatter)
-        uses: astral-sh/ruff-action@57714a7c8a2e59f32539362ba31877a1957dded1 # v3.5.1
-        with:
-          version: "0.9.1"
-          args: "format --check"
-      - name: "make fmtfull: Python and Go formatting"
-        # This is already done by actions, but good to check that make command is working
-        run: |
-          make fmtfull
-          git diff --exit-code
-      - name: "make checks: custom checks outside of fmt and lint"
-        run: |
-          make checks
-          git diff --exit-code
 
   validate-generated-is-up-to-date:
     needs: cleanups

@@ -26,10 +26,7 @@ func New() *cobra.Command {
   objects within Databricks SQL. Compute resources are infrastructure resources
   that provide processing capabilities in the cloud.`,
 		GroupID: "sql",
-		Annotations: map[string]string{
-			"package": "sql",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -95,7 +92,7 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create"
 	cmd.Short = `Create a warehouse.`
 	cmd.Long = `Create a warehouse.
-  
+
   Creates a new SQL warehouse.`
 
 	cmd.Annotations = make(map[string]string)
@@ -178,7 +175,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete ID"
 	cmd.Short = `Delete a warehouse.`
 	cmd.Long = `Delete a warehouse.
-  
+
   Deletes a SQL warehouse.
 
   Arguments:
@@ -269,7 +266,7 @@ func newEdit() *cobra.Command {
 	cmd.Use = "edit ID"
 	cmd.Short = `Update a warehouse.`
 	cmd.Long = `Update a warehouse.
-  
+
   Updates the configuration for a SQL warehouse.
 
   Arguments:
@@ -368,7 +365,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get ID"
 	cmd.Short = `Get warehouse info.`
 	cmd.Long = `Get warehouse info.
-  
+
   Gets the information for a single SQL warehouse.
 
   Arguments:
@@ -436,7 +433,7 @@ func newGetPermissionLevels() *cobra.Command {
 	cmd.Use = "get-permission-levels WAREHOUSE_ID"
 	cmd.Short = `Get SQL warehouse permission levels.`
 	cmd.Long = `Get SQL warehouse permission levels.
-  
+
   Gets the permission levels that a user can have on an object.
 
   Arguments:
@@ -504,7 +501,7 @@ func newGetPermissions() *cobra.Command {
 	cmd.Use = "get-permissions WAREHOUSE_ID"
 	cmd.Short = `Get SQL warehouse permissions.`
 	cmd.Long = `Get SQL warehouse permissions.
-  
+
   Gets the permissions of a SQL warehouse. SQL warehouses can inherit
   permissions from their root object.
 
@@ -570,7 +567,7 @@ func newGetWorkspaceWarehouseConfig() *cobra.Command {
 	cmd.Use = "get-workspace-warehouse-config"
 	cmd.Short = `Get the workspace configuration.`
 	cmd.Long = `Get the workspace configuration.
-  
+
   Gets the workspace level configuration that is shared by all SQL warehouses in
   a workspace.`
 
@@ -620,7 +617,7 @@ func newList() *cobra.Command {
 	cmd.Use = "list"
 	cmd.Short = `List warehouses.`
 	cmd.Long = `List warehouses.
-  
+
   Lists all SQL warehouses that a user has access to.`
 
 	cmd.Annotations = make(map[string]string)
@@ -673,7 +670,7 @@ func newSetPermissions() *cobra.Command {
 	cmd.Use = "set-permissions WAREHOUSE_ID"
 	cmd.Short = `Set SQL warehouse permissions.`
 	cmd.Long = `Set SQL warehouse permissions.
-  
+
   Sets permissions on an object, replacing existing permissions if they exist.
   Deletes all direct permissions if none are specified. Objects can inherit
   permissions from their root object.
@@ -769,7 +766,7 @@ func newSetWorkspaceWarehouseConfig() *cobra.Command {
 	cmd.Use = "set-workspace-warehouse-config"
 	cmd.Short = `Set the workspace configuration.`
 	cmd.Long = `Set the workspace configuration.
-  
+
   Sets the workspace level configuration that is shared by all SQL warehouses in
   a workspace.`
 
@@ -840,7 +837,7 @@ func newStart() *cobra.Command {
 	cmd.Use = "start ID"
 	cmd.Short = `Start a warehouse.`
 	cmd.Long = `Start a warehouse.
-  
+
   Starts a SQL warehouse.
 
   Arguments:
@@ -933,7 +930,7 @@ func newStop() *cobra.Command {
 	cmd.Use = "stop ID"
 	cmd.Short = `Stop a warehouse.`
 	cmd.Long = `Stop a warehouse.
-  
+
   Stops a SQL warehouse.
 
   Arguments:
@@ -1025,7 +1022,7 @@ func newUpdatePermissions() *cobra.Command {
 	cmd.Use = "update-permissions WAREHOUSE_ID"
 	cmd.Short = `Update SQL warehouse permissions.`
 	cmd.Long = `Update SQL warehouse permissions.
-  
+
   Updates the permissions on a SQL warehouse. SQL warehouses can inherit
   permissions from their root object.
 

@@ -27,10 +27,7 @@ func New() *cobra.Command {
   under their original name, qualified by their original schema, or provide
   alternate exposed names.`,
 		GroupID: "sharing",
-		Annotations: map[string]string{
-			"package": "sharing",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -73,7 +70,7 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create NAME"
 	cmd.Short = `Create a share.`
 	cmd.Long = `Create a share.
-  
+
   Creates a new share for data objects. Data objects can be added after creation
   with **update**. The caller must be a metastore admin or have the
   **CREATE_SHARE** privilege on the metastore.
@@ -152,7 +149,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete NAME"
 	cmd.Short = `Delete a share.`
 	cmd.Long = `Delete a share.
-  
+
   Deletes a data object share from the metastore. The caller must be an owner of
   the share.
 
@@ -211,7 +208,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get NAME"
 	cmd.Short = `Get a share.`
 	cmd.Long = `Get a share.
-  
+
   Gets a data object share from the metastore. The caller must have the
   USE_SHARE privilege on the metastore or be the owner of the share.
 
@@ -271,7 +268,7 @@ func newListShares() *cobra.Command {
 	cmd.Use = "list-shares"
 	cmd.Short = `List shares.`
 	cmd.Long = `List shares.
-  
+
   Gets an array of data object shares from the metastore. If the caller has the
   USE_SHARE privilege on the metastore, all shares are returned. Otherwise, only
   shares owned by the caller are returned. There is no guarantee of a specific
@@ -325,7 +322,7 @@ func newSharePermissions() *cobra.Command {
 	cmd.Use = "share-permissions NAME"
 	cmd.Short = `Get permissions.`
 	cmd.Long = `Get permissions.
-  
+
   Gets the permissions for a data share from the metastore. The caller must have
   the USE_SHARE privilege on the metastore or be the owner of the share.
 
@@ -391,23 +388,23 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update NAME"
 	cmd.Short = `Update a share.`
 	cmd.Long = `Update a share.
-  
+
   Updates the share with the changes and data objects in the request. The caller
   must be the owner of the share or a metastore admin.
-  
+
   When the caller is a metastore admin, only the __owner__ field can be updated.
-  
+
   In the case the share name is changed, **updateShare** requires that the
   caller is the owner of the share and has the CREATE_SHARE privilege.
-  
+
   If there are notebook files in the share, the __storage_root__ field cannot be
   updated.
-  
+
   For each table that is added through this method, the share owner must also
   have **SELECT** privilege on the table. This privilege must be maintained
   indefinitely for recipients to be able to access the table. Typically, you
   should use a group as the share owner.
-  
+
   Table removals through **update** do not require additional privileges.
 
   Arguments:
@@ -481,11 +478,11 @@ func newUpdatePermissions() *cobra.Command {
 	cmd.Use = "update-permissions NAME"
 	cmd.Short = `Update permissions.`
 	cmd.Long = `Update permissions.
-  
+
   Updates the permissions for a data share in the metastore. The caller must
   have both the USE_SHARE and SET_SHARE_PERMISSION privileges on the metastore,
   or be the owner of the share.
-  
+
   For new recipient grants, the user must also be the owner of the recipients.
   recipient revocations do not require additional privileges.
 

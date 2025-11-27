@@ -85,7 +85,7 @@ func (r *ResourceDashboard) RemapState(state *resources.DashboardConfig) *resour
 	}
 }
 
-func (r *ResourceDashboard) DoRefresh(ctx context.Context, id string) (*resources.DashboardConfig, error) {
+func (r *ResourceDashboard) DoRead(ctx context.Context, id string) (*resources.DashboardConfig, error) {
 	var dashboard *dashboards.Dashboard
 	var publishedDashboard *dashboards.PublishedDashboard
 
@@ -234,7 +234,7 @@ func (r *ResourceDashboard) DoCreate(ctx context.Context, config *resources.Dash
 	return createResp.DashboardId, responseToState(createResp, publishResp), nil
 }
 
-func (r *ResourceDashboard) DoUpdate(ctx context.Context, id string, config *resources.DashboardConfig) (*resources.DashboardConfig, error) {
+func (r *ResourceDashboard) DoUpdate(ctx context.Context, id string, config *resources.DashboardConfig, _ *Changes) (*resources.DashboardConfig, error) {
 	dashboard, err := prepareDashboardRequest(config)
 	if err != nil {
 		return nil, err

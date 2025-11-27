@@ -27,10 +27,7 @@ func New() *cobra.Command {
   data permission on the schema and its parent catalog, and they must have the
   SELECT permission on the table or view.`,
 		GroupID: "catalog",
-		Annotations: map[string]string{
-			"package": "catalog",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -72,7 +69,7 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create NAME CATALOG_NAME"
 	cmd.Short = `Create a schema.`
 	cmd.Long = `Create a schema.
-  
+
   Creates a new schema for catalog in the Metastore. The caller must be a
   metastore admin, or have the **CREATE_SCHEMA** privilege in the parent
   catalog.
@@ -157,7 +154,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete FULL_NAME"
 	cmd.Short = `Delete a schema.`
 	cmd.Long = `Delete a schema.
-  
+
   Deletes the specified schema from the parent catalog. The caller must be the
   owner of the schema or an owner of the parent catalog.
 
@@ -216,7 +213,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get FULL_NAME"
 	cmd.Short = `Get a schema.`
 	cmd.Long = `Get a schema.
-  
+
   Gets the specified schema within the metastore. The caller must be a metastore
   admin, the owner of the schema, or a user that has the **USE_SCHEMA**
   privilege on the schema.
@@ -278,16 +275,16 @@ func newList() *cobra.Command {
 	cmd.Use = "list CATALOG_NAME"
 	cmd.Short = `List schemas.`
 	cmd.Long = `List schemas.
-  
+
   Gets an array of schemas for a catalog in the metastore. If the caller is the
   metastore admin or the owner of the parent catalog, all schemas for the
   catalog will be retrieved. Otherwise, only schemas owned by the caller (or for
   which the caller has the **USE_SCHEMA** privilege) will be retrieved. There is
   no guarantee of a specific ordering of the elements in the array.
-  
+
   NOTE: we recommend using max_results=0 to use the paginated version of this
   API. Unpaginated calls will be deprecated soon.
-  
+
   PAGINATION BEHAVIOR: When using pagination (max_results >= 0), a page may
   contain zero results while still providing a next_page_token. Clients must
   continue reading pages until next_page_token is absent, which is the only
@@ -352,7 +349,7 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update FULL_NAME"
 	cmd.Short = `Update a schema.`
 	cmd.Long = `Update a schema.
-  
+
   Updates a schema for a catalog. The caller must be the owner of the schema or
   a metastore admin. If the caller is a metastore admin, only the __owner__
   field can be changed in the update. If the __name__ field must be updated, the

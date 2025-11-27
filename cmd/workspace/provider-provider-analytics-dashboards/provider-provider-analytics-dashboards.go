@@ -21,10 +21,7 @@ func New() *cobra.Command {
 		Short:   `Manage templated analytics solution for providers.`,
 		Long:    `Manage templated analytics solution for providers.`,
 		GroupID: "marketplace",
-		Annotations: map[string]string{
-			"package": "marketplace",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -55,7 +52,7 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create"
 	cmd.Short = `Create provider analytics dashboard.`
 	cmd.Long = `Create provider analytics dashboard.
-  
+
   Create provider analytics dashboard. Returns Marketplace specific id. Not to
   be confused with the Lakeview dashboard id.`
 

@@ -26,10 +26,7 @@ func New() *cobra.Command {
   name, description, tags, and parameters. Queries can be scheduled using the
   sql_task type of the Jobs API, e.g. :method:jobs/create.`,
 		GroupID: "sql",
-		Annotations: map[string]string{
-			"package": "sql",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -71,7 +68,7 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create"
 	cmd.Short = `Create a query.`
 	cmd.Long = `Create a query.
-  
+
   Creates a query.`
 
 	cmd.Annotations = make(map[string]string)
@@ -135,7 +132,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete ID"
 	cmd.Short = `Delete a query.`
 	cmd.Long = `Delete a query.
-  
+
   Moves a query to the trash. Trashed queries immediately disappear from
   searches and list views, and cannot be used for alerts. You can restore a
   trashed query through the UI. A trashed query is permanently deleted after 30
@@ -203,7 +200,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get ID"
 	cmd.Short = `Get a query.`
 	cmd.Long = `Get a query.
-  
+
   Gets a query.`
 
 	cmd.Annotations = make(map[string]string)
@@ -271,7 +268,7 @@ func newList() *cobra.Command {
 	cmd.Use = "list"
 	cmd.Short = `List queries.`
 	cmd.Long = `List queries.
-  
+
   Gets a list of queries accessible to the user, ordered by creation time.
   **Warning:** Calling this API concurrently 10 or more times could result in
   throttling, service degradation, or a temporary ban.`
@@ -324,7 +321,7 @@ func newListVisualizations() *cobra.Command {
 	cmd.Use = "list-visualizations ID"
 	cmd.Short = `List visualizations on a query.`
 	cmd.Long = `List visualizations on a query.
-  
+
   Gets a list of visualizations on a query.`
 
 	// This command is being previewed; hide from help output.
@@ -395,18 +392,18 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update ID UPDATE_MASK"
 	cmd.Short = `Update a query.`
 	cmd.Long = `Update a query.
-  
+
   Updates a query.
 
   Arguments:
-    ID: 
+    ID:
     UPDATE_MASK: The field mask must be a single string, with multiple fields separated by
       commas (no spaces). The field path is relative to the resource object,
       using a dot (.) to navigate sub-fields (e.g., author.given_name).
       Specification of elements in sequence or map fields is not allowed, as
       only the entire collection field can be specified. Field names must
       exactly match the resource field names.
-      
+
       A field mask of * indicates full replacement. It’s recommended to
       always explicitly list the fields being updated and avoid using *
       wildcards, as it can lead to unintended results if the API changes in the

@@ -23,7 +23,7 @@ func New() *cobra.Command {
 		Use:   "jobs",
 		Short: `The Jobs API allows you to create, edit, and delete jobs.`,
 		Long: `The Jobs API allows you to create, edit, and delete jobs.
-  
+
   You can use a Databricks job to run a data processing or data analysis task in
   a Databricks cluster with scalable resources. Your job can consist of a single
   task or can be a large, multi-task workflow with complex dependencies.
@@ -32,19 +32,16 @@ func New() *cobra.Command {
   periodically through an easy-to-use scheduling system. You can implement job
   tasks using notebooks, JARS, Delta Live Tables pipelines, or Python, Scala,
   Spark submit, and Java applications.
-  
+
   You should never hard code secrets or store them in plain text. Use the
   [Secrets CLI] to manage secrets in the [Databricks CLI]. Use the [Secrets
   utility] to reference secrets in notebooks and jobs.
-  
+
   [Databricks CLI]: https://docs.databricks.com/dev-tools/cli/index.html
   [Secrets CLI]: https://docs.databricks.com/dev-tools/cli/secrets-cli.html
   [Secrets utility]: https://docs.databricks.com/dev-tools/databricks-utils.html#dbutils-secrets`,
 		GroupID: "jobs",
-		Annotations: map[string]string{
-			"package": "jobs",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -100,7 +97,7 @@ func newCancelAllRuns() *cobra.Command {
 	cmd.Use = "cancel-all-runs"
 	cmd.Short = `Cancel all runs of a job.`
 	cmd.Long = `Cancel all runs of a job.
-  
+
   Cancels all active runs of a job. The runs are canceled asynchronously, so it
   doesn't prevent new runs from being started.`
 
@@ -174,7 +171,7 @@ func newCancelRun() *cobra.Command {
 	cmd.Use = "cancel-run RUN_ID"
 	cmd.Short = `Cancel a run.`
 	cmd.Long = `Cancel a run.
-  
+
   Cancels a job run or a task run. The run is canceled asynchronously, so it may
   still be running when this request completes.
 
@@ -355,7 +352,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete JOB_ID"
 	cmd.Short = `Delete a job.`
 	cmd.Long = `Delete a job.
-  
+
   Deletes a job.
 
   Arguments:
@@ -454,7 +451,7 @@ func newDeleteRun() *cobra.Command {
 	cmd.Use = "delete-run RUN_ID"
 	cmd.Short = `Delete a job run.`
 	cmd.Long = `Delete a job run.
-  
+
   Deletes a non-active run. Returns an error if the run is active.
 
   Arguments:
@@ -552,7 +549,7 @@ func newExportRun() *cobra.Command {
 	cmd.Use = "export-run RUN_ID"
 	cmd.Short = `Export and retrieve a job run.`
 	cmd.Long = `Export and retrieve a job run.
-  
+
   Export and retrieve the job run task.
 
   Arguments:
@@ -625,9 +622,9 @@ func newGet() *cobra.Command {
 	cmd.Use = "get JOB_ID"
 	cmd.Short = `Get a single job.`
 	cmd.Long = `Get a single job.
-  
+
   Retrieves the details for a single job.
-  
+
   Large arrays in the results will be paginated when they exceed 100 elements. A
   request for a single job will return all properties for that job, and the
   first 100 elements of array properties (tasks, job_clusters,
@@ -706,7 +703,7 @@ func newGetPermissionLevels() *cobra.Command {
 	cmd.Use = "get-permission-levels JOB_ID"
 	cmd.Short = `Get job permission levels.`
 	cmd.Long = `Get job permission levels.
-  
+
   Gets the permission levels that a user can have on an object.
 
   Arguments:
@@ -774,7 +771,7 @@ func newGetPermissions() *cobra.Command {
 	cmd.Use = "get-permissions JOB_ID"
 	cmd.Short = `Get job permissions.`
 	cmd.Long = `Get job permissions.
-  
+
   Gets the permissions of a job. Jobs can inherit permissions from their root
   object.
 
@@ -847,9 +844,9 @@ func newGetRun() *cobra.Command {
 	cmd.Use = "get-run RUN_ID"
 	cmd.Short = `Get a single job run.`
 	cmd.Long = `Get a single job run.
-  
+
   Retrieves the metadata of a run.
-  
+
   Large arrays in the results will be paginated when they exceed 100 elements. A
   request for a single run will return all properties for that run, and the
   first 100 elements of array properties (tasks, job_clusters,
@@ -928,13 +925,13 @@ func newGetRunOutput() *cobra.Command {
 	cmd.Use = "get-run-output RUN_ID"
 	cmd.Short = `Get the output for a single run.`
 	cmd.Long = `Get the output for a single run.
-  
+
   Retrieve the output and metadata of a single task run. When a notebook task
   returns a value through the dbutils.notebook.exit() call, you can use this
   endpoint to retrieve that value. Databricks restricts this API to returning
   the first 5 MB of the output. To return a larger result, you can store job
   results in a cloud storage service.
-  
+
   This endpoint validates that the __run_id__ parameter is valid and returns an
   HTTP status code 400 if the __run_id__ parameter is invalid. Runs are
   automatically removed after 60 days. If you to want to reference them beyond
@@ -1014,7 +1011,7 @@ func newList() *cobra.Command {
 	cmd.Use = "list"
 	cmd.Short = `List jobs.`
 	cmd.Long = `List jobs.
-  
+
   Retrieves a list of jobs.`
 
 	cmd.Annotations = make(map[string]string)
@@ -1073,7 +1070,7 @@ func newListRuns() *cobra.Command {
 	cmd.Use = "list-runs"
 	cmd.Short = `List job runs.`
 	cmd.Long = `List job runs.
-  
+
   List runs in descending order by start time.`
 
 	cmd.Annotations = make(map[string]string)
@@ -1145,7 +1142,7 @@ func newRepairRun() *cobra.Command {
 	cmd.Use = "repair-run RUN_ID"
 	cmd.Short = `Repair a job run.`
 	cmd.Long = `Repair a job run.
-  
+
   Re-run one or more tasks. Tasks are re-run as part of the original job run.
   They use the current job and task settings, and can be viewed in the history
   for the original job run.
@@ -1265,7 +1262,7 @@ func newReset() *cobra.Command {
 	cmd.Use = "reset"
 	cmd.Short = `Update all job settings (reset).`
 	cmd.Long = `Update all job settings (reset).
-  
+
   Overwrite all settings for the given job. Use the [_Update_
   endpoint](:method:jobs/update) to update job settings partially.`
 
@@ -1350,7 +1347,7 @@ func newRunNow() *cobra.Command {
 	cmd.Use = "run-now JOB_ID"
 	cmd.Short = `Trigger a new job run.`
 	cmd.Long = `Trigger a new job run.
-  
+
   Run a job and return the run_id of the triggered run.
 
   Arguments:
@@ -1470,7 +1467,7 @@ func newSetPermissions() *cobra.Command {
 	cmd.Use = "set-permissions JOB_ID"
 	cmd.Short = `Set job permissions.`
 	cmd.Long = `Set job permissions.
-  
+
   Sets permissions on an object, replacing existing permissions if they exist.
   Deletes all direct permissions if none are specified. Objects can inherit
   permissions from their root object.
@@ -1577,7 +1574,7 @@ func newSubmit() *cobra.Command {
 	cmd.Use = "submit"
 	cmd.Short = `Create and trigger a one-time run.`
 	cmd.Long = `Create and trigger a one-time run.
-  
+
   Submit a one-time run. This endpoint allows you to submit a workload directly
   without creating a job. Runs submitted using this endpoint don’t display in
   the UI. Use the jobs/runs/get API to check the run state after the job is
@@ -1669,7 +1666,7 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update JOB_ID"
 	cmd.Short = `Update job settings partially.`
 	cmd.Long = `Update job settings partially.
-  
+
   Add, update, or remove specific settings of an existing job. Use the [_Reset_
   endpoint](:method:jobs/reset) to overwrite all job settings.
 
@@ -1771,7 +1768,7 @@ func newUpdatePermissions() *cobra.Command {
 	cmd.Use = "update-permissions JOB_ID"
 	cmd.Short = `Update job permissions.`
 	cmd.Long = `Update job permissions.
-  
+
   Updates the permissions on a job. Jobs can inherit permissions from their root
   object.
 

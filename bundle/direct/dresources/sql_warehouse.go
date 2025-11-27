@@ -43,22 +43,22 @@ func (*ResourceSqlWarehouse) RemapState(warehouse *sql.GetWarehouseResponse) *sq
 	}
 }
 
-// DoRefresh reads the warehouse by id.
-func (r *ResourceSqlWarehouse) DoRefresh(ctx context.Context, id string) (*sql.GetWarehouseResponse, error) {
+// DoRead reads the warehouse by id.
+func (r *ResourceSqlWarehouse) DoRead(ctx context.Context, id string) (*sql.GetWarehouseResponse, error) {
 	return r.client.Warehouses.GetById(ctx, id)
 }
 
 // DoCreate creates the warehouse and returns its id.
-func (r *ResourceSqlWarehouse) DoCreate(ctx context.Context, config *sql.CreateWarehouseRequest) (string, error) {
+func (r *ResourceSqlWarehouse) DoCreate(ctx context.Context, config *sql.CreateWarehouseRequest) (string, *sql.GetWarehouseResponse, error) {
 	waiter, err := r.client.Warehouses.Create(ctx, *config)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
-	return waiter.Id, nil
+	return waiter.Id, nil, nil
 }
 
 // DoUpdate updates the warehouse in place.
-func (r *ResourceSqlWarehouse) DoUpdate(ctx context.Context, id string, config *sql.CreateWarehouseRequest) error {
+func (r *ResourceSqlWarehouse) DoUpdate(ctx context.Context, id string, config *sql.CreateWarehouseRequest, _ *Changes) (*sql.GetWarehouseResponse, error) {
 	request := sql.EditWarehouseRequest{
 		AutoStopMins:            config.AutoStopMins,
 		Channel:                 config.Channel,
@@ -79,14 +79,14 @@ func (r *ResourceSqlWarehouse) DoUpdate(ctx context.Context, id string, config *
 
 	waiter, err := r.client.Warehouses.Edit(ctx, request)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if waiter.Id != id {
 		log.Warnf(ctx, "sql_warehouses: response contains unexpected id=%#v (expected %#v)", waiter.Id, id)
 	}
 
-	return nil
+	return nil, nil
 }
 
 func (r *ResourceSqlWarehouse) DoDelete(ctx context.Context, oldID string) error {

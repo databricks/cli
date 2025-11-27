@@ -2,8 +2,10 @@ package workspace
 
 import (
 	"context"
+	"errors"
 	"io"
 	"io/fs"
+	"net/http"
 	"os"
 	"path"
 	"path/filepath"
@@ -13,6 +15,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/notebook"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/spf13/cobra"
 )
@@ -21,11 +24,36 @@ type exportDirOptions struct {
 	sourceDir string
 	targetDir string
 	overwrite bool
+	warnings  []string
+}
+
+// isFileSizeError checks if the error is due to file size limits.
+func isFileSizeError(err error) bool {
+	var aerr *apierr.APIError
+	if !errors.As(err, &aerr) || aerr.StatusCode != http.StatusBadRequest {
+		return false
+	}
+
+	// Check ErrorCode field
+	if aerr.ErrorCode == "MAX_NOTEBOOK_SIZE_EXCEEDED" || aerr.ErrorCode == "MAX_READ_SIZE_EXCEEDED" {
+		return true
+	}
+
+	// Check ErrorInfo.Reason field
+	details := aerr.ErrorDetails()
+	if details.ErrorInfo != nil {
+		reason := details.ErrorInfo.Reason
+		if reason == "MAX_NOTEBOOK_SIZE_EXCEEDED" || reason == "MAX_READ_SIZE_EXCEEDED" {
+			return true
+		}
+	}
+
+	return false
 }
 
 // The callback function exports the file specified at relPath. This function is
 // meant to be used in conjunction with fs.WalkDir
-func (opts exportDirOptions) callback(ctx context.Context, workspaceFiler filer.Filer) func(string, fs.DirEntry, error) error {
+func (opts *exportDirOptions) callback(ctx context.Context, workspaceFiler filer.Filer) func(string, fs.DirEntry, error) error {
 	sourceDir := opts.sourceDir
 	targetDir := opts.targetDir
 	overwrite := opts.overwrite
@@ -59,6 +87,20 @@ func (opts exportDirOptions) callback(ctx context.Context, workspaceFiler filer.
 			return cmdio.RenderWithTemplate(ctx, newFileSkippedEvent(relPath, targetPath), "", "{{.SourcePath}} -> {{.TargetPath}} (skipped; already exists)\n")
 		}
 
+		// Write content to the local file
+		r, err := workspaceFiler.Read(ctx, relPath)
+		if err != nil {
+			// Check if this is a file size limit error
+			if isFileSizeError(err) {
+				warning := sourcePath + " (skipped; file too large)"
+				cmdio.LogString(ctx, "Warning: "+warning)
+				opts.warnings = append(opts.warnings, warning)
+				return nil
+			}
+			return err
+		}
+		defer r.Close()
+
 		// create the file
 		f, err := os.Create(targetPath)
 		if err != nil {
@@ -66,11 +108,6 @@ func (opts exportDirOptions) callback(ctx context.Context, workspaceFiler filer.
 		}
 		defer f.Close()
 
-		// Write content to the local file
-		r, err := workspaceFiler.Read(ctx, relPath)
-		if err != nil {
-			return err
-		}
 		_, err = io.Copy(f, r)
 		if err != nil {
 			return err
@@ -103,6 +140,7 @@ func newExportDir() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 		opts.sourceDir = args[0]
 		opts.targetDir = args[1]
+		opts.warnings = []string{}
 
 		// Initialize a filer and a file system on the source directory
 		workspaceFiler, err := filer.NewWorkspaceFilesClient(w, opts.sourceDir)
@@ -120,6 +158,17 @@ func newExportDir() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
+		// Print all warnings at the end if any were collected
+		if len(opts.warnings) > 0 {
+			cmdio.LogString(ctx, "")
+			cmdio.LogString(ctx, "The following files were skipped because they exceed the maximum size limit:")
+			for _, warning := range opts.warnings {
+				cmdio.LogString(ctx, "  - "+warning)
+			}
+			cmdio.LogString(ctx, "")
+		}
+
 		return cmdio.RenderWithTemplate(ctx, newExportCompletedEvent(opts.targetDir), "", "Export complete\n")
 	}
 

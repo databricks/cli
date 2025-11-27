@@ -51,10 +51,10 @@ Error: resource with key "foo" not found
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
-  delete schema foo
+  delete resources.schemas.foo
 
 This action will result in the deletion of the following UC schemas. Any underlying data may be lost:
-  delete schema foo
+  delete resources.schemas.foo
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 

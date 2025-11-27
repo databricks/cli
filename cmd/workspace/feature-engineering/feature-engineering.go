@@ -23,9 +23,6 @@ func New() *cobra.Command {
 		Short:   `[description].`,
 		Long:    `[description]`,
 		GroupID: "ml",
-		Annotations: map[string]string{
-			"package": "ml",
-		},
 
 		// This service is being previewed; hide from help output.
 		Hidden: true,
@@ -76,7 +73,7 @@ func newCreateFeature() *cobra.Command {
 	cmd.Use = "create-feature FULL_NAME SOURCE INPUTS FUNCTION TIME_WINDOW"
 	cmd.Short = `Create a feature.`
 	cmd.Long = `Create a feature.
-  
+
   Create a Feature.
 
   Arguments:
@@ -268,7 +265,7 @@ func newDeleteFeature() *cobra.Command {
 	cmd.Use = "delete-feature FULL_NAME"
 	cmd.Short = `Delete a feature.`
 	cmd.Long = `Delete a feature.
-  
+
   Delete a Feature.
 
   Arguments:
@@ -378,7 +375,7 @@ func newGetFeature() *cobra.Command {
 	cmd.Use = "get-feature FULL_NAME"
 	cmd.Short = `Get a feature.`
 	cmd.Long = `Get a feature.
-  
+
   Get a Feature.
 
   Arguments:
@@ -491,7 +488,7 @@ func newListFeatures() *cobra.Command {
 	cmd.Use = "list-features"
 	cmd.Short = `List features.`
 	cmd.Long = `List features.
-  
+
   List Features.`
 
 	cmd.Annotations = make(map[string]string)
@@ -596,7 +593,7 @@ func newUpdateFeature() *cobra.Command {
 	cmd.Use = "update-feature FULL_NAME UPDATE_MASK SOURCE INPUTS FUNCTION TIME_WINDOW"
 	cmd.Short = `Update a feature's description (all other fields are immutable).`
 	cmd.Long = `Update a feature's description (all other fields are immutable).
-  
+
   Update a Feature.
 
   Arguments:
@@ -713,7 +710,7 @@ func newUpdateMaterializedFeature() *cobra.Command {
 	cmd.Use = "update-materialized-feature MATERIALIZED_FEATURE_ID UPDATE_MASK FEATURE_NAME"
 	cmd.Short = `Update a materialized feature.`
 	cmd.Long = `Update a materialized feature.
-  
+
   Update a materialized feature (pause/resume).
 
   Arguments:

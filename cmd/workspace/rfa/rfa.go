@@ -23,15 +23,12 @@ func New() *cobra.Command {
 		Short: `Request for Access enables customers to request access to and manage access request destinations for Unity Catalog securables.`,
 		Long: `Request for Access enables customers to request access to and manage access
   request destinations for Unity Catalog securables.
-  
+
   These APIs provide a standardized way to update, get, and request to access
   request destinations. Fine-grained authorization ensures that only users with
   appropriate permissions can manage access request destinations.`,
 		GroupID: "catalog",
-		Annotations: map[string]string{
-			"package": "catalog",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -69,13 +66,13 @@ func newBatchCreateAccessRequests() *cobra.Command {
 	cmd.Use = "batch-create-access-requests"
 	cmd.Short = `Create Access Requests.`
 	cmd.Long = `Create Access Requests.
-  
+
   Creates access requests for Unity Catalog permissions for a specified
   principal on a securable object. This Batch API can take in multiple
   principals, securable objects, and permissions as the input and returns the
   access request destinations for each. Principals must be unique across the API
   call.
-  
+
   The supported securable types are: "metastore", "catalog", "schema", "table",
   "external_location", "connection", "credential", "function",
   "registered_model", and "volume".`
@@ -141,12 +138,12 @@ func newGetAccessRequestDestinations() *cobra.Command {
 	cmd.Use = "get-access-request-destinations SECURABLE_TYPE FULL_NAME"
 	cmd.Short = `Get Access Request Destinations.`
 	cmd.Long = `Get Access Request Destinations.
-  
+
   Gets an array of access request destinations for the specified securable. Any
   caller can see URL destinations or the destinations on the metastore.
   Otherwise, only those with **BROWSE** permissions on the securable can see
   destinations.
-  
+
   The supported securable types are: "metastore", "catalog", "schema", "table",
   "external_location", "connection", "credential", "function",
   "registered_model", and "volume".
@@ -210,7 +207,7 @@ func newUpdateAccessRequestDestinations() *cobra.Command {
 	cmd.Use = "update-access-request-destinations UPDATE_MASK DESTINATIONS SECURABLE"
 	cmd.Short = `Update Access Request Destinations.`
 	cmd.Long = `Update Access Request Destinations.
-  
+
   Updates the access request destinations for the given securable. The caller
   must be a metastore admin, the owner of the securable, or a user that has the
   **MANAGE** privilege on the securable in order to assign destinations.
@@ -220,7 +217,7 @@ func newUpdateAccessRequestDestinations() *cobra.Command {
   notification destinations (Slack, Microsoft Teams, and Generic Webhook
   destinations) can be assigned to a securable. If a URL destination is
   assigned, no other destinations can be set.
-  
+
   The supported securable types are: "metastore", "catalog", "schema", "table",
   "external_location", "connection", "credential", "function",
   "registered_model", and "volume".
@@ -232,7 +229,7 @@ func newUpdateAccessRequestDestinations() *cobra.Command {
       Specification of elements in sequence or map fields is not allowed, as
       only the entire collection field can be specified. Field names must
       exactly match the resource field names.
-      
+
       A field mask of * indicates full replacement. It’s recommended to
       always explicitly list the fields being updated and avoid using *
       wildcards, as it can lead to unintended results if the API changes in the

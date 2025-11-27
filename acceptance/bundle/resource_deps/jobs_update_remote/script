@@ -3,6 +3,8 @@ $CLI bundle plan -o json > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
 trace print_requests.py //jobs
 
+trace $CLI bundle plan
+
 foo_id=`read_id.py jobs foo`
 echo "$foo_id:FOO_ID" >> ACC_REPLS
 export foo_id

@@ -23,10 +23,7 @@ func New() *cobra.Command {
 		Short:   `These APIs manage metastore assignments to a workspace.`,
 		Long:    `These APIs manage metastore assignments to a workspace.`,
 		GroupID: "catalog",
-		Annotations: map[string]string{
-			"package": "catalog",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -66,7 +63,7 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create WORKSPACE_ID METASTORE_ID"
 	cmd.Short = `Assigns a workspace to a metastore.`
 	cmd.Long = `Assigns a workspace to a metastore.
-  
+
   Creates an assignment to a metastore for a workspace
 
   Arguments:
@@ -140,7 +137,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete WORKSPACE_ID METASTORE_ID"
 	cmd.Short = `Delete a metastore assignment.`
 	cmd.Long = `Delete a metastore assignment.
-  
+
   Deletes a metastore assignment to a workspace, leaving the workspace with no
   metastore.
 
@@ -203,7 +200,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get WORKSPACE_ID"
 	cmd.Short = `Gets the metastore assignment for a workspace.`
 	cmd.Long = `Gets the metastore assignment for a workspace.
-  
+
   Gets the metastore assignment, if any, for the workspace specified by ID. If
   the workspace is assigned a metastore, the mapping will be returned. If no
   metastore is assigned to the workspace, the assignment will not be found and a
@@ -265,7 +262,7 @@ func newList() *cobra.Command {
 	cmd.Use = "list METASTORE_ID"
 	cmd.Short = `Get all workspaces assigned to a metastore.`
 	cmd.Long = `Get all workspaces assigned to a metastore.
-  
+
   Gets a list of all Databricks workspace IDs that have been assigned to given
   metastore.
 
@@ -324,7 +321,7 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update WORKSPACE_ID METASTORE_ID"
 	cmd.Short = `Updates a metastore assignment to a workspace.`
 	cmd.Long = `Updates a metastore assignment to a workspace.
-  
+
   Updates an assignment to a metastore for a workspace. Currently, only the
   default catalog may be updated.
 

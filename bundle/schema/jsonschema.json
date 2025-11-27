@@ -3102,8 +3102,7 @@
                   "type": "string",
                   "enum": [
                     "MEDIUM",
-                    "LARGE",
-                    "LIQUID"
+                    "LARGE"
                   ]
                 },
                 {
@@ -6023,7 +6022,7 @@
                   "type": "object",
                   "properties": {
                     "jar_uri": {
-                      "description": "Deprecated since 04/2016. Provide a `jar` through the `libraries` field instead. For an example, see :method:jobs/create.",
+                      "description": "Deprecated since 04/2016. For classic compute, provide a `jar` through the `libraries` field instead. For serverless compute, provide a `jar` though the `java_dependencies` field inside the `environments` list.\n\nSee the examples of classic and serverless compute usage at the top of the page.",
                       "$ref": "#/$defs/string",
                       "deprecationMessage": "This field is deprecated",
                       "deprecated": true
@@ -7090,8 +7089,6 @@
                   "enum": [
                     "MYSQL",
                     "POSTGRESQL",
-                    "REDSHIFT",
-                    "SQLDW",
                     "SQLSERVER",
                     "SALESFORCE",
                     "BIGQUERY",
@@ -7103,10 +7100,7 @@
                     "ORACLE",
                     "TERADATA",
                     "SHAREPOINT",
-                    "DYNAMICS365",
-                    "CONFLUENCE",
-                    "META_MARKETING",
-                    "FOREIGN_CATALOG"
+                    "DYNAMICS365"
                   ]
                 },
                 {

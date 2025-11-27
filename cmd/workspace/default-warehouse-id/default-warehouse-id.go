@@ -61,7 +61,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete"
 	cmd.Short = `Delete the Default Warehouse Id setting.`
 	cmd.Long = `Delete the Default Warehouse Id setting.
-  
+
   Reverts the Default Warehouse Id setting to its default value.`
 
 	cmd.Annotations = make(map[string]string)
@@ -114,7 +114,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get"
 	cmd.Short = `Get the Default Warehouse Id setting.`
 	cmd.Long = `Get the Default Warehouse Id setting.
-  
+
   Gets the Default Warehouse Id setting.`
 
 	cmd.Annotations = make(map[string]string)
@@ -168,7 +168,7 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update"
 	cmd.Short = `Update the Default Warehouse Id setting.`
 	cmd.Long = `Update the Default Warehouse Id setting.
-  
+
   Updates the Default Warehouse Id setting.`
 
 	cmd.Annotations = make(map[string]string)

@@ -26,10 +26,7 @@ func New() *cobra.Command {
   write, delete, or modify privileges in production. This eliminates the risk of
   a user overwriting production data by accident.`,
 		GroupID: "iam",
-		Annotations: map[string]string{
-			"package": "iam",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -78,7 +75,7 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create"
 	cmd.Short = `Create a service principal.`
 	cmd.Long = `Create a service principal.
-  
+
   Creates a new service principal in the Databricks workspace.`
 
 	cmd.Annotations = make(map[string]string)
@@ -142,7 +139,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete ID"
 	cmd.Short = `Delete a service principal.`
 	cmd.Long = `Delete a service principal.
-  
+
   Delete a single service principal in the Databricks workspace.
 
   Arguments:
@@ -198,7 +195,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get ID"
 	cmd.Short = `Get service principal details.`
 	cmd.Long = `Get service principal details.
-  
+
   Gets the details for a single service principal define in the Databricks
   workspace.
 
@@ -263,7 +260,7 @@ func newList() *cobra.Command {
 	cmd.Use = "list"
 	cmd.Short = `List service principals.`
 	cmd.Long = `List service principals.
-  
+
   Gets the set of service principals associated with a Databricks workspace.`
 
 	cmd.Annotations = make(map[string]string)
@@ -317,7 +314,7 @@ func newPatch() *cobra.Command {
 	cmd.Use = "patch ID"
 	cmd.Short = `Update service principal details.`
 	cmd.Long = `Update service principal details.
-  
+
   Partially updates the details of a single service principal in the Databricks
   workspace.
 
@@ -398,9 +395,9 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update ID"
 	cmd.Short = `Replace service principal.`
 	cmd.Long = `Replace service principal.
-  
+
   Updates the details of a single service principal.
-  
+
   This action replaces the existing service principal with the same name.
 
   Arguments:

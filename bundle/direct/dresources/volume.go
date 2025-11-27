@@ -37,7 +37,7 @@ func (*ResourceVolume) RemapState(info *catalog.VolumeInfo) *catalog.CreateVolum
 	}
 }
 
-func (r *ResourceVolume) DoRefresh(ctx context.Context, id string) (*catalog.VolumeInfo, error) {
+func (r *ResourceVolume) DoRead(ctx context.Context, id string) (*catalog.VolumeInfo, error) {
 	return r.client.Volumes.ReadByName(ctx, id)
 }
 
@@ -49,7 +49,7 @@ func (r *ResourceVolume) DoCreate(ctx context.Context, config *catalog.CreateVol
 	return response.FullName, response, nil
 }
 
-func (r *ResourceVolume) DoUpdate(ctx context.Context, id string, config *catalog.CreateVolumeRequestContent) (*catalog.VolumeInfo, error) {
+func (r *ResourceVolume) DoUpdate(ctx context.Context, id string, config *catalog.CreateVolumeRequestContent, _ *Changes) (*catalog.VolumeInfo, error) {
 	updateRequest := catalog.UpdateVolumeRequestContent{
 		Comment: config.Comment,
 		Name:    id,

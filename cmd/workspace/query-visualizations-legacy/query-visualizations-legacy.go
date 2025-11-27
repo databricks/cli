@@ -24,15 +24,12 @@ func New() *cobra.Command {
 		Long: `This is an evolving API that facilitates the addition and removal of
   vizualisations from existing queries within the Databricks Workspace. Data
   structures may change over time.
-  
+
   **Note**: A new version of the Databricks SQL API is now available. Please see
   the latest version. [Learn more]
-  
+
   [Learn more]: https://docs.databricks.com/en/sql/dbsql-api-latest.html`,
 		GroupID: "sql",
-		Annotations: map[string]string{
-			"package": "sql",
-		},
 
 		// This service is being previewed; hide from help output.
 		Hidden: true,
@@ -75,12 +72,12 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create"
 	cmd.Short = `Add visualization to a query.`
 	cmd.Long = `Add visualization to a query.
-  
+
   Creates visualization in the query.
-  
+
   **Note**: A new version of the Databricks SQL API is now available. Please use
   :method:queryvisualizations/create instead. [Learn more]
-  
+
   [Learn more]: https://docs.databricks.com/en/sql/dbsql-api-latest.html`
 
 	cmd.Annotations = make(map[string]string)
@@ -141,12 +138,12 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete ID"
 	cmd.Short = `Remove visualization.`
 	cmd.Long = `Remove visualization.
-  
+
   Removes a visualization from the query.
-  
+
   **Note**: A new version of the Databricks SQL API is now available. Please use
   :method:queryvisualizations/delete instead. [Learn more]
-  
+
   [Learn more]: https://docs.databricks.com/en/sql/dbsql-api-latest.html
 
   Arguments:
@@ -214,12 +211,12 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update"
 	cmd.Short = `Edit existing visualization.`
 	cmd.Long = `Edit existing visualization.
-  
+
   Updates visualization in the query.
-  
+
   **Note**: A new version of the Databricks SQL API is now available. Please use
   :method:queryvisualizations/update instead. [Learn more]
-  
+
   [Learn more]: https://docs.databricks.com/en/sql/dbsql-api-latest.html`
 
 	cmd.Annotations = make(map[string]string)
