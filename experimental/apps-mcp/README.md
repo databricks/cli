@@ -28,14 +28,7 @@ Perfect for data engineers and developers who want to build Databricks apps with
 
 ### Quick Setup (Recommended)
 
-1. **Set up Databricks credentials** (required for Databricks tools):
-   ```bash
-   export DATABRICKS_HOST="https://your-workspace.databricks.com"
-   export DATABRICKS_TOKEN="dapi..."
-   export DATABRICKS_WAREHOUSE_ID="your-warehouse-id"
-   ```
-
-2. **Install the MCP server automatically:**
+1. **Install the MCP server automatically:**
    ```bash
    databricks experimental apps-mcp install
    ```
@@ -46,11 +39,18 @@ Perfect for data engineers and developers who want to build Databricks apps with
    - Set up the server at user scope (available in all projects)
    - Show manual instructions for other agents if needed
 
-3. **Restart your MCP client** (Claude Code, Cursor, etc.) for changes to take effect.
+2. **Start your MCP client** (Claude Code, Cursor, etc.) for changes to take effect.
 
-4. **Create your first Databricks app:**
+    ```
+    claude /mcp
+    ```
+
+Must list your databricks MCP in connected state. If it does not show up or disconnected, go to Troubleshooting section.
+
+3. **Create your first Databricks app:**
 
    Try this in your MCP client:
+
    ```
    Create a Databricks app that shows sales data from main.sales.transactions
    with a chart showing revenue by region. Deploy it as "sales-dashboard".
@@ -68,6 +68,13 @@ Perfect for data engineers and developers who want to build Databricks apps with
 ### Manual Setup (Alternative)
 
 If you prefer to configure manually or the automatic installation doesn't work:
+
+**Set up Databricks credentials** (required for Databricks tools):
+  ```bash
+  export DATABRICKS_HOST="https://your-workspace.databricks.com"
+  export DATABRICKS_TOKEN="dapi..."
+  export DATABRICKS_WAREHOUSE_ID="your-warehouse-id"
+  ```
 
 **Add to your MCP config file** (e.g., `~/.claude.json` for global scope):
 ```json
@@ -87,6 +94,12 @@ If you prefer to configure manually or the automatic installation doesn't work:
 ```
 
 Then restart your MCP client for changes to take effect
+
+---
+
+### Troubleshooting
+
+Ask claude to fix your setup. It will help most likely. If not, contact developers!
 
 ---
 
