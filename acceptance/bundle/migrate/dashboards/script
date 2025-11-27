@@ -1,0 +1,38 @@
+trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+DASHBOARD_ID=$(DATABRICKS_BUNDLE_ENGINE= $CLI bundle summary --output json | jq -r '.resources.dashboards.dashboard1.id')
+echo "$DASHBOARD_ID:DASHBOARD_ID" >> ACC_REPLS
+print_state.py > out.original_state.json
+
+trace $CLI bundle deployment migrate 2>&1 | contains.py 'Migrated 1 resources'
+print_state.py > out.new_state.json
+
+# this is expected to fail because state does not match env var
+trace DATABRICKS_BUNDLE_ENGINE=terraform musterr $CLI bundle plan
+trace DATABRICKS_BUNDLE_ENGINE=terraform musterr $CLI bundle deploy
+
+rm out.requests.txt
+# Both DATABRICKS_BUNDLE_ENGINE=direct and DATABRICKS_BUNDLE_ENGINE= work
+# Badness: known issue with dashboards, will show up as 'recreate' see https://github.com/databricks/cli/pull/3966
+trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle plan | contains.py "1 unchanged"
+trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle plan | contains.py "1 unchanged"
+trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle plan -o json > out.plan_after_migrate.json
+trace print_requests.py --get //dashboards | contains.py 'engine/direct' > /dev/null
+
+trace DATABRICKS_BUNDLE_ENGINE="" $CLI bundle deploy --auto-approve
+trace print_requests.py --get //dashboards | jq '.headers["User-Agent"][0]' | contains.py 'engine/direct' > /dev/null
+
+title "Should show that it's already migrated"
+trace musterr $CLI bundle deployment migrate
+trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle debug states
+trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle debug states --force-pull
+
+rm out.requests.txt
+
+# Uncomment once 'recreate' bug is fixed
+#title "Update databricks.yml, run plan & update"
+#trace update_file.py databricks.yml dashboard DASHBOARD
+#trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle plan
+#trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle plan -o json > out.plan_update.json
+#trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle deploy
+
+#rm out.requests.txt

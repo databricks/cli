@@ -25,10 +25,7 @@ func New() *cobra.Command {
   Generic resource management can be done with Workspace API (import, export,
   get-status, list, delete).`,
 		GroupID: "dashboards",
-		Annotations: map[string]string{
-			"package": "dashboards",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

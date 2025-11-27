@@ -21,10 +21,7 @@ func New() *cobra.Command {
 		Short:   `These APIs manage storage credentials for a particular metastore.`,
 		Long:    `These APIs manage storage credentials for a particular metastore.`,
 		GroupID: "catalog",
-		Annotations: map[string]string{
-			"package": "catalog",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

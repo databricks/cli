@@ -30,10 +30,7 @@ func New() *cobra.Command {
   different workspaces can share access to the same data, depending on
   privileges granted centrally in Unity Catalog.`,
 		GroupID: "catalog",
-		Annotations: map[string]string{
-			"package": "catalog",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

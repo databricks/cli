@@ -31,10 +31,7 @@ func New() *cobra.Command {
   launch and init scripts with later position are skipped. If enough containers
   fail, the entire cluster fails with a GLOBAL_INIT_SCRIPT_FAILURE error code.`,
 		GroupID: "compute",
-		Annotations: map[string]string{
-			"package": "compute",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

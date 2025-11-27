@@ -29,10 +29,7 @@ func New() *cobra.Command {
   to have **SELECT** privileges on the table (along with **USE_SCHEMA** and
   **USE_CATALOG**).`,
 		GroupID: "catalog",
-		Annotations: map[string]string{
-			"package": "catalog",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

@@ -26,10 +26,7 @@ func New() *cobra.Command {
   data, use and extend Databricks services, and enable users to interact through
   single sign-on.`,
 		GroupID: "apps",
-		Annotations: map[string]string{
-			"package": "apps",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

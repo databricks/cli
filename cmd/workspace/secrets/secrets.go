@@ -34,10 +34,7 @@ func New() *cobra.Command {
   that might be displayed in notebooks, it is not possible to prevent such users
   from reading secrets.`,
 		GroupID: "workspace",
-		Annotations: map[string]string{
-			"package": "workspace",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

@@ -27,10 +27,7 @@ func New() *cobra.Command {
   With these APIs, users can create, update, delete, and list tag assignments
   across Unity Catalog entities`,
 		GroupID: "catalog",
-		Annotations: map[string]string{
-			"package": "catalog",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

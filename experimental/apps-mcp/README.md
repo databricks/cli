@@ -10,7 +10,7 @@ extensive validation to ensure high-quality outputs.
 
 **How it works:**
 1. **Explore your data** - Query Databricks catalogs, schemas, and tables to understand your data
-2. **Generate the app** - Scaffold a full-stack TypeScript application (tRPC + React) with proper structure
+2. **Generate the app** - Scaffold a full-stack TypeScript application with proper structure
 3. **Customize with AI** - Use workspace tools to read, write, and edit files naturally through conversation
 4. **Validate rigorously** - Run builds, type checks, and tests to ensure quality
 5. **Deploy confidently** - Push validated apps directly to Databricks Apps platform
@@ -91,7 +91,7 @@ Understand your Databricks data before building:
 
 Create the application structure:
 
-- **`scaffold_data_app`** - Generate a full-stack TypeScript application
+- **`scaffold_databricks_app`** - Generate a full-stack TypeScript application
   - Modern stack: Node.js, TypeScript, React, tRPC
   - Pre-configured build system, linting, and testing
   - Production-ready project structure
@@ -103,7 +103,7 @@ Create the application structure:
 
 Ensure production-readiness before deployment:
 
-- **`validate_data_app`** - Comprehensive validation
+- **`validate_databricks_app`** - Comprehensive validation
   - Build verification (npm build)
   - Type checking (TypeScript compiler)
   - Test execution (full test suite)
@@ -112,7 +112,7 @@ Ensure production-readiness before deployment:
 
 ### 4. Deployment (Production Release)
 
-Deploy validated applications to Databricks (enable with `--allow-deployment`):
+Deploy validated applications to Databricks:
 
 - **`deploy_databricks_app`** - Push to Databricks Apps platform
   - Automatic deployment configuration
@@ -290,9 +290,6 @@ databricks experimental apps-mcp --warehouse-id <warehouse-id>
 
 # Enable workspace tools
 databricks experimental apps-mcp --warehouse-id <warehouse-id> --with-workspace-tools
-
-# Enable deployment
-databricks experimental apps-mcp --warehouse-id <warehouse-id> --allow-deployment
 ```
 
 ### CLI Flags
@@ -301,7 +298,6 @@ databricks experimental apps-mcp --warehouse-id <warehouse-id> --allow-deploymen
 |------|-------------|---------|
 | `--warehouse-id` | Databricks SQL Warehouse ID (required) | - |
 | `--with-workspace-tools` | Enable workspace file operations | `false` |
-| `--allow-deployment` | Enable deployment operations | `false` |
 | `--help` | Show help | - |
 
 ### Environment Variables
@@ -312,7 +308,6 @@ databricks experimental apps-mcp --warehouse-id <warehouse-id> --allow-deploymen
 | `DATABRICKS_TOKEN` | Databricks personal access token | `dapi...` |
 | `WAREHOUSE_ID` | Databricks SQL warehouse ID (preferred) | `abc123def456` |
 | `DATABRICKS_WAREHOUSE_ID` | Alternative name for warehouse ID | `abc123def456` |
-| `ALLOW_DEPLOYMENT` | Enable deployment operations | `true` or `false` |
 | `WITH_WORKSPACE_TOOLS` | Enable workspace tools | `true` or `false` |
 
 ### Authentication

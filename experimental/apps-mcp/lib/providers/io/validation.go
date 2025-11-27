@@ -82,6 +82,12 @@ func (v *ValidationNodeJs) Validate(ctx context.Context, workDir string) (*Valid
 
 	steps := []validationStep{
 		{
+			name:        "install",
+			command:     "npm install",
+			errorPrefix: "Failed to install dependencies",
+			displayName: "Install",
+		},
+		{
 			name:        "build",
 			command:     "npm run build --if-present",
 			errorPrefix: "Failed to run npm build",

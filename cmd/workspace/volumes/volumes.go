@@ -30,10 +30,7 @@ func New() *cobra.Command {
   centrally and providing secure access across workspaces to it, or transforming
   and querying non-tabular data files in ETL.`,
 		GroupID: "catalog",
-		Annotations: map[string]string{
-			"package": "catalog",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

@@ -63,13 +63,10 @@ type IResource interface {
 	// Example: func (r *ResourceVolume) DoCreate(ctx context.Context, newState *catalog.CreateVolumeRequestContent) (string, *catalog.VolumeInfo, error)
 	DoCreate(ctx context.Context, newState any) (id string, remoteState any, e error)
 
-	// DoUpdate updates the resource. ID must not change as a result of this operation. Returns optionally remote state.
+	// [Optional] DoUpdate updates the resource. ID must not change as a result of this operation. Returns optionally remote state.
 	// If remote state is available as part of the operation, return it; otherwise return nil.
-	// Example: func (r *ResourceSchema) DoUpdate(ctx context.Context, id string, newState *catalog.CreateSchema) (*catalog.SchemaInfo, error)
-	DoUpdate(ctx context.Context, id string, newState any) (remoteState any, e error)
-
-	// [Optional] DoUpdateWithChanges updates the resource with information about changes computed during plan. Returns optionally remote state.
-	DoUpdateWithChanges(ctx context.Context, id string, newState any, changes *deployplan.Changes) (remoteState any, e error)
+	// Example: func (r *ResourceSchema) DoUpdate(ctx context.Context, id string, newState *catalog.CreateSchema, changes *deployplan.Changes) (*catalog.SchemaInfo, error)
+	DoUpdate(ctx context.Context, id string, newState any, changes *deployplan.Changes) (remoteState any, e error)
 
 	// [Optional] DoUpdateWithID performs an update that may result in resource having a new ID. Returns new id and optionally remote state.
 	DoUpdateWithID(ctx context.Context, id string, newState any) (newID string, remoteState any, e error)
@@ -94,15 +91,14 @@ type Adapter struct {
 	doRefresh    *calladapt.BoundCaller
 	doDelete     *calladapt.BoundCaller
 	doCreate     *calladapt.BoundCaller
-	doUpdate     *calladapt.BoundCaller
 
 	// Optional:
-	doUpdateWithChanges *calladapt.BoundCaller
-	doUpdateWithID      *calladapt.BoundCaller
-	waitAfterCreate     *calladapt.BoundCaller
-	waitAfterUpdate     *calladapt.BoundCaller
-	classifyChange      *calladapt.BoundCaller
-	doResize            *calladapt.BoundCaller
+	doUpdate        *calladapt.BoundCaller
+	doUpdateWithID  *calladapt.BoundCaller
+	waitAfterCreate *calladapt.BoundCaller
+	waitAfterUpdate *calladapt.BoundCaller
+	classifyChange  *calladapt.BoundCaller
+	doResize        *calladapt.BoundCaller
 
 	fieldTriggersLocal  map[string]deployplan.ActionType
 	fieldTriggersRemote map[string]deployplan.ActionType
@@ -128,7 +124,6 @@ func NewAdapter(typedNil any, client *databricks.WorkspaceClient) (*Adapter, err
 		doDelete:            nil,
 		doCreate:            nil,
 		doUpdate:            nil,
-		doUpdateWithChanges: nil,
 		doUpdateWithID:      nil,
 		doResize:            nil,
 		waitAfterCreate:     nil,
@@ -225,14 +220,9 @@ func (a *Adapter) initMethods(resource any) error {
 		return err
 	}
 
-	a.doUpdate, err = prepareCallRequired(resource, "DoUpdate")
-	if err != nil {
-		return err
-	}
-
 	// Optional methods with varying signatures:
 
-	a.doUpdateWithChanges, err = calladapt.PrepareCall(resource, calladapt.TypeOf[IResource](), "DoUpdateWithChanges")
+	a.doUpdate, err = calladapt.PrepareCall(resource, calladapt.TypeOf[IResource](), "DoUpdate")
 	if err != nil {
 		return err
 	}
@@ -299,7 +289,6 @@ func (a *Adapter) validate() error {
 	validations := []any{
 		"PrepareState return", a.prepareState.OutTypes[0], stateType,
 		"DoCreate newState", a.doCreate.InTypes[1], stateType,
-		"DoUpdate newState", a.doUpdate.InTypes[2], stateType,
 	}
 
 	// If RemapState is implemented, validate its signature.
@@ -319,19 +308,13 @@ func (a *Adapter) validate() error {
 	}
 	validations = append(validations, "DoCreate remoteState return", a.doCreate.OutTypes[1], remoteType)
 
-	// Validate DoUpdate: must return (remoteType, error)
-	if len(a.doUpdate.OutTypes) != 2 {
-		return fmt.Errorf("DoUpdate must return (remoteType, error), got %d return values", len(a.doUpdate.OutTypes))
-	}
-	validations = append(validations, "DoUpdate remoteState return", a.doUpdate.OutTypes[0], remoteType)
-
-	if a.doUpdateWithChanges != nil {
-		validations = append(validations, "DoUpdateWithChanges newState", a.doUpdateWithChanges.InTypes[2], stateType)
-		// DoUpdateWithChanges must return (remoteType, error)
-		if len(a.doUpdateWithChanges.OutTypes) != 2 {
-			return fmt.Errorf("DoUpdateWithChanges must return (remoteType, error), got %d return values", len(a.doUpdateWithChanges.OutTypes))
+	// Validate DoUpdate: must return (remoteType, error) if implemented
+	if a.doUpdate != nil {
+		validations = append(validations, "DoUpdate newState", a.doUpdate.InTypes[2], stateType)
+		if len(a.doUpdate.OutTypes) != 2 {
+			return fmt.Errorf("DoUpdate must return (remoteType, error), got %d return values", len(a.doUpdate.OutTypes))
 		}
-		validations = append(validations, "DoUpdateWithChanges remoteState return", a.doUpdateWithChanges.OutTypes[0], remoteType)
+		validations = append(validations, "DoUpdate remoteState return", a.doUpdate.OutTypes[0], remoteType)
 	}
 
 	if a.doResize != nil {
@@ -471,30 +454,19 @@ func (a *Adapter) DoCreate(ctx context.Context, newState any) (string, any, erro
 	return id, remoteState, nil
 }
 
-// DoUpdate updates the resource. Returns remote state if available, otherwise nil.
-func (a *Adapter) DoUpdate(ctx context.Context, id string, newState any) (any, error) {
-	outs, err := a.doUpdate.Call(ctx, id, newState)
-	if err != nil {
-		return nil, err
-	}
-
-	remoteState := normalizeNilPointer(outs[0])
-	return remoteState, nil
+// HasDoUpdate returns true if the resource implements DoUpdate method.
+func (a *Adapter) HasDoUpdate() bool {
+	return a.doUpdate != nil
 }
 
-// HasDoUpdateWithChanges returns true if the resource implements DoUpdateWithChanges method.
-func (a *Adapter) HasDoUpdateWithChanges() bool {
-	return a.doUpdateWithChanges != nil
-}
-
-// DoUpdateWithChanges updates the resource with information about changes computed during plan.
+// DoUpdate updates the resource with information about changes computed during plan.
 // Returns remote state if available, otherwise nil.
-func (a *Adapter) DoUpdateWithChanges(ctx context.Context, id string, newState any, changes *deployplan.Changes) (any, error) {
-	if a.doUpdateWithChanges == nil {
-		return nil, errors.New("internal error: DoUpdateWithChanges not found")
+func (a *Adapter) DoUpdate(ctx context.Context, id string, newState any, changes *deployplan.Changes) (any, error) {
+	if a.doUpdate == nil {
+		return nil, errors.New("internal error: DoUpdate not found")
 	}
 
-	outs, err := a.doUpdateWithChanges.Call(ctx, id, newState, changes)
+	outs, err := a.doUpdate.Call(ctx, id, newState, changes)
 	if err != nil {
 		return nil, err
 	}

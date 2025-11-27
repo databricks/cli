@@ -42,7 +42,7 @@ func (r *ResourceApp) DoCreate(ctx context.Context, config *apps.App) (string, *
 	return waiter.Response.Name, nil, nil
 }
 
-func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *apps.App) (*apps.App, error) {
+func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *apps.App, _ *Changes) (*apps.App, error) {
 	request := apps.UpdateAppRequest{
 		App:  *config,
 		Name: id,

@@ -76,7 +76,7 @@ func (r *ResourcePipeline) DoCreate(ctx context.Context, config *pipelines.Creat
 	return response.PipelineId, nil, nil
 }
 
-func (r *ResourcePipeline) DoUpdate(ctx context.Context, id string, config *pipelines.CreatePipeline) (*pipelines.GetPipelineResponse, error) {
+func (r *ResourcePipeline) DoUpdate(ctx context.Context, id string, config *pipelines.CreatePipeline, _ *Changes) (*pipelines.GetPipelineResponse, error) {
 	request := pipelines.EditPipeline{
 		AllowDuplicateNames:  config.AllowDuplicateNames,
 		BudgetPolicyId:       config.BudgetPolicyId,

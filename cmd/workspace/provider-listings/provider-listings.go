@@ -24,10 +24,7 @@ func New() *cobra.Command {
 		Long: `Listings are the core entities in the Marketplace. They represent the products
   that are available for consumption.`,
 		GroupID: "marketplace",
-		Annotations: map[string]string{
-			"package": "marketplace",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

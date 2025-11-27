@@ -5,7 +5,6 @@ package mcp
 // Config holds MCP server configuration.
 // Configuration is populated from CLI flags and Databricks client context.
 type Config struct {
-	AllowDeployment    bool
 	WithWorkspaceTools bool
 	IoConfig           *IoConfig
 }
@@ -41,7 +40,6 @@ func DefaultConfig() *Config {
 	validationCfg.SetDefaults()
 
 	return &Config{
-		AllowDeployment:    false,
 		WithWorkspaceTools: false,
 		IoConfig: &IoConfig{
 			Template: &TemplateConfig{

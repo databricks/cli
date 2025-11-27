@@ -32,10 +32,7 @@ func New() *cobra.Command {
   science and engineering code development best practices using Git for version
   control, collaboration, and CI/CD.`,
 		GroupID: "workspace",
-		Annotations: map[string]string{
-			"package": "workspace",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
