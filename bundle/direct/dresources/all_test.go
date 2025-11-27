@@ -505,30 +505,32 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 		require.Equal(t, remote, remoteStateFromWaitCreate)
 	}
 
-	remoteStateFromUpdate, err := adapter.DoUpdate(ctx, createdID, newState, nil)
-	require.NoError(t, err, "DoUpdate failed")
-	if remoteStateFromUpdate != nil {
-		remappedStateFromUpdate, err := adapter.RemapState(remoteStateFromUpdate)
-		require.NoError(t, err)
-		changes, err := structdiff.GetStructDiff(remappedState, remappedStateFromUpdate)
-		require.NoError(t, err)
-		// Filter out timestamp fields that are expected to differ in value
-		var relevantChanges []structdiff.Change
-		for _, change := range changes {
-			fieldName := change.Path.String()
-			if fieldName != "updated_at" {
-				relevantChanges = append(relevantChanges, change)
+	if adapter.HasDoUpdate() {
+		remoteStateFromUpdate, err := adapter.DoUpdate(ctx, createdID, newState, nil)
+		require.NoError(t, err, "DoUpdate failed")
+		if remoteStateFromUpdate != nil {
+			remappedStateFromUpdate, err := adapter.RemapState(remoteStateFromUpdate)
+			require.NoError(t, err)
+			changes, err := structdiff.GetStructDiff(remappedState, remappedStateFromUpdate)
+			require.NoError(t, err)
+			// Filter out timestamp fields that are expected to differ in value
+			var relevantChanges []structdiff.Change
+			for _, change := range changes {
+				fieldName := change.Path.String()
+				if fieldName != "updated_at" {
+					relevantChanges = append(relevantChanges, change)
+				}
 			}
+			require.Empty(t, relevantChanges, "unexpected differences found: %v", relevantChanges)
 		}
-		require.Empty(t, relevantChanges, "unexpected differences found: %v", relevantChanges)
-	}
 
-	remoteStateFromWaitUpdate, err := adapter.WaitAfterUpdate(ctx, newState)
-	require.NoError(t, err)
-	if remoteStateFromWaitUpdate != nil {
-		remappedStateFromWaitUpdate, err := adapter.RemapState(remoteStateFromWaitUpdate)
+		remoteStateFromWaitUpdate, err := adapter.WaitAfterUpdate(ctx, newState)
 		require.NoError(t, err)
-		require.Equal(t, remappedState, remappedStateFromWaitUpdate)
+		if remoteStateFromWaitUpdate != nil {
+			remappedStateFromWaitUpdate, err := adapter.RemapState(remoteStateFromWaitUpdate)
+			require.NoError(t, err)
+			require.Equal(t, remappedState, remappedStateFromWaitUpdate)
+		}
 	}
 
 	require.NoError(t, structwalk.Walk(newState, func(path *structpath.PathNode, val any, field *reflect.StructField) {

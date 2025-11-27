@@ -114,7 +114,7 @@ func (r *ResourceSecretScopeAcls) DoCreate(ctx context.Context, state *SecretSco
 	return scopeName, nil, nil
 }
 
-func (r *ResourceSecretScopeAcls) DoUpdate(ctx context.Context, id string, state *SecretScopeAclsState) (*SecretScopeAclsState, error) {
+func (r *ResourceSecretScopeAcls) DoUpdate(ctx context.Context, id string, state *SecretScopeAclsState, _ *Changes) (*SecretScopeAclsState, error) {
 	_, err := r.setACLs(ctx, state.ScopeName, state.Acls)
 	return nil, err
 }
