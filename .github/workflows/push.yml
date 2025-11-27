@@ -52,7 +52,7 @@ jobs:
         id: mask
         working-directory: tools/testmask
         run: |
-          go run . > output.txt
+          go run . ${{ github.event.pull_request.head.sha }} ${{ github.event.pull_request.base.sha }} > output.txt
 
       - name: Parse testmask output
         id: parse
