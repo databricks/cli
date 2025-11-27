@@ -1,4 +1,4 @@
-package structprefixtree
+package structtrie
 
 import (
 	"fmt"
@@ -301,7 +301,7 @@ func (c componentKey) append(prev *structpath.PathNode) *structpath.PathNode {
 	}
 }*/
 
-func (t *PrefixTree) match(current *Node, segments []*structpath.PathNode, index int, depth int, concreteness int, best *matchResult) {
+func (t *PrefixTree) match(current *Node, segments []*structpath.PathNode, index, depth, concreteness int, best *matchResult) {
 	if current == nil {
 		return
 	}
@@ -355,7 +355,7 @@ type matchResult struct {
 	concreteness int
 }
 
-func (m *matchResult) consider(node *Node, depth int, concreteness int) {
+func (m *matchResult) consider(node *Node, depth, concreteness int) {
 	if node == nil || node.value == nil {
 		return
 	}

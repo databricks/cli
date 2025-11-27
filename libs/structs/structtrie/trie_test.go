@@ -1,4 +1,4 @@
-package structprefixtree
+package structtrie
 
 import (
 	"testing"
