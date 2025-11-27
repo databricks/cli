@@ -3,4 +3,4 @@ Local = true
 IncludeRequestHeaders = ["User-Agent"]
 
 [Env]
-DATABRICKS_CACHE_DISABLED = 'true'
+DATABRICKS_CACHE_ENABLED = 'false'

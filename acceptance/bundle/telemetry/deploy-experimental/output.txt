@@ -13,6 +13,14 @@ Deployment complete!
 {
   "bool_values": [
     {
+      "key": "local.cache.(redacted)
+      "value": true
+    },
+    {
+      "key": "local.cache.(redacted)
+      "value": true
+    },
+    {
       "key": "experimental.use_legacy_run_as",
       "value": true
     },

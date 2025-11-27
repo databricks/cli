@@ -2,7 +2,7 @@ RecordRequests = true
 IncludeRequestHeaders = ["User-Agent"]
 
 [Env]
-DATABRICKS_CACHE_DISABLED = 'true'
+DATABRICKS_CACHE_ENABLED = 'false'
 
 [[Repls]]
 Old = '"execution_time_ms": \d{1,5},'
@@ -11,3 +11,11 @@ New = '"execution_time_ms": SMALL_INT,'
 [[Repls]]
 Old = '(linux|darwin|windows)'
 New = '[OS]'
+
+[[Repls]]
+Old = 'local\.cache\.(.*)'
+New = 'local.cache.(redacted)'
+
+[[Repls]]
+Old = '"local_cache_measurements_ms": \[[^\]]*\]'
+New = '"local_cache_measurements_ms": []'

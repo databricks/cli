@@ -2,7 +2,7 @@ RecordRequests = true
 IncludeRequestHeaders = ["Authorization"]
 
 [Env]
-DATABRICKS_CACHE_DISABLED = 'true'
+DATABRICKS_CACHE_ENABLED = 'false'
 
 # "client_id:client_secret" in base64 is Y2xpZW50X2lkOmNsaWVudF9zZWNyZXQ=, expect to
 # see this in Authorization header

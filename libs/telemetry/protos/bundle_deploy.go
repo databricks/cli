@@ -92,5 +92,5 @@ type BoolMapEntry struct {
 
 type IntMapEntry struct {
 	Key   string `json:"key,omitempty"`
-	Value int64  `json:"value,omitempty"`
+	Value int64  `json:"value"`
 }
