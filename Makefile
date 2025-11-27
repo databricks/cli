@@ -155,3 +155,15 @@ generate:
 
 
 .PHONY: lint lintfull tidy lintcheck fmt fmtfull test cover showcover build snapshot snapshot-release schema integration integration-short acc-cover acc-showcover docs ws wsfix links checks test-update test-update-templates test-update-aws test-update-all generate-validation
+
+test-exp-aitools:
+	make test TEST_PACKAGES="./experimental/aitools/..." ACCEPTANCE_TEST_FILTER="TestAccept/idontexistyet/aitools"
+
+test-exp-apps-mcp:
+	make test TEST_PACKAGES="./experimental/apps-mcp/..." ACCEPTANCE_TEST_FILTER="TestAccept/idontexistyet/apps-mcp"
+
+test-exp-ssh:
+	make test TEST_PACKAGES="./experimental/ssh/..." ACCEPTANCE_TEST_FILTER="TestAccept/ssh"
+
+test-pipelines:
+	make test TEST_PACKAGES="./cmd/pipelines/..." ACCEPTANCE_TEST_FILTER="TestAccept/pipelines"
