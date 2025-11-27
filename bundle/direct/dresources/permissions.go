@@ -98,7 +98,7 @@ func accessControlRequestKey(x iam.AccessControlRequest) (string, string) {
 	return "", ""
 }
 
-func (*ResourcePermissions) KeyedSlices(s *PermissionsState) map[string]any {
+func (*ResourcePermissions) KeyedSlices() map[string]any {
 	return map[string]any{
 		"permissions": accessControlRequestKey,
 	}

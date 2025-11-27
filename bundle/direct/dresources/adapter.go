@@ -86,7 +86,7 @@ type IResource interface {
 
 	// [Optional] KeyedSlices returns a map from path patterns to KeyFunc for comparing slices by key instead of by index.
 	// Example: func (*ResourcePermissions) KeyedSlices(state *PermissionsState) map[string]any
-	KeyedSlices(state any) map[string]any
+	KeyedSlices() map[string]any
 }
 
 // Adapter wraps resource implementation, validates signatures and type consistency across methods
@@ -202,18 +202,7 @@ func loadFieldTriggers(triggerCall *calladapt.BoundCaller, isLocal bool) (map[st
 
 // loadKeyedSlices validates and calls KeyedSlices method, returning the resulting map.
 func loadKeyedSlices(call *calladapt.BoundCaller) (map[string]any, error) {
-	// Validate signature: func(stateType) map[string]any
-	if len(call.InTypes) != 1 {
-		return nil, fmt.Errorf("KeyedSlices must take exactly 1 parameter, got %d", len(call.InTypes))
-	}
-	expectedReturnType := reflect.TypeOf(map[string]any{})
-	if len(call.OutTypes) != 1 || call.OutTypes[0] != expectedReturnType {
-		return nil, fmt.Errorf("KeyedSlices must return map[string]any, got %v", call.OutTypes)
-	}
-
-	// Create a nil pointer of the expected type (KeyedSlices implementations should not depend on the state value)
-	nilArg := reflect.Zero(call.InTypes[0]).Interface()
-	outs, err := call.Call(nilArg)
+	outs, err := call.Call()
 	if err != nil {
 		return nil, fmt.Errorf("failed to call KeyedSlices: %w", err)
 	}
