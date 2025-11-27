@@ -17,14 +17,16 @@ import (
 // Metrics is a local interface for tracking cache telemetry.
 type Metrics interface {
 	SetBoolValue(key string, value bool)
+	SetDurationValue(key string, value time.Duration)
 }
 
 // FileCache implements the Cache interface using local disk storage.
 type FileCache[T any] struct {
-	baseDir       string
-	expiryMinutes int
-	mu            sync.Mutex
-	metrics       Metrics
+	baseDir         string
+	expiryMinutes   int
+	mu              sync.Mutex
+	metrics         Metrics
+	measurementMode bool // If true, cache is used only for measurement, not for actual caching
 }
 
 // newFileCacheWithBaseDir creates a new file-based cache that stores data in the specified directory.
@@ -112,6 +114,12 @@ func sanitizeVersion(version string) string {
 
 // NewFileCache creates a new file-based cache using UserCacheDir() + "databricks" + version + cached component name.
 // Including the CLI version in the path ensures cache isolation across different CLI versions.
+// By default, the cache operates in measurement-only mode (measurementMode=true), which means it will:
+// - Check if cached values exist
+// - Measure how much time would have been saved
+// - Emit metrics about potential savings
+// - Always compute the value (never actually use the cache)
+// Set DATABRICKS_CACHE_ENABLED=true to enable actual caching.
 func NewFileCache[T any](ctx context.Context, component string, expiryMinutes int, metrics Metrics) (*FileCache[T], error) {
 	cacheBaseDir, err := getCacheBaseDir()
 	if err != nil {
@@ -127,6 +135,17 @@ func NewFileCache[T any](ctx context.Context, component string, expiryMinutes in
 		return nil, err
 	}
 	fc.metrics = metrics
+
+	// By default, cache is in measurement mode (disabled for actual use)
+	// Explicitly enable with DATABRICKS_CACHE_ENABLED=true
+	fc.measurementMode = os.Getenv("DATABRICKS_CACHE_ENABLED") != "true"
+
+	if fc.measurementMode {
+		log.Debugf(ctx, "[Local Cache] cache is in measurement-only mode; set DATABRICKS_CACHE_ENABLED=true to enable caching\n")
+	} else {
+		log.Debugf(ctx, "[Local Cache] cache is enabled for actual use\n")
+	}
+
 	return fc, nil
 }
 
@@ -141,6 +160,8 @@ func (fc *FileCache[T]) addTelemetryMetric(key string) {
 
 // GetOrCompute retrieves cached content or computes it using the provided function.
 // Cache operations fail open: if caching fails, the compute function is still called.
+// In measurement mode, the cache checks if values exist and measures potential time savings,
+// but always computes and never returns cached values.
 func (fc *FileCache[T]) GetOrCompute(ctx context.Context, fingerprint any, compute func(ctx context.Context) (T, error)) (T, error) {
 	// Convert fingerprint to deterministic hash - this is our cache key
 	cacheKey, err := fingerprintToHash(fingerprint)
@@ -156,25 +177,32 @@ func (fc *FileCache[T]) GetOrCompute(ctx context.Context, fingerprint any, compu
 	cachePath := fc.getCachePath(cacheKey)
 
 	// Try to read from disk cache
-	if data, found := fc.readFromCache(ctx, cachePath); found {
+	cachedData, cacheExists := fc.readFromCache(ctx, cachePath)
+
+	// In normal mode: return cached value if found
+	if cacheExists && !fc.measurementMode {
 		log.Debugf(ctx, "[Local Cache] cache hit\n")
 		fc.addTelemetryMetric("local.cache.hit")
-		return data, nil
+		return cachedData, nil
 	}
 
-	// Cache miss - acquire lock to compute
-	fc.mu.Lock()
-	defer fc.mu.Unlock()
-
-	// Check again after acquiring lock (another goroutine might have computed it)
-	if data, found := fc.readFromCache(ctx, cachePath); found {
-		log.Debugf(ctx, "[Local Cache] cache hit after lock\n")
+	// Record metrics (hit in measurement mode, miss in normal mode)
+	if cacheExists {
+		log.Debugf(ctx, "[Local Cache] cache hit\n")
 		fc.addTelemetryMetric("local.cache.hit")
-		return data, nil
+	} else {
+		log.Debugf(ctx, "[Local Cache] cache miss, computing\n")
+		fc.addTelemetryMetric("local.cache.miss")
 	}
 
-	// Compute the value
-	log.Debugf(ctx, "[Local Cache] cache miss, computing\n")
+	// In normal mode, acquire lock to serialize writes to the same cache key
+	if !fc.measurementMode {
+		fc.mu.Lock()
+		defer fc.mu.Unlock()
+	}
+
+	// Compute the value (with timing in measurement mode)
+	start := time.Now()
 	result, err := compute(ctx)
 	if err != nil {
 		log.Debugf(ctx, "[Local Cache] error while computing: %v\n", err)
@@ -182,10 +210,19 @@ func (fc *FileCache[T]) GetOrCompute(ctx context.Context, fingerprint any, compu
 		return result, err
 	}
 
+	// Record duration metrics in measurement mode
+	if fc.measurementMode && fc.metrics != nil {
+		computeDuration := time.Since(start)
+		fc.metrics.SetDurationValue("local.cache.compute_duration", computeDuration)
+		if cacheExists {
+			fc.metrics.SetDurationValue("local.cache.potential_savings", computeDuration)
+		}
+	}
+
+	log.Debugf(ctx, "[Local Cache] computed and stored result\n")
+
 	// Write to disk cache (failures are silent - cache write errors don't affect the result)
 	fc.writeToCache(ctx, cachePath, result)
-	log.Debugf(ctx, "[Local Cache] computed and stored result\n")
-	fc.addTelemetryMetric("local.cache.miss")
 
 	return result, nil
 }

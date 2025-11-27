@@ -2,3 +2,6 @@ Cloud=false
 Local=true
 
 RecordRequests = true
+
+[EnvMatrix]
+  DATABRICKS_CACHE_ENABLED = ["true"]

@@ -80,6 +80,9 @@ type BundleDeployExperimental struct {
 
 	// Number of resource mutators declared at 'python/mutators' in databricks.yml
 	PythonResourceMutatorsCount int64 `json:"python_resource_mutators_count,omitempty"`
+
+	// Local cache measurements in milliseconds (compute duration, potential savings, etc.)
+	LocalCacheMeasurementsMs []IntMapEntry `json:"local_cache_measurements_ms,omitempty"`
 }
 
 type BoolMapEntry struct {

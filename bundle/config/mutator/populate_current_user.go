@@ -3,7 +3,6 @@ package mutator
 import (
 	"context"
 	"net/http"
-	"os"
 
 	"github.com/databricks/cli/libs/cache"
 
@@ -27,21 +26,18 @@ func PopulateCurrentUser() bundle.Mutator {
 	return &populateCurrentUser{}
 }
 
-// initializeCache sets up the cache for authorization headers if not already initialized
+// initializeCache sets up the cache for authorization headers if not already initialized.
+// By default, cache operates in measurement-only mode to gather metrics about potential savings.
+// Set DATABRICKS_CACHE_ENABLED=true to enable actual caching.
 func (m *populateCurrentUser) initializeCache(ctx context.Context, b *bundle.Bundle) {
 	if m.cache != nil {
-		return
-	}
-
-	if os.Getenv("DATABRICKS_CACHE_DISABLED") == "true" {
-		log.Debugf(ctx, "[Local Cache] Local cache is disabled via environment variable DATABRICKS_CACHE_DISABLED=true\n")
 		return
 	}
 
 	var err error
 	m.cache, err = cache.NewFileCache[*iam.User](ctx, "auth", 30, &b.Metrics)
 	if err != nil {
-		log.Debugf(ctx, "[Local Cache] Failed to initialize cache dir: %v\n", err)
+		log.Debugf(ctx, "[Local Cache] Failed to initialize cache: %v\n", err)
 	}
 }
 
