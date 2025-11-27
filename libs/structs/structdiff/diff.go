@@ -302,7 +302,6 @@ func (ctx *diffContext) findKeyFunc(path *structpath.PathNode) KeyFunc {
 
 // pathToPattern converts a PathNode to a pattern string for matching.
 // Slice indices are converted to [*] wildcard.
-// XXX why indices are special; why do we need this; if we need this, should it be in structpath instead?
 func pathToPattern(path *structpath.PathNode) string {
 	if path == nil {
 		return ""
