@@ -1,0 +1,7 @@
+trace $CLI bundle deploy
+update_file.py databricks.yml '- {"level": "CAN_VIEW", "user_name": "viewer@example.com"}' ''
+update_file.py databricks.yml '# PLACEHOLDER' '        - {"level": "CAN_VIEW", "user_name": "viewer@example.com"}'
+
+trace $CLI bundle plan
+trace $CLI bundle deploy
+trace $CLI bundle plan
