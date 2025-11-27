@@ -3,12 +3,12 @@ package databricks
 import (
 	"context"
 	"fmt"
+	"os"
 	"os/exec"
 	"time"
 
 	mcp "github.com/databricks/cli/experimental/apps-mcp/lib"
 	"github.com/databricks/cli/experimental/apps-mcp/lib/middlewares"
-	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 )
@@ -20,18 +20,13 @@ func GetSourcePath(app *apps.App) string {
 	return app.DefaultSourceCodePath
 }
 
-func GetAppInfo(ctx context.Context, cfg *mcp.Config, name string) (*apps.App, error) {
-	w := cmdctx.WorkspaceClient(ctx)
-	app, err := w.Apps.GetByName(ctx, name)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get app info: %w", err)
-	}
-
-	return app, nil
+func GetAppInfo(ctx context.Context, name string) (*apps.App, error) {
+	w := middlewares.MustGetDatabricksClient(ctx)
+	return w.Apps.GetByName(ctx, name)
 }
 
-func CreateApp(ctx context.Context, cfg *mcp.Config, createAppRequest *apps.CreateAppRequest) (*apps.App, error) {
-	w := cmdctx.WorkspaceClient(ctx)
+func CreateApp(ctx context.Context, createAppRequest *apps.CreateAppRequest) (*apps.App, error) {
+	w := middlewares.MustGetDatabricksClient(ctx)
 
 	wait, err := w.Apps.Create(ctx, *createAppRequest)
 	if err != nil {
@@ -47,7 +42,10 @@ func CreateApp(ctx context.Context, cfg *mcp.Config, createAppRequest *apps.Crea
 }
 
 func GetUserInfo(ctx context.Context, cfg *mcp.Config) (*iam.User, error) {
-	w := cmdctx.WorkspaceClient(ctx)
+	w, err := middlewares.GetDatabricksClient(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get databricks client: %w", err)
+	}
 	user, err := w.CurrentUser.Me(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user info: %w", err)
@@ -56,8 +54,9 @@ func GetUserInfo(ctx context.Context, cfg *mcp.Config) (*iam.User, error) {
 	return user, nil
 }
 
-func SyncWorkspace(appInfo *apps.App, sourceDir string) error {
+func SyncWorkspace(ctx context.Context, appInfo *apps.App, sourceDir string) error {
 	targetPath := GetSourcePath(appInfo)
+	host := middlewares.MustGetDatabricksClient(ctx).Config.Host
 
 	cmd := exec.Command(
 		"databricks",
@@ -68,6 +67,9 @@ func SyncWorkspace(appInfo *apps.App, sourceDir string) error {
 		targetPath,
 	)
 	cmd.Dir = sourceDir
+	env := os.Environ()
+	env = append(env, "DATABRICKS_HOST="+host)
+	cmd.Env = env
 
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -78,7 +80,10 @@ func SyncWorkspace(appInfo *apps.App, sourceDir string) error {
 }
 
 func DeployApp(ctx context.Context, cfg *mcp.Config, appInfo *apps.App) error {
-	w := cmdctx.WorkspaceClient(ctx)
+	w, err := middlewares.GetDatabricksClient(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get databricks client: %w", err)
+	}
 	sourcePath := GetSourcePath(appInfo)
 
 	req := apps.CreateAppDeploymentRequest{
@@ -109,8 +114,8 @@ func ResourcesFromEnv(ctx context.Context, cfg *mcp.Config) (*apps.AppResource, 
 	}
 
 	return &apps.AppResource{
-		Name:        "base",
-		Description: "template resources",
+		Name:        "warehouse",
+		Description: "Warehouse to use for the app",
 		SqlWarehouse: &apps.AppResourceSqlWarehouse{
 			Id:         warehouseID,
 			Permission: apps.AppResourceSqlWarehouseSqlWarehousePermissionCanUse,

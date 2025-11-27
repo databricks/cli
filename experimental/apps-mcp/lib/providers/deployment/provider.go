@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"time"
 
@@ -19,14 +18,10 @@ import (
 )
 
 func init() {
-	// Register deployment provider with conditional enablement based on AllowDeployment
+	// Register deployment provider
 	providers.Register("deployment", func(ctx context.Context, cfg *mcp.Config, sess *session.Session) (providers.Provider, error) {
 		return NewProvider(ctx, cfg, sess)
-	}, providers.ProviderConfig{
-		EnabledWhen: func(cfg *mcp.Config) bool {
-			return cfg.AllowDeployment
-		},
-	})
+	}, providers.ProviderConfig{})
 }
 
 const deployRetries = 3
@@ -150,7 +145,7 @@ func (p *Provider) deployDatabricksApp(ctx context.Context, args *DeployDatabric
 	if !hasChecksum {
 		return &DeployResult{
 			Success: false,
-			Message: "Project must be validated before deployment. Run validate_data_app first.",
+			Message: "Project must be validated before deployment. Run validate_databricks_app first.",
 			AppName: args.Name,
 		}, nil
 	}
@@ -167,25 +162,7 @@ func (p *Provider) deployDatabricksApp(ctx context.Context, args *DeployDatabric
 	if !checksumValid {
 		return &DeployResult{
 			Success: false,
-			Message: "Project files changed since validation. Re-run validate_data_app before deployment.",
-			AppName: args.Name,
-		}, nil
-	}
-
-	log.Infof(ctx, "Installing dependencies: work_dir=%s", workPath)
-	if err := p.runCommand(workPath, "npm", "install"); err != nil {
-		return &DeployResult{
-			Success: false,
-			Message: fmt.Sprintf("Failed to install dependencies: %v", err),
-			AppName: args.Name,
-		}, nil
-	}
-
-	log.Infof(ctx, "Building frontend: work_dir=%s", workPath)
-	if err := p.runCommand(workPath, "npm", "run", "build"); err != nil {
-		return &DeployResult{
-			Success: false,
-			Message: fmt.Sprintf("Failed to build frontend: %v", err),
+			Message: "Project files changed since validation. Re-run validate_databricks_app before deployment.",
 			AppName: args.Name,
 		}, nil
 	}
@@ -199,11 +176,10 @@ func (p *Provider) deployDatabricksApp(ctx context.Context, args *DeployDatabric
 		}, nil
 	}
 
-	serverDir := filepath.Join(workPath, "server")
 	syncStart := time.Now()
-	log.Infof(ctx, "Syncing workspace: source=%s, target=%s", serverDir, databricks.GetSourcePath(appInfo))
+	log.Infof(ctx, "Syncing workspace: source=%s, target=%s", workPath, databricks.GetSourcePath(appInfo))
 
-	if err := databricks.SyncWorkspace(appInfo, serverDir); err != nil {
+	if err := databricks.SyncWorkspace(ctx, appInfo, workPath); err != nil {
 		return &DeployResult{
 			Success: false,
 			Message: fmt.Sprintf("Failed to sync workspace: %v", err),
@@ -265,7 +241,7 @@ func (p *Provider) deployDatabricksApp(ctx context.Context, args *DeployDatabric
 }
 
 func (p *Provider) getOrCreateApp(ctx context.Context, name, description string, force bool) (*apps.App, error) {
-	appInfo, err := databricks.GetAppInfo(ctx, p.config, name)
+	appInfo, err := databricks.GetAppInfo(ctx, name)
 	if err == nil {
 		log.Infof(ctx, "Found existing app: name=%s", name)
 
@@ -302,19 +278,7 @@ func (p *Provider) getOrCreateApp(ctx context.Context, name, description string,
 		},
 	}
 
-	return databricks.CreateApp(ctx, p.config, createApp)
-}
-
-func (p *Provider) runCommand(dir, name string, args ...string) error {
-	cmd := exec.Command(name, args...)
-	cmd.Dir = dir
-
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return fmt.Errorf("%s failed: %w (output: %s)", name, err, string(output))
-	}
-
-	return nil
+	return databricks.CreateApp(ctx, createApp)
 }
 
 func formatDeployResult(result *DeployResult) string {
