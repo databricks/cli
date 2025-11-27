@@ -901,7 +901,7 @@ func BuildCLI(t *testing.T, buildDir, coverDir, osName, arch string) string {
 	}
 
 	args := []string{
-		"go", "build", "-o", execPath,
+		"go", "build", "-o", execPath, "-buildvcs=false",
 	}
 
 	if coverDir != "" {
