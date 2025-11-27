@@ -338,7 +338,7 @@ func Parse(s string) (*PathNode, error) {
 				state = stateMapKey
 			} else if ch == '*' {
 				state = stateWildcard
-			} else if isKeyValueKeyChar(ch) {
+			} else if !isReservedFieldChar(ch) {
 				currentToken.WriteByte(ch)
 				state = stateKeyValueKey
 			} else {
@@ -396,7 +396,7 @@ func Parse(s string) (*PathNode, error) {
 				keyValueKey = currentToken.String()
 				currentToken.Reset()
 				state = stateKeyValueEquals
-			} else if isKeyValueKeyChar(ch) {
+			} else if !isReservedFieldChar(ch) {
 				currentToken.WriteByte(ch)
 			} else {
 				return nil, fmt.Errorf("unexpected character '%c' in key-value key at position %d", ch, pos)
@@ -489,11 +489,6 @@ func Parse(s string) (*PathNode, error) {
 	default:
 		return nil, fmt.Errorf("parser error at position %d", pos)
 	}
-}
-
-// isKeyValueKeyChar checks if character is valid for key-value key (identifier-like)
-func isKeyValueKeyChar(ch byte) bool {
-	return (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9') || ch == '_'
 }
 
 // isReservedFieldChar checks if character is reserved and cannot be used in field names

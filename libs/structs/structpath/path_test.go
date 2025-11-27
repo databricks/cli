@@ -322,7 +322,7 @@ func TestParseErrors(t *testing.T) {
 		{
 			name:  "negative array index",
 			input: "[-1]",
-			error: "unexpected character '-' after '[' at position 1",
+			error: "unexpected character ']' in key-value key at position 3",
 		},
 		{
 			name:  "unclosed map key quote",
