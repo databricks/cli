@@ -10,6 +10,8 @@ python/docs/images/databricks-logo.svg
 # Binary files
 **/*.zip
 **/*.whl
+**/*.png
+**/*.tgz
 
 # new lines are recorded differently on windows and unix.
 # In unix: "raw_body": "hello, world\n"
@@ -30,6 +32,3 @@ internal/genkit/tagging.py
 bundle/docsgen/output/resources.md
 bundle/docsgen/output/reference.md
 bundle/docsgen/testdata/anchors.md
-
-# MCP
-experimental/apps-mcp/lib/templates/appkit/**/*
