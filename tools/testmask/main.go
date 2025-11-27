@@ -1,9 +1,9 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
-	"strings"
 )
 
 func main() {
@@ -30,5 +30,9 @@ func main() {
 	}
 
 	targets := GetTargets(changedFiles)
-	fmt.Println(strings.Join(targets, " "))
+	err = json.NewEncoder(os.Stdout).Encode(targets)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error encoding targets: %v\n", err)
+		os.Exit(1)
+	}
 }
