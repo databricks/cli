@@ -19,10 +19,10 @@ type Change struct {
 
 // KeyFunc extracts a key field name and value from a slice element.
 // It can be either:
-//   - func(T) (string, string, error) - typed function for specific element type T
-//   - func(any) (string, string, error) - generic function accepting any element
+//   - func(T) (string, string) - typed function for specific element type T
+//   - func(any) (string, string) - generic function accepting any element
 //
-// The function returns (keyField, keyValue, error). The keyField is typically a field name
+// The function returns (keyField, keyValue). The keyField is typically a field name
 // like "task_key", and keyValue is the value that uniquely identifies the element.
 type KeyFunc = any
 
@@ -41,32 +41,21 @@ func newKeyFuncCaller(fn any) (*keyFuncCaller, error) {
 	if t.NumIn() != 1 {
 		return nil, fmt.Errorf("KeyFunc must have exactly 1 parameter, got %d", t.NumIn())
 	}
-	if t.NumOut() != 3 {
-		return nil, fmt.Errorf("KeyFunc must return exactly 3 values, got %d", t.NumOut())
+	if t.NumOut() != 2 {
+		return nil, fmt.Errorf("KeyFunc must return exactly 2 values, got %d", t.NumOut())
 	}
 	if t.Out(0).Kind() != reflect.String || t.Out(1).Kind() != reflect.String {
-		return nil, fmt.Errorf("KeyFunc must return (string, string, error), got (%v, %v, %v)", t.Out(0), t.Out(1), t.Out(2))
-	}
-	errType := reflect.TypeOf((*error)(nil)).Elem()
-	if !t.Out(2).Implements(errType) && t.Out(2) != errType {
-		return nil, fmt.Errorf("KeyFunc third return must be error, got %v", t.Out(2))
+		return nil, fmt.Errorf("KeyFunc must return (string, string), got (%v, %v)", t.Out(0), t.Out(1))
 	}
 	return &keyFuncCaller{fn: v, argType: t.In(0)}, nil
 }
 
-func (c *keyFuncCaller) call(elem any) (string, string, error) {
+func (c *keyFuncCaller) call(elem any) (string, string) {
 	elemValue := reflect.ValueOf(elem)
-	if !elemValue.Type().AssignableTo(c.argType) {
-		return "", "", fmt.Errorf("KeyFunc expects %v, got %T", c.argType, elem)
-	}
 	out := c.fn.Call([]reflect.Value{elemValue})
 	keyField := out[0].String()
 	keyValue := out[1].String()
-	var err error
-	if !out[2].IsNil() {
-		err = out[2].Interface().(error)
-	}
-	return keyField, keyValue, err
+	return keyField, keyValue
 }
 
 // diffContext holds configuration for the diff operation.
@@ -341,12 +330,33 @@ type sliceElement struct {
 	value    reflect.Value
 }
 
+// validateKeyFuncElementType verifies that the first element type in the sequence
+// is assignable to the expected type. If the sequence is empty, it succeeds.
+func validateKeyFuncElementType(seq reflect.Value, expected reflect.Type) error {
+	if seq.Len() == 0 {
+		return nil
+	}
+	elem := seq.Index(0)
+	if !elem.Type().AssignableTo(expected) {
+		return fmt.Errorf("KeyFunc expects %v, got %v", expected, elem.Type())
+	}
+	return nil
+}
+
 // diffSliceByKey compares two slices using the provided key function.
 // Elements are matched by their (keyField, keyValue) pairs instead of by index.
 // Duplicate keys are allowed and matched in order.
 func diffSliceByKey(ctx *diffContext, path *structpath.PathNode, v1, v2 reflect.Value, keyFunc KeyFunc, changes *[]Change) error {
 	caller, err := newKeyFuncCaller(keyFunc)
 	if err != nil {
+		return err
+	}
+
+	// Validate element types up-front to avoid runtime panics and to return a clear error.
+	if err := validateKeyFuncElementType(v1, caller.argType); err != nil {
+		return err
+	}
+	if err := validateKeyFuncElementType(v2, caller.argType); err != nil {
 		return err
 	}
 
@@ -359,10 +369,7 @@ func diffSliceByKey(ctx *diffContext, path *structpath.PathNode, v1, v2 reflect.
 	// Build from first slice
 	for i := range v1.Len() {
 		elem := v1.Index(i)
-		keyField, keyValue, err := caller.call(elem.Interface())
-		if err != nil {
-			return err
-		}
+		keyField, keyValue := caller.call(elem.Interface())
 		elements1[keyValue] = append(elements1[keyValue], sliceElement{keyField: keyField, keyValue: keyValue, value: elem})
 		if !seen[keyValue] {
 			seen[keyValue] = true
@@ -373,10 +380,7 @@ func diffSliceByKey(ctx *diffContext, path *structpath.PathNode, v1, v2 reflect.
 	// Build from second slice
 	for i := range v2.Len() {
 		elem := v2.Index(i)
-		keyField, keyValue, err := caller.call(elem.Interface())
-		if err != nil {
-			return err
-		}
+		keyField, keyValue := caller.call(elem.Interface())
 		elements2[keyValue] = append(elements2[keyValue], sliceElement{keyField: keyField, keyValue: keyValue, value: elem})
 		if !seen[keyValue] {
 			seen[keyValue] = true

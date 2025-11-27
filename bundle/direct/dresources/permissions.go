@@ -85,17 +85,17 @@ func (*ResourcePermissions) PrepareState(s *PermissionsState) *PermissionsState 
 	return s
 }
 
-func accessControlRequestKey(x iam.AccessControlRequest) (string, string, error) {
+func accessControlRequestKey(x iam.AccessControlRequest) (string, string) {
 	if x.UserName != "" {
-		return "user_name", x.UserName, nil
+		return "user_name", x.UserName
 	}
 	if x.ServicePrincipalName != "" {
-		return "service_principal_name", x.ServicePrincipalName, nil
+		return "service_principal_name", x.ServicePrincipalName
 	}
 	if x.GroupName != "" {
-		return "group_name", x.GroupName, nil
+		return "group_name", x.GroupName
 	}
-	return "", "", fmt.Errorf("no key found in AccessControlRequest: %+v", x)
+	return "", ""
 }
 
 func (*ResourcePermissions) KeyedSlices(s *PermissionsState) map[string]any {

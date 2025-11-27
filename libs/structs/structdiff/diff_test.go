@@ -448,8 +448,8 @@ type Job struct {
 	Tasks []Task `json:"tasks,omitempty"`
 }
 
-func taskKeyFunc(task Task) (string, string, error) {
-	return "task_key", task.TaskKey, nil
+func taskKeyFunc(task Task) (string, string) {
+	return "task_key", task.TaskKey
 }
 
 func TestGetStructDiffSliceKeys(t *testing.T) {
@@ -534,8 +534,8 @@ type Root struct {
 	Nested []Nested `json:"nested,omitempty"`
 }
 
-func itemKeyFunc(item Item) (string, string, error) {
-	return "id", item.ID, nil
+func itemKeyFunc(item Item) (string, string) {
+	return "id", item.ID
 }
 
 func TestGetStructDiffNestedSliceKeys(t *testing.T) {
@@ -590,33 +590,28 @@ func TestGetStructDiffSliceKeysInvalidFunc(t *testing.T) {
 		},
 		{
 			name:    "wrong number of parameters",
-			keyFunc: func() (string, string, error) { return "", "", nil },
+			keyFunc: func() (string, string) { return "", "" },
 			errMsg:  "KeyFunc must have exactly 1 parameter, got 0",
 		},
 		{
 			name:    "too many parameters",
-			keyFunc: func(a, b Task) (string, string, error) { return "", "", nil },
+			keyFunc: func(a, b Task) (string, string) { return "", "" },
 			errMsg:  "KeyFunc must have exactly 1 parameter, got 2",
 		},
 		{
 			name:    "wrong number of returns",
 			keyFunc: func(t Task) string { return "" },
-			errMsg:  "KeyFunc must return exactly 3 values, got 1",
+			errMsg:  "KeyFunc must return exactly 2 values, got 1",
 		},
 		{
 			name:    "wrong first return type",
-			keyFunc: func(t Task) (int, string, error) { return 0, "", nil },
-			errMsg:  "KeyFunc must return (string, string, error), got (int, string, error)",
+			keyFunc: func(t Task) (int, string) { return 0, "" },
+			errMsg:  "KeyFunc must return (string, string), got (int, string)",
 		},
 		{
 			name:    "wrong second return type",
-			keyFunc: func(t Task) (string, int, error) { return "", 0, nil },
-			errMsg:  "KeyFunc must return (string, string, error), got (string, int, error)",
-		},
-		{
-			name:    "wrong third return type",
-			keyFunc: func(t Task) (string, string, string) { return "", "", "" },
-			errMsg:  "KeyFunc third return must be error, got string",
+			keyFunc: func(t Task) (string, int) { return "", 0 },
+			errMsg:  "KeyFunc must return (string, string), got (string, int)",
 		},
 	}
 
@@ -634,8 +629,8 @@ func TestGetStructDiffSliceKeysInvalidFunc(t *testing.T) {
 func TestGetStructDiffSliceKeysWrongArgType(t *testing.T) {
 	// Function expects Item but slice contains Task
 	sliceKeys := map[string]KeyFunc{
-		"tasks": func(item Item) (string, string, error) {
-			return "id", item.ID, nil
+		"tasks": func(item Item) (string, string) {
+			return "id", item.ID
 		},
 	}
 	a := Job{Tasks: []Task{{TaskKey: "a"}}}
