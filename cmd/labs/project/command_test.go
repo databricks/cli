@@ -82,8 +82,9 @@ func TestLogLevelHandoff(t *testing.T) {
 		expectedLevel string
 	}{
 		{
+			// Historical handoff value when the user does not set an explicit log level.
 			name:          "not set by default",
-			expectedLevel: "notset",
+			expectedLevel: "disabled",
 		},
 		{
 			name:          "set explicitly with --log-level",
@@ -106,14 +107,9 @@ func TestLogLevelHandoff(t *testing.T) {
 			expectedLevel: "warn",
 		},
 		{
-			name:          "disabled log level",
-			args:          []string{"--log-level", "disabled"},
-			expectedLevel: "disabled",
-		},
-		{
 			name:          "invalid env var ignored",
 			envVar:        "invalid-level",
-			expectedLevel: "notset",
+			expectedLevel: "disabled",
 		},
 		{
 			name:          "conflict: --debug trumps --log-level and env var",
@@ -144,7 +140,7 @@ func TestLogLevelHandoff(t *testing.T) {
 
 			// Verify that our expectation matches what the logger has actually been configured to use.
 			// This should catch drift between the logic in cmd/root/logger.go and cmd/labs/project/proxy.go.
-			if tc.expectedLevel != "notset" {
+			if tc.expectedLevel != "disabled" {
 				actualLoggerLevel := getLoggerLevel(ctx)
 				assert.Equal(t, tc.expectedLevel, actualLoggerLevel)
 			}

@@ -131,7 +131,8 @@ func (cp *proxy) commandInput(cmd *cobra.Command) ([]string, error) {
 		if userSupplied {
 			logLevel = logLevelInUse
 		} else {
-			logLevel = "notset"
+			// Historical value to indicate "not set by user".
+			logLevel = "disabled"
 		}
 		commandInput.Flags["log_level"] = logLevel
 	}
