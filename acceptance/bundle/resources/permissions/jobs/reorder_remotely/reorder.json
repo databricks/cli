@@ -1,0 +1,8 @@
+{
+  "access_control_list": [
+      {"permission_level": "CAN_MANAGE", "group_name": "data-team"},
+      {"permission_level": "CAN_VIEW", "user_name": "viewer@example.com"},
+      {"permission_level": "IS_OWNER", "user_name": "tester@databricks.com"},
+      {"permission_level": "CAN_MANAGE", "service_principal_name": "f37d18cd-98a8-4db5-8112-12dd0a6bfe38"}
+  ]
+}

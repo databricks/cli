@@ -511,7 +511,7 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 		if remoteStateFromUpdate != nil {
 			remappedStateFromUpdate, err := adapter.RemapState(remoteStateFromUpdate)
 			require.NoError(t, err)
-			changes, err := structdiff.GetStructDiff(remappedState, remappedStateFromUpdate)
+			changes, err := structdiff.GetStructDiff(remappedState, remappedStateFromUpdate, nil)
 			require.NoError(t, err)
 			// Filter out timestamp fields that are expected to differ in value
 			var relevantChanges []structdiff.Change
