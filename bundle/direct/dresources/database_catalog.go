@@ -3,7 +3,6 @@ package dresources
 import (
 	"context"
 
-	"github.com/databricks/cli/bundle/deployplan"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go"
@@ -36,7 +35,7 @@ func (r *ResourceDatabaseCatalog) DoCreate(ctx context.Context, config *database
 	return result.Name, nil, nil
 }
 
-func (r *ResourceDatabaseCatalog) DoUpdate(ctx context.Context, id string, config *database.DatabaseCatalog, _ *deployplan.Changes) (*database.DatabaseCatalog, error) {
+func (r *ResourceDatabaseCatalog) DoUpdate(ctx context.Context, id string, config *database.DatabaseCatalog, _ *Changes) (*database.DatabaseCatalog, error) {
 	request := database.UpdateDatabaseCatalogRequest{
 		DatabaseCatalog: *config,
 		Name:            id,

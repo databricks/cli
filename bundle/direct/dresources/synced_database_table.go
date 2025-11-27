@@ -3,7 +3,6 @@ package dresources
 import (
 	"context"
 
-	"github.com/databricks/cli/bundle/deployplan"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go"
@@ -36,7 +35,7 @@ func (r *ResourceSyncedDatabaseTable) DoCreate(ctx context.Context, config *data
 	return result.Name, nil, nil
 }
 
-func (r *ResourceSyncedDatabaseTable) DoUpdate(ctx context.Context, id string, config *database.SyncedDatabaseTable, _ *deployplan.Changes) (*database.SyncedDatabaseTable, error) {
+func (r *ResourceSyncedDatabaseTable) DoUpdate(ctx context.Context, id string, config *database.SyncedDatabaseTable, _ *Changes) (*database.SyncedDatabaseTable, error) {
 	request := database.UpdateSyncedDatabaseTableRequest{
 		SyncedTable: *config,
 		Name:        id,
