@@ -26,7 +26,7 @@ Perfect for data engineers and developers who want to build Databricks apps with
 
 ## Getting Started
 
-### Quick Setup
+### Quick Setup (Recommended)
 
 1. **Set up Databricks credentials** (required for Databricks tools):
    ```bash
@@ -35,28 +35,22 @@ Perfect for data engineers and developers who want to build Databricks apps with
    export DATABRICKS_WAREHOUSE_ID="your-warehouse-id"
    ```
 
-2. **Configure your MCP client** (e.g., Claude Code):
-
-   Add to your MCP config file (e.g., `~/.claude.json`):
-   ```json
-   {
-     "mcpServers": {
-       "databricks": {
-         "command": "databricks",
-         "args": ["experimental", "apps-mcp"],
-         "env": {
-           "DATABRICKS_HOST": "https://your-workspace.databricks.com",
-           "DATABRICKS_TOKEN": "dapi...",
-           "DATABRICKS_WAREHOUSE_ID": "your-warehouse-id"
-         }
-       }
-     }
-   }
+2. **Install the MCP server automatically:**
+   ```bash
+   databricks experimental apps-mcp install
    ```
 
-3. **Create your first Databricks app:**
+   This interactive command will:
+   - Automatically detect Claude Code and Cursor installations
+   - Configure the MCP server with proper settings
+   - Set up the server at user scope (available in all projects)
+   - Show manual instructions for other agents if needed
 
-   Restart your MCP client and try:
+3. **Restart your MCP client** (Claude Code, Cursor, etc.) for changes to take effect.
+
+4. **Create your first Databricks app:**
+
+   Try this in your MCP client:
    ```
    Create a Databricks app that shows sales data from main.sales.transactions
    with a chart showing revenue by region. Deploy it as "sales-dashboard".
@@ -68,6 +62,31 @@ Perfect for data engineers and developers who want to build Databricks apps with
    - Customize it based on your requirements
    - Validate it passes all tests
    - Deploy it to Databricks Apps
+
+---
+
+### Manual Setup (Alternative)
+
+If you prefer to configure manually or the automatic installation doesn't work:
+
+**Add to your MCP config file** (e.g., `~/.claude.json` for global scope):
+```json
+{
+  "mcpServers": {
+    "databricks": {
+      "command": "databricks",
+      "args": ["experimental", "apps-mcp"],
+      "env": {
+        "DATABRICKS_HOST": "https://your-workspace.databricks.com",
+        "DATABRICKS_TOKEN": "dapi...",
+        "DATABRICKS_WAREHOUSE_ID": "your-warehouse-id"
+      }
+    }
+  }
+}
+```
+
+Then restart your MCP client for changes to take effect
 
 ---
 
@@ -285,6 +304,9 @@ The Databricks MCP server doesn't just generate code—it ensures quality:
 ### CLI Commands
 
 ```bash
+# Install MCP server in coding agents (Claude Code, Cursor, etc.)
+databricks experimental apps-mcp install
+
 # Start MCP server (default mode)
 databricks experimental apps-mcp --warehouse-id <warehouse-id>
 
