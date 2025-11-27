@@ -18,4 +18,4 @@ New = 'local.cache.(redacted)'
 
 [[Repls]]
 Old = '"local_cache_measurements_ms": \[[^\]]*\]'
-New = '"local_cache_measurements_ms": []'
+New = '"local_cache_measurements_ms": [...redacted...]'

@@ -85,7 +85,7 @@
           ],
           "bundle_mode": "TYPE_UNSPECIFIED",
           "workspace_artifact_path_type": "WORKSPACE_FILE_SYSTEM",
-          "local_cache_measurements_ms": []
+          "local_cache_measurements_ms": [...redacted...]
         }
       }
     }

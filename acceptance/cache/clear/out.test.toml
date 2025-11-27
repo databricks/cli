@@ -3,4 +3,3 @@ Cloud = false
 
 [EnvMatrix]
   DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
-  DATABRICKS_CACHE_ENABLED = ["true"]

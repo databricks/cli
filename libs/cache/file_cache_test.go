@@ -75,6 +75,9 @@ func TestFileCacheGetOrCompute(t *testing.T) {
 	cache, err := newFileCacheWithBaseDir[string](ctx, tempDir, 60) // 1 hour for tests
 	require.NoError(t, err)
 
+	// Enable cache for this test (default is measurement-only mode)
+	cache.cacheEnabled = true
+
 	fingerprint := struct {
 		Key   string `json:"key"`
 		Value int    `json:"value"`

@@ -1,5 +1,5 @@
 Cloud=false
 Local=true
 
-[EnvMatrix]
-  DATABRICKS_CACHE_ENABLED = ["true"]
+[Env]
+DATABRICKS_CACHE_ENABLED = 'true'

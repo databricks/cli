@@ -20,6 +20,9 @@ func TestFileCacheExpiryBehavior(t *testing.T) {
 	cache, err := newFileCacheWithBaseDir[string](ctx, tempDir, 1)
 	require.NoError(t, err)
 
+	// Enable cache for this test (default is measurement-only mode)
+	cache.cacheEnabled = true
+
 	fingerprint := struct {
 		Key string `json:"key"`
 	}{
@@ -48,6 +51,20 @@ func TestFileCacheExpiryBehavior(t *testing.T) {
 	require.NoError(t, err)
 	age := time.Since(info.ModTime())
 	assert.Less(t, age, 10*time.Second, "File should have been created recently")
+
+	// Make the file expired by backdating its mtime to 2 minutes ago (older than 1 minute expiry)
+	expiredTime := time.Now().Add(-2 * time.Minute)
+	require.NoError(t, os.Chtimes(cacheFiles[0], expiredTime, expiredTime))
+
+	// Verify GetOrCompute treats it as a cache miss and recomputes
+	callCount := 0
+	result, err = cache.GetOrCompute(ctx, fingerprint, func(ctx context.Context) (string, error) {
+		callCount++
+		return "recomputed-value", nil
+	})
+	require.NoError(t, err)
+	assert.Equal(t, "recomputed-value", result, "Should return newly computed value, not expired cache")
+	assert.Equal(t, 1, callCount, "Should have called compute function once due to cache expiry")
 }
 
 // TestReadFromCacheRespectsExpiry tests that readFromCache returns false for expired entries based on mtime
