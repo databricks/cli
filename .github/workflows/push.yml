@@ -42,7 +42,8 @@ jobs:
           - macos-latest
           - group: databricks-protected-runner-group-large
             labels: linux-ubuntu-latest-large
-          - ${{ github.event_name != 'merge_group' && 'windows-latest' || null }}
+            # Do not run tests on windows on merge.
+          - ${{ github.event_name != 'merge_group' && fromJSON('{"group":"databricks-protected-runner-group-large","labels":"windows-server-latest-large"}') || null }}
         deployment:
           - "terraform"
           - "direct"
