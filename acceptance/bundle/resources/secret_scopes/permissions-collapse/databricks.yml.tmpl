@@ -8,7 +8,7 @@ resources:
       backend_type: "DATABRICKS"
       permissions:
         # Current user gets READ (should be overridden to MANAGE by fixup in direct mode)
-        - user_name: ${workspace.current_user.userName}
+        - service_principal_name: ${workspace.current_user.userName}
           level: READ
         # Test user gets WRITE first, then READ (direct: collapses to highest, i.e. WRITE)
         - user_name: deco-test-user@databricks.com
