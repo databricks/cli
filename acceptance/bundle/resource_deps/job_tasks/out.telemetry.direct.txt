@@ -3,7 +3,7 @@ has_classic_interactive_compute false
 has_classic_job_compute false
 has_serverless_compute true
 local.cache.attempt true
-local.cache.miss true
+local.cache.hit true
 presets_name_prefix_is_set false
 python_wheel_wrapper_is_set false
 resref_jobs.tags.* true
