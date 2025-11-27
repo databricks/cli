@@ -95,40 +95,10 @@ jobs:
           - os: null
 
     steps:
-      - name: Checkout repository and submodules
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-
-      - name: Create deployment-specific cache identifier
-        run: echo "${{ matrix.deployment }}" > deployment-type.txt
-
-      - name: Setup Go
-        uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
+      - name: Setup build environment
+        uses: ./.github/actions/setup-build-environment
         with:
-          go-version-file: go.mod
-          cache-dependency-path: |
-            go.sum
-            deployment-type.txt
-
-      - name: Setup Python
-        uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6.0.0
-        with:
-          python-version: '3.13'
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@85856786d1ce8acfbcc2f13a5f3fbd6b938f9f41 # v7.1.2
-        with:
-          version: "0.8.9"
-
-      - name: Install ruff (Python linter and formatter)
-        uses: astral-sh/ruff-action@57714a7c8a2e59f32539362ba31877a1957dded1 # v3.5.1
-        with:
-          version: "0.9.1"
-          args: "--version"
-
-      - name: Pull external libraries
-        run: |
-          go mod download
-          pip3 install wheel==0.45.1
+          cache-key: ${{matrix.target}}-${{ matrix.deployment }}
 
       - name: Run tests without coverage
         # We run tests without coverage on PR, merge_group, and schedule because we don't make use of coverage information
@@ -149,69 +119,117 @@ jobs:
       - name: Analyze slow tests
         run: make slowest
 
-  tests-selective:
+  test-exp-aitools:
     needs:
       - cleanups
       - testmask
 
     # Only run if the target is in the list of targets from testmask
-    if: ${{ contains(fromJSON(needs.testmask.outputs.targets), matrix.target) }}
-    name: "make ${{ matrix.target }} (${{ matrix.os }})"
+    if: ${{ contains(fromJSON(needs.testmask.outputs.targets), 'test-exp-aitools') }}
+    name: "make test-exp-aitools (${{ matrix.os }})"
     runs-on: ${{ matrix.os }}
 
     strategy:
       fail-fast: false
       matrix:
-        target:
-          - test-exp-aitools
-          - test-exp-apps-mcp
-          - test-exp-ssh
-          - test-pipelines
         os:
           - macos-latest
           - ubuntu-latest
           - windows-latest
 
     steps:
-      - name: Checkout repository and submodules
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-
-      - name: Create cache identifier
-        run: echo "${{ matrix.target }}" > target.txt
-
-      - name: Setup Go
-        uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
+      - name: Setup build environment
+        uses: ./.github/actions/setup-build-environment
         with:
-          go-version-file: go.mod
-          cache-dependency-path: |
-            go.sum
-            target.txt
-
-      - name: Setup Python
-        uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6.0.0
-        with:
-          python-version: '3.13'
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@85856786d1ce8acfbcc2f13a5f3fbd6b938f9f41 # v7.1.2
-        with:
-          version: "0.8.9"
-
-      - name: Install ruff (Python linter and formatter)
-        uses: astral-sh/ruff-action@57714a7c8a2e59f32539362ba31877a1957dded1 # v3.5.1
-        with:
-          version: "0.9.1"
-          args: "--version"
-
-      - name: Pull external libraries
-        run: |
-          go mod download
-          pip3 install wheel==0.45.1
+          cache-key: test-exp-aitools
 
       - name: Run tests
         run: |
-          make ${{ matrix.target }}
+          make test-exp-aitools
 
+  test-exp-apps-mcp:
+    needs:
+      - cleanups
+      - testmask
+
+    # Only run if the target is in the list of targets from testmask
+    if: ${{ contains(fromJSON(needs.testmask.outputs.targets), 'test-exp-apps-mcp') }}
+    name: "make test-exp-apps-mcp (${{ matrix.os }})"
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - macos-latest
+          - ubuntu-latest
+          - windows-latest
+
+    steps:
+      - name: Setup build environment
+        uses: ./.github/actions/setup-build-environment
+        with:
+          cache-key: test-exp-apps-mcp
+
+      - name: Run tests
+        run: |
+          make test-exp-apps-mcp
+
+  test-exp-ssh:
+    needs:
+      - cleanups
+      - testmask
+
+    # Only run if the target is in the list of targets from testmask
+    if: ${{ contains(fromJSON(needs.testmask.outputs.targets), 'test-exp-ssh') }}
+    name: "make test-exp-ssh (${{ matrix.os }})"
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - macos-latest
+          - ubuntu-latest
+          - windows-latest
+
+    steps:
+      - name: Setup build environment
+        uses: ./.github/actions/setup-build-environment
+        with:
+          cache-key: test-exp-ssh
+
+      - name: Run tests
+        run: |
+          make test-exp-ssh
+
+  test-pipelines:
+    needs:
+      - cleanups
+      - testmask
+
+    # Only run if the target is in the list of targets from testmask
+    if: ${{ contains(fromJSON(needs.testmask.outputs.targets), 'test-pipelines') }}
+    name: "make test-pipelines (${{ matrix.os }})"
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - macos-latest
+          - ubuntu-latest
+          - windows-latest
+
+    steps:
+      - name: Setup build environment
+        uses: ./.github/actions/setup-build-environment
+        with:
+          cache-key: test-pipelines
+
+      - name: Run tests
+        run: |
+          make test-pipelines
 
   validate-generated-is-up-to-date:
     needs: cleanups
