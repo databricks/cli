@@ -32,10 +32,9 @@ jobs:
         run: gh cache delete --all --repo databricks/cli || true
 
   testmask:
-    if: ${{ github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
     outputs:
-      targets: ${{ steps.mask1.outputs.targets | steps.mask2.outputs.targets | steps.mask3.outputs.targets }}
+      targets: ${{ steps.mask1.outputs.targets || steps.mask2.outputs.targets || steps.mask3.outputs.targets }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
