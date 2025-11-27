@@ -44,6 +44,6 @@ jobs:
           git diff --exit-code
 
       - name: "make checks: custom checks outside of fmt and lint"
-        run: |
+        run: |-
           make checks
           git diff --exit-code
