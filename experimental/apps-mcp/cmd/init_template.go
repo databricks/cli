@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"path/filepath"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/experimental/apps-mcp/lib/middlewares"
@@ -15,20 +14,18 @@ import (
 )
 
 const (
-	defaultTemplateRepo = "https://github.com/databricks/cli"
-	defaultTemplateDir  = "experimental/apps-mcp/lib/templates/trpc"
+	defaultTemplateRepo = "https://github.com/neondatabase/appdotbuild-agent"
+	defaultTemplateDir  = "edda/edda_templates/trpc_bundle"
 )
 
 func newInitTemplateCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "init-template PROJECT_NAME",
 		Short: "Initialize a new app from template",
-		Long: `Initialize a new Databricks app from the tRPC template.
+		Long: `Initialize a new Databricks app from a template.
 
 This is a shortcut for 'bundle init' with the default MCP app template.
-Auto-detects the SQL warehouse ID unless DATABRICKS_WAREHOUSE_ID is set.
-
-PROJECT_NAME is used as both the project name and the output directory.`,
+Auto-detects the SQL warehouse ID unless DATABRICKS_WAREHOUSE_ID is set.`,
 		Example: `  databricks experimental apps-mcp tools init-template my-app`,
 		Args:    cobra.ExactArgs(1),
 		PreRunE: root.MustWorkspaceClient,
@@ -36,14 +33,10 @@ PROJECT_NAME is used as both the project name and the output directory.`,
 			ctx := cmd.Context()
 			w := cmdctx.WorkspaceClient(ctx)
 
-			outputDir := args[0]
-			projectName := filepath.Base(outputDir)
-			if !filepath.IsAbs(outputDir) {
-				cwd, err := os.Getwd()
-				if err != nil {
-					return fmt.Errorf("get working directory: %w", err)
-				}
-				outputDir = filepath.Join(cwd, outputDir)
+			projectName := args[0]
+			outputDir, err := os.Getwd()
+			if err != nil {
+				return fmt.Errorf("get working directory: %w", err)
 			}
 
 			// set up session with client for middleware compatibility

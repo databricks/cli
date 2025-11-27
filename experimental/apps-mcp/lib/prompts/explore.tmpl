@@ -16,19 +16,41 @@ Note: No SQL warehouse detected. SQL queries will require warehouse_id to be spe
 
 IMPORTANT: Use the invoke_databricks_cli tool to run all commands below!
 
+QUICK START - DATA DISCOVERY
+=============================
+
+⚡ EFFICIENT 4-STEP WORKFLOW:
+
+1. Find available catalogs:
+   invoke_databricks_cli 'catalogs list'
+
+2. Find schemas in a catalog:
+   invoke_databricks_cli 'schemas list <catalog_name>'
+
+3. Find tables in a schema:
+   invoke_databricks_cli 'tables list <catalog_name> <schema_name>'
+
+4. Batch discover multiple tables (ONE call for efficiency):
+   invoke_databricks_cli 'experimental apps-mcp tools discover-schema TABLE1 TABLE2 TABLE3'
+
+   ⚡ Always use batch mode: Discover multiple tables in ONE call instead of separate calls
+   Table format: CATALOG.SCHEMA.TABLE (e.g., samples.nyctaxi.trips)
+
+QUICK SQL EXECUTION:
+   Execute SQL and get JSON results:
+   invoke_databricks_cli 'experimental apps-mcp tools query "SELECT * FROM catalog.schema.table LIMIT 10"'
+
+⚠️ COMMON ERRORS:
+❌ Wrong: invoke_databricks_cli 'tables list samples.tpcds_sf1'
+✅ Correct: invoke_databricks_cli 'tables list samples tpcds_sf1'
+   (Use separate arguments, not dot notation for catalog and schema)
+
+📚 For detailed information on each command, see sections below.
+
 
 1. EXECUTING SQL QUERIES
-   Run queries with auto-wait (max 50s):
-     invoke_databricks_cli 'api post /api/2.0/sql/statements --json '{"warehouse_id":"{{if .WarehouseID}}{{.WarehouseID}}{{else}}<warehouse_id>{{end}}","statement":"SELECT * FROM <catalog>.<schema>.<table> LIMIT 10","wait_timeout":"50s"}'
-
-   Response has status.state:
-   - "SUCCEEDED" → Results in result.data_array (you're done!)
-   - "PENDING" → Warehouse starting or query slow. Poll with:
-       invoke_databricks_cli 'api get /api/2.0/sql/statements/<statement_id>'
-     Repeat every 5-10s until "SUCCEEDED"
-
-   Note: First query on stopped warehouse takes 60-120s startup time
-
+   Execute SQL queries using the query tool (recommended):
+     invoke_databricks_cli 'experimental apps-mcp tools query "SELECT * FROM catalog.schema.table LIMIT 10"'
 
 2. EXPLORING JOBS AND WORKFLOWS
    List all jobs:
@@ -64,6 +86,12 @@ IMPORTANT: Use the invoke_databricks_cli tool to run all commands below!
    Get table details (schema, columns, properties):
      invoke_databricks_cli 'tables get <catalog>.<schema>.<table>'
 
+   Discover table schema with samples (recommended):
+     Batch discover multiple tables in ONE call:
+       invoke_databricks_cli 'experimental apps-mcp tools discover-schema catalog.schema.table1 catalog.schema.table2'
+
+     Single table:
+       invoke_databricks_cli 'experimental apps-mcp tools discover-schema catalog.schema.table'
 
 5. EXPLORING WORKSPACE FILES
    List workspace files and notebooks:
@@ -140,6 +168,18 @@ BEST PRACTICES
 
 ✅ DO use invoke_databricks_cli for all Databricks CLI commands
    (Better for user allowlisting and tracking)
+
+✅ DO use 'experimental apps-mcp tools query' for SQL execution
+   (Auto-wait, clean JSON output, no manual polling)
+
+✅ DO use batch discover-schema for multiple tables
+   (One call instead of multiple: more efficient)
+
+✅ DO test SQL with query tool before implementing in code
+   (Verify syntax and results interactively)
+
+✅ DO use 'experimental apps-mcp tools init-template your-app-name' for new projects
+   (Faster scaffolding with auto-configured warehouse)
 
 ✅ DO validate bundles before deploying:
    invoke_databricks_cli 'bundle validate'
