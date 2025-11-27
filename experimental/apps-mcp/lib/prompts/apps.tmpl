@@ -13,7 +13,7 @@ DATABRICKS APPS DEVELOPMENT
 
 ALWAYS start by scaffolding a new app using command:
 
-invoke_databricks_cli 'bundle init https://github.com/neondatabase/appdotbuild-agent --template-dir edda/edda_templates/trpc_bundle --config-file /dev/stdin <<EOF\n{"project_name": "your-app-name", "sql_warehouse_id": "{{.WarehouseID}}"}\nEOF'
+invoke_databricks_cli 'experimental apps-mcp tools init-template <app_name>'
 
 # View and manage your app:
 

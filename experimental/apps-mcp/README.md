@@ -83,7 +83,7 @@ Execute Databricks CLI commands and explore workspace resources:
   - Gives workflow guidance for Databricks Asset Bundles and Apps
 
 - **`invoke_databricks_cli`** - Execute any Databricks CLI command
-  - Run bundle commands: `bundle init`, `bundle validate`, `bundle deploy`, `bundle run`
+  - Run MCP app commands: `experimental apps-mcp tools init-template`, `bundle validate`, `bundle deploy`, `bundle run`
   - Run apps commands: `apps deploy`, `apps list`, `apps get`, `apps start`, `apps stop`
   - Run workspace commands: `workspace list`, `workspace export`, `jobs list`, `clusters list`
   - Run catalog commands: `catalogs list`, `schemas list`, `tables list`

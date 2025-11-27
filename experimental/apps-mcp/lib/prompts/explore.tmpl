@@ -86,7 +86,7 @@ Creating a New Bundle Project:
   When to use: Building a new project from scratch with deployment to multiple environments
 
   1. Initialize a new bundle (creates proper project structure):
-     invoke_databricks_cli 'bundle init'
+     invoke_databricks_cli 'experimental apps-mcp tools init-template <app_name>'
 
   2. Validate the bundle configuration:
      invoke_databricks_cli 'bundle validate'
@@ -110,14 +110,14 @@ Working with Existing Bundle Project:
      invoke_databricks_cli 'bundle destroy --target <environment>'
 
 Bundle Commands Reference:
-  - bundle init                    # Initialize new bundle from template
+  - experimental apps-mcp tools init-template <name>  # Initialize new MCP app from template
   - bundle validate                # Validate bundle configuration
   - bundle deploy                  # Deploy bundle to workspace
   - bundle run <resource>          # Run a job or pipeline
   - bundle destroy                 # Remove deployed resources
   - bundle schema                  # Show bundle configuration schema
 
-💡 Tip: Use 'invoke_databricks_cli bundle init' to see available templates
+💡 Tip: Use 'invoke_databricks_cli experimental apps-mcp tools init-template <app_name>' to create a new MCP app
 
 
 COMMON PATTERNS
@@ -144,7 +144,7 @@ BEST PRACTICES
 ✅ DO validate bundles before deploying:
    invoke_databricks_cli 'bundle validate'
 
-✅ DO use bundle templates for new projects:
-   invoke_databricks_cli 'bundle init'
+✅ DO use bundle templates for new MCP app projects:
+   invoke_databricks_cli 'experimental apps-mcp tools init-template <app_name>'
 
 ✅ DO call explore during planning to get workspace context

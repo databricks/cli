@@ -25,7 +25,7 @@ func newInitTemplateCmd() *cobra.Command {
 		Short: "Initialize a new app from template",
 		Long: `Initialize a new Databricks app from the tRPC template.
 
-This is a shortcut for 'bundle init' with the default MCP app template.
+This initializes a new MCP app project with the default template.
 Auto-detects the SQL warehouse ID unless DATABRICKS_WAREHOUSE_ID is set.
 
 PROJECT_NAME is used as both the project name and the output directory.`,
