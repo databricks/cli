@@ -77,7 +77,7 @@ jobs:
       - testmask
 
     # Only run if the target is in the list of targets from testmask
-    if: ${{ contains(needs.testmask.outputs.targets, matrix.target) }}
+    if: ${{ contains(fromJSON(needs.testmask.outputs.targets), "test") }}
     runs-on: ${{ matrix.os }}
 
     strategy:
@@ -155,7 +155,7 @@ jobs:
       - testmask
 
     # Only run if the target is in the list of targets from testmask
-    if: ${{ contains(needs.testmask.outputs.targets, matrix.target) }}
+    if: ${{ contains(fromJSON(needs.testmask.outputs.targets), matrix.target) }}
     name: "make ${{ matrix.target }} (${{ matrix.os }})"
     runs-on: ${{ matrix.os }}
 
