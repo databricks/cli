@@ -1,7 +1,8 @@
 default: checks fmt lint
 
 # gotestsum: when go test args are used with --rerun-fails the list of packages to test must be specified by the --packages flag
-PACKAGES=--packages "./acceptance/... ./libs/... ./internal/... ./cmd/... ./bundle/... ./experimental/aitools/... ./experimental/ssh/... ."
+PACKAGES = ./acceptance/... ./libs/... ./internal/... ./cmd/... ./bundle/... ./experimental/aitools/... ./experimental/ssh/... .
+PACKAGES_ARG = --packages "${PACKAGES}"
 
 GO_TOOL ?= go tool -modfile=tools/go.mod
 GOTESTSUM_FORMAT ?= pkgname-and-test-fails
@@ -56,10 +57,10 @@ links:
 checks: tidy ws links
 
 test:
-	${GOTESTSUM_CMD} ${PACKAGES} -- -timeout=${LOCAL_TIMEOUT} -short
+	${GOTESTSUM_CMD} ${PACKAGES_ARG} -- -timeout=${LOCAL_TIMEOUT} -short
 
 test-slow:
-	${GOTESTSUM_CMD} ${PACKAGES} -- -timeout=${LOCAL_TIMEOUT}
+	${GOTESTSUM_CMD} ${PACKAGES_ARG} -- -timeout=${LOCAL_TIMEOUT}
 
 # Updates acceptance test output (local tests)
 test-update:
@@ -82,7 +83,7 @@ slowest:
 
 cover:
 	rm -fr ./acceptance/build/cover/
-	VERBOSE_TEST=1 CLI_GOCOVERDIR=build/cover ${GOTESTSUM_CMD} ${PACKAGES} -- -coverprofile=coverage.txt -timeout=${LOCAL_TIMEOUT}
+	VERBOSE_TEST=1 CLI_GOCOVERDIR=build/cover ${GOTESTSUM_CMD} ${PACKAGES_ARG} -- -coverprofile=coverage.txt -timeout=${LOCAL_TIMEOUT}
 	rm -fr ./acceptance/build/cover-merged/
 	mkdir -p acceptance/build/cover-merged/
 	go tool covdata merge -i $$(printf '%s,' acceptance/build/cover/* | sed 's/,$$//') -o acceptance/build/cover-merged/

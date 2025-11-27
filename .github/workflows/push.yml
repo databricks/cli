@@ -31,8 +31,45 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh cache delete --all --repo databricks/cli || true
 
+  testmask:
+    if: ${{ github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    outputs:
+      packages: ${{ steps.mask.outputs.packages }}
+      acceptance_prefix: ${{ steps.mask.outputs.acceptance_prefix }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
+        with:
+          go-version-file: tools/go.mod
+
+      - name: Run testmask
+        id: mask
+        working-directory: tools/testmask
+        run: |
+          go run . > output.txt
+
+      - name: Parse testmask output
+        id: parse
+        working-directory: tools/testmask
+        run: |
+          packages=$(head -n 1 output.txt)
+          acceptance_prefix=$(tail -n 1 output.txt)
+          rm -f output.txt
+
+          echo "packages: \"$packages\""
+          echo "acceptance_prefix: \"$acceptance_prefix\""
+          echo "packages=$packages" >> $GITHUB_OUTPUT
+          echo "acceptance_prefix=$acceptance_prefix" >> $GITHUB_OUTPUT
+
   tests:
     needs: cleanups
+
     runs-on: ${{ matrix.os }}
 
     strategy:
