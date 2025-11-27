@@ -48,10 +48,7 @@ func New() *cobra.Command {
   This API only supports temporary path credentials for external locations and
   external tables, and volumes will be supported in the future.`,
 		GroupID: "catalog",
-		Annotations: map[string]string{
-			"package": "catalog",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

@@ -35,10 +35,7 @@ func New() *cobra.Command {
   account admin who creates the storage credential can delegate ownership to
   another user or group to manage permissions on it.`,
 		GroupID: "catalog",
-		Annotations: map[string]string{
-			"package": "catalog",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

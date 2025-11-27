@@ -36,10 +36,7 @@ func New() *cobra.Command {
   entities behind an endpoint. Additionally, you can configure the scale of
   resources that should be applied to each served entity.`,
 		GroupID: "serving",
-		Annotations: map[string]string{
-			"package": "serving",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

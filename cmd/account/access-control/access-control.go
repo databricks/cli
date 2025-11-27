@@ -25,10 +25,7 @@ func New() *cobra.Command {
   grant rules are supported. A grant rule specifies a role assigned to a set of
   principals. A list of rules attached to a resource is called a rule set.`,
 		GroupID: "iam",
-		Annotations: map[string]string{
-			"package": "iam",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

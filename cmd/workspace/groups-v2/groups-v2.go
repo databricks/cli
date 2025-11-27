@@ -27,10 +27,7 @@ func New() *cobra.Command {
   workspace identities can be assigned as members of groups, and members inherit
   permissions that are assigned to their group.`,
 		GroupID: "iam",
-		Annotations: map[string]string{
-			"package": "iam",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

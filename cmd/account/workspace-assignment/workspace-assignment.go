@@ -24,10 +24,7 @@ func New() *cobra.Command {
 		Long: `The Workspace Permission Assignment API allows you to manage workspace
   permissions for principals in your account.`,
 		GroupID: "iam",
-		Annotations: map[string]string{
-			"package": "iam",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

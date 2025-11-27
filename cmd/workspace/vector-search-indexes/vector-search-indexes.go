@@ -31,10 +31,7 @@ func New() *cobra.Command {
   and write of vectors and metadata through our REST and SDK APIs. With this
   model, the user manages index updates.`,
 		GroupID: "vectorsearch",
-		Annotations: map[string]string{
-			"package": "vectorsearch",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

@@ -28,10 +28,7 @@ func New() *cobra.Command {
   least CAN USE permission on a Pro or Serverless SQL warehouse. Also,
   Databricks Assistant must be enabled.`,
 		GroupID: "dashboards",
-		Annotations: map[string]string{
-			"package": "dashboards",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

@@ -43,10 +43,7 @@ func New() *cobra.Command {
   After changes to the IP access list feature, it can take a few minutes for
   changes to take effect.`,
 		GroupID: "settings",
-		Annotations: map[string]string{
-			"package": "settings",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

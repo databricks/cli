@@ -24,10 +24,7 @@ func New() *cobra.Command {
 		Long: `Marketplace offers a set of file APIs for various purposes such as preview
   notebooks and provider icons.`,
 		GroupID: "marketplace",
-		Annotations: map[string]string{
-			"package": "marketplace",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

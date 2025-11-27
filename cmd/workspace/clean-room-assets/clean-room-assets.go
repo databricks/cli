@@ -24,10 +24,7 @@ func New() *cobra.Command {
 		Long: `Clean room assets are data and code objects — Tables, volumes, and notebooks
   that are shared with the clean room.`,
 		GroupID: "cleanrooms",
-		Annotations: map[string]string{
-			"package": "cleanrooms",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

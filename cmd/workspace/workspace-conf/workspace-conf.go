@@ -23,10 +23,7 @@ func New() *cobra.Command {
 		Short:   `This API allows updating known workspace settings for advanced users.`,
 		Long:    `This API allows updating known workspace settings for advanced users.`,
 		GroupID: "settings",
-		Annotations: map[string]string{
-			"package": "settings",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

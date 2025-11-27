@@ -23,10 +23,7 @@ func New() *cobra.Command {
 		Short:   `Manage data quality of UC objects (currently support schema).`,
 		Long:    `Manage data quality of UC objects (currently support schema)`,
 		GroupID: "qualitymonitor",
-		Annotations: map[string]string{
-			"package": "qualitymonitorv2",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

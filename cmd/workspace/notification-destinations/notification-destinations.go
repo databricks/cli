@@ -25,10 +25,7 @@ func New() *cobra.Command {
   Databricks. Only workspace admins can create, update, and delete notification
   destinations.`,
 		GroupID: "settings",
-		Annotations: map[string]string{
-			"package": "settings",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
