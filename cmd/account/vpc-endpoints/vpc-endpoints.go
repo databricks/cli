@@ -21,10 +21,7 @@ func New() *cobra.Command {
 		Short:   `These APIs manage VPC endpoint configurations for this account.`,
 		Long:    `These APIs manage VPC endpoint configurations for this account.`,
 		GroupID: "provisioning",
-		Annotations: map[string]string{
-			"package": "provisioning",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

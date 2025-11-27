@@ -23,10 +23,7 @@ func New() *cobra.Command {
 		Short:   `Providers are entities that manage assets in Marketplace.`,
 		Long:    `Providers are entities that manage assets in Marketplace.`,
 		GroupID: "marketplace",
-		Annotations: map[string]string{
-			"package": "marketplace",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

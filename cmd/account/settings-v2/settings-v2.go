@@ -21,10 +21,7 @@ func New() *cobra.Command {
 		Short:   `APIs to manage account level settings.`,
 		Long:    `APIs to manage account level settings`,
 		GroupID: "settings",
-		Annotations: map[string]string{
-			"package": "settingsv2",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

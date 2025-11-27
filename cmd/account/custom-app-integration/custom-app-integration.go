@@ -23,10 +23,7 @@ func New() *cobra.Command {
   which is required for adding/using Custom OAuth App Integration like Tableau
   Cloud for Databricks in AWS cloud.`,
 		GroupID: "oauth2",
-		Annotations: map[string]string{
-			"package": "oauth2",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

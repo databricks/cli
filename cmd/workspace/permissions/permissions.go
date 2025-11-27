@@ -51,10 +51,7 @@ func New() *cobra.Command {
 
   [Access Control]: https://docs.databricks.com/security/auth-authz/access-control/index.html`,
 		GroupID: "iam",
-		Annotations: map[string]string{
-			"package": "iam",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

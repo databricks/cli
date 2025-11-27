@@ -26,10 +26,7 @@ func New() *cobra.Command {
   name, description, tags, and parameters. Queries can be scheduled using the
   sql_task type of the Jobs API, e.g. :method:jobs/create.`,
 		GroupID: "sql",
-		Annotations: map[string]string{
-			"package": "sql",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

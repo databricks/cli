@@ -35,10 +35,7 @@ func New() *cobra.Command {
   specification during table creation. You can also add or drop constraints on
   existing tables.`,
 		GroupID: "catalog",
-		Annotations: map[string]string{
-			"package": "catalog",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

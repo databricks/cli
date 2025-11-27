@@ -29,10 +29,7 @@ func New() *cobra.Command {
   With these APIs, users can create, update, delete, and list lineage
   relationships with support for column-level mappings and custom properties.`,
 		GroupID: "catalog",
-		Annotations: map[string]string{
-			"package": "catalog",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

@@ -29,10 +29,7 @@ func New() *cobra.Command {
   treat the downloaded credential as a secret and must not share it outside of
   their organization.`,
 		GroupID: "sharing",
-		Annotations: map[string]string{
-			"package": "sharing",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

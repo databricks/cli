@@ -27,10 +27,7 @@ func New() *cobra.Command {
 
   [Account Access Control Proxy API]: https://docs.databricks.com/api/workspace/accountaccesscontrolproxy`,
 		GroupID: "tags",
-		Annotations: map[string]string{
-			"package": "tags",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

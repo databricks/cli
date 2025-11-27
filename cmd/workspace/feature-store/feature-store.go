@@ -29,9 +29,6 @@ func New() *cobra.Command {
   An online store is a low-latency database used for feature lookup during
   real-time model inference or serve feature for real-time applications.`,
 		GroupID: "ml",
-		Annotations: map[string]string{
-			"package": "ml",
-		},
 
 		// This service is being previewed; hide from help output.
 		Hidden: true,
