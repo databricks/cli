@@ -52,7 +52,7 @@ jobs:
         working-directory: tools/testmask
         run: |
           go run . ${{ github.event.pull_request.head.sha }} ${{ github.event.pull_request.base.sha }} | tee output.json
-          echo "targets=$(jq -r '.' output.json)" >> $GITHUB_OUTPUT
+          echo "targets=$(jq -c '.' output.json)" >> $GITHUB_OUTPUT
 
       - name: Run testmask (merge group)
         if: ${{ github.event_name == 'merge_group' }}
@@ -60,7 +60,7 @@ jobs:
         working-directory: tools/testmask
         run: |
           go run . ${{ github.event.merge_group.head.sha }} ${{ github.event.merge_group.base.sha }} | tee output.json
-          echo "targets=$(jq -r '.' output.json)" >> $GITHUB_OUTPUT
+          echo "targets=$(jq -c '.' output.json)" >> $GITHUB_OUTPUT
 
       - name: Run testmask (other events)
         if: ${{ github.event_name != 'pull_request' && github.event_name != 'merge_group' }}
