@@ -58,16 +58,6 @@ func (c *keyFuncCaller) call(elem any) (string, string) {
 	return keyField, keyValue
 }
 
-func advanceTrie(root *structtrie.Node, node *structtrie.Node, pathNode *structpath.PathNode) *structtrie.Node {
-	if root == nil {
-		return nil
-	}
-	if node == nil {
-		node = root
-	}
-	return node.Child(pathNode)
-}
-
 func keyFuncFor(node *structtrie.Node) KeyFunc {
 	if node == nil {
 		return nil
@@ -123,7 +113,7 @@ func GetStructDiff(a, b any, sliceTrie *structtrie.Node) ([]Change, error) {
 		return nil, fmt.Errorf("type mismatch: %v vs %v", v1.Type(), v2.Type())
 	}
 
-	if err := diffValues(sliceTrie, sliceTrie, nil, v1, v2, &changes); err != nil {
+	if err := diffValues(sliceTrie, nil, v1, v2, &changes); err != nil {
 		return nil, err
 	}
 	return changes, nil
@@ -131,7 +121,7 @@ func GetStructDiff(a, b any, sliceTrie *structtrie.Node) ([]Change, error) {
 
 // diffValues appends changes between v1 and v2 to the slice.  path is the current
 // JSON-style path (dot + brackets).  At the root path is "".
-func diffValues(trieRoot *structtrie.Node, trieNode *structtrie.Node, path *structpath.PathNode, v1, v2 reflect.Value, changes *[]Change) error {
+func diffValues(trieNode *structtrie.Node, path *structpath.PathNode, v1, v2 reflect.Value, changes *[]Change) error {
 	if !v1.IsValid() {
 		if !v2.IsValid() {
 			return nil
@@ -174,26 +164,26 @@ func diffValues(trieRoot *structtrie.Node, trieNode *structtrie.Node, path *stru
 
 	switch kind {
 	case reflect.Pointer:
-		return diffValues(trieRoot, trieNode, path, v1.Elem(), v2.Elem(), changes)
+		return diffValues(trieNode, path, v1.Elem(), v2.Elem(), changes)
 	case reflect.Struct:
-		return diffStruct(trieRoot, trieNode, path, v1, v2, changes)
+		return diffStruct(trieNode, path, v1, v2, changes)
 	case reflect.Slice, reflect.Array:
 		if keyFunc := keyFuncFor(trieNode); keyFunc != nil {
-			return diffSliceByKey(trieRoot, trieNode, path, v1, v2, keyFunc, changes)
+			return diffSliceByKey(trieNode, path, v1, v2, keyFunc, changes)
 		} else if v1.Len() != v2.Len() {
 			*changes = append(*changes, Change{Path: path, Old: v1.Interface(), New: v2.Interface()})
 		} else {
 			for i := range v1.Len() {
 				node := structpath.NewIndex(path, i)
-				nextTrie := advanceTrie(trieRoot, trieNode, node)
-				if err := diffValues(trieRoot, nextTrie, node, v1.Index(i), v2.Index(i), changes); err != nil {
+				nextTrie := trieNode.Child(node)
+				if err := diffValues(nextTrie, node, v1.Index(i), v2.Index(i), changes); err != nil {
 					return err
 				}
 			}
 		}
 	case reflect.Map:
 		if v1Type.Key().Kind() == reflect.String {
-			return diffMapStringKey(trieRoot, trieNode, path, v1, v2, changes)
+			return diffMapStringKey(trieNode, path, v1, v2, changes)
 		} else {
 			deepEqualValues(path, v1, v2, changes)
 		}
@@ -209,7 +199,7 @@ func deepEqualValues(path *structpath.PathNode, v1, v2 reflect.Value, changes *[
 	}
 }
 
-func diffStruct(trieRoot *structtrie.Node, trieNode *structtrie.Node, path *structpath.PathNode, s1, s2 reflect.Value, changes *[]Change) error {
+func diffStruct(trieNode *structtrie.Node, path *structpath.PathNode, s1, s2 reflect.Value, changes *[]Change) error {
 	t := s1.Type()
 	forced1 := getForceSendFields(s1)
 	forced2 := getForceSendFields(s2)
@@ -222,7 +212,7 @@ func diffStruct(trieRoot *structtrie.Node, trieNode *structtrie.Node, path *stru
 
 		// Continue traversing embedded structs. Do not add the key to the path though.
 		if sf.Anonymous {
-			if err := diffValues(trieRoot, trieNode, path, s1.Field(i), s2.Field(i), changes); err != nil {
+			if err := diffValues(trieNode, path, s1.Field(i), s2.Field(i), changes); err != nil {
 				return err
 			}
 			continue
@@ -258,15 +248,15 @@ func diffStruct(trieRoot *structtrie.Node, trieNode *structtrie.Node, path *stru
 			}
 		}
 
-		nextTrie := advanceTrie(trieRoot, trieNode, node)
-		if err := diffValues(trieRoot, nextTrie, node, v1Field, v2Field, changes); err != nil {
+		nextTrie := trieNode.Child(node)
+		if err := diffValues(nextTrie, node, v1Field, v2Field, changes); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func diffMapStringKey(trieRoot *structtrie.Node, trieNode *structtrie.Node, path *structpath.PathNode, m1, m2 reflect.Value, changes *[]Change) error {
+func diffMapStringKey(trieNode *structtrie.Node, path *structpath.PathNode, m1, m2 reflect.Value, changes *[]Change) error {
 	keySet := map[string]reflect.Value{}
 	for _, k := range m1.MapKeys() {
 		// Key is always string at this point
@@ -289,8 +279,8 @@ func diffMapStringKey(trieRoot *structtrie.Node, trieNode *structtrie.Node, path
 		v1 := m1.MapIndex(k)
 		v2 := m2.MapIndex(k)
 		node := structpath.NewStringKey(path, ks)
-		nextTrie := advanceTrie(trieRoot, trieNode, node)
-		if err := diffValues(trieRoot, nextTrie, node, v1, v2, changes); err != nil {
+		nextTrie := trieNode.Child(node)
+		if err := diffValues(nextTrie, node, v1, v2, changes); err != nil {
 			return err
 		}
 	}
@@ -335,7 +325,7 @@ func validateKeyFuncElementType(seq reflect.Value, expected reflect.Type) error 
 // diffSliceByKey compares two slices using the provided key function.
 // Elements are matched by their (keyField, keyValue) pairs instead of by index.
 // Duplicate keys are allowed and matched in order.
-func diffSliceByKey(trieRoot *structtrie.Node, trieNode *structtrie.Node, path *structpath.PathNode, v1, v2 reflect.Value, keyFunc KeyFunc, changes *[]Change) error {
+func diffSliceByKey(trieNode *structtrie.Node, path *structpath.PathNode, v1, v2 reflect.Value, keyFunc KeyFunc, changes *[]Change) error {
 	caller, err := newKeyFuncCaller(keyFunc)
 	if err != nil {
 		return err
@@ -393,8 +383,8 @@ func diffSliceByKey(trieRoot *structtrie.Node, trieNode *structtrie.Node, path *
 		minLen := min(len(list1), len(list2))
 		for i := range minLen {
 			node := structpath.NewKeyValue(path, keyField, keyValue)
-			nextTrie := advanceTrie(trieRoot, trieNode, node)
-			if err := diffValues(trieRoot, nextTrie, node, list1[i].value, list2[i].value, changes); err != nil {
+			nextTrie := trieNode.Child(node)
+			if err := diffValues(nextTrie, node, list1[i].value, list2[i].value, changes); err != nil {
 				return err
 			}
 		}
