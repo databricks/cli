@@ -2,12 +2,14 @@ package project_test
 
 import (
 	"context"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/databricks/cli/internal/testcli"
 	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/python"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/stretchr/testify/assert"
@@ -66,4 +68,105 @@ func TestRenderingTable(t *testing.T) {
 	First  Second
 	Third  Fourth
 	`)
+}
+
+func TestLogLevelHandoff(t *testing.T) {
+	if _, ok := os.LookupEnv("DATABRICKS_LOG_LEVEL"); ok {
+		t.Fatal("DATABRICKS_LOG_LEVEL must not be set when running this test")
+	}
+
+	testCases := []struct {
+		name          string
+		envVar        string
+		args          []string
+		expectedLevel string
+	}{
+		{
+			name:          "not set by default",
+			expectedLevel: "notset",
+		},
+		{
+			name:          "set explicitly with --log-level",
+			args:          []string{"--log-level", "iNFo"},
+			expectedLevel: "info",
+		},
+		{
+			name:          "set by --debug flag",
+			args:          []string{"--debug"},
+			expectedLevel: "debug",
+		},
+		{
+			name:          "set by env var",
+			envVar:        "tRaCe",
+			expectedLevel: "trace",
+		},
+		{
+			name:          "set to default",
+			envVar:        "warn",
+			expectedLevel: "warn",
+		},
+		{
+			name:          "disabled log level",
+			args:          []string{"--log-level", "disabled"},
+			expectedLevel: "disabled",
+		},
+		{
+			name:          "invalid env var ignored",
+			envVar:        "invalid-level",
+			expectedLevel: "notset",
+		},
+		{
+			name:          "conflict: --debug trumps --log-level and env var",
+			envVar:        "error",
+			args:          []string{"--debug", "--log-level", "trace"},
+			expectedLevel: "debug",
+		},
+		{
+			name:          "conflict: --log-level trumps env var",
+			envVar:        "error",
+			args:          []string{"--log-level", "info"},
+			expectedLevel: "info",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := devEnvContext(t)
+			if tc.envVar != "" {
+				ctx = env.Set(ctx, "DATABRICKS_LOG_LEVEL", tc.envVar)
+			}
+			args := append([]string{"labs", "blueprint", "echo"}, tc.args...)
+			r := testcli.NewRunner(t, ctx, args...)
+			var out echoOut
+			r.RunAndParseJSON(&out)
+			usedLevel := out.Flags["log_level"]
+			assert.Equal(t, tc.expectedLevel, usedLevel)
+
+			// Verify that our expectation matches what the logger has actually been configured to use.
+			// This should catch drift between the logic in cmd/root/logger.go and cmd/labs/project/proxy.go.
+			if tc.expectedLevel != "notset" {
+				actualLoggerLevel := getLoggerLevel(ctx)
+				assert.Equal(t, tc.expectedLevel, actualLoggerLevel)
+			}
+		})
+	}
+}
+
+func getLoggerLevel(ctx context.Context) string {
+	logger := log.GetLogger(ctx)
+	var level string
+	if logger.Enabled(ctx, log.LevelTrace) {
+		level = "trace"
+	} else if logger.Enabled(ctx, log.LevelDebug) {
+		level = "debug"
+	} else if logger.Enabled(ctx, log.LevelInfo) {
+		level = "info"
+	} else if logger.Enabled(ctx, log.LevelWarn) {
+		level = "warn"
+	} else if logger.Enabled(ctx, log.LevelError) {
+		level = "error"
+	} else {
+		level = "disabled"
+	}
+	return level
 }

@@ -10,11 +10,14 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/process"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
+
+const envLogLevel = "DATABRICKS_LOG_LEVEL"
 
 type proxy struct {
 	Entrypoint    `yaml:",inline"`
@@ -107,12 +110,32 @@ func (cp *proxy) commandInput(cmd *cobra.Command) ([]string, error) {
 		}
 		commandInput.Flags[f.Name] = v
 	}
+	ctx := cmd.Context()
+	/*
+	 * Although we _could_ get the log-level from the logger in context, that would not tell us
+	 * whether the user explicitly set it or whether it's just the default. So instead here we
+	 * check the same places that the root command does when initializing logging:
+	 *   DATABRICKS_LOG_LEVEL (env), --log-level and --debug.
+	 * Note: we rely on tests to catch any drift between here and the root log-level.
+	 */
 	logLevelFlag := flags.Lookup("log-level")
 	if logLevelFlag != nil {
-		commandInput.Flags["log_level"] = logLevelFlag.Value.String()
+		debugFlag := flags.Lookup("debug")
+		envValue, hasEnvLogLevel := env.Lookup(ctx, envLogLevel)
+		logLevelInUse := logLevelFlag.Value.String()
+		// Quirk: env var is ignored if invalid, so only treat as user-supplied if it matches
+		// the value in use.
+		userSupplied := logLevelFlag.Changed || (debugFlag != nil && debugFlag.Changed) ||
+			hasEnvLogLevel && strings.EqualFold(envValue, logLevelInUse)
+		var logLevel string
+		if userSupplied {
+			logLevel = logLevelInUse
+		} else {
+			logLevel = "notset"
+		}
+		commandInput.Flags["log_level"] = logLevel
 	}
 	var args []string
-	ctx := cmd.Context()
 	if cp.IsPythonProject() {
 		args = append(args, cp.virtualEnvPython(ctx))
 		libDir := cp.EffectiveLibDir()
