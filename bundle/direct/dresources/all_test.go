@@ -576,6 +576,33 @@ func TestFieldTriggers(t *testing.T) {
 	}
 }
 
+// TestFieldTriggersNoUpdateWhenNotImplemented validates that resources without
+// DoUpdate implementation don't produce update actions in their FieldTriggers.
+func TestFieldTriggersNoUpdateWhenNotImplemented(t *testing.T) {
+	for resourceName, resource := range SupportedResources {
+		adapter, err := NewAdapter(resource, nil)
+		require.NoError(t, err)
+
+		if adapter.HasDoUpdate() {
+			continue
+		}
+
+		t.Run(resourceName+"_local", func(t *testing.T) {
+			for field, action := range adapter.fieldTriggersLocal {
+				assert.NotEqual(t, deployplan.ActionTypeUpdate, action,
+					"resource %s does not implement DoUpdate but field %s triggers update action", resourceName, field)
+			}
+		})
+
+		t.Run(resourceName+"_remote", func(t *testing.T) {
+			for field, action := range adapter.fieldTriggersRemote {
+				assert.NotEqual(t, deployplan.ActionTypeUpdate, action,
+					"resource %s does not implement DoUpdate but field %s triggers update action", resourceName, field)
+			}
+		})
+	}
+}
+
 func setupTestServerClient(t *testing.T) (*testserver.Server, *databricks.WorkspaceClient) {
 	server := testserver.New(t)
 	testserver.AddDefaultHandlers(server)
