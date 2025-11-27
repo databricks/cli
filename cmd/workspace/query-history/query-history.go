@@ -21,10 +21,7 @@ func New() *cobra.Command {
 		Long: `A service responsible for storing and retrieving the list of queries run
   against SQL endpoints and serverless compute.`,
 		GroupID: "sql",
-		Annotations: map[string]string{
-			"package": "sql",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

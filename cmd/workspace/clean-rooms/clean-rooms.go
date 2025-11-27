@@ -26,10 +26,7 @@ func New() *cobra.Command {
   privacy-protecting environment where multiple parties can work together on
   sensitive enterprise data without direct access to each other's data.`,
 		GroupID: "cleanrooms",
-		Annotations: map[string]string{
-			"package": "cleanrooms",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

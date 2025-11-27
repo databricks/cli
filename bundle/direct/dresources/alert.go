@@ -40,8 +40,8 @@ func (r *ResourceAlert) DoCreate(ctx context.Context, config *sql.AlertV2) (stri
 	return response.Id, response, nil
 }
 
-// DoUpdateWithChanges updates the alert in place.
-func (r *ResourceAlert) DoUpdateWithChanges(ctx context.Context, id string, config *sql.AlertV2, _ *deployplan.Changes) (*sql.AlertV2, error) {
+// DoUpdate updates the alert in place.
+func (r *ResourceAlert) DoUpdate(ctx context.Context, id string, config *sql.AlertV2, _ *deployplan.Changes) (*sql.AlertV2, error) {
 	request := sql.UpdateAlertV2Request{
 		Id:         id,
 		Alert:      *config,

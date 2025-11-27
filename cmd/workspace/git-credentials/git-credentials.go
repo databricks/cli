@@ -28,10 +28,7 @@ func New() *cobra.Command {
 
   [more info]: https://docs.databricks.com/repos/get-access-tokens-from-git-provider.html`,
 		GroupID: "workspace",
-		Annotations: map[string]string{
-			"package": "workspace",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

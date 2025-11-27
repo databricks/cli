@@ -30,9 +30,6 @@ func New() *cobra.Command {
 
   [Learn more]: https://docs.databricks.com/en/sql/dbsql-api-latest.html`,
 		GroupID: "sql",
-		Annotations: map[string]string{
-			"package": "sql",
-		},
 
 		// This service is being previewed; hide from help output.
 		Hidden: true,

@@ -21,10 +21,7 @@ func New() *cobra.Command {
 		Short:   `Manage templated analytics solution for providers.`,
 		Long:    `Manage templated analytics solution for providers.`,
 		GroupID: "marketplace",
-		Annotations: map[string]string{
-			"package": "marketplace",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

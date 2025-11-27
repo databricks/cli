@@ -297,7 +297,7 @@ func (r *ResourceModelServingEndpoint) hasFieldChange(changes *deployplan.Change
 	return false
 }
 
-func (r *ResourceModelServingEndpoint) DoUpdateWithChanges(ctx context.Context, id string, config *serving.CreateServingEndpoint, changes *deployplan.Changes) (*RefreshOutput, error) {
+func (r *ResourceModelServingEndpoint) DoUpdate(ctx context.Context, id string, config *serving.CreateServingEndpoint, changes *deployplan.Changes) (*RefreshOutput, error) {
 	var err error
 
 	if r.hasFieldChange(changes, "tags") {

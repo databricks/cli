@@ -31,10 +31,7 @@ func New() *cobra.Command {
   the catalog. Similarly, privileges granted on a schema are inherited by all
   current and future objects within that schema.`,
 		GroupID: "catalog",
-		Annotations: map[string]string{
-			"package": "catalog",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

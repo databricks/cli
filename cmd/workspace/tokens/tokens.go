@@ -24,10 +24,7 @@ func New() *cobra.Command {
 		Long: `The Token API allows you to create, list, and revoke tokens that can be used
   to authenticate and access Databricks REST APIs.`,
 		GroupID: "settings",
-		Annotations: map[string]string{
-			"package": "settings",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

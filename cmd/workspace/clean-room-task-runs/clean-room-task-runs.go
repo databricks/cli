@@ -20,10 +20,7 @@ func New() *cobra.Command {
 		Short:   `Clean room task runs are the executions of notebooks in a clean room.`,
 		Long:    `Clean room task runs are the executions of notebooks in a clean room.`,
 		GroupID: "cleanrooms",
-		Annotations: map[string]string{
-			"package": "cleanrooms",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

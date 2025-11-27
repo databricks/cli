@@ -29,10 +29,7 @@ func New() *cobra.Command {
 
   [Learn more]: https://docs.databricks.com/en/sql/dbsql-api-latest.html`,
 		GroupID: "sql",
-		Annotations: map[string]string{
-			"package": "sql",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

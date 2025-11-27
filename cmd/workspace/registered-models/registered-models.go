@@ -51,10 +51,7 @@ func New() *cobra.Command {
   tagging, grants) that specify a securable type, use FUNCTION as the securable
   type.`,
 		GroupID: "catalog",
-		Annotations: map[string]string{
-			"package": "catalog",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

@@ -36,7 +36,7 @@ func (r *ResourceSyncedDatabaseTable) DoCreate(ctx context.Context, config *data
 	return result.Name, nil, nil
 }
 
-func (r *ResourceSyncedDatabaseTable) DoUpdateWithChanges(ctx context.Context, id string, config *database.SyncedDatabaseTable, _ *deployplan.Changes) (*database.SyncedDatabaseTable, error) {
+func (r *ResourceSyncedDatabaseTable) DoUpdate(ctx context.Context, id string, config *database.SyncedDatabaseTable, _ *deployplan.Changes) (*database.SyncedDatabaseTable, error) {
 	request := database.UpdateSyncedDatabaseTableRequest{
 		SyncedTable: *config,
 		Name:        id,

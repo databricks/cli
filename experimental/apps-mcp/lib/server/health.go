@@ -37,10 +37,7 @@ func (s *Server) CheckHealth(ctx context.Context) *HealthStatus {
 		status.Providers["workspace"] = "healthy"
 	}
 
-	// Check deployment provider if enabled
-	if s.config.AllowDeployment {
-		status.Providers["deployment"] = "healthy"
-	}
+	status.Providers["deployment"] = "healthy"
 
 	return status
 }
