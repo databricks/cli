@@ -9,7 +9,7 @@ import (
 )
 
 func TestPrefixTreeMatchesSample(t *testing.T) {
-	tree, err := NewPrefixTreeFromMap(map[string]any{
+	root, err := NewFromMap(map[string]any{
 		"*":                   "star",
 		"grants":              "grants slice",
 		"grants[*]":           "grant",
@@ -79,7 +79,7 @@ func TestPrefixTreeMatchesSample(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			node, ok, err := tree.MatchString(tt.path)
+			node, ok, err := MatchString(root, tt.path)
 			require.NoError(t, err)
 			wantMatch := tt.value != nil
 			assert.Equal(t, wantMatch, ok)
@@ -94,12 +94,9 @@ func TestPrefixTreeMatchesSample(t *testing.T) {
 }
 
 func TestChildPrefersExactThenWildcard(t *testing.T) {
-	tree := NewPrefixTree()
-	mustInsert(t, tree, "*", "star")
-	mustInsert(t, tree, "foo", "foo")
-
-	root := tree.Root
-	require.NotNil(t, root)
+	root := New()
+	mustInsert(t, root, "*", "star")
+	mustInsert(t, root, "foo", "foo")
 
 	exact := root.Child(mustParse(t, "foo"))
 	require.NotNil(t, exact)
@@ -113,58 +110,58 @@ func TestChildPrefersExactThenWildcard(t *testing.T) {
 }
 
 func TestDotStarAndBracketStarAreEquivalent(t *testing.T) {
-	tree := NewPrefixTree()
-	mustInsert(t, tree, "items[*].name", "value")
+	root := New()
+	mustInsert(t, root, "items[*].name", "value")
 
-	mustMatch(t, tree, "items.*.name", "value")
-	mustMatch(t, tree, "items[5].name", "value")
+	mustMatch(t, root, "items.*.name", "value")
+	mustMatch(t, root, "items[5].name", "value")
 }
 
 func TestRootValueMatch(t *testing.T) {
-	tree := NewPrefixTree()
-	_, err := tree.Insert(nil, "root")
+	root := New()
+	_, err := Insert(root, nil, "root")
 	require.NoError(t, err)
 
-	node, ok := tree.Match(nil)
+	node, ok := Match(root, nil)
 	require.True(t, ok)
 	assert.Equal(t, "root", node.Value())
 
-	node, ok, err = tree.MatchString("any")
+	node, ok, err = MatchString(root, "any")
 	require.NoError(t, err)
 	assert.False(t, ok)
 	assert.Nil(t, node)
 }
 
 func TestWildcardMatchesKeyValueAndIndex(t *testing.T) {
-	tree := NewPrefixTree()
-	mustInsert(t, tree, "items.*.name", "value")
+	root := New()
+	mustInsert(t, root, "items.*.name", "value")
 
-	mustMatch(t, tree, "items[task_key='foo'].name", "value")
-	mustMatch(t, tree, "items[3].name", "value")
+	mustMatch(t, root, "items[task_key='foo'].name", "value")
+	mustMatch(t, root, "items[3].name", "value")
 }
 
 func TestPatternMustConsumeEntirePath(t *testing.T) {
-	tree := NewPrefixTree()
-	mustInsert(t, tree, "*", "star")
+	root := New()
+	mustInsert(t, root, "*", "star")
 
-	node, ok, err := tree.MatchString("foo.bar")
+	node, ok, err := MatchString(root, "foo.bar")
 	require.NoError(t, err)
 	assert.False(t, ok)
 	assert.Nil(t, node)
 }
 
 func TestInsertRejectsIndexAndKeyValue(t *testing.T) {
-	tree := NewPrefixTree()
+	root := New()
 
-	_, err := tree.InsertString("foo[1]", "x")
+	_, err := InsertString(root, "foo[1]", "x")
 	require.Error(t, err)
 
-	_, err = tree.InsertString("foo[key='value']", "x")
+	_, err = InsertString(root, "foo[key='value']", "x")
 	require.Error(t, err)
 }
 
 func TestNewPrefixTreeFromMapRejectsPathWithIndex(t *testing.T) {
-	_, err := NewPrefixTreeFromMap(map[string]any{
+	_, err := NewFromMap(map[string]any{
 		"foo":    "ok",
 		"foo[1]": "bad",
 	})
@@ -172,7 +169,7 @@ func TestNewPrefixTreeFromMapRejectsPathWithIndex(t *testing.T) {
 }
 
 func TestNewPrefixTreeFromMapRejectsDuplicateWildcardPaths(t *testing.T) {
-	_, err := NewPrefixTreeFromMap(map[string]any{
+	_, err := NewFromMap(map[string]any{
 		"items.*":  "value-1",
 		"items[*]": "value-2",
 	})
@@ -180,24 +177,24 @@ func TestNewPrefixTreeFromMapRejectsDuplicateWildcardPaths(t *testing.T) {
 }
 
 func TestInsertRejectsDuplicatePaths(t *testing.T) {
-	tree := NewPrefixTree()
+	root := New()
 	path, err := structpath.Parse("foo.bar")
 	require.NoError(t, err)
 
-	_, err = tree.Insert(path, "value-1")
+	_, err = Insert(root, path, "value-1")
 	require.NoError(t, err)
 
-	_, err = tree.Insert(path, "value-2")
+	_, err = Insert(root, path, "value-2")
 	require.Error(t, err)
 }
 
 func TestInsertStringRejectsDuplicatePaths(t *testing.T) {
-	tree := NewPrefixTree()
+	root := New()
 
-	_, err := tree.InsertString("foo.bar", "value-1")
+	_, err := InsertString(root, "foo.bar", "value-1")
 	require.NoError(t, err)
 
-	_, err = tree.InsertString("foo.bar", "value-2")
+	_, err = InsertString(root, "foo.bar", "value-2")
 	require.Error(t, err)
 }
 
@@ -211,15 +208,15 @@ func mustParse(t *testing.T, path string) *structpath.PathNode {
 	return p
 }
 
-func mustInsert(t *testing.T, tree *PrefixTree, path string, value any) {
+func mustInsert(t *testing.T, root *Node, path string, value any) {
 	t.Helper()
-	_, err := tree.InsertString(path, value)
+	_, err := InsertString(root, path, value)
 	require.NoError(t, err)
 }
 
-func mustMatch(t *testing.T, tree *PrefixTree, path string, expected any) *Node {
+func mustMatch(t *testing.T, root *Node, path string, expected any) *Node {
 	t.Helper()
-	node, ok, err := tree.MatchString(path)
+	node, ok, err := MatchString(root, path)
 	require.NoError(t, err)
 	require.True(t, ok, "expected match for %s", path)
 	require.NotNil(t, node)

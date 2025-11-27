@@ -40,12 +40,6 @@ Child(node *PathNode) return child node in the tree best match matching node. No
 
 */
 
-// PrefixTree stores path patterns and associated values in a trie-like structure.
-// Matches prefer the deepest node, with concrete segments taking precedence over wildcards.
-type PrefixTree struct {
-	Root *Node
-}
-
 // Node represents a single step inside the prefix tree.
 // It keeps track of the component that leads to it, its value and the children below it.
 type Node struct {
@@ -55,42 +49,42 @@ type Node struct {
 	value     any
 }
 
-// NewPrefixTree returns an empty prefix tree with a root node.
-func NewPrefixTree() *PrefixTree {
-	return &PrefixTree{Root: newNode(componentKey{}, nil)}
+// New returns an empty prefix tree root node.
+func New() *Node {
+	return newNode(componentKey{}, nil)
 }
 
-// NewPrefixTreeFromMap constructs a prefix tree from serialized path patterns.
-func NewPrefixTreeFromMap(values map[string]any) (*PrefixTree, error) {
-	tree := NewPrefixTree()
+// NewFromMap constructs a prefix tree root from serialized path patterns.
+func NewFromMap(values map[string]any) (*Node, error) {
+	root := New()
 	for raw, v := range values {
 		path, err := structpath.Parse(raw)
 		if err != nil {
 			return nil, fmt.Errorf("parse %q: %w", raw, err)
 		}
-		if _, err = tree.Insert(path, v); err != nil {
+		if _, err = Insert(root, path, v); err != nil {
 			return nil, fmt.Errorf("insert %q: %w", raw, err)
 		}
 	}
-	return tree, nil
+	return root, nil
 }
 
 // Insert adds or updates a value for the given path pattern.
 // A nil path represents the root node.
-func (t *PrefixTree) Insert(path *structpath.PathNode, value any) (*Node, error) {
-	if t.Root == nil {
-		t.Root = newNode(componentKey{}, nil)
+func Insert(root *Node, path *structpath.PathNode, value any) (*Node, error) {
+	if root == nil {
+		return nil, fmt.Errorf("root cannot be nil")
 	}
 
 	if path == nil {
-		if t.Root.value != nil {
+		if root.value != nil {
 			return nil, fmt.Errorf("path %q already exists", "")
 		}
-		t.Root.value = value
-		return t.Root, nil
+		root.value = value
+		return root, nil
 	}
 
-	current := t.Root
+	current := root
 	for _, segment := range path.AsSlice() {
 		key, err := componentFromPattern(segment)
 		if err != nil {
@@ -116,31 +110,31 @@ func (t *PrefixTree) Insert(path *structpath.PathNode, value any) (*Node, error)
 }
 
 // InsertString parses the string path pattern and inserts the value.
-func (t *PrefixTree) InsertString(path string, value any) (*Node, error) {
+func InsertString(root *Node, path string, value any) (*Node, error) {
 	parsed, err := structpath.Parse(path)
 	if err != nil {
 		return nil, err
 	}
-	return t.Insert(parsed, value)
+	return Insert(root, parsed, value)
 }
 
 // Match returns the node with the best matching value for the provided path.
 // Matches prefer the deepest node. When depth ties, the node that used fewer wildcards wins.
-func (t *PrefixTree) Match(path *structpath.PathNode) (*Node, bool) {
-	if t == nil || t.Root == nil {
+func Match(root *Node, path *structpath.PathNode) (*Node, bool) {
+	if root == nil {
 		return nil, false
 	}
 
 	if path == nil {
-		if t.Root.value != nil {
-			return t.Root, true
+		if root.value != nil {
+			return root, true
 		}
 		return nil, false
 	}
 
 	segments := path.AsSlice()
 	var best matchResult
-	t.match(t.Root, segments, 0, 0, 0, &best)
+	matchFromNode(root, segments, 0, 0, 0, &best)
 
 	if best.node != nil {
 		return best.node, true
@@ -150,12 +144,12 @@ func (t *PrefixTree) Match(path *structpath.PathNode) (*Node, bool) {
 }
 
 // MatchString parses the given path string and matches it against the tree.
-func (t *PrefixTree) MatchString(path string) (*Node, bool, error) {
+func MatchString(root *Node, path string) (*Node, bool, error) {
 	parsed, err := structpath.Parse(path)
 	if err != nil {
 		return nil, false, err
 	}
-	node, ok := t.Match(parsed)
+	node, ok := Match(root, parsed)
 	return node, ok, nil
 }
 
@@ -301,7 +295,7 @@ func (c componentKey) append(prev *structpath.PathNode) *structpath.PathNode {
 	}
 }*/
 
-func (t *PrefixTree) match(current *Node, segments []*structpath.PathNode, index, depth, concreteness int, best *matchResult) {
+func matchFromNode(current *Node, segments []*structpath.PathNode, index, depth, concreteness int, best *matchResult) {
 	if current == nil {
 		return
 	}
@@ -317,12 +311,12 @@ func (t *PrefixTree) match(current *Node, segments []*structpath.PathNode, index
 		if child.component.kind != componentKindWildcard {
 			nextConcreteness++
 		}
-		t.match(child, segments, index+1, depth+1, nextConcreteness, best)
+		matchFromNode(child, segments, index+1, depth+1, nextConcreteness, best)
 	}
 }
 
 func (n *Node) matchingChildren(pathNode *structpath.PathNode) []*Node {
-	if len(n.children) == 0 {
+	if n == nil || len(n.children) == 0 {
 		return nil
 	}
 

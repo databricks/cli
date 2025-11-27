@@ -5,10 +5,10 @@ import (
 	"reflect"
 	"slices"
 	"sort"
-	"strings"
 
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structtag"
+	"github.com/databricks/cli/libs/structs/structtrie"
 )
 
 type Change struct {
@@ -58,23 +58,53 @@ func (c *keyFuncCaller) call(elem any) (string, string) {
 	return keyField, keyValue
 }
 
-// diffContext holds configuration for the diff operation.
-type diffContext struct {
-	sliceKeys map[string]KeyFunc
+func advanceTrie(root *structtrie.Node, node *structtrie.Node, pathNode *structpath.PathNode) *structtrie.Node {
+	if root == nil {
+		return nil
+	}
+	if node == nil {
+		node = root
+	}
+	return node.Child(pathNode)
+}
+
+func keyFuncFor(node *structtrie.Node) KeyFunc {
+	if node == nil {
+		return nil
+	}
+	if value := node.Value(); value != nil {
+		return value.(*keyFuncCaller)
+	}
+	return nil
+}
+
+// BuildSliceKeyTrie converts a map of slice-key patterns to a PrefixTree used by GetStructDiff.
+// Returns nil if sliceKeys is empty.
+func BuildSliceKeyTrie(sliceKeys map[string]KeyFunc) (*structtrie.Node, error) {
+	if len(sliceKeys) == 0 {
+		return nil, nil
+	}
+
+	root := structtrie.New()
+	for pattern, fn := range sliceKeys {
+		caller, err := newKeyFuncCaller(fn)
+		if err != nil {
+			return nil, err
+		}
+		if _, err := structtrie.InsertString(root, pattern, caller); err != nil {
+			return nil, err
+		}
+	}
+	return root, nil
 }
 
 // GetStructDiff compares two Go structs and returns a list of Changes or an error.
 // Respects ForceSendFields if present.
 // Types of a and b must match exactly, otherwise returns an error.
 //
-// The sliceKeys parameter maps path patterns to functions that extract
-// key field/value pairs from slice elements. When provided, slices at matching
-// paths are compared as maps keyed by (keyField, keyValue) instead of by index.
-// Path patterns use dot notation (e.g., "tasks" or "job.tasks").
-// The [*] wildcard matches any slice index in the path.
-// Note, key wildcard is not supported yet ("a.*.c")
-// Pass nil if no slice key functions are needed.
-func GetStructDiff(a, b any, sliceKeys map[string]KeyFunc) ([]Change, error) {
+// The sliceTrie parameter is produced by BuildSliceKeyTrie and allows comparing slices
+// as maps keyed by (keyField, keyValue). Pass nil if no keyed slices are needed.
+func GetStructDiff(a, b any, sliceTrie *structtrie.Node) ([]Change, error) {
 	v1 := reflect.ValueOf(a)
 	v2 := reflect.ValueOf(b)
 
@@ -93,8 +123,7 @@ func GetStructDiff(a, b any, sliceKeys map[string]KeyFunc) ([]Change, error) {
 		return nil, fmt.Errorf("type mismatch: %v vs %v", v1.Type(), v2.Type())
 	}
 
-	ctx := &diffContext{sliceKeys: sliceKeys}
-	if err := diffValues(ctx, nil, v1, v2, &changes); err != nil {
+	if err := diffValues(sliceTrie, sliceTrie, nil, v1, v2, &changes); err != nil {
 		return nil, err
 	}
 	return changes, nil
@@ -102,7 +131,7 @@ func GetStructDiff(a, b any, sliceKeys map[string]KeyFunc) ([]Change, error) {
 
 // diffValues appends changes between v1 and v2 to the slice.  path is the current
 // JSON-style path (dot + brackets).  At the root path is "".
-func diffValues(ctx *diffContext, path *structpath.PathNode, v1, v2 reflect.Value, changes *[]Change) error {
+func diffValues(trieRoot *structtrie.Node, trieNode *structtrie.Node, path *structpath.PathNode, v1, v2 reflect.Value, changes *[]Change) error {
 	if !v1.IsValid() {
 		if !v2.IsValid() {
 			return nil
@@ -145,25 +174,26 @@ func diffValues(ctx *diffContext, path *structpath.PathNode, v1, v2 reflect.Valu
 
 	switch kind {
 	case reflect.Pointer:
-		return diffValues(ctx, path, v1.Elem(), v2.Elem(), changes)
+		return diffValues(trieRoot, trieNode, path, v1.Elem(), v2.Elem(), changes)
 	case reflect.Struct:
-		return diffStruct(ctx, path, v1, v2, changes)
+		return diffStruct(trieRoot, trieNode, path, v1, v2, changes)
 	case reflect.Slice, reflect.Array:
-		if keyFunc := ctx.findKeyFunc(path); keyFunc != nil {
-			return diffSliceByKey(ctx, path, v1, v2, keyFunc, changes)
+		if keyFunc := keyFuncFor(trieNode); keyFunc != nil {
+			return diffSliceByKey(trieRoot, trieNode, path, v1, v2, keyFunc, changes)
 		} else if v1.Len() != v2.Len() {
 			*changes = append(*changes, Change{Path: path, Old: v1.Interface(), New: v2.Interface()})
 		} else {
 			for i := range v1.Len() {
 				node := structpath.NewIndex(path, i)
-				if err := diffValues(ctx, node, v1.Index(i), v2.Index(i), changes); err != nil {
+				nextTrie := advanceTrie(trieRoot, trieNode, node)
+				if err := diffValues(trieRoot, nextTrie, node, v1.Index(i), v2.Index(i), changes); err != nil {
 					return err
 				}
 			}
 		}
 	case reflect.Map:
 		if v1Type.Key().Kind() == reflect.String {
-			return diffMapStringKey(ctx, path, v1, v2, changes)
+			return diffMapStringKey(trieRoot, trieNode, path, v1, v2, changes)
 		} else {
 			deepEqualValues(path, v1, v2, changes)
 		}
@@ -179,7 +209,7 @@ func deepEqualValues(path *structpath.PathNode, v1, v2 reflect.Value, changes *[
 	}
 }
 
-func diffStruct(ctx *diffContext, path *structpath.PathNode, s1, s2 reflect.Value, changes *[]Change) error {
+func diffStruct(trieRoot *structtrie.Node, trieNode *structtrie.Node, path *structpath.PathNode, s1, s2 reflect.Value, changes *[]Change) error {
 	t := s1.Type()
 	forced1 := getForceSendFields(s1)
 	forced2 := getForceSendFields(s2)
@@ -192,7 +222,7 @@ func diffStruct(ctx *diffContext, path *structpath.PathNode, s1, s2 reflect.Valu
 
 		// Continue traversing embedded structs. Do not add the key to the path though.
 		if sf.Anonymous {
-			if err := diffValues(ctx, path, s1.Field(i), s2.Field(i), changes); err != nil {
+			if err := diffValues(trieRoot, trieNode, path, s1.Field(i), s2.Field(i), changes); err != nil {
 				return err
 			}
 			continue
@@ -228,14 +258,15 @@ func diffStruct(ctx *diffContext, path *structpath.PathNode, s1, s2 reflect.Valu
 			}
 		}
 
-		if err := diffValues(ctx, node, v1Field, v2Field, changes); err != nil {
+		nextTrie := advanceTrie(trieRoot, trieNode, node)
+		if err := diffValues(trieRoot, nextTrie, node, v1Field, v2Field, changes); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func diffMapStringKey(ctx *diffContext, path *structpath.PathNode, m1, m2 reflect.Value, changes *[]Change) error {
+func diffMapStringKey(trieRoot *structtrie.Node, trieNode *structtrie.Node, path *structpath.PathNode, m1, m2 reflect.Value, changes *[]Change) error {
 	keySet := map[string]reflect.Value{}
 	for _, k := range m1.MapKeys() {
 		// Key is always string at this point
@@ -258,7 +289,8 @@ func diffMapStringKey(ctx *diffContext, path *structpath.PathNode, m1, m2 reflec
 		v1 := m1.MapIndex(k)
 		v2 := m2.MapIndex(k)
 		node := structpath.NewStringKey(path, ks)
-		if err := diffValues(ctx, node, v1, v2, changes); err != nil {
+		nextTrie := advanceTrie(trieRoot, trieNode, node)
+		if err := diffValues(trieRoot, nextTrie, node, v1, v2, changes); err != nil {
 			return err
 		}
 	}
@@ -278,50 +310,6 @@ func getForceSendFields(v reflect.Value) []string {
 		return result
 	}
 	return nil
-}
-
-// findKeyFunc returns the KeyFunc for the given path, or nil if none matches.
-// Path patterns support [*] to match any slice index.
-func (ctx *diffContext) findKeyFunc(path *structpath.PathNode) KeyFunc {
-	if ctx.sliceKeys == nil {
-		return nil
-	}
-	pathStr := pathToPattern(path)
-	fmt.Printf("looking up %q\n", pathStr)
-	return ctx.sliceKeys[pathStr]
-}
-
-// pathToPattern converts a PathNode to a pattern string for matching.
-// Slice indices are converted to [*] wildcard.
-func pathToPattern(path *structpath.PathNode) string {
-	if path == nil {
-		return ""
-	}
-
-	components := path.AsSlice()
-	var result strings.Builder
-
-	for i, node := range components {
-		if idx, ok := node.Index(); ok {
-			// Convert numeric index to wildcard
-			_ = idx
-			result.WriteString("[*]")
-		} else if key, value, ok := node.KeyValue(); ok {
-			// Key-value syntax
-			result.WriteString("[")
-			result.WriteString(key)
-			result.WriteString("=")
-			result.WriteString(structpath.EncodeMapKey(value))
-			result.WriteString("]")
-		} else if key, ok := node.StringKey(); ok {
-			if i != 0 {
-				result.WriteString(".")
-			}
-			result.WriteString(key)
-		}
-	}
-
-	return result.String()
 }
 
 // sliceElement holds a slice element with its key information.
@@ -347,7 +335,7 @@ func validateKeyFuncElementType(seq reflect.Value, expected reflect.Type) error 
 // diffSliceByKey compares two slices using the provided key function.
 // Elements are matched by their (keyField, keyValue) pairs instead of by index.
 // Duplicate keys are allowed and matched in order.
-func diffSliceByKey(ctx *diffContext, path *structpath.PathNode, v1, v2 reflect.Value, keyFunc KeyFunc, changes *[]Change) error {
+func diffSliceByKey(trieRoot *structtrie.Node, trieNode *structtrie.Node, path *structpath.PathNode, v1, v2 reflect.Value, keyFunc KeyFunc, changes *[]Change) error {
 	caller, err := newKeyFuncCaller(keyFunc)
 	if err != nil {
 		return err
@@ -405,7 +393,8 @@ func diffSliceByKey(ctx *diffContext, path *structpath.PathNode, v1, v2 reflect.
 		minLen := min(len(list1), len(list2))
 		for i := range minLen {
 			node := structpath.NewKeyValue(path, keyField, keyValue)
-			if err := diffValues(ctx, node, list1[i].value, list2[i].value, changes); err != nil {
+			nextTrie := advanceTrie(trieRoot, trieNode, node)
+			if err := diffValues(trieRoot, nextTrie, node, list1[i].value, list2[i].value, changes); err != nil {
 				return err
 			}
 		}
