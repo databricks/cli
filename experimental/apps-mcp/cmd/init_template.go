@@ -2,125 +2,118 @@ package mcp
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
-	"sort"
-	"strings"
 
+	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/jsonschema"
 	"github.com/databricks/cli/libs/template"
 	"github.com/spf13/cobra"
 )
 
-type templateConfig struct {
-	repo string
-	dir  string
-}
-
-var templateRegistry = map[string]templateConfig{
-	"apps": {
-		repo: "https://github.com/neondatabase/appdotbuild-agent",
-		dir:  "edda/edda_templates/trpc_bundle",
-	},
-}
-
-func getTemplateTypes() []string {
-	types := make([]string, 0, len(templateRegistry))
-	for t := range templateRegistry {
-		types = append(types, t)
-	}
-	sort.Strings(types)
-	return types
-}
-
-func formatSchemaForDisplay(ctx *cobra.Command, schema *jsonschema.Schema, templateType string) {
-	if len(schema.Properties) == 0 {
-		return // Skip display for empty schemas
-	}
-
-	cmdio.LogString(ctx.Context(), "\nTemplate Configuration Variables:")
-	cmdio.LogString(ctx.Context(), "==================================\n")
-
-	for _, prop := range schema.OrderedProperties() {
-		if prop.Schema.SkipPromptIf != nil && prop.Schema.Default == nil {
-			continue
-		}
-
-		cmdio.LogString(ctx.Context(), fmt.Sprintf("\n%s (%s)", prop.Name, prop.Schema.Type))
-
-		if prop.Schema.Description != "" {
-			desc := strings.TrimSpace(prop.Schema.Description)
-			desc = strings.ReplaceAll(desc, "\\n", "\n")
-			cmdio.LogString(ctx.Context(), "  Description: "+desc)
-		}
-
-		if prop.Schema.Default != nil {
-			cmdio.LogString(ctx.Context(), fmt.Sprintf("  Default: %v", prop.Schema.Default))
-		}
-		if len(prop.Schema.Enum) > 0 {
-			cmdio.LogString(ctx.Context(), "  Options:")
-			for _, opt := range prop.Schema.Enum {
-				cmdio.LogString(ctx.Context(), fmt.Sprintf("    - %v", opt))
-			}
-		}
-
-		for _, req := range schema.Required {
-			if req == prop.Name {
-				cmdio.LogString(ctx.Context(), "  Required: yes")
-				break
-			}
-		}
-	}
-
-	cmdio.LogString(ctx.Context(), "\n\nTo initialize the template with these values, use:")
-	cmdio.LogString(ctx.Context(), fmt.Sprintf("  experimental apps-mcp tools init-template %s --config_json '{\"key\":\"value\",...}'", templateType))
-}
-
 func newInitTemplateCmd() *cobra.Command {
-	var configJSON string
-
 	cmd := &cobra.Command{
-		Use:   "init-template TEMPLATE_TYPE",
-		Short: "Initialize a new app from template",
-		Long: `Initialize a new Databricks app from a template.
+		Use:   "init-template [TEMPLATE_PATH]",
+		Short: "Initialize using a bundle template",
+		Args:  root.MaximumNArgs(1),
+		Long: fmt.Sprintf(`Initialize using a bundle template to get started quickly.
 
-Supported template types: apps
+TEMPLATE_PATH optionally specifies which template to use. It can be one of the following:
+%s
+- a local file system path with a template directory
+- a Git repository URL, e.g. https://github.com/my/repository
 
-When run without --config_json, displays the template schema and exits.
-When run with --config_json, initializes the template with the provided configuration.`,
-		Example: `  # Display template schema
-  experimental apps-mcp tools init-template apps
+Supports the same options as 'databricks bundle init' plus:
+  --describe: Display template schema without materializing
+  --config_json: Provide config as JSON string instead of file
 
-  # Initialize with configuration
-  experimental apps-mcp tools init-template apps --config_json '{"project_name":"my-app"}'`,
-		Args: func(cmd *cobra.Command, args []string) error {
-			if len(args) != 1 {
-				return fmt.Errorf("accepts 1 arg, received %d", len(args))
+Examples:
+  experimental apps-mcp tools init-template                   # Choose from built-in templates
+  experimental apps-mcp tools init-template default-python    # Python jobs and notebooks
+  experimental apps-mcp tools init-template --output-dir ./my-project
+  experimental apps-mcp tools init-template default-python --describe
+  experimental apps-mcp tools init-template default-python --config_json '{"project_name":"my-app"}'
+
+After initialization:
+  databricks bundle deploy --target dev
+
+See https://docs.databricks.com/en/dev-tools/bundles/templates.html for more information on templates.`, template.HelpDescriptions()),
+	}
+
+	var configFile string
+	var outputDir string
+	var templateDir string
+	var tag string
+	var branch string
+	var configJSON string
+	var describe bool
+
+	cmd.Flags().StringVar(&configFile, "config-file", "", "JSON file containing key value pairs of input parameters required for template initialization.")
+	cmd.Flags().StringVar(&templateDir, "template-dir", "", "Directory path within a Git repository containing the template.")
+	cmd.Flags().StringVar(&outputDir, "output-dir", "", "Directory to write the initialized template to.")
+	cmd.Flags().StringVar(&branch, "tag", "", "Git tag to use for template initialization")
+	cmd.Flags().StringVar(&tag, "branch", "", "Git branch to use for template initialization")
+	cmd.Flags().StringVar(&configJSON, "config-json", "", "JSON string containing key value pairs (alternative to --config-file).")
+	cmd.Flags().BoolVar(&describe, "describe", false, "Display template schema without initializing")
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+		if tag != "" && branch != "" {
+			return errors.New("only one of --tag or --branch can be specified")
+		}
+
+		if configFile != "" && configJSON != "" {
+			return errors.New("only one of --config-file or --config-json can be specified")
+		}
+
+		var templatePathOrUrl string
+		if len(args) > 0 {
+			templatePathOrUrl = args[0]
+		}
+
+		ctx := cmd.Context()
+
+		// NEW: Describe mode - show schema only
+		if describe {
+			r := template.Resolver{
+				TemplatePathOrUrl: templatePathOrUrl,
+				ConfigFile:        "",
+				OutputDir:         outputDir,
+				TemplateDir:       templateDir,
+				Tag:               tag,
+				Branch:            branch,
 			}
-			templateType := args[0]
-			if _, ok := templateRegistry[templateType]; !ok {
-				return fmt.Errorf("unknown template type %q. Supported types: %s",
-					templateType, strings.Join(getTemplateTypes(), ", "))
+
+			tmpl, err := r.Resolve(ctx)
+			if errors.Is(err, template.ErrCustomSelected) {
+				cmdio.LogString(ctx, "Please specify a path or Git repository to use a custom template.")
+				cmdio.LogString(ctx, "See https://docs.databricks.com/en/dev-tools/bundles/templates.html to learn more about custom templates.")
+				return nil
 			}
-			return nil
-		},
-		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := cmd.Context()
-
-			templateType := args[0]
-			tmplCfg := templateRegistry[templateType]
-
-			outputDir, err := os.Getwd()
 			if err != nil {
-				return fmt.Errorf("get working directory: %w", err)
+				return err
+			}
+			defer tmpl.Reader.Cleanup(ctx)
+
+			schema, _, err := tmpl.Reader.LoadSchemaAndTemplateFS(ctx)
+			if err != nil {
+				return fmt.Errorf("failed to load template schema: %w", err)
 			}
 
+			schemaJSON, err := json.MarshalIndent(schema, "", "  ")
+			if err != nil {
+				return err
+			}
+			cmdio.LogString(ctx, string(schemaJSON))
+			return nil
+		}
+
+		// NEW: Handle config_json by creating temp config file
+		if configJSON != "" {
 			var userConfigMap map[string]any
-			if configJSON != "" {
-				if err := json.Unmarshal([]byte(configJSON), &userConfigMap); err != nil {
-					return fmt.Errorf("invalid JSON in --config_json: %w", err)
-				}
+			if err := json.Unmarshal([]byte(configJSON), &userConfigMap); err != nil {
+				return fmt.Errorf("invalid JSON in --config-json: %w", err)
 			}
 
 			tmpFile, err := os.CreateTemp("", "mcp-template-config-*.json")
@@ -140,42 +133,36 @@ When run with --config_json, initializes the template with the provided configur
 				return fmt.Errorf("close config file: %w", err)
 			}
 
-			r := template.Resolver{
-				TemplatePathOrUrl: tmplCfg.repo,
-				ConfigFile:        tmpFile.Name(),
-				OutputDir:         outputDir,
-				TemplateDir:       tmplCfg.dir,
-			}
+			configFile = tmpFile.Name()
+		}
 
-			tmpl, err := r.Resolve(ctx)
-			if err != nil {
-				return err
-			}
-			defer tmpl.Reader.Cleanup(ctx)
+		// Standard materialize flow (identical to bundle/init.go)
+		r := template.Resolver{
+			TemplatePathOrUrl: templatePathOrUrl,
+			ConfigFile:        configFile,
+			OutputDir:         outputDir,
+			TemplateDir:       templateDir,
+			Tag:               tag,
+			Branch:            branch,
+		}
 
-			schema, _, err := tmpl.Reader.LoadSchemaAndTemplateFS(ctx)
-			if err != nil {
-				return fmt.Errorf("failed to load template schema: %w", err)
-			}
-
-			if configJSON == "" {
-				if len(schema.Properties) > 0 {
-					formatSchemaForDisplay(cmd, schema, templateType)
-					return nil // Exit without materializing
-				}
-			}
-
-			err = tmpl.Writer.Materialize(ctx, tmpl.Reader)
-			if err != nil {
-				return err
-			}
-
-			tmpl.Writer.LogTelemetry(ctx)
+		tmpl, err := r.Resolve(ctx)
+		if errors.Is(err, template.ErrCustomSelected) {
+			cmdio.LogString(ctx, "Please specify a path or Git repository to use a custom template.")
+			cmdio.LogString(ctx, "See https://docs.databricks.com/en/dev-tools/bundles/templates.html to learn more about custom templates.")
 			return nil
-		},
+		}
+		if err != nil {
+			return err
+		}
+		defer tmpl.Reader.Cleanup(ctx)
+
+		err = tmpl.Writer.Materialize(ctx, tmpl.Reader)
+		if err != nil {
+			return err
+		}
+		tmpl.Writer.LogTelemetry(ctx)
+		return nil
 	}
-
-	cmd.Flags().StringVar(&configJSON, "config_json", "", "JSON string with configuration values")
-
 	return cmd
 }

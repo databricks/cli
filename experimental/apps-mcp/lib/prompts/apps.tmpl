@@ -13,7 +13,7 @@ DATABRICKS APPS DEVELOPMENT
 
 ALWAYS start by scaffolding a new app using command:
 
-invoke_databricks_cli 'experimental apps-mcp tools init-template your-app-name'
+invoke_databricks_cli 'experimental apps-mcp tools init-template https://github.com/neondatabase/appdotbuild-agent --template-dir edda/edda_templates/trpc_bundle --config-json '{"project_name":"my-app-name","sql_warehouse_id":"{{if .WarehouseID}}{{.WarehouseID}}{{else}}12345{{end}}"}''
 
 # Validation
 
@@ -21,7 +21,20 @@ invoke_databricks_cli 'experimental apps-mcp tools init-template your-app-name'
 
 invoke_databricks_cli 'experimental apps-mcp tools validate ./your-app-location'
 
+# Deployment
+
+Always use the sequence of commands:
+
+invoke_databricks_cli 'bundle deploy'
+invoke_databricks_cli 'bundle run my-app-name_app'
+
+⚠️ Important: the name of the resource is found in ./resources/trpc.app.yml
+`
+resources:
+  apps:
+    my-trpc-app_app: <- this is the argument to 'bundle run'
+`
+
 # View and manage your app:
 
-invoke_databricks_cli 'apps list'
-invoke_databricks_cli 'apps get <app_name>'
+invoke_databricks_cli 'bundle summary'
