@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strconv"
 
-
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"

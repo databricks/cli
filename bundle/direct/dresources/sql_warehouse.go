@@ -3,7 +3,6 @@ package dresources
 import (
 	"context"
 
-
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/utils"

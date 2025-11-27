@@ -8,7 +8,6 @@ import (
 	"sort"
 	"strings"
 
-
 	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/catalog"

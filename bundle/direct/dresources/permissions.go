@@ -6,7 +6,6 @@ import (
 	"reflect"
 	"strings"
 
-
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/databricks-sdk-go"
