@@ -94,6 +94,9 @@ jobs:
           - os: null
 
     steps:
+      - name: Checkout repository and submodules
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
       - name: Setup build environment
         uses: ./.github/actions/setup-build-environment
         with:
@@ -125,7 +128,7 @@ jobs:
 
     # Only run if the target is in the list of targets from testmask
     if: ${{ contains(fromJSON(needs.testmask.outputs.targets), 'test-exp-aitools') }}
-    name: "make test-exp-aitools (${{ matrix.os }})"
+    name: "make test-exp-aitools"
     runs-on: ${{ matrix.os }}
 
     strategy:
@@ -137,6 +140,9 @@ jobs:
           - windows-latest
 
     steps:
+      - name: Checkout repository and submodules
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
       - name: Setup build environment
         uses: ./.github/actions/setup-build-environment
         with:
@@ -153,7 +159,7 @@ jobs:
 
     # Only run if the target is in the list of targets from testmask
     if: ${{ contains(fromJSON(needs.testmask.outputs.targets), 'test-exp-apps-mcp') }}
-    name: "make test-exp-apps-mcp (${{ matrix.os }})"
+    name: "make test-exp-apps-mcp"
     runs-on: ${{ matrix.os }}
 
     strategy:
@@ -165,6 +171,9 @@ jobs:
           - windows-latest
 
     steps:
+      - name: Checkout repository and submodules
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
       - name: Setup build environment
         uses: ./.github/actions/setup-build-environment
         with:
@@ -181,7 +190,7 @@ jobs:
 
     # Only run if the target is in the list of targets from testmask
     if: ${{ contains(fromJSON(needs.testmask.outputs.targets), 'test-exp-ssh') }}
-    name: "make test-exp-ssh (${{ matrix.os }})"
+    name: "make test-exp-ssh"
     runs-on: ${{ matrix.os }}
 
     strategy:
@@ -193,6 +202,9 @@ jobs:
           - windows-latest
 
     steps:
+      - name: Checkout repository and submodules
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
       - name: Setup build environment
         uses: ./.github/actions/setup-build-environment
         with:
@@ -209,7 +221,7 @@ jobs:
 
     # Only run if the target is in the list of targets from testmask
     if: ${{ contains(fromJSON(needs.testmask.outputs.targets), 'test-pipelines') }}
-    name: "make test-pipelines (${{ matrix.os }})"
+    name: "make test-pipelines"
     runs-on: ${{ matrix.os }}
 
     strategy:
@@ -221,6 +233,9 @@ jobs:
           - windows-latest
 
     steps:
+      - name: Checkout repository and submodules
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
       - name: Setup build environment
         uses: ./.github/actions/setup-build-environment
         with:
