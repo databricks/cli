@@ -9,7 +9,6 @@ import (
 
 func NewMcpCmd() *cobra.Command {
 	var warehouseID string
-	var withWorkspaceTools bool
 
 	cmd := &cobra.Command{
 		Use:    "apps-mcp",
@@ -24,17 +23,12 @@ The MCP server exposes the following capabilities:
 
 The server communicates via stdio using the Model Context Protocol.`,
 		Example: `  # Start MCP server with required warehouse
-  databricks experimental apps-mcp --warehouse-id abc123
-
-  # Start with workspace tools enabled
-  databricks experimental apps-mcp --warehouse-id abc123 --with-workspace-tools`,
+  databricks experimental apps-mcp --warehouse-id abc123`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
 			// Build MCP config from flags
-			cfg := &mcplib.Config{
-				WithWorkspaceTools: withWorkspaceTools,
-			}
+			cfg := &mcplib.Config{}
 
 			log.Infof(ctx, "Starting MCP server")
 
@@ -54,7 +48,6 @@ The server communicates via stdio using the Model Context Protocol.`,
 
 	// Define flags
 	cmd.Flags().StringVar(&warehouseID, "warehouse-id", "", "Databricks SQL Warehouse ID")
-	cmd.Flags().BoolVar(&withWorkspaceTools, "with-workspace-tools", false, "Enable workspace tools (file operations, bash, grep, glob)")
 
 	cmd.AddCommand(newInstallCmd())
 	cmd.AddCommand(newToolsCmd())

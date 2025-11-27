@@ -32,11 +32,6 @@ func (s *Server) CheckHealth(ctx context.Context) *HealthStatus {
 	// Check CLI tools provider
 	status.Providers["clitools"] = "healthy"
 
-	// Check workspace provider if enabled
-	if s.config.WithWorkspaceTools {
-		status.Providers["workspace"] = "healthy"
-	}
-
 	return status
 }
 

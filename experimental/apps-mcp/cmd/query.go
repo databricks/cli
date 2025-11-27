@@ -18,7 +18,7 @@ import (
 func newQueryCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "query SQL",
-		Short: "Execute SQL against Databricks warehouse",
+		Short: "Execute SQL against a Databricks warehouse",
 		Long: `Execute a SQL statement against a Databricks SQL warehouse and return results.
 
 The command auto-detects an available warehouse unless DATABRICKS_WAREHOUSE_ID is set.
