@@ -1,0 +1,18 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+resources:
+  jobs:
+    foo:
+      tasks:
+        - task_key: task_bb
+          notebook_task:
+            notebook_path: task_bb.py
+        - task_key: task_aa
+          notebook_task:
+            notebook_path: task_aa.py
+    bar:
+      tasks:
+        - task_key: task_cc
+          notebook_task:
+            notebook_path: ${resources.jobs.foo.tasks[1].notebook_task.notebook_path}
