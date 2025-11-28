@@ -76,9 +76,9 @@ func createTestClient(t *testing.T, serverURL string, requestHandoverTick func()
 
 func TestClientServerEcho(t *testing.T) {
 	server := createTestServer(t, 2, time.Hour)
+	defer server.Close()
 	client := createTestClient(t, server.URL, nil, nil)
 	defer client.Cleanup()
-	defer server.Close()
 
 	testMsg1 := []byte("test message 1\n")
 	_, err := client.InputWriter.Write(testMsg1)
