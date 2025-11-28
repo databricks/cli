@@ -39,11 +39,13 @@ jobs:
       fail-fast: false
       matrix:
         os:
-          - macos-latest
           - group: databricks-protected-runner-group-large
             labels: linux-ubuntu-latest-large
-            # Do not run tests on windows on merge.
+
+          # On merge_group events, only run the tests on Linux, to reduce time to merge.
           - ${{ github.event_name != 'merge_group' && fromJSON('{"group":"databricks-protected-runner-group-large","labels":"windows-server-latest-large"}') || null }}
+          - ${{ github.event_name != 'merge_group' && 'macos-latest' || null }}
+
         deployment:
           - "terraform"
           - "direct"
