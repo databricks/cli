@@ -29,15 +29,8 @@ func (s *Server) CheckHealth(ctx context.Context) *HealthStatus {
 		status.Providers["databricks"] = "healthy"
 	}
 
-	// I/O provider doesn't need health checks (no external dependencies)
-	status.Providers["io"] = "healthy"
-
-	// Check workspace provider if enabled
-	if s.config.WithWorkspaceTools {
-		status.Providers["workspace"] = "healthy"
-	}
-
-	status.Providers["deployment"] = "healthy"
+	// Check CLI tools provider
+	status.Providers["clitools"] = "healthy"
 
 	return status
 }
