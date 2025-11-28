@@ -115,7 +115,7 @@ func setupTestServer(ctx context.Context, t *testing.T) *TestProxy {
 		}
 		defer serverProxy.close()
 		err = serverProxy.start(ctx, serverInput, serverOutput)
-		if err != nil && !errors.Is(err, context.Canceled) {
+		if err != nil && !errors.Is(err, context.Canceled) && !errors.Is(err, io.ErrClosedPipe) {
 			t.Errorf("server error: %v", err)
 			return
 		}
@@ -150,16 +150,19 @@ func setupTestClient(ctx context.Context, t *testing.T, serverURL string) *TestP
 	err := clientProxy.connect(ctx)
 	require.NoError(t, err)
 
-	go func() {
+	wg := sync.WaitGroup{}
+	wg.Go(func() {
 		err := clientProxy.start(ctx, clientInput, clientOutput)
-		if err != nil && !errors.Is(err, context.Canceled) {
+		if err != nil && !errors.Is(err, context.Canceled) && !errors.Is(err, io.ErrClosedPipe) {
 			t.Errorf("proxy error: %v", err)
 		}
-	}()
+	})
 
 	cleanup := func() {
 		clientProxy.close()
+		clientInput.Close()
 		clientInputWriter.Close()
+		wg.Wait()
 	}
 
 	return &TestProxy{
