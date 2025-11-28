@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/calladapt"
 	"github.com/databricks/cli/libs/structs/structdiff"
+	"github.com/databricks/cli/libs/structs/structtrie"
 	"github.com/databricks/databricks-sdk-go"
 )
 
@@ -106,7 +107,8 @@ type Adapter struct {
 
 	fieldTriggersLocal  map[string]deployplan.ActionType
 	fieldTriggersRemote map[string]deployplan.ActionType
-	keyedSlices         map[string]any
+	// keyedSlices         map[string]any
+	keyedSliceTrie *structtrie.Node
 }
 
 func NewAdapter(typedNil any, client *databricks.WorkspaceClient) (*Adapter, error) {
@@ -276,6 +278,16 @@ func (a *Adapter) initMethods(resource any) error {
 		a.keyedSlices, err = loadKeyedSlices(keyedSlicesCall)
 		if err != nil {
 			return err
+		}
+		if len(a.keyedSlices) > 0 {
+			typed := make(map[string]structdiff.KeyFunc, len(a.keyedSlices))
+			for pattern, fn := range a.keyedSlices {
+				typed[pattern] = fn
+			}
+			a.keyedSliceTrie, err = structdiff.BuildSliceKeyTrie(typed)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
@@ -613,6 +625,10 @@ func (a *Adapter) ClassifyChange(change structdiff.Change, remoteState any, isLo
 // If the resource doesn't implement KeyedSlices, returns nil.
 func (a *Adapter) KeyedSlices() map[string]any {
 	return a.keyedSlices
+}
+
+func (a *Adapter) KeyedSliceTrie() *structtrie.Node {
+	return a.keyedSliceTrie
 }
 
 // prepareCallRequired prepares a call and ensures the method is found.

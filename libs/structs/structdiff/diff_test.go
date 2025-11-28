@@ -4,6 +4,7 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/databricks/cli/libs/structs/structtrie"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -62,6 +63,15 @@ func resolveChanges(changes []Change) []ResolvedChange {
 		}
 	}
 	return resolved
+}
+
+func mustSliceTrie(t *testing.T, sliceKeys map[string]KeyFunc) *structtrie.Node {
+	t.Helper()
+	trie, err := BuildSliceKeyTrie(sliceKeys)
+	if err != nil {
+		t.Fatalf("failed to build slice trie: %v", err)
+	}
+	return trie
 }
 
 func TestGetStructDiff(t *testing.T) {
@@ -456,6 +466,7 @@ func TestGetStructDiffSliceKeys(t *testing.T) {
 	sliceKeys := map[string]KeyFunc{
 		"tasks": taskKeyFunc,
 	}
+	sliceTrie := mustSliceTrie(t, sliceKeys)
 
 	tests := []struct {
 		name string
@@ -514,7 +525,7 @@ func TestGetStructDiffSliceKeys(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := GetStructDiff(tt.a, tt.b, sliceKeys)
+			got, err := GetStructDiff(tt.a, tt.b, sliceTrie)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.want, resolveChanges(got))
 		})
@@ -542,6 +553,7 @@ func TestGetStructDiffNestedSliceKeys(t *testing.T) {
 	sliceKeys := map[string]KeyFunc{
 		"nested[*].items": itemKeyFunc,
 	}
+	sliceTrie := mustSliceTrie(t, sliceKeys)
 
 	tests := []struct {
 		name string
@@ -570,7 +582,7 @@ func TestGetStructDiffNestedSliceKeys(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := GetStructDiff(tt.a, tt.b, sliceKeys)
+			got, err := GetStructDiff(tt.a, tt.b, sliceTrie)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.want, resolveChanges(got))
 		})
@@ -617,10 +629,7 @@ func TestGetStructDiffSliceKeysInvalidFunc(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			sliceKeys := map[string]KeyFunc{"tasks": tt.keyFunc}
-			a := Job{Tasks: []Task{{TaskKey: "a"}}}
-			b := Job{Tasks: []Task{{TaskKey: "a"}}}
-			_, err := GetStructDiff(a, b, sliceKeys)
+			_, err := BuildSliceKeyTrie(map[string]KeyFunc{"tasks": tt.keyFunc})
 			assert.EqualError(t, err, tt.errMsg)
 		})
 	}
@@ -628,21 +637,20 @@ func TestGetStructDiffSliceKeysInvalidFunc(t *testing.T) {
 
 func TestGetStructDiffSliceKeysWrongArgType(t *testing.T) {
 	// Function expects Item but slice contains Task
-	sliceKeys := map[string]KeyFunc{
+	sliceTrie, err := BuildSliceKeyTrie(map[string]KeyFunc{
 		"tasks": func(item Item) (string, string) {
 			return "id", item.ID
 		},
-	}
+	})
+	assert.NoError(t, err)
 	a := Job{Tasks: []Task{{TaskKey: "a"}}}
 	b := Job{Tasks: []Task{{TaskKey: "b"}}}
-	_, err := GetStructDiff(a, b, sliceKeys)
+	_, err = GetStructDiff(a, b, sliceTrie)
 	assert.EqualError(t, err, "KeyFunc expects structdiff.Item, got structdiff.Task")
 }
 
 func TestGetStructDiffSliceKeysDuplicates(t *testing.T) {
-	sliceKeys := map[string]KeyFunc{
-		"tasks": taskKeyFunc,
-	}
+	sliceTrie := mustSliceTrie(t, map[string]KeyFunc{"tasks": taskKeyFunc})
 
 	tests := []struct {
 		name string
@@ -686,7 +694,7 @@ func TestGetStructDiffSliceKeysDuplicates(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := GetStructDiff(tt.a, tt.b, sliceKeys)
+			got, err := GetStructDiff(tt.a, tt.b, sliceTrie)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.want, resolveChanges(got))
 		})

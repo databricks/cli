@@ -5,8 +5,8 @@
     "changes": [
       {
         "add": [
-          "CREATE_TABLE",
-          "USE_SCHEMA"
+          "USE_SCHEMA",
+          "CREATE_TABLE"
         ],
         "principal": "deco-test-user@databricks.com",
         "remove": [

@@ -51,10 +51,10 @@
       },
       "changes": {
         "local": {
-          "grants[0].privileges[0]": {
+          "grants[principal='deco-test-user@databricks.com'].privileges[='APPLY_TAG']": {
             "action": "update"
           },
-          "grants[0].privileges[1]": {
+          "grants[principal='deco-test-user@databricks.com'].privileges[='USE_SCHEMA']": {
             "action": "update"
           }
         }
