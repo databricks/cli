@@ -150,8 +150,10 @@ const { data } = useAnalyticsQuery<ResultType[]>('filtered_data', {
 For dates, use `YYYY-MM-DD` format in frontend, `DATE()` function in SQL:
 
 ```typescript
-// Frontend
-const startDate = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+// Date helper for query params
+const daysAgo = (n: number) => new Date(Date.now() - n * 86400000).toISOString().split('T')[0];
+
+const startDate = daysAgo(7);  // 7 days ago
 ```
 
 ```sql
@@ -345,13 +347,56 @@ npm run test:e2e:ui     # Run with Playwright UI
 
 ## Frontend Styling Guidelines:
 
+### Layout Structure:
+
+```tsx
+<div className="container mx-auto p-4">
+  <h1 className="text-2xl font-bold mb-4">Page Title</h1>
+  <form className="space-y-4 mb-8">{/* form inputs */}</form>
+  <div className="grid gap-4">{/* list items */}</div>
+</div>
+```
+
+### Component Organization:
+
+- Shared UI components: `client/src/components/ui/`
+- Feature components: `client/src/components/FeatureName.tsx`
+- Split components when logic exceeds ~100 lines or component is reused
+
+### Best Practices:
+
 - Use shadcn/radix components (Button, Input, Card, etc.) for consistent UI
 - **Use skeleton loaders**: Always use `<Skeleton>` components instead of plain "Loading..." text
 - Define result types in `shared/types.ts` for reuse between frontend and backend
-- Split components when logic exceeds ~100 lines or component is reused
 - Handle nullable fields: `value={field || ''}` for inputs
 - Type callbacks explicitly: `onChange={(e: React.ChangeEvent<HTMLInputElement>) => ...}`
+- Forms should have loading states: `disabled={isLoading}`
+- Show empty states with helpful text when no data exists
 
 ## Data Visualization with Recharts
 
-The template includes Recharts. Use Databricks brand colors: `['#40d1f5', '#4462c9', '#EB1600', '#0B2026', '#4A4A4A', '#353a4a']` (via `stroke` or `fill` props). Always wrap charts in `<ResponsiveContainer width="100%" height={300}>`.
+The template includes Recharts. Use Databricks brand colors: `['#40d1f5', '#4462c9', '#EB1600', '#0B2026', '#4A4A4A', '#353a4a']` (via `stroke` or `fill` props).
+
+```tsx
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+
+<Card>
+  <CardHeader><CardTitle>My Metrics</CardTitle></CardHeader>
+  <CardContent>
+    {loading && <Skeleton className="h-[300px] w-full" />}
+    {error && <div className="text-destructive">Error: {error}</div>}
+    {data && (
+      <ResponsiveContainer width="100%" height={300}>
+        <LineChart data={data}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="name" />
+          <YAxis />
+          <Tooltip />
+          <Line type="monotone" dataKey="value" stroke="#40d1f5" />
+        </LineChart>
+      </ResponsiveContainer>
+    )}
+  </CardContent>
+</Card>
+```
