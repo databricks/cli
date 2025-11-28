@@ -123,7 +123,6 @@ See https://docs.databricks.com/en/dev-tools/bundles/templates.html for more inf
 			return errors.New("only one of --config-file or --config-json can be specified")
 		}
 
-		// Validate app name length if config file is provided
 		if configFile != "" {
 			if configBytes, err := os.ReadFile(configFile); err == nil {
 				var userConfigMap map[string]any
