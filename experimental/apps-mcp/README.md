@@ -1,12 +1,10 @@
 # Databricks MCP Server
 
-A Model Context Protocol (MCP) server for generating production-ready Databricks applications with testing,
-linting and deployment setup from a single prompt. This agent relies heavily on scaffolding and
-extensive validation to ensure high-quality outputs.
+A Model Context Protocol (MCP) server for working with Databricks through natural language. This server provides tools for data exploration, workspace management, and executing Databricks CLI commands through AI-powered conversations.
 
 ## TL;DR
 
-**Primary Goal:** Create and deploy production-ready Databricks applications from a single natural language prompt. This MCP server combines scaffolding, validation, and deployment into a seamless workflow that goes from idea to running application.
+**Primary Goal:** Interact with Databricks workspaces, manage Databricks Asset Bundles (DABs), deploy Databricks Apps, and query data through natural language conversations.
 
 **How it works:**
 1. **Explore your data** - Query Databricks catalogs, schemas, and tables to understand your data
@@ -16,12 +14,12 @@ extensive validation to ensure high-quality outputs.
 5. **Deploy confidently** - Push validated apps directly to Databricks Apps platform
 
 **Why use it:**
-- **Speed**: Go from concept to deployed Databricks app in minutes, not hours or days
-- **Quality**: Extensive validation ensures your app builds, passes tests, and is production-ready
-- **Simplicity**: One natural language conversation handles the entire workflow
+- **Conversational interface**: Work with Databricks using natural language instead of memorizing CLI commands
+- **Context-aware**: Get relevant command suggestions based on your workspace configuration
+- **Unified workflow**: Combine data exploration, bundle management, and app deployment in one tool
 - **Transparency**: Every MCP tool call displays clear, branded output so you always know when Databricks MCP is working
 
-Perfect for data engineers and developers who want to build Databricks apps without the manual overhead of project setup, configuration, testing infrastructure, and deployment pipelines.
+Perfect for data engineers and developers who want to streamline their Databricks workflows with AI-powered assistance.
 
 **Visual Feedback:**
 When using Databricks MCP, you'll see distinctive branded headers in your chat:
@@ -64,16 +62,18 @@ This makes it immediately clear you're using the Databricks MCP server, not just
    Try this in your MCP client:
 
    ```
-   Create a Databricks app that shows sales data from main.sales.transactions
-   with a chart showing revenue by region. Deploy it as "sales-dashboard".
+   Explore my Databricks workspace and show me what catalogs are available
    ```
 
-   The AI will:
-   - Explore your Databricks tables
-   - Generate a full-stack application
-   - Customize it based on your requirements
-   - Validate it passes all tests
-   - Deploy it to Databricks Apps
+   ```
+   Initialize a new Databricks Asset Bundle for a data pipeline project
+   ```
+
+   ```
+   Query the main.sales.transactions table and show me the top 10 customers by revenue
+   ```
+
+   The AI will use the appropriate Databricks tools to help you complete these tasks.
 
 ---
 
@@ -175,237 +175,143 @@ If issues persist, please report them at https://github.com/databricks/cli/issue
 
 ## Features
 
-All features are designed to support the end-to-end workflow of creating production-ready Databricks applications:
+The Databricks MCP server provides CLI-based tools for workspace interaction:
 
-### 1. Data Exploration (Foundation)
+Execute Databricks CLI commands and explore workspace resources:
 
-Understand your Databricks data before building:
+- **`explore`** - Discover workspace resources and get CLI command recommendations
+  - Lists workspace URL, SQL warehouse details, and authentication profiles
+  - Provides command examples for jobs, clusters, catalogs, tables, and workspace files
+  - Gives workflow guidance for Databricks Asset Bundles and Apps
 
-- **`databricks_list_catalogs`** - Discover available data catalogs
-- **`databricks_list_schemas`** - Browse schemas in a catalog
-- **`databricks_find_tables`** - Find tables in a schema
-- **`databricks_describe_table`** - Get table details, columns, and sample data
-- **`databricks_execute_query`** - Test queries and preview data
+- **`invoke_databricks_cli`** - Execute any Databricks CLI command
+  - Run bundle commands: `bundle init`, `bundle validate`, `bundle deploy`, `bundle run`
+  - Run apps commands: `apps deploy`, `apps list`, `apps get`, `apps start`, `apps stop`
+  - Run workspace commands: `workspace list`, `workspace export`, `jobs list`, `clusters list`
+  - Run catalog commands: `catalogs list`, `schemas list`, `tables list`
+  - Supports all Databricks CLI functionality with proper user allowlisting
 
-*These tools help the AI understand your data structure so it can generate relevant application code.*
-
-### 2. Application Generation (Core)
-
-Create the application structure:
-
-- **`scaffold_databricks_app`** - Generate a full-stack TypeScript application
-  - Modern stack: Node.js, TypeScript, React, tRPC
-  - Pre-configured build system, linting, and testing
-  - Production-ready project structure
-  - Databricks SDK integration
-
-*This is the foundation of your application - a working, tested template ready for customization.*
-
-### 3. Validation (Quality Assurance)
-
-Ensure production-readiness before deployment:
-
-- **`validate_databricks_app`** - Comprehensive validation
-  - Build verification (npm build)
-  - Type checking (TypeScript compiler)
-  - Test execution (full test suite)
-
-*This step guarantees your application is tested and ready for production before deployment.*
-
-### 4. Deployment (Production Release)
-
-Deploy validated applications to Databricks:
-
-- **`deploy_databricks_app`** - Push to Databricks Apps platform
-  - Automatic deployment configuration
-  - Environment management
-  - Production-grade setup
-
-*The final step: your validated application running on Databricks.*
+*These tools provide a conversational interface to the full Databricks CLI, including Unity Catalog exploration and SQL query execution.*
 
 ---
 
 ## Example Usage
 
-Here are example conversations showing the end-to-end workflow for creating Databricks applications:
+Here are example conversations showing common workflows:
 
-### Complete Workflow: Analytics Dashboard
+### Data Exploration
 
-This example shows how to go from data exploration to deployed application:
-
-**User:**
+**Explore workspace resources:**
 ```
-I want to create a Databricks app that visualizes customer purchases. The data is
-in the main.sales catalog. Show me what tables are available and create a dashboard
-with charts for total revenue by region and top products. Deploy it as "sales-insights".
+Explore my Databricks workspace and show me what's available
 ```
 
-**What happens:**
-1. **Data Discovery** - AI lists schemas and tables in main.sales
-2. **Data Inspection** - AI describes the purchases table structure
-3. **App Generation** - AI scaffolds a TypeScript application
-4. **Customization** - AI adds visualization components and queries
-5. **Validation** - AI runs build, type check, and tests
-6. **Deployment** - AI deploys to Databricks Apps as "sales-insights"
-
-**What you'll see in your chat:**
-Every Databricks MCP operation shows a clear branded header:
+**Query data:**
 ```
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🚀 Databricks MCP: App scaffolded successfully
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-✅ Created appkit application at /path/to/sales-insights
-Files copied: 42
-...
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🔍 Databricks MCP: Validating your app
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-✅ All validation checks passed
-...
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🚢 Databricks MCP: Deploying to production
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-✅ App 'sales-insights' deployed successfully!
-
-🌐 URL: https://your-workspace.databricks.com/...
+Show me the schema of the main.sales.transactions table and give me a sample of 10 rows
 ```
 
-**Result:** A production-ready Databricks app running in minutes with proper testing.
-
----
-
-### Quick Examples for Specific Use Cases
-
-#### Data App from Scratch
-
+**Find specific tables:**
 ```
-Create a Databricks app in ~/projects/user-analytics that shows daily active users
-from main.analytics.events. Include a line chart and data table.
+Find all tables in the main catalog that contain the word "customer"
 ```
 
-#### Real-Time Monitoring Dashboard
+### Databricks Asset Bundles (DABs)
 
+**Create a new bundle project:**
 ```
-Build a monitoring dashboard for the main.logs.system_metrics table. Show CPU,
-memory, and disk usage over time. Add alerts for values above thresholds.
-```
-
-#### Report Generator
-
-```
-Create an app that generates weekly reports from main.sales.transactions.
-Include revenue trends, top customers, and product performance. Add export to CSV.
+Initialize a new Databricks Asset Bundle for a data pipeline project
 ```
 
-#### Data Quality Dashboard
-
+**Deploy a bundle:**
 ```
-Build a data quality dashboard for main.warehouse.inventory. Check for nulls,
-duplicates, and out-of-range values. Show data freshness metrics.
+Validate and deploy my Databricks bundle to the dev environment
+```
+
+**Run a job from a bundle:**
+```
+Run the data_processing job from my bundle
+```
+
+### Databricks Apps
+
+**Initialize an app from template:**
+```
+Initialize a new Streamlit app using the Databricks bundle template
+```
+
+**Deploy an app:**
+```
+Deploy my app in the current directory to Databricks Apps as "sales-dashboard"
+```
+
+**Manage apps:**
+```
+List all my Databricks Apps and show me their status
+```
+
+### Working with Jobs and Clusters
+
+**List and inspect jobs:**
+```
+Show me all jobs in the workspace and their recent run status
+```
+
+**Get cluster details:**
+```
+List all clusters and show me the configuration of the production cluster
+```
+
+### Complex Workflows
+
+**End-to-end data pipeline:**
+```
+1. Show me what tables are in the main.raw catalog
+2. Create a new bundle for an ETL pipeline
+3. Deploy it to the dev environment
+4. Run the pipeline and show me the results
+```
+
+**Multi-environment deployment:**
+```
+Validate my bundle, then deploy it to dev, staging, and production environments
 ```
 
 ---
 
-### Working with Existing Applications
+## Benefits
 
-Once an app is scaffolded, you can continue development through conversation:
+### Natural Language Interface
 
-```
-Add a filter to show only transactions from the last 30 days
-```
+Instead of memorizing complex CLI commands and flags, you can:
+- Ask questions in plain English
+- Get context-aware command suggestions
+- Execute commands through conversation
+- Receive explanations of results
 
-```
-Update the chart to use a bar chart instead of line chart
-```
+### Workspace Awareness
 
-```
-Add a new API endpoint to fetch customer details
-```
+The `explore` tool provides:
+- Automatic workspace configuration detection
+- SQL warehouse information
+- Authentication profile details
+- Relevant command examples based on your setup
 
-```
-Run the tests and fix any failures
-```
+### Unified Workflow
 
-```
-Add error handling for failed database queries
-```
+Work with all Databricks functionality from one place:
+- **Data exploration**: Query catalogs, schemas, and tables
+- **Bundle management**: Create, validate, and deploy DABs
+- **App deployment**: Deploy and manage Databricks Apps
+- **Workspace operations**: Manage jobs, clusters, and notebooks
 
----
+### Safe Command Execution
 
-### Iterative Development Workflow
-
-**Initial Request:**
-```
-Create a simple dashboard for main.sales.orders
-```
-
-**Refinement:**
-```
-Add a date range picker to filter orders
-```
-
-**Enhancement:**
-```
-Include a summary card showing total orders and revenue
-```
-
-**Quality Check:**
-```
-Validate the app and show me any test failures
-```
-
-**Production:**
-```
-Deploy the app to Databricks as "orders-dashboard"
-```
-
----
-
-## Why This Approach Works
-
-### Traditional Development vs. Databricks MCP
-
-| Traditional Approach | With Databricks MCP |
-|---------------------|-------------|
-| Manual project setup (hours) | Instant scaffolding (seconds) |
-| Configure build tools manually | Pre-configured and tested |
-| Set up testing infrastructure | Built-in test suite |
-| Manual code changes and debugging | AI-powered development with validation |
-| Local testing only | Containerized validation (reproducible) |
-| Manual deployment setup | Automated deployment to Databricks |
-| **Time to production: days/weeks** | **Time to production: minutes** |
-
-### Key Advantages
-
-**1. Scaffolding + Validation = Quality**
-- Start with a working, tested template
-- Every change is validated before deployment
-- No broken builds reach production
-
-**2. Natural Language = Productivity**
-- Describe what you want, not how to build it
-- AI handles implementation details
-- Focus on requirements, not configuration
-
-**3. End-to-End Workflow = Simplicity**
-- Single tool for entire lifecycle
-- No context switching between tools
-- Seamless progression from idea to deployment
-
-### What Makes It Production-Ready
-
-The Databricks MCP server doesn't just generate code—it ensures quality:
-
-- ✅ **TypeScript** - Type safety catches errors early
-- ✅ **Build verification** - Ensures code compiles
-- ✅ **Test suite** - Validates functionality
-- ✅ **Linting** - Enforces code quality
-- ✅ **Databricks integration** - Native SDK usage
+The `invoke_databricks_cli` tool:
+- Allows users to allowlist specific commands
+- Provides better tracking of executed operations
+- Maintains audit trail of AI actions
+- Prevents unauthorized operations
 
 ---
 
@@ -418,29 +324,16 @@ The Databricks MCP server doesn't just generate code—it ensures quality:
 databricks experimental apps-mcp install
 
 # Start MCP server (default mode)
-databricks experimental apps-mcp --warehouse-id <warehouse-id>
-
-# Enable workspace tools
-databricks experimental apps-mcp --warehouse-id <warehouse-id> --with-workspace-tools
+databricks experimental apps-mcp
 ```
-
-### CLI Flags
-
-| Flag | Description | Default |
-|------|-------------|---------|
-| `--warehouse-id` | Databricks SQL Warehouse ID (required) | - |
-| `--with-workspace-tools` | Enable workspace file operations | `false` |
-| `--help` | Show help | - |
 
 ### Environment Variables
 
 | Variable | Description | Example |
 |----------|-------------|---------|
 | `DATABRICKS_HOST` | Databricks workspace URL | `https://your-workspace.databricks.com` |
-| `DATABRICKS_TOKEN` | Databricks personal access token | `dapi...` |
 | `WAREHOUSE_ID` | Databricks SQL warehouse ID (preferred) | `abc123def456` |
 | `DATABRICKS_WAREHOUSE_ID` | Alternative name for warehouse ID | `abc123def456` |
-| `WITH_WORKSPACE_TOOLS` | Enable workspace tools | `true` or `false` |
 
 ### Authentication
 

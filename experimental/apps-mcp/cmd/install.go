@@ -90,7 +90,7 @@ func runInstall(ctx context.Context) error {
 		cmdio.LogString(ctx, "")
 		cmdio.LogString(ctx, "You can now use your coding agent to interact with Databricks.")
 		cmdio.LogString(ctx, "")
-		cmdio.LogString(ctx, "Try asking: "+color.YellowString("Create an app that calculates taxi trip metrics: average fare by distance bracket and time of day."))
+		cmdio.LogString(ctx, "Try asking: "+color.YellowString("Create a Databricks app that calculates taxi trip metrics: average fare by distance bracket and time of day."))
 	}
 
 	return nil

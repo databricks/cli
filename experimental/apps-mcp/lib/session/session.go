@@ -20,10 +20,11 @@ const (
 
 // Data keys for session storage
 const (
-	WorkDirDataKey   = "workDir"
-	StartTimeDataKey = "startTime"
-	ToolCallsDataKey = "toolCalls"
-	TrackerDataKey   = "tracker"
+	WorkDirDataKey      = "workDir"
+	StartTimeDataKey    = "startTime"
+	ToolCallsDataKey    = "toolCalls"
+	TrackerDataKey      = "tracker"
+	CapabilitiesDataKey = "capabilities"
 )
 
 // Session represents an MCP session with state tracking

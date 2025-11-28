@@ -76,7 +76,7 @@
       },
       "changes": {
         "local": {
-          "permissions[0].permission_level": {
+          "permissions[user_name='viewer@example.com'].permission_level": {
             "action": "update"
           }
         }
