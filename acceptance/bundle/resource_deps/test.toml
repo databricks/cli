@@ -5,3 +5,7 @@ Ignore = [
     ".databricks",
     ".gitignore",
 ]
+
+[[Repls]]
+Old = 'local\.cache\.(.*)'
+New = 'local.cache.(redacted)'

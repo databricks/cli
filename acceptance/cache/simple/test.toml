@@ -1,0 +1,7 @@
+Cloud=false
+Local=true
+
+RecordRequests = true
+
+[Env]
+DATABRICKS_CACHE_ENABLED = 'true'

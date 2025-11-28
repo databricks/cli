@@ -175,6 +175,7 @@ func logDeployTelemetry(ctx context.Context, b *bundle.Bundle) {
 				TargetCount:                  b.Metrics.TargetCount,
 				WorkspaceArtifactPathType:    artifactPathType,
 				BoolValues:                   b.Metrics.BoolValues,
+				LocalCacheMeasurementsMs:     b.Metrics.LocalCacheMeasurementsMs,
 				PythonAddedResourcesCount:    b.Metrics.PythonAddedResourcesCount,
 				PythonUpdatedResourcesCount:  b.Metrics.PythonUpdatedResourcesCount,
 				PythonResourceLoadersCount:   int64(len(experimentalConfig.Python.Resources)),
