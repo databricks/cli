@@ -89,16 +89,32 @@ function MyComponent() {
 **useAnalyticsQuery API:**
 
 ```typescript
+// Signature
 const { data, loading, error } = useAnalyticsQuery<T>(
-  queryName: string,                        // SQL file name without .sql extension
-  params: Record<string, string | number>   // Query parameters
+  queryName: string,      // SQL file name without .sql extension
+  params: Record<string, string | number>  // Query parameters
 );
-// Returns: { data: T | null, loading: boolean, error: string | null }
+
+// Returns
+interface QueryResult<T> {
+  data: T | null;         // Query results (null while loading)
+  loading: boolean;       // True while query is executing
+  error: string | null;   // Error message if query failed
+}
 ```
 
 **NOT supported options:**
-- `enabled` - Query always executes on mount. Use conditional rendering instead: `{selectedId && <MyComponent id={selectedId} />}`
+- `enabled` - Query always executes on mount. Use conditional rendering instead.
 - `refetch` - Not available. Re-mount component to re-query.
+
+**Conditional query pattern** (use instead of `enabled`):
+```typescript
+// ✅ CORRECT - conditional rendering
+{selectedId && <MyComponent id={selectedId} />}
+
+// ❌ WRONG - enabled option doesn't exist
+useAnalyticsQuery('query', { id }, { enabled: !!selectedId });
+```
 
 ### SQL Query Files:
 
