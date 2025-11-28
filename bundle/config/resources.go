@@ -25,6 +25,7 @@ type Resources struct {
 	Dashboards            map[string]*resources.Dashboard            `json:"dashboards,omitempty"`
 	Apps                  map[string]*resources.App                  `json:"apps,omitempty"`
 	SecretScopes          map[string]*resources.SecretScope          `json:"secret_scopes,omitempty"`
+	Secrets               map[string]*resources.Secret               `json:"secrets,omitempty"`
 	// Alerts                map[string]*resources.Alert                `json:"alerts,omitempty"`
 	SqlWarehouses        map[string]*resources.SqlWarehouse        `json:"sql_warehouses,omitempty"`
 	DatabaseInstances    map[string]*resources.DatabaseInstance    `json:"database_instances,omitempty"`
@@ -94,6 +95,7 @@ func (r *Resources) AllResources() []ResourceGroup {
 		collectResourceMap(descriptions["apps"], r.Apps),
 		// collectResourceMap(descriptions["alerts"], r.Alerts),
 		collectResourceMap(descriptions["secret_scopes"], r.SecretScopes),
+		collectResourceMap(descriptions["secrets"], r.Secrets),
 		collectResourceMap(descriptions["sql_warehouses"], r.SqlWarehouses),
 		collectResourceMap(descriptions["database_instances"], r.DatabaseInstances),
 		collectResourceMap(descriptions["database_catalogs"], r.DatabaseCatalogs),
@@ -175,6 +177,12 @@ func (r *Resources) FindResourceByConfigKey(key string) (ConfigResource, error) 
 		}
 	}
 
+	for k := range r.Secrets {
+		if k == key {
+			found = append(found, r.Secrets[k])
+		}
+	}
+
 	// for k := range r.Alerts {
 	// 	if k == key {
 	// 		found = append(found, r.Alerts[k])
@@ -236,6 +244,7 @@ func SupportedResources() map[string]resources.ResourceDescription {
 		"volumes":                 (&resources.Volume{}).ResourceDescription(),
 		"apps":                    (&resources.App{}).ResourceDescription(),
 		"secret_scopes":           (&resources.SecretScope{}).ResourceDescription(),
+		"secrets":                 (&resources.Secret{}).ResourceDescription(),
 		// "alerts":                  (&resources.Alert{}).ResourceDescription(),
 		"sql_warehouses":         (&resources.SqlWarehouse{}).ResourceDescription(),
 		"database_instances":     (&resources.DatabaseInstance{}).ResourceDescription(),

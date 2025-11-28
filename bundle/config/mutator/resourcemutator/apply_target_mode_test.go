@@ -162,6 +162,12 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 						Name: "secretScope1",
 					},
 				},
+				Secrets: map[string]*resources.Secret{
+					"secret1": {
+						Scope: "secretScope1",
+						Key:   "secret1",
+					},
+				},
 				SqlWarehouses: map[string]*resources.SqlWarehouse{
 					"sql_warehouse1": {
 						CreateWarehouseRequest: sql.CreateWarehouseRequest{
@@ -365,7 +371,7 @@ func TestAllNonUcResourcesAreRenamed(t *testing.T) {
 				resourceType := resources.Type().Field(i).Name
 
 				// Skip resources that are not renamed
-				if resourceType == "Apps" || resourceType == "SecretScopes" || resourceType == "DatabaseInstances" || resourceType == "DatabaseCatalogs" || resourceType == "SyncedDatabaseTables" {
+				if resourceType == "Apps" || resourceType == "SecretScopes" || resourceType == "Secrets" || resourceType == "DatabaseInstances" || resourceType == "DatabaseCatalogs" || resourceType == "SyncedDatabaseTables" {
 					continue
 				}
 

@@ -180,6 +180,12 @@ func TestResourcesBindSupport(t *testing.T) {
 				Name: "0",
 			},
 		},
+		Secrets: map[string]*resources.Secret{
+			"my_secret": {
+				Scope: "0",
+				Key:   "0",
+			},
+		},
 		SqlWarehouses: map[string]*resources.SqlWarehouse{
 			"my_sql_warehouse": {
 				CreateWarehouseRequest: sql.CreateWarehouseRequest{},
@@ -220,6 +226,7 @@ func TestResourcesBindSupport(t *testing.T) {
 	m.GetMockSecretsAPI().EXPECT().ListScopesAll(mock.Anything).Return([]workspace.SecretScope{
 		{Name: "0"},
 	}, nil)
+	m.GetMockSecretsAPI().EXPECT().GetSecret(mock.Anything, mock.Anything).Return(&workspace.GetSecretResponse{}, nil)
 	m.GetMockWarehousesAPI().EXPECT().GetById(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockDatabaseAPI().EXPECT().GetDatabaseInstance(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockDatabaseAPI().EXPECT().GetDatabaseCatalog(mock.Anything, mock.Anything).Return(nil, nil)

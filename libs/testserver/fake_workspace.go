@@ -138,6 +138,10 @@ type FakeWorkspace struct {
 
 	Acls map[string][]workspace.AclItem
 
+	// Secret scopes and secrets
+	SecretScopes map[string]workspace.SecretScope
+	Secrets      map[string]workspace.SecretMetadata // key is "scope/key"
+
 	// Generic permissions storage: key is "{object_type}:{object_id}"
 	Permissions map[string]iam.ObjectPermissions
 
@@ -235,6 +239,8 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		ServingEndpoints:     map[string]serving.ServingEndpointDetailed{},
 		Repos:                map[string]workspace.RepoInfo{},
 		Acls:                 map[string][]workspace.AclItem{},
+		SecretScopes:         map[string]workspace.SecretScope{},
+		Secrets:              map[string]workspace.SecretMetadata{},
 		Permissions:          map[string]iam.ObjectPermissions{},
 		DatabaseInstances:    map[string]database.DatabaseInstance{},
 		DatabaseCatalogs:     map[string]database.DatabaseCatalog{},

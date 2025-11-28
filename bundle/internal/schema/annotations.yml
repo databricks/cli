@@ -220,6 +220,11 @@ github.com/databricks/cli/bundle/config.Resources:
       The secret scope definitions for the bundle, where each key is the name of the secret scope.
     "markdown_description": |-
       The secret scope definitions for the bundle, where each key is the name of the secret scope. See [\_](/dev-tools/bundles/resources.md#secret_scopes).
+  "secrets":
+    "description": |-
+      The secret definitions for the bundle, where each key is the name of the secret.
+    "markdown_description": |-
+      The secret definitions for the bundle, where each key is the name of the secret. See [\_](/dev-tools/bundles/resources.md#secrets).
   "sql_warehouses":
     "description": |-
       The SQL warehouse definitions for the bundle, where each key is the name of the warehouse.
@@ -628,6 +633,22 @@ github.com/databricks/cli/bundle/config/resources.SecretScopePermission:
   "user_name":
     "description": |-
       The name of the user that has the permission set in level. This field translates to a `principal` field in secret scope ACL.
+github.com/databricks/cli/bundle/config/resources.Secret:
+  "bytes_value":
+    "description": |-
+      The base64-encoded bytes value of the secret. Only one of `string_value` or `bytes_value` can be specified.
+  "key":
+    "description": |-
+      A unique name to identify the secret.
+  "lifecycle":
+    "description": |-
+      Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+  "scope":
+    "description": |-
+      The name of the secret scope containing the secret.
+  "string_value":
+    "description": |-
+      The string value of the secret. Only one of `string_value` or `bytes_value` can be specified.
 github.com/databricks/cli/bundle/config/resources.SqlWarehousePermission:
   "group_name":
     "description": |-

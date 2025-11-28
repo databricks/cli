@@ -61,7 +61,7 @@ func (s SecretScope) Exists(ctx context.Context, w *databricks.WorkspaceClient, 
 	// The indirect methods are not semantically ideal for simple existence checks, so we use the list API here
 	scopes, err := w.Secrets.ListScopesAll(ctx)
 	if err != nil {
-		return false, nil
+		return false, err
 	}
 
 	for _, scope := range scopes {

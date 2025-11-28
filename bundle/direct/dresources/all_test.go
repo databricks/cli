@@ -26,6 +26,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/databricks/databricks-sdk-go/service/serving"
+	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -142,6 +143,10 @@ var testConfig map[string]any = map[string]any{
 				},
 			},
 		},
+	},
+
+	"secret_scopes": &resources.SecretScope{
+		Name: "my-secret-scope",
 	},
 }
 
@@ -388,6 +393,22 @@ var testDeps = map[string]prepareWorkspace{
 			}},
 		}, nil
 	},
+
+	"secrets": func(client *databricks.WorkspaceClient) (any, error) {
+		// Create the secret scope first
+		err := client.Secrets.CreateScope(context.Background(), workspace.CreateScope{
+			Scope: "test-secret-scope",
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return &resources.Secret{
+			Scope:       "test-secret-scope",
+			Key:         "test-secret-key",
+			StringValue: "test-secret-value",
+		}, nil
+	},
 }
 
 func TestAll(t *testing.T) {
@@ -509,6 +530,10 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 		// t.Logf("Testing %s v=%#v, remoteValue=%#v", path.String(), val, remoteValue)
 		// We expect fields set explicitly to be preserved by testserver, which is true for all resources as of today.
 		// If not true for your resource, add exception here:
+		// Secrets: string_value and bytes_value are intentionally not returned by the API for security reasons
+		if group == "secrets" && (path.String() == "string_value" || path.String() == "bytes_value") {
+			return
+		}
 		assert.Equal(t, val, remoteValue, "path=%q\nnewState=%s\nremappedState=%s", path.String(), jsonDump(newState), jsonDump(remappedState))
 	}))
 
