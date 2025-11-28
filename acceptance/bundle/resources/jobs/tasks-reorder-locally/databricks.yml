@@ -1,0 +1,13 @@
+bundle:
+  name: test-bundle
+
+resources:
+  jobs:
+    foo:
+      tasks:
+        - task_key: task_bb
+          notebook_task:
+            notebook_path: task_bb.py
+        - task_key: task_aa
+          notebook_task:
+            notebook_path: task_aa.py

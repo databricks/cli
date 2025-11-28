@@ -96,7 +96,7 @@
       },
       "changes": {
         "local": {
-          "tasks": {
+          "tasks[task_key='TestTask1']": {
             "action": "update"
           }
         },

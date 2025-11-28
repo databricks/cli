@@ -150,10 +150,10 @@
           "environments[0].spec.dependencies[0]": {
             "action": "update"
           },
-          "tasks[1].for_each_task.task.libraries[0].whl": {
+          "tasks[task_key='TestTask'].for_each_task.task.libraries[0].whl": {
             "action": "update"
           },
-          "tasks[1].libraries[0].whl": {
+          "tasks[task_key='TestTask'].libraries[0].whl": {
             "action": "update"
           }
         },
