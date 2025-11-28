@@ -100,7 +100,7 @@
       },
       "changes": {
         "local": {
-          "permissions": {
+          "permissions[user_name='test-dabs-1@databricks.com']": {
             "action": "update"
           }
         }
