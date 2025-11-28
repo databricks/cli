@@ -17,8 +17,19 @@ A Model Context Protocol (MCP) server for working with Databricks through natura
 - **Conversational interface**: Work with Databricks using natural language instead of memorizing CLI commands
 - **Context-aware**: Get relevant command suggestions based on your workspace configuration
 - **Unified workflow**: Combine data exploration, bundle management, and app deployment in one tool
+- **Transparency**: Every MCP tool call displays clear, branded output so you always know when Databricks MCP is working
 
 Perfect for data engineers and developers who want to streamline their Databricks workflows with AI-powered assistance.
+
+**Visual Feedback:**
+When using Databricks MCP, you'll see distinctive branded headers in your chat:
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🚀 Databricks MCP: App scaffolded successfully
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+This makes it immediately clear you're using the Databricks MCP server, not just plain Claude or Cursor. If you don't see these headers, the MCP server isn't connected (see Troubleshooting below).
 
 ---
 
@@ -26,29 +37,30 @@ Perfect for data engineers and developers who want to streamline their Databrick
 
 ### Quick Setup (Recommended)
 
-1. **Set up Databricks credentials** (required for Databricks tools):
-   ```bash
-   export DATABRICKS_HOST="https://your-workspace.databricks.com"
-   export DATABRICKS_TOKEN="dapi..."
-   export DATABRICKS_WAREHOUSE_ID="your-warehouse-id"
-   ```
-
-2. **Install the MCP server automatically:**
+1. **Install the MCP server automatically:**
    ```bash
    databricks experimental apps-mcp install
    ```
 
    This interactive command will:
    - Automatically detect Claude Code and Cursor installations
-   - Configure the MCP server with proper settings
+   - Configure the MCP server with proper settings (including credentials)
    - Set up the server at user scope (available in all projects)
    - Show manual instructions for other agents if needed
 
-3. **Restart your MCP client** (Claude Code, Cursor, etc.) for changes to take effect.
+2. **Restart your MCP client** (Claude Code, Cursor, etc.) for changes to take effect.
+
+3. **Verify the connection:**
+   ```
+   claude /mcp
+   ```
+
+   The databricks MCP server should be listed in "connected" state. If it doesn't show up or appears disconnected, see the Troubleshooting section below.
 
 4. **Create your first Databricks app:**
 
    Try this in your MCP client:
+
    ```
    Explore my Databricks workspace and show me what catalogs are available
    ```
@@ -69,6 +81,13 @@ Perfect for data engineers and developers who want to streamline their Databrick
 
 If you prefer to configure manually or the automatic installation doesn't work:
 
+**Set up Databricks credentials** (required for Databricks tools):
+  ```bash
+  export DATABRICKS_HOST="https://your-workspace.databricks.com"
+  export DATABRICKS_TOKEN="dapi..."
+  export DATABRICKS_WAREHOUSE_ID="your-warehouse-id"
+  ```
+
 **Add to your MCP config file** (e.g., `~/.claude.json` for global scope):
 ```json
 {
@@ -87,6 +106,70 @@ If you prefer to configure manually or the automatic installation doesn't work:
 ```
 
 Then restart your MCP client for changes to take effect
+
+---
+
+### Troubleshooting
+
+#### 🚨 Not seeing Databricks MCP headers in your chat?
+
+If you ask about Databricks or apps but **don't see the distinctive headers** like:
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🚀 Databricks MCP: App scaffolded successfully
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+**You're using plain Claude/Cursor, not the Databricks MCP server!** This means:
+- ❌ No access to Databricks data or tools
+- ❌ Generic AI responses instead of actual app generation
+- ❌ No scaffolding, validation, or deployment capabilities
+
+**Fix it:** Follow the troubleshooting steps below to connect the MCP server.
+
+---
+
+#### General Troubleshooting
+
+If the MCP server doesn't connect or shows errors:
+
+1. **Check MCP server status:**
+   ```
+   claude /mcp
+   ```
+   Look for the databricks server - it should show "connected"
+
+2. **Verify credentials:** Make sure your environment variables are set correctly:
+   ```bash
+   echo $DATABRICKS_HOST
+   echo $DATABRICKS_WAREHOUSE_ID
+   # Don't echo token for security
+   ```
+
+3. **Check configuration file:** Verify the MCP server is properly configured in your `~/.claude.json`:
+   ```bash
+   cat ~/.claude.json | grep -A 10 databricks
+   ```
+
+4. **Restart your MCP client:** After making configuration changes, always restart your client
+
+5. **Check Databricks CLI:** Verify the CLI is installed and accessible:
+   ```bash
+   databricks --version
+   databricks experimental apps-mcp --help
+   ```
+
+6. **Test authentication:** Try listing catalogs to verify credentials work:
+   ```bash
+   databricks catalogs list
+   ```
+
+7. **Ask Claude for help:** Claude can often diagnose and fix MCP connection issues. Try:
+   ```
+   My databricks MCP server isn't connecting. Can you help troubleshoot?
+   ```
+
+If issues persist, please report them at https://github.com/databricks/cli/issues
 
 ---
 

@@ -1,12 +1,11 @@
 /*
 Package providers contains MCP tool providers.
 
-Each provider implements a set of related tools:
+The clitools provider implements CLI-based tools for Databricks integration:
 
-- databricks: Databricks API integration
-- io: Project scaffolding and validation
-- clitools: CLI exploration and invocation
-- deployment: Application deployment (optional)
+- explore: Discover workspace resources and get workflow recommendations
+- invoke_databricks_cli: Execute Databricks CLI commands
+- databricks_configure_auth: Configure workspace authentication
 
 Provider Interface:
 
@@ -16,5 +15,8 @@ Provider Interface:
 
 Providers are registered with the MCP server during initialization
 and their tools become available to AI agents.
+
+The CLI-based approach leverages existing bundle commands for app
+scaffolding, validation, and deployment rather than duplicating API logic.
 */
 package providers
