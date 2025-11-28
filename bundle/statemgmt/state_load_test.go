@@ -43,7 +43,7 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 		"resources.database_instances.test_database_instance":         {ID: "1"},
 		"resources.database_catalogs.test_database_catalog":           {ID: "1"},
 		"resources.synced_database_tables.test_synced_database_table": {ID: "1"},
-		// "resources.alerts.test_alert": {ID: "1"},
+		"resources.alerts.test_alert":                                 {ID: "1"},
 	}
 	err := StateToBundle(context.Background(), state, &config)
 	assert.NoError(t, err)
@@ -94,8 +94,8 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 	assert.Equal(t, "1", config.Resources.DatabaseInstances["test_database_instance"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.DatabaseInstances["test_database_instance"].ModifiedStatus)
 
-	// assert.Equal(t, "1", config.Resources.Alerts["test_alert"].ID)
-	// assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Alerts["test_alert"].ModifiedStatus)
+	assert.Equal(t, "1", config.Resources.Alerts["test_alert"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Alerts["test_alert"].ModifiedStatus)
 
 	AssertFullResourceCoverage(t, &config)
 }
@@ -222,13 +222,13 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 					},
 				},
 			},
-			// Alerts: map[string]*resources.Alert{
-			// 	"test_alert": {
-			// 		AlertV2: sql.AlertV2{
-			// 			DisplayName: "test_alert",
-			// 		},
-			// 	},
-			// },
+			Alerts: map[string]*resources.Alert{
+				"test_alert": {
+					AlertV2: sql.AlertV2{
+						DisplayName: "test_alert",
+					},
+				},
+			},
 		},
 	}
 
@@ -286,8 +286,8 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 	assert.Equal(t, "", config.Resources.SyncedDatabaseTables["test_synced_database_table"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.SyncedDatabaseTables["test_synced_database_table"].ModifiedStatus)
 
-	// assert.Equal(t, "", config.Resources.Alerts["test_alert"].ID)
-	// assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Alerts["test_alert"].ModifiedStatus)
+	assert.Equal(t, "", config.Resources.Alerts["test_alert"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Alerts["test_alert"].ModifiedStatus)
 
 	AssertFullResourceCoverage(t, &config)
 }
@@ -499,18 +499,18 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 					},
 				},
 			},
-			// Alerts: map[string]*resources.Alert{
-			// 	"test_alert": {
-			// 		AlertV2: sql.AlertV2{
-			// 			DisplayName: "test_alert",
-			// 		},
-			// 	},
-			// 	"test_alert_new": {
-			// 		AlertV2: sql.AlertV2{
-			// 			DisplayName: "test_alert_new",
-			// 		},
-			// 	},
-			// },
+			Alerts: map[string]*resources.Alert{
+				"test_alert": {
+					AlertV2: sql.AlertV2{
+						DisplayName: "test_alert",
+					},
+				},
+				"test_alert_new": {
+					AlertV2: sql.AlertV2{
+						DisplayName: "test_alert_new",
+					},
+				},
+			},
 		},
 	}
 	state := ExportedResourcesMap{
@@ -544,8 +544,8 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 		"resources.sql_warehouses.test_sql_warehouse_old":          {ID: "2"},
 		"resources.database_instances.test_database_instance":      {ID: "1"},
 		"resources.database_instances.test_database_instance_old":  {ID: "2"},
-		// "resources.alerts.test_alert": {ID: "1"},
-		// "resources.alerts.test_alert_old": {ID: "2"},
+		"resources.alerts.test_alert":                              {ID: "1"},
+		"resources.alerts.test_alert_old":                          {ID: "2"},
 	}
 	err := StateToBundle(context.Background(), state, &config)
 	assert.NoError(t, err)
@@ -657,12 +657,12 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 	assert.Equal(t, "", config.Resources.DatabaseInstances["test_database_instance_new"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.DatabaseInstances["test_database_instance_new"].ModifiedStatus)
 
-	// assert.Equal(t, "1", config.Resources.Alerts["test_alert"].ID)
-	// assert.Equal(t, "", config.Resources.Alerts["test_alert"].ModifiedStatus)
-	// assert.Equal(t, "2", config.Resources.Alerts["test_alert_old"].ID)
-	// assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Alerts["test_alert_old"].ModifiedStatus)
-	// assert.Equal(t, "", config.Resources.Alerts["test_alert_new"].ID)
-	// assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Alerts["test_alert_new"].ModifiedStatus)
+	assert.Equal(t, "1", config.Resources.Alerts["test_alert"].ID)
+	assert.Equal(t, "", config.Resources.Alerts["test_alert"].ModifiedStatus)
+	assert.Equal(t, "2", config.Resources.Alerts["test_alert_old"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Alerts["test_alert_old"].ModifiedStatus)
+	assert.Equal(t, "", config.Resources.Alerts["test_alert_new"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Alerts["test_alert_new"].ModifiedStatus)
 
 	AssertFullResourceCoverage(t, &config)
 }

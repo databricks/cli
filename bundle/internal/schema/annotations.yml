@@ -154,6 +154,9 @@ github.com/databricks/cli/bundle/config.Python:
       If enabled, Python code will execute within this environment. If disabled,
       it defaults to using the Python interpreter available in the current shell.
 github.com/databricks/cli/bundle/config.Resources:
+  "alerts":
+    "description": |-
+      PLACEHOLDER
   "apps":
     "description": |-
       The app resource defines a Databricks app.
@@ -442,6 +445,74 @@ github.com/databricks/cli/bundle/config.Workspace:
   "state_path":
     "description": |-
       The workspace state path
+github.com/databricks/cli/bundle/config/resources.Alert:
+  "create_time":
+    "description": |-
+      PLACEHOLDER
+  "custom_description":
+    "description": |-
+      PLACEHOLDER
+  "custom_summary":
+    "description": |-
+      PLACEHOLDER
+  "display_name":
+    "description": |-
+      PLACEHOLDER
+  "effective_run_as":
+    "description": |-
+      PLACEHOLDER
+  "evaluation":
+    "description": |-
+      PLACEHOLDER
+  "id":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle_state":
+    "description": |-
+      PLACEHOLDER
+  "owner_user_name":
+    "description": |-
+      PLACEHOLDER
+  "parent_path":
+    "description": |-
+      PLACEHOLDER
+  "permissions":
+    "description": |-
+      PLACEHOLDER
+  "query_text":
+    "description": |-
+      PLACEHOLDER
+  "run_as":
+    "description": |-
+      PLACEHOLDER
+  "run_as_user_name":
+    "description": |-
+      PLACEHOLDER
+  "schedule":
+    "description": |-
+      PLACEHOLDER
+  "update_time":
+    "description": |-
+      PLACEHOLDER
+  "warehouse_id":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.AlertPermission:
+  "group_name":
+    "description": |-
+      PLACEHOLDER
+  "level":
+    "description": |-
+      PLACEHOLDER
+  "service_principal_name":
+    "description": |-
+      PLACEHOLDER
+  "user_name":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.AppPermission:
   "group_name":
     "description": |-

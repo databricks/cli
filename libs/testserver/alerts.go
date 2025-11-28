@@ -40,3 +40,21 @@ func (s *FakeWorkspace) AlertsUpsert(req Request, alertId string) Response {
 		Body:       alert,
 	}
 }
+
+func (s *FakeWorkspace) AlertsDelete(alertId string) Response {
+	defer s.LockUnlock()()
+
+	alert, ok := s.Alerts[alertId]
+	if !ok {
+		return Response{
+			StatusCode: 404,
+		}
+	}
+
+	alert.LifecycleState = sql.AlertLifecycleStateDeleted
+	s.Alerts[alertId] = alert
+
+	return Response{
+		StatusCode: 200,
+	}
+}
