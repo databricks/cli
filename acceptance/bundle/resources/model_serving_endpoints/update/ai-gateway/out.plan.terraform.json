@@ -1,0 +1,7 @@
+{
+  "plan": {
+    "resources.model_serving_endpoints.test_endpoint": {
+      "action": "update"
+    }
+  }
+}

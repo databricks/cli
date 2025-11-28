@@ -1,0 +1,72 @@
+{
+  "plan": {
+    "resources.model_serving_endpoints.test_endpoint": {
+      "action": "update",
+      "new_state": {
+        "value": {
+          "config": {
+            "served_entities": [
+              {
+                "external_model": {
+                  "name": "gpt-4o-mini",
+                  "openai_config": {
+                    "openai_api_key": "{{secrets/test-scope/openai-key}}"
+                  },
+                  "provider": "openai",
+                  "task": "llm/v1/chat"
+                },
+                "name": "prod"
+              }
+            ]
+          },
+          "name": "[ENDPOINT_ID]",
+          "tags": [
+            {
+              "key": "team",
+              "value": "my-team-two"
+            }
+          ]
+        }
+      },
+      "remote_state": {
+        "endpoint_details": {
+          "config": {
+            "served_entities": [
+              {
+                "external_model": {
+                  "name": "gpt-4o-mini",
+                  "openai_config": {
+                    "openai_api_key": "{{secrets/test-scope/openai-key}}"
+                  },
+                  "provider": "openai",
+                  "task": "llm/v1/chat"
+                },
+                "name": "prod"
+              }
+            ]
+          },
+          "creator": "[USERNAME]",
+          "id": "[UUID]",
+          "name": "[ENDPOINT_ID]",
+          "state": {
+            "config_update": "NOT_UPDATING"
+          },
+          "tags": [
+            {
+              "key": "team",
+              "value": "my-team-one"
+            }
+          ]
+        },
+        "endpoint_id": "[UUID]"
+      },
+      "changes": {
+        "local": {
+          "tags[0].value": {
+            "action": "update"
+          }
+        }
+      }
+    }
+  }
+}

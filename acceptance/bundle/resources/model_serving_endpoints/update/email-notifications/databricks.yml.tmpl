@@ -1,0 +1,21 @@
+bundle:
+  name: test-mse-update-email-notifications-$UNIQUE_NAME
+
+workspace:
+  root_path: ~/.bundle/$UNIQUE_NAME
+
+resources:
+  model_serving_endpoints:
+    test_endpoint:
+      name: test-endpoint-$UNIQUE_NAME
+      config:
+        served_entities:
+          - name: prod
+            external_model:
+              name: gpt-4o-mini
+              provider: openai
+              task: llm/v1/chat
+              openai_config:
+                openai_api_key: "{{secrets/test-scope/openai-key}}"
+      email_notifications:
+        on_update_success: ["user1@example.com"]

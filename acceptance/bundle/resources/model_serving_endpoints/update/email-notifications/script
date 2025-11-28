@@ -1,0 +1,25 @@
+#!/bin/bash
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+
+ENDPOINT_ID=$($CLI bundle summary -o json | jq -r '.resources.model_serving_endpoints.test_endpoint.id')
+echo "$ENDPOINT_ID:ENDPOINT_ID" >> ACC_REPLS
+trace $CLI serving-endpoints get "${ENDPOINT_ID}" | jq '.email_notifications'
+
+# Update email_notifications - change the email address
+trace update_file.py databricks.yml "user1@example.com" "user2@example.com"
+
+trace $CLI bundle plan -o json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle deploy
+
+title "There a bug in TF where it does not actually update the email notifications for a serving endpoint."
+trace print_requests.py //serving-endpoints > out.requests.$DATABRICKS_BUNDLE_ENGINE.json
+
+trace $CLI serving-endpoints get "${ENDPOINT_ID}" | jq '.email_notifications' > out.get_email_notifications.$DATABRICKS_BUNDLE_ENGINE.json

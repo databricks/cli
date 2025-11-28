@@ -1,0 +1,37 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] serving-endpoints get [ENDPOINT_ID]
+{
+  "on_update_success": [
+    "user1@example.com"
+  ]
+}
+
+>>> update_file.py databricks.yml user1@example.com user2@example.com
+
+>>> [CLI] bundle plan -o json
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== There a bug in TF where it does not actually update the email notifications for a serving endpoint.
+>>> print_requests.py //serving-endpoints
+
+>>> [CLI] serving-endpoints get [ENDPOINT_ID]
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.model_serving_endpoints.test_endpoint
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+
+Deleting files...
+Destroy complete!
