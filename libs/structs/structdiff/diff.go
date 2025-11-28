@@ -63,7 +63,9 @@ func keyFuncFor(node *structtrie.Node) KeyFunc {
 		return nil
 	}
 	if value := node.Value(); value != nil {
-		return value.(*keyFuncCaller)
+		if fn, ok := value.(KeyFunc); ok {
+			return fn
+		}
 	}
 	return nil
 }
@@ -77,11 +79,11 @@ func BuildSliceKeyTrie(sliceKeys map[string]KeyFunc) (*structtrie.Node, error) {
 
 	root := structtrie.New()
 	for pattern, fn := range sliceKeys {
-		caller, err := newKeyFuncCaller(fn)
+		_, err := newKeyFuncCaller(fn)
 		if err != nil {
 			return nil, err
 		}
-		if _, err := structtrie.InsertString(root, pattern, caller); err != nil {
+		if _, err := structtrie.InsertString(root, pattern, fn); err != nil {
 			return nil, err
 		}
 	}
