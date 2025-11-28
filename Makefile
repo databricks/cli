@@ -1,7 +1,7 @@
 default: checks fmt lint
 
 # Default packages to test (all)
-TEST_PACKAGES = . ./acceptance/internal ./libs/... ./internal/... ./cmd/... ./bundle/... ./experimental/...
+TEST_PACKAGES = ./acceptance/internal ./libs/... ./internal/... ./cmd/... ./bundle/... ./experimental/aitools/... ./experimental/ssh/... .
 
 # Default acceptance test filter (all)
 ACCEPTANCE_TEST_FILTER = TestAccept
