@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"fmt"
 	"slices"
+	"strings"
 	"sync"
 
 	"github.com/databricks/cli/libs/structs/structvar"
@@ -51,6 +52,27 @@ type Changes struct {
 type Trigger struct {
 	Action string `json:"action"`
 	Reason string `json:"reason,omitempty"`
+}
+
+// HasFieldChange checks if there are any changes for fields with the given prefix.
+func (c *Changes) HasFieldChange(fieldPath string) bool {
+	if c == nil {
+		return false
+	}
+
+	for field := range c.Local {
+		if strings.HasPrefix(field, fieldPath) {
+			return true
+		}
+	}
+
+	for field := range c.Remote {
+		if strings.HasPrefix(field, fieldPath) {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (p *Plan) GetActions() []Action {

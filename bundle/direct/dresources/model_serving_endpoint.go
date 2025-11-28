@@ -3,7 +3,6 @@ package dresources
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -277,51 +276,31 @@ func (r *ResourceModelServingEndpoint) updateTags(ctx context.Context, id string
 	return nil
 }
 
-func (r *ResourceModelServingEndpoint) hasFieldChange(changes *Changes, fieldPath string) bool {
-	if changes == nil {
-		return false
-	}
-
-	for field := range changes.Local {
-		if strings.HasPrefix(field, fieldPath) {
-			return true
-		}
-	}
-
-	for field := range changes.Remote {
-		if strings.HasPrefix(field, fieldPath) {
-			return true
-		}
-	}
-
-	return false
-}
-
 func (r *ResourceModelServingEndpoint) DoUpdate(ctx context.Context, id string, config *serving.CreateServingEndpoint, changes *Changes) (*RefreshOutput, error) {
 	var err error
 
-	if r.hasFieldChange(changes, "tags") {
+	if changes.HasFieldChange("tags") {
 		err = r.updateTags(ctx, id, config.Tags)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	if r.hasFieldChange(changes, "ai_gateway") {
+	if changes.HasFieldChange("ai_gateway") {
 		err = r.updateAiGateway(ctx, id, config.AiGateway)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	if r.hasFieldChange(changes, "config") {
+	if changes.HasFieldChange("config") {
 		err = r.updateConfig(ctx, id, config.Config)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	if r.hasFieldChange(changes, "email_notifications") {
+	if changes.HasFieldChange("email_notifications") {
 		err = r.updateNotifications(ctx, id, config.EmailNotifications)
 		if err != nil {
 			return nil, err
