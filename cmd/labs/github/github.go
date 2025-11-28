@@ -33,7 +33,20 @@ func WithUserContentOverride(ctx context.Context, override string) context.Conte
 
 var ErrNotFound = errors.New("not found")
 
+type pagedResponse struct {
+	Body     []byte
+	NextLink string
+}
+
 func getBytes(ctx context.Context, method, url string, body io.Reader) ([]byte, error) {
+	resp, err := getPagedBytes(ctx, method, url, body)
+	if err != nil {
+		return nil, err
+	}
+	return resp.Body, nil
+}
+
+func getPagedBytes(ctx context.Context, method, url string, body io.Reader) (*pagedResponse, error) {
 	ao, ok := ctx.Value(&apiOverride).(string)
 	if ok {
 		url = strings.Replace(url, gitHubAPI, ao, 1)
@@ -57,14 +70,47 @@ func getBytes(ctx context.Context, method, url string, body io.Reader) ([]byte, 
 	if res.StatusCode >= 400 {
 		return nil, fmt.Errorf("github request failed: %s", res.Status)
 	}
+	nextLink := parseNextLink(res.Header.Get("link"))
 	defer res.Body.Close()
-	return io.ReadAll(res.Body)
+	bodyBytes, err := io.ReadAll(res.Body)
+	if err != nil {
+		return nil, err
+	}
+	return &pagedResponse{
+		Body:     bodyBytes,
+		NextLink: nextLink,
+	}, nil
 }
 
-func httpGetAndUnmarshal(ctx context.Context, url string, response any) error {
-	raw, err := getBytes(ctx, "GET", url, nil)
-	if err != nil {
-		return err
+func parseNextLink(linkHeader string) string {
+	if linkHeader == "" {
+		return ""
 	}
-	return json.Unmarshal(raw, response)
+	// Pagination and link headers are documented here:
+	//   https://docs.github.com/en/rest/using-the-rest-api/using-pagination-in-the-rest-api?apiVersion=2022-11-28#using-link-headers
+	// An example link header to handle:
+	//   link: <https://api.github.com/repositories/1300192/issues?page=2>; rel="prev", <https://api.github.com/repositories/1300192/issues?page=4>; rel="next", <https://api.github.com/repositories/1300192/issues?page=515>; rel="last", <https://api.github.com/repositories/1300192/issues?page=1>; rel="first"
+	links := strings.Split(linkHeader, ",")
+	for _, link := range links {
+		parts := strings.Split(strings.TrimSpace(link), ";")
+		if len(parts) != 2 {
+			continue
+		}
+		if strings.Contains(parts[1], `rel="next"`) {
+			urlField := strings.TrimSpace(parts[0])
+			if strings.HasPrefix(urlField, "<") && strings.HasSuffix(urlField, ">") {
+				url := urlField[1 : len(urlField)-1]
+				return url
+			}
+		}
+	}
+	return ""
+}
+
+func httpGetAndUnmarshal(ctx context.Context, url string, response any) (string, error) {
+	raw, err := getPagedBytes(ctx, "GET", url, nil)
+	if err != nil {
+		return "", err
+	}
+	return raw.NextLink, json.Unmarshal(raw.Body, response)
 }
