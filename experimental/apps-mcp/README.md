@@ -7,11 +7,11 @@ A Model Context Protocol (MCP) server for working with Databricks through natura
 **Primary Goal:** Interact with Databricks workspaces, manage Databricks Asset Bundles (DABs), deploy Databricks Apps, and query data through natural language conversations.
 
 **How it works:**
-1. **Explore your workspace** - Discover workspace resources, get CLI command examples, and workflow recommendations
-2. **Query your data** - Browse catalogs, schemas, and tables; execute SQL queries via CLI commands
-3. **Manage bundles** - Initialize, validate, deploy, and run Databricks Asset Bundles
-4. **Deploy apps** - Deploy and manage Databricks Apps through CLI commands
-5. **Execute any CLI command** - Run the full Databricks CLI through the `invoke_databricks_cli` tool
+1. **Explore your data** - Query Databricks catalogs, schemas, and tables to understand your data
+2. **Generate the app** - Scaffold a full-stack TypeScript application with proper structure
+3. **Customize with AI** - Use workspace tools to read, write, and edit files naturally through conversation
+4. **Validate rigorously** - Run builds, type checks, and tests to ensure quality
+5. **Deploy confidently** - Push validated apps directly to Databricks Apps platform
 
 **Why use it:**
 - **Conversational interface**: Work with Databricks using natural language instead of memorizing CLI commands
@@ -24,7 +24,7 @@ Perfect for data engineers and developers who want to streamline their Databrick
 
 ## Getting Started
 
-### Quick Setup
+### Quick Setup (Recommended)
 
 1. **Set up Databricks credentials** (required for Databricks tools):
    ```bash
@@ -33,28 +33,22 @@ Perfect for data engineers and developers who want to streamline their Databrick
    export DATABRICKS_WAREHOUSE_ID="your-warehouse-id"
    ```
 
-2. **Configure your MCP client** (e.g., Claude Code):
-
-   Add to your MCP config file (e.g., `~/.claude.json`):
-   ```json
-   {
-     "mcpServers": {
-       "databricks": {
-         "command": "databricks",
-         "args": ["experimental", "apps-mcp"],
-         "env": {
-           "DATABRICKS_HOST": "https://your-workspace.databricks.com",
-           "DATABRICKS_TOKEN": "dapi...",
-           "DATABRICKS_WAREHOUSE_ID": "your-warehouse-id"
-         }
-       }
-     }
-   }
+2. **Install the MCP server automatically:**
+   ```bash
+   databricks experimental apps-mcp install
    ```
 
-3. **Start using Databricks with natural language:**
+   This interactive command will:
+   - Automatically detect Claude Code and Cursor installations
+   - Configure the MCP server with proper settings
+   - Set up the server at user scope (available in all projects)
+   - Show manual instructions for other agents if needed
 
-   Restart your MCP client and try:
+3. **Restart your MCP client** (Claude Code, Cursor, etc.) for changes to take effect.
+
+4. **Create your first Databricks app:**
+
+   Try this in your MCP client:
    ```
    Explore my Databricks workspace and show me what catalogs are available
    ```
@@ -68,6 +62,31 @@ Perfect for data engineers and developers who want to streamline their Databrick
    ```
 
    The AI will use the appropriate Databricks tools to help you complete these tasks.
+
+---
+
+### Manual Setup (Alternative)
+
+If you prefer to configure manually or the automatic installation doesn't work:
+
+**Add to your MCP config file** (e.g., `~/.claude.json` for global scope):
+```json
+{
+  "mcpServers": {
+    "databricks": {
+      "command": "databricks",
+      "args": ["experimental", "apps-mcp"],
+      "env": {
+        "DATABRICKS_HOST": "https://your-workspace.databricks.com",
+        "DATABRICKS_TOKEN": "dapi...",
+        "DATABRICKS_WAREHOUSE_ID": "your-warehouse-id"
+      }
+    }
+  }
+}
+```
+
+Then restart your MCP client for changes to take effect
 
 ---
 
@@ -218,30 +237,20 @@ The `invoke_databricks_cli` tool:
 ### CLI Commands
 
 ```bash
+# Install MCP server in coding agents (Claude Code, Cursor, etc.)
+databricks experimental apps-mcp install
+
 # Start MCP server (default mode)
-databricks experimental apps-mcp --warehouse-id <warehouse-id>
-
-# Enable workspace tools
-databricks experimental apps-mcp --warehouse-id <warehouse-id> --with-workspace-tools
+databricks experimental apps-mcp
 ```
-
-### CLI Flags
-
-| Flag | Description | Default |
-|------|-------------|---------|
-| `--warehouse-id` | Databricks SQL Warehouse ID (required for SQL queries) | - |
-| `--with-workspace-tools` | Enable workspace file operations | `false` |
-| `--help` | Show help | - |
 
 ### Environment Variables
 
 | Variable | Description | Example |
 |----------|-------------|---------|
 | `DATABRICKS_HOST` | Databricks workspace URL | `https://your-workspace.databricks.com` |
-| `DATABRICKS_TOKEN` | Databricks personal access token | `dapi...` |
 | `WAREHOUSE_ID` | Databricks SQL warehouse ID (preferred) | `abc123def456` |
 | `DATABRICKS_WAREHOUSE_ID` | Alternative name for warehouse ID | `abc123def456` |
-| `WITH_WORKSPACE_TOOLS` | Enable workspace tools | `true` or `false` |
 
 ### Authentication
 

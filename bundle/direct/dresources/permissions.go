@@ -85,6 +85,25 @@ func (*ResourcePermissions) PrepareState(s *PermissionsState) *PermissionsState 
 	return s
 }
 
+func accessControlRequestKey(x iam.AccessControlRequest) (string, string) {
+	if x.UserName != "" {
+		return "user_name", x.UserName
+	}
+	if x.ServicePrincipalName != "" {
+		return "service_principal_name", x.ServicePrincipalName
+	}
+	if x.GroupName != "" {
+		return "group_name", x.GroupName
+	}
+	return "", ""
+}
+
+func (*ResourcePermissions) KeyedSlices() map[string]any {
+	return map[string]any{
+		"permissions": accessControlRequestKey,
+	}
+}
+
 // parsePermissionsID extracts the object type and ID from a permissions ID string.
 // Handles both 3-part IDs ("/jobs/123") and 4-part IDs ("/sql/warehouses/uuid").
 func parsePermissionsID(id string) (extractedType, extractedID string, err error) {
@@ -147,7 +166,7 @@ func (r *ResourcePermissions) DoRead(ctx context.Context, id string) (*Permissio
 // DoCreate calls https://docs.databricks.com/api/workspace/jobs/setjobpermissions.
 func (r *ResourcePermissions) DoCreate(ctx context.Context, newState *PermissionsState) (string, *PermissionsState, error) {
 	// should we remember the default here?
-	_, err := r.DoUpdate(ctx, newState.ObjectID, newState)
+	_, err := r.DoUpdate(ctx, newState.ObjectID, newState, nil)
 	if err != nil {
 		return "", nil, err
 	}
@@ -156,7 +175,7 @@ func (r *ResourcePermissions) DoCreate(ctx context.Context, newState *Permission
 }
 
 // DoUpdate calls https://docs.databricks.com/api/workspace/jobs/setjobpermissions.
-func (r *ResourcePermissions) DoUpdate(ctx context.Context, _ string, newState *PermissionsState) (*PermissionsState, error) {
+func (r *ResourcePermissions) DoUpdate(ctx context.Context, _ string, newState *PermissionsState, _ *Changes) (*PermissionsState, error) {
 	extractedType, extractedID, err := parsePermissionsID(newState.ObjectID)
 	if err != nil {
 		return nil, err

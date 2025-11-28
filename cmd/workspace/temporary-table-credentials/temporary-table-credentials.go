@@ -37,10 +37,7 @@ func New() *cobra.Command {
   can only be granted by catalog admin explicitly and is not included in schema
   ownership or ALL PRIVILEGES on the schema for security reasons.`,
 		GroupID: "catalog",
-		Annotations: map[string]string{
-			"package": "catalog",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

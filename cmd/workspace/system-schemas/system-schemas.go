@@ -23,10 +23,7 @@ func New() *cobra.Command {
   schema may contain information about customer usage of Unity Catalog such as
   audit-logs, billing-logs, lineage information, etc.`,
 		GroupID: "catalog",
-		Annotations: map[string]string{
-			"package": "catalog",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

@@ -24,10 +24,7 @@ func New() *cobra.Command {
 		Long: `Installations are entities that allow consumers to interact with Databricks
   Marketplace listings.`,
 		GroupID: "marketplace",
-		Annotations: map[string]string{
-			"package": "marketplace",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

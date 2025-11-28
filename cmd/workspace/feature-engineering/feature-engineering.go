@@ -23,9 +23,6 @@ func New() *cobra.Command {
 		Short:   `[description].`,
 		Long:    `[description]`,
 		GroupID: "ml",
-		Annotations: map[string]string{
-			"package": "ml",
-		},
 
 		// This service is being previewed; hide from help output.
 		Hidden: true,

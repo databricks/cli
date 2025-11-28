@@ -20,10 +20,7 @@ func New() *cobra.Command {
 		Short:   `Fulfillments are entities that allow consumers to preview installations.`,
 		Long:    `Fulfillments are entities that allow consumers to preview installations.`,
 		GroupID: "marketplace",
-		Annotations: map[string]string{
-			"package": "marketplace",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

@@ -31,10 +31,7 @@ func New() *cobra.Command {
   using the same tools you use to manage other workspace objects such as
   folders, notebooks, and libraries.`,
 		GroupID: "ml",
-		Annotations: map[string]string{
-			"package": "ml",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

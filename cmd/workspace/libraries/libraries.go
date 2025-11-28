@@ -38,10 +38,7 @@ func New() *cobra.Command {
   you restart the cluster. Until you restart the cluster, the status of the
   uninstalled library appears as Uninstall pending restart.`,
 		GroupID: "compute",
-		Annotations: map[string]string{
-			"package": "compute",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

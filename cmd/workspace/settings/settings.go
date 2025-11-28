@@ -34,10 +34,7 @@ func New() *cobra.Command {
 		Short:   `Workspace Settings API allows users to manage settings at the workspace level.`,
 		Long:    `Workspace Settings API allows users to manage settings at the workspace level.`,
 		GroupID: "settings",
-		Annotations: map[string]string{
-			"package": "settings",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add subservices

@@ -31,10 +31,7 @@ func New() *cobra.Command {
   account. This ensures a consistent offboarding process and prevents
   unauthorized users from accessing sensitive data.`,
 		GroupID: "iam",
-		Annotations: map[string]string{
-			"package": "iam",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
