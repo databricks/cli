@@ -11,4 +11,3 @@ resources:
         - task_key: task_aa
           notebook_task:
             notebook_path: task_aa.py
-
