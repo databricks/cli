@@ -8,6 +8,7 @@ Updating deployment state...
 Deployment complete!
 
 >>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 === Delete one permission and deploy again
 
