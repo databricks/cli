@@ -477,6 +477,33 @@ func AddDefaultHandlers(server *Server) {
 	server.Handle("POST", "/api/2.0/secrets/acls/delete", func(req Request) any {
 		return req.Workspace.SecretsAclsDelete(req)
 	})
+
+	// Secret Scopes:
+	server.Handle("POST", "/api/2.0/secrets/scopes/create", func(req Request) any {
+		return req.Workspace.SecretScopeCreate(req)
+	})
+
+	server.Handle("GET", "/api/2.0/secrets/scopes/list", func(req Request) any {
+		return req.Workspace.SecretScopeList(req)
+	})
+
+	server.Handle("POST", "/api/2.0/secrets/scopes/delete", func(req Request) any {
+		return req.Workspace.SecretScopeDelete(req)
+	})
+
+	// Secrets:
+	server.Handle("POST", "/api/2.0/secrets/put", func(req Request) any {
+		return req.Workspace.SecretPut(req)
+	})
+
+	server.Handle("GET", "/api/2.0/secrets/get", func(req Request) any {
+		return req.Workspace.SecretGet(req)
+	})
+
+	server.Handle("POST", "/api/2.0/secrets/delete", func(req Request) any {
+		return req.Workspace.SecretDelete(req)
+	})
+
 	// Database Instances:
 
 	server.Handle("POST", "/api/2.0/database/instances", func(req Request) any {

@@ -25,6 +25,7 @@ var unsupportedResources = []string{
 	"registered_models",
 	"database_catalogs",
 	"synced_database_tables",
+	"secrets",
 }
 
 func TestApplyBundlePermissions(t *testing.T) {

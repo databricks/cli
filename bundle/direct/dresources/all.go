@@ -23,6 +23,8 @@ var SupportedResources = map[string]any{
 	"registered_models":       (*ResourceRegisteredModel)(nil),
 	"dashboards":              (*ResourceDashboard)(nil),
 	"model_serving_endpoints": (*ResourceModelServingEndpoint)(nil),
+	"secret_scopes":           (*ResourceSecretScope)(nil),
+	"secrets":                 (*ResourceSecret)(nil),
 
 	// Permissions
 	"jobs.permissions":                    (*ResourcePermissions)(nil),

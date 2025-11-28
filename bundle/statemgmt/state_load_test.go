@@ -39,6 +39,7 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 		"resources.dashboards.test_dashboard":                         {ID: "1"},
 		"resources.apps.test_app":                                     {ID: "app1"},
 		"resources.secret_scopes.test_secret_scope":                   {ID: "secret_scope1"},
+		"resources.secrets.test_secret":                               {ID: "test_secret_scope/test_secret"},
 		"resources.sql_warehouses.test_sql_warehouse":                 {ID: "1"},
 		"resources.database_instances.test_database_instance":         {ID: "1"},
 		"resources.database_catalogs.test_database_catalog":           {ID: "1"},
@@ -192,6 +193,12 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 			SecretScopes: map[string]*resources.SecretScope{
 				"test_secret_scope": {
 					Name: "test_secret_scope",
+				},
+			},
+			Secrets: map[string]*resources.Secret{
+				"test_secret": {
+					Scope: "test_secret_scope",
+					Key:   "test_secret",
 				},
 			},
 			SqlWarehouses: map[string]*resources.SqlWarehouse{
@@ -451,6 +458,16 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 					Name: "test_secret_scope_new",
 				},
 			},
+			Secrets: map[string]*resources.Secret{
+				"test_secret": {
+					Scope: "test_secret_scope",
+					Key:   "test_secret",
+				},
+				"test_secret_new": {
+					Scope: "test_secret_scope",
+					Key:   "test_secret_new",
+				},
+			},
 			SqlWarehouses: map[string]*resources.SqlWarehouse{
 				"test_sql_warehouse": {
 					CreateWarehouseRequest: sql.CreateWarehouseRequest{
@@ -540,6 +557,8 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 		"resources.apps.test_app_old":                              {ID: "test_app_old"},
 		"resources.secret_scopes.test_secret_scope":                {ID: "test_secret_scope"},
 		"resources.secret_scopes.test_secret_scope_old":            {ID: "test_secret_scope_old"},
+		"resources.secrets.test_secret":                            {ID: "test_secret_scope/test_secret"},
+		"resources.secrets.test_secret_old":                        {ID: "test_secret_scope/test_secret_old"},
 		"resources.sql_warehouses.test_sql_warehouse":              {ID: "1"},
 		"resources.sql_warehouses.test_sql_warehouse_old":          {ID: "2"},
 		"resources.database_instances.test_database_instance":      {ID: "1"},
