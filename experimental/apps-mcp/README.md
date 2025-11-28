@@ -35,19 +35,20 @@ Perfect for data engineers and developers who want to build Databricks apps with
 
    This interactive command will:
    - Automatically detect Claude Code and Cursor installations
-   - Configure the MCP server with proper settings
+   - Configure the MCP server with proper settings (including credentials)
    - Set up the server at user scope (available in all projects)
    - Show manual instructions for other agents if needed
 
-2. **Start your MCP client** (Claude Code, Cursor, etc.) for changes to take effect.
+2. **Restart your MCP client** (Claude Code, Cursor, etc.) for changes to take effect.
 
-    ```
-    claude /mcp
-    ```
+3. **Verify the connection:**
+   ```
+   claude /mcp
+   ```
 
-Must list your databricks MCP in connected state. If it does not show up or disconnected, go to Troubleshooting section.
+   The databricks MCP server should be listed in "connected" state. If it doesn't show up or appears disconnected, see the Troubleshooting section below.
 
-3. **Create your first Databricks app:**
+4. **Create your first Databricks app:**
 
    Try this in your MCP client:
 
@@ -99,7 +100,45 @@ Then restart your MCP client for changes to take effect
 
 ### Troubleshooting
 
-Ask claude to fix your setup. It will help most likely. If not, contact developers!
+If the MCP server doesn't connect or shows errors:
+
+1. **Check MCP server status:**
+   ```
+   claude /mcp
+   ```
+   Look for the databricks server - it should show "connected"
+
+2. **Verify credentials:** Make sure your environment variables are set correctly:
+   ```bash
+   echo $DATABRICKS_HOST
+   echo $DATABRICKS_WAREHOUSE_ID
+   # Don't echo token for security
+   ```
+
+3. **Check configuration file:** Verify the MCP server is properly configured in your `~/.claude.json`:
+   ```bash
+   cat ~/.claude.json | grep -A 10 databricks
+   ```
+
+4. **Restart your MCP client:** After making configuration changes, always restart your client
+
+5. **Check Databricks CLI:** Verify the CLI is installed and accessible:
+   ```bash
+   databricks --version
+   databricks experimental apps-mcp --help
+   ```
+
+6. **Test authentication:** Try listing catalogs to verify credentials work:
+   ```bash
+   databricks catalogs list
+   ```
+
+7. **Ask Claude for help:** Claude can often diagnose and fix MCP connection issues. Try:
+   ```
+   My databricks MCP server isn't connecting. Can you help troubleshoot?
+   ```
+
+If issues persist, please report them at https://github.com/databricks/cli/issues
 
 ---
 
