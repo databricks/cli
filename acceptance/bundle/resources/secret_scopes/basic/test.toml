@@ -1,0 +1,5 @@
+Cloud = true
+
+# Local is false because otherwise you end up with different order for ACLs in the plan.
+Local = false
+RecordRequests = true

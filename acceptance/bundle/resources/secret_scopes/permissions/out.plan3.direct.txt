@@ -1,0 +1,4 @@
+recreate secret_scopes.my_scope
+update secret_scopes.my_scope.permissions
+
+Plan: 1 to add, 1 to change, 1 to delete, 0 unchanged
