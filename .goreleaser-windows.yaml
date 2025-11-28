@@ -8,6 +8,7 @@ builds:
   - id: cli
     env:
       - CGO_ENABLED=0
+      - GODEBUG=embedfollowsymlinks=1
     mod_timestamp: '{{ .CommitTimestamp }}'
     flags:
       - -trimpath

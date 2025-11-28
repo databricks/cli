@@ -95,14 +95,14 @@ acc-showcover:
 	go tool cover -html=coverage-acceptance.txt
 
 build: tidy
-	go build
+	GODEBUG=embedfollowsymlinks=1 go build
 
 # builds the binary in a VM environment (such as Parallels Desktop) where your files are mirrored from the host os
 build-vm: tidy
-	go build -buildvcs=false
+	GODEBUG=embedfollowsymlinks=1 go build -buildvcs=false
 
 snapshot:
-	go build -o .databricks/databricks
+	GODEBUG=embedfollowsymlinks=1 go build -o .databricks/databricks
 
 # Produce release binaries and archives in the dist folder without uploading them anywhere.
 # Useful for "databricks ssh" development, as it needs to upload linux releases to the /Workspace.
