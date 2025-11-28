@@ -1,6 +1,7 @@
 package structtrie
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/libs/structs/structpath"
@@ -73,7 +74,7 @@ func NewFromMap(values map[string]any) (*Node, error) {
 // A nil path represents the root node.
 func Insert(root *Node, path *structpath.PathNode, value any) (*Node, error) {
 	if root == nil {
-		return nil, fmt.Errorf("root cannot be nil")
+		return nil, errors.New("root cannot be nil")
 	}
 
 	if path == nil {
@@ -258,7 +259,7 @@ var wildcardComponent = componentKey{kind: componentKindWildcard}
 
 func componentFromPattern(node *structpath.PathNode) (componentKey, error) {
 	if node == nil {
-		return componentKey{}, fmt.Errorf("nil path node")
+		return componentKey{}, errors.New("nil path node")
 	}
 
 	if node.DotStar() || node.BracketStar() {
@@ -266,11 +267,11 @@ func componentFromPattern(node *structpath.PathNode) (componentKey, error) {
 	}
 
 	if _, ok := node.Index(); ok {
-		return componentKey{}, fmt.Errorf("array indexes are not supported in prefix tree keys")
+		return componentKey{}, errors.New("array indexes are not supported in prefix tree keys")
 	}
 
 	if _, _, ok := node.KeyValue(); ok {
-		return componentKey{}, fmt.Errorf("key-value selectors are not supported in prefix tree keys")
+		return componentKey{}, errors.New("key-value selectors are not supported in prefix tree keys")
 	}
 
 	if key, ok := node.StringKey(); ok {

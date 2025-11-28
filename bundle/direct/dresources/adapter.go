@@ -107,8 +107,8 @@ type Adapter struct {
 
 	fieldTriggersLocal  map[string]deployplan.ActionType
 	fieldTriggersRemote map[string]deployplan.ActionType
-	keyedSlices         map[string]any
-	keyedSliceTrie      *structtrie.Node
+	// keyedSlices         map[string]any
+	keyedSliceTrie *structtrie.Node
 }
 
 func NewAdapter(typedNil any, client *databricks.WorkspaceClient) (*Adapter, error) {
