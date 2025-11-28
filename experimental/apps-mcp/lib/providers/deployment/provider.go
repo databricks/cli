@@ -282,16 +282,20 @@ func (p *Provider) getOrCreateApp(ctx context.Context, name, description string,
 }
 
 func formatDeployResult(result *DeployResult) string {
+	header := "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" +
+		"🚢 Databricks MCP: Deploying to production\n" +
+		"━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n"
+
 	if result.Success {
 		return fmt.Sprintf(
-			"Successfully deployed app '%s'\nURL: %s\n%s",
+			header+"✅ App '%s' deployed successfully!\n\n🌐 URL: %s\n\n%s",
 			result.AppName,
 			result.AppURL,
 			result.Message,
 		)
 	}
 	return fmt.Sprintf(
-		"Deployment failed for app '%s': %s",
+		header+"❌ Deployment failed for '%s'\n\n%s",
 		result.AppName,
 		result.Message,
 	)

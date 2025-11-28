@@ -19,8 +19,19 @@ extensive validation to ensure high-quality outputs.
 - **Speed**: Go from concept to deployed Databricks app in minutes, not hours or days
 - **Quality**: Extensive validation ensures your app builds, passes tests, and is production-ready
 - **Simplicity**: One natural language conversation handles the entire workflow
+- **Transparency**: Every MCP tool call displays clear, branded output so you always know when Databricks MCP is working
 
 Perfect for data engineers and developers who want to build Databricks apps without the manual overhead of project setup, configuration, testing infrastructure, and deployment pipelines.
+
+**Visual Feedback:**
+When using Databricks MCP, you'll see distinctive branded headers in your chat:
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🚀 Databricks MCP: App scaffolded successfully
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+This makes it immediately clear you're using the Databricks MCP server, not just plain Claude or Cursor. If you don't see these headers, the MCP server isn't connected (see Troubleshooting below).
 
 ---
 
@@ -99,6 +110,26 @@ Then restart your MCP client for changes to take effect
 ---
 
 ### Troubleshooting
+
+#### 🚨 Not seeing Databricks MCP headers in your chat?
+
+If you ask about Databricks or apps but **don't see the distinctive headers** like:
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🚀 Databricks MCP: App scaffolded successfully
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+**You're using plain Claude/Cursor, not the Databricks MCP server!** This means:
+- ❌ No access to Databricks data or tools
+- ❌ Generic AI responses instead of actual app generation
+- ❌ No scaffolding, validation, or deployment capabilities
+
+**Fix it:** Follow the troubleshooting steps below to connect the MCP server.
+
+---
+
+#### General Troubleshooting
 
 If the MCP server doesn't connect or shows errors:
 
@@ -214,8 +245,35 @@ with charts for total revenue by region and top products. Deploy it as "sales-in
 2. **Data Inspection** - AI describes the purchases table structure
 3. **App Generation** - AI scaffolds a TypeScript application
 4. **Customization** - AI adds visualization components and queries
-5. **Validation** - AI runs build, type check, and tests in container
+5. **Validation** - AI runs build, type check, and tests
 6. **Deployment** - AI deploys to Databricks Apps as "sales-insights"
+
+**What you'll see in your chat:**
+Every Databricks MCP operation shows a clear branded header:
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🚀 Databricks MCP: App scaffolded successfully
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ Created appkit application at /path/to/sales-insights
+Files copied: 42
+...
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🔍 Databricks MCP: Validating your app
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ All validation checks passed
+...
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🚢 Databricks MCP: Deploying to production
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+✅ App 'sales-insights' deployed successfully!
+
+🌐 URL: https://your-workspace.databricks.com/...
+```
 
 **Result:** A production-ready Databricks app running in minutes with proper testing.
 
