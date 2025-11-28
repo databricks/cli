@@ -465,12 +465,12 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 		require.Equal(t, remote, remoteStateFromWaitCreate)
 	}
 
-	remoteStateFromUpdate, err := adapter.DoUpdate(ctx, createdID, newState)
+	remoteStateFromUpdate, err := adapter.DoUpdate(ctx, createdID, newState, nil)
 	require.NoError(t, err, "DoUpdate failed")
 	if remoteStateFromUpdate != nil {
 		remappedStateFromUpdate, err := adapter.RemapState(remoteStateFromUpdate)
 		require.NoError(t, err)
-		changes, err := structdiff.GetStructDiff(remappedState, remappedStateFromUpdate)
+		changes, err := structdiff.GetStructDiff(remappedState, remappedStateFromUpdate, nil)
 		require.NoError(t, err)
 		// Filter out timestamp fields that are expected to differ in value
 		var relevantChanges []structdiff.Change
@@ -572,6 +572,33 @@ func TestFieldTriggers(t *testing.T) {
 		})
 		t.Run(resourceName+"_remote", func(t *testing.T) {
 			validateFields(t, adapter.StateType(), adapter.fieldTriggersRemote)
+		})
+	}
+}
+
+// TestFieldTriggersNoUpdateWhenNotImplemented validates that resources without
+// DoUpdate implementation don't produce update actions in their FieldTriggers.
+func TestFieldTriggersNoUpdateWhenNotImplemented(t *testing.T) {
+	for resourceName, resource := range SupportedResources {
+		adapter, err := NewAdapter(resource, nil)
+		require.NoError(t, err)
+
+		if adapter.HasDoUpdate() {
+			continue
+		}
+
+		t.Run(resourceName+"_local", func(t *testing.T) {
+			for field, action := range adapter.fieldTriggersLocal {
+				assert.NotEqual(t, deployplan.ActionTypeUpdate, action,
+					"resource %s does not implement DoUpdate but field %s triggers update action", resourceName, field)
+			}
+		})
+
+		t.Run(resourceName+"_remote", func(t *testing.T) {
+			for field, action := range adapter.fieldTriggersRemote {
+				assert.NotEqual(t, deployplan.ActionTypeUpdate, action,
+					"resource %s does not implement DoUpdate but field %s triggers update action", resourceName, field)
+			}
 		})
 	}
 }

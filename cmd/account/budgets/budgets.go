@@ -26,10 +26,7 @@ func New() *cobra.Command {
   account-wide spending, or apply filters to track the spending of specific
   teams, projects, or workspaces.`,
 		GroupID: "billing",
-		Annotations: map[string]string{
-			"package": "billing",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

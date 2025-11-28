@@ -1,0 +1,49 @@
+bundle:
+  name: minimal
+
+variables:
+  warehouse_id:
+    description: The ID of the warehouse to use
+    lookup:
+      warehouse: Serverless Starter Warehouse
+
+resources:
+  apps:
+    minimal:
+      name: ${bundle.target}-minimal
+      description: A minimal Databricks App powered by Databricks AppKit
+      source_code_path: ./
+
+      # Uncomment to enable on behalf of user API scopes. Available scopes: sql, dashboards.genie, files.files
+      # user_api_scopes:
+      #   - sql
+
+      # The resources which this app has access to.
+      resources:
+        - name: 'warehouse'
+          sql_warehouse:
+            id: ${var.warehouse_id}
+            permission: 'CAN_USE'
+
+targets:
+  dev:
+    mode: development
+    default: true
+    # Uncomment to set a specific workspace host for development
+    # workspace:
+    #  host: https://6177827686947384.4.gcp.databricks.com/
+
+    # Uncomment to set a specific warehouse
+    # variables:
+    #  warehouse_id: e1234567890
+
+  prod:
+    mode: production
+    # workspace:
+    #   host: https://...
+    # variables:
+    #   warehouse_id: ...
+    resources:
+      apps:
+        minimal:
+          name: minimal

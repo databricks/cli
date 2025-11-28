@@ -39,10 +39,7 @@ func New() *cobra.Command {
   file to establish a secure connection to receive the shared data. This sharing
   mode is called **open sharing**.`,
 		GroupID: "sharing",
-		Annotations: map[string]string{
-			"package": "sharing",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

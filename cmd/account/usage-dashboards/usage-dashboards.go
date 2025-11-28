@@ -23,10 +23,7 @@ func New() *cobra.Command {
   you to gain insights into your usage with pre-built dashboards: visualize
   breakdowns, analyze tag attributions, and identify cost drivers.`,
 		GroupID: "billing",
-		Annotations: map[string]string{
-			"package": "billing",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

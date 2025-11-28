@@ -24,9 +24,6 @@ func New() *cobra.Command {
 		Long: `Credentials manager interacts with with Identity Providers to to perform token
   exchanges using stored credentials and refresh tokens.`,
 		GroupID: "settings",
-		Annotations: map[string]string{
-			"package": "settings",
-		},
 
 		// This service is being previewed; hide from help output.
 		Hidden: true,

@@ -25,9 +25,6 @@ func New() *cobra.Command {
   visualizations from existing queries in the Databricks Workspace. Data
   structures can change over time.`,
 		GroupID: "sql",
-		Annotations: map[string]string{
-			"package": "sql",
-		},
 
 		// This service is being previewed; hide from help output.
 		Hidden: true,

@@ -72,7 +72,7 @@
       },
       "changes": {
         "local": {
-          "permissions": {
+          "permissions[group_name='data-team']": {
             "action": "update"
           }
         }

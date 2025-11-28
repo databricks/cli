@@ -28,10 +28,7 @@ func New() *cobra.Command {
   create cluster policies using a policy family. Cluster policies created using
   a policy family inherit the policy family's policy definition.`,
 		GroupID: "compute",
-		Annotations: map[string]string{
-			"package": "compute",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

@@ -31,10 +31,7 @@ func New() *cobra.Command {
 
   [configure serverless secure connectivity]: https://learn.microsoft.com/azure/databricks/security/network/serverless-network-security`,
 		GroupID: "settings",
-		Annotations: map[string]string{
-			"package": "settings",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

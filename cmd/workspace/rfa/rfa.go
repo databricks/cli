@@ -28,10 +28,7 @@ func New() *cobra.Command {
   request destinations. Fine-grained authorization ensures that only users with
   appropriate permissions can manage access request destinations.`,
 		GroupID: "catalog",
-		Annotations: map[string]string{
-			"package": "catalog",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

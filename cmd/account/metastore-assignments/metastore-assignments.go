@@ -23,10 +23,7 @@ func New() *cobra.Command {
 		Short:   `These APIs manage metastore assignments to a workspace.`,
 		Long:    `These APIs manage metastore assignments to a workspace.`,
 		GroupID: "catalog",
-		Annotations: map[string]string{
-			"package": "catalog",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
