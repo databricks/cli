@@ -153,7 +153,7 @@ func setupTestClient(ctx context.Context, t *testing.T, serverURL string) *TestP
 	wg := sync.WaitGroup{}
 	wg.Go(func() {
 		err := clientProxy.start(ctx, clientInput, clientOutput)
-		if err != nil && !errors.Is(err, context.Canceled) {
+		if err != nil && !errors.Is(err, context.Canceled) && !errors.Is(err, io.ErrClosedPipe) {
 			t.Errorf("proxy error: %v", err)
 		}
 	})
