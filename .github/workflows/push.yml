@@ -168,7 +168,8 @@ jobs:
         os:
           - macos-latest
           - ubuntu-latest
-          - windows-latest
+          # The Windows tests are broken; see https://github.com/databricks/cli/pull/4024.
+          # - windows-latest
 
     steps:
       - name: Checkout repository and submodules
