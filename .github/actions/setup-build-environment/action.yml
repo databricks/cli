@@ -1,0 +1,47 @@
+name: 'Setup Build Environment'
+description: 'Sets up the build environment with Go, Python, uv, and ruff'
+
+inputs:
+  cache-key:
+    description: 'Cache key identifier for Go cache'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Checkout repository and submodules
+      uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+    - name: Create cache identifier
+      run: echo "${{ inputs.cache-key }}" > cache.txt
+      shell: bash
+
+    - name: Setup Go
+      uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
+      with:
+        go-version-file: go.mod
+        cache-dependency-path: |
+          go.sum
+          cache.txt
+
+    - name: Setup Python
+      uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6.0.0
+      with:
+        python-version: '3.13'
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@85856786d1ce8acfbcc2f13a5f3fbd6b938f9f41 # v7.1.2
+      with:
+        version: "0.8.9"
+
+    - name: Install ruff (Python linter and formatter)
+      uses: astral-sh/ruff-action@57714a7c8a2e59f32539362ba31877a1957dded1 # v3.5.1
+      with:
+        version: "0.9.1"
+        args: "--version"
+
+    - name: Pull external libraries
+      run: |
+        go mod download
+        pip3 install wheel==0.45.1
+      shell: bash
