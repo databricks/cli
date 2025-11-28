@@ -14,6 +14,20 @@ import (
 	"github.com/spf13/cobra"
 )
 
+func validateAppNameLength(projectName string) error {
+	const maxAppNameLength = 30
+	const devTargetPrefix = "dev-"
+	totalLength := len(devTargetPrefix) + len(projectName)
+	if totalLength > maxAppNameLength {
+		maxAllowed := maxAppNameLength - len(devTargetPrefix)
+		return fmt.Errorf(
+			"app name too long: 'dev-%s' is %d chars (max: %d). App name must be ≤%d characters",
+			projectName, totalLength, maxAppNameLength, maxAllowed,
+		)
+	}
+	return nil
+}
+
 func readClaudeMd(ctx context.Context, configFile string) {
 	showFallback := func() {
 		cmdio.LogString(ctx, "\nConsult with CLAUDE.md provided in the bundle if present.")
@@ -109,6 +123,20 @@ See https://docs.databricks.com/en/dev-tools/bundles/templates.html for more inf
 			return errors.New("only one of --config-file or --config-json can be specified")
 		}
 
+		// Validate app name length if config file is provided
+		if configFile != "" {
+			if configBytes, err := os.ReadFile(configFile); err == nil {
+				var userConfigMap map[string]any
+				if err := json.Unmarshal(configBytes, &userConfigMap); err == nil {
+					if projectName, ok := userConfigMap["project_name"].(string); ok {
+						if err := validateAppNameLength(projectName); err != nil {
+							return err
+						}
+					}
+				}
+			}
+		}
+
 		var templatePathOrUrl string
 		if len(args) > 0 {
 			templatePathOrUrl = args[0]
@@ -155,6 +183,13 @@ See https://docs.databricks.com/en/dev-tools/bundles/templates.html for more inf
 			var userConfigMap map[string]any
 			if err := json.Unmarshal([]byte(configJSON), &userConfigMap); err != nil {
 				return fmt.Errorf("invalid JSON in --config-json: %w", err)
+			}
+
+			// Validate app name length
+			if projectName, ok := userConfigMap["project_name"].(string); ok {
+				if err := validateAppNameLength(projectName); err != nil {
+					return err
+				}
 			}
 
 			tmpFile, err := os.CreateTemp("", "mcp-template-config-*.json")

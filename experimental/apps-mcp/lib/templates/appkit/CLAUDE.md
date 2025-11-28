@@ -5,6 +5,35 @@ TypeScript full-stack template powered by **Databricks AppKit** with tRPC for ad
 - config/queries/: SQL query files for analytics
 - shared/: Shared TypeScript types
 
+## App Naming Constraints
+
+App names must not exceed 30 characters total (including target prefix).
+
+Formula: `target-prefix` + `-` + `app-name` ≤ 30 chars
+
+With default `dev-` target: max app name = **25 characters**
+
+Examples:
+- ✅ `dev-sales-dashboard` (19 chars)
+- ❌ `dev-retail-inventory-sales-reconciliation` (42 chars - TOO LONG)
+
+The init-template command validates this automatically.
+
+## TypeScript Import Rules
+
+This template uses strict TypeScript settings with `verbatimModuleSyntax: true`. **Always use `import type` for type-only imports**:
+
+```typescript
+// ✅ CORRECT - use import type for types
+import type { MyInterface, MyType } from '../../shared/types';
+
+// ❌ WRONG - will fail compilation
+import { MyInterface, MyType } from '../../shared/types';
+```
+
+**Common error this prevents:**
+- `TS1484: 'X' is a type and must be imported using a type-only import`
+
 ## Databricks App Kit SDK:
 
 This template uses `@databricks/app-kit` which provides:
@@ -67,6 +96,36 @@ function MyComponent() {
 
   return <div>{data?.map(row => row.column_name)}</div>;
 }
+```
+
+**useAnalyticsQuery API:**
+
+```typescript
+// Signature
+const { data, loading, error } = useAnalyticsQuery<T>(
+  queryName: string,      // SQL file name without .sql extension
+  params: Record<string, string | number>  // Query parameters
+);
+
+// Returns
+interface QueryResult<T> {
+  data: T | null;         // Query results (null while loading)
+  loading: boolean;       // True while query is executing
+  error: string | null;   // Error message if query failed
+}
+```
+
+**NOT supported options:**
+- `enabled` - Query always executes on mount. Use conditional rendering instead.
+- `refetch` - Not available. Re-mount component to re-query.
+
+**Conditional query pattern** (use instead of `enabled`):
+```typescript
+// ✅ CORRECT - conditional rendering
+{selectedId && <MyComponent id={selectedId} />}
+
+// ❌ WRONG - enabled option doesn't exist
+useAnalyticsQuery('query', { id }, { enabled: !!selectedId });
 ```
 
 ### SQL Query Files:
@@ -380,7 +439,7 @@ describe('Feature Name', () => {
 
 ### Smoke Test (Playwright)
 
-**CRITICAL**: Keep the smoke test simple - it verifies the app loads and displays data correctly.
+Keep the smoke test simple - it verifies the app loads and displays data correctly.
 
 The template includes a smoke test at `tests/smoke.spec.ts` that:
 
@@ -391,9 +450,11 @@ The template includes a smoke test at `tests/smoke.spec.ts` that:
 
 **When to update the smoke test:**
 
-- When you change what data is displayed on the initial page load
-- When you modify the main App component's loading behavior
-- When you add/remove data sources that should be validated on startup
+When you customize the app, update `tests/smoke.spec.ts` to match your UI:
+- Change heading selector to match your app title (replace 'Minimal Databricks App')
+- Update data assertions to match your query results (replace 'hello world' check)
+- Keep the test simple - just verify app loads and displays data
+- The default test expects specific template content; update these expectations after customization
 
 **Keep smoke tests simple:**
 
