@@ -100,7 +100,7 @@ jobs:
       - name: Setup build environment
         uses: ./.github/actions/setup-build-environment
         with:
-          cache-key: ${{matrix.target}}-${{ matrix.deployment }}
+          cache-key: test-${{ matrix.deployment }}
 
       - name: Run tests without coverage
         # We run tests without coverage on PR, merge_group, and schedule because we don't make use of coverage information
