@@ -85,6 +85,25 @@ func (*ResourcePermissions) PrepareState(s *PermissionsState) *PermissionsState 
 	return s
 }
 
+func accessControlRequestKey(x iam.AccessControlRequest) (string, string) {
+	if x.UserName != "" {
+		return "user_name", x.UserName
+	}
+	if x.ServicePrincipalName != "" {
+		return "service_principal_name", x.ServicePrincipalName
+	}
+	if x.GroupName != "" {
+		return "group_name", x.GroupName
+	}
+	return "", ""
+}
+
+func (*ResourcePermissions) KeyedSlices() map[string]any {
+	return map[string]any{
+		"permissions": accessControlRequestKey,
+	}
+}
+
 // parsePermissionsID extracts the object type and ID from a permissions ID string.
 // Handles both 3-part IDs ("/jobs/123") and 4-part IDs ("/sql/warehouses/uuid").
 func parsePermissionsID(id string) (extractedType, extractedID string, err error) {
