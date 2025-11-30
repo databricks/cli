@@ -18,23 +18,30 @@ import (
 var ExploreTool = Tool{
 	Definition: ToolDefinition{
 		Name:        "explore",
-		Description: "**REQUIRED DURING PLAN MODE** - Call this FIRST when planning ANY Databricks work. Use this to discover available workspaces, warehouses, and get workflow recommendations for your specific task. Even if you're just reading an assignment document, call this first. Especially important when task involves: creating Databricks projects/apps/pipelines/jobs, SQL pipelines or data transformation workflows, deploying code to multiple environments (dev/prod), or working with databricks.yml files. You DON'T need a workspace name - call this when starting ANY Databricks planning to understand workspace capabilities and recommended tooling before you create your plan.",
+		Description: "**REQUIRED DURING PLAN MODE** - Call this FIRST when planning ANY Databricks work. Discovers available workspaces, shows current workspace details (URL, warehouse, user), and provides comprehensive workflow recommendations. Even if you're just reading an assignment document, call this first. Especially important when task involves: creating Databricks projects/apps/pipelines/jobs, SQL pipelines or data transformation workflows, deploying code to multiple environments (dev/prod), or working with databricks.yml files.",
 		InputSchema: map[string]any{
 			"type":       "object",
 			"properties": map[string]any{},
 		},
 	},
 	Handler: func(ctx context.Context, params map[string]any) (string, error) {
-		warehouse, err := GetDefaultWarehouse(ctx)
+		// Get workspace context via listWorkspacesWithCurrent
+		workspaceContext, err := listWorkspacesWithCurrent(ctx)
 		if err != nil {
-			log.Debugf(ctx, "Failed to get default warehouse (non-fatal): %v", err)
-			warehouse = nil
+			log.Debugf(ctx, "Failed to get workspace context (non-fatal): %v", err)
+			workspaceContext = "Unable to load workspace information. You may need to authenticate first."
 		}
 
+		// Get warehouse ID for SQL query examples in guidance
 		currentProfile := getCurrentProfile(ctx)
-		profiles := getAvailableProfiles(ctx)
+		warehouse, err := GetDefaultWarehouse(ctx, currentProfile)
+		warehouseID := ""
+		if err == nil && warehouse != nil {
+			warehouseID = warehouse.ID
+		}
 
-		return generateExploreGuidance(warehouse, currentProfile, profiles), nil
+		// Generate guidance with warehouse context
+		return generateExploreGuidance(workspaceContext, warehouseID), nil
 	},
 }
 
@@ -47,13 +54,21 @@ type warehouse struct {
 // GetDefaultWarehouse finds a suitable SQL warehouse for queries.
 // It filters out warehouses the user cannot access and prefers RUNNING warehouses,
 // then falls back to STOPPED ones (which auto-start).
-func GetDefaultWarehouse(ctx context.Context) (*warehouse, error) {
+// The profile parameter specifies which workspace profile to use (defaults to DEFAULT if empty).
+func GetDefaultWarehouse(ctx context.Context, profile string) (*warehouse, error) {
 	executor, err := exec.NewCommandExecutor("")
 	if err != nil {
 		return nil, fmt.Errorf("failed to create command executor: %w", err)
 	}
 
-	output, err := executor.Exec(ctx, fmt.Sprintf(`"%s" api get "/api/2.0/sql/warehouses?skip_cannot_use=true" --output json`, GetCLIPath()))
+	// Build the CLI command with optional --profile flag
+	cmd := fmt.Sprintf(`"%s"`, GetCLIPath())
+	if profile != "" && profile != "DEFAULT" {
+		cmd += fmt.Sprintf(` --profile "%s"`, profile)
+	}
+	cmd += ` api get "/api/2.0/sql/warehouses?skip_cannot_use=true" --output json`
+
+	output, err := executor.Exec(ctx, cmd)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list warehouses: %w\nOutput: %s", err, output)
 	}
@@ -109,58 +124,9 @@ func getAvailableProfiles(ctx context.Context) profile.Profiles {
 }
 
 // generateExploreGuidance creates comprehensive guidance for data exploration.
-func generateExploreGuidance(warehouse *warehouse, currentProfile string, profiles profile.Profiles) string {
-	// Build workspace/profile information
-	workspaceInfo := "Current Workspace Profile: " + currentProfile
-	if len(profiles) > 0 {
-		// Find current profile details
-		var currentHost string
-		for _, p := range profiles {
-			if p.Name == currentProfile {
-				currentHost = p.Host
-				if cloud := p.Cloud(); cloud != "" {
-					currentHost = fmt.Sprintf("%s (%s)", currentHost, cloud)
-				}
-				break
-			}
-		}
-		if currentHost != "" {
-			workspaceInfo = fmt.Sprintf("Current Workspace Profile: %s - %s", currentProfile, currentHost)
-		}
-	}
-
-	// Build available profiles list
-	profilesInfo := ""
-	if len(profiles) > 1 {
-		profilesInfo = "\n\nAvailable Workspace Profiles:\n"
-		for _, p := range profiles {
-			marker := ""
-			if p.Name == currentProfile {
-				marker = " (current)"
-			}
-			cloud := p.Cloud()
-			if cloud != "" {
-				profilesInfo += fmt.Sprintf("  - %s: %s (%s)%s\n", p.Name, p.Host, cloud, marker)
-			} else {
-				profilesInfo += fmt.Sprintf("  - %s: %s%s\n", p.Name, p.Host, marker)
-			}
-		}
-		profilesInfo += "\n  To use a different workspace, add --profile <name> to any command:\n"
-		profilesInfo += "    invoke_databricks_cli '--profile prod catalogs list'\n"
-	}
-
-	// Handle warehouse information (may be nil if lookup failed)
-	warehouseName := ""
-	warehouseID := ""
-	if warehouse != nil {
-		warehouseName = warehouse.Name
-		warehouseID = warehouse.ID
-	}
-
+func generateExploreGuidance(workspaceContext, warehouseID string) string {
 	return prompts.MustExecuteTemplate("explore.tmpl", map[string]string{
-		"WorkspaceInfo": workspaceInfo,
-		"WarehouseName": warehouseName,
-		"WarehouseID":   warehouseID,
-		"ProfilesInfo":  profilesInfo,
+		"WorkspaceContext": workspaceContext,
+		"WarehouseID":      warehouseID,
 	})
 }
