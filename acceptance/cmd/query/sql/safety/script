@@ -1,0 +1,2 @@
+title "Blocks destructive SQL by default"
+trace musterr $CLI query sql --warehouse-id wh-123 --sql "DROP TABLE users"

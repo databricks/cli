@@ -1,0 +1,4 @@
+
+=== Env override allows destructive SQL
+>>> DATABRICKS_CLI_ALLOW_DESTRUCTIVE_SQL=true [CLI] query sql --warehouse-id wh-123 --sql UPDATE users SET active = false WHERE id = 42 --format table
+Statement stmt-allow-env returned no results
