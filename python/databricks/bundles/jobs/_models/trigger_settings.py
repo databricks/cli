@@ -42,6 +42,9 @@ class TriggerSettings:
     """
 
     table_update: VariableOrOptional[TableUpdateTriggerConfiguration] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    """
 
     @classmethod
     def from_dict(cls, value: "TriggerSettingsDict") -> "Self":
@@ -70,6 +73,9 @@ class TriggerSettingsDict(TypedDict, total=False):
     """
 
     table_update: VariableOrOptional[TableUpdateTriggerConfigurationParam]
+    """
+    :meta private: [EXPERIMENTAL]
+    """
 
 
 TriggerSettingsParam = TriggerSettingsDict | TriggerSettings

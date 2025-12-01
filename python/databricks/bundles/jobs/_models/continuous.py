@@ -25,6 +25,8 @@ class Continuous:
 
     task_retry_mode: VariableOrOptional[TaskRetryMode] = None
     """
+    :meta private: [EXPERIMENTAL]
+    
     Indicate whether the continuous job is applying task level retries or not. Defaults to NEVER.
     """
 
@@ -46,6 +48,8 @@ class ContinuousDict(TypedDict, total=False):
 
     task_retry_mode: VariableOrOptional[TaskRetryModeParam]
     """
+    :meta private: [EXPERIMENTAL]
+    
     Indicate whether the continuous job is applying task level retries or not. Defaults to NEVER.
     """
 

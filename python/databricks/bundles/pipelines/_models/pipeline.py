@@ -70,6 +70,8 @@ class Pipeline(Resource):
 
     budget_policy_id: VariableOrOptional[str] = None
     """
+    :meta private: [EXPERIMENTAL]
+    
     Budget policy of this pipeline.
     """
 
@@ -182,6 +184,9 @@ class Pipeline(Resource):
     """
 
     run_as: VariableOrOptional[RunAs] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    """
 
     schema: VariableOrOptional[str] = None
     """
@@ -235,6 +240,8 @@ class PipelineDict(TypedDict, total=False):
 
     budget_policy_id: VariableOrOptional[str]
     """
+    :meta private: [EXPERIMENTAL]
+    
     Budget policy of this pipeline.
     """
 
@@ -347,6 +354,9 @@ class PipelineDict(TypedDict, total=False):
     """
 
     run_as: VariableOrOptional[RunAsParam]
+    """
+    :meta private: [EXPERIMENTAL]
+    """
 
     schema: VariableOrOptional[str]
     """

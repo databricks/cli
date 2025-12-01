@@ -26,9 +26,7 @@ class SparkJarTask:
 
     jar_uri: VariableOrOptional[str] = None
     """
-    [DEPRECATED] Deprecated since 04/2016. For classic compute, provide a `jar` through the `libraries` field instead. For serverless compute, provide a `jar` though the `java_dependencies` field inside the `environments` list.
-    
-    See the examples of classic and serverless compute usage at the top of the page.
+    [DEPRECATED] Deprecated since 04/2016. Provide a `jar` through the `libraries` field instead. For an example, see :method:jobs/create.
     """
 
     parameters: VariableOrList[str] = field(default_factory=list)
@@ -63,9 +61,7 @@ class SparkJarTaskDict(TypedDict, total=False):
 
     jar_uri: VariableOrOptional[str]
     """
-    [DEPRECATED] Deprecated since 04/2016. For classic compute, provide a `jar` through the `libraries` field instead. For serverless compute, provide a `jar` though the `java_dependencies` field inside the `environments` list.
-    
-    See the examples of classic and serverless compute usage at the top of the page.
+    [DEPRECATED] Deprecated since 04/2016. Provide a `jar` through the `libraries` field instead. For an example, see :method:jobs/create.
     """
 
     parameters: VariableOrList[str]
