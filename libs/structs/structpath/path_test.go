@@ -728,6 +728,26 @@ func TestHasPrefix(t *testing.T) {
 			prefix:   "config",
 			expected: false,
 		},
+
+		// Regex patterns are NOT supported - treated as literals
+		{
+			name:     "regex pattern not respected - dot wildcard",
+			s:        "abc",
+			prefix:   "a.c",
+			expected: false,
+		},
+		{
+			name:     "regex pattern not respected - star quantifier",
+			s:        "aaa",
+			prefix:   "a*",
+			expected: false,
+		},
+		{
+			name:     "regex pattern not respected - bracket class",
+			s:        "a1b",
+			prefix:   "a[0-9]b",
+			expected: false,
+		},
 	}
 
 	for _, tt := range tests {
