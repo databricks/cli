@@ -65,7 +65,7 @@ func (c *DashboardConfig) UnmarshalJSON(b []byte) error {
 	embeddedDashboard := c.Dashboard
 	embeddedDashboard.SerializedDashboard = ""
 	forceSendFields := []string{}
-	for _, field := range forceSendFields {
+	for _, field := range embeddedDashboard.ForceSendFields {
 		if field != "SerializedDashboard" {
 			forceSendFields = append(forceSendFields, field)
 		}

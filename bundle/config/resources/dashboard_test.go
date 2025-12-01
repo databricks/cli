@@ -29,11 +29,12 @@ func TestDashboardConfigMarshalJSON(t *testing.T) {
 }
 
 func TestDashboardConfigUnmarshalJSON(t *testing.T) {
-	b := []byte(`{"display_name":"test","serialized_dashboard":{"a": "b"},"embed_credentials":true}`)
+	b := []byte(`{"display_name":"test","warehouse_id":"","serialized_dashboard":{"a": "b"},"embed_credentials":true}`)
 
 	expectedConfig := DashboardConfig{
 		Dashboard: dashboards.Dashboard{
-			DisplayName: "test",
+			DisplayName:     "test",
+			ForceSendFields: []string{},
 		},
 		SerializedDashboard: map[string]any{"a": "b"},
 		EmbedCredentials:    true,
