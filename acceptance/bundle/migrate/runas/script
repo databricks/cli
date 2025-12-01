@@ -24,4 +24,3 @@ trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle deployment migrate -t production
 trace print_state.py -t production > out.new_state.json
 trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle plan -t production
 trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle plan -t production -o json > out.plan.json
-#trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle deployment deploy -t production
