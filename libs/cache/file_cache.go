@@ -278,6 +278,15 @@ func (fc *FileCache[T]) writeToCache(ctx context.Context, cachePath string, data
 		return
 	}
 
+	if err := tempFile.Close(); err != nil {
+		log.Debugf(ctx, "[Local Cache] failed to close temp cache file: %v", err)
+		return
+	}
+
+	// On Windows, os.Rename fails if target exists, so remove it first
+	// This is a best-effort operation - if it fails because file doesn't exist, that's fine
+	_ = os.Remove(cachePath)
+
 	// Atomically rename temp file to actual cache file
 	if err := os.Rename(tempPath, cachePath); err != nil {
 		log.Debugf(ctx, "[Local Cache] failed to rename temp cache file: %v", err)
