@@ -39,13 +39,13 @@ func loadWarehouseInBackground(ctx context.Context) {
 		return
 	}
 
-	sess.Set("warehouse_id", warehouse.Id)
+	sess.Set("warehouse_endpoint", warehouse)
 }
 
-func GetWarehouseID(ctx context.Context) (string, error) {
+func GetWarehouseEndpoint(ctx context.Context) (*sql.EndpointInfo, error) {
 	sess, err := session.GetSession(ctx)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
 	// Wait for background loading if in progress
@@ -57,22 +57,29 @@ func GetWarehouseID(ctx context.Context) (string, error) {
 		// Check if there was an error during background loading
 		if errRaw, ok := sess.Get(warehouseErrorKey); ok {
 			sess.Delete(warehouseErrorKey)
-			return "", errRaw.(error)
+			return nil, errRaw.(error)
 		}
 	}
 
-	warehouseID, ok := sess.Get("warehouse_id")
+	warehouse, ok := sess.Get("warehouse_endpoint")
 	if !ok {
 		// Fallback: synchronously load if background loading didn't happen
-		warehouse, err := getDefaultWarehouse(ctx)
+		warehouse, err = getDefaultWarehouse(ctx)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
-		warehouseID = warehouse.Id
-		sess.Set("warehouse_id", warehouseID.(string))
+		sess.Set("warehouse_endpoint", warehouse)
 	}
 
-	return warehouseID.(string), nil
+	return warehouse.(*sql.EndpointInfo), nil
+}
+
+func GetWarehouseID(ctx context.Context) (string, error) {
+	warehouse, err := GetWarehouseEndpoint(ctx)
+	if err != nil {
+		return "", err
+	}
+	return warehouse.Id, nil
 }
 
 func getDefaultWarehouse(ctx context.Context) (*sql.EndpointInfo, error) {
@@ -87,7 +94,9 @@ func getDefaultWarehouse(ctx context.Context) (*sql.EndpointInfo, error) {
 			return nil, fmt.Errorf("get warehouse: %w", err)
 		}
 		return &sql.EndpointInfo{
-			Id: warehouse.Id,
+			Id:    warehouse.Id,
+			Name:  warehouse.Name,
+			State: warehouse.State,
 		}, nil
 	}
 

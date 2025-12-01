@@ -29,6 +29,16 @@ func (*ResourceJob) RemapState(jobs *jobs.Job) *jobs.JobSettings {
 	return jobs.Settings
 }
 
+func getTaskKey(x jobs.Task) (string, string) {
+	return "task_key", x.TaskKey
+}
+
+func (*ResourceJob) KeyedSlices() map[string]any {
+	return map[string]any{
+		"tasks": getTaskKey,
+	}
+}
+
 func (r *ResourceJob) DoRead(ctx context.Context, id string) (*jobs.Job, error) {
 	idInt, err := parseJobID(id)
 	if err != nil {

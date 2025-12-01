@@ -1,0 +1,33 @@
+{{- /*
+     * Guidance for Databricks Apps development.
+     *
+     * This guidance provides instructions for initializing and working with
+     * Databricks Apps using bundle templates.
+     *
+     */ -}}
+
+DATABRICKS APPS DEVELOPMENT
+============================
+
+# Initialization
+
+⚠️ ALWAYS start by scaffolding a new Databricks app using command:
+
+invoke_databricks_cli 'experimental apps-mcp tools init-template https://github.com/databricks/cli --template-dir experimental/apps-mcp/templates/appkit --branch main --config-json '{"project_name":"my-app-name","app_description":"my-app-description","sql_warehouse_id":"{{if .WarehouseID}}{{.WarehouseID}}{{end}}"}''
+
+# Validation
+
+⚠️ Always validate your app before deploying to production:
+
+invoke_databricks_cli 'experimental apps-mcp tools validate ./your-app-location'
+
+# Deployment
+
+⚠️ Always use the sequence of commands:
+
+invoke_databricks_cli 'bundle deploy'
+invoke_databricks_cli 'bundle run app'
+
+# View and manage your app:
+
+invoke_databricks_cli 'bundle summary'
