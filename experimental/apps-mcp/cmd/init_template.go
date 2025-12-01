@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/experimental/apps-mcp/lib/common"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/template"
 	"github.com/spf13/cobra"
@@ -237,6 +238,27 @@ See https://docs.databricks.com/en/dev-tools/bundles/templates.html for more inf
 			return err
 		}
 		tmpl.Writer.LogTelemetry(ctx)
+
+		// Show branded success message
+		templateName := "bundle"
+		if templatePathOrUrl != "" {
+			templateName = filepath.Base(templatePathOrUrl)
+		}
+		outputPath := outputDir
+		if outputPath == "" {
+			outputPath = "."
+		}
+		// Count files if we can
+		fileCount := 0
+		if absPath, err := filepath.Abs(outputPath); err == nil {
+			_ = filepath.Walk(absPath, func(path string, info os.FileInfo, err error) error {
+				if err == nil && !info.IsDir() {
+					fileCount++
+				}
+				return nil
+			})
+		}
+		cmdio.LogString(ctx, common.FormatScaffoldSuccess(templateName, outputPath, fileCount))
 
 		// Try to read and display CLAUDE.md if present
 		readClaudeMd(ctx, configFile)
