@@ -4,9 +4,9 @@ import (
 	"cmp"
 	"fmt"
 	"slices"
-	"strings"
 	"sync"
 
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structvar"
 )
 
@@ -55,19 +55,23 @@ type Trigger struct {
 }
 
 // HasFieldChange checks if there are any changes for fields with the given prefix.
+// This function is path-aware and correctly handles path component boundaries.
+// For example:
+//   - HasFieldChange("a") matches "a" and "a.b" but not "aa"
+//   - HasFieldChange("config") matches "config" and "config.name" but not "configuration"
 func (c *Changes) HasFieldChange(fieldPath string) bool {
 	if c == nil {
 		return false
 	}
 
 	for field := range c.Local {
-		if strings.HasPrefix(field, fieldPath) {
+		if structpath.HasPrefix(field, fieldPath) {
 			return true
 		}
 	}
 
 	for field := range c.Remote {
-		if strings.HasPrefix(field, fieldPath) {
+		if structpath.HasPrefix(field, fieldPath) {
 			return true
 		}
 	}

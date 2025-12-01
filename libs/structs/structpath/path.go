@@ -623,3 +623,37 @@ func (p *PathNode) Prefix(n int) *PathNode {
 
 	return current
 }
+
+// HasPrefix tests whether the path string s begins with prefix.
+// Unlike strings.HasPrefix, this function is path-aware and correctly handles
+// path component boundaries. For example:
+//   - HasPrefix("a.b", "a") returns true (matches field "a")
+//   - HasPrefix("aa", "a") returns false (field "aa" is different from "a")
+//   - HasPrefix("a[0]", "a") returns true (matches field "a")
+//   - HasPrefix("config.name", "config") returns true
+func HasPrefix(s, prefix string) bool {
+	// Handle edge cases
+	if prefix == "" {
+		return true
+	}
+	if s == "" {
+		return false
+	}
+	if s == prefix {
+		return true
+	}
+
+	// Check if s starts with prefix using string comparison
+	if !strings.HasPrefix(s, prefix) {
+		return false
+	}
+
+	// Ensure the match is at a path boundary
+	// The character after the prefix must be a path separator: '.', '[', or end of string
+	if len(s) > len(prefix) {
+		nextChar := s[len(prefix)]
+		return nextChar == '.' || nextChar == '['
+	}
+
+	return true
+}

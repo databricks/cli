@@ -655,3 +655,173 @@ func TestPureReferenceToPath(t *testing.T) {
 		})
 	}
 }
+
+func TestHasPrefix(t *testing.T) {
+	tests := []struct {
+		name     string
+		s        string
+		prefix   string
+		expected bool
+	}{
+		// Edge cases
+		{
+			name:     "empty prefix",
+			s:        "a.b.c",
+			prefix:   "",
+			expected: true,
+		},
+		{
+			name:     "empty string",
+			s:        "",
+			prefix:   "a",
+			expected: false,
+		},
+		{
+			name:     "exact match",
+			s:        "config",
+			prefix:   "config",
+			expected: true,
+		},
+
+		// Correct matches - path boundary aware
+		{
+			name:     "simple field match",
+			s:        "a.b",
+			prefix:   "a",
+			expected: true,
+		},
+		{
+			name:     "nested field match",
+			s:        "config.database.name",
+			prefix:   "config",
+			expected: true,
+		},
+		{
+			name:     "nested field match deeper",
+			s:        "config.database.name",
+			prefix:   "config.database",
+			expected: true,
+		},
+		{
+			name:     "field with array index",
+			s:        "a[0]",
+			prefix:   "a",
+			expected: true,
+		},
+		{
+			name:     "field with nested array",
+			s:        "items[3].name",
+			prefix:   "items",
+			expected: true,
+		},
+		{
+			name:     "field with bracket notation",
+			s:        "config['database.name']",
+			prefix:   "config",
+			expected: true,
+		},
+
+		// Incorrect matches - should NOT match
+		{
+			name:     "different field with same prefix - main issue",
+			s:        "aa",
+			prefix:   "a",
+			expected: false,
+		},
+		{
+			name:     "different field with same prefix - longer example",
+			s:        "ai_gateway",
+			prefix:   "ai",
+			expected: false,
+		},
+		{
+			name:     "different nested field",
+			s:        "configuration.name",
+			prefix:   "config",
+			expected: false,
+		},
+		{
+			name:     "substring match without boundary",
+			s:        "email_notifications",
+			prefix:   "email",
+			expected: false,
+		},
+
+		// Model serving endpoint use cases
+		{
+			name:     "tags field",
+			s:        "tags",
+			prefix:   "tags",
+			expected: true,
+		},
+		{
+			name:     "nested tags field",
+			s:        "tags.environment",
+			prefix:   "tags",
+			expected: true,
+		},
+		{
+			name:     "ai_gateway field",
+			s:        "ai_gateway",
+			prefix:   "ai_gateway",
+			expected: true,
+		},
+		{
+			name:     "ai_gateway nested",
+			s:        "ai_gateway.enabled",
+			prefix:   "ai_gateway",
+			expected: true,
+		},
+		{
+			name:     "config field",
+			s:        "config",
+			prefix:   "config",
+			expected: true,
+		},
+		{
+			name:     "config nested",
+			s:        "config.auto_capture_config.catalog_name",
+			prefix:   "config",
+			expected: true,
+		},
+		{
+			name:     "config nested deeper",
+			s:        "config.auto_capture_config.catalog_name",
+			prefix:   "config.auto_capture_config",
+			expected: true,
+		},
+		{
+			name:     "email_notifications",
+			s:        "email_notifications",
+			prefix:   "email_notifications",
+			expected: true,
+		},
+		{
+			name:     "email_notifications nested",
+			s:        "email_notifications.on_failure",
+			prefix:   "email_notifications",
+			expected: true,
+		},
+
+		// Array and bracket notation
+		{
+			name:     "array with prefix match",
+			s:        "items[0].name",
+			prefix:   "items[0]",
+			expected: true,
+		},
+		{
+			name:     "bracket notation full",
+			s:        "config['spark.conf'].value",
+			prefix:   "config['spark.conf']",
+			expected: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := HasPrefix(tt.s, tt.prefix)
+			assert.Equal(t, tt.expected, result, "HasPrefix(%q, %q)", tt.s, tt.prefix)
+		})
+	}
+}
