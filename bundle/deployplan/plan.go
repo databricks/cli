@@ -54,12 +54,14 @@ type Trigger struct {
 	Reason string `json:"reason,omitempty"`
 }
 
-// HasFieldChange checks if there are any changes for fields with the given prefix.
+// HasChange checks if there are any changes for fields with the given prefix.
 // This function is path-aware and correctly handles path component boundaries.
 // For example:
-//   - HasFieldChange("a") matches "a" and "a.b" but not "aa"
-//   - HasFieldChange("config") matches "config" and "config.name" but not "configuration"
-func (c *Changes) HasFieldChange(fieldPath string) bool {
+//   - HasChange("a") matches "a" and "a.b" but not "aa"
+//   - HasChange("config") matches "config" and "config.name" but not "configuration"
+//
+// Note: This function does not support wildcard patterns.
+func (c *Changes) HasChange(fieldPath string) bool {
 	if c == nil {
 		return false
 	}

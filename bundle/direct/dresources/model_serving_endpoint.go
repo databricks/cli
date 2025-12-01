@@ -279,28 +279,31 @@ func (r *ResourceModelServingEndpoint) updateTags(ctx context.Context, id string
 func (r *ResourceModelServingEndpoint) DoUpdate(ctx context.Context, id string, config *serving.CreateServingEndpoint, changes *Changes) (*RefreshOutput, error) {
 	var err error
 
-	if changes.HasFieldChange("tags") {
+	// Terraform makes these API calls sequentially. We do the same here.
+	// It's an unknown as of 1st Dec 2025 if these APIs are safe to make in parallel. (we did not check)
+	// https://github.com/databricks/terraform-provider-databricks/blob/c61a32300445f84efb2bb6827dee35e6e523f4ff/serving/resource_model_serving.go#L373
+	if changes.HasChange("tags") {
 		err = r.updateTags(ctx, id, config.Tags)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	if changes.HasFieldChange("ai_gateway") {
+	if changes.HasChange("ai_gateway") {
 		err = r.updateAiGateway(ctx, id, config.AiGateway)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	if changes.HasFieldChange("config") {
+	if changes.HasChange("config") {
 		err = r.updateConfig(ctx, id, config.Config)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	if changes.HasFieldChange("email_notifications") {
+	if changes.HasChange("email_notifications") {
 		err = r.updateNotifications(ctx, id, config.EmailNotifications)
 		if err != nil {
 			return nil, err
