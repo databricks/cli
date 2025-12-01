@@ -24,10 +24,7 @@ func New() *cobra.Command {
 		Short:   `Database Instances provide access to a database via REST API or direct SQL.`,
 		Long:    `Database Instances provide access to a database via REST API or direct SQL.`,
 		GroupID: "database",
-		Annotations: map[string]string{
-			"package": "database",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

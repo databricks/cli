@@ -110,7 +110,7 @@ func TestResolveRef(t *testing.T) {
 			},
 			reference: "${var.test}",
 			value:     "value",
-			errorMsg:  "unexpected character",
+			errorMsg:  "invalid path",
 		},
 	}
 

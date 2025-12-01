@@ -27,10 +27,7 @@ func New() *cobra.Command {
   under their original name, qualified by their original schema, or provide
   alternate exposed names.`,
 		GroupID: "sharing",
-		Annotations: map[string]string{
-			"package": "sharing",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

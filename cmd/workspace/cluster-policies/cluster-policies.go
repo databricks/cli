@@ -45,10 +45,7 @@ func New() *cobra.Command {
   Only admin users can create, edit, and delete policies. Admin users also have
   access to all policies.`,
 		GroupID: "compute",
-		Annotations: map[string]string{
-			"package": "compute",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

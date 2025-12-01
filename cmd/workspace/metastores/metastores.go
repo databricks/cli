@@ -35,10 +35,7 @@ func New() *cobra.Command {
   includes a legacy Hive metastore, the data in that metastore is available in a
   catalog named hive_metastore.`,
 		GroupID: "catalog",
-		Annotations: map[string]string{
-			"package": "catalog",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

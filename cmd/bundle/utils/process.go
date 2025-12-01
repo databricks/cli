@@ -245,6 +245,14 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, 
 		if logdiag.HasError(ctx) {
 			return b, stateDesc, root.ErrAlreadyPrinted
 		}
+
+		if b != nil && stateDesc != nil && stateDesc.Engine.IsDirect() && stateDesc.HasRemoteTerraformState() {
+			statemgmt.BackupRemoteTerraformState(ctx, b)
+
+			if logdiag.HasError(ctx) {
+				return b, stateDesc, root.ErrAlreadyPrinted
+			}
+		}
 	}
 
 	return b, stateDesc, nil

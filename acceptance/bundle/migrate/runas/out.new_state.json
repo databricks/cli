@@ -1,0 +1,47 @@
+{
+ "lineage": "[UUID]",
+ "serial": 4,
+ "state": {
+  "resources.pipelines.foo": {
+   "__id__": "[UUID]",
+   "state": {
+    "catalog": "main",
+    "channel": "CURRENT",
+    "deployment": {
+     "kind": "BUNDLE",
+     "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dabs_revenue-[UNIQUE_NAME]/production/state/metadata.json"
+    },
+    "edition": "ADVANCED",
+    "libraries": [
+     {
+      "notebook": {
+       "path": "/Workspace/Users/[USERNAME]/.bundle/dabs_revenue-[UNIQUE_NAME]/production/files/sql"
+      }
+     }
+    ],
+    "name": "DABs Revenue Pipeline",
+    "run_as": {
+     "service_principal_name": "[UUID]"
+    },
+    "serverless": true,
+    "target": "team_eng_deco"
+   }
+  },
+  "resources.pipelines.foo.permissions": {
+   "__id__": "/pipelines/[UUID]",
+   "state": {
+    "object_id": "/pipelines/[UUID]",
+    "permissions": [
+     {
+      "group_name": "users",
+      "permission_level": "CAN_VIEW"
+     },
+     {
+      "permission_level": "IS_OWNER",
+      "user_name": "[USERNAME]"
+     }
+    ]
+   }
+  }
+ }
+}

@@ -45,10 +45,7 @@ func New() *cobra.Command {
   https://www.databricks.com/blog/announcing-oidc-token-federation-enhanced-delta-sharing-security
   and https://docs.databricks.com/en/delta-sharing/create-recipient-oidc-fed`,
 		GroupID: "sharing",
-		Annotations: map[string]string{
-			"package": "sharing",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

@@ -23,10 +23,7 @@ func New() *cobra.Command {
 		Short:   `New version of SQL Alerts.`,
 		Long:    `New version of SQL Alerts`,
 		GroupID: "sql",
-		Annotations: map[string]string{
-			"package": "sql",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

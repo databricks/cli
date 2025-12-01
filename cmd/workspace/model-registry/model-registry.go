@@ -30,10 +30,7 @@ func New() *cobra.Command {
   The Workspace Model Registry is a centralized model repository and a UI and
   set of APIs that enable you to manage the full lifecycle of MLflow Models.`,
 		GroupID: "ml",
-		Annotations: map[string]string{
-			"package": "ml",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

@@ -29,10 +29,7 @@ func New() *cobra.Command {
   You cannot create or delete a workspace's network option, only update it to
   associate the workspace with a different policy`,
 		GroupID: "settings",
-		Annotations: map[string]string{
-			"package": "settings",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

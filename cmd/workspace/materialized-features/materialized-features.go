@@ -24,9 +24,6 @@ func New() *cobra.Command {
 		Long: `Materialized Features are columns in tables and views that can be directly
   used as features to train and serve ML models.`,
 		GroupID: "ml",
-		Annotations: map[string]string{
-			"package": "ml",
-		},
 
 		// This service is being previewed; hide from help output.
 		Hidden: true,

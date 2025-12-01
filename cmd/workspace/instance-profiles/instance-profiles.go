@@ -28,10 +28,7 @@ func New() *cobra.Command {
 
   [Secure access to S3 buckets]: https://docs.databricks.com/administration-guide/cloud-configurations/aws/instance-profiles.html`,
 		GroupID: "compute",
-		Annotations: map[string]string{
-			"package": "compute",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

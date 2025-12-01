@@ -24,10 +24,7 @@ func New() *cobra.Command {
 		Long: `Manage the data quality of Unity Catalog objects (currently support schema
   and table)`,
 		GroupID: "dataquality",
-		Annotations: map[string]string{
-			"package": "dataquality",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

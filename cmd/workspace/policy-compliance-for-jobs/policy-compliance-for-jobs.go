@@ -35,10 +35,7 @@ func New() *cobra.Command {
   status of a job. The enforce compliance API allows you to update a job so that
   it becomes compliant with all of its policies.`,
 		GroupID: "jobs",
-		Annotations: map[string]string{
-			"package": "jobs",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

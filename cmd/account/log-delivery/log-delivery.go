@@ -86,10 +86,7 @@ func New() *cobra.Command {
   [Usage page]: https://docs.databricks.com/administration-guide/account-settings/usage.html
   [create a new AWS S3 bucket]: https://docs.databricks.com/administration-guide/account-api/aws-storage.html`,
 		GroupID: "billing",
-		Annotations: map[string]string{
-			"package": "billing",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

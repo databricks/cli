@@ -27,10 +27,7 @@ func New() *cobra.Command {
   workspace. 'default-policy' is reserved and cannot be deleted, but it can be
   updated to customize the default network access rules for your account.`,
 		GroupID: "settings",
-		Annotations: map[string]string{
-			"package": "settings",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

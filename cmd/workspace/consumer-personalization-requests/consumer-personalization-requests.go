@@ -24,10 +24,7 @@ func New() *cobra.Command {
 		Long: `Personalization Requests allow customers to interact with the individualized
   Marketplace listing flow.`,
 		GroupID: "marketplace",
-		Annotations: map[string]string{
-			"package": "marketplace",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

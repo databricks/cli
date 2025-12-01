@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"runtime"
 	"strings"
@@ -314,6 +315,22 @@ func loadProfileByName(ctx context.Context, profileName string, profiler profile
 	return nil, nil
 }
 
+// openURLSuppressingStderr opens a URL in the browser while suppressing stderr output.
+// This prevents xdg-open error messages from being displayed to the user.
+func openURLSuppressingStderr(url string) error {
+	// Save the original stderr from the browser package
+	originalStderr := browserpkg.Stderr
+	defer func() {
+		browserpkg.Stderr = originalStderr
+	}()
+
+	// Redirect stderr to discard to suppress xdg-open errors
+	browserpkg.Stderr = io.Discard
+
+	// Call the browser open function
+	return browserpkg.OpenURL(url)
+}
+
 // getBrowserFunc returns a function that opens the given URL in the browser.
 // It respects the BROWSER environment variable:
 // - empty string: uses the default browser
@@ -323,10 +340,10 @@ func getBrowserFunc(cmd *cobra.Command) func(url string) error {
 	browser := env.Get(cmd.Context(), "BROWSER")
 	switch browser {
 	case "":
-		return browserpkg.OpenURL
+		return openURLSuppressingStderr
 	case "none":
 		return func(url string) error {
-			fmt.Fprintf(cmd.OutOrStdout(), "Please open %s in the browser to continue authentication\n", url)
+			fmt.Fprintf(cmd.OutOrStdout(), "Please complete authentication by opening this link in your browser:\n%s\n", url)
 			return nil
 		}
 	default:
