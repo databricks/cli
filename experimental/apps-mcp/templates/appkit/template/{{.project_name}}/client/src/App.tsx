@@ -1,6 +1,8 @@
 import { useAnalyticsQuery, AreaChart, LineChart, RadarChart } from '@databricks/app-kit-ui/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { QueryResult } from '../../shared/types';
 import { trpc } from './lib/trpc';
 import { useState, useEffect } from 'react';
@@ -43,6 +45,10 @@ function App() {
         setModelLoading(false);
       });
   }, []);
+
+  const [maxMonthNum, setMaxMonthNum] = useState<number>(12);
+
+  const salesParameters = { max_month_num: maxMonthNum };
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 w-full">
@@ -102,31 +108,6 @@ function App() {
           </CardContent>
         </Card>
 
-        <Card className="shadow-lg flex min-w-0">
-          <CardHeader>
-            <CardTitle>Sales Trend Area Chart</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <AreaChart queryKey="mocked_sales" parameters={{}} />
-          </CardContent>
-        </Card>
-        <Card className="shadow-lg flex min-w-0">
-          <CardHeader>
-            <CardTitle>Sales Trend Line Chart</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <LineChart queryKey="mocked_sales" parameters={{}} />
-          </CardContent>
-        </Card>
-        <Card className="shadow-lg flex min-w-0">
-          <CardHeader>
-            <CardTitle>Sales Trend Line Chart</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <RadarChart queryKey="mocked_sales" parameters={{}} />
-          </CardContent>
-        </Card>
-
         <Card className="shadow-lg">
           <CardHeader>
             <CardTitle>Model Query Demo</CardTitle>
@@ -149,6 +130,56 @@ function App() {
                 <div className="text-base bg-muted p-3 rounded-md border border-border">{modelResponse}</div>
               </div>
             )}
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-lg md:col-span-3">
+          <CardHeader>
+            <CardTitle>Sales Data Filter</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="max-w-md">
+              <div className="space-y-2">
+                <Label htmlFor="max-month">Show data up to month</Label>
+                <Select value={maxMonthNum.toString()} onValueChange={(value) => setMaxMonthNum(parseInt(value))}>
+                  <SelectTrigger id="max-month">
+                    <SelectValue placeholder="All months" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {[...Array(12)].map((_, i) => (
+                      <SelectItem key={i + 1} value={(i + 1).toString()}>
+                        {i + 1 === 12 ? 'All months (12)' : `Month ${i + 1}`}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-lg flex min-w-0">
+          <CardHeader>
+            <CardTitle>Sales Trend Area Chart</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <AreaChart queryKey="mocked_sales" parameters={salesParameters} />
+          </CardContent>
+        </Card>
+        <Card className="shadow-lg flex min-w-0">
+          <CardHeader>
+            <CardTitle>Sales Trend Line Chart</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <LineChart queryKey="mocked_sales" parameters={salesParameters} />
+          </CardContent>
+        </Card>
+        <Card className="shadow-lg flex min-w-0">
+          <CardHeader>
+            <CardTitle>Sales Trend Radar Chart</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <RadarChart queryKey="mocked_sales" parameters={salesParameters} />
           </CardContent>
         </Card>
       </div>
