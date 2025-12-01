@@ -15,7 +15,6 @@ CLI = os.environ["CLI"]
 
 
 class jobs:
-
     def get(self, job_id):
         return run_json([CLI, "jobs", "get", job_id])["settings"]
 
