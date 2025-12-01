@@ -1,4 +1,4 @@
-import { useAnalyticsQuery } from '@databricks/app-kit/react';
+import { useAnalyticsQuery, AreaChart, LineChart, RadarChart } from '@databricks/app-kit-ui/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { QueryResult } from '../../shared/types';
@@ -45,15 +45,13 @@ function App() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 w-full">
       <div className="mb-8 text-center">
-        <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-slate-900 to-slate-700 dark:from-slate-100 dark:to-slate-300 bg-clip-text text-transparent">
-          Minimal Databricks App
-        </h1>
+        <h1 className="text-4xl font-bold mb-2 text-foreground">Minimal Databricks App</h1>
         <p className="text-lg text-muted-foreground max-w-md">A minimal Databricks App powered by Databricks AppKit</p>
       </div>
 
-      <div className="flex flex-col gap-6 w-full max-w-md">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 w-full max-w-7xl">
         <Card className="shadow-lg">
           <CardHeader>
             <CardTitle>SQL Query Result</CardTitle>
@@ -69,9 +67,7 @@ function App() {
             {data && data.length > 0 && (
               <div className="space-y-2">
                 <div className="text-sm text-muted-foreground">Query: SELECT :message AS value</div>
-                <div className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                  {data[0].value}
-                </div>
+                <div className="text-2xl font-bold text-primary">{data[0].value}</div>
               </div>
             )}
             {data && data.length === 0 && <div className="text-muted-foreground">No results</div>}
@@ -95,16 +91,39 @@ function App() {
             {health && (
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                  <div className="text-lg font-semibold text-green-600 dark:text-green-400">
-                    {health.status.toUpperCase()}
-                  </div>
+                  <div className="w-2 h-2 rounded-full bg-[hsl(var(--success))] animate-pulse"></div>
+                  <div className="text-lg font-semibold text-[hsl(var(--success))]">{health.status.toUpperCase()}</div>
                 </div>
                 <div className="text-sm text-muted-foreground">
                   Last checked: {new Date(health.timestamp).toLocaleString()}
                 </div>
               </div>
             )}
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-lg flex min-w-0">
+          <CardHeader>
+            <CardTitle>Sales Trend Area Chart</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <AreaChart queryKey="mocked_sales" parameters={{}} />
+          </CardContent>
+        </Card>
+        <Card className="shadow-lg flex min-w-0">
+          <CardHeader>
+            <CardTitle>Sales Trend Line Chart</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <LineChart queryKey="mocked_sales" parameters={{}} />
+          </CardContent>
+        </Card>
+        <Card className="shadow-lg flex min-w-0">
+          <CardHeader>
+            <CardTitle>Sales Trend Line Chart</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <RadarChart queryKey="mocked_sales" parameters={{}} />
           </CardContent>
         </Card>
 
@@ -116,7 +135,7 @@ function App() {
             {modelLoading && (
               <div className="space-y-2">
                 <Skeleton className="h-4 w-48" />
-                <div className="bg-slate-100 dark:bg-slate-800 p-3 rounded-md border border-slate-200 dark:border-slate-700 space-y-2">
+                <div className="bg-muted p-3 rounded-md border border-border space-y-2">
                   <Skeleton className="h-4 w-full" />
                   <Skeleton className="h-4 w-5/6" />
                   <Skeleton className="h-4 w-4/6" />
@@ -127,9 +146,7 @@ function App() {
             {modelResponse && (
               <div className="space-y-2">
                 <div className="text-sm text-muted-foreground">Prompt: &quot;How are you today?&quot;</div>
-                <div className="text-base bg-slate-100 dark:bg-slate-800 p-3 rounded-md border border-slate-200 dark:border-slate-700">
-                  {modelResponse}
-                </div>
+                <div className="text-base bg-muted p-3 rounded-md border border-border">{modelResponse}</div>
               </div>
             )}
           </CardContent>
