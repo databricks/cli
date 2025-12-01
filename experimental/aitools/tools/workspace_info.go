@@ -80,7 +80,7 @@ func getWorkspaceDetails(ctx context.Context, profileName string) (string, error
 		result.WriteString("\nDefault Warehouse: Not available\n")
 		result.WriteString("Note: You may need to authenticate or no SQL warehouses are accessible.\n")
 	} else if warehouse != nil {
-		result.WriteString(fmt.Sprintf("\nDefault SQL Warehouse:\n"))
+		result.WriteString("\nDefault SQL Warehouse:\n")
 		result.WriteString(fmt.Sprintf("  Name: %s\n", warehouse.Name))
 		result.WriteString(fmt.Sprintf("  ID: %s\n", warehouse.ID))
 		result.WriteString(fmt.Sprintf("  State: %s\n", warehouse.State))
@@ -88,7 +88,7 @@ func getWorkspaceDetails(ctx context.Context, profileName string) (string, error
 
 	// Get Unity Catalog info
 	if catalog, err := getDefaultCatalog(ctx, profileName); err == nil && catalog != "" {
-		result.WriteString(fmt.Sprintf("\nUnity Catalog:\n"))
+		result.WriteString("\nUnity Catalog:\n")
 		result.WriteString(fmt.Sprintf("  Default Catalog: %s\n", catalog))
 	}
 

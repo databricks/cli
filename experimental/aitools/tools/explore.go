@@ -8,7 +8,6 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/experimental/aitools/tools/prompts"
-	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/exec"
 	"github.com/databricks/cli/libs/log"
@@ -111,16 +110,6 @@ func getCurrentProfile(ctx context.Context) string {
 		return "DEFAULT"
 	}
 	return profileName
-}
-
-// getAvailableProfiles returns all available profiles from ~/.databrickscfg.
-func getAvailableProfiles(ctx context.Context) profile.Profiles {
-	profiles, err := profile.DefaultProfiler.LoadProfiles(ctx, profile.MatchAllProfiles)
-	if err != nil {
-		// If we can't load profiles, return empty list (config file might not exist)
-		return profile.Profiles{}
-	}
-	return profiles
 }
 
 // generateExploreGuidance creates comprehensive guidance for data exploration.
