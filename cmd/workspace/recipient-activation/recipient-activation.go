@@ -24,15 +24,12 @@ func New() *cobra.Command {
   the credential file that includes the access token. The recipient will then
   use the credential file to establish a secure connection with the provider to
   receive the shared data.
-  
+
   Note that you can download the credential file only once. Recipients should
   treat the downloaded credential as a secret and must not share it outside of
   their organization.`,
 		GroupID: "sharing",
-		Annotations: map[string]string{
-			"package": "sharing",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -64,7 +61,7 @@ func newGetActivationUrlInfo() *cobra.Command {
 	cmd.Use = "get-activation-url-info ACTIVATION_URL"
 	cmd.Short = `Get a share activation URL.`
 	cmd.Long = `Get a share activation URL.
-  
+
   Gets an activation URL for a share.
 
   Arguments:
@@ -120,7 +117,7 @@ func newRetrieveToken() *cobra.Command {
 	cmd.Use = "retrieve-token ACTIVATION_URL"
 	cmd.Short = `Get an access token.`
 	cmd.Long = `Get an access token.
-  
+
   Retrieve access token with an activation url. This is a public API without any
   authentication.
 

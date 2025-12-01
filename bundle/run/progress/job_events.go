@@ -27,10 +27,6 @@ func (event *TaskErrorEvent) String() string {
 	return result.String()
 }
 
-func (event *TaskErrorEvent) IsInplaceSupported() bool {
-	return false
-}
-
 type JobRunUrlEvent struct {
 	Type string `json:"type"`
 	Url  string `json:"url"`
@@ -45,8 +41,4 @@ func NewJobRunUrlEvent(url string) *JobRunUrlEvent {
 
 func (event *JobRunUrlEvent) String() string {
 	return fmt.Sprintf("Run URL: %s\n", event.Url)
-}
-
-func (event *JobRunUrlEvent) IsInplaceSupported() bool {
-	return false
 }

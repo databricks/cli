@@ -1,0 +1,57 @@
+{
+  "plan": {
+    "resources.jobs.bar": {
+      "action": "create",
+      "new_state": {
+        "value": {
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+          },
+          "edit_mode": "UI_LOCKED",
+          "format": "MULTI_TASK",
+          "max_concurrent_runs": 1,
+          "name": "job bar",
+          "queue": {
+            "enabled": true
+          }
+        }
+      }
+    },
+    "resources.jobs.foo": {
+      "depends_on": [
+        {
+          "node": "resources.jobs.bar",
+          "label": "${resources.jobs.bar.id}"
+        }
+      ],
+      "action": "create",
+      "new_state": {
+        "value": {
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+          },
+          "edit_mode": "UI_LOCKED",
+          "format": "MULTI_TASK",
+          "max_concurrent_runs": 1,
+          "name": "job foo",
+          "queue": {
+            "enabled": true
+          },
+          "tasks": [
+            {
+              "run_job_task": {
+                "job_id": 0
+              },
+              "task_key": "job_task"
+            }
+          ]
+        },
+        "vars": {
+          "tasks[0].run_job_task.job_id": "${resources.jobs.bar.id}"
+        }
+      }
+    }
+  }
+}

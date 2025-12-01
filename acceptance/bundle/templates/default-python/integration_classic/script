@@ -10,7 +10,6 @@ rm input.json
 cd project_name_${UNIQUE_NAME}
 
 export JQ_DELETE='
-  .bundle.terraform,
   .workspace.current_user
 '
 
@@ -18,6 +17,7 @@ trap "trace $CLI bundle destroy -t dev --auto-approve" EXIT
 
 trace $CLI bundle validate -t dev
 trace $CLI bundle validate -t dev -o json | jq -S "del($JQ_DELETE)" > ../out.validate.dev.json
+$CLI bundle plan -o json -t dev > ../out.plan_dev.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy -t dev
 trace $CLI bundle summary -t dev
 trace $CLI bundle summary -t dev -o json | jq -S "del($JQ_DELETE)" > ../out.summary.dev.json
@@ -30,6 +30,7 @@ trace $CLI bundle validate -t prod
 trace $CLI bundle validate -t prod -o json | jq -S "del($JQ_DELETE)" > ../out.validate.prod.json
 trace diff.py ../out.validate.dev.json ../out.validate.prod.json
 rm ../out.validate.prod.json
+$CLI bundle plan -o json -t prod > ../out.plan_prod.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy -t prod
 trace $CLI bundle summary -t prod
 trace $CLI bundle summary -t prod -o json | jq -S "del($JQ_DELETE)" > ../out.summary.prod.json

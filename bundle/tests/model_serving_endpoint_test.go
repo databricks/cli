@@ -9,8 +9,12 @@ import (
 )
 
 func assertExpected(t *testing.T, p *resources.ModelServingEndpoint) {
-	assert.Equal(t, "model-name", p.Config.ServedModels[0].ModelName)
-	assert.Equal(t, "1", p.Config.ServedModels[0].ModelVersion)
+	// After ModelServingEndpointFixups mutator, served_models is converted to served_entities
+	assert.Nil(t, p.Config.ServedModels, "served_models should be nil after conversion")
+	assert.Len(t, p.Config.ServedEntities, 1, "served_entities should have one entity")
+	assert.Equal(t, "model-name", p.Config.ServedEntities[0].EntityName)
+	assert.Equal(t, "1", p.Config.ServedEntities[0].EntityVersion)
+
 	assert.Equal(t, "model-name-1", p.Config.TrafficConfig.Routes[0].ServedModelName)
 	assert.Equal(t, 100, p.Config.TrafficConfig.Routes[0].TrafficPercentage)
 	assert.Equal(t, resources.ModelServingEndpointPermission{

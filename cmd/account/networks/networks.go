@@ -3,8 +3,6 @@
 package networks
 
 import (
-	"fmt"
-
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
@@ -24,10 +22,7 @@ func New() *cobra.Command {
 		Long: `These APIs manage network configurations for customer-managed VPCs (optional).
   Its ID is used when creating a new workspace if you use customer-managed VPCs.`,
 		GroupID: "provisioning",
-		Annotations: map[string]string{
-			"package": "provisioning",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -62,33 +57,24 @@ func newCreate() *cobra.Command {
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: gcp_network_info
+	cmd.Flags().StringVar(&createReq.NetworkName, "network-name", createReq.NetworkName, `The human-readable name of the network configuration.`)
 	// TODO: array: security_group_ids
 	// TODO: array: subnet_ids
 	// TODO: complex arg: vpc_endpoints
-	cmd.Flags().StringVar(&createReq.VpcId, "vpc-id", createReq.VpcId, `The ID of the VPC associated with this network.`)
+	cmd.Flags().StringVar(&createReq.VpcId, "vpc-id", createReq.VpcId, `The ID of the VPC associated with this network configuration.`)
 
-	cmd.Use = "create NETWORK_NAME"
+	cmd.Use = "create"
 	cmd.Short = `Create network configuration.`
 	cmd.Long = `Create network configuration.
-  
+
   Creates a Databricks network configuration that represents an VPC and its
   resources. The VPC will be used for new Databricks clusters. This requires a
-  pre-existing VPC and subnets.
-
-  Arguments:
-    NETWORK_NAME: The human-readable name of the network configuration.`
+  pre-existing VPC and subnets.`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		if cmd.Flags().Changed("json") {
-			err := root.ExactArgs(0)(cmd, args)
-			if err != nil {
-				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'network_name' in your JSON input")
-			}
-			return nil
-		}
-		check := root.ExactArgs(1)
+		check := root.ExactArgs(0)
 		return check(cmd, args)
 	}
 
@@ -108,9 +94,6 @@ func newCreate() *cobra.Command {
 					return err
 				}
 			}
-		}
-		if !cmd.Flags().Changed("json") {
-			createReq.NetworkName = args[0]
 		}
 
 		response, err := a.Networks.Create(ctx, createReq)
@@ -149,11 +132,11 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete NETWORK_ID"
 	cmd.Short = `Delete a network configuration.`
 	cmd.Long = `Delete a network configuration.
-  
+
   Deletes a Databricks network configuration, which represents a cloud VPC and
   its resources. You cannot delete a network that is associated with a
   workspace.
-  
+
   This operation is available only if your account is on the E2 version of the
   platform.
 
@@ -162,35 +145,23 @@ func newDelete() *cobra.Command {
 
 	cmd.Annotations = make(map[string]string)
 
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
 
-		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No NETWORK_ID argument specified. Loading names for Networks drop-down."
-			names, err := a.Networks.NetworkNetworkNameToNetworkIdMap(ctx)
-			close(promptSpinner)
-			if err != nil {
-				return fmt.Errorf("failed to load names for Networks drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "Databricks Account API network configuration ID")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have databricks account api network configuration id")
-		}
 		deleteReq.NetworkId = args[0]
 
-		err = a.Networks.Delete(ctx, deleteReq)
+		response, err := a.Networks.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -222,7 +193,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get NETWORK_ID"
 	cmd.Short = `Get a network configuration.`
 	cmd.Long = `Get a network configuration.
-  
+
   Gets a Databricks network configuration, which represents a cloud VPC and its
   resources.
 
@@ -231,28 +202,16 @@ func newGet() *cobra.Command {
 
 	cmd.Annotations = make(map[string]string)
 
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
 
-		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No NETWORK_ID argument specified. Loading names for Networks drop-down."
-			names, err := a.Networks.NetworkNetworkNameToNetworkIdMap(ctx)
-			close(promptSpinner)
-			if err != nil {
-				return fmt.Errorf("failed to load names for Networks drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "Databricks Account API network configuration ID")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have databricks account api network configuration id")
-		}
 		getReq.NetworkId = args[0]
 
 		response, err := a.Networks.Get(ctx, getReq)
@@ -286,14 +245,10 @@ func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	cmd.Use = "list"
-	cmd.Short = `Get all network configurations.`
-	cmd.Long = `Get all network configurations.
-  
-  Gets a list of all Databricks network configurations for an account, specified
-  by ID.
-  
-  This operation is available only if your account is on the E2 version of the
-  platform.`
+	cmd.Short = `List network configurations.`
+	cmd.Long = `List network configurations.
+
+  Lists Databricks network configurations for an account.`
 
 	cmd.Annotations = make(map[string]string)
 

@@ -1,0 +1,29 @@
+
+>>> [CLI] bundle validate -o json
+[
+  {
+    "level": "CAN_READ",
+    "user_name": "viewer@example.com"
+  },
+  {
+    "group_name": "data-team",
+    "level": "CAN_MANAGE"
+  },
+  {
+    "level": "CAN_MANAGE",
+    "service_principal_name": "[UUID]"
+  },
+  {
+    "level": "CAN_MANAGE",
+    "user_name": "[USERNAME]"
+  }
+]
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.models.foo
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Deleting files...
+Destroy complete!

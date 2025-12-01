@@ -1,0 +1,63 @@
+
+>>> [CLI] bundle plan
+create dashboards.my_dashboard
+
+Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/change-embed-credentials-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] lakeview get [DASHBOARD_ID]
+{
+  "display_name": "test dashboard",
+  "lifecycle_state": "ACTIVE",
+  "parent_path": "/Users/[USERNAME]/.bundle/change-embed-credentials-[UNIQUE_NAME]/default/resources",
+  "path": "/Users/[USERNAME]/.bundle/change-embed-credentials-[UNIQUE_NAME]/default/resources/test dashboard.lvdash.json",
+  "serialized_dashboard": "{}\n",
+  "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
+}
+
+>>> [CLI] lakeview get-published [DASHBOARD_ID]
+{
+  "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]",
+  "embed_credentials": false
+}
+
+>>> [CLI] bundle plan
+update dashboards.my_dashboard
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/change-embed-credentials-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] lakeview get [DASHBOARD_ID]
+{
+  "display_name": "test dashboard",
+  "lifecycle_state": "ACTIVE",
+  "parent_path": "/Users/[USERNAME]/.bundle/change-embed-credentials-[UNIQUE_NAME]/default/resources",
+  "path": "/Users/[USERNAME]/.bundle/change-embed-credentials-[UNIQUE_NAME]/default/resources/test dashboard.lvdash.json",
+  "serialized_dashboard": "{}\n",
+  "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
+}
+
+>>> [CLI] lakeview get-published [DASHBOARD_ID]
+{
+  "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]",
+  "embed_credentials": true
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.dashboards.my_dashboard
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/change-embed-credentials-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!

@@ -1,0 +1,39 @@
+
+>>> [CLI] bundle plan -o json
+
+>>> print_requests.py --get //permissions
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-registered-models-basic-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py //permissions
+
+>>> [CLI] grants get function main.myschema_[UNIQUE_NAME].mymodel
+{
+  "privilege_assignments": [
+    {
+      "principal": "deco-test-user@databricks.com",
+      "privileges": [
+        "APPLY_TAG"
+      ]
+    }
+  ]
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.registered_models.my_registered_model
+  delete resources.schemas.my_schema
+
+This action will result in the deletion of the following UC schemas. Any underlying data may be lost:
+  delete resources.schemas.my_schema
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-registered-models-basic-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!
+
+>>> print_requests.py //permissions

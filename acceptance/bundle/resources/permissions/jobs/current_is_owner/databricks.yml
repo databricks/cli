@@ -1,0 +1,13 @@
+resources:
+  jobs:
+    foo:
+      name: job1
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Workspace/Users/user@example.com/notebook
+            source: WORKSPACE
+      permissions:
+        # job with explicit IS_OWNER matching username, not changed
+        - level: IS_OWNER
+          user_name: tester@databricks.com

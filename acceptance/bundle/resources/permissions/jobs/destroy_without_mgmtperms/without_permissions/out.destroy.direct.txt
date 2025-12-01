@@ -1,0 +1,11 @@
+
+>>> errcode as-test-sp [CLI] bundle destroy --auto-approve
+Warn: cannot read resources.jobs.foo id="[NUMID]": User [UUID] does not have View or Admin or Manage Run or Owner permissions on job [NUMID]
+The following resources will be deleted:
+  delete resources.jobs.foo
+
+All files and directories at the following location will be deleted: /Workspace/Users/[UUID]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Warn: Ignoring permission error when deleting resources.jobs.foo id=[NUMID]: User [UUID] does not have Admin or Owner permissions on job [NUMID]
+Deleting files...
+Destroy complete!

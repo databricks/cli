@@ -23,14 +23,6 @@ type DataSources struct {
 	BudgetPolicy                           map[string]any `json:"databricks_budget_policy,omitempty"`
 	Catalog                                map[string]any `json:"databricks_catalog,omitempty"`
 	Catalogs                               map[string]any `json:"databricks_catalogs,omitempty"`
-	CleanRoomAsset                         map[string]any `json:"databricks_clean_room_asset,omitempty"`
-	CleanRoomAssetRevisionsCleanRoomAsset  map[string]any `json:"databricks_clean_room_asset_revisions_clean_room_asset,omitempty"`
-	CleanRoomAssetRevisionsCleanRoomAssets map[string]any `json:"databricks_clean_room_asset_revisions_clean_room_assets,omitempty"`
-	CleanRoomAssets                        map[string]any `json:"databricks_clean_room_assets,omitempty"`
-	CleanRoomAutoApprovalRule              map[string]any `json:"databricks_clean_room_auto_approval_rule,omitempty"`
-	CleanRoomAutoApprovalRules             map[string]any `json:"databricks_clean_room_auto_approval_rules,omitempty"`
-	CleanRoomsCleanRoom                    map[string]any `json:"databricks_clean_rooms_clean_room,omitempty"`
-	CleanRoomsCleanRooms                   map[string]any `json:"databricks_clean_rooms_clean_rooms,omitempty"`
 	Cluster                                map[string]any `json:"databricks_cluster,omitempty"`
 	ClusterPolicy                          map[string]any `json:"databricks_cluster_policy,omitempty"`
 	Clusters                               map[string]any `json:"databricks_clusters,omitempty"`
@@ -38,6 +30,10 @@ type DataSources struct {
 	CurrentMetastore                       map[string]any `json:"databricks_current_metastore,omitempty"`
 	CurrentUser                            map[string]any `json:"databricks_current_user,omitempty"`
 	Dashboards                             map[string]any `json:"databricks_dashboards,omitempty"`
+	DataQualityMonitor                     map[string]any `json:"databricks_data_quality_monitor,omitempty"`
+	DataQualityMonitors                    map[string]any `json:"databricks_data_quality_monitors,omitempty"`
+	DataQualityRefresh                     map[string]any `json:"databricks_data_quality_refresh,omitempty"`
+	DataQualityRefreshes                   map[string]any `json:"databricks_data_quality_refreshes,omitempty"`
 	DatabaseDatabaseCatalog                map[string]any `json:"databricks_database_database_catalog,omitempty"`
 	DatabaseDatabaseCatalogs               map[string]any `json:"databricks_database_database_catalogs,omitempty"`
 	DatabaseInstance                       map[string]any `json:"databricks_database_instance,omitempty"`
@@ -53,6 +49,10 @@ type DataSources struct {
 	ExternalLocations                      map[string]any `json:"databricks_external_locations,omitempty"`
 	ExternalMetadata                       map[string]any `json:"databricks_external_metadata,omitempty"`
 	ExternalMetadatas                      map[string]any `json:"databricks_external_metadatas,omitempty"`
+	FeatureEngineeringFeature              map[string]any `json:"databricks_feature_engineering_feature,omitempty"`
+	FeatureEngineeringFeatures             map[string]any `json:"databricks_feature_engineering_features,omitempty"`
+	FeatureEngineeringMaterializedFeature  map[string]any `json:"databricks_feature_engineering_materialized_feature,omitempty"`
+	FeatureEngineeringMaterializedFeatures map[string]any `json:"databricks_feature_engineering_materialized_features,omitempty"`
 	Functions                              map[string]any `json:"databricks_functions,omitempty"`
 	Group                                  map[string]any `json:"databricks_group,omitempty"`
 	InstancePool                           map[string]any `json:"databricks_instance_pool,omitempty"`
@@ -81,10 +81,9 @@ type DataSources struct {
 	PolicyInfos                            map[string]any `json:"databricks_policy_infos,omitempty"`
 	QualityMonitorV2                       map[string]any `json:"databricks_quality_monitor_v2,omitempty"`
 	QualityMonitorsV2                      map[string]any `json:"databricks_quality_monitors_v2,omitempty"`
-	RecipientFederationPolicies            map[string]any `json:"databricks_recipient_federation_policies,omitempty"`
-	RecipientFederationPolicy              map[string]any `json:"databricks_recipient_federation_policy,omitempty"`
 	RegisteredModel                        map[string]any `json:"databricks_registered_model,omitempty"`
 	RegisteredModelVersions                map[string]any `json:"databricks_registered_model_versions,omitempty"`
+	RfaAccessRequestDestinations           map[string]any `json:"databricks_rfa_access_request_destinations,omitempty"`
 	Schema                                 map[string]any `json:"databricks_schema,omitempty"`
 	Schemas                                map[string]any `json:"databricks_schemas,omitempty"`
 	ServicePrincipal                       map[string]any `json:"databricks_service_principal,omitempty"`
@@ -134,14 +133,6 @@ func NewDataSources() *DataSources {
 		BudgetPolicy:                           make(map[string]any),
 		Catalog:                                make(map[string]any),
 		Catalogs:                               make(map[string]any),
-		CleanRoomAsset:                         make(map[string]any),
-		CleanRoomAssetRevisionsCleanRoomAsset:  make(map[string]any),
-		CleanRoomAssetRevisionsCleanRoomAssets: make(map[string]any),
-		CleanRoomAssets:                        make(map[string]any),
-		CleanRoomAutoApprovalRule:              make(map[string]any),
-		CleanRoomAutoApprovalRules:             make(map[string]any),
-		CleanRoomsCleanRoom:                    make(map[string]any),
-		CleanRoomsCleanRooms:                   make(map[string]any),
 		Cluster:                                make(map[string]any),
 		ClusterPolicy:                          make(map[string]any),
 		Clusters:                               make(map[string]any),
@@ -149,6 +140,10 @@ func NewDataSources() *DataSources {
 		CurrentMetastore:                       make(map[string]any),
 		CurrentUser:                            make(map[string]any),
 		Dashboards:                             make(map[string]any),
+		DataQualityMonitor:                     make(map[string]any),
+		DataQualityMonitors:                    make(map[string]any),
+		DataQualityRefresh:                     make(map[string]any),
+		DataQualityRefreshes:                   make(map[string]any),
 		DatabaseDatabaseCatalog:                make(map[string]any),
 		DatabaseDatabaseCatalogs:               make(map[string]any),
 		DatabaseInstance:                       make(map[string]any),
@@ -164,6 +159,10 @@ func NewDataSources() *DataSources {
 		ExternalLocations:                      make(map[string]any),
 		ExternalMetadata:                       make(map[string]any),
 		ExternalMetadatas:                      make(map[string]any),
+		FeatureEngineeringFeature:              make(map[string]any),
+		FeatureEngineeringFeatures:             make(map[string]any),
+		FeatureEngineeringMaterializedFeature:  make(map[string]any),
+		FeatureEngineeringMaterializedFeatures: make(map[string]any),
 		Functions:                              make(map[string]any),
 		Group:                                  make(map[string]any),
 		InstancePool:                           make(map[string]any),
@@ -192,10 +191,9 @@ func NewDataSources() *DataSources {
 		PolicyInfos:                            make(map[string]any),
 		QualityMonitorV2:                       make(map[string]any),
 		QualityMonitorsV2:                      make(map[string]any),
-		RecipientFederationPolicies:            make(map[string]any),
-		RecipientFederationPolicy:              make(map[string]any),
 		RegisteredModel:                        make(map[string]any),
 		RegisteredModelVersions:                make(map[string]any),
+		RfaAccessRequestDestinations:           make(map[string]any),
 		Schema:                                 make(map[string]any),
 		Schemas:                                make(map[string]any),
 		ServicePrincipal:                       make(map[string]any),

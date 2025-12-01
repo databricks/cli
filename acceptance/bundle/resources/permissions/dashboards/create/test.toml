@@ -1,0 +1,7 @@
+Local = false
+RequiresWarehouse = true
+Cloud = true
+
+# The current user on GCP is a user and not a SP. This causes different permissions to be set.
+# Thus we skip this test on GCP.
+CloudEnvs.gcp = false

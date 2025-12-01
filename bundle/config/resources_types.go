@@ -3,7 +3,7 @@ package config
 import (
 	"reflect"
 
-	"github.com/databricks/cli/libs/structdiff/structtag"
+	"github.com/databricks/cli/libs/structs/structtag"
 )
 
 // ResourcesTypes maps the configuration key of each Databricks resource group (for example
@@ -32,6 +32,20 @@ var ResourcesTypes = func() map[string]reflect.Type {
 		}
 
 		res[name] = elemType
+
+		// Automatically detect and add permissions field types
+		// Look for a "Permissions" field in the resource type
+		for _, resourceField := range reflect.VisibleFields(elemType) {
+			if resourceField.Name == "Permissions" {
+				permissionsKey := name + ".permissions"
+				res[permissionsKey] = resourceField.Type
+				continue
+			}
+			if resourceField.Name == "Grants" {
+				grantsKey := name + ".grants"
+				res[grantsKey] = resourceField.Type
+			}
+		}
 	}
 
 	return res

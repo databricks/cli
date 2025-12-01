@@ -1,0 +1,12 @@
+Badness = "Setting name_prefix to empty string has no effect, setting to nil raises a warning and also has no effect"
+# The test works on terraform as well but output is slightly different
+#                     "mode": "development",
+#                     "name": "BUNDLE",
+#                -    "target": "dev"
+#                +    "target": "dev",
+#                +    "terraform": {
+#                +      "exec_path": "[TERRAFORM]"
+#                +    }
+#                   },
+# Disabling terraform since we're not planning or deploying there, one is enough.
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

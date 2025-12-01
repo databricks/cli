@@ -1,0 +1,147 @@
+
+>>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle plan
+Recommendation: permissions section should explicitly include the current deployment identity '[USERNAME]' or one of its groups
+If it is not included, CAN_MANAGE permissions are only applied if the present identity is used to deploy.
+
+Consider using a adding a top-level permissions section such as the following:
+
+  permissions:
+    - user_name: [USERNAME]
+      level: CAN_MANAGE
+
+See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more about permission configuration.
+  in databricks.yml:5:3
+
+create pipelines.foo
+create pipelines.foo.permissions
+
+Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
+
+>>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
+Recommendation: permissions section should explicitly include the current deployment identity '[USERNAME]' or one of its groups
+If it is not included, CAN_MANAGE permissions are only applied if the present identity is used to deploy.
+
+Consider using a adding a top-level permissions section such as the following:
+
+  permissions:
+    - user_name: [USERNAME]
+      level: CAN_MANAGE
+
+See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more about permission configuration.
+  in databricks.yml:5:3
+
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/dabs_revenue-[UNIQUE_NAME]/production/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py //pipelines
+
+>>> print_state.py
+Recommendation: permissions section should explicitly include the current deployment identity '[USERNAME]' or one of its groups
+If it is not included, CAN_MANAGE permissions are only applied if the present identity is used to deploy.
+
+Consider using a adding a top-level permissions section such as the following:
+
+  permissions:
+    - user_name: [USERNAME]
+      level: CAN_MANAGE
+
+See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more about permission configuration.
+  in databricks.yml:5:3
+
+
+>>> [CLI] pipelines get [UUID]
+
+>>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle plan
+Recommendation: permissions section should explicitly include the current deployment identity '[USERNAME]' or one of its groups
+If it is not included, CAN_MANAGE permissions are only applied if the present identity is used to deploy.
+
+Consider using a adding a top-level permissions section such as the following:
+
+  permissions:
+    - user_name: [USERNAME]
+      level: CAN_MANAGE
+
+See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more about permission configuration.
+  in databricks.yml:5:3
+
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
+>>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle deployment migrate
+Recommendation: permissions section should explicitly include the current deployment identity '[USERNAME]' or one of its groups
+If it is not included, CAN_MANAGE permissions are only applied if the present identity is used to deploy.
+
+Consider using a adding a top-level permissions section such as the following:
+
+  permissions:
+    - user_name: [USERNAME]
+      level: CAN_MANAGE
+
+See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more about permission configuration.
+  in databricks.yml:5:3
+
+Migrated 2 resources to direct engine state file: [TEST_TMP_DIR]/.databricks/bundle/production/resources.json
+
+Validate the migration by running "bundle plan", there should be no actions planned.
+
+The state file is not synchronized to the workspace yet. To do that and finalize the migration, run "bundle deploy".
+
+To undo the migration, remove [TEST_TMP_DIR]/.databricks/bundle/production/resources.json and rename [TEST_TMP_DIR]/.databricks/bundle/production/terraform/terraform.tfstate.backup to [TEST_TMP_DIR]/.databricks/bundle/production/terraform/terraform.tfstate
+
+
+>>> print_state.py
+
+>>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle plan
+Recommendation: permissions section should explicitly include the current deployment identity '[USERNAME]' or one of its groups
+If it is not included, CAN_MANAGE permissions are only applied if the present identity is used to deploy.
+
+Consider using a adding a top-level permissions section such as the following:
+
+  permissions:
+    - user_name: [USERNAME]
+      level: CAN_MANAGE
+
+See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more about permission configuration.
+  in databricks.yml:5:3
+
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
+>>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle plan -o json
+Recommendation: permissions section should explicitly include the current deployment identity '[USERNAME]' or one of its groups
+If it is not included, CAN_MANAGE permissions are only applied if the present identity is used to deploy.
+
+Consider using a adding a top-level permissions section such as the following:
+
+  permissions:
+    - user_name: [USERNAME]
+      level: CAN_MANAGE
+
+See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more about permission configuration.
+  in databricks.yml:5:3
+
+
+>>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle destroy --auto-approve
+Recommendation: permissions section should explicitly include the current deployment identity '[USERNAME]' or one of its groups
+If it is not included, CAN_MANAGE permissions are only applied if the present identity is used to deploy.
+
+Consider using a adding a top-level permissions section such as the following:
+
+  permissions:
+    - user_name: [USERNAME]
+      level: CAN_MANAGE
+
+See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more about permission configuration.
+  in databricks.yml:5:3
+
+The following resources will be deleted:
+  delete resources.pipelines.foo
+
+This action will result in the deletion of the following Lakeflow Declarative Pipelines along with the
+Streaming Tables (STs) and Materialized Views (MVs) managed by them:
+  delete resources.pipelines.foo
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/dabs_revenue-[UNIQUE_NAME]/production
+
+Deleting files...
+Destroy complete!

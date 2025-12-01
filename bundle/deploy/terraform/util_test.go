@@ -3,12 +3,12 @@ package terraform
 import (
 	"context"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func TestParseResourcesStateWithNoFile(t *testing.T) {
@@ -83,16 +83,15 @@ func TestParseResourcesStateWithExistingStateFile(t *testing.T) {
 		  }
 		]
 	}`)
-	path, err := b.StateLocalPath(ctx)
-	require.NoError(t, err)
-	err = os.WriteFile(path, data, os.ModePerm)
+	_, localPath := b.StateFilenameTerraform(ctx)
+	err := os.MkdirAll(filepath.Dir(localPath), 0o700)
 	assert.NoError(t, err)
-	state, err := ParseResourcesState(ctx, b)
+	err = os.WriteFile(localPath, data, 0o600)
+	assert.NoError(t, err)
+	state, err := parseResourcesState(ctx, localPath)
 	assert.NoError(t, err)
 	expected := ExportedResourcesMap{
-		"pipelines": map[string]ResourceState{
-			"test_pipeline": {ID: "123"},
-		},
+		"resources.pipelines.test_pipeline": {ID: "123"},
 	}
 	assert.Equal(t, expected, state)
 }

@@ -1,0 +1,13 @@
+
+>>> errcode [CLI] bundle destroy --auto-approve
+Warning: required field "git_provider" is not set
+  at resources.jobs.foo.git_source
+  in databricks.yml:12:9
+
+The following resources will be deleted:
+  delete resources.jobs.foo
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+
+Deleting files...
+Destroy complete!

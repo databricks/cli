@@ -1,0 +1,15 @@
+{
+  "plan": {
+    "resources.volumes.foo": {
+      "action": "create",
+      "new_state": {
+        "value": {
+          "catalog_name": "mycatalog",
+          "name": "myname",
+          "schema_name": "myschema",
+          "volume_type": "MANAGED"
+        }
+      }
+    }
+  }
+}

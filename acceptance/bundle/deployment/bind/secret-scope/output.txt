@@ -3,7 +3,8 @@
 
 >>> [CLI] bundle deployment bind secret_scope1 test-secret-scope-[UUID] --auto-approve
 Updating deployment state...
-Successfully bound secret_scope with an id 'test-secret-scope-[UUID]'. Run 'bundle deploy' to deploy changes to your workspace
+Successfully bound secret_scope with an id 'test-secret-scope-[UUID]'
+Run 'bundle deploy' to deploy changes to your workspace
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/bind-secret-scope-test-[UNIQUE_NAME]/default/files...

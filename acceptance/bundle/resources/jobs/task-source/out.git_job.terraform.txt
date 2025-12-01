@@ -1,0 +1,123 @@
+{
+  "deployment": {
+    "kind": "BUNDLE",
+    "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/task-source/default/state/metadata.json"
+  },
+  "edit_mode": "UI_LOCKED",
+  "format": "MULTI_TASK",
+  "git_source": {
+    "git_branch": "main",
+    "git_provider": "github",
+    "git_url": "https://github.com/databricks/cli.git"
+  },
+  "max_concurrent_runs": 1,
+  "name": "git_job",
+  "queue": {
+    "enabled": true
+  },
+  "tasks": [
+    {
+      "for_each_task": {
+        "inputs": "[1]",
+        "task": {
+          "notebook_task": {
+            "notebook_path": "./notebook.py",
+            "source": "GIT"
+          },
+          "task_key": "test_task_foreach_no_source"
+        }
+      },
+      "task_key": "test_task_foreach_no_source"
+    },
+    {
+      "for_each_task": {
+        "inputs": "[1]",
+        "task": {
+          "notebook_task": {
+            "notebook_path": "./notebook.py",
+            "source": "WORKSPACE"
+          },
+          "task_key": "test_task_foreach_workspace"
+        }
+      },
+      "task_key": "test_task_foreach_workspace"
+    },
+    {
+      "notebook_task": {
+        "notebook_path": "./notebook.py",
+        "source": "GIT"
+      },
+      "task_key": "test_task_no_source"
+    },
+    {
+      "notebook_task": {
+        "notebook_path": "./notebook.py",
+        "source": "WORKSPACE"
+      },
+      "task_key": "test_task_source_workspace"
+    }
+  ]
+}
+{
+  "job_id": [NUMID],
+  "new_settings": {
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/task-source/default/state/metadata.json"
+    },
+    "edit_mode": "UI_LOCKED",
+    "email_notifications": {},
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "git_job",
+    "queue": {
+      "enabled": true
+    },
+    "run_as": {
+      "user_name": "[USERNAME]"
+    },
+    "tasks": [
+      {
+        "for_each_task": {
+          "inputs": "[1]",
+          "task": {
+            "notebook_task": {
+              "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/task-source/default/files/notebook",
+              "source": "WORKSPACE"
+            },
+            "task_key": "test_task_foreach_no_source"
+          }
+        },
+        "task_key": "test_task_foreach_no_source"
+      },
+      {
+        "for_each_task": {
+          "inputs": "[1]",
+          "task": {
+            "notebook_task": {
+              "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/task-source/default/files/notebook",
+              "source": "WORKSPACE"
+            },
+            "task_key": "test_task_foreach_workspace"
+          }
+        },
+        "task_key": "test_task_foreach_workspace"
+      },
+      {
+        "notebook_task": {
+          "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/task-source/default/files/notebook",
+          "source": "WORKSPACE"
+        },
+        "task_key": "test_task_no_source"
+      },
+      {
+        "notebook_task": {
+          "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/task-source/default/files/notebook",
+          "source": "WORKSPACE"
+        },
+        "task_key": "test_task_source_workspace"
+      }
+    ],
+    "webhook_notifications": {}
+  }
+}

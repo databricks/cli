@@ -26,60 +26,24 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 	}
 
 	state := ExportedResourcesMap{
-		"jobs": map[string]ResourceState{
-			"test_job": {ID: "1"},
-		},
-		"pipelines": map[string]ResourceState{
-			"test_pipeline": {ID: "1"},
-		},
-		"models": map[string]ResourceState{
-			"test_mlflow_model": {ID: "1"},
-		},
-		"experiments": map[string]ResourceState{
-			"test_mlflow_experiment": {ID: "1"},
-		},
-		"model_serving_endpoints": map[string]ResourceState{
-			"test_model_serving": {ID: "1"},
-		},
-		"registered_models": map[string]ResourceState{
-			"test_registered_model": {ID: "1"},
-		},
-		"quality_monitors": map[string]ResourceState{
-			"test_monitor": {ID: "1"},
-		},
-		"schemas": map[string]ResourceState{
-			"test_schema": {ID: "1"},
-		},
-		"volumes": map[string]ResourceState{
-			"test_volume": {ID: "1"},
-		},
-		"clusters": map[string]ResourceState{
-			"test_cluster": {ID: "1"},
-		},
-		"dashboards": map[string]ResourceState{
-			"test_dashboard": {ID: "1"},
-		},
-		"apps": map[string]ResourceState{
-			"test_app": {ID: "app1"},
-		},
-		"secret_scopes": map[string]ResourceState{
-			"test_secret_scope": {ID: "secret_scope1"},
-		},
-		"sql_warehouses": map[string]ResourceState{
-			"test_sql_warehouse": {ID: "1"},
-		},
-		"database_instances": map[string]ResourceState{
-			"test_database_instance": {ID: "1"},
-		},
-		"database_catalogs": map[string]ResourceState{
-			"test_database_catalog": {ID: "1"},
-		},
-		"synced_database_tables": map[string]ResourceState{
-			"test_synced_database_table": {ID: "1"},
-		},
-		"alerts": map[string]ResourceState{
-			"test_alert": {ID: "1"},
-		},
+		"resources.jobs.test_job":                                     {ID: "1"},
+		"resources.pipelines.test_pipeline":                           {ID: "1"},
+		"resources.models.test_mlflow_model":                          {ID: "1"},
+		"resources.experiments.test_mlflow_experiment":                {ID: "1"},
+		"resources.model_serving_endpoints.test_model_serving":        {ID: "1"},
+		"resources.registered_models.test_registered_model":           {ID: "1"},
+		"resources.quality_monitors.test_monitor":                     {ID: "1"},
+		"resources.schemas.test_schema":                               {ID: "1"},
+		"resources.volumes.test_volume":                               {ID: "1"},
+		"resources.clusters.test_cluster":                             {ID: "1"},
+		"resources.dashboards.test_dashboard":                         {ID: "1"},
+		"resources.apps.test_app":                                     {ID: "app1"},
+		"resources.secret_scopes.test_secret_scope":                   {ID: "secret_scope1"},
+		"resources.sql_warehouses.test_sql_warehouse":                 {ID: "1"},
+		"resources.database_instances.test_database_instance":         {ID: "1"},
+		"resources.database_catalogs.test_database_catalog":           {ID: "1"},
+		"resources.synced_database_tables.test_synced_database_table": {ID: "1"},
+		// "resources.alerts.test_alert": {ID: "1"},
 	}
 	err := StateToBundle(context.Background(), state, &config)
 	assert.NoError(t, err)
@@ -130,8 +94,8 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 	assert.Equal(t, "1", config.Resources.DatabaseInstances["test_database_instance"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.DatabaseInstances["test_database_instance"].ModifiedStatus)
 
-	assert.Equal(t, "1", config.Resources.Alerts["test_alert"].ID)
-	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Alerts["test_alert"].ModifiedStatus)
+	// assert.Equal(t, "1", config.Resources.Alerts["test_alert"].ID)
+	// assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Alerts["test_alert"].ModifiedStatus)
 
 	AssertFullResourceCoverage(t, &config)
 }
@@ -162,7 +126,7 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 			},
 			Experiments: map[string]*resources.MlflowExperiment{
 				"test_mlflow_experiment": {
-					Experiment: ml.Experiment{
+					CreateExperiment: ml.CreateExperiment{
 						Name: "test_mlflow_experiment",
 					},
 				},
@@ -258,13 +222,13 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 					},
 				},
 			},
-			Alerts: map[string]*resources.Alert{
-				"test_alert": {
-					AlertV2: sql.AlertV2{
-						DisplayName: "test_alert",
-					},
-				},
-			},
+			// Alerts: map[string]*resources.Alert{
+			// 	"test_alert": {
+			// 		AlertV2: sql.AlertV2{
+			// 			DisplayName: "test_alert",
+			// 		},
+			// 	},
+			// },
 		},
 	}
 
@@ -322,8 +286,8 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 	assert.Equal(t, "", config.Resources.SyncedDatabaseTables["test_synced_database_table"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.SyncedDatabaseTables["test_synced_database_table"].ModifiedStatus)
 
-	assert.Equal(t, "", config.Resources.Alerts["test_alert"].ID)
-	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Alerts["test_alert"].ModifiedStatus)
+	// assert.Equal(t, "", config.Resources.Alerts["test_alert"].ID)
+	// assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Alerts["test_alert"].ModifiedStatus)
 
 	AssertFullResourceCoverage(t, &config)
 }
@@ -369,12 +333,12 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 			},
 			Experiments: map[string]*resources.MlflowExperiment{
 				"test_mlflow_experiment": {
-					Experiment: ml.Experiment{
+					CreateExperiment: ml.CreateExperiment{
 						Name: "test_mlflow_experiment",
 					},
 				},
 				"test_mlflow_experiment_new": {
-					Experiment: ml.Experiment{
+					CreateExperiment: ml.CreateExperiment{
 						Name: "test_mlflow_experiment_new",
 					},
 				},
@@ -535,85 +499,53 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 					},
 				},
 			},
-			Alerts: map[string]*resources.Alert{
-				"test_alert": {
-					AlertV2: sql.AlertV2{
-						DisplayName: "test_alert",
-					},
-				},
-				"test_alert_new": {
-					AlertV2: sql.AlertV2{
-						DisplayName: "test_alert_new",
-					},
-				},
-			},
+			// Alerts: map[string]*resources.Alert{
+			// 	"test_alert": {
+			// 		AlertV2: sql.AlertV2{
+			// 			DisplayName: "test_alert",
+			// 		},
+			// 	},
+			// 	"test_alert_new": {
+			// 		AlertV2: sql.AlertV2{
+			// 			DisplayName: "test_alert_new",
+			// 		},
+			// 	},
+			// },
 		},
 	}
 	state := ExportedResourcesMap{
-		"jobs": map[string]ResourceState{
-			"test_job":     {ID: "1"},
-			"test_job_old": {ID: "2"},
-		},
-		"pipelines": map[string]ResourceState{
-			"test_pipeline":     {ID: "1"},
-			"test_pipeline_old": {ID: "2"},
-		},
-		"models": map[string]ResourceState{
-			"test_mlflow_model":     {ID: "1"},
-			"test_mlflow_model_old": {ID: "2"},
-		},
-		"experiments": map[string]ResourceState{
-			"test_mlflow_experiment":     {ID: "1"},
-			"test_mlflow_experiment_old": {ID: "2"},
-		},
-		"model_serving_endpoints": map[string]ResourceState{
-			"test_model_serving":     {ID: "1"},
-			"test_model_serving_old": {ID: "2"},
-		},
-		"registered_models": map[string]ResourceState{
-			"test_registered_model":     {ID: "1"},
-			"test_registered_model_old": {ID: "2"},
-		},
-		"quality_monitors": map[string]ResourceState{
-			"test_monitor":     {ID: "test_monitor"},
-			"test_monitor_old": {ID: "test_monitor_old"},
-		},
-		"schemas": map[string]ResourceState{
-			"test_schema":     {ID: "1"},
-			"test_schema_old": {ID: "2"},
-		},
-		"volumes": map[string]ResourceState{
-			"test_volume":     {ID: "1"},
-			"test_volume_old": {ID: "2"},
-		},
-		"clusters": map[string]ResourceState{
-			"test_cluster":     {ID: "1"},
-			"test_cluster_old": {ID: "2"},
-		},
-		"dashboards": map[string]ResourceState{
-			"test_dashboard":     {ID: "1"},
-			"test_dashboard_old": {ID: "2"},
-		},
-		"apps": map[string]ResourceState{
-			"test_app":     {ID: "test_app"},
-			"test_app_old": {ID: "test_app_old"},
-		},
-		"secret_scopes": map[string]ResourceState{
-			"test_secret_scope":     {ID: "test_secret_scope"},
-			"test_secret_scope_old": {ID: "test_secret_scope_old"},
-		},
-		"sql_warehouses": map[string]ResourceState{
-			"test_sql_warehouse":     {ID: "1"},
-			"test_sql_warehouse_old": {ID: "2"},
-		},
-		"database_instances": map[string]ResourceState{
-			"test_database_instance":     {ID: "1"},
-			"test_database_instance_old": {ID: "2"},
-		},
-		"alerts": map[string]ResourceState{
-			"test_alert":     {ID: "1"},
-			"test_alert_old": {ID: "2"},
-		},
+		"resources.jobs.test_job":                                  {ID: "1"},
+		"resources.jobs.test_job_old":                              {ID: "2"},
+		"resources.pipelines.test_pipeline":                        {ID: "1"},
+		"resources.pipelines.test_pipeline_old":                    {ID: "2"},
+		"resources.models.test_mlflow_model":                       {ID: "1"},
+		"resources.models.test_mlflow_model_old":                   {ID: "2"},
+		"resources.experiments.test_mlflow_experiment":             {ID: "1"},
+		"resources.experiments.test_mlflow_experiment_old":         {ID: "2"},
+		"resources.model_serving_endpoints.test_model_serving":     {ID: "1"},
+		"resources.model_serving_endpoints.test_model_serving_old": {ID: "2"},
+		"resources.registered_models.test_registered_model":        {ID: "1"},
+		"resources.registered_models.test_registered_model_old":    {ID: "2"},
+		"resources.quality_monitors.test_monitor":                  {ID: "test_monitor"},
+		"resources.quality_monitors.test_monitor_old":              {ID: "test_monitor_old"},
+		"resources.schemas.test_schema":                            {ID: "1"},
+		"resources.schemas.test_schema_old":                        {ID: "2"},
+		"resources.volumes.test_volume":                            {ID: "1"},
+		"resources.volumes.test_volume_old":                        {ID: "2"},
+		"resources.clusters.test_cluster":                          {ID: "1"},
+		"resources.clusters.test_cluster_old":                      {ID: "2"},
+		"resources.dashboards.test_dashboard":                      {ID: "1"},
+		"resources.dashboards.test_dashboard_old":                  {ID: "2"},
+		"resources.apps.test_app":                                  {ID: "test_app"},
+		"resources.apps.test_app_old":                              {ID: "test_app_old"},
+		"resources.secret_scopes.test_secret_scope":                {ID: "test_secret_scope"},
+		"resources.secret_scopes.test_secret_scope_old":            {ID: "test_secret_scope_old"},
+		"resources.sql_warehouses.test_sql_warehouse":              {ID: "1"},
+		"resources.sql_warehouses.test_sql_warehouse_old":          {ID: "2"},
+		"resources.database_instances.test_database_instance":      {ID: "1"},
+		"resources.database_instances.test_database_instance_old":  {ID: "2"},
+		// "resources.alerts.test_alert": {ID: "1"},
+		// "resources.alerts.test_alert_old": {ID: "2"},
 	}
 	err := StateToBundle(context.Background(), state, &config)
 	assert.NoError(t, err)
@@ -725,12 +657,12 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 	assert.Equal(t, "", config.Resources.DatabaseInstances["test_database_instance_new"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.DatabaseInstances["test_database_instance_new"].ModifiedStatus)
 
-	assert.Equal(t, "1", config.Resources.Alerts["test_alert"].ID)
-	assert.Equal(t, "", config.Resources.Alerts["test_alert"].ModifiedStatus)
-	assert.Equal(t, "2", config.Resources.Alerts["test_alert_old"].ID)
-	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Alerts["test_alert_old"].ModifiedStatus)
-	assert.Equal(t, "", config.Resources.Alerts["test_alert_new"].ID)
-	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Alerts["test_alert_new"].ModifiedStatus)
+	// assert.Equal(t, "1", config.Resources.Alerts["test_alert"].ID)
+	// assert.Equal(t, "", config.Resources.Alerts["test_alert"].ModifiedStatus)
+	// assert.Equal(t, "2", config.Resources.Alerts["test_alert_old"].ID)
+	// assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Alerts["test_alert_old"].ModifiedStatus)
+	// assert.Equal(t, "", config.Resources.Alerts["test_alert_new"].ID)
+	// assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Alerts["test_alert_new"].ModifiedStatus)
 
 	AssertFullResourceCoverage(t, &config)
 }

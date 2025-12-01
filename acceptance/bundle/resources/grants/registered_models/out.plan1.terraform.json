@@ -1,0 +1,13 @@
+{
+  "plan": {
+    "resources.registered_models.my_registered_model": {
+      "action": "create"
+    },
+    "resources.registered_models.my_registered_model.grants": {
+      "action": "create"
+    },
+    "resources.schemas.my_schema": {
+      "action": "create"
+    }
+  }
+}

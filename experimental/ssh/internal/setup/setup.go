@@ -2,10 +2,12 @@ package setup
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -20,6 +22,8 @@ type SetupOptions struct {
 	HostName string
 	// The cluster ID to connect to
 	ClusterID string
+	// Whether to automatically start the cluster during ssh connection if it is not running
+	AutoStartCluster bool
 	// Delay before shutting down the SSH tunnel, will be added as a --shutdown-delay flag to the ProxyCommand
 	ShutdownDelay time.Duration
 	// Optional path to the local ssh config. Defaults to ~/.ssh/config
@@ -52,20 +56,39 @@ func resolveConfigPath(configPath string) (string, error) {
 	return filepath.Join(homeDir, ".ssh", "config"), nil
 }
 
+func GenerateProxyCommand(clusterId string, autoStartCluster bool, shutdownDelay time.Duration, profile, userName string, serverPort int, handoverTimeout time.Duration) (string, error) {
+	executablePath, err := os.Executable()
+	if err != nil {
+		return "", fmt.Errorf("failed to get current executable path: %w", err)
+	}
+
+	proxyCommand := fmt.Sprintf("%q ssh connect --proxy --cluster=%s --auto-start-cluster=%t --shutdown-delay=%s",
+		executablePath, clusterId, autoStartCluster, shutdownDelay.String())
+
+	if userName != "" && serverPort != 0 {
+		proxyCommand += " --metadata=" + userName + "," + strconv.Itoa(serverPort)
+	}
+
+	if handoverTimeout > 0 {
+		proxyCommand += " --handover-timeout=" + handoverTimeout.String()
+	}
+
+	if profile != "" {
+		proxyCommand += " --profile=" + profile
+	}
+
+	return proxyCommand, nil
+}
+
 func generateHostConfig(opts SetupOptions) (string, error) {
 	identityFilePath, err := keys.GetLocalSSHKeyPath(opts.ClusterID, opts.SSHKeysDir)
 	if err != nil {
 		return "", fmt.Errorf("failed to get local keys folder: %w", err)
 	}
 
-	execPath, err := os.Executable()
+	proxyCommand, err := GenerateProxyCommand(opts.ClusterID, opts.AutoStartCluster, opts.ShutdownDelay, opts.Profile, "", 0, 0)
 	if err != nil {
-		return "", fmt.Errorf("failed to get executable path: %w", err)
-	}
-
-	profileOption := ""
-	if opts.Profile != "" {
-		profileOption = "--profile=" + opts.Profile
+		return "", fmt.Errorf("failed to generate ProxyCommand: %w", err)
 	}
 
 	hostConfig := fmt.Sprintf(`
@@ -74,8 +97,8 @@ Host %s
     ConnectTimeout 360
     StrictHostKeyChecking accept-new
     IdentityFile %q
-    ProxyCommand %q ssh connect --proxy --cluster=%s --shutdown-delay=%s %s
-`, opts.HostName, identityFilePath, execPath, opts.ClusterID, opts.ShutdownDelay, profileOption)
+    ProxyCommand %s
+`, opts.HostName, identityFilePath, proxyCommand)
 
 	return hostConfig, nil
 }
@@ -141,7 +164,38 @@ func updateSSHConfigFile(configPath, hostConfig, hostName string) error {
 	return nil
 }
 
+func clusterSelectionPrompt(ctx context.Context, client *databricks.WorkspaceClient) (string, error) {
+	spinnerChan := cmdio.Spinner(ctx)
+	spinnerChan <- "Loading clusters."
+	clusters, err := client.Clusters.ClusterDetailsClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{
+		FilterBy: &compute.ListClustersFilterBy{
+			ClusterSources: []compute.ClusterSource{compute.ClusterSourceApi, compute.ClusterSourceUi},
+		},
+	})
+	close(spinnerChan)
+	if err != nil {
+		return "", fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify cluster argument. Original error: %w", err)
+	}
+	id, err := cmdio.Select(ctx, clusters, "The cluster to connect to")
+	if err != nil {
+		return "", err
+	}
+	return id, nil
+}
+
 func Setup(ctx context.Context, client *databricks.WorkspaceClient, opts SetupOptions) error {
+	if opts.ClusterID == "" {
+		id, err := clusterSelectionPrompt(ctx, client)
+		if err != nil {
+			return err
+		}
+		opts.ClusterID = id
+	}
+
+	if opts.ClusterID == "" {
+		return errors.New("cluster ID is required")
+	}
+
 	err := validateClusterAccess(ctx, client, opts.ClusterID)
 	if err != nil {
 		return err

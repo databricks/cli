@@ -20,14 +20,8 @@ func New() *cobra.Command {
 		Use:     "workspace-settings-v2",
 		Short:   `APIs to manage workspace level settings.`,
 		Long:    `APIs to manage workspace level settings`,
-		GroupID: "settingsv2",
-		Annotations: map[string]string{
-			"package": "settingsv2",
-		},
-
-		// This service is being previewed; hide from help output.
-		Hidden: true,
-		RunE:   root.ReportUnknownSubcommand,
+		GroupID: "settings",
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -60,8 +54,10 @@ func newGetPublicWorkspaceSetting() *cobra.Command {
 	cmd.Use = "get-public-workspace-setting NAME"
 	cmd.Short = `Get a workspace setting.`
 	cmd.Long = `Get a workspace setting.
-  
-  Get a setting value at workspace level`
+
+  Get a setting value at workspace level. See
+  :method:settingsv2/listworkspacesettingsmetadata for list of setting available
+  via public APIs.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -116,13 +112,10 @@ func newListWorkspaceSettingsMetadata() *cobra.Command {
 	cmd.Use = "list-workspace-settings-metadata"
 	cmd.Short = `List valid setting keys and their metadata.`
 	cmd.Long = `List valid setting keys and their metadata.
-  
-  List valid setting keys and metadata. These settings are available to
-  referenced via [GET
-  /api/2.1/settings/{name}](#~1api~1workspace~1settingsv2~1getpublicworkspacesetting)
-  and [PATCH
-  /api/2.1/settings/{name}](#~1api~1workspace~1settingsv2~patchpublicworkspacesetting)
-  APIs`
+
+  List valid setting keys and metadata. These settings are available to be
+  referenced via GET :method:settingsv2/getpublicworkspacesetting and PATCH
+  :method:settingsv2/patchpublicworkspacesetting APIs`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -174,12 +167,10 @@ func newPatchPublicWorkspaceSetting() *cobra.Command {
 	// TODO: complex arg: aibi_dashboard_embedding_approved_domains
 	// TODO: complex arg: automatic_cluster_update_workspace
 	// TODO: complex arg: boolean_val
-	// TODO: complex arg: default_data_security_mode
 	// TODO: complex arg: effective_aibi_dashboard_embedding_access_policy
 	// TODO: complex arg: effective_aibi_dashboard_embedding_approved_domains
 	// TODO: complex arg: effective_automatic_cluster_update_workspace
 	// TODO: complex arg: effective_boolean_val
-	// TODO: complex arg: effective_default_data_security_mode
 	// TODO: complex arg: effective_integer_val
 	// TODO: complex arg: effective_personal_compute
 	// TODO: complex arg: effective_restrict_workspace_admins
@@ -193,8 +184,10 @@ func newPatchPublicWorkspaceSetting() *cobra.Command {
 	cmd.Use = "patch-public-workspace-setting NAME"
 	cmd.Short = `Update a workspace setting.`
 	cmd.Long = `Update a workspace setting.
-  
-  Patch a setting value at workspace level`
+
+  Patch a setting value at workspace level. See
+  :method:settingsv2/listworkspacesettingsmetadata for list of setting available
+  via public APIs at workspace level.`
 
 	cmd.Annotations = make(map[string]string)
 

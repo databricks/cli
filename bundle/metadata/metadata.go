@@ -14,7 +14,7 @@ type Workspace struct {
 	FilePath string `json:"file_path"`
 }
 
-type Job struct {
+type Resource struct {
 	ID string `json:"id,omitempty"`
 
 	// Relative path from the bundle root to the configuration file that holds
@@ -23,13 +23,23 @@ type Job struct {
 }
 
 type Resources struct {
-	Jobs map[string]*Job `json:"jobs,omitempty"`
+	Jobs      map[string]*Resource `json:"jobs,omitempty"`
+	Pipelines map[string]*Resource `json:"pipelines,omitempty"`
+}
+
+type Presets struct {
+	SourceLinkedDeployment bool `json:"source_linked_deployment"`
 }
 
 type Config struct {
 	Bundle    Bundle    `json:"bundle,omitempty"`
 	Workspace Workspace `json:"workspace,omitempty"`
 	Resources Resources `json:"resources,omitempty"`
+	Presets   Presets   `json:"presets,omitempty"`
+}
+
+type Extra struct {
+	GitFolderPath string `json:"git_folder_path,omitempty"`
 }
 
 // Metadata about the bundle deployment. This is the interface Databricks services
@@ -42,4 +52,6 @@ type Metadata struct {
 	Version int `json:"version"`
 
 	Config Config `json:"config"`
+	// Fields that don't map 1-to-1 with the bundle configuration schema
+	Extra Extra `json:"extra"`
 }

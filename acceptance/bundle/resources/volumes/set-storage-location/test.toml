@@ -6,4 +6,3 @@ CloudEnvs.azure = false
 Ignore = [
     ".databricks",
 ]
-EnvMatrix.DATABRICKS_CLI_DEPLOYMENT = ["terraform"]

@@ -20,18 +20,15 @@ func New() *cobra.Command {
 		Short: `View available policy families.`,
 		Long: `View available policy families. A policy family contains a policy definition
   providing best practices for configuring clusters for a particular use case.
-  
+
   Databricks manages and provides policy families for several common cluster use
   cases. You cannot create, edit, or delete policy families.
-  
+
   Policy families cannot be used directly to create clusters. Instead, you
   create cluster policies using a policy family. Cluster policies created using
   a policy family inherit the policy family's policy definition.`,
 		GroupID: "compute",
-		Annotations: map[string]string{
-			"package": "compute",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -65,7 +62,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get POLICY_FAMILY_ID"
 	cmd.Short = `Get policy family information.`
 	cmd.Long = `Get policy family information.
-  
+
   Retrieve the information for an policy family based on its identifier and
   version
 
@@ -125,7 +122,7 @@ func newList() *cobra.Command {
 	cmd.Use = "list"
 	cmd.Short = `List policy families.`
 	cmd.Long = `List policy families.
-  
+
   Returns the list of policy definition types available to use at their latest
   version. This API is paginated.`
 

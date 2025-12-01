@@ -38,15 +38,13 @@ func ApplyParallel(ctx context.Context, b *Bundle, mutators ...ReadOnlyMutator) 
 	}
 
 	for ind, m := range mutators {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			// We're not using bundle.ApplyContext here because we don't do copy between typed and dynamic values
 			diags := m.Apply(contexts[ind], b)
 			for _, d := range diags {
 				logdiag.LogDiag(ctx, d)
 			}
-		}()
+		})
 	}
 
 	wg.Wait()

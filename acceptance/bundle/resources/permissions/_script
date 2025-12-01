@@ -1,0 +1,16 @@
+trace $CLI bundle validate -o json | jq .resources.$RESOURCE.foo.permissions
+rm out.requests.txt
+
+$CLI bundle plan -o json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+
+print_requests() {
+    jq -c < out.requests.txt | jq 'select(.method != "GET" and (.path | contains("permissions")))'
+    rm out.requests.txt
+}
+
+rm out.requests.txt
+trace $CLI bundle deploy
+print_requests > out.requests.deploy.$DATABRICKS_BUNDLE_ENGINE.json
+
+trace $CLI bundle destroy --auto-approve
+print_requests > out.requests.destroy.$DATABRICKS_BUNDLE_ENGINE.json

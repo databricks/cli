@@ -48,13 +48,10 @@ func New() *cobra.Command {
   and other important information, see [Access Control]. Note that to manage
   access control on service principals, use **[Account Access Control
   Proxy](:service:accountaccesscontrolproxy)**.
-  
+
   [Access Control]: https://docs.databricks.com/security/auth-authz/access-control/index.html`,
 		GroupID: "iam",
-		Annotations: map[string]string{
-			"package": "iam",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -88,15 +85,15 @@ func newGet() *cobra.Command {
 	cmd.Use = "get REQUEST_OBJECT_TYPE REQUEST_OBJECT_ID"
 	cmd.Short = `Get object permissions.`
 	cmd.Long = `Get object permissions.
-  
+
   Gets the permissions of an object. Objects can inherit permissions from their
   parent objects or root object.
 
   Arguments:
     REQUEST_OBJECT_TYPE: The type of the request object. Can be one of the following: alerts,
       alertsv2, authorization, clusters, cluster-policies, dashboards,
-      dbsql-dashboards, directories, experiments, files, instance-pools, jobs,
-      notebooks, pipelines, queries, registered-models, repos,
+      dbsql-dashboards, directories, experiments, files, genie, instance-pools,
+      jobs, notebooks, pipelines, queries, registered-models, repos,
       serving-endpoints, or warehouses.
     REQUEST_OBJECT_ID: The id of the request object.`
 
@@ -151,14 +148,14 @@ func newGetPermissionLevels() *cobra.Command {
 	cmd.Use = "get-permission-levels REQUEST_OBJECT_TYPE REQUEST_OBJECT_ID"
 	cmd.Short = `Get object permission levels.`
 	cmd.Long = `Get object permission levels.
-  
+
   Gets the permission levels that a user can have on an object.
 
   Arguments:
     REQUEST_OBJECT_TYPE: The type of the request object. Can be one of the following: alerts,
       alertsv2, authorization, clusters, cluster-policies, dashboards,
-      dbsql-dashboards, directories, experiments, files, instance-pools, jobs,
-      notebooks, pipelines, queries, registered-models, repos,
+      dbsql-dashboards, directories, experiments, files, genie, instance-pools,
+      jobs, notebooks, pipelines, queries, registered-models, repos,
       serving-endpoints, or warehouses.
     REQUEST_OBJECT_ID: `
 
@@ -218,7 +215,7 @@ func newSet() *cobra.Command {
 	cmd.Use = "set REQUEST_OBJECT_TYPE REQUEST_OBJECT_ID"
 	cmd.Short = `Set object permissions.`
 	cmd.Long = `Set object permissions.
-  
+
   Sets permissions on an object, replacing existing permissions if they exist.
   Deletes all direct permissions if none are specified. Objects can inherit
   permissions from their parent objects or root object.
@@ -226,8 +223,8 @@ func newSet() *cobra.Command {
   Arguments:
     REQUEST_OBJECT_TYPE: The type of the request object. Can be one of the following: alerts,
       alertsv2, authorization, clusters, cluster-policies, dashboards,
-      dbsql-dashboards, directories, experiments, files, instance-pools, jobs,
-      notebooks, pipelines, queries, registered-models, repos,
+      dbsql-dashboards, directories, experiments, files, genie, instance-pools,
+      jobs, notebooks, pipelines, queries, registered-models, repos,
       serving-endpoints, or warehouses.
     REQUEST_OBJECT_ID: The id of the request object.`
 
@@ -299,15 +296,15 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update REQUEST_OBJECT_TYPE REQUEST_OBJECT_ID"
 	cmd.Short = `Update object permissions.`
 	cmd.Long = `Update object permissions.
-  
+
   Updates the permissions on an object. Objects can inherit permissions from
   their parent objects or root object.
 
   Arguments:
     REQUEST_OBJECT_TYPE: The type of the request object. Can be one of the following: alerts,
       alertsv2, authorization, clusters, cluster-policies, dashboards,
-      dbsql-dashboards, directories, experiments, files, instance-pools, jobs,
-      notebooks, pipelines, queries, registered-models, repos,
+      dbsql-dashboards, directories, experiments, files, genie, instance-pools,
+      jobs, notebooks, pipelines, queries, registered-models, repos,
       serving-endpoints, or warehouses.
     REQUEST_OBJECT_ID: The id of the request object.`
 

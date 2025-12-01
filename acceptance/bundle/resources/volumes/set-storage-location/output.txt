@@ -3,24 +3,9 @@
 create schemas.myschema
 create volumes.volume1
 
+Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
+
 >>> print_requests
-
->>> musterr [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/testbundle-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Error: terraform apply: exit status 1
-
-Error: cannot create volume: CreateVolume storage_location can not be provided.
-
-  with databricks_volume.volume1,
-  on bundle.tf.json line 29, in resource.databricks_volume.volume1:
-  29:       }
-
-
-
-Updating deployment state...
-
-Exit code (musterr): 1
 
 >>> print_requests
 {
@@ -46,10 +31,10 @@ Exit code (musterr): 1
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
-  delete schema myschema
+  delete resources.schemas.myschema
 
 This action will result in the deletion of the following UC schemas. Any underlying data may be lost:
-  delete schema myschema
+  delete resources.schemas.myschema
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/testbundle-[UNIQUE_NAME]/default
 
@@ -59,5 +44,8 @@ Destroy complete!
 >>> print_requests
 {
   "method": "DELETE",
-  "path": "/api/2.1/unity-catalog/schemas/main.testschema-[UNIQUE_NAME]"
+  "path": "/api/2.1/unity-catalog/schemas/main.testschema-[UNIQUE_NAME]",
+  "q": {
+    "force": "true"
+  }
 }

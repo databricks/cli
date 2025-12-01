@@ -1,11 +1,11 @@
+// Code generated from OpenAPI specs by Databricks SDK Generator. DO NOT EDIT.
+
 package workspace
 
 import (
 	"github.com/spf13/cobra"
 )
 
-// Groups returns an ordered list of command groups.
-// The order matches the order used in the Databricks API explorer.
 func Groups() []cobra.Group {
 	return []cobra.Group{
 		{
@@ -25,6 +25,10 @@ func Groups() []cobra.Group {
 			Title: "Delta Live Tables",
 		},
 		{
+			ID:    "files",
+			Title: "File Management",
+		},
+		{
 			ID:    "ml",
 			Title: "Machine Learning",
 		},
@@ -33,12 +37,24 @@ func Groups() []cobra.Group {
 			Title: "Real-time Serving",
 		},
 		{
+			ID:    "apps",
+			Title: "Apps",
+		},
+		{
+			ID:    "vectorsearch",
+			Title: "Vector Search",
+		},
+		{
 			ID:    "iam",
 			Title: "Identity and Access Management",
 		},
 		{
 			ID:    "sql",
 			Title: "Databricks SQL",
+		},
+		{
+			ID:    "dashboards",
+			Title: "AI/BI",
 		},
 		{
 			ID:    "catalog",
@@ -53,44 +69,36 @@ func Groups() []cobra.Group {
 			Title: "Settings",
 		},
 		{
-			ID:    "development",
-			Title: "Developer Tools",
-		},
-		{
-			ID:    "vectorsearch",
-			Title: "Vector Search",
-		},
-		{
-			ID:    "dashboards",
-			Title: "Dashboards",
+			ID:    "oauth2",
+			Title: "OAuth",
 		},
 		{
 			ID:    "marketplace",
 			Title: "Marketplace",
 		},
 		{
-			ID:    "apps",
-			Title: "Apps",
-		},
-		{
 			ID:    "cleanrooms",
 			Title: "Clean Rooms",
 		},
 		{
-			ID:    "aibuilder",
-			Title: "AI Builder",
+			ID:    "qualitymonitor",
+			Title: "Quality Monitor",
+		},
+		{
+			ID:    "dataquality",
+			Title: "Data Quality Monitoring",
 		},
 		{
 			ID:    "database",
-			Title: "Database",
+			Title: "Database Instances",
 		},
 		{
-			ID:    "qualitymonitorv2",
-			Title: "Quality Monitor v2",
+			ID:    "agentbricks",
+			Title: "Agent Bricks",
 		},
 		{
-			ID:    "oauth2",
-			Title: "OAuth",
+			ID:    "tags",
+			Title: "Tags",
 		},
 	}
 }

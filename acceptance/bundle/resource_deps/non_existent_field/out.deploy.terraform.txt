@@ -10,5 +10,3 @@ This object has no argument, nested block, or exported attribute named
 "non_existent".
 
 
-
-Exit code (musterr): 1

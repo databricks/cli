@@ -1,0 +1,30 @@
+
+>>> [CLI] bundle plan -o json
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
+=== Delete one permission and deploy again
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> errcode [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.job_with_permissions
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!
+
+>>> print_requests

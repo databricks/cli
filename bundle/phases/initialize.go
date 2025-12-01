@@ -2,7 +2,6 @@ package phases
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/databricks/cli/bundle/config/mutator/resourcemutator"
 
@@ -14,28 +13,17 @@ import (
 	pythonmutator "github.com/databricks/cli/bundle/config/mutator/python"
 	"github.com/databricks/cli/bundle/config/validate"
 	"github.com/databricks/cli/bundle/deploy/metadata"
-	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/permissions"
 	"github.com/databricks/cli/bundle/scripts"
 	"github.com/databricks/cli/bundle/trampoline"
-	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/cli/libs/logdiag"
 )
 
 // The initialize phase fills in defaults and connects to the workspace.
 // Interpolation of fields referring to the "bundle" and "workspace" keys
 // happens upon completion of this phase.
 func Initialize(ctx context.Context, b *bundle.Bundle) {
-	var err error
-
 	log.Info(ctx, "Phase: initialize")
-
-	b.DirectDeployment, err = IsDirectDeployment(ctx)
-	if err != nil {
-		logdiag.LogError(ctx, err)
-		return
-	}
 
 	bundle.ApplySeqContext(ctx, b,
 		// Reads (dynamic): resource.*.*
@@ -152,6 +140,9 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// Validate that all fields with enum values specified are set to a valid value.
 		validate.Enum(),
 
+		// Validate that no dashboard etags are set. They are purely internal state and should not be set by the user.
+		validate.ValidateDashboardEtags(),
+
 		// Reads (typed): b.Config.Permissions (checks if current user or their groups have CAN_MANAGE permissions)
 		// Reads (typed): b.Config.Workspace.CurrentUser (gets current user information)
 		// Provides diagnostic recommendations if the current deployment identity isn't explicitly granted CAN_MANAGE permissions
@@ -200,41 +191,9 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// Updates (typed): b.Config.Resources.Pipelines[].CreatePipeline.Deployment (sets deployment metadata for bundle deployments)
 		// Annotates pipelines with bundle deployment metadata
 		metadata.AnnotatePipelines(),
+
+		// Reads (typed): b.Config.Experimental.Scripts["post_init"] (checks if script is defined)
+		// Executes the post_init script hook defined in the bundle configuration
+		scripts.Execute(config.ScriptPostInit),
 	)
-
-	if logdiag.HasError(ctx) {
-		return
-	}
-
-	if !b.DirectDeployment {
-		// Reads (typed): b.Config.Bundle.Terraform (checks terraform configuration)
-		// Updates (typed): b.Config.Bundle.Terraform (sets default values if not already set)
-		// Updates (typed): b.Terraform (initializes Terraform executor with proper environment variables and paths)
-		// Initializes Terraform with the correct binary, working directory, and environment variables for authentication
-
-		bundle.ApplyContext(ctx, b, terraform.Initialize())
-	}
-
-	if logdiag.HasError(ctx) {
-		return
-	}
-
-	// Reads (typed): b.Config.Experimental.Scripts["post_init"] (checks if script is defined)
-	// Executes the post_init script hook defined in the bundle configuration
-	bundle.ApplyContext(ctx, b, scripts.Execute(config.ScriptPostInit))
-}
-
-func IsDirectDeployment(ctx context.Context) (bool, error) {
-	deployment := env.Get(ctx, "DATABRICKS_CLI_DEPLOYMENT")
-	// We use "direct-exp" while direct backend is not suitable for end users.
-	// Once we consider it usable we'll change the value to "direct".
-	// This is to prevent accidentally running direct backend with older CLI versions where it was still considered experimental.
-	switch deployment {
-	case "direct-exp":
-		return true, nil
-	case "terraform", "":
-		return false, nil
-	default:
-		return false, fmt.Errorf("unexpected setting for DATABRICKS_CLI_DEPLOYMENT=%#v (expected 'terraform' or 'direct-exp' or absent/empty which means 'terraform')", deployment)
-	}
 }

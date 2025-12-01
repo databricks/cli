@@ -5,15 +5,16 @@ import (
 	"errors"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/apps"
 	"github.com/databricks/cli/bundle/artifacts"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/deploy"
 	"github.com/databricks/cli/bundle/deploy/files"
 	"github.com/databricks/cli/bundle/deploy/lock"
 	"github.com/databricks/cli/bundle/deploy/metadata"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/bundle/metrics"
 	"github.com/databricks/cli/bundle/permissions"
@@ -25,43 +26,19 @@ import (
 	"github.com/databricks/cli/libs/sync"
 )
 
-func getActions(ctx context.Context, b *bundle.Bundle) ([]deployplan.Action, error) {
-	if b.DirectDeployment {
-		err := b.OpenStateFile(ctx)
-		if err != nil {
-			return nil, err
-		}
-		err = b.DeploymentBundle.CalculatePlanForDeploy(ctx, b.WorkspaceClient(), &b.Config)
-		if err != nil {
-			return nil, err
-		}
-		return b.DeploymentBundle.GetActions(ctx), nil
-	} else {
-		tf := b.Terraform
-		if tf == nil {
-			return nil, errors.New("terraform not initialized")
-		}
-		actions, err := terraform.ShowPlanFile(ctx, tf, b.TerraformPlanPath)
-		return actions, err
-	}
-}
+func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) (bool, error) {
+	actions := plan.GetActions()
 
-func approvalForDeploy(ctx context.Context, b *bundle.Bundle) (bool, error) {
-	actions, err := getActions(ctx, b)
-	if err != nil {
-		return false, err
-	}
-
-	err = checkForPreventDestroy(b, actions)
+	err := checkForPreventDestroy(b, actions)
 	if err != nil {
 		return false, err
 	}
 
 	types := []deployplan.ActionType{deployplan.ActionTypeRecreate, deployplan.ActionTypeDelete}
-	schemaActions := deployplan.FilterGroup(actions, "schemas", types...)
-	dltActions := deployplan.FilterGroup(actions, "pipelines", types...)
-	volumeActions := deployplan.FilterGroup(actions, "volumes", types...)
-	dashboardActions := deployplan.FilterGroup(actions, "dashboards", types...)
+	schemaActions := filterGroup(actions, "schemas", types...)
+	dltActions := filterGroup(actions, "pipelines", types...)
+	volumeActions := filterGroup(actions, "volumes", types...)
+	dashboardActions := filterGroup(actions, "dashboards", types...)
 
 	// We don't need to display any prompts in this case.
 	if len(schemaActions) == 0 && len(dltActions) == 0 && len(volumeActions) == 0 && len(dashboardActions) == 0 {
@@ -72,6 +49,9 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle) (bool, error) {
 	if len(schemaActions) != 0 {
 		cmdio.LogString(ctx, deleteOrRecreateSchemaMessage)
 		for _, action := range schemaActions {
+			if action.IsChildResource() {
+				continue
+			}
 			cmdio.Log(ctx, action)
 		}
 	}
@@ -117,34 +97,25 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle) (bool, error) {
 	return approved, nil
 }
 
-func deployCore(ctx context.Context, b *bundle.Bundle) {
+func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, targetEngine engine.EngineType) {
 	// Core mutators that CRUD resources and modify deployment state. These
 	// mutators need informed consent if they are potentially destructive.
 	cmdio.LogString(ctx, "Deploying resources...")
 
-	if b.DirectDeployment {
-		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(), &b.Config)
+	if targetEngine.IsDirect() {
+		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(), &b.Config, plan, direct.MigrateMode(false))
 	} else {
 		bundle.ApplyContext(ctx, b, terraform.Apply())
 	}
 
 	// Even if deployment failed, there might be updates in states that we need to upload
-	bundle.ApplyContext(ctx, b,
-		statemgmt.StatePush(),
-	)
+	statemgmt.PushResourcesState(ctx, b, targetEngine)
 	if logdiag.HasError(ctx) {
 		return
 	}
 
 	bundle.ApplySeqContext(ctx, b,
-		statemgmt.Load(),
-
-		// TODO: this does terraform specific transformation.
-		apps.InterpolateVariables(),
-
-		// TODO: this should either be part of app resource or separate AppConfig resource that depends on main resource.
-		apps.UploadConfig(),
-
+		statemgmt.Load(targetEngine),
 		metadata.Compute(),
 		metadata.Upload(),
 	)
@@ -165,7 +136,7 @@ func uploadLibraries(ctx context.Context, b *bundle.Bundle, libs map[string][]li
 }
 
 // The deploy phase deploys artifacts and resources.
-func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHandler) {
+func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHandler, engine engine.EngineType) {
 	log.Info(ctx, "Phase: deploy")
 
 	// Core mutators that CRUD resources and modify deployment state. These
@@ -185,7 +156,7 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDeploy))
 	}()
 
-	libs := deployPrepare(ctx, b)
+	libs := DeployPrepare(ctx, b, false, engine)
 	if logdiag.HasError(ctx) {
 		return
 	}
@@ -208,28 +179,21 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		return
 	}
 
-	if !b.DirectDeployment {
-		bundle.ApplySeqContext(ctx, b,
-			terraform.Interpolate(),
-			terraform.Write(),
-			terraform.Plan(terraform.PlanGoal("deploy")),
-		)
-	}
-
+	plan := RunPlan(ctx, b, engine)
 	if logdiag.HasError(ctx) {
 		return
 	}
 
-	haveApproval, err := approvalForDeploy(ctx, b)
+	haveApproval, err := approvalForDeploy(ctx, b, plan)
 	if err != nil {
 		logdiag.LogError(ctx, err)
 		return
 	}
-
 	if haveApproval {
-		deployCore(ctx, b)
+		deployCore(ctx, b, plan, engine)
 	} else {
 		cmdio.LogString(ctx, "Deployment cancelled!")
+		return
 	}
 
 	if logdiag.HasError(ctx) {
@@ -240,30 +204,51 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	bundle.ApplyContext(ctx, b, scripts.Execute(config.ScriptPostDeploy))
 }
 
-func Diff(ctx context.Context, b *bundle.Bundle) []deployplan.Action {
-	deployPrepare(ctx, b)
+func RunPlan(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) *deployplan.Plan {
+	if engine.IsDirect() {
+		_, localPath := b.StateFilenameDirect(ctx)
+		plan, err := b.DeploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(), &b.Config, localPath)
+		if err != nil {
+			logdiag.LogError(ctx, err)
+			return nil
+		}
+		return plan
+	}
+
+	bundle.ApplySeqContext(ctx, b,
+		terraform.Interpolate(),
+		terraform.Write(),
+		terraform.Plan(terraform.PlanGoal("deploy")),
+	)
+
 	if logdiag.HasError(ctx) {
 		return nil
 	}
 
-	if !b.DirectDeployment {
-		bundle.ApplySeqContext(ctx, b,
-			terraform.Interpolate(),
-			terraform.Write(),
-			terraform.Plan(terraform.PlanGoal("deploy")),
-		)
-	}
-
-	if logdiag.HasError(ctx) {
+	tf := b.Terraform
+	if tf == nil {
+		logdiag.LogError(ctx, errors.New("terraform not initialized"))
 		return nil
 	}
 
-	actions, err := getActions(ctx, b)
+	plan, err := terraform.ShowPlanFile(ctx, tf, b.TerraformPlanPath)
 	if err != nil {
 		logdiag.LogError(ctx, err)
+		return nil
 	}
 
-	return actions
+	for _, group := range b.Config.Resources.AllResources() {
+		for rKey := range group.Resources {
+			resourceKey := "resources." + group.Description.PluralName + "." + rKey
+			if _, ok := plan.Plan[resourceKey]; !ok {
+				plan.Plan[resourceKey] = &deployplan.PlanEntry{
+					Action: deployplan.ActionTypeSkip.String(),
+				}
+			}
+		}
+	}
+
+	return plan
 }
 
 // If there are more than 1 thousand of a resource type, do not

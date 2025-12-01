@@ -1,0 +1,24 @@
+{
+    "properties": {
+      "project_name": {
+        "type": "string",
+        "description": "Project Name",
+        "order": 1,
+        "pattern": "^[A-Za-z0-9_-]+$",
+        "pattern_match_failure_message": "Name must consist of letters, numbers, underscores, or hyphens."
+      },
+      "sql_warehouse_id": {
+        "type": "string",
+        "description": "SQL Warehouse ID",
+        "order": 2
+      },
+      "app_description": {
+        "type": "string",
+        "description": "App Description (Optional)",
+        "default": "A Databricks App powered by Databricks AppKit",
+        "order": 3
+      }
+
+    },
+    "success_message": "\nYour new project has been created in the '{{.project_name}}' directory!"
+  }

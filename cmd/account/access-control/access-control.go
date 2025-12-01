@@ -25,10 +25,7 @@ func New() *cobra.Command {
   grant rules are supported. A grant rule specifies a role assigned to a set of
   principals. A list of rules attached to a resource is called a rule set.`,
 		GroupID: "iam",
-		Annotations: map[string]string{
-			"package": "iam",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -61,19 +58,21 @@ func newGetAssignableRolesForResource() *cobra.Command {
 	cmd.Use = "get-assignable-roles-for-resource RESOURCE"
 	cmd.Short = `Get assignable roles for a resource.`
 	cmd.Long = `Get assignable roles for a resource.
-  
+
   Gets all the roles that can be granted on an account level resource. A role is
   grantable if the rule set on the resource can contain an access rule of the
   role.
 
   Arguments:
     RESOURCE: The resource name for which assignable roles will be listed.
-      
+
       Examples | Summary :--- | :--- resource=accounts/<ACCOUNT_ID> | A
       resource name for the account.
       resource=accounts/<ACCOUNT_ID>/groups/<GROUP_ID> | A resource name for
       the group. resource=accounts/<ACCOUNT_ID>/servicePrincipals/<SP_ID> | A
-      resource name for the service principal.`
+      resource name for the service principal.
+      resource=accounts/<ACCOUNT_ID>/tagPolicies/<TAG_POLICY_ID> | A resource
+      name for the tag policy.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -125,14 +124,14 @@ func newGetRuleSet() *cobra.Command {
 	cmd.Use = "get-rule-set NAME ETAG"
 	cmd.Short = `Get a rule set.`
 	cmd.Long = `Get a rule set.
-  
+
   Get a rule set by its name. A rule set is always attached to a resource and
   contains a list of access rules on the said resource. Currently only a default
   rule set for each resource is supported.
 
   Arguments:
     NAME: The ruleset name associated with the request.
-      
+
       Examples | Summary :--- | :---
       name=accounts/<ACCOUNT_ID>/ruleSets/default | A name for a rule set on
       the account.
@@ -140,6 +139,8 @@ func newGetRuleSet() *cobra.Command {
       for a rule set on the group.
       name=accounts/<ACCOUNT_ID>/servicePrincipals/<SERVICE_PRINCIPAL_APPLICATION_ID>/ruleSets/default
       | A name for a rule set on the service principal.
+      name=accounts/<ACCOUNT_ID>/tagPolicies/<TAG_POLICY_ID>/ruleSets/default
+      | A name for a rule set on the tag policy.
     ETAG: Etag used for versioning. The response is at least as fresh as the eTag
       provided. Etag is used for optimistic concurrency control as a way to help
       prevent simultaneous updates of a rule set from overwriting each other. It
@@ -148,7 +149,7 @@ func newGetRuleSet() *cobra.Command {
       conditions that is get an etag from a GET rule set request, and pass it
       with the PUT update request to identify the rule set version you are
       updating.
-      
+
       Examples | Summary :--- | :--- etag= | An empty etag can only be used in
       GET to indicate no freshness requirements.
       etag=RENUAAABhSweA4NvVmmUYdiU717H3Tgy0UJdor3gE4a+mq/oj9NjAf8ZsQ== | An
@@ -208,7 +209,7 @@ func newUpdateRuleSet() *cobra.Command {
 	cmd.Use = "update-rule-set"
 	cmd.Short = `Update a rule set.`
 	cmd.Long = `Update a rule set.
-  
+
   Replace the rules of a rule set. First, use get to read the current version of
   the rule set before modifying it. This pattern helps prevent conflicts between
   concurrent updates.`

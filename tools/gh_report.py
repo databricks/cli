@@ -14,6 +14,9 @@ import subprocess
 import argparse
 import json
 import pprint
+import time
+import urllib.request
+import threading
 from pathlib import Path
 
 
@@ -21,6 +24,7 @@ CLI_REPO = "databricks/cli"
 DECO_REPO = os.environ.get("DECO_REPO") or os.environ.get("GITHUB_REPOSITORY")
 DECO_TESTS_PREFIX = "https://go/deco-tests/"
 CLI_TESTS_PREFIX = "https://github.com/databricks/cli/actions/runs/"
+KNOWN_FAILURES_URL = "https://raw.githubusercontent.com/databricks/cli/ciconfig/known_failures.txt"
 DIRECTORY = Path(__file__).parent
 PARSE_SCRIPT = DIRECTORY / "gh_parse.py"
 
@@ -114,6 +118,31 @@ def get_commit_run_id_unit(commit):
     return results[-1]
 
 
+def download_known_failures():
+    """Download known_failures.txt if absent or older than 5 minutes."""
+    logs_dir = Path(".gh-logs")
+    logs_dir.mkdir(exist_ok=True)
+    known_failures_path = logs_dir / "known_failures.txt"
+
+    # Check if file exists and is newer than 5 minutes
+    if known_failures_path.exists():
+        file_age = time.time() - known_failures_path.stat().st_mtime
+        if file_age < 300:  # 5 minutes
+            return
+
+    temp_path = known_failures_path.with_name(f"{known_failures_path.name}.{os.getpid()}")
+
+    try:
+        with urllib.request.urlopen(KNOWN_FAILURES_URL) as response:
+            content = response.read().decode("utf-8")
+    except Exception as e:
+        print(f"Failed to download known_failures.txt: {e}", file=sys.stderr)
+        return
+
+    temp_path.write_text(content)
+    temp_path.replace(known_failures_path)
+
+
 def download_run_id(run_id, repo, rm):
     target_dir = f".gh-logs/{run_id}"
     if os.path.exists(target_dir):
@@ -133,17 +162,25 @@ def download_run_id(run_id, repo, rm):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--run", type=int, help="Github run_id to load")
-    parser.add_argument("--commit", help="Commit to get run_id from. If not set, getting either PR status or most recent commit")
+    parser.add_argument(
+        "--commit", help="Commit to get run_id from. If not set, getting either PR status or most recent commit"
+    )
     parser.add_argument("--rm", help="Remove previously downloaded files first", action="store_true")
     parser.add_argument("--filter", help="Filter results by test name (substring match)")
     parser.add_argument("--filter-env", help="Filter results by env name (substring match)")
     parser.add_argument("--output", help="Show output for failing tests", action="store_true")
     parser.add_argument("--markdown", help="Output in GitHub-flavored markdown format", action="store_true")
-    parser.add_argument("--omit-repl", help="Omit lines starting with 'REPL' and containing 'Available replacements:'", action="store_true")
+    parser.add_argument(
+        "--omit-repl",
+        help="Omit lines starting with 'REPL' and containing 'Available replacements:'",
+        action="store_true",
+    )
 
     # This does not work because we don't store artifacts for unit tests. We could download logs instead but that requires different parsing method:
     # ~/work/cli % gh api -H "Accept: application/vnd.github+json" /repos/databricks/cli/actions/runs/15827411452/logs  > logs.zip
-    parser.add_argument("--unit", action="store_true", help="Extract run_id for unit tests rather than integration tests (not working)")
+    parser.add_argument(
+        "--unit", action="store_true", help="Extract run_id for unit tests rather than integration tests (not working)"
+    )
     args = parser.parse_args()
 
     repo = CLI_REPO if args.unit else DECO_REPO
@@ -164,6 +201,8 @@ def main():
             args.run = get_commit_run_id_unit(args.commit)
         else:
             args.run = get_commit_run_id_integration(args.commit)
+
+    threading.Thread(target=download_known_failures, daemon=True).start()
 
     target_dir = download_run_id(args.run, repo, rm=args.rm)
     print(flush=True)

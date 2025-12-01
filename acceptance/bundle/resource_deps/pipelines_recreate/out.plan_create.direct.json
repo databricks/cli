@@ -1,0 +1,47 @@
+{
+  "plan": {
+    "resources.jobs.bar": {
+      "depends_on": [
+        {
+          "node": "resources.pipelines.foo",
+          "label": "${resources.pipelines.foo.id}"
+        }
+      ],
+      "action": "create",
+      "new_state": {
+        "value": {
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+          },
+          "description": "depends on foo id ${resources.pipelines.foo.id}",
+          "edit_mode": "UI_LOCKED",
+          "format": "MULTI_TASK",
+          "max_concurrent_runs": 1,
+          "name": "job bar",
+          "queue": {
+            "enabled": true
+          }
+        },
+        "vars": {
+          "description": "depends on foo id ${resources.pipelines.foo.id}"
+        }
+      }
+    },
+    "resources.pipelines.foo": {
+      "action": "create",
+      "new_state": {
+        "value": {
+          "catalog": "mycatalog",
+          "channel": "CURRENT",
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+          },
+          "edition": "ADVANCED",
+          "name": "pipeline foo"
+        }
+      }
+    }
+  }
+}

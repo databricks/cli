@@ -1,0 +1,10 @@
+{
+  "plan": {
+    "resources.pipelines.foo": {
+      "action": "create"
+    },
+    "resources.pipelines.foo.permissions": {
+      "action": "create"
+    }
+  }
+}

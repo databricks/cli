@@ -8,6 +8,8 @@ Deployment complete!
 >>> [CLI] jobs list --output json
 [
   {
+    "created_time": [UNIX_TIME_MILLIS],
+    "creator_user_name": "[USERNAME]",
     "job_id": [NUMID],
     "settings": {
       "deployment": {
@@ -15,6 +17,7 @@ Deployment complete!
         "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
       },
       "edit_mode": "UI_LOCKED",
+      "email_notifications": {},
       "format": "MULTI_TASK",
       "max_concurrent_runs": 1,
       "name": "My Job",
@@ -29,7 +32,9 @@ Deployment complete!
           },
           "task_key": "my_notebook"
         }
-      ]
+      ],
+      "timeout_seconds": 0,
+      "webhook_notifications": {}
     }
   }
 ]

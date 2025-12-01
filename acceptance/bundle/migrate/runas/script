@@ -1,0 +1,26 @@
+if [ -z "${TEST_SP_APPLICATION_ID+x}" ]; then
+    export TEST_SP_APPLICATION_ID="123b0db3-ba48-4e12-be3b-3b7898cdf000"
+fi
+
+envsubst < databricks.yml.tmpl > databricks.yml
+trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle plan
+
+cleanup() {
+    trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+
+trap cleanup EXIT
+
+trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+trace print_requests.py //pipelines > out.create_requests.json
+trace print_state.py > out.old_state.json
+
+pipeline_id=$(DATABRICKS_BUNDLE_ENGINE= $CLI bundle summary --output json | jq -r '.resources.pipelines.foo.id')
+trace $CLI pipelines get $pipeline_id > out.pipelines_get.json
+
+trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle plan
+trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle deployment migrate
+trace print_state.py > out.new_state.json
+trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle plan
+trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle plan -o json > out.plan.json

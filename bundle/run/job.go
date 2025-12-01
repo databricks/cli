@@ -74,9 +74,7 @@ func (r *jobRunner) logFailedTasks(ctx context.Context, runId int64) {
 				log.Errorf(ctx, "task %s failed. Unable to fetch error trace: %s", red(task.TaskKey), err)
 				continue
 			}
-			if progressLogger, ok := cmdio.FromContext(ctx); ok {
-				progressLogger.Log(progress.NewTaskErrorEvent(task.TaskKey, taskInfo.Error, taskInfo.ErrorTrace))
-			}
+			cmdio.Log(ctx, progress.NewTaskErrorEvent(task.TaskKey, taskInfo.Error, taskInfo.ErrorTrace))
 			log.Errorf(ctx, "Task %s failed!\nError:\n%s\nTrace:\n%s",
 				red(task.TaskKey), taskInfo.Error, taskInfo.ErrorTrace)
 		} else {
@@ -86,66 +84,46 @@ func (r *jobRunner) logFailedTasks(ctx context.Context, runId int64) {
 	}
 }
 
-func pullRunIdCallback(runId *int64) func(info *jobs.Run) {
-	return func(i *jobs.Run) {
-		if *runId == 0 {
-			*runId = i.RunId
-		}
-	}
+// jobRunMonitor tracks state for a single job run and provides callbacks
+// for monitoring progress.
+type jobRunMonitor struct {
+	ctx       context.Context
+	prevState *jobs.RunState
 }
 
-func logDebugCallback(ctx context.Context, runId *int64) func(info *jobs.Run) {
-	var prevState *jobs.RunState
-	return func(i *jobs.Run) {
-		state := i.State
-		if state == nil {
-			return
-		}
-
-		// Log the job run URL as soon as it is available.
-		if prevState == nil {
-			log.Infof(ctx, "Run available at %s", i.RunPageUrl)
-		}
-		if prevState == nil || prevState.LifeCycleState != state.LifeCycleState {
-			log.Infof(ctx, "Run status: %s", i.State.LifeCycleState)
-			prevState = state
-		}
+// onProgress is the single callback that handles all state tracking and logging.
+func (m *jobRunMonitor) onProgress(info *jobs.Run) {
+	state := info.State
+	if state == nil {
+		return
 	}
-}
 
-func logProgressCallback(ctx context.Context, progressLogger *cmdio.Logger) func(info *jobs.Run) {
-	var prevState *jobs.RunState
-	return func(i *jobs.Run) {
-		state := i.State
-		if state == nil {
-			return
-		}
-
-		if prevState == nil {
-			progressLogger.Log(progress.NewJobRunUrlEvent(i.RunPageUrl))
-		}
-
-		if prevState != nil && prevState.LifeCycleState == state.LifeCycleState &&
-			prevState.ResultState == state.ResultState {
-			return
-		} else {
-			prevState = state
-		}
-
-		event := &progress.JobProgressEvent{
-			Timestamp: time.Now(),
-			JobId:     i.JobId,
-			RunId:     i.RunId,
-			RunName:   i.RunName,
-			State:     *i.State,
-		}
-
-		// log progress events to stderr
-		progressLogger.Log(event)
-
-		// log progress events in using the default logger
-		log.Info(ctx, event.String())
+	// First time we see this run.
+	if m.prevState == nil {
+		log.Infof(m.ctx, "Run available at %s", info.RunPageUrl)
+		cmdio.Log(m.ctx, progress.NewJobRunUrlEvent(info.RunPageUrl))
 	}
+
+	// No state change: do not log.
+	if m.prevState != nil &&
+		m.prevState.LifeCycleState == state.LifeCycleState &&
+		m.prevState.ResultState == state.ResultState {
+		return
+	}
+
+	// Capture current state as previous state for next call.
+	m.prevState = state
+
+	// Log progress event both to the terminal (in place or append), and to the logger.
+	event := &progress.JobProgressEvent{
+		Timestamp: time.Now(),
+		JobId:     info.JobId,
+		RunId:     info.RunId,
+		RunName:   info.RunName,
+		State:     *info.State,
+	}
+	cmdio.Log(m.ctx, event)
+	log.Info(m.ctx, event.String())
 }
 
 func (r *jobRunner) Run(ctx context.Context, opts *Options) (output.RunOutput, error) {
@@ -153,8 +131,6 @@ func (r *jobRunner) Run(ctx context.Context, opts *Options) (output.RunOutput, e
 	if err != nil {
 		return nil, fmt.Errorf("job ID is not an integer: %s", r.job.ID)
 	}
-
-	runId := new(int64)
 
 	err = r.convertPythonParams(opts)
 	if err != nil {
@@ -172,19 +148,9 @@ func (r *jobRunner) Run(ctx context.Context, opts *Options) (output.RunOutput, e
 
 	w := r.bundle.WorkspaceClient()
 
-	// gets the run id from inside Jobs.RunNowAndWait
-	pullRunId := pullRunIdCallback(runId)
-
-	// callback to log status updates to the universal log destination.
-	// Called on every poll request
-	logDebug := logDebugCallback(ctx, runId)
-
-	// callback to log progress events. Called on every poll request
-	progressLogger, ok := cmdio.FromContext(ctx)
-	if !ok {
-		return nil, errors.New("no progress logger found")
+	monitor := &jobRunMonitor{
+		ctx: ctx,
 	}
-	logProgress := logProgressCallback(ctx, progressLogger)
 
 	waiter, err := w.Jobs.RunNow(ctx, *req)
 	if err != nil {
@@ -195,17 +161,13 @@ func (r *jobRunner) Run(ctx context.Context, opts *Options) (output.RunOutput, e
 		details, err := w.Jobs.GetRun(ctx, jobs.GetRunRequest{
 			RunId: waiter.RunId,
 		})
-		progressLogger.Log(progress.NewJobRunUrlEvent(details.RunPageUrl))
+		cmdio.Log(ctx, progress.NewJobRunUrlEvent(details.RunPageUrl))
 		return nil, err
 	}
 
-	run, err := waiter.OnProgress(func(r *jobs.Run) {
-		pullRunId(r)
-		logDebug(r)
-		logProgress(r)
-	}).GetWithTimeout(jobRunTimeout)
+	run, err := waiter.OnProgress(monitor.onProgress).GetWithTimeout(jobRunTimeout)
 	if err != nil {
-		r.logFailedTasks(ctx, *runId)
+		r.logFailedTasks(ctx, waiter.RunId)
 	}
 	if err != nil {
 		return nil, err
@@ -229,12 +191,15 @@ func (r *jobRunner) Run(ctx context.Context, opts *Options) (output.RunOutput, e
 	// The task completed successfully.
 	case jobs.RunResultStateSuccess:
 		log.Infof(ctx, "Run has completed successfully!")
-		return output.GetJobOutput(ctx, r.bundle.WorkspaceClient(), *runId)
+		return output.GetJobOutput(ctx, r.bundle.WorkspaceClient(), waiter.RunId)
 
 	// The run was stopped after reaching the timeout.
 	case jobs.RunResultStateTimedout:
 		log.Infof(ctx, "Run has timed out!")
 		return nil, fmt.Errorf("run timed out: %s", run.State.StateMessage)
+
+	// TODO: handle other result states.
+	default:
 	}
 
 	return nil, err

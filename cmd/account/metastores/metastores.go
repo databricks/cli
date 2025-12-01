@@ -22,10 +22,7 @@ func New() *cobra.Command {
 		Long: `These APIs manage Unity Catalog metastores for an account. A metastore
   contains catalogs that can be associated with workspaces`,
 		GroupID: "catalog",
-		Annotations: map[string]string{
-			"package": "catalog",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -63,9 +60,9 @@ func newCreate() *cobra.Command {
 	// TODO: complex arg: metastore_info
 
 	cmd.Use = "create"
-	cmd.Short = `Create metastore.`
-	cmd.Long = `Create metastore.
-  
+	cmd.Short = `Create Metastore.`
+	cmd.Long = `Create Metastore.
+
   Creates a Unity Catalog metastore.`
 
 	cmd.Annotations = make(map[string]string)
@@ -131,7 +128,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete METASTORE_ID"
 	cmd.Short = `Delete a metastore.`
 	cmd.Long = `Delete a metastore.
-  
+
   Deletes a Unity Catalog metastore for an account, both specified by ID.
 
   Arguments:
@@ -151,11 +148,11 @@ func newDelete() *cobra.Command {
 
 		deleteReq.MetastoreId = args[0]
 
-		err = a.Metastores.Delete(ctx, deleteReq)
+		response, err := a.Metastores.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -187,7 +184,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get METASTORE_ID"
 	cmd.Short = `Get a metastore.`
 	cmd.Long = `Get a metastore.
-  
+
   Gets a Unity Catalog metastore from an account, both specified by ID.
 
   Arguments:
@@ -240,7 +237,7 @@ func newList() *cobra.Command {
 	cmd.Use = "list"
 	cmd.Short = `Get all metastores associated with an account.`
 	cmd.Long = `Get all metastores associated with an account.
-  
+
   Gets all Unity Catalog metastores associated with an account specified by ID.`
 
 	cmd.Annotations = make(map[string]string)
@@ -287,7 +284,7 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update METASTORE_ID"
 	cmd.Short = `Update a metastore.`
 	cmd.Long = `Update a metastore.
-  
+
   Updates an existing Unity Catalog metastore.
 
   Arguments:

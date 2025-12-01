@@ -23,10 +23,7 @@ func New() *cobra.Command {
   applications to their account through the OAuth Published App Integration
   APIs.`,
 		GroupID: "oauth2",
-		Annotations: map[string]string{
-			"package": "oauth2",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -60,7 +57,7 @@ func newList() *cobra.Command {
 	cmd.Use = "list"
 	cmd.Short = `Get all the published OAuth apps.`
 	cmd.Long = `Get all the published OAuth apps.
-  
+
   Get all the available published OAuth apps in Databricks.`
 
 	cmd.Annotations = make(map[string]string)

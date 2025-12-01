@@ -1,8 +1,0 @@
-Error: cannot resolve "${resources.volumes.bar.non_existent}": schema mismatch: non_existent: field "non_existent" not found in resources.Volume; non_existent: field "non_existent" not found in catalog.VolumeInfo
-
-Error: cannot plan volumes.foo: dependency failed: volumes.bar
-
-Error: planning failed
-
-
-Exit code (musterr): 1

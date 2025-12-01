@@ -1,0 +1,55 @@
+
+>>> [CLI] bundle plan
+create dashboards.my_dashboard
+
+Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/change-parent-path-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] lakeview get [ORIGINAL_DASHBOARD_ID]
+{
+  "display_name": "test dashboard",
+  "lifecycle_state": "ACTIVE",
+  "parent_path": "/Users/[USERNAME]/.bundle/change-parent-path-[UNIQUE_NAME]/default/resources",
+  "path": "/Users/[USERNAME]/.bundle/change-parent-path-[UNIQUE_NAME]/default/resources/test dashboard.lvdash.json",
+  "serialized_dashboard": "{}\n",
+  "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
+}
+
+>>> [CLI] bundle plan
+recreate dashboards.my_dashboard
+
+Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/change-parent-path-[UNIQUE_NAME]/default/files...
+
+This action will result in the deletion or recreation of the following dashboards.
+This will result in changed IDs and permanent URLs of the dashboards that will be recreated:
+  recreate resources.dashboards.my_dashboard
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] lakeview get [NEW_DASHBOARD_ID]
+{
+  "display_name": "test dashboard",
+  "lifecycle_state": "ACTIVE",
+  "parent_path": "/Users/[USERNAME]/.bundle/change-parent-path-[UNIQUE_NAME]/default/resources2",
+  "path": "/Users/[USERNAME]/.bundle/change-parent-path-[UNIQUE_NAME]/default/resources2/test dashboard.lvdash.json",
+  "serialized_dashboard": "{}\n",
+  "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.dashboards.my_dashboard
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/change-parent-path-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!

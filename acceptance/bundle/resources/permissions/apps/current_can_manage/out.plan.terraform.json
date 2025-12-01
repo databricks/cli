@@ -1,0 +1,10 @@
+{
+  "plan": {
+    "resources.apps.foo": {
+      "action": "create"
+    },
+    "resources.apps.foo.permissions": {
+      "action": "create"
+    }
+  }
+}

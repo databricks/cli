@@ -28,17 +28,14 @@ func New() *cobra.Command {
   have access to an external location in Unity Catalog, the request fails and
   Unity Catalog does not attempt to authenticate to your cloud tenant on the
   user’s behalf.
-  
+
   Databricks recommends using external locations rather than using storage
   credentials directly.
-  
+
   To create external locations, you must be a metastore admin or a user with the
   **CREATE_EXTERNAL_LOCATION** privilege.`,
 		GroupID: "catalog",
-		Annotations: map[string]string{
-			"package": "catalog",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -84,7 +81,7 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create NAME URL CREDENTIAL_NAME"
 	cmd.Short = `Create an external location.`
 	cmd.Long = `Create an external location.
-  
+
   Creates a new external location entry in the metastore. The caller must be a
   metastore admin or have the **CREATE_EXTERNAL_LOCATION** privilege on both the
   metastore and the associated storage credential.
@@ -173,7 +170,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete NAME"
 	cmd.Short = `Delete an external location.`
 	cmd.Long = `Delete an external location.
-  
+
   Deletes the specified external location from the metastore. The caller must be
   the owner of the external location.
 
@@ -232,7 +229,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get NAME"
 	cmd.Short = `Get an external location.`
 	cmd.Long = `Get an external location.
-  
+
   Gets an external location from the metastore. The caller must be either a
   metastore admin, the owner of the external location, or a user that has some
   privilege on the external location.
@@ -288,17 +285,26 @@ func newList() *cobra.Command {
 	var listReq catalog.ListExternalLocationsRequest
 
 	cmd.Flags().BoolVar(&listReq.IncludeBrowse, "include-browse", listReq.IncludeBrowse, `Whether to include external locations in the response for which the principal can only access selective metadata for.`)
+	cmd.Flags().BoolVar(&listReq.IncludeUnbound, "include-unbound", listReq.IncludeUnbound, `Whether to include external locations not bound to the workspace.`)
 	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of external locations to return.`)
 	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
 
 	cmd.Use = "list"
 	cmd.Short = `List external locations.`
 	cmd.Long = `List external locations.
-  
+
   Gets an array of external locations (__ExternalLocationInfo__ objects) from
   the metastore. The caller must be a metastore admin, the owner of the external
   location, or a user that has some privilege on the external location. There is
-  no guarantee of a specific ordering of the elements in the array.`
+  no guarantee of a specific ordering of the elements in the array.
+
+  NOTE: we recommend using max_results=0 to use the paginated version of this
+  API. Unpaginated calls will be deprecated soon.
+
+  PAGINATION BEHAVIOR: When using pagination (max_results >= 0), a page may
+  contain zero results while still providing a next_page_token. Clients must
+  continue reading pages until next_page_token is absent, which is the only
+  indication that the end of results has been reached.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -362,7 +368,7 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update NAME"
 	cmd.Short = `Update an external location.`
 	cmd.Long = `Update an external location.
-  
+
   Updates an external location in the metastore. The caller must be the owner of
   the external location, or be a metastore admin. In the second case, the admin
   can only update the name of the external location.

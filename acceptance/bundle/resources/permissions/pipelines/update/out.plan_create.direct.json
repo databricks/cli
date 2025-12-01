@@ -1,0 +1,49 @@
+{
+  "plan": {
+    "resources.pipelines.foo": {
+      "action": "create",
+      "new_state": {
+        "value": {
+          "channel": "CURRENT",
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/permissions-test/default/state/metadata.json"
+          },
+          "edition": "ADVANCED",
+          "name": "foo"
+        }
+      }
+    },
+    "resources.pipelines.foo.permissions": {
+      "depends_on": [
+        {
+          "node": "resources.pipelines.foo",
+          "label": "${resources.pipelines.foo.id}"
+        }
+      ],
+      "action": "create",
+      "new_state": {
+        "value": {
+          "object_id": "",
+          "permissions": [
+            {
+              "permission_level": "CAN_VIEW",
+              "user_name": "viewer@example.com"
+            },
+            {
+              "group_name": "data-team",
+              "permission_level": "CAN_MANAGE"
+            },
+            {
+              "permission_level": "IS_OWNER",
+              "user_name": "[USERNAME]"
+            }
+          ]
+        },
+        "vars": {
+          "object_id": "/pipelines/${resources.pipelines.foo.id}"
+        }
+      }
+    }
+  }
+}

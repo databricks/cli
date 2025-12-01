@@ -1,0 +1,172 @@
+{
+  "plan": {
+    "resources.clusters.test_cluster": {
+      "action": "create",
+      "new_state": {
+        "value": {
+          "autotermination_minutes": 60,
+          "cluster_name": "test-cluster-[UNIQUE_NAME]",
+          "node_type_id": "[NODE_TYPE_ID]",
+          "num_workers": 2,
+          "spark_version": "13.3.x-snapshot-scala2.12"
+        }
+      }
+    }
+  }
+}
+{
+  "plan": {
+    "resources.clusters.test_cluster": {
+      "action": "update",
+      "new_state": {
+        "value": {
+          "autoscale": {
+            "max_workers": 4,
+            "min_workers": 2
+          },
+          "autotermination_minutes": 60,
+          "cluster_name": "test-cluster-[UNIQUE_NAME]",
+          "node_type_id": "[NODE_TYPE_ID]",
+          "spark_version": "13.3.x-snapshot-scala2.12"
+        }
+      },
+      "remote_state": {
+        "autotermination_minutes": 60,
+        "cluster_id": "[CLUSTER_ID]",
+        "cluster_name": "test-cluster-[UNIQUE_NAME]",
+        "node_type_id": "[NODE_TYPE_ID]",
+        "num_workers": 2,
+        "spark_version": "13.3.x-snapshot-scala2.12"
+      },
+      "changes": {
+        "local": {
+          "autoscale": {
+            "action": "update"
+          },
+          "num_workers": {
+            "action": "update"
+          }
+        }
+      }
+    }
+  }
+}
+{
+  "plan": {
+    "resources.clusters.test_cluster": {
+      "action": "update",
+      "new_state": {
+        "value": {
+          "autoscale": {
+            "max_workers": 5,
+            "min_workers": 3
+          },
+          "autotermination_minutes": 60,
+          "cluster_name": "test-cluster-[UNIQUE_NAME]",
+          "node_type_id": "[NODE_TYPE_ID]",
+          "spark_version": "13.3.x-snapshot-scala2.12"
+        }
+      },
+      "remote_state": {
+        "autoscale": {
+          "max_workers": 4,
+          "min_workers": 2
+        },
+        "autotermination_minutes": 60,
+        "cluster_id": "[CLUSTER_ID]",
+        "cluster_name": "test-cluster-[UNIQUE_NAME]",
+        "node_type_id": "[NODE_TYPE_ID]",
+        "spark_version": "13.3.x-snapshot-scala2.12"
+      },
+      "changes": {
+        "local": {
+          "autoscale.max_workers": {
+            "action": "update"
+          },
+          "autoscale.min_workers": {
+            "action": "update"
+          }
+        }
+      }
+    }
+  }
+}
+{
+  "plan": {
+    "resources.clusters.test_cluster": {
+      "action": "resize",
+      "new_state": {
+        "value": {
+          "autoscale": {
+            "max_workers": 6,
+            "min_workers": 4
+          },
+          "autotermination_minutes": 60,
+          "cluster_name": "test-cluster-[UNIQUE_NAME]",
+          "node_type_id": "[NODE_TYPE_ID]",
+          "spark_version": "13.3.x-snapshot-scala2.12"
+        }
+      },
+      "remote_state": {
+        "autoscale": {
+          "max_workers": 5,
+          "min_workers": 3
+        },
+        "autotermination_minutes": 60,
+        "cluster_id": "[CLUSTER_ID]",
+        "cluster_name": "test-cluster-[UNIQUE_NAME]",
+        "node_type_id": "[NODE_TYPE_ID]",
+        "spark_version": "13.3.x-snapshot-scala2.12",
+        "state": "RUNNING"
+      },
+      "changes": {
+        "local": {
+          "autoscale.max_workers": {
+            "action": "resize"
+          },
+          "autoscale.min_workers": {
+            "action": "resize"
+          }
+        }
+      }
+    }
+  }
+}
+{
+  "plan": {
+    "resources.clusters.test_cluster": {
+      "action": "resize",
+      "new_state": {
+        "value": {
+          "autotermination_minutes": 60,
+          "cluster_name": "test-cluster-[UNIQUE_NAME]",
+          "node_type_id": "[NODE_TYPE_ID]",
+          "num_workers": 3,
+          "spark_version": "13.3.x-snapshot-scala2.12"
+        }
+      },
+      "remote_state": {
+        "autoscale": {
+          "max_workers": 6,
+          "min_workers": 4
+        },
+        "autotermination_minutes": 60,
+        "cluster_id": "[CLUSTER_ID]",
+        "cluster_name": "test-cluster-[UNIQUE_NAME]",
+        "node_type_id": "[NODE_TYPE_ID]",
+        "spark_version": "13.3.x-snapshot-scala2.12",
+        "state": "RUNNING"
+      },
+      "changes": {
+        "local": {
+          "autoscale": {
+            "action": "resize"
+          },
+          "num_workers": {
+            "action": "resize"
+          }
+        }
+      }
+    }
+  }
+}

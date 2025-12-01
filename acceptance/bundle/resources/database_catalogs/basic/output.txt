@@ -1,0 +1,53 @@
+
+>>> [CLI] bundle validate
+Name: deploy-lakebase-catalog-[UNIQUE_NAME]
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/deploy-lakebase-catalog-[UNIQUE_NAME]/default
+
+Validation OK!
+
+>>> [CLI] bundle summary
+Name: deploy-lakebase-catalog-[UNIQUE_NAME]
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/deploy-lakebase-catalog-[UNIQUE_NAME]/default
+Resources:
+  Database catalogs:
+    my_catalog:
+      Name: my_catalog_[UNIQUE_NAME]
+  Database instances:
+    my_instance:
+      Name: test-db-catalog-[UNIQUE_NAME]
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-lakebase-catalog-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] bundle summary
+Name: deploy-lakebase-catalog-[UNIQUE_NAME]
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/deploy-lakebase-catalog-[UNIQUE_NAME]/default
+Resources:
+  Database catalogs:
+    my_catalog:
+      Name: my_catalog_[UNIQUE_NAME]
+  Database instances:
+    my_instance:
+      Name: test-db-catalog-[UNIQUE_NAME]
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.database_catalogs.my_catalog
+  delete resources.database_instances.my_instance
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-lakebase-catalog-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!

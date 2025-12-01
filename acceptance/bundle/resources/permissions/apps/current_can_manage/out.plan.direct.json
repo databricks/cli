@@ -1,0 +1,48 @@
+{
+  "plan": {
+    "resources.apps.foo": {
+      "action": "create",
+      "new_state": {
+        "value": {
+          "description": "",
+          "name": "foo"
+        }
+      }
+    },
+    "resources.apps.foo.permissions": {
+      "depends_on": [
+        {
+          "node": "resources.apps.foo",
+          "label": "${resources.apps.foo.id}"
+        }
+      ],
+      "action": "create",
+      "new_state": {
+        "value": {
+          "object_id": "",
+          "permissions": [
+            {
+              "permission_level": "CAN_USE",
+              "user_name": "viewer@example.com"
+            },
+            {
+              "group_name": "data-team",
+              "permission_level": "CAN_MANAGE"
+            },
+            {
+              "permission_level": "CAN_MANAGE",
+              "service_principal_name": "[UUID]"
+            },
+            {
+              "permission_level": "CAN_MANAGE",
+              "user_name": "[USERNAME]"
+            }
+          ]
+        },
+        "vars": {
+          "object_id": "/apps/${resources.apps.foo.id}"
+        }
+      }
+    }
+  }
+}

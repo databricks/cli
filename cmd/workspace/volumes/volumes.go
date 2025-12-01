@@ -30,10 +30,7 @@ func New() *cobra.Command {
   centrally and providing secure access across workspaces to it, or transforming
   and querying non-tabular data files in ETL.`,
 		GroupID: "catalog",
-		Annotations: map[string]string{
-			"package": "catalog",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -74,20 +71,20 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create CATALOG_NAME SCHEMA_NAME NAME VOLUME_TYPE"
 	cmd.Short = `Create a Volume.`
 	cmd.Long = `Create a Volume.
-  
+
   Creates a new volume.
-  
+
   The user could create either an external volume or a managed volume. An
   external volume will be created in the specified external location, while a
   managed volume will be located in the default location which is specified by
   the parent schema, or the parent catalog, or the Metastore.
-  
+
   For the volume creation to succeed, the user must satisfy following
   conditions: - The caller must be a metastore admin, or be the owner of the
   parent catalog and schema, or have the **USE_CATALOG** privilege on the parent
   catalog and the **USE_SCHEMA** privilege on the parent schema. - The caller
   must have **CREATE VOLUME** privilege on the parent schema.
-  
+
   For an external volume, following conditions also need to satisfy - The caller
   must have **CREATE EXTERNAL VOLUME** privilege on the external location. -
   There are no other tables, nor volumes existing in the specified storage
@@ -98,7 +95,12 @@ func newCreate() *cobra.Command {
     CATALOG_NAME: The name of the catalog where the schema and the volume are
     SCHEMA_NAME: The name of the schema where the volume is
     NAME: The name of the volume
-    VOLUME_TYPE:  
+    VOLUME_TYPE: The type of the volume. An external volume is located in the specified
+      external location. A managed volume is located in the default location
+      which is specified by the parent schema, or the parent catalog, or the
+      Metastore. [Learn more]
+
+      [Learn more]: https://docs.databricks.com/aws/en/volumes/managed-vs-external
       Supported values: [EXTERNAL, MANAGED]`
 
 	cmd.Annotations = make(map[string]string)
@@ -146,6 +148,7 @@ func newCreate() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid VOLUME_TYPE: %s", args[3])
 			}
+
 		}
 
 		response, err := w.Volumes.Create(ctx, createReq)
@@ -184,9 +187,9 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete NAME"
 	cmd.Short = `Delete a Volume.`
 	cmd.Long = `Delete a Volume.
-  
+
   Deletes a volume from the specified parent catalog and schema.
-  
+
   The caller must be a metastore admin or an owner of the volume. For the latter
   case, the caller must also be the owner or have the **USE_CATALOG** privilege
   on the parent catalog and the **USE_SCHEMA** privilege on the parent schema.
@@ -260,18 +263,23 @@ func newList() *cobra.Command {
 	cmd.Use = "list CATALOG_NAME SCHEMA_NAME"
 	cmd.Short = `List Volumes.`
 	cmd.Long = `List Volumes.
-  
+
   Gets an array of volumes for the current metastore under the parent catalog
   and schema.
-  
+
   The returned volumes are filtered based on the privileges of the calling user.
   For example, the metastore admin is able to list all the volumes. A regular
   user needs to be the owner or have the **READ VOLUME** privilege on the volume
-  to recieve the volumes in the response. For the latter case, the caller must
+  to receive the volumes in the response. For the latter case, the caller must
   also be the owner or have the **USE_CATALOG** privilege on the parent catalog
   and the **USE_SCHEMA** privilege on the parent schema.
-  
+
   There is no guarantee of a specific ordering of the elements in the array.
+
+  PAGINATION BEHAVIOR: The API is by default paginated, a page may contain zero
+  results while still providing a next_page_token. Clients must continue reading
+  pages until next_page_token is absent, which is the only indication that the
+  end of results has been reached.
 
   Arguments:
     CATALOG_NAME: The identifier of the catalog
@@ -327,9 +335,9 @@ func newRead() *cobra.Command {
 	cmd.Use = "read NAME"
 	cmd.Short = `Get a Volume.`
 	cmd.Long = `Get a Volume.
-  
+
   Gets a volume from the metastore for a specific catalog and schema.
-  
+
   The caller must be a metastore admin or an owner of (or have the **READ
   VOLUME** privilege on) the volume. For the latter case, the caller must also
   be the owner or have the **USE_CATALOG** privilege on the parent catalog and
@@ -407,13 +415,13 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update NAME"
 	cmd.Short = `Update a Volume.`
 	cmd.Long = `Update a Volume.
-  
+
   Updates the specified volume under the specified parent catalog and schema.
-  
+
   The caller must be a metastore admin or an owner of the volume. For the latter
   case, the caller must also be the owner or have the **USE_CATALOG** privilege
   on the parent catalog and the **USE_SCHEMA** privilege on the parent schema.
-  
+
   Currently only the name, the owner or the comment of the volume could be
   updated.
 

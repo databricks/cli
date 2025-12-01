@@ -2,4 +2,4 @@ Local = true
 Cloud = false
 
 [EnvMatrix]
-  DATABRICKS_CLI_DEPLOYMENT = ["direct-exp"]
+  DATABRICKS_BUNDLE_ENGINE = ["direct"]

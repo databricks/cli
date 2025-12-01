@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/cmd/auth"
 	"github.com/databricks/cli/cmd/bundle"
 	"github.com/databricks/cli/cmd/configure"
+	"github.com/databricks/cli/cmd/experimental"
 	"github.com/databricks/cli/cmd/fs"
 	"github.com/databricks/cli/cmd/labs"
 	"github.com/databricks/cli/cmd/pipelines"
@@ -29,11 +30,26 @@ const (
 	permissionsGroup = "permissions"
 )
 
+// configureGroups adds groups to the command, only if a group
+// has at least one available command.
+func configureGroups(cmd *cobra.Command, groups []cobra.Group) {
+	filteredGroups := cmdgroup.FilterGroups(groups, cmd.Commands())
+	for i := range filteredGroups {
+		cmd.AddGroup(&filteredGroups[i])
+	}
+}
+
+func accountCommand() *cobra.Command {
+	cmd := account.New()
+	configureGroups(cmd, account.Groups())
+	return cmd
+}
+
 func New(ctx context.Context) *cobra.Command {
 	cli := root.New(ctx)
 
 	// Add account subcommand.
-	cli.AddCommand(account.New())
+	cli.AddCommand(accountCommand())
 
 	// Add workspace subcommands.
 	workspaceCommands := workspace.All()
@@ -70,6 +86,7 @@ func New(ctx context.Context) *cobra.Command {
 	cli.AddCommand(api.New())
 	cli.AddCommand(auth.New())
 	cli.AddCommand(bundle.New())
+	cli.AddCommand(experimental.New())
 	cli.AddCommand(psql.New())
 	cli.AddCommand(configure.New())
 	cli.AddCommand(fs.New())
@@ -81,12 +98,10 @@ func New(ctx context.Context) *cobra.Command {
 	cli.AddCommand(ssh.New())
 
 	// Add workspace command groups, filtering out empty groups or groups with only hidden commands.
-	allGroups := workspace.Groups()
-	allCommands := cli.Commands()
-	filteredGroups := cmdgroup.FilterGroups(allGroups, allCommands)
-	for i := range filteredGroups {
-		cli.AddGroup(&filteredGroups[i])
-	}
+	configureGroups(cli, append(workspace.Groups(), cobra.Group{
+		ID:    "development",
+		Title: "Developer Tools",
+	}))
 
 	return cli
 }

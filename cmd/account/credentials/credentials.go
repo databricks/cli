@@ -27,10 +27,7 @@ func New() *cobra.Command {
   credential configuration encapsulates this role information, and its ID is
   used when creating a new workspace.`,
 		GroupID: "provisioning",
-		Annotations: map[string]string{
-			"package": "provisioning",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -67,20 +64,20 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create"
 	cmd.Short = `Create credential configuration.`
 	cmd.Long = `Create credential configuration.
-  
+
   Creates a Databricks credential configuration that represents cloud
   cross-account credentials for a specified account. Databricks uses this to set
   up network infrastructure properly to host Databricks clusters. For your AWS
   IAM role, you need to trust the External ID (the Databricks Account API
   account ID) in the returned credential object, and configure the required
   access policy.
-  
+
   Save the response's credentials_id field, which is the ID for your new
   credential configuration object.
-  
+
   For information about how to create a new workspace with this API, see [Create
   a new workspace using the Account API]
-  
+
   [Create a new workspace using the Account API]: http://docs.databricks.com/administration-guide/account-api/new-workspace.html`
 
 	cmd.Annotations = make(map[string]string)
@@ -141,7 +138,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete CREDENTIALS_ID"
 	cmd.Short = `Delete credential configuration.`
 	cmd.Long = `Delete credential configuration.
-  
+
   Deletes a Databricks credential configuration object for an account, both
   specified by ID. You cannot delete a credential that is associated with any
   workspace.
@@ -151,35 +148,23 @@ func newDelete() *cobra.Command {
 
 	cmd.Annotations = make(map[string]string)
 
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
 
-		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No CREDENTIALS_ID argument specified. Loading names for Credentials drop-down."
-			names, err := a.Credentials.CredentialCredentialsNameToCredentialsIdMap(ctx)
-			close(promptSpinner)
-			if err != nil {
-				return fmt.Errorf("failed to load names for Credentials drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "Databricks Account API credential configuration ID")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have databricks account api credential configuration id")
-		}
 		deleteReq.CredentialsId = args[0]
 
-		err = a.Credentials.Delete(ctx, deleteReq)
+		response, err := a.Credentials.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -211,37 +196,25 @@ func newGet() *cobra.Command {
 	cmd.Use = "get CREDENTIALS_ID"
 	cmd.Short = `Get credential configuration.`
 	cmd.Long = `Get credential configuration.
-  
+
   Gets a Databricks credential configuration object for an account, both
   specified by ID.
 
   Arguments:
-    CREDENTIALS_ID: Databricks Account API credential configuration ID`
+    CREDENTIALS_ID: Credential configuration ID`
 
 	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
 
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
 
-		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No CREDENTIALS_ID argument specified. Loading names for Credentials drop-down."
-			names, err := a.Credentials.CredentialCredentialsNameToCredentialsIdMap(ctx)
-			close(promptSpinner)
-			if err != nil {
-				return fmt.Errorf("failed to load names for Credentials drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "Databricks Account API credential configuration ID")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have databricks account api credential configuration id")
-		}
 		getReq.CredentialsId = args[0]
 
 		response, err := a.Credentials.Get(ctx, getReq)
@@ -275,11 +248,11 @@ func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	cmd.Use = "list"
-	cmd.Short = `Get all credential configurations.`
-	cmd.Long = `Get all credential configurations.
-  
-  Gets all Databricks credential configurations associated with an account
-  specified by ID.`
+	cmd.Short = `List credential configuration.`
+	cmd.Long = `List credential configuration.
+
+  List Databricks credential configuration objects for an account, specified by
+  ID.`
 
 	cmd.Annotations = make(map[string]string)
 

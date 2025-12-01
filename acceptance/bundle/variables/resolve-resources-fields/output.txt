@@ -13,7 +13,6 @@
     "baz": {
       "description": "",
       "name": "myapp",
-      "permissions": [],
       "source_code_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files"
     }
   },

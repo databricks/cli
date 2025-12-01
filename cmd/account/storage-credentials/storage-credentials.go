@@ -21,10 +21,7 @@ func New() *cobra.Command {
 		Short:   `These APIs manage storage credentials for a particular metastore.`,
 		Long:    `These APIs manage storage credentials for a particular metastore.`,
 		GroupID: "catalog",
-		Annotations: map[string]string{
-			"package": "catalog",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -60,18 +57,18 @@ func newCreate() *cobra.Command {
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: credential_info
+	cmd.Flags().BoolVar(&createReq.SkipValidation, "skip-validation", createReq.SkipValidation, `Optional, default false.`)
 
 	cmd.Use = "create METASTORE_ID"
 	cmd.Short = `Create a storage credential.`
 	cmd.Long = `Create a storage credential.
-  
+
   Creates a new storage credential. The request object is specific to the cloud:
-  
-  * **AwsIamRole** for AWS credentials * **AzureServicePrincipal** for Azure
-  credentials * **GcpServiceAcountKey** for GCP credentials.
-  
-  The caller must be a metastore admin and have the
-  **CREATE_STORAGE_CREDENTIAL** privilege on the metastore.
+  - **AwsIamRole** for AWS credentials - **AzureServicePrincipal** for Azure
+  credentials - **GcpServiceAccountKey** for GCP credentials
+
+  The caller must be a metastore admin and have the CREATE_STORAGE_CREDENTIAL
+  privilege on the metastore.
 
   Arguments:
     METASTORE_ID: Unity Catalog metastore ID`
@@ -140,7 +137,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete METASTORE_ID STORAGE_CREDENTIAL_NAME"
 	cmd.Short = `Delete a storage credential.`
 	cmd.Long = `Delete a storage credential.
-  
+
   Deletes a storage credential from the metastore. The caller must be an owner
   of the storage credential.
 
@@ -163,11 +160,11 @@ func newDelete() *cobra.Command {
 		deleteReq.MetastoreId = args[0]
 		deleteReq.StorageCredentialName = args[1]
 
-		err = a.StorageCredentials.Delete(ctx, deleteReq)
+		response, err := a.StorageCredentials.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -199,14 +196,14 @@ func newGet() *cobra.Command {
 	cmd.Use = "get METASTORE_ID STORAGE_CREDENTIAL_NAME"
 	cmd.Short = `Gets the named storage credential.`
 	cmd.Long = `Gets the named storage credential.
-  
+
   Gets a storage credential from the metastore. The caller must be a metastore
   admin, the owner of the storage credential, or have a level of privilege on
   the storage credential.
 
   Arguments:
     METASTORE_ID: Unity Catalog metastore ID
-    STORAGE_CREDENTIAL_NAME: Name of the storage credential.`
+    STORAGE_CREDENTIAL_NAME: Required. Name of the storage credential.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -259,7 +256,7 @@ func newList() *cobra.Command {
 	cmd.Use = "list METASTORE_ID"
 	cmd.Short = `Get all storage credentials assigned to a metastore.`
 	cmd.Long = `Get all storage credentials assigned to a metastore.
-  
+
   Gets a list of all storage credentials that have been assigned to given
   metastore.
 
@@ -314,13 +311,14 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	// TODO: complex arg: credential_info
+	cmd.Flags().BoolVar(&updateReq.SkipValidation, "skip-validation", updateReq.SkipValidation, `Optional.`)
 
 	cmd.Use = "update METASTORE_ID STORAGE_CREDENTIAL_NAME"
 	cmd.Short = `Updates a storage credential.`
 	cmd.Long = `Updates a storage credential.
-  
+
   Updates a storage credential on the metastore. The caller must be the owner of
-  the storage credential. If the caller is a metastore admin, only the __owner__
+  the storage credential. If the caller is a metastore admin, only the **owner**
   credential can be changed.
 
   Arguments:

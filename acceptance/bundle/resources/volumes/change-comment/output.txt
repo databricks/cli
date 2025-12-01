@@ -14,8 +14,6 @@
 >>> musterr [CLI] volumes read main.myschema.myvolume
 Error: Resource catalog.VolumeInfo not found: main.myschema.myvolume
 
-Exit code (musterr): 1
-
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Deploying resources...
@@ -44,10 +42,14 @@ Deployment complete!
 {
   "catalog_name":"main",
   "comment":"COMMENT1",
+  "created_at":[UNIX_TIME_MILLIS][0],
+  "created_by":"[USERNAME]",
   "full_name":"main.myschema.myvolume",
   "name":"myvolume",
+  "owner":"[USERNAME]",
   "schema_name":"myschema",
   "storage_location":"s3://deco-uc-prod-isolated-aws-us-east-1/metastore/[UUID]/volumes/[UUID]",
+  "updated_at":[UNIX_TIME_MILLIS][0],
   "volume_type":"MANAGED"
 }
 
@@ -86,13 +88,13 @@ Deployment complete!
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
-  delete volume volume1
+  delete resources.volumes.volume1
 
 This action will result in the deletion of the following volumes.
 For managed volumes, the files stored in the volume are also deleted from your
 cloud tenant within 30 days. For external volumes, the metadata about the volume
 is removed from the catalog, but the underlying files are not deleted:
-  delete volume volume1
+  delete resources.volumes.volume1
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
@@ -107,8 +109,6 @@ Destroy complete!
 
 >>> musterr [CLI] volumes read main.myschema.myvolume
 Error: Resource catalog.VolumeInfo not found: main.myschema.myvolume
-
-Exit code (musterr): 1
 {
   "catalog_name": "main",
   "comment": "COMMENT2",

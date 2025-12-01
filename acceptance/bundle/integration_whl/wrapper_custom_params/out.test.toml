@@ -6,4 +6,4 @@ CloudSlow = true
   gcp = false
 
 [EnvMatrix]
-  DATABRICKS_CLI_DEPLOYMENT = ["terraform", "direct-exp"]
+  DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]

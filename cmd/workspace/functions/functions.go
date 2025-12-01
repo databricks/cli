@@ -22,16 +22,13 @@ func New() *cobra.Command {
 		Use:   "functions",
 		Short: `Functions implement User-Defined Functions (UDFs) in Unity Catalog.`,
 		Long: `Functions implement User-Defined Functions (UDFs) in Unity Catalog.
-  
+
   The function implementation can be any SQL expression or Query, and it can be
   invoked wherever a table reference is allowed in a query. In Unity Catalog, a
   function resides at the same level as a table, so it can be referenced with
   the form __catalog_name__.__schema_name__.__function_name__.`,
 		GroupID: "catalog",
-		Annotations: map[string]string{
-			"package": "catalog",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -69,11 +66,11 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create"
 	cmd.Short = `Create a function.`
 	cmd.Long = `Create a function.
-  
+
   **WARNING: This API is experimental and will change in future versions**
-  
+
   Creates a new function
-  
+
   The user must have the following permissions in order for the function to be
   created: - **USE_CATALOG** on the function's parent catalog - **USE_SCHEMA**
   and **CREATE_FUNCTION** on the function's parent schema`
@@ -138,7 +135,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete NAME"
 	cmd.Short = `Delete a function.`
 	cmd.Long = `Delete a function.
-  
+
   Deletes the function that matches the supplied name. For the deletion to
   succeed, the user must satisfy one of the following conditions: - Is the owner
   of the function's parent catalog - Is the owner of the function's parent
@@ -148,7 +145,7 @@ func newDelete() *cobra.Command {
 
   Arguments:
     NAME: The fully-qualified name of the function (of the form
-      __catalog_name__.__schema_name__.__function__name__).`
+      __catalog_name__.__schema_name__.__function__name__) .`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -165,14 +162,14 @@ func newDelete() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("failed to load names for Functions drop-down. Please manually specify required arguments. Original error: %w", err)
 			}
-			id, err := cmdio.Select(ctx, names, "The fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function__name__)")
+			id, err := cmdio.Select(ctx, names, "The fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function__name__) ")
 			if err != nil {
 				return err
 			}
 			args = append(args, id)
 		}
 		if len(args) != 1 {
-			return fmt.Errorf("expected to have the fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function__name__)")
+			return fmt.Errorf("expected to have the fully-qualified name of the function (of the form __catalog_name__.__schema_name__.__function__name__) ")
 		}
 		deleteReq.Name = args[0]
 
@@ -214,7 +211,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get NAME"
 	cmd.Short = `Get a function.`
 	cmd.Long = `Get a function.
-  
+
   Gets a function from within a parent catalog and schema. For the fetch to
   succeed, the user must satisfy one of the following requirements: - Is a
   metastore admin - Is an owner of the function's parent catalog - Have the
@@ -293,7 +290,7 @@ func newList() *cobra.Command {
 	cmd.Use = "list CATALOG_NAME SCHEMA_NAME"
 	cmd.Short = `List functions.`
 	cmd.Long = `List functions.
-  
+
   List functions within the specified parent catalog and schema. If the user is
   a metastore admin, all functions are returned in the output list. Otherwise,
   the user must have the **USE_CATALOG** privilege on the catalog and the
@@ -301,6 +298,14 @@ func newList() *cobra.Command {
   functions for which either the user has the **EXECUTE** privilege or the user
   is the owner. There is no guarantee of a specific ordering of the elements in
   the array.
+
+  NOTE: we recommend using max_results=0 to use the paginated version of this
+  API. Unpaginated calls will be deprecated soon.
+
+  PAGINATION BEHAVIOR: When using pagination (max_results >= 0), a page may
+  contain zero results while still providing a next_page_token. Clients must
+  continue reading pages until next_page_token is absent, which is the only
+  indication that the end of results has been reached.
 
   Arguments:
     CATALOG_NAME: Name of parent catalog for functions of interest.
@@ -354,12 +359,12 @@ func newUpdate() *cobra.Command {
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of current owner of function.`)
+	cmd.Flags().StringVar(&updateReq.Owner, "owner", updateReq.Owner, `Username of current owner of the function.`)
 
 	cmd.Use = "update NAME"
 	cmd.Short = `Update a function.`
 	cmd.Long = `Update a function.
-  
+
   Updates the function that matches the supplied name. Only the owner of the
   function can be updated. If the user is not a metastore admin, the user must
   be a member of the group that is the new function owner. - Is a metastore

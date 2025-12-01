@@ -24,35 +24,32 @@ func New() *cobra.Command {
 		Short: `The Clusters API allows you to create, start, edit, list, terminate, and delete clusters.`,
 		Long: `The Clusters API allows you to create, start, edit, list, terminate, and
   delete clusters.
-  
+
   Databricks maps cluster node instance types to compute units known as DBUs.
   See the instance type pricing page for a list of the supported instance types
   and their corresponding DBUs.
-  
+
   A Databricks cluster is a set of computation resources and configurations on
   which you run data engineering, data science, and data analytics workloads,
   such as production ETL pipelines, streaming analytics, ad-hoc analytics, and
   machine learning.
-  
+
   You run these workloads as a set of commands in a notebook or as an automated
   job. Databricks makes a distinction between all-purpose clusters and job
   clusters. You use all-purpose clusters to analyze data collaboratively using
   interactive notebooks. You use job clusters to run fast and robust automated
   jobs.
-  
+
   You can create an all-purpose cluster using the UI, CLI, or REST API. You can
   manually terminate and restart an all-purpose cluster. Multiple users can
   share such clusters to do collaborative interactive analysis.
-  
+
   IMPORTANT: Databricks retains cluster configuration information for terminated
   clusters for 30 days. To keep an all-purpose cluster configuration even after
   it has been terminated for more than 30 days, an administrator can pin a
   cluster to the cluster list.`,
 		GroupID: "compute",
-		Annotations: map[string]string{
-			"package": "compute",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -106,13 +103,13 @@ func newChangeOwner() *cobra.Command {
 	cmd.Use = "change-owner CLUSTER_ID OWNER_USERNAME"
 	cmd.Short = `Change cluster owner.`
 	cmd.Long = `Change cluster owner.
-  
+
   Change the owner of the cluster. You must be an admin and the cluster must be
   terminated to perform this operation. The service principal application ID can
   be supplied as an argument to owner_username.
 
   Arguments:
-    CLUSTER_ID: 
+    CLUSTER_ID:
     OWNER_USERNAME: New owner of the cluster_id after this RPC.`
 
 	cmd.Annotations = make(map[string]string)
@@ -242,7 +239,7 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create SPARK_VERSION"
 	cmd.Short = `Create new cluster.`
 	cmd.Long = `Create new cluster.
-  
+
   Creates a new Spark cluster. This method will acquire new instances from the
   cloud provider if necessary. This method is asynchronous; the returned
   cluster_id can be used to poll the cluster status. When this method
@@ -250,15 +247,15 @@ func newCreate() *cobra.Command {
   usable once it enters a RUNNING state. Note: Databricks may not be able to
   acquire some of the requested nodes, due to cloud provider limitations
   (account limits, spot price, etc.) or transient network issues.
-  
+
   If Databricks acquires at least 85% of the requested on-demand nodes, cluster
   creation will succeed. Otherwise the cluster will terminate with an
   informative error message.
-  
+
   Rather than authoring the cluster's JSON definition from scratch, Databricks
   recommends filling out the [create compute UI] and then copying the generated
   JSON definition from the UI.
-  
+
   [create compute UI]: https://docs.databricks.com/compute/configure.html
 
   Arguments:
@@ -358,7 +355,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete CLUSTER_ID"
 	cmd.Short = `Terminate cluster.`
 	cmd.Long = `Terminate cluster.
-  
+
   Terminates the Spark cluster with the specified ID. The cluster is removed
   asynchronously. Once the termination has completed, the cluster will be in a
   TERMINATED state. If the cluster is already in a TERMINATING or
@@ -517,18 +514,18 @@ func newEdit() *cobra.Command {
 	cmd.Use = "edit CLUSTER_ID SPARK_VERSION"
 	cmd.Short = `Update cluster configuration.`
 	cmd.Long = `Update cluster configuration.
-  
+
   Updates the configuration of a cluster to match the provided attributes and
   size. A cluster can be updated if it is in a RUNNING or TERMINATED state.
-  
+
   If a cluster is updated while in a RUNNING state, it will be restarted so
   that the new attributes can take effect.
-  
+
   If a cluster is updated while in a TERMINATED state, it will remain
   TERMINATED. The next time it is started using the clusters/start API, the
   new attributes will take effect. Any attempt to update a cluster in any other
   state will be rejected with an INVALID_STATE error code.
-  
+
   Clusters created by the Databricks Jobs service cannot be edited.
 
   Arguments:
@@ -635,7 +632,7 @@ func newEvents() *cobra.Command {
 	cmd.Use = "events CLUSTER_ID"
 	cmd.Short = `List cluster activity events.`
 	cmd.Long = `List cluster activity events.
-  
+
   Retrieves a list of events about the activity of a cluster. This API is
   paginated. If there are more events to read, the response includes all the
   parameters necessary to request the next page of events.
@@ -691,6 +688,7 @@ func newEvents() *cobra.Command {
 				return fmt.Errorf("expected to have the id of the cluster to retrieve events about")
 			}
 			eventsReq.ClusterId = args[0]
+
 		}
 
 		response := w.Clusters.Events(ctx, eventsReq)
@@ -726,7 +724,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get CLUSTER_ID"
 	cmd.Short = `Get cluster info.`
 	cmd.Long = `Get cluster info.
-  
+
   Retrieves the information for a cluster given its identifier. Clusters can be
   described while they are running, or up to 60 days after they are terminated.
 
@@ -795,7 +793,7 @@ func newGetPermissionLevels() *cobra.Command {
 	cmd.Use = "get-permission-levels CLUSTER_ID"
 	cmd.Short = `Get cluster permission levels.`
 	cmd.Long = `Get cluster permission levels.
-  
+
   Gets the permission levels that a user can have on an object.
 
   Arguments:
@@ -863,7 +861,7 @@ func newGetPermissions() *cobra.Command {
 	cmd.Use = "get-permissions CLUSTER_ID"
 	cmd.Short = `Get cluster permissions.`
 	cmd.Long = `Get cluster permissions.
-  
+
   Gets the permissions of a cluster. Clusters can inherit permissions from their
   root object.
 
@@ -937,7 +935,7 @@ func newList() *cobra.Command {
 	cmd.Use = "list"
 	cmd.Short = `List clusters.`
 	cmd.Long = `List clusters.
-  
+
   Return information about all pinned and active clusters, and all clusters
   terminated within the last 30 days. Clusters terminated prior to this period
   are not included.`
@@ -984,7 +982,7 @@ func newListNodeTypes() *cobra.Command {
 	cmd.Use = "list-node-types"
 	cmd.Short = `List node types.`
 	cmd.Long = `List node types.
-  
+
   Returns a list of supported Spark node types. These node types can be used to
   launch a cluster.`
 
@@ -1027,7 +1025,7 @@ func newListZones() *cobra.Command {
 	cmd.Use = "list-zones"
 	cmd.Short = `List availability zones.`
 	cmd.Long = `List availability zones.
-  
+
   Returns a list of availability zones where clusters can be created in (For
   example, us-west-2a). These zones can be used to launch a cluster.`
 
@@ -1076,10 +1074,10 @@ func newPermanentDelete() *cobra.Command {
 	cmd.Use = "permanent-delete CLUSTER_ID"
 	cmd.Short = `Permanently delete cluster.`
 	cmd.Long = `Permanently delete cluster.
-  
+
   Permanently deletes a Spark cluster. This cluster is terminated and resources
   are asynchronously removed.
-  
+
   In addition, users will no longer see permanently deleted clusters in the
   cluster list, and API users can no longer perform any action on permanently
   deleted clusters.
@@ -1176,7 +1174,7 @@ func newPin() *cobra.Command {
 	cmd.Use = "pin CLUSTER_ID"
 	cmd.Short = `Pin cluster.`
 	cmd.Long = `Pin cluster.
-  
+
   Pinning a cluster ensures that the cluster will always be returned by the
   ListClusters API. Pinning a cluster that is already pinned will have no
   effect. This API can only be called by workspace admins.`
@@ -1279,7 +1277,7 @@ func newResize() *cobra.Command {
 	cmd.Use = "resize CLUSTER_ID"
 	cmd.Short = `Resize cluster.`
 	cmd.Long = `Resize cluster.
-  
+
   Resizes a cluster to have a desired number of workers. This will fail unless
   the cluster is in a RUNNING state.
 
@@ -1334,6 +1332,7 @@ func newResize() *cobra.Command {
 				return fmt.Errorf("expected to have the cluster to be resized")
 			}
 			resizeReq.ClusterId = args[0]
+
 		}
 
 		wait, err := w.Clusters.Resize(ctx, resizeReq)
@@ -1395,7 +1394,7 @@ func newRestart() *cobra.Command {
 	cmd.Use = "restart CLUSTER_ID"
 	cmd.Short = `Restart cluster.`
 	cmd.Long = `Restart cluster.
-  
+
   Restarts a Spark cluster with the supplied ID. If the cluster is not currently
   in a RUNNING state, nothing will happen.
 
@@ -1450,6 +1449,7 @@ func newRestart() *cobra.Command {
 				return fmt.Errorf("expected to have the cluster to be started")
 			}
 			restartReq.ClusterId = args[0]
+
 		}
 
 		wait, err := w.Clusters.Restart(ctx, restartReq)
@@ -1505,7 +1505,7 @@ func newSetPermissions() *cobra.Command {
 	cmd.Use = "set-permissions CLUSTER_ID"
 	cmd.Short = `Set cluster permissions.`
 	cmd.Long = `Set cluster permissions.
-  
+
   Sets permissions on an object, replacing existing permissions if they exist.
   Deletes all direct permissions if none are specified. Objects can inherit
   permissions from their root object.
@@ -1584,7 +1584,7 @@ func newSparkVersions() *cobra.Command {
 	cmd.Use = "spark-versions"
 	cmd.Short = `List available Spark versions.`
 	cmd.Long = `List available Spark versions.
-  
+
   Returns the list of available Spark versions. These versions can be used to
   launch a cluster.`
 
@@ -1639,7 +1639,7 @@ func newStart() *cobra.Command {
 	cmd.Use = "start CLUSTER_ID"
 	cmd.Short = `Start terminated cluster.`
 	cmd.Long = `Start terminated cluster.
-  
+
   Starts a terminated Spark cluster with the supplied ID. This works similar to
   createCluster except: - The previous cluster id and attributes are
   preserved. - The cluster starts with the last specified cluster size. - If the
@@ -1752,7 +1752,7 @@ func newUnpin() *cobra.Command {
 	cmd.Use = "unpin CLUSTER_ID"
 	cmd.Short = `Unpin cluster.`
 	cmd.Long = `Unpin cluster.
-  
+
   Unpinning a cluster will allow the cluster to eventually be removed from the
   ListClusters API. Unpinning a cluster that is not pinned will have no effect.
   This API can only be called by workspace admins.`
@@ -1854,7 +1854,7 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update CLUSTER_ID UPDATE_MASK"
 	cmd.Short = `Update cluster configuration (partial).`
 	cmd.Long = `Update cluster configuration (partial).
-  
+
   Updates the configuration of a cluster to match the partial set of attributes
   and size. Denote which fields to update using the update_mask field in the
   request body. A cluster can be updated if it is in a RUNNING or TERMINATED
@@ -1870,14 +1870,14 @@ func newUpdate() *cobra.Command {
     CLUSTER_ID: ID of the cluster.
     UPDATE_MASK: Used to specify which cluster attributes and size fields to update. See
       https://google.aip.dev/161 for more details.
-      
+
       The field mask must be a single string, with multiple fields separated by
       commas (no spaces). The field path is relative to the resource object,
       using a dot (.) to navigate sub-fields (e.g., author.given_name).
       Specification of elements in sequence or map fields is not allowed, as
       only the entire collection field can be specified. Field names must
       exactly match the resource field names.
-      
+
       A field mask of * indicates full replacement. It’s recommended to
       always explicitly list the fields being updated and avoid using *
       wildcards, as it can lead to unintended results if the API changes in the
@@ -1974,7 +1974,7 @@ func newUpdatePermissions() *cobra.Command {
 	cmd.Use = "update-permissions CLUSTER_ID"
 	cmd.Short = `Update cluster permissions.`
 	cmd.Long = `Update cluster permissions.
-  
+
   Updates the permissions on a cluster. Clusters can inherit permissions from
   their root object.
 

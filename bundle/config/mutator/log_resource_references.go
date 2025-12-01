@@ -10,7 +10,8 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/cli/libs/structaccess"
+	"github.com/databricks/cli/libs/structs/structaccess"
+	"github.com/databricks/cli/libs/structs/structpath"
 )
 
 // Longest field name:
@@ -115,7 +116,14 @@ func truncate(s string, n int, suffix string) string {
 }
 
 func censorValue(ctx context.Context, v any, path dyn.Path) (string, error) {
-	v, err := structaccess.Get(v, path)
+	pathString := path.String()
+	pathNode, err := structpath.Parse(pathString)
+	if err != nil {
+		log.Warnf(ctx, "internal error: parsing %q: %s", pathString, err)
+		return "err", err
+	}
+
+	v, err = structaccess.Get(v, pathNode)
 	if err != nil {
 		log.Infof(ctx, "internal error: path=%s: %s", path, err)
 		return "err", err

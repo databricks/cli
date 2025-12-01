@@ -22,27 +22,27 @@ func New() *cobra.Command {
 		Use:   "service-principal-federation-policy",
 		Short: `These APIs manage service principal federation policies.`,
 		Long: `These APIs manage service principal federation policies.
-  
+
   Service principal federation, also known as Workload Identity Federation,
   allows your automated workloads running outside of Databricks to securely
   access Databricks APIs without the need for Databricks secrets. With Workload
   Identity Federation, your application (or workload) authenticates to
   Databricks as a Databricks service principal, using tokens provided by the
   workload runtime.
-  
+
   Databricks strongly recommends using Workload Identity Federation to
   authenticate to Databricks from automated workloads, over alternatives such as
   OAuth client secrets or Personal Access Tokens, whenever possible. Workload
   Identity Federation is supported by many popular services, including Github
   Actions, Azure DevOps, GitLab, Terraform Cloud, and Kubernetes clusters, among
   others.
-  
+
   Workload identity federation is configured in your Databricks account using a
   service principal federation policy. A service principal federation policy
   specifies: * which IdP, or issuer, the service principal is allowed to
   authenticate from * which workload identity, or subject, is allowed to
   authenticate as the Databricks service principal
-  
+
   To configure a federation policy, you provide the following: * The required
   token __issuer__, as specified in the “iss” claim of workload identity
   tokens. The issuer is an https URL that identifies the workload identity
@@ -58,28 +58,25 @@ func New() *cobra.Command {
   (recommended), Databricks automatically fetches the public keys from the
   issuer’s well known endpoint. Databricks strongly recommends relying on the
   issuer’s well known endpoint for discovering public keys.
-  
+
   An example service principal federation policy, for a Github Actions workload,
   is:  issuer: "https://token.actions.githubusercontent.com" audiences:
   ["https://github.com/my-github-org"] subject:
-  "repo:my-github-org/my-repo:environment:prod" 
-  
+  "repo:my-github-org/my-repo:environment:prod"
+
   An example JWT token body that matches this policy and could be used to
   authenticate to Databricks is:  { "iss":
   "https://token.actions.githubusercontent.com", "aud":
   "https://github.com/my-github-org", "sub":
-  "repo:my-github-org/my-repo:environment:prod" } 
-  
+  "repo:my-github-org/my-repo:environment:prod" }
+
   You may also need to configure the workload runtime to generate tokens for
   your workloads.
-  
+
   You do not need to configure an OAuth application in Databricks to use token
   federation.`,
 		GroupID: "oauth2",
-		Annotations: map[string]string{
-			"package": "oauth2",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -122,7 +119,7 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create SERVICE_PRINCIPAL_ID"
 	cmd.Short = `Create service principal federation policy.`
 	cmd.Long = `Create service principal federation policy.
-  
+
   Create account federation policy.
 
   Arguments:
@@ -193,7 +190,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete SERVICE_PRINCIPAL_ID POLICY_ID"
 	cmd.Short = `Delete service principal federation policy.`
 	cmd.Long = `Delete service principal federation policy.
-  
+
   Delete account federation policy.
 
   Arguments:
@@ -216,6 +213,7 @@ func newDelete() *cobra.Command {
 		if err != nil {
 			return fmt.Errorf("invalid SERVICE_PRINCIPAL_ID: %s", args[0])
 		}
+
 		deleteReq.PolicyId = args[1]
 
 		err = a.ServicePrincipalFederationPolicy.Delete(ctx, deleteReq)
@@ -254,7 +252,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get SERVICE_PRINCIPAL_ID POLICY_ID"
 	cmd.Short = `Get service principal federation policy.`
 	cmd.Long = `Get service principal federation policy.
-  
+
   Get account federation policy.
 
   Arguments:
@@ -277,6 +275,7 @@ func newGet() *cobra.Command {
 		if err != nil {
 			return fmt.Errorf("invalid SERVICE_PRINCIPAL_ID: %s", args[0])
 		}
+
 		getReq.PolicyId = args[1]
 
 		response, err := a.ServicePrincipalFederationPolicy.Get(ctx, getReq)
@@ -318,7 +317,7 @@ func newList() *cobra.Command {
 	cmd.Use = "list SERVICE_PRINCIPAL_ID"
 	cmd.Short = `List service principal federation policies.`
 	cmd.Long = `List service principal federation policies.
-  
+
   List account federation policies.
 
   Arguments:
@@ -382,7 +381,7 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update SERVICE_PRINCIPAL_ID POLICY_ID"
 	cmd.Short = `Update service principal federation policy.`
 	cmd.Long = `Update service principal federation policy.
-  
+
   Update account federation policy.
 
   Arguments:
@@ -417,6 +416,7 @@ func newUpdate() *cobra.Command {
 		if err != nil {
 			return fmt.Errorf("invalid SERVICE_PRINCIPAL_ID: %s", args[0])
 		}
+
 		updateReq.PolicyId = args[1]
 
 		response, err := a.ServicePrincipalFederationPolicy.Update(ctx, updateReq)

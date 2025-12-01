@@ -25,10 +25,7 @@ func New() *cobra.Command {
   Generic resource management can be done with Workspace API (import, export,
   get-status, list, delete).`,
 		GroupID: "dashboards",
-		Annotations: map[string]string{
-			"package": "dashboards",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -84,7 +81,7 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create"
 	cmd.Short = `Create dashboard.`
 	cmd.Long = `Create dashboard.
-  
+
   Create a draft dashboard.`
 
 	cmd.Annotations = make(map[string]string)
@@ -199,6 +196,7 @@ func newCreateSchedule() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid CRON_SCHEDULE: %s", args[1])
 			}
+
 		}
 
 		response, err := w.Lakeview.CreateSchedule(ctx, createScheduleReq)
@@ -286,6 +284,7 @@ func newCreateSubscription() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid SUBSCRIBER: %s", args[2])
 			}
+
 		}
 
 		response, err := w.Lakeview.CreateSubscription(ctx, createSubscriptionReq)
@@ -442,7 +441,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get DASHBOARD_ID"
 	cmd.Short = `Get dashboard.`
 	cmd.Long = `Get dashboard.
-  
+
   Get a draft dashboard.
 
   Arguments:
@@ -498,7 +497,7 @@ func newGetPublished() *cobra.Command {
 	cmd.Use = "get-published DASHBOARD_ID"
 	cmd.Short = `Get published dashboard.`
 	cmd.Long = `Get published dashboard.
-  
+
   Get the current published dashboard.
 
   Arguments:
@@ -836,7 +835,7 @@ func newMigrate() *cobra.Command {
 	cmd.Use = "migrate SOURCE_DASHBOARD_ID"
 	cmd.Short = `Migrate dashboard.`
 	cmd.Long = `Migrate dashboard.
-  
+
   Migrates a classic SQL dashboard to Lakeview.
 
   Arguments:
@@ -919,7 +918,7 @@ func newPublish() *cobra.Command {
 	cmd.Use = "publish DASHBOARD_ID"
 	cmd.Short = `Publish dashboard.`
 	cmd.Long = `Publish dashboard.
-  
+
   Publish the current draft dashboard.
 
   Arguments:
@@ -987,7 +986,7 @@ func newTrash() *cobra.Command {
 	cmd.Use = "trash DASHBOARD_ID"
 	cmd.Short = `Trash dashboard.`
 	cmd.Long = `Trash dashboard.
-  
+
   Trash a dashboard.
 
   Arguments:
@@ -1043,7 +1042,7 @@ func newUnpublish() *cobra.Command {
 	cmd.Use = "unpublish DASHBOARD_ID"
 	cmd.Short = `Unpublish dashboard.`
 	cmd.Long = `Unpublish dashboard.
-  
+
   Unpublish the dashboard.
 
   Arguments:
@@ -1107,7 +1106,7 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update DASHBOARD_ID"
 	cmd.Short = `Update dashboard.`
 	cmd.Long = `Update dashboard.
-  
+
   Update a draft dashboard.
 
   Arguments:
@@ -1228,6 +1227,7 @@ func newUpdateSchedule() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid CRON_SCHEDULE: %s", args[2])
 			}
+
 		}
 
 		response, err := w.Lakeview.UpdateSchedule(ctx, updateScheduleReq)

@@ -13,7 +13,7 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/appproxy"
-	"github.com/databricks/cli/libs/apps"
+	"github.com/databricks/cli/libs/apps/runlocal"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
@@ -25,7 +25,7 @@ import (
 // https://docs.databricks.com/aws/en/dev-tools/databricks-apps/app-development#important-guidelines-for-implementing-databricks-apps
 const SHUTDOWN_TIMEOUT = 15 * time.Second
 
-func setupWorkspaceAndConfig(cmd *cobra.Command, entryPoint string, appPort int) (*apps.Config, *apps.AppSpec, error) {
+func setupWorkspaceAndConfig(cmd *cobra.Command, entryPoint string, appPort int) (*runlocal.Config, *runlocal.AppSpec, error) {
 	ctx := cmd.Context()
 	w := cmdctx.WorkspaceClient(ctx)
 	workspaceId, err := w.CurrentWorkspaceID(ctx)
@@ -38,11 +38,11 @@ func setupWorkspaceAndConfig(cmd *cobra.Command, entryPoint string, appPort int)
 		return nil, nil, err
 	}
 
-	config := apps.NewConfig(w.Config.Host, workspaceId, cwd, apps.DEFAULT_HOST, appPort)
+	config := runlocal.NewConfig(w.Config.Host, workspaceId, cwd, runlocal.DEFAULT_HOST, appPort)
 	if entryPoint != "" {
 		config.AppSpecFiles = []string{entryPoint}
 	}
-	spec, err := apps.ReadAppSpecFile(config)
+	spec, err := runlocal.ReadAppSpecFile(config)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -50,10 +50,10 @@ func setupWorkspaceAndConfig(cmd *cobra.Command, entryPoint string, appPort int)
 	return config, spec, nil
 }
 
-func setupApp(cmd *cobra.Command, config *apps.Config, spec *apps.AppSpec, customEnv []string, prepareEnvironment bool) (apps.App, []string, error) {
+func setupApp(cmd *cobra.Command, config *runlocal.Config, spec *runlocal.AppSpec, customEnv []string, prepareEnvironment bool) (runlocal.App, []string, error) {
 	ctx := cmd.Context()
 	cfg := cmdctx.ConfigUsed(ctx)
-	app, err := apps.NewApp(ctx, config, spec)
+	app, err := runlocal.NewApp(ctx, config, spec)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -79,7 +79,7 @@ func setupApp(cmd *cobra.Command, config *apps.Config, spec *apps.AppSpec, custo
 	return app, env, nil
 }
 
-func startAppProcess(cmd *cobra.Command, config *apps.Config, app apps.App, env []string, debug bool) (*exec.Cmd, error) {
+func startAppProcess(cmd *cobra.Command, config *runlocal.Config, app runlocal.App, env []string, debug bool) (*exec.Cmd, error) {
 	ctx := cmd.Context()
 	specCommand, err := app.GetCommand(debug)
 	if err != nil {
@@ -93,7 +93,7 @@ func startAppProcess(cmd *cobra.Command, config *apps.Config, app apps.App, env 
 	appCmd.Stderr = cmd.ErrOrStderr()
 
 	var appCmdEnv []string
-	appEnvs := apps.GetBaseEnvVars(config)
+	appEnvs := runlocal.GetBaseEnvVars(config)
 	for _, envVar := range appEnvs {
 		appCmdEnv = append(appCmdEnv, envVar.String())
 	}
@@ -109,7 +109,7 @@ func startAppProcess(cmd *cobra.Command, config *apps.Config, app apps.App, env 
 	return appCmd, nil
 }
 
-func setupProxy(ctx context.Context, cmd *cobra.Command, config *apps.Config, w *databricks.WorkspaceClient, port int, debug bool) error {
+func setupProxy(ctx context.Context, cmd *cobra.Command, config *runlocal.Config, w *databricks.WorkspaceClient, port int, debug bool) error {
 	proxy, err := appproxy.New(ctx, config.AppURL)
 	if err != nil {
 		return err
@@ -120,7 +120,7 @@ func setupProxy(ctx context.Context, cmd *cobra.Command, config *apps.Config, w 
 		return err
 	}
 
-	for key, value := range apps.GetXHeaders(me) {
+	for key, value := range runlocal.GetXHeaders(me) {
 		proxy.InjectHeader(key, value)
 	}
 
@@ -191,7 +191,7 @@ func newRunLocal() *cobra.Command {
 	  This command starts an app locally.`
 
 	cmd.Flags().IntVar(&port, "port", 8001, "Port on which to run the app app proxy")
-	cmd.Flags().IntVar(&appPort, "app-port", apps.DEFAULT_PORT, "Port on which to run the app")
+	cmd.Flags().IntVar(&appPort, "app-port", runlocal.DEFAULT_PORT, "Port on which to run the app")
 	cmd.Flags().BoolVar(&debug, "debug", false, "Enable debug mode")
 	cmd.Flags().BoolVar(&prepareEnvironment, "prepare-environment", false, "Prepares the environment for running the app. Requires 'uv' to be installed.")
 	cmd.Flags().StringSliceVar(&customEnv, "env", nil, "Set environment variables")

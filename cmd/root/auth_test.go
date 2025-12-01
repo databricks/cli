@@ -39,7 +39,7 @@ func expectPrompts(t *testing.T, fn promptFn, config *config.Config) {
 	// Channel to pass errors from the prompting function back to the test.
 	errch := make(chan error, 1)
 
-	ctx, io := cmdio.SetupTest(ctx)
+	ctx, io := cmdio.SetupTest(ctx, cmdio.TestOptions{PromptSupported: true})
 	go func() {
 		defer close(errch)
 		defer cancel()
@@ -61,7 +61,7 @@ func expectReturns(t *testing.T, fn promptFn, config *config.Config) {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 
-	ctx, _ = cmdio.SetupTest(ctx)
+	ctx, _ = cmdio.SetupTest(ctx, cmdio.TestOptions{PromptSupported: true})
 	client, err := fn(ctx, config, true)
 	require.NoError(t, err)
 	require.NotNil(t, client)
@@ -224,7 +224,7 @@ func TestMustAccountClientWorksWithDatabricksCfg(t *testing.T) {
 func TestMustAccountClientWorksWithNoDatabricksCfgButEnvironmentVariables(t *testing.T) {
 	testutil.CleanupEnvironment(t)
 
-	ctx, tt := cmdio.SetupTest(context.Background())
+	ctx, tt := cmdio.SetupTest(context.Background(), cmdio.TestOptions{PromptSupported: true})
 	t.Cleanup(tt.Done)
 	cmd := New(ctx)
 	t.Setenv("DATABRICKS_HOST", "https://accounts.azuredatabricks.net/")
@@ -238,7 +238,7 @@ func TestMustAccountClientWorksWithNoDatabricksCfgButEnvironmentVariables(t *tes
 func TestMustAccountClientErrorsWithNoDatabricksCfg(t *testing.T) {
 	testutil.CleanupEnvironment(t)
 
-	ctx, tt := cmdio.SetupTest(context.Background())
+	ctx, tt := cmdio.SetupTest(context.Background(), cmdio.TestOptions{PromptSupported: true})
 	t.Cleanup(tt.Done)
 	cmd := New(ctx)
 
@@ -261,7 +261,7 @@ func TestMustAnyClientCanCreateWorkspaceClient(t *testing.T) {
 		0o755)
 	require.NoError(t, err)
 
-	ctx, tt := cmdio.SetupTest(context.Background())
+	ctx, tt := cmdio.SetupTest(context.Background(), cmdio.TestOptions{PromptSupported: true})
 	t.Cleanup(tt.Done)
 	cmd := New(ctx)
 
@@ -290,7 +290,7 @@ func TestMustAnyClientCanCreateAccountClient(t *testing.T) {
 		0o755)
 	require.NoError(t, err)
 
-	ctx, tt := cmdio.SetupTest(context.Background())
+	ctx, tt := cmdio.SetupTest(context.Background(), cmdio.TestOptions{PromptSupported: true})
 	t.Cleanup(tt.Done)
 	cmd := New(ctx)
 
@@ -314,7 +314,7 @@ func TestMustAnyClientWithEmptyDatabricksCfg(t *testing.T) {
 		0o755)
 	require.NoError(t, err)
 
-	ctx, tt := cmdio.SetupTest(context.Background())
+	ctx, tt := cmdio.SetupTest(context.Background(), cmdio.TestOptions{PromptSupported: true})
 	t.Cleanup(tt.Done)
 	cmd := New(ctx)
 

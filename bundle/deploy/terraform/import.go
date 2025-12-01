@@ -28,29 +28,23 @@ type importResource struct {
 
 // Apply implements bundle.Mutator.
 func (m *importResource) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
-	if b.DirectDeployment {
-		return diag.Errorf("import is not implemented for DATABRICKS_CLI_DEPLOYMENT=direct")
-	}
-
 	dir, err := Dir(ctx, b)
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	tf := b.Terraform
-	if tf == nil {
-		return diag.Errorf("terraform not initialized")
+	diags := Initialize(ctx, b)
+	if diags.HasError() {
+		return diags
 	}
 
-	err = tf.Init(ctx, tfexec.Upgrade(true))
-	if err != nil {
-		return diag.Errorf("terraform init: %v", err)
-	}
+	tf := b.Terraform
 	tmpDir, err := os.MkdirTemp("", "state-*")
 	if err != nil {
 		return diag.Errorf("terraform init: %v", err)
 	}
-	tmpState := filepath.Join(tmpDir, b.StateFilename())
+	relPath, _ := b.StateFilenameTerraform(ctx)
+	tmpState := filepath.Join(tmpDir, filepath.Base(relPath))
 
 	importAddress := fmt.Sprintf("%s.%s", m.opts.ResourceType, m.opts.ResourceKey)
 	err = tf.Import(ctx, importAddress, m.opts.ResourceId, tfexec.StateOut(tmpState))
@@ -71,8 +65,10 @@ func (m *importResource) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 
 	if changed && !m.opts.AutoApprove {
 		output := buf.String()
-		// Remove output starting from Warning until end of output
-		output = output[:strings.Index(output, "Warning:")]
+		// Remove output starting from Warning until end of output, if present.
+		if idx := strings.Index(output, "Warning:"); idx != -1 {
+			output = output[:idx]
+		}
 		cmdio.LogString(ctx, output)
 
 		if !cmdio.IsPromptSupported(ctx) {
@@ -89,7 +85,7 @@ func (m *importResource) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 	}
 
 	// If user confirmed changes, move the state file from temp dir to state location
-	f, err := os.Create(filepath.Join(dir, b.StateFilename()))
+	f, err := os.Create(filepath.Join(dir, relPath))
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -106,7 +102,7 @@ func (m *importResource) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagn
 		return diag.FromErr(err)
 	}
 
-	return nil
+	return diags
 }
 
 // Name implements bundle.Mutator.

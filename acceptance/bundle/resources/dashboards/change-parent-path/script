@@ -1,0 +1,41 @@
+export USERNAME=$($CLI current-user me --output json | jq -r '.userName')
+
+# Path intentionally start with " " to avoid Windows path conversion in git bash.
+export PARENT_PATH=" /Users/$USERNAME/.bundle/change-parent-path-$UNIQUE_NAME/default/resources"
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm out.requests.txt
+}
+trap cleanup EXIT
+# Deploy the dashboard and capture the ID
+deploy_dashboard() {
+    envsubst < databricks.yml.tmpl > databricks.yml
+    trace $CLI bundle plan
+    trace $CLI bundle deploy --auto-approve
+    dashboard_id=$($CLI bundle summary --output json | jq -r '.resources.dashboards.my_dashboard.id')
+    trace $CLI lakeview get $dashboard_id | jq '{display_name, lifecycle_state, parent_path, path, serialized_dashboard, warehouse_id}'
+}
+
+# Create the dashboard with initial parent_path
+deploy_dashboard
+
+# Capture the dashboard ID as a replacement.
+dashboard_id=$($CLI bundle summary --output json | jq -r '.resources.dashboards.my_dashboard.id')
+echo "$dashboard_id:ORIGINAL_DASHBOARD_ID" >> ACC_REPLS
+
+# Change the parent_path - this should trigger a recreate (delete + create)
+export PARENT_PATH=" /Users/$USERNAME/.bundle/change-parent-path-$UNIQUE_NAME/default/resources2"
+deploy_dashboard
+
+# Capture the new dashboard ID as a replacement.
+new_dashboard_id=$($CLI bundle summary --output json | jq -r '.resources.dashboards.my_dashboard.id')
+echo "$new_dashboard_id:NEW_DASHBOARD_ID" >> ACC_REPLS
+
+# Print API requests made to create parent_path or create / update / delete the dashboard.
+cat out.requests.txt | \
+ jq 'select(.method == "POST" or .method == "PATCH" or .method == "DELETE")' | \
+ jq 'select( (.path | contains("/api/2.0/lakeview/dashboards")) or ((.path == "/api/2.0/workspace/mkdirs") and (.body.path | contains("/default/resources"))))' \
+ > out.dashboardrequests.txt
+
+$CLI bundle plan > out.plan_after_deploy.$DATABRICKS_BUNDLE_ENGINE.txt

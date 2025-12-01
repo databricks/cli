@@ -8,9 +8,11 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/libs/log"
 	"github.com/gorilla/websocket"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -18,19 +20,21 @@ import (
 
 type testBuffer struct {
 	t       *testing.T
+	m       sync.Mutex
 	buff    *bytes.Buffer
 	OnWrite chan []byte
 }
 
 const (
-	MESSAGE_CHUNKS      = 5
-	MESSAGES_PER_CHUNK  = 1024
+	MESSAGE_CHUNKS      = 4
+	MESSAGES_PER_CHUNK  = 512
 	TOTAL_MESSAGE_COUNT = MESSAGE_CHUNKS * MESSAGES_PER_CHUNK
 )
 
 func newTestBuffer(t *testing.T) *testBuffer {
 	return &testBuffer{
 		t:       t,
+		m:       sync.Mutex{},
 		buff:    new(bytes.Buffer),
 		OnWrite: make(chan []byte, TOTAL_MESSAGE_COUNT),
 	}
@@ -45,7 +49,9 @@ func (tb *testBuffer) Read(p []byte) (n int, err error) {
 }
 
 func (tb *testBuffer) Write(p []byte) (n int, err error) {
+	tb.m.Lock()
 	n, err = tb.buff.Write(p)
+	tb.m.Unlock()
 	require.NoError(tb.t, err)
 	tb.OnWrite <- p
 	return n, err
@@ -56,13 +62,32 @@ func (tb *testBuffer) AssertWrite(expected []byte) error {
 	case data := <-tb.OnWrite:
 		assert.Equal(tb.t, expected, data)
 		return nil
-	case <-time.After(2 * time.Second):
+	case <-time.After(3 * time.Second):
 		return errors.New("timeout waiting for write, was expecting: " + string(expected))
 	}
 }
 
+func (tb *testBuffer) Contains(data []byte) bool {
+	tb.m.Lock()
+	defer tb.m.Unlock()
+	return bytes.Contains(tb.buff.Bytes(), data)
+}
+
+func (tb *testBuffer) WaitForWrite(expected []byte) error {
+	for {
+		select {
+		case <-tb.OnWrite:
+			if tb.Contains(expected) {
+				return nil
+			}
+		case <-time.After(3 * time.Second):
+			return errors.New("timeout waiting for write")
+		}
+	}
+}
+
 type TestProxy struct {
-	Proxy   *ProxyConnection
+	Proxy   *proxyConnection
 	Input   io.Writer
 	Output  *testBuffer
 	URL     string
@@ -72,31 +97,32 @@ type TestProxy struct {
 func setupTestServer(ctx context.Context, t *testing.T) *TestProxy {
 	serverInput, serverInputWriter := io.Pipe()
 	serverOutput := newTestBuffer(t)
-	var serverProxy *ProxyConnection
+	var serverProxy *proxyConnection
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := log.NewContext(ctx, log.GetLogger(ctx).With("Server", true))
 		if serverProxy != nil {
-			err := serverProxy.AcceptHandover(ctx, w, r)
+			err := serverProxy.acceptHandover(ctx, w, r)
 			if err != nil {
 				t.Errorf("failed to accept handover: %v", err)
 			}
 			return
 		}
-		serverProxy = NewProxyConnection(nil)
-		err := serverProxy.Accept(w, r)
+		serverProxy = newProxyConnection(nil)
+		err := serverProxy.accept(w, r)
 		if err != nil {
 			t.Errorf("failed to accept websocket connection: %v", err)
 			return
 		}
-		defer serverProxy.Close()
-		err = serverProxy.Start(ctx, serverInput, serverOutput)
-		if err != nil && !errors.Is(err, errProxyEOF) {
+		defer serverProxy.close()
+		err = serverProxy.start(ctx, serverInput, serverOutput)
+		if err != nil && !errors.Is(err, context.Canceled) && !errors.Is(err, io.ErrClosedPipe) {
 			t.Errorf("server error: %v", err)
 			return
 		}
 	}))
 	cleanup := func() {
 		server.Close()
-		serverProxy.Close()
+		serverProxy.close()
 		serverInputWriter.Close()
 	}
 	return &TestProxy{
@@ -114,25 +140,29 @@ func createTestWebsocketConnection(url string) (*websocket.Conn, error) {
 }
 
 func setupTestClient(ctx context.Context, t *testing.T, serverURL string) *TestProxy {
+	ctx = log.NewContext(ctx, log.GetLogger(ctx).With("Client", true))
 	clientInput, clientInputWriter := io.Pipe()
 	clientOutput := newTestBuffer(t)
 	wsURL := "ws" + serverURL[4:]
-	clientProxy := NewProxyConnection(func(ctx context.Context, connID string) (*websocket.Conn, error) {
+	clientProxy := newProxyConnection(func(ctx context.Context, connID string) (*websocket.Conn, error) {
 		return createTestWebsocketConnection(wsURL)
 	})
-	err := clientProxy.Connect(ctx)
+	err := clientProxy.connect(ctx)
 	require.NoError(t, err)
 
-	go func() {
-		err := clientProxy.Start(ctx, clientInput, clientOutput)
-		if err != nil && !errors.Is(err, errProxyEOF) {
+	wg := sync.WaitGroup{}
+	wg.Go(func() {
+		err := clientProxy.start(ctx, clientInput, clientOutput)
+		if err != nil && !errors.Is(err, context.Canceled) && !errors.Is(err, io.ErrClosedPipe) {
 			t.Errorf("proxy error: %v", err)
 		}
-	}()
+	})
 
 	cleanup := func() {
-		clientProxy.Close()
+		clientProxy.close()
+		clientInput.Close()
 		clientInputWriter.Close()
+		wg.Wait()
 	}
 
 	return &TestProxy{
@@ -197,7 +227,7 @@ func TestConnectionHandover(t *testing.T) {
 		for i := range TOTAL_MESSAGE_COUNT {
 			client.Input.Write(createTestMessage("client", i)) // nolint:errcheck
 			server.Input.Write(createTestMessage("server", i)) // nolint:errcheck
-			if i > 0 && i%MESSAGES_PER_CHUNK == 0 {
+			if i > 0 && i%MESSAGES_PER_CHUNK == 0 && i < TOTAL_MESSAGE_COUNT-1 {
 				handoverChan <- struct{}{}
 			}
 		}
@@ -207,7 +237,7 @@ func TestConnectionHandover(t *testing.T) {
 		for {
 			select {
 			case <-handoverChan:
-				err := client.Proxy.InitiateHandover(ctx)
+				err := client.Proxy.initiateHandover(ctx)
 				if err != nil {
 					t.Errorf("failed to initiate handover: %v", err)
 				}

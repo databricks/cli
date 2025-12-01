@@ -1,5 +1,5 @@
 
->>> uv run --with-requirements requirements-latest.txt --no-cache -q [CLI] bundle validate --output json
+>>> uv run [UV_ARGS] -q [CLI] bundle validate --output json
 Warning: This is a warning message with unicode characters: 🔥🔥🔥
 
 {
@@ -21,7 +21,6 @@ Warning: This is a warning message with unicode characters: 🔥🔥🔥
         "format": "MULTI_TASK",
         "max_concurrent_runs": 1,
         "name": "🔥🔥🔥",
-        "permissions": [],
         "queue": {
           "enabled": true
         }
@@ -35,7 +34,6 @@ Warning: This is a warning message with unicode characters: 🔥🔥🔥
         "format": "MULTI_TASK",
         "max_concurrent_runs": 1,
         "name": "🔥🔥🔥",
-        "permissions": [],
         "queue": {
           "enabled": true
         }

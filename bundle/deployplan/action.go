@@ -6,19 +6,20 @@ import (
 )
 
 type Action struct {
-	ResourceNode
-
-	ActionType ActionType
+	// Full resource key, e.g. "resources.jobs.foo" or "resources.jobs.foo.permissions"
+	ResourceKey string
+	ActionType  ActionType
 }
 
 func (a Action) String() string {
-	typ, _ := strings.CutSuffix(a.Group, "s")
-	return fmt.Sprintf("  %s %s %s", a.ActionType.String(), typ, a.Key)
+	return fmt.Sprintf("  %s %s", a.ActionType.StringShort(), a.ResourceKey)
 }
 
-// Implements cmdio.Event for cmdio.Log
-func (a Action) IsInplaceSupported() bool {
-	return false
+func (a Action) IsChildResource() bool {
+	// Note, strictly speaking ResourceKey could be resources.jobs["my.job"] but
+	// we have an assumption in many other places that it's always looks like "resources.jobs.my_job"
+	items := strings.Split(a.ResourceKey, ".")
+	return len(items) == 4
 }
 
 type ActionType int
@@ -27,8 +28,8 @@ type ActionType int
 // If case of several options, action with highest severity wins.
 // Note, Create/Delete are handled explicitly and never compared.
 const (
-	ActionTypeUnset ActionType = iota
-	ActionTypeNoop
+	ActionTypeUndefined ActionType = iota
+	ActionTypeSkip
 	ActionTypeResize
 	ActionTypeUpdate
 	ActionTypeUpdateWithID
@@ -37,31 +38,55 @@ const (
 	ActionTypeDelete
 )
 
-var ShortName = map[ActionType]string{
-	ActionTypeNoop:         "noop",
+const ActionTypeSkipString = "skip"
+
+var actionName = map[ActionType]string{
+	ActionTypeSkip:         ActionTypeSkipString,
 	ActionTypeResize:       "resize",
 	ActionTypeUpdate:       "update",
-	ActionTypeUpdateWithID: "update",
+	ActionTypeUpdateWithID: "update_id",
 	ActionTypeCreate:       "create",
 	ActionTypeRecreate:     "recreate",
 	ActionTypeDelete:       "delete",
 }
 
-func (a ActionType) IsNoop() bool {
-	return a == ActionTypeNoop
+var nameToAction = map[string]ActionType{}
+
+func init() {
+	for k, v := range actionName {
+		if _, ok := nameToAction[v]; ok {
+			panic("duplicate action string: " + v)
+		}
+		nameToAction[v] = k
+	}
 }
 
 func (a ActionType) KeepsID() bool {
 	switch a {
-	case ActionTypeCreate, ActionTypeUpdateWithID, ActionTypeRecreate:
+	case ActionTypeCreate, ActionTypeUpdateWithID, ActionTypeRecreate, ActionTypeDelete:
 		return false
 	default:
 		return true
 	}
 }
 
+// StringShort short version of action string, without suffix
+func (a ActionType) StringShort() string {
+	items := strings.SplitN(actionName[a], "_", 2)
+	return items[0]
+}
+
+// String returns the string representation of the action type.
 func (a ActionType) String() string {
-	return ShortName[a]
+	return actionName[a]
+}
+
+func ActionTypeFromString(s string) ActionType {
+	actionType, ok := nameToAction[s]
+	if !ok {
+		return ActionTypeUndefined
+	}
+	return actionType
 }
 
 // Filter returns actions that match the specified action type
@@ -69,24 +94,6 @@ func Filter(changes []Action, actionType ActionType) []Action {
 	var result []Action
 	for _, action := range changes {
 		if action.ActionType == actionType {
-			result = append(result, action)
-		}
-	}
-	return result
-}
-
-// FilterGroup returns actions that match the specified group and any of the specified action types
-func FilterGroup(changes []Action, group string, actionTypes ...ActionType) []Action {
-	var result []Action
-
-	// Create a set of action types for efficient lookup
-	actionTypeSet := make(map[ActionType]bool)
-	for _, actionType := range actionTypes {
-		actionTypeSet[actionType] = true
-	}
-
-	for _, action := range changes {
-		if action.Group == group && actionTypeSet[action.ActionType] {
 			result = append(result, action)
 		}
 	}

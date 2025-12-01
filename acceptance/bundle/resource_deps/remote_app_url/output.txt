@@ -12,13 +12,15 @@ Validation OK!
 create apps.myapp
 create pipelines.mypipeline
 
->>> print_requests
+Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
+
+>>> print_requests.py ^//import-file/
 {
+  "method": "POST",
+  "path": "/api/2.0/workspace/mkdirs",
   "body": {
     "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files"
-  },
-  "method": "POST",
-  "path": "/api/2.0/workspace/mkdirs"
+  }
 }
 
 >>> [CLI] bundle deploy
@@ -27,31 +29,36 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> print_requests
+>>> print_requests.py ^//import-file/
 {
+  "method": "POST",
+  "path": "/api/2.0/workspace/delete",
   "body": {
     "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal",
     "recursive": true
-  },
-  "method": "POST",
-  "path": "/api/2.0/workspace/delete"
+  }
 }
 {
+  "method": "POST",
+  "path": "/api/2.0/workspace/mkdirs",
   "body": {
     "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal"
-  },
-  "method": "POST",
-  "path": "/api/2.0/workspace/mkdirs"
+  }
 }
 {
+  "method": "POST",
+  "path": "/api/2.0/apps",
+  "q": {
+    "no_compute": "true"
+  },
   "body": {
     "description": "best app",
     "name": "myapp"
-  },
-  "method": "POST",
-  "path": "/api/2.0/apps"
+  }
 }
 {
+  "method": "POST",
+  "path": "/api/2.0/pipelines",
   "body": {
     "channel": "CURRENT",
     "deployment": {
@@ -60,33 +67,31 @@ Deployment complete!
     },
     "edition": "ADVANCED",
     "name": "app url is myapp-123.cloud.databricksapps.com"
-  },
-  "method": "POST",
-  "path": "/api/2.0/pipelines"
+  }
 }
 {
+  "method": "POST",
+  "path": "/api/2.0/workspace/delete",
   "body": {
     "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/deploy.lock"
-  },
-  "method": "POST",
-  "path": "/api/2.0/workspace/delete"
+  }
 }
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
-  delete app myapp
-  delete pipeline mypipeline
+  delete resources.apps.myapp
+  delete resources.pipelines.mypipeline
 
 This action will result in the deletion of the following Lakeflow Declarative Pipelines along with the
 Streaming Tables (STs) and Materialized Views (MVs) managed by them:
-  delete pipeline mypipeline
+  delete resources.pipelines.mypipeline
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
 Deleting files...
 Destroy complete!
 
->>> print_sorted_requests
+>>> print_requests.py --sort ^//import-file/
 {
   "method": "DELETE",
   "path": "/api/2.0/apps/myapp"
@@ -96,10 +101,10 @@ Destroy complete!
   "path": "/api/2.0/pipelines/[UUID]"
 }
 {
+  "method": "POST",
+  "path": "/api/2.0/workspace/delete",
   "body": {
     "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default",
     "recursive": true
-  },
-  "method": "POST",
-  "path": "/api/2.0/workspace/delete"
+  }
 }

@@ -145,6 +145,19 @@ func TestInprocessMode(t *testing.T) {
 	require.Equal(t, 1, testAccept(t, true, "selftest/server"))
 }
 
+// Configure replacements for environment variables we read from test environments.
+func setReplsForTestEnvVars(t *testing.T, repls *testdiff.ReplacementsContext) {
+	envVars := []string{
+		"TEST_DEFAULT_WAREHOUSE_ID",
+		"TEST_INSTANCE_POOL_ID",
+	}
+	for _, envVar := range envVars {
+		if value := os.Getenv(envVar); value != "" {
+			repls.Set(value, "["+envVar+"]")
+		}
+	}
+}
+
 func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	repls := testdiff.ReplacementsContext{}
 	cwd, err := os.Getwd()
@@ -153,9 +166,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	// Consistent behavior of locale-dependent tools, such as 'sort'
 	t.Setenv("LC_ALL", "C")
 
-	buildDir := filepath.Join(cwd, "build", fmt.Sprintf("%s_%s", runtime.GOOS, runtime.GOARCH))
-	err = os.MkdirAll(buildDir, os.ModePerm)
-	require.NoError(t, err)
+	buildDir := getBuildDir(t, cwd, runtime.GOOS, runtime.GOARCH)
 
 	terraformDir := TerraformDir
 	if terraformDir == "" {
@@ -163,7 +174,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	}
 
 	// Download terraform and provider and create config.
-	RunCommand(t, []string{"python3", filepath.Join(cwd, "install_terraform.py"), "--targetdir", terraformDir}, ".")
+	RunCommand(t, []string{"python3", filepath.Join(cwd, "install_terraform.py"), "--targetdir", terraformDir}, ".", []string{})
 
 	wheelPath := buildDatabricksBundlesWheel(t, buildDir)
 	if wheelPath != "" {
@@ -190,7 +201,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 		if UseVersion != "" {
 			execPath = DownloadCLI(t, buildDir, UseVersion)
 		} else {
-			execPath = BuildCLI(t, buildDir, coverDir)
+			execPath = BuildCLI(t, buildDir, coverDir, runtime.GOOS, runtime.GOARCH)
 		}
 	}
 
@@ -228,15 +239,18 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	cloudEnv := os.Getenv("CLOUD_ENV")
 
 	if cloudEnv == "" {
-		internal.StartDefaultServer(t)
+		internal.StartDefaultServer(t, LogRequests)
 		if os.Getenv("TEST_DEFAULT_WAREHOUSE_ID") == "" {
 			t.Setenv("TEST_DEFAULT_WAREHOUSE_ID", "8ec9edc1-db0c-40df-af8d-7580020fe61e")
 		}
 	}
 
-	testDefaultWarehouseId := os.Getenv("TEST_DEFAULT_WAREHOUSE_ID")
-	if testDefaultWarehouseId != "" {
-		repls.Set(testDefaultWarehouseId, "[TEST_DEFAULT_WAREHOUSE_ID]")
+	setReplsForTestEnvVars(t, &repls)
+
+	if cloudEnv != "" && UseVersion == "" {
+		// Create linux release artifacts, to be used by the cloud-only ssh tunnel tests
+		releasesDir := CreateReleaseArtifacts(t, cwd, coverDir, "linux")
+		t.Setenv("CLI_RELEASES_DIR", releasesDir)
 	}
 
 	terraformrcPath := filepath.Join(terraformDir, ".terraformrc")
@@ -251,8 +265,6 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 
 	// do it last so that full paths match first:
 	repls.SetPath(buildDir, "[BUILD_DIR]")
-
-	repls.Set(os.Getenv("TEST_INSTANCE_POOL_ID"), "[TEST_INSTANCE_POOL_ID]")
 
 	testdiff.PrepareReplacementsDevVersion(t, &repls)
 	testdiff.PrepareReplacementSdkVersion(t, &repls)
@@ -366,13 +378,6 @@ func getEnvFilters(t *testing.T) []string {
 		key := items[0]
 		// Clear it just to be sure, since it's going to be part of os.Environ() and we're going to add different value based on settings.
 		os.Unsetenv(key)
-
-		if key == "DATABRICKS_CLI_DEPLOYMENT" && items[1] == "direct" {
-			// CLI only recognizes "direct-exp" at the moment, but in the future will recognize "direct" as well.
-			// On CI we set "direct". To avoid renaming jobs in CI on the future, we correct direct -> direct-exp here
-			items[1] = "direct-exp"
-		}
-
 		outFilters = append(outFilters, key+"="+items[1])
 	}
 
@@ -714,6 +719,17 @@ func runTest(t *testing.T,
 		if config.CompiledIgnoreObject.MatchesPath(relPath) {
 			continue
 		}
+		if strings.HasPrefix(filepath.Base(relPath), "LOG") {
+			prefix := relPath + ": "
+			messages := testutil.ReadFile(t, filepath.Join(tmpDir, relPath))
+			messages = strings.TrimRight(messages, "\r\n \t")
+			messages = prefix + strings.ReplaceAll(messages, "\n", "\n"+prefix)
+			if strings.Contains(messages, "\n") {
+				messages = "\n" + messages
+			}
+			t.Log(messages)
+			continue
+		}
 		unexpected = append(unexpected, relPath)
 		if strings.HasPrefix(relPath, "out") {
 			// We have a new file starting with "out"
@@ -867,9 +883,20 @@ func readMergedScriptContents(t *testing.T, dir string) string {
 	return strings.Join(prepares, "\n")
 }
 
-func BuildCLI(t *testing.T, buildDir, coverDir string) string {
+func getBuildDirRoot(cwd string) string {
+	return filepath.Join(cwd, "build")
+}
+
+func getBuildDir(t *testing.T, cwd, osName, arch string) string {
+	buildDir := filepath.Join(getBuildDirRoot(cwd), fmt.Sprintf("%s_%s", osName, arch))
+	err := os.MkdirAll(buildDir, os.ModePerm)
+	require.NoError(t, err)
+	return buildDir
+}
+
+func BuildCLI(t *testing.T, buildDir, coverDir, osName, arch string) string {
 	execPath := filepath.Join(buildDir, "databricks")
-	if runtime.GOOS == "windows" {
+	if osName == "windows" {
 		execPath += ".exe"
 	}
 
@@ -881,15 +908,60 @@ func BuildCLI(t *testing.T, buildDir, coverDir string) string {
 		args = append(args, "-cover")
 	}
 
-	if runtime.GOOS == "windows" {
+	if osName == "windows" {
 		// Get this error on my local Windows:
 		// error obtaining VCS status: exit status 128
 		// Use -buildvcs=false to disable VCS stamping.
 		args = append(args, "-buildvcs=false")
 	}
 
-	RunCommand(t, args, "..")
+	RunCommand(t, args, "..", []string{"GOOS=" + osName, "GOARCH=" + arch})
 	return execPath
+}
+
+// CreateReleaseArtifacts builds release artifacts for the given OS using amd64 and arm64 architectures,
+// archives them into zip files, and returns the directory containing the release artifacts.
+func CreateReleaseArtifacts(t *testing.T, cwd, coverDir, osName string) string {
+	releasesDir := filepath.Join(getBuildDirRoot(cwd), "releases")
+	require.NoError(t, os.MkdirAll(releasesDir, os.ModePerm))
+	for _, arch := range []string{"amd64", "arm64"} {
+		CreateReleaseArtifact(t, cwd, releasesDir, coverDir, osName, arch)
+	}
+	return releasesDir
+}
+
+func CreateReleaseArtifact(t *testing.T, cwd, releasesDir, coverDir, osName, arch string) {
+	buildDir := getBuildDir(t, cwd, osName, arch)
+	execPath := BuildCLI(t, buildDir, coverDir, osName, arch)
+	execInfo, err := os.Stat(execPath)
+	require.NoError(t, err)
+
+	zipName := fmt.Sprintf("databricks_cli_%s_%s.zip", osName, arch)
+	zipPath := filepath.Join(releasesDir, zipName)
+
+	zipFile, err := os.Create(zipPath)
+	require.NoError(t, err)
+	defer zipFile.Close()
+
+	zipWriter := zip.NewWriter(zipFile)
+	defer zipWriter.Close()
+
+	header, err := zip.FileInfoHeader(execInfo)
+	require.NoError(t, err)
+	header.Name = "databricks"
+	header.Method = zip.Deflate
+
+	writer, err := zipWriter.CreateHeader(header)
+	require.NoError(t, err)
+
+	binaryFile, err := os.Open(execPath)
+	require.NoError(t, err)
+	defer binaryFile.Close()
+
+	_, err = io.Copy(writer, binaryFile)
+	require.NoError(t, err)
+
+	t.Logf("Created %s %s release: %s", osName, arch, zipPath)
 }
 
 // DownloadCLI downloads a released CLI binary archive for the given version,
@@ -1112,10 +1184,11 @@ func getUVDefaultCacheDir(t *testing.T) string {
 	}
 }
 
-func RunCommand(t *testing.T, args []string, dir string) {
+func RunCommand(t *testing.T, args []string, dir string, env []string) {
 	start := time.Now()
 	cmd := exec.Command(args[0], args[1:]...)
 	cmd.Dir = dir
+	cmd.Env = append(os.Environ(), env...)
 	out, err := cmd.CombinedOutput()
 	elapsed := time.Since(start)
 	t.Logf("%s took %s", args, elapsed)
@@ -1237,7 +1310,7 @@ func buildDatabricksBundlesWheel(t *testing.T, buildDir string) string {
 	// so we prepare here by keeping only one.
 	_ = prepareWheelBuildDirectory(t, buildDir)
 
-	RunCommand(t, []string{"uv", "build", "--no-cache", "-q", "--wheel", "--out-dir", buildDir}, "../experimental/python")
+	RunCommand(t, []string{"uv", "build", "--no-cache", "-q", "--wheel", "--out-dir", buildDir}, "../python", []string{})
 
 	latestWheel := prepareWheelBuildDirectory(t, buildDir)
 	if latestWheel == "" {
@@ -1365,7 +1438,7 @@ func BuildYamlfmt(t *testing.T) {
 	args := []string{
 		"make", "-s", "tools/yamlfmt" + exeSuffix,
 	}
-	RunCommand(t, args, "..")
+	RunCommand(t, args, "..", []string{})
 }
 
 func loadUserReplacements(t *testing.T, repls *testdiff.ReplacementsContext, tmpDir string) {
@@ -1393,8 +1466,8 @@ func loadUserReplacements(t *testing.T, repls *testdiff.ReplacementsContext, tmp
 
 type pathFilter struct {
 	// contains substrings from the variants other than current.
-	// E.g. if EnvVaryOutput is DATABRICKS_CLI_DEPLOYMENT and current test running DATABRICKS_CLI_DEPLOYMENT="terraform" then
-	// notSelected contains ".direct-exp." meaning if filename contains that (e.g. out.deploy.direct-exp.txt) then we ignore it here.
+	// E.g. if EnvVaryOutput is DATABRICKS_BUNDLE_ENGINE and current test running DATABRICKS_BUNDLE_ENGINE="terraform" then
+	// notSelected contains ".direct." meaning if filename contains that (e.g. out.deploy.direct.txt) then we ignore it here.
 	notSelected []string
 }
 

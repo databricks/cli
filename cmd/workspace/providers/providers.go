@@ -25,10 +25,7 @@ func New() *cobra.Command {
   who shares the data. A provider contains shares which further contain the
   shared data.`,
 		GroupID: "sharing",
-		Annotations: map[string]string{
-			"package": "sharing",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -71,13 +68,13 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create NAME AUTHENTICATION_TYPE"
 	cmd.Short = `Create an auth provider.`
 	cmd.Long = `Create an auth provider.
-  
+
   Creates a new authentication provider minimally based on a name and
   authentication type. The caller must be an admin on the metastore.
 
   Arguments:
     NAME: The name of the Provider.
-    AUTHENTICATION_TYPE:  
+    AUTHENTICATION_TYPE:
       Supported values: [DATABRICKS, OAUTH_CLIENT_CREDENTIALS, OIDC_FEDERATION, TOKEN]`
 
 	cmd.Annotations = make(map[string]string)
@@ -119,6 +116,7 @@ func newCreate() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid AUTHENTICATION_TYPE: %s", args[1])
 			}
+
 		}
 
 		response, err := w.Providers.Create(ctx, createReq)
@@ -157,7 +155,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete NAME"
 	cmd.Short = `Delete a provider.`
 	cmd.Long = `Delete a provider.
-  
+
   Deletes an authentication provider, if the caller is a metastore admin or is
   the owner of the provider.
 
@@ -226,7 +224,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get NAME"
 	cmd.Short = `Get a provider.`
 	cmd.Long = `Get a provider.
-  
+
   Gets a specific authentication provider. The caller must supply the name of
   the provider, and must either be a metastore admin or the owner of the
   provider.
@@ -300,7 +298,7 @@ func newList() *cobra.Command {
 	cmd.Use = "list"
 	cmd.Short = `List providers.`
 	cmd.Long = `List providers.
-  
+
   Gets an array of available authentication providers. The caller must either be
   a metastore admin or the owner of the providers. Providers not owned by the
   caller are not included in the response. There is no guarantee of a specific
@@ -356,7 +354,7 @@ func newListProviderShareAssets() *cobra.Command {
 	cmd.Use = "list-provider-share-assets PROVIDER_NAME SHARE_NAME"
 	cmd.Short = `List assets by provider share.`
 	cmd.Long = `List assets by provider share.
-  
+
   Get arrays of assets associated with a specified provider's share. The caller
   is the recipient of the share.
 
@@ -418,9 +416,9 @@ func newListShares() *cobra.Command {
 	cmd.Use = "list-shares NAME"
 	cmd.Short = `List shares by Provider.`
 	cmd.Long = `List shares by Provider.
-  
+
   Gets an array of a specified provider's shares within the metastore where:
-  
+
   * the caller is a metastore admin, or * the caller is the owner.
 
   Arguments:
@@ -493,7 +491,7 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update NAME"
 	cmd.Short = `Update a provider.`
 	cmd.Long = `Update a provider.
-  
+
   Updates the information for an authentication provider, if the caller is a
   metastore admin or is the owner of the provider. If the update changes the
   provider name, the caller must be both a metastore admin and the owner of the

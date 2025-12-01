@@ -24,9 +24,6 @@ func New() *cobra.Command {
 		Long: `Materialized Features are columns in tables and views that can be directly
   used as features to train and serve ML models.`,
 		GroupID: "ml",
-		Annotations: map[string]string{
-			"package": "ml",
-		},
 
 		// This service is being previewed; hide from help output.
 		Hidden: true,
@@ -72,7 +69,7 @@ func newCreateFeatureTag() *cobra.Command {
 	cmd.Use = "create-feature-tag TABLE_NAME FEATURE_NAME KEY"
 	cmd.Short = `Create a feature tag.`
 	cmd.Long = `Create a feature tag.
-  
+
   Creates a FeatureTag.`
 
 	cmd.Annotations = make(map[string]string)
@@ -148,7 +145,7 @@ func newDeleteFeatureTag() *cobra.Command {
 	cmd.Use = "delete-feature-tag TABLE_NAME FEATURE_NAME KEY"
 	cmd.Short = `Delete a feature tag.`
 	cmd.Long = `Delete a feature tag.
-  
+
   Deletes a FeatureTag.
 
   Arguments:
@@ -264,7 +261,7 @@ func newGetFeatureTag() *cobra.Command {
 	cmd.Use = "get-feature-tag TABLE_NAME FEATURE_NAME KEY"
 	cmd.Short = `Get a feature tag.`
 	cmd.Long = `Get a feature tag.
-  
+
   Gets a FeatureTag.`
 
 	cmd.Annotations = make(map[string]string)
@@ -322,7 +319,7 @@ func newListFeatureTags() *cobra.Command {
 	cmd.Use = "list-feature-tags TABLE_NAME FEATURE_NAME"
 	cmd.Short = `List all feature tags.`
 	cmd.Long = `List all feature tags.
-  
+
   Lists FeatureTags.`
 
 	cmd.Annotations = make(map[string]string)
@@ -380,7 +377,7 @@ func newUpdateFeatureTag() *cobra.Command {
 	cmd.Use = "update-feature-tag TABLE_NAME FEATURE_NAME KEY"
 	cmd.Short = `Update a feature tag.`
 	cmd.Long = `Update a feature tag.
-  
+
   Updates a FeatureTag.`
 
 	cmd.Annotations = make(map[string]string)

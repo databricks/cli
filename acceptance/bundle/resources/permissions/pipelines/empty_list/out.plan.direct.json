@@ -1,0 +1,18 @@
+{
+  "plan": {
+    "resources.pipelines.foo": {
+      "action": "create",
+      "new_state": {
+        "value": {
+          "channel": "CURRENT",
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+          },
+          "edition": "ADVANCED",
+          "name": "foo"
+        }
+      }
+    }
+  }
+}

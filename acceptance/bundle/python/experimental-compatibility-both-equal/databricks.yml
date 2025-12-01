@@ -1,0 +1,15 @@
+bundle:
+  name: my_project
+
+sync: {paths: []} # don't need to copy files
+
+# We DO NOT allow specifying both 'python' and 'experimental/python' if they are not equal.
+
+experimental:
+  python:
+    resources:
+      - "resources:load_resources"
+
+python:
+  resources:
+    - "resources:load_resources"

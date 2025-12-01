@@ -7,4 +7,4 @@ RequiresUnityCatalog = true
   gcp = false
 
 [EnvMatrix]
-  DATABRICKS_CLI_DEPLOYMENT = ["terraform"]
+  DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]

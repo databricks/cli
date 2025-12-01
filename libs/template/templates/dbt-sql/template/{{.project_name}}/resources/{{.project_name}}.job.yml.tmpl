@@ -1,3 +1,5 @@
+{{$with_serverless := (eq .serverless "yes") -}}
+
 resources:
   jobs:
     {{.project_name}}_job:
@@ -15,6 +17,9 @@ resources:
 
       tasks:
         - task_key: dbt
+          {{- if $with_serverless }}
+          environment_key: default
+          {{- end }}
           dbt_task:
             project_directory: ../
             # The default schema, catalog, etc. are defined in ../dbt_profiles/profiles.yml
@@ -32,6 +37,8 @@ resources:
               - 'dbt run --target=${bundle.target}'
 {{- end}}
 
+          {{- if not $with_serverless }}
+
           libraries:
             - pypi:
                 package: dbt-databricks>=1.8.0,<2.0.0
@@ -46,3 +53,14 @@ resources:
               spark.databricks.cluster.profile: singleNode
             custom_tags:
               ResourceClass: SingleNode
+          {{- end }}
+
+      {{- if $with_serverless }}
+
+      environments:
+        - environment_key: default
+          spec:
+            environment_version: "{{template "serverless_environment_version"}}"
+            dependencies:
+              - dbt-databricks>=1.8.0,<2.0.0
+      {{- end }}

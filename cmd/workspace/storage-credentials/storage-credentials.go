@@ -27,18 +27,15 @@ func New() *cobra.Command {
   groups can access the credential. If a user does not have access to a storage
   credential in Unity Catalog, the request fails and Unity Catalog does not
   attempt to authenticate to your cloud tenant on the user’s behalf.
-  
+
   Databricks recommends using external locations rather than using storage
   credentials directly.
-  
+
   To create storage credentials, you must be a Databricks account admin. The
   account admin who creates the storage credential can delegate ownership to
   another user or group to manage permissions on it.`,
 		GroupID: "catalog",
-		Annotations: map[string]string{
-			"package": "catalog",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -86,9 +83,9 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create NAME"
 	cmd.Short = `Create a storage credential.`
 	cmd.Long = `Create a storage credential.
-  
+
   Creates a new storage credential.
-  
+
   The caller must be a metastore admin or have the **CREATE_STORAGE_CREDENTIAL**
   privilege on the metastore.
 
@@ -169,7 +166,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete NAME"
 	cmd.Short = `Delete a credential.`
 	cmd.Long = `Delete a credential.
-  
+
   Deletes a storage credential from the metastore. The caller must be an owner
   of the storage credential.
 
@@ -226,7 +223,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get NAME"
 	cmd.Short = `Get a credential.`
 	cmd.Long = `Get a credential.
-  
+
   Gets a storage credential from the metastore. The caller must be a metastore
   admin, the owner of the storage credential, or have some permission on the
   storage credential.
@@ -281,18 +278,27 @@ func newList() *cobra.Command {
 
 	var listReq catalog.ListStorageCredentialsRequest
 
+	cmd.Flags().BoolVar(&listReq.IncludeUnbound, "include-unbound", listReq.IncludeUnbound, `Whether to include credentials not bound to the workspace.`)
 	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of storage credentials to return.`)
 	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
 
 	cmd.Use = "list"
 	cmd.Short = `List credentials.`
 	cmd.Long = `List credentials.
-  
+
   Gets an array of storage credentials (as __StorageCredentialInfo__ objects).
   The array is limited to only those storage credentials the caller has
   permission to access. If the caller is a metastore admin, retrieval of
   credentials is unrestricted. There is no guarantee of a specific ordering of
-  the elements in the array.`
+  the elements in the array.
+
+  NOTE: we recommend using max_results=0 to use the paginated version of this
+  API. Unpaginated calls will be deprecated soon.
+
+  PAGINATION BEHAVIOR: When using pagination (max_results >= 0), a page may
+  contain zero results while still providing a next_page_token. Clients must
+  continue reading pages until next_page_token is absent, which is the only
+  indication that the end of results has been reached.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -355,9 +361,9 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update NAME"
 	cmd.Short = `Update a credential.`
 	cmd.Long = `Update a credential.
-  
+
   Updates a storage credential on the metastore.
-  
+
   The caller must be the owner of the storage credential or a metastore admin.
   If the caller is a metastore admin, only the **owner** field can be changed.
 
@@ -439,16 +445,16 @@ func newValidate() *cobra.Command {
 	cmd.Use = "validate"
 	cmd.Short = `Validate a storage credential.`
 	cmd.Long = `Validate a storage credential.
-  
+
   Validates a storage credential. At least one of __external_location_name__ and
   __url__ need to be provided. If only one of them is provided, it will be used
   for validation. And if both are provided, the __url__ will be used for
   validation, and __external_location_name__ will be ignored when checking
   overlapping urls.
-  
+
   Either the __storage_credential_name__ or the cloud-specific credential must
   be provided.
-  
+
   The caller must be a metastore admin or the storage credential owner or have
   the **CREATE_EXTERNAL_LOCATION** privilege on the metastore and the storage
   credential.`

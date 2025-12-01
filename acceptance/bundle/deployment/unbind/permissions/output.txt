@@ -1,0 +1,52 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] bundle summary --output json
+
+>>> [CLI] jobs get-permissions [NUMID] --output json
+{
+  "all_permissions": [
+    {
+      "inherited": false,
+      "permission_level": "CAN_MANAGE"
+    }
+  ],
+  "group_name": "users"
+}
+
+>>> [CLI] bundle deployment unbind job_1
+Updating deployment state...
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Permissions should be the same as before unbind
+>>> [CLI] jobs get-permissions [NUMID] --output json
+{
+  "all_permissions": [
+    {
+      "inherited": false,
+      "permission_level": "CAN_MANAGE"
+    }
+  ],
+  "group_name": "users"
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.job_1
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+
+Deleting files...
+Destroy complete!
+
+>>> [CLI] jobs delete [NUMID]
+0

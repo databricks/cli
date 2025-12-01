@@ -23,10 +23,7 @@ func New() *cobra.Command {
   schema may contain information about customer usage of Unity Catalog such as
   audit-logs, billing-logs, lineage information, etc.`,
 		GroupID: "catalog",
-		Annotations: map[string]string{
-			"package": "catalog",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -59,7 +56,7 @@ func newDisable() *cobra.Command {
 	cmd.Use = "disable METASTORE_ID SCHEMA_NAME"
 	cmd.Short = `Disable a system schema.`
 	cmd.Long = `Disable a system schema.
-  
+
   Disables the system schema and removes it from the system catalog. The caller
   must be an account admin or a metastore admin.
 
@@ -123,7 +120,7 @@ func newEnable() *cobra.Command {
 	cmd.Use = "enable METASTORE_ID SCHEMA_NAME"
 	cmd.Short = `Enable a system schema.`
 	cmd.Long = `Enable a system schema.
-  
+
   Enables the system schema and adds it to the system catalog. The caller must
   be an account admin or a metastore admin.
 
@@ -197,9 +194,17 @@ func newList() *cobra.Command {
 	cmd.Use = "list METASTORE_ID"
 	cmd.Short = `List system schemas.`
 	cmd.Long = `List system schemas.
-  
+
   Gets an array of system schemas for a metastore. The caller must be an account
   admin or a metastore admin.
+
+  NOTE: we recommend using max_results=0 to use the paginated version of this
+  API. Unpaginated calls will be deprecated soon.
+
+  PAGINATION BEHAVIOR: When using pagination (max_results >= 0), a page may
+  contain zero results while still providing a next_page_token. Clients must
+  continue reading pages until next_page_token is absent, which is the only
+  indication that the end of results has been reached.
 
   Arguments:
     METASTORE_ID: The ID for the metastore in which the system schema resides.`

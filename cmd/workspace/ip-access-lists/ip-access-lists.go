@@ -22,31 +22,28 @@ func New() *cobra.Command {
 		Use:   "ip-access-lists",
 		Short: `IP Access List enables admins to configure IP access lists.`,
 		Long: `IP Access List enables admins to configure IP access lists.
-  
+
   IP access lists affect web application access and REST API access to this
   workspace only. If the feature is disabled for a workspace, all access is
   allowed for this workspace. There is support for allow lists (inclusion) and
   block lists (exclusion).
-  
+
   When a connection is attempted: 1. **First, all block lists are checked.** If
   the connection IP address matches any block list, the connection is rejected.
   2. **If the connection was not rejected by block lists**, the IP address is
   compared with the allow lists.
-  
+
   If there is at least one allow list for the workspace, the connection is
   allowed only if the IP address matches an allow list. If there are no allow
   lists for the workspace, all IP addresses are allowed.
-  
+
   For all allow lists and block lists combined, the workspace supports a maximum
   of 1000 IP/CIDR values, where one CIDR counts as a single value.
-  
+
   After changes to the IP access list feature, it can take a few minutes for
   changes to take effect.`,
 		GroupID: "settings",
-		Annotations: map[string]string{
-			"package": "settings",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -87,27 +84,27 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create LABEL LIST_TYPE"
 	cmd.Short = `Create access list.`
 	cmd.Long = `Create access list.
-  
+
   Creates an IP access list for this workspace.
-  
+
   A list can be an allow list or a block list. See the top of this file for a
   description of how the server treats allow lists and block lists at runtime.
-  
+
   When creating or updating an IP access list:
-  
+
   * For all allow lists and block lists combined, the API supports a maximum of
   1000 IP/CIDR values, where one CIDR counts as a single value. Attempts to
   exceed that number return error 400 with error_code value QUOTA_EXCEEDED.
   * If the new list would block the calling user's current IP, error 400 is
   returned with error_code value INVALID_STATE.
-  
+
   It can take a few minutes for the changes to take effect. **Note**: Your new
   IP access list has no effect until you enable the feature. See
   :method:workspaceconf/setStatus
 
   Arguments:
     LABEL: Label for the IP access list. This **cannot** be empty.
-    LIST_TYPE:  
+    LIST_TYPE:
       Supported values: [ALLOW, BLOCK]`
 
 	cmd.Annotations = make(map[string]string)
@@ -149,6 +146,7 @@ func newCreate() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid LIST_TYPE: %s", args[1])
 			}
+
 		}
 
 		response, err := w.IpAccessLists.Create(ctx, createReq)
@@ -187,7 +185,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete IP_ACCESS_LIST_ID"
 	cmd.Short = `Delete access list.`
 	cmd.Long = `Delete access list.
-  
+
   Deletes an IP access list, specified by its list ID.
 
   Arguments:
@@ -255,7 +253,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get IP_ACCESS_LIST_ID"
 	cmd.Short = `Get access list.`
 	cmd.Long = `Get access list.
-  
+
   Gets an IP access list, specified by its list ID.
 
   Arguments:
@@ -320,7 +318,7 @@ func newList() *cobra.Command {
 	cmd.Use = "list"
 	cmd.Short = `Get access lists.`
 	cmd.Long = `Get access lists.
-  
+
   Gets all IP access lists for the specified workspace.`
 
 	cmd.Annotations = make(map[string]string)
@@ -367,9 +365,9 @@ func newReplace() *cobra.Command {
 	cmd.Use = "replace IP_ACCESS_LIST_ID LABEL LIST_TYPE ENABLED"
 	cmd.Short = `Replace access list.`
 	cmd.Long = `Replace access list.
-  
+
   Replaces an IP access list, specified by its ID.
-  
+
   A list can include allow lists and block lists. See the top of this file for a
   description of how the server treats allow lists and block lists at run time.
   When replacing an IP access list: * For all allow lists and block lists
@@ -384,7 +382,7 @@ func newReplace() *cobra.Command {
   Arguments:
     IP_ACCESS_LIST_ID: The ID for the corresponding IP access list
     LABEL: Label for the IP access list. This **cannot** be empty.
-    LIST_TYPE:  
+    LIST_TYPE:
       Supported values: [ALLOW, BLOCK]
     ENABLED: Specifies whether this IP access list is enabled.`
 
@@ -428,12 +426,14 @@ func newReplace() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid LIST_TYPE: %s", args[2])
 			}
+
 		}
 		if !cmd.Flags().Changed("json") {
 			_, err = fmt.Sscan(args[3], &replaceReq.Enabled)
 			if err != nil {
 				return fmt.Errorf("invalid ENABLED: %s", args[3])
 			}
+
 		}
 
 		err = w.IpAccessLists.Replace(ctx, replaceReq)
@@ -480,20 +480,20 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update IP_ACCESS_LIST_ID"
 	cmd.Short = `Update access list.`
 	cmd.Long = `Update access list.
-  
+
   Updates an existing IP access list, specified by its ID.
-  
+
   A list can include allow lists and block lists. See the top of this file for a
   description of how the server treats allow lists and block lists at run time.
-  
+
   When updating an IP access list:
-  
+
   * For all allow lists and block lists combined, the API supports a maximum of
   1000 IP/CIDR values, where one CIDR counts as a single value. Attempts to
   exceed that number return error 400 with error_code value QUOTA_EXCEEDED.
   * If the updated list would block the calling user's current IP, error 400 is
   returned with error_code value INVALID_STATE.
-  
+
   It can take a few minutes for the changes to take effect. Note that your
   resulting IP access list has no effect until you enable the feature. See
   :method:workspaceconf/setStatus.

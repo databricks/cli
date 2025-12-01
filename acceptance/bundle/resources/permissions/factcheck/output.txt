@@ -1,0 +1,33 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test_bundle_[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Permissions API simply takes the latest level in the request for a given principal
+jobs CAN_VIEW,CAN_MANAGE_RUN => CAN_MANAGE_RUN
+jobs CAN_MANAGE_RUN,CAN_VIEW => CAN_VIEW
+jobs CAN_VIEW,CAN_MANAGE_RUN,CAN_MANAGE => CAN_MANAGE
+jobs CAN_MANAGE,CAN_MANAGE_RUN => CAN_MANAGE_RUN
+jobs CAN_MANAGE,IS_OWNER => IS_OWNER
+
+=== Since we take the most recent level, IS_OWNER is lost, which results in the error due to lack of owner defined
+jobs IS_OWNER,CAN_MANAGE => SET ERROR Error: The job must have exactly one owner.
+REQUEST:
+{'access_control_list': [{'permission_level': 'IS_OWNER',
+                          'user_name': '[USERNAME]'},
+                         {'permission_level': 'CAN_MANAGE',
+                          'user_name': '[USERNAME]'}]}
+sql/warehouses CAN_VIEW,CAN_USE => CAN_USE
+sql/warehouses CAN_USE,CAN_VIEW => CAN_VIEW
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.job
+  delete resources.sql_warehouses.warehouse
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test_bundle_[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!

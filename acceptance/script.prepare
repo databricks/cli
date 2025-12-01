@@ -23,7 +23,6 @@ musterr() {
         >&2 printf "\nUnexpected success\n"
         exit 1
     fi
-    >&2 printf "\nExit code (musterr): $exit_code\n"
 }
 
 trace() {
@@ -96,4 +95,28 @@ envsubst() {
 
 print_telemetry_bool_values() {
     jq -r 'select(.path? == "/telemetry-ext") | (.body.protoLogs // [])[] | fromjson | ( (.entry // .) | (.databricks_cli_log.bundle_deploy_event.experimental.bool_values // []) ) | map("\(.key) \(.value)") | .[]' out.requests.txt | sort
+}
+
+sethome() {
+    local home="$1"
+    mkdir -p "$home"
+
+    # For macOS and Linux, use HOME.
+    export HOME="$home"
+
+    # For Windows, use USERPROFILE.
+    export USERPROFILE="$home"
+}
+
+as-test-sp() {
+    if [[ -z "$TEST_SP_TOKEN" ]]; then
+        echo "Error: TEST_SP_TOKEN is not set." >&2
+        return 1
+    fi
+
+    DATABRICKS_TOKEN="$TEST_SP_TOKEN" \
+    DATABRICKS_CLIENT_SECRET="" \
+    DATABRICKS_CLIENT_ID="" \
+    DATABRICKS_AUTH_TYPE="" \
+    "$@"
 }

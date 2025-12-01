@@ -25,24 +25,32 @@ an SSH host configuration to your SSH config file.
 	var clusterID string
 	var sshConfigPath string
 	var shutdownDelay time.Duration
+	var autoStartCluster bool
 
 	cmd.Flags().StringVar(&hostName, "name", "", "Host name to use in SSH config")
 	cmd.MarkFlagRequired("name")
 	cmd.Flags().StringVar(&clusterID, "cluster", "", "Databricks cluster ID")
-	cmd.MarkFlagRequired("cluster")
+	cmd.Flags().BoolVar(&autoStartCluster, "auto-start-cluster", true, "Automatically start the cluster when establishing the ssh connection")
 	cmd.Flags().StringVar(&sshConfigPath, "ssh-config", "", "Path to SSH config file (default ~/.ssh/config)")
 	cmd.Flags().DurationVar(&shutdownDelay, "shutdown-delay", defaultShutdownDelay, "SSH server will terminate after this delay if there are no active connections")
 
-	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
+		// We want to avoid the situation where the setup command works because it pulls the auth config from a bundle,
+		// but later on the `ssh host-name` command fails when executed outside of the bundle directory.
+		cmd.SetContext(root.SkipLoadBundle(cmd.Context()))
+		return root.MustWorkspaceClient(cmd, args)
+	}
+
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 		client := cmdctx.WorkspaceClient(ctx)
 		opts := setup.SetupOptions{
-			HostName:      hostName,
-			ClusterID:     clusterID,
-			SSHConfigPath: sshConfigPath,
-			ShutdownDelay: shutdownDelay,
-			Profile:       client.Config.Profile,
+			HostName:         hostName,
+			ClusterID:        clusterID,
+			AutoStartCluster: autoStartCluster,
+			SSHConfigPath:    sshConfigPath,
+			ShutdownDelay:    shutdownDelay,
+			Profile:          client.Config.Profile,
 		}
 		return setup.Setup(ctx, client, opts)
 	}

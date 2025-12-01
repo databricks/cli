@@ -1,0 +1,15 @@
+{
+ "lineage": "[UUID]",
+ "serial": 2,
+ "state": {
+  "resources.dashboards.dashboard1": {
+   "__id__": "[DASHBOARD_ID]",
+   "state": {
+    "display_name": "my dashboard",
+    "etag": "[NUMID]",
+    "parent_path": "/Users/[USERNAME]",
+    "warehouse_id": "123456"
+   }
+  }
+ }
+}

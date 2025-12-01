@@ -1,0 +1,6 @@
+Local = true
+Cloud = true
+IsServicePrincipal = true
+
+# On GCP, service principals do not follow UUID which results them being treated as user_name, resulting in different output
+CloudEnvs.gcp = false

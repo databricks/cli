@@ -40,18 +40,12 @@ func New() *cobra.Command {
   of short-lived, expiring tokens. It is designed for strong identity
   governance, secure cross-platform data sharing, and reduced operational
   overhead for credential management.
-  
+
   For more information, see
   https://www.databricks.com/blog/announcing-oidc-token-federation-enhanced-delta-sharing-security
   and https://docs.databricks.com/en/delta-sharing/create-recipient-oidc-fed`,
 		GroupID: "sharing",
-		Annotations: map[string]string{
-			"package": "sharing",
-		},
-
-		// This service is being previewed; hide from help output.
-		Hidden: true,
-		RunE:   root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -59,7 +53,6 @@ func New() *cobra.Command {
 	cmd.AddCommand(newDelete())
 	cmd.AddCommand(newGetFederationPolicy())
 	cmd.AddCommand(newList())
-	cmd.AddCommand(newUpdate())
 
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
@@ -94,7 +87,7 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create RECIPIENT_NAME"
 	cmd.Short = `Create recipient federation policy.`
 	cmd.Long = `Create recipient federation policy.
-  
+
   Create a federation policy for an OIDC_FEDERATION recipient for sharing data
   from Databricks to non-Databricks recipients. The caller must be the owner of
   the recipient. When sharing data from Databricks to non-Databricks clients,
@@ -102,16 +95,16 @@ func newCreate() *cobra.Command {
   The federation policy validates OIDC claims in federated tokens and is defined
   at the recipient level. This enables secretless sharing clients to
   authenticate using OIDC tokens.
-  
+
   Supported scenarios for federation policies: 1. **User-to-Machine (U2M) flow**
   (e.g., PowerBI): A user accesses a resource using their own identity. 2.
   **Machine-to-Machine (M2M) flow** (e.g., OAuth App): An OAuth App accesses a
   resource using its own identity, typically for tasks like running nightly
   jobs.
-  
+
   For an overview, refer to: - Blog post: Overview of feature:
   https://www.databricks.com/blog/announcing-oidc-token-federation-enhanced-delta-sharing-security
-  
+
   For detailed configuration guides based on your use case: - Creating a
   Federation Policy as a provider:
   https://docs.databricks.com/en/delta-sharing/create-recipient-oidc-fed -
@@ -188,7 +181,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete RECIPIENT_NAME NAME"
 	cmd.Short = `Delete recipient federation policy.`
 	cmd.Long = `Delete recipient federation policy.
-  
+
   Deletes an existing federation policy for an OIDC_FEDERATION recipient. The
   caller must be the owner of the recipient.
 
@@ -248,7 +241,7 @@ func newGetFederationPolicy() *cobra.Command {
 	cmd.Use = "get-federation-policy RECIPIENT_NAME NAME"
 	cmd.Short = `Get recipient federation policy.`
 	cmd.Long = `Get recipient federation policy.
-  
+
   Reads an existing federation policy for an OIDC_FEDERATION recipient for
   sharing data from Databricks to non-Databricks recipients. The caller must
   have read access to the recipient.
@@ -312,7 +305,7 @@ func newList() *cobra.Command {
 	cmd.Use = "list RECIPIENT_NAME"
 	cmd.Short = `List recipient federation policies.`
 	cmd.Long = `List recipient federation policies.
-  
+
   Lists federation policies for an OIDC_FEDERATION recipient for sharing data
   from Databricks to non-Databricks recipients. The caller must have read access
   to the recipient.
@@ -346,87 +339,6 @@ func newList() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range listOverrides {
 		fn(cmd, &listReq)
-	}
-
-	return cmd
-}
-
-// start update command
-
-// Slice with functions to override default command behavior.
-// Functions can be added from the `init()` function in manually curated files in this directory.
-var updateOverrides []func(
-	*cobra.Command,
-	*sharing.UpdateFederationPolicyRequest,
-)
-
-func newUpdate() *cobra.Command {
-	cmd := &cobra.Command{}
-
-	var updateReq sharing.UpdateFederationPolicyRequest
-	updateReq.Policy = sharing.FederationPolicy{}
-	var updateJson flags.JsonFlag
-
-	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
-
-	cmd.Flags().StringVar(&updateReq.UpdateMask, "update-mask", updateReq.UpdateMask, `The field mask specifies which fields of the policy to update.`)
-	cmd.Flags().StringVar(&updateReq.Policy.Comment, "comment", updateReq.Policy.Comment, `Description of the policy.`)
-	cmd.Flags().StringVar(&updateReq.Policy.Name, "name", updateReq.Policy.Name, `Name of the federation policy.`)
-	// TODO: complex arg: oidc_policy
-
-	cmd.Use = "update RECIPIENT_NAME NAME"
-	cmd.Short = `Update recipient federation policy.`
-	cmd.Long = `Update recipient federation policy.
-  
-  Updates an existing federation policy for an OIDC_RECIPIENT. The caller must
-  be the owner of the recipient.
-
-  Arguments:
-    RECIPIENT_NAME: Name of the recipient. This is the name of the recipient for which the
-      policy is being updated.
-    NAME: Name of the policy. This is the name of the current name of the policy.`
-
-	cmd.Annotations = make(map[string]string)
-
-	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(2)
-		return check(cmd, args)
-	}
-
-	cmd.PreRunE = root.MustWorkspaceClient
-	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
-		ctx := cmd.Context()
-		w := cmdctx.WorkspaceClient(ctx)
-
-		if cmd.Flags().Changed("json") {
-			diags := updateJson.Unmarshal(&updateReq.Policy)
-			if diags.HasError() {
-				return diags.Error()
-			}
-			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
-				if err != nil {
-					return err
-				}
-			}
-		}
-		updateReq.RecipientName = args[0]
-		updateReq.Name = args[1]
-
-		response, err := w.RecipientFederationPolicies.Update(ctx, updateReq)
-		if err != nil {
-			return err
-		}
-		return cmdio.Render(ctx, response)
-	}
-
-	// Disable completions since they are not applicable.
-	// Can be overridden by manual implementation in `override.go`.
-	cmd.ValidArgsFunction = cobra.NoFileCompletions
-
-	// Apply optional overrides to this command.
-	for _, fn := range updateOverrides {
-		fn(cmd, &updateReq)
 	}
 
 	return cmd

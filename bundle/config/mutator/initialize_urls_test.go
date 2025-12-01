@@ -37,8 +37,8 @@ func TestInitializeURLs(t *testing.T) {
 				},
 				Experiments: map[string]*resources.MlflowExperiment{
 					"experiment1": {
-						BaseResource: resources.BaseResource{ID: "4"},
-						Experiment:   ml.Experiment{Name: "experiment1"},
+						BaseResource:     resources.BaseResource{ID: "4"},
+						CreateExperiment: ml.CreateExperiment{Name: "experiment1"},
 					},
 				},
 				Models: map[string]*resources.MlflowModel{

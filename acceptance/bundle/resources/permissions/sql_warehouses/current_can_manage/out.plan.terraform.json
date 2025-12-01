@@ -1,0 +1,10 @@
+{
+  "plan": {
+    "resources.sql_warehouses.foo": {
+      "action": "create"
+    },
+    "resources.sql_warehouses.foo.permissions": {
+      "action": "create"
+    }
+  }
+}

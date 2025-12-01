@@ -1,0 +1,16 @@
+{
+  "plan": {
+    "resources.jobs.sample_job": {
+      "action": "create"
+    },
+    "resources.jobs.sample_job.permissions": {
+      "action": "create"
+    },
+    "resources.pipelines.project_name_[UNIQUE_NAME]_etl": {
+      "action": "create"
+    },
+    "resources.pipelines.project_name_[UNIQUE_NAME]_etl.permissions": {
+      "action": "create"
+    }
+  }
+}

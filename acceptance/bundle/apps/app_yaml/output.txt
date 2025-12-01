@@ -11,6 +11,8 @@ Validation OK!
 >>> [CLI] bundle plan
 create apps.myapp
 
+Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Deploying resources...
@@ -21,14 +23,14 @@ Deployment complete!
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
-  delete app myapp
+  delete resources.apps.myapp
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
 Deleting files...
 Destroy complete!
 
->>> print_requests
+>>> print_requests.py //apps
 {
   "method": "DELETE",
   "path": "/api/2.0/apps/myapp"

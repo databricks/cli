@@ -19,7 +19,10 @@ from urllib.request import urlretrieve
 os_name = platform.system().lower()
 
 arch = platform.machine().lower()
-arch = {"x86_64": "amd64"}.get(arch, arch)
+arch = {
+    "x86_64": "amd64",
+    "aarch64": "arm64",
+}.get(arch, arch)
 if os_name == "windows" and arch not in ("386", "amd64"):
     # terraform 1.5.5 only has builds for these two.
     arch = "amd64"
@@ -65,9 +68,7 @@ def main():
         terraform_provider_version = args.provider_version
 
     terraform_provider_file = f"terraform-provider-databricks_{terraform_provider_version}_{os_name}_{arch}.zip"
-    terraform_provider_url = (
-        f"https://github.com/databricks/terraform-provider-databricks/releases/download/v{terraform_provider_version}/{terraform_provider_file}"
-    )
+    terraform_provider_url = f"https://github.com/databricks/terraform-provider-databricks/releases/download/v{terraform_provider_version}/{terraform_provider_file}"
 
     target.mkdir(exist_ok=True, parents=True)
 
@@ -87,7 +88,9 @@ def main():
         terraform_path.chmod(0o755)
 
     tfplugins_path = target / "tfplugins"
-    provider_dir = Path(tfplugins_path / f"registry.terraform.io/databricks/databricks/{terraform_provider_version}/{os_name}_{arch}")
+    provider_dir = Path(
+        tfplugins_path / f"registry.terraform.io/databricks/databricks/{terraform_provider_version}/{os_name}_{arch}"
+    )
     if not provider_dir.exists():
         print(f"Extracting {terraform_provider_path} -> {provider_dir}")
         os.makedirs(provider_dir, exist_ok=True)

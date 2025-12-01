@@ -49,3 +49,43 @@ func TestValueIsValid(t *testing.T) {
 	intValue := dyn.V(1)
 	assert.True(t, intValue.IsValid())
 }
+
+func TestIsZero(t *testing.T) {
+	assert.True(t, dyn.V(0).IsZero(), "int")
+	assert.True(t, dyn.V(int(0)).IsZero(), "int")
+	assert.False(t, dyn.V(int(1)).IsZero(), "int")
+	assert.True(t, dyn.V(uint(0)).IsZero(), "uint")
+
+	assert.True(t, dyn.V(int8(0)).IsZero(), "int8")
+	assert.True(t, dyn.V(uint8(0)).IsZero(), "uint8")
+
+	assert.True(t, dyn.V(int16(0)).IsZero(), "int16")
+	assert.True(t, dyn.V(uint16(0)).IsZero(), "uint16")
+
+	assert.True(t, dyn.V(int32(0)).IsZero(), "int32")
+	assert.False(t, dyn.V(int32(1)).IsZero(), "int32")
+	assert.True(t, dyn.V(uint32(0)).IsZero(), "uint32")
+
+	assert.True(t, dyn.V(int64(0)).IsZero(), "int64")
+	assert.False(t, dyn.V(int64(-1)).IsZero(), "int64")
+
+	assert.True(t, dyn.V(uint64(0)).IsZero(), "uint64")
+	assert.False(t, dyn.V(uint64(2)).IsZero(), "uint64")
+
+	assert.True(t, dyn.V("").IsZero(), "string")
+	assert.False(t, dyn.V("x").IsZero(), "string")
+
+	assert.True(t, dyn.V(false).IsZero(), "bool")
+	assert.False(t, dyn.V(true).IsZero(), "bool")
+
+	assert.True(t, dyn.V(float32(0.0)).IsZero(), "float32")
+	assert.False(t, dyn.V(float32(0.01)).IsZero(), "float32")
+
+	assert.True(t, dyn.V(float64(0.0)).IsZero(), "float64")
+	assert.False(t, dyn.V(float64(0.01)).IsZero(), "float64")
+
+	assert.True(t, dyn.V(dyn.Time{}).IsZero(), "time")
+	assert.True(t, dyn.V(dyn.Mapping{}).IsZero(), "Mapping")
+	assert.True(t, dyn.V([]dyn.Value{}).IsZero(), "Sequence")
+	assert.False(t, dyn.V([]dyn.Value{dyn.V(0)}).IsZero(), "Sequence")
+}

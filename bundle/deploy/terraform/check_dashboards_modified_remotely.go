@@ -3,8 +3,10 @@ package terraform
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 )
@@ -15,14 +17,32 @@ type dashboardState struct {
 	ETag string
 }
 
-func collectDashboardsFromState(ctx context.Context, b *bundle.Bundle) ([]dashboardState, error) {
-	state, err := ParseResourcesState(ctx, b)
-	if err != nil && state == nil {
+func collectDashboardsFromState(ctx context.Context, b *bundle.Bundle, directDeployment bool) ([]dashboardState, error) {
+	var state ExportedResourcesMap
+	var err error
+	if directDeployment {
+		_, localPath := b.StateFilenameDirect(ctx)
+		state, err = b.DeploymentBundle.ExportState(ctx, localPath)
+	} else {
+		state, err = ParseResourcesState(ctx, b)
+	}
+	if err != nil {
 		return nil, err
 	}
 
 	var dashboards []dashboardState
-	for resourceName, instance := range state["dashboards"] {
+	for resourceKey, instance := range state {
+		// Check if this is a dashboard resource key
+		if !strings.HasPrefix(resourceKey, "resources.dashboards.") {
+			continue
+		}
+		// Extract dashboard name from "resources.dashboards.name"
+		parts := strings.Split(resourceKey, ".")
+		if len(parts) != 3 {
+			continue
+		}
+		resourceName := parts[2]
+
 		dashboards = append(dashboards, dashboardState{
 			Name: resourceName,
 			ID:   instance.ID,
@@ -33,7 +53,10 @@ func collectDashboardsFromState(ctx context.Context, b *bundle.Bundle) ([]dashbo
 	return dashboards, nil
 }
 
-type checkDashboardsModifiedRemotely struct{}
+type checkDashboardsModifiedRemotely struct {
+	isPlan bool
+	engine engine.EngineType
+}
 
 func (l *checkDashboardsModifiedRemotely) Name() string {
 	return "CheckDashboardsModifiedRemotely"
@@ -45,17 +68,12 @@ func (l *checkDashboardsModifiedRemotely) Apply(ctx context.Context, b *bundle.B
 		return nil
 	}
 
-	if b.DirectDeployment {
-		// TODO: not implemented yet
-		return nil
-	}
-
 	// If the user has forced the deployment, skip this check.
 	if b.Config.Bundle.Force {
 		return nil
 	}
 
-	dashboards, err := collectDashboardsFromState(ctx, b)
+	dashboards, err := collectDashboardsFromState(ctx, b, l.engine.IsDirect())
 	if err != nil {
 		return diag.FromErr(err)
 	}
@@ -87,8 +105,14 @@ func (l *checkDashboardsModifiedRemotely) Apply(ctx context.Context, b *bundle.B
 			continue
 		}
 
+		// Downgrade this to a warning in plan mode.
+		severity := diag.Error
+		if l.isPlan {
+			severity = diag.Warning
+		}
+
 		diags = diags.Append(diag.Diagnostic{
-			Severity: diag.Error,
+			Severity: severity,
 			Summary:  fmt.Sprintf("dashboard %q has been modified remotely", dashboard.Name),
 			Detail: "" +
 				"This dashboard has been modified remotely since the last bundle deployment.\n" +
@@ -107,6 +131,6 @@ func (l *checkDashboardsModifiedRemotely) Apply(ctx context.Context, b *bundle.B
 	return diags
 }
 
-func CheckDashboardsModifiedRemotely() *checkDashboardsModifiedRemotely {
-	return &checkDashboardsModifiedRemotely{}
+func CheckDashboardsModifiedRemotely(isPlan bool, engine engine.EngineType) *checkDashboardsModifiedRemotely {
+	return &checkDashboardsModifiedRemotely{isPlan: isPlan, engine: engine}
 }

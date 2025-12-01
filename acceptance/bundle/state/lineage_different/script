@@ -1,0 +1,11 @@
+mkdir -p .databricks/bundle/default/terraform
+echo '{"version": 4, "lineage": "111"}' > .databricks/bundle/default/terraform/terraform.tfstate
+echo '{"lineage": "222"}' > .databricks/bundle/default/resources.json
+trace musterr $CLI bundle plan
+trace musterr $CLI bundle deploy
+trace musterr $CLI bundle summary
+trace musterr $CLI bundle destroy --auto-approve
+
+# These commands don't care:
+trace $CLI bundle validate
+trace $CLI bundle > /dev/null

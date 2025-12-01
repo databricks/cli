@@ -18,7 +18,8 @@ test.py
 
 >>> [CLI] bundle deployment bind test_job_key [NUMID] --auto-approve
 Updating deployment state...
-Successfully bound job with an id '[NUMID]'. Run 'bundle deploy' to deploy changes to your workspace
+Successfully bound job with an id '[NUMID]'
+Run 'bundle deploy' to deploy changes to your workspace
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-generate-bind-[UNIQUE_NAME]/files...
@@ -28,7 +29,7 @@ Deployment complete!
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
-  delete job test_job_key
+  delete resources.jobs.test_job_key
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-generate-bind-[UNIQUE_NAME]
 

@@ -1,0 +1,10 @@
+{
+  "plan": {
+    "resources.clusters.foo": {
+      "action": "create"
+    },
+    "resources.clusters.foo.permissions": {
+      "action": "create"
+    }
+  }
+}

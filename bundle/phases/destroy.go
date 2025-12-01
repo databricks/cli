@@ -6,11 +6,13 @@ import (
 	"net/http"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/engine"
+	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/deploy/files"
 	"github.com/databricks/cli/bundle/deploy/lock"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/bundle/statemgmt"
+	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
@@ -30,42 +32,10 @@ func assertRootPathExists(ctx context.Context, b *bundle.Bundle) (bool, error) {
 	return true, err
 }
 
-func getDeleteActions(ctx context.Context, b *bundle.Bundle) ([]deployplan.Action, error) {
-	if b.DirectDeployment {
-		err := b.OpenStateFile(ctx)
-		if err != nil {
-			return nil, err
-		}
-		err = b.DeploymentBundle.CalculatePlanForDestroy(ctx, b.WorkspaceClient())
-		if err != nil {
-			return nil, err
-		}
-		return b.DeploymentBundle.GetActions(ctx), nil
-	}
+func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan) (bool, error) {
+	deleteActions := plan.GetActions()
 
-	tf := b.Terraform
-
-	if tf == nil {
-		return nil, errors.New("terraform not initialized")
-	}
-
-	actions, err := terraform.ShowPlanFile(ctx, tf, b.TerraformPlanPath)
-	if err != nil {
-		return nil, err
-	}
-
-	deleteActions := deployplan.Filter(actions, deployplan.ActionTypeDelete)
-
-	return deleteActions, nil
-}
-
-func approvalForDestroy(ctx context.Context, b *bundle.Bundle) (bool, error) {
-	deleteActions, err := getDeleteActions(ctx, b)
-	if err != nil {
-		return false, err
-	}
-
-	err = checkForPreventDestroy(b, deleteActions)
+	err := checkForPreventDestroy(b, deleteActions)
 	if err != nil {
 		return false, err
 	}
@@ -73,15 +43,17 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle) (bool, error) {
 	if len(deleteActions) > 0 {
 		cmdio.LogString(ctx, "The following resources will be deleted:")
 		for _, a := range deleteActions {
+			if a.IsChildResource() {
+				continue
+			}
 			cmdio.Log(ctx, a)
 		}
 		cmdio.LogString(ctx, "")
-
 	}
 
-	schemaActions := deployplan.FilterGroup(deleteActions, "schemas", deployplan.ActionTypeDelete)
-	dltActions := deployplan.FilterGroup(deleteActions, "pipelines", deployplan.ActionTypeDelete)
-	volumeActions := deployplan.FilterGroup(deleteActions, "volumes", deployplan.ActionTypeDelete)
+	schemaActions := filterGroup(deleteActions, "schemas", deployplan.ActionTypeDelete)
+	dltActions := filterGroup(deleteActions, "pipelines", deployplan.ActionTypeDelete)
+	volumeActions := filterGroup(deleteActions, "volumes", deployplan.ActionTypeDelete)
 
 	if len(schemaActions) > 0 {
 		cmdio.LogString(ctx, deleteSchemaMessage)
@@ -122,9 +94,9 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle) (bool, error) {
 	return approved, nil
 }
 
-func destroyCore(ctx context.Context, b *bundle.Bundle) {
-	if b.DirectDeployment {
-		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(), &b.Config)
+func destroyCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, engine engine.EngineType) {
+	if engine.IsDirect() {
+		b.DeploymentBundle.Apply(ctx, b.WorkspaceClient(), &b.Config, plan, direct.MigrateMode(false))
 	} else {
 		// Core destructive mutators for destroy. These require informed user consent.
 		bundle.ApplyContext(ctx, b, terraform.Apply())
@@ -142,7 +114,7 @@ func destroyCore(ctx context.Context, b *bundle.Bundle) {
 }
 
 // The destroy phase deletes artifacts and resources.
-func Destroy(ctx context.Context, b *bundle.Bundle) {
+func Destroy(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) {
 	log.Info(ctx, "Phase: destroy")
 
 	ok, err := assertRootPathExists(ctx, b)
@@ -165,13 +137,14 @@ func Destroy(ctx context.Context, b *bundle.Bundle) {
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDestroy))
 	}()
 
-	bundle.ApplyContext(ctx, b, statemgmt.StatePull())
-	if logdiag.HasError(ctx) {
-		return
-	}
-
-	if !b.DirectDeployment {
+	if !engine.IsDirect() {
 		bundle.ApplySeqContext(ctx, b,
+			// We need to resolve artifact variable (how we do it in build phase)
+			// because some of the to-be-destroyed resource might use this variable.
+			// Not resolving might lead to terraform "Reference to undeclared resource" error
+			mutator.ResolveVariableReferencesWithoutResources("artifacts"),
+			mutator.ResolveVariableReferencesOnlyResources("artifacts"),
+
 			terraform.Interpolate(),
 			terraform.Write(),
 			terraform.Plan(terraform.PlanGoal("destroy")),
@@ -182,14 +155,36 @@ func Destroy(ctx context.Context, b *bundle.Bundle) {
 		return
 	}
 
-	hasApproval, err := approvalForDestroy(ctx, b)
+	var plan *deployplan.Plan
+	if engine.IsDirect() {
+		_, localPath := b.StateFilenameDirect(ctx)
+		plan, err = b.DeploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(), nil, localPath)
+		if err != nil {
+			logdiag.LogError(ctx, err)
+			return
+		}
+	} else {
+		tf := b.Terraform
+		if tf == nil {
+			logdiag.LogError(ctx, errors.New("terraform not initialized"))
+			return
+		}
+
+		plan, err = terraform.ShowPlanFile(ctx, tf, b.TerraformPlanPath)
+		if err != nil {
+			logdiag.LogError(ctx, err)
+			return
+		}
+	}
+
+	hasApproval, err := approvalForDestroy(ctx, b, plan)
 	if err != nil {
 		logdiag.LogError(ctx, err)
 		return
 	}
 
 	if hasApproval {
-		destroyCore(ctx, b)
+		destroyCore(ctx, b, plan, engine)
 	} else {
 		cmdio.LogString(ctx, "Destroy cancelled!")
 	}

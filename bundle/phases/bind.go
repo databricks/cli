@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/deploy/lock"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/statemgmt"
@@ -13,6 +14,12 @@ import (
 
 func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions) {
 	log.Info(ctx, "Phase: bind")
+
+	engine, err := engine.FromEnv(ctx)
+	if err != nil {
+		logdiag.LogError(ctx, err)
+		return
+	}
 
 	bundle.ApplyContext(ctx, b, lock.Acquire())
 	if logdiag.HasError(ctx) {
@@ -24,16 +31,25 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions) {
 	}()
 
 	bundle.ApplySeqContext(ctx, b,
-		statemgmt.StatePull(),
 		terraform.Interpolate(),
 		terraform.Write(),
 		terraform.Import(opts),
-		statemgmt.StatePush(),
 	)
+	if logdiag.HasError(ctx) {
+		return
+	}
+
+	statemgmt.PushResourcesState(ctx, b, engine)
 }
 
-func Unbind(ctx context.Context, b *bundle.Bundle, resourceType, resourceKey string) {
+func Unbind(ctx context.Context, b *bundle.Bundle, bundleType, tfResourceType, resourceKey string) {
 	log.Info(ctx, "Phase: unbind")
+
+	engine, err := engine.FromEnv(ctx)
+	if err != nil {
+		logdiag.LogError(ctx, err)
+		return
+	}
 
 	bundle.ApplyContext(ctx, b, lock.Acquire())
 	if logdiag.HasError(ctx) {
@@ -45,10 +61,13 @@ func Unbind(ctx context.Context, b *bundle.Bundle, resourceType, resourceKey str
 	}()
 
 	bundle.ApplySeqContext(ctx, b,
-		statemgmt.StatePull(),
 		terraform.Interpolate(),
 		terraform.Write(),
-		terraform.Unbind(resourceType, resourceKey),
-		statemgmt.StatePush(),
+		terraform.Unbind(bundleType, tfResourceType, resourceKey),
 	)
+	if logdiag.HasError(ctx) {
+		return
+	}
+
+	statemgmt.PushResourcesState(ctx, b, engine)
 }

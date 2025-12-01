@@ -5,6 +5,9 @@ github.com/databricks/cli/bundle/config/resources.App:
   "budget_policy_id":
     "description": |-
       PLACEHOLDER
+  "compute_size":
+    "description": |-
+      PLACEHOLDER
   "compute_status":
     "description": |-
       PLACEHOLDER
@@ -674,6 +677,9 @@ github.com/databricks/databricks-sdk-go/service/apps.AppResource:
   "database":
     "description": |-
       PLACEHOLDER
+  "genie_space":
+    "description": |-
+      PLACEHOLDER
   "job":
     "description": |-
       PLACEHOLDER
@@ -697,6 +703,16 @@ github.com/databricks/databricks-sdk-go/service/apps.AppResourceDatabase:
     "description": |-
       PLACEHOLDER
   "permission":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/apps.AppResourceGenieSpace:
+  "name":
+    "description": |-
+      PLACEHOLDER
+  "permission":
+    "description": |-
+      PLACEHOLDER
+  "space_id":
     "description": |-
       PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/apps.AppResourceJob:
@@ -803,6 +819,11 @@ github.com/databricks/databricks-sdk-go/service/compute.InitScriptInfo:
   "abfss":
     "description": |-
       Contains the Azure Data Lake Storage destination path
+github.com/databricks/databricks-sdk-go/service/compute.Kind:
+  "_":
+    "enum":
+      - |-
+        CLASSIC_PREVIEW
 github.com/databricks/databricks-sdk-go/service/compute.LogAnalyticsInfo:
   "log_analytics_primary_key":
     "description": |-
@@ -895,10 +916,6 @@ github.com/databricks/databricks-sdk-go/service/pipelines.PipelineTrigger:
   "manual":
     "description": |-
       PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/serving.AiGatewayRateLimit:
-  "principal":
-    "description": |-
-      PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/serving.Route:
   "served_entity_name":
     "description": |-
@@ -912,44 +929,6 @@ github.com/databricks/databricks-sdk-go/service/serving.ServedModelInput:
     "description": |-
       PLACEHOLDER
   "model_version":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/sql.AlertV2Notification:
-  "subscriptions":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/sql.AlertV2Operand:
-  "column":
-    "description": |-
-      PLACEHOLDER
-  "value":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/sql.AlertV2OperandColumn:
-  "aggregation":
-    "description": |-
-      PLACEHOLDER
-  "display":
-    "description": |-
-      PLACEHOLDER
-  "name":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/sql.AlertV2OperandValue:
-  "bool_value":
-    "description": |-
-      PLACEHOLDER
-  "double_value":
-    "description": |-
-      PLACEHOLDER
-  "string_value":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/databricks-sdk-go/service/sql.AlertV2Subscription:
-  "destination_id":
-    "description": |-
-      PLACEHOLDER
-  "user_email":
     "description": |-
       PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/sql.Channel:

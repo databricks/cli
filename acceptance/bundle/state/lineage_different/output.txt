@@ -1,0 +1,43 @@
+
+>>> musterr [CLI] bundle plan
+Error: lineage mismatch in state files
+
+Available state files:
+- [TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfstate: local terraform state serial=0 lineage="111"
+- [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=0 lineage="222"
+
+
+>>> musterr [CLI] bundle deploy
+Error: lineage mismatch in state files
+
+Available state files:
+- [TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfstate: local terraform state serial=0 lineage="111"
+- [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=0 lineage="222"
+
+
+>>> musterr [CLI] bundle summary
+Error: lineage mismatch in state files
+
+Available state files:
+- [TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfstate: local terraform state serial=0 lineage="111"
+- [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=0 lineage="222"
+
+
+>>> musterr [CLI] bundle destroy --auto-approve
+Error: lineage mismatch in state files
+
+Available state files:
+- [TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfstate: local terraform state serial=0 lineage="111"
+- [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=0 lineage="222"
+
+
+>>> [CLI] bundle validate
+Name: test-bundle
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Validation OK!
+
+>>> [CLI] bundle

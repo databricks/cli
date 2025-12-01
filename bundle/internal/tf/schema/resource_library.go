@@ -13,19 +13,24 @@ type ResourceLibraryMaven struct {
 	Repo        string   `json:"repo,omitempty"`
 }
 
+type ResourceLibraryProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type ResourceLibraryPypi struct {
 	Package string `json:"package"`
 	Repo    string `json:"repo,omitempty"`
 }
 
 type ResourceLibrary struct {
-	ClusterId    string                 `json:"cluster_id"`
-	Egg          string                 `json:"egg,omitempty"`
-	Id           string                 `json:"id,omitempty"`
-	Jar          string                 `json:"jar,omitempty"`
-	Requirements string                 `json:"requirements,omitempty"`
-	Whl          string                 `json:"whl,omitempty"`
-	Cran         []ResourceLibraryCran  `json:"cran,omitempty"`
-	Maven        []ResourceLibraryMaven `json:"maven,omitempty"`
-	Pypi         []ResourceLibraryPypi  `json:"pypi,omitempty"`
+	ClusterId      string                          `json:"cluster_id"`
+	Egg            string                          `json:"egg,omitempty"`
+	Id             string                          `json:"id,omitempty"`
+	Jar            string                          `json:"jar,omitempty"`
+	Requirements   string                          `json:"requirements,omitempty"`
+	Whl            string                          `json:"whl,omitempty"`
+	Cran           []ResourceLibraryCran           `json:"cran,omitempty"`
+	Maven          []ResourceLibraryMaven          `json:"maven,omitempty"`
+	ProviderConfig []ResourceLibraryProviderConfig `json:"provider_config,omitempty"`
+	Pypi           []ResourceLibraryPypi           `json:"pypi,omitempty"`
 }

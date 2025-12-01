@@ -28,10 +28,7 @@ func New() *cobra.Command {
   encapsulates this bucket information, and its ID is used when creating a new
   workspace.`,
 		GroupID: "provisioning",
-		Annotations: map[string]string{
-			"package": "provisioning",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -65,20 +62,13 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	cmd.Flags().StringVar(&createReq.RoleArn, "role-arn", createReq.RoleArn, `Optional IAM role that is used to access the workspace catalog which is created during workspace creation for UC by Default.`)
+
 	cmd.Use = "create"
-	cmd.Short = `Create new storage configuration.`
-	cmd.Long = `Create new storage configuration.
-  
-  Creates new storage configuration for an account, specified by ID. Uploads a
-  storage configuration object that represents the root AWS S3 bucket in your
-  account. Databricks stores related workspace assets including DBFS, cluster
-  logs, and job results. For the AWS S3 bucket, you need to configure the
-  required bucket policy.
-  
-  For information about how to create a new workspace with this API, see [Create
-  a new workspace using the Account API]
-  
-  [Create a new workspace using the Account API]: http://docs.databricks.com/administration-guide/account-api/new-workspace.html`
+	cmd.Short = `Create a storage configuration.`
+	cmd.Long = `Create a storage configuration.
+
+  Creates a Databricks storage configuration for an account.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -136,46 +126,31 @@ func newDelete() *cobra.Command {
 	var deleteReq provisioning.DeleteStorageRequest
 
 	cmd.Use = "delete STORAGE_CONFIGURATION_ID"
-	cmd.Short = `Delete storage configuration.`
-	cmd.Long = `Delete storage configuration.
-  
-  Deletes a Databricks storage configuration. You cannot delete a storage
-  configuration that is associated with any workspace.
+	cmd.Short = `Delete a storage configuration.`
+	cmd.Long = `Delete a storage configuration.
 
-  Arguments:
-    STORAGE_CONFIGURATION_ID: Databricks Account API storage configuration ID.`
+  Deletes a Databricks storage configuration. You cannot delete a storage
+  configuration that is associated with any workspace.`
 
 	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
 
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
 
-		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No STORAGE_CONFIGURATION_ID argument specified. Loading names for Storage drop-down."
-			names, err := a.Storage.StorageConfigurationStorageConfigurationNameToStorageConfigurationIdMap(ctx)
-			close(promptSpinner)
-			if err != nil {
-				return fmt.Errorf("failed to load names for Storage drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "Databricks Account API storage configuration ID")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have databricks account api storage configuration id")
-		}
 		deleteReq.StorageConfigurationId = args[0]
 
-		err = a.Storage.Delete(ctx, deleteReq)
+		response, err := a.Storage.Delete(ctx, deleteReq)
 		if err != nil {
 			return err
 		}
-		return nil
+		return cmdio.Render(ctx, response)
 	}
 
 	// Disable completions since they are not applicable.
@@ -205,38 +180,23 @@ func newGet() *cobra.Command {
 	var getReq provisioning.GetStorageRequest
 
 	cmd.Use = "get STORAGE_CONFIGURATION_ID"
-	cmd.Short = `Get storage configuration.`
-	cmd.Long = `Get storage configuration.
-  
-  Gets a Databricks storage configuration for an account, both specified by ID.
+	cmd.Short = `Get a storage configuration.`
+	cmd.Long = `Get a storage configuration.
 
-  Arguments:
-    STORAGE_CONFIGURATION_ID: Databricks Account API storage configuration ID.`
+  Gets a Databricks storage configuration for an account, both specified by ID.`
 
 	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
 
 	cmd.PreRunE = root.MustAccountClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
 		ctx := cmd.Context()
 		a := cmdctx.AccountClient(ctx)
 
-		if len(args) == 0 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No STORAGE_CONFIGURATION_ID argument specified. Loading names for Storage drop-down."
-			names, err := a.Storage.StorageConfigurationStorageConfigurationNameToStorageConfigurationIdMap(ctx)
-			close(promptSpinner)
-			if err != nil {
-				return fmt.Errorf("failed to load names for Storage drop-down. Please manually specify required arguments. Original error: %w", err)
-			}
-			id, err := cmdio.Select(ctx, names, "Databricks Account API storage configuration ID")
-			if err != nil {
-				return err
-			}
-			args = append(args, id)
-		}
-		if len(args) != 1 {
-			return fmt.Errorf("expected to have databricks account api storage configuration id")
-		}
 		getReq.StorageConfigurationId = args[0]
 
 		response, err := a.Storage.Get(ctx, getReq)
@@ -270,11 +230,10 @@ func newList() *cobra.Command {
 	cmd := &cobra.Command{}
 
 	cmd.Use = "list"
-	cmd.Short = `Get all storage configurations.`
-	cmd.Long = `Get all storage configurations.
-  
-  Gets a list of all Databricks storage configurations for your account,
-  specified by ID.`
+	cmd.Short = `List storage configurations.`
+	cmd.Long = `List storage configurations.
+
+  Lists Databricks storage configurations for an account, specified by ID.`
 
 	cmd.Annotations = make(map[string]string)
 

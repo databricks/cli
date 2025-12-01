@@ -1,0 +1,3 @@
+RecordRequests = true
+Local = true
+IncludeRequestHeaders = ["User-Agent"]

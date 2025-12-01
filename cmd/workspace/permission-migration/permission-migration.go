@@ -24,9 +24,6 @@ func New() *cobra.Command {
 		Long: `APIs for migrating acl permissions, used only by the ucx tool:
   https://github.com/databrickslabs/ucx`,
 		GroupID: "iam",
-		Annotations: map[string]string{
-			"package": "iam",
-		},
 
 		// This service is being previewed; hide from help output.
 		Hidden: true,
@@ -109,6 +106,7 @@ func newMigratePermissions() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid WORKSPACE_ID: %s", args[0])
 			}
+
 		}
 		if !cmd.Flags().Changed("json") {
 			migratePermissionsReq.FromWorkspaceGroupName = args[1]

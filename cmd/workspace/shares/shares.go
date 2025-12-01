@@ -27,17 +27,14 @@ func New() *cobra.Command {
   under their original name, qualified by their original schema, or provide
   alternate exposed names.`,
 		GroupID: "sharing",
-		Annotations: map[string]string{
-			"package": "sharing",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
 	cmd.AddCommand(newCreate())
 	cmd.AddCommand(newDelete())
 	cmd.AddCommand(newGet())
-	cmd.AddCommand(newList())
+	cmd.AddCommand(newListShares())
 	cmd.AddCommand(newSharePermissions())
 	cmd.AddCommand(newUpdate())
 	cmd.AddCommand(newUpdatePermissions())
@@ -73,7 +70,7 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create NAME"
 	cmd.Short = `Create a share.`
 	cmd.Long = `Create a share.
-  
+
   Creates a new share for data objects. Data objects can be added after creation
   with **update**. The caller must be a metastore admin or have the
   **CREATE_SHARE** privilege on the metastore.
@@ -152,7 +149,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete NAME"
 	cmd.Short = `Delete a share.`
 	cmd.Long = `Delete a share.
-  
+
   Deletes a data object share from the metastore. The caller must be an owner of
   the share.
 
@@ -211,9 +208,9 @@ func newGet() *cobra.Command {
 	cmd.Use = "get NAME"
 	cmd.Short = `Get a share.`
 	cmd.Long = `Get a share.
-  
-  Gets a data object share from the metastore. The caller must be a metastore
-  admin or the owner of the share.
+
+  Gets a data object share from the metastore. The caller must have the
+  USE_SHARE privilege on the metastore or be the owner of the share.
 
   Arguments:
     NAME: The name of the share.`
@@ -251,29 +248,30 @@ func newGet() *cobra.Command {
 	return cmd
 }
 
-// start list command
+// start list-shares command
 
 // Slice with functions to override default command behavior.
 // Functions can be added from the `init()` function in manually curated files in this directory.
-var listOverrides []func(
+var listSharesOverrides []func(
 	*cobra.Command,
-	*sharing.ListSharesRequest,
+	*sharing.SharesListRequest,
 )
 
-func newList() *cobra.Command {
+func newListShares() *cobra.Command {
 	cmd := &cobra.Command{}
 
-	var listReq sharing.ListSharesRequest
+	var listSharesReq sharing.SharesListRequest
 
-	cmd.Flags().IntVar(&listReq.MaxResults, "max-results", listReq.MaxResults, `Maximum number of shares to return.`)
-	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
+	cmd.Flags().IntVar(&listSharesReq.MaxResults, "max-results", listSharesReq.MaxResults, `Maximum number of shares to return.`)
+	cmd.Flags().StringVar(&listSharesReq.PageToken, "page-token", listSharesReq.PageToken, `Opaque pagination token to go to next page based on previous query.`)
 
-	cmd.Use = "list"
+	cmd.Use = "list-shares"
 	cmd.Short = `List shares.`
 	cmd.Long = `List shares.
-  
-  Gets an array of data object shares from the metastore. The caller must be a
-  metastore admin or the owner of the share. There is no guarantee of a specific
+
+  Gets an array of data object shares from the metastore. If the caller has the
+  USE_SHARE privilege on the metastore, all shares are returned. Otherwise, only
+  shares owned by the caller are returned. There is no guarantee of a specific
   ordering of the elements in the array.`
 
 	cmd.Annotations = make(map[string]string)
@@ -288,7 +286,7 @@ func newList() *cobra.Command {
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 
-		response := w.Shares.List(ctx, listReq)
+		response := w.Shares.ListShares(ctx, listSharesReq)
 		return cmdio.RenderIterator(ctx, response)
 	}
 
@@ -297,8 +295,8 @@ func newList() *cobra.Command {
 	cmd.ValidArgsFunction = cobra.NoFileCompletions
 
 	// Apply optional overrides to this command.
-	for _, fn := range listOverrides {
-		fn(cmd, &listReq)
+	for _, fn := range listSharesOverrides {
+		fn(cmd, &listSharesReq)
 	}
 
 	return cmd
@@ -324,12 +322,12 @@ func newSharePermissions() *cobra.Command {
 	cmd.Use = "share-permissions NAME"
 	cmd.Short = `Get permissions.`
 	cmd.Long = `Get permissions.
-  
-  Gets the permissions for a data share from the metastore. The caller must be a
-  metastore admin or the owner of the share.
+
+  Gets the permissions for a data share from the metastore. The caller must have
+  the USE_SHARE privilege on the metastore or be the owner of the share.
 
   Arguments:
-    NAME: The name of the share.`
+    NAME: The name of the Recipient.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -390,23 +388,23 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update NAME"
 	cmd.Short = `Update a share.`
 	cmd.Long = `Update a share.
-  
+
   Updates the share with the changes and data objects in the request. The caller
   must be the owner of the share or a metastore admin.
-  
+
   When the caller is a metastore admin, only the __owner__ field can be updated.
-  
+
   In the case the share name is changed, **updateShare** requires that the
   caller is the owner of the share and has the CREATE_SHARE privilege.
-  
+
   If there are notebook files in the share, the __storage_root__ field cannot be
   updated.
-  
+
   For each table that is added through this method, the share owner must also
   have **SELECT** privilege on the table. This privilege must be maintained
   indefinitely for recipients to be able to access the table. Typically, you
   should use a group as the share owner.
-  
+
   Table removals through **update** do not require additional privileges.
 
   Arguments:
@@ -480,12 +478,13 @@ func newUpdatePermissions() *cobra.Command {
 	cmd.Use = "update-permissions NAME"
 	cmd.Short = `Update permissions.`
 	cmd.Long = `Update permissions.
-  
-  Updates the permissions for a data share in the metastore. The caller must be
-  a metastore admin or an owner of the share.
-  
-  For new recipient grants, the user must also be the recipient owner or
-  metastore admin. recipient revocations do not require additional privileges.
+
+  Updates the permissions for a data share in the metastore. The caller must
+  have both the USE_SHARE and SET_SHARE_PERMISSION privileges on the metastore,
+  or be the owner of the share.
+
+  For new recipient grants, the user must also be the owner of the recipients.
+  recipient revocations do not require additional privileges.
 
   Arguments:
     NAME: The name of the share.`

@@ -29,7 +29,7 @@ func New() *cobra.Command {
   Security Token Service (STS), Azure utilizes Shared Access Signatures (SAS)
   for its data storage services, and Google Cloud supports temporary credentials
   through OAuth 2.0.
-  
+
   Temporary path credentials ensure that data access is limited in scope and
   duration, reducing the risk of unauthorized access or misuse. To use the
   temporary path credentials API, a metastore admin needs to enable the
@@ -37,21 +37,18 @@ func New() *cobra.Command {
   needs to be granted the EXTERNAL USE LOCATION permission by external location
   owner. For requests on existing external tables, user also needs to be granted
   the EXTERNAL USE SCHEMA permission at the schema level by catalog admin.
-  
+
   Note that EXTERNAL USE SCHEMA is a schema level permission that can only be
   granted by catalog admin explicitly and is not included in schema ownership or
   ALL PRIVILEGES on the schema for security reasons. Similarly, EXTERNAL USE
   LOCATION is an external location level permission that can only be granted by
   external location owner explicitly and is not included in external location
   ownership or ALL PRIVILEGES on the external location for security reasons.
-  
+
   This API only supports temporary path credentials for external locations and
   external tables, and volumes will be supported in the future.`,
 		GroupID: "catalog",
-		Annotations: map[string]string{
-			"package": "catalog",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -87,7 +84,7 @@ func newGenerateTemporaryPathCredentials() *cobra.Command {
 	cmd.Use = "generate-temporary-path-credentials URL OPERATION"
 	cmd.Short = `Generate a temporary path credential.`
 	cmd.Long = `Generate a temporary path credential.
-  
+
   Get a short-lived credential for directly accessing cloud storage locations
   registered in Databricks. The Generate Temporary Path Credentials API is only
   supported for external storage paths, specifically external locations and
@@ -101,7 +98,7 @@ func newGenerateTemporaryPathCredentials() *cobra.Command {
 
   Arguments:
     URL: URL for path-based access.
-    OPERATION: The operation being performed on the path. 
+    OPERATION: The operation being performed on the path.
       Supported values: [PATH_CREATE_TABLE, PATH_READ, PATH_READ_WRITE]`
 
 	cmd.Annotations = make(map[string]string)
@@ -143,6 +140,7 @@ func newGenerateTemporaryPathCredentials() *cobra.Command {
 			if err != nil {
 				return fmt.Errorf("invalid OPERATION: %s", args[1])
 			}
+
 		}
 
 		response, err := w.TemporaryPathCredentials.GenerateTemporaryPathCredentials(ctx, generateTemporaryPathCredentialsReq)

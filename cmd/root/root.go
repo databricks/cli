@@ -13,7 +13,6 @@ import (
 
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/cmdctx"
-	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/telemetry"
@@ -43,11 +42,13 @@ func New(ctx context.Context) *cobra.Command {
 
 	// Initialize flags
 	logFlags := initLogFlags(cmd)
-	progressLoggerFlag := initProgressLoggerFlag(cmd, logFlags)
 	outputFlag := initOutputFlag(cmd)
 	initProfileFlag(cmd)
 	initEnvironmentFlag(cmd)
 	initTargetFlag(cmd)
+
+	// Deprecated flag. Warn if it is specified.
+	initProgressLoggerFlag(cmd, logFlags)
 
 	cmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
@@ -63,11 +64,6 @@ func New(ctx context.Context) *cobra.Command {
 			slog.String("version", build.GetInfo().Version),
 			slog.String("args", strings.Join(os.Args, ", ")))
 
-		// Configure progress logger
-		ctx, err = progressLoggerFlag.initializeContext(ctx)
-		if err != nil {
-			return err
-		}
 		// set context, so that initializeIO can have the current context
 		cmd.SetContext(ctx)
 
@@ -140,9 +136,7 @@ Stack Trace:
 	// Run the command
 	cmd, err = cmd.ExecuteContextC(ctx)
 	if err != nil && !errors.Is(err, ErrAlreadyPrinted) {
-		// If cmdio logger initialization succeeds, then this function logs with the
-		// initialized cmdio logger, otherwise with the default cmdio logger
-		cmdio.LogError(cmd.Context(), err)
+		fmt.Fprintf(cmd.ErrOrStderr(), "Error: %s\n", err.Error())
 	}
 
 	// Log exit status and error

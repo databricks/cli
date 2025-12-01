@@ -138,6 +138,10 @@ func assignAnnotation(s *jsonschema.Schema, a annotation.Descriptor) {
 		s.Preview = a.Preview
 	}
 
+	if a.OutputOnly != nil && *a.OutputOnly {
+		s.FieldBehaviors = []string{"OUTPUT_ONLY"}
+	}
+
 	s.MarkdownDescription = convertLinksToAbsoluteUrl(a.MarkdownDescription)
 	s.Title = a.Title
 	s.Enum = a.Enum

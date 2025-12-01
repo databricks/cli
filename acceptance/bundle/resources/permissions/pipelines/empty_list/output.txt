@@ -1,0 +1,22 @@
+
+>>> [CLI] bundle validate -o json
+null
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.pipelines.foo
+
+This action will result in the deletion of the following Lakeflow Declarative Pipelines along with the
+Streaming Tables (STs) and Materialized Views (MVs) managed by them:
+  delete resources.pipelines.foo
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Deleting files...
+Destroy complete!

@@ -1,0 +1,15 @@
+{
+  "method": "DELETE",
+  "path": "/api/2.1/unity-catalog/schemas/main.myschema-[UNIQUE_NAME]",
+  "q": {
+    "force": "true"
+  }
+}
+{
+  "method": "DELETE",
+  "path": "/api/2.1/unity-catalog/volumes/main.myschema-[UNIQUE_NAME].volumebar-[UNIQUE_NAME]"
+}
+{
+  "method": "DELETE",
+  "path": "/api/2.1/unity-catalog/volumes/main.myschema-[UNIQUE_NAME].volumefoo-[UNIQUE_NAME]"
+}

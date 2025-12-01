@@ -62,6 +62,9 @@ func walk(v Value, p Path, fn func(p Path, v Value) (Value, error)) (Value, erro
 			out = append(out, nv)
 		}
 		v.v = out
+	default:
+		// Other kinds are not walkable.
+		// This was a leaf node.
 	}
 
 	return v, nil
@@ -81,6 +84,7 @@ func CollectLeafPaths(v Value) []string {
 		case KindMap, KindSequence:
 			// Ignore internal nodes.
 		default:
+			// This was a leaf node.
 			paths = append(paths, p.String())
 		}
 

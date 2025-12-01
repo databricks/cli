@@ -160,24 +160,6 @@ func AddDefaultHandlers(server *Server) {
 		return TestMetastore
 	})
 
-	server.Handle("GET", "/api/2.0/permissions/directories/{objectId}", func(req Request) any {
-		objectId := req.Vars["objectId"]
-		return workspace.WorkspaceObjectPermissions{
-			ObjectId:   objectId,
-			ObjectType: "DIRECTORY",
-			AccessControlList: []workspace.WorkspaceObjectAccessControlResponse{
-				{
-					UserName: "tester@databricks.com",
-					AllPermissions: []workspace.WorkspaceObjectPermission{
-						{
-							PermissionLevel: "CAN_MANAGE",
-						},
-					},
-				},
-			},
-		}
-	})
-
 	server.Handle("POST", "/api/2.2/jobs/create", func(req Request) any {
 		return req.Workspace.JobsCreate(req)
 	})
@@ -222,19 +204,15 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	server.Handle("GET", "/oidc/.well-known/oauth-authorization-server", func(_ Request) any {
-		return map[string]string{
-			"authorization_endpoint": server.URL + "oidc/v1/authorize",
-			"token_endpoint":         server.URL + "/oidc/v1/token",
-		}
+		return server.fakeOidc.OidcEndpoints()
 	})
 
-	server.Handle("POST", "/oidc/v1/token", func(_ Request) any {
-		return map[string]string{
-			"access_token": "oauth-token",
-			"expires_in":   "3600",
-			"scope":        "all-apis",
-			"token_type":   "Bearer",
-		}
+	server.Handle("GET", "/oidc/v1/authorize", func(req Request) any {
+		return server.fakeOidc.OidcAuthorize(req)
+	})
+
+	server.Handle("POST", "/oidc/v1/token", func(req Request) any {
+		return server.fakeOidc.OidcToken(req)
 	})
 
 	server.Handle("POST", "/telemetry-ext", func(_ Request) any {
@@ -258,7 +236,12 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.DashboardUpdate(req)
 	})
 	server.Handle("DELETE", "/api/2.0/lakeview/dashboards/{dashboard_id}", func(req Request) any {
-		return MapDelete(req.Workspace, req.Workspace.Dashboards, req.Vars["dashboard_id"])
+		// Calling DELETE on a dashboard does not delete the record immediately. Instead, the dashboard
+		// is marked as trashed and moved to the trash.
+		return req.Workspace.DashboardTrash(req)
+	})
+	server.Handle("GET", "/api/2.0/lakeview/dashboards/{dashboard_id}/published", func(req Request) any {
+		return MapGet(req.Workspace, req.Workspace.PublishedDashboards, req.Vars["dashboard_id"])
 	})
 
 	// Pipelines:
@@ -347,6 +330,52 @@ func AddDefaultHandlers(server *Server) {
 
 	server.Handle("DELETE", "/api/2.1/unity-catalog/schemas/{full_name}", func(req Request) any {
 		return MapDelete(req.Workspace, req.Workspace.Schemas, req.Vars["full_name"])
+	})
+
+	// Grants:
+
+	server.Handle("PATCH", "/api/2.1/unity-catalog/permissions/{securable_type}/{full_name}", func(req Request) any {
+		return req.Workspace.GrantsUpdate(req, req.Vars["securable_type"], req.Vars["full_name"])
+	})
+
+	server.Handle("GET", "/api/2.1/unity-catalog/permissions/{securable_type}/{full_name}", func(req Request) any {
+		return req.Workspace.GrantsGet(req, req.Vars["securable_type"], req.Vars["full_name"])
+	})
+
+	// Catalogs:
+
+	server.Handle("GET", "/api/2.1/unity-catalog/catalogs/{name}", func(req Request) any {
+		return MapGet(req.Workspace, req.Workspace.Catalogs, req.Vars["name"])
+	})
+
+	server.Handle("POST", "/api/2.1/unity-catalog/catalogs", func(req Request) any {
+		return req.Workspace.CatalogsCreate(req)
+	})
+
+	server.Handle("PATCH", "/api/2.1/unity-catalog/catalogs/{name}", func(req Request) any {
+		return req.Workspace.CatalogsUpdate(req, req.Vars["name"])
+	})
+
+	server.Handle("DELETE", "/api/2.1/unity-catalog/catalogs/{name}", func(req Request) any {
+		return MapDelete(req.Workspace, req.Workspace.Catalogs, req.Vars["name"])
+	})
+
+	// Registered Models:
+
+	server.Handle("GET", "/api/2.1/unity-catalog/models/{full_name}", func(req Request) any {
+		return MapGet(req.Workspace, req.Workspace.RegisteredModels, req.Vars["full_name"])
+	})
+
+	server.Handle("POST", "/api/2.1/unity-catalog/models", func(req Request) any {
+		return req.Workspace.RegisteredModelsCreate(req)
+	})
+
+	server.Handle("PATCH", "/api/2.1/unity-catalog/models/{full_name}", func(req Request) any {
+		return req.Workspace.RegisteredModelsUpdate(req, req.Vars["full_name"])
+	})
+
+	server.Handle("DELETE", "/api/2.1/unity-catalog/models/{full_name}", func(req Request) any {
+		return MapDelete(req.Workspace, req.Workspace.RegisteredModels, req.Vars["full_name"])
 	})
 
 	// Volumes:
@@ -504,5 +533,119 @@ func AddDefaultHandlers(server *Server) {
 
 	server.Handle("DELETE", "/api/2.0/database/synced_tables/{name}", func(req Request) any {
 		return MapDelete(req.Workspace, req.Workspace.SyncedDatabaseTables, req.Vars["name"])
+	})
+
+	// Clusters:
+	server.Handle("POST", "/api/2.1/clusters/resize", func(req Request) any {
+		return req.Workspace.ClustersResize(req)
+	})
+
+	server.Handle("POST", "/api/2.1/clusters/edit", func(req Request) any {
+		return req.Workspace.ClustersEdit(req)
+	})
+
+	server.Handle("GET", "/api/2.1/clusters/get", func(req Request) any {
+		clusterId := req.URL.Query().Get("cluster_id")
+		return req.Workspace.ClustersGet(req, clusterId)
+	})
+
+	server.Handle("POST", "/api/2.1/clusters/create", func(req Request) any {
+		return req.Workspace.ClustersCreate(req)
+	})
+
+	server.Handle("POST", "/api/2.1/clusters/start", func(req Request) any {
+		return req.Workspace.ClustersStart(req)
+	})
+
+	server.Handle("POST", "/api/2.1/clusters/permanent-delete", func(req Request) any {
+		return req.Workspace.ClustersPermanentDelete(req)
+	})
+
+	// MLflow Experiments:
+	server.Handle("GET", "/api/2.0/mlflow/experiments/get", func(req Request) any {
+		experimentId := req.URL.Query().Get("experiment_id")
+		if experimentId == "" {
+			return Response{
+				StatusCode: http.StatusBadRequest,
+				Body:       map[string]string{"message": "experiment_id is required"},
+			}
+		}
+
+		return MapGet(req.Workspace, req.Workspace.Experiments, experimentId)
+	})
+
+	server.Handle("POST", "/api/2.0/mlflow/experiments/create", func(req Request) any {
+		return req.Workspace.ExperimentCreate(req)
+	})
+
+	server.Handle("POST", "/api/2.0/mlflow/experiments/update", func(req Request) any {
+		return req.Workspace.ExperimentUpdate(req)
+	})
+
+	server.Handle("POST", "/api/2.0/mlflow/experiments/delete", func(req Request) any {
+		return req.Workspace.ExperimentDelete(req)
+	})
+
+	// Model registry models.
+	server.Handle("POST", "/api/2.0/mlflow/registered-models/create", func(req Request) any {
+		return req.Workspace.ModelRegistryCreateModel(req)
+	})
+
+	server.Handle("GET", "/api/2.0/mlflow/databricks/registered-models/get", func(req Request) any {
+		return req.Workspace.ModelRegistryGetModel(req)
+	})
+
+	server.Handle("PATCH", "/api/2.0/mlflow/registered-models/update", func(req Request) any {
+		return req.Workspace.ModelRegistryUpdateModel(req)
+	})
+
+	server.Handle("DELETE", "/api/2.0/mlflow/registered-models/delete", func(req Request) any {
+		return MapDelete(req.Workspace, req.Workspace.ModelRegistryModels, req.URL.Query().Get("name"))
+	})
+
+	// Serving Endpoints:
+	server.Handle("GET", "/api/2.0/serving-endpoints/{name}", func(req Request) any {
+		return MapGet(req.Workspace, req.Workspace.ServingEndpoints, req.Vars["name"])
+	})
+
+	server.Handle("POST", "/api/2.0/serving-endpoints", func(req Request) any {
+		return req.Workspace.ServingEndpointCreate(req)
+	})
+
+	server.Handle("PUT", "/api/2.0/serving-endpoints/{name}/config", func(req Request) any {
+		return req.Workspace.ServingEndpointUpdate(req, req.Vars["name"])
+	})
+
+	server.Handle("DELETE", "/api/2.0/serving-endpoints/{name}", func(req Request) any {
+		return MapDelete(req.Workspace, req.Workspace.ServingEndpoints, req.Vars["name"])
+	})
+
+	server.Handle("PUT", "/api/2.0/serving-endpoints/{name}/ai-gateway", func(req Request) any {
+		return req.Workspace.ServingEndpointPutAiGateway(req, req.Vars["name"])
+	})
+
+	server.Handle("PATCH", "/api/2.0/serving-endpoints/{name}/notifications", func(req Request) any {
+		return req.Workspace.ServingEndpointUpdateNotifications(req, req.Vars["name"])
+	})
+
+	server.Handle("PATCH", "/api/2.0/serving-endpoints/{name}/tags", func(req Request) any {
+		return req.Workspace.ServingEndpointPatchTags(req, req.Vars["name"])
+	})
+
+	// Generic permissions endpoints
+	server.Handle("GET", "/api/2.0/permissions/{object_type}/{object_id}", func(req Request) any {
+		return req.Workspace.GetPermissions(req)
+	})
+
+	server.Handle("GET", "/api/2.0/permissions/{prefix}/{object_type}/{object_id}", func(req Request) any {
+		return req.Workspace.GetPermissions(req)
+	})
+
+	server.Handle("PUT", "/api/2.0/permissions/{object_type}/{object_id}", func(req Request) any {
+		return req.Workspace.SetPermissions(req)
+	})
+
+	server.Handle("PUT", "/api/2.0/permissions/{prefix}/{object_type}/{object_id}", func(req Request) any {
+		return req.Workspace.SetPermissions(req)
 	})
 }

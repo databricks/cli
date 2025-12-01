@@ -1,0 +1,33 @@
+{
+  "method": "POST",
+  "path": "/api/2.0/pipelines",
+  "body": {
+    "channel": "CURRENT",
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/permissions-test/default/state/metadata.json"
+    },
+    "edition": "ADVANCED",
+    "name": "foo"
+  }
+}
+{
+  "method": "PUT",
+  "path": "/api/2.0/permissions/pipelines/[PIPELINE_ID]",
+  "body": {
+    "access_control_list": [
+      {
+        "permission_level": "CAN_VIEW",
+        "user_name": "viewer@example.com"
+      },
+      {
+        "group_name": "data-team",
+        "permission_level": "CAN_MANAGE"
+      },
+      {
+        "permission_level": "IS_OWNER",
+        "user_name": "[USERNAME]"
+      }
+    ]
+  }
+}

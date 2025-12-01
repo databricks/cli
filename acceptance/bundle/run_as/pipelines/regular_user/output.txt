@@ -1,6 +1,7 @@
 
-=== run_as should succeed in all cases
->>> errcode [CLI] bundle validate -t t_user_name
+=== run_as should succeed in all cases\nProcessing target: t_user_name
+
+>>> [CLI] bundle validate -t t_user_name
 Name: run_as
 Target: t_user_name
 Workspace:
@@ -9,7 +10,20 @@ Workspace:
 
 Validation OK!
 
->>> errcode [CLI] bundle validate -t t_user_name_different
+>>> [CLI] bundle plan -t t_user_name
+create pipelines.nyc_taxi_pipeline
+create pipelines.nyc_taxi_pipeline.permissions
+
+Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy -t t_user_name
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/run_as/t_user_name/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+\nProcessing target: t_user_name_different
+
+>>> [CLI] bundle validate -t t_user_name_different
 Name: run_as
 Target: t_user_name_different
 Workspace:
@@ -18,7 +32,20 @@ Workspace:
 
 Validation OK!
 
->>> errcode [CLI] bundle validate -t t_service_principal_name
+>>> [CLI] bundle plan -t t_user_name_different
+create pipelines.nyc_taxi_pipeline
+create pipelines.nyc_taxi_pipeline.permissions
+
+Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy -t t_user_name_different
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/run_as/t_user_name_different/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+\nProcessing target: t_service_principal_name
+
+>>> [CLI] bundle validate -t t_service_principal_name
 Name: run_as
 Target: t_service_principal_name
 Workspace:
@@ -27,7 +54,20 @@ Workspace:
 
 Validation OK!
 
->>> errcode [CLI] bundle validate -t t_service_principal_name_different
+>>> [CLI] bundle plan -t t_service_principal_name
+create pipelines.nyc_taxi_pipeline
+create pipelines.nyc_taxi_pipeline.permissions
+
+Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy -t t_service_principal_name
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/run_as/t_service_principal_name/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+\nProcessing target: t_service_principal_name_different
+
+>>> [CLI] bundle validate -t t_service_principal_name_different
 Name: run_as
 Target: t_service_principal_name_different
 Workspace:
@@ -35,3 +75,15 @@ Workspace:
   Path: /Workspace/Users/[USERNAME]/.bundle/run_as/t_service_principal_name_different
 
 Validation OK!
+
+>>> [CLI] bundle plan -t t_service_principal_name_different
+create pipelines.nyc_taxi_pipeline
+create pipelines.nyc_taxi_pipeline.permissions
+
+Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy -t t_service_principal_name_different
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/run_as/t_service_principal_name_different/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!

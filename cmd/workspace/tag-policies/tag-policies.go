@@ -19,14 +19,15 @@ var cmdOverrides []func(*cobra.Command)
 
 func New() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "tag-policies",
-		Short:   `The Tag Policy API allows you to manage tag policies in Databricks.`,
-		Long:    `The Tag Policy API allows you to manage tag policies in Databricks.`,
+		Use:   "tag-policies",
+		Short: `The Tag Policy API allows you to manage policies for governed tags in Databricks.`,
+		Long: `The Tag Policy API allows you to manage policies for governed tags in
+  Databricks. Permissions for tag policies can be managed using the [Account
+  Access Control Proxy API].
+
+  [Account Access Control Proxy API]: https://docs.databricks.com/api/workspace/accountaccesscontrolproxy`,
 		GroupID: "tags",
-		Annotations: map[string]string{
-			"package": "tags",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -68,8 +69,8 @@ func newCreateTagPolicy() *cobra.Command {
 	cmd.Use = "create-tag-policy TAG_KEY"
 	cmd.Short = `Create a new tag policy.`
 	cmd.Long = `Create a new tag policy.
-  
-  Creates a new tag policy.`
+
+  Creates a new tag policy, making the associated tag key governed.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -142,8 +143,9 @@ func newDeleteTagPolicy() *cobra.Command {
 	cmd.Use = "delete-tag-policy TAG_KEY"
 	cmd.Short = `Delete a tag policy.`
 	cmd.Long = `Delete a tag policy.
-  
-  Deletes a tag policy by its key.`
+
+  Deletes a tag policy by its associated governed tag's key, leaving that tag
+  key ungoverned.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -195,8 +197,8 @@ func newGetTagPolicy() *cobra.Command {
 	cmd.Use = "get-tag-policy TAG_KEY"
 	cmd.Short = `Get a tag policy.`
 	cmd.Long = `Get a tag policy.
-  
-  Gets a single tag policy by its key.`
+
+  Gets a single tag policy by its associated governed tag's key.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -251,8 +253,8 @@ func newListTagPolicies() *cobra.Command {
 	cmd.Use = "list-tag-policies"
 	cmd.Short = `List tag policies.`
 	cmd.Long = `List tag policies.
-  
-  Lists all tag policies in the account.`
+
+  Lists the tag policies for all governed tags in the account.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -306,18 +308,18 @@ func newUpdateTagPolicy() *cobra.Command {
 	cmd.Use = "update-tag-policy TAG_KEY UPDATE_MASK"
 	cmd.Short = `Update an existing tag policy.`
 	cmd.Long = `Update an existing tag policy.
-  
-  Updates an existing tag policy.
+
+  Updates an existing tag policy for a single governed tag.
 
   Arguments:
-    TAG_KEY: 
+    TAG_KEY:
     UPDATE_MASK: The field mask must be a single string, with multiple fields separated by
       commas (no spaces). The field path is relative to the resource object,
       using a dot (.) to navigate sub-fields (e.g., author.given_name).
       Specification of elements in sequence or map fields is not allowed, as
       only the entire collection field can be specified. Field names must
       exactly match the resource field names.
-      
+
       A field mask of * indicates full replacement. It’s recommended to
       always explicitly list the fields being updated and avoid using *
       wildcards, as it can lead to unintended results if the API changes in the

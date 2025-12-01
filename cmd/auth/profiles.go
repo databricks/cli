@@ -51,6 +51,7 @@ func (c *profileMetadata) Load(ctx context.Context, configFilePath string, skipV
 		return
 	}
 
+	//nolint:staticcheck // SA1019: IsAccountClient is deprecated but is still used here to avoid breaking changes
 	if cfg.IsAccountClient() {
 		a, err := databricks.NewAccountClient((*databricks.Config)(cfg))
 		if err != nil {
@@ -115,14 +116,12 @@ func newProfilesCommand() *cobra.Command {
 			if profile.IsEmpty() {
 				continue
 			}
-			wg.Add(1)
-			go func() {
+			wg.Go(func() {
 				ctx := cmd.Context()
 				t := time.Now()
 				profile.Load(ctx, iniFile.Path(), skipValidate)
 				log.Debugf(ctx, "Profile %q took %s to load", profile.Name, time.Since(t))
-				wg.Done()
-			}()
+			})
 			profiles = append(profiles, profile)
 		}
 		wg.Wait()

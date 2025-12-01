@@ -1,0 +1,5 @@
+# Because grants impl in direct uses different approach from terraform, we test the end result on the cloud rather than compare requests
+Cloud = true
+RequiresUnityCatalog = true
+RecordRequests = true
+Ignore = ['.databricks']

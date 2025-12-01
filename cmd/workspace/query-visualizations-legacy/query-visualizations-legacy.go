@@ -24,15 +24,12 @@ func New() *cobra.Command {
 		Long: `This is an evolving API that facilitates the addition and removal of
   vizualisations from existing queries within the Databricks Workspace. Data
   structures may change over time.
-  
+
   **Note**: A new version of the Databricks SQL API is now available. Please see
   the latest version. [Learn more]
-  
+
   [Learn more]: https://docs.databricks.com/en/sql/dbsql-api-latest.html`,
 		GroupID: "sql",
-		Annotations: map[string]string{
-			"package": "sql",
-		},
 
 		// This service is being previewed; hide from help output.
 		Hidden: true,
@@ -75,12 +72,12 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create"
 	cmd.Short = `Add visualization to a query.`
 	cmd.Long = `Add visualization to a query.
-  
+
   Creates visualization in the query.
-  
+
   **Note**: A new version of the Databricks SQL API is now available. Please use
   :method:queryvisualizations/create instead. [Learn more]
-  
+
   [Learn more]: https://docs.databricks.com/en/sql/dbsql-api-latest.html`
 
 	cmd.Annotations = make(map[string]string)
@@ -141,12 +138,12 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete ID"
 	cmd.Short = `Remove visualization.`
 	cmd.Long = `Remove visualization.
-  
+
   Removes a visualization from the query.
-  
+
   **Note**: A new version of the Databricks SQL API is now available. Please use
   :method:queryvisualizations/delete instead. [Learn more]
-  
+
   [Learn more]: https://docs.databricks.com/en/sql/dbsql-api-latest.html
 
   Arguments:
@@ -211,24 +208,21 @@ func newUpdate() *cobra.Command {
 	cmd.Flags().StringVar(&updateReq.Type, "type", updateReq.Type, `The type of visualization: chart, table, pivot table, and so on.`)
 	cmd.Flags().StringVar(&updateReq.UpdatedAt, "updated-at", updateReq.UpdatedAt, ``)
 
-	cmd.Use = "update ID"
+	cmd.Use = "update"
 	cmd.Short = `Edit existing visualization.`
 	cmd.Long = `Edit existing visualization.
-  
+
   Updates visualization in the query.
-  
+
   **Note**: A new version of the Databricks SQL API is now available. Please use
   :method:queryvisualizations/update instead. [Learn more]
-  
-  [Learn more]: https://docs.databricks.com/en/sql/dbsql-api-latest.html
 
-  Arguments:
-    ID: The UUID for this visualization.`
+  [Learn more]: https://docs.databricks.com/en/sql/dbsql-api-latest.html`
 
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(1)
+		check := root.ExactArgs(0)
 		return check(cmd, args)
 	}
 
@@ -249,7 +243,6 @@ func newUpdate() *cobra.Command {
 				}
 			}
 		}
-		updateReq.Id = args[0]
 
 		response, err := w.QueryVisualizationsLegacy.Update(ctx, updateReq)
 		if err != nil {

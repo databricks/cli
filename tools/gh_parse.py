@@ -30,14 +30,217 @@ BUG = "🪲\u200bBUG"
 MISSING = "🤯\u200bMISS"
 PANIC = "💥\u200bPANIC"
 
-INTERESTING_ACTIONS = (FAIL, BUG, FLAKY, PANIC, MISSING)
+# These happen if test matches known_failures.txt
+KNOWN_FAILURE = "🟨\u200bKNOWN"
+RECOVERED = "💚\u200bRECOVERED"
+KNOWN_SKIP = "🙈\u200bSKIP"
+
+# The order is important - in case of ambiguity, earlier one gets preference.
+# For examples, each environment gets a summary icon which is earliest action in this list among all tests.
+INTERESTING_ACTIONS = (PANIC, BUG, FAIL, KNOWN_FAILURE, MISSING, FLAKY, RECOVERED, KNOWN_SKIP)
 ACTIONS_WITH_ICON = INTERESTING_ACTIONS + (PASS, SKIP)
+
+# Minimum elapsed time for test to be in slowest tests table.
+SLOWEST_MIN_MINUTES = 2
+
+# Maximum number of tests in slowest tests table
+SLOWEST_MAX_ENTRIES = 50
 
 ACTION_MESSAGES = {
     "fail": FAIL,
     "pass": PASS,
     "skip": SKIP,
 }
+
+
+class KnownFailuresConfig:
+    def __init__(self, rules):
+        self.rules = rules
+
+    def matches(self, package_name, test_name):
+        for rule in self.rules:
+            if rule.matches(package_name, test_name):
+                return rule.original_line
+        return ""
+
+
+class KnownFailuresRule:
+    def __init__(self, package_pattern, test_pattern, package_prefix, test_prefix, original_line):
+        self.package_pattern = package_pattern
+        self.test_pattern = test_pattern
+        self.package_prefix = package_prefix
+        self.test_prefix = test_prefix
+        self.original_line = original_line
+
+    def matches(self, package_name, test_name):
+        # Check package pattern
+        if self.package_prefix:
+            package_match = self._matches_path_prefix(package_name, self.package_pattern)
+        else:
+            package_match = package_name == self.package_pattern
+
+        if not package_match:
+            return False
+
+        # Check test pattern - this matches the Go logic
+        if self.test_prefix:
+            return self._matches_path_prefix(test_name, self.test_pattern) or self._matches_path_prefix(
+                self.test_pattern, test_name
+            )
+        else:
+            return test_name == self.test_pattern or self._matches_path_prefix(self.test_pattern, test_name)
+
+    def _matches_path_prefix(self, s, pattern):
+        if pattern == "":
+            return True
+        if s == pattern:
+            return True
+        return s.startswith(pattern + "/")
+
+
+def parse_known_failures(content):
+    """
+    Parse known failures config content.
+
+    >>> _test_parse_known_failures()
+    """
+    rules = []
+    for line_num, line in enumerate(content.splitlines(), 1):
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+
+        # Remove comments
+        if "#" in line:
+            line = line[: line.index("#")].strip()
+            if not line:
+                continue
+
+        parts = line.split()
+        if len(parts) != 2:
+            continue
+
+        package_pattern, test_pattern = parts
+        package_pattern, package_prefix = _parse_pattern(package_pattern)
+        test_pattern, test_prefix = _parse_pattern(test_pattern)
+
+        rule = KnownFailuresRule(package_pattern, test_pattern, package_prefix, test_prefix, line)
+        rules.append(rule)
+
+    return KnownFailuresConfig(rules)
+
+
+def _parse_pattern(pattern):
+    if pattern == "*":
+        return "", True
+    if pattern.endswith("/"):
+        return pattern[:-1], True
+    return pattern, False
+
+
+def _test_parse_known_failures():
+    """Test cases from Go testrunner/main_test.go as table tests."""
+    # Table of test cases: (input, package_name, testcase, expected_match)
+    test_cases = [
+        # Exact matches
+        ("bundle TestDeploy", "bundle", "TestDeploy", True),
+        ("bundle TestDeploy", "libs", "TestDeploy", False),
+        ("bundle TestDeploy", "bundle", "TestSomethingElse", False),
+        # Package prefix matches
+        ("libs/ TestSomething", "libs/auth", "TestSomething", True),
+        ("libs/ TestSomething", "libs", "TestSomething", True),
+        ("libs/ TestSomething", "libsother", "TestSomething", False),
+        # Test prefix matches
+        ("bundle TestAccept/", "bundle", "TestAcceptDeploy", False),
+        ("bundle TestAccept/", "bundle", "TestAccept", True),
+        ("bundle TestAccept/", "bundle", "TestAccept/Deploy", True),
+        # Wildcard matches
+        ("* *", "any/package", "AnyTest", True),
+        ("* TestAccept/", "any/package", "TestAcceptDeploy", False),
+        ("* TestAccept/", "any/package", "TestAccept/Deploy", True),
+        ("libs/ *", "libs/auth", "AnyTest", True),
+        # Path prefix edge cases
+        ("TestAccept/ TestAccept/", "TestAccept", "TestAccept", True),
+        ("TestAccept/ TestAccept/", "TestAccept/bundle", "TestAccept/deploy", True),
+        ("TestAccept/ TestAccept/", "TestAcceptSomething", "TestAcceptSomething", False),
+        # Empty values cases
+        ("* TestDeploy", "", "TestDeploy", True),
+        ("bundle *", "bundle", "", True),
+        # Subtest failure results in parent test failure as well
+        (
+            "acceptance TestAccept/bundle/templates/default-python/combinations/classic",
+            "acceptance",
+            "TestAccept",
+            True,
+        ),
+        (
+            "acceptance TestAccept/bundle/templates/default-python/combinations/classic",
+            "acceptance",
+            "TestAnother",
+            False,
+        ),
+        (
+            "acceptance TestAccept/bundle/templates/default-python/combinations/classic",
+            "acceptance",
+            "TestAccept/bundle/templates/default-python/combinations/classic/x",
+            False,
+        ),
+        # Pattern version
+        (
+            "acceptance TestAccept/bundle/templates/default-python/combinations/classic/",
+            "acceptance",
+            "TestAccept",
+            True,
+        ),
+        (
+            "acceptance TestAccept/bundle/templates/default-python/combinations/classic/",
+            "acceptance",
+            "TestAnother",
+            False,
+        ),
+        (
+            "acceptance TestAccept/bundle/templates/default-python/combinations/classic/",
+            "acceptance",
+            "TestAccept/bundle/templates/default-python/combinations/classic/x",
+            True,
+        ),
+        (
+            "acceptance TestAccept/bundle/templates/default-python/combinations/classic/",
+            "acceptance",
+            "TestAccept/bundle/templates/default-python/combinations/classic",
+            True,
+        ),
+        (
+            "acceptance TestAccept/bundle/templates/default-python/combinations/classic/",
+            "acceptance",
+            "TestAccept/bundle/templates/default-python/combinations",
+            True,
+        ),
+    ]
+
+    for input_str, package_name, testcase, expected_match in test_cases:
+        config = parse_known_failures(input_str)
+        result = config.matches(package_name, testcase)
+
+        # Convert result to boolean for comparison
+        actual_match = bool(result)
+
+        if actual_match != expected_match:
+            raise AssertionError(
+                f"Test failed for input='{input_str}', package='{package_name}', test='{testcase}': "
+                f"expected {expected_match}, got {actual_match} (result: '{result}')"
+            )
+
+
+def load_known_failures():
+    try:
+        known_failures_path = Path(".gh-logs/known_failures.txt")
+        if known_failures_path.exists():
+            content = known_failures_path.read_text()
+            return parse_known_failures(content)
+    except Exception:
+        pass
+    return None
 
 
 def cleanup_env(name):
@@ -80,6 +283,8 @@ def iter_paths(paths):
 def parse_file(path, filter):
     results = {}
     outputs = {}
+    durations = {}  # test_key -> elapsed time in seconds
+    timestamps = []  # list of all timestamps from this file
     for line in path.open():
         if not line.strip():
             continue
@@ -88,41 +293,73 @@ def parse_file(path, filter):
         except Exception as ex:
             print(f"{path}: {ex}\n{line!r}\n")
             break
+
+        # Collect timestamp
+        timestamp = data.get("Time")
+        if timestamp:
+            timestamps.append(timestamp)
+
         testname = data.get("Test")
         if not testname:
             continue
         if filter and filter not in testname:
             continue
-        action = data.get("Action")
 
+        package_name = data.get("Package", "").removeprefix("github.com/databricks/cli/")
+        test_key = (package_name, testname)
+
+        action = data.get("Action")
         action = ACTION_MESSAGES.get(action, action)
 
         if action in (FAIL, PASS, SKIP):
-            prev = results.get(testname)
+            prev = results.get(test_key)
             if prev == FAIL and action == PASS:
-                results[testname] = FLAKY
+                results[test_key] = FLAKY
             else:
-                results[testname] = action
+                results[test_key] = action
+
+            # Store elapsed time if available
+            elapsed = data.get("Elapsed")
+            if elapsed and action == PASS:
+                durations[test_key] = elapsed
 
         out = data.get("Output")
         if out:
-            outputs.setdefault(testname, []).append(out.rstrip())
+            outputs.setdefault(test_key, []).append(out.rstrip())
 
-    for testname, lines in outputs.items():
-        if testname in results:
+    for test_key, lines in outputs.items():
+        if test_key in results:
             continue
         if "panic: " in str(lines):
-            results.setdefault(testname, PANIC)
+            results.setdefault(test_key, PANIC)
         else:
-            results.setdefault(testname, MISSING)
+            results.setdefault(test_key, MISSING)
 
-    return results, outputs
+    return results, outputs, durations, timestamps
+
+
+def mark_known_failures(results, known_failures_config):
+    """Mark tests as KNOWN_FAILURE or RECOVERED based on known failures config."""
+    marked_results = {}
+    for test_key, action in results.items():
+        package_name, testname = test_key
+        if known_failures_config and known_failures_config.matches(package_name, testname):
+            action = {
+                FAIL: KNOWN_FAILURE,
+                PASS: RECOVERED,
+                SKIP: KNOWN_SKIP,
+            }.get(action, action)
+        marked_results[test_key] = action
+    return marked_results
 
 
 def print_report(filenames, filter, filter_env, show_output, markdown=False, omit_repl=False):
-    outputs = {}  # testname -> env -> [output]
-    per_test_per_env_stats = {}  # testname -> env -> action -> count
-    all_testnames = set()
+    known_failures_config = load_known_failures()
+    outputs = {}  # test_key -> env -> [output]
+    per_test_per_env_stats = {}  # test_key -> env -> action -> count
+    durations_by_env = {}  # env -> test_key -> duration
+    timestamps_by_env = {}  # env -> list of timestamps
+    all_test_keys = set()
     all_envs = set()
     count_files = 0
     count_results = 0
@@ -135,19 +372,24 @@ def print_report(filenames, filter, filter_env, show_output, markdown=False, omi
         if filter_env and filter_env not in env:
             continue
         all_envs.add(env)
-        test_results, test_outputs = parse_file(p, filter)
+        test_results, test_outputs, test_durations, test_timestamps = parse_file(p, filter)
+        test_results = mark_known_failures(test_results, known_failures_config)
         count_files += 1
         count_results += len(test_results)
-        for testname, action in test_results.items():
-            per_test_per_env_stats.setdefault(testname, {}).setdefault(env, Counter())[action] += 1
-        for testname, output in test_outputs.items():
-            outputs.setdefault(testname, {}).setdefault(env, []).extend(output)
-        all_testnames.update(test_results)
+        for test_key, action in test_results.items():
+            per_test_per_env_stats.setdefault(test_key, {}).setdefault(env, Counter())[action] += 1
+        for test_key, output in test_outputs.items():
+            outputs.setdefault(test_key, {}).setdefault(env, []).extend(output)
+        for test_key, duration in test_durations.items():
+            durations_by_env.setdefault(env, {})[test_key] = duration
+        timestamps_by_env.setdefault(env, []).extend(test_timestamps)
+        all_test_keys.update(test_results)
 
     print(f"Parsed {count_files} files: {count_results} results", file=sys.stderr, flush=True)
 
     # Check for missing tests
-    for testname in all_testnames:
+    for test_key in all_test_keys:
+        package_name, testname = test_key
         # It is possible for test to be missing if it's parent is skipped, ignore test cases with a parent.
         # For acceptance tests, ignore tests with subtests produced via EnvMatrix
         if testname.startswith("TestAccept/") and "=" in testname:
@@ -155,7 +397,7 @@ def print_report(filenames, filter, filter_env, show_output, markdown=False, omi
         # For non-acceptance tests ignore all subtests.
         if not testname.startswith("TestAccept/") and "/" in testname:
             continue
-        test_results = per_test_per_env_stats.get(testname, {})
+        test_results = per_test_per_env_stats.get(test_key, {})
         for e in all_envs:
             if e not in test_results:
                 test_results.setdefault(e, Counter())[MISSING] += 1
@@ -177,8 +419,8 @@ def print_report(filenames, filter, filter_env, show_output, markdown=False, omi
                 count += 1
         return count >= 0
 
-    for testname in all_testnames:
-        test_results = per_test_per_env_stats.get(testname, {})
+    for test_key in all_test_keys:
+        test_results = per_test_per_env_stats.get(test_key, {})
         if not is_bug(test_results):
             continue
         for e, env_results in sorted(test_results.items()):
@@ -189,11 +431,12 @@ def print_report(filenames, filter, filter_env, show_output, markdown=False, omi
                 env_results[BUG] += 1
 
     per_env_stats = {}  # env -> action -> count
-    for testname, items in per_test_per_env_stats.items():
+    for test_key, items in per_test_per_env_stats.items():
         for env, stats in items.items():
             per_env_stats.setdefault(env, Counter()).update(stats)
 
     table = []
+    columns = {" ", "Env"}
     for env, stats in sorted(per_env_stats.items()):
         status = "??"
         for action in ACTIONS_WITH_ICON:
@@ -201,14 +444,47 @@ def print_report(filenames, filter, filter_env, show_output, markdown=False, omi
                 status = action[:2]
                 break
 
+        # Find slowest test, mean duration, and time span for this environment
+        env_durations = durations_by_env.get(env, {})
+        time_span = ""
+
+        # Calculate time span (max timestamp - min timestamp)
+        env_timestamps = timestamps_by_env.get(env, [])
+        if env_timestamps:
+            from datetime import datetime
+
+            # Parse timestamps and find span
+            parsed_timestamps = []
+            for ts in env_timestamps:
+                try:
+                    parsed_timestamps.append(datetime.fromisoformat(ts.replace("Z", "+00:00")))
+                except Exception:
+                    continue
+
+            if parsed_timestamps:
+                time_span_seconds = (max(parsed_timestamps) - min(parsed_timestamps)).total_seconds()
+                time_span = format_duration(time_span_seconds)
+
         table.append(
             {
                 " ": status,
                 "Env": env,
+                "Time": time_span,
                 **stats,
             }
         )
-    print(format_table(table, markdown=markdown))
+        columns.update(stats)
+
+    def key(column):
+        try:
+            return (ACTIONS_WITH_ICON.index(column), "")
+        except Exception:
+            return (-1, str(column))
+
+    columns = sorted(columns, key=key)
+    columns.append("Time")
+
+    print(format_table(table, markdown=markdown, columns=columns))
 
     interesting_envs = set()
     for env, stats in per_env_stats.items():
@@ -217,35 +493,44 @@ def print_report(filenames, filter, filter_env, show_output, markdown=False, omi
                 interesting_envs.add(env)
                 break
 
-    simplified_results = {}  # testname -> env -> action
-    for testname, items in sorted(per_test_per_env_stats.items()):
-        per_testname_result = simplified_results.setdefault(testname, {})
+    simplified_results = {}  # test_key -> env -> action
+    for test_key, items in sorted(per_test_per_env_stats.items()):
+        package_name, testname = test_key
+        per_testkey_result = simplified_results.setdefault(test_key, {})
         # first select tests with interesting actions (anything but pass or skip)
         for env, counts in items.items():
             for action in INTERESTING_ACTIONS:
                 if action in counts:
-                    per_testname_result.setdefault(env, action)
+                    per_testkey_result.setdefault(env, action)
                     break
 
         # Once we know test is interesting, complete the row
-        if per_testname_result:
+        if per_testkey_result:
             for env, counts in items.items():
                 if env not in interesting_envs:
                     continue
                 for action in (PASS, SKIP):
                     if action in counts:
-                        per_testname_result.setdefault(env, action)
+                        per_testkey_result.setdefault(env, action)
                         break
 
-        if not per_testname_result:
-            per_testname_result = simplified_results.pop(testname)
+        if not per_testkey_result:
+            per_testkey_result = simplified_results.pop(test_key)
 
     table = []
-    for testname, items in simplified_results.items():
+    for test_key, items in simplified_results.items():
+        package_name, testname = test_key
+        status = "??"
+        for action in ACTIONS_WITH_ICON:
+            if action in items.values():
+                status = action[:2]
+                break
+        items_proc = dict((k, short_action(v)) for (k, v) in items.items())
         table.append(
             {
+                " ": status,
                 "Test Name": testname,
-                **items,
+                **items_proc,
             }
         )
     table_txt = format_table(table, markdown=markdown)
@@ -254,14 +539,41 @@ def print_report(filenames, filter, filter_env, show_output, markdown=False, omi
     if table_txt:
         print(table_txt)
 
+    # Generate slowest tests table (tests slower than 10 minutes)
+    all_durations = []  # [(env, package, testname, duration), ...]
+    for env, env_durations in durations_by_env.items():
+        for test_key, duration in env_durations.items():
+            package_name, testname = test_key
+            if duration >= SLOWEST_MIN_MINUTES * 60:
+                all_durations.append((env, package_name, testname, duration))
+
+    all_durations.sort(key=lambda x: x[3], reverse=True)
+    top_slowest = all_durations[:SLOWEST_MAX_ENTRIES]
+
+    if top_slowest:
+        slowest_table = []
+        for env, package_name, testname, duration in top_slowest:
+            slowest_table.append({"duration": format_duration(duration), "env": env, "testname": testname})
+
+        slowest_table_txt = format_table(slowest_table, columns=["duration", "env", "testname"], markdown=markdown)
+        slowest_table_txt = wrap_in_details(
+            slowest_table_txt, f"Top {len(top_slowest)} slowest tests (at least {SLOWEST_MIN_MINUTES} minutes):"
+        )
+        print(slowest_table_txt)
+
     if show_output:
-        for testname, stats in simplified_results.items():
+        for test_key, stats in simplified_results.items():
+            package_name, testname = test_key
             for env, action in stats.items():
                 if action not in INTERESTING_ACTIONS:
                     continue
-                output_lines = outputs.get(testname, {}).get(env, [])
+                output_lines = outputs.get(test_key, {}).get(env, [])
                 if omit_repl:
-                    output_lines = [line for line in output_lines if not line.strip().startswith("REPL") and "Available replacements:" not in line]
+                    output_lines = [
+                        line
+                        for line in output_lines
+                        if not line.strip().startswith("REPL") and "Available replacements:" not in line
+                    ]
                 out = "\n".join(output_lines)
 
                 if markdown:
@@ -270,6 +582,15 @@ def print_report(filenames, filter, filter_env, show_output, markdown=False, omi
                     print(f"### {env} {testname} {action}\n{out}")
                 if out:
                     print()
+
+
+# For test table, use shorter version of action.
+# We have full action name in env table, so that is used as agenda.
+def short_action(action):
+    if len(action) >= 4 and action[1] == "\u200b":
+        # include first non-emoji letter in case emoji rendering is broken
+        return action[:3]
+    return action
 
 
 def format_table(table, columns=None, markdown=False):
@@ -305,12 +626,12 @@ def format_table(table, columns=None, markdown=False):
 
     if markdown:
         # Header
-        write("| " + " | ".join(str(col).ljust(w) for col, w in zip(columns, widths)) + " |")
+        write("| " + " | ".join(autojust(str(col), w) for col, w in zip(columns, widths)) + " |")
         # Separator
         write("| " + " | ".join("-" * w for w in widths) + " |")
         # Data rows
         for row in table:
-            write("| " + " | ".join(str(row.get(col, "")).ljust(w) for col, w in zip(columns, widths)) + " |")
+            write("| " + " | ".join(autojust(row.get(col, ""), w) for col, w in zip(columns, widths)) + " |")
     else:
         write(fmt(columns, widths))
         for ind, row in enumerate(table):
@@ -322,11 +643,30 @@ def format_table(table, columns=None, markdown=False):
 
 
 def fmt(cells, widths):
-    return "  ".join(str(cell).ljust(w) for cell, w in zip(cells, widths))
+    return "  ".join(autojust(cell, w) for cell, w in zip(cells, widths))
+
+
+def autojust(value, width):
+    # Note, this has no effect on how markdown is rendered, only relevant for terminal output
+    value = str(value)
+    if value.isdigit():
+        return value.center(width)
+    if len(value) <= 3:  # short action name
+        return value.center(width)
+    return value.ljust(width)
 
 
 def wrap_in_details(txt, summary):
     return f"<details><summary>{summary}</summary>\n\n{txt}\n\n</details>"
+
+
+def format_duration(seconds):
+    """Format duration from seconds to MM:SS format."""
+    if seconds is None:
+        return ""
+    minutes = int(seconds // 60)
+    secs = int(seconds % 60)
+    return f"{minutes}:{secs:02d}"
 
 
 def main():
@@ -336,10 +676,19 @@ def main():
     parser.add_argument("--filter-env", help="Filter results by env name (substring match)")
     parser.add_argument("--output", help="Show output for failed tests", action="store_true")
     parser.add_argument("--markdown", help="Output in GitHub-flavored markdown format", action="store_true")
-    parser.add_argument("--omit-repl", help="Omit lines starting with 'REPL' and containing 'Available replacements:'", action="store_true")
+    parser.add_argument(
+        "--omit-repl",
+        help="Omit lines starting with 'REPL' and containing 'Available replacements:'",
+        action="store_true",
+    )
     args = parser.parse_args()
     print_report(
-        args.filenames, filter=args.filter, filter_env=args.filter_env, show_output=args.output, markdown=args.markdown, omit_repl=args.omit_repl
+        args.filenames,
+        filter=args.filter,
+        filter_env=args.filter_env,
+        show_output=args.output,
+        markdown=args.markdown,
+        omit_repl=args.omit_repl,
     )
 
 

@@ -1,0 +1,10 @@
+{
+  "plan": {
+    "resources.jobs.interim_gold_layer_job": {
+      "action": "skip"
+    },
+    "resources.jobs.interim_gold_layer_job.permissions": {
+      "action": "skip"
+    }
+  }
+}

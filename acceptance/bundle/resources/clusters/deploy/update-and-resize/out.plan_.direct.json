@@ -1,0 +1,135 @@
+{
+  "plan": {
+    "resources.clusters.test_cluster": {
+      "action": "create",
+      "new_state": {
+        "value": {
+          "autotermination_minutes": 60,
+          "cluster_name": "test-cluster-[UNIQUE_NAME]",
+          "node_type_id": "[NODE_TYPE_ID]",
+          "num_workers": 2,
+          "spark_conf": {
+            "spark.executor.memory": "2g"
+          },
+          "spark_version": "13.3.x-snapshot-scala2.12"
+        }
+      }
+    }
+  }
+}
+{
+  "plan": {
+    "resources.clusters.test_cluster": {
+      "action": "update",
+      "new_state": {
+        "value": {
+          "autotermination_minutes": 60,
+          "cluster_name": "test-cluster-[UNIQUE_NAME]",
+          "node_type_id": "[NODE_TYPE_ID]",
+          "num_workers": 3,
+          "spark_conf": {
+            "spark.executor.memory": "2g"
+          },
+          "spark_version": "13.3.x-snapshot-scala2.12"
+        }
+      },
+      "remote_state": {
+        "autotermination_minutes": 60,
+        "cluster_id": "[CLUSTER_ID]",
+        "cluster_name": "test-cluster-[UNIQUE_NAME]",
+        "node_type_id": "[NODE_TYPE_ID]",
+        "num_workers": 2,
+        "spark_conf": {
+          "spark.executor.memory": "2g"
+        },
+        "spark_version": "13.3.x-snapshot-scala2.12"
+      },
+      "changes": {
+        "local": {
+          "num_workers": {
+            "action": "update"
+          }
+        }
+      }
+    }
+  }
+}
+{
+  "plan": {
+    "resources.clusters.test_cluster": {
+      "action": "resize",
+      "new_state": {
+        "value": {
+          "autotermination_minutes": 60,
+          "cluster_name": "test-cluster-[UNIQUE_NAME]",
+          "node_type_id": "[NODE_TYPE_ID]",
+          "num_workers": 4,
+          "spark_conf": {
+            "spark.executor.memory": "2g"
+          },
+          "spark_version": "13.3.x-snapshot-scala2.12"
+        }
+      },
+      "remote_state": {
+        "autotermination_minutes": 60,
+        "cluster_id": "[CLUSTER_ID]",
+        "cluster_name": "test-cluster-[UNIQUE_NAME]",
+        "node_type_id": "[NODE_TYPE_ID]",
+        "num_workers": 3,
+        "spark_conf": {
+          "spark.executor.memory": "2g"
+        },
+        "spark_version": "13.3.x-snapshot-scala2.12",
+        "state": "RUNNING"
+      },
+      "changes": {
+        "local": {
+          "num_workers": {
+            "action": "resize"
+          }
+        }
+      }
+    }
+  }
+}
+{
+  "plan": {
+    "resources.clusters.test_cluster": {
+      "action": "update",
+      "new_state": {
+        "value": {
+          "autotermination_minutes": 60,
+          "cluster_name": "test-cluster-[UNIQUE_NAME]",
+          "node_type_id": "[NODE_TYPE_ID]",
+          "num_workers": 5,
+          "spark_conf": {
+            "spark.executor.memory": "4g"
+          },
+          "spark_version": "13.3.x-snapshot-scala2.12"
+        }
+      },
+      "remote_state": {
+        "autotermination_minutes": 60,
+        "cluster_id": "[CLUSTER_ID]",
+        "cluster_name": "test-cluster-[UNIQUE_NAME]",
+        "node_type_id": "[NODE_TYPE_ID]",
+        "num_workers": 4,
+        "spark_conf": {
+          "spark.executor.memory": "2g"
+        },
+        "spark_version": "13.3.x-snapshot-scala2.12",
+        "state": "RUNNING"
+      },
+      "changes": {
+        "local": {
+          "num_workers": {
+            "action": "resize"
+          },
+          "spark_conf['spark.executor.memory']": {
+            "action": "update"
+          }
+        }
+      }
+    }
+  }
+}

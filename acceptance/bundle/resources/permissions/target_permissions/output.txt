@@ -1,0 +1,21 @@
+
+>>> [CLI] bundle plan
+create jobs.foo
+create jobs.foo.permissions
+
+Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/test-bundle/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.foo
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/test-bundle
+
+Deleting files...
+Destroy complete!

@@ -23,9 +23,6 @@ func New() *cobra.Command {
 		Short:   `Rule based Access Control for Databricks Resources.`,
 		Long:    `Rule based Access Control for Databricks Resources.`,
 		GroupID: "iam",
-		Annotations: map[string]string{
-			"package": "iam",
-		},
 
 		// This service is being previewed; hide from help output.
 		Hidden: true,

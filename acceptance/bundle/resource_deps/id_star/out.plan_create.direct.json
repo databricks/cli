@@ -1,0 +1,135 @@
+{
+  "plan": {
+    "resources.jobs.a": {
+      "action": "create",
+      "new_state": {
+        "value": {
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+          },
+          "description": "aa_desc",
+          "edit_mode": "UI_LOCKED",
+          "format": "MULTI_TASK",
+          "max_concurrent_runs": 1,
+          "name": "aa",
+          "queue": {
+            "enabled": true
+          }
+        }
+      }
+    },
+    "resources.jobs.b": {
+      "depends_on": [
+        {
+          "node": "resources.jobs.a",
+          "label": "${resources.jobs.a.id}"
+        }
+      ],
+      "action": "create",
+      "new_state": {
+        "value": {
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+          },
+          "description": "prefix ${resources.jobs.a.id}",
+          "edit_mode": "UI_LOCKED",
+          "format": "MULTI_TASK",
+          "max_concurrent_runs": 1,
+          "name": "bb",
+          "queue": {
+            "enabled": true
+          }
+        },
+        "vars": {
+          "description": "prefix ${resources.jobs.a.id}"
+        }
+      }
+    },
+    "resources.jobs.c": {
+      "depends_on": [
+        {
+          "node": "resources.jobs.a",
+          "label": "${resources.jobs.a.id}"
+        }
+      ],
+      "action": "create",
+      "new_state": {
+        "value": {
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+          },
+          "description": "prefix ${resources.jobs.a.id}",
+          "edit_mode": "UI_LOCKED",
+          "format": "MULTI_TASK",
+          "max_concurrent_runs": 1,
+          "name": "cc",
+          "queue": {
+            "enabled": true
+          }
+        },
+        "vars": {
+          "description": "prefix ${resources.jobs.a.id}"
+        }
+      }
+    },
+    "resources.jobs.d": {
+      "depends_on": [
+        {
+          "node": "resources.jobs.a",
+          "label": "${resources.jobs.a.id}"
+        }
+      ],
+      "action": "create",
+      "new_state": {
+        "value": {
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+          },
+          "description": "prefix ${resources.jobs.a.id}",
+          "edit_mode": "UI_LOCKED",
+          "format": "MULTI_TASK",
+          "max_concurrent_runs": 1,
+          "name": "dd",
+          "queue": {
+            "enabled": true
+          }
+        },
+        "vars": {
+          "description": "prefix ${resources.jobs.a.id}"
+        }
+      }
+    },
+    "resources.jobs.e": {
+      "depends_on": [
+        {
+          "node": "resources.jobs.a",
+          "label": "${resources.jobs.a.id}"
+        }
+      ],
+      "action": "create",
+      "new_state": {
+        "value": {
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+          },
+          "description": "prefix ${resources.jobs.a.id}",
+          "edit_mode": "UI_LOCKED",
+          "format": "MULTI_TASK",
+          "max_concurrent_runs": 1,
+          "name": "ee",
+          "queue": {
+            "enabled": true
+          }
+        },
+        "vars": {
+          "description": "prefix ${resources.jobs.a.id}"
+        }
+      }
+    }
+  }
+}
