@@ -1,0 +1,15 @@
+bundle:
+  name: test-bundle
+
+resources:
+  jobs:
+    job_with_permissions:
+      name: job permissions added remotely
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Workspace/Users/user@example.com/notebook
+            source: WORKSPACE
+      permissions:
+        - level: CAN_VIEW
+          user_name: viewer@example.com
