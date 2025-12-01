@@ -49,18 +49,6 @@ func NewTracker(ctx context.Context, sess *session.Session, cfg *mcp.Config) (*T
 
 func (t *Tracker) writeSessionEntry(cfg *mcp.Config) error {
 	configMap := make(map[string]any)
-	configMap["with_workspace_tools"] = cfg.WithWorkspaceTools
-
-	if cfg.IoConfig != nil {
-		ioConfigMap := make(map[string]any)
-		if cfg.IoConfig.Template != nil {
-			ioConfigMap["template"] = fmt.Sprintf("%v", cfg.IoConfig.Template)
-		}
-		if cfg.IoConfig.Validation != nil {
-			ioConfigMap["validation"] = "***"
-		}
-		configMap["io_config"] = ioConfigMap
-	}
 
 	entry := NewSessionEntry(t.sessionID, configMap)
 	return t.writer.WriteEntry(entry)
