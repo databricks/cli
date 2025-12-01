@@ -3,6 +3,8 @@ package validation
 import (
 	"context"
 	"fmt"
+
+	"github.com/databricks/cli/experimental/apps-mcp/lib/common"
 )
 
 // ValidationDetail contains detailed output from a failed validation.
@@ -26,6 +28,8 @@ type ValidateResult struct {
 }
 
 func (vr *ValidateResult) String() string {
+	// Add branded header
+	header := common.FormatBrandedHeader("🔍", "Validating your app")
 	var result string
 
 	if len(vr.ProgressLog) > 0 {
@@ -37,16 +41,16 @@ func (vr *ValidateResult) String() string {
 	}
 
 	if vr.Success {
-		result += "✓ " + vr.Message
+		result += "✅ " + vr.Message
 	} else {
-		result += "✗ " + vr.Message
+		result += "❌ " + vr.Message
 		if vr.Details != nil {
 			result += fmt.Sprintf("\n\nExit code: %d\n\nStdout:\n%s\n\nStderr:\n%s",
 				vr.Details.ExitCode, vr.Details.Stdout, vr.Details.Stderr)
 		}
 	}
 
-	return result
+	return header + result
 }
 
 // Validation defines the interface for project validation strategies.
