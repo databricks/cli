@@ -164,9 +164,8 @@ func NewBracketString(prev *PathNode, fieldName string) *PathNode {
 	}
 }
 
-// NewStringKey creates a PathNode, choosing dot notation if the field name is valid,
-// otherwise bracket notation. This maintains backward compatibility while automatically
-// selecting the appropriate representation.
+// NewStringKey creates a PathNode, choosing dot notation if the fieldName is a valid field name,
+// otherwise bracket notation.
 func NewStringKey(prev *PathNode, fieldName string) *PathNode {
 	if isValidField(fieldName) {
 		return NewDotString(prev, fieldName)
