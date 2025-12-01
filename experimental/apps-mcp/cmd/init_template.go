@@ -273,6 +273,13 @@ After initialization:
 
 		configFile := tmpFile.Name()
 
+		// Create output directory if specified and doesn't exist
+		if outputDir != "" {
+			if err := os.MkdirAll(outputDir, 0o755); err != nil {
+				return fmt.Errorf("create output directory: %w", err)
+			}
+		}
+
 		r := template.Resolver{
 			TemplatePathOrUrl: templatePathOrUrl,
 			ConfigFile:        configFile,

@@ -23,10 +23,9 @@ invoke_databricks_cli 'experimental apps-mcp tools validate ./your-app-location'
 
 # Deployment
 
-⚠️ Always use the sequence of commands:
+⚠️ Use the deploy command which validates, deploys, and runs the app:
 
-invoke_databricks_cli 'bundle deploy'
-invoke_databricks_cli 'bundle run app'
+invoke_databricks_cli 'experimental apps-mcp tools deploy'
 
 # View and manage your app:
 
