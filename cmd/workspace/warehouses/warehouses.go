@@ -26,10 +26,7 @@ func New() *cobra.Command {
   objects within Databricks SQL. Compute resources are infrastructure resources
   that provide processing capabilities in the cloud.`,
 		GroupID: "sql",
-		Annotations: map[string]string{
-			"package": "sql",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

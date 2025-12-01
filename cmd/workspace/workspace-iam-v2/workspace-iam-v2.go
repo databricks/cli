@@ -24,10 +24,7 @@ func New() *cobra.Command {
 		Long: `These APIs are used to manage identities and the workspace access of these
   identities in <Databricks>.`,
 		GroupID: "iam",
-		Annotations: map[string]string{
-			"package": "iamv2",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

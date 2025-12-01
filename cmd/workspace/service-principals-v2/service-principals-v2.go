@@ -26,10 +26,7 @@ func New() *cobra.Command {
   write, delete, or modify privileges in production. This eliminates the risk of
   a user overwriting production data by accident.`,
 		GroupID: "iam",
-		Annotations: map[string]string{
-			"package": "iam",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

@@ -5,7 +5,7 @@ Each provider implements a set of related tools:
 
 - databricks: Databricks API integration
 - io: Project scaffolding and validation
-- workspace: File and command operations
+- clitools: CLI exploration and invocation
 - deployment: Application deployment (optional)
 
 Provider Interface:

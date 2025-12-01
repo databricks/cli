@@ -30,10 +30,7 @@ func New() *cobra.Command {
   MANAGE privilege on a securable to view, create, update, or delete ABAC
   policies.`,
 		GroupID: "catalog",
-		Annotations: map[string]string{
-			"package": "catalog",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

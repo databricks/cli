@@ -27,10 +27,7 @@ func New() *cobra.Command {
 
   [Unity Catalog documentation]: https://docs.databricks.com/en/data-governance/unity-catalog/index.html#resource-quotas`,
 		GroupID: "catalog",
-		Annotations: map[string]string{
-			"package": "catalog",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

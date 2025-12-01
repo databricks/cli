@@ -25,10 +25,7 @@ func New() *cobra.Command {
   to the allowlist in UC so that users can leverage these artifacts on compute
   configured with shared access mode.`,
 		GroupID: "catalog",
-		Annotations: map[string]string{
-			"package": "catalog",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

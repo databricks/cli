@@ -24,10 +24,7 @@ func New() *cobra.Command {
 		Long: `Marketplace exchanges allow providers to share their listings with a curated
   set of customers.`,
 		GroupID: "marketplace",
-		Annotations: map[string]string{
-			"package": "marketplace",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

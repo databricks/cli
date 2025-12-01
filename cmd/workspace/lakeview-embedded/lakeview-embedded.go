@@ -20,10 +20,7 @@ func New() *cobra.Command {
 		Short:   `Token-based Lakeview APIs for embedding dashboards in external applications.`,
 		Long:    `Token-based Lakeview APIs for embedding dashboards in external applications.`,
 		GroupID: "dashboards",
-		Annotations: map[string]string{
-			"package": "dashboards",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

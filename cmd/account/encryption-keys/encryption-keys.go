@@ -38,10 +38,7 @@ func New() *cobra.Command {
   If you have an older workspace, it might not be on the E2 version of the
   platform. If you are not sure, contact your Databricks representative.`,
 		GroupID: "provisioning",
-		Annotations: map[string]string{
-			"package": "provisioning",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

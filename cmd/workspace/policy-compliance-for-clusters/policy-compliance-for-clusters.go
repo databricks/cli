@@ -32,10 +32,7 @@ func New() *cobra.Command {
   status of a cluster. The enforce compliance API allows you to update a cluster
   to be compliant with the current version of its policy.`,
 		GroupID: "compute",
-		Annotations: map[string]string{
-			"package": "compute",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

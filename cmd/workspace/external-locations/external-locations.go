@@ -35,10 +35,7 @@ func New() *cobra.Command {
   To create external locations, you must be a metastore admin or a user with the
   **CREATE_EXTERNAL_LOCATION** privilege.`,
 		GroupID: "catalog",
-		Annotations: map[string]string{
-			"package": "catalog",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

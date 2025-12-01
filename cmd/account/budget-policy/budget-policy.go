@@ -21,10 +21,7 @@ func New() *cobra.Command {
 		Short:   `A service serves REST API about Budget policies.`,
 		Long:    `A service serves REST API about Budget policies`,
 		GroupID: "billing",
-		Annotations: map[string]string{
-			"package": "billing",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

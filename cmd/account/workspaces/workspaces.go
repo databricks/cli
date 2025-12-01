@@ -31,10 +31,7 @@ func New() *cobra.Command {
   platform or on a select custom plan that allows multiple workspaces per
   account.`,
 		GroupID: "provisioning",
-		Annotations: map[string]string{
-			"package": "provisioning",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods

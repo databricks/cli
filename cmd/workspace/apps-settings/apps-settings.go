@@ -24,9 +24,6 @@ func New() *cobra.Command {
 		Long: `Apps Settings manage the settings for the Apps service on a customer's
   Databricks instance.`,
 		GroupID: "apps",
-		Annotations: map[string]string{
-			"package": "apps",
-		},
 
 		// This service is being previewed; hide from help output.
 		Hidden: true,
