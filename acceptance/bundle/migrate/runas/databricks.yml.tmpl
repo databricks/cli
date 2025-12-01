@@ -17,17 +17,6 @@ resources:
       serverless: true
 
 targets:
-  development:
-    default: true
-    mode: development
-
-    resources:
-      pipelines:
-        # Make the pipeline write to the current user's schema in logfood.
-        foo:
-          catalog: users
-          target: ${workspace.current_user.short_name}
-
   production:
     run_as:
       service_principal_name: $TEST_SP_APPLICATION_ID
