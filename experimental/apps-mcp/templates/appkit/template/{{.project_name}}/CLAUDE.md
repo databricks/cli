@@ -5,6 +5,102 @@ TypeScript full-stack template powered by **Databricks AppKit** with tRPC for ad
 - config/queries/: SQL query files for analytics
 - shared/: Shared TypeScript types
 
+## Operational Commands Reference
+
+**⚠️ CRITICAL**: Use ONLY these commands. Do not improvise alternatives.
+
+### Local Development
+
+**Command**: `npm run dev`
+
+**When**: Testing app locally during development
+
+**What it does**:
+- Starts dev server with hot reload (tsx watch)
+- Runs on port 8000
+- Uses NODE_ENV=development
+- Auto-reloads on file changes
+
+**DO NOT use**:
+- ❌ `npm start` - Production only!
+- ❌ `databricks bundle run` - Runs on Databricks, not locally
+- ❌ Custom commands - Stick to `npm run dev`
+
+**Example**:
+```bash
+cd my-app
+npm install          # First time
+npm run dev          # Start development
+# Open http://localhost:8000
+```
+
+### Validation (Before Deployment)
+
+**Command**: `databricks experimental apps-mcp tools validate .`
+
+**When**: Before deploying to verify production-readiness
+
+**What it does** (automatically):
+1. `npm install`
+2. `npm run build` (if exists)
+3. `npm run typecheck` (if exists)
+4. `npm run test` (if exists)
+
+**Important**: Reads package.json to check which scripts exist. Skips missing ones.
+
+**DO NOT**:
+- ❌ Run commands manually one-by-one
+- ❌ Skip validation
+- ❌ Deploy with failing validations
+
+### Production Deployment
+
+**Commands** (in sequence):
+```bash
+databricks bundle deploy
+databricks bundle run app
+```
+
+**Pre-deployment checklist**:
+- ✅ Validated locally with `npm run dev`
+- ✅ Passed validation
+- ✅ Committed to git
+- ✅ Bundle config correct
+
+**DO NOT**:
+- ❌ Deploy without validation
+- ❌ Use `npm start` for deployment
+- ❌ Deploy without bundle commands
+
+### Command Decision Tree
+
+```
+What do you want to do?
+│
+├─ "Test/run locally" → npm run dev
+├─ "Check ready to deploy" → databricks experimental apps-mcp tools validate .
+├─ "Deploy to production" → databricks bundle deploy && databricks bundle run app
+└─ "Type check/lint/test" → Use specific command
+```
+
+### Why These Commands?
+
+**`npm run dev` (not `npm start`)**:
+- `dev` = tsx watch with hot reload (development)
+- `start` = production build (node ./dist/...)
+
+**Validation tool (not manual)**:
+- Consistent validation
+- Branded MCP output
+- Handles missing scripts
+- Clear progress
+
+**Bundle commands (not direct deploy)**:
+- Manages infrastructure
+- Multi-environment support
+- Respects app.yaml
+- Rollback capabilities
+
 ## App Naming Constraints
 
 App names must not exceed 30 characters total (including target prefix).

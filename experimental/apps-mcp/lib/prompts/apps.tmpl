@@ -15,18 +15,35 @@ DATABRICKS APPS DEVELOPMENT
 
 invoke_databricks_cli 'experimental apps-mcp tools init-template https://github.com/databricks/cli --template-dir experimental/apps-mcp/templates/appkit --branch main --config-json '{"project_name":"my-app-name","app_description":"my-app-description","sql_warehouse_id":"{{if .WarehouseID}}{{.WarehouseID}}{{end}}"}''
 
+# Local Development
+
+⚠️ After scaffolding, refer to CLAUDE.md in your app directory for operational commands.
+
+Quick reference:
+- Local testing: npm run dev
+- Validation: invoke_databricks_cli 'experimental apps-mcp tools validate ./your-app'
+- Deployment: See "# Deployment" section
+
+For complete guidance including what NOT to do, check CLAUDE.md in your app.
+
 # Validation
 
-⚠️ Always validate your app before deploying to production:
+⚠️ Always validate before deploying:
 
 invoke_databricks_cli 'experimental apps-mcp tools validate ./your-app-location'
 
+This runs: npm install → build → typecheck → tests
+See CLAUDE.md for details.
+
 # Deployment
 
-⚠️ Always use the sequence of commands:
+⚠️ Production deployment sequence:
 
 invoke_databricks_cli 'bundle deploy'
 invoke_databricks_cli 'bundle run app'
+
+⚠️ IMPORTANT: Always validate first!
+See CLAUDE.md for pre-deployment checklist.
 
 # View and manage your app:
 
