@@ -25,7 +25,14 @@ func InvokeDatabricksCLI(ctx context.Context, command []string, workingDirectory
 	cmd := exec.CommandContext(ctx, cliPath, command...)
 	cmd.Dir = workingDirectory
 	env := os.Environ()
-	env = append(env, "DATABRICKS_HOST="+host)
+
+	profile := middlewares.MustGetDatabricksProfile(ctx)
+	if profile != "" {
+		env = append(env, "DATABRICKS_CONFIG_PROFILE="+profile)
+	}
+	if host != "" {
+		env = append(env, "DATABRICKS_HOST="+host)
+	}
 	cmd.Env = env
 
 	output, err := cmd.CombinedOutput()
