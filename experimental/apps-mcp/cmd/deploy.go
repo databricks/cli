@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/experimental/apps-mcp/lib/validation"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
 	"github.com/spf13/cobra"
 )
@@ -31,41 +32,31 @@ The command will stop immediately if any step fails.`,
 		RunE: deployRun,
 	}
 
+	// Add --var flag required by ProcessBundle
+	cmd.Flags().StringSlice("var", []string{}, `set values for variables defined in bundle config. Example: --var="foo=bar"`)
+
 	return cmd
 }
 
 func deployRun(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
 
-	// Load bundle to get work directory
-	b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{
-		SkipInitialize: true,
-	})
-	if err != nil {
-		return fmt.Errorf("failed to load bundle: %w", err)
-	}
-
-	workDir := b.BundleRootPath
-
-	// Step 1: Validation
 	log.Infof(ctx, "Running Node.js validation...")
 	validator := &validation.ValidationNodeJs{}
-	result, err := validator.Validate(ctx, workDir)
+	result, err := validator.Validate(ctx, ".")
 	if err != nil {
 		return fmt.Errorf("validation error: %w", err)
 	}
+
+	cmdio.LogString(ctx, result.String())
+
 	if !result.Success {
-		if result.Details != nil {
-			return fmt.Errorf("validation failed (exit code %d): %s\nstderr: %s",
-				result.Details.ExitCode, result.Message, result.Details.Stderr)
-		}
-		return fmt.Errorf("validation failed: %s", result.Message)
+		return errors.New("validation failed")
 	}
 	log.Infof(ctx, "Validation passed")
 
-	// Step 2: Deploy
 	log.Infof(ctx, "Deploying bundle...")
-	b, err = utils.ProcessBundle(cmd, utils.ProcessOptions{
+	b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{
 		AlwaysPull:   true,
 		FastValidate: true,
 		Build:        true,
@@ -76,14 +67,13 @@ func deployRun(cmd *cobra.Command, args []string) error {
 	}
 	log.Infof(ctx, "Deploy completed")
 
-	// Step 3: Detect and run app
 	appKey, err := detectApp(b)
 	if err != nil {
 		return err
 	}
 
 	log.Infof(ctx, "Running app: %s", appKey)
-	err = runApp(ctx, cmd, b, appKey)
+	err = runApp(ctx, b, appKey)
 	if err != nil {
 		return fmt.Errorf("failed to run app: %w", err)
 	}
@@ -112,20 +102,17 @@ func detectApp(b *bundle.Bundle) (string, error) {
 }
 
 // runApp runs the specified app using the runner interface.
-func runApp(ctx context.Context, cmd *cobra.Command, b *bundle.Bundle, appKey string) error {
-	// Lookup the app resource
+func runApp(ctx context.Context, b *bundle.Bundle, appKey string) error {
 	ref, err := resources.Lookup(b, appKey, run.IsRunnable)
 	if err != nil {
 		return fmt.Errorf("failed to lookup app: %w", err)
 	}
 
-	// Convert to runner
 	runner, err := run.ToRunner(b, ref)
 	if err != nil {
 		return fmt.Errorf("failed to create runner: %w", err)
 	}
 
-	// Run the app
 	output, err := runner.Run(ctx, &run.Options{})
 	if err != nil {
 		return fmt.Errorf("failed to run app: %w", err)
