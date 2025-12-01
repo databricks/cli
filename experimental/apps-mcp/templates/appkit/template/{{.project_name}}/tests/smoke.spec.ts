@@ -12,10 +12,10 @@ test('smoke test - app loads and displays data', async ({ page }) => {
   // Navigate to the app
   await page.goto('/');
 
-  // Wait for the page title to be visible
+  // ⚠️ UPDATE THESE SELECTORS after customizing App.tsx:
+  // - Change heading name to match your app title
+  // - Change data selector to match your primary data display
   await expect(page.getByRole('heading', { name: 'Minimal Databricks App' })).toBeVisible();
-
-  // Wait for SQL query result to load (wait for "hello world" to appear)
   await expect(page.getByText('hello world', { exact: true })).toBeVisible({ timeout: 30000 });
 
   // Wait for health check to complete (wait for "OK" status)

@@ -73,6 +73,10 @@ func (p *PathNode) KeyValue() (key, value string, ok bool) {
 	return "", "", false
 }
 
+func (p *PathNode) IsStringKey() bool {
+	return p != nil && p.index == tagStringKey
+}
+
 // StringKey returns either Field() or MapKey() if either is available
 func (p *PathNode) StringKey() (string, bool) {
 	if p == nil {

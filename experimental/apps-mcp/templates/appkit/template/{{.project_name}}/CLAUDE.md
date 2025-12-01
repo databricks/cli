@@ -21,7 +21,11 @@ The init-template command validates this automatically.
 
 ## TypeScript Import Rules
 
-This template uses strict TypeScript settings with `verbatimModuleSyntax: true`. **Always use `import type` for type-only imports**:
+This template uses strict TypeScript settings with `verbatimModuleSyntax: true`. **Always use `import type` for type-only imports**.
+
+Template enforces `noUnusedLocals` - remove unused imports immediately or build fails.
+
+**Type-only imports**:
 
 ```typescript
 // ✅ CORRECT - use import type for types
@@ -201,6 +205,20 @@ WHERE DATE(timestamp_column) >= :start_date
 - **Strings/Numbers**: Use directly in SQL with `:param_name`
 - **Dates**: Format as `YYYY-MM-DD`, use with `DATE()` in SQL
 - **Optional**: Use empty string default, check with `(:param = '' OR column = :param)`
+
+## SQL Type Handling
+
+Numeric fields from Databricks SQL (especially `ROUND()`, `AVG()`, `SUM()`) are returned as strings in JSON. Convert before using numeric methods:
+
+```typescript
+// ❌ WRONG - fails at runtime
+<span>{row.total_amount.toFixed(2)}</span>
+
+// ✅ CORRECT
+<span>{Number(row.total_amount).toFixed(2)}</span>
+```
+
+Use helpers from `shared/types.ts`: `toNumber()`, `formatCurrency()`, `formatPercent()`.
 
 ## tRPC for Custom Endpoints:
 
@@ -398,6 +416,10 @@ npm run test:e2e:ui     # Run with Playwright UI
 - Shared UI components: `client/src/components/ui/`
 - Feature components: `client/src/components/FeatureName.tsx`
 - Split components when logic exceeds ~100 lines or component is reused
+
+### Radix UI Constraints
+
+- `SelectItem` cannot have `value=""`. Use sentinel value like `"all"` for "show all" options.
 
 ### Best Practices:
 

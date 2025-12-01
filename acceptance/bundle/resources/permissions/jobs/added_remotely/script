@@ -1,0 +1,18 @@
+trace $CLI bundle plan
+trace $CLI bundle deploy
+trace $CLI bundle plan
+
+job_id="$(read_id.py jobs job_with_permissions)"
+echo "$job_id:JOB_ID" >> ACC_REPLS
+
+trace $CLI permissions get jobs "$job_id"
+
+title "Add permissions out of band"
+trace $CLI permissions set jobs "$job_id" --json @remote_add.json
+
+trace $CLI bundle plan
+trace $CLI bundle plan -o json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle deploy
+trace $CLI bundle plan
+
+trace $CLI permissions get jobs "$job_id"
