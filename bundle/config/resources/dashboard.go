@@ -52,12 +52,31 @@ type Dashboard struct {
 	FilePath string `json:"file_path,omitempty"`
 }
 
-func (r *Dashboard) UnmarshalJSON(b []byte) error {
-	return marshal.Unmarshal(b, r)
+// These override functions are necessary to ensure that "serialized_dashboard" and "embed_credentials"
+// serialized into the state for direct deployment.
+func (c *DashboardConfig) UnmarshalJSON(b []byte) error {
+	err := marshal.Unmarshal(b, c)
+
+	// Do not  de-serialized the nested "serialized_dashboard" field. By default, using a json decoder
+	// the value from "serialized_dashboard" will be de-serialized into both
+	// "DashboardConfig.Dashboard.SerializedDashboard" and "DashboardConfig.SerializedDashboard".
+	// We only want to de-serialize it into "DashboardConfig.SerializedDashboard"
+	// persistent diffs in direct deployment.
+	embeddedDashboard := c.Dashboard
+	embeddedDashboard.SerializedDashboard = ""
+	forceSendFields := []string{}
+	for _, field := range forceSendFields {
+		if field != "SerializedDashboard" {
+			forceSendFields = append(forceSendFields, field)
+		}
+	}
+	embeddedDashboard.ForceSendFields = forceSendFields
+	c.Dashboard = embeddedDashboard
+	return err
 }
 
-func (r Dashboard) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(r)
+func (c DashboardConfig) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(c)
 }
 
 func (*Dashboard) Exists(ctx context.Context, w *databricks.WorkspaceClient, id string) (bool, error) {

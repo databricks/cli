@@ -1,5 +1,6 @@
-Badness = "direct: drift after deploy"
-Local = true
+# The server formats serialized_dashboard in a way that is tedious to replicate locally.
+# Thus we skip this test for local server.
+Local = false
 Cloud = true
 RequiresWarehouse = true
 RecordRequests = false
