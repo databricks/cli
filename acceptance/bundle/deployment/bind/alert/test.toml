@@ -5,5 +5,5 @@ BundleConfigTarget = "databricks.yml"
 
 Ignore = [
     "databricks.yml",
-    "alert.json", 
+    "alert.json",
 ]
