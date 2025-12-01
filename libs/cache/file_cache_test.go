@@ -66,6 +66,10 @@ func TestNewFileCacheWithExistingDirectory(t *testing.T) {
 }
 
 func TestNewFileCacheInvalidPath(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Skipping invalid path test on Windows")
+	}
+
 	ctx := context.Background()
 	// Try to create cache in a location that should fail
 	invalidPath := "/root/invalid/path/that/should/not/exist"
@@ -370,6 +374,9 @@ func TestFileCacheMeasurementMode(t *testing.T) {
 func TestFileCacheReadPermissionError(t *testing.T) {
 	if os.Getuid() == 0 {
 		t.Skip("Skipping permission test when running as root")
+	}
+	if runtime.GOOS == "windows" {
+		t.Skip("Skipping permission test on Windows")
 	}
 
 	ctx := context.Background()

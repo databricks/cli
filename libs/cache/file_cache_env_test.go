@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -142,6 +143,10 @@ func TestCacheDirEnvVar(t *testing.T) {
 	})
 
 	t.Run("handles invalid cache dir path", func(t *testing.T) {
+		if runtime.GOOS == "windows" {
+			t.Skip("Skipping invalid path test on Windows - permission model differs")
+		}
+
 		// Set an invalid path (no permissions)
 		t.Setenv("DATABRICKS_CACHE_DIR", "/root/invalid-cache-dir")
 
