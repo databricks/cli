@@ -179,14 +179,11 @@ func (r *ResourceDashboard) publishDashboard(ctx context.Context, id string, con
 func responseToState(createOrUpdateResp *dashboards.Dashboard, publishResp *dashboards.PublishedDashboard, serializedDashboard string) *resources.DashboardConfig {
 	return &resources.DashboardConfig{
 		Dashboard: dashboards.Dashboard{
-			DisplayName: createOrUpdateResp.DisplayName,
-			Etag:        createOrUpdateResp.Etag,
-			WarehouseId: createOrUpdateResp.WarehouseId,
-			ParentPath:  ensureWorkspacePrefix(createOrUpdateResp.ParentPath),
-
-			// Omit serialized dashboard here. Only set it in the [resources.DashboardConfig] struct.
-			// otherwise a phantom diff will be created.
-			SerializedDashboard: "",
+			DisplayName:         createOrUpdateResp.DisplayName,
+			Etag:                createOrUpdateResp.Etag,
+			WarehouseId:         createOrUpdateResp.WarehouseId,
+			SerializedDashboard: createOrUpdateResp.SerializedDashboard,
+			ParentPath:          ensureWorkspacePrefix(createOrUpdateResp.ParentPath),
 
 			// Output only fields
 			CreateTime:      createOrUpdateResp.CreateTime,
