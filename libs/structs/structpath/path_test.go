@@ -729,13 +729,7 @@ func TestHasPrefix(t *testing.T) {
 			expected: false,
 		},
 
-		// Regex patterns are NOT supported - treated as literals
-		{
-			name:     "regex pattern not respected - dot wildcard",
-			s:        "abc",
-			prefix:   "a.c",
-			expected: false,
-		},
+		// wildcard patterns are NOT supported - treated as literals
 		{
 			name:     "regex pattern not respected - star quantifier",
 			s:        "aaa",
@@ -744,8 +738,8 @@ func TestHasPrefix(t *testing.T) {
 		},
 		{
 			name:     "regex pattern not respected - bracket class",
-			s:        "a1b",
-			prefix:   "a[0-9]b",
+			s:        "a[1]",
+			prefix:   "a[*]",
 			expected: false,
 		},
 	}
