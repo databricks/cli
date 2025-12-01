@@ -2,6 +2,7 @@ package template
 
 import (
 	"context"
+	"fmt"
 	"path/filepath"
 	"sort"
 	"strconv"
@@ -122,6 +123,66 @@ func (tmpl *defaultWriter) promptForInput(ctx context.Context, reader Reader) er
 	return tmpl.config.validate()
 }
 
+// generateFileTree creates a tree-style visualization of the file structure.
+// Collapses directories with more than 10 files to avoid clutter.
+func generateFileTree(files []file) string {
+	const maxFilesToShow = 10
+
+	// build a tree structure
+	tree := make(map[string][]string)
+
+	for _, f := range files {
+		relPath := f.RelPath()
+		parts := strings.Split(filepath.ToSlash(relPath), "/")
+
+		if len(parts) == 1 {
+			// root level file
+			tree[""] = append(tree[""], parts[0])
+		} else {
+			// file in subdirectory
+			dir := strings.Join(parts[:len(parts)-1], "/")
+			fileName := parts[len(parts)-1]
+			tree[dir] = append(tree[dir], fileName)
+		}
+	}
+
+	// format as tree
+	var output strings.Builder
+	var sortedDirs []string
+	for dir := range tree {
+		sortedDirs = append(sortedDirs, dir)
+	}
+	sort.Strings(sortedDirs)
+
+	for _, dir := range sortedDirs {
+		filesInDir := tree[dir]
+		if dir == "" {
+			// root files - always show all
+			for _, file := range filesInDir {
+				output.WriteString(file)
+				output.WriteString("\n")
+			}
+		} else {
+			// directory
+			output.WriteString(dir)
+			output.WriteString("/\n")
+			if len(filesInDir) <= maxFilesToShow {
+				// show all files
+				for _, file := range filesInDir {
+					output.WriteString("  ")
+					output.WriteString(file)
+					output.WriteString("\n")
+				}
+			} else {
+				// collapse large directories
+				output.WriteString(fmt.Sprintf("  (%d files)\n", len(filesInDir)))
+			}
+		}
+	}
+
+	return output.String()
+}
+
 func (tmpl *defaultWriter) printSuccessMessage(ctx context.Context) error {
 	success := tmpl.config.schema.SuccessMessage
 	if success == "" {
@@ -156,7 +217,20 @@ func (tmpl *defaultWriter) Materialize(ctx context.Context, reader Reader) error
 		return err
 	}
 
-	return tmpl.printSuccessMessage(ctx)
+	// Print success message
+	err = tmpl.printSuccessMessage(ctx)
+	if err != nil {
+		return err
+	}
+
+	// Print file tree structure
+	fileTree := generateFileTree(tmpl.renderer.files)
+	if fileTree != "" {
+		cmdio.LogString(ctx, "\nFile structure:")
+		cmdio.LogString(ctx, fileTree)
+	}
+
+	return nil
 }
 
 func (tmpl *defaultWriter) LogTelemetry(ctx context.Context) {
