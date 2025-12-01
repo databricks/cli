@@ -11,9 +11,6 @@ import (
 )
 
 const (
-	// Encodes string key, which is encoded as .field or as ['spark.conf']
-	tagStringKey = -1
-
 	// Encodes wildcard after a dot: foo.*
 	tagDotStar = -2
 
@@ -22,6 +19,13 @@ const (
 
 	// Encodes key/value index, which is encoded as [key='value'] or [key="value"]
 	tagKeyValue = -4
+
+	// Encodes .field syntax
+	// Note, most users should use StringKey() method which represents both DotString and BracketString
+	tagDotString = -5
+
+	// Encodes ["field"] syntax
+	tagBracketString = -6
 )
 
 // PathNode represents a node in a path for struct diffing.
@@ -73,8 +77,28 @@ func (p *PathNode) KeyValue() (key, value string, ok bool) {
 	return "", "", false
 }
 
-func (p *PathNode) IsStringKey() bool {
-	return p != nil && p.index == tagStringKey
+func (p *PathNode) IsDotString() bool {
+	return p != nil && p.index == tagDotString
+}
+
+func (p *PathNode) DotString() (string, bool) {
+	if p == nil {
+		return "", false
+	}
+	if p.index == tagDotString {
+		return p.key, true
+	}
+	return "", false
+}
+
+func (p *PathNode) BracketString() (string, bool) {
+	if p == nil {
+		return "", false
+	}
+	if p.index == tagBracketString {
+		return p.key, true
+	}
+	return "", false
 }
 
 // StringKey returns either Field() or MapKey() if either is available
@@ -82,7 +106,7 @@ func (p *PathNode) StringKey() (string, bool) {
 	if p == nil {
 		return "", false
 	}
-	if p.index == tagStringKey {
+	if p.index == tagDotString || p.index == tagBracketString {
 		return p.key, true
 	}
 	return "", false
@@ -122,14 +146,32 @@ func NewIndex(prev *PathNode, index int) *PathNode {
 	}
 }
 
-// NewStringKey creates either StructField or MapKey
-// The fieldName should be the resolved field name (e.g., from JSON tag or Go field name).
-func NewStringKey(prev *PathNode, fieldName string) *PathNode {
+// NewDotString creates a PathNode for dot notation (.field).
+func NewDotString(prev *PathNode, fieldName string) *PathNode {
 	return &PathNode{
 		prev:  prev,
 		key:   fieldName,
-		index: tagStringKey,
+		index: tagDotString,
 	}
+}
+
+// NewBracketString creates a PathNode for bracket notation (["field"]).
+func NewBracketString(prev *PathNode, fieldName string) *PathNode {
+	return &PathNode{
+		prev:  prev,
+		key:   fieldName,
+		index: tagBracketString,
+	}
+}
+
+// NewStringKey creates a PathNode, choosing dot notation if the field name is valid,
+// otherwise bracket notation. This maintains backward compatibility while automatically
+// selecting the appropriate representation.
+func NewStringKey(prev *PathNode, fieldName string) *PathNode {
+	if isValidField(fieldName) {
+		return NewDotString(prev, fieldName)
+	}
+	return NewBracketString(prev, fieldName)
 }
 
 func NewDotStar(prev *PathNode) *PathNode {
@@ -193,14 +235,14 @@ func (p *PathNode) String() string {
 			result.WriteString("=")
 			result.WriteString(EncodeMapKey(node.value))
 			result.WriteString("]")
-		} else if isValidField(node.key) {
-			// Valid field name
+		} else if node.index == tagDotString {
+			// Dot notation: .field
 			if i != 0 {
 				result.WriteString(".")
 			}
 			result.WriteString(node.key)
-		} else {
-			// Map key with single quotes
+		} else if node.index == tagBracketString {
+			// Bracket notation: ['field']
 			result.WriteString("[")
 			result.WriteString(EncodeMapKey(node.key))
 			result.WriteString("]")
@@ -309,11 +351,11 @@ func Parse(s string) (*PathNode, error) {
 
 		case stateField:
 			if ch == '.' {
-				result = NewStringKey(result, currentToken.String())
+				result = NewDotString(result, currentToken.String())
 				currentToken.Reset()
 				state = stateFieldStart
 			} else if ch == '[' {
-				result = NewStringKey(result, currentToken.String())
+				result = NewDotString(result, currentToken.String())
 				currentToken.Reset()
 				state = stateBracketOpen
 			} else if !isReservedFieldChar(ch) {
@@ -380,7 +422,7 @@ func Parse(s string) (*PathNode, error) {
 				state = stateMapKey
 			case ']':
 				// End of map key
-				result = NewStringKey(result, currentToken.String())
+				result = NewBracketString(result, currentToken.String())
 				currentToken.Reset()
 				state = stateExpectDotOrEnd
 			default:
@@ -461,7 +503,7 @@ func Parse(s string) (*PathNode, error) {
 	case stateStart:
 		return result, nil // Empty path, result is nil
 	case stateField:
-		result = NewStringKey(result, currentToken.String())
+		result = NewDotString(result, currentToken.String())
 		return result, nil
 	case stateDotStar:
 		result = NewDotStar(result)
