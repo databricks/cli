@@ -318,7 +318,10 @@ func newTestLogServer(t *testing.T, handler func(int, *websocket.Conn)) *httptes
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		id := int(connCount.Add(1))
 		conn, err := upgrader.Upgrade(w, r, nil)
-		require.NoError(t, err)
+		if err != nil {
+			t.Errorf("failed to upgrade connection: %v", err)
+			return
+		}
 		go handler(id, conn)
 	}))
 
@@ -502,7 +505,10 @@ func TestLogStreamerRefreshesTokenAfterAuthClose(t *testing.T) {
 		id := int(connCount.Add(1))
 		auth := r.Header.Get("Authorization")
 		conn, err := upgrader.Upgrade(w, r, nil)
-		require.NoError(t, err)
+		if err != nil {
+			t.Errorf("failed to upgrade connection: %v", err)
+			return
+		}
 
 		go func() {
 			defer conn.Close()
@@ -514,7 +520,9 @@ func TestLogStreamerRefreshesTokenAfterAuthClose(t *testing.T) {
 			}
 
 			assert.Equal(t, "Bearer fresh", auth)
-			require.NoError(t, sendEntry(conn, 1, "refreshed"))
+			if err := sendEntry(conn, 1, "refreshed"); err != nil {
+				t.Errorf("failed to send entry: %v", err)
+			}
 			_ = conn.WriteControl(websocket.CloseMessage, websocket.FormatCloseMessage(websocket.CloseNormalClosure, ""), time.Now().Add(time.Second))
 		}()
 	}))
@@ -682,7 +690,7 @@ func TestAppStatusCheckerStopsFollowing(t *testing.T) {
 		count := checkCount.Add(1)
 		// Simulate app being stopped after first reconnect attempt
 		if count > 1 {
-			return fmt.Errorf("app stopped")
+			return errors.New("app stopped")
 		}
 		return nil
 	}

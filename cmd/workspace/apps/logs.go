@@ -27,9 +27,9 @@ import (
 )
 
 const (
-	defaultTailLines           = 200
-	defaultPrefetchWindow      = 2 * time.Second
-	defaultHandshakeTimeout    = 30 * time.Second
+	defaultTailLines        = 200
+	defaultPrefetchWindow   = 2 * time.Second
+	defaultHandshakeTimeout = 30 * time.Second
 )
 
 var allowedSources = []string{"APP", "SYSTEM"}
@@ -120,17 +120,19 @@ via --source APP|SYSTEM. Use --output-file to mirror the stream to a local file 
 					return err
 				}
 				if app.ComputeStatus == nil {
-					return fmt.Errorf("app status unavailable")
+					return errors.New("app status unavailable")
 				}
 				// Check if app is in a terminal/stopped state
 				switch app.ComputeStatus.State {
 				case apps.ComputeStateStopped, apps.ComputeStateDeleting, apps.ComputeStateError:
 					return fmt.Errorf("app is %s", app.ComputeStatus.State)
+				default:
+					// App is running or transitioning - continue streaming
+					return nil
 				}
-				return nil
 			}
 
-			var writer io.Writer = cmd.OutOrStdout()
+			writer := cmd.OutOrStdout()
 			var file *os.File
 			if outputPath != "" {
 				file, err = os.OpenFile(outputPath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o600)

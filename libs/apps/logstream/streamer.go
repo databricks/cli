@@ -115,48 +115,63 @@ func (s *logStreamer) Run(ctx context.Context) error {
 	stopTimer(timer, 0)
 
 	for {
-		resp, err := s.connectAndConsume(ctx)
-		if err == nil {
+		shouldContinue, err := func() (bool, error) {
+			resp, err := s.connectAndConsume(ctx)
+			if err != nil {
+				if ctx.Err() != nil {
+					return false, ctx.Err()
+				}
+
+				if s.follow && (s.shouldRefreshForStatus(resp) || s.shouldRefreshForError(err)) {
+					if err := s.refreshToken(ctx); err != nil {
+						return false, err
+					}
+					backoff = initialReconnectBackoff
+					return true, nil
+				}
+
+				if !s.follow {
+					return false, err
+				}
+
+				// Before retrying, check if the app is still running (if checker is provided).
+				if s.appStatusChecker != nil {
+					if statusErr := s.appStatusChecker(ctx); statusErr != nil {
+						return false, fmt.Errorf("app is no longer available: %w", statusErr)
+					}
+				}
+
+				return true, nil
+			}
+			if resp != nil && resp.Body != nil {
+				defer resp.Body.Close()
+			}
+
 			backoff = initialReconnectBackoff
 			if !s.follow {
-				return nil
+				return false, nil
 			}
 			// Connection closed normally while following - check if app is still running.
 			if s.appStatusChecker != nil {
 				if statusErr := s.appStatusChecker(ctx); statusErr != nil {
-					return fmt.Errorf("app is no longer available: %w", statusErr)
+					return false, fmt.Errorf("app is no longer available: %w", statusErr)
 				}
 			}
-			continue
+			return true, nil
+		}()
+		if err != nil {
+			return err
 		}
 
-		if ctx.Err() != nil {
-			return ctx.Err()
-		}
-
-		if s.follow && (s.shouldRefreshForStatus(resp) || s.shouldRefreshForError(err)) {
-			if err := s.refreshToken(ctx); err != nil {
+		if shouldContinue {
+			if err := waitForBackoff(ctx, timer, backoff); err != nil {
 				return err
 			}
-			backoff = initialReconnectBackoff
+			backoff = min(backoff*2, maxReconnectBackoff)
 			continue
 		}
 
-		if !s.follow {
-			return err
-		}
-
-		// Before retrying, check if the app is still running (if checker is provided).
-		if s.appStatusChecker != nil {
-			if statusErr := s.appStatusChecker(ctx); statusErr != nil {
-				return fmt.Errorf("app is no longer available: %w", statusErr)
-			}
-		}
-
-		if err := waitForBackoff(ctx, timer, backoff); err != nil {
-			return err
-		}
-		backoff = min(backoff*2, maxReconnectBackoff)
+		return nil
 	}
 }
 
@@ -448,7 +463,7 @@ func decorateDialError(err error, resp *http.Response) error {
 		status = "unknown status"
 	}
 
-	detail := fmt.Sprintf("HTTP %s", status)
+	detail := "HTTP " + status
 	if bodySnippet != "" {
 		return fmt.Errorf("%w (%s: %s)", err, detail, bodySnippet)
 	}
