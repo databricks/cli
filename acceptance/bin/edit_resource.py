@@ -1,4 +1,10 @@
 #!/usr/bin/env python3
+"""
+Implements get / update / set for a given resource.
+
+Fetches a given resource by id from the backend, executes Python code read from stdin and updates the resource.
+"""
+
 import sys
 import os
 import subprocess
@@ -12,6 +18,9 @@ from util import run_json, run
 
 
 CLI = os.environ["CLI"]
+
+
+# Each class should be named after CLI command group and implement get(id) and set(id, value) methods:
 
 
 class jobs:
