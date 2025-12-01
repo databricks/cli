@@ -15,7 +15,8 @@ import (
 )
 
 const (
-	DatabricksClientKey = "databricks_client"
+	DatabricksClientKey  = "databricks_client"
+	DatabricksProfileKey = "databricks_profile"
 )
 
 func NewDatabricksClientMiddleware(unauthorizedToolNames []string) mcp.Middleware {
@@ -38,6 +39,18 @@ func NewDatabricksClientMiddleware(unauthorizedToolNames []string) mcp.Middlewar
 
 		return next()
 	})
+}
+
+func MustGetDatabricksProfile(ctx context.Context) string {
+	sess, err := session.GetSession(ctx)
+	if err != nil {
+		panic(err)
+	}
+	profile, ok := sess.Get(DatabricksProfileKey)
+	if !ok {
+		return ""
+	}
+	return profile.(string)
 }
 
 func MustGetApiClient(ctx context.Context) (*httpclient.ApiClient, error) {

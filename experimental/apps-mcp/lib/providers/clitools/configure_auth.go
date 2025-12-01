@@ -55,6 +55,10 @@ func ConfigureAuth(ctx context.Context, sess *session.Session, host, profile *st
 	// Store client in session data
 	sess.Set(middlewares.DatabricksClientKey, client)
 
+	if profile == nil {
+		sess.Set(middlewares.DatabricksProfileKey, client.Config.Profile)
+	}
+
 	return client, nil
 }
 

@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+
+	"github.com/databricks/cli/libs/databrickscfg/profile"
 )
 
 type cursorConfig struct {
@@ -47,7 +49,7 @@ func DetectCursor() bool {
 }
 
 // InstallCursor installs the Databricks MCP server in Cursor.
-func InstallCursor() error {
+func InstallCursor(profile *profile.Profile, warehouseID string) error {
 	configPath, err := getCursorConfigPath()
 	if err != nil {
 		return fmt.Errorf("failed to determine Cursor config path: %w", err)
@@ -81,10 +83,18 @@ func InstallCursor() error {
 		return fmt.Errorf("failed to determine Databricks path: %w", err)
 	}
 
+	// Build environment variables
+	envVars := map[string]string{
+		"DATABRICKS_CONFIG_PROFILE": profile.Name,
+		"DATABRICKS_HOST":           profile.Host,
+		"DATABRICKS_WAREHOUSE_ID":   warehouseID,
+	}
+
 	// Add or update the Databricks MCP server entry
 	config.McpServers["databricks-mcp"] = mcpServer{
 		Command: databricksPath,
 		Args:    []string{"experimental", "apps-mcp"},
+		Env:     envVars,
 	}
 
 	// Write back to file with pretty printing
