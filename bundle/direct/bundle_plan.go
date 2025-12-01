@@ -260,7 +260,7 @@ func interpretOldStateVsRemoteState(ctx context.Context, adapter *dresources.Ada
 	m := make(map[string]deployplan.Trigger)
 
 	for _, ch := range diff {
-		if ch.Old == nil {
+		if ch.Old == nil && ch.Path.IsStringKey() {
 			// The field was not set by us, but comes from the remote state.
 			// This could either be server-side default or a policy.
 			// In any case, this is not a change we should react to.
