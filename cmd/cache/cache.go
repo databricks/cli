@@ -20,10 +20,22 @@ func newClearCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "clear",
 		Short: "Clear all local cache files",
-		Long:  "Remove all cached files stored locally by the Databricks CLI",
+		Long: `Remove all cached files stored locally by the Databricks CLI.
+
+This clears the cache for all CLI versions, not just the current version.
+The cache directory is typically located at:
+  - Linux/macOS: ~/.cache/databricks/
+  - Windows: %LOCALAPPDATA%\databricks\
+
+You can override this with the DATABRICKS_CACHE_DIR environment variable.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
-			return cache.ClearFileCache(ctx)
+			cachePath, err := cache.ClearFileCache(ctx)
+			if err != nil {
+				return err
+			}
+			cmd.Printf("Cache cleared successfully from %s\n", cachePath)
+			return nil
 		},
 	}
 	return cmd

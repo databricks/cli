@@ -5,10 +5,12 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/libs/env"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -17,11 +19,13 @@ func TestNewFileCache(t *testing.T) {
 	ctx := context.Background()
 	tempDir := t.TempDir()
 	cacheDir := filepath.Join(tempDir, "cache")
+	ctx = env.Set(ctx, "DATABRICKS_CACHE_ENABLED", "true")
+	ctx = env.Set(ctx, "DATABRICKS_CACHE_DIR", cacheDir)
 
-	cache, err := newFileCacheWithBaseDir[string](ctx, cacheDir, 60)
-	require.NoError(t, err)
-	assert.NotNil(t, cache)
-	assert.Equal(t, cacheDir, cache.baseDir)
+	cache := NewCache[string](ctx, "test-component", 60, nil)
+	fc, ok := cache.(*FileCache[string])
+	require.True(t, ok)
+	assert.True(t, strings.HasPrefix(fc.baseDir, cacheDir))
 
 	// Verify directory was created
 	info, err := os.Stat(cacheDir)
@@ -51,32 +55,36 @@ func TestNewFileCacheWithExistingDirectory(t *testing.T) {
 	err := os.MkdirAll(cacheDir, 0o700)
 	require.NoError(t, err)
 
-	cache, err := newFileCacheWithBaseDir[string](ctx, cacheDir, 60) // 1 hour for tests
+	ctx = env.Set(ctx, "DATABRICKS_CACHE_ENABLED", "true")
+	ctx = env.Set(ctx, "DATABRICKS_CACHE_DIR", cacheDir)
+
+	cache := NewCache[string](ctx, "test-component", 60, nil)
+	fc, ok := cache.(*FileCache[string])
+	require.True(t, ok)
 	require.NoError(t, err)
-	assert.NotNil(t, cache)
-	assert.Equal(t, cacheDir, cache.baseDir)
+	assert.True(t, strings.HasPrefix(fc.baseDir, cacheDir))
 }
 
 func TestNewFileCacheInvalidPath(t *testing.T) {
 	ctx := context.Background()
 	// Try to create cache in a location that should fail
 	invalidPath := "/root/invalid/path/that/should/not/exist"
+	ctx = env.Set(ctx, "DATABRICKS_CACHE_ENABLED", "true")
+	ctx = env.Set(ctx, "DATABRICKS_CACHE_DIR", invalidPath)
 
-	cache, err := newFileCacheWithBaseDir[string](ctx, invalidPath, 60) // 1 hour for tests
-	if err != nil {
-		assert.Nil(t, cache)
-		assert.Contains(t, err.Error(), "failed to create cache directory")
-	}
+	cache := NewCache[string](ctx, "test-component", 60, nil)
+	_, ok := cache.(*NoopFileCache[string])
+	require.True(t, ok)
 }
 
 func TestFileCacheGetOrCompute(t *testing.T) {
 	ctx := context.Background()
 	tempDir := t.TempDir()
-	cache, err := newFileCacheWithBaseDir[string](ctx, tempDir, 60) // 1 hour for tests
-	require.NoError(t, err)
+	cacheDir := filepath.Join(tempDir, "cache")
+	ctx = env.Set(ctx, "DATABRICKS_CACHE_ENABLED", "true")
+	ctx = env.Set(ctx, "DATABRICKS_CACHE_DIR", cacheDir)
 
-	// Enable cache for this test (default is measurement-only mode)
-	cache.cacheEnabled = true
+	cache := NewCache[string](ctx, "test-component", 60, nil)
 
 	fingerprint := struct {
 		Key   string `json:"key"`
@@ -112,8 +120,11 @@ func TestFileCacheGetOrCompute(t *testing.T) {
 func TestFileCacheGetOrComputeError(t *testing.T) {
 	ctx := context.Background()
 	tempDir := t.TempDir()
-	cache, err := newFileCacheWithBaseDir[string](ctx, tempDir, 60) // 1 hour for tests
-	require.NoError(t, err)
+	cacheDir := filepath.Join(tempDir, "cache")
+	ctx = env.Set(ctx, "DATABRICKS_CACHE_ENABLED", "true")
+	ctx = env.Set(ctx, "DATABRICKS_CACHE_DIR", cacheDir)
+
+	cache := NewCache[string](ctx, "test-component", 60, nil)
 
 	fingerprint := struct {
 		Key string `json:"key"`
@@ -134,8 +145,11 @@ func TestFileCacheGetOrComputeError(t *testing.T) {
 func TestFileCacheGetOrComputeConcurrency(t *testing.T) {
 	ctx := context.Background()
 	tempDir := t.TempDir()
-	cache, err := newFileCacheWithBaseDir[string](ctx, tempDir, 60) // 1 hour for tests
-	require.NoError(t, err)
+	cacheDir := filepath.Join(tempDir, "cache")
+	ctx = env.Set(ctx, "DATABRICKS_CACHE_ENABLED", "true")
+	ctx = env.Set(ctx, "DATABRICKS_CACHE_DIR", cacheDir)
+
+	cache := NewCache[string](ctx, "test-component", 60, nil)
 
 	fingerprint := struct {
 		Key string `json:"key"`
@@ -213,4 +227,190 @@ func TestFileCacheCleanupExpiredFiles(t *testing.T) {
 
 	_, err = os.Stat(nonCacheFile)
 	assert.False(t, os.IsNotExist(err), "Non-cache file should be ignored")
+}
+
+func TestFileCacheInvalidJSON(t *testing.T) {
+	ctx := context.Background()
+	tempDir := t.TempDir()
+	cache, err := newFileCacheWithBaseDir[string](ctx, tempDir, 60)
+	require.NoError(t, err)
+
+	// Enable cache for this test
+	cache.cacheEnabled = true
+
+	fingerprint := struct {
+		Key string `json:"key"`
+	}{
+		Key: "test-invalid-json",
+	}
+
+	// Manually write invalid JSON to the cache file
+	cacheKey, err := fingerprintToHash(fingerprint)
+	require.NoError(t, err)
+	cachePath := cache.getCachePath(cacheKey)
+	err = os.WriteFile(cachePath, []byte("invalid json {{{"), 0o600)
+	require.NoError(t, err)
+
+	// GetOrCompute should fail open and recompute when cache contains invalid JSON
+	var computeCalls int32
+	result, err := cache.GetOrCompute(ctx, fingerprint, func(ctx context.Context) (string, error) {
+		atomic.AddInt32(&computeCalls, 1)
+		return "recomputed-value", nil
+	})
+
+	require.NoError(t, err)
+	assert.Equal(t, "recomputed-value", result)
+	assert.Equal(t, int32(1), atomic.LoadInt32(&computeCalls), "Should recompute when cache has invalid JSON")
+}
+
+func TestFileCacheCorruptedData(t *testing.T) {
+	ctx := context.Background()
+	tempDir := t.TempDir()
+	cache, err := newFileCacheWithBaseDir[int](ctx, tempDir, 60)
+	require.NoError(t, err)
+
+	// Enable cache for this test
+	cache.cacheEnabled = true
+
+	fingerprint := struct {
+		Key string `json:"key"`
+	}{
+		Key: "test-corrupted",
+	}
+
+	// Write valid JSON but wrong type (string instead of int)
+	cacheKey, err := fingerprintToHash(fingerprint)
+	require.NoError(t, err)
+	cachePath := cache.getCachePath(cacheKey)
+	err = os.WriteFile(cachePath, []byte(`"not-an-integer"`), 0o600)
+	require.NoError(t, err)
+
+	// GetOrCompute should fail open and recompute when cache type doesn't match
+	var computeCalls int32
+	result, err := cache.GetOrCompute(ctx, fingerprint, func(ctx context.Context) (int, error) {
+		atomic.AddInt32(&computeCalls, 1)
+		return 42, nil
+	})
+
+	require.NoError(t, err)
+	assert.Equal(t, 42, result)
+	assert.Equal(t, int32(1), atomic.LoadInt32(&computeCalls), "Should recompute when cache type is wrong")
+}
+
+func TestFileCacheEmptyFingerprint(t *testing.T) {
+	ctx := context.Background()
+	tempDir := t.TempDir()
+	cache, err := newFileCacheWithBaseDir[string](ctx, tempDir, 60)
+	require.NoError(t, err)
+
+	// Enable cache for this test
+	cache.cacheEnabled = true
+
+	// Empty struct fingerprint is valid
+	fingerprint := struct{}{}
+
+	var computeCalls int32
+	result, err := cache.GetOrCompute(ctx, fingerprint, func(ctx context.Context) (string, error) {
+		atomic.AddInt32(&computeCalls, 1)
+		return "value", nil
+	})
+	require.NoError(t, err)
+	assert.Equal(t, "value", result)
+
+	// Second call should use cache
+	result2, err := cache.GetOrCompute(ctx, fingerprint, func(ctx context.Context) (string, error) {
+		atomic.AddInt32(&computeCalls, 1)
+		return "should-not-be-called", nil
+	})
+	require.NoError(t, err)
+	assert.Equal(t, "value", result2)
+	assert.Equal(t, int32(1), atomic.LoadInt32(&computeCalls), "Empty fingerprint should work with cache")
+}
+
+func TestFileCacheMeasurementMode(t *testing.T) {
+	ctx := context.Background()
+	tempDir := t.TempDir()
+	cache, err := newFileCacheWithBaseDir[string](ctx, tempDir, 60)
+	require.NoError(t, err)
+
+	// Keep cache disabled (measurement mode)
+	cache.cacheEnabled = false
+
+	fingerprint := struct {
+		Key string `json:"key"`
+	}{
+		Key: "test-measurement",
+	}
+
+	// First call
+	var computeCalls int32
+	result, err := cache.GetOrCompute(ctx, fingerprint, func(ctx context.Context) (string, error) {
+		atomic.AddInt32(&computeCalls, 1)
+		return "computed-value", nil
+	})
+	require.NoError(t, err)
+	assert.Equal(t, "computed-value", result)
+	assert.Equal(t, int32(1), atomic.LoadInt32(&computeCalls))
+
+	// Second call - in measurement mode, should always recompute
+	result2, err := cache.GetOrCompute(ctx, fingerprint, func(ctx context.Context) (string, error) {
+		atomic.AddInt32(&computeCalls, 1)
+		return "recomputed-value", nil
+	})
+	require.NoError(t, err)
+	assert.Equal(t, "recomputed-value", result2)
+	assert.Equal(t, int32(2), atomic.LoadInt32(&computeCalls), "Measurement mode should always recompute")
+
+	// But cache file should still exist
+	cacheFiles, err := filepath.Glob(filepath.Join(tempDir, "*.json"))
+	require.NoError(t, err)
+	assert.Len(t, cacheFiles, 1, "Cache file should be written even in measurement mode")
+}
+
+func TestFileCacheReadPermissionError(t *testing.T) {
+	if os.Getuid() == 0 {
+		t.Skip("Skipping permission test when running as root")
+	}
+
+	ctx := context.Background()
+	tempDir := t.TempDir()
+	cache, err := newFileCacheWithBaseDir[string](ctx, tempDir, 60)
+	require.NoError(t, err)
+
+	// Enable cache for this test
+	cache.cacheEnabled = true
+
+	fingerprint := struct {
+		Key string `json:"key"`
+	}{
+		Key: "test-permissions",
+	}
+
+	// First, populate the cache
+	result, err := cache.GetOrCompute(ctx, fingerprint, func(ctx context.Context) (string, error) {
+		return "cached-value", nil
+	})
+	require.NoError(t, err)
+	assert.Equal(t, "cached-value", result)
+
+	// Find the cache file and make it unreadable
+	cacheFiles, err := filepath.Glob(filepath.Join(tempDir, "*.json"))
+	require.NoError(t, err)
+	require.Len(t, cacheFiles, 1)
+	err = os.Chmod(cacheFiles[0], 0o000)
+	require.NoError(t, err)
+
+	// Restore permissions after test
+	defer func() { _ = os.Chmod(cacheFiles[0], 0o600) }()
+
+	// GetOrCompute should fail open and recompute when file is unreadable
+	var computeCalls int32
+	result2, err := cache.GetOrCompute(ctx, fingerprint, func(ctx context.Context) (string, error) {
+		atomic.AddInt32(&computeCalls, 1)
+		return "recomputed-value", nil
+	})
+
+	require.NoError(t, err)
+	assert.Equal(t, "recomputed-value", result2)
+	assert.Equal(t, int32(1), atomic.LoadInt32(&computeCalls), "Should recompute when cache file is unreadable")
 }

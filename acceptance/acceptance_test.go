@@ -629,9 +629,8 @@ func runTest(t *testing.T,
 	}
 
 	// Set unique cache folder for this test to avoid race conditions between parallel tests
-	userCacheDir, err := os.UserCacheDir()
-	require.NoError(t, err)
-	uniqueCacheDir := filepath.Join(userCacheDir, strings.ReplaceAll(dir, string(os.PathSeparator), "--"))
+	// Use test temp directory to avoid polluting user's cache
+	uniqueCacheDir := filepath.Join(tmpDir, ".cache")
 	cmd.Env = append(cmd.Env, "DATABRICKS_CACHE_DIR="+uniqueCacheDir)
 
 	for _, key := range utils.SortedKeys(config.Env) {

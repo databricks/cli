@@ -2,7 +2,6 @@ package mutator
 
 import (
 	"context"
-	"net/http"
 
 	"github.com/databricks/cli/libs/cache"
 
@@ -13,7 +12,6 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/iamutil"
 	"github.com/databricks/cli/libs/tags"
-	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 )
 
@@ -30,15 +28,7 @@ func PopulateCurrentUser() bundle.Mutator {
 // By default, cache operates in measurement-only mode to gather metrics about potential savings.
 // Set DATABRICKS_CACHE_ENABLED=true to enable actual caching.
 func (m *populateCurrentUser) initializeCache(ctx context.Context, b *bundle.Bundle) {
-	if m.cache != nil {
-		return
-	}
-
-	var err error
-	m.cache, err = cache.NewFileCache[*iam.User](ctx, "auth", 30, &b.Metrics)
-	if err != nil {
-		log.Debugf(ctx, "[Local Cache] Failed to initialize cache: %v\n", err)
-	}
+	m.cache = cache.NewCache[*iam.User](ctx, "auth", 30, &b.Metrics)
 }
 
 func (m *populateCurrentUser) Name() string {
@@ -52,23 +42,18 @@ func (m *populateCurrentUser) Apply(ctx context.Context, b *bundle.Bundle) diag.
 	m.initializeCache(ctx, b)
 	w := b.WorkspaceClient()
 
-	fingerprint := struct {
-		authHeader string
-	}{
-		authHeader: m.getAuthorizationHeader(ctx, w),
-	}
-
 	var me *iam.User
 	var err error
 
-	if m.cache != nil && fingerprint.authHeader != "" {
-		log.Debugf(ctx, "[Local Cache] local cache is enabled\n")
+	fingerprint := b.GetUserFingerprint(ctx)
+	if !fingerprint.IsEmpty() {
+		log.Debugf(ctx, "[Local Cache] local cache is enabled")
 		me, err = m.cache.GetOrCompute(ctx, fingerprint, func(ctx context.Context) (*iam.User, error) {
 			currentUser, err := w.CurrentUser.Me(ctx)
 			return currentUser, err
 		})
 	} else {
-		log.Debugf(ctx, "[Local Cache] local cache is disabled\n")
+		log.Debugf(ctx, "[Local Cache] local cache is disabled")
 		me, err = w.CurrentUser.Me(ctx)
 	}
 
@@ -90,16 +75,4 @@ func (m *populateCurrentUser) Apply(ctx context.Context, b *bundle.Bundle) diag.
 	b.Tagging = tags.ForCloud(w.Config)
 
 	return nil
-}
-
-func (m *populateCurrentUser) getAuthorizationHeader(ctx context.Context, w *databricks.WorkspaceClient) string {
-	// Create a dummy request to extract the Authorization header
-	req := &http.Request{Header: http.Header{}}
-	if err := w.Config.Authenticate(req); err != nil {
-		return ""
-	}
-
-	authHeader := req.Header.Get("Authorization")
-	log.Debugf(ctx, "[Local Cache] found authorization header with length: %d\n", len(authHeader))
-	return authHeader
 }

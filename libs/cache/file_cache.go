@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/internal/build"
+	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 )
 
@@ -46,13 +47,16 @@ func newFileCacheWithBaseDir[T any](ctx context.Context, baseDir string, expiryM
 	return fc, nil
 }
 
+// isExpired checks if a file with the given modification time has expired.
+func (fc *FileCache[T]) isExpired(modTime time.Time) bool {
+	expiryThreshold := time.Now().Add(-time.Duration(fc.expiryMinutes) * time.Minute)
+	return modTime.Before(expiryThreshold)
+}
+
 // cleanupExpiredFiles removes expired cache files from disk based on file modification time.
 // This runs synchronously once when the cache is created.
 // Files older than expiryMinutes are deleted.
 func (fc *FileCache[T]) cleanupExpiredFiles(ctx context.Context) {
-	now := time.Now()
-	expiryDuration := time.Duration(fc.expiryMinutes) * time.Minute
-
 	err := filepath.Walk(fc.baseDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			// Log walk errors but continue cleanup
@@ -64,31 +68,36 @@ func (fc *FileCache[T]) cleanupExpiredFiles(ctx context.Context) {
 			return nil
 		}
 
+		// Remove any leftover .tmp files (from failed atomic writes)
+		if filepath.Ext(info.Name()) == ".tmp" {
+			_ = os.Remove(path)
+			return nil
+		}
+
 		// Only process .json cache files
 		if filepath.Ext(info.Name()) != ".json" {
 			return nil
 		}
 
 		// Check if file is expired based on modification time
-		age := now.Sub(info.ModTime())
-		if age > expiryDuration {
+		if fc.isExpired(info.ModTime()) {
 			if err := os.Remove(path); err != nil {
-				log.Debugf(ctx, "[Local Cache] cleanup: failed to remove expired file %s: %v", path, err)
+				log.Tracef(ctx, "[Local Cache] cleanup: failed to remove expired file %s: %v", path, err)
 			} else {
-				log.Debugf(ctx, "[Local Cache] cleanup: removed expired file %s (age: %v)", path, age)
+				log.Tracef(ctx, "[Local Cache] cleanup: removed expired file %s", path)
 			}
 		}
 
 		return nil
 	})
 	if err != nil {
-		log.Warnf(ctx, "[Local Cache] cleanup: failed to walk cache directory: %v", err)
+		log.Debugf(ctx, "[Local Cache] cleanup: failed to walk cache directory: %v", err)
 	}
 }
 
-func getCacheBaseDir() (string, error) {
+func getCacheBaseDir(ctx context.Context) (string, error) {
 	// Check if user has configured a custom cache directory
-	if customCacheDir := os.Getenv("DATABRICKS_CACHE_DIR"); customCacheDir != "" {
+	if customCacheDir := env.Get(ctx, "DATABRICKS_CACHE_DIR"); customCacheDir != "" {
 		return customCacheDir, nil
 	}
 
@@ -112,7 +121,7 @@ func sanitizeVersion(version string) string {
 	return version
 }
 
-// NewFileCache creates a new file-based cache using UserCacheDir() + "databricks" + version + cached component name.
+// NewCache creates a new file-based cache using UserCacheDir() + "databricks" + version + cached component name.
 // Including the CLI version in the path ensures cache isolation across different CLI versions.
 // By default, the cache operates in measurement-only mode (cacheEnabled=false), which means it will:
 // - Check if cached values exist
@@ -120,10 +129,10 @@ func sanitizeVersion(version string) string {
 // - Emit metrics about potential savings
 // - Always compute the value (never actually use the cache)
 // Set DATABRICKS_CACHE_ENABLED=true to enable actual caching.
-func NewFileCache[T any](ctx context.Context, component string, expiryMinutes int, metrics Metrics) (*FileCache[T], error) {
-	cacheBaseDir, err := getCacheBaseDir()
+func NewCache[T any](ctx context.Context, component string, expiryMinutes int, metrics Metrics) Cache[T] {
+	cacheBaseDir, err := getCacheBaseDir(ctx)
 	if err != nil {
-		return nil, err
+		return &NoopFileCache[T]{}
 	}
 
 	// Include CLI version in cache path to avoid issues across versions
@@ -132,17 +141,14 @@ func NewFileCache[T any](ctx context.Context, component string, expiryMinutes in
 	baseDir := filepath.Join(cacheBaseDir, version, component)
 	fc, err := newFileCacheWithBaseDir[T](ctx, baseDir, expiryMinutes)
 	if err != nil {
-		return nil, err
+		return &NoopFileCache[T]{}
 	}
 	fc.metrics = metrics
 
 	// Check if cache is enabled; default is false (measurement-only mode)
-	fc.cacheEnabled = os.Getenv("DATABRICKS_CACHE_ENABLED") == "true"
-	return fc, nil
+	fc.cacheEnabled = env.Get(ctx, "DATABRICKS_CACHE_ENABLED") == "true"
+	return fc
 }
-
-// Cache files are stored as JSON directly without metadata wrapper.
-// Expiry is tracked using file modification time, not stored in the file itself.
 
 func (fc *FileCache[T]) addTelemetryMetric(key string) {
 	if fc.metrics != nil {
@@ -159,11 +165,11 @@ func (fc *FileCache[T]) GetOrCompute(ctx context.Context, fingerprint any, compu
 	cacheKey, err := fingerprintToHash(fingerprint)
 	if err != nil {
 		// Fail open: if we can't generate cache key, just compute directly
-		log.Debugf(ctx, "[Local Cache] failed to generate cache key, computing without cache: %v\n", err)
+		log.Debugf(ctx, "[Local Cache] failed to generate cache key, computing without cache: %v", err)
 		return compute(ctx)
 	}
 
-	log.Debugf(ctx, "[Local Cache] using cache key: %s\n", cacheKey)
+	log.Debugf(ctx, "[Local Cache] using cache key: %s", cacheKey)
 	fc.addTelemetryMetric("local.cache.attempt")
 
 	cachePath := fc.getCachePath(cacheKey)
@@ -173,7 +179,7 @@ func (fc *FileCache[T]) GetOrCompute(ctx context.Context, fingerprint any, compu
 
 	// Record metrics
 	if cacheExists {
-		log.Debugf(ctx, "[Local Cache] cache hit\n")
+		log.Debugf(ctx, "[Local Cache] cache hit")
 		fc.addTelemetryMetric("local.cache.hit")
 
 		// If cache is enabled, return the cached value
@@ -181,7 +187,7 @@ func (fc *FileCache[T]) GetOrCompute(ctx context.Context, fingerprint any, compu
 			return cachedData, nil
 		}
 	} else {
-		log.Debugf(ctx, "[Local Cache] cache miss, computing\n")
+		log.Debugf(ctx, "[Local Cache] cache miss, computing")
 		fc.addTelemetryMetric("local.cache.miss")
 	}
 
@@ -193,7 +199,7 @@ func (fc *FileCache[T]) GetOrCompute(ctx context.Context, fingerprint any, compu
 	start := time.Now()
 	result, err := compute(ctx)
 	if err != nil {
-		log.Debugf(ctx, "[Local Cache] error while computing: %v\n", err)
+		log.Debugf(ctx, "[Local Cache] error while computing: %v", err)
 		fc.addTelemetryMetric("local.cache.error")
 		return result, err
 	}
@@ -204,7 +210,7 @@ func (fc *FileCache[T]) GetOrCompute(ctx context.Context, fingerprint any, compu
 		fc.metrics.SetDurationValue("local.cache.compute_duration", computeDuration)
 	}
 
-	log.Debugf(ctx, "[Local Cache] computed and stored result\n")
+	log.Debugf(ctx, "[Local Cache] computed and stored result")
 
 	// Write to disk cache (failures are silent - cache write errors don't affect the result)
 	fc.writeToCache(ctx, cachePath, result)
@@ -220,46 +226,61 @@ func (fc *FileCache[T]) readFromCache(ctx context.Context, cachePath string) (T,
 	// Check file modification time for expiry
 	info, err := os.Stat(cachePath)
 	if err != nil {
-		log.Debugf(ctx, "[Local Cache] failed to stat cache file: %v\n", err)
+		log.Debugf(ctx, "[Local Cache] failed to stat cache file: %v", err)
 		return zero, false
 	}
 
-	age := time.Since(info.ModTime())
-	expiryDuration := time.Duration(fc.expiryMinutes) * time.Minute
-	if age > expiryDuration {
+	if fc.isExpired(info.ModTime()) {
 		return zero, false
 	}
 
 	// Read and deserialize the data
 	data, err := os.ReadFile(cachePath)
 	if err != nil {
-		log.Debugf(ctx, "[Local Cache] failed to read cache file: %v\n", err)
+		log.Debugf(ctx, "[Local Cache] failed to read cache file: %v", err)
 		return zero, false
 	}
 
 	var result T
 	if err := json.Unmarshal(data, &result); err != nil {
-		log.Debugf(ctx, "[Local Cache] failed to deserialize data: %v\n", err)
+		log.Debugf(ctx, "[Local Cache] failed to deserialize data: %v", err)
 		return zero, false
 	}
 
 	return result, true
 }
 
-// writeToCache serializes and writes data to the cache file.
-// Expiry is tracked by file modification time, not stored in the file.
+// writeToCache serializes and writes data to the cache file atomically.
+// Uses atomic write: writes to temp file first, then renames to actual cache file.
 func (fc *FileCache[T]) writeToCache(ctx context.Context, cachePath string, data any) {
 	// Serialize the data directly
 	serializedData, err := json.Marshal(data)
 	if err != nil {
-		log.Debugf(ctx, "[Local Cache] failed to serialize data: %v\n", err)
+		log.Debugf(ctx, "[Local Cache] failed to serialize data: %v", err)
 		return // Silently fail on serialization errors
 	}
 
-	// Write to cache file - the mtime will be used to track expiry
-	err = os.WriteFile(cachePath, serializedData, 0o600)
+	// Create temporary file in the same directory for atomic operation
+	tempFile, err := os.CreateTemp(fc.baseDir, ".cache-*.tmp")
 	if err != nil {
-		log.Debugf(ctx, "[Local Cache] failed to write to cache file: %v\n", err)
+		log.Debugf(ctx, "[Local Cache] failed to create temp cache file: %v", err)
+		return
+	}
+	tempPath := tempFile.Name()
+	defer func() {
+		_ = tempFile.Close()
+		_ = os.Remove(tempPath) // Clean up temp file if still exists
+	}()
+
+	// Write data to temp file
+	if _, err := tempFile.Write(serializedData); err != nil {
+		log.Debugf(ctx, "[Local Cache] failed to write to temp cache file: %v", err)
+		return
+	}
+
+	// Atomically rename temp file to actual cache file
+	if err := os.Rename(tempPath, cachePath); err != nil {
+		log.Debugf(ctx, "[Local Cache] failed to rename temp cache file: %v", err)
 	}
 }
 
