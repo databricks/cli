@@ -1,0 +1,19 @@
+bundle:
+ name: test-bind-alert-$UNIQUE_NAME
+
+resources:
+  alerts:
+    my_alert:
+      display_name: test-alert
+      evaluation:
+        comparison_operator: EQUAL
+        source:
+          name: "1"
+        threshold:
+          value:
+            double_value: 2
+      query_text: select 2
+      schedule:
+        quartz_cron_schedule: "44 19 */1 * * ?"
+        timezone_id: Europe/Amsterdam
+      warehouse_id: aaaaaaaaaaaaaaaa

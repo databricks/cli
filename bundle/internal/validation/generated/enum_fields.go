@@ -8,6 +8,14 @@ var EnumFields = map[string][]string{
 	"artifacts.*.executable": {"bash", "sh", "cmd"},
 	"artifacts.*.type":       {"whl", "jar"},
 
+	"resources.alerts.*.evaluation.comparison_operator":          {"EQUAL", "GREATER_THAN", "GREATER_THAN_OR_EQUAL", "IS_NOT_NULL", "IS_NULL", "LESS_THAN", "LESS_THAN_OR_EQUAL", "NOT_EQUAL"},
+	"resources.alerts.*.evaluation.empty_result_state":           {"ERROR", "OK", "TRIGGERED", "UNKNOWN"},
+	"resources.alerts.*.evaluation.source.aggregation":           {"AVG", "COUNT", "COUNT_DISTINCT", "MAX", "MEDIAN", "MIN", "STDDEV", "SUM"},
+	"resources.alerts.*.evaluation.state":                        {"ERROR", "OK", "TRIGGERED", "UNKNOWN"},
+	"resources.alerts.*.evaluation.threshold.column.aggregation": {"AVG", "COUNT", "COUNT_DISTINCT", "MAX", "MEDIAN", "MIN", "STDDEV", "SUM"},
+	"resources.alerts.*.lifecycle_state":                         {"ACTIVE", "DELETED"},
+	"resources.alerts.*.schedule.pause_status":                   {"PAUSED", "UNPAUSED"},
+
 	"resources.apps.*.active_deployment.mode":                   {"AUTO_SYNC", "SNAPSHOT"},
 	"resources.apps.*.active_deployment.status.state":           {"CANCELLED", "FAILED", "IN_PROGRESS", "SUCCEEDED"},
 	"resources.apps.*.app_status.state":                         {"CRASHED", "DEPLOYING", "RUNNING", "UNAVAILABLE"},

@@ -1,4 +1,9 @@
-Cloud = false
-Local = true
+Cloud = true
+Local = false
 
 BundleConfigTarget = "databricks.yml"
+
+Ignore = [
+    "databricks.yml",
+    "alert.json", 
+]
