@@ -81,6 +81,7 @@ func generateExploreGuidance(ctx context.Context, warehouse *sql.EndpointInfo, c
 		"WarehouseName": warehouseName,
 		"WarehouseID":   warehouseID,
 		"ProfilesInfo":  profilesInfo,
+		"Profile":       currentProfile,
 	}
 
 	// Render base explore template
