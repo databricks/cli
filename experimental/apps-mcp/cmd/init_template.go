@@ -217,7 +217,7 @@ See https://docs.databricks.com/en/dev-tools/bundles/templates.html for more inf
 		// Count files if we can
 		fileCount := 0
 		if absPath, err := filepath.Abs(outputPath); err == nil {
-			filepath.Walk(absPath, func(path string, info os.FileInfo, err error) error {
+			_ = filepath.Walk(absPath, func(path string, info os.FileInfo, err error) error {
 				if err == nil && !info.IsDir() {
 					fileCount++
 				}
