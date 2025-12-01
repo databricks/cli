@@ -17,8 +17,12 @@ func InvokeDatabricksCLI(ctx context.Context, command []string, workingDirectory
 		return "", errors.New("command is required")
 	}
 
-	workspaceClient := middlewares.MustGetDatabricksClient(ctx)
+	workspaceClient, err := middlewares.GetDatabricksClient(ctx)
+	if err != nil {
+		return "", fmt.Errorf("get databricks client: %w", err)
+	}
 	host := workspaceClient.Config.Host
+	profile := middlewares.GetDatabricksProfile(ctx)
 
 	// GetCLIPath returns the path to the current CLI executable
 	cliPath := common.GetCLIPath()
@@ -26,6 +30,9 @@ func InvokeDatabricksCLI(ctx context.Context, command []string, workingDirectory
 	cmd.Dir = workingDirectory
 	env := os.Environ()
 	env = append(env, "DATABRICKS_HOST="+host)
+	if profile != "" {
+		env = append(env, "DATABRICKS_CONFIG_PROFILE="+profile)
+	}
 	cmd.Env = env
 
 	output, err := cmd.CombinedOutput()

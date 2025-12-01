@@ -75,6 +75,8 @@ func TestConfigureAuthWithCustomHost(t *testing.T) {
 }
 
 func TestWrapAuthError(t *testing.T) {
+	ctx := context.Background()
+
 	tests := []struct {
 		name     string
 		err      error
@@ -89,7 +91,7 @@ func TestWrapAuthError(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			wrapped := wrapAuthError(tt.err)
+			wrapped := middlewares.WrapAuthError(ctx, tt.err)
 			assert.Contains(t, wrapped.Error(), tt.expected)
 		})
 	}

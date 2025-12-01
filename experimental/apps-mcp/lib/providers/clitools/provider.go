@@ -93,7 +93,7 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 		},
 		func(ctx context.Context, req *mcpsdk.CallToolRequest, args struct{}) (*mcpsdk.CallToolResult, any, error) {
 			log.Debug(ctx, "explore called")
-			result, err := Explore(session.WithSession(ctx, p.session))
+			result, err := Explore(ctx)
 			if err != nil {
 				return nil, nil, err
 			}
