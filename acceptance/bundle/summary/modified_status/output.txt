@@ -1,24 +1,29 @@
 
 === Initial view of resources without id and modified_status=created
 >>> [CLI] bundle summary -o json
-Warning: required field "evaluation" is not set
-  at resources.alerts.my_alert
-  in databricks.yml:6:7
-
-Warning: required field "schedule" is not set
-  at resources.alerts.my_alert
-  in databricks.yml:6:7
-
 {
   "alerts": {
     "my_alert": {
-      "custom_description": "test-alert-description",
-      "custom_summary": "test-alert-summary",
       "display_name": "test-alert",
+      "evaluation": {
+        "comparison_operator": "EQUAL",
+        "source": {
+          "name": "1"
+        },
+        "threshold": {
+          "value": {
+            "double_value": 2
+          }
+        }
+      },
       "modified_status": "created",
       "parent_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/resources",
-      "query_text": "SELECT 1",
-      "warehouse_id": "test-sql-warehouse"
+      "query_text": "select 2",
+      "schedule": {
+        "quartz_cron_schedule": "44 19 */1 * * ?",
+        "timezone_id": "Europe/Amsterdam"
+      },
+      "warehouse_id": "aaaaaaaaaaaaaaaa"
     }
   },
   "pipelines": {
@@ -63,31 +68,134 @@ Warning: required field "schedule" is not set
 }
 
 >>> [CLI] bundle deploy
-Warning: required field "evaluation" is not set
-  at resources.alerts.my_alert
-  in databricks.yml:6:7
-
-Warning: required field "schedule" is not set
-  at resources.alerts.my_alert
-  in databricks.yml:6:7
-
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
-Error: exit status 1
+Deploying resources...
+Updating deployment state...
+Deployment complete!
 
-Error: Missing required argument
+=== Post-deployment view of resources with id and without modified_status
+>>> [CLI] bundle summary -o json
+{
+  "alerts": {
+    "my_alert": {
+      "display_name": "test-alert",
+      "evaluation": {
+        "comparison_operator": "EQUAL",
+        "source": {
+          "name": "1"
+        },
+        "threshold": {
+          "value": {
+            "double_value": 2
+          }
+        }
+      },
+      "id": "[UUID]",
+      "parent_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/resources",
+      "query_text": "select 2",
+      "schedule": {
+        "quartz_cron_schedule": "44 19 */1 * * ?",
+        "timezone_id": "Europe/Amsterdam"
+      },
+      "url": "[DATABRICKS_URL]/sql/alerts-v2/[UUID]?o=[NUMID]",
+      "warehouse_id": "aaaaaaaaaaaaaaaa"
+    }
+  },
+  "pipelines": {
+    "my_pipeline": {
+      "channel": "CURRENT",
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+      },
+      "edition": "ADVANCED",
+      "id": "[UUID]",
+      "libraries": [
+        {
+          "file": {
+            "path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/foo.py"
+          }
+        }
+      ],
+      "name": "test-pipeline",
+      "url": "[DATABRICKS_URL]/pipelines/[UUID]?o=[NUMID]"
+    }
+  },
+  "schemas": {
+    "my_schema": {
+      "catalog_name": "main",
+      "comment": "COMMENT1",
+      "id": "main.test-schema",
+      "name": "test-schema",
+      "url": "[DATABRICKS_URL]/explore/data/main/test-schema?o=[NUMID]"
+    }
+  },
+  "sql_warehouses": {
+    "my_sql_warehouse": {
+      "auto_stop_mins": 120,
+      "cluster_size": "X-Large",
+      "enable_photon": true,
+      "enable_serverless_compute": true,
+      "id": "[UUID]",
+      "max_num_clusters": 1,
+      "name": "test-sql-warehouse",
+      "spot_instance_policy": "COST_OPTIMIZED",
+      "url": "[DATABRICKS_URL]/sql/warehouses/[UUID]?o=[NUMID]"
+    }
+  }
+}
 
-  on bundle.tf.json line 22, in resource.databricks_alert_v2.my_alert:
-  22:       }
+=== Expecting all resources to have modified_status=deleted
+>>> [CLI] bundle summary -o json
+{
+  "alerts": {
+    "my_alert": {
+      "id": "[UUID]",
+      "modified_status": "deleted",
+      "url": "[DATABRICKS_URL]/sql/alerts-v2/[UUID]?o=[NUMID]"
+    }
+  },
+  "pipelines": {
+    "my_pipeline": {
+      "id": "[UUID]",
+      "modified_status": "deleted",
+      "url": "[DATABRICKS_URL]/pipelines/[UUID]?o=[NUMID]"
+    }
+  },
+  "schemas": {
+    "my_schema": {
+      "id": "main.test-schema",
+      "modified_status": "deleted",
+      "url": "[DATABRICKS_URL]/explore/data/main/test-schema?o=[NUMID]"
+    }
+  },
+  "sql_warehouses": {
+    "my_sql_warehouse": {
+      "id": "[UUID]",
+      "modified_status": "deleted",
+      "url": "[DATABRICKS_URL]/sql/warehouses/[UUID]?o=[NUMID]"
+    }
+  }
+}
 
-The argument "evaluation" is required, but no definition was found.
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.alerts.my_alert
+  delete resources.pipelines.my_pipeline
+  delete resources.schemas.my_schema
+  delete resources.sql_warehouses.my_sql_warehouse
 
-Error: Missing required argument
+This action will result in the deletion of the following UC schemas. Any underlying data may be lost:
+  delete resources.schemas.my_schema
 
-  on bundle.tf.json line 22, in resource.databricks_alert_v2.my_alert:
-  22:       }
+This action will result in the deletion of the following Lakeflow Declarative Pipelines along with the
+Streaming Tables (STs) and Materialized Views (MVs) managed by them:
+  delete resources.pipelines.my_pipeline
 
-The argument "schedule" is required, but no definition was found.
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 
+Deleting files...
+Destroy complete!
 
-
-Exit code: 1
+>>> [CLI] bundle summary -o json
+{}
