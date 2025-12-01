@@ -35,23 +35,6 @@ func (m *dashboardFixups) Apply(ctx context.Context, b *bundle.Bundle) diag.Diag
 		}
 
 		dashboard.ParentPath = ensureWorkspacePrefix(dashboard.ParentPath)
-
-		// // Serialized dashboard should always only be set in the [resources.DashboardConfig] struct
-		// // not in the embedded [dashboards.Dashboard] struct.
-		// embeddedDashboard := dashboard.Dashboard
-		// if embeddedDashboard.SerializedDashboard != "" {
-		// 	dashboard.DashboardConfig.SerializedDashboard = embeddedDashboard.SerializedDashboard
-		// 	embeddedDashboard.SerializedDashboard = ""
-		// }
-
-		// forceSendFields := embeddedDashboard.ForceSendFields
-		// for _, field := range forceSendFields {
-		// 	if field == "SerializedDashboard" {
-		// 		forceSendFields = append(forceSendFields, "SerializedDashboard")
-		// 	}
-		// }
-		// embeddedDashboard.ForceSendFields = forceSendFields
-		// dashboard.Dashboard = embeddedDashboard
 	}
 
 	return nil
