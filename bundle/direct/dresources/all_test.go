@@ -26,6 +26,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/databricks/databricks-sdk-go/service/serving"
+	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -138,6 +139,29 @@ var testConfig map[string]any = map[string]any{
 							ServedModelName:   "model-name-1",
 							TrafficPercentage: 100,
 						},
+					},
+				},
+			},
+		},
+	},
+
+	"alerts": &resources.Alert{
+		AlertV2: sql.AlertV2{
+			DisplayName: "my-alert",
+			QueryText:   "SELECT 1",
+			WarehouseId: "test-warehouse-id",
+			Schedule: sql.CronSchedule{
+				QuartzCronSchedule: "0 0 12 * * ?",
+				TimezoneId:         "UTC",
+			},
+			Evaluation: sql.AlertV2Evaluation{
+				ComparisonOperator: sql.ComparisonOperatorGreaterThan,
+				Source: sql.AlertV2OperandColumn{
+					Name: "column1",
+				},
+				Threshold: &sql.AlertV2Operand{
+					Column: &sql.AlertV2OperandColumn{
+						Name: "column2",
 					},
 				},
 			},
@@ -356,6 +380,37 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
+	"alerts.permissions": func(client *databricks.WorkspaceClient) (any, error) {
+		resp, err := client.AlertsV2.CreateAlert(context.Background(), sql.CreateAlertV2Request{
+			Alert: sql.AlertV2{
+				DisplayName: "alert-permissions",
+				QueryText:   "SELECT 1",
+				WarehouseId: "test-warehouse-id",
+				Schedule: sql.CronSchedule{
+					QuartzCronSchedule: "0 0 12 * * ?",
+					TimezoneId:         "UTC",
+				},
+				Evaluation: sql.AlertV2Evaluation{
+					ComparisonOperator: sql.ComparisonOperatorGreaterThan,
+					Source: sql.AlertV2OperandColumn{
+						Name: "column1",
+					},
+				},
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return &PermissionsState{
+			ObjectID: "/alerts/" + resp.Id,
+			Permissions: []iam.AccessControlRequest{{
+				PermissionLevel: "CAN_MANAGE",
+				UserName:        "user@example.com",
+			}},
+		}, nil
+	},
+
 	"schemas.grants": func(client *databricks.WorkspaceClient) (any, error) {
 		return &GrantsState{
 			SecurableType: "schema",
@@ -532,7 +587,7 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	}, remote, false)
 	require.NoError(t, err)
 
-	deleteIsNoop := strings.HasSuffix(group, "permissions") || strings.HasSuffix(group, "grants")
+	deleteIsNoop := strings.HasSuffix(group, "permissions") || strings.HasSuffix(group, "grants") || group == "alerts"
 
 	remoteAfterDelete, err := adapter.DoRead(ctx, createdID)
 	if deleteIsNoop {
