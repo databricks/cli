@@ -1885,7 +1885,6 @@
                         "$ref": "#/$defs/string"
                       },
                       "lifecycle": {
-                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "logical_database_name": {

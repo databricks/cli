@@ -461,13 +461,7 @@ github.com/databricks/cli/bundle/config/resources.Alert:
   "effective_run_as":
     "description": |-
       PLACEHOLDER
-  "evaluation":
-    "description": |-
-      PLACEHOLDER
   "id":
-    "description": |-
-      PLACEHOLDER
-  "lifecycle":
     "description": |-
       PLACEHOLDER
   "lifecycle_state":
@@ -479,9 +473,6 @@ github.com/databricks/cli/bundle/config/resources.Alert:
   "parent_path":
     "description": |-
       PLACEHOLDER
-  "permissions":
-    "description": |-
-      PLACEHOLDER
   "query_text":
     "description": |-
       PLACEHOLDER
@@ -489,9 +480,6 @@ github.com/databricks/cli/bundle/config/resources.Alert:
     "description": |-
       PLACEHOLDER
   "run_as_user_name":
-    "description": |-
-      PLACEHOLDER
-  "schedule":
     "description": |-
       PLACEHOLDER
   "update_time":
@@ -552,10 +540,7 @@ github.com/databricks/cli/bundle/config/resources.DashboardPermission:
   "user_name":
     "description": |-
       PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.DatabaseInstance:
-  "effective_capacity":
-    "description": |-
-      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.DatabaseInstance: {}
 github.com/databricks/cli/bundle/config/resources.DatabaseInstancePermission:
   "group_name":
     "description": |-
@@ -725,9 +710,6 @@ github.com/databricks/cli/bundle/config/resources.SyncedDatabaseTable:
   "effective_logical_database_name":
     "description": |-
       PLACEHOLDER
-  "lifecycle":
-    "description": |-
-      Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
   "logical_database_name":
     "description": |-
       PLACEHOLDER
