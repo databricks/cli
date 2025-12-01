@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
+	"strings"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/experimental/apps-mcp/lib/common"
@@ -67,6 +69,84 @@ func readClaudeMd(ctx context.Context, configFile string) {
 	cmdio.LogString(ctx, "\n=== CLAUDE.md ===")
 	cmdio.LogString(ctx, string(content))
 	cmdio.LogString(ctx, "=================\n")
+}
+
+// generateFileTree creates a tree-style visualization of the file structure.
+// Collapses directories with more than 10 files to avoid clutter.
+func generateFileTree(outputDir string) (string, error) {
+	const maxFilesToShow = 10
+
+	// collect all files in the output directory
+	var allFiles []string
+	err := filepath.Walk(outputDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() {
+			relPath, err := filepath.Rel(outputDir, path)
+			if err != nil {
+				return err
+			}
+			allFiles = append(allFiles, filepath.ToSlash(relPath))
+		}
+		return nil
+	})
+	if err != nil {
+		return "", err
+	}
+
+	// build a tree structure
+	tree := make(map[string][]string)
+
+	for _, relPath := range allFiles {
+		parts := strings.Split(relPath, "/")
+
+		if len(parts) == 1 {
+			// root level file
+			tree[""] = append(tree[""], parts[0])
+		} else {
+			// file in subdirectory
+			dir := strings.Join(parts[:len(parts)-1], "/")
+			fileName := parts[len(parts)-1]
+			tree[dir] = append(tree[dir], fileName)
+		}
+	}
+
+	// format as tree
+	var output strings.Builder
+	var sortedDirs []string
+	for dir := range tree {
+		sortedDirs = append(sortedDirs, dir)
+	}
+	sort.Strings(sortedDirs)
+
+	for _, dir := range sortedDirs {
+		filesInDir := tree[dir]
+		if dir == "" {
+			// root files - always show all
+			for _, file := range filesInDir {
+				output.WriteString(file)
+				output.WriteString("\n")
+			}
+		} else {
+			// directory
+			output.WriteString(dir)
+			output.WriteString("/\n")
+			if len(filesInDir) <= maxFilesToShow {
+				// show all files
+				for _, file := range filesInDir {
+					output.WriteString("  ")
+					output.WriteString(file)
+					output.WriteString("\n")
+				}
+			} else {
+				// collapse large directories
+				output.WriteString(fmt.Sprintf("  (%d files)\n", len(filesInDir)))
+			}
+		}
+	}
+
+	return output.String(), nil
 }
 
 func newInitTemplateCmd() *cobra.Command {
@@ -259,6 +339,13 @@ See https://docs.databricks.com/en/dev-tools/bundles/templates.html for more inf
 			})
 		}
 		cmdio.LogString(ctx, common.FormatScaffoldSuccess(templateName, outputPath, fileCount))
+
+		// Generate and print file tree structure
+		fileTree, err := generateFileTree(outputPath)
+		if err == nil && fileTree != "" {
+			cmdio.LogString(ctx, "\nFile structure:")
+			cmdio.LogString(ctx, fileTree)
+		}
 
 		// Try to read and display CLAUDE.md if present
 		readClaudeMd(ctx, configFile)
