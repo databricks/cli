@@ -1,0 +1,40 @@
+bundle:
+  name: dabs_revenue-$UNIQUE_NAME
+
+permissions:
+  - level: CAN_VIEW
+    group_name: users
+
+resources:
+  pipelines:
+    foo:
+      name: DABs Revenue Pipeline
+
+      libraries:
+        - notebook:
+            path: sql.sql
+
+      serverless: true
+
+targets:
+  development:
+    default: true
+    mode: development
+
+    resources:
+      pipelines:
+        # Make the pipeline write to the current user's schema in logfood.
+        foo:
+          catalog: users
+          target: ${workspace.current_user.short_name}
+
+  production:
+    run_as:
+      service_principal_name: $TEST_SP_APPLICATION_ID
+
+    resources:
+      pipelines:
+        # Make the pipeline write to the team's schema in logfood.
+        foo:
+          catalog: main
+          target: team_eng_deco
