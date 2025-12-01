@@ -33,7 +33,12 @@ func loadWarehouseInBackground(ctx context.Context) {
 
 	defer wg.Done()
 
-	warehouse, err := getDefaultWarehouse(ctx)
+	apiClient, err := MustGetApiClient(ctx)
+	if err != nil {
+		return
+	}
+
+	warehouse, err := GetDefaultWarehouse(ctx, apiClient)
 	if err != nil {
 		sess.Set(warehouseErrorKey, err)
 		return
@@ -64,7 +69,12 @@ func GetWarehouseEndpoint(ctx context.Context) (*sql.EndpointInfo, error) {
 	warehouse, ok := sess.Get("warehouse_endpoint")
 	if !ok {
 		// Fallback: synchronously load if background loading didn't happen
-		warehouse, err = getDefaultWarehouse(ctx)
+		apiClient, err := MustGetApiClient(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		warehouse, err = GetDefaultWarehouse(ctx, apiClient)
 		if err != nil {
 			return nil, err
 		}
@@ -82,7 +92,7 @@ func GetWarehouseID(ctx context.Context) (string, error) {
 	return warehouse.Id, nil
 }
 
-func getDefaultWarehouse(ctx context.Context) (*sql.EndpointInfo, error) {
+func GetDefaultWarehouse(ctx context.Context, apiClient *httpclient.ApiClient) (*sql.EndpointInfo, error) {
 	// first resolve DATABRICKS_WAREHOUSE_ID env variable
 	warehouseID := env.Get(ctx, "DATABRICKS_WAREHOUSE_ID")
 	if warehouseID != "" {
@@ -100,18 +110,13 @@ func getDefaultWarehouse(ctx context.Context) (*sql.EndpointInfo, error) {
 		}, nil
 	}
 
-	apiClient, err := MustGetApiClient(ctx)
-	if err != nil {
-		return nil, err
-	}
-
 	apiPath := "/api/2.0/sql/warehouses"
 	params := url.Values{}
 	params.Add("skip_cannot_use", "true")
 	fullPath := fmt.Sprintf("%s?%s", apiPath, params.Encode())
 
 	var response sql.ListWarehousesResponse
-	err = apiClient.Do(ctx, "GET", fullPath, httpclient.WithResponseUnmarshal(&response))
+	err := apiClient.Do(ctx, "GET", fullPath, httpclient.WithResponseUnmarshal(&response))
 	if err != nil {
 		return nil, err
 	}

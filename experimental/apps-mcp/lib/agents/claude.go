@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+
+	"github.com/databricks/cli/libs/databrickscfg/profile"
 )
 
 // DetectClaude checks if Claude Code CLI is installed and available on PATH.
@@ -14,7 +16,7 @@ func DetectClaude() bool {
 }
 
 // InstallClaude installs the Databricks MCP server in Claude Code.
-func InstallClaude() error {
+func InstallClaude(profile *profile.Profile, warehouseID string) error {
 	if !DetectClaude() {
 		return errors.New("claude Code CLI is not installed or not on PATH\n\nPlease install Claude Code and ensure 'claude' is available on your system PATH.\nFor installation instructions, visit: https://docs.anthropic.com/en/docs/claude-code")
 	}
@@ -27,12 +29,19 @@ func InstallClaude() error {
 	removeCmd := exec.Command("claude", "mcp", "remove", "--scope", "user", "databricks-mcp")
 	_ = removeCmd.Run()
 
-	cmd := exec.Command("claude", "mcp", "add",
+	args := []string{
+		"mcp", "add",
 		"--scope", "user",
 		"--transport", "stdio",
 		"databricks-mcp",
-		"--",
-		databricksPath, "experimental", "apps-mcp")
+		"--env", "DATABRICKS_CONFIG_PROFILE=" + profile.Name,
+		"--env", "DATABRICKS_HOST=" + profile.Host,
+		"--env", "DATABRICKS_WAREHOUSE_ID=" + warehouseID,
+	}
+
+	args = append(args, "--", databricksPath, "experimental", "apps-mcp")
+
+	cmd := exec.Command("claude", args...)
 
 	output, err := cmd.CombinedOutput()
 	if err != nil {
