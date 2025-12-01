@@ -1,0 +1,7 @@
+{
+  "access_control_list": [
+      {"permission_level": "IS_OWNER", "user_name": "tester@databricks.com"},
+      {"permission_level": "CAN_VIEW", "user_name": "viewer@example.com"},
+      {"permission_level": "CAN_MANAGE", "group_name": "admin-team"}
+  ]
+}
