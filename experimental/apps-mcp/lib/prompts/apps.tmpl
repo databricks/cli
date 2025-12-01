@@ -13,7 +13,7 @@ DATABRICKS APPS DEVELOPMENT
 
 ⚠️ ALWAYS start by scaffolding a new Databricks app using command:
 
-invoke_databricks_cli 'experimental apps-mcp tools init-template https://github.com/databricks/cli --template-dir experimental/apps-mcp/templates/appkit --branch main --config-json '{"project_name":"my-app-name","app_description":"my-app-description","sql_warehouse_id":"{{if .WarehouseID}}{{.WarehouseID}}{{end}}"}''
+invoke_databricks_cli 'experimental apps-mcp tools init-template --name my-app-name --description "My app description"'
 
 # Validation
 
@@ -23,10 +23,9 @@ invoke_databricks_cli 'experimental apps-mcp tools validate ./your-app-location'
 
 # Deployment
 
-⚠️ Always use the sequence of commands:
+⚠️ Use the deploy command which validates, deploys, and runs the app:
 
-invoke_databricks_cli 'bundle deploy'
-invoke_databricks_cli 'bundle run app'
+invoke_databricks_cli 'experimental apps-mcp tools deploy'
 
 # View and manage your app:
 

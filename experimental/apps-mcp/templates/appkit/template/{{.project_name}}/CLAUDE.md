@@ -5,6 +5,38 @@ TypeScript full-stack template powered by **Databricks AppKit** with tRPC for ad
 - config/queries/: SQL query files for analytics
 - shared/: Shared TypeScript types
 
+## NPM Scripts
+
+### Development
+- `npm run dev` - Start dev server with hot reload (use during active development)
+- `npm start` - Start production server (requires `npm run build` first)
+
+### Build
+- `npm run build` - Full build (server + client) - use before deployment
+- `npm run build:server` - Compile server TypeScript only
+- `npm run build:client` - Compile and bundle React app only
+
+### Code Quality
+- `npm run typecheck` - Type-check without building (fast validation)
+- `npm run lint` - Check for linting issues
+- `npm run lint:fix` - Auto-fix linting issues
+- `npm run format` - Check code formatting
+- `npm run format:fix` - Auto-format code with Prettier
+
+### Testing
+- `npm test` - Run unit tests (vitest) + smoke test
+- `npm run test:e2e` - Run all Playwright tests
+- `npm run test:e2e:ui` - Run Playwright with interactive UI (for debugging)
+- `npm run test:smoke` - Run smoke test only (quick validation)
+
+### Utility
+- `npm run clean` - Remove all build artifacts and node_modules (requires `npm install` after)
+
+**Common workflows:**
+- Development: `npm run dev` → make changes → `npm run typecheck` → `npm run lint:fix`
+- Pre-commit: `npm run typecheck && npm run lint:fix && npm run format:fix && npm test`
+- Pre-deploy: `npm run build && npm start` (test locally) → `npm test`
+
 ## App Naming Constraints
 
 App names must not exceed 30 characters total (including target prefix).
@@ -21,7 +53,11 @@ The init-template command validates this automatically.
 
 ## TypeScript Import Rules
 
-This template uses strict TypeScript settings with `verbatimModuleSyntax: true`. **Always use `import type` for type-only imports**:
+This template uses strict TypeScript settings with `verbatimModuleSyntax: true`. **Always use `import type` for type-only imports**.
+
+Template enforces `noUnusedLocals` - remove unused imports immediately or build fails.
+
+**Type-only imports**:
 
 ```typescript
 // ✅ CORRECT - use import type for types
@@ -165,6 +201,20 @@ WHERE DATE(timestamp_column) >= :start_date
 - **Strings/Numbers**: Use directly in SQL with `:param_name`
 - **Dates**: Format as `YYYY-MM-DD`, use with `DATE()` in SQL
 - **Optional**: Use empty string default, check with `(:param = '' OR column = :param)`
+
+## SQL Type Handling
+
+Numeric fields from Databricks SQL (especially `ROUND()`, `AVG()`, `SUM()`) are returned as strings in JSON. Convert before using numeric methods:
+
+```typescript
+// ❌ WRONG - fails at runtime
+<span>{row.total_amount.toFixed(2)}</span>
+
+// ✅ CORRECT
+<span>{Number(row.total_amount).toFixed(2)}</span>
+```
+
+Use helpers from `shared/types.ts`: `toNumber()`, `formatCurrency()`, `formatPercent()`.
 
 ## tRPC for Custom Endpoints:
 
@@ -362,6 +412,10 @@ npm run test:e2e:ui     # Run with Playwright UI
 - Shared UI components: `client/src/components/ui/`
 - Feature components: `client/src/components/FeatureName.tsx`
 - Split components when logic exceeds ~100 lines or component is reused
+
+### Radix UI Constraints
+
+- `SelectItem` cannot have `value=""`. Use sentinel value like `"all"` for "show all" options.
 
 ### Best Practices:
 

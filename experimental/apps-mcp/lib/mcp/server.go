@@ -30,11 +30,15 @@ type serverTool struct {
 }
 
 // NewServer creates a new MCP server.
-func NewServer(impl *Implementation, options any) *Server {
+// If sess is nil, a new session will be created.
+func NewServer(impl *Implementation, options any, sess *session.Session) *Server {
+	if sess == nil {
+		sess = session.NewSession()
+	}
 	return &Server{
 		impl:    impl,
 		tools:   make(map[string]*serverTool),
-		session: session.NewSession(),
+		session: sess,
 	}
 }
 
