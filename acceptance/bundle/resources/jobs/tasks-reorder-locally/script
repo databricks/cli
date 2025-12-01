@@ -1,0 +1,12 @@
+trace $CLI bundle plan
+trace $CLI bundle deploy
+trace $CLI bundle plan | contains.py "0 to add, 0 to change, 0 to delete"
+
+update_file.py databricks.yml task_aa task_XX
+update_file.py databricks.yml task_bb task_aa
+update_file.py databricks.yml task_XX task_bb
+
+trace $CLI bundle plan
+
+trace $CLI bundle deploy
+trace $CLI bundle plan | contains.py "0 to add, 0 to change, 0 to delete"
