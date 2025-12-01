@@ -34,7 +34,7 @@ func TestDashboardConfigUnmarshalJSON(t *testing.T) {
 	expectedConfig := DashboardConfig{
 		Dashboard: dashboards.Dashboard{
 			DisplayName:     "test",
-			ForceSendFields: []string{},
+			ForceSendFields: nil,
 		},
 		SerializedDashboard: map[string]any{"a": "b"},
 		EmbedCredentials:    true,
