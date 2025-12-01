@@ -1,0 +1,52 @@
+{
+  "headers": {
+    "User-Agent": [
+      "databricks-tf-provider/1.97.0 databricks-sdk-go/[SDK_VERSION] go/1.24.0 os/[OS] cli/[DEV_VERSION] terraform/1.5.5 sdk/sdkv2 resource/pipeline auth/pat"
+    ]
+  },
+  "method": "POST",
+  "path": "/api/2.0/pipelines",
+  "body": {
+    "catalog": "main",
+    "channel": "CURRENT",
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dabs_revenue-[UNIQUE_NAME]/production/state/metadata.json"
+    },
+    "edition": "ADVANCED",
+    "libraries": [
+      {
+        "notebook": {
+          "path": "/Workspace/Users/[USERNAME]/.bundle/dabs_revenue-[UNIQUE_NAME]/production/files/sql"
+        }
+      }
+    ],
+    "name": "DABs Revenue Pipeline",
+    "run_as": {
+      "service_principal_name": "[UUID]"
+    },
+    "serverless": true,
+    "target": "team_eng_deco"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "databricks-tf-provider/1.97.0 databricks-sdk-go/[SDK_VERSION] go/1.24.0 os/[OS] cli/[DEV_VERSION] terraform/1.5.5 sdk/sdkv2 resource/permissions auth/pat"
+    ]
+  },
+  "method": "PUT",
+  "path": "/api/2.0/permissions/pipelines/[UUID]",
+  "body": {
+    "access_control_list": [
+      {
+        "group_name": "users",
+        "permission_level": "CAN_VIEW"
+      },
+      {
+        "permission_level": "IS_OWNER",
+        "user_name": "[USERNAME]"
+      }
+    ]
+  }
+}
