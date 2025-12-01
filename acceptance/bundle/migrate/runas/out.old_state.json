@@ -1,0 +1,149 @@
+{
+  "version": 4,
+  "terraform_version": "1.5.5",
+  "serial": 3,
+  "lineage": "[UUID]",
+  "outputs": {},
+  "resources": [
+    {
+      "mode": "managed",
+      "type": "databricks_permissions",
+      "name": "pipeline_foo",
+      "provider": "provider[\"registry.terraform.io/databricks/databricks\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "access_control": [
+              {
+                "group_name": "",
+                "permission_level": "IS_OWNER",
+                "service_principal_name": "",
+                "user_name": "[USERNAME]"
+              },
+              {
+                "group_name": "users",
+                "permission_level": "CAN_VIEW",
+                "service_principal_name": "",
+                "user_name": ""
+              }
+            ],
+            "alert_v2_id": null,
+            "app_name": null,
+            "authorization": null,
+            "cluster_id": null,
+            "cluster_policy_id": null,
+            "dashboard_id": null,
+            "database_instance_name": null,
+            "directory_id": null,
+            "directory_path": null,
+            "experiment_id": null,
+            "id": "/pipelines/[UUID]",
+            "instance_pool_id": null,
+            "job_id": null,
+            "notebook_id": null,
+            "notebook_path": null,
+            "object_type": "pipelines",
+            "pipeline_id": "[UUID]",
+            "registered_model_id": null,
+            "repo_id": null,
+            "repo_path": null,
+            "serving_endpoint_id": null,
+            "sql_alert_id": null,
+            "sql_dashboard_id": null,
+            "sql_endpoint_id": null,
+            "sql_query_id": null,
+            "vector_search_endpoint_id": null,
+            "workspace_file_id": null,
+            "workspace_file_path": null
+          },
+          "sensitive_attributes": [],
+          "private": "bnVsbA==",
+          "dependencies": [
+            "databricks_pipeline.foo"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "databricks_pipeline",
+      "name": "foo",
+      "provider": "provider[\"registry.terraform.io/databricks/databricks\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "allow_duplicate_names": false,
+            "budget_policy_id": null,
+            "catalog": "main",
+            "cause": null,
+            "channel": "CURRENT",
+            "cluster": [],
+            "cluster_id": null,
+            "configuration": null,
+            "continuous": false,
+            "creator_user_name": "[USERNAME]",
+            "deployment": [
+              {
+                "kind": "BUNDLE",
+                "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dabs_revenue-[UNIQUE_NAME]/production/state/metadata.json"
+              }
+            ],
+            "development": false,
+            "edition": "ADVANCED",
+            "environment": [],
+            "event_log": [],
+            "expected_last_modified": 0,
+            "filters": [],
+            "gateway_definition": [],
+            "health": null,
+            "id": "[UUID]",
+            "ingestion_definition": [],
+            "last_modified": [UNIX_TIME_MILLIS],
+            "latest_updates": null,
+            "library": [
+              {
+                "file": [],
+                "glob": [],
+                "jar": "",
+                "maven": [],
+                "notebook": [
+                  {
+                    "path": "/Workspace/Users/[USERNAME]/.bundle/dabs_revenue-[UNIQUE_NAME]/production/files/sql"
+                  }
+                ],
+                "whl": ""
+              }
+            ],
+            "name": "DABs Revenue Pipeline",
+            "notification": [],
+            "photon": false,
+            "restart_window": [],
+            "root_path": null,
+            "run_as": [
+              {
+                "service_principal_name": "[UUID]",
+                "user_name": ""
+              }
+            ],
+            "run_as_user_name": "[USERNAME]",
+            "schema": null,
+            "serverless": true,
+            "state": "IDLE",
+            "storage": null,
+            "tags": null,
+            "target": "team_eng_deco",
+            "timeouts": null,
+            "trigger": [],
+            "url": "[DATABRICKS_URL]/#joblist/pipelines/[UUID]",
+            "usage_policy_id": null
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxMjAwMDAwMDAwMDAwLCJkZWZhdWx0IjoxMjAwMDAwMDAwMDAwLCJkZWxldGUiOjEyMDAwMDAwMDAwMDAsInJlYWQiOjEyMDAwMDAwMDAwMDAsInVwZGF0ZSI6MTIwMDAwMDAwMDAwMH19"
+        }
+      ]
+    }
+  ],
+  "check_results": null
+}
