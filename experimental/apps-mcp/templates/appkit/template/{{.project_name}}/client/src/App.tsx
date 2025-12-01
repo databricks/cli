@@ -1,14 +1,14 @@
 import { useAnalyticsQuery, AreaChart, LineChart, RadarChart } from '@databricks/app-kit-ui/react';
+import { Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import type { QueryResult } from '../../shared/types';
 import { trpc } from './lib/trpc';
 import { useState, useEffect } from 'react';
 
 function App() {
-  const { data, loading, error } = useAnalyticsQuery<QueryResult[]>('hello_world', {
+  const { data, loading, error } = useAnalyticsQuery('hello_world', {
     message: 'hello world',
   });
 
@@ -168,10 +168,18 @@ function App() {
         </Card>
         <Card className="shadow-lg flex min-w-0">
           <CardHeader>
-            <CardTitle>Sales Trend Line Chart</CardTitle>
+            <CardTitle>Sales Trend Custom Line Chart</CardTitle>
           </CardHeader>
           <CardContent>
-            <LineChart queryKey="mocked_sales" parameters={salesParameters} />
+            <LineChart queryKey="mocked_sales" parameters={salesParameters}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <Line type="monotone" dataKey="revenue" stroke="#40d1f5" />
+              <Line type="monotone" dataKey="expenses" stroke="#4462c9" />
+              <Line type="monotone" dataKey="customers" stroke="#EB1600" />
+              <XAxis dataKey="month" />
+              <YAxis />
+              <Tooltip />
+            </LineChart>
           </CardContent>
         </Card>
         <Card className="shadow-lg flex min-w-0">
