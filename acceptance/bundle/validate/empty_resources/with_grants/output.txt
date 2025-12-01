@@ -236,6 +236,26 @@ Warning: unknown field: grants
   at resources.alerts.rname
   in databricks.yml:7:7
 
+Warning: required field "display_name" is not set
+  at resources.alerts.rname
+  in databricks.yml:7:7
+
+Warning: required field "evaluation" is not set
+  at resources.alerts.rname
+  in databricks.yml:7:7
+
+Warning: required field "query_text" is not set
+  at resources.alerts.rname
+  in databricks.yml:7:7
+
+Warning: required field "schedule" is not set
+  at resources.alerts.rname
+  in databricks.yml:7:7
+
+Warning: required field "warehouse_id" is not set
+  at resources.alerts.rname
+  in databricks.yml:7:7
+
 {
   "alerts": {
     "rname": {

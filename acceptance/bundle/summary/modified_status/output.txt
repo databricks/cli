@@ -1,6 +1,14 @@
 
 === Initial view of resources without id and modified_status=created
 >>> [CLI] bundle summary -o json
+Warning: required field "evaluation" is not set
+  at resources.alerts.my_alert
+  in databricks.yml:6:7
+
+Warning: required field "schedule" is not set
+  at resources.alerts.my_alert
+  in databricks.yml:6:7
+
 {
   "alerts": {
     "my_alert": {
@@ -55,6 +63,14 @@
 }
 
 >>> [CLI] bundle deploy
+Warning: required field "evaluation" is not set
+  at resources.alerts.my_alert
+  in databricks.yml:6:7
+
+Warning: required field "schedule" is not set
+  at resources.alerts.my_alert
+  in databricks.yml:6:7
+
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Error: exit status 1
 
