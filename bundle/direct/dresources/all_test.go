@@ -403,7 +403,7 @@ var testDeps = map[string]prepareWorkspace{
 		}
 
 		return &PermissionsState{
-			ObjectID: "/alerts/" + resp.Id,
+			ObjectID: "/alertsv2/" + resp.Id,
 			Permissions: []iam.AccessControlRequest{{
 				PermissionLevel: "CAN_MANAGE",
 				UserName:        "user@example.com",
@@ -587,7 +587,7 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	}, remote, false)
 	require.NoError(t, err)
 
-	deleteIsNoop := strings.HasSuffix(group, "permissions") || strings.HasSuffix(group, "grants") || group == "alerts"
+	deleteIsNoop := strings.HasSuffix(group, "permissions") || strings.HasSuffix(group, "grants")
 
 	remoteAfterDelete, err := adapter.DoRead(ctx, createdID)
 	if deleteIsNoop {
