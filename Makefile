@@ -4,7 +4,7 @@ default: checks fmt lint
 TEST_PACKAGES = ./acceptance/internal ./libs/... ./internal/... ./cmd/... ./bundle/... ./experimental/aitools/... ./experimental/ssh/... .
 
 # Default acceptance test filter (all)
-ACCEPTANCE_TEST_FILTER = TestAccept
+ACCEPTANCE_TEST_FILTER = ""
 
 GO_TOOL ?= go tool -modfile=tools/go.mod
 GOTESTSUM_FORMAT ?= pkgname-and-test-fails
@@ -58,12 +58,24 @@ links:
 # Checks other than 'fmt' and 'lint'; these are fast, so can be run first
 checks: tidy ws links
 
-test:
-	${GOTESTSUM_CMD} --packages "${TEST_PACKAGES}" -- -timeout=${LOCAL_TIMEOUT} ${SHORT_FLAG}
-	${GOTESTSUM_CMD} --packages ./acceptance/... -- -timeout=${LOCAL_TIMEOUT} ${SHORT_FLAG} -run ${ACCEPTANCE_TEST_FILTER}
 
-test-slow:
-	make test SHORT_FLAG="-short"
+# Run short unit and acceptance tests (testing.Short() is true).
+test: test-unit test-acc
+
+test-unit:
+	${GOTESTSUM_CMD} --packages "${TEST_PACKAGES}" -- -timeout=${LOCAL_TIMEOUT} -short
+
+test-acc:
+	${GOTESTSUM_CMD} --packages ./acceptance/... -- -timeout=${LOCAL_TIMEOUT} -short -run ${ACCEPTANCE_TEST_FILTER}
+
+# Run all unit and acceptance tests.
+test-slow: test-slow-unit test-slow-acc
+
+test-slow-unit:
+	${GOTESTSUM_CMD} --packages "${TEST_PACKAGES}" -- -timeout=${LOCAL_TIMEOUT}
+
+test-slow-acc:
+	${GOTESTSUM_CMD} --packages ./acceptance/... -- -timeout=${LOCAL_TIMEOUT} -run ${ACCEPTANCE_TEST_FILTER}
 
 # Updates acceptance test output (local tests)
 test-update:
@@ -154,7 +166,7 @@ generate:
 	$(GENKIT_BINARY) update-sdk
 
 
-.PHONY: lint lintfull tidy lintcheck fmt fmtfull test cover showcover build snapshot snapshot-release schema integration integration-short acc-cover acc-showcover docs ws wsfix links checks test-update test-update-templates test-update-aws test-update-all generate-validation
+.PHONY: lint lintfull tidy lintcheck fmt fmtfull test test-unit test-acc test-slow test-slow-unit test-slow-acc cover showcover build snapshot snapshot-release schema integration integration-short acc-cover acc-showcover docs ws wsfix links checks test-update test-update-templates test-update-aws test-update-all generate-validation
 
 test-exp-aitools:
 	make test TEST_PACKAGES="./experimental/aitools/..." ACCEPTANCE_TEST_FILTER="TestAccept/idontexistyet/aitools"
