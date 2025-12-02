@@ -3,10 +3,24 @@ import "@databricks/app-kit-ui/react";
 
 declare module "@databricks/app-kit-ui/react" {
   interface PluginRegistry {
-
+    "analytics": {
+      "/users/me/query/:query_key": {
+          chunk_index: number;
+          row_offset: number;
+          row_count: number;
+          data: any[];
+      };
+      "/query/:query_key": {
+          chunk_index: number;
+          row_offset: number;
+          row_count: number;
+          data: any[];
+      };
+    }
   }
 
   interface QueryRegistry {
+
     mocked_sales: {
         max_month_num: number;
     }[];
@@ -14,5 +28,4 @@ declare module "@databricks/app-kit-ui/react" {
         value: string;
     }[];
   }
-
 }
