@@ -37,6 +37,71 @@ TypeScript full-stack template powered by **Databricks AppKit** with tRPC for ad
 - Pre-commit: `npm run typecheck && npm run lint:fix && npm run format:fix && npm test`
 - Pre-deploy: `npm run build && npm start` (test locally) → `npm test`
 
+## Deployment Procedures
+
+**CRITICAL**: Deployment is a significant action that affects live environments. NEVER deploy without explicit user confirmation.
+
+### Before Deploying
+
+**ALWAYS** confirm with the user first by asking: "Ready to deploy to [environment]?"
+
+Pre-deployment checklist:
+1. ✅ App validated successfully (`databricks experimental apps-mcp tools validate .`)
+2. ✅ Local testing completed (`npm run dev` and manual verification)
+3. ✅ User explicitly approved deployment
+4. ✅ Code committed to git (recommended)
+
+### Deployment Commands
+
+```bash
+databricks bundle deploy              # Deploy app infrastructure
+databricks bundle run app            # Start the app
+databricks bundle summary            # Get deployed app URL
+```
+
+Or use the all-in-one command:
+```bash
+databricks experimental apps-mcp tools deploy  # Validates, deploys, and runs
+```
+
+**DO NOT** run deployment commands unless the user explicitly requests it or confirms when asked.
+
+## Local Development vs Deployed Apps
+
+**CRITICAL**: Understand the difference between local development and deployed environments.
+
+### During Development (Before Deployment)
+
+When the user asks to "open the app", "see the app", "view the app", or "open a dev copy":
+
+- ✅ **Use localhost**: `http://localhost:8000`
+- ✅ **Requires**: `npm run dev` must be running
+- ✅ **Purpose**: Hot reload, fast iteration, debugging
+
+**DO NOT** suggest deployed URLs (staging/production) during active development!
+
+### After Deployment
+
+Only after running `databricks bundle deploy && databricks bundle run app`:
+
+- ✅ **Use deployed URL**: Get from `databricks bundle summary`
+- ✅ **Purpose**: Production/staging environment, sharing with others
+
+### Decision Tree
+
+```
+User asks to "open the app" or "see the app"
+│
+├─ Has the app been deployed in this session?
+│  ├─ No  → Use http://localhost:8000 (start with `npm run dev` if needed)
+│  └─ Yes → Ask user which environment they want:
+│           • localhost (development)
+│           • deployed URL (production/staging)
+│
+└─ User explicitly says "localhost" or "local"
+   → Always use http://localhost:8000
+```
+
 ## App Naming Constraints
 
 App names must not exceed 30 characters total (including target prefix).

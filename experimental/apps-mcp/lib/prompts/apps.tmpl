@@ -15,18 +15,43 @@ DATABRICKS APPS DEVELOPMENT
 
 invoke_databricks_cli 'experimental apps-mcp tools init-template --name my-app-name --description "My app description"'
 
+# Local Development
+
+⚠️ PRIMARY development workflow - run app locally:
+
+1. Navigate to app directory: cd ./your-app
+2. Start dev server: npm run dev
+3. Open in browser: http://localhost:8000
+
+⚠️ IMPORTANT: When user asks to "open the app", "see the app", or "open dev copy":
+- During development → ALWAYS use http://localhost:8000 (requires npm run dev to be running)
+- After deployment → Use deployed URL from bundle summary
+
+DO NOT suggest deployed URLs (staging/production) when user wants to test during development!
+
 # Validation
 
 ⚠️ Always validate your app before deploying to production:
 
 invoke_databricks_cli 'experimental apps-mcp tools validate ./your-app-location'
 
+This runs: npm install → build → typecheck → tests
+
 # Deployment
 
-⚠️ Use the deploy command which validates, deploys, and runs the app:
+⚠️ CRITICAL: NEVER deploy without explicit user confirmation!
+
+Deployment checklist (confirm with user BEFORE deploying):
+1. App has been validated successfully
+2. Local testing completed (npm run dev)
+3. User explicitly approved deployment
+
+⚠️ ALWAYS ask user: "Ready to deploy to [environment]?" before running deploy command.
+
+Once confirmed, use the deploy command:
 
 invoke_databricks_cli 'experimental apps-mcp tools deploy'
 
-# View and manage your app:
+After deployment, get the app URL:
 
 invoke_databricks_cli 'bundle summary'
