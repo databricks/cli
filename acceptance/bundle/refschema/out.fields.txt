@@ -1550,6 +1550,13 @@ resources.jobs.*.settings.trigger.file_arrival	*jobs.FileArrivalTriggerConfigura
 resources.jobs.*.settings.trigger.file_arrival.min_time_between_triggers_seconds	int	REMOTE
 resources.jobs.*.settings.trigger.file_arrival.url	string	REMOTE
 resources.jobs.*.settings.trigger.file_arrival.wait_after_last_change_seconds	int	REMOTE
+resources.jobs.*.settings.trigger.model	*jobs.ModelTriggerConfiguration	REMOTE
+resources.jobs.*.settings.trigger.model.aliases	[]string	REMOTE
+resources.jobs.*.settings.trigger.model.aliases[*]	string	REMOTE
+resources.jobs.*.settings.trigger.model.condition	jobs.ModelTriggerConfigurationCondition	REMOTE
+resources.jobs.*.settings.trigger.model.min_time_between_triggers_seconds	int	REMOTE
+resources.jobs.*.settings.trigger.model.securable_name	string	REMOTE
+resources.jobs.*.settings.trigger.model.wait_after_last_change_seconds	int	REMOTE
 resources.jobs.*.settings.trigger.pause_status	jobs.PauseStatus	REMOTE
 resources.jobs.*.settings.trigger.periodic	*jobs.PeriodicTriggerConfiguration	REMOTE
 resources.jobs.*.settings.trigger.periodic.interval	int	REMOTE
@@ -2215,6 +2222,13 @@ resources.jobs.*.trigger.file_arrival	*jobs.FileArrivalTriggerConfiguration	INPU
 resources.jobs.*.trigger.file_arrival.min_time_between_triggers_seconds	int	INPUT	STATE
 resources.jobs.*.trigger.file_arrival.url	string	INPUT	STATE
 resources.jobs.*.trigger.file_arrival.wait_after_last_change_seconds	int	INPUT	STATE
+resources.jobs.*.trigger.model	*jobs.ModelTriggerConfiguration	INPUT	STATE
+resources.jobs.*.trigger.model.aliases	[]string	INPUT	STATE
+resources.jobs.*.trigger.model.aliases[*]	string	INPUT	STATE
+resources.jobs.*.trigger.model.condition	jobs.ModelTriggerConfigurationCondition	INPUT	STATE
+resources.jobs.*.trigger.model.min_time_between_triggers_seconds	int	INPUT	STATE
+resources.jobs.*.trigger.model.securable_name	string	INPUT	STATE
+resources.jobs.*.trigger.model.wait_after_last_change_seconds	int	INPUT	STATE
 resources.jobs.*.trigger.pause_status	jobs.PauseStatus	INPUT	STATE
 resources.jobs.*.trigger.periodic	*jobs.PeriodicTriggerConfiguration	INPUT	STATE
 resources.jobs.*.trigger.periodic.interval	int	INPUT	STATE
@@ -2890,6 +2904,8 @@ resources.pipelines.*.filters.include[*]	string	INPUT	STATE
 resources.pipelines.*.gateway_definition	*pipelines.IngestionGatewayPipelineDefinition	INPUT	STATE
 resources.pipelines.*.gateway_definition.connection_id	string	INPUT	STATE
 resources.pipelines.*.gateway_definition.connection_name	string	INPUT	STATE
+resources.pipelines.*.gateway_definition.connection_parameters	*pipelines.ConnectionParameters	INPUT	STATE
+resources.pipelines.*.gateway_definition.connection_parameters.source_catalog	string	INPUT	STATE
 resources.pipelines.*.gateway_definition.gateway_storage_catalog	string	INPUT	STATE
 resources.pipelines.*.gateway_definition.gateway_storage_name	string	INPUT	STATE
 resources.pipelines.*.gateway_definition.gateway_storage_schema	string	INPUT	STATE
@@ -2897,6 +2913,7 @@ resources.pipelines.*.health	pipelines.GetPipelineResponseHealth	REMOTE
 resources.pipelines.*.id	string	INPUT	STATE
 resources.pipelines.*.ingestion_definition	*pipelines.IngestionPipelineDefinition	INPUT	STATE
 resources.pipelines.*.ingestion_definition.connection_name	string	INPUT	STATE
+resources.pipelines.*.ingestion_definition.ingest_from_uc_foreign_catalog	bool	INPUT	STATE
 resources.pipelines.*.ingestion_definition.ingestion_gateway_id	string	INPUT	STATE
 resources.pipelines.*.ingestion_definition.netsuite_jar_path	string	INPUT	STATE
 resources.pipelines.*.ingestion_definition.objects	[]pipelines.IngestionConfig	INPUT	STATE
@@ -3185,12 +3202,15 @@ resources.pipelines.*.spec.filters.include[*]	string	REMOTE
 resources.pipelines.*.spec.gateway_definition	*pipelines.IngestionGatewayPipelineDefinition	REMOTE
 resources.pipelines.*.spec.gateway_definition.connection_id	string	REMOTE
 resources.pipelines.*.spec.gateway_definition.connection_name	string	REMOTE
+resources.pipelines.*.spec.gateway_definition.connection_parameters	*pipelines.ConnectionParameters	REMOTE
+resources.pipelines.*.spec.gateway_definition.connection_parameters.source_catalog	string	REMOTE
 resources.pipelines.*.spec.gateway_definition.gateway_storage_catalog	string	REMOTE
 resources.pipelines.*.spec.gateway_definition.gateway_storage_name	string	REMOTE
 resources.pipelines.*.spec.gateway_definition.gateway_storage_schema	string	REMOTE
 resources.pipelines.*.spec.id	string	REMOTE
 resources.pipelines.*.spec.ingestion_definition	*pipelines.IngestionPipelineDefinition	REMOTE
 resources.pipelines.*.spec.ingestion_definition.connection_name	string	REMOTE
+resources.pipelines.*.spec.ingestion_definition.ingest_from_uc_foreign_catalog	bool	REMOTE
 resources.pipelines.*.spec.ingestion_definition.ingestion_gateway_id	string	REMOTE
 resources.pipelines.*.spec.ingestion_definition.netsuite_jar_path	string	REMOTE
 resources.pipelines.*.spec.ingestion_definition.objects	[]pipelines.IngestionConfig	REMOTE
@@ -3565,6 +3585,7 @@ resources.synced_database_tables.*.spec	*database.SyncedTableSpec	ALL
 resources.synced_database_tables.*.spec.create_database_objects_if_missing	bool	ALL
 resources.synced_database_tables.*.spec.existing_pipeline_id	string	ALL
 resources.synced_database_tables.*.spec.new_pipeline_spec	*database.NewPipelineSpec	ALL
+resources.synced_database_tables.*.spec.new_pipeline_spec.budget_policy_id	string	ALL
 resources.synced_database_tables.*.spec.new_pipeline_spec.storage_catalog	string	ALL
 resources.synced_database_tables.*.spec.new_pipeline_spec.storage_schema	string	ALL
 resources.synced_database_tables.*.spec.primary_key_columns	[]string	ALL
