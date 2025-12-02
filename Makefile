@@ -98,7 +98,8 @@ slowest:
 
 cover:
 	rm -fr ./acceptance/build/cover/
-	VERBOSE_TEST=1 CLI_GOCOVERDIR=build/cover ${GOTESTSUM_CMD} --packages ${TEST_PACKAGES} -- -coverprofile=coverage.txt -timeout=${LOCAL_TIMEOUT}
+	VERBOSE_TEST=1 ${GOTESTSUM_CMD} --packages "${TEST_PACKAGES}" -- -coverprofile=coverage.txt -timeout=${LOCAL_TIMEOUT}
+	VERBOSE_TEST=1 CLI_GOCOVERDIR=build/cover ${GOTESTSUM_CMD} --packages ./acceptance/... -- -timeout=${LOCAL_TIMEOUT} -run ${ACCEPTANCE_TEST_FILTER}
 	rm -fr ./acceptance/build/cover-merged/
 	mkdir -p acceptance/build/cover-merged/
 	go tool covdata merge -i $$(printf '%s,' acceptance/build/cover/* | sed 's/,$$//') -o acceptance/build/cover-merged/
