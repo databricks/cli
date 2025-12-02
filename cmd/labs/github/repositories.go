@@ -30,13 +30,22 @@ func (r *repositoryCache) Load(ctx context.Context) (Repositories, error) {
 	})
 }
 
-// getRepositories is considered to be privata API, as we want the usage to go through a cache
+// getRepositories is considered to be private API, as we want the usage to go through a cache
 func getRepositories(ctx context.Context, org string) (Repositories, error) {
-	var repos Repositories
+	var allRepos Repositories
 	log.Debugf(ctx, "Loading repositories for %s from GitHub API", org)
-	url := fmt.Sprintf("%s/users/%s/repos", gitHubAPI, org)
-	err := httpGetAndUnmarshal(ctx, url, &repos)
-	return repos, err
+	url := fmt.Sprintf("%s/users/%s/repos?per_page=100", gitHubAPI, org)
+
+	for url != "" {
+		var repos Repositories
+		nextUrl, err := httpGetAndUnmarshal(ctx, url, &repos)
+		if err != nil {
+			return nil, err
+		}
+		allRepos = append(allRepos, repos...)
+		url = nextUrl
+	}
+	return allRepos, nil
 }
 
 type Repositories []ghRepo
@@ -44,7 +53,7 @@ type Repositories []ghRepo
 type ghRepo struct {
 	Name          string   `json:"name"`
 	Description   string   `json:"description"`
-	Langauge      string   `json:"language"`
+	Language      string   `json:"language"`
 	DefaultBranch string   `json:"default_branch"`
 	Stars         int      `json:"stargazers_count"`
 	IsFork        bool     `json:"fork"`

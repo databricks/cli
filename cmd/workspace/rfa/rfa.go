@@ -20,13 +20,12 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "rfa",
-		Short: `Request for Access enables customers to request access to and manage access request destinations for Unity Catalog securables.`,
-		Long: `Request for Access enables customers to request access to and manage access
-  request destinations for Unity Catalog securables.
+		Short: `Request for Access enables users to request access for Unity Catalog securables.`,
+		Long: `Request for Access enables users to request access for Unity Catalog
+  securables.
 
-  These APIs provide a standardized way to update, get, and request to access
-  request destinations. Fine-grained authorization ensures that only users with
-  appropriate permissions can manage access request destinations.`,
+  These APIs provide a standardized way for securable owners (or users with
+  MANAGE privileges) to manage access request destinations.`,
 		GroupID: "catalog",
 		RunE:    root.ReportUnknownSubcommand,
 	}
@@ -204,7 +203,9 @@ func newUpdateAccessRequestDestinations() *cobra.Command {
 
 	cmd.Flags().Var(&updateAccessRequestDestinationsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Use = "update-access-request-destinations UPDATE_MASK DESTINATIONS SECURABLE"
+	// TODO: array: destinations
+
+	cmd.Use = "update-access-request-destinations UPDATE_MASK SECURABLE"
 	cmd.Short = `Update Access Request Destinations.`
 	cmd.Long = `Update Access Request Destinations.
 
@@ -234,7 +235,6 @@ func newUpdateAccessRequestDestinations() *cobra.Command {
       always explicitly list the fields being updated and avoid using *
       wildcards, as it can lead to unintended results if the API changes in the
       future.
-    DESTINATIONS: The access request destinations for the securable.
     SECURABLE: The securable for which the access request destinations are being
       retrieved.`
 
@@ -244,11 +244,11 @@ func newUpdateAccessRequestDestinations() *cobra.Command {
 		if cmd.Flags().Changed("json") {
 			err := root.ExactArgs(1)(cmd, args)
 			if err != nil {
-				return fmt.Errorf("when --json flag is specified, provide only UPDATE_MASK as positional arguments. Provide 'destinations', 'securable' in your JSON input")
+				return fmt.Errorf("when --json flag is specified, provide only UPDATE_MASK as positional arguments. Provide 'securable' in your JSON input")
 			}
 			return nil
 		}
-		check := root.ExactArgs(3)
+		check := root.ExactArgs(2)
 		return check(cmd, args)
 	}
 
@@ -271,16 +271,9 @@ func newUpdateAccessRequestDestinations() *cobra.Command {
 		}
 		updateAccessRequestDestinationsReq.UpdateMask = args[0]
 		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[1], &updateAccessRequestDestinationsReq.AccessRequestDestinations.Destinations)
+			_, err = fmt.Sscan(args[1], &updateAccessRequestDestinationsReq.AccessRequestDestinations.Securable)
 			if err != nil {
-				return fmt.Errorf("invalid DESTINATIONS: %s", args[1])
-			}
-
-		}
-		if !cmd.Flags().Changed("json") {
-			_, err = fmt.Sscan(args[2], &updateAccessRequestDestinationsReq.AccessRequestDestinations.Securable)
-			if err != nil {
-				return fmt.Errorf("invalid SECURABLE: %s", args[2])
+				return fmt.Errorf("invalid SECURABLE: %s", args[1])
 			}
 
 		}

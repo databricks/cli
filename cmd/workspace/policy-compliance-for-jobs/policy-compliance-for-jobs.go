@@ -34,7 +34,7 @@ func New() *cobra.Command {
   The get and list compliance APIs allow you to view the policy compliance
   status of a job. The enforce compliance API allows you to update a job so that
   it becomes compliant with all of its policies.`,
-		GroupID: "jobs",
+		GroupID: "lakeflow",
 		RunE:    root.ReportUnknownSubcommand,
 	}
 

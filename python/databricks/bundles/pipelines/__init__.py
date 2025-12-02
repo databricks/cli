@@ -15,6 +15,9 @@ __all__ = [
     "ClusterLogConf",
     "ClusterLogConfDict",
     "ClusterLogConfParam",
+    "ConnectionParameters",
+    "ConnectionParametersDict",
+    "ConnectionParametersParam",
     "DayOfWeek",
     "DayOfWeekParam",
     "DbfsStorageInfo",
@@ -174,6 +177,11 @@ from databricks.bundles.pipelines._models.cluster_log_conf import (
     ClusterLogConf,
     ClusterLogConfDict,
     ClusterLogConfParam,
+)
+from databricks.bundles.pipelines._models.connection_parameters import (
+    ConnectionParameters,
+    ConnectionParametersDict,
+    ConnectionParametersParam,
 )
 from databricks.bundles.pipelines._models.day_of_week import DayOfWeek, DayOfWeekParam
 from databricks.bundles.pipelines._models.dbfs_storage_info import (

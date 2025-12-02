@@ -891,6 +891,9 @@ github.com/databricks/databricks-sdk-go/service/jobs.Task:
     "description": |-
       PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/jobs.TriggerSettings:
+  "model":
+    "description": |-
+      PLACEHOLDER
   "table_update":
     "description": |-
       PLACEHOLDER
