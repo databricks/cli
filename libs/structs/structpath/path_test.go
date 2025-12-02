@@ -33,7 +33,7 @@ func TestPathNode(t *testing.T) {
 		},
 		{
 			name:      "map key",
-			node:      NewStringKey(nil, "mykey"),
+			node:      NewDotString(nil, "mykey"),
 			String:    `mykey`,
 			StringKey: "mykey",
 		},
@@ -59,31 +59,31 @@ func TestPathNode(t *testing.T) {
 		// Two node tests
 		{
 			name:   "struct field -> array index",
-			node:   NewIndex(NewStringKey(nil, "items"), 3),
+			node:   NewIndex(NewDotString(nil, "items"), 3),
 			String: "items[3]",
 			Index:  3,
 		},
 		{
 			name:      "struct field -> map key",
-			node:      NewStringKey(NewStringKey(nil, "config"), "database.name"),
+			node:      NewBracketString(NewDotString(nil, "config"), "database.name"),
 			String:    `config['database.name']`,
 			StringKey: "database.name",
 		},
 		{
 			name:      "struct field -> struct field",
-			node:      NewStringKey(NewStringKey(nil, "user"), "name"),
+			node:      NewDotString(NewDotString(nil, "user"), "name"),
 			String:    "user.name",
 			StringKey: "name",
 		},
 		{
 			name:   "map key -> array index",
-			node:   NewIndex(NewStringKey(nil, "servers list"), 0),
+			node:   NewIndex(NewBracketString(nil, "servers list"), 0),
 			String: `['servers list'][0]`,
 			Index:  0,
 		},
 		{
 			name:      "array index -> struct field",
-			node:      NewStringKey(NewIndex(nil, 2), "id"),
+			node:      NewDotString(NewIndex(nil, 2), "id"),
 			String:    "[2].id",
 			StringKey: "id",
 		},
@@ -652,6 +652,102 @@ func TestPureReferenceToPath(t *testing.T) {
 			} else {
 				assert.Nil(t, pathNode)
 			}
+		})
+	}
+}
+
+func TestHasPrefix(t *testing.T) {
+	tests := []struct {
+		name     string
+		s        string
+		prefix   string
+		expected bool
+	}{
+		// Edge cases
+		{
+			name:     "empty prefix",
+			s:        "a.b.c",
+			prefix:   "",
+			expected: true,
+		},
+		{
+			name:     "empty string",
+			s:        "",
+			prefix:   "a",
+			expected: false,
+		},
+		{
+			name:     "exact match",
+			s:        "config",
+			prefix:   "config",
+			expected: true,
+		},
+
+		// Correct matches - path boundary aware
+		{
+			name:     "simple field match",
+			s:        "a.b",
+			prefix:   "a",
+			expected: true,
+		},
+		{
+			name:     "nested field match",
+			s:        "config.database.name",
+			prefix:   "config.database",
+			expected: true,
+		},
+		{
+			name:     "field with array index",
+			s:        "items[3].name",
+			prefix:   "items",
+			expected: true,
+		},
+		{
+			name:     "array with prefix match",
+			s:        "items[0].name",
+			prefix:   "items[0]",
+			expected: true,
+		},
+		{
+			name:     "field with bracket notation",
+			s:        "config['spark.conf'].value",
+			prefix:   "config['spark.conf']",
+			expected: true,
+		},
+
+		// Incorrect matches - should NOT match
+		{
+			name:     "substring match without boundary",
+			s:        "ai_gateway",
+			prefix:   "ai",
+			expected: false,
+		},
+		{
+			name:     "different nested field",
+			s:        "configuration.name",
+			prefix:   "config",
+			expected: false,
+		},
+
+		// wildcard patterns are NOT supported - treated as literals
+		{
+			name:     "regex pattern not respected - star quantifier",
+			s:        "aaa",
+			prefix:   "a*",
+			expected: false,
+		},
+		{
+			name:     "regex pattern not respected - bracket class",
+			s:        "a[1]",
+			prefix:   "a[*]",
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := HasPrefix(tt.s, tt.prefix)
+			assert.Equal(t, tt.expected, result, "HasPrefix(%q, %q)", tt.s, tt.prefix)
 		})
 	}
 }

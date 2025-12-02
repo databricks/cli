@@ -34,6 +34,9 @@ class Environment:
     """
 
     java_dependencies: VariableOrList[str] = field(default_factory=list)
+    """
+    List of java dependencies. Each dependency is a string representing a java library path. For example: `/Volumes/path/to/test.jar`.
+    """
 
     @classmethod
     def from_dict(cls, value: "EnvironmentDict") -> "Self":
@@ -64,6 +67,9 @@ class EnvironmentDict(TypedDict, total=False):
     """
 
     java_dependencies: VariableOrList[str]
+    """
+    List of java dependencies. Each dependency is a string representing a java library path. For example: `/Volumes/path/to/test.jar`.
+    """
 
 
 EnvironmentParam = EnvironmentDict | Environment

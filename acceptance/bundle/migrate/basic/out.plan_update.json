@@ -67,7 +67,7 @@
             "action": "skip",
             "reason": "server_side_default"
           },
-          "tasks[0].notebook_task.source": {
+          "tasks[task_key='main'].notebook_task.source": {
             "action": "skip",
             "reason": "server_side_default"
           },
@@ -175,7 +175,7 @@
           "name": {
             "action": "update"
           },
-          "tags.myjob_name": {
+          "tags['myjob_name']": {
             "action": "update"
           }
         },

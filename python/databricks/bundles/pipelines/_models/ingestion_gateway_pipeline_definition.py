@@ -4,6 +4,10 @@ from typing import TYPE_CHECKING, TypedDict
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
 from databricks.bundles.core._variable import VariableOr, VariableOrOptional
+from databricks.bundles.pipelines._models.connection_parameters import (
+    ConnectionParameters,
+    ConnectionParametersParam,
+)
 
 if TYPE_CHECKING:
     from typing_extensions import Self
@@ -35,11 +39,18 @@ class IngestionGatewayPipelineDefinition:
     [DEPRECATED] [Deprecated, use connection_name instead] Immutable. The Unity Catalog connection that this gateway pipeline uses to communicate with the source.
     """
 
+    connection_parameters: VariableOrOptional[ConnectionParameters] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    Optional, Internal. Parameters required to establish an initial connection with the source.
+    """
+
     gateway_storage_name: VariableOrOptional[str] = None
     """
     Optional. The Unity Catalog-compatible name for the gateway storage location.
     This is the destination to use for the data that is extracted by the gateway.
-    Delta Live Tables system will automatically create the storage location under the catalog and schema.
+    Spark Declarative Pipelines system will automatically create the storage location under the catalog and schema.
     """
 
     @classmethod
@@ -73,11 +84,18 @@ class IngestionGatewayPipelineDefinitionDict(TypedDict, total=False):
     [DEPRECATED] [Deprecated, use connection_name instead] Immutable. The Unity Catalog connection that this gateway pipeline uses to communicate with the source.
     """
 
+    connection_parameters: VariableOrOptional[ConnectionParametersParam]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    Optional, Internal. Parameters required to establish an initial connection with the source.
+    """
+
     gateway_storage_name: VariableOrOptional[str]
     """
     Optional. The Unity Catalog-compatible name for the gateway storage location.
     This is the destination to use for the data that is extracted by the gateway.
-    Delta Live Tables system will automatically create the storage location under the catalog and schema.
+    Spark Declarative Pipelines system will automatically create the storage location under the catalog and schema.
     """
 
 

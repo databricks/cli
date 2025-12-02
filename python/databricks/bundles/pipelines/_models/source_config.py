@@ -15,14 +15,10 @@ if TYPE_CHECKING:
 
 @dataclass(kw_only=True)
 class SourceConfig:
-    """
-    :meta private: [EXPERIMENTAL]
-    """
+    """"""
 
     catalog: VariableOrOptional[SourceCatalogConfig] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
     Catalog-level source configuration parameters
     """
 
@@ -39,8 +35,6 @@ class SourceConfigDict(TypedDict, total=False):
 
     catalog: VariableOrOptional[SourceCatalogConfigParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
     Catalog-level source configuration parameters
     """
 

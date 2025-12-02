@@ -7,12 +7,30 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
+	"strings"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/experimental/apps-mcp/lib/common"
+	"github.com/databricks/cli/experimental/apps-mcp/lib/prompts"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/template"
 	"github.com/spf13/cobra"
 )
+
+func validateAppNameLength(projectName string) error {
+	const maxAppNameLength = 30
+	const devTargetPrefix = "dev-"
+	totalLength := len(devTargetPrefix) + len(projectName)
+	if totalLength > maxAppNameLength {
+		maxAllowed := maxAppNameLength - len(devTargetPrefix)
+		return fmt.Errorf(
+			"app name too long: 'dev-%s' is %d chars (max: %d). App name must be ≤%d characters",
+			projectName, totalLength, maxAppNameLength, maxAllowed,
+		)
+	}
+	return nil
+}
 
 func readClaudeMd(ctx context.Context, configFile string) {
 	showFallback := func() {
@@ -54,85 +72,158 @@ func readClaudeMd(ctx context.Context, configFile string) {
 	cmdio.LogString(ctx, "=================\n")
 }
 
+// generateFileTree creates a tree-style visualization of the file structure.
+// Collapses directories with more than 10 files to avoid clutter.
+func generateFileTree(outputDir string) (string, error) {
+	const maxFilesToShow = 10
+
+	// collect all files in the output directory
+	var allFiles []string
+	err := filepath.Walk(outputDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() {
+			relPath, err := filepath.Rel(outputDir, path)
+			if err != nil {
+				return err
+			}
+			allFiles = append(allFiles, filepath.ToSlash(relPath))
+		}
+		return nil
+	})
+	if err != nil {
+		return "", err
+	}
+
+	// build a tree structure
+	tree := make(map[string][]string)
+
+	for _, relPath := range allFiles {
+		parts := strings.Split(relPath, "/")
+
+		if len(parts) == 1 {
+			// root level file
+			tree[""] = append(tree[""], parts[0])
+		} else {
+			// file in subdirectory
+			dir := strings.Join(parts[:len(parts)-1], "/")
+			fileName := parts[len(parts)-1]
+			tree[dir] = append(tree[dir], fileName)
+		}
+	}
+
+	// format as tree
+	var output strings.Builder
+	var sortedDirs []string
+	for dir := range tree {
+		sortedDirs = append(sortedDirs, dir)
+	}
+	sort.Strings(sortedDirs)
+
+	for _, dir := range sortedDirs {
+		filesInDir := tree[dir]
+		if dir == "" {
+			// root files - always show all
+			for _, file := range filesInDir {
+				output.WriteString(file)
+				output.WriteString("\n")
+			}
+		} else {
+			// directory
+			output.WriteString(dir)
+			output.WriteString("/\n")
+			if len(filesInDir) <= maxFilesToShow {
+				// show all files
+				for _, file := range filesInDir {
+					output.WriteString("  ")
+					output.WriteString(file)
+					output.WriteString("\n")
+				}
+			} else {
+				// collapse large directories
+				output.WriteString(fmt.Sprintf("  (%d files)\n", len(filesInDir)))
+			}
+		}
+	}
+
+	return output.String(), nil
+}
+
+const (
+	defaultTemplateRepo = "https://github.com/databricks/cli"
+	defaultTemplateDir  = "experimental/apps-mcp/templates/appkit"
+	defaultBranch       = "main"
+	templatePathEnvVar  = "DATABRICKS_APPKIT_TEMPLATE_PATH"
+)
+
 func newInitTemplateCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "init-template [TEMPLATE_PATH]",
-		Short: "Initialize using a bundle template",
-		Args:  root.MaximumNArgs(1),
-		Long: fmt.Sprintf(`Initialize using a bundle template to get started quickly.
-
-TEMPLATE_PATH optionally specifies which template to use. It can be one of the following:
-%s
-- a local file system path with a template directory
-- a Git repository URL, e.g. https://github.com/my/repository
-
-Supports the same options as 'databricks bundle init' plus:
-  --describe: Display template schema without materializing
-  --config_json: Provide config as JSON string instead of file
+		Use:   "init-template",
+		Short: "Initialize a Databricks App using the appkit template",
+		Args:  cobra.NoArgs,
+		Long: `Initialize a Databricks App using the appkit template.
 
 Examples:
-  experimental apps-mcp tools init-template                   # Choose from built-in templates
-  experimental apps-mcp tools init-template default-python    # Python jobs and notebooks
-  experimental apps-mcp tools init-template --output-dir ./my-project
-  experimental apps-mcp tools init-template default-python --describe
-  experimental apps-mcp tools init-template default-python --config_json '{"project_name":"my-app"}'
+  experimental apps-mcp tools init-template --name my-app
+  experimental apps-mcp tools init-template --name my-app --warehouse abc123
+  experimental apps-mcp tools init-template --name my-app --description "My cool app"
+  experimental apps-mcp tools init-template --name my-app --output-dir ./projects
+
+Environment variables:
+  DATABRICKS_APPKIT_TEMPLATE_PATH  Override template source with local path (for development)
 
 After initialization:
   databricks bundle deploy --target dev
-
-See https://docs.databricks.com/en/dev-tools/bundles/templates.html for more information on templates.`, template.HelpDescriptions()),
+`,
 	}
 
-	var configFile string
+	var name string
+	var warehouse string
+	var description string
 	var outputDir string
-	var templateDir string
-	var tag string
-	var branch string
-	var configJSON string
 	var describe bool
 
-	cmd.Flags().StringVar(&configFile, "config-file", "", "JSON file containing key value pairs of input parameters required for template initialization.")
-	cmd.Flags().StringVar(&templateDir, "template-dir", "", "Directory path within a Git repository containing the template.")
-	cmd.Flags().StringVar(&outputDir, "output-dir", "", "Directory to write the initialized template to.")
-	cmd.Flags().StringVar(&branch, "tag", "", "Git tag to use for template initialization")
-	cmd.Flags().StringVar(&tag, "branch", "", "Git branch to use for template initialization")
-	cmd.Flags().StringVar(&configJSON, "config-json", "", "JSON string containing key value pairs (alternative to --config-file).")
+	cmd.Flags().StringVar(&name, "name", "", "Project name (required)")
+	cmd.Flags().StringVar(&warehouse, "warehouse", "", "SQL warehouse ID")
+	cmd.Flags().StringVar(&warehouse, "warehouse-id", "", "SQL warehouse ID (alias for --warehouse)")
+	cmd.Flags().StringVar(&warehouse, "sql-warehouse-id", "", "SQL warehouse ID (alias for --warehouse)")
+	cmd.Flags().StringVar(&warehouse, "sql_warehouse_id", "", "SQL warehouse ID (alias for --warehouse)")
+	cmd.Flags().StringVar(&description, "description", "", "App description")
+	cmd.Flags().StringVar(&outputDir, "output-dir", "", "Directory to write the initialized template to")
 	cmd.Flags().BoolVar(&describe, "describe", false, "Display template schema without initializing")
+
+	// Hide the alias flags from help
+	cmd.Flags().MarkHidden("warehouse-id")
+	cmd.Flags().MarkHidden("sql-warehouse-id")
+	cmd.Flags().MarkHidden("sql_warehouse_id")
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		if tag != "" && branch != "" {
-			return errors.New("only one of --tag or --branch can be specified")
-		}
-
-		if configFile != "" && configJSON != "" {
-			return errors.New("only one of --config-file or --config-json can be specified")
-		}
-
-		var templatePathOrUrl string
-		if len(args) > 0 {
-			templatePathOrUrl = args[0]
-		}
-
 		ctx := cmd.Context()
 
-		// NEW: Describe mode - show schema only
+		// Resolve template source: env var override or default remote
+		templatePathOrUrl := os.Getenv(templatePathEnvVar)
+		templateDir := ""
+		branch := ""
+
+		if templatePathOrUrl == "" {
+			templatePathOrUrl = defaultTemplateRepo
+			templateDir = defaultTemplateDir
+			branch = defaultBranch
+		}
+
+		// Describe mode - show schema only
 		if describe {
 			r := template.Resolver{
 				TemplatePathOrUrl: templatePathOrUrl,
 				ConfigFile:        "",
 				OutputDir:         outputDir,
 				TemplateDir:       templateDir,
-				Tag:               tag,
 				Branch:            branch,
 			}
 
 			tmpl, err := r.Resolve(ctx)
-			if errors.Is(err, template.ErrCustomSelected) {
-				cmdio.LogString(ctx, "Please specify a path or Git repository to use a custom template.")
-				cmdio.LogString(ctx, "See https://docs.databricks.com/en/dev-tools/bundles/templates.html to learn more about custom templates.")
-				return nil
-			}
 			if err != nil {
 				return err
 			}
@@ -151,48 +242,62 @@ See https://docs.databricks.com/en/dev-tools/bundles/templates.html for more inf
 			return nil
 		}
 
-		if configJSON != "" {
-			var userConfigMap map[string]any
-			if err := json.Unmarshal([]byte(configJSON), &userConfigMap); err != nil {
-				return fmt.Errorf("invalid JSON in --config-json: %w", err)
-			}
-
-			tmpFile, err := os.CreateTemp("", "mcp-template-config-*.json")
-			if err != nil {
-				return fmt.Errorf("create temp config file: %w", err)
-			}
-			defer os.Remove(tmpFile.Name())
-
-			configBytes, err := json.Marshal(userConfigMap)
-			if err != nil {
-				return fmt.Errorf("marshal config: %w", err)
-			}
-			if _, err := tmpFile.Write(configBytes); err != nil {
-				return fmt.Errorf("write config file: %w", err)
-			}
-			if err := tmpFile.Close(); err != nil {
-				return fmt.Errorf("close config file: %w", err)
-			}
-
-			configFile = tmpFile.Name()
+		// Validate required flag
+		if name == "" {
+			return errors.New("--name is required")
 		}
 
-		// Standard materialize flow (identical to bundle/init.go)
+		if err := validateAppNameLength(name); err != nil {
+			return err
+		}
+
+		// Build config map from flags
+		configMap := map[string]any{
+			"project_name": name,
+		}
+		if warehouse != "" {
+			configMap["sql_warehouse_id"] = warehouse
+		}
+		if description != "" {
+			configMap["app_description"] = description
+		}
+
+		// Write config to temp file
+		tmpFile, err := os.CreateTemp("", "mcp-template-config-*.json")
+		if err != nil {
+			return fmt.Errorf("create temp config file: %w", err)
+		}
+		defer os.Remove(tmpFile.Name())
+
+		configBytes, err := json.Marshal(configMap)
+		if err != nil {
+			return fmt.Errorf("marshal config: %w", err)
+		}
+		if _, err := tmpFile.Write(configBytes); err != nil {
+			return fmt.Errorf("write config file: %w", err)
+		}
+		if err := tmpFile.Close(); err != nil {
+			return fmt.Errorf("close config file: %w", err)
+		}
+
+		configFile := tmpFile.Name()
+
+		// Create output directory if specified and doesn't exist
+		if outputDir != "" {
+			if err := os.MkdirAll(outputDir, 0o755); err != nil {
+				return fmt.Errorf("create output directory: %w", err)
+			}
+		}
+
 		r := template.Resolver{
 			TemplatePathOrUrl: templatePathOrUrl,
 			ConfigFile:        configFile,
 			OutputDir:         outputDir,
 			TemplateDir:       templateDir,
-			Tag:               tag,
 			Branch:            branch,
 		}
 
 		tmpl, err := r.Resolve(ctx)
-		if errors.Is(err, template.ErrCustomSelected) {
-			cmdio.LogString(ctx, "Please specify a path or Git repository to use a custom template.")
-			cmdio.LogString(ctx, "See https://docs.databricks.com/en/dev-tools/bundles/templates.html to learn more about custom templates.")
-			return nil
-		}
 		if err != nil {
 			return err
 		}
@@ -204,8 +309,39 @@ See https://docs.databricks.com/en/dev-tools/bundles/templates.html for more inf
 		}
 		tmpl.Writer.LogTelemetry(ctx)
 
+		// Determine actual output directory (template writes to subdirectory with project name)
+		actualOutputDir := name
+		if outputDir != "" {
+			actualOutputDir = filepath.Join(outputDir, name)
+		}
+
+		// Count files and get absolute path
+		fileCount := 0
+		absOutputDir, err := filepath.Abs(actualOutputDir)
+		if err != nil {
+			absOutputDir = actualOutputDir
+		}
+		_ = filepath.Walk(absOutputDir, func(path string, info os.FileInfo, err error) error {
+			if err == nil && !info.IsDir() {
+				fileCount++
+			}
+			return nil
+		})
+		cmdio.LogString(ctx, common.FormatScaffoldSuccess("appkit", absOutputDir, fileCount))
+
+		// Generate and print file tree structure
+		fileTree, err := generateFileTree(absOutputDir)
+		if err == nil && fileTree != "" {
+			cmdio.LogString(ctx, "\nFile structure:")
+			cmdio.LogString(ctx, fileTree)
+		}
+
 		// Try to read and display CLAUDE.md if present
 		readClaudeMd(ctx, configFile)
+
+		// Re-inject app-specific guidance
+		appsContent := prompts.MustExecuteTemplate("apps.tmpl", map[string]any{})
+		cmdio.LogString(ctx, appsContent)
 
 		return nil
 	}
