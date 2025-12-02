@@ -7,21 +7,13 @@ import (
 )
 
 func main() {
-	baseRef := os.Getenv("GITHUB_BASE_REF")
-	if baseRef == "" {
-		baseRef = "HEAD"
+	if len(os.Args) != 3 {
+		fmt.Fprintf(os.Stderr, "Usage: %s <head-ref> <base-ref>\n", os.Args[0])
+		os.Exit(1)
 	}
 
-	headRef := os.Getenv("GITHUB_HEAD_REF")
-	if headRef == "" {
-		headRef = "HEAD"
-	}
-
-	// Accept CLI arguments for testing
-	if len(os.Args) == 3 {
-		headRef = os.Args[1]
-		baseRef = os.Args[2]
-	}
+	headRef := os.Args[1]
+	baseRef := os.Args[2]
 
 	changedFiles, err := GetChangedFiles(headRef, baseRef)
 	if err != nil {
