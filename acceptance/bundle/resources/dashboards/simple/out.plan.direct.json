@@ -11,7 +11,7 @@
         "lifecycle_state": "ACTIVE",
         "parent_path": "/Workspace/Users/[USERNAME]",
         "path": "/Users/[USERNAME]/test bundle-deploy-dashboard [UUID].lvdash.json",
-        "serialized_dashboard": "{\n  \"pages\": [\n    {\n      \"name\": \"02724bf2\",\n      \"displayName\": \"Dashboard test bundle-deploy-dashboard\",\n      \"pageType\": \"PAGE_TYPE_CANVAS\"\n    }\n  ]\n}\n",
+        "serialized_dashboard": "{}\n",
         "update_time": "[TIMESTAMP]",
         "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
       },

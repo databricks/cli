@@ -23,12 +23,6 @@ type ResourceDashboard struct {
 	client *databricks.WorkspaceClient
 }
 
-func dashboardConfigForceSendFields() []string {
-	return []string{
-		"EmbedCredentials",
-	}
-}
-
 // ensureWorkspacePrefix adds the /Workspace prefix to the parent path if it's not already present.
 // The backend removes this prefix from parent path, and thus it needs to be added back
 // to match the local configuration. The default parent_path (i.e. ${workspace.resource_path})
@@ -52,42 +46,37 @@ func (*ResourceDashboard) PrepareState(input *resources.Dashboard) *resources.Da
 }
 
 func (r *ResourceDashboard) RemapState(state *resources.DashboardConfig) *resources.DashboardConfig {
+	forceSendFields := utils.FilterFields[resources.DashboardConfig](state.ForceSendFields, []string{
+		"CreateTime",
+		"DashboardId",
+		"LifecycleState",
+		"Path",
+		"UpdateTime",
+		"SerializedDashboard",
+	}...)
+
+	// EmbedCredentials must always be included in ForceSendFields to ensure it's serialized
+	// even when false (zero value).
+	if !slices.Contains(forceSendFields, "EmbedCredentials") {
+		forceSendFields = append(forceSendFields, "EmbedCredentials")
+	}
+
 	return &resources.DashboardConfig{
-		Dashboard: dashboards.Dashboard{
-			DisplayName: state.DisplayName,
-			Etag:        state.Etag,
-			ParentPath:  state.ParentPath,
-			WarehouseId: state.WarehouseId,
-			ForceSendFields: utils.FilterFields[dashboards.Dashboard](state.ForceSendFields, []string{
-				"CreateTime",
-				"DashboardId",
-				"LifecycleState",
-				"Path",
-				"UpdateTime",
-				"SerializedDashboard",
-			}...),
+		DisplayName:         state.DisplayName,
+		Etag:                state.Etag,
+		ParentPath:          state.ParentPath,
+		WarehouseId:         state.WarehouseId,
+		SerializedDashboard: state.SerializedDashboard,
+		EmbedCredentials:    state.EmbedCredentials,
 
-			// Clear output only fields. They should not show up on remote diff computation.
-			CreateTime:     "",
-			DashboardId:    "",
-			LifecycleState: dashboards.LifecycleState(""),
-			Path:           "",
-			UpdateTime:     "",
+		ForceSendFields: forceSendFields,
 
-			// Serialized dashboard is ignored for remote diff changes.
-			// They are only relevant for local diff changes.
-			SerializedDashboard: "",
-		},
-
-		EmbedCredentials: state.EmbedCredentials,
-
-		// Serialized dashboard is ignored for remote diff changes.
-		// They are only relevant for local diff changes.
-		SerializedDashboard: "",
-
-		// Only fields from [resources.DashboardConfig] that are not present in [dashboards.Dashboard]
-		// can be specfied here. Otherwise marshalling will fail.
-		ForceSendFields: dashboardConfigForceSendFields(),
+		// Clear output only fields. They should not show up on remote diff computation.
+		CreateTime:     "",
+		DashboardId:    "",
+		LifecycleState: dashboards.LifecycleState(""),
+		Path:           "",
+		UpdateTime:     "",
 	}
 }
 
@@ -117,34 +106,48 @@ func (r *ResourceDashboard) DoRead(ctx context.Context, id string) (*resources.D
 		return nil, err
 	}
 
-	return &resources.DashboardConfig{
-		Dashboard: dashboards.Dashboard{
-			DisplayName:         dashboard.DisplayName,
-			Etag:                dashboard.Etag,
-			WarehouseId:         dashboard.WarehouseId,
-			SerializedDashboard: dashboard.SerializedDashboard,
-			ParentPath:          ensureWorkspacePrefix(dashboard.ParentPath),
+	forceSendFields := utils.FilterFields[resources.DashboardConfig](dashboard.ForceSendFields)
+	// EmbedCredentials must always be included in ForceSendFields to ensure it's serialized
+	// even when false (zero value).
+	if !slices.Contains(forceSendFields, "EmbedCredentials") {
+		forceSendFields = append(forceSendFields, "EmbedCredentials")
+	}
 
-			// Output only fields.
-			CreateTime:      dashboard.CreateTime,
-			DashboardId:     dashboard.DashboardId,
-			LifecycleState:  dashboard.LifecycleState,
-			Path:            dashboard.Path,
-			UpdateTime:      dashboard.UpdateTime,
-			ForceSendFields: utils.FilterFields[dashboards.Dashboard](dashboard.ForceSendFields),
-		},
+	return &resources.DashboardConfig{
+		DisplayName:         dashboard.DisplayName,
+		Etag:                dashboard.Etag,
+		WarehouseId:         dashboard.WarehouseId,
 		SerializedDashboard: dashboard.SerializedDashboard,
-		EmbedCredentials:    publishedDashboard.EmbedCredentials,
-		ForceSendFields:     dashboardConfigForceSendFields(),
+		ParentPath:          ensureWorkspacePrefix(dashboard.ParentPath),
+
+		// Output only fields.
+		CreateTime:      dashboard.CreateTime,
+		DashboardId:     dashboard.DashboardId,
+		LifecycleState:  dashboard.LifecycleState,
+		Path:            dashboard.Path,
+		UpdateTime:      dashboard.UpdateTime,
+		ForceSendFields: forceSendFields,
+
+		EmbedCredentials: publishedDashboard.EmbedCredentials,
 	}, nil
 }
 
 func prepareDashboardRequest(config *resources.DashboardConfig) (dashboards.Dashboard, error) {
-	dashboard := config.Dashboard
-
-	// Fields like "embed_credentials" are part of the bundle configuration but not the create request here.
-	// Thus we need to filter such fields out.
-	dashboard.ForceSendFields = utils.FilterFields[dashboards.Dashboard](config.ForceSendFields)
+	dashboard := dashboards.Dashboard{
+		DisplayName:         config.DisplayName,
+		ParentPath:          config.ParentPath,
+		WarehouseId:         config.WarehouseId,
+		Etag:                config.Etag,
+		CreateTime:          "",
+		DashboardId:         "",
+		LifecycleState:      "",
+		Path:                "",
+		SerializedDashboard: "",
+		UpdateTime:          "",
+		// Fields like "embed_credentials" are part of the bundle configuration but not the create request here.
+		// Thus we need to filter such fields out.
+		ForceSendFields: utils.FilterFields[dashboards.Dashboard](config.ForceSendFields),
+	}
 	v := config.SerializedDashboard
 	if serializedDashboard, ok := v.(string); ok {
 		// If serialized dashboard is already a string, we can use it directly.
@@ -177,25 +180,29 @@ func (r *ResourceDashboard) publishDashboard(ctx context.Context, id string, con
 }
 
 func responseToState(createOrUpdateResp *dashboards.Dashboard, publishResp *dashboards.PublishedDashboard, serializedDashboard string) *resources.DashboardConfig {
-	return &resources.DashboardConfig{
-		Dashboard: dashboards.Dashboard{
-			DisplayName:         createOrUpdateResp.DisplayName,
-			Etag:                createOrUpdateResp.Etag,
-			WarehouseId:         createOrUpdateResp.WarehouseId,
-			SerializedDashboard: createOrUpdateResp.SerializedDashboard,
-			ParentPath:          ensureWorkspacePrefix(createOrUpdateResp.ParentPath),
+	forceSendFields := utils.FilterFields[resources.DashboardConfig](createOrUpdateResp.ForceSendFields)
+	// EmbedCredentials must always be included in ForceSendFields to ensure it's serialized
+	// even when false (zero value).
+	if !slices.Contains(forceSendFields, "EmbedCredentials") {
+		forceSendFields = append(forceSendFields, "EmbedCredentials")
+	}
 
-			// Output only fields
-			CreateTime:      createOrUpdateResp.CreateTime,
-			DashboardId:     createOrUpdateResp.DashboardId,
-			LifecycleState:  createOrUpdateResp.LifecycleState,
-			Path:            createOrUpdateResp.Path,
-			UpdateTime:      createOrUpdateResp.UpdateTime,
-			ForceSendFields: utils.FilterFields[dashboards.Dashboard](createOrUpdateResp.ForceSendFields),
-		},
+	return &resources.DashboardConfig{
+		DisplayName:         createOrUpdateResp.DisplayName,
+		Etag:                createOrUpdateResp.Etag,
+		WarehouseId:         createOrUpdateResp.WarehouseId,
 		SerializedDashboard: serializedDashboard,
-		EmbedCredentials:    publishResp.EmbedCredentials,
-		ForceSendFields:     dashboardConfigForceSendFields(),
+		ParentPath:          ensureWorkspacePrefix(createOrUpdateResp.ParentPath),
+
+		// Output only fields
+		CreateTime:      createOrUpdateResp.CreateTime,
+		DashboardId:     createOrUpdateResp.DashboardId,
+		LifecycleState:  createOrUpdateResp.LifecycleState,
+		Path:            createOrUpdateResp.Path,
+		UpdateTime:      createOrUpdateResp.UpdateTime,
+		ForceSendFields: forceSendFields,
+
+		EmbedCredentials: publishResp.EmbedCredentials,
 	}
 }
 

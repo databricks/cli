@@ -10,7 +10,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/compute"
-	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/databricks/databricks-sdk-go/service/database"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
@@ -176,9 +175,7 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 			Dashboards: map[string]*resources.Dashboard{
 				"test_dashboard": {
 					DashboardConfig: resources.DashboardConfig{
-						Dashboard: dashboards.Dashboard{
-							DisplayName: "test_dashboard",
-						},
+						DisplayName: "test_dashboard",
 					},
 				},
 			},
@@ -418,16 +415,12 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 			Dashboards: map[string]*resources.Dashboard{
 				"test_dashboard": {
 					DashboardConfig: resources.DashboardConfig{
-						Dashboard: dashboards.Dashboard{
-							DisplayName: "test_dashboard",
-						},
+						DisplayName: "test_dashboard",
 					},
 				},
 				"test_dashboard_new": {
 					DashboardConfig: resources.DashboardConfig{
-						Dashboard: dashboards.Dashboard{
-							DisplayName: "test_dashboard_new",
-						},
+						DisplayName: "test_dashboard_new",
 					},
 				},
 			},

@@ -12,14 +12,40 @@ import (
 )
 
 type DashboardConfig struct {
-	dashboards.Dashboard
+	// The timestamp of when the dashboard was created.
+	CreateTime string `json:"create_time,omitempty"`
+	// UUID identifying the dashboard.
+	DashboardId string `json:"dashboard_id,omitempty"`
+	// The display name of the dashboard.
+	DisplayName string `json:"display_name,omitempty"`
+	// The etag for the dashboard. Can be optionally provided on updates to
+	// ensure that the dashboard has not been modified since the last read. This
+	// field is excluded in List Dashboards responses.
+	Etag string `json:"etag,omitempty"`
+	// The state of the dashboard resource. Used for tracking trashed status.
+	LifecycleState dashboards.LifecycleState `json:"lifecycle_state,omitempty"`
+	// The workspace path of the folder containing the dashboard. Includes
+	// leading slash and no trailing slash. This field is excluded in List
+	// Dashboards responses.
+	ParentPath string `json:"parent_path,omitempty"`
+	// The workspace path of the dashboard asset, including the file name.
+	// Exported dashboards always have the file extension `.lvdash.json`. This
+	// field is excluded in List Dashboards responses.
+	Path string `json:"path,omitempty"`
+	// The timestamp of when the dashboard was last updated by the user. This
+	// field is excluded in List Dashboards responses.
+	UpdateTime string `json:"update_time,omitempty"`
+	// The warehouse ID used to run the dashboard.
+	WarehouseId string `json:"warehouse_id,omitempty"`
 
-	// =========================
-	// === Additional fields ===
-	// =========================
+	ForceSendFields []string `json:"-" url:"-"`
+
+	// ==============================================
+	// === overrides over [dashboards.Dashboard] ===
+	// ==============================================
 
 	// SerializedDashboard holds the contents of the dashboard in serialized JSON form.
-	// We override the field's type from the SDK struct here to allow for inlining as YAML.
+	// Even though the SDK represents this as a string, we override it as any to allow for inlining as YAML.
 	// If the value is a string, it is used as is.
 	// If it is not a string, its contents is marshalled as JSON.
 	SerializedDashboard any `json:"serialized_dashboard,omitempty"`
@@ -30,13 +56,14 @@ type DashboardConfig struct {
 	//
 	// Defaults to false if not set.
 	EmbedCredentials bool `json:"embed_credentials,omitempty"`
+}
 
-	// Direct deployment uses ForceSendFields to serialize zero values in the bundle configuration.
-	// This struct [DashboardConfig] is the config representation of a dashboard. So it's
-	// necessary to override the ForceSendFields from the [dashboards.Dashboard] struct here.
-	//
-	// This is necessary to serialize the zero value of EmbedCredentials in the local
-	ForceSendFields []string `json:"-" url:"-"`
+func (c *DashboardConfig) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, c)
+}
+
+func (c DashboardConfig) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(c)
 }
 
 type Dashboard struct {
@@ -50,33 +77,6 @@ type Dashboard struct {
 	// as metadata which is needed for `databricks bundle generate dashboard --resource <dashboard_key>` to work.
 	// This is not part of DashboardConfig because we don't need to store this in the resource state.
 	FilePath string `json:"file_path,omitempty"`
-}
-
-// These override functions are necessary to ensure that "serialized_dashboard" and "embed_credentials"
-// serialized into the state for direct deployment.
-func (c *DashboardConfig) UnmarshalJSON(b []byte) error {
-	err := marshal.Unmarshal(b, c)
-
-	// Do not  de-serialized the nested "serialized_dashboard" field. By default, using a json decoder
-	// the value from "serialized_dashboard" will be de-serialized into both
-	// "DashboardConfig.Dashboard.SerializedDashboard" and "DashboardConfig.SerializedDashboard".
-	// We only want to de-serialize it into "DashboardConfig.SerializedDashboard"
-	// persistent diffs in direct deployment.
-	embeddedDashboard := c.Dashboard
-	embeddedDashboard.SerializedDashboard = ""
-	var forceSendFields []string
-	for _, field := range embeddedDashboard.ForceSendFields {
-		if field != "SerializedDashboard" {
-			forceSendFields = append(forceSendFields, field)
-		}
-	}
-	embeddedDashboard.ForceSendFields = forceSendFields
-	c.Dashboard = embeddedDashboard
-	return err
-}
-
-func (c DashboardConfig) MarshalJSON() ([]byte, error) {
-	return marshal.Marshal(c)
 }
 
 func (*Dashboard) Exists(ctx context.Context, w *databricks.WorkspaceClient, id string) (bool, error) {
