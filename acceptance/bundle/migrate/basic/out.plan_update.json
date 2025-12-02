@@ -175,7 +175,7 @@
           "name": {
             "action": "update"
           },
-          "tags.myjob_name": {
+          "tags['myjob_name']": {
             "action": "update"
           }
         },

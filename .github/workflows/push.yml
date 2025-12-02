@@ -31,8 +31,52 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh cache delete --all --repo databricks/cli || true
 
+  testmask:
+    runs-on: ubuntu-latest
+    outputs:
+      targets: ${{ steps.mask1.outputs.targets || steps.mask2.outputs.targets || steps.mask3.outputs.targets }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
+        with:
+          go-version-file: tools/go.mod
+
+      - name: Run testmask (pull requests)
+        if: ${{ github.event_name == 'pull_request' }}
+        id: mask1
+        working-directory: tools/testmask
+        run: |
+          go run . ${{ github.event.pull_request.head.sha }} ${{ github.event.pull_request.base.sha }} | tee output.json
+          echo "targets=$(jq -c '.' output.json)" >> $GITHUB_OUTPUT
+
+      - name: Run testmask (merge group)
+        if: ${{ github.event_name == 'merge_group' }}
+        id: mask2
+        working-directory: tools/testmask
+        run: |
+          go run . ${{ github.event.merge_group.head_sha }} ${{ github.event.merge_group.base_sha }} | tee output.json
+          echo "targets=$(jq -c '.' output.json)" >> $GITHUB_OUTPUT
+
+      - name: Run testmask (other events)
+        if: ${{ github.event_name != 'pull_request' && github.event_name != 'merge_group' }}
+        id: mask3
+        working-directory: tools/testmask
+        run: |
+          # Always run all tests
+          echo "targets=[\"test\"]" >> $GITHUB_OUTPUT
+
   tests:
-    needs: cleanups
+    needs:
+      - cleanups
+      - testmask
+
+    # Only run if the target is in the list of targets from testmask
+    if: ${{ contains(fromJSON(needs.testmask.outputs.targets), 'test') }}
     runs-on: ${{ matrix.os }}
 
     strategy:
@@ -56,37 +100,10 @@ jobs:
       - name: Checkout repository and submodules
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-      - name: Create deployment-specific cache identifier
-        run: echo "${{ matrix.deployment }}" > deployment-type.txt
-
-      - name: Setup Go
-        uses: actions/setup-go@44694675825211faa026b3c33043df3e48a5fa00 # v6.0.0
+      - name: Setup build environment
+        uses: ./.github/actions/setup-build-environment
         with:
-          go-version-file: go.mod
-          cache-dependency-path: |
-            go.sum
-            deployment-type.txt
-
-      - name: Setup Python
-        uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6.0.0
-        with:
-          python-version: '3.13'
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@85856786d1ce8acfbcc2f13a5f3fbd6b938f9f41 # v7.1.2
-        with:
-          version: "0.8.9"
-
-      - name: Install ruff (Python linter and formatter)
-        uses: astral-sh/ruff-action@57714a7c8a2e59f32539362ba31877a1957dded1 # v3.5.1
-        with:
-          version: "0.9.1"
-          args: "--version"
-
-      - name: Pull external libraries
-        run: |
-          go mod download
-          pip3 install wheel==0.45.1
+          cache-key: test-${{ matrix.deployment }}
 
       - name: Run tests without coverage
         # We run tests without coverage on PR, merge_group, and schedule because we don't make use of coverage information
@@ -106,6 +123,131 @@ jobs:
 
       - name: Analyze slow tests
         run: make slowest
+
+  test-exp-aitools:
+    needs:
+      - cleanups
+      - testmask
+
+    # Only run if the target is in the list of targets from testmask
+    if: ${{ contains(fromJSON(needs.testmask.outputs.targets), 'test-exp-aitools') }}
+    name: "make test-exp-aitools"
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - macos-latest
+          - ubuntu-latest
+          - windows-latest
+
+    steps:
+      - name: Checkout repository and submodules
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup build environment
+        uses: ./.github/actions/setup-build-environment
+        with:
+          cache-key: test-exp-aitools
+
+      - name: Run tests
+        run: |
+          make test-exp-aitools
+
+  test-exp-apps-mcp:
+    needs:
+      - cleanups
+      - testmask
+
+    # Only run if the target is in the list of targets from testmask
+    if: ${{ contains(fromJSON(needs.testmask.outputs.targets), 'test-exp-apps-mcp') }}
+    name: "make test-exp-apps-mcp"
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - macos-latest
+          - ubuntu-latest
+          # The Windows tests are broken; see https://github.com/databricks/cli/pull/4024.
+          # - windows-latest
+
+    steps:
+      - name: Checkout repository and submodules
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup build environment
+        uses: ./.github/actions/setup-build-environment
+        with:
+          cache-key: test-exp-apps-mcp
+
+      - name: Run tests
+        run: |
+          make test-exp-apps-mcp
+
+  test-exp-ssh:
+    needs:
+      - cleanups
+      - testmask
+
+    # Only run if the target is in the list of targets from testmask
+    if: ${{ contains(fromJSON(needs.testmask.outputs.targets), 'test-exp-ssh') }}
+    name: "make test-exp-ssh"
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - macos-latest
+          - ubuntu-latest
+          - windows-latest
+
+    steps:
+      - name: Checkout repository and submodules
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup build environment
+        uses: ./.github/actions/setup-build-environment
+        with:
+          cache-key: test-exp-ssh
+
+      - name: Run tests
+        run: |
+          make test-exp-ssh
+
+  test-pipelines:
+    needs:
+      - cleanups
+      - testmask
+
+    # Only run if the target is in the list of targets from testmask
+    if: ${{ contains(fromJSON(needs.testmask.outputs.targets), 'test-pipelines') }}
+    name: "make test-pipelines"
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - macos-latest
+          - ubuntu-latest
+          - windows-latest
+
+    steps:
+      - name: Checkout repository and submodules
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Setup build environment
+        uses: ./.github/actions/setup-build-environment
+        with:
+          cache-key: test-pipelines
+
+      - name: Run tests
+        run: |
+          make test-pipelines
 
   validate-generated-is-up-to-date:
     needs: cleanups
