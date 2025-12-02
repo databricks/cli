@@ -301,25 +301,27 @@ After initialization:
 		tmpl.Writer.LogTelemetry(ctx)
 
 		// Determine actual output directory (template writes to subdirectory with project name)
-		actualOutputDir := outputDir
-		if actualOutputDir == "" {
-			actualOutputDir = name
+		actualOutputDir := name
+		if outputDir != "" {
+			actualOutputDir = filepath.Join(outputDir, name)
 		}
 
-		// Count files if we can
+		// Count files and get absolute path
 		fileCount := 0
-		if absPath, err := filepath.Abs(actualOutputDir); err == nil {
-			_ = filepath.Walk(absPath, func(path string, info os.FileInfo, err error) error {
-				if err == nil && !info.IsDir() {
-					fileCount++
-				}
-				return nil
-			})
+		absOutputDir, err := filepath.Abs(actualOutputDir)
+		if err != nil {
+			absOutputDir = actualOutputDir
 		}
-		cmdio.LogString(ctx, common.FormatScaffoldSuccess("appkit", actualOutputDir, fileCount))
+		_ = filepath.Walk(absOutputDir, func(path string, info os.FileInfo, err error) error {
+			if err == nil && !info.IsDir() {
+				fileCount++
+			}
+			return nil
+		})
+		cmdio.LogString(ctx, common.FormatScaffoldSuccess("appkit", absOutputDir, fileCount))
 
 		// Generate and print file tree structure
-		fileTree, err := generateFileTree(actualOutputDir)
+		fileTree, err := generateFileTree(absOutputDir)
 		if err == nil && fileTree != "" {
 			cmdio.LogString(ctx, "\nFile structure:")
 			cmdio.LogString(ctx, fileTree)
