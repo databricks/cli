@@ -602,7 +602,6 @@ The template includes a smoke test at `tests/smoke.spec.ts` that verifies the ap
 
 ```bash
 npm run test:smoke      # Run smoke test only
-npm test                # Run unit tests + smoke test
 npm run test:e2e        # Run all E2E tests
 npm run test:e2e:ui     # Run with Playwright UI
 ```
