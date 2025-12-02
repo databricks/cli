@@ -33,7 +33,7 @@ func TestPathNode(t *testing.T) {
 		},
 		{
 			name:      "map key",
-			node:      NewStringKey(nil, "mykey"),
+			node:      NewDotString(nil, "mykey"),
 			String:    `mykey`,
 			StringKey: "mykey",
 		},
@@ -59,31 +59,31 @@ func TestPathNode(t *testing.T) {
 		// Two node tests
 		{
 			name:   "struct field -> array index",
-			node:   NewIndex(NewStringKey(nil, "items"), 3),
+			node:   NewIndex(NewDotString(nil, "items"), 3),
 			String: "items[3]",
 			Index:  3,
 		},
 		{
 			name:      "struct field -> map key",
-			node:      NewStringKey(NewStringKey(nil, "config"), "database.name"),
+			node:      NewBracketString(NewDotString(nil, "config"), "database.name"),
 			String:    `config['database.name']`,
 			StringKey: "database.name",
 		},
 		{
 			name:      "struct field -> struct field",
-			node:      NewStringKey(NewStringKey(nil, "user"), "name"),
+			node:      NewDotString(NewDotString(nil, "user"), "name"),
 			String:    "user.name",
 			StringKey: "name",
 		},
 		{
 			name:   "map key -> array index",
-			node:   NewIndex(NewStringKey(nil, "servers list"), 0),
+			node:   NewIndex(NewBracketString(nil, "servers list"), 0),
 			String: `['servers list'][0]`,
 			Index:  0,
 		},
 		{
 			name:      "array index -> struct field",
-			node:      NewStringKey(NewIndex(nil, 2), "id"),
+			node:      NewDotString(NewIndex(nil, 2), "id"),
 			String:    "[2].id",
 			StringKey: "id",
 		},

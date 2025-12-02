@@ -349,7 +349,8 @@ export const querySchemas = {
 
 - Parameters use colon prefix: `:parameter_name`
 - Databricks infers types from values automatically
-- For optional parameters, use pattern: `(:param = '' OR column = :param)`
+- For optional string parameters, use pattern: `(:param = '' OR column = :param)`
+- **For optional date parameters, use sentinel dates** (`'1900-01-01'` and `'9999-12-31'`) instead of empty strings (see Date Parameters section below)
 
 #### Frontend Parameter Passing:
 
@@ -364,7 +365,7 @@ const { data } = useAnalyticsQuery('filtered_data', {
 
 #### Date Parameters:
 
-For dates, use `YYYY-MM-DD` format in frontend, `DATE()` function in SQL:
+For dates, use `YYYY-MM-DD` format in frontend, `CAST()` function in SQL:
 
 ```typescript
 // Date helper for query params
@@ -375,13 +376,62 @@ const startDate = daysAgo(7);  // 7 days ago
 
 ```sql
 -- SQL
-WHERE DATE(timestamp_column) >= :start_date
+WHERE timestamp_column >= CAST(:start_date AS DATE)
 ```
+
+**⚠️ IMPORTANT: Optional Date Parameters - Use Sentinel Dates**
+
+Databricks App Kit validates parameter types before query execution. **DO NOT use empty strings (`''`) for optional date parameters** as this causes validation errors.
+
+**✅ CORRECT - Use Sentinel Dates:**
+
+```typescript
+// Frontend: Use sentinel dates for "no filter" instead of empty strings
+const revenueParams = {
+  group_by: 'month',
+  start_date: '1900-01-01',  // Sentinel: effectively no lower bound
+  end_date: '9999-12-31',    // Sentinel: effectively no upper bound
+  country: country || '',
+  property_type: propertyType || '',
+};
+```
+
+```sql
+-- SQL: Simple comparison since sentinel dates are always valid
+WHERE b.check_in >= CAST(:start_date AS DATE)
+  AND b.check_in <= CAST(:end_date AS DATE)
+```
+
+**❌ WRONG - Empty Strings Cause Validation Errors:**
+
+```typescript
+// ❌ DON'T DO THIS - causes "Invalid date format" error
+const params = {
+  start_date: '',  // Empty string triggers parameter validation error
+  end_date: '',
+};
+```
+
+```sql
+-- ❌ DON'T DO THIS - even with conditional logic, validation happens first
+WHERE (:start_date = '' OR b.check_in >= CAST(:start_date AS DATE))
+```
+
+**Why Sentinel Dates Work:**
+- `1900-01-01` is before any real data (effectively no lower bound filter)
+- `9999-12-31` is after any real data (effectively no upper bound filter)
+- Always valid DATE types, so no parameter validation errors
+- All real dates fall within this range, so no filtering occurs
+
+**When to Use Real Dates vs Sentinel Dates:**
+- **Sentinel dates**: When you want "no filter" by default (e.g., show all time periods)
+- **Real dates**: When you have actual date pickers or filters that users can set
 
 **Parameter Types:**
 - **Strings/Numbers**: Use directly in SQL with `:param_name`
-- **Dates**: Format as `YYYY-MM-DD`, use with `DATE()` in SQL
-- **Optional**: Use empty string default, check with `(:param = '' OR column = :param)`
+- **Dates**: Format as `YYYY-MM-DD`, use with `CAST(:param AS DATE)` in SQL
+- **Optional Strings**: Use empty string default, check with `(:param = '' OR column = :param)`
+- **Optional Dates**: Use sentinel dates (`'1900-01-01'` and `'9999-12-31'`) instead of empty strings
 
 ## SQL Type Handling
 

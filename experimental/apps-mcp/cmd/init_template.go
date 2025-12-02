@@ -185,9 +185,17 @@ After initialization:
 
 	cmd.Flags().StringVar(&name, "name", "", "Project name (required)")
 	cmd.Flags().StringVar(&warehouse, "warehouse", "", "SQL warehouse ID")
+	cmd.Flags().StringVar(&warehouse, "warehouse-id", "", "SQL warehouse ID (alias for --warehouse)")
+	cmd.Flags().StringVar(&warehouse, "sql-warehouse-id", "", "SQL warehouse ID (alias for --warehouse)")
+	cmd.Flags().StringVar(&warehouse, "sql_warehouse_id", "", "SQL warehouse ID (alias for --warehouse)")
 	cmd.Flags().StringVar(&description, "description", "", "App description")
 	cmd.Flags().StringVar(&outputDir, "output-dir", "", "Directory to write the initialized template to")
 	cmd.Flags().BoolVar(&describe, "describe", false, "Display template schema without initializing")
+
+	// Hide the alias flags from help
+	cmd.Flags().MarkHidden("warehouse-id")
+	cmd.Flags().MarkHidden("sql-warehouse-id")
+	cmd.Flags().MarkHidden("sql_warehouse_id")
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {

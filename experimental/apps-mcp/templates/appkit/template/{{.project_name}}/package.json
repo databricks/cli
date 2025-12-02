@@ -18,7 +18,7 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:smoke": "playwright install chromium && playwright test tests/smoke.spec.ts",
-    "clean": "rm -rf client/dist build node_modules .smoke-test test-results playwright-report"
+    "clean": "rm -rf client/dist dist build node_modules .smoke-test test-results playwright-report"
   },
   "keywords": [],
   "author": "",

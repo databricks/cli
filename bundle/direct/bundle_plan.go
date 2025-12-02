@@ -260,12 +260,11 @@ func interpretOldStateVsRemoteState(ctx context.Context, adapter *dresources.Ada
 	m := make(map[string]deployplan.Trigger)
 
 	for _, ch := range diff {
-		if ch.Old == nil && ch.Path.IsStringKey() {
+		if ch.Old == nil && ch.Path.IsDotString() {
 			// The field was not set by us, but comes from the remote state.
 			// This could either be server-side default or a policy.
 			// In any case, this is not a change we should react to.
-			// Note, we only consider StringKeys here, because indexes and key-value pairs refer to slices and we want to react to new element in slices.
-			// Note, IsStringKey is also too broad - it currently covers struct fields and map keys, we don't want to include map keys here.
+			// Note, we only consider struct fields here. Adding/removing elements to/from maps and slices should trigger updates.
 			m[ch.Path.String()] = deployplan.Trigger{
 				Action: deployplan.ActionTypeSkipString,
 				Reason: "server_side_default",
