@@ -111,14 +111,9 @@ jobs:
           - event: pull_request
             os:
               name: windows
-              runner:
-                group: databricks-protected-runner-group-large
-                labels: windows-server-latest-large
           - event: pull_request
             os:
               name: macos
-              runner:
-                labels: macos-latest
 
     steps:
       - name: Checkout repository and submodules
