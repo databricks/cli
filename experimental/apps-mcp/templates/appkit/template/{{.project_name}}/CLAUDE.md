@@ -543,7 +543,7 @@ function MyComponent() {
 
 ### Unit Tests (Vitest)
 
-Use vitest for all unit tests. Put tests next to the code (e.g. `src/*.test.ts`).
+**CRITICAL**: Use vitest for all tests. Put tests next to the code (e.g. src/\*.test.ts)
 
 ```typescript
 import { describe, it, expect } from 'vitest';
@@ -605,93 +605,6 @@ npm run test:smoke      # Run smoke test only
 npm test                # Run unit tests + smoke test
 npm run test:e2e        # Run all E2E tests
 npm run test:e2e:ui     # Run with Playwright UI
-```
-
-## Deployment Workflow
-
-Deploy your Databricks app using the bundle CLI commands.
-
-### Pre-Deployment Checklist
-
-1. **Build the app**: `npm run build`
-2. **Run tests**: `npm test`
-3. **Type check**: `npm run typecheck`
-4. **Lint**: `npm run lint:fix`
-
-### Deployment Steps
-
-**Step 1: Validate Configuration**
-
-```bash
-databricks bundle validate
-```
-
-This checks:
-- `databricks.yml` syntax is correct
-- All required resources are defined
-- Warehouse IDs and permissions are valid
-
-**Step 2: Deploy to Target Environment**
-
-```bash
-# Deploy to dev (default)
-databricks bundle deploy --target dev
-
-# Deploy to production
-databricks bundle deploy --target prod
-```
-
-This will:
-- Upload app files to Databricks workspace
-- Create or update the app resource
-- Configure warehouse access and permissions
-
-**Step 3: Verify Deployment**
-
-```bash
-databricks bundle summary
-```
-
-View your deployed app in the Databricks workspace under Apps.
-
-### Managing Deployments
-
-**Destroy a deployment:**
-
-```bash
-databricks bundle destroy --target dev --auto-approve
-```
-
-**Redeploy after changes:**
-
-```bash
-npm run build
-databricks bundle deploy --target dev
-```
-
-### Common Issues
-
-- **App already exists**: Run `databricks bundle destroy` first, then redeploy
-- **Warehouse not found**: Check warehouse ID in `databricks.yml`
-- **Build files missing**: Run `npm run build` before deploying
-
-### Environment Configuration
-
-The `databricks.yml` file defines deployment targets:
-
-```yaml
-targets:
-  dev:
-    mode: development
-    workspace:
-      host: https://your-workspace.cloud.databricks.com
-    variables:
-      warehouse_id: your-warehouse-id
-
-  prod:
-    mode: production
-    workspace:
-      host: https://your-prod-workspace.cloud.databricks.com
 ```
 
 ## Frontend Styling Guidelines:
