@@ -26,51 +26,40 @@ When building or planning a new Databricks app, use the following steps:
 
 # Initialization
 
-⚠️ ALWAYS start by scaffolding a new Databricks app using command:
+⚠️ ALWAYS start by scaffolding a new Databricks app:
 
 invoke_databricks_cli 'experimental apps-mcp tools init-template --name my-app-name --description "My app description"'
 
+After scaffolding, refer to CLAUDE.md in the app directory for template-specific instructions.
+
 # Local Development
 
-⚠️ PRIMARY development workflow - run app locally:
-
-1. Navigate to app directory: cd ./your-app
-2. Start dev server: npm run dev (NEVER use npm start during development!)
-3. Open in browser: http://localhost:8000
-
-CRITICAL: Always use `npm run dev` during development, NEVER `npm start`:
-- npm run dev = development server with hot reload
-- npm start = production server (deployment only)
-
-⚠️ IMPORTANT: When user asks to "open the app", "see the app", or "open dev copy":
-- During development → ALWAYS use http://localhost:8000 (requires npm run dev to be running)
-- After deployment → Use deployed URL from bundle summary
-
-DO NOT suggest deployed URLs (staging/production) when user wants to test during development!
+⚠️ After initialization, check the app's CLAUDE.md for:
+- How to run the app locally
+- Development commands specific to the template
+- Local vs deployed environment guidance
 
 # Validation
 
-⚠️ Always validate your app before deploying to production:
+⚠️ Before deploying, validate your app:
 
 invoke_databricks_cli 'experimental apps-mcp tools validate ./your-app-location'
 
-This runs: npm install → build → typecheck → tests
+This ensures the app is production-ready by running template-specific checks.
 
 # Deployment
 
 ⚠️ CRITICAL: NEVER deploy without explicit user confirmation!
 
-Deployment checklist (confirm with user BEFORE deploying):
-1. App has been validated successfully
-2. Local testing completed (npm run dev)
-3. User explicitly approved deployment
+Before deploying:
+1. ✅ Validate the app successfully
+2. ✅ Test locally per CLAUDE.md instructions
+3. ✅ Ask user: "Ready to deploy to [environment]?"
 
-⚠️ ALWAYS ask user: "Ready to deploy to [environment]?" before running deploy command.
-
-Once confirmed, use the deploy command:
+Once confirmed:
 
 invoke_databricks_cli 'experimental apps-mcp tools deploy'
 
-After deployment, get the app URL:
+After deployment:
 
 invoke_databricks_cli 'bundle summary'
