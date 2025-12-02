@@ -108,13 +108,13 @@ jobs:
 
         exclude:
           # On merge_group events, only run the tests on Linux to reduce time to merge.
-          - event: merge_group
+          - event: pull_request
             os:
               name: windows
               runner:
                 group: databricks-protected-runner-group-large
                 labels: windows-server-latest-large
-          - event: merge_group
+          - event: pull_request
             os:
               name: macos
               runner:
