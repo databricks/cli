@@ -450,8 +450,7 @@ github.com/databricks/cli/bundle/config/resources.Job:
   "environments":
     "description": |-
       A list of task execution environment specifications that can be referenced by serverless tasks of this job.
-      An environment is required to be present for serverless tasks.
-      For serverless notebook tasks, the environment is accessible in the notebook environment panel.
+      For serverless notebook tasks, if the environment_key is not specified, the notebook environment will be used if present. If a jobs environment is specified, it will override the notebook environment.
       For other serverless tasks, the task environment is required to be specified using environment_key in the task settings.
   "format":
     "description": |-
@@ -1467,7 +1466,7 @@ github.com/databricks/databricks-sdk-go/service/compute.AwsAttributes:
       This string will be of a form like "us-west-2a". The provided availability
       zone must be in the same region as the Databricks deployment. For example, "us-west-2a"
       is not a valid zone id if the Databricks deployment resides in the "us-east-1" region.
-      This is an optional field at cluster creation, and if not specified, a default zone will be used.
+      This is an optional field at cluster creation, and if not specified, the zone "auto" will be used.
       If the zone specified is "auto", will try to place cluster in a zone with high availability,
       and will retry placement in a different AZ if there is not enough capacity.
 
@@ -1841,8 +1840,6 @@ github.com/databricks/databricks-sdk-go/service/compute.Environment:
   "java_dependencies":
     "description": |-
       List of java dependencies. Each dependency is a string representing a java library path. For example: `/Volumes/path/to/test.jar`.
-    "x-databricks-preview": |-
-      PRIVATE
 github.com/databricks/databricks-sdk-go/service/compute.GcpAttributes:
   "_":
     "description": |-
@@ -2173,6 +2170,9 @@ github.com/databricks/databricks-sdk-go/service/database.NewPipelineSpec:
     "description": |-
       Custom fields that user can set for pipeline while creating SyncedDatabaseTable.
       Note that other fields of pipeline are still inferred by table def internally
+  "budget_policy_id":
+    "description": |-
+      Budget policy to set on the newly created pipeline.
   "storage_catalog":
     "description": |-
       This field needs to be specified if the destination catalog is a managed postgres catalog.
@@ -2899,6 +2899,35 @@ github.com/databricks/databricks-sdk-go/service/jobs.JobsHealthRules:
     "description": |-
       An optional set of health rules that can be defined for this job.
   "rules": {}
+github.com/databricks/databricks-sdk-go/service/jobs.ModelTriggerConfiguration:
+  "aliases":
+    "description": |-
+      Aliases of the model versions to monitor. Can only be used in conjunction with condition MODEL_ALIAS_SET.
+  "condition":
+    "description": |-
+      The condition based on which to trigger a job run.
+  "min_time_between_triggers_seconds":
+    "description": |-
+      If set, the trigger starts a run only after the specified amount of time has passed since
+      the last time the trigger fired. The minimum allowed value is 60 seconds.
+  "securable_name":
+    "description": |-
+      Name of the securable to monitor ("mycatalog.myschema.mymodel" in the case of model-level triggers,
+      "mycatalog.myschema" in the case of schema-level triggers) or empty in the case of metastore-level triggers.
+  "wait_after_last_change_seconds":
+    "description": |-
+      If set, the trigger starts a run only after no model updates have occurred for the specified time
+      and can be used to wait for a series of model updates before triggering a run. The
+      minimum allowed value is 60 seconds.
+github.com/databricks/databricks-sdk-go/service/jobs.ModelTriggerConfigurationCondition:
+  "_":
+    "enum":
+      - |-
+        MODEL_CREATED
+      - |-
+        MODEL_VERSION_READY
+      - |-
+        MODEL_ALIAS_SET
 github.com/databricks/databricks-sdk-go/service/jobs.NotebookTask:
   "base_parameters":
     "description": |-
@@ -3516,6 +3545,9 @@ github.com/databricks/databricks-sdk-go/service/jobs.TriggerSettings:
   "file_arrival":
     "description": |-
       File arrival trigger settings.
+  "model":
+    "x-databricks-preview": |-
+      PRIVATE
   "pause_status":
     "description": |-
       Whether this trigger is paused or not.
@@ -3564,6 +3596,15 @@ github.com/databricks/databricks-sdk-go/service/ml.ModelTag:
   "value":
     "description": |-
       The tag value.
+github.com/databricks/databricks-sdk-go/service/pipelines.ConnectionParameters:
+  "source_catalog":
+    "description": |-
+      Source catalog for initial connection.
+      This is necessary for schema exploration in some database systems like Oracle, and optional but nice-to-have
+      in some other database systems like Postgres.
+      For Oracle databases, this maps to a service name.
+    "x-databricks-preview": |-
+      PRIVATE
 github.com/databricks/databricks-sdk-go/service/pipelines.CronTrigger:
   "quartz_cron_schedule": {}
   "timezone_id": {}
@@ -3638,6 +3679,11 @@ github.com/databricks/databricks-sdk-go/service/pipelines.IngestionGatewayPipeli
   "connection_name":
     "description": |-
       Immutable. The Unity Catalog connection that this gateway pipeline uses to communicate with the source.
+  "connection_parameters":
+    "description": |-
+      Optional, Internal. Parameters required to establish an initial connection with the source.
+    "x-databricks-preview": |-
+      PRIVATE
   "gateway_storage_catalog":
     "description": |-
       Required, Immutable. The name of the catalog for the gateway pipeline's storage location.
@@ -3645,7 +3691,7 @@ github.com/databricks/databricks-sdk-go/service/pipelines.IngestionGatewayPipeli
     "description": |-
       Optional. The Unity Catalog-compatible name for the gateway storage location.
       This is the destination to use for the data that is extracted by the gateway.
-      Delta Live Tables system will automatically create the storage location under the catalog and schema.
+      Spark Declarative Pipelines system will automatically create the storage location under the catalog and schema.
   "gateway_storage_schema":
     "description": |-
       Required, Immutable. The name of the schema for the gateway pipelines's storage location.
@@ -3653,6 +3699,14 @@ github.com/databricks/databricks-sdk-go/service/pipelines.IngestionPipelineDefin
   "connection_name":
     "description": |-
       Immutable. The Unity Catalog connection that this ingestion pipeline uses to communicate with the source. This is used with connectors for applications like Salesforce, Workday, and so on.
+  "ingest_from_uc_foreign_catalog":
+    "description": |-
+      Immutable. If set to true, the pipeline will ingest tables from the
+      UC foreign catalogs directly without the need to specify a UC connection or ingestion gateway.
+      The `source_catalog` fields in objects of IngestionConfig are interpreted as
+      the UC foreign catalogs to ingest from.
+    "x-databricks-preview": |-
+      PRIVATE
   "ingestion_gateway_id":
     "description": |-
       Immutable. Identifier for the gateway that is used by this ingestion pipeline to communicate with the source database. This is used with connectors to databases like SQL Server.
@@ -3669,8 +3723,6 @@ github.com/databricks/databricks-sdk-go/service/pipelines.IngestionPipelineDefin
   "source_configurations":
     "description": |-
       Top-level source configurations
-    "x-databricks-preview": |-
-      PRIVATE
   "source_type":
     "description": |-
       The type of the foreign source.
@@ -3783,6 +3835,8 @@ github.com/databricks/databricks-sdk-go/service/pipelines.IngestionSourceType:
         SHAREPOINT
       - |-
         DYNAMICS365
+      - |-
+        FOREIGN_CATALOG
 github.com/databricks/databricks-sdk-go/service/pipelines.ManualTrigger: {}
 github.com/databricks/databricks-sdk-go/service/pipelines.NotebookLibrary:
   "path":
@@ -3985,8 +4039,6 @@ github.com/databricks/databricks-sdk-go/service/pipelines.PostgresCatalogConfig:
   "slot_config":
     "description": |-
       Optional. The Postgres slot configuration to use for logical replication
-    "x-databricks-preview": |-
-      PRIVATE
 github.com/databricks/databricks-sdk-go/service/pipelines.PostgresSlotConfig:
   "_":
     "description": |-
@@ -3994,13 +4046,9 @@ github.com/databricks/databricks-sdk-go/service/pipelines.PostgresSlotConfig:
   "publication_name":
     "description": |-
       The name of the publication to use for the Postgres source
-    "x-databricks-preview": |-
-      PRIVATE
   "slot_name":
     "description": |-
       The name of the logical replication slot to use for the Postgres source
-    "x-databricks-preview": |-
-      PRIVATE
 github.com/databricks/databricks-sdk-go/service/pipelines.ReportSpec:
   "destination_catalog":
     "description": |-
@@ -4065,19 +4113,13 @@ github.com/databricks/databricks-sdk-go/service/pipelines.SourceCatalogConfig:
   "postgres":
     "description": |-
       Postgres-specific catalog-level configuration parameters
-    "x-databricks-preview": |-
-      PRIVATE
   "source_catalog":
     "description": |-
       Source catalog name
-    "x-databricks-preview": |-
-      PRIVATE
 github.com/databricks/databricks-sdk-go/service/pipelines.SourceConfig:
   "catalog":
     "description": |-
       Catalog-level source configuration parameters
-    "x-databricks-preview": |-
-      PRIVATE
 github.com/databricks/databricks-sdk-go/service/pipelines.TableSpec:
   "destination_catalog":
     "description": |-
@@ -4134,7 +4176,7 @@ github.com/databricks/databricks-sdk-go/service/pipelines.TableSpecificConfig:
       PRIVATE
   "sequence_by":
     "description": |-
-      The column names specifying the logical order of events in the source data. Delta Live Tables uses this sequencing to handle change events that arrive out of order.
+      The column names specifying the logical order of events in the source data. Spark Declarative Pipelines uses this sequencing to handle change events that arrive out of order.
   "workday_report_parameters":
     "description": |-
       (Optional) Additional custom parameters for Workday Report

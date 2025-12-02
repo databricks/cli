@@ -96,8 +96,7 @@ class Job(Resource):
     environments: VariableOrList[JobEnvironment] = field(default_factory=list)
     """
     A list of task execution environment specifications that can be referenced by serverless tasks of this job.
-    An environment is required to be present for serverless tasks.
-    For serverless notebook tasks, the environment is accessible in the notebook environment panel.
+    For serverless notebook tasks, if the environment_key is not specified, the notebook environment will be used if present. If a jobs environment is specified, it will override the notebook environment.
     For other serverless tasks, the task environment is required to be specified using environment_key in the task settings.
     """
 
@@ -241,8 +240,7 @@ class JobDict(TypedDict, total=False):
     environments: VariableOrList[JobEnvironmentParam]
     """
     A list of task execution environment specifications that can be referenced by serverless tasks of this job.
-    An environment is required to be present for serverless tasks.
-    For serverless notebook tasks, the environment is accessible in the notebook environment panel.
+    For serverless notebook tasks, if the environment_key is not specified, the notebook environment will be used if present. If a jobs environment is specified, it will override the notebook environment.
     For other serverless tasks, the task environment is required to be specified using environment_key in the task settings.
     """
 

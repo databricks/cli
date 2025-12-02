@@ -22,10 +22,12 @@ func New() *cobra.Command {
 		Use:   "tag-policies",
 		Short: `The Tag Policy API allows you to manage policies for governed tags in Databricks.`,
 		Long: `The Tag Policy API allows you to manage policies for governed tags in
-  Databricks. Permissions for tag policies can be managed using the [Account
-  Access Control Proxy API].
+  Databricks. For Terraform usage, see the [Tag Policy Terraform documentation].
+  Permissions for tag policies can be managed using the [Account Access Control
+  Proxy API].
 
-  [Account Access Control Proxy API]: https://docs.databricks.com/api/workspace/accountaccesscontrolproxy`,
+  [Account Access Control Proxy API]: https://docs.databricks.com/api/workspace/accountaccesscontrolproxy
+  [Tag Policy Terraform documentation]: https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/tag_policy`,
 		GroupID: "tags",
 		RunE:    root.ReportUnknownSubcommand,
 	}
@@ -70,7 +72,12 @@ func newCreateTagPolicy() *cobra.Command {
 	cmd.Short = `Create a new tag policy.`
 	cmd.Long = `Create a new tag policy.
 
-  Creates a new tag policy, making the associated tag key governed.`
+  Creates a new tag policy, making the associated tag key governed. For
+  Terraform usage, see the [Tag Policy Terraform documentation]. To manage
+  permissions for tag policies, use the [Account Access Control Proxy API].
+
+  [Account Access Control Proxy API]: https://docs.databricks.com/api/workspace/accountaccesscontrolproxy
+  [Tag Policy Terraform documentation]: https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/tag_policy`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -145,7 +152,10 @@ func newDeleteTagPolicy() *cobra.Command {
 	cmd.Long = `Delete a tag policy.
 
   Deletes a tag policy by its associated governed tag's key, leaving that tag
-  key ungoverned.`
+  key ungoverned. For Terraform usage, see the [Tag Policy Terraform
+  documentation].
+
+  [Tag Policy Terraform documentation]: https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/tag_policy`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -198,7 +208,12 @@ func newGetTagPolicy() *cobra.Command {
 	cmd.Short = `Get a tag policy.`
 	cmd.Long = `Get a tag policy.
 
-  Gets a single tag policy by its associated governed tag's key.`
+  Gets a single tag policy by its associated governed tag's key. For Terraform
+  usage, see the [Tag Policy Terraform documentation]. To list granted
+  permissions for tag policies, use the [Account Access Control Proxy API].
+
+  [Account Access Control Proxy API]: https://docs.databricks.com/api/workspace/accountaccesscontrolproxy
+  [Tag Policy Terraform documentation]: https://registry.terraform.io/providers/databricks/databricks/latest/docs/data-sources/tag_policy`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -254,7 +269,12 @@ func newListTagPolicies() *cobra.Command {
 	cmd.Short = `List tag policies.`
 	cmd.Long = `List tag policies.
 
-  Lists the tag policies for all governed tags in the account.`
+  Lists the tag policies for all governed tags in the account. For Terraform
+  usage, see the [Tag Policy Terraform documentation]. To list granted
+  permissions for tag policies, use the [Account Access Control Proxy API].
+
+  [Account Access Control Proxy API]: https://docs.databricks.com/api/workspace/accountaccesscontrolproxy
+  [Tag Policy Terraform documentation]: https://registry.terraform.io/providers/databricks/databricks/latest/docs/data-sources/tag_policies`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -309,7 +329,12 @@ func newUpdateTagPolicy() *cobra.Command {
 	cmd.Short = `Update an existing tag policy.`
 	cmd.Long = `Update an existing tag policy.
 
-  Updates an existing tag policy for a single governed tag.
+  Updates an existing tag policy for a single governed tag. For Terraform usage,
+  see the [Tag Policy Terraform documentation]. To manage permissions for tag
+  policies, use the [Account Access Control Proxy API].
+
+  [Account Access Control Proxy API]: https://docs.databricks.com/api/workspace/accountaccesscontrolproxy
+  [Tag Policy Terraform documentation]: https://registry.terraform.io/providers/databricks/databricks/latest/docs/resources/tag_policy
 
   Arguments:
     TAG_KEY:
