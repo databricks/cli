@@ -1,8 +1,6 @@
 package main
 
 import (
-	"bufio"
-	"bytes"
 	"fmt"
 	"os/exec"
 	"strings"
@@ -16,18 +14,12 @@ func GetChangedFiles(headRef, baseRef string) ([]string, error) {
 		return nil, fmt.Errorf("failed to get diff between %s and %s: %w", baseRef, headRef, err)
 	}
 
-	return parseLines(output), nil
-}
+	lines := strings.Split(string(output), "\n")
 
-// parseLines parses command output into a slice of non-empty lines.
-func parseLines(output []byte) []string {
-	var lines []string
-	scanner := bufio.NewScanner(bytes.NewReader(output))
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		if line != "" {
-			lines = append(lines, line)
-		}
+	// Drop the last line (always empty)
+	if len(lines) > 0 {
+		lines = lines[:len(lines)-1]
 	}
-	return lines
+
+	return lines, nil
 }
