@@ -6,57 +6,149 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    --primary: 0 0% 9%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 0 0% 3.9%;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
+    /* Light mode - Databricks Design System */
+    /* Primary: Lava 600: #FF3621, Navy 800: #1B3139, Oat Light: #F9F7F4, Oat Medium: #EEEDE9, White: #FFFFFF */
+    --background: 36 25% 97%; /* Oat Light */
+    --foreground: 202 36% 16%; /* Navy 800 */
+    --card: 0 0% 100%; /* White */
+    --card-foreground: 202 36% 16%; /* Navy 800 */
+    --popover: 0 0% 100%; /* White */
+    --popover-foreground: 202 36% 16%; /* Navy 800 */
+    --primary: 6 100% 56%; /* Lava 600 */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 48 11% 92%; /* Oat Medium */
+    --secondary-foreground: 202 36% 16%; /* Navy 800 */
+    --muted: 48 11% 92%; /* Oat Medium */
+    --muted-foreground: 189 19% 41%; /* Gray Text #5A6F77 */
+    --accent: 6 100% 56%; /* Lava 600 */
+    --accent-foreground: 0 0% 100%;
+    --destructive: 351 72% 52%; /* Maroon 600 #98102A */
+    --destructive-foreground: 0 0% 100%;
+    --success: 162 100% 33%; /* Green 600 #00A972 */
+    --success-foreground: 0 0% 100%;
+    --warning: 45 100% 50%; /* Yellow 600 #FFAB00 */
+    --warning-foreground: 202 36% 16%;
+    --border: 192 14% 88%; /* Gray Lines #DCE0E2 */
+    --input: 192 14% 88%;
+    --ring: 6 100% 56%; /* Lava 600 */
     --radius: 0.5rem;
+
+    /* Chart colors - Databricks extended palette */
+    --chart-1: 6 100% 56%; /* Lava 600 */
+    --chart-2: 162 100% 33%; /* Green 600 */
+    --chart-3: 203 89% 36%; /* Blue 600 */
+    --chart-4: 45 100% 50%; /* Yellow 600 */
+    --chart-5: 351 72% 52%; /* Maroon 600 */
+
+    /* Extended palette - functional colors */
+    --gray-navigation: 198 19% 23%; /* #303F47 */
+    --gray-text: 189 19% 41%; /* #5A6F77 */
+    --gray-lines: 192 14% 88%; /* #DCE0E2 */
+
+    /* Lava scale */
+    --lava-800: 5 70% 30%; /* #801C17 */
+    --lava-700: 2 66% 45%; /* #BD2B26 */
+    --lava-600: 6 100% 56%; /* #FF3621 */
+    --lava-500: 6 100% 64%; /* #FF5F46 */
+    --lava-400: 5 100% 79%; /* #FF9E94 */
+    --lava-300: 4 89% 85%; /* #FABFBA */
+
+    /* Navy scale */
+    --navy-900: 198 55% 10%; /* #0B2026 */
+    --navy-800: 202 36% 16%; /* #1B3139 */
+    --navy-700: 197 58% 18%; /* #143D4A */
+    --navy-600: 197 57% 25%; /* #1B5162 */
+    --navy-500: 194 21% 48%; /* #618794 */
+    --navy-400: 200 17% 63%; /* #90A5B1 */
+    --navy-300: 210 20% 80%; /* #C4CCD6 */
+
+    /* Green scale */
+    --green-600: 162 100% 33%; /* #00A972 */
+    --green-500: 165 59% 49%; /* #42BA91 */
+    --green-400: 164 45% 60%; /* #70C4AB */
+
+    /* Blue scale */
+    --blue-600: 203 89% 36%; /* #2272B4 */
+    --blue-500: 203 69% 57%; /* #4299E0 */
+    --blue-400: 203 100% 77%; /* #8ACAFF */
+
+    /* Yellow scale */
+    --yellow-600: 45 100% 50%; /* #FFAB00 */
+    --yellow-500: 45 97% 59%; /* #FCBA33 */
+    --yellow-400: 45 100% 70%; /* #FFCC66 */
   }
-  .dark {
-    --background: 0 0% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 0 0% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 0 0% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 0 0% 98%;
-    --primary-foreground: 0 0% 9%;
-    --secondary: 0 0% 14.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 0 0% 14.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 0 0% 14.9%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 14.9%;
-    --input: 0 0% 14.9%;
-    --ring: 0 0% 83.1%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      /* Dark mode - Databricks Design System */
+      --background: 202 36% 16%; /* Navy 800 */
+      --foreground: 36 25% 97%; /* Oat Light */
+      --card: 197 58% 18%; /* Navy 700 */
+      --card-foreground: 36 25% 97%;
+      --popover: 202 36% 20%;
+      --popover-foreground: 36 25% 97%;
+      --primary: 6 100% 64%; /* Lava 500 */
+      --primary-foreground: 0 0% 100%;
+      --secondary: 198 19% 23%; /* Gray Navigation */
+      --secondary-foreground: 36 25% 97%;
+      --muted: 197 57% 25%; /* Navy 600 */
+      --muted-foreground: 200 17% 63%; /* Navy 400 */
+      --accent: 6 100% 64%; /* Lava 500 */
+      --accent-foreground: 0 0% 100%;
+      --destructive: 351 72% 52%; /* Maroon 600 */
+      --destructive-foreground: 0 0% 100%;
+      --success: 165 59% 49%; /* Green 500 */
+      --success-foreground: 0 0% 100%;
+      --warning: 45 97% 59%; /* Yellow 500 */
+      --warning-foreground: 202 36% 16%;
+      --border: 194 21% 48%; /* Navy 500 */
+      --input: 197 57% 25%; /* Navy 600 */
+      --ring: 6 100% 64%;
+
+      /* Chart colors - vibrant extended palette */
+      --chart-1: 6 100% 64%; /* Lava 500 */
+      --chart-2: 165 59% 49%; /* Green 500 */
+      --chart-3: 203 69% 57%; /* Blue 500 */
+      --chart-4: 45 97% 59%; /* Yellow 500 */
+      --chart-5: 351 72% 52%; /* Maroon 600 */
+
+      /* Extended palette inherits same values in dark mode */
+      --gray-navigation: 198 19% 23%; /* #303F47 */
+      --gray-text: 189 19% 41%; /* #5A6F77 */
+      --gray-lines: 192 14% 88%; /* #DCE0E2 */
+
+      /* Lava scale */
+      --lava-800: 5 70% 30%; /* #801C17 */
+      --lava-700: 2 66% 45%; /* #BD2B26 */
+      --lava-600: 6 100% 56%; /* #FF3621 */
+      --lava-500: 6 100% 64%; /* #FF5F46 */
+      --lava-400: 5 100% 79%; /* #FF9E94 */
+      --lava-300: 4 89% 85%; /* #FABFBA */
+
+      /* Navy scale */
+      --navy-900: 198 55% 10%; /* #0B2026 */
+      --navy-800: 202 36% 16%; /* #1B3139 */
+      --navy-700: 197 58% 18%; /* #143D4A */
+      --navy-600: 197 57% 25%; /* #1B5162 */
+      --navy-500: 194 21% 48%; /* #618794 */
+      --navy-400: 200 17% 63%; /* #90A5B1 */
+      --navy-300: 210 20% 80%; /* #C4CCD6 */
+
+      /* Green scale */
+      --green-600: 162 100% 33%; /* #00A972 */
+      --green-500: 165 59% 49%; /* #42BA91 */
+      --green-400: 164 45% 60%; /* #70C4AB */
+
+      /* Blue scale */
+      --blue-600: 203 89% 36%; /* #2272B4 */
+      --blue-500: 203 69% 57%; /* #4299E0 */
+      --blue-400: 203 100% 77%; /* #8ACAFF */
+
+      /* Yellow scale */
+      --yellow-600: 45 100% 50%; /* #FFAB00 */
+      --yellow-500: 45 97% 59%; /* #FCBA33 */
+      --yellow-400: 45 100% 70%; /* #FFCC66 */
+    }
   }
 }
 
@@ -64,8 +156,153 @@
   * {
     border-color: hsl(var(--border));
   }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
   body {
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
+    font-feature-settings: 'rlig' 1, 'calt' 1;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+
+  /* Improved typography */
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 600;
+    letter-spacing: -0.025em;
+  }
+
+  h1 {
+    font-size: 2.25rem;
+    line-height: 1.2;
+  }
+
+  h2 {
+    font-size: 1.875rem;
+    line-height: 1.3;
+  }
+
+  h3 {
+    font-size: 1.5rem;
+    line-height: 1.4;
+  }
+
+  h4 {
+    font-size: 1.25rem;
+  }
+
+  h5 {
+    font-size: 1.125rem;
+  }
+
+  p {
+    line-height: 1.75rem;
+  }
+
+  /* Accessibility improvements */
+  :focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px hsl(var(--background)), 0 0 0 4px hsl(var(--ring));
+  }
+
+  /* Skip to main content link for screen readers */
+  .skip-to-main {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+
+  .skip-to-main:focus {
+    position: fixed;
+    top: 1rem;
+    left: 1rem;
+    z-index: 50;
+    width: auto;
+    height: auto;
+    padding: 0.5rem 1rem;
+    margin: 0;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
+    background-color: hsl(var(--primary));
+    color: hsl(var(--primary-foreground));
+    border-radius: 0.375rem;
+  }
+
+  /* Ensure images are accessible */
+  img {
+    max-width: 100%;
+    height: auto;
+  }
+
+  /* Better scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background-color: hsl(var(--secondary));
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--muted-foreground) / 0.5);
+    border-radius: 0.375rem;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--muted-foreground) / 0.7);
+  }
+
+  /* Selection styling */
+  ::selection {
+    background-color: hsl(var(--primary) / 0.2);
+  }
+
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer utilities {
+  /* Screen reader only utility */
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+
+  .focus\:not-sr-only:focus {
+    position: static;
+    width: auto;
+    height: auto;
+    padding: initial;
+    margin: initial;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
   }
 }

@@ -77,6 +77,7 @@ This template uses `@databricks/app-kit` which provides:
 - **Server setup**: `createApp()` with `server()` and `analytics()` plugins
 - **SQL queries**: Store SQL files in `config/queries/` directory
 - **React hooks**: `useAnalyticsQuery<T>()` for executing SQL queries from frontend
+- **Visualization Components**: AreaChart, BarChart, LineChart, PieChart, RadarChart, DataTable
 - **Authentication**: Automatic Databricks workspace authentication
 
 ### Server Setup Pattern:
@@ -87,13 +88,9 @@ import { createApp, server, analytics } from '@databricks/app-kit';
 const app = await createApp({
   plugins: [
     server({
-      watch: process.env.NODE_ENV === 'development',
-      staticPath,
       autoStart: false,
     }),
-    analytics({
-      timeout: 10000,
-    }),
+    analytics(),
   ],
 });
 
@@ -136,13 +133,27 @@ const { data, loading, error } = useAnalyticsQuery<T>(
 - `enabled` - Query always executes on mount. Use conditional rendering instead: `{selectedId && <MyComponent id={selectedId} />}`
 - `refetch` - Not available. Re-mount component to re-query.
 
+### Frontend Visualization Pattern:
+
+```typescript
+import { AreaChart } from '@databricks/app-kit/react';
+
+function MyComponent() {
+  return (
+    <div>
+      <AreaChart queryKey="query_name" parameters={{}} />
+    </div>
+  );
+}
+```
+
 ### SQL Query Files:
 
 **IMPORTANT**: ALWAYS use SQL files in `config/queries/` for data retrieval. NEVER use tRPC for SQL queries.
 
 - Store ALL SQL queries in `config/queries/` directory
 - Name files descriptively: `trip_statistics.sql`, `user_metrics.sql`, `sales_by_region.sql`
-- Reference by filename (without extension) in `useAnalyticsQuery`
+- Reference by filename (without extension) in `useAnalyticsQuery` or directly in a visualization component passing it as `queryKey`
 - App Kit automatically executes queries against configured Databricks warehouse
 - Benefits: Built-in caching, proper connection pooling, better performance
 
@@ -164,6 +175,31 @@ WHERE column_value >= :min_value
   AND (:optional_filter = '' OR status = :optional_filter)
 ```
 
+### Query Types
+
+Once the schema and the result of a query has been discovered, create its corresponding type in `config/queries/schema.ts` using a zod schema.
+
+Example
+
+```typescript
+import { z } from 'zod';
+
+export const querySchemas = {
+  mocked_sales: z.array(
+    z.object({
+      max_month_num: z.number().min(1).max(12),
+    })
+  ),
+
+  hello_world: z.array(
+    z.object({
+      value: z.string(),
+    })
+  ),
+};
+
+```
+
 **Key Points:**
 
 - Parameters use colon prefix: `:parameter_name`
@@ -173,7 +209,7 @@ WHERE column_value >= :min_value
 #### Frontend Parameter Passing:
 
 ```typescript
-const { data } = useAnalyticsQuery<ResultType[]>('filtered_data', {
+const { data } = useAnalyticsQuery('filtered_data', {
   min_value: minValue,
   max_value: maxValue,
   category: category,
@@ -287,7 +323,7 @@ function MyComponent() {
 
 **Decision Tree for Data Operations:**
 
-1. **Is it a SQL query?** → Use `config/queries/*.sql` + `useAnalyticsQuery`
+1. **Is it a SQL query?** → Use `config/queries/*.sql` + a Visualization component or `useAnalyticsQuery` if no component is available
    - SELECT statements
    - Aggregations, JOINs, GROUP BY
    - Analytics and reporting queries
@@ -427,30 +463,52 @@ npm run test:e2e:ui     # Run with Playwright UI
 - Forms should have loading states: `disabled={isLoading}`
 - Show empty states with helpful text when no data exists
 
-## Data Visualization with Recharts
+## Data Visualization with App Kit UI
 
-The template includes Recharts. Use Databricks brand colors: `['#40d1f5', '#4462c9', '#EB1600', '#0B2026', '#4A4A4A', '#353a4a']` (via `stroke` or `fill` props).
+App Kit UI provides an abstraction over Recharts.
+
+It exports a list of components where each component also exports its own props, so for example to use the `LineChart` it would be used as follows:
+
+```typescript
+import { LineChart } from '@databricks/app-kit-ui/react';
+
+function MyComponent() {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>My Data</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <LineChart queryKey="my_data" parameters={{}} />
+      </CardContent>
+    </Card>
+  );
+}
+```
+Each component exports their props, so to know the props from `LineChart`, `LineChartProps` can be imported too.
+
+The Visualization components provided by the App Kit UI library can also be used in full control mode combined with Recharts, which is included in the template.
+Use Databricks brand colors: `['#40d1f5', '#4462c9', '#EB1600', '#0B2026', '#4A4A4A', '#353a4a']` (via `stroke` or `fill` props).
 
 ```tsx
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { LineChart } from '@databricks/app-kit-ui/react';
+import { Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 <Card>
   <CardHeader><CardTitle>My Metrics</CardTitle></CardHeader>
   <CardContent>
-    {loading && <Skeleton className="h-[300px] w-full" />}
-    {error && <div className="text-destructive">Error: {error}</div>}
-    {data && (
-      <ResponsiveContainer width="100%" height={300}>
-        <LineChart data={data}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="name" />
-          <YAxis />
-          <Tooltip />
-          <Line type="monotone" dataKey="value" stroke="#40d1f5" />
-        </LineChart>
-      </ResponsiveContainer>
-    )}
+    <LineChart queryKey="query_name" parameters={salesParameters}>
+      <Line type="monotone" dataKey="revenue" stroke="#40d1f5" />
+      <Line type="monotone" dataKey="expenses" stroke="#4462c9" />
+      <Line type="monotone" dataKey="customers" stroke="#EB1600" />
+      <XAxis dataKey="month" />
+      <YAxis />
+      <Tooltip />
+    </LineChart>
   </CardContent>
 </Card>
 ```
+
+Every component handles loading, errors and data fetching internally, so the only thing needed is the `queryKey` and `parameters`.
+When rendering fully custom mode, it also needs the recharts components for that specific visualization component.
