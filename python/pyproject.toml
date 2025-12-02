@@ -18,8 +18,8 @@ dependencies = [
 requires = ["flit_core >=3.11,<4"]
 build-backend = "flit_core.buildapi"
 
-[tool.uv]
-dev-dependencies = [
+[dependency-groups]
+dev = [
   "pyright==1.1.380",
   "pytest-cov==5.0.0",
   "pytest==8.3.3",
