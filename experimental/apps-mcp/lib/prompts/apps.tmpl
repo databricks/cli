@@ -20,8 +20,12 @@ invoke_databricks_cli 'experimental apps-mcp tools init-template --name my-app-n
 ⚠️ PRIMARY development workflow - run app locally:
 
 1. Navigate to app directory: cd ./your-app
-2. Start dev server: npm run dev
+2. Start dev server: npm run dev (NEVER use npm start during development!)
 3. Open in browser: http://localhost:8000
+
+CRITICAL: Always use `npm run dev` during development, NEVER `npm start`:
+- npm run dev = development server with hot reload
+- npm start = production server (deployment only)
 
 ⚠️ IMPORTANT: When user asks to "open the app", "see the app", or "open dev copy":
 - During development → ALWAYS use http://localhost:8000 (requires npm run dev to be running)
