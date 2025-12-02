@@ -57,7 +57,10 @@ func newGetPublicWorkspaceSetting() *cobra.Command {
 
   Get a setting value at workspace level. See
   :method:settingsv2/listworkspacesettingsmetadata for list of setting available
-  via public APIs.`
+  via public APIs.
+
+  Arguments:
+    NAME: Name of the setting`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -187,7 +190,12 @@ func newPatchPublicWorkspaceSetting() *cobra.Command {
 
   Patch a setting value at workspace level. See
   :method:settingsv2/listworkspacesettingsmetadata for list of setting available
-  via public APIs at workspace level.`
+  via public APIs at workspace level. To determine the correct field to include
+  in a patch request, refer to the type field of the setting returned in the
+  :method:settingsv2/listworkspacesettingsmetadata response.
+
+  Arguments:
+    NAME: Name of the setting`
 
 	cmd.Annotations = make(map[string]string)
 
