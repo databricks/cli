@@ -221,7 +221,7 @@
   },
   "body": {
     "lineage": "[UUID]",
-    "serial": 0,
+    "serial": 1,
     "state": {
       "resources.schemas.foo": {
         "__id__": "mycatalog.myschema",
