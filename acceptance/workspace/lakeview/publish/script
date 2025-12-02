@@ -1,0 +1,2 @@
+# Test that embed_credentials defaults to false when --embed-credentials flag is not provided
+trace $CLI lakeview publish dashboard-id-123

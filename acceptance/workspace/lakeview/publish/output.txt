@@ -1,0 +1,8 @@
+
+>>> [CLI] lakeview publish dashboard-id-123
+{
+  "display_name":"My Dashboard",
+  "embed_credentials":false,
+  "revision_create_time":"[TIMESTAMP]",
+  "warehouse_id":"warehouse-123"
+}

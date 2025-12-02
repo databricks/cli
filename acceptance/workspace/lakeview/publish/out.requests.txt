@@ -1,0 +1,7 @@
+{
+  "method": "POST",
+  "path": "/api/2.0/lakeview/dashboards/dashboard-id-123/published",
+  "body": {
+    "embed_credentials": false
+  }
+}
