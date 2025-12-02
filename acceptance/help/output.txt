@@ -20,12 +20,10 @@ Compute
   policy-compliance-for-clusters         The policy compliance APIs allow you to view and manage the policy compliance status of clusters in your workspace.
   policy-families                        View available policy families.
 
-Workflows
+Lakeflow
   jobs                                   The Jobs API allows you to create, edit, and delete jobs.
+  pipelines                              The Lakeflow Spark Declarative Pipelines API allows you to create, edit, delete, start, and view details about pipelines.
   policy-compliance-for-jobs             The compliance APIs allow you to view and manage the policy compliance status of jobs in your workspace.
-
-Delta Live Tables
-  pipelines                              The Delta Live Tables API allows you to create, edit, delete, start, and view details about pipelines.
 
 Machine Learning
   experiments                            Experiments are the primary unit of organization in MLflow; all MLflow runs belong to an experiment.
@@ -86,7 +84,7 @@ Unity Catalog
   quality-monitors                       A monitor computes and monitors data or model quality metrics for a table over time.
   registered-models                      Databricks provides a hosted version of MLflow Model Registry in Unity Catalog.
   resource-quotas                        Unity Catalog enforces resource quotas on all securable objects, which limits the number of resources that can be created.
-  rfa                                    Request for Access enables customers to request access to and manage access request destinations for Unity Catalog securables.
+  rfa                                    Request for Access enables users to request access for Unity Catalog securables.
   schemas                                A schema (also called a database) is the second layer of Unity Catalog’s three-level namespace.
   storage-credentials                    A storage credential represents an authentication and authorization mechanism for accessing data stored on your cloud tenant.
   system-schemas                         A system schema is a schema that lives within the system catalog.
