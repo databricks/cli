@@ -78,22 +78,25 @@ jobs:
     # Only run if the target is in the list of targets from testmask
     if: ${{ contains(fromJSON(needs.testmask.outputs.targets), 'test') }}
     name: "make test (${{matrix.os.name}}, ${{matrix.deployment}})"
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.os.runner }}
 
     strategy:
       fail-fast: false
       matrix:
         os:
           - name: linux
-            group: databricks-protected-runner-group-large
-            labels: linux-ubuntu-latest-large
+            runner:
+              group: databricks-protected-runner-group-large
+              labels: linux-ubuntu-latest-large
 
           - name: windows
-            group: databricks-protected-runner-group-large
-            labels: windows-server-latest-large
+            runner:
+              group: databricks-protected-runner-group-large
+              labels: windows-server-latest-large
 
           - name: macos
-            labels: macos-latest
+            runner:
+              labels: macos-latest
 
         deployment:
           - "terraform"
@@ -108,12 +111,14 @@ jobs:
           - event: merge_group
             os:
               name: windows
-              group: databricks-protected-runner-group-large
-              labels: windows-server-latest-large
+              runner:
+                group: databricks-protected-runner-group-large
+                labels: windows-server-latest-large
           - event: merge_group
             os:
               name: macos
-              labels: macos-latest
+              runner:
+                labels: macos-latest
 
     steps:
       - name: Checkout repository and submodules
