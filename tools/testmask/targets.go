@@ -1,37 +1,38 @@
 package main
 
 import (
-	"sort"
+	"maps"
+	"slices"
 	"strings"
 )
 
 type targetMapping struct {
-	patterns []string
+	prefixes []string
 	target   string
 }
 
 var fileTargetMappings = []targetMapping{
 	{
-		patterns: []string{
+		prefixes: []string{
 			"experimental/aitools/",
 		},
 		target: "test-exp-aitools",
 	},
 	{
-		patterns: []string{
+		prefixes: []string{
 			"experimental/apps-mcp/",
 		},
 		target: "test-exp-apps-mcp",
 	},
 	{
-		patterns: []string{
+		prefixes: []string{
 			"experimental/ssh/",
 			"acceptance/ssh/",
 		},
 		target: "test-exp-ssh",
 	},
 	{
-		patterns: []string{
+		prefixes: []string{
 			"cmd/pipelines/",
 			"acceptance/pipelines/",
 		},
@@ -47,8 +48,8 @@ func GetTargets(files []string) []string {
 	for _, file := range files {
 		matched := false
 		for _, mapping := range fileTargetMappings {
-			for _, pattern := range mapping.patterns {
-				if strings.HasPrefix(file, pattern) {
+			for _, prefix := range mapping.prefixes {
+				if strings.HasPrefix(file, prefix) {
 					targetSet[mapping.target] = true
 					matched = true
 					break
@@ -73,13 +74,5 @@ func GetTargets(files []string) []string {
 		return []string{"test"}
 	}
 
-	// Convert map to sorted slice
-	targets := make([]string, 0, len(targetSet))
-	for target := range targetSet {
-		targets = append(targets, target)
-	}
-
-	// Sort for consistent output
-	sort.Strings(targets)
-	return targets
+	return slices.Sorted(maps.Keys(targetSet))
 }
