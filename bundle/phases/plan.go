@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/libraries"
+	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/bundle/trampoline"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/logdiag"
@@ -24,7 +25,7 @@ func DeployPrepare(ctx context.Context, b *bundle.Bundle, isPlan bool, engine en
 		terraform.CheckDashboardsModifiedRemotely(isPlan, engine),
 		deploy.StatePull(),
 		mutator.ValidateGitDetails(),
-		terraform.CheckRunningResource(),
+		statemgmt.CheckRunningResource(engine),
 
 		// libraries.CheckForSameNameLibraries() needs to be run after we expand glob references so we
 		// know what are the actual library paths.
