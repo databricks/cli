@@ -12,6 +12,7 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/experimental/apps-mcp/lib/common"
+	"github.com/databricks/cli/experimental/apps-mcp/lib/prompts"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/template"
 	"github.com/spf13/cobra"
@@ -327,6 +328,10 @@ After initialization:
 
 		// Try to read and display CLAUDE.md if present
 		readClaudeMd(ctx, configFile)
+
+		// Re-inject app-specific guidance
+		appsContent := prompts.MustExecuteTemplate("apps.tmpl", map[string]any{})
+		cmdio.LogString(ctx, appsContent)
 
 		return nil
 	}
