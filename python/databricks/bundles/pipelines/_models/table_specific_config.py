@@ -78,6 +78,9 @@ class TableSpecificConfig:
     workday_report_parameters: VariableOrOptional[
         IngestionPipelineDefinitionWorkdayReportParameters
     ] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    """
 
     @classmethod
     def from_dict(cls, value: "TableSpecificConfigDict") -> "Self":
@@ -143,6 +146,9 @@ class TableSpecificConfigDict(TypedDict, total=False):
     workday_report_parameters: VariableOrOptional[
         IngestionPipelineDefinitionWorkdayReportParametersParam
     ]
+    """
+    :meta private: [EXPERIMENTAL]
+    """
 
 
 TableSpecificConfigParam = TableSpecificConfigDict | TableSpecificConfig

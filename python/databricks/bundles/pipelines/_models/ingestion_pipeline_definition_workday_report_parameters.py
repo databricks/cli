@@ -19,7 +19,9 @@ if TYPE_CHECKING:
 
 @dataclass(kw_only=True)
 class IngestionPipelineDefinitionWorkdayReportParameters:
-    """"""
+    """
+    :meta private: [EXPERIMENTAL]
+    """
 
     incremental: VariableOrOptional[bool] = None
 

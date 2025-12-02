@@ -11,7 +11,9 @@ if TYPE_CHECKING:
 
 @dataclass(kw_only=True)
 class IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValue:
-    """"""
+    """
+    :meta private: [EXPERIMENTAL]
+    """
 
     key: VariableOrOptional[str] = None
 
