@@ -6,6 +6,7 @@ import (
 	"slices"
 	"sync"
 
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structvar"
 )
 
@@ -51,6 +52,33 @@ type Changes struct {
 type Trigger struct {
 	Action string `json:"action"`
 	Reason string `json:"reason,omitempty"`
+}
+
+// HasChange checks if there are any changes for fields with the given prefix.
+// This function is path-aware and correctly handles path component boundaries.
+// For example:
+//   - HasChange("a") matches "a" and "a.b" but not "aa"
+//   - HasChange("config") matches "config" and "config.name" but not "configuration"
+//
+// Note: This function does not support wildcard patterns.
+func (c *Changes) HasChange(fieldPath string) bool {
+	if c == nil {
+		return false
+	}
+
+	for field := range c.Local {
+		if structpath.HasPrefix(field, fieldPath) {
+			return true
+		}
+	}
+
+	for field := range c.Remote {
+		if structpath.HasPrefix(field, fieldPath) {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (p *Plan) GetActions() []Action {
