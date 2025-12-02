@@ -83,6 +83,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # Use separate fields for the OS name and runner configuration.
+        # When combined in a single object, "runs-on" errors with "Unexpected value 'name'".
         os:
           - name: linux
             runner:
@@ -106,12 +108,12 @@ jobs:
         event:
           - ${{ github.event_name }}
 
+        # Run on Linux only in merge queue to reduce time to merge.
         exclude:
-          # On merge_group events, only run the tests on Linux to reduce time to merge.
-          - event: pull_request
+          - event: merge_group
             os:
               name: windows
-          - event: pull_request
+          - event: merge_group
             os:
               name: macos
 
