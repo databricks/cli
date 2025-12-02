@@ -8,7 +8,6 @@ import (
 	"github.com/databricks/cli/experimental/apps-mcp/lib/prompts"
 	"github.com/databricks/cli/experimental/apps-mcp/lib/session"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
-	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 )
@@ -21,30 +20,10 @@ func Explore(ctx context.Context) (string, error) {
 		warehouse = nil
 	}
 
-	currentProfile := getCurrentProfile(ctx)
-	profiles := getAvailableProfiles(ctx)
+	currentProfile := middlewares.GetDatabricksProfile(ctx)
+	profiles := middlewares.GetAvailableProfiles(ctx)
 
 	return generateExploreGuidance(ctx, warehouse, currentProfile, profiles), nil
-}
-
-// getCurrentProfile returns the currently active profile name.
-func getCurrentProfile(ctx context.Context) string {
-	// Check DATABRICKS_CONFIG_PROFILE env var
-	profileName := env.Get(ctx, "DATABRICKS_CONFIG_PROFILE")
-	if profileName == "" {
-		return "DEFAULT"
-	}
-	return profileName
-}
-
-// getAvailableProfiles returns all available profiles from ~/.databrickscfg.
-func getAvailableProfiles(ctx context.Context) profile.Profiles {
-	profiles, err := profile.DefaultProfiler.LoadProfiles(ctx, profile.MatchAllProfiles)
-	if err != nil {
-		// If we can't load profiles, return empty list (config file might not exist)
-		return profile.Profiles{}
-	}
-	return profiles
 }
 
 // generateExploreGuidance creates comprehensive guidance for data exploration.
@@ -102,6 +81,7 @@ func generateExploreGuidance(ctx context.Context, warehouse *sql.EndpointInfo, c
 		"WarehouseName": warehouseName,
 		"WarehouseID":   warehouseID,
 		"ProfilesInfo":  profilesInfo,
+		"Profile":       currentProfile,
 	}
 
 	// Render base explore template

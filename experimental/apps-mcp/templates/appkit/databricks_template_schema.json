@@ -12,13 +12,18 @@
         "description": "SQL Warehouse ID",
         "order": 2
       },
+      "profile": {
+        "type": "string",
+        "description": "Profile Name",
+        "default": "",
+        "order": 3
+      },
       "app_description": {
         "type": "string",
         "description": "App Description (Optional)",
         "default": "A Databricks App powered by Databricks AppKit",
-        "order": 3
+        "order": 4
       }
-
     },
-    "success_message": "\nYour new project has been created in the '{{.project_name}}' directory!"
+    "success_message": "\nYour new project has been created in the '{{.project_name}}' directory!\nYOU MUST read {{.project_name}}/CLAUDE.md immediately. It is STRONGLY RECOMMENDED to immediately run `npm install`, run `npm run dev` in the background, and open http://localhost:8000 in your browser before making changes to the app."
   }

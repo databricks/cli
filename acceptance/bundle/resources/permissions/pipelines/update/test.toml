@@ -1,4 +1,1 @@
-Badness = """direct: State in the plan does not reflect the implicit permissions added by tfpermissions
-both direct and tf: upon destroy, the permissions are reset to IS_OWNER/user. this seems unnecessary
-"""
 RecordRequests = true
