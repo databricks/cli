@@ -503,6 +503,21 @@ npm run test:e2e:ui     # Run with Playwright UI
 
 - `SelectItem` cannot have `value=""`. Use sentinel value like `"all"` for "show all" options.
 
+### Map Libraries (react-leaflet)
+
+For maps with React 19, use react-leaflet v5:
+
+```bash
+npm install react-leaflet@^5.0.0 leaflet @types/leaflet
+```
+
+Import CSS in your component:
+```typescript
+import 'leaflet/dist/leaflet.css';
+```
+
+Note: react-leaflet v4.x requires React 18. Use v5 for React 19 compatibility.
+
 ### Best Practices:
 
 - Use shadcn/radix components (Button, Input, Card, etc.) for consistent UI
