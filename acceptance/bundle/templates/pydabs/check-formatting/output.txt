@@ -15,5 +15,6 @@ To get started, refer to the project README.md file and the documentation at htt
 >>> find my_pydabs -mindepth 1 ! -name pyproject.toml ! -regex .*/resources.* -delete
 
 >>> ruff format --quiet --diff --check my_pydabs
+script: line 45: ruff: command not found
 
->>> yamlcheck.py
+Exit code: 127
