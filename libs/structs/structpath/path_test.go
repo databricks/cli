@@ -655,3 +655,99 @@ func TestPureReferenceToPath(t *testing.T) {
 		})
 	}
 }
+
+func TestHasPrefix(t *testing.T) {
+	tests := []struct {
+		name     string
+		s        string
+		prefix   string
+		expected bool
+	}{
+		// Edge cases
+		{
+			name:     "empty prefix",
+			s:        "a.b.c",
+			prefix:   "",
+			expected: true,
+		},
+		{
+			name:     "empty string",
+			s:        "",
+			prefix:   "a",
+			expected: false,
+		},
+		{
+			name:     "exact match",
+			s:        "config",
+			prefix:   "config",
+			expected: true,
+		},
+
+		// Correct matches - path boundary aware
+		{
+			name:     "simple field match",
+			s:        "a.b",
+			prefix:   "a",
+			expected: true,
+		},
+		{
+			name:     "nested field match",
+			s:        "config.database.name",
+			prefix:   "config.database",
+			expected: true,
+		},
+		{
+			name:     "field with array index",
+			s:        "items[3].name",
+			prefix:   "items",
+			expected: true,
+		},
+		{
+			name:     "array with prefix match",
+			s:        "items[0].name",
+			prefix:   "items[0]",
+			expected: true,
+		},
+		{
+			name:     "field with bracket notation",
+			s:        "config['spark.conf'].value",
+			prefix:   "config['spark.conf']",
+			expected: true,
+		},
+
+		// Incorrect matches - should NOT match
+		{
+			name:     "substring match without boundary",
+			s:        "ai_gateway",
+			prefix:   "ai",
+			expected: false,
+		},
+		{
+			name:     "different nested field",
+			s:        "configuration.name",
+			prefix:   "config",
+			expected: false,
+		},
+
+		// wildcard patterns are NOT supported - treated as literals
+		{
+			name:     "regex pattern not respected - star quantifier",
+			s:        "aaa",
+			prefix:   "a*",
+			expected: false,
+		},
+		{
+			name:     "regex pattern not respected - bracket class",
+			s:        "a[1]",
+			prefix:   "a[*]",
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := HasPrefix(tt.s, tt.prefix)
+			assert.Equal(t, tt.expected, result, "HasPrefix(%q, %q)", tt.s, tt.prefix)
+		})
+	}
+}

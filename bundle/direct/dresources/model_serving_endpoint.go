@@ -10,7 +10,6 @@ import (
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/serving"
-	"golang.org/x/sync/errgroup"
 )
 
 type ResourceModelServingEndpoint struct {
@@ -138,6 +137,10 @@ func (r *ResourceModelServingEndpoint) waitForEndpointReady(ctx context.Context,
 }
 
 func (r *ResourceModelServingEndpoint) WaitAfterCreate(ctx context.Context, config *serving.CreateServingEndpoint) (*RefreshOutput, error) {
+	return r.waitForEndpointReady(ctx, config.Name)
+}
+
+func (r *ResourceModelServingEndpoint) WaitAfterUpdate(ctx context.Context, config *serving.CreateServingEndpoint) (*RefreshOutput, error) {
 	return r.waitForEndpointReady(ctx, config.Name)
 }
 
@@ -273,25 +276,41 @@ func (r *ResourceModelServingEndpoint) updateTags(ctx context.Context, id string
 	return nil
 }
 
-func (r *ResourceModelServingEndpoint) DoUpdate(ctx context.Context, id string, config *serving.CreateServingEndpoint, _ *Changes) (*RefreshOutput, error) {
-	errGroup := errgroup.Group{}
-	errGroup.Go(func() error {
-		return r.updateAiGateway(ctx, id, config.AiGateway)
-	})
-	errGroup.Go(func() error {
-		return r.updateConfig(ctx, id, config.Config)
-	})
-	errGroup.Go(func() error {
-		return r.updateNotifications(ctx, id, config.EmailNotifications)
-	})
-	errGroup.Go(func() error {
-		return r.updateTags(ctx, id, config.Tags)
-	})
-	return nil, errGroup.Wait()
-}
+func (r *ResourceModelServingEndpoint) DoUpdate(ctx context.Context, id string, config *serving.CreateServingEndpoint, changes *Changes) (*RefreshOutput, error) {
+	var err error
 
-func (r *ResourceModelServingEndpoint) WaitAfterUpdate(ctx context.Context, config *serving.CreateServingEndpoint) (*RefreshOutput, error) {
-	return r.waitForEndpointReady(ctx, config.Name)
+	// Terraform makes these API calls sequentially. We do the same here.
+	// It's an unknown as of 1st Dec 2025 if these APIs are safe to make in parallel. (we did not check)
+	// https://github.com/databricks/terraform-provider-databricks/blob/c61a32300445f84efb2bb6827dee35e6e523f4ff/serving/resource_model_serving.go#L373
+	if changes.HasChange("tags") {
+		err = r.updateTags(ctx, id, config.Tags)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if changes.HasChange("ai_gateway") {
+		err = r.updateAiGateway(ctx, id, config.AiGateway)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if changes.HasChange("config") {
+		err = r.updateConfig(ctx, id, config.Config)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if changes.HasChange("email_notifications") {
+		err = r.updateNotifications(ctx, id, config.EmailNotifications)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return nil, nil
 }
 
 func (r *ResourceModelServingEndpoint) DoDelete(ctx context.Context, id string) error {
