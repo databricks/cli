@@ -9,45 +9,17 @@
 DATABRICKS APPS DEVELOPMENT
 ============================
 
-# Initialization
+When building or planning a new Databricks app, use the following steps:
 
-⚠️ MUST start by scaffolding a new Databricks app:
-
-invoke_databricks_cli 'experimental apps-mcp tools init-template --name my-app-name --description "My app description"'
-
-After scaffolding:
-1. MUST read CLAUDE.md in the app directory for template-specific instructions
-2. MUST run `cd <project_name>` to navigate to the app directory
-3. MUST execute all subsequent commands from this directory
-
-# Local Development
-
-⚠️ After initialization, check the app's CLAUDE.md for:
-- How to run the app locally
-- Development commands specific to the template
-- Local vs deployed environment guidance
-
-# Validation
-
-⚠️ Before deploying, validate your app:
-
-invoke_databricks_cli 'experimental apps-mcp tools validate ./your-app-location'
-
-This ensures the app is production-ready by running template-specific checks.
-
-# Deployment
-
-⚠️ CRITICAL: NEVER deploy without explicit user confirmation!
-
-Before deploying:
-1. ✅ Validate the app successfully
-2. ✅ Test locally per CLAUDE.md instructions
-3. ✅ Ask user: "Ready to deploy to [environment]?"
-
-Once confirmed:
-
-invoke_databricks_cli 'experimental apps-mcp tools deploy'
-
-After deployment:
-
-invoke_databricks_cli 'bundle summary'
+1. MUST start by scaffolding a new Databricks app using command: invoke_databricks_cli 'experimental apps-mcp tools init-template --name my-app-name --description "My app description"'
+   MUST run this command before planning the app. You must understand the generated file structure and the purpose of the files.
+2. MUST read the CLAUDE.md file in the app directory.
+3. SHOULD run `npm install`, run `npm run dev` in the background, and open http://localhost:8000 in your browser before making changes to the app.
+4. MUST run `cd <project_name>` to navigate to the app directory. MUST execute all commands from this directory.
+5. If applicable, create SQL query files in the ./config/queries directory.
+6. If applicable, create tRPC endpoints in the ./server/trpc.ts file.
+7. If applicable, build UI components in the ./client/src directory.
+8. MUST update the ./client/src/App.tsx file
+9. MUST update smoke test in the ./tests/smoke.spec.ts file
+10. MUST run validation using command: invoke_databricks_cli 'experimental apps-mcp tools validate ./'
+11. USER CONSENT: Only deploy the app with explicit consent from the user. Deployment using command: invoke_databricks_cli 'experimental apps-mcp tools deploy'
