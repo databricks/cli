@@ -1,5 +1,3 @@
-# The server formats serialized_dashboard in a way that is tedious to replicate locally.
-# Thus we skip this test for local server.
 Local = true
 Cloud = true
 RequiresWarehouse = true
