@@ -59,7 +59,7 @@ jobs:
         id: mask2
         working-directory: tools/testmask
         run: |
-          go run . ${{ github.event.merge_group.head.sha }} ${{ github.event.merge_group.base.sha }} | tee output.json
+          go run . ${{ github.event.merge_group.head_sha }} ${{ github.event.merge_group.base_sha }} | tee output.json
           echo "targets=$(jq -c '.' output.json)" >> $GITHUB_OUTPUT
 
       - name: Run testmask (other events)
