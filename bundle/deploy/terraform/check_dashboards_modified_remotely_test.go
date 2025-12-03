@@ -29,9 +29,7 @@ func mockDashboardBundle(t *testing.T) *bundle.Bundle {
 				Dashboards: map[string]*resources.Dashboard{
 					"dash1": {
 						DashboardConfig: resources.DashboardConfig{
-							Dashboard: dashboards.Dashboard{
-								DisplayName: "My Special Dashboard",
-							},
+							DisplayName: "My Special Dashboard",
 						},
 					},
 				},

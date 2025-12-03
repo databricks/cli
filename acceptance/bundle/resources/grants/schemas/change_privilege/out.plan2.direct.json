@@ -52,10 +52,14 @@
       "changes": {
         "local": {
           "grants[0].privileges[0]": {
-            "action": "update"
+            "action": "update",
+            "old": "CREATE_TABLE",
+            "new": "APPLY_TAG"
           },
           "grants[0].privileges[1]": {
-            "action": "update"
+            "action": "update",
+            "old": "USE_SCHEMA",
+            "new": "CREATE_TABLE"
           }
         }
       }

@@ -4,11 +4,13 @@ package feature_engineering
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/spf13/cobra"
 )
@@ -31,14 +33,19 @@ func New() *cobra.Command {
 
 	// Add methods
 	cmd.AddCommand(newCreateFeature())
+	cmd.AddCommand(newCreateKafkaConfig())
 	cmd.AddCommand(newCreateMaterializedFeature())
 	cmd.AddCommand(newDeleteFeature())
+	cmd.AddCommand(newDeleteKafkaConfig())
 	cmd.AddCommand(newDeleteMaterializedFeature())
 	cmd.AddCommand(newGetFeature())
+	cmd.AddCommand(newGetKafkaConfig())
 	cmd.AddCommand(newGetMaterializedFeature())
 	cmd.AddCommand(newListFeatures())
+	cmd.AddCommand(newListKafkaConfigs())
 	cmd.AddCommand(newListMaterializedFeatures())
 	cmd.AddCommand(newUpdateFeature())
+	cmd.AddCommand(newUpdateKafkaConfig())
 	cmd.AddCommand(newUpdateMaterializedFeature())
 
 	// Apply optional overrides to this command.
@@ -69,6 +76,7 @@ func newCreateFeature() *cobra.Command {
 
 	cmd.Flags().StringVar(&createFeatureReq.Feature.Description, "description", createFeatureReq.Feature.Description, `The description of the feature.`)
 	cmd.Flags().StringVar(&createFeatureReq.Feature.FilterCondition, "filter-condition", createFeatureReq.Feature.FilterCondition, `The filter condition applied to the source data before aggregation.`)
+	// TODO: complex arg: lineage_context
 
 	cmd.Use = "create-feature FULL_NAME SOURCE INPUTS FUNCTION TIME_WINDOW"
 	cmd.Short = `Create a feature.`
@@ -160,6 +168,111 @@ func newCreateFeature() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range createFeatureOverrides {
 		fn(cmd, &createFeatureReq)
+	}
+
+	return cmd
+}
+
+// start create-kafka-config command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createKafkaConfigOverrides []func(
+	*cobra.Command,
+	*ml.CreateKafkaConfigRequest,
+)
+
+func newCreateKafkaConfig() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var createKafkaConfigReq ml.CreateKafkaConfigRequest
+	createKafkaConfigReq.KafkaConfig = ml.KafkaConfig{}
+	var createKafkaConfigJson flags.JsonFlag
+
+	cmd.Flags().Var(&createKafkaConfigJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: map via StringToStringVar: extra_options
+	// TODO: complex arg: key_schema
+	// TODO: complex arg: value_schema
+
+	cmd.Use = "create-kafka-config NAME BOOTSTRAP_SERVERS SUBSCRIPTION_MODE AUTH_CONFIG"
+	cmd.Short = `Create a Kafka config.`
+	cmd.Long = `Create a Kafka config.
+
+  Arguments:
+    NAME: Name that uniquely identifies this Kafka config within the metastore. This
+      will be the identifier used from the Feature object to reference these
+      configs for a feature. Can be distinct from topic name.
+    BOOTSTRAP_SERVERS: A comma-separated list of host/port pairs pointing to Kafka cluster.
+    SUBSCRIPTION_MODE: Options to configure which Kafka topics to pull data from.
+    AUTH_CONFIG: Authentication configuration for connection to topics.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().Changed("json") {
+			err := root.ExactArgs(0)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'name', 'bootstrap_servers', 'subscription_mode', 'auth_config' in your JSON input")
+			}
+			return nil
+		}
+		check := root.ExactArgs(4)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := createKafkaConfigJson.Unmarshal(&createKafkaConfigReq.KafkaConfig)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		if !cmd.Flags().Changed("json") {
+			createKafkaConfigReq.KafkaConfig.Name = args[0]
+		}
+		if !cmd.Flags().Changed("json") {
+			createKafkaConfigReq.KafkaConfig.BootstrapServers = args[1]
+		}
+		if !cmd.Flags().Changed("json") {
+			_, err = fmt.Sscan(args[2], &createKafkaConfigReq.KafkaConfig.SubscriptionMode)
+			if err != nil {
+				return fmt.Errorf("invalid SUBSCRIPTION_MODE: %s", args[2])
+			}
+
+		}
+		if !cmd.Flags().Changed("json") {
+			_, err = fmt.Sscan(args[3], &createKafkaConfigReq.KafkaConfig.AuthConfig)
+			if err != nil {
+				return fmt.Errorf("invalid AUTH_CONFIG: %s", args[3])
+			}
+
+		}
+
+		response, err := w.FeatureEngineering.CreateKafkaConfig(ctx, createKafkaConfigReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createKafkaConfigOverrides {
+		fn(cmd, &createKafkaConfigReq)
 	}
 
 	return cmd
@@ -304,6 +417,60 @@ func newDeleteFeature() *cobra.Command {
 	return cmd
 }
 
+// start delete-kafka-config command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deleteKafkaConfigOverrides []func(
+	*cobra.Command,
+	*ml.DeleteKafkaConfigRequest,
+)
+
+func newDeleteKafkaConfig() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deleteKafkaConfigReq ml.DeleteKafkaConfigRequest
+
+	cmd.Use = "delete-kafka-config NAME"
+	cmd.Short = `Delete a Kafka config.`
+	cmd.Long = `Delete a Kafka config.
+
+  Arguments:
+    NAME: Name of the Kafka config to delete.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		deleteKafkaConfigReq.Name = args[0]
+
+		err = w.FeatureEngineering.DeleteKafkaConfig(ctx, deleteKafkaConfigReq)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deleteKafkaConfigOverrides {
+		fn(cmd, &deleteKafkaConfigReq)
+	}
+
+	return cmd
+}
+
 // start delete-materialized-feature command
 
 // Slice with functions to override default command behavior.
@@ -414,6 +581,60 @@ func newGetFeature() *cobra.Command {
 	return cmd
 }
 
+// start get-kafka-config command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getKafkaConfigOverrides []func(
+	*cobra.Command,
+	*ml.GetKafkaConfigRequest,
+)
+
+func newGetKafkaConfig() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getKafkaConfigReq ml.GetKafkaConfigRequest
+
+	cmd.Use = "get-kafka-config NAME"
+	cmd.Short = `Get a Kafka config.`
+	cmd.Long = `Get a Kafka config.
+
+  Arguments:
+    NAME: Name of the Kafka config to get.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		getKafkaConfigReq.Name = args[0]
+
+		response, err := w.FeatureEngineering.GetKafkaConfig(ctx, getKafkaConfigReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getKafkaConfigOverrides {
+		fn(cmd, &getKafkaConfigReq)
+	}
+
+	return cmd
+}
+
 // start get-materialized-feature command
 
 // Slice with functions to override default command behavior.
@@ -519,6 +740,55 @@ func newListFeatures() *cobra.Command {
 	return cmd
 }
 
+// start list-kafka-configs command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listKafkaConfigsOverrides []func(
+	*cobra.Command,
+	*ml.ListKafkaConfigsRequest,
+)
+
+func newListKafkaConfigs() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listKafkaConfigsReq ml.ListKafkaConfigsRequest
+
+	cmd.Flags().IntVar(&listKafkaConfigsReq.PageSize, "page-size", listKafkaConfigsReq.PageSize, `The maximum number of results to return.`)
+	cmd.Flags().StringVar(&listKafkaConfigsReq.PageToken, "page-token", listKafkaConfigsReq.PageToken, `Pagination token to go to the next page based on a previous query.`)
+
+	cmd.Use = "list-kafka-configs"
+	cmd.Short = `List Kafka configs.`
+	cmd.Long = `List Kafka configs.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(0)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		response := w.FeatureEngineering.ListKafkaConfigs(ctx, listKafkaConfigsReq)
+		return cmdio.RenderIterator(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listKafkaConfigsOverrides {
+		fn(cmd, &listKafkaConfigsReq)
+	}
+
+	return cmd
+}
+
 // start list-materialized-features command
 
 // Slice with functions to override default command behavior.
@@ -589,6 +859,7 @@ func newUpdateFeature() *cobra.Command {
 
 	cmd.Flags().StringVar(&updateFeatureReq.Feature.Description, "description", updateFeatureReq.Feature.Description, `The description of the feature.`)
 	cmd.Flags().StringVar(&updateFeatureReq.Feature.FilterCondition, "filter-condition", updateFeatureReq.Feature.FilterCondition, `The filter condition applied to the source data before aggregation.`)
+	// TODO: complex arg: lineage_context
 
 	cmd.Use = "update-feature FULL_NAME UPDATE_MASK SOURCE INPUTS FUNCTION TIME_WINDOW"
 	cmd.Short = `Update a feature's description (all other fields are immutable).`
@@ -680,6 +951,114 @@ func newUpdateFeature() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range updateFeatureOverrides {
 		fn(cmd, &updateFeatureReq)
+	}
+
+	return cmd
+}
+
+// start update-kafka-config command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updateKafkaConfigOverrides []func(
+	*cobra.Command,
+	*ml.UpdateKafkaConfigRequest,
+)
+
+func newUpdateKafkaConfig() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updateKafkaConfigReq ml.UpdateKafkaConfigRequest
+	updateKafkaConfigReq.KafkaConfig = ml.KafkaConfig{}
+	var updateKafkaConfigJson flags.JsonFlag
+
+	cmd.Flags().Var(&updateKafkaConfigJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: map via StringToStringVar: extra_options
+	// TODO: complex arg: key_schema
+	// TODO: complex arg: value_schema
+
+	cmd.Use = "update-kafka-config NAME UPDATE_MASK BOOTSTRAP_SERVERS SUBSCRIPTION_MODE AUTH_CONFIG"
+	cmd.Short = `Update a Kafka config.`
+	cmd.Long = `Update a Kafka config.
+
+  Arguments:
+    NAME: Name that uniquely identifies this Kafka config within the metastore. This
+      will be the identifier used from the Feature object to reference these
+      configs for a feature. Can be distinct from topic name.
+    UPDATE_MASK: The list of fields to update.
+    BOOTSTRAP_SERVERS: A comma-separated list of host/port pairs pointing to Kafka cluster.
+    SUBSCRIPTION_MODE: Options to configure which Kafka topics to pull data from.
+    AUTH_CONFIG: Authentication configuration for connection to topics.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().Changed("json") {
+			err := root.ExactArgs(2)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, provide only NAME, UPDATE_MASK as positional arguments. Provide 'name', 'bootstrap_servers', 'subscription_mode', 'auth_config' in your JSON input")
+			}
+			return nil
+		}
+		check := root.ExactArgs(5)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := updateKafkaConfigJson.Unmarshal(&updateKafkaConfigReq.KafkaConfig)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		updateKafkaConfigReq.Name = args[0]
+		if args[1] != "" {
+			updateMaskArray := strings.Split(args[1], ",")
+			updateKafkaConfigReq.UpdateMask = *fieldmask.New(updateMaskArray)
+		}
+		if !cmd.Flags().Changed("json") {
+			updateKafkaConfigReq.KafkaConfig.BootstrapServers = args[2]
+		}
+		if !cmd.Flags().Changed("json") {
+			_, err = fmt.Sscan(args[3], &updateKafkaConfigReq.KafkaConfig.SubscriptionMode)
+			if err != nil {
+				return fmt.Errorf("invalid SUBSCRIPTION_MODE: %s", args[3])
+			}
+
+		}
+		if !cmd.Flags().Changed("json") {
+			_, err = fmt.Sscan(args[4], &updateKafkaConfigReq.KafkaConfig.AuthConfig)
+			if err != nil {
+				return fmt.Errorf("invalid AUTH_CONFIG: %s", args[4])
+			}
+
+		}
+
+		response, err := w.FeatureEngineering.UpdateKafkaConfig(ctx, updateKafkaConfigReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updateKafkaConfigOverrides {
+		fn(cmd, &updateKafkaConfigReq)
 	}
 
 	return cmd

@@ -53,7 +53,9 @@
       "changes": {
         "local": {
           "description": {
-            "action": "update"
+            "action": "update",
+            "old": "depends on foo id [FOO_ID]",
+            "new": "depends on foo id ${resources.pipelines.foo.id}"
           }
         },
         "remote": {
@@ -89,7 +91,9 @@
       "changes": {
         "local": {
           "catalog": {
-            "action": "recreate"
+            "action": "recreate",
+            "old": "mycatalog",
+            "new": "mynewcatalog"
           }
         }
       }

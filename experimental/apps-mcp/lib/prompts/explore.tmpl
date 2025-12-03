@@ -1,0 +1,120 @@
+{{- /*
+     * Guidance for exploring Databricks workspaces and resources.
+     *
+     * This guidance is offered by the explore tool to provide comprehensive
+     * instructions for discovering and querying workspace resources like
+     * jobs, clusters, catalogs, tables, and SQL warehouses.
+     *
+     */ -}}
+
+{{.WorkspaceInfo}}{{if .WarehouseName}}
+Default SQL Warehouse: {{.WarehouseName}} ({{.WarehouseID}}){{else}}
+Note: No SQL warehouse detected. SQL queries will require warehouse_id to be specified manually.{{end}}{{.ProfilesInfo}}
+
+IMPORTANT: Use the invoke_databricks_cli tool to run all commands below!
+
+1. EXECUTING SQL QUERIES
+   Execute SQL queries using the query tool (recommended):
+     invoke_databricks_cli 'experimental apps-mcp tools query "SELECT * FROM catalog.schema.table LIMIT 10"'
+
+2. EXPLORING JOBS AND WORKFLOWS
+   List all jobs:
+     invoke_databricks_cli 'jobs list'
+
+   Get job details:
+     invoke_databricks_cli 'jobs get <job_id>'
+
+   List job runs:
+     invoke_databricks_cli 'jobs list-runs --job-id <job_id>'
+
+
+3. EXPLORING CLUSTERS
+   List all clusters:
+     invoke_databricks_cli 'clusters list'
+
+   Get cluster details:
+     invoke_databricks_cli 'clusters get <cluster_id>'
+
+
+4. EXPLORING UNITY CATALOG DATA
+   ⚡ EFFICIENT 4-STEP WORKFLOW:
+
+   1. Find available catalogs:
+      invoke_databricks_cli 'catalogs list'
+
+   2. Find schemas in a catalog:
+      invoke_databricks_cli 'schemas list <catalog_name>'
+
+   3. Find tables in a schema:
+      invoke_databricks_cli 'tables list <catalog_name> <schema_name>'
+
+   4. Batch discover multiple tables (ONE call for efficiency):
+      invoke_databricks_cli 'experimental apps-mcp tools discover-schema TABLE1 TABLE2 TABLE3'
+
+      ⚡ Always use batch mode: Discover multiple tables in ONE call instead of separate calls
+      Table format: CATALOG.SCHEMA.TABLE (e.g., samples.nyctaxi.trips)
+
+   QUICK SQL EXECUTION:
+      Execute SQL and get JSON results:
+      invoke_databricks_cli 'experimental apps-mcp tools query "SELECT * FROM catalog.schema.table LIMIT 10"'
+
+   ⚠️ COMMON ERRORS:
+   ❌ Wrong: invoke_databricks_cli 'tables list samples.tpcds_sf1'
+   ✅ Correct: invoke_databricks_cli 'tables list samples tpcds_sf1'
+      (Use separate arguments, not dot notation for catalog and schema)
+
+5. EXPLORING WORKSPACE FILES
+   List workspace files and notebooks:
+     invoke_databricks_cli 'workspace list <path>'
+
+   Export a notebook:
+     invoke_databricks_cli 'workspace export <path>'
+
+
+DATABRICKS ASSET BUNDLES (DABs) WORKFLOW
+=========================================
+
+Creating a New Bundle Project:
+  When to use: Building a new project from scratch with deployment to multiple environments
+
+  1. Initialize a new bundle (creates proper project structure):
+     invoke_databricks_cli 'bundle init'
+
+  2. Validate the bundle configuration:
+     invoke_databricks_cli 'bundle validate'
+
+  3. Deploy to a target environment (dev/staging/prod):
+     invoke_databricks_cli 'bundle deploy --target dev'
+
+Working with Existing Bundle Project:
+  When to use: databricks.yml file already exists in the directory
+
+  1. Validate changes:
+     invoke_databricks_cli 'bundle validate'
+
+  2. Deploy to environment:
+     invoke_databricks_cli 'bundle deploy --target <environment>'
+
+  3. Run a resource (job/pipeline/app):
+     invoke_databricks_cli 'bundle run <resource_name>'
+
+  4. Destroy deployed resources:
+     invoke_databricks_cli 'bundle destroy --target <environment>'
+
+
+BEST PRACTICES
+==============
+
+✅ DO use invoke_databricks_cli for all Databricks CLI commands
+   (Better for user allowlisting and tracking)
+
+✅ DO use 'experimental apps-mcp tools query' for SQL execution
+   (Auto-wait, clean JSON output, no manual polling)
+
+✅ DO use batch discover-schema for multiple tables
+   (One call instead of multiple: more efficient)
+
+✅ DO test SQL with query tool before implementing in code
+   (Verify syntax and results interactively)
+
+✅ DO call explore during planning to get workspace context

@@ -35,8 +35,6 @@ class Environment:
 
     java_dependencies: VariableOrList[str] = field(default_factory=list)
     """
-    :meta private: [EXPERIMENTAL]
-    
     List of java dependencies. Each dependency is a string representing a java library path. For example: `/Volumes/path/to/test.jar`.
     """
 
@@ -70,8 +68,6 @@ class EnvironmentDict(TypedDict, total=False):
 
     java_dependencies: VariableOrList[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
     List of java dependencies. Each dependency is a string representing a java library path. For example: `/Volumes/path/to/test.jar`.
     """
 

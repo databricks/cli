@@ -80,10 +80,14 @@
       "changes": {
         "local": {
           "grants[0].privileges[0]": {
-            "action": "update"
+            "action": "update",
+            "old": "READ_VOLUME",
+            "new": "MANAGE"
           },
           "grants[0].privileges[1]": {
-            "action": "update"
+            "action": "update",
+            "old": "WRITE_VOLUME",
+            "new": "READ_VOLUME"
           }
         }
       }

@@ -1,0 +1,12 @@
+touch hello.whl
+$CLI bundle plan
+$CLI bundle deploy
+job_id="$(read_id.py jobs foo)"
+echo "$job_id:JOB_ID" >> ACC_REPLS
+
+edit_resource.py jobs $job_id <<EOF
+r["tags"]["new_tag"] = "new_value"
+EOF
+
+$CLI bundle plan
+$CLI bundle plan -o json > out.plan_post_update.$DATABRICKS_BUNDLE_ENGINE.json

@@ -8,6 +8,10 @@ from databricks.bundles.jobs._models.file_arrival_trigger_configuration import (
     FileArrivalTriggerConfiguration,
     FileArrivalTriggerConfigurationParam,
 )
+from databricks.bundles.jobs._models.model_trigger_configuration import (
+    ModelTriggerConfiguration,
+    ModelTriggerConfigurationParam,
+)
 from databricks.bundles.jobs._models.pause_status import PauseStatus, PauseStatusParam
 from databricks.bundles.jobs._models.periodic_trigger_configuration import (
     PeriodicTriggerConfiguration,
@@ -29,6 +33,11 @@ class TriggerSettings:
     file_arrival: VariableOrOptional[FileArrivalTriggerConfiguration] = None
     """
     File arrival trigger settings.
+    """
+
+    model: VariableOrOptional[ModelTriggerConfiguration] = None
+    """
+    :meta private: [EXPERIMENTAL]
     """
 
     pause_status: VariableOrOptional[PauseStatus] = None
@@ -57,6 +66,11 @@ class TriggerSettingsDict(TypedDict, total=False):
     file_arrival: VariableOrOptional[FileArrivalTriggerConfigurationParam]
     """
     File arrival trigger settings.
+    """
+
+    model: VariableOrOptional[ModelTriggerConfigurationParam]
+    """
+    :meta private: [EXPERIMENTAL]
     """
 
     pause_status: VariableOrOptional[PauseStatusParam]

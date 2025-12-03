@@ -33,6 +33,10 @@ Deployment complete!
   "creator": "[USERNAME]"
 }
 
+=== verify there's no persistent drift
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.model_serving_endpoints.my_endpoint

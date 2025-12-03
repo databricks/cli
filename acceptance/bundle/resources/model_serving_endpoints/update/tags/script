@@ -1,0 +1,23 @@
+#!/bin/bash
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+
+ENDPOINT_ID=$($CLI bundle summary -o json | jq -r '.resources.model_serving_endpoints.test_endpoint.id')
+echo "$ENDPOINT_ID:ENDPOINT_ID" >> ACC_REPLS
+trace $CLI serving-endpoints get "${ENDPOINT_ID}" | jq '.tags'
+
+trace update_file.py databricks.yml "value: my-team-one" "value: my-team-two"
+
+trace $CLI bundle plan -o json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle deploy
+
+trace print_requests.py //serving-endpoints
+
+trace $CLI serving-endpoints get "${ENDPOINT_ID}" | jq '.tags'

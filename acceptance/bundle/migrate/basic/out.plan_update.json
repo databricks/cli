@@ -59,7 +59,9 @@
       "changes": {
         "local": {
           "name": {
-            "action": "update"
+            "action": "update",
+            "old": "Test Migration Job",
+            "new": "Test Migrated Job"
           }
         },
         "remote": {
@@ -67,7 +69,7 @@
             "action": "skip",
             "reason": "server_side_default"
           },
-          "tasks[0].notebook_task.source": {
+          "tasks[task_key='main'].notebook_task.source": {
             "action": "skip",
             "reason": "server_side_default"
           },
@@ -173,10 +175,14 @@
       "changes": {
         "local": {
           "name": {
-            "action": "update"
+            "action": "update",
+            "old": "Test Migration Pipeline",
+            "new": "Test Migrated Pipeline"
           },
-          "tags.myjob_name": {
-            "action": "update"
+          "tags['myjob_name']": {
+            "action": "update",
+            "old": "Test Migration Job",
+            "new": "Test Migrated Job"
           }
         },
         "remote": {

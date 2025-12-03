@@ -56,6 +56,7 @@ func newCreate() *cobra.Command {
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().Var(&createReq.DashboardType, "dashboard-type", `Workspace level usage dashboard shows usage data for the specified workspace ID. Supported values: [USAGE_DASHBOARD_TYPE_GLOBAL, USAGE_DASHBOARD_TYPE_WORKSPACE]`)
+	cmd.Flags().Var(&createReq.MajorVersion, "major-version", `The major version of the usage dashboard template to use. Supported values: [USAGE_DASHBOARD_MAJOR_VERSION_1, USAGE_DASHBOARD_MAJOR_VERSION_2]`)
 	cmd.Flags().Int64Var(&createReq.WorkspaceId, "workspace-id", createReq.WorkspaceId, `The workspace ID of the workspace in which the usage dashboard is created.`)
 
 	cmd.Use = "create"

@@ -113,6 +113,11 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) {
 		// Enable queueing for jobs by default, following the behavior from API 2.2+.
 		DefaultQueueing(),
 
+		// Reads (typed): b.Config.Resources.Dashboards (checks dashboard configurations)
+		// Updates (typed): b.Config.Resources.Dashboards[].ParentPath (ensures /Workspace prefix is present)
+		// Ensures dashboard parent paths have the required /Workspace prefix
+		DashboardFixups(),
+
 		// Reads (typed): b.Config.Permissions (validates permission levels)
 		// Reads (dynamic): resources.{jobs,pipelines,experiments,models,model_serving_endpoints,dashboards,apps}.*.permissions (reads existing permissions)
 		// Updates (dynamic): resources.{jobs,pipelines,experiments,models,model_serving_endpoints,dashboards,apps}.*.permissions (adds permissions from bundle-level configuration)
