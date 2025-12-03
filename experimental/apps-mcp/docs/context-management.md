@@ -1,3 +1,4 @@
+<!-- DO NOT MODIFY: This documentation defines the context management architecture for Databricks MCP -->
 # Context Management for Databricks MCP
 
 ## Goals
@@ -12,7 +13,7 @@
 
 | Layer | Content | When Injected |
 |-------|---------|---------------|
-| **L0: Tools** | Tool names and descriptions | Always (MCP protocol) |
+| **L0: Tools** | Databricks MCP tool names and descriptions | Always (MCP protocol) |
 | **L1: Flow** | Universal workflow, available tools, CLI patterns | Always (via `databricks_discover`) |
 | **L2: Target** | Target-specific: validation, deployment, constraints | When target type detected or after `init-template` |
 | **L3: Template** | SDK/language-specific: file structure, commands, patterns | After `init-template`. For existing projects, agent reads CLAUDE.md. |
