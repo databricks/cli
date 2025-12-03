@@ -334,3 +334,77 @@ jobs:
 
             exit 1
           fi
+
+  # Trigger integration tests in a separate repository.
+  # Requires secrets from "test-trigger-is" environment (not available for fork PRs).
+  # Auto-approves for merge groups to avoid running twice and queue timeouts.
+  integration-trigger:
+    needs:
+      - testmask
+
+    if: >-
+      (github.event_name == 'pull_request' && !github.event.pull_request.head.repo.fork) ||
+      (github.event_name == 'merge_group') ||
+      (github.event_name == 'push')
+
+    runs-on:
+      group: databricks-deco-testing-runner-group
+      labels: ubuntu-latest-deco
+
+    environment: "test-trigger-is"
+
+    steps:
+      - name: Generate GitHub App Token
+        if: ${{ github.event_name == 'pull_request' || github.event_name == 'push' }}
+        id: generate-token
+        uses: actions/create-github-app-token@df432ceedc7162793a195dd1713ff69aefc7379e # v2.0.6
+        with:
+          app-id: ${{ secrets.DECO_WORKFLOW_TRIGGER_APP_ID }}
+          private-key: ${{ secrets.DECO_WORKFLOW_TRIGGER_PRIVATE_KEY }}
+          owner: ${{ secrets.ORG_NAME }}
+          repositories: ${{ secrets.REPO_NAME }}
+
+      # Trigger integration tests if the primary "test" target is triggered by this change.
+      - name: Trigger integration tests (pull request)
+        if: ${{ github.event_name == 'pull_request' && contains(fromJSON(needs.testmask.outputs.targets), 'test') }}
+        env:
+          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
+        run: |-
+          gh workflow run cli-isolated-pr.yml -R ${{ secrets.ORG_NAME }}/${{ secrets.REPO_NAME }} \
+            --ref main \
+            -f pull_request_number=${{ github.event.pull_request.number }} \
+            -f commit_sha=${{ github.event.pull_request.head.sha }}
+
+      # Skip integration tests if the primary "test" target is not triggered by this change.
+      - name: Skip integration tests (pull request)
+        if: ${{ github.event_name == 'pull_request' && !contains(fromJSON(needs.testmask.outputs.targets), 'test') }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |-
+          gh api -X POST -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            /repos/${{ github.repository }}/statuses/${{ github.event.pull_request.head.sha }} \
+            -f 'state=success' \
+            -f 'context=Integration Tests Check' \
+            -f 'description=⏭️ Skipped'
+
+      - name: Auto-approve for merge group
+        if: ${{ github.event_name == 'merge_group' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |-
+          gh api -X POST -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            /repos/${{ github.repository }}/statuses/${{ github.sha }} \
+            -f 'state=success' \
+            -f 'context=Integration Tests Check' \
+            -f 'description=⏭️ Skipped'
+
+      - name: Trigger integration tests (push to main)
+        if: ${{ github.event_name == 'push' }}
+        env:
+          GH_TOKEN: ${{ steps.generate-token.outputs.token }}
+        run: |-
+          gh workflow run cli-isolated-nightly.yml -R ${{ secrets.ORG_NAME }}/${{ secrets.REPO_NAME }} \
+            --ref main \
+            -f commit_sha=${{ github.event.after }}
