@@ -1,0 +1,23 @@
+trace $CLI bundle init default-python --config-file ./input.json
+cd my_default_python
+
+trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
+trace print_state.py > ../out.state_original.json
+
+trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle plan # verify no drift in terraform
+
+trace $CLI bundle deployment migrate
+trace print_state.py > ../out.state_after_migration.json
+trace jq '.. | .libraries? | select(.)' ../out.state_after_migration.json
+
+trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle plan
+trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle plan -o json > ../out.plan_after_migration.json
+trace DATABRICKS_BUNDLE_ENGINE="" $CLI bundle deploy
+
+trace print_state.py > ../out.state_after_deploy.json
+trace diff.py ../out.state_after_migration.json ../out.state_after_deploy.json
+rm ../out.state_after_deploy.json
+
+title "Extra plan: should have no drift"
+trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle plan
+trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle plan -o json > ../out.plan_after_deploy.json
