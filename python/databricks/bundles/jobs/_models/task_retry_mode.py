@@ -4,8 +4,6 @@ from typing import Literal
 
 class TaskRetryMode(Enum):
     """
-    :meta private: [EXPERIMENTAL]
-
     task retry mode of the continuous job
     * NEVER: The failed task will not be retried.
     * ON_FAILURE: Retry a failed task if at least one other task in the job is still running its first attempt.

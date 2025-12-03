@@ -46,6 +46,9 @@ class IngestionPipelineDefinition:
     """
 
     netsuite_jar_path: VariableOrOptional[str] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    """
 
     objects: VariableOrList[IngestionConfig] = field(default_factory=list)
     """
@@ -94,6 +97,9 @@ class IngestionPipelineDefinitionDict(TypedDict, total=False):
     """
 
     netsuite_jar_path: VariableOrOptional[str]
+    """
+    :meta private: [EXPERIMENTAL]
+    """
 
     objects: VariableOrList[IngestionConfigParam]
     """
