@@ -3,6 +3,7 @@
 ## Release v0.279.0
 
 ### Notable Changes
+* New deployment engine for DABs that does not require Terraform is available to try in experimental mode. Not recommended for production workloads yet. Documentation at https://github.com/databricks/cli/blob/main/docs/direct.md
 
 ### CLI
 
