@@ -60,8 +60,8 @@ run_terminal_cmd with required_permissions: ['all']
 ## NPM Scripts
 
 ### Development
-- `npm run dev` - Start dev server with hot reload (use during active development)
-- `npm start` - Start production server (requires `npm run build` first)
+- `npm run dev` - Start dev server with hot reload (**ALWAYS use this during development**)
+- `npm start` - Start production server (**NEVER use during development - production only!**)
 
 ### Build
 - `npm run build` - Full build (server + client) - use before deployment
@@ -87,7 +87,152 @@ run_terminal_cmd with required_permissions: ['all']
 **Common workflows:**
 - Development: `npm run dev` → make changes → `npm run typecheck` → `npm run lint:fix`
 - Pre-commit: `npm run typecheck && npm run lint:fix && npm run format:fix && npm test`
-- Pre-deploy: `npm run build && npm start` (test locally) → `npm test`
+- Pre-deploy: Validate with `databricks experimental apps-mcp tools validate .`
+
+**CRITICAL - npm run dev vs npm start:**
+```
+┌─────────────────────────────────────────────────────┐
+│ DURING DEVELOPMENT: ALWAYS use `npm run dev`       │
+│ - Hot reload enabled                                │
+│ - Fast iteration                                    │
+│ - Runs on localhost:8000                           │
+│                                                     │
+│ NEVER use `npm start` during development!          │
+│ - npm start is for production deployment only      │
+│ - No hot reload                                     │
+│ - Requires build step first                        │
+└─────────────────────────────────────────────────────┘
+```
+
+## Deployment Procedures
+
+**CRITICAL**: Deployment is a significant action that affects live environments. NEVER deploy without explicit user confirmation.
+
+### Before Deploying
+
+**ALWAYS** confirm with the user first by asking: "Ready to deploy to [environment]?"
+
+Pre-deployment checklist:
+1. ✅ App validated successfully (`databricks experimental apps-mcp tools validate .`)
+2. ✅ Local testing completed (`npm run dev` and manual verification)
+3. ✅ User explicitly approved deployment
+4. ✅ Code committed to git (recommended)
+
+### Deployment Commands
+
+```bash
+databricks bundle deploy              # Deploy app infrastructure
+databricks bundle run app            # Start the app
+databricks bundle summary            # Get deployed app URL
+```
+
+Or use the all-in-one command:
+```bash
+databricks experimental apps-mcp tools deploy  # Validates, deploys, and runs
+```
+
+**DO NOT** run deployment commands unless the user explicitly requests it or confirms when asked.
+
+## Local Development vs Deployed Apps
+
+**CRITICAL**: Understand the difference between local development and deployed environments.
+
+### During Development (Before Deployment)
+
+When the user asks to "open the app", "see the app", "view the app", or "open a dev copy":
+
+- ✅ **Use localhost**: `http://localhost:8000`
+- ✅ **Requires**: `npm run dev` must be running
+- ✅ **Purpose**: Hot reload, fast iteration, debugging
+
+**DO NOT** suggest deployed URLs (staging/production) during active development!
+
+### After Deployment
+
+Only after running `databricks bundle deploy && databricks bundle run app`:
+
+- ✅ **Use deployed URL**: Get from `databricks bundle summary`
+- ✅ **Purpose**: Production/staging environment, sharing with others
+
+### Decision Tree
+
+```
+User asks to "open the app" or "see the app"
+│
+├─ Has the app been deployed in this session?
+│  ├─ No  → Use http://localhost:8000 (start with `npm run dev` if needed)
+│  └─ Yes → Ask user which environment they want:
+│           • localhost (development)
+│           • deployed URL (production/staging)
+│
+└─ User explicitly says "localhost" or "local"
+   → Always use http://localhost:8000
+```
+
+## Deployment Procedures
+
+**CRITICAL**: Deployment is a significant action that affects live environments. NEVER deploy without explicit user confirmation.
+
+### Before Deploying
+
+**ALWAYS** confirm with the user first by asking: "Ready to deploy to [environment]?"
+
+Pre-deployment checklist:
+1. ✅ App validated successfully (`databricks experimental apps-mcp tools validate .`)
+2. ✅ Local testing completed (`npm run dev` and manual verification)
+3. ✅ User explicitly approved deployment
+4. ✅ Code committed to git (recommended)
+
+### Deployment Commands
+
+```bash
+databricks bundle deploy              # Deploy app infrastructure
+databricks bundle run app            # Start the app
+databricks bundle summary            # Get deployed app URL
+```
+
+Or use the all-in-one command:
+```bash
+databricks experimental apps-mcp tools deploy  # Validates, deploys, and runs
+```
+
+**DO NOT** run deployment commands unless the user explicitly requests it or confirms when asked.
+
+## Local Development vs Deployed Apps
+
+**CRITICAL**: Understand the difference between local development and deployed environments.
+
+### During Development (Before Deployment)
+
+When the user asks to "open the app", "see the app", "view the app", or "open a dev copy":
+
+- ✅ **Use localhost**: `http://localhost:8000`
+- ✅ **Requires**: `npm run dev` must be running
+- ✅ **Purpose**: Hot reload, fast iteration, debugging
+
+**DO NOT** suggest deployed URLs (staging/production) during active development!
+
+### After Deployment
+
+Only after running `databricks bundle deploy && databricks bundle run app`:
+
+- ✅ **Use deployed URL**: Get from `databricks bundle summary`
+- ✅ **Purpose**: Production/staging environment, sharing with others
+
+### Decision Tree
+
+```
+User asks to "open the app" or "see the app"
+│
+├─ Has the app been deployed in this session?
+│  ├─ No  → Use http://localhost:8000 (start with `npm run dev` if needed)
+│  └─ Yes → Ask user which environment they want:
+│           • localhost (development)
+│           • deployed URL (production/staging)
+│
+└─ User explicitly says "localhost" or "local"
+   → Always use http://localhost:8000
+```
 
 ## App Naming Constraints
 
@@ -407,7 +552,8 @@ SQL queries can accept parameters to make them dynamic and reusable.
 
 - Parameters use colon prefix: `:parameter_name`
 - Databricks infers types from values automatically
-- For optional parameters, use pattern: `(:param = '' OR column = :param)`
+- For optional string parameters, use pattern: `(:param = '' OR column = :param)`
+- **For optional date parameters, use sentinel dates** (`'1900-01-01'` and `'9999-12-31'`) instead of empty strings (see Date Parameters section below)
 
 #### Frontend Parameter Passing:
 
@@ -422,7 +568,7 @@ const { data } = useAnalyticsQuery('filtered_data', {
 
 #### Date Parameters:
 
-For dates, use `YYYY-MM-DD` format in frontend, `DATE()` function in SQL:
+For dates, use `YYYY-MM-DD` format in frontend, `CAST()` function in SQL:
 
 ```typescript
 // Date helper for query params
@@ -433,13 +579,62 @@ const startDate = daysAgo(7);  // 7 days ago
 
 ```sql
 -- SQL
-WHERE DATE(timestamp_column) >= :start_date
+WHERE timestamp_column >= CAST(:start_date AS DATE)
 ```
+
+**⚠️ IMPORTANT: Optional Date Parameters - Use Sentinel Dates**
+
+Databricks App Kit validates parameter types before query execution. **DO NOT use empty strings (`''`) for optional date parameters** as this causes validation errors.
+
+**✅ CORRECT - Use Sentinel Dates:**
+
+```typescript
+// Frontend: Use sentinel dates for "no filter" instead of empty strings
+const revenueParams = {
+  group_by: 'month',
+  start_date: '1900-01-01',  // Sentinel: effectively no lower bound
+  end_date: '9999-12-31',    // Sentinel: effectively no upper bound
+  country: country || '',
+  property_type: propertyType || '',
+};
+```
+
+```sql
+-- SQL: Simple comparison since sentinel dates are always valid
+WHERE b.check_in >= CAST(:start_date AS DATE)
+  AND b.check_in <= CAST(:end_date AS DATE)
+```
+
+**❌ WRONG - Empty Strings Cause Validation Errors:**
+
+```typescript
+// ❌ DON'T DO THIS - causes "Invalid date format" error
+const params = {
+  start_date: '',  // Empty string triggers parameter validation error
+  end_date: '',
+};
+```
+
+```sql
+-- ❌ DON'T DO THIS - even with conditional logic, validation happens first
+WHERE (:start_date = '' OR b.check_in >= CAST(:start_date AS DATE))
+```
+
+**Why Sentinel Dates Work:**
+- `1900-01-01` is before any real data (effectively no lower bound filter)
+- `9999-12-31` is after any real data (effectively no upper bound filter)
+- Always valid DATE types, so no parameter validation errors
+- All real dates fall within this range, so no filtering occurs
+
+**When to Use Real Dates vs Sentinel Dates:**
+- **Sentinel dates**: When you want "no filter" by default (e.g., show all time periods)
+- **Real dates**: When you have actual date pickers or filters that users can set
 
 **Parameter Types:**
 - **Strings/Numbers**: Use directly in SQL with `:param_name`
-- **Dates**: Format as `YYYY-MM-DD`, use with `DATE()` in SQL
-- **Optional**: Use empty string default, check with `(:param = '' OR column = :param)`
+- **Dates**: Format as `YYYY-MM-DD`, use with `CAST(:param AS DATE)` in SQL
+- **Optional Strings**: Use empty string default, check with `(:param = '' OR column = :param)`
+- **Optional Dates**: Use sentinel dates (`'1900-01-01'` and `'9999-12-31'`) instead of empty strings
 
 ## tRPC for Custom Endpoints:
 
@@ -627,6 +822,21 @@ npm run test:e2e:ui     # Run with Playwright UI
 ### Radix UI Constraints
 
 - `SelectItem` cannot have `value=""`. Use sentinel value like `"all"` for "show all" options.
+
+### Map Libraries (react-leaflet)
+
+For maps with React 19, use react-leaflet v5:
+
+```bash
+npm install react-leaflet@^5.0.0 leaflet @types/leaflet
+```
+
+Import CSS in your component:
+```typescript
+import 'leaflet/dist/leaflet.css';
+```
+
+Note: react-leaflet v4.x requires React 18. Use v5 for React 19 compatibility.
 
 ### Best Practices:
 

@@ -72,7 +72,7 @@ class TableSpecificConfig:
 
     sequence_by: VariableOrList[str] = field(default_factory=list)
     """
-    The column names specifying the logical order of events in the source data. Delta Live Tables uses this sequencing to handle change events that arrive out of order.
+    The column names specifying the logical order of events in the source data. Spark Declarative Pipelines uses this sequencing to handle change events that arrive out of order.
     """
 
     workday_report_parameters: VariableOrOptional[
@@ -142,7 +142,7 @@ class TableSpecificConfigDict(TypedDict, total=False):
 
     sequence_by: VariableOrList[str]
     """
-    The column names specifying the logical order of events in the source data. Delta Live Tables uses this sequencing to handle change events that arrive out of order.
+    The column names specifying the logical order of events in the source data. Spark Declarative Pipelines uses this sequencing to handle change events that arrive out of order.
     """
 
     workday_report_parameters: VariableOrOptional[

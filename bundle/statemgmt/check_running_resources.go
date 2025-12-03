@@ -1,4 +1,4 @@
-package terraform
+package statemgmt
 
 import (
 	"context"
@@ -7,6 +7,8 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/engine"
+	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -23,7 +25,9 @@ func (e ErrResourceIsRunning) Error() string {
 	return fmt.Sprintf("%s %s is running", e.resourceType, e.resourceId)
 }
 
-type checkRunningResources struct{}
+type checkRunningResources struct {
+	engine engine.EngineType
+}
 
 func (l *checkRunningResources) Name() string {
 	return "check-running-resources"
@@ -34,9 +38,20 @@ func (l *checkRunningResources) Apply(ctx context.Context, b *bundle.Bundle) dia
 		return nil
 	}
 
-	state, err := ParseResourcesState(ctx, b)
-	if err != nil && state == nil {
-		return diag.FromErr(err)
+	var err error
+	var state ExportedResourcesMap
+
+	if l.engine.IsDirect() {
+		_, fullPathDirect := b.StateFilenameDirect(ctx)
+		state, err = b.DeploymentBundle.ExportState(ctx, fullPathDirect)
+		if err != nil {
+			return diag.FromErr(err)
+		}
+	} else {
+		state, err = terraform.ParseResourcesState(ctx, b)
+		if err != nil {
+			return diag.FromErr(err)
+		}
 	}
 
 	w := b.WorkspaceClient()
@@ -47,8 +62,8 @@ func (l *checkRunningResources) Apply(ctx context.Context, b *bundle.Bundle) dia
 	return nil
 }
 
-func CheckRunningResource() *checkRunningResources {
-	return &checkRunningResources{}
+func CheckRunningResource(engine engine.EngineType) bundle.Mutator {
+	return &checkRunningResources{engine: engine}
 }
 
 func checkAnyResourceRunning(ctx context.Context, w *databricks.WorkspaceClient, state ExportedResourcesMap) error {

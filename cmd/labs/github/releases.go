@@ -48,7 +48,7 @@ func getVersions(ctx context.Context, org, repo string) (Versions, error) {
 	var releases Versions
 	log.Debugf(ctx, "Fetching latest releases for %s/%s from GitHub API", org, repo)
 	url := fmt.Sprintf("%s/repos/%s/%s/releases", gitHubAPI, org, repo)
-	err := httpGetAndUnmarshal(ctx, url, &releases)
+	_, err := httpGetAndUnmarshal(ctx, url, &releases)
 	return releases, err
 }
 

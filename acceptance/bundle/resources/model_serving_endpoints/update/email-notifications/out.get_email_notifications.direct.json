@@ -1,0 +1,5 @@
+{
+  "on_update_success": [
+    "user2@example.com"
+  ]
+}

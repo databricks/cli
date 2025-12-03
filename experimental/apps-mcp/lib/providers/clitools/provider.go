@@ -52,7 +52,7 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 	mcpsdk.AddTool(server,
 		&mcpsdk.Tool{
 			Name:        "databricks_configure_auth",
-			Description: "Configure authentication for Databricks. Only call when Databricks authentication has has failed to authenticate automatically or when the user explicitly asks for using a specific host or profile. Validates credentials and stores the authenticated client in the session.",
+			Description: "Configure authentication for Databricks. Only call when Databricks authentication has failed to authenticate automatically or when the user explicitly asks for using a specific host or profile. Validates credentials and stores the authenticated client in the session.",
 		},
 		func(ctx context.Context, req *mcpsdk.CallToolRequest, args ConfigureAuthInput) (*mcpsdk.CallToolResult, any, error) {
 			log.Debug(ctx, "databricks_configure_auth called")
@@ -89,7 +89,7 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 	mcpsdk.AddTool(server,
 		&mcpsdk.Tool{
 			Name:        "explore",
-			Description: "**REQUIRED DURING PLAN MODE** - Call this FIRST when planning ANY Databricks work. Use this to discover available workspaces, warehouses, and get workflow recommendations for your specific task. Even if you're just reading an assignment document, call this first. Especially important when task involves: creating Databricks projects/apps/pipelines/jobs, SQL pipelines or data transformation workflows, deploying code to multiple environments (dev/prod), or working with databricks.yml files. You DON'T need a workspace name - call this when starting ANY Databricks planning to understand workspace capabilities and recommended tooling before you create your plan.",
+			Description: "Discover available Databricks workspaces, warehouses, and get workflow recommendations. Call this FIRST when planning ANY Databricks work involving apps, pipelines, jobs, bundles, or SQL workflows. Returns workspace capabilities and recommended tooling.",
 		},
 		func(ctx context.Context, req *mcpsdk.CallToolRequest, args struct{}) (*mcpsdk.CallToolResult, any, error) {
 			log.Debug(ctx, "explore called")
@@ -104,16 +104,16 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 	// Register invoke_databricks_cli tool
 	type InvokeDatabricksCLIInput struct {
 		WorkingDirectory string   `json:"working_directory" jsonschema:"required" jsonschema_description:"The directory to run the command in."`
-		Args             []string `json:"args" jsonschema:"required" jsonschema_description:"The arguments to pass to the Databricks CLI command e.g. ['bundle', 'deploy'] or ['bundle', 'validate']. Do not include the 'databricks' prefix."`
+		Args             []string `json:"args" jsonschema:"required" jsonschema_description:"CLI arguments as array, e.g. [\"bundle\", \"deploy\"] or [\"bundle\", \"validate\", \"--target\", \"dev\"]. Do not include 'databricks' prefix."`
 	}
 
 	mcpsdk.AddTool(server,
 		&mcpsdk.Tool{
 			Name:        "invoke_databricks_cli",
-			Description: "Execute Databricks CLI command. Pass all arguments as a single string.",
+			Description: "Execute Databricks CLI command. Pass arguments as an array of strings.",
 		},
 		func(ctx context.Context, req *mcpsdk.CallToolRequest, args InvokeDatabricksCLIInput) (*mcpsdk.CallToolResult, any, error) {
-			log.Debugf(ctx, "invoke_databricks_cli called: args=%s, working_directory=%s", args.Args, args.WorkingDirectory)
+			log.Debugf(ctx, "invoke_databricks_cli called: args=%v, working_directory=%s", args.Args, args.WorkingDirectory)
 			result, err := InvokeDatabricksCLI(ctx, args.Args, args.WorkingDirectory)
 			if err != nil {
 				return nil, nil, err

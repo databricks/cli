@@ -1,0 +1,70 @@
+{
+  "plan": {
+    "resources.model_serving_endpoints.test_endpoint": {
+      "action": "update",
+      "new_state": {
+        "value": {
+          "ai_gateway": {
+            "inference_table_config": {
+              "catalog_name": "second-inference-catalog"
+            }
+          },
+          "config": {
+            "served_entities": [
+              {
+                "external_model": {
+                  "name": "gpt-4o-mini",
+                  "openai_config": {
+                    "openai_api_key": "{{secrets/test-scope/openai-key}}"
+                  },
+                  "provider": "openai",
+                  "task": "llm/v1/chat"
+                },
+                "name": "prod"
+              }
+            ]
+          },
+          "name": "[ENDPOINT_ID]"
+        }
+      },
+      "remote_state": {
+        "endpoint_details": {
+          "ai_gateway": {
+            "inference_table_config": {
+              "catalog_name": "first-inference-catalog"
+            }
+          },
+          "config": {
+            "served_entities": [
+              {
+                "external_model": {
+                  "name": "gpt-4o-mini",
+                  "openai_config": {
+                    "openai_api_key": "{{secrets/test-scope/openai-key}}"
+                  },
+                  "provider": "openai",
+                  "task": "llm/v1/chat"
+                },
+                "name": "prod"
+              }
+            ]
+          },
+          "creator": "[USERNAME]",
+          "id": "[UUID]",
+          "name": "[ENDPOINT_ID]",
+          "state": {
+            "config_update": "NOT_UPDATING"
+          }
+        },
+        "endpoint_id": "[UUID]"
+      },
+      "changes": {
+        "local": {
+          "ai_gateway.inference_table_config.catalog_name": {
+            "action": "update"
+          }
+        }
+      }
+    }
+  }
+}

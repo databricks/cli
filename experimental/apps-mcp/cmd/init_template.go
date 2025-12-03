@@ -12,6 +12,7 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/experimental/apps-mcp/lib/common"
+	"github.com/databricks/cli/experimental/apps-mcp/lib/prompts"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/template"
 	"github.com/spf13/cobra"
@@ -185,9 +186,17 @@ After initialization:
 
 	cmd.Flags().StringVar(&name, "name", "", "Project name (required)")
 	cmd.Flags().StringVar(&warehouse, "warehouse", "", "SQL warehouse ID")
+	cmd.Flags().StringVar(&warehouse, "warehouse-id", "", "SQL warehouse ID (alias for --warehouse)")
+	cmd.Flags().StringVar(&warehouse, "sql-warehouse-id", "", "SQL warehouse ID (alias for --warehouse)")
+	cmd.Flags().StringVar(&warehouse, "sql_warehouse_id", "", "SQL warehouse ID (alias for --warehouse)")
 	cmd.Flags().StringVar(&description, "description", "", "App description")
 	cmd.Flags().StringVar(&outputDir, "output-dir", "", "Directory to write the initialized template to")
 	cmd.Flags().BoolVar(&describe, "describe", false, "Display template schema without initializing")
+
+	// Hide the alias flags from help
+	cmd.Flags().MarkHidden("warehouse-id")
+	cmd.Flags().MarkHidden("sql-warehouse-id")
+	cmd.Flags().MarkHidden("sql_warehouse_id")
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
@@ -301,25 +310,27 @@ After initialization:
 		tmpl.Writer.LogTelemetry(ctx)
 
 		// Determine actual output directory (template writes to subdirectory with project name)
-		actualOutputDir := outputDir
-		if actualOutputDir == "" {
-			actualOutputDir = name
+		actualOutputDir := name
+		if outputDir != "" {
+			actualOutputDir = filepath.Join(outputDir, name)
 		}
 
-		// Count files if we can
+		// Count files and get absolute path
 		fileCount := 0
-		if absPath, err := filepath.Abs(actualOutputDir); err == nil {
-			_ = filepath.Walk(absPath, func(path string, info os.FileInfo, err error) error {
-				if err == nil && !info.IsDir() {
-					fileCount++
-				}
-				return nil
-			})
+		absOutputDir, err := filepath.Abs(actualOutputDir)
+		if err != nil {
+			absOutputDir = actualOutputDir
 		}
-		cmdio.LogString(ctx, common.FormatScaffoldSuccess("appkit", actualOutputDir, fileCount))
+		_ = filepath.Walk(absOutputDir, func(path string, info os.FileInfo, err error) error {
+			if err == nil && !info.IsDir() {
+				fileCount++
+			}
+			return nil
+		})
+		cmdio.LogString(ctx, common.FormatScaffoldSuccess("appkit", absOutputDir, fileCount))
 
 		// Generate and print file tree structure
-		fileTree, err := generateFileTree(actualOutputDir)
+		fileTree, err := generateFileTree(absOutputDir)
 		if err == nil && fileTree != "" {
 			cmdio.LogString(ctx, "\nFile structure:")
 			cmdio.LogString(ctx, fileTree)
@@ -327,6 +338,10 @@ After initialization:
 
 		// Try to read and display CLAUDE.md if present
 		readClaudeMd(ctx, configFile)
+
+		// Re-inject app-specific guidance
+		appsContent := prompts.MustExecuteTemplate("apps.tmpl", map[string]any{})
+		cmdio.LogString(ctx, appsContent)
 
 		return nil
 	}

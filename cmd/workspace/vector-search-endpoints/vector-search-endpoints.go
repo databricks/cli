@@ -32,6 +32,7 @@ func New() *cobra.Command {
 	cmd.AddCommand(newDeleteEndpoint())
 	cmd.AddCommand(newGetEndpoint())
 	cmd.AddCommand(newListEndpoints())
+	cmd.AddCommand(newRetrieveUserVisibleMetrics())
 	cmd.AddCommand(newUpdateEndpointBudgetPolicy())
 	cmd.AddCommand(newUpdateEndpointCustomTags())
 
@@ -316,6 +317,83 @@ func newListEndpoints() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range listEndpointsOverrides {
 		fn(cmd, &listEndpointsReq)
+	}
+
+	return cmd
+}
+
+// start retrieve-user-visible-metrics command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var retrieveUserVisibleMetricsOverrides []func(
+	*cobra.Command,
+	*vectorsearch.RetrieveUserVisibleMetricsRequest,
+)
+
+func newRetrieveUserVisibleMetrics() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var retrieveUserVisibleMetricsReq vectorsearch.RetrieveUserVisibleMetricsRequest
+	var retrieveUserVisibleMetricsJson flags.JsonFlag
+
+	cmd.Flags().Var(&retrieveUserVisibleMetricsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().StringVar(&retrieveUserVisibleMetricsReq.EndTime, "end-time", retrieveUserVisibleMetricsReq.EndTime, `End time for metrics query.`)
+	cmd.Flags().IntVar(&retrieveUserVisibleMetricsReq.GranularityInSeconds, "granularity-in-seconds", retrieveUserVisibleMetricsReq.GranularityInSeconds, `Granularity in seconds.`)
+	// TODO: array: metrics
+	cmd.Flags().StringVar(&retrieveUserVisibleMetricsReq.PageToken, "page-token", retrieveUserVisibleMetricsReq.PageToken, `Token for pagination.`)
+	cmd.Flags().StringVar(&retrieveUserVisibleMetricsReq.StartTime, "start-time", retrieveUserVisibleMetricsReq.StartTime, `Start time for metrics query.`)
+
+	cmd.Use = "retrieve-user-visible-metrics NAME"
+	cmd.Short = `Retrieve user-visible metrics for an endpoint.`
+	cmd.Long = `Retrieve user-visible metrics for an endpoint.
+
+  Retrieve user-visible metrics for an endpoint
+
+  Arguments:
+    NAME: Vector search endpoint name`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := retrieveUserVisibleMetricsJson.Unmarshal(&retrieveUserVisibleMetricsReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		retrieveUserVisibleMetricsReq.Name = args[0]
+
+		response, err := w.VectorSearchEndpoints.RetrieveUserVisibleMetrics(ctx, retrieveUserVisibleMetricsReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range retrieveUserVisibleMetricsOverrides {
+		fn(cmd, &retrieveUserVisibleMetricsReq)
 	}
 
 	return cmd

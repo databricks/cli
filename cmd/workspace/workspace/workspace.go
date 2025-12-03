@@ -262,7 +262,9 @@ func newGetPermissionLevels() *cobra.Command {
   Gets the permission levels that a user can have on an object.
 
   Arguments:
-    WORKSPACE_OBJECT_TYPE: The workspace object type for which to get or manage permissions.
+    WORKSPACE_OBJECT_TYPE: The workspace object type for which to get or manage permissions. Could be
+      one of the following: alerts, alertsv2, dashboards, dbsql-dashboards,
+      directories, experiments, files, genie, notebooks, queries
     WORKSPACE_OBJECT_ID: The workspace object for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
@@ -321,7 +323,9 @@ func newGetPermissions() *cobra.Command {
   permissions from their parent objects or root object.
 
   Arguments:
-    WORKSPACE_OBJECT_TYPE: The workspace object type for which to get or manage permissions.
+    WORKSPACE_OBJECT_TYPE: The workspace object type for which to get or manage permissions. Could be
+      one of the following: alerts, alertsv2, dashboards, dbsql-dashboards,
+      directories, experiments, files, genie, notebooks, queries
     WORKSPACE_OBJECT_ID: The workspace object for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
@@ -701,7 +705,9 @@ func newSetPermissions() *cobra.Command {
   permissions from their parent objects or root object.
 
   Arguments:
-    WORKSPACE_OBJECT_TYPE: The workspace object type for which to get or manage permissions.
+    WORKSPACE_OBJECT_TYPE: The workspace object type for which to get or manage permissions. Could be
+      one of the following: alerts, alertsv2, dashboards, dbsql-dashboards,
+      directories, experiments, files, genie, notebooks, queries
     WORKSPACE_OBJECT_ID: The workspace object for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)
@@ -777,7 +783,9 @@ func newUpdatePermissions() *cobra.Command {
   permissions from their parent objects or root object.
 
   Arguments:
-    WORKSPACE_OBJECT_TYPE: The workspace object type for which to get or manage permissions.
+    WORKSPACE_OBJECT_TYPE: The workspace object type for which to get or manage permissions. Could be
+      one of the following: alerts, alertsv2, dashboards, dbsql-dashboards,
+      directories, experiments, files, genie, notebooks, queries
     WORKSPACE_OBJECT_ID: The workspace object for which to get or manage permissions.`
 
 	cmd.Annotations = make(map[string]string)

@@ -9,11 +9,28 @@
 DATABRICKS APPS DEVELOPMENT
 ============================
 
+When building or planning a new Databricks app, use the following steps:
+
+1. MUST start by scaffolding a new Databricks app using command: invoke_databricks_cli 'experimental apps-mcp tools init-template --name my-app-name --description "My app description"'
+   MUST run this command before planning the app. You must understand tge generated file structure and the purpose of the files.
+2. MUST read the CLAUDE.md file in the app directory.
+3. SHOULD run `npm install`, run `npm run dev` in the background, and open http://localhost:8000 in your browser before making changes to the app.
+4. MUST run `cd <project_name>` to navigate to the app directory. MUST execute all commands from this directory.
+4. If applicable, create SQL query files in the ./config/queries directory.
+5. If applicable, create tRPC endpoints in the ./server/trpc.ts file.
+6. If applicable, build UI components in the ./client/src directory.
+7. MUST update the ./client/src/App.tsx file
+8. MUST update smoke test in the ./tests/smoke.spec.ts file
+9. MUST run validation using command: invoke_databricks_cli 'experimental apps-mcp tools validate ./'
+10. USER CONSENT: Only deploy the app with explicit consent from the user. Deployment using command: invoke_databricks_cli 'experimental apps-mcp tools deploy'
+
 # Initialization
 
 ⚠️ ALWAYS start by scaffolding a new Databricks app using command:
 
 invoke_databricks_cli 'experimental apps-mcp tools init-template --name my-app-name --description "My app description"'
+
+This creates a `my-app-name/` directory in the current working directory containing the app files.
 
 # Validation
 
@@ -23,7 +40,7 @@ invoke_databricks_cli 'experimental apps-mcp tools validate ./your-app-location'
 
 # Deployment
 
-⚠️ Use the deploy command which validates, deploys, and runs the app:
+⚠️ (ONLY when user explicitly requested) Use the deploy command which validates, deploys, and runs the app:
 
 invoke_databricks_cli 'experimental apps-mcp tools deploy'
 

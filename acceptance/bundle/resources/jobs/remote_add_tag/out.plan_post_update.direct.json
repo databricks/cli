@@ -1,0 +1,100 @@
+{
+  "plan": {
+    "resources.jobs.foo": {
+      "action": "update",
+      "new_state": {
+        "value": {
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+          },
+          "edit_mode": "UI_LOCKED",
+          "format": "MULTI_TASK",
+          "max_concurrent_runs": 1,
+          "name": "My Wheel Job",
+          "queue": {
+            "enabled": true
+          },
+          "tags": {
+            "tag1": "tag value"
+          },
+          "tasks": [
+            {
+              "environment_key": "test_env",
+              "libraries": [
+                {
+                  "whl": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/hello.whl"
+                }
+              ],
+              "python_wheel_task": {
+                "entry_point": "run",
+                "package_name": "my_test_code"
+              },
+              "task_key": "TestTask"
+            }
+          ]
+        }
+      },
+      "remote_state": {
+        "created_time": [UNIX_TIME_MILLIS],
+        "creator_user_name": "[USERNAME]",
+        "job_id": [JOB_ID],
+        "run_as_user_name": "[USERNAME]",
+        "settings": {
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+          },
+          "edit_mode": "UI_LOCKED",
+          "email_notifications": {},
+          "format": "MULTI_TASK",
+          "max_concurrent_runs": 1,
+          "name": "My Wheel Job",
+          "queue": {
+            "enabled": true
+          },
+          "tags": {
+            "new_tag": "new_value",
+            "tag1": "tag value"
+          },
+          "tasks": [
+            {
+              "environment_key": "test_env",
+              "libraries": [
+                {
+                  "whl": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/hello.whl"
+                }
+              ],
+              "python_wheel_task": {
+                "entry_point": "run",
+                "package_name": "my_test_code"
+              },
+              "task_key": "TestTask"
+            }
+          ],
+          "timeout_seconds": 0,
+          "webhook_notifications": {}
+        }
+      },
+      "changes": {
+        "remote": {
+          "email_notifications": {
+            "action": "skip",
+            "reason": "server_side_default"
+          },
+          "tags['new_tag']": {
+            "action": "update"
+          },
+          "timeout_seconds": {
+            "action": "skip",
+            "reason": "server_side_default"
+          },
+          "webhook_notifications": {
+            "action": "skip",
+            "reason": "server_side_default"
+          }
+        }
+      }
+    }
+  }
+}
