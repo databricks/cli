@@ -3,6 +3,9 @@ Local = false
 
 BundleConfigTarget = "databricks.yml"
 
+# On aws the host URL includes the workspace ID as well. Thus skipping it to keep the test simple.
+CloudEnvs.aws = false
+
 Ignore = [
     "databricks.yml",
     "alert.json",
