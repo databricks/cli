@@ -18,12 +18,15 @@
       "changes": {
         "local": {
           "etag": {
-            "action": "skip"
+            "action": "skip",
+            "old": "[NUMID]"
           }
         },
         "remote": {
           "serialized_dashboard": {
-            "action": "skip"
+            "action": "skip",
+            "old": "{\"pages\":[{\"name\":\"02724bf2\",\"displayName\":\"Dashboard test bundle-deploy-dashboard\"}]}\n",
+            "new": "{\"pages\":[{\"displayName\":\"Dashboard test bundle-deploy-dashboard\",\"name\":\"02724bf2\",\"pageType\":\"PAGE_TYPE_CANVAS\"}]}\n"
           }
         }
       }

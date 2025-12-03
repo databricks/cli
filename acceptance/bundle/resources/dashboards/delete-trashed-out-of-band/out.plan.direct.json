@@ -14,7 +14,8 @@
       "changes": {
         "local": {
           "etag": {
-            "action": "skip"
+            "action": "skip",
+            "old": [ETAG]
           }
         }
       }

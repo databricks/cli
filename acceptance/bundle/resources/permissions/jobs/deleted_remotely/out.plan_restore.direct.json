@@ -89,10 +89,18 @@
       "changes": {
         "remote": {
           "permissions[group_name='data-team']": {
-            "action": "update"
+            "action": "update",
+            "old": {
+              "group_name": "data-team",
+              "permission_level": "CAN_MANAGE"
+            }
           },
           "permissions[user_name='viewer@example.com']": {
-            "action": "update"
+            "action": "update",
+            "old": {
+              "permission_level": "CAN_VIEW",
+              "user_name": "viewer@example.com"
+            }
           }
         }
       }

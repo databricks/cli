@@ -24,7 +24,9 @@
       "changes": {
         "local": {
           "catalog": {
-            "action": "recreate"
+            "action": "recreate",
+            "old": "mycatalog1",
+            "new": "mycatalog2"
           }
         }
       }

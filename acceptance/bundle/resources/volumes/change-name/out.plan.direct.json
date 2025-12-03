@@ -27,7 +27,9 @@
       "changes": {
         "local": {
           "name": {
-            "action": "update_id"
+            "action": "update_id",
+            "old": "myvolume",
+            "new": "mynewvolume"
           }
         },
         "remote": {
