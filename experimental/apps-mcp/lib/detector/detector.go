@@ -15,8 +15,8 @@ type BundleInfo struct {
 // DetectedContext represents the detected project context.
 type DetectedContext struct {
 	InProject   bool
-	TargetTypes []string          // ["apps", "jobs"] - supports combined bundles
-	Template    string            // "appkit-typescript", "python", etc.
+	TargetTypes []string // ["apps", "jobs"] - supports combined bundles
+	Template    string   // "appkit-typescript", "python", etc.
 	BundleInfo  *BundleInfo
 	Metadata    map[string]string
 }
