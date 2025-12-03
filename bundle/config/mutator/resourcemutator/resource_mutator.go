@@ -74,7 +74,6 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) {
 
 		// https://github.com/databricks/terraform-provider-databricks/blob/v1.75.0/clusters/resource_cluster.go
 		// This triggers SingleNodeCluster() cluster validator. It needs to be run before applying defaults.
-		{"resources.jobs.*.job_clusters[*].new_cluster.num_workers", 0},
 		{"resources.jobs.*.job_clusters[*].new_cluster.workload_type.clients.notebooks", true},
 		{"resources.jobs.*.job_clusters[*].new_cluster.workload_type.clients.jobs", true},
 

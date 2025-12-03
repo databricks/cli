@@ -62,7 +62,6 @@
             {
               "job_cluster_key": "key",
               "new_cluster": {
-                "num_workers": 0,
                 "spark_version": "13.3.x-scala2.12"
               }
             }
@@ -122,6 +121,10 @@
       "changes": {
         "remote": {
           "email_notifications": {
+            "action": "skip",
+            "reason": "server_side_default"
+          },
+          "job_clusters[0].new_cluster.num_workers": {
             "action": "skip",
             "reason": "server_side_default"
           },
