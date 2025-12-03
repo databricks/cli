@@ -119,7 +119,7 @@ func (r *ResourceSecretScopeAcls) DoUpdate(ctx context.Context, id string, state
 	return nil, err
 }
 
-func (r *ResourceSecretScopeAcls) DoUpdateWithID(ctx context.Context, oldID string, state *SecretScopeAclsState) (string, *SecretScopeAclsState, error) {
+func (r *ResourceSecretScopeAcls) DoUpdateWithID(ctx context.Context, _ string, state *SecretScopeAclsState) (string, *SecretScopeAclsState, error) {
 	// Use state.ScopeName instead of oldID because when the parent scope is recreated,
 	// state.ScopeName will have the new (resolved) scope name, while oldID still has the old name
 	scopeName, err := r.setACLs(ctx, state.ScopeName, state.Acls)
