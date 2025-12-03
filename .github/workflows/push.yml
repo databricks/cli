@@ -70,31 +70,52 @@ jobs:
           # Always run all tests
           echo "targets=[\"test\"]" >> $GITHUB_OUTPUT
 
-  tests:
+  test:
     needs:
       - cleanups
       - testmask
 
     # Only run if the target is in the list of targets from testmask
     if: ${{ contains(fromJSON(needs.testmask.outputs.targets), 'test') }}
-    runs-on: ${{ matrix.os }}
+    name: "make test (${{matrix.os.name}}, ${{matrix.deployment}})"
+    runs-on: ${{ matrix.os.runner }}
 
     strategy:
       fail-fast: false
       matrix:
+        # Use separate fields for the OS name and runner configuration.
+        # When combined in a single object, "runs-on" errors with "Unexpected value 'name'".
         os:
-          - group: databricks-protected-runner-group-large
-            labels: linux-ubuntu-latest-large
+          - name: linux
+            runner:
+              group: databricks-protected-runner-group-large
+              labels: linux-ubuntu-latest-large
 
-          # On merge_group events, only run the tests on Linux, to reduce time to merge.
-          - ${{ github.event_name != 'merge_group' && fromJSON('{"group":"databricks-protected-runner-group-large","labels":"windows-server-latest-large"}') || null }}
-          - ${{ github.event_name != 'merge_group' && 'macos-latest' || null }}
+          - name: windows
+            runner:
+              group: databricks-protected-runner-group-large
+              labels: windows-server-latest-large
+
+          - name: macos
+            runner:
+              labels: macos-latest
 
         deployment:
           - "terraform"
           - "direct"
+
+        # Include "event_name" in the matrix so we can include/exclude based on it.
+        event:
+          - ${{ github.event_name }}
+
+        # Run on Linux only in merge queue to reduce time to merge.
         exclude:
-          - os: null
+          - event: merge_group
+            os:
+              name: windows
+          - event: merge_group
+            os:
+              name: macos
 
     steps:
       - name: Checkout repository and submodules
