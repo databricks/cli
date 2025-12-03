@@ -45,13 +45,15 @@ type DependsOnEntry struct {
 }
 
 type Changes struct {
-	Local  map[string]Trigger `json:"local,omitempty"`
-	Remote map[string]Trigger `json:"remote,omitempty"`
+	Local  map[string]ChangeDesc `json:"local,omitempty"`
+	Remote map[string]ChangeDesc `json:"remote,omitempty"`
 }
 
-type Trigger struct {
+type ChangeDesc struct {
 	Action string `json:"action"`
 	Reason string `json:"reason,omitempty"`
+	Old    any    `json:"old,omitempty"`
+	New    any    `json:"new,omitempty"`
 }
 
 // HasChange checks if there are any changes for fields with the given prefix.

@@ -93,7 +93,11 @@
       "changes": {
         "remote": {
           "permissions[group_name='admin-team']": {
-            "action": "update"
+            "action": "update",
+            "new": {
+              "group_name": "admin-team",
+              "permission_level": "CAN_MANAGE"
+            }
           }
         }
       }

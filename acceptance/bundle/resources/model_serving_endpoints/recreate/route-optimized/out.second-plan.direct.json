@@ -22,7 +22,9 @@
       "changes": {
         "local": {
           "route_optimized": {
-            "action": "recreate"
+            "action": "recreate",
+            "old": false,
+            "new": true
           }
         }
       }

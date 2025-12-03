@@ -51,7 +51,9 @@
       "changes": {
         "local": {
           "config.served_entities[0].external_model.name": {
-            "action": "update"
+            "action": "update",
+            "old": "gpt-4o-mini",
+            "new": "gpt-5o-mini"
           }
         }
       }

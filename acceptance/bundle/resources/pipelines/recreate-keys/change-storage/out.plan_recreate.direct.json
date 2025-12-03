@@ -24,7 +24,9 @@
       "changes": {
         "local": {
           "storage": {
-            "action": "recreate"
+            "action": "recreate",
+            "old": "dbfs:/pipelines/custom",
+            "new": "dbfs:/pipelines/newcustom"
           }
         }
       }

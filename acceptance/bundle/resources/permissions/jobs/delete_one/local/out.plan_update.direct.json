@@ -101,7 +101,11 @@
       "changes": {
         "local": {
           "permissions[user_name='test-dabs-1@databricks.com']": {
-            "action": "update"
+            "action": "update",
+            "old": {
+              "permission_level": "CAN_MANAGE_RUN",
+              "user_name": "test-dabs-1@databricks.com"
+            }
           }
         }
       }
