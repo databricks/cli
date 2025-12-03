@@ -1,0 +1,198 @@
+
+>>> [CLI] bundle init default-python --config-file ./input.json
+Welcome to the default Python template for Databricks Asset Bundles!
+
+Answer the following questions to customize your project.
+You can always change your configuration in the databricks.yml file later.
+
+Note that [DATABRICKS_URL] is used for initialization.
+(For information on how to change your profile, see https://docs.databricks.com/dev-tools/cli/profiles.html.)
+
+✨ Your new project has been created in the 'my_default_python' directory!
+
+To get started, refer to the project README.md file and the documentation at https://docs.databricks.com/dev-tools/bundles/index.html.
+
+>>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
+Building python_artifact...
+Uploading .databricks/bundle/dev/patched_wheels/python_artifact_my_default_python/my_default_python-0.0.1+[UNIX_TIME_NANOS][0]-py3-none-any.whl...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_state.py
+
+>>> [CLI] bundle deployment migrate
+Building python_artifact...
+Migrated 2 resources to direct engine state file: [TEST_TMP_DIR]/my_default_python/.databricks/bundle/dev/resources.json
+
+Validate the migration by running "bundle plan", there should be no actions planned.
+
+The state file is not synchronized to the workspace yet. To do that and finalize the migration, run "bundle deploy".
+
+To undo the migration, remove [TEST_TMP_DIR]/my_default_python/.databricks/bundle/dev/resources.json and rename [TEST_TMP_DIR]/my_default_python/.databricks/bundle/dev/terraform/terraform.tfstate.backup to [TEST_TMP_DIR]/my_default_python/.databricks/bundle/dev/terraform/terraform.tfstate
+
+
+>>> print_state.py
+
+>>> jq .. | .libraries? | select(.) ../out.state_after_migration.json
+[
+  {
+    "whl": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/artifacts/.internal/my_default_python-0.0.1+[UNIX_TIME_NANOS][1]-py3-none-any.whl"
+  }
+]
+[
+  {
+    "whl": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/artifacts/.internal/my_default_python-0.0.1+[UNIX_TIME_NANOS][1]-py3-none-any.whl"
+  }
+]
+[
+  {
+    "glob": {
+      "include": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/files/src/my_default_python_etl/transformations/**"
+    }
+  }
+]
+
+>>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle plan
+Building python_artifact...
+update jobs.sample_job
+
+Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
+
+>>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle plan -o json
+Building python_artifact...
+
+>>> jq .plan[] | .changes ../out.plan_after_migration.json
+{
+  "local": {
+    "tasks[task_key='notebook_task'].libraries[0].whl": {
+      "action": "update",
+      "old": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/artifacts/.internal/my_default_python-0.0.1+[UNIX_TIME_NANOS][1]-py3-none-any.whl",
+      "new": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/artifacts/.internal/my_default_python-0.0.1+[UNIX_TIME_NANOS][2]-py3-none-any.whl"
+    },
+    "tasks[task_key='python_wheel_task'].libraries[0].whl": {
+      "action": "update",
+      "old": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/artifacts/.internal/my_default_python-0.0.1+[UNIX_TIME_NANOS][1]-py3-none-any.whl",
+      "new": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/artifacts/.internal/my_default_python-0.0.1+[UNIX_TIME_NANOS][2]-py3-none-any.whl"
+    }
+  },
+  "remote": {
+    "email_notifications": {
+      "action": "skip",
+      "reason": "server_side_default"
+    },
+    "job_clusters[0].new_cluster.num_workers": {
+      "action": "update",
+      "old": 0
+    },
+    "tasks[task_key='notebook_task'].libraries[0].whl": {
+      "action": "update",
+      "old": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/artifacts/.internal/my_default_python-0.0.1+[UNIX_TIME_NANOS][1]-py3-none-any.whl",
+      "new": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/artifacts/.internal/my_default_python-0.0.1+[UNIX_TIME_NANOS][0]-py3-none-any.whl"
+    },
+    "tasks[task_key='notebook_task'].notebook_task.source": {
+      "action": "skip",
+      "reason": "server_side_default"
+    },
+    "tasks[task_key='python_wheel_task'].libraries[0].whl": {
+      "action": "update",
+      "old": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/artifacts/.internal/my_default_python-0.0.1+[UNIX_TIME_NANOS][1]-py3-none-any.whl",
+      "new": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/artifacts/.internal/my_default_python-0.0.1+[UNIX_TIME_NANOS][0]-py3-none-any.whl"
+    },
+    "timeout_seconds": {
+      "action": "skip",
+      "reason": "server_side_default"
+    },
+    "webhook_notifications": {
+      "action": "skip",
+      "reason": "server_side_default"
+    }
+  }
+}
+{
+  "remote": {
+    "storage": {
+      "action": "skip",
+      "reason": "server_side_default"
+    }
+  }
+}
+
+>>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle deploy
+Building python_artifact...
+Uploading .databricks/bundle/dev/patched_wheels/python_artifact_my_default_python/my_default_python-0.0.1+[UNIX_TIME_NANOS][3]-py3-none-any.whl...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_state.py
+
+>>> diff.py ../out.state_after_migration.json ../out.state_after_deploy.json
+
+=== Extra plan: should have no drift
+>>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle plan
+Building python_artifact...
+update jobs.sample_job
+
+Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
+
+>>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle plan -o json
+Building python_artifact...
+
+>>> jq .plan[] | .changes ../out.plan_after_migration.json
+{
+  "local": {
+    "tasks[task_key='notebook_task'].libraries[0].whl": {
+      "action": "update",
+      "old": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/artifacts/.internal/my_default_python-0.0.1+[UNIX_TIME_NANOS][1]-py3-none-any.whl",
+      "new": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/artifacts/.internal/my_default_python-0.0.1+[UNIX_TIME_NANOS][2]-py3-none-any.whl"
+    },
+    "tasks[task_key='python_wheel_task'].libraries[0].whl": {
+      "action": "update",
+      "old": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/artifacts/.internal/my_default_python-0.0.1+[UNIX_TIME_NANOS][1]-py3-none-any.whl",
+      "new": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/artifacts/.internal/my_default_python-0.0.1+[UNIX_TIME_NANOS][2]-py3-none-any.whl"
+    }
+  },
+  "remote": {
+    "email_notifications": {
+      "action": "skip",
+      "reason": "server_side_default"
+    },
+    "job_clusters[0].new_cluster.num_workers": {
+      "action": "update",
+      "old": 0
+    },
+    "tasks[task_key='notebook_task'].libraries[0].whl": {
+      "action": "update",
+      "old": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/artifacts/.internal/my_default_python-0.0.1+[UNIX_TIME_NANOS][1]-py3-none-any.whl",
+      "new": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/artifacts/.internal/my_default_python-0.0.1+[UNIX_TIME_NANOS][0]-py3-none-any.whl"
+    },
+    "tasks[task_key='notebook_task'].notebook_task.source": {
+      "action": "skip",
+      "reason": "server_side_default"
+    },
+    "tasks[task_key='python_wheel_task'].libraries[0].whl": {
+      "action": "update",
+      "old": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/artifacts/.internal/my_default_python-0.0.1+[UNIX_TIME_NANOS][1]-py3-none-any.whl",
+      "new": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/artifacts/.internal/my_default_python-0.0.1+[UNIX_TIME_NANOS][0]-py3-none-any.whl"
+    },
+    "timeout_seconds": {
+      "action": "skip",
+      "reason": "server_side_default"
+    },
+    "webhook_notifications": {
+      "action": "skip",
+      "reason": "server_side_default"
+    }
+  }
+}
+{
+  "remote": {
+    "storage": {
+      "action": "skip",
+      "reason": "server_side_default"
+    }
+  }
+}

@@ -35,10 +35,10 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		opts := utils.ProcessOptions{
-			AlwaysPull:    true,
-			FastValidate:  true,
-			Build:         true,
-			DeployPrepare: true,
+			AlwaysPull:      true,
+			FastValidate:    true,
+			Build:           true,
+			PreDeployChecks: true,
 		}
 
 		// Only add InitFunc if we need to set force or cluster ID
