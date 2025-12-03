@@ -136,7 +136,7 @@ func uploadLibraries(ctx context.Context, b *bundle.Bundle, libs map[string][]li
 }
 
 // The deploy phase deploys artifacts and resources.
-func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHandler, engine engine.EngineType) {
+func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHandler, engine engine.EngineType, libs map[string][]libraries.LocationToUpdate) {
 	log.Info(ctx, "Phase: deploy")
 
 	// Core mutators that CRUD resources and modify deployment state. These
@@ -155,11 +155,6 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 	defer func() {
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalDeploy))
 	}()
-
-	libs := DeployPrepare(ctx, b, false, engine)
-	if logdiag.HasError(ctx) {
-		return
-	}
 
 	uploadLibraries(ctx, b, libs)
 	if logdiag.HasError(ctx) {

@@ -1,0 +1,430 @@
+{
+  "version": 4,
+  "terraform_version": "1.5.5",
+  "serial": 3,
+  "lineage": "[UUID]",
+  "outputs": {},
+  "resources": [
+    {
+      "mode": "managed",
+      "type": "databricks_job",
+      "name": "sample_job",
+      "provider": "provider[\"registry.terraform.io/databricks/databricks\"]",
+      "instances": [
+        {
+          "schema_version": 2,
+          "attributes": {
+            "always_running": false,
+            "budget_policy_id": null,
+            "continuous": [],
+            "control_run_state": false,
+            "dbt_task": [],
+            "deployment": [
+              {
+                "kind": "BUNDLE",
+                "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/state/metadata.json"
+              }
+            ],
+            "description": null,
+            "edit_mode": "UI_LOCKED",
+            "email_notifications": [
+              {
+                "no_alert_for_skipped_runs": false,
+                "on_duration_warning_threshold_exceeded": [],
+                "on_failure": [],
+                "on_start": [],
+                "on_streaming_backlog_exceeded": [],
+                "on_success": []
+              }
+            ],
+            "environment": [],
+            "existing_cluster_id": null,
+            "format": "MULTI_TASK",
+            "git_source": [],
+            "health": [],
+            "id": "[NUMID]",
+            "job_cluster": [
+              {
+                "job_cluster_key": "job_cluster",
+                "new_cluster": [
+                  {
+                    "__apply_policy_default_values_allow_list": null,
+                    "apply_policy_default_values": false,
+                    "autoscale": [
+                      {
+                        "max_workers": 4,
+                        "min_workers": 1
+                      }
+                    ],
+                    "aws_attributes": [],
+                    "azure_attributes": [],
+                    "cluster_id": "",
+                    "cluster_log_conf": [],
+                    "cluster_mount_info": [],
+                    "cluster_name": "",
+                    "custom_tags": null,
+                    "data_security_mode": "SINGLE_USER",
+                    "docker_image": [],
+                    "driver_instance_pool_id": "",
+                    "driver_node_type_id": "",
+                    "enable_elastic_disk": false,
+                    "enable_local_disk_encryption": false,
+                    "gcp_attributes": [],
+                    "idempotency_token": "",
+                    "init_scripts": [],
+                    "instance_pool_id": "",
+                    "is_single_node": false,
+                    "kind": "",
+                    "library": [],
+                    "node_type_id": "[NODE_TYPE_ID]",
+                    "num_workers": 0,
+                    "policy_id": "",
+                    "provider_config": [],
+                    "remote_disk_throughput": 0,
+                    "runtime_engine": "",
+                    "single_user_name": "",
+                    "spark_conf": null,
+                    "spark_env_vars": null,
+                    "spark_version": "16.4.x-scala2.12",
+                    "ssh_public_keys": null,
+                    "total_initial_remote_disk_size": 0,
+                    "use_ml_runtime": false,
+                    "workload_type": []
+                  }
+                ]
+              }
+            ],
+            "library": [],
+            "max_concurrent_runs": 4,
+            "max_retries": 0,
+            "min_retry_interval_millis": 0,
+            "name": "[dev [USERNAME]] sample_job",
+            "new_cluster": [],
+            "notebook_task": [],
+            "notification_settings": [],
+            "parameter": [
+              {
+                "default": "hive_metastore",
+                "name": "catalog"
+              },
+              {
+                "default": "[USERNAME]",
+                "name": "schema"
+              }
+            ],
+            "performance_target": null,
+            "pipeline_task": [],
+            "provider_config": [],
+            "python_wheel_task": [],
+            "queue": [
+              {
+                "enabled": true
+              }
+            ],
+            "retry_on_timeout": false,
+            "run_as": [
+              {
+                "service_principal_name": "",
+                "user_name": "[USERNAME]"
+              }
+            ],
+            "run_job_task": [],
+            "schedule": [],
+            "spark_jar_task": [],
+            "spark_python_task": [],
+            "spark_submit_task": [],
+            "tags": {
+              "dev": "[USERNAME]"
+            },
+            "task": [
+              {
+                "clean_rooms_notebook_task": [],
+                "condition_task": [],
+                "dashboard_task": [],
+                "dbt_cloud_task": [],
+                "dbt_platform_task": [],
+                "dbt_task": [],
+                "depends_on": [],
+                "description": "",
+                "disable_auto_optimization": false,
+                "disabled": false,
+                "email_notifications": [],
+                "environment_key": "",
+                "existing_cluster_id": "",
+                "for_each_task": [],
+                "gen_ai_compute_task": [],
+                "health": [],
+                "job_cluster_key": "job_cluster",
+                "library": [
+                  {
+                    "cran": [],
+                    "egg": "",
+                    "jar": "",
+                    "maven": [],
+                    "provider_config": [],
+                    "pypi": [],
+                    "requirements": "",
+                    "whl": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/artifacts/.internal/my_default_python-0.0.1+[UNIX_TIME_NANOS][0]-py3-none-any.whl"
+                  }
+                ],
+                "max_retries": 0,
+                "min_retry_interval_millis": 0,
+                "new_cluster": [],
+                "notebook_task": [
+                  {
+                    "base_parameters": null,
+                    "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/files/src/sample_notebook",
+                    "source": "WORKSPACE",
+                    "warehouse_id": ""
+                  }
+                ],
+                "notification_settings": [],
+                "pipeline_task": [],
+                "power_bi_task": [],
+                "python_wheel_task": [],
+                "retry_on_timeout": false,
+                "run_if": "",
+                "run_job_task": [],
+                "spark_jar_task": [],
+                "spark_python_task": [],
+                "spark_submit_task": [],
+                "sql_task": [],
+                "task_key": "notebook_task",
+                "timeout_seconds": 0,
+                "webhook_notifications": []
+              },
+              {
+                "clean_rooms_notebook_task": [],
+                "condition_task": [],
+                "dashboard_task": [],
+                "dbt_cloud_task": [],
+                "dbt_platform_task": [],
+                "dbt_task": [],
+                "depends_on": [
+                  {
+                    "outcome": "",
+                    "task_key": "notebook_task"
+                  }
+                ],
+                "description": "",
+                "disable_auto_optimization": false,
+                "disabled": false,
+                "email_notifications": [],
+                "environment_key": "",
+                "existing_cluster_id": "",
+                "for_each_task": [],
+                "gen_ai_compute_task": [],
+                "health": [],
+                "job_cluster_key": "job_cluster",
+                "library": [
+                  {
+                    "cran": [],
+                    "egg": "",
+                    "jar": "",
+                    "maven": [],
+                    "provider_config": [],
+                    "pypi": [],
+                    "requirements": "",
+                    "whl": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/artifacts/.internal/my_default_python-0.0.1+[UNIX_TIME_NANOS][0]-py3-none-any.whl"
+                  }
+                ],
+                "max_retries": 0,
+                "min_retry_interval_millis": 0,
+                "new_cluster": [],
+                "notebook_task": [],
+                "notification_settings": [],
+                "pipeline_task": [],
+                "power_bi_task": [],
+                "python_wheel_task": [
+                  {
+                    "entry_point": "main",
+                    "named_parameters": null,
+                    "package_name": "my_default_python",
+                    "parameters": [
+                      "--catalog",
+                      "hive_metastore",
+                      "--schema",
+                      "[USERNAME]"
+                    ]
+                  }
+                ],
+                "retry_on_timeout": false,
+                "run_if": "",
+                "run_job_task": [],
+                "spark_jar_task": [],
+                "spark_python_task": [],
+                "spark_submit_task": [],
+                "sql_task": [],
+                "task_key": "python_wheel_task",
+                "timeout_seconds": 0,
+                "webhook_notifications": []
+              },
+              {
+                "clean_rooms_notebook_task": [],
+                "condition_task": [],
+                "dashboard_task": [],
+                "dbt_cloud_task": [],
+                "dbt_platform_task": [],
+                "dbt_task": [],
+                "depends_on": [
+                  {
+                    "outcome": "",
+                    "task_key": "notebook_task"
+                  }
+                ],
+                "description": "",
+                "disable_auto_optimization": false,
+                "disabled": false,
+                "email_notifications": [],
+                "environment_key": "",
+                "existing_cluster_id": "",
+                "for_each_task": [],
+                "gen_ai_compute_task": [],
+                "health": [],
+                "job_cluster_key": "",
+                "library": [],
+                "max_retries": 0,
+                "min_retry_interval_millis": 0,
+                "new_cluster": [],
+                "notebook_task": [],
+                "notification_settings": [],
+                "pipeline_task": [
+                  {
+                    "full_refresh": false,
+                    "pipeline_id": "[UUID]"
+                  }
+                ],
+                "power_bi_task": [],
+                "python_wheel_task": [],
+                "retry_on_timeout": false,
+                "run_if": "",
+                "run_job_task": [],
+                "spark_jar_task": [],
+                "spark_python_task": [],
+                "spark_submit_task": [],
+                "sql_task": [],
+                "task_key": "refresh_pipeline",
+                "timeout_seconds": 0,
+                "webhook_notifications": []
+              }
+            ],
+            "timeout_seconds": 0,
+            "timeouts": null,
+            "trigger": [
+              {
+                "file_arrival": [],
+                "pause_status": "PAUSED",
+                "periodic": [
+                  {
+                    "interval": 1,
+                    "unit": "DAYS"
+                  }
+                ],
+                "table_update": []
+              }
+            ],
+            "url": "[DATABRICKS_URL]/#job/[NUMID]",
+            "usage_policy_id": null,
+            "webhook_notifications": [
+              {
+                "on_duration_warning_threshold_exceeded": [],
+                "on_failure": [],
+                "on_start": [],
+                "on_streaming_backlog_exceeded": [],
+                "on_success": []
+              }
+            ]
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxODAwMDAwMDAwMDAwLCJ1cGRhdGUiOjE4MDAwMDAwMDAwMDB9LCJzY2hlbWFfdmVyc2lvbiI6IjIifQ==",
+          "dependencies": [
+            "databricks_pipeline.my_default_python_etl"
+          ]
+        }
+      ]
+    },
+    {
+      "mode": "managed",
+      "type": "databricks_pipeline",
+      "name": "my_default_python_etl",
+      "provider": "provider[\"registry.terraform.io/databricks/databricks\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "allow_duplicate_names": false,
+            "budget_policy_id": null,
+            "catalog": null,
+            "cause": null,
+            "channel": "CURRENT",
+            "cluster": [],
+            "cluster_id": null,
+            "configuration": null,
+            "continuous": false,
+            "creator_user_name": "[USERNAME]",
+            "deployment": [
+              {
+                "kind": "BUNDLE",
+                "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/state/metadata.json"
+              }
+            ],
+            "development": true,
+            "edition": "ADVANCED",
+            "environment": [
+              {
+                "dependencies": [
+                  "--editable /Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/files"
+                ]
+              }
+            ],
+            "event_log": [],
+            "expected_last_modified": 0,
+            "filters": [],
+            "gateway_definition": [],
+            "health": null,
+            "id": "[UUID]",
+            "ingestion_definition": [],
+            "last_modified": [UNIX_TIME_MILLIS],
+            "latest_updates": null,
+            "library": [
+              {
+                "file": [],
+                "glob": [
+                  {
+                    "include": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/files/src/my_default_python_etl/transformations/**"
+                  }
+                ],
+                "jar": "",
+                "maven": [],
+                "notebook": [],
+                "whl": ""
+              }
+            ],
+            "name": "[dev [USERNAME]] my_default_python_etl",
+            "notification": [],
+            "photon": false,
+            "restart_window": [],
+            "root_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/files/src/my_default_python_etl",
+            "run_as": [],
+            "run_as_user_name": "[USERNAME]",
+            "schema": "[USERNAME]",
+            "serverless": false,
+            "state": "IDLE",
+            "storage": "dbfs:/pipelines/[UUID]",
+            "tags": {
+              "dev": "[USERNAME]"
+            },
+            "target": null,
+            "timeouts": null,
+            "trigger": [],
+            "url": "[DATABRICKS_URL]/#joblist/pipelines/[UUID]",
+            "usage_policy_id": null
+          },
+          "sensitive_attributes": [],
+          "private": "eyJlMmJmYjczMC1lY2FhLTExZTYtOGY4OC0zNDM2M2JjN2M0YzAiOnsiY3JlYXRlIjoxMjAwMDAwMDAwMDAwLCJkZWZhdWx0IjoxMjAwMDAwMDAwMDAwLCJkZWxldGUiOjEyMDAwMDAwMDAwMDAsInJlYWQiOjEyMDAwMDAwMDAwMDAsInVwZGF0ZSI6MTIwMDAwMDAwMDAwMH19"
+        }
+      ]
+    }
+  ],
+  "check_results": null
+}
