@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"reflect"
 	"slices"
 	"strings"
 
@@ -26,24 +25,14 @@ type SecretScopeAclsState struct {
 	Acls      []workspace.AclItem `json:"acls,omitempty"`
 }
 
-func PrepareSecretScopeAclsInputConfig(inputConfig any, node string) (*structvar.StructVar, error) {
+func PrepareSecretScopeAclsInputConfig(inputConfig []resources.SecretScopePermission, node string) (*structvar.StructVar, error) {
 	baseNode, ok := strings.CutSuffix(node, ".permissions")
 	if !ok {
 		return nil, fmt.Errorf("internal error: node %q does not end with .permissions", node)
 	}
 
-	// Use reflection to get the slice from the pointer
-	rv := reflect.ValueOf(inputConfig)
-	if rv.Kind() != reflect.Ptr || rv.Elem().Kind() != reflect.Slice {
-		return nil, fmt.Errorf("inputConfig must be a pointer to a slice, got: %T", inputConfig)
-	}
-
-	sliceValue := rv.Elem()
-
-	// Convert slice to []resources.SecretScopePermission
-	acls := make([]workspace.AclItem, 0, sliceValue.Len())
-	for i := range sliceValue.Len() {
-		elem := sliceValue.Index(i).Interface().(resources.SecretScopePermission)
+	acls := make([]workspace.AclItem, 0, len(inputConfig))
+	for _, elem := range inputConfig {
 		acl := workspace.AclItem{
 			Permission: workspace.AclPermission(elem.Level),
 			Principal:  "",
@@ -88,7 +77,7 @@ func (r *ResourceSecretScopeAcls) DoRead(ctx context.Context, id string) (*Secre
 		Scope: id,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to list ACLs: %w", err)
+		return nil, err
 	}
 
 	// Sort ACLs by principal for deterministic ordering
@@ -107,26 +96,26 @@ func (r *ResourceSecretScopeAcls) RemapState(remote *SecretScopeAclsState) *Secr
 }
 
 func (r *ResourceSecretScopeAcls) DoCreate(ctx context.Context, state *SecretScopeAclsState) (string, *SecretScopeAclsState, error) {
-	scopeName, err := r.setACLs(ctx, state.ScopeName, state.Acls)
+	err := r.setACLs(ctx, state.ScopeName, state.Acls)
 	if err != nil {
 		return "", nil, err
 	}
-	return scopeName, nil, nil
+	return state.ScopeName, nil, nil
 }
 
 func (r *ResourceSecretScopeAcls) DoUpdate(ctx context.Context, id string, state *SecretScopeAclsState, _ *Changes) (*SecretScopeAclsState, error) {
-	_, err := r.setACLs(ctx, state.ScopeName, state.Acls)
+	err := r.setACLs(ctx, state.ScopeName, state.Acls)
 	return nil, err
 }
 
 func (r *ResourceSecretScopeAcls) DoUpdateWithID(ctx context.Context, _ string, state *SecretScopeAclsState) (string, *SecretScopeAclsState, error) {
 	// Use state.ScopeName instead of oldID because when the parent scope is recreated,
 	// state.ScopeName will have the new (resolved) scope name, while oldID still has the old name
-	scopeName, err := r.setACLs(ctx, state.ScopeName, state.Acls)
+	err := r.setACLs(ctx, state.ScopeName, state.Acls)
 	if err != nil {
 		return "", nil, err
 	}
-	return scopeName, nil, nil
+	return state.ScopeName, nil, nil
 }
 
 func (r *ResourceSecretScopeAcls) FieldTriggers(_ bool) map[string]deployplan.ActionType {
@@ -142,13 +131,13 @@ func (r *ResourceSecretScopeAcls) DoDelete(ctx context.Context, id string) error
 }
 
 // setACLs reconciles the desired ACLs with the current state
-func (r *ResourceSecretScopeAcls) setACLs(ctx context.Context, scopeName string, desiredAcls []workspace.AclItem) (string, error) {
+func (r *ResourceSecretScopeAcls) setACLs(ctx context.Context, scopeName string, desiredAcls []workspace.AclItem) error {
 	// Get current ACLs
 	currentAcls, err := r.client.Secrets.ListAclsAll(ctx, workspace.ListAclsRequest{
 		Scope: scopeName,
 	})
 	if err != nil {
-		return "", fmt.Errorf("failed to list current ACLs: %w", err)
+		return fmt.Errorf("failed to list current ACLs: %w", err)
 	}
 
 	// Build maps for reconciliation
@@ -191,7 +180,8 @@ func (r *ResourceSecretScopeAcls) setACLs(ctx context.Context, scopeName string,
 	g, ctx := errgroup.WithContext(ctx)
 
 	// Set ACLs in parallel
-	for _, acl := range toSet {
+	for i := range toSet {
+		acl := toSet[i]
 		g.Go(func() error {
 			if err := r.client.Secrets.PutAcl(ctx, acl); err != nil {
 				return fmt.Errorf("failed to set ACL %v for principal %q: %w", acl, acl.Principal, err)
@@ -201,7 +191,8 @@ func (r *ResourceSecretScopeAcls) setACLs(ctx context.Context, scopeName string,
 	}
 
 	// Delete ACLs in parallel
-	for _, acl := range toDelete {
+	for i := range toDelete {
+		acl := toDelete[i]
 		g.Go(func() error {
 			err := r.client.Secrets.DeleteAcl(ctx, acl)
 			// Ignore not found errors for ACLs.
@@ -215,9 +206,5 @@ func (r *ResourceSecretScopeAcls) setACLs(ctx context.Context, scopeName string,
 		})
 	}
 
-	if err := g.Wait(); err != nil {
-		return "", err
-	}
-
-	return scopeName, nil
+	return g.Wait()
 }

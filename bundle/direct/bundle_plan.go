@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/direct/dstate"
@@ -512,7 +513,11 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 			var err error
 
 			if strings.HasPrefix(node, "resources.secret_scopes.") {
-				inputConfigStructVar, err = dresources.PrepareSecretScopeAclsInputConfig(inputConfig, node)
+				typedConfig, ok := inputConfig.(*[]resources.SecretScopePermission)
+				if !ok {
+					return nil, fmt.Errorf("%s: expected *[]resources.SecretScopePermission, got %T", prefix, inputConfig)
+				}
+				inputConfigStructVar, err = dresources.PrepareSecretScopeAclsInputConfig(*typedConfig, node)
 			} else {
 				inputConfigStructVar, err = dresources.PreparePermissionsInputConfig(inputConfig, node)
 			}
