@@ -61,7 +61,9 @@
       "changes": {
         "local": {
           "ai_gateway.inference_table_config.catalog_name": {
-            "action": "update"
+            "action": "update",
+            "old": "first-inference-catalog",
+            "new": "second-inference-catalog"
           }
         }
       }

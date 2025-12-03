@@ -63,7 +63,9 @@
       "changes": {
         "local": {
           "tags[0].value": {
-            "action": "update"
+            "action": "update",
+            "old": "my-team-one",
+            "new": "my-team-two"
           }
         }
       }

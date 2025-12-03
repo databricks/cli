@@ -1,8 +1,81 @@
 @import 'tailwindcss';
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@theme inline {
+  /* Semantic colors - reference CSS variables for light/dark mode support */
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-success: hsl(var(--success));
+  --color-success-foreground: hsl(var(--success-foreground));
+  --color-warning: hsl(var(--warning));
+  --color-warning-foreground: hsl(var(--warning-foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+
+  /* Chart colors */
+  --color-chart-1: hsl(var(--chart-1));
+  --color-chart-2: hsl(var(--chart-2));
+  --color-chart-3: hsl(var(--chart-3));
+  --color-chart-4: hsl(var(--chart-4));
+  --color-chart-5: hsl(var(--chart-5));
+
+  /* Extended Databricks palette - Grays */
+  --color-gray-navigation: hsl(var(--gray-navigation));
+  --color-gray-text: hsl(var(--gray-text));
+  --color-gray-lines: hsl(var(--gray-lines));
+
+  /* Lava scale */
+  --color-lava-800: hsl(var(--lava-800));
+  --color-lava-700: hsl(var(--lava-700));
+  --color-lava-600: hsl(var(--lava-600));
+  --color-lava-500: hsl(var(--lava-500));
+  --color-lava-400: hsl(var(--lava-400));
+  --color-lava-300: hsl(var(--lava-300));
+
+  /* Navy scale */
+  --color-navy-900: hsl(var(--navy-900));
+  --color-navy-800: hsl(var(--navy-800));
+  --color-navy-700: hsl(var(--navy-700));
+  --color-navy-600: hsl(var(--navy-600));
+  --color-navy-500: hsl(var(--navy-500));
+  --color-navy-400: hsl(var(--navy-400));
+  --color-navy-300: hsl(var(--navy-300));
+
+  /* Green scale */
+  --color-green-600: hsl(var(--green-600));
+  --color-green-500: hsl(var(--green-500));
+  --color-green-400: hsl(var(--green-400));
+
+  /* Blue scale */
+  --color-blue-600: hsl(var(--blue-600));
+  --color-blue-500: hsl(var(--blue-500));
+  --color-blue-400: hsl(var(--blue-400));
+
+  /* Yellow scale */
+  --color-yellow-600: hsl(var(--yellow-600));
+  --color-yellow-500: hsl(var(--yellow-500));
+  --color-yellow-400: hsl(var(--yellow-400));
+
+  /* Border radius */
+  --radius: 0.5rem;
+  --radius-lg: var(--radius);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-sm: calc(var(--radius) - 4px);
+}
 
 @layer base {
   :root {

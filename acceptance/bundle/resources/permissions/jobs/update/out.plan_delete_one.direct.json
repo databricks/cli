@@ -93,7 +93,11 @@
       "changes": {
         "local": {
           "permissions[group_name='data-team']": {
-            "action": "update"
+            "action": "update",
+            "old": {
+              "group_name": "data-team",
+              "permission_level": "CAN_MANAGE"
+            }
           }
         }
       }

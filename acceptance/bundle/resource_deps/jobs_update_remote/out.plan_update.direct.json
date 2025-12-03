@@ -130,7 +130,9 @@
             "reason": "server_side_default"
           },
           "trigger.periodic.unit": {
-            "action": "update"
+            "action": "update",
+            "old": "DAYS",
+            "new": "HOURS"
           },
           "webhook_notifications": {
             "action": "skip",

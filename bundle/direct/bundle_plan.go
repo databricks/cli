@@ -176,7 +176,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		entry.RemoteState = remoteState
 
 		var remoteAction deployplan.ActionType
-		var remoteChangeMap map[string]deployplan.Trigger
+		var remoteChangeMap map[string]deployplan.ChangeDesc
 
 		if remoteState == nil {
 			remoteAction = deployplan.ActionTypeCreate
@@ -233,9 +233,9 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 	return plan, nil
 }
 
-func localChangesToTriggers(ctx context.Context, adapter *dresources.Adapter, diff []structdiff.Change, remoteState any) (deployplan.ActionType, map[string]deployplan.Trigger) {
+func localChangesToTriggers(ctx context.Context, adapter *dresources.Adapter, diff []structdiff.Change, remoteState any) (deployplan.ActionType, map[string]deployplan.ChangeDesc) {
 	action := deployplan.ActionTypeSkip
-	var m map[string]deployplan.Trigger
+	var m map[string]deployplan.ChangeDesc
 
 	for _, ch := range diff {
 		fieldAction, err := adapter.ClassifyChange(ch, remoteState, true)
@@ -247,17 +247,21 @@ func localChangesToTriggers(ctx context.Context, adapter *dresources.Adapter, di
 			action = fieldAction
 		}
 		if m == nil {
-			m = make(map[string]deployplan.Trigger)
+			m = make(map[string]deployplan.ChangeDesc)
 		}
-		m[ch.Path.String()] = deployplan.Trigger{Action: fieldAction.String()}
+		m[ch.Path.String()] = deployplan.ChangeDesc{
+			Action: fieldAction.String(),
+			Old:    ch.Old,
+			New:    ch.New,
+		}
 	}
 
 	return action, m
 }
 
-func interpretOldStateVsRemoteState(ctx context.Context, adapter *dresources.Adapter, diff []structdiff.Change, remoteState any) (deployplan.ActionType, map[string]deployplan.Trigger) {
+func interpretOldStateVsRemoteState(ctx context.Context, adapter *dresources.Adapter, diff []structdiff.Change, remoteState any) (deployplan.ActionType, map[string]deployplan.ChangeDesc) {
 	action := deployplan.ActionTypeSkip
-	m := make(map[string]deployplan.Trigger)
+	m := make(map[string]deployplan.ChangeDesc)
 
 	for _, ch := range diff {
 		if ch.Old == nil && ch.Path.IsDotString() {
@@ -265,7 +269,7 @@ func interpretOldStateVsRemoteState(ctx context.Context, adapter *dresources.Ada
 			// This could either be server-side default or a policy.
 			// In any case, this is not a change we should react to.
 			// Note, we only consider struct fields here. Adding/removing elements to/from maps and slices should trigger updates.
-			m[ch.Path.String()] = deployplan.Trigger{
+			m[ch.Path.String()] = deployplan.ChangeDesc{
 				Action: deployplan.ActionTypeSkipString,
 				Reason: "server_side_default",
 			}
@@ -279,7 +283,11 @@ func interpretOldStateVsRemoteState(ctx context.Context, adapter *dresources.Ada
 		if fieldAction > action {
 			action = fieldAction
 		}
-		m[ch.Path.String()] = deployplan.Trigger{Action: fieldAction.String()}
+		m[ch.Path.String()] = deployplan.ChangeDesc{
+			Action: fieldAction.String(),
+			Old:    ch.Old,
+			New:    ch.New,
+		}
 	}
 
 	if len(m) == 0 {

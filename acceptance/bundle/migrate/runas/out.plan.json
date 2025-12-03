@@ -33,7 +33,10 @@
       "changes": {
         "remote": {
           "run_as": {
-            "action": "skip"
+            "action": "skip",
+            "old": {
+              "service_principal_name": "[UUID]"
+            }
           }
         }
       }

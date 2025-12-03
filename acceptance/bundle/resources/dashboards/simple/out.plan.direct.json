@@ -18,12 +18,15 @@
       "changes": {
         "local": {
           "etag": {
-            "action": "skip"
+            "action": "skip",
+            "old": [ETAG]
           }
         },
         "remote": {
           "serialized_dashboard": {
-            "action": "skip"
+            "action": "skip",
+            "old": "{ }\n",
+            "new": "{}\n"
           }
         }
       }

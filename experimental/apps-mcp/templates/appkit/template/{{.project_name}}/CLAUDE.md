@@ -5,6 +5,58 @@ TypeScript full-stack template powered by **Databricks AppKit** with tRPC for ad
 - config/queries/: SQL query files for analytics
 - shared/: Shared TypeScript types
 
+## Quick Start: Your First Query & Chart
+
+Follow these 3 steps to add data visualization to your app:
+
+**Step 1: Create a SQL query file**
+
+```sql
+-- config/queries/my_data.sql
+SELECT category, COUNT(*) as count, AVG(value) as avg_value
+FROM my_table
+GROUP BY category
+```
+
+**Step 2: Define the schema**
+
+```typescript
+// config/queries/schema.ts
+export const querySchemas = {
+  my_data: z.array(
+    z.object({
+      category: z.string(),
+      count: z.number(),
+      avg_value: z.number(),
+    })
+  ),
+};
+```
+
+**Step 3: Add visualization to your app**
+
+```typescript
+// client/src/App.tsx
+import { BarChart } from '@databricks/app-kit-ui/react';
+
+<BarChart queryKey="my_data" parameters={{}} />
+```
+
+**That's it!** The component handles data fetching, loading states, and rendering automatically.
+
+**To refresh TypeScript types after adding queries:**
+- Run `npm run dev` - this auto-generates type definitions in `client/src/appKitTypes.d.ts`
+- DO NOT manually edit `appKitTypes.d.ts`
+
+## Installation
+
+**IMPORTANT**: When running `npm install`, always use `required_permissions: ['all']` to avoid sandbox permission errors. The command will fail in the default sandbox due to npm's file access requirements.
+
+```
+# Correct approach - use 'all' permissions from the start
+run_terminal_cmd with required_permissions: ['all']
+```
+
 ## NPM Scripts
 
 ### Development
@@ -247,20 +299,124 @@ app.server.extend((express: Application) => {
 await app.server.start();
 ```
 
-### Frontend Query Pattern:
+### Frontend Data Visualization (Recommended):
+
+**IMPORTANT**: The visualization components handle data fetching, loading states, and error handling internally. You do NOT need to call `useAnalyticsQuery` separately.
+
+Available visualization components from `@databricks/app-kit-ui/react`:
+- `AreaChart` - Area chart visualization
+- `BarChart` - Bar chart visualization
+- `LineChart` - Line chart visualization
+- `PieChart` - Pie chart visualization
+- `RadarChart` - Radar chart visualization
+- `DataTable` - Data table visualization
+
+**Basic Usage (Default Visualization):**
+
+The components provide sensible defaults out of the box. Just pass the query name and parameters:
 
 ```typescript
-import { useAnalyticsQuery } from '@databricks/app-kit/react';
+import { BarChart, LineChart, DataTable } from '@databricks/app-kit-ui/react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+
+function MyDashboard() {
+  return (
+    <div>
+      <Card>
+        <CardHeader><CardTitle>Sales by Region</CardTitle></CardHeader>
+        <CardContent>
+          <BarChart queryKey="sales_by_region" parameters={{}} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle>Revenue Trend</CardTitle></CardHeader>
+        <CardContent>
+          <LineChart queryKey="revenue_over_time" parameters={{ months: 12 }} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle>Customer Data</CardTitle></CardHeader>
+        <CardContent>
+          <DataTable queryKey="customer_list" parameters={{}} />
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+```
+
+**That's it!** The components automatically:
+- Fetch data from the SQL query
+- Show loading states while data loads
+- Display error messages if queries fail
+- Render the visualization with sensible defaults
+
+**Advanced Usage (Custom Visualization):**
+
+Only customize if you need specific styling or behavior. Use Recharts components for full control:
+
+```typescript
+import { BarChart } from '@databricks/app-kit-ui/react';
+import { Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+
+function CustomChart() {
+  return (
+    <Card>
+      <CardHeader><CardTitle>Custom Sales Chart</CardTitle></CardHeader>
+      <CardContent>
+        <BarChart queryKey="sales_by_region" parameters={{}}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="region" />
+          <YAxis />
+          <Tooltip />
+          <Legend />
+          <Bar dataKey="revenue" fill="#40d1f5" />
+          <Bar dataKey="expenses" fill="#4462c9" />
+        </BarChart>
+      </CardContent>
+    </Card>
+  );
+}
+```
+
+Use Databricks brand colors for custom visualizations: `['#40d1f5', '#4462c9', '#EB1600', '#0B2026', '#4A4A4A', '#353a4a']`
+
+### When to Use `useAnalyticsQuery` Hook:
+
+**ONLY use `useAnalyticsQuery` when you need to display data in a custom way that isn't a chart or table.**
+
+Use cases for `useAnalyticsQuery`:
+- Custom HTML layouts (cards, lists, grids)
+- Summary statistics and KPIs
+- Conditional rendering based on data values
+- Data that needs transformation before display
+- Non-visualization UI components
+
+```typescript
+import { useAnalyticsQuery } from '@databricks/app-kit-ui/react';
 import { Skeleton } from '@/components/ui/skeleton';
 
-interface QueryResult { column_name: string; }
+interface QueryResult { column_name: string; value: number; }
 
-function MyComponent() {
+function CustomDisplay() {
   const { data, loading, error } = useAnalyticsQuery<QueryResult[]>('query_name', {});
 
   if (loading) return <Skeleton className="h-4 w-3/4" />;
-  if (error) return <div>Error: {error}</div>;
-  return <div>{data?.map(row => row.column_name)}</div>;
+  if (error) return <div className="text-destructive">Error: {error}</div>;
+
+  return (
+    <div className="grid gap-4">
+      {data?.map(row => (
+        <div key={row.column_name} className="p-4 border rounded">
+          <h3>{row.column_name}</h3>
+          <p>{row.value}</p>
+        </div>
+      ))}
+    </div>
+  );
 }
 ```
 
@@ -278,17 +434,23 @@ const { data, loading, error } = useAnalyticsQuery<T>(
 - `enabled` - Query always executes on mount. Use conditional rendering instead: `{selectedId && <MyComponent id={selectedId} />}`
 - `refetch` - Not available. Re-mount component to re-query.
 
-### Frontend Visualization Pattern:
+**❌ DO NOT DO THIS:**
 
 ```typescript
-import { AreaChart } from '@databricks/app-kit/react';
+// WRONG - Don't fetch data with useAnalyticsQuery if you're using a visualization component
+function BadExample() {
+  const { data, loading, error } = useAnalyticsQuery('sales_data', {});
 
-function MyComponent() {
-  return (
-    <div>
-      <AreaChart queryKey="query_name" parameters={{}} />
-    </div>
-  );
+  return <BarChart queryKey="sales_data" parameters={{}} />; // Redundant!
+}
+```
+
+**✅ DO THIS INSTEAD:**
+
+```typescript
+// CORRECT - Let the component handle everything
+function GoodExample() {
+  return <BarChart queryKey="sales_data" parameters={{}} />;
 }
 ```
 
@@ -344,6 +506,47 @@ export const querySchemas = {
 };
 
 ```
+
+**IMPORTANT: Refreshing Type Definitions**
+
+After adding or modifying query schemas in `config/queries/schema.ts`:
+
+1. **DO NOT** manually edit `client/src/appKitTypes.d.ts` - this file is auto-generated
+2. Run `npm run dev` to automatically regenerate the TypeScript type definitions
+3. The dev server will scan your SQL files and schema definitions and update `appKitTypes.d.ts` accordingly
+
+### SQL Type Handling
+
+**IMPORTANT**: Numeric fields from Databricks SQL (especially `ROUND()`, `AVG()`, `SUM()`) are returned as strings in JSON. Always convert before using numeric methods:
+
+```typescript
+// ❌ WRONG - fails at runtime
+<span>{row.total_amount.toFixed(2)}</span>
+
+// ✅ CORRECT - convert to number first
+<span>{Number(row.total_amount).toFixed(2)}</span>
+```
+
+**Helper Functions:**
+
+Use the helpers from `shared/types.ts` for consistent formatting:
+
+```typescript
+import { toNumber, formatCurrency, formatPercent } from '../../shared/types';
+
+// Convert to number
+const amount = toNumber(row.amount);  // "123.45" → 123.45
+
+// Format as currency
+const formatted = formatCurrency(row.amount);  // "123.45" → "$123.45"
+
+// Format as percentage
+const percent = formatPercent(row.rate);  // "85.5" → "85.5%"
+```
+
+### Query Parameterization
+
+SQL queries can accept parameters to make them dynamic and reusable.
 
 **Key Points:**
 
@@ -433,20 +636,6 @@ WHERE (:start_date = '' OR b.check_in >= CAST(:start_date AS DATE))
 - **Optional Strings**: Use empty string default, check with `(:param = '' OR column = :param)`
 - **Optional Dates**: Use sentinel dates (`'1900-01-01'` and `'9999-12-31'`) instead of empty strings
 
-## SQL Type Handling
-
-Numeric fields from Databricks SQL (especially `ROUND()`, `AVG()`, `SUM()`) are returned as strings in JSON. Convert before using numeric methods:
-
-```typescript
-// ❌ WRONG - fails at runtime
-<span>{row.total_amount.toFixed(2)}</span>
-
-// ✅ CORRECT
-<span>{Number(row.total_amount).toFixed(2)}</span>
-```
-
-Use helpers from `shared/types.ts`: `toNumber()`, `formatCurrency()`, `formatPercent()`.
-
 ## tRPC for Custom Endpoints:
 
 **CRITICAL**: Do NOT use tRPC for SQL queries or data retrieval. Use `config/queries/` + `useAnalyticsQuery` instead.
@@ -518,44 +707,34 @@ function MyComponent() {
 
 **Decision Tree for Data Operations:**
 
-1. **Is it a SQL query?** → Use `config/queries/*.sql` + a Visualization component or `useAnalyticsQuery` if no component is available
-   - SELECT statements
-   - Aggregations, JOINs, GROUP BY
-   - Analytics and reporting queries
-   - Data visualization queries
+1. **Need to display data from SQL?**
+   - **Chart or Table?** → Use visualization components (`BarChart`, `LineChart`, `DataTable`, etc.)
+   - **Custom display (KPIs, cards, lists)?** → Use `useAnalyticsQuery` hook
+   - **Never** use tRPC for SQL SELECT statements
 
-2. **Is it calling a Databricks API?** → Use tRPC
+2. **Need to call a Databricks API?** → Use tRPC
    - Serving endpoints (model inference)
    - MLflow operations
    - Jobs API
    - Workspace API
 
-3. **Is it modifying data?** → Use tRPC mutations
+3. **Need to modify data?** → Use tRPC mutations
    - INSERT, UPDATE, DELETE operations
    - Multi-step transactions
    - Business logic with side effects
 
-4. **Is it non-SQL custom logic?** → Use tRPC
+4. **Need non-SQL custom logic?** → Use tRPC
    - File processing
    - External API calls
    - Complex computations in TypeScript
 
-❌ **NEVER use tRPC for:**
-
-- Simple data retrieval that can be done with SQL
-- Wrapping SQL queries in tRPC endpoints
-- SELECT statements of any kind
+**Summary:**
+- ✅ SQL queries → Visualization components or `useAnalyticsQuery`
+- ✅ Databricks APIs → tRPC
+- ✅ Data mutations → tRPC
+- ❌ SQL queries → tRPC (NEVER do this)
 
 ## Testing Guidelines:
-
-### Smoke Test (Playwright)
-
-The template includes a smoke test at `tests/smoke.spec.ts` that verifies the app loads correctly.
-
-**When customizing the app**, update `tests/smoke.spec.ts` to match your UI:
-- Change heading selector to match your app title (replace 'Minimal Databricks App')
-- Update data assertions to match your query results (replace 'hello world' check)
-- Keep the test simple - just verify app loads and displays data
 
 ### Unit Tests (Vitest)
 
@@ -576,44 +755,40 @@ describe('Feature Name', () => {
 });
 ```
 
+**Best Practices:**
 - Use `describe` blocks to group related tests
 - Use `it` for individual test cases
 - Use `expect` for assertions
 - Tests run with `npm test` (runs `vitest run`)
 
-❌ **Do not write unit tests for query files:**
-
-- writing unit tests for serving sql files under `config/queries` has little value
-- do not write unit tests to types associated with queries
+❌ **Do not write unit tests for:**
+- SQL files under `config/queries/` - little value in testing static SQL
+- Types associated with queries - these are just schema definitions
 
 ### Smoke Test (Playwright)
 
-Keep the smoke test simple - it verifies the app loads and displays data correctly.
+The template includes a smoke test at `tests/smoke.spec.ts` that verifies the app loads correctly.
 
-The template includes a smoke test at `tests/smoke.spec.ts` that:
-
+**What the smoke test does:**
 - Opens the app
-- Waits for data to load (SQL query results and health check)
+- Waits for data to load (SQL query results)
+- Verifies key UI elements are visible
 - Captures screenshots and console logs to `.smoke-test/` directory
-- Always captures artifacts, even on test failure (using try-finally)
+- Always captures artifacts, even on test failure
 
-**When to update the smoke test:**
-
-When you customize the app, update `tests/smoke.spec.ts` to match your UI:
+**When customizing the app**, update `tests/smoke.spec.ts` to match your UI:
 - Change heading selector to match your app title (replace 'Minimal Databricks App')
 - Update data assertions to match your query results (replace 'hello world' check)
 - Keep the test simple - just verify app loads and displays data
 - The default test expects specific template content; update these expectations after customization
 
 **Keep smoke tests simple:**
-
 - Only verify that the app loads and displays initial data
 - Wait for key elements to appear (page title, main content)
 - Capture artifacts for debugging
 - Run quickly (< 5 seconds)
 
 **For extended E2E tests:**
-
 - Create separate test files in `tests/` directory (e.g., `tests/user-flow.spec.ts`)
 - Use `npm run test:e2e` to run all Playwright tests
 - Keep complex user flows, interactions, and edge cases out of the smoke test
@@ -672,53 +847,3 @@ Note: react-leaflet v4.x requires React 18. Use v5 for React 19 compatibility.
 - Type callbacks explicitly: `onChange={(e: React.ChangeEvent<HTMLInputElement>) => ...}`
 - Forms should have loading states: `disabled={isLoading}`
 - Show empty states with helpful text when no data exists
-
-## Data Visualization with App Kit UI
-
-App Kit UI provides an abstraction over Recharts.
-
-It exports a list of components where each component also exports its own props, so for example to use the `LineChart` it would be used as follows:
-
-```typescript
-import { LineChart } from '@databricks/app-kit-ui/react';
-
-function MyComponent() {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>My Data</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <LineChart queryKey="my_data" parameters={{}} />
-      </CardContent>
-    </Card>
-  );
-}
-```
-Each component exports their props, so to know the props from `LineChart`, `LineChartProps` can be imported too.
-
-The Visualization components provided by the App Kit UI library can also be used in full control mode combined with Recharts, which is included in the template.
-Use Databricks brand colors: `['#40d1f5', '#4462c9', '#EB1600', '#0B2026', '#4A4A4A', '#353a4a']` (via `stroke` or `fill` props).
-
-```tsx
-import { LineChart } from '@databricks/app-kit-ui/react';
-import { Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-
-<Card>
-  <CardHeader><CardTitle>My Metrics</CardTitle></CardHeader>
-  <CardContent>
-    <LineChart queryKey="query_name" parameters={salesParameters}>
-      <Line type="monotone" dataKey="revenue" stroke="#40d1f5" />
-      <Line type="monotone" dataKey="expenses" stroke="#4462c9" />
-      <Line type="monotone" dataKey="customers" stroke="#EB1600" />
-      <XAxis dataKey="month" />
-      <YAxis />
-      <Tooltip />
-    </LineChart>
-  </CardContent>
-</Card>
-```
-
-Every component handles loading, errors and data fetching internally, so the only thing needed is the `queryKey` and `parameters`.
-When rendering fully custom mode, it also needs the recharts components for that specific visualization component.
