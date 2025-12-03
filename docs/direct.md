@@ -46,11 +46,11 @@ The full sequence of operations:
 mv .databricks/bundle/my_target/terraform/tfstate.json.backup .databricks/bundle/my_target/terraform/tfstate.json
 rm .databricks/bundle/my_target/resources.json
 ```
-5. If satisfied with the result, do a deployment to synchronize the state file to the workspace: `bundle deploy -t my_target`
+5. If satisfied with the result, do a deployment to synchronize the state file to the workspace: `databricks bundle deploy -t my_target`
 
 ### Using on new bundles
 
-For bundles that were never deployed, the migrate command will not work. Instead, deploy with an environment variable set: `DATABRICKS_BUNDLE_ENGINE=direct bundle deploy -t my_target`.
+For bundles that were never deployed, the migrate command will not work. Instead, deploy with an environment variable set: `DATABRICKS_BUNDLE_ENGINE=direct databricks bundle deploy -t my_target`.
 
 ## Differences from terraform
 
