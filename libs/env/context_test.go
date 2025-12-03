@@ -45,7 +45,7 @@ func TestContext(t *testing.T) {
 	assert.NotNil(t, all)
 	assert.Equal(t, "qux", all["FOO"])
 	assert.Equal(t, "x=y", all["BAR"])
-	assert.Empty(t, all["PATH"])
+	assert.NotEmpty(t, all["PATH"])
 }
 
 func TestHome(t *testing.T) {
