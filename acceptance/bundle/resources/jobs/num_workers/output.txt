@@ -75,6 +75,13 @@ Deployment complete!
           "num_workers": 0,
           "spark_version": "16.4.x-scala2.16"
         }
+      },
+      {
+        "job_cluster_key": "job_cluster_default",
+        "new_cluster": {
+          "num_workers": 0,
+          "spark_version": "16.4.x-scala2.17"
+        }
       }
     ],
     "max_concurrent_runs": 1,

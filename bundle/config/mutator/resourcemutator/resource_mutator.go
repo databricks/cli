@@ -40,8 +40,6 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) {
 
 		// ApplyPresets should have more priority than defaults below, so it should be run first
 		ApplyPresets(),
-
-		validate.SingleNodeCluster(),
 	)
 
 	if logdiag.HasError(ctx) {
@@ -73,7 +71,6 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) {
 		{"resources.jobs.*.task[*].for_each_task.task.dbt_task.schema", "default"},
 
 		// https://github.com/databricks/terraform-provider-databricks/blob/v1.75.0/clusters/resource_cluster.go
-		// This triggers SingleNodeCluster() cluster validator. It needs to be run before applying defaults.
 		{"resources.jobs.*.job_clusters[*].new_cluster.workload_type.clients.notebooks", true},
 		{"resources.jobs.*.job_clusters[*].new_cluster.workload_type.clients.jobs", true},
 
@@ -136,6 +133,9 @@ func applyNormalizeMutators(ctx context.Context, b *bundle.Bundle) {
 	bundle.ApplySeqContext(
 		ctx,
 		b,
+
+		validate.SingleNodeCluster(),
+
 		// Reads (dynamic): * (strings) (searches for variable references in string values)
 		// Updates (dynamic): resources.* (strings) (resolves variable references to their actual values)
 		// Resolves variable references in 'resources' using bundle, workspace, and variables prefixes
