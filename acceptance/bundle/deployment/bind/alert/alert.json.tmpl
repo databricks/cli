@@ -1,0 +1,29 @@
+{
+    "display_name": "test-alert-$UNIQUE_NAME",
+    "query_text": "SELECT 1",
+    "warehouse_id": "$TEST_DEFAULT_WAREHOUSE_ID",
+    "custom_summary": "Test Alert Summary",
+    "custom_description": "Test Alert Description",
+    "evaluation": {
+        "comparison_operator": "EQUAL",
+        "notification": {
+            "notify_on_ok": false,
+            "retrigger_seconds": 1
+        },
+        "source": {
+            "aggregation": "MAX",
+            "display": "1",
+            "name": "1"
+        },
+        "threshold": {
+            "value": {
+                "double_value": 1
+            }
+        }
+    },
+    "schedule": {
+        "pause_status": "UNPAUSED",
+        "quartz_cron_schedule": "0 0 * * * ?",
+        "timezone_id": "UTC"
+    }
+}

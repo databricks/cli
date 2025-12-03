@@ -240,12 +240,12 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 	// Apps: No presets
 
 	// Alerts: Prefix
-	// for _, a := range r.Alerts {
-	// 	if a == nil {
-	// 		continue
-	// 	}
-	// 	a.DisplayName = prefix + a.DisplayName
-	// }
+	for _, a := range r.Alerts {
+		if a == nil {
+			continue
+		}
+		a.DisplayName = prefix + a.DisplayName
+	}
 
 	// SQL Warehouses: Prefix, Tags
 	for _, w := range r.SqlWarehouses {

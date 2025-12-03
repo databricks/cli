@@ -55,6 +55,13 @@ resources.alerts.*.schedule.timezone_id	string	ALL
 resources.alerts.*.update_time	string	ALL
 resources.alerts.*.url	string	INPUT
 resources.alerts.*.warehouse_id	string	ALL
+resources.alerts.*.permissions.object_id	string	ALL
+resources.alerts.*.permissions.permissions	[]iam.AccessControlRequest	ALL
+resources.alerts.*.permissions.permissions[*]	iam.AccessControlRequest	ALL
+resources.alerts.*.permissions.permissions[*].group_name	string	ALL
+resources.alerts.*.permissions.permissions[*].permission_level	iam.PermissionLevel	ALL
+resources.alerts.*.permissions.permissions[*].service_principal_name	string	ALL
+resources.alerts.*.permissions.permissions[*].user_name	string	ALL
 resources.apps.*.active_deployment	*apps.AppDeployment	ALL
 resources.apps.*.active_deployment.create_time	string	ALL
 resources.apps.*.active_deployment.creator	string	ALL
