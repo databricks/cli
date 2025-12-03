@@ -9,6 +9,7 @@ trace jq '.. | .libraries? | select(.)' ../out.state_after_migration.json
 
 trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle plan
 trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle plan -o json > ../out.plan_after_migration.json
+trace jq '.plan[] | .changes' ../out.plan_after_migration.json  # Badness: contains changes for whl and num_workers
 trace DATABRICKS_BUNDLE_ENGINE="" $CLI bundle deploy
 
 trace print_state.py > ../out.state_after_deploy.json
@@ -18,3 +19,4 @@ rm ../out.state_after_deploy.json
 title "Extra plan: should have no drift"
 trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle plan
 trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle plan -o json > ../out.plan_after_deploy.json
+trace jq '.plan[] | .changes' ../out.plan_after_migration.json  # Badness: contains changes for whl
