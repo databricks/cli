@@ -435,7 +435,6 @@ resources.dashboards.*.permissions[*].level	resources.DashboardPermissionLevel	I
 resources.dashboards.*.permissions[*].service_principal_name	string	INPUT
 resources.dashboards.*.permissions[*].user_name	string	INPUT
 resources.dashboards.*.serialized_dashboard	any	ALL
-resources.dashboards.*.serialized_dashboard	string	ALL
 resources.dashboards.*.update_time	string	ALL
 resources.dashboards.*.url	string	INPUT
 resources.dashboards.*.warehouse_id	string	ALL
