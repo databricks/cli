@@ -9,11 +9,15 @@ import (
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/bundle/scripts"
+	"github.com/databricks/cli/bundle/trampoline"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/logdiag"
 )
 
+type LibLocationMap map[string][]libraries.LocationToUpdate
+
 // The build phase builds artifacts.
-func Build(ctx context.Context, b *bundle.Bundle) {
+func Build(ctx context.Context, b *bundle.Bundle) LibLocationMap {
 	log.Info(ctx, "Phase: build")
 
 	bundle.ApplySeqContext(ctx, b,
@@ -36,4 +40,17 @@ func Build(ctx context.Context, b *bundle.Bundle) {
 		// SwitchToPatchedWheels must be run after ExpandGlobReferences and after build phase because it Artifact.Source and Artifact.Patched populated
 		libraries.SwitchToPatchedWheels(),
 	)
+
+	libs, diags := libraries.ReplaceWithRemotePath(ctx, b)
+	for _, diag := range diags {
+		logdiag.LogDiag(ctx, diag)
+	}
+
+	bundle.ApplyContext(ctx, b,
+		// TransformWheelTask must be run after ReplaceWithRemotePath so we can use correct remote path in the
+		// transformed notebook
+		trampoline.TransformWheelTask(),
+	)
+
+	return libs
 }

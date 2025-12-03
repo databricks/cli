@@ -38,12 +38,12 @@ To undo the migration, remove [TEST_TMP_DIR]/my_default_python/.databricks/bundl
 >>> jq .. | .libraries? | select(.) ../out.state_after_migration.json
 [
   {
-    "whl": ".databricks/bundle/dev/patched_wheels/python_artifact_my_default_python/my_default_python-0.0.1+[UNIX_TIME_NANOS][1]-py3-none-any.whl"
+    "whl": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/artifacts/.internal/my_default_python-0.0.1+[UNIX_TIME_NANOS][1]-py3-none-any.whl"
   }
 ]
 [
   {
-    "whl": ".databricks/bundle/dev/patched_wheels/python_artifact_my_default_python/my_default_python-0.0.1+[UNIX_TIME_NANOS][1]-py3-none-any.whl"
+    "whl": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/artifacts/.internal/my_default_python-0.0.1+[UNIX_TIME_NANOS][1]-py3-none-any.whl"
   }
 ]
 [
@@ -74,22 +74,6 @@ Deployment complete!
 >>> print_state.py
 
 >>> diff.py ../out.state_after_migration.json ../out.state_after_deploy.json
---- ../out.state_after_migration.json
-+++ ../out.state_after_deploy.json
-@@ -50,5 +50,5 @@
-       "libraries": [
-        {
--        "whl": ".databricks/bundle/dev/patched_wheels/python_artifact_my_default_python/my_default_python-0.0.1+[UNIX_TIME_NANOS]-py3-none-any.whl"
-+        "whl": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/artifacts/.internal/my_default_python-0.0.1+[UNIX_TIME_NANOS]-py3-none-any.whl"
-        }
-       ],
-@@ -67,5 +67,5 @@
-       "libraries": [
-        {
--        "whl": ".databricks/bundle/dev/patched_wheels/python_artifact_my_default_python/my_default_python-0.0.1+[UNIX_TIME_NANOS]-py3-none-any.whl"
-+        "whl": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/artifacts/.internal/my_default_python-0.0.1+[UNIX_TIME_NANOS]-py3-none-any.whl"
-        }
-       ],
 
 === Extra plan: should have no drift
 >>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle plan

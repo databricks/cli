@@ -49,7 +49,7 @@
       "job_cluster_key": "job_cluster",
       "libraries": [
        {
-        "whl": ".databricks/bundle/dev/patched_wheels/python_artifact_my_default_python/my_default_python-0.0.1+[UNIX_TIME_NANOS][0]-py3-none-any.whl"
+        "whl": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/artifacts/.internal/my_default_python-0.0.1+[UNIX_TIME_NANOS][0]-py3-none-any.whl"
        }
       ],
       "notebook_task": {
@@ -66,7 +66,7 @@
       "job_cluster_key": "job_cluster",
       "libraries": [
        {
-        "whl": ".databricks/bundle/dev/patched_wheels/python_artifact_my_default_python/my_default_python-0.0.1+[UNIX_TIME_NANOS][0]-py3-none-any.whl"
+        "whl": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/artifacts/.internal/my_default_python-0.0.1+[UNIX_TIME_NANOS][0]-py3-none-any.whl"
        }
       ],
       "python_wheel_task": {

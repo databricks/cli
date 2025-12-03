@@ -11,35 +11,19 @@ import (
 	"github.com/databricks/cli/bundle/deploy"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/bundle/libraries"
 	"github.com/databricks/cli/bundle/statemgmt"
-	"github.com/databricks/cli/bundle/trampoline"
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/logdiag"
 )
 
-// DeployPrepare is common set of mutators between "bundle plan" and "bundle deploy".
-// This function does not make any mutations in the workspace remotely, only in-memory bundle config mutations
-func DeployPrepare(ctx context.Context, b *bundle.Bundle, isPlan bool, engine engine.EngineType) map[string][]libraries.LocationToUpdate {
+// PreDeployChecks is common set of mutators between "bundle plan" and "bundle deploy".
+// Note, it is not run in "bundle migrate" so it must not modify the config
+func PreDeployChecks(ctx context.Context, b *bundle.Bundle, isPlan bool, engine engine.EngineType) {
 	bundle.ApplySeqContext(ctx, b,
 		terraform.CheckDashboardsModifiedRemotely(isPlan, engine),
 		deploy.StatePull(),
 		mutator.ValidateGitDetails(),
 		statemgmt.CheckRunningResource(engine),
 	)
-
-	libs, diags := libraries.ReplaceWithRemotePath(ctx, b)
-	for _, diag := range diags {
-		logdiag.LogDiag(ctx, diag)
-	}
-
-	bundle.ApplySeqContext(ctx, b,
-		// TransformWheelTask must be run after ReplaceWithRemotePath so we can use correct remote path in the
-		// transformed notebook
-		trampoline.TransformWheelTask(),
-	)
-
-	return libs
 }
 
 // checkForPreventDestroy checks if the resource has lifecycle.prevent_destroy set, but the plan calls for this resource to be recreated or destroyed.
