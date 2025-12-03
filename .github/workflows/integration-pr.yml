@@ -27,5 +27,5 @@ jobs:
             -H "X-GitHub-Api-Version: 2022-11-28" \
             /repos/${{ github.repository }}/statuses/${{ github.event.pull_request.head.sha }} \
             -f 'state=success' \
-            -f 'description=Integration tests skipped (experimental)' \
+            -f 'description=⏭️ Skipped (experimental)' \
             -f 'context=Integration Tests Check'
