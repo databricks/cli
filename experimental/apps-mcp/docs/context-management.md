@@ -1,16 +1,5 @@
 # Context Management for Databricks MCP
 
-## Current vs Proposed
-
-| Aspect | Current | Proposed |
-|--------|---------|----------|
-| **First-call injection** | Middleware prepends init message to any first tool call — position-dependent, can't recover if lost | Explicit `databricks_discover` tool — agent controls when to call, can re-call anytime |
-| **Context layers** | Mixed: `apps.tmpl` contains both target-specific (validation) and template-specific (TypeScript SDK) guidance | Separated: L1 (flow), L2 (target), L3 (template) with clear boundaries |
-| **Existing projects** | No detection — treats all projects the same | Detectors identify target types from `databricks.yml`, inject relevant L2 |
-| **Combined bundles** | Not supported | Injects all relevant L2 layers (apps + jobs) |
-| **Template guidance** | Agent must be told to "read CLAUDE.md" via instruction | `init-template` returns CLAUDE.md content directly |
-| **Extensibility** | Hardcoded capability check for "apps" | `DetectorRegistry` — add new detectors without changing core logic |
-
 ## Problem
 
 Current implementation has several issues with how context is provided to AI agents:
@@ -18,12 +7,11 @@ Current implementation has several issues with how context is provided to AI age
 1. **Mixed context layers** — target-specific guidance (apps) is mixed with template-specific guidance (TypeScript SDK)
 2. **First-call injection is fragile** — middleware prepends initialization to whatever tool runs first, which is position-dependent and non-recoverable
 3. **No project detection** — system doesn't adapt to existing projects or combined bundles (app + job)
-4. **Template guidance is external** — agent must be instructed to read CLAUDE.md separately
 
 ## Design Goals
 
 - Universal MCP for any coding agent (Claude, Cursor, etc.)
-- Support multiple target types: apps, jobs, pipelines
+- Support multiple target types: apps, jobs, etc. 
 - Support multiple templates per target type
 - Clean separation of context layers
 - Detect existing project context automatically
@@ -93,6 +81,17 @@ lib/prompts/
 templates/appkit/template/{{.project_name}}/
 └── CLAUDE.md              # L3 (injected after scaffold)
 ```
+
+## Current vs Proposed
+
+| Aspect | Current | Proposed |
+|--------|---------|----------|
+| **First-call injection** | Middleware prepends init message to any first tool call — position-dependent, can't recover if lost | Explicit `databricks_discover` tool — agent controls when to call, can re-call anytime |
+| **Context layers** | Mixed: `apps.tmpl` contains both target-specific (validation) and template-specific (TypeScript SDK) guidance | Separated: L1 (flow), L2 (target), L3 (template) with clear boundaries |
+| **Existing projects** | No detection — treats all projects the same | Detectors identify target types from `databricks.yml`, inject relevant L2 |
+| **Combined bundles** | Not supported | Injects all relevant L2 layers (apps + jobs) |
+| **Template guidance** | Agent must be told to "read CLAUDE.md" via instruction | `init-template` returns CLAUDE.md content directly |
+| **Extensibility** | Hardcoded capability check for "apps" | `DetectorRegistry` — add new detectors without changing core logic |
 
 ## Flow
 
