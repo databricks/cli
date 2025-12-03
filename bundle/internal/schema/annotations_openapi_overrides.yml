@@ -229,9 +229,6 @@ github.com/databricks/cli/bundle/config/resources.DatabaseCatalog:
     "description": |-
       PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.DatabaseInstance:
-  "effective_capacity":
-    "description": |-
-      PLACEHOLDER
   "lifecycle":
     "description": |-
       Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
@@ -648,10 +645,6 @@ github.com/databricks/cli/bundle/config/resources.SqlWarehousePermissionLevel:
         CAN_MONITOR
       - |-
         CAN_VIEW
-github.com/databricks/cli/bundle/config/resources.SyncedDatabaseTable:
-  "lifecycle":
-    "description": |-
-      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.Volume:
   "_":
     "markdown_description": |-
