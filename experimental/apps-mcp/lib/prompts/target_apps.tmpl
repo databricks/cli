@@ -1,0 +1,29 @@
+{{- /*
+     * L2: Target-specific guidance for Databricks Apps.
+     *
+     * Injected when: target type "apps" is detected or after init-template.
+     * Contains: app naming constraints, validation, deployment consent.
+     */ -}}
+
+## Databricks Apps Development
+
+### Building a New App
+1. Scaffold: invoke_databricks_cli 'experimental apps-mcp tools init-template --name my-app --description "My app description"'
+2. Read CLAUDE.md in the generated directory
+3. Navigate to project: cd <project_name>
+4. Run locally: npm install && npm run dev (opens http://localhost:8000)
+
+### Validation
+⚠️ Always validate before deploying:
+  invoke_databricks_cli 'experimental apps-mcp tools validate ./'
+
+### Deployment
+⚠️ USER CONSENT REQUIRED: Only deploy with explicit user permission.
+  invoke_databricks_cli 'experimental apps-mcp tools deploy'
+
+### App Naming
+- App name must be ≤26 characters (dev- prefix adds 4 chars, max total 30)
+- Use lowercase letters, numbers, and hyphens only
+
+### View and Manage
+  invoke_databricks_cli 'bundle summary'
