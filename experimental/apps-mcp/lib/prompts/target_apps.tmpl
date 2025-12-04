@@ -7,23 +7,29 @@
 
 ## Databricks Apps Development
 
-### Building a New App
-1. Scaffold: invoke_databricks_cli 'experimental apps-mcp tools init-template --name my-app --description "My app description"'
-2. Read CLAUDE.md in the generated directory
-3. Navigate to project: cd <project_name>
-4. Run locally: npm install && npm run dev (opens http://localhost:8000)
-
 ### Validation
 ⚠️ Always validate before deploying:
   invoke_databricks_cli 'experimental apps-mcp tools validate ./'
+
+This is battle-tested to catch common issues before deployment. Prefer using this over manual checks (e.g. `npm run lint`), as it covers more ground specific to Databricks Apps.
 
 ### Deployment
 ⚠️ USER CONSENT REQUIRED: Only deploy with explicit user permission.
   invoke_databricks_cli 'experimental apps-mcp tools deploy'
 
-### App Naming
-- App name must be ≤26 characters (dev- prefix adds 4 chars, max total 30)
-- Use lowercase letters, numbers, and hyphens only
-
 ### View and Manage
   invoke_databricks_cli 'bundle summary'
+
+### Local Development vs Deployed Apps
+
+During development:
+- Start template-specific dev server (see project's CLAUDE.md for command and port)
+- Use localhost URL shown when dev server starts
+
+After deployment:
+- Get URL from: invoke_databricks_cli 'bundle summary'
+
+Decision tree:
+- "open the app" + not deployed → localhost
+- "open the app" + deployed → ask which environment
+- "localhost"/"local" → always localhost

@@ -33,6 +33,12 @@ func (v *ValidationNodeJs) Validate(ctx context.Context, workDir string) (*Valid
 			displayName: "Install",
 		},
 		{
+			name:        "generate",
+			command:     "npm run typegen --if-present",
+			errorPrefix: "Failed to run npm typegen",
+			displayName: "Type generation",
+		},
+		{
 			name:        "build",
 			command:     "npm run build --if-present",
 			errorPrefix: "Failed to run npm build",
