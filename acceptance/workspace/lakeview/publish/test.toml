@@ -1,13 +1,5 @@
 RecordRequests = true
 
-[[Server]]
-Pattern = "POST /api/2.0/lakeview/dashboards/dashboard-id-123/published"
-Response.Body = '''
-{
-    "dashboard_id": "dashboard-id-123",
-    "display_name": "My Dashboard",
-    "warehouse_id": "warehouse-123",
-    "embed_credentials": false,
-    "revision_create_time": "2025-01-01T00:00:00.000Z"
-}
-'''
+[[Repls]]
+Old = "[a-f0-9]{32}"
+New = "[DASHBOARD_ID]"

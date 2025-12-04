@@ -1,6 +1,22 @@
 {
   "method": "POST",
-  "path": "/api/2.0/lakeview/dashboards/dashboard-id-123/published",
+  "path": "/api/2.0/workspace/mkdirs",
+  "body": {
+    "path": "/Users/[USERNAME]"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/lakeview/dashboards",
+  "body": {
+    "display_name": "Test Dashboard",
+    "parent_path": "/Users/[USERNAME]",
+    "warehouse_id": "test-warehouse"
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/lakeview/dashboards/[DASHBOARD_ID]/published",
   "body": {
     "embed_credentials": false
   }
