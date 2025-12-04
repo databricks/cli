@@ -109,8 +109,8 @@ function App() {
             {health && (
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-[hsl(var(--success))] animate-pulse"></div>
-                  <div className="text-lg font-semibold text-[hsl(var(--success))]">{health.status.toUpperCase()}</div>
+                  <div className="w-2 h-2 rounded-full bg-success animate-pulse"></div>
+                  <div className="text-lg font-semibold text-success">{health.status.toUpperCase()}</div>
                 </div>
                 <div className="text-sm text-muted-foreground">
                   Last checked: {new Date(health.timestamp).toLocaleString()}
