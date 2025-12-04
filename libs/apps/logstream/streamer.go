@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	handshakeErrorBodyLimit = 4 * 1024
+	handshakeErrorBodyLimit = 8 * 1024
 	defaultUserAgent        = "databricks-cli logstream"
 	initialReconnectBackoff = 200 * time.Millisecond
 	maxReconnectBackoff     = 5 * time.Second
@@ -446,28 +446,16 @@ func decorateDialError(err error, resp *http.Response) error {
 		return err
 	}
 
-	var bodySnippet string
+	var errDetails string
 	if resp.Body != nil {
 		data, readErr := io.ReadAll(io.LimitReader(resp.Body, handshakeErrorBodyLimit))
 		_ = resp.Body.Close()
-		if readErr == nil {
-			bodySnippet = strings.TrimSpace(string(data))
+		if readErr == nil && json.Valid(data) {
+			errDetails = fmt.Sprintf(" (details: %s)", string(data))
 		}
 	}
 
-	status := strings.TrimSpace(resp.Status)
-	if status == "" && resp.StatusCode != 0 {
-		status = fmt.Sprintf("%d %s", resp.StatusCode, http.StatusText(resp.StatusCode))
-	}
-	if status == "" {
-		status = "unknown status"
-	}
-
-	detail := "HTTP " + status
-	if bodySnippet != "" {
-		return fmt.Errorf("%w (%s: %s)", err, detail, bodySnippet)
-	}
-	return fmt.Errorf("%w (%s)", err, detail)
+	return fmt.Errorf("%w (HTTP %s)%s", err, resp.Status, errDetails)
 }
 
 func (s *logStreamer) shouldRefreshForStatus(resp *http.Response) bool {
