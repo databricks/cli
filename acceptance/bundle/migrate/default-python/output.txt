@@ -82,10 +82,6 @@ Building python_artifact...
       "action": "skip",
       "reason": "server_side_default"
     },
-    "job_clusters[0].new_cluster.num_workers": {
-      "action": "update",
-      "old": 0
-    },
     "tasks[task_key='notebook_task'].libraries[0].whl": {
       "action": "update",
       "old": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/artifacts/.internal/my_default_python-0.0.1+[UNIX_TIME_NANOS][1]-py3-none-any.whl",
@@ -159,10 +155,6 @@ Building python_artifact...
     "email_notifications": {
       "action": "skip",
       "reason": "server_side_default"
-    },
-    "job_clusters[0].new_cluster.num_workers": {
-      "action": "update",
-      "old": 0
     },
     "tasks[task_key='notebook_task'].libraries[0].whl": {
       "action": "update",
