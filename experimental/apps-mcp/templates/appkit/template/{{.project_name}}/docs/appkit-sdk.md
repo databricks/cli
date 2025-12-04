@@ -45,8 +45,7 @@ Use cases:
 - Data that needs transformation before display
 
 ```typescript
-import { useAnalyticsQuery } from '@databricks/app-kit-ui/react';
-import { Skeleton } from '@/components/ui/skeleton';
+import { useAnalyticsQuery, Skeleton } from '@databricks/app-kit-ui/react';
 
 interface QueryResult { column_name: string; value: number; }
 
