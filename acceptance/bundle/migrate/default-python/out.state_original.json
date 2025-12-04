@@ -313,6 +313,7 @@
             "trigger": [
               {
                 "file_arrival": [],
+                "model": [],
                 "pause_status": "PAUSED",
                 "periodic": [
                   {

@@ -1,7 +1,7 @@
 {
   "plan": {
     "resources.pipelines.my": {
-      "action": "recreate"
+      "action": "update"
     }
   }
 }

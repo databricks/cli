@@ -51,27 +51,17 @@ Deployment complete!
 >>> update_file.py databricks.yml catalog1 catalog2
 
 >>> [CLI] bundle plan
-recreate pipelines.my
+update pipelines.my
 
-Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/files...
-
-This action will result in the deletion or recreation of the following Lakeflow Declarative Pipelines along with the
-Streaming Tables (STs) and Materialized Views (MVs) managed by them. Recreating the pipelines will
-restore the defined STs and MVs through full refresh. Note that recreation is necessary when pipeline
-properties such as the 'catalog' or 'storage' are changed:
-  recreate resources.pipelines.my
 Deploying resources...
 Updating deployment state...
 Deployment complete!
 
 >>> print_requests
-{
-  "method": "DELETE",
-  "path": "/api/2.0/pipelines/[PIPELINE_ID_1]"
-}
 {
   "body": {
     "catalog": "mycatalog2",
@@ -81,6 +71,7 @@ Deployment complete!
       "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/state/metadata.json"
     },
     "edition": "ADVANCED",
+    "id": "[PIPELINE_ID_1]",
     "libraries": [
       {
         "file": {
@@ -90,17 +81,17 @@ Deployment complete!
     ],
     "name": "test-pipeline-[UNIQUE_NAME]"
   },
-  "method": "POST",
-  "path": "/api/2.0/pipelines"
+  "method": "PUT",
+  "path": "/api/2.0/pipelines/[PIPELINE_ID_1]"
 }
 
 === Fetch pipeline ID and verify remote state
->>> [CLI] pipelines get [PIPELINE_ID_2]
+>>> [CLI] pipelines get [PIPELINE_ID_1]
 {
   "creator_user_name":"[USERNAME]",
-  "last_modified":[UNIX_TIME_MILLIS],
+  "last_modified":[UNIX_TIME_MILLIS][0],
   "name":"test-pipeline-[UNIQUE_NAME]",
-  "pipeline_id":"[PIPELINE_ID_2]",
+  "pipeline_id":"[PIPELINE_ID_1]",
   "run_as_user_name":"[USERNAME]",
   "spec": {
     "catalog":"mycatalog2",
@@ -110,7 +101,7 @@ Deployment complete!
       "metadata_file_path":"/Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/state/metadata.json"
     },
     "edition":"ADVANCED",
-    "id":"[PIPELINE_ID_2]",
+    "id":"[PIPELINE_ID_1]",
     "libraries": [
       {
         "file": {
@@ -125,27 +116,33 @@ Deployment complete!
 
 === Verify that original pipeline is gone
 >>> musterr [CLI] pipelines get [PIPELINE_ID_1]
-Error: The specified pipeline [PIPELINE_ID_1] was not found.
-
-=== Destroy the pipeline and verify that it's removed from the state and from remote
->>> [CLI] bundle destroy --auto-approve
-The following resources will be deleted:
-  delete resources.pipelines.my
-
-This action will result in the deletion of the following Lakeflow Declarative Pipelines along with the
-Streaming Tables (STs) and Materialized Views (MVs) managed by them:
-  delete resources.pipelines.my
-
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default
-
-Deleting files...
-Destroy complete!
-
->>> print_requests
 {
-  "method": "DELETE",
-  "path": "/api/2.0/pipelines/[PIPELINE_ID_2]"
+  "creator_user_name":"[USERNAME]",
+  "last_modified":[UNIX_TIME_MILLIS][0],
+  "name":"test-pipeline-[UNIQUE_NAME]",
+  "pipeline_id":"[PIPELINE_ID_1]",
+  "run_as_user_name":"[USERNAME]",
+  "spec": {
+    "catalog":"mycatalog2",
+    "channel":"CURRENT",
+    "deployment": {
+      "kind":"BUNDLE",
+      "metadata_file_path":"/Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/state/metadata.json"
+    },
+    "edition":"ADVANCED",
+    "id":"[PIPELINE_ID_1]",
+    "libraries": [
+      {
+        "file": {
+          "path":"/Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/files/foo.py"
+        }
+      }
+    ],
+    "name":"test-pipeline-[UNIQUE_NAME]"
+  },
+  "state":"IDLE"
 }
 
->>> musterr [CLI] pipelines get [PIPELINE_ID_2]
-Error: The specified pipeline [PIPELINE_ID_2] was not found.
+Unexpected success
+
+Exit code: 1

@@ -7,11 +7,13 @@ trap cleanup EXIT
 
 trace $CLI bundle deploy
 
-title "Assert the pipeline is created"
+title "Assert the pipeline is created with catalog"
 PIPELINE_ID=$($CLI bundle summary -o json | jq -r '.resources.pipelines.foo.id')
 trace $CLI pipelines get "${PIPELINE_ID}" | jq "{spec}"
 
-trace $CLI bundle plan --var="catalog=another_catalog" 2>&1
+# Note: In Terraform provider v1.98.0+, changing catalog no longer triggers recreation.
+# We switch to using storage location instead, which still triggers recreation.
+trace $CLI bundle plan --var="storage=dbfs:/my-storage" --var="catalog=" 2>&1
 
-title "Try to redeploy the bundle, pointing the DLT pipeline to a different UC catalog"
-trace errcode $CLI bundle deploy --force-lock --var="catalog=another_catalog"
+title "Try to redeploy the bundle, switching from catalog to storage (triggers recreation)"
+trace errcode $CLI bundle deploy --force-lock --var="storage=dbfs:/my-storage" --var="catalog="

@@ -1,0 +1,8 @@
+{
+  "method": "GET",
+  "path": "/api/2.0/pipelines/[PIPELINE_ID_1]"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/pipelines/[PIPELINE_ID_1]"
+}
