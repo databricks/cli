@@ -16,16 +16,23 @@ Deployment complete!
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
-=== Update catalog, triggering recreate for pipeline; this means updating downstream deps
->>> update_file.py databricks.yml mycatalog mynewcatalog
+=== Update storage, triggering recreate for pipeline; this means updating downstream deps
+>>> update_file.py databricks.yml storage: dbfs:/my-storage storage: dbfs:/my-new-storage
 
 >>> [CLI] bundle plan
-update pipelines.foo
+update jobs.bar
+recreate pipelines.foo
 
-Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
+Plan: 1 to add, 1 to change, 1 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+
+This action will result in the deletion or recreation of the following Lakeflow Declarative Pipelines along with the
+Streaming Tables (STs) and Materialized Views (MVs) managed by them. Recreating the pipelines will
+restore the defined STs and MVs through full refresh. Note that recreation is necessary when pipeline
+properties such as the 'catalog' or 'storage' are changed:
+  recreate resources.pipelines.foo
 Deploying resources...
 Updating deployment state...
 Deployment complete!
@@ -34,26 +41,98 @@ Deployment complete!
 
 === Fetch resource IDs and verify remote state
 >>> musterr [CLI] pipelines get [FOO_ID]
+Error: The specified pipeline [FOO_ID] was not found.
+
+>>> [CLI] pipelines get [UUID]
 {
   "creator_user_name":"[USERNAME]",
-  "last_modified":[UNIX_TIME_MILLIS],
+  "last_modified":[UNIX_TIME_MILLIS][0],
   "name":"pipeline foo",
-  "pipeline_id":"[FOO_ID]",
+  "pipeline_id":"[UUID]",
   "run_as_user_name":"[USERNAME]",
   "spec": {
-    "catalog":"mynewcatalog",
     "channel":"CURRENT",
     "deployment": {
       "kind":"BUNDLE",
       "metadata_file_path":"/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
     },
     "edition":"ADVANCED",
-    "id":"[FOO_ID]",
-    "name":"pipeline foo"
+    "id":"[UUID]",
+    "name":"pipeline foo",
+    "storage":"dbfs:/my-new-storage"
   },
   "state":"IDLE"
 }
 
-Unexpected success
+>>> [CLI] jobs get [BAR_ID]
+{
+  "created_time": [UNIX_TIME_MILLIS][1],
+  "creator_user_name": "[USERNAME]",
+  "job_id": [BAR_ID],
+  "run_as_user_name": "[USERNAME]",
+  "settings": {
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+    },
+    "description": "depends on foo id [UUID]",
+    "edit_mode": "UI_LOCKED",
+    "email_notifications": {},
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "job bar",
+    "queue": {
+      "enabled": true
+    },
+    "timeout_seconds": 0,
+    "webhook_notifications": {}
+  }
+}
 
-Exit code: 1
+=== Follow up plan & deploy do nothing
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py //jobs //pipelines
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.bar
+  delete resources.pipelines.foo
+
+This action will result in the deletion of the following Lakeflow Declarative Pipelines along with the
+Streaming Tables (STs) and Materialized Views (MVs) managed by them:
+  delete resources.pipelines.foo
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Deleting files...
+Destroy complete!
+
+>>> print_requests.py --sort //jobs //pipelines
+{
+  "method": "DELETE",
+  "path": "/api/2.0/pipelines/[UUID]"
+}
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/delete",
+  "body": {
+    "job_id": [BAR_ID]
+  }
+}
+
+>>> musterr [CLI] pipelines get [FOO_ID]
+Error: The specified pipeline [FOO_ID] was not found.
+
+>>> musterr [CLI] pipelines get [UUID]
+Error: The specified pipeline [UUID] was not found.
+
+>>> musterr [CLI] jobs get [BAR_ID]
+Error: Not Found

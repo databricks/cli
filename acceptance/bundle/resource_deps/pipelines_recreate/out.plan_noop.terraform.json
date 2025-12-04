@@ -1,10 +1,10 @@
 {
   "plan": {
     "resources.jobs.bar": {
-      "action": "update"
+      "action": "skip"
     },
     "resources.pipelines.foo": {
-      "action": "recreate"
+      "action": "skip"
     }
   }
 }

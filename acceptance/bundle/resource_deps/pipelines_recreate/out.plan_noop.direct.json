@@ -57,7 +57,6 @@
         "pipeline_id": "[UUID]",
         "run_as_user_name": "[USERNAME]",
         "spec": {
-          "catalog": "mynewcatalog",
           "channel": "CURRENT",
           "deployment": {
             "kind": "BUNDLE",
@@ -65,7 +64,8 @@
           },
           "edition": "ADVANCED",
           "id": "[UUID]",
-          "name": "pipeline foo"
+          "name": "pipeline foo",
+          "storage": "dbfs:/my-new-storage"
         },
         "state": "IDLE"
       }

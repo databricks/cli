@@ -1,4 +1,0 @@
-{
-  "method": "GET",
-  "path": "/api/2.0/pipelines/[FOO_ID]"
-}
