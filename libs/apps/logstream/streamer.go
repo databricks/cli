@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/databricks/cli/libs/flags"
 	"github.com/gorilla/websocket"
 )
 
@@ -50,6 +51,7 @@ type Config struct {
 	Writer           io.Writer
 	UserAgent        string
 	Colorize         bool
+	OutputFormat     flags.Output
 }
 
 // Run connects to the log stream described by cfg and copies frames to the writer.
@@ -72,7 +74,7 @@ func Run(ctx context.Context, cfg Config) error {
 		prefetch:         cfg.Prefetch,
 		writer:           cfg.Writer,
 		userAgent:        cfg.UserAgent,
-		formatter:        newLogFormatter(cfg.Colorize),
+		formatter:        newLogFormatter(cfg.Colorize, cfg.OutputFormat),
 	}
 	if streamer.userAgent == "" {
 		streamer.userAgent = defaultUserAgent
@@ -267,7 +269,7 @@ func (s *logStreamer) formatMessage(message []byte) string {
 	source := strings.ToUpper(entry.Source)
 	if len(s.sources) > 0 {
 		if _, ok := s.sources[source]; !ok {
-			return "" // Filtered out
+			return ""
 		}
 	}
 	return s.formatter.FormatEntry(entry)

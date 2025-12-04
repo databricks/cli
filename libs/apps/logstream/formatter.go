@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/databricks/cli/libs/flags"
 	"github.com/fatih/color"
 )
 
@@ -27,16 +28,25 @@ func parseLogEntry(raw []byte) (*wsEntry, error) {
 
 // logFormatter formats log entries for output.
 type logFormatter struct {
-	colorize bool
+	colorize     bool
+	outputFormat flags.Output
 }
 
 // newLogFormatter creates a new log formatter.
-func newLogFormatter(colorize bool) *logFormatter {
-	return &logFormatter{colorize: colorize}
+func newLogFormatter(colorize bool, outputFormat flags.Output) *logFormatter {
+	return &logFormatter{colorize: colorize, outputFormat: outputFormat}
 }
 
 // FormatEntry formats a structured log entry for output.
 func (f *logFormatter) FormatEntry(entry *wsEntry) string {
+	if f.outputFormat == flags.OutputJSON {
+		return f.formatEntryJSON(entry)
+	}
+	return f.formatEntryText(entry)
+}
+
+// formatEntryText formats a structured log entry as human-readable text.
+func (f *logFormatter) formatEntryText(entry *wsEntry) string {
 	timestamp := formatTimestamp(entry.Timestamp)
 	source := strings.ToUpper(entry.Source)
 	message := strings.TrimRight(entry.Message, "\r\n")
@@ -47,6 +57,20 @@ func (f *logFormatter) FormatEntry(entry *wsEntry) string {
 	}
 
 	return fmt.Sprintf("%s [%s] %s", timestamp, source, message)
+}
+
+// formatEntryJSON formats a structured log entry as JSON (NDJSON line).
+func (f *logFormatter) formatEntryJSON(entry *wsEntry) string {
+	normalized := wsEntry{
+		Source:    strings.ToUpper(entry.Source),
+		Timestamp: entry.Timestamp,
+		Message:   strings.TrimRight(entry.Message, "\r\n"),
+	}
+	data, err := json.Marshal(normalized)
+	if err != nil {
+		return f.formatEntryText(entry)
+	}
+	return string(data)
 }
 
 // FormatPlain formats a plain text message by trimming trailing newlines.
