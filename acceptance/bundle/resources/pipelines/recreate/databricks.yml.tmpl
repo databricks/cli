@@ -4,16 +4,6 @@ bundle:
 workspace:
   root_path: ~/.bundle/$UNIQUE_NAME
 
-variables:
-  # Note: In Terraform provider v1.98.0+, changing catalog no longer triggers recreation.
-  # We use storage location instead (which is mutually exclusive with catalog).
-  storage:
-    description: Storage location for the Lakeflow Declarative Pipeline (mutually exclusive with catalog)
-    default: ""
-  catalog:
-    description: The catalog the Lakeflow Declarative Pipeline should use (when not using storage)
-    default: main
-
 resources:
   pipelines:
     foo:
@@ -22,14 +12,13 @@ resources:
         - notebook:
             path: ./nb.sql
       development: true
-      storage: ${var.storage}
-      catalog: ${var.catalog}
+      catalog: main
       target: ${resources.schemas.bar.id}
 
   schemas:
     bar:
       name: test-schema-$UNIQUE_NAME
-      catalog_name: ${var.catalog}
+      catalog_name: main
       comment: This schema was created from DABs
 
 targets:

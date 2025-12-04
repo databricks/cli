@@ -13,7 +13,12 @@ trace $CLI pipelines get "${PIPELINE_ID}" | jq "{spec}"
 
 # Note: In Terraform provider v1.98.0+, changing catalog no longer triggers recreation.
 # We switch to using storage location instead, which still triggers recreation.
-trace $CLI bundle plan --var="storage=dbfs:/my-storage" --var="catalog=" 2>&1
+title "Switch from catalog to storage (triggers recreation)"
+trace update_file.py databricks.yml "catalog: main" "storage: dbfs:/my-storage"
+# Remove target reference since storage-based pipelines can't use it
+trace update_file.py databricks.yml "target: \${resources.schemas.bar.id}" "#target: \${resources.schemas.bar.id}"
 
-title "Try to redeploy the bundle, switching from catalog to storage (triggers recreation)"
-trace errcode $CLI bundle deploy --force-lock --var="storage=dbfs:/my-storage" --var="catalog="
+trace $CLI bundle plan 2>&1
+
+title "Redeploy the bundle (should recreate the pipeline)"
+trace errcode $CLI bundle deploy --force-lock
