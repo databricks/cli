@@ -1,9 +1,21 @@
-import { useAnalyticsQuery, AreaChart, LineChart, RadarChart } from '@databricks/app-kit-ui/react';
+import {
+  useAnalyticsQuery,
+  AreaChart,
+  LineChart,
+  RadarChart,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Skeleton,
+  Label,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@databricks/app-kit-ui/react';
 import { Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { trpc } from './lib/trpc';
 import { useState, useEffect } from 'react';
 

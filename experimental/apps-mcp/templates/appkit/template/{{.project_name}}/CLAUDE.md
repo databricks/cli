@@ -316,8 +316,7 @@ Available visualization components from `@databricks/app-kit-ui/react`:
 The components provide sensible defaults out of the box. Just pass the query name and parameters:
 
 ```typescript
-import { BarChart, LineChart, DataTable } from '@databricks/app-kit-ui/react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { BarChart, LineChart, DataTable, Card, CardContent, CardHeader, CardTitle } from '@databricks/app-kit-ui/react';
 
 function MyDashboard() {
   return (
@@ -358,9 +357,8 @@ function MyDashboard() {
 Only customize if you need specific styling or behavior. Use Recharts components for full control:
 
 ```typescript
-import { BarChart } from '@databricks/app-kit-ui/react';
+import { BarChart, Card, CardContent, CardHeader, CardTitle } from '@databricks/app-kit-ui/react';
 import { Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 function CustomChart() {
   return (
@@ -396,8 +394,7 @@ Use cases for `useAnalyticsQuery`:
 - Non-visualization UI components
 
 ```typescript
-import { useAnalyticsQuery } from '@databricks/app-kit-ui/react';
-import { Skeleton } from '@/components/ui/skeleton';
+import { useAnalyticsQuery, Skeleton } from '@databricks/app-kit-ui/react';
 
 interface QueryResult { column_name: string; value: number; }
 
@@ -840,7 +837,7 @@ Note: react-leaflet v4.x requires React 18. Use v5 for React 19 compatibility.
 
 ### Best Practices:
 
-- Use shadcn/radix components (Button, Input, Card, etc.) for consistent UI
+- Use shadcn/radix components (Button, Input, Card, etc.) for consistent UI, import them from `@databricks/app-kit-ui/react`
 - **Use skeleton loaders**: Always use `<Skeleton>` components instead of plain "Loading..." text
 - Define result types in `shared/types.ts` for reuse between frontend and backend
 - Handle nullable fields: `value={field || ''}` for inputs
