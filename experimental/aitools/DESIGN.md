@@ -192,6 +192,24 @@ the system as a whole a bit (btw each tool should be defined in a separate .go f
   - further implementation guidance: i want acceptance tests for each of these project types (app, dashboard, job, pipeline);
     this means they should be exposed as a hidden command like 'databricks experimental aitools tool add_project_resource --json <json>'. having these tests will be instrumental for iterating on them; the initing should not fail! note that the tool subcommand should just assume that the cwd is the current project dir.
 
+- the "workspace_info" tool:
+    - description: Get information about Databricks workspaces. Call without parameters to list all available workspaces and get current workspace details. Call with a profile parameter to get detailed information about a specific workspace (warehouse, user, etc).
+    - parameter: profile - optional workspace profile name. If provided, returns detailed information about that specific workspace. If omitted, lists all available workspaces and shows details for the current workspace.
+    - implementation:
+      - When called without parameters:
+        1. Shows current workspace details (profile, host, cloud, user, warehouse, catalog)
+        2. Lists all available workspace profiles with their URLs and cloud providers (if multiple exist)
+        3. Provides guidance on how to get details about other workspaces and how to use --profile flag
+      - When called with a profile parameter:
+        1. Validates the profile exists in ~/.databrickscfg
+        2. Shows workspace URL and cloud provider
+        3. Gets current user via SCIM API
+        4. Gets default SQL warehouse using GetDefaultWarehouse()
+        5. Gets default Unity Catalog if available
+    - output: Formatted text with workspace information (profile, host, cloud, user, warehouse, catalog)
+    - implementation: Single workspace_info.go file with getWorkspaceDetails, listWorkspacesWithCurrent, getCurrentUser, and getDefaultCatalog helpers
+    - key use case: When user wants to know what workspaces they have access to, or get connection details for a specific workspace
+
 - the "explore" tool:
     - description: CALL THIS FIRST when user mentions a workspace by name or asks about workspace resources. Shows available workspaces/profiles, default warehouse, and provides guidance on exploring jobs, clusters, catalogs, and other Databricks resources. Use this to discover what's available before running CLI commands.
     - no parameters needed
