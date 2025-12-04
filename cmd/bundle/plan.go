@@ -107,6 +107,7 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 				}
 				fmt.Fprintln(out)
 			}
+			// Note, this string should not be changed, "bundle deployment migrate" depends on this format:
 			fmt.Fprintf(out, "Plan: %d to add, %d to change, %d to delete, %d unchanged\n", createCount, updateCount, deleteCount, unchangedCount)
 		case flags.OutputJSON:
 			buf, err := json.MarshalIndent(plan, "", "  ")
