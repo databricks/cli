@@ -3,6 +3,7 @@ package workspace
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"io/fs"
 	"net/http"
@@ -51,6 +52,26 @@ func isFileSizeError(err error) bool {
 	return false
 }
 
+// Object types that cannot be exported via the workspace export API.
+// These will be skipped with a warning during export-dir.
+var nonExportableTypes = []workspace.ObjectType{
+	workspace.ObjectTypeLibrary,
+	workspace.ObjectTypeDashboard,
+	workspace.ObjectTypeRepo,
+	// MLFLOW_EXPERIMENT is not defined as a constant in the SDK
+	workspace.ObjectType("MLFLOW_EXPERIMENT"),
+}
+
+// isNonExportable checks if an object type cannot be exported.
+func isNonExportable(objectType workspace.ObjectType) bool {
+	for _, t := range nonExportableTypes {
+		if objectType == t {
+			return true
+		}
+	}
+	return false
+}
+
 // The callback function exports the file specified at relPath. This function is
 // meant to be used in conjunction with fs.WalkDir
 func (opts *exportDirOptions) callback(ctx context.Context, workspaceFiler filer.Filer) func(string, fs.DirEntry, error) error {
@@ -77,6 +98,13 @@ func (opts *exportDirOptions) callback(ctx context.Context, workspaceFiler filer
 			return err
 		}
 		objectInfo := info.Sys().(workspace.ObjectInfo)
+
+		// Skip non-exportable objects (e.g., MLFLOW_EXPERIMENT, LIBRARY)
+		if isNonExportable(objectInfo.ObjectType) {
+			opts.warnings = append(opts.warnings, fmt.Sprintf("%s (skipped; cannot export %s)", sourcePath, objectInfo.ObjectType))
+			return nil
+		}
+
 		targetPath += notebook.GetExtensionByLanguage(&objectInfo)
 
 		// Skip file if a file already exists in path.
@@ -92,9 +120,7 @@ func (opts *exportDirOptions) callback(ctx context.Context, workspaceFiler filer
 		if err != nil {
 			// Check if this is a file size limit error
 			if isFileSizeError(err) {
-				warning := sourcePath + " (skipped; file too large)"
-				cmdio.LogString(ctx, "Warning: "+warning)
-				opts.warnings = append(opts.warnings, warning)
+				opts.warnings = append(opts.warnings, sourcePath+" (skipped; file too large)")
 				return nil
 			}
 			return err
@@ -162,7 +188,7 @@ func newExportDir() *cobra.Command {
 		// Print all warnings at the end if any were collected
 		if len(opts.warnings) > 0 {
 			cmdio.LogString(ctx, "")
-			cmdio.LogString(ctx, "The following files were skipped because they exceed the maximum size limit:")
+			cmdio.LogString(ctx, "Warnings:")
 			for _, warning := range opts.warnings {
 				cmdio.LogString(ctx, "  - "+warning)
 			}
