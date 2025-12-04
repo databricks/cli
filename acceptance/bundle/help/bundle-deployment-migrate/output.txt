@@ -14,7 +14,8 @@ Usage:
   databricks bundle deployment migrate [flags]
 
 Flags:
-  -h, --help   help for migrate
+  -h, --help          help for migrate
+      --noplancheck   Skip running bundle plan before migration.
 
 Global Flags:
       --debug            enable debug logging
