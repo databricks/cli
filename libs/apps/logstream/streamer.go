@@ -8,7 +8,6 @@ import (
 	"io"
 	"net"
 	"net/http"
-	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -20,8 +19,6 @@ import (
 const (
 	handshakeErrorBodyLimit = 8 * 1024
 	defaultUserAgent        = "databricks-cli logstream"
-	initialReconnectBackoff = 200 * time.Millisecond
-	maxReconnectBackoff     = 5 * time.Second
 	closeCodeUnauthorized   = 4401
 	closeCodeForbidden      = 4403
 )
@@ -109,10 +106,7 @@ func (s *logStreamer) Run(ctx context.Context) error {
 		s.dialer = &websocket.Dialer{}
 	}
 
-	backoff := initialReconnectBackoff
-	// Backoff timer starts as a zero-value timer; stopTimer handles the first initialization safely.
-	timer := time.NewTimer(0)
-	stopTimer(timer, 0)
+	backoff := newBackoffStrategy(initialReconnectBackoff, maxReconnectBackoff)
 
 	for {
 		shouldContinue, err := func() (bool, error) {
@@ -126,7 +120,7 @@ func (s *logStreamer) Run(ctx context.Context) error {
 					if err := s.refreshToken(ctx); err != nil {
 						return false, err
 					}
-					backoff = initialReconnectBackoff
+					backoff.Reset()
 					return true, nil
 				}
 
@@ -143,11 +137,9 @@ func (s *logStreamer) Run(ctx context.Context) error {
 
 				return true, nil
 			}
-			if resp != nil && resp.Body != nil {
-				defer resp.Body.Close()
-			}
+			defer closeRespBody(resp)
 
-			backoff = initialReconnectBackoff
+			backoff.Reset()
 			if !s.follow {
 				return false, nil
 			}
@@ -164,10 +156,10 @@ func (s *logStreamer) Run(ctx context.Context) error {
 		}
 
 		if shouldContinue {
-			if err := waitForBackoff(ctx, timer, backoff); err != nil {
+			if err := backoff.Wait(ctx); err != nil {
 				return err
 			}
-			backoff = min(backoff*2, maxReconnectBackoff)
+			backoff.Next()
 			continue
 		}
 
@@ -188,15 +180,10 @@ func (s *logStreamer) connectAndConsume(ctx context.Context) (*http.Response, er
 	}
 
 	conn, resp, err := s.dialer.DialContext(ctx, s.url, headers)
+	defer closeRespBody(resp)
 	if err != nil {
 		err = decorateDialError(err, resp)
-		if resp != nil && resp.Body != nil {
-			_ = resp.Body.Close()
-		}
 		return resp, err
-	}
-	if resp != nil && resp.Body != nil {
-		_ = resp.Body.Close()
 	}
 
 	stopWatch := watchContext(ctx, conn)
@@ -208,9 +195,6 @@ func (s *logStreamer) connectAndConsume(ctx context.Context) (*http.Response, er
 
 func (s *logStreamer) consume(ctx context.Context, conn *websocket.Conn) (retErr error) {
 	initial := []byte(s.search)
-	if len(initial) == 0 {
-		initial = []byte("")
-	}
 
 	if err := conn.WriteMessage(websocket.TextMessage, initial); err != nil {
 		return err
@@ -379,38 +363,6 @@ func formatPlainMessage(raw []byte) string {
 	return line
 }
 
-type tailBuffer struct {
-	size  int
-	lines []string
-}
-
-func (b *tailBuffer) Add(line string) {
-	if b.size <= 0 {
-		return
-	}
-	b.lines = append(b.lines, line)
-	if len(b.lines) > b.size {
-		b.lines = slices.Delete(b.lines, 0, len(b.lines)-b.size)
-	}
-}
-
-func (b *tailBuffer) Len() int {
-	return len(b.lines)
-}
-
-func (b *tailBuffer) Flush(w io.Writer) error {
-	if b.size == 0 {
-		return nil
-	}
-	for _, line := range b.lines {
-		if _, err := fmt.Fprintln(w, line); err != nil {
-			return err
-		}
-	}
-	b.lines = slices.Clip(b.lines[:0])
-	return nil
-}
-
 func formatTimestamp(ts float64) string {
 	if ts <= 0 {
 		return "----------"
@@ -492,52 +444,6 @@ func handleCloseError(err error) (bool, error) {
 	return true, fmt.Errorf("log stream closed with code %d (%s): %w", closeErr.Code, strings.TrimSpace(closeErr.Text), err)
 }
 
-func waitForBackoff(ctx context.Context, timer *time.Timer, d time.Duration) error {
-	if d <= 0 {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		default:
-			return nil
-		}
-	}
-	stopTimer(timer, d)
-	select {
-	case <-ctx.Done():
-		stopTimer(timer, 0)
-		return ctx.Err()
-	case <-timer.C:
-		return nil
-	}
-}
-
-func stopTimer(timer *time.Timer, d time.Duration) {
-	if timer == nil {
-		return
-	}
-	if d <= 0 {
-		// For a zero duration we only need to stop and drain.
-		if timer.Stop() {
-			return
-		}
-		drainTimer(timer)
-		return
-	}
-	// For a positive duration, either stop an already-started timer or
-	// just initialize it when it is still in the zero state.
-	if !timer.Stop() {
-		drainTimer(timer)
-	}
-	timer.Reset(d)
-}
-
-func drainTimer(timer *time.Timer) {
-	select {
-	case <-timer.C:
-	default:
-	}
-}
-
 func watchContext(ctx context.Context, conn *websocket.Conn) func() {
 	var once sync.Once
 	closeCh := make(chan struct{})
@@ -561,4 +467,11 @@ func watchContext(ctx context.Context, conn *websocket.Conn) func() {
 		close(closeCh)
 		closeConn()
 	}
+}
+
+func closeRespBody(resp *http.Response) error {
+	if resp != nil && resp.Body != nil {
+		return resp.Body.Close()
+	}
+	return nil
 }
