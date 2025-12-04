@@ -458,7 +458,7 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	server.Handle("DELETE", "/api/2.0/alerts/{id}", func(req Request) any {
-		return MapDelete(req.Workspace, req.Workspace.Alerts, req.Vars["id"])
+		return req.Workspace.AlertsDelete(req.Vars["id"])
 	})
 
 	// Secret Scopes:

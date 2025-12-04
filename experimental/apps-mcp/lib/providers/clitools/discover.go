@@ -4,16 +4,17 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/databricks/cli/experimental/apps-mcp/lib/detector"
 	"github.com/databricks/cli/experimental/apps-mcp/lib/middlewares"
 	"github.com/databricks/cli/experimental/apps-mcp/lib/prompts"
-	"github.com/databricks/cli/experimental/apps-mcp/lib/session"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 )
 
-// Explore provides guidance on exploring Databricks workspaces and resources.
-func Explore(ctx context.Context) (string, error) {
+// Discover provides workspace context and workflow guidance.
+// Returns L1 (flow) always + L2 (target) for detected target types.
+func Discover(ctx context.Context, workingDirectory string) (string, error) {
 	warehouse, err := middlewares.GetWarehouseEndpoint(ctx)
 	if err != nil {
 		log.Debugf(ctx, "Failed to get default warehouse (non-fatal): %v", err)
@@ -23,15 +24,46 @@ func Explore(ctx context.Context) (string, error) {
 	currentProfile := middlewares.GetDatabricksProfile(ctx)
 	profiles := middlewares.GetAvailableProfiles(ctx)
 
-	return generateExploreGuidance(ctx, warehouse, currentProfile, profiles), nil
+	// run detectors to identify project context
+	registry := detector.NewRegistry()
+	detected := registry.Detect(ctx, workingDirectory)
+
+	return generateDiscoverGuidance(ctx, warehouse, currentProfile, profiles, detected), nil
 }
 
-// generateExploreGuidance creates comprehensive guidance for data exploration.
-func generateExploreGuidance(ctx context.Context, warehouse *sql.EndpointInfo, currentProfile string, profiles profile.Profiles) string {
-	// Build workspace/profile information
+// generateDiscoverGuidance creates guidance with L1 (flow) + L2 (target) layers.
+func generateDiscoverGuidance(ctx context.Context, warehouse *sql.EndpointInfo, currentProfile string, profiles profile.Profiles, detected *detector.DetectedContext) string {
+	data := buildTemplateData(warehouse, currentProfile, profiles)
+
+	// L1: always include flow guidance
+	result := prompts.MustExecuteTemplate("flow.tmpl", data)
+
+	// L2: inject target-specific guidance for detected target types
+	for _, targetType := range detected.TargetTypes {
+		templateName := fmt.Sprintf("target_%s.tmpl", targetType)
+		if prompts.TemplateExists(templateName) {
+			targetContent := prompts.MustExecuteTemplate(templateName, data)
+			result += "\n\n" + targetContent
+			log.Debugf(ctx, "Injected L2 guidance for target type: %s", targetType)
+		} else {
+			log.Debugf(ctx, "No L2 template found for target type: %s", targetType)
+		}
+	}
+
+	// add project context info if detected
+	if detected.InProject {
+		result += "\n\nDetected project: " + detected.BundleInfo.Name
+		if detected.Template != "" {
+			result += fmt.Sprintf(" (template: %s)", detected.Template)
+		}
+	}
+
+	return result
+}
+
+func buildTemplateData(warehouse *sql.EndpointInfo, currentProfile string, profiles profile.Profiles) map[string]string {
 	workspaceInfo := "Current Workspace Profile: " + currentProfile
 	if len(profiles) > 0 {
-		// Find current profile details
 		var currentHost string
 		for _, p := range profiles {
 			if p.Name == currentProfile {
@@ -47,7 +79,6 @@ func generateExploreGuidance(ctx context.Context, warehouse *sql.EndpointInfo, c
 		}
 	}
 
-	// Build available profiles list
 	profilesInfo := ""
 	if len(profiles) > 1 {
 		profilesInfo = "\n\nAvailable Workspace Profiles:\n"
@@ -67,7 +98,6 @@ func generateExploreGuidance(ctx context.Context, warehouse *sql.EndpointInfo, c
 		profilesInfo += "    invoke_databricks_cli '--profile prod catalogs list'\n"
 	}
 
-	// Handle warehouse information (may be nil if lookup failed)
 	warehouseName := ""
 	warehouseID := ""
 	if warehouse != nil {
@@ -75,49 +105,11 @@ func generateExploreGuidance(ctx context.Context, warehouse *sql.EndpointInfo, c
 		warehouseID = warehouse.Id
 	}
 
-	// Prepare template data
-	data := map[string]string{
+	return map[string]string{
 		"WorkspaceInfo": workspaceInfo,
 		"WarehouseName": warehouseName,
 		"WarehouseID":   warehouseID,
 		"ProfilesInfo":  profilesInfo,
 		"Profile":       currentProfile,
 	}
-
-	// Render base explore template
-	result := prompts.MustExecuteTemplate("explore.tmpl", data)
-
-	// Get session and check for enabled capabilities
-	sess, err := session.GetSession(ctx)
-	if err != nil {
-		log.Debugf(ctx, "No session found, skipping capability-based instructions: %v", err)
-		return result
-	}
-
-	capabilities, ok := sess.Get(session.CapabilitiesDataKey)
-	if !ok {
-		log.Debugf(ctx, "No capabilities set in session")
-		return result
-	}
-
-	capList, ok := capabilities.([]string)
-	if !ok {
-		log.Warnf(ctx, "Capabilities is not a string slice, skipping")
-		return result
-	}
-
-	// Inject additional templates based on enabled capabilities
-	for _, cap := range capList {
-		switch cap {
-		case "apps":
-			// Render and append apps template
-			appsContent := prompts.MustExecuteTemplate("apps.tmpl", data)
-			result = result + "\n\n" + appsContent
-			log.Debugf(ctx, "Injected apps instructions based on capability")
-		default:
-			log.Debugf(ctx, "Unknown capability: %s", cap)
-		}
-	}
-
-	return result
 }

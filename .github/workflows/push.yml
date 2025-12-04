@@ -270,6 +270,23 @@ jobs:
         run: |
           make test-pipelines
 
+  # This job groups the result of all the above test jobs.
+  # If any of them failed, this job will be skipped.
+  # It is a required check, so it blocks auto-merge and the merge queue.
+  test-result:
+    needs:
+      - test
+      - test-exp-aitools
+      - test-exp-apps-mcp
+      - test-exp-ssh
+      - test-pipelines
+
+    name: test-result
+    runs-on: ubuntu-latest
+
+    steps:
+      - run: echo "All tests passed ✅"
+
   validate-generated-is-up-to-date:
     needs: cleanups
     runs-on: ubuntu-latest
