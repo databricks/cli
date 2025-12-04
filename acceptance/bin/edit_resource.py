@@ -50,7 +50,7 @@ def main():
     my_locals = {"r": data}
 
     try:
-        exec(script, locals=my_locals)
+        exec(script, my_locals)
     except Exception:
         pprint.pprint(my_locals)
         raise

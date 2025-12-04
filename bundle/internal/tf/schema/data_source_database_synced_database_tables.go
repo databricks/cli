@@ -73,6 +73,7 @@ type DataSourceDatabaseSyncedDatabaseTablesSyncedTablesDataSynchronizationStatus
 }
 
 type DataSourceDatabaseSyncedDatabaseTablesSyncedTablesSpecNewPipelineSpec struct {
+	BudgetPolicyId string `json:"budget_policy_id,omitempty"`
 	StorageCatalog string `json:"storage_catalog,omitempty"`
 	StorageSchema  string `json:"storage_schema,omitempty"`
 }
