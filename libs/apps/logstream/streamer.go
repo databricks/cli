@@ -192,30 +192,16 @@ func (s *logStreamer) connectAndConsume(ctx context.Context) (*http.Response, er
 }
 
 func (s *logStreamer) consume(ctx context.Context, conn *websocket.Conn) (retErr error) {
-	initial := []byte(s.search)
-
-	if err := conn.WriteMessage(websocket.TextMessage, initial); err != nil {
+	if err := conn.WriteMessage(websocket.TextMessage, []byte(s.search)); err != nil {
 		return err
 	}
 
-	buffer := &tailBuffer{size: s.tail}
-	flushed := s.tail == 0 || s.tailFlushed
-	var flushDeadline time.Time
-	if s.tail > 0 && s.prefetch > 0 && !s.tailFlushed {
-		flushDeadline = time.Now().Add(s.prefetch)
-	}
-
+	state := newConsumeState(s.tail, s.follow, s.prefetch, s.writer, s.tailFlushed)
 	defer func() {
-		if s.tail > 0 && !flushed {
-			if err := buffer.Flush(s.writer); err != nil {
-				if retErr == nil {
-					retErr = err
-				}
-				return
-			}
-			flushed = true
-			s.tailFlushed = true
+		if err := state.FlushRemaining(); err != nil && retErr == nil {
+			retErr = err
 		}
+		s.tailFlushed = state.IsFlushed()
 	}()
 
 	for {
@@ -223,18 +209,7 @@ func (s *logStreamer) consume(ctx context.Context, conn *websocket.Conn) (retErr
 			return ctx.Err()
 		}
 
-		deadline, hasDeadline := ctx.Deadline()
-		if !flushDeadline.IsZero() {
-			if !hasDeadline || flushDeadline.Before(deadline) {
-				deadline = flushDeadline
-			}
-			hasDeadline = true
-		}
-		if hasDeadline {
-			_ = conn.SetReadDeadline(deadline)
-		} else {
-			_ = conn.SetReadDeadline(time.Time{})
-		}
+		_ = conn.SetReadDeadline(state.ReadDeadline(ctx))
 
 		_, message, err := conn.ReadMessage()
 		if err != nil {
@@ -243,19 +218,15 @@ func (s *logStreamer) consume(ctx context.Context, conn *websocket.Conn) (retErr
 			}
 			var netErr net.Error
 			if errors.As(err, &netErr) && netErr.Timeout() {
-				if !flushDeadline.IsZero() {
-					flushDeadline = time.Time{}
-					if s.tail > 0 && !flushed {
-						if err := buffer.Flush(s.writer); err != nil {
-							return err
-						}
-						flushed = true
-						s.tailFlushed = true
-						if !s.follow {
-							return nil
-						}
+				if state.HasPendingFlushDeadline() {
+					shouldContinue, flushErr := state.HandleFlushTimeout()
+					if flushErr != nil {
+						return flushErr
 					}
-					continue
+					if shouldContinue {
+						continue
+					}
+					return nil
 				}
 			}
 			if handled, closeErr := handleCloseError(err); handled {
@@ -271,62 +242,28 @@ func (s *logStreamer) consume(ctx context.Context, conn *websocket.Conn) (retErr
 			continue
 		}
 
-		entry, err := parseLogEntry(message)
-		if err != nil {
-			line := s.formatter.FormatPlain(message)
-			if line == "" {
-				continue
-			}
-			stop, err := s.flushOrBufferLine(line, buffer, &flushed, &flushDeadline)
-			if err != nil {
-				return err
-			}
-			if stop {
-				return nil
-			}
+		line := s.formatMessage(message)
+		if line == "" {
 			continue
 		}
-		source := strings.ToUpper(entry.Source)
-		if len(s.sources) > 0 {
-			if _, ok := s.sources[source]; !ok {
-				continue
-			}
-		}
-		line := s.formatter.FormatEntry(entry)
-		stop, err := s.flushOrBufferLine(line, buffer, &flushed, &flushDeadline)
-		if err != nil {
+		if err := state.ProcessLine(line); err != nil {
 			return err
-		}
-		if stop {
-			return nil
 		}
 	}
 }
 
-func (s *logStreamer) flushOrBufferLine(line string, buffer *tailBuffer, flushed *bool, flushDeadline *time.Time) (bool, error) {
-	if s.tail > 0 && !*flushed {
-		buffer.Add(line)
-		ready := buffer.Len() >= s.tail
-		if !flushDeadline.IsZero() {
-			ready = false
-		}
-		if ready {
-			if !s.follow {
-				return false, nil
-			}
-			if err := buffer.Flush(s.writer); err != nil {
-				return false, err
-			}
-			*flushed = true
-			s.tailFlushed = true
-			*flushDeadline = time.Time{}
-		}
-		return false, nil
+func (s *logStreamer) formatMessage(message []byte) string {
+	entry, err := parseLogEntry(message)
+	if err != nil {
+		return s.formatter.FormatPlain(message)
 	}
-	if _, err := fmt.Fprintln(s.writer, line); err != nil {
-		return false, err
+	source := strings.ToUpper(entry.Source)
+	if len(s.sources) > 0 {
+		if _, ok := s.sources[source]; !ok {
+			return "" // Filtered out
+		}
 	}
-	return false, nil
+	return s.formatter.FormatEntry(entry)
 }
 
 func (s *logStreamer) ensureToken(ctx context.Context) error {
