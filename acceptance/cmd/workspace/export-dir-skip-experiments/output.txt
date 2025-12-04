@@ -3,6 +3,6 @@
 Exporting files from /test-dir
 
 Warnings:
-  - /test-dir/file.py (skipped; file too large)
+  - /test-dir/experiment (skipped; cannot export MLFLOW_EXPERIMENT)
 
 Export complete
