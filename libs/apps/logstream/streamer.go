@@ -12,12 +12,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/fatih/color"
 	"github.com/gorilla/websocket"
 )
 
 const (
-	handshakeErrorBodyLimit = 8 * 1024
+	handshakeErrorBodyLimit = 4 * 1024
 	defaultUserAgent        = "databricks-cli logstream"
 	closeCodeUnauthorized   = 4401
 	closeCodeForbidden      = 4403
@@ -73,7 +72,7 @@ func Run(ctx context.Context, cfg Config) error {
 		prefetch:         cfg.Prefetch,
 		writer:           cfg.Writer,
 		userAgent:        cfg.UserAgent,
-		colorize:         cfg.Colorize,
+		formatter:        newLogFormatter(cfg.Colorize),
 	}
 	if streamer.userAgent == "" {
 		streamer.userAgent = defaultUserAgent
@@ -96,7 +95,7 @@ type logStreamer struct {
 	writer           io.Writer
 	tailFlushed      bool
 	userAgent        string
-	colorize         bool
+	formatter        *logFormatter
 }
 
 // Run establishes the websocket connection and manages reconnections.
@@ -137,7 +136,6 @@ func (s *logStreamer) Run(ctx context.Context) error {
 
 				return true, nil
 			}
-			defer closeRespBody(resp)
 
 			backoff.Reset()
 			if !s.follow {
@@ -180,7 +178,7 @@ func (s *logStreamer) connectAndConsume(ctx context.Context) (*http.Response, er
 	}
 
 	conn, resp, err := s.dialer.DialContext(ctx, s.url, headers)
-	defer closeRespBody(resp)
+	defer closeBody(resp)
 	if err != nil {
 		err = decorateDialError(err, resp)
 		return resp, err
@@ -275,7 +273,7 @@ func (s *logStreamer) consume(ctx context.Context, conn *websocket.Conn) (retErr
 
 		entry, err := parseLogEntry(message)
 		if err != nil {
-			line := formatPlainMessage(message)
+			line := s.formatter.FormatPlain(message)
 			if line == "" {
 				continue
 			}
@@ -294,7 +292,7 @@ func (s *logStreamer) consume(ctx context.Context, conn *websocket.Conn) (retErr
 				continue
 			}
 		}
-		line := s.formatLogEntry(entry)
+		line := s.formatter.FormatEntry(entry)
 		stop, err := s.flushOrBufferLine(line, buffer, &flushed, &flushDeadline)
 		if err != nil {
 			return err
@@ -331,48 +329,6 @@ func (s *logStreamer) flushOrBufferLine(line string, buffer *tailBuffer, flushed
 	return false, nil
 }
 
-type wsEntry struct {
-	Source    string  `json:"source"`
-	Timestamp float64 `json:"timestamp"`
-	Message   string  `json:"message"`
-}
-
-func parseLogEntry(raw []byte) (*wsEntry, error) {
-	var entry wsEntry
-	if err := json.Unmarshal(raw, &entry); err != nil {
-		return nil, err
-	}
-	return &entry, nil
-}
-
-func (s *logStreamer) formatLogEntry(entry *wsEntry) string {
-	timestamp := formatTimestamp(entry.Timestamp)
-	source := strings.ToUpper(entry.Source)
-	message := strings.TrimRight(entry.Message, "\r\n")
-
-	if s.colorize {
-		timestamp = color.HiBlackString(timestamp)
-		source = color.HiBlueString(source)
-	}
-
-	return fmt.Sprintf("%s [%s] %s", timestamp, source, message)
-}
-
-func formatPlainMessage(raw []byte) string {
-	line := strings.TrimRight(string(raw), "\r\n")
-	return line
-}
-
-func formatTimestamp(ts float64) string {
-	if ts <= 0 {
-		return "----------"
-	}
-	sec := int64(ts)
-	nsec := int64((ts - float64(sec)) * 1e9)
-	t := time.Unix(sec, nsec).UTC()
-	return t.Format(time.RFC3339)
-}
-
 func (s *logStreamer) ensureToken(ctx context.Context) error {
 	if s.token != "" || s.tokenProvider == nil {
 		return nil
@@ -391,23 +347,6 @@ func (s *logStreamer) refreshToken(ctx context.Context) error {
 	}
 	s.token = ""
 	return s.ensureToken(ctx)
-}
-
-func decorateDialError(err error, resp *http.Response) error {
-	if resp == nil {
-		return err
-	}
-
-	var errDetails string
-	if resp.Body != nil {
-		data, readErr := io.ReadAll(io.LimitReader(resp.Body, handshakeErrorBodyLimit))
-		_ = resp.Body.Close()
-		if readErr == nil && json.Valid(data) {
-			errDetails = fmt.Sprintf(" (details: %s)", string(data))
-		}
-	}
-
-	return fmt.Errorf("%w (HTTP %s)%s", err, resp.Status, errDetails)
 }
 
 func (s *logStreamer) shouldRefreshForStatus(resp *http.Response) bool {
@@ -431,6 +370,23 @@ func (s *logStreamer) shouldRefreshForError(err error) bool {
 		}
 	}
 	return false
+}
+
+func decorateDialError(err error, resp *http.Response) error {
+	if resp == nil {
+		return err
+	}
+
+	var errDetails string
+	if resp.Body != nil {
+		data, readErr := io.ReadAll(io.LimitReader(resp.Body, handshakeErrorBodyLimit))
+		_ = resp.Body.Close()
+		if readErr == nil && json.Valid(data) {
+			errDetails = fmt.Sprintf(" (details: %s)", string(data))
+		}
+	}
+
+	return fmt.Errorf("%w (HTTP %s)%s", err, resp.Status, errDetails)
 }
 
 func handleCloseError(err error) (bool, error) {
@@ -469,7 +425,7 @@ func watchContext(ctx context.Context, conn *websocket.Conn) func() {
 	}
 }
 
-func closeRespBody(resp *http.Response) error {
+func closeBody(resp *http.Response) error {
 	if resp != nil && resp.Body != nil {
 		return resp.Body.Close()
 	}

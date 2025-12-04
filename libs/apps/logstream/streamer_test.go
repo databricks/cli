@@ -37,13 +37,14 @@ func TestLogStreamerTailBufferFlushes(t *testing.T) {
 
 	buf := &bytes.Buffer{}
 	streamer := &logStreamer{
-		dialer:   &websocket.Dialer{},
-		url:      toWebSocketURL(server.URL),
-		token:    "test",
-		tail:     2,
-		follow:   false,
-		prefetch: 25 * time.Millisecond,
-		writer:   buf,
+		dialer:    &websocket.Dialer{},
+		url:       toWebSocketURL(server.URL),
+		token:     "test",
+		tail:      2,
+		follow:    false,
+		prefetch:  25 * time.Millisecond,
+		writer:    buf,
+		formatter: newLogFormatter(false),
 	}
 
 	require.NoError(t, streamer.Run(context.Background()))
@@ -69,13 +70,14 @@ func TestLogStreamerTailFlushErrorPropagates(t *testing.T) {
 
 	writerErr := errors.New("simulated write failure")
 	streamer := &logStreamer{
-		dialer:   &websocket.Dialer{},
-		url:      toWebSocketURL(server.URL),
-		token:    "test",
-		tail:     2,
-		follow:   false,
-		prefetch: 0,
-		writer:   &failWriter{err: writerErr},
+		dialer:    &websocket.Dialer{},
+		url:       toWebSocketURL(server.URL),
+		token:     "test",
+		tail:      2,
+		follow:    false,
+		prefetch:  0,
+		writer:    &failWriter{err: writerErr},
+		formatter: newLogFormatter(false),
 	}
 
 	err := streamer.Run(context.Background())
@@ -96,10 +98,11 @@ func TestLogStreamerTrimsCRLFInStructuredEntries(t *testing.T) {
 
 	buf := &bytes.Buffer{}
 	streamer := &logStreamer{
-		dialer: &websocket.Dialer{},
-		url:    toWebSocketURL(server.URL),
-		token:  "token",
-		writer: buf,
+		dialer:    &websocket.Dialer{},
+		url:       toWebSocketURL(server.URL),
+		token:     "token",
+		writer:    buf,
+		formatter: newLogFormatter(false),
 	}
 
 	require.NoError(t, streamer.Run(context.Background()))
@@ -118,10 +121,11 @@ func TestLogStreamerDialErrorIncludesResponseBody(t *testing.T) {
 	defer server.Close()
 
 	streamer := &logStreamer{
-		dialer: &websocket.Dialer{},
-		url:    toWebSocketURL(server.URL),
-		token:  "test",
-		writer: &bytes.Buffer{},
+		dialer:    &websocket.Dialer{},
+		url:       toWebSocketURL(server.URL),
+		token:     "test",
+		writer:    &bytes.Buffer{},
+		formatter: newLogFormatter(false),
 	}
 
 	err := streamer.Run(context.Background())
@@ -142,12 +146,13 @@ func TestLogStreamerRetriesOnDialFailure(t *testing.T) {
 
 	buf := &bytes.Buffer{}
 	streamer := &logStreamer{
-		dialer:   &flakyDialer{failures: 1, inner: &websocket.Dialer{}},
-		url:      toWebSocketURL(server.URL),
-		tail:     0,
-		follow:   true,
-		prefetch: 0,
-		writer:   buf,
+		dialer:    &flakyDialer{failures: 1, inner: &websocket.Dialer{}},
+		url:       toWebSocketURL(server.URL),
+		tail:      0,
+		follow:    true,
+		prefetch:  0,
+		writer:    buf,
+		formatter: newLogFormatter(false),
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
@@ -172,11 +177,12 @@ func TestLogStreamerSendsSearchTerm(t *testing.T) {
 
 	buf := &bytes.Buffer{}
 	streamer := &logStreamer{
-		dialer: &websocket.Dialer{},
-		url:    toWebSocketURL(server.URL),
-		token:  "test",
-		search: "ERROR",
-		writer: buf,
+		dialer:    &websocket.Dialer{},
+		url:       toWebSocketURL(server.URL),
+		token:     "test",
+		search:    "ERROR",
+		writer:    buf,
+		formatter: newLogFormatter(false),
 	}
 
 	require.NoError(t, streamer.Run(context.Background()))
@@ -199,11 +205,12 @@ func TestLogStreamerFiltersSources(t *testing.T) {
 
 	buf := &bytes.Buffer{}
 	streamer := &logStreamer{
-		dialer:  &websocket.Dialer{},
-		url:     toWebSocketURL(server.URL),
-		token:   "test",
-		sources: sources,
-		writer:  buf,
+		dialer:    &websocket.Dialer{},
+		url:       toWebSocketURL(server.URL),
+		token:     "test",
+		sources:   sources,
+		writer:    buf,
+		formatter: newLogFormatter(false),
 	}
 
 	require.NoError(t, streamer.Run(context.Background()))
@@ -218,13 +225,14 @@ func TestFormatLogEntryColorizesWhenEnabled(t *testing.T) {
 	defer func() { color.NoColor = original }()
 
 	entry := &wsEntry{Source: "app", Timestamp: 1, Message: "hello\n"}
-	streamer := &logStreamer{colorize: true}
-	colored := streamer.formatLogEntry(entry)
+
+	colorFormatter := newLogFormatter(true)
+	colored := colorFormatter.FormatEntry(entry)
 	assert.Contains(t, colored, "\x1b[")
 	assert.Contains(t, colored, fmt.Sprintf("[%s]", color.HiBlueString("APP")))
 
-	streamer.colorize = false
-	plain := streamer.formatLogEntry(entry)
+	plainFormatter := newLogFormatter(false)
+	plain := plainFormatter.FormatEntry(entry)
 	assert.NotContains(t, plain, "\x1b[")
 	assert.Contains(t, plain, "[APP]")
 }
@@ -253,12 +261,13 @@ func TestTailWithoutPrefetchRespectsTailSize(t *testing.T) {
 
 	buf := &bytes.Buffer{}
 	streamer := &logStreamer{
-		dialer:   &websocket.Dialer{},
-		url:      toWebSocketURL(server.URL),
-		token:    "token",
-		tail:     2,
-		prefetch: 0,
-		writer:   buf,
+		dialer:    &websocket.Dialer{},
+		url:       toWebSocketURL(server.URL),
+		token:     "token",
+		tail:      2,
+		prefetch:  0,
+		writer:    buf,
+		formatter: newLogFormatter(false),
 	}
 
 	require.NoError(t, streamer.Run(context.Background()))
@@ -279,9 +288,10 @@ func TestCloseErrorPropagatesWhenAbnormal(t *testing.T) {
 	defer server.Close()
 
 	streamer := &logStreamer{
-		dialer: &websocket.Dialer{},
-		url:    toWebSocketURL(server.URL),
-		token:  "token",
+		dialer:    &websocket.Dialer{},
+		url:       toWebSocketURL(server.URL),
+		token:     "token",
+		formatter: newLogFormatter(false),
 	}
 
 	err := streamer.Run(context.Background())
@@ -364,13 +374,14 @@ func TestLogStreamerTailFlushesWithoutFollow(t *testing.T) {
 
 	writer := newNotifyBuffer()
 	streamer := &logStreamer{
-		dialer:   &websocket.Dialer{},
-		url:      toWebSocketURL(server.URL),
-		token:    "token",
-		tail:     2,
-		follow:   false,
-		prefetch: 50 * time.Millisecond,
-		writer:   writer,
+		dialer:    &websocket.Dialer{},
+		url:       toWebSocketURL(server.URL),
+		token:     "token",
+		tail:      2,
+		follow:    false,
+		prefetch:  50 * time.Millisecond,
+		writer:    writer,
+		formatter: newLogFormatter(false),
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
@@ -404,13 +415,14 @@ func TestLogStreamerFollowTailWithoutPrefetchEmitsRequestedLines(t *testing.T) {
 
 	writer := newNotifyBuffer()
 	streamer := &logStreamer{
-		dialer:   &websocket.Dialer{},
-		url:      toWebSocketURL(server.URL),
-		token:    "token",
-		tail:     2,
-		follow:   true,
-		prefetch: 0,
-		writer:   writer,
+		dialer:    &websocket.Dialer{},
+		url:       toWebSocketURL(server.URL),
+		token:     "token",
+		tail:      2,
+		follow:    true,
+		prefetch:  0,
+		writer:    writer,
+		formatter: newLogFormatter(false),
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -461,13 +473,14 @@ func TestLogStreamerFollowTailDoesNotReplayAfterReconnect(t *testing.T) {
 
 	writer := newNotifyBuffer()
 	streamer := &logStreamer{
-		dialer:   &websocket.Dialer{},
-		url:      toWebSocketURL(server.URL),
-		token:    "token",
-		tail:     2,
-		follow:   true,
-		prefetch: 0,
-		writer:   writer,
+		dialer:    &websocket.Dialer{},
+		url:       toWebSocketURL(server.URL),
+		token:     "token",
+		tail:      2,
+		follow:    true,
+		prefetch:  0,
+		writer:    writer,
+		formatter: newLogFormatter(false),
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -548,6 +561,7 @@ func TestLogStreamerRefreshesTokenAfterAuthClose(t *testing.T) {
 		tokenProvider: tokenProvider,
 		follow:        true,
 		writer:        buf,
+		formatter:     newLogFormatter(false),
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -582,10 +596,11 @@ func TestLogStreamerEmitsPlainTextFrames(t *testing.T) {
 
 	buf := &bytes.Buffer{}
 	streamer := &logStreamer{
-		dialer: &websocket.Dialer{},
-		url:    toWebSocketURL(server.URL),
-		token:  "token",
-		writer: buf,
+		dialer:    &websocket.Dialer{},
+		url:       toWebSocketURL(server.URL),
+		token:     "token",
+		writer:    buf,
+		formatter: newLogFormatter(false),
 	}
 
 	require.NoError(t, streamer.Run(context.Background()))
@@ -606,10 +621,11 @@ func TestLogStreamerTimeoutStopsQuietFollowStream(t *testing.T) {
 	defer server.Close()
 
 	streamer := &logStreamer{
-		dialer: &websocket.Dialer{},
-		url:    toWebSocketURL(server.URL),
-		token:  "token",
-		follow: true,
+		dialer:    &websocket.Dialer{},
+		url:       toWebSocketURL(server.URL),
+		token:     "token",
+		follow:    true,
+		formatter: newLogFormatter(false),
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
@@ -702,6 +718,7 @@ func TestAppStatusCheckerStopsFollowing(t *testing.T) {
 		follow:           true,
 		writer:           buf,
 		appStatusChecker: appStatusChecker,
+		formatter:        newLogFormatter(false),
 	}
 
 	err := streamer.Run(context.Background())
