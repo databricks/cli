@@ -17,6 +17,7 @@ type consumeState struct {
 	follow        bool
 }
 
+// newConsumeState creates a new consume state.
 func newConsumeState(tail int, follow bool, prefetch time.Duration, writer io.Writer, alreadyFlushed bool) *consumeState {
 	s := &consumeState{
 		buffer:  &tailBuffer{size: tail},

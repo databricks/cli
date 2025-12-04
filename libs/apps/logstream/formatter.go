@@ -16,6 +16,7 @@ type wsEntry struct {
 	Message   string  `json:"message"`
 }
 
+// parseLogEntry parses a raw log entry from the websocket stream.
 func parseLogEntry(raw []byte) (*wsEntry, error) {
 	var entry wsEntry
 	if err := json.Unmarshal(raw, &entry); err != nil {
@@ -29,6 +30,7 @@ type logFormatter struct {
 	colorize bool
 }
 
+// newLogFormatter creates a new log formatter.
 func newLogFormatter(colorize bool) *logFormatter {
 	return &logFormatter{colorize: colorize}
 }
@@ -52,6 +54,7 @@ func (f *logFormatter) FormatPlain(raw []byte) string {
 	return strings.TrimRight(string(raw), "\r\n")
 }
 
+// formatTimestamp formats a timestamp as a string.
 func formatTimestamp(ts float64) string {
 	if ts <= 0 {
 		return "----------"

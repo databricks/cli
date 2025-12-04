@@ -80,6 +80,7 @@ func Run(ctx context.Context, cfg Config) error {
 	return streamer.Run(ctx)
 }
 
+// logStreamer manages the websocket connection and log consumption.
 type logStreamer struct {
 	dialer           Dialer
 	url              string
@@ -109,13 +110,13 @@ func (s *logStreamer) Run(ctx context.Context) error {
 
 	for {
 		shouldContinue, err := func() (bool, error) {
-			resp, err := s.connectAndConsume(ctx)
+			respStatusCode, err := s.connectAndConsume(ctx)
 			if err != nil {
 				if ctx.Err() != nil {
 					return false, ctx.Err()
 				}
 
-				if s.follow && (s.shouldRefreshForStatus(resp) || s.shouldRefreshForError(err)) {
+				if s.follow && (s.shouldRefreshForStatus(respStatusCode) || s.shouldRefreshForError(err)) {
 					if err := s.refreshToken(ctx); err != nil {
 						return false, err
 					}
@@ -165,7 +166,7 @@ func (s *logStreamer) Run(ctx context.Context) error {
 	}
 }
 
-func (s *logStreamer) connectAndConsume(ctx context.Context) (*http.Response, error) {
+func (s *logStreamer) connectAndConsume(ctx context.Context) (*int, error) {
 	if err := s.ensureToken(ctx); err != nil {
 		return nil, err
 	}
@@ -181,7 +182,13 @@ func (s *logStreamer) connectAndConsume(ctx context.Context) (*http.Response, er
 	defer closeBody(resp)
 	if err != nil {
 		err = decorateDialError(err, resp)
-		return resp, err
+
+		var statusCode *int
+		if resp != nil {
+			statusCode = &resp.StatusCode
+		}
+
+		return statusCode, err
 	}
 
 	stopWatch := watchContext(ctx, conn)
@@ -286,11 +293,11 @@ func (s *logStreamer) refreshToken(ctx context.Context) error {
 	return s.ensureToken(ctx)
 }
 
-func (s *logStreamer) shouldRefreshForStatus(resp *http.Response) bool {
-	if resp == nil {
+func (s *logStreamer) shouldRefreshForStatus(respStatusCode *int) bool {
+	if respStatusCode == nil {
 		return false
 	}
-	switch resp.StatusCode {
+	switch *respStatusCode {
 	case http.StatusUnauthorized, http.StatusForbidden:
 		return true
 	default:
@@ -362,9 +369,10 @@ func watchContext(ctx context.Context, conn *websocket.Conn) func() {
 	}
 }
 
-func closeBody(resp *http.Response) error {
-	if resp != nil && resp.Body != nil {
-		return resp.Body.Close()
+func closeBody(resp *http.Response) {
+	if resp == nil || resp.Body == nil {
+		return
 	}
-	return nil
+
+	_ = resp.Body.Close()
 }
