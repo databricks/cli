@@ -2,8 +2,12 @@ package apps
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -18,6 +22,7 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/spf13/cobra"
 )
 
@@ -171,7 +176,78 @@ func handleGracefulShutdown(appCmd *exec.Cmd) error {
 	}
 }
 
-func newRunLocal() *cobra.Command {
+type envResponse struct {
+	EnvVariables []string `json:"env_variables"`
+}
+
+// fetchRemoteEnvVars fetches environment variables from the deployed app's /env endpoint.
+func fetchRemoteEnvVars(ctx context.Context, w *databricks.WorkspaceClient, appName string) ([]string, error) {
+	app, err := w.Apps.Get(ctx, apps.GetAppRequest{Name: appName})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get app: %w", err)
+	}
+
+	if app.Url == "" {
+		return nil, errors.New("app URL is empty")
+	}
+
+	cfg := cmdctx.ConfigUsed(ctx)
+	if cfg == nil {
+		return nil, errors.New("missing workspace configuration")
+	}
+
+	tokenSource := cfg.GetTokenSource()
+	if tokenSource == nil {
+		return nil, errors.New("configuration does not support OAuth tokens")
+	}
+
+	token, err := tokenSource.Token(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	envURL, err := url.Parse(app.Url)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse app URL: %w", err)
+	}
+	envURL.Path = envURL.Path + "/env"
+
+	req, err := http.NewRequestWithContext(ctx, "GET", envURL.String(), nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+	req.Header.Set("Authorization", "Bearer "+token.AccessToken)
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch env vars: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("failed to fetch env vars: status %d, body: %s", resp.StatusCode, string(body))
+	}
+
+	var envResp envResponse
+	if err := json.NewDecoder(resp.Body).Decode(&envResp); err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	var filteredEnvVars []string
+	for _, envVar := range envResp.EnvVariables {
+		// TODO: fetch secret values when backend supports it
+		if strings.Contains(envVar, "***") {
+			continue
+		}
+		filteredEnvVars = append(filteredEnvVars, envVar)
+	}
+
+	return filteredEnvVars, nil
+}
+
+func newDevLocal() *cobra.Command {
 	var (
 		port               int
 		debug              bool
@@ -180,15 +256,17 @@ func newRunLocal() *cobra.Command {
 		customEnv          []string
 		debugPort          string
 		appPort            int
+		appName            string
+		skipRemoteEnv      bool
 	)
 
 	cmd := &cobra.Command{}
 
-	cmd.Use = "run-local"
-	cmd.Short = `Run an app locally`
-	cmd.Long = `Run an app locally.
+	cmd.Use = "dev-local"
+	cmd.Short = `Run an app locally with development environment`
+	cmd.Long = `Run an app locally with development environment.
 
-	  This command starts an app locally.`
+	  This command starts an app locally and optionally fetches environment variables from a deployed app.`
 
 	cmd.Flags().IntVar(&port, "port", 8001, "Port on which to run the app app proxy")
 	cmd.Flags().IntVar(&appPort, "app-port", runlocal.DEFAULT_PORT, "Port on which to run the app")
@@ -197,6 +275,8 @@ func newRunLocal() *cobra.Command {
 	cmd.Flags().StringSliceVar(&customEnv, "env", nil, "Set environment variables")
 	cmd.Flags().StringVar(&entryPoint, "entry-point", "", "Specify the custom entry point with configuration (.yml file) for the app. Defaults to app.yml")
 	cmd.Flags().StringVar(&debugPort, "debug-port", "", "Port on which to run the debugger")
+	cmd.Flags().StringVar(&appName, "app-name", "", "Name of the deployed app to fetch environment variables from")
+	cmd.Flags().BoolVar(&skipRemoteEnv, "skip-remote-env", false, "Skip fetching environment variables from the deployed app")
 	cmd.PreRunE = root.MustWorkspaceClient
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
@@ -212,7 +292,20 @@ func newRunLocal() *cobra.Command {
 			config.DebugPort = debugPort
 		}
 
-		app, env, err := setupApp(cmd, config, spec, customEnv, prepareEnvironment)
+		// Fetch remote environment variables if app-name is provided and skip-remote-env is false
+		var remoteEnv []string
+		if appName != "" && !skipRemoteEnv {
+			remoteEnv, err = fetchRemoteEnvVars(ctx, w, appName)
+			if err != nil {
+				return fmt.Errorf("failed to fetch remote environment variables: %w", err)
+			}
+			cmdio.LogString(ctx, fmt.Sprintf("Fetched %d environment variables from deployed app", len(remoteEnv)))
+		}
+
+		// Merge remote env vars with local customEnv, with local taking precedence
+		mergedEnv := append(remoteEnv, customEnv...)
+
+		app, env, err := setupApp(cmd, config, spec, mergedEnv, prepareEnvironment)
 		if err != nil {
 			return err
 		}
@@ -237,6 +330,6 @@ func newRunLocal() *cobra.Command {
 
 func init() {
 	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newRunLocal())
+		cmd.AddCommand(newDevLocal())
 	})
 }
