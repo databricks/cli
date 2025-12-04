@@ -10,7 +10,11 @@
 
 ## Query Schemas
 
-Once the schema and the result of a query has been discovered, create its corresponding type in `config/queries/schema.ts` using a zod schema.
+Define the shape of QUERY RESULTS (not input parameters) in `config/queries/schema.ts` using Zod schemas.
+
+- **These schemas validate the COLUMNS RETURNED by SQL queries**
+- Input parameters are passed separately to `useAnalyticsQuery()` as the second argument
+- Schema field names must match your SQL SELECT column names/aliases
 
 Example:
 
@@ -40,9 +44,9 @@ After adding or modifying query schemas in `config/queries/schema.ts`:
 2. Run `npm run dev` to automatically regenerate the TypeScript type definitions
 3. The dev server will scan your SQL files and schema definitions and update `appKitTypes.d.ts` accordingly
 
-## SQL Type Handling
+## SQL Type Handling (Critical)
 
-**IMPORTANT**: Numeric fields from Databricks SQL (especially `ROUND()`, `AVG()`, `SUM()`) are returned as strings in JSON. Always convert before using numeric methods:
+**ALL numeric values from Databricks SQL are returned as STRINGS in JSON responses.** This includes results from `ROUND()`, `AVG()`, `SUM()`, `COUNT()`, etc. Always convert before using numeric methods:
 
 ```typescript
 // ❌ WRONG - fails at runtime
