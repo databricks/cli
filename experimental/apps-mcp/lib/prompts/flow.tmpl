@@ -5,29 +5,40 @@
      * Contains: available tools, CLI patterns, best practices.
      */ -}}
 
-## Available Tools
-- **databricks_discover**: Discover workspace resources and get workflow recommendations (call this first)
+## Databricks MCP Available Tools
+- **databricks_discover**: Discover workspace resources and get workflow recommendations
 - **databricks_configure_auth**: Switch workspace profile/host
 - **invoke_databricks_cli**: Execute any Databricks CLI command
 
 ## Workflow Best Practices
-- Use `databricks_discover` at the start of tasks to understand workspace context
-- Use `invoke_databricks_cli` for all Databricks CLI operations
-- For Databricks Asset Bundles: validate before deploying
+- Use `databricks_discover` at the beginning of your session to get context-aware recommendations
+- For non-idempotent operations like deployment, ask for confirmation
+- Always validate before deploying
 - When not sure about the user's intent, ask clarifying questions
-- Do NOT create summary files, reports, or README unless explicitly requested
 
 {{.WorkspaceInfo}}{{if .WarehouseName}}
 Default SQL Warehouse: {{.WarehouseName}} ({{.WarehouseID}}){{else}}
 Note: No SQL warehouse detected. SQL queries will require warehouse_id to be specified manually.{{end}}{{.ProfilesInfo}}
 
-IMPORTANT: Use invoke_databricks_cli for all commands below!
+## Universal Databricks CLI Patterns
+Use `invoke_databricks_cli '<command>'` to run any Databricks CLI command.
 
-## SQL Queries
-Execute SQL using the query tool:
-  invoke_databricks_cli 'experimental apps-mcp tools query "SELECT * FROM catalog.schema.table LIMIT 10"'
+### Project scaffolding
 
-## Exploring Resources
+For apps:
+
+invoke_databricks_cli 'experimental apps-mcp tools init-template --name my-app --description "My app description"'
+
+- App name must be ≤26 characters (dev- prefix adds 4 chars, max total 30)
+- Use lowercase letters, numbers, and hyphens only
+
+Other types of projects are not yet supported.
+
+### Custom SQL Queries
+
+invoke_databricks_cli 'experimental apps-mcp tools query "SELECT * FROM catalog.schema.table LIMIT 10"'
+
+### Exploring Resources
 Jobs:
   invoke_databricks_cli 'jobs list'
   invoke_databricks_cli 'jobs get <job_id>'
@@ -41,15 +52,5 @@ Unity Catalog:
   invoke_databricks_cli 'tables list <catalog> <schema>'
   invoke_databricks_cli 'experimental apps-mcp tools discover-schema TABLE1 TABLE2 TABLE3'
 
-⚠️ Use separate arguments for catalog/schema: 'tables list samples tpcds_sf1' (not dot notation)
-
-## Databricks Asset Bundles
-New project:
-  invoke_databricks_cli 'bundle init'
-  invoke_databricks_cli 'bundle validate'
-  invoke_databricks_cli 'bundle deploy --target dev'
-
-Existing project:
-  invoke_databricks_cli 'bundle validate'
-  invoke_databricks_cli 'bundle deploy --target <environment>'
-  invoke_databricks_cli 'bundle run <resource_name>'
+Use separate arguments for catalog/schema: 'tables list samples tpcds_sf1' (not dot notation).
+Dot notation is only supported in `experimental apps-mcp tools discover-schema` and `experimental apps-mcp tools query`.
