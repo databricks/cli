@@ -271,8 +271,14 @@ jobs:
           make test-pipelines
 
   # This job groups the result of all the above test jobs.
-  # If any of them failed, this job will be skipped.
   # It is a required check, so it blocks auto-merge and the merge queue.
+  #
+  # We use `if: always()` to ensure this job runs even when dependencies are skipped.
+  # Without it, GitHub Actions skips jobs whose dependencies are skipped, which would
+  # incorrectly block the merge queue when optional test jobs don't run.
+  #
+  # The step checks `contains(needs.*.result, 'failure')` to fail if any dependency failed.
+  # Reference: https://github.com/orgs/community/discussions/25970
   test-result:
     needs:
       - test
@@ -281,11 +287,17 @@ jobs:
       - test-exp-ssh
       - test-pipelines
 
+    if: ${{ always() }}
     name: test-result
     runs-on: ubuntu-latest
 
     steps:
-      - run: echo "All tests passed ✅"
+      - run: |
+          if [[ "${{ contains(needs.*.result, 'failure') }}" == "true" ]]; then
+            echo "One or more required jobs failed ❌"
+            exit 1
+          fi
+          echo "All tests passed ✅"
 
   validate-generated-is-up-to-date:
     needs: cleanups
