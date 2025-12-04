@@ -4,7 +4,7 @@
       "action": "recreate",
       "new_state": {
         "value": {
-          "scope": "test-scope-[UNIQUE_NAME]-2",
+          "scope": "test-scope-permissions-[UNIQUE_NAME]-2",
           "scope_backend_type": "DATABRICKS"
         }
       },
@@ -12,8 +12,8 @@
         "local": {
           "scope": {
             "action": "recreate",
-            "old": "test-scope-[UNIQUE_NAME]-1",
-            "new": "test-scope-[UNIQUE_NAME]-2"
+            "old": "test-scope-permissions-[UNIQUE_NAME]",
+            "new": "test-scope-permissions-[UNIQUE_NAME]-2"
           }
         }
       }
@@ -32,6 +32,10 @@
           "acls": [
             {
               "permission": "MANAGE",
+              "principal": "users"
+            },
+            {
+              "permission": "MANAGE",
               "principal": "[USERNAME]"
             },
             {
@@ -45,15 +49,19 @@
         }
       },
       "remote_state": {
-        "scope_name": "test-scope-[UNIQUE_NAME]-1",
+        "scope_name": "test-scope-permissions-[UNIQUE_NAME]",
         "acls": [
-          {
-            "permission": "MANAGE",
-            "principal": "[USERNAME]"
-          },
           {
             "permission": "WRITE",
             "principal": "deco-test-user@databricks.com"
+          },
+          {
+            "permission": "MANAGE",
+            "principal": "users"
+          },
+          {
+            "permission": "MANAGE",
+            "principal": "[USERNAME]"
           }
         ]
       },
@@ -61,7 +69,7 @@
         "local": {
           "scope_name": {
             "action": "update",
-            "old": "test-scope-[UNIQUE_NAME]-1",
+            "old": "test-scope-permissions-[UNIQUE_NAME]",
             "new": ""
           }
         }

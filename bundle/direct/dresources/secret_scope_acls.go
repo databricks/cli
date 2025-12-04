@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"slices"
 	"strings"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -47,11 +46,6 @@ func PrepareSecretScopeAclsInputConfig(inputConfig []resources.SecretScopePermis
 		acls = append(acls, acl)
 	}
 
-	// Sort ACLs by principal for deterministic ordering
-	slices.SortFunc(acls, func(a, b workspace.AclItem) int {
-		return strings.Compare(a.Principal, b.Principal)
-	})
-
 	return &structvar.StructVar{
 		Value: &SecretScopeAclsState{
 			ScopeName: "", // Always a reference, defined in Refs below
@@ -71,6 +65,16 @@ func (*ResourceSecretScopeAcls) PrepareState(s *SecretScopeAclsState) *SecretSco
 	return s
 }
 
+func aclItemKey(x workspace.AclItem) (string, string) {
+	return "principal", x.Principal
+}
+
+func (*ResourceSecretScopeAcls) KeyedSlices() map[string]any {
+	return map[string]any{
+		"acls": aclItemKey,
+	}
+}
+
 func (r *ResourceSecretScopeAcls) DoRead(ctx context.Context, id string) (*SecretScopeAclsState, error) {
 	// id is the scope name
 	currentAcls, err := r.client.Secrets.ListAclsAll(ctx, workspace.ListAclsRequest{
@@ -79,11 +83,6 @@ func (r *ResourceSecretScopeAcls) DoRead(ctx context.Context, id string) (*Secre
 	if err != nil {
 		return nil, err
 	}
-
-	// Sort ACLs by principal for deterministic ordering
-	slices.SortFunc(currentAcls, func(a, b workspace.AclItem) int {
-		return strings.Compare(a.Principal, b.Principal)
-	})
 
 	return &SecretScopeAclsState{
 		ScopeName: id,
@@ -103,26 +102,9 @@ func (r *ResourceSecretScopeAcls) DoCreate(ctx context.Context, state *SecretSco
 	return state.ScopeName, nil, nil
 }
 
-func (r *ResourceSecretScopeAcls) DoUpdate(ctx context.Context, id string, state *SecretScopeAclsState, _ *Changes) (*SecretScopeAclsState, error) {
+func (r *ResourceSecretScopeAcls) DoUpdate(ctx context.Context, id string, state *SecretScopeAclsState, _ *deployplan.Changes) (*SecretScopeAclsState, error) {
 	err := r.setACLs(ctx, state.ScopeName, state.Acls)
 	return nil, err
-}
-
-func (r *ResourceSecretScopeAcls) DoUpdateWithID(ctx context.Context, _ string, state *SecretScopeAclsState) (string, *SecretScopeAclsState, error) {
-	// Use state.ScopeName instead of oldID because when the parent scope is recreated,
-	// state.ScopeName will have the new (resolved) scope name, while oldID still has the old name
-	err := r.setACLs(ctx, state.ScopeName, state.Acls)
-	if err != nil {
-		return "", nil, err
-	}
-	return state.ScopeName, nil, nil
-}
-
-func (r *ResourceSecretScopeAcls) FieldTriggers(_ bool) map[string]deployplan.ActionType {
-	return map[string]deployplan.ActionType{
-		"scope_name": deployplan.ActionTypeUpdateWithID, // When scope name changes, ID changes
-		"acls":       deployplan.ActionTypeUpdate,       // When ACLs change, just update
-	}
 }
 
 // Removing ACLs is a no-op, to match the behavior for permissions and grants.

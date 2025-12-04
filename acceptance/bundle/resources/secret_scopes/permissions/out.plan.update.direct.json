@@ -1,0 +1,90 @@
+{
+  "plan": {
+    "resources.secret_scopes.my_scope": {
+      "action": "skip",
+      "remote_state": {
+        "backend_type": "DATABRICKS",
+        "name": "test-scope-permissions-[UNIQUE_NAME]"
+      }
+    },
+    "resources.secret_scopes.my_scope.permissions": {
+      "depends_on": [
+        {
+          "node": "resources.secret_scopes.my_scope",
+          "label": "${resources.secret_scopes.my_scope.name}"
+        }
+      ],
+      "action": "update",
+      "new_state": {
+        "value": {
+          "scope_name": "test-scope-permissions-[UNIQUE_NAME]",
+          "acls": [
+            {
+              "permission": "MANAGE",
+              "principal": "users"
+            },
+            {
+              "permission": "MANAGE",
+              "principal": "[USERNAME]"
+            },
+            {
+              "permission": "WRITE",
+              "principal": "deco-test-user@databricks.com"
+            }
+          ]
+        }
+      },
+      "remote_state": {
+        "scope_name": "test-scope-permissions-[UNIQUE_NAME]",
+        "acls": [
+          {
+            "permission": "READ",
+            "principal": "deco-test-user@databricks.com"
+          },
+          {
+            "permission": "WRITE",
+            "principal": "[TEST_SP_APPLICATION_ID]"
+          },
+          {
+            "permission": "WRITE",
+            "principal": "scopes-permissions-group-[UNIQUE_NAME]"
+          },
+          {
+            "permission": "MANAGE",
+            "principal": "[USERNAME]"
+          }
+        ]
+      },
+      "changes": {
+        "local": {
+          "acls[principal='[TEST_SP_APPLICATION_ID]']": {
+            "action": "update",
+            "old": {
+              "permission": "WRITE",
+              "principal": "[TEST_SP_APPLICATION_ID]"
+            }
+          },
+          "acls[principal='deco-test-user@databricks.com'].permission": {
+            "action": "update",
+            "old": "READ",
+            "new": "WRITE"
+          },
+          "acls[principal='scopes-permissions-group-[UNIQUE_NAME]']": {
+            "action": "update",
+            "old": {
+              "permission": "WRITE",
+              "principal": "scopes-permissions-group-[UNIQUE_NAME]"
+            }
+          },
+          "acls[principal='users']": {
+            "action": "update",
+            "new": {
+              "permission": "MANAGE",
+              "principal": "users"
+            }
+          }
+        }
+      }
+    }
+  }
+}

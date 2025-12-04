@@ -91,6 +91,7 @@ func collapsePermissions(scope *resources.SecretScope) error {
 		newPermissions = append(newPermissions, perm)
 	}
 
+	// Sort to convert the map back to a list with a deterministic order.
 	slices.SortFunc(newPermissions, func(a, b resources.SecretScopePermission) int {
 		var principalA string
 		switch {

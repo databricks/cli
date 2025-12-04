@@ -1,6 +1,7 @@
-Local = false
+Local = true
 Cloud = true
 RecordRequests = false
+IsServicePrincipal = true
 
 # The current user on GCP is not a service principal. This causes diverging output since we set permissions for the current user. Thus we skip this test on GCP.
 CloudEnvs.gcp = false
