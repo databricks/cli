@@ -1,0 +1,60 @@
+# Apps-MCP Evaluation Job
+# Runs nightly + supports manual trigger via: databricks bundle run -t dev apps_eval_job
+
+resources:
+  jobs:
+    apps_eval_job:
+      name: "[${bundle.target}] Apps-MCP Continuous Evals"
+
+      # Nightly schedule (2am UTC)
+      trigger:
+        periodic:
+          interval: 1
+          unit: DAYS
+
+      # Health monitoring - alert if eval takes > 2 hours
+      health:
+        rules:
+          - metric: RUN_DURATION_SECONDS
+            op: GREATER_THAN
+            value: 7200
+
+      email_notifications:
+        on_failure:
+          - apps-mcp-team@databricks.com
+
+      parameters:
+        - name: catalog
+          default: ${var.catalog}
+        - name: schema
+          default: ${var.schema}
+        - name: mlflow_experiment
+          default: ${var.mlflow_experiment}
+        - name: eval_mode
+          default: full
+        - name: parallelism
+          default: ${var.eval_parallelism}
+
+      tasks:
+        - task_key: run_evals
+          python_wheel_task:
+            package_name: apps_mcp_evals
+            entry_point: main
+            parameters:
+              - --catalog
+              - ${var.catalog}
+              - --schema
+              - ${var.schema}
+              - --mlflow-experiment
+              - ${var.mlflow_experiment}
+              - --parallelism
+              - ${var.eval_parallelism}
+
+          environment_key: default
+
+      environments:
+        - environment_key: default
+          spec:
+            environment_version: "1"
+            dependencies:
+              - ../dist/*.whl

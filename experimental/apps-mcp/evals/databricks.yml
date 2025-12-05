@@ -1,0 +1,50 @@
+# Databricks Asset Bundle for Apps-MCP Continuous Evals
+# See https://docs.databricks.com/dev-tools/bundles/index.html
+bundle:
+  name: apps-mcp-evals
+  uuid: 80e50a10-c2da-4b59-99d6-e101b1bcf485
+
+include:
+  - resources/*.yml
+
+artifacts:
+  apps_mcp_evals:
+    type: whl
+    build: uv build --wheel
+    path: .
+
+variables:
+  catalog:
+    description: Unity Catalog for eval results
+    default: main
+  schema:
+    description: Schema for eval tables
+  mlflow_experiment:
+    description: MLflow experiment path for tracking
+    default: /Shared/apps-mcp-evaluations
+  klaudbiusz_git_url:
+    description: Git URL for klaudbiusz eval framework
+    default: https://github.com/databricks/klaudbiusz.git
+  eval_parallelism:
+    description: Number of parallel eval workers
+    default: "4"
+
+targets:
+  dev:
+    mode: development
+    default: true
+    workspace:
+      host: https://6177827686947384.4.gcp.databricks.com
+    variables:
+      schema: ${workspace.current_user.short_name}
+      mlflow_experiment: /Shared/apps-mcp-evaluations-staging
+
+  prod:
+    mode: production
+    workspace:
+      host: https://6177827686947384.4.gcp.databricks.com
+      root_path: /Workspace/Users/${workspace.current_user.user_name}/.bundle/${bundle.name}/${bundle.target}
+    variables:
+      schema: evals
+    run_as:
+      service_principal_name: apps-mcp-eval-sp
