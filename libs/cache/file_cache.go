@@ -174,6 +174,10 @@ func (fc *FileCache[T]) GetOrCompute(ctx context.Context, fingerprint any, compu
 
 	cachePath := fc.getCachePath(cacheKey)
 
+	// Acquire lock to prevent concurrent and double computations and writes for the same cache key
+	fc.mu.Lock()
+	defer fc.mu.Unlock()
+
 	// Try to read from disk cache
 	cachedData, cacheExists := fc.readFromCache(ctx, cachePath)
 
@@ -190,10 +194,6 @@ func (fc *FileCache[T]) GetOrCompute(ctx context.Context, fingerprint any, compu
 		log.Debugf(ctx, "[Local Cache] cache miss, computing")
 		fc.addTelemetryMetric("local.cache.miss")
 	}
-
-	// Acquire lock to prevent concurrent computations and writes for the same cache key
-	fc.mu.Lock()
-	defer fc.mu.Unlock()
 
 	// Compute the value and measure timing
 	start := time.Now()
