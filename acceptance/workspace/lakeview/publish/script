@@ -1,5 +1,5 @@
 $CLI workspace mkdirs /Users/tester@databricks.com
 
-dashboard_id=$($CLI lakeview create --json '{"display_name": "Test Dashboard", "parent_path": "/Users/tester@databricks.com", "warehouse_id": "test-warehouse"}' -o json | jq -r '.dashboard_id')
+dashboard_id=$($CLI lakeview create --json '{"display_name": "Test Dashboard", "parent_path": "/Users/tester@databricks.com", "warehouse_id": "test-warehouse"}' -o json | grep -o '"dashboard_id":"[^"]*"' | cut -d'"' -f4)
 
 trace $CLI lakeview publish $dashboard_id
