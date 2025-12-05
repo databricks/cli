@@ -22,9 +22,9 @@ variables:
   mlflow_experiment:
     description: MLflow experiment path for tracking
     default: /Shared/apps-mcp-evaluations
-  klaudbiusz_git_url:
-    description: Git URL for klaudbiusz eval framework
-    default: https://github.com/databricks/klaudbiusz.git
+  evals_git_url:
+    description: Git URL for appdotbuild-agent eval framework
+    default: https://github.com/neondatabase/appdotbuild-agent.git
   eval_parallelism:
     description: Number of parallel eval workers
     default: "4"

@@ -25,12 +25,20 @@ def setup_mlflow(experiment_name: str) -> None:
     mlflow.set_experiment(experiment_name)
 
 
-def clone_klaudbiusz(git_url: str, target_dir: Path) -> Path:
-    """Clone or update klaudbiusz repository."""
+def clone_evals_repo(git_url: str, target_dir: Path) -> Path:
+    """Clone or update appdotbuild-agent repository."""
     if target_dir.exists():
-        subprocess.run(["git", "-C", str(target_dir), "pull"], check=True)
+        subprocess.run(["git", "-C", str(target_dir), "pull"], check=True, capture_output=True)
     else:
-        subprocess.run(["git", "clone", "--depth", "1", git_url, str(target_dir)], check=True)
+        result = subprocess.run(
+            ["git", "clone", "--depth", "1", git_url, str(target_dir)],
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode != 0:
+            print(f"Git clone stderr: {result.stderr}")
+            raise RuntimeError(f"Failed to clone {git_url}: {result.stderr}")
     return target_dir
 
 
@@ -160,7 +168,7 @@ def main(
     mlflow_experiment: str = "/Shared/apps-mcp-evaluations",
     mode: str = "eval_only",
     parallelism: int = 4,
-    klaudbiusz_git_url: str = "https://github.com/databricks/klaudbiusz.git",
+    evals_git_url: str = "https://github.com/neondatabase/appdotbuild-agent.git",
     mcp_binary: Optional[str] = None,
     fast: bool = False,
 ) -> None:
@@ -173,25 +181,26 @@ def main(
         mlflow_experiment: MLflow experiment path
         mode: "full" (generate + eval), "eval_only" (eval existing apps), "quick" (subset)
         parallelism: Number of parallel workers
-        klaudbiusz_git_url: Git URL for klaudbiusz
+        evals_git_url: Git URL for appdotbuild-agent eval framework
         mcp_binary: Path to MCP binary (required for full mode)
         fast: Skip slow LLM checks
     """
-    print(f"Starting Apps-MCP Evaluation")
+    print("Starting Apps-MCP Evaluation")
     print(f"  Mode: {mode}")
     print(f"  MLflow Experiment: {mlflow_experiment}")
+    print(f"  Evals Repo: {evals_git_url}")
     print(f"  Parallelism: {parallelism}")
     print("=" * 60)
 
     setup_mlflow(mlflow_experiment)
 
     work_dir = Path(tempfile.mkdtemp(prefix="apps-mcp-evals-"))
-    klaudbiusz_dir = work_dir / "klaudbiusz"
+    evals_dir = work_dir / "appdotbuild-agent"
     apps_dir = work_dir / "apps"
     apps_dir.mkdir(exist_ok=True)
 
-    print(f"\nCloning klaudbiusz to {klaudbiusz_dir}...")
-    clone_klaudbiusz(klaudbiusz_git_url, klaudbiusz_dir)
+    print(f"\nCloning evals repo to {evals_dir}...")
+    clone_evals_repo(evals_git_url, evals_dir)
 
     generation_results = None
     if mode == "full":
@@ -199,15 +208,15 @@ def main(
             raise ValueError("--mcp_binary required for full mode")
         print("\nRunning app generation...")
         generation_results = run_generation(
-            klaudbiusz_dir=klaudbiusz_dir,
+            klaudbiusz_dir=evals_dir,
             output_dir=apps_dir,
             mcp_binary=mcp_binary,
         )
 
     print("\nRunning evaluation...")
-    eval_apps_dir = apps_dir if mode == "full" else klaudbiusz_dir / "app"
+    eval_apps_dir = apps_dir if mode == "full" else evals_dir / "app"
     evaluation_report = run_evaluation(
-        klaudbiusz_dir=klaudbiusz_dir,
+        klaudbiusz_dir=evals_dir,
         apps_dir=eval_apps_dir,
         parallelism=parallelism,
         fast_mode=fast or mode == "quick",

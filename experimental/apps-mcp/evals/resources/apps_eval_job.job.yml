@@ -30,10 +30,10 @@ resources:
           default: ${var.schema}
         - name: mlflow_experiment
           default: ${var.mlflow_experiment}
-        - name: eval_mode
-          default: full
         - name: parallelism
           default: ${var.eval_parallelism}
+        - name: evals_git_url
+          default: ${var.evals_git_url}
 
       tasks:
         - task_key: run_evals
@@ -49,6 +49,8 @@ resources:
               - ${var.mlflow_experiment}
               - --parallelism
               - ${var.eval_parallelism}
+              - --evals-git-url
+              - ${var.evals_git_url}
 
           environment_key: default
 
