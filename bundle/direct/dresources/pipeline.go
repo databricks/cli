@@ -76,7 +76,7 @@ func (r *ResourcePipeline) DoCreate(ctx context.Context, config *pipelines.Creat
 	return response.PipelineId, nil, nil
 }
 
-func (r *ResourcePipeline) DoUpdate(ctx context.Context, id string, config *pipelines.CreatePipeline) (*pipelines.GetPipelineResponse, error) {
+func (r *ResourcePipeline) DoUpdate(ctx context.Context, id string, config *pipelines.CreatePipeline, _ *Changes) (*pipelines.GetPipelineResponse, error) {
 	request := pipelines.EditPipeline{
 		AllowDuplicateNames:  config.AllowDuplicateNames,
 		BudgetPolicyId:       config.BudgetPolicyId,
@@ -120,13 +120,22 @@ func (r *ResourcePipeline) DoDelete(ctx context.Context, id string) error {
 	return r.client.Pipelines.DeleteByPipelineId(ctx, id)
 }
 
-func (*ResourcePipeline) FieldTriggers(_ bool) map[string]deployplan.ActionType {
-	return map[string]deployplan.ActionType{
-		"storage":                              deployplan.ActionTypeRecreate,
-		"catalog":                              deployplan.ActionTypeRecreate,
-		"ingestion_definition.connection_name": deployplan.ActionTypeRecreate,
+func (*ResourcePipeline) FieldTriggers(isLocal bool) map[string]deployplan.ActionType {
+	result := map[string]deployplan.ActionType{
+		"storage":                                   deployplan.ActionTypeRecreate,
+		"ingestion_definition.connection_name":      deployplan.ActionTypeRecreate,
 		"ingestion_definition.ingestion_gateway_id": deployplan.ActionTypeRecreate,
 	}
+
+	if !isLocal {
+		// We've seen that run_as is not consistently set by the backend
+		// TF also ignores it (by not copying it here:
+		// https://github.com/databricks/terraform-provider-databricks/blob/15e951f976e3857d9f01651c4b2513657f137796/pipelines/resource_pipeline.go#L304-L317
+		// TODO: Rather than skipping, consider ignoring the change if run_as is not present but still triggering an update if run_as is different.
+		result["run_as"] = deployplan.ActionTypeSkip
+	}
+
+	return result
 }
 
 // Note, terraform provider either

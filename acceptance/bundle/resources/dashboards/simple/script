@@ -1,6 +1,7 @@
 DASHBOARD_DISPLAY_NAME="test bundle-deploy-dashboard $(uuid)"
 if [ -z "$CLOUD_ENV" ]; then
     export TEST_DEFAULT_WAREHOUSE_ID="warehouse-1234"
+    echo "warehouse-1234:TEST_DEFAULT_WAREHOUSE_ID" >> ACC_REPLS
 fi
 
 export DASHBOARD_DISPLAY_NAME
@@ -17,7 +18,8 @@ DASHBOARD_ID=$($CLI bundle summary --output json | jq -r '.resources.dashboards.
 # Capture the dashboard ID as a replacement.
 echo "$DASHBOARD_ID:DASHBOARD_ID" >> ACC_REPLS
 
-trace $CLI lakeview get $DASHBOARD_ID | jq '{lifecycle_state, parent_path, path, serialized_dashboard: (.serialized_dashboard | fromjson | {pages: (.pages | map({name, displayName, pageType}))})}'
+trace $CLI lakeview get $DASHBOARD_ID | jq '{lifecycle_state, parent_path, path, serialized_dashboard}'
 
-# Verify that there is no drift right after deploy
-$CLI bundle plan > out.plan.$DATABRICKS_BUNDLE_ENGINE.txt
+# Verify that there is no drift right after deploy. We use |= to update the serialized_dashboard field in place to account
+# for formatting that the cloud server applies to the serialized_dashboard field.
+trace $CLI bundle plan -o json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json

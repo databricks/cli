@@ -10,20 +10,14 @@ Deployment complete!
   "lifecycle_state": "ACTIVE",
   "parent_path": "/Users/[USERNAME]",
   "path": "/Users/[USERNAME]/test bundle-deploy-dashboard [UUID].lvdash.json",
-  "serialized_dashboard": {
-    "pages": [
-      {
-        "name": "02724bf2",
-        "displayName": "Dashboard test bundle-deploy-dashboard",
-        "pageType": "PAGE_TYPE_CANVAS"
-      }
-    ]
-  }
+  "serialized_dashboard": "{}\n"
 }
+
+>>> [CLI] bundle plan -o json
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
-  delete dashboard dashboard1
+  delete resources.dashboards.dashboard1
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-dashboard-test-[UNIQUE_NAME]/default
 

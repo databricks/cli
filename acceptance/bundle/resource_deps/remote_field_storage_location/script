@@ -11,5 +11,5 @@ trap cleanup EXIT
 trace errcode $CLI bundle deploy &> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt
 print_requests.py --get //unity &> out.deploy.requests.$DATABRICKS_BUNDLE_ENGINE.json
 
-# Should show empty plan for direct, but shows update in volumes.foo (permanent drift)
+# Terraform could not deploy, so it still shows up here; direct shows no drift:
 $CLI bundle plan &> out.plan_after_deploy.$DATABRICKS_BUNDLE_ENGINE.txt

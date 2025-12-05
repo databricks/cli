@@ -28,13 +28,10 @@ func New() *cobra.Command {
   provision private endpoints for Databricks to privately connect serverless
   compute resources to your Azure resources using Azure Private Link. See
   [configure serverless secure connectivity].
-  
+
   [configure serverless secure connectivity]: https://learn.microsoft.com/azure/databricks/security/network/serverless-network-security`,
 		GroupID: "settings",
-		Annotations: map[string]string{
-			"package": "settings",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -77,19 +74,19 @@ func newCreateNetworkConnectivityConfiguration() *cobra.Command {
 	cmd.Use = "create-network-connectivity-configuration NAME REGION"
 	cmd.Short = `Create a network connectivity configuration.`
 	cmd.Long = `Create a network connectivity configuration.
-  
+
   Creates a network connectivity configuration (NCC), which provides stable
   Azure service subnets when accessing your Azure Storage accounts. You can also
   use a network connectivity configuration to create Databricks managed private
   endpoints so that Databricks serverless compute resources privately access
   your resources.
-  
+
   **IMPORTANT**: After you create the network connectivity configuration, you
   must assign one or more workspaces to the new network connectivity
   configuration. You can share one network connectivity configuration with
   multiple workspaces from the same Azure region within the same Databricks
   account. See [configure serverless secure connectivity].
-  
+
   [configure serverless secure connectivity]: https://learn.microsoft.com/azure/databricks/security/network/serverless-network-security
 
   Arguments:
@@ -184,16 +181,16 @@ func newCreatePrivateEndpointRule() *cobra.Command {
 	cmd.Use = "create-private-endpoint-rule NETWORK_CONNECTIVITY_CONFIG_ID"
 	cmd.Short = `Create a private endpoint rule.`
 	cmd.Long = `Create a private endpoint rule.
-  
+
   Create a private endpoint rule for the specified network connectivity config
   object. Once the object is created, Databricks asynchronously provisions a new
   Azure private endpoint to your specified Azure resource.
-  
+
   **IMPORTANT**: You must use Azure portal or other Azure tools to approve the
   private endpoint to complete the connection. To get the information of the
   private endpoint created, make a GET request on the new private endpoint
   rule. See [serverless private link].
-  
+
   [serverless private link]: https://learn.microsoft.com/azure/databricks/security/network/serverless-network-security/serverless-private-link
 
   Arguments:
@@ -261,7 +258,7 @@ func newDeleteNetworkConnectivityConfiguration() *cobra.Command {
 	cmd.Use = "delete-network-connectivity-configuration NETWORK_CONNECTIVITY_CONFIG_ID"
 	cmd.Short = `Delete a network connectivity configuration.`
 	cmd.Long = `Delete a network connectivity configuration.
-  
+
   Deletes a network connectivity configuration.
 
   Arguments:
@@ -317,7 +314,7 @@ func newDeletePrivateEndpointRule() *cobra.Command {
 	cmd.Use = "delete-private-endpoint-rule NETWORK_CONNECTIVITY_CONFIG_ID PRIVATE_ENDPOINT_RULE_ID"
 	cmd.Short = `Delete a private endpoint rule.`
 	cmd.Long = `Delete a private endpoint rule.
-  
+
   Initiates deleting a private endpoint rule. If the connection state is PENDING
   or EXPIRED, the private endpoint is immediately deleted. Otherwise, the
   private endpoint is deactivated and will be deleted after seven days of
@@ -380,7 +377,7 @@ func newGetNetworkConnectivityConfiguration() *cobra.Command {
 	cmd.Use = "get-network-connectivity-configuration NETWORK_CONNECTIVITY_CONFIG_ID"
 	cmd.Short = `Get a network connectivity configuration.`
 	cmd.Long = `Get a network connectivity configuration.
-  
+
   Gets a network connectivity configuration.
 
   Arguments:
@@ -436,7 +433,7 @@ func newGetPrivateEndpointRule() *cobra.Command {
 	cmd.Use = "get-private-endpoint-rule NETWORK_CONNECTIVITY_CONFIG_ID PRIVATE_ENDPOINT_RULE_ID"
 	cmd.Short = `Gets a private endpoint rule.`
 	cmd.Long = `Gets a private endpoint rule.
-  
+
   Gets the private endpoint rule.
 
   Arguments:
@@ -496,7 +493,7 @@ func newListNetworkConnectivityConfigurations() *cobra.Command {
 	cmd.Use = "list-network-connectivity-configurations"
 	cmd.Short = `List network connectivity configurations.`
 	cmd.Long = `List network connectivity configurations.
-  
+
   Gets an array of network connectivity configurations.`
 
 	cmd.Annotations = make(map[string]string)
@@ -546,7 +543,7 @@ func newListPrivateEndpointRules() *cobra.Command {
 	cmd.Use = "list-private-endpoint-rules NETWORK_CONNECTIVITY_CONFIG_ID"
 	cmd.Short = `List private endpoint rules.`
 	cmd.Long = `List private endpoint rules.
-  
+
   Gets an array of private endpoint rules.
 
   Arguments:
@@ -607,7 +604,7 @@ func newUpdatePrivateEndpointRule() *cobra.Command {
 	cmd.Use = "update-private-endpoint-rule NETWORK_CONNECTIVITY_CONFIG_ID PRIVATE_ENDPOINT_RULE_ID UPDATE_MASK"
 	cmd.Short = `Update a private endpoint rule.`
 	cmd.Long = `Update a private endpoint rule.
-  
+
   Updates a private endpoint rule. Currently only a private endpoint rule to
   customer-managed resources is allowed to be updated.
 

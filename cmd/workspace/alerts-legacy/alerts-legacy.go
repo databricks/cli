@@ -26,16 +26,13 @@ func New() *cobra.Command {
   its result, and notifies one or more users and/or notification destinations if
   the condition was met. Alerts can be scheduled using the sql_task type of
   the Jobs API, e.g. :method:jobs/create.
-  
+
   **Note**: A new version of the Databricks SQL API is now available. Please see
   the latest version. [Learn more]
-  
+
   [Learn more]: https://docs.databricks.com/en/sql/dbsql-api-latest.html`,
 		GroupID: "sql",
-		Annotations: map[string]string{
-			"package": "sql",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -76,14 +73,14 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create"
 	cmd.Short = `Create an alert.`
 	cmd.Long = `Create an alert.
-  
+
   Creates an alert. An alert is a Databricks SQL object that periodically runs a
   query, evaluates a condition of its result, and notifies users or notification
   destinations if the condition was met.
-  
+
   **Note**: A new version of the Databricks SQL API is now available. Please use
   :method:alerts/create instead. [Learn more]
-  
+
   [Learn more]: https://docs.databricks.com/en/sql/dbsql-api-latest.html`
 
 	cmd.Annotations = make(map[string]string)
@@ -144,14 +141,14 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete ALERT_ID"
 	cmd.Short = `Delete an alert.`
 	cmd.Long = `Delete an alert.
-  
+
   Deletes an alert. Deleted alerts are no longer accessible and cannot be
   restored. **Note**: Unlike queries and dashboards, alerts cannot be moved to
   the trash.
-  
+
   **Note**: A new version of the Databricks SQL API is now available. Please use
   :method:alerts/delete instead. [Learn more]
-  
+
   [Learn more]: https://docs.databricks.com/en/sql/dbsql-api-latest.html`
 
 	cmd.Annotations = make(map[string]string)
@@ -204,12 +201,12 @@ func newGet() *cobra.Command {
 	cmd.Use = "get ALERT_ID"
 	cmd.Short = `Get an alert.`
 	cmd.Long = `Get an alert.
-  
+
   Gets an alert.
-  
+
   **Note**: A new version of the Databricks SQL API is now available. Please use
   :method:alerts/get instead. [Learn more]
-  
+
   [Learn more]: https://docs.databricks.com/en/sql/dbsql-api-latest.html`
 
 	cmd.Annotations = make(map[string]string)
@@ -259,12 +256,12 @@ func newList() *cobra.Command {
 	cmd.Use = "list"
 	cmd.Short = `Get alerts.`
 	cmd.Long = `Get alerts.
-  
+
   Gets a list of alerts.
-  
+
   **Note**: A new version of the Databricks SQL API is now available. Please use
   :method:alerts/list instead. [Learn more]
-  
+
   [Learn more]: https://docs.databricks.com/en/sql/dbsql-api-latest.html`
 
 	cmd.Annotations = make(map[string]string)
@@ -314,12 +311,12 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update ALERT_ID"
 	cmd.Short = `Update an alert.`
 	cmd.Long = `Update an alert.
-  
+
   Updates an alert.
-  
+
   **Note**: A new version of the Databricks SQL API is now available. Please use
   :method:alerts/update instead. [Learn more]
-  
+
   [Learn more]: https://docs.databricks.com/en/sql/dbsql-api-latest.html`
 
 	cmd.Annotations = make(map[string]string)

@@ -20,10 +20,7 @@ func New() *cobra.Command {
 		Short:   `Token-based Lakeview APIs for embedding dashboards in external applications.`,
 		Long:    `Token-based Lakeview APIs for embedding dashboards in external applications.`,
 		GroupID: "dashboards",
-		Annotations: map[string]string{
-			"package": "dashboards",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -57,7 +54,7 @@ func newGetPublishedDashboardTokenInfo() *cobra.Command {
 	cmd.Use = "get-published-dashboard-token-info DASHBOARD_ID"
 	cmd.Short = `Read information of a published dashboard to mint an OAuth token.`
 	cmd.Long = `Read information of a published dashboard to mint an OAuth token.
-  
+
   Get a required authorization details and scopes of a published dashboard to
   mint an OAuth token.
 

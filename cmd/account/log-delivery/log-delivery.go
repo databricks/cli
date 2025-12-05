@@ -25,26 +25,26 @@ func New() *cobra.Command {
   supported log types for this API are _billable usage logs_ and _audit logs_.
   This feature is in Public Preview. This feature works with all account ID
   types.
-  
+
   Log delivery works with all account types. However, if your account is on the
   E2 version of the platform or on a select custom plan that allows multiple
   workspaces per account, you can optionally configure different storage
   destinations for each workspace. Log delivery status is also provided to know
   the latest status of log delivery attempts.
-  
+
   The high-level flow of billable usage delivery:
-  
+
   1. **Create storage**: In AWS, [create a new AWS S3 bucket] with a specific
   bucket policy. Using Databricks APIs, call the Account API to create a
   [storage configuration object](:method:Storage/Create) that uses the bucket
   name.
-  
+
   2. **Create credentials**: In AWS, create the appropriate AWS IAM role. For
   full details, including the required IAM role policies and trust relationship,
   see [Billable usage log delivery]. Using Databricks APIs, call the Account API
   to create a [credential configuration object](:method:Credentials/Create) that
   uses the IAM role's ARN.
-  
+
   3. **Create log delivery configuration**: Using Databricks APIs, call the
   Account API to [create a log delivery
   configuration](:method:LogDelivery/Create) that uses the credential and
@@ -55,7 +55,7 @@ func New() *cobra.Command {
   workspaces plus account level logs, while workspace level log delivery solely
   delivers logs related to the specified workspaces. You can create multiple
   types of delivery configurations per account.
-  
+
   For billable usage delivery: * For more information about billable usage logs,
   see [Billable usage log delivery]. For the CSV schema, see the [Usage page]. *
   The delivery location is <bucket-name>/<prefix>/billable-usage/csv/, where
@@ -67,7 +67,7 @@ func New() *cobra.Command {
   that delivers logs for all current and future workspaces in your account. *
   The files are delivered daily by overwriting the month's CSV file for each
   workspace.
-  
+
   For audit log delivery: * For more information about about audit log delivery,
   see [Audit log delivery], which includes information about the used JSON
   schema. * The delivery location is
@@ -80,16 +80,13 @@ func New() *cobra.Command {
   workspace-level audit logs for all workspaces in the account as well as
   account-level audit logs. See [Audit log delivery] for details. * Auditable
   events are typically available in logs within 15 minutes.
-  
+
   [Audit log delivery]: https://docs.databricks.com/administration-guide/account-settings/audit-logs.html
   [Billable usage log delivery]: https://docs.databricks.com/administration-guide/account-settings/billable-usage-delivery.html
   [Usage page]: https://docs.databricks.com/administration-guide/account-settings/usage.html
   [create a new AWS S3 bucket]: https://docs.databricks.com/administration-guide/account-api/aws-storage.html`,
 		GroupID: "billing",
-		Annotations: map[string]string{
-			"package": "billing",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -126,17 +123,17 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create"
 	cmd.Short = `Create a new log delivery configuration.`
 	cmd.Long = `Create a new log delivery configuration.
-  
+
   Creates a new Databricks log delivery configuration to enable delivery of the
   specified type of logs to your storage location. This requires that you
   already created a [credential object](:method:Credentials/Create) (which
   encapsulates a cross-account service IAM role) and a [storage configuration
   object](:method:Storage/Create) (which encapsulates an S3 bucket).
-  
+
   For full details, including the required IAM role policies and bucket
   policies, see [Deliver and access billable usage logs] or [Configure audit
   logging].
-  
+
   **Note**: There is a limit on the number of log delivery configurations
   available per account (each limit applies separately to each log type
   including billable usage and audit logs). You can create a maximum of two
@@ -145,11 +142,11 @@ func newCreate() *cobra.Command {
   workspace-level delivery configurations per workspace for each log type, which
   means that the same workspace ID can occur in the workspace filter for no more
   than two delivery configurations per log type.
-  
+
   You cannot delete a log delivery configuration, but you can disable it (see
   [Enable or disable log delivery
   configuration](:method:LogDelivery/PatchStatus)).
-  
+
   [Configure audit logging]: https://docs.databricks.com/administration-guide/account-settings/audit-logs.html
   [Deliver and access billable usage logs]: https://docs.databricks.com/administration-guide/account-settings/billable-usage-delivery.html`
 
@@ -211,7 +208,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get LOG_DELIVERY_CONFIGURATION_ID"
 	cmd.Short = `Get log delivery configuration.`
 	cmd.Long = `Get log delivery configuration.
-  
+
   Gets a Databricks log delivery configuration object for an account, both
   specified by ID.
 
@@ -285,7 +282,7 @@ func newList() *cobra.Command {
 	cmd.Use = "list"
 	cmd.Short = `Get all log delivery configurations.`
 	cmd.Long = `Get all log delivery configurations.
-  
+
   Gets all Databricks log delivery configurations associated with an account
   specified by ID.`
 
@@ -337,7 +334,7 @@ func newPatchStatus() *cobra.Command {
 	cmd.Use = "patch-status LOG_DELIVERY_CONFIGURATION_ID STATUS"
 	cmd.Short = `Enable or disable log delivery configuration.`
 	cmd.Long = `Enable or disable log delivery configuration.
-  
+
   Enables or disables a log delivery configuration. Deletion of delivery
   configurations is not supported, so disable log delivery configurations that
   are no longer needed. Note that you can't re-enable a delivery configuration
@@ -350,7 +347,7 @@ func newPatchStatus() *cobra.Command {
       DISABLED (disabled). Defaults to ENABLED. You can [enable or disable
       the configuration](#operation/patch-log-delivery-config-status) later.
       Deletion of a configuration is not supported, so disable a log delivery
-      configuration that is no longer needed. 
+      configuration that is no longer needed.
       Supported values: [DISABLED, ENABLED]`
 
 	cmd.Annotations = make(map[string]string)

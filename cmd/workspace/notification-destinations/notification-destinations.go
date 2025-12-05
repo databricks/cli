@@ -25,10 +25,7 @@ func New() *cobra.Command {
   Databricks. Only workspace admins can create, update, and delete notification
   destinations.`,
 		GroupID: "settings",
-		Annotations: map[string]string{
-			"package": "settings",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -69,7 +66,7 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create"
 	cmd.Short = `Create a notification destination.`
 	cmd.Long = `Create a notification destination.
-  
+
   Creates a notification destination. Requires workspace admin permissions.`
 
 	cmd.Annotations = make(map[string]string)
@@ -133,7 +130,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete ID"
 	cmd.Short = `Delete a notification destination.`
 	cmd.Long = `Delete a notification destination.
-  
+
   Deletes a notification destination. Requires workspace admin permissions.`
 
 	cmd.Annotations = make(map[string]string)
@@ -186,7 +183,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get ID"
 	cmd.Short = `Get a notification destination.`
 	cmd.Long = `Get a notification destination.
-  
+
   Gets a notification destination.`
 
 	cmd.Annotations = make(map[string]string)
@@ -242,7 +239,7 @@ func newList() *cobra.Command {
 	cmd.Use = "list"
 	cmd.Short = `List notification destinations.`
 	cmd.Long = `List notification destinations.
-  
+
   Lists notification destinations.`
 
 	cmd.Annotations = make(map[string]string)
@@ -296,7 +293,7 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update ID"
 	cmd.Short = `Update a notification destination.`
 	cmd.Long = `Update a notification destination.
-  
+
   Updates a notification destination. Requires workspace admin permissions. At
   least one field is required in the request body.
 

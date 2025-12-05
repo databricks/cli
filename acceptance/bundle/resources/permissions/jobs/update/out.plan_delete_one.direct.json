@@ -92,8 +92,12 @@
       },
       "changes": {
         "local": {
-          "permissions": {
-            "action": "update"
+          "permissions[group_name='data-team']": {
+            "action": "update",
+            "old": {
+              "group_name": "data-team",
+              "permission_level": "CAN_MANAGE"
+            }
           }
         }
       }

@@ -24,17 +24,14 @@ func New() *cobra.Command {
   owner of an object, or the owner of the catalog or schema that contains the
   object. Securable objects in Unity Catalog are hierarchical and privileges are
   inherited downward.
-  
+
   Securable objects in Unity Catalog are hierarchical and privileges are
   inherited downward. This means that granting a privilege on the catalog
   automatically grants the privilege to all current and future objects within
   the catalog. Similarly, privileges granted on a schema are inherited by all
   current and future objects within that schema.`,
 		GroupID: "catalog",
-		Annotations: map[string]string{
-			"package": "catalog",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -71,12 +68,12 @@ func newGet() *cobra.Command {
 	cmd.Use = "get SECURABLE_TYPE FULL_NAME"
 	cmd.Short = `Get permissions.`
 	cmd.Long = `Get permissions.
-  
+
   Gets the permissions for a securable. Does not include inherited permissions.
-  
+
   NOTE: we recommend using max_results=0 to use the paginated version of this
   API. Unpaginated calls will be deprecated soon.
-  
+
   PAGINATION BEHAVIOR: When using pagination (max_results >= 0), a page may
   contain zero results while still providing a next_page_token. Clients must
   continue reading pages until next_page_token is absent, which is the only
@@ -141,13 +138,13 @@ func newGetEffective() *cobra.Command {
 	cmd.Use = "get-effective SECURABLE_TYPE FULL_NAME"
 	cmd.Short = `Get effective permissions.`
 	cmd.Long = `Get effective permissions.
-  
+
   Gets the effective permissions for a securable. Includes inherited permissions
   from any parent securables.
-  
+
   NOTE: we recommend using max_results=0 to use the paginated version of this
   API. Unpaginated calls will be deprecated soon.
-  
+
   PAGINATION BEHAVIOR: When using pagination (max_results >= 0), a page may
   contain zero results while still providing a next_page_token. Clients must
   continue reading pages until next_page_token is absent, which is the only
@@ -213,7 +210,7 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update SECURABLE_TYPE FULL_NAME"
 	cmd.Short = `Update permissions.`
 	cmd.Long = `Update permissions.
-  
+
   Updates the permissions for a securable.
 
   Arguments:

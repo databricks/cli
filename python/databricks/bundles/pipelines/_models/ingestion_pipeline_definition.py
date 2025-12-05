@@ -30,6 +30,16 @@ class IngestionPipelineDefinition:
     Immutable. The Unity Catalog connection that this ingestion pipeline uses to communicate with the source. This is used with connectors for applications like Salesforce, Workday, and so on.
     """
 
+    ingest_from_uc_foreign_catalog: VariableOrOptional[bool] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    Immutable. If set to true, the pipeline will ingest tables from the
+    UC foreign catalogs directly without the need to specify a UC connection or ingestion gateway.
+    The `source_catalog` fields in objects of IngestionConfig are interpreted as
+    the UC foreign catalogs to ingest from.
+    """
+
     ingestion_gateway_id: VariableOrOptional[str] = None
     """
     Immutable. Identifier for the gateway that is used by this ingestion pipeline to communicate with the source database. This is used with connectors to databases like SQL Server.
@@ -38,10 +48,6 @@ class IngestionPipelineDefinition:
     netsuite_jar_path: VariableOrOptional[str] = None
     """
     :meta private: [EXPERIMENTAL]
-    
-    Netsuite only configuration. When the field is set for a netsuite connector,
-    the jar stored in the field will be validated and added to the classpath of
-    pipeline's cluster.
     """
 
     objects: VariableOrList[IngestionConfig] = field(default_factory=list)
@@ -51,8 +57,6 @@ class IngestionPipelineDefinition:
 
     source_configurations: VariableOrList[SourceConfig] = field(default_factory=list)
     """
-    :meta private: [EXPERIMENTAL]
-    
     Top-level source configurations
     """
 
@@ -77,6 +81,16 @@ class IngestionPipelineDefinitionDict(TypedDict, total=False):
     Immutable. The Unity Catalog connection that this ingestion pipeline uses to communicate with the source. This is used with connectors for applications like Salesforce, Workday, and so on.
     """
 
+    ingest_from_uc_foreign_catalog: VariableOrOptional[bool]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    Immutable. If set to true, the pipeline will ingest tables from the
+    UC foreign catalogs directly without the need to specify a UC connection or ingestion gateway.
+    The `source_catalog` fields in objects of IngestionConfig are interpreted as
+    the UC foreign catalogs to ingest from.
+    """
+
     ingestion_gateway_id: VariableOrOptional[str]
     """
     Immutable. Identifier for the gateway that is used by this ingestion pipeline to communicate with the source database. This is used with connectors to databases like SQL Server.
@@ -85,10 +99,6 @@ class IngestionPipelineDefinitionDict(TypedDict, total=False):
     netsuite_jar_path: VariableOrOptional[str]
     """
     :meta private: [EXPERIMENTAL]
-    
-    Netsuite only configuration. When the field is set for a netsuite connector,
-    the jar stored in the field will be validated and added to the classpath of
-    pipeline's cluster.
     """
 
     objects: VariableOrList[IngestionConfigParam]
@@ -98,8 +108,6 @@ class IngestionPipelineDefinitionDict(TypedDict, total=False):
 
     source_configurations: VariableOrList[SourceConfigParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
     Top-level source configurations
     """
 

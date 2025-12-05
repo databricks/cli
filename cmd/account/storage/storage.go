@@ -28,10 +28,7 @@ func New() *cobra.Command {
   encapsulates this bucket information, and its ID is used when creating a new
   workspace.`,
 		GroupID: "provisioning",
-		Annotations: map[string]string{
-			"package": "provisioning",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -70,7 +67,7 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create"
 	cmd.Short = `Create a storage configuration.`
 	cmd.Long = `Create a storage configuration.
-  
+
   Creates a Databricks storage configuration for an account.`
 
 	cmd.Annotations = make(map[string]string)
@@ -131,7 +128,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete STORAGE_CONFIGURATION_ID"
 	cmd.Short = `Delete a storage configuration.`
 	cmd.Long = `Delete a storage configuration.
-  
+
   Deletes a Databricks storage configuration. You cannot delete a storage
   configuration that is associated with any workspace.`
 
@@ -185,7 +182,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get STORAGE_CONFIGURATION_ID"
 	cmd.Short = `Get a storage configuration.`
 	cmd.Long = `Get a storage configuration.
-  
+
   Gets a Databricks storage configuration for an account, both specified by ID.`
 
 	cmd.Annotations = make(map[string]string)
@@ -235,7 +232,7 @@ func newList() *cobra.Command {
 	cmd.Use = "list"
 	cmd.Short = `List storage configurations.`
 	cmd.Long = `List storage configurations.
-  
+
   Lists Databricks storage configurations for an account, specified by ID.`
 
 	cmd.Annotations = make(map[string]string)

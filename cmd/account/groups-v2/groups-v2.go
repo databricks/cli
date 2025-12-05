@@ -21,16 +21,13 @@ func New() *cobra.Command {
 		Short: `Groups simplify identity management, making it easier to assign access to Databricks account, data, and other securable objects.`,
 		Long: `Groups simplify identity management, making it easier to assign access to
   Databricks account, data, and other securable objects.
-  
+
   It is best practice to assign access to workspaces and access-control policies
   in Unity Catalog to groups, instead of to users individually. All Databricks
   account identities can be assigned as members of groups, and members inherit
   permissions that are assigned to their group.`,
 		GroupID: "iam",
-		Annotations: map[string]string{
-			"package": "iam",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -76,7 +73,7 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create"
 	cmd.Short = `Create a new group.`
 	cmd.Long = `Create a new group.
-  
+
   Creates a group in the Databricks account with a unique name, using the
   supplied group details.`
 
@@ -141,7 +138,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete ID"
 	cmd.Short = `Delete a group.`
 	cmd.Long = `Delete a group.
-  
+
   Deletes a group from the Databricks account.
 
   Arguments:
@@ -197,7 +194,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get ID"
 	cmd.Short = `Get group details.`
 	cmd.Long = `Get group details.
-  
+
   Gets the information for a specific group in the Databricks account.
 
   Arguments:
@@ -261,10 +258,12 @@ func newList() *cobra.Command {
 	cmd.Use = "list"
 	cmd.Short = `List group details.`
 	cmd.Long = `List group details.
-  
+
   Gets all details of the groups associated with the Databricks account. As of
-  08/22/2025, this endpoint will not return members. Instead, members should be
-  retrieved by iterating through Get group details.`
+  08/22/2025, this endpoint will no longer return members. Instead, members
+  should be retrieved by iterating through Get group details. Existing
+  accounts that rely on this attribute will not be impacted and will continue
+  receiving member data as before.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -317,7 +316,7 @@ func newPatch() *cobra.Command {
 	cmd.Use = "patch ID"
 	cmd.Short = `Update group details.`
 	cmd.Long = `Update group details.
-  
+
   Partially updates the details of a group.
 
   Arguments:
@@ -394,7 +393,7 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update ID"
 	cmd.Short = `Replace a group.`
 	cmd.Long = `Replace a group.
-  
+
   Updates the details of a group by replacing the entire group entity.
 
   Arguments:

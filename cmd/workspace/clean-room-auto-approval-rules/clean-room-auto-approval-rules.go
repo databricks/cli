@@ -25,10 +25,7 @@ func New() *cobra.Command {
   when an asset (e.g. notebook) meeting specific criteria is shared in a clean
   room.`,
 		GroupID: "cleanrooms",
-		Annotations: map[string]string{
-			"package": "cleanrooms",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -66,7 +63,7 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create CLEAN_ROOM_NAME"
 	cmd.Short = `Create an auto-approval rule.`
 	cmd.Long = `Create an auto-approval rule.
-  
+
   Create an auto-approval rule
 
   Arguments:
@@ -136,7 +133,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete CLEAN_ROOM_NAME RULE_ID"
 	cmd.Short = `Delete an auto-approval rule.`
 	cmd.Long = `Delete an auto-approval rule.
-  
+
   Delete a auto-approval rule by rule ID`
 
 	cmd.Annotations = make(map[string]string)
@@ -190,7 +187,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get CLEAN_ROOM_NAME RULE_ID"
 	cmd.Short = `Get an auto-approval rule.`
 	cmd.Long = `Get an auto-approval rule.
-  
+
   Get a auto-approval rule by rule ID`
 
 	cmd.Annotations = make(map[string]string)
@@ -247,7 +244,7 @@ func newList() *cobra.Command {
 	cmd.Use = "list CLEAN_ROOM_NAME"
 	cmd.Short = `List auto-approval rules.`
 	cmd.Long = `List auto-approval rules.
-  
+
   List all auto-approval rules for the caller`
 
 	cmd.Annotations = make(map[string]string)
@@ -306,7 +303,7 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update CLEAN_ROOM_NAME RULE_ID"
 	cmd.Short = `Update an auto-approval rule.`
 	cmd.Long = `Update an auto-approval rule.
-  
+
   Update a auto-approval rule by rule ID
 
   Arguments:

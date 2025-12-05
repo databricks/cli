@@ -51,6 +51,8 @@ type DataSources struct {
 	ExternalMetadatas                      map[string]any `json:"databricks_external_metadatas,omitempty"`
 	FeatureEngineeringFeature              map[string]any `json:"databricks_feature_engineering_feature,omitempty"`
 	FeatureEngineeringFeatures             map[string]any `json:"databricks_feature_engineering_features,omitempty"`
+	FeatureEngineeringKafkaConfig          map[string]any `json:"databricks_feature_engineering_kafka_config,omitempty"`
+	FeatureEngineeringKafkaConfigs         map[string]any `json:"databricks_feature_engineering_kafka_configs,omitempty"`
 	FeatureEngineeringMaterializedFeature  map[string]any `json:"databricks_feature_engineering_materialized_feature,omitempty"`
 	FeatureEngineeringMaterializedFeatures map[string]any `json:"databricks_feature_engineering_materialized_features,omitempty"`
 	Functions                              map[string]any `json:"databricks_functions,omitempty"`
@@ -103,6 +105,7 @@ type DataSources struct {
 	TagPolicies                            map[string]any `json:"databricks_tag_policies,omitempty"`
 	TagPolicy                              map[string]any `json:"databricks_tag_policy,omitempty"`
 	User                                   map[string]any `json:"databricks_user,omitempty"`
+	Users                                  map[string]any `json:"databricks_users,omitempty"`
 	Views                                  map[string]any `json:"databricks_views,omitempty"`
 	Volume                                 map[string]any `json:"databricks_volume,omitempty"`
 	Volumes                                map[string]any `json:"databricks_volumes,omitempty"`
@@ -161,6 +164,8 @@ func NewDataSources() *DataSources {
 		ExternalMetadatas:                      make(map[string]any),
 		FeatureEngineeringFeature:              make(map[string]any),
 		FeatureEngineeringFeatures:             make(map[string]any),
+		FeatureEngineeringKafkaConfig:          make(map[string]any),
+		FeatureEngineeringKafkaConfigs:         make(map[string]any),
 		FeatureEngineeringMaterializedFeature:  make(map[string]any),
 		FeatureEngineeringMaterializedFeatures: make(map[string]any),
 		Functions:                              make(map[string]any),
@@ -213,6 +218,7 @@ func NewDataSources() *DataSources {
 		TagPolicies:                            make(map[string]any),
 		TagPolicy:                              make(map[string]any),
 		User:                                   make(map[string]any),
+		Users:                                  make(map[string]any),
 		Views:                                  make(map[string]any),
 		Volume:                                 make(map[string]any),
 		Volumes:                                make(map[string]any),

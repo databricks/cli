@@ -518,18 +518,27 @@ def print_report(filenames, filter, filter_env, show_output, markdown=False, omi
             per_testkey_result = simplified_results.pop(test_key)
 
     table = []
+    summary = {}
     for test_key, items in simplified_results.items():
         package_name, testname = test_key
+        status = "??"
+        for action in ACTIONS_WITH_ICON:
+            if action in items.values():
+                status, info = action[:2], action[2:]
+                summary[info] = summary.get(info, 0) + 1
+                break
         items_proc = dict((k, short_action(v)) for (k, v) in items.items())
         table.append(
             {
+                " ": status,
                 "Test Name": testname,
                 **items_proc,
             }
         )
     table_txt = format_table(table, markdown=markdown)
     if len(table) > 5:
-        table_txt = wrap_in_details(table_txt, f"{len(table)} failing tests:")
+        summary_msg = make_summary_message(table, summary)
+        table_txt = wrap_in_details(table_txt, summary_msg)
     if table_txt:
         print(table_txt)
 
@@ -576,6 +585,13 @@ def print_report(filenames, filter, filter_env, show_output, markdown=False, omi
                     print(f"### {env} {testname} {action}\n{out}")
                 if out:
                     print()
+
+
+def make_summary_message(table, summary):
+    items = list(summary.items())
+    items.sort(key=lambda x: x[1], reverse=True)
+    items = ", ".join(f"{count} {info}" for (info, count) in items)
+    return f"{len(table)} interesting tests: " + items
 
 
 # For test table, use shorter version of action.

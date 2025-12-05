@@ -1,0 +1,10 @@
+{
+  "plan": {
+    "resources.jobs.sample_job": {
+      "action": "update"
+    },
+    "resources.pipelines.my_default_python_etl": {
+      "action": "skip"
+    }
+  }
+}

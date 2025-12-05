@@ -68,6 +68,8 @@ type ClientOptions struct {
 	Profile string
 	// Additional arguments to pass to the SSH client in the non proxy mode.
 	AdditionalArgs []string
+	// Optional path to the user known hosts file.
+	UserKnownHostsFile string
 }
 
 func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOptions) error {
@@ -253,8 +255,11 @@ func spawnSSHClient(ctx context.Context, userName, privateKeyPath string, server
 		"-o", "StrictHostKeyChecking=accept-new",
 		"-o", "ConnectTimeout=360",
 		"-o", "ProxyCommand=" + proxyCommand,
-		opts.ClusterID,
 	}
+	if opts.UserKnownHostsFile != "" {
+		sshArgs = append(sshArgs, "-o", "UserKnownHostsFile="+opts.UserKnownHostsFile)
+	}
+	sshArgs = append(sshArgs, opts.ClusterID)
 	sshArgs = append(sshArgs, opts.AdditionalArgs...)
 
 	cmdio.LogString(ctx, "Launching SSH client: ssh "+strings.Join(sshArgs, " "))

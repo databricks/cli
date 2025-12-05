@@ -29,11 +29,5 @@ Sessions track state across tool calls including:
 - Working directory (set by scaffold, used by workspace tools)
 - Metrics and telemetry
 - Trajectory logging (JSONL history)
-
-Sandbox:
-
-Tools execute in a sandbox abstraction that can be:
-- Local: Direct filesystem and shell access
-- Dagger: Not implemented (stub only)
 */
 package server

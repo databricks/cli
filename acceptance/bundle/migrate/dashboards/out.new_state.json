@@ -1,0 +1,17 @@
+{
+ "lineage": "[UUID]",
+ "serial": 2,
+ "state": {
+  "resources.dashboards.dashboard1": {
+   "__id__": "[DASHBOARD_ID]",
+   "state": {
+    "display_name": "my dashboard",
+    "embed_credentials": true,
+    "etag": "[NUMID]",
+    "parent_path": "/Workspace/Users/[USERNAME]",
+    "serialized_dashboard": "{\"pages\":[{\"name\":\"02724bf2\",\"displayName\":\"Dashboard test bundle-deploy-dashboard\"}]}\n",
+    "warehouse_id": "123456"
+   }
+  }
+ }
+}

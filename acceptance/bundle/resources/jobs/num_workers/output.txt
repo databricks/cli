@@ -1,0 +1,128 @@
+
+>>> [CLI] bundle deploy
+Warning: Single node cluster is not correctly configured
+  at resources.jobs.sample_job.job_clusters[3].new_cluster
+  in databricks.yml:64:13
+
+num_workers should be 0 only for single-node clusters. To create a
+valid single node cluster please ensure that the following properties
+are correctly set in the cluster specification:
+
+  spark_conf:
+    spark.databricks.cluster.profile: singleNode
+    spark.master: local[*]
+
+  custom_tags:
+    ResourceClass: SingleNode
+  
+
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py //jobs
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/create",
+  "body": {
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "job_clusters": [
+      {
+        "job_cluster_key": "job_cluster_autoscale",
+        "new_cluster": {
+          "autoscale": {
+            "max_workers": 4,
+            "min_workers": 1
+          },
+          "data_security_mode": "SINGLE_USER",
+          "node_type_id": "[NODE_TYPE_ID]",
+          "spark_version": "16.4.x-scala2.12"
+        }
+      },
+      {
+        "job_cluster_key": "job_cluster_autoscale_num_workers1",
+        "new_cluster": {
+          "autoscale": {
+            "max_workers": 4,
+            "min_workers": 1
+          },
+          "data_security_mode": "SINGLE_USER",
+          "node_type_id": "[NODE_TYPE_ID]",
+          "num_workers": 1,
+          "spark_version": "16.4.x-scala2.14"
+        }
+      },
+      {
+        "job_cluster_key": "job_cluster_num_workers1",
+        "new_cluster": {
+          "data_security_mode": "SINGLE_USER",
+          "node_type_id": "[NODE_TYPE_ID]",
+          "num_workers": 1,
+          "spark_version": "16.4.x-scala2.15"
+        }
+      },
+      {
+        "job_cluster_key": "job_cluster_num_workers0",
+        "new_cluster": {
+          "data_security_mode": "SINGLE_USER",
+          "node_type_id": "[NODE_TYPE_ID]",
+          "num_workers": 0,
+          "spark_version": "16.4.x-scala2.16"
+        }
+      },
+      {
+        "job_cluster_key": "job_cluster_default",
+        "new_cluster": {
+          "num_workers": 0,
+          "spark_version": "16.4.x-scala2.17"
+        }
+      }
+    ],
+    "max_concurrent_runs": 1,
+    "name": "sample_job",
+    "queue": {
+      "enabled": true
+    },
+    "tasks": [
+      {
+        "notebook_task": {
+          "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/sample_notebook",
+          "source": "WORKSPACE"
+        },
+        "task_key": "notebook_task"
+      }
+    ],
+    "trigger": {
+      "pause_status": "UNPAUSED",
+      "periodic": {
+        "interval": 1,
+        "unit": "DAYS"
+      }
+    }
+  }
+}
+
+>>> [CLI] bundle plan
+Warning: Single node cluster is not correctly configured
+  at resources.jobs.sample_job.job_clusters[3].new_cluster
+  in databricks.yml:64:13
+
+num_workers should be 0 only for single-node clusters. To create a
+valid single node cluster please ensure that the following properties
+are correctly set in the cluster specification:
+
+  spark_conf:
+    spark.databricks.cluster.profile: singleNode
+    spark.master: local[*]
+
+  custom_tags:
+    ResourceClass: SingleNode
+  
+
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged

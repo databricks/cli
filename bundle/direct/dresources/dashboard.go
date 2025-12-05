@@ -46,42 +46,37 @@ func (*ResourceDashboard) PrepareState(input *resources.Dashboard) *resources.Da
 }
 
 func (r *ResourceDashboard) RemapState(state *resources.DashboardConfig) *resources.DashboardConfig {
+	forceSendFields := utils.FilterFields[resources.DashboardConfig](state.ForceSendFields, []string{
+		"CreateTime",
+		"DashboardId",
+		"LifecycleState",
+		"Path",
+		"UpdateTime",
+		"SerializedDashboard",
+	}...)
+
+	// EmbedCredentials must always be included in ForceSendFields to ensure it's serialized
+	// even when false (zero value).
+	if !slices.Contains(forceSendFields, "EmbedCredentials") {
+		forceSendFields = append(forceSendFields, "EmbedCredentials")
+	}
+
 	return &resources.DashboardConfig{
-		Dashboard: dashboards.Dashboard{
-			DisplayName: state.DisplayName,
-			Etag:        state.Etag,
-			ParentPath:  state.ParentPath,
-			WarehouseId: state.WarehouseId,
-			ForceSendFields: utils.FilterFields[dashboards.Dashboard](state.ForceSendFields, []string{
-				"CreateTime",
-				"DashboardId",
-				"LifecycleState",
-				"Path",
-				"UpdateTime",
-				"SerializedDashboard",
-			}...),
+		DisplayName:         state.DisplayName,
+		Etag:                state.Etag,
+		ParentPath:          state.ParentPath,
+		WarehouseId:         state.WarehouseId,
+		SerializedDashboard: state.SerializedDashboard,
+		EmbedCredentials:    state.EmbedCredentials,
 
-			// Clear output only fields. They should not show up on remote diff computation.
-			CreateTime:     "",
-			DashboardId:    "",
-			LifecycleState: dashboards.LifecycleState(""),
-			Path:           "",
-			UpdateTime:     "",
+		ForceSendFields: forceSendFields,
 
-			// Serialized dashboard is ignored for remote diff changes.
-			// They are only relevant for local diff changes.
-			SerializedDashboard: "",
-		},
-
-		EmbedCredentials: state.EmbedCredentials,
-
-		// Serialized dashboard is ignored for remote diff changes.
-		// They are only relevant for local diff changes.
-		SerializedDashboard: "",
-
-		ForceSendFields: utils.FilterFields[dashboards.Dashboard](state.ForceSendFields, []string{
-			"SerializedDashboard",
-		}...),
+		// Clear output only fields. They should not show up on remote diff computation.
+		CreateTime:     "",
+		DashboardId:    "",
+		LifecycleState: dashboards.LifecycleState(""),
+		Path:           "",
+		UpdateTime:     "",
 	}
 }
 
@@ -111,34 +106,48 @@ func (r *ResourceDashboard) DoRead(ctx context.Context, id string) (*resources.D
 		return nil, err
 	}
 
-	return &resources.DashboardConfig{
-		Dashboard: dashboards.Dashboard{
-			DisplayName:         dashboard.DisplayName,
-			Etag:                dashboard.Etag,
-			WarehouseId:         dashboard.WarehouseId,
-			SerializedDashboard: dashboard.SerializedDashboard,
-			ParentPath:          ensureWorkspacePrefix(dashboard.ParentPath),
+	forceSendFields := utils.FilterFields[resources.DashboardConfig](dashboard.ForceSendFields)
+	// EmbedCredentials must always be included in ForceSendFields to ensure it's serialized
+	// even when false (zero value).
+	if !slices.Contains(forceSendFields, "EmbedCredentials") {
+		forceSendFields = append(forceSendFields, "EmbedCredentials")
+	}
 
-			// Output only fields.
-			CreateTime:      dashboard.CreateTime,
-			DashboardId:     dashboard.DashboardId,
-			LifecycleState:  dashboard.LifecycleState,
-			Path:            dashboard.Path,
-			UpdateTime:      dashboard.UpdateTime,
-			ForceSendFields: utils.FilterFields[dashboards.Dashboard](dashboard.ForceSendFields),
-		},
+	return &resources.DashboardConfig{
+		DisplayName:         dashboard.DisplayName,
+		Etag:                dashboard.Etag,
+		WarehouseId:         dashboard.WarehouseId,
 		SerializedDashboard: dashboard.SerializedDashboard,
-		EmbedCredentials:    publishedDashboard.EmbedCredentials,
-		ForceSendFields:     utils.FilterFields[dashboards.PublishedDashboard](publishedDashboard.ForceSendFields),
+		ParentPath:          ensureWorkspacePrefix(dashboard.ParentPath),
+
+		// Output only fields.
+		CreateTime:      dashboard.CreateTime,
+		DashboardId:     dashboard.DashboardId,
+		LifecycleState:  dashboard.LifecycleState,
+		Path:            dashboard.Path,
+		UpdateTime:      dashboard.UpdateTime,
+		ForceSendFields: forceSendFields,
+
+		EmbedCredentials: publishedDashboard.EmbedCredentials,
 	}, nil
 }
 
 func prepareDashboardRequest(config *resources.DashboardConfig) (dashboards.Dashboard, error) {
-	// Fields like "embed_credentials" are part of the bundle configuration but not the create request here.
-	// Thus we need to filter such fields out.
-	config.ForceSendFields = utils.FilterFields[dashboards.Dashboard](config.ForceSendFields)
-
-	dashboard := config.Dashboard
+	dashboard := dashboards.Dashboard{
+		DisplayName:         config.DisplayName,
+		ParentPath:          config.ParentPath,
+		WarehouseId:         config.WarehouseId,
+		Etag:                config.Etag,
+		CreateTime:          "",
+		DashboardId:         "",
+		LifecycleState:      "",
+		Path:                "",
+		SerializedDashboard: "",
+		UpdateTime:          "",
+		// Fields like "embed_credentials" are part of the bundle configuration but not the create request here.
+		// Thus we need to filter such fields out.
+		ForceSendFields: utils.FilterFields[dashboards.Dashboard](config.ForceSendFields),
+	}
 	v := config.SerializedDashboard
 	if serializedDashboard, ok := v.(string); ok {
 		// If serialized dashboard is already a string, we can use it directly.
@@ -170,26 +179,30 @@ func (r *ResourceDashboard) publishDashboard(ctx context.Context, id string, con
 	})
 }
 
-func responseToState(createOrUpdateResp *dashboards.Dashboard, publishResp *dashboards.PublishedDashboard) *resources.DashboardConfig {
-	return &resources.DashboardConfig{
-		Dashboard: dashboards.Dashboard{
-			DisplayName:         createOrUpdateResp.DisplayName,
-			Etag:                createOrUpdateResp.Etag,
-			WarehouseId:         createOrUpdateResp.WarehouseId,
-			SerializedDashboard: createOrUpdateResp.SerializedDashboard,
-			ParentPath:          ensureWorkspacePrefix(createOrUpdateResp.ParentPath),
+func responseToState(createOrUpdateResp *dashboards.Dashboard, publishResp *dashboards.PublishedDashboard, serializedDashboard string) *resources.DashboardConfig {
+	forceSendFields := utils.FilterFields[resources.DashboardConfig](createOrUpdateResp.ForceSendFields)
+	// EmbedCredentials must always be included in ForceSendFields to ensure it's serialized
+	// even when false (zero value).
+	if !slices.Contains(forceSendFields, "EmbedCredentials") {
+		forceSendFields = append(forceSendFields, "EmbedCredentials")
+	}
 
-			// Output only fields
-			CreateTime:      createOrUpdateResp.CreateTime,
-			DashboardId:     createOrUpdateResp.DashboardId,
-			LifecycleState:  createOrUpdateResp.LifecycleState,
-			Path:            createOrUpdateResp.Path,
-			UpdateTime:      createOrUpdateResp.UpdateTime,
-			ForceSendFields: utils.FilterFields[dashboards.Dashboard](createOrUpdateResp.ForceSendFields),
-		},
-		SerializedDashboard: createOrUpdateResp.SerializedDashboard,
-		EmbedCredentials:    publishResp.EmbedCredentials,
-		ForceSendFields:     utils.FilterFields[dashboards.PublishedDashboard](publishResp.ForceSendFields),
+	return &resources.DashboardConfig{
+		DisplayName:         createOrUpdateResp.DisplayName,
+		Etag:                createOrUpdateResp.Etag,
+		WarehouseId:         createOrUpdateResp.WarehouseId,
+		SerializedDashboard: serializedDashboard,
+		ParentPath:          ensureWorkspacePrefix(createOrUpdateResp.ParentPath),
+
+		// Output only fields
+		CreateTime:      createOrUpdateResp.CreateTime,
+		DashboardId:     createOrUpdateResp.DashboardId,
+		LifecycleState:  createOrUpdateResp.LifecycleState,
+		Path:            createOrUpdateResp.Path,
+		UpdateTime:      createOrUpdateResp.UpdateTime,
+		ForceSendFields: forceSendFields,
+
+		EmbedCredentials: publishResp.EmbedCredentials,
 	}
 }
 
@@ -231,10 +244,10 @@ func (r *ResourceDashboard) DoCreate(ctx context.Context, config *resources.Dash
 		return "", nil, err
 	}
 
-	return createResp.DashboardId, responseToState(createResp, publishResp), nil
+	return createResp.DashboardId, responseToState(createResp, publishResp, dashboard.SerializedDashboard), nil
 }
 
-func (r *ResourceDashboard) DoUpdate(ctx context.Context, id string, config *resources.DashboardConfig) (*resources.DashboardConfig, error) {
+func (r *ResourceDashboard) DoUpdate(ctx context.Context, id string, config *resources.DashboardConfig, _ *Changes) (*resources.DashboardConfig, error) {
 	dashboard, err := prepareDashboardRequest(config)
 	if err != nil {
 		return nil, err
@@ -256,7 +269,7 @@ func (r *ResourceDashboard) DoUpdate(ctx context.Context, id string, config *res
 		return nil, err
 	}
 
-	return responseToState(updateResp, publishResp), nil
+	return responseToState(updateResp, publishResp, dashboard.SerializedDashboard), nil
 }
 
 func (r *ResourceDashboard) DoDelete(ctx context.Context, id string) error {
@@ -272,7 +285,10 @@ func (*ResourceDashboard) FieldTriggers(isLocal bool) map[string]deployplan.Acti
 		"parent_path": deployplan.ActionTypeRecreate,
 	}
 
-	if !isLocal {
+	if isLocal {
+		// Etags should only be compared for remote diffs, not local diffs.
+		triggers["etag"] = deployplan.ActionTypeSkip
+	} else {
 		// Note: If the etag changes remotely, it means the dashboard has been modified remotely
 		// and needs to be updated to match with the config. Since update is the default action type,
 		// we don't need to explicitly specify it here.

@@ -144,7 +144,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		// for integers: compare 0 with actual object ID. As long as real object IDs are never 0 we're good.
 		// Once we add non-id fields or add per-field details to "bundle plan", we must read dynamic data and deal with references as first class citizen.
 		// This means distinguishing between 0 that are actually object ids and 0 that are there because typed struct integer cannot contain ${...} string.
-		localDiff, err := structdiff.GetStructDiff(savedState, entry.NewState.Value)
+		localDiff, err := structdiff.GetStructDiff(savedState, entry.NewState.Value, adapter.KeyedSlices())
 		if err != nil {
 			logdiag.LogError(ctx, fmt.Errorf("%s: diffing local state: %w", errorPrefix, err))
 			return false
@@ -176,7 +176,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		entry.RemoteState = remoteState
 
 		var remoteAction deployplan.ActionType
-		var remoteChangeMap map[string]deployplan.Trigger
+		var remoteChangeMap map[string]deployplan.ChangeDesc
 
 		if remoteState == nil {
 			remoteAction = deployplan.ActionTypeCreate
@@ -187,7 +187,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 				return false
 			}
 
-			remoteDiff, err := structdiff.GetStructDiff(savedState, remoteStateComparable)
+			remoteDiff, err := structdiff.GetStructDiff(savedState, remoteStateComparable, adapter.KeyedSlices())
 			if err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("%s: diffing remote state: %w", errorPrefix, err))
 				return false
@@ -196,7 +196,19 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			remoteAction, remoteChangeMap = interpretOldStateVsRemoteState(ctx, adapter, remoteDiff, remoteState)
 		}
 
-		entry.Action = max(localAction, remoteAction).String()
+		action := max(localAction, remoteAction)
+		if action == deployplan.ActionTypeSkip {
+			// resource is not going to change, can use remoteState to resolve references
+			b.RemoteStateCache.Store(resourceKey, remoteState)
+		}
+
+		// Validate that resources without DoUpdate don't have update actions
+		if action == deployplan.ActionTypeUpdate && !adapter.HasDoUpdate() {
+			logdiag.LogError(ctx, fmt.Errorf("%s: resource does not support update action but plan produced update", errorPrefix))
+			return false
+		}
+
+		entry.Action = action.String()
 
 		if len(localChangeMap) > 0 || len(remoteChangeMap) > 0 {
 			entry.Changes = &deployplan.Changes{
@@ -221,9 +233,9 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 	return plan, nil
 }
 
-func localChangesToTriggers(ctx context.Context, adapter *dresources.Adapter, diff []structdiff.Change, remoteState any) (deployplan.ActionType, map[string]deployplan.Trigger) {
+func localChangesToTriggers(ctx context.Context, adapter *dresources.Adapter, diff []structdiff.Change, remoteState any) (deployplan.ActionType, map[string]deployplan.ChangeDesc) {
 	action := deployplan.ActionTypeSkip
-	var m map[string]deployplan.Trigger
+	var m map[string]deployplan.ChangeDesc
 
 	for _, ch := range diff {
 		fieldAction, err := adapter.ClassifyChange(ch, remoteState, true)
@@ -235,24 +247,29 @@ func localChangesToTriggers(ctx context.Context, adapter *dresources.Adapter, di
 			action = fieldAction
 		}
 		if m == nil {
-			m = make(map[string]deployplan.Trigger)
+			m = make(map[string]deployplan.ChangeDesc)
 		}
-		m[ch.Path.String()] = deployplan.Trigger{Action: fieldAction.String()}
+		m[ch.Path.String()] = deployplan.ChangeDesc{
+			Action: fieldAction.String(),
+			Old:    ch.Old,
+			New:    ch.New,
+		}
 	}
 
 	return action, m
 }
 
-func interpretOldStateVsRemoteState(ctx context.Context, adapter *dresources.Adapter, diff []structdiff.Change, remoteState any) (deployplan.ActionType, map[string]deployplan.Trigger) {
+func interpretOldStateVsRemoteState(ctx context.Context, adapter *dresources.Adapter, diff []structdiff.Change, remoteState any) (deployplan.ActionType, map[string]deployplan.ChangeDesc) {
 	action := deployplan.ActionTypeSkip
-	m := make(map[string]deployplan.Trigger)
+	m := make(map[string]deployplan.ChangeDesc)
 
 	for _, ch := range diff {
-		if ch.Old == nil {
+		if ch.Old == nil && ch.Path.IsDotString() {
 			// The field was not set by us, but comes from the remote state.
 			// This could either be server-side default or a policy.
 			// In any case, this is not a change we should react to.
-			m[ch.Path.String()] = deployplan.Trigger{
+			// Note, we only consider struct fields here. Adding/removing elements to/from maps and slices should trigger updates.
+			m[ch.Path.String()] = deployplan.ChangeDesc{
 				Action: deployplan.ActionTypeSkipString,
 				Reason: "server_side_default",
 			}
@@ -266,7 +283,11 @@ func interpretOldStateVsRemoteState(ctx context.Context, adapter *dresources.Ada
 		if fieldAction > action {
 			action = fieldAction
 		}
-		m[ch.Path.String()] = deployplan.Trigger{Action: fieldAction.String()}
+		m[ch.Path.String()] = deployplan.ChangeDesc{
+			Action: fieldAction.String(),
+			Old:    ch.Old,
+			New:    ch.New,
+		}
 	}
 
 	if len(m) == 0 {
@@ -276,9 +297,11 @@ func interpretOldStateVsRemoteState(ctx context.Context, adapter *dresources.Ada
 	return action, m
 }
 
+// TODO: calling this "Local" is not right, it can resolve "id" and remote refrences for "skip" targets
 func (b *DeploymentBundle) LookupReferenceLocal(ctx context.Context, path *structpath.PathNode) (any, error) {
 	// TODO: Prefix(3) assumes resources.jobs.foo but not resources.jobs.foo.permissions
 	targetResourceKey := path.Prefix(3).String()
+
 	fieldPath := path.SkipPrefix(3)
 	fieldPathS := fieldPath.String()
 
@@ -349,17 +372,30 @@ func (b *DeploymentBundle) LookupReferenceLocal(ctx context.Context, path *struc
 
 	if configValidErr != nil && remoteValidErr == nil {
 		// The field is only present in remote state schema.
-		// TODO: If resource is unchanged in this plan, we can proceed with resolution.
-		// If resource is going to change, we need to postpone this until deploy.
+		if targetAction != deployplan.ActionTypeSkip {
+			// The resource is going to be updated, so remoteState can change
+			return nil, errDelayed
+		}
+		remoteState, ok := b.RemoteStateCache.Load(targetResourceKey)
+		if ok {
+			return structaccess.Get(remoteState, fieldPath)
+		}
 		return nil, errDelayed
 	}
 
-	// Field is present in both: try local, fallback to delayed.
+	// Field is present in both: try local, fallback to remote (if skip) then delayed.
 
 	value, err := structaccess.Get(localConfig, fieldPath)
 
 	if err == nil && value != nil {
 		return value, nil
+	}
+
+	if targetAction == deployplan.ActionTypeSkip {
+		remoteState, ok := b.RemoteStateCache.Load(targetResourceKey)
+		if ok {
+			return structaccess.Get(remoteState, fieldPath)
+		}
 	}
 
 	return nil, errDelayed
@@ -372,11 +408,8 @@ func (b *DeploymentBundle) resolveReferences(ctx context.Context, entry *deployp
 	for fieldPathStr, refString := range entry.NewState.Refs {
 		refs, ok := dynvar.NewRef(dyn.V(refString))
 		if !ok {
-			if !isLocal {
-				logdiag.LogError(ctx, fmt.Errorf("%s: cannot parse %q", errorPrefix, refString))
-				return false
-			}
-			continue
+			logdiag.LogError(ctx, fmt.Errorf("%s: cannot parse %q", errorPrefix, refString))
+			return false
 		}
 
 		for _, pathString := range refs.References() {

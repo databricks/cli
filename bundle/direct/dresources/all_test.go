@@ -19,12 +19,14 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
+	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/databricks/databricks-sdk-go/service/database"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/databricks/databricks-sdk-go/service/serving"
+	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -137,6 +139,29 @@ var testConfig map[string]any = map[string]any{
 							ServedModelName:   "model-name-1",
 							TrafficPercentage: 100,
 						},
+					},
+				},
+			},
+		},
+	},
+
+	"alerts": &resources.Alert{
+		AlertV2: sql.AlertV2{
+			DisplayName: "my-alert",
+			QueryText:   "SELECT 1",
+			WarehouseId: "test-warehouse-id",
+			Schedule: sql.CronSchedule{
+				QuartzCronSchedule: "0 0 12 * * ?",
+				TimezoneId:         "UTC",
+			},
+			Evaluation: sql.AlertV2Evaluation{
+				ComparisonOperator: sql.ComparisonOperatorGreaterThan,
+				Source: sql.AlertV2OperandColumn{
+					Name: "column1",
+				},
+				Threshold: &sql.AlertV2Operand{
+					Column: &sql.AlertV2OperandColumn{
+						Name: "column2",
 					},
 				},
 			},
@@ -298,6 +323,36 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
+	"dashboards.permissions": func(client *databricks.WorkspaceClient) (any, error) {
+		ctx := context.Background()
+		parentPath := "/Workspace/Users/user@example.com"
+
+		// Create parent directory if it doesn't exist
+		err := client.Workspace.MkdirsByPath(ctx, parentPath)
+		if err != nil {
+			return nil, err
+		}
+
+		resp, err := client.Lakeview.Create(ctx, dashboards.CreateDashboardRequest{
+			Dashboard: dashboards.Dashboard{
+				DisplayName:         "dashboard-permissions",
+				ParentPath:          parentPath,
+				SerializedDashboard: `{"pages":[{"name":"page1","displayName":"Page 1"}]}`,
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return &PermissionsState{
+			ObjectID: "/dashboards/" + resp.DashboardId,
+			Permissions: []iam.AccessControlRequest{{
+				PermissionLevel: "CAN_MANAGE",
+				UserName:        "user@example.com",
+			}},
+		}, nil
+	},
+
 	"model_serving_endpoints.permissions": func(client *databricks.WorkspaceClient) (any, error) {
 		waiter, err := client.ServingEndpoints.Create(context.Background(), serving.CreateServingEndpoint{
 			Name: "endpoint-permissions",
@@ -318,6 +373,37 @@ var testDeps = map[string]prepareWorkspace{
 
 		return &PermissionsState{
 			ObjectID: "/serving-endpoints/" + waiter.Response.Name,
+			Permissions: []iam.AccessControlRequest{{
+				PermissionLevel: "CAN_MANAGE",
+				UserName:        "user@example.com",
+			}},
+		}, nil
+	},
+
+	"alerts.permissions": func(client *databricks.WorkspaceClient) (any, error) {
+		resp, err := client.AlertsV2.CreateAlert(context.Background(), sql.CreateAlertV2Request{
+			Alert: sql.AlertV2{
+				DisplayName: "alert-permissions",
+				QueryText:   "SELECT 1",
+				WarehouseId: "test-warehouse-id",
+				Schedule: sql.CronSchedule{
+					QuartzCronSchedule: "0 0 12 * * ?",
+					TimezoneId:         "UTC",
+				},
+				Evaluation: sql.AlertV2Evaluation{
+					ComparisonOperator: sql.ComparisonOperatorGreaterThan,
+					Source: sql.AlertV2OperandColumn{
+						Name: "column1",
+					},
+				},
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return &PermissionsState{
+			ObjectID: "/alertsv2/" + resp.Id,
 			Permissions: []iam.AccessControlRequest{{
 				PermissionLevel: "CAN_MANAGE",
 				UserName:        "user@example.com",
@@ -434,12 +520,12 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 		require.Equal(t, remote, remoteStateFromWaitCreate)
 	}
 
-	remoteStateFromUpdate, err := adapter.DoUpdate(ctx, createdID, newState)
+	remoteStateFromUpdate, err := adapter.DoUpdate(ctx, createdID, newState, nil)
 	require.NoError(t, err, "DoUpdate failed")
 	if remoteStateFromUpdate != nil {
 		remappedStateFromUpdate, err := adapter.RemapState(remoteStateFromUpdate)
 		require.NoError(t, err)
-		changes, err := structdiff.GetStructDiff(remappedState, remappedStateFromUpdate)
+		changes, err := structdiff.GetStructDiff(remappedState, remappedStateFromUpdate, nil)
 		require.NoError(t, err)
 		// Filter out timestamp fields that are expected to differ in value
 		var relevantChanges []structdiff.Change
@@ -537,10 +623,37 @@ func TestFieldTriggers(t *testing.T) {
 		require.NoError(t, err)
 
 		t.Run(resourceName+"_local", func(t *testing.T) {
-			validateFields(t, adapter.InputConfigType(), adapter.fieldTriggersLocal)
+			validateFields(t, adapter.StateType(), adapter.fieldTriggersLocal)
 		})
 		t.Run(resourceName+"_remote", func(t *testing.T) {
-			validateFields(t, adapter.InputConfigType(), adapter.fieldTriggersRemote)
+			validateFields(t, adapter.StateType(), adapter.fieldTriggersRemote)
+		})
+	}
+}
+
+// TestFieldTriggersNoUpdateWhenNotImplemented validates that resources without
+// DoUpdate implementation don't produce update actions in their FieldTriggers.
+func TestFieldTriggersNoUpdateWhenNotImplemented(t *testing.T) {
+	for resourceName, resource := range SupportedResources {
+		adapter, err := NewAdapter(resource, nil)
+		require.NoError(t, err)
+
+		if adapter.HasDoUpdate() {
+			continue
+		}
+
+		t.Run(resourceName+"_local", func(t *testing.T) {
+			for field, action := range adapter.fieldTriggersLocal {
+				assert.NotEqual(t, deployplan.ActionTypeUpdate, action,
+					"resource %s does not implement DoUpdate but field %s triggers update action", resourceName, field)
+			}
+		})
+
+		t.Run(resourceName+"_remote", func(t *testing.T) {
+			for field, action := range adapter.fieldTriggersRemote {
+				assert.NotEqual(t, deployplan.ActionTypeUpdate, action,
+					"resource %s does not implement DoUpdate but field %s triggers update action", resourceName, field)
+			}
 		})
 	}
 }

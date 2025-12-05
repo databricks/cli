@@ -26,19 +26,16 @@ func New() *cobra.Command {
   Databricks account admins can create metastores and assign them to Databricks
   workspaces to control which workloads use each metastore. For a workspace to
   use Unity Catalog, it must have a Unity Catalog metastore attached.
-  
+
   Each metastore is configured with a root storage location in a cloud storage
   account. This storage location is used for metadata and managed tables data.
-  
+
   NOTE: This metastore is distinct from the metastore included in Databricks
   workspaces created before Unity Catalog was released. If your workspace
   includes a legacy Hive metastore, the data in that metastore is available in a
   catalog named hive_metastore.`,
 		GroupID: "catalog",
-		Annotations: map[string]string{
-			"package": "catalog",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -81,7 +78,7 @@ func newAssign() *cobra.Command {
 	cmd.Use = "assign WORKSPACE_ID METASTORE_ID DEFAULT_CATALOG_NAME"
 	cmd.Short = `Create an assignment.`
 	cmd.Long = `Create an assignment.
-  
+
   Creates a new metastore assignment. If an assignment for the same
   __workspace_id__ exists, it will be overwritten by the new __metastore_id__
   and __default_catalog_name__. The caller must be an account admin.
@@ -178,7 +175,7 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create NAME"
 	cmd.Short = `Create a metastore.`
 	cmd.Long = `Create a metastore.
-  
+
   Creates a new metastore based on a provided name and optional storage root
   path. By default (if the __owner__ field is not set), the owner of the new
   metastore is the user calling the __createMetastore__ API. If the __owner__
@@ -256,7 +253,7 @@ func newCurrent() *cobra.Command {
 	cmd.Use = "current"
 	cmd.Short = `Get metastore assignment for workspace.`
 	cmd.Long = `Get metastore assignment for workspace.
-  
+
   Gets the metastore assignment for the workspace being accessed.`
 
 	cmd.Annotations = make(map[string]string)
@@ -303,7 +300,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete ID"
 	cmd.Short = `Delete a metastore.`
 	cmd.Long = `Delete a metastore.
-  
+
   Deletes a metastore. The caller must be a metastore admin.
 
   Arguments:
@@ -359,7 +356,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get ID"
 	cmd.Short = `Get a metastore.`
 	cmd.Long = `Get a metastore.
-  
+
   Gets a metastore that matches the supplied ID. The caller must be a metastore
   admin to retrieve this info.
 
@@ -419,14 +416,14 @@ func newList() *cobra.Command {
 	cmd.Use = "list"
 	cmd.Short = `List metastores.`
 	cmd.Long = `List metastores.
-  
+
   Gets an array of the available metastores (as __MetastoreInfo__ objects). The
   caller must be an admin to retrieve this info. There is no guarantee of a
   specific ordering of the elements in the array.
-  
+
   NOTE: we recommend using max_results=0 to use the paginated version of this
   API. Unpaginated calls will be deprecated soon.
-  
+
   PAGINATION BEHAVIOR: When using pagination (max_results >= 0), a page may
   contain zero results while still providing a next_page_token. Clients must
   continue reading pages until next_page_token is absent, which is the only
@@ -474,7 +471,7 @@ func newSummary() *cobra.Command {
 	cmd.Use = "summary"
 	cmd.Short = `Get a metastore summary.`
 	cmd.Long = `Get a metastore summary.
-  
+
   Gets information about a metastore. This summary includes the storage
   credential, the cloud vendor, the cloud region, and the global metastore ID.`
 
@@ -520,7 +517,7 @@ func newUnassign() *cobra.Command {
 	cmd.Use = "unassign WORKSPACE_ID METASTORE_ID"
 	cmd.Short = `Delete an assignment.`
 	cmd.Long = `Delete an assignment.
-  
+
   Deletes a metastore assignment. The caller must be an account administrator.
 
   Arguments:
@@ -593,7 +590,7 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update ID"
 	cmd.Short = `Update a metastore.`
 	cmd.Long = `Update a metastore.
-  
+
   Updates information for a specific metastore. The caller must be a metastore
   admin. If the __owner__ field is set to the empty string (**""**), the
   ownership is updated to the System User.
@@ -669,7 +666,7 @@ func newUpdateAssignment() *cobra.Command {
 	cmd.Use = "update-assignment WORKSPACE_ID"
 	cmd.Short = `Update an assignment.`
 	cmd.Long = `Update an assignment.
-  
+
   Updates a metastore assignment. This operation can be used to update
   __metastore_id__ or __default_catalog_name__ for a specified Workspace, if the
   Workspace is already assigned a metastore. The caller must be an account admin

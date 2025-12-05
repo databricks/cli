@@ -23,10 +23,7 @@ func New() *cobra.Command {
 		Short:   `This API allows updating known workspace settings for advanced users.`,
 		Long:    `This API allows updating known workspace settings for advanced users.`,
 		GroupID: "settings",
-		Annotations: map[string]string{
-			"package": "settings",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -58,7 +55,7 @@ func newGetStatus() *cobra.Command {
 	cmd.Use = "get-status KEYS"
 	cmd.Short = `Check configuration status.`
 	cmd.Long = `Check configuration status.
-  
+
   Gets the configuration status for a workspace.`
 
 	cmd.Annotations = make(map[string]string)
@@ -114,7 +111,7 @@ func newSetStatus() *cobra.Command {
 	cmd.Use = "set-status"
 	cmd.Short = `Enable/disable features.`
 	cmd.Long = `Enable/disable features.
-  
+
   Sets the configuration status for a workspace, including enabling or disabling
   it.`
 

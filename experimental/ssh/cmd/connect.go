@@ -29,6 +29,7 @@ the SSH server and handling the connection proxy.
 	var handoverTimeout time.Duration
 	var releasesDir string
 	var autoStartCluster bool
+	var userKnownHostsFile string
 
 	cmd.Flags().StringVar(&clusterID, "cluster", "", "Databricks cluster ID (required)")
 	cmd.MarkFlagRequired("cluster")
@@ -45,6 +46,9 @@ the SSH server and handling the connection proxy.
 
 	cmd.Flags().StringVar(&releasesDir, "releases-dir", "", "Directory for local SSH tunnel development releases")
 	cmd.Flags().MarkHidden("releases-dir")
+
+	cmd.Flags().StringVar(&userKnownHostsFile, "user-known-hosts-file", "", "Path to user known hosts file for SSH client")
+	cmd.Flags().MarkHidden("user-known-hosts-file")
 
 	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
 		// CLI in the proxy mode is executed by the ssh client and can't prompt for input
@@ -73,6 +77,7 @@ the SSH server and handling the connection proxy.
 			AutoStartCluster:     autoStartCluster,
 			ClientPublicKeyName:  clientPublicKeyName,
 			ClientPrivateKeyName: clientPrivateKeyName,
+			UserKnownHostsFile:   userKnownHostsFile,
 			AdditionalArgs:       args,
 		}
 		return client.Run(ctx, wsClient, opts)

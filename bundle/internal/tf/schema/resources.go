@@ -47,6 +47,7 @@ type Resources struct {
 	ExternalLocation                             map[string]any `json:"databricks_external_location,omitempty"`
 	ExternalMetadata                             map[string]any `json:"databricks_external_metadata,omitempty"`
 	FeatureEngineeringFeature                    map[string]any `json:"databricks_feature_engineering_feature,omitempty"`
+	FeatureEngineeringKafkaConfig                map[string]any `json:"databricks_feature_engineering_kafka_config,omitempty"`
 	FeatureEngineeringMaterializedFeature        map[string]any `json:"databricks_feature_engineering_materialized_feature,omitempty"`
 	File                                         map[string]any `json:"databricks_file,omitempty"`
 	GitCredential                                map[string]any `json:"databricks_git_credential,omitempty"`
@@ -185,6 +186,7 @@ func NewResources() *Resources {
 		ExternalLocation:                      make(map[string]any),
 		ExternalMetadata:                      make(map[string]any),
 		FeatureEngineeringFeature:             make(map[string]any),
+		FeatureEngineeringKafkaConfig:         make(map[string]any),
 		FeatureEngineeringMaterializedFeature: make(map[string]any),
 		File:                                  make(map[string]any),
 		GitCredential:                         make(map[string]any),

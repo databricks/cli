@@ -30,7 +30,9 @@
       "changes": {
         "local": {
           "config.auto_capture_config.catalog_name": {
-            "action": "recreate"
+            "action": "recreate",
+            "old": "main",
+            "new": "other_catalog"
           }
         }
       }

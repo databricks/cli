@@ -22,10 +22,7 @@ func New() *cobra.Command {
 		Short:   `Providers are the entities that publish listings to the Marketplace.`,
 		Long:    `Providers are the entities that publish listings to the Marketplace.`,
 		GroupID: "marketplace",
-		Annotations: map[string]string{
-			"package": "marketplace",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -60,7 +57,7 @@ func newBatchGet() *cobra.Command {
 	cmd.Use = "batch-get"
 	cmd.Short = `Get one batch of providers. One may specify up to 50 IDs per request.`
 	cmd.Long = `Get one batch of providers. One may specify up to 50 IDs per request.
-  
+
   Batch get a provider in the Databricks Marketplace with at least one visible
   listing.`
 
@@ -112,7 +109,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get ID"
 	cmd.Short = `Get a provider.`
 	cmd.Long = `Get a provider.
-  
+
   Get a provider in the Databricks Marketplace with at least one visible
   listing.`
 
@@ -182,7 +179,7 @@ func newList() *cobra.Command {
 	cmd.Use = "list"
 	cmd.Short = `List providers.`
 	cmd.Long = `List providers.
-  
+
   List all providers in the Databricks Marketplace with at least one visible
   listing.`
 

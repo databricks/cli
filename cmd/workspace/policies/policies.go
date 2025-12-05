@@ -30,10 +30,7 @@ func New() *cobra.Command {
   MANAGE privilege on a securable to view, create, update, or delete ABAC
   policies.`,
 		GroupID: "catalog",
-		Annotations: map[string]string{
-			"package": "catalog",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -93,14 +90,14 @@ func newCreatePolicy() *cobra.Command {
   STORAGE_CREDENTIAL,
   TABLE,
   VOLUME,
-].`)
+]`)
 	// TODO: complex arg: row_filter
 	cmd.Flags().StringVar(&createPolicyReq.PolicyInfo.WhenCondition, "when-condition", createPolicyReq.PolicyInfo.WhenCondition, `Optional condition when the policy should take effect.`)
 
 	cmd.Use = "create-policy TO_PRINCIPALS FOR_SECURABLE_TYPE POLICY_TYPE"
 	cmd.Short = `Create an ABAC policy.`
 	cmd.Long = `Create an ABAC policy.
-  
+
   Creates a new policy on a securable. The new policy applies to the securable
   and all its descendants.
 
@@ -108,7 +105,7 @@ func newCreatePolicy() *cobra.Command {
     TO_PRINCIPALS: List of user or group names that the policy applies to. Required on create
       and optional on update.
     FOR_SECURABLE_TYPE: Type of securables that the policy should take effect on. Only TABLE is
-      supported at this moment. Required on create and optional on update. 
+      supported at this moment. Required on create and optional on update.
       Supported values: [
         CATALOG,
         CLEAN_ROOM,
@@ -128,7 +125,7 @@ func newCreatePolicy() *cobra.Command {
         TABLE,
         VOLUME,
       ]
-    POLICY_TYPE: Type of the policy. Required on create and ignored on update. 
+    POLICY_TYPE: Type of the policy. Required on create and ignored on update.
       Supported values: [POLICY_TYPE_COLUMN_MASK, POLICY_TYPE_ROW_FILTER]`
 
 	cmd.Annotations = make(map[string]string)
@@ -220,7 +217,7 @@ func newDeletePolicy() *cobra.Command {
 	cmd.Use = "delete-policy ON_SECURABLE_TYPE ON_SECURABLE_FULLNAME NAME"
 	cmd.Short = `Delete an ABAC policy.`
 	cmd.Long = `Delete an ABAC policy.
-  
+
   Delete an ABAC policy defined on a securable.
 
   Arguments:
@@ -281,7 +278,7 @@ func newGetPolicy() *cobra.Command {
 	cmd.Use = "get-policy ON_SECURABLE_TYPE ON_SECURABLE_FULLNAME NAME"
 	cmd.Short = `Get an ABAC policy.`
 	cmd.Long = `Get an ABAC policy.
-  
+
   Get the policy definition on a securable
 
   Arguments:
@@ -345,10 +342,10 @@ func newListPolicies() *cobra.Command {
 	cmd.Use = "list-policies ON_SECURABLE_TYPE ON_SECURABLE_FULLNAME"
 	cmd.Short = `List ABAC policies.`
 	cmd.Long = `List ABAC policies.
-  
+
   List all policies defined on a securable. Optionally, the list can include
   inherited policies defined on the securable's parent schema or catalog.
-  
+
   PAGINATION BEHAVIOR: The API is by default paginated, a page may contain zero
   results while still providing a next_page_token. Clients must continue reading
   pages until next_page_token is absent, which is the only indication that the
@@ -432,14 +429,14 @@ func newUpdatePolicy() *cobra.Command {
   STORAGE_CREDENTIAL,
   TABLE,
   VOLUME,
-].`)
+]`)
 	// TODO: complex arg: row_filter
 	cmd.Flags().StringVar(&updatePolicyReq.PolicyInfo.WhenCondition, "when-condition", updatePolicyReq.PolicyInfo.WhenCondition, `Optional condition when the policy should take effect.`)
 
 	cmd.Use = "update-policy ON_SECURABLE_TYPE ON_SECURABLE_FULLNAME NAME TO_PRINCIPALS FOR_SECURABLE_TYPE POLICY_TYPE"
 	cmd.Short = `Update an ABAC policy.`
 	cmd.Long = `Update an ABAC policy.
-  
+
   Update an ABAC policy on a securable.
 
   Arguments:
@@ -450,7 +447,7 @@ func newUpdatePolicy() *cobra.Command {
     TO_PRINCIPALS: List of user or group names that the policy applies to. Required on create
       and optional on update.
     FOR_SECURABLE_TYPE: Type of securables that the policy should take effect on. Only TABLE is
-      supported at this moment. Required on create and optional on update. 
+      supported at this moment. Required on create and optional on update.
       Supported values: [
         CATALOG,
         CLEAN_ROOM,
@@ -470,7 +467,7 @@ func newUpdatePolicy() *cobra.Command {
         TABLE,
         VOLUME,
       ]
-    POLICY_TYPE: Type of the policy. Required on create and ignored on update. 
+    POLICY_TYPE: Type of the policy. Required on create and ignored on update.
       Supported values: [POLICY_TYPE_COLUMN_MASK, POLICY_TYPE_ROW_FILTER]`
 
 	cmd.Annotations = make(map[string]string)

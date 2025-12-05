@@ -4,9 +4,9 @@ import (
 	"cmp"
 	"fmt"
 	"slices"
-	"strings"
 	"sync"
 
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structvar"
 )
 
@@ -45,25 +45,48 @@ type DependsOnEntry struct {
 }
 
 type Changes struct {
-	Local  map[string]Trigger `json:"local,omitempty"`
-	Remote map[string]Trigger `json:"remote,omitempty"`
+	Local  map[string]ChangeDesc `json:"local,omitempty"`
+	Remote map[string]ChangeDesc `json:"remote,omitempty"`
 }
 
-type Trigger struct {
+type ChangeDesc struct {
 	Action string `json:"action"`
 	Reason string `json:"reason,omitempty"`
+	Old    any    `json:"old,omitempty"`
+	New    any    `json:"new,omitempty"`
+}
+
+// HasChange checks if there are any changes for fields with the given prefix.
+// This function is path-aware and correctly handles path component boundaries.
+// For example:
+//   - HasChange("a") matches "a" and "a.b" but not "aa"
+//   - HasChange("config") matches "config" and "config.name" but not "configuration"
+//
+// Note: This function does not support wildcard patterns.
+func (c *Changes) HasChange(fieldPath string) bool {
+	if c == nil {
+		return false
+	}
+
+	for field := range c.Local {
+		if structpath.HasPrefix(field, fieldPath) {
+			return true
+		}
+	}
+
+	for field := range c.Remote {
+		if structpath.HasPrefix(field, fieldPath) {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (p *Plan) GetActions() []Action {
 	actions := make([]Action, 0, len(p.Plan))
 	for key, entry := range p.Plan {
 		at := ActionTypeFromString(entry.Action)
-		parts := strings.Split(key, ".")
-		if len(parts) == 4 {
-			// Example: "resources.jobs.foo.permissions"
-			// For compatibility between terraform and direct output filter out permissions and grants
-			continue
-		}
 		actions = append(actions, Action{
 			ResourceKey: key,
 			ActionType:  at,

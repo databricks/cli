@@ -24,9 +24,6 @@ func New() *cobra.Command {
 		Long: `Credentials manager interacts with with Identity Providers to to perform token
   exchanges using stored credentials and refresh tokens.`,
 		GroupID: "settings",
-		Annotations: map[string]string{
-			"package": "settings",
-		},
 
 		// This service is being previewed; hide from help output.
 		Hidden: true,
@@ -64,7 +61,7 @@ func newExchangeToken() *cobra.Command {
 	cmd.Use = "exchange-token"
 	cmd.Short = `Exchange token.`
 	cmd.Long = `Exchange token.
-  
+
   Exchange tokens with an Identity Provider to get a new access token. It allows
   specifying scopes to determine token permissions.`
 

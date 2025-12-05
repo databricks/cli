@@ -25,9 +25,6 @@ func New() *cobra.Command {
 		Long: `The Forecasting API allows you to create and get serverless forecasting
   experiments`,
 		GroupID: "ml",
-		Annotations: map[string]string{
-			"package": "ml",
-		},
 
 		// This service is being previewed; hide from help output.
 		Hidden: true,
@@ -85,7 +82,7 @@ func newCreateExperiment() *cobra.Command {
 	cmd.Use = "create-experiment TRAIN_DATA_PATH TARGET_COLUMN TIME_COLUMN FORECAST_GRANULARITY FORECAST_HORIZON"
 	cmd.Short = `Create a forecasting experiment.`
 	cmd.Long = `Create a forecasting experiment.
-  
+
   Creates a serverless forecasting experiment. Returns the experiment ID.
 
   Arguments:
@@ -205,7 +202,7 @@ func newGetExperiment() *cobra.Command {
 	cmd.Use = "get-experiment EXPERIMENT_ID"
 	cmd.Short = `Get a forecasting experiment.`
 	cmd.Long = `Get a forecasting experiment.
-  
+
   Public RPC to get forecasting experiment
 
   Arguments:

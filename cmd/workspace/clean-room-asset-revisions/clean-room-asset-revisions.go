@@ -23,10 +23,7 @@ func New() *cobra.Command {
 		Long: `Clean Room Asset Revisions denote new versions of uploaded assets (e.g.
   notebooks) in the clean room.`,
 		GroupID: "cleanrooms",
-		Annotations: map[string]string{
-			"package": "cleanrooms",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -58,12 +55,12 @@ func newGet() *cobra.Command {
 	cmd.Use = "get CLEAN_ROOM_NAME ASSET_TYPE NAME ETAG"
 	cmd.Short = `Get an asset revision.`
 	cmd.Long = `Get an asset revision.
-  
+
   Get a specific revision of an asset
 
   Arguments:
     CLEAN_ROOM_NAME: Name of the clean room.
-    ASSET_TYPE: Asset type. Only NOTEBOOK_FILE is supported. 
+    ASSET_TYPE: Asset type. Only NOTEBOOK_FILE is supported.
       Supported values: [FOREIGN_TABLE, NOTEBOOK_FILE, TABLE, VIEW, VOLUME]
     NAME: Name of the asset.
     ETAG: Revision etag to fetch. If not provided, the latest revision will be
@@ -129,12 +126,12 @@ func newList() *cobra.Command {
 	cmd.Use = "list CLEAN_ROOM_NAME ASSET_TYPE NAME"
 	cmd.Short = `List asset revisions.`
 	cmd.Long = `List asset revisions.
-  
+
   List revisions for an asset
 
   Arguments:
     CLEAN_ROOM_NAME: Name of the clean room.
-    ASSET_TYPE: Asset type. Only NOTEBOOK_FILE is supported. 
+    ASSET_TYPE: Asset type. Only NOTEBOOK_FILE is supported.
       Supported values: [FOREIGN_TABLE, NOTEBOOK_FILE, TABLE, VIEW, VOLUME]
     NAME: Name of the asset.`
 

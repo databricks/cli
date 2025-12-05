@@ -30,7 +30,9 @@
       "changes": {
         "local": {
           "config.auto_capture_config.table_name_prefix": {
-            "action": "recreate"
+            "action": "recreate",
+            "old": "my_table",
+            "new": "other_table"
           }
         }
       }

@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"strings"
 	"sync"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -28,22 +27,6 @@ type Database struct {
 type ResourceEntry struct {
 	ID    string `json:"__id__"`
 	State any    `json:"state"`
-}
-
-// splitKey extracts group and name from the key: 'resources.jobs.foo' -> 'jobs', 'foo', true
-// For sub-resources like permissions it returns "", "", false
-// Note we don't use group/name anywhere in bundle/direct, this is only for ExportState
-// which makes ID available to other parts of DABs
-func splitKey(key string) (group, name string, ok bool) {
-	items := strings.Split(key, ".")
-	if len(items) != 3 {
-		// e.g. resources.jobs.foo.permissions
-		return "", "", false
-	}
-	if items[0] != "resources" {
-		return "", "", false
-	}
-	return items[1], items[2], true
 }
 
 func (db *DeploymentState) SaveState(key, newID string, state any) error {
@@ -105,7 +88,7 @@ func (db *DeploymentState) Open(path string) error {
 	if err != nil {
 		if os.IsNotExist(err) {
 			db.Data = Database{
-				Serial:  0,
+				Serial:  1,
 				Lineage: uuid.New().String(),
 				State:   make(map[string]ResourceEntry),
 			}
@@ -140,15 +123,6 @@ func (db *DeploymentState) AssertOpened() {
 func (db *DeploymentState) ExportState(ctx context.Context) resourcestate.ExportedResourcesMap {
 	result := make(resourcestate.ExportedResourcesMap)
 	for key, entry := range db.Data.State {
-		groupName, resourceName, ok := splitKey(key)
-		if !ok {
-			continue
-		}
-		resultGroup, ok := result[groupName]
-		if !ok {
-			resultGroup = make(map[string]resourcestate.ResourceState)
-			result[groupName] = resultGroup
-		}
 		// Extract etag for dashboards.
 		var etag string
 		switch dashboard := entry.State.(type) {
@@ -166,7 +140,7 @@ func (db *DeploymentState) ExportState(ctx context.Context) resourcestate.Export
 			etag = dashboard.Etag
 		}
 
-		resultGroup[resourceName] = resourcestate.ResourceState{
+		result[key] = resourcestate.ResourceState{
 			ID:   entry.ID,
 			ETag: etag,
 		}

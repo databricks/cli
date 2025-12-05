@@ -2,6 +2,9 @@
   "plan": {
     "resources.schemas.grants_schema": {
       "action": "create"
+    },
+    "resources.schemas.grants_schema.grants": {
+      "action": "create"
     }
   }
 }

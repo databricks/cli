@@ -26,10 +26,7 @@ func New() *cobra.Command {
   privacy-protecting environment where multiple parties can work together on
   sensitive enterprise data without direct access to each other's data.`,
 		GroupID: "cleanrooms",
-		Annotations: map[string]string{
-			"package": "cleanrooms",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -81,14 +78,14 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create"
 	cmd.Short = `Create a clean room.`
 	cmd.Long = `Create a clean room.
-  
+
   Create a new clean room with the specified collaborators. This method is
   asynchronous; the returned name field inside the clean_room field can be used
   to poll the clean room status, using the :method:cleanrooms/get method. When
   this method returns, the clean room will be in a PROVISIONING state, with only
   name, owner, comment, created_at and status populated. The clean room will be
   usable once it enters an ACTIVE state.
-  
+
   The caller must be a metastore admin or have the **CREATE_CLEAN_ROOM**
   privilege on the metastore.`
 
@@ -172,7 +169,7 @@ func newCreateOutputCatalog() *cobra.Command {
 	cmd.Use = "create-output-catalog CLEAN_ROOM_NAME"
 	cmd.Short = `Create an output catalog.`
 	cmd.Long = `Create an output catalog.
-  
+
   Create the output catalog of the clean room.
 
   Arguments:
@@ -240,7 +237,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete NAME"
 	cmd.Short = `Delete a clean room.`
 	cmd.Long = `Delete a clean room.
-  
+
   Delete a clean room. After deletion, the clean room will be removed from the
   metastore. If the other collaborators have not deleted the clean room, they
   will still have the clean room in their metastore, but it will be in a DELETED
@@ -299,7 +296,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get NAME"
 	cmd.Short = `Get a clean room.`
 	cmd.Long = `Get a clean room.
-  
+
   Get the details of a clean room given its name.`
 
 	cmd.Annotations = make(map[string]string)
@@ -355,7 +352,7 @@ func newList() *cobra.Command {
 	cmd.Use = "list"
 	cmd.Short = `List clean rooms.`
 	cmd.Long = `List clean rooms.
-  
+
   Get a list of all clean rooms of the metastore. Only clean rooms the caller
   has access to are returned.`
 
@@ -409,10 +406,10 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update NAME"
 	cmd.Short = `Update a clean room.`
 	cmd.Long = `Update a clean room.
-  
+
   Update a clean room. The caller must be the owner of the clean room, have
   **MODIFY_CLEAN_ROOM** privilege, or be metastore admin.
-  
+
   When the caller is a metastore admin, only the __owner__ field can be updated.
 
   Arguments:

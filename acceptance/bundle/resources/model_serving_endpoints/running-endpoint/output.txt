@@ -33,9 +33,13 @@ Deployment complete!
   "creator": "[USERNAME]"
 }
 
+=== verify there's no persistent drift
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
-  delete model_serving_endpoint my_endpoint
+  delete resources.model_serving_endpoints.my_endpoint
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default
 

@@ -23,10 +23,7 @@ func New() *cobra.Command {
   you to gain insights into your usage with pre-built dashboards: visualize
   breakdowns, analyze tag attributions, and identify cost drivers.`,
 		GroupID: "billing",
-		Annotations: map[string]string{
-			"package": "billing",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -59,12 +56,13 @@ func newCreate() *cobra.Command {
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().Var(&createReq.DashboardType, "dashboard-type", `Workspace level usage dashboard shows usage data for the specified workspace ID. Supported values: [USAGE_DASHBOARD_TYPE_GLOBAL, USAGE_DASHBOARD_TYPE_WORKSPACE]`)
+	cmd.Flags().Var(&createReq.MajorVersion, "major-version", `The major version of the usage dashboard template to use. Supported values: [USAGE_DASHBOARD_MAJOR_VERSION_1, USAGE_DASHBOARD_MAJOR_VERSION_2]`)
 	cmd.Flags().Int64Var(&createReq.WorkspaceId, "workspace-id", createReq.WorkspaceId, `The workspace ID of the workspace in which the usage dashboard is created.`)
 
 	cmd.Use = "create"
 	cmd.Short = `Create new usage dashboard.`
 	cmd.Long = `Create new usage dashboard.
-  
+
   Create a usage dashboard specified by workspaceId, accountId, and dashboard
   type.`
 
@@ -132,7 +130,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get"
 	cmd.Short = `Get usage dashboard.`
 	cmd.Long = `Get usage dashboard.
-  
+
   Get a usage dashboard specified by workspaceId, accountId, and dashboard type.`
 
 	cmd.Annotations = make(map[string]string)
