@@ -13,6 +13,7 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"time"
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/direct"
@@ -50,6 +51,7 @@ type Metrics struct {
 	PythonAddedResourcesCount   int64
 	PythonUpdatedResourcesCount int64
 	ExecutionTimes              []protos.IntMapEntry
+	LocalCacheMeasurementsMs    []protos.IntMapEntry // Local cache measurements stored as milliseconds
 }
 
 // SetBoolValue sets the value of a boolean metric.
@@ -68,6 +70,21 @@ func (m *Metrics) SetBoolValue(key string, value bool) {
 
 func (m *Metrics) AddBoolValue(key string, value bool) {
 	m.BoolValues = append(m.BoolValues, protos.BoolMapEntry{Key: key, Value: value})
+}
+
+// SetDurationValue sets the value of a duration metric in milliseconds.
+// If the metric does not exist, it is created.
+// If the metric exists, it is updated.
+// Ensures that the metric is unique.
+func (m *Metrics) SetDurationValue(key string, value time.Duration) {
+	valueMs := value.Milliseconds()
+	for i, v := range m.LocalCacheMeasurementsMs {
+		if v.Key == key {
+			m.LocalCacheMeasurementsMs[i].Value = valueMs
+			return
+		}
+	}
+	m.LocalCacheMeasurementsMs = append(m.LocalCacheMeasurementsMs, protos.IntMapEntry{Key: key, Value: valueMs})
 }
 
 type Bundle struct {

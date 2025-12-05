@@ -17,6 +17,14 @@ Deployment complete!
 {
   "bool_values": [
     {
+      "key": "local.cache.(redacted)
+      "value": true
+    },
+    {
+      "key": "local.cache.(redacted)
+      "value": true
+    },
+    {
       "key": "artifact_build_command_is_set",
       "value": false
     },
@@ -48,6 +56,14 @@ Deployment complete!
 }
 {
   "bool_values": [
+    {
+      "key": "local.cache.(redacted)
+      "value": true
+    },
+    {
+      "key": "local.cache.(redacted)
+      "value": true
+    },
     {
       "key": "artifact_build_command_is_set",
       "value": true

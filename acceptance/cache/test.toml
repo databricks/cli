@@ -1,0 +1,15 @@
+[[Repls]]
+Old = '\d\d:\d\d:\d\d'
+New = "[DEBUG_TIMESTAMP]"
+
+[[Repls]]
+Old = '[a-f0-9]{64}'
+New = "[SHA256_HASH]"
+
+[[Repls]]
+Old = '[a-f0-9]{12}'
+New = "[CACHE_KEY]"
+
+[[Repls]]
+Old = 'failed to stat cache file: .*'
+New = "failed to stat cache file: (redacted)"
