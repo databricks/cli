@@ -257,7 +257,7 @@ func newDevLocal() *cobra.Command {
 		debugPort          string
 		appPort            int
 		appName            string
-		skipRemoteEnv      bool
+		injectRemoteEnv    bool
 	)
 
 	cmd := &cobra.Command{}
@@ -276,7 +276,7 @@ func newDevLocal() *cobra.Command {
 	cmd.Flags().StringVar(&entryPoint, "entry-point", "", "Specify the custom entry point with configuration (.yml file) for the app. Defaults to app.yml")
 	cmd.Flags().StringVar(&debugPort, "debug-port", "", "Port on which to run the debugger")
 	cmd.Flags().StringVar(&appName, "app-name", "", "Name of the deployed app to fetch environment variables from")
-	cmd.Flags().BoolVar(&skipRemoteEnv, "skip-remote-env", false, "Skip fetching environment variables from the deployed app")
+	cmd.Flags().BoolVar(&injectRemoteEnv, "inject-remote-env", true, "Inject environment variables from the deployed app (requires --app-name)")
 	cmd.PreRunE = root.MustWorkspaceClient
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
@@ -292,14 +292,19 @@ func newDevLocal() *cobra.Command {
 			config.DebugPort = debugPort
 		}
 
-		// Fetch remote environment variables if app-name is provided and skip-remote-env is false
+		// Fetch remote environment variables if app-name is provided and inject-remote-env is true
 		var remoteEnv []string
-		if appName != "" && !skipRemoteEnv {
+		if appName != "" && injectRemoteEnv {
 			remoteEnv, err = fetchRemoteEnvVars(ctx, w, appName)
 			if err != nil {
 				return fmt.Errorf("failed to fetch remote environment variables: %w", err)
 			}
 			cmdio.LogString(ctx, fmt.Sprintf("Fetched %d environment variables from deployed app", len(remoteEnv)))
+			// Temporary logging for debugging
+			cmdio.LogString(ctx, "Remote environment variables:")
+			for _, envVar := range remoteEnv {
+				cmdio.LogString(ctx, "  "+envVar)
+			}
 		}
 
 		// Merge remote env vars with local customEnv, with local taking precedence
