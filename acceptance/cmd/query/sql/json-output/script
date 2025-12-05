@@ -1,0 +1,4 @@
+title "Writes NDJSON results to file"
+trace $CLI query sql --warehouse-id wh-123 --sql "SELECT 'a' AS letter, 1 AS num UNION ALL SELECT 'b', 2" --format json --result-file result.json
+trace cat result.json
+rm result.json

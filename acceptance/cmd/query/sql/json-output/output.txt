@@ -1,0 +1,8 @@
+
+=== Writes NDJSON results to file
+>>> [CLI] query sql --warehouse-id wh-123 --sql SELECT 'a' AS letter, 1 AS num UNION ALL SELECT 'b', 2 --format json --result-file result.json
+Results truncated for statement stmt-2
+
+>>> cat result.json
+{"letter":"a","num":"1"}
+{"letter":"b","num":"2"}

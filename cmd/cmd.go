@@ -16,6 +16,7 @@ import (
 	"github.com/databricks/cli/cmd/fs"
 	"github.com/databricks/cli/cmd/labs"
 	"github.com/databricks/cli/cmd/pipelines"
+	"github.com/databricks/cli/cmd/query"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/cmd/selftest"
 	"github.com/databricks/cli/cmd/sync"
@@ -91,6 +92,7 @@ func New(ctx context.Context) *cobra.Command {
 	cli.AddCommand(configure.New())
 	cli.AddCommand(fs.New())
 	cli.AddCommand(labs.New(ctx))
+	cli.AddCommand(query.New())
 	cli.AddCommand(sync.New())
 	cli.AddCommand(version.New())
 	cli.AddCommand(selftest.New())

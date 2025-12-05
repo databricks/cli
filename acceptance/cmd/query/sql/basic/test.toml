@@ -1,0 +1,32 @@
+[[Server]]
+Pattern = "POST /api/2.0/sql/statements"
+Response.Body = '''
+{
+  "statement_id": "stmt-1",
+  "status": {"state": "SUCCEEDED"},
+  "manifest": {
+    "schema": {
+      "column_count": 1,
+      "columns": [
+        {"name": "one"}
+      ]
+    },
+    "total_row_count": 1
+  },
+  "result": {
+    "chunk_index": 0,
+    "data_array": [["1"]],
+    "row_count": 1
+  }
+}
+'''
+
+[[Server]]
+Pattern = "GET /api/2.0/sql/statements/stmt-1/result/chunks/0"
+Response.Body = '''
+{
+  "chunk_index": 0,
+  "data_array": [["1"]],
+  "row_count": 1
+}
+'''
