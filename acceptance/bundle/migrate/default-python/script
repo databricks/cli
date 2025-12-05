@@ -3,7 +3,10 @@ cd my_default_python
 
 trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
 trace print_state.py > ../out.state_original.json
-trace $CLI bundle deployment migrate
+
+trace musterr $CLI bundle deployment migrate
+trace $CLI bundle deployment migrate --noplancheck
+
 trace print_state.py > ../out.state_after_migration.json
 trace jq '.. | .libraries? | select(.)' ../out.state_after_migration.json
 

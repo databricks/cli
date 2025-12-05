@@ -1,9 +1,12 @@
 package deployment
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
+	"strings"
 
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/direct"
@@ -18,6 +21,60 @@ import (
 )
 
 const backupSuffix = ".backup"
+
+// runPlanCheck runs bundle plan and checks if there are any actions planned.
+// Returns error if plan fails or if there are actions planned.
+func runPlanCheck(cmd *cobra.Command, target string) error {
+	ctx := cmd.Context()
+
+	// Build command arguments
+	executable, err := os.Executable()
+	if err != nil {
+		return fmt.Errorf("failed to get executable path: %w", err)
+	}
+
+	args := []string{"bundle", "plan"}
+	targetArgs := ""
+	if target != "" {
+		targetArgs = " -t " + target
+		args = append(args, "-t", target)
+	}
+
+	// Create and run command
+	planCmd := exec.CommandContext(ctx, executable, args...)
+	var stdout bytes.Buffer
+	planCmd.Stdout = &stdout
+	planCmd.Stderr = cmd.ErrOrStderr()
+	planCmd.Env = append(os.Environ(), "DATABRICKS_BUNDLE_ENGINE=")
+
+	err = planCmd.Run()
+
+	// Output the plan stdout as is
+	output := stdout.String()
+	fmt.Fprint(cmd.OutOrStdout(), output)
+
+	// Check error code
+	if err != nil {
+		var exitErr *exec.ExitError
+		msg := ""
+		if errors.As(err, &exitErr) {
+			msg = fmt.Sprintf("exit code %d", exitErr.ExitCode())
+		} else {
+			msg = exitErr.String()
+		}
+		return fmt.Errorf("bundle plan failed with %s, aborting migration. To proceed with migration anyway, re-run the command with --noplancheck option", msg)
+	}
+
+	if !strings.Contains(output, "Plan:") {
+		return fmt.Errorf("cannot parse 'databricks bundle plan%s' output, aborting migration. Skip plan check with --noplancheck option", targetArgs)
+	}
+
+	if !strings.Contains(output, "Plan: 0 to add, 0 to change, 0 to delete") {
+		return fmt.Errorf("'databricks bundle plan%s' shows actions planned, aborting migration. Please run 'databricks bundle deploy%s' first to ensure your bundle is up to date, If actions persist after deploy, skip plan check with --noplancheck option", targetArgs, targetArgs)
+	}
+
+	return nil
+}
 
 func newMigrateCommand() *cobra.Command {
 	cmd := &cobra.Command{
@@ -36,7 +93,20 @@ WARNING: Both direct deployment engine and this command are experimental and not
 		Args: root.NoArgs,
 	}
 
+	var noPlanCheck bool
+	cmd.Flags().BoolVar(&noPlanCheck, "noplancheck", false, "Skip running bundle plan before migration.")
+
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+		// Get the target if it was explicitly passed
+		target := ""
+		if flag := cmd.Flag("target"); flag != nil && flag.Changed {
+			target = flag.Value.String()
+		}
+		targetArgs := ""
+		if target != "" {
+			targetArgs += " -t " + target
+		}
+
 		opts := utils.ProcessOptions{
 			SkipEngineEnvVar: true,
 			AlwaysPull:       true,
@@ -61,6 +131,14 @@ To start using direct engine, deploy with DATABRICKS_BUNDLE_ENGINE=direct env va
 
 		if stateDesc.Engine.IsDirect() {
 			return fmt.Errorf("already using direct engine\nDetails: %s", stateDesc.String())
+		}
+
+		// Run plan check unless --noplancheck is set
+		if !noPlanCheck {
+			fmt.Fprintf(cmd.OutOrStdout(), "Migration should be done after a full deploy. Running plan now to verify that deployment was done:\n")
+			if err = runPlanCheck(cmd, target); err != nil {
+				return err
+			}
 		}
 
 		_, localTerraformPath := b.StateFilenameTerraform(ctx)
@@ -155,12 +233,12 @@ To start using direct engine, deploy with DATABRICKS_BUNDLE_ENGINE=direct env va
 
 		cmdio.LogString(ctx, fmt.Sprintf(`Migrated %d resources to direct engine state file: %s
 
-Validate the migration by running "bundle plan", there should be no actions planned.
+Validate the migration by running "databricks bundle plan%s", there should be no actions planned.
 
-The state file is not synchronized to the workspace yet. To do that and finalize the migration, run "bundle deploy".
+The state file is not synchronized to the workspace yet. To do that and finalize the migration, run "bundle deploy%s".
 
 To undo the migration, remove %s and rename %s to %s
-`, len(deploymentBundle.StateDB.Data.State), localPath, localPath, localTerraformBackupPath, localTerraformPath))
+`, len(deploymentBundle.StateDB.Data.State), localPath, targetArgs, targetArgs, localPath, localTerraformBackupPath, localTerraformPath))
 		return nil
 	}
 
