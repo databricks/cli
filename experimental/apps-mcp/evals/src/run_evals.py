@@ -13,11 +13,10 @@ import sys
 import tempfile
 from datetime import datetime
 from pathlib import Path
+from typing import Optional
 
 import fire
 import mlflow
-from databricks.sdk import WorkspaceClient
-from tqdm import tqdm
 
 
 def setup_mlflow(experiment_name: str) -> None:
@@ -40,7 +39,7 @@ def run_generation(
     output_dir: Path,
     mcp_binary: str,
     backend: str = "claude",
-    model: str | None = None,
+    model: Optional[str] = None,
     prompt_set: str = "databricks",
 ) -> dict:
     """Run app generation using klaudbiusz bulk_run."""
@@ -112,8 +111,8 @@ def run_evaluation(
 
 def log_results_to_mlflow(
     evaluation_report: dict,
-    generation_results: dict | None = None,
-    run_name: str | None = None,
+    generation_results: Optional[dict] = None,
+    run_name: Optional[str] = None,
 ) -> str:
     """Log evaluation results to MLflow."""
     if not run_name:
@@ -162,7 +161,7 @@ def main(
     mode: str = "eval_only",
     parallelism: int = 4,
     klaudbiusz_git_url: str = "https://github.com/databricks/klaudbiusz.git",
-    mcp_binary: str | None = None,
+    mcp_binary: Optional[str] = None,
     fast: bool = False,
 ) -> None:
     """

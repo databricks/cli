@@ -10,12 +10,10 @@ name = "apps_mcp_evals"
 version = "0.1.0"
 description = "Continuous evaluation framework for Apps-MCP code generation"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.10"
 dependencies = [
     "mlflow>=2.15.0",
-    "databricks-sdk>=0.70.0",
     "fire>=0.7.1",
-    "tqdm>=4.66.0",
 ]
 
 [project.scripts]
@@ -23,4 +21,4 @@ main = "src.run_evals:main"
 
 [tool.ruff]
 line-length = 120
-target-version = "py311"
+target-version = "py310"
