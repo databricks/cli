@@ -51,17 +51,11 @@ func TestCacheEnabledEnvVar(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		// Set up environment
+		if tt.envValue != "" {
+			t.Setenv("DATABRICKS_CACHE_ENABLED", tt.envValue)
+		}
 		t.Run(tt.name, func(t *testing.T) {
-			// Set up environment
-			if tt.envValue != "" {
-				t.Setenv("DATABRICKS_CACHE_ENABLED", tt.envValue)
-			} else {
-				os.Unsetenv("DATABRICKS_CACHE_ENABLED")
-			}
-
-			// Note: We can't reset sync.Once, so logging will only happen in the first test
-			// This is acceptable as we're testing behavior, not logging
-
 			// Create a unique subdirectory for this test
 			testDir := filepath.Join(tempDir, tt.name)
 			cache, err := newFileCacheWithBaseDir[string](ctx, testDir, 60)

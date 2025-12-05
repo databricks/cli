@@ -1,13 +1,11 @@
 
 === First call in a session is expected to be a cache miss:
-[DEBUG_TIMESTAMP] Debug: [Local Cache] local cache is enabled
 [DEBUG_TIMESTAMP] Debug: [Local Cache] using cache key: [SHA256_HASH]
 [DEBUG_TIMESTAMP] Debug: [Local Cache] failed to stat cache file: (redacted)
 [DEBUG_TIMESTAMP] Debug: [Local Cache] cache miss, computing
 [DEBUG_TIMESTAMP] Debug: [Local Cache] computed and stored result
 
 === Second call in a session is expected to be a cache hit
-[DEBUG_TIMESTAMP] Debug: [Local Cache] local cache is enabled
 [DEBUG_TIMESTAMP] Debug: [Local Cache] using cache key: [SHA256_HASH]
 [DEBUG_TIMESTAMP] Debug: [Local Cache] cache hit
 
@@ -15,7 +13,6 @@
 Cache cleared successfully from [TEST_TMP_DIR]/.cache
 
 === First call after a clear is expected to be a cache miss:
-[DEBUG_TIMESTAMP] Debug: [Local Cache] local cache is enabled
 [DEBUG_TIMESTAMP] Debug: [Local Cache] using cache key: [SHA256_HASH]
 [DEBUG_TIMESTAMP] Debug: [Local Cache] failed to stat cache file: (redacted)
 [DEBUG_TIMESTAMP] Debug: [Local Cache] cache miss, computing

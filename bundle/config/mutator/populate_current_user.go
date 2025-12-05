@@ -5,8 +5,6 @@ import (
 
 	"github.com/databricks/cli/libs/cache"
 
-	"github.com/databricks/cli/libs/log"
-
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/libs/diag"
@@ -46,23 +44,12 @@ func (m *populateCurrentUser) Apply(ctx context.Context, b *bundle.Bundle) diag.
 	var err error
 
 	fingerprint := b.GetUserFingerprint(ctx)
-	if !fingerprint.IsEmpty() {
-		log.Debugf(ctx, "[Local Cache] local cache is enabled")
-		me, err = m.cache.GetOrCompute(ctx, fingerprint, func(ctx context.Context) (*iam.User, error) {
-			currentUser, err := w.CurrentUser.Me(ctx)
-			return currentUser, err
-		})
-	} else {
-		log.Debugf(ctx, "[Local Cache] local cache is disabled")
-		me, err = w.CurrentUser.Me(ctx)
-	}
-
+	me, err = m.cache.GetOrCompute(ctx, fingerprint, func(ctx context.Context) (*iam.User, error) {
+		currentUser, err := w.CurrentUser.Me(ctx)
+		return currentUser, err
+	})
 	if err != nil {
 		return diag.FromErr(err)
-	}
-
-	if me == nil {
-		return diag.Errorf("could not find current user, but no error was returned")
 	}
 
 	b.Config.Workspace.CurrentUser = &config.User{
