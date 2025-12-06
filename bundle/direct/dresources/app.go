@@ -8,6 +8,7 @@ import (
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 )
@@ -29,6 +30,10 @@ func (r *ResourceApp) DoRead(ctx context.Context, id string) (*apps.App, error) 
 }
 
 func (r *ResourceApp) DoCreate(ctx context.Context, config *apps.App) (string, *apps.App, error) {
+	if err := r.waitForDeletion(ctx, config.Name); err != nil {
+		return "", nil, err
+	}
+
 	request := apps.CreateAppRequest{
 		App:             *config,
 		NoCompute:       true,
@@ -72,6 +77,28 @@ func (*ResourceApp) FieldTriggers(_ bool) map[string]deployplan.ActionType {
 
 func (r *ResourceApp) WaitAfterCreate(ctx context.Context, config *apps.App) (*apps.App, error) {
 	return r.waitForApp(ctx, r.client, config.Name)
+}
+
+// waitForDeletion waits for an app to be deleted if it exists and is in DELETING state.
+func (r *ResourceApp) waitForDeletion(ctx context.Context, name string) error {
+	retrier := retries.New[struct{}](retries.WithTimeout(-1), retries.WithRetryFunc(shouldRetry))
+	_, err := retrier.Run(ctx, func(ctx context.Context) (*struct{}, error) {
+		app, err := r.client.Apps.GetByName(ctx, name)
+		if err != nil {
+			if apierr.IsMissing(err) {
+				return nil, nil
+			}
+			return nil, retries.Halt(err)
+		}
+
+		if app.ComputeStatus.State == apps.ComputeStateDeleting {
+			log.Infof(ctx, "App %s is in DELETING state, waiting for it to be deleted...", name)
+			return nil, retries.Continues("app is deleting")
+		}
+
+		return nil, nil
+	})
+	return err
 }
 
 // waitForApp waits for the app to reach the target state. The target state is either ACTIVE or STOPPED.
