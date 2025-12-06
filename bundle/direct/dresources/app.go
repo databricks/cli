@@ -91,7 +91,7 @@ func (r *ResourceApp) waitForDeletion(ctx context.Context, name string) error {
 			return nil, retries.Halt(err)
 		}
 
-		if app.ComputeStatus.State == apps.ComputeStateDeleting {
+		if app.ComputeStatus != nil && app.ComputeStatus.State == apps.ComputeStateDeleting {
 			log.Infof(ctx, "App %s is in DELETING state, waiting for it to be deleted...", name)
 			return nil, retries.Continues("app is deleting")
 		}
