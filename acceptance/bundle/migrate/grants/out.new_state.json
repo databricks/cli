@@ -1,6 +1,6 @@
 {
  "lineage": "[UUID]",
- "serial": 8,
+ "serial": 9,
  "state": {
   "resources.registered_models.my_registered_model": {
    "__id__": "main.schema_grants.mymodel",
