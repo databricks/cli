@@ -117,9 +117,10 @@ func TestForEachTask_MultipleRetryFieldsOnParent(t *testing.T) {
 	errorCount := 0
 	warningCount := 0
 	for _, d := range diags {
-		if d.Severity == diag.Error {
+		switch d.Severity {
+		case diag.Error:
 			errorCount++
-		} else if d.Severity == diag.Warning {
+		case diag.Warning:
 			warningCount++
 		}
 	}
