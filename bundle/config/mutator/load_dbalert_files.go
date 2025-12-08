@@ -125,24 +125,18 @@ func (m *loadDBAlertFiles) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 			}
 		}
 
-		// Handle query_text: prefer query_lines if present, otherwise use query_text directly.
 		queryText := ""
 		if len(dbalertFromFile.QueryLines) > 0 {
 			for _, line := range dbalertFromFile.QueryLines {
 				queryText += line + "\n"
 			}
-		} else {
-			queryText = dbalertFromFile.QueryText
 		}
 
-		// Handle custom_description: prefer custom_description_lines if present, otherwise use custom_description directly.
 		customDescription := ""
 		if len(dbalertFromFile.CustomDescriptionLines) > 0 {
 			for _, line := range dbalertFromFile.CustomDescriptionLines {
 				customDescription += line + "\n"
 			}
-		} else {
-			customDescription = dbalertFromFile.CustomDescription
 		}
 
 		newAlert := sql.AlertV2{
