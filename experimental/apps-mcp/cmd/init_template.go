@@ -12,10 +12,7 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/experimental/apps-mcp/lib/common"
-	"github.com/databricks/cli/experimental/apps-mcp/lib/middlewares"
 	"github.com/databricks/cli/experimental/apps-mcp/lib/prompts"
-	"github.com/databricks/cli/experimental/apps-mcp/lib/session"
-	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/template"
 	"github.com/spf13/cobra"
@@ -254,23 +251,12 @@ After initialization:
 			return err
 		}
 
-		// Auto-detect warehouse if not provided
-		if warehouse == "" {
-			sess := session.NewSession()
-			sess.Set(middlewares.DatabricksClientKey, cmdctx.WorkspaceClient(ctx))
-			ctx = session.WithSession(ctx, sess)
-
-			warehouseID, err := middlewares.GetWarehouseID(ctx)
-			if err != nil {
-				return fmt.Errorf("--warehouse is required (auto-detection failed: %w)", err)
-			}
-			warehouse = warehouseID
-		}
-
 		// Build config map from flags
 		configMap := map[string]any{
-			"project_name":     name,
-			"sql_warehouse_id": warehouse,
+			"project_name": name,
+		}
+		if warehouse != "" {
+			configMap["sql_warehouse_id"] = warehouse
 		}
 		if description != "" {
 			configMap["app_description"] = description
