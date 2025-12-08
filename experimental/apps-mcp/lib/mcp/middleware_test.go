@@ -224,7 +224,7 @@ func TestServerMiddleware(t *testing.T) {
 		Name:    "test-server",
 		Version: "1.0.0",
 	}
-	server := mcp.NewServer(impl, nil)
+	server := mcp.NewServer(impl, nil, nil)
 
 	var executionOrder []string
 
@@ -264,7 +264,7 @@ func TestServerSessionPersistence(t *testing.T) {
 		Name:    "test-server",
 		Version: "1.0.0",
 	}
-	server := mcp.NewServer(impl, nil)
+	server := mcp.NewServer(impl, nil, nil)
 
 	// Add middleware that increments a counter
 	server.AddMiddlewareFunc(func(ctx *mcp.MiddlewareContext, next mcp.NextFunc) (*mcp.CallToolResult, error) {

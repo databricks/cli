@@ -88,7 +88,7 @@ func (db *DeploymentState) Open(path string) error {
 	if err != nil {
 		if os.IsNotExist(err) {
 			db.Data = Database{
-				Serial:  0,
+				Serial:  1,
 				Lineage: uuid.New().String(),
 				State:   make(map[string]ResourceEntry),
 			}

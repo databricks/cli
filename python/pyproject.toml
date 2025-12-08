@@ -1,7 +1,7 @@
 [project]
 name = "databricks-bundles"
 description = "Python support for Databricks Asset Bundles"
-version = "0.278.0"
+version = "0.279.0"
 
 authors = [
     { name = "Gleb Kanterov", email = "gleb.kanterov@databricks.com" },
@@ -18,8 +18,8 @@ dependencies = [
 requires = ["flit_core >=3.11,<4"]
 build-backend = "flit_core.buildapi"
 
-[tool.uv]
-dev-dependencies = [
+[dependency-groups]
+dev = [
   "pyright==1.1.380",
   "pytest-cov==5.0.0",
   "pytest==8.3.3",

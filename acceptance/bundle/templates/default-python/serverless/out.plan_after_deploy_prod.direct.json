@@ -1,0 +1,195 @@
+{
+  "plan": {
+    "resources.jobs.sample_job": {
+      "depends_on": [
+        {
+          "node": "resources.pipelines.my_default_python_etl",
+          "label": "${resources.pipelines.my_default_python_etl.id}"
+        }
+      ],
+      "action": "skip",
+      "remote_state": {
+        "created_time": [UNIX_TIME_MILLIS][0],
+        "creator_user_name": "[USERNAME]",
+        "job_id": [NUMID],
+        "run_as_user_name": "[USERNAME]",
+        "settings": {
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/prod/state/metadata.json"
+          },
+          "edit_mode": "UI_LOCKED",
+          "email_notifications": {},
+          "environments": [
+            {
+              "environment_key": "default",
+              "spec": {
+                "dependencies": [
+                  "/Workspace/Users/[USERNAME]/.bundle/my_default_python/prod/artifacts/.internal/my_default_python-0.0.1-py3-none-any.whl"
+                ],
+                "environment_version": "4"
+              }
+            }
+          ],
+          "format": "MULTI_TASK",
+          "max_concurrent_runs": 1,
+          "name": "sample_job",
+          "parameters": [
+            {
+              "default": "hive_metastore",
+              "name": "catalog"
+            },
+            {
+              "default": "prod",
+              "name": "schema"
+            }
+          ],
+          "queue": {
+            "enabled": true
+          },
+          "tasks": [
+            {
+              "notebook_task": {
+                "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/prod/files/src/sample_notebook",
+                "source": "WORKSPACE"
+              },
+              "task_key": "notebook_task"
+            },
+            {
+              "depends_on": [
+                {
+                  "task_key": "notebook_task"
+                }
+              ],
+              "environment_key": "default",
+              "python_wheel_task": {
+                "entry_point": "main",
+                "package_name": "my_default_python",
+                "parameters": [
+                  "--catalog",
+                  "hive_metastore",
+                  "--schema",
+                  "prod"
+                ]
+              },
+              "task_key": "python_wheel_task"
+            },
+            {
+              "depends_on": [
+                {
+                  "task_key": "notebook_task"
+                }
+              ],
+              "pipeline_task": {
+                "pipeline_id": "[UUID]"
+              },
+              "task_key": "refresh_pipeline"
+            }
+          ],
+          "timeout_seconds": 0,
+          "trigger": {
+            "pause_status": "UNPAUSED",
+            "periodic": {
+              "interval": 1,
+              "unit": "DAYS"
+            }
+          },
+          "webhook_notifications": {}
+        }
+      },
+      "changes": {
+        "remote": {
+          "email_notifications": {
+            "action": "skip",
+            "reason": "server_side_default"
+          },
+          "tasks[task_key='notebook_task'].notebook_task.source": {
+            "action": "skip",
+            "reason": "server_side_default"
+          },
+          "timeout_seconds": {
+            "action": "skip",
+            "reason": "server_side_default"
+          },
+          "webhook_notifications": {
+            "action": "skip",
+            "reason": "server_side_default"
+          }
+        }
+      }
+    },
+    "resources.jobs.sample_job.permissions": {
+      "depends_on": [
+        {
+          "node": "resources.jobs.sample_job",
+          "label": "${resources.jobs.sample_job.id}"
+        }
+      ],
+      "action": "skip",
+      "remote_state": {
+        "object_id": "/jobs/[NUMID]",
+        "permissions": [
+          {
+            "permission_level": "IS_OWNER",
+            "user_name": "[USERNAME]"
+          }
+        ]
+      }
+    },
+    "resources.pipelines.my_default_python_etl": {
+      "action": "skip",
+      "remote_state": {
+        "creator_user_name": "[USERNAME]",
+        "last_modified": [UNIX_TIME_MILLIS][1],
+        "name": "my_default_python_etl",
+        "pipeline_id": "[UUID]",
+        "run_as_user_name": "[USERNAME]",
+        "spec": {
+          "catalog": "main",
+          "channel": "CURRENT",
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/prod/state/metadata.json"
+          },
+          "edition": "ADVANCED",
+          "environment": {
+            "dependencies": [
+              "--editable /Workspace/Users/[USERNAME]/.bundle/my_default_python/prod/files"
+            ]
+          },
+          "id": "[UUID]",
+          "libraries": [
+            {
+              "glob": {
+                "include": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/prod/files/src/my_default_python_etl/transformations/**"
+              }
+            }
+          ],
+          "name": "my_default_python_etl",
+          "root_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/prod/files/src/my_default_python_etl",
+          "schema": "prod",
+          "serverless": true
+        },
+        "state": "IDLE"
+      }
+    },
+    "resources.pipelines.my_default_python_etl.permissions": {
+      "depends_on": [
+        {
+          "node": "resources.pipelines.my_default_python_etl",
+          "label": "${resources.pipelines.my_default_python_etl.id}"
+        }
+      ],
+      "action": "skip",
+      "remote_state": {
+        "object_id": "/pipelines/[UUID]",
+        "permissions": [
+          {
+            "permission_level": "IS_OWNER",
+            "user_name": "[USERNAME]"
+          }
+        ]
+      }
+    }
+  }
+}

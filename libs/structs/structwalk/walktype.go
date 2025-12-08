@@ -127,7 +127,7 @@ func walkTypeStruct(path *structpath.PathNode, st reflect.Type, visit VisitTypeF
 		if fieldName == "" {
 			fieldName = sf.Name
 		}
-		node := structpath.NewStringKey(path, fieldName)
+		node := structpath.NewDotString(path, fieldName)
 		walkTypeValue(node, sf.Type, &sf, visit, visitedCount)
 	}
 }

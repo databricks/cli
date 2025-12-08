@@ -74,7 +74,9 @@
       "changes": {
         "local": {
           "trigger.periodic.unit": {
-            "action": "update"
+            "action": "update",
+            "old": "DAYS",
+            "new": "HOURS"
           }
         },
         "remote": {

@@ -58,3 +58,9 @@ func MustLoadTemplate(name string) string {
 	}
 	return result
 }
+
+// TemplateExists checks if a template with the given name exists.
+func TemplateExists(name string) bool {
+	_, err := promptTemplates.ReadFile(name)
+	return err == nil
+}

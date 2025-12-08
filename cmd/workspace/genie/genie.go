@@ -33,6 +33,7 @@ func New() *cobra.Command {
 
 	// Add methods
 	cmd.AddCommand(newCreateMessage())
+	cmd.AddCommand(newCreateSpace())
 	cmd.AddCommand(newDeleteConversation())
 	cmd.AddCommand(newDeleteConversationMessage())
 	cmd.AddCommand(newExecuteMessageAttachmentQuery())
@@ -48,6 +49,7 @@ func New() *cobra.Command {
 	cmd.AddCommand(newSendMessageFeedback())
 	cmd.AddCommand(newStartConversation())
 	cmd.AddCommand(newTrashSpace())
+	cmd.AddCommand(newUpdateSpace())
 
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
@@ -157,6 +159,98 @@ func newCreateMessage() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range createMessageOverrides {
 		fn(cmd, &createMessageReq)
+	}
+
+	return cmd
+}
+
+// start create-space command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createSpaceOverrides []func(
+	*cobra.Command,
+	*dashboards.GenieCreateSpaceRequest,
+)
+
+func newCreateSpace() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var createSpaceReq dashboards.GenieCreateSpaceRequest
+	var createSpaceJson flags.JsonFlag
+
+	cmd.Flags().Var(&createSpaceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().StringVar(&createSpaceReq.Description, "description", createSpaceReq.Description, `Optional description.`)
+	cmd.Flags().StringVar(&createSpaceReq.ParentPath, "parent-path", createSpaceReq.ParentPath, `Parent folder path where the space will be registered.`)
+	cmd.Flags().StringVar(&createSpaceReq.Title, "title", createSpaceReq.Title, `Optional title override.`)
+
+	cmd.Use = "create-space WAREHOUSE_ID SERIALIZED_SPACE"
+	cmd.Short = `Create Genie Space.`
+	cmd.Long = `Create Genie Space.
+
+  Creates a Genie space from a serialized payload.
+
+  Arguments:
+    WAREHOUSE_ID: Warehouse to associate with the new space
+    SERIALIZED_SPACE: The contents of the Genie Space in serialized string form. Use the [Get
+      Genie Space](:method:genie/getspace) API to retrieve an example response,
+      which includes the serialized_space field. This field provides the
+      structure of the JSON string that represents the space's layout and
+      components.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().Changed("json") {
+			err := root.ExactArgs(0)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'warehouse_id', 'serialized_space' in your JSON input")
+			}
+			return nil
+		}
+		check := root.ExactArgs(2)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := createSpaceJson.Unmarshal(&createSpaceReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		if !cmd.Flags().Changed("json") {
+			createSpaceReq.WarehouseId = args[0]
+		}
+		if !cmd.Flags().Changed("json") {
+			createSpaceReq.SerializedSpace = args[1]
+		}
+
+		response, err := w.Genie.CreateSpace(ctx, createSpaceReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createSpaceOverrides {
+		fn(cmd, &createSpaceReq)
 	}
 
 	return cmd
@@ -677,6 +771,8 @@ func newGetSpace() *cobra.Command {
 
 	var getSpaceReq dashboards.GenieGetSpaceRequest
 
+	cmd.Flags().BoolVar(&getSpaceReq.IncludeSerializedSpace, "include-serialized-space", getSpaceReq.IncludeSerializedSpace, `Whether to include the serialized space export in the response.`)
+
 	cmd.Use = "get-space SPACE_ID"
 	cmd.Short = `Get Genie Space.`
 	cmd.Long = `Get Genie Space.
@@ -1138,6 +1234,82 @@ func newTrashSpace() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range trashSpaceOverrides {
 		fn(cmd, &trashSpaceReq)
+	}
+
+	return cmd
+}
+
+// start update-space command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updateSpaceOverrides []func(
+	*cobra.Command,
+	*dashboards.GenieUpdateSpaceRequest,
+)
+
+func newUpdateSpace() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updateSpaceReq dashboards.GenieUpdateSpaceRequest
+	var updateSpaceJson flags.JsonFlag
+
+	cmd.Flags().Var(&updateSpaceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().StringVar(&updateSpaceReq.Description, "description", updateSpaceReq.Description, `Optional description.`)
+	cmd.Flags().StringVar(&updateSpaceReq.SerializedSpace, "serialized-space", updateSpaceReq.SerializedSpace, `The contents of the Genie Space in serialized string form (full replacement).`)
+	cmd.Flags().StringVar(&updateSpaceReq.Title, "title", updateSpaceReq.Title, `Optional title override.`)
+	cmd.Flags().StringVar(&updateSpaceReq.WarehouseId, "warehouse-id", updateSpaceReq.WarehouseId, `Optional warehouse override.`)
+
+	cmd.Use = "update-space SPACE_ID"
+	cmd.Short = `Update Genie Space.`
+	cmd.Long = `Update Genie Space.
+
+  Updates a Genie space with a serialized payload.
+
+  Arguments:
+    SPACE_ID: Genie space ID`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := updateSpaceJson.Unmarshal(&updateSpaceReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		updateSpaceReq.SpaceId = args[0]
+
+		response, err := w.Genie.UpdateSpace(ctx, updateSpaceReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updateSpaceOverrides {
+		fn(cmd, &updateSpaceReq)
 	}
 
 	return cmd

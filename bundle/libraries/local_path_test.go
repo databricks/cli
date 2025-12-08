@@ -8,22 +8,30 @@ import (
 )
 
 func TestIsLocalPath(t *testing.T) {
-	// Relative paths, paths with the file scheme, and Windows paths.
+	// Relative paths and Windows paths (local files to upload).
 	assert.True(t, IsLocalPath("some/local/path"))
 	assert.True(t, IsLocalPath("./some/local/path"))
-	assert.True(t, IsLocalPath("file://path/to/package"))
 	assert.True(t, IsLocalPath("C:\\path\\to\\package"))
 	assert.True(t, IsLocalPath("myfile.txt"))
 	assert.True(t, IsLocalPath("./myfile.txt"))
 	assert.True(t, IsLocalPath("../myfile.txt"))
-	assert.True(t, IsLocalPath("file:///foo/bar/myfile.txt"))
 
-	// Absolute paths.
+	// Absolute paths without scheme (remote).
 	assert.False(t, IsLocalPath("/some/full/path"))
 	assert.False(t, IsLocalPath("/Workspace/path/to/package"))
 	assert.False(t, IsLocalPath("/Users/path/to/package"))
 
-	// Paths with schemes.
+	// file:// URIs are runtime paths (remote - not uploaded).
+	assert.False(t, IsLocalPath("file:///foo/bar/myfile.txt"))
+	assert.False(t, IsLocalPath("file:///opt/spark/jars/driver.jar"))
+	assert.False(t, IsLocalPath("file:///"))
+	assert.False(t, IsLocalPath("file:///absolute/path"))
+	assert.False(t, IsLocalPath("file://path/to/package"))
+	assert.False(t, IsLocalPath("file://foo/bar/myfile.txt"))
+	assert.False(t, IsLocalPath("file://./relative.jar"))
+	assert.False(t, IsLocalPath("file://../lib/package.whl"))
+
+	// Paths with other schemes (remote).
 	assert.False(t, IsLocalPath("dbfs://path/to/package"))
 	assert.False(t, IsLocalPath("dbfs:/path/to/package"))
 	assert.False(t, IsLocalPath("s3://path/to/package"))
@@ -47,7 +55,6 @@ func TestIsLibraryLocal(t *testing.T) {
 		{path: ".\\..\\local\\*.whl", expected: true},
 		{path: "../../local/*.whl", expected: true},
 		{path: "..\\..\\local\\*.whl", expected: true},
-		{path: "file://path/to/package/whl.whl", expected: true},
 		{path: "local/foo-bar.whl", expected: true},
 
 		{path: "", expected: false},

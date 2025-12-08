@@ -31,11 +31,8 @@ func NewServer(ctx context.Context, cfg *mcp.Config) *Server {
 		Version: build.GetInfo().Version,
 	}
 
-	server := mcpsdk.NewServer(impl, nil)
 	sess := session.NewSession()
-
-	// Set enabled capabilities for this MCP server
-	sess.Set(session.CapabilitiesDataKey, []string{"apps"})
+	server := mcpsdk.NewServer(impl, nil, sess)
 
 	tracker, err := trajectory.NewTracker(ctx, sess, cfg)
 	if err != nil {
@@ -45,10 +42,12 @@ func NewServer(ctx context.Context, cfg *mcp.Config) *Server {
 
 	server.AddMiddleware(middlewares.NewToolCounterMiddleware(sess))
 	server.AddMiddleware(middlewares.NewDatabricksClientMiddleware([]string{"databricks_configure_auth"}))
-	server.AddMiddleware(middlewares.NewEngineGuideMiddleware())
 	server.AddMiddleware(middlewares.NewTrajectoryMiddleware(tracker))
 
 	sess.SetTracker(tracker)
+
+	// Set enabled capabilities for this MCP server
+	sess.Set(session.CapabilitiesDataKey, []string{"apps"})
 
 	return &Server{
 		server:  server,
@@ -84,9 +83,6 @@ func (s *Server) RegisterTools(ctx context.Context) error {
 // registerCLIToolsProvider registers the CLI tools provider
 func (s *Server) registerCLIToolsProvider(ctx context.Context) error {
 	log.Info(ctx, "Registering CLI tools provider")
-
-	// Add session to context
-	ctx = session.WithSession(ctx, s.session)
 
 	provider, err := clitools.NewProvider(ctx, s.config, s.session)
 	if err != nil {

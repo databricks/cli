@@ -97,7 +97,20 @@
       "changes": {
         "local": {
           "tasks[task_key='TestTask1']": {
-            "action": "update"
+            "action": "update",
+            "old": {
+              "existing_cluster_id": "0717-132531-5opeqon1",
+              "libraries": [
+                {
+                  "whl": "/Workspace/Users/foo@bar.com/mywheel.whl"
+                }
+              ],
+              "python_wheel_task": {
+                "entry_point": "run",
+                "package_name": "whl"
+              },
+              "task_key": "TestTask1"
+            }
           }
         },
         "remote": {

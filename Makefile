@@ -1,7 +1,10 @@
 default: checks fmt lint
 
-# gotestsum: when go test args are used with --rerun-fails the list of packages to test must be specified by the --packages flag
-PACKAGES=--packages "./acceptance/... ./libs/... ./internal/... ./cmd/... ./bundle/... ./experimental/aitools/... ./experimental/ssh/... ."
+# Default packages to test (all)
+TEST_PACKAGES = ./acceptance/internal ./libs/... ./internal/... ./cmd/... ./bundle/... ./experimental/aitools/... ./experimental/ssh/... .
+
+# Default acceptance test filter (all)
+ACCEPTANCE_TEST_FILTER = ""
 
 GO_TOOL ?= go tool -modfile=tools/go.mod
 GOTESTSUM_FORMAT ?= pkgname-and-test-fails
@@ -55,11 +58,24 @@ links:
 # Checks other than 'fmt' and 'lint'; these are fast, so can be run first
 checks: tidy ws links
 
-test:
-	${GOTESTSUM_CMD} ${PACKAGES} -- -timeout=${LOCAL_TIMEOUT} -short
 
-test-slow:
-	${GOTESTSUM_CMD} ${PACKAGES} -- -timeout=${LOCAL_TIMEOUT}
+# Run short unit and acceptance tests (testing.Short() is true).
+test: test-unit test-acc
+
+# Run all unit and acceptance tests.
+test-slow: test-slow-unit test-slow-acc
+
+test-unit:
+	${GOTESTSUM_CMD} --packages "${TEST_PACKAGES}" -- -timeout=${LOCAL_TIMEOUT} -short
+
+test-slow-unit:
+	${GOTESTSUM_CMD} --packages "${TEST_PACKAGES}" -- -timeout=${LOCAL_TIMEOUT}
+
+test-acc:
+	${GOTESTSUM_CMD} --packages ./acceptance/... -- -timeout=${LOCAL_TIMEOUT} -short -run ${ACCEPTANCE_TEST_FILTER}
+
+test-slow-acc:
+	${GOTESTSUM_CMD} --packages ./acceptance/... -- -timeout=${LOCAL_TIMEOUT} -run ${ACCEPTANCE_TEST_FILTER}
 
 # Updates acceptance test output (local tests)
 test-update:
@@ -82,7 +98,8 @@ slowest:
 
 cover:
 	rm -fr ./acceptance/build/cover/
-	VERBOSE_TEST=1 CLI_GOCOVERDIR=build/cover ${GOTESTSUM_CMD} ${PACKAGES} -- -coverprofile=coverage.txt -timeout=${LOCAL_TIMEOUT}
+	VERBOSE_TEST=1 ${GOTESTSUM_CMD} --packages "${TEST_PACKAGES}" -- -coverprofile=coverage.txt -timeout=${LOCAL_TIMEOUT}
+	VERBOSE_TEST=1 CLI_GOCOVERDIR=build/cover ${GOTESTSUM_CMD} --packages ./acceptance/... -- -timeout=${LOCAL_TIMEOUT} -run ${ACCEPTANCE_TEST_FILTER}
 	rm -fr ./acceptance/build/cover-merged/
 	mkdir -p acceptance/build/cover-merged/
 	go tool covdata merge -i $$(printf '%s,' acceptance/build/cover/* | sed 's/,$$//') -o acceptance/build/cover-merged/
@@ -150,4 +167,16 @@ generate:
 	$(GENKIT_BINARY) update-sdk
 
 
-.PHONY: lint lintfull tidy lintcheck fmt fmtfull test cover showcover build snapshot snapshot-release schema integration integration-short acc-cover acc-showcover docs ws wsfix links checks test-update test-update-templates test-update-aws test-update-all generate-validation
+.PHONY: lint lintfull tidy lintcheck fmt fmtfull test test-unit test-acc test-slow test-slow-unit test-slow-acc cover showcover build snapshot snapshot-release schema integration integration-short acc-cover acc-showcover docs ws wsfix links checks test-update test-update-templates test-update-aws test-update-all generate-validation
+
+test-exp-aitools:
+	make test TEST_PACKAGES="./experimental/aitools/..." ACCEPTANCE_TEST_FILTER="TestAccept/idontexistyet/aitools"
+
+test-exp-apps-mcp:
+	make test TEST_PACKAGES="./experimental/apps-mcp/..." ACCEPTANCE_TEST_FILTER="TestAccept/idontexistyet/apps-mcp"
+
+test-exp-ssh:
+	make test TEST_PACKAGES="./experimental/ssh/..." ACCEPTANCE_TEST_FILTER="TestAccept/ssh"
+
+test-pipelines:
+	make test TEST_PACKAGES="./cmd/pipelines/..." ACCEPTANCE_TEST_FILTER="TestAccept/pipelines"

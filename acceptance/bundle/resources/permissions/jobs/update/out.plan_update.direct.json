@@ -97,7 +97,9 @@
       "changes": {
         "local": {
           "permissions[user_name='viewer@example.com'].permission_level": {
-            "action": "update"
+            "action": "update",
+            "old": "CAN_VIEW",
+            "new": "CAN_MANAGE"
           }
         }
       }

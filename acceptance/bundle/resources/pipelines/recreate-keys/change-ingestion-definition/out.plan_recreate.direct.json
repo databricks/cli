@@ -29,7 +29,9 @@
       "changes": {
         "local": {
           "ingestion_definition.connection_name": {
-            "action": "recreate"
+            "action": "recreate",
+            "old": "my_connection",
+            "new": "my_new_connection"
           }
         }
       }

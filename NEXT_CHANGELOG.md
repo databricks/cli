@@ -1,13 +1,13 @@
 # NEXT CHANGELOG
 
-## Release v0.279.0
+## Release v0.280.0
 
 ### Notable Changes
 
 ### CLI
 
-### Dependency updates
-
 ### Bundles
+
+### Dependency updates
 
 ### API Changes

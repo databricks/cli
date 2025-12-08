@@ -1,0 +1,161 @@
+
+>>> [CLI] bundle plan
+create jobs.job_with_permissions
+create jobs.job_with_permissions.permissions
+
+Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
+>>> [CLI] permissions get jobs [JOB_ID]
+{
+  "access_control_list": [
+    {
+      "all_permissions": [
+        {
+          "inherited":false,
+          "permission_level":"CAN_VIEW"
+        }
+      ],
+      "display_name":"viewer@example.com",
+      "user_name":"viewer@example.com"
+    },
+    {
+      "all_permissions": [
+        {
+          "inherited":false,
+          "permission_level":"IS_OWNER"
+        }
+      ],
+      "display_name":"[USERNAME]",
+      "user_name":"[USERNAME]"
+    },
+    {
+      "all_permissions": [
+        {
+          "inherited":true,
+          "inherited_from_object": [
+            "/jobs/"
+          ],
+          "permission_level":"CAN_MANAGE"
+        }
+      ],
+      "group_name":"admins"
+    }
+  ],
+  "object_id":"/jobs/[JOB_ID]",
+  "object_type":"job"
+}
+
+=== Add permissions out of band
+>>> [CLI] permissions set jobs [JOB_ID] --json @remote_add.json
+{
+  "access_control_list": [
+    {
+      "all_permissions": [
+        {
+          "inherited":false,
+          "permission_level":"IS_OWNER"
+        }
+      ],
+      "display_name":"[USERNAME]",
+      "user_name":"[USERNAME]"
+    },
+    {
+      "all_permissions": [
+        {
+          "inherited":false,
+          "permission_level":"CAN_VIEW"
+        }
+      ],
+      "display_name":"viewer@example.com",
+      "user_name":"viewer@example.com"
+    },
+    {
+      "all_permissions": [
+        {
+          "inherited":false,
+          "permission_level":"CAN_MANAGE"
+        }
+      ],
+      "group_name":"admin-team"
+    },
+    {
+      "all_permissions": [
+        {
+          "inherited":true,
+          "inherited_from_object": [
+            "/jobs/"
+          ],
+          "permission_level":"CAN_MANAGE"
+        }
+      ],
+      "group_name":"admins"
+    }
+  ],
+  "object_id":"/jobs/[JOB_ID]",
+  "object_type":"job"
+}
+
+>>> [CLI] bundle plan
+update jobs.job_with_permissions.permissions
+
+Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
+
+>>> [CLI] bundle plan -o json
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
+>>> [CLI] permissions get jobs [JOB_ID]
+{
+  "access_control_list": [
+    {
+      "all_permissions": [
+        {
+          "inherited":false,
+          "permission_level":"CAN_VIEW"
+        }
+      ],
+      "display_name":"viewer@example.com",
+      "user_name":"viewer@example.com"
+    },
+    {
+      "all_permissions": [
+        {
+          "inherited":false,
+          "permission_level":"IS_OWNER"
+        }
+      ],
+      "display_name":"[USERNAME]",
+      "user_name":"[USERNAME]"
+    },
+    {
+      "all_permissions": [
+        {
+          "inherited":true,
+          "inherited_from_object": [
+            "/jobs/"
+          ],
+          "permission_level":"CAN_MANAGE"
+        }
+      ],
+      "group_name":"admins"
+    }
+  ],
+  "object_id":"/jobs/[JOB_ID]",
+  "object_type":"job"
+}

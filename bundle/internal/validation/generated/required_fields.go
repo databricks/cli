@@ -11,6 +11,13 @@ var RequiredFields = map[string][]string{
 
 	"permissions[*]": {"level"},
 
+	"resources.alerts.*":                             {"display_name", "evaluation", "query_text", "schedule", "warehouse_id"},
+	"resources.alerts.*.evaluation":                  {"comparison_operator", "source"},
+	"resources.alerts.*.evaluation.source":           {"name"},
+	"resources.alerts.*.evaluation.threshold.column": {"name"},
+	"resources.alerts.*.permissions[*]":              {"level"},
+	"resources.alerts.*.schedule":                    {"quartz_cron_schedule", "timezone_id"},
+
 	"resources.apps.*":                               {"name", "source_code_path"},
 	"resources.apps.*.permissions[*]":                {"level"},
 	"resources.apps.*.resources[*]":                  {"name"},
@@ -143,7 +150,9 @@ var RequiredFields = map[string][]string{
 	"resources.jobs.*.tasks[*].webhook_notifications.on_streaming_backlog_exceeded[*]":                             {"id"},
 	"resources.jobs.*.tasks[*].webhook_notifications.on_success[*]":                                                {"id"},
 	"resources.jobs.*.trigger.file_arrival":                                                                        {"url"},
+	"resources.jobs.*.trigger.model":                                                                               {"condition"},
 	"resources.jobs.*.trigger.periodic":                                                                            {"interval", "unit"},
+	"resources.jobs.*.trigger.table_update":                                                                        {"table_names"},
 	"resources.jobs.*.webhook_notifications.on_duration_warning_threshold_exceeded[*]":                             {"id"},
 	"resources.jobs.*.webhook_notifications.on_failure[*]":                                                         {"id"},
 	"resources.jobs.*.webhook_notifications.on_start[*]":                                                           {"id"},

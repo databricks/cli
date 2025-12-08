@@ -59,11 +59,11 @@ type ProcessOptions struct {
 	SkipEngineEnvVar bool
 
 	// If true, call corresponding phase:
-	FastValidate  bool
-	Validate      bool
-	Build         bool
-	DeployPrepare bool
-	Deploy        bool
+	FastValidate    bool
+	Validate        bool
+	Build           bool
+	PreDeployChecks bool
+	Deploy          bool
 
 	// Indicate whether the bundle operation originates from the pipelines CLI
 	IsPipelinesCLI bool
@@ -152,7 +152,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, 
 
 	var stateDesc *statemgmt.StateDesc
 
-	shouldReadState := opts.ReadState || opts.AlwaysPull || opts.InitIDs || opts.ErrorOnEmptyState || opts.DeployPrepare || opts.Deploy
+	shouldReadState := opts.ReadState || opts.AlwaysPull || opts.InitIDs || opts.ErrorOnEmptyState || opts.PreDeployChecks || opts.Deploy
 
 	if shouldReadState {
 		// PullResourcesState depends on stateFiler which needs b.Config.Workspace.StatePath which is set in phases.Initialize
@@ -206,9 +206,11 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, 
 		}
 	}
 
-	if opts.Build {
+	var libs phases.LibLocationMap
+
+	if opts.Build || opts.Deploy {
 		t2 := time.Now()
-		phases.Build(ctx, b)
+		libs = phases.Build(ctx, b)
 		b.Metrics.ExecutionTimes = append(b.Metrics.ExecutionTimes, protos.IntMapEntry{
 			Key:   "phases.Build",
 			Value: time.Since(t2).Milliseconds(),
@@ -219,12 +221,13 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, 
 		}
 	}
 
-	if opts.DeployPrepare {
-		if opts.Deploy {
-			panic("Deploy already calls DeployPrepare internally")
-		}
+	if opts.PreDeployChecks || opts.Deploy {
 		downgradeWarningToError := !opts.Deploy
-		_ = phases.DeployPrepare(ctx, b, downgradeWarningToError, stateDesc.Engine)
+		phases.PreDeployChecks(ctx, b, downgradeWarningToError, stateDesc.Engine)
+
+		if logdiag.HasError(ctx) {
+			return b, stateDesc, root.ErrAlreadyPrinted
+		}
 	}
 
 	if opts.Deploy {
@@ -236,7 +239,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, 
 		}
 
 		t3 := time.Now()
-		phases.Deploy(ctx, b, outputHandler, stateDesc.Engine)
+		phases.Deploy(ctx, b, outputHandler, stateDesc.Engine, libs)
 		b.Metrics.ExecutionTimes = append(b.Metrics.ExecutionTimes, protos.IntMapEntry{
 			Key:   "phases.Deploy",
 			Value: time.Since(t3).Milliseconds(),

@@ -18,14 +18,15 @@
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:smoke": "playwright install chromium && playwright test tests/smoke.spec.ts",
-    "clean": "rm -rf client/dist build node_modules .smoke-test test-results playwright-report"
+    "clean": "rm -rf client/dist dist build node_modules .smoke-test test-results playwright-report"
   },
   "keywords": [],
   "author": "",
   "license": "Unlicensed",
   "description": "",
   "dependencies": {
-    "@databricks/app-kit": "file:vendor/databricks-app-kit-1.0.0-dev4.tgz",
+    "@databricks/app-kit": "file:vendor/databricks-app-kit-0.0.1.tgz",
+    "@databricks/app-kit-ui": "file:vendor/databricks-app-kit-ui-0.0.1.tgz",
     "@databricks/sdk-experimental": "^0.14.2",
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-alert-dialog": "^1.1.15",
@@ -66,7 +67,7 @@
     "react-dom": "^19.1.1",
     "react-hook-form": "^7.66.1",
     "react-resizable-panels": "^3.0.6",
-    "recharts": "^3.5.0",
+    "recharts": "^3.4.1",
     "sonner": "^2.0.7",
     "superjson": "^2.2.5",
     "tailwind-merge": "^3.3.1",
@@ -98,6 +99,10 @@
     "tsx": "^4.20.6",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.48.0",
-    "vitest": "^4.0.14"
+    "vitest": "^4.0.14",
+    "vite": "npm:rolldown-vite@7.1.14"
+  },
+  "overrides": {
+    "vite": "npm:rolldown-vite@7.1.14"
   }
 }

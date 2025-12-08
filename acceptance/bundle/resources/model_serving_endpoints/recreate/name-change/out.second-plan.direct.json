@@ -25,7 +25,9 @@
       "changes": {
         "local": {
           "name": {
-            "action": "recreate"
+            "action": "recreate",
+            "old": "[ORIGINAL_ENDPOINT_ID]",
+            "new": "[NEW_ENDPOINT_ID]"
           }
         }
       }

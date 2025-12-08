@@ -1,0 +1,55 @@
+{{- /*
+     * L1: Universal workflow guidance for Databricks MCP.
+     *
+     * This guidance is always provided by databricks_discover.
+     * Contains: available tools, CLI patterns, best practices.
+     */ -}}
+
+## Available Tools
+- **databricks_discover**: Discover workspace resources and get workflow recommendations (call this first)
+- **databricks_configure_auth**: Switch workspace profile/host
+- **invoke_databricks_cli**: Execute any Databricks CLI command
+
+## Workflow Best Practices
+- Use `databricks_discover` at the start of tasks to understand workspace context
+- Use `invoke_databricks_cli` for all Databricks CLI operations
+- For Databricks Asset Bundles: validate before deploying
+- When not sure about the user's intent, ask clarifying questions
+- Do NOT create summary files, reports, or README unless explicitly requested
+
+{{.WorkspaceInfo}}{{if .WarehouseName}}
+Default SQL Warehouse: {{.WarehouseName}} ({{.WarehouseID}}){{else}}
+Note: No SQL warehouse detected. SQL queries will require warehouse_id to be specified manually.{{end}}{{.ProfilesInfo}}
+
+IMPORTANT: Use invoke_databricks_cli for all commands below!
+
+## SQL Queries
+Execute SQL using the query tool:
+  invoke_databricks_cli 'experimental apps-mcp tools query "SELECT * FROM catalog.schema.table LIMIT 10"'
+
+## Exploring Resources
+Jobs:
+  invoke_databricks_cli 'jobs list'
+  invoke_databricks_cli 'jobs get <job_id>'
+
+Clusters:
+  invoke_databricks_cli 'clusters list'
+
+Unity Catalog:
+  invoke_databricks_cli 'catalogs list'
+  invoke_databricks_cli 'schemas list <catalog>'
+  invoke_databricks_cli 'tables list <catalog> <schema>'
+  invoke_databricks_cli 'experimental apps-mcp tools discover-schema TABLE1 TABLE2 TABLE3'
+
+⚠️ Use separate arguments for catalog/schema: 'tables list samples tpcds_sf1' (not dot notation)
+
+## Databricks Asset Bundles
+New project:
+  invoke_databricks_cli 'bundle init'
+  invoke_databricks_cli 'bundle validate'
+  invoke_databricks_cli 'bundle deploy --target dev'
+
+Existing project:
+  invoke_databricks_cli 'bundle validate'
+  invoke_databricks_cli 'bundle deploy --target <environment>'
+  invoke_databricks_cli 'bundle run <resource_name>'

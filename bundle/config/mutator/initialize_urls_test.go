@@ -8,7 +8,6 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/compute"
-	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
@@ -89,9 +88,7 @@ func TestInitializeURLs(t *testing.T) {
 					"dashboard1": {
 						BaseResource: resources.BaseResource{ID: "01ef8d56871e1d50ae30ce7375e42478"},
 						DashboardConfig: resources.DashboardConfig{
-							Dashboard: dashboards.Dashboard{
-								DisplayName: "My special dashboard",
-							},
+							DisplayName: "My special dashboard",
 						},
 					},
 				},

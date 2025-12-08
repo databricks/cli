@@ -6,9 +6,14 @@
 Not authenticated to Databricks
 
 I need to know either the Databricks workspace URL or the Databricks profile name.
-You can list the available profiles by running `databricks auth profiles`.
 
-ASK the user which of the configured profiles or databricks workspace URL they want to use.
+The available profiles are:
+
+{{- range .Profiles }}
+- {{ .Name }} ({{ .Host }})
+{{- end }}
+
+IMPORTANT: YOU MUST ASK the user which of the configured profiles or databricks workspace URL they want to use.
 Only then call the `databricks_configure_auth` tool to configure the authentication.
 
 Do not run anything else before authenticating successfully.

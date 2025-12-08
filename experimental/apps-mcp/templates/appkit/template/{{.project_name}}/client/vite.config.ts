@@ -11,11 +11,11 @@ export default defineConfig({
     middlewareMode: true,
   },
   build: {
-    outDir: path.resolve(__dirname, '../dist/client'),
+    outDir: path.resolve(__dirname, './dist'),
     emptyOutDir: true,
   },
   optimizeDeps: {
-    include: ['react', 'react-dom', 'react/jsx-dev-runtime', 'react/jsx-runtime'],
+    include: ['react', 'react-dom', 'react/jsx-dev-runtime', 'react/jsx-runtime', 'recharts'],
   },
   resolve: {
     alias: {

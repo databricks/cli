@@ -1,0 +1,35 @@
+{
+  "plan": {
+    "resources.dashboards.dashboard1": {
+      "action": "skip",
+      "remote_state": {
+        "create_time": "[TIMESTAMP]",
+        "dashboard_id": "[DASHBOARD_ID]",
+        "display_name": "test bundle-deploy-dashboard [UUID]",
+        "embed_credentials": true,
+        "etag": [ETAG],
+        "lifecycle_state": "ACTIVE",
+        "parent_path": "/Workspace/Users/[USERNAME]",
+        "path": "/Users/[USERNAME]/test bundle-deploy-dashboard [UUID].lvdash.json",
+        "serialized_dashboard": "{}\n",
+        "update_time": "[TIMESTAMP]",
+        "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
+      },
+      "changes": {
+        "local": {
+          "etag": {
+            "action": "skip",
+            "old": [ETAG]
+          }
+        },
+        "remote": {
+          "serialized_dashboard": {
+            "action": "skip",
+            "old": "{ }\n",
+            "new": "{}\n"
+          }
+        }
+      }
+    }
+  }
+}

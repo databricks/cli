@@ -59,7 +59,9 @@
       "changes": {
         "local": {
           "name": {
-            "action": "update"
+            "action": "update",
+            "old": "Test Migration Job",
+            "new": "Test Migrated Job"
           }
         },
         "remote": {
@@ -173,10 +175,14 @@
       "changes": {
         "local": {
           "name": {
-            "action": "update"
+            "action": "update",
+            "old": "Test Migration Pipeline",
+            "new": "Test Migrated Pipeline"
           },
-          "tags.myjob_name": {
-            "action": "update"
+          "tags['myjob_name']": {
+            "action": "update",
+            "old": "Test Migration Job",
+            "new": "Test Migrated Job"
           }
         },
         "remote": {

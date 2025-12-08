@@ -16,8 +16,8 @@ Deployment complete!
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
-=== Update catalog, triggering recreate for pipeline; this means updating downstream deps
->>> update_file.py databricks.yml mycatalog mynewcatalog
+=== Update storage, triggering recreate for pipeline; this means updating downstream deps
+>>> update_file.py databricks.yml storage: dbfs:/my-storage storage: dbfs:/my-new-storage
 
 >>> [CLI] bundle plan
 update jobs.bar
@@ -51,7 +51,6 @@ Error: The specified pipeline [FOO_ID] was not found.
   "pipeline_id":"[UUID]",
   "run_as_user_name":"[USERNAME]",
   "spec": {
-    "catalog":"mynewcatalog",
     "channel":"CURRENT",
     "deployment": {
       "kind":"BUNDLE",
@@ -59,7 +58,8 @@ Error: The specified pipeline [FOO_ID] was not found.
     },
     "edition":"ADVANCED",
     "id":"[UUID]",
-    "name":"pipeline foo"
+    "name":"pipeline foo",
+    "storage":"dbfs:/my-new-storage"
   },
   "state":"IDLE"
 }

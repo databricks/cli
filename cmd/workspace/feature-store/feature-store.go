@@ -38,6 +38,7 @@ func New() *cobra.Command {
 	// Add methods
 	cmd.AddCommand(newCreateOnlineStore())
 	cmd.AddCommand(newDeleteOnlineStore())
+	cmd.AddCommand(newDeleteOnlineTable())
 	cmd.AddCommand(newGetOnlineStore())
 	cmd.AddCommand(newListOnlineStores())
 	cmd.AddCommand(newPublishTable())
@@ -187,6 +188,62 @@ func newDeleteOnlineStore() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range deleteOnlineStoreOverrides {
 		fn(cmd, &deleteOnlineStoreReq)
+	}
+
+	return cmd
+}
+
+// start delete-online-table command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deleteOnlineTableOverrides []func(
+	*cobra.Command,
+	*ml.DeleteOnlineTableRequest,
+)
+
+func newDeleteOnlineTable() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deleteOnlineTableReq ml.DeleteOnlineTableRequest
+
+	cmd.Use = "delete-online-table ONLINE_TABLE_NAME"
+	cmd.Short = `Delete an online table.`
+	cmd.Long = `Delete an online table.
+
+  Delete online table.
+
+  Arguments:
+    ONLINE_TABLE_NAME: The full three-part (catalog, schema, table) name of the online table.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		deleteOnlineTableReq.OnlineTableName = args[0]
+
+		err = w.FeatureStore.DeleteOnlineTable(ctx, deleteOnlineTableReq)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deleteOnlineTableOverrides {
+		fn(cmd, &deleteOnlineTableReq)
 	}
 
 	return cmd

@@ -1,0 +1,14 @@
+resources:
+  jobs:
+    foo:
+      name: "My Wheel Job"
+      tags:
+        tag1: tag value
+      tasks:
+        - task_key: TestTask
+          python_wheel_task:
+            package_name: "my_test_code"
+            entry_point: "run"
+          environment_key: test_env
+          libraries:
+            - whl: hello.whl

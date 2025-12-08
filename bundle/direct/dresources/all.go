@@ -28,6 +28,7 @@ var SupportedResources = map[string]any{
 	"jobs.permissions":                    (*ResourcePermissions)(nil),
 	"pipelines.permissions":               (*ResourcePermissions)(nil),
 	"apps.permissions":                    (*ResourcePermissions)(nil),
+	"alerts.permissions":                  (*ResourcePermissions)(nil),
 	"clusters.permissions":                (*ResourcePermissions)(nil),
 	"database_instances.permissions":      (*ResourcePermissions)(nil),
 	"experiments.permissions":             (*ResourcePermissions)(nil),
