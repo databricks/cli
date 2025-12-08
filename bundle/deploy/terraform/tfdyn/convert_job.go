@@ -18,6 +18,7 @@ import (
 // https://docs.databricks.com/api/workspace/jobs/create
 var supportedTypeTasks = []string{
 	"dbt_task",
+	"gen_ai_compute_task",
 	"notebook_task",
 	"spark_python_task",
 	"sql_task.file",
