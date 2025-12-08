@@ -22,6 +22,14 @@ type Database struct {
 	Lineage string                   `json:"lineage"`
 	Serial  int                      `json:"serial"`
 	State   map[string]ResourceEntry `json:"state"`
+	WAL     []LogEntry               `json:"wal,omitempty"`
+}
+
+type LogEntry struct {
+	Op    string `json:"op"`
+	Key   string `json:"key"`
+	ID    string `json:"id,omitempty"`
+	State any    `json:"state,omitempty"`
 }
 
 type ResourceEntry struct {
@@ -34,15 +42,16 @@ func (db *DeploymentState) SaveState(key, newID string, state any) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
+	db.Data.WAL = append(db.Data.WAL, LogEntry{Op: "save", Key: key, ID: newID, State: state})
+	if err := db.writeState(); err != nil {
+		db.Data.WAL = db.Data.WAL[:len(db.Data.WAL)-1] // Rollback on failure
+		return err
+	}
+
 	if db.Data.State == nil {
 		db.Data.State = make(map[string]ResourceEntry)
 	}
-
-	db.Data.State[key] = ResourceEntry{
-		ID:    newID,
-		State: state,
-	}
-
+	db.Data.State[key] = ResourceEntry{ID: newID, State: state}
 	return nil
 }
 
@@ -51,12 +60,13 @@ func (db *DeploymentState) DeleteState(key string) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
-	if db.Data.State == nil {
-		return nil
+	db.Data.WAL = append(db.Data.WAL, LogEntry{Op: "delete", Key: key})
+	if err := db.writeState(); err != nil {
+		db.Data.WAL = db.Data.WAL[:len(db.Data.WAL)-1] // Rollback on failure
+		return err
 	}
 
 	delete(db.Data.State, key)
-
 	return nil
 }
 
@@ -104,6 +114,7 @@ func (db *DeploymentState) Open(path string) error {
 	}
 
 	db.Path = path
+	db.replayWAL()
 	return nil
 }
 
@@ -111,7 +122,13 @@ func (db *DeploymentState) Finalize() error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
-	return db.unlockedSave()
+	oldWAL := db.Data.WAL
+	db.Data.WAL = nil
+	if err := db.writeState(); err != nil {
+		db.Data.WAL = oldWAL // Restore on failure
+		return err
+	}
+	return nil
 }
 
 func (db *DeploymentState) AssertOpened() {
@@ -148,17 +165,25 @@ func (db *DeploymentState) ExportState(ctx context.Context) resourcestate.Export
 	return result
 }
 
-func (db *DeploymentState) unlockedSave() error {
+func (db *DeploymentState) writeState() error {
 	db.AssertOpened()
 	data, err := json.MarshalIndent(db.Data, "", " ")
 	if err != nil {
 		return err
 	}
+	return os.WriteFile(db.Path, data, 0o600)
+}
 
-	err = os.WriteFile(db.Path, data, 0o600)
-	if err != nil {
-		return fmt.Errorf("failed to save resources state to %#v: %w", db.Path, err)
+func (db *DeploymentState) replayWAL() {
+	for _, entry := range db.Data.WAL {
+		switch entry.Op {
+		case "save":
+			if db.Data.State == nil {
+				db.Data.State = make(map[string]ResourceEntry)
+			}
+			db.Data.State[entry.Key] = ResourceEntry{ID: entry.ID, State: entry.State}
+		case "delete":
+			delete(db.Data.State, entry.Key)
+		}
 	}
-
-	return nil
 }
