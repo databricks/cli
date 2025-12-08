@@ -14,11 +14,11 @@ Deployment complete!
 >>> cat out.requests.txt
 [
   {
-    "key": "local.cache.(redacted)
+    "key": "local.cache.attempt",
     "value": true
   },
   {
-    "key": "local.cache.(redacted)
+    "key": "local.cache.miss",
     "value": true
   },
   {
@@ -56,11 +56,11 @@ Deployment complete!
 ]
 [
   {
-    "key": "local.cache.(redacted)
+    "key": "local.cache.attempt",
     "value": true
   },
   {
-    "key": "local.cache.(redacted)
+    "key": "local.cache.hit",
     "value": true
   },
   {

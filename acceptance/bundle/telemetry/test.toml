@@ -13,9 +13,5 @@ Old = '(linux|darwin|windows)'
 New = '[OS]'
 
 [[Repls]]
-Old = 'local\.cache\.(.*)'
-New = 'local.cache.(redacted)'
-
-[[Repls]]
 Old = '"local_cache_measurements_ms": \[[^\]]*\]'
 New = '"local_cache_measurements_ms": [...redacted...]'

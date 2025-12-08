@@ -43,11 +43,11 @@
           "target_count": 1,
           "bool_values": [
             {
-              "key": "local.cache.(redacted)
+              "key": "local.cache.attempt",
               "value": true
             },
             {
-              "key": "local.cache.(redacted)
+              "key": "local.cache.miss",
               "value": true
             },
             {
