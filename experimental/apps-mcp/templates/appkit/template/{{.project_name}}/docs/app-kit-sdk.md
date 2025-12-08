@@ -51,7 +51,10 @@ import { Skeleton } from '@/components/ui/skeleton';
 interface QueryResult { column_name: string; value: number; }
 
 function CustomDisplay() {
-  const { data, loading, error } = useAnalyticsQuery<QueryResult[]>('query_name', {});
+  const { data, loading, error } = useAnalyticsQuery<QueryResult[]>('query_name', {
+    start_date: sql.date(Date.now()),
+    category: sql.string("tools")
+  });
 
   if (loading) return <Skeleton className="h-4 w-3/4" />;
   if (error) return <div className="text-destructive">Error: {error}</div>;
@@ -74,7 +77,7 @@ function CustomDisplay() {
 ```typescript
 const { data, loading, error } = useAnalyticsQuery<T>(
   queryName: string,                        // SQL file name without .sql extension
-  params: Record<string, string | number>   // Query parameters
+  params: Record<string, SQLTypeMarker>     // Query parameters
 );
 // Returns: { data: T | null, loading: boolean, error: string | null }
 ```
