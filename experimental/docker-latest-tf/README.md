@@ -14,7 +14,8 @@ Images are output to `build/` directory.
 
 ```bash
 # Login to ghcr.io
-docker login ghcr.io -u <username>
+# Provision a token with write packages permissions
+echo "GH_TOKEN" | docker login ghcr.io -u <username> --password-stdin
 
 # Load and tag images
 docker load -i build/cli-amd64.tar
