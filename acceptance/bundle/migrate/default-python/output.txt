@@ -135,6 +135,15 @@ Deployment complete!
 >>> print_state.py
 
 >>> diff.py ../out.state_after_migration.json ../out.state_after_deploy.json
+--- ../out.state_after_migration.json
++++ ../out.state_after_deploy.json
+@@ -1,5 +1,5 @@
+ {
+  "lineage": "[UUID]",
+- "serial": 5,
++ "serial": 6,
+  "state": {
+   "resources.jobs.sample_job": {
 
 === Extra plan: should have no drift
 >>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle plan
