@@ -22,11 +22,20 @@ Deployment complete!
 
 >>> print_state.py
 
->>> [CLI] bundle deployment migrate
+>>> musterr [CLI] bundle deployment migrate
+Building python_artifact...
+Note: Migration should be done after a full deploy. Running plan now to verify that deployment was done:
+Building python_artifact...
+update jobs.sample_job
+
+Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
+Error: 'databricks bundle plan' shows actions planned, aborting migration. Please run 'databricks bundle deploy' first to ensure your bundle is up to date, If actions persist after deploy, skip plan check with --noplancheck option
+
+>>> [CLI] bundle deployment migrate --noplancheck
 Building python_artifact...
 Migrated 2 resources to direct engine state file: [TEST_TMP_DIR]/my_default_python/.databricks/bundle/dev/resources.json
 
-Validate the migration by running "bundle plan", there should be no actions planned.
+Validate the migration by running "databricks bundle plan", there should be no actions planned.
 
 The state file is not synchronized to the workspace yet. To do that and finalize the migration, run "bundle deploy".
 
