@@ -755,6 +755,8 @@ func newDeleteSyncedDatabaseTable() *cobra.Command {
 
 	var deleteSyncedDatabaseTableReq database.DeleteSyncedDatabaseTableRequest
 
+	cmd.Flags().BoolVar(&deleteSyncedDatabaseTableReq.PurgeData, "purge-data", deleteSyncedDatabaseTableReq.PurgeData, `Optional.`)
+
 	cmd.Use = "delete-synced-database-table NAME"
 	cmd.Short = `Delete a Synced Database Table.`
 	cmd.Long = `Delete a Synced Database Table.`
