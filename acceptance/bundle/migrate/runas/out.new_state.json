@@ -1,6 +1,6 @@
 {
  "lineage": "[UUID]",
- "serial": 4,
+ "serial": 5,
  "state": {
   "resources.pipelines.foo": {
    "__id__": "[UUID]",

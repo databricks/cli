@@ -111,6 +111,8 @@ func (db *DeploymentState) Finalize() error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
+	db.Data.Serial += 1
+
 	return db.unlockedSave()
 }
 
