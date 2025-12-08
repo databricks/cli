@@ -138,8 +138,7 @@ class ClusterSpec:
     enable_elastic_disk: VariableOrOptional[bool] = None
     """
     Autoscaling Local Storage: when enabled, this cluster will dynamically acquire additional disk
-    space when its Spark workers are running low on disk space. This feature requires specific AWS
-    permissions to function correctly - refer to the User Guide for more details.
+    space when its Spark workers are running low on disk space.
     """
 
     enable_local_disk_encryption: VariableOrOptional[bool] = None
@@ -353,8 +352,7 @@ class ClusterSpecDict(TypedDict, total=False):
     enable_elastic_disk: VariableOrOptional[bool]
     """
     Autoscaling Local Storage: when enabled, this cluster will dynamically acquire additional disk
-    space when its Spark workers are running low on disk space. This feature requires specific AWS
-    permissions to function correctly - refer to the User Guide for more details.
+    space when its Spark workers are running low on disk space.
     """
 
     enable_local_disk_encryption: VariableOrOptional[bool]
