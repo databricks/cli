@@ -10,4 +10,6 @@
 
 ### Dependency updates
 
+* Bump Go toolchain to 1.25.5.
+
 ### API Changes
