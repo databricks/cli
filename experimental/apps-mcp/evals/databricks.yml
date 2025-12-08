@@ -30,10 +30,10 @@ variables:
     default: "4"
   cli_binary_volume:
     description: UC Volume path for CLI binary
-    default: /Volumes/main/evals/artifacts
+    default: /Volumes/main/default/apps_mcp_artifacts
   apps_volume:
     description: UC Volume path for generated apps
-    default: /Volumes/main/evals/generated_apps
+    default: /Volumes/main/default/apps_mcp_generated
   generation_parallelism:
     description: Number of parallel app generations
     default: "4"
