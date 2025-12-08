@@ -1,0 +1,37 @@
+resources:
+  jobs:
+    apps_generation_job:
+      name: "[${bundle.target}] Apps-MCP Generation"
+
+      job_clusters:
+        - job_cluster_key: generation_cluster
+          new_cluster:
+            spark_version: "15.4.x-scala2.12"
+            node_type_id: "n2-standard-8"
+            num_workers: 0
+            data_security_mode: SINGLE_USER
+            spark_conf:
+              spark.databricks.cluster.profile: singleNode
+              spark.master: "local[*]"
+            custom_tags:
+              ResourceClass: SingleNode
+            spark_env_vars:
+              ANTHROPIC_API_KEY: "{{secrets/apps-mcp-evals/anthropic-api-key}}"
+            init_scripts:
+              - workspace:
+                  destination: ${workspace.file_path}/init/setup_generation.sh
+
+      tasks:
+        - task_key: generate_apps
+          job_cluster_key: generation_cluster
+          spark_python_task:
+            python_file: ${workspace.file_path}/src/generate_apps.py
+            parameters:
+              - --mcp-binary
+              - ${var.cli_binary_volume}/databricks-linux
+              - --output-volume
+              - ${var.apps_volume}
+              - --prompts
+              - ${var.prompts}
+              - --max-concurrency
+              - ${var.generation_parallelism}

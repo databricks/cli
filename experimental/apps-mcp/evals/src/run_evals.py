@@ -149,6 +149,7 @@ def main(
     mlflow_experiment: str = "/Shared/apps-mcp-evaluations",
     parallelism: int = 4,
     evals_git_url: str = "https://github.com/neondatabase/appdotbuild-agent.git",
+    apps_volume: Optional[str] = None,
 ) -> None:
     """
     Run Apps-MCP evaluations.
@@ -157,11 +158,13 @@ def main(
         mlflow_experiment: MLflow experiment path
         parallelism: Number of parallel workers
         evals_git_url: Git URL for appdotbuild-agent eval framework
+        apps_volume: UC Volume path containing generated apps (optional)
     """
     print("Starting Apps-MCP Evaluation")
     print(f"  MLflow Experiment: {mlflow_experiment}")
     print(f"  Evals Repo: {evals_git_url}")
     print(f"  Parallelism: {parallelism}")
+    print(f"  Apps Volume: {apps_volume or 'not specified'}")
     print("=" * 60)
 
     setup_mlflow(mlflow_experiment)
@@ -180,7 +183,25 @@ def main(
     print("=" * 60)
 
     klaudbiusz_dir = evals_dir / "klaudbiusz"
-    apps_dir = klaudbiusz_dir / "app"
+
+    if apps_volume:
+        volume_path = Path(apps_volume)
+        latest_link = volume_path / "latest"
+        if latest_link.exists():
+            apps_dir = latest_link
+            print(f"Using apps from UC Volume: {apps_dir}")
+        elif volume_path.exists():
+            subdirs = [d for d in volume_path.iterdir() if d.is_dir()]
+            if subdirs:
+                apps_dir = max(subdirs, key=lambda d: d.name)
+                print(f"Using most recent apps dir: {apps_dir}")
+            else:
+                apps_dir = volume_path
+        else:
+            print(f"Warning: Apps volume not found at {apps_volume}")
+            apps_dir = klaudbiusz_dir / "app"
+    else:
+        apps_dir = klaudbiusz_dir / "app"
 
     if not apps_dir.exists():
         print(f"Apps directory not found at {apps_dir}")

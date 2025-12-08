@@ -30,6 +30,8 @@ resources:
           default: ${var.eval_parallelism}
         - name: evals_git_url
           default: ${var.evals_git_url}
+        - name: apps_volume
+          default: ${var.apps_volume}
 
       tasks:
         - task_key: run_evals
@@ -43,6 +45,8 @@ resources:
               - ${var.eval_parallelism}
               - --evals-git-url
               - ${var.evals_git_url}
+              - --apps-volume
+              - ${var.apps_volume}
 
           environment_key: default
 

@@ -28,6 +28,18 @@ variables:
   eval_parallelism:
     description: Number of parallel eval workers
     default: "4"
+  cli_binary_volume:
+    description: UC Volume path for CLI binary
+    default: /Volumes/main/evals/artifacts
+  apps_volume:
+    description: UC Volume path for generated apps
+    default: /Volumes/main/evals/generated_apps
+  generation_parallelism:
+    description: Number of parallel app generations
+    default: "4"
+  prompts:
+    description: Prompt set for generation (databricks, databricks_v2, test)
+    default: databricks
 
 targets:
   dev:
