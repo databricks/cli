@@ -310,7 +310,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "enable_elastic_disk": {
-                        "description": "Autoscaling Local Storage: when enabled, this cluster will dynamically acquire additional disk\nspace when its Spark workers are running low on disk space. This feature requires specific AWS\npermissions to function correctly - refer to the User Guide for more details.",
+                        "description": "Autoscaling Local Storage: when enabled, this cluster will dynamically acquire additional disk\nspace when its Spark workers are running low on disk space.",
                         "$ref": "#/$defs/bool"
                       },
                       "enable_local_disk_encryption": {
@@ -3825,7 +3825,7 @@
                       "$ref": "#/$defs/string"
                     },
                     "enable_elastic_disk": {
-                      "description": "Autoscaling Local Storage: when enabled, this cluster will dynamically acquire additional disk\nspace when its Spark workers are running low on disk space. This feature requires specific AWS\npermissions to function correctly - refer to the User Guide for more details.",
+                      "description": "Autoscaling Local Storage: when enabled, this cluster will dynamically acquire additional disk\nspace when its Spark workers are running low on disk space.",
                       "$ref": "#/$defs/bool"
                     },
                     "enable_local_disk_encryption": {
@@ -9138,7 +9138,7 @@
                       "$ref": "#/$defs/bool"
                     },
                     "retrigger_seconds": {
-                      "description": "Number of seconds an alert must wait after being triggered to rearm itself. After rearming, it can be triggered again. If 0 or not specified, the alert will not be triggered again.",
+                      "description": "Number of seconds an alert waits after being triggered before it is allowed to send another notification.\nIf set to 0 or omitted, the alert will not send any further notifications after the first trigger\nSetting this value to 1 allows the alert to send a notification on every evaluation where the condition is met, effectively making it always retrigger for notification purposes.",
                       "$ref": "#/$defs/int"
                     },
                     "subscriptions": {

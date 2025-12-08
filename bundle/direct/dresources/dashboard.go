@@ -214,6 +214,12 @@ func (r *ResourceDashboard) DoCreate(ctx context.Context, config *resources.Dash
 
 	createResp, err := r.client.Lakeview.Create(ctx, dashboards.CreateDashboardRequest{
 		Dashboard: dashboard,
+
+		// Note: these remain unset until there is a TF release with support for these fields.
+		DatasetCatalog: "",
+		DatasetSchema:  "",
+
+		ForceSendFields: nil,
 	})
 
 	// The API returns 404 if the parent directory doesn't exist.
@@ -223,7 +229,15 @@ func (r *ResourceDashboard) DoCreate(ctx context.Context, config *resources.Dash
 		if err != nil {
 			return "", nil, fmt.Errorf("failed to create parent directory: %w", err)
 		}
-		createResp, err = r.client.Lakeview.Create(ctx, dashboards.CreateDashboardRequest{Dashboard: dashboard})
+		createResp, err = r.client.Lakeview.Create(ctx, dashboards.CreateDashboardRequest{
+			Dashboard: dashboard,
+
+			// Note: these remain unset until there is a TF release with support for these fields.
+			DatasetCatalog: "",
+			DatasetSchema:  "",
+
+			ForceSendFields: nil,
+		})
 	}
 	if err != nil {
 		return "", nil, err
@@ -256,6 +270,12 @@ func (r *ResourceDashboard) DoUpdate(ctx context.Context, id string, config *res
 	updateResp, err := r.client.Lakeview.Update(ctx, dashboards.UpdateDashboardRequest{
 		DashboardId: id,
 		Dashboard:   dashboard,
+
+		// Note: these remain unset until there is a TF release with support for these fields.
+		DatasetCatalog: "",
+		DatasetSchema:  "",
+
+		ForceSendFields: nil,
 	})
 	if err != nil {
 		return nil, err
