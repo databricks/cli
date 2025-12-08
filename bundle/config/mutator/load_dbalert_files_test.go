@@ -13,6 +13,7 @@ import (
 	"github.com/databricks/cli/bundle/internal/bundletest"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/databricks-sdk-go/service/sql"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -73,7 +74,9 @@ func TestLoadDBAlertFiles(t *testing.T) {
 	// Note: This test only verifies that the mutator doesn't error when a file_path is set.
 	// The full functionality is tested in acceptance tests where the bundle is properly initialized.
 	diags := bundle.Apply(context.Background(), b, mutator.LoadDBAlertFiles())
-
-	// The mutator should not error out (it will skip processing if Config.Value() is not initialized)
 	require.NoError(t, diags.Error())
+
+	assert.Equal(t, "Test Alert", b.Config.Resources.Alerts["my_alert"].DisplayName)
+	assert.Equal(t, "abc123", b.Config.Resources.Alerts["my_alert"].WarehouseId)
+	assert.Equal(t, "SELECT * FROM table\nWHERE value > 100\n", b.Config.Resources.Alerts["my_alert"].QueryText)
 }
