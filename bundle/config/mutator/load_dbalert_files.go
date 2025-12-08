@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynvar"
+	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 )
 
@@ -25,13 +26,21 @@ func (m *loadDBAlertFiles) Name() string {
 	return "LoadDBAlertFiles"
 }
 
-type dbalertFile struct {
+type DbalertFile struct {
 	sql.AlertV2
 
-	// query_text and custom_description are split into lines to make it easier to view the diff
+	// query_text and custom_description can be split into lines to make it easier to view the diff
 	// in a Git editor.
 	QueryLines             []string `json:"query_lines,omitempty"`
 	CustomDescriptionLines []string `json:"custom_description_lines,omitempty"`
+}
+
+func (d *DbalertFile) UnmarshalJSON(data []byte) error {
+	return marshal.Unmarshal(data, d)
+}
+
+func (d DbalertFile) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(d)
 }
 
 func (m *loadDBAlertFiles) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
@@ -91,7 +100,7 @@ func (m *loadDBAlertFiles) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 			}
 		}
 
-		var dbalertFromFile dbalertFile
+		var dbalertFromFile DbalertFile
 		err = json.Unmarshal(content, &dbalertFromFile)
 		if err != nil {
 			return diag.Diagnostics{

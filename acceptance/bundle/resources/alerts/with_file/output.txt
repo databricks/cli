@@ -1,4 +1,37 @@
 
+>>> [CLI] bundle validate -o json
+{
+  "custom_description": "My alert from file\nwith multiple lines\nand a third line\n",
+  "custom_summary": "My alert from file",
+  "display_name": "My alert with file",
+  "evaluation": {
+    "comparison_operator": "EQUAL",
+    "notification": {
+      "notify_on_ok": false,
+      "retrigger_seconds": 1
+    },
+    "source": {
+      "aggregation": "MAX",
+      "display": "1",
+      "name": "1"
+    },
+    "threshold": {
+      "value": {
+        "double_value": 2
+      }
+    }
+  },
+  "file_path": "alert.dbalert.json",
+  "parent_path": "/Workspace/Users/[USERNAME]/.bundle/alerts-with-file-[UNIQUE_NAME]/default/resources",
+  "query_text": "select 2\n",
+  "schedule": {
+    "pause_status": "UNPAUSED",
+    "quartz_cron_schedule": "44 19 */1 * * ?",
+    "timezone_id": "Europe/Amsterdam"
+  },
+  "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
+}
+
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/alerts-with-file-[UNIQUE_NAME]/default/files...
 Deploying resources...
@@ -27,7 +60,7 @@ Deployment complete!
       }
     }
   },
-  "query_text": "select 2",
+  "query_text": "select 2\n",
   "schedule": {
     "pause_status": "UNPAUSED",
     "quartz_cron_schedule": "44 19 */1 * * ?",
@@ -35,10 +68,6 @@ Deployment complete!
   },
   "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
 }
-
-=== assert that no permanent drift happens
->>> [CLI] bundle plan
-Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

@@ -1,5 +1,10 @@
 {
   "custom_summary": "My alert from file",
+  "custom_description_lines": [
+    "My alert from file",
+    "with multiple lines",
+    "and a third line"
+  ],
   "evaluation": {
     "comparison_operator": "EQUAL",
     "notification": {
@@ -17,7 +22,9 @@
       }
     }
   },
-  "query_text": "select 2",
+  "query_lines": [
+    "select 2"
+  ],
   "schedule": {
     "pause_status": "UNPAUSED",
     "quartz_cron_schedule": "44 19 */1 * * ?",

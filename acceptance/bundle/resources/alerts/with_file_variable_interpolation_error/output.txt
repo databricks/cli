@@ -1,6 +1,6 @@
 
 >>> [CLI] bundle validate
-Error: .dbalert.json file ./alert.dbalert.json contains variable interpolations, which are not supported. Please inline the alert configuration in the bundle YAML to use variables
+Error: .dbalert.json file alert.dbalert.json contains variable interpolations, which are not supported. Please inline the alert configuration in the bundle YAML to use variables
   at resources.alerts.myalert.file_path
   in databricks.yml:9:18
 
