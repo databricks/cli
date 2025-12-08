@@ -1,0 +1,2 @@
+# Test that bundle generate alert fails when the existing ID is not found
+exec $CLI bundle generate alert --existing-id f00dcafe

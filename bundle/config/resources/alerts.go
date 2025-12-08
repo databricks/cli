@@ -15,6 +15,10 @@ type Alert struct {
 	sql.AlertV2 //nolint AlertV2 also defines Id and URL field with the same json tag "id" and "url"
 
 	Permissions []AlertPermission `json:"permissions,omitempty"`
+
+	// FilePath points to the local `.dbalert.json` file containing the alert definition.
+	// This is inlined into the alert during deployment.
+	FilePath string `json:"file_path,omitempty"`
 }
 
 func (a *Alert) UnmarshalJSON(b []byte) error {

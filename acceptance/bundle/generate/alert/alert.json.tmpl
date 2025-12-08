@@ -1,0 +1,21 @@
+{
+  "display_name": "test alert",
+  "parent_path": "/Workspace/test-$UNIQUE_NAME",
+  "query_text": "SELECT 1 as value",
+  "warehouse_id": "$WAREHOUSE_ID",
+  "evaluation": {
+    "comparison_operator": "GREATER_THAN",
+    "source": {
+      "name": "value"
+    },
+    "threshold": {
+      "value": {
+        "double_value": 0.0
+      }
+    }
+  },
+  "schedule": {
+    "quartz_cron_schedule": "0 0 * * * ?",
+    "timezone_id": "UTC"
+  }
+}

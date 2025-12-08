@@ -1,0 +1,6 @@
+
+>>> [CLI] workspace mkdirs /Workspace/test-[UNIQUE_NAME]
+
+>>> [CLI] bundle generate alert --existing-id [UUID] --alert-dir out/alert --resource-dir out/resource
+Writing alert to "out/alert/test_alert.dbalert.json"
+Writing configuration to "out/resource/test_alert.alert.yml"
