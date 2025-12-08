@@ -17,6 +17,26 @@
   },
   "tasks": [
     {
+      "dbt_task": {
+        "commands": [
+          "dbt run"
+        ],
+        "project_directory": "./dbt_project"
+      },
+      "new_cluster": {
+        "custom_tags": {
+          "ResourceClass": "SingleNode"
+        },
+        "num_workers": 0,
+        "spark_conf": {
+          "spark.databricks.cluster.profile": "singleNode",
+          "spark.master": "local[*]"
+        },
+        "spark_version": "15.4.x-scala2.12"
+      },
+      "task_key": "test_task_dbt"
+    },
+    {
       "for_each_task": {
         "inputs": "[1]",
         "task": {
@@ -80,6 +100,26 @@
       "enabled": true
     },
     "tasks": [
+      {
+        "dbt_task": {
+          "commands": [
+            "dbt run"
+          ],
+          "project_directory": "/Workspace/Users/[USERNAME]/.bundle/task-source/default/files/dbt_project"
+        },
+        "new_cluster": {
+          "custom_tags": {
+            "ResourceClass": "SingleNode"
+          },
+          "num_workers": 0,
+          "spark_conf": {
+            "spark.databricks.cluster.profile": "singleNode",
+            "spark.master": "local[*]"
+          },
+          "spark_version": "15.4.x-scala2.12"
+        },
+        "task_key": "test_task_dbt"
+      },
       {
         "for_each_task": {
           "inputs": "[1]",
