@@ -7,6 +7,7 @@
 ### CLI
 
 ### Bundles
+* Fixed changing the source for the SQL task from GIT to WORKSPACE ([#4114](https://github.com/databricks/cli/pull/4114))
 
 ### Dependency updates
 
