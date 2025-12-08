@@ -35,6 +35,11 @@ resources:
               notebook_task:
                 notebook_path: ./notebook.py
                 source: WORKSPACE
+        - task_key: test_task_sql
+          sql_task:
+            warehouse_id: cafef00d
+            file:
+              path: ./sql.sql
 
     workspace_job:
       name: workspace_job
