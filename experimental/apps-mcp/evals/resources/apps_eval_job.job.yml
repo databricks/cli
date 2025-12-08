@@ -24,10 +24,6 @@ resources:
           - apps-mcp-team@databricks.com
 
       parameters:
-        - name: catalog
-          default: ${var.catalog}
-        - name: schema
-          default: ${var.schema}
         - name: mlflow_experiment
           default: ${var.mlflow_experiment}
         - name: parallelism
@@ -41,10 +37,6 @@ resources:
             package_name: apps_mcp_evals
             entry_point: main
             parameters:
-              - --catalog
-              - ${var.catalog}
-              - --schema
-              - ${var.schema}
               - --mlflow-experiment
               - ${var.mlflow_experiment}
               - --parallelism
