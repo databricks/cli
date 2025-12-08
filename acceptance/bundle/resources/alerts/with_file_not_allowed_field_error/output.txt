@@ -1,0 +1,17 @@
+
+>>> trace [CLI] bundle validate
+
+>>> [CLI] bundle validate
+Error: field query_text is not allowed in the bundle YAML when a .dbalert.json is specified. Please set it in the .dbalert.json file instead. Only allowed fields are: warehouse_id, display_name, file_path
+  at resources.alerts.query_text.query_text
+  in databricks.yml:11:19
+
+Name: alerts-not-allowed-field
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/alerts-not-allowed-field/default
+
+Found 1 error
+
+Exit code: 1

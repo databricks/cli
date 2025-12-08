@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 )
 
@@ -38,7 +39,7 @@ func (m *loadDBAlertFiles) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 	// We will only allow these fields to be set in the bundle YAML when an .dbalert.json is
 	// specified. This is done to only have one way to set these fields when a .dbalert.json is
 	// specified.
-	allowedInYAML := []string{"warehouse_id", "display_name"}
+	allowedInYAML := []string{"warehouse_id", "display_name", "file_path"}
 
 	for k, alert := range b.Config.Resources.Alerts {
 		if alert.FilePath == "" {
@@ -103,10 +104,70 @@ func (m *loadDBAlertFiles) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 			}
 		}
 
-		// TODO: Parse that the file does not have any variable interpolations.
+		// Check that the file does not have any variable interpolations.
+		if dynvar.ContainsVariableReference(string(content)) {
+			return diag.Diagnostics{
+				{
+					Severity:  diag.Error,
+					Summary:   fmt.Sprintf(".dbalert.json file %s contains variable interpolations, which are not supported. Please inline the alert configuration in the bundle YAML to use variables", alert.FilePath),
+					Paths:     []dyn.Path{dyn.MustPathFromString(fmt.Sprintf("resources.alerts.%s.file_path", k))},
+					Locations: alertV.Get("file_path").Locations(),
+				},
+			}
+		}
+
+		// Handle query_text: prefer query_lines if present, otherwise use query_text directly.
+		queryText := ""
+		if len(dbalertFromFile.QueryLines) > 0 {
+			for _, line := range dbalertFromFile.QueryLines {
+				queryText += line + "\n"
+			}
+		} else {
+			queryText = dbalertFromFile.QueryText
+		}
+
+		// Handle custom_description: prefer custom_description_lines if present, otherwise use custom_description directly.
+		customDescription := ""
+		if len(dbalertFromFile.CustomDescriptionLines) > 0 {
+			for _, line := range dbalertFromFile.CustomDescriptionLines {
+				customDescription += line + "\n"
+			}
+		} else {
+			customDescription = dbalertFromFile.CustomDescription
+		}
+
+		newAlert := sql.AlertV2{
+			// Fields with different schema in file vs API.
+			CustomDescription: customDescription,
+			QueryText:         queryText,
+
+			// API only fields. All these should be present in [allowedInYAML]
+			DisplayName: alert.DisplayName,
+			WarehouseId: alert.WarehouseId,
+
+			// Fields with the same schema in file vs API.
+			CustomSummary:  dbalertFromFile.CustomSummary,
+			Schedule:       dbalertFromFile.Schedule,
+			Evaluation:     dbalertFromFile.Evaluation,
+			EffectiveRunAs: dbalertFromFile.EffectiveRunAs,
+			RunAs:          dbalertFromFile.RunAs,
+			RunAsUserName:  dbalertFromFile.RunAsUserName,
+			ParentPath:     dbalertFromFile.ParentPath,
+
+			// Output only fields.
+			CreateTime:     dbalertFromFile.CreateTime,
+			OwnerUserName:  dbalertFromFile.OwnerUserName,
+			UpdateTime:     dbalertFromFile.UpdateTime,
+			LifecycleState: dbalertFromFile.LifecycleState,
+
+			// Other fields.
+			Id:              dbalertFromFile.Id,
+			ForceSendFields: dbalertFromFile.ForceSendFields,
+		}
 
 		// write values from the file to the alert.
-		b.Config.Resources.Alerts[k].AlertV2 = dbalertFromFile.AlertV2
-
+		b.Config.Resources.Alerts[k].AlertV2 = newAlert
 	}
+
+	return nil
 }

@@ -1,0 +1,18 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+trace $CLI bundle deploy
+
+alert_id=$($CLI bundle summary --output json | jq -r '.resources.alerts.myalert.id')
+
+echo "$alert_id:ALERT_ID" >> ACC_REPLS
+
+trace $CLI alerts-v2 get-alert $alert_id | jq '{display_name, lifecycle_state, custom_summary, evaluation, query_text, schedule, warehouse_id}'
+
+title "assert that no permanent drift happens"
+trace $CLI bundle plan
+
+trace $CLI bundle destroy --auto-approve
+
+trace $CLI alerts-v2 get-alert $alert_id | jq '{display_name, lifecycle_state}'
+
+trace $CLI bundle summary
