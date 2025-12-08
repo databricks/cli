@@ -27,7 +27,6 @@ const backupSuffix = ".backup"
 func runPlanCheck(cmd *cobra.Command, target string) error {
 	ctx := cmd.Context()
 
-	// Build command arguments
 	executable, err := os.Executable()
 	if err != nil {
 		return fmt.Errorf("failed to get executable path: %w", err)
@@ -40,12 +39,13 @@ func runPlanCheck(cmd *cobra.Command, target string) error {
 		args = append(args, "-t", target)
 	}
 
-	// Create and run command
 	planCmd := exec.CommandContext(ctx, executable, args...)
 	var stdout bytes.Buffer
 	planCmd.Stdout = &stdout
 	planCmd.Stderr = cmd.ErrOrStderr()
-	planCmd.Env = append(os.Environ(), "DATABRICKS_BUNDLE_ENGINE=")
+
+	// Use the engine encoded in the state
+	planCmd.Env = append(os.Environ(), "DATABRICKS_BUNDLE_ENGINE=terraform")
 
 	err = planCmd.Run()
 
@@ -133,14 +133,6 @@ To start using direct engine, deploy with DATABRICKS_BUNDLE_ENGINE=direct env va
 			return fmt.Errorf("already using direct engine\nDetails: %s", stateDesc.String())
 		}
 
-		// Run plan check unless --noplancheck is set
-		if !noPlanCheck {
-			fmt.Fprintf(cmd.OutOrStdout(), "Migration should be done after a full deploy. Running plan now to verify that deployment was done:\n")
-			if err = runPlanCheck(cmd, target); err != nil {
-				return err
-			}
-		}
-
 		_, localTerraformPath := b.StateFilenameTerraform(ctx)
 		if _, err = os.Stat(localTerraformPath); err != nil {
 			return fmt.Errorf("reading %s: %w", localTerraformPath, err)
@@ -158,6 +150,14 @@ To start using direct engine, deploy with DATABRICKS_BUNDLE_ENGINE=direct env va
 		}
 		if _, err = os.Stat(localPath); err == nil {
 			return fmt.Errorf("state file %s already exists", localPath)
+		}
+
+		// Run plan check unless --noplancheck is set
+		if !noPlanCheck {
+			fmt.Fprintf(cmd.OutOrStdout(), "Note: Migration should be done after a full deploy. Running plan now to verify that deployment was done:\n")
+			if err = runPlanCheck(cmd, target); err != nil {
+				return err
+			}
 		}
 
 		etags := map[string]string{}
