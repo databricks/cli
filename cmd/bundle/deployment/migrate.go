@@ -53,14 +53,13 @@ func runPlanCheck(cmd *cobra.Command, target string) error {
 	output := stdout.String()
 	fmt.Fprint(cmd.OutOrStdout(), output)
 
-	// Check error code
 	if err != nil {
 		var exitErr *exec.ExitError
 		msg := ""
 		if errors.As(err, &exitErr) {
 			msg = fmt.Sprintf("exit code %d", exitErr.ExitCode())
 		} else {
-			msg = exitErr.String()
+			msg = err.Error()
 		}
 		return fmt.Errorf("bundle plan failed with %s, aborting migration. To proceed with migration anyway, re-run the command with --noplancheck option", msg)
 	}
