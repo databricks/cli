@@ -1,4 +1,5 @@
 import { useAnalyticsQuery, AreaChart, LineChart, RadarChart } from '@databricks/app-kit-ui/react';
+import { sql } from "@databricks/app-kit-ui/js";
 import { Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -9,7 +10,7 @@ import { useState, useEffect } from 'react';
 
 function App() {
   const { data, loading, error } = useAnalyticsQuery('hello_world', {
-    message: 'hello world',
+    message: sql.string('hello world'),
   });
 
   const [health, setHealth] = useState<{
@@ -48,7 +49,7 @@ function App() {
 
   const [maxMonthNum, setMaxMonthNum] = useState<number>(12);
 
-  const salesParameters = { max_month_num: maxMonthNum };
+  const salesParameters = { max_month_num: sql.number(maxMonthNum) };
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 w-full">

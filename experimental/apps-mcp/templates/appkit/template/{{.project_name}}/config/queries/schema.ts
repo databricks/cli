@@ -8,12 +8,11 @@
  * Example:
  *   SQL: SELECT name, age FROM users WHERE city = :city
  *   Schema: z.array(z.object({ name: z.string(), age: z.number() }))
- *   Usage: useAnalyticsQuery('users', { city: 'NYC' })
+ *   Usage: useAnalyticsQuery('users', { city: sql.string('NYC') })
  *                                       ^ input params   ^ schema validates this result
  */
 
 import { z } from 'zod';
-
 export const querySchemas = {
   mocked_sales: z.array(
     z.object({
