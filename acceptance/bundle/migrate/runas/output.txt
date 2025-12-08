@@ -81,9 +81,23 @@ Consider using a adding a top-level permissions section such as the following:
 See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more about permission configuration.
   in databricks.yml:5:3
 
+Note: Migration should be done after a full deploy. Running plan now to verify that deployment was done:
+Recommendation: permissions section should explicitly include the current deployment identity '[USERNAME]' or one of its groups
+If it is not included, CAN_MANAGE permissions are only applied if the present identity is used to deploy.
+
+Consider using a adding a top-level permissions section such as the following:
+
+  permissions:
+    - user_name: [USERNAME]
+      level: CAN_MANAGE
+
+See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more about permission configuration.
+  in databricks.yml:5:3
+
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 Migrated 2 resources to direct engine state file: [TEST_TMP_DIR]/.databricks/bundle/production/resources.json
 
-Validate the migration by running "bundle plan", there should be no actions planned.
+Validate the migration by running "databricks bundle plan", there should be no actions planned.
 
 The state file is not synchronized to the workspace yet. To do that and finalize the migration, run "bundle deploy".
 
