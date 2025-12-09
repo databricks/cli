@@ -99,12 +99,26 @@ func (r *ResourceSecretScopeAcls) DoCreate(ctx context.Context, state *SecretSco
 	if err != nil {
 		return "", nil, err
 	}
-	return state.ScopeName, nil, nil
+	return state.ScopeName, &SecretScopeAclsState{
+		ScopeName: state.ScopeName,
+		Acls:      state.Acls,
+	}, nil
 }
 
-func (r *ResourceSecretScopeAcls) DoUpdate(ctx context.Context, id string, state *SecretScopeAclsState, _ *deployplan.Changes) (*SecretScopeAclsState, error) {
+func (r *ResourceSecretScopeAcls) DoUpdateWithID(ctx context.Context, id string, state *SecretScopeAclsState) (string, *SecretScopeAclsState, error) {
 	err := r.setACLs(ctx, state.ScopeName, state.Acls)
-	return nil, err
+	if err != nil {
+		return "", nil, err
+	}
+	return state.ScopeName, state, nil
+}
+
+func (r *ResourceSecretScopeAcls) FieldTriggers(isLocal bool) map[string]deployplan.ActionType {
+	// When scope name changes, we need  a DoUpdateWithID trigger. This is necessary so that subsequent
+	// DoRead operations use the correct ID and we do not end up with a persistent drift.
+	return map[string]deployplan.ActionType{
+		"scope_name": deployplan.ActionTypeUpdateWithID,
+	}
 }
 
 // Removing ACLs is a no-op, to match the behavior for permissions and grants.

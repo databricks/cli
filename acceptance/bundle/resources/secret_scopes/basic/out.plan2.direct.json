@@ -25,7 +25,7 @@
           "label": "${resources.secret_scopes.my_scope.name}"
         }
       ],
-      "action": "update",
+      "action": "update_id",
       "new_state": {
         "value": {
           "scope_name": "",
@@ -60,7 +60,7 @@
       "changes": {
         "local": {
           "scope_name": {
-            "action": "update",
+            "action": "update_id",
             "old": "test-scope-[UNIQUE_NAME]-1",
             "new": ""
           }

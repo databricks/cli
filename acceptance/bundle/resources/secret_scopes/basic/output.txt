@@ -88,6 +88,9 @@ Deployment complete!
   }
 }
 
+=== verify there's no persistent drift
+>>> [CLI] bundle plan -o json
+
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.secret_scopes.my_scope

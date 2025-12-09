@@ -39,3 +39,6 @@ trace $CLI secrets put-secret $scope_name another-key --string-value "another-se
 trace $CLI secrets get-secret $scope_name another-key
 
 trace print_requests.py //secrets
+
+title "verify there's no persistent drift"
+trace $CLI bundle plan -o json > out.plan_verify_no_drift.$DATABRICKS_BUNDLE_ENGINE.json
