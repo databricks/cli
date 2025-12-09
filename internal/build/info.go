@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"runtime/debug"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -27,6 +28,18 @@ type Info struct {
 	Prerelease string
 	IsSnapshot bool
 	BuildTime  time.Time
+}
+
+// sanitizeVersion removes characters from version string that might be problematic in file paths.
+// Particularly important for Windows which has restrictions on certain characters.
+func (i Info) GetSanitizedVersion() string {
+	// Replace + with - (used in version metadata like "1.0.0+abc123")
+	version := strings.ReplaceAll(i.Version, "+", "-")
+	// Remove any other potentially problematic characters
+	version = strings.ReplaceAll(version, ":", "-")
+	version = strings.ReplaceAll(version, "/", "-")
+	version = strings.ReplaceAll(version, "\\", "-")
+	return version
 }
 
 var info Info
