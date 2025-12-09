@@ -1,0 +1,27 @@
+bundle:
+  name: usage_logs
+
+variables:
+  notify_on_failure:
+    type: complex
+    default: []
+
+resources:
+  jobs:
+    refresh_usage_logs:
+      name: Refresh usage logs
+
+      tasks:
+        - task_key: usage_logs_grants
+          notebook_task:
+            notebook_path: usage_logs.py
+
+      email_notifications:
+        on_failure: ${var.notify_on_failure}
+
+targets:
+  dev:
+    default: true
+    mode: development
+    workspace:
+      profile: logfood
