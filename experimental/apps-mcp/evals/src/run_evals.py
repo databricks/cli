@@ -250,5 +250,10 @@ def main(
     print("\nEvaluation complete!")
 
 
-if __name__ == "__main__":
+def cli():
+    """CLI entry point using fire for argument parsing."""
     fire.Fire(main)
+
+
+if __name__ == "__main__":
+    cli()

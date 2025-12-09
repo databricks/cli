@@ -17,7 +17,7 @@ dependencies = [
 ]
 
 [project.scripts]
-main = "src.run_evals:main"
+main = "src.run_evals:cli"
 
 [tool.ruff]
 line-length = 120
