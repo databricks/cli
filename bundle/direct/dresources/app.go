@@ -3,6 +3,7 @@ package dresources
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
@@ -30,10 +31,6 @@ func (r *ResourceApp) DoRead(ctx context.Context, id string) (*apps.App, error) 
 }
 
 func (r *ResourceApp) DoCreate(ctx context.Context, config *apps.App) (string, *apps.App, error) {
-	if err := r.waitForDeletion(ctx, config.Name); err != nil {
-		return "", nil, err
-	}
-
 	request := apps.CreateAppRequest{
 		App:             *config,
 		NoCompute:       true,
@@ -66,7 +63,10 @@ func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *apps.App,
 
 func (r *ResourceApp) DoDelete(ctx context.Context, id string) error {
 	_, err := r.client.Apps.DeleteByName(ctx, id)
-	return err
+	if err != nil {
+		return err
+	}
+	return r.waitForDeletion(ctx, id)
 }
 
 func (*ResourceApp) FieldTriggers(_ bool) map[string]deployplan.ActionType {
@@ -79,9 +79,9 @@ func (r *ResourceApp) WaitAfterCreate(ctx context.Context, config *apps.App) (*a
 	return r.waitForApp(ctx, r.client, config.Name)
 }
 
-// waitForDeletion waits for an app to be deleted if it exists and is in DELETING state.
+// waitForDeletion waits for an app to be fully deleted.
 func (r *ResourceApp) waitForDeletion(ctx context.Context, name string) error {
-	retrier := retries.New[struct{}](retries.WithTimeout(-1), retries.WithRetryFunc(shouldRetry))
+	retrier := retries.New[struct{}](retries.WithTimeout(10*time.Minute), retries.WithRetryFunc(shouldRetry))
 	_, err := retrier.Run(ctx, func(ctx context.Context) (*struct{}, error) {
 		app, err := r.client.Apps.GetByName(ctx, name)
 		if err != nil {
@@ -91,12 +91,20 @@ func (r *ResourceApp) waitForDeletion(ctx context.Context, name string) error {
 			return nil, retries.Halt(err)
 		}
 
-		if app.ComputeStatus != nil && app.ComputeStatus.State == apps.ComputeStateDeleting {
-			log.Infof(ctx, "App %s is in DELETING state, waiting for it to be deleted...", name)
-			return nil, retries.Continues("app is deleting")
+		if app.ComputeStatus == nil {
+			return nil, retries.Continues("waiting for compute status")
 		}
 
-		return nil, nil
+		switch app.ComputeStatus.State {
+		case apps.ComputeStateDeleting:
+			log.Infof(ctx, "App %s is in DELETING state, waiting for it to be deleted...", name)
+			return nil, retries.Continues("app is deleting")
+		case apps.ComputeStateActive, apps.ComputeStateStopped, apps.ComputeStateError:
+			err := fmt.Errorf("app %s was not deleted, current state: %s", name, app.ComputeStatus.State)
+			return nil, retries.Halt(err)
+		default:
+			return nil, retries.Continues(fmt.Sprintf("app is in %s state", app.ComputeStatus.State))
+		}
 	})
 	return err
 }
