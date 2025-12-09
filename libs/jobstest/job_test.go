@@ -8,6 +8,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+type TestStruct struct {
+	OnFailure []string `json:"on_failure"`
+}
+
 func TestStringSlice(t *testing.T) {
 	x := &jobs.JobEmailNotifications{
 		OnFailure:       []string{},
@@ -17,10 +21,13 @@ func TestStringSlice(t *testing.T) {
 	xs := jsonDump(t, x)
 
 	// expecting this:
-	//require.Equal(t, `{"on_failure":[]}`, xs)
+	// require.Equal(t, `{"on_failure":[]}`, xs)
 
 	// but get this:
 	require.Equal(t, `{}`, xs)
+
+	// Compare with non-omitempty regular struct
+	require.Equal(t, `{"on_failure":[]}`, jsonDump(t, TestStruct{OnFailure: []string{}}))
 }
 
 func TestBool(t *testing.T) {
