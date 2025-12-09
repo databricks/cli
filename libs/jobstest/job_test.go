@@ -12,6 +12,10 @@ type TestStruct struct {
 	OnFailure []string `json:"on_failure"`
 }
 
+type TestStructOmitEmpty struct {
+	OnFailure []string `json:"on_failure,omitempty"`
+}
+
 func TestStringSlice(t *testing.T) {
 	x := &jobs.JobEmailNotifications{
 		OnFailure:       []string{},
@@ -28,6 +32,10 @@ func TestStringSlice(t *testing.T) {
 
 	// Compare with non-omitempty regular struct
 	require.Equal(t, `{"on_failure":[]}`, jsonDump(t, TestStruct{OnFailure: []string{}}))
+
+	// Compare with omitempty regular struct
+	require.Equal(t, `{}`, jsonDump(t, TestStructOmitEmpty{OnFailure: []string{}}))
+
 }
 
 func TestBool(t *testing.T) {
