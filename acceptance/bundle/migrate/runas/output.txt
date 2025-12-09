@@ -95,7 +95,7 @@ See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more
   in databricks.yml:5:3
 
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
-Migrated 2 resources to direct engine state file: [TEST_TMP_DIR]/.databricks/bundle/production/resources.json
+Success! Migrated 2 resources to direct engine state file: [TEST_TMP_DIR]/.databricks/bundle/production/resources.json
 
 Validate the migration by running "databricks bundle plan", there should be no actions planned.
 

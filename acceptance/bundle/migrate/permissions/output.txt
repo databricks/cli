@@ -8,7 +8,7 @@ Deployment complete!
 >>> [CLI] bundle deployment migrate
 Note: Migration should be done after a full deploy. Running plan now to verify that deployment was done:
 Plan: 0 to add, 0 to change, 0 to delete, 4 unchanged
-Migrated 4 resources to direct engine state file: [TEST_TMP_DIR]/.databricks/bundle/default/resources.json
+Success! Migrated 4 resources to direct engine state file: [TEST_TMP_DIR]/.databricks/bundle/default/resources.json
 
 Validate the migration by running "databricks bundle plan", there should be no actions planned.
 

@@ -1,6 +1,6 @@
 
 >>> musterr [CLI] bundle deployment migrate
-This command migrates the existing Terraform state file (terraform.tfstate) to a direct deployment state file (resources.json). However, no existing local or remote state was found.
+Error: This command migrates the existing Terraform state file (terraform.tfstate) to a direct deployment state file (resources.json). However, no existing local or remote state was found.
 
 To start using direct engine, deploy with DATABRICKS_BUNDLE_ENGINE=direct env var set.
 
@@ -13,7 +13,7 @@ Deployment complete!
 >>> [CLI] bundle deployment migrate
 Note: Migration should be done after a full deploy. Running plan now to verify that deployment was done:
 Plan: 0 to add, 0 to change, 0 to delete, 3 unchanged
-Migrated 3 resources to direct engine state file: [TEST_TMP_DIR]/.databricks/bundle/dev/resources.json
+Success! Migrated 3 resources to direct engine state file: [TEST_TMP_DIR]/.databricks/bundle/dev/resources.json
 
 Validate the migration by running "databricks bundle plan", there should be no actions planned.
 

@@ -8,7 +8,7 @@ Deployment complete!
 >>> [CLI] bundle deployment migrate -p non_existent321
 Note: Migration should be done after a full deploy. Running plan now to verify that deployment was done:
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
-Migrated 1 resources to direct engine state file: [TEST_TMP_DIR]/.databricks/bundle/dev/resources.json
+Success! Migrated 1 resources to direct engine state file: [TEST_TMP_DIR]/.databricks/bundle/dev/resources.json
 
 Validate the migration by running "databricks bundle plan -p non_existent321", there should be no actions planned.
 
@@ -26,7 +26,7 @@ Deployment complete!
 >>> [CLI] bundle deployment migrate -p non_existent321 -t prod
 Note: Migration should be done after a full deploy. Running plan now to verify that deployment was done:
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
-Migrated 2 resources to direct engine state file: [TEST_TMP_DIR]/.databricks/bundle/prod/resources.json
+Success! Migrated 2 resources to direct engine state file: [TEST_TMP_DIR]/.databricks/bundle/prod/resources.json
 
 Validate the migration by running "databricks bundle plan -t prod -p non_existent321", there should be no actions planned.
 
