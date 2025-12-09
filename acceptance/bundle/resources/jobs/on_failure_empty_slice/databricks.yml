@@ -1,11 +1,6 @@
 bundle:
   name: usage_logs
 
-variables:
-  notify_on_failure:
-    type: complex
-    default: []
-
 resources:
   jobs:
     refresh_usage_logs:
@@ -17,7 +12,7 @@ resources:
             notebook_path: usage_logs.py
 
       email_notifications:
-        on_failure: ${var.notify_on_failure}
+        on_failure: []
 
 targets:
   dev:
