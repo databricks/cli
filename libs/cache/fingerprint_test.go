@@ -23,7 +23,7 @@ func TestFingerprintStability(t *testing.T) {
 
 	hash1, err := fingerprintToHash(fingerprint1)
 	require.NoError(t, err)
-	require.Equal(t, hash1, "1b329dc07a9fa87da7480f6b10cc917a40a4f460ac82aea3d09df477764f3101")
+	require.Equal(t, "1b329dc07a9fa87da7480f6b10cc917a40a4f460ac82aea3d09df477764f3101", hash1)
 	hash2, err := fingerprintToHash(fingerprint2)
 	require.NoError(t, err)
 	hash1ToCompare, err := fingerprintToHash(fingerprint1)
