@@ -17,9 +17,11 @@ import (
 // These are the task types that support the source field
 // https://docs.databricks.com/api/workspace/jobs/create
 var supportedTypeTasks = []string{
-	"db_task",
+	"dbt_task",
+	"gen_ai_compute_task",
 	"notebook_task",
 	"spark_python_task",
+	"sql_task.file",
 }
 
 func setSourceIfNotSet(task dyn.Value, defaultSource jobs.Source) (dyn.Value, error) {

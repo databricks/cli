@@ -2,12 +2,16 @@ package tfdyn
 
 import (
 	"context"
+	"reflect"
+	"slices"
+	"strings"
 	"testing"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/internal/tf/schema"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
+	"github.com/databricks/cli/libs/textutil"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
@@ -285,4 +289,92 @@ func TestConvertJobApplyPolicyDefaultValues(t *testing.T) {
 			},
 		},
 	}, out.Job["my_job"])
+}
+
+// TestSupportedTypeTasksComplete verifies that supportedTypeTasks includes all task types with a Source field.
+func TestSupportedTypeTasksComplete(t *testing.T) {
+	// Use reflection to find all task types that have a Source field
+	taskType := reflect.TypeOf(jobs.Task{})
+	var tasksWithSource []string
+
+	for i := range taskType.NumField() {
+		field := taskType.Field(i)
+
+		// Skip non-task fields (like DependsOn, Libraries, etc.)
+		if !strings.HasSuffix(field.Name, "Task") {
+			continue
+		}
+
+		// Get the type of the task field (e.g., *NotebookTask)
+		taskFieldType := field.Type
+		if taskFieldType.Kind() == reflect.Ptr {
+			taskFieldType = taskFieldType.Elem()
+		}
+
+		if taskFieldType.Kind() != reflect.Struct {
+			continue
+		}
+
+		// Recursively search for Source fields in this task type
+		// We only search one level deep to catch nested Source fields like sql_task.file
+		taskName := textutil.CamelToSnakeCase(field.Name)
+		sourcePaths := findSourceFieldsShallow(taskFieldType)
+		for _, path := range sourcePaths {
+			if path == "" {
+				tasksWithSource = append(tasksWithSource, taskName)
+			} else {
+				tasksWithSource = append(tasksWithSource, taskName+"."+path)
+			}
+		}
+	}
+
+	// Verify that all tasks with Source fields are in supportedTypeTasks
+	slices.Sort(tasksWithSource)
+	sortedSupported := make([]string, len(supportedTypeTasks))
+	copy(sortedSupported, supportedTypeTasks)
+	slices.Sort(sortedSupported)
+
+	assert.Equal(t, sortedSupported, tasksWithSource,
+		"supportedTypeTasks must include all task types with a Source field. "+
+			"If this test fails, update supportedTypeTasks in convert_job.go")
+}
+
+// findSourceFieldsShallow searches for Source fields in a struct type, going only one level deep.
+// Returns a list of paths to Source fields (e.g., "" for direct Source, "file" for sql_task.file).
+func findSourceFieldsShallow(t reflect.Type) []string {
+	if t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+
+	if t.Kind() != reflect.Struct {
+		return nil
+	}
+
+	var paths []string
+
+	for i := range t.NumField() {
+		field := t.Field(i)
+
+		// Check if this field is named "Source"
+		if field.Name == "Source" {
+			paths = append(paths, "")
+			continue
+		}
+
+		// Only search one level deep in nested structs
+		fieldType := field.Type
+		if fieldType.Kind() == reflect.Ptr {
+			fieldType = fieldType.Elem()
+		}
+
+		if fieldType.Kind() == reflect.Struct {
+			// Check if the nested struct has a Source field
+			if _, hasSource := fieldType.FieldByName("Source"); hasSource {
+				fieldName := textutil.CamelToSnakeCase(field.Name)
+				paths = append(paths, fieldName)
+			}
+		}
+	}
+
+	return paths
 }
