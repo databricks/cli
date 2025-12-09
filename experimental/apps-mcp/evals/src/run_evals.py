@@ -186,10 +186,10 @@ def main(
 
     if apps_volume:
         volume_path = Path(apps_volume)
-        latest_link = volume_path / "latest"
-        if latest_link.exists():
-            apps_dir = latest_link
-            print(f"Using apps from UC Volume: {apps_dir}")
+        latest_file = volume_path / "latest.txt"
+        if latest_file.exists():
+            apps_dir = Path(latest_file.read_text().strip())
+            print(f"Using apps from UC Volume (via latest.txt): {apps_dir}")
         elif volume_path.exists():
             subdirs = [d for d in volume_path.iterdir() if d.is_dir()]
             if subdirs:

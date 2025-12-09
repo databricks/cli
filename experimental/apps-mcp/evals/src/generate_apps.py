@@ -44,39 +44,80 @@ def install_klaudbiusz_deps(klaudbiusz_dir: Path) -> None:
         print(f"Warning: pip install had issues: {result.stderr[:500]}")
 
 
+def get_prompts(prompts_name: str) -> dict:
+    """Load prompts from klaudbiusz."""
+    if prompts_name == "databricks":
+        return {
+            "churn-risk-dashboard": "Build a churn risk dashboard showing customers with less than 30 day login activity, declining usage trends, and support ticket volume. Calculate a risk score.",
+            "revenue-by-channel": "Show daily revenue by channel (store/web/catalog) for the last 90 days with week-over-week growth rates and contribution percentages.",
+            "customer-rfm-segments": "Create customer segments using RFM analysis (recency, frequency, monetary). Show 4-5 clusters with average spend, purchase frequency, and last order date.",
+            "taxi-trip-metrics": "Calculate taxi trip metrics: average fare by distance bracket and time of day. Show daily trip volume and revenue trends.",
+            "slow-moving-inventory": "Identify slow-moving inventory: products with more than 90 days in stock, low turnover ratio, and current warehouse capacity by location.",
+        }
+    elif prompts_name == "test":
+        return {
+            "hello-world": "Create a simple hello world app that displays a greeting message.",
+        }
+    else:
+        return {
+            "sample-dashboard": "Create a sample data dashboard with charts showing sales trends.",
+        }
+
+
 def run_generation(
     klaudbiusz_dir: Path,
     mcp_binary: str,
     output_dir: Path,
     prompts: str,
     max_concurrency: int,
-) -> None:
-    """Run bulk app generation using klaudbiusz."""
-    print(f"\nStarting app generation...")
+) -> int:
+    """Run app generation using local_run (no Dagger required)."""
+    print(f"\nStarting app generation (local mode, no Dagger)...")
     print(f"  MCP binary: {mcp_binary}")
     print(f"  Prompts: {prompts}")
-    print(f"  Max concurrency: {max_concurrency}")
     print(f"  Output dir: {output_dir}")
 
     env = os.environ.copy()
     env["PYTHONPATH"] = str(klaudbiusz_dir)
 
-    cmd = [
-        sys.executable,
-        "-m",
-        "cli.generation.bulk_run",
-        f"--prompts={prompts}",
-        f"--mcp_binary={mcp_binary}",
-        '--mcp_args=["experimental", "apps-mcp"]',
-        f"--max_concurrency={max_concurrency}",
-        f"--output_dir={output_dir}",
-    ]
+    prompt_dict = get_prompts(prompts)
+    print(f"  Total prompts: {len(prompt_dict)}")
 
-    print(f"\nRunning: {' '.join(cmd)}")
-    result = subprocess.run(cmd, cwd=klaudbiusz_dir, env=env)
+    success_count = 0
+    fail_count = 0
 
-    if result.returncode != 0:
-        print(f"Generation completed with return code: {result.returncode}")
+    for app_name, prompt in prompt_dict.items():
+        print(f"\n{'=' * 60}")
+        print(f"Generating: {app_name}")
+        print(f"Prompt: {prompt[:100]}...")
+        print("=" * 60)
+
+        # Use LiteLLM backend to avoid Claude Agent SDK root user restriction
+        # (Databricks clusters run as root, Claude Agent SDK refuses to run as root)
+        cmd = [
+            sys.executable,
+            "-m",
+            "cli.generation.local_run",
+            prompt,
+            f"--app_name={app_name}",
+            "--backend=litellm",
+            "--model=anthropic/claude-sonnet-4-20250514",
+            f"--mcp_binary={mcp_binary}",
+            '--mcp_args=["experimental", "apps-mcp"]',
+            f"--output_dir={output_dir}",
+        ]
+
+        result = subprocess.run(cmd, cwd=klaudbiusz_dir, env=env)
+
+        if result.returncode == 0:
+            success_count += 1
+            print(f"SUCCESS: {app_name}")
+        else:
+            fail_count += 1
+            print(f"FAILED: {app_name} (return code: {result.returncode})")
+
+    print(f"\nGeneration summary: {success_count} succeeded, {fail_count} failed")
+    return success_count
 
 
 def upload_to_volume(local_dir: Path, volume_path: str) -> int:
@@ -101,10 +142,10 @@ def upload_to_volume(local_dir: Path, volume_path: str) -> int:
     shutil.copytree(local_dir, dest_dir)
     print(f"Uploaded to {dest_dir}")
 
-    latest_link = volume_dir / "latest"
-    if latest_link.exists():
-        latest_link.unlink()
-    latest_link.symlink_to(dest_dir.name)
+    # Write latest run path to a file (symlinks not supported on UC Volumes)
+    latest_file = volume_dir / "latest.txt"
+    latest_file.write_text(str(dest_dir))
+    print(f"Latest run recorded in {latest_file}")
 
     return len(apps)
 

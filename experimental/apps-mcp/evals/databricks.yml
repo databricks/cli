@@ -39,7 +39,7 @@ variables:
     default: "4"
   prompts:
     description: Prompt set for generation (databricks, databricks_v2, test)
-    default: databricks
+    default: test
 
 targets:
   dev:

@@ -6,7 +6,7 @@ resources:
       job_clusters:
         - job_cluster_key: generation_cluster
           new_cluster:
-            spark_version: "15.4.x-scala2.12"
+            spark_version: "16.2.x-scala2.12"
             node_type_id: "n2-standard-8"
             num_workers: 0
             data_security_mode: SINGLE_USER
@@ -17,6 +17,8 @@ resources:
               ResourceClass: SingleNode
             spark_env_vars:
               ANTHROPIC_API_KEY: "{{secrets/apps-mcp-evals/anthropic-api-key}}"
+              DATABRICKS_HOST: ${workspace.host}
+              DATABRICKS_TOKEN: "{{secrets/apps-mcp-evals/databricks-token}}"
             init_scripts:
               - workspace:
                   destination: ${workspace.file_path}/init/setup_generation.sh
