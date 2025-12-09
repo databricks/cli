@@ -75,9 +75,15 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 			return false
 		}
 
+		var dependsOnNodes []string
+		for _, dep := range entry.DependsOn {
+			dependsOnNodes = append(dependsOnNodes, dep.Node)
+		}
+
 		d := &DeploymentUnit{
 			ResourceKey: resourceKey,
 			Adapter:     adapter,
+			DependsOn:   dependsOnNodes,
 		}
 
 		if at == deployplan.ActionTypeDelete {
@@ -112,7 +118,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 					logdiag.LogError(ctx, fmt.Errorf("state entry not found for %q", resourceKey))
 					return false
 				}
-				err = b.StateDB.SaveState(resourceKey, dbentry.ID, entry.NewState.Value)
+				err = b.StateDB.SaveState(resourceKey, dbentry.ID, entry.NewState.Value, dependsOnNodes)
 			} else {
 				// TODO: redo calcDiff to downgrade planned action if possible (?)
 				err = d.Deploy(ctx, &b.StateDB, entry.NewState.Value, at, entry.Changes)

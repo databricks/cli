@@ -25,11 +25,12 @@ type Database struct {
 }
 
 type ResourceEntry struct {
-	ID    string `json:"__id__"`
-	State any    `json:"state"`
+	ID        string   `json:"__id__"`
+	State     any      `json:"state"`
+	DependsOn []string `json:"depends_on,omitempty"`
 }
 
-func (db *DeploymentState) SaveState(key, newID string, state any) error {
+func (db *DeploymentState) SaveState(key, newID string, state any, dependsOn []string) error {
 	db.AssertOpened()
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -39,8 +40,9 @@ func (db *DeploymentState) SaveState(key, newID string, state any) error {
 	}
 
 	db.Data.State[key] = ResourceEntry{
-		ID:    newID,
-		State: state,
+		ID:        newID,
+		State:     state,
+		DependsOn: dependsOn,
 	}
 
 	return nil

@@ -1,6 +1,11 @@
 {
   "plan": {
     "resources.jobs.bar": {
+      "depends_on": [
+        {
+          "node": "resources.jobs.foo"
+        }
+      ],
       "action": "delete",
       "remote_state": {
         "created_time": [UNIX_TIME_MILLIS][0],

@@ -591,12 +591,29 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 		p.Plan[node] = &e
 	}
 
+	// Build reverse dependency map: reverseDeps[B] = resources that depend on B.
+	reverseDeps := make(map[string][]string)
+	for n, entry := range existingKeys {
+		for _, dep := range entry.DependsOn {
+			reverseDeps[dep] = append(reverseDeps[dep], n)
+		}
+	}
+
 	for n := range existingKeys {
 		if p.Plan[n] != nil {
 			panic("unexpected node " + n)
 		}
+
+		var dependsOn []deployplan.DependsOnEntry
+		for _, dep := range reverseDeps[n] {
+			dependsOn = append(dependsOn, deployplan.DependsOnEntry{
+				Node: dep,
+			})
+		}
+
 		p.Plan[n] = &deployplan.PlanEntry{
-			Action: deployplan.ActionTypeDelete.String(),
+			Action:    deployplan.ActionTypeDelete.String(),
+			DependsOn: dependsOn,
 		}
 	}
 

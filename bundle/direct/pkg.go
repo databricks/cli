@@ -31,6 +31,9 @@ type DeploymentUnit struct {
 	// If the resource does not implement withRefresh variants of those methods, remoteState remains nil and
 	// will be populated lazily by calling DoRead().
 	RemoteState any
+
+	// DependsOn lists resource keys this resource depends on (persisted in state).
+	DependsOn []string
 }
 
 // DeploymentBundle holds everything needed to deploy a bundle

@@ -71,7 +71,7 @@ func (d *DeploymentUnit) Create(ctx context.Context, db *dstate.DeploymentState,
 		return err
 	}
 
-	err = db.SaveState(d.ResourceKey, newID, newState)
+	err = db.SaveState(d.ResourceKey, newID, newState, d.DependsOn)
 	if err != nil {
 		return fmt.Errorf("saving state after creating id=%s: %w", newID, err)
 	}
@@ -96,7 +96,7 @@ func (d *DeploymentUnit) Recreate(ctx context.Context, db *dstate.DeploymentStat
 		return fmt.Errorf("deleting old id=%s: %w", oldID, err)
 	}
 
-	err = db.SaveState(d.ResourceKey, "", nil)
+	err = db.SaveState(d.ResourceKey, "", nil, nil)
 	if err != nil {
 		return fmt.Errorf("deleting state: %w", err)
 	}
@@ -119,7 +119,7 @@ func (d *DeploymentUnit) Update(ctx context.Context, db *dstate.DeploymentState,
 		return err
 	}
 
-	err = db.SaveState(d.ResourceKey, id, newState)
+	err = db.SaveState(d.ResourceKey, id, newState, d.DependsOn)
 	if err != nil {
 		return fmt.Errorf("saving state id=%s: %w", id, err)
 	}
@@ -155,7 +155,7 @@ func (d *DeploymentUnit) UpdateWithID(ctx context.Context, db *dstate.Deployment
 		return err
 	}
 
-	err = db.SaveState(d.ResourceKey, newID, newState)
+	err = db.SaveState(d.ResourceKey, newID, newState, d.DependsOn)
 	if err != nil {
 		return fmt.Errorf("saving state id=%s: %w", oldID, err)
 	}
@@ -202,7 +202,7 @@ func (d *DeploymentUnit) Resize(ctx context.Context, db *dstate.DeploymentState,
 		return fmt.Errorf("resizing id=%s: %w", id, err)
 	}
 
-	err = db.SaveState(d.ResourceKey, id, newState)
+	err = db.SaveState(d.ResourceKey, id, newState, d.DependsOn)
 	if err != nil {
 		return fmt.Errorf("saving state id=%s: %w", id, err)
 	}
