@@ -1,3 +1,4 @@
 {"permission":"MANAGE","principal":"[USERNAME]"}
 {"permission":"MANAGE","principal":"users"}
+{"permission":"WRITE","principal":"[TEST_SP_APPLICATION_ID]"}
 {"permission":"WRITE","principal":"deco-test-user@databricks.com"}
