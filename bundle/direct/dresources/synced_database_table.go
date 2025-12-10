@@ -47,6 +47,8 @@ func (r *ResourceSyncedDatabaseTable) DoUpdate(ctx context.Context, id string, c
 
 func (r *ResourceSyncedDatabaseTable) DoDelete(ctx context.Context, id string) error {
 	return r.client.Database.DeleteSyncedDatabaseTable(ctx, database.DeleteSyncedDatabaseTableRequest{
-		Name: id,
+		Name:            id,
+		PurgeData:       false,
+		ForceSendFields: nil,
 	})
 }

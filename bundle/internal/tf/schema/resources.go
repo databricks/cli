@@ -47,6 +47,7 @@ type Resources struct {
 	ExternalLocation                             map[string]any `json:"databricks_external_location,omitempty"`
 	ExternalMetadata                             map[string]any `json:"databricks_external_metadata,omitempty"`
 	FeatureEngineeringFeature                    map[string]any `json:"databricks_feature_engineering_feature,omitempty"`
+	FeatureEngineeringKafkaConfig                map[string]any `json:"databricks_feature_engineering_kafka_config,omitempty"`
 	FeatureEngineeringMaterializedFeature        map[string]any `json:"databricks_feature_engineering_materialized_feature,omitempty"`
 	File                                         map[string]any `json:"databricks_file,omitempty"`
 	GitCredential                                map[string]any `json:"databricks_git_credential,omitempty"`
@@ -134,6 +135,7 @@ type Resources struct {
 	Volume                                       map[string]any `json:"databricks_volume,omitempty"`
 	WorkspaceBinding                             map[string]any `json:"databricks_workspace_binding,omitempty"`
 	WorkspaceConf                                map[string]any `json:"databricks_workspace_conf,omitempty"`
+	WorkspaceEntityTagAssignment                 map[string]any `json:"databricks_workspace_entity_tag_assignment,omitempty"`
 	WorkspaceFile                                map[string]any `json:"databricks_workspace_file,omitempty"`
 	WorkspaceNetworkOption                       map[string]any `json:"databricks_workspace_network_option,omitempty"`
 	WorkspaceSettingV2                           map[string]any `json:"databricks_workspace_setting_v2,omitempty"`
@@ -185,6 +187,7 @@ func NewResources() *Resources {
 		ExternalLocation:                      make(map[string]any),
 		ExternalMetadata:                      make(map[string]any),
 		FeatureEngineeringFeature:             make(map[string]any),
+		FeatureEngineeringKafkaConfig:         make(map[string]any),
 		FeatureEngineeringMaterializedFeature: make(map[string]any),
 		File:                                  make(map[string]any),
 		GitCredential:                         make(map[string]any),
@@ -272,6 +275,7 @@ func NewResources() *Resources {
 		Volume:                                make(map[string]any),
 		WorkspaceBinding:                      make(map[string]any),
 		WorkspaceConf:                         make(map[string]any),
+		WorkspaceEntityTagAssignment:          make(map[string]any),
 		WorkspaceFile:                         make(map[string]any),
 		WorkspaceNetworkOption:                make(map[string]any),
 		WorkspaceSettingV2:                    make(map[string]any),

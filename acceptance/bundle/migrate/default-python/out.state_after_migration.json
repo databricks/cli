@@ -1,6 +1,6 @@
 {
  "lineage": "[UUID]",
- "serial": 4,
+ "serial": 5,
  "state": {
   "resources.jobs.sample_job": {
    "__id__": "[NUMID]",
@@ -21,7 +21,6 @@
        },
        "data_security_mode": "SINGLE_USER",
        "node_type_id": "[NODE_TYPE_ID]",
-       "num_workers": 0,
        "spark_version": "16.4.x-scala2.12"
       }
      }
