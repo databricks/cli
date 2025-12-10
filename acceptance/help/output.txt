@@ -157,6 +157,7 @@ Additional Commands:
   account                                Databricks Account Commands
   api                                    Perform Databricks API call
   auth                                   Authentication related commands
+  cache                                  Local cache related commands
   completion                             Generate the autocompletion script for the specified shell
   configure                              Configure authentication
   help                                   Help about any command

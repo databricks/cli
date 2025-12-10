@@ -1,0 +1,21 @@
+
+=== First call in a session is expected to be a cache miss:
+[DEBUG_TIMESTAMP] Debug: [Local Cache] using cache key: [SHA256_HASH]
+[DEBUG_TIMESTAMP] Debug: [Local Cache] failed to stat cache file: (redacted)
+[DEBUG_TIMESTAMP] Debug: [Local Cache] cache miss, computing
+[DEBUG_TIMESTAMP] Debug: [Local Cache] computed and stored result
+
+=== Second call in a session is expected to be a cache hit
+[DEBUG_TIMESTAMP] Debug: [Local Cache] using cache key: [SHA256_HASH]
+[DEBUG_TIMESTAMP] Debug: [Local Cache] cache hit
+
+=== Bundle deploy should send telemetry values
+
+>>> [CLI] bundle deploy -p dogfood
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/exploratory-cache-test/default/files...
+Deploying resources...
+Deployment complete!
+
+>>> print_telemetry_bool_values
+local.cache.attempt true
+local.cache.hit true
