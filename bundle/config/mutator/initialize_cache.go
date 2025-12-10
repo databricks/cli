@@ -2,6 +2,7 @@ package mutator
 
 import (
 	"context"
+	"time"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/cache"
@@ -21,6 +22,6 @@ func (m *initializeCache) Name() string {
 
 func (m *initializeCache) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	// Initialize cache with 30 minute expiry for user information
-	b.Cache = cache.NewCache(ctx, "user", 30, &b.Metrics)
+	b.Cache = cache.NewCache(ctx, "user", 30*time.Minute, &b.Metrics)
 	return nil
 }

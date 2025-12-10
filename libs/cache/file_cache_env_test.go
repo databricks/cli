@@ -8,6 +8,7 @@ import (
 	"strings"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/databricks/cli/libs/env"
 	"github.com/stretchr/testify/assert"
@@ -58,10 +59,11 @@ func TestCacheEnabledEnvVar(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Create a unique subdirectory for this test
 			testDir := filepath.Join(tempDir, tt.name)
-			fc, err := newFileCacheWithBaseDir(ctx, testDir, 60)
+			fc, err := newFileCacheWithBaseDir(ctx, testDir, 60*time.Minute)
 			require.NoError(t, err)
 
 			// Set cacheEnabled based on env var (simulate NewFileCache behavior)
+			// Only "true" enables caching; any other value keeps it disabled
 			fc.cacheEnabled = env.Get(ctx, "DATABRICKS_CACHE_ENABLED") == "true"
 
 			cache := &Cache{impl: fc}
@@ -74,7 +76,7 @@ func TestCacheEnabledEnvVar(t *testing.T) {
 
 			// First call - should always compute
 			var computeCalls int32
-			result, err := GetOrCompute[string](cache, ctx, fingerprint, func(ctx context.Context) (string, error) {
+			result, err := GetOrCompute[string](ctx, cache, fingerprint, func(ctx context.Context) (string, error) {
 				atomic.AddInt32(&computeCalls, 1)
 				return "computed-value", nil
 			})
@@ -83,7 +85,7 @@ func TestCacheEnabledEnvVar(t *testing.T) {
 			assert.Equal(t, int32(1), atomic.LoadInt32(&computeCalls))
 
 			// Second call - should use cache only if enabled
-			result2, err := GetOrCompute[string](cache, ctx, fingerprint, func(ctx context.Context) (string, error) {
+			result2, err := GetOrCompute[string](ctx, cache, fingerprint, func(ctx context.Context) (string, error) {
 				atomic.AddInt32(&computeCalls, 1)
 				return "should-not-be-called", nil
 			})
@@ -110,7 +112,7 @@ func TestCacheDirEnvVar(t *testing.T) {
 		customCacheDir := filepath.Join(tempDir, "custom-cache")
 		t.Setenv("DATABRICKS_CACHE_DIR", customCacheDir)
 
-		cache := NewCache(ctx, "test-component", 60, nil)
+		cache := NewCache(ctx, "test-component", 60*time.Minute, nil)
 		fc, ok := cache.impl.(*fileCache)
 		require.True(t, ok)
 
@@ -126,7 +128,7 @@ func TestCacheDirEnvVar(t *testing.T) {
 	t.Run("uses default UserCacheDir when env var not set", func(t *testing.T) {
 		os.Unsetenv("DATABRICKS_CACHE_DIR")
 
-		cache := NewCache(ctx, "test-component", 60, nil)
+		cache := NewCache(ctx, "test-component", 60*time.Minute, nil)
 		fc, ok := cache.impl.(*fileCache)
 		require.True(t, ok)
 
@@ -146,7 +148,7 @@ func TestCacheDirEnvVar(t *testing.T) {
 		// Set an invalid path (no permissions)
 		t.Setenv("DATABRICKS_CACHE_DIR", "/root/invalid-cache-dir")
 
-		cache := NewCache(ctx, "test-component", 60, nil)
+		cache := NewCache(ctx, "test-component", 60*time.Minute, nil)
 		_, ok := cache.impl.(*noopFileCache)
 		require.True(t, ok)
 	})
@@ -158,7 +160,7 @@ func TestCacheIsolationByVersion(t *testing.T) {
 	t.Setenv("DATABRICKS_CACHE_DIR", tempDir)
 
 	// Create cache for component
-	cache := NewCache(ctx, "test-component", 60, nil)
+	cache := NewCache(ctx, "test-component", 60*time.Minute, nil)
 	fc, ok := cache.impl.(*fileCache)
 	require.True(t, ok)
 

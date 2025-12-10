@@ -25,7 +25,7 @@ type Cache struct {
 // Cache operations fail open: if caching fails, the compute function is still called.
 // Returns an error only if the compute function fails.
 // The type parameter T is inferred from the compute function's return type.
-func GetOrCompute[T any](c *Cache, ctx context.Context, fingerprint any, compute func(ctx context.Context) (T, error)) (T, error) {
+func GetOrCompute[T any](ctx context.Context, c *Cache, fingerprint any, compute func(ctx context.Context) (T, error)) (T, error) {
 	var zero T
 
 	// Wrap the compute function to serialize to JSON

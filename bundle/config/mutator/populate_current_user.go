@@ -33,7 +33,7 @@ func (m *populateCurrentUser) Apply(ctx context.Context, b *bundle.Bundle) diag.
 	var err error
 
 	fingerprint := b.GetUserFingerprint(ctx)
-	me, err = cache.GetOrCompute(b.Cache, ctx, fingerprint, func(ctx context.Context) (*iam.User, error) {
+	me, err = cache.GetOrCompute(ctx, b.Cache, fingerprint, func(ctx context.Context) (*iam.User, error) {
 		currentUser, err := w.CurrentUser.Me(ctx)
 		return currentUser, err
 	})

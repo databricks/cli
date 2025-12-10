@@ -73,18 +73,10 @@ func (m *Metrics) AddBoolValue(key string, value bool) {
 	m.BoolValues = append(m.BoolValues, protos.BoolMapEntry{Key: key, Value: value})
 }
 
-// SetDurationValue sets the value of a duration metric in milliseconds.
-// If the metric does not exist, it is created.
-// If the metric exists, it is updated.
-// Ensures that the metric is unique.
-func (m *Metrics) SetDurationValue(key string, value time.Duration) {
+// AddDurationValue sets the value of a duration metric in milliseconds.
+// The value is added to the list of measurements.
+func (m *Metrics) AddDurationValue(key string, value time.Duration) {
 	valueMs := value.Milliseconds()
-	for i, v := range m.LocalCacheMeasurementsMs {
-		if v.Key == key {
-			m.LocalCacheMeasurementsMs[i].Value = valueMs
-			return
-		}
-	}
 	m.LocalCacheMeasurementsMs = append(m.LocalCacheMeasurementsMs, protos.IntMapEntry{Key: key, Value: valueMs})
 }
 

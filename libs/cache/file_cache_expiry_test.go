@@ -17,7 +17,7 @@ func TestFileCacheExpiryBehavior(t *testing.T) {
 	tempDir := t.TempDir()
 
 	// Create cache with 1 minute expiry
-	fc, err := newFileCacheWithBaseDir(ctx, tempDir, 1)
+	fc, err := newFileCacheWithBaseDir(ctx, tempDir, 1*time.Minute)
 	require.NoError(t, err)
 
 	// Enable cache for this test (default is measurement-only mode)
@@ -32,7 +32,7 @@ func TestFileCacheExpiryBehavior(t *testing.T) {
 	}
 
 	// Compute and store a value
-	result, err := GetOrCompute[string](cache, ctx, fingerprint, func(ctx context.Context) (string, error) {
+	result, err := GetOrCompute[string](ctx, cache, fingerprint, func(ctx context.Context) (string, error) {
 		return "test-value", nil
 	})
 	require.NoError(t, err)
@@ -60,7 +60,7 @@ func TestFileCacheExpiryBehavior(t *testing.T) {
 
 	// Verify GetOrCompute treats it as a cache miss and recomputes
 	callCount := 0
-	result, err = GetOrCompute[string](cache, ctx, fingerprint, func(ctx context.Context) (string, error) {
+	result, err = GetOrCompute[string](ctx, cache, fingerprint, func(ctx context.Context) (string, error) {
 		callCount++
 		return "recomputed-value", nil
 	})
@@ -73,7 +73,7 @@ func TestFileCacheExpiryBehavior(t *testing.T) {
 func TestReadFromCacheRespectsExpiry(t *testing.T) {
 	ctx := context.Background()
 	tempDir := t.TempDir()
-	cache, err := newFileCacheWithBaseDir(ctx, tempDir, 1) // 1 minute expiry
+	cache, err := newFileCacheWithBaseDir(ctx, tempDir, 1*time.Minute) // 1 minute expiry
 	require.NoError(t, err)
 
 	// Create an expired cache file by setting its mtime to 2 hours ago

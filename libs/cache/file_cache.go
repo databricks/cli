@@ -16,27 +16,27 @@ import (
 // Metrics is a local interface for tracking cache telemetry.
 type Metrics interface {
 	SetBoolValue(key string, value bool)
-	SetDurationValue(key string, value time.Duration)
+	AddDurationValue(key string, value time.Duration)
 }
 
 // fileCache implements the cacheImpl interface using local disk storage.
 type fileCache struct {
-	baseDir       string
-	expiryMinutes int
-	mu            sync.Mutex
-	metrics       Metrics
-	cacheEnabled  bool // If true, cached values are returned; if false, cache is only used for measurement
+	baseDir      string
+	expiry       time.Duration
+	mu           sync.Mutex
+	metrics      Metrics
+	cacheEnabled bool // If true, cached values are returned; if false, cache is only used for measurement
 }
 
 // newFileCacheWithBaseDir creates a new file-based cache that stores data in the specified directory.
-func newFileCacheWithBaseDir(ctx context.Context, baseDir string, expiryMinutes int) (*fileCache, error) {
+func newFileCacheWithBaseDir(ctx context.Context, baseDir string, expiry time.Duration) (*fileCache, error) {
 	if err := os.MkdirAll(baseDir, 0o700); err != nil {
 		return nil, fmt.Errorf("failed to create cache directory: %w", err)
 	}
 
 	fc := &fileCache{
-		baseDir:       baseDir,
-		expiryMinutes: expiryMinutes,
+		baseDir: baseDir,
+		expiry:  expiry,
 	}
 
 	// Clean up expired files synchronously
@@ -47,13 +47,13 @@ func newFileCacheWithBaseDir(ctx context.Context, baseDir string, expiryMinutes 
 
 // isExpired checks if a file with the given modification time has expired.
 func (fc *fileCache) isExpired(modTime time.Time) bool {
-	expiryThreshold := time.Now().Add(-time.Duration(fc.expiryMinutes) * time.Minute)
+	expiryThreshold := time.Now().Add(-fc.expiry)
 	return modTime.Before(expiryThreshold)
 }
 
 // cleanupExpiredFiles removes expired cache files from disk based on file modification time.
 // This runs synchronously once when the cache is created.
-// Files older than expiryMinutes are deleted.
+// Files older than expiry duration are deleted.
 func (fc *fileCache) cleanupExpiredFiles(ctx context.Context) {
 	err := filepath.Walk(fc.baseDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -116,7 +116,7 @@ func getCacheBaseDir(ctx context.Context) (string, error) {
 // - Always compute the value (never actually use the cache)
 // Set DATABRICKS_CACHE_ENABLED=true to enable actual caching.
 // The returned cache can handle multiple types through the generic GetOrCompute function.
-func NewCache(ctx context.Context, component string, expiryMinutes int, metrics Metrics) *Cache {
+func NewCache(ctx context.Context, component string, expiry time.Duration, metrics Metrics) *Cache {
 	cacheBaseDir, err := getCacheBaseDir(ctx)
 	if err != nil {
 		return &Cache{impl: &noopFileCache{}}
@@ -126,13 +126,14 @@ func NewCache(ctx context.Context, component string, expiryMinutes int, metrics 
 	// Sanitize version string for use in file paths
 	version := build.GetInfo().GetSanitizedVersion()
 	baseDir := filepath.Join(cacheBaseDir, version, component)
-	fc, err := newFileCacheWithBaseDir(ctx, baseDir, expiryMinutes)
+	fc, err := newFileCacheWithBaseDir(ctx, baseDir, expiry)
 	if err != nil {
 		return &Cache{impl: &noopFileCache{}}
 	}
 	fc.metrics = metrics
 
 	// Check if cache is enabled; default is false (measurement-only mode)
+	// Only "true" enables caching; any other value (including "false", "1", etc.) keeps it disabled
 	fc.cacheEnabled = env.Get(ctx, "DATABRICKS_CACHE_ENABLED") == "true"
 	return &Cache{impl: fc}
 }
@@ -194,7 +195,7 @@ func (fc *fileCache) getOrComputeJSON(ctx context.Context, fingerprint any, comp
 	// Record duration metrics
 	if fc.metrics != nil {
 		computeDuration := time.Since(start)
-		fc.metrics.SetDurationValue("local.cache.compute_duration", computeDuration)
+		fc.metrics.AddDurationValue("local.cache.compute_duration", computeDuration)
 	}
 
 	log.Debugf(ctx, "[Local Cache] computed and stored result")
