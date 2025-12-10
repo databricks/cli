@@ -3,11 +3,13 @@ package dresources
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 )
@@ -61,7 +63,10 @@ func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *apps.App,
 
 func (r *ResourceApp) DoDelete(ctx context.Context, id string) error {
 	_, err := r.client.Apps.DeleteByName(ctx, id)
-	return err
+	if err != nil {
+		return err
+	}
+	return r.waitForDeletion(ctx, id)
 }
 
 func (*ResourceApp) FieldTriggers(_ bool) map[string]deployplan.ActionType {
@@ -72,6 +77,34 @@ func (*ResourceApp) FieldTriggers(_ bool) map[string]deployplan.ActionType {
 
 func (r *ResourceApp) WaitAfterCreate(ctx context.Context, config *apps.App) (*apps.App, error) {
 	return r.waitForApp(ctx, r.client, config.Name)
+}
+
+func (r *ResourceApp) waitForDeletion(ctx context.Context, name string) error {
+	retrier := retries.New[struct{}](retries.WithTimeout(10*time.Minute), retries.WithRetryFunc(shouldRetry))
+	_, err := retrier.Run(ctx, func(ctx context.Context) (*struct{}, error) {
+		app, err := r.client.Apps.GetByName(ctx, name)
+		if err != nil {
+			if apierr.IsMissing(err) {
+				return nil, nil
+			}
+			return nil, retries.Halt(err)
+		}
+
+		if app.ComputeStatus == nil {
+			return nil, retries.Continues("waiting for compute status")
+		}
+
+		switch app.ComputeStatus.State {
+		case apps.ComputeStateDeleting:
+			return nil, retries.Continues("app is deleting")
+		case apps.ComputeStateActive, apps.ComputeStateStopped, apps.ComputeStateError:
+			err := fmt.Errorf("app %s was not deleted, current state: %s", name, app.ComputeStatus.State)
+			return nil, retries.Halt(err)
+		default:
+			return nil, retries.Continues(fmt.Sprintf("app is in %s state", app.ComputeStatus.State))
+		}
+	})
+	return err
 }
 
 // waitForApp waits for the app to reach the target state. The target state is either ACTIVE or STOPPED.
