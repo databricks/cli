@@ -17,11 +17,13 @@ func TestFileCacheExpiryBehavior(t *testing.T) {
 	tempDir := t.TempDir()
 
 	// Create cache with 1 minute expiry
-	cache, err := newFileCacheWithBaseDir[string](ctx, tempDir, 1)
+	fc, err := newFileCacheWithBaseDir(ctx, tempDir, 1)
 	require.NoError(t, err)
 
 	// Enable cache for this test (default is measurement-only mode)
-	cache.cacheEnabled = true
+	fc.cacheEnabled = true
+
+	cache := &Cache{impl: fc}
 
 	fingerprint := struct {
 		Key string `json:"key"`
@@ -30,7 +32,7 @@ func TestFileCacheExpiryBehavior(t *testing.T) {
 	}
 
 	// Compute and store a value
-	result, err := cache.GetOrCompute(ctx, fingerprint, func(ctx context.Context) (string, error) {
+	result, err := GetOrCompute[string](cache, ctx, fingerprint, func(ctx context.Context) (string, error) {
 		return "test-value", nil
 	})
 	require.NoError(t, err)
@@ -58,7 +60,7 @@ func TestFileCacheExpiryBehavior(t *testing.T) {
 
 	// Verify GetOrCompute treats it as a cache miss and recomputes
 	callCount := 0
-	result, err = cache.GetOrCompute(ctx, fingerprint, func(ctx context.Context) (string, error) {
+	result, err = GetOrCompute[string](cache, ctx, fingerprint, func(ctx context.Context) (string, error) {
 		callCount++
 		return "recomputed-value", nil
 	})
@@ -67,11 +69,11 @@ func TestFileCacheExpiryBehavior(t *testing.T) {
 	assert.Equal(t, 1, callCount, "Should have called compute function once due to cache expiry")
 }
 
-// TestReadFromCacheRespectsExpiry tests that readFromCache returns false for expired entries based on mtime
+// TestReadFromCacheRespectsExpiry tests that readFromCacheJSON returns false for expired entries based on mtime
 func TestReadFromCacheRespectsExpiry(t *testing.T) {
 	ctx := context.Background()
 	tempDir := t.TempDir()
-	cache, err := newFileCacheWithBaseDir[string](ctx, tempDir, 1) // 1 minute expiry
+	cache, err := newFileCacheWithBaseDir(ctx, tempDir, 1) // 1 minute expiry
 	require.NoError(t, err)
 
 	// Create an expired cache file by setting its mtime to 2 hours ago
@@ -81,16 +83,16 @@ func TestReadFromCacheRespectsExpiry(t *testing.T) {
 	require.NoError(t, os.Chtimes(expiredFile, oldTime, oldTime))
 
 	// Try to read from expired cache - should return false
-	result, found := cache.readFromCache(ctx, expiredFile)
+	result, found := cache.readFromCacheJSON(ctx, expiredFile)
 	assert.False(t, found, "Should not find expired cache entry")
-	assert.Equal(t, "", result, "Result should be zero value for expired entry")
+	assert.Nil(t, result, "Result should be nil for expired entry")
 
 	// Create a valid (non-expired) cache file with recent mtime
 	validFile := filepath.Join(tempDir, "valid.json")
 	require.NoError(t, os.WriteFile(validFile, []byte(`"valid-value"`), 0o644))
 
 	// Try to read from valid cache - should return true
-	result, found = cache.readFromCache(ctx, validFile)
+	result, found = cache.readFromCacheJSON(ctx, validFile)
 	assert.True(t, found, "Should find valid cache entry")
-	assert.Equal(t, "valid-value", result, "Should return correct value for valid entry")
+	assert.Equal(t, `"valid-value"`, string(result), "Should return correct value for valid entry")
 }

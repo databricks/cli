@@ -2,8 +2,9 @@ package cache
 
 import "context"
 
-type NoopFileCache[T any] struct{}
+type noopFileCache struct{}
 
-func (c *NoopFileCache[T]) GetOrCompute(ctx context.Context, fingerprint any, compute func(ctx context.Context) (T, error)) (T, error) {
-	return compute(ctx)
+func (c *noopFileCache) getOrComputeJSON(ctx context.Context, fingerprint any, compute func(ctx context.Context) ([]byte, error)) ([]byte, bool, error) {
+	result, err := compute(ctx)
+	return result, false, err
 }

@@ -22,8 +22,8 @@ func TestNewFileCache(t *testing.T) {
 	ctx = env.Set(ctx, "DATABRICKS_CACHE_ENABLED", "true")
 	ctx = env.Set(ctx, "DATABRICKS_CACHE_DIR", cacheDir)
 
-	cache := NewCache[string](ctx, "test-component", 60, nil)
-	fc, ok := cache.(*FileCache[string])
+	cache := NewCache(ctx, "test-component", 60, nil)
+	fc, ok := cache.impl.(*fileCache)
 	require.True(t, ok)
 	assert.True(t, strings.HasPrefix(fc.baseDir, cacheDir))
 
@@ -58,8 +58,8 @@ func TestNewFileCacheWithExistingDirectory(t *testing.T) {
 	ctx = env.Set(ctx, "DATABRICKS_CACHE_ENABLED", "true")
 	ctx = env.Set(ctx, "DATABRICKS_CACHE_DIR", cacheDir)
 
-	cache := NewCache[string](ctx, "test-component", 60, nil)
-	fc, ok := cache.(*FileCache[string])
+	cache := NewCache(ctx, "test-component", 60, nil)
+	fc, ok := cache.impl.(*fileCache)
 	require.True(t, ok)
 	require.NoError(t, err)
 	assert.True(t, strings.HasPrefix(fc.baseDir, cacheDir))
@@ -76,8 +76,8 @@ func TestNewFileCacheInvalidPath(t *testing.T) {
 	ctx = env.Set(ctx, "DATABRICKS_CACHE_ENABLED", "true")
 	ctx = env.Set(ctx, "DATABRICKS_CACHE_DIR", invalidPath)
 
-	cache := NewCache[string](ctx, "test-component", 60, nil)
-	_, ok := cache.(*NoopFileCache[string])
+	cache := NewCache(ctx, "test-component", 60, nil)
+	_, ok := cache.impl.(*noopFileCache)
 	require.True(t, ok)
 }
 
@@ -88,7 +88,7 @@ func TestFileCacheGetOrCompute(t *testing.T) {
 	ctx = env.Set(ctx, "DATABRICKS_CACHE_ENABLED", "true")
 	ctx = env.Set(ctx, "DATABRICKS_CACHE_DIR", cacheDir)
 
-	cache := NewCache[string](ctx, "test-component", 60, nil)
+	cache := NewCache(ctx, "test-component", 60, nil)
 
 	fingerprint := struct {
 		Key   string `json:"key"`
@@ -101,7 +101,7 @@ func TestFileCacheGetOrCompute(t *testing.T) {
 
 	// First call should compute the value
 	var computeCalls int32
-	result, err := cache.GetOrCompute(ctx, fingerprint, func(ctx context.Context) (string, error) {
+	result, err := GetOrCompute[string](cache, ctx, fingerprint, func(ctx context.Context) (string, error) {
 		atomic.AddInt32(&computeCalls, 1)
 		return expectedValue, nil
 	})
@@ -111,7 +111,7 @@ func TestFileCacheGetOrCompute(t *testing.T) {
 	assert.Equal(t, int32(1), atomic.LoadInt32(&computeCalls))
 
 	// Second call should return cached value without computing
-	result2, err := cache.GetOrCompute(ctx, fingerprint, func(ctx context.Context) (string, error) {
+	result2, err := GetOrCompute[string](cache, ctx, fingerprint, func(ctx context.Context) (string, error) {
 		atomic.AddInt32(&computeCalls, 1)
 		return "should-not-be-called", nil
 	})
@@ -128,7 +128,7 @@ func TestFileCacheGetOrComputeError(t *testing.T) {
 	ctx = env.Set(ctx, "DATABRICKS_CACHE_ENABLED", "true")
 	ctx = env.Set(ctx, "DATABRICKS_CACHE_DIR", cacheDir)
 
-	cache := NewCache[string](ctx, "test-component", 60, nil)
+	cache := NewCache(ctx, "test-component", 60, nil)
 
 	fingerprint := struct {
 		Key string `json:"key"`
@@ -137,7 +137,7 @@ func TestFileCacheGetOrComputeError(t *testing.T) {
 	}
 
 	// Compute function returns error
-	result, err := cache.GetOrCompute(ctx, fingerprint, func(ctx context.Context) (string, error) {
+	result, err := GetOrCompute[string](cache, ctx, fingerprint, func(ctx context.Context) (string, error) {
 		return "", assert.AnError
 	})
 
@@ -153,7 +153,7 @@ func TestFileCacheGetOrComputeConcurrency(t *testing.T) {
 	ctx = env.Set(ctx, "DATABRICKS_CACHE_ENABLED", "true")
 	ctx = env.Set(ctx, "DATABRICKS_CACHE_DIR", cacheDir)
 
-	cache := NewCache[string](ctx, "test-component", 60, nil)
+	cache := NewCache(ctx, "test-component", 60, nil)
 
 	fingerprint := struct {
 		Key string `json:"key"`
@@ -170,7 +170,7 @@ func TestFileCacheGetOrComputeConcurrency(t *testing.T) {
 
 	for range numGoroutines {
 		go func() {
-			result, err := cache.GetOrCompute(ctx, fingerprint, func(ctx context.Context) (string, error) {
+			result, err := GetOrCompute[string](cache, ctx, fingerprint, func(ctx context.Context) (string, error) {
 				atomic.AddInt32(&computeCalls, 1)
 				time.Sleep(10 * time.Millisecond) // Simulate work
 				return expectedValue, nil
@@ -219,7 +219,7 @@ func TestFileCacheCleanupExpiredFiles(t *testing.T) {
 	require.NoError(t, os.WriteFile(nonCacheFile, []byte("readme"), 0o644))
 
 	// Create cache - this should trigger cleanup
-	_, err := newFileCacheWithBaseDir[string](ctx, tempDir, expiryMinutes)
+	_, err := newFileCacheWithBaseDir(ctx, tempDir, expiryMinutes)
 	require.NoError(t, err)
 
 	// Check results
@@ -236,11 +236,13 @@ func TestFileCacheCleanupExpiredFiles(t *testing.T) {
 func TestFileCacheInvalidJSON(t *testing.T) {
 	ctx := context.Background()
 	tempDir := t.TempDir()
-	cache, err := newFileCacheWithBaseDir[string](ctx, tempDir, 60)
+	fc, err := newFileCacheWithBaseDir(ctx, tempDir, 60)
 	require.NoError(t, err)
 
 	// Enable cache for this test
-	cache.cacheEnabled = true
+	fc.cacheEnabled = true
+
+	cache := &Cache{impl: fc}
 
 	fingerprint := struct {
 		Key string `json:"key"`
@@ -251,13 +253,13 @@ func TestFileCacheInvalidJSON(t *testing.T) {
 	// Manually write invalid JSON to the cache file
 	cacheKey, err := fingerprintToHash(fingerprint)
 	require.NoError(t, err)
-	cachePath := cache.getCachePath(cacheKey)
+	cachePath := fc.getCachePath(cacheKey)
 	err = os.WriteFile(cachePath, []byte("invalid json {{{"), 0o600)
 	require.NoError(t, err)
 
 	// GetOrCompute should fail open and recompute when cache contains invalid JSON
 	var computeCalls int32
-	result, err := cache.GetOrCompute(ctx, fingerprint, func(ctx context.Context) (string, error) {
+	result, err := GetOrCompute[string](cache, ctx, fingerprint, func(ctx context.Context) (string, error) {
 		atomic.AddInt32(&computeCalls, 1)
 		return "recomputed-value", nil
 	})
@@ -270,11 +272,13 @@ func TestFileCacheInvalidJSON(t *testing.T) {
 func TestFileCacheCorruptedData(t *testing.T) {
 	ctx := context.Background()
 	tempDir := t.TempDir()
-	cache, err := newFileCacheWithBaseDir[int](ctx, tempDir, 60)
+	fc, err := newFileCacheWithBaseDir(ctx, tempDir, 60)
 	require.NoError(t, err)
 
 	// Enable cache for this test
-	cache.cacheEnabled = true
+	fc.cacheEnabled = true
+
+	cache := &Cache{impl: fc}
 
 	fingerprint := struct {
 		Key string `json:"key"`
@@ -285,13 +289,13 @@ func TestFileCacheCorruptedData(t *testing.T) {
 	// Write valid JSON but wrong type (string instead of int)
 	cacheKey, err := fingerprintToHash(fingerprint)
 	require.NoError(t, err)
-	cachePath := cache.getCachePath(cacheKey)
+	cachePath := fc.getCachePath(cacheKey)
 	err = os.WriteFile(cachePath, []byte(`"not-an-integer"`), 0o600)
 	require.NoError(t, err)
 
 	// GetOrCompute should fail open and recompute when cache type doesn't match
 	var computeCalls int32
-	result, err := cache.GetOrCompute(ctx, fingerprint, func(ctx context.Context) (int, error) {
+	result, err := GetOrCompute[int](cache, ctx, fingerprint, func(ctx context.Context) (int, error) {
 		atomic.AddInt32(&computeCalls, 1)
 		return 42, nil
 	})
@@ -304,17 +308,19 @@ func TestFileCacheCorruptedData(t *testing.T) {
 func TestFileCacheEmptyFingerprint(t *testing.T) {
 	ctx := context.Background()
 	tempDir := t.TempDir()
-	cache, err := newFileCacheWithBaseDir[string](ctx, tempDir, 60)
+	fc, err := newFileCacheWithBaseDir(ctx, tempDir, 60)
 	require.NoError(t, err)
 
 	// Enable cache for this test
-	cache.cacheEnabled = true
+	fc.cacheEnabled = true
+
+	cache := &Cache{impl: fc}
 
 	// Empty struct fingerprint is valid
 	fingerprint := struct{}{}
 
 	var computeCalls int32
-	result, err := cache.GetOrCompute(ctx, fingerprint, func(ctx context.Context) (string, error) {
+	result, err := GetOrCompute[string](cache, ctx, fingerprint, func(ctx context.Context) (string, error) {
 		atomic.AddInt32(&computeCalls, 1)
 		return "value", nil
 	})
@@ -322,7 +328,7 @@ func TestFileCacheEmptyFingerprint(t *testing.T) {
 	assert.Equal(t, "value", result)
 
 	// Second call should use cache
-	result2, err := cache.GetOrCompute(ctx, fingerprint, func(ctx context.Context) (string, error) {
+	result2, err := GetOrCompute[string](cache, ctx, fingerprint, func(ctx context.Context) (string, error) {
 		atomic.AddInt32(&computeCalls, 1)
 		return "should-not-be-called", nil
 	})
@@ -334,11 +340,13 @@ func TestFileCacheEmptyFingerprint(t *testing.T) {
 func TestFileCacheMeasurementMode(t *testing.T) {
 	ctx := context.Background()
 	tempDir := t.TempDir()
-	cache, err := newFileCacheWithBaseDir[string](ctx, tempDir, 60)
+	fc, err := newFileCacheWithBaseDir(ctx, tempDir, 60)
 	require.NoError(t, err)
 
 	// Keep cache disabled (measurement mode)
-	cache.cacheEnabled = false
+	fc.cacheEnabled = false
+
+	cache := &Cache{impl: fc}
 
 	fingerprint := struct {
 		Key string `json:"key"`
@@ -348,7 +356,7 @@ func TestFileCacheMeasurementMode(t *testing.T) {
 
 	// First call
 	var computeCalls int32
-	result, err := cache.GetOrCompute(ctx, fingerprint, func(ctx context.Context) (string, error) {
+	result, err := GetOrCompute[string](cache, ctx, fingerprint, func(ctx context.Context) (string, error) {
 		atomic.AddInt32(&computeCalls, 1)
 		return "computed-value", nil
 	})
@@ -357,7 +365,7 @@ func TestFileCacheMeasurementMode(t *testing.T) {
 	assert.Equal(t, int32(1), atomic.LoadInt32(&computeCalls))
 
 	// Second call - in measurement mode, should always recompute
-	result2, err := cache.GetOrCompute(ctx, fingerprint, func(ctx context.Context) (string, error) {
+	result2, err := GetOrCompute[string](cache, ctx, fingerprint, func(ctx context.Context) (string, error) {
 		atomic.AddInt32(&computeCalls, 1)
 		return "recomputed-value", nil
 	})
@@ -381,11 +389,13 @@ func TestFileCacheReadPermissionError(t *testing.T) {
 
 	ctx := context.Background()
 	tempDir := t.TempDir()
-	cache, err := newFileCacheWithBaseDir[string](ctx, tempDir, 60)
+	fc, err := newFileCacheWithBaseDir(ctx, tempDir, 60)
 	require.NoError(t, err)
 
 	// Enable cache for this test
-	cache.cacheEnabled = true
+	fc.cacheEnabled = true
+
+	cache := &Cache{impl: fc}
 
 	fingerprint := struct {
 		Key string `json:"key"`
@@ -394,7 +404,7 @@ func TestFileCacheReadPermissionError(t *testing.T) {
 	}
 
 	// First, populate the cache
-	result, err := cache.GetOrCompute(ctx, fingerprint, func(ctx context.Context) (string, error) {
+	result, err := GetOrCompute[string](cache, ctx, fingerprint, func(ctx context.Context) (string, error) {
 		return "cached-value", nil
 	})
 	require.NoError(t, err)
@@ -412,7 +422,7 @@ func TestFileCacheReadPermissionError(t *testing.T) {
 
 	// GetOrCompute should fail open and recompute when file is unreadable
 	var computeCalls int32
-	result2, err := cache.GetOrCompute(ctx, fingerprint, func(ctx context.Context) (string, error) {
+	result2, err := GetOrCompute[string](cache, ctx, fingerprint, func(ctx context.Context) (string, error) {
 		atomic.AddInt32(&computeCalls, 1)
 		return "recomputed-value", nil
 	})
