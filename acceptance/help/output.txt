@@ -147,6 +147,7 @@ Database Instances
 
 Tags
   tag-policies                           The Tag Policy API allows you to manage policies for governed tags in Databricks.
+  workspace-entity-tag-assignments       Manage tag assignments on workspace-scoped objects.
 
 Developer Tools
   bundle                                 Databricks Asset Bundles let you express data/AI/analytics projects as code.
@@ -156,6 +157,7 @@ Additional Commands:
   account                                Databricks Account Commands
   api                                    Perform Databricks API call
   auth                                   Authentication related commands
+  cache                                  Local cache related commands
   completion                             Generate the autocompletion script for the specified shell
   configure                              Configure authentication
   help                                   Help about any command

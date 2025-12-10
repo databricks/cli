@@ -1,0 +1,71 @@
+{
+  "plan": {
+    "resources.secret_scopes.my_scope": {
+      "action": "recreate",
+      "new_state": {
+        "value": {
+          "scope": "test-scope-[UNIQUE_NAME]-2",
+          "scope_backend_type": "DATABRICKS"
+        }
+      },
+      "changes": {
+        "local": {
+          "scope": {
+            "action": "recreate",
+            "old": "test-scope-[UNIQUE_NAME]-1",
+            "new": "test-scope-[UNIQUE_NAME]-2"
+          }
+        }
+      }
+    },
+    "resources.secret_scopes.my_scope.permissions": {
+      "depends_on": [
+        {
+          "node": "resources.secret_scopes.my_scope",
+          "label": "${resources.secret_scopes.my_scope.name}"
+        }
+      ],
+      "action": "update_id",
+      "new_state": {
+        "value": {
+          "scope_name": "",
+          "acls": [
+            {
+              "permission": "MANAGE",
+              "principal": "[USERNAME]"
+            },
+            {
+              "permission": "WRITE",
+              "principal": "deco-test-user@databricks.com"
+            }
+          ]
+        },
+        "vars": {
+          "scope_name": "${resources.secret_scopes.my_scope.name}"
+        }
+      },
+      "remote_state": {
+        "scope_name": "test-scope-[UNIQUE_NAME]-1",
+        "acls": [
+          {
+            "permission": "WRITE",
+            "principal": "deco-test-user@databricks.com"
+          },
+          {
+            "permission": "MANAGE",
+            "principal": "[USERNAME]"
+          }
+        ]
+      },
+      "changes": {
+        "local": {
+          "scope_name": {
+            "action": "update_id",
+            "old": "test-scope-[UNIQUE_NAME]-1",
+            "new": ""
+          }
+        }
+      }
+    }
+  }
+}

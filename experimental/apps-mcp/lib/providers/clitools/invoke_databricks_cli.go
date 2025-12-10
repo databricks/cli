@@ -9,6 +9,7 @@ import (
 
 	"github.com/databricks/cli/experimental/apps-mcp/lib/common"
 	"github.com/databricks/cli/experimental/apps-mcp/lib/middlewares"
+	"github.com/databricks/cli/internal/build"
 )
 
 // InvokeDatabricksCLI runs a Databricks CLI command and returns the output.
@@ -23,16 +24,19 @@ func InvokeDatabricksCLI(ctx context.Context, args []string, workingDirectory st
 	}
 	host := workspaceClient.Config.Host
 	profile := middlewares.GetDatabricksProfile(ctx)
-
-	// GetCLIPath returns the path to the current CLI executable
 	cliPath := common.GetCLIPath()
+
 	cmd := exec.CommandContext(ctx, cliPath, args...)
 	cmd.Dir = workingDirectory
+
 	env := os.Environ()
 	env = append(env, "DATABRICKS_HOST="+host)
 	if profile != "" {
 		env = append(env, "DATABRICKS_CONFIG_PROFILE="+profile)
 	}
+	env = append(env, "DATABRICKS_CLI_UPSTREAM=cli-mcp")
+	env = append(env, "DATABRICKS_CLI_UPSTREAM_VERSION="+build.GetInfo().Version)
+
 	cmd.Env = env
 
 	output, err := cmd.CombinedOutput()
