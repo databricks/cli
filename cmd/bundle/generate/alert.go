@@ -16,9 +16,7 @@ import (
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/resources"
 	"github.com/databricks/cli/bundle/statemgmt"
-	"github.com/databricks/cli/cmd/bundle/deployment"
 	"github.com/databricks/cli/cmd/root"
-	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/yamlsaver"
 	"github.com/databricks/cli/libs/logdiag"
@@ -50,15 +48,12 @@ type alert struct {
 	// Command.
 	cmd *cobra.Command
 
-	// Automatically bind the generated resource to the existing resource.
-	bind bool
-
 	// Output and error streams.
 	out io.Writer
 	err io.Writer
 }
 
-func (a *alert) resolveID(ctx context.Context, b *bundle.Bundle) string {
+func (a *alert) resolveFromID(ctx context.Context, b *bundle.Bundle) string {
 	if a.existingID == "" {
 		logdiag.LogError(ctx, errors.New("expected --alert-id"))
 		return ""
@@ -85,7 +80,7 @@ func (a *alert) saveAlertDefinition(_ context.Context, b *bundle.Bundle, alert *
 		return err
 	}
 
-	// Unmarshal and remarshal to ensure it is formatted correctly.
+	// Unmarshal and remarshal to ensure it has a stable format.
 	data, err = remarshalJSON(data)
 	if err != nil {
 		return err
@@ -182,15 +177,6 @@ func (a *alert) generateForExisting(ctx context.Context, b *bundle.Bundle, alert
 	if err != nil {
 		logdiag.LogError(ctx, err)
 	}
-
-	if a.bind {
-		err = deployment.BindResource(a.cmd, key, alertID, true, false, true)
-		if err != nil {
-			logdiag.LogError(ctx, err)
-			return
-		}
-		cmdio.LogString(ctx, fmt.Sprintf("Successfully bound alert with an id '%s'", alertID))
-	}
 }
 
 func (a *alert) initialize(ctx context.Context, b *bundle.Bundle) {
@@ -268,7 +254,7 @@ func (a *alert) runForResource(ctx context.Context, b *bundle.Bundle) {
 
 func (a *alert) runForExisting(ctx context.Context, b *bundle.Bundle) {
 	// Resolve the ID of the alert to generate configuration for.
-	alertID := a.resolveID(ctx, b)
+	alertID := a.resolveFromID(ctx, b)
 	if logdiag.HasError(ctx) {
 		return
 	}
@@ -332,7 +318,7 @@ This command downloads an existing SQL alert and creates bundle files
 that you can use to deploy the alert to other environments or manage it as code.
 
 Examples:
-  # Import alert by ID
+  # Generate alert configuration by ID
   databricks bundle generate alert --existing-id abc123
 
   # Update existing resource configuration
@@ -370,17 +356,11 @@ changes back to your bundle:
 	cmd.Flags().StringVarP(&a.alertDir, "alert-dir", "s", "src", `directory to write the alert definition to`)
 	cmd.Flags().BoolVarP(&a.force, "force", "f", false, `force overwrite existing files in the output directory`)
 
-	cmd.Flags().BoolVarP(&a.bind, "bind", "b", false, `automatically bind the generated alert config to the existing alert`)
-	cmd.Flags().MarkHidden("bind")
-
 	// Exactly one of the lookup flags must be provided.
 	cmd.MarkFlagsOneRequired(
 		"existing-id",
 		"resource",
 	)
-
-	// Make sure the bind flag is only used with the existing-id flag.
-	cmd.MarkFlagsMutuallyExclusive("bind", "resource")
 
 	// Completion for the resource flag.
 	cmd.RegisterFlagCompletionFunc("resource", alertResourceCompletion)
