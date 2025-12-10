@@ -12,7 +12,6 @@ import (
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
-	"golang.org/x/sync/errgroup"
 )
 
 type ResourceSecretScopeAcls struct {
@@ -99,10 +98,7 @@ func (r *ResourceSecretScopeAcls) DoCreate(ctx context.Context, state *SecretSco
 	if err != nil {
 		return "", nil, err
 	}
-	return state.ScopeName, &SecretScopeAclsState{
-		ScopeName: state.ScopeName,
-		Acls:      state.Acls,
-	}, nil
+	return state.ScopeName, nil, nil
 }
 
 // We implement DoUpdateWithId to ensure that the updated ID gets recorded in state.
@@ -111,12 +107,12 @@ func (r *ResourceSecretScopeAcls) DoUpdateWithID(ctx context.Context, id string,
 	if err != nil {
 		return "", nil, err
 	}
-	return state.ScopeName, state, nil
+	return state.ScopeName, nil, nil
 }
 
 func (r *ResourceSecretScopeAcls) DoUpdate(ctx context.Context, id string, state *SecretScopeAclsState, changes *deployplan.Changes) (*SecretScopeAclsState, error) {
 	_, _, err := r.DoUpdateWithID(ctx, id, state)
-	return state, err
+	return nil, err
 }
 
 func (r *ResourceSecretScopeAcls) FieldTriggers(isLocal bool) map[string]deployplan.ActionType {
@@ -178,35 +174,26 @@ func (r *ResourceSecretScopeAcls) setACLs(ctx context.Context, scopeName string,
 		}
 	}
 
-	// Execute all operations in parallel using errgroup
-	g, ctx := errgroup.WithContext(ctx)
-
-	// Set ACLs in parallel
-	for i := range toSet {
-		acl := toSet[i]
-		g.Go(func() error {
-			if err := r.client.Secrets.PutAcl(ctx, acl); err != nil {
-				return fmt.Errorf("failed to set ACL %v for principal %q: %w", acl, acl.Principal, err)
-			}
-			return nil
-		})
+	// Set ACLs. The service returns inconsistent results for parallel API calls. That's why we do them sequentially
+	// here to maintain correctness.
+	for _, acl := range toSet {
+		err := r.client.Secrets.PutAcl(ctx, acl)
+		if err != nil {
+			return fmt.Errorf("failed to set ACL %v for principal %q: %w", acl, acl.Principal, err)
+		}
 	}
 
-	// Delete ACLs in parallel
-	for i := range toDelete {
-		acl := toDelete[i]
-		g.Go(func() error {
-			err := r.client.Secrets.DeleteAcl(ctx, acl)
-			// Ignore not found errors for ACLs.
-			if errors.Is(err, apierr.ErrNotFound) {
-				return nil
-			}
-			if err != nil {
-				return fmt.Errorf("failed to delete ACL %v for principal %q: %w", acl, acl.Principal, err)
-			}
+	// Delete ACLs
+	for _, acl := range toDelete {
+		err := r.client.Secrets.DeleteAcl(ctx, acl)
+		// Ignore not found errors for ACLs.
+		if errors.Is(err, apierr.ErrNotFound) {
 			return nil
-		})
+		}
+		if err != nil {
+			return fmt.Errorf("failed to delete ACL %v for principal %q: %w", acl, acl.Principal, err)
+		}
 	}
 
-	return g.Wait()
+	return nil
 }
