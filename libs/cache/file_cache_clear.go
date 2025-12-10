@@ -7,8 +7,16 @@ import (
 
 // ClearFileCache removes all cached files from the Databricks cache directory.
 // This clears the cache for ALL CLI versions, not just the current version.
-// The cache is organized as: <cache-base>/<version>/<component>/
-// This function removes the entire <cache-base> directory.
+//
+// The cache directory structure is:
+//
+//	~/.cache/databricks/           (or %LOCALAPPDATA%\databricks\ on Windows)
+//	└── <cli-version>/
+//	    └── <component>/
+//	        ├── <sha256-hash>.json
+//	        └── ...
+//
+// This function removes the entire databricks cache directory (all versions and components).
 // Returns the path of the cleared directory on success.
 func ClearFileCache(ctx context.Context) (string, error) {
 	databricksCacheDir, err := getCacheBaseDir(ctx)

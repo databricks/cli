@@ -52,21 +52,19 @@ func TestCacheEnabledEnvVar(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		// Set up environment
-		if tt.envValue != "" {
-			t.Setenv("DATABRICKS_CACHE_ENABLED", tt.envValue)
-		}
 		t.Run(tt.name, func(t *testing.T) {
 			// Create a unique subdirectory for this test
 			testDir := filepath.Join(tempDir, tt.name)
-			fc, err := newFileCacheWithBaseDir(ctx, testDir, 60*time.Minute)
-			require.NoError(t, err)
 
-			// Set cacheEnabled based on env var (simulate NewFileCache behavior)
-			// Only "true" enables caching; any other value keeps it disabled
-			fc.cacheEnabled = env.Get(ctx, "DATABRICKS_CACHE_ENABLED") == "true"
+			// Set up context with environment variable
+			testCtx := ctx
+			if tt.envValue != "" {
+				testCtx = env.Set(testCtx, "DATABRICKS_CACHE_ENABLED", tt.envValue)
+			}
+			testCtx = env.Set(testCtx, "DATABRICKS_CACHE_DIR", testDir)
 
-			cache := &Cache{impl: fc}
+			// Use NewCache to properly initialize the cache
+			cache := NewCache(testCtx, "test-component", 60*time.Minute, nil)
 
 			fingerprint := struct {
 				Key string `json:"key"`
@@ -76,7 +74,7 @@ func TestCacheEnabledEnvVar(t *testing.T) {
 
 			// First call - should always compute
 			var computeCalls int32
-			result, err := GetOrCompute[string](ctx, cache, fingerprint, func(ctx context.Context) (string, error) {
+			result, err := GetOrCompute[string](testCtx, cache, fingerprint, func(ctx context.Context) (string, error) {
 				atomic.AddInt32(&computeCalls, 1)
 				return "computed-value", nil
 			})
@@ -85,7 +83,7 @@ func TestCacheEnabledEnvVar(t *testing.T) {
 			assert.Equal(t, int32(1), atomic.LoadInt32(&computeCalls))
 
 			// Second call - should use cache only if enabled
-			result2, err := GetOrCompute[string](ctx, cache, fingerprint, func(ctx context.Context) (string, error) {
+			result2, err := GetOrCompute[string](testCtx, cache, fingerprint, func(ctx context.Context) (string, error) {
 				atomic.AddInt32(&computeCalls, 1)
 				return "should-not-be-called", nil
 			})

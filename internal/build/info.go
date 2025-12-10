@@ -30,7 +30,7 @@ type Info struct {
 	BuildTime  time.Time
 }
 
-// sanitizeVersion removes characters from version string that might be problematic in file paths.
+// GetSanitizedVersion removes characters from version string that might be problematic in file paths.
 // Particularly important for Windows which has restrictions on certain characters.
 func (i Info) GetSanitizedVersion() string {
 	// Replace + with - (used in version metadata like "1.0.0+abc123")

@@ -9,6 +9,9 @@ import (
 
 // cacheImpl is the internal interface for cache implementations.
 type cacheImpl interface {
+	// getOrComputeJSON retrieves cached JSON bytes or computes them.
+	// The compute function must return JSON-encoded data as []byte.
+	// The returned []byte is also expected to be JSON-encoded.
 	getOrComputeJSON(ctx context.Context, fingerprint any, compute func(ctx context.Context) ([]byte, error)) ([]byte, error)
 }
 
