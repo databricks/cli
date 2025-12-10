@@ -10,12 +10,12 @@ from pathlib import Path
 REVIEW_OUTPUT_FILE = "/tmp/reviewbot_output.json"
 
 PUBLISH_PROMPT = """
-IMPORTANT: After completing your review, you MUST call the publish_review tool to save your review.
-The review will be published to GitHub after user confirmation.
+After your analysis, YOU MUST call the publish_review tool to save your review.
+You can output your analysis to the logs, but you MUST also call the tool at the end.
 
 The publish_review tool takes a single JSON argument with:
 - event: One of "APPROVE", "REQUEST_CHANGES", or "COMMENT"
-- body: Minimal, actionable feedback ONLY. No summary or praise - just what the PR creator needs to fix/address.
+- body: Actionable feedback - issues, suggestions, recommendations. No praise or filler.
 - comments: Array of inline comments, each with:
   - path: File path relative to repo root (MUST be a file in the PR diff)
   - line: Line number within a diff hunk (MUST be within the @@ range shown in the diff)
@@ -31,17 +31,17 @@ include those comments in the main "body" field instead.
 Example:
 ```json
 {
-  "event": "REQUEST_CHANGES",
-  "body": "Consider also updating cmd/other.go to handle this case.",
+  "event": "COMMENT",
+  "body": "1. The comment at line 277 is confusing - clarify the double-negative logic.\\n2. Consider adding unit tests for exclusion counting.\\n3. Consider updating cmd/other.go to handle this case.",
   "comments": [
-    {"path": "cmd/root.go", "line": 15, "body": "Add error handling here."}
+    {"path": "libs/sync/sync.go", "line": 277, "body": "Clarify this comment - the double-negative logic is confusing."}
   ]
 }
 ```
 
 Guidelines:
-- Body: ONLY actionable items. No summary, no "good work", no "LGTM". Just what needs to be done.
-- If approving with no issues, body can be empty or just "LGTM".
+- Body: Issues found, suggestions, recommendations. Skip praise/summary.
+- If approving with no issues, body can be empty.
 - Inline comments: ONLY for lines visible in the diff
 - Be specific and concise
 """
@@ -218,8 +218,8 @@ class ReviewBot:
 
 {PUBLISH_PROMPT}
 
-Please review this PR according to the guidelines. Explore the codebase to understand context.
-When done, call publish_review with your structured review.
+Review this PR according to the guidelines. Explore the codebase to understand context.
+Output your analysis, then YOU MUST call publish_review with your review JSON.
 """
         subprocess.run(
             [
