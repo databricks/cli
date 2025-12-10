@@ -17,7 +17,6 @@ You are reviewing a Pull Request for the Databricks CLI. Please conduct a thorou
 ### Edge Case Analysis
 - [ ] Identify edge cases for the changed code (e.g. empty inputs, nil values, boundary conditions, error paths)
 - [ ] Verify edge cases have acceptance test coverage
-- [ ] Create and run new tests to confirm edge cases pass at runtime
 
 ### Documentation
 - [ ] Code includes necessary comments for complex logic
@@ -36,7 +35,7 @@ You are reviewing a Pull Request for the Databricks CLI. Please conduct a thorou
 ## Review Process
 1. **Understand the Context**: Read the PR description, linked issues and the code / changes.
 2. **Review code coverage**: For all changed files / code, ensure that the code being added is adequately tested. Strong preference should be given to end-to-end acceptance tests in acceptance/ over unit tests, unless the change being tested is a well defined and clean function / library.
-3. **Identify gaps in testing / detect bugs (important)** Identify and construct edge cases that are not covered in existing tests. Contruct and run relevant acceptance tests (preferred) and unit tests to ensure these edge cases have a good behavior. Report
+3. **Identify gaps in testing / detect bugs (important)** Identify and construct edge cases that are not covered in existing tests. Contruct and run relevant acceptance tests (preferred) and unit tests to ensure these edge cases have a good behavior. Report when missing coverage is detected.
 4. **Ensure adequate documentation**: Non trivial functions / code changes should have the appropriate amount of doc strings, so that's a new visitor to the code can quickly understand what's happening. This is even more important for abstract changes that use reflection for example.
 
 ## Output Format

@@ -47,3 +47,8 @@ dist/
 # Local development notes, tmp
 /pr-*
 /tmp/
+
+# Reviewbot worktrees and generated files
+.worktrees/
+.reviews/
+tools/publish_review.py
