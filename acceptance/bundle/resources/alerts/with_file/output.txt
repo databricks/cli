@@ -70,7 +70,7 @@ Deployment complete!
 === assert that the uploaded alert file is the same as the local one
 >>> [CLI] workspace export /Workspace/Users/[USERNAME]/.bundle/alerts-with-file-[UNIQUE_NAME]/default/resources/myalert.dbalert.json
 
->>> diff out.alert.dbalert.json alert.dbalert.json
+>>> diff exported_alert.dbalert.json alert.dbalert.json
 
 >>> [CLI] alerts-v2 get-alert [ALERT_ID]
 {

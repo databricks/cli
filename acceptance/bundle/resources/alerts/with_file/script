@@ -18,8 +18,9 @@ trace $CLI alerts-v2 get-alert $alert_id | jq '{display_name, lifecycle_state, c
 
 alert_path=$($CLI bundle summary --output json | jq -r '.resources.alerts.myalert.parent_path')/myalert.dbalert.json
 title "assert that the uploaded alert file is the same as the local one"
-trace $CLI workspace export $alert_path > out.alert.dbalert.json
-trace diff out.alert.dbalert.json alert.dbalert.json
+trace $CLI workspace export $alert_path > exported_alert.dbalert.json
+trace diff exported_alert.dbalert.json alert.dbalert.json
+rm exported_alert.dbalert.json
 
 trace $CLI alerts-v2 get-alert $alert_id | jq '{display_name, lifecycle_state}'
 
