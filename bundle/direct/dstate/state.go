@@ -9,6 +9,7 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
+	"github.com/databricks/cli/internal/build"
 	"github.com/google/uuid"
 )
 
@@ -19,9 +20,11 @@ type DeploymentState struct {
 }
 
 type Database struct {
-	Lineage string                   `json:"lineage"`
-	Serial  int                      `json:"serial"`
-	State   map[string]ResourceEntry `json:"state"`
+	StateVersion int                      `json:"state_version"`
+	CLIVersion   string                   `json:"cli_version"`
+	Lineage      string                   `json:"lineage"`
+	Serial       int                      `json:"serial"`
+	State        map[string]ResourceEntry `json:"state"`
 }
 
 type ResourceEntry struct {
@@ -88,9 +91,11 @@ func (db *DeploymentState) Open(path string) error {
 	if err != nil {
 		if os.IsNotExist(err) {
 			db.Data = Database{
-				Serial:  1,
-				Lineage: uuid.New().String(),
-				State:   make(map[string]ResourceEntry),
+				StateVersion: 1,
+				CLIVersion:   build.GetInfo().Version,
+				Serial:       1,
+				Lineage:      uuid.New().String(),
+				State:        make(map[string]ResourceEntry),
 			}
 			db.Path = path
 			return nil
