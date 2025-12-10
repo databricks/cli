@@ -1,0 +1,2 @@
+title "Inline SQL returns table output"
+trace $CLI query sql --warehouse-id wh-123 --sql "SELECT 1 AS one" --format table
