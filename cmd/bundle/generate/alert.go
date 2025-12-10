@@ -167,8 +167,8 @@ After generation, you can deploy this alert to other targets using:
 			return err
 		}
 
-		cmdio.LogString(ctx, fmt.Sprintf("Alert configuration successfully saved to %s", configPath))
-		cmdio.LogString(ctx, fmt.Sprintf("Serialized alert definition to %s", alertPath))
+		cmdio.LogString(ctx, "Alert configuration successfully saved to "+configPath)
+		cmdio.LogString(ctx, "Serialized alert definition to "+alertPath)
 
 		return nil
 	}
