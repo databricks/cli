@@ -3,7 +3,7 @@
 {
   "custom_description": "My alert from file\nwith multiple lines\nand a third line\n",
   "custom_summary": "My alert from file",
-  "display_name": "My alert with file",
+  "display_name": "myalert",
   "evaluation": {
     "comparison_operator": "EQUAL",
     "notification": {
@@ -25,7 +25,6 @@
   "parent_path": "/Workspace/Users/[USERNAME]/.bundle/alerts-with-file-[UNIQUE_NAME]/default/resources",
   "query_text": "select 2\n",
   "schedule": {
-    "pause_status": "UNPAUSED",
     "quartz_cron_schedule": "44 19 */1 * * ?",
     "timezone_id": "Europe/Amsterdam"
   },
@@ -40,7 +39,7 @@ Deployment complete!
 
 >>> [CLI] alerts-v2 get-alert [ALERT_ID]
 {
-  "display_name": "My alert with file",
+  "display_name": "myalert",
   "lifecycle_state": "ACTIVE",
   "custom_summary": "My alert from file",
   "evaluation": {
@@ -62,26 +61,21 @@ Deployment complete!
   },
   "query_text": "select 2\n",
   "schedule": {
-    "pause_status": "UNPAUSED",
     "quartz_cron_schedule": "44 19 */1 * * ?",
     "timezone_id": "Europe/Amsterdam"
   },
   "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
 }
 
->>> [CLI] bundle destroy --auto-approve
-The following resources will be deleted:
-  delete resources.alerts.myalert
+=== assert that the uploaded alert file is the same as the local one
+>>> [CLI] workspace export /Workspace/Users/[USERNAME]/.bundle/alerts-with-file-[UNIQUE_NAME]/default/resources/myalert.dbalert.json
 
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/alerts-with-file-[UNIQUE_NAME]/default
-
-Deleting files...
-Destroy complete!
+>>> diff out.alert.dbalert.json alert.dbalert.json
 
 >>> [CLI] alerts-v2 get-alert [ALERT_ID]
 {
-  "display_name": "My alert with file",
-  "lifecycle_state": "DELETED"
+  "display_name": "myalert",
+  "lifecycle_state": "ACTIVE"
 }
 
 >>> [CLI] bundle summary
@@ -93,5 +87,14 @@ Workspace:
 Resources:
   Alerts:
     myalert:
-      Name: My alert with file
-      URL:  (not deployed)
+      Name: myalert
+      URL:  [DATABRICKS_URL]/sql/alerts-v2/[ALERT_ID]
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.alerts.myalert
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/alerts-with-file-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!
