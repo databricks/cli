@@ -15,7 +15,7 @@ The review will be published to GitHub after user confirmation.
 
 The publish_review tool takes a single JSON argument with:
 - event: One of "APPROVE", "REQUEST_CHANGES", or "COMMENT"
-- body: Overall review summary (will be prefixed with a reviewbot notice)
+- body: Minimal, actionable feedback ONLY. No summary or praise - just what the PR creator needs to fix/address.
 - comments: Array of inline comments, each with:
   - path: File path relative to repo root (MUST be a file in the PR diff)
   - line: Line number within a diff hunk (MUST be within the @@ range shown in the diff)
@@ -32,17 +32,18 @@ Example:
 ```json
 {
   "event": "REQUEST_CHANGES",
-  "body": "Good progress but a few issues need addressing.\n\n**Additional suggestion:** Consider also updating cmd/other.go to handle this case.",
+  "body": "Consider also updating cmd/other.go to handle this case.",
   "comments": [
-    {"path": "cmd/root.go", "line": 15, "body": "Consider adding error handling here."}
+    {"path": "cmd/root.go", "line": 15, "body": "Add error handling here."}
   ]
 }
 ```
 
 Guidelines:
+- Body: ONLY actionable items. No summary, no "good work", no "LGTM". Just what needs to be done.
+- If approving with no issues, body can be empty or just "LGTM".
 - Inline comments: ONLY for lines visible in the diff
-- Body: General observations AND suggestions for files/lines not in the diff
-- Be specific and actionable
+- Be specific and concise
 """
 
 
@@ -135,7 +136,7 @@ class ReviewBot:
         )
         return result.stdout.strip()
 
-    def create_worktree(self, pr_number: int, branch: str) -> Path:
+    def create_worktree(self, pr_number: int) -> Path:
         """Create a git worktree for the PR."""
         self.worktrees_dir.mkdir(exist_ok=True)
         worktree_path = self.worktrees_dir / f"pr-{pr_number}"
@@ -144,24 +145,27 @@ class ReviewBot:
         if worktree_path.exists():
             self.remove_worktree(worktree_path)
 
-        # Fetch the PR branch
+        # Fetch PR head into a local branch (delete existing branch first)
+        local_branch = f"pr-{pr_number}"
         subprocess.run(
-            ["gh", "pr", "checkout", str(pr_number), "--detach"],
+            ["git", "branch", "-D", local_branch],
             capture_output=True,
             check=False,
         )
-        # Get back to original state - we just wanted to fetch
-        subprocess.run(["git", "checkout", "-"], capture_output=True, check=False)
-
-        # Create worktree with the PR branch
         subprocess.run(
-            ["git", "worktree", "add", str(worktree_path), branch],
+            ["git", "fetch", "origin", f"pull/{pr_number}/head:{local_branch}"],
+            check=True,
+        )
+
+        # Create worktree with the local branch
+        subprocess.run(
+            ["git", "worktree", "add", str(worktree_path), local_branch],
             check=True,
         )
         return worktree_path
 
     def remove_worktree(self, worktree_path: Path) -> None:
-        """Remove a git worktree."""
+        """Remove a git worktree and its local branch."""
         subprocess.run(
             ["git", "worktree", "remove", str(worktree_path), "--force"],
             capture_output=True,
@@ -170,6 +174,13 @@ class ReviewBot:
         # Clean up if still exists
         if worktree_path.exists():
             shutil.rmtree(worktree_path)
+        # Delete the local branch (pr-NNN)
+        local_branch = worktree_path.name
+        subprocess.run(
+            ["git", "branch", "-D", local_branch],
+            capture_output=True,
+            check=False,
+        )
 
     def read_review_prompt(self) -> str:
         """Read the review prompt template."""
@@ -396,7 +407,7 @@ When done, call publish_review with your structured review.
 
         # Create worktree for the PR
         print(f"Creating worktree for PR #{pr['number']}...")
-        worktree_path = self.create_worktree(pr["number"], pr["headRefName"])
+        worktree_path = self.create_worktree(pr["number"])
         print(f"Worktree created at {worktree_path}\n")
 
         try:
