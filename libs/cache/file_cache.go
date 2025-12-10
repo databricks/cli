@@ -147,14 +147,13 @@ func (fc *fileCache) addTelemetryMetric(key string) {
 // Cache operations fail open: if caching fails, the compute function is still called.
 // When cacheEnabled is false, the cache checks if values exist and measures potential time savings,
 // but always computes and never returns cached values.
-func (fc *fileCache) getOrComputeJSON(ctx context.Context, fingerprint any, compute func(ctx context.Context) ([]byte, error)) ([]byte, bool, error) {
+func (fc *fileCache) getOrComputeJSON(ctx context.Context, fingerprint any, compute func(ctx context.Context) ([]byte, error)) ([]byte, error) {
 	// Convert fingerprint to deterministic hash - this is our cache key
 	cacheKey, err := fingerprintToHash(fingerprint)
 	if err != nil {
 		// Fail open: if we can't generate cache key, just compute directly
 		log.Debugf(ctx, "[Local Cache] failed to generate cache key, computing without cache: %v", err)
-		result, err := compute(ctx)
-		return result, false, err
+		return compute(ctx)
 	}
 
 	log.Debugf(ctx, "[Local Cache] using cache key: %s", cacheKey)
@@ -176,7 +175,7 @@ func (fc *fileCache) getOrComputeJSON(ctx context.Context, fingerprint any, comp
 
 		// If cache is enabled, return the cached value
 		if fc.cacheEnabled {
-			return cachedData, true, nil
+			return cachedData, nil
 		}
 	} else {
 		log.Debugf(ctx, "[Local Cache] cache miss, computing")
@@ -189,7 +188,7 @@ func (fc *fileCache) getOrComputeJSON(ctx context.Context, fingerprint any, comp
 	if err != nil {
 		log.Debugf(ctx, "[Local Cache] error while computing: %v", err)
 		fc.addTelemetryMetric("local.cache.error")
-		return result, false, err
+		return result, err
 	}
 
 	// Record duration metrics
@@ -203,7 +202,7 @@ func (fc *fileCache) getOrComputeJSON(ctx context.Context, fingerprint any, comp
 	// Write to disk cache (failures are silent - cache write errors don't affect the result)
 	fc.writeToCacheJSON(ctx, cachePath, result)
 
-	return result, false, nil
+	return result, nil
 }
 
 // readFromCacheJSON attempts to read data from the cache file.

@@ -3,12 +3,13 @@ package cache
 import (
 	"context"
 	"encoding/json"
-	"fmt"
+
+	"github.com/databricks/cli/libs/log"
 )
 
 // cacheImpl is the internal interface for cache implementations.
 type cacheImpl interface {
-	getOrComputeJSON(ctx context.Context, fingerprint any, compute func(ctx context.Context) ([]byte, error)) ([]byte, bool, error)
+	getOrComputeJSON(ctx context.Context, fingerprint any, compute func(ctx context.Context) ([]byte, error)) ([]byte, error)
 }
 
 // Cache provides a concrete cache that works with any type through the generic GetOrCompute function.
@@ -37,7 +38,7 @@ func GetOrCompute[T any](c *Cache, ctx context.Context, fingerprint any, compute
 	}
 
 	// Call the internal method
-	jsonBytes, fromCache, err := c.impl.getOrComputeJSON(ctx, fingerprint, computeJSON)
+	jsonBytes, err := c.impl.getOrComputeJSON(ctx, fingerprint, computeJSON)
 	if err != nil {
 		return zero, err
 	}
@@ -45,16 +46,9 @@ func GetOrCompute[T any](c *Cache, ctx context.Context, fingerprint any, compute
 	// Unmarshal into the target type
 	var result T
 	if err := json.Unmarshal(jsonBytes, &result); err != nil {
-		// If we got corrupted data from cache, fail open and recompute
-		if fromCache {
-			result, computeErr := compute(ctx)
-			if computeErr != nil {
-				return zero, computeErr
-			}
-			return result, nil
-		}
-		// If compute function returned invalid JSON, that's a real error
-		return zero, fmt.Errorf("failed to unmarshal computed data: %w", err)
+		// Fail open: if cached data is corrupted, log and recompute
+		log.Debugf(ctx, "[Local Cache] failed to unmarshal cached data, recomputing: %v", err)
+		return compute(ctx)
 	}
 
 	return result, nil
