@@ -19,12 +19,12 @@
         "scope_name": "test-scope-[UNIQUE_NAME]-2",
         "acls": [
           {
-            "permission": "MANAGE",
-            "principal": "[USERNAME]"
-          },
-          {
             "permission": "WRITE",
             "principal": "deco-test-user@databricks.com"
+          },
+          {
+            "permission": "MANAGE",
+            "principal": "[USERNAME]"
           }
         ]
       }

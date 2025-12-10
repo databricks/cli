@@ -105,12 +105,18 @@ func (r *ResourceSecretScopeAcls) DoCreate(ctx context.Context, state *SecretSco
 	}, nil
 }
 
+// We implement DoUpdateWithId to ensure that the updated ID gets recorded in state.
 func (r *ResourceSecretScopeAcls) DoUpdateWithID(ctx context.Context, id string, state *SecretScopeAclsState) (string, *SecretScopeAclsState, error) {
 	err := r.setACLs(ctx, state.ScopeName, state.Acls)
 	if err != nil {
 		return "", nil, err
 	}
 	return state.ScopeName, state, nil
+}
+
+func (r *ResourceSecretScopeAcls) DoUpdate(ctx context.Context, id string, state *SecretScopeAclsState, changes *deployplan.Changes) (*SecretScopeAclsState, error) {
+	_, _, err := r.DoUpdateWithID(ctx, id, state)
+	return state, err
 }
 
 func (r *ResourceSecretScopeAcls) FieldTriggers(isLocal bool) map[string]deployplan.ActionType {

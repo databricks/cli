@@ -1,4 +1,4 @@
 Cloud = true
-Local = true
+Local = false
 RecordRequests = true
 IsServicePrincipal = true
