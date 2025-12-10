@@ -58,16 +58,9 @@ func safeMutatorName(m Mutator) string {
 func ApplyContext(ctx context.Context, b *Bundle, m Mutator) {
 	t0 := time.Now()
 	defer func() {
-		duration := time.Since(t0).Milliseconds()
-
-		// Don't track the mutator if it takes less than 1ms to execute.
-		if duration == 0 {
-			return
-		}
-
 		b.Metrics.ExecutionTimes = append(b.Metrics.ExecutionTimes, protos.IntMapEntry{
 			Key:   safeMutatorName(m),
-			Value: duration,
+			Value: time.Since(t0).Microseconds(),
 		})
 	}()
 
