@@ -61,28 +61,6 @@ class ReviewBot:
         self.tool_script = Path(__file__).parent / "publish_review.py"
         self.worktrees_dir = self.repo_root / ".worktrees"
         self.reviews_dir = self.repo_root / ".reviews"
-        self._ensure_tool_script()
-
-    def _ensure_tool_script(self):
-        """Create the publish_review tool script for Claude to use."""
-        self.tool_script.write_text(f'''#!/usr/bin/env python3
-import json
-import sys
-
-def main():
-    if len(sys.argv) < 2:
-        print("Usage: publish_review.py '<json>'")
-        sys.exit(1)
-
-    review = json.loads(sys.argv[1])
-    with open("{REVIEW_OUTPUT_FILE}", "w") as f:
-        json.dump(review, f, indent=2)
-    print("Review saved. Awaiting user confirmation to publish.")
-
-if __name__ == "__main__":
-    main()
-''')
-        self.tool_script.chmod(0o755)
 
     def list_review_requests(self) -> list[dict]:
         """List PRs with open review requests for the current user."""

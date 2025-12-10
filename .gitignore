@@ -51,4 +51,3 @@ dist/
 # Reviewbot worktrees and generated files
 .worktrees/
 .reviews/
-tools/publish_review.py
