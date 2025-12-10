@@ -1,0 +1,7 @@
+Name: for_each_task_validation
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/for_each_task_validation/default
+
+Validation OK!
