@@ -8,6 +8,3 @@ CloudEnvs.gcp = false
 Ignore = [
     "databricks.yml.tmpl",
 ]
-
-[EnvMatrix]
-  DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
