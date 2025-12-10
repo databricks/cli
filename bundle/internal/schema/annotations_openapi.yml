@@ -243,8 +243,7 @@ github.com/databricks/cli/bundle/config/resources.Cluster:
   "enable_elastic_disk":
     "description": |-
       Autoscaling Local Storage: when enabled, this cluster will dynamically acquire additional disk
-      space when its Spark workers are running low on disk space. This feature requires specific AWS
-      permissions to function correctly - refer to the User Guide for more details.
+      space when its Spark workers are running low on disk space.
   "enable_local_disk_encryption":
     "description": |-
       Whether to enable LUKS on cluster VMs' local disks
@@ -1258,8 +1257,6 @@ github.com/databricks/databricks-sdk-go/service/apps.ComputeSize:
         MEDIUM
       - |-
         LARGE
-      - |-
-        LIQUID
 github.com/databricks/databricks-sdk-go/service/apps.ComputeState:
   "_":
     "enum":
@@ -1704,8 +1701,7 @@ github.com/databricks/databricks-sdk-go/service/compute.ClusterSpec:
   "enable_elastic_disk":
     "description": |-
       Autoscaling Local Storage: when enabled, this cluster will dynamically acquire additional disk
-      space when its Spark workers are running low on disk space. This feature requires specific AWS
-      permissions to function correctly - refer to the User Guide for more details.
+      space when its Spark workers are running low on disk space.
   "enable_local_disk_encryption":
     "description": |-
       Whether to enable LUKS on cluster VMs' local disks
@@ -3881,10 +3877,6 @@ github.com/databricks/databricks-sdk-go/service/pipelines.IngestionSourceType:
       - |-
         POSTGRESQL
       - |-
-        REDSHIFT
-      - |-
-        SQLDW
-      - |-
         SQLSERVER
       - |-
         SALESFORCE
@@ -3908,24 +3900,6 @@ github.com/databricks/databricks-sdk-go/service/pipelines.IngestionSourceType:
         SHAREPOINT
       - |-
         DYNAMICS365
-      - |-
-        CONFLUENCE
-      - |-
-        META_MARKETING
-      - |-
-        GOOGLE_ADS
-      - |-
-        TIKTOK_ADS
-      - |-
-        SALESFORCE_MARKETING_CLOUD
-      - |-
-        HUBSPOT
-      - |-
-        WORKDAY_HCM
-      - |-
-        GUIDEWIRE
-      - |-
-        ZENDESK
       - |-
         FOREIGN_CATALOG
 github.com/databricks/databricks-sdk-go/service/pipelines.ManualTrigger: {}
@@ -4985,7 +4959,9 @@ github.com/databricks/databricks-sdk-go/service/sql.AlertV2Notification:
       Whether to notify alert subscribers when alert returns back to normal.
   "retrigger_seconds":
     "description": |-
-      Number of seconds an alert must wait after being triggered to rearm itself. After rearming, it can be triggered again. If 0 or not specified, the alert will not be triggered again.
+      Number of seconds an alert waits after being triggered before it is allowed to send another notification.
+      If set to 0 or omitted, the alert will not send any further notifications after the first trigger
+      Setting this value to 1 allows the alert to send a notification on every evaluation where the condition is met, effectively making it always retrigger for notification purposes.
   "subscriptions": {}
 github.com/databricks/databricks-sdk-go/service/sql.AlertV2Operand:
   "column": {}

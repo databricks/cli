@@ -1,6 +1,6 @@
 {
  "lineage": "[UUID]",
- "serial": 1,
+ "serial": 2,
  "state": {
   "resources.jobs.foo": {
    "__id__": "[JOB_ID]",

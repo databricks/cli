@@ -1,9 +1,12 @@
 package deployment
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
+	"strings"
 
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/direct"
@@ -18,6 +21,81 @@ import (
 )
 
 const backupSuffix = ".backup"
+
+// runPlanCheck runs bundle plan and checks if there are any actions planned.
+// Returns error if plan fails or if there are actions planned.
+func runPlanCheck(cmd *cobra.Command, extraArgs []string, extraArgsStr string) error {
+	ctx := cmd.Context()
+
+	executable, err := os.Executable()
+	if err != nil {
+		return fmt.Errorf("failed to get executable path: %w", err)
+	}
+
+	args := []string{"bundle", "plan"}
+	args = append(args, extraArgs...)
+
+	planCmd := exec.CommandContext(ctx, executable, args...)
+	var stdout bytes.Buffer
+	planCmd.Stdout = &stdout
+	planCmd.Stderr = cmd.ErrOrStderr()
+
+	// Use the engine encoded in the state
+	planCmd.Env = append(os.Environ(), "DATABRICKS_BUNDLE_ENGINE=terraform")
+
+	err = planCmd.Run()
+
+	// Output the plan stdout as is
+	output := stdout.String()
+	fmt.Fprint(cmd.OutOrStdout(), output)
+
+	if err != nil {
+		var exitErr *exec.ExitError
+		msg := ""
+		if errors.As(err, &exitErr) {
+			msg = fmt.Sprintf("exit code %d", exitErr.ExitCode())
+		} else {
+			msg = err.Error()
+		}
+		return fmt.Errorf("bundle plan failed with %s, aborting migration. To proceed with migration anyway, re-run the command with --noplancheck option", msg)
+	}
+
+	if !strings.Contains(output, "Plan:") {
+		return fmt.Errorf("cannot parse 'databricks bundle plan%s' output, aborting migration. Skip plan check with --noplancheck option", extraArgsStr)
+	}
+
+	if !strings.Contains(output, "Plan: 0 to add, 0 to change, 0 to delete") {
+		return fmt.Errorf("'databricks bundle plan%s' shows actions planned, aborting migration. Please run 'databricks bundle deploy%s' first to ensure your bundle is up to date, If actions persist after deploy, skip plan check with --noplancheck option", extraArgsStr, extraArgsStr)
+	}
+
+	return nil
+}
+
+func getCommonArgs(cmd *cobra.Command) ([]string, string) {
+	var args []string
+	if flag := cmd.Flag("target"); flag != nil && flag.Changed {
+		target := flag.Value.String()
+		if target != "" {
+			args = append(args, "-t")
+			args = append(args, target)
+		}
+	}
+	if flag := cmd.Flag("profile"); flag != nil && flag.Changed {
+		profile := flag.Value.String()
+		if profile != "" {
+			args = append(args, "-p")
+			args = append(args, profile)
+		}
+	}
+
+	argsStr := ""
+
+	if len(args) > 0 {
+		argsStr = " " + strings.Join(args, " ")
+	}
+
+	return args, argsStr
+}
 
 func newMigrateCommand() *cobra.Command {
 	cmd := &cobra.Command{
@@ -36,7 +114,12 @@ WARNING: Both direct deployment engine and this command are experimental and not
 		Args: root.NoArgs,
 	}
 
+	var noPlanCheck bool
+	cmd.Flags().BoolVar(&noPlanCheck, "noplancheck", false, "Skip running bundle plan before migration.")
+
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+		extraArgs, extraArgsStr := getCommonArgs(cmd)
+
 		opts := utils.ProcessOptions{
 			SkipEngineEnvVar: true,
 			AlwaysPull:       true,
@@ -53,7 +136,7 @@ WARNING: Both direct deployment engine and this command are experimental and not
 
 		if stateDesc.Lineage == "" {
 			// TODO: mention bundle.engine once it's there
-			cmdio.LogString(ctx, `This command migrates the existing Terraform state file (terraform.tfstate) to a direct deployment state file (resources.json). However, no existing local or remote state was found.
+			cmdio.LogString(ctx, `Error: This command migrates the existing Terraform state file (terraform.tfstate) to a direct deployment state file (resources.json). However, no existing local or remote state was found.
 
 To start using direct engine, deploy with DATABRICKS_BUNDLE_ENGINE=direct env var set.`)
 			return root.ErrAlreadyPrinted
@@ -80,6 +163,14 @@ To start using direct engine, deploy with DATABRICKS_BUNDLE_ENGINE=direct env va
 		}
 		if _, err = os.Stat(localPath); err == nil {
 			return fmt.Errorf("state file %s already exists", localPath)
+		}
+
+		// Run plan check unless --noplancheck is set
+		if !noPlanCheck {
+			fmt.Fprintf(cmd.OutOrStdout(), "Note: Migration should be done after a full deploy. Running plan now to verify that deployment was done:\n")
+			if err = runPlanCheck(cmd, extraArgs, extraArgsStr); err != nil {
+				return err
+			}
 		}
 
 		etags := map[string]string{}
@@ -153,14 +244,14 @@ To start using direct engine, deploy with DATABRICKS_BUNDLE_ENGINE=direct env va
 			logdiag.LogError(ctx, err)
 		}
 
-		cmdio.LogString(ctx, fmt.Sprintf(`Migrated %d resources to direct engine state file: %s
+		cmdio.LogString(ctx, fmt.Sprintf(`Success! Migrated %d resources to direct engine state file: %s
 
-Validate the migration by running "bundle plan", there should be no actions planned.
+Validate the migration by running "databricks bundle plan%s", there should be no actions planned.
 
-The state file is not synchronized to the workspace yet. To do that and finalize the migration, run "bundle deploy".
+The state file is not synchronized to the workspace yet. To do that and finalize the migration, run "bundle deploy%s".
 
 To undo the migration, remove %s and rename %s to %s
-`, len(deploymentBundle.StateDB.Data.State), localPath, localPath, localTerraformBackupPath, localTerraformPath))
+`, len(deploymentBundle.StateDB.Data.State), localPath, extraArgsStr, extraArgsStr, localPath, localTerraformBackupPath, localTerraformPath))
 		return nil
 	}
 
