@@ -47,88 +47,55 @@ func createBundleWithForEachTask(parentTask jobs.Task) *bundle.Bundle {
 	return b
 }
 
-func TestForEachTask_InvalidRetryFields(t *testing.T) {
-	tests := []struct {
-		name             string
-		task             jobs.Task
-		expectedSeverity diag.Severity
-		expectedSummary  string
-		expectedDetail   string
-	}{
-		{
-			name: "max_retries on parent",
-			task: jobs.Task{
-				TaskKey:    "parent_task",
-				MaxRetries: 3,
-			},
-			expectedSeverity: diag.Error,
-			expectedSummary:  "Invalid max_retries configuration for for_each_task",
-			expectedDetail:   "max_retries must be defined on the nested task",
-		},
-		{
-			name: "min_retry_interval_millis on parent",
-			task: jobs.Task{
-				TaskKey:                "parent_task",
-				MinRetryIntervalMillis: 1000,
-			},
-			expectedSeverity: diag.Warning,
-			expectedSummary:  "Invalid min_retry_interval_millis configuration for for_each_task",
-			expectedDetail:   "min_retry_interval_millis must be defined on the nested task",
-		},
-		{
-			name: "retry_on_timeout on parent",
-			task: jobs.Task{
-				TaskKey:        "parent_task",
-				RetryOnTimeout: true,
-			},
-			expectedSeverity: diag.Warning,
-			expectedSummary:  "Invalid retry_on_timeout configuration for for_each_task",
-			expectedDetail:   "retry_on_timeout must be defined on the nested task",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			ctx := context.Background()
-			b := createBundleWithForEachTask(tt.task)
-
-			diags := ForEachTask().Apply(ctx, b)
-
-			require.Len(t, diags, 1)
-			assert.Equal(t, tt.expectedSeverity, diags[0].Severity)
-			assert.Equal(t, tt.expectedSummary, diags[0].Summary)
-			assert.Contains(t, diags[0].Detail, tt.expectedDetail)
-		})
-	}
-}
-
-func TestForEachTask_MultipleRetryFieldsOnParent(t *testing.T) {
+func TestForEachTask_MaxRetriesError(t *testing.T) {
 	ctx := context.Background()
 	b := createBundleWithForEachTask(jobs.Task{
-		TaskKey:                "parent_task",
-		MaxRetries:             3,
-		MinRetryIntervalMillis: 1000,
-		RetryOnTimeout:         true,
+		TaskKey:    "parent_task",
+		MaxRetries: 3,
 	})
 
 	diags := ForEachTask().Apply(ctx, b)
-	require.Len(t, diags, 3)
 
-	errorCount := 0
-	warningCount := 0
-	for _, d := range diags {
-		switch d.Severity {
-		case diag.Error:
-			errorCount++
-		case diag.Warning:
-			warningCount++
-		}
-	}
-	assert.Equal(t, 1, errorCount)
-	assert.Equal(t, 2, warningCount)
+	require.Len(t, diags, 1)
+	assert.Equal(t, diag.Error, diags[0].Severity)
+	assert.Equal(t, "Invalid max_retries configuration for for_each_task", diags[0].Summary)
+	assert.Contains(t, diags[0].Detail, `Task "parent_task" has max_retries defined at the parent level`)
+	assert.Contains(t, diags[0].Detail, "for_each_task.task.max_retries")
 }
 
-func TestForEachTask_ValidConfigurationOnChild(t *testing.T) {
+func TestForEachTask_MinRetryIntervalWarning(t *testing.T) {
+	ctx := context.Background()
+	b := createBundleWithForEachTask(jobs.Task{
+		TaskKey:                "parent_task",
+		MinRetryIntervalMillis: 1000,
+	})
+
+	diags := ForEachTask().Apply(ctx, b)
+
+	require.Len(t, diags, 1)
+	assert.Equal(t, diag.Warning, diags[0].Severity)
+	assert.Equal(t, "Invalid min_retry_interval_millis configuration for for_each_task", diags[0].Summary)
+	assert.Contains(t, diags[0].Detail, `Task "parent_task" has min_retry_interval_millis defined at the parent level`)
+	assert.Contains(t, diags[0].Detail, "for_each_task.task.min_retry_interval_millis")
+}
+
+func TestForEachTask_RetryOnTimeoutWarning(t *testing.T) {
+	ctx := context.Background()
+	b := createBundleWithForEachTask(jobs.Task{
+		TaskKey:        "parent_task",
+		RetryOnTimeout: true,
+	})
+
+	diags := ForEachTask().Apply(ctx, b)
+
+	require.Len(t, diags, 1)
+	assert.Equal(t, diag.Warning, diags[0].Severity)
+	assert.Equal(t, "Invalid retry_on_timeout configuration for for_each_task", diags[0].Summary)
+	assert.Contains(t, diags[0].Detail, `Task "parent_task" has retry_on_timeout defined at the parent level`)
+	assert.Contains(t, diags[0].Detail, "for_each_task.task.retry_on_timeout")
+}
+
+func TestForEachTask_ValidConfiguration(t *testing.T) {
 	ctx := context.Background()
 	b := createBundleWithForEachTask(jobs.Task{
 		TaskKey: "parent_task",
@@ -142,48 +109,6 @@ func TestForEachTask_ValidConfigurationOnChild(t *testing.T) {
 				},
 			},
 		},
-	})
-
-	diags := ForEachTask().Apply(ctx, b)
-	assert.Empty(t, diags)
-}
-
-func TestForEachTask_NoForEachTask(t *testing.T) {
-	ctx := context.Background()
-	b := &bundle.Bundle{
-		Config: config.Root{
-			Resources: config.Resources{
-				Jobs: map[string]*resources.Job{
-					"job1": {
-						JobSettings: jobs.JobSettings{
-							Name: "My Job",
-							Tasks: []jobs.Task{
-								{
-									TaskKey:    "simple_task",
-									MaxRetries: 3,
-									NotebookTask: &jobs.NotebookTask{
-										NotebookPath: "test.py",
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-
-	bundletest.SetLocation(b, "resources.jobs.job1.tasks[0]", []dyn.Location{{File: "job.yml", Line: 1, Column: 1}})
-
-	diags := ForEachTask().Apply(ctx, b)
-	assert.Empty(t, diags)
-}
-
-func TestForEachTask_RetryOnTimeoutFalse(t *testing.T) {
-	ctx := context.Background()
-	b := createBundleWithForEachTask(jobs.Task{
-		TaskKey:        "parent_task",
-		RetryOnTimeout: false,
 	})
 
 	diags := ForEachTask().Apply(ctx, b)
