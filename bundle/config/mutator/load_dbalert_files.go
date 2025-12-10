@@ -26,7 +26,7 @@ func (m *loadDBAlertFiles) Name() string {
 	return "LoadDBAlertFiles"
 }
 
-type DbalertFile struct {
+type AlertFile struct {
 	sql.AlertV2
 
 	// query_text and custom_description can be split into lines to make it easier to view the diff
@@ -35,11 +35,11 @@ type DbalertFile struct {
 	CustomDescriptionLines []string `json:"custom_description_lines,omitempty"`
 }
 
-func (d *DbalertFile) UnmarshalJSON(data []byte) error {
+func (d *AlertFile) UnmarshalJSON(data []byte) error {
 	return marshal.Unmarshal(data, d)
 }
 
-func (d DbalertFile) MarshalJSON() ([]byte, error) {
+func (d AlertFile) MarshalJSON() ([]byte, error) {
 	return marshal.Marshal(d)
 }
 
@@ -48,14 +48,14 @@ func (m *loadDBAlertFiles) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 	// We will only allow these fields to be set in the bundle YAML when an .dbalert.json is
 	// specified. This is done to only have one way to set these fields when a .dbalert.json is
 	// specified.
-	allowedInYAML := []string{"warehouse_id", "display_name", "file_path"}
+	allowedInYAML := []string{"warehouse_id", "display_name", "file_path", "permissions", "lifecycle"}
 
-	for k, alert := range b.Config.Resources.Alerts {
+	for alertKey, alert := range b.Config.Resources.Alerts {
 		if alert.FilePath == "" {
 			continue
 		}
 
-		alertV, err := dyn.GetByPath(b.Config.Value(), dyn.NewPath(dyn.Key("resources"), dyn.Key("alerts"), dyn.Key(k)))
+		alertV, err := dyn.GetByPath(b.Config.Value(), dyn.NewPath(dyn.Key("resources"), dyn.Key("alerts"), dyn.Key(alertKey)))
 		if err != nil {
 			return diag.FromErr(err)
 		}
@@ -82,7 +82,7 @@ func (m *loadDBAlertFiles) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 				{
 					Severity:  diag.Error,
 					Summary:   fmt.Sprintf("field %s is not allowed in the bundle YAML when a .dbalert.json is specified. Please set it in the .dbalert.json file instead. Only allowed fields are: %s", k, strings.Join(allowedInYAML, ", ")),
-					Paths:     []dyn.Path{dyn.MustPathFromString(fmt.Sprintf("resources.alerts.%s.%s", k, k))},
+					Paths:     []dyn.Path{dyn.MustPathFromString(fmt.Sprintf("resources.alerts.%s.%s", alertKey, k))},
 					Locations: v.Locations(),
 				},
 			}
@@ -94,20 +94,20 @@ func (m *loadDBAlertFiles) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 				{
 					Severity:  diag.Error,
 					Summary:   fmt.Sprintf("failed to read .dbalert.json file %s: %s", alert.FilePath, err),
-					Paths:     []dyn.Path{dyn.MustPathFromString(fmt.Sprintf("resources.alerts.%s.file_path", k))},
+					Paths:     []dyn.Path{dyn.MustPathFromString(fmt.Sprintf("resources.alerts.%s.file_path", alertKey))},
 					Locations: alertV.Get("file_path").Locations(),
 				},
 			}
 		}
 
-		var dbalertFromFile DbalertFile
+		var dbalertFromFile AlertFile
 		err = json.Unmarshal(content, &dbalertFromFile)
 		if err != nil {
 			return diag.Diagnostics{
 				{
 					Severity:  diag.Error,
 					Summary:   fmt.Sprintf("failed to parse .dbalert.json file %s: %s", alert.FilePath, err),
-					Paths:     []dyn.Path{dyn.MustPathFromString(fmt.Sprintf("resources.alerts.%s.file_path", k))},
+					Paths:     []dyn.Path{dyn.MustPathFromString(fmt.Sprintf("resources.alerts.%s.file_path", alertKey))},
 					Locations: alertV.Get("file_path").Locations(),
 				},
 			}
@@ -118,8 +118,9 @@ func (m *loadDBAlertFiles) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 			return diag.Diagnostics{
 				{
 					Severity:  diag.Error,
-					Summary:   fmt.Sprintf(".dbalert.json file %s contains variable interpolations, which are not supported. Please inline the alert configuration in the bundle YAML to use variables", alert.FilePath),
-					Paths:     []dyn.Path{dyn.MustPathFromString(fmt.Sprintf("resources.alerts.%s.file_path", k))},
+					Summary:   fmt.Sprintf(".alert file %s must not contain variable interpolations.", alert.FilePath),
+					Detail:    "Please inline the alert configuration in the bundle configuration to use variables",
+					Paths:     []dyn.Path{dyn.MustPathFromString(fmt.Sprintf("resources.alerts.%s.file_path", alertKey))},
 					Locations: alertV.Get("file_path").Locations(),
 				},
 			}
@@ -158,18 +159,18 @@ func (m *loadDBAlertFiles) Apply(ctx context.Context, b *bundle.Bundle) diag.Dia
 			ParentPath:     dbalertFromFile.ParentPath,
 
 			// Output only fields.
-			CreateTime:     dbalertFromFile.CreateTime,
+			// CreateTime:     dbalertFromFile.CreateTime,
 			OwnerUserName:  dbalertFromFile.OwnerUserName,
 			UpdateTime:     dbalertFromFile.UpdateTime,
 			LifecycleState: dbalertFromFile.LifecycleState,
 
 			// Other fields.
-			Id:              dbalertFromFile.Id,
+			// Id:              dbalertFromFile.Id,
 			ForceSendFields: dbalertFromFile.ForceSendFields,
 		}
 
 		// write values from the file to the alert.
-		b.Config.Resources.Alerts[k].AlertV2 = newAlert
+		b.Config.Resources.Alerts[alertKey].AlertV2 = newAlert
 	}
 
 	return nil
