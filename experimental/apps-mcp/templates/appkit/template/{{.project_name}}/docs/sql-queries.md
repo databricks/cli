@@ -98,28 +98,64 @@ WHERE column_value >= :min_value
 ### Frontend Parameter Passing
 
 ```typescript
+import { sql } from "@databricks/app-kit-ui/js";
+
 const { data } = useAnalyticsQuery('filtered_data', {
-  min_value: minValue,
-  max_value: maxValue,
-  category: category,
-  optional_filter: optionalFilter || '',  // empty string for optional params
+  min_value: sql.number(minValue),
+  max_value: sql.number(maxValue),
+  category: sql.string(category),
+  optional_filter: sql.string(optionalFilter || ''),  // empty string for optional params
 });
 ```
 
 ### Date Parameters
 
-For dates, use `YYYY-MM-DD` format in frontend, `CAST()` function in SQL:
+Use `sql.date()` for date parameters with `YYYY-MM-DD` format strings.
+
+**Frontend - Using Date Parameters:**
 
 ```typescript
-// Date helper for query params
-const daysAgo = (n: number) => new Date(Date.now() - n * 86400000).toISOString().split('T')[0];
+import { sql } from '@databricks/app-kit-ui/js';
+import { useState } from 'react';
 
-const startDate = daysAgo(7);  // 7 days ago
+function MyComponent() {
+  const [startDate, setStartDate] = useState<string>('2016-02-01');
+  const [endDate, setEndDate] = useState<string>('2016-02-29');
+
+  const queryParams = {
+    start_date: sql.date(startDate),  // Pass YYYY-MM-DD string to sql.date()
+    end_date: sql.date(endDate),
+  };
+
+  const { data } = useAnalyticsQuery('my_query', queryParams);
+
+  // ...
+}
 ```
 
+**SQL - Date Filtering:**
+
 ```sql
--- SQL
-WHERE timestamp_column >= CAST(:start_date AS DATE)
+-- Filter by date range using DATE() function
+SELECT COUNT(*) as trip_count
+FROM samples.nyctaxi.trips
+WHERE DATE(tpep_pickup_datetime) >= :start_date
+  AND DATE(tpep_pickup_datetime) <= :end_date
+```
+
+**Date Helper Functions:**
+
+```typescript
+// Helper to get dates relative to today
+const daysAgo = (n: number) => {
+  const date = new Date(Date.now() - n * 86400000);
+  return sql.date(date)
+};
+
+const params = {
+  start_date: daysAgo(7),             // 7 days ago
+  end_date: sql.date(daysAgo(0)),     // Today
+};
 ```
 
 ### Optional Date Parameters - Use Sentinel Dates
@@ -132,10 +168,10 @@ Databricks App Kit validates parameter types before query execution. **DO NOT us
 // Frontend: Use sentinel dates for "no filter" instead of empty strings
 const revenueParams = {
   group_by: 'month',
-  start_date: '1900-01-01',  // Sentinel: effectively no lower bound
-  end_date: '9999-12-31',    // Sentinel: effectively no upper bound
-  country: country || '',
-  property_type: propertyType || '',
+  start_date: sql.date('1900-01-01'),  // Sentinel: effectively no lower bound
+  end_date: sql.date('9999-12-31'),    // Sentinel: effectively no upper bound
+  country: sql.string(country || ''),
+  property_type: sql.string(propertyType || ''),
 };
 ```
 
@@ -145,16 +181,6 @@ WHERE b.check_in >= CAST(:start_date AS DATE)
   AND b.check_in <= CAST(:end_date AS DATE)
 ```
 
-**❌ WRONG - Empty Strings Cause Validation Errors:**
-
-```typescript
-// ❌ DON'T DO THIS - causes "Invalid date format" error
-const params = {
-  start_date: '',  // Empty string triggers parameter validation error
-  end_date: '',
-};
-```
-
 **Why Sentinel Dates Work:**
 - `1900-01-01` is before any real data (effectively no lower bound filter)
 - `9999-12-31` is after any real data (effectively no upper bound filter)
@@ -162,7 +188,8 @@ const params = {
 - All real dates fall within this range, so no filtering occurs
 
 **Parameter Types Summary:**
+- ALWAYS use sql.* helper functions from the `@databricks/app-kit-ui/js` package to define SQL parameters
 - **Strings/Numbers**: Use directly in SQL with `:param_name`
-- **Dates**: Format as `YYYY-MM-DD`, use with `CAST(:param AS DATE)` in SQL
+- **Dates**: Use with `CAST(:param AS DATE)` in SQL
 - **Optional Strings**: Use empty string default, check with `(:param = '' OR column = :param)`
-- **Optional Dates**: Use sentinel dates (`'1900-01-01'` and `'9999-12-31'`) instead of empty strings
+- **Optional Dates**: Use sentinel dates (`sql.date('1900-01-01')` and `sql.date('9999-12-31')`) instead of empty strings

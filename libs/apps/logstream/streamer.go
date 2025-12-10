@@ -8,20 +8,17 @@ import (
 	"io"
 	"net"
 	"net/http"
-	"slices"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/fatih/color"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/gorilla/websocket"
 )
 
 const (
 	handshakeErrorBodyLimit = 4 * 1024
 	defaultUserAgent        = "databricks-cli logstream"
-	initialReconnectBackoff = 200 * time.Millisecond
-	maxReconnectBackoff     = 5 * time.Second
 	closeCodeUnauthorized   = 4401
 	closeCodeForbidden      = 4403
 )
@@ -54,6 +51,7 @@ type Config struct {
 	Writer           io.Writer
 	UserAgent        string
 	Colorize         bool
+	OutputFormat     flags.Output
 }
 
 // Run connects to the log stream described by cfg and copies frames to the writer.
@@ -76,7 +74,7 @@ func Run(ctx context.Context, cfg Config) error {
 		prefetch:         cfg.Prefetch,
 		writer:           cfg.Writer,
 		userAgent:        cfg.UserAgent,
-		colorize:         cfg.Colorize,
+		formatter:        newLogFormatter(cfg.Colorize, cfg.OutputFormat),
 	}
 	if streamer.userAgent == "" {
 		streamer.userAgent = defaultUserAgent
@@ -84,6 +82,7 @@ func Run(ctx context.Context, cfg Config) error {
 	return streamer.Run(ctx)
 }
 
+// logStreamer manages the websocket connection and log consumption.
 type logStreamer struct {
 	dialer           Dialer
 	url              string
@@ -99,7 +98,7 @@ type logStreamer struct {
 	writer           io.Writer
 	tailFlushed      bool
 	userAgent        string
-	colorize         bool
+	formatter        *logFormatter
 }
 
 // Run establishes the websocket connection and manages reconnections.
@@ -109,24 +108,21 @@ func (s *logStreamer) Run(ctx context.Context) error {
 		s.dialer = &websocket.Dialer{}
 	}
 
-	backoff := initialReconnectBackoff
-	// Backoff timer starts as a zero-value timer; stopTimer handles the first initialization safely.
-	timer := time.NewTimer(0)
-	stopTimer(timer, 0)
+	backoff := newBackoffStrategy(initialReconnectBackoff, maxReconnectBackoff)
 
 	for {
 		shouldContinue, err := func() (bool, error) {
-			resp, err := s.connectAndConsume(ctx)
+			respStatusCode, err := s.connectAndConsume(ctx)
 			if err != nil {
 				if ctx.Err() != nil {
 					return false, ctx.Err()
 				}
 
-				if s.follow && (s.shouldRefreshForStatus(resp) || s.shouldRefreshForError(err)) {
+				if s.follow && (s.shouldRefreshForStatus(respStatusCode) || s.shouldRefreshForError(err)) {
 					if err := s.refreshToken(ctx); err != nil {
 						return false, err
 					}
-					backoff = initialReconnectBackoff
+					backoff.Reset()
 					return true, nil
 				}
 
@@ -143,11 +139,8 @@ func (s *logStreamer) Run(ctx context.Context) error {
 
 				return true, nil
 			}
-			if resp != nil && resp.Body != nil {
-				defer resp.Body.Close()
-			}
 
-			backoff = initialReconnectBackoff
+			backoff.Reset()
 			if !s.follow {
 				return false, nil
 			}
@@ -164,10 +157,10 @@ func (s *logStreamer) Run(ctx context.Context) error {
 		}
 
 		if shouldContinue {
-			if err := waitForBackoff(ctx, timer, backoff); err != nil {
+			if err := backoff.Wait(ctx); err != nil {
 				return err
 			}
-			backoff = min(backoff*2, maxReconnectBackoff)
+			backoff.Next()
 			continue
 		}
 
@@ -175,7 +168,7 @@ func (s *logStreamer) Run(ctx context.Context) error {
 	}
 }
 
-func (s *logStreamer) connectAndConsume(ctx context.Context) (*http.Response, error) {
+func (s *logStreamer) connectAndConsume(ctx context.Context) (*int, error) {
 	if err := s.ensureToken(ctx); err != nil {
 		return nil, err
 	}
@@ -188,15 +181,16 @@ func (s *logStreamer) connectAndConsume(ctx context.Context) (*http.Response, er
 	}
 
 	conn, resp, err := s.dialer.DialContext(ctx, s.url, headers)
+	defer closeBody(resp)
 	if err != nil {
 		err = decorateDialError(err, resp)
-		if resp != nil && resp.Body != nil {
-			_ = resp.Body.Close()
+
+		var statusCode *int
+		if resp != nil {
+			statusCode = &resp.StatusCode
 		}
-		return resp, err
-	}
-	if resp != nil && resp.Body != nil {
-		_ = resp.Body.Close()
+
+		return statusCode, err
 	}
 
 	stopWatch := watchContext(ctx, conn)
@@ -207,33 +201,16 @@ func (s *logStreamer) connectAndConsume(ctx context.Context) (*http.Response, er
 }
 
 func (s *logStreamer) consume(ctx context.Context, conn *websocket.Conn) (retErr error) {
-	initial := []byte(s.search)
-	if len(initial) == 0 {
-		initial = []byte("")
-	}
-
-	if err := conn.WriteMessage(websocket.TextMessage, initial); err != nil {
+	if err := conn.WriteMessage(websocket.TextMessage, []byte(s.search)); err != nil {
 		return err
 	}
 
-	buffer := &tailBuffer{size: s.tail}
-	flushed := s.tail == 0 || s.tailFlushed
-	var flushDeadline time.Time
-	if s.tail > 0 && s.prefetch > 0 && !s.tailFlushed {
-		flushDeadline = time.Now().Add(s.prefetch)
-	}
-
+	state := newConsumeState(s.tail, s.follow, s.prefetch, s.writer, s.tailFlushed)
 	defer func() {
-		if s.tail > 0 && !flushed {
-			if err := buffer.Flush(s.writer); err != nil {
-				if retErr == nil {
-					retErr = err
-				}
-				return
-			}
-			flushed = true
-			s.tailFlushed = true
+		if err := state.FlushRemaining(); err != nil && retErr == nil {
+			retErr = err
 		}
+		s.tailFlushed = state.IsFlushed()
 	}()
 
 	for {
@@ -241,18 +218,7 @@ func (s *logStreamer) consume(ctx context.Context, conn *websocket.Conn) (retErr
 			return ctx.Err()
 		}
 
-		deadline, hasDeadline := ctx.Deadline()
-		if !flushDeadline.IsZero() {
-			if !hasDeadline || flushDeadline.Before(deadline) {
-				deadline = flushDeadline
-			}
-			hasDeadline = true
-		}
-		if hasDeadline {
-			_ = conn.SetReadDeadline(deadline)
-		} else {
-			_ = conn.SetReadDeadline(time.Time{})
-		}
+		_ = conn.SetReadDeadline(state.ReadDeadline(ctx))
 
 		_, message, err := conn.ReadMessage()
 		if err != nil {
@@ -261,19 +227,15 @@ func (s *logStreamer) consume(ctx context.Context, conn *websocket.Conn) (retErr
 			}
 			var netErr net.Error
 			if errors.As(err, &netErr) && netErr.Timeout() {
-				if !flushDeadline.IsZero() {
-					flushDeadline = time.Time{}
-					if s.tail > 0 && !flushed {
-						if err := buffer.Flush(s.writer); err != nil {
-							return err
-						}
-						flushed = true
-						s.tailFlushed = true
-						if !s.follow {
-							return nil
-						}
+				if state.HasPendingFlushDeadline() {
+					shouldContinue, flushErr := state.HandleFlushTimeout()
+					if flushErr != nil {
+						return flushErr
 					}
-					continue
+					if shouldContinue {
+						continue
+					}
+					return nil
 				}
 			}
 			if handled, closeErr := handleCloseError(err); handled {
@@ -289,136 +251,28 @@ func (s *logStreamer) consume(ctx context.Context, conn *websocket.Conn) (retErr
 			continue
 		}
 
-		entry, err := parseLogEntry(message)
-		if err != nil {
-			line := formatPlainMessage(message)
-			if line == "" {
-				continue
-			}
-			stop, err := s.flushOrBufferLine(line, buffer, &flushed, &flushDeadline)
-			if err != nil {
-				return err
-			}
-			if stop {
-				return nil
-			}
+		line := s.formatMessage(message)
+		if line == "" {
 			continue
 		}
-		source := strings.ToUpper(entry.Source)
-		if len(s.sources) > 0 {
-			if _, ok := s.sources[source]; !ok {
-				continue
-			}
-		}
-		line := s.formatLogEntry(entry)
-		stop, err := s.flushOrBufferLine(line, buffer, &flushed, &flushDeadline)
-		if err != nil {
+		if err := state.ProcessLine(line); err != nil {
 			return err
 		}
-		if stop {
-			return nil
-		}
 	}
 }
 
-func (s *logStreamer) flushOrBufferLine(line string, buffer *tailBuffer, flushed *bool, flushDeadline *time.Time) (bool, error) {
-	if s.tail > 0 && !*flushed {
-		buffer.Add(line)
-		ready := buffer.Len() >= s.tail
-		if !flushDeadline.IsZero() {
-			ready = false
-		}
-		if ready {
-			if !s.follow {
-				return false, nil
-			}
-			if err := buffer.Flush(s.writer); err != nil {
-				return false, err
-			}
-			*flushed = true
-			s.tailFlushed = true
-			*flushDeadline = time.Time{}
-		}
-		return false, nil
+func (s *logStreamer) formatMessage(message []byte) string {
+	entry, err := parseLogEntry(message)
+	if err != nil {
+		return s.formatter.FormatPlain(message)
 	}
-	if _, err := fmt.Fprintln(s.writer, line); err != nil {
-		return false, err
-	}
-	return false, nil
-}
-
-type wsEntry struct {
-	Source    string  `json:"source"`
-	Timestamp float64 `json:"timestamp"`
-	Message   string  `json:"message"`
-}
-
-func parseLogEntry(raw []byte) (*wsEntry, error) {
-	var entry wsEntry
-	if err := json.Unmarshal(raw, &entry); err != nil {
-		return nil, err
-	}
-	return &entry, nil
-}
-
-func (s *logStreamer) formatLogEntry(entry *wsEntry) string {
-	timestamp := formatTimestamp(entry.Timestamp)
 	source := strings.ToUpper(entry.Source)
-	message := strings.TrimRight(entry.Message, "\r\n")
-
-	if s.colorize {
-		timestamp = color.HiBlackString(timestamp)
-		source = color.HiBlueString(source)
-	}
-
-	return fmt.Sprintf("%s [%s] %s", timestamp, source, message)
-}
-
-func formatPlainMessage(raw []byte) string {
-	line := strings.TrimRight(string(raw), "\r\n")
-	return line
-}
-
-type tailBuffer struct {
-	size  int
-	lines []string
-}
-
-func (b *tailBuffer) Add(line string) {
-	if b.size <= 0 {
-		return
-	}
-	b.lines = append(b.lines, line)
-	if len(b.lines) > b.size {
-		b.lines = slices.Delete(b.lines, 0, len(b.lines)-b.size)
-	}
-}
-
-func (b *tailBuffer) Len() int {
-	return len(b.lines)
-}
-
-func (b *tailBuffer) Flush(w io.Writer) error {
-	if b.size == 0 {
-		return nil
-	}
-	for _, line := range b.lines {
-		if _, err := fmt.Fprintln(w, line); err != nil {
-			return err
+	if len(s.sources) > 0 {
+		if _, ok := s.sources[source]; !ok {
+			return ""
 		}
 	}
-	b.lines = slices.Clip(b.lines[:0])
-	return nil
-}
-
-func formatTimestamp(ts float64) string {
-	if ts <= 0 {
-		return "----------"
-	}
-	sec := int64(ts)
-	nsec := int64((ts - float64(sec)) * 1e9)
-	t := time.Unix(sec, nsec).UTC()
-	return t.Format(time.RFC3339)
+	return s.formatter.FormatEntry(entry)
 }
 
 func (s *logStreamer) ensureToken(ctx context.Context) error {
@@ -441,40 +295,11 @@ func (s *logStreamer) refreshToken(ctx context.Context) error {
 	return s.ensureToken(ctx)
 }
 
-func decorateDialError(err error, resp *http.Response) error {
-	if resp == nil {
-		return err
-	}
-
-	var bodySnippet string
-	if resp.Body != nil {
-		data, readErr := io.ReadAll(io.LimitReader(resp.Body, handshakeErrorBodyLimit))
-		_ = resp.Body.Close()
-		if readErr == nil {
-			bodySnippet = strings.TrimSpace(string(data))
-		}
-	}
-
-	status := strings.TrimSpace(resp.Status)
-	if status == "" && resp.StatusCode != 0 {
-		status = fmt.Sprintf("%d %s", resp.StatusCode, http.StatusText(resp.StatusCode))
-	}
-	if status == "" {
-		status = "unknown status"
-	}
-
-	detail := "HTTP " + status
-	if bodySnippet != "" {
-		return fmt.Errorf("%w (%s: %s)", err, detail, bodySnippet)
-	}
-	return fmt.Errorf("%w (%s)", err, detail)
-}
-
-func (s *logStreamer) shouldRefreshForStatus(resp *http.Response) bool {
-	if resp == nil {
+func (s *logStreamer) shouldRefreshForStatus(respStatusCode *int) bool {
+	if respStatusCode == nil {
 		return false
 	}
-	switch resp.StatusCode {
+	switch *respStatusCode {
 	case http.StatusUnauthorized, http.StatusForbidden:
 		return true
 	default:
@@ -493,6 +318,23 @@ func (s *logStreamer) shouldRefreshForError(err error) bool {
 	return false
 }
 
+func decorateDialError(err error, resp *http.Response) error {
+	if resp == nil {
+		return err
+	}
+
+	var errDetails string
+	if resp.Body != nil {
+		data, readErr := io.ReadAll(io.LimitReader(resp.Body, handshakeErrorBodyLimit))
+		_ = resp.Body.Close()
+		if readErr == nil && json.Valid(data) {
+			errDetails = fmt.Sprintf(" (details: %s)", string(data))
+		}
+	}
+
+	return fmt.Errorf("%w (HTTP %s)%s", err, resp.Status, errDetails)
+}
+
 func handleCloseError(err error) (bool, error) {
 	var closeErr *websocket.CloseError
 	if !errors.As(err, &closeErr) {
@@ -502,52 +344,6 @@ func handleCloseError(err error) (bool, error) {
 		return true, nil
 	}
 	return true, fmt.Errorf("log stream closed with code %d (%s): %w", closeErr.Code, strings.TrimSpace(closeErr.Text), err)
-}
-
-func waitForBackoff(ctx context.Context, timer *time.Timer, d time.Duration) error {
-	if d <= 0 {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		default:
-			return nil
-		}
-	}
-	stopTimer(timer, d)
-	select {
-	case <-ctx.Done():
-		stopTimer(timer, 0)
-		return ctx.Err()
-	case <-timer.C:
-		return nil
-	}
-}
-
-func stopTimer(timer *time.Timer, d time.Duration) {
-	if timer == nil {
-		return
-	}
-	if d <= 0 {
-		// For a zero duration we only need to stop and drain.
-		if timer.Stop() {
-			return
-		}
-		drainTimer(timer)
-		return
-	}
-	// For a positive duration, either stop an already-started timer or
-	// just initialize it when it is still in the zero state.
-	if !timer.Stop() {
-		drainTimer(timer)
-	}
-	timer.Reset(d)
-}
-
-func drainTimer(timer *time.Timer) {
-	select {
-	case <-timer.C:
-	default:
-	}
 }
 
 func watchContext(ctx context.Context, conn *websocket.Conn) func() {
@@ -573,4 +369,12 @@ func watchContext(ctx context.Context, conn *websocket.Conn) func() {
 		close(closeCh)
 		closeConn()
 	}
+}
+
+func closeBody(resp *http.Response) {
+	if resp == nil || resp.Body == nil {
+		return
+	}
+
+	_ = resp.Body.Close()
 }

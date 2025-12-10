@@ -8,7 +8,7 @@ Deployment complete!
 >>> [CLI] bundle deployment migrate
 Note: Migration should be done after a full deploy. Running plan now to verify that deployment was done:
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
-Migrated 1 resources to direct engine state file: [TEST_TMP_DIR]/.databricks/bundle/default/resources.json
+Success! Migrated 1 resources to direct engine state file: [TEST_TMP_DIR]/.databricks/bundle/default/resources.json
 
 Validate the migration by running "databricks bundle plan", there should be no actions planned.
 
@@ -22,7 +22,7 @@ Error: Required engine "terraform" does not match present state files. Clear "DA
 
 Available state files:
 - terraform.tfstate: remote terraform state serial=1 lineage="[UUID]"
-- [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=2 lineage="[UUID]"
+- [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=3 lineage="[UUID]"
 
 
 >>> DATABRICKS_BUNDLE_ENGINE=terraform musterr [CLI] bundle deploy
@@ -30,7 +30,7 @@ Error: Required engine "terraform" does not match present state files. Clear "DA
 
 Available state files:
 - terraform.tfstate: remote terraform state serial=1 lineage="[UUID]"
-- [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=2 lineage="[UUID]"
+- [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=3 lineage="[UUID]"
 
 
 >>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle plan
@@ -54,11 +54,11 @@ Deployment complete!
 === Should show that it's already migrated
 >>> musterr [CLI] bundle deployment migrate
 Error: already using direct engine
-Details: [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=2 lineage="[UUID]"
+Details: [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=4 lineage="[UUID]"
 
 >>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle debug states
-[TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=2 lineage="[UUID]"
+[TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=4 lineage="[UUID]"
 
 >>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle debug states --force-pull
-resources.json: remote direct state serial=2 lineage="[UUID]"
-[TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=2 lineage="[UUID]"
+resources.json: remote direct state serial=4 lineage="[UUID]"
+[TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=4 lineage="[UUID]"

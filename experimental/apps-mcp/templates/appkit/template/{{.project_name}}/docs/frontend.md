@@ -11,6 +11,7 @@ Available: `AreaChart`, `BarChart`, `LineChart`, `PieChart`, `RadarChart`, `Data
 ```typescript
 import { BarChart, LineChart, DataTable } from '@databricks/app-kit-ui/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { sql } from "@databricks/app-kit-ui/js";
 
 function MyDashboard() {
   return (
@@ -25,7 +26,7 @@ function MyDashboard() {
       <Card>
         <CardHeader><CardTitle>Revenue Trend</CardTitle></CardHeader>
         <CardContent>
-          <LineChart queryKey="revenue_over_time" parameters={{ months: 12 }} />
+          <LineChart queryKey="revenue_over_time" parameters={{ months: sql.number(12) }} />
         </CardContent>
       </Card>
     </div>
