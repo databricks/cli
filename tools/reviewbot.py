@@ -265,8 +265,8 @@ When done, call publish_review with your structured review.
         review_file.write_text(json.dumps(payload, indent=2))
         return review_file
 
-    def publish_to_github(self, review: dict, pr_info: dict) -> None:
-        """Publish the review to GitHub."""
+    def prepare_payload(self, review: dict, pr_info: dict) -> dict:
+        """Prepare the review payload for GitHub."""
         head_sha = self.get_head_sha(pr_info["number"])
         diff = self.get_pr_diff(pr_info["number"])
         valid_ranges = self.parse_diff_ranges(diff)
@@ -315,11 +315,10 @@ When done, call publish_review with your structured review.
                 }
             )
 
-        # Save the payload for debugging
-        review_file = self.save_review_payload(payload, pr_info["number"])
-        print(f"Full review payload saved to: {review_file}")
+        return payload
 
-        # Submit via gh api
+    def publish_to_github(self, payload: dict, pr_info: dict, review_file: Path) -> None:
+        """Publish the prepared review payload to GitHub."""
         result = subprocess.run(
             [
                 "gh",
@@ -409,18 +408,17 @@ When done, call publish_review with your structured review.
 
             self.display_review(review, pr)
 
-            # Save review for inspection
-            self.reviews_dir.mkdir(exist_ok=True)
-            review_file = self.reviews_dir / f"pr-{pr['number']}.json"
-            review_file.write_text(json.dumps(review, indent=2))
-            print(f"Full review saved to: {review_file}")
+            # Prepare and save payload
+            payload = self.prepare_payload(review, pr)
+            review_file = self.save_review_payload(payload, pr["number"])
+            print(f"Full review payload saved to: {review_file}")
 
             # Ask for confirmation
             while True:
                 try:
                     confirm = input("\nPublish this review to GitHub? [y/N]: ").strip().lower()
                     if confirm in ("y", "yes"):
-                        self.publish_to_github(review, pr)
+                        self.publish_to_github(payload, pr, review_file)
                         break
                     elif confirm in ("n", "no", ""):
                         print("Review not published.")
