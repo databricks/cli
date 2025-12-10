@@ -1,0 +1,4 @@
+create secret_scopes.my_scope
+create secret_scopes.my_scope.permissions
+
+Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
