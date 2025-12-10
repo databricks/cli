@@ -1,0 +1,7 @@
+{
+  "plan": {
+    "resources.jobs.refresh_usage_logs": {
+      "action": "skip"
+    }
+  }
+}
