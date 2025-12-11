@@ -9,12 +9,18 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/spf13/cobra"
+	"golang.org/x/sync/errgroup"
 )
+
+// Maximum number of concurrent file copy operations. The number was set
+// conservatively and might be adjusted in the future.
+const maxWorkers = 16
 
 type copy struct {
 	overwrite bool
@@ -25,40 +31,83 @@ type copy struct {
 	targetFiler  filer.Filer
 	sourceScheme string
 	targetScheme string
+
+	mu sync.Mutex // protect output from concurrent writes
 }
 
-func (c *copy) cpWriteCallback(sourceDir, targetDir string) fs.WalkDirFunc {
+type copyTask struct {
+	sourcePath string
+	targetPath string
+}
+
+// cpDirToDir recursively copies the contents of a directory to another
+// directory.
+//
+// There is no guarantee on the order in which the files are copied.
+//
+// The method does not take care of retrying on error; this is considered to
+// be the responsibility of the Filer implementation. If a file copy fails,
+// the error is returned and the other copies are cancelled.
+func (c *copy) cpDirToDir(sourceDir, targetDir string) error {
+	if !c.recursive {
+		return fmt.Errorf("source path %s is a directory. Please specify the --recursive flag", sourceDir)
+	}
+
+	// Walk the source directory and collect all files to copy.
+	var tasks []copyTask
+	sourceFs := filer.NewFS(c.ctx, c.sourceFiler)
+	err := fs.WalkDir(sourceFs, sourceDir, c.cpCollectCallback(sourceDir, targetDir, &tasks))
+	if err != nil {
+		return err
+	}
+
+	if len(tasks) == 0 {
+		return nil // no file to copy
+	}
+
+	// Process each file copy in parallel using a fixed number of workers.
+	g, ctx := errgroup.WithContext(c.ctx)
+	g.SetLimit(min(maxWorkers, len(tasks)))
+	for _, task := range tasks {
+		g.Go(func() error {
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+			return c.cpFileToFile(task.sourcePath, task.targetPath)
+		})
+	}
+
+	return g.Wait()
+}
+
+func (c *copy) cpCollectCallback(sourceDir, targetDir string, tasks *[]copyTask) fs.WalkDirFunc {
 	return func(sourcePath string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 
-		// Compute path relative to the target directory
+		// Compute path relative to the source directory.
 		relPath, err := filepath.Rel(sourceDir, sourcePath)
 		if err != nil {
 			return err
 		}
 		relPath = filepath.ToSlash(relPath)
 
-		// Compute target path for the file
+		// Compute target path for the file.
 		targetPath := path.Join(targetDir, relPath)
 
-		// create directory and return early
+		// Create directory and return early.
 		if d.IsDir() {
 			return c.targetFiler.Mkdir(c.ctx, targetPath)
 		}
 
-		return c.cpFileToFile(sourcePath, targetPath)
+		// Collect file copy tasks.
+		*tasks = append(*tasks, copyTask{
+			sourcePath: sourcePath,
+			targetPath: targetPath,
+		})
+		return nil
 	}
-}
-
-func (c *copy) cpDirToDir(sourceDir, targetDir string) error {
-	if !c.recursive {
-		return fmt.Errorf("source path %s is a directory. Please specify the --recursive flag", sourceDir)
-	}
-
-	sourceFs := filer.NewFS(c.ctx, c.sourceFiler)
-	return fs.WalkDir(sourceFs, sourceDir, c.cpWriteCallback(sourceDir, targetDir))
 }
 
 func (c *copy) cpFileToDir(sourcePath, targetDir string) error {
@@ -109,6 +158,8 @@ func (c *copy) emitFileSkippedEvent(sourcePath, targetPath string) error {
 	event := newFileSkippedEvent(fullSourcePath, fullTargetPath)
 	template := "{{.SourcePath}} -> {{.TargetPath}} (skipped; already exists)\n"
 
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	return cmdio.RenderWithTemplate(c.ctx, event, "", template)
 }
 
@@ -125,6 +176,8 @@ func (c *copy) emitFileCopiedEvent(sourcePath, targetPath string) error {
 	event := newFileCopiedEvent(fullSourcePath, fullTargetPath)
 	template := "{{.SourcePath}} -> {{.TargetPath}}\n"
 
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	return cmdio.RenderWithTemplate(c.ctx, event, "", template)
 }
 
