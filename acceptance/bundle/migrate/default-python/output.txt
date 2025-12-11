@@ -33,7 +33,7 @@ Error: 'databricks bundle plan' shows actions planned, aborting migration. Pleas
 
 >>> [CLI] bundle deployment migrate --noplancheck
 Building python_artifact...
-Migrated 2 resources to direct engine state file: [TEST_TMP_DIR]/my_default_python/.databricks/bundle/dev/resources.json
+Success! Migrated 2 resources to direct engine state file: [TEST_TMP_DIR]/my_default_python/.databricks/bundle/dev/resources.json
 
 Validate the migration by running "databricks bundle plan", there should be no actions planned.
 
@@ -137,8 +137,8 @@ Deployment complete!
 >>> diff.py ../out.state_after_migration.json ../out.state_after_deploy.json
 --- ../out.state_after_migration.json
 +++ ../out.state_after_deploy.json
-@@ -1,5 +1,5 @@
- {
+@@ -3,5 +3,5 @@
+  "cli_version": "[DEV_VERSION]",
   "lineage": "[UUID]",
 - "serial": 5,
 + "serial": 6,

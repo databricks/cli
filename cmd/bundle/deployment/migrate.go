@@ -136,7 +136,7 @@ WARNING: Both direct deployment engine and this command are experimental and not
 
 		if stateDesc.Lineage == "" {
 			// TODO: mention bundle.engine once it's there
-			cmdio.LogString(ctx, `This command migrates the existing Terraform state file (terraform.tfstate) to a direct deployment state file (resources.json). However, no existing local or remote state was found.
+			cmdio.LogString(ctx, `Error: This command migrates the existing Terraform state file (terraform.tfstate) to a direct deployment state file (resources.json). However, no existing local or remote state was found.
 
 To start using direct engine, deploy with DATABRICKS_BUNDLE_ENGINE=direct env var set.`)
 			return root.ErrAlreadyPrinted
@@ -184,14 +184,13 @@ To start using direct engine, deploy with DATABRICKS_BUNDLE_ENGINE=direct env va
 			}
 		}
 
+		migratedDB := dstate.NewMigratedDatabase(stateDesc.Lineage, stateDesc.Serial+1)
+		migratedDB.State = state
+
 		deploymentBundle := &direct.DeploymentBundle{
 			StateDB: dstate.DeploymentState{
 				Path: tempStatePath,
-				Data: dstate.Database{
-					Serial:  stateDesc.Serial + 1,
-					Lineage: stateDesc.Lineage,
-					State:   state,
-				},
+				Data: migratedDB,
 			},
 		}
 
@@ -244,7 +243,7 @@ To start using direct engine, deploy with DATABRICKS_BUNDLE_ENGINE=direct env va
 			logdiag.LogError(ctx, err)
 		}
 
-		cmdio.LogString(ctx, fmt.Sprintf(`Migrated %d resources to direct engine state file: %s
+		cmdio.LogString(ctx, fmt.Sprintf(`Success! Migrated %d resources to direct engine state file: %s
 
 Validate the migration by running "databricks bundle plan%s", there should be no actions planned.
 

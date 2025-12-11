@@ -1,0 +1,3 @@
+trace $CLI bundle plan
+trace $CLI bundle deploy
+trace $CLI bundle plan -o json | jq '.plan."resources.jobs.refresh_usage_logs".changes // .' > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
