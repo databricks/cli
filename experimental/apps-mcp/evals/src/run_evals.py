@@ -35,24 +35,63 @@ def find_apps_dir(apps_volume: str) -> Optional[Path]:
     return None
 
 
+def run_local_evaluation(apps_dir: Path, mlflow_experiment: str) -> dict:
+    """Run local evaluation using shell scripts (no Docker/Dagger)."""
+    import time
+    from dataclasses import asdict
+
+    from cli.evaluation.evaluate_app import evaluate_app
+    from cli.evaluation.evaluate_all import generate_summary_report
+    from cli.utils.apps_discovery import list_apps_in_dir
+
+    app_dirs = list_apps_in_dir(apps_dir)
+    if not app_dirs:
+        raise ValueError(f"No apps found in: {apps_dir}")
+
+    print(f"Evaluating {len(app_dirs)} apps locally...")
+
+    results = []
+    eval_start = time.time()
+
+    for i, app_dir in enumerate(app_dirs, 1):
+        print(f"\n[{i}/{len(app_dirs)}] {app_dir.name}")
+        try:
+            result = evaluate_app(app_dir, prompt=None, port=8000 + i)
+            results.append(asdict(result))
+        except Exception as e:
+            print(f"  Error: {e}")
+
+    eval_duration = time.time() - eval_start
+    print(f"\nEvaluated {len(results)}/{len(app_dirs)} apps in {eval_duration:.1f}s")
+
+    summary = generate_summary_report(results)
+    report = {"summary": summary, "apps": results}
+
+    if mlflow_experiment:
+        from cli.evaluation.tracking import log_evaluation_to_mlflow, setup_mlflow
+        if setup_mlflow(mlflow_experiment):
+            run_id = log_evaluation_to_mlflow(report)
+            if run_id:
+                print(f"MLflow run logged: {run_id}")
+
+    return report
+
+
 def main(
     mlflow_experiment: str = "/Shared/apps-mcp-evaluations",
     parallelism: int = 4,
     apps_volume: Optional[str] = None,
     evals_git_url: str = "https://github.com/neondatabase/appdotbuild-agent.git",
 ) -> None:
-    """Run Apps-MCP evaluations using klaudbiusz."""
+    """Run Apps-MCP evaluations using klaudbiusz (local mode)."""
     print("=" * 60)
-    print("Apps-MCP Evaluation")
+    print("Apps-MCP Evaluation (Local Mode)")
     print("=" * 60)
     print(f"  MLflow Experiment: {mlflow_experiment}")
-    print(f"  Parallelism: {parallelism}")
     print(f"  Apps Volume: {apps_volume or 'not specified'}")
 
     work_dir = Path(tempfile.mkdtemp(prefix="apps-mcp-evals-"))
     clone_and_install_klaudbiusz(work_dir, evals_git_url)
-
-    from cli.evaluation import run_evaluation_simple
 
     apps_dir = find_apps_dir(apps_volume) if apps_volume else None
     if apps_dir:
@@ -62,16 +101,12 @@ def main(
         apps_dir = work_dir / "appdotbuild-agent" / "klaudbiusz" / "app"
 
     print("\n" + "=" * 60)
-    print("Running evaluation...")
+    print("Running local evaluation...")
     print("=" * 60)
 
-    # Use no_dagger=False to use Dagger mode (runs locally, not in Docker containers)
-    report = run_evaluation_simple(
-        apps_dir=str(apps_dir),
+    report = run_local_evaluation(
+        apps_dir=apps_dir,
         mlflow_experiment=mlflow_experiment,
-        parallelism=parallelism,
-        fast_mode=True,
-        no_dagger=False,
     )
 
     summary = report.get("summary", {})
