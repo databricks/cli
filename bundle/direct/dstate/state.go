@@ -13,6 +13,8 @@ import (
 	"github.com/google/uuid"
 )
 
+const currentStateVersion = 1
+
 type DeploymentState struct {
 	Path string
 	Data Database
@@ -32,14 +34,24 @@ type ResourceEntry struct {
 	State any    `json:"state"`
 }
 
+func NewDatabase() Database {
+	return NewMigratedDatabase(uuid.New().String(), 1)
+}
+
+func NewMigratedDatabase(lineage string, serial int) Database {
+	return Database{
+		StateVersion: currentStateVersion,
+		CLIVersion:   build.GetInfo().Version,
+		Lineage:      lineage,
+		Serial:       serial,
+		State:        make(map[string]ResourceEntry),
+	}
+}
+
 func (db *DeploymentState) SaveState(key, newID string, state any) error {
 	db.AssertOpened()
 	db.mu.Lock()
 	defer db.mu.Unlock()
-
-	if db.Data.State == nil {
-		db.Data.State = make(map[string]ResourceEntry)
-	}
 
 	db.Data.State[key] = ResourceEntry{
 		ID:    newID,
@@ -90,13 +102,7 @@ func (db *DeploymentState) Open(path string) error {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			db.Data = Database{
-				StateVersion: 1,
-				CLIVersion:   build.GetInfo().Version,
-				Serial:       1,
-				Lineage:      uuid.New().String(),
-				State:        make(map[string]ResourceEntry),
-			}
+			db.Data = NewDatabase()
 			db.Path = path
 			return nil
 		}

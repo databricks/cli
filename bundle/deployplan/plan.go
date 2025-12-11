@@ -11,6 +11,8 @@ import (
 	"github.com/databricks/cli/libs/structs/structvar"
 )
 
+const currentPlanVersion = 1
+
 type Plan struct {
 	PlanVersion int    `json:"plan_version"`
 	CLIVersion  string `json:"cli_version"`
@@ -25,7 +27,7 @@ type Plan struct {
 
 func NewPlan() *Plan {
 	return &Plan{
-		PlanVersion: 1,
+		PlanVersion: currentPlanVersion,
 		CLIVersion:  build.GetInfo().Version,
 		Plan:        make(map[string]*PlanEntry),
 		lockmap:     newLockmap(),
