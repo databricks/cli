@@ -6,23 +6,28 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const tailLinesSuggestedValue = 100
+
 // AppDeploymentError wraps deployment errors with a helpful logs command suggestion.
 type AppDeploymentError struct {
-	Err     error
-	AppName string
-	Profile string
+	Underlying error
+	appName    string
+	profile    string
 }
 
 func (e *AppDeploymentError) Error() string {
-	suggestion := "\n\nTo view app logs, run:\n  databricks workspace apps logs " + e.AppName
-	if e.Profile != "" {
-		suggestion = fmt.Sprintf("%s --profile %s", suggestion, e.Profile)
+	suggestion := fmt.Sprintf("\n\nTo view app logs, run:\n  databricks apps logs %s --tail-lines %d",
+		e.appName,
+		tailLinesSuggestedValue,
+	)
+	if e.profile != "" {
+		suggestion = fmt.Sprintf("%s --profile %s", suggestion, e.profile)
 	}
-	return e.Err.Error() + suggestion
+	return e.Underlying.Error() + suggestion
 }
 
 func (e *AppDeploymentError) Unwrap() error {
-	return e.Err
+	return e.Underlying
 }
 
 // newAppDeploymentError creates an AppDeploymentError with profile info from the command.
@@ -33,8 +38,8 @@ func newAppDeploymentError(cmd *cobra.Command, appName string, err error) error 
 		profile = profileFlag.Value.String()
 	}
 	return &AppDeploymentError{
-		Err:     err,
-		AppName: appName,
-		Profile: profile,
+		Underlying: err,
+		appName:    appName,
+		profile:    profile,
 	}
 }
