@@ -53,6 +53,10 @@ func (db *DeploymentState) SaveState(key, newID string, state any) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
+	if db.Data.State == nil {
+		db.Data.State = make(map[string]ResourceEntry)
+	}
+
 	db.Data.State[key] = ResourceEntry{
 		ID:    newID,
 		State: state,
