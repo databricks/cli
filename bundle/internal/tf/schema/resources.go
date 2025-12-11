@@ -135,6 +135,7 @@ type Resources struct {
 	Volume                                       map[string]any `json:"databricks_volume,omitempty"`
 	WorkspaceBinding                             map[string]any `json:"databricks_workspace_binding,omitempty"`
 	WorkspaceConf                                map[string]any `json:"databricks_workspace_conf,omitempty"`
+	WorkspaceEntityTagAssignment                 map[string]any `json:"databricks_workspace_entity_tag_assignment,omitempty"`
 	WorkspaceFile                                map[string]any `json:"databricks_workspace_file,omitempty"`
 	WorkspaceNetworkOption                       map[string]any `json:"databricks_workspace_network_option,omitempty"`
 	WorkspaceSettingV2                           map[string]any `json:"databricks_workspace_setting_v2,omitempty"`
@@ -274,6 +275,7 @@ func NewResources() *Resources {
 		Volume:                                make(map[string]any),
 		WorkspaceBinding:                      make(map[string]any),
 		WorkspaceConf:                         make(map[string]any),
+		WorkspaceEntityTagAssignment:          make(map[string]any),
 		WorkspaceFile:                         make(map[string]any),
 		WorkspaceNetworkOption:                make(map[string]any),
 		WorkspaceSettingV2:                    make(map[string]any),

@@ -34,7 +34,8 @@ There are known issues, see https://github.com/databricks/cli/issues?q=state%3Ao
 
 ### Migrating the existing deployment
 
-The direct engine uses its own state file, also JSON, but with a different schema from terraform state file. In order to migrate an existing Terraform-based deployment, use the "bundle deployment migrate" command. The command reads IDs from the existing deployment.
+The direct engine uses its own state file, also JSON, but with a different schema from terraform state file.
+In order to migrate an existing Terraform-based deployment, use the `databricks bundle deployment migrate` command. The command reads IDs from the existing deployment.
 
 The full sequence of operations:
 

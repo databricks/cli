@@ -109,6 +109,8 @@ type DataSources struct {
 	Views                                  map[string]any `json:"databricks_views,omitempty"`
 	Volume                                 map[string]any `json:"databricks_volume,omitempty"`
 	Volumes                                map[string]any `json:"databricks_volumes,omitempty"`
+	WorkspaceEntityTagAssignment           map[string]any `json:"databricks_workspace_entity_tag_assignment,omitempty"`
+	WorkspaceEntityTagAssignments          map[string]any `json:"databricks_workspace_entity_tag_assignments,omitempty"`
 	WorkspaceNetworkOption                 map[string]any `json:"databricks_workspace_network_option,omitempty"`
 	WorkspaceSettingV2                     map[string]any `json:"databricks_workspace_setting_v2,omitempty"`
 	Zones                                  map[string]any `json:"databricks_zones,omitempty"`
@@ -222,6 +224,8 @@ func NewDataSources() *DataSources {
 		Views:                                  make(map[string]any),
 		Volume:                                 make(map[string]any),
 		Volumes:                                make(map[string]any),
+		WorkspaceEntityTagAssignment:           make(map[string]any),
+		WorkspaceEntityTagAssignments:          make(map[string]any),
 		WorkspaceNetworkOption:                 make(map[string]any),
 		WorkspaceSettingV2:                     make(map[string]any),
 		Zones:                                  make(map[string]any),

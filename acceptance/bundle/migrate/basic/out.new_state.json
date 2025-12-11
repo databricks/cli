@@ -1,6 +1,8 @@
 {
+ "state_version": 1,
+ "cli_version": "[DEV_VERSION]",
  "lineage": "[UUID]",
- "serial": 5,
+ "serial": 6,
  "state": {
   "resources.jobs.test_job": {
    "__id__": "[NUMID]",

@@ -9,8 +9,11 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
+	"github.com/databricks/cli/internal/build"
 	"github.com/google/uuid"
 )
+
+const currentStateVersion = 1
 
 type DeploymentState struct {
 	Path string
@@ -19,14 +22,30 @@ type DeploymentState struct {
 }
 
 type Database struct {
-	Lineage string                   `json:"lineage"`
-	Serial  int                      `json:"serial"`
-	State   map[string]ResourceEntry `json:"state"`
+	StateVersion int                      `json:"state_version"`
+	CLIVersion   string                   `json:"cli_version"`
+	Lineage      string                   `json:"lineage"`
+	Serial       int                      `json:"serial"`
+	State        map[string]ResourceEntry `json:"state"`
 }
 
 type ResourceEntry struct {
 	ID    string `json:"__id__"`
 	State any    `json:"state"`
+}
+
+func NewDatabase() Database {
+	return NewMigratedDatabase(uuid.New().String(), 1)
+}
+
+func NewMigratedDatabase(lineage string, serial int) Database {
+	return Database{
+		StateVersion: currentStateVersion,
+		CLIVersion:   build.GetInfo().Version,
+		Lineage:      lineage,
+		Serial:       serial,
+		State:        make(map[string]ResourceEntry),
+	}
 }
 
 func (db *DeploymentState) SaveState(key, newID string, state any) error {
@@ -87,11 +106,7 @@ func (db *DeploymentState) Open(path string) error {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			db.Data = Database{
-				Serial:  1,
-				Lineage: uuid.New().String(),
-				State:   make(map[string]ResourceEntry),
-			}
+			db.Data = NewDatabase()
 			db.Path = path
 			return nil
 		}
@@ -110,6 +125,8 @@ func (db *DeploymentState) Open(path string) error {
 func (db *DeploymentState) Finalize() error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
+
+	db.Data.Serial += 1
 
 	return db.unlockedSave()
 }

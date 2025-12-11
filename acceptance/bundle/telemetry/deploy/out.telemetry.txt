@@ -43,6 +43,14 @@
           "target_count": 1,
           "bool_values": [
             {
+              "key": "local.cache.attempt",
+              "value": true
+            },
+            {
+              "key": "local.cache.miss",
+              "value": true
+            },
+            {
               "key": "experimental.use_legacy_run_as",
               "value": false
             },
@@ -76,7 +84,8 @@
             }
           ],
           "bundle_mode": "TYPE_UNSPECIFIED",
-          "workspace_artifact_path_type": "WORKSPACE_FILE_SYSTEM"
+          "workspace_artifact_path_type": "WORKSPACE_FILE_SYSTEM",
+          "local_cache_measurements_ms": [...redacted...]
         }
       }
     }
