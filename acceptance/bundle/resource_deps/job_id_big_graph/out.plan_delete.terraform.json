@@ -1,0 +1,40 @@
+{
+  "plan": {
+    "resources.jobs.chain_bottom": {
+      "action": "delete"
+    },
+    "resources.jobs.chain_mid": {
+      "action": "delete"
+    },
+    "resources.jobs.chain_top": {
+      "action": "delete"
+    },
+    "resources.jobs.diamond_bottom": {
+      "action": "delete"
+    },
+    "resources.jobs.diamond_left": {
+      "action": "delete"
+    },
+    "resources.jobs.diamond_right": {
+      "action": "delete"
+    },
+    "resources.jobs.diamond_top": {
+      "action": "delete"
+    },
+    "resources.jobs.independent1": {
+      "action": "delete"
+    },
+    "resources.jobs.independent2": {
+      "action": "delete"
+    },
+    "resources.jobs.multi_child": {
+      "action": "delete"
+    },
+    "resources.jobs.multi_parent1": {
+      "action": "delete"
+    },
+    "resources.jobs.multi_parent2": {
+      "action": "delete"
+    }
+  }
+}

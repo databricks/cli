@@ -1,0 +1,18 @@
+echo "*" > .gitignore
+trace $CLI bundle deploy
+trace print_requests.py --sort //jobs
+
+# Capture all job IDs
+for name in independent1 independent2 chain_bottom chain_mid chain_top diamond_bottom diamond_left diamond_right diamond_top multi_parent1 multi_parent2 multi_child; do
+  id=`read_id.py jobs $name`
+  upper=$(echo $name | tr '[:lower:]' '[:upper:]')
+  echo "$id:${upper}_ID" >> ACC_REPLS
+done
+
+title "Delete all - complex graph with chain, diamond, independent, multi-deps"
+cp empty.yml databricks.yml
+trace $CLI bundle plan -o json > out.plan_delete.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle deploy
+
+trace $CLI bundle destroy --auto-approve
+rm -f out.requests.txt

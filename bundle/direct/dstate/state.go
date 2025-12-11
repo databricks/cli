@@ -8,6 +8,7 @@ import (
 	"sync"
 
 	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
 	"github.com/google/uuid"
 )
@@ -25,12 +26,12 @@ type Database struct {
 }
 
 type ResourceEntry struct {
-	ID        string   `json:"__id__"`
-	State     any      `json:"state"`
-	DependsOn []string `json:"depends_on,omitempty"`
+	ID        string                      `json:"__id__"`
+	State     any                         `json:"state"`
+	DependsOn []deployplan.DependsOnEntry `json:"depends_on,omitempty"`
 }
 
-func (db *DeploymentState) SaveState(key, newID string, state any, dependsOn []string) error {
+func (db *DeploymentState) SaveState(key, newID string, state any, dependsOn []deployplan.DependsOnEntry) error {
 	db.AssertOpened()
 	db.mu.Lock()
 	defer db.mu.Unlock()

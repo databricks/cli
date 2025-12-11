@@ -32,8 +32,8 @@ type DeploymentUnit struct {
 	// will be populated lazily by calling DoRead().
 	RemoteState any
 
-	// DependsOn lists resource keys this resource depends on (persisted in state).
-	DependsOn []string
+	// DependsOn lists resources this resource depends on (persisted in state).
+	DependsOn []deployplan.DependsOnEntry
 }
 
 // DeploymentBundle holds everything needed to deploy a bundle

@@ -1,0 +1,10 @@
+{
+  "plan": {
+    "resources.jobs.bar": {
+      "action": "skip"
+    },
+    "resources.jobs.foo": {
+      "action": "delete"
+    }
+  }
+}

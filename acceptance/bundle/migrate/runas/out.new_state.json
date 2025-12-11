@@ -41,7 +41,13 @@
       "user_name": "[USERNAME]"
      }
     ]
-   }
+   },
+   "depends_on": [
+    {
+     "node": "resources.pipelines.foo",
+     "label": "${resources.pipelines.foo.id}"
+    }
+   ]
   }
  }
 }
