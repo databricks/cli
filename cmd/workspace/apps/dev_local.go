@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/internal/appenv"
 	"github.com/databricks/cli/libs/appproxy"
 	"github.com/databricks/cli/libs/apps/runlocal"
 	"github.com/databricks/cli/libs/auth"
@@ -171,7 +172,7 @@ func handleGracefulShutdown(appCmd *exec.Cmd) error {
 	}
 }
 
-func newRunLocal() *cobra.Command {
+func newDevLocal() *cobra.Command {
 	var (
 		port               int
 		debug              bool
@@ -180,15 +181,17 @@ func newRunLocal() *cobra.Command {
 		customEnv          []string
 		debugPort          string
 		appPort            int
+		appName            string
+		injectRemoteEnv    bool
 	)
 
 	cmd := &cobra.Command{}
 
-	cmd.Use = "run-local"
-	cmd.Short = `Run an app locally`
-	cmd.Long = `Run an app locally.
+	cmd.Use = "dev-local"
+	cmd.Short = `Run an app locally with development environment`
+	cmd.Long = `Run an app locally with development environment.
 
-	  This command starts an app locally.`
+	  This command starts an app locally and optionally fetches environment variables from a deployed app.`
 
 	cmd.Flags().IntVar(&port, "port", 8001, "Port on which to run the app app proxy")
 	cmd.Flags().IntVar(&appPort, "app-port", runlocal.DEFAULT_PORT, "Port on which to run the app")
@@ -197,6 +200,8 @@ func newRunLocal() *cobra.Command {
 	cmd.Flags().StringSliceVar(&customEnv, "env", nil, "Set environment variables")
 	cmd.Flags().StringVar(&entryPoint, "entry-point", "", "Specify the custom entry point with configuration (.yml file) for the app. Defaults to app.yml")
 	cmd.Flags().StringVar(&debugPort, "debug-port", "", "Port on which to run the debugger")
+	cmd.Flags().StringVar(&appName, "app-name", "", "Name of the deployed app to fetch environment variables from")
+	cmd.Flags().BoolVar(&injectRemoteEnv, "inject-remote-env", true, "Inject environment variables from the deployed app (requires --app-name)")
 	cmd.PreRunE = root.MustWorkspaceClient
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
@@ -212,7 +217,27 @@ func newRunLocal() *cobra.Command {
 			config.DebugPort = debugPort
 		}
 
-		app, env, err := setupApp(cmd, config, spec, customEnv, prepareEnvironment)
+		var remoteEnv []string
+		if appName != "" && injectRemoteEnv {
+			fetcher := appenv.NewEnvFetcher(w)
+			result, err := fetcher.Fetch(ctx, appName)
+			if err != nil {
+				return fmt.Errorf("failed to fetch remote environment variables: %w", err)
+			}
+			cmdio.LogString(ctx, fmt.Sprintf("Fetched %d environment variables from deployed app", len(result.EnvVars)))
+
+			resolver := appenv.NewSecretResolver(w)
+			remoteEnv = resolver.Resolve(ctx, result.EnvVars, result.Resources, spec)
+
+			cmdio.LogString(ctx, "Remote environment variables:")
+			for _, envVar := range remoteEnv {
+				cmdio.LogString(ctx, "  "+envVar)
+			}
+		}
+
+		mergedEnv := append(remoteEnv, customEnv...)
+
+		app, env, err := setupApp(cmd, config, spec, mergedEnv, prepareEnvironment)
 		if err != nil {
 			return err
 		}
@@ -237,6 +262,6 @@ func newRunLocal() *cobra.Command {
 
 func init() {
 	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newRunLocal())
+		cmd.AddCommand(newDevLocal())
 	})
 }
