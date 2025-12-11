@@ -58,7 +58,7 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> print_requests.py //jobs
+>>> print_requests.py --sort //jobs
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
