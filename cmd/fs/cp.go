@@ -52,11 +52,16 @@ func (c *copy) cpDirToDir(sourceDir, targetDir string) error {
 		return fmt.Errorf("source path %s is a directory. Please specify the --recursive flag", sourceDir)
 	}
 
+	// Create cancellable context to ensure cleanup and that all goroutines
+	// are stopped when the function exits on any error path.
+	ctx, cancel := context.WithCancel(c.ctx)
+	defer cancel()
+
 	// Pool of workers to process copy operations in parallel.
-	g, ctx := errgroup.WithContext(c.ctx)
+	g, ctx := errgroup.WithContext(ctx)
 	g.SetLimit(c.concurrency)
 
-	// Walk the source directory, queueing copy operations for processing.
+	// Walk the source directory, queueing file copy operations for processing.
 	sourceFs := filer.NewFS(c.ctx, c.sourceFiler)
 	err := fs.WalkDir(sourceFs, sourceDir, func(sourcePath string, d fs.DirEntry, err error) error {
 		if err != nil {
