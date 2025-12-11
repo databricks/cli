@@ -1,5 +1,12 @@
 {
   "method": "POST",
+  "path": "/api/2.2/jobs/delete",
+  "body": {
+    "job_id": [BAR_ID]
+  }
+}
+{
+  "method": "POST",
   "path": "/api/2.2/jobs/reset",
   "body": {
     "job_id": [FOO_ID],
@@ -16,12 +23,5 @@
         "enabled": true
       }
     }
-  }
-}
-{
-  "method": "POST",
-  "path": "/api/2.2/jobs/delete",
-  "body": {
-    "job_id": [BAR_ID]
   }
 }
