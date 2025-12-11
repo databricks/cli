@@ -137,8 +137,8 @@ Deployment complete!
 >>> diff.py ../out.state_after_migration.json ../out.state_after_deploy.json
 --- ../out.state_after_migration.json
 +++ ../out.state_after_deploy.json
-@@ -1,5 +1,5 @@
- {
+@@ -3,5 +3,5 @@
+  "cli_version": "[DEV_VERSION]",
   "lineage": "[UUID]",
 - "serial": 5,
 + "serial": 6,

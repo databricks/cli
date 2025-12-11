@@ -184,14 +184,13 @@ To start using direct engine, deploy with DATABRICKS_BUNDLE_ENGINE=direct env va
 			}
 		}
 
+		migratedDB := dstate.NewMigratedDatabase(stateDesc.Lineage, stateDesc.Serial+1)
+		migratedDB.State = state
+
 		deploymentBundle := &direct.DeploymentBundle{
 			StateDB: dstate.DeploymentState{
 				Path: tempStatePath,
-				Data: dstate.Database{
-					Serial:  stateDesc.Serial + 1,
-					Lineage: stateDesc.Lineage,
-					State:   state,
-				},
+				Data: migratedDB,
 			},
 		}
 
