@@ -1,4 +1,7 @@
+cp $TESTDIR/../databricks.yml .
+cp $TESTDIR/../empty.yml .
 echo "*" > .gitignore
+
 trace $CLI bundle deploy
 trace print_requests.py --sort //jobs
 
@@ -9,9 +12,12 @@ for name in independent1 independent2 chain_bottom chain_mid chain_top diamond_b
   echo "$id:${upper}_ID" >> ACC_REPLS
 done
 
-title "Delete all - complex graph with chain, diamond, independent, multi-deps"
+# Sanity check plan after deploy
+trace $CLI bundle plan > out.plan_sanity.$DATABRICKS_BUNDLE_ENGINE.txt
+
+title "Delete all via empty.yml"
 cp empty.yml databricks.yml
-trace $CLI bundle plan -o json > out.plan_delete.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle plan > out.plan_delete.$DATABRICKS_BUNDLE_ENGINE.txt
 trace $CLI bundle deploy
 
 trace $CLI bundle destroy --auto-approve

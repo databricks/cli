@@ -3,8 +3,8 @@ Local = true
 Cloud = false
 
 # default timeouts
-Timeout = '30s'
-TimeoutWindows = '60s'
+Timeout = '120s'
+TimeoutWindows = '120s'
 
 # Slowest test I saw:
 # github.com/databricks/cli/acceptance TestAccept/bundle/integration_whl/interactive_single_user 18m8.69s

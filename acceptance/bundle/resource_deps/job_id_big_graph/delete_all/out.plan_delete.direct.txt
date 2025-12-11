@@ -1,0 +1,14 @@
+delete jobs.chain_bottom
+delete jobs.chain_mid
+delete jobs.chain_top
+delete jobs.diamond_bottom
+delete jobs.diamond_left
+delete jobs.diamond_right
+delete jobs.diamond_top
+delete jobs.independent1
+delete jobs.independent2
+delete jobs.multi_child
+delete jobs.multi_parent1
+delete jobs.multi_parent2
+
+Plan: 0 to add, 0 to change, 12 to delete, 0 unchanged
