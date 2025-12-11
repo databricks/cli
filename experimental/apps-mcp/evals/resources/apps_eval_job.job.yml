@@ -33,11 +33,30 @@ resources:
         - name: apps_volume
           default: ${var.apps_volume}
 
+      job_clusters:
+        - job_cluster_key: eval_cluster
+          new_cluster:
+            spark_version: "16.2.x-scala2.12"
+            node_type_id: "n2-standard-4"
+            num_workers: 0
+            data_security_mode: SINGLE_USER
+            spark_conf:
+              spark.databricks.cluster.profile: singleNode
+              spark.master: "local[*]"
+            custom_tags:
+              ResourceClass: SingleNode
+            spark_env_vars:
+              DATABRICKS_HOST: ${workspace.host}
+              DATABRICKS_TOKEN: "{{secrets/apps-mcp-evals/databricks-token}}"
+            init_scripts:
+              - workspace:
+                  destination: ${workspace.file_path}/init/setup_eval.sh
+
       tasks:
         - task_key: run_evals
-          python_wheel_task:
-            package_name: apps_mcp_evals
-            entry_point: main
+          job_cluster_key: eval_cluster
+          spark_python_task:
+            python_file: ${workspace.file_path}/src/run_evals.py
             parameters:
               - --mlflow-experiment
               - ${var.mlflow_experiment}
@@ -47,12 +66,3 @@ resources:
               - ${var.evals_git_url}
               - --apps-volume
               - ${var.apps_volume}
-
-          environment_key: default
-
-      environments:
-        - environment_key: default
-          spec:
-            environment_version: "1"
-            dependencies:
-              - ../dist/*.whl
