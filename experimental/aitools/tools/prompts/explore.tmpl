@@ -10,11 +10,10 @@
 Databricks Data Exploration Guide
 =====================================
 
-{{.WorkspaceInfo}}{{if .WarehouseName}}
-Default SQL Warehouse: {{.WarehouseName}} ({{.WarehouseID}}){{else}}
-Note: No SQL warehouse detected. SQL queries will require warehouse_id to be specified manually.{{end}}{{.ProfilesInfo}}
+{{.WorkspaceContext}}
 
 IMPORTANT: Use the invoke_databricks_cli tool to run all commands below!
+Use workspace_info(profile='<name>') to get details about other workspaces.
 
 
 1. EXECUTING SQL QUERIES
@@ -76,7 +75,99 @@ IMPORTANT: Use the invoke_databricks_cli tool to run all commands below!
 Getting Started:
 - Use the commands above to explore what resources exist in the workspace
 - All commands support --output json for programmatic access
-- Remember to add --profile <name> when working with non-default workspaces
+- To use a different workspace: workspace_info(profile='<name>') then invoke_databricks_cli('--profile <name> <command>')
+
+WORKFLOW PATTERNS FOR NOTEBOOKS
+===============================
+
+Create notebooks locally (.ipynb), fetch data from Databricks, generate visualizations.
+
+## Setup (one-time)
+
+```bash
+# Install uv
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+**pyproject.toml** dev dependencies:
+```toml
+[dependency-groups]
+dev = [
+    "databricks-connect>=15.4.0",
+    "papermill",
+    "nbformat",
+    "matplotlib",
+]
+```
+
+```bash
+# Install deps
+uv sync
+
+# Auto-init spark (no boilerplate in notebooks)
+mkdir -p ~/.ipython/profile_default/startup
+cat > ~/.ipython/profile_default/startup/00-databricks-spark.py << 'EOF'
+try:
+    from databricks.connect import DatabricksSession
+    spark = DatabricksSession.builder.getOrCreate()
+except: pass
+EOF
+```
+
+## Workflow
+
+**Create or update notebook:**
+
+Add exploratory cells to an .ipynb notebook like
+
+```python
+import pandas as pd, matplotlib.pyplot as plt
+
+# Aggregate in Spark, limit for viz
+df = spark.sql("""
+    SELECT category, COUNT(*) as count, AVG(value) as avg_value
+    FROM catalog.schema.table
+    GROUP BY category
+    ORDER BY count DESC
+""").limit(10000).toPandas()
+
+df.plot(x='category', y='avg_value', kind='bar', figsize=(10, 6))
+plt.title('Average Value by Category')
+plt.show()
+```
+
+**Execute:**
+
+Execute the notebook and produce results inline in the ipynb:
+
+```bash
+DATABRICKS_CONFIG_PROFILE=<profile> DATABRICKS_SERVERLESS_COMPUTE_ID=auto \
+  uv run papermill notebook.ipynb notebook_executed.ipynb -k python3
+```
+
+**Iterate:**
+
+Actually iterating over a notebook is MANDATORY. You can't assume that it will just be successful.
+
+Papermill embeds all outputs (stdout, stderr, plots as base64, errors) into the executed .ipynb.
+
+To iterate:
+1. Read `notebook_executed.ipynb` to see results (outputs are in cell JSON)
+2. Check for errors, review data/plots
+4. Optionally, do any quick exploratory queries directly via the CLI
+5. Modify `notebook.ipynb` based on results
+6. Re-execute and repeat
+
+**View in IDE:**
+- `cursor notebook_executed.ipynb` or `code notebook_executed.ipynb`
+- Or deploy: `databricks bundle deploy` and open in workspace browser
+
+## Key Pattern
+
+**Aggregate → Limit → Pandas → Visualize → Read outputs → Iterate**
+
+Always aggregate in Spark (GROUP BY, AVG, COUNT), then `.limit(10000)` before `.toPandas()`. Execute with papermill, read the executed .ipynb to see results, iterate.
+
 
 
 WORKFLOW PATTERNS FOR DATABRICKS PROJECTS
