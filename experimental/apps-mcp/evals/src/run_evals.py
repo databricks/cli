@@ -1,66 +1,13 @@
 #!/usr/bin/env python3
 """Apps-MCP Evaluation Runner for Databricks Jobs."""
 
-import os
 import subprocess
 import sys
 import tempfile
-import time
 from pathlib import Path
 from typing import Optional
 
 import fire
-
-
-def start_docker_daemon() -> bool:
-    """Start Docker daemon with vfs storage driver (works without privileges)."""
-    print("Checking Docker installation...")
-
-    # Check if Docker CLI is available
-    result = subprocess.run(["which", "docker"], capture_output=True, text=True)
-    if result.returncode != 0:
-        print("Docker CLI not found, attempting to install...")
-        subprocess.run(
-            ["sudo", "bash", "-c", "curl -fsSL https://get.docker.com | sh"],
-            check=False,
-        )
-
-    # Check if Docker is already running
-    result = subprocess.run(
-        ["docker", "info"], capture_output=True, text=True, timeout=10
-    )
-    if result.returncode == 0:
-        print("Docker daemon already running")
-        return True
-
-    print("Starting Docker daemon...")
-
-    # Start dockerd in background (config already set by init script)
-    proc = subprocess.Popen(
-        ["sudo", "dockerd"],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-    )
-
-    # Wait for Docker to start
-    for i in range(60):
-        time.sleep(1)
-        result = subprocess.run(
-            ["sudo", "docker", "info"], capture_output=True, text=True, timeout=10
-        )
-        if result.returncode == 0:
-            print(f"Docker daemon started after {i+1}s")
-            # Fix socket permissions
-            subprocess.run(["sudo", "chmod", "666", "/var/run/docker.sock"], check=False)
-            return True
-        if proc.poll() is not None:
-            stdout, stderr = proc.communicate()
-            print(f"dockerd exited with code {proc.returncode}")
-            print(f"stderr: {stderr.decode()[:500]}")
-            break
-
-    print("Failed to start Docker daemon")
-    return False
 
 
 def clone_and_install_klaudbiusz(work_dir: Path, git_url: str) -> Path:
@@ -102,11 +49,6 @@ def main(
     print(f"  Parallelism: {parallelism}")
     print(f"  Apps Volume: {apps_volume or 'not specified'}")
 
-    # Try to start Docker daemon
-    docker_available = start_docker_daemon()
-    if not docker_available:
-        print("Warning: Docker not available, container-based checks will fail")
-
     work_dir = Path(tempfile.mkdtemp(prefix="apps-mcp-evals-"))
     clone_and_install_klaudbiusz(work_dir, evals_git_url)
 
@@ -123,11 +65,13 @@ def main(
     print("Running evaluation...")
     print("=" * 60)
 
+    # Use no_dagger=False to use Dagger mode (runs locally, not in Docker containers)
     report = run_evaluation_simple(
         apps_dir=str(apps_dir),
         mlflow_experiment=mlflow_experiment,
         parallelism=parallelism,
         fast_mode=True,
+        no_dagger=False,
     )
 
     summary = report.get("summary", {})
