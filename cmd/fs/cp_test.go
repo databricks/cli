@@ -1,27 +1,29 @@
 package fs
 
 import (
-	"context"
-	"strings"
+	"errors"
+	"fmt"
 	"testing"
 )
 
 func TestCpConcurrencyValidation(t *testing.T) {
-	ctx := context.Background()
-	cmd := newCpCommand()
-	cmd.SetContext(ctx)
-
-	// Test concurrency = 0
-	cmd.SetArgs([]string{"src", "dst", "--concurrency", "0"})
-	err := cmd.Execute()
-	if err == nil || !strings.Contains(err.Error(), "--concurrency must be at least 1") {
-		t.Errorf("expected error containing '--concurrency must be at least 1', got %v", err)
+	testCases := []struct {
+		concurrency int
+		wantError   error
+	}{
+		{-1337, errInvalidConcurrency},
+		{-1, errInvalidConcurrency},
+		{0, errInvalidConcurrency},
 	}
 
-	// Test concurrency = -1
-	cmd.SetArgs([]string{"src", "dst", "--concurrency", "-1"})
-	err = cmd.Execute()
-	if err == nil || !strings.Contains(err.Error(), "--concurrency must be at least 1") {
-		t.Errorf("expected error containing '--concurrency must be at least 1', got %v", err)
+	for _, tc := range testCases {
+		t.Run(fmt.Sprintf("concurrency=%d", tc.concurrency), func(t *testing.T) {
+			cmd := newCpCommand()
+			cmd.SetArgs([]string{"src", "dst", "--concurrency", fmt.Sprintf("%d", tc.concurrency)})
+			err := cmd.Execute()
+			if !errors.Is(err, tc.wantError) {
+				t.Errorf("expected error %v, got %v", tc.wantError, err)
+			}
+		})
 	}
 }

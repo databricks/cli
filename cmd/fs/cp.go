@@ -21,6 +21,10 @@ import (
 // Default number of concurrent file copy operations.
 const defaultConcurrency = 16
 
+// errInvalidConcurrency is returned when the value of the concurrency
+// flag is invalid.
+var errInvalidConcurrency = errors.New("--concurrency must be at least 1")
+
 type copy struct {
 	overwrite   bool
 	recursive   bool
@@ -197,7 +201,7 @@ func newCpCommand() *cobra.Command {
 
 	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
 		if c.concurrency <= 0 {
-			return fmt.Errorf("--concurrency must be at least 1")
+			return errInvalidConcurrency
 		}
 		return root.MustWorkspaceClient(cmd, args)
 	}
