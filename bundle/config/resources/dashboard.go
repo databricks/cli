@@ -56,6 +56,14 @@ type DashboardConfig struct {
 	//
 	// Defaults to false if not set.
 	EmbedCredentials bool `json:"embed_credentials,omitempty"`
+
+	// DatasetCatalog sets the default catalog for all datasets in this dashboard.
+	// When set, this overrides the catalog specified in individual dataset definitions.
+	DatasetCatalog string `json:"dataset_catalog,omitempty"`
+
+	// DatasetSchema sets the default schema for all datasets in this dashboard.
+	// When set, this overrides the schema specified in individual dataset definitions.
+	DatasetSchema string `json:"dataset_schema,omitempty"`
 }
 
 func (c *DashboardConfig) UnmarshalJSON(b []byte) error {

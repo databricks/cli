@@ -53,6 +53,8 @@ func (r *ResourceDashboard) RemapState(state *resources.DashboardConfig) *resour
 		"Path",
 		"UpdateTime",
 		"SerializedDashboard",
+		"DatasetCatalog",
+		"DatasetSchema",
 	}...)
 
 	// EmbedCredentials must always be included in ForceSendFields to ensure it's serialized
@@ -68,6 +70,8 @@ func (r *ResourceDashboard) RemapState(state *resources.DashboardConfig) *resour
 		WarehouseId:         state.WarehouseId,
 		SerializedDashboard: state.SerializedDashboard,
 		EmbedCredentials:    state.EmbedCredentials,
+		DatasetCatalog:      state.DatasetCatalog,
+		DatasetSchema:       state.DatasetSchema,
 
 		ForceSendFields: forceSendFields,
 
@@ -119,6 +123,8 @@ func (r *ResourceDashboard) DoRead(ctx context.Context, id string) (*resources.D
 		WarehouseId:         dashboard.WarehouseId,
 		SerializedDashboard: dashboard.SerializedDashboard,
 		ParentPath:          ensureWorkspacePrefix(dashboard.ParentPath),
+		DatasetCatalog:      "",
+		DatasetSchema:       "",
 
 		// Output only fields.
 		CreateTime:      dashboard.CreateTime,
@@ -193,6 +199,8 @@ func responseToState(createOrUpdateResp *dashboards.Dashboard, publishResp *dash
 		WarehouseId:         createOrUpdateResp.WarehouseId,
 		SerializedDashboard: serializedDashboard,
 		ParentPath:          ensureWorkspacePrefix(createOrUpdateResp.ParentPath),
+		DatasetCatalog:      "",
+		DatasetSchema:       "",
 
 		// Output only fields
 		CreateTime:      createOrUpdateResp.CreateTime,
@@ -213,11 +221,9 @@ func (r *ResourceDashboard) DoCreate(ctx context.Context, config *resources.Dash
 	}
 
 	createResp, err := r.client.Lakeview.Create(ctx, dashboards.CreateDashboardRequest{
-		Dashboard: dashboard,
-
-		// Note: these remain unset until there is a TF release with support for these fields.
-		DatasetCatalog: "",
-		DatasetSchema:  "",
+		Dashboard:      dashboard,
+		DatasetCatalog: config.DatasetCatalog,
+		DatasetSchema:  config.DatasetSchema,
 
 		ForceSendFields: nil,
 	})
@@ -230,11 +236,9 @@ func (r *ResourceDashboard) DoCreate(ctx context.Context, config *resources.Dash
 			return "", nil, fmt.Errorf("failed to create parent directory: %w", err)
 		}
 		createResp, err = r.client.Lakeview.Create(ctx, dashboards.CreateDashboardRequest{
-			Dashboard: dashboard,
-
-			// Note: these remain unset until there is a TF release with support for these fields.
-			DatasetCatalog: "",
-			DatasetSchema:  "",
+			Dashboard:      dashboard,
+			DatasetCatalog: config.DatasetCatalog,
+			DatasetSchema:  config.DatasetSchema,
 
 			ForceSendFields: nil,
 		})
@@ -268,12 +272,10 @@ func (r *ResourceDashboard) DoUpdate(ctx context.Context, id string, config *res
 	}
 
 	updateResp, err := r.client.Lakeview.Update(ctx, dashboards.UpdateDashboardRequest{
-		DashboardId: id,
-		Dashboard:   dashboard,
-
-		// Note: these remain unset until there is a TF release with support for these fields.
-		DatasetCatalog: "",
-		DatasetSchema:  "",
+		DashboardId:    id,
+		Dashboard:      dashboard,
+		DatasetCatalog: config.DatasetCatalog,
+		DatasetSchema:  config.DatasetSchema,
 
 		ForceSendFields: nil,
 	})
