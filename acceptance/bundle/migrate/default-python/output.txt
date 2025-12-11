@@ -138,7 +138,7 @@ Deployment complete!
 --- ../out.state_after_migration.json
 +++ ../out.state_after_deploy.json
 @@ -3,5 +3,5 @@
-  "cli_version": "",
+  "cli_version": "[DEV_VERSION]",
   "lineage": "[UUID]",
 - "serial": 5,
 + "serial": 6,

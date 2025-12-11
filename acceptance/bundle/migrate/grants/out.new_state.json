@@ -1,6 +1,6 @@
 {
- "state_version": 0,
- "cli_version": "",
+ "state_version": 1,
+ "cli_version": "[DEV_VERSION]",
  "lineage": "[UUID]",
  "serial": 9,
  "state": {
