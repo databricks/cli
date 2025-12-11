@@ -46,22 +46,9 @@ def install_klaudbiusz_deps(klaudbiusz_dir: Path) -> None:
 
 def get_prompts(prompts_name: str) -> dict:
     """Load prompts from klaudbiusz."""
-    if prompts_name == "databricks":
-        return {
-            "churn-risk-dashboard": "Build a churn risk dashboard showing customers with less than 30 day login activity, declining usage trends, and support ticket volume. Calculate a risk score.",
-            "revenue-by-channel": "Show daily revenue by channel (store/web/catalog) for the last 90 days with week-over-week growth rates and contribution percentages.",
-            "customer-rfm-segments": "Create customer segments using RFM analysis (recency, frequency, monetary). Show 4-5 clusters with average spend, purchase frequency, and last order date.",
-            "taxi-trip-metrics": "Calculate taxi trip metrics: average fare by distance bracket and time of day. Show daily trip volume and revenue trends.",
-            "slow-moving-inventory": "Identify slow-moving inventory: products with more than 90 days in stock, low turnover ratio, and current warehouse capacity by location.",
-        }
-    elif prompts_name == "test":
-        return {
-            "hello-world": "Create a simple hello world app that displays a greeting message.",
-        }
-    else:
-        return {
-            "sample-dashboard": "Create a sample data dashboard with charts showing sales trends.",
-        }
+    from cli.prompts import get_prompts as klaudbiusz_get_prompts
+
+    return klaudbiusz_get_prompts(prompts_name)
 
 
 def run_generation(
