@@ -123,6 +123,7 @@ func (r *ResourceDashboard) DoRead(ctx context.Context, id string) (*resources.D
 		WarehouseId:         dashboard.WarehouseId,
 		SerializedDashboard: dashboard.SerializedDashboard,
 		ParentPath:          ensureWorkspacePrefix(dashboard.ParentPath),
+		// diffs are detected via etags, which will change if dataset_catalog/dataset_schema is updated.
 		DatasetCatalog:      "",
 		DatasetSchema:       "",
 

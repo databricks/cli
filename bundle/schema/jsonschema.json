@@ -461,6 +461,12 @@
                         "description": "UUID identifying the dashboard.",
                         "$ref": "#/$defs/string"
                       },
+                      "dataset_catalog": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "dataset_schema": {
+                        "$ref": "#/$defs/string"
+                      },
                       "display_name": {
                         "description": "The display name of the dashboard.",
                         "$ref": "#/$defs/string"

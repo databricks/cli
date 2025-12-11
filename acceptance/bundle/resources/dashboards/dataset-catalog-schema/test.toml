@@ -3,6 +3,7 @@ Cloud = true
 RequiresWarehouse = true
 RecordRequests = true
 
+# TODO: test terraform once commit had been released (https://github.com/databricks/terraform-provider-databricks/pull/5259)
 [EnvMatrix]
   DATABRICKS_BUNDLE_ENGINE = ["direct"]
 

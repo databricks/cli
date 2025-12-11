@@ -59,10 +59,12 @@ type DashboardConfig struct {
 
 	// DatasetCatalog sets the default catalog for all datasets in this dashboard.
 	// When set, this overrides the catalog specified in individual dataset definitions.
+	// These are request only parameters and not returned by the GET API.
 	DatasetCatalog string `json:"dataset_catalog,omitempty"`
 
 	// DatasetSchema sets the default schema for all datasets in this dashboard.
 	// When set, this overrides the schema specified in individual dataset definitions.
+	// These are request only parameters and not returned by the GET API.
 	DatasetSchema string `json:"dataset_schema,omitempty"`
 }
 
