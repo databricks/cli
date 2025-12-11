@@ -18,13 +18,13 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-// Maximum number of concurrent file copy operations. The number was set
-// conservatively and might be adjusted in the future.
-const maxWorkers = 16
+// Default number of concurrent file copy operations.
+const defaultConcurrency = 16
 
 type copy struct {
-	overwrite bool
-	recursive bool
+	overwrite   bool
+	recursive   bool
+	concurrency int
 
 	ctx          context.Context
 	sourceFiler  filer.Filer
@@ -33,11 +33,6 @@ type copy struct {
 	targetScheme string
 
 	mu sync.Mutex // protect output from concurrent writes
-}
-
-type copyTask struct {
-	sourcePath string
-	targetPath string
 }
 
 // cpDirToDir recursively copies the contents of a directory to another
@@ -53,35 +48,13 @@ func (c *copy) cpDirToDir(sourceDir, targetDir string) error {
 		return fmt.Errorf("source path %s is a directory. Please specify the --recursive flag", sourceDir)
 	}
 
-	// Walk the source directory and collect all files to copy.
-	var tasks []copyTask
-	sourceFs := filer.NewFS(c.ctx, c.sourceFiler)
-	err := fs.WalkDir(sourceFs, sourceDir, c.cpCollectCallback(sourceDir, targetDir, &tasks))
-	if err != nil {
-		return err
-	}
-
-	if len(tasks) == 0 {
-		return nil // no file to copy
-	}
-
-	// Process each file copy in parallel using a fixed number of workers.
+	// Pool of workers to process copy operations in parallel.
 	g, ctx := errgroup.WithContext(c.ctx)
-	g.SetLimit(min(maxWorkers, len(tasks)))
-	for _, task := range tasks {
-		g.Go(func() error {
-			if ctx.Err() != nil {
-				return ctx.Err()
-			}
-			return c.cpFileToFile(task.sourcePath, task.targetPath)
-		})
-	}
+	g.SetLimit(c.concurrency)
 
-	return g.Wait()
-}
-
-func (c *copy) cpCollectCallback(sourceDir, targetDir string, tasks *[]copyTask) fs.WalkDirFunc {
-	return func(sourcePath string, d fs.DirEntry, err error) error {
+	// Walk the source directory, queueing copy operations for processing.
+	sourceFs := filer.NewFS(c.ctx, c.sourceFiler)
+	err := fs.WalkDir(sourceFs, sourceDir, func(sourcePath string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
@@ -96,18 +69,26 @@ func (c *copy) cpCollectCallback(sourceDir, targetDir string, tasks *[]copyTask)
 		// Compute target path for the file.
 		targetPath := path.Join(targetDir, relPath)
 
-		// Create directory and return early.
+		// Create the directory synchronously. This must happen before files
+		// are copied into it, and WalkDir guarantees directories are visited
+		// before their contents.
 		if d.IsDir() {
 			return c.targetFiler.Mkdir(c.ctx, targetPath)
 		}
 
-		// Collect file copy tasks.
-		*tasks = append(*tasks, copyTask{
-			sourcePath: sourcePath,
-			targetPath: targetPath,
+		// Queue file copy operation for processing.
+		g.Go(func() error {
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+			return c.cpFileToFile(sourcePath, targetPath)
 		})
 		return nil
+	})
+	if err != nil {
+		return err
 	}
+	return g.Wait()
 }
 
 func (c *copy) cpFileToDir(sourcePath, targetDir string) error {
@@ -206,13 +187,20 @@ func newCpCommand() *cobra.Command {
 	  When copying a file, if TARGET_PATH is a directory, the file will be created
 	  inside the directory, otherwise the file is created at TARGET_PATH.
 	`,
-		Args:    root.ExactArgs(2),
-		PreRunE: root.MustWorkspaceClient,
+		Args: root.ExactArgs(2),
 	}
 
 	var c copy
 	cmd.Flags().BoolVar(&c.overwrite, "overwrite", false, "overwrite existing files")
 	cmd.Flags().BoolVarP(&c.recursive, "recursive", "r", false, "recursively copy files from directory")
+	cmd.Flags().IntVar(&c.concurrency, "concurrency", defaultConcurrency, "number of parallel copy operations")
+
+	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
+		if c.concurrency <= 0 {
+			return fmt.Errorf("--concurrency must be at least 1")
+		}
+		return root.MustWorkspaceClient(cmd, args)
+	}
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
