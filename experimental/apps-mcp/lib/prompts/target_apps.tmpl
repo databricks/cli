@@ -22,7 +22,7 @@ This is battle-tested to catch common issues before deployment. Prefer using thi
 
 ### View App Logs
 To troubleshoot deployed apps, view their logs:
-  invoke_databricks_cli 'workspace apps logs <app-name> --tail-lines 100'
+  invoke_databricks_cli 'apps logs <app-name> --tail-lines 100'
 
 Add --follow to stream logs continuously. Useful for debugging deployment failures or runtime issues.
 
