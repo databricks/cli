@@ -58,5 +58,5 @@ Recommendations for improvement (not blocking).
 Any clarifications needed.
 
 ## Command reference:
-1. You can run and generate golden files for local acceptance tests by running: go test -timeout 300s -run ^TestAccept/$1$ github.com/databricks/cli/acceptance -update <path-to-test-from-acceotance/> (e.g. selftest)
-2. You can run and generate golden files for cloud acceptance tests by running: deco env run -i -n azure-prod-ucws -- go test -timeout 600s -run ^TestAccept/$1$ github.com/databricks/cli/acceptance -update <path-to-test-from-acceotance/>
+1. You can run and generate golden files for local acceptance tests by running: go test -timeout 300s -run ^TestAccept/$1$ github.com/databricks/cli/acceptance -update <path-to-test-from-acceptance/> (e.g. selftest)
+2. You can run and generate golden files for cloud acceptance tests by running: deco env run -i -n azure-prod-ucws -- go test -timeout 600s -run ^TestAccept/$1$ github.com/databricks/cli/acceptance -update <path-to-test-from-acceptance/>
