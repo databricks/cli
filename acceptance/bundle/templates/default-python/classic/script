@@ -11,12 +11,13 @@ $CLI bundle plan -o json -t dev > ../../out.plan_dev.$DATABRICKS_BUNDLE_ENGINE.j
 $CLI bundle plan -o json -t prod > ../../out.plan_prod.$DATABRICKS_BUNDLE_ENGINE.json
 
 rm ../../out.requests.txt
-trace $CLI bundle deploy -t dev
+# With --readplan variant we don't build artifacts, so we can filter out relevant log lines
+$CLI bundle deploy -t dev $(readplanarg ../../out.plan_dev.direct.json) 2>&1 | grep -vE '^Building python_artifact|^Uploading .databricks'
 print_requests.py --sort '^//import-file/' '^//telemetry-ext' > ../../out.requests.dev.$DATABRICKS_BUNDLE_ENGINE.txt
 trace $CLI bundle plan -t dev  # check if if there is drift
 trace $CLI bundle plan -t dev -o json > ../../out.plan_after_deploy_dev.$DATABRICKS_BUNDLE_ENGINE.json
 
-trace $CLI bundle deploy -t prod
+$CLI bundle deploy -t prod $(readplanarg ../../out.plan_prod.direct.json) 2>&1 | grep -vE '^Building python_artifact|^Uploading dist'
 print_requests.py --sort '^//import-file/' '^//telemetry-ext' > ../../out.requests.prod.$DATABRICKS_BUNDLE_ENGINE.txt
 trace $CLI bundle plan -t prod  # check if there is drift
 trace $CLI bundle plan -t prod -o json > ../../out.plan_after_deploy_prod.$DATABRICKS_BUNDLE_ENGINE.json
