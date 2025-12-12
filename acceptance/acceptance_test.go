@@ -336,7 +336,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 			if testdiff.OverwriteMode && len(expanded) > 1 {
 				// All variants of the test are producing the same output,
 				// there is no need to run the concurrently when updating.
-				// Exception: if EnvVaryOutput is configured with multiple values, we must
+				// Exception: if EnvVaryOutput is configured, we must
 				// run all variants to record variant-specific outputs.
 				if config.EnvVaryOutput == nil || len(config.EnvMatrix[*config.EnvVaryOutput]) <= 1 {
 					expanded = expanded[0:1]
@@ -351,6 +351,9 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 				runTest(t, dir, 0, coverDir, repls.Clone(), config, expanded[0], envFilters)
 			} else {
 				for ind, envset := range expanded {
+					if forbiddenEnvSet(envset) {
+						continue
+					}
 					envname := strings.Join(envset, "/")
 					t.Run(envname, func(t *testing.T) {
 						if !inprocessMode {
@@ -366,6 +369,23 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	t.Logf("Summary (dirs): %d/%d/%d run/selected/total, %d skipped", selectedDirs-skippedDirs, selectedDirs, totalDirs, skippedDirs)
 
 	return selectedDirs - skippedDirs
+}
+
+func forbiddenEnvSet(envset []string) bool {
+	hasTerraform := false
+	hasReadplan := false
+
+	for _, pair := range envset {
+		if pair == "DATABRICKS_BUNDLE_ENGINE=terraform" {
+			hasTerraform = true
+		}
+		if pair == "READPLAN=1" {
+			hasReadplan = true
+		}
+	}
+
+	// Do not run terraform tests with --readplan option:
+	return hasTerraform && hasReadplan
 }
 
 func getEnvFilters(t *testing.T) []string {

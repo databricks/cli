@@ -136,7 +136,8 @@ func uploadLibraries(ctx context.Context, b *bundle.Bundle, libs map[string][]li
 }
 
 // The deploy phase deploys artifacts and resources.
-func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHandler, engine engine.EngineType, libs map[string][]libraries.LocationToUpdate) {
+// If readPlanPath is provided, the plan is loaded from that file instead of being calculated.
+func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHandler, engine engine.EngineType, libs map[string][]libraries.LocationToUpdate, readPlanPath string) {
 	log.Info(ctx, "Phase: deploy")
 
 	// Core mutators that CRUD resources and modify deployment state. These
@@ -174,7 +175,25 @@ func Deploy(ctx context.Context, b *bundle.Bundle, outputHandler sync.OutputHand
 		return
 	}
 
-	plan := RunPlan(ctx, b, engine)
+	var plan *deployplan.Plan
+	if readPlanPath != "" {
+		// Load plan from file instead of calculating
+		var err error
+		plan, err = deployplan.LoadPlanFromFile(readPlanPath)
+		if err != nil {
+			logdiag.LogError(ctx, err)
+			return
+		}
+		// Initialize DeploymentBundle for applying the loaded plan
+		_, localPath := b.StateFilenameDirect(ctx)
+		err = b.DeploymentBundle.InitForApply(ctx, b.WorkspaceClient(), localPath, plan)
+		if err != nil {
+			logdiag.LogError(ctx, err)
+			return
+		}
+	} else {
+		plan = RunPlan(ctx, b, engine)
+	}
 	if logdiag.HasError(ctx) {
 		return
 	}

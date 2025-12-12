@@ -120,3 +120,11 @@ as-test-sp() {
     DATABRICKS_AUTH_TYPE="" \
     "$@"
 }
+
+readplanarg() {
+    if [[ -n "$READPLAN" ]]; then
+        printf -- "--readplan %s" "$1"
+    else
+        printf ""
+    fi
+}

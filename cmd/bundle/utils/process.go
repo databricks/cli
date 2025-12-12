@@ -65,6 +65,10 @@ type ProcessOptions struct {
 	PreDeployChecks bool
 	Deploy          bool
 
+	// Path to pre-computed plan JSON file (direct engine only).
+	// When set, skips Build and PreDeployChecks phases, loads plan from file instead of calculating.
+	ReadPlanPath string
+
 	// Indicate whether the bundle operation originates from the pipelines CLI
 	IsPipelinesCLI bool
 }
@@ -206,9 +210,18 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, 
 		}
 	}
 
+	// When ReadPlanPath is set, validate engine and skip Build/PreDeployChecks
+	skipBuildAndChecks := opts.ReadPlanPath != ""
+	if skipBuildAndChecks {
+		if !stateDesc.Engine.IsDirect() {
+			logdiag.LogError(ctx, errors.New("--readplan is only supported with direct engine (set DATABRICKS_BUNDLE_ENGINE=direct)"))
+			return b, stateDesc, root.ErrAlreadyPrinted
+		}
+	}
+
 	var libs phases.LibLocationMap
 
-	if opts.Build || opts.Deploy {
+	if (opts.Build || opts.Deploy) && !skipBuildAndChecks {
 		t2 := time.Now()
 		libs = phases.Build(ctx, b)
 		b.Metrics.ExecutionTimes = append(b.Metrics.ExecutionTimes, protos.IntMapEntry{
@@ -221,7 +234,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, 
 		}
 	}
 
-	if opts.PreDeployChecks || opts.Deploy {
+	if (opts.PreDeployChecks || opts.Deploy) && !skipBuildAndChecks {
 		downgradeWarningToError := !opts.Deploy
 		phases.PreDeployChecks(ctx, b, downgradeWarningToError, stateDesc.Engine)
 
@@ -239,7 +252,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, 
 		}
 
 		t3 := time.Now()
-		phases.Deploy(ctx, b, outputHandler, stateDesc.Engine, libs)
+		phases.Deploy(ctx, b, outputHandler, stateDesc.Engine, libs, opts.ReadPlanPath)
 		b.Metrics.ExecutionTimes = append(b.Metrics.ExecutionTimes, protos.IntMapEntry{
 			Key:   "phases.Deploy",
 			Value: time.Since(t3).Milliseconds(),

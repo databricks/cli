@@ -37,6 +37,45 @@ func (b *DeploymentBundle) init(client *databricks.WorkspaceClient) error {
 	return err
 }
 
+// InitForApply initializes the DeploymentBundle for applying a pre-computed plan.
+// This is used when --readplan is specified to skip the planning phase.
+func (b *DeploymentBundle) InitForApply(ctx context.Context, client *databricks.WorkspaceClient, statePath string, plan *deployplan.Plan) error {
+	err := b.StateDB.Open(statePath)
+	if err != nil {
+		return fmt.Errorf("failed to read state from %s: %w", statePath, err)
+	}
+
+	err = b.init(client)
+	if err != nil {
+		return err
+	}
+
+	// Convert NewState.Value from map[string]interface{} to proper typed structs.
+	// When JSON is deserialized, struct fields become maps. We need to convert them
+	// back to the expected types for each resource.
+	for resourceKey, entry := range plan.Plan {
+		if entry.NewState == nil || entry.NewState.Value == nil {
+			continue
+		}
+
+		adapter, err := b.getAdapterForKey(resourceKey)
+		if err != nil {
+			return fmt.Errorf("cannot convert plan entry %s: %w", resourceKey, err)
+		}
+
+		// StateType returns *T (pointer to struct), typeConvert expects this
+		convertedValue, err := typeConvert(adapter.StateType(), entry.NewState.Value)
+		if err != nil {
+			return fmt.Errorf("cannot convert plan entry %s: %w", resourceKey, err)
+		}
+
+		entry.NewState.Value = convertedValue
+	}
+
+	b.Plan = plan
+	return nil
+}
+
 func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root, statePath string) (*deployplan.Plan, error) {
 	err := b.StateDB.Open(statePath)
 	if err != nil {
