@@ -13,6 +13,7 @@ func VisitPaths(root dyn.Value, fn VisitFunc) (dyn.Value, error) {
 		VisitJobLibrariesPaths,
 		VisitAppPaths,
 		VisitArtifactPaths,
+		VisitAlertPaths,
 		VisitDashboardPaths,
 		VisitPipelinePaths,
 		VisitPipelineLibrariesPaths,

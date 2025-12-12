@@ -90,7 +90,7 @@ linters:
       - legacy
       - std-error-handling
     rules:
-      - path-except: bundle/direct/dresources
+      - path-except: bundle/direct/dresources|bundle/config/mutator/load_dbalert_files.go
         linters:
           - exhaustruct
       - path: bundle/direct/dresources/all_test.go
