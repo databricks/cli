@@ -574,14 +574,14 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 			if err != nil {
 				return nil, err
 			}
-			inputConfig = inputConfigStructVar.Value
+			inputConfig = inputConfigStructVar.GetValue()
 			baseRefs = inputConfigStructVar.Refs
 		} else if strings.HasSuffix(node, ".grants") {
 			inputConfigStructVar, err := dresources.PrepareGrantsInputConfig(inputConfig, node)
 			if err != nil {
 				return nil, err
 			}
-			inputConfig = inputConfigStructVar.Value
+			inputConfig = inputConfigStructVar.GetValue()
 			baseRefs = inputConfigStructVar.Refs
 		}
 
