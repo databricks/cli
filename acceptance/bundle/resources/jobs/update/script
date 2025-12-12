@@ -1,20 +1,25 @@
 echo "*" > .gitignore
 trace $CLI bundle plan
 $CLI bundle plan -o json > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
-trace $CLI bundle deploy
+$CLI bundle deploy $(readplanarg out.plan_create.direct.json)
+trace print_requests.py //jobs > out.create.requests.json
+
 print_state.py > out.state.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle plan
 trace $CLI bundle plan -o json > out.plan_skip.$DATABRICKS_BUNDLE_ENGINE.json
 
-trace print_requests.py //jobs > out.create.requests.json
+$CLI bundle deploy $(readplanarg out.plan_skip.direct.json)
+trace print_requests.py //jobs
 
 title "Update trigger.periodic.unit and re-deploy"
 trace update_file.py databricks.yml DAYS HOURS
 trace $CLI bundle plan
 $CLI bundle plan -o json > out.plan_update.$DATABRICKS_BUNDLE_ENGINE.json
-trace $CLI bundle deploy
-trace $CLI bundle plan
+
+$CLI bundle deploy $(readplanarg out.plan_update.direct.json)
 trace print_requests.py //jobs | jq 'del(.body.new_settings.run_as, .body.new_settings.webhook_notifications, .body.new_settings.email_notifications)' > out.update.requests.json
+
+trace $CLI bundle plan
 
 title "Fetch job ID and verify remote state"
 

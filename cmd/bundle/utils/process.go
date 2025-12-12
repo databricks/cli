@@ -65,6 +65,10 @@ type ProcessOptions struct {
 	PreDeployChecks bool
 	Deploy          bool
 
+	// Path to pre-computed plan JSON file (direct engine only).
+	// When set, skips Build and PreDeployChecks phases, loads plan from file instead of calculating.
+	ReadPlanPath string
+
 	// Indicate whether the bundle operation originates from the pipelines CLI
 	IsPipelinesCLI bool
 }
@@ -152,7 +156,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, 
 
 	var stateDesc *statemgmt.StateDesc
 
-	shouldReadState := opts.ReadState || opts.AlwaysPull || opts.InitIDs || opts.ErrorOnEmptyState || opts.PreDeployChecks || opts.Deploy
+	shouldReadState := opts.ReadState || opts.AlwaysPull || opts.InitIDs || opts.ErrorOnEmptyState || opts.PreDeployChecks || opts.Deploy || opts.ReadPlanPath != ""
 
 	if shouldReadState {
 		// PullResourcesState depends on stateFiler which needs b.Config.Workspace.StatePath which is set in phases.Initialize
@@ -176,6 +180,18 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, 
 				return b, stateDesc, root.ErrAlreadyPrinted
 			}
 		}
+	}
+
+	if opts.ReadPlanPath != "" {
+		if !stateDesc.Engine.IsDirect() {
+			logdiag.LogError(ctx, errors.New("--readplan is only supported with direct engine (set DATABRICKS_BUNDLE_ENGINE=direct)"))
+			return b, stateDesc, root.ErrAlreadyPrinted
+		}
+		opts.Build = false
+		opts.PreDeployChecks = false
+	} else if opts.Deploy {
+		opts.Build = true
+		opts.PreDeployChecks = true
 	}
 
 	if opts.FastValidate {
@@ -208,7 +224,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, 
 
 	var libs phases.LibLocationMap
 
-	if opts.Build || opts.Deploy {
+	if opts.Build {
 		t2 := time.Now()
 		libs = phases.Build(ctx, b)
 		b.Metrics.ExecutionTimes = append(b.Metrics.ExecutionTimes, protos.IntMapEntry{
@@ -221,7 +237,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, 
 		}
 	}
 
-	if opts.PreDeployChecks || opts.Deploy {
+	if opts.PreDeployChecks {
 		downgradeWarningToError := !opts.Deploy
 		phases.PreDeployChecks(ctx, b, downgradeWarningToError, stateDesc.Engine)
 
@@ -239,7 +255,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, 
 		}
 
 		t3 := time.Now()
-		phases.Deploy(ctx, b, outputHandler, stateDesc.Engine, libs)
+		phases.Deploy(ctx, b, outputHandler, stateDesc.Engine, libs, opts.ReadPlanPath)
 		b.Metrics.ExecutionTimes = append(b.Metrics.ExecutionTimes, protos.IntMapEntry{
 			Key:   "phases.Deploy",
 			Value: time.Since(t3).Milliseconds(),

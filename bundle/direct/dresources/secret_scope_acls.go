@@ -45,15 +45,15 @@ func PrepareSecretScopeAclsInputConfig(inputConfig []resources.SecretScopePermis
 		acls = append(acls, acl)
 	}
 
-	return &structvar.StructVar{
-		Value: &SecretScopeAclsState{
+	return structvar.NewStructVar(
+		&SecretScopeAclsState{
 			ScopeName: "", // Always a reference, defined in Refs below
 			Acls:      acls,
 		},
-		Refs: map[string]string{
+		map[string]string{
 			"scope_name": "${" + baseNode + ".name}",
 		},
-	}, nil
+	)
 }
 
 func (*ResourceSecretScopeAcls) New(client *databricks.WorkspaceClient) *ResourceSecretScopeAcls {

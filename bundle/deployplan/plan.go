@@ -2,7 +2,9 @@ package deployplan
 
 import (
 	"cmp"
+	"encoding/json"
 	"fmt"
+	"os"
 	"slices"
 	"sync"
 
@@ -32,6 +34,24 @@ func NewPlan() *Plan {
 		Plan:        make(map[string]*PlanEntry),
 		lockmap:     newLockmap(),
 	}
+}
+
+// LoadPlanFromFile reads a plan from a JSON file.
+func LoadPlanFromFile(path string) (*Plan, error) {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("reading plan file: %w", err)
+	}
+	var plan Plan
+	if err := json.Unmarshal(data, &plan); err != nil {
+		return nil, fmt.Errorf("parsing plan JSON: %w", err)
+	}
+	// Initialize internal fields that are not serialized
+	plan.lockmap = newLockmap()
+	if plan.Plan == nil {
+		plan.Plan = make(map[string]*PlanEntry)
+	}
+	return &plan, nil
 }
 
 type PlanEntry struct {
