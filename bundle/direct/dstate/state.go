@@ -1,6 +1,7 @@
 package dstate
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -113,7 +114,9 @@ func (db *DeploymentState) Open(path string) error {
 		return err
 	}
 
-	err = json.Unmarshal(data, &db.Data)
+	dec := json.NewDecoder(bytes.NewReader(data))
+	dec.UseNumber()
+	err = dec.Decode(&db.Data)
 	if err != nil {
 		return err
 	}
