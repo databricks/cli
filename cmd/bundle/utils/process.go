@@ -156,7 +156,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, 
 
 	var stateDesc *statemgmt.StateDesc
 
-	shouldReadState := opts.ReadState || opts.AlwaysPull || opts.InitIDs || opts.ErrorOnEmptyState || opts.PreDeployChecks || opts.Deploy
+	shouldReadState := opts.ReadState || opts.AlwaysPull || opts.InitIDs || opts.ErrorOnEmptyState || opts.PreDeployChecks || opts.Deploy || opts.ReadPlanPath != ""
 
 	if shouldReadState {
 		// PullResourcesState depends on stateFiler which needs b.Config.Workspace.StatePath which is set in phases.Initialize
@@ -180,6 +180,18 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, 
 				return b, stateDesc, root.ErrAlreadyPrinted
 			}
 		}
+	}
+
+	if opts.ReadPlanPath != "" {
+		if !stateDesc.Engine.IsDirect() {
+			logdiag.LogError(ctx, errors.New("--readplan is only supported with direct engine (set DATABRICKS_BUNDLE_ENGINE=direct)"))
+			return b, stateDesc, root.ErrAlreadyPrinted
+		}
+		opts.Build = false
+		opts.PreDeployChecks = false
+	} else if opts.Deploy {
+		opts.Build = true
+		opts.PreDeployChecks = true
 	}
 
 	if opts.FastValidate {
@@ -210,18 +222,9 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, 
 		}
 	}
 
-	// When ReadPlanPath is set, validate engine and skip Build/PreDeployChecks
-	skipBuildAndChecks := opts.ReadPlanPath != ""
-	if skipBuildAndChecks {
-		if !stateDesc.Engine.IsDirect() {
-			logdiag.LogError(ctx, errors.New("--readplan is only supported with direct engine (set DATABRICKS_BUNDLE_ENGINE=direct)"))
-			return b, stateDesc, root.ErrAlreadyPrinted
-		}
-	}
-
 	var libs phases.LibLocationMap
 
-	if (opts.Build || opts.Deploy) && !skipBuildAndChecks {
+	if opts.Build {
 		t2 := time.Now()
 		libs = phases.Build(ctx, b)
 		b.Metrics.ExecutionTimes = append(b.Metrics.ExecutionTimes, protos.IntMapEntry{
@@ -234,7 +237,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, 
 		}
 	}
 
-	if (opts.PreDeployChecks || opts.Deploy) && !skipBuildAndChecks {
+	if opts.PreDeployChecks {
 		downgradeWarningToError := !opts.Deploy
 		phases.PreDeployChecks(ctx, b, downgradeWarningToError, stateDesc.Engine)
 
