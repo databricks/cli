@@ -1,7 +1,6 @@
 package direct
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -210,15 +209,9 @@ func (d *DeploymentUnit) Resize(ctx context.Context, db *dstate.DeploymentState,
 	return nil
 }
 
-func typeConvert(destType reflect.Type, src any) (any, error) {
-	raw, err := json.Marshal(src)
-	if err != nil {
-		return nil, fmt.Errorf("marshalling: %w", err)
-	}
-
+func parseState(destType reflect.Type, raw json.RawMessage) (any, error) {
 	destPtr := reflect.New(destType).Interface()
-	dec := json.NewDecoder(bytes.NewReader(raw))
-	err = dec.Decode(destPtr)
+	err := json.Unmarshal(raw, destPtr)
 	if err != nil {
 		return nil, fmt.Errorf("unmarshalling into %s: %w", destType, err)
 	}
