@@ -1,7 +1,7 @@
 ---
-name: databricks-apps
-description: Guide for building and deploying Databricks Apps using AppKit. Use when creating data visualization apps, dashboards and similar data-oriented apps. Covers scaffolding, development, validation, and deployment.
----
+name: databricks-toolset
+description: REQUIRED before building dashboards, data apps, or analytics tools. Provides project scaffolding, SQL data access, and deployment commands. Invoke this skill first - do not start implementation without it. User is a Databricks power user.
+----
 
 # Databricks Apps Development Guide
 
