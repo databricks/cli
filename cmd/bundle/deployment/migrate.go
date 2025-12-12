@@ -240,9 +240,12 @@ To start using direct engine, deploy with DATABRICKS_BUNDLE_ENGINE=direct env va
 			if etag == "" {
 				continue
 			}
-			err := structaccess.Set(planEntry.NewState.Value, structpath.NewStringKey(nil, "etag"), etag)
+			err := structaccess.Set(planEntry.NewState.GetValue(), structpath.NewStringKey(nil, "etag"), etag)
 			if err != nil {
 				return fmt.Errorf("failed to set etag on %s: %w", key, err)
+			}
+			if err := planEntry.NewState.Save(); err != nil {
+				return fmt.Errorf("failed to save state for %s: %w", key, err)
 			}
 		}
 
