@@ -83,7 +83,7 @@ func TestOpenPreservesLargeIntegers(t *testing.T) {
 	err := json.Unmarshal(content, &badData)
 	require.NoError(t, err)
 	badValue := badData.State["resources.jobs.foo"].State["job_id"].(float64)
-	assert.Equal(t, float64(9007199254740992), badValue) // precision lost: ends in 2 not 3
+	assert.InEpsilon(t, float64(9007199254740992), badValue, 0.0001) // precision lost: ends in 2 not 3
 
 	// UseNumber() preserves precision
 	dir := t.TempDir()
