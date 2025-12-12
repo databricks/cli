@@ -17,20 +17,24 @@ type TestObj struct {
 
 // newTestStructVar creates a fresh StructVar instance for testing
 func newTestStructVar() *structvar.StructVar {
-	return &structvar.StructVar{
-		Value: &TestObj{
+	sv, err := structvar.NewStructVar(
+		&TestObj{
 			Name: "OldName",
 			Age:  25,
 			Tags: map[string]string{
 				"env": "old_env",
 			},
 		},
-		Refs: map[string]string{
+		map[string]string{
 			"name":            "${var.name}",
 			"age":             "${var.age}",
 			"tags['version']": "${var.version}",
 		},
+	)
+	if err != nil {
+		panic(err)
 	}
+	return sv
 }
 
 func TestResolveRef(t *testing.T) {
@@ -101,12 +105,16 @@ func TestResolveRef(t *testing.T) {
 		{
 			name: "error on invalid path",
 			setup: func() *structvar.StructVar {
-				return &structvar.StructVar{
-					Value: &TestObj{},
-					Refs: map[string]string{
+				sv, err := structvar.NewStructVar(
+					&TestObj{},
+					map[string]string{
 						"invalid[path": "${var.test}",
 					},
+				)
+				if err != nil {
+					panic(err)
 				}
+				return sv
 			},
 			reference: "${var.test}",
 			value:     "value",
@@ -133,28 +141,29 @@ func TestResolveRef(t *testing.T) {
 			}
 
 			require.NoError(t, err)
-			assert.Equal(t, tt.expectedObj, sv.Value)
+			assert.Equal(t, tt.expectedObj, sv.GetValue())
 			assert.Equal(t, tt.expectedRefs, sv.Refs)
 		})
 	}
 }
 
 func TestResolveRefMultiReference(t *testing.T) {
-	sv := &structvar.StructVar{
-		Value: &TestObj{
+	sv, err := structvar.NewStructVar(
+		&TestObj{
 			Name: "OldName",
 		},
-		Refs: map[string]string{
+		map[string]string{
 			"name": "${var.prefix} ${var.suffix}",
 		},
-	}
+	)
+	require.NoError(t, err)
 
 	// Resolve one reference
-	err := sv.ResolveRef("${var.prefix}", "Hello")
+	err = sv.ResolveRef("${var.prefix}", "Hello")
 	require.NoError(t, err)
 
 	// The value should be partially resolved
-	assert.Equal(t, "Hello ${var.suffix}", sv.Value.(*TestObj).Name)
+	assert.Equal(t, "Hello ${var.suffix}", sv.GetValue().(*TestObj).Name)
 	assert.Equal(t, map[string]string{
 		"name": "Hello ${var.suffix}", // partially resolved
 	}, sv.Refs)
@@ -164,7 +173,7 @@ func TestResolveRefMultiReference(t *testing.T) {
 	require.NoError(t, err)
 
 	// Now it should be fully resolved
-	assert.Equal(t, "Hello World", sv.Value.(*TestObj).Name)
+	assert.Equal(t, "Hello World", sv.GetValue().(*TestObj).Name)
 	assert.Equal(t, map[string]string{}, sv.Refs) // fully resolved, reference removed
 }
 
@@ -182,19 +191,20 @@ func TestResolveRefJobSettings(t *testing.T) {
 		},
 	}
 
-	sv := &structvar.StructVar{
-		Value: &jobSettings,
-		Refs: map[string]string{
+	sv, err := structvar.NewStructVar(
+		&jobSettings,
+		map[string]string{
 			"tasks[0].run_job_task.job_id": "${resources.jobs.bar.id}",
 		},
-	}
+	)
+	require.NoError(t, err)
 
 	// Resolve the reference with a realistic job ID value (as string that gets converted to int64)
-	err := sv.ResolveRef("${resources.jobs.bar.id}", "123")
+	err = sv.ResolveRef("${resources.jobs.bar.id}", "123")
 	require.NoError(t, err)
 
 	// Verify the job ID was set correctly
-	updatedSettings := sv.Value.(*jobs.JobSettings)
+	updatedSettings := sv.GetValue().(*jobs.JobSettings)
 	assert.Equal(t, "job foo", updatedSettings.Name)
 	assert.Len(t, updatedSettings.Tasks, 1)
 	assert.Equal(t, "job_task", updatedSettings.Tasks[0].TaskKey)

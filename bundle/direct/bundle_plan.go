@@ -50,11 +50,11 @@ func (b *DeploymentBundle) InitForApply(ctx context.Context, client *databricks.
 		return err
 	}
 
-	// Convert NewState.Value from map[string]interface{} to proper typed structs.
-	// When JSON is deserialized, struct fields become maps. We need to convert them
-	// back to the expected types for each resource.
+	// Load NewState.Value from json.RawMessage into typed structs.
+	// When the plan is read from JSON, Value contains raw JSON bytes.
+	// We need to parse them into the correct types for each resource.
 	for resourceKey, entry := range plan.Plan {
-		if entry.NewState == nil || entry.NewState.Value == nil {
+		if entry.NewState == nil || len(entry.NewState.Value) == 0 {
 			continue
 		}
 
@@ -63,13 +63,9 @@ func (b *DeploymentBundle) InitForApply(ctx context.Context, client *databricks.
 			return fmt.Errorf("cannot convert plan entry %s: %w", resourceKey, err)
 		}
 
-		// StateType returns *T (pointer to struct), typeConvert expects this
-		convertedValue, err := typeConvert(adapter.StateType(), entry.NewState.Value)
-		if err != nil {
-			return fmt.Errorf("cannot convert plan entry %s: %w", resourceKey, err)
+		if err := entry.NewState.Load(adapter.StateType()); err != nil {
+			return fmt.Errorf("cannot load plan entry %s: %w", resourceKey, err)
 		}
-
-		entry.NewState.Value = convertedValue
 	}
 
 	b.Plan = plan
@@ -157,7 +153,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 
 		// Process all references in the resource using Refs map
 		// Refs maps path inside resource to references e.g. "${resources.jobs.foo.id} ${resources.jobs.foo.name}"
-		if !b.resolveReferences(ctx, entry, errorPrefix, true) {
+		if !b.resolveReferences(ctx, entry, errorPrefix, true, adapter.StateType()) {
 			return false
 		}
 
@@ -184,7 +180,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		// for integers: compare 0 with actual object ID. As long as real object IDs are never 0 we're good.
 		// Once we add non-id fields or add per-field details to "bundle plan", we must read dynamic data and deal with references as first class citizen.
 		// This means distinguishing between 0 that are actually object ids and 0 that are there because typed struct integer cannot contain ${...} string.
-		localDiff, err := structdiff.GetStructDiff(savedState, entry.NewState.Value, adapter.KeyedSlices())
+		localDiff, err := structdiff.GetStructDiff(savedState, entry.NewState.GetValue(), adapter.KeyedSlices())
 		if err != nil {
 			logdiag.LogError(ctx, fmt.Errorf("%s: diffing local state: %w", errorPrefix, err))
 			return false
@@ -384,7 +380,7 @@ func (b *DeploymentBundle) LookupReferenceLocal(ctx context.Context, path *struc
 		return nil, errDelayed
 	}
 
-	localConfig := targetEntry.NewState.Value
+	localConfig := targetEntry.NewState.GetValue()
 
 	targetGroup := config.GetResourceTypeFromKey(targetResourceKey)
 	adapter := b.Adapters[targetGroup]
@@ -444,7 +440,13 @@ func (b *DeploymentBundle) LookupReferenceLocal(ctx context.Context, path *struc
 // resolveReferences processes all references in entry.NewState.Refs.
 // If isLocal is true, uses LookupReferenceLocal (for planning phase).
 // If isLocal is false, uses LookupReferenceRemote (for apply phase).
-func (b *DeploymentBundle) resolveReferences(ctx context.Context, entry *deployplan.PlanEntry, errorPrefix string, isLocal bool) bool {
+func (b *DeploymentBundle) resolveReferences(ctx context.Context, entry *deployplan.PlanEntry, errorPrefix string, isLocal bool, stateType reflect.Type) bool {
+	if err := entry.NewState.Load(stateType); err != nil {
+		logdiag.LogError(ctx, fmt.Errorf("%s: cannot load state: %w", errorPrefix, err))
+		return false
+	}
+
+	var resolved bool
 	for fieldPathStr, refString := range entry.NewState.Refs {
 		refs, ok := dynvar.NewRef(dyn.V(refString))
 		if !ok {
@@ -483,6 +485,14 @@ func (b *DeploymentBundle) resolveReferences(ctx context.Context, entry *deployp
 				logdiag.LogError(ctx, fmt.Errorf("%s: cannot update %s with value of %q: %w", errorPrefix, fieldPathStr, ref, err))
 				return false
 			}
+			resolved = true
+		}
+	}
+
+	if resolved {
+		if err := entry.NewState.Save(); err != nil {
+			logdiag.LogError(ctx, fmt.Errorf("%s: cannot save state: %w", errorPrefix, err))
+			return false
 		}
 	}
 	return true
@@ -632,12 +642,14 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 			return strings.Compare(a.Label, b.Label)
 		})
 
+		newState, err := structvar.NewStructVar(newStateConfig, refs)
+		if err != nil {
+			return nil, fmt.Errorf("%s: cannot create state: %w", node, err)
+		}
+
 		e := deployplan.PlanEntry{
 			DependsOn: dependsOn,
-			NewState: &structvar.StructVar{
-				Value: newStateConfig,
-				Refs:  refs,
-			},
+			NewState:  newState,
 		}
 
 		p.Plan[node] = &e

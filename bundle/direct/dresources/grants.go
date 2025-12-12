@@ -94,16 +94,16 @@ func PrepareGrantsInputConfig(inputConfig any, node string) (*structvar.StructVa
 		})
 	}
 
-	return &structvar.StructVar{
-		Value: &GrantsState{
+	return structvar.NewStructVar(
+		&GrantsState{
 			SecurableType: securableType,
 			FullName:      "",
 			Grants:        grants,
 		},
-		Refs: map[string]string{
+		map[string]string{
 			"full_name": "${" + baseNode + ".id}",
 		},
-	}, nil
+	)
 }
 
 type ResourceGrants struct {
