@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 	"sync"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -32,7 +33,7 @@ type Database struct {
 
 type ResourceEntry struct {
 	ID        string                      `json:"__id__"`
-	State     any                         `json:"state"`
+	State     json.RawMessage                         `json:"state"`
 	DependsOn []deployplan.DependsOnEntry `json:"depends_on,omitempty"`
 }
 
@@ -59,9 +60,14 @@ func (db *DeploymentState) SaveState(key, newID string, state any, dependsOn []d
 		db.Data.State = make(map[string]ResourceEntry)
 	}
 
+	jsonMessage, err := json.MarshalIndent(state, "  ", " ")
+	if err != nil {
+		return err
+	}
+
 	db.Data.State[key] = ResourceEntry{
 		ID:        newID,
-		State:     state,
+		State:     json.RawMessage(jsonMessage),
 		DependsOn: dependsOn,
 	}
 
@@ -143,21 +149,16 @@ func (db *DeploymentState) AssertOpened() {
 func (db *DeploymentState) ExportState(ctx context.Context) resourcestate.ExportedResourcesMap {
 	result := make(resourcestate.ExportedResourcesMap)
 	for key, entry := range db.Data.State {
-		// Extract etag for dashboards.
 		var etag string
-		switch dashboard := entry.State.(type) {
-		// Dashboard state has type map[string]any during bundle deployment.
+		// Extract etag for dashboards.
 		// covered by test case: bundle/deploy/dashboard/detect-change
-		case map[string]any:
-			v, ok := dashboard["etag"].(string)
-			if ok {
-				etag = v
+		if strings.Contains(key, ".dashboards.") && len(entry.State) > 0 {
+			var holder struct {
+				Etag string `json:"etag"`
 			}
-
-		// Dashboard state has type *resources.DashboardConfig during bundle generation.
-		// covered by test case: bundle/deploy/dashboard/generate_inplace
-		case *resources.DashboardConfig:
-			etag = dashboard.Etag
+			if err := json.Unmarshal(entry.State, &holder); err == nil {
+				etag = holder.Etag
+			}
 		}
 
 		result[key] = resourcestate.ResourceState{

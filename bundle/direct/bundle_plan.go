@@ -133,7 +133,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			return false
 		}
 
-		savedState, err := typeConvert(adapter.StateType(), dbentry.State)
+		savedState, err := parseState(adapter.StateType(), dbentry.State)
 		if err != nil {
 			logdiag.LogError(ctx, fmt.Errorf("%s: interpreting state: %w", errorPrefix, err))
 			return false
