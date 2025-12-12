@@ -1,0 +1,80 @@
+
+>>> [CLI] bundle validate -o json
+
+>>> [CLI] bundle plan -o json
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py //jobs
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/create",
+  "body": {
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "Untitled",
+    "queue": {
+      "enabled": true
+    },
+    "tasks": [
+      {
+        "run_job_task": {
+          "job_id": [MAX_INT_64]
+        },
+        "task_key": "max(int64)"
+      },
+      {
+        "run_job_task": {
+          "job_id": [MAX_INT_64_MINUS_1]
+        },
+        "task_key": "max(int64) - 1"
+      },
+      {
+        "run_job_task": {
+          "job_id": [MAX_INT_64_MINUS_2]
+        },
+        "task_key": "max(int64) - 2"
+      },
+      {
+        "run_job_task": {
+          "job_id": [MIN_INT_64]
+        },
+        "task_key": "min(int64)"
+      },
+      {
+        "run_job_task": {
+          "job_id": -[MAX_INT_64]
+        },
+        "task_key": "min(int64) - 1"
+      }
+    ]
+  }
+}
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.foo
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Deleting files...
+Destroy complete!
+
+>>> print_requests.py //jobs
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/delete",
+  "body": {
+    "job_id": [NUMID]
+  }
+}
