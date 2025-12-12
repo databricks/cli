@@ -1,8 +1,10 @@
 package structvar
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"reflect"
 	"strings"
 
 	"github.com/databricks/cli/libs/dyn/dynvar"
@@ -12,14 +14,65 @@ import (
 
 // StructVar is a container holding a struct and a map of unresolved references inside this struct
 type StructVar struct {
-	Value any `json:"value"`
+	Value json.RawMessage `json:"value"`
 
 	// Refs holds unresolved references. Key is serialized PathNode pointing inside a struct (e.g. "name")
 	// and value is either pure or multiple references string: "${resources.foo.jobs.id}" or "${a} ${b}"
 	Refs map[string]string `json:"vars,omitempty"`
+
+	valueCache any
 }
 
 var ErrNotFound = errors.New("reference not found")
+
+// NewStructVar creates a StructVar from a typed value.
+// Marshals value to JSON for serialization, keeps typed value in cache.
+func NewStructVar(value any, refs map[string]string) (*StructVar, error) {
+	data, err := json.Marshal(value)
+	if err != nil {
+		return nil, err
+	}
+	return &StructVar{
+		Value:      data,
+		Refs:       refs,
+		valueCache: value,
+	}, nil
+}
+
+// Load parses Value (json.RawMessage) into valueCache as the given type.
+// Must be called before ResolveRef when reading from persisted state.
+// typ must be a pointer type (e.g., *jobs.JobSettings).
+func (sv *StructVar) Load(typ reflect.Type) error {
+	if sv.valueCache != nil {
+		return nil // Already loaded
+	}
+	ptr := reflect.New(typ.Elem())
+	if err := json.Unmarshal(sv.Value, ptr.Interface()); err != nil {
+		return err
+	}
+	sv.valueCache = ptr.Interface()
+	return nil
+}
+
+// Save marshals valueCache back to Value (json.RawMessage).
+// Call after ResolveRef to persist changes.
+func (sv *StructVar) Save() error {
+	if sv.valueCache == nil {
+		return nil
+	}
+	data, err := json.Marshal(sv.valueCache)
+	if err != nil {
+		return err
+	}
+	sv.Value = data
+	return nil
+}
+
+// GetValue returns the cached typed value.
+// Returns nil if Load hasn't been called and NewStructVar wasn't used.
+func (sv *StructVar) GetValue() any {
+	return sv.valueCache
+}
 
 // ResolveRef resolves the given reference by finding it in Refs values and replacing it.
 // It searches through the Refs map to find values that contain the reference,
@@ -46,9 +99,9 @@ func (sv *StructVar) ResolveRef(reference string, value any) error {
 		// Check if this is a pure reference (reference equals the entire value)
 		if refValue == reference {
 			// Pure reference - use original typed value
-			err = structaccess.Set(sv.Value, pathNode, value)
+			err = structaccess.Set(sv.valueCache, pathNode, value)
 			if err != nil {
-				return fmt.Errorf("cannot set (%T).%s to %T (%#v): %w", sv.Value, pathNode.String(), value, value, err)
+				return fmt.Errorf("cannot set (%T).%s to %T (%#v): %w", sv.valueCache, pathNode.String(), value, value, err)
 			}
 			// Remove the fully resolved reference
 			delete(sv.Refs, pathKey)
@@ -61,7 +114,7 @@ func (sv *StructVar) ResolveRef(reference string, value any) error {
 			newValue := strings.ReplaceAll(refValue, reference, valueStr)
 
 			// Set the updated string value
-			err = structaccess.Set(sv.Value, pathNode, newValue)
+			err = structaccess.Set(sv.valueCache, pathNode, newValue)
 			if err != nil {
 				return fmt.Errorf("cannot update %s to string: %w", pathNode.String(), err)
 			}

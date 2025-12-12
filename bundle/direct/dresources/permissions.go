@@ -66,15 +66,15 @@ func PreparePermissionsInputConfig(inputConfig any, node string) (*structvar.Str
 		objectIdRef = prefix + "${" + baseNode + ".endpoint_id}"
 	}
 
-	return &structvar.StructVar{
-		Value: &PermissionsState{
+	return structvar.NewStructVar(
+		&PermissionsState{
 			ObjectID:    "", // Always a reference, defined in Refs below
 			Permissions: permissions,
 		},
-		Refs: map[string]string{
+		map[string]string{
 			"object_id": objectIdRef,
 		},
-	}, nil
+	)
 }
 
 func (*ResourcePermissions) New(client *databricks.WorkspaceClient) *ResourcePermissions {

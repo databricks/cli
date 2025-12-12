@@ -97,7 +97,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 		// We don't keep NewState around for 'skip' nodes
 
 		if at != deployplan.ActionTypeSkip {
-			if !b.resolveReferences(ctx, entry, errorPrefix, false) {
+			if !b.resolveReferences(ctx, entry, errorPrefix, false, adapter.StateType()) {
 				return false
 			}
 
@@ -113,10 +113,10 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 					logdiag.LogError(ctx, fmt.Errorf("state entry not found for %q", resourceKey))
 					return false
 				}
-				err = b.StateDB.SaveState(resourceKey, dbentry.ID, entry.NewState.Value, entry.DependsOn)
+				err = b.StateDB.SaveState(resourceKey, dbentry.ID, entry.NewState.GetValue(), entry.DependsOn)
 			} else {
 				// TODO: redo calcDiff to downgrade planned action if possible (?)
-				err = d.Deploy(ctx, &b.StateDB, entry.NewState.Value, at, entry.Changes)
+				err = d.Deploy(ctx, &b.StateDB, entry.NewState.GetValue(), at, entry.Changes)
 			}
 
 			if err != nil {

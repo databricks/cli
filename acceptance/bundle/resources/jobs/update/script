@@ -16,7 +16,7 @@ trace update_file.py databricks.yml DAYS HOURS
 trace $CLI bundle plan
 $CLI bundle plan -o json > out.plan_update.$DATABRICKS_BUNDLE_ENGINE.json
 
-trace $CLI bundle deploy $(readplanarg out.plan_update.direct.json)
+$CLI bundle deploy $(readplanarg out.plan_update.direct.json)
 trace print_requests.py //jobs | jq 'del(.body.new_settings.run_as, .body.new_settings.webhook_notifications, .body.new_settings.email_notifications)' > out.update.requests.json
 
 trace $CLI bundle plan
