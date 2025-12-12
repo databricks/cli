@@ -32,7 +32,7 @@ type Database struct {
 
 type ResourceEntry struct {
 	ID        string                      `json:"__id__"`
-	State     json.RawMessage                         `json:"state"`
+	State     json.RawMessage             `json:"state"`
 	DependsOn []deployplan.DependsOnEntry `json:"depends_on,omitempty"`
 }
 
