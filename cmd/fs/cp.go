@@ -99,7 +99,9 @@ func (c *copy) cpDirToDir(ctx context.Context, sourceDir, targetDir string) erro
 		return nil
 	})
 	if err != nil {
-		return err
+		cancel()     // cancel the goroutines
+		_ = g.Wait() // wait for the goroutines to finish
+		return err   // return the "real" error that led to cancellation
 	}
 	return g.Wait()
 }
