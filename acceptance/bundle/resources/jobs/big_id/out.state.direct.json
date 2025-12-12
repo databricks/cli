@@ -45,9 +45,9 @@
      },
      {
       "run_job_task": {
-       "job_id": -[MAX_INT_64]
+       "job_id": [MIN_INT_64_MINUS_4]
       },
-      "task_key": "min(int64) - 1"
+      "task_key": "min(int64) - 4"
      }
     ]
    }

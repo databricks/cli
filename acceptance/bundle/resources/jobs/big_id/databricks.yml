@@ -15,6 +15,6 @@ resources:
         - task_key: min(int64)
           run_job_task:
             job_id: -9223372036854775808
-        - task_key: min(int64) - 1
+        - task_key: min(int64) - 4
           run_job_task:
-            job_id: -9223372036854775807
+            job_id: -9223372036854775804
