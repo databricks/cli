@@ -4,23 +4,23 @@ from typing import TYPE_CHECKING, TypedDict
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
 from databricks.bundles.core._variable import VariableOrList, VariableOrOptional
-from databricks.bundles.serving._models.ai_gateway_guardrails import (
+from databricks.bundles.model_serving_endpoints._models.ai_gateway_guardrails import (
     AiGatewayGuardrails,
     AiGatewayGuardrailsParam,
 )
-from databricks.bundles.serving._models.ai_gateway_inference_table_config import (
+from databricks.bundles.model_serving_endpoints._models.ai_gateway_inference_table_config import (
     AiGatewayInferenceTableConfig,
     AiGatewayInferenceTableConfigParam,
 )
-from databricks.bundles.serving._models.ai_gateway_rate_limit import (
+from databricks.bundles.model_serving_endpoints._models.ai_gateway_rate_limit import (
     AiGatewayRateLimit,
     AiGatewayRateLimitParam,
 )
-from databricks.bundles.serving._models.ai_gateway_usage_tracking_config import (
+from databricks.bundles.model_serving_endpoints._models.ai_gateway_usage_tracking_config import (
     AiGatewayUsageTrackingConfig,
     AiGatewayUsageTrackingConfigParam,
 )
-from databricks.bundles.serving._models.fallback_config import (
+from databricks.bundles.model_serving_endpoints._models.fallback_config import (
     FallbackConfig,
     FallbackConfigParam,
 )

@@ -4,11 +4,11 @@ from typing import TYPE_CHECKING, TypedDict
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
 from databricks.bundles.core._variable import VariableOr, VariableOrOptional
-from databricks.bundles.serving._models.ai_gateway_rate_limit_key import (
+from databricks.bundles.model_serving_endpoints._models.ai_gateway_rate_limit_key import (
     AiGatewayRateLimitKey,
     AiGatewayRateLimitKeyParam,
 )
-from databricks.bundles.serving._models.ai_gateway_rate_limit_renewal_period import (
+from databricks.bundles.model_serving_endpoints._models.ai_gateway_rate_limit_renewal_period import (
     AiGatewayRateLimitRenewalPeriod,
     AiGatewayRateLimitRenewalPeriodParam,
 )

@@ -4,7 +4,10 @@ from typing import TYPE_CHECKING, TypedDict
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
 from databricks.bundles.core._variable import VariableOrList
-from databricks.bundles.serving._models.route import Route, RouteParam
+from databricks.bundles.model_serving_endpoints._models.route import (
+    Route,
+    RouteParam,
+)
 
 if TYPE_CHECKING:
     from typing_extensions import Self

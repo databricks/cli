@@ -9,28 +9,31 @@ from databricks.bundles.core._variable import (
     VariableOrList,
     VariableOrOptional,
 )
-from databricks.bundles.serving._models.ai_gateway_config import (
+from databricks.bundles.model_serving_endpoints._models.ai_gateway_config import (
     AiGatewayConfig,
     AiGatewayConfigParam,
 )
-from databricks.bundles.serving._models.email_notifications import (
+from databricks.bundles.model_serving_endpoints._models.email_notifications import (
     EmailNotifications,
     EmailNotificationsParam,
 )
-from databricks.bundles.serving._models.endpoint_core_config_input import (
+from databricks.bundles.model_serving_endpoints._models.endpoint_core_config_input import (
     EndpointCoreConfigInput,
     EndpointCoreConfigInputParam,
 )
-from databricks.bundles.serving._models.endpoint_tag import (
+from databricks.bundles.model_serving_endpoints._models.endpoint_tag import (
     EndpointTag,
     EndpointTagParam,
 )
-from databricks.bundles.serving._models.lifecycle import Lifecycle, LifecycleParam
-from databricks.bundles.serving._models.model_serving_endpoint_permission import (
+from databricks.bundles.model_serving_endpoints._models.lifecycle import (
+    Lifecycle,
+    LifecycleParam,
+)
+from databricks.bundles.model_serving_endpoints._models.model_serving_endpoint_permission import (
     ModelServingEndpointPermission,
     ModelServingEndpointPermissionParam,
 )
-from databricks.bundles.serving._models.rate_limit import (
+from databricks.bundles.model_serving_endpoints._models.rate_limit import (
     RateLimit,
     RateLimitParam,
 )

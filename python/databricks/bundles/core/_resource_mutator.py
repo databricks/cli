@@ -7,6 +7,9 @@ from databricks.bundles.core._resource import Resource
 
 if TYPE_CHECKING:
     from databricks.bundles.jobs._models.job import Job
+    from databricks.bundles.model_serving_endpoints._models.model_serving_endpoint import (
+        ModelServingEndpoint,
+    )
     from databricks.bundles.pipelines._models.pipeline import Pipeline
     from databricks.bundles.schemas._models.schema import Schema
     from databricks.bundles.volumes._models.volume import Volume
@@ -193,3 +196,39 @@ def volume_mutator(function: Callable) -> ResourceMutator["Volume"]:
     from databricks.bundles.volumes._models.volume import Volume
 
     return ResourceMutator(resource_type=Volume, function=function)
+
+
+@overload
+def model_serving_endpoint_mutator(
+    function: Callable[[Bundle, "ModelServingEndpoint"], "ModelServingEndpoint"],
+) -> ResourceMutator["ModelServingEndpoint"]: ...
+
+
+@overload
+def model_serving_endpoint_mutator(
+    function: Callable[["ModelServingEndpoint"], "ModelServingEndpoint"],
+) -> ResourceMutator["ModelServingEndpoint"]: ...
+
+
+def model_serving_endpoint_mutator(
+    function: Callable,
+) -> ResourceMutator["ModelServingEndpoint"]:
+    """
+    Decorator for defining a model serving endpoint mutator. Function should return a new instance of the model serving endpoint with the desired changes,
+    instead of mutating the input model serving endpoint.
+
+    Example:
+
+    .. code-block:: python
+
+        @model_serving_endpoint_mutator
+        def my_model_serving_endpoint_mutator(bundle: Bundle, model_serving_endpoint: ModelServingEndpoint) -> ModelServingEndpoint:
+            return replace(model_serving_endpoint, name="my_model_serving_endpoint")
+
+    :param function: Function that mutates a model serving endpoint.
+    """
+    from databricks.bundles.model_serving_endpoints._models.model_serving_endpoint import (
+        ModelServingEndpoint,
+    )
+
+    return ResourceMutator(resource_type=ModelServingEndpoint, function=function)

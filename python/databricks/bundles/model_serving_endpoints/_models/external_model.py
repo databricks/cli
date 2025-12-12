@@ -4,43 +4,46 @@ from typing import TYPE_CHECKING, TypedDict
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
 from databricks.bundles.core._variable import VariableOr, VariableOrOptional
-from databricks.bundles.serving._models.ai21_labs_config import (
+from databricks.bundles.model_serving_endpoints._models.ai21_labs_config import (
     Ai21LabsConfig,
     Ai21LabsConfigParam,
 )
-from databricks.bundles.serving._models.amazon_bedrock_config import (
+from databricks.bundles.model_serving_endpoints._models.amazon_bedrock_config import (
     AmazonBedrockConfig,
     AmazonBedrockConfigParam,
 )
-from databricks.bundles.serving._models.anthropic_config import (
+from databricks.bundles.model_serving_endpoints._models.anthropic_config import (
     AnthropicConfig,
     AnthropicConfigParam,
 )
-from databricks.bundles.serving._models.cohere_config import (
+from databricks.bundles.model_serving_endpoints._models.cohere_config import (
     CohereConfig,
     CohereConfigParam,
 )
-from databricks.bundles.serving._models.custom_provider_config import (
+from databricks.bundles.model_serving_endpoints._models.custom_provider_config import (
     CustomProviderConfig,
     CustomProviderConfigParam,
 )
-from databricks.bundles.serving._models.databricks_model_serving_config import (
+from databricks.bundles.model_serving_endpoints._models.databricks_model_serving_config import (
     DatabricksModelServingConfig,
     DatabricksModelServingConfigParam,
 )
-from databricks.bundles.serving._models.external_model_provider import (
+from databricks.bundles.model_serving_endpoints._models.external_model_provider import (
     ExternalModelProvider,
     ExternalModelProviderParam,
 )
-from databricks.bundles.serving._models.google_cloud_vertex_ai_config import (
+from databricks.bundles.model_serving_endpoints._models.google_cloud_vertex_ai_config import (
     GoogleCloudVertexAiConfig,
     GoogleCloudVertexAiConfigParam,
 )
-from databricks.bundles.serving._models.open_ai_config import (
+from databricks.bundles.model_serving_endpoints._models.open_ai_config import (
     OpenAiConfig,
     OpenAiConfigParam,
 )
-from databricks.bundles.serving._models.pa_lm_config import PaLmConfig, PaLmConfigParam
+from databricks.bundles.model_serving_endpoints._models.pa_lm_config import (
+    PaLmConfig,
+    PaLmConfigParam,
+)
 
 if TYPE_CHECKING:
     from typing_extensions import Self

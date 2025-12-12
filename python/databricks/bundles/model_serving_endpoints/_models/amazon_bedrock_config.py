@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING, TypedDict
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
 from databricks.bundles.core._variable import VariableOr, VariableOrOptional
-from databricks.bundles.serving._models.amazon_bedrock_config_bedrock_provider import (
+from databricks.bundles.model_serving_endpoints._models.amazon_bedrock_config_bedrock_provider import (
     AmazonBedrockConfigBedrockProvider,
     AmazonBedrockConfigBedrockProviderParam,
 )

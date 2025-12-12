@@ -8,7 +8,7 @@ from databricks.bundles.core._variable import (
     VariableOrDict,
     VariableOrOptional,
 )
-from databricks.bundles.serving._models.served_model_input_workload_type import (
+from databricks.bundles.model_serving_endpoints._models.served_model_input_workload_type import (
     ServedModelInputWorkloadType,
     ServedModelInputWorkloadTypeParam,
 )

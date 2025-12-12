@@ -4,11 +4,11 @@ from typing import TYPE_CHECKING, TypedDict
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
 from databricks.bundles.core._variable import VariableOrDict, VariableOrOptional
-from databricks.bundles.serving._models.external_model import (
+from databricks.bundles.model_serving_endpoints._models.external_model import (
     ExternalModel,
     ExternalModelParam,
 )
-from databricks.bundles.serving._models.serving_model_workload_type import (
+from databricks.bundles.model_serving_endpoints._models.serving_model_workload_type import (
     ServingModelWorkloadType,
     ServingModelWorkloadTypeParam,
 )

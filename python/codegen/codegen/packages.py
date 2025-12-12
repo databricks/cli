@@ -1,26 +1,4 @@
 import os
-
-
-# def get_all_model_class_names(namespace: str, models_dir: str) -> list[str]:
-#     """
-#     Enumerate all generated model files in the _models/ directory for a namespace,
-#     extract the top-level class names, and return them as a list.
-#     """
-#     class_names = []
-#     for filename in os.listdir(models_dir):
-#         if not filename.endswith(".py") or filename == "__init__.py":
-#             continue
-#         file_path = os.path.join(models_dir, filename)
-#         with open(file_path, "r") as f:
-#             for line in f:
-#                 line = line.strip()
-#                 if line.startswith("class "):
-#                     # e.g. class ModelServingEndpoint(BaseModel):
-#                     class_name = line.split()[1].split("(")[0]
-#                     class_names.append(class_name)
-#     return class_names
-
-
 import re
 from typing import Optional
 
@@ -30,9 +8,7 @@ RESOURCE_NAMESPACE = {
     "resources.Pipeline": "pipelines",
     "resources.Schema": "schemas",
     "resources.Volume": "volumes",
-    "resources.ModelServingEndpoint": "serving",
-    "resources.ModelServingEndpointPermission": "model_serving_endpoints",  # _permissions",
-    "resources.ModelServingEndpointPermissionLevel": "model_serving_endpoints",  # _permission_levels",
+    "resources.ModelServingEndpoint": "model_serving_endpoints",  # serving
 }
 
 RESOURCE_TYPES = list(RESOURCE_NAMESPACE.keys())
@@ -47,9 +23,7 @@ LOADED_NAMESPACES = [
     "resources",
     "catalog",
     "model_serving_endpoints",
-    # "model_serving_endpoint_permissions",
-    # "model_serving_endpoint_permission_levels",
-    "serving",
+    "serving",  # this exists within model_serving_endpoints and for some reason needs to be loaded separately
 ]
 
 RENAMES = {

@@ -7,6 +7,10 @@ from databricks.bundles.core._transform import _transform
 
 if TYPE_CHECKING:
     from databricks.bundles.jobs._models.job import Job, JobParam
+    from databricks.bundles.model_serving_endpoints._models.model_serving_endpoint import (
+        ModelServingEndpoint,
+        ModelServingEndpointParam,
+    )
     from databricks.bundles.pipelines._models.pipeline import Pipeline, PipelineParam
     from databricks.bundles.schemas._models.schema import Schema, SchemaParam
     from databricks.bundles.volumes._models.volume import Volume, VolumeParam
@@ -60,6 +64,7 @@ class Resources:
         self._pipelines = dict[str, "Pipeline"]()
         self._schemas = dict[str, "Schema"]()
         self._volumes = dict[str, "Volume"]()
+        self._model_serving_endpoints = dict[str, "ModelServingEndpoint"]()
         self._locations = dict[tuple[str, ...], Location]()
         self._diagnostics = Diagnostics()
 
@@ -78,6 +83,10 @@ class Resources:
     @property
     def volumes(self) -> dict[str, "Volume"]:
         return self._volumes
+
+    @property
+    def model_serving_endpoints(self) -> dict[str, "ModelServingEndpoint"]:
+        return self._model_serving_endpoints
 
     @property
     def diagnostics(self) -> Diagnostics:
@@ -103,6 +112,7 @@ class Resources:
         """
 
         from databricks.bundles.jobs import Job
+        from databricks.bundles.model_serving_endpoints import ModelServingEndpoint
         from databricks.bundles.pipelines import Pipeline
         from databricks.bundles.schemas import Schema
         from databricks.bundles.volumes import Volume
@@ -118,6 +128,10 @@ class Resources:
                 self.add_schema(resource_name, resource, location=location)
             case Volume():
                 self.add_volume(resource_name, resource, location=location)
+            case ModelServingEndpoint():
+                self.add_model_serving_endpoint(
+                    resource_name, resource, location=location
+                )
             case _:
                 raise ValueError(f"Unsupported resource type: {type(resource)}")
 
@@ -249,6 +263,40 @@ class Resources:
 
             self._volumes[resource_name] = volume
 
+    def add_model_serving_endpoint(
+        self,
+        resource_name: str,
+        model_serving_endpoint: "ModelServingEndpointParam",
+        *,
+        location: Optional[Location] = None,
+    ) -> None:
+        """
+        Adds a model serving endpoint to the collection of resources. Resource name must be unique across all model serving endpoints.
+
+        :param resource_name: unique identifier for the model serving endpoint
+        :param model_serving_endpoint: the model serving endpoint to add, can be ModelServingEndpoint or dict
+        :param location: optional location of the model serving endpoint in the source code
+        """
+        from databricks.bundles.model_serving_endpoints import ModelServingEndpoint
+
+        model_serving_endpoint = _transform(
+            ModelServingEndpoint, model_serving_endpoint
+        )
+        path = ("resources", "model_serving_endpoints", resource_name)
+        location = location or Location.from_stack_frame(depth=1)
+
+        if self._model_serving_endpoints.get(resource_name):
+            self.add_diagnostic_error(
+                msg=f"Duplicate resource name '{resource_name}' for a model serving endpoint. Resource names must be unique.",
+                location=location,
+                path=path,
+            )
+        else:
+            if location:
+                self.add_location(path, location)
+
+            self._model_serving_endpoints[resource_name] = model_serving_endpoint
+
     def add_location(self, path: tuple[str, ...], location: Location) -> None:
         """
         Associate source code location with a path in the bundle configuration.
@@ -330,6 +378,9 @@ class Resources:
 
         for name, volume in other.volumes.items():
             self.add_volume(name, volume)
+
+        for name, model_serving_endpoint in other.model_serving_endpoints.items():
+            self.add_model_serving_endpoint(name, model_serving_endpoint)
 
         for path, location in other._locations.items():
             self.add_location(path, location)

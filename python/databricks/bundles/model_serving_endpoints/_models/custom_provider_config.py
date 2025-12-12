@@ -4,8 +4,11 @@ from typing import TYPE_CHECKING, TypedDict
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
 from databricks.bundles.core._variable import VariableOr, VariableOrOptional
-from databricks.bundles.serving._models.api_key_auth import ApiKeyAuth, ApiKeyAuthParam
-from databricks.bundles.serving._models.bearer_token_auth import (
+from databricks.bundles.model_serving_endpoints._models.api_key_auth import (
+    ApiKeyAuth,
+    ApiKeyAuthParam,
+)
+from databricks.bundles.model_serving_endpoints._models.bearer_token_auth import (
     BearerTokenAuth,
     BearerTokenAuthParam,
 )

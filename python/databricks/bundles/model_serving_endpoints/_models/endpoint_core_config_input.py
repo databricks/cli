@@ -4,19 +4,19 @@ from typing import TYPE_CHECKING, TypedDict
 from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
 from databricks.bundles.core._variable import VariableOrList, VariableOrOptional
-from databricks.bundles.serving._models.auto_capture_config_input import (
+from databricks.bundles.model_serving_endpoints._models.auto_capture_config_input import (
     AutoCaptureConfigInput,
     AutoCaptureConfigInputParam,
 )
-from databricks.bundles.serving._models.served_entity_input import (
+from databricks.bundles.model_serving_endpoints._models.served_entity_input import (
     ServedEntityInput,
     ServedEntityInputParam,
 )
-from databricks.bundles.serving._models.served_model_input import (
+from databricks.bundles.model_serving_endpoints._models.served_model_input import (
     ServedModelInput,
     ServedModelInputParam,
 )
-from databricks.bundles.serving._models.traffic_config import (
+from databricks.bundles.model_serving_endpoints._models.traffic_config import (
     TrafficConfig,
     TrafficConfigParam,
 )
