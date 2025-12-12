@@ -1,0 +1,8 @@
+trace $CLI bundle validate -o json | jq .resources > out.validate.json
+trace $CLI bundle plan -o json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+$CLI bundle deploy
+trace print_requests.py //jobs
+print_state.py > out.state.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle plan | contains.py '0 to add, 0 to change, 0 to delete'
+trace $CLI bundle destroy --auto-approve
+trace print_requests.py //jobs
