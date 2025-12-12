@@ -38,7 +38,7 @@ type copy struct {
 	mu sync.Mutex // protect output from concurrent writes
 }
 
-// cpDirToDir recursively copies the contents of a directory to another
+// cpDirToDir recursively copies the content of a directory to another
 // directory.
 //
 // There is no guarantee on the order in which the files are copied.
@@ -51,13 +51,15 @@ func (c *copy) cpDirToDir(ctx context.Context, sourceDir, targetDir string) erro
 		return fmt.Errorf("source path %s is a directory. Please specify the --recursive flag", sourceDir)
 	}
 
-	// Create cancellable context to ensure cleanup and that all goroutines
-	// are stopped when the function exits on any error path (e.g. permission
-	// denied when walking the source directory).
+	// Create a cancellable context purely for the purpose of having a way to
+	// cancel the goroutines in case of error walking the directory.
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	// Pool of workers to process copy operations in parallel.
+	// Pool of workers to process copy operations in parallel. The created
+	// context is the real context for this operation. It is shared by the
+	// walking function and the goroutines and can be cancelled manually
+	// by calling the cancel() function of its parent context.
 	g, ctx := errgroup.WithContext(ctx)
 	g.SetLimit(c.concurrency)
 
@@ -85,8 +87,10 @@ func (c *copy) cpDirToDir(ctx context.Context, sourceDir, targetDir string) erro
 			return c.targetFiler.Mkdir(ctx, targetPath)
 		}
 
-		// Queue file copy operation for processing.
 		g.Go(func() error {
+			// Goroutines are queued and may start after the context is already
+			// cancelled (e.g. a prior copy failed). This check aims to avoid
+			// starting work that will inevitably fail.
 			if ctx.Err() != nil {
 				return ctx.Err()
 			}
