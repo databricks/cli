@@ -1,0 +1,9 @@
+{
+  "all_resources": [
+    {
+      "resource_type": "databricks_dashboard",
+      "resource_key": "dashboard1",
+      "action": "noop"
+    }
+  ]
+}

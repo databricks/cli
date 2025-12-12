@@ -1,6 +1,7 @@
 package resources
 
 import (
+	"encoding/json"
 	"reflect"
 	"testing"
 
@@ -58,4 +59,26 @@ func TestDashboardConfigIsSupersetOfSDKDashboard(t *testing.T) {
 				fieldName, sdkJSONTag, configJSONTag)
 		}
 	}
+}
+
+func TestDashboardConfigWithDatasetCatalogSchema(t *testing.T) {
+	jsonConfig := `{
+		"display_name": "Test Dashboard",
+		"warehouse_id": "test_warehouse_id",
+		"dataset_catalog": "main",
+		"dataset_schema": "default",
+		"embed_credentials": true,
+		"serialized_dashboard": "{\"key\": \"value\"}"
+	}`
+
+	var config DashboardConfig
+	err := json.Unmarshal([]byte(jsonConfig), &config)
+	assert.NoError(t, err)
+
+	assert.Equal(t, "Test Dashboard", config.DisplayName)
+	assert.Equal(t, "test_warehouse_id", config.WarehouseId)
+	assert.Equal(t, "main", config.DatasetCatalog)
+	assert.Equal(t, "default", config.DatasetSchema)
+	assert.True(t, config.EmbedCredentials)
+	assert.Equal(t, `{"key": "value"}`, config.SerializedDashboard)
 }

@@ -1,0 +1,14 @@
+{
+  "method": "POST",
+  "path": "/api/2.0/lakeview/dashboards",
+  "body": {
+    "dashboard": {
+      "display_name": "test bundle-deploy-dashboard-dataset [UUID]",
+      "parent_path": "/Users/[USERNAME]",
+      "serialized_dashboard": "{\"pages\":[{\"name\":\"test_page\",\"displayName\":\"Test Page\"}]}\n",
+      "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
+    },
+    "dataset_catalog": "main",
+    "dataset_schema": "default"
+  }
+}

@@ -1,0 +1,34 @@
+#!/bin/bash
+DASHBOARD_DISPLAY_NAME="test bundle-deploy-dashboard-dataset $(uuid)"
+if [ -z "$CLOUD_ENV" ]; then
+    export TEST_DEFAULT_WAREHOUSE_ID="warehouse-1234"
+    echo "warehouse-1234:TEST_DEFAULT_WAREHOUSE_ID" >> ACC_REPLS
+fi
+
+export DASHBOARD_DISPLAY_NAME
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+DASHBOARD_ID=$($CLI bundle summary --output json | jq -r '.resources.dashboards.dashboard1.id')
+
+# Capture the dashboard ID as a replacement.
+echo "$DASHBOARD_ID:DASHBOARD_ID" >> ACC_REPLS
+
+trace $CLI lakeview get $DASHBOARD_ID | jq '{lifecycle_state, parent_path, path, serialized_dashboard}'
+
+# Verify that there is no drift right after deploy.
+trace $CLI bundle plan -o json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+
+# Print API requests made to create the dashboard.
+# This verifies that dataset_catalog and dataset_schema are passed to the API.
+cat out.requests.txt | \
+ jq 'select(.method == "POST")' | \
+ jq 'select(.path | contains("/api/2.0/lakeview/dashboards"))' | \
+ jq 'select(.path | contains("/published") | not)' \
+ > out.post.requests.txt
