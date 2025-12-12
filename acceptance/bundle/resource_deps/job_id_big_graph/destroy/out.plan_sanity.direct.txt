@@ -1,1 +1,8 @@
-Plan: 0 to add, 0 to change, 0 to delete, 12 unchanged
+update jobs.chain_mid
+update jobs.chain_top
+update jobs.diamond_left
+update jobs.diamond_right
+update jobs.diamond_top
+update jobs.multi_child
+
+Plan: 0 to add, 6 to change, 0 to delete, 6 unchanged

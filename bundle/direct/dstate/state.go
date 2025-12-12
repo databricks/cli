@@ -1,7 +1,6 @@
 package dstate
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -116,13 +115,8 @@ func (db *DeploymentState) Open(path string) error {
 		}
 		return err
 	}
-
-	// Use json.Decoder with UseNumber() to preserve precision of large integers.
-	// Without this, numbers are decoded as float64 when the destination is interface{}/any,
-	// which loses precision for int64 values larger than 2^53.
-	dec := json.NewDecoder(bytes.NewReader(data))
-	dec.UseNumber()
-	err = dec.Decode(&db.Data)
+	// TODO: Use json.Decoder with UseNumber() to preserve precision of large integers.
+	err = json.Unmarshal(data, &db.Data)
 	if err != nil {
 		return err
 	}

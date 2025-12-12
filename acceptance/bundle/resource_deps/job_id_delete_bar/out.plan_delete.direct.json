@@ -81,7 +81,7 @@
             "old": [
               {
                 "run_job_task": {
-                  "job_id": [BAR_ID]
+                  "job_id": [NUMID]
                 },
                 "task_key": "job_task"
               }
@@ -92,6 +92,11 @@
           "email_notifications": {
             "action": "skip",
             "reason": "server_side_default"
+          },
+          "tasks[task_key='job_task'].run_job_task.job_id": {
+            "action": "update",
+            "old": [NUMID],
+            "new": [BAR_ID]
           },
           "timeout_seconds": {
             "action": "skip",
