@@ -1,0 +1,4 @@
+bundle:
+  name: test-bundle
+
+resources: {}

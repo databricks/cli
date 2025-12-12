@@ -11,7 +11,13 @@
     "comment": "mycomment",
     "name": "mymodel",
     "schema_name": "schema_grants"
-   }
+   },
+   "depends_on": [
+    {
+     "node": "resources.schemas.my_schema",
+     "label": "${resources.schemas.my_schema.name}"
+    }
+   ]
   },
   "resources.registered_models.my_registered_model.grants": {
    "__id__": "function/main.schema_grants.mymodel",
@@ -26,7 +32,13 @@
       ]
      }
     ]
-   }
+   },
+   "depends_on": [
+    {
+     "node": "resources.registered_models.my_registered_model",
+     "label": "${resources.registered_models.my_registered_model.id}"
+    }
+   ]
   },
   "resources.schemas.my_schema": {
    "__id__": "main.schema_grants",
@@ -49,7 +61,13 @@
       ]
      }
     ]
-   }
+   },
+   "depends_on": [
+    {
+     "node": "resources.schemas.my_schema",
+     "label": "${resources.schemas.my_schema.id}"
+    }
+   ]
   },
   "resources.volumes.my_volume": {
    "__id__": "main.schema_grants.volume_name",
@@ -58,7 +76,13 @@
     "name": "volume_name",
     "schema_name": "schema_grants",
     "volume_type": "MANAGED"
-   }
+   },
+   "depends_on": [
+    {
+     "node": "resources.schemas.my_schema",
+     "label": "${resources.schemas.my_schema.name}"
+    }
+   ]
   },
   "resources.volumes.my_volume.grants": {
    "__id__": "volume/main.schema_grants.volume_name",
@@ -74,7 +98,13 @@
       ]
      }
     ]
-   }
+   },
+   "depends_on": [
+    {
+     "node": "resources.volumes.my_volume",
+     "label": "${resources.volumes.my_volume.id}"
+    }
+   ]
   }
  }
 }

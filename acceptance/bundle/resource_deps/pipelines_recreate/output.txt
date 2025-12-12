@@ -115,17 +115,17 @@ All files and directories at the following location will be deleted: /Workspace/
 Deleting files...
 Destroy complete!
 
->>> print_requests.py --sort //jobs //pipelines
-{
-  "method": "DELETE",
-  "path": "/api/2.0/pipelines/[UUID]"
-}
+>>> print_requests.py //jobs //pipelines
 {
   "method": "POST",
   "path": "/api/2.2/jobs/delete",
   "body": {
     "job_id": [BAR_ID]
   }
+}
+{
+  "method": "DELETE",
+  "path": "/api/2.0/pipelines/[UUID]"
 }
 
 >>> musterr [CLI] pipelines get [FOO_ID]

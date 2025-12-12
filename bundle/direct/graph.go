@@ -16,17 +16,23 @@ func makeGraph(plan *deployplan.Plan) (*dagrun.Graph, error) {
 		g.AddNode(resourceKey)
 	}
 
-	// Add edges based on depends_on field exclusively
+	// Add edges based on depends_on field.
+	// For deletions, reverse direction so children are deleted before parents.
 	for resourceKey, entry := range plan.Plan {
 		if entry.DependsOn == nil {
 			continue
 		}
 
+		isDelete := entry.Action == deployplan.ActionTypeDelete.String()
+
 		for _, dep := range entry.DependsOn {
-			// Only add edge if target node exists in the plan
 			if _, exists := plan.Plan[dep.Node]; exists {
-				g.AddDirectedEdge(dep.Node, resourceKey, dep.Label)
-			} else {
+				if isDelete {
+					g.AddDirectedEdge(resourceKey, dep.Node, dep.Label)
+				} else {
+					g.AddDirectedEdge(dep.Node, resourceKey, dep.Label)
+				}
+			} else if !isDelete {
 				return nil, fmt.Errorf("invalid dependency %q, no such node %q", dep.Label, dep.Node)
 			}
 		}

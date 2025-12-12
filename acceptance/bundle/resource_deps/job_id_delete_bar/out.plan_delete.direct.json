@@ -28,13 +28,22 @@
       }
     },
     "resources.jobs.foo": {
-      "depends_on": [
-        {
-          "node": "resources.jobs.bar",
-          "label": "${resources.jobs.bar.id}"
+      "action": "update",
+      "new_state": {
+        "value": {
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+          },
+          "edit_mode": "UI_LOCKED",
+          "format": "MULTI_TASK",
+          "max_concurrent_runs": 1,
+          "name": "job foo",
+          "queue": {
+            "enabled": true
+          }
         }
-      ],
-      "action": "delete",
+      },
       "remote_state": {
         "created_time": [UNIX_TIME_MILLIS][1],
         "creator_user_name": "[USERNAME]",
@@ -63,6 +72,35 @@
           ],
           "timeout_seconds": 0,
           "webhook_notifications": {}
+        }
+      },
+      "changes": {
+        "local": {
+          "tasks": {
+            "action": "update",
+            "old": [
+              {
+                "run_job_task": {
+                  "job_id": [BAR_ID]
+                },
+                "task_key": "job_task"
+              }
+            ]
+          }
+        },
+        "remote": {
+          "email_notifications": {
+            "action": "skip",
+            "reason": "server_side_default"
+          },
+          "timeout_seconds": {
+            "action": "skip",
+            "reason": "server_side_default"
+          },
+          "webhook_notifications": {
+            "action": "skip",
+            "reason": "server_side_default"
+          }
         }
       }
     }

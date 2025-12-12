@@ -28,8 +28,7 @@ trace $CLI jobs get $bar_id
 rm out.requests.txt
 
 trace $CLI bundle destroy --auto-approve
-# Sort, because the order of requests is different. TODO: remember deps in order to delete in reverse deployment order.
-trace print_requests.py --sort //jobs
+trace print_requests.py //jobs
 
 trace musterr $CLI jobs get $foo_id
 trace musterr $CLI jobs get $bar_id

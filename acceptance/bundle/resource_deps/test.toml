@@ -1,4 +1,3 @@
-Badness = "Delete order is not respected by direct"
 RecordRequests = true
 
 Ignore = [

@@ -604,12 +604,14 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 		p.Plan[node] = &e
 	}
 
-	for n := range existingKeys {
+	for n, entry := range existingKeys {
 		if p.Plan[n] != nil {
 			panic("unexpected node " + n)
 		}
+
 		p.Plan[n] = &deployplan.PlanEntry{
-			Action: deployplan.ActionTypeDelete.String(),
+			Action:    deployplan.ActionTypeDelete.String(),
+			DependsOn: entry.DependsOn,
 		}
 	}
 
