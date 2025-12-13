@@ -252,6 +252,7 @@ func spawnSSHClient(ctx context.Context, userName, privateKeyPath string, server
 	sshArgs := []string{
 		"-l", userName,
 		"-i", privateKeyPath,
+		"-o", "IdentitiesOnly=yes",
 		"-o", "StrictHostKeyChecking=accept-new",
 		"-o", "ConnectTimeout=360",
 		"-o", "ProxyCommand=" + proxyCommand,

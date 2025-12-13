@@ -96,6 +96,7 @@ Host %s
     User root
     ConnectTimeout 360
     StrictHostKeyChecking accept-new
+    IdentitiesOnly yes
     IdentityFile %q
     ProxyCommand %s
 `, opts.HostName, identityFilePath, proxyCommand)
