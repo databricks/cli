@@ -166,6 +166,13 @@ func inheritEnvVars(ctx context.Context, environ map[string]string) error {
 		environ[oidcTokenEnv] = oidcToken
 	}
 
+	// If there's SYSTEM_ACCESSTOKEN set, we need to pass the value of the environment variable to Terraform.
+	// This is necessary to ensure that Terraform can use the same access token as the CLI.
+	systemAccessToken, ok := env.Lookup(ctx, "SYSTEM_ACCESSTOKEN")
+	if ok {
+		environ["SYSTEM_ACCESSTOKEN"] = systemAccessToken
+	}
+
 	// Map $DATABRICKS_TF_CLI_CONFIG_FILE to $TF_CLI_CONFIG_FILE
 	// VSCode extension provides a file with the "provider_installation.filesystem_mirror" configuration.
 	// We only use it if the provider version matches the currently used version,
