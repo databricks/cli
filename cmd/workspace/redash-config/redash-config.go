@@ -19,9 +19,6 @@ func New() *cobra.Command {
 		Short:   `Redash V2 service for workspace configurations (internal).`,
 		Long:    `Redash V2 service for workspace configurations (internal)`,
 		GroupID: "sql",
-		Annotations: map[string]string{
-			"package": "sql",
-		},
 
 		// This service is being previewed; hide from help output.
 		Hidden: true,

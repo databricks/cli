@@ -1,0 +1,37 @@
+{
+  "plan_version": 1,
+  "cli_version": "[DEV_VERSION]",
+  "plan": {
+    "resources.dashboards.dashboard1": {
+      "action": "skip",
+      "remote_state": {
+        "create_time": "[TIMESTAMP]",
+        "dashboard_id": "[DASHBOARD_ID]",
+        "display_name": "my dashboard",
+        "embed_credentials": true,
+        "etag": "[NUMID]",
+        "lifecycle_state": "ACTIVE",
+        "parent_path": "/Workspace/Users/[USERNAME]",
+        "path": "/Users/[USERNAME]/my dashboard.lvdash.json",
+        "serialized_dashboard": "{\"pages\":[{\"displayName\":\"Dashboard test bundle-deploy-dashboard\",\"name\":\"02724bf2\",\"pageType\":\"PAGE_TYPE_CANVAS\"}]}\n",
+        "update_time": "[TIMESTAMP]",
+        "warehouse_id": "123456"
+      },
+      "changes": {
+        "local": {
+          "etag": {
+            "action": "skip",
+            "old": "[NUMID]"
+          }
+        },
+        "remote": {
+          "serialized_dashboard": {
+            "action": "skip",
+            "old": "{\"pages\":[{\"name\":\"02724bf2\",\"displayName\":\"Dashboard test bundle-deploy-dashboard\"}]}\n",
+            "new": "{\"pages\":[{\"displayName\":\"Dashboard test bundle-deploy-dashboard\",\"name\":\"02724bf2\",\"pageType\":\"PAGE_TYPE_CANVAS\"}]}\n"
+          }
+        }
+      }
+    }
+  }
+}

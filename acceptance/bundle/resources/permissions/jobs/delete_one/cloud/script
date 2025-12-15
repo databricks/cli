@@ -10,7 +10,7 @@ $CLI users create --id test-dabs-2@databricks.com --user-name test-dabs-2@databr
 $CLI groups create --id test-dabs-group-1@databricks.com --display-name test-dabs-group-1 &> /dev/null || true
 rm -f out.requests.txt
 
-trace $CLI bundle debug plan > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle plan -o json > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
 
 cleanup() {
     trace errcode $CLI bundle destroy --auto-approve
@@ -32,6 +32,7 @@ trace $CLI bundle deploy
 # Terraform always puts group permissions after user permissions in the request, so we store requests in a different file
 # although they are semantically the same. We're not doing the same transformation in direct, because permissions get endpoint uses a different order.
 print_requests | sort_acl_requests > out.requests_create.json
+
 trace $CLI bundle plan
 
 job_id=$($CLI bundle summary --output json | jq -r '.resources.jobs.job_with_permissions.id')

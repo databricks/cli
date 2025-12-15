@@ -143,8 +143,12 @@ Error: secret_scope rname is not defined
 }
 
 === resources.alerts.rname ===
-Warning: unknown field: alerts
-  at resources
-  in databricks.yml:5:3
+Error: alert rname is not defined
+  at resources.alerts.rname
+  in databricks.yml:6:12
 
-{}
+{
+  "alerts": {
+    "rname": null
+  }
+}

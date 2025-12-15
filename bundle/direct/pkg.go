@@ -29,8 +29,11 @@ type DeploymentUnit struct {
 	// Remote state (pointer to adapter.RemoteType()) or nil if remote state was not fetched yet.
 	// Remote state will be eagerly populated by (withRefresh) DoCreate/DoUpdate/WaitForCreate/WaitForUpdate.
 	// If the resource does not implement withRefresh variants of those methods, remoteState remains nil and
-	// will be populated lazily by calling DoRefresh().
+	// will be populated lazily by calling DoRead().
 	RemoteState any
+
+	// DependsOn lists resources this resource depends on (persisted in state).
+	DependsOn []deployplan.DependsOnEntry
 }
 
 // DeploymentBundle holds everything needed to deploy a bundle

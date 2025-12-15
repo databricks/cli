@@ -20,10 +20,7 @@ func New() *cobra.Command {
 		Short:   `Fulfillments are entities that allow consumers to preview installations.`,
 		Long:    `Fulfillments are entities that allow consumers to preview installations.`,
 		GroupID: "marketplace",
-		Annotations: map[string]string{
-			"package": "marketplace",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -58,7 +55,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get LISTING_ID"
 	cmd.Short = `Get listing content metadata.`
 	cmd.Long = `Get listing content metadata.
-  
+
   Get a high level preview of the metadata of listing installable content.`
 
 	cmd.Annotations = make(map[string]string)
@@ -111,7 +108,7 @@ func newList() *cobra.Command {
 	cmd.Use = "list LISTING_ID"
 	cmd.Short = `List all listing fulfillments.`
 	cmd.Long = `List all listing fulfillments.
-  
+
   Get all listings fulfillments associated with a listing. A _fulfillment_ is a
   potential installation. Standard installations contain metadata about the
   attached share or git repo. Only one of these fields will be present.

@@ -1,15 +1,15 @@
 # NEXT CHANGELOG
 
-## Release v0.277.0
+## Release v0.281.0
 
 ### Notable Changes
 
 ### CLI
 
-### Dependency updates
-
 ### Bundles
-* Add `default-minimal` template for users who want a clean slate without sample code ([#3885](https://github.com/databricks/cli/pull/3885))
-* Add validation that served_models and served_entities are not used at the same time. Add client side translation logic. ([#3880](https://github.com/databricks/cli/pull/3880))
+* engine/direct: Fix dependency-ordered deletion by persisting depends_on in state ([#4105](https://github.com/databricks/cli/pull/4105))
+* Pass SYSTEM_ACCESSTOKEN from env to the Terraform provider ([#4135](https://github.com/databricks/cli/pull/4135)
+
+### Dependency updates
 
 ### API Changes

@@ -16,22 +16,16 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class SourceCatalogConfig:
     """
-    :meta private: [EXPERIMENTAL]
-
     SourceCatalogConfig contains catalog-level custom configuration parameters for each source
     """
 
     postgres: VariableOrOptional[PostgresCatalogConfig] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
     Postgres-specific catalog-level configuration parameters
     """
 
     source_catalog: VariableOrOptional[str] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
     Source catalog name
     """
 
@@ -48,15 +42,11 @@ class SourceCatalogConfigDict(TypedDict, total=False):
 
     postgres: VariableOrOptional[PostgresCatalogConfigParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
     Postgres-specific catalog-level configuration parameters
     """
 
     source_catalog: VariableOrOptional[str]
     """
-    :meta private: [EXPERIMENTAL]
-    
     Source catalog name
     """
 

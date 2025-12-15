@@ -1,4 +1,71 @@
 # This file is auto-generated. DO NOT EDIT.
+github.com/databricks/cli/bundle/config/resources.Alert:
+  "create_time":
+    "description": |-
+      The timestamp indicating when the alert was created.
+    "x-databricks-field-behaviors_output_only": |-
+      true
+  "custom_description":
+    "description": |-
+      Custom description for the alert. support mustache template.
+  "custom_summary":
+    "description": |-
+      Custom summary for the alert. support mustache template.
+  "display_name":
+    "description": |-
+      The display name of the alert.
+  "effective_run_as":
+    "description": |-
+      The actual identity that will be used to execute the alert.
+      This is an output-only field that shows the resolved run-as identity after applying
+      permissions and defaults.
+    "x-databricks-field-behaviors_output_only": |-
+      true
+  "evaluation": {}
+  "id":
+    "description": |-
+      UUID identifying the alert.
+    "x-databricks-field-behaviors_output_only": |-
+      true
+  "lifecycle_state":
+    "description": |-
+      Indicates whether the query is trashed.
+    "x-databricks-field-behaviors_output_only": |-
+      true
+  "owner_user_name":
+    "description": |-
+      The owner's username. This field is set to "Unavailable" if the user has been deleted.
+    "x-databricks-field-behaviors_output_only": |-
+      true
+  "parent_path":
+    "description": |-
+      The workspace path of the folder containing the alert. Can only be set on create, and cannot be updated.
+  "query_text":
+    "description": |-
+      Text of the query to be run.
+  "run_as":
+    "description": |-
+      Specifies the identity that will be used to run the alert.
+      This field allows you to configure alerts to run as a specific user or service principal.
+      - For user identity: Set `user_name` to the email of an active workspace user. Users can only set this to their own email.
+      - For service principal: Set `service_principal_name` to the application ID. Requires the `servicePrincipal/user` role.
+      If not specified, the alert will run as the request user.
+  "run_as_user_name":
+    "description": |-
+      The run as username or application ID of service principal.
+      On Create and Update, this field can be set to application ID of an active service principal. Setting this field requires the servicePrincipal/user role.
+      Deprecated: Use `run_as` field instead. This field will be removed in a future release.
+    "deprecation_message": |-
+      This field is deprecated
+  "schedule": {}
+  "update_time":
+    "description": |-
+      The timestamp indicating when the alert was updated.
+    "x-databricks-field-behaviors_output_only": |-
+      true
+  "warehouse_id":
+    "description": |-
+      ID of the SQL warehouse attached to the alert.
 github.com/databricks/cli/bundle/config/resources.App:
   "active_deployment":
     "description": |-
@@ -176,8 +243,7 @@ github.com/databricks/cli/bundle/config/resources.Cluster:
   "enable_elastic_disk":
     "description": |-
       Autoscaling Local Storage: when enabled, this cluster will dynamically acquire additional disk
-      space when its Spark workers are running low on disk space. This feature requires specific AWS
-      permissions to function correctly - refer to the User Guide for more details.
+      space when its Spark workers are running low on disk space.
   "enable_local_disk_encryption":
     "description": |-
       Whether to enable LUKS on cluster VMs' local disks
@@ -450,8 +516,7 @@ github.com/databricks/cli/bundle/config/resources.Job:
   "environments":
     "description": |-
       A list of task execution environment specifications that can be referenced by serverless tasks of this job.
-      An environment is required to be present for serverless tasks.
-      For serverless notebook tasks, the environment is accessible in the notebook environment panel.
+      For serverless notebook tasks, if the environment_key is not specified, the notebook environment will be used if present. If a jobs environment is specified, it will override the notebook environment.
       For other serverless tasks, the task environment is required to be specified using environment_key in the task settings.
   "format":
     "description": |-
@@ -1192,8 +1257,6 @@ github.com/databricks/databricks-sdk-go/service/apps.ComputeSize:
         MEDIUM
       - |-
         LARGE
-      - |-
-        LIQUID
 github.com/databricks/databricks-sdk-go/service/apps.ComputeState:
   "_":
     "enum":
@@ -1469,7 +1532,7 @@ github.com/databricks/databricks-sdk-go/service/compute.AwsAttributes:
       This string will be of a form like "us-west-2a". The provided availability
       zone must be in the same region as the Databricks deployment. For example, "us-west-2a"
       is not a valid zone id if the Databricks deployment resides in the "us-east-1" region.
-      This is an optional field at cluster creation, and if not specified, a default zone will be used.
+      This is an optional field at cluster creation, and if not specified, the zone "auto" will be used.
       If the zone specified is "auto", will try to place cluster in a zone with high availability,
       and will retry placement in a different AZ if there is not enough capacity.
 
@@ -1638,8 +1701,7 @@ github.com/databricks/databricks-sdk-go/service/compute.ClusterSpec:
   "enable_elastic_disk":
     "description": |-
       Autoscaling Local Storage: when enabled, this cluster will dynamically acquire additional disk
-      space when its Spark workers are running low on disk space. This feature requires specific AWS
-      permissions to function correctly - refer to the User Guide for more details.
+      space when its Spark workers are running low on disk space.
   "enable_local_disk_encryption":
     "description": |-
       Whether to enable LUKS on cluster VMs' local disks
@@ -1843,8 +1905,6 @@ github.com/databricks/databricks-sdk-go/service/compute.Environment:
   "java_dependencies":
     "description": |-
       List of java dependencies. Each dependency is a string representing a java library path. For example: `/Volumes/path/to/test.jar`.
-    "x-databricks-preview": |-
-      PRIVATE
 github.com/databricks/databricks-sdk-go/service/compute.GcpAttributes:
   "_":
     "description": |-
@@ -2175,6 +2235,9 @@ github.com/databricks/databricks-sdk-go/service/database.NewPipelineSpec:
     "description": |-
       Custom fields that user can set for pipeline while creating SyncedDatabaseTable.
       Note that other fields of pipeline are still inferred by table def internally
+  "budget_policy_id":
+    "description": |-
+      Budget policy to set on the newly created pipeline.
   "storage_catalog":
     "description": |-
       This field needs to be specified if the destination catalog is a managed postgres catalog.
@@ -2901,6 +2964,35 @@ github.com/databricks/databricks-sdk-go/service/jobs.JobsHealthRules:
     "description": |-
       An optional set of health rules that can be defined for this job.
   "rules": {}
+github.com/databricks/databricks-sdk-go/service/jobs.ModelTriggerConfiguration:
+  "aliases":
+    "description": |-
+      Aliases of the model versions to monitor. Can only be used in conjunction with condition MODEL_ALIAS_SET.
+  "condition":
+    "description": |-
+      The condition based on which to trigger a job run.
+  "min_time_between_triggers_seconds":
+    "description": |-
+      If set, the trigger starts a run only after the specified amount of time has passed since
+      the last time the trigger fired. The minimum allowed value is 60 seconds.
+  "securable_name":
+    "description": |-
+      Name of the securable to monitor ("mycatalog.myschema.mymodel" in the case of model-level triggers,
+      "mycatalog.myschema" in the case of schema-level triggers) or empty in the case of metastore-level triggers.
+  "wait_after_last_change_seconds":
+    "description": |-
+      If set, the trigger starts a run only after no model updates have occurred for the specified time
+      and can be used to wait for a series of model updates before triggering a run. The
+      minimum allowed value is 60 seconds.
+github.com/databricks/databricks-sdk-go/service/jobs.ModelTriggerConfigurationCondition:
+  "_":
+    "enum":
+      - |-
+        MODEL_CREATED
+      - |-
+        MODEL_VERSION_READY
+      - |-
+        MODEL_ALIAS_SET
 github.com/databricks/databricks-sdk-go/service/jobs.NotebookTask:
   "base_parameters":
     "description": |-
@@ -3176,7 +3268,9 @@ github.com/databricks/databricks-sdk-go/service/jobs.Source:
 github.com/databricks/databricks-sdk-go/service/jobs.SparkJarTask:
   "jar_uri":
     "description": |-
-      Deprecated since 04/2016. Provide a `jar` through the `libraries` field instead. For an example, see :method:jobs/create.
+      Deprecated since 04/2016. For classic compute, provide a `jar` through the `libraries` field instead. For serverless compute, provide a `jar` though the `java_dependencies` field inside the `environments` list.
+
+      See the examples of classic and serverless compute usage at the top of the page.
     "deprecation_message": |-
       This field is deprecated
   "main_class_name":
@@ -3516,6 +3610,9 @@ github.com/databricks/databricks-sdk-go/service/jobs.TriggerSettings:
   "file_arrival":
     "description": |-
       File arrival trigger settings.
+  "model":
+    "x-databricks-preview": |-
+      PRIVATE
   "pause_status":
     "description": |-
       Whether this trigger is paused or not.
@@ -3564,6 +3661,15 @@ github.com/databricks/databricks-sdk-go/service/ml.ModelTag:
   "value":
     "description": |-
       The tag value.
+github.com/databricks/databricks-sdk-go/service/pipelines.ConnectionParameters:
+  "source_catalog":
+    "description": |-
+      Source catalog for initial connection.
+      This is necessary for schema exploration in some database systems like Oracle, and optional but nice-to-have
+      in some other database systems like Postgres.
+      For Oracle databases, this maps to a service name.
+    "x-databricks-preview": |-
+      PRIVATE
 github.com/databricks/databricks-sdk-go/service/pipelines.CronTrigger:
   "quartz_cron_schedule": {}
   "timezone_id": {}
@@ -3638,6 +3744,11 @@ github.com/databricks/databricks-sdk-go/service/pipelines.IngestionGatewayPipeli
   "connection_name":
     "description": |-
       Immutable. The Unity Catalog connection that this gateway pipeline uses to communicate with the source.
+  "connection_parameters":
+    "description": |-
+      Optional, Internal. Parameters required to establish an initial connection with the source.
+    "x-databricks-preview": |-
+      PRIVATE
   "gateway_storage_catalog":
     "description": |-
       Required, Immutable. The name of the catalog for the gateway pipeline's storage location.
@@ -3645,7 +3756,7 @@ github.com/databricks/databricks-sdk-go/service/pipelines.IngestionGatewayPipeli
     "description": |-
       Optional. The Unity Catalog-compatible name for the gateway storage location.
       This is the destination to use for the data that is extracted by the gateway.
-      Delta Live Tables system will automatically create the storage location under the catalog and schema.
+      Spark Declarative Pipelines system will automatically create the storage location under the catalog and schema.
   "gateway_storage_schema":
     "description": |-
       Required, Immutable. The name of the schema for the gateway pipelines's storage location.
@@ -3653,6 +3764,14 @@ github.com/databricks/databricks-sdk-go/service/pipelines.IngestionPipelineDefin
   "connection_name":
     "description": |-
       Immutable. The Unity Catalog connection that this ingestion pipeline uses to communicate with the source. This is used with connectors for applications like Salesforce, Workday, and so on.
+  "ingest_from_uc_foreign_catalog":
+    "description": |-
+      Immutable. If set to true, the pipeline will ingest tables from the
+      UC foreign catalogs directly without the need to specify a UC connection or ingestion gateway.
+      The `source_catalog` fields in objects of IngestionConfig are interpreted as
+      the UC foreign catalogs to ingest from.
+    "x-databricks-preview": |-
+      PRIVATE
   "ingestion_gateway_id":
     "description": |-
       Immutable. Identifier for the gateway that is used by this ingestion pipeline to communicate with the source database. This is used with connectors to databases like SQL Server.
@@ -3669,8 +3788,6 @@ github.com/databricks/databricks-sdk-go/service/pipelines.IngestionPipelineDefin
   "source_configurations":
     "description": |-
       Top-level source configurations
-    "x-databricks-preview": |-
-      PRIVATE
   "source_type":
     "description": |-
       The type of the foreign source.
@@ -3760,10 +3877,6 @@ github.com/databricks/databricks-sdk-go/service/pipelines.IngestionSourceType:
       - |-
         POSTGRESQL
       - |-
-        REDSHIFT
-      - |-
-        SQLDW
-      - |-
         SQLSERVER
       - |-
         SALESFORCE
@@ -3787,10 +3900,6 @@ github.com/databricks/databricks-sdk-go/service/pipelines.IngestionSourceType:
         SHAREPOINT
       - |-
         DYNAMICS365
-      - |-
-        CONFLUENCE
-      - |-
-        META_MARKETING
       - |-
         FOREIGN_CATALOG
 github.com/databricks/databricks-sdk-go/service/pipelines.ManualTrigger: {}
@@ -3995,8 +4104,6 @@ github.com/databricks/databricks-sdk-go/service/pipelines.PostgresCatalogConfig:
   "slot_config":
     "description": |-
       Optional. The Postgres slot configuration to use for logical replication
-    "x-databricks-preview": |-
-      PRIVATE
 github.com/databricks/databricks-sdk-go/service/pipelines.PostgresSlotConfig:
   "_":
     "description": |-
@@ -4004,13 +4111,9 @@ github.com/databricks/databricks-sdk-go/service/pipelines.PostgresSlotConfig:
   "publication_name":
     "description": |-
       The name of the publication to use for the Postgres source
-    "x-databricks-preview": |-
-      PRIVATE
   "slot_name":
     "description": |-
       The name of the logical replication slot to use for the Postgres source
-    "x-databricks-preview": |-
-      PRIVATE
 github.com/databricks/databricks-sdk-go/service/pipelines.ReportSpec:
   "destination_catalog":
     "description": |-
@@ -4075,19 +4178,13 @@ github.com/databricks/databricks-sdk-go/service/pipelines.SourceCatalogConfig:
   "postgres":
     "description": |-
       Postgres-specific catalog-level configuration parameters
-    "x-databricks-preview": |-
-      PRIVATE
   "source_catalog":
     "description": |-
       Source catalog name
-    "x-databricks-preview": |-
-      PRIVATE
 github.com/databricks/databricks-sdk-go/service/pipelines.SourceConfig:
   "catalog":
     "description": |-
       Catalog-level source configuration parameters
-    "x-databricks-preview": |-
-      PRIVATE
 github.com/databricks/databricks-sdk-go/service/pipelines.TableSpec:
   "destination_catalog":
     "description": |-
@@ -4144,7 +4241,7 @@ github.com/databricks/databricks-sdk-go/service/pipelines.TableSpecificConfig:
       PRIVATE
   "sequence_by":
     "description": |-
-      The column names specifying the logical order of events in the source data. Delta Live Tables uses this sequencing to handle change events that arrive out of order.
+      The column names specifying the logical order of events in the source data. Spark Declarative Pipelines uses this sequencing to handle change events that arrive out of order.
   "workday_report_parameters":
     "description": |-
       (Optional) Additional custom parameters for Workday Report
@@ -4787,6 +4884,108 @@ github.com/databricks/databricks-sdk-go/service/serving.TrafficConfig:
   "routes":
     "description": |-
       The list of routes that define traffic to each served entity.
+github.com/databricks/databricks-sdk-go/service/sql.Aggregation:
+  "_":
+    "enum":
+      - |-
+        SUM
+      - |-
+        COUNT
+      - |-
+        COUNT_DISTINCT
+      - |-
+        AVG
+      - |-
+        MEDIAN
+      - |-
+        MIN
+      - |-
+        MAX
+      - |-
+        STDDEV
+github.com/databricks/databricks-sdk-go/service/sql.AlertEvaluationState:
+  "_":
+    "description": |-
+      UNSPECIFIED - default unspecify value for proto enum, do not use it in the code
+      UNKNOWN - alert not yet evaluated
+      TRIGGERED - alert is triggered
+      OK - alert is not triggered
+      ERROR - alert evaluation failed
+    "enum":
+      - |-
+        UNKNOWN
+      - |-
+        TRIGGERED
+      - |-
+        OK
+      - |-
+        ERROR
+github.com/databricks/databricks-sdk-go/service/sql.AlertLifecycleState:
+  "_":
+    "enum":
+      - |-
+        ACTIVE
+      - |-
+        DELETED
+github.com/databricks/databricks-sdk-go/service/sql.AlertV2Evaluation:
+  "comparison_operator":
+    "description": |-
+      Operator used for comparison in alert evaluation.
+  "empty_result_state":
+    "description": |-
+      Alert state if result is empty. Please avoid setting this field to be `UNKNOWN` because `UNKNOWN` state is planned to be deprecated.
+  "last_evaluated_at":
+    "description": |-
+      Timestamp of the last evaluation.
+    "x-databricks-field-behaviors_output_only": |-
+      true
+  "notification":
+    "description": |-
+      User or Notification Destination to notify when alert is triggered.
+  "source":
+    "description": |-
+      Source column from result to use to evaluate alert
+  "state":
+    "description": |-
+      Latest state of alert evaluation.
+    "x-databricks-field-behaviors_output_only": |-
+      true
+  "threshold":
+    "description": |-
+      Threshold to user for alert evaluation, can be a column or a value.
+github.com/databricks/databricks-sdk-go/service/sql.AlertV2Notification:
+  "notify_on_ok":
+    "description": |-
+      Whether to notify alert subscribers when alert returns back to normal.
+  "retrigger_seconds":
+    "description": |-
+      Number of seconds an alert waits after being triggered before it is allowed to send another notification.
+      If set to 0 or omitted, the alert will not send any further notifications after the first trigger
+      Setting this value to 1 allows the alert to send a notification on every evaluation where the condition is met, effectively making it always retrigger for notification purposes.
+  "subscriptions": {}
+github.com/databricks/databricks-sdk-go/service/sql.AlertV2Operand:
+  "column": {}
+  "value": {}
+github.com/databricks/databricks-sdk-go/service/sql.AlertV2OperandColumn:
+  "aggregation":
+    "description": |-
+      If not set, the behavior is equivalent to using `First row` in the UI.
+  "display": {}
+  "name": {}
+github.com/databricks/databricks-sdk-go/service/sql.AlertV2OperandValue:
+  "bool_value": {}
+  "double_value": {}
+  "string_value": {}
+github.com/databricks/databricks-sdk-go/service/sql.AlertV2RunAs:
+  "service_principal_name":
+    "description": |-
+      Application ID of an active service principal. Setting this field requires the `servicePrincipal/user` role.
+  "user_name":
+    "description": |-
+      The email of an active workspace user. Can only set this field to their own email.
+github.com/databricks/databricks-sdk-go/service/sql.AlertV2Subscription:
+  "destination_id": {}
+  "user_email": {}
 github.com/databricks/databricks-sdk-go/service/sql.Channel:
   "_":
     "description": |-
@@ -4804,6 +5003,25 @@ github.com/databricks/databricks-sdk-go/service/sql.ChannelName:
         CHANNEL_NAME_PREVIOUS
       - |-
         CHANNEL_NAME_CUSTOM
+github.com/databricks/databricks-sdk-go/service/sql.ComparisonOperator:
+  "_":
+    "enum":
+      - |-
+        LESS_THAN
+      - |-
+        GREATER_THAN
+      - |-
+        EQUAL
+      - |-
+        NOT_EQUAL
+      - |-
+        GREATER_THAN_OR_EQUAL
+      - |-
+        LESS_THAN_OR_EQUAL
+      - |-
+        IS_NULL
+      - |-
+        IS_NOT_NULL
 github.com/databricks/databricks-sdk-go/service/sql.CreateWarehouseRequestWarehouseType:
   "_":
     "enum":
@@ -4813,11 +5031,31 @@ github.com/databricks/databricks-sdk-go/service/sql.CreateWarehouseRequestWareho
         CLASSIC
       - |-
         PRO
+github.com/databricks/databricks-sdk-go/service/sql.CronSchedule:
+  "pause_status":
+    "description": |-
+      Indicate whether this schedule is paused or not.
+  "quartz_cron_schedule":
+    "description": |-
+      A cron expression using quartz syntax that specifies the schedule for this pipeline.
+      Should use the quartz format described here: http://www.quartz-scheduler.org/documentation/quartz-2.1.7/tutorials/tutorial-lesson-06.html
+  "timezone_id":
+    "description": |-
+      A Java timezone id. The schedule will be resolved using this timezone.
+      This will be combined with the quartz_cron_schedule to determine the schedule.
+      See https://docs.databricks.com/sql/language-manual/sql-ref-syntax-aux-conf-mgmt-set-timezone.html for details.
 github.com/databricks/databricks-sdk-go/service/sql.EndpointTagPair:
   "key": {}
   "value": {}
 github.com/databricks/databricks-sdk-go/service/sql.EndpointTags:
   "custom_tags": {}
+github.com/databricks/databricks-sdk-go/service/sql.SchedulePauseStatus:
+  "_":
+    "enum":
+      - |-
+        UNPAUSED
+      - |-
+        PAUSED
 github.com/databricks/databricks-sdk-go/service/sql.SpotInstancePolicy:
   "_":
     "description": |-

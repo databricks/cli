@@ -1,4 +1,6 @@
 {
+  "plan_version": 1,
+  "cli_version": "[DEV_VERSION]",
   "plan": {
     "resources.jobs.bar": {
       "action": "delete",
@@ -26,6 +28,12 @@
       }
     },
     "resources.jobs.foo": {
+      "depends_on": [
+        {
+          "node": "resources.jobs.bar",
+          "label": "${resources.jobs.bar.id}"
+        }
+      ],
       "action": "delete",
       "remote_state": {
         "created_time": [UNIX_TIME_MILLIS][1],

@@ -1,6 +1,3 @@
-# Deploy relies on terraform.CheckRunningResource()
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform"]
-
 # Cycling between states not implemented yet
 # spec to avoid "pipeline spec is nil" error
 

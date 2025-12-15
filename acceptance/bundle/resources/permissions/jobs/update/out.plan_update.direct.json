@@ -1,4 +1,6 @@
 {
+  "plan_version": 1,
+  "cli_version": "[DEV_VERSION]",
   "plan": {
     "resources.jobs.job_with_permissions": {
       "action": "skip",
@@ -59,7 +61,7 @@
       ],
       "action": "update",
       "new_state": {
-        "config": {
+        "value": {
           "object_id": "/jobs/[JOB_ID]",
           "permissions": [
             {
@@ -96,8 +98,10 @@
       },
       "changes": {
         "local": {
-          "permissions[0].permission_level": {
-            "action": "update"
+          "permissions[user_name='viewer@example.com'].permission_level": {
+            "action": "update",
+            "old": "CAN_VIEW",
+            "new": "CAN_MANAGE"
           }
         }
       }

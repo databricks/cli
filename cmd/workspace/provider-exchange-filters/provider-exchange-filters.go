@@ -23,10 +23,7 @@ func New() *cobra.Command {
 		Short:   `Marketplace exchanges filters curate which groups can access an exchange.`,
 		Long:    `Marketplace exchanges filters curate which groups can access an exchange.`,
 		GroupID: "marketplace",
-		Annotations: map[string]string{
-			"package": "marketplace",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -63,7 +60,7 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create"
 	cmd.Short = `Create a new exchange filter.`
 	cmd.Long = `Create a new exchange filter.
-  
+
   Add an exchange filter.`
 
 	cmd.Annotations = make(map[string]string)
@@ -124,7 +121,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete ID"
 	cmd.Short = `Delete an exchange filter.`
 	cmd.Long = `Delete an exchange filter.
-  
+
   Delete an exchange filter`
 
 	cmd.Annotations = make(map[string]string)
@@ -192,7 +189,7 @@ func newList() *cobra.Command {
 	cmd.Use = "list EXCHANGE_ID"
 	cmd.Short = `List exchange filters.`
 	cmd.Long = `List exchange filters.
-  
+
   List exchange filter`
 
 	cmd.Annotations = make(map[string]string)
@@ -245,7 +242,7 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update ID"
 	cmd.Short = `Update exchange filter.`
 	cmd.Long = `Update exchange filter.
-  
+
   Update an exchange filter.`
 
 	cmd.Annotations = make(map[string]string)

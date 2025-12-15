@@ -34,8 +34,12 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions) {
 		terraform.Interpolate(),
 		terraform.Write(),
 		terraform.Import(opts),
-		statemgmt.StatePush(engine),
 	)
+	if logdiag.HasError(ctx) {
+		return
+	}
+
+	statemgmt.PushResourcesState(ctx, b, engine)
 }
 
 func Unbind(ctx context.Context, b *bundle.Bundle, bundleType, tfResourceType, resourceKey string) {
@@ -60,6 +64,10 @@ func Unbind(ctx context.Context, b *bundle.Bundle, bundleType, tfResourceType, r
 		terraform.Interpolate(),
 		terraform.Write(),
 		terraform.Unbind(bundleType, tfResourceType, resourceKey),
-		statemgmt.StatePush(engine),
 	)
+	if logdiag.HasError(ctx) {
+		return
+	}
+
+	statemgmt.PushResourcesState(ctx, b, engine)
 }

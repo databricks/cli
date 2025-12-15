@@ -1,5 +1,5 @@
 
->>> [CLI] bundle debug plan
+>>> [CLI] bundle plan -o json
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/schema-grants-[UNIQUE_NAME]/default/files...
@@ -22,7 +22,7 @@ Deployment complete!
   ]
 }
 
->>> [CLI] bundle debug plan
+>>> [CLI] bundle plan -o json
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/schema-grants-[UNIQUE_NAME]/default/files...
@@ -47,17 +47,17 @@ Deployment complete!
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
-  delete schema grants_schema
-  delete volume grants_volume
+  delete resources.schemas.grants_schema
+  delete resources.volumes.grants_volume
 
 This action will result in the deletion of the following UC schemas. Any underlying data may be lost:
-  delete schema grants_schema
+  delete resources.schemas.grants_schema
 
 This action will result in the deletion of the following volumes.
 For managed volumes, the files stored in the volume are also deleted from your
 cloud tenant within 30 days. For external volumes, the metadata about the volume
 is removed from the catalog, but the underlying files are not deleted:
-  delete volume grants_volume
+  delete resources.volumes.grants_volume
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/schema-grants-[UNIQUE_NAME]/default
 

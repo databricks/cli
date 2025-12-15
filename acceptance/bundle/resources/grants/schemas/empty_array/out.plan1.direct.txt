@@ -1,9 +1,11 @@
 {
+  "plan_version": 1,
+  "cli_version": "[DEV_VERSION]",
   "plan": {
     "resources.schemas.grants_schema": {
       "action": "create",
       "new_state": {
-        "config": {
+        "value": {
           "catalog_name": "main",
           "name": "schema_grants_[UNIQUE_NAME]"
         }
@@ -18,7 +20,7 @@
       ],
       "action": "create",
       "new_state": {
-        "config": {
+        "value": {
           "securable_type": "schema",
           "full_name": "",
           "grants": [

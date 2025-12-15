@@ -57,7 +57,7 @@ Resources:
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
-  delete database_instance my_database
+  delete resources.database_instances.my_database
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-lakebase-single-instance-[UNIQUE_NAME]/default
 

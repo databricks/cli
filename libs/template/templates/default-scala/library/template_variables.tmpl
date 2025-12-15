@@ -1,0 +1,36 @@
+{{/* Project artifact version used in JAR naming */}}
+{{ define `version` -}}
+    0.1
+{{- end }}
+
+{{ define `databricks_cli_version` -}}
+    0.241.0
+{{- end }}
+
+{{ define `dbr_version` -}}
+    17.0
+{{- end }}
+
+{{ define `scala_major_minor_version` -}}
+    2.13
+{{- end }}
+
+{{ define `scala_version` -}}
+    {{template `scala_major_minor_version` .}}.16
+{{- end}}
+
+{{ define `java_version` -}}
+    17
+{{- end}}
+
+{{ define `organization` -}}
+    com.examples
+{{- end }}
+
+{{ define `main_class_name` -}}
+    {{template `organization` .}}.Main
+{{- end }}
+
+{{ define `jar_path` -}}
+    ./target/scala-{{template `scala_major_minor_version` .}}/{{.project_name}}-assembly-{{template `version` .}}.jar
+{{- end }}

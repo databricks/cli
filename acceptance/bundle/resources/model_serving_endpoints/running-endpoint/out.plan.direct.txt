@@ -1,0 +1,25 @@
+{
+  "plan_version": 1,
+  "cli_version": "[DEV_VERSION]",
+  "plan": {
+    "resources.model_serving_endpoints.my_endpoint": {
+      "action": "create",
+      "new_state": {
+        "value": {
+          "config": {
+            "served_entities": [
+              {
+                "entity_name": "system.ai.llama_v3_2_1b_instruct",
+                "entity_version": "[VERSION]",
+                "name": "llama",
+                "scale_to_zero_enabled": true,
+                "workload_size": "Small"
+              }
+            ]
+          },
+          "name": "test-endpoint-[UNIQUE_NAME]"
+        }
+      }
+    }
+  }
+}

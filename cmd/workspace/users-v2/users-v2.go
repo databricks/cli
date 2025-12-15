@@ -20,7 +20,7 @@ func New() *cobra.Command {
 		Use:   "users-v2",
 		Short: `User identities recognized by Databricks and represented by email addresses.`,
 		Long: `User identities recognized by Databricks and represented by email addresses.
-  
+
   Databricks recommends using SCIM provisioning to sync users and groups
   automatically from your identity provider to your Databricks workspace. SCIM
   streamlines onboarding a new employee or team by using your identity provider
@@ -31,10 +31,7 @@ func New() *cobra.Command {
   workspace. This ensures a consistent offboarding process and prevents
   unauthorized users from accessing sensitive data.`,
 		GroupID: "iam",
-		Annotations: map[string]string{
-			"package": "iam",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -89,7 +86,7 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create"
 	cmd.Short = `Create a new user.`
 	cmd.Long = `Create a new user.
-  
+
   Creates a new user in the Databricks workspace. This new user will also be
   added to the Databricks account.`
 
@@ -154,7 +151,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete ID"
 	cmd.Short = `Delete a user.`
 	cmd.Long = `Delete a user.
-  
+
   Deletes a user. Deleting a user from a Databricks workspace also removes
   objects associated with the user.
 
@@ -219,7 +216,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get ID"
 	cmd.Short = `Get user details.`
 	cmd.Long = `Get user details.
-  
+
   Gets information for a specific user in Databricks workspace.
 
   Arguments:
@@ -275,7 +272,7 @@ func newGetPermissionLevels() *cobra.Command {
 	cmd.Use = "get-permission-levels"
 	cmd.Short = `Get password permission levels.`
 	cmd.Long = `Get password permission levels.
-  
+
   Gets the permission levels that a user can have on an object.`
 
 	cmd.Annotations = make(map[string]string)
@@ -321,7 +318,7 @@ func newGetPermissions() *cobra.Command {
 	cmd.Use = "get-permissions"
 	cmd.Short = `Get password permissions.`
 	cmd.Long = `Get password permissions.
-  
+
   Gets the permissions of all passwords. Passwords can inherit permissions from
   their root object.`
 
@@ -376,7 +373,7 @@ func newList() *cobra.Command {
 	cmd.Use = "list"
 	cmd.Short = `List users.`
 	cmd.Long = `List users.
-  
+
   Gets details for all the users associated with a Databricks workspace.`
 
 	cmd.Annotations = make(map[string]string)
@@ -430,7 +427,7 @@ func newPatch() *cobra.Command {
 	cmd.Use = "patch ID"
 	cmd.Short = `Update user details.`
 	cmd.Long = `Update user details.
-  
+
   Partially updates a user resource by applying the supplied operations on
   specific user attributes.
 
@@ -504,7 +501,7 @@ func newSetPermissions() *cobra.Command {
 	cmd.Use = "set-permissions"
 	cmd.Short = `Set password permissions.`
 	cmd.Long = `Set password permissions.
-  
+
   Sets permissions on an object, replacing existing permissions if they exist.
   Deletes all direct permissions if none are specified. Objects can inherit
   permissions from their root object.`
@@ -584,7 +581,7 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update ID"
 	cmd.Short = `Replace a user.`
 	cmd.Long = `Replace a user.
-  
+
   Replaces a user's information with the data supplied in request.
 
   Arguments:
@@ -657,7 +654,7 @@ func newUpdatePermissions() *cobra.Command {
 	cmd.Use = "update-permissions"
 	cmd.Short = `Update password permissions.`
 	cmd.Long = `Update password permissions.
-  
+
   Updates the permissions on all passwords. Passwords can inherit permissions
   from their root object.`
 

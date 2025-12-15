@@ -220,8 +220,10 @@
     "overwrite": "true"
   },
   "body": {
+    "state_version": 1,
+    "cli_version": "[DEV_VERSION]",
     "lineage": "[UUID]",
-    "serial": 0,
+    "serial": 2,
     "state": {
       "resources.schemas.foo": {
         "__id__": "mycatalog.myschema",

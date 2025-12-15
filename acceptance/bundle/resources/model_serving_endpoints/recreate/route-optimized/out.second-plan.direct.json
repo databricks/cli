@@ -1,0 +1,35 @@
+{
+  "plan_version": 1,
+  "cli_version": "[DEV_VERSION]",
+  "plan": {
+    "resources.model_serving_endpoints.test_endpoint": {
+      "action": "recreate",
+      "new_state": {
+        "value": {
+          "config": {
+            "served_entities": [
+              {
+                "entity_name": "system.ai.llama_v3_2_1b_instruct",
+                "entity_version": "1",
+                "name": "llama",
+                "scale_to_zero_enabled": true,
+                "workload_size": "Small"
+              }
+            ]
+          },
+          "name": "[ORIGINAL_ENDPOINT_ID]",
+          "route_optimized": true
+        }
+      },
+      "changes": {
+        "local": {
+          "route_optimized": {
+            "action": "recreate",
+            "old": false,
+            "new": true
+          }
+        }
+      }
+    }
+  }
+}

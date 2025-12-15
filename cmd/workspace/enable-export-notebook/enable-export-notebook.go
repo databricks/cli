@@ -52,7 +52,7 @@ func newGetEnableExportNotebook() *cobra.Command {
 	cmd.Use = "get-enable-export-notebook"
 	cmd.Short = `Get the Notebook and File exporting setting.`
 	cmd.Long = `Get the Notebook and File exporting setting.
-  
+
   Gets the Notebook and File exporting setting.`
 
 	cmd.Annotations = make(map[string]string)
@@ -100,7 +100,7 @@ func newPatchEnableExportNotebook() *cobra.Command {
 	cmd.Use = "patch-enable-export-notebook"
 	cmd.Short = `Update the Notebook and File exporting setting.`
 	cmd.Long = `Update the Notebook and File exporting setting.
-  
+
   Updates the Notebook and File exporting setting. The model follows eventual
   consistency, which means the get after the update operation might receive
   stale values for some time.`

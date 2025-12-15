@@ -20,10 +20,7 @@ func New() *cobra.Command {
 		Long: `This API allows retrieving information about currently authenticated user or
   service principal.`,
 		GroupID: "iam",
-		Annotations: map[string]string{
-			"package": "iam",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -51,7 +48,7 @@ func newMe() *cobra.Command {
 	cmd.Use = "me"
 	cmd.Short = `Get current user info.`
 	cmd.Long = `Get current user info.
-  
+
   Get details about the current method caller's identity.`
 
 	cmd.Annotations = make(map[string]string)

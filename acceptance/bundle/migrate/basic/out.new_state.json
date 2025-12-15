@@ -1,0 +1,94 @@
+{
+ "state_version": 1,
+ "cli_version": "[DEV_VERSION]",
+ "lineage": "[UUID]",
+ "serial": 6,
+ "state": {
+  "resources.jobs.test_job": {
+   "__id__": "[NUMID]",
+   "state": {
+    "deployment": {
+     "kind": "BUNDLE",
+     "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/metadata.json"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "Test Migration Job",
+    "queue": {
+     "enabled": true
+    },
+    "tasks": [
+     {
+      "notebook_task": {
+       "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files/notebook"
+      },
+      "task_key": "main"
+     }
+    ]
+   }
+  },
+  "resources.pipelines.test_pipeline": {
+   "__id__": "[UUID]",
+   "state": {
+    "channel": "CURRENT",
+    "deployment": {
+     "kind": "BUNDLE",
+     "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/state/metadata.json"
+    },
+    "edition": "ADVANCED",
+    "libraries": [
+     {
+      "notebook": {
+       "path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files/pipeline"
+      }
+     }
+    ],
+    "name": "Test Migration Pipeline",
+    "tags": {
+     "myjob_id": "[NUMID]",
+     "myjob_name": "Test Migration Job",
+     "myjob_timeout": "",
+     "myvolume_id": "mycat.myschema.myvol",
+     "volume_catalog_name": "mycat",
+     "volume_storage_location": "s3://deco-uc-prod-isolated-aws-us-east-1/metastore/[UUID]/volumes/[UUID]"
+    }
+   },
+   "depends_on": [
+    {
+     "node": "resources.jobs.test_job",
+     "label": "${resources.jobs.test_job.id}"
+    },
+    {
+     "node": "resources.jobs.test_job",
+     "label": "${resources.jobs.test_job.name}"
+    },
+    {
+     "node": "resources.jobs.test_job",
+     "label": "${resources.jobs.test_job.timeout_seconds}"
+    },
+    {
+     "node": "resources.volumes.test_volume",
+     "label": "${resources.volumes.test_volume.catalog_name}"
+    },
+    {
+     "node": "resources.volumes.test_volume",
+     "label": "${resources.volumes.test_volume.id}"
+    },
+    {
+     "node": "resources.volumes.test_volume",
+     "label": "${resources.volumes.test_volume.storage_location}"
+    }
+   ]
+  },
+  "resources.volumes.test_volume": {
+   "__id__": "mycat.myschema.myvol",
+   "state": {
+    "catalog_name": "mycat",
+    "name": "myvol",
+    "schema_name": "myschema",
+    "volume_type": "MANAGED"
+   }
+  }
+ }
+}

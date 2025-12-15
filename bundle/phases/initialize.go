@@ -50,7 +50,12 @@ func Initialize(ctx context.Context, b *bundle.Bundle) {
 		// Updates (typed) b.Config.{Sync,Include,Exclude} they set to be relative to SyncRootPath instead of bundle root
 		mutator.SyncInferRoot(),
 
+		// Updates (typed): b.Cache (initializes cache for API responses)
+		// Initialize cache before any mutator that might need it
+		mutator.InitializeCache(),
+
 		// Reads (typed): b.Config.Workspace.CurrentUser (checks if it's already set)
+		// Reads (typed): b.Cache (uses cache for current user API call)
 		// Updates (typed): b.Config.Workspace.CurrentUser (sets user information from API)
 		// Updates (typed): b.Tagging (configures tagging object based on current cloud)
 		mutator.PopulateCurrentUser(),

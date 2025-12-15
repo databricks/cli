@@ -26,15 +26,12 @@ func New() *cobra.Command {
   compare runs, as well as download run artifacts or metadata for analysis in
   other tools. Experiments are maintained in a Databricks hosted MLflow tracking
   server.
-  
+
   Experiments are located in the workspace file tree. You manage experiments
   using the same tools you use to manage other workspace objects such as
   folders, notebooks, and libraries.`,
 		GroupID: "ml",
-		Annotations: map[string]string{
-			"package": "ml",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -109,12 +106,12 @@ func newCreateExperiment() *cobra.Command {
 	cmd.Use = "create-experiment NAME"
 	cmd.Short = `Create experiment.`
 	cmd.Long = `Create experiment.
-  
+
   Creates an experiment with a name. Returns the ID of the newly created
   experiment. Validates that another experiment with the same name does not
   already exist and fails if another experiment with the same name already
   exists.
-  
+
   Throws RESOURCE_ALREADY_EXISTS if an experiment with the given name exists.
 
   Arguments:
@@ -284,7 +281,7 @@ func newCreateRun() *cobra.Command {
 	cmd.Use = "create-run"
 	cmd.Short = `Create a run.`
 	cmd.Long = `Create a run.
-  
+
   Creates a new run within an experiment. A run is usually a single execution of
   a machine learning or data ETL pipeline. MLflow uses runs to track the
   mlflowParam, mlflowMetric, and mlflowRunTag associated with a single
@@ -354,7 +351,7 @@ func newDeleteExperiment() *cobra.Command {
 	cmd.Use = "delete-experiment EXPERIMENT_ID"
 	cmd.Short = `Delete an experiment.`
 	cmd.Long = `Delete an experiment.
-  
+
   Marks an experiment and associated metadata, runs, metrics, params, and tags
   for deletion. If the experiment uses FileStore, artifacts associated with the
   experiment are also deleted.
@@ -546,7 +543,7 @@ func newDeleteRun() *cobra.Command {
 	cmd.Use = "delete-run RUN_ID"
 	cmd.Short = `Delete a run.`
 	cmd.Long = `Delete a run.
-  
+
   Marks a run for deletion.
 
   Arguments:
@@ -628,7 +625,7 @@ func newDeleteRuns() *cobra.Command {
 	cmd.Use = "delete-runs EXPERIMENT_ID MAX_TIMESTAMP_MILLIS"
 	cmd.Short = `Delete runs by creation time.`
 	cmd.Long = `Delete runs by creation time.
-  
+
   Bulk delete runs in an experiment that were created prior to or at the
   specified timestamp. Deletes at most max_runs per request. To call this API
   from a Databricks Notebook in Python, you can use the client code snippet on
@@ -720,7 +717,7 @@ func newDeleteTag() *cobra.Command {
 	cmd.Use = "delete-tag RUN_ID KEY"
 	cmd.Short = `Delete a tag on a run.`
 	cmd.Long = `Delete a tag on a run.
-  
+
   Deletes a tag on a run. Tags are run metadata that can be updated during a run
   and after a run completes.
 
@@ -810,7 +807,7 @@ func newFinalizeLoggedModel() *cobra.Command {
     MODEL_ID: The ID of the logged model to finalize.
     STATUS: Whether or not the model is ready for use.
       "LOGGED_MODEL_UPLOAD_FAILED" indicates that something went wrong when
-      logging the model weights / agent code. 
+      logging the model weights / agent code.
       Supported values: [LOGGED_MODEL_PENDING, LOGGED_MODEL_READY, LOGGED_MODEL_UPLOAD_FAILED]`
 
 	cmd.Annotations = make(map[string]string)
@@ -889,14 +886,14 @@ func newGetByName() *cobra.Command {
 	cmd.Use = "get-by-name EXPERIMENT_NAME"
 	cmd.Short = `Get an experiment by name.`
 	cmd.Long = `Get an experiment by name.
-  
+
   Gets metadata for an experiment.
-  
+
   This endpoint will return deleted experiments, but prefers the active
   experiment if an active and deleted experiment share the same name. If
   multiple deleted experiments share the same name, the API will return one of
   them.
-  
+
   Throws RESOURCE_DOES_NOT_EXIST if no experiment with the specified name
   exists.
 
@@ -953,7 +950,7 @@ func newGetExperiment() *cobra.Command {
 	cmd.Use = "get-experiment EXPERIMENT_ID"
 	cmd.Short = `Get an experiment.`
 	cmd.Long = `Get an experiment.
-  
+
   Gets metadata for an experiment. This method works on deleted experiments.
 
   Arguments:
@@ -1014,7 +1011,7 @@ func newGetHistory() *cobra.Command {
 	cmd.Use = "get-history METRIC_KEY"
 	cmd.Short = `Get metric history for a run.`
 	cmd.Long = `Get metric history for a run.
-  
+
   Gets a list of all values for the specified metric for a given run.
 
   Arguments:
@@ -1121,7 +1118,7 @@ func newGetPermissionLevels() *cobra.Command {
 	cmd.Use = "get-permission-levels EXPERIMENT_ID"
 	cmd.Short = `Get experiment permission levels.`
 	cmd.Long = `Get experiment permission levels.
-  
+
   Gets the permission levels that a user can have on an object.
 
   Arguments:
@@ -1177,7 +1174,7 @@ func newGetPermissions() *cobra.Command {
 	cmd.Use = "get-permissions EXPERIMENT_ID"
 	cmd.Short = `Get experiment permissions.`
 	cmd.Long = `Get experiment permissions.
-  
+
   Gets the permissions of an experiment. Experiments can inherit permissions
   from their root object.
 
@@ -1236,11 +1233,11 @@ func newGetRun() *cobra.Command {
 	cmd.Use = "get-run RUN_ID"
 	cmd.Short = `Get a run.`
 	cmd.Long = `Get a run.
-  
+
   Gets the metadata, metrics, params, and tags for a run. In the case where
   multiple metrics with the same key are logged for a run, return only the value
   with the latest timestamp.
-  
+
   If there are multiple values with the latest timestamp, return the maximum of
   these values.
 
@@ -1302,7 +1299,7 @@ func newListArtifacts() *cobra.Command {
 	cmd.Use = "list-artifacts"
 	cmd.Short = `List artifacts.`
 	cmd.Long = `List artifacts.
-  
+
   List artifacts for a run. Takes an optional artifact_path prefix which if
   specified, the response contains only artifacts with the specified prefix. A
   maximum of 1000 artifacts will be retrieved for UC Volumes. Please call
@@ -1359,7 +1356,7 @@ func newListExperiments() *cobra.Command {
 	cmd.Use = "list-experiments"
 	cmd.Short = `List experiments.`
 	cmd.Long = `List experiments.
-  
+
   Gets a list of all experiments.`
 
 	cmd.Annotations = make(map[string]string)
@@ -1415,49 +1412,49 @@ func newLogBatch() *cobra.Command {
 	cmd.Use = "log-batch"
 	cmd.Short = `Log a batch of metrics/params/tags for a run.`
 	cmd.Long = `Log a batch of metrics/params/tags for a run.
-  
+
   Logs a batch of metrics, params, and tags for a run. If any data failed to be
   persisted, the server will respond with an error (non-200 status code).
-  
+
   In case of error (due to internal server error or an invalid request), partial
   data may be written.
-  
+
   You can write metrics, params, and tags in interleaving fashion, but within a
   given entity type are guaranteed to follow the order specified in the request
   body.
-  
+
   The overwrite behavior for metrics, params, and tags is as follows:
-  
+
   * Metrics: metric values are never overwritten. Logging a metric (key, value,
   timestamp) appends to the set of values for the metric with the provided key.
-  
+
   * Tags: tag values can be overwritten by successive writes to the same tag
   key. That is, if multiple tag values with the same key are provided in the
   same API request, the last-provided tag value is written. Logging the same tag
   (key, value) is permitted. Specifically, logging a tag is idempotent.
-  
+
   * Parameters: once written, param values cannot be changed (attempting to
   overwrite a param value will result in an error). However, logging the same
   param (key, value) is permitted. Specifically, logging a param is idempotent.
-  
+
   Request Limits ------------------------------- A single JSON-serialized API
   request may be up to 1 MB in size and contain:
-  
+
   * No more than 1000 metrics, params, and tags in total
-  
+
   * Up to 1000 metrics
-  
+
   * Up to 100 params
-  
+
   * Up to 100 tags
-  
+
   For example, a valid request might contain 900 metrics, 50 params, and 50
   tags, but logging 900 metrics, 50 params, and 51 tags is invalid.
-  
+
   The following limits also apply to metric, param, and tag keys and values:
-  
+
   * Metric keys, param keys, and tag keys can be up to 250 characters in length
-  
+
   * Parameter and tag values can be up to 250 characters in length`
 
 	cmd.Annotations = make(map[string]string)
@@ -1527,7 +1524,7 @@ func newLogInputs() *cobra.Command {
 	cmd.Use = "log-inputs RUN_ID"
 	cmd.Short = `Log inputs to a run.`
 	cmd.Long = `Log inputs to a run.
-  
+
   Logs inputs, such as datasets and models, to an MLflow Run.
 
   Arguments:
@@ -1609,7 +1606,7 @@ func newLogLoggedModelParams() *cobra.Command {
 	cmd.Use = "log-logged-model-params MODEL_ID"
 	cmd.Short = `Log params for a logged model.`
 	cmd.Long = `Log params for a logged model.
-  
+
   Logs params for a logged model. A param is a key-value pair (string key,
   string value). Examples include hyperparameters used for ML model training. A
   param can be logged only once for a logged model, and attempting to overwrite
@@ -1690,7 +1687,7 @@ func newLogMetric() *cobra.Command {
 	cmd.Use = "log-metric KEY VALUE TIMESTAMP"
 	cmd.Short = `Log a metric for a run.`
 	cmd.Long = `Log a metric for a run.
-  
+
   Log a metric for a run. A metric is a key-value pair (string key, float value)
   with an associated timestamp. Examples include the various metrics that
   represent ML model accuracy. A metric can be logged multiple times.
@@ -1791,11 +1788,11 @@ func newLogModel() *cobra.Command {
 	cmd.Use = "log-model"
 	cmd.Short = `Log a model.`
 	cmd.Long = `Log a model.
-  
+
   **Note:** the [Create a logged
   model](/api/workspace/experiments/createloggedmodel) API replaces this
   endpoint.
-  
+
   Log a model to an MLflow Run.`
 
 	cmd.Annotations = make(map[string]string)
@@ -1864,7 +1861,7 @@ func newLogOutputs() *cobra.Command {
 	cmd.Use = "log-outputs RUN_ID"
 	cmd.Short = `Log outputs from a run.`
 	cmd.Long = `Log outputs from a run.
-  
+
   Logs outputs, such as models, from an MLflow Run.
 
   Arguments:
@@ -1947,7 +1944,7 @@ func newLogParam() *cobra.Command {
 	cmd.Use = "log-param KEY VALUE"
 	cmd.Short = `Log a param for a run.`
 	cmd.Long = `Log a param for a run.
-  
+
   Logs a param used for a run. A param is a key-value pair (string key, string
   value). Examples include hyperparameters used for ML model training and
   constant dates and values used in an ETL pipeline. A param can be logged only
@@ -2034,11 +2031,11 @@ func newRestoreExperiment() *cobra.Command {
 	cmd.Use = "restore-experiment EXPERIMENT_ID"
 	cmd.Short = `Restore an experiment.`
 	cmd.Long = `Restore an experiment.
-  
+
   Restore an experiment marked for deletion. This also restores associated
   metadata, runs, metrics, params, and tags. If experiment uses FileStore,
   underlying artifacts associated with experiment are also restored.
-  
+
   Throws RESOURCE_DOES_NOT_EXIST if experiment was never created or was
   permanently deleted.
 
@@ -2119,10 +2116,10 @@ func newRestoreRun() *cobra.Command {
 	cmd.Use = "restore-run RUN_ID"
 	cmd.Short = `Restore a run.`
 	cmd.Long = `Restore a run.
-  
+
   Restores a deleted run. This also restores associated metadata, runs, metrics,
   params, and tags.
-  
+
   Throws RESOURCE_DOES_NOT_EXIST if the run was never created or was
   permanently deleted.
 
@@ -2205,7 +2202,7 @@ func newRestoreRuns() *cobra.Command {
 	cmd.Use = "restore-runs EXPERIMENT_ID MIN_TIMESTAMP_MILLIS"
 	cmd.Short = `Restore runs by deletion time.`
 	cmd.Long = `Restore runs by deletion time.
-  
+
   Bulk restore runs in an experiment that were deleted no earlier than the
   specified timestamp. Restores at most max_runs per request. To call this API
   from a Databricks Notebook in Python, you can use the client code snippet on
@@ -2303,7 +2300,7 @@ func newSearchExperiments() *cobra.Command {
 	cmd.Use = "search-experiments"
 	cmd.Short = `Search experiments.`
 	cmd.Long = `Search experiments.
-  
+
   Searches for experiments that satisfy specified search criteria.`
 
 	cmd.Annotations = make(map[string]string)
@@ -2374,7 +2371,7 @@ func newSearchLoggedModels() *cobra.Command {
 	cmd.Use = "search-logged-models"
 	cmd.Short = `Search logged models.`
 	cmd.Long = `Search logged models.
-  
+
   Search for Logged Models that satisfy specified search criteria.`
 
 	cmd.Annotations = make(map[string]string)
@@ -2448,9 +2445,9 @@ func newSearchRuns() *cobra.Command {
 	cmd.Use = "search-runs"
 	cmd.Short = `Search for runs.`
 	cmd.Long = `Search for runs.
-  
+
   Searches for runs that satisfy expressions.
-  
+
   Search expressions can use mlflowMetric and mlflowParam keys.`
 
 	cmd.Annotations = make(map[string]string)
@@ -2514,7 +2511,7 @@ func newSetExperimentTag() *cobra.Command {
 	cmd.Use = "set-experiment-tag EXPERIMENT_ID KEY VALUE"
 	cmd.Short = `Set a tag for an experiment.`
 	cmd.Long = `Set a tag for an experiment.
-  
+
   Sets a tag on an experiment. Experiment tags are metadata that can be updated.
 
   Arguments:
@@ -2676,7 +2673,7 @@ func newSetPermissions() *cobra.Command {
 	cmd.Use = "set-permissions EXPERIMENT_ID"
 	cmd.Short = `Set experiment permissions.`
 	cmd.Long = `Set experiment permissions.
-  
+
   Sets permissions on an object, replacing existing permissions if they exist.
   Deletes all direct permissions if none are specified. Objects can inherit
   permissions from their root object.
@@ -2752,7 +2749,7 @@ func newSetTag() *cobra.Command {
 	cmd.Use = "set-tag KEY VALUE"
 	cmd.Short = `Set a tag for a run.`
 	cmd.Long = `Set a tag for a run.
-  
+
   Sets a tag on a run. Tags are run metadata that can be updated during a run
   and after a run completes.
 
@@ -2840,7 +2837,7 @@ func newUpdateExperiment() *cobra.Command {
 	cmd.Use = "update-experiment EXPERIMENT_ID"
 	cmd.Short = `Update an experiment.`
 	cmd.Long = `Update an experiment.
-  
+
   Updates experiment metadata.
 
   Arguments:
@@ -2922,7 +2919,7 @@ func newUpdatePermissions() *cobra.Command {
 	cmd.Use = "update-permissions EXPERIMENT_ID"
 	cmd.Short = `Update experiment permissions.`
 	cmd.Long = `Update experiment permissions.
-  
+
   Updates the permissions on an experiment. Experiments can inherit permissions
   from their root object.
 
@@ -3000,7 +2997,7 @@ func newUpdateRun() *cobra.Command {
 	cmd.Use = "update-run"
 	cmd.Short = `Update a run.`
 	cmd.Long = `Update a run.
-  
+
   Updates run metadata.`
 
 	cmd.Annotations = make(map[string]string)

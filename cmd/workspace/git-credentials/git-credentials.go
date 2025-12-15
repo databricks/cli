@@ -23,15 +23,12 @@ func New() *cobra.Command {
 		Short: `Registers personal access token for Databricks to do operations on behalf of the user.`,
 		Long: `Registers personal access token for Databricks to do operations on behalf of
   the user.
-  
+
   See [more info].
-  
+
   [more info]: https://docs.databricks.com/repos/get-access-tokens-from-git-provider.html`,
 		GroupID: "workspace",
-		Annotations: map[string]string{
-			"package": "workspace",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -75,7 +72,7 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create GIT_PROVIDER"
 	cmd.Short = `Create a credential entry.`
 	cmd.Long = `Create a credential entry.
-  
+
   Creates a Git credential entry for the user. Only one Git credential per user
   is supported, so any attempts to create credentials if an entry already exists
   will fail. Use the PATCH endpoint to update existing credentials, or the
@@ -158,7 +155,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete CREDENTIAL_ID"
 	cmd.Short = `Delete a credential.`
 	cmd.Long = `Delete a credential.
-  
+
   Deletes the specified Git credential.
 
   Arguments:
@@ -229,7 +226,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get CREDENTIAL_ID"
 	cmd.Short = `Get a credential entry.`
 	cmd.Long = `Get a credential entry.
-  
+
   Gets the Git credential with the specified credential ID.
 
   Arguments:
@@ -297,7 +294,7 @@ func newList() *cobra.Command {
 	cmd.Use = "list"
 	cmd.Short = `Get Git credentials.`
 	cmd.Long = `Get Git credentials.
-  
+
   Lists the calling user's Git credentials. One credential per user is
   supported.`
 
@@ -349,7 +346,7 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update CREDENTIAL_ID GIT_PROVIDER"
 	cmd.Short = `Update a credential.`
 	cmd.Long = `Update a credential.
-  
+
   Updates the specified Git credential.
 
   Arguments:

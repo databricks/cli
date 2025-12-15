@@ -21,21 +21,21 @@ func (*ResourceDatabaseInstance) PrepareState(input *resources.DatabaseInstance)
 	return &input.DatabaseInstance
 }
 
-func (d *ResourceDatabaseInstance) DoRefresh(ctx context.Context, id string) (*database.DatabaseInstance, error) {
+func (d *ResourceDatabaseInstance) DoRead(ctx context.Context, id string) (*database.DatabaseInstance, error) {
 	return d.client.Database.GetDatabaseInstanceByName(ctx, id)
 }
 
-func (d *ResourceDatabaseInstance) DoCreate(ctx context.Context, config *database.DatabaseInstance) (string, error) {
+func (d *ResourceDatabaseInstance) DoCreate(ctx context.Context, config *database.DatabaseInstance) (string, *database.DatabaseInstance, error) {
 	waiter, err := d.client.Database.CreateDatabaseInstance(ctx, database.CreateDatabaseInstanceRequest{
 		DatabaseInstance: *config,
 	})
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
-	return waiter.Response.Name, nil
+	return waiter.Response.Name, nil, nil
 }
 
-func (d *ResourceDatabaseInstance) DoUpdate(ctx context.Context, id string, config *database.DatabaseInstance) error {
+func (d *ResourceDatabaseInstance) DoUpdate(ctx context.Context, id string, config *database.DatabaseInstance, _ *Changes) (*database.DatabaseInstance, error) {
 	request := database.UpdateDatabaseInstanceRequest{
 		DatabaseInstance: *config,
 		Name:             config.Name,
@@ -43,10 +43,10 @@ func (d *ResourceDatabaseInstance) DoUpdate(ctx context.Context, id string, conf
 	}
 	request.DatabaseInstance.Uid = id
 	_, err := d.client.Database.UpdateDatabaseInstance(ctx, request)
-	return err
+	return nil, err
 }
 
-func (d *ResourceDatabaseInstance) WaitAfterCreate(ctx context.Context, config *database.DatabaseInstance) error {
+func (d *ResourceDatabaseInstance) WaitAfterCreate(ctx context.Context, config *database.DatabaseInstance) (*database.DatabaseInstance, error) {
 	waiter := &database.WaitGetDatabaseInstanceDatabaseAvailable[database.DatabaseInstance]{
 		Response: config,
 		Name:     config.Name,
@@ -54,8 +54,10 @@ func (d *ResourceDatabaseInstance) WaitAfterCreate(ctx context.Context, config *
 			return d.client.Database.WaitGetDatabaseInstanceDatabaseAvailable(ctx, config.Name, timeout, callback)
 		},
 	}
+
+	// _ is remoteState, should we return it here?
 	_, err := waiter.GetWithTimeout(20 * time.Minute)
-	return err
+	return nil, err
 }
 
 func (d *ResourceDatabaseInstance) DoDelete(ctx context.Context, name string) error {

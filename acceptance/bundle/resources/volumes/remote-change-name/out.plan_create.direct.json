@@ -1,9 +1,11 @@
 {
+  "plan_version": 1,
+  "cli_version": "[DEV_VERSION]",
   "plan": {
     "resources.volumes.foo": {
       "action": "create",
       "new_state": {
-        "config": {
+        "value": {
           "catalog_name": "mycatalog",
           "name": "myname",
           "schema_name": "myschema",

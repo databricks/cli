@@ -1,10 +1,15 @@
 {
+  "plan_version": 1,
+  "cli_version": "[DEV_VERSION]",
   "plan": {
     "resources.schemas.grants_schema": {
       "action": "skip"
     },
     "resources.volumes.grants_volume": {
       "action": "skip"
+    },
+    "resources.volumes.grants_volume.grants": {
+      "action": "update"
     }
   }
 }

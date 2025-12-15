@@ -1,7 +1,12 @@
 {
+  "plan_version": 1,
+  "cli_version": "[DEV_VERSION]",
   "plan": {
     "resources.pipelines.foo": {
       "action": "skip"
+    },
+    "resources.pipelines.foo.permissions": {
+      "action": "update"
     }
   }
 }

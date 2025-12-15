@@ -1,4 +1,6 @@
 {
+  "plan_version": 1,
+  "cli_version": "[DEV_VERSION]",
   "plan": {
     "resources.jobs.bar": {
       "depends_on": [
@@ -51,7 +53,7 @@
     "resources.jobs.foo": {
       "action": "update",
       "new_state": {
-        "config": {
+        "value": {
           "deployment": {
             "kind": "BUNDLE",
             "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
@@ -98,7 +100,6 @@
             {
               "job_cluster_key": "key",
               "new_cluster": {
-                "num_workers": 0,
                 "spark_version": "13.3.x-scala2.12"
               }
             }
@@ -125,12 +126,18 @@
             "action": "skip",
             "reason": "server_side_default"
           },
+          "job_clusters[0].new_cluster.num_workers": {
+            "action": "update",
+            "old": 0
+          },
           "timeout_seconds": {
             "action": "skip",
             "reason": "server_side_default"
           },
           "trigger.periodic.unit": {
-            "action": "update"
+            "action": "update",
+            "old": "DAYS",
+            "new": "HOURS"
           },
           "webhook_notifications": {
             "action": "skip",

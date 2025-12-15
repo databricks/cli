@@ -1,9 +1,11 @@
 {
+  "plan_version": 1,
+  "cli_version": "[DEV_VERSION]",
   "plan": {
     "resources.clusters.test_cluster": {
       "action": "create",
       "new_state": {
-        "config": {
+        "value": {
           "autotermination_minutes": 60,
           "cluster_name": "test-cluster-[UNIQUE_NAME]",
           "node_type_id": "[NODE_TYPE_ID]",
@@ -18,11 +20,13 @@
   }
 }
 {
+  "plan_version": 1,
+  "cli_version": "[DEV_VERSION]",
   "plan": {
     "resources.clusters.test_cluster": {
       "action": "update",
       "new_state": {
-        "config": {
+        "value": {
           "autotermination_minutes": 60,
           "cluster_name": "test-cluster-[UNIQUE_NAME]",
           "node_type_id": "[NODE_TYPE_ID]",
@@ -47,7 +51,9 @@
       "changes": {
         "local": {
           "num_workers": {
-            "action": "update"
+            "action": "update",
+            "old": 2,
+            "new": 3
           }
         }
       }
@@ -55,11 +61,13 @@
   }
 }
 {
+  "plan_version": 1,
+  "cli_version": "[DEV_VERSION]",
   "plan": {
     "resources.clusters.test_cluster": {
       "action": "resize",
       "new_state": {
-        "config": {
+        "value": {
           "autotermination_minutes": 60,
           "cluster_name": "test-cluster-[UNIQUE_NAME]",
           "node_type_id": "[NODE_TYPE_ID]",
@@ -85,7 +93,9 @@
       "changes": {
         "local": {
           "num_workers": {
-            "action": "resize"
+            "action": "resize",
+            "old": 3,
+            "new": 4
           }
         }
       }
@@ -93,11 +103,13 @@
   }
 }
 {
+  "plan_version": 1,
+  "cli_version": "[DEV_VERSION]",
   "plan": {
     "resources.clusters.test_cluster": {
       "action": "update",
       "new_state": {
-        "config": {
+        "value": {
           "autotermination_minutes": 60,
           "cluster_name": "test-cluster-[UNIQUE_NAME]",
           "node_type_id": "[NODE_TYPE_ID]",
@@ -123,10 +135,14 @@
       "changes": {
         "local": {
           "num_workers": {
-            "action": "resize"
+            "action": "resize",
+            "old": 4,
+            "new": 5
           },
           "spark_conf['spark.executor.memory']": {
-            "action": "update"
+            "action": "update",
+            "old": "2g",
+            "new": "4g"
           }
         }
       }

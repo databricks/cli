@@ -25,10 +25,7 @@ func New() *cobra.Command {
 		Short:   `Accounts Settings API allows users to manage settings at the account level.`,
 		Long:    `Accounts Settings API allows users to manage settings at the account level.`,
 		GroupID: "settings",
-		Annotations: map[string]string{
-			"package": "settings",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add subservices

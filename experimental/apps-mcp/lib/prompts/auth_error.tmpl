@@ -1,0 +1,20 @@
+{{- /*
+     * Actionable rror message shown when user is not authenticated to Databricks.
+     *
+     */ -}}
+
+Not authenticated to Databricks
+
+I need to know either the Databricks workspace URL or the Databricks profile name.
+
+The available profiles are:
+
+{{- range .Profiles }}
+- {{ .Name }} ({{ .Host }})
+{{- end }}
+
+IMPORTANT: YOU MUST ASK the user which of the configured profiles or databricks workspace URL they want to use.
+Only then call the `databricks_configure_auth` tool to configure the authentication.
+
+Do not run anything else before authenticating successfully.
+Once authenticated, you can use this tool again

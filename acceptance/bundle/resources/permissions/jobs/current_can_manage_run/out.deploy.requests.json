@@ -1,0 +1,29 @@
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/create",
+  "body": {
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/green/state/metadata.json"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "Untitled",
+    "queue": {
+      "enabled": true
+    }
+  }
+}
+{
+  "method": "PUT",
+  "path": "/api/2.0/permissions/jobs/[NUMID]",
+  "body": {
+    "access_control_list": [
+      {
+        "permission_level": "IS_OWNER",
+        "service_principal_name": "[USERNAME]"
+      }
+    ]
+  }
+}

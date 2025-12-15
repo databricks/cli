@@ -1,0 +1,9 @@
+{
+  "plan_version": 1,
+  "cli_version": "[DEV_VERSION]",
+  "plan": {
+    "resources.model_serving_endpoints.my_endpoint": {
+      "action": "create"
+    }
+  }
+}

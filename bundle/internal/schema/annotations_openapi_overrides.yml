@@ -1,3 +1,27 @@
+github.com/databricks/cli/bundle/config/resources.Alert:
+  "evaluation":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
+  "permissions":
+    "description": |-
+      PLACEHOLDER
+  "schedule":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.AlertPermissionLevel:
+  "_":
+    "enum":
+      - |-
+        CAN_EDIT
+      - |-
+        CAN_MANAGE
+      - |-
+        CAN_READ
+      - |-
+        CAN_RUN
 github.com/databricks/cli/bundle/config/resources.App:
   "app_status":
     "description": |-
@@ -465,12 +489,39 @@ github.com/databricks/cli/bundle/config/resources.RegisteredModel:
                     - EXECUTE
                   principal: account users
       ```
+  "aliases":
+    "description": |-
+      PLACEHOLDER
+  "browse_only":
+    "description": |-
+      PLACEHOLDER
+  "created_at":
+    "description": |-
+      PLACEHOLDER
+  "created_by":
+    "description": |-
+      PLACEHOLDER
+  "full_name":
+    "description": |-
+      PLACEHOLDER
   "grants":
     "description": |-
       PLACEHOLDER
   "lifecycle":
     "description": |-
       Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+  "metastore_id":
+    "description": |-
+      PLACEHOLDER
+  "owner":
+    "description": |-
+      PLACEHOLDER
+  "updated_at":
+    "description": |-
+      PLACEHOLDER
+  "updated_by":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.Schema:
   "_":
     "markdown_description": |-
@@ -776,6 +827,19 @@ github.com/databricks/databricks-sdk-go/service/catalog.MonitorTimeSeries:
   "granularities":
     "description": |-
       Granularities for aggregating data into time windows based on their timestamp. Valid values are 5 minutes, 30 minutes, 1 hour, 1 day, n weeks, 1 month, or 1 year.
+github.com/databricks/databricks-sdk-go/service/catalog.RegisteredModelAlias:
+  "catalog_name":
+    "description": |-
+      PLACEHOLDER
+  "id":
+    "description": |-
+      PLACEHOLDER
+  "model_name":
+    "description": |-
+      PLACEHOLDER
+  "schema_name":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/compute.AwsAttributes:
   "availability":
     "description": |-
@@ -811,6 +875,9 @@ github.com/databricks/databricks-sdk-go/service/compute.Environment:
   "dependencies":
     "description": |-
       List of pip dependencies, as supported by the version of pip in this environment.
+  "java_dependencies":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/compute.GcpAttributes:
   "availability":
     "description": |-
@@ -891,6 +958,9 @@ github.com/databricks/databricks-sdk-go/service/jobs.Task:
     "description": |-
       PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/jobs.TriggerSettings:
+  "model":
+    "description": |-
+      PLACEHOLDER
   "table_update":
     "description": |-
       PLACEHOLDER
@@ -905,6 +975,10 @@ github.com/databricks/databricks-sdk-go/service/pipelines.CronTrigger:
   "timezone_id":
     "description": |-
       PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/pipelines.IngestionPipelineDefinition:
+  "netsuite_jar_path":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/pipelines.PipelineLibrary:
   "whl":
     "deprecation_message": |-
@@ -914,6 +988,10 @@ github.com/databricks/databricks-sdk-go/service/pipelines.PipelineTrigger:
     "description": |-
       PLACEHOLDER
   "manual":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/pipelines.TableSpecificConfig:
+  "workday_report_parameters":
     "description": |-
       PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/serving.Route:
@@ -929,6 +1007,44 @@ github.com/databricks/databricks-sdk-go/service/serving.ServedModelInput:
     "description": |-
       PLACEHOLDER
   "model_version":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/sql.AlertV2Notification:
+  "subscriptions":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/sql.AlertV2Operand:
+  "column":
+    "description": |-
+      PLACEHOLDER
+  "value":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/sql.AlertV2OperandColumn:
+  "aggregation":
+    "description": |-
+      PLACEHOLDER
+  "display":
+    "description": |-
+      PLACEHOLDER
+  "name":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/sql.AlertV2OperandValue:
+  "bool_value":
+    "description": |-
+      PLACEHOLDER
+  "double_value":
+    "description": |-
+      PLACEHOLDER
+  "string_value":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/sql.AlertV2Subscription:
+  "destination_id":
+    "description": |-
+      PLACEHOLDER
+  "user_email":
     "description": |-
       PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/sql.Channel:

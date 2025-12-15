@@ -1,0 +1,65 @@
+{
+  "plan_version": 1,
+  "cli_version": "[DEV_VERSION]",
+  "plan": {
+    "resources.jobs.interim_gold_layer_job": {
+      "action": "skip",
+      "remote_state": {
+        "created_time": [UNIX_TIME_MILLIS],
+        "creator_user_name": "[USERNAME]",
+        "job_id": [NUMID],
+        "run_as_user_name": "[USERNAME]",
+        "settings": {
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/green/state/metadata.json"
+          },
+          "edit_mode": "UI_LOCKED",
+          "email_notifications": {},
+          "format": "MULTI_TASK",
+          "max_concurrent_runs": 1,
+          "name": "Untitled",
+          "queue": {
+            "enabled": true
+          },
+          "timeout_seconds": 0,
+          "webhook_notifications": {}
+        }
+      },
+      "changes": {
+        "remote": {
+          "email_notifications": {
+            "action": "skip",
+            "reason": "server_side_default"
+          },
+          "timeout_seconds": {
+            "action": "skip",
+            "reason": "server_side_default"
+          },
+          "webhook_notifications": {
+            "action": "skip",
+            "reason": "server_side_default"
+          }
+        }
+      }
+    },
+    "resources.jobs.interim_gold_layer_job.permissions": {
+      "depends_on": [
+        {
+          "node": "resources.jobs.interim_gold_layer_job",
+          "label": "${resources.jobs.interim_gold_layer_job.id}"
+        }
+      ],
+      "action": "skip",
+      "remote_state": {
+        "object_id": "/jobs/[NUMID]",
+        "permissions": [
+          {
+            "permission_level": "IS_OWNER",
+            "service_principal_name": "[USERNAME]"
+          }
+        ]
+      }
+    }
+  }
+}

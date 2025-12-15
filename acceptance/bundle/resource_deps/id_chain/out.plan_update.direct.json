@@ -1,9 +1,11 @@
 {
+  "plan_version": 1,
+  "cli_version": "[DEV_VERSION]",
   "plan": {
     "resources.jobs.a": {
       "action": "update",
       "new_state": {
-        "config": {
+        "value": {
           "deployment": {
             "kind": "BUNDLE",
             "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
@@ -44,7 +46,9 @@
       "changes": {
         "local": {
           "description": {
-            "action": "update"
+            "action": "update",
+            "old": "aa_desc",
+            "new": "aa_new_desc"
           }
         },
         "remote": {
@@ -72,7 +76,7 @@
       ],
       "action": "update",
       "new_state": {
-        "config": {
+        "value": {
           "deployment": {
             "kind": "BUNDLE",
             "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
@@ -113,7 +117,9 @@
       "changes": {
         "local": {
           "description": {
-            "action": "update"
+            "action": "update",
+            "old": "prefix [NUMID]",
+            "new": "new_prefix [NUMID]"
           }
         },
         "remote": {
@@ -141,7 +147,7 @@
       ],
       "action": "update",
       "new_state": {
-        "config": {
+        "value": {
           "deployment": {
             "kind": "BUNDLE",
             "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
@@ -182,7 +188,9 @@
       "changes": {
         "local": {
           "description": {
-            "action": "update"
+            "action": "update",
+            "old": "prefix [NUMID]",
+            "new": "new_prefix [NUMID]"
           }
         },
         "remote": {
@@ -210,7 +218,7 @@
       ],
       "action": "update",
       "new_state": {
-        "config": {
+        "value": {
           "deployment": {
             "kind": "BUNDLE",
             "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
@@ -251,7 +259,9 @@
       "changes": {
         "local": {
           "description": {
-            "action": "update"
+            "action": "update",
+            "old": "prefix [NUMID]",
+            "new": "new_prefix [NUMID]"
           }
         },
         "remote": {
@@ -279,7 +289,7 @@
       ],
       "action": "update",
       "new_state": {
-        "config": {
+        "value": {
           "deployment": {
             "kind": "BUNDLE",
             "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
@@ -320,7 +330,9 @@
       "changes": {
         "local": {
           "description": {
-            "action": "update"
+            "action": "update",
+            "old": "prefix [NUMID]",
+            "new": "new_prefix [NUMID]"
           }
         },
         "remote": {

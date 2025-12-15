@@ -16,15 +16,11 @@ if TYPE_CHECKING:
 @dataclass(kw_only=True)
 class PostgresCatalogConfig:
     """
-    :meta private: [EXPERIMENTAL]
-
     PG-specific catalog-level configuration parameters
     """
 
     slot_config: VariableOrOptional[PostgresSlotConfig] = None
     """
-    :meta private: [EXPERIMENTAL]
-    
     Optional. The Postgres slot configuration to use for logical replication
     """
 
@@ -41,8 +37,6 @@ class PostgresCatalogConfigDict(TypedDict, total=False):
 
     slot_config: VariableOrOptional[PostgresSlotConfigParam]
     """
-    :meta private: [EXPERIMENTAL]
-    
     Optional. The Postgres slot configuration to use for logical replication
     """
 

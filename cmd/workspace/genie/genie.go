@@ -28,14 +28,12 @@ func New() *cobra.Command {
   least CAN USE permission on a Pro or Serverless SQL warehouse. Also,
   Databricks Assistant must be enabled.`,
 		GroupID: "dashboards",
-		Annotations: map[string]string{
-			"package": "dashboards",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
 	cmd.AddCommand(newCreateMessage())
+	cmd.AddCommand(newCreateSpace())
 	cmd.AddCommand(newDeleteConversation())
 	cmd.AddCommand(newDeleteConversationMessage())
 	cmd.AddCommand(newExecuteMessageAttachmentQuery())
@@ -51,6 +49,7 @@ func New() *cobra.Command {
 	cmd.AddCommand(newSendMessageFeedback())
 	cmd.AddCommand(newStartConversation())
 	cmd.AddCommand(newTrashSpace())
+	cmd.AddCommand(newUpdateSpace())
 
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
@@ -86,7 +85,7 @@ func newCreateMessage() *cobra.Command {
 	cmd.Use = "create-message SPACE_ID CONVERSATION_ID CONTENT"
 	cmd.Short = `Create conversation message.`
 	cmd.Long = `Create conversation message.
-  
+
   Create new message in a [conversation](:method:genie/startconversation). The
   AI response uses all previously created messages in the conversation to
   respond.
@@ -165,6 +164,98 @@ func newCreateMessage() *cobra.Command {
 	return cmd
 }
 
+// start create-space command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createSpaceOverrides []func(
+	*cobra.Command,
+	*dashboards.GenieCreateSpaceRequest,
+)
+
+func newCreateSpace() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var createSpaceReq dashboards.GenieCreateSpaceRequest
+	var createSpaceJson flags.JsonFlag
+
+	cmd.Flags().Var(&createSpaceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().StringVar(&createSpaceReq.Description, "description", createSpaceReq.Description, `Optional description.`)
+	cmd.Flags().StringVar(&createSpaceReq.ParentPath, "parent-path", createSpaceReq.ParentPath, `Parent folder path where the space will be registered.`)
+	cmd.Flags().StringVar(&createSpaceReq.Title, "title", createSpaceReq.Title, `Optional title override.`)
+
+	cmd.Use = "create-space WAREHOUSE_ID SERIALIZED_SPACE"
+	cmd.Short = `Create Genie Space.`
+	cmd.Long = `Create Genie Space.
+
+  Creates a Genie space from a serialized payload.
+
+  Arguments:
+    WAREHOUSE_ID: Warehouse to associate with the new space
+    SERIALIZED_SPACE: The contents of the Genie Space in serialized string form. Use the [Get
+      Genie Space](:method:genie/getspace) API to retrieve an example response,
+      which includes the serialized_space field. This field provides the
+      structure of the JSON string that represents the space's layout and
+      components.`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().Changed("json") {
+			err := root.ExactArgs(0)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, no positional arguments are required. Provide 'warehouse_id', 'serialized_space' in your JSON input")
+			}
+			return nil
+		}
+		check := root.ExactArgs(2)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := createSpaceJson.Unmarshal(&createSpaceReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		if !cmd.Flags().Changed("json") {
+			createSpaceReq.WarehouseId = args[0]
+		}
+		if !cmd.Flags().Changed("json") {
+			createSpaceReq.SerializedSpace = args[1]
+		}
+
+		response, err := w.Genie.CreateSpace(ctx, createSpaceReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createSpaceOverrides {
+		fn(cmd, &createSpaceReq)
+	}
+
+	return cmd
+}
+
 // start delete-conversation command
 
 // Slice with functions to override default command behavior.
@@ -182,7 +273,7 @@ func newDeleteConversation() *cobra.Command {
 	cmd.Use = "delete-conversation SPACE_ID CONVERSATION_ID"
 	cmd.Short = `Delete conversation.`
 	cmd.Long = `Delete conversation.
-  
+
   Delete a conversation.
 
   Arguments:
@@ -240,7 +331,7 @@ func newDeleteConversationMessage() *cobra.Command {
 	cmd.Use = "delete-conversation-message SPACE_ID CONVERSATION_ID MESSAGE_ID"
 	cmd.Short = `Delete conversation message.`
 	cmd.Long = `Delete conversation message.
-  
+
   Delete a conversation message.
 
   Arguments:
@@ -300,7 +391,7 @@ func newExecuteMessageAttachmentQuery() *cobra.Command {
 	cmd.Use = "execute-message-attachment-query SPACE_ID CONVERSATION_ID MESSAGE_ID ATTACHMENT_ID"
 	cmd.Short = `Execute message attachment SQL query.`
 	cmd.Long = `Execute message attachment SQL query.
-  
+
   Execute the SQL for a message query attachment. Use this API when the query
   attachment has expired and needs to be re-executed.
 
@@ -363,7 +454,7 @@ func newExecuteMessageQuery() *cobra.Command {
 	cmd.Use = "execute-message-query SPACE_ID CONVERSATION_ID MESSAGE_ID"
 	cmd.Short = `[Deprecated] Execute SQL query in a conversation message.`
 	cmd.Long = `[Deprecated] Execute SQL query in a conversation message.
-  
+
   DEPRECATED: Use [Execute Message Attachment
   Query](:method:genie/executemessageattachmentquery) instead.
 
@@ -427,7 +518,7 @@ func newGetMessage() *cobra.Command {
 	cmd.Use = "get-message SPACE_ID CONVERSATION_ID MESSAGE_ID"
 	cmd.Short = `Get conversation message.`
 	cmd.Long = `Get conversation message.
-  
+
   Get message from conversation.
 
   Arguments:
@@ -489,7 +580,7 @@ func newGetMessageAttachmentQueryResult() *cobra.Command {
 	cmd.Use = "get-message-attachment-query-result SPACE_ID CONVERSATION_ID MESSAGE_ID ATTACHMENT_ID"
 	cmd.Short = `Get message attachment SQL query result.`
 	cmd.Long = `Get message attachment SQL query result.
-  
+
   Get the result of SQL query if the message has a query attachment. This is
   only available if a message has a query attachment and the message status is
   EXECUTING_QUERY OR COMPLETED.
@@ -553,7 +644,7 @@ func newGetMessageQueryResult() *cobra.Command {
 	cmd.Use = "get-message-query-result SPACE_ID CONVERSATION_ID MESSAGE_ID"
 	cmd.Short = `[Deprecated] Get conversation message SQL query result.`
 	cmd.Long = `[Deprecated] Get conversation message SQL query result.
-  
+
   DEPRECATED: Use [Get Message Attachment Query
   Result](:method:genie/getmessageattachmentqueryresult) instead.
 
@@ -617,7 +708,7 @@ func newGetMessageQueryResultByAttachment() *cobra.Command {
 	cmd.Use = "get-message-query-result-by-attachment SPACE_ID CONVERSATION_ID MESSAGE_ID ATTACHMENT_ID"
 	cmd.Short = `[Deprecated] Get conversation message SQL query result.`
 	cmd.Long = `[Deprecated] Get conversation message SQL query result.
-  
+
   DEPRECATED: Use [Get Message Attachment Query
   Result](:method:genie/getmessageattachmentqueryresult) instead.
 
@@ -680,10 +771,12 @@ func newGetSpace() *cobra.Command {
 
 	var getSpaceReq dashboards.GenieGetSpaceRequest
 
+	cmd.Flags().BoolVar(&getSpaceReq.IncludeSerializedSpace, "include-serialized-space", getSpaceReq.IncludeSerializedSpace, `Whether to include the serialized space export in the response.`)
+
 	cmd.Use = "get-space SPACE_ID"
 	cmd.Short = `Get Genie Space.`
 	cmd.Long = `Get Genie Space.
-  
+
   Get details of a Genie Space.
 
   Arguments:
@@ -742,7 +835,7 @@ func newListConversationMessages() *cobra.Command {
 	cmd.Use = "list-conversation-messages SPACE_ID CONVERSATION_ID"
 	cmd.Short = `List conversation messages.`
 	cmd.Long = `List conversation messages.
-  
+
   List messages in a conversation
 
   Arguments:
@@ -804,7 +897,7 @@ func newListConversations() *cobra.Command {
 	cmd.Use = "list-conversations SPACE_ID"
 	cmd.Short = `List conversations in a Genie Space.`
 	cmd.Long = `List conversations in a Genie Space.
-  
+
   Get a list of conversations in a Genie Space.
 
   Arguments:
@@ -863,7 +956,7 @@ func newListSpaces() *cobra.Command {
 	cmd.Use = "list-spaces"
 	cmd.Short = `List Genie spaces.`
 	cmd.Long = `List Genie spaces.
-  
+
   Get list of Genie Spaces.`
 
 	cmd.Annotations = make(map[string]string)
@@ -917,14 +1010,14 @@ func newSendMessageFeedback() *cobra.Command {
 	cmd.Use = "send-message-feedback SPACE_ID CONVERSATION_ID MESSAGE_ID RATING"
 	cmd.Short = `Send message feedback.`
 	cmd.Long = `Send message feedback.
-  
+
   Send feedback for a message.
 
   Arguments:
     SPACE_ID: The ID associated with the Genie space where the message is located.
     CONVERSATION_ID: The ID associated with the conversation.
     MESSAGE_ID: The ID associated with the message to provide feedback for.
-    RATING: The rating (POSITIVE, NEGATIVE, or NONE). 
+    RATING: The rating (POSITIVE, NEGATIVE, or NONE).
       Supported values: [NEGATIVE, NONE, POSITIVE]`
 
 	cmd.Annotations = make(map[string]string)
@@ -1014,7 +1107,7 @@ func newStartConversation() *cobra.Command {
 	cmd.Use = "start-conversation SPACE_ID CONTENT"
 	cmd.Short = `Start conversation.`
 	cmd.Long = `Start conversation.
-  
+
   Start a new conversation.
 
   Arguments:
@@ -1107,7 +1200,7 @@ func newTrashSpace() *cobra.Command {
 	cmd.Use = "trash-space SPACE_ID"
 	cmd.Short = `Trash Genie Space.`
 	cmd.Long = `Trash Genie Space.
-  
+
   Move a Genie Space to the trash.
 
   Arguments:
@@ -1141,6 +1234,82 @@ func newTrashSpace() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range trashSpaceOverrides {
 		fn(cmd, &trashSpaceReq)
+	}
+
+	return cmd
+}
+
+// start update-space command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updateSpaceOverrides []func(
+	*cobra.Command,
+	*dashboards.GenieUpdateSpaceRequest,
+)
+
+func newUpdateSpace() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updateSpaceReq dashboards.GenieUpdateSpaceRequest
+	var updateSpaceJson flags.JsonFlag
+
+	cmd.Flags().Var(&updateSpaceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().StringVar(&updateSpaceReq.Description, "description", updateSpaceReq.Description, `Optional description.`)
+	cmd.Flags().StringVar(&updateSpaceReq.SerializedSpace, "serialized-space", updateSpaceReq.SerializedSpace, `The contents of the Genie Space in serialized string form (full replacement).`)
+	cmd.Flags().StringVar(&updateSpaceReq.Title, "title", updateSpaceReq.Title, `Optional title override.`)
+	cmd.Flags().StringVar(&updateSpaceReq.WarehouseId, "warehouse-id", updateSpaceReq.WarehouseId, `Optional warehouse override.`)
+
+	cmd.Use = "update-space SPACE_ID"
+	cmd.Short = `Update Genie Space.`
+	cmd.Long = `Update Genie Space.
+
+  Updates a Genie space with a serialized payload.
+
+  Arguments:
+    SPACE_ID: Genie space ID`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := updateSpaceJson.Unmarshal(&updateSpaceReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		updateSpaceReq.SpaceId = args[0]
+
+		response, err := w.Genie.UpdateSpace(ctx, updateSpaceReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updateSpaceOverrides {
+		fn(cmd, &updateSpaceReq)
 	}
 
 	return cmd

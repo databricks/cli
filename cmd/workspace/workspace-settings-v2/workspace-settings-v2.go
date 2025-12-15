@@ -20,11 +20,8 @@ func New() *cobra.Command {
 		Use:     "workspace-settings-v2",
 		Short:   `APIs to manage workspace level settings.`,
 		Long:    `APIs to manage workspace level settings`,
-		GroupID: "settingsv2",
-		Annotations: map[string]string{
-			"package": "settingsv2",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		GroupID: "settings",
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -57,10 +54,13 @@ func newGetPublicWorkspaceSetting() *cobra.Command {
 	cmd.Use = "get-public-workspace-setting NAME"
 	cmd.Short = `Get a workspace setting.`
 	cmd.Long = `Get a workspace setting.
-  
+
   Get a setting value at workspace level. See
   :method:settingsv2/listworkspacesettingsmetadata for list of setting available
-  via public APIs.`
+  via public APIs.
+
+  Arguments:
+    NAME: Name of the setting`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -115,7 +115,7 @@ func newListWorkspaceSettingsMetadata() *cobra.Command {
 	cmd.Use = "list-workspace-settings-metadata"
 	cmd.Short = `List valid setting keys and their metadata.`
 	cmd.Long = `List valid setting keys and their metadata.
-  
+
   List valid setting keys and metadata. These settings are available to be
   referenced via GET :method:settingsv2/getpublicworkspacesetting and PATCH
   :method:settingsv2/patchpublicworkspacesetting APIs`
@@ -187,10 +187,15 @@ func newPatchPublicWorkspaceSetting() *cobra.Command {
 	cmd.Use = "patch-public-workspace-setting NAME"
 	cmd.Short = `Update a workspace setting.`
 	cmd.Long = `Update a workspace setting.
-  
+
   Patch a setting value at workspace level. See
   :method:settingsv2/listworkspacesettingsmetadata for list of setting available
-  via public APIs at workspace level.`
+  via public APIs at workspace level. To determine the correct field to include
+  in a patch request, refer to the type field of the setting returned in the
+  :method:settingsv2/listworkspacesettingsmetadata response.
+
+  Arguments:
+    NAME: Name of the setting`
 
 	cmd.Annotations = make(map[string]string)
 

@@ -24,16 +24,13 @@ func New() *cobra.Command {
 		Long: `A catalog is the first layer of Unity Catalog’s three-level namespace.
   It’s used to organize your data assets. Users can see all catalogs on which
   they have been assigned the USE_CATALOG data permission.
-  
+
   In Unity Catalog, admins and data stewards manage users and their access to
   data centrally across all of the workspaces in a Databricks account. Users in
   different workspaces can share access to the same data, depending on
   privileges granted centrally in Unity Catalog.`,
 		GroupID: "catalog",
-		Annotations: map[string]string{
-			"package": "catalog",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -79,7 +76,7 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create NAME"
 	cmd.Short = `Create a catalog.`
 	cmd.Long = `Create a catalog.
-  
+
   Creates a new catalog instance in the parent metastore if the caller is a
   metastore admin or has the **CREATE_CATALOG** privilege.
 
@@ -159,7 +156,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete NAME"
 	cmd.Short = `Delete a catalog.`
 	cmd.Long = `Delete a catalog.
-  
+
   Deletes the catalog that matches the supplied name. The caller must be a
   metastore admin or the owner of the catalog.
 
@@ -218,7 +215,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get NAME"
 	cmd.Short = `Get a catalog.`
 	cmd.Long = `Get a catalog.
-  
+
   Gets the specified catalog in a metastore. The caller must be a metastore
   admin, the owner of the catalog, or a user that has the **USE_CATALOG**
   privilege set for their account.
@@ -281,16 +278,16 @@ func newList() *cobra.Command {
 	cmd.Use = "list"
 	cmd.Short = `List catalogs.`
 	cmd.Long = `List catalogs.
-  
+
   Gets an array of catalogs in the metastore. If the caller is the metastore
   admin, all catalogs will be retrieved. Otherwise, only catalogs owned by the
   caller (or for which the caller has the **USE_CATALOG** privilege) will be
   retrieved. There is no guarantee of a specific ordering of the elements in the
   array.
-  
+
   NOTE: we recommend using max_results=0 to use the paginated version of this
   API. Unpaginated calls will be deprecated soon.
-  
+
   PAGINATION BEHAVIOR: When using pagination (max_results >= 0), a page may
   contain zero results while still providing a next_page_token. Clients must
   continue reading pages until next_page_token is absent, which is the only
@@ -352,7 +349,7 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update NAME"
 	cmd.Short = `Update a catalog.`
 	cmd.Long = `Update a catalog.
-  
+
   Updates the catalog that matches the supplied name. The caller must be either
   the owner of the catalog, or a metastore admin (when changing the owner field
   of the catalog).

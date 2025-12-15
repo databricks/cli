@@ -15,7 +15,7 @@ for target in "${targets[@]}"; do
     trace $CLI bundle plan -t $target
 
     # Debug plan
-    $CLI bundle debug plan -t $target > out.plan_$target.$DATABRICKS_BUNDLE_ENGINE.json
+    $CLI bundle plan -o json -t $target > out.plan_$target.$DATABRICKS_BUNDLE_ENGINE.json
 
     # Deploy
     rm -f out.requests.txt

@@ -37,7 +37,10 @@ func (r *ReleaseCache) Load(ctx context.Context) (Versions, error) {
 		})
 	}
 	cached, err := r.cache.LoadCache()
-	return cached.Data, err
+	if err != nil {
+		return nil, err
+	}
+	return cached.Data, nil
 }
 
 // getVersions is considered to be a private API, as we want the usage go through a cache
@@ -45,7 +48,7 @@ func getVersions(ctx context.Context, org, repo string) (Versions, error) {
 	var releases Versions
 	log.Debugf(ctx, "Fetching latest releases for %s/%s from GitHub API", org, repo)
 	url := fmt.Sprintf("%s/repos/%s/%s/releases", gitHubAPI, org, repo)
-	err := httpGetAndUnmarshal(ctx, url, &releases)
+	_, err := httpGetAndUnmarshal(ctx, url, &releases)
 	return releases, err
 }
 

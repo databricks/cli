@@ -1,5 +1,5 @@
-Local = false
-Cloud = true
+Local = true
+CloudSlow = true
 RecordRequests = false
 
 # I get this error, not sure why:

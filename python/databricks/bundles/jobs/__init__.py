@@ -148,6 +148,11 @@ __all__ = [
     "MavenLibrary",
     "MavenLibraryDict",
     "MavenLibraryParam",
+    "ModelTriggerConfiguration",
+    "ModelTriggerConfigurationCondition",
+    "ModelTriggerConfigurationConditionParam",
+    "ModelTriggerConfigurationDict",
+    "ModelTriggerConfigurationParam",
     "NotebookTask",
     "NotebookTaskDict",
     "NotebookTaskParam",
@@ -507,6 +512,15 @@ from databricks.bundles.jobs._models.maven_library import (
     MavenLibrary,
     MavenLibraryDict,
     MavenLibraryParam,
+)
+from databricks.bundles.jobs._models.model_trigger_configuration import (
+    ModelTriggerConfiguration,
+    ModelTriggerConfigurationDict,
+    ModelTriggerConfigurationParam,
+)
+from databricks.bundles.jobs._models.model_trigger_configuration_condition import (
+    ModelTriggerConfigurationCondition,
+    ModelTriggerConfigurationConditionParam,
 )
 from databricks.bundles.jobs._models.notebook_task import (
     NotebookTask,

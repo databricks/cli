@@ -1,4 +1,6 @@
 {
+  "plan_version": 1,
+  "cli_version": "[DEV_VERSION]",
   "plan": {
     "resources.jobs.bar": {
       "depends_on": [
@@ -9,7 +11,7 @@
       ],
       "action": "update",
       "new_state": {
-        "config": {
+        "value": {
           "deployment": {
             "kind": "BUNDLE",
             "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
@@ -53,7 +55,9 @@
       "changes": {
         "local": {
           "description": {
-            "action": "update"
+            "action": "update",
+            "old": "depends on foo id [FOO_ID]",
+            "new": "depends on foo id ${resources.pipelines.foo.id}"
           }
         },
         "remote": {
@@ -75,21 +79,23 @@
     "resources.pipelines.foo": {
       "action": "recreate",
       "new_state": {
-        "config": {
-          "catalog": "mynewcatalog",
+        "value": {
           "channel": "CURRENT",
           "deployment": {
             "kind": "BUNDLE",
             "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
           },
           "edition": "ADVANCED",
-          "name": "pipeline foo"
+          "name": "pipeline foo",
+          "storage": "dbfs:/my-new-storage"
         }
       },
       "changes": {
         "local": {
-          "catalog": {
-            "action": "recreate"
+          "storage": {
+            "action": "recreate",
+            "old": "dbfs:/my-storage",
+            "new": "dbfs:/my-new-storage"
           }
         }
       }

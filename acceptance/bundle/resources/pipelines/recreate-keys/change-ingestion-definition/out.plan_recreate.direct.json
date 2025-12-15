@@ -1,9 +1,11 @@
 {
+  "plan_version": 1,
+  "cli_version": "[DEV_VERSION]",
   "plan": {
     "resources.pipelines.my": {
       "action": "recreate",
       "new_state": {
-        "config": {
+        "value": {
           "channel": "CURRENT",
           "deployment": {
             "kind": "BUNDLE",
@@ -29,7 +31,9 @@
       "changes": {
         "local": {
           "ingestion_definition.connection_name": {
-            "action": "recreate"
+            "action": "recreate",
+            "old": "my_connection",
+            "new": "my_new_connection"
           }
         }
       }

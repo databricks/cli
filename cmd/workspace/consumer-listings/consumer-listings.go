@@ -23,10 +23,7 @@ func New() *cobra.Command {
 		Long: `Listings are the core entities in the Marketplace. They represent the products
   that are available for consumption.`,
 		GroupID: "marketplace",
-		Annotations: map[string]string{
-			"package": "marketplace",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -62,7 +59,7 @@ func newBatchGet() *cobra.Command {
 	cmd.Use = "batch-get"
 	cmd.Short = `Get one batch of listings. One may specify up to 50 IDs per request.`
 	cmd.Long = `Get one batch of listings. One may specify up to 50 IDs per request.
-  
+
   Batch get a published listing in the Databricks Marketplace that the consumer
   has access to.`
 
@@ -114,7 +111,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get ID"
 	cmd.Short = `Get listing.`
 	cmd.Long = `Get listing.
-  
+
   Get a published listing in the Databricks Marketplace that the consumer has
   access to.`
 
@@ -190,7 +187,7 @@ func newList() *cobra.Command {
 	cmd.Use = "list"
 	cmd.Short = `List listings.`
 	cmd.Long = `List listings.
-  
+
   List all published listings in the Databricks Marketplace that the consumer
   has access to.`
 
@@ -247,7 +244,7 @@ func newSearch() *cobra.Command {
 	cmd.Use = "search QUERY"
 	cmd.Short = `Search listings.`
 	cmd.Long = `Search listings.
-  
+
   Search published listings in the Databricks Marketplace that the consumer has
   access to. This query supports a variety of different search parameters and
   performs fuzzy matching.

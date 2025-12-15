@@ -1,0 +1,12 @@
+{
+  "plan_version": 1,
+  "cli_version": "[DEV_VERSION]",
+  "plan": {
+    "resources.jobs.interim_gold_layer_job": {
+      "action": "skip"
+    },
+    "resources.jobs.interim_gold_layer_job.permissions": {
+      "action": "skip"
+    }
+  }
+}

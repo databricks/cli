@@ -1,6 +1,11 @@
 {
+  "plan_version": 1,
+  "cli_version": "[DEV_VERSION]",
   "plan": {
     "resources.experiments.foo": {
+      "action": "create"
+    },
+    "resources.experiments.foo.permissions": {
       "action": "create"
     }
   }

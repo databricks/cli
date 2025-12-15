@@ -21,26 +21,24 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "pipelines",
-		Short: `The Delta Live Tables API allows you to create, edit, delete, start, and view details about pipelines.`,
-		Long: `The Delta Live Tables API allows you to create, edit, delete, start, and view
-  details about pipelines.
-  
-  Delta Live Tables is a framework for building reliable, maintainable, and
-  testable data processing pipelines. You define the transformations to perform
-  on your data, and Delta Live Tables manages task orchestration, cluster
-  management, monitoring, data quality, and error handling.
-  
+		Short: `The Lakeflow Spark Declarative Pipelines API allows you to create, edit, delete, start, and view details about pipelines.`,
+		Long: `The Lakeflow Spark Declarative Pipelines API allows you to create, edit,
+  delete, start, and view details about pipelines.
+
+  Spark Declarative Pipelines is a framework for building reliable,
+  maintainable, and testable data processing pipelines. You define the
+  transformations to perform on your data, and Spark Declarative Pipelines
+  manages task orchestration, cluster management, monitoring, data quality, and
+  error handling.
+
   Instead of defining your data pipelines using a series of separate Apache
-  Spark tasks, Delta Live Tables manages how your data is transformed based on a
-  target schema you define for each processing step. You can also enforce data
-  quality with Delta Live Tables expectations. Expectations allow you to define
-  expected data quality and specify how to handle records that fail those
-  expectations.`,
-		GroupID: "pipelines",
-		Annotations: map[string]string{
-			"package": "pipelines",
-		},
-		RunE: root.ReportUnknownSubcommand,
+  Spark tasks, Spark Declarative Pipelines manages how your data is transformed
+  based on a target schema you define for each processing step. You can also
+  enforce data quality with Spark Declarative Pipelines expectations.
+  Expectations allow you to define expected data quality and specify how to
+  handle records that fail those expectations.`,
+		GroupID: "lakeflow",
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -87,7 +85,7 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create"
 	cmd.Short = `Create a pipeline.`
 	cmd.Long = `Create a pipeline.
-  
+
   Creates a new data processing pipeline based on the requested configuration.
   If successful, this method returns the ID of the new pipeline.`
 
@@ -149,9 +147,10 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete PIPELINE_ID"
 	cmd.Short = `Delete a pipeline.`
 	cmd.Long = `Delete a pipeline.
-  
-  Deletes a pipeline. Deleting a pipeline is a permanent action that stops and
-  removes the pipeline and its tables. You cannot undo this action.`
+
+  Deletes a pipeline. If the pipeline publishes to Unity Catalog, pipeline
+  deletion will cascade to all pipeline tables. Please reach out to Databricks
+  support for assistance to undo this action.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -278,7 +277,7 @@ func newGetPermissionLevels() *cobra.Command {
 	cmd.Use = "get-permission-levels PIPELINE_ID"
 	cmd.Short = `Get pipeline permission levels.`
 	cmd.Long = `Get pipeline permission levels.
-  
+
   Gets the permission levels that a user can have on an object.
 
   Arguments:
@@ -346,7 +345,7 @@ func newGetPermissions() *cobra.Command {
 	cmd.Use = "get-permissions PIPELINE_ID"
 	cmd.Short = `Get pipeline permissions.`
 	cmd.Long = `Get pipeline permissions.
-  
+
   Gets the permissions of a pipeline. Pipelines can inherit permissions from
   their root object.
 
@@ -415,7 +414,7 @@ func newGetUpdate() *cobra.Command {
 	cmd.Use = "get-update PIPELINE_ID UPDATE_ID"
 	cmd.Short = `Get a pipeline update.`
 	cmd.Long = `Get a pipeline update.
-  
+
   Gets an update from an active pipeline.
 
   Arguments:
@@ -478,7 +477,7 @@ func newListPipelineEvents() *cobra.Command {
 	cmd.Use = "list-pipeline-events PIPELINE_ID"
 	cmd.Short = `List pipeline events.`
 	cmd.Long = `List pipeline events.
-  
+
   Retrieves events for a pipeline.
 
   Arguments:
@@ -548,8 +547,8 @@ func newListPipelines() *cobra.Command {
 	cmd.Use = "list-pipelines"
 	cmd.Short = `List pipelines.`
 	cmd.Long = `List pipelines.
-  
-  Lists pipelines defined in the Delta Live Tables system.`
+
+  Lists pipelines defined in the Spark Declarative Pipelines system.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -600,7 +599,7 @@ func newListUpdates() *cobra.Command {
 	cmd.Use = "list-updates PIPELINE_ID"
 	cmd.Short = `List pipeline updates.`
 	cmd.Long = `List pipeline updates.
-  
+
   List updates for an active pipeline.
 
   Arguments:
@@ -673,7 +672,7 @@ func newSetPermissions() *cobra.Command {
 	cmd.Use = "set-permissions PIPELINE_ID"
 	cmd.Short = `Set pipeline permissions.`
 	cmd.Long = `Set pipeline permissions.
-  
+
   Sets permissions on an object, replacing existing permissions if they exist.
   Deletes all direct permissions if none are specified. Objects can inherit
   permissions from their root object.
@@ -767,12 +766,13 @@ func newStartUpdate() *cobra.Command {
 	cmd.Flags().BoolVar(&startUpdateReq.FullRefresh, "full-refresh", startUpdateReq.FullRefresh, `If true, this update will reset all tables before running.`)
 	// TODO: array: full_refresh_selection
 	// TODO: array: refresh_selection
+	// TODO: complex arg: rewind_spec
 	cmd.Flags().BoolVar(&startUpdateReq.ValidateOnly, "validate-only", startUpdateReq.ValidateOnly, `If true, this update only validates the correctness of pipeline source code but does not materialize or publish any datasets.`)
 
 	cmd.Use = "start-update PIPELINE_ID"
 	cmd.Short = `Start a pipeline.`
 	cmd.Long = `Start a pipeline.
-  
+
   Starts a new update for the pipeline. If there is already an active update for
   the pipeline, the request will fail and the active update will remain running.`
 
@@ -856,7 +856,7 @@ func newStop() *cobra.Command {
 	cmd.Use = "stop PIPELINE_ID"
 	cmd.Short = `Stop a pipeline.`
 	cmd.Long = `Stop a pipeline.
-  
+
   Stops the pipeline by canceling the active update. If there is no active
   update for the pipeline, this request is a no-op.`
 
@@ -969,7 +969,7 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update PIPELINE_ID"
 	cmd.Short = `Edit a pipeline.`
 	cmd.Long = `Edit a pipeline.
-  
+
   Updates a pipeline with the supplied configuration.
 
   Arguments:
@@ -1054,7 +1054,7 @@ func newUpdatePermissions() *cobra.Command {
 	cmd.Use = "update-permissions PIPELINE_ID"
 	cmd.Short = `Update pipeline permissions.`
 	cmd.Long = `Update pipeline permissions.
-  
+
   Updates the permissions on a pipeline. Pipelines can inherit permissions from
   their root object.
 

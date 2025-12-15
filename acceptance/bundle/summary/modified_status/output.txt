@@ -1,11 +1,31 @@
 
 === Initial view of resources without id and modified_status=created
 >>> [CLI] bundle summary -o json
-Warning: unknown field: alerts
-  at resources
-  in databricks.yml:4:3
-
 {
+  "alerts": {
+    "my_alert": {
+      "display_name": "test-alert",
+      "evaluation": {
+        "comparison_operator": "EQUAL",
+        "source": {
+          "name": "1"
+        },
+        "threshold": {
+          "value": {
+            "double_value": 2
+          }
+        }
+      },
+      "modified_status": "created",
+      "parent_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/resources",
+      "query_text": "select 2",
+      "schedule": {
+        "quartz_cron_schedule": "44 19 */1 * * ?",
+        "timezone_id": "Europe/Amsterdam"
+      },
+      "warehouse_id": "aaaaaaaaaaaaaaaa"
+    }
+  },
   "pipelines": {
     "my_pipeline": {
       "channel": "CURRENT",
@@ -48,10 +68,6 @@ Warning: unknown field: alerts
 }
 
 >>> [CLI] bundle deploy
-Warning: unknown field: alerts
-  at resources
-  in databricks.yml:4:3
-
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Deploying resources...
 Updating deployment state...
@@ -59,11 +75,32 @@ Deployment complete!
 
 === Post-deployment view of resources with id and without modified_status
 >>> [CLI] bundle summary -o json
-Warning: unknown field: alerts
-  at resources
-  in databricks.yml:4:3
-
 {
+  "alerts": {
+    "my_alert": {
+      "display_name": "test-alert",
+      "evaluation": {
+        "comparison_operator": "EQUAL",
+        "source": {
+          "name": "1"
+        },
+        "threshold": {
+          "value": {
+            "double_value": 2
+          }
+        }
+      },
+      "id": "[UUID]",
+      "parent_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/resources",
+      "query_text": "select 2",
+      "schedule": {
+        "quartz_cron_schedule": "44 19 */1 * * ?",
+        "timezone_id": "Europe/Amsterdam"
+      },
+      "url": "[DATABRICKS_URL]/sql/alerts-v2/[UUID]?o=[NUMID]",
+      "warehouse_id": "aaaaaaaaaaaaaaaa"
+    }
+  },
   "pipelines": {
     "my_pipeline": {
       "channel": "CURRENT",
@@ -111,6 +148,13 @@ Warning: unknown field: alerts
 === Expecting all resources to have modified_status=deleted
 >>> [CLI] bundle summary -o json
 {
+  "alerts": {
+    "my_alert": {
+      "id": "[UUID]",
+      "modified_status": "deleted",
+      "url": "[DATABRICKS_URL]/sql/alerts-v2/[UUID]?o=[NUMID]"
+    }
+  },
   "pipelines": {
     "my_pipeline": {
       "id": "[UUID]",
@@ -136,16 +180,17 @@ Warning: unknown field: alerts
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
-  delete pipeline my_pipeline
-  delete schema my_schema
-  delete sql_warehouse my_sql_warehouse
+  delete resources.alerts.my_alert
+  delete resources.pipelines.my_pipeline
+  delete resources.schemas.my_schema
+  delete resources.sql_warehouses.my_sql_warehouse
 
 This action will result in the deletion of the following UC schemas. Any underlying data may be lost:
-  delete schema my_schema
+  delete resources.schemas.my_schema
 
 This action will result in the deletion of the following Lakeflow Declarative Pipelines along with the
 Streaming Tables (STs) and Materialized Views (MVs) managed by them:
-  delete pipeline my_pipeline
+  delete resources.pipelines.my_pipeline
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 

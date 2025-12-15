@@ -1663,6 +1663,14 @@ type ResourceJobTriggerFileArrival struct {
 	WaitAfterLastChangeSeconds    int    `json:"wait_after_last_change_seconds,omitempty"`
 }
 
+type ResourceJobTriggerModel struct {
+	Aliases                       []string `json:"aliases,omitempty"`
+	Condition                     string   `json:"condition"`
+	MinTimeBetweenTriggersSeconds int      `json:"min_time_between_triggers_seconds,omitempty"`
+	SecurableName                 string   `json:"securable_name,omitempty"`
+	WaitAfterLastChangeSeconds    int      `json:"wait_after_last_change_seconds,omitempty"`
+}
+
 type ResourceJobTriggerPeriodic struct {
 	Interval int    `json:"interval"`
 	Unit     string `json:"unit"`
@@ -1678,6 +1686,7 @@ type ResourceJobTriggerTableUpdate struct {
 type ResourceJobTrigger struct {
 	PauseStatus string                         `json:"pause_status,omitempty"`
 	FileArrival *ResourceJobTriggerFileArrival `json:"file_arrival,omitempty"`
+	Model       *ResourceJobTriggerModel       `json:"model,omitempty"`
 	Periodic    *ResourceJobTriggerPeriodic    `json:"periodic,omitempty"`
 	TableUpdate *ResourceJobTriggerTableUpdate `json:"table_update,omitempty"`
 }

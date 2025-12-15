@@ -20,10 +20,7 @@ func New() *cobra.Command {
 		Short:   `Clean room task runs are the executions of notebooks in a clean room.`,
 		Long:    `Clean room task runs are the executions of notebooks in a clean room.`,
 		GroupID: "cleanrooms",
-		Annotations: map[string]string{
-			"package": "cleanrooms",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -58,7 +55,7 @@ func newList() *cobra.Command {
 	cmd.Use = "list CLEAN_ROOM_NAME"
 	cmd.Short = `List notebook task runs.`
 	cmd.Long = `List notebook task runs.
-  
+
   List all the historical notebook task runs in a clean room.
 
   Arguments:

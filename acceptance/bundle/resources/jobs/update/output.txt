@@ -13,7 +13,7 @@ Deployment complete!
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
->>> [CLI] bundle debug plan
+>>> [CLI] bundle plan -o json
 
 >>> print_requests.py //jobs
 
@@ -80,7 +80,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 === Destroy the job and verify that it's removed from the state and from remote
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
-  delete job foo
+  delete resources.jobs.foo
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 

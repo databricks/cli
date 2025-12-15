@@ -1,9 +1,11 @@
 {
+  "plan_version": 1,
+  "cli_version": "[DEV_VERSION]",
   "plan": {
     "resources.volumes.volume1": {
       "action": "update_id",
       "new_state": {
-        "config": {
+        "value": {
           "catalog_name": "main",
           "comment": "COMMENT1",
           "name": "mynewvolume",
@@ -27,7 +29,9 @@
       "changes": {
         "local": {
           "name": {
-            "action": "update_id"
+            "action": "update_id",
+            "old": "myvolume",
+            "new": "mynewvolume"
           }
         },
         "remote": {

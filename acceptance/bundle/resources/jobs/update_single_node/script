@@ -1,15 +1,15 @@
 echo "*" > .gitignore
 trace $CLI bundle plan
-$CLI bundle debug plan > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
+$CLI bundle plan -o json > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
-$CLI bundle debug plan > out.plan_skip.$DATABRICKS_BUNDLE_ENGINE.json
+$CLI bundle plan -o json > out.plan_skip.$DATABRICKS_BUNDLE_ENGINE.json
 
 trace print_requests.py //jobs > out.create.requests.txt
 
 title "Update trigger.periodic.unit and re-deploy"
 trace update_file.py databricks.yml DAYS HOURS
 trace $CLI bundle plan
-$CLI bundle debug plan > out.plan_update.$DATABRICKS_BUNDLE_ENGINE.json
+$CLI bundle plan -o json > out.plan_update.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
 trace print_requests.py //jobs > out.update.requests.$DATABRICKS_BUNDLE_ENGINE.json
 

@@ -1,7 +1,7 @@
 
 echo "*" > .gitignore
 trace $CLI bundle plan
-$CLI bundle debug plan > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
+$CLI bundle plan -o json > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
 trace print_requests.py //jobs //pipelines > out.create.requests.json
 
@@ -13,10 +13,10 @@ echo "$bar_id:BAR_ID" >> ACC_REPLS
 
 trace $CLI bundle plan  # empty
 
-title "Update catalog, triggering recreate for pipeline; this means updating downstream deps"
-trace update_file.py databricks.yml mycatalog mynewcatalog
+title "Update storage, triggering recreate for pipeline; this means updating downstream deps"
+trace update_file.py databricks.yml "storage: dbfs:/my-storage" "storage: dbfs:/my-new-storage"
 trace $CLI bundle plan
-$CLI bundle debug plan > out.plan_update.$DATABRICKS_BUNDLE_ENGINE.json
+$CLI bundle plan -o json > out.plan_update.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy --auto-approve
 trace print_requests.py //jobs //pipelines > out.update.requests.$DATABRICKS_BUNDLE_ENGINE.json
 
@@ -32,13 +32,12 @@ rm out.requests.txt
 
 title "Follow up plan & deploy do nothing"
 trace $CLI bundle plan
-$CLI bundle debug plan > out.plan_noop.$DATABRICKS_BUNDLE_ENGINE.json
+$CLI bundle plan -o json > out.plan_noop.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
 trace print_requests.py //jobs //pipelines
 
 trace $CLI bundle destroy --auto-approve
-# Sort, because the order of requests is different. TODO: remember deps in order to delete in reverse deployment order.
-trace print_requests.py --sort //jobs //pipelines
+trace print_requests.py //jobs //pipelines
 
 trace musterr $CLI pipelines get $foo_id
 trace musterr $CLI pipelines get $foo_id_2

@@ -27,14 +27,11 @@ func New() *cobra.Command {
   permission on its parent catalog. To query a table, users must have the SELECT
   permission on the table, and they must have the USE_CATALOG permission on its
   parent catalog and the USE_SCHEMA permission on its parent schema.
-  
+
   A table can be managed or external. From an API perspective, a __VIEW__ is a
   particular kind of table (rather than a managed or external table).`,
 		GroupID: "catalog",
-		Annotations: map[string]string{
-			"package": "catalog",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -77,25 +74,25 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create NAME CATALOG_NAME SCHEMA_NAME TABLE_TYPE DATA_SOURCE_FORMAT STORAGE_LOCATION"
 	cmd.Short = `Create a table.`
 	cmd.Long = `Create a table.
-  
+
   Creates a new table in the specified catalog and schema.
-  
+
   To create an external delta table, the caller must have the
   **EXTERNAL_USE_SCHEMA** privilege on the parent schema and the
   **EXTERNAL_USE_LOCATION** privilege on the external location. These privileges
   must always be granted explicitly, and cannot be inherited through ownership
   or **ALL_PRIVILEGES**.
-  
+
   Standard UC permissions needed to create tables still apply: **USE_CATALOG**
   on the parent catalog (or ownership of the parent catalog), **CREATE_TABLE**
   and **USE_SCHEMA** on the parent schema (or ownership of the parent schema),
   and **CREATE_EXTERNAL_TABLE** on external location.
-  
+
   The **columns** field needs to be in a Spark compatible format, so we
   recommend you use Spark to create these tables. The API itself does not
   validate the correctness of the column spec. If the spec is not Spark
   compatible, the tables may not be readable by Databricks Runtime.
-  
+
   NOTE: The Create Table API for external clients only supports creating
   **external delta tables**. The values shown in the respective enums are all
   values supported by Databricks, however for this specific Create Table API,
@@ -107,7 +104,7 @@ func newCreate() *cobra.Command {
     NAME: Name of table, relative to parent schema.
     CATALOG_NAME: Name of parent catalog.
     SCHEMA_NAME: Name of parent schema relative to its parent catalog.
-    TABLE_TYPE:  
+    TABLE_TYPE:
       Supported values: [
         EXTERNAL,
         EXTERNAL_SHALLOW_CLONE,
@@ -119,7 +116,7 @@ func newCreate() *cobra.Command {
         STREAMING_TABLE,
         VIEW,
       ]
-    DATA_SOURCE_FORMAT:  
+    DATA_SOURCE_FORMAT:
       Supported values: [
         AVRO,
         BIGQUERY_FORMAT,
@@ -248,7 +245,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete FULL_NAME"
 	cmd.Short = `Delete a table.`
 	cmd.Long = `Delete a table.
-  
+
   Deletes a table from the specified parent catalog and schema. The caller must
   be the owner of the parent catalog, have the **USE_CATALOG** privilege on the
   parent catalog and be the owner of the parent schema, or be the owner of the
@@ -308,7 +305,7 @@ func newExists() *cobra.Command {
 	cmd.Use = "exists FULL_NAME"
 	cmd.Short = `Get boolean reflecting if table exists.`
 	cmd.Long = `Get boolean reflecting if table exists.
-  
+
   Gets if a table exists in the metastore for a specific catalog and schema. The
   caller must satisfy one of the following requirements: * Be a metastore admin
   * Be the owner of the parent catalog * Be the owner of the parent schema and
@@ -375,7 +372,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get FULL_NAME"
 	cmd.Short = `Get a table.`
 	cmd.Long = `Get a table.
-  
+
   Gets a table from the metastore for a specific catalog and schema. The caller
   must satisfy one of the following requirements: * Be a metastore admin * Be
   the owner of the parent catalog * Be the owner of the parent schema and have
@@ -445,17 +442,17 @@ func newList() *cobra.Command {
 	cmd.Use = "list CATALOG_NAME SCHEMA_NAME"
 	cmd.Short = `List tables.`
 	cmd.Long = `List tables.
-  
+
   Gets an array of all tables for the current metastore under the parent catalog
   and schema. The caller must be a metastore admin or an owner of (or have the
   **SELECT** privilege on) the table. For the latter case, the caller must also
   be the owner or have the **USE_CATALOG** privilege on the parent catalog and
   the **USE_SCHEMA** privilege on the parent schema. There is no guarantee of a
   specific ordering of the elements in the array.
-  
+
   NOTE: we recommend using max_results=0 to use the paginated version of this
   API. Unpaginated calls will be deprecated soon.
-  
+
   PAGINATION BEHAVIOR: When using pagination (max_results >= 0), a page may
   contain zero results while still providing a next_page_token. Clients must
   continue reading pages until next_page_token is absent, which is the only
@@ -519,19 +516,19 @@ func newListSummaries() *cobra.Command {
 	cmd.Use = "list-summaries CATALOG_NAME"
 	cmd.Short = `List table summaries.`
 	cmd.Long = `List table summaries.
-  
+
   Gets an array of summaries for tables for a schema and catalog within the
   metastore. The table summaries returned are either:
-  
+
   * summaries for tables (within the current metastore and parent catalog and
   schema), when the user is a metastore admin, or: * summaries for tables and
   schemas (within the current metastore and parent catalog) for which the user
   has ownership or the **SELECT** privilege on the table and ownership or
   **USE_SCHEMA** privilege on the schema, provided that the user also has
   ownership or the **USE_CATALOG** privilege on the parent catalog.
-  
+
   There is no guarantee of a specific ordering of the elements in the array.
-  
+
   PAGINATION BEHAVIOR: The API is by default paginated, a page may contain zero
   results while still providing a next_page_token. Clients must continue reading
   pages until next_page_token is absent, which is the only indication that the
@@ -592,7 +589,7 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update FULL_NAME"
 	cmd.Short = `Update a table owner.`
 	cmd.Long = `Update a table owner.
-  
+
   Change the owner of the table. The caller must be the owner of the parent
   catalog, have the **USE_CATALOG** privilege on the parent catalog and be the
   owner of the parent schema, or be the owner of the table and have the

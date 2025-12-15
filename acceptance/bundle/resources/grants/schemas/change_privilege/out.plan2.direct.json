@@ -1,4 +1,6 @@
 {
+  "plan_version": 1,
+  "cli_version": "[DEV_VERSION]",
   "plan": {
     "resources.schemas.grants_schema": {
       "action": "skip",
@@ -22,7 +24,7 @@
       ],
       "action": "update",
       "new_state": {
-        "config": {
+        "value": {
           "securable_type": "schema",
           "full_name": "main.schema_grants_[UNIQUE_NAME]",
           "grants": [
@@ -52,10 +54,14 @@
       "changes": {
         "local": {
           "grants[0].privileges[0]": {
-            "action": "update"
+            "action": "update",
+            "old": "CREATE_TABLE",
+            "new": "APPLY_TAG"
           },
           "grants[0].privileges[1]": {
-            "action": "update"
+            "action": "update",
+            "old": "USE_SCHEMA",
+            "new": "CREATE_TABLE"
           }
         }
       }
