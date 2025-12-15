@@ -2,10 +2,14 @@
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
+
+import yaml
 
 REVIEW_OUTPUT_FILE = "/tmp/reviewbot_output.json"
 
@@ -269,6 +273,47 @@ Output your analysis, then YOU MUST call publish_review with your review JSON.
 
         print(f"\n{'=' * 80}")
 
+    def review_to_yaml(self, review: dict) -> str:
+        """Convert review to YAML for editing."""
+        editable = {
+            "event": review.get("event", "COMMENT"),
+            "body": review.get("body", ""),
+            "comments": review.get("comments", []),
+        }
+        return yaml.dump(editable, default_flow_style=False, sort_keys=False, allow_unicode=True, width=1000)
+
+    def yaml_to_review(self, yaml_content: str) -> dict:
+        """Parse YAML back to review dict."""
+        return yaml.safe_load(yaml_content)
+
+    def edit_review_in_editor(self, review: dict) -> dict | None:
+        """Open review in editor for user to edit. Returns edited review or None if cancelled."""
+        yaml_content = self.review_to_yaml(review)
+
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".yaml", delete=False) as f:
+            f.write("# Edit your review below. Save and close the editor when done.\n")
+            f.write("# Delete the entire file content to cancel.\n")
+            f.write("# event: APPROVE, COMMENT, or REQUEST_CHANGES\n")
+            f.write("#\n")
+            f.write(yaml_content)
+            temp_path = f.name
+
+        editor = os.environ.get("EDITOR", "vim")
+        try:
+            subprocess.run([editor, temp_path], check=True)
+
+            edited_content = Path(temp_path).read_text()
+            # Remove comment lines
+            lines = [line for line in edited_content.split("\n") if not line.startswith("#")]
+            cleaned_content = "\n".join(lines).strip()
+
+            if not cleaned_content:
+                return None
+
+            return self.yaml_to_review(cleaned_content)
+        finally:
+            Path(temp_path).unlink(missing_ok=True)
+
     def save_review_payload(self, payload: dict, pr_number: int) -> Path:
         """Save the review payload to .reviews/pr-<num>.json."""
         self.reviews_dir.mkdir(exist_ok=True)
@@ -417,25 +462,30 @@ Output your analysis, then YOU MUST call publish_review with your review JSON.
                 print("\nNo review output generated.")
                 return
 
-            self.display_review(review, pr)
-
-            # Prepare and save payload
-            payload = self.prepare_payload(review, pr)
-            review_file = self.save_review_payload(payload, pr["number"])
-            print(f"Full review payload saved to: {review_file}")
-
-            # Ask for confirmation
+            # Edit-review-publish loop
             while True:
+                self.display_review(review, pr)
+
                 try:
-                    confirm = input("\nPublish this review to GitHub? [y/N]: ").strip().lower()
-                    if confirm in ("y", "yes"):
+                    choice = input("\n[e]dit, [p]ublish, or [c]ancel? ").strip().lower()
+                    if choice in ("e", "edit"):
+                        edited = self.edit_review_in_editor(review)
+                        if edited is None:
+                            print("Edit cancelled (empty content).")
+                        else:
+                            review = edited
+                            print("Review updated.")
+                    elif choice in ("p", "publish"):
+                        payload = self.prepare_payload(review, pr)
+                        review_file = self.save_review_payload(payload, pr["number"])
+                        print(f"Full review payload saved to: {review_file}")
                         self.publish_to_github(payload, pr, review_file)
                         break
-                    elif confirm in ("n", "no", ""):
+                    elif choice in ("c", "cancel", ""):
                         print("Review not published.")
                         break
                     else:
-                        print("Please enter 'y' or 'n'")
+                        print("Please enter 'e', 'p', or 'c'")
                 except (EOFError, KeyboardInterrupt):
                     print("\nReview not published.")
                     break
