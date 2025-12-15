@@ -1,4 +1,3 @@
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Error: parsing plan JSON: invalid character 'i' looking for beginning of value
 
 

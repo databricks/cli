@@ -1,0 +1,35 @@
+
+>>> [CLI] bundle plan -o json
+
+>>> [CLI] bundle deploy --readplan plan.json
+Warn: Plan was created with CLI version 1.2.3 but current version is [DEV_VERSION]
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/create",
+  "body": {
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "test-job",
+    "queue": {
+      "enabled": true
+    }
+  }
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Deleting files...
+Destroy complete!
