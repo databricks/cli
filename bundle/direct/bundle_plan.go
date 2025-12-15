@@ -133,7 +133,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			return false
 		}
 
-		savedState, err := typeConvert(adapter.StateType(), dbentry.State)
+		savedState, err := parseState(adapter.StateType(), dbentry.State)
 		if err != nil {
 			logdiag.LogError(ctx, fmt.Errorf("%s: interpreting state: %w", errorPrefix, err))
 			return false
@@ -604,12 +604,14 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 		p.Plan[node] = &e
 	}
 
-	for n := range existingKeys {
+	for n, entry := range existingKeys {
 		if p.Plan[n] != nil {
 			panic("unexpected node " + n)
 		}
+
 		p.Plan[n] = &deployplan.PlanEntry{
-			Action: deployplan.ActionTypeDelete.String(),
+			Action:    deployplan.ActionTypeDelete.String(),
+			DependsOn: entry.DependsOn,
 		}
 	}
 

@@ -1,4 +1,6 @@
 {
+ "state_version": 1,
+ "cli_version": "[DEV_VERSION]",
  "lineage": "[UUID]",
  "serial": 5,
  "state": {
@@ -99,7 +101,13 @@
       "unit": "DAYS"
      }
     }
-   }
+   },
+   "depends_on": [
+    {
+     "node": "resources.pipelines.my_default_python_etl",
+     "label": "${resources.pipelines.my_default_python_etl.id}"
+    }
+   ]
   },
   "resources.pipelines.my_default_python_etl": {
    "__id__": "[UUID]",
