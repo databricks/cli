@@ -16,7 +16,7 @@ type TestObj struct {
 }
 
 // newTestStructVar creates a fresh StructVar instance for testing
-func newTestStructVar() *structvar.StructVar {
+func newTestStructVar(t *testing.T) *structvar.StructVar {
 	sv, err := structvar.NewStructVar(
 		&TestObj{
 			Name: "OldName",
@@ -31,9 +31,7 @@ func newTestStructVar() *structvar.StructVar {
 			"tags['version']": "${var.version}",
 		},
 	)
-	if err != nil {
-		panic(err)
-	}
+	require.NoError(t, err)
 	return sv
 }
 
@@ -129,7 +127,7 @@ func TestResolveRef(t *testing.T) {
 			if tt.setup != nil {
 				sv = tt.setup()
 			} else {
-				sv = newTestStructVar()
+				sv = newTestStructVar(t)
 			}
 
 			err := sv.ResolveRef(tt.reference, tt.value)
