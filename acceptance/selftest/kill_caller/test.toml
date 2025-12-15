@@ -1,0 +1,11 @@
+Local = true
+Env.DATABRICKS_CLI_TEST_PID = "1"
+
+# Kill the CLI when it calls /Me endpoint
+[[Server]]
+Pattern = "GET /api/2.0/preview/scim/v2/Me"
+KillCaller = 9
+
+[[Repls]]
+Old = 'script: line \d+: \d+ Killed'
+New = 'script: line [N]: [PID] Killed'

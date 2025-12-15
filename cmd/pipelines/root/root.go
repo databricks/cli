@@ -10,6 +10,7 @@ import (
 
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/testserver"
 	"github.com/spf13/cobra"
 )
 
@@ -72,6 +73,7 @@ func New(ctx context.Context) *cobra.Command {
 		ctx = withCommandInUserAgent(ctx, cmd)
 		ctx = withCommandExecIdInUserAgent(ctx)
 		ctx = withUpstreamInUserAgent(ctx)
+		ctx = testserver.InjectPidToUserAgent(ctx)
 		cmd.SetContext(ctx)
 		return nil
 	}

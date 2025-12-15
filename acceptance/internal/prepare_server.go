@@ -10,6 +10,7 @@ import (
 	"slices"
 	"strings"
 	"sync"
+	"syscall"
 	"testing"
 	"time"
 	"unicode/utf8"
@@ -206,6 +207,43 @@ func startLocalServer(t *testing.T,
 					// Optional: log the reason (context deadline, cancellation, etc.)
 					t.Logf("request canceled: %v", ctx.Err())
 					return nil
+				}
+			}
+
+			if stub.KillCaller > 0 {
+				pid := testserver.ExtractPidFromHeaders(req.Headers)
+				if pid == 0 {
+					t.Errorf("KillCaller configured but test-pid not found in User-Agent")
+					return testserver.Response{
+						StatusCode: http.StatusBadRequest,
+						Body:       "test-pid not found in User-Agent (set DATABRICKS_CLI_TEST_PID=1)",
+					}
+				}
+
+				signal := syscall.Signal(stub.KillCaller)
+				t.Logf("KillCaller: sending signal %d to PID %d (pattern: %s)", signal, pid, stub.Pattern)
+
+				process, err := os.FindProcess(pid)
+				if err != nil {
+					t.Errorf("Failed to find process %d: %s", pid, err)
+					return testserver.Response{
+						StatusCode: http.StatusInternalServerError,
+						Body:       fmt.Sprintf("failed to find process: %s", err),
+					}
+				}
+
+				if err := process.Signal(signal); err != nil {
+					t.Errorf("Failed to send signal %d to process %d: %s", signal, pid, err)
+					return testserver.Response{
+						StatusCode: http.StatusInternalServerError,
+						Body:       fmt.Sprintf("failed to send signal: %s", err),
+					}
+				}
+
+				// Return a response (the CLI will likely be killed before it receives this)
+				return testserver.Response{
+					StatusCode: http.StatusOK,
+					Body:       fmt.Sprintf("sent signal %d to PID %d", signal, pid),
 				}
 			}
 

@@ -1,0 +1,5 @@
+
+>>> errcode [CLI] workspace list /
+script: line [N]: [PID] Killed                  "$@"
+
+Exit code: 137

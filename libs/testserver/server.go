@@ -9,14 +9,46 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"reflect"
+	"regexp"
+	"strconv"
 	"strings"
 	"sync"
-
-	"github.com/gorilla/mux"
+	"syscall"
 
 	"github.com/databricks/cli/internal/testutil"
+	"github.com/databricks/cli/libs/env"
+	"github.com/databricks/databricks-sdk-go/useragent"
+	"github.com/gorilla/mux"
 )
+
+const (
+	TestPidEnvVar = "DATABRICKS_CLI_TEST_PID"
+	testPidKey    = "test-pid"
+)
+
+var testPidRegex = regexp.MustCompile(testPidKey + `/(\d+)`)
+
+func InjectPidToUserAgent(ctx context.Context) context.Context {
+	if env.Get(ctx, TestPidEnvVar) != "1" {
+		return ctx
+	}
+	return useragent.InContext(ctx, testPidKey, strconv.Itoa(os.Getpid()))
+}
+
+func ExtractPidFromHeaders(headers http.Header) int {
+	ua := headers.Get("User-Agent")
+	matches := testPidRegex.FindStringSubmatch(ua)
+	if len(matches) < 2 {
+		return 0
+	}
+	pid, err := strconv.Atoi(matches[1])
+	if err != nil {
+		return 0
+	}
+	return pid
+}
 
 type Server struct {
 	*httptest.Server
@@ -274,6 +306,9 @@ func (s *Server) Handle(method, path string, handler HandlerFunc) {
 				StatusCode: 500,
 				Body:       []byte("INJECTED"),
 			}
+		} else if bytes.Contains(request.Body, []byte("KILL_CALLER")) {
+			s.handleKillCaller(&request, w)
+			return
 		} else {
 			respAny := handler(request)
 			if respAny == nil && request.Context.Err() != nil {
@@ -321,4 +356,49 @@ func isNil(i any) bool {
 	default:
 		return false
 	}
+}
+
+func (s *Server) handleKillCaller(request *Request, w http.ResponseWriter) {
+	pid := ExtractPidFromHeaders(request.Headers)
+	if pid == 0 {
+		s.t.Errorf("KILL_CALLER requested but test-pid not found in User-Agent")
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = fmt.Fprint(w, "test-pid not found in User-Agent (set DATABRICKS_CLI_TEST_PID=1)")
+		return
+	}
+
+	signal := syscall.SIGKILL
+	bodyStr := string(request.Body)
+	if idx := strings.Index(bodyStr, "KILL_CALLER:"); idx != -1 {
+		signalPart := bodyStr[idx+len("KILL_CALLER:"):]
+		endIdx := 0
+		for endIdx < len(signalPart) && signalPart[endIdx] >= '0' && signalPart[endIdx] <= '9' {
+			endIdx++
+		}
+		if endIdx > 0 {
+			if sigNum, err := strconv.Atoi(signalPart[:endIdx]); err == nil {
+				signal = syscall.Signal(sigNum)
+			}
+		}
+	}
+
+	s.t.Logf("KILL_CALLER: sending signal %d to PID %d", signal, pid)
+
+	process, err := os.FindProcess(pid)
+	if err != nil {
+		s.t.Errorf("Failed to find process %d: %s", pid, err)
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = fmt.Fprintf(w, "failed to find process: %s", err)
+		return
+	}
+
+	if err := process.Signal(signal); err != nil {
+		s.t.Errorf("Failed to send signal %d to process %d: %s", signal, pid, err)
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = fmt.Fprintf(w, "failed to send signal: %s", err)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	_, _ = fmt.Fprintf(w, "sent signal %d to PID %d", signal, pid)
 }

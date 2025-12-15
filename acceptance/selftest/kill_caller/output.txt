@@ -1,0 +1,5 @@
+
+>>> errcode [CLI] current-user me
+script: line [N]: [PID] Killed                  "$@"
+
+Exit code: 137
