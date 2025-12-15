@@ -10,11 +10,14 @@ import (
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/config/validate"
+	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/sync"
 	"github.com/databricks/cli/libs/telemetry/protos"
@@ -182,6 +185,8 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, 
 		}
 	}
 
+	var plan *deployplan.Plan
+
 	if opts.ReadPlanPath != "" {
 		if !stateDesc.Engine.IsDirect() {
 			logdiag.LogError(ctx, errors.New("--readplan is only supported with direct engine (set DATABRICKS_BUNDLE_ENGINE=direct)"))
@@ -189,6 +194,17 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, 
 		}
 		opts.Build = false
 		opts.PreDeployChecks = false
+
+		var err error
+		plan, err = deployplan.LoadPlanFromFile(opts.ReadPlanPath)
+		if err != nil {
+			logdiag.LogError(ctx, err)
+			return b, stateDesc, root.ErrAlreadyPrinted
+		}
+		currentVersion := build.GetInfo().Version
+		if plan.CLIVersion != currentVersion {
+			log.Warnf(ctx, "Plan was created with CLI version %s but current version is %s", plan.CLIVersion, currentVersion)
+		}
 	} else if opts.Deploy {
 		opts.Build = true
 		opts.PreDeployChecks = true
@@ -255,7 +271,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, 
 		}
 
 		t3 := time.Now()
-		phases.Deploy(ctx, b, outputHandler, stateDesc.Engine, libs, opts.ReadPlanPath)
+		phases.Deploy(ctx, b, outputHandler, stateDesc.Engine, libs, plan)
 		b.Metrics.ExecutionTimes = append(b.Metrics.ExecutionTimes, protos.IntMapEntry{
 			Key:   "phases.Deploy",
 			Value: time.Since(t3).Milliseconds(),

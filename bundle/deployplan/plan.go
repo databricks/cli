@@ -46,6 +46,12 @@ func LoadPlanFromFile(path string) (*Plan, error) {
 	if err := json.Unmarshal(data, &plan); err != nil {
 		return nil, fmt.Errorf("parsing plan JSON: %w", err)
 	}
+
+	// Validate plan version
+	if plan.PlanVersion != currentPlanVersion {
+		return nil, fmt.Errorf("plan version mismatch: plan has version %d, but current version is %d", plan.PlanVersion, currentPlanVersion)
+	}
+
 	// Initialize internal fields that are not serialized
 	plan.lockmap = newLockmap()
 	if plan.Plan == nil {
