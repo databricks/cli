@@ -88,7 +88,7 @@ Resources:
   Alerts:
     myalert:
       Name: myalert
-      URL:  [DATABRICKS_URL]/sql/alerts-v2/[ALERT_ID]
+      URL:  [DATABRICKS_URL]/sql/alerts-v2/[ALERT_ID][NUMID]
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
