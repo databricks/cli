@@ -1,0 +1,4 @@
+Error: --readplan is only supported with direct engine (set DATABRICKS_BUNDLE_ENGINE=direct)
+
+
+Exit code: 1

@@ -1,0 +1,2 @@
+# Test that --readplan with terraform engine produces an error
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform"]

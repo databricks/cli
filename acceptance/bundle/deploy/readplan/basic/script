@@ -1,0 +1,15 @@
+# First deploy to create the resource
+trace $CLI bundle deploy
+
+# Generate a plan (should show "skip" since nothing changed)
+$CLI bundle plan -o json > plan.json
+cat plan.json | jq -c '.plan."resources.jobs.job".action'
+
+# Deploy using the saved plan
+trace $CLI bundle deploy --readplan plan.json
+rm plan.json
+
+# Show what requests were made (should not create/update job again)
+print_requests.py //jobs
+
+trace $CLI bundle destroy --auto-approve
