@@ -22,9 +22,11 @@ The new engine implements resources CRUD directly on top of SDK Go and provides 
 
 * Self-contained binary that does not require downloading Terraform and terraform-provider-databricks before deployment.
   * Avoid issues with firewalls/proxies/custom provider registries.
-* Explanation why a given action is planned and detailed diff of changes available in `databricks bundle plan -o json`.
 * Faster deployment.
 * Simplified development of new resources, implement CRUD directly in CLI repo, no need to coordinate with terraform provider release.
+* New features:
+  - Detailed plan with explanation why a given action is taken in `databricks bundle plan -o json > plan.json`.
+  - Ability to deploy previously generated plan with `databricks bundle deploy --readplan plan.json`.
 
 ## Disadvantages
 
