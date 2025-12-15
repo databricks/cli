@@ -18,8 +18,10 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-// Default number of concurrent file copy operations.
-const defaultConcurrency = 16
+// Default number of concurrent file copy operations. This is a conservative
+// default that should be sufficient to fully utilize the available bandwidth
+// in most cases.
+const defaultConcurrency = 8
 
 // errInvalidConcurrency is returned when the value of the concurrency
 // flag is invalid.

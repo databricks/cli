@@ -1,0 +1,6 @@
+mkdir -p localdir
+echo -n "file1 content" > localdir/file1.txt
+echo -n "file2 content" > localdir/file2.txt
+
+# Recursive directory copy (output sorted for deterministic ordering).
+$CLI fs cp -r localdir dbfs:/Volumes/main/default/data/uploaded-dir 2>&1 | sort

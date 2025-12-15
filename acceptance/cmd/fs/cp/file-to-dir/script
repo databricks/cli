@@ -1,0 +1,4 @@
+echo -n "hello world!" > local.txt
+
+# Copy file into a directory (trailing slash indicates directory target).
+trace $CLI fs cp local.txt dbfs:/Volumes/main/default/data/mydir/
