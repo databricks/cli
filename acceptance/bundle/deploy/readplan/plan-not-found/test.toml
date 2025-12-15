@@ -1,2 +1,5 @@
 # Test that --readplan with missing file produces an error
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+# different error message on Windows
+GOOS.windows = false
