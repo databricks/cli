@@ -1,6 +1,4 @@
-
-trace $CLI bundle plan
-trace $CLI bundle plan -o json > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
+echo "*" > .gitignore
 trace $CLI bundle deploy
 trace print_requests.py //jobs
 
@@ -10,7 +8,8 @@ echo "$foo_id:FOO_ID" >> ACC_REPLS
 bar_id=`read_id.py jobs bar`
 echo "$bar_id:BAR_ID" >> ACC_REPLS
 
-cp empty.yml databricks.yml
+title "Delete foo, keep bar"
+cp only_bar.yml databricks.yml
 trace $CLI bundle plan -o json > out.plan_delete.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
 trace print_requests.py //jobs
