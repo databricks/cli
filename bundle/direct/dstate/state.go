@@ -120,7 +120,7 @@ func (db *DeploymentState) Open(path string) error {
 		}
 		return err
 	}
-	// TODO: Use json.Decoder with UseNumber() to preserve precision of large integers.
+
 	err = json.Unmarshal(data, &db.Data)
 	if err != nil {
 		return err
