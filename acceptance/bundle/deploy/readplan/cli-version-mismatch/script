@@ -6,3 +6,4 @@ trace $CLI bundle deploy --readplan plan.json
 rm plan.json
 print_requests.py //jobs
 trace $CLI bundle destroy --auto-approve
+rm out.requests.txt
