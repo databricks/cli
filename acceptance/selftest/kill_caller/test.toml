@@ -4,8 +4,21 @@ Env.DATABRICKS_CLI_TEST_PID = "1"
 # Kill the CLI when it calls /Me endpoint
 [[Server]]
 Pattern = "GET /api/2.0/preview/scim/v2/Me"
-KillCaller = 9
+KillCaller = true
 
 [[Repls]]
-Old = 'script: line \d+: \d+ Killed'
-New = 'script: line [N]: [PID] Killed'
+# macOS bash shows "Killed: 9" (with signal number), Linux shows "Killed"
+# Normalize the whole killed line to a placeholder
+Old = 'script: line \d+:\s+\d+ Killed(: 9)?\s+"\$@"'
+New = '[PROCESS_KILLED]'
+
+[[Repls]]
+# On Windows, there's no "Killed" message - just empty line before Exit code
+# Insert [PROCESS_KILLED] placeholder for consistency
+Old = '(\n>>> errcode [^\n]+\n)\nExit code:'
+New = '${1}[PROCESS_KILLED]\n\nExit code:'
+
+[[Repls]]
+# Normalize exit code: 137 on Unix (128 + SIGKILL), 1 on Windows
+Old = 'Exit code: (137|1)'
+New = 'Exit code: [KILLED]'

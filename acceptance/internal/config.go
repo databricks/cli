@@ -157,10 +157,9 @@ type ServerStub struct {
 	// See [time.ParseDuration] for details.
 	Delay time.Duration
 
-	// If set, send this signal to the caller process instead of returning a response.
-	// Use signal numbers: 9 for SIGKILL, 15 for SIGTERM, etc.
-	// Requires DATABRICKS_CLI_TEST_PID=1 to be set.
-	KillCaller int
+	// If true, kill the caller process instead of returning a response.
+	// Requires DATABRICKS_CLI_TEST_PID=1 to be set in the test environment.
+	KillCaller bool
 }
 
 // FindConfigs finds all the config relevant for this test,

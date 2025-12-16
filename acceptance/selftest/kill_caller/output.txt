@@ -1,5 +1,5 @@
 
 >>> errcode [CLI] current-user me
-script: line [N]: [PID] Killed                  "$@"
+[PROCESS_KILLED]
 
-Exit code: 137
+Exit code: [KILLED]

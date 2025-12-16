@@ -15,7 +15,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"syscall"
 
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/env"
@@ -367,22 +366,7 @@ func (s *Server) handleKillCaller(request *Request, w http.ResponseWriter) {
 		return
 	}
 
-	signal := syscall.SIGKILL
-	bodyStr := string(request.Body)
-	if idx := strings.Index(bodyStr, "KILL_CALLER:"); idx != -1 {
-		signalPart := bodyStr[idx+len("KILL_CALLER:"):]
-		endIdx := 0
-		for endIdx < len(signalPart) && signalPart[endIdx] >= '0' && signalPart[endIdx] <= '9' {
-			endIdx++
-		}
-		if endIdx > 0 {
-			if sigNum, err := strconv.Atoi(signalPart[:endIdx]); err == nil {
-				signal = syscall.Signal(sigNum)
-			}
-		}
-	}
-
-	s.t.Logf("KILL_CALLER: sending signal %d to PID %d", signal, pid)
+	s.t.Logf("KILL_CALLER: killing PID %d", pid)
 
 	process, err := os.FindProcess(pid)
 	if err != nil {
@@ -392,13 +376,15 @@ func (s *Server) handleKillCaller(request *Request, w http.ResponseWriter) {
 		return
 	}
 
-	if err := process.Signal(signal); err != nil {
-		s.t.Errorf("Failed to send signal %d to process %d: %s", signal, pid, err)
+	// Use process.Kill() for cross-platform compatibility.
+	// On Unix, this sends SIGKILL. On Windows, this calls TerminateProcess.
+	if err := process.Kill(); err != nil {
+		s.t.Errorf("Failed to kill process %d: %s", pid, err)
 		w.WriteHeader(http.StatusInternalServerError)
-		_, _ = fmt.Fprintf(w, "failed to send signal: %s", err)
+		_, _ = fmt.Fprintf(w, "failed to kill process: %s", err)
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
-	_, _ = fmt.Fprintf(w, "sent signal %d to PID %d", signal, pid)
+	_, _ = fmt.Fprintf(w, "killed PID %d", pid)
 }

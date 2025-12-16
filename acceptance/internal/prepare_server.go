@@ -10,7 +10,6 @@ import (
 	"slices"
 	"strings"
 	"sync"
-	"syscall"
 	"testing"
 	"time"
 	"unicode/utf8"
@@ -210,7 +209,7 @@ func startLocalServer(t *testing.T,
 				}
 			}
 
-			if stub.KillCaller > 0 {
+			if stub.KillCaller {
 				pid := testserver.ExtractPidFromHeaders(req.Headers)
 				if pid == 0 {
 					t.Errorf("KillCaller configured but test-pid not found in User-Agent")
@@ -220,8 +219,7 @@ func startLocalServer(t *testing.T,
 					}
 				}
 
-				signal := syscall.Signal(stub.KillCaller)
-				t.Logf("KillCaller: sending signal %d to PID %d (pattern: %s)", signal, pid, stub.Pattern)
+				t.Logf("KillCaller: killing PID %d (pattern: %s)", pid, stub.Pattern)
 
 				process, err := os.FindProcess(pid)
 				if err != nil {
@@ -232,18 +230,20 @@ func startLocalServer(t *testing.T,
 					}
 				}
 
-				if err := process.Signal(signal); err != nil {
-					t.Errorf("Failed to send signal %d to process %d: %s", signal, pid, err)
+				// Use process.Kill() for cross-platform compatibility.
+				// On Unix, this sends SIGKILL. On Windows, this calls TerminateProcess.
+				if err := process.Kill(); err != nil {
+					t.Errorf("Failed to kill process %d: %s", pid, err)
 					return testserver.Response{
 						StatusCode: http.StatusInternalServerError,
-						Body:       fmt.Sprintf("failed to send signal: %s", err),
+						Body:       fmt.Sprintf("failed to kill process: %s", err),
 					}
 				}
 
 				// Return a response (the CLI will likely be killed before it receives this)
 				return testserver.Response{
 					StatusCode: http.StatusOK,
-					Body:       fmt.Sprintf("sent signal %d to PID %d", signal, pid),
+					Body:       fmt.Sprintf("killed PID %d", pid),
 				}
 			}
 
