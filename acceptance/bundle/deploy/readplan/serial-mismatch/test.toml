@@ -1,0 +1,3 @@
+# Test that --readplan with mismatched serial produces an error
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+RecordRequests = false

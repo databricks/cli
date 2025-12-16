@@ -1,0 +1,2 @@
+# Test that --readplan with mismatched lineage produces an error
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

@@ -1,0 +1,8 @@
+
+>>> [CLI] bundle plan -o json
+
+>>> update_file.py out.plan.json "action": "action_renamed":
+
+>>> musterr [CLI] bundle deploy --readplan out.plan.json
+Error: parsing plan JSON: json: unknown field "action_renamed"
+

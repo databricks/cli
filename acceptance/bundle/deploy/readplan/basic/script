@@ -1,4 +1,4 @@
-# Generate a plan (should show "skip" since nothing changed)
+# Generate initial plan
 trace $CLI bundle plan -o json > out.plan_create.json
 trace print_requests.py --get //jobs | contains.py "!GET" "!POST"
 
