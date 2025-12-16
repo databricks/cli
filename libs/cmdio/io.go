@@ -199,8 +199,11 @@ func (c *cmdIO) Spinner(ctx context.Context) chan string {
 	}
 	updates := make(chan string)
 	go func() {
-		if c.interactive {
-			defer sp.Stop()
+		if sp != nil {
+			defer func() {
+				sp.Stop()
+				fmt.Fprintln(c.err)
+			}()
 		}
 		for {
 			select {

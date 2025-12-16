@@ -1,0 +1,4 @@
+
+=== Blocks destructive SQL by default
+>>> musterr [CLI] query sql --warehouse-id wh-123 --sql DROP TABLE users
+Error: blocked by read-only policy: keyword DROP at statement 1 (line 1, column 1). Pass --allow-destructive, set DATABRICKS_CLI_ALLOW_DESTRUCTIVE_SQL=true, or add cli.allow_destructive_sql=true to your profile to override

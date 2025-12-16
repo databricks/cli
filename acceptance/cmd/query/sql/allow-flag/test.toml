@@ -1,0 +1,8 @@
+[[Server]]
+Pattern = "POST /api/2.0/sql/statements"
+Response.Body = '''
+{
+  "statement_id": "stmt-allow-flag",
+  "status": {"state": "SUCCEEDED"}
+}
+'''
