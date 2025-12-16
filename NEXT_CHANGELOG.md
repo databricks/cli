@@ -11,5 +11,6 @@
 * Pass SYSTEM_ACCESSTOKEN from env to the Terraform provider ([#4135](https://github.com/databricks/cli/pull/4135)
 
 ### Dependency updates
+* Upgrade Go SDK to 0.94.0 ([#4148](https://github.com/databricks/cli/pull/4148))
 
 ### API Changes
