@@ -1,4 +1,4 @@
-Error: plan version mismatch: plan has version 999, but current version is 1
+Error: plan version mismatch: plan has version 999 (generated with CLI "0.0.0"), but current version is 1
 
 
 Exit code: 1

@@ -49,7 +49,7 @@ func LoadPlanFromFile(path string) (*Plan, error) {
 
 	// Validate plan version
 	if plan.PlanVersion != currentPlanVersion {
-		return nil, fmt.Errorf("plan version mismatch: plan has version %d, but current version is %d", plan.PlanVersion, currentPlanVersion)
+		return nil, fmt.Errorf("plan version mismatch: plan has version %d (generated with CLI %q), but current version is %d", plan.PlanVersion, plan.CLIVersion, currentPlanVersion)
 	}
 
 	// Initialize internal fields that are not serialized
