@@ -1,10 +1,18 @@
 /**
- * This file is meant to contain the schema for the queries that are used in the app.
- * It is used to validate the parameters that are passed to the queries.
+ * Query Result Schemas - Define the COLUMNS RETURNED by each SQL query.
+ *
+ * These schemas validate QUERY RESULTS, not input parameters.
+ * - Input parameters are passed to useAnalyticsQuery() as the second argument
+ * - These schemas define the shape of data[] returned by the query
+ *
+ * Example:
+ *   SQL: SELECT name, age FROM users WHERE city = :city
+ *   Schema: z.array(z.object({ name: z.string(), age: z.number() }))
+ *   Usage: useAnalyticsQuery('users', { city: sql.string('NYC') })
+ *                                       ^ input params   ^ schema validates this result
  */
 
 import { z } from 'zod';
-
 export const querySchemas = {
   mocked_sales: z.array(
     z.object({

@@ -1,4 +1,6 @@
 {
+  "plan_version": 1,
+  "cli_version": "[DEV_VERSION]",
   "plan": {
     "resources.jobs.test_job": {
       "action": "update",
@@ -59,7 +61,9 @@
       "changes": {
         "local": {
           "name": {
-            "action": "update"
+            "action": "update",
+            "old": "Test Migration Job",
+            "new": "Test Migrated Job"
           }
         },
         "remote": {
@@ -173,10 +177,14 @@
       "changes": {
         "local": {
           "name": {
-            "action": "update"
+            "action": "update",
+            "old": "Test Migration Pipeline",
+            "new": "Test Migrated Pipeline"
           },
           "tags['myjob_name']": {
-            "action": "update"
+            "action": "update",
+            "old": "Test Migration Job",
+            "new": "Test Migrated Job"
           }
         },
         "remote": {

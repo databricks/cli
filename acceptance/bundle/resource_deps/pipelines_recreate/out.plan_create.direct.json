@@ -1,4 +1,6 @@
 {
+  "plan_version": 1,
+  "cli_version": "[DEV_VERSION]",
   "plan": {
     "resources.jobs.bar": {
       "depends_on": [
@@ -32,14 +34,14 @@
       "action": "create",
       "new_state": {
         "value": {
-          "catalog": "mycatalog",
           "channel": "CURRENT",
           "deployment": {
             "kind": "BUNDLE",
             "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
           },
           "edition": "ADVANCED",
-          "name": "pipeline foo"
+          "name": "pipeline foo",
+          "storage": "dbfs:/my-storage"
         }
       }
     }

@@ -1,5 +1,35 @@
 # Version changelog
 
+## Release v0.280.0 (2025-12-10)
+
+### Bundles
+* Fixed changing the source for the SQL task from GIT to WORKSPACE ([#4114](https://github.com/databricks/cli/pull/4114))
+* `bundle deployment migrate` will now run a plan before migration to check if deployment was done ([#4088](https://github.com/databricks/cli/pull/4088))
+* engine/direct: Increase "serial" in state file after every deployment ([#4115](https://github.com/databricks/cli/pull/4115))
+
+### Dependency updates
+
+* Upgrade Go SDK to 0.93.0 ([#4112](https://github.com/databricks/cli/pull/4112))
+* Bump Go toolchain to 1.25.5.
+
+
+## Release v0.279.0 (2025-12-04)
+
+### Notable Changes
+* New deployment engine for DABs that does not require Terraform is available to try in experimental mode. Not recommended for production workloads yet. Documentation at [docs/direct.md](docs/direct.md).
+
+### CLI
+* Introduce `databricks apps logs` command to tail app logs from the CLI ([#3908](https://github.com/databricks/cli/pull/3908))
+
+### Bundles
+* Add support for alerts to DABs ([#4004](https://github.com/databricks/cli/pull/4004))
+* Allow `file://` URIs in job libraries to reference runtime filesystem paths (e.g., JARs pre-installed on clusters via init scripts). These paths are no longer treated as local files to upload. ([#3884](https://github.com/databricks/cli/pull/3884))
+* Pipeline catalog changes now trigger in-place updates instead of recreation (Terraform provider v1.98.0 behavior change) ([#4082](https://github.com/databricks/cli/pull/4082))
+
+### Dependency updates
+* Bump Terraform provider to v1.98.0 ([#4082](https://github.com/databricks/cli/pull/4082))
+
+
 ## Release v0.278.0 (2025-11-19)
 
 ### Dependency updates

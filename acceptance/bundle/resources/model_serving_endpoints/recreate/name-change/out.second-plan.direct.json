@@ -1,4 +1,6 @@
 {
+  "plan_version": 1,
+  "cli_version": "[DEV_VERSION]",
   "plan": {
     "resources.model_serving_endpoints.test_endpoint": {
       "action": "recreate",
@@ -25,7 +27,9 @@
       "changes": {
         "local": {
           "name": {
-            "action": "recreate"
+            "action": "recreate",
+            "old": "[ORIGINAL_ENDPOINT_ID]",
+            "new": "[NEW_ENDPOINT_ID]"
           }
         }
       }

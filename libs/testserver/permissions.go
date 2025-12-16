@@ -206,6 +206,30 @@ func (s *FakeWorkspace) SetPermissions(req Request) any {
 		})
 	}
 
+	// Add default ACLs for alertsv2 to match cloud environment
+	if requestObjectType == "alertsv2" {
+		existingPermissions.AccessControlList = append(existingPermissions.AccessControlList, iam.AccessControlResponse{
+			AllPermissions: []iam.Permission{
+				{
+					Inherited:           true,
+					InheritedFromObject: []string{"/directories/4454031293888593"},
+					PermissionLevel:     "CAN_MANAGE",
+				},
+			},
+			UserName:    "shreyas.goenka@databricks.com",
+			DisplayName: "shreyas.goenka@databricks.com",
+		}, iam.AccessControlResponse{
+			AllPermissions: []iam.Permission{
+				{
+					Inherited:           true,
+					InheritedFromObject: []string{"/directories/"},
+					PermissionLevel:     "CAN_MANAGE",
+				},
+			},
+			GroupName: "admins",
+		})
+	}
+
 	// Validate job ownership requirements
 	if requestObjectType == "jobs" {
 		hasOwner := false

@@ -1,0 +1,23 @@
+# terraform fails with:
+#   panic: Error reading level state: strconv.ParseInt: parsing "[NUMID]": value out of range
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ['direct']
+
+[[Repls]]
+Old = '9223372036854775807'
+New = '[MAX_INT_64]'
+
+[[Repls]]
+Old = '9223372036854775806'
+New = '[MAX_INT_64_MINUS_1]'
+
+[[Repls]]
+Old = '9223372036854775805'
+New = '[MAX_INT_64_MINUS_2]'
+
+[[Repls]]
+Old = '-9223372036854775808'
+New = '[MIN_INT_64]'
+
+[[Repls]]
+Old = '-9223372036854775804'
+New = '[MIN_INT_64_MINUS_4]'

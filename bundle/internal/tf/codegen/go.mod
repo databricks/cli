@@ -2,7 +2,7 @@ module github.com/databricks/cli/bundle/internal/tf/codegen
 
 go 1.25.0
 
-toolchain go1.25.1
+toolchain go1.25.5
 
 require (
 	github.com/hashicorp/go-version v1.7.0

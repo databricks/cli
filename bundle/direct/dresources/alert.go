@@ -27,7 +27,16 @@ func (*ResourceAlert) PrepareState(input *resources.Alert) *sql.AlertV2 {
 
 // DoRead reads the alert by id.
 func (r *ResourceAlert) DoRead(ctx context.Context, id string) (*sql.AlertV2, error) {
-	return r.client.AlertsV2.GetAlertById(ctx, id)
+	alert, err := r.client.AlertsV2.GetAlertById(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	// If the alert is already marked as thrashed, return a 404 on DoRead.
+	if alert.LifecycleState == sql.AlertLifecycleStateDeleted {
+		return nil, databricks.ErrResourceDoesNotExist
+	}
+	return alert, nil
 }
 
 // DoCreate creates the alert and returns its id.

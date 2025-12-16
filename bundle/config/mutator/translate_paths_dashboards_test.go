@@ -12,7 +12,6 @@ import (
 	"github.com/databricks/cli/bundle/internal/bundletest"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/vfs"
-	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -30,9 +29,7 @@ func TestTranslatePathsDashboards_FilePathRelativeSubDirectory(t *testing.T) {
 				Dashboards: map[string]*resources.Dashboard{
 					"dashboard": {
 						DashboardConfig: resources.DashboardConfig{
-							Dashboard: dashboards.Dashboard{
-								DisplayName: "My Dashboard",
-							},
+							DisplayName: "My Dashboard",
 						},
 						FilePath: "../src/my_dashboard.lvdash.json",
 					},

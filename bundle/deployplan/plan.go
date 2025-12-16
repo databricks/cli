@@ -6,15 +6,17 @@ import (
 	"slices"
 	"sync"
 
+	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structvar"
 )
 
+const currentPlanVersion = 1
+
 type Plan struct {
-	// Current version is zero which is omitted and has no backward compatibility guarantees
-	PlanVersion int `json:"plan_version,omitempty"`
+	PlanVersion int    `json:"plan_version"`
+	CLIVersion  string `json:"cli_version"`
 	// TODO:
-	// - CliVersion  string               `json:"cli_version"`
 	// - Copy Serial / Lineage from the state file
 	// - Store a path to state file
 	Plan map[string]*PlanEntry `json:"plan,omitzero"`
@@ -25,8 +27,10 @@ type Plan struct {
 
 func NewPlan() *Plan {
 	return &Plan{
-		Plan:    make(map[string]*PlanEntry),
-		lockmap: newLockmap(),
+		PlanVersion: currentPlanVersion,
+		CLIVersion:  build.GetInfo().Version,
+		Plan:        make(map[string]*PlanEntry),
+		lockmap:     newLockmap(),
 	}
 }
 
@@ -45,13 +49,15 @@ type DependsOnEntry struct {
 }
 
 type Changes struct {
-	Local  map[string]Trigger `json:"local,omitempty"`
-	Remote map[string]Trigger `json:"remote,omitempty"`
+	Local  map[string]ChangeDesc `json:"local,omitempty"`
+	Remote map[string]ChangeDesc `json:"remote,omitempty"`
 }
 
-type Trigger struct {
+type ChangeDesc struct {
 	Action string `json:"action"`
 	Reason string `json:"reason,omitempty"`
+	Old    any    `json:"old,omitempty"`
+	New    any    `json:"new,omitempty"`
 }
 
 // HasChange checks if there are any changes for fields with the given prefix.

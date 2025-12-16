@@ -47,12 +47,26 @@ func TestGetTargets(t *testing.T) {
 			targets: []string{"test"},
 		},
 		{
-			name: "mixed_matching_and_unmatched",
+			name: "go_mod_triggers_all",
+			files: []string{
+				"go.mod",
+			},
+			targets: []string{"test", "test-exp-aitools", "test-exp-apps-mcp", "test-exp-ssh", "test-pipelines"},
+		},
+		{
+			name: "go_sum_triggers_all",
+			files: []string{
+				"go.sum",
+			},
+			targets: []string{"test", "test-exp-aitools", "test-exp-apps-mcp", "test-exp-ssh", "test-pipelines"},
+		},
+		{
+			name: "go_mod_with_other_files_triggers_all",
 			files: []string{
 				"experimental/ssh/main.go",
 				"go.mod",
 			},
-			targets: []string{"test", "test-exp-ssh"},
+			targets: []string{"test", "test-exp-aitools", "test-exp-apps-mcp", "test-exp-ssh", "test-pipelines"},
 		},
 		{
 			name:    "empty_files",

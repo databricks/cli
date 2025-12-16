@@ -17,7 +17,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/compute"
-	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
@@ -144,9 +143,7 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 				Dashboards: map[string]*resources.Dashboard{
 					"dashboard1": {
 						DashboardConfig: resources.DashboardConfig{
-							Dashboard: dashboards.Dashboard{
-								DisplayName: "dashboard1",
-							},
+							DisplayName: "dashboard1",
 						},
 					},
 				},
@@ -190,13 +187,13 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 						},
 					},
 				},
-				// Alerts: map[string]*resources.Alert{
-				// 	"alert1": {
-				// 		AlertV2: sql.AlertV2{
-				// 			DisplayName: "alert1",
-				// 		},
-				// 	},
-				// },
+				Alerts: map[string]*resources.Alert{
+					"alert1": {
+						AlertV2: sql.AlertV2{
+							DisplayName: "alert1",
+						},
+					},
+				},
 			},
 		},
 		SyncRoot: vfs.MustNew("/Users/lennart.kats@databricks.com"),

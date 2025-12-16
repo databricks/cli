@@ -1,4 +1,6 @@
 {
+  "plan_version": 1,
+  "cli_version": "[DEV_VERSION]",
   "plan": {
     "resources.pipelines.my": {
       "action": "recreate",
@@ -24,7 +26,9 @@
       "changes": {
         "local": {
           "storage": {
-            "action": "recreate"
+            "action": "recreate",
+            "old": "dbfs:/pipelines/custom",
+            "new": "dbfs:/pipelines/newcustom"
           }
         }
       }

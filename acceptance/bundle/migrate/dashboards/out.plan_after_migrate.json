@@ -1,18 +1,14 @@
 {
+  "plan_version": 1,
+  "cli_version": "[DEV_VERSION]",
   "plan": {
     "resources.dashboards.dashboard1": {
-      "action": "recreate",
-      "new_state": {
-        "value": {
-          "display_name": "my dashboard",
-          "parent_path": "/Users/[USERNAME]",
-          "warehouse_id": "123456"
-        }
-      },
+      "action": "skip",
       "remote_state": {
         "create_time": "[TIMESTAMP]",
         "dashboard_id": "[DASHBOARD_ID]",
         "display_name": "my dashboard",
+        "embed_credentials": true,
         "etag": "[NUMID]",
         "lifecycle_state": "ACTIVE",
         "parent_path": "/Workspace/Users/[USERNAME]",
@@ -23,27 +19,16 @@
       },
       "changes": {
         "local": {
-          "embed_credentials": {
-            "action": "update"
-          },
           "etag": {
-            "action": "update"
-          },
-          "serialized_dashboard": {
-            "action": "update"
+            "action": "skip",
+            "old": "[NUMID]"
           }
         },
         "remote": {
-          "embed_credentials": {
-            "action": "skip",
-            "reason": "server_side_default"
-          },
-          "parent_path": {
-            "action": "recreate"
-          },
           "serialized_dashboard": {
             "action": "skip",
-            "reason": "server_side_default"
+            "old": "{\"pages\":[{\"name\":\"02724bf2\",\"displayName\":\"Dashboard test bundle-deploy-dashboard\"}]}\n",
+            "new": "{\"pages\":[{\"displayName\":\"Dashboard test bundle-deploy-dashboard\",\"name\":\"02724bf2\",\"pageType\":\"PAGE_TYPE_CANVAS\"}]}\n"
           }
         }
       }

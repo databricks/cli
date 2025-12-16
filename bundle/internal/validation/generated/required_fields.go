@@ -11,6 +11,13 @@ var RequiredFields = map[string][]string{
 
 	"permissions[*]": {"level"},
 
+	"resources.alerts.*":                             {"display_name", "evaluation", "query_text", "schedule", "warehouse_id"},
+	"resources.alerts.*.evaluation":                  {"comparison_operator", "source"},
+	"resources.alerts.*.evaluation.source":           {"name"},
+	"resources.alerts.*.evaluation.threshold.column": {"name"},
+	"resources.alerts.*.permissions[*]":              {"level"},
+	"resources.alerts.*.schedule":                    {"quartz_cron_schedule", "timezone_id"},
+
 	"resources.apps.*":                               {"name", "source_code_path"},
 	"resources.apps.*.permissions[*]":                {"level"},
 	"resources.apps.*.resources[*]":                  {"name"},

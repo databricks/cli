@@ -1,7 +1,7 @@
 {
   "empty_string": {
     "embed_credentials": false,
-    "parent_path": ""
+    "parent_path": "/Workspace"
   },
   "neither_parent_path_nor_embed_credentials": {
     "embed_credentials": false,
@@ -9,7 +9,7 @@
   },
   "non_empty_string": {
     "embed_credentials": false,
-    "parent_path": "already-set"
+    "parent_path": "/Workspace/already-set"
   },
   "other_fields": {
     "embed_credentials": false,

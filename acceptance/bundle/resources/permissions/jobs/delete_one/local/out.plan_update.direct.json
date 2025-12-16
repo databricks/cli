@@ -1,4 +1,6 @@
 {
+  "plan_version": 1,
+  "cli_version": "[DEV_VERSION]",
   "plan": {
     "resources.jobs.job_with_permissions": {
       "action": "skip",
@@ -101,7 +103,11 @@
       "changes": {
         "local": {
           "permissions[user_name='test-dabs-1@databricks.com']": {
-            "action": "update"
+            "action": "update",
+            "old": {
+              "permission_level": "CAN_MANAGE_RUN",
+              "user_name": "test-dabs-1@databricks.com"
+            }
           }
         }
       }

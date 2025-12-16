@@ -1,9 +1,5 @@
 
 >>> musterr [CLI] bundle deploy --force-lock
-Warning: required field "new_cluster" is not set
-  at resources.jobs.foo.job_clusters[0]
-  in databricks.yml:7:11
-
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Deploying resources...
 Error: cannot create resources.jobs.foo: Shared job cluster feature is only supported in multi-task jobs. (400 INVALID_PARAMETER_VALUE)

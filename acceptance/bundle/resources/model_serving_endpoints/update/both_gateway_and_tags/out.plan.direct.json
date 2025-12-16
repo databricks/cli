@@ -1,4 +1,6 @@
 {
+  "plan_version": 1,
+  "cli_version": "[DEV_VERSION]",
   "plan": {
     "resources.model_serving_endpoints.test_endpoint": {
       "action": "update",
@@ -73,10 +75,14 @@
       "changes": {
         "local": {
           "ai_gateway.inference_table_config.catalog_name": {
-            "action": "update"
+            "action": "update",
+            "old": "first-inference-catalog",
+            "new": "second-inference-catalog"
           },
           "tags[0].value": {
-            "action": "update"
+            "action": "update",
+            "old": "my-team-one",
+            "new": "my-team-two"
           }
         }
       }

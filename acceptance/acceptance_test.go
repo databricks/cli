@@ -48,6 +48,7 @@ var (
 	UseVersion      string
 	WorkspaceTmpDir bool
 	TerraformDir    string
+	OnlyOutTestToml bool
 )
 
 // In order to debug CLI running under acceptance test, search for TestInprocessMode and update
@@ -78,6 +79,7 @@ func init() {
 	// creates these symlinks when a file_mirror is used for a provider (in .terraformrc). This flag
 	// allows us to download the provider to the workspace file system on DBR enabling DBR integration testing.
 	flag.StringVar(&TerraformDir, "terraform-dir", "", "Directory to download the terraform provider to")
+	flag.BoolVar(&OnlyOutTestToml, "only-out-test-toml", false, "Only regenerate out.test.toml files without running tests")
 }
 
 const (
@@ -307,12 +309,17 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 			config, configPath := internal.LoadConfig(t, dir)
 			skipReason := getSkipReason(&config, configPath)
 
-			if testdiff.OverwriteMode {
+			if testdiff.OverwriteMode || OnlyOutTestToml {
 				// Generate materialized config for this test
 				// We do this before skipping the test, so the configs are generated for all tests.
 				materializedConfig, err := internal.GenerateMaterializedConfig(config)
 				require.NoError(t, err)
 				testutil.WriteFile(t, filepath.Join(dir, internal.MaterializedConfigFile), materializedConfig)
+			}
+
+			// If only regenerating out.test.toml, skip the actual test execution
+			if OnlyOutTestToml {
+				t.Skip("Skipping test execution (only regenerating out.test.toml)")
 			}
 
 			if skipReason != "" {
@@ -627,6 +634,11 @@ func runTest(t *testing.T,
 		require.NoError(t, err)
 		cmd.Env = append(cmd.Env, "GOCOVERDIR="+coverDir)
 	}
+
+	// Set unique cache folder for this test to avoid race conditions between parallel tests
+	// Use test temp directory to avoid polluting user's cache
+	uniqueCacheDir := filepath.Join(t.TempDir(), ".cache")
+	cmd.Env = append(cmd.Env, "DATABRICKS_CACHE_DIR="+uniqueCacheDir)
 
 	for _, key := range utils.SortedKeys(config.Env) {
 		if hasKey(customEnv, key) {

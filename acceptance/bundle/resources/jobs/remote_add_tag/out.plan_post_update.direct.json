@@ -1,4 +1,6 @@
 {
+  "plan_version": 1,
+  "cli_version": "[DEV_VERSION]",
   "plan": {
     "resources.jobs.foo": {
       "action": "update",
@@ -83,7 +85,8 @@
             "reason": "server_side_default"
           },
           "tags['new_tag']": {
-            "action": "update"
+            "action": "update",
+            "new": "new_value"
           },
           "timeout_seconds": {
             "action": "skip",

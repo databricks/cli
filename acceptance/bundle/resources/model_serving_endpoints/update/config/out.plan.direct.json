@@ -1,4 +1,6 @@
 {
+  "plan_version": 1,
+  "cli_version": "[DEV_VERSION]",
   "plan": {
     "resources.model_serving_endpoints.test_endpoint": {
       "action": "update",
@@ -51,7 +53,9 @@
       "changes": {
         "local": {
           "config.served_entities[0].external_model.name": {
-            "action": "update"
+            "action": "update",
+            "old": "gpt-4o-mini",
+            "new": "gpt-5o-mini"
           }
         }
       }

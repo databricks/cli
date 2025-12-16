@@ -1,4 +1,6 @@
 {
+  "plan_version": 1,
+  "cli_version": "[DEV_VERSION]",
   "plan": {
     "resources.volumes.volume1": {
       "action": "update_id",
@@ -27,7 +29,9 @@
       "changes": {
         "local": {
           "name": {
-            "action": "update_id"
+            "action": "update_id",
+            "old": "myvolume",
+            "new": "mynewvolume"
           }
         },
         "remote": {

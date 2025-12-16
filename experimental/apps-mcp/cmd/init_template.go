@@ -336,12 +336,12 @@ After initialization:
 			cmdio.LogString(ctx, fileTree)
 		}
 
-		// Try to read and display CLAUDE.md if present
-		readClaudeMd(ctx, configFile)
+		// Inject L2 (target-specific guidance for apps)
+		targetApps := prompts.MustExecuteTemplate("target_apps.tmpl", map[string]any{})
+		cmdio.LogString(ctx, targetApps)
 
-		// Re-inject app-specific guidance
-		appsContent := prompts.MustExecuteTemplate("apps.tmpl", map[string]any{})
-		cmdio.LogString(ctx, appsContent)
+		// Inject L3 (template-specific guidance from CLAUDE.md)
+		readClaudeMd(ctx, configFile)
 
 		return nil
 	}

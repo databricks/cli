@@ -1,4 +1,6 @@
 {
+  "plan_version": 1,
+  "cli_version": "[DEV_VERSION]",
   "plan": {
     "resources.jobs.foo": {
       "action": "update",
@@ -74,7 +76,9 @@
       "changes": {
         "local": {
           "trigger.periodic.unit": {
-            "action": "update"
+            "action": "update",
+            "old": "DAYS",
+            "new": "HOURS"
           }
         },
         "remote": {

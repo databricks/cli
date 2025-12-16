@@ -1,4 +1,6 @@
 {
+  "plan_version": 1,
+  "cli_version": "[DEV_VERSION]",
   "plan": {
     "resources.model_serving_endpoints.test_endpoint": {
       "action": "recreate",
@@ -30,7 +32,9 @@
       "changes": {
         "local": {
           "config.auto_capture_config.table_name_prefix": {
-            "action": "recreate"
+            "action": "recreate",
+            "old": "my_table",
+            "new": "other_table"
           }
         }
       }

@@ -74,6 +74,8 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	cmd.Flags().StringVar(&createReq.DatasetCatalog, "dataset-catalog", createReq.DatasetCatalog, `Sets the default catalog for all datasets in this dashboard.`)
+	cmd.Flags().StringVar(&createReq.DatasetSchema, "dataset-schema", createReq.DatasetSchema, `Sets the default schema for all datasets in this dashboard.`)
 	cmd.Flags().StringVar(&createReq.Dashboard.DisplayName, "display-name", createReq.Dashboard.DisplayName, `The display name of the dashboard.`)
 	cmd.Flags().StringVar(&createReq.Dashboard.SerializedDashboard, "serialized-dashboard", createReq.Dashboard.SerializedDashboard, `The contents of the dashboard in serialized string form.`)
 	cmd.Flags().StringVar(&createReq.Dashboard.WarehouseId, "warehouse-id", createReq.Dashboard.WarehouseId, `The warehouse ID used to run the dashboard.`)
@@ -1099,6 +1101,8 @@ func newUpdate() *cobra.Command {
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	cmd.Flags().StringVar(&updateReq.DatasetCatalog, "dataset-catalog", updateReq.DatasetCatalog, `Sets the default catalog for all datasets in this dashboard.`)
+	cmd.Flags().StringVar(&updateReq.DatasetSchema, "dataset-schema", updateReq.DatasetSchema, `Sets the default schema for all datasets in this dashboard.`)
 	cmd.Flags().StringVar(&updateReq.Dashboard.DisplayName, "display-name", updateReq.Dashboard.DisplayName, `The display name of the dashboard.`)
 	cmd.Flags().StringVar(&updateReq.Dashboard.SerializedDashboard, "serialized-dashboard", updateReq.Dashboard.SerializedDashboard, `The contents of the dashboard in serialized string form.`)
 	cmd.Flags().StringVar(&updateReq.Dashboard.WarehouseId, "warehouse-id", updateReq.Dashboard.WarehouseId, `The warehouse ID used to run the dashboard.`)

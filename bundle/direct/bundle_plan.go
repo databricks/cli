@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/direct/dstate"
@@ -132,7 +133,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			return false
 		}
 
-		savedState, err := typeConvert(adapter.StateType(), dbentry.State)
+		savedState, err := parseState(adapter.StateType(), dbentry.State)
 		if err != nil {
 			logdiag.LogError(ctx, fmt.Errorf("%s: interpreting state: %w", errorPrefix, err))
 			return false
@@ -176,7 +177,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		entry.RemoteState = remoteState
 
 		var remoteAction deployplan.ActionType
-		var remoteChangeMap map[string]deployplan.Trigger
+		var remoteChangeMap map[string]deployplan.ChangeDesc
 
 		if remoteState == nil {
 			remoteAction = deployplan.ActionTypeCreate
@@ -233,9 +234,9 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 	return plan, nil
 }
 
-func localChangesToTriggers(ctx context.Context, adapter *dresources.Adapter, diff []structdiff.Change, remoteState any) (deployplan.ActionType, map[string]deployplan.Trigger) {
+func localChangesToTriggers(ctx context.Context, adapter *dresources.Adapter, diff []structdiff.Change, remoteState any) (deployplan.ActionType, map[string]deployplan.ChangeDesc) {
 	action := deployplan.ActionTypeSkip
-	var m map[string]deployplan.Trigger
+	var m map[string]deployplan.ChangeDesc
 
 	for _, ch := range diff {
 		fieldAction, err := adapter.ClassifyChange(ch, remoteState, true)
@@ -247,17 +248,21 @@ func localChangesToTriggers(ctx context.Context, adapter *dresources.Adapter, di
 			action = fieldAction
 		}
 		if m == nil {
-			m = make(map[string]deployplan.Trigger)
+			m = make(map[string]deployplan.ChangeDesc)
 		}
-		m[ch.Path.String()] = deployplan.Trigger{Action: fieldAction.String()}
+		m[ch.Path.String()] = deployplan.ChangeDesc{
+			Action: fieldAction.String(),
+			Old:    ch.Old,
+			New:    ch.New,
+		}
 	}
 
 	return action, m
 }
 
-func interpretOldStateVsRemoteState(ctx context.Context, adapter *dresources.Adapter, diff []structdiff.Change, remoteState any) (deployplan.ActionType, map[string]deployplan.Trigger) {
+func interpretOldStateVsRemoteState(ctx context.Context, adapter *dresources.Adapter, diff []structdiff.Change, remoteState any) (deployplan.ActionType, map[string]deployplan.ChangeDesc) {
 	action := deployplan.ActionTypeSkip
-	m := make(map[string]deployplan.Trigger)
+	m := make(map[string]deployplan.ChangeDesc)
 
 	for _, ch := range diff {
 		if ch.Old == nil && ch.Path.IsDotString() {
@@ -265,7 +270,7 @@ func interpretOldStateVsRemoteState(ctx context.Context, adapter *dresources.Ada
 			// This could either be server-side default or a policy.
 			// In any case, this is not a change we should react to.
 			// Note, we only consider struct fields here. Adding/removing elements to/from maps and slices should trigger updates.
-			m[ch.Path.String()] = deployplan.Trigger{
+			m[ch.Path.String()] = deployplan.ChangeDesc{
 				Action: deployplan.ActionTypeSkipString,
 				Reason: "server_side_default",
 			}
@@ -279,7 +284,11 @@ func interpretOldStateVsRemoteState(ctx context.Context, adapter *dresources.Ada
 		if fieldAction > action {
 			action = fieldAction
 		}
-		m[ch.Path.String()] = deployplan.Trigger{Action: fieldAction.String()}
+		m[ch.Path.String()] = deployplan.ChangeDesc{
+			Action: fieldAction.String(),
+			Old:    ch.Old,
+			New:    ch.New,
+		}
 	}
 
 	if len(m) == 0 {
@@ -500,7 +509,19 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 		baseRefs := map[string]string{}
 
 		if strings.HasSuffix(node, ".permissions") {
-			inputConfigStructVar, err := dresources.PreparePermissionsInputConfig(inputConfig, node)
+			var inputConfigStructVar *structvar.StructVar
+			var err error
+
+			if strings.HasPrefix(node, "resources.secret_scopes.") {
+				typedConfig, ok := inputConfig.(*[]resources.SecretScopePermission)
+				if !ok {
+					return nil, fmt.Errorf("%s: expected *[]resources.SecretScopePermission, got %T", prefix, inputConfig)
+				}
+				inputConfigStructVar, err = dresources.PrepareSecretScopeAclsInputConfig(*typedConfig, node)
+			} else {
+				inputConfigStructVar, err = dresources.PreparePermissionsInputConfig(inputConfig, node)
+			}
+
 			if err != nil {
 				return nil, err
 			}
@@ -583,12 +604,14 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 		p.Plan[node] = &e
 	}
 
-	for n := range existingKeys {
+	for n, entry := range existingKeys {
 		if p.Plan[n] != nil {
 			panic("unexpected node " + n)
 		}
+
 		p.Plan[n] = &deployplan.PlanEntry{
-			Action: deployplan.ActionTypeDelete.String(),
+			Action:    deployplan.ActionTypeDelete.String(),
+			DependsOn: entry.DependsOn,
 		}
 	}
 

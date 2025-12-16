@@ -1,4 +1,6 @@
 {
+  "plan_version": 1,
+  "cli_version": "[DEV_VERSION]",
   "plan": {
     "resources.clusters.test_cluster": {
       "action": "create",
@@ -15,6 +17,8 @@
   }
 }
 {
+  "plan_version": 1,
+  "cli_version": "[DEV_VERSION]",
   "plan": {
     "resources.clusters.test_cluster": {
       "action": "update",
@@ -41,10 +45,15 @@
       "changes": {
         "local": {
           "autoscale": {
-            "action": "update"
+            "action": "update",
+            "new": {
+              "max_workers": 4,
+              "min_workers": 2
+            }
           },
           "num_workers": {
-            "action": "update"
+            "action": "update",
+            "old": 2
           }
         }
       }
@@ -52,6 +61,8 @@
   }
 }
 {
+  "plan_version": 1,
+  "cli_version": "[DEV_VERSION]",
   "plan": {
     "resources.clusters.test_cluster": {
       "action": "update",
@@ -81,10 +92,14 @@
       "changes": {
         "local": {
           "autoscale.max_workers": {
-            "action": "update"
+            "action": "update",
+            "old": 4,
+            "new": 5
           },
           "autoscale.min_workers": {
-            "action": "update"
+            "action": "update",
+            "old": 2,
+            "new": 3
           }
         }
       }
@@ -92,6 +107,8 @@
   }
 }
 {
+  "plan_version": 1,
+  "cli_version": "[DEV_VERSION]",
   "plan": {
     "resources.clusters.test_cluster": {
       "action": "resize",
@@ -122,10 +139,14 @@
       "changes": {
         "local": {
           "autoscale.max_workers": {
-            "action": "resize"
+            "action": "resize",
+            "old": 5,
+            "new": 6
           },
           "autoscale.min_workers": {
-            "action": "resize"
+            "action": "resize",
+            "old": 3,
+            "new": 4
           }
         }
       }
@@ -133,6 +154,8 @@
   }
 }
 {
+  "plan_version": 1,
+  "cli_version": "[DEV_VERSION]",
   "plan": {
     "resources.clusters.test_cluster": {
       "action": "resize",
@@ -160,10 +183,15 @@
       "changes": {
         "local": {
           "autoscale": {
-            "action": "resize"
+            "action": "resize",
+            "old": {
+              "max_workers": 6,
+              "min_workers": 4
+            }
           },
           "num_workers": {
-            "action": "resize"
+            "action": "resize",
+            "new": 3
           }
         }
       }

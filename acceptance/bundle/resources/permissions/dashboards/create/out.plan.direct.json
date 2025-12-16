@@ -1,11 +1,15 @@
 {
+  "plan_version": 1,
+  "cli_version": "[DEV_VERSION]",
   "plan": {
     "resources.dashboards.foo": {
       "action": "create",
       "new_state": {
         "value": {
           "display_name": "test-dashboard-[UNIQUE_NAME]",
-          "parent_path": "/Users/[USERNAME]/folder1",
+          "embed_credentials": false,
+          "parent_path": "/Workspace/Users/[USERNAME]/folder1",
+          "serialized_dashboard": "{\"pages\":[{\"name\":\"page1\",\"displayName\":\"Page 1\"}]}",
           "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
         }
       }

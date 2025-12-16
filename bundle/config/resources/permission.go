@@ -148,7 +148,6 @@ type SqlWarehousePermission struct {
 }
 
 // GetAPIRequestObjectType is used by direct to construct a request to permissions API:
-// Untested, since we don't have alerts
 // https://github.com/databricks/terraform-provider-databricks/blob/430902d/permissions/permission_definitions.go#L775C24-L775C32
 func (p AlertPermission) GetAPIRequestObjectType() string            { return "/alertsv2/" }
 func (p AppPermission) GetAPIRequestObjectType() string              { return "/apps/" }

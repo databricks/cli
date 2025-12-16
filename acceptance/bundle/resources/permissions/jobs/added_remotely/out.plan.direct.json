@@ -1,4 +1,6 @@
 {
+  "plan_version": 1,
+  "cli_version": "[DEV_VERSION]",
   "plan": {
     "resources.jobs.job_with_permissions": {
       "action": "skip",
@@ -93,7 +95,11 @@
       "changes": {
         "remote": {
           "permissions[group_name='admin-team']": {
-            "action": "update"
+            "action": "update",
+            "new": {
+              "group_name": "admin-team",
+              "permission_level": "CAN_MANAGE"
+            }
           }
         }
       }
