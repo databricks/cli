@@ -12,4 +12,7 @@
 
 ### Dependency updates
 
+### Bundles
+* Fix lakeview publish to default `embed_credentials` to false ([#4066](https://github.com/databricks/cli/pull/4066))
+
 ### API Changes
