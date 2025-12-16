@@ -3,6 +3,16 @@
   "path": "/oidc/.well-known/oauth-authorization-server"
 }
 {
+  "headers": {
+    "Authorization": [
+      "Basic [ENCODED_AUTH]"
+    ]
+  },
+  "method": "POST",
+  "path": "/oidc/v1/token",
+  "raw_body": "grant_type=client_credentials\u0026scope=all-apis"
+}
+{
   "method": "GET",
   "path": "/oidc/.well-known/oauth-authorization-server"
 }
