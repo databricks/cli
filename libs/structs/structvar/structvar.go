@@ -46,6 +46,9 @@ func (sv *StructVar) Load(typ reflect.Type) error {
 	if sv.valueCache != nil {
 		return nil // Already loaded
 	}
+	if typ.Kind() != reflect.Pointer {
+		return fmt.Errorf("expecting pointer, got %s", typ.Kind())
+	}
 	ptr := reflect.New(typ.Elem())
 	if err := json.Unmarshal(sv.Value, ptr.Interface()); err != nil {
 		return err
