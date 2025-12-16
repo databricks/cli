@@ -1,0 +1,12 @@
+{
+  "plan_version": 1,
+  "cli_version": "[DEV_VERSION]",
+  "plan": {
+    "resources.jobs.bar": {
+      "action": "delete"
+    },
+    "resources.jobs.foo": {
+      "action": "update"
+    }
+  }
+}

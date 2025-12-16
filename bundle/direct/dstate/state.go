@@ -8,6 +8,7 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
 	"github.com/databricks/cli/internal/build"
 	"github.com/google/uuid"
@@ -30,8 +31,9 @@ type Database struct {
 }
 
 type ResourceEntry struct {
-	ID    string          `json:"__id__"`
-	State json.RawMessage `json:"state"`
+	ID        string                      `json:"__id__"`
+	State     json.RawMessage             `json:"state"`
+	DependsOn []deployplan.DependsOnEntry `json:"depends_on,omitempty"`
 }
 
 func NewDatabase() Database {
@@ -48,7 +50,7 @@ func NewMigratedDatabase(lineage string, serial int) Database {
 	}
 }
 
-func (db *DeploymentState) SaveState(key, newID string, state any) error {
+func (db *DeploymentState) SaveState(key, newID string, state any, dependsOn []deployplan.DependsOnEntry) error {
 	db.AssertOpened()
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -63,8 +65,9 @@ func (db *DeploymentState) SaveState(key, newID string, state any) error {
 	}
 
 	db.Data.State[key] = ResourceEntry{
-		ID:    newID,
-		State: json.RawMessage(jsonMessage),
+		ID:        newID,
+		State:     json.RawMessage(jsonMessage),
+		DependsOn: dependsOn,
 	}
 
 	return nil
