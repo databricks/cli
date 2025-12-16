@@ -97,12 +97,19 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 		// We don't keep NewState around for 'skip' nodes
 
 		if at != deployplan.ActionTypeSkip {
-			if !b.resolveReferences(ctx, entry, errorPrefix, false, adapter.StateType()) {
+			if !b.resolveReferences(ctx, resourceKey, entry, errorPrefix, false) {
 				return false
 			}
 
-			if len(entry.NewState.Refs) > 0 {
-				logdiag.LogError(ctx, fmt.Errorf("%s: unresolved references: %s", errorPrefix, jsonDump(entry.NewState.Refs)))
+			// Get the cached StructVar to check for unresolved refs and get value
+			sv, ok := b.StructVarCache.Load(resourceKey)
+			if !ok {
+				logdiag.LogError(ctx, fmt.Errorf("%s: internal error: missing cached StructVar", errorPrefix))
+				return false
+			}
+
+			if len(sv.Refs) > 0 {
+				logdiag.LogError(ctx, fmt.Errorf("%s: unresolved references: %s", errorPrefix, jsonDump(sv.Refs)))
 				return false
 			}
 
@@ -113,10 +120,10 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 					logdiag.LogError(ctx, fmt.Errorf("state entry not found for %q", resourceKey))
 					return false
 				}
-				err = b.StateDB.SaveState(resourceKey, dbentry.ID, entry.NewState.GetValue(), entry.DependsOn)
+				err = b.StateDB.SaveState(resourceKey, dbentry.ID, sv.Value, entry.DependsOn)
 			} else {
 				// TODO: redo calcDiff to downgrade planned action if possible (?)
-				err = d.Deploy(ctx, &b.StateDB, entry.NewState.GetValue(), at, entry.Changes)
+				err = d.Deploy(ctx, &b.StateDB, sv.Value, at, entry.Changes)
 			}
 
 			if err != nil {

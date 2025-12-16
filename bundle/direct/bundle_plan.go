@@ -50,9 +50,9 @@ func (b *DeploymentBundle) InitForApply(ctx context.Context, client *databricks.
 		return err
 	}
 
-	// Load NewState.Value from json.RawMessage into typed structs.
+	// Eagerly parse all StructVarJSON entries to catch parsing errors early.
 	// When the plan is read from JSON, Value contains raw JSON bytes.
-	// We need to parse them into the correct types for each resource.
+	// We parse them into typed structs and cache them for later use.
 	for resourceKey, entry := range plan.Plan {
 		if entry.NewState == nil || len(entry.NewState.Value) == 0 {
 			continue
@@ -63,9 +63,12 @@ func (b *DeploymentBundle) InitForApply(ctx context.Context, client *databricks.
 			return fmt.Errorf("cannot convert plan entry %s: %w", resourceKey, err)
 		}
 
-		if err := entry.NewState.Load(adapter.StateType()); err != nil {
+		sv, err := entry.NewState.ToStructVar(adapter.StateType())
+		if err != nil {
 			return fmt.Errorf("cannot load plan entry %s: %w", resourceKey, err)
 		}
+
+		b.StructVarCache.Store(resourceKey, sv)
 	}
 
 	b.Plan = plan
@@ -153,7 +156,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 
 		// Process all references in the resource using Refs map
 		// Refs maps path inside resource to references e.g. "${resources.jobs.foo.id} ${resources.jobs.foo.name}"
-		if !b.resolveReferences(ctx, entry, errorPrefix, true, adapter.StateType()) {
+		if !b.resolveReferences(ctx, resourceKey, entry, errorPrefix, true) {
 			return false
 		}
 
@@ -180,7 +183,8 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		// for integers: compare 0 with actual object ID. As long as real object IDs are never 0 we're good.
 		// Once we add non-id fields or add per-field details to "bundle plan", we must read dynamic data and deal with references as first class citizen.
 		// This means distinguishing between 0 that are actually object ids and 0 that are there because typed struct integer cannot contain ${...} string.
-		localDiff, err := structdiff.GetStructDiff(savedState, entry.NewState.GetValue(), adapter.KeyedSlices())
+		sv, _ := b.StructVarCache.Load(resourceKey)
+		localDiff, err := structdiff.GetStructDiff(savedState, sv.Value, adapter.KeyedSlices())
 		if err != nil {
 			logdiag.LogError(ctx, fmt.Errorf("%s: diffing local state: %w", errorPrefix, err))
 			return false
@@ -374,13 +378,19 @@ func (b *DeploymentBundle) LookupReferenceLocal(ctx context.Context, path *struc
 		return nil, fmt.Errorf("internal error: %s: action is %q missing new_state", targetResourceKey, targetEntry.Action)
 	}
 
-	_, isUnresolved := targetEntry.NewState.Refs[fieldPathS]
+	// Get StructVar from cache
+	sv, ok := b.StructVarCache.Load(targetResourceKey)
+	if !ok {
+		return nil, fmt.Errorf("internal error: %s: missing cached StructVar", targetResourceKey)
+	}
+
+	_, isUnresolved := sv.Refs[fieldPathS]
 	if isUnresolved {
 		// The value that is requested is itself a reference; this means it will be resolved after apply
 		return nil, errDelayed
 	}
 
-	localConfig := targetEntry.NewState.GetValue()
+	localConfig := sv.Value
 
 	targetGroup := config.GetResourceTypeFromKey(targetResourceKey)
 	adapter := b.Adapters[targetGroup]
@@ -437,17 +447,28 @@ func (b *DeploymentBundle) LookupReferenceLocal(ctx context.Context, path *struc
 	return nil, errDelayed
 }
 
+// getStructVar returns the cached StructVar for the given resource key.
+// The StructVar must have been eagerly loaded during plan creation or InitForApply.
+func (b *DeploymentBundle) getStructVar(resourceKey string) (*structvar.StructVar, error) {
+	sv, ok := b.StructVarCache.Load(resourceKey)
+	if !ok {
+		return nil, fmt.Errorf("internal error: StructVar not found in cache for %s", resourceKey)
+	}
+	return sv, nil
+}
+
 // resolveReferences processes all references in entry.NewState.Refs.
 // If isLocal is true, uses LookupReferenceLocal (for planning phase).
 // If isLocal is false, uses LookupReferenceRemote (for apply phase).
-func (b *DeploymentBundle) resolveReferences(ctx context.Context, entry *deployplan.PlanEntry, errorPrefix string, isLocal bool, stateType reflect.Type) bool {
-	if err := entry.NewState.Load(stateType); err != nil {
-		logdiag.LogError(ctx, fmt.Errorf("%s: cannot load state: %w", errorPrefix, err))
+func (b *DeploymentBundle) resolveReferences(ctx context.Context, resourceKey string, entry *deployplan.PlanEntry, errorPrefix string, isLocal bool) bool {
+	sv, err := b.getStructVar(resourceKey)
+	if err != nil {
+		logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 		return false
 	}
 
 	var resolved bool
-	for fieldPathStr, refString := range entry.NewState.Refs {
+	for fieldPathStr, refString := range sv.Refs {
 		refs, ok := dynvar.NewRef(dyn.V(refString))
 		if !ok {
 			logdiag.LogError(ctx, fmt.Errorf("%s: cannot parse %q", errorPrefix, refString))
@@ -480,7 +501,7 @@ func (b *DeploymentBundle) resolveReferences(ctx context.Context, entry *deployp
 				}
 			}
 
-			err = entry.NewState.ResolveRef(ref, value)
+			err = sv.ResolveRef(ref, value)
 			if err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("%s: cannot update %s with value of %q: %w", errorPrefix, fieldPathStr, ref, err))
 				return false
@@ -489,12 +510,14 @@ func (b *DeploymentBundle) resolveReferences(ctx context.Context, entry *deployp
 		}
 	}
 
+	// Sync resolved values back to StructVarJSON for serialization
 	if resolved {
-		if err := entry.NewState.Save(); err != nil {
+		if err := sv.SyncToJSON(entry.NewState); err != nil {
 			logdiag.LogError(ctx, fmt.Errorf("%s: cannot save state: %w", errorPrefix, err))
 			return false
 		}
 	}
+
 	return true
 }
 
@@ -574,14 +597,14 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 			if err != nil {
 				return nil, err
 			}
-			inputConfig = inputConfigStructVar.GetValue()
+			inputConfig = inputConfigStructVar.Value
 			baseRefs = inputConfigStructVar.Refs
 		} else if strings.HasSuffix(node, ".grants") {
 			inputConfigStructVar, err := dresources.PrepareGrantsInputConfig(inputConfig, node)
 			if err != nil {
 				return nil, err
 			}
-			inputConfig = inputConfigStructVar.GetValue()
+			inputConfig = inputConfigStructVar.Value
 			baseRefs = inputConfigStructVar.Refs
 		}
 
@@ -642,14 +665,23 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 			return strings.Compare(a.Label, b.Label)
 		})
 
-		newState, err := structvar.NewStructVar(newStateConfig, refs)
+		newState := &structvar.StructVar{
+			Value: newStateConfig,
+			Refs:  refs,
+		}
+
+		// Store in cache for use during planning phase
+		b.StructVarCache.Store(node, newState)
+
+		// Convert to JSON for serialization in plan
+		newStateJSON, err := newState.ToJSON()
 		if err != nil {
-			return nil, fmt.Errorf("%s: cannot create state: %w", node, err)
+			return nil, fmt.Errorf("%s: cannot serialize state: %w", node, err)
 		}
 
 		e := deployplan.PlanEntry{
 			DependsOn: dependsOn,
-			NewState:  newState,
+			NewState:  newStateJSON,
 		}
 
 		p.Plan[node] = &e

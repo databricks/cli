@@ -235,17 +235,19 @@ To start using direct engine, deploy with DATABRICKS_BUNDLE_ENGINE=direct env va
 		// comes from remote state. If we don't store "etag" in state, we won't detect remote drift, because
 		// local=nil, remote="<some new etag>" which will be classified as "server_side_default".
 
-		for key, planEntry := range plan.Plan {
+		for key := range plan.Plan {
 			etag := etags[key]
 			if etag == "" {
 				continue
 			}
-			err := structaccess.Set(planEntry.NewState.GetValue(), structpath.NewStringKey(nil, "etag"), etag)
+			// Get the cached StructVar created during planning
+			sv, ok := deploymentBundle.StructVarCache.Load(key)
+			if !ok {
+				return fmt.Errorf("failed to get cached state for %s", key)
+			}
+			err := structaccess.Set(sv.Value, structpath.NewStringKey(nil, "etag"), etag)
 			if err != nil {
 				return fmt.Errorf("failed to set etag on %s: %w", key, err)
-			}
-			if err := planEntry.NewState.Save(); err != nil {
-				return fmt.Errorf("failed to save state for %s: %w", key, err)
 			}
 		}
 

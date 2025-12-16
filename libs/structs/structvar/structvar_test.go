@@ -1,6 +1,7 @@
 package structvar_test
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/databricks/cli/libs/structs/structvar"
@@ -17,7 +18,7 @@ type TestObj struct {
 
 // newTestStructVar creates a fresh StructVar instance for testing
 func newTestStructVar(t *testing.T) *structvar.StructVar {
-	sv, err := structvar.NewStructVar(
+	return structvar.NewStructVar(
 		&TestObj{
 			Name: "OldName",
 			Age:  25,
@@ -31,8 +32,6 @@ func newTestStructVar(t *testing.T) *structvar.StructVar {
 			"tags['version']": "${var.version}",
 		},
 	)
-	require.NoError(t, err)
-	return sv
 }
 
 func TestResolveRef(t *testing.T) {
@@ -103,16 +102,12 @@ func TestResolveRef(t *testing.T) {
 		{
 			name: "error on invalid path",
 			setup: func() *structvar.StructVar {
-				sv, err := structvar.NewStructVar(
+				return structvar.NewStructVar(
 					&TestObj{},
 					map[string]string{
 						"invalid[path": "${var.test}",
 					},
 				)
-				if err != nil {
-					panic(err)
-				}
-				return sv
 			},
 			reference: "${var.test}",
 			value:     "value",
@@ -139,14 +134,14 @@ func TestResolveRef(t *testing.T) {
 			}
 
 			require.NoError(t, err)
-			assert.Equal(t, tt.expectedObj, sv.GetValue())
+			assert.Equal(t, tt.expectedObj, sv.Value)
 			assert.Equal(t, tt.expectedRefs, sv.Refs)
 		})
 	}
 }
 
 func TestResolveRefMultiReference(t *testing.T) {
-	sv, err := structvar.NewStructVar(
+	sv := structvar.NewStructVar(
 		&TestObj{
 			Name: "OldName",
 		},
@@ -154,14 +149,13 @@ func TestResolveRefMultiReference(t *testing.T) {
 			"name": "${var.prefix} ${var.suffix}",
 		},
 	)
-	require.NoError(t, err)
 
 	// Resolve one reference
-	err = sv.ResolveRef("${var.prefix}", "Hello")
+	err := sv.ResolveRef("${var.prefix}", "Hello")
 	require.NoError(t, err)
 
 	// The value should be partially resolved
-	assert.Equal(t, "Hello ${var.suffix}", sv.GetValue().(*TestObj).Name)
+	assert.Equal(t, "Hello ${var.suffix}", sv.Value.(*TestObj).Name)
 	assert.Equal(t, map[string]string{
 		"name": "Hello ${var.suffix}", // partially resolved
 	}, sv.Refs)
@@ -171,7 +165,7 @@ func TestResolveRefMultiReference(t *testing.T) {
 	require.NoError(t, err)
 
 	// Now it should be fully resolved
-	assert.Equal(t, "Hello World", sv.GetValue().(*TestObj).Name)
+	assert.Equal(t, "Hello World", sv.Value.(*TestObj).Name)
 	assert.Equal(t, map[string]string{}, sv.Refs) // fully resolved, reference removed
 }
 
@@ -189,20 +183,19 @@ func TestResolveRefJobSettings(t *testing.T) {
 		},
 	}
 
-	sv, err := structvar.NewStructVar(
+	sv := structvar.NewStructVar(
 		&jobSettings,
 		map[string]string{
 			"tasks[0].run_job_task.job_id": "${resources.jobs.bar.id}",
 		},
 	)
-	require.NoError(t, err)
 
 	// Resolve the reference with a realistic job ID value (as string that gets converted to int64)
-	err = sv.ResolveRef("${resources.jobs.bar.id}", "123")
+	err := sv.ResolveRef("${resources.jobs.bar.id}", "123")
 	require.NoError(t, err)
 
 	// Verify the job ID was set correctly
-	updatedSettings := sv.GetValue().(*jobs.JobSettings)
+	updatedSettings := sv.Value.(*jobs.JobSettings)
 	assert.Equal(t, "job foo", updatedSettings.Name)
 	assert.Len(t, updatedSettings.Tasks, 1)
 	assert.Equal(t, "job_task", updatedSettings.Tasks[0].TaskKey)
@@ -211,4 +204,49 @@ func TestResolveRefJobSettings(t *testing.T) {
 
 	// Verify the reference was removed after resolution
 	assert.Empty(t, sv.Refs)
+}
+
+func TestToJSONAndBack(t *testing.T) {
+	original := structvar.NewStructVar(
+		&TestObj{
+			Name: "TestName",
+			Age:  30,
+			Tags: map[string]string{
+				"env": "prod",
+			},
+		},
+		map[string]string{
+			"name": "${var.name}",
+		},
+	)
+
+	// Convert to JSON
+	svJSON, err := original.ToJSON()
+	require.NoError(t, err)
+	assert.NotEmpty(t, svJSON.Value)
+	assert.Equal(t, original.Refs, svJSON.Refs)
+
+	// Convert back to StructVar
+	restored, err := svJSON.ToStructVar(reflect.TypeOf(&TestObj{}))
+	require.NoError(t, err)
+
+	// Verify the restored value matches
+	assert.Equal(t, original.Value, restored.Value)
+	assert.Equal(t, original.Refs, restored.Refs)
+}
+
+func TestToStructVarRequiresPointerType(t *testing.T) {
+	svJSON := &structvar.StructVarJSON{
+		Value: []byte(`{"name":"test"}`),
+	}
+
+	// Should fail with non-pointer type
+	_, err := svJSON.ToStructVar(reflect.TypeOf(TestObj{}))
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "expecting pointer")
+
+	// Should succeed with pointer type
+	sv, err := svJSON.ToStructVar(reflect.TypeOf(&TestObj{}))
+	require.NoError(t, err)
+	assert.Equal(t, "test", sv.Value.(*TestObj).Name)
 }
