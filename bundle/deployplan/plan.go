@@ -41,6 +41,7 @@ func LoadPlanFromFile(path string) (*Plan, error) {
 	if err != nil {
 		return nil, fmt.Errorf("reading plan file: %w", err)
 	}
+	defer file.Close()
 	var plan Plan
 	decoder := json.NewDecoder(file)
 	decoder.DisallowUnknownFields()
