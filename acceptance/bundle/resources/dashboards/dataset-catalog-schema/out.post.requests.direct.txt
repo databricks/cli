@@ -8,7 +8,7 @@
   "body": {
     "display_name": "test bundle-deploy-dashboard-dataset [UUID]",
     "parent_path": "/Workspace/Users/[USERNAME]",
-    "serialized_dashboard": "{\"pages\":[{\"name\":\"test_page\",\"displayName\":\"Test Page\"}]}\n",
+    "serialized_dashboard": "{\n  \"pages\": [\n    {\n      \"name\": \"test_page\",\n      \"displayName\": \"Test Page\",\n      \"pageType\": \"PAGE_TYPE_CANVAS\"\n    }\n  ],\n  \"datasets\": [\n    {\n      \"name\": \"bf8f76f4\",\n      \"displayName\": \"Test Dataset\",\n      \"queryLines\": [\n        \"SELECT 1\\n\"\n      ],\n      \"catalog\": \"foobar\",\n      \"schema\": \"foobar\"\n    }\n  ]\n}\n",
     "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
   }
 }

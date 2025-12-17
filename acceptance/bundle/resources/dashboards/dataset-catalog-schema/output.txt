@@ -9,8 +9,13 @@ Deployment complete!
 {
   "lifecycle_state": "ACTIVE",
   "parent_path": "/Users/[USERNAME]",
-  "path": "/Users/[USERNAME]/test bundle-deploy-dashboard-dataset [UUID].lvdash.json",
-  "serialized_dashboard": "{\"pages\":[{\"displayName\":\"Test Page\",\"name\":\"test_page\",\"pageType\":\"PAGE_TYPE_CANVAS\"}]}\n"
+  "path": "/Users/[USERNAME]/test bundle-deploy-dashboard-dataset [UUID].lvdash.json"
+}
+
+>>> [CLI] lakeview get [DASHBOARD_ID]
+{
+  "catalog": "main",
+  "schema": "default"
 }
 
 >>> [CLI] bundle plan -o json

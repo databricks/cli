@@ -20,10 +20,25 @@ DASHBOARD_ID=$($CLI bundle summary --output json | jq -r '.resources.dashboards.
 # Capture the dashboard ID as a replacement.
 echo "$DASHBOARD_ID:DASHBOARD_ID" >> ACC_REPLS
 
-trace $CLI lakeview get $DASHBOARD_ID | jq '{lifecycle_state, parent_path, path, serialized_dashboard}'
+trace $CLI lakeview get $DASHBOARD_ID | jq '{lifecycle_state, parent_path, path}'
+
+# Verify that the serialized_dashboard datasets have the overridden catalog/schema values.
+# The dataset_catalog and dataset_schema parameters should override the values in the datasets.
+trace $CLI lakeview get $DASHBOARD_ID | jq '.serialized_dashboard | fromjson | .datasets[] | {catalog, schema}'
 
 # Verify that there is no drift right after deploy.
 trace $CLI bundle plan -o json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+
+# Modify the direct plan to replace "serialized_dashboard" with a fixture.
+# It is normalized on the backend so we cannot compare reliably across local and cloud.
+if [ "$DATABRICKS_BUNDLE_ENGINE" = "direct" ]; then
+    jq '.plan["resources.dashboards.dashboard1"].remote_state.serialized_dashboard |=
+       if . then "[SERIALIZED_FIXTURE]" else . end' \
+       out.plan.direct.json > out.plan.direct.json.tmp && mv out.plan.direct.json.tmp out.plan.direct.json
+    jq '.plan["resources.dashboards.dashboard1"].changes.remote.serialized_dashboard |=
+       if . then {"action": .action, "old": "[SERIALIZED_FIXTURE_OLD]", "new": "[SERIALIZED_FIXTURE_NEW]"} else . end' \
+       out.plan.direct.json > out.plan.direct.json.tmp && mv out.plan.direct.json.tmp out.plan.direct.json
+fi
 
 # Print API requests made to create the dashboard.
 # This verifies that dataset_catalog and dataset_schema are passed to the API.
