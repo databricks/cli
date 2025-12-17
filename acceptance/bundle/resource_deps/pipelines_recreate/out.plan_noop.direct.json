@@ -1,6 +1,8 @@
 {
   "plan_version": 1,
   "cli_version": "[DEV_VERSION]",
+  "lineage": "[UUID]",
+  "serial": 2,
   "plan": {
     "resources.jobs.bar": {
       "depends_on": [

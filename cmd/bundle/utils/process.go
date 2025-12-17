@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/config/validate"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/cmd/root"
@@ -204,6 +205,15 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, 
 		currentVersion := build.GetInfo().Version
 		if plan.CLIVersion != currentVersion {
 			log.Warnf(ctx, "Plan was created with CLI version %s but current version is %s", plan.CLIVersion, currentVersion)
+		}
+
+		// Validate that the plan's lineage and serial match the current state
+		// This must happen before any file operations
+		_, localPath := b.StateFilenameDirect(ctx)
+		err = direct.ValidatePlanAgainstState(localPath, plan)
+		if err != nil {
+			logdiag.LogError(ctx, err)
+			return b, stateDesc, root.ErrAlreadyPrinted
 		}
 	} else if opts.Deploy {
 		opts.Build = true

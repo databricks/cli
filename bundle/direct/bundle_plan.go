@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"os"
 	"reflect"
 	"slices"
 	"strings"
@@ -35,6 +36,39 @@ func (b *DeploymentBundle) init(client *databricks.WorkspaceClient) error {
 	var err error
 	b.Adapters, err = dresources.InitAll(client)
 	return err
+}
+
+// ValidatePlanAgainstState validates that a plan's lineage and serial match the current state.
+// This should be called early in the deployment process, before any file operations.
+// If the plan has no lineage (first deployment), validation is skipped.
+func ValidatePlanAgainstState(statePath string, plan *deployplan.Plan) error {
+	// If plan has no lineage, this is a first deployment before any state exists
+	// No validation needed
+	if plan.Lineage == "" {
+		return nil
+	}
+
+	var stateDB dstate.DeploymentState
+	err := stateDB.Open(statePath)
+	if err != nil {
+		// If state file doesn't exist but plan has lineage, something is wrong
+		if os.IsNotExist(err) {
+			return fmt.Errorf("plan has lineage %q but state file does not exist at %s; the state may have been deleted", plan.Lineage, statePath)
+		}
+		return fmt.Errorf("failed to read state from %s: %w", statePath, err)
+	}
+
+	// Validate that the plan's lineage matches the current state's lineage
+	if plan.Lineage != stateDB.Data.Lineage {
+		return fmt.Errorf("plan lineage %q does not match state lineage %q; the state may have been modified by another process", plan.Lineage, stateDB.Data.Lineage)
+	}
+
+	// Validate that the plan's serial matches the current state's serial
+	if plan.Serial != stateDB.Data.Serial {
+		return fmt.Errorf("plan serial %d does not match state serial %d; the state has been modified since the plan was created. Please run 'bundle plan' again", plan.Serial, stateDB.Data.Serial)
+	}
+
+	return nil
 }
 
 // InitForApply initializes the DeploymentBundle for applying a pre-computed plan.
@@ -523,6 +557,10 @@ func (b *DeploymentBundle) resolveReferences(ctx context.Context, resourceKey st
 
 func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root, db *dstate.Database) (*deployplan.Plan, error) {
 	p := deployplan.NewPlan()
+
+	// Copy state metadata to plan for validation during apply
+	p.Lineage = db.Lineage
+	p.Serial = db.Serial
 
 	// Collect and sort nodes first, because MapByPattern gives them in randomized order
 	var nodes []string

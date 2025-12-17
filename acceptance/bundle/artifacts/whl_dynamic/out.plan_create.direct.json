@@ -1,8 +1,6 @@
 {
   "plan_version": 1,
   "cli_version": "[DEV_VERSION]",
-  "lineage": "[UUID]",
-  "serial": 1,
   "plan": {
     "resources.jobs.test_job": {
       "action": "create",
