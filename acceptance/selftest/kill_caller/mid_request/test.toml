@@ -15,9 +15,16 @@ New = '[PROCESS_KILLED]'
 # On Windows, there's no "Killed" message - just empty line before Exit code
 # Insert [PROCESS_KILLED] placeholder for consistency
 Old = '(\n>>> errcode [^\n]+\n)\nExit code:'
-New = '${1}[PROCESS_KILLED]\n\nExit code:'
+New = """${1}[PROCESS_KILLED]
+
+Exit code:"""
 
 [[Repls]]
 # Normalize exit code: 137 on Unix (128 + SIGKILL), 1 on Windows
 Old = 'Exit code: (137|1)'
 New = 'Exit code: [KILLED]'
+
+[[Repls]]
+# Normalize Windows line endings (CRLF -> LF) - must be LAST
+Old = "\r"
+New = ''
