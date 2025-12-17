@@ -240,14 +240,13 @@ To start using direct engine, deploy with DATABRICKS_BUNDLE_ENGINE=direct env va
 			if etag == "" {
 				continue
 			}
-			// Get the cached StructVar created during planning
 			sv, ok := deploymentBundle.StructVarCache.Load(key)
 			if !ok {
-				return fmt.Errorf("failed to get cached state for %s", key)
+				return fmt.Errorf("failed to read state for %q", key)
 			}
 			err := structaccess.Set(sv.Value, structpath.NewStringKey(nil, "etag"), etag)
 			if err != nil {
-				return fmt.Errorf("failed to set etag on %s: %w", key, err)
+				return fmt.Errorf("failed to set etag on %q: %w", key, err)
 			}
 		}
 
