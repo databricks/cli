@@ -217,7 +217,11 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		// for integers: compare 0 with actual object ID. As long as real object IDs are never 0 we're good.
 		// Once we add non-id fields or add per-field details to "bundle plan", we must read dynamic data and deal with references as first class citizen.
 		// This means distinguishing between 0 that are actually object ids and 0 that are there because typed struct integer cannot contain ${...} string.
-		sv, _ := b.StructVarCache.Load(resourceKey)
+		sv, ok := b.StructVarCache.Load(resourceKey)
+		if !ok {
+			logdiag.LogError(ctx, fmt.Errorf("%s: internal error: no state found for %q", errorPrefix, resourceKey))
+			return false
+		}
 		localDiff, err := structdiff.GetStructDiff(savedState, sv.Value, adapter.KeyedSlices())
 		if err != nil {
 			logdiag.LogError(ctx, fmt.Errorf("%s: diffing local state: %w", errorPrefix, err))
