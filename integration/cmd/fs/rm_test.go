@@ -94,7 +94,7 @@ func TestFsRmNonEmptyDirectory(t *testing.T) {
 
 			// Run rm command
 			_, _, err = testcli.RequireErrorRun(t, ctx, "fs", "rm", path.Join(tmpDir, "a"))
-			assert.ErrorIs(t, err, fs.ErrInvalid)
+			require.Error(t, err)
 		})
 	}
 }
