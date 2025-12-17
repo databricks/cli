@@ -35,11 +35,11 @@ type DiffOutput struct {
 	Changes *ChangesSummary `json:"changes"`
 }
 
-func NewExpDiffCommand() *cobra.Command {
+func NewConfigRemoteSyncCommand() *cobra.Command {
 	var save bool
 
 	cmd := &cobra.Command{
-		Use:   "exp-diff",
+		Use:   "config-remote-sync",
 		Short: "Show differences between current remote state and last deploy snapshot (experimental)",
 		Long: `Show differences between the current remote resource state and the state at the time of the last successful deploy.
 

@@ -16,6 +16,6 @@ func newDebugCommand() *cobra.Command {
 	cmd.AddCommand(debug.NewTerraformCommand())
 	cmd.AddCommand(debug.NewRefSchemaCommand())
 	cmd.AddCommand(debug.NewStatesCommand())
-	cmd.AddCommand(debug.NewExpDiffCommand())
+	cmd.AddCommand(debug.NewConfigRemoteSyncCommand())
 	return cmd
 }
