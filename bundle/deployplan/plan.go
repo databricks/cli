@@ -1,7 +1,6 @@
 package deployplan
 
 import (
-	"bytes"
 	"cmp"
 	"encoding/json"
 	"fmt"
@@ -38,12 +37,12 @@ func NewPlan() *Plan {
 
 // LoadPlanFromFile reads a plan from a JSON file.
 func LoadPlanFromFile(path string) (*Plan, error) {
-	data, err := os.ReadFile(path)
+	file, err := os.Open(path)
 	if err != nil {
 		return nil, fmt.Errorf("reading plan file: %w", err)
 	}
 	var plan Plan
-	decoder := json.NewDecoder(bytes.NewReader(data))
+	decoder := json.NewDecoder(file)
 	decoder.DisallowUnknownFields()
 	if err := decoder.Decode(&plan); err != nil {
 		return nil, fmt.Errorf("parsing plan JSON: %w", err)
