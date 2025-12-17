@@ -10,7 +10,7 @@ Deployment complete!
   "lifecycle_state": "ACTIVE",
   "parent_path": "/Users/[USERNAME]",
   "path": "/Users/[USERNAME]/test bundle-deploy-dashboard-dataset [UUID].lvdash.json",
-  "serialized_dashboard": "{\"pages\":[{\"name\":\"test_page\",\"displayName\":\"Test Page\"}]}\n"
+  "serialized_dashboard": "{\"pages\":[{\"displayName\":\"Test Page\",\"name\":\"test_page\",\"pageType\":\"PAGE_TYPE_CANVAS\"}]}\n"
 }
 
 >>> [CLI] bundle plan -o json

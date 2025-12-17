@@ -2,10 +2,10 @@ Local = true
 Cloud = true
 RequiresWarehouse = true
 RecordRequests = true
+EnvVaryOutput = "DATABRICKS_BUNDLE_ENGINE"
 
-# TODO: test terraform once commit had been released (https://github.com/databricks/terraform-provider-databricks/pull/5259)
 [EnvMatrix]
-  DATABRICKS_BUNDLE_ENGINE = ["direct"]
+  DATABRICKS_BUNDLE_ENGINE = ["direct", "terraform"]
 
 Ignore = [
     "databricks.yml",

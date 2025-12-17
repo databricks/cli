@@ -31,4 +31,4 @@ cat out.requests.txt | \
  jq 'select(.method == "POST")' | \
  jq 'select(.path | contains("/api/2.0/lakeview/dashboards"))' | \
  jq 'select(.path | contains("/published") | not)' \
- > out.post.requests.txt
+ > out.post.requests.$DATABRICKS_BUNDLE_ENGINE.txt

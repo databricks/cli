@@ -124,8 +124,8 @@ func (r *ResourceDashboard) DoRead(ctx context.Context, id string) (*resources.D
 		SerializedDashboard: dashboard.SerializedDashboard,
 		ParentPath:          ensureWorkspacePrefix(dashboard.ParentPath),
 		// diffs are detected via etags, which will change if dataset_catalog/dataset_schema is updated.
-		DatasetCatalog:      "",
-		DatasetSchema:       "",
+		DatasetCatalog: "",
+		DatasetSchema:  "",
 
 		// Output only fields.
 		CreateTime:      dashboard.CreateTime,
@@ -321,6 +321,12 @@ func (*ResourceDashboard) FieldTriggers(isLocal bool) map[string]deployplan.Acti
 		// "serialized_dashboard" locally and remotely will have different diffs.
 		// We only need to rely on etag here, and can skip this field for diff computation.
 		triggers["serialized_dashboard"] = deployplan.ActionTypeSkip
+
+		// "dataset_catalog" and "dataset_schema" are write-only fields that are not returned by the server.
+		// They will always differ between local config (which has values) and remote state (which has empty strings),
+		// so we skip them for remote diff computation to avoid false positives.
+		triggers["dataset_catalog"] = deployplan.ActionTypeSkip
+		triggers["dataset_schema"] = deployplan.ActionTypeSkip
 	}
 
 	return triggers

@@ -4,4 +4,5 @@ RequiresWarehouse = true
 RecordRequests = true
 
 [EnvMatrix]
-  DATABRICKS_BUNDLE_ENGINE = ["direct"]
+  DATABRICKS_BUNDLE_ENGINE = ["direct", "terraform"]
+  Ignore = ["databricks.yml"]
