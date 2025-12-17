@@ -14,3 +14,14 @@
 # Error: Invalid access token. [ReqId: [UUID]] on aws-prod, but not on aws-prod-ucws
 # Cannot reproduce it locally though - works for me via "deco env run -i -n aws-prod"
 acceptance TestAccept/bundle/resources/permissions/jobs/destroy_without_mgmtperms/
+
+# Started failing in some envs on 2025-12-16 with:
+# "# Databricks notebook source" does not contain "# Databricks notebook source\n"
+# https://github.com/databricks/cli/pull/4147#issuecomment-3661201328
+* TestExport
+* TestExportWithFileFlag
+* TestImportDir
+* TestImportDirDoesNotOverwrite
+* TestImportDirWithOverwriteFlag
+* TestImportFileFormatAuto
+* TestImportFileFormatSource
