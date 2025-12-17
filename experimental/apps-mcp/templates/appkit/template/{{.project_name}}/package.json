@@ -12,6 +12,7 @@
     "typecheck": "tsc -p ./tsconfig.server.json --noEmit && tsc -p ./tsconfig.client.json --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
+    "lint:ast-grep": "tsx scripts/lint-ast-grep.ts",
     "format": "prettier --check .",
     "format:fix": "prettier --write .",
     "test": "vitest run && npm run test:smoke",
@@ -76,6 +77,7 @@
     "zod": "^4.1.13"
   },
   "devDependencies": {
+    "@ast-grep/napi": "^0.37.0",
     "@eslint/compat": "^2.0.0",
     "@eslint/js": "^9.39.1",
     "@playwright/test": "^1.57.0",
