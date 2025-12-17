@@ -32,7 +32,6 @@ func GenerateMaterializedConfig(config TestConfig) (string, error) {
 		RequiresUnityCatalog: config.RequiresUnityCatalog,
 		RequiresCluster:      config.RequiresCluster,
 		RequiresWarehouse:    config.RequiresWarehouse,
-		RecordRequests:       config.RecordRequests,
 		EnvMatrix:            config.EnvMatrix,
 	}
 
