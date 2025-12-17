@@ -8,7 +8,7 @@ trace $CLI bundle plan -o json > plan.json
 jq '.serial = 999' plan.json > plan.json.tmp && mv plan.json.tmp plan.json
 
 # Try to deploy with stale plan (should fail with serial mismatch)
-musterr $CLI bundle deploy --readplan plan.json
+musterr $CLI bundle deploy --plan plan.json
 
 rm plan.json
 trace $CLI bundle destroy --auto-approve

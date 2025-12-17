@@ -1,4 +1,4 @@
-# Test that --readplan with missing file produces an error
+# Test that --plan with missing file produces an error
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 
 # different error message on Windows

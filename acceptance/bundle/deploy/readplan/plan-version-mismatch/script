@@ -1,1 +1,1 @@
-$CLI bundle deploy --readplan plan.json
+$CLI bundle deploy --plan plan.json

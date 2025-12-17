@@ -384,7 +384,7 @@ func forbiddenEnvSet(envset []string) bool {
 		}
 	}
 
-	// Do not run terraform tests with --readplan option:
+	// Do not run terraform tests with --plan option:
 	return hasTerraform && hasReadplan
 }
 

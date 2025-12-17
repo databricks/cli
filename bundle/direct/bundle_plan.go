@@ -72,7 +72,7 @@ func ValidatePlanAgainstState(statePath string, plan *deployplan.Plan) error {
 }
 
 // InitForApply initializes the DeploymentBundle for applying a pre-computed plan.
-// This is used when --readplan is specified to skip the planning phase.
+// This is used when --plan is specified to skip the planning phase.
 func (b *DeploymentBundle) InitForApply(ctx context.Context, client *databricks.WorkspaceClient, statePath string, plan *deployplan.Plan) error {
 	err := b.StateDB.Open(statePath)
 	if err != nil {

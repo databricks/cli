@@ -19,7 +19,7 @@ Flags:
       --force                 Force-override Git branch validation.
       --force-lock            Force acquisition of deployment lock.
   -h, --help                  help for deploy
-      --readplan string       Path to a JSON plan file to apply instead of planning (direct engine only).
+      --plan string           Path to a JSON plan file to apply instead of planning (direct engine only).
 
 Global Flags:
       --debug            enable debug logging

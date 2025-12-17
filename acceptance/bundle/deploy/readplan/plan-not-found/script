@@ -1,1 +1,1 @@
-$CLI bundle deploy --readplan nonexistent.json
+$CLI bundle deploy --plan nonexistent.json

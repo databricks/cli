@@ -39,7 +39,7 @@ See https://docs.databricks.com/en/dev-tools/bundles/index.html for more informa
 	cmd.Flags().BoolVar(&autoApprove, "auto-approve", false, "Skip interactive approvals that might be required for deployment.")
 	cmd.Flags().MarkDeprecated("compute-id", "use --cluster-id instead")
 	cmd.Flags().BoolVar(&verbose, "verbose", false, "Enable verbose output.")
-	cmd.Flags().StringVar(&readPlanPath, "readplan", "", "Path to a JSON plan file to apply instead of planning (direct engine only).")
+	cmd.Flags().StringVar(&readPlanPath, "plan", "", "Path to a JSON plan file to apply instead of planning (direct engine only).")
 	// Verbose flag currently only affects file sync output, it's used by the vscode extension
 	cmd.Flags().MarkHidden("verbose")
 

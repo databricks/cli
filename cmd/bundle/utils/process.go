@@ -190,7 +190,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, 
 
 	if opts.ReadPlanPath != "" {
 		if !stateDesc.Engine.IsDirect() {
-			logdiag.LogError(ctx, errors.New("--readplan is only supported with direct engine (set DATABRICKS_BUNDLE_ENGINE=direct)"))
+			logdiag.LogError(ctx, errors.New("--plan is only supported with direct engine (set DATABRICKS_BUNDLE_ENGINE=direct)"))
 			return b, stateDesc, root.ErrAlreadyPrinted
 		}
 		opts.Build = false

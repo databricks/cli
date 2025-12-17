@@ -1,2 +1,2 @@
-# Test that --readplan with unknown fields in the plan JSON produces an error
+# Test that --plan with unknown fields in the plan JSON produces an error
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
