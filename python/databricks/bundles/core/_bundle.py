@@ -39,6 +39,36 @@ class Bundle:
             default: "14.3.x-scala2.12"
     """
 
+    _resource_state: dict[str, dict[str, dict[str, Any]]] = field(default_factory=dict, repr=False)
+    """
+    Internal field containing deployed resource state information.
+    Use :meth:`get_resource_id` to access deployed resource IDs.
+    """
+
+    def get_resource_id(self, resource_type: str, resource_name: str) -> str | None:
+        """
+        Get the ID of a deployed resource.
+
+        This method is available in post-deploy callbacks to retrieve deployed resource IDs.
+
+        :param resource_type: The type of resource (e.g., 'jobs', 'pipelines', 'schemas')
+        :param resource_name: The name of the resource as defined in the bundle
+        :return: The deployed resource ID, or None if not found or not yet deployed
+
+        Example:
+
+        .. code-block:: python
+
+            def on_deploy_complete(bundle: Bundle) -> None:
+                job_id = bundle.get_resource_id("jobs", "my_job")
+                if job_id:
+                    print(f"Job deployed with ID: {job_id}")
+        """
+        resources = self._resource_state.get("resources", {})
+        resource_group = resources.get(resource_type, {})
+        resource_info = resource_group.get(resource_name, {})
+        return resource_info.get("id")
+
     def resolve_variable(self, variable: VariableOr[_T]) -> _T:
         """
         Resolve a variable to its value.

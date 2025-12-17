@@ -56,6 +56,14 @@ type Python struct {
 	// Example: ["my_project.mutators:add_default_cluster"]
 	Mutators []string `json:"mutators,omitempty"`
 
+	// PostDeploy contains a list of fully qualified function paths to callback functions
+	// that are executed after successful bundle deployment. These functions receive the
+	// updated Bundle with deployed resource IDs and can perform post-deployment tasks
+	// such as triggering jobs, sending notifications, or running validations.
+	//
+	// Example: ["my_project.callbacks:on_deploy_complete"]
+	PostDeploy []string `json:"post_deploy,omitempty"`
+
 	// VEnvPath is path to the virtual environment.
 	//
 	// If enabled, Python code will execute within this environment. If disabled,
