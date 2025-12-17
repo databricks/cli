@@ -1,4 +1,6 @@
 {
+ "state_version": 1,
+ "cli_version": "[DEV_VERSION]",
  "lineage": "[UUID]",
  "serial": 5,
  "state": {
@@ -41,7 +43,13 @@
       "user_name": "[USERNAME]"
      }
     ]
-   }
+   },
+   "depends_on": [
+    {
+     "node": "resources.pipelines.foo",
+     "label": "${resources.pipelines.foo.id}"
+    }
+   ]
   }
  }
 }

@@ -281,6 +281,16 @@ func TestInheritOIDCTokenEnv(t *testing.T) {
 	assert.Equal(t, "", env["DATABRICKS_OIDC_TOKEN_ENV"])
 }
 
+func TestInheritSystemAccessToken(t *testing.T) {
+	t.Setenv("SYSTEM_ACCESSTOKEN", "foobar")
+
+	ctx := context.Background()
+	env := map[string]string{}
+	err := inheritEnvVars(ctx, env)
+	require.NoError(t, err)
+	assert.Equal(t, "foobar", env["SYSTEM_ACCESSTOKEN"])
+}
+
 func TestSetUserProfileFromInheritEnvVars(t *testing.T) {
 	t.Setenv("USERPROFILE", "c:\\foo\\c")
 

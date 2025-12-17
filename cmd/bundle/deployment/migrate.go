@@ -2,6 +2,7 @@ package deployment
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -177,21 +178,23 @@ To start using direct engine, deploy with DATABRICKS_BUNDLE_ENGINE=direct env va
 
 		state := make(map[string]dstate.ResourceEntry)
 		for key, resourceEntry := range terraformResources {
-			state[key] = dstate.ResourceEntry{ID: resourceEntry.ID}
+			state[key] = dstate.ResourceEntry{
+				ID:    resourceEntry.ID,
+				State: json.RawMessage("{}"),
+			}
 			if resourceEntry.ETag != "" {
 				// dashboard:
 				etags[key] = resourceEntry.ETag
 			}
 		}
 
+		migratedDB := dstate.NewMigratedDatabase(stateDesc.Lineage, stateDesc.Serial+1)
+		migratedDB.State = state
+
 		deploymentBundle := &direct.DeploymentBundle{
 			StateDB: dstate.DeploymentState{
 				Path: tempStatePath,
-				Data: dstate.Database{
-					Serial:  stateDesc.Serial + 1,
-					Lineage: stateDesc.Lineage,
-					State:   state,
-				},
+				Data: migratedDB,
 			},
 		}
 
