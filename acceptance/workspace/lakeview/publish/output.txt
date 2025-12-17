@@ -1,4 +1,8 @@
 
+>>> [CLI] workspace mkdirs /Users/[USERNAME]
+
+>>> [CLI] lakeview create --json {"display_name": "Test Dashboard", "parent_path": "/Users/[USERNAME]", "warehouse_id": "test-warehouse"} -o json
+
 >>> [CLI] lakeview publish [DASHBOARD_ID]
 {
   "display_name":"Test Dashboard",

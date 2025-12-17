@@ -2,7 +2,3 @@ RecordRequests = true
 
 [Env]
 MSYS_NO_PATHCONV = "1"
-
-[[Repls]]
-Old = "[a-f0-9]{32}"
-New = "[DASHBOARD_ID]"
