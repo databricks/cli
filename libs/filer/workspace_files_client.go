@@ -268,10 +268,6 @@ func (w *WorkspaceFilesClient) Delete(ctx context.Context, name string, mode ...
 	}
 
 	switch aerr.StatusCode {
-	case http.StatusBadRequest:
-		if aerr.ErrorCode == "DIRECTORY_NOT_EMPTY" {
-			return DirectoryNotEmptyError{absPath}
-		}
 	case http.StatusNotFound:
 		return FileDoesNotExistError{absPath}
 	}

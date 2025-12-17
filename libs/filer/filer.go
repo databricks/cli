@@ -90,18 +90,6 @@ func (err NotAFile) Is(other error) bool {
 	return other == fs.ErrInvalid
 }
 
-type DirectoryNotEmptyError struct {
-	path string
-}
-
-func (err DirectoryNotEmptyError) Error() string {
-	return "directory not empty: " + err.path
-}
-
-func (err DirectoryNotEmptyError) Is(other error) bool {
-	return other == fs.ErrInvalid
-}
-
 type CannotDeleteRootError struct{}
 
 func (err CannotDeleteRootError) Error() string {

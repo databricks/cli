@@ -212,25 +212,6 @@ func (w *DbfsClient) Delete(ctx context.Context, name string, mode ...DeleteMode
 		Recursive: recursive,
 	})
 
-	// Return early on success.
-	if err == nil {
-		return nil
-	}
-
-	// Special handling of this error only if it is an API error.
-	var aerr *apierr.APIError
-	if !errors.As(err, &aerr) {
-		return err
-	}
-
-	switch aerr.StatusCode {
-	case http.StatusBadRequest:
-		// Anecdotally, this error is returned when attempting to delete a non-empty directory.
-		if aerr.ErrorCode == "IO_ERROR" {
-			return DirectoryNotEmptyError{absPath}
-		}
-	}
-
 	return err
 }
 

@@ -246,30 +246,7 @@ func (w *FilesClient) deleteDirectory(ctx context.Context, name string) error {
 		return CannotDeleteRootError{}
 	}
 
-	err = w.workspaceClient.Files.DeleteDirectoryByDirectoryPath(ctx, absPath)
-
-	var aerr *apierr.APIError
-	// Special handling of this error only if it is an API error.
-	if !errors.As(err, &aerr) {
-		return err
-	}
-
-	// The directory delete API returns a 400 if the directory is not empty
-	if aerr.StatusCode == http.StatusBadRequest {
-		var reasons []string
-		details := aerr.ErrorDetails()
-		if details.ErrorInfo != nil {
-			reasons = append(reasons, details.ErrorInfo.Reason)
-		}
-		// Error code 400 is generic and can be returned for other reasons. Make
-		// sure one of the reasons for the error is that the directory is not empty.
-		if !slices.Contains(reasons, "FILES_API_DIRECTORY_IS_NOT_EMPTY") {
-			return err
-		}
-		return DirectoryNotEmptyError{absPath}
-	}
-
-	return err
+	return w.workspaceClient.Files.DeleteDirectoryByDirectoryPath(ctx, absPath)
 }
 
 func (w *FilesClient) recursiveDelete(ctx context.Context, name string) error {

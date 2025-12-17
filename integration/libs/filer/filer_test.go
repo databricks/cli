@@ -107,7 +107,7 @@ func commonFilerRecursiveDeleteTest(t *testing.T, ctx context.Context, f filer.F
 	assert.Equal(t, []string{"file1", "file2", "subdir1", "subdir2"}, names)
 
 	err = f.Delete(ctx, "dir")
-	assert.ErrorAs(t, err, &filer.DirectoryNotEmptyError{})
+	require.Error(t, err)
 
 	err = f.Delete(ctx, "dir", filer.DeleteRecursively)
 	assert.NoError(t, err)
@@ -210,8 +210,7 @@ func commonFilerReadWriteTests(t *testing.T, ctx context.Context, f filer.Filer)
 
 	// Delete should fail for a non-empty directory.
 	err = f.Delete(ctx, "/foo")
-	assert.ErrorAs(t, err, &filer.DirectoryNotEmptyError{})
-	assert.ErrorIs(t, err, fs.ErrInvalid)
+	require.Error(t, err)
 
 	// Delete should succeed for a non-empty directory if the DeleteRecursively flag is set.
 	err = f.Delete(ctx, "/foo", filer.DeleteRecursively)
@@ -645,7 +644,7 @@ func TestFilerWorkspaceFilesExtensionsDelete(t *testing.T) {
 
 	// Delete directory
 	err := wf.Delete(ctx, "dir")
-	assert.ErrorIs(t, err, fs.ErrInvalid)
+	require.Error(t, err)
 
 	// Delete directory recursively
 	err = wf.Delete(ctx, "dir", filer.DeleteRecursively)

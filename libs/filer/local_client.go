@@ -125,7 +125,6 @@ func (w *LocalClient) Delete(ctx context.Context, name string, mode ...DeleteMod
 		if slices.Contains(mode, DeleteRecursively) {
 			return os.RemoveAll(absPath)
 		}
-		return DirectoryNotEmptyError{path: absPath}
 	}
 
 	return err
