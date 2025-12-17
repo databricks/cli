@@ -13,7 +13,7 @@
         "lifecycle_state": "ACTIVE",
         "parent_path": "/Workspace/Users/[USERNAME]",
         "path": "/Users/[USERNAME]/test bundle-deploy-dashboard-dataset [UUID].lvdash.json",
-        "serialized_dashboard": "[SERIALIZED_FIXTURE_NEW]",
+        "serialized_dashboard": "[SERIALIZED_FIXTURE]",
         "update_time": "[TIMESTAMP]",
         "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
       },
