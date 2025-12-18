@@ -226,7 +226,13 @@ func (w *DbfsClient) Delete(ctx context.Context, name string, mode ...DeleteMode
 	switch aerr.StatusCode {
 	case http.StatusBadRequest:
 		// Anecdotally, this error is returned when attempting to delete a non-empty directory.
-		if aerr.ErrorCode == "IO_ERROR" || strings.Contains(aerr.Message, "Directory is not empty") {
+		if aerr.ErrorCode == "IO_ERROR" {
+			return err
+		}
+
+		// Since 17th december we are observing the backend return an error_code of BAD_REQUEST
+		// instead of IO_ERROR. Doing direct comparison on the error string instead.
+		if strings.Contains(aerr.Message, "Directory is not empty. Use recursive delete or remove contents first.") {
 			return DirectoryNotEmptyError{absPath}
 		}
 	}
