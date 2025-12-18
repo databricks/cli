@@ -106,7 +106,7 @@ func (w *DbfsClient) Write(ctx context.Context, name string, reader io.Reader, m
 			// This API returns a 404 if the file doesn't exist.
 			if aerr.StatusCode == http.StatusNotFound {
 				if aerr.ErrorCode == "RESOURCE_DOES_NOT_EXIST" {
-					return NoSuchDirectoryError{path.Dir(absPath)}
+					return noSuchDirectoryError{path.Dir(absPath)}
 				}
 			}
 
@@ -124,7 +124,7 @@ func (w *DbfsClient) Write(ctx context.Context, name string, reader io.Reader, m
 		// This API returns a 400 if the file already exists.
 		if aerr.StatusCode == http.StatusBadRequest {
 			if aerr.ErrorCode == "RESOURCE_ALREADY_EXISTS" {
-				return FileAlreadyExistsError{absPath}
+				return fileAlreadyExistsError{absPath}
 			}
 		}
 
@@ -150,7 +150,7 @@ func (w *DbfsClient) Read(ctx context.Context, name string) (io.ReadCloser, erro
 	if err != nil {
 		// Return error if file is a directory
 		if strings.Contains(err.Error(), "cannot open directory for reading") {
-			return nil, NotAFile{absPath}
+			return nil, notAFile{absPath}
 		}
 
 		var aerr *apierr.APIError
@@ -161,7 +161,7 @@ func (w *DbfsClient) Read(ctx context.Context, name string) (io.ReadCloser, erro
 		// This API returns a 404 if the file doesn't exist.
 		if aerr.StatusCode == http.StatusNotFound {
 			if aerr.ErrorCode == "RESOURCE_DOES_NOT_EXIST" {
-				return nil, FileDoesNotExistError{absPath}
+				return nil, fileDoesNotExistError{absPath}
 			}
 		}
 
@@ -180,7 +180,7 @@ func (w *DbfsClient) Delete(ctx context.Context, name string, mode ...DeleteMode
 
 	// Illegal to delete the root path.
 	if absPath == w.root.rootPath {
-		return CannotDeleteRootError{}
+		return cannotDeleteRootError{}
 	}
 
 	// Issue info call before delete because delete succeeds if the specified path doesn't exist.
@@ -198,7 +198,7 @@ func (w *DbfsClient) Delete(ctx context.Context, name string, mode ...DeleteMode
 		// This API returns a 404 if the file doesn't exist.
 		if aerr.StatusCode == http.StatusNotFound {
 			if aerr.ErrorCode == "RESOURCE_DOES_NOT_EXIST" {
-				return FileDoesNotExistError{absPath}
+				return fileDoesNotExistError{absPath}
 			}
 		}
 
@@ -227,7 +227,7 @@ func (w *DbfsClient) Delete(ctx context.Context, name string, mode ...DeleteMode
 	case http.StatusBadRequest:
 		// Anecdotally, this error is returned when attempting to delete a non-empty directory.
 		if aerr.ErrorCode == "IO_ERROR" {
-			return DirectoryNotEmptyError{absPath}
+			return directoryNotEmptyError{absPath}
 		}
 	}
 
@@ -250,7 +250,7 @@ func (w *DbfsClient) ReadDir(ctx context.Context, name string) ([]fs.DirEntry, e
 		// This API returns a 404 if the file doesn't exist.
 		if aerr.StatusCode == http.StatusNotFound {
 			if aerr.ErrorCode == "RESOURCE_DOES_NOT_EXIST" {
-				return nil, NoSuchDirectoryError{absPath}
+				return nil, noSuchDirectoryError{absPath}
 			}
 		}
 
@@ -258,7 +258,7 @@ func (w *DbfsClient) ReadDir(ctx context.Context, name string) ([]fs.DirEntry, e
 	}
 
 	if len(res.Files) == 1 && res.Files[0].Path == absPath {
-		return nil, NotADirectory{absPath}
+		return nil, notADirectory{absPath}
 	}
 
 	info := make([]fs.DirEntry, len(res.Files))
@@ -296,7 +296,7 @@ func (w *DbfsClient) Stat(ctx context.Context, name string) (fs.FileInfo, error)
 		// This API returns a 404 if the file doesn't exist.
 		if aerr.StatusCode == http.StatusNotFound {
 			if aerr.ErrorCode == "RESOURCE_DOES_NOT_EXIST" {
-				return nil, FileDoesNotExistError{absPath}
+				return nil, fileDoesNotExistError{absPath}
 			}
 		}
 
