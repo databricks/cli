@@ -16,6 +16,7 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/libs/shellquote"
 	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/spf13/cobra"
@@ -74,11 +75,15 @@ func runPlanCheck(cmd *cobra.Command, extraArgs []string, extraArgsStr string) e
 
 func getCommonArgs(cmd *cobra.Command) ([]string, string) {
 	var args []string
+	var quotedArgs []string
+
 	if flag := cmd.Flag("target"); flag != nil && flag.Changed {
 		target := flag.Value.String()
 		if target != "" {
 			args = append(args, "-t")
 			args = append(args, target)
+			quotedArgs = append(quotedArgs, "-t")
+			quotedArgs = append(quotedArgs, shellquote.BashArg(target))
 		}
 	}
 	if flag := cmd.Flag("profile"); flag != nil && flag.Changed {
@@ -86,13 +91,26 @@ func getCommonArgs(cmd *cobra.Command) ([]string, string) {
 		if profile != "" {
 			args = append(args, "-p")
 			args = append(args, profile)
+			quotedArgs = append(quotedArgs, "-p")
+			quotedArgs = append(quotedArgs, shellquote.BashArg(profile))
+		}
+	}
+	if flag := cmd.Flag("var"); flag != nil && flag.Changed {
+		varValues, err := cmd.Flags().GetStringSlice("var")
+		if err == nil {
+			for _, v := range varValues {
+				args = append(args, "--var")
+				args = append(args, v)
+				quotedArgs = append(quotedArgs, "--var")
+				quotedArgs = append(quotedArgs, shellquote.BashArg(v))
+			}
 		}
 	}
 
 	argsStr := ""
 
-	if len(args) > 0 {
-		argsStr = " " + strings.Join(args, " ")
+	if len(quotedArgs) > 0 {
+		argsStr = " " + strings.Join(quotedArgs, " ")
 	}
 
 	return args, argsStr
