@@ -5,6 +5,7 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/databricks-sdk-go"
 	workspaceConfig "github.com/databricks/databricks-sdk-go/config"
@@ -15,12 +16,8 @@ import (
 func TestNewOutputFilerLocal(t *testing.T) {
 	ctx := dbr.MockRuntime(context.Background(), dbr.Environment{IsDbr: false})
 
-	w := &databricks.WorkspaceClient{
-		Config: &workspaceConfig.Config{Host: "https://myhost.com"},
-	}
-
 	tmpDir := t.TempDir()
-	f, err := NewOutputFiler(ctx, w, tmpDir)
+	f, err := NewOutputFiler(ctx, tmpDir)
 	require.NoError(t, err)
 
 	assert.IsType(t, &LocalClient{}, f)
@@ -35,12 +32,8 @@ func TestNewOutputFilerLocalForNonWorkspacePath(t *testing.T) {
 	// Even on DBR, if path doesn't start with /Workspace/, use local client
 	ctx := dbr.MockRuntime(context.Background(), dbr.Environment{IsDbr: true, Version: "15.4"})
 
-	w := &databricks.WorkspaceClient{
-		Config: &workspaceConfig.Config{Host: "https://myhost.com"},
-	}
-
 	tmpDir := t.TempDir()
-	f, err := NewOutputFiler(ctx, w, tmpDir)
+	f, err := NewOutputFiler(ctx, tmpDir)
 	require.NoError(t, err)
 
 	assert.IsType(t, &LocalClient{}, f)
@@ -53,13 +46,12 @@ func TestNewOutputFilerDBR(t *testing.T) {
 	}
 
 	ctx := dbr.MockRuntime(context.Background(), dbr.Environment{IsDbr: true, Version: "15.4"})
-
-	w := &databricks.WorkspaceClient{
+	ctx = cmdctx.SetWorkspaceClient(ctx, &databricks.WorkspaceClient{
 		Config: &workspaceConfig.Config{Host: "https://myhost.com"},
-	}
+	})
 
 	// On DBR with /Workspace/ path, should use workspace files extensions client
-	f, err := NewOutputFiler(ctx, w, "/Workspace/Users/test@example.com/my-bundle")
+	f, err := NewOutputFiler(ctx, "/Workspace/Users/test@example.com/my-bundle")
 	require.NoError(t, err)
 
 	assert.IsType(t, &WorkspaceFilesExtensionsClient{}, f)

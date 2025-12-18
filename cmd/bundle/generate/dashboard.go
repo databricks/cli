@@ -364,7 +364,7 @@ func (d *dashboard) initialize(ctx context.Context, b *bundle.Bundle) {
 	d.relativeDashboardDir = filepath.ToSlash(rel)
 
 	// Construct output filer for writing files.
-	outputFiler, err := filer.NewOutputFiler(ctx, b.WorkspaceClient(), b.BundleRootPath)
+	outputFiler, err := filer.NewOutputFiler(ctx, b.BundleRootPath)
 	if err != nil {
 		logdiag.LogError(ctx, err)
 		return

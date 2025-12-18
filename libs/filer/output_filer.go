@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/dbr"
-	"github.com/databricks/databricks-sdk-go"
 )
 
 // NewOutputFiler creates a filer for writing output files.
@@ -16,7 +16,7 @@ import (
 //
 // It is not possible to write notebooks through the workspace filesystem's FUSE mount for DBR versions less than 16.4.
 // This function ensures the correct filer is used based on the runtime environment.
-func NewOutputFiler(ctx context.Context, w *databricks.WorkspaceClient, outputDir string) (Filer, error) {
+func NewOutputFiler(ctx context.Context, outputDir string) (Filer, error) {
 	outputDir, err := filepath.Abs(outputDir)
 	if err != nil {
 		return nil, err
@@ -25,6 +25,7 @@ func NewOutputFiler(ctx context.Context, w *databricks.WorkspaceClient, outputDi
 	// If the CLI is running on DBR and we're writing to the workspace file system,
 	// use the extension-aware workspace filesystem filer.
 	if strings.HasPrefix(outputDir, "/Workspace/") && dbr.RunsOnRuntime(ctx) {
+		w := cmdctx.WorkspaceClient(ctx)
 		return NewWorkspaceFilesExtensionsClient(w, outputDir)
 	}
 

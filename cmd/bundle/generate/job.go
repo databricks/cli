@@ -108,7 +108,7 @@ After generation, you can deploy this job to other targets using:
 			return err
 		}
 
-		outputFiler, err := filer.NewOutputFiler(ctx, w, b.BundleRootPath)
+		outputFiler, err := filer.NewOutputFiler(ctx, b.BundleRootPath)
 		if err != nil {
 			return err
 		}
