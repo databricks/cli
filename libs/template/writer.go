@@ -2,11 +2,14 @@ package template
 
 import (
 	"context"
+	"path/filepath"
 	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/jsonschema"
 	"github.com/databricks/cli/libs/telemetry"
@@ -46,7 +49,20 @@ type defaultWriter struct {
 func (tmpl *defaultWriter) Configure(ctx context.Context, configPath, outputDir string) error {
 	tmpl.configPath = configPath
 
-	outputFiler, err := filer.NewOutputFiler(ctx, cmdctx.WorkspaceClient(ctx), outputDir)
+	// Workspace client is only needed when running on DBR and writing to /Workspace/.
+	// We avoid calling cmdctx.WorkspaceClient unconditionally because it panics
+	// if the workspace client is not set in the context.
+	var outputFiler filer.Filer
+	var err error
+	absOutputDir, err := filepath.Abs(outputDir)
+	if err != nil {
+		return err
+	}
+	if strings.HasPrefix(absOutputDir, "/Workspace/") && dbr.RunsOnRuntime(ctx) {
+		outputFiler, err = filer.NewOutputFiler(ctx, cmdctx.WorkspaceClient(ctx), outputDir)
+	} else {
+		outputFiler, err = filer.NewLocalClient(absOutputDir)
+	}
 	if err != nil {
 		return err
 	}
