@@ -1,0 +1,3 @@
+# Invalid concurrency values should fail.
+trace errcode $CLI fs cp src dst --concurrency -1
+trace errcode $CLI fs cp src dst --concurrency 0
