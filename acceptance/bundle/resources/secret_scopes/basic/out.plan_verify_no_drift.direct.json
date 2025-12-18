@@ -1,6 +1,8 @@
 {
   "plan_version": 1,
   "cli_version": "[DEV_VERSION]",
+  "lineage": "[UUID]",
+  "serial": 2,
   "plan": {
     "resources.secret_scopes.my_scope": {
       "action": "skip",

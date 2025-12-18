@@ -206,7 +206,7 @@ To start using direct engine, deploy with DATABRICKS_BUNDLE_ENGINE=direct env va
 			}
 		}
 
-		migratedDB := dstate.NewMigratedDatabase(stateDesc.Lineage, stateDesc.Serial+1)
+		migratedDB := dstate.NewDatabase(stateDesc.Lineage, stateDesc.Serial+1)
 		migratedDB.State = state
 
 		deploymentBundle := &direct.DeploymentBundle{
@@ -235,14 +235,18 @@ To start using direct engine, deploy with DATABRICKS_BUNDLE_ENGINE=direct env va
 		// comes from remote state. If we don't store "etag" in state, we won't detect remote drift, because
 		// local=nil, remote="<some new etag>" which will be classified as "server_side_default".
 
-		for key, planEntry := range plan.Plan {
+		for key := range plan.Plan {
 			etag := etags[key]
 			if etag == "" {
 				continue
 			}
-			err := structaccess.Set(planEntry.NewState.Value, structpath.NewStringKey(nil, "etag"), etag)
+			sv, ok := deploymentBundle.StructVarCache.Load(key)
+			if !ok {
+				return fmt.Errorf("failed to read state for %q", key)
+			}
+			err := structaccess.Set(sv.Value, structpath.NewStringKey(nil, "etag"), etag)
 			if err != nil {
-				return fmt.Errorf("failed to set etag on %s: %w", key, err)
+				return fmt.Errorf("failed to set etag on %q: %w", key, err)
 			}
 		}
 

@@ -1,6 +1,7 @@
 # terraform fails with:
 #   panic: Error reading level state: strconv.ParseInt: parsing "[NUMID]": value out of range
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ['direct']
+EnvMatrix.READPLAN = ["", "1"]
 
 [[Repls]]
 Old = '9223372036854775807'
