@@ -5,4 +5,4 @@ Cloud = true
   aws = false
 
 [EnvMatrix]
-  DATABRICKS_BUNDLE_ENGINE = ["terraform"]
+  DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
