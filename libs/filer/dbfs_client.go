@@ -233,7 +233,7 @@ func (w *DbfsClient) Delete(ctx context.Context, name string, mode ...DeleteMode
 		// Since 17th december we are observing the backend return an error_code of BAD_REQUEST
 		// instead of IO_ERROR. Doing direct comparison on the error string instead.
 		if strings.Contains(aerr.Message, "Directory is not empty. Use recursive delete or remove contents first.") {
-			return DirectoryNotEmptyError{absPath}
+			return directoryNotEmptyError{absPath}
 		}
 	}
 
