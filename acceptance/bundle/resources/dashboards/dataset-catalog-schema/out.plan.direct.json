@@ -1,0 +1,45 @@
+{
+  "plan_version": 1,
+  "cli_version": "[DEV_VERSION]",
+  "plan": {
+    "resources.dashboards.dashboard1": {
+      "action": "skip",
+      "remote_state": {
+        "create_time": "[TIMESTAMP]",
+        "dashboard_id": "[DASHBOARD_ID]",
+        "display_name": "test bundle-deploy-dashboard-dataset [UUID]",
+        "embed_credentials": true,
+        "etag": [ETAG],
+        "lifecycle_state": "ACTIVE",
+        "parent_path": "/Workspace/Users/[USERNAME]",
+        "path": "/Users/[USERNAME]/test bundle-deploy-dashboard-dataset [UUID].lvdash.json",
+        "serialized_dashboard": "[SERIALIZED_FIXTURE]",
+        "update_time": "[TIMESTAMP]",
+        "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
+      },
+      "changes": {
+        "local": {
+          "etag": {
+            "action": "skip",
+            "old": [ETAG]
+          }
+        },
+        "remote": {
+          "dataset_catalog": {
+            "action": "skip",
+            "old": "main"
+          },
+          "dataset_schema": {
+            "action": "skip",
+            "old": "default"
+          },
+          "serialized_dashboard": {
+            "action": "skip",
+            "old": "[SERIALIZED_FIXTURE_OLD]",
+            "new": "[SERIALIZED_FIXTURE_NEW]"
+          }
+        }
+      }
+    }
+  }
+}

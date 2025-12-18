@@ -424,6 +424,8 @@ resources.clusters.*.permissions.permissions[*].service_principal_name	string	AL
 resources.clusters.*.permissions.permissions[*].user_name	string	ALL
 resources.dashboards.*.create_time	string	ALL
 resources.dashboards.*.dashboard_id	string	ALL
+resources.dashboards.*.dataset_catalog	string	ALL
+resources.dashboards.*.dataset_schema	string	ALL
 resources.dashboards.*.display_name	string	ALL
 resources.dashboards.*.embed_credentials	bool	ALL
 resources.dashboards.*.etag	string	ALL
