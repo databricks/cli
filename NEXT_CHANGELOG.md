@@ -5,6 +5,7 @@
 ### Notable Changes
 
 ### CLI
+* Fix lakeview publish to default `embed_credentials` to false ([#4066](https://github.com/databricks/cli/pull/4066))
 
 ### Bundles
 * Add support for configurable catalog/schema for dashboards ([#4130](https://github.com/databricks/cli/pull/4130))
