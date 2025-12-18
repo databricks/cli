@@ -599,7 +599,7 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 				},
 			)
 			if err != nil {
-				return nil, fmt.Errorf("reading config: %w", err)
+				return nil, err
 			}
 		}
 	}
@@ -612,7 +612,7 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 		prefix := "cannot plan " + node
 		inputConfig, err := configRoot.GetResourceConfig(node)
 		if err != nil {
-			return nil, fmt.Errorf("%s: reading config: %s", prefix, err)
+			return nil, err
 		}
 
 		adapter, err := b.getAdapterForKey(node)
