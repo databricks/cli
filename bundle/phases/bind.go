@@ -2,6 +2,7 @@ package phases
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
@@ -9,6 +10,7 @@ import (
 	"github.com/databricks/cli/bundle/deploy/lock"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/statemgmt"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 )
@@ -32,6 +34,28 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions) {
 	}()
 
 	if eng.IsDirect() {
+
+		// Note, difference from Terraform engine:
+		// We simply always ask for confirmation or for --auto-approve.
+		// Terraform logic is to only do that if bind results in plan changes.
+
+		if !opts.AutoApprove {
+			if !cmdio.IsPromptSupported(ctx) {
+				logdiag.LogError(ctx, errors.New("This bind operation requires user confirmation, but the current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed."))
+				return
+			}
+
+			ans, err := cmdio.AskYesOrNo(ctx, "Confirm import changes? Changes will be remotely applied only after running 'bundle deploy'.")
+			if err != nil {
+				logdiag.LogError(ctx, err)
+				return
+			}
+			if !ans {
+				logdiag.LogError(ctx, errors.New("import aborted"))
+				return
+			}
+		}
+
 		// Direct engine: simply add the resource to state
 		groupName := terraform.TerraformToGroupName[opts.ResourceType]
 		resourceKey := fmt.Sprintf("resources.%s.%s", groupName, opts.ResourceKey)
