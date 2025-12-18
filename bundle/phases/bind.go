@@ -2,6 +2,7 @@ package phases
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/engine"
@@ -15,7 +16,7 @@ import (
 func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions) {
 	log.Info(ctx, "Phase: bind")
 
-	engine, err := engine.FromEnv(ctx)
+	eng, err := engine.FromEnv(ctx)
 	if err != nil {
 		logdiag.LogError(ctx, err)
 		return
@@ -30,22 +31,35 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions) {
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalBind))
 	}()
 
-	bundle.ApplySeqContext(ctx, b,
-		terraform.Interpolate(),
-		terraform.Write(),
-		terraform.Import(opts),
-	)
-	if logdiag.HasError(ctx) {
-		return
+	if eng.IsDirect() {
+		// Direct engine: simply add the resource to state
+		groupName := terraform.TerraformToGroupName[opts.ResourceType]
+		resourceKey := fmt.Sprintf("resources.%s.%s", groupName, opts.ResourceKey)
+		_, statePath := b.StateFilenameDirect(ctx)
+		err := b.DeploymentBundle.Bind(ctx, statePath, resourceKey, opts.ResourceId)
+		if err != nil {
+			logdiag.LogError(ctx, err)
+			return
+		}
+	} else {
+		// Terraform engine: use terraform import
+		bundle.ApplySeqContext(ctx, b,
+			terraform.Interpolate(),
+			terraform.Write(),
+			terraform.Import(opts),
+		)
+		if logdiag.HasError(ctx) {
+			return
+		}
 	}
 
-	statemgmt.PushResourcesState(ctx, b, engine)
+	statemgmt.PushResourcesState(ctx, b, eng)
 }
 
 func Unbind(ctx context.Context, b *bundle.Bundle, bundleType, tfResourceType, resourceKey string) {
 	log.Info(ctx, "Phase: unbind")
 
-	engine, err := engine.FromEnv(ctx)
+	eng, err := engine.FromEnv(ctx)
 	if err != nil {
 		logdiag.LogError(ctx, err)
 		return
@@ -60,14 +74,27 @@ func Unbind(ctx context.Context, b *bundle.Bundle, bundleType, tfResourceType, r
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalUnbind))
 	}()
 
-	bundle.ApplySeqContext(ctx, b,
-		terraform.Interpolate(),
-		terraform.Write(),
-		terraform.Unbind(bundleType, tfResourceType, resourceKey),
-	)
-	if logdiag.HasError(ctx) {
-		return
+	if eng.IsDirect() {
+		// Direct engine: simply remove the resource from state
+		groupName := terraform.TerraformToGroupName[tfResourceType]
+		fullResourceKey := fmt.Sprintf("resources.%s.%s", groupName, resourceKey)
+		_, statePath := b.StateFilenameDirect(ctx)
+		err := b.DeploymentBundle.Unbind(ctx, statePath, fullResourceKey)
+		if err != nil {
+			logdiag.LogError(ctx, err)
+			return
+		}
+	} else {
+		// Terraform engine: use terraform state rm
+		bundle.ApplySeqContext(ctx, b,
+			terraform.Interpolate(),
+			terraform.Write(),
+			terraform.Unbind(bundleType, tfResourceType, resourceKey),
+		)
+		if logdiag.HasError(ctx) {
+			return
+		}
 	}
 
-	statemgmt.PushResourcesState(ctx, b, engine)
+	statemgmt.PushResourcesState(ctx, b, eng)
 }

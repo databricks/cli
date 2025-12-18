@@ -28,8 +28,7 @@ Deployment complete!
       {
         "task_key": "my_notebook_task",
         "spark_python_task": {
-          "python_file": "/Workspace/Users/[USERNAME]/.bundle/test-bind-job-[UNIQUE_NAME]/files/hello_world.py",
-          "source": "WORKSPACE"
+          "python_file": "/Workspace/Users/[USERNAME]/.bundle/test-bind-job-[UNIQUE_NAME]/files/hello_world.py"
         }
       }
     ]
@@ -60,8 +59,7 @@ Destroy complete!
       {
         "task_key": "my_notebook_task",
         "spark_python_task": {
-          "python_file": "/Workspace/Users/[USERNAME]/.bundle/test-bind-job-[UNIQUE_NAME]/files/hello_world.py",
-          "source": "WORKSPACE"
+          "python_file": "/Workspace/Users/[USERNAME]/.bundle/test-bind-job-[UNIQUE_NAME]/files/hello_world.py"
         }
       }
     ]
