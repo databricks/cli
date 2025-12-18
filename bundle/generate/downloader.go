@@ -1,10 +1,8 @@
 package generate
 
 import (
-	"bytes"
 	"context"
 	"fmt"
-	"io"
 	"net/http"
 	"path"
 	"path/filepath"
@@ -14,12 +12,11 @@ import (
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/notebook"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"golang.org/x/sync/errgroup"
-
-	"github.com/databricks/databricks-sdk-go/client"
 )
 
 type exportFile struct {
@@ -216,17 +213,11 @@ func (n *Downloader) FlushToDisk(ctx context.Context, force bool) error {
 			}
 			defer reader.Close()
 
-			// Read into buffer so we can write via the filer
-			content, err := io.ReadAll(reader)
-			if err != nil {
-				return err
-			}
-
 			mode := []filer.WriteMode{filer.CreateParentDirectories}
 			if force {
 				mode = append(mode, filer.OverwriteIfExists)
 			}
-			err = n.outputFiler.Write(errCtx, targetPath, bytes.NewReader(content), mode...)
+			err = n.outputFiler.Write(errCtx, targetPath, reader, mode...)
 			if err != nil {
 				return err
 			}
