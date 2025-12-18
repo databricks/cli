@@ -1,10 +1,12 @@
 package generate
 
 import (
+	"bytes"
+	"context"
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
-	"os"
 	"path/filepath"
 	"strconv"
 
@@ -14,12 +16,38 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/yamlsaver"
+	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/textutil"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 )
+
+// filerRename renames a file using filer operations (read, write, delete).
+// This is needed because the filer interface doesn't have a native rename method.
+func filerRename(ctx context.Context, f filer.Filer, oldPath, newPath string) error {
+	// Read the old file
+	r, err := f.Read(ctx, oldPath)
+	if err != nil {
+		return err
+	}
+	defer r.Close()
+
+	content, err := io.ReadAll(r)
+	if err != nil {
+		return err
+	}
+
+	// Write to new path
+	err = f.Write(ctx, newPath, bytes.NewReader(content), filer.CreateParentDirectories, filer.OverwriteIfExists)
+	if err != nil {
+		return err
+	}
+
+	// Delete the old file
+	return f.Delete(ctx, oldPath)
+}
 
 func NewGenerateJobCommand() *cobra.Command {
 	var configDir string
@@ -80,7 +108,12 @@ After generation, you can deploy this job to other targets using:
 			return err
 		}
 
-		downloader := generate.NewDownloader(w, sourceDir, configDir)
+		outputFiler, err := filer.NewOutputFiler(ctx, w, b.BundleRootPath)
+		if err != nil {
+			return err
+		}
+
+		downloader := generate.NewDownloader(w, sourceDir, configDir, outputFiler)
 
 		// Don't download files if the job is using Git source
 		// When Git source is used, the job will be using the files from the Git repository
@@ -129,7 +162,7 @@ After generation, you can deploy this job to other targets using:
 		// User might continuously run generate command to update their bundle jobs with any changes made in Databricks UI.
 		// Due to changing in the generated file names, we need to first rename existing resource file to the new name.
 		// Otherwise users can end up with duplicated resources.
-		err = os.Rename(oldFilename, filename)
+		err = filerRename(ctx, outputFiler, oldFilename, filename)
 		if err != nil && !errors.Is(err, fs.ErrNotExist) {
 			return fmt.Errorf("failed to rename file %s. DABs uses the resource type as a sub-extension for generated content, please rename it to %s, err: %w", oldFilename, filename, err)
 		}
@@ -140,7 +173,7 @@ After generation, you can deploy this job to other targets using:
 			"custom_tags": yaml.DoubleQuotedStyle,
 			"tags":        yaml.DoubleQuotedStyle,
 		})
-		err = saver.SaveAsYAML(result, filename, force)
+		err = saver.SaveAsYAMLToFiler(ctx, outputFiler, result, filename, force)
 		if err != nil {
 			return err
 		}

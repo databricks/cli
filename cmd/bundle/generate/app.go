@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/yamlsaver"
+	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/textutil"
 	"github.com/databricks/databricks-sdk-go/service/apps"
@@ -77,7 +78,12 @@ per target environment.`,
 			return err
 		}
 
-		downloader := generate.NewDownloader(w, sourceDir, configDir)
+		outputFiler, err := filer.NewOutputFiler(ctx, w, b.BundleRootPath)
+		if err != nil {
+			return err
+		}
+
+		downloader := generate.NewDownloader(w, sourceDir, configDir, outputFiler)
 
 		sourceCodePath := app.DefaultSourceCodePath
 		// If the source code path is not set, we don't need to download anything.
@@ -121,7 +127,7 @@ per target environment.`,
 		filename := filepath.Join(configDir, appKey+".app.yml")
 
 		saver := yamlsaver.NewSaver()
-		err = saver.SaveAsYAML(result, filename, force)
+		err = saver.SaveAsYAMLToFiler(ctx, outputFiler, result, filename, force)
 		if err != nil {
 			return err
 		}

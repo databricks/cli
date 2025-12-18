@@ -1,6 +1,8 @@
 package yamlsaver
 
 import (
+	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -9,6 +11,7 @@ import (
 	"strconv"
 
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/filer"
 	"gopkg.in/yaml.v3"
 )
 
@@ -54,6 +57,32 @@ func (s *saver) SaveAsYAML(data any, filename string, force bool) error {
 		return err
 	}
 	return nil
+}
+
+// SaveAsYAMLToFiler saves the data as YAML to the given filename using the provided filer.
+func (s *saver) SaveAsYAMLToFiler(ctx context.Context, f filer.Filer, data any, filename string, force bool) error {
+	// check that file exists
+	info, err := f.Stat(ctx, filename)
+	if err == nil {
+		if info.IsDir() {
+			return fmt.Errorf("%s is a directory", filename)
+		}
+		if !force {
+			return fmt.Errorf("%s already exists. Use --force to overwrite", filename)
+		}
+	}
+
+	var buf bytes.Buffer
+	err = s.encode(data, &buf)
+	if err != nil {
+		return err
+	}
+
+	mode := []filer.WriteMode{filer.CreateParentDirectories}
+	if force {
+		mode = append(mode, filer.OverwriteIfExists)
+	}
+	return f.Write(ctx, filename, &buf, mode...)
 }
 
 func (s *saver) encode(data any, w io.Writer) error {

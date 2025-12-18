@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os"
 	"path"
 	"path/filepath"
 	"strings"
@@ -25,6 +24,7 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/yamlsaver"
+	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/textutil"
 	"github.com/databricks/databricks-sdk-go"
@@ -66,6 +66,9 @@ type dashboard struct {
 	// Output and error streams.
 	out io.Writer
 	err io.Writer
+
+	// Output filer for writing files.
+	outputFiler filer.Filer
 }
 
 func (d *dashboard) resolveID(ctx context.Context, b *bundle.Bundle) string {
@@ -165,16 +168,11 @@ func remarshalJSON(data []byte) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func (d *dashboard) saveSerializedDashboard(_ context.Context, b *bundle.Bundle, dashboard *dashboards.Dashboard, filename string) error {
+func (d *dashboard) saveSerializedDashboard(ctx context.Context, b *bundle.Bundle, dashboard *dashboards.Dashboard, filename string) error {
 	// Unmarshal and remarshal the serialized dashboard to ensure it is formatted correctly.
 	// The result will have alphabetically sorted keys and be indented.
 	data, err := remarshalJSON([]byte(dashboard.SerializedDashboard))
 	if err != nil {
-		return err
-	}
-
-	// Make sure the output directory exists.
-	if err := os.MkdirAll(filepath.Dir(filename), 0o755); err != nil {
 		return err
 	}
 
@@ -188,7 +186,7 @@ func (d *dashboard) saveSerializedDashboard(_ context.Context, b *bundle.Bundle,
 	}
 
 	// Verify that the file does not already exist.
-	info, err := os.Stat(filename)
+	info, err := d.outputFiler.Stat(ctx, filename)
 	if err == nil {
 		if info.IsDir() {
 			return fmt.Errorf("%s is a directory", rel)
@@ -199,7 +197,12 @@ func (d *dashboard) saveSerializedDashboard(_ context.Context, b *bundle.Bundle,
 	}
 
 	fmt.Fprintf(d.out, "Writing dashboard to %q\n", rel)
-	return os.WriteFile(filename, data, 0o644)
+
+	mode := []filer.WriteMode{filer.CreateParentDirectories}
+	if d.force {
+		mode = append(mode, filer.OverwriteIfExists)
+	}
+	return d.outputFiler.Write(ctx, filename, bytes.NewReader(data), mode...)
 }
 
 func (d *dashboard) saveConfiguration(ctx context.Context, b *bundle.Bundle, dashboard *dashboards.Dashboard, key string) error {
@@ -225,11 +228,6 @@ func (d *dashboard) saveConfiguration(ctx context.Context, b *bundle.Bundle, das
 		}),
 	}
 
-	// Make sure the output directory exists.
-	if err := os.MkdirAll(d.resourceDir, 0o755); err != nil {
-		return err
-	}
-
 	// Save the configuration to the resource directory.
 	resourcePath := filepath.Join(d.resourceDir, key+".dashboard.yml")
 	saver := yamlsaver.NewSaverWithStyle(map[string]yaml.Style{
@@ -243,7 +241,7 @@ func (d *dashboard) saveConfiguration(ctx context.Context, b *bundle.Bundle, das
 	}
 
 	fmt.Fprintf(d.out, "Writing configuration to %q\n", rel)
-	err = saver.SaveAsYAML(result, resourcePath, d.force)
+	err = saver.SaveAsYAMLToFiler(ctx, d.outputFiler, result, resourcePath, d.force)
 	if err != nil {
 		return err
 	}
@@ -370,6 +368,14 @@ func (d *dashboard) initialize(ctx context.Context, b *bundle.Bundle) {
 	}
 
 	d.relativeDashboardDir = filepath.ToSlash(rel)
+
+	// Construct output filer for writing files.
+	outputFiler, err := filer.NewOutputFiler(ctx, b.WorkspaceClient(), b.BundleRootPath)
+	if err != nil {
+		logdiag.LogError(ctx, err)
+		return
+	}
+	d.outputFiler = outputFiler
 }
 
 func (d *dashboard) runForResource(ctx context.Context, b *bundle.Bundle) {

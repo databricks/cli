@@ -2,14 +2,11 @@ package template
 
 import (
 	"context"
-	"path/filepath"
 	"sort"
 	"strconv"
-	"strings"
 
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/jsonschema"
 	"github.com/databricks/cli/libs/telemetry"
@@ -46,30 +43,10 @@ type defaultWriter struct {
 	renderer *renderer
 }
 
-func constructOutputFiler(ctx context.Context, outputDir string) (filer.Filer, error) {
-	outputDir, err := filepath.Abs(outputDir)
-	if err != nil {
-		return nil, err
-	}
-
-	// If the CLI is running on DBR and we're writing to the workspace file system,
-	// use the extension-aware workspace filesystem filer to instantiate the template.
-	//
-	// It is not possible to write notebooks through the workspace filesystem's FUSE mount.
-	// Therefore this is the only way we can initialize templates that contain notebooks
-	// when running the CLI on DBR and initializing a template to the workspace.
-	//
-	if strings.HasPrefix(outputDir, "/Workspace/") && dbr.RunsOnRuntime(ctx) {
-		return filer.NewWorkspaceFilesExtensionsClient(cmdctx.WorkspaceClient(ctx), outputDir)
-	}
-
-	return filer.NewLocalClient(outputDir)
-}
-
 func (tmpl *defaultWriter) Configure(ctx context.Context, configPath, outputDir string) error {
 	tmpl.configPath = configPath
 
-	outputFiler, err := constructOutputFiler(ctx, outputDir)
+	outputFiler, err := filer.NewOutputFiler(ctx, cmdctx.WorkspaceClient(ctx), outputDir)
 	if err != nil {
 		return err
 	}

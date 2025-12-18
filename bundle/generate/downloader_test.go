@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/databricks/cli/libs/fakefs"
+	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/stretchr/testify/assert"
@@ -18,7 +20,8 @@ func TestDownloader_MarkFileReturnsRelativePath(t *testing.T) {
 	dir := "base/dir/doesnt/matter"
 	sourceDir := filepath.Join(dir, "source")
 	configDir := filepath.Join(dir, "config")
-	downloader := NewDownloader(m.WorkspaceClient, sourceDir, configDir)
+	fakeFiler := filer.NewFakeFiler(map[string]fakefs.FileInfo{})
+	downloader := NewDownloader(m.WorkspaceClient, sourceDir, configDir, fakeFiler)
 
 	var err error
 

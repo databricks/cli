@@ -1,16 +1,17 @@
 package generate
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"io"
 	"net/http"
-	"os"
 	"path"
 	"path/filepath"
 	"strings"
 
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/notebook"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -27,11 +28,12 @@ type exportFile struct {
 }
 
 type Downloader struct {
-	files     map[string]exportFile
-	w         *databricks.WorkspaceClient
-	sourceDir string
-	configDir string
-	basePath  string
+	files       map[string]exportFile
+	w           *databricks.WorkspaceClient
+	sourceDir   string
+	configDir   string
+	basePath    string
+	outputFiler filer.Filer
 }
 
 func (n *Downloader) MarkTaskForDownload(ctx context.Context, task *jobs.Task) error {
@@ -194,7 +196,7 @@ func (n *Downloader) relativePath(fullPath string) string {
 func (n *Downloader) FlushToDisk(ctx context.Context, force bool) error {
 	// First check that all files can be written
 	for targetPath := range n.files {
-		info, err := os.Stat(targetPath)
+		info, err := n.outputFiler.Stat(ctx, targetPath)
 		if err == nil {
 			if info.IsDir() {
 				return fmt.Errorf("%s is a directory", targetPath)
@@ -207,42 +209,42 @@ func (n *Downloader) FlushToDisk(ctx context.Context, force bool) error {
 
 	errs, errCtx := errgroup.WithContext(ctx)
 	for targetPath, exportFile := range n.files {
-		// Create parent directories if they don't exist
-		dir := filepath.Dir(targetPath)
-		err := os.MkdirAll(dir, 0o755)
-		if err != nil {
-			return err
-		}
 		errs.Go(func() error {
 			reader, err := n.w.Workspace.Download(errCtx, exportFile.path, workspace.DownloadFormat(exportFile.format))
 			if err != nil {
 				return err
 			}
+			defer reader.Close()
 
-			file, err := os.Create(targetPath)
+			// Read into buffer so we can write via the filer
+			content, err := io.ReadAll(reader)
 			if err != nil {
 				return err
 			}
-			defer file.Close()
 
-			_, err = io.Copy(file, reader)
+			mode := []filer.WriteMode{filer.CreateParentDirectories}
+			if force {
+				mode = append(mode, filer.OverwriteIfExists)
+			}
+			err = n.outputFiler.Write(errCtx, targetPath, bytes.NewReader(content), mode...)
 			if err != nil {
 				return err
 			}
 
 			cmdio.LogString(errCtx, "File successfully saved to "+targetPath)
-			return reader.Close()
+			return nil
 		})
 	}
 
 	return errs.Wait()
 }
 
-func NewDownloader(w *databricks.WorkspaceClient, sourceDir, configDir string) *Downloader {
+func NewDownloader(w *databricks.WorkspaceClient, sourceDir, configDir string, outputFiler filer.Filer) *Downloader {
 	return &Downloader{
-		files:     make(map[string]exportFile),
-		w:         w,
-		sourceDir: sourceDir,
-		configDir: configDir,
+		files:       make(map[string]exportFile),
+		w:           w,
+		sourceDir:   sourceDir,
+		configDir:   configDir,
+		outputFiler: outputFiler,
 	}
 }

@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
-	"os"
 	"path/filepath"
 
 	"github.com/databricks/cli/bundle/generate"
@@ -13,6 +12,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/yamlsaver"
+	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/textutil"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
@@ -79,7 +79,12 @@ like catalogs, schemas, and compute configurations per target.`,
 			return err
 		}
 
-		downloader := generate.NewDownloader(w, sourceDir, configDir)
+		outputFiler, err := filer.NewOutputFiler(ctx, w, b.BundleRootPath)
+		if err != nil {
+			return err
+		}
+
+		downloader := generate.NewDownloader(w, sourceDir, configDir, outputFiler)
 		for _, lib := range pipeline.Spec.Libraries {
 			err := downloader.MarkPipelineLibraryForDownload(ctx, &lib)
 			if err != nil {
@@ -131,7 +136,7 @@ like catalogs, schemas, and compute configurations per target.`,
 		// User might continuously run generate command to update their bundle jobs with any changes made in Databricks UI.
 		// Due to changing in the generated file names, we need to first rename existing resource file to the new name.
 		// Otherwise users can end up with duplicated resources.
-		err = os.Rename(oldFilename, filename)
+		err = filerRename(ctx, outputFiler, oldFilename, filename)
 		if err != nil && !errors.Is(err, fs.ErrNotExist) {
 			return fmt.Errorf("failed to rename file %s. DABs uses the resource type as a sub-extension for generated content, please rename it to %s, err: %w", oldFilename, filename, err)
 		}
@@ -144,7 +149,7 @@ like catalogs, schemas, and compute configurations per target.`,
 				"configuration": yaml.DoubleQuotedStyle,
 			},
 		)
-		err = saver.SaveAsYAML(result, filename, force)
+		err = saver.SaveAsYAMLToFiler(ctx, outputFiler, result, filename, force)
 		if err != nil {
 			return err
 		}
