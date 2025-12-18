@@ -157,7 +157,7 @@ func newCreate() *cobra.Command {
 		}).GetWithTimeout(createTimeout)
 		close(spinner)
 		if err != nil {
-			return newAppDeploymentError(cmd, createReq.App.Name, err)
+			return err
 		}
 		return cmdio.Render(ctx, info)
 	}
@@ -278,7 +278,7 @@ func newCreateUpdate() *cobra.Command {
 		}).GetWithTimeout(createUpdateTimeout)
 		close(spinner)
 		if err != nil {
-			return newAppDeploymentError(cmd, createUpdateReq.AppName, err)
+			return err
 		}
 		return cmdio.Render(ctx, info)
 	}
@@ -437,7 +437,7 @@ func newDeploy() *cobra.Command {
 		}).GetWithTimeout(deployTimeout)
 		close(spinner)
 		if err != nil {
-			return newAppDeploymentError(cmd, deployReq.AppName, err)
+			return err
 		}
 		return cmdio.Render(ctx, info)
 	}
@@ -984,7 +984,7 @@ func newStart() *cobra.Command {
 		}).GetWithTimeout(startTimeout)
 		close(spinner)
 		if err != nil {
-			return newAppDeploymentError(cmd, startReq.Name, err)
+			return err
 		}
 		return cmdio.Render(ctx, info)
 	}
