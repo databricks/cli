@@ -84,6 +84,16 @@ like catalogs, schemas, and compute configurations per target.`,
 			return err
 		}
 
+		// Make sourceDir and configDir relative to the bundle root
+		sourceDir, err = makeRelativeToRoot(b.BundleRootPath, sourceDir)
+		if err != nil {
+			return err
+		}
+		configDir, err = makeRelativeToRoot(b.BundleRootPath, configDir)
+		if err != nil {
+			return err
+		}
+
 		downloader := generate.NewDownloader(w, sourceDir, configDir, outputFiler)
 		for _, lib := range pipeline.Spec.Libraries {
 			err := downloader.MarkPipelineLibraryForDownload(ctx, &lib)

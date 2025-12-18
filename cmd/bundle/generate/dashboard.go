@@ -168,7 +168,7 @@ func remarshalJSON(data []byte) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func (d *dashboard) saveSerializedDashboard(ctx context.Context, b *bundle.Bundle, dashboard *dashboards.Dashboard, filename string) error {
+func (d *dashboard) saveSerializedDashboard(ctx context.Context, dashboard *dashboards.Dashboard, filename string) error {
 	// Unmarshal and remarshal the serialized dashboard to ensure it is formatted correctly.
 	// The result will have alphabetically sorted keys and be indented.
 	data, err := remarshalJSON([]byte(dashboard.SerializedDashboard))
@@ -179,24 +179,18 @@ func (d *dashboard) saveSerializedDashboard(ctx context.Context, b *bundle.Bundl
 	// Clean the filename to ensure it is a valid path (and can be used on this OS).
 	filename = filepath.Clean(filename)
 
-	// Attempt to make the path relative to the bundle root.
-	rel, err := filepath.Rel(b.BundleRootPath, filename)
-	if err != nil {
-		rel = filename
-	}
-
 	// Verify that the file does not already exist.
 	info, err := d.outputFiler.Stat(ctx, filename)
 	if err == nil {
 		if info.IsDir() {
-			return fmt.Errorf("%s is a directory", rel)
+			return fmt.Errorf("%s is a directory", filename)
 		}
 		if !d.force {
-			return fmt.Errorf("%s already exists. Use --force to overwrite", rel)
+			return fmt.Errorf("%s already exists. Use --force to overwrite", filename)
 		}
 	}
 
-	fmt.Fprintf(d.out, "Writing dashboard to %q\n", rel)
+	fmt.Fprintf(d.out, "Writing dashboard to %q\n", filename)
 
 	mode := []filer.WriteMode{filer.CreateParentDirectories}
 	if d.force {
@@ -205,11 +199,11 @@ func (d *dashboard) saveSerializedDashboard(ctx context.Context, b *bundle.Bundl
 	return d.outputFiler.Write(ctx, filename, bytes.NewReader(data), mode...)
 }
 
-func (d *dashboard) saveConfiguration(ctx context.Context, b *bundle.Bundle, dashboard *dashboards.Dashboard, key string) error {
+func (d *dashboard) saveConfiguration(ctx context.Context, dashboard *dashboards.Dashboard, key string) error {
 	// Save serialized dashboard definition to the dashboard directory.
 	dashboardBasename := key + ".lvdash.json"
 	dashboardPath := filepath.Join(d.dashboardDir, dashboardBasename)
-	err := d.saveSerializedDashboard(ctx, b, dashboard, dashboardPath)
+	err := d.saveSerializedDashboard(ctx, dashboard, dashboardPath)
 	if err != nil {
 		return err
 	}
@@ -234,13 +228,7 @@ func (d *dashboard) saveConfiguration(ctx context.Context, b *bundle.Bundle, das
 		"display_name": yaml.DoubleQuotedStyle,
 	})
 
-	// Attempt to make the path relative to the bundle root.
-	rel, err := filepath.Rel(b.BundleRootPath, resourcePath)
-	if err != nil {
-		rel = resourcePath
-	}
-
-	fmt.Fprintf(d.out, "Writing configuration to %q\n", rel)
+	fmt.Fprintf(d.out, "Writing configuration to %q\n", resourcePath)
 	err = saver.SaveAsYAMLToFiler(ctx, d.outputFiler, result, resourcePath, d.force)
 	if err != nil {
 		return err
@@ -304,7 +292,7 @@ func (d *dashboard) updateDashboardForResource(ctx context.Context, b *bundle.Bu
 		}
 
 		if etag != dashboard.Etag {
-			err = d.saveSerializedDashboard(ctx, b, dashboard, dashboardPath)
+			err = d.saveSerializedDashboard(ctx, dashboard, dashboardPath)
 			if err != nil {
 				logdiag.LogError(ctx, err)
 				return
@@ -336,7 +324,7 @@ func (d *dashboard) generateForExisting(ctx context.Context, b *bundle.Bundle, d
 	}
 
 	key := textutil.NormalizeString(dashboard.DisplayName)
-	err = d.saveConfiguration(ctx, b, dashboard, key)
+	err = d.saveConfiguration(ctx, dashboard, key)
 	if err != nil {
 		logdiag.LogError(ctx, err)
 	}
@@ -352,12 +340,18 @@ func (d *dashboard) generateForExisting(ctx context.Context, b *bundle.Bundle, d
 }
 
 func (d *dashboard) initialize(ctx context.Context, b *bundle.Bundle) {
-	// Make the paths absolute if they aren't already.
-	if !filepath.IsAbs(d.resourceDir) {
-		d.resourceDir = filepath.Join(b.BundleRootPath, d.resourceDir)
+	var err error
+
+	// Make paths relative to the bundle root (required for the filer which is rooted there).
+	d.resourceDir, err = makeRelativeToRoot(b.BundleRootPath, d.resourceDir)
+	if err != nil {
+		logdiag.LogError(ctx, err)
+		return
 	}
-	if !filepath.IsAbs(d.dashboardDir) {
-		d.dashboardDir = filepath.Join(b.BundleRootPath, d.dashboardDir)
+	d.dashboardDir, err = makeRelativeToRoot(b.BundleRootPath, d.dashboardDir)
+	if err != nil {
+		logdiag.LogError(ctx, err)
+		return
 	}
 
 	// Make sure we know how the dashboard path is relative to the resource path.

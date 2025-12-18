@@ -83,6 +83,16 @@ per target environment.`,
 			return err
 		}
 
+		// Make sourceDir and configDir relative to the bundle root
+		sourceDir, err = makeRelativeToRoot(b.BundleRootPath, sourceDir)
+		if err != nil {
+			return err
+		}
+		configDir, err = makeRelativeToRoot(b.BundleRootPath, configDir)
+		if err != nil {
+			return err
+		}
+
 		downloader := generate.NewDownloader(w, sourceDir, configDir, outputFiler)
 
 		sourceCodePath := app.DefaultSourceCodePath

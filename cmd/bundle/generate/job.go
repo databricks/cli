@@ -113,6 +113,16 @@ After generation, you can deploy this job to other targets using:
 			return err
 		}
 
+		// Make sourceDir and configDir relative to the bundle root
+		sourceDir, err = makeRelativeToRoot(b.BundleRootPath, sourceDir)
+		if err != nil {
+			return err
+		}
+		configDir, err = makeRelativeToRoot(b.BundleRootPath, configDir)
+		if err != nil {
+			return err
+		}
+
 		downloader := generate.NewDownloader(w, sourceDir, configDir, outputFiler)
 
 		// Don't download files if the job is using Git source
