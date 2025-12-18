@@ -461,6 +461,9 @@ github.com/databricks/cli/bundle/config/resources.Alert:
   "effective_run_as":
     "description": |-
       PLACEHOLDER
+  "file_path":
+    "description": |-
+      PLACEHOLDER
   "id":
     "description": |-
       PLACEHOLDER

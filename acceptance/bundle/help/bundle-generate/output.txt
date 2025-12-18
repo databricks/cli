@@ -27,6 +27,7 @@ Usage:
   databricks bundle generate [command]
 
 Available Commands:
+  alert       Generate configuration for an alert
   app         Generate bundle configuration for a Databricks app
   dashboard   Generate configuration for a dashboard
   job         Generate bundle configuration for a job
