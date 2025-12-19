@@ -48,6 +48,7 @@ var (
 	UseVersion      string
 	WorkspaceTmpDir bool
 	TerraformDir    string
+	OnlyOutTestToml bool
 )
 
 // In order to debug CLI running under acceptance test, search for TestInprocessMode and update
@@ -78,6 +79,7 @@ func init() {
 	// creates these symlinks when a file_mirror is used for a provider (in .terraformrc). This flag
 	// allows us to download the provider to the workspace file system on DBR enabling DBR integration testing.
 	flag.StringVar(&TerraformDir, "terraform-dir", "", "Directory to download the terraform provider to")
+	flag.BoolVar(&OnlyOutTestToml, "only-out-test-toml", false, "Only regenerate out.test.toml files without running tests")
 }
 
 const (
@@ -307,12 +309,17 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 			config, configPath := internal.LoadConfig(t, dir)
 			skipReason := getSkipReason(&config, configPath)
 
-			if testdiff.OverwriteMode {
+			if testdiff.OverwriteMode || OnlyOutTestToml {
 				// Generate materialized config for this test
 				// We do this before skipping the test, so the configs are generated for all tests.
 				materializedConfig, err := internal.GenerateMaterializedConfig(config)
 				require.NoError(t, err)
 				testutil.WriteFile(t, filepath.Join(dir, internal.MaterializedConfigFile), materializedConfig)
+			}
+
+			// If only regenerating out.test.toml, skip the actual test execution
+			if OnlyOutTestToml {
+				t.Skip("Skipping test execution (only regenerating out.test.toml)")
 			}
 
 			if skipReason != "" {
@@ -329,7 +336,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 			if testdiff.OverwriteMode && len(expanded) > 1 {
 				// All variants of the test are producing the same output,
 				// there is no need to run the concurrently when updating.
-				// Exception: if EnvVaryOutput is configured with multiple values, we must
+				// Exception: if EnvVaryOutput is configured, we must
 				// run all variants to record variant-specific outputs.
 				if config.EnvVaryOutput == nil || len(config.EnvMatrix[*config.EnvVaryOutput]) <= 1 {
 					expanded = expanded[0:1]
@@ -344,6 +351,9 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 				runTest(t, dir, 0, coverDir, repls.Clone(), config, expanded[0], envFilters)
 			} else {
 				for ind, envset := range expanded {
+					if forbiddenEnvSet(envset) {
+						continue
+					}
 					envname := strings.Join(envset, "/")
 					t.Run(envname, func(t *testing.T) {
 						if !inprocessMode {
@@ -359,6 +369,23 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	t.Logf("Summary (dirs): %d/%d/%d run/selected/total, %d skipped", selectedDirs-skippedDirs, selectedDirs, totalDirs, skippedDirs)
 
 	return selectedDirs - skippedDirs
+}
+
+func forbiddenEnvSet(envset []string) bool {
+	hasTerraform := false
+	hasReadplan := false
+
+	for _, pair := range envset {
+		if pair == "DATABRICKS_BUNDLE_ENGINE=terraform" {
+			hasTerraform = true
+		}
+		if pair == "READPLAN=1" {
+			hasReadplan = true
+		}
+	}
+
+	// Do not run terraform tests with --plan option:
+	return hasTerraform && hasReadplan
 }
 
 func getEnvFilters(t *testing.T) []string {

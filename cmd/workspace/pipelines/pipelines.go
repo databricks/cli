@@ -42,6 +42,7 @@ func New() *cobra.Command {
 	}
 
 	// Add methods
+	cmd.AddCommand(newClone())
 	cmd.AddCommand(newCreate())
 	cmd.AddCommand(newDelete())
 	cmd.AddCommand(newGet())
@@ -60,6 +61,81 @@ func New() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
+	}
+
+	return cmd
+}
+
+// start clone command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var cloneOverrides []func(
+	*cobra.Command,
+	*pipelines.ClonePipelineRequest,
+)
+
+func newClone() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var cloneReq pipelines.ClonePipelineRequest
+	var cloneJson flags.JsonFlag
+
+	cmd.Flags().Var(&cloneJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Use = "clone PIPELINE_ID"
+	cmd.Short = `Clone a pipeline.`
+	cmd.Long = `Clone a pipeline.
+
+  Creates a new pipeline using Unity Catalog from a pipeline using Hive
+  Metastore. This method returns the ID of the newly created clone.
+  Additionally, this method starts an update for the newly created pipeline.
+
+  Arguments:
+    PIPELINE_ID: Source pipeline to clone from`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := cloneJson.Unmarshal(&cloneReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		} else {
+			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+		}
+		cloneReq.PipelineId = args[0]
+
+		response, err := w.Pipelines.Clone(ctx, cloneReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range cloneOverrides {
+		fn(cmd, &cloneReq)
 	}
 
 	return cmd
