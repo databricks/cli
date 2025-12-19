@@ -1,7 +1,4 @@
-"""This file configures pytest.
-
-This file can be used for tests in any place in this project.
-"""
+"""This file configures pytest, making sure Databricks Connect is initialized and test fixtures are available."""
 
 import os, sys, pathlib
 from contextlib import contextmanager
