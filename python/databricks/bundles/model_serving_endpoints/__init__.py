@@ -115,9 +115,19 @@ __all__ = [
     "TrafficConfig",
     "TrafficConfigDict",
     "TrafficConfigParam",
+    "VariableOr",
+    "VariableOrDict",
+    "VariableOrList",
+    "VariableOrOptional",
 ]
 
 
+from databricks.bundles.core import (
+    VariableOr,
+    VariableOrDict,
+    VariableOrList,
+    VariableOrOptional,
+)
 from databricks.bundles.model_serving_endpoints._models.ai21_labs_config import (
     Ai21LabsConfig,
     Ai21LabsConfigDict,

@@ -7,12 +7,12 @@ from databricks.bundles.core._transform import _transform
 
 if TYPE_CHECKING:
     from databricks.bundles.jobs._models.job import Job, JobParam
-    from databricks.bundles.model_serving_endpoints._models.model_serving_endpoint import (
+    from databricks.bundles.pipelines._models.pipeline import Pipeline, PipelineParam
+    from databricks.bundles.schemas._models.schema import Schema, SchemaParam
+    from databricks.bundles.serving._models.model_serving_endpoint import (
         ModelServingEndpoint,
         ModelServingEndpointParam,
     )
-    from databricks.bundles.pipelines._models.pipeline import Pipeline, PipelineParam
-    from databricks.bundles.schemas._models.schema import Schema, SchemaParam
     from databricks.bundles.volumes._models.volume import Volume, VolumeParam
 
 __all__ = ["Resources"]

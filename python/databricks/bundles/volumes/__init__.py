@@ -2,6 +2,9 @@ __all__ = [
     "Lifecycle",
     "LifecycleDict",
     "LifecycleParam",
+    "VariableOr",
+    "VariableOrList",
+    "VariableOrOptional",
     "Volume",
     "VolumeDict",
     "VolumeGrant",
@@ -15,6 +18,7 @@ __all__ = [
 ]
 
 
+from databricks.bundles.core import VariableOr, VariableOrList, VariableOrOptional
 from databricks.bundles.volumes._models.lifecycle import (
     Lifecycle,
     LifecycleDict,
