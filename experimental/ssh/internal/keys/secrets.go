@@ -10,12 +10,14 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
-func CreateKeysSecretScope(ctx context.Context, client *databricks.WorkspaceClient, clusterID string) (string, error) {
+// CreateKeysSecretScope creates or retrieves the secret scope for SSH keys.
+// sessionID is the unique identifier for the session (cluster ID for dedicated clusters, connection name for serverless).
+func CreateKeysSecretScope(ctx context.Context, client *databricks.WorkspaceClient, sessionID string) (string, error) {
 	me, err := client.CurrentUser.Me(ctx)
 	if err != nil {
 		return "", fmt.Errorf("failed to get current user: %w", err)
 	}
-	secretScopeName := fmt.Sprintf("%s-%s-ssh-tunnel-keys", me.UserName, clusterID)
+	secretScopeName := fmt.Sprintf("%s-%s-ssh-tunnel-keys", me.UserName, sessionID)
 	err = client.Secrets.CreateScope(ctx, workspace.CreateScope{
 		Scope: secretScopeName,
 	})
@@ -53,8 +55,10 @@ func putSecret(ctx context.Context, client *databricks.WorkspaceClient, scope, k
 	return nil
 }
 
-func PutSecretInScope(ctx context.Context, client *databricks.WorkspaceClient, clusterID, key, value string) (string, error) {
-	scopeName, err := CreateKeysSecretScope(ctx, client, clusterID)
+// PutSecretInScope creates the secret scope if needed and stores the secret.
+// sessionID is the unique identifier for the session (cluster ID for dedicated clusters, connection name for serverless).
+func PutSecretInScope(ctx context.Context, client *databricks.WorkspaceClient, sessionID, key, value string) (string, error) {
+	scopeName, err := CreateKeysSecretScope(ctx, client, sessionID)
 	if err != nil {
 		return "", err
 	}
