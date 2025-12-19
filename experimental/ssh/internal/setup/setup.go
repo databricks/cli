@@ -56,17 +56,31 @@ func resolveConfigPath(configPath string) (string, error) {
 	return filepath.Join(homeDir, ".ssh", "config"), nil
 }
 
-func GenerateProxyCommand(clusterId string, autoStartCluster bool, shutdownDelay time.Duration, profile, userName string, serverPort int, handoverTimeout time.Duration) (string, error) {
+// GenerateProxyCommand generates the ProxyCommand string for SSH config.
+// sessionID is the unique identifier (cluster ID for dedicated clusters, connection name for serverless).
+// clusterID is the actual cluster ID for Driver Proxy connections (same as sessionID for dedicated clusters,
+// but obtained from job metadata for serverless).
+func GenerateProxyCommand(sessionID, clusterID string, serverlessMode, autoStartCluster bool, shutdownDelay time.Duration, profile, userName string, serverPort int, handoverTimeout time.Duration) (string, error) {
 	executablePath, err := os.Executable()
 	if err != nil {
 		return "", fmt.Errorf("failed to get current executable path: %w", err)
 	}
 
-	proxyCommand := fmt.Sprintf("%q ssh connect --proxy --cluster=%s --auto-start-cluster=%t --shutdown-delay=%s",
-		executablePath, clusterId, autoStartCluster, shutdownDelay.String())
+	var proxyCommand string
+	if serverlessMode {
+		proxyCommand = fmt.Sprintf("%q ssh connect --proxy --name=%s --shutdown-delay=%s",
+			executablePath, sessionID, shutdownDelay.String())
+	} else {
+		proxyCommand = fmt.Sprintf("%q ssh connect --proxy --cluster=%s --auto-start-cluster=%t --shutdown-delay=%s",
+			executablePath, clusterID, autoStartCluster, shutdownDelay.String())
+	}
 
 	if userName != "" && serverPort != 0 {
-		proxyCommand += " --metadata=" + userName + "," + strconv.Itoa(serverPort)
+		if serverlessMode && clusterID != "" {
+			proxyCommand += " --metadata=" + userName + "," + strconv.Itoa(serverPort) + "," + clusterID
+		} else {
+			proxyCommand += " --metadata=" + userName + "," + strconv.Itoa(serverPort)
+		}
 	}
 
 	if handoverTimeout > 0 {
@@ -86,7 +100,7 @@ func generateHostConfig(opts SetupOptions) (string, error) {
 		return "", fmt.Errorf("failed to get local keys folder: %w", err)
 	}
 
-	proxyCommand, err := GenerateProxyCommand(opts.ClusterID, opts.AutoStartCluster, opts.ShutdownDelay, opts.Profile, "", 0, 0)
+	proxyCommand, err := GenerateProxyCommand(opts.ClusterID, opts.ClusterID, false, opts.AutoStartCluster, opts.ShutdownDelay, opts.Profile, "", 0, 0)
 	if err != nil {
 		return "", fmt.Errorf("failed to generate ProxyCommand: %w", err)
 	}
