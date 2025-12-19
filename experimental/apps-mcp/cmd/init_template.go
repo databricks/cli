@@ -13,6 +13,7 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/experimental/apps-mcp/lib/common"
 	"github.com/databricks/cli/experimental/apps-mcp/lib/prompts"
+	"github.com/databricks/cli/experimental/apps-mcp/lib/state"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/template"
 	"github.com/spf13/cobra"
@@ -342,6 +343,11 @@ After initialization:
 
 		// Inject L3 (template-specific guidance from CLAUDE.md)
 		readClaudeMd(ctx, configFile)
+
+		// Save initial scaffolded state
+		if err := state.SaveState(absOutputDir, state.NewScaffolded()); err != nil {
+			return fmt.Errorf("failed to save project state: %w", err)
+		}
 
 		return nil
 	}
