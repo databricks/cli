@@ -1,4 +1,8 @@
 {
+  "plan_version": 1,
+  "cli_version": "[DEV_VERSION]",
+  "lineage": "[UUID]",
+  "serial": 1,
   "plan": {
     "resources.model_serving_endpoints.test_endpoint": {
       "action": "update",
@@ -61,7 +65,9 @@
       "changes": {
         "local": {
           "email_notifications.on_update_success[0]": {
-            "action": "update"
+            "action": "update",
+            "old": "user1@example.com",
+            "new": "user2@example.com"
           }
         }
       }

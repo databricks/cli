@@ -151,12 +151,17 @@ type ResourcePipelineFilters struct {
 	Include []string `json:"include,omitempty"`
 }
 
+type ResourcePipelineGatewayDefinitionConnectionParameters struct {
+	SourceCatalog string `json:"source_catalog,omitempty"`
+}
+
 type ResourcePipelineGatewayDefinition struct {
-	ConnectionId          string `json:"connection_id,omitempty"`
-	ConnectionName        string `json:"connection_name"`
-	GatewayStorageCatalog string `json:"gateway_storage_catalog"`
-	GatewayStorageName    string `json:"gateway_storage_name,omitempty"`
-	GatewayStorageSchema  string `json:"gateway_storage_schema"`
+	ConnectionId          string                                                 `json:"connection_id,omitempty"`
+	ConnectionName        string                                                 `json:"connection_name"`
+	GatewayStorageCatalog string                                                 `json:"gateway_storage_catalog"`
+	GatewayStorageName    string                                                 `json:"gateway_storage_name,omitempty"`
+	GatewayStorageSchema  string                                                 `json:"gateway_storage_schema"`
+	ConnectionParameters  *ResourcePipelineGatewayDefinitionConnectionParameters `json:"connection_parameters,omitempty"`
 }
 
 type ResourcePipelineIngestionDefinitionObjectsReportTableConfigurationQueryBasedConnectorConfig struct {
@@ -322,13 +327,14 @@ type ResourcePipelineIngestionDefinitionTableConfiguration struct {
 }
 
 type ResourcePipelineIngestionDefinition struct {
-	ConnectionName       string                                                    `json:"connection_name,omitempty"`
-	IngestionGatewayId   string                                                    `json:"ingestion_gateway_id,omitempty"`
-	NetsuiteJarPath      string                                                    `json:"netsuite_jar_path,omitempty"`
-	SourceType           string                                                    `json:"source_type,omitempty"`
-	Objects              []ResourcePipelineIngestionDefinitionObjects              `json:"objects,omitempty"`
-	SourceConfigurations []ResourcePipelineIngestionDefinitionSourceConfigurations `json:"source_configurations,omitempty"`
-	TableConfiguration   *ResourcePipelineIngestionDefinitionTableConfiguration    `json:"table_configuration,omitempty"`
+	ConnectionName             string                                                    `json:"connection_name,omitempty"`
+	IngestFromUcForeignCatalog bool                                                      `json:"ingest_from_uc_foreign_catalog,omitempty"`
+	IngestionGatewayId         string                                                    `json:"ingestion_gateway_id,omitempty"`
+	NetsuiteJarPath            string                                                    `json:"netsuite_jar_path,omitempty"`
+	SourceType                 string                                                    `json:"source_type,omitempty"`
+	Objects                    []ResourcePipelineIngestionDefinitionObjects              `json:"objects,omitempty"`
+	SourceConfigurations       []ResourcePipelineIngestionDefinitionSourceConfigurations `json:"source_configurations,omitempty"`
+	TableConfiguration         *ResourcePipelineIngestionDefinitionTableConfiguration    `json:"table_configuration,omitempty"`
 }
 
 type ResourcePipelineLatestUpdates struct {

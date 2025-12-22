@@ -35,10 +35,10 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		opts := utils.ProcessOptions{
-			AlwaysPull:    true,
-			FastValidate:  true,
-			Build:         true,
-			DeployPrepare: true,
+			AlwaysPull:      true,
+			FastValidate:    true,
+			Build:           true,
+			PreDeployChecks: true,
 		}
 
 		// Only add InitFunc if we need to set force or cluster ID
@@ -107,6 +107,7 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 				}
 				fmt.Fprintln(out)
 			}
+			// Note, this string should not be changed, "bundle deployment migrate" depends on this format:
 			fmt.Fprintf(out, "Plan: %d to add, %d to change, %d to delete, %d unchanged\n", createCount, updateCount, deleteCount, unchangedCount)
 		case flags.OutputJSON:
 			buf, err := json.MarshalIndent(plan, "", "  ")

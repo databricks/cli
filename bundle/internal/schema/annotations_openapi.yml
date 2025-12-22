@@ -1,4 +1,71 @@
 # This file is auto-generated. DO NOT EDIT.
+github.com/databricks/cli/bundle/config/resources.Alert:
+  "create_time":
+    "description": |-
+      The timestamp indicating when the alert was created.
+    "x-databricks-field-behaviors_output_only": |-
+      true
+  "custom_description":
+    "description": |-
+      Custom description for the alert. support mustache template.
+  "custom_summary":
+    "description": |-
+      Custom summary for the alert. support mustache template.
+  "display_name":
+    "description": |-
+      The display name of the alert.
+  "effective_run_as":
+    "description": |-
+      The actual identity that will be used to execute the alert.
+      This is an output-only field that shows the resolved run-as identity after applying
+      permissions and defaults.
+    "x-databricks-field-behaviors_output_only": |-
+      true
+  "evaluation": {}
+  "id":
+    "description": |-
+      UUID identifying the alert.
+    "x-databricks-field-behaviors_output_only": |-
+      true
+  "lifecycle_state":
+    "description": |-
+      Indicates whether the query is trashed.
+    "x-databricks-field-behaviors_output_only": |-
+      true
+  "owner_user_name":
+    "description": |-
+      The owner's username. This field is set to "Unavailable" if the user has been deleted.
+    "x-databricks-field-behaviors_output_only": |-
+      true
+  "parent_path":
+    "description": |-
+      The workspace path of the folder containing the alert. Can only be set on create, and cannot be updated.
+  "query_text":
+    "description": |-
+      Text of the query to be run.
+  "run_as":
+    "description": |-
+      Specifies the identity that will be used to run the alert.
+      This field allows you to configure alerts to run as a specific user or service principal.
+      - For user identity: Set `user_name` to the email of an active workspace user. Users can only set this to their own email.
+      - For service principal: Set `service_principal_name` to the application ID. Requires the `servicePrincipal/user` role.
+      If not specified, the alert will run as the request user.
+  "run_as_user_name":
+    "description": |-
+      The run as username or application ID of service principal.
+      On Create and Update, this field can be set to application ID of an active service principal. Setting this field requires the servicePrincipal/user role.
+      Deprecated: Use `run_as` field instead. This field will be removed in a future release.
+    "deprecation_message": |-
+      This field is deprecated
+  "schedule": {}
+  "update_time":
+    "description": |-
+      The timestamp indicating when the alert was updated.
+    "x-databricks-field-behaviors_output_only": |-
+      true
+  "warehouse_id":
+    "description": |-
+      ID of the SQL warehouse attached to the alert.
 github.com/databricks/cli/bundle/config/resources.App:
   "active_deployment":
     "description": |-
@@ -176,8 +243,7 @@ github.com/databricks/cli/bundle/config/resources.Cluster:
   "enable_elastic_disk":
     "description": |-
       Autoscaling Local Storage: when enabled, this cluster will dynamically acquire additional disk
-      space when its Spark workers are running low on disk space. This feature requires specific AWS
-      permissions to function correctly - refer to the User Guide for more details.
+      space when its Spark workers are running low on disk space.
   "enable_local_disk_encryption":
     "description": |-
       Whether to enable LUKS on cluster VMs' local disks
@@ -490,6 +556,7 @@ github.com/databricks/cli/bundle/config/resources.Job:
   "performance_target":
     "description": |-
       The performance mode on a serverless job. This field determines the level of compute performance or cost-efficiency for the run.
+      The performance target does not apply to tasks that run on Serverless GPU compute.
 
       * `STANDARD`: Enables cost-efficient execution of serverless workloads.
       * `PERFORMANCE_OPTIMIZED`: Prioritizes fast startup and execution times through rapid scaling and optimized cluster performance.
@@ -1635,8 +1702,7 @@ github.com/databricks/databricks-sdk-go/service/compute.ClusterSpec:
   "enable_elastic_disk":
     "description": |-
       Autoscaling Local Storage: when enabled, this cluster will dynamically acquire additional disk
-      space when its Spark workers are running low on disk space. This feature requires specific AWS
-      permissions to function correctly - refer to the User Guide for more details.
+      space when its Spark workers are running low on disk space.
   "enable_local_disk_encryption":
     "description": |-
       Whether to enable LUKS on cluster VMs' local disks
@@ -4819,6 +4885,108 @@ github.com/databricks/databricks-sdk-go/service/serving.TrafficConfig:
   "routes":
     "description": |-
       The list of routes that define traffic to each served entity.
+github.com/databricks/databricks-sdk-go/service/sql.Aggregation:
+  "_":
+    "enum":
+      - |-
+        SUM
+      - |-
+        COUNT
+      - |-
+        COUNT_DISTINCT
+      - |-
+        AVG
+      - |-
+        MEDIAN
+      - |-
+        MIN
+      - |-
+        MAX
+      - |-
+        STDDEV
+github.com/databricks/databricks-sdk-go/service/sql.AlertEvaluationState:
+  "_":
+    "description": |-
+      UNSPECIFIED - default unspecify value for proto enum, do not use it in the code
+      UNKNOWN - alert not yet evaluated
+      TRIGGERED - alert is triggered
+      OK - alert is not triggered
+      ERROR - alert evaluation failed
+    "enum":
+      - |-
+        UNKNOWN
+      - |-
+        TRIGGERED
+      - |-
+        OK
+      - |-
+        ERROR
+github.com/databricks/databricks-sdk-go/service/sql.AlertLifecycleState:
+  "_":
+    "enum":
+      - |-
+        ACTIVE
+      - |-
+        DELETED
+github.com/databricks/databricks-sdk-go/service/sql.AlertV2Evaluation:
+  "comparison_operator":
+    "description": |-
+      Operator used for comparison in alert evaluation.
+  "empty_result_state":
+    "description": |-
+      Alert state if result is empty. Please avoid setting this field to be `UNKNOWN` because `UNKNOWN` state is planned to be deprecated.
+  "last_evaluated_at":
+    "description": |-
+      Timestamp of the last evaluation.
+    "x-databricks-field-behaviors_output_only": |-
+      true
+  "notification":
+    "description": |-
+      User or Notification Destination to notify when alert is triggered.
+  "source":
+    "description": |-
+      Source column from result to use to evaluate alert
+  "state":
+    "description": |-
+      Latest state of alert evaluation.
+    "x-databricks-field-behaviors_output_only": |-
+      true
+  "threshold":
+    "description": |-
+      Threshold to user for alert evaluation, can be a column or a value.
+github.com/databricks/databricks-sdk-go/service/sql.AlertV2Notification:
+  "notify_on_ok":
+    "description": |-
+      Whether to notify alert subscribers when alert returns back to normal.
+  "retrigger_seconds":
+    "description": |-
+      Number of seconds an alert waits after being triggered before it is allowed to send another notification.
+      If set to 0 or omitted, the alert will not send any further notifications after the first trigger
+      Setting this value to 1 allows the alert to send a notification on every evaluation where the condition is met, effectively making it always retrigger for notification purposes.
+  "subscriptions": {}
+github.com/databricks/databricks-sdk-go/service/sql.AlertV2Operand:
+  "column": {}
+  "value": {}
+github.com/databricks/databricks-sdk-go/service/sql.AlertV2OperandColumn:
+  "aggregation":
+    "description": |-
+      If not set, the behavior is equivalent to using `First row` in the UI.
+  "display": {}
+  "name": {}
+github.com/databricks/databricks-sdk-go/service/sql.AlertV2OperandValue:
+  "bool_value": {}
+  "double_value": {}
+  "string_value": {}
+github.com/databricks/databricks-sdk-go/service/sql.AlertV2RunAs:
+  "service_principal_name":
+    "description": |-
+      Application ID of an active service principal. Setting this field requires the `servicePrincipal/user` role.
+  "user_name":
+    "description": |-
+      The email of an active workspace user. Can only set this field to their own email.
+github.com/databricks/databricks-sdk-go/service/sql.AlertV2Subscription:
+  "destination_id": {}
+  "user_email": {}
 github.com/databricks/databricks-sdk-go/service/sql.Channel:
   "_":
     "description": |-
@@ -4836,6 +5004,25 @@ github.com/databricks/databricks-sdk-go/service/sql.ChannelName:
         CHANNEL_NAME_PREVIOUS
       - |-
         CHANNEL_NAME_CUSTOM
+github.com/databricks/databricks-sdk-go/service/sql.ComparisonOperator:
+  "_":
+    "enum":
+      - |-
+        LESS_THAN
+      - |-
+        GREATER_THAN
+      - |-
+        EQUAL
+      - |-
+        NOT_EQUAL
+      - |-
+        GREATER_THAN_OR_EQUAL
+      - |-
+        LESS_THAN_OR_EQUAL
+      - |-
+        IS_NULL
+      - |-
+        IS_NOT_NULL
 github.com/databricks/databricks-sdk-go/service/sql.CreateWarehouseRequestWarehouseType:
   "_":
     "enum":
@@ -4845,11 +5032,31 @@ github.com/databricks/databricks-sdk-go/service/sql.CreateWarehouseRequestWareho
         CLASSIC
       - |-
         PRO
+github.com/databricks/databricks-sdk-go/service/sql.CronSchedule:
+  "pause_status":
+    "description": |-
+      Indicate whether this schedule is paused or not.
+  "quartz_cron_schedule":
+    "description": |-
+      A cron expression using quartz syntax that specifies the schedule for this pipeline.
+      Should use the quartz format described here: http://www.quartz-scheduler.org/documentation/quartz-2.1.7/tutorials/tutorial-lesson-06.html
+  "timezone_id":
+    "description": |-
+      A Java timezone id. The schedule will be resolved using this timezone.
+      This will be combined with the quartz_cron_schedule to determine the schedule.
+      See https://docs.databricks.com/sql/language-manual/sql-ref-syntax-aux-conf-mgmt-set-timezone.html for details.
 github.com/databricks/databricks-sdk-go/service/sql.EndpointTagPair:
   "key": {}
   "value": {}
 github.com/databricks/databricks-sdk-go/service/sql.EndpointTags:
   "custom_tags": {}
+github.com/databricks/databricks-sdk-go/service/sql.SchedulePauseStatus:
+  "_":
+    "enum":
+      - |-
+        UNPAUSED
+      - |-
+        PAUSED
 github.com/databricks/databricks-sdk-go/service/sql.SpotInstancePolicy:
   "_":
     "description": |-

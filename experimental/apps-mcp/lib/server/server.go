@@ -42,7 +42,6 @@ func NewServer(ctx context.Context, cfg *mcp.Config) *Server {
 
 	server.AddMiddleware(middlewares.NewToolCounterMiddleware(sess))
 	server.AddMiddleware(middlewares.NewDatabricksClientMiddleware([]string{"databricks_configure_auth"}))
-	server.AddMiddleware(middlewares.NewEngineGuideMiddleware())
 	server.AddMiddleware(middlewares.NewTrajectoryMiddleware(tracker))
 
 	sess.SetTracker(tracker)

@@ -22,9 +22,11 @@ The new engine implements resources CRUD directly on top of SDK Go and provides 
 
 * Self-contained binary that does not require downloading Terraform and terraform-provider-databricks before deployment.
   * Avoid issues with firewalls/proxies/custom provider registries.
-* Explanation why a given action is planned and detailed diff of changes available in "bundle plan \-o json".
 * Faster deployment.
 * Simplified development of new resources, implement CRUD directly in CLI repo, no need to coordinate with terraform provider release.
+* New features:
+  - Detailed plan with explanation why a given action is taken in `databricks bundle plan -o json > plan.json`.
+  - Ability to deploy previously generated plan with `databricks bundle deploy --plan plan.json`.
 
 ## Disadvantages
 
@@ -34,19 +36,24 @@ There are known issues, see https://github.com/databricks/cli/issues?q=state%3Ao
 
 ### Migrating the existing deployment
 
-The direct engine uses its own state file, also JSON, but with a different schema from terraform state file. In order to migrate an existing Terraform-based deployment, use the "bundle deployment migrate" command. The command reads IDs from the existing deployment.
+The direct engine uses its own state file, also JSON, but with a different schema from terraform state file.
+In order to migrate an existing Terraform-based deployment, use the `databricks bundle deployment migrate` command. The command reads IDs from the existing deployment.
 
 The full sequence of operations:
 
-1. Perform full deployment with Terraform: bundle deploy \-t my\_target
-2. Migrate state file locally: bundle deployment migrate \-t my\_target
-3. Verify that migration was successful: bundle plan should work and should not show any changes to be planned: bundle plan \-t my\_target
-4. If not satisfied with the result, remove new state file: rm .databricks/bundle/my\_target/resources.json
-5. If satisfied with the result, do a deployment to synchronize the state file to the workspace: bundle deploy \-t my\_target
+1. Perform full deployment with Terraform: `databricks bundle deploy -t my_target`
+2. Migrate state file locally: `databricks bundle deployment migrate -t my_target`
+3. Verify that migration was successful: bundle plan should work and should not show any changes to be planned: `databricks bundle plan -t my_target`
+4. If not satisfied with the result, remove new state file and restore terraform state file from the backup:
+```
+mv .databricks/bundle/my_target/terraform/tfstate.json.backup .databricks/bundle/my_target/terraform/tfstate.json
+rm .databricks/bundle/my_target/resources.json
+```
+5. If satisfied with the result, do a deployment to synchronize the state file to the workspace: `databricks bundle deploy -t my_target`
 
 ### Using on new bundles
 
-For bundles that were never deployed, the migrate command will not work. Instead, deploy with an environment variable set: DATABRICKS\_BUNDLE\_ENGINE=direct bundle deploy \-t my\_target.
+For bundles that were never deployed, the migrate command will not work. Instead, deploy with an environment variable set: `DATABRICKS_BUNDLE_ENGINE=direct databricks bundle deploy -t my_target`.
 
 ## Differences from terraform
 

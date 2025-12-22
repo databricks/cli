@@ -136,7 +136,9 @@ type FakeWorkspace struct {
 	RegisteredModels    map[string]catalog.RegisteredModelInfo
 	ServingEndpoints    map[string]serving.ServingEndpointDetailed
 
-	Acls map[string][]workspace.AclItem
+	SecretScopes map[string]workspace.SecretScope
+	Secrets      map[string]map[string]string // scope -> key -> value
+	Acls         map[string][]workspace.AclItem
 
 	// Generic permissions storage: key is "{object_type}:{object_id}"
 	Permissions map[string]iam.ObjectPermissions
@@ -234,6 +236,8 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		SqlWarehouses:        map[string]sql.GetWarehouseResponse{},
 		ServingEndpoints:     map[string]serving.ServingEndpointDetailed{},
 		Repos:                map[string]workspace.RepoInfo{},
+		SecretScopes:         map[string]workspace.SecretScope{},
+		Secrets:              map[string]map[string]string{},
 		Acls:                 map[string][]workspace.AclItem{},
 		Permissions:          map[string]iam.ObjectPermissions{},
 		DatabaseInstances:    map[string]database.DatabaseInstance{},

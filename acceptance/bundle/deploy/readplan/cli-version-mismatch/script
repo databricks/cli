@@ -1,0 +1,9 @@
+trace $CLI bundle plan -o json > plan.json
+
+jq '.cli_version = "1.2.3"' plan.json > plan.json.tmp && mv plan.json.tmp plan.json
+
+trace $CLI bundle deploy --plan plan.json
+rm plan.json
+print_requests.py //jobs
+trace $CLI bundle destroy --auto-approve
+rm out.requests.txt

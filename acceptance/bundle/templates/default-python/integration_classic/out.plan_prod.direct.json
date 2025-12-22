@@ -1,4 +1,6 @@
 {
+  "plan_version": 1,
+  "cli_version": "[DEV_VERSION]",
   "plan": {
     "resources.jobs.sample_job": {
       "depends_on": [
@@ -26,7 +28,6 @@
                 },
                 "data_security_mode": "SINGLE_USER",
                 "node_type_id": "[NODE_TYPE_ID]",
-                "num_workers": 0,
                 "spark_version": "16.4.x-scala2.12"
               }
             }

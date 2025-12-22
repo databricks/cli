@@ -136,7 +136,7 @@ func TestTypeJobSettings(t *testing.T) {
 func TestTypeRoot(t *testing.T) {
 	testStruct(t,
 		reflect.TypeOf(config.Root{}),
-		4000, 4300, // 4003 at the time of the update
+		4300, 4700, // 4322 at the time of the update
 		map[string]any{
 			"bundle.target":                "",
 			`variables.*.lookup.dashboard`: "",

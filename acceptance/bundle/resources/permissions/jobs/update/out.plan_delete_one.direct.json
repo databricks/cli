@@ -1,4 +1,8 @@
 {
+  "plan_version": 1,
+  "cli_version": "[DEV_VERSION]",
+  "lineage": "[UUID]",
+  "serial": 2,
   "plan": {
     "resources.jobs.job_with_permissions": {
       "action": "skip",
@@ -93,7 +97,11 @@
       "changes": {
         "local": {
           "permissions[group_name='data-team']": {
-            "action": "update"
+            "action": "update",
+            "old": {
+              "group_name": "data-team",
+              "permission_level": "CAN_MANAGE"
+            }
           }
         }
       }

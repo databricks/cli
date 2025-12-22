@@ -1,15 +1,28 @@
-import { useAnalyticsQuery, AreaChart, LineChart, RadarChart } from '@databricks/app-kit-ui/react';
+import {
+  useAnalyticsQuery,
+  AreaChart,
+  LineChart,
+  RadarChart,
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  Skeleton,
+  Label,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@databricks/appkit-ui/react';
+import { sql } from "@databricks/appkit-ui/js";
 import { Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { trpc } from './lib/trpc';
 import { useState, useEffect } from 'react';
 
 function App() {
   const { data, loading, error } = useAnalyticsQuery('hello_world', {
-    message: 'hello world',
+    message: sql.string('hello world'),
   });
 
   const [health, setHealth] = useState<{
@@ -48,7 +61,7 @@ function App() {
 
   const [maxMonthNum, setMaxMonthNum] = useState<number>(12);
 
-  const salesParameters = { max_month_num: maxMonthNum };
+  const salesParameters = { max_month_num: sql.number(maxMonthNum) };
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4 w-full">
@@ -97,8 +110,8 @@ function App() {
             {health && (
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-[hsl(var(--success))] animate-pulse"></div>
-                  <div className="text-lg font-semibold text-[hsl(var(--success))]">{health.status.toUpperCase()}</div>
+                  <div className="w-2 h-2 rounded-full bg-success animate-pulse"></div>
+                  <div className="text-lg font-semibold text-success">{health.status.toUpperCase()}</div>
                 </div>
                 <div className="text-sm text-muted-foreground">
                   Last checked: {new Date(health.timestamp).toLocaleString()}

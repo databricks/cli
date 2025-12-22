@@ -1,7 +1,7 @@
 {
   "headers": {
     "User-Agent": [
-      "databricks-tf-provider/1.97.0 databricks-sdk-go/[SDK_VERSION] go/1.24.0 os/[OS] cli/[DEV_VERSION] terraform/1.5.5 sdk/sdkv2 resource/pipeline auth/pat"
+      "databricks-tf-provider/1.100.0 databricks-sdk-go/[SDK_VERSION] go/1.24.0 os/[OS] cli/[DEV_VERSION] terraform/1.5.5 sdk/sdkv2 resource/pipeline auth/pat"
     ]
   },
   "method": "POST",
@@ -32,7 +32,7 @@
 {
   "headers": {
     "User-Agent": [
-      "databricks-tf-provider/1.97.0 databricks-sdk-go/[SDK_VERSION] go/1.24.0 os/[OS] cli/[DEV_VERSION] terraform/1.5.5 sdk/sdkv2 resource/permissions auth/pat"
+      "databricks-tf-provider/1.100.0 databricks-sdk-go/[SDK_VERSION] go/1.24.0 os/[OS] cli/[DEV_VERSION] terraform/1.5.5 sdk/sdkv2 resource/permissions auth/pat"
     ]
   },
   "method": "PUT",

@@ -1,2 +1,0 @@
-envsubst < $TESTDIR/../databricks.yml.tmpl > databricks.yml
-source $TESTDIR/../_script

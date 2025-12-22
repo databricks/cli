@@ -1,0 +1,4 @@
+RecordRequests = true
+
+[Env]
+MSYS_NO_PATHCONV = "1"

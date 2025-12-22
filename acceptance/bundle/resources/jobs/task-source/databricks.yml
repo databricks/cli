@@ -35,6 +35,24 @@ resources:
               notebook_task:
                 notebook_path: ./notebook.py
                 source: WORKSPACE
+        - task_key: test_task_sql
+          sql_task:
+            warehouse_id: cafef00d
+            file:
+              path: ./sql.sql
+        - task_key: test_task_dbt
+          new_cluster:
+            spark_version: 15.4.x-scala2.12
+            num_workers: 0
+            spark_conf:
+              spark.databricks.cluster.profile: singleNode
+              spark.master: local[*]
+            custom_tags:
+              ResourceClass: SingleNode
+          dbt_task:
+            project_directory: ./dbt_project
+            commands:
+              - "dbt run"
 
     workspace_job:
       name: workspace_job

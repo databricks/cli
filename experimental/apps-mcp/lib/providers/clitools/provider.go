@@ -85,15 +85,19 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 		},
 	)
 
-	// Register explore tool
+	// Register databricks_discover tool
+	type DiscoverInput struct {
+		WorkingDirectory string `json:"working_directory" jsonschema:"required" jsonschema_description:"The directory to detect project context from."`
+	}
+
 	mcpsdk.AddTool(server,
 		&mcpsdk.Tool{
-			Name:        "explore",
-			Description: "Discover available Databricks workspaces, warehouses, and get workflow recommendations. Call this FIRST when planning ANY Databricks work involving apps, pipelines, jobs, bundles, or SQL workflows. Returns workspace capabilities and recommended tooling.",
+			Name:        "databricks_discover",
+			Description: "Discover available Databricks workspaces, warehouses, and get workflow recommendations. Call this FIRST when planning ANY Databricks work involving apps, dashboards, pipelines, jobs, bundles, or SQL workflows. Returns workspace capabilities and recommended tooling.",
 		},
-		func(ctx context.Context, req *mcpsdk.CallToolRequest, args struct{}) (*mcpsdk.CallToolResult, any, error) {
-			log.Debug(ctx, "explore called")
-			result, err := Explore(ctx)
+		func(ctx context.Context, req *mcpsdk.CallToolRequest, args DiscoverInput) (*mcpsdk.CallToolResult, any, error) {
+			log.Debugf(ctx, "databricks_discover called: working_directory=%s", args.WorkingDirectory)
+			result, err := Discover(ctx, args.WorkingDirectory)
 			if err != nil {
 				return nil, nil, err
 			}

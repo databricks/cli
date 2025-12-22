@@ -9,15 +9,14 @@ type ResourceFeatureEngineeringMaterializedFeatureOfflineStoreConfig struct {
 }
 
 type ResourceFeatureEngineeringMaterializedFeatureOnlineStoreConfig struct {
-	Capacity         string `json:"capacity"`
-	CreationTime     string `json:"creation_time,omitempty"`
-	Creator          string `json:"creator,omitempty"`
-	Name             string `json:"name"`
-	ReadReplicaCount int    `json:"read_replica_count,omitempty"`
-	State            string `json:"state,omitempty"`
+	CatalogName     string `json:"catalog_name"`
+	OnlineStoreName string `json:"online_store_name"`
+	SchemaName      string `json:"schema_name"`
+	TableNamePrefix string `json:"table_name_prefix"`
 }
 
 type ResourceFeatureEngineeringMaterializedFeature struct {
+	CronSchedule            string                                                           `json:"cron_schedule,omitempty"`
 	FeatureName             string                                                           `json:"feature_name"`
 	LastMaterializationTime string                                                           `json:"last_materialization_time,omitempty"`
 	MaterializedFeatureId   string                                                           `json:"materialized_feature_id,omitempty"`

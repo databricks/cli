@@ -25,7 +25,7 @@ func generateDashboardId() (string, error) {
 }
 
 // Transform the serialized dashboard to mimic remote behavior.
-func transformSerializedDashboard(serializedDashboard string) string {
+func transformSerializedDashboard(serializedDashboard, datasetCatalog, datasetSchema string) string {
 	var dashboardContent map[string]any
 	err := json.Unmarshal([]byte(serializedDashboard), &dashboardContent)
 	if err != nil {
@@ -37,6 +37,20 @@ func transformSerializedDashboard(serializedDashboard string) string {
 		for _, page := range pages {
 			if pageMap, ok := page.(map[string]any); ok {
 				pageMap["pageType"] = "PAGE_TYPE_CANVAS"
+			}
+		}
+	}
+
+	// Apply dataset_catalog and dataset_schema overrides to all datasets
+	if datasets, ok := dashboardContent["datasets"].([]any); ok {
+		for _, dataset := range datasets {
+			if datasetMap, ok := dataset.(map[string]any); ok {
+				if datasetCatalog != "" {
+					datasetMap["catalog"] = datasetCatalog
+				}
+				if datasetSchema != "" {
+					datasetMap["schema"] = datasetSchema
+				}
 			}
 		}
 	}
@@ -98,9 +112,13 @@ func (s *FakeWorkspace) DashboardCreate(req Request) Response {
 
 	inputSerializedDashboard := dashboard.SerializedDashboard
 
+	// Extract dataset_catalog and dataset_schema from query parameters
+	datasetCatalog := req.URL.Query().Get("dataset_catalog")
+	datasetSchema := req.URL.Query().Get("dataset_schema")
+
 	// Parse serializedDashboard into json and put it back as a string
 	if dashboard.SerializedDashboard != "" {
-		dashboard.SerializedDashboard = transformSerializedDashboard(dashboard.SerializedDashboard)
+		dashboard.SerializedDashboard = transformSerializedDashboard(dashboard.SerializedDashboard, datasetCatalog, datasetSchema)
 	}
 	dashboard.Etag = "80611980"
 
@@ -170,7 +188,10 @@ func (s *FakeWorkspace) DashboardUpdate(req Request) Response {
 		dashboard.Path = path.Join(dir, base)
 	}
 	if updateReq.SerializedDashboard != "" {
-		dashboard.SerializedDashboard = transformSerializedDashboard(updateReq.SerializedDashboard)
+		// Extract dataset_catalog and dataset_schema from query parameters
+		datasetCatalog := req.URL.Query().Get("dataset_catalog")
+		datasetSchema := req.URL.Query().Get("dataset_schema")
+		dashboard.SerializedDashboard = transformSerializedDashboard(updateReq.SerializedDashboard, datasetCatalog, datasetSchema)
 	}
 	if updateReq.WarehouseId != "" {
 		dashboard.WarehouseId = updateReq.WarehouseId

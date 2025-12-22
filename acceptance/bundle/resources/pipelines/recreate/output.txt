@@ -5,7 +5,7 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
-=== Assert the pipeline is created
+=== Assert the pipeline is created with catalog
 >>> [CLI] pipelines get [UUID]
 {
   "spec": {
@@ -30,18 +30,19 @@ Deployment complete!
   }
 }
 
->>> [CLI] bundle plan --var=catalog=another_catalog
+=== Switch from catalog to storage (triggers recreation)
+>>> update_file.py databricks.yml catalog: main storage: dbfs:/my-storage
+
+>>> update_file.py databricks.yml target: ${resources.schemas.bar.id} #target: ${resources.schemas.bar.id}
+
+>>> [CLI] bundle plan
 recreate pipelines.foo
-recreate schemas.bar
 
-Plan: 2 to add, 0 to change, 2 to delete, 0 unchanged
+Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
 
-=== Try to redeploy the bundle, pointing the DLT pipeline to a different UC catalog
->>> errcode [CLI] bundle deploy --force-lock --var=catalog=another_catalog
+=== Redeploy the bundle (should recreate the pipeline)
+>>> errcode [CLI] bundle deploy --force-lock
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-
-This action will result in the deletion or recreation of the following UC schemas. Any underlying data may be lost:
-  recreate resources.schemas.bar
 
 This action will result in the deletion or recreation of the following Lakeflow Declarative Pipelines along with the
 Streaming Tables (STs) and Materialized Views (MVs) managed by them. Recreating the pipelines will
