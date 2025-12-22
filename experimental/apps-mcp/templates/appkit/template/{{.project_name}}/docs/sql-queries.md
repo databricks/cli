@@ -98,7 +98,7 @@ WHERE column_value >= :min_value
 ### Frontend Parameter Passing
 
 ```typescript
-import { sql } from "@databricks/app-kit-ui/js";
+import { sql } from "@databricks/appkit-ui/js";
 
 const { data } = useAnalyticsQuery('filtered_data', {
   min_value: sql.number(minValue),
@@ -115,7 +115,7 @@ Use `sql.date()` for date parameters with `YYYY-MM-DD` format strings.
 **Frontend - Using Date Parameters:**
 
 ```typescript
-import { sql } from '@databricks/app-kit-ui/js';
+import { sql } from '@databricks/appkit-ui/js';
 import { useState } from 'react';
 
 function MyComponent() {
@@ -188,7 +188,7 @@ WHERE b.check_in >= CAST(:start_date AS DATE)
 - All real dates fall within this range, so no filtering occurs
 
 **Parameter Types Summary:**
-- ALWAYS use sql.* helper functions from the `@databricks/app-kit-ui/js` package to define SQL parameters
+- ALWAYS use sql.* helper functions from the `@databricks/appkit-ui/js` package to define SQL parameters
 - **Strings/Numbers**: Use directly in SQL with `:param_name`
 - **Dates**: Use with `CAST(:param AS DATE)` in SQL
 - **Optional Strings**: Use empty string default, check with `(:param = '' OR column = :param)`
