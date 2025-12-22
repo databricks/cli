@@ -2,7 +2,7 @@ resources:
   pipelines:
     foo:
       name: pipeline foo
-      catalog: mycatalog
+      storage: dbfs:/my-storage
   jobs:
     bar:
       name: job bar

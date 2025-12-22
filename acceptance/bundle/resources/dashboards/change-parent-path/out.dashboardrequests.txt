@@ -3,7 +3,7 @@
   "path": "/api/2.0/lakeview/dashboards",
   "body": {
     "display_name": "test dashboard",
-    "parent_path": "/Users/[USERNAME]/.bundle/change-parent-path-[UNIQUE_NAME]/default/resources",
+    "parent_path": "/Workspace/Users/[USERNAME]/.bundle/change-parent-path-[UNIQUE_NAME]/default/resources",
     "serialized_dashboard": "{}\n",
     "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
   }
@@ -12,7 +12,7 @@
   "method": "POST",
   "path": "/api/2.0/workspace/mkdirs",
   "body": {
-    "path": "/Users/[USERNAME]/.bundle/change-parent-path-[UNIQUE_NAME]/default/resources"
+    "path": "/Workspace/Users/[USERNAME]/.bundle/change-parent-path-[UNIQUE_NAME]/default/resources"
   }
 }
 {
@@ -20,7 +20,7 @@
   "path": "/api/2.0/lakeview/dashboards",
   "body": {
     "display_name": "test dashboard",
-    "parent_path": "/Users/[USERNAME]/.bundle/change-parent-path-[UNIQUE_NAME]/default/resources",
+    "parent_path": "/Workspace/Users/[USERNAME]/.bundle/change-parent-path-[UNIQUE_NAME]/default/resources",
     "serialized_dashboard": "{}\n",
     "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
   }
@@ -42,7 +42,7 @@
   "path": "/api/2.0/lakeview/dashboards",
   "body": {
     "display_name": "test dashboard",
-    "parent_path": "/Users/[USERNAME]/.bundle/change-parent-path-[UNIQUE_NAME]/default/resources2",
+    "parent_path": "/Workspace/Users/[USERNAME]/.bundle/change-parent-path-[UNIQUE_NAME]/default/resources2",
     "serialized_dashboard": "{}\n",
     "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
   }
@@ -51,7 +51,7 @@
   "method": "POST",
   "path": "/api/2.0/workspace/mkdirs",
   "body": {
-    "path": "/Users/[USERNAME]/.bundle/change-parent-path-[UNIQUE_NAME]/default/resources2"
+    "path": "/Workspace/Users/[USERNAME]/.bundle/change-parent-path-[UNIQUE_NAME]/default/resources2"
   }
 }
 {
@@ -59,7 +59,7 @@
   "path": "/api/2.0/lakeview/dashboards",
   "body": {
     "display_name": "test dashboard",
-    "parent_path": "/Users/[USERNAME]/.bundle/change-parent-path-[UNIQUE_NAME]/default/resources2",
+    "parent_path": "/Workspace/Users/[USERNAME]/.bundle/change-parent-path-[UNIQUE_NAME]/default/resources2",
     "serialized_dashboard": "{}\n",
     "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
   }

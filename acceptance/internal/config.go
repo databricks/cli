@@ -213,6 +213,8 @@ func LoadConfig(t *testing.T, dir string) (TestConfig, string) {
 		}
 	}
 
+	// Always ignore .cache directory (used by local cache)
+	result.Ignore = append(result.Ignore, ".cache")
 	result.CompiledIgnoreObject = ignore.CompileIgnoreLines(result.Ignore...)
 
 	return result, strings.Join(configs, ", ")

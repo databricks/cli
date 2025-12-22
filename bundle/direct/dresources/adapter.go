@@ -80,6 +80,10 @@ type IResource interface {
 
 	// [Optional] WaitAfterUpdate waits for the resource to become ready after update. Returns optionally updated remote state.
 	WaitAfterUpdate(ctx context.Context, newState any) (remoteState any, e error)
+
+	// [Optional] KeyedSlices returns a map from path patterns to KeyFunc for comparing slices by key instead of by index.
+	// Example: func (*ResourcePermissions) KeyedSlices(state *PermissionsState) map[string]any
+	KeyedSlices() map[string]any
 }
 
 // Adapter wraps resource implementation, validates signatures and type consistency across methods
@@ -102,6 +106,7 @@ type Adapter struct {
 
 	fieldTriggersLocal  map[string]deployplan.ActionType
 	fieldTriggersRemote map[string]deployplan.ActionType
+	keyedSlices         map[string]any
 }
 
 func NewAdapter(typedNil any, client *databricks.WorkspaceClient) (*Adapter, error) {
@@ -131,6 +136,7 @@ func NewAdapter(typedNil any, client *databricks.WorkspaceClient) (*Adapter, err
 		classifyChange:      nil,
 		fieldTriggersLocal:  map[string]deployplan.ActionType{},
 		fieldTriggersRemote: map[string]deployplan.ActionType{},
+		keyedSlices:         nil,
 	}
 
 	err = adapter.initMethods(impl)
@@ -186,6 +192,16 @@ func loadFieldTriggers(triggerCall *calladapt.BoundCaller, isLocal bool) (map[st
 	fields := outs[0].(map[string]deployplan.ActionType)
 	result := make(map[string]deployplan.ActionType, len(fields))
 	maps.Copy(result, fields)
+	return result, nil
+}
+
+// loadKeyedSlices validates and calls KeyedSlices method, returning the resulting map.
+func loadKeyedSlices(call *calladapt.BoundCaller) (map[string]any, error) {
+	outs, err := call.Call()
+	if err != nil {
+		return nil, fmt.Errorf("failed to call KeyedSlices: %w", err)
+	}
+	result := outs[0].(map[string]any)
 	return result, nil
 }
 
@@ -250,6 +266,17 @@ func (a *Adapter) initMethods(resource any) error {
 	a.doResize, err = calladapt.PrepareCall(resource, calladapt.TypeOf[IResource](), "DoResize")
 	if err != nil {
 		return err
+	}
+
+	keyedSlicesCall, err := calladapt.PrepareCall(resource, calladapt.TypeOf[IResource](), "KeyedSlices")
+	if err != nil {
+		return err
+	}
+	if keyedSlicesCall != nil {
+		a.keyedSlices, err = loadKeyedSlices(keyedSlicesCall)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -580,6 +607,12 @@ func (a *Adapter) ClassifyChange(change structdiff.Change, remoteState any, isLo
 		return a.classifyByTriggers(change, isLocal), nil
 	}
 	return actionType, nil
+}
+
+// KeyedSlices returns a map from path patterns to KeyFunc for comparing slices by key.
+// If the resource doesn't implement KeyedSlices, returns nil.
+func (a *Adapter) KeyedSlices() map[string]any {
+	return a.keyedSlices
 }
 
 // prepareCallRequired prepares a call and ensures the method is found.

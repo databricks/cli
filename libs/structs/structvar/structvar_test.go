@@ -1,6 +1,7 @@
 package structvar_test
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/databricks/cli/libs/structs/structvar"
@@ -16,21 +17,21 @@ type TestObj struct {
 }
 
 // newTestStructVar creates a fresh StructVar instance for testing
-func newTestStructVar() *structvar.StructVar {
-	return &structvar.StructVar{
-		Value: &TestObj{
+func newTestStructVar(t *testing.T) *structvar.StructVar {
+	return structvar.NewStructVar(
+		&TestObj{
 			Name: "OldName",
 			Age:  25,
 			Tags: map[string]string{
 				"env": "old_env",
 			},
 		},
-		Refs: map[string]string{
+		map[string]string{
 			"name":            "${var.name}",
 			"age":             "${var.age}",
 			"tags['version']": "${var.version}",
 		},
-	}
+	)
 }
 
 func TestResolveRef(t *testing.T) {
@@ -101,16 +102,16 @@ func TestResolveRef(t *testing.T) {
 		{
 			name: "error on invalid path",
 			setup: func() *structvar.StructVar {
-				return &structvar.StructVar{
-					Value: &TestObj{},
-					Refs: map[string]string{
+				return structvar.NewStructVar(
+					&TestObj{},
+					map[string]string{
 						"invalid[path": "${var.test}",
 					},
-				}
+				)
 			},
 			reference: "${var.test}",
 			value:     "value",
-			errorMsg:  "unexpected character",
+			errorMsg:  "invalid path",
 		},
 	}
 
@@ -121,7 +122,7 @@ func TestResolveRef(t *testing.T) {
 			if tt.setup != nil {
 				sv = tt.setup()
 			} else {
-				sv = newTestStructVar()
+				sv = newTestStructVar(t)
 			}
 
 			err := sv.ResolveRef(tt.reference, tt.value)
@@ -140,14 +141,14 @@ func TestResolveRef(t *testing.T) {
 }
 
 func TestResolveRefMultiReference(t *testing.T) {
-	sv := &structvar.StructVar{
-		Value: &TestObj{
+	sv := structvar.NewStructVar(
+		&TestObj{
 			Name: "OldName",
 		},
-		Refs: map[string]string{
+		map[string]string{
 			"name": "${var.prefix} ${var.suffix}",
 		},
-	}
+	)
 
 	// Resolve one reference
 	err := sv.ResolveRef("${var.prefix}", "Hello")
@@ -182,12 +183,12 @@ func TestResolveRefJobSettings(t *testing.T) {
 		},
 	}
 
-	sv := &structvar.StructVar{
-		Value: &jobSettings,
-		Refs: map[string]string{
+	sv := structvar.NewStructVar(
+		&jobSettings,
+		map[string]string{
 			"tasks[0].run_job_task.job_id": "${resources.jobs.bar.id}",
 		},
-	}
+	)
 
 	// Resolve the reference with a realistic job ID value (as string that gets converted to int64)
 	err := sv.ResolveRef("${resources.jobs.bar.id}", "123")
@@ -203,4 +204,49 @@ func TestResolveRefJobSettings(t *testing.T) {
 
 	// Verify the reference was removed after resolution
 	assert.Empty(t, sv.Refs)
+}
+
+func TestToJSONAndBack(t *testing.T) {
+	original := structvar.NewStructVar(
+		&TestObj{
+			Name: "TestName",
+			Age:  30,
+			Tags: map[string]string{
+				"env": "prod",
+			},
+		},
+		map[string]string{
+			"name": "${var.name}",
+		},
+	)
+
+	// Convert to JSON
+	svJSON, err := original.ToJSON()
+	require.NoError(t, err)
+	assert.NotEmpty(t, svJSON.Value)
+	assert.Equal(t, original.Refs, svJSON.Refs)
+
+	// Convert back to StructVar
+	restored, err := svJSON.ToStructVar(reflect.TypeOf(&TestObj{}))
+	require.NoError(t, err)
+
+	// Verify the restored value matches
+	assert.Equal(t, original.Value, restored.Value)
+	assert.Equal(t, original.Refs, restored.Refs)
+}
+
+func TestToStructVarRequiresPointerType(t *testing.T) {
+	svJSON := &structvar.StructVarJSON{
+		Value: []byte(`{"name":"test"}`),
+	}
+
+	// Should fail with non-pointer type
+	_, err := svJSON.ToStructVar(reflect.TypeOf(TestObj{}))
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "expecting pointer")
+
+	// Should succeed with pointer type
+	sv, err := svJSON.ToStructVar(reflect.TypeOf(&TestObj{}))
+	require.NoError(t, err)
+	assert.Equal(t, "test", sv.Value.(*TestObj).Name)
 }

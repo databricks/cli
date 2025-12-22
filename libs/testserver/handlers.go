@@ -458,7 +458,29 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	server.Handle("DELETE", "/api/2.0/alerts/{id}", func(req Request) any {
-		return MapDelete(req.Workspace, req.Workspace.Alerts, req.Vars["id"])
+		return req.Workspace.AlertsDelete(req.Vars["id"])
+	})
+
+	// Secret Scopes:
+	server.Handle("POST", "/api/2.0/secrets/scopes/create", func(req Request) any {
+		return req.Workspace.SecretsCreateScope(req)
+	})
+
+	server.Handle("GET", "/api/2.0/secrets/scopes/list", func(req Request) any {
+		return req.Workspace.SecretsListScopes(req)
+	})
+
+	server.Handle("POST", "/api/2.0/secrets/scopes/delete", func(req Request) any {
+		return req.Workspace.SecretsDeleteScope(req)
+	})
+
+	// Secrets:
+	server.Handle("POST", "/api/2.0/secrets/put", func(req Request) any {
+		return req.Workspace.SecretsPut(req)
+	})
+
+	server.Handle("GET", "/api/2.0/secrets/get", func(req Request) any {
+		return req.Workspace.SecretsGet(req)
 	})
 
 	// Secrets ACLs:
@@ -467,7 +489,7 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	server.Handle("GET", "/api/2.0/secrets/acls/list", func(req Request) any {
-		return MapGet(req.Workspace, req.Workspace.Acls, req.URL.Query().Get("scope"))
+		return req.Workspace.SecretsListAcls(req)
 	})
 
 	server.Handle("POST", "/api/2.0/secrets/acls/put", func(req Request) any {

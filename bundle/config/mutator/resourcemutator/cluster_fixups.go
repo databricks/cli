@@ -2,6 +2,7 @@ package resourcemutator
 
 import (
 	"context"
+	"slices"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
@@ -97,5 +98,19 @@ func prepareJobSettingsForUpdate(js *jobs.JobSettings) {
 	}
 	for ind := range js.JobClusters {
 		ModifyRequestOnInstancePool(&js.JobClusters[ind].NewCluster)
+		initializeNumWorkers(&js.JobClusters[ind].NewCluster)
 	}
+}
+
+func initializeNumWorkers(c *compute.ClusterSpec) {
+	if c.Autoscale != nil {
+		return
+	}
+	if c.NumWorkers != 0 {
+		return
+	}
+	if slices.Contains(c.ForceSendFields, "NumWorkers") {
+		return
+	}
+	c.ForceSendFields = append(c.ForceSendFields, "NumWorkers")
 }

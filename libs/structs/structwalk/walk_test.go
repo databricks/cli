@@ -37,6 +37,10 @@ func TestValueEmptyMap(t *testing.T) {
 	assert.Empty(t, flatten(t, make(map[string]int)))
 }
 
+func TestValueNonEmptyMap(t *testing.T) {
+	assert.Equal(t, map[string]any{"['hello']": 5}, flatten(t, map[string]int{"hello": 5}))
+}
+
 func TestValueEmptySlice(t *testing.T) {
 	assert.Empty(t, flatten(t, []string{}))
 }
@@ -87,8 +91,8 @@ func TestValueJobSettings(t *testing.T) {
 	}
 
 	assert.Equal(t, map[string]any{
-		`tags.env`:            "test",
-		`tags.team`:           "data",
+		`tags['env']`:         "test",
+		`tags['team']`:        "data",
 		"name":                "test-job",
 		"max_concurrent_runs": 5,
 		"timeout_seconds":     3600,

@@ -76,21 +76,7 @@ All files and directories at the following location will be deleted: /Workspace/
 Deleting files...
 Destroy complete!
 
->>> print_requests.py --sort //jobs
-{
-  "method": "POST",
-  "path": "/api/2.2/jobs/delete",
-  "body": {
-    "job_id": [FOO_ID]
-  }
-}
-{
-  "method": "POST",
-  "path": "/api/2.2/jobs/delete",
-  "body": {
-    "job_id": [BAR_ID]
-  }
-}
+>>> print_requests.py //jobs
 {
   "method": "POST",
   "path": "/api/2.2/jobs/reset",
@@ -107,7 +93,6 @@ Destroy complete!
         {
           "job_cluster_key": "key",
           "new_cluster": {
-            "num_workers": 0,
             "spark_version": "13.3.x-scala2.12"
           }
         }
@@ -125,5 +110,19 @@ Destroy complete!
         }
       }
     }
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/delete",
+  "body": {
+    "job_id": [BAR_ID]
+  }
+}
+{
+  "method": "POST",
+  "path": "/api/2.2/jobs/delete",
+  "body": {
+    "job_id": [FOO_ID]
   }
 }

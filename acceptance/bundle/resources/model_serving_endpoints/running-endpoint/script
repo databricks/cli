@@ -14,4 +14,8 @@ trace $CLI bundle deploy
 trace print_requests.py //serving-endpoints
 
 endpoint_name=$($CLI bundle summary -o json | jq -r '.resources.model_serving_endpoints.my_endpoint.name')
+endpoint_id=$($CLI bundle summary -o json | jq -r '.resources.model_serving_endpoints.my_endpoint.id')
 trace $CLI serving-endpoints get $endpoint_name | jq '{name, creator}'
+
+title "verify there's no persistent drift"
+trace $CLI bundle plan

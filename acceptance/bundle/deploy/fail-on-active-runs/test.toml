@@ -1,8 +1,5 @@
 RecordRequests = true
 
-# --fail-on-active-runs not implemented yet
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform"]
-
 [[Server]]
 Pattern = "GET /api/2.2/jobs/runs/list"
 Response.Body = '''

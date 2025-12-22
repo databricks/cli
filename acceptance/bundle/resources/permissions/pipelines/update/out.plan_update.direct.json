@@ -1,4 +1,8 @@
 {
+  "plan_version": 1,
+  "cli_version": "[DEV_VERSION]",
+  "lineage": "[UUID]",
+  "serial": 1,
   "plan": {
     "resources.pipelines.foo": {
       "action": "skip",
@@ -76,8 +80,10 @@
       },
       "changes": {
         "local": {
-          "permissions[0].permission_level": {
-            "action": "update"
+          "permissions[user_name='viewer@example.com'].permission_level": {
+            "action": "update",
+            "old": "CAN_VIEW",
+            "new": "CAN_MANAGE"
           }
         }
       }

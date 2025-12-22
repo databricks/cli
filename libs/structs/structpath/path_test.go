@@ -13,6 +13,7 @@ func TestPathNode(t *testing.T) {
 		String      string
 		Index       any
 		StringKey   any
+		KeyValue    []string // [key, value] or nil
 		Root        any
 		DotStar     bool
 		BracketStar bool
@@ -32,7 +33,7 @@ func TestPathNode(t *testing.T) {
 		},
 		{
 			name:      "map key",
-			node:      NewStringKey(nil, "mykey"),
+			node:      NewDotString(nil, "mykey"),
 			String:    `mykey`,
 			StringKey: "mykey",
 		},
@@ -48,35 +49,41 @@ func TestPathNode(t *testing.T) {
 			String:      "[*]",
 			BracketStar: true,
 		},
+		{
+			name:     "key value",
+			node:     NewKeyValue(nil, "name", "foo"),
+			String:   "[name='foo']",
+			KeyValue: []string{"name", "foo"},
+		},
 
 		// Two node tests
 		{
 			name:   "struct field -> array index",
-			node:   NewIndex(NewStringKey(nil, "items"), 3),
+			node:   NewIndex(NewDotString(nil, "items"), 3),
 			String: "items[3]",
 			Index:  3,
 		},
 		{
 			name:      "struct field -> map key",
-			node:      NewStringKey(NewStringKey(nil, "config"), "database.name"),
+			node:      NewBracketString(NewDotString(nil, "config"), "database.name"),
 			String:    `config['database.name']`,
 			StringKey: "database.name",
 		},
 		{
 			name:      "struct field -> struct field",
-			node:      NewStringKey(NewStringKey(nil, "user"), "name"),
+			node:      NewDotString(NewDotString(nil, "user"), "name"),
 			String:    "user.name",
 			StringKey: "name",
 		},
 		{
 			name:   "map key -> array index",
-			node:   NewIndex(NewStringKey(nil, "servers list"), 0),
+			node:   NewIndex(NewBracketString(nil, "servers list"), 0),
 			String: `['servers list'][0]`,
 			Index:  0,
 		},
 		{
 			name:      "array index -> struct field",
-			node:      NewStringKey(NewIndex(nil, 2), "id"),
+			node:      NewDotString(NewIndex(nil, 2), "id"),
 			String:    "[2].id",
 			StringKey: "id",
 		},
@@ -175,6 +182,38 @@ func TestPathNode(t *testing.T) {
 			String:      "bla.*[*]",
 			BracketStar: true,
 		},
+
+		// Key-value tests
+		{
+			name:     "key value with parent",
+			node:     NewKeyValue(NewStringKey(nil, "tasks"), "task_key", "my_task"),
+			String:   "tasks[task_key='my_task']",
+			KeyValue: []string{"task_key", "my_task"},
+		},
+		{
+			name:      "key value then field",
+			node:      NewStringKey(NewKeyValue(nil, "name", "foo"), "id"),
+			String:    "[name='foo'].id",
+			StringKey: "id",
+		},
+		{
+			name:     "key value with quote in value",
+			node:     NewKeyValue(nil, "name", "it's"),
+			String:   "[name='it''s']",
+			KeyValue: []string{"name", "it's"},
+		},
+		{
+			name:     "key value with empty value",
+			node:     NewKeyValue(nil, "key", ""),
+			String:   "[key='']",
+			KeyValue: []string{"key", ""},
+		},
+		{
+			name:      "complex path with key value",
+			node:      NewStringKey(NewKeyValue(NewStringKey(NewStringKey(nil, "resources"), "jobs"), "task_key", "my_task"), "notebook_task"),
+			String:    "resources.jobs[task_key='my_task'].notebook_task",
+			StringKey: "notebook_task",
+		},
 	}
 
 	for _, tt := range tests {
@@ -210,6 +249,18 @@ func TestPathNode(t *testing.T) {
 				expected := tt.StringKey.(string)
 				assert.Equal(t, expected, gotStringKey)
 				assert.True(t, isStringKey)
+			}
+
+			// KeyValue
+			gotKey, gotValue, isKeyValue := tt.node.KeyValue()
+			if tt.KeyValue == nil {
+				assert.Equal(t, "", gotKey)
+				assert.Equal(t, "", gotValue)
+				assert.False(t, isKeyValue)
+			} else {
+				assert.Equal(t, tt.KeyValue[0], gotKey)
+				assert.Equal(t, tt.KeyValue[1], gotValue)
+				assert.True(t, isKeyValue)
 			}
 
 			// IsRoot
@@ -266,12 +317,12 @@ func TestParseErrors(t *testing.T) {
 		{
 			name:  "invalid array index",
 			input: "[abc]",
-			error: "unexpected character 'a' after '[' at position 1",
+			error: "unexpected character ']' in key-value key at position 4",
 		},
 		{
 			name:  "negative array index",
 			input: "[-1]",
-			error: "unexpected character '-' after '[' at position 1",
+			error: "unexpected character ']' in key-value key at position 3",
 		},
 		{
 			name:  "unclosed map key quote",
@@ -331,7 +382,7 @@ func TestParseErrors(t *testing.T) {
 		{
 			name:  "invalid character in bracket",
 			input: "field[name",
-			error: "unexpected character 'n' after '[' at position 6",
+			error: "unexpected end of input while parsing key-value key",
 		},
 		{
 			name:  "unexpected character after valid path",
@@ -379,6 +430,53 @@ func TestParseErrors(t *testing.T) {
 			name:  "dot star followed by field name",
 			input: "bla.*foo",
 			error: "unexpected character 'f' after '.*' at position 5",
+		},
+
+		// Invalid key-value patterns
+		{
+			name:  "key-value missing equals",
+			input: "[name'value']",
+			error: "unexpected character ''' in key-value key at position 5",
+		},
+		{
+			name:  "key-value missing value quote",
+			input: "[name=value]",
+			error: "expected quote after '=' but got 'v' at position 6",
+		},
+		{
+			name:  "key-value incomplete key",
+			input: "[name",
+			error: "unexpected end of input while parsing key-value key",
+		},
+		{
+			name:  "key-value incomplete after equals",
+			input: "[name=",
+			error: "unexpected end of input after '=' in key-value",
+		},
+		{
+			name:  "key-value incomplete value",
+			input: "[name='value",
+			error: "unexpected end of input while parsing key-value value",
+		},
+		{
+			name:  "key-value incomplete after value quote",
+			input: "[name='value'",
+			error: "unexpected end of input after quote in key-value value",
+		},
+		{
+			name:  "key-value invalid char after value quote",
+			input: "[name='value'x]",
+			error: "unexpected character 'x' after quote in key-value at position 13",
+		},
+		{
+			name:  "double quotes are not supported a.t.m",
+			input: "[name=\"value\"]",
+			error: "expected quote after '=' but got '\"' at position 6",
+		},
+		{
+			name:  "mixed quotes never going to be supported",
+			input: "[name='value\"]",
+			error: "unexpected end of input while parsing key-value value",
 		},
 	}
 
@@ -554,6 +652,102 @@ func TestPureReferenceToPath(t *testing.T) {
 			} else {
 				assert.Nil(t, pathNode)
 			}
+		})
+	}
+}
+
+func TestHasPrefix(t *testing.T) {
+	tests := []struct {
+		name     string
+		s        string
+		prefix   string
+		expected bool
+	}{
+		// Edge cases
+		{
+			name:     "empty prefix",
+			s:        "a.b.c",
+			prefix:   "",
+			expected: true,
+		},
+		{
+			name:     "empty string",
+			s:        "",
+			prefix:   "a",
+			expected: false,
+		},
+		{
+			name:     "exact match",
+			s:        "config",
+			prefix:   "config",
+			expected: true,
+		},
+
+		// Correct matches - path boundary aware
+		{
+			name:     "simple field match",
+			s:        "a.b",
+			prefix:   "a",
+			expected: true,
+		},
+		{
+			name:     "nested field match",
+			s:        "config.database.name",
+			prefix:   "config.database",
+			expected: true,
+		},
+		{
+			name:     "field with array index",
+			s:        "items[3].name",
+			prefix:   "items",
+			expected: true,
+		},
+		{
+			name:     "array with prefix match",
+			s:        "items[0].name",
+			prefix:   "items[0]",
+			expected: true,
+		},
+		{
+			name:     "field with bracket notation",
+			s:        "config['spark.conf'].value",
+			prefix:   "config['spark.conf']",
+			expected: true,
+		},
+
+		// Incorrect matches - should NOT match
+		{
+			name:     "substring match without boundary",
+			s:        "ai_gateway",
+			prefix:   "ai",
+			expected: false,
+		},
+		{
+			name:     "different nested field",
+			s:        "configuration.name",
+			prefix:   "config",
+			expected: false,
+		},
+
+		// wildcard patterns are NOT supported - treated as literals
+		{
+			name:     "regex pattern not respected - star quantifier",
+			s:        "aaa",
+			prefix:   "a*",
+			expected: false,
+		},
+		{
+			name:     "regex pattern not respected - bracket class",
+			s:        "a[1]",
+			prefix:   "a[*]",
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := HasPrefix(tt.s, tt.prefix)
+			assert.Equal(t, tt.expected, result, "HasPrefix(%q, %q)", tt.s, tt.prefix)
 		})
 	}
 }

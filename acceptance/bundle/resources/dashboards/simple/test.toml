@@ -1,4 +1,3 @@
-Badness = "direct: drift after deploy"
 Local = true
 Cloud = true
 RequiresWarehouse = true

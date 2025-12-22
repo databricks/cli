@@ -1,4 +1,8 @@
 {
+  "plan_version": 1,
+  "cli_version": "[DEV_VERSION]",
+  "lineage": "[UUID]",
+  "serial": 1,
   "plan": {
     "resources.jobs.a": {
       "action": "update",
@@ -44,7 +48,9 @@
       "changes": {
         "local": {
           "description": {
-            "action": "update"
+            "action": "update",
+            "old": "aa_desc",
+            "new": "aa_new_desc"
           }
         },
         "remote": {
@@ -113,7 +119,9 @@
       "changes": {
         "local": {
           "description": {
-            "action": "update"
+            "action": "update",
+            "old": "prefix [NUMID]",
+            "new": "new_prefix [NUMID]"
           }
         },
         "remote": {
@@ -182,7 +190,9 @@
       "changes": {
         "local": {
           "description": {
-            "action": "update"
+            "action": "update",
+            "old": "prefix [NUMID]",
+            "new": "new_prefix [NUMID]"
           }
         },
         "remote": {
@@ -251,7 +261,9 @@
       "changes": {
         "local": {
           "description": {
-            "action": "update"
+            "action": "update",
+            "old": "prefix [NUMID]",
+            "new": "new_prefix [NUMID]"
           }
         },
         "remote": {
@@ -320,7 +332,9 @@
       "changes": {
         "local": {
           "description": {
-            "action": "update"
+            "action": "update",
+            "old": "prefix [NUMID]",
+            "new": "new_prefix [NUMID]"
           }
         },
         "remote": {

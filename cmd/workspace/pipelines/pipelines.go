@@ -21,26 +21,28 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "pipelines",
-		Short: `The Delta Live Tables API allows you to create, edit, delete, start, and view details about pipelines.`,
-		Long: `The Delta Live Tables API allows you to create, edit, delete, start, and view
-  details about pipelines.
+		Short: `The Lakeflow Spark Declarative Pipelines API allows you to create, edit, delete, start, and view details about pipelines.`,
+		Long: `The Lakeflow Spark Declarative Pipelines API allows you to create, edit,
+  delete, start, and view details about pipelines.
 
-  Delta Live Tables is a framework for building reliable, maintainable, and
-  testable data processing pipelines. You define the transformations to perform
-  on your data, and Delta Live Tables manages task orchestration, cluster
-  management, monitoring, data quality, and error handling.
+  Spark Declarative Pipelines is a framework for building reliable,
+  maintainable, and testable data processing pipelines. You define the
+  transformations to perform on your data, and Spark Declarative Pipelines
+  manages task orchestration, cluster management, monitoring, data quality, and
+  error handling.
 
   Instead of defining your data pipelines using a series of separate Apache
-  Spark tasks, Delta Live Tables manages how your data is transformed based on a
-  target schema you define for each processing step. You can also enforce data
-  quality with Delta Live Tables expectations. Expectations allow you to define
-  expected data quality and specify how to handle records that fail those
-  expectations.`,
-		GroupID: "pipelines",
+  Spark tasks, Spark Declarative Pipelines manages how your data is transformed
+  based on a target schema you define for each processing step. You can also
+  enforce data quality with Spark Declarative Pipelines expectations.
+  Expectations allow you to define expected data quality and specify how to
+  handle records that fail those expectations.`,
+		GroupID: "lakeflow",
 		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
+	cmd.AddCommand(newClone())
 	cmd.AddCommand(newCreate())
 	cmd.AddCommand(newDelete())
 	cmd.AddCommand(newGet())
@@ -59,6 +61,81 @@ func New() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
 		fn(cmd)
+	}
+
+	return cmd
+}
+
+// start clone command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var cloneOverrides []func(
+	*cobra.Command,
+	*pipelines.ClonePipelineRequest,
+)
+
+func newClone() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var cloneReq pipelines.ClonePipelineRequest
+	var cloneJson flags.JsonFlag
+
+	cmd.Flags().Var(&cloneJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Use = "clone PIPELINE_ID"
+	cmd.Short = `Clone a pipeline.`
+	cmd.Long = `Clone a pipeline.
+
+  Creates a new pipeline using Unity Catalog from a pipeline using Hive
+  Metastore. This method returns the ID of the newly created clone.
+  Additionally, this method starts an update for the newly created pipeline.
+
+  Arguments:
+    PIPELINE_ID: Source pipeline to clone from`
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := cloneJson.Unmarshal(&cloneReq)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		} else {
+			return fmt.Errorf("please provide command input in JSON format by specifying the --json flag")
+		}
+		cloneReq.PipelineId = args[0]
+
+		response, err := w.Pipelines.Clone(ctx, cloneReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range cloneOverrides {
+		fn(cmd, &cloneReq)
 	}
 
 	return cmd
@@ -147,8 +224,9 @@ func newDelete() *cobra.Command {
 	cmd.Short = `Delete a pipeline.`
 	cmd.Long = `Delete a pipeline.
 
-  Deletes a pipeline. Deleting a pipeline is a permanent action that stops and
-  removes the pipeline and its tables. You cannot undo this action.`
+  Deletes a pipeline. If the pipeline publishes to Unity Catalog, pipeline
+  deletion will cascade to all pipeline tables. Please reach out to Databricks
+  support for assistance to undo this action.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -546,7 +624,7 @@ func newListPipelines() *cobra.Command {
 	cmd.Short = `List pipelines.`
 	cmd.Long = `List pipelines.
 
-  Lists pipelines defined in the Delta Live Tables system.`
+  Lists pipelines defined in the Spark Declarative Pipelines system.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -764,6 +842,7 @@ func newStartUpdate() *cobra.Command {
 	cmd.Flags().BoolVar(&startUpdateReq.FullRefresh, "full-refresh", startUpdateReq.FullRefresh, `If true, this update will reset all tables before running.`)
 	// TODO: array: full_refresh_selection
 	// TODO: array: refresh_selection
+	// TODO: complex arg: rewind_spec
 	cmd.Flags().BoolVar(&startUpdateReq.ValidateOnly, "validate-only", startUpdateReq.ValidateOnly, `If true, this update only validates the correctness of pipeline source code but does not materialize or publish any datasets.`)
 
 	cmd.Use = "start-update PIPELINE_ID"

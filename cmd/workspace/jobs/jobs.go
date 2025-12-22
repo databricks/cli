@@ -30,7 +30,7 @@ func New() *cobra.Command {
   Databricks manages the task orchestration, cluster management, monitoring, and
   error reporting for all of your jobs. You can run your jobs immediately or
   periodically through an easy-to-use scheduling system. You can implement job
-  tasks using notebooks, JARS, Delta Live Tables pipelines, or Python, Scala,
+  tasks using notebooks, JARS, Spark Declarative Pipelines, or Python, Scala,
   Spark submit, and Java applications.
 
   You should never hard code secrets or store them in plain text. Use the
@@ -40,7 +40,7 @@ func New() *cobra.Command {
   [Databricks CLI]: https://docs.databricks.com/dev-tools/cli/index.html
   [Secrets CLI]: https://docs.databricks.com/dev-tools/cli/secrets-cli.html
   [Secrets utility]: https://docs.databricks.com/dev-tools/databricks-utils.html#dbutils-secrets`,
-		GroupID: "jobs",
+		GroupID: "lakeflow",
 		RunE:    root.ReportUnknownSubcommand,
 	}
 

@@ -96,8 +96,7 @@ class Job(Resource):
     environments: VariableOrList[JobEnvironment] = field(default_factory=list)
     """
     A list of task execution environment specifications that can be referenced by serverless tasks of this job.
-    An environment is required to be present for serverless tasks.
-    For serverless notebook tasks, the environment is accessible in the notebook environment panel.
+    For serverless notebook tasks, if the environment_key is not specified, the notebook environment will be used if present. If a jobs environment is specified, it will override the notebook environment.
     For other serverless tasks, the task environment is required to be specified using environment_key in the task settings.
     """
 
@@ -150,6 +149,7 @@ class Job(Resource):
     performance_target: VariableOrOptional[PerformanceTarget] = None
     """
     The performance mode on a serverless job. This field determines the level of compute performance or cost-efficiency for the run.
+    The performance target does not apply to tasks that run on Serverless GPU compute.
     
     * `STANDARD`: Enables cost-efficient execution of serverless workloads.
     * `PERFORMANCE_OPTIMIZED`: Prioritizes fast startup and execution times through rapid scaling and optimized cluster performance.
@@ -241,8 +241,7 @@ class JobDict(TypedDict, total=False):
     environments: VariableOrList[JobEnvironmentParam]
     """
     A list of task execution environment specifications that can be referenced by serverless tasks of this job.
-    An environment is required to be present for serverless tasks.
-    For serverless notebook tasks, the environment is accessible in the notebook environment panel.
+    For serverless notebook tasks, if the environment_key is not specified, the notebook environment will be used if present. If a jobs environment is specified, it will override the notebook environment.
     For other serverless tasks, the task environment is required to be specified using environment_key in the task settings.
     """
 
@@ -295,6 +294,7 @@ class JobDict(TypedDict, total=False):
     performance_target: VariableOrOptional[PerformanceTargetParam]
     """
     The performance mode on a serverless job. This field determines the level of compute performance or cost-efficiency for the run.
+    The performance target does not apply to tasks that run on Serverless GPU compute.
     
     * `STANDARD`: Enables cost-efficient execution of serverless workloads.
     * `PERFORMANCE_OPTIMIZED`: Prioritizes fast startup and execution times through rapid scaling and optimized cluster performance.

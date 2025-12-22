@@ -1,4 +1,8 @@
 {
+  "plan_version": 1,
+  "cli_version": "[DEV_VERSION]",
+  "lineage": "[UUID]",
+  "serial": 1,
   "plan": {
     "resources.schemas.grants_schema": {
       "action": "skip",
@@ -80,10 +84,14 @@
       "changes": {
         "local": {
           "grants[0].privileges[0]": {
-            "action": "update"
+            "action": "update",
+            "old": "READ_VOLUME",
+            "new": "MANAGE"
           },
           "grants[0].privileges[1]": {
-            "action": "update"
+            "action": "update",
+            "old": "WRITE_VOLUME",
+            "new": "READ_VOLUME"
           }
         }
       }

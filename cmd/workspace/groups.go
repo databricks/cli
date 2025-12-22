@@ -17,12 +17,8 @@ func Groups() []cobra.Group {
 			Title: "Compute",
 		},
 		{
-			ID:    "jobs",
-			Title: "Workflows",
-		},
-		{
-			ID:    "pipelines",
-			Title: "Delta Live Tables",
+			ID:    "lakeflow",
+			Title: "Lakeflow",
 		},
 		{
 			ID:    "files",

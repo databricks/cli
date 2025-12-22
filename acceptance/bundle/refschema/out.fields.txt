@@ -55,6 +55,13 @@ resources.alerts.*.schedule.timezone_id	string	ALL
 resources.alerts.*.update_time	string	ALL
 resources.alerts.*.url	string	INPUT
 resources.alerts.*.warehouse_id	string	ALL
+resources.alerts.*.permissions.object_id	string	ALL
+resources.alerts.*.permissions.permissions	[]iam.AccessControlRequest	ALL
+resources.alerts.*.permissions.permissions[*]	iam.AccessControlRequest	ALL
+resources.alerts.*.permissions.permissions[*].group_name	string	ALL
+resources.alerts.*.permissions.permissions[*].permission_level	iam.PermissionLevel	ALL
+resources.alerts.*.permissions.permissions[*].service_principal_name	string	ALL
+resources.alerts.*.permissions.permissions[*].user_name	string	ALL
 resources.apps.*.active_deployment	*apps.AppDeployment	ALL
 resources.apps.*.active_deployment.create_time	string	ALL
 resources.apps.*.active_deployment.creator	string	ALL
@@ -417,6 +424,8 @@ resources.clusters.*.permissions.permissions[*].service_principal_name	string	AL
 resources.clusters.*.permissions.permissions[*].user_name	string	ALL
 resources.dashboards.*.create_time	string	ALL
 resources.dashboards.*.dashboard_id	string	ALL
+resources.dashboards.*.dataset_catalog	string	ALL
+resources.dashboards.*.dataset_schema	string	ALL
 resources.dashboards.*.display_name	string	ALL
 resources.dashboards.*.embed_credentials	bool	ALL
 resources.dashboards.*.etag	string	ALL
@@ -435,7 +444,6 @@ resources.dashboards.*.permissions[*].level	resources.DashboardPermissionLevel	I
 resources.dashboards.*.permissions[*].service_principal_name	string	INPUT
 resources.dashboards.*.permissions[*].user_name	string	INPUT
 resources.dashboards.*.serialized_dashboard	any	ALL
-resources.dashboards.*.serialized_dashboard	string	ALL
 resources.dashboards.*.update_time	string	ALL
 resources.dashboards.*.url	string	INPUT
 resources.dashboards.*.warehouse_id	string	ALL
@@ -1550,6 +1558,13 @@ resources.jobs.*.settings.trigger.file_arrival	*jobs.FileArrivalTriggerConfigura
 resources.jobs.*.settings.trigger.file_arrival.min_time_between_triggers_seconds	int	REMOTE
 resources.jobs.*.settings.trigger.file_arrival.url	string	REMOTE
 resources.jobs.*.settings.trigger.file_arrival.wait_after_last_change_seconds	int	REMOTE
+resources.jobs.*.settings.trigger.model	*jobs.ModelTriggerConfiguration	REMOTE
+resources.jobs.*.settings.trigger.model.aliases	[]string	REMOTE
+resources.jobs.*.settings.trigger.model.aliases[*]	string	REMOTE
+resources.jobs.*.settings.trigger.model.condition	jobs.ModelTriggerConfigurationCondition	REMOTE
+resources.jobs.*.settings.trigger.model.min_time_between_triggers_seconds	int	REMOTE
+resources.jobs.*.settings.trigger.model.securable_name	string	REMOTE
+resources.jobs.*.settings.trigger.model.wait_after_last_change_seconds	int	REMOTE
 resources.jobs.*.settings.trigger.pause_status	jobs.PauseStatus	REMOTE
 resources.jobs.*.settings.trigger.periodic	*jobs.PeriodicTriggerConfiguration	REMOTE
 resources.jobs.*.settings.trigger.periodic.interval	int	REMOTE
@@ -2215,6 +2230,13 @@ resources.jobs.*.trigger.file_arrival	*jobs.FileArrivalTriggerConfiguration	INPU
 resources.jobs.*.trigger.file_arrival.min_time_between_triggers_seconds	int	INPUT	STATE
 resources.jobs.*.trigger.file_arrival.url	string	INPUT	STATE
 resources.jobs.*.trigger.file_arrival.wait_after_last_change_seconds	int	INPUT	STATE
+resources.jobs.*.trigger.model	*jobs.ModelTriggerConfiguration	INPUT	STATE
+resources.jobs.*.trigger.model.aliases	[]string	INPUT	STATE
+resources.jobs.*.trigger.model.aliases[*]	string	INPUT	STATE
+resources.jobs.*.trigger.model.condition	jobs.ModelTriggerConfigurationCondition	INPUT	STATE
+resources.jobs.*.trigger.model.min_time_between_triggers_seconds	int	INPUT	STATE
+resources.jobs.*.trigger.model.securable_name	string	INPUT	STATE
+resources.jobs.*.trigger.model.wait_after_last_change_seconds	int	INPUT	STATE
 resources.jobs.*.trigger.pause_status	jobs.PauseStatus	INPUT	STATE
 resources.jobs.*.trigger.periodic	*jobs.PeriodicTriggerConfiguration	INPUT	STATE
 resources.jobs.*.trigger.periodic.interval	int	INPUT	STATE
@@ -2890,6 +2912,8 @@ resources.pipelines.*.filters.include[*]	string	INPUT	STATE
 resources.pipelines.*.gateway_definition	*pipelines.IngestionGatewayPipelineDefinition	INPUT	STATE
 resources.pipelines.*.gateway_definition.connection_id	string	INPUT	STATE
 resources.pipelines.*.gateway_definition.connection_name	string	INPUT	STATE
+resources.pipelines.*.gateway_definition.connection_parameters	*pipelines.ConnectionParameters	INPUT	STATE
+resources.pipelines.*.gateway_definition.connection_parameters.source_catalog	string	INPUT	STATE
 resources.pipelines.*.gateway_definition.gateway_storage_catalog	string	INPUT	STATE
 resources.pipelines.*.gateway_definition.gateway_storage_name	string	INPUT	STATE
 resources.pipelines.*.gateway_definition.gateway_storage_schema	string	INPUT	STATE
@@ -2897,6 +2921,7 @@ resources.pipelines.*.health	pipelines.GetPipelineResponseHealth	REMOTE
 resources.pipelines.*.id	string	INPUT	STATE
 resources.pipelines.*.ingestion_definition	*pipelines.IngestionPipelineDefinition	INPUT	STATE
 resources.pipelines.*.ingestion_definition.connection_name	string	INPUT	STATE
+resources.pipelines.*.ingestion_definition.ingest_from_uc_foreign_catalog	bool	INPUT	STATE
 resources.pipelines.*.ingestion_definition.ingestion_gateway_id	string	INPUT	STATE
 resources.pipelines.*.ingestion_definition.netsuite_jar_path	string	INPUT	STATE
 resources.pipelines.*.ingestion_definition.objects	[]pipelines.IngestionConfig	INPUT	STATE
@@ -3185,12 +3210,15 @@ resources.pipelines.*.spec.filters.include[*]	string	REMOTE
 resources.pipelines.*.spec.gateway_definition	*pipelines.IngestionGatewayPipelineDefinition	REMOTE
 resources.pipelines.*.spec.gateway_definition.connection_id	string	REMOTE
 resources.pipelines.*.spec.gateway_definition.connection_name	string	REMOTE
+resources.pipelines.*.spec.gateway_definition.connection_parameters	*pipelines.ConnectionParameters	REMOTE
+resources.pipelines.*.spec.gateway_definition.connection_parameters.source_catalog	string	REMOTE
 resources.pipelines.*.spec.gateway_definition.gateway_storage_catalog	string	REMOTE
 resources.pipelines.*.spec.gateway_definition.gateway_storage_name	string	REMOTE
 resources.pipelines.*.spec.gateway_definition.gateway_storage_schema	string	REMOTE
 resources.pipelines.*.spec.id	string	REMOTE
 resources.pipelines.*.spec.ingestion_definition	*pipelines.IngestionPipelineDefinition	REMOTE
 resources.pipelines.*.spec.ingestion_definition.connection_name	string	REMOTE
+resources.pipelines.*.spec.ingestion_definition.ingest_from_uc_foreign_catalog	bool	REMOTE
 resources.pipelines.*.spec.ingestion_definition.ingestion_gateway_id	string	REMOTE
 resources.pipelines.*.spec.ingestion_definition.netsuite_jar_path	string	REMOTE
 resources.pipelines.*.spec.ingestion_definition.objects	[]pipelines.IngestionConfig	REMOTE
@@ -3454,6 +3482,33 @@ resources.schemas.*.grants.grants[*].principal	string	ALL
 resources.schemas.*.grants.grants[*].privileges	[]catalog.Privilege	ALL
 resources.schemas.*.grants.grants[*].privileges[*]	catalog.Privilege	ALL
 resources.schemas.*.grants.securable_type	string	ALL
+resources.secret_scopes.*.backend_azure_keyvault	*workspace.AzureKeyVaultSecretScopeMetadata	STATE
+resources.secret_scopes.*.backend_azure_keyvault.dns_name	string	STATE
+resources.secret_scopes.*.backend_azure_keyvault.resource_id	string	STATE
+resources.secret_scopes.*.backend_type	workspace.ScopeBackendType	INPUT	REMOTE
+resources.secret_scopes.*.id	string	INPUT
+resources.secret_scopes.*.initial_manage_principal	string	STATE
+resources.secret_scopes.*.keyvault_metadata	*workspace.AzureKeyVaultSecretScopeMetadata	INPUT	REMOTE
+resources.secret_scopes.*.keyvault_metadata.dns_name	string	INPUT	REMOTE
+resources.secret_scopes.*.keyvault_metadata.resource_id	string	INPUT	REMOTE
+resources.secret_scopes.*.lifecycle	resources.Lifecycle	INPUT
+resources.secret_scopes.*.lifecycle.prevent_destroy	bool	INPUT
+resources.secret_scopes.*.modified_status	string	INPUT
+resources.secret_scopes.*.name	string	INPUT	REMOTE
+resources.secret_scopes.*.permissions	[]resources.SecretScopePermission	INPUT
+resources.secret_scopes.*.permissions[*]	resources.SecretScopePermission	INPUT
+resources.secret_scopes.*.permissions[*].group_name	string	INPUT
+resources.secret_scopes.*.permissions[*].level	resources.SecretScopePermissionLevel	INPUT
+resources.secret_scopes.*.permissions[*].service_principal_name	string	INPUT
+resources.secret_scopes.*.permissions[*].user_name	string	INPUT
+resources.secret_scopes.*.scope	string	STATE
+resources.secret_scopes.*.scope_backend_type	workspace.ScopeBackendType	STATE
+resources.secret_scopes.*.url	string	INPUT
+resources.secret_scopes.*.permissions.acls	[]workspace.AclItem	ALL
+resources.secret_scopes.*.permissions.acls[*]	workspace.AclItem	ALL
+resources.secret_scopes.*.permissions.acls[*].permission	workspace.AclPermission	ALL
+resources.secret_scopes.*.permissions.acls[*].principal	string	ALL
+resources.secret_scopes.*.permissions.scope_name	string	ALL
 resources.sql_warehouses.*.auto_stop_mins	int	ALL
 resources.sql_warehouses.*.channel	*sql.Channel	ALL
 resources.sql_warehouses.*.channel.dbsql_version	string	ALL
@@ -3565,6 +3620,7 @@ resources.synced_database_tables.*.spec	*database.SyncedTableSpec	ALL
 resources.synced_database_tables.*.spec.create_database_objects_if_missing	bool	ALL
 resources.synced_database_tables.*.spec.existing_pipeline_id	string	ALL
 resources.synced_database_tables.*.spec.new_pipeline_spec	*database.NewPipelineSpec	ALL
+resources.synced_database_tables.*.spec.new_pipeline_spec.budget_policy_id	string	ALL
 resources.synced_database_tables.*.spec.new_pipeline_spec.storage_catalog	string	ALL
 resources.synced_database_tables.*.spec.new_pipeline_spec.storage_schema	string	ALL
 resources.synced_database_tables.*.spec.primary_key_columns	[]string	ALL

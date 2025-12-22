@@ -1,0 +1,37 @@
+{
+  "plan_version": 1,
+  "cli_version": "[DEV_VERSION]",
+  "lineage": "[UUID]",
+  "serial": 2,
+  "plan": {
+    "resources.secret_scopes.my_scope": {
+      "action": "skip",
+      "remote_state": {
+        "backend_type": "DATABRICKS",
+        "name": "test-scope-[UNIQUE_NAME]-2"
+      }
+    },
+    "resources.secret_scopes.my_scope.permissions": {
+      "depends_on": [
+        {
+          "node": "resources.secret_scopes.my_scope",
+          "label": "${resources.secret_scopes.my_scope.name}"
+        }
+      ],
+      "action": "skip",
+      "remote_state": {
+        "scope_name": "test-scope-[UNIQUE_NAME]-2",
+        "acls": [
+          {
+            "permission": "WRITE",
+            "principal": "deco-test-user@databricks.com"
+          },
+          {
+            "permission": "MANAGE",
+            "principal": "[USERNAME]"
+          }
+        ]
+      }
+    }
+  }
+}

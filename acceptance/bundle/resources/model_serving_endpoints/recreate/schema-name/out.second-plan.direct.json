@@ -1,4 +1,8 @@
 {
+  "plan_version": 1,
+  "cli_version": "[DEV_VERSION]",
+  "lineage": "[UUID]",
+  "serial": 1,
   "plan": {
     "resources.model_serving_endpoints.test_endpoint": {
       "action": "recreate",
@@ -30,7 +34,9 @@
       "changes": {
         "local": {
           "config.auto_capture_config.schema_name": {
-            "action": "recreate"
+            "action": "recreate",
+            "old": "default",
+            "new": "other_schema"
           }
         }
       }
