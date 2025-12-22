@@ -25,7 +25,6 @@ type exportDirOptions struct {
 	sourceDir string
 	targetDir string
 	overwrite bool
-	warnings  []string
 }
 
 // isFileSizeError checks if the error is due to file size limits.
@@ -101,7 +100,7 @@ func (opts *exportDirOptions) callback(ctx context.Context, workspaceFiler filer
 
 		// Skip non-exportable objects (e.g., MLFLOW_EXPERIMENT, LIBRARY)
 		if isNonExportable(objectInfo.ObjectType) {
-			opts.warnings = append(opts.warnings, fmt.Sprintf("%s (skipped; cannot export %s)", sourcePath, objectInfo.ObjectType))
+			cmdio.LogString(ctx, fmt.Sprintf("%s (skipped; cannot export %s)", sourcePath, objectInfo.ObjectType))
 			return nil
 		}
 
@@ -120,7 +119,7 @@ func (opts *exportDirOptions) callback(ctx context.Context, workspaceFiler filer
 		if err != nil {
 			// Check if this is a file size limit error
 			if isFileSizeError(err) {
-				opts.warnings = append(opts.warnings, sourcePath+" (skipped; file too large)")
+				cmdio.LogString(ctx, sourcePath+" (skipped; file too large)")
 				return nil
 			}
 			return err
@@ -166,7 +165,6 @@ func newExportDir() *cobra.Command {
 		w := cmdctx.WorkspaceClient(ctx)
 		opts.sourceDir = args[0]
 		opts.targetDir = args[1]
-		opts.warnings = []string{}
 
 		// Initialize a filer and a file system on the source directory
 		workspaceFiler, err := filer.NewWorkspaceFilesClient(w, opts.sourceDir)
@@ -183,16 +181,6 @@ func newExportDir() *cobra.Command {
 		err = fs.WalkDir(workspaceFS, ".", opts.callback(ctx, workspaceFiler))
 		if err != nil {
 			return err
-		}
-
-		// Print all warnings at the end if any were collected
-		if len(opts.warnings) > 0 {
-			cmdio.LogString(ctx, "")
-			cmdio.LogString(ctx, "Warnings:")
-			for _, warning := range opts.warnings {
-				cmdio.LogString(ctx, "  - "+warning)
-			}
-			cmdio.LogString(ctx, "")
 		}
 
 		return cmdio.RenderWithTemplate(ctx, newExportCompletedEvent(opts.targetDir), "", "Export complete\n")

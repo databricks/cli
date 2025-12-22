@@ -1,8 +1,5 @@
 
 >>> [CLI] workspace export-dir /test-dir [TEST_TMP_DIR]/export
 Exporting files from /test-dir
-
-Warnings:
-  - /test-dir/experiment (skipped; cannot export MLFLOW_EXPERIMENT)
-
+/test-dir/experiment (skipped; cannot export MLFLOW_EXPERIMENT)
 Export complete
