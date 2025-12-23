@@ -17,7 +17,7 @@ import (
 	"github.com/manifoldco/promptui"
 )
 
-var ErrNoCompatibleWarehouses = errors.New("no compatible warehouses. You can explicitly set the warehouse ID using the DATABRICKS_WAREHOUSE_ID environment variable")
+var ErrNoCompatibleWarehouses = errors.New("no compatible warehouses")
 
 type warehouseFilter func(sql.EndpointInfo) bool
 

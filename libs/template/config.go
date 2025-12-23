@@ -115,15 +115,14 @@ func (c *config) assignDefaultValues(r *renderer) error {
 			continue
 		}
 
+		// Resolve custom formats (e.g., warehouse_path auto-selects the default warehouse)
 		if property.Format != "" {
 			val, err := c.resolveFormat(property.Format, "")
 			if err != nil {
 				return err
 			}
-			if val != "" {
-				c.values[name] = val
-				continue
-			}
+			c.values[name] = val
+			continue
 		}
 
 		// No default value defined for the property
@@ -200,34 +199,33 @@ func (c *config) skipPrompt(p jsonschema.Property, r *renderer) (bool, error) {
 
 func (c *config) promptOnce(property *jsonschema.Schema, name, defaultVal, description string) error {
 	var userInput string
-	var err error
 
 	if property.Format != "" {
+		var err error
 		userInput, err = c.resolveFormat(property.Format, description)
+		if err != nil {
+			return err
+		}
+	} else if property.Enum != nil {
+		// List options for the user to select from
+		options, err := property.EnumStringSlice()
+		if err != nil {
+			return err
+		}
+		userInput, err = cmdio.AskSelect(c.ctx, description, options)
+		if err != nil {
+			return err
+		}
+	} else {
+		var err error
+		userInput, err = cmdio.Ask(c.ctx, description, defaultVal)
 		if err != nil {
 			return err
 		}
 	}
 
-	if userInput == "" {
-		if property.Enum != nil {
-			options, err := property.EnumStringSlice()
-			if err != nil {
-				return err
-			}
-			userInput, err = cmdio.AskSelect(c.ctx, description, options)
-			if err != nil {
-				return err
-			}
-		} else {
-			userInput, err = cmdio.Ask(c.ctx, description, defaultVal)
-			if err != nil {
-				return err
-			}
-		}
-	}
-
 	// Convert user input string back to a Go value
+	var err error
 	c.values[name], err = property.ParseString(userInput)
 	if err != nil {
 		// Show error and retry if validation fails

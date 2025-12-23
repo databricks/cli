@@ -93,9 +93,6 @@ These profiles define the default warehouse, catalog, schema, and any other
 target-specific settings. Read more about dbt profiles on Databricks at
 https://docs.databricks.com/en/workflows/jobs/how-to/use-dbt-in-workflows.html#advanced-run-dbt-with-a-custom-profile.
 
-To change the warehouse, catalog, or schema used by deployed dbt jobs,
-edit the settings in `dbt_profiles/profiles.yml`.
-
 The target workspaces for staging and prod are defined in `databricks.yml`.
 You can manually deploy based on these configurations (see below).
 Or you can use CI/CD to automate deployment. See

@@ -85,6 +85,7 @@ func getDefaultWarehouse(ctx context.Context) (*sql.EndpointInfo, error) {
 		return nil, fmt.Errorf("get databricks client: %w", err)
 	}
 
+	// first resolve DATABRICKS_WAREHOUSE_ID env variable
 	warehouseID := env.Get(ctx, "DATABRICKS_WAREHOUSE_ID")
 	if warehouseID != "" {
 		warehouse, err := w.Warehouses.Get(ctx, sql.GetWarehouseRequest{
