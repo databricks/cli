@@ -1,0 +1,5 @@
+
+>>> uv run [UV_ARGS] -q [CLI] bundle validate --output json
+{
+  "description": "Validated by user: [USERNAME]"
+}
