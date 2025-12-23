@@ -16,6 +16,8 @@ const metadataFileName = "metadata.json"
 
 type WorkspaceMetadata struct {
 	Port int `json:"port"`
+	// ClusterID is required for Driver Proxy websocket connections (for any compute type, including serverless)
+	ClusterID string `json:"cluster_id,omitempty"`
 }
 
 func getWorkspaceRootDir(ctx context.Context, client *databricks.WorkspaceClient) (string, error) {
@@ -34,49 +36,55 @@ func GetWorkspaceVersionedDir(ctx context.Context, client *databricks.WorkspaceC
 	return filepath.ToSlash(filepath.Join(contentDir, version)), nil
 }
 
-func GetWorkspaceContentDir(ctx context.Context, client *databricks.WorkspaceClient, version, clusterID string) (string, error) {
+// GetWorkspaceContentDir returns the directory for storing session content.
+// sessionID is the unique identifier for the session (cluster ID for dedicated clusters, connection name for serverless).
+func GetWorkspaceContentDir(ctx context.Context, client *databricks.WorkspaceClient, version, sessionID string) (string, error) {
 	contentDir, err := GetWorkspaceVersionedDir(ctx, client, version)
 	if err != nil {
 		return "", fmt.Errorf("failed to get versioned workspace directory: %w", err)
 	}
-	return filepath.ToSlash(filepath.Join(contentDir, clusterID)), nil
+	return filepath.ToSlash(filepath.Join(contentDir, sessionID)), nil
 }
 
-func GetWorkspaceMetadata(ctx context.Context, client *databricks.WorkspaceClient, version, clusterID string) (int, error) {
-	contentDir, err := GetWorkspaceContentDir(ctx, client, version, clusterID)
+// GetWorkspaceMetadata loads session metadata from the workspace.
+// sessionID is the unique identifier for the session (cluster ID for dedicated clusters, connection name for serverless).
+func GetWorkspaceMetadata(ctx context.Context, client *databricks.WorkspaceClient, version, sessionID string) (*WorkspaceMetadata, error) {
+	contentDir, err := GetWorkspaceContentDir(ctx, client, version, sessionID)
 	if err != nil {
-		return 0, fmt.Errorf("failed to get workspace content directory: %w", err)
+		return nil, fmt.Errorf("failed to get workspace content directory: %w", err)
 	}
 
 	metadataPath := filepath.ToSlash(filepath.Join(contentDir, metadataFileName))
 
 	content, err := client.Workspace.Download(ctx, metadataPath)
 	if err != nil {
-		return 0, fmt.Errorf("failed to download metadata file: %w", err)
+		return nil, fmt.Errorf("failed to download metadata file: %w", err)
 	}
 	defer content.Close()
 
 	metadataBytes, err := io.ReadAll(content)
 	if err != nil {
-		return 0, fmt.Errorf("failed to read metadata content: %w", err)
+		return nil, fmt.Errorf("failed to read metadata content: %w", err)
 	}
 
 	var metadata WorkspaceMetadata
 	err = json.Unmarshal(metadataBytes, &metadata)
 	if err != nil {
-		return 0, fmt.Errorf("failed to parse metadata JSON: %w", err)
+		return nil, fmt.Errorf("failed to parse metadata JSON: %w", err)
 	}
 
-	return metadata.Port, nil
+	return &metadata, nil
 }
 
-func SaveWorkspaceMetadata(ctx context.Context, client *databricks.WorkspaceClient, version, clusterID string, port int) error {
-	metadataBytes, err := json.Marshal(WorkspaceMetadata{Port: port})
+// SaveWorkspaceMetadata saves session metadata to the workspace.
+// sessionID is the unique identifier for the session (cluster ID for dedicated clusters, connection name for serverless).
+func SaveWorkspaceMetadata(ctx context.Context, client *databricks.WorkspaceClient, version, sessionID string, metadata *WorkspaceMetadata) error {
+	metadataBytes, err := json.Marshal(metadata)
 	if err != nil {
 		return fmt.Errorf("failed to marshal metadata: %w", err)
 	}
 
-	contentDir, err := GetWorkspaceContentDir(ctx, client, version, clusterID)
+	contentDir, err := GetWorkspaceContentDir(ctx, client, version, sessionID)
 	if err != nil {
 		return fmt.Errorf("failed to get workspace content directory: %w", err)
 	}
