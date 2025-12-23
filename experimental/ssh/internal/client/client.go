@@ -74,6 +74,8 @@ type ClientOptions struct {
 	AdditionalArgs []string
 	// Optional path to the user known hosts file.
 	UserKnownHostsFile string
+	// Liteswap header value for traffic routing (dev/test only).
+	Liteswap string
 }
 
 func (o *ClientOptions) IsServerlessMode() bool {
@@ -107,7 +109,8 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 	}
 
 	// Only check cluster state for dedicated clusters
-	if !opts.IsServerlessMode() {
+	// TODO: we can remove liteswap check when we can start serverless GPU clusters via API.
+	if !opts.IsServerlessMode() && opts.Liteswap == "" {
 		err := checkClusterState(ctx, client, opts.ClusterID, opts.AutoStartCluster)
 		if err != nil {
 			return err
@@ -195,7 +198,7 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 // sessionID is the unique identifier for the session (cluster ID for dedicated clusters, connection name for serverless).
 // For dedicated clusters, clusterID should be the same as sessionID.
 // For serverless, clusterID is read from the workspace metadata.
-func getServerMetadata(ctx context.Context, client *databricks.WorkspaceClient, sessionID, clusterID, version string) (int, string, string, error) {
+func getServerMetadata(ctx context.Context, client *databricks.WorkspaceClient, sessionID, clusterID, version, liteswap string) (int, string, string, error) {
 	wsMetadata, err := sshWorkspace.GetWorkspaceMetadata(ctx, client, version, sessionID)
 	if err != nil {
 		return 0, "", "", errors.Join(errServerMetadata, err)
@@ -221,6 +224,9 @@ func getServerMetadata(ctx context.Context, client *databricks.WorkspaceClient, 
 	req, err := http.NewRequestWithContext(ctx, "GET", metadataURL, nil)
 	if err != nil {
 		return 0, "", "", err
+	}
+	if liteswap != "" {
+		req.Header.Set("x-databricks-traffic-id", "testenv://liteswap/"+liteswap)
 	}
 	if err := client.Config.Authenticate(req); err != nil {
 		return 0, "", "", err
@@ -357,7 +363,7 @@ func spawnSSHClient(ctx context.Context, userName, privateKeyPath string, server
 
 func runSSHProxy(ctx context.Context, client *databricks.WorkspaceClient, serverPort int, clusterID string, opts ClientOptions) error {
 	createConn := func(ctx context.Context, connID string) (*websocket.Conn, error) {
-		return createWebsocketConnection(ctx, client, connID, clusterID, serverPort)
+		return createWebsocketConnection(ctx, client, connID, clusterID, serverPort, opts.Liteswap)
 	}
 	requestHandoverTick := func() <-chan time.Time {
 		return time.After(opts.HandoverTimeout)
@@ -390,7 +396,7 @@ func ensureSSHServerIsRunning(ctx context.Context, client *databricks.WorkspaceC
 	// For dedicated clusters, use clusterID; for serverless, it will be read from metadata
 	clusterID := opts.ClusterID
 
-	serverPort, userName, effectiveClusterID, err := getServerMetadata(ctx, client, sessionID, clusterID, version)
+	serverPort, userName, effectiveClusterID, err := getServerMetadata(ctx, client, sessionID, clusterID, version, opts.Liteswap)
 	if errors.Is(err, errServerMetadata) {
 		cmdio.LogString(ctx, "SSH server is not running, starting it now...")
 
@@ -406,7 +412,7 @@ func ensureSSHServerIsRunning(ctx context.Context, client *databricks.WorkspaceC
 			if ctx.Err() != nil {
 				return "", 0, "", ctx.Err()
 			}
-			serverPort, userName, effectiveClusterID, err = getServerMetadata(ctx, client, sessionID, clusterID, version)
+			serverPort, userName, effectiveClusterID, err = getServerMetadata(ctx, client, sessionID, clusterID, version, opts.Liteswap)
 			if err == nil {
 				cmdio.LogString(ctx, "Health check successful, starting ssh WebSocket connection...")
 				break
