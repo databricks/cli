@@ -1,0 +1,5 @@
+command: ['npm', 'run', 'start']
+{{- if .app_env}}
+env:
+{{.app_env}}
+{{- end}}
