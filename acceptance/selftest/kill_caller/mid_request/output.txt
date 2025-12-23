@@ -1,0 +1,5 @@
+
+>>> errcode [CLI] workspace list /
+[PROCESS_KILLED]
+
+Exit code: [KILLED]

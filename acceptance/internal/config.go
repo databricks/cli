@@ -156,6 +156,10 @@ type ServerStub struct {
 	// Configure as "1ms", "2s", "3m", etc.
 	// See [time.ParseDuration] for details.
 	Delay time.Duration
+
+	// If true, kill the caller process instead of returning a response.
+	// Requires DATABRICKS_CLI_TEST_PID=1 to be set in the test environment.
+	KillCaller bool
 }
 
 // FindConfigs finds all the config relevant for this test,

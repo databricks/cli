@@ -209,6 +209,44 @@ func startLocalServer(t *testing.T,
 				}
 			}
 
+			if stub.KillCaller {
+				pid := testserver.ExtractPidFromHeaders(req.Headers)
+				if pid == 0 {
+					t.Errorf("KillCaller configured but test-pid not found in User-Agent")
+					return testserver.Response{
+						StatusCode: http.StatusBadRequest,
+						Body:       "test-pid not found in User-Agent (set DATABRICKS_CLI_TEST_PID=1)",
+					}
+				}
+
+				t.Logf("KillCaller: killing PID %d (pattern: %s)", pid, stub.Pattern)
+
+				process, err := os.FindProcess(pid)
+				if err != nil {
+					t.Errorf("Failed to find process %d: %s", pid, err)
+					return testserver.Response{
+						StatusCode: http.StatusInternalServerError,
+						Body:       fmt.Sprintf("failed to find process: %s", err),
+					}
+				}
+
+				// Use process.Kill() for cross-platform compatibility.
+				// On Unix, this sends SIGKILL. On Windows, this calls TerminateProcess.
+				if err := process.Kill(); err != nil {
+					t.Errorf("Failed to kill process %d: %s", pid, err)
+					return testserver.Response{
+						StatusCode: http.StatusInternalServerError,
+						Body:       fmt.Sprintf("failed to kill process: %s", err),
+					}
+				}
+
+				// Return a response (the CLI will likely be killed before it receives this)
+				return testserver.Response{
+					StatusCode: http.StatusOK,
+					Body:       fmt.Sprintf("killed PID %d", pid),
+				}
+			}
+
 			return stub.Response
 		})
 	}
