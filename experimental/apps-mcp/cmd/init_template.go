@@ -151,25 +151,32 @@ func generateFileTree(outputDir string) (string, error) {
 	return output.String(), nil
 }
 
-const (
-	defaultTemplateRepo = "https://github.com/databricks/cli"
-	defaultTemplateDir  = "experimental/apps-mcp/templates/appkit"
-	defaultBranch       = "main"
-	templatePathEnvVar  = "DATABRICKS_APPKIT_TEMPLATE_PATH"
-)
+const templatePathEnvVar = "DATABRICKS_APPKIT_TEMPLATE_PATH"
 
+// newInitTemplateCmd creates a command group for initializing project templates.
+// Currently only the "app" subcommand exists, but this structure allows adding
+// more template types in the future (e.g., job, pipeline).
 func newInitTemplateCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "init-template",
-		Short: "Initialize a Databricks App using the appkit template",
+		Short: "Initialize project templates",
+	}
+	cmd.AddCommand(newInitTemplateAppCmd())
+	return cmd
+}
+
+func newInitTemplateAppCmd() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "app",
+		Short: "Initialize a Databricks App using the default-app template",
 		Args:  cobra.NoArgs,
-		Long: `Initialize a Databricks App using the appkit template.
+		Long: `Initialize a Databricks App using the default-app template.
 
 Examples:
-  experimental apps-mcp tools init-template --name my-app
-  experimental apps-mcp tools init-template --name my-app --warehouse abc123
-  experimental apps-mcp tools init-template --name my-app --description "My cool app"
-  experimental apps-mcp tools init-template --name my-app --output-dir ./projects
+  experimental apps-mcp tools init-template app --name my-app
+  experimental apps-mcp tools init-template app --name my-app --warehouse abc123
+  experimental apps-mcp tools init-template app --name my-app --description "My cool app"
+  experimental apps-mcp tools init-template app --name my-app --output-dir ./projects
 
 Environment variables:
   DATABRICKS_APPKIT_TEMPLATE_PATH  Override template source with local path (for development)
@@ -203,15 +210,10 @@ After initialization:
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
 
-		// Resolve template source: env var override or default remote
+		// Use the built-in default-app template, or override via env var for development
 		templatePathOrUrl := os.Getenv(templatePathEnvVar)
-		templateDir := ""
-		branch := ""
-
 		if templatePathOrUrl == "" {
-			templatePathOrUrl = defaultTemplateRepo
-			templateDir = defaultTemplateDir
-			branch = defaultBranch
+			templatePathOrUrl = string(template.DefaultApp)
 		}
 
 		// Describe mode - show schema only
@@ -220,8 +222,6 @@ After initialization:
 				TemplatePathOrUrl: templatePathOrUrl,
 				ConfigFile:        "",
 				OutputDir:         outputDir,
-				TemplateDir:       templateDir,
-				Branch:            branch,
 			}
 
 			tmpl, err := r.Resolve(ctx)
@@ -243,7 +243,7 @@ After initialization:
 			return nil
 		}
 
-		// Validate required flag
+		// Validate required flags
 		if name == "" {
 			return errors.New("--name is required")
 		}
@@ -257,7 +257,7 @@ After initialization:
 			"project_name": name,
 		}
 		if warehouse != "" {
-			configMap["sql_warehouse_id"] = warehouse
+			configMap["http_path"] = "/sql/1.0/warehouses/" + warehouse
 		}
 		if description != "" {
 			configMap["app_description"] = description
@@ -294,8 +294,6 @@ After initialization:
 			TemplatePathOrUrl: templatePathOrUrl,
 			ConfigFile:        configFile,
 			OutputDir:         outputDir,
-			TemplateDir:       templateDir,
-			Branch:            branch,
 		}
 
 		tmpl, err := r.Resolve(ctx)
@@ -328,7 +326,7 @@ After initialization:
 			}
 			return nil
 		})
-		cmdio.LogString(ctx, common.FormatScaffoldSuccess("appkit", absOutputDir, fileCount))
+		cmdio.LogString(ctx, common.FormatScaffoldSuccess("default-app", absOutputDir, fileCount))
 
 		// Generate and print file tree structure
 		fileTree, err := generateFileTree(absOutputDir)

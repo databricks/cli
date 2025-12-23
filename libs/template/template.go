@@ -29,6 +29,7 @@ const (
 	DefaultScala              TemplateName = "default-scala"
 	ExperimentalDefaultPython TemplateName = "experimental-default-python-vnext"
 	DefaultSql                TemplateName = "default-sql"
+	DefaultApp                TemplateName = "default-app"
 	LakeflowPipelines         TemplateName = "lakeflow-pipelines"
 	CLIPipelines              TemplateName = "cli-pipelines"
 	DbtSql                    TemplateName = "dbt-sql"
@@ -63,6 +64,13 @@ var databricksTemplates = []Template{
 		description: "The default Scala template for JAR jobs",
 		Reader:      &builtinReader{name: string(DefaultScala)},
 		Writer:      &writerWithFullTelemetry{defaultWriter: defaultWriter{name: DefaultScala}},
+	},
+	{
+		name:        DefaultApp,
+		hidden:      true,
+		description: "The default template for Databricks Apps (NodeJS)",
+		Reader:      &builtinReader{name: string(DefaultApp)},
+		Writer:      &writerWithFullTelemetry{defaultWriter: defaultWriter{name: DefaultApp}},
 	},
 	{
 		name:        LakeflowPipelines,

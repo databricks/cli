@@ -1,29 +1,44 @@
 {
+    "welcome_message": "\nWelcome to the default-app template for Databricks Asset Bundles!\n\n⚠️  EXPERIMENTAL: This template is under active development and may change.\n\nThis template creates a full-stack TypeScript application powered by Databricks AppKit,\nwith a React frontend and Node.js backend.\n\nNote that {{workspace_host}} is used for initialization.\n(For information on how to change your profile, see https://docs.databricks.com/dev-tools/cli/profiles.html.)",
     "properties": {
       "project_name": {
         "type": "string",
-        "description": "Project Name",
+        "default": "my_app",
+        "description": "\nUnique name for this project.\nproject_name",
         "order": 1,
         "pattern": "^[A-Za-z0-9_-]+$",
         "pattern_match_failure_message": "Name must consist of letters, numbers, underscores, or hyphens."
       },
-      "sql_warehouse_id": {
+      "http_path": {
         "type": "string",
-        "description": "SQL Warehouse ID",
+        "format": "warehouse_path",
+        "pattern": "^/sql/.\\../warehouses/[a-z0-9]+$",
+        "pattern_match_failure_message": "Path must be of the form /sql/1.0/warehouses/<warehouse id>",
+        "description": "\nPlease provide the HTTP Path of the SQL warehouse you would like to use during development.\nYou can find this path by clicking on \"Connection details\" for your SQL warehouse.\nhttp_path [example: /sql/1.0/warehouses/abcdef1234567890]",
         "order": 2
       },
-      "profile": {
+      "sql_warehouse_id": {
+        "//": "Hidden property derived from http_path; extracts the warehouse ID",
         "type": "string",
-        "description": "Profile Name",
-        "default": "",
-        "order": 3
+        "description": "SQL warehouse ID (derived from http_path)",
+        "skip_prompt_if": {},
+        "default": "{{index ((regexp \"/warehouses/([a-z0-9]+)$\").FindStringSubmatch .http_path) 1}}",
+        "order": 99
       },
       "app_description": {
         "type": "string",
-        "description": "App Description (Optional)",
+        "description": "\nDescription for your app.\napp_description",
         "default": "A Databricks App powered by Databricks AppKit",
+        "order": 3
+      },
+      "profile": {
+        "//": "Hidden property for advanced use; allows overriding auth via CLI profile instead of workspace host",
+        "type": "string",
+        "description": "Databricks CLI profile",
+        "default": "",
+        "skip_prompt_if": {},
         "order": 4
       }
     },
-    "success_message": "\nYour new project has been created in the '{{.project_name}}' directory!"
+    "success_message": "\n✨ Your new project has been created in the '{{.project_name}}' directory!\n\nNext steps:\n  cd {{.project_name}}\n  npm install\n  npm run dev\n\nTo deploy:\n  databricks bundle deploy --target dev"
   }
