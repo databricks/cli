@@ -60,7 +60,7 @@ func resolveConfigPath(configPath string) (string, error) {
 // sessionID is the unique identifier (cluster ID for dedicated clusters, connection name for serverless).
 // clusterID is the actual cluster ID for Driver Proxy connections (same as sessionID for dedicated clusters,
 // but obtained from job metadata for serverless).
-func GenerateProxyCommand(sessionID, clusterID string, serverlessMode, autoStartCluster bool, shutdownDelay time.Duration, profile, userName string, serverPort int, handoverTimeout time.Duration) (string, error) {
+func GenerateProxyCommand(sessionID, clusterID string, serverlessMode, autoStartCluster bool, shutdownDelay time.Duration, profile, userName string, serverPort int, handoverTimeout time.Duration, liteswap string) (string, error) {
 	executablePath, err := os.Executable()
 	if err != nil {
 		return "", fmt.Errorf("failed to get current executable path: %w", err)
@@ -91,6 +91,10 @@ func GenerateProxyCommand(sessionID, clusterID string, serverlessMode, autoStart
 		proxyCommand += " --profile=" + profile
 	}
 
+	if liteswap != "" {
+		proxyCommand += " --liteswap=" + liteswap
+	}
+
 	return proxyCommand, nil
 }
 
@@ -100,7 +104,7 @@ func generateHostConfig(opts SetupOptions) (string, error) {
 		return "", fmt.Errorf("failed to get local keys folder: %w", err)
 	}
 
-	proxyCommand, err := GenerateProxyCommand(opts.ClusterID, opts.ClusterID, false, opts.AutoStartCluster, opts.ShutdownDelay, opts.Profile, "", 0, 0)
+	proxyCommand, err := GenerateProxyCommand(opts.ClusterID, opts.ClusterID, false, opts.AutoStartCluster, opts.ShutdownDelay, opts.Profile, "", 0, 0, "")
 	if err != nil {
 		return "", fmt.Errorf("failed to generate ProxyCommand: %w", err)
 	}
