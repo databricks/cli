@@ -220,6 +220,8 @@
     "overwrite": "true"
   },
   "body": {
+    "state_version": 1,
+    "cli_version": "[DEV_VERSION]",
     "lineage": "[UUID]",
     "serial": 1,
     "state": {

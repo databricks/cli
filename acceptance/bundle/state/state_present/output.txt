@@ -5,7 +5,7 @@
 Error: Required engine "direct" does not match present state files. Clear "DATABRICKS_BUNDLE_ENGINE" env var to use engine appropriate for the state.
 
 Available state files:
-- [TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfstate: local terraform state serial=1 lineage=""
+- [TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfstate: local terraform state serial=1 lineage="test-lineage"
 
 
 >>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
@@ -15,7 +15,7 @@ Updating deployment state...
 Deployment complete!
 
 >>> print_requests.py //api/2.1/unity-catalog/schemas
-"databricks-tf-provider/1.98.0 databricks-sdk-go/[SDK_VERSION] go/1.24.0 os/[OS] cli/[DEV_VERSION] terraform/1.5.5 sdk/sdkv2 resource/schema auth/pat"
+"databricks-tf-provider/1.100.0 databricks-sdk-go/[SDK_VERSION] go/1.24.0 os/[OS] cli/[DEV_VERSION] terraform/1.5.5 sdk/sdkv2 resource/schema auth/pat"
 
 >>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
@@ -24,15 +24,15 @@ Updating deployment state...
 Deployment complete!
 
 >>> print_requests.py --get //api/2.1/unity-catalog/schemas
-"databricks-tf-provider/1.98.0 databricks-sdk-go/[SDK_VERSION] go/1.24.0 os/[OS] cli/[DEV_VERSION] terraform/1.5.5 sdk/sdkv2 resource/schema auth/pat"
+"databricks-tf-provider/1.100.0 databricks-sdk-go/[SDK_VERSION] go/1.24.0 os/[OS] cli/[DEV_VERSION] terraform/1.5.5 sdk/sdkv2 resource/schema auth/pat"
 
 === Adding resources.json with lower serial does not change anything
 >>> DATABRICKS_BUNDLE_ENGINE=direct musterr [CLI] bundle plan
 Error: Required engine "direct" does not match present state files. Clear "DATABRICKS_BUNDLE_ENGINE" env var to use engine appropriate for the state.
 
 Available state files:
-- [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=0 lineage=""
-- terraform.tfstate: remote terraform state serial=3 lineage=""
+- [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=0 lineage="test-lineage"
+- terraform.tfstate: remote terraform state serial=3 lineage="test-lineage"
 
 
 >>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle plan
@@ -52,27 +52,27 @@ Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
 Error: Required engine "terraform" does not match present state files. Clear "DATABRICKS_BUNDLE_ENGINE" env var to use engine appropriate for the state.
 
 Available state files:
-- terraform.tfstate: remote terraform state serial=3 lineage=""
-- [TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfstate: local terraform state serial=3 lineage=""
-- [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=10 lineage=""
+- terraform.tfstate: remote terraform state serial=3 lineage="test-lineage"
+- [TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfstate: local terraform state serial=3 lineage="test-lineage"
+- [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=10 lineage="test-lineage"
 
 
 >>> DATABRICKS_BUNDLE_ENGINE=terraform musterr [CLI] bundle deploy
 Error: Required engine "terraform" does not match present state files. Clear "DATABRICKS_BUNDLE_ENGINE" env var to use engine appropriate for the state.
 
 Available state files:
-- terraform.tfstate: remote terraform state serial=3 lineage=""
-- [TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfstate: local terraform state serial=3 lineage=""
-- [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=10 lineage=""
+- terraform.tfstate: remote terraform state serial=3 lineage="test-lineage"
+- [TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfstate: local terraform state serial=3 lineage="test-lineage"
+- [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=10 lineage="test-lineage"
 
 
 >>> DATABRICKS_BUNDLE_ENGINE=terraform musterr [CLI] bundle destroy --auto-approve
 Error: Required engine "terraform" does not match present state files. Clear "DATABRICKS_BUNDLE_ENGINE" env var to use engine appropriate for the state.
 
 Available state files:
-- terraform.tfstate: remote terraform state serial=3 lineage=""
-- [TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfstate: local terraform state serial=3 lineage=""
-- [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=10 lineage=""
+- terraform.tfstate: remote terraform state serial=3 lineage="test-lineage"
+- [TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfstate: local terraform state serial=3 lineage="test-lineage"
+- [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=10 lineage="test-lineage"
 
 
 >>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle deploy
@@ -84,13 +84,17 @@ Deployment complete!
 >>> print_requests.py //api/2.1/unity-catalog/schemas
 "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] engine/direct auth/pat"
 
+>>> print_state.py
+3
+11
+
 >>> DATABRICKS_BUNDLE_ENGINE=terraform musterr [CLI] bundle deploy
 Error: Required engine "terraform" does not match present state files. Clear "DATABRICKS_BUNDLE_ENGINE" env var to use engine appropriate for the state.
 
 Available state files:
-- [TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfstate: local terraform state serial=3 lineage=""
-- resources.json: remote direct state serial=10 lineage=""
-- [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=10 lineage=""
+- [TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfstate: local terraform state serial=3 lineage="test-lineage"
+- resources.json: remote direct state serial=11 lineage="test-lineage"
+- [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=11 lineage="test-lineage"
 
 
 >>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle deploy
@@ -102,11 +106,15 @@ Deployment complete!
 >>> print_requests.py --get //api/2.1/unity-catalog/schemas
 "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] engine/direct auth/pat"
 
+>>> print_state.py
+3
+12
+
 >>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle debug states
-[TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfstate: local terraform state serial=3 lineage=""
-[TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=10 lineage=""
+[TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfstate: local terraform state serial=3 lineage="test-lineage"
+[TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=12 lineage="test-lineage"
 
 >>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle debug states --force-pull
-[TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfstate: local terraform state serial=3 lineage=""
-resources.json: remote direct state serial=10 lineage=""
-[TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=10 lineage=""
+[TEST_TMP_DIR]/.databricks/bundle/default/terraform/terraform.tfstate: local terraform state serial=3 lineage="test-lineage"
+resources.json: remote direct state serial=12 lineage="test-lineage"
+[TEST_TMP_DIR]/.databricks/bundle/default/resources.json: local direct state serial=12 lineage="test-lineage"

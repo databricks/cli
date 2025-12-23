@@ -33,6 +33,12 @@ func (v *ValidationNodeJs) Validate(ctx context.Context, workDir string) (*Valid
 			displayName: "Install",
 		},
 		{
+			name:        "generate",
+			command:     "npm run typegen --if-present",
+			errorPrefix: "Failed to run npm typegen",
+			displayName: "Type generation",
+		},
+		{
 			name:        "build",
 			command:     "npm run build --if-present",
 			errorPrefix: "Failed to run npm build",
@@ -43,6 +49,12 @@ func (v *ValidationNodeJs) Validate(ctx context.Context, workDir string) (*Valid
 			command:     "npm run typecheck --if-present",
 			errorPrefix: "Failed to run client typecheck",
 			displayName: "Type check",
+		},
+		{
+			name:        "ast-grep-lint",
+			command:     "npm run lint:ast-grep --if-present",
+			errorPrefix: "AST-grep lint found violations",
+			displayName: "AST-grep lint",
 		},
 		{
 			name:        "tests",

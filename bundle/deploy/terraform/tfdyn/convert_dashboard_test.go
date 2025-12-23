@@ -109,3 +109,34 @@ func TestConvertDashboardSerializedDashboardAny(t *testing.T) {
 	// Assert that the "file_path" is dropped.
 	assert.NotContains(t, out.Dashboard["my_dashboard"], "file_path")
 }
+
+func TestConvertDashboardDatasetCatalogSchema(t *testing.T) {
+	src := resources.Dashboard{
+		DashboardConfig: resources.DashboardConfig{
+			DisplayName:      "my dashboard",
+			WarehouseId:      "f00dcafe",
+			ParentPath:       "/some/path",
+			DatasetCatalog:   "main",
+			DatasetSchema:    "default",
+			EmbedCredentials: true,
+		},
+	}
+
+	vin, err := convert.FromTyped(src, dyn.NilValue)
+	require.NoError(t, err)
+
+	ctx := context.Background()
+	out := schema.NewResources()
+	err = dashboardConverter{}.Convert(ctx, "my_dashboard", vin, out)
+	require.NoError(t, err)
+
+	// Assert that dataset_catalog and dataset_schema are included.
+	assert.Subset(t, out.Dashboard["my_dashboard"], map[string]any{
+		"display_name":      "my dashboard",
+		"warehouse_id":      "f00dcafe",
+		"parent_path":       "/some/path",
+		"dataset_catalog":   "main",
+		"dataset_schema":    "default",
+		"embed_credentials": true,
+	})
+}

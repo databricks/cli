@@ -11,31 +11,43 @@ type targetMapping struct {
 	target   string
 }
 
+// goTriggerPatterns lists patterns that trigger all Go-dependent targets.
+var goTriggerPatterns = []string{
+	"go.mod",
+	"go.sum",
+}
+
 var fileTargetMappings = []targetMapping{
 	{
-		prefixes: []string{
+		prefixes: slices.Concat(goTriggerPatterns, []string{
+			// Specify files that match targets below and should still trigger the "test" target.
+		}),
+		target: "test",
+	},
+	{
+		prefixes: slices.Concat(goTriggerPatterns, []string{
 			"experimental/aitools/",
-		},
+		}),
 		target: "test-exp-aitools",
 	},
 	{
-		prefixes: []string{
+		prefixes: slices.Concat(goTriggerPatterns, []string{
 			"experimental/apps-mcp/",
-		},
+		}),
 		target: "test-exp-apps-mcp",
 	},
 	{
-		prefixes: []string{
+		prefixes: slices.Concat(goTriggerPatterns, []string{
 			"experimental/ssh/",
 			"acceptance/ssh/",
-		},
+		}),
 		target: "test-exp-ssh",
 	},
 	{
-		prefixes: []string{
+		prefixes: slices.Concat(goTriggerPatterns, []string{
 			"cmd/pipelines/",
 			"acceptance/pipelines/",
-		},
+		}),
 		target: "test-pipelines",
 	},
 }
@@ -46,6 +58,7 @@ func GetTargets(files []string) []string {
 	unmatchedFiles := []string{}
 
 	for _, file := range files {
+		// Check all mappings for this file (a file can match multiple targets).
 		matched := false
 		for _, mapping := range fileTargetMappings {
 			for _, prefix := range mapping.prefixes {
@@ -54,9 +67,6 @@ func GetTargets(files []string) []string {
 					matched = true
 					break
 				}
-			}
-			if matched {
-				break
 			}
 		}
 		if !matched {

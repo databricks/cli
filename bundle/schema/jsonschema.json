@@ -310,7 +310,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "enable_elastic_disk": {
-                        "description": "Autoscaling Local Storage: when enabled, this cluster will dynamically acquire additional disk\nspace when its Spark workers are running low on disk space. This feature requires specific AWS\npermissions to function correctly - refer to the User Guide for more details.",
+                        "description": "Autoscaling Local Storage: when enabled, this cluster will dynamically acquire additional disk\nspace when its Spark workers are running low on disk space.",
                         "$ref": "#/$defs/bool"
                       },
                       "enable_local_disk_encryption": {
@@ -459,6 +459,14 @@
                       },
                       "dashboard_id": {
                         "description": "UUID identifying the dashboard.",
+                        "$ref": "#/$defs/string"
+                      },
+                      "dataset_catalog": {
+                        "description": "Sets the default catalog for all datasets in this dashboard. When set, this overrides the catalog specified in individual dataset definitions.",
+                        "$ref": "#/$defs/string"
+                      },
+                      "dataset_schema": {
+                        "description": "Sets the default schema for all datasets in this dashboard. When set, this overrides the schema specified in individual dataset definitions.",
                         "$ref": "#/$defs/string"
                       },
                       "display_name": {
@@ -793,7 +801,7 @@
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/jobs.JobParameterDefinition"
                       },
                       "performance_target": {
-                        "description": "The performance mode on a serverless job. This field determines the level of compute performance or cost-efficiency for the run.\n\n* `STANDARD`: Enables cost-efficient execution of serverless workloads.\n* `PERFORMANCE_OPTIMIZED`: Prioritizes fast startup and execution times through rapid scaling and optimized cluster performance.",
+                        "description": "The performance mode on a serverless job. This field determines the level of compute performance or cost-efficiency for the run.\nThe performance target does not apply to tasks that run on Serverless GPU compute.\n\n* `STANDARD`: Enables cost-efficient execution of serverless workloads.\n* `PERFORMANCE_OPTIMIZED`: Prioritizes fast startup and execution times through rapid scaling and optimized cluster performance.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.PerformanceTarget"
                       },
                       "permissions": {
@@ -3201,8 +3209,7 @@
                   "type": "string",
                   "enum": [
                     "MEDIUM",
-                    "LARGE",
-                    "LIQUID"
+                    "LARGE"
                   ]
                 },
                 {
@@ -3826,7 +3833,7 @@
                       "$ref": "#/$defs/string"
                     },
                     "enable_elastic_disk": {
-                      "description": "Autoscaling Local Storage: when enabled, this cluster will dynamically acquire additional disk\nspace when its Spark workers are running low on disk space. This feature requires specific AWS\npermissions to function correctly - refer to the User Guide for more details.",
+                      "description": "Autoscaling Local Storage: when enabled, this cluster will dynamically acquire additional disk\nspace when its Spark workers are running low on disk space.",
                       "$ref": "#/$defs/bool"
                     },
                     "enable_local_disk_encryption": {
@@ -7276,8 +7283,6 @@
                   "enum": [
                     "MYSQL",
                     "POSTGRESQL",
-                    "REDSHIFT",
-                    "SQLDW",
                     "SQLSERVER",
                     "SALESFORCE",
                     "BIGQUERY",
@@ -7290,15 +7295,6 @@
                     "TERADATA",
                     "SHAREPOINT",
                     "DYNAMICS365",
-                    "CONFLUENCE",
-                    "META_MARKETING",
-                    "GOOGLE_ADS",
-                    "TIKTOK_ADS",
-                    "SALESFORCE_MARKETING_CLOUD",
-                    "HUBSPOT",
-                    "WORKDAY_HCM",
-                    "GUIDEWIRE",
-                    "ZENDESK",
                     "FOREIGN_CATALOG"
                   ]
                 },
@@ -9150,7 +9146,7 @@
                       "$ref": "#/$defs/bool"
                     },
                     "retrigger_seconds": {
-                      "description": "Number of seconds an alert must wait after being triggered to rearm itself. After rearming, it can be triggered again. If 0 or not specified, the alert will not be triggered again.",
+                      "description": "Number of seconds an alert waits after being triggered before it is allowed to send another notification.\nIf set to 0 or omitted, the alert will not send any further notifications after the first trigger\nSetting this value to 1 allows the alert to send a notification on every evaluation where the condition is met, effectively making it always retrigger for notification purposes.",
                       "$ref": "#/$defs/int"
                     },
                     "subscriptions": {

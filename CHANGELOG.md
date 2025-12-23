@@ -1,5 +1,35 @@
 # Version changelog
 
+## Release v0.281.0 (2025-12-18)
+
+### CLI
+* Fix lakeview publish to default `embed_credentials` to false ([#4066](https://github.com/databricks/cli/pull/4066))
+
+### Bundles
+* Add support for configurable catalog/schema for dashboards ([#4130](https://github.com/databricks/cli/pull/4130))
+* Pass SYSTEM\_ACCESSTOKEN from env to the Terraform provider ([#4135](https://github.com/databricks/cli/pull/4135))
+* `bundle deployment migrate`: when running `bundle plan` propagate `-var` arguments.
+* engine/direct: New option --plan to `bundle deploy` to deploy previously saved plan (saved plan with `bundle plan -o json`) ([#4134](https://github.com/databricks/cli/pull/4134))
+* engine/direct: Fix dependency-ordered deletion by persisting depends\_on in state ([#4105](https://github.com/databricks/cli/pull/4105))
+
+### Dependency updates
+* Upgrade Go SDK to 0.94.0 ([#4148](https://github.com/databricks/cli/pull/4148))
+* Upgrade Terraform provider to 1.100.0 ([#4150](https://github.com/databricks/cli/pull/4150))
+
+
+## Release v0.280.0 (2025-12-10)
+
+### Bundles
+* Fixed changing the source for the SQL task from GIT to WORKSPACE ([#4114](https://github.com/databricks/cli/pull/4114))
+* `bundle deployment migrate` will now run a plan before migration to check if deployment was done ([#4088](https://github.com/databricks/cli/pull/4088))
+* engine/direct: Increase "serial" in state file after every deployment ([#4115](https://github.com/databricks/cli/pull/4115))
+
+### Dependency updates
+
+* Upgrade Go SDK to 0.93.0 ([#4112](https://github.com/databricks/cli/pull/4112))
+* Bump Go toolchain to 1.25.5.
+
+
 ## Release v0.279.0 (2025-12-04)
 
 ### Notable Changes

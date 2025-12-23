@@ -1,0 +1,4 @@
+Error: reading plan file: open nonexistent.json: no such file or directory
+
+
+Exit code: 1

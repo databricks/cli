@@ -22,9 +22,11 @@ The new engine implements resources CRUD directly on top of SDK Go and provides 
 
 * Self-contained binary that does not require downloading Terraform and terraform-provider-databricks before deployment.
   * Avoid issues with firewalls/proxies/custom provider registries.
-* Explanation why a given action is planned and detailed diff of changes available in `databricks bundle plan -o json`.
 * Faster deployment.
 * Simplified development of new resources, implement CRUD directly in CLI repo, no need to coordinate with terraform provider release.
+* New features:
+  - Detailed plan with explanation why a given action is taken in `databricks bundle plan -o json > plan.json`.
+  - Ability to deploy previously generated plan with `databricks bundle deploy --plan plan.json`.
 
 ## Disadvantages
 
@@ -34,7 +36,8 @@ There are known issues, see https://github.com/databricks/cli/issues?q=state%3Ao
 
 ### Migrating the existing deployment
 
-The direct engine uses its own state file, also JSON, but with a different schema from terraform state file. In order to migrate an existing Terraform-based deployment, use the "bundle deployment migrate" command. The command reads IDs from the existing deployment.
+The direct engine uses its own state file, also JSON, but with a different schema from terraform state file.
+In order to migrate an existing Terraform-based deployment, use the `databricks bundle deployment migrate` command. The command reads IDs from the existing deployment.
 
 The full sequence of operations:
 
