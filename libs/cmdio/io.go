@@ -114,7 +114,7 @@ func (c *cmdIO) Select(items []Tuple, label string) (id string, err error) {
 		StartInSearchMode: true,
 		Searcher: func(input string, idx int) bool {
 			lower := strings.ToLower(items[idx].Name)
-			return strings.Contains(lower, input)
+			return strings.Contains(lower, strings.ToLower(input))
 		},
 		Templates: &promptui.SelectTemplates{
 			Active:   `{{.Name | bold}} ({{.Id|faint}})`,
