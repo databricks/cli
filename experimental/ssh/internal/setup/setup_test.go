@@ -56,7 +56,7 @@ func TestValidateClusterAccess_ClusterNotFound(t *testing.T) {
 }
 
 func TestGenerateProxyCommand(t *testing.T) {
-	cmd, err := GenerateProxyCommand("cluster-123", "cluster-123", false, true, 45*time.Second, "", "", 0, 0)
+	cmd, err := GenerateProxyCommand("cluster-123", "cluster-123", false, true, 45*time.Second, "", "", 0, 0, "")
 	assert.NoError(t, err)
 	assert.Contains(t, cmd, "ssh connect --proxy --cluster=cluster-123 --auto-start-cluster=true --shutdown-delay=45s")
 	assert.NotContains(t, cmd, "--metadata")
@@ -65,7 +65,7 @@ func TestGenerateProxyCommand(t *testing.T) {
 }
 
 func TestGenerateProxyCommand_WithExtraArgs(t *testing.T) {
-	cmd, err := GenerateProxyCommand("cluster-123", "cluster-123", false, true, 45*time.Second, "test-profile", "user", 2222, 2*time.Minute)
+	cmd, err := GenerateProxyCommand("cluster-123", "cluster-123", false, true, 45*time.Second, "test-profile", "user", 2222, 2*time.Minute, "")
 	assert.NoError(t, err)
 	assert.Contains(t, cmd, "ssh connect --proxy --cluster=cluster-123 --auto-start-cluster=true --shutdown-delay=45s")
 	assert.Contains(t, cmd, " --metadata=user,2222")
@@ -74,7 +74,7 @@ func TestGenerateProxyCommand_WithExtraArgs(t *testing.T) {
 }
 
 func TestGenerateProxyCommand_ServerlessMode(t *testing.T) {
-	cmd, err := GenerateProxyCommand("my-connection", "serverless-cluster-id", true, false, 45*time.Second, "", "user", 2222, 0)
+	cmd, err := GenerateProxyCommand("my-connection", "serverless-cluster-id", true, false, 45*time.Second, "", "user", 2222, 0, "")
 	assert.NoError(t, err)
 	assert.Contains(t, cmd, "ssh connect --proxy --name=my-connection --shutdown-delay=45s")
 	assert.Contains(t, cmd, " --metadata=user,2222,serverless-cluster-id")
