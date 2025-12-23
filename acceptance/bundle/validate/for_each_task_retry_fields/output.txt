@@ -1,0 +1,30 @@
+Error: Invalid max_retries configuration for for_each_task
+  at resources.jobs.test_job.tasks[0]
+  in databricks.yml:9:11
+
+Task "parent_task" has max_retries defined at the parent level, but it uses for_each_task.
+When using for_each_task, max_retries must be defined on the nested task (for_each_task.task.max_retries), not on the parent task.
+
+Warning: Invalid min_retry_interval_millis configuration for for_each_task
+  at resources.jobs.test_job.tasks[0]
+  in databricks.yml:9:11
+
+Task "parent_task" has min_retry_interval_millis defined at the parent level, but it uses for_each_task.
+When using for_each_task, min_retry_interval_millis must be defined on the nested task (for_each_task.task.min_retry_interval_millis), not on the parent task.
+
+Warning: Invalid retry_on_timeout configuration for for_each_task
+  at resources.jobs.test_job.tasks[0]
+  in databricks.yml:9:11
+
+Task "parent_task" has retry_on_timeout defined at the parent level, but it uses for_each_task.
+When using for_each_task, retry_on_timeout must be defined on the nested task (for_each_task.task.retry_on_timeout), not on the parent task.
+
+Name: for_each_task_validation
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/for_each_task_validation/default
+
+Found 1 error and 2 warnings
+
+Exit code: 1
