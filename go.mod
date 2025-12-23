@@ -41,7 +41,7 @@ require (
 )
 
 // Dependencies for experimental MCP commands
-require github.com/google/jsonschema-go v0.3.0 // MIT
+require github.com/google/jsonschema-go v0.4.2 // MIT
 
 require (
 	cloud.google.com/go/auth v0.16.5 // indirect
