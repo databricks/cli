@@ -2,16 +2,15 @@
 
 ## Visualization Components
 
-Components from `@databricks/app-kit-ui/react` handle data fetching, loading states, and error handling internally.
+Components from `@databricks/appkit-ui/react` handle data fetching, loading states, and error handling internally.
 
 Available: `AreaChart`, `BarChart`, `LineChart`, `PieChart`, `RadarChart`, `DataTable`
 
 **Basic Usage:**
 
 ```typescript
-import { BarChart, LineChart, DataTable } from '@databricks/app-kit-ui/react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { sql } from "@databricks/app-kit-ui/js";
+import { BarChart, LineChart, DataTable, Card, CardContent, CardHeader, CardTitle } from '@databricks/appkit-ui/react';
+import { sql } from "@databricks/appkit-ui/js";
 
 function MyDashboard() {
   return (
@@ -39,7 +38,7 @@ Components automatically fetch data, show loading states, display errors, and re
 **Custom Visualization (Recharts):**
 
 ```typescript
-import { BarChart } from '@databricks/app-kit-ui/react';
+import { BarChart } from '@databricks/appkit-ui/react';
 import { Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 
 <BarChart queryKey="sales_by_region" parameters={{}}>
@@ -78,7 +77,7 @@ return <BarChart queryKey="sales_data" parameters={{}} />;
 
 ## Component Organization
 
-- Shared UI components: `client/src/components/ui/`
+- Shared UI components: `@databricks/appkit-ui/react`
 - Feature components: `client/src/components/FeatureName.tsx`
 - Split components when logic exceeds ~100 lines or component is reused
 
@@ -100,7 +99,7 @@ import 'leaflet/dist/leaflet.css';
 
 ## Best Practices
 
-- Use shadcn/radix components (Button, Input, Card, etc.) for consistent UI
+- Use shadcn/radix components (Button, Input, Card, etc.) for consistent UI, import them from `@databricks/appkit-ui/react`.
 - **Use skeleton loaders**: Always use `<Skeleton>` components instead of plain "Loading..." text
 - Define result types in `shared/types.ts` for reuse between frontend and backend
 - Handle nullable fields: `value={field || ''}` for inputs

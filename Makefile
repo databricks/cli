@@ -87,6 +87,10 @@ test-update:
 test-update-templates:
 	-go test ./acceptance -run '^TestAccept/bundle/templates' -update -timeout=${LOCAL_TIMEOUT}
 
+# Regenerate out.test.toml files without running tests
+generate-out-test-toml:
+	go test ./acceptance -run '^TestAccept$$' -only-out-test-toml -timeout=${LOCAL_TIMEOUT}
+
 # Updates acceptance test output (integration tests, requires access)
 test-update-aws:
 	deco env run -i -n aws-prod-ucws -- go test ./acceptance -run ^TestAccept$$ -update -timeout=1h -skiplocal -v
@@ -167,7 +171,7 @@ generate:
 	$(GENKIT_BINARY) update-sdk
 
 
-.PHONY: lint lintfull tidy lintcheck fmt fmtfull test test-unit test-acc test-slow test-slow-unit test-slow-acc cover showcover build snapshot snapshot-release schema integration integration-short acc-cover acc-showcover docs ws wsfix links checks test-update test-update-templates test-update-aws test-update-all generate-validation
+.PHONY: lint lintfull tidy lintcheck fmt fmtfull test test-unit test-acc test-slow test-slow-unit test-slow-acc cover showcover build snapshot snapshot-release schema integration integration-short acc-cover acc-showcover docs ws wsfix links checks test-update test-update-templates generate-out-test-toml test-update-aws test-update-all generate-validation
 
 test-exp-aitools:
 	make test TEST_PACKAGES="./experimental/aitools/..." ACCEPTANCE_TEST_FILTER="TestAccept/idontexistyet/aitools"

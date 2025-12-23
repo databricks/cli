@@ -120,3 +120,14 @@ as-test-sp() {
     DATABRICKS_AUTH_TYPE="" \
     "$@"
 }
+
+readplanarg() {
+    # Expands into "--plan <filename>" based on READPLAN env var
+    # Use it with "bundle deploy" to configure two runs: once with saved plan and one without.
+    # Note: READPLAN is specially handled in test runner so that engine=terraform/readplan is set combination is skipped.
+    if [[ -n "$READPLAN" ]]; then
+        printf -- "--plan %s" "$1"
+    else
+        printf ""
+    fi
+}

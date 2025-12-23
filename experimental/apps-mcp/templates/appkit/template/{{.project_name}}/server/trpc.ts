@@ -2,7 +2,7 @@ import { initTRPC } from '@trpc/server';
 import { createExpressMiddleware } from '@trpc/server/adapters/express';
 import superjson from 'superjson';
 import type express from 'express';
-import { getRequestContext } from '@databricks/app-kit';
+import { getRequestContext } from '@databricks/appkit';
 import { z } from 'zod';
 
 const t = initTRPC.create({

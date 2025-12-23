@@ -1,0 +1,9 @@
+# Generate a plan
+trace $CLI bundle plan -o json > out.plan.json
+
+# Modify the plan to rename "action" field to "action_renamed"
+# This will create an unknown field that the strict decoder should reject
+trace update_file.py out.plan.json '"action":' '"action_renamed":'
+
+# Try to deploy with the modified plan - should fail
+trace musterr $CLI bundle deploy --plan out.plan.json
