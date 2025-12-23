@@ -167,10 +167,17 @@ func inheritEnvVars(ctx context.Context, environ map[string]string) error {
 	}
 
 	// If there's SYSTEM_ACCESSTOKEN set, we need to pass the value of the environment variable to Terraform.
-	// This is necessary to ensure that Terraform can use the same access token as the CLI.
+	// This is necessary to ensure that Terraform can use the same access token as the CLI for Azure DevOps OIDC auth.
 	systemAccessToken, ok := env.Lookup(ctx, "SYSTEM_ACCESSTOKEN")
 	if ok {
 		environ["SYSTEM_ACCESSTOKEN"] = systemAccessToken
+	}
+
+	// If there's SYSTEM_TEAMFOUNDATIONCOLLECTIONURI set, we need to pass the value of the environment variable to Terraform.
+	// This is necessary for Azure DevOps OIDC auth to work properly.
+	systemCollectionUri, ok := env.Lookup(ctx, "SYSTEM_TEAMFOUNDATIONCOLLECTIONURI")
+	if ok {
+		environ["SYSTEM_TEAMFOUNDATIONCOLLECTIONURI"] = systemCollectionUri
 	}
 
 	// Map $DATABRICKS_TF_CLI_CONFIG_FILE to $TF_CLI_CONFIG_FILE
