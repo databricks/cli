@@ -76,6 +76,9 @@
                       "evaluation": {
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertV2Evaluation"
                       },
+                      "file_path": {
+                        "$ref": "#/$defs/string"
+                      },
                       "lifecycle": {
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },

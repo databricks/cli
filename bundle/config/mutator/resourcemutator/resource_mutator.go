@@ -176,6 +176,10 @@ func applyNormalizeMutators(ctx context.Context, b *bundle.Bundle) {
 		// Drops (dynamic): resources.dashboards.*.file_path
 		ConfigureDashboardSerializedDashboard(),
 
+		// Reads (typed): resources.alerts.*.file_path
+		// Updates (typed): resources.alerts.* (loads alert configuration from .dbalert.json file)
+		mutator.LoadDBAlertFiles(),
+
 		// Reads and updates (typed): resources.jobs.*.**
 		JobClustersFixups(),
 		ClusterFixups(),

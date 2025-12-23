@@ -1,0 +1,9 @@
+bundle:
+  name: alerts-variable-error
+
+resources:
+  alerts:
+    myalert:
+      warehouse_id: "0123456789012345"
+      display_name: "My alert"
+      file_path: ./alert.dbalert.json
