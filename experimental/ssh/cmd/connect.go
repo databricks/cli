@@ -39,6 +39,7 @@ For serverless compute:
 	var releasesDir string
 	var autoStartCluster bool
 	var userKnownHostsFile string
+	var liteswap string
 
 	cmd.Flags().StringVar(&clusterID, "cluster", "", "Databricks cluster ID (for dedicated clusters)")
 	cmd.Flags().StringVar(&connectionName, "name", "", "Connection name (for serverless compute)")
@@ -58,6 +59,9 @@ For serverless compute:
 
 	cmd.Flags().StringVar(&userKnownHostsFile, "user-known-hosts-file", "", "Path to user known hosts file for SSH client")
 	cmd.Flags().MarkHidden("user-known-hosts-file")
+
+	cmd.Flags().StringVar(&liteswap, "liteswap", "", "Liteswap header value for traffic routing (dev/test only)")
+	cmd.Flags().MarkHidden("liteswap")
 
 	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
 		// CLI in the proxy mode is executed by the ssh client and can't prompt for input
@@ -95,6 +99,7 @@ For serverless compute:
 			ClientPublicKeyName:  clientPublicKeyName,
 			ClientPrivateKeyName: clientPrivateKeyName,
 			UserKnownHostsFile:   userKnownHostsFile,
+			Liteswap:             liteswap,
 			AdditionalArgs:       args,
 		}
 		return client.Run(ctx, wsClient, opts)
