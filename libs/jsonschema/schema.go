@@ -65,6 +65,10 @@ type Schema struct {
 	// here: https://github.com/google/re2/wiki/Syntax
 	Pattern string `json:"pattern,omitempty"`
 
+	// Format defines a semantic format for string values (e.g., "date-time", "email", "uri").
+	// For templates, custom formats like "warehouse_path" trigger special input handling.
+	Format string `json:"format,omitempty"`
+
 	// Extension embeds our custom JSON schema extensions.
 	Extension
 

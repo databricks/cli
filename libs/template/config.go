@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"io/fs"
 
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/databrickscfg/cfgpickers"
 	"github.com/databricks/cli/libs/jsonschema"
 	"github.com/databricks/cli/libs/log"
 	"golang.org/x/exp/maps"
@@ -112,6 +114,18 @@ func (c *config) assignDefaultValues(r *renderer) error {
 		if _, ok := c.values[name]; ok {
 			continue
 		}
+
+		if property.Format != "" {
+			val, err := c.resolveFormat(property.Format, "")
+			if err != nil {
+				return err
+			}
+			if val != "" {
+				c.values[name] = val
+				continue
+			}
+		}
+
 		// No default value defined for the property
 		if property.Default == nil {
 			continue
@@ -131,6 +145,22 @@ func (c *config) assignDefaultValues(r *renderer) error {
 		c.values[name] = defaultValTyped
 	}
 	return nil
+}
+
+// resolveFormat returns a value for custom format types.
+// Returns empty string for unknown formats (to fall back to default handling).
+func (c *config) resolveFormat(format, description string) (string, error) {
+	switch format {
+	case "warehouse_path":
+		w := cmdctx.WorkspaceClient(c.ctx)
+		warehouseId, err := cfgpickers.SelectWarehouse(c.ctx, w, description)
+		if err != nil {
+			return "", err
+		}
+		return "/sql/1.0/warehouses/" + warehouseId, nil
+	default:
+		return "", nil
+	}
 }
 
 func (c *config) skipPrompt(p jsonschema.Property, r *renderer) (bool, error) {
@@ -170,26 +200,34 @@ func (c *config) skipPrompt(p jsonschema.Property, r *renderer) (bool, error) {
 
 func (c *config) promptOnce(property *jsonschema.Schema, name, defaultVal, description string) error {
 	var userInput string
-	if property.Enum != nil {
-		// List options for the user to select from
-		options, err := property.EnumStringSlice()
-		if err != nil {
-			return err
-		}
-		userInput, err = cmdio.AskSelect(c.ctx, description, options)
-		if err != nil {
-			return err
-		}
-	} else {
-		var err error
-		userInput, err = cmdio.Ask(c.ctx, description, defaultVal)
+	var err error
+
+	if property.Format != "" {
+		userInput, err = c.resolveFormat(property.Format, description)
 		if err != nil {
 			return err
 		}
 	}
 
+	if userInput == "" {
+		if property.Enum != nil {
+			options, err := property.EnumStringSlice()
+			if err != nil {
+				return err
+			}
+			userInput, err = cmdio.AskSelect(c.ctx, description, options)
+			if err != nil {
+				return err
+			}
+		} else {
+			userInput, err = cmdio.Ask(c.ctx, description, defaultVal)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
 	// Convert user input string back to a Go value
-	var err error
 	c.values[name], err = property.ParseString(userInput)
 	if err != nil {
 		// Show error and retry if validation fails
