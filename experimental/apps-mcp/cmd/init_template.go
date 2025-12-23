@@ -153,30 +153,18 @@ func generateFileTree(outputDir string) (string, error) {
 
 const templatePathEnvVar = "DATABRICKS_APPKIT_TEMPLATE_PATH"
 
-// newInitTemplateCmd creates a command group for initializing project templates.
-// Currently only the "app" subcommand exists, but this structure allows adding
-// more template types in the future (e.g., job, pipeline).
 func newInitTemplateCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "init-template",
-		Short: "Initialize project templates",
-	}
-	cmd.AddCommand(newInitTemplateAppCmd())
-	return cmd
-}
-
-func newInitTemplateAppCmd() *cobra.Command {
-	cmd := &cobra.Command{
-		Use:   "app",
 		Short: "Initialize a Databricks App using the default-app template",
 		Args:  cobra.NoArgs,
 		Long: `Initialize a Databricks App using the default-app template.
 
 Examples:
-  experimental apps-mcp tools init-template app --name my-app
-  experimental apps-mcp tools init-template app --name my-app --warehouse abc123
-  experimental apps-mcp tools init-template app --name my-app --description "My cool app"
-  experimental apps-mcp tools init-template app --name my-app --output-dir ./projects
+  experimental apps-mcp tools init-template --name my-app
+  experimental apps-mcp tools init-template --name my-app --warehouse abc123
+  experimental apps-mcp tools init-template --name my-app --description "My cool app"
+  experimental apps-mcp tools init-template --name my-app --output-dir ./projects
 
 Environment variables:
   DATABRICKS_APPKIT_TEMPLATE_PATH  Override template source with local path (for development)
