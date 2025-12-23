@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"sort"
+	"strings"
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go"
@@ -69,7 +70,8 @@ func AskForWarehouse(ctx context.Context, w *databricks.WorkspaceClient, filters
 	return cmdio.Select(ctx, names, "Choose SQL Warehouse")
 }
 
-// sortWarehousesByState sorts warehouses by state priority (running first) and filters out deleted ones.
+// sortWarehousesByState sorts warehouses by state priority (running first), then alphabetically by name.
+// Deleted warehouses are filtered out.
 func sortWarehousesByState(all []sql.EndpointInfo) []sql.EndpointInfo {
 	var warehouses []sql.EndpointInfo
 	for _, wh := range all {
@@ -85,7 +87,11 @@ func sortWarehousesByState(all []sql.EndpointInfo) []sql.EndpointInfo {
 		sql.StateStopping: 4,
 	}
 	sort.Slice(warehouses, func(i, j int) bool {
-		return priorities[warehouses[i].State] < priorities[warehouses[j].State]
+		pi, pj := priorities[warehouses[i].State], priorities[warehouses[j].State]
+		if pi != pj {
+			return pi < pj
+		}
+		return strings.ToLower(warehouses[i].Name) < strings.ToLower(warehouses[j].Name)
 	})
 
 	return warehouses
@@ -145,13 +151,30 @@ func listUsableWarehouses(ctx context.Context, w *databricks.WorkspaceClient) ([
 // Warehouses are sorted by state (running first) so the default selection is the best available.
 // In non-interactive mode, returns the first (best) warehouse automatically.
 // The description parameter is shown before the picker (if non-empty).
-func SelectWarehouse(ctx context.Context, w *databricks.WorkspaceClient, description string) (string, error) {
+func SelectWarehouse(ctx context.Context, w *databricks.WorkspaceClient, description string, filters ...warehouseFilter) (string, error) {
 	all, err := w.Warehouses.ListAll(ctx, sql.ListWarehousesRequest{})
 	if err != nil {
 		return "", fmt.Errorf("list warehouses: %w", err)
 	}
 
 	warehouses := sortWarehousesByState(all)
+
+	// Apply filters
+	var filtered []sql.EndpointInfo
+	for _, wh := range warehouses {
+		skip := false
+		for _, filter := range filters {
+			if !filter(wh) {
+				skip = true
+				break
+			}
+		}
+		if !skip {
+			filtered = append(filtered, wh)
+		}
+	}
+	warehouses = filtered
+
 	if len(warehouses) == 0 {
 		return "", ErrNoCompatibleWarehouses
 	}
@@ -160,9 +183,22 @@ func SelectWarehouse(ctx context.Context, w *databricks.WorkspaceClient, descrip
 		return warehouses[0].Id, nil
 	}
 
+	// The first warehouse (sorted by state, then alphabetically) is the default
+	defaultId := warehouses[0].Id
+
+	// Sort by running state first, then alphabetically for display
+	sort.Slice(warehouses, func(i, j int) bool {
+		iRunning := warehouses[i].State == sql.StateRunning
+		jRunning := warehouses[j].State == sql.StateRunning
+		if iRunning != jRunning {
+			return iRunning
+		}
+		return strings.ToLower(warehouses[i].Name) < strings.ToLower(warehouses[j].Name)
+	})
+
 	// Build options for the picker (● = running, ○ = not running)
 	var items []cmdio.Tuple
-	for i, warehouse := range warehouses {
+	for _, warehouse := range warehouses {
 		var icon string
 		if warehouse.State == sql.StateRunning {
 			icon = color.GreenString("●")
@@ -170,9 +206,15 @@ func SelectWarehouse(ctx context.Context, w *databricks.WorkspaceClient, descrip
 			icon = color.HiBlackString("○")
 		}
 
-		name := fmt.Sprintf("%s %s", icon, warehouse.Name)
-		if i == 0 {
-			name += " [DEFAULT]"
+		// Show type info in gray
+		typeInfo := strings.ToLower(string(warehouse.WarehouseType))
+		if warehouse.EnableServerlessCompute {
+			typeInfo = "serverless"
+		}
+
+		name := fmt.Sprintf("%s %s %s", icon, warehouse.Name, color.HiBlackString(typeInfo))
+		if warehouse.Id == defaultId {
+			name += color.HiBlackString(" [DEFAULT]")
 		}
 		items = append(items, cmdio.Tuple{Name: name, Id: warehouse.Id})
 	}
