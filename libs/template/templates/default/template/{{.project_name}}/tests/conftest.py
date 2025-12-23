@@ -1,8 +1,4 @@
-"""This file configures pytest.
-
-This file is in the root since it can be used for tests in any place in this
-project, including tests under resources/.
-"""
+"""This file configures pytest, initializes Databricks Connect, and provides fixtures for Spark and loading test data."""
 
 import os, sys, pathlib
 from contextlib import contextmanager
