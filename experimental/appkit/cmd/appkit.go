@@ -1,30 +1,29 @@
-package experimental
+package appkit
 
 import (
-	"github.com/databricks/cli/experimental/aitools"
-	appkit "github.com/databricks/cli/experimental/appkit/cmd"
-	mcp "github.com/databricks/cli/experimental/apps-mcp/cmd"
 	"github.com/spf13/cobra"
 )
 
 func New() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:    "experimental",
-		Short:  "Experimental commands that may change in future versions",
+		Use:    "appkit",
+		Short:  "Manage Databricks AppKit applications",
 		Hidden: true,
-		Long: `Experimental commands that may change in future versions.
+		Long: `Manage Databricks AppKit applications.
 
 ╔════════════════════════════════════════════════════════════════╗
 ║  ⚠️  EXPERIMENTAL: These commands may change in future versions ║
 ╚════════════════════════════════════════════════════════════════╝
 
-These commands provide early access to new features that are still under
-development. They may change or be removed in future versions without notice.`,
+AppKit provides a streamlined interface for creating, managing, and
+monitoring full-stack Databricks applications built with TypeScript,
+React, and Tailwind CSS.`,
 	}
 
-	cmd.AddCommand(aitools.New())
-	cmd.AddCommand(appkit.New())
-	cmd.AddCommand(mcp.NewMcpCmd())
+	cmd.AddCommand(newCreateCmd())
+	cmd.AddCommand(newListTemplatesCmd())
+	cmd.AddCommand(newLogsCmd())
+	cmd.AddCommand(newMetricsCmd())
 
 	return cmd
 }

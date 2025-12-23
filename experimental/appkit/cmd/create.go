@@ -1,0 +1,488 @@
+package appkit
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"strings"
+	"text/template"
+
+	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdio"
+	"github.com/spf13/cobra"
+)
+
+const (
+	templatePathEnvVar = "DATABRICKS_APPKIT_TEMPLATE_PATH"
+)
+
+func validateAppNameLength(projectName string) error {
+	const maxAppNameLength = 30
+	const devTargetPrefix = "dev-"
+	totalLength := len(devTargetPrefix) + len(projectName)
+	if totalLength > maxAppNameLength {
+		maxAllowed := maxAppNameLength - len(devTargetPrefix)
+		return fmt.Errorf(
+			"app name too long: 'dev-%s' is %d chars (max: %d). App name must be ≤%d characters",
+			projectName, totalLength, maxAppNameLength, maxAllowed,
+		)
+	}
+	return nil
+}
+
+func newCreateCmd() *cobra.Command {
+	var (
+		templatePath string
+		name         string
+		warehouse    string
+		description  string
+		outputDir    string
+	)
+
+	cmd := &cobra.Command{
+		Use:   "create",
+		Short: "Create a new AppKit application from a template",
+		Long: `Create a new AppKit application from a template.
+
+When run without arguments, an interactive prompt guides you through the setup.
+
+Examples:
+  # Interactive mode (recommended)
+  databricks experimental appkit create
+
+  # Non-interactive with flags
+  databricks experimental appkit create --name my-app
+
+  # With a custom template from a local path
+  databricks experimental appkit create --template /path/to/template --name my-app
+
+Environment variables:
+  DATABRICKS_APPKIT_TEMPLATE_PATH  Override template source with local path`,
+		Args:    cobra.NoArgs,
+		PreRunE: root.MustWorkspaceClient,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx := cmd.Context()
+			return runCreate(ctx, createOptions{
+				templatePath: templatePath,
+				name:         name,
+				warehouse:    warehouse,
+				description:  description,
+				outputDir:    outputDir,
+			})
+		},
+	}
+
+	cmd.Flags().StringVar(&templatePath, "template", "", "Path to template directory")
+	cmd.Flags().StringVar(&name, "name", "", "Project name (prompts if not provided)")
+	cmd.Flags().StringVar(&warehouse, "warehouse", "", "SQL warehouse ID")
+	cmd.Flags().StringVar(&description, "description", "", "App description")
+	cmd.Flags().StringVar(&outputDir, "output-dir", "", "Directory to write the project to")
+
+	return cmd
+}
+
+type createOptions struct {
+	templatePath string
+	name         string
+	warehouse    string
+	description  string
+	outputDir    string
+}
+
+// templateVars holds the variables for template substitution.
+type templateVars struct {
+	ProjectName    string
+	SQLWarehouseID string
+	AppDescription string
+	Profile        string
+	WorkspaceHost  string
+	PluginImport   string
+	PluginUsage    string
+}
+
+func runCreate(ctx context.Context, opts createOptions) error {
+	var selectedFeatures []string
+	var dependencies map[string]string
+
+	// Interactive prompts when name is not provided
+	if opts.name == "" {
+		if !cmdio.IsPromptSupported(ctx) {
+			return errors.New("--name is required in non-interactive mode")
+		}
+
+		config, err := PromptForProjectConfig()
+		if err != nil {
+			return err
+		}
+		opts.name = config.ProjectName
+		if config.Description != "" {
+			opts.description = config.Description
+		}
+		selectedFeatures = config.Features
+		dependencies = config.Dependencies
+
+		// Get warehouse from dependencies if provided
+		if wh, ok := dependencies["sql_warehouse_id"]; ok && wh != "" {
+			opts.warehouse = wh
+		}
+	}
+
+	// Validate project name
+	if opts.name == "" {
+		return errors.New("project name is required")
+	}
+	if err := validateAppNameLength(opts.name); err != nil {
+		return err
+	}
+
+	// Set defaults
+	if opts.description == "" {
+		opts.description = "A Databricks App powered by AppKit"
+	}
+
+	// Resolve template path
+	templateSrc := opts.templatePath
+	if templateSrc == "" {
+		templateSrc = os.Getenv(templatePathEnvVar)
+	}
+	if templateSrc == "" {
+		// Use the built-in template from the CLI source
+		// For now, require the env var or --template flag
+		return errors.New("template path required: set DATABRICKS_APPKIT_TEMPLATE_PATH or use --template flag")
+	}
+
+	// Verify template exists - check for generic subdirectory first (default)
+	templateDir := filepath.Join(templateSrc, "generic")
+	if _, err := os.Stat(templateDir); os.IsNotExist(err) {
+		// Fall back to the provided path directly
+		templateDir = templateSrc
+		if _, err := os.Stat(templateDir); os.IsNotExist(err) {
+			return fmt.Errorf("template not found at %s", templateSrc)
+		}
+	}
+
+	// Determine output directory
+	destDir := opts.name
+	if opts.outputDir != "" {
+		destDir = filepath.Join(opts.outputDir, opts.name)
+	}
+
+	// Check if destination already exists
+	if _, err := os.Stat(destDir); err == nil {
+		return fmt.Errorf("directory %s already exists", destDir)
+	}
+
+	// Get workspace host and profile from context
+	workspaceHost := ""
+	profile := ""
+	if w := cmdctx.WorkspaceClient(ctx); w != nil && w.Config != nil {
+		workspaceHost = w.Config.Host
+		profile = w.Config.Profile
+	}
+
+	// Build plugin imports and usages from selected features
+	pluginImport, pluginUsage := BuildPluginStrings(selectedFeatures)
+
+	// Template variables
+	vars := templateVars{
+		ProjectName:    opts.name,
+		SQLWarehouseID: opts.warehouse,
+		AppDescription: opts.description,
+		Profile:        profile,
+		WorkspaceHost:  workspaceHost,
+		PluginImport:   pluginImport,
+		PluginUsage:    pluginUsage,
+	}
+
+	// Copy template with variable substitution
+	var fileCount int
+	err := RunWithSpinner("Creating project...", func() error {
+		var copyErr error
+		fileCount, copyErr = copyTemplate(templateDir, destDir, vars)
+		return copyErr
+	})
+	if err != nil {
+		return err
+	}
+
+	// Get absolute path
+	absOutputDir, err := filepath.Abs(destDir)
+	if err != nil {
+		absOutputDir = destDir
+	}
+
+	// Apply features (adds selected features, removes unselected feature files)
+	err = RunWithSpinner("Configuring features...", func() error {
+		return ApplyFeatures(absOutputDir, selectedFeatures)
+	})
+	if err != nil {
+		return err
+	}
+
+	// Run npm install
+	if err := runNpmInstall(ctx, absOutputDir); err != nil {
+		return err
+	}
+
+	PrintSuccess(opts.name, absOutputDir, fileCount)
+	return nil
+}
+
+// runNpmInstall runs npm install in the project directory.
+func runNpmInstall(ctx context.Context, projectDir string) error {
+	// Check if npm is available
+	if _, err := exec.LookPath("npm"); err != nil {
+		fmt.Println("\n⚠ npm not found. Please install Node.js and run 'npm install' manually.")
+		return nil
+	}
+
+	return RunWithSpinner("Installing dependencies...", func() error {
+		cmd := exec.CommandContext(ctx, "npm", "install")
+		cmd.Dir = projectDir
+		cmd.Stdout = nil // Suppress output
+		cmd.Stderr = nil
+		return cmd.Run()
+	})
+}
+
+// renameFiles maps source file names to destination names (for files that can't use special chars).
+var renameFiles = map[string]string{
+	"_gitignore":  ".gitignore",
+	"_env":        ".env",
+	"_env.local":  ".env.local",
+	"_npmrc":      ".npmrc",
+	"_prettierrc": ".prettierrc",
+	"_eslintrc":   ".eslintrc",
+}
+
+// copyTemplate copies the template directory to dest, substituting variables.
+func copyTemplate(src, dest string, vars templateVars) (int, error) {
+	fileCount := 0
+
+	// Find the project_name placeholder directory
+	srcProjectDir := ""
+	entries, err := os.ReadDir(src)
+	if err != nil {
+		return 0, err
+	}
+	for _, e := range entries {
+		if e.IsDir() && strings.Contains(e.Name(), "{{.project_name}}") {
+			srcProjectDir = filepath.Join(src, e.Name())
+			break
+		}
+	}
+
+	// If no {{.project_name}} dir found, copy src directly
+	if srcProjectDir == "" {
+		srcProjectDir = src
+	}
+
+	// Files and directories to skip
+	skipFiles := map[string]bool{
+		"CLAUDE.md":                       true,
+		"AGENTS.md":                       true,
+		"databricks_template_schema.json": true,
+	}
+	skipDirs := map[string]bool{
+		"docs": true,
+	}
+
+	err = filepath.Walk(srcProjectDir, func(srcPath string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		baseName := filepath.Base(srcPath)
+
+		// Skip certain files
+		if skipFiles[baseName] {
+			return nil
+		}
+
+		// Skip certain directories
+		if info.IsDir() && skipDirs[baseName] {
+			return filepath.SkipDir
+		}
+
+		// Calculate relative path from source project dir
+		relPath, err := filepath.Rel(srcProjectDir, srcPath)
+		if err != nil {
+			return err
+		}
+
+		// Substitute variables in path
+		relPath = substituteVars(relPath, vars)
+
+		// Handle .tmpl extension - strip it
+		relPath = strings.TrimSuffix(relPath, ".tmpl")
+
+		// Apply file renames (e.g., _gitignore -> .gitignore)
+		fileName := filepath.Base(relPath)
+		if newName, ok := renameFiles[fileName]; ok {
+			relPath = filepath.Join(filepath.Dir(relPath), newName)
+		}
+
+		destPath := filepath.Join(dest, relPath)
+
+		if info.IsDir() {
+			return os.MkdirAll(destPath, info.Mode())
+		}
+
+		// Read file content
+		content, err := os.ReadFile(srcPath)
+		if err != nil {
+			return err
+		}
+
+		// Handle special files
+		switch filepath.Base(srcPath) {
+		case "package.json":
+			content, err = processPackageJSON(content, vars)
+			if err != nil {
+				return fmt.Errorf("process package.json: %w", err)
+			}
+		default:
+			// Use Go template engine for .tmpl files (handles conditionals)
+			if strings.HasSuffix(srcPath, ".tmpl") {
+				content, err = executeTemplate(srcPath, content, vars)
+				if err != nil {
+					return fmt.Errorf("process template %s: %w", srcPath, err)
+				}
+			} else if isTextFile(srcPath) {
+				// Simple substitution for other text files
+				content = []byte(substituteVars(string(content), vars))
+			}
+		}
+
+		// Create parent directory
+		if err := os.MkdirAll(filepath.Dir(destPath), 0o755); err != nil {
+			return err
+		}
+
+		// Write file
+		if err := os.WriteFile(destPath, content, info.Mode()); err != nil {
+			return err
+		}
+
+		fileCount++
+		return nil
+	})
+
+	return fileCount, err
+}
+
+// processPackageJSON updates the package.json with project-specific values.
+func processPackageJSON(content []byte, vars templateVars) ([]byte, error) {
+	var pkg map[string]any
+	if err := json.Unmarshal(content, &pkg); err != nil {
+		// If it's not valid JSON, just do string substitution
+		return []byte(substituteVars(string(content), vars)), nil
+	}
+
+	// Update name field
+	pkg["name"] = vars.ProjectName
+
+	// Update description if present
+	if _, ok := pkg["description"]; ok {
+		pkg["description"] = vars.AppDescription
+	}
+
+	// Re-encode with proper formatting
+	result, err := json.MarshalIndent(pkg, "", "  ")
+	if err != nil {
+		return nil, err
+	}
+
+	return append(result, '\n'), nil
+}
+
+// substituteVars replaces template variables in a string.
+func substituteVars(s string, vars templateVars) string {
+	s = strings.ReplaceAll(s, "{{.project_name}}", vars.ProjectName)
+	s = strings.ReplaceAll(s, "{{.sql_warehouse_id}}", vars.SQLWarehouseID)
+	s = strings.ReplaceAll(s, "{{.app_description}}", vars.AppDescription)
+	s = strings.ReplaceAll(s, "{{.profile}}", vars.Profile)
+	s = strings.ReplaceAll(s, "{{workspace_host}}", vars.WorkspaceHost)
+
+	// Handle plugin placeholders
+	if vars.PluginImport != "" {
+		s = strings.ReplaceAll(s, "{{.plugin_import}}", vars.PluginImport)
+		s = strings.ReplaceAll(s, "{{.plugin_usage}}", vars.PluginUsage)
+	} else {
+		// No plugins selected - clean up the template
+		// Remove ", {{.plugin_import}}" from import line
+		s = strings.ReplaceAll(s, ", {{.plugin_import}} ", " ")
+		s = strings.ReplaceAll(s, ", {{.plugin_import}}", "")
+		// Remove the plugin_usage line entirely
+		s = strings.ReplaceAll(s, "    {{.plugin_usage}},\n", "")
+		s = strings.ReplaceAll(s, "    {{.plugin_usage}},", "")
+	}
+
+	return s
+}
+
+// executeTemplate processes a .tmpl file using Go's text/template engine.
+func executeTemplate(path string, content []byte, vars templateVars) ([]byte, error) {
+	tmpl, err := template.New(filepath.Base(path)).
+		Funcs(template.FuncMap{
+			"workspace_host": func() string { return vars.WorkspaceHost },
+		}).
+		Parse(string(content))
+	if err != nil {
+		return nil, fmt.Errorf("parse template: %w", err)
+	}
+
+	// Use a map to match template variable names exactly (snake_case)
+	data := map[string]string{
+		"project_name":     vars.ProjectName,
+		"sql_warehouse_id": vars.SQLWarehouseID,
+		"app_description":  vars.AppDescription,
+		"profile":          vars.Profile,
+		"workspace_host":   vars.WorkspaceHost,
+		"plugin_import":    vars.PluginImport,
+		"plugin_usage":     vars.PluginUsage,
+	}
+
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, data); err != nil {
+		return nil, fmt.Errorf("execute template: %w", err)
+	}
+
+	return buf.Bytes(), nil
+}
+
+// isTextFile checks if a file is likely a text file based on extension.
+func isTextFile(path string) bool {
+	textExtensions := map[string]bool{
+		".ts": true, ".tsx": true, ".js": true, ".jsx": true,
+		".json": true, ".yaml": true, ".yml": true,
+		".md": true, ".txt": true, ".html": true, ".css": true,
+		".scss": true, ".less": true, ".sql": true,
+		".sh": true, ".bash": true, ".zsh": true,
+		".py": true, ".go": true, ".rs": true,
+		".toml": true, ".ini": true, ".cfg": true,
+		".env": true, ".gitignore": true, ".npmrc": true,
+		".prettierrc": true, ".eslintrc": true,
+	}
+
+	ext := strings.ToLower(filepath.Ext(path))
+	if textExtensions[ext] {
+		return true
+	}
+
+	// Check for files without extension or special names
+	base := filepath.Base(path)
+	textFiles := map[string]bool{
+		"Makefile": true, "Dockerfile": true, "LICENSE": true,
+		"README": true, ".gitignore": true, ".env": true,
+		".nvmrc": true, ".node-version": true,
+		"_gitignore": true, "_env": true, "_npmrc": true,
+	}
+	return textFiles[base]
+}
