@@ -1,0 +1,69 @@
+package validation
+
+import (
+	"context"
+	"fmt"
+	"os"
+	"path/filepath"
+)
+
+// ValidationDetail contains detailed output from a failed validation.
+type ValidationDetail struct {
+	ExitCode int    `json:"exit_code"`
+	Stdout   string `json:"stdout"`
+	Stderr   string `json:"stderr"`
+}
+
+func (vd *ValidationDetail) Error() string {
+	return fmt.Sprintf("validation failed (exit code %d)\nStdout:\n%s\nStderr:\n%s",
+		vd.ExitCode, vd.Stdout, vd.Stderr)
+}
+
+// ValidateResult contains the outcome of a validation operation.
+type ValidateResult struct {
+	Success     bool              `json:"success"`
+	Message     string            `json:"message"`
+	Details     *ValidationDetail `json:"details,omitempty"`
+	ProgressLog []string          `json:"progress_log,omitempty"`
+}
+
+func (vr *ValidateResult) String() string {
+	var result string
+
+	if len(vr.ProgressLog) > 0 {
+		result = "Validation Progress:\n"
+		for _, entry := range vr.ProgressLog {
+			result += entry + "\n"
+		}
+		result += "\n"
+	}
+
+	if vr.Success {
+		result += "✅ " + vr.Message
+	} else {
+		result += "❌ " + vr.Message
+		if vr.Details != nil {
+			result += fmt.Sprintf("\n\nExit code: %d\n\nStdout:\n%s\n\nStderr:\n%s",
+				vr.Details.ExitCode, vr.Details.Stdout, vr.Details.Stderr)
+		}
+	}
+
+	return result
+}
+
+// Validation defines the interface for project validation strategies.
+type Validation interface {
+	Validate(ctx context.Context, workDir string) (*ValidateResult, error)
+}
+
+// GetProjectValidator returns the appropriate validator based on project type.
+// Returns nil if no validator is applicable.
+func GetProjectValidator(workDir string) Validation {
+	// Check for Node.js project (package.json exists)
+	packageJSON := filepath.Join(workDir, "package.json")
+	if _, err := os.Stat(packageJSON); err == nil {
+		return &ValidationNodeJs{}
+	}
+	// TODO: Extend this with other project types as needed (e.g. python, etc.)
+	return nil
+}
