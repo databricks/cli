@@ -38,6 +38,7 @@ func validateAppNameLength(projectName string) error {
 func newCreateCmd() *cobra.Command {
 	var (
 		templatePath string
+		branch       string
 		name         string
 		warehouse    string
 		description  string
@@ -61,6 +62,15 @@ Examples:
   # With a custom template from a local path
   databricks experimental appkit create --template /path/to/template --name my-app
 
+  # With a GitHub URL
+  databricks experimental appkit create --template https://github.com/user/repo --name my-app
+
+  # With a GitHub URL and subdirectory
+  databricks experimental appkit create --template https://github.com/user/repo/tree/main/templates/starter --name my-app
+
+  # With explicit branch/tag
+  databricks experimental appkit create --template https://github.com/user/repo --branch v1.0.0 --name my-app
+
 Environment variables:
   DATABRICKS_APPKIT_TEMPLATE_PATH  Override template source with local path`,
 		Args:    cobra.NoArgs,
@@ -69,6 +79,7 @@ Environment variables:
 			ctx := cmd.Context()
 			return runCreate(ctx, createOptions{
 				templatePath: templatePath,
+				branch:       branch,
 				name:         name,
 				warehouse:    warehouse,
 				description:  description,
@@ -77,7 +88,8 @@ Environment variables:
 		},
 	}
 
-	cmd.Flags().StringVar(&templatePath, "template", "", "Path to template directory")
+	cmd.Flags().StringVar(&templatePath, "template", "", "Template path (local directory or GitHub URL)")
+	cmd.Flags().StringVar(&branch, "branch", "", "Git branch or tag (for GitHub templates)")
 	cmd.Flags().StringVar(&name, "name", "", "Project name (prompts if not provided)")
 	cmd.Flags().StringVar(&warehouse, "warehouse", "", "SQL warehouse ID")
 	cmd.Flags().StringVar(&description, "description", "", "App description")
@@ -88,6 +100,7 @@ Environment variables:
 
 type createOptions struct {
 	templatePath string
+	branch       string
 	name         string
 	warehouse    string
 	description  string
@@ -103,6 +116,89 @@ type templateVars struct {
 	WorkspaceHost  string
 	PluginImport   string
 	PluginUsage    string
+}
+
+// parseGitHubURL extracts the repository URL, subdirectory, and branch from a GitHub URL.
+// Input: https://github.com/user/repo/tree/main/templates/starter
+// Output: repoURL="https://github.com/user/repo", subdir="templates/starter", branch="main"
+func parseGitHubURL(url string) (repoURL, subdir, branch string) {
+	// Remove trailing slash
+	url = strings.TrimSuffix(url, "/")
+
+	// Check for /tree/branch/path pattern
+	if idx := strings.Index(url, "/tree/"); idx != -1 {
+		repoURL = url[:idx]
+		rest := url[idx+6:] // Skip "/tree/"
+
+		// Split into branch and path
+		parts := strings.SplitN(rest, "/", 2)
+		branch = parts[0]
+		if len(parts) > 1 {
+			subdir = parts[1]
+		}
+		return repoURL, subdir, branch
+	}
+
+	// No /tree/ pattern, just a repo URL
+	return url, "", ""
+}
+
+// cloneRepo clones a git repository to a temporary directory.
+func cloneRepo(ctx context.Context, repoURL, branch string) (string, error) {
+	tempDir, err := os.MkdirTemp("", "appkit-template-*")
+	if err != nil {
+		return "", fmt.Errorf("create temp dir: %w", err)
+	}
+
+	args := []string{"clone", "--depth", "1"}
+	if branch != "" {
+		args = append(args, "--branch", branch)
+	}
+	args = append(args, repoURL, tempDir)
+
+	cmd := exec.CommandContext(ctx, "git", args...)
+	cmd.Stdout = nil
+	cmd.Stderr = nil
+	if err := cmd.Run(); err != nil {
+		os.RemoveAll(tempDir)
+		return "", fmt.Errorf("git clone failed: %w", err)
+	}
+
+	return tempDir, nil
+}
+
+// resolveTemplate resolves a template path, handling both local paths and GitHub URLs.
+// Returns the local path to use, a cleanup function (for temp dirs), and any error.
+func resolveTemplate(ctx context.Context, templatePath, branch string) (localPath string, cleanup func(), err error) {
+	// Case 1: Local path - return as-is
+	if !strings.HasPrefix(templatePath, "https://") {
+		return templatePath, nil, nil
+	}
+
+	// Case 2: GitHub URL - parse and clone
+	repoURL, subdir, urlBranch := parseGitHubURL(templatePath)
+	if branch == "" {
+		branch = urlBranch // Use branch from URL if not overridden by flag
+	}
+
+	// Clone to temp dir with spinner
+	var tempDir string
+	err = RunWithSpinner("Cloning template...", func() error {
+		var cloneErr error
+		tempDir, cloneErr = cloneRepo(ctx, repoURL, branch)
+		return cloneErr
+	})
+	if err != nil {
+		return "", nil, err
+	}
+
+	cleanup = func() { os.RemoveAll(tempDir) }
+
+	// Return path to subdirectory if specified
+	if subdir != "" {
+		return filepath.Join(tempDir, subdir), cleanup, nil
+	}
+	return tempDir, cleanup, nil
 }
 
 func runCreate(ctx context.Context, opts createOptions) error {
@@ -145,24 +241,31 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		opts.description = "A Databricks App powered by AppKit"
 	}
 
-	// Resolve template path
+	// Resolve template path (supports local paths and GitHub URLs)
 	templateSrc := opts.templatePath
 	if templateSrc == "" {
 		templateSrc = os.Getenv(templatePathEnvVar)
 	}
 	if templateSrc == "" {
-		// Use the built-in template from the CLI source
-		// For now, require the env var or --template flag
 		return errors.New("template path required: set DATABRICKS_APPKIT_TEMPLATE_PATH or use --template flag")
 	}
 
-	// Verify template exists - check for generic subdirectory first (default)
-	templateDir := filepath.Join(templateSrc, "generic")
+	// Resolve template (handles GitHub URLs by cloning)
+	resolvedPath, cleanup, err := resolveTemplate(ctx, templateSrc, opts.branch)
+	if err != nil {
+		return err
+	}
+	if cleanup != nil {
+		defer cleanup()
+	}
+
+	// Check for generic subdirectory first (default for multi-template repos)
+	templateDir := filepath.Join(resolvedPath, "generic")
 	if _, err := os.Stat(templateDir); os.IsNotExist(err) {
 		// Fall back to the provided path directly
-		templateDir = templateSrc
+		templateDir = resolvedPath
 		if _, err := os.Stat(templateDir); os.IsNotExist(err) {
-			return fmt.Errorf("template not found at %s", templateSrc)
+			return fmt.Errorf("template not found at %s", resolvedPath)
 		}
 	}
 
@@ -201,7 +304,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 
 	// Copy template with variable substitution
 	var fileCount int
-	err := RunWithSpinner("Creating project...", func() error {
+	err = RunWithSpinner("Creating project...", func() error {
 		var copyErr error
 		fileCount, copyErr = copyTemplate(templateDir, destDir, vars)
 		return copyErr
