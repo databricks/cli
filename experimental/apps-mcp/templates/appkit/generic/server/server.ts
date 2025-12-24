@@ -5,4 +5,4 @@ createApp({
     server(),
     {{.plugin_usage}},
   ],
-});
+}).catch(console.error);

@@ -3,7 +3,6 @@ package appkit
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -379,27 +378,8 @@ func copyTemplate(src, dest string, vars templateVars) (int, error) {
 
 // processPackageJSON updates the package.json with project-specific values.
 func processPackageJSON(content []byte, vars templateVars) ([]byte, error) {
-	var pkg map[string]any
-	if err := json.Unmarshal(content, &pkg); err != nil {
-		// If it's not valid JSON, just do string substitution
-		return []byte(substituteVars(string(content), vars)), nil
-	}
-
-	// Update name field
-	pkg["name"] = vars.ProjectName
-
-	// Update description if present
-	if _, ok := pkg["description"]; ok {
-		pkg["description"] = vars.AppDescription
-	}
-
-	// Re-encode with proper formatting
-	result, err := json.MarshalIndent(pkg, "", "  ")
-	if err != nil {
-		return nil, err
-	}
-
-	return append(result, '\n'), nil
+	// Just do string substitution to preserve key order and formatting
+	return []byte(substituteVars(string(content), vars)), nil
 }
 
 // substituteVars replaces template variables in a string.

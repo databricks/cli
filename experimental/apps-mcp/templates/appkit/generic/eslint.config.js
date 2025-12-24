@@ -54,6 +54,7 @@ export default tseslint.config(
       ...reactHooksPlugin.configs.recommended.rules,
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
       'react/prop-types': 'off', // Using TypeScript for prop validation
+      'react/no-array-index-key': 'warn',
     },
   },
 

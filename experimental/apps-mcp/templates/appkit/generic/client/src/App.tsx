@@ -16,7 +16,6 @@ import {
   SelectValue,
 } from '@databricks/appkit-ui/react';
 import { sql } from "@databricks/appkit-ui/js";
-import { Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import { useState, useEffect } from 'react';
 
 function App() {
@@ -32,9 +31,9 @@ function App() {
 
   useEffect(() => {
     fetch('/health')
-      .then(response => response.json())
-      .then(data => setHealth({ ...data, timestamp: new Date().toISOString() }))
-      .catch(error => setHealthError(error.message));
+      .then((response) => response.json())
+      .then((data: { status: string }) => setHealth({ ...data, timestamp: new Date().toISOString() }))
+      .catch((error: { message: string }) => setHealthError(error.message));
   }, []);
 
   const [maxMonthNum, setMaxMonthNum] = useState<number>(12);
@@ -112,8 +111,8 @@ function App() {
                     <SelectValue placeholder="All months" />
                   </SelectTrigger>
                   <SelectContent>
-                    {[...Array(12)].map((_, i) => (
-                      <SelectItem key={i + 1} value={(i + 1).toString()}>
+                    {Array.from({ length: 12 }, (_, i) => (
+                      <SelectItem key={`month-${i + 1}`} value={(i + 1).toString()}>
                         {i + 1 === 12 ? 'All months (12)' : `Month ${i + 1}`}
                       </SelectItem>
                     ))}
@@ -137,15 +136,7 @@ function App() {
             <CardTitle>Sales Trend Custom Line Chart</CardTitle>
           </CardHeader>
           <CardContent>
-            <LineChart queryKey="mocked_sales" parameters={salesParameters}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <Line type="monotone" dataKey="revenue" stroke="#40d1f5" />
-              <Line type="monotone" dataKey="expenses" stroke="#4462c9" />
-              <Line type="monotone" dataKey="customers" stroke="#EB1600" />
-              <XAxis dataKey="month" />
-              <YAxis />
-              <Tooltip />
-            </LineChart>
+            <LineChart queryKey="mocked_sales" parameters={salesParameters} />
           </CardContent>
         </Card>
         <Card className="shadow-lg flex min-w-0">
