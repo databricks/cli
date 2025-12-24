@@ -40,14 +40,36 @@ func (d *BundleDetector) Detect(ctx context.Context, workDir string, detected *D
 	}
 
 	// extract target types from fully loaded resources
-	if len(b.Config.Resources.Apps) > 0 {
+	hasApps := len(b.Config.Resources.Apps) > 0
+	hasJobs := len(b.Config.Resources.Jobs) > 0
+	hasPipelines := len(b.Config.Resources.Pipelines) > 0
+
+	if hasApps {
 		detected.TargetTypes = append(detected.TargetTypes, "apps")
 	}
-	if len(b.Config.Resources.Jobs) > 0 {
+	if hasJobs {
 		detected.TargetTypes = append(detected.TargetTypes, "jobs")
 	}
-	if len(b.Config.Resources.Pipelines) > 0 {
+	if hasPipelines {
 		detected.TargetTypes = append(detected.TargetTypes, "pipelines")
+	}
+
+	// Include "mixed" guidance for all projects EXCEPT app-only projects.
+	// This provides general resource addition guidance (target_mixed.tmpl).
+	// We exclude app-only projects to provide a dedicated app development experience
+	// focused on app-specific patterns (target_apps.tmpl has comprehensive app guidance).
+	isAppOnly := hasApps && !hasJobs && !hasPipelines &&
+		len(b.Config.Resources.Clusters) == 0 &&
+		len(b.Config.Resources.Dashboards) == 0 &&
+		len(b.Config.Resources.Experiments) == 0 &&
+		len(b.Config.Resources.ModelServingEndpoints) == 0 &&
+		len(b.Config.Resources.RegisteredModels) == 0 &&
+		len(b.Config.Resources.Schemas) == 0 &&
+		len(b.Config.Resources.QualityMonitors) == 0 &&
+		len(b.Config.Resources.Volumes) == 0
+
+	if !isAppOnly {
+		detected.TargetTypes = append(detected.TargetTypes, "mixed")
 	}
 
 	return nil

@@ -24,16 +24,35 @@ func Discover(ctx context.Context, workingDirectory string) (string, error) {
 	currentProfile := middlewares.GetDatabricksProfile(ctx)
 	profiles := middlewares.GetAvailableProfiles(ctx)
 
+	// Get default catalog (non-fatal if unavailable)
+	defaultCatalog := getDefaultCatalog(ctx)
+
 	// run detectors to identify project context
 	registry := detector.NewRegistry()
 	detected := registry.Detect(ctx, workingDirectory)
 
-	return generateDiscoverGuidance(ctx, warehouse, currentProfile, profiles, detected), nil
+	return generateDiscoverGuidance(ctx, warehouse, currentProfile, profiles, defaultCatalog, detected), nil
+}
+
+// getDefaultCatalog fetches the workspace default catalog name.
+// Returns empty string if Unity Catalog is not available or on error.
+func getDefaultCatalog(ctx context.Context) string {
+	w, err := middlewares.GetDatabricksClient(ctx)
+	if err != nil {
+		return ""
+	}
+
+	metastore, err := w.Metastores.Current(ctx)
+	if err != nil {
+		return "" // gracefully handle any error (no UC, permission denied, etc.)
+	}
+
+	return metastore.DefaultCatalogName
 }
 
 // generateDiscoverGuidance creates guidance with L1 (flow) + L2 (target) layers.
-func generateDiscoverGuidance(ctx context.Context, warehouse *sql.EndpointInfo, currentProfile string, profiles profile.Profiles, detected *detector.DetectedContext) string {
-	data := buildTemplateData(warehouse, currentProfile, profiles)
+func generateDiscoverGuidance(ctx context.Context, warehouse *sql.EndpointInfo, currentProfile string, profiles profile.Profiles, defaultCatalog string, detected *detector.DetectedContext) string {
+	data := buildTemplateData(warehouse, currentProfile, profiles, defaultCatalog)
 
 	// L1: always include flow guidance
 	result := prompts.MustExecuteTemplate("flow.tmpl", data)
@@ -61,7 +80,7 @@ func generateDiscoverGuidance(ctx context.Context, warehouse *sql.EndpointInfo, 
 	return result
 }
 
-func buildTemplateData(warehouse *sql.EndpointInfo, currentProfile string, profiles profile.Profiles) map[string]string {
+func buildTemplateData(warehouse *sql.EndpointInfo, currentProfile string, profiles profile.Profiles, defaultCatalog string) map[string]string {
 	workspaceInfo := "Current Workspace Profile: " + currentProfile
 	if len(profiles) > 0 {
 		var currentHost string
@@ -106,10 +125,11 @@ func buildTemplateData(warehouse *sql.EndpointInfo, currentProfile string, profi
 	}
 
 	return map[string]string{
-		"WorkspaceInfo": workspaceInfo,
-		"WarehouseName": warehouseName,
-		"WarehouseID":   warehouseID,
-		"ProfilesInfo":  profilesInfo,
-		"Profile":       currentProfile,
+		"WorkspaceInfo":  workspaceInfo,
+		"WarehouseName":  warehouseName,
+		"WarehouseID":    warehouseID,
+		"ProfilesInfo":   profilesInfo,
+		"Profile":        currentProfile,
+		"DefaultCatalog": defaultCatalog,
 	}
 }

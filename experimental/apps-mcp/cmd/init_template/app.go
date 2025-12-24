@@ -1,4 +1,4 @@
-package mcp
+package init_template
 
 import (
 	"context"
@@ -7,8 +7,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"sort"
-	"strings"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/experimental/apps-mcp/lib/common"
@@ -17,6 +15,13 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/template"
 	"github.com/spf13/cobra"
+)
+
+const (
+	defaultTemplateRepo = "https://github.com/databricks/cli"
+	defaultTemplateDir  = "experimental/apps-mcp/templates/appkit"
+	defaultBranch       = "main"
+	templatePathEnvVar  = "DATABRICKS_APPKIT_TEMPLATE_PATH"
 )
 
 func validateAppNameLength(projectName string) error {
@@ -73,103 +78,19 @@ func readClaudeMd(ctx context.Context, configFile string) {
 	cmdio.LogString(ctx, "=================\n")
 }
 
-// generateFileTree creates a tree-style visualization of the file structure.
-// Collapses directories with more than 10 files to avoid clutter.
-func generateFileTree(outputDir string) (string, error) {
-	const maxFilesToShow = 10
-
-	// collect all files in the output directory
-	var allFiles []string
-	err := filepath.Walk(outputDir, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		if !info.IsDir() {
-			relPath, err := filepath.Rel(outputDir, path)
-			if err != nil {
-				return err
-			}
-			allFiles = append(allFiles, filepath.ToSlash(relPath))
-		}
-		return nil
-	})
-	if err != nil {
-		return "", err
-	}
-
-	// build a tree structure
-	tree := make(map[string][]string)
-
-	for _, relPath := range allFiles {
-		parts := strings.Split(relPath, "/")
-
-		if len(parts) == 1 {
-			// root level file
-			tree[""] = append(tree[""], parts[0])
-		} else {
-			// file in subdirectory
-			dir := strings.Join(parts[:len(parts)-1], "/")
-			fileName := parts[len(parts)-1]
-			tree[dir] = append(tree[dir], fileName)
-		}
-	}
-
-	// format as tree
-	var output strings.Builder
-	var sortedDirs []string
-	for dir := range tree {
-		sortedDirs = append(sortedDirs, dir)
-	}
-	sort.Strings(sortedDirs)
-
-	for _, dir := range sortedDirs {
-		filesInDir := tree[dir]
-		if dir == "" {
-			// root files - always show all
-			for _, file := range filesInDir {
-				output.WriteString(file)
-				output.WriteString("\n")
-			}
-		} else {
-			// directory
-			output.WriteString(dir)
-			output.WriteString("/\n")
-			if len(filesInDir) <= maxFilesToShow {
-				// show all files
-				for _, file := range filesInDir {
-					output.WriteString("  ")
-					output.WriteString(file)
-					output.WriteString("\n")
-				}
-			} else {
-				// collapse large directories
-				output.WriteString(fmt.Sprintf("  (%d files)\n", len(filesInDir)))
-			}
-		}
-	}
-
-	return output.String(), nil
-}
-
-const (
-	defaultTemplateRepo = "https://github.com/databricks/cli"
-	defaultTemplateDir  = "experimental/apps-mcp/templates/appkit"
-	defaultBranch       = "main"
-	templatePathEnvVar  = "DATABRICKS_APPKIT_TEMPLATE_PATH"
-)
-
-func newInitTemplateCmd() *cobra.Command {
+// newAppCmd creates the app subcommand for init-template.
+func newAppCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "init-template",
+		Use:   "app",
 		Short: "Initialize a Databricks App using the appkit template",
 		Args:  cobra.NoArgs,
 		Long: `Initialize a Databricks App using the appkit template.
 
 Examples:
-  experimental apps-mcp tools init-template --name my-app
-  experimental apps-mcp tools init-template --name my-app --warehouse abc123
-  experimental apps-mcp tools init-template --name my-app --description "My cool app"
-  experimental apps-mcp tools init-template --name my-app --output-dir ./projects
+  experimental apps-mcp tools init-template app --name my-app
+  experimental apps-mcp tools init-template app --name my-app --warehouse abc123
+  experimental apps-mcp tools init-template app --name my-app --description "My cool app"
+  experimental apps-mcp tools init-template app --name my-app --output-dir ./projects
 
 Environment variables:
   DATABRICKS_APPKIT_TEMPLATE_PATH  Override template source with local path (for development)
@@ -264,24 +185,11 @@ After initialization:
 		}
 
 		// Write config to temp file
-		tmpFile, err := os.CreateTemp("", "mcp-template-config-*.json")
+		configFile, err := writeConfigToTempFile(configMap)
 		if err != nil {
-			return fmt.Errorf("create temp config file: %w", err)
+			return err
 		}
-		defer os.Remove(tmpFile.Name())
-
-		configBytes, err := json.Marshal(configMap)
-		if err != nil {
-			return fmt.Errorf("marshal config: %w", err)
-		}
-		if _, err := tmpFile.Write(configBytes); err != nil {
-			return fmt.Errorf("write config file: %w", err)
-		}
-		if err := tmpFile.Close(); err != nil {
-			return fmt.Errorf("close config file: %w", err)
-		}
-
-		configFile := tmpFile.Name()
+		defer os.Remove(configFile)
 
 		// Create output directory if specified and doesn't exist
 		if outputDir != "" {
@@ -317,17 +225,11 @@ After initialization:
 		}
 
 		// Count files and get absolute path
-		fileCount := 0
 		absOutputDir, err := filepath.Abs(actualOutputDir)
 		if err != nil {
 			absOutputDir = actualOutputDir
 		}
-		_ = filepath.Walk(absOutputDir, func(path string, info os.FileInfo, err error) error {
-			if err == nil && !info.IsDir() {
-				fileCount++
-			}
-			return nil
-		})
+		fileCount := countFiles(absOutputDir)
 		cmdio.LogString(ctx, common.FormatScaffoldSuccess("appkit", absOutputDir, fileCount))
 
 		// Generate and print file tree structure

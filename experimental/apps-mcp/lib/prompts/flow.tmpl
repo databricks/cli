@@ -25,14 +25,29 @@ Use `invoke_databricks_cli '<command>'` to run any Databricks CLI command.
 
 ### Project scaffolding
 
+IMPORTANT: Always use 'experimental apps-mcp tools init-template' commands below instead of 'databricks bundle init'.
+The init-template commands create agent-friendly projects with AGENTS.md/CLAUDE.md guidance files and proper MCP integration.
+
 For apps:
+invoke_databricks_cli 'experimental apps-mcp tools init-template app --name my-app --description "My app description"'
 
-invoke_databricks_cli 'experimental apps-mcp tools init-template --name my-app --description "My app description"'
+For jobs (Python notebooks with wheel package):
+invoke_databricks_cli 'experimental apps-mcp tools init-template job --name my_job'
+invoke_databricks_cli 'experimental apps-mcp tools init-template job --name my_job --catalog my_catalog'
 
+For pipelines (Lakeflow Declarative Pipelines):
+invoke_databricks_cli 'experimental apps-mcp tools init-template pipeline --name my_pipeline --language python'
+invoke_databricks_cli 'experimental apps-mcp tools init-template pipeline --name my_pipeline --language sql --catalog my_catalog'
+Note: --language is required (python or sql)
+
+For custom resources (dashboards, alerts, model serving, etc.):
+invoke_databricks_cli 'experimental apps-mcp tools init-template empty --name my_project'
+Note: Use this for resources OTHER than apps, jobs, or pipelines
+
+Notes:
 - App name must be ≤26 characters (dev- prefix adds 4 chars, max total 30)
-- Use lowercase letters, numbers, and hyphens only
-
-Other types of projects are not yet supported.
+- Job/pipeline/project names: letters, numbers, underscores only
+- --catalog defaults to workspace default catalog{{if .DefaultCatalog}} (currently '{{.DefaultCatalog}}'){{end}}
 
 ### Custom SQL Queries
 

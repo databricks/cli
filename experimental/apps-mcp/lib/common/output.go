@@ -45,3 +45,18 @@ func FormatDeploymentFailure(appName, message string) string {
 	return fmt.Sprintf("%s❌ Deployment failed for '%s'\n\n%s\n",
 		header, appName, message)
 }
+
+// FormatProjectScaffoldSuccess formats a success message for project scaffolding.
+// projectType examples: "job", "pipeline", "empty"
+// emoji examples: "⚙️" (job), "🔄" (pipeline), "📦" (empty)
+// extraDetails can include additional info like "Language: python"
+func FormatProjectScaffoldSuccess(projectType, emoji, templateName, workDir string, filesCopied int, extraDetails string) string {
+	header := FormatBrandedHeader(emoji, projectType+" project scaffolded successfully")
+	result := fmt.Sprintf("%s✅ Created %s %s project at %s\n\n",
+		header, templateName, projectType, workDir)
+	if extraDetails != "" {
+		result += extraDetails + "\n"
+	}
+	result += fmt.Sprintf("Files copied: %d\n\nTemplate: %s\n", filesCopied, templateName)
+	return result
+}
