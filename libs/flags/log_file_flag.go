@@ -8,6 +8,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const (
+	LogFileStderr = "stderr"
+	LogFileStdout = "stdout"
+)
+
 // Abstract over files that are already open (e.g. stderr) and
 // files that need to be opened before use.
 type logFile interface {
@@ -71,7 +76,7 @@ type LogFileFlag struct {
 
 func NewLogFileFlag() LogFileFlag {
 	return LogFileFlag{
-		name:    "stderr",
+		name:    LogFileStderr,
 		logFile: &nopLogFile{os.Stderr},
 	}
 }
@@ -83,10 +88,10 @@ func (f *LogFileFlag) String() string {
 func (f *LogFileFlag) Set(s string) error {
 	lower := strings.ToLower(s)
 	switch lower {
-	case "stderr":
+	case LogFileStderr:
 		f.name = lower
 		f.logFile = &nopLogFile{os.Stderr}
-	case "stdout":
+	case LogFileStdout:
 		f.name = lower
 		f.logFile = &nopLogFile{os.Stdout}
 	default:
@@ -104,7 +109,7 @@ func (f *LogFileFlag) Type() string {
 // Complete is the Cobra compatible completion function for this flag.
 func (f *LogFileFlag) Complete(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 	return []string{
-		"stdout",
-		"stderr",
+		LogFileStdout,
+		LogFileStderr,
 	}, cobra.ShellCompDirectiveDefault
 }
