@@ -156,7 +156,7 @@ func (locker *Locker) Lock(ctx context.Context, isForced bool) error {
 		// the error and instead fall through to [assertLockHeld] below.
 		// This function will return a more descriptive error message that includes
 		// details about the current holder of the lock.
-		if !errors.As(err, &filer.FileAlreadyExistsError{}) {
+		if !errors.Is(err, fs.ErrExist) {
 			return err
 		}
 	}

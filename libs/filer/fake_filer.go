@@ -37,7 +37,7 @@ func (f *FakeFiler) ReadDir(ctx context.Context, p string) ([]fs.DirEntry, error
 	p = strings.TrimSuffix(p, "/")
 	entry, ok := f.entries[p]
 	if !ok {
-		return nil, NoSuchDirectoryError{p}
+		return nil, noSuchDirectoryError{p}
 	}
 
 	if !entry.FakeDir {

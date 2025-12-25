@@ -61,7 +61,7 @@ func (w *WorkspaceFilesExtensionsClient) getNotebookStatByNameWithExt(ctx contex
 	stat, err := w.stat(ctx, nameWithoutExt)
 	if err != nil {
 		// If the file does not exist, return early.
-		if errors.As(err, &FileDoesNotExistError{}) {
+		if errors.Is(err, fs.ErrNotExist) {
 			return nil, nil
 		}
 		log.Debugf(ctx, "attempting to determine if %s could be a notebook. Failed to fetch the status of object at %s: %s", name, path.Join(w.root, nameWithoutExt), err)
@@ -259,7 +259,7 @@ func (w *WorkspaceFilesExtensionsClient) Read(ctx context.Context, name string) 
 	r, err := w.wsfs.Read(ctx, name)
 
 	// If the file is not found, it might be a notebook.
-	if errors.As(err, &FileDoesNotExistError{}) {
+	if errors.Is(err, fs.ErrNotExist) {
 		stat, serr := w.getNotebookStatByNameWithExt(ctx, name)
 		if serr != nil {
 			// Unable to stat. Return the stat error.
@@ -302,7 +302,7 @@ func (w *WorkspaceFilesExtensionsClient) Delete(ctx context.Context, name string
 	err = w.wsfs.Delete(ctx, name, mode...)
 
 	// If the file is not found, it might be a notebook.
-	if errors.As(err, &FileDoesNotExistError{}) {
+	if errors.Is(err, fs.ErrNotExist) {
 		stat, serr := w.getNotebookStatByNameWithExt(ctx, name)
 		if serr != nil {
 			// Unable to stat. Return the stat error.
@@ -324,7 +324,7 @@ func (w *WorkspaceFilesExtensionsClient) Stat(ctx context.Context, name string) 
 	info, err := w.wsfs.Stat(ctx, name)
 
 	// If the file is not found, it might be a notebook.
-	if errors.As(err, &FileDoesNotExistError{}) {
+	if errors.Is(err, fs.ErrNotExist) {
 		stat, serr := w.getNotebookStatByNameWithExt(ctx, name)
 		if serr != nil {
 			// Unable to stat. Return the stat error.
@@ -342,7 +342,7 @@ func (w *WorkspaceFilesExtensionsClient) Stat(ctx context.Context, name string) 
 		return nil, err
 	}
 
-	// If an object is found and it is a notebook, return a FileDoesNotExistError.
+	// If an object is found and it is a notebook, return a fileDoesNotExistError.
 	// If a notebook is found by the workspace files client, without having stripped
 	// the extension, this implies that no file with the same name exists.
 	//
@@ -352,7 +352,7 @@ func (w *WorkspaceFilesExtensionsClient) Stat(ctx context.Context, name string) 
 	// To stat the metadata of a notebook called `foo` in the workspace the user
 	// should use the name with the extension included like `foo.ipynb` or `foo.sql`.
 	if info.Sys().(workspace.ObjectInfo).ObjectType == workspace.ObjectTypeNotebook {
-		return nil, FileDoesNotExistError{name}
+		return nil, fileDoesNotExistError{name}
 	}
 
 	return info, nil
