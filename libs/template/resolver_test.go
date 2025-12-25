@@ -5,9 +5,14 @@ import (
 	"testing"
 
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/dbr"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func testContext(t *testing.T) context.Context {
+	return dbr.DetectRuntime(context.Background())
+}
 
 func TestTemplateResolverBothTagAndBranch(t *testing.T) {
 	r := Resolver{
@@ -15,13 +20,13 @@ func TestTemplateResolverBothTagAndBranch(t *testing.T) {
 		Branch: "branch",
 	}
 
-	_, err := r.Resolve(context.Background())
+	_, err := r.Resolve(testContext(t))
 	assert.EqualError(t, err, "only one of tag or branch can be specified")
 }
 
 func TestTemplateResolverErrorsWhenPromptingIsNotSupported(t *testing.T) {
 	r := Resolver{}
-	ctx := cmdio.MockDiscard(context.Background())
+	ctx := cmdio.MockDiscard(testContext(t))
 
 	_, err := r.Resolve(ctx)
 	assert.EqualError(t, err, "prompting is not supported. Please specify the path, name or URL of the template to use")
@@ -38,7 +43,7 @@ func TestTemplateResolverForDefaultTemplates(t *testing.T) {
 				TemplatePathOrUrl: name,
 			}
 
-			tmpl, err := r.Resolve(context.Background())
+			tmpl, err := r.Resolve(testContext(t))
 			require.NoError(t, err)
 
 			assert.Equal(t, &builtinReader{name: name}, tmpl.Reader)
@@ -52,7 +57,7 @@ func TestTemplateResolverForDefaultTemplates(t *testing.T) {
 			ConfigFile:        "/config/file",
 		}
 
-		tmpl, err := r.Resolve(context.Background())
+		tmpl, err := r.Resolve(testContext(t))
 		require.NoError(t, err)
 
 		// Assert reader and writer configuration
@@ -69,7 +74,7 @@ func TestTemplateResolverForCustomUrl(t *testing.T) {
 		ConfigFile:        "/config/file",
 	}
 
-	tmpl, err := r.Resolve(context.Background())
+	tmpl, err := r.Resolve(testContext(t))
 	require.NoError(t, err)
 
 	assert.Equal(t, Custom, tmpl.name)
@@ -89,7 +94,7 @@ func TestTemplateResolverForCustomPath(t *testing.T) {
 		ConfigFile:        "/config/file",
 	}
 
-	tmpl, err := r.Resolve(context.Background())
+	tmpl, err := r.Resolve(testContext(t))
 	require.NoError(t, err)
 
 	assert.Equal(t, Custom, tmpl.name)
