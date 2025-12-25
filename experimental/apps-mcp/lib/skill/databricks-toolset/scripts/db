@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+CYAN='\033[0;36m'
+NC='\033[0m'
+echo -e "${CYAN}> databricks $*${NC}" >&2
+__DATABRICKS_CLI_PATH__ "$@"
