@@ -1,0 +1,4 @@
+#!/bin/bash
+$CLI experimental apps-mcp tools init-template empty --name test_empty --catalog main --output-dir output > /dev/null 2>&1
+echo "✓ Template instantiation succeeded"
+rm -rf output

@@ -9,8 +9,6 @@ import (
 	"path/filepath"
 
 	"github.com/databricks/cli/cmd/root"
-	"github.com/databricks/cli/experimental/apps-mcp/lib/common"
-	"github.com/databricks/cli/experimental/apps-mcp/lib/prompts"
 	"github.com/databricks/cli/experimental/apps-mcp/lib/state"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/template"
@@ -24,6 +22,19 @@ const (
 	templatePathEnvVar  = "DATABRICKS_APPKIT_TEMPLATE_PATH"
 )
 
+func readClaudeMd(ctx context.Context, projectDir string) {
+	claudePath := filepath.Join(projectDir, "CLAUDE.md")
+	content, err := os.ReadFile(claudePath)
+	if err != nil {
+		cmdio.LogString(ctx, "\nConsult with CLAUDE.md provided in the bundle if present.")
+		return
+	}
+
+	cmdio.LogString(ctx, "\n=== CLAUDE.md ===")
+	cmdio.LogString(ctx, string(content))
+	cmdio.LogString(ctx, "=================\n")
+}
+
 func validateAppNameLength(projectName string) error {
 	const maxAppNameLength = 30
 	const devTargetPrefix = "dev-"
@@ -36,46 +47,6 @@ func validateAppNameLength(projectName string) error {
 		)
 	}
 	return nil
-}
-
-func readClaudeMd(ctx context.Context, configFile string) {
-	showFallback := func() {
-		cmdio.LogString(ctx, "\nConsult with CLAUDE.md provided in the bundle if present.")
-	}
-
-	if configFile == "" {
-		showFallback()
-		return
-	}
-
-	configBytes, err := os.ReadFile(configFile)
-	if err != nil {
-		showFallback()
-		return
-	}
-
-	var config map[string]any
-	if err := json.Unmarshal(configBytes, &config); err != nil {
-		showFallback()
-		return
-	}
-
-	projectName, ok := config["project_name"].(string)
-	if !ok || projectName == "" {
-		showFallback()
-		return
-	}
-
-	claudePath := filepath.Join(".", projectName, "CLAUDE.md")
-	content, err := os.ReadFile(claudePath)
-	if err != nil {
-		showFallback()
-		return
-	}
-
-	cmdio.LogString(ctx, "\n=== CLAUDE.md ===")
-	cmdio.LogString(ctx, string(content))
-	cmdio.LogString(ctx, "=================\n")
 }
 
 // newAppCmd creates the app subcommand for init-template.
@@ -184,73 +155,26 @@ After initialization:
 			configMap["app_description"] = description
 		}
 
-		// Write config to temp file
-		configFile, err := writeConfigToTempFile(configMap)
+		err := MaterializeTemplate(ctx, TemplateConfig{
+			TemplatePath: templatePathOrUrl,
+			TemplateName: "appkit",
+			TemplateDir:  templateDir,
+			Branch:       branch,
+		}, configMap, name, outputDir)
 		if err != nil {
 			return err
 		}
-		defer os.Remove(configFile)
 
-		// Create output directory if specified and doesn't exist
-		if outputDir != "" {
-			if err := os.MkdirAll(outputDir, 0o755); err != nil {
-				return fmt.Errorf("create output directory: %w", err)
-			}
-		}
-
-		r := template.Resolver{
-			TemplatePathOrUrl: templatePathOrUrl,
-			ConfigFile:        configFile,
-			OutputDir:         outputDir,
-			TemplateDir:       templateDir,
-			Branch:            branch,
-		}
-
-		tmpl, err := r.Resolve(ctx)
-		if err != nil {
-			return err
-		}
-		defer tmpl.Reader.Cleanup(ctx)
-
-		err = tmpl.Writer.Materialize(ctx, tmpl.Reader)
-		if err != nil {
-			return err
-		}
-		tmpl.Writer.LogTelemetry(ctx)
-
-		// Determine actual output directory (template writes to subdirectory with project name)
-		actualOutputDir := name
-		if outputDir != "" {
-			actualOutputDir = filepath.Join(outputDir, name)
-		}
-
-		// Count files and get absolute path
-		absOutputDir, err := filepath.Abs(actualOutputDir)
-		if err != nil {
-			absOutputDir = actualOutputDir
-		}
-		fileCount := countFiles(absOutputDir)
-		cmdio.LogString(ctx, common.FormatScaffoldSuccess("appkit", absOutputDir, fileCount))
-
-		// Generate and print file tree structure
-		fileTree, err := generateFileTree(absOutputDir)
-		if err == nil && fileTree != "" {
-			cmdio.LogString(ctx, "\nFile structure:")
-			cmdio.LogString(ctx, fileTree)
-		}
-
-		// Inject L2 (target-specific guidance for apps)
-		targetApps := prompts.MustExecuteTemplate("target_apps.tmpl", map[string]any{})
-		cmdio.LogString(ctx, targetApps)
+		projectDir := filepath.Join(outputDir, name)
 
 		// Inject L3 (template-specific guidance from CLAUDE.md)
-		readClaudeMd(ctx, configFile)
+		// (we only do this for the app template; other templates use a generic CLAUDE.md)
+		readClaudeMd(ctx, projectDir)
 
-		// Save initial scaffolded state
-		if err := state.SaveState(absOutputDir, state.NewScaffolded()); err != nil {
+		// Save initial scaffolded state for app state machine
+		if err := state.SaveState(projectDir, state.NewScaffolded()); err != nil {
 			return fmt.Errorf("failed to save project state: %w", err)
 		}
-
 		return nil
 	}
 	return cmd

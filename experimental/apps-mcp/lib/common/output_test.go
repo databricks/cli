@@ -17,11 +17,11 @@ func TestFormatBrandedHeader(t *testing.T) {
 	}
 }
 
-func TestFormatScaffoldSuccess(t *testing.T) {
-	result := FormatScaffoldSuccess("appkit", "/path/to/app", 42)
+func TestFormatProjectScaffoldSuccess(t *testing.T) {
+	result := FormatProjectScaffoldSuccess("appkit", "/path/to/app", 42)
 
 	// Check for key components
-	if !strings.Contains(result, "🚀 Databricks MCP") {
+	if !strings.Contains(result, "📦 Databricks MCP") {
 		t.Error("Missing branded header")
 	}
 	if !strings.Contains(result, "✅") {

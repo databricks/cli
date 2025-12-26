@@ -2,14 +2,8 @@ package init_template
 
 import (
 	"errors"
-	"fmt"
-	"os"
-	"path/filepath"
 
 	"github.com/databricks/cli/cmd/root"
-	"github.com/databricks/cli/experimental/apps-mcp/lib/common"
-	"github.com/databricks/cli/experimental/apps-mcp/lib/prompts"
-	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/template"
 	"github.com/spf13/cobra"
 )
@@ -62,72 +56,13 @@ After initialization:
 			"include_python":   "yes",
 			"serverless":       "yes",
 			"personal_schemas": "yes",
-		}
-		if catalog != "" {
-			configMap["default_catalog"] = catalog
+			"default_catalog":  catalog,
 		}
 
-		configFile, err := writeConfigToTempFile(configMap)
-		if err != nil {
-			return err
-		}
-		defer os.Remove(configFile)
-
-		if outputDir != "" {
-			if err := os.MkdirAll(outputDir, 0o755); err != nil {
-				return fmt.Errorf("create output directory: %w", err)
-			}
-		}
-
-		r := template.Resolver{
-			TemplatePathOrUrl: string(template.DefaultPython),
-			ConfigFile:        configFile,
-			OutputDir:         outputDir,
-		}
-
-		tmpl, err := r.Resolve(ctx)
-		if err != nil {
-			return err
-		}
-		defer tmpl.Reader.Cleanup(ctx)
-
-		err = tmpl.Writer.Materialize(ctx, tmpl.Reader)
-		if err != nil {
-			return err
-		}
-		tmpl.Writer.LogTelemetry(ctx)
-
-		actualOutputDir := name
-		if outputDir != "" {
-			actualOutputDir = filepath.Join(outputDir, name)
-		}
-
-		absOutputDir, err := filepath.Abs(actualOutputDir)
-		if err != nil {
-			absOutputDir = actualOutputDir
-		}
-		fileCount := countFiles(absOutputDir)
-		cmdio.LogString(ctx, common.FormatProjectScaffoldSuccess("job", "⚙️", "default-python", absOutputDir, fileCount, ""))
-
-		fileTree, err := generateFileTree(absOutputDir)
-		if err == nil && fileTree != "" {
-			cmdio.LogString(ctx, "\nFile structure:")
-			cmdio.LogString(ctx, fileTree)
-		}
-
-		// Write CLAUDE.md and AGENTS.md files
-		if err := writeAgentFiles(absOutputDir, map[string]any{}); err != nil {
-			return fmt.Errorf("failed to write agent files: %w", err)
-		}
-
-		// Show L2 guidance: mixed (for adding any resource) + jobs (for developing jobs)
-		targetMixed := prompts.MustExecuteTemplate("target_mixed.tmpl", map[string]any{})
-		cmdio.LogString(ctx, targetMixed)
-
-		targetJobs := prompts.MustExecuteTemplate("target_jobs.tmpl", map[string]any{})
-		cmdio.LogString(ctx, targetJobs)
-
-		return nil
+		return MaterializeTemplate(ctx, TemplateConfig{
+			TemplatePath: string(template.DefaultPython),
+			TemplateName: "default-python",
+		}, configMap, name, outputDir)
 	}
 	return cmd
 }

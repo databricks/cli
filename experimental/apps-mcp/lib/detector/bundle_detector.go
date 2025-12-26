@@ -22,7 +22,9 @@ func (d *BundleDetector) Detect(ctx context.Context, workDir string, detected *D
 	}
 
 	// use full bundle loading to get all resources including from includes
-	ctx = logdiag.InitContext(ctx)
+	if !logdiag.IsSetup(ctx) {
+		ctx = logdiag.InitContext(ctx)
+	}
 	b, err := bundle.Load(ctx, workDir)
 	if err != nil || b == nil {
 		return nil
@@ -54,10 +56,8 @@ func (d *BundleDetector) Detect(ctx context.Context, workDir string, detected *D
 		detected.TargetTypes = append(detected.TargetTypes, "pipelines")
 	}
 
-	// Include "mixed" guidance for all projects EXCEPT app-only projects.
-	// This provides general resource addition guidance (target_mixed.tmpl).
-	// We exclude app-only projects to provide a dedicated app development experience
-	// focused on app-specific patterns (target_apps.tmpl has comprehensive app guidance).
+	// Determine if this is an app-only project (only app resources, nothing else).
+	// App-only projects get focused app guidance; others get "mixed" guidance.
 	isAppOnly := hasApps && !hasJobs && !hasPipelines &&
 		len(b.Config.Resources.Clusters) == 0 &&
 		len(b.Config.Resources.Dashboards) == 0 &&
@@ -68,6 +68,7 @@ func (d *BundleDetector) Detect(ctx context.Context, workDir string, detected *D
 		len(b.Config.Resources.QualityMonitors) == 0 &&
 		len(b.Config.Resources.Volumes) == 0
 
+	// Include "mixed" guidance for all projects except app-only projects
 	if !isAppOnly {
 		detected.TargetTypes = append(detected.TargetTypes, "mixed")
 	}

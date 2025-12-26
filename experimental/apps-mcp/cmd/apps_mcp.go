@@ -1,8 +1,8 @@
 package mcp
 
 import (
-	mcplib "github.com/databricks/cli/experimental/apps-mcp/lib"
 	"github.com/databricks/cli/experimental/apps-mcp/cmd/init_template"
+	mcplib "github.com/databricks/cli/experimental/apps-mcp/lib"
 	"github.com/databricks/cli/experimental/apps-mcp/lib/server"
 	"github.com/databricks/cli/libs/log"
 	"github.com/spf13/cobra"

@@ -12,13 +12,6 @@ func FormatBrandedHeader(emoji, message string) string {
 		headerLine, emoji, message, headerLine)
 }
 
-// FormatScaffoldSuccess formats a success message for app scaffolding.
-func FormatScaffoldSuccess(templateName, workDir string, filesCopied int) string {
-	header := FormatBrandedHeader("🚀", "App scaffolded successfully")
-	return fmt.Sprintf("%s✅ Created %s application at %s\n\nFiles copied: %d\n\nTemplate: %s\n",
-		header, templateName, workDir, filesCopied, templateName)
-}
-
 // FormatValidationSuccess formats a success message for validation.
 func FormatValidationSuccess(message string) string {
 	header := FormatBrandedHeader("🔍", "Validating your app")
@@ -47,16 +40,8 @@ func FormatDeploymentFailure(appName, message string) string {
 }
 
 // FormatProjectScaffoldSuccess formats a success message for project scaffolding.
-// projectType examples: "job", "pipeline", "empty"
-// emoji examples: "⚙️" (job), "🔄" (pipeline), "📦" (empty)
-// extraDetails can include additional info like "Language: python"
-func FormatProjectScaffoldSuccess(projectType, emoji, templateName, workDir string, filesCopied int, extraDetails string) string {
-	header := FormatBrandedHeader(emoji, projectType+" project scaffolded successfully")
-	result := fmt.Sprintf("%s✅ Created %s %s project at %s\n\n",
-		header, templateName, projectType, workDir)
-	if extraDetails != "" {
-		result += extraDetails + "\n"
-	}
-	result += fmt.Sprintf("Files copied: %d\n\nTemplate: %s\n", filesCopied, templateName)
-	return result
+func FormatProjectScaffoldSuccess(templateName, workDir string, filesCopied int) string {
+	header := FormatBrandedHeader("📦", "Project scaffolded successfully")
+	return fmt.Sprintf("%s✅ Created %s project at %s\n\nFiles copied: %d\n",
+		header, templateName, workDir, filesCopied)
 }

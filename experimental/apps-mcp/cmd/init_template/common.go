@@ -1,6 +1,7 @@
 package init_template
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -8,8 +9,90 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/databricks/cli/experimental/apps-mcp/lib/common"
+	"github.com/databricks/cli/experimental/apps-mcp/lib/detector"
 	"github.com/databricks/cli/experimental/apps-mcp/lib/prompts"
+	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/template"
 )
+
+// TemplateConfig holds configuration for template materialization.
+type TemplateConfig struct {
+	TemplatePath string // e.g., template.DefaultPython or remote URL
+	TemplateName string // e.g., "default-python", "lakeflow-pipelines", "appkit"
+	TemplateDir  string // subdirectory within repo (for remote templates)
+	Branch       string // git branch (for remote templates)
+}
+
+// MaterializeTemplate handles the common template materialization workflow.
+func MaterializeTemplate(ctx context.Context, cfg TemplateConfig, configMap map[string]any, name, outputDir string) error {
+	configFile, err := writeConfigToTempFile(configMap)
+	if err != nil {
+		return err
+	}
+	defer os.Remove(configFile)
+
+	if outputDir != "" {
+		if err := os.MkdirAll(outputDir, 0o755); err != nil {
+			return fmt.Errorf("create output directory: %w", err)
+		}
+	}
+
+	r := template.Resolver{
+		TemplatePathOrUrl: cfg.TemplatePath,
+		ConfigFile:        configFile,
+		OutputDir:         outputDir,
+		TemplateDir:       cfg.TemplateDir,
+		Branch:            cfg.Branch,
+	}
+
+	tmpl, err := r.Resolve(ctx)
+	if err != nil {
+		return err
+	}
+	defer tmpl.Reader.Cleanup(ctx)
+
+	if err := tmpl.Writer.Materialize(ctx, tmpl.Reader); err != nil {
+		return err
+	}
+	tmpl.Writer.LogTelemetry(ctx)
+
+	actualOutputDir := name
+	if outputDir != "" {
+		actualOutputDir = filepath.Join(outputDir, name)
+	}
+
+	absOutputDir, err := filepath.Abs(actualOutputDir)
+	if err != nil {
+		absOutputDir = actualOutputDir
+	}
+
+	fileCount := countFiles(absOutputDir)
+	cmdio.LogString(ctx, common.FormatProjectScaffoldSuccess(cfg.TemplateName, absOutputDir, fileCount))
+
+	fileTree, err := generateFileTree(absOutputDir)
+	if err == nil && fileTree != "" {
+		cmdio.LogString(ctx, "\nFile structure:")
+		cmdio.LogString(ctx, fileTree)
+	}
+
+	if err := writeAgentFiles(absOutputDir, map[string]any{}); err != nil {
+		return fmt.Errorf("failed to write agent files: %w", err)
+	}
+
+	// Detect project type and inject appropriate L2 guidance
+	registry := detector.NewRegistry()
+	detected := registry.Detect(ctx, absOutputDir)
+	for _, targetType := range detected.TargetTypes {
+		templateName := fmt.Sprintf("target_%s.tmpl", targetType)
+		if prompts.TemplateExists(templateName) {
+			content := prompts.MustExecuteTemplate(templateName, map[string]any{})
+			cmdio.LogString(ctx, content)
+		}
+	}
+
+	return nil
+}
 
 // countFiles counts the number of files in a directory.
 func countFiles(dir string) int {
