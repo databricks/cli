@@ -20,7 +20,7 @@ monitoring full-stack Databricks applications built with TypeScript,
 React, and Tailwind CSS.`,
 	}
 
-	cmd.AddCommand(newCreateCmd())
+	cmd.AddCommand(newInitCmd())
 	cmd.AddCommand(newListTemplatesCmd())
 	cmd.AddCommand(newLogsCmd())
 	cmd.AddCommand(newMetricsCmd())

@@ -35,7 +35,7 @@ func validateAppNameLength(projectName string) error {
 	return nil
 }
 
-func newCreateCmd() *cobra.Command {
+func newInitCmd() *cobra.Command {
 	var (
 		templatePath string
 		branch       string
@@ -46,30 +46,30 @@ func newCreateCmd() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:   "create",
-		Short: "Create a new AppKit application from a template",
-		Long: `Create a new AppKit application from a template.
+		Use:   "init",
+		Short: "Initialize a new AppKit application from a template",
+		Long: `Initialize a new AppKit application from a template.
 
 When run without arguments, an interactive prompt guides you through the setup.
 
 Examples:
   # Interactive mode (recommended)
-  databricks experimental appkit create
+  databricks experimental appkit init
 
   # Non-interactive with flags
-  databricks experimental appkit create --name my-app
+  databricks experimental appkit init --name my-app
 
   # With a custom template from a local path
-  databricks experimental appkit create --template /path/to/template --name my-app
+  databricks experimental appkit init --template /path/to/template --name my-app
 
   # With a GitHub URL
-  databricks experimental appkit create --template https://github.com/user/repo --name my-app
+  databricks experimental appkit init --template https://github.com/user/repo --name my-app
 
   # With a GitHub URL and subdirectory
-  databricks experimental appkit create --template https://github.com/user/repo/tree/main/templates/starter --name my-app
+  databricks experimental appkit init --template https://github.com/user/repo/tree/main/templates/starter --name my-app
 
   # With explicit branch/tag
-  databricks experimental appkit create --template https://github.com/user/repo --branch v1.0.0 --name my-app
+  databricks experimental appkit init --template https://github.com/user/repo --branch v1.0.0 --name my-app
 
 Environment variables:
   DATABRICKS_APPKIT_TEMPLATE_PATH  Override template source with local path`,
@@ -332,6 +332,11 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		return err
 	}
 
+	// Run npm run setup
+	if err := runNpmSetup(ctx, absOutputDir); err != nil {
+		return err
+	}
+
 	PrintSuccess(opts.name, absOutputDir, fileCount)
 	return nil
 }
@@ -346,6 +351,22 @@ func runNpmInstall(ctx context.Context, projectDir string) error {
 
 	return RunWithSpinner("Installing dependencies...", func() error {
 		cmd := exec.CommandContext(ctx, "npm", "install")
+		cmd.Dir = projectDir
+		cmd.Stdout = nil // Suppress output
+		cmd.Stderr = nil
+		return cmd.Run()
+	})
+}
+
+// runNpmSetup runs npx appkit-setup in the project directory.
+func runNpmSetup(ctx context.Context, projectDir string) error {
+	// Check if npx is available
+	if _, err := exec.LookPath("npx"); err != nil {
+		return nil
+	}
+
+	return RunWithSpinner("Running setup...", func() error {
+		cmd := exec.CommandContext(ctx, "npx", "appkit-setup", "--write")
 		cmd.Dir = projectDir
 		cmd.Stdout = nil // Suppress output
 		cmd.Stderr = nil
