@@ -1,7 +1,6 @@
 package mcp
 
 import (
-	"github.com/databricks/cli/experimental/apps-mcp/cmd/init_template"
 	mcplib "github.com/databricks/cli/experimental/apps-mcp/lib"
 	"github.com/databricks/cli/experimental/apps-mcp/lib/server"
 	"github.com/databricks/cli/libs/log"
@@ -52,7 +51,6 @@ The server communicates via stdio using the Model Context Protocol.`,
 
 	cmd.AddCommand(newInstallCmd())
 	cmd.AddCommand(newToolsCmd())
-	cmd.AddCommand(init_template.NewInitTemplateCommand())
 
 	return cmd
 }

@@ -38,7 +38,9 @@ invoke_databricks_cli 'experimental apps-mcp tools init-template job --name my_j
 For pipelines (Lakeflow Declarative Pipelines):
 invoke_databricks_cli 'experimental apps-mcp tools init-template pipeline --name my_pipeline --language python'
 invoke_databricks_cli 'experimental apps-mcp tools init-template pipeline --name my_pipeline --language sql --catalog my_catalog'
-Note: --language is required (python or sql)
+Note: --language is required (python or sql). Ask the user which language they prefer:
+  - SQL: Recommended for straightforward transformations (filters, joins, aggregations)
+  - Python: Recommended for complex logic (custom UDFs, ML, advanced processing)
 
 For custom resources (dashboards, alerts, model serving, etc.):
 invoke_databricks_cli 'experimental apps-mcp tools init-template empty --name my_project'

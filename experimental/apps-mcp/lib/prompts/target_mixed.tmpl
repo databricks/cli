@@ -19,10 +19,6 @@ resources:
         - task_key: main
           notebook_task:
             notebook_path: ../src/notebook.py
-          new_cluster:
-            num_workers: 2
-            spark_version: "15.4.x-scala2.12"
-            node_type_id: "i3.xlarge"
 ```
 
 **Pipelines** (Lakeflow Declarative Pipelines) - `resources/my_pipeline.pipeline.yml`:

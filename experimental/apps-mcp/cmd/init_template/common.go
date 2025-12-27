@@ -76,13 +76,17 @@ func MaterializeTemplate(ctx context.Context, cfg TemplateConfig, configMap map[
 		cmdio.LogString(ctx, fileTree)
 	}
 
-	if err := writeAgentFiles(absOutputDir, map[string]any{}); err != nil {
-		return fmt.Errorf("failed to write agent files: %w", err)
-	}
-
-	// Detect project type and inject appropriate L2 guidance
 	registry := detector.NewRegistry()
 	detected := registry.Detect(ctx, absOutputDir)
+
+	// Only write generic CLAUDE.md for non-app projects
+	// (app projects have their own template-specific CLAUDE.md)
+	if !detected.IsAppOnly {
+		if err := writeAgentFiles(absOutputDir, map[string]any{}); err != nil {
+			return fmt.Errorf("failed to write agent files: %w", err)
+		}
+	}
+
 	for _, targetType := range detected.TargetTypes {
 		templateName := fmt.Sprintf("target_%s.tmpl", targetType)
 		if prompts.TemplateExists(templateName) {

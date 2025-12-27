@@ -68,6 +68,8 @@ func (d *BundleDetector) Detect(ctx context.Context, workDir string, detected *D
 		len(b.Config.Resources.QualityMonitors) == 0 &&
 		len(b.Config.Resources.Volumes) == 0
 
+	detected.IsAppOnly = isAppOnly
+
 	// Include "mixed" guidance for all projects except app-only projects
 	if !isAppOnly {
 		detected.TargetTypes = append(detected.TargetTypes, "mixed")
