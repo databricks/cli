@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/databricks/cli/experimental/apps-mcp/lib/state"
 	"github.com/databricks/cli/experimental/apps-mcp/lib/validation"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/spf13/cobra"
@@ -79,6 +80,28 @@ Exit codes:
 			if !result.Success {
 				return errors.New("validation failed")
 			}
+
+			// Compute checksum and transition to validated state
+			checksum, err := state.ComputeChecksum(absPath)
+			if err != nil {
+				return fmt.Errorf("failed to compute checksum: %w", err)
+			}
+
+			// Load current state or create new scaffolded state
+			currentState, err := state.LoadState(absPath)
+			if err != nil {
+				return fmt.Errorf("failed to load state: %w", err)
+			}
+			if currentState == nil {
+				currentState = state.NewScaffolded()
+			}
+
+			// Transition to validated
+			newState := currentState.Validate(checksum)
+			if err := state.SaveState(absPath, newState); err != nil {
+				return fmt.Errorf("failed to save state: %w", err)
+			}
+
 			return nil
 		},
 	}

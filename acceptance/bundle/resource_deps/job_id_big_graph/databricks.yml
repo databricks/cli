@@ -1,0 +1,78 @@
+bundle:
+  name: test-bundle
+
+# Complex graph combining: chain, diamond, independent, multi-deps
+#
+#   independent1    independent2
+#
+#   chain_top -> chain_mid -> chain_bottom
+#
+#   diamond_top -> diamond_left  -> diamond_bottom
+#                  diamond_right ->
+#
+#   multi_child -> multi_parent1
+#               -> multi_parent2
+
+resources:
+  jobs:
+    # Independent nodes (no dependencies)
+    independent1:
+      name: job independent1
+    independent2:
+      name: job independent2
+
+    # Chain: chain_top -> chain_mid -> chain_bottom
+    chain_bottom:
+      name: job chain_bottom
+    chain_mid:
+      name: job chain_mid
+      tasks:
+        - task_key: t1
+          run_job_task:
+            job_id: ${resources.jobs.chain_bottom.id}
+    chain_top:
+      name: job chain_top
+      tasks:
+        - task_key: t1
+          run_job_task:
+            job_id: ${resources.jobs.chain_mid.id}
+
+    # Diamond: diamond_top -> diamond_left/right -> diamond_bottom
+    diamond_bottom:
+      name: job diamond_bottom
+    diamond_left:
+      name: job diamond_left
+      tasks:
+        - task_key: t1
+          run_job_task:
+            job_id: ${resources.jobs.diamond_bottom.id}
+    diamond_right:
+      name: job diamond_right
+      tasks:
+        - task_key: t1
+          run_job_task:
+            job_id: ${resources.jobs.diamond_bottom.id}
+    diamond_top:
+      name: job diamond_top
+      tasks:
+        - task_key: t1
+          run_job_task:
+            job_id: ${resources.jobs.diamond_left.id}
+        - task_key: t2
+          run_job_task:
+            job_id: ${resources.jobs.diamond_right.id}
+
+    # Multi-deps: multi_child -> multi_parent1, multi_parent2
+    multi_parent1:
+      name: job multi_parent1
+    multi_parent2:
+      name: job multi_parent2
+    multi_child:
+      name: job multi_child
+      tasks:
+        - task_key: t1
+          run_job_task:
+            job_id: ${resources.jobs.multi_parent1.id}
+        - task_key: t2
+          run_job_task:
+            job_id: ${resources.jobs.multi_parent2.id}

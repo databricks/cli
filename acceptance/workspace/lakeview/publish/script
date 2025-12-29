@@ -1,0 +1,7 @@
+trace $CLI workspace mkdirs /Users/tester@databricks.com
+
+trace $CLI lakeview create --json '{"display_name": "Test Dashboard", "parent_path": "/Users/tester@databricks.com", "warehouse_id": "test-warehouse"}' -o json > tmp.json
+dashboard_id=$(jq -r .dashboard_id < tmp.json)
+rm tmp.json
+echo "$dashboard_id:DASHBOARD_ID" >> ACC_REPLS
+trace $CLI lakeview publish $dashboard_id

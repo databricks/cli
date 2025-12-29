@@ -17,6 +17,8 @@
             "create_time": "[TIMESTAMP]",
             "dashboard_change_detected": false,
             "dashboard_id": "[DASHBOARD_ID]",
+            "dataset_catalog": null,
+            "dataset_schema": null,
             "display_name": "my dashboard",
             "embed_credentials": true,
             "etag": "[NUMID]",

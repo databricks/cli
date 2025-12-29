@@ -1,0 +1,18 @@
+# Generate initial plan
+trace $CLI bundle plan -o json > out.plan_create.json
+trace print_requests.py --get //jobs | contains.py "!GET" "!POST"
+
+# First deploy to create the resource
+trace $CLI bundle deploy --plan out.plan_create.json
+trace print_requests.py --get //jobs | contains.py "!GET" "POST"
+
+# Generate a plan (should show "skip" since nothing changed)
+trace $CLI bundle plan -o json > out.plan_skip.json
+trace print_requests.py --get //jobs | contains.py "GET"
+
+trace $CLI bundle deploy --plan out.plan_skip.json
+# Show what requests were made (should not create/update job again; should not read remote state)
+trace print_requests.py --get //jobs | contains.py "!GET" "!POST"
+
+trace $CLI bundle destroy --auto-approve
+rm out.requests.txt

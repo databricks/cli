@@ -20,6 +20,10 @@ This is battle-tested to catch common issues before deployment. Prefer using thi
 ### View and Manage
   invoke_databricks_cli 'bundle summary'
 
+### View App Logs
+To troubleshoot deployed apps, view their logs:
+  invoke_databricks_cli 'apps logs <app-name> --tail-lines 100'
+
 ### Local Development vs Deployed Apps
 
 During development:

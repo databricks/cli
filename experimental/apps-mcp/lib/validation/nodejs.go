@@ -51,6 +51,12 @@ func (v *ValidationNodeJs) Validate(ctx context.Context, workDir string) (*Valid
 			displayName: "Type check",
 		},
 		{
+			name:        "ast-grep-lint",
+			command:     "npm run lint:ast-grep --if-present",
+			errorPrefix: "AST-grep lint found violations",
+			displayName: "AST-grep lint",
+		},
+		{
 			name:        "tests",
 			command:     "npm run test --if-present",
 			errorPrefix: "Failed to run tests",

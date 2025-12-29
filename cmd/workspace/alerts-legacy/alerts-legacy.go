@@ -27,8 +27,8 @@ func New() *cobra.Command {
   the condition was met. Alerts can be scheduled using the sql_task type of
   the Jobs API, e.g. :method:jobs/create.
 
-  **Note**: A new version of the Databricks SQL API is now available. Please see
-  the latest version. [Learn more]
+  **Warning**: This API is deprecated. Please see the latest version of the
+  Databricks SQL API. [Learn more]
 
   [Learn more]: https://docs.databricks.com/en/sql/dbsql-api-latest.html`,
 		GroupID: "sql",
@@ -78,8 +78,8 @@ func newCreate() *cobra.Command {
   query, evaluates a condition of its result, and notifies users or notification
   destinations if the condition was met.
 
-  **Note**: A new version of the Databricks SQL API is now available. Please use
-  :method:alerts/create instead. [Learn more]
+  **Warning**: This API is deprecated. Please use :method:alerts/create instead.
+  [Learn more]
 
   [Learn more]: https://docs.databricks.com/en/sql/dbsql-api-latest.html`
 
@@ -146,8 +146,8 @@ func newDelete() *cobra.Command {
   restored. **Note**: Unlike queries and dashboards, alerts cannot be moved to
   the trash.
 
-  **Note**: A new version of the Databricks SQL API is now available. Please use
-  :method:alerts/delete instead. [Learn more]
+  **Warning**: This API is deprecated. Please use :method:alerts/delete instead.
+  [Learn more]
 
   [Learn more]: https://docs.databricks.com/en/sql/dbsql-api-latest.html`
 
@@ -204,8 +204,8 @@ func newGet() *cobra.Command {
 
   Gets an alert.
 
-  **Note**: A new version of the Databricks SQL API is now available. Please use
-  :method:alerts/get instead. [Learn more]
+  **Warning**: This API is deprecated. Please use :method:alerts/get instead.
+  [Learn more]
 
   [Learn more]: https://docs.databricks.com/en/sql/dbsql-api-latest.html`
 
@@ -259,8 +259,8 @@ func newList() *cobra.Command {
 
   Gets a list of alerts.
 
-  **Note**: A new version of the Databricks SQL API is now available. Please use
-  :method:alerts/list instead. [Learn more]
+  **Warning**: This API is deprecated. Please use :method:alerts/list instead.
+  [Learn more]
 
   [Learn more]: https://docs.databricks.com/en/sql/dbsql-api-latest.html`
 
@@ -314,8 +314,8 @@ func newUpdate() *cobra.Command {
 
   Updates an alert.
 
-  **Note**: A new version of the Databricks SQL API is now available. Please use
-  :method:alerts/update instead. [Learn more]
+  **Warning**: This API is deprecated. Please use :method:alerts/update instead.
+  [Learn more]
 
   [Learn more]: https://docs.databricks.com/en/sql/dbsql-api-latest.html`
 

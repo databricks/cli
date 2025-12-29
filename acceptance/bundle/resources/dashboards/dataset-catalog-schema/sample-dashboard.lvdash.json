@@ -1,0 +1,20 @@
+{
+  "pages": [
+    {
+      "name": "test_page",
+      "displayName": "Test Page",
+      "pageType": "PAGE_TYPE_CANVAS"
+    }
+  ],
+  "datasets": [
+    {
+      "name": "bf8f76f4",
+      "displayName": "Test Dataset",
+      "queryLines": [
+        "SELECT 1\n"
+      ],
+      "catalog": "foobar",
+      "schema": "foobar"
+    }
+  ]
+}
