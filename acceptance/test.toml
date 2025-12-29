@@ -16,6 +16,7 @@ Env.PYTHONUNBUFFERED = "1"
 Env.PYTHONUTF8 = "1"
 
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
+EnvMatrixExclude.noplantf = ["DATABRICKS_BUNDLE_ENGINE=terraform", "READPLAN=1"]
 EnvRepl.DATABRICKS_BUNDLE_ENGINE = false
 
 # >>> datetime.datetime.fromtimestamp(18000000000)
