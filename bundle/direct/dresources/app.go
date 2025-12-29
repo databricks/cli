@@ -38,12 +38,25 @@ func (r *ResourceApp) DoCreate(ctx context.Context, config *apps.App) (string, *
 		ForceSendFields: nil,
 	}
 
-	retrier := retries.New[apps.App](retries.WithTimeout(time.Minute), retries.WithRetryFunc(shouldRetry))
+	retrier := retries.New[apps.App](retries.WithTimeout(15*time.Minute), retries.WithRetryFunc(shouldRetry))
 	app, err := retrier.Run(ctx, func(ctx context.Context) (*apps.App, error) {
 		waiter, err := r.client.Apps.Create(ctx, request)
 		if err != nil {
 			if errors.Is(err, apierr.ErrResourceAlreadyExists) {
-				return nil, retries.Continues("app already exists, retrying")
+				// Check if the app is in DELETING state - only then should we retry
+				existingApp, getErr := r.client.Apps.GetByName(ctx, config.Name)
+				if getErr != nil {
+					// If we can't get the app (e.g., it was just deleted), retry the create
+					if apierr.IsMissing(getErr) {
+						return nil, retries.Continues("app was deleted, retrying create")
+					}
+					return nil, retries.Halt(err)
+				}
+				if existingApp.ComputeStatus != nil && existingApp.ComputeStatus.State == apps.ComputeStateDeleting {
+					return nil, retries.Continues("app is deleting, retrying create")
+				}
+				// App exists and is not being deleted - this is a hard error
+				return nil, retries.Halt(err)
 			}
 			return nil, retries.Halt(err)
 		}
