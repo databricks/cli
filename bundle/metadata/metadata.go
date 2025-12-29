@@ -7,7 +7,10 @@ import (
 const Version = 1
 
 type Bundle struct {
-	Git config.Git `json:"git,omitempty"`
+	Name   string     `json:"name,omitempty"`
+	Target string     `json:"target,omitempty"`
+	Mode   string     `json:"mode,omitempty"`
+	Git    config.Git `json:"git,omitempty"`
 }
 
 type Workspace struct {
