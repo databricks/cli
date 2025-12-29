@@ -331,7 +331,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 				t.Parallel()
 			}
 
-			expanded := internal.ExpandEnvMatrix(config.EnvMatrix)
+			expanded := internal.ExpandEnvMatrix(config.EnvMatrix, config.EnvMatrixExclude)
 
 			if len(expanded) == 1 {
 				// env vars aren't part of the test case name, so log them for debugging
@@ -341,9 +341,6 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 				runTest(t, dir, 0, coverDir, repls.Clone(), config, expanded[0], envFilters)
 			} else {
 				for ind, envset := range expanded {
-					if forbiddenEnvSet(envset) {
-						continue
-					}
 					envname := strings.Join(envset, "/")
 					t.Run(envname, func(t *testing.T) {
 						if !inprocessMode {
@@ -359,23 +356,6 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	t.Logf("Summary (dirs): %d/%d/%d run/selected/total, %d skipped", selectedDirs-skippedDirs, selectedDirs, totalDirs, skippedDirs)
 
 	return selectedDirs - skippedDirs
-}
-
-func forbiddenEnvSet(envset []string) bool {
-	hasTerraform := false
-	hasReadplan := false
-
-	for _, pair := range envset {
-		if pair == "DATABRICKS_BUNDLE_ENGINE=terraform" {
-			hasTerraform = true
-		}
-		if pair == "READPLAN=1" {
-			hasReadplan = true
-		}
-	}
-
-	// Do not run terraform tests with --plan option:
-	return hasTerraform && hasReadplan
 }
 
 func getEnvFilters(t *testing.T) []string {
