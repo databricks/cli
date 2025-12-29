@@ -336,16 +336,6 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 
 			expanded := internal.ExpandEnvMatrix(config.EnvMatrix)
 
-			if testdiff.OverwriteMode && len(expanded) > 1 {
-				// All variants of the test are producing the same output,
-				// there is no need to run the concurrently when updating.
-				// Exception: if EnvVaryOutput is configured, we must
-				// run all variants to record variant-specific outputs.
-				if config.EnvVaryOutput == nil || len(config.EnvMatrix[*config.EnvVaryOutput]) <= 1 {
-					expanded = expanded[0:1]
-				}
-			}
-
 			if len(expanded) == 1 {
 				// env vars aren't part of the test case name, so log them for debugging
 				if len(expanded[0]) > 0 {
