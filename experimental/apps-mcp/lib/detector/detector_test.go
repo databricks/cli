@@ -59,7 +59,7 @@ resources:
 	detected := registry.Detect(ctx, dir)
 
 	assert.True(t, detected.InProject)
-	assert.Equal(t, []string{"jobs"}, detected.TargetTypes)
+	assert.Equal(t, []string{"jobs", "mixed"}, detected.TargetTypes)
 	assert.Equal(t, "my-job", detected.BundleInfo.Name)
 }
 

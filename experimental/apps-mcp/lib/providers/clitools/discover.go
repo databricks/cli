@@ -31,7 +31,7 @@ func Discover(ctx context.Context, workingDirectory string) (string, error) {
 	registry := detector.NewRegistry()
 	detected := registry.Detect(ctx, workingDirectory)
 
-	return generateDiscoverGuidance(ctx, warehouse, currentProfile, profiles, defaultCatalog, detected, listAllSkills), nil
+	return generateDiscoverGuidance(ctx, warehouse, currentProfile, profiles, defaultCatalog, detected), nil
 }
 
 // generateDiscoverGuidance creates guidance with L1 (flow) + L2 (target) layers.
