@@ -13,12 +13,14 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"time"
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/bundle/metadata"
 	"github.com/databricks/cli/libs/auth"
+	"github.com/databricks/cli/libs/cache"
 	"github.com/databricks/cli/libs/fileset"
 	"github.com/databricks/cli/libs/locker"
 	"github.com/databricks/cli/libs/log"
@@ -50,6 +52,7 @@ type Metrics struct {
 	PythonAddedResourcesCount   int64
 	PythonUpdatedResourcesCount int64
 	ExecutionTimes              []protos.IntMapEntry
+	LocalCacheMeasurementsMs    []protos.IntMapEntry // Local cache measurements stored as milliseconds
 }
 
 // SetBoolValue sets the value of a boolean metric.
@@ -68,6 +71,13 @@ func (m *Metrics) SetBoolValue(key string, value bool) {
 
 func (m *Metrics) AddBoolValue(key string, value bool) {
 	m.BoolValues = append(m.BoolValues, protos.BoolMapEntry{Key: key, Value: value})
+}
+
+// AddDurationValue sets the value of a duration metric in milliseconds.
+// The value is added to the list of measurements.
+func (m *Metrics) AddDurationValue(key string, value time.Duration) {
+	valueMs := value.Milliseconds()
+	m.LocalCacheMeasurementsMs = append(m.LocalCacheMeasurementsMs, protos.IntMapEntry{Key: key, Value: valueMs})
 }
 
 type Bundle struct {
@@ -139,6 +149,10 @@ type Bundle struct {
 	// Tagging is used to normalize tag keys and values.
 	// The implementation depends on the cloud being targeted.
 	Tagging tags.Cloud
+
+	// Cache is used for caching API responses (e.g., current user).
+	// By default, operates in measurement-only mode. Set DATABRICKS_CACHE_ENABLED=true to enable actual caching.
+	Cache *cache.Cache
 
 	Metrics Metrics
 }

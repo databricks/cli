@@ -6,6 +6,8 @@ type ResourceDashboard struct {
 	CreateTime              string `json:"create_time,omitempty"`
 	DashboardChangeDetected bool   `json:"dashboard_change_detected,omitempty"`
 	DashboardId             string `json:"dashboard_id,omitempty"`
+	DatasetCatalog          string `json:"dataset_catalog,omitempty"`
+	DatasetSchema           string `json:"dataset_schema,omitempty"`
 	DisplayName             string `json:"display_name"`
 	EmbedCredentials        bool   `json:"embed_credentials,omitempty"`
 	Etag                    string `json:"etag,omitempty"`

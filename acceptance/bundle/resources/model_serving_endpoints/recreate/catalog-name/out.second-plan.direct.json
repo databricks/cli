@@ -1,9 +1,13 @@
 {
+  "plan_version": 1,
+  "cli_version": "[DEV_VERSION]",
+  "lineage": "[UUID]",
+  "serial": 1,
   "plan": {
     "resources.model_serving_endpoints.test_endpoint": {
       "action": "recreate",
       "new_state": {
-        "config": {
+        "value": {
           "config": {
             "auto_capture_config": {
               "catalog_name": "other_catalog",
@@ -30,7 +34,9 @@
       "changes": {
         "local": {
           "config.auto_capture_config.catalog_name": {
-            "action": "recreate"
+            "action": "recreate",
+            "old": "main",
+            "new": "other_catalog"
           }
         }
       }

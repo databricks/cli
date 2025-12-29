@@ -26,10 +26,7 @@ func New() *cobra.Command {
   account-wide spending, or apply filters to track the spending of specific
   teams, projects, or workspaces.`,
 		GroupID: "billing",
-		Annotations: map[string]string{
-			"package": "billing",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -67,7 +64,7 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create"
 	cmd.Short = `Create new budget.`
 	cmd.Long = `Create new budget.
-  
+
   Create a new budget configuration for an account. For full details, see
   https://docs.databricks.com/en/admin/account-settings/budgets.html.`
 
@@ -129,7 +126,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete BUDGET_ID"
 	cmd.Short = `Delete budget.`
 	cmd.Long = `Delete budget.
-  
+
   Deletes a budget configuration for an account. Both account and budget
   configuration are specified by ID. This cannot be undone.
 
@@ -186,7 +183,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get BUDGET_ID"
 	cmd.Short = `Get budget.`
 	cmd.Long = `Get budget.
-  
+
   Gets a budget configuration for an account. Both account and budget
   configuration are specified by ID.
 
@@ -245,7 +242,7 @@ func newList() *cobra.Command {
 	cmd.Use = "list"
 	cmd.Short = `Get all budgets.`
 	cmd.Long = `Get all budgets.
-  
+
   Gets all budgets associated with this account.`
 
 	cmd.Annotations = make(map[string]string)
@@ -296,7 +293,7 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update BUDGET_ID"
 	cmd.Short = `Modify budget.`
 	cmd.Long = `Modify budget.
-  
+
   Updates a budget configuration for an account. Both account and budget
   configuration are specified by ID.
 

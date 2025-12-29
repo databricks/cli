@@ -23,10 +23,7 @@ func New() *cobra.Command {
   which is required for adding/using Published OAuth App Integration like
   Tableau Desktop for Databricks in AWS cloud.`,
 		GroupID: "oauth2",
-		Annotations: map[string]string{
-			"package": "oauth2",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -67,9 +64,9 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create"
 	cmd.Short = `Create Published OAuth App Integration.`
 	cmd.Long = `Create Published OAuth App Integration.
-  
+
   Create Published OAuth App Integration.
-  
+
   You can retrieve the published OAuth app integration via
   :method:PublishedAppIntegration/get.`
 
@@ -134,7 +131,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete INTEGRATION_ID"
 	cmd.Short = `Delete Published OAuth App Integration.`
 	cmd.Long = `Delete Published OAuth App Integration.
-  
+
   Delete an existing Published OAuth App Integration. You can retrieve the
   published OAuth app integration via :method:PublishedAppIntegration/get.`
 
@@ -188,7 +185,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get INTEGRATION_ID"
 	cmd.Short = `Get OAuth Published App Integration.`
 	cmd.Long = `Get OAuth Published App Integration.
-  
+
   Gets the Published OAuth App Integration for the given integration id.`
 
 	cmd.Annotations = make(map[string]string)
@@ -244,7 +241,7 @@ func newList() *cobra.Command {
 	cmd.Use = "list"
 	cmd.Short = `Get published oauth app integrations.`
 	cmd.Long = `Get published oauth app integrations.
-  
+
   Get the list of published OAuth app integrations for the specified Databricks
   account`
 
@@ -298,7 +295,7 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update INTEGRATION_ID"
 	cmd.Short = `Updates Published OAuth App Integration.`
 	cmd.Long = `Updates Published OAuth App Integration.
-  
+
   Updates an existing published OAuth App Integration. You can retrieve the
   published OAuth app integration via :method:PublishedAppIntegration/get.`
 

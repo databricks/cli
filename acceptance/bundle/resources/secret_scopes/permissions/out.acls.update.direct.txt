@@ -1,0 +1,3 @@
+{"permission":"MANAGE","principal":"[USERNAME]"}
+{"permission":"MANAGE","principal":"users"}
+{"permission":"WRITE","principal":"deco-test-user@databricks.com"}

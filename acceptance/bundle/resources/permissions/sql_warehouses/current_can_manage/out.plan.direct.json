@@ -1,9 +1,11 @@
 {
+  "plan_version": 1,
+  "cli_version": "[DEV_VERSION]",
   "plan": {
     "resources.sql_warehouses.foo": {
       "action": "create",
       "new_state": {
-        "config": {
+        "value": {
           "auto_stop_mins": 120,
           "cluster_size": "Small",
           "enable_photon": true,
@@ -22,7 +24,7 @@
       ],
       "action": "create",
       "new_state": {
-        "config": {
+        "value": {
           "object_id": "",
           "permissions": [
             {

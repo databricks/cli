@@ -5,8 +5,8 @@ resources:
   alerts:
     myalert:
       permissions:
-        - level: CAN_RUN
-          group_name: users
+        - level: CAN_MANAGE
+          user_name: deco-test-user@databricks.com
 
       custom_summary: "My alert"
       display_name: "My alert"
@@ -27,4 +27,4 @@ resources:
         pause_status: "UNPAUSED"
         quartz_cron_schedule: "44 19 */1 * * ?"
         timezone_id: "Europe/Amsterdam"
-      warehouse_id: "dd43ee29fedd958d"
+      warehouse_id: $TEST_DEFAULT_WAREHOUSE_ID

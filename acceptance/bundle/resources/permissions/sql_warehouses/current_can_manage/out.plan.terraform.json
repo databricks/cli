@@ -1,6 +1,11 @@
 {
+  "plan_version": 1,
+  "cli_version": "[DEV_VERSION]",
   "plan": {
     "resources.sql_warehouses.foo": {
+      "action": "create"
+    },
+    "resources.sql_warehouses.foo.permissions": {
       "action": "create"
     }
   }

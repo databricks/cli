@@ -23,6 +23,7 @@ type loginConfig struct {
 }
 
 func (lc *loginConfig) askWorkspace(ctx context.Context, cfg *config.Config) (*databricks.WorkspaceClient, error) {
+	//nolint:staticcheck // SA1019: IsAccountClient is deprecated but is still used here to avoid breaking changes
 	if cfg.IsAccountClient() {
 		return nil, nil
 	}

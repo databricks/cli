@@ -5,8 +5,10 @@ trace $CLI bundle deploy
 trace errcode $CLI bundle plan
 trace musterr $CLI bundle destroy --auto-approve >>out.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1
 
-# Changing the catalog name, deploy must fail because pipeline will be recreated
-update_file.py resources/pipeline.yml 'catalog: main' 'catalog: mainnew'
+# Note: In Terraform provider v1.98.0+, changing the catalog no longer triggers recreation.
+# We use storage location instead, which still requires recreation.
+# Changing from catalog to storage, deploy must fail because pipeline will be recreated
+update_file.py resources/pipeline.yml '      catalog: main' '      storage: "dbfs:/my-storage"'
 trace errcode $CLI bundle plan >>out.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1
 trace musterr $CLI bundle deploy >>out.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1
 

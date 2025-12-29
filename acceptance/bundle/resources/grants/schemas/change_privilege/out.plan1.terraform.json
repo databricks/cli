@@ -1,6 +1,11 @@
 {
+  "plan_version": 1,
+  "cli_version": "[DEV_VERSION]",
   "plan": {
     "resources.schemas.grants_schema": {
+      "action": "create"
+    },
+    "resources.schemas.grants_schema.grants": {
       "action": "create"
     }
   }

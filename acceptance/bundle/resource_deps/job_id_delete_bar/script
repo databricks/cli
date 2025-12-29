@@ -1,0 +1,20 @@
+echo "*" > .gitignore
+trace $CLI bundle deploy
+trace print_requests.py //jobs
+
+foo_id=`read_id.py jobs foo`
+echo "$foo_id:FOO_ID" >> ACC_REPLS
+
+bar_id=`read_id.py jobs bar`
+echo "$bar_id:BAR_ID" >> ACC_REPLS
+
+title "Delete bar, keep foo (foo config updated to not depend on bar)"
+cp only_foo.yml databricks.yml
+trace $CLI bundle plan -o json > out.plan_delete.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle deploy
+# Sort requests because foo's update and bar's delete have no dependency edge
+# (foo's dependency on bar was removed in only_foo.yml), so execution order is non-deterministic.
+trace print_requests.py --sort //jobs > out.deploy2.requests.$DATABRICKS_BUNDLE_ENGINE.json
+
+trace $CLI bundle destroy --auto-approve
+trace print_requests.py //jobs

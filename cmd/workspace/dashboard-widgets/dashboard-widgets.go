@@ -25,9 +25,6 @@ func New() *cobra.Command {
   from existing dashboards within the Databricks Workspace. Data structures may
   change over time.`,
 		GroupID: "sql",
-		Annotations: map[string]string{
-			"package": "sql",
-		},
 
 		// This service is being previewed; hide from help output.
 		Hidden: true,
@@ -70,7 +67,7 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create"
 	cmd.Short = `Add widget to a dashboard.`
 	cmd.Long = `Add widget to a dashboard.
-  
+
   Adds a widget to a dashboard`
 
 	cmd.Annotations = make(map[string]string)
@@ -131,7 +128,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete ID"
 	cmd.Short = `Remove widget.`
 	cmd.Long = `Remove widget.
-  
+
   Removes a widget from a dashboard
 
   Arguments:
@@ -193,7 +190,7 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update ID"
 	cmd.Short = `Update existing widget.`
 	cmd.Long = `Update existing widget.
-  
+
   Updates an existing widget
 
   Arguments:

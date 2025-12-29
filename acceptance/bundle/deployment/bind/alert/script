@@ -1,4 +1,8 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+envsubst < alert.json.tmpl > alert.json
+
 alert_id=$(trace $CLI alerts-v2 create-alert --json @alert.json | jq -r '.id')
+echo "$alert_id:ALERT_ID" >> ACC_REPLS
 trace $CLI bundle deployment bind my_alert $alert_id --auto-approve
 trace $CLI bundle summary
 

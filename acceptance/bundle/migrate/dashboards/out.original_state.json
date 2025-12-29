@@ -1,0 +1,42 @@
+{
+  "version": 4,
+  "terraform_version": "1.5.5",
+  "serial": 1,
+  "lineage": "[UUID]",
+  "outputs": {},
+  "resources": [
+    {
+      "mode": "managed",
+      "type": "databricks_dashboard",
+      "name": "dashboard1",
+      "provider": "provider[\"registry.terraform.io/databricks/databricks\"]",
+      "instances": [
+        {
+          "schema_version": 0,
+          "attributes": {
+            "create_time": "[TIMESTAMP]",
+            "dashboard_change_detected": false,
+            "dashboard_id": "[DASHBOARD_ID]",
+            "dataset_catalog": null,
+            "dataset_schema": null,
+            "display_name": "my dashboard",
+            "embed_credentials": true,
+            "etag": "[NUMID]",
+            "file_path": null,
+            "id": "[DASHBOARD_ID]",
+            "lifecycle_state": "ACTIVE",
+            "md5": "b4ab6aee48485b0b5e980761d3efe936",
+            "parent_path": "/Users/[USERNAME]",
+            "path": "/Users/[USERNAME]/my dashboard.lvdash.json",
+            "serialized_dashboard": "{\"pages\":[{\"displayName\":\"Dashboard test bundle-deploy-dashboard\",\"name\":\"02724bf2\",\"pageType\":\"PAGE_TYPE_CANVAS\"}]}\n",
+            "update_time": "[TIMESTAMP]",
+            "warehouse_id": "123456"
+          },
+          "sensitive_attributes": [],
+          "private": "bnVsbA=="
+        }
+      ]
+    }
+  ],
+  "check_results": null
+}

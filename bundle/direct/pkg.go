@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
+	"github.com/databricks/cli/libs/structs/structvar"
 )
 
 // How many parallel operations (API calls) are allowed
@@ -29,8 +30,11 @@ type DeploymentUnit struct {
 	// Remote state (pointer to adapter.RemoteType()) or nil if remote state was not fetched yet.
 	// Remote state will be eagerly populated by (withRefresh) DoCreate/DoUpdate/WaitForCreate/WaitForUpdate.
 	// If the resource does not implement withRefresh variants of those methods, remoteState remains nil and
-	// will be populated lazily by calling DoRefresh().
+	// will be populated lazily by calling DoRead().
 	RemoteState any
+
+	// DependsOn lists resources this resource depends on (persisted in state).
+	DependsOn []deployplan.DependsOnEntry
 }
 
 // DeploymentBundle holds everything needed to deploy a bundle
@@ -39,6 +43,7 @@ type DeploymentBundle struct {
 	Adapters         map[string]*dresources.Adapter
 	Plan             *deployplan.Plan
 	RemoteStateCache sync.Map
+	StructVarCache   structvar.Cache
 }
 
 // SetRemoteState updates the remote state with type validation and marks as fresh.

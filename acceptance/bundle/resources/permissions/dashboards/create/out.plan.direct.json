@@ -1,0 +1,45 @@
+{
+  "plan_version": 1,
+  "cli_version": "[DEV_VERSION]",
+  "plan": {
+    "resources.dashboards.foo": {
+      "action": "create",
+      "new_state": {
+        "value": {
+          "display_name": "test-dashboard-[UNIQUE_NAME]",
+          "embed_credentials": false,
+          "parent_path": "/Workspace/Users/[USERNAME]/folder1",
+          "serialized_dashboard": "{\"pages\":[{\"name\":\"page1\",\"displayName\":\"Page 1\"}]}",
+          "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
+        }
+      }
+    },
+    "resources.dashboards.foo.permissions": {
+      "depends_on": [
+        {
+          "node": "resources.dashboards.foo",
+          "label": "${resources.dashboards.foo.id}"
+        }
+      ],
+      "action": "create",
+      "new_state": {
+        "value": {
+          "object_id": "",
+          "permissions": [
+            {
+              "permission_level": "CAN_READ",
+              "user_name": "deco-test-user@databricks.com"
+            },
+            {
+              "permission_level": "CAN_MANAGE",
+              "service_principal_name": "[USERNAME]"
+            }
+          ]
+        },
+        "vars": {
+          "object_id": "/dashboards/${resources.dashboards.foo.id}"
+        }
+      }
+    }
+  }
+}

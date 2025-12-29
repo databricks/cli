@@ -1,24 +1,25 @@
 {
+  "plan_version": 1,
+  "cli_version": "[DEV_VERSION]",
+  "lineage": "[UUID]",
+  "serial": 1,
   "plan": {
     "resources.dashboards.dashboard1": {
       "action": "create",
       "new_state": {
-        "config": {
+        "value": {
           "display_name": "test bundle-deploy-dashboard [UNIQUE_NAME])",
+          "embed_credentials": false,
           "parent_path": "/Workspace/Users/[USERNAME]/.bundle/delete-trashed-out-of-band-[UNIQUE_NAME]/default/resources",
+          "serialized_dashboard": "{\"pages\":[{\"name\":\"test-page\",\"displayName\":\"Test Dashboard\"}]}\n",
           "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
         }
       },
       "changes": {
         "local": {
-          "embed_credentials": {
-            "action": "update"
-          },
           "etag": {
-            "action": "update"
-          },
-          "serialized_dashboard": {
-            "action": "update"
+            "action": "skip",
+            "old": [ETAG]
           }
         }
       }

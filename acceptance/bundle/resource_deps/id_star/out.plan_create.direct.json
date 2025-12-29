@@ -1,9 +1,11 @@
 {
+  "plan_version": 1,
+  "cli_version": "[DEV_VERSION]",
   "plan": {
     "resources.jobs.a": {
       "action": "create",
       "new_state": {
-        "config": {
+        "value": {
           "deployment": {
             "kind": "BUNDLE",
             "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
@@ -28,7 +30,7 @@
       ],
       "action": "create",
       "new_state": {
-        "config": {
+        "value": {
           "deployment": {
             "kind": "BUNDLE",
             "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
@@ -56,7 +58,7 @@
       ],
       "action": "create",
       "new_state": {
-        "config": {
+        "value": {
           "deployment": {
             "kind": "BUNDLE",
             "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
@@ -84,7 +86,7 @@
       ],
       "action": "create",
       "new_state": {
-        "config": {
+        "value": {
           "deployment": {
             "kind": "BUNDLE",
             "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
@@ -112,7 +114,7 @@
       ],
       "action": "create",
       "new_state": {
-        "config": {
+        "value": {
           "deployment": {
             "kind": "BUNDLE",
             "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"

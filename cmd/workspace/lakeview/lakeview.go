@@ -25,10 +25,7 @@ func New() *cobra.Command {
   Generic resource management can be done with Workspace API (import, export,
   get-status, list, delete).`,
 		GroupID: "dashboards",
-		Annotations: map[string]string{
-			"package": "dashboards",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -77,6 +74,8 @@ func newCreate() *cobra.Command {
 
 	cmd.Flags().Var(&createJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	cmd.Flags().StringVar(&createReq.DatasetCatalog, "dataset-catalog", createReq.DatasetCatalog, `Sets the default catalog for all datasets in this dashboard.`)
+	cmd.Flags().StringVar(&createReq.DatasetSchema, "dataset-schema", createReq.DatasetSchema, `Sets the default schema for all datasets in this dashboard.`)
 	cmd.Flags().StringVar(&createReq.Dashboard.DisplayName, "display-name", createReq.Dashboard.DisplayName, `The display name of the dashboard.`)
 	cmd.Flags().StringVar(&createReq.Dashboard.SerializedDashboard, "serialized-dashboard", createReq.Dashboard.SerializedDashboard, `The contents of the dashboard in serialized string form.`)
 	cmd.Flags().StringVar(&createReq.Dashboard.WarehouseId, "warehouse-id", createReq.Dashboard.WarehouseId, `The warehouse ID used to run the dashboard.`)
@@ -84,7 +83,7 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create"
 	cmd.Short = `Create dashboard.`
 	cmd.Long = `Create dashboard.
-  
+
   Create a draft dashboard.`
 
 	cmd.Annotations = make(map[string]string)
@@ -444,7 +443,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get DASHBOARD_ID"
 	cmd.Short = `Get dashboard.`
 	cmd.Long = `Get dashboard.
-  
+
   Get a draft dashboard.
 
   Arguments:
@@ -500,7 +499,7 @@ func newGetPublished() *cobra.Command {
 	cmd.Use = "get-published DASHBOARD_ID"
 	cmd.Short = `Get published dashboard.`
 	cmd.Long = `Get published dashboard.
-  
+
   Get the current published dashboard.
 
   Arguments:
@@ -838,7 +837,7 @@ func newMigrate() *cobra.Command {
 	cmd.Use = "migrate SOURCE_DASHBOARD_ID"
 	cmd.Short = `Migrate dashboard.`
 	cmd.Long = `Migrate dashboard.
-  
+
   Migrates a classic SQL dashboard to Lakeview.
 
   Arguments:
@@ -921,7 +920,7 @@ func newPublish() *cobra.Command {
 	cmd.Use = "publish DASHBOARD_ID"
 	cmd.Short = `Publish dashboard.`
 	cmd.Long = `Publish dashboard.
-  
+
   Publish the current draft dashboard.
 
   Arguments:
@@ -989,7 +988,7 @@ func newTrash() *cobra.Command {
 	cmd.Use = "trash DASHBOARD_ID"
 	cmd.Short = `Trash dashboard.`
 	cmd.Long = `Trash dashboard.
-  
+
   Trash a dashboard.
 
   Arguments:
@@ -1045,7 +1044,7 @@ func newUnpublish() *cobra.Command {
 	cmd.Use = "unpublish DASHBOARD_ID"
 	cmd.Short = `Unpublish dashboard.`
 	cmd.Long = `Unpublish dashboard.
-  
+
   Unpublish the dashboard.
 
   Arguments:
@@ -1102,6 +1101,8 @@ func newUpdate() *cobra.Command {
 
 	cmd.Flags().Var(&updateJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	cmd.Flags().StringVar(&updateReq.DatasetCatalog, "dataset-catalog", updateReq.DatasetCatalog, `Sets the default catalog for all datasets in this dashboard.`)
+	cmd.Flags().StringVar(&updateReq.DatasetSchema, "dataset-schema", updateReq.DatasetSchema, `Sets the default schema for all datasets in this dashboard.`)
 	cmd.Flags().StringVar(&updateReq.Dashboard.DisplayName, "display-name", updateReq.Dashboard.DisplayName, `The display name of the dashboard.`)
 	cmd.Flags().StringVar(&updateReq.Dashboard.SerializedDashboard, "serialized-dashboard", updateReq.Dashboard.SerializedDashboard, `The contents of the dashboard in serialized string form.`)
 	cmd.Flags().StringVar(&updateReq.Dashboard.WarehouseId, "warehouse-id", updateReq.Dashboard.WarehouseId, `The warehouse ID used to run the dashboard.`)
@@ -1109,7 +1110,7 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update DASHBOARD_ID"
 	cmd.Short = `Update dashboard.`
 	cmd.Long = `Update dashboard.
-  
+
   Update a draft dashboard.
 
   Arguments:

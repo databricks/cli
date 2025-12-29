@@ -1,0 +1,5 @@
+
+>>> [CLI] workspace export-dir /test-dir [TEST_TMP_DIR]/export
+Exporting files from /test-dir
+/test-dir/file.py (skipped; file too large)
+Export complete

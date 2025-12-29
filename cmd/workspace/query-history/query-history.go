@@ -21,10 +21,7 @@ func New() *cobra.Command {
 		Long: `A service responsible for storing and retrieving the list of queries run
   against SQL endpoints and serverless compute.`,
 		GroupID: "sql",
-		Annotations: map[string]string{
-			"package": "sql",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -60,9 +57,9 @@ func newList() *cobra.Command {
 	cmd.Use = "list"
 	cmd.Short = `List Queries.`
 	cmd.Long = `List Queries.
-  
+
   List the history of queries through SQL warehouses, and serverless compute.
-  
+
   You can filter by user ID, warehouse ID, status, and time range. Most recently
   started queries are returned first (up to max_results in request). The
   pagination token returned in response can be used to list subsequent query

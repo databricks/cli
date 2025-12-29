@@ -1,0 +1,14 @@
+# First deploy to create state
+trace $CLI bundle deploy
+
+# Generate a plan (captures current lineage and serial)
+trace $CLI bundle plan -o json > plan.json
+
+# Modify only the serial to simulate stale plan
+jq '.serial = 999' plan.json > plan.json.tmp && mv plan.json.tmp plan.json
+
+# Try to deploy with stale plan (should fail with serial mismatch)
+musterr $CLI bundle deploy --plan plan.json
+
+rm plan.json
+trace $CLI bundle destroy --auto-approve

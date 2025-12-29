@@ -1,7 +1,6 @@
 package direct
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -71,7 +70,7 @@ func (d *DeploymentUnit) Create(ctx context.Context, db *dstate.DeploymentState,
 		return err
 	}
 
-	err = db.SaveState(d.ResourceKey, newID, newState)
+	err = db.SaveState(d.ResourceKey, newID, newState, d.DependsOn)
 	if err != nil {
 		return fmt.Errorf("saving state after creating id=%s: %w", newID, err)
 	}
@@ -96,7 +95,7 @@ func (d *DeploymentUnit) Recreate(ctx context.Context, db *dstate.DeploymentStat
 		return fmt.Errorf("deleting old id=%s: %w", oldID, err)
 	}
 
-	err = db.SaveState(d.ResourceKey, "", nil)
+	err = db.SaveState(d.ResourceKey, "", nil, nil)
 	if err != nil {
 		return fmt.Errorf("deleting state: %w", err)
 	}
@@ -105,15 +104,11 @@ func (d *DeploymentUnit) Recreate(ctx context.Context, db *dstate.DeploymentStat
 }
 
 func (d *DeploymentUnit) Update(ctx context.Context, db *dstate.DeploymentState, id string, newState any, changes *deployplan.Changes) error {
-	var remoteState any
-	var err error
-
-	if d.Adapter.HasDoUpdateWithChanges() && changes != nil {
-		remoteState, err = d.Adapter.DoUpdateWithChanges(ctx, id, newState, changes)
-	} else {
-		remoteState, err = d.Adapter.DoUpdate(ctx, id, newState)
+	if !d.Adapter.HasDoUpdate() {
+		return fmt.Errorf("internal error: DoUpdate not implemented for resource %s", d.ResourceKey)
 	}
 
+	remoteState, err := d.Adapter.DoUpdate(ctx, id, newState, changes)
 	if err != nil {
 		return fmt.Errorf("updating id=%s: %w", id, err)
 	}
@@ -123,7 +118,7 @@ func (d *DeploymentUnit) Update(ctx context.Context, db *dstate.DeploymentState,
 		return err
 	}
 
-	err = db.SaveState(d.ResourceKey, id, newState)
+	err = db.SaveState(d.ResourceKey, id, newState, d.DependsOn)
 	if err != nil {
 		return fmt.Errorf("saving state id=%s: %w", id, err)
 	}
@@ -159,7 +154,7 @@ func (d *DeploymentUnit) UpdateWithID(ctx context.Context, db *dstate.Deployment
 		return err
 	}
 
-	err = db.SaveState(d.ResourceKey, newID, newState)
+	err = db.SaveState(d.ResourceKey, newID, newState, d.DependsOn)
 	if err != nil {
 		return fmt.Errorf("saving state id=%s: %w", oldID, err)
 	}
@@ -206,7 +201,7 @@ func (d *DeploymentUnit) Resize(ctx context.Context, db *dstate.DeploymentState,
 		return fmt.Errorf("resizing id=%s: %w", id, err)
 	}
 
-	err = db.SaveState(d.ResourceKey, id, newState)
+	err = db.SaveState(d.ResourceKey, id, newState, d.DependsOn)
 	if err != nil {
 		return fmt.Errorf("saving state id=%s: %w", id, err)
 	}
@@ -214,15 +209,9 @@ func (d *DeploymentUnit) Resize(ctx context.Context, db *dstate.DeploymentState,
 	return nil
 }
 
-func typeConvert(destType reflect.Type, src any) (any, error) {
-	raw, err := json.Marshal(src)
-	if err != nil {
-		return nil, fmt.Errorf("marshalling: %w", err)
-	}
-
+func parseState(destType reflect.Type, raw json.RawMessage) (any, error) {
 	destPtr := reflect.New(destType).Interface()
-	dec := json.NewDecoder(bytes.NewReader(raw))
-	err = dec.Decode(destPtr)
+	err := json.Unmarshal(raw, destPtr)
 	if err != nil {
 		return nil, fmt.Errorf("unmarshalling into %s: %w", destType, err)
 	}
@@ -234,7 +223,7 @@ func (d *DeploymentUnit) refreshRemoteState(ctx context.Context, id string) erro
 	if d.RemoteState != nil {
 		return nil
 	}
-	remoteState, err := d.Adapter.DoRefresh(ctx, id)
+	remoteState, err := d.Adapter.DoRead(ctx, id)
 	if err != nil {
 		return fmt.Errorf("failed to refresh remote state id=%s: %w", id, err)
 	}

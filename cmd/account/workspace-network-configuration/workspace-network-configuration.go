@@ -29,10 +29,7 @@ func New() *cobra.Command {
   You cannot create or delete a workspace's network option, only update it to
   associate the workspace with a different policy`,
 		GroupID: "settings",
-		Annotations: map[string]string{
-			"package": "settings",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -64,7 +61,7 @@ func newGetWorkspaceNetworkOptionRpc() *cobra.Command {
 	cmd.Use = "get-workspace-network-option-rpc WORKSPACE_ID"
 	cmd.Short = `Get workspace network option.`
 	cmd.Long = `Get workspace network option.
-  
+
   Gets the network option for a workspace. Every workspace has exactly one
   network policy binding, with 'default-policy' used if no explicit assignment
   exists.
@@ -132,7 +129,7 @@ func newUpdateWorkspaceNetworkOptionRpc() *cobra.Command {
 	cmd.Use = "update-workspace-network-option-rpc WORKSPACE_ID"
 	cmd.Short = `Update workspace network option.`
 	cmd.Long = `Update workspace network option.
-  
+
   Updates the network option for a workspace. This operation associates the
   workspace with the specified network policy. To revert to the default policy,
   specify 'default-policy' as the network_policy_id.

@@ -1,0 +1,12 @@
+{
+  "plan_version": 1,
+  "cli_version": "[DEV_VERSION]",
+  "plan": {
+    "resources.dashboards.foo": {
+      "action": "create"
+    },
+    "resources.dashboards.foo.permissions": {
+      "action": "create"
+    }
+  }
+}

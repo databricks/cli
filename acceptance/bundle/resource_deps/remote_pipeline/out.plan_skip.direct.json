@@ -1,4 +1,8 @@
 {
+  "plan_version": 1,
+  "cli_version": "[DEV_VERSION]",
+  "lineage": "[UUID]",
+  "serial": 1,
   "plan": {
     "resources.pipelines.foo1": {
       "action": "skip",
@@ -37,21 +41,7 @@
           "label": "${resources.pipelines.foo1.creator_user_name}"
         }
       ],
-      "action": "update",
-      "new_state": {
-        "config": {
-          "channel": "CURRENT",
-          "deployment": {
-            "kind": "BUNDLE",
-            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
-          },
-          "edition": "ADVANCED",
-          "name": "foo2 foo1.creator_user_name=${resources.pipelines.foo1.creator_user_name}"
-        },
-        "vars": {
-          "name": "foo2 foo1.creator_user_name=${resources.pipelines.foo1.creator_user_name}"
-        }
-      },
+      "action": "skip",
       "remote_state": {
         "creator_user_name": "[USERNAME]",
         "last_modified": [UNIX_TIME_MILLIS],
@@ -72,11 +62,6 @@
         "state": "IDLE"
       },
       "changes": {
-        "local": {
-          "name": {
-            "action": "update"
-          }
-        },
         "remote": {
           "storage": {
             "action": "skip",
@@ -92,21 +77,7 @@
           "label": "${resources.pipelines.foo2.state}"
         }
       ],
-      "action": "update",
-      "new_state": {
-        "config": {
-          "channel": "CURRENT",
-          "deployment": {
-            "kind": "BUNDLE",
-            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
-          },
-          "edition": "ADVANCED",
-          "name": "foo3 foo2.state=${resources.pipelines.foo2.state}"
-        },
-        "vars": {
-          "name": "foo3 foo2.state=${resources.pipelines.foo2.state}"
-        }
-      },
+      "action": "skip",
       "remote_state": {
         "creator_user_name": "[USERNAME]",
         "last_modified": [UNIX_TIME_MILLIS],
@@ -127,11 +98,6 @@
         "state": "IDLE"
       },
       "changes": {
-        "local": {
-          "name": {
-            "action": "update"
-          }
-        },
         "remote": {
           "storage": {
             "action": "skip",
@@ -147,21 +113,7 @@
           "label": "${resources.pipelines.foo3.last_modified}"
         }
       ],
-      "action": "update",
-      "new_state": {
-        "config": {
-          "channel": "CURRENT",
-          "deployment": {
-            "kind": "BUNDLE",
-            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
-          },
-          "edition": "ADVANCED",
-          "name": "foo4 foo3.last_modified=${resources.pipelines.foo3.last_modified}"
-        },
-        "vars": {
-          "name": "foo4 foo3.last_modified=${resources.pipelines.foo3.last_modified}"
-        }
-      },
+      "action": "skip",
       "remote_state": {
         "creator_user_name": "[USERNAME]",
         "last_modified": [UNIX_TIME_MILLIS],
@@ -182,11 +134,6 @@
         "state": "IDLE"
       },
       "changes": {
-        "local": {
-          "name": {
-            "action": "update"
-          }
-        },
         "remote": {
           "storage": {
             "action": "skip",

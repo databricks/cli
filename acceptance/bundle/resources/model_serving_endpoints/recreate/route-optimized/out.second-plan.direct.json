@@ -1,9 +1,13 @@
 {
+  "plan_version": 1,
+  "cli_version": "[DEV_VERSION]",
+  "lineage": "[UUID]",
+  "serial": 1,
   "plan": {
     "resources.model_serving_endpoints.test_endpoint": {
       "action": "recreate",
       "new_state": {
-        "config": {
+        "value": {
           "config": {
             "served_entities": [
               {
@@ -22,7 +26,9 @@
       "changes": {
         "local": {
           "route_optimized": {
-            "action": "recreate"
+            "action": "recreate",
+            "old": false,
+            "new": true
           }
         }
       }

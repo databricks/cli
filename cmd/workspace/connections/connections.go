@@ -22,7 +22,7 @@ func New() *cobra.Command {
 		Use:   "connections",
 		Short: `Connections allow for creating a connection to an external data source.`,
 		Long: `Connections allow for creating a connection to an external data source.
-  
+
   A connection is an abstraction of an external data source that can be
   connected from Databricks Compute. Creating a connection object is the first
   step to managing external data sources within Unity Catalog, with the second
@@ -33,10 +33,7 @@ func New() *cobra.Command {
   set of configuration options to support credential management and other
   settings.`,
 		GroupID: "catalog",
-		Annotations: map[string]string{
-			"package": "catalog",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -78,9 +75,9 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create"
 	cmd.Short = `Create a connection.`
 	cmd.Long = `Create a connection.
-  
+
   Creates a new connection
-  
+
   Creates a new connection to an external data source. It allows users to
   specify connection details and configurations for interaction with the
   external server.`
@@ -143,7 +140,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete NAME"
 	cmd.Short = `Delete a connection.`
 	cmd.Long = `Delete a connection.
-  
+
   Deletes the connection that matches the supplied name.
 
   Arguments:
@@ -211,7 +208,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get NAME"
 	cmd.Short = `Get a connection.`
 	cmd.Long = `Get a connection.
-  
+
   Gets a connection from it's name.
 
   Arguments:
@@ -282,12 +279,12 @@ func newList() *cobra.Command {
 	cmd.Use = "list"
 	cmd.Short = `List connections.`
 	cmd.Long = `List connections.
-  
+
   List all connections.
-  
+
   NOTE: we recommend using max_results=0 to use the paginated version of this
   API. Unpaginated calls will be deprecated soon.
-  
+
   PAGINATION BEHAVIOR: When using pagination (max_results >= 0), a page may
   contain zero results while still providing a next_page_token. Clients must
   continue reading pages until next_page_token is absent, which is the only
@@ -344,7 +341,7 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update NAME"
 	cmd.Short = `Update a connection.`
 	cmd.Long = `Update a connection.
-  
+
   Updates the connection that matches the supplied name.
 
   Arguments:

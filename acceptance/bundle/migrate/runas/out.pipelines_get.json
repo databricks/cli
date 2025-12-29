@@ -1,0 +1,28 @@
+{
+  "creator_user_name":"[USERNAME]",
+  "last_modified":[UNIX_TIME_MILLIS],
+  "name":"DABs Revenue Pipeline",
+  "pipeline_id":"[UUID]",
+  "run_as_user_name":"[USERNAME]",
+  "spec": {
+    "catalog":"main",
+    "channel":"CURRENT",
+    "deployment": {
+      "kind":"BUNDLE",
+      "metadata_file_path":"/Workspace/Users/[USERNAME]/.bundle/dabs_revenue-[UNIQUE_NAME]/production/state/metadata.json"
+    },
+    "edition":"ADVANCED",
+    "id":"[UUID]",
+    "libraries": [
+      {
+        "notebook": {
+          "path":"/Workspace/Users/[USERNAME]/.bundle/dabs_revenue-[UNIQUE_NAME]/production/files/sql"
+        }
+      }
+    ],
+    "name":"DABs Revenue Pipeline",
+    "serverless":true,
+    "target":"team_eng_deco"
+  },
+  "state":"IDLE"
+}

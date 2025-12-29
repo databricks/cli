@@ -126,6 +126,7 @@
             "trigger": [
               {
                 "file_arrival": [],
+                "model": [],
                 "pause_status": "UNPAUSED",
                 "periodic": [
                   {

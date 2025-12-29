@@ -45,7 +45,7 @@ func (*ResourceRegisteredModel) RemapState(model *catalog.RegisteredModelInfo) *
 	}
 }
 
-func (r *ResourceRegisteredModel) DoRefresh(ctx context.Context, id string) (*catalog.RegisteredModelInfo, error) {
+func (r *ResourceRegisteredModel) DoRead(ctx context.Context, id string) (*catalog.RegisteredModelInfo, error) {
 	return r.client.RegisteredModels.Get(ctx, catalog.GetRegisteredModelRequest{
 		FullName:        id,
 		IncludeAliases:  false,
@@ -63,7 +63,7 @@ func (r *ResourceRegisteredModel) DoCreate(ctx context.Context, config *catalog.
 	return response.FullName, response, nil
 }
 
-func (r *ResourceRegisteredModel) DoUpdate(ctx context.Context, id string, config *catalog.CreateRegisteredModelRequest) (*catalog.RegisteredModelInfo, error) {
+func (r *ResourceRegisteredModel) DoUpdate(ctx context.Context, id string, config *catalog.CreateRegisteredModelRequest, _ *Changes) (*catalog.RegisteredModelInfo, error) {
 	updateRequest := catalog.UpdateRegisteredModelRequest{
 		FullName:        id,
 		Comment:         config.Comment,

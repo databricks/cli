@@ -1,9 +1,11 @@
 {
+  "plan_version": 1,
+  "cli_version": "[DEV_VERSION]",
   "plan": {
     "resources.apps.foo": {
       "action": "create",
       "new_state": {
-        "config": {
+        "value": {
           "description": "",
           "name": "foo"
         }
@@ -18,7 +20,7 @@
       ],
       "action": "create",
       "new_state": {
-        "config": {
+        "value": {
           "object_id": "",
           "permissions": [
             {

@@ -1,6 +1,11 @@
 {
+  "plan_version": 1,
+  "cli_version": "[DEV_VERSION]",
   "plan": {
     "resources.clusters.foo": {
+      "action": "create"
+    },
+    "resources.clusters.foo.permissions": {
       "action": "create"
     }
   }

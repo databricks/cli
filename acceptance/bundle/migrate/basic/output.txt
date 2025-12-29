@@ -1,0 +1,142 @@
+
+>>> musterr [CLI] bundle deployment migrate
+Error: This command migrates the existing Terraform state file (terraform.tfstate) to a direct deployment state file (resources.json). However, no existing local or remote state was found.
+
+To start using direct engine, deploy with DATABRICKS_BUNDLE_ENGINE=direct env var set.
+
+>>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] bundle deployment migrate
+Note: Migration should be done after a full deploy. Running plan now to verify that deployment was done:
+Plan: 0 to add, 0 to change, 0 to delete, 3 unchanged
+Success! Migrated 3 resources to direct engine state file: [TEST_TMP_DIR]/.databricks/bundle/dev/resources.json
+
+Validate the migration by running "databricks bundle plan", there should be no actions planned.
+
+The state file is not synchronized to the workspace yet. To do that and finalize the migration, run "bundle deploy".
+
+To undo the migration, remove [TEST_TMP_DIR]/.databricks/bundle/dev/resources.json and rename [TEST_TMP_DIR]/.databricks/bundle/dev/terraform/terraform.tfstate.backup to [TEST_TMP_DIR]/.databricks/bundle/dev/terraform/terraform.tfstate
+
+
+>>> diff out.original_state.json out.backup_state.json
+
+>>> jq .state."resources.pipelines.test_pipeline".state.tags.volume_storage_location out.new_state.json
+"s3://deco-uc-prod-isolated-aws-us-east-1/metastore/[UUID]/volumes/[UUID]"
+
+>>> DATABRICKS_BUNDLE_ENGINE=terraform musterr [CLI] bundle plan
+Error: Required engine "terraform" does not match present state files. Clear "DATABRICKS_BUNDLE_ENGINE" env var to use engine appropriate for the state.
+
+Available state files:
+- terraform.tfstate: remote terraform state serial=4 lineage="[UUID]"
+- [TEST_TMP_DIR]/.databricks/bundle/dev/resources.json: local direct state serial=6 lineage="[UUID]"
+
+
+>>> DATABRICKS_BUNDLE_ENGINE=terraform musterr [CLI] bundle deploy
+Error: Required engine "terraform" does not match present state files. Clear "DATABRICKS_BUNDLE_ENGINE" env var to use engine appropriate for the state.
+
+Available state files:
+- terraform.tfstate: remote terraform state serial=4 lineage="[UUID]"
+- [TEST_TMP_DIR]/.databricks/bundle/dev/resources.json: local direct state serial=6 lineage="[UUID]"
+
+
+=== Should show that it's already migrated
+>>> musterr [CLI] bundle deployment migrate
+Error: already using direct engine
+Details: [TEST_TMP_DIR]/.databricks/bundle/dev/resources.json: local direct state serial=6 lineage="[UUID]"
+
+>>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle plan
+update pipelines.test_pipeline
+
+Plan: 0 to add, 1 to change, 0 to delete, 2 unchanged
+
+>>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle plan
+update pipelines.test_pipeline
+
+Plan: 0 to add, 1 to change, 0 to delete, 2 unchanged
+
+>>> print_requests.py --get //jobs/get
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] engine/direct auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.2/jobs/get",
+  "q": {
+    "job_id": "[NUMID]"
+  }
+}
+{
+  "headers": {
+    "User-Agent": [
+      "cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_plan cmd-exec-id/[UUID] engine/direct auth/pat"
+    ]
+  },
+  "method": "GET",
+  "path": "/api/2.2/jobs/get",
+  "q": {
+    "job_id": "[NUMID]"
+  }
+}
+
+>>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py --get //jobs/get
+"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] engine/direct auth/pat"
+"cli/[DEV_VERSION] databricks-sdk-go/[SDK_VERSION] go/[GO_VERSION] os/[OS] cmd/bundle_deploy cmd-exec-id/[UUID] engine/direct auth/pat"
+
+=== Should show that it's already migrated
+>>> musterr [CLI] bundle deployment migrate
+Error: already using direct engine
+Details: [TEST_TMP_DIR]/.databricks/bundle/dev/resources.json: local direct state serial=7 lineage="[UUID]"
+
+>>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle debug states
+[TEST_TMP_DIR]/.databricks/bundle/dev/resources.json: local direct state serial=7 lineage="[UUID]"
+
+>>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle debug states --force-pull
+resources.json: remote direct state serial=7 lineage="[UUID]"
+[TEST_TMP_DIR]/.databricks/bundle/dev/resources.json: local direct state serial=7 lineage="[UUID]"
+
+=== Extra plan: should have no drift
+>>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 3 unchanged
+
+=== Update databricks.yml, run plan & update
+>>> update_file.py databricks.yml Migration Migrated
+
+>>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle plan
+update jobs.test_job
+update pipelines.test_pipeline
+
+Plan: 0 to add, 2 to change, 0 to delete, 1 unchanged
+
+>>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle plan -o json
+
+>>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Different target, still on terraform
+>>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle deploy -t prod
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/prod/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle debug states -t prod
+[TEST_TMP_DIR]/.databricks/bundle/prod/terraform/terraform.tfstate: local terraform state serial=5 lineage="[UUID]"
+
+>>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle debug states -t prod --force-pull
+terraform.tfstate: remote terraform state serial=5 lineage="[UUID]"
+[TEST_TMP_DIR]/.databricks/bundle/prod/terraform/terraform.tfstate: local terraform state serial=5 lineage="[UUID]"

@@ -20,21 +20,21 @@ func (*ResourceDatabaseCatalog) PrepareState(input *resources.DatabaseCatalog) *
 	return &input.DatabaseCatalog
 }
 
-func (r *ResourceDatabaseCatalog) DoRefresh(ctx context.Context, id string) (*database.DatabaseCatalog, error) {
+func (r *ResourceDatabaseCatalog) DoRead(ctx context.Context, id string) (*database.DatabaseCatalog, error) {
 	return r.client.Database.GetDatabaseCatalogByName(ctx, id)
 }
 
-func (r *ResourceDatabaseCatalog) DoCreate(ctx context.Context, config *database.DatabaseCatalog) (string, error) {
+func (r *ResourceDatabaseCatalog) DoCreate(ctx context.Context, config *database.DatabaseCatalog) (string, *database.DatabaseCatalog, error) {
 	result, err := r.client.Database.CreateDatabaseCatalog(ctx, database.CreateDatabaseCatalogRequest{
 		Catalog: *config,
 	})
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
-	return result.Name, nil
+	return result.Name, nil, nil
 }
 
-func (r *ResourceDatabaseCatalog) DoUpdate(ctx context.Context, id string, config *database.DatabaseCatalog) error {
+func (r *ResourceDatabaseCatalog) DoUpdate(ctx context.Context, id string, config *database.DatabaseCatalog, _ *Changes) (*database.DatabaseCatalog, error) {
 	request := database.UpdateDatabaseCatalogRequest{
 		DatabaseCatalog: *config,
 		Name:            id,
@@ -42,7 +42,7 @@ func (r *ResourceDatabaseCatalog) DoUpdate(ctx context.Context, id string, confi
 	}
 
 	_, err := r.client.Database.UpdateDatabaseCatalog(ctx, request)
-	return err
+	return nil, err
 }
 
 func (r *ResourceDatabaseCatalog) DoDelete(ctx context.Context, id string) error {

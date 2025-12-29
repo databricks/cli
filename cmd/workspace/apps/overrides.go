@@ -22,7 +22,46 @@ func listDeploymentsOverride(listDeploymentsCmd *cobra.Command, listDeploymentsR
 	{{end}}`)
 }
 
+func createOverride(createCmd *cobra.Command, createReq *apps.CreateAppRequest) {
+	originalRunE := createCmd.RunE
+	createCmd.RunE = func(cmd *cobra.Command, args []string) error {
+		err := originalRunE(cmd, args)
+		return wrapDeploymentError(cmd, createReq.App.Name, err)
+	}
+}
+
+func deployOverride(deployCmd *cobra.Command, deployReq *apps.CreateAppDeploymentRequest) {
+	originalRunE := deployCmd.RunE
+	deployCmd.RunE = func(cmd *cobra.Command, args []string) error {
+		err := originalRunE(cmd, args)
+		return wrapDeploymentError(cmd, deployReq.AppName, err)
+	}
+}
+
+func createUpdateOverride(createUpdateCmd *cobra.Command, createUpdateReq *apps.AsyncUpdateAppRequest) {
+	originalRunE := createUpdateCmd.RunE
+	createUpdateCmd.RunE = func(cmd *cobra.Command, args []string) error {
+		err := originalRunE(cmd, args)
+		return wrapDeploymentError(cmd, createUpdateReq.AppName, err)
+	}
+}
+
+func startOverride(startCmd *cobra.Command, startReq *apps.StartAppRequest) {
+	originalRunE := startCmd.RunE
+	startCmd.RunE = func(cmd *cobra.Command, args []string) error {
+		err := originalRunE(cmd, args)
+		return wrapDeploymentError(cmd, startReq.Name, err)
+	}
+}
+
 func init() {
+	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
+		cmd.AddCommand(newLogsCommand())
+	})
 	listOverrides = append(listOverrides, listOverride)
 	listDeploymentsOverrides = append(listDeploymentsOverrides, listDeploymentsOverride)
+	createOverrides = append(createOverrides, createOverride)
+	deployOverrides = append(deployOverrides, deployOverride)
+	createUpdateOverrides = append(createUpdateOverrides, createUpdateOverride)
+	startOverrides = append(startOverrides, startOverride)
 }

@@ -24,9 +24,6 @@ func New() *cobra.Command {
 		Long: `Apps Settings manage the settings for the Apps service on a customer's
   Databricks instance.`,
 		GroupID: "apps",
-		Annotations: map[string]string{
-			"package": "apps",
-		},
 
 		// This service is being previewed; hide from help output.
 		Hidden: true,
@@ -71,7 +68,7 @@ func newCreateCustomTemplate() *cobra.Command {
 	cmd.Use = "create-custom-template NAME GIT_REPO PATH MANIFEST GIT_PROVIDER"
 	cmd.Short = `Create a template.`
 	cmd.Long = `Create a template.
-  
+
   Creates a custom template.
 
   Arguments:
@@ -171,7 +168,7 @@ func newDeleteCustomTemplate() *cobra.Command {
 	cmd.Use = "delete-custom-template NAME"
 	cmd.Short = `Delete a template.`
 	cmd.Long = `Delete a template.
-  
+
   Deletes the custom template with the specified name.
 
   Arguments:
@@ -227,7 +224,7 @@ func newGetCustomTemplate() *cobra.Command {
 	cmd.Use = "get-custom-template NAME"
 	cmd.Short = `Get a template.`
 	cmd.Long = `Get a template.
-  
+
   Gets the custom template with the specified name.
 
   Arguments:
@@ -286,7 +283,7 @@ func newListCustomTemplates() *cobra.Command {
 	cmd.Use = "list-custom-templates"
 	cmd.Short = `List templates.`
 	cmd.Long = `List templates.
-  
+
   Lists all custom templates in the workspace.`
 
 	cmd.Annotations = make(map[string]string)
@@ -340,7 +337,7 @@ func newUpdateCustomTemplate() *cobra.Command {
 	cmd.Use = "update-custom-template NAME GIT_REPO PATH MANIFEST GIT_PROVIDER"
 	cmd.Short = `Update a template.`
 	cmd.Long = `Update a template.
-  
+
   Updates the custom template with the specified name. Note that the template
   name cannot be updated.
 

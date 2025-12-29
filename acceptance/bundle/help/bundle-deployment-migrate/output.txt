@@ -1,0 +1,25 @@
+
+>>> [CLI] bundle deployment migrate --help
+This command converts your bundle from using Terraform for deployment to using
+the Direct deployment engine. It reads resource IDs from the existing Terraform
+state and creates a Direct deployment state file (resources.json) with the same
+lineage and incremented serial number.
+
+Note, the migration is performed locally only. To finalize it, run 'bundle deploy'. This will synchronize the state file
+to the workspace so that subsequent deploys of this bundle use direct deployment engine as well.
+
+WARNING: Both direct deployment engine and this command are experimental and not recommended for production targets yet.
+
+Usage:
+  databricks bundle deployment migrate [flags]
+
+Flags:
+  -h, --help          help for migrate
+      --noplancheck   Skip running bundle plan before migration.
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+      --var strings      set values for variables defined in bundle config. Example: --var="foo=bar"

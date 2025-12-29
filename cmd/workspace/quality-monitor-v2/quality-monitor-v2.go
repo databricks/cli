@@ -22,11 +22,8 @@ func New() *cobra.Command {
 		Use:     "quality-monitor-v2",
 		Short:   `Manage data quality of UC objects (currently support schema).`,
 		Long:    `Manage data quality of UC objects (currently support schema)`,
-		GroupID: "qualitymonitorv2",
-		Annotations: map[string]string{
-			"package": "qualitymonitorv2",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		GroupID: "qualitymonitor",
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -67,7 +64,7 @@ func newCreateQualityMonitor() *cobra.Command {
 	cmd.Use = "create-quality-monitor OBJECT_TYPE OBJECT_ID"
 	cmd.Short = `Create a quality monitor.`
 	cmd.Long = `Create a quality monitor.
-  
+
   Create a quality monitor on UC object
 
   Arguments:
@@ -148,7 +145,7 @@ func newDeleteQualityMonitor() *cobra.Command {
 	cmd.Use = "delete-quality-monitor OBJECT_TYPE OBJECT_ID"
 	cmd.Short = `Delete a quality monitor.`
 	cmd.Long = `Delete a quality monitor.
-  
+
   Delete a quality monitor on UC object
 
   Arguments:
@@ -206,7 +203,7 @@ func newGetQualityMonitor() *cobra.Command {
 	cmd.Use = "get-quality-monitor OBJECT_TYPE OBJECT_ID"
 	cmd.Short = `Read a quality monitor.`
 	cmd.Long = `Read a quality monitor.
-  
+
   Read a quality monitor on UC object
 
   Arguments:
@@ -267,7 +264,7 @@ func newListQualityMonitor() *cobra.Command {
 	cmd.Use = "list-quality-monitor"
 	cmd.Short = `List quality monitors.`
 	cmd.Long = `List quality monitors.
-  
+
   (Unimplemented) List quality monitors`
 
 	cmd.Annotations = make(map[string]string)
@@ -321,7 +318,7 @@ func newUpdateQualityMonitor() *cobra.Command {
 	cmd.Use = "update-quality-monitor OBJECT_TYPE OBJECT_ID OBJECT_TYPE OBJECT_ID"
 	cmd.Short = `Update a quality monitor.`
 	cmd.Long = `Update a quality monitor.
-  
+
   (Unimplemented) Update a quality monitor on UC object
 
   Arguments:

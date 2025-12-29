@@ -23,7 +23,7 @@ func New() *cobra.Command {
 		Short: `Groups simplify identity management, making it easier to assign access to Databricks workspace, data, and other securable objects.`,
 		Long: `Groups simplify identity management, making it easier to assign access to
   Databricks workspace, data, and other securable objects.
-  
+
   It is best practice to assign access to workspaces and access-control policies
   in Unity Catalog to groups, instead of to users individually. All Databricks
   workspace identities can be assigned as members of groups, and members inherit
@@ -81,7 +81,7 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create"
 	cmd.Short = `Create a new group.`
 	cmd.Long = `Create a new group.
-  
+
   Creates a group in the Databricks workspace with a unique name, using the
   supplied group details.`
 
@@ -146,7 +146,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete ID"
 	cmd.Short = `Delete a group.`
 	cmd.Long = `Delete a group.
-  
+
   Deletes a group from the Databricks workspace.
 
   Arguments:
@@ -214,7 +214,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get ID"
 	cmd.Short = `Get group details.`
 	cmd.Long = `Get group details.
-  
+
   Gets the information for a specific group in the Databricks workspace.
 
   Arguments:
@@ -290,7 +290,7 @@ func newList() *cobra.Command {
 	cmd.Use = "list"
 	cmd.Short = `List group details.`
 	cmd.Long = `List group details.
-  
+
   Gets all details of the groups associated with the Databricks workspace.`
 
 	cmd.Annotations = make(map[string]string)
@@ -344,7 +344,7 @@ func newPatch() *cobra.Command {
 	cmd.Use = "patch ID"
 	cmd.Short = `Update group details.`
 	cmd.Long = `Update group details.
-  
+
   Partially updates the details of a group.
 
   Arguments:
@@ -437,7 +437,7 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update ID"
 	cmd.Short = `Replace a group.`
 	cmd.Long = `Replace a group.
-  
+
   Updates the details of a group by replacing the entire group entity.
 
   Arguments:

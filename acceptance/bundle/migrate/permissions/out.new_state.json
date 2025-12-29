@@ -1,0 +1,95 @@
+{
+ "state_version": 1,
+ "cli_version": "[DEV_VERSION]",
+ "lineage": "[UUID]",
+ "serial": 7,
+ "state": {
+  "resources.jobs.test_job": {
+   "__id__": "[NUMID]",
+   "state": {
+    "deployment": {
+     "kind": "BUNDLE",
+     "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/default/state/metadata.json"
+    },
+    "edit_mode": "UI_LOCKED",
+    "format": "MULTI_TASK",
+    "max_concurrent_runs": 1,
+    "name": "Test Migration Job",
+    "queue": {
+     "enabled": true
+    },
+    "tasks": [
+     {
+      "notebook_task": {
+       "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/default/files/notebook"
+      },
+      "task_key": "main"
+     }
+    ]
+   }
+  },
+  "resources.jobs.test_job.permissions": {
+   "__id__": "/jobs/[NUMID]",
+   "state": {
+    "object_id": "/jobs/[NUMID]",
+    "permissions": [
+     {
+      "permission_level": "CAN_VIEW",
+      "user_name": "viewer@databricks.com"
+     },
+     {
+      "permission_level": "IS_OWNER",
+      "user_name": "[USERNAME]"
+     }
+    ]
+   },
+   "depends_on": [
+    {
+     "node": "resources.jobs.test_job",
+     "label": "${resources.jobs.test_job.id}"
+    }
+   ]
+  },
+  "resources.pipelines.test_pipeline": {
+   "__id__": "[UUID]",
+   "state": {
+    "channel": "CURRENT",
+    "deployment": {
+     "kind": "BUNDLE",
+     "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/default/state/metadata.json"
+    },
+    "edition": "ADVANCED",
+    "libraries": [
+     {
+      "notebook": {
+       "path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/default/files/pipeline"
+      }
+     }
+    ],
+    "name": "Test Migration Pipeline"
+   }
+  },
+  "resources.pipelines.test_pipeline.permissions": {
+   "__id__": "/pipelines/[UUID]",
+   "state": {
+    "object_id": "/pipelines/[UUID]",
+    "permissions": [
+     {
+      "permission_level": "CAN_MANAGE",
+      "user_name": "manager@databricks.com"
+     },
+     {
+      "permission_level": "IS_OWNER",
+      "user_name": "[USERNAME]"
+     }
+    ]
+   },
+   "depends_on": [
+    {
+     "node": "resources.pipelines.test_pipeline",
+     "label": "${resources.pipelines.test_pipeline.id}"
+    }
+   ]
+  }
+ }
+}

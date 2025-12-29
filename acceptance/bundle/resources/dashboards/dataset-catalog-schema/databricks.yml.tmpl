@@ -1,0 +1,17 @@
+#
+# Acceptance test for deploying dashboards with dataset_catalog and dataset_schema.
+# These fields override the catalog/schema for all datasets in the dashboard.
+#
+bundle:
+  name: deploy-dashboard-dataset-test-$UNIQUE_NAME
+
+resources:
+  dashboards:
+    dashboard1:
+      display_name: $DASHBOARD_DISPLAY_NAME
+      warehouse_id: $TEST_DEFAULT_WAREHOUSE_ID
+      embed_credentials: true
+      dataset_catalog: main
+      dataset_schema: default
+      file_path: "sample-dashboard.lvdash.json"
+      parent_path: /Users/$CURRENT_USER_NAME

@@ -1,9 +1,11 @@
 {
+  "plan_version": 1,
+  "cli_version": "[DEV_VERSION]",
   "plan": {
     "resources.model_serving_endpoints.test_endpoint": {
       "action": "create",
       "new_state": {
-        "config": {
+        "value": {
           "config": {
             "auto_capture_config": {
               "catalog_name": "main",

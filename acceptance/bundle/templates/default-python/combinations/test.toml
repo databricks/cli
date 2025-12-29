@@ -2,6 +2,8 @@ Cloud = true
 
 Ignore = ["input.json"]
 
+EnvMatrix.READPLAN = ["", "1"]
+
 # Using shortcuts, because max path component name on Windows is 256 chars
 # INCLUDE_NOTEBOOK
 EnvMatrix.NBOOK = ["yes", "no"]

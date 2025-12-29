@@ -1,3 +1,10 @@
-Local = true
-Cloud = false
-RecordRequests = true
+Local = false
+Cloud = true
+RecordRequests = false
+
+# The current user on GCP is not a service principal. This causes diverging output since we set permissions for the current user. Thus we skip this test on GCP.
+CloudEnvs.gcp = false
+
+Ignore = [
+    "databricks.yml.tmpl",
+]

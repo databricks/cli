@@ -26,15 +26,12 @@ func New() *cobra.Command {
   environment for accessing all of your Databricks assets. The workspace
   organizes objects (notebooks, libraries, and experiments) into folders, and
   provides access to data and computational resources such as clusters and jobs.
-  
+
   These endpoints are available if your account is on the E2 version of the
   platform or on a select custom plan that allows multiple workspaces per
   account.`,
 		GroupID: "provisioning",
-		Annotations: map[string]string{
-			"package": "provisioning",
-		},
-		RunE: root.ReportUnknownSubcommand,
+		RunE:    root.ReportUnknownSubcommand,
 	}
 
 	// Add methods
@@ -104,7 +101,7 @@ func newCreate() *cobra.Command {
 	cmd.Use = "create"
 	cmd.Short = `Create a workspace.`
 	cmd.Long = `Create a workspace.
-  
+
   Creates a new workspace using a credential configuration and a storage
   configuration, an optional network configuration (if using a customer-managed
   VPC), an optional managed services key configuration (if using
@@ -112,7 +109,7 @@ func newCreate() *cobra.Command {
   configuration (if using customer-managed keys for storage). The key
   configurations used for managed services and storage encryption can be the
   same or different.
-  
+
   Important: This operation is asynchronous. A response with HTTP status code
   200 means the request has been accepted and is in progress, but does not mean
   that the workspace deployed successfully and is running. The initial workspace
@@ -120,7 +117,7 @@ func newCreate() *cobra.Command {
   the response to identify the new workspace and make repeated GET requests with
   the workspace ID and check its status. The workspace becomes available when
   the status changes to RUNNING.
-  
+
   You can share one customer-managed VPC with multiple workspaces in a single
   account. It is not required to create a new VPC for each workspace. However,
   you cannot reuse subnets or Security Groups between workspaces. If you plan to
@@ -128,18 +125,18 @@ func newCreate() *cobra.Command {
   subnets accordingly. Because a Databricks Account API network configuration
   encapsulates this information, you cannot reuse a Databricks Account API
   network configuration across workspaces.
-  
+
   For information about how to create a new workspace with this API including
   error handling, see [Create a new workspace using the Account API].
-  
+
   Important: Customer-managed VPCs, PrivateLink, and customer-managed keys are
   supported on a limited set of deployment and subscription types. If you have
   questions about availability, contact your Databricks representative.
-  
+
   This operation is available only if your account is on the E2 version of the
   platform or on a select custom plan that allows multiple workspaces per
   account.
-  
+
   [Create a new workspace using the Account API]: http://docs.databricks.com/administration-guide/account-api/new-workspace.html`
 
 	cmd.Annotations = make(map[string]string)
@@ -215,7 +212,7 @@ func newDelete() *cobra.Command {
 	cmd.Use = "delete WORKSPACE_ID"
 	cmd.Short = `Delete a workspace.`
 	cmd.Long = `Delete a workspace.
-  
+
   Deletes a Databricks workspace, both specified by ID.`
 
 	cmd.Annotations = make(map[string]string)
@@ -271,7 +268,7 @@ func newGet() *cobra.Command {
 	cmd.Use = "get WORKSPACE_ID"
 	cmd.Short = `Get a workspace.`
 	cmd.Long = `Get a workspace.
-  
+
   Gets information including status for a Databricks workspace, specified by ID.
   In the response, the workspace_status field indicates the current status.
   After initial workspace creation (which is asynchronous), make repeated GET
@@ -279,7 +276,7 @@ func newGet() *cobra.Command {
   available when the status changes to RUNNING. For information about how to
   create a new workspace with this API **including error handling**, see [Create
   a new workspace using the Account API].
-  
+
   [Create a new workspace using the Account API]: http://docs.databricks.com/administration-guide/account-api/new-workspace.html`
 
 	cmd.Annotations = make(map[string]string)
@@ -332,7 +329,7 @@ func newList() *cobra.Command {
 	cmd.Use = "list"
 	cmd.Short = `List workspaces.`
 	cmd.Long = `List workspaces.
-  
+
   Lists Databricks workspaces for an account.`
 
 	cmd.Annotations = make(map[string]string)
@@ -415,7 +412,7 @@ func newUpdate() *cobra.Command {
 	cmd.Use = "update WORKSPACE_ID"
 	cmd.Short = `Update a workspace.`
 	cmd.Long = `Update a workspace.
-  
+
   Updates a workspace.
 
   Arguments:

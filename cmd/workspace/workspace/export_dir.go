@@ -2,8 +2,11 @@ package workspace
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"io"
 	"io/fs"
+	"net/http"
 	"os"
 	"path"
 	"path/filepath"
@@ -13,6 +16,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/notebook"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/spf13/cobra"
 )
@@ -23,9 +27,53 @@ type exportDirOptions struct {
 	overwrite bool
 }
 
+// isFileSizeError checks if the error is due to file size limits.
+func isFileSizeError(err error) bool {
+	var aerr *apierr.APIError
+	if !errors.As(err, &aerr) || aerr.StatusCode != http.StatusBadRequest {
+		return false
+	}
+
+	// Check ErrorCode field
+	if aerr.ErrorCode == "MAX_NOTEBOOK_SIZE_EXCEEDED" || aerr.ErrorCode == "MAX_READ_SIZE_EXCEEDED" {
+		return true
+	}
+
+	// Check ErrorInfo.Reason field
+	details := aerr.ErrorDetails()
+	if details.ErrorInfo != nil {
+		reason := details.ErrorInfo.Reason
+		if reason == "MAX_NOTEBOOK_SIZE_EXCEEDED" || reason == "MAX_READ_SIZE_EXCEEDED" {
+			return true
+		}
+	}
+
+	return false
+}
+
+// Object types that cannot be exported via the workspace export API.
+// These will be skipped with a warning during export-dir.
+var nonExportableTypes = []workspace.ObjectType{
+	workspace.ObjectTypeLibrary,
+	workspace.ObjectTypeDashboard,
+	workspace.ObjectTypeRepo,
+	// MLFLOW_EXPERIMENT is not defined as a constant in the SDK
+	workspace.ObjectType("MLFLOW_EXPERIMENT"),
+}
+
+// isNonExportable checks if an object type cannot be exported.
+func isNonExportable(objectType workspace.ObjectType) bool {
+	for _, t := range nonExportableTypes {
+		if objectType == t {
+			return true
+		}
+	}
+	return false
+}
+
 // The callback function exports the file specified at relPath. This function is
 // meant to be used in conjunction with fs.WalkDir
-func (opts exportDirOptions) callback(ctx context.Context, workspaceFiler filer.Filer) func(string, fs.DirEntry, error) error {
+func (opts *exportDirOptions) callback(ctx context.Context, workspaceFiler filer.Filer) func(string, fs.DirEntry, error) error {
 	sourceDir := opts.sourceDir
 	targetDir := opts.targetDir
 	overwrite := opts.overwrite
@@ -49,6 +97,13 @@ func (opts exportDirOptions) callback(ctx context.Context, workspaceFiler filer.
 			return err
 		}
 		objectInfo := info.Sys().(workspace.ObjectInfo)
+
+		// Skip non-exportable objects (e.g., MLFLOW_EXPERIMENT, LIBRARY)
+		if isNonExportable(objectInfo.ObjectType) {
+			cmdio.LogString(ctx, fmt.Sprintf("%s (skipped; cannot export %s)", sourcePath, objectInfo.ObjectType))
+			return nil
+		}
+
 		targetPath += notebook.GetExtensionByLanguage(&objectInfo)
 
 		// Skip file if a file already exists in path.
@@ -59,6 +114,18 @@ func (opts exportDirOptions) callback(ctx context.Context, workspaceFiler filer.
 			return cmdio.RenderWithTemplate(ctx, newFileSkippedEvent(relPath, targetPath), "", "{{.SourcePath}} -> {{.TargetPath}} (skipped; already exists)\n")
 		}
 
+		// Write content to the local file
+		r, err := workspaceFiler.Read(ctx, relPath)
+		if err != nil {
+			// Check if this is a file size limit error
+			if isFileSizeError(err) {
+				cmdio.LogString(ctx, sourcePath+" (skipped; file too large)")
+				return nil
+			}
+			return err
+		}
+		defer r.Close()
+
 		// create the file
 		f, err := os.Create(targetPath)
 		if err != nil {
@@ -66,11 +133,6 @@ func (opts exportDirOptions) callback(ctx context.Context, workspaceFiler filer.
 		}
 		defer f.Close()
 
-		// Write content to the local file
-		r, err := workspaceFiler.Read(ctx, relPath)
-		if err != nil {
-			return err
-		}
 		_, err = io.Copy(f, r)
 		if err != nil {
 			return err
@@ -120,6 +182,7 @@ func newExportDir() *cobra.Command {
 		if err != nil {
 			return err
 		}
+
 		return cmdio.RenderWithTemplate(ctx, newExportCompletedEvent(opts.targetDir), "", "Export complete\n")
 	}
 
