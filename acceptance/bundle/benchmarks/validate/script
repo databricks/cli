@@ -1,0 +1,5 @@
+BENCH_N_JOBS="${BENCH_N_JOBS:-10}"
+echo "TESTLOG: Generating config with $BENCH_N_JOBS jobs"
+gen_config.py --jobs $BENCH_N_JOBS > databricks.yml
+trace head -n 10 databricks.yml
+trace benchmark.py $CLI bundle validate

@@ -61,6 +61,9 @@ var InprocessMode bool
 // lines with this prefix are not recorded in output.txt but logged instead
 const TestLogPrefix = "TESTLOG: "
 
+// In benchmark mode we disable parallel run of all tests that contain work "benchmark" in their path
+var benchmarkMode = os.Getenv("BENCHMARK_MODE") != ""
+
 func init() {
 	flag.BoolVar(&InprocessMode, "inprocess", false, "Run CLI in the same process as test (for debugging)")
 	flag.BoolVar(&KeepTmp, "keeptmp", false, "Do not delete TMP directory after run")
@@ -328,7 +331,17 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 				t.Skip(skipReason)
 			}
 
-			if !inprocessMode {
+			runParallel := true
+
+			if inprocessMode {
+				runParallel = false
+			}
+
+			if benchmarkMode && strings.Contains(dir, "benchmark") {
+				runParallel = false
+			}
+
+			if runParallel {
 				t.Parallel()
 			}
 
@@ -344,7 +357,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 				for ind, envset := range expanded {
 					envname := strings.Join(envset, "/")
 					t.Run(envname, func(t *testing.T) {
-						if !inprocessMode {
+						if runParallel {
 							t.Parallel()
 						}
 						runTest(t, dir, ind, coverDir, repls.Clone(), config, envset, envFilters)
@@ -689,6 +702,9 @@ func runTest(t *testing.T,
 
 		skipRepls := false
 		if relPath == internal.MaterializedConfigFile {
+			if benchmarkMode {
+				continue
+			}
 			skipRepls = true
 		}
 		doComparison(t, repls, dir, tmpDir, relPath, &printedRepls, skipRepls)

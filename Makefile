@@ -97,6 +97,9 @@ test-update-aws:
 
 test-update-all: test-update test-update-aws
 
+bench:
+	BENCH_N_JOBS=1000 BENCHMARK_MODE=1 go test ./acceptance -v -tail -run TestAccept/bundle/benchmarks -timeout=120m
+
 slowest:
 	${GO_TOOL} gotestsum tool slowest --jsonfile test-output.json --threshold 1s --num 50
 
