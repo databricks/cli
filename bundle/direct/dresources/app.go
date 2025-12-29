@@ -2,6 +2,7 @@ package dresources
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -31,21 +32,28 @@ func (r *ResourceApp) DoRead(ctx context.Context, id string) (*apps.App, error) 
 }
 
 func (r *ResourceApp) DoCreate(ctx context.Context, config *apps.App) (string, *apps.App, error) {
-	if err := r.waitForDeletion(ctx, config.Name); err != nil {
-		return "", nil, err
-	}
-
 	request := apps.CreateAppRequest{
 		App:             *config,
 		NoCompute:       true,
 		ForceSendFields: nil,
 	}
-	waiter, err := r.client.Apps.Create(ctx, request)
+
+	retrier := retries.New[apps.App](retries.WithTimeout(time.Minute), retries.WithRetryFunc(shouldRetry))
+	app, err := retrier.Run(ctx, func(ctx context.Context) (*apps.App, error) {
+		waiter, err := r.client.Apps.Create(ctx, request)
+		if err != nil {
+			if errors.Is(err, apierr.ErrResourceAlreadyExists) {
+				return nil, retries.Continues("app already exists, retrying")
+			}
+			return nil, retries.Halt(err)
+		}
+		return waiter.Response, nil
+	})
 	if err != nil {
 		return "", nil, err
 	}
 
-	return waiter.Response.Name, nil, nil
+	return app.Name, nil, nil
 }
 
 func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *apps.App, _ *Changes) (*apps.App, error) {
@@ -78,32 +86,6 @@ func (*ResourceApp) FieldTriggers(_ bool) map[string]deployplan.ActionType {
 
 func (r *ResourceApp) WaitAfterCreate(ctx context.Context, config *apps.App) (*apps.App, error) {
 	return r.waitForApp(ctx, r.client, config.Name)
-}
-
-func (r *ResourceApp) waitForDeletion(ctx context.Context, name string) error {
-	retrier := retries.New[struct{}](retries.WithTimeout(10*time.Minute), retries.WithRetryFunc(shouldRetry))
-	_, err := retrier.Run(ctx, func(ctx context.Context) (*struct{}, error) {
-		app, err := r.client.Apps.GetByName(ctx, name)
-		if err != nil {
-			if apierr.IsMissing(err) {
-				return nil, nil
-			}
-			return nil, retries.Halt(err)
-		}
-
-		if app.ComputeStatus == nil {
-			return nil, retries.Continues("waiting for compute status")
-		}
-
-		switch app.ComputeStatus.State {
-		case apps.ComputeStateDeleting:
-			return nil, retries.Continues("app is deleting")
-		default:
-			err := fmt.Errorf("app %s already exists", name)
-			return nil, retries.Halt(err)
-		}
-	})
-	return err
 }
 
 // waitForApp waits for the app to reach the target state. The target state is either ACTIVE or STOPPED.
