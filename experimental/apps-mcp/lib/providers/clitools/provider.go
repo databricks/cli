@@ -7,6 +7,7 @@ import (
 	mcpsdk "github.com/databricks/cli/experimental/apps-mcp/lib/mcp"
 	"github.com/databricks/cli/experimental/apps-mcp/lib/providers"
 	"github.com/databricks/cli/experimental/apps-mcp/lib/session"
+	"github.com/databricks/cli/experimental/apps-mcp/lib/skills"
 	"github.com/databricks/cli/libs/log"
 )
 
@@ -88,6 +89,7 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 	// Register databricks_discover tool
 	type DiscoverInput struct {
 		WorkingDirectory string `json:"working_directory" jsonschema:"required" jsonschema_description:"The directory to detect project context from."`
+		ListAllSkills    bool   `json:"list_all_skills,omitempty" jsonschema_description:"If true, list all available skills without filtering by project type."`
 	}
 
 	mcpsdk.AddTool(server,
@@ -97,7 +99,7 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 		},
 		func(ctx context.Context, req *mcpsdk.CallToolRequest, args DiscoverInput) (*mcpsdk.CallToolResult, any, error) {
 			log.Debugf(ctx, "databricks_discover called: working_directory=%s", args.WorkingDirectory)
-			result, err := Discover(ctx, args.WorkingDirectory)
+			result, err := Discover(ctx, args.WorkingDirectory, args.ListAllSkills)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -126,6 +128,26 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 		},
 	)
 
-	log.Infof(p.ctx, "Registered CLI tools: count=%d", 3)
+	// Register read_skill_file tool
+	type ReadSkillFileInput struct {
+		FilePath string `json:"file_path" jsonschema:"required" jsonschema_description:"Path to skill file, format: category/skill-name/file.md (e.g., pipelines/auto-cdc/SKILL.md)"`
+	}
+
+	mcpsdk.AddTool(server,
+		&mcpsdk.Tool{
+			Name:        "read_skill_file",
+			Description: "Read a skill file from the skills registry (skills are listed by databricks_discover). Provides domain-specific expertise for Databricks tasks (pipelines, jobs, apps, ...). Load when user requests match a skill's scope.",
+		},
+		func(ctx context.Context, req *mcpsdk.CallToolRequest, args ReadSkillFileInput) (*mcpsdk.CallToolResult, any, error) {
+			log.Debugf(ctx, "read_skill_file called: file_path=%s", args.FilePath)
+			result, err := skills.GetSkillFile(args.FilePath)
+			if err != nil {
+				return nil, nil, err
+			}
+			return mcpsdk.CreateNewTextContentResult(result), nil, nil
+		},
+	)
+
+	log.Infof(p.ctx, "Registered CLI tools: count=%d", 4)
 	return nil
 }

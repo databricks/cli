@@ -1,0 +1,25 @@
+{{- /*
+     * L3: Skills listing template.
+     *
+     * Injected when: existing project is detected or after init-template.
+     * Contains: skill selection & loading guidance, skill registry.
+     */ -}}
+
+## Skills
+
+You have access to modular Skills for domain-specific expertise knowledge.
+
+### Skill Selection & Loading
+* When a user request matches a skill's scope description, select that Skill
+* Load skills using the MCP tool: `read_skill_file(file_path: "category/skill-name/SKILL.md")`
+* Example: `read_skill_file(file_path: "pipelines/materialized-view/SKILL.md")`
+* Skills may contain links to sub-sections (e.g., "category/skill-name/file.md")
+* If no Skill is suitable, continue with your base capabilities
+* Never mention or reference skills to the user, only use them internally
+{{if .ShowNoSkillsForApps}}
+There are currently no skills available for apps. For skills related to other Databricks resources (jobs, pipelines, etc.), use `databricks_discover` with `list_all_skills=true`.
+{{else}}
+### Skill Registry (names + brief descriptors)
+{{range .Skills}}* **{{.Path}}/SKILL.md**: {{.Description}}
+{{end}}
+{{end}}

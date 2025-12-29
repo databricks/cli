@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/experimental/apps-mcp/lib/common"
 	"github.com/databricks/cli/experimental/apps-mcp/lib/detector"
 	"github.com/databricks/cli/experimental/apps-mcp/lib/prompts"
+	"github.com/databricks/cli/experimental/apps-mcp/lib/skills"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/template"
 )
@@ -87,12 +88,19 @@ func MaterializeTemplate(ctx context.Context, cfg TemplateConfig, configMap map[
 		}
 	}
 
+	// L2: resource-specific giudance (e.g., from target_jobs.tmpl)
+	cmdio.LogString(ctx, "--") // separator for prompt readability & tests
 	for _, targetType := range detected.TargetTypes {
 		templateName := fmt.Sprintf("target_%s.tmpl", targetType)
 		if prompts.TemplateExists(templateName) {
 			content := prompts.MustExecuteTemplate(templateName, map[string]any{})
 			cmdio.LogString(ctx, content)
 		}
+	}
+
+	// L3: list available skills
+	if skillsSection := skills.FormatSkillsSection(detected.IsAppOnly, false); skillsSection != "" {
+		cmdio.LogString(ctx, "\n"+skillsSection)
 	}
 
 	return nil

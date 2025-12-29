@@ -1,0 +1,174 @@
+package skills
+
+import (
+	"embed"
+	"errors"
+	"fmt"
+	"io/fs"
+	"path"
+	"regexp"
+	"sort"
+	"strings"
+
+	"github.com/databricks/cli/experimental/apps-mcp/lib/prompts"
+)
+
+// skillsFS embeds the skills filesystem.
+//
+//go:embed apps/* jobs/* pipelines/*
+var skillsFS embed.FS
+
+// SkillMetadata contains the path and description for progressive disclosure.
+type SkillMetadata struct {
+	Path        string
+	Description string
+}
+
+type skillEntry struct {
+	Metadata SkillMetadata
+	Files    map[string]string
+}
+
+var registry = mustLoadRegistry()
+
+// mustLoadRegistry discovers skill categories and skills from the embedded filesystem.
+func mustLoadRegistry() map[string]map[string]*skillEntry {
+	result := make(map[string]map[string]*skillEntry)
+	categories, _ := fs.ReadDir(skillsFS, ".")
+	for _, cat := range categories {
+		if !cat.IsDir() {
+			continue
+		}
+		category := cat.Name()
+		result[category] = make(map[string]*skillEntry)
+		entries, _ := fs.ReadDir(skillsFS, category)
+		for _, entry := range entries {
+			if !entry.IsDir() {
+				continue
+			}
+			skillPath := path.Join(category, entry.Name())
+			if skill, err := loadSkill(skillPath); err == nil {
+				result[category][entry.Name()] = skill
+			}
+		}
+	}
+	return result
+}
+
+func loadSkill(skillPath string) (*skillEntry, error) {
+	content, err := fs.ReadFile(skillsFS, path.Join(skillPath, "SKILL.md"))
+	if err != nil {
+		return nil, err
+	}
+
+	metadata, err := parseMetadata(string(content))
+	if err != nil {
+		return nil, err
+	}
+	metadata.Path = skillPath
+
+	files := make(map[string]string)
+	entries, _ := fs.ReadDir(skillsFS, skillPath)
+	for _, e := range entries {
+		if !e.IsDir() {
+			if data, err := fs.ReadFile(skillsFS, path.Join(skillPath, e.Name())); err == nil {
+				files[e.Name()] = string(data)
+			}
+		}
+	}
+
+	return &skillEntry{Metadata: *metadata, Files: files}, nil
+}
+
+var frontmatterRe = regexp.MustCompile(`(?s)^---\n(.+?)\n---\n`)
+
+func parseMetadata(content string) (*SkillMetadata, error) {
+	match := frontmatterRe.FindStringSubmatch(content)
+	if match == nil {
+		return nil, errors.New("missing YAML frontmatter")
+	}
+
+	var description string
+	for _, line := range strings.Split(match[1], "\n") {
+		if k, v, ok := strings.Cut(line, ":"); ok && strings.TrimSpace(k) == "description" {
+			description = strings.TrimSpace(v)
+		}
+	}
+
+	if description == "" {
+		return nil, errors.New("missing description in skill frontmatter")
+	}
+
+	return &SkillMetadata{Description: description}, nil
+}
+
+// ListAllSkills returns metadata for all registered skills.
+func ListAllSkills() []SkillMetadata {
+	var skills []SkillMetadata
+	for _, categorySkills := range registry {
+		for _, entry := range categorySkills {
+			skills = append(skills, entry.Metadata)
+		}
+	}
+
+	sort.Slice(skills, func(i, j int) bool {
+		return skills[i].Path < skills[j].Path
+	})
+
+	return skills
+}
+
+// GetSkillFile reads a specific file from a skill.
+// path format: "category/skill-name/file.md"
+func GetSkillFile(path string) (string, error) {
+	parts := strings.SplitN(path, "/", 3)
+	if len(parts) != 3 {
+		return "", fmt.Errorf("invalid skill path: %q (expected format category/skill-name/file.md, use databricks_discover for available skills)", path)
+	}
+
+	category, skillName, fileName := parts[0], parts[1], parts[2]
+
+	entry := registry[category][skillName]
+	if entry == nil {
+		return "", fmt.Errorf("skill not found: %s (use databricks_discover for available skills)", skillName)
+	}
+
+	content, ok := entry.Files[fileName]
+	if !ok {
+		return "", fmt.Errorf("skill file not found: %s (use databricks_discover for available skills)", fileName)
+	}
+
+	// Strip frontmatter from SKILL.md
+	if fileName == "SKILL.md" {
+		if loc := frontmatterRe.FindStringIndex(content); loc != nil {
+			content = strings.TrimLeft(content[loc[1]:], "\n")
+		}
+	}
+
+	return content, nil
+}
+
+// FormatSkillsSection returns the L3 skills listing for prompts.
+func FormatSkillsSection(isAppOnly, listAllSkills bool) string {
+	allSkills := ListAllSkills()
+
+	var skillsToShow []SkillMetadata
+	if listAllSkills || !isAppOnly {
+		skillsToShow = allSkills
+	} else {
+		for _, skill := range allSkills {
+			if strings.HasPrefix(skill.Path, "apps/") {
+				skillsToShow = append(skillsToShow, skill)
+			}
+		}
+	}
+
+	if len(skillsToShow) == 0 && !isAppOnly {
+		return ""
+	}
+
+	return prompts.MustExecuteTemplate("skills.tmpl", map[string]any{
+		"ShowNoSkillsForApps": len(skillsToShow) == 0 && isAppOnly,
+		"Skills":              skillsToShow,
+	})
+}

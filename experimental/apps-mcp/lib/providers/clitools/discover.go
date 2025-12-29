@@ -7,14 +7,16 @@ import (
 	"github.com/databricks/cli/experimental/apps-mcp/lib/detector"
 	"github.com/databricks/cli/experimental/apps-mcp/lib/middlewares"
 	"github.com/databricks/cli/experimental/apps-mcp/lib/prompts"
+	"github.com/databricks/cli/experimental/apps-mcp/lib/skills"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 )
 
 // Discover provides workspace context and workflow guidance.
-// Returns L1 (flow) always + L2 (target) for detected target types.
-func Discover(ctx context.Context, workingDirectory string) (string, error) {
+// Returns L1 (flow) always + L2 (target) for detected target types + L3 (skills) listing.
+// If listAllSkills is true, shows all available skills without filtering by project type.
+func Discover(ctx context.Context, workingDirectory string, listAllSkills bool) (string, error) {
 	warehouse, err := middlewares.GetWarehouseEndpoint(ctx)
 	if err != nil {
 		log.Debugf(ctx, "Failed to get default warehouse (non-fatal): %v", err)
@@ -31,11 +33,11 @@ func Discover(ctx context.Context, workingDirectory string) (string, error) {
 	registry := detector.NewRegistry()
 	detected := registry.Detect(ctx, workingDirectory)
 
-	return generateDiscoverGuidance(ctx, warehouse, currentProfile, profiles, defaultCatalog, detected), nil
+	return generateDiscoverGuidance(ctx, warehouse, currentProfile, profiles, defaultCatalog, detected, listAllSkills), nil
 }
 
-// generateDiscoverGuidance creates guidance with L1 (flow) + L2 (target) layers.
-func generateDiscoverGuidance(ctx context.Context, warehouse *sql.EndpointInfo, currentProfile string, profiles profile.Profiles, defaultCatalog string, detected *detector.DetectedContext) string {
+// generateDiscoverGuidance creates guidance with L1 (flow) + L2 (target) + L3 (skills) layers.
+func generateDiscoverGuidance(ctx context.Context, warehouse *sql.EndpointInfo, currentProfile string, profiles profile.Profiles, defaultCatalog string, detected *detector.DetectedContext, listAllSkills bool) string {
 	data := buildTemplateData(warehouse, currentProfile, profiles, defaultCatalog)
 
 	// L1: always include flow guidance
@@ -59,6 +61,11 @@ func generateDiscoverGuidance(ctx context.Context, warehouse *sql.EndpointInfo, 
 		if detected.Template != "" {
 			result += fmt.Sprintf(" (template: %s)", detected.Template)
 		}
+	}
+
+	// L3: list available skills
+	if skillsSection := skills.FormatSkillsSection(detected.IsAppOnly, listAllSkills); skillsSection != "" {
+		result += "\n\n" + skillsSection
 	}
 
 	return result
