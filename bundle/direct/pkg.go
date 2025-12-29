@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
+	"github.com/databricks/cli/libs/structs/structvar"
 )
 
 // How many parallel operations (API calls) are allowed
@@ -42,6 +43,7 @@ type DeploymentBundle struct {
 	Adapters         map[string]*dresources.Adapter
 	Plan             *deployplan.Plan
 	RemoteStateCache sync.Map
+	StructVarCache   structvar.Cache
 }
 
 // SetRemoteState updates the remote state with type validation and marks as fresh.

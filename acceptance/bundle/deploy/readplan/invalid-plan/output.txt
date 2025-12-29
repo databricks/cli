@@ -1,0 +1,4 @@
+Error: parsing plan JSON: invalid character 'i' looking for beginning of value
+
+
+Exit code: 1
