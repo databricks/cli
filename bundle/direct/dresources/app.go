@@ -31,6 +31,10 @@ func (r *ResourceApp) DoRead(ctx context.Context, id string) (*apps.App, error) 
 }
 
 func (r *ResourceApp) DoCreate(ctx context.Context, config *apps.App) (string, *apps.App, error) {
+	if err := r.waitForDeletion(ctx, config.Name); err != nil {
+		return "", nil, err
+	}
+
 	request := apps.CreateAppRequest{
 		App:             *config,
 		NoCompute:       true,
@@ -63,10 +67,7 @@ func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *apps.App,
 
 func (r *ResourceApp) DoDelete(ctx context.Context, id string) error {
 	_, err := r.client.Apps.DeleteByName(ctx, id)
-	if err != nil {
-		return err
-	}
-	return r.waitForDeletion(ctx, id)
+	return err
 }
 
 func (*ResourceApp) FieldTriggers(_ bool) map[string]deployplan.ActionType {
@@ -97,11 +98,9 @@ func (r *ResourceApp) waitForDeletion(ctx context.Context, name string) error {
 		switch app.ComputeStatus.State {
 		case apps.ComputeStateDeleting:
 			return nil, retries.Continues("app is deleting")
-		case apps.ComputeStateActive, apps.ComputeStateStopped, apps.ComputeStateError:
-			err := fmt.Errorf("app %s was not deleted, current state: %s", name, app.ComputeStatus.State)
-			return nil, retries.Halt(err)
 		default:
-			return nil, retries.Continues(fmt.Sprintf("app is in %s state", app.ComputeStatus.State))
+			err := fmt.Errorf("app %s already exists", name)
+			return nil, retries.Halt(err)
 		}
 	})
 	return err
