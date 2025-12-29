@@ -60,6 +60,9 @@ var (
 // Also disables parallelism in tests.
 var InprocessMode bool
 
+// lines with this prefix are not recorded in output.txt but logged instead
+const TestLogPrefix = "TESTLOG: "
+
 func init() {
 	flag.BoolVar(&InprocessMode, "inprocess", false, "Run CLI in the same process as test (for debugging)")
 	flag.BoolVar(&KeepTmp, "keeptmp", false, "Do not delete TMP directory after run")
@@ -1245,14 +1248,20 @@ func runWithLog(t *testing.T, cmd *exec.Cmd, out *os.File, tail bool) (string, e
 		if tail {
 			msg := strings.TrimRight(line, "\n")
 			if len(msg) > 0 {
-				d := time.Since(start)
-				t.Logf("%2d.%03d %s", d/time.Second, (d%time.Second)/time.Millisecond, msg)
+				logWithDurationSince(t, start, msg)
 			}
 		}
 		if len(line) > 0 {
 			mostRecentLine = line
-			_, err = out.WriteString(line)
-			require.NoError(t, err)
+			if strings.HasPrefix(line, TestLogPrefix) {
+				// if tail is true, we already logged it above
+				if !tail {
+					logWithDurationSince(t, start, strings.TrimRight(line, "\n"))
+				}
+			} else {
+				_, err = out.WriteString(line)
+				require.NoError(t, err)
+			}
 		}
 		if err == io.EOF {
 			break
@@ -1267,6 +1276,11 @@ func runWithLog(t *testing.T, cmd *exec.Cmd, out *os.File, tail bool) (string, e
 	}
 
 	return skipReason, <-processErrCh
+}
+
+func logWithDurationSince(t *testing.T, start time.Time, msg string) {
+	d := time.Since(start)
+	t.Logf("%2d.%03d %s", d/time.Second, (d%time.Second)/time.Millisecond, msg)
 }
 
 func getCloudEnvBase(cloudEnv string) string {
