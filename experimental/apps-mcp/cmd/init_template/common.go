@@ -68,7 +68,7 @@ func MaterializeTemplate(ctx context.Context, cfg TemplateConfig, configMap map[
 	}
 
 	fileCount := countFiles(absOutputDir)
-	cmdio.LogString(ctx, common.FormatProjectScaffoldSuccess(cfg.TemplateName, absOutputDir, fileCount))
+	cmdio.LogString(ctx, common.FormatScaffoldSuccess(cfg.TemplateName, absOutputDir, fileCount))
 
 	fileTree, err := generateFileTree(absOutputDir)
 	if err == nil && fileTree != "" {
