@@ -24,7 +24,7 @@ func (m *annotateJobs) Apply(_ context.Context, b *bundle.Bundle) diag.Diagnosti
 			Kind:             jobs.JobDeploymentKindBundle,
 			MetadataFilePath: metadataFilePath(b),
 		}
-		job.EditMode = jobs.JobEditModeUiLocked
+		job.EditMode = jobs.JobEditModeEditable
 		job.Format = jobs.FormatMultiTask
 	}
 
