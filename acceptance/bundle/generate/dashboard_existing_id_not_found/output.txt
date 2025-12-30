@@ -1,4 +1,4 @@
-Error: dashboard with ID f00dcafe not found
+Error: unable to locate bundle root: databricks.yml not found
 
 
 Exit code: 1

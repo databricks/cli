@@ -1,3 +1,6 @@
+bundle:
+  name: test-bundle
+
 experimental:
   skip_artifact_cleanup: true
 
