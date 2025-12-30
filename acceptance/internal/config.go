@@ -157,9 +157,11 @@ type ServerStub struct {
 	// See [time.ParseDuration] for details.
 	Delay time.Duration
 
-	// If true, kill the caller process instead of returning a response.
+	// Number of times to kill the caller process before returning normal responses.
+	// 0 = never kill (default), 1 = kill once then allow, 2 = kill twice then allow, etc.
+	// Useful for testing crash recovery scenarios where first deploy crashes but retry succeeds.
 	// Requires DATABRICKS_CLI_TEST_PID=1 to be set in the test environment.
-	KillCaller bool
+	KillCaller int
 }
 
 // FindConfigs finds all the config relevant for this test,

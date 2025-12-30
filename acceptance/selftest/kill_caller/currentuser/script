@@ -1,1 +1,2 @@
 trace errcode $CLI current-user me
+echo "Script continued after kill"

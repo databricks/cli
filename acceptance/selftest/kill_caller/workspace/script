@@ -1,1 +1,2 @@
 trace errcode $CLI workspace list /
+echo "Script continued after kill"

@@ -3,3 +3,4 @@
 [PROCESS_KILLED]
 
 Exit code: [KILLED]
+Script continued after kill

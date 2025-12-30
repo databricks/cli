@@ -17,24 +17,12 @@ import (
 	"sync"
 
 	"github.com/databricks/cli/internal/testutil"
-	"github.com/databricks/cli/libs/env"
-	"github.com/databricks/databricks-sdk-go/useragent"
 	"github.com/gorilla/mux"
 )
 
-const (
-	TestPidEnvVar = "DATABRICKS_CLI_TEST_PID"
-	testPidKey    = "test-pid"
-)
+const testPidKey = "test-pid"
 
 var testPidRegex = regexp.MustCompile(testPidKey + `/(\d+)`)
-
-func InjectPidToUserAgent(ctx context.Context) context.Context {
-	if env.Get(ctx, TestPidEnvVar) != "1" {
-		return ctx
-	}
-	return useragent.InContext(ctx, testPidKey, strconv.Itoa(os.Getpid()))
-}
 
 func ExtractPidFromHeaders(headers http.Header) int {
 	ua := headers.Get("User-Agent")

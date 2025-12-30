@@ -1,11 +1,6 @@
 Local = true
 Env.DATABRICKS_CLI_TEST_PID = "1"
 
-# Kill the CLI when it calls /Me endpoint
-[[Server]]
-Pattern = "GET /api/2.0/preview/scim/v2/Me"
-KillCaller = true
-
 [[Repls]]
 # macOS bash shows "Killed: 9" (with signal number), Linux shows "Killed"
 # Normalize the whole killed line to a placeholder
