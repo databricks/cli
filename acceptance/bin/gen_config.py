@@ -107,7 +107,7 @@ def gen_config(n):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--jobs", type=int, required=True, help="Number of jobs to generate")
+    parser.add_argument("--jobs", type=int, default=10, help="Number of jobs to generate")
     args = parser.parse_args()
 
     config = gen_config(args.jobs)

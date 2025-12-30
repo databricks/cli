@@ -6,40 +6,31 @@ import statistics
 import sys
 import os
 import resource
+import json
 
 
 def run_benchmark(command, warmup, runs):
     times = []
 
-    if len(command) == 1 and " " in command[0] or ">" in command[0]:
-        shell = True
-        command = command[0]
-    else:
-        shell = False
-
     for i in range(runs):
-        rusage_before = resource.getrusage(resource.RUSAGE_CHILDREN)
+        cp = subprocess.run([sys.executable, sys.argv[0], "--once"] + command, stdout=subprocess.PIPE)
+        if cp.returncode != 0:
+            sys.exit(cp.returncode)
 
-        with open("LOG.process", "a") as log:
-            start = time.perf_counter()
-            result = subprocess.run(command, shell=shell, stdout=log, stderr=log)
-            end = time.perf_counter()
-
-        if result.returncode != 0:
-            print(f"Error: command failed with exit code {result.returncode}", file=sys.stderr)
-            sys.exit(result.returncode)
-
-        rusage_after = resource.getrusage(resource.RUSAGE_CHILDREN)
-        utime = rusage_after.ru_utime - rusage_before.ru_utime
-        stime = rusage_after.ru_stime - rusage_before.ru_stime
+        try:
+            result = json.loads(cp.stdout)
+        except Exception:
+            print(f"Failed to parse: {cp.stdout!r}")
+            raise
 
         run = f"Run #{i} (warm): " if i < warmup else f"Run #{i} (count):"
-        print(
-            f"TESTLOG: {run} wall={end - start:.3f}  ru_utime={utime:.3f}  ru_stime={stime:.3f}  ru_maxrss={rusage_after.ru_maxrss}"
-        )
+
+        result_formatted = "  ".join(f"{key}={value}" for (key, value) in result.items())
+
+        print(f"TESTLOG: {run} {result_formatted}")
 
         if i >= warmup:
-            times.append(end - start)
+            times.append(result["wall"])
 
     if not times:
         print("No times recorded")
@@ -53,18 +44,54 @@ def run_benchmark(command, warmup, runs):
 
         print(f"TESTLOG: Benchmark: {command}")
         print(f"TESTLOG:  Time (mean ± σ):     {mean:.3f} s ±  {stdev:.3f} s")
-        print(f"TESTLOG:  Range (min … max):   {min_time:.3f} s … {max_time:.3f} s    {runs} runs", flush=True)
+        print(f"TESTLOG:  Range (min … max):   {min_time:.3f} s … {max_time:.3f} s    {len(times)} runs", flush=True)
+
+
+def run_once(command):
+    if len(command) == 1 and " " in command[0] or ">" in command[0]:
+        shell = True
+        command = command[0]
+    else:
+        shell = False
+
+    rusage_before = resource.getrusage(resource.RUSAGE_CHILDREN)
+
+    with open("LOG.process", "a") as log:
+        start = time.perf_counter()
+        result = subprocess.run(command, shell=shell, stdout=log, stderr=log)
+        end = time.perf_counter()
+
+    if result.returncode != 0:
+        print(f"Error: command failed with exit code {result.returncode}", file=sys.stderr)
+        sys.exit(result.returncode)
+
+    rusage_after = resource.getrusage(resource.RUSAGE_CHILDREN)
+
+    return {
+        "wall": end - start,
+        "ru_utime": rusage_after.ru_utime - rusage_before.ru_utime,
+        "ru_stime": rusage_after.ru_stime - rusage_before.ru_stime,
+        # maxrss returns largest process, so subtracting is not correct since rusage_before will be reporting different process
+        "ru_maxrss": rusage_after.ru_maxrss,
+    }
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--warmup", type=int, default=1)
     parser.add_argument("--runs", type=int)
+    parser.add_argument("--once", action="store_true")
     parser.add_argument("command", nargs="+")
     args = parser.parse_args()
 
+    if args.once:
+        assert not args.runs
+        result = run_once(args.command)
+        print(json.dumps(result))
+        return
+
     if args.runs is None:
-        if os.environ.get("BENCHMARK_MODE"):
+        if os.environ.get("BENCHMARK_PARAMS"):
             args.runs = 5
         else:
             args.runs = 1

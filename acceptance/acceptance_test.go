@@ -62,7 +62,7 @@ var InprocessMode bool
 const TestLogPrefix = "TESTLOG: "
 
 // In benchmark mode we disable parallel run of all tests that contain work "benchmark" in their path
-var benchmarkMode = os.Getenv("BENCHMARK_MODE") != ""
+var benchmarkMode = os.Getenv("BENCHMARK_PARAMS") != ""
 
 func init() {
 	flag.BoolVar(&InprocessMode, "inprocess", false, "Run CLI in the same process as test (for debugging)")
