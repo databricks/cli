@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"os"
 	"reflect"
 	"regexp"
 	"strconv"
@@ -293,9 +292,6 @@ func (s *Server) Handle(method, path string, handler HandlerFunc) {
 				StatusCode: 500,
 				Body:       []byte("INJECTED"),
 			}
-		} else if bytes.Contains(request.Body, []byte("KILL_CALLER")) {
-			s.handleKillCaller(&request, w)
-			return
 		} else {
 			respAny := handler(request)
 			if respAny == nil && request.Context.Err() != nil {
@@ -343,36 +339,4 @@ func isNil(i any) bool {
 	default:
 		return false
 	}
-}
-
-func (s *Server) handleKillCaller(request *Request, w http.ResponseWriter) {
-	pid := ExtractPidFromHeaders(request.Headers)
-	if pid == 0 {
-		s.t.Errorf("KILL_CALLER requested but test-pid not found in User-Agent")
-		w.WriteHeader(http.StatusBadRequest)
-		_, _ = fmt.Fprint(w, "test-pid not found in User-Agent (set DATABRICKS_CLI_TEST_PID=1)")
-		return
-	}
-
-	s.t.Logf("KILL_CALLER: killing PID %d", pid)
-
-	process, err := os.FindProcess(pid)
-	if err != nil {
-		s.t.Errorf("Failed to find process %d: %s", pid, err)
-		w.WriteHeader(http.StatusInternalServerError)
-		_, _ = fmt.Fprintf(w, "failed to find process: %s", err)
-		return
-	}
-
-	// Use process.Kill() for cross-platform compatibility.
-	// On Unix, this sends SIGKILL. On Windows, this calls TerminateProcess.
-	if err := process.Kill(); err != nil {
-		s.t.Errorf("Failed to kill process %d: %s", pid, err)
-		w.WriteHeader(http.StatusInternalServerError)
-		_, _ = fmt.Fprintf(w, "failed to kill process: %s", err)
-		return
-	}
-
-	w.WriteHeader(http.StatusOK)
-	_, _ = fmt.Fprintf(w, "killed PID %d", pid)
 }

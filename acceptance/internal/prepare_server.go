@@ -218,50 +218,9 @@ func startLocalServer(t *testing.T,
 				}
 			}
 
-			// Check if we should kill the caller
-			shouldKill := false
-			if stub.KillCaller > 0 && killCounters[stub.Pattern] > 0 {
-				killCounters[stub.Pattern]--
-				shouldKill = true
-				t.Logf("KillCaller: will kill (remaining kills for %s: %d)", stub.Pattern, killCounters[stub.Pattern])
-			}
-
-			if shouldKill {
-				pid := testserver.ExtractPidFromHeaders(req.Headers)
-				if pid == 0 {
-					t.Errorf("KillCaller configured but test-pid not found in User-Agent")
-					return testserver.Response{
-						StatusCode: http.StatusBadRequest,
-						Body:       "test-pid not found in User-Agent (set DATABRICKS_CLI_TEST_PID=1)",
-					}
-				}
-
-				t.Logf("KillCaller: killing PID %d (pattern: %s)", pid, stub.Pattern)
-
-				process, err := os.FindProcess(pid)
-				if err != nil {
-					t.Errorf("Failed to find process %d: %s", pid, err)
-					return testserver.Response{
-						StatusCode: http.StatusInternalServerError,
-						Body:       fmt.Sprintf("failed to find process: %s", err),
-					}
-				}
-
-				// Use process.Kill() for cross-platform compatibility.
-				// On Unix, this sends SIGKILL. On Windows, this calls TerminateProcess.
-				if err := process.Kill(); err != nil {
-					t.Errorf("Failed to kill process %d: %s", pid, err)
-					return testserver.Response{
-						StatusCode: http.StatusInternalServerError,
-						Body:       fmt.Sprintf("failed to kill process: %s", err),
-					}
-				}
-
-				// Return a response (the CLI will likely be killed before it receives this)
-				return testserver.Response{
-					StatusCode: http.StatusOK,
-					Body:       fmt.Sprintf("killed PID %d", pid),
-				}
+			if shouldKillCaller(stub, killCounters) {
+				killCaller(t, stub.Pattern, req.Headers)
+				return testserver.Response{StatusCode: http.StatusOK}
 			}
 
 			return stub.Response
@@ -271,6 +230,37 @@ func startLocalServer(t *testing.T,
 	// The earliest handlers take precedence, add default handlers last
 	testserver.AddDefaultHandlers(s)
 	return s.URL
+}
+
+func shouldKillCaller(stub ServerStub, killCounters map[string]int) bool {
+	if stub.KillCaller <= 0 || killCounters[stub.Pattern] <= 0 {
+		return false
+	}
+	killCounters[stub.Pattern]--
+	return true
+}
+
+func killCaller(t *testing.T, pattern string, headers http.Header) {
+	pid := testserver.ExtractPidFromHeaders(headers)
+	if pid == 0 {
+		t.Errorf("KillCaller configured but test-pid not found in User-Agent")
+		return
+	}
+
+	process, err := os.FindProcess(pid)
+	if err != nil {
+		t.Errorf("Failed to find process %d: %s", pid, err)
+		return
+	}
+
+	// Use process.Kill() for cross-platform compatibility.
+	// On Unix, this sends SIGKILL. On Windows, this calls TerminateProcess.
+	if err := process.Kill(); err != nil {
+		t.Errorf("Failed to kill process %d: %s", pid, err)
+		return
+	}
+
+	t.Logf("KillCaller: killed PID %d (pattern: %s)", pid, pattern)
 }
 
 func startProxyServer(t *testing.T,

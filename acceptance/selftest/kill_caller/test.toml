@@ -1,3 +1,7 @@
+# KillCaller tests verify the test server's ability to terminate CLI processes mid-request.
+# This enables testing crash recovery scenarios, e.g., "bundle deploy" fails on first attempt
+# but succeeds on retry. Each subdirectory tests a different endpoint or retry count.
+
 Local = true
 Env.DATABRICKS_CLI_TEST_PID = "1"
 
