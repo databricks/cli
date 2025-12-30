@@ -1,4 +1,4 @@
-Error: unable to locate bundle root: databricks.yml not found
+Error: dashboard "dashboard" not found
 
 
 Exit code: 1

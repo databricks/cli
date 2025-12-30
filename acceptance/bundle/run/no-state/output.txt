@@ -1,2 +1,2 @@
-Error: unable to locate bundle root: databricks.yml not found
+Error: resource not found or not yet deployed. Did you forget to run 'databricks bundle deploy'?
 
