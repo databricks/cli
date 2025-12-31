@@ -16,6 +16,7 @@ type ResourceFeatureEngineeringMaterializedFeatureOnlineStoreConfig struct {
 }
 
 type ResourceFeatureEngineeringMaterializedFeature struct {
+	CronSchedule            string                                                           `json:"cron_schedule,omitempty"`
 	FeatureName             string                                                           `json:"feature_name"`
 	LastMaterializationTime string                                                           `json:"last_materialization_time,omitempty"`
 	MaterializedFeatureId   string                                                           `json:"materialized_feature_id,omitempty"`

@@ -1,14 +1,15 @@
 # NEXT CHANGELOG
 
-## Release v0.281.0
+## Release v0.282.0
 
 ### Notable Changes
 
 ### CLI
+* Skip non-exportable objects (e.g., `MLFLOW_EXPERIMENT`) during `workspace export-dir` instead of failing ([#4081](https://github.com/databricks/cli/issues/4081))
 
 ### Bundles
-* engine/direct: Fix dependency-ordered deletion by persisting depends_on in state ([#4105](https://github.com/databricks/cli/pull/4105))
-* Pass SYSTEM_ACCESSTOKEN from env to the Terraform provider ([#4135](https://github.com/databricks/cli/pull/4135)
+
+* Add interactive SQL warehouse picker to `default-sql` and `dbt-sql` bundle templates ([#4170](https://github.com/databricks/cli/pull/4170))
 
 ### Dependency updates
 

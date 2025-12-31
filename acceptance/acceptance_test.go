@@ -48,6 +48,7 @@ var (
 	UseVersion      string
 	WorkspaceTmpDir bool
 	TerraformDir    string
+	OnlyOutTestToml bool
 )
 
 // In order to debug CLI running under acceptance test, search for TestInprocessMode and update
@@ -58,6 +59,9 @@ var (
 // CLI commands. The $CLI in test scripts is a helper that just forwards command-line arguments to this server (see bin/callserver.py).
 // Also disables parallelism in tests.
 var InprocessMode bool
+
+// lines with this prefix are not recorded in output.txt but logged instead
+const TestLogPrefix = "TESTLOG: "
 
 func init() {
 	flag.BoolVar(&InprocessMode, "inprocess", false, "Run CLI in the same process as test (for debugging)")
@@ -78,6 +82,7 @@ func init() {
 	// creates these symlinks when a file_mirror is used for a provider (in .terraformrc). This flag
 	// allows us to download the provider to the workspace file system on DBR enabling DBR integration testing.
 	flag.StringVar(&TerraformDir, "terraform-dir", "", "Directory to download the terraform provider to")
+	flag.BoolVar(&OnlyOutTestToml, "only-out-test-toml", false, "Only regenerate out.test.toml files without running tests")
 }
 
 const (
@@ -307,12 +312,17 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 			config, configPath := internal.LoadConfig(t, dir)
 			skipReason := getSkipReason(&config, configPath)
 
-			if testdiff.OverwriteMode {
+			if testdiff.OverwriteMode || OnlyOutTestToml {
 				// Generate materialized config for this test
 				// We do this before skipping the test, so the configs are generated for all tests.
 				materializedConfig, err := internal.GenerateMaterializedConfig(config)
 				require.NoError(t, err)
 				testutil.WriteFile(t, filepath.Join(dir, internal.MaterializedConfigFile), materializedConfig)
+			}
+
+			// If only regenerating out.test.toml, skip the actual test execution
+			if OnlyOutTestToml {
+				t.Skip("Skipping test execution (only regenerating out.test.toml)")
 			}
 
 			if skipReason != "" {
@@ -324,17 +334,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 				t.Parallel()
 			}
 
-			expanded := internal.ExpandEnvMatrix(config.EnvMatrix)
-
-			if testdiff.OverwriteMode && len(expanded) > 1 {
-				// All variants of the test are producing the same output,
-				// there is no need to run the concurrently when updating.
-				// Exception: if EnvVaryOutput is configured with multiple values, we must
-				// run all variants to record variant-specific outputs.
-				if config.EnvVaryOutput == nil || len(config.EnvMatrix[*config.EnvVaryOutput]) <= 1 {
-					expanded = expanded[0:1]
-				}
-			}
+			expanded := internal.ExpandEnvMatrix(config.EnvMatrix, config.EnvMatrixExclude)
 
 			if len(expanded) == 1 {
 				// env vars aren't part of the test case name, so log them for debugging
@@ -1248,14 +1248,20 @@ func runWithLog(t *testing.T, cmd *exec.Cmd, out *os.File, tail bool) (string, e
 		if tail {
 			msg := strings.TrimRight(line, "\n")
 			if len(msg) > 0 {
-				d := time.Since(start)
-				t.Logf("%2d.%03d %s", d/time.Second, (d%time.Second)/time.Millisecond, msg)
+				logWithDurationSince(t, start, msg)
 			}
 		}
 		if len(line) > 0 {
 			mostRecentLine = line
-			_, err = out.WriteString(line)
-			require.NoError(t, err)
+			if strings.HasPrefix(line, TestLogPrefix) {
+				// if tail is true, we already logged it above
+				if !tail {
+					logWithDurationSince(t, start, strings.TrimRight(line, "\n"))
+				}
+			} else {
+				_, err = out.WriteString(line)
+				require.NoError(t, err)
+			}
 		}
 		if err == io.EOF {
 			break
@@ -1270,6 +1276,11 @@ func runWithLog(t *testing.T, cmd *exec.Cmd, out *os.File, tail bool) (string, e
 	}
 
 	return skipReason, <-processErrCh
+}
+
+func logWithDurationSince(t *testing.T, start time.Time, msg string) {
+	d := time.Since(start)
+	t.Logf("%2d.%03d %s", d/time.Second, (d%time.Second)/time.Millisecond, msg)
 }
 
 func getCloudEnvBase(cloudEnv string) string {

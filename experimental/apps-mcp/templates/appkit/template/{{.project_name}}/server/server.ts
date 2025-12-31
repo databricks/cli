@@ -1,4 +1,4 @@
-import { analytics, createApp, server } from '@databricks/app-kit';
+import { analytics, createApp, server } from '@databricks/appkit';
 import { appRouterMiddleware } from './trpc.js';
 import type { Application } from 'express';
 

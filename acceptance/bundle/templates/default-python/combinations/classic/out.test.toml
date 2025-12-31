@@ -6,3 +6,4 @@ Cloud = true
   DLT = ["yes", "no"]
   NBOOK = ["yes", "no"]
   PY = ["yes", "no"]
+  READPLAN = ["", "1"]

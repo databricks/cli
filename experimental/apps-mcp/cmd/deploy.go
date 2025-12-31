@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/bundle/run"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/experimental/apps-mcp/lib/state"
 	"github.com/databricks/cli/experimental/apps-mcp/lib/validation"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
@@ -40,10 +41,37 @@ The command will stop immediately if any step fails.`,
 
 func deployRun(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
+	workDir := "."
+
+	// Load and verify state
+	currentState, err := state.LoadState(workDir)
+	if err != nil {
+		return fmt.Errorf("failed to load state: %w", err)
+	}
+	if currentState == nil {
+		return errors.New("cannot deploy: project not validated (run validate first)")
+	}
+
+	// Verify checksum before deploy
+	if currentState.GetChecksum() != "" {
+		match, err := state.VerifyChecksum(workDir, currentState.GetChecksum())
+		if err != nil {
+			return fmt.Errorf("failed to verify checksum: %w", err)
+		}
+		if !match {
+			return errors.New("cannot deploy: code changed since validation (run validate again)")
+		}
+	}
+
+	// Check state transition is valid
+	newState, err := currentState.Deploy()
+	if err != nil {
+		return err
+	}
 
 	log.Infof(ctx, "Running Node.js validation...")
 	validator := &validation.ValidationNodeJs{}
-	result, err := validator.Validate(ctx, ".")
+	result, err := validator.Validate(ctx, workDir)
 	if err != nil {
 		return fmt.Errorf("validation error: %w", err)
 	}
@@ -76,6 +104,11 @@ func deployRun(cmd *cobra.Command, args []string) error {
 	err = runApp(ctx, b, appKey)
 	if err != nil {
 		return fmt.Errorf("failed to run app: %w", err)
+	}
+
+	// Save deployed state
+	if err := state.SaveState(workDir, newState); err != nil {
+		return fmt.Errorf("failed to save state: %w", err)
 	}
 
 	return nil

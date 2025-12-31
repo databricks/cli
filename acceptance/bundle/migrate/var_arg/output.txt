@@ -1,0 +1,66 @@
+
+>>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy --var=job_name=Custom Job Name
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-var-test/dev/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] bundle deployment migrate --var=job_name=Custom Job Name
+Note: Migration should be done after a full deploy. Running plan now to verify that deployment was done:
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+Success! Migrated 1 resources to direct engine state file: [TEST_TMP_DIR]/.databricks/bundle/dev/resources.json
+
+Validate the migration by running "databricks bundle plan --var 'job_name=Custom Job Name'", there should be no actions planned.
+
+The state file is not synchronized to the workspace yet. To do that and finalize the migration, run "bundle deploy --var 'job_name=Custom Job Name'".
+
+To undo the migration, remove [TEST_TMP_DIR]/.databricks/bundle/dev/resources.json and rename [TEST_TMP_DIR]/.databricks/bundle/dev/terraform/terraform.tfstate.backup to [TEST_TMP_DIR]/.databricks/bundle/dev/terraform/terraform.tfstate
+
+
+>>> print_state.py
+"Custom Job Name"
+
+>>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle plan --var=job_name=Custom Job Name
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+>>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle destroy --var=job_name=Custom Job Name --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.test_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/migrate-var-test/dev
+
+Deleting files...
+Destroy complete!
+
+>>> DATABRICKS_BUNDLE_ENGINE=terraform [CLI] bundle deploy --var job_name=Custom Job Name
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/migrate-var-test/dev/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] bundle deployment migrate --var job_name=Custom Job Name
+Note: Migration should be done after a full deploy. Running plan now to verify that deployment was done:
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+Success! Migrated 1 resources to direct engine state file: [TEST_TMP_DIR]/.databricks/bundle/dev/resources.json
+
+Validate the migration by running "databricks bundle plan --var 'job_name=Custom Job Name'", there should be no actions planned.
+
+The state file is not synchronized to the workspace yet. To do that and finalize the migration, run "bundle deploy --var 'job_name=Custom Job Name'".
+
+To undo the migration, remove [TEST_TMP_DIR]/.databricks/bundle/dev/resources.json and rename [TEST_TMP_DIR]/.databricks/bundle/dev/terraform/terraform.tfstate.backup to [TEST_TMP_DIR]/.databricks/bundle/dev/terraform/terraform.tfstate
+
+
+>>> print_state.py
+"Custom Job Name"
+
+>>> DATABRICKS_BUNDLE_ENGINE=direct [CLI] bundle plan --var job_name=Custom Job Name
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+>>> DATABRICKS_BUNDLE_ENGINE= [CLI] bundle destroy --var=job_name=Custom Job Name --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.test_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/migrate-var-test/dev
+
+Deleting files...
+Destroy complete!

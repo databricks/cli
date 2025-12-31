@@ -100,7 +100,7 @@ Exit code: 1
 
 === variable is required but it's not provided in the file
 >>> errcode [CLI] bundle validate -o json --target without_defaults
-Error: no value assigned to required variable cluster. Assignment can be done using "--var", by setting the BUNDLE_VAR_cluster environment variable, or in .databricks/bundle/<target>/variable-overrides.json file
+Error: no value assigned to required variable cluster. Variables are usually assigned in databricks.yml, and they can be overridden using "--var", the BUNDLE_VAR_cluster environment variable, or .databricks/bundle/<target>/variable-overrides.json
 
 
 Exit code: 1
