@@ -5,7 +5,7 @@ cleaned up during bundle destroy.
   at bundle.name
   in databricks.yml:7:9
 
-Error: no value assigned to required variable a. Assignment can be done using "--var", by setting the BUNDLE_VAR_a environment variable, or in .databricks/bundle/<target>/variable-overrides.json file
+Error: no value assigned to required variable a. Variables are usually assigned in databricks.yml, and they can be overridden using "--var", the BUNDLE_VAR_a environment variable, or .databricks/bundle/<target>/variable-overrides.json
 
 Name: empty${var.a}
 Target: default
