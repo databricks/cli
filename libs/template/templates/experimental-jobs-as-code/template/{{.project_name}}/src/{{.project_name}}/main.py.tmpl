@@ -1,8 +1,8 @@
 from pyspark.sql import SparkSession, DataFrame
 
 
-def get_users(spark: SparkSession) -> DataFrame:
-    return spark.read.table("samples.wanderbricks.users")
+def get_taxis(spark: SparkSession) -> DataFrame:
+    return spark.read.table("samples.nyctaxi.trips")
 
 
 # Create a new Databricks Connect session. If this fails,
@@ -18,7 +18,7 @@ def get_spark() -> SparkSession:
 
 
 def main():
-    get_users(get_spark()).show(5)
+    get_taxis(get_spark()).show(5)
 
 
 if __name__ == "__main__":

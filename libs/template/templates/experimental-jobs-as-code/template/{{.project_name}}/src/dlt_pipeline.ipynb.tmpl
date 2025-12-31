@@ -64,18 +64,18 @@
    "source": [
     {{- if (eq .include_python "yes") }}
     "@dlt.view\n",
-    "def users_raw():\n",
-    "    return main.get_users(spark)\n",
+    "def taxi_raw():\n",
+    "    return main.get_taxis(spark)\n",
     {{else}}
     "@dlt.view\n",
-    "def users_raw():\n",
-    "    return spark.read.table(\"samples.wanderbricks.users\")\n",
+    "def taxi_raw():\n",
+    "    return spark.read.format(\"json\").load(\"/databricks-datasets/nyctaxi/sample/json/\")\n",
     {{end -}}
     "\n",
     "\n",
     "@dlt.table\n",
-    "def active_users():\n",
-    "    return dlt.read(\"users_raw\").filter(expr(\"city IS NOT NULL\"))"
+    "def filtered_taxis():\n",
+    "    return dlt.read(\"taxi_raw\").filter(expr(\"fare_amount < 30\"))"
    ]
   }
  ],
