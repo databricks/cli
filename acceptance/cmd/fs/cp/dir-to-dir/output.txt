@@ -1,0 +1,2 @@
+localdir/file1.txt -> dbfs:/Volumes/main/default/data/uploaded-dir/file1.txt
+localdir/file2.txt -> dbfs:/Volumes/main/default/data/uploaded-dir/file2.txt

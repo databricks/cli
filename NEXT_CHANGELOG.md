@@ -7,6 +7,9 @@
 ### CLI
 * Skip non-exportable objects (e.g., `MLFLOW_EXPERIMENT`) during `workspace export-dir` instead of failing ([#4081](https://github.com/databricks/cli/issues/4081))
 
+* Improve performance of `databricks fs cp` command by parallelizing file uploads when
+  copying directories with the `--recursive` flag.
+
 ### Bundles
 
 * Add interactive SQL warehouse picker to `default-sql` and `dbt-sql` bundle templates ([#4170](https://github.com/databricks/cli/pull/4170))
