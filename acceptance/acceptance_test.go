@@ -60,6 +60,9 @@ var (
 // Also disables parallelism in tests.
 var InprocessMode bool
 
+// lines with this prefix are not recorded in output.txt but logged instead
+const TestLogPrefix = "TESTLOG: "
+
 func init() {
 	flag.BoolVar(&InprocessMode, "inprocess", false, "Run CLI in the same process as test (for debugging)")
 	flag.BoolVar(&KeepTmp, "keeptmp", false, "Do not delete TMP directory after run")
@@ -331,17 +334,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 				t.Parallel()
 			}
 
-			expanded := internal.ExpandEnvMatrix(config.EnvMatrix)
-
-			if testdiff.OverwriteMode && len(expanded) > 1 {
-				// All variants of the test are producing the same output,
-				// there is no need to run the concurrently when updating.
-				// Exception: if EnvVaryOutput is configured, we must
-				// run all variants to record variant-specific outputs.
-				if config.EnvVaryOutput == nil || len(config.EnvMatrix[*config.EnvVaryOutput]) <= 1 {
-					expanded = expanded[0:1]
-				}
-			}
+			expanded := internal.ExpandEnvMatrix(config.EnvMatrix, config.EnvMatrixExclude)
 
 			if len(expanded) == 1 {
 				// env vars aren't part of the test case name, so log them for debugging
@@ -351,9 +344,6 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 				runTest(t, dir, 0, coverDir, repls.Clone(), config, expanded[0], envFilters)
 			} else {
 				for ind, envset := range expanded {
-					if forbiddenEnvSet(envset) {
-						continue
-					}
 					envname := strings.Join(envset, "/")
 					t.Run(envname, func(t *testing.T) {
 						if !inprocessMode {
@@ -369,23 +359,6 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	t.Logf("Summary (dirs): %d/%d/%d run/selected/total, %d skipped", selectedDirs-skippedDirs, selectedDirs, totalDirs, skippedDirs)
 
 	return selectedDirs - skippedDirs
-}
-
-func forbiddenEnvSet(envset []string) bool {
-	hasTerraform := false
-	hasReadplan := false
-
-	for _, pair := range envset {
-		if pair == "DATABRICKS_BUNDLE_ENGINE=terraform" {
-			hasTerraform = true
-		}
-		if pair == "READPLAN=1" {
-			hasReadplan = true
-		}
-	}
-
-	// Do not run terraform tests with --plan option:
-	return hasTerraform && hasReadplan
 }
 
 func getEnvFilters(t *testing.T) []string {
@@ -1275,14 +1248,20 @@ func runWithLog(t *testing.T, cmd *exec.Cmd, out *os.File, tail bool) (string, e
 		if tail {
 			msg := strings.TrimRight(line, "\n")
 			if len(msg) > 0 {
-				d := time.Since(start)
-				t.Logf("%2d.%03d %s", d/time.Second, (d%time.Second)/time.Millisecond, msg)
+				logWithDurationSince(t, start, msg)
 			}
 		}
 		if len(line) > 0 {
 			mostRecentLine = line
-			_, err = out.WriteString(line)
-			require.NoError(t, err)
+			if strings.HasPrefix(line, TestLogPrefix) {
+				// if tail is true, we already logged it above
+				if !tail {
+					logWithDurationSince(t, start, strings.TrimRight(line, "\n"))
+				}
+			} else {
+				_, err = out.WriteString(line)
+				require.NoError(t, err)
+			}
 		}
 		if err == io.EOF {
 			break
@@ -1297,6 +1276,11 @@ func runWithLog(t *testing.T, cmd *exec.Cmd, out *os.File, tail bool) (string, e
 	}
 
 	return skipReason, <-processErrCh
+}
+
+func logWithDurationSince(t *testing.T, start time.Time, msg string) {
+	d := time.Since(start)
+	t.Logf("%2d.%03d %s", d/time.Second, (d%time.Second)/time.Millisecond, msg)
 }
 
 func getCloudEnvBase(cloudEnv string) string {
