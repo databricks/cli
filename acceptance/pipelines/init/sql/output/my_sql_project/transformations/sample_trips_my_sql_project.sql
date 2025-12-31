@@ -4,6 +4,7 @@
 
 CREATE MATERIALIZED VIEW sample_trips_my_sql_project AS
 SELECT
-    pickup_zip,
-    fare_amount
-FROM samples.nyctaxi.trips
+    zone_id,
+    zone_name,
+    state
+FROM samples.wanderbricks.zones

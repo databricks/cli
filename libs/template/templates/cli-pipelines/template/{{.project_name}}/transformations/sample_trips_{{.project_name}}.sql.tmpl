@@ -4,6 +4,7 @@
 
 CREATE MATERIALIZED VIEW sample_trips_{{ .project_name }} AS
 SELECT
-    pickup_zip,
-    fare_amount
-FROM samples.nyctaxi.trips
+    zone_id,
+    zone_name,
+    state
+FROM samples.wanderbricks.zones

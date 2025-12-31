@@ -1,5 +1,5 @@
 import dlt
-from pyspark.sql.functions import col
+from pyspark.sql.functions import col, split
 from utilities import utils
 
 
@@ -10,6 +10,6 @@ from utilities import utils
 
 @dlt.table
 def sample_trips_my_python_project():
-    return spark.read.table("samples.nyctaxi.trips").withColumn(
-        "trip_distance_km", utils.distance_km(col("trip_distance"))
+    return spark.read.table("samples.wanderbricks.users").withColumn(
+        "email_domain", split(col("email"), "@").getItem(1)
     )
