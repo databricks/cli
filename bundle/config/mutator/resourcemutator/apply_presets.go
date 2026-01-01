@@ -237,6 +237,14 @@ func (m *applyPresets) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 		dashboard.DisplayName = prefix + dashboard.DisplayName
 	}
 
+	// Genie Spaces: Prefix
+	for _, genieSpace := range r.GenieSpaces {
+		if genieSpace == nil {
+			continue
+		}
+		genieSpace.Title = prefix + genieSpace.Title
+	}
+
 	// Apps: No presets
 
 	// Alerts: Prefix
