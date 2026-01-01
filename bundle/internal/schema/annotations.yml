@@ -183,6 +183,11 @@ github.com/databricks/cli/bundle/config.Resources:
       The experiment definitions for the bundle, where each key is the name of the experiment.
     "markdown_description": |-
       The experiment definitions for the bundle, where each key is the name of the experiment. See [\_](/dev-tools/bundles/resources.md#experiments).
+  "genie_spaces":
+    "description": |-
+      The genie space definitions for the bundle, where each key is the name of the genie space.
+    "markdown_description": |-
+      The genie space definitions for the bundle, where each key is the name of the genie space. See [\_](/dev-tools/bundles/resources.md#genie_spaces).
   "jobs":
     "description": |-
       The job definitions for the bundle, where each key is the name of the job.
@@ -564,6 +569,34 @@ github.com/databricks/cli/bundle/config/resources.DatabaseInstancePermission:
   "user_name":
     "description": |-
       PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.GenieSpace:
+  "_":
+    "description": |-
+      Configuration for a Genie space resource in a bundle.
+  "description":
+    "description": |-
+      The description of the genie space.
+  "file_path":
+    "description": |-
+      Path to a file containing the serialized space content. When specified, the file content is loaded and used as the serialized_space value. If both file_path and serialized_space are set, file_path takes precedence.
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
+  "parent_path":
+    "description": |-
+      Workspace path where the genie space is stored.
+  "serialized_space":
+    "description": |-
+      The serialized content of the genie space, containing the layout and components. If file_path is also set, this value will be overwritten with the file contents.
+  "space_id":
+    "description": |-
+      The unique identifier of the genie space. This is an output-only field set by the API.
+  "title":
+    "description": |-
+      The display title of the genie space.
+  "warehouse_id":
+    "description": |-
+      The ID of the SQL warehouse to use with this genie space.
 github.com/databricks/cli/bundle/config/resources.Grant:
   "principal":
     "description": |-
