@@ -1,0 +1,15 @@
+#
+# Acceptance test for deploying genie spaces with the following setup:
+# 1. genie space file is inside the bundle root
+# 2. sync root is the same as the bundle root
+#
+bundle:
+  name: deploy-genie-space-test-$UNIQUE_NAME
+
+resources:
+  genie_spaces:
+    genie1:
+      title: $GENIE_TITLE
+      warehouse_id: $TEST_DEFAULT_WAREHOUSE_ID
+      file_path: "sample-genie.json"
+      parent_path: /Users/$CURRENT_USER_NAME

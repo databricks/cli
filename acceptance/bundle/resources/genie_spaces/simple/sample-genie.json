@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "config": {
+    "sample_questions": [
+      {
+        "id": "q1",
+        "question": ["What is the total count?"]
+      }
+    ],
+    "instructions": [
+      {
+        "id": "i1",
+        "content": "This is a test genie space for acceptance testing."
+      }
+    ]
+  },
+  "data_sources": {
+    "tables": []
+  }
+}
