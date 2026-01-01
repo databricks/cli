@@ -22,6 +22,7 @@ var SupportedResources = map[string]any{
 	"clusters":                (*ResourceCluster)(nil),
 	"registered_models":       (*ResourceRegisteredModel)(nil),
 	"dashboards":              (*ResourceDashboard)(nil),
+	"genie_spaces":            (*ResourceGenieSpace)(nil),
 	"secret_scopes":           (*ResourceSecretScope)(nil),
 	"model_serving_endpoints": (*ResourceModelServingEndpoint)(nil),
 
