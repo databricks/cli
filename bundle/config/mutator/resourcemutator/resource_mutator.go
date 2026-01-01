@@ -52,6 +52,7 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) {
 	}{
 		{"resources.dashboards.*.parent_path", b.Config.Workspace.ResourcePath},
 		{"resources.dashboards.*.embed_credentials", false},
+		{"resources.genie_spaces.*.parent_path", b.Config.Workspace.ResourcePath},
 		{"resources.volumes.*.volume_type", "MANAGED"},
 
 		{"resources.alerts.*.parent_path", b.Config.Workspace.ResourcePath},
@@ -114,6 +115,11 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) {
 		// Ensures dashboard parent paths have the required /Workspace prefix
 		DashboardFixups(),
 
+		// Reads (typed): b.Config.Resources.GenieSpaces (checks genie space configurations)
+		// Updates (typed): b.Config.Resources.GenieSpaces[].ParentPath (ensures /Workspace prefix is present)
+		// Ensures genie space parent paths have the required /Workspace prefix
+		GenieSpaceFixups(),
+
 		// Reads (typed): b.Config.Permissions (validates permission levels)
 		// Reads (dynamic): resources.{jobs,pipelines,experiments,models,model_serving_endpoints,dashboards,apps}.*.permissions (reads existing permissions)
 		// Updates (dynamic): resources.{jobs,pipelines,experiments,models,model_serving_endpoints,dashboards,apps}.*.permissions (adds permissions from bundle-level configuration)
@@ -175,6 +181,11 @@ func applyNormalizeMutators(ctx context.Context, b *bundle.Bundle) {
 		// Updates (dynamic): resources.dashboards.*.serialized_dashboard
 		// Drops (dynamic): resources.dashboards.*.file_path
 		ConfigureDashboardSerializedDashboard(),
+
+		// Reads (dynamic): resources.genie_spaces.*.file_path
+		// Updates (dynamic): resources.genie_spaces.*.serialized_space
+		// Reads file contents and inlines them into serialized_space
+		ConfigureGenieSpaceSerializedSpace(),
 
 		// Reads and updates (typed): resources.jobs.*.**
 		JobClustersFixups(),
