@@ -1,0 +1,33 @@
+{
+  "plan_version": 1,
+  "cli_version": "[DEV_VERSION]",
+  "lineage": "[UUID]",
+  "serial": 1,
+  "plan": {
+    "resources.genie_spaces.genie1": {
+      "action": "recreate",
+      "new_state": {
+        "value": {
+          "parent_path": "/Workspace/Users/[USERNAME]",
+          "serialized_space": "{\n  \"version\": 1,\n  \"config\": {\n    \"sample_questions\": [\n      {\n        \"id\": \"q1\",\n        \"question\": [\"What is the total count?\"]\n      }\n    ],\n    \"instructions\": [\n      {\n        \"id\": \"i1\",\n        \"content\": \"This is a test genie space for acceptance testing.\"\n      }\n    ]\n  },\n  \"data_sources\": {\n    \"tables\": []\n  }\n}\n",
+          "title": "test bundle-deploy-genie-space [UUID]",
+          "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
+        }
+      },
+      "remote_state": {
+        "serialized_space": "{\n  \"version\": 1,\n  \"config\": {\n    \"sample_questions\": [\n      {\n        \"id\": \"q1\",\n        \"question\": [\"What is the total count?\"]\n      }\n    ],\n    \"instructions\": [\n      {\n        \"id\": \"i1\",\n        \"content\": \"This is a test genie space for acceptance testing.\"\n      }\n    ]\n  },\n  \"data_sources\": {\n    \"tables\": []\n  }\n}\n",
+        "space_id": "[GENIE_ID]",
+        "title": "test bundle-deploy-genie-space [UUID]",
+        "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
+      },
+      "changes": {
+        "remote": {
+          "parent_path": {
+            "action": "recreate",
+            "old": "/Workspace/Users/[USERNAME]"
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,24 @@
+GENIE_TITLE="test bundle-deploy-genie-space $(uuid)"
+if [ -z "$CLOUD_ENV" ]; then
+    export TEST_DEFAULT_WAREHOUSE_ID="warehouse-1234"
+    echo "warehouse-1234:TEST_DEFAULT_WAREHOUSE_ID" >> ACC_REPLS
+fi
+
+export GENIE_TITLE
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+GENIE_ID=$($CLI bundle summary --output json | jq -r '.resources.genie_spaces.genie1.id')
+
+# Capture the genie space ID as a replacement.
+echo "$GENIE_ID:GENIE_ID" >> ACC_REPLS
+
+trace $CLI genie get-space $GENIE_ID | jq '{title, parent_path}'
+
+# Verify that there is no drift right after deploy.
+trace $CLI bundle plan -o json > out.plan.direct.json
