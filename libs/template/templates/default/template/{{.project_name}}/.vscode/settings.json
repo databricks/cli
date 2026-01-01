@@ -33,7 +33,15 @@
     "python.testing.unittestEnabled": false,
     "python.testing.pytestEnabled": true,
     "[python]": {
-        "editor.defaultFormatter": "ms-python.black-formatter",
+        "editor.defaultFormatter": "charliermarsh.ruff",
         "editor.formatOnSave": true,
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": "explicit"
+        }
     },
+
+    // Ruff settings
+    "ruff.lineLength": 120,
+    "ruff.lint.enable": true,
+    "ruff.format.args": [],
 }

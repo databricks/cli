@@ -88,8 +88,14 @@ with this project. It's also possible to interact with it directly using the CLI
    ```
 {{- if and (not $skip_tests) (not $is_lakeflow)}}
 
-5. Finally, to run tests locally, use `pytest`:
+5. To run tests locally, use `pytest`:
    ```
    $ uv run pytest
+   ```
+
+6. To check code quality and style, use `ruff`:
+   ```
+   $ uv run ruff check .    # Check for issues
+   $ uv run ruff format .   # Format code
    ```
 {{- end}}

@@ -29,6 +29,29 @@ To get started, refer to the project README.md file and the documentation at htt
 +      catalog: customcatalog
        schema: prod
      permissions:
+--- [TESTROOT]/bundle/templates/default-python/serverless-customcatalog/../serverless/output/my_default_python/pyproject.toml
++++ output/my_default_python/pyproject.toml
+@@ -29,20 +29,2 @@
+ [tool.ruff]
+ line-length = 120
+-target-version = "py311"
+-
+-[tool.ruff.lint]
+-select = [
+-    "E",   # pycodestyle errors
+-    "W",   # pycodestyle warnings
+-    "F",   # pyflakes
+-    "I",   # isort
+-    "UP",  # pyupgrade
+-    "B",   # flake8-bugbear
+-    "C4",  # flake8-comprehensions
+-    "ARG", # flake8-unused-arguments
+-    "SIM", # flake8-simplify
+-]
+-
+-[tool.ruff.format]
+-quote-style = "double"
+-indent-style = "space"
 --- [TESTROOT]/bundle/templates/default-python/serverless-customcatalog/../serverless/output/my_default_python/resources/my_default_python_etl.pipeline.yml
 +++ output/my_default_python/resources/my_default_python_etl.pipeline.yml
 @@ -5,6 +5,5 @@

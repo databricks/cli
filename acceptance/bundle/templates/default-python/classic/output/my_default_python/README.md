@@ -64,7 +64,13 @@ with this project. It's also possible to interact with it directly using the CLI
    $ databricks bundle run
    ```
 
-5. Finally, to run tests locally, use `pytest`:
+5. To run tests locally, use `pytest`:
    ```
    $ uv run pytest
+   ```
+
+6. To check code quality and style, use `ruff`:
+   ```
+   $ uv run ruff check .    # Check for issues
+   $ uv run ruff format .   # Format code
    ```
