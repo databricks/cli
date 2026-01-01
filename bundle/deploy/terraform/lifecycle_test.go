@@ -14,7 +14,15 @@ func TestConvertLifecycleForAllResources(t *testing.T) {
 	supportedResources := config.SupportedResources()
 	ctx := context.Background()
 
+	// Skip resources that are direct-mode only (no Terraform support)
+	directModeOnlyResources := map[string]bool{
+		"genie_spaces": true,
+	}
+
 	for resourceType := range supportedResources {
+		if directModeOnlyResources[resourceType] {
+			continue
+		}
 		t.Run(resourceType, func(t *testing.T) {
 			vin := dyn.NewValue(map[string]dyn.Value{
 				"resources": dyn.NewValue(map[string]dyn.Value{
