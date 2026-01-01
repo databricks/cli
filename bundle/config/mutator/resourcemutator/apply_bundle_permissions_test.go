@@ -19,12 +19,12 @@ import (
 // This list exists to ensure that this mutator is updated when new resource is added.
 // These resources are there because they use grants, not permissions:
 var unsupportedResources = []string{
-	"volumes",
-	"schemas",
+	"database_catalogs",
 	"quality_monitors",
 	"registered_models",
-	"database_catalogs",
+	"schemas",
 	"synced_database_tables",
+	"volumes",
 }
 
 func TestApplyBundlePermissions(t *testing.T) {
@@ -70,6 +70,10 @@ func TestApplyBundlePermissions(t *testing.T) {
 				Dashboards: map[string]*resources.Dashboard{
 					"dashboard_1": {},
 					"dashboard_2": {},
+				},
+				GenieSpaces: map[string]*resources.GenieSpace{
+					"geniespace_1": {},
+					"geniespace_2": {},
 				},
 				Apps: map[string]*resources.App{
 					"app_1": {},
@@ -131,6 +135,11 @@ func TestApplyBundlePermissions(t *testing.T) {
 	require.Len(t, b.Config.Resources.Dashboards["dashboard_1"].Permissions, 2)
 	require.Contains(t, b.Config.Resources.Dashboards["dashboard_1"].Permissions, resources.DashboardPermission{Level: "CAN_MANAGE", UserName: "TestUser"})
 	require.Contains(t, b.Config.Resources.Dashboards["dashboard_1"].Permissions, resources.DashboardPermission{Level: "CAN_READ", GroupName: "TestGroup"})
+
+	require.Len(t, b.Config.Resources.GenieSpaces["geniespace_1"].Permissions, 3)
+	require.Contains(t, b.Config.Resources.GenieSpaces["geniespace_1"].Permissions, resources.GenieSpacePermission{Level: "CAN_MANAGE", UserName: "TestUser"})
+	require.Contains(t, b.Config.Resources.GenieSpaces["geniespace_1"].Permissions, resources.GenieSpacePermission{Level: "CAN_VIEW", GroupName: "TestGroup"})
+	require.Contains(t, b.Config.Resources.GenieSpaces["geniespace_1"].Permissions, resources.GenieSpacePermission{Level: "CAN_RUN", ServicePrincipalName: "TestServicePrincipal"})
 
 	require.Len(t, b.Config.Resources.Apps["app_1"].Permissions, 2)
 	require.Contains(t, b.Config.Resources.Apps["app_1"].Permissions, resources.AppPermission{Level: "CAN_MANAGE", UserName: "TestUser"})
