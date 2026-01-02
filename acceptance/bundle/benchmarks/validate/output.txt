@@ -1,14 +1,14 @@
 
 >>> head -n 10 databricks.yml
 bundle:
-  name: test-bundle
+  name: "test-bundle"
 resources:
   jobs:
     job_0:
-      description: This job contain multiple tasks that are required to produce the
-        weekly shark sightings report.
+      description: "This job contain multiple tasks that are required to produce the weekly shark sightings report."
       email_notifications:
         no_alert_for_skipped_runs: false
         on_failure:
+          - "user.name@databricks.com"
 
 >>> benchmark.py [CLI] bundle validate
