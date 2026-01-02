@@ -1,3 +1,2 @@
 Timeout = '4h'
 Ignore = ["databricks.yml"]
-BundleConfig.default_name = ""
