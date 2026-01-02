@@ -718,6 +718,83 @@
                   }
                 ]
               },
+              "resources.GenieSpace": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "description": "Configuration for a Genie space resource in a bundle.",
+                    "properties": {
+                      "description": {
+                        "description": "The description of the genie space.",
+                        "$ref": "#/$defs/string"
+                      },
+                      "lifecycle": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
+                      },
+                      "parent_path": {
+                        "description": "Workspace path where the genie space is stored.",
+                        "$ref": "#/$defs/string"
+                      },
+                      "permissions": {
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.GenieSpacePermission"
+                      },
+                      "serialized_space": {
+                        "description": "The serialized content of the genie space, containing instructions, sample questions, and data sources.",
+                        "$ref": "#/$defs/string"
+                      },
+                      "space_id": {
+                        "description": "The unique identifier of the genie space. This is an output-only field set by the API.",
+                        "$ref": "#/$defs/string"
+                      },
+                      "title": {
+                        "description": "The display title of the genie space.",
+                        "$ref": "#/$defs/string"
+                      },
+                      "warehouse_id": {
+                        "description": "The ID of the SQL warehouse to use with this genie space.",
+                        "$ref": "#/$defs/string"
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "resources.GenieSpacePermission": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "group_name": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "level": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.GenieSpacePermissionLevel"
+                      },
+                      "service_principal_name": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "user_name": {
+                        "$ref": "#/$defs/string"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "level"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "resources.GenieSpacePermissionLevel": {
+                "type": "string"
+              },
               "resources.Grant": {
                 "oneOf": [
                   {
@@ -2464,6 +2541,11 @@
                       "description": "The experiment definitions for the bundle, where each key is the name of the experiment.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.MlflowExperiment",
                       "markdownDescription": "The experiment definitions for the bundle, where each key is the name of the experiment. See [experiments](https://docs.databricks.com/dev-tools/bundles/resources.html#experiments)."
+                    },
+                    "genie_spaces": {
+                      "description": "The genie space definitions for the bundle, where each key is the name of the genie space.",
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.GenieSpace",
+                      "markdownDescription": "The genie space definitions for the bundle, where each key is the name of the genie space. See [genie_spaces](https://docs.databricks.com/dev-tools/bundles/resources.html#genie_spaces)."
                     },
                     "jobs": {
                       "description": "The job definitions for the bundle, where each key is the name of the job.",
@@ -9638,6 +9720,20 @@
                     }
                   ]
                 },
+                "resources.GenieSpace": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.GenieSpace"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
                 "resources.Job": {
                   "oneOf": [
                     {
@@ -9978,6 +10074,20 @@
                       "type": "array",
                       "items": {
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.DatabaseInstancePermission"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
+                "resources.GenieSpacePermission": {
+                  "oneOf": [
+                    {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.GenieSpacePermission"
                       }
                     },
                     {
