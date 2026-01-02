@@ -13,6 +13,7 @@ def run_benchmark(command, warmup, runs):
     times = []
 
     for i in range(runs):
+        # double fork to reset max statistics like ru_maxrss
         cp = subprocess.run([sys.executable, sys.argv[0], "--once"] + command, stdout=subprocess.PIPE)
         if cp.returncode != 0:
             sys.exit(cp.returncode)
