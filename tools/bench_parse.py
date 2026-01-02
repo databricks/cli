@@ -34,14 +34,12 @@ def parse_bench_output(file_path):
 
     with open(file_path) as f:
         for line in f:
-            # Match test name
             test_match = re.match(r"=== RUN\s+(.+)", line)
             if test_match:
                 current_test = test_match.group(1)
                 current_test = current_test.removeprefix("TestAccept/bundle/benchmarks/")
                 continue
 
-            # Match benchmark run data (only count runs, skip warm)
             if "TESTLOG: Run #" in line and "(count)" in line:
                 if current_test:
                     # Extract everything after the run label
@@ -72,18 +70,15 @@ def print_results(results):
             all_metrics.setdefault(key, None)
     all_metrics = list(all_metrics.keys())
 
-    # Calculate column widths
     testname_width = max(len("testname"), max((len(name) for name in means.keys()), default=0))
     metric_width = 12
 
-    # Print header
     header = f"{'testname':<{testname_width}}"
     for metric in all_metrics:
         header += f"  {metric:>{metric_width}}"
     print(header)
     print("-" * len(header))
 
-    # Print rows
     for test_name in sorted(means.keys()):
         m = means[test_name]
         row = f"{test_name:<{testname_width}}"
