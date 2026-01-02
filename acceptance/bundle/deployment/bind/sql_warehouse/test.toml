@@ -1,6 +1,5 @@
 Local = true
 Cloud = false
-BundleConfigTarget = "databricks.yml"
 
 Ignore = [
     ".databricks"
