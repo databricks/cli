@@ -30,24 +30,11 @@ type GenieSpaceConfig struct {
 	// This is required for creating a Genie space.
 	WarehouseId string `json:"warehouse_id,omitempty"`
 
-	// SerializedSpace holds the contents of the Genie space in serialized JSON form.
-	// Even though the SDK represents this as a string, we override it as any to allow
-	// for inlining as YAML. If the value is a string, it is used as is.
-	// If it is not a string, its contents is marshalled as JSON.
-	//
-	// The JSON structure includes instructions, sample questions, and data sources.
+	// SerializedSpace holds the contents of the Genie space in serialized JSON string form.
+	// The JSON structure includes sample questions and data sources.
 	// Example:
-	//   {
-	//     "version": 1,
-	//     "config": {
-	//       "sample_questions": [{"id": "...", "question": ["Show orders by date"]}],
-	//       "instructions": [{"id": "...", "content": "Use MM/DD/YYYY date format"}]
-	//     },
-	//     "data_sources": {
-	//       "tables": [{"identifier": "catalog.schema.table_name"}]
-	//     }
-	//   }
-	SerializedSpace any `json:"serialized_space,omitempty"`
+	//   {"version":1,"config":{"sample_questions":[{"id":"...","question":["Show orders by date"]}]},"data_sources":{"tables":[{"identifier":"catalog.schema.table_name"}]}}
+	SerializedSpace string `json:"serialized_space,omitempty"`
 
 	ForceSendFields []string `json:"-" url:"-"`
 }
@@ -64,13 +51,6 @@ func (c GenieSpaceConfig) MarshalJSON() ([]byte, error) {
 type GenieSpace struct {
 	BaseResource
 	GenieSpaceConfig
-
-	// FilePath points to the local JSON file containing the Genie space definition.
-	// This is inlined into serialized_space during deployment.
-	// The file should contain the JSON structure with instructions, sample questions,
-	// and data sources that define the Genie space.
-	// This is not part of GenieSpaceConfig because we don't need to store this in state.
-	FilePath string `json:"file_path,omitempty"`
 
 	Permissions []GenieSpacePermission `json:"permissions,omitempty"`
 }
