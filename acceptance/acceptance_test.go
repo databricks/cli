@@ -702,9 +702,6 @@ func runTest(t *testing.T,
 
 		skipRepls := false
 		if relPath == internal.MaterializedConfigFile {
-			if benchmarkMode {
-				continue
-			}
 			skipRepls = true
 		}
 		doComparison(t, repls, dir, tmpDir, relPath, &printedRepls, skipRepls)
