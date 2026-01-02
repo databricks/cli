@@ -1,0 +1,15 @@
+trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy --var="job_name=Custom Job Name"
+trace $CLI bundle deployment migrate --var="job_name=Custom Job Name" 2>&1 | contains.py 'Migrated 1 resources'
+trace print_state.py | jq '.state."resources.jobs.test_job".state.name'
+trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle plan --var="job_name=Custom Job Name" | contains.py "1 unchanged"
+trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle destroy --var="job_name=Custom Job Name" --auto-approve
+
+# Try different syntax, '--var X', instead of '--var=X'
+rm -fr .databricks
+
+# Deploy with Terraform using a variable
+trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy --var "job_name=Custom Job Name"
+trace $CLI bundle deployment migrate --var "job_name=Custom Job Name" 2>&1 | contains.py 'Migrated 1 resources'
+trace print_state.py | jq '.state."resources.jobs.test_job".state.name'
+trace DATABRICKS_BUNDLE_ENGINE=direct $CLI bundle plan --var "job_name=Custom Job Name" | contains.py "1 unchanged"
+trace DATABRICKS_BUNDLE_ENGINE= $CLI bundle destroy --var="job_name=Custom Job Name" --auto-approve

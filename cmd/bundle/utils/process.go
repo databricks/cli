@@ -10,11 +10,15 @@ import (
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/config/validate"
+	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/cli/libs/sync"
 	"github.com/databricks/cli/libs/telemetry/protos"
@@ -64,6 +68,10 @@ type ProcessOptions struct {
 	Build           bool
 	PreDeployChecks bool
 	Deploy          bool
+
+	// Path to pre-computed plan JSON file (direct engine only).
+	// When set, skips Build and PreDeployChecks phases, loads plan from file instead of calculating.
+	ReadPlanPath string
 
 	// Indicate whether the bundle operation originates from the pipelines CLI
 	IsPipelinesCLI bool
@@ -152,7 +160,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, 
 
 	var stateDesc *statemgmt.StateDesc
 
-	shouldReadState := opts.ReadState || opts.AlwaysPull || opts.InitIDs || opts.ErrorOnEmptyState || opts.PreDeployChecks || opts.Deploy
+	shouldReadState := opts.ReadState || opts.AlwaysPull || opts.InitIDs || opts.ErrorOnEmptyState || opts.PreDeployChecks || opts.Deploy || opts.ReadPlanPath != ""
 
 	if shouldReadState {
 		// PullResourcesState depends on stateFiler which needs b.Config.Workspace.StatePath which is set in phases.Initialize
@@ -176,6 +184,40 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, 
 				return b, stateDesc, root.ErrAlreadyPrinted
 			}
 		}
+	}
+
+	var plan *deployplan.Plan
+
+	if opts.ReadPlanPath != "" {
+		if !stateDesc.Engine.IsDirect() {
+			logdiag.LogError(ctx, errors.New("--plan is only supported with direct engine (set DATABRICKS_BUNDLE_ENGINE=direct)"))
+			return b, stateDesc, root.ErrAlreadyPrinted
+		}
+		opts.Build = false
+		opts.PreDeployChecks = false
+
+		var err error
+		plan, err = deployplan.LoadPlanFromFile(opts.ReadPlanPath)
+		if err != nil {
+			logdiag.LogError(ctx, err)
+			return b, stateDesc, root.ErrAlreadyPrinted
+		}
+		currentVersion := build.GetInfo().Version
+		if plan.CLIVersion != currentVersion {
+			log.Warnf(ctx, "Plan was created with CLI version %s but current version is %s", plan.CLIVersion, currentVersion)
+		}
+
+		// Validate that the plan's lineage and serial match the current state
+		// This must happen before any file operations
+		_, localPath := b.StateFilenameDirect(ctx)
+		err = direct.ValidatePlanAgainstState(localPath, plan)
+		if err != nil {
+			logdiag.LogError(ctx, err)
+			return b, stateDesc, root.ErrAlreadyPrinted
+		}
+	} else if opts.Deploy {
+		opts.Build = true
+		opts.PreDeployChecks = true
 	}
 
 	if opts.FastValidate {
@@ -208,7 +250,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, 
 
 	var libs phases.LibLocationMap
 
-	if opts.Build || opts.Deploy {
+	if opts.Build {
 		t2 := time.Now()
 		libs = phases.Build(ctx, b)
 		b.Metrics.ExecutionTimes = append(b.Metrics.ExecutionTimes, protos.IntMapEntry{
@@ -221,7 +263,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, 
 		}
 	}
 
-	if opts.PreDeployChecks || opts.Deploy {
+	if opts.PreDeployChecks {
 		downgradeWarningToError := !opts.Deploy
 		phases.PreDeployChecks(ctx, b, downgradeWarningToError, stateDesc.Engine)
 
@@ -239,7 +281,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (*bundle.Bundle, 
 		}
 
 		t3 := time.Now()
-		phases.Deploy(ctx, b, outputHandler, stateDesc.Engine, libs)
+		phases.Deploy(ctx, b, outputHandler, stateDesc.Engine, libs, plan)
 		b.Metrics.ExecutionTimes = append(b.Metrics.ExecutionTimes, protos.IntMapEntry{
 			Key:   "phases.Deploy",
 			Value: time.Since(t3).Milliseconds(),

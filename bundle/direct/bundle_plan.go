@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"maps"
+	"os"
 	"reflect"
 	"slices"
 	"strings"
@@ -35,6 +36,77 @@ func (b *DeploymentBundle) init(client *databricks.WorkspaceClient) error {
 	var err error
 	b.Adapters, err = dresources.InitAll(client)
 	return err
+}
+
+// ValidatePlanAgainstState validates that a plan's lineage and serial match the current state.
+// This should be called early in the deployment process, before any file operations.
+// If the plan has no lineage (first deployment), validation is skipped.
+func ValidatePlanAgainstState(statePath string, plan *deployplan.Plan) error {
+	// If plan has no lineage, this is a first deployment before any state exists
+	// No validation needed
+	if plan.Lineage == "" {
+		return nil
+	}
+
+	var stateDB dstate.DeploymentState
+	err := stateDB.Open(statePath)
+	if err != nil {
+		// If state file doesn't exist but plan has lineage, something is wrong
+		if os.IsNotExist(err) {
+			return fmt.Errorf("plan has lineage %q but state file does not exist at %s; the state may have been deleted", plan.Lineage, statePath)
+		}
+		return fmt.Errorf("failed to read state from %s: %w", statePath, err)
+	}
+
+	// Validate that the plan's lineage matches the current state's lineage
+	if plan.Lineage != stateDB.Data.Lineage {
+		return fmt.Errorf("plan lineage %q does not match state lineage %q; the state may have been modified by another process", plan.Lineage, stateDB.Data.Lineage)
+	}
+
+	// Validate that the plan's serial matches the current state's serial
+	if plan.Serial != stateDB.Data.Serial {
+		return fmt.Errorf("plan serial %d does not match state serial %d; the state has been modified since the plan was created. Please run 'bundle plan' again", plan.Serial, stateDB.Data.Serial)
+	}
+
+	return nil
+}
+
+// InitForApply initializes the DeploymentBundle for applying a pre-computed plan.
+// This is used when --plan is specified to skip the planning phase.
+func (b *DeploymentBundle) InitForApply(ctx context.Context, client *databricks.WorkspaceClient, statePath string, plan *deployplan.Plan) error {
+	err := b.StateDB.Open(statePath)
+	if err != nil {
+		return fmt.Errorf("failed to read state from %s: %w", statePath, err)
+	}
+
+	err = b.init(client)
+	if err != nil {
+		return err
+	}
+
+	// Eagerly parse all StructVarJSON entries to catch parsing errors early.
+	// When the plan is read from JSON, Value contains raw JSON bytes.
+	// We parse them into typed structs and cache them for later use.
+	for resourceKey, entry := range plan.Plan {
+		if entry.NewState == nil || len(entry.NewState.Value) == 0 {
+			continue
+		}
+
+		adapter, err := b.getAdapterForKey(resourceKey)
+		if err != nil {
+			return fmt.Errorf("cannot convert plan entry %s: %w", resourceKey, err)
+		}
+
+		sv, err := entry.NewState.ToStructVar(adapter.StateType())
+		if err != nil {
+			return fmt.Errorf("cannot load plan entry %s: %w", resourceKey, err)
+		}
+
+		b.StructVarCache.Store(resourceKey, sv)
+	}
+
+	b.Plan = plan
+	return nil
 }
 
 func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root, statePath string) (*deployplan.Plan, error) {
@@ -118,7 +190,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 
 		// Process all references in the resource using Refs map
 		// Refs maps path inside resource to references e.g. "${resources.jobs.foo.id} ${resources.jobs.foo.name}"
-		if !b.resolveReferences(ctx, entry, errorPrefix, true) {
+		if !b.resolveReferences(ctx, resourceKey, entry, errorPrefix, true) {
 			return false
 		}
 
@@ -145,7 +217,12 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		// for integers: compare 0 with actual object ID. As long as real object IDs are never 0 we're good.
 		// Once we add non-id fields or add per-field details to "bundle plan", we must read dynamic data and deal with references as first class citizen.
 		// This means distinguishing between 0 that are actually object ids and 0 that are there because typed struct integer cannot contain ${...} string.
-		localDiff, err := structdiff.GetStructDiff(savedState, entry.NewState.Value, adapter.KeyedSlices())
+		sv, ok := b.StructVarCache.Load(resourceKey)
+		if !ok {
+			logdiag.LogError(ctx, fmt.Errorf("%s: internal error: no state found for %q", errorPrefix, resourceKey))
+			return false
+		}
+		localDiff, err := structdiff.GetStructDiff(savedState, sv.Value, adapter.KeyedSlices())
 		if err != nil {
 			logdiag.LogError(ctx, fmt.Errorf("%s: diffing local state: %w", errorPrefix, err))
 			return false
@@ -339,13 +416,19 @@ func (b *DeploymentBundle) LookupReferenceLocal(ctx context.Context, path *struc
 		return nil, fmt.Errorf("internal error: %s: action is %q missing new_state", targetResourceKey, targetEntry.Action)
 	}
 
-	_, isUnresolved := targetEntry.NewState.Refs[fieldPathS]
+	// Get StructVar from cache
+	sv, ok := b.StructVarCache.Load(targetResourceKey)
+	if !ok {
+		return nil, fmt.Errorf("internal error: %s: missing cached StructVar", targetResourceKey)
+	}
+
+	_, isUnresolved := sv.Refs[fieldPathS]
 	if isUnresolved {
 		// The value that is requested is itself a reference; this means it will be resolved after apply
 		return nil, errDelayed
 	}
 
-	localConfig := targetEntry.NewState.Value
+	localConfig := sv.Value
 
 	targetGroup := config.GetResourceTypeFromKey(targetResourceKey)
 	adapter := b.Adapters[targetGroup]
@@ -402,11 +485,28 @@ func (b *DeploymentBundle) LookupReferenceLocal(ctx context.Context, path *struc
 	return nil, errDelayed
 }
 
+// getStructVar returns the cached StructVar for the given resource key.
+// The StructVar must have been eagerly loaded during plan creation or InitForApply.
+func (b *DeploymentBundle) getStructVar(resourceKey string) (*structvar.StructVar, error) {
+	sv, ok := b.StructVarCache.Load(resourceKey)
+	if !ok {
+		return nil, fmt.Errorf("internal error: StructVar not found in cache for %s", resourceKey)
+	}
+	return sv, nil
+}
+
 // resolveReferences processes all references in entry.NewState.Refs.
 // If isLocal is true, uses LookupReferenceLocal (for planning phase).
 // If isLocal is false, uses LookupReferenceRemote (for apply phase).
-func (b *DeploymentBundle) resolveReferences(ctx context.Context, entry *deployplan.PlanEntry, errorPrefix string, isLocal bool) bool {
-	for fieldPathStr, refString := range entry.NewState.Refs {
+func (b *DeploymentBundle) resolveReferences(ctx context.Context, resourceKey string, entry *deployplan.PlanEntry, errorPrefix string, isLocal bool) bool {
+	sv, err := b.getStructVar(resourceKey)
+	if err != nil {
+		logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
+		return false
+	}
+
+	var resolved bool
+	for fieldPathStr, refString := range sv.Refs {
 		refs, ok := dynvar.NewRef(dyn.V(refString))
 		if !ok {
 			logdiag.LogError(ctx, fmt.Errorf("%s: cannot parse %q", errorPrefix, refString))
@@ -439,18 +539,32 @@ func (b *DeploymentBundle) resolveReferences(ctx context.Context, entry *deployp
 				}
 			}
 
-			err = entry.NewState.ResolveRef(ref, value)
+			err = sv.ResolveRef(ref, value)
 			if err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("%s: cannot update %s with value of %q: %w", errorPrefix, fieldPathStr, ref, err))
 				return false
 			}
+			resolved = true
 		}
 	}
+
+	// Sync resolved values back to StructVarJSON for serialization
+	if resolved {
+		if err := sv.SyncToJSON(entry.NewState); err != nil {
+			logdiag.LogError(ctx, fmt.Errorf("%s: cannot save state: %w", errorPrefix, err))
+			return false
+		}
+	}
+
 	return true
 }
 
 func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root, db *dstate.Database) (*deployplan.Plan, error) {
 	p := deployplan.NewPlan()
+
+	// Copy state metadata to plan for validation during apply
+	p.Lineage = db.Lineage
+	p.Serial = db.Serial
 
 	// Collect and sort nodes first, because MapByPattern gives them in randomized order
 	var nodes []string
@@ -485,7 +599,7 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 				},
 			)
 			if err != nil {
-				return nil, fmt.Errorf("reading config: %w", err)
+				return nil, err
 			}
 		}
 	}
@@ -498,7 +612,7 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 		prefix := "cannot plan " + node
 		inputConfig, err := configRoot.GetResourceConfig(node)
 		if err != nil {
-			return nil, fmt.Errorf("%s: reading config: %s", prefix, err)
+			return nil, err
 		}
 
 		adapter, err := b.getAdapterForKey(node)
@@ -593,12 +707,23 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 			return strings.Compare(a.Label, b.Label)
 		})
 
+		newState := &structvar.StructVar{
+			Value: newStateConfig,
+			Refs:  refs,
+		}
+
+		// Store in cache for use during planning phase
+		b.StructVarCache.Store(node, newState)
+
+		// Convert to JSON for serialization in plan
+		newStateJSON, err := newState.ToJSON()
+		if err != nil {
+			return nil, fmt.Errorf("%s: cannot serialize state: %w", node, err)
+		}
+
 		e := deployplan.PlanEntry{
 			DependsOn: dependsOn,
-			NewState: &structvar.StructVar{
-				Value: newStateConfig,
-				Refs:  refs,
-			},
+			NewState:  newStateJSON,
 		}
 
 		p.Plan[node] = &e

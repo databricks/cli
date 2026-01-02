@@ -193,6 +193,8 @@
     "version": 1,
     "config": {
       "bundle": {
+        "name": "test-bundle",
+        "target": "default",
         "git": {
           "bundle_root_path": "."
         }
@@ -223,7 +225,7 @@
     "state_version": 1,
     "cli_version": "[DEV_VERSION]",
     "lineage": "[UUID]",
-    "serial": 2,
+    "serial": 1,
     "state": {
       "resources.schemas.foo": {
         "__id__": "mycatalog.myschema",
