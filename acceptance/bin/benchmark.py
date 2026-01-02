@@ -5,8 +5,13 @@ import time
 import statistics
 import sys
 import os
-import resource
 import json
+
+try:
+    import resource
+except ImportError:
+    # n/a on windows
+    resource = None
 
 
 def run_benchmark(command, warmup, runs):
@@ -55,7 +60,8 @@ def run_once(command):
     else:
         shell = False
 
-    rusage_before = resource.getrusage(resource.RUSAGE_CHILDREN)
+    if resource:
+        rusage_before = resource.getrusage(resource.RUSAGE_CHILDREN)
 
     with open("LOG.process", "a") as log:
         start = time.perf_counter()
@@ -66,15 +72,19 @@ def run_once(command):
         print(f"Error: command failed with exit code {result.returncode}", file=sys.stderr)
         sys.exit(result.returncode)
 
-    rusage_after = resource.getrusage(resource.RUSAGE_CHILDREN)
+    result = {"wall": end - start}
 
-    return {
-        "wall": end - start,
-        "ru_utime": rusage_after.ru_utime - rusage_before.ru_utime,
-        "ru_stime": rusage_after.ru_stime - rusage_before.ru_stime,
-        # maxrss returns largest process, so subtracting is not correct since rusage_before will be reporting different process
-        "ru_maxrss": rusage_after.ru_maxrss,
-    }
+    if resource:
+        rusage_after = resource.getrusage(resource.RUSAGE_CHILDREN)
+
+        result.update({
+            "ru_utime": rusage_after.ru_utime - rusage_before.ru_utime,
+            "ru_stime": rusage_after.ru_stime - rusage_before.ru_stime,
+            # maxrss returns largest process, so subtracting is not correct since rusage_before will be reporting different process
+            "ru_maxrss": rusage_after.ru_maxrss,
+        })
+
+    return result
 
 
 def main():
