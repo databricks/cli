@@ -1,0 +1,10 @@
+resources:
+  pipelines:
+    test_exp_diff_pipeline:
+      name: test_exp_diff_pipeline
+      tags:
+        my_tag: new_tag
+        new_tag: tag3
+      libraries:
+        - file:
+            path: ./notebook.py
