@@ -1,3 +1,6 @@
 gen_config.py ${BENCHMARK_PARAMS:-} > databricks.yml
 wc -l databricks.yml >> LOG.wc
+# Note, since testserver persists state for the duration of the test, .databricks is kept and benchmark.py skips first run as a warmup, this measures time
+# it takes for no-changes deploy.
+# Note, terraform is set up by the test runner, so this time does not include TF download time.
 benchmark.py $CLI bundle deploy
