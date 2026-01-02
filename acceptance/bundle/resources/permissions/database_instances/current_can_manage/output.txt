@@ -2,11 +2,11 @@
 >>> [CLI] bundle validate -o json
 Warning: unknown field: catalog_name
   at resources.database_instances.foo
-  in databricks.yml:6:7
+  in databricks.yml:8:7
 
 Warning: unknown field: instance_profile_arn
   at resources.database_instances.foo
-  in databricks.yml:7:7
+  in databricks.yml:9:7
 
 [
   {
@@ -28,21 +28,21 @@ Warning: unknown field: instance_profile_arn
 ]
 Warning: unknown field: catalog_name
   at resources.database_instances.foo
-  in databricks.yml:6:7
+  in databricks.yml:8:7
 
 Warning: unknown field: instance_profile_arn
   at resources.database_instances.foo
-  in databricks.yml:7:7
+  in databricks.yml:9:7
 
 
 >>> [CLI] bundle deploy
 Warning: unknown field: catalog_name
   at resources.database_instances.foo
-  in databricks.yml:6:7
+  in databricks.yml:8:7
 
 Warning: unknown field: instance_profile_arn
   at resources.database_instances.foo
-  in databricks.yml:7:7
+  in databricks.yml:9:7
 
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Deploying resources...
@@ -52,11 +52,11 @@ Deployment complete!
 >>> [CLI] bundle destroy --auto-approve
 Warning: unknown field: catalog_name
   at resources.database_instances.foo
-  in databricks.yml:6:7
+  in databricks.yml:8:7
 
 Warning: unknown field: instance_profile_arn
   at resources.database_instances.foo
-  in databricks.yml:7:7
+  in databricks.yml:9:7
 
 The following resources will be deleted:
   delete resources.database_instances.foo

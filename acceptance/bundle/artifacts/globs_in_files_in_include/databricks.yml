@@ -1,2 +1,5 @@
+bundle:
+  name: test-bundle
+
 include:
   - resources/artifacts.yml

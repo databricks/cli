@@ -1,3 +1,6 @@
+bundle:
+  name: test-bundle
+
 variables:
   my_variable:
     type: "complex"
