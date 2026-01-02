@@ -1,0 +1,13 @@
+# First 3 attempts should be killed
+trace errcode $CLI current-user me
+echo "Attempt 1 done"
+
+trace errcode $CLI current-user me
+echo "Attempt 2 done"
+
+trace errcode $CLI current-user me
+echo "Attempt 3 done"
+
+# 4th attempt should succeed
+trace $CLI current-user me
+echo "Attempt 4 done - success!"

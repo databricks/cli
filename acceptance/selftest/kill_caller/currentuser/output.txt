@@ -1,0 +1,6 @@
+
+>>> errcode [CLI] current-user me
+[PROCESS_KILLED]
+
+Exit code: [KILLED]
+Script continued after kill

@@ -1,0 +1,16 @@
+# Test pattern 1: /Me endpoint (kills first 2, then allows)
+trace errcode $CLI current-user me
+echo "Me attempt 1 done"
+
+trace errcode $CLI current-user me
+echo "Me attempt 2 done"
+
+trace $CLI current-user me
+echo "Me attempt 3 done - success!"
+
+# Test pattern 2: /workspace/list endpoint (kills first 1, then allows)
+trace errcode $CLI workspace list /
+echo "Workspace attempt 1 done"
+
+trace $CLI workspace list /
+echo "Workspace attempt 2 done - success!"

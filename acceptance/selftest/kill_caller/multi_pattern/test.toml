@@ -1,0 +1,17 @@
+# Test that multiple patterns can have independent KillCaller counts
+# Pattern 1: Kill first 2 requests to /Me endpoint
+# Pattern 2: Kill first 1 request to /workspace/list endpoint
+
+[[Server]]
+Pattern = "GET /api/2.0/preview/scim/v2/Me"
+KillCaller = 2
+Response.Body = '''
+{
+    "id": "123",
+    "userName": "test@example.com"
+}
+'''
+
+[[Server]]
+Pattern = "GET /api/2.0/workspace/list"
+KillCaller = 1
