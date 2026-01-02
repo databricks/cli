@@ -105,19 +105,46 @@ def gen_config(n):
     return config
 
 
+def yaml_dump(obj, indent=0, list_item=False):
+    lines = []
+    indent_str = "  " * indent
+
+    if isinstance(obj, dict):
+        first = True
+        for key, value in obj.items():
+            if list_item and first:
+                prefix = indent_str + "- "
+                first = False
+            elif list_item:
+                prefix = indent_str + "  "
+            else:
+                prefix = indent_str
+            nested_indent = indent + 2 if list_item else indent + 1
+            if isinstance(value, (dict, list)) and value:
+                lines.append(f"{prefix}{key}:")
+                lines.append(yaml_dump(value, nested_indent))
+            else:
+                lines.append(f"{prefix}{key}: {json.dumps(value)}")
+    elif isinstance(obj, list):
+        for item in obj:
+            if isinstance(item, (dict, list)):
+                lines.append(yaml_dump(item, indent, list_item=True))
+            else:
+                lines.append(f"{indent_str}- {json.dumps(item)}")
+    else:
+        prefix = f"{indent_str}- " if list_item else indent_str
+        return f"{prefix}{json.dumps(obj)}"
+
+    return "\n".join(line for line in lines if line)
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--jobs", type=int, default=10, help="Number of jobs to generate")
     args = parser.parse_args()
 
     config = gen_config(args.jobs)
-
-    import yaml
-
-    try:
-        print(yaml.dump(config, default_flow_style=False, sort_keys=False))
-    except ImportError:
-        print(json.dumps(config, indent=2))
+    print(yaml_dump(config))
 
 
 if __name__ == "__main__":
