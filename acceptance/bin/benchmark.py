@@ -77,12 +77,14 @@ def run_once(command):
     if resource:
         rusage_after = resource.getrusage(resource.RUSAGE_CHILDREN)
 
-        result.update({
-            "ru_utime": rusage_after.ru_utime - rusage_before.ru_utime,
-            "ru_stime": rusage_after.ru_stime - rusage_before.ru_stime,
-            # maxrss returns largest process, so subtracting is not correct since rusage_before will be reporting different process
-            "ru_maxrss": rusage_after.ru_maxrss,
-        })
+        result.update(
+            {
+                "ru_utime": rusage_after.ru_utime - rusage_before.ru_utime,
+                "ru_stime": rusage_after.ru_stime - rusage_before.ru_stime,
+                # maxrss returns largest process, so subtracting is not correct since rusage_before will be reporting different process
+                "ru_maxrss": rusage_after.ru_maxrss,
+            }
+        )
 
     return result
 
