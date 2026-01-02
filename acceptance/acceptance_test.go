@@ -331,11 +331,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 				t.Skip(skipReason)
 			}
 
-			runParallel := true
-
-			if inprocessMode {
-				runParallel = false
-			}
+			runParallel := !inprocessMode
 
 			if benchmarkMode && strings.Contains(dir, "benchmark") {
 				runParallel = false
