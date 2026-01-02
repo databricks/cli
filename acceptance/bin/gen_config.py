@@ -105,8 +105,7 @@ def gen_config(n):
     return config
 
 
-def yaml_dump(obj, indent=0, list_item=False):
-    lines = []
+def print_yaml(obj, indent=0, list_item=False):
     indent_str = "  " * indent
 
     if isinstance(obj, dict):
@@ -121,21 +120,19 @@ def yaml_dump(obj, indent=0, list_item=False):
                 prefix = indent_str
             nested_indent = indent + 2 if list_item else indent + 1
             if isinstance(value, (dict, list)) and value:
-                lines.append(f"{prefix}{key}:")
-                lines.append(yaml_dump(value, nested_indent))
+                print(f"{prefix}{key}:")
+                print_yaml(value, nested_indent)
             else:
-                lines.append(f"{prefix}{key}: {json.dumps(value)}")
+                print(f"{prefix}{key}: {json.dumps(value)}")
     elif isinstance(obj, list):
         for item in obj:
             if isinstance(item, (dict, list)):
-                lines.append(yaml_dump(item, indent, list_item=True))
+                print_yaml(item, indent, list_item=True)
             else:
-                lines.append(f"{indent_str}- {json.dumps(item)}")
+                print(f"{indent_str}- {json.dumps(item)}")
     else:
         prefix = f"{indent_str}- " if list_item else indent_str
-        return f"{prefix}{json.dumps(obj)}"
-
-    return "\n".join(line for line in lines if line)
+        print(f"{prefix}{json.dumps(obj)}")
 
 
 def main():
@@ -143,8 +140,7 @@ def main():
     parser.add_argument("--jobs", type=int, default=10, help="Number of jobs to generate")
     args = parser.parse_args()
 
-    config = gen_config(args.jobs)
-    print(yaml_dump(config))
+    print_yaml(gen_config(args.jobs))
 
 
 if __name__ == "__main__":
