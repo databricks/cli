@@ -186,6 +186,7 @@ func startLocalServer(t *testing.T,
 
 	// Track remaining kill counts per pattern (for KillCaller > 0)
 	killCounters := make(map[string]int)
+	killCountersMu := &sync.Mutex{}
 
 	for ind := range stubs {
 		// We want later stubs takes precedence, because then leaf configs take precedence over parent directory configs
@@ -218,7 +219,7 @@ func startLocalServer(t *testing.T,
 				}
 			}
 
-			if shouldKillCaller(stub, killCounters) {
+			if shouldKillCaller(stub, killCounters, killCountersMu) {
 				killCaller(t, stub.Pattern, req.Headers)
 				return testserver.Response{StatusCode: http.StatusOK}
 			}
@@ -232,8 +233,13 @@ func startLocalServer(t *testing.T,
 	return s.URL
 }
 
-func shouldKillCaller(stub ServerStub, killCounters map[string]int) bool {
-	if stub.KillCaller <= 0 || killCounters[stub.Pattern] <= 0 {
+func shouldKillCaller(stub ServerStub, killCounters map[string]int, mu *sync.Mutex) bool {
+	if stub.KillCaller <= 0 {
+		return false
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	if killCounters[stub.Pattern] <= 0 {
 		return false
 	}
 	killCounters[stub.Pattern]--
