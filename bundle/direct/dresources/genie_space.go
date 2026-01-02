@@ -2,7 +2,6 @@ package dresources
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"path"
 	"strings"
@@ -78,22 +77,9 @@ func (r *ResourceGenieSpace) DoRead(ctx context.Context, id string) (*resources.
 	}, nil
 }
 
-// prepareGenieSpaceRequest converts the config to API request format.
-// It handles serialized_space which can be either a string or any type that needs JSON marshaling.
-func prepareGenieSpaceRequest(config *resources.GenieSpaceConfig) (string, error) {
-	v := config.SerializedSpace
-	if serializedSpace, ok := v.(string); ok {
-		// If serialized space is already a string, use it directly.
-		return serializedSpace, nil
-	} else if v != nil {
-		// If it's inlined in the bundle config as a map, marshal it to a string.
-		b, err := json.Marshal(v)
-		if err != nil {
-			return "", fmt.Errorf("failed to marshal serialized_space: %w", err)
-		}
-		return string(b), nil
-	}
-	return "", nil
+// prepareGenieSpaceRequest returns the serialized_space string from the config.
+func prepareGenieSpaceRequest(config *resources.GenieSpaceConfig) string {
+	return config.SerializedSpace
 }
 
 func responseToGenieState(resp *dashboards.GenieSpace, serializedSpace, parentPath string) *resources.GenieSpaceConfig {
@@ -109,10 +95,7 @@ func responseToGenieState(resp *dashboards.GenieSpace, serializedSpace, parentPa
 }
 
 func (r *ResourceGenieSpace) DoCreate(ctx context.Context, config *resources.GenieSpaceConfig) (string, *resources.GenieSpaceConfig, error) {
-	serializedSpace, err := prepareGenieSpaceRequest(config)
-	if err != nil {
-		return "", nil, err
-	}
+	serializedSpace := prepareGenieSpaceRequest(config)
 
 	createReq := dashboards.GenieCreateSpaceRequest{
 		WarehouseId:     config.WarehouseId,
@@ -142,10 +125,7 @@ func (r *ResourceGenieSpace) DoCreate(ctx context.Context, config *resources.Gen
 }
 
 func (r *ResourceGenieSpace) DoUpdate(ctx context.Context, id string, config *resources.GenieSpaceConfig, _ *Changes) (*resources.GenieSpaceConfig, error) {
-	serializedSpace, err := prepareGenieSpaceRequest(config)
-	if err != nil {
-		return nil, err
-	}
+	serializedSpace := prepareGenieSpaceRequest(config)
 
 	resp, err := r.client.Genie.UpdateSpace(ctx, dashboards.GenieUpdateSpaceRequest{
 		SpaceId:         id,
