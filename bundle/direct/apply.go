@@ -27,7 +27,7 @@ func (d *DeploymentUnit) Destroy(ctx context.Context, db *dstate.DeploymentState
 	return d.Delete(ctx, db, entry.ID)
 }
 
-func (d *DeploymentUnit) Deploy(ctx context.Context, db *dstate.DeploymentState, newState any, actionType deployplan.ActionType, changes *deployplan.Changes) error {
+func (d *DeploymentUnit) Deploy(ctx context.Context, db *dstate.DeploymentState, newState any, actionType deployplan.ActionType, changes deployplan.Changes) error {
 	if actionType == deployplan.ActionTypeCreate {
 		return d.Create(ctx, db, newState)
 	}
@@ -103,7 +103,7 @@ func (d *DeploymentUnit) Recreate(ctx context.Context, db *dstate.DeploymentStat
 	return d.Create(ctx, db, newState)
 }
 
-func (d *DeploymentUnit) Update(ctx context.Context, db *dstate.DeploymentState, id string, newState any, changes *deployplan.Changes) error {
+func (d *DeploymentUnit) Update(ctx context.Context, db *dstate.DeploymentState, id string, newState any, changes deployplan.Changes) error {
 	if !d.Adapter.HasDoUpdate() {
 		return fmt.Errorf("internal error: DoUpdate not implemented for resource %s", d.ResourceKey)
 	}

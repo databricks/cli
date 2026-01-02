@@ -32,7 +32,7 @@
         }
       },
       "remote_state": {
-        "created_time": [UNIX_TIME_MILLIS],
+        "created_time": [UNIX_TIME_MILLIS][0],
         "creator_user_name": "[USERNAME]",
         "job_id": [BAR_ID],
         "run_as_user_name": "[USERNAME]",
@@ -55,26 +55,26 @@
         }
       },
       "changes": {
-        "local": {
-          "description": {
-            "action": "update",
-            "old": "depends on foo id [FOO_ID]",
-            "new": "depends on foo id ${resources.pipelines.foo.id}"
-          }
+        "description": {
+          "action": "update",
+          "old": "depends on foo id [FOO_ID]",
+          "new": "depends on foo id ${resources.pipelines.foo.id}",
+          "remote": "depends on foo id [FOO_ID]"
         },
-        "remote": {
-          "email_notifications": {
-            "action": "skip",
-            "reason": "server_side_default"
-          },
-          "timeout_seconds": {
-            "action": "skip",
-            "reason": "server_side_default"
-          },
-          "webhook_notifications": {
-            "action": "skip",
-            "reason": "server_side_default"
-          }
+        "email_notifications": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": {}
+        },
+        "timeout_seconds": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": 0
+        },
+        "webhook_notifications": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": {}
         }
       }
     },
@@ -92,13 +92,32 @@
           "storage": "dbfs:/my-new-storage"
         }
       },
+      "remote_state": {
+        "creator_user_name": "[USERNAME]",
+        "last_modified": [UNIX_TIME_MILLIS][1],
+        "name": "pipeline foo",
+        "pipeline_id": "[FOO_ID]",
+        "run_as_user_name": "[USERNAME]",
+        "spec": {
+          "channel": "CURRENT",
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+          },
+          "edition": "ADVANCED",
+          "id": "[FOO_ID]",
+          "name": "pipeline foo",
+          "storage": "dbfs:/my-storage"
+        },
+        "state": "IDLE"
+      },
       "changes": {
-        "local": {
-          "storage": {
-            "action": "recreate",
-            "old": "dbfs:/my-storage",
-            "new": "dbfs:/my-new-storage"
-          }
+        "storage": {
+          "action": "recreate",
+          "reason": "field_triggers",
+          "old": "dbfs:/my-storage",
+          "new": "dbfs:/my-new-storage",
+          "remote": "dbfs:/my-storage"
         }
       }
     }

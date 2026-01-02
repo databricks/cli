@@ -224,9 +224,18 @@ To start using direct engine, deploy with DATABRICKS_BUNDLE_ENGINE=direct env va
 			}
 		}()
 
-		plan, err := deploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(), &b.Config, tempStatePath)
+		plan, err := deploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(), &b.Config, tempStatePath, direct.MigrateMode(true))
 		if err != nil {
 			return err
+		}
+
+		for key, value := range plan.Plan {
+			if value.Action == "skip" {
+				logdiag.LogError(ctx, fmt.Errorf("unexpected planned action: %q for %q during migration", value.Action, key))
+			}
+		}
+		if logdiag.HasError(ctx) {
+			return root.ErrAlreadyPrinted
 		}
 
 		// We need to copy ETag into new state.

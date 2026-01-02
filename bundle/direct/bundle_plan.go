@@ -55,7 +55,7 @@ func ValidatePlanAgainstState(statePath string, plan *deployplan.Plan) error {
 		if os.IsNotExist(err) {
 			return fmt.Errorf("plan has lineage %q but state file does not exist at %s; the state may have been deleted", plan.Lineage, statePath)
 		}
-		return fmt.Errorf("failed to read state from %s: %w", statePath, err)
+		return fmt.Errorf("reading state from %s: %w", statePath, err)
 	}
 
 	// Validate that the plan's lineage matches the current state's lineage
@@ -76,7 +76,7 @@ func ValidatePlanAgainstState(statePath string, plan *deployplan.Plan) error {
 func (b *DeploymentBundle) InitForApply(ctx context.Context, client *databricks.WorkspaceClient, statePath string, plan *deployplan.Plan) error {
 	err := b.StateDB.Open(statePath)
 	if err != nil {
-		return fmt.Errorf("failed to read state from %s: %w", statePath, err)
+		return fmt.Errorf("reading state from %s: %w", statePath, err)
 	}
 
 	err = b.init(client)
@@ -94,12 +94,12 @@ func (b *DeploymentBundle) InitForApply(ctx context.Context, client *databricks.
 
 		adapter, err := b.getAdapterForKey(resourceKey)
 		if err != nil {
-			return fmt.Errorf("cannot convert plan entry %s: %w", resourceKey, err)
+			return fmt.Errorf("converting plan entry %s: %w", resourceKey, err)
 		}
 
 		sv, err := entry.NewState.ToStructVar(adapter.StateType())
 		if err != nil {
-			return fmt.Errorf("cannot load plan entry %s: %w", resourceKey, err)
+			return fmt.Errorf("loading plan entry %s: %w", resourceKey, err)
 		}
 
 		b.StructVarCache.Store(resourceKey, sv)
@@ -109,10 +109,10 @@ func (b *DeploymentBundle) InitForApply(ctx context.Context, client *databricks.
 	return nil
 }
 
-func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root, statePath string) (*deployplan.Plan, error) {
+func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root, statePath string, migrateMode MigrateMode) (*deployplan.Plan, error) {
 	err := b.StateDB.Open(statePath)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read state from %s: %w", statePath, err)
+		return nil, fmt.Errorf("reading state from %s: %w", statePath, err)
 	}
 
 	err = b.init(client)
@@ -143,29 +143,35 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 
 		entry, err := plan.WriteLockEntry(resourceKey)
 		if err != nil {
-			logdiag.LogError(ctx, fmt.Errorf("%s: internal error: %w", resourceKey, err))
+			logdiag.LogError(ctx, fmt.Errorf("%s: internal error: %w", errorPrefix, err))
 			return false
 		}
 
 		if entry == nil {
-			logdiag.LogError(ctx, fmt.Errorf("%s: internal error: node not in graph", resourceKey))
+			logdiag.LogError(ctx, fmt.Errorf("%s: internal error: node not in graph", errorPrefix))
 			return false
 		}
 
 		defer plan.WriteUnlockEntry(resourceKey)
 
 		if failedDependency != nil {
+			// TODO: this should be a warning
 			logdiag.LogError(ctx, fmt.Errorf("%s: dependency failed: %s", errorPrefix, *failedDependency))
 			return false
 		}
 
 		adapter, err := b.getAdapterForKey(resourceKey)
 		if err != nil {
-			logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
+			logdiag.LogError(ctx, fmt.Errorf("%s: getting adapter: %w", errorPrefix, err))
 			return false
 		}
 
 		if entry.Action == deployplan.ActionTypeDelete.String() {
+			if migrateMode {
+				logdiag.LogError(ctx, fmt.Errorf("%s: is planned for deletion, cannot migrate. Must perform deployment first", errorPrefix))
+				return false
+			}
+
 			dbentry, hasEntry := b.StateDB.GetResourceEntry(resourceKey)
 			if !hasEntry {
 				logdiag.LogError(ctx, fmt.Errorf("%s: internal error, missing in state", errorPrefix))
@@ -178,7 +184,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 					// no such resource
 					plan.RemoveEntry(resourceKey)
 				} else {
-					log.Warnf(ctx, "cannot read %s id=%q: %s", resourceKey, dbentry.ID, err)
+					log.Warnf(ctx, "reading %s id=%q: %s", resourceKey, dbentry.ID, err)
 					return false
 				}
 			}
@@ -192,6 +198,11 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		// Refs maps path inside resource to references e.g. "${resources.jobs.foo.id} ${resources.jobs.foo.name}"
 		if !b.resolveReferences(ctx, resourceKey, entry, errorPrefix, true) {
 			return false
+		}
+
+		if migrateMode {
+			entry.Action = deployplan.ActionTypeUpdateString
+			return true
 		}
 
 		dbentry, hasEntry := b.StateDB.GetResourceEntry(resourceKey)
@@ -233,48 +244,53 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			if isResourceGone(err) {
 				remoteState = nil
 			} else {
-				logdiag.LogError(ctx, fmt.Errorf("%s: failed to read id=%q: %w", errorPrefix, dbentry.ID, err))
+				logdiag.LogError(ctx, fmt.Errorf("%s: reading id=%q: %w", errorPrefix, dbentry.ID, err))
 				return false
 			}
-		}
-
-		localAction, localChangeMap := localChangesToTriggers(ctx, adapter, localDiff, remoteState)
-		if localAction == deployplan.ActionTypeRecreate {
-			entry.Action = localAction.String()
-			if len(localChangeMap) > 0 {
-				entry.Changes = &deployplan.Changes{
-					Local: localChangeMap,
-				}
-			}
-			return true
 		}
 
 		// We have a choice whether to include remoteState or remoteStateComparable from below.
 		// Including remoteState because in the near future remoteState is expected to become a superset struct of remoteStateComparable
 		entry.RemoteState = remoteState
 
-		var remoteAction deployplan.ActionType
-		var remoteChangeMap map[string]deployplan.ChangeDesc
+		action := deployplan.ActionTypeSkip
+		var remoteDiff []structdiff.Change
+		var remoteStateComparable any
 
-		if remoteState == nil {
-			remoteAction = deployplan.ActionTypeCreate
-		} else {
-			remoteStateComparable, err := adapter.RemapState(remoteState)
+		if remoteState != nil {
+			remoteStateComparable, err = adapter.RemapState(remoteState)
 			if err != nil {
-				logdiag.LogError(ctx, fmt.Errorf("%s: failed to interpret remote state id=%q: %w", errorPrefix, dbentry.ID, err))
+				logdiag.LogError(ctx, fmt.Errorf("%s: interpreting remote state id=%q: %w", errorPrefix, dbentry.ID, err))
 				return false
 			}
 
-			remoteDiff, err := structdiff.GetStructDiff(savedState, remoteStateComparable, adapter.KeyedSlices())
+			remoteDiff, err = structdiff.GetStructDiff(remoteStateComparable, sv.Value, adapter.KeyedSlices())
 			if err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("%s: diffing remote state: %w", errorPrefix, err))
 				return false
 			}
-
-			remoteAction, remoteChangeMap = interpretOldStateVsRemoteState(ctx, adapter, remoteDiff, remoteState)
 		}
 
-		action := max(localAction, remoteAction)
+		entry.Changes, err = prepareChanges(ctx, adapter, localDiff, remoteDiff, savedState, remoteState != nil)
+		if err != nil {
+			logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
+			return false
+		}
+
+		err = addPerFieldActions(ctx, adapter, entry.Changes, remoteState)
+		if err != nil {
+			logdiag.LogError(ctx, fmt.Errorf("%s: classifying changes: %w", errorPrefix, err))
+			return false
+		}
+
+		if remoteState == nil {
+			// Even if local action is "recreate" which is higher than "create", we should still pick "create" here
+			// because we know remote does not exist.
+			action = deployplan.ActionTypeCreate
+		} else {
+			action = getMaxAction(entry.Changes)
+		}
+
 		if action == deployplan.ActionTypeSkip {
 			// resource is not going to change, can use remoteState to resolve references
 			b.RemoteStateCache.Store(resourceKey, remoteState)
@@ -287,14 +303,6 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		}
 
 		entry.Action = action.String()
-
-		if len(localChangeMap) > 0 || len(remoteChangeMap) > 0 {
-			entry.Changes = &deployplan.Changes{
-				Local:  localChangeMap,
-				Remote: remoteChangeMap,
-			}
-		}
-
 		return true
 	})
 
@@ -311,68 +319,92 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 	return plan, nil
 }
 
-func localChangesToTriggers(ctx context.Context, adapter *dresources.Adapter, diff []structdiff.Change, remoteState any) (deployplan.ActionType, map[string]deployplan.ChangeDesc) {
-	action := deployplan.ActionTypeSkip
-	var m map[string]deployplan.ChangeDesc
+func getMaxAction(m map[string]*deployplan.ChangeDesc) deployplan.ActionType {
+	result := deployplan.ActionTypeSkip
+	for _, ch := range m {
+		result = max(result, deployplan.ActionTypeFromString(ch.Action))
+	}
+	return result
+}
 
-	for _, ch := range diff {
-		fieldAction, err := adapter.ClassifyChange(ch, remoteState, true)
-		if err != nil {
-			logdiag.LogError(ctx, fmt.Errorf("internal error: failed to classify change: %w", err))
-			continue
+func prepareChanges(ctx context.Context, adapter *dresources.Adapter, localDiff, remoteDiff []structdiff.Change, oldState any, hasRemote bool) (deployplan.Changes, error) {
+	m := make(deployplan.Changes)
+
+	for _, ch := range localDiff {
+		e := deployplan.ChangeDesc{
+			Old: ch.Old,
+			New: ch.New,
 		}
-		if fieldAction > action {
-			action = fieldAction
+		if hasRemote {
+			// by default, assume e.Remote is the same as config; if not the case it'll be ovewritten below
+			e.Remote = ch.New
 		}
-		if m == nil {
-			m = make(map[string]deployplan.ChangeDesc)
-		}
-		m[ch.Path.String()] = deployplan.ChangeDesc{
-			Action: fieldAction.String(),
-			Old:    ch.Old,
-			New:    ch.New,
+		m[ch.Path.String()] = &e
+	}
+
+	for _, ch := range remoteDiff {
+		entry := m[ch.Path.String()]
+		if entry == nil {
+			// we have difference for remoteState but not difference for localState
+			// from remoteDiff we can find out remote value (ch.Old) and new config value (ch.New) but we don't know oldState value
+			oldStateVal, err := structaccess.Get(oldState, ch.Path)
+			var notFound *structaccess.NotFoundError
+			if errors.As(err, &notFound) {
+				oldStateVal = nil
+			} else if err != nil {
+				return nil, fmt.Errorf("accessing %q on %T: %w", ch.Path, oldState, err)
+			}
+			m[ch.Path.String()] = &deployplan.ChangeDesc{
+				Old:    oldStateVal,
+				New:    ch.New,
+				Remote: ch.Old,
+			}
+		} else {
+			entry.Remote = ch.Old
+			if !structdiff.IsEqual(entry.New, ch.New) {
+				// this is not fatal (may result in unexpected drift or undetected change but not incorrect deploy), but good to log this
+				log.Warnf(ctx, "unexpected local and remote diffs (%T, %T); entry=%v ch=%v", entry.New, ch.New, entry, ch)
+			}
 		}
 	}
 
-	return action, m
+	return m, nil
 }
 
-func interpretOldStateVsRemoteState(ctx context.Context, adapter *dresources.Adapter, diff []structdiff.Change, remoteState any) (deployplan.ActionType, map[string]deployplan.ChangeDesc) {
-	action := deployplan.ActionTypeSkip
-	m := make(map[string]deployplan.ChangeDesc)
+func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, changes deployplan.Changes, remoteState any) error {
+	fieldTriggers := adapter.FieldTriggers()
 
-	for _, ch := range diff {
-		if ch.Old == nil && ch.Path.IsDotString() {
+	for pathString, ch := range changes {
+		path, err := structpath.Parse(pathString)
+		if err != nil {
+			return err
+		}
+
+		if ch.New == nil && ch.Old == nil && ch.Remote != nil && path.IsDotString() {
 			// The field was not set by us, but comes from the remote state.
 			// This could either be server-side default or a policy.
 			// In any case, this is not a change we should react to.
 			// Note, we only consider struct fields here. Adding/removing elements to/from maps and slices should trigger updates.
-			m[ch.Path.String()] = deployplan.ChangeDesc{
-				Action: deployplan.ActionTypeSkipString,
-				Reason: "server_side_default",
-			}
-			continue
+			ch.Action = deployplan.ActionTypeSkipString
+			ch.Reason = deployplan.ReasonServerSideDefault
+		} else if structdiff.IsEqual(ch.Remote, ch.New) {
+			ch.Action = deployplan.ActionTypeSkipString
+			ch.Reason = deployplan.ReasonRemoteAlreadySet
+		} else if action, ok := fieldTriggers[pathString]; ok {
+			// TODO: should we check prefixes instead?
+			ch.Action = action.String()
+			ch.Reason = deployplan.ReasonFieldTriggers
+		} else {
+			ch.Action = deployplan.ActionTypeUpdateString
 		}
-		fieldAction, err := adapter.ClassifyChange(ch, remoteState, false)
+
+		err = adapter.OverrideChangeDesc(ctx, path, ch, remoteState)
 		if err != nil {
-			logdiag.LogError(ctx, fmt.Errorf("internal error: failed to classify change: %w", err))
-			continue
-		}
-		if fieldAction > action {
-			action = fieldAction
-		}
-		m[ch.Path.String()] = deployplan.ChangeDesc{
-			Action: fieldAction.String(),
-			Old:    ch.Old,
-			New:    ch.New,
+			return fmt.Errorf("internal error: failed to classify change: %w", err)
 		}
 	}
 
-	if len(m) == 0 {
-		m = nil
-	}
-
-	return action, m
+	return nil
 }
 
 // TODO: calling this "Local" is not right, it can resolve "id" and remote refrences for "skip" targets

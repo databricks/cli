@@ -12,13 +12,17 @@
           "scope_backend_type": "DATABRICKS"
         }
       },
+      "remote_state": {
+        "backend_type": "DATABRICKS",
+        "name": "test-scope-[UNIQUE_NAME]-1"
+      },
       "changes": {
-        "local": {
-          "scope": {
-            "action": "recreate",
-            "old": "test-scope-[UNIQUE_NAME]-1",
-            "new": "test-scope-[UNIQUE_NAME]-2"
-          }
+        "scope": {
+          "action": "recreate",
+          "reason": "field_triggers",
+          "old": "test-scope-[UNIQUE_NAME]-1",
+          "new": "test-scope-[UNIQUE_NAME]-2",
+          "remote": "test-scope-[UNIQUE_NAME]-1"
         }
       }
     },
@@ -62,12 +66,12 @@
         ]
       },
       "changes": {
-        "local": {
-          "scope_name": {
-            "action": "update_id",
-            "old": "test-scope-[UNIQUE_NAME]-1",
-            "new": ""
-          }
+        "scope_name": {
+          "action": "update_id",
+          "reason": "field_triggers",
+          "old": "test-scope-[UNIQUE_NAME]-1",
+          "new": "",
+          "remote": "test-scope-[UNIQUE_NAME]-1"
         }
       }
     }

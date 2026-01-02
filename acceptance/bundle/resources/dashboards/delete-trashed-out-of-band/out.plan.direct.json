@@ -16,11 +16,10 @@
         }
       },
       "changes": {
-        "local": {
-          "etag": {
-            "action": "skip",
-            "old": [ETAG]
-          }
+        "etag": {
+          "action": "update",
+          "reason": "remote_already_set",
+          "old": [ETAG]
         }
       }
     }
