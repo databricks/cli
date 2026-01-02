@@ -182,11 +182,6 @@ func applyNormalizeMutators(ctx context.Context, b *bundle.Bundle) {
 		// Drops (dynamic): resources.dashboards.*.file_path
 		ConfigureDashboardSerializedDashboard(),
 
-		// Reads (dynamic): resources.genie_spaces.*.file_path
-		// Updates (dynamic): resources.genie_spaces.*.serialized_space
-		// Reads file contents and inlines them into serialized_space
-		ConfigureGenieSpaceSerializedSpace(),
-
 		// Reads and updates (typed): resources.jobs.*.**
 		JobClustersFixups(),
 		ClusterFixups(),
