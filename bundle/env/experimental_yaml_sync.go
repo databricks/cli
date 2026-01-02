@@ -2,7 +2,7 @@ package env
 
 import "context"
 
-// ExperimentalYamlSyncVariable names the environment variable that holds the flag whether
+// experimentalYamlSyncVariable names the environment variable that holds the flag whether
 // experimental YAML sync is enabled.
 const experimentalYamlSyncVariable = "DATABRICKS_BUNDLE_ENABLE_EXPERIMENTAL_YAML_SYNC"
 
