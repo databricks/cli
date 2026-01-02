@@ -291,6 +291,16 @@ func TestInheritSystemAccessToken(t *testing.T) {
 	assert.Equal(t, "foobar", env["SYSTEM_ACCESSTOKEN"])
 }
 
+func TestInheritSystemTeamFoundationCollectionUri(t *testing.T) {
+	t.Setenv("SYSTEM_TEAMFOUNDATIONCOLLECTIONURI", "foobar")
+
+	ctx := context.Background()
+	env := map[string]string{}
+	err := inheritEnvVars(ctx, env)
+	require.NoError(t, err)
+	assert.Equal(t, "foobar", env["SYSTEM_TEAMFOUNDATIONCOLLECTIONURI"])
+}
+
 func TestSetUserProfileFromInheritEnvVars(t *testing.T) {
 	t.Setenv("USERPROFILE", "c:\\foo\\c")
 
