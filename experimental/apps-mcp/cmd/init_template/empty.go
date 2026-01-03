@@ -15,7 +15,7 @@ func newEmptyCmd() *cobra.Command {
 		Use:   "empty",
 		Short: "Initialize an empty project for custom resources",
 		Args:  cobra.NoArgs,
-		Long: `Initialize an empty Databricks Asset Bundle project.
+		Long: `Initialize an empty Databricks Asset Bundles project.
 
 Use this for deploying resource types OTHER than apps, jobs, or pipelines, such as:
 - Dashboards (Lakeview dashboards)
