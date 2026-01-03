@@ -7,6 +7,7 @@ import (
 	"io/fs"
 	"path"
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
 
@@ -15,7 +16,7 @@ import (
 
 // skillsFS embeds the skills filesystem.
 //
-//go:embed apps/* jobs/* pipelines/*
+//go:embed */*
 var skillsFS embed.FS
 
 // SkillMetadata contains the path and description for progressive disclosure.
@@ -149,26 +150,31 @@ func GetSkillFile(path string) (string, error) {
 }
 
 // FormatSkillsSection returns the L3 skills listing for prompts.
-func FormatSkillsSection(isAppOnly, listAllSkills bool) string {
+// Partitions skills into relevant (matching targetTypes) and other skills.
+func FormatSkillsSection(targetTypes []string) string {
 	allSkills := ListAllSkills()
 
-	var skillsToShow []SkillMetadata
-	if listAllSkills || !isAppOnly {
-		skillsToShow = allSkills
-	} else {
-		for _, skill := range allSkills {
-			if strings.HasPrefix(skill.Path, "apps/") {
-				skillsToShow = append(skillsToShow, skill)
-			}
+	// For empty bundles (no resources), show all skills without partitioning or caveats
+	if len(targetTypes) == 0 || (len(targetTypes) == 1 && targetTypes[0] == "bundle") {
+		return prompts.MustExecuteTemplate("skills.tmpl", map[string]any{
+			"RelevantSkills": allSkills,
+			"OtherSkills":    nil,
+		})
+	}
+
+	// Partition by relevance for projects with resource types
+	var relevantSkills, otherSkills []SkillMetadata
+	for _, skill := range allSkills {
+		category := strings.SplitN(skill.Path, "/", 2)[0]
+		if slices.Contains(targetTypes, category) {
+			relevantSkills = append(relevantSkills, skill)
+		} else {
+			otherSkills = append(otherSkills, skill)
 		}
 	}
 
-	if len(skillsToShow) == 0 && !isAppOnly {
-		return ""
-	}
-
 	return prompts.MustExecuteTemplate("skills.tmpl", map[string]any{
-		"ShowNoSkillsForApps": len(skillsToShow) == 0 && isAppOnly,
-		"Skills":              skillsToShow,
+		"RelevantSkills": relevantSkills,
+		"OtherSkills":    otherSkills,
 	})
 }

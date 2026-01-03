@@ -4,7 +4,7 @@
 ## Goals
 
 - Universal MCP for any coding agent (Claude, Cursor, etc.)
-- Support multiple target types: apps, jobs, pipelines
+- Support multiple target types: apps, jobs, bundle (general DABs guidance), ...
 - Support multiple templates per target type
 - Clean separation of context layers
 - Detect existing project context automatically

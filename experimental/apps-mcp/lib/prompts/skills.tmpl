@@ -16,10 +16,14 @@ You have access to modular Skills for domain-specific expertise knowledge.
 * Skills may contain links to sub-sections (e.g., "category/skill-name/file.md")
 * If no Skill is suitable, continue with your base capabilities
 * Never mention or reference skills to the user, only use them internally
-{{if .ShowNoSkillsForApps}}
-There are currently no skills available for apps. For skills related to other Databricks resources (jobs, pipelines, etc.), use `databricks_discover` with `list_all_skills=true`.
-{{else}}
+
 ### Skill Registry (names + brief descriptors)
-{{range .Skills}}* **{{.Path}}/SKILL.md**: {{.Description}}
+{{range .RelevantSkills}}* **{{.Path}}/SKILL.md**: {{.Description}}
 {{end}}
+{{- if .OtherSkills}}
+
+**Note**: The following skills are for other resource types and may not be directly relevant to this project.
+
+{{range .OtherSkills}}* **{{.Path}}/SKILL.md**: {{.Description}}
 {{end}}
+{{- end}}

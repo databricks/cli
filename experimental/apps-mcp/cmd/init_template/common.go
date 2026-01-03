@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 
@@ -82,7 +83,8 @@ func MaterializeTemplate(ctx context.Context, cfg TemplateConfig, configMap map[
 
 	// Only write generic CLAUDE.md for non-app projects
 	// (app projects have their own template-specific CLAUDE.md)
-	if !detected.IsAppOnly {
+	isAppOnly := slices.Contains(detected.TargetTypes, "apps") && len(detected.TargetTypes) == 1
+	if !isAppOnly {
 		if err := writeAgentFiles(absOutputDir, map[string]any{}); err != nil {
 			return fmt.Errorf("failed to write agent files: %w", err)
 		}
@@ -99,7 +101,7 @@ func MaterializeTemplate(ctx context.Context, cfg TemplateConfig, configMap map[
 	}
 
 	// L3: list available skills
-	if skillsSection := skills.FormatSkillsSection(detected.IsAppOnly, false); skillsSection != "" {
+	if skillsSection := skills.FormatSkillsSection(detected.TargetTypes); skillsSection != "" {
 		cmdio.LogString(ctx, "\n"+skillsSection)
 	}
 

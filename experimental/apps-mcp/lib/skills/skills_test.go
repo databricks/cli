@@ -43,20 +43,26 @@ func TestGetSkillFileErrors(t *testing.T) {
 }
 
 func TestFormatSkillsSection(t *testing.T) {
-	// Non-app project shows all skills
-	section := FormatSkillsSection(false, false)
+	// Pipelines project - pipeline skills shown as relevant
+	section := FormatSkillsSection([]string{"pipelines", "bundle"})
 	assert.Contains(t, section, "## Skills")
-	assert.Contains(t, section, "pipelines/auto-cdc")
-	assert.NotContains(t, section, "no skills available for apps")
+	assert.Contains(t, section, "pipelines/")
 
-	// App-only project shows hint (no app skills currently exist)
-	section = FormatSkillsSection(true, false)
-	assert.Contains(t, section, "no skills available for apps")
+	// Jobs project - pipeline skills shown as other
+	section = FormatSkillsSection([]string{"jobs", "bundle"})
+	assert.Contains(t, section, "## Skills")
+	assert.Contains(t, section, "skills are for other resource types and may not be directly relevant to this project")
+	assert.Contains(t, section, "pipelines/")
 
-	// listAllSkills=true shows all skills for app-only project too
-	section = FormatSkillsSection(true, true)
-	assert.Contains(t, section, "pipelines/auto-cdc")
-	assert.NotContains(t, section, "no skills available for apps")
+	// Apps project - pipeline skills shown as other
+	section = FormatSkillsSection([]string{"apps"})
+	assert.Contains(t, section, "## Skills")
+	assert.Contains(t, section, "skills are for other resource types and may not be directly relevant to this project")
+
+	// Empty bundle - all skills shown without caveat
+	section = FormatSkillsSection([]string{"bundle"})
+	assert.Contains(t, section, "## Skills")
+	assert.NotContains(t, section, "skills are for other resource types and may not be directly relevant to this project")
 }
 
 func TestAllSkillsHaveValidFrontmatter(t *testing.T) {

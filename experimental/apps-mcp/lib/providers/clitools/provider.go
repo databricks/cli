@@ -89,7 +89,6 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 	// Register databricks_discover tool
 	type DiscoverInput struct {
 		WorkingDirectory string `json:"working_directory" jsonschema:"required" jsonschema_description:"The directory to detect project context from."`
-		ListAllSkills    bool   `json:"list_all_skills,omitempty" jsonschema_description:"If true, list all available skills without filtering by project type."`
 	}
 
 	mcpsdk.AddTool(server,
@@ -99,7 +98,7 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 		},
 		func(ctx context.Context, req *mcpsdk.CallToolRequest, args DiscoverInput) (*mcpsdk.CallToolResult, any, error) {
 			log.Debugf(ctx, "databricks_discover called: working_directory=%s", args.WorkingDirectory)
-			result, err := Discover(ctx, args.WorkingDirectory, args.ListAllSkills)
+			result, err := Discover(ctx, args.WorkingDirectory)
 			if err != nil {
 				return nil, nil, err
 			}
