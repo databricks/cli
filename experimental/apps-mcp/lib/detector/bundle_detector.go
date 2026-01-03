@@ -56,8 +56,6 @@ func (d *BundleDetector) Detect(ctx context.Context, workDir string, detected *D
 	// App-only projects get focused app guidance; others get general bundle guidance.
 	isAppOnly := hasApps && len(detected.TargetTypes) == 1
 
-	detected.IsAppOnly = isAppOnly
-
 	// Include general "bundle" guidance for all projects except app-only projects
 	if !isAppOnly {
 		detected.TargetTypes = append(detected.TargetTypes, "bundle")
