@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/experimental/apps-mcp/lib/middlewares"
 	"github.com/databricks/cli/libs/template"
 	"github.com/spf13/cobra"
 )
@@ -59,6 +60,11 @@ After initialization:
 
 		if language != "python" && language != "sql" && language != "other" {
 			return fmt.Errorf("--language must be 'python', 'sql', or 'other', got '%s'", language)
+		}
+
+		// Default to workspace default catalog if not specified
+		if catalog == "" {
+			catalog = middlewares.GetDefaultCatalog(ctx)
 		}
 
 		configMap := map[string]any{

@@ -23,6 +23,23 @@ func TestDetectorRegistry_EmptyDir(t *testing.T) {
 	assert.Empty(t, detected.Template)
 }
 
+func TestDetectorRegistry_EmptyBundle(t *testing.T) {
+	dir := t.TempDir()
+	ctx := context.Background()
+
+	bundleYml := `bundle:
+  name: empty-project
+`
+	require.NoError(t, os.WriteFile(filepath.Join(dir, "databricks.yml"), []byte(bundleYml), 0o644))
+
+	registry := detector.NewRegistry()
+	detected := registry.Detect(ctx, dir)
+
+	assert.True(t, detected.InProject)
+	assert.Equal(t, []string{"bundle"}, detected.TargetTypes)
+	assert.Equal(t, "empty-project", detected.BundleInfo.Name)
+}
+
 func TestDetectorRegistry_BundleWithApps(t *testing.T) {
 	dir := t.TempDir()
 	ctx := context.Background()
@@ -59,7 +76,7 @@ resources:
 	detected := registry.Detect(ctx, dir)
 
 	assert.True(t, detected.InProject)
-	assert.Equal(t, []string{"jobs", "mixed"}, detected.TargetTypes)
+	assert.Equal(t, []string{"jobs", "bundle"}, detected.TargetTypes)
 	assert.Equal(t, "my-job", detected.BundleInfo.Name)
 }
 

@@ -41,38 +41,26 @@ func (d *BundleDetector) Detect(ctx context.Context, workDir string, detected *D
 		RootDir: workDir,
 	}
 
-	// extract target types from fully loaded resources
-	hasApps := len(b.Config.Resources.Apps) > 0
-	hasJobs := len(b.Config.Resources.Jobs) > 0
-	hasPipelines := len(b.Config.Resources.Pipelines) > 0
-
-	if hasApps {
-		detected.TargetTypes = append(detected.TargetTypes, "apps")
-	}
-	if hasJobs {
-		detected.TargetTypes = append(detected.TargetTypes, "jobs")
-	}
-	if hasPipelines {
-		detected.TargetTypes = append(detected.TargetTypes, "pipelines")
+	// Detect all resource types present in the bundle
+	hasApps := false
+	for _, group := range b.Config.Resources.AllResources() {
+		if len(group.Resources) > 0 {
+			detected.TargetTypes = append(detected.TargetTypes, group.Description.PluralName)
+			if group.Description.PluralName == "apps" {
+				hasApps = true
+			}
+		}
 	}
 
 	// Determine if this is an app-only project (only app resources, nothing else).
-	// App-only projects get focused app guidance; others get "mixed" guidance.
-	isAppOnly := hasApps && !hasJobs && !hasPipelines &&
-		len(b.Config.Resources.Clusters) == 0 &&
-		len(b.Config.Resources.Dashboards) == 0 &&
-		len(b.Config.Resources.Experiments) == 0 &&
-		len(b.Config.Resources.ModelServingEndpoints) == 0 &&
-		len(b.Config.Resources.RegisteredModels) == 0 &&
-		len(b.Config.Resources.Schemas) == 0 &&
-		len(b.Config.Resources.QualityMonitors) == 0 &&
-		len(b.Config.Resources.Volumes) == 0
+	// App-only projects get focused app guidance; others get general bundle guidance.
+	isAppOnly := hasApps && len(detected.TargetTypes) == 1
 
 	detected.IsAppOnly = isAppOnly
 
-	// Include "mixed" guidance for all projects except app-only projects
+	// Include general "bundle" guidance for all projects except app-only projects
 	if !isAppOnly {
-		detected.TargetTypes = append(detected.TargetTypes, "mixed")
+		detected.TargetTypes = append(detected.TargetTypes, "bundle")
 	}
 
 	return nil
