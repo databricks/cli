@@ -1,0 +1,61 @@
+{{- /*
+     * L2: Target-specific guidance for Lakeflow Declarative Pipelines.
+     *
+     * Injected when: target type "pipelines" is detected or after init-template pipeline.
+     * Contains: pipeline-specific development patterns, transformation syntax, scheduling.
+     * Note: For adding NEW resources (dashboards, alerts, etc.), see target_mixed.tmpl guidance.
+     */ -}}
+
+## Lakeflow Declarative Pipelines Development
+
+This guidance is for developing pipelines in this project.
+
+Lakeflow Declarative Pipelines (formerly Delta Live Tables) is a framework for building batch and streaming data pipelines.
+
+### Project Structure
+- `src/` - Pipeline transformations (Python or SQL)
+- `resources/` - Pipeline configuration in databricks.yml format
+
+### Adding Transformations
+
+**Python** - Create `.py` files in `src/`:
+```python
+from pyspark import pipelines as dp
+
+@dp.table
+def my_table():
+    return spark.read.table("catalog.schema.source")
+```
+
+By convention, each dataset definition like the @dp.table definition above should be in a file named
+like the dataset name, e.g. `src/my_table.py`.
+
+**SQL** - Create `.sql` files in `src/`:
+```sql
+CREATE MATERIALIZED VIEW my_view AS
+SELECT * FROM catalog.schema.source
+```
+
+This example would live in `src/my_view.sql`.
+
+Use `CREATE STREAMING TABLE` for incremental ingestion, `CREATE MATERIALIZED VIEW` for transformations.
+
+### Scheduling Pipelines
+To schedule a pipeline, make sure you have a job that triggers it, like `resources/<name>.job.yml`:
+```yaml
+resources:
+  jobs:
+    my_pipeline_job:
+      trigger:
+        periodic:
+          interval: 1
+          unit: DAYS
+      tasks:
+        - task_key: refresh_pipeline
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.my_pipeline.id}
+```
+
+### Documentation
+- Lakeflow Declarative Pipelines: https://docs.databricks.com/ldp
+- Databricks Asset Bundles / yml format examples: https://docs.databricks.com/dev-tools/bundles/examples

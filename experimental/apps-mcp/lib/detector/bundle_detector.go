@@ -22,7 +22,9 @@ func (d *BundleDetector) Detect(ctx context.Context, workDir string, detected *D
 	}
 
 	// use full bundle loading to get all resources including from includes
-	ctx = logdiag.InitContext(ctx)
+	if !logdiag.IsSetup(ctx) {
+		ctx = logdiag.InitContext(ctx)
+	}
 	b, err := bundle.Load(ctx, workDir)
 	if err != nil || b == nil {
 		return nil
@@ -39,15 +41,26 @@ func (d *BundleDetector) Detect(ctx context.Context, workDir string, detected *D
 		RootDir: workDir,
 	}
 
-	// extract target types from fully loaded resources
-	if len(b.Config.Resources.Apps) > 0 {
-		detected.TargetTypes = append(detected.TargetTypes, "apps")
+	// Detect all resource types present in the bundle
+	hasApps := false
+	for _, group := range b.Config.Resources.AllResources() {
+		if len(group.Resources) > 0 {
+			detected.TargetTypes = append(detected.TargetTypes, group.Description.PluralName)
+			if group.Description.PluralName == "apps" {
+				hasApps = true
+			}
+		}
 	}
-	if len(b.Config.Resources.Jobs) > 0 {
-		detected.TargetTypes = append(detected.TargetTypes, "jobs")
-	}
-	if len(b.Config.Resources.Pipelines) > 0 {
-		detected.TargetTypes = append(detected.TargetTypes, "pipelines")
+
+	// Determine if this is an app-only project (only app resources, nothing else).
+	// App-only projects get focused app guidance; others get general bundle guidance.
+	isAppOnly := hasApps && len(detected.TargetTypes) == 1
+
+	detected.IsAppOnly = isAppOnly
+
+	// Include general "bundle" guidance for all projects except app-only projects
+	if !isAppOnly {
+		detected.TargetTypes = append(detected.TargetTypes, "bundle")
 	}
 
 	return nil

@@ -132,3 +132,19 @@ func newAuthError(ctx context.Context) error {
 	}
 	return errors.New(prompts.MustExecuteTemplate("auth_error.tmpl", data))
 }
+
+// GetDefaultCatalog fetches the workspace default catalog name.
+// Returns empty string if Unity Catalog is not available or on error.
+func GetDefaultCatalog(ctx context.Context) string {
+	w, err := GetDatabricksClient(ctx)
+	if err != nil {
+		return ""
+	}
+
+	metastore, err := w.Metastores.Current(ctx)
+	if err != nil {
+		return "" // gracefully handle any error (no UC, permission denied, etc.)
+	}
+
+	return metastore.DefaultCatalogName
+}

@@ -1,6 +1,7 @@
 package mcp
 
 import (
+	"github.com/databricks/cli/experimental/apps-mcp/cmd/init_template"
 	"github.com/spf13/cobra"
 )
 
@@ -13,7 +14,7 @@ func newToolsCmd() *cobra.Command {
 
 	cmd.AddCommand(newQueryCmd())
 	cmd.AddCommand(newDiscoverSchemaCmd())
-	cmd.AddCommand(newInitTemplateCmd())
+	cmd.AddCommand(init_template.NewInitTemplateCommand())
 	cmd.AddCommand(newValidateCmd())
 	cmd.AddCommand(newDeployCmd())
 
