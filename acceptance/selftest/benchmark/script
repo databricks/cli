@@ -1,0 +1,1 @@
+benchmark.py --runs 3 'true'
