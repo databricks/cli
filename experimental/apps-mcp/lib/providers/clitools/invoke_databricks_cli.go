@@ -23,7 +23,6 @@ func InvokeDatabricksCLI(ctx context.Context, args []string, workingDirectory st
 		return "", fmt.Errorf("get databricks client: %w", err)
 	}
 	host := workspaceClient.Config.Host
-	profile := middlewares.GetDatabricksProfile(ctx)
 	cliPath := common.GetCLIPath()
 
 	cmd := exec.CommandContext(ctx, cliPath, args...)
@@ -31,9 +30,7 @@ func InvokeDatabricksCLI(ctx context.Context, args []string, workingDirectory st
 
 	env := os.Environ()
 	env = append(env, "DATABRICKS_HOST="+host)
-	if profile != "" {
-		env = append(env, "DATABRICKS_CONFIG_PROFILE="+profile)
-	}
+	env = append(env, "DATABRICKS_TOKEN="+workspaceClient.Config.Token)
 	env = append(env, "DATABRICKS_CLI_UPSTREAM=cli-mcp")
 	env = append(env, "DATABRICKS_CLI_UPSTREAM_VERSION="+build.GetInfo().Version)
 
