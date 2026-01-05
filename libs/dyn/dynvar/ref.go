@@ -84,6 +84,56 @@ func ContainsVariableReference(s string) bool {
 	return re.MatchString(s)
 }
 
+// ValidDABPrefixes are the known prefixes for DAB variable interpolation.
+// A reference like ${prefix.path} is a valid DAB reference if prefix is one of these.
+var ValidDABPrefixes = []string{
+	"var",
+	"bundle",
+	"workspace",
+	"variables",
+	"resources",
+	"artifacts",
+}
+
+// InterpolationReference represents a single ${...} reference found in a string.
+type InterpolationReference struct {
+	// Full match including ${...}
+	Match string
+	// The path inside the braces (e.g., "var.foo" from "${var.foo}")
+	Path string
+}
+
+// FindAllInterpolationReferences returns all ${...} patterns that match the DAB
+// variable reference syntax. This does not include bash-style patterns like
+// ${VAR:-default} which don't match the DAB identifier rules.
+func FindAllInterpolationReferences(s string) []InterpolationReference {
+	matches := re.FindAllStringSubmatch(s, -1)
+	if len(matches) == 0 {
+		return nil
+	}
+
+	refs := make([]InterpolationReference, len(matches))
+	for i, m := range matches {
+		refs[i] = InterpolationReference{
+			Match: m[0], // Full match including ${}
+			Path:  m[1], // Captured group (path inside braces)
+		}
+	}
+	return refs
+}
+
+// HasValidDABPrefix checks if the given path starts with a known DAB prefix.
+// For example, "var.foo" returns true (prefix "var"), "FOO" returns false.
+func HasValidDABPrefix(path string) bool {
+	for _, prefix := range ValidDABPrefixes {
+		// Check if path equals prefix or starts with prefix followed by a dot
+		if path == prefix || len(path) > len(prefix) && path[:len(prefix)] == prefix && path[len(prefix)] == '.' {
+			return true
+		}
+	}
+	return false
+}
+
 // If s is a pure variable reference, this function returns the corresponding
 // dyn.Path. Otherwise, it returns false.
 func PureReferenceToPath(s string) (dyn.Path, bool) {
