@@ -68,9 +68,3 @@ with this project. It's also possible to interact with it directly using the CLI
    ```
    $ uv run pytest
    ```
-
-6. To check code quality and style, use `ruff`:
-   ```
-   $ uv run ruff check .    # Check for issues
-   $ uv run ruff format .   # Format code
-   ```
