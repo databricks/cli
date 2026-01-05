@@ -5,9 +5,9 @@ Ignore = [".databricks"]
 
 # redact ?o=[NUMID]. Different clouds can have different URL serialization, like [DATABRICKS_URL]/sql/alerts-v2/[ALERT_ID] vs [DATABRICKS_URL]/sql/alerts-v2/[ALERT_ID]?o=[NUMID].
 [[Repls]]
-Old = '\?o\=[0-9]*'
+Old = '\?o=\d+'
 New = ''
-Order = 1000
+Order = 0
 
 [EnvMatrix]
   DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
