@@ -38,10 +38,5 @@
         "editor.codeActionsOnSave": {
             "source.organizeImports": "explicit"
         }
-    },
-
-    // Ruff settings
-    "ruff.lineLength": 120,
-    "ruff.lint.enable": true,
-    "ruff.format.args": [],
+    }
 }
