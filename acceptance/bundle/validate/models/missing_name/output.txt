@@ -1,6 +1,6 @@
 Warning: required field "name" is not set
   at resources.models.mymodel
-  in databricks.yml:5:14
+  in databricks.yml:6:14
 
 Name: test-bundle
 Target: default

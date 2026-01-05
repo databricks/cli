@@ -1,3 +1,6 @@
+bundle:
+  name: test-bundle
+
 resources:
   pipelines:
     my_pipeline:

@@ -1,4 +1,4 @@
-cp -r $TESTDIR/../job-spark-python-task/{databricks.yml.tmpl,hello_world.py} .
+cp -r $TESTDIR/../job-spark-python-task/hello_world.py .
 
 title "Create a pre-defined job:\n"
 
@@ -24,7 +24,7 @@ JOB_ID=$($CLI jobs create --json '
 
 echo "Created job with ID: $JOB_ID"
 
-envsubst < databricks.yml.tmpl > databricks.yml
+envsubst < $TESTDIR/../job-spark-python-task/databricks.yml.tmpl > databricks.yml
 
 cleanup() {
     title "Delete the pre-defined job $JOB_ID:"
