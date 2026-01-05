@@ -13,17 +13,16 @@ Note that [DATABRICKS_URL] is used for initialization.
 To get started, refer to the project README.md file and the documentation at https://docs.databricks.com/dev-tools/bundles/index.html.
 
 >>> diff.py [TESTROOT]/bundle/templates/default-python/serverless-customcatalog/../serverless/output output/
---- [TESTROOT]/bundle/templates/default-python/serverless-customcatalog/../serverless/output/my_default_python/README.md
-+++ output/my_default_python/README.md
-@@ -69,8 +69,2 @@
-    $ uv run pytest
-    ```
--
--6. To check code quality and style, use `ruff`:
--   ```
--   $ uv run ruff check .    # Check for issues
--   $ uv run ruff format .   # Format code
--   ```
+--- [TESTROOT]/bundle/templates/default-python/serverless-customcatalog/../serverless/output/my_default_python/.vscode/settings.json
++++ output/my_default_python/.vscode/settings.json
+@@ -36,7 +36,4 @@
+         "editor.defaultFormatter": "charliermarsh.ruff",
+         "editor.formatOnSave": true,
+-        "editor.codeActionsOnSave": {
+-            "source.organizeImports": "explicit"
+-        }
+     }
+ }
 --- [TESTROOT]/bundle/templates/default-python/serverless-customcatalog/../serverless/output/my_default_python/databricks.yml
 +++ output/my_default_python/databricks.yml
 @@ -32,5 +32,5 @@
