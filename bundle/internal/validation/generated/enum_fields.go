@@ -133,7 +133,7 @@ var EnumFields = map[string][]string{
 	"resources.quality_monitors.*.inference_log.problem_type": {"PROBLEM_TYPE_CLASSIFICATION", "PROBLEM_TYPE_REGRESSION"},
 	"resources.quality_monitors.*.schedule.pause_status":      {"PAUSED", "UNPAUSED", "UNSPECIFIED"},
 
-	"resources.schemas.*.grants[*].privileges[*]": {"ALL_PRIVILEGES", "APPLY_TAG", "CREATE_FUNCTION", "CREATE_TABLE", "CREATE_VOLUME", "MANAGE", "USE_SCHEMA", "EXECUTE", "MODIFY", "REFRESH", "SELECT", "READ_VOLUME", "WRITE_VOLUME"},
+	"resources.schemas.*.grants[*].privileges[*]": {"ALL_PRIVILEGES", "APPLY_TAG", "CREATE_FUNCTION", "CREATE_MATERIALIZED_VIEW", "CREATE_MODEL", "CREATE_TABLE", "CREATE_VOLUME", "EXECUTE", "EXTERNAL_USE_SCHEMA", "MANAGE", "MODIFY", "READ_VOLUME", "REFRESH", "SELECT", "USE_SCHEMA", "WRITE_VOLUME"},
 
 	"resources.secret_scopes.*.backend_type": {"AZURE_KEYVAULT", "DATABRICKS"},
 
