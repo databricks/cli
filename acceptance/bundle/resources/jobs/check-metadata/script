@@ -31,3 +31,8 @@ trace cat metadata.json
 title "Check that metadata contains created job ids"
 trace cat metadata.json | grep "${JOB_1_ID}"
 trace cat metadata.json | grep "${JOB_2_ID}"
+
+title "Check that metadata contains bundle name, target, and mode"
+trace cat metadata.json | jq '.config.bundle.name'
+trace cat metadata.json | jq '.config.bundle.target'
+trace cat metadata.json | jq '.config.bundle.mode'

@@ -2,7 +2,7 @@
  "state_version": 1,
  "cli_version": "[DEV_VERSION]",
  "lineage": "[UUID]",
- "serial": 2,
+ "serial": 1,
  "state": {
   "resources.jobs.foo": {
    "__id__": "[NUMID]",

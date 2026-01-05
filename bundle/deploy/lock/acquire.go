@@ -8,7 +8,6 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/permissions"
 	"github.com/databricks/cli/libs/diag"
-	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/locker"
 	"github.com/databricks/cli/libs/log"
 )
@@ -57,8 +56,7 @@ func (m *acquire) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 			return permissions.ReportPossiblePermissionDenied(ctx, b, b.Config.Workspace.StatePath)
 		}
 
-		notExistsError := filer.NoSuchDirectoryError{}
-		if errors.As(err, &notExistsError) {
+		if errors.Is(err, fs.ErrNotExist) {
 			// If we get a "doesn't exist" error from the API this indicates
 			// we either don't have permissions or the path is invalid.
 			return permissions.ReportPossiblePermissionDenied(ctx, b, b.Config.Workspace.StatePath)

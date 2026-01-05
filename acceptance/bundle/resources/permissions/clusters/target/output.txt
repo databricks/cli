@@ -10,7 +10,7 @@ Consider using a adding a top-level permissions section such as the following:
       level: CAN_MANAGE
 
 See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more about permission configuration.
-  in databricks.yml:15:7
+  in databricks.yml:9:7
 
 {
   "clusters": {
@@ -56,7 +56,7 @@ Consider using a adding a top-level permissions section such as the following:
       level: CAN_MANAGE
 
 See https://docs.databricks.com/dev-tools/bundles/permissions.html to learn more about permission configuration.
-  in databricks.yml:15:7
+  in databricks.yml:9:7
 
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/dev/files...
 Deploying resources...

@@ -1,3 +1,6 @@
+bundle:
+  name: test-bundle
+
 # this tests presets that modify schema are visible in $resources references
 resources:
   schemas:
