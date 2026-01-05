@@ -5,11 +5,11 @@ Successfully bound sql_warehouse with an id '[SQL-WAREHOUSE-ID]'
 Run 'bundle deploy' to deploy changes to your workspace
 
 >>> [CLI] bundle summary
-Name: test-bundle-$UNIQUE_NAME
+Name: test-bundle
 Target: default
 Workspace:
   User: [USERNAME]
-  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle-$UNIQUE_NAME/default
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 Resources:
   SQL Warehouses:
     sql_warehouse1:
@@ -20,11 +20,11 @@ Resources:
 Updating deployment state...
 
 >>> [CLI] bundle summary
-Name: test-bundle-$UNIQUE_NAME
+Name: test-bundle
 Target: default
 Workspace:
   User: [USERNAME]
-  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle-$UNIQUE_NAME/default
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
 Resources:
   SQL Warehouses:
     sql_warehouse1:

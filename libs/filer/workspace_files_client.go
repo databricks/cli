@@ -172,14 +172,14 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 	// This API returns a 404 if the parent directory does not exist.
 	if aerr.StatusCode == http.StatusNotFound {
 		if !slices.Contains(mode, CreateParentDirectories) {
-			return NoSuchDirectoryError{path.Dir(absPath)}
+			return noSuchDirectoryError{path.Dir(absPath)}
 		}
 
 		// Create parent directory.
 		err = w.workspaceClient.Workspace.MkdirsByPath(ctx, path.Dir(absPath))
 		if err != nil {
 			if errors.As(err, &aerr) && aerr.StatusCode == http.StatusForbidden {
-				return PermissionError{absPath}
+				return permissionError{absPath}
 			}
 			return fmt.Errorf("unable to mkdir to write file %s: %w", absPath, err)
 		}
@@ -190,7 +190,7 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 
 	// This API returns 409 if the file already exists, when the object type is file
 	if aerr.StatusCode == http.StatusConflict {
-		return FileAlreadyExistsError{absPath}
+		return fileAlreadyExistsError{absPath}
 	}
 
 	// This API returns 400 if the file already exists, when the object type is notebook
@@ -199,16 +199,16 @@ func (w *WorkspaceFilesClient) Write(ctx context.Context, name string, reader io
 		// Parse file path from regex capture group
 		matches := regex.FindStringSubmatch(aerr.Message)
 		if len(matches) == 2 {
-			return FileAlreadyExistsError{matches[1]}
+			return fileAlreadyExistsError{matches[1]}
 		}
 
 		// Default to path specified to filer.Write if regex capture fails
-		return FileAlreadyExistsError{absPath}
+		return fileAlreadyExistsError{absPath}
 	}
 
 	// This API returns StatusForbidden when you have read access but don't have write access to a file
 	if aerr.StatusCode == http.StatusForbidden {
-		return PermissionError{absPath}
+		return permissionError{absPath}
 	}
 
 	return err
@@ -230,7 +230,7 @@ func (w *WorkspaceFilesClient) Read(ctx context.Context, name string) (io.ReadCl
 		return nil, err
 	}
 	if stat.IsDir() {
-		return nil, NotAFile{absPath}
+		return nil, notAFile{absPath}
 	}
 
 	// Export file contents. Note the /workspace/export API has a limit of 10MBs
@@ -246,7 +246,7 @@ func (w *WorkspaceFilesClient) Delete(ctx context.Context, name string, mode ...
 
 	// Illegal to delete the root path.
 	if absPath == w.root.rootPath {
-		return CannotDeleteRootError{}
+		return cannotDeleteRootError{}
 	}
 
 	recursive := slices.Contains(mode, DeleteRecursively)
@@ -270,10 +270,10 @@ func (w *WorkspaceFilesClient) Delete(ctx context.Context, name string, mode ...
 	switch aerr.StatusCode {
 	case http.StatusBadRequest:
 		if aerr.ErrorCode == "DIRECTORY_NOT_EMPTY" {
-			return DirectoryNotEmptyError{absPath}
+			return directoryNotEmptyError{absPath}
 		}
 	case http.StatusNotFound:
-		return FileDoesNotExistError{absPath}
+		return fileDoesNotExistError{absPath}
 	}
 
 	return err
@@ -290,7 +290,7 @@ func (w *WorkspaceFilesClient) ReadDir(ctx context.Context, name string) ([]fs.D
 	})
 
 	if len(objects) == 1 && objects[0].Path == absPath {
-		return nil, NotADirectory{absPath}
+		return nil, notADirectory{absPath}
 	}
 
 	if err != nil {
@@ -303,7 +303,7 @@ func (w *WorkspaceFilesClient) ReadDir(ctx context.Context, name string) ([]fs.D
 		// NOTE: This API returns a 404 if the specified path does not exist,
 		// but can also do so if we don't have read access.
 		if aerr.StatusCode == http.StatusNotFound {
-			return nil, NoSuchDirectoryError{path.Dir(absPath)}
+			return nil, noSuchDirectoryError{path.Dir(absPath)}
 		}
 		return nil, err
 	}
@@ -354,7 +354,7 @@ func (w *WorkspaceFilesClient) Stat(ctx context.Context, name string) (fs.FileIn
 
 		// This API returns a 404 if the specified path does not exist.
 		if aerr.StatusCode == http.StatusNotFound {
-			return nil, FileDoesNotExistError{absPath}
+			return nil, fileDoesNotExistError{absPath}
 		}
 	}
 

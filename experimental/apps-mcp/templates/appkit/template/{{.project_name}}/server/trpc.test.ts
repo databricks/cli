@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-// Mock @databricks/app-kit before importing the router
+// Mock @databricks/appkit before importing the router
 const mockServingEndpointsQuery = vi.fn();
-vi.mock('@databricks/app-kit', () => ({
+vi.mock('@databricks/appkit', () => ({
   getRequestContext: vi.fn(() => ({
     serviceDatabricksClient: {
       servingEndpoints: {
