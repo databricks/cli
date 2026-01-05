@@ -79,7 +79,7 @@ like catalogs, schemas, and compute configurations per target.`,
 			return err
 		}
 
-		outputFiler, err := filer.NewOutputFiler(ctx, b.BundleRootPath)
+		outputFiler, err := filer.NewOutputFiler(ctx, w, b.BundleRootPath)
 		if err != nil {
 			return err
 		}

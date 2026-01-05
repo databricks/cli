@@ -5,6 +5,7 @@ import (
 	"sort"
 	"strconv"
 
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/jsonschema"
@@ -45,7 +46,7 @@ type defaultWriter struct {
 func (tmpl *defaultWriter) Configure(ctx context.Context, configPath, outputDir string) error {
 	tmpl.configPath = configPath
 
-	outputFiler, err := filer.NewOutputFiler(ctx, outputDir)
+	outputFiler, err := filer.NewOutputFiler(ctx, cmdctx.WorkspaceClient(ctx), outputDir)
 	if err != nil {
 		return err
 	}

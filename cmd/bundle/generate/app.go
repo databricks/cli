@@ -78,7 +78,7 @@ per target environment.`,
 			return err
 		}
 
-		outputFiler, err := filer.NewOutputFiler(ctx, b.BundleRootPath)
+		outputFiler, err := filer.NewOutputFiler(ctx, w, b.BundleRootPath)
 		if err != nil {
 			return err
 		}
