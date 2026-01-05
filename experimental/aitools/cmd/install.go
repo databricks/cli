@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/experimental/aitools/lib/agents"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/fatih/color"
+	"github.com/mattn/go-isatty"
 	"github.com/spf13/cobra"
 )
 
@@ -26,6 +27,27 @@ func newInstallCmd() *cobra.Command {
 }
 
 func runInstall(ctx context.Context) error {
+	// Check for non-interactive mode with agent detection
+	// If running in an AI agent, install automatically without prompts
+	if !isatty.IsTerminal(os.Stdin.Fd()) {
+		if os.Getenv("CLAUDECODE") != "" {
+			if err := agents.InstallClaude(); err != nil {
+				return fmt.Errorf("failed to install for Claude Code: %w", err)
+			}
+			cmdio.LogString(ctx, color.GreenString("✓ Installed Databricks MCP server for Claude Code"))
+			cmdio.LogString(ctx, color.YellowString("⚠️  Please restart Claude Code for changes to take effect"))
+			return nil
+		}
+		if os.Getenv("CURSOR_AGENT") != "" {
+			if err := agents.InstallCursor(); err != nil {
+				return fmt.Errorf("failed to install for Cursor: %w", err)
+			}
+			cmdio.LogString(ctx, color.GreenString("✓ Installed Databricks MCP server for Cursor"))
+			cmdio.LogString(ctx, color.YellowString("⚠️  Please restart Cursor for changes to take effect"))
+			return nil
+		}
+	}
+
 	cmdio.LogString(ctx, "")
 	green := color.New(color.FgGreen).SprintFunc()
 	cmdio.LogString(ctx, " "+green("[")+"████████"+green("]")+"  Experimental Databricks AI Tools MCP server")
