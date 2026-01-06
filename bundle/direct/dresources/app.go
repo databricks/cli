@@ -2,12 +2,15 @@ package dresources
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 )
@@ -34,12 +37,36 @@ func (r *ResourceApp) DoCreate(ctx context.Context, config *apps.App) (string, *
 		NoCompute:       true,
 		ForceSendFields: nil,
 	}
-	waiter, err := r.client.Apps.Create(ctx, request)
+
+	retrier := retries.New[apps.App](retries.WithTimeout(15*time.Minute), retries.WithRetryFunc(shouldRetry))
+	app, err := retrier.Run(ctx, func(ctx context.Context) (*apps.App, error) {
+		waiter, err := r.client.Apps.Create(ctx, request)
+		if err != nil {
+			if errors.Is(err, apierr.ErrResourceAlreadyExists) {
+				// Check if the app is in DELETING state - only then should we retry
+				existingApp, getErr := r.client.Apps.GetByName(ctx, config.Name)
+				if getErr != nil {
+					// If we can't get the app (e.g., it was just deleted), retry the create
+					if apierr.IsMissing(getErr) {
+						return nil, retries.Continues("app was deleted, retrying create")
+					}
+					return nil, retries.Halt(err)
+				}
+				if existingApp.ComputeStatus != nil && existingApp.ComputeStatus.State == apps.ComputeStateDeleting {
+					return nil, retries.Continues("app is deleting, retrying create")
+				}
+				// App exists and is not being deleted - this is a hard error
+				return nil, retries.Halt(err)
+			}
+			return nil, retries.Halt(err)
+		}
+		return waiter.Response, nil
+	})
 	if err != nil {
 		return "", nil, err
 	}
 
-	return waiter.Response.Name, nil, nil
+	return app.Name, nil, nil
 }
 
 func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *apps.App, _ *Changes) (*apps.App, error) {

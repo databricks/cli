@@ -2,22 +2,25 @@ package deployplan
 
 import (
 	"cmp"
+	"encoding/json"
 	"fmt"
+	"os"
 	"slices"
 	"sync"
 
+	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/structs/structvar"
 )
 
+const currentPlanVersion = 1
+
 type Plan struct {
-	// Current version is zero which is omitted and has no backward compatibility guarantees
-	PlanVersion int `json:"plan_version,omitempty"`
-	// TODO:
-	// - CliVersion  string               `json:"cli_version"`
-	// - Copy Serial / Lineage from the state file
-	// - Store a path to state file
-	Plan map[string]*PlanEntry `json:"plan,omitzero"`
+	PlanVersion int                   `json:"plan_version,omitempty"`
+	CLIVersion  string                `json:"cli_version,omitempty"`
+	Lineage     string                `json:"lineage,omitempty"`
+	Serial      int                   `json:"serial,omitempty"`
+	Plan        map[string]*PlanEntry `json:"plan,omitzero"`
 
 	mutex   sync.Mutex `json:"-"`
 	lockmap lockmap    `json:"-"`
@@ -25,18 +28,47 @@ type Plan struct {
 
 func NewPlan() *Plan {
 	return &Plan{
-		Plan:    make(map[string]*PlanEntry),
-		lockmap: newLockmap(),
+		PlanVersion: currentPlanVersion,
+		CLIVersion:  build.GetInfo().Version,
+		Plan:        make(map[string]*PlanEntry),
+		lockmap:     newLockmap(),
 	}
 }
 
+// LoadPlanFromFile reads a plan from a JSON file.
+func LoadPlanFromFile(path string) (*Plan, error) {
+	file, err := os.Open(path)
+	if err != nil {
+		return nil, fmt.Errorf("reading plan file: %w", err)
+	}
+	defer file.Close()
+	var plan Plan
+	decoder := json.NewDecoder(file)
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&plan); err != nil {
+		return nil, fmt.Errorf("parsing plan JSON: %w", err)
+	}
+
+	// Validate plan version
+	if plan.PlanVersion != currentPlanVersion {
+		return nil, fmt.Errorf("plan version mismatch: plan has version %d (generated with CLI %q), but current version is %d", plan.PlanVersion, plan.CLIVersion, currentPlanVersion)
+	}
+
+	// Initialize internal fields that are not serialized
+	plan.lockmap = newLockmap()
+	if plan.Plan == nil {
+		plan.Plan = make(map[string]*PlanEntry)
+	}
+	return &plan, nil
+}
+
 type PlanEntry struct {
-	ID          string               `json:"id,omitempty"`
-	DependsOn   []DependsOnEntry     `json:"depends_on,omitempty"`
-	Action      string               `json:"action,omitempty"`
-	NewState    *structvar.StructVar `json:"new_state,omitempty"`
-	RemoteState any                  `json:"remote_state,omitempty"`
-	Changes     *Changes             `json:"changes,omitempty"`
+	ID          string                   `json:"id,omitempty"`
+	DependsOn   []DependsOnEntry         `json:"depends_on,omitempty"`
+	Action      string                   `json:"action,omitempty"`
+	NewState    *structvar.StructVarJSON `json:"new_state,omitempty"`
+	RemoteState any                      `json:"remote_state,omitempty"`
+	Changes     *Changes                 `json:"changes,omitempty"`
 }
 
 type DependsOnEntry struct {

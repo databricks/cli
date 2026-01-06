@@ -1,6 +1,6 @@
 import React, { Component } from 'react';
 import type { ReactNode } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@databricks/appkit-ui/react';
 
 interface Props {
   children: ReactNode;

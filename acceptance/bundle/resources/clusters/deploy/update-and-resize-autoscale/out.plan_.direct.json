@@ -1,4 +1,6 @@
 {
+  "plan_version": 1,
+  "cli_version": "[DEV_VERSION]",
   "plan": {
     "resources.clusters.test_cluster": {
       "action": "create",
@@ -15,6 +17,10 @@
   }
 }
 {
+  "plan_version": 1,
+  "cli_version": "[DEV_VERSION]",
+  "lineage": "[UUID]",
+  "serial": 1,
   "plan": {
     "resources.clusters.test_cluster": {
       "action": "update",
@@ -57,6 +63,10 @@
   }
 }
 {
+  "plan_version": 1,
+  "cli_version": "[DEV_VERSION]",
+  "lineage": "[UUID]",
+  "serial": 2,
   "plan": {
     "resources.clusters.test_cluster": {
       "action": "update",
@@ -101,6 +111,10 @@
   }
 }
 {
+  "plan_version": 1,
+  "cli_version": "[DEV_VERSION]",
+  "lineage": "[UUID]",
+  "serial": 3,
   "plan": {
     "resources.clusters.test_cluster": {
       "action": "resize",
@@ -146,6 +160,10 @@
   }
 }
 {
+  "plan_version": 1,
+  "cli_version": "[DEV_VERSION]",
+  "lineage": "[UUID]",
+  "serial": 4,
   "plan": {
     "resources.clusters.test_cluster": {
       "action": "resize",

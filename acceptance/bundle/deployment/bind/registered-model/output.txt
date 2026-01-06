@@ -1,10 +1,11 @@
 bundle:
   name: test-bundle-[UNIQUE_NAME]
+
 resources:
   registered_models:
     model1:
-      catalog_name: main
       name: test-registered-model-[UUID]
+      catalog_name: main
       schema_name: test-schema-rmodel-[UUID]
 
 >>> [CLI] schemas create test-schema-rmodel-[UUID] main

@@ -14,7 +14,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"reflect"
 	"regexp"
 	"runtime"
 	"slices"
@@ -26,7 +25,6 @@ import (
 	"unicode/utf8"
 
 	"github.com/google/uuid"
-	"gopkg.in/yaml.v3"
 
 	"github.com/databricks/cli/acceptance/internal"
 	"github.com/databricks/cli/internal/testutil"
@@ -48,6 +46,7 @@ var (
 	UseVersion      string
 	WorkspaceTmpDir bool
 	TerraformDir    string
+	OnlyOutTestToml bool
 )
 
 // In order to debug CLI running under acceptance test, search for TestInprocessMode and update
@@ -58,6 +57,9 @@ var (
 // CLI commands. The $CLI in test scripts is a helper that just forwards command-line arguments to this server (see bin/callserver.py).
 // Also disables parallelism in tests.
 var InprocessMode bool
+
+// lines with this prefix are not recorded in output.txt but logged instead
+const TestLogPrefix = "TESTLOG: "
 
 func init() {
 	flag.BoolVar(&InprocessMode, "inprocess", false, "Run CLI in the same process as test (for debugging)")
@@ -78,6 +80,7 @@ func init() {
 	// creates these symlinks when a file_mirror is used for a provider (in .terraformrc). This flag
 	// allows us to download the provider to the workspace file system on DBR enabling DBR integration testing.
 	flag.StringVar(&TerraformDir, "terraform-dir", "", "Directory to download the terraform provider to")
+	flag.BoolVar(&OnlyOutTestToml, "only-out-test-toml", false, "Only regenerate out.test.toml files without running tests")
 }
 
 const (
@@ -307,12 +310,17 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 			config, configPath := internal.LoadConfig(t, dir)
 			skipReason := getSkipReason(&config, configPath)
 
-			if testdiff.OverwriteMode {
+			if testdiff.OverwriteMode || OnlyOutTestToml {
 				// Generate materialized config for this test
 				// We do this before skipping the test, so the configs are generated for all tests.
 				materializedConfig, err := internal.GenerateMaterializedConfig(config)
 				require.NoError(t, err)
 				testutil.WriteFile(t, filepath.Join(dir, internal.MaterializedConfigFile), materializedConfig)
+			}
+
+			// If only regenerating out.test.toml, skip the actual test execution
+			if OnlyOutTestToml {
+				t.Skip("Skipping test execution (only regenerating out.test.toml)")
 			}
 
 			if skipReason != "" {
@@ -324,17 +332,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 				t.Parallel()
 			}
 
-			expanded := internal.ExpandEnvMatrix(config.EnvMatrix)
-
-			if testdiff.OverwriteMode && len(expanded) > 1 {
-				// All variants of the test are producing the same output,
-				// there is no need to run the concurrently when updating.
-				// Exception: if EnvVaryOutput is configured with multiple values, we must
-				// run all variants to record variant-specific outputs.
-				if config.EnvVaryOutput == nil || len(config.EnvMatrix[*config.EnvVaryOutput]) <= 1 {
-					expanded = expanded[0:1]
-				}
-			}
+			expanded := internal.ExpandEnvMatrix(config.EnvMatrix, config.EnvMatrixExclude)
 
 			if len(expanded) == 1 {
 				// env vars aren't part of the test case name, so log them for debugging
@@ -548,18 +546,6 @@ func runTest(t *testing.T,
 	// Add materialized config to outputs for comparison
 	outputs[internal.MaterializedConfigFile] = true
 
-	bundleConfigTarget := "databricks.yml"
-	if config.BundleConfigTarget != nil {
-		bundleConfigTarget = *config.BundleConfigTarget
-	}
-
-	if bundleConfigTarget != "" {
-		configCreated := applyBundleConfig(t, tmpDir, config.BundleConfig, bundleConfigTarget)
-		if configCreated {
-			inputs[bundleConfigTarget] = true
-		}
-	}
-
 	timeout := config.Timeout
 
 	if runtime.GOOS == "windows" {
@@ -627,6 +613,11 @@ func runTest(t *testing.T,
 		require.NoError(t, err)
 		cmd.Env = append(cmd.Env, "GOCOVERDIR="+coverDir)
 	}
+
+	// Set unique cache folder for this test to avoid race conditions between parallel tests
+	// Use test temp directory to avoid polluting user's cache
+	uniqueCacheDir := filepath.Join(t.TempDir(), ".cache")
+	cmd.Env = append(cmd.Env, "DATABRICKS_CACHE_DIR="+uniqueCacheDir)
 
 	for _, key := range utils.SortedKeys(config.Env) {
 		if hasKey(customEnv, key) {
@@ -1243,14 +1234,20 @@ func runWithLog(t *testing.T, cmd *exec.Cmd, out *os.File, tail bool) (string, e
 		if tail {
 			msg := strings.TrimRight(line, "\n")
 			if len(msg) > 0 {
-				d := time.Since(start)
-				t.Logf("%2d.%03d %s", d/time.Second, (d%time.Second)/time.Millisecond, msg)
+				logWithDurationSince(t, start, msg)
 			}
 		}
 		if len(line) > 0 {
 			mostRecentLine = line
-			_, err = out.WriteString(line)
-			require.NoError(t, err)
+			if strings.HasPrefix(line, TestLogPrefix) {
+				// if tail is true, we already logged it above
+				if !tail {
+					logWithDurationSince(t, start, strings.TrimRight(line, "\n"))
+				}
+			} else {
+				_, err = out.WriteString(line)
+				require.NoError(t, err)
+			}
 		}
 		if err == io.EOF {
 			break
@@ -1265,6 +1262,11 @@ func runWithLog(t *testing.T, cmd *exec.Cmd, out *os.File, tail bool) (string, e
 	}
 
 	return skipReason, <-processErrCh
+}
+
+func logWithDurationSince(t *testing.T, start time.Time, msg string) {
+	d := time.Since(start)
+	t.Logf("%2d.%03d %s", d/time.Second, (d%time.Second)/time.Millisecond, msg)
 }
 
 func getCloudEnvBase(cloudEnv string) string {
@@ -1360,77 +1362,6 @@ func prepareWheelBuildDirectory(t *testing.T, dir string) string {
 	}
 
 	return latestWheel
-}
-
-// Applies BundleConfig setting to file named bundleConfigTarget and updates it in place if there were any changes.
-// Returns true if new file was created.
-func applyBundleConfig(t *testing.T, tmpDir string, bundleConfig map[string]any, bundleConfigTarget string) bool {
-	validConfig := make(map[string]map[string]any, len(bundleConfig))
-
-	for _, configName := range utils.SortedKeys(bundleConfig) {
-		configValue := bundleConfig[configName]
-		// Setting BundleConfig.<name> to empty string disables it.
-		// This is useful when parent directory defines some config that child test wants to cancel.
-		if configValue == "" {
-			continue
-		}
-		cfg, ok := configValue.(map[string]any)
-		if !ok {
-			t.Fatalf("Unexpected type for BundleConfig.%s: %#v", configName, configValue)
-		}
-		validConfig[configName] = cfg
-	}
-
-	if len(validConfig) == 0 {
-		return false
-	}
-
-	configPath := filepath.Join(tmpDir, bundleConfigTarget)
-	configData, configExists := tryReading(t, configPath)
-
-	newConfigData := configData
-	var applied []string
-
-	for _, configName := range utils.SortedKeys(validConfig) {
-		configValue := validConfig[configName]
-		updated, err := internal.MergeBundleConfig(newConfigData, configValue)
-		if err != nil {
-			t.Fatalf("Failed to merge BundleConfig.%s: %s\nvvalue: %#v\ntext:\n%s", configName, err, configValue, newConfigData)
-		}
-		if isSameYAMLContent(newConfigData, updated) {
-			t.Logf("No effective updates from BundleConfig.%s", configName)
-		} else {
-			newConfigData = updated
-			applied = append(applied, configName)
-		}
-	}
-
-	if newConfigData != configData {
-		t.Logf("Writing updated bundle config to %s. BundleConfig sections: %s", bundleConfigTarget, strings.Join(applied, ", "))
-		testutil.WriteFile(t, configPath, newConfigData)
-		return !configExists
-	}
-
-	return false
-}
-
-// Returns true if both strings are deep-equal after unmarshalling
-func isSameYAMLContent(str1, str2 string) bool {
-	var obj1, obj2 any
-
-	if str1 == str2 {
-		return true
-	}
-
-	if err := yaml.Unmarshal([]byte(str1), &obj1); err != nil {
-		return false
-	}
-
-	if err := yaml.Unmarshal([]byte(str2), &obj2); err != nil {
-		return false
-	}
-
-	return reflect.DeepEqual(obj1, obj2)
 }
 
 func BuildYamlfmt(t *testing.T) {

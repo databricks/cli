@@ -1,0 +1,23 @@
+bundle:
+  name: test-bundle
+
+# Note, I'm not testing jobs here. I'm testing how encoder/decoders work with int64, job_id is just a field that came up.
+resources:
+  jobs:
+    foo:
+      tasks:
+        - task_key: max(int64)
+          run_job_task:
+            job_id: 9223372036854775807
+        - task_key: max(int64) - 1
+          run_job_task:
+            job_id: 9223372036854775806
+        - task_key: max(int64) - 2
+          run_job_task:
+            job_id: 9223372036854775805
+        - task_key: min(int64)
+          run_job_task:
+            job_id: -9223372036854775808
+        - task_key: min(int64) - 4
+          run_job_task:
+            job_id: -9223372036854775804

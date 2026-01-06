@@ -1,0 +1,5 @@
+Warn: Plan was created with CLI version 0.0.0-test but current version is [DEV_VERSION]
+Error: plan lineage "different-lineage" does not match state lineage ""; the state may have been modified by another process
+
+
+Exit code: 1

@@ -1,0 +1,13 @@
+
+>>> [CLI] bundle plan
+create jobs.refresh_usage_logs
+
+Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/usage_logs/dev/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] bundle plan -o json

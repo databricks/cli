@@ -5,12 +5,16 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 	"sync"
 
-	"github.com/databricks/cli/bundle/config/resources"
+	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
+	"github.com/databricks/cli/internal/build"
 	"github.com/google/uuid"
 )
+
+const currentStateVersion = 1
 
 type DeploymentState struct {
 	Path string
@@ -19,17 +23,30 @@ type DeploymentState struct {
 }
 
 type Database struct {
-	Lineage string                   `json:"lineage"`
-	Serial  int                      `json:"serial"`
-	State   map[string]ResourceEntry `json:"state"`
+	StateVersion int                      `json:"state_version"`
+	CLIVersion   string                   `json:"cli_version"`
+	Lineage      string                   `json:"lineage"`
+	Serial       int                      `json:"serial"`
+	State        map[string]ResourceEntry `json:"state"`
 }
 
 type ResourceEntry struct {
-	ID    string `json:"__id__"`
-	State any    `json:"state"`
+	ID        string                      `json:"__id__"`
+	State     json.RawMessage             `json:"state"`
+	DependsOn []deployplan.DependsOnEntry `json:"depends_on,omitempty"`
 }
 
-func (db *DeploymentState) SaveState(key, newID string, state any) error {
+func NewDatabase(lineage string, serial int) Database {
+	return Database{
+		StateVersion: currentStateVersion,
+		CLIVersion:   build.GetInfo().Version,
+		Lineage:      lineage,
+		Serial:       serial,
+		State:        make(map[string]ResourceEntry),
+	}
+}
+
+func (db *DeploymentState) SaveState(key, newID string, state any, dependsOn []deployplan.DependsOnEntry) error {
 	db.AssertOpened()
 	db.mu.Lock()
 	defer db.mu.Unlock()
@@ -38,9 +55,15 @@ func (db *DeploymentState) SaveState(key, newID string, state any) error {
 		db.Data.State = make(map[string]ResourceEntry)
 	}
 
+	jsonMessage, err := json.MarshalIndent(state, "  ", " ")
+	if err != nil {
+		return err
+	}
+
 	db.Data.State[key] = ResourceEntry{
-		ID:    newID,
-		State: state,
+		ID:        newID,
+		State:     json.RawMessage(jsonMessage),
+		DependsOn: dependsOn,
 	}
 
 	return nil
@@ -87,11 +110,8 @@ func (db *DeploymentState) Open(path string) error {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			db.Data = Database{
-				Serial:  1,
-				Lineage: uuid.New().String(),
-				State:   make(map[string]ResourceEntry),
-			}
+			// Create new database with serial=0, will be incremented to 1 in Finalize()
+			db.Data = NewDatabase("", 0)
 			db.Path = path
 			return nil
 		}
@@ -111,7 +131,12 @@ func (db *DeploymentState) Finalize() error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
-	db.Data.Serial += 1
+	// Generate lineage on first save
+	if db.Data.Lineage == "" {
+		db.Data.Lineage = uuid.New().String()
+	}
+
+	db.Data.Serial++
 
 	return db.unlockedSave()
 }
@@ -125,21 +150,16 @@ func (db *DeploymentState) AssertOpened() {
 func (db *DeploymentState) ExportState(ctx context.Context) resourcestate.ExportedResourcesMap {
 	result := make(resourcestate.ExportedResourcesMap)
 	for key, entry := range db.Data.State {
-		// Extract etag for dashboards.
 		var etag string
-		switch dashboard := entry.State.(type) {
-		// Dashboard state has type map[string]any during bundle deployment.
+		// Extract etag for dashboards.
 		// covered by test case: bundle/deploy/dashboard/detect-change
-		case map[string]any:
-			v, ok := dashboard["etag"].(string)
-			if ok {
-				etag = v
+		if strings.Contains(key, ".dashboards.") && len(entry.State) > 0 {
+			var holder struct {
+				Etag string `json:"etag"`
 			}
-
-		// Dashboard state has type *resources.DashboardConfig during bundle generation.
-		// covered by test case: bundle/deploy/dashboard/generate_inplace
-		case *resources.DashboardConfig:
-			etag = dashboard.Etag
+			if err := json.Unmarshal(entry.State, &holder); err == nil {
+				etag = holder.Etag
+			}
 		}
 
 		result[key] = resourcestate.ResourceState{

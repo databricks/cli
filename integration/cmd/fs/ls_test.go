@@ -116,7 +116,7 @@ func TestFsLsOnFile(t *testing.T) {
 
 			_, _, err := testcli.RequireErrorRun(t, ctx, "fs", "ls", path.Join(tmpDir, "a", "hello.txt"), "--output=json")
 			assert.Regexp(t, "not a directory: .*/a/hello.txt", err.Error())
-			assert.ErrorAs(t, err, &filer.NotADirectory{})
+			assert.ErrorIs(t, err, fs.ErrInvalid)
 		})
 	}
 }

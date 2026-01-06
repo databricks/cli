@@ -1,0 +1,2 @@
+# Try to deploy with mismatched lineage (should fail)
+$CLI bundle deploy --plan plan.json
