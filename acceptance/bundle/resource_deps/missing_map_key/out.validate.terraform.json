@@ -1,5 +1,3 @@
-
->>> [CLI] bundle validate -o json
 {
   "jobs": {
     "bar": {
@@ -40,6 +38,3 @@
     }
   }
 }
-
-=== Nothing is logged in telemetry because deploy has failed
->>> print_telemetry_bool_values

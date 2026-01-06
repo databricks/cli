@@ -2,6 +2,7 @@ package dresources
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -36,12 +37,36 @@ func (r *ResourceApp) DoCreate(ctx context.Context, config *apps.App) (string, *
 		NoCompute:       true,
 		ForceSendFields: nil,
 	}
-	waiter, err := r.client.Apps.Create(ctx, request)
+
+	retrier := retries.New[apps.App](retries.WithTimeout(15*time.Minute), retries.WithRetryFunc(shouldRetry))
+	app, err := retrier.Run(ctx, func(ctx context.Context) (*apps.App, error) {
+		waiter, err := r.client.Apps.Create(ctx, request)
+		if err != nil {
+			if errors.Is(err, apierr.ErrResourceAlreadyExists) {
+				// Check if the app is in DELETING state - only then should we retry
+				existingApp, getErr := r.client.Apps.GetByName(ctx, config.Name)
+				if getErr != nil {
+					// If we can't get the app (e.g., it was just deleted), retry the create
+					if apierr.IsMissing(getErr) {
+						return nil, retries.Continues("app was deleted, retrying create")
+					}
+					return nil, retries.Halt(err)
+				}
+				if existingApp.ComputeStatus != nil && existingApp.ComputeStatus.State == apps.ComputeStateDeleting {
+					return nil, retries.Continues("app is deleting, retrying create")
+				}
+				// App exists and is not being deleted - this is a hard error
+				return nil, retries.Halt(err)
+			}
+			return nil, retries.Halt(err)
+		}
+		return waiter.Response, nil
+	})
 	if err != nil {
 		return "", nil, err
 	}
 
-	return waiter.Response.Name, nil, nil
+	return app.Name, nil, nil
 }
 
 func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *apps.App, _ *Changes) (*apps.App, error) {
@@ -63,10 +88,7 @@ func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *apps.App,
 
 func (r *ResourceApp) DoDelete(ctx context.Context, id string) error {
 	_, err := r.client.Apps.DeleteByName(ctx, id)
-	if err != nil {
-		return err
-	}
-	return r.waitForDeletion(ctx, id)
+	return err
 }
 
 func (*ResourceApp) FieldTriggers(_ bool) map[string]deployplan.ActionType {
@@ -77,34 +99,6 @@ func (*ResourceApp) FieldTriggers(_ bool) map[string]deployplan.ActionType {
 
 func (r *ResourceApp) WaitAfterCreate(ctx context.Context, config *apps.App) (*apps.App, error) {
 	return r.waitForApp(ctx, r.client, config.Name)
-}
-
-func (r *ResourceApp) waitForDeletion(ctx context.Context, name string) error {
-	retrier := retries.New[struct{}](retries.WithTimeout(10*time.Minute), retries.WithRetryFunc(shouldRetry))
-	_, err := retrier.Run(ctx, func(ctx context.Context) (*struct{}, error) {
-		app, err := r.client.Apps.GetByName(ctx, name)
-		if err != nil {
-			if apierr.IsMissing(err) {
-				return nil, nil
-			}
-			return nil, retries.Halt(err)
-		}
-
-		if app.ComputeStatus == nil {
-			return nil, retries.Continues("waiting for compute status")
-		}
-
-		switch app.ComputeStatus.State {
-		case apps.ComputeStateDeleting:
-			return nil, retries.Continues("app is deleting")
-		case apps.ComputeStateActive, apps.ComputeStateStopped, apps.ComputeStateError:
-			err := fmt.Errorf("app %s was not deleted, current state: %s", name, app.ComputeStatus.State)
-			return nil, retries.Halt(err)
-		default:
-			return nil, retries.Continues(fmt.Sprintf("app is in %s state", app.ComputeStatus.State))
-		}
-	})
-	return err
 }
 
 // waitForApp waits for the app to reach the target state. The target state is either ACTIVE or STOPPED.

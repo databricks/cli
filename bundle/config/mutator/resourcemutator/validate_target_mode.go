@@ -69,7 +69,7 @@ func validateDevelopmentMode(b *bundle.Bundle) diag.Diagnostics {
 			diags = diags.Extend(diag.Errorf("%s must start with '~/' or contain the current username to ensure uniqueness when using 'mode: development'", path))
 		}
 	}
-	if p.NamePrefix != "" && !strings.Contains(p.NamePrefix, u.ShortName) && !strings.Contains(p.NamePrefix, u.UserName) {
+	if p.NamePrefix != "" && !namePrefixContainsUserIdentifier(p.NamePrefix, u) {
 		// Resources such as pipelines require a unique name, e.g. '[dev steve] my_pipeline'.
 		// For this reason we require the name prefix to contain the current username;
 		// it's a pitfall for users if they don't include it and later find out that
@@ -81,6 +81,21 @@ func validateDevelopmentMode(b *bundle.Bundle) diag.Diagnostics {
 		})
 	}
 	return diags
+}
+
+// namePrefixContainsUserIdentifier checks if the name prefix contains any user identifier
+// (username, short name, or domain friendly name) to ensure uniqueness.
+func namePrefixContainsUserIdentifier(prefix string, u *config.User) bool {
+	if strings.Contains(prefix, u.UserName) {
+		return true
+	}
+	if strings.Contains(prefix, u.ShortName) {
+		return true
+	}
+	if u.DomainFriendlyName != "" && strings.Contains(prefix, u.DomainFriendlyName) {
+		return true
+	}
+	return false
 }
 
 // findNonUserPath finds the first workspace path such as root_path that doesn't
