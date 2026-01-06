@@ -47,3 +47,5 @@ dist/
 # Local development notes, tmp
 /pr-*
 /tmp/
+cli-linux-arm64
+databricks-linux

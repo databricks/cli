@@ -44,8 +44,12 @@ def install_klaudbiusz_deps(klaudbiusz_dir: Path) -> None:
         print(f"Warning: pip install had issues: {result.stderr[:500]}")
 
 
-def get_prompts(prompts_name: str) -> dict:
+def get_prompts(prompts_name: str, klaudbiusz_dir: Path) -> dict:
     """Load prompts from klaudbiusz."""
+    # Ensure klaudbiusz is in path
+    if str(klaudbiusz_dir) not in sys.path:
+        sys.path.insert(0, str(klaudbiusz_dir))
+
     from cli.prompts import get_prompts as klaudbiusz_get_prompts
 
     return klaudbiusz_get_prompts(prompts_name)
@@ -67,7 +71,7 @@ def run_generation(
     env = os.environ.copy()
     env["PYTHONPATH"] = str(klaudbiusz_dir)
 
-    prompt_dict = get_prompts(prompts)
+    prompt_dict = get_prompts(prompts, klaudbiusz_dir)
     print(f"  Total prompts: {len(prompt_dict)}")
 
     success_count = 0
