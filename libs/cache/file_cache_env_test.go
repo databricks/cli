@@ -35,19 +35,19 @@ func TestCacheEnabledEnvVar(t *testing.T) {
 			expectCached: false,
 		},
 		{
-			name:         "cache disabled when empty",
+			name:         "cache enabled when empty (default)",
 			envValue:     "",
-			expectCached: false,
+			expectCached: true,
 		},
 		{
-			name:         "cache disabled with invalid value",
+			name:         "cache enabled with other value",
 			envValue:     "yes",
-			expectCached: false,
+			expectCached: true,
 		},
 		{
-			name:         "cache disabled with '1'",
+			name:         "cache enabled with '1'",
 			envValue:     "1",
-			expectCached: false,
+			expectCached: true,
 		},
 	}
 
