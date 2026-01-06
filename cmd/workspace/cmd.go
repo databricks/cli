@@ -67,6 +67,7 @@ import (
 	policy_compliance_for_clusters "github.com/databricks/cli/cmd/workspace/policy-compliance-for-clusters"
 	policy_compliance_for_jobs "github.com/databricks/cli/cmd/workspace/policy-compliance-for-jobs"
 	policy_families "github.com/databricks/cli/cmd/workspace/policy-families"
+	postgres "github.com/databricks/cli/cmd/workspace/postgres"
 	provider_exchange_filters "github.com/databricks/cli/cmd/workspace/provider-exchange-filters"
 	provider_exchanges "github.com/databricks/cli/cmd/workspace/provider-exchanges"
 	provider_files "github.com/databricks/cli/cmd/workspace/provider-files"
@@ -191,6 +192,7 @@ func All() []*cobra.Command {
 	out = append(out, policy_compliance_for_clusters.New())
 	out = append(out, policy_compliance_for_jobs.New())
 	out = append(out, policy_families.New())
+	out = append(out, postgres.New())
 	out = append(out, provider_exchange_filters.New())
 	out = append(out, provider_exchanges.New())
 	out = append(out, provider_files.New())
