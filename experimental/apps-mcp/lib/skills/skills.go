@@ -103,7 +103,7 @@ func loadSkill(skillPath string) (*skillEntry, error) {
 	return &skillEntry{Metadata: *metadata, Files: files}, nil
 }
 
-var frontmatterRe = regexp.MustCompile(`(?s)^---\n(.+?)\n---\n`)
+var frontmatterRe = regexp.MustCompile(`(?s)^---\r?\n(.+?)\r?\n---\r?\n`)
 
 func parseMetadata(content string) (*SkillMetadata, error) {
 	match := frontmatterRe.FindStringSubmatch(content)
@@ -164,7 +164,7 @@ func GetSkillFile(path string) (string, error) {
 	// Strip frontmatter from SKILL.md
 	if fileName == "SKILL.md" {
 		if loc := frontmatterRe.FindStringIndex(content); loc != nil {
-			content = strings.TrimLeft(content[loc[1]:], "\n")
+			content = strings.TrimLeft(content[loc[1]:], "\n\r")
 		}
 	}
 
