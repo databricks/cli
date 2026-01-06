@@ -33,4 +33,4 @@ acceptance TestAccept/bundle/resources/permissions/jobs/destroy_without_mgmtperm
 * TestAccept/bundle/resources/alerts/basic/
 * TestAccept/bundle/deployment/bind/alert
 * TestAccept/bundle/generate/alert
-* TestAccept/bundle/resources/alerts/with_file
+* TestAccept/bundle/resources/alerts/with_file/
