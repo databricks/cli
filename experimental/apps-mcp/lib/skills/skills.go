@@ -16,7 +16,7 @@ import (
 
 // skillsFS embeds the skills filesystem.
 //
-//go:embed */*
+//go:embed all:*
 var skillsFS embed.FS
 
 // SkillMetadata contains the path and description for progressive disclosure.
