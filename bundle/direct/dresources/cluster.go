@@ -125,15 +125,13 @@ func (r *ResourceCluster) OverrideChangeDesc(ctx context.Context, p *structpath.
 	case "data_security_mode":
 		// We do change skip here in the same way TF provider does suppress diff if the alias is used.
 		// https://github.com/databricks/terraform-provider-databricks/blob/main/clusters/resource_cluster.go#L109-L117
-		if change.Remote == compute.DataSecurityModeDataSecurityModeStandard && change.Old == compute.DataSecurityModeUserIsolation && change.New == change.Old {
+		if change.New == compute.DataSecurityModeDataSecurityModeStandard && change.Remote == compute.DataSecurityModeUserIsolation && change.New == change.Old {
 			change.Action = deployplan.ActionTypeSkipString
 			change.Reason = deployplan.ReasonAlias
-		}
-		if change.Remote == compute.DataSecurityModeDataSecurityModeDedicated && change.Old == compute.DataSecurityModeSingleUser && change.New == change.Old {
+		} else if change.New == compute.DataSecurityModeDataSecurityModeDedicated && change.Remote == compute.DataSecurityModeSingleUser && change.New == change.Old {
 			change.Action = deployplan.ActionTypeSkipString
 			change.Reason = deployplan.ReasonAlias
-		}
-		if change.Remote == compute.DataSecurityModeDataSecurityModeAuto && (change.Old == compute.DataSecurityModeSingleUser || change.Old == compute.DataSecurityModeUserIsolation) && change.New == change.Old {
+		} else if change.New == compute.DataSecurityModeDataSecurityModeAuto && (change.Remote == compute.DataSecurityModeSingleUser || change.Remote == compute.DataSecurityModeUserIsolation) && change.New == change.Old {
 			change.Action = deployplan.ActionTypeSkipString
 			change.Reason = deployplan.ReasonAlias
 		}
