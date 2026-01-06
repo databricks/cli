@@ -18,7 +18,10 @@ import (
 // Uses explicit names (not wildcards) for Windows compatibility.
 // TestAllSkillDirectoriesAreEmbedded validates this list is complete.
 //
-//go:embed all:apps all:bundle all:jobs all:pipelines
+//go:embed all:apps
+//go:embed all:bundle
+//go:embed all:jobs
+//go:embed all:pipelines
 var skillsFS embed.FS
 
 // SkillMetadata contains the path and description for progressive disclosure.
@@ -37,24 +40,41 @@ var registry = mustLoadRegistry()
 // mustLoadRegistry discovers skill categories and skills from the embedded filesystem.
 func mustLoadRegistry() map[string]map[string]*skillEntry {
 	result := make(map[string]map[string]*skillEntry)
-	categories, _ := fs.ReadDir(skillsFS, ".")
+	categories, err := fs.ReadDir(skillsFS, ".")
+	if err != nil {
+		panic(fmt.Sprintf("failed to read skills root directory: %v", err))
+	}
+	if len(categories) == 0 {
+		panic("skills embed is empty - check //go:embed directive in skills.go includes all directories")
+	}
+
 	for _, cat := range categories {
 		if !cat.IsDir() {
 			continue
 		}
 		category := cat.Name()
 		result[category] = make(map[string]*skillEntry)
-		entries, _ := fs.ReadDir(skillsFS, category)
+		entries, err := fs.ReadDir(skillsFS, category)
+		if err != nil {
+			panic(fmt.Sprintf("failed to read skills category %q: %v", category, err))
+		}
 		for _, entry := range entries {
 			if !entry.IsDir() {
 				continue
 			}
 			skillPath := path.Join(category, entry.Name())
-			if skill, err := loadSkill(skillPath); err == nil {
-				result[category][entry.Name()] = skill
+			skill, err := loadSkill(skillPath)
+			if err != nil {
+				panic(fmt.Sprintf("failed to load skill %q: %v", skillPath, err))
 			}
+			result[category][entry.Name()] = skill
 		}
 	}
+
+	if len(result) == 0 {
+		panic("skills registry is empty after loading - no skill directories found or all loads failed")
+	}
+
 	return result
 }
 
