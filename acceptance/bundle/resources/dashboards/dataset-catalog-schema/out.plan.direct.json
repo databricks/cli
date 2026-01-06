@@ -37,12 +37,8 @@
         },
         "serialized_dashboard": {
           "action": "skip",
-          "old": "{\n  \"pages\": [\n    {\n      \"name\": \"test_page\",\n      \"displayName\": \"Test Page\",\n      \"pageType\": \"PAGE_TYPE_CANVAS\"\n    }\n  ],\n  \"datasets\": [\n    {\n      \"name\": \"bf8f76f4\",\n      \"displayName\": \"Test Dataset\",\n      \"queryLines\": [\n        \"SELECT 1\\n\"\n      ],\n      \"catalog\": \"foobar\",\n      \"schema\": \"foobar\"\n    }\n  ]\n}\n",
-          "new": "{\n  \"pages\": [\n    {\n      \"name\": \"test_page\",\n      \"displayName\": \"Test Page\",\n      \"pageType\": \"PAGE_TYPE_CANVAS\"\n    }\n  ],\n  \"datasets\": [\n    {\n      \"name\": \"bf8f76f4\",\n      \"displayName\": \"Test Dataset\",\n      \"queryLines\": [\n        \"SELECT 1\\n\"\n      ],\n      \"catalog\": \"foobar\",\n      \"schema\": \"foobar\"\n    }\n  ]\n}\n",
-          "remote": "{\"datasets\":[{\"catalog\":\"main\",\"displayName\":\"Test Dataset\",\"name\":\"bf8f76f4\",\"queryLines\":[\"SELECT 1\\n\"],\"schema\":\"default\"}],\"pages\":[{\"displayName\":\"Test Page\",\"name\":\"test_page\",\"pageType\":\"PAGE_TYPE_CANVAS\"}]}\n"
-        },
-        "remote": {
-          "serialized_dashboard": null
+          "old": "[SERIALIZED_FIXTURE_OLD]",
+          "new": "[SERIALIZED_FIXTURE_NEW]"
         }
       }
     }
