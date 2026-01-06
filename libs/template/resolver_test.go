@@ -4,14 +4,18 @@ import (
 	"context"
 	"testing"
 
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dbr"
+	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func testContext(t *testing.T) context.Context {
-	return dbr.DetectRuntime(context.Background())
+	m := mocks.NewMockWorkspaceClient(t)
+	ctx := cmdctx.SetWorkspaceClient(context.Background(), m.WorkspaceClient)
+	return dbr.DetectRuntime(ctx)
 }
 
 func TestTemplateResolverBothTagAndBranch(t *testing.T) {
