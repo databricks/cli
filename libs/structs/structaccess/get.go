@@ -9,6 +9,15 @@ import (
 	"github.com/databricks/cli/libs/structs/structtag"
 )
 
+// NotFoundError is returned when a map key, slice index, or key-value selector is not found.
+type NotFoundError struct {
+	msg string
+}
+
+func (e *NotFoundError) Error() string {
+	return e.msg
+}
+
 // GetByString returns the value at the given path inside v.
 // This is a convenience function that parses the path string and calls Get.
 func GetByString(v any, path string) (any, error) {
@@ -53,9 +62,18 @@ func getValue(v any, path *structpath.PathNode) (reflect.Value, error) {
 				return reflect.Value{}, fmt.Errorf("%s: cannot index %s", node.String(), kind)
 			}
 			if idx < 0 || idx >= cur.Len() {
-				return reflect.Value{}, fmt.Errorf("%s: index out of range, length is %d", node.String(), cur.Len())
+				return reflect.Value{}, &NotFoundError{fmt.Sprintf("%s: index out of range, length is %d", node.String(), cur.Len())}
 			}
 			cur = cur.Index(idx)
+			continue
+		}
+
+		if key, value, ok := node.KeyValue(); ok {
+			nv, err := accessKeyValue(cur, key, value, node)
+			if err != nil {
+				return reflect.Value{}, err
+			}
+			cur = nv
 			continue
 		}
 
@@ -76,6 +94,7 @@ func getValue(v any, path *structpath.PathNode) (reflect.Value, error) {
 
 // Get returns the value at the given path inside v.
 // Wildcards ("*" or "[*]") are not supported and return an error.
+// Returns NotFoundError when a map key, slice index, or key-value selector is not found.
 func Get(v any, path *structpath.PathNode) (any, error) {
 	cur, err := getValue(v, path)
 	if err != nil {
@@ -142,12 +161,58 @@ func accessKey(v reflect.Value, key string, path *structpath.PathNode) (reflect.
 		}
 		mv := v.MapIndex(mk)
 		if !mv.IsValid() {
-			return reflect.Value{}, fmt.Errorf("%s: key %q not found in map", path.String(), key)
+			return reflect.Value{}, &NotFoundError{fmt.Sprintf("%s: key %q not found in map", path.String(), key)}
 		}
 		return mv, nil
 	default:
 		return reflect.Value{}, fmt.Errorf("%s: cannot access key %q on %s", path.String(), key, v.Kind())
 	}
+}
+
+// accessKeyValue searches for an element in a slice/array where a field matching key has the given value.
+// v must be a slice or array. Returns the first matching element.
+func accessKeyValue(v reflect.Value, key, value string, path *structpath.PathNode) (reflect.Value, error) {
+	kind := v.Kind()
+	if kind != reflect.Slice && kind != reflect.Array {
+		return reflect.Value{}, fmt.Errorf("%s: cannot use key-value syntax on %s", path.String(), kind)
+	}
+
+	for i := range v.Len() {
+		elem := v.Index(i)
+
+		// Dereference pointers/interfaces in the element
+		elemDeref, ok := deref(elem)
+		if !ok {
+			continue // Skip nil elements
+		}
+
+		// Element must be a struct to have fields
+		if elemDeref.Kind() != reflect.Struct {
+			return reflect.Value{}, fmt.Errorf("%s: key-value syntax requires slice elements to be structs, got %s", path.String(), elemDeref.Kind())
+		}
+
+		// Try to get the field value
+		fieldVal, err := accessKey(elemDeref, key, path)
+		if err != nil {
+			continue // Field not found in this element, try next
+		}
+
+		// Check if the field value matches
+		if !fieldVal.IsValid() {
+			continue
+		}
+
+		// Only string fields are supported for key-value matching
+		if fieldVal.Kind() != reflect.String {
+			continue
+		}
+
+		if fieldVal.String() == value {
+			return elem, nil
+		}
+	}
+
+	return reflect.Value{}, &NotFoundError{fmt.Sprintf("%s: no element found with %s=%q", path.String(), key, value)}
 }
 
 // findFieldInStruct searches for a field by JSON key in a single struct (no embedding).

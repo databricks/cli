@@ -53,6 +53,8 @@ func (r *ResourceDashboard) RemapState(state *resources.DashboardConfig) *resour
 		"Path",
 		"UpdateTime",
 		"SerializedDashboard",
+		"DatasetCatalog",
+		"DatasetSchema",
 	}...)
 
 	// EmbedCredentials must always be included in ForceSendFields to ensure it's serialized
@@ -68,6 +70,8 @@ func (r *ResourceDashboard) RemapState(state *resources.DashboardConfig) *resour
 		WarehouseId:         state.WarehouseId,
 		SerializedDashboard: state.SerializedDashboard,
 		EmbedCredentials:    state.EmbedCredentials,
+		DatasetCatalog:      state.DatasetCatalog,
+		DatasetSchema:       state.DatasetSchema,
 
 		ForceSendFields: forceSendFields,
 
@@ -119,6 +123,9 @@ func (r *ResourceDashboard) DoRead(ctx context.Context, id string) (*resources.D
 		WarehouseId:         dashboard.WarehouseId,
 		SerializedDashboard: dashboard.SerializedDashboard,
 		ParentPath:          ensureWorkspacePrefix(dashboard.ParentPath),
+		// diffs are detected via etags, which will change if dataset_catalog/dataset_schema is updated.
+		DatasetCatalog: "",
+		DatasetSchema:  "",
 
 		// Output only fields.
 		CreateTime:      dashboard.CreateTime,
@@ -193,6 +200,8 @@ func responseToState(createOrUpdateResp *dashboards.Dashboard, publishResp *dash
 		WarehouseId:         createOrUpdateResp.WarehouseId,
 		SerializedDashboard: serializedDashboard,
 		ParentPath:          ensureWorkspacePrefix(createOrUpdateResp.ParentPath),
+		DatasetCatalog:      "",
+		DatasetSchema:       "",
 
 		// Output only fields
 		CreateTime:      createOrUpdateResp.CreateTime,
@@ -213,11 +222,9 @@ func (r *ResourceDashboard) DoCreate(ctx context.Context, config *resources.Dash
 	}
 
 	createResp, err := r.client.Lakeview.Create(ctx, dashboards.CreateDashboardRequest{
-		Dashboard: dashboard,
-
-		// Note: these remain unset until there is a TF release with support for these fields.
-		DatasetCatalog: "",
-		DatasetSchema:  "",
+		Dashboard:      dashboard,
+		DatasetCatalog: config.DatasetCatalog,
+		DatasetSchema:  config.DatasetSchema,
 
 		ForceSendFields: nil,
 	})
@@ -230,11 +237,9 @@ func (r *ResourceDashboard) DoCreate(ctx context.Context, config *resources.Dash
 			return "", nil, fmt.Errorf("failed to create parent directory: %w", err)
 		}
 		createResp, err = r.client.Lakeview.Create(ctx, dashboards.CreateDashboardRequest{
-			Dashboard: dashboard,
-
-			// Note: these remain unset until there is a TF release with support for these fields.
-			DatasetCatalog: "",
-			DatasetSchema:  "",
+			Dashboard:      dashboard,
+			DatasetCatalog: config.DatasetCatalog,
+			DatasetSchema:  config.DatasetSchema,
 
 			ForceSendFields: nil,
 		})
@@ -268,12 +273,10 @@ func (r *ResourceDashboard) DoUpdate(ctx context.Context, id string, config *res
 	}
 
 	updateResp, err := r.client.Lakeview.Update(ctx, dashboards.UpdateDashboardRequest{
-		DashboardId: id,
-		Dashboard:   dashboard,
-
-		// Note: these remain unset until there is a TF release with support for these fields.
-		DatasetCatalog: "",
-		DatasetSchema:  "",
+		DashboardId:    id,
+		Dashboard:      dashboard,
+		DatasetCatalog: config.DatasetCatalog,
+		DatasetSchema:  config.DatasetSchema,
 
 		ForceSendFields: nil,
 	})
@@ -318,6 +321,12 @@ func (*ResourceDashboard) FieldTriggers(isLocal bool) map[string]deployplan.Acti
 		// "serialized_dashboard" locally and remotely will have different diffs.
 		// We only need to rely on etag here, and can skip this field for diff computation.
 		triggers["serialized_dashboard"] = deployplan.ActionTypeSkip
+
+		// "dataset_catalog" and "dataset_schema" are write-only fields that are not returned by the server.
+		// They will always differ between local config (which has values) and remote state (which has empty strings),
+		// so we skip them for remote diff computation to avoid false positives.
+		triggers["dataset_catalog"] = deployplan.ActionTypeSkip
+		triggers["dataset_schema"] = deployplan.ActionTypeSkip
 	}
 
 	return triggers

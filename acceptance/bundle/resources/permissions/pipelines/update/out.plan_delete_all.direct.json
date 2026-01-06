@@ -1,6 +1,8 @@
 {
   "plan_version": 1,
   "cli_version": "[DEV_VERSION]",
+  "lineage": "[UUID]",
+  "serial": 3,
   "plan": {
     "resources.pipelines.foo": {
       "action": "skip",
@@ -33,6 +35,12 @@
       }
     },
     "resources.pipelines.foo.permissions": {
+      "depends_on": [
+        {
+          "node": "resources.pipelines.foo",
+          "label": "${resources.pipelines.foo.id}"
+        }
+      ],
       "action": "delete",
       "remote_state": {
         "object_id": "/pipelines/[PIPELINE_ID]",

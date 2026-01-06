@@ -1,6 +1,5 @@
 Local = true
 Cloud = true
-BundleConfigTarget = "databricks.yml"
 
 [[Server]]
 Pattern = "POST /api/2.0/mlflow/experiments/create"

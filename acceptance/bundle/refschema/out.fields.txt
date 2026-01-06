@@ -30,6 +30,7 @@ resources.alerts.*.evaluation.threshold.value	*sql.AlertV2OperandValue	ALL
 resources.alerts.*.evaluation.threshold.value.bool_value	bool	ALL
 resources.alerts.*.evaluation.threshold.value.double_value	float64	ALL
 resources.alerts.*.evaluation.threshold.value.string_value	string	ALL
+resources.alerts.*.file_path	string	INPUT
 resources.alerts.*.id	string	ALL
 resources.alerts.*.lifecycle	resources.Lifecycle	INPUT
 resources.alerts.*.lifecycle.prevent_destroy	bool	INPUT
@@ -424,6 +425,8 @@ resources.clusters.*.permissions.permissions[*].service_principal_name	string	AL
 resources.clusters.*.permissions.permissions[*].user_name	string	ALL
 resources.dashboards.*.create_time	string	ALL
 resources.dashboards.*.dashboard_id	string	ALL
+resources.dashboards.*.dataset_catalog	string	ALL
+resources.dashboards.*.dataset_schema	string	ALL
 resources.dashboards.*.display_name	string	ALL
 resources.dashboards.*.embed_credentials	bool	ALL
 resources.dashboards.*.etag	string	ALL

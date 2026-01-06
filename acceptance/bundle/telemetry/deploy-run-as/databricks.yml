@@ -1,3 +1,6 @@
+bundle:
+  name: test-bundle
+
 run_as:
   service_principal_name: "sp_test"
 

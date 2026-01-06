@@ -1,14 +1,11 @@
 /Workspace should be prepended on all paths, but it is not the case:
 Warning: required field "entry_point" is not set
   at resources.jobs.my_job.tasks[0].python_wheel_task
-  in databricks.yml:23:13
-
-Warning: required field "name" is not set
-  at bundle
+  in databricks.yml:26:13
 
 Warning: required field "package_name" is not set
   at resources.jobs.my_job.tasks[0].python_wheel_task
-  in databricks.yml:23:13
+  in databricks.yml:26:13
 
 {
   "bundle": {
@@ -16,6 +13,7 @@ Warning: required field "package_name" is not set
     "git": {
       "bundle_root_path": "."
     },
+    "name": "test-bundle",
     "target": "dev"
   },
   "resources": {

@@ -1,0 +1,33 @@
+{
+  "custom_summary": "Alert for ${var.target}",
+  "evaluation": {
+    "comparison_operator": "EQUAL",
+    "notification": {
+      "notify_on_ok": false,
+      "retrigger_seconds": 1
+    },
+    "source": {
+      "aggregation": "MAX",
+      "display": "1",
+      "name": "1"
+    },
+    "threshold": {
+      "value": {
+        "double_value": 2
+      }
+    }
+  },
+  "query_lines": [
+    "select 2"
+  ],
+  "custom_description_lines": [
+    "Alert for ${var.target}",
+    "with multiple lines",
+    "and a third line"
+  ],
+  "schedule": {
+    "pause_status": "UNPAUSED",
+    "quartz_cron_schedule": "44 19 */1 * * ?",
+    "timezone_id": "Europe/Amsterdam"
+  }
+}
