@@ -510,28 +510,6 @@ func (a *Adapter) DoResize(ctx context.Context, id string, newState any) error {
 	return err
 }
 
-/*
-// classifyByTriggers classifies a change using FieldTriggers.
-// Defaults to ActionTypeUpdate.
-// The isLocal parameter determines which trigger map to use:
-// - isLocal=true uses triggers from FieldTriggers(true)
-// - isLocal=false uses triggers from FieldTriggers(false)
-func (a *Adapter) classifyByTriggers(change structdiff.Change, isLocal bool) deployplan.ActionType {
-	var triggers map[string]deployplan.ActionType
-	if isLocal {
-		triggers = a.fieldTriggersLocal
-	} else {
-		triggers = a.fieldTriggersRemote
-	}
-
-	action, ok := triggers[change.Path.String()]
-	if ok {
-		return action
-	}
-	return deployplan.ActionTypeUpdate
-}
-*/
-
 // WaitAfterCreate waits for the resource to become ready after creation.
 // If the resource doesn't implement this method, this is a no-op.
 // Returns the updated remoteState if available, otherwise returns nil
