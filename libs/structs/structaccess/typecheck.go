@@ -57,6 +57,16 @@ func Validate(t reflect.Type, path *structpath.PathNode) error {
 			return fmt.Errorf("wildcards not supported: %s", path.String())
 		}
 
+		// Handle key-value selector: validates that we can index the slice/array
+		if _, _, isKeyValue := node.KeyValue(); isKeyValue {
+			kind := cur.Kind()
+			if kind != reflect.Slice && kind != reflect.Array {
+				return fmt.Errorf("%s: cannot use key-value syntax on %s", node.String(), kind)
+			}
+			cur = cur.Elem()
+			continue
+		}
+
 		key, ok := node.StringKey()
 
 		if !ok {

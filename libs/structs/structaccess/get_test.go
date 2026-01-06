@@ -16,6 +16,7 @@ type testCase struct {
 	want        any
 	wantSelf    bool
 	errFmt      string
+	notFound    string // if set, expect NotFoundError with this message
 	typeHasPath bool
 }
 
@@ -81,8 +82,8 @@ func makeOuterNoFSF() outerNoFSF {
 			Name: "x",
 		},
 		Items: []inner{
-			{ID: "i0"},
-			{ID: "i1"},
+			{ID: "i0", Name: "first"},
+			{ID: "i1", Name: "second"},
 		},
 		Labels: map[string]string{
 			"env": "dev",
@@ -101,8 +102,8 @@ func makeOuterWithFSF() outerWithFSF {
 			Name: "x",
 		},
 		Items: []inner{
-			{ID: "i0"},
-			{ID: "i1"},
+			{ID: "i0", Name: "first"},
+			{ID: "i1", Name: "second"},
 		},
 		Labels: map[string]string{
 			"env": "dev",
@@ -198,7 +199,7 @@ func runCommonTests(t *testing.T, obj any) {
 		{
 			name:        "out of range index",
 			path:        "items[5]",
-			errFmt:      "items[5]: index out of range, length is 2",
+			notFound:    "items[5]: index out of range, length is 2",
 			typeHasPath: true,
 		},
 		{
@@ -225,7 +226,7 @@ func runCommonTests(t *testing.T, obj any) {
 		{
 			name:        "map missing key",
 			path:        "labels.missing",
-			errFmt:      "labels.missing: key \"missing\" not found in map",
+			notFound:    "labels.missing: key \"missing\" not found in map",
 			typeHasPath: true,
 		},
 		{
@@ -233,20 +234,59 @@ func runCommonTests(t *testing.T, obj any) {
 			path:   "ignored",
 			errFmt: "ignored: field \"ignored\" not found in " + typeName,
 		},
+
+		// Key-value selector tests
+		{
+			name: "key-value selector",
+			path: "items[id='i1']",
+			want: inner{ID: "i1", Name: "second"},
+		},
+		{
+			name: "key-value selector then field",
+			path: "items[id='i0'].name",
+			want: "first",
+		},
+		{
+			name:        "key-value no match",
+			path:        "items[id='missing']",
+			notFound:    "items[id='missing']: no element found with id=\"missing\"",
+			typeHasPath: true,
+		},
+		{
+			name:   "key-value on non-slice",
+			path:   "connection[id='abc']",
+			errFmt: "connection[id='abc']: cannot use key-value syntax on struct",
+		},
+		{
+			name:        "key-value field not found",
+			path:        "items[missing='value']",
+			notFound:    "items[missing='value']: no element found with missing=\"value\"",
+			typeHasPath: true,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			hasPathError := ValidateByString(reflect.TypeOf(obj), tt.path)
-			if tt.errFmt == "" || tt.typeHasPath {
+			if tt.errFmt == "" && tt.notFound == "" || tt.typeHasPath {
 				require.NoError(t, hasPathError)
-			} else {
+			} else if tt.errFmt != "" {
 				require.EqualError(t, hasPathError, tt.errFmt)
+			} else if tt.notFound != "" {
+				require.EqualError(t, hasPathError, tt.notFound)
 			}
 
 			got, err := GetByString(obj, tt.path)
+			if tt.notFound != "" {
+				require.EqualError(t, err, tt.notFound)
+				var notFound *NotFoundError
+				require.ErrorAs(t, err, &notFound)
+				return
+			}
 			if tt.errFmt != "" {
 				require.EqualError(t, err, tt.errFmt)
+				var notFound *NotFoundError
+				require.NotErrorAs(t, err, &notFound, "non-NotFoundError should not match")
 				return
 			}
 			require.NoError(t, err)
@@ -699,4 +739,40 @@ func TestPipeline(t *testing.T) {
 	require.Error(t, err)
 	require.Equal(t, "ingestion_definition: cannot access nil value", err.Error())
 	require.Nil(t, v)
+}
+
+func TestGetKeyValue_NestedMultiple(t *testing.T) {
+	type Item struct {
+		ID   string `json:"id"`
+		Name string `json:"name"`
+	}
+	type Group struct {
+		GroupID string `json:"group_id"`
+		Items   []Item `json:"items"`
+	}
+	type Container struct {
+		Groups []Group `json:"groups"`
+	}
+
+	c := Container{
+		Groups: []Group{
+			{
+				GroupID: "g1",
+				Items: []Item{
+					{ID: "i1", Name: "item1"},
+					{ID: "i2", Name: "item2"},
+				},
+			},
+			{
+				GroupID: "g2",
+				Items: []Item{
+					{ID: "i3", Name: "item3"},
+				},
+			},
+		},
+	}
+
+	name, err := GetByString(&c, "groups[group_id='g2'].items[id='i3'].name")
+	require.NoError(t, err)
+	require.Equal(t, "item3", name)
 }
