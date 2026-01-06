@@ -1,6 +1,10 @@
 package skills
 
 import (
+	"io/fs"
+	"os"
+	"sort"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -72,4 +76,51 @@ func TestAllSkillsHaveValidFrontmatter(t *testing.T) {
 			assert.Contains(t, entry.Files, "SKILL.md", "skill %s/%s missing SKILL.md", category, name)
 		}
 	}
+}
+
+func TestAllSkillDirectoriesAreEmbedded(t *testing.T) {
+	// Read actual skill directories from the filesystem
+	skillsDir := "."
+	diskEntries, err := os.ReadDir(skillsDir)
+	require.NoError(t, err)
+
+	var diskDirs []string
+	for _, entry := range diskEntries {
+		if entry.IsDir() && !strings.HasPrefix(entry.Name(), ".") {
+			diskDirs = append(diskDirs, entry.Name())
+		}
+	}
+	sort.Strings(diskDirs)
+
+	// Read embedded skill directories
+	embeddedEntries, err := fs.ReadDir(skillsFS, ".")
+	require.NoError(t, err)
+
+	var embeddedDirs []string
+	for _, entry := range embeddedEntries {
+		if entry.IsDir() {
+			embeddedDirs = append(embeddedDirs, entry.Name())
+		}
+	}
+	sort.Strings(embeddedDirs)
+
+	// Compare
+	if !assert.Equal(t, diskDirs, embeddedDirs, "Embedded skill directories don't match filesystem") {
+		t.Errorf("\nSkill directories are missing from the embed directive!\n\n"+
+			"Found on disk: %v\n"+
+			"Found in embed: %v\n\n"+
+			"To fix: Update the //go:embed directive in skills.go to include all directories:\n"+
+			"  //go:embed %s\n",
+			diskDirs, embeddedDirs, "all:"+strings.Join(diskDirs, " all:"))
+	}
+
+	// Verify the registry actually loaded them
+	var registryDirs []string
+	for category := range registry {
+		registryDirs = append(registryDirs, category)
+	}
+	sort.Strings(registryDirs)
+
+	assert.Equal(t, diskDirs, registryDirs,
+		"Registry didn't load all embedded directories. This suggests mustLoadRegistry() has a bug.")
 }

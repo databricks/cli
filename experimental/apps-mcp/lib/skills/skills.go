@@ -15,9 +15,8 @@ import (
 )
 
 // skillsFS embeds the skills filesystem.
-// Note: Uses explicit directory names rather than wildcards because
-// embed patterns with `all:*` don't work reliably on Windows builds.
-// When adding new resource type directories, update this list.
+// Uses explicit names (not wildcards) for Windows compatibility.
+// TestAllSkillDirectoriesAreEmbedded validates this list is complete.
 //
 //go:embed all:apps all:bundle all:jobs all:pipelines
 var skillsFS embed.FS
