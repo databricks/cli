@@ -36,6 +36,16 @@ func (s *FakeWorkspace) AppsUpsert(req Request, name string) Response {
 				Body:       "name is required",
 			}
 		}
+		// Check if app already exists on create
+		if _, exists := s.Apps[name]; exists {
+			return Response{
+				StatusCode: 409,
+				Body: map[string]string{
+					"error_code": "RESOURCE_ALREADY_EXISTS",
+					"message":    "An app with the same name already exists: " + name,
+				},
+			}
+		}
 	}
 
 	app.AppStatus = &apps.ApplicationStatus{
