@@ -13,7 +13,7 @@ import (
 	"github.com/databricks/cli/libs/structs/structvar"
 )
 
-const currentPlanVersion = 1
+const currentPlanVersion = 2
 
 type Plan struct {
 	PlanVersion int                   `json:"plan_version,omitempty"`
