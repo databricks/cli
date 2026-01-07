@@ -68,7 +68,7 @@ func checkFolderPermission(ctx context.Context, b *bundle.Bundle, folderPath str
 	}
 
 	p := permissions.ObjectAclToResourcePermissions(folderPath, objPermissions.AccessControlList)
-	return p.Compare(b.Config.Permissions, b.Config.Workspace.CurrentUser)
+	return p.Compare(b.Config.Permissions)
 }
 
 func getClosestExistingObject(ctx context.Context, w workspace.WorkspaceInterface, folderPath string) (*workspace.ObjectInfo, error) {

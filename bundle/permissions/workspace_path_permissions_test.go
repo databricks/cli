@@ -120,7 +120,7 @@ func TestWorkspacePathPermissionsCompare(t *testing.T) {
 
 	for _, tc := range testCases {
 		wp := ObjectAclToResourcePermissions("path", tc.acl)
-		diags := wp.Compare(tc.perms, nil)
+		diags := wp.Compare(tc.perms)
 		require.Equal(t, tc.expected, diags)
 	}
 }
@@ -191,7 +191,7 @@ func TestWorkspacePathPermissionsCompareWithHierarchy(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			wp := ObjectAclToResourcePermissions("path", tc.acl)
-			diags := wp.Compare(tc.perms, nil)
+			diags := wp.Compare(tc.perms)
 			require.Equal(t, tc.expected, diags)
 		})
 	}
