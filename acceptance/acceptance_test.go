@@ -1303,7 +1303,7 @@ func getNodeTypeID(cloudEnv string) string {
 	case "aws":
 		return "i3.xlarge"
 	case "azure":
-		return "Standard_DS4_v2"
+		return "Standard_E4ds_v5"
 	case "gcp":
 		return "n1-standard-4"
 	case "":
