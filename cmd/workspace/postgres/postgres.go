@@ -443,7 +443,7 @@ func newCreateRole() *cobra.Command {
 	cmd.Use = "create-role PARENT ROLE_ID"
 	cmd.Short = `Create a postgres role for a branch.`
 	cmd.Long = `Create a postgres role for a branch.
-  
+
   Create a role for a branch.
 
   This is a long-running operation. By default, the command waits for the
@@ -456,7 +456,7 @@ func newCreateRole() *cobra.Command {
       projects/{project_id}/branches/{branch_id}
     ROLE_ID: The ID to use for the Role, which will become the final component of the
       branch's resource name. This ID becomes the role in postgres.
-      
+
       This value should be 4-63 characters, and only use characters available in
       DNS names, as defined by RFC-1123`
 
@@ -726,7 +726,7 @@ func newDeleteRole() *cobra.Command {
 	cmd.Use = "delete-role NAME"
 	cmd.Short = `Delete a postgres role in a branch.`
 	cmd.Long = `Delete a postgres role in a branch.
-  
+
   Delete a role in a branch.
 
   This is a long-running operation. By default, the command waits for the
@@ -1038,7 +1038,7 @@ func newGetRole() *cobra.Command {
 	cmd.Use = "get-role NAME"
 	cmd.Short = `Get a postgres role in a branch.`
 	cmd.Long = `Get a postgres role in a branch.
-  
+
   Get a Role.
 
   Arguments:
@@ -1257,7 +1257,7 @@ func newListRoles() *cobra.Command {
 	cmd.Use = "list-roles PARENT"
 	cmd.Short = `List postgres roles in a branch.`
 	cmd.Long = `List postgres roles in a branch.
-  
+
   List Roles.
 
   Arguments:
