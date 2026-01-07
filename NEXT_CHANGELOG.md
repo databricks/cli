@@ -3,6 +3,8 @@
 ## Release v0.282.0
 
 ### Notable Changes
+Now caching user identity for bundle commands is enabled by default.
+Do disable it, set the environment variable DATABRICKS_CACHE_ENABLED to false.
 
 ### CLI
 * Skip non-exportable objects (e.g., `MLFLOW_EXPERIMENT`) during `workspace export-dir` instead of failing ([#4081](https://github.com/databricks/cli/issues/4081))
