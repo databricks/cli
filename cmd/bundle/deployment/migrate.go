@@ -232,7 +232,7 @@ To start using direct engine, deploy with DATABRICKS_BUNDLE_ENGINE=direct env va
 
 		for _, entry := range plan.Plan {
 			// Force all actions to be "update" so that deploym below goes through every resource
-			entry.Action = deployplan.ActionTypeUpdateString
+			entry.Action = deployplan.ActionTypeUpdate
 		}
 
 		// We need to copy ETag into new state.

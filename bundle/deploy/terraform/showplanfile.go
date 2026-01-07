@@ -105,7 +105,7 @@ func populatePlan(ctx context.Context, plan *deployplan.Plan, changes []*tfjson.
 			key = "resources." + group + "." + rc.Name
 		}
 
-		plan.Plan[key] = &deployplan.PlanEntry{Action: actionType.String()}
+		plan.Plan[key] = &deployplan.PlanEntry{Action: actionType}
 	}
 }
 

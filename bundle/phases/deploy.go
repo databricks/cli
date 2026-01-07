@@ -249,7 +249,7 @@ func RunPlan(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) *d
 			resourceKey := "resources." + group.Description.PluralName + "." + rKey
 			if _, ok := plan.Plan[resourceKey]; !ok {
 				plan.Plan[resourceKey] = &deployplan.PlanEntry{
-					Action: deployplan.ActionTypeSkip.String(),
+					Action: deployplan.ActionTypeSkip,
 				}
 			}
 		}

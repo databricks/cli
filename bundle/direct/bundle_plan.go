@@ -166,7 +166,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			return false
 		}
 
-		if entry.Action == deployplan.ActionTypeDelete.String() {
+		if entry.Action == deployplan.ActionTypeDelete {
 			dbentry, hasEntry := b.StateDB.GetResourceEntry(resourceKey)
 			if !hasEntry {
 				logdiag.LogError(ctx, fmt.Errorf("%s: internal error, missing in state", errorPrefix))
@@ -197,7 +197,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 
 		dbentry, hasEntry := b.StateDB.GetResourceEntry(resourceKey)
 		if !hasEntry {
-			entry.Action = deployplan.ActionTypeCreate.String()
+			entry.Action = deployplan.ActionTypeCreate
 			return true
 		}
 
@@ -292,7 +292,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			return false
 		}
 
-		entry.Action = action.String()
+		entry.Action = action
 		return true
 	})
 
@@ -301,7 +301,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 	}
 
 	for _, entry := range plan.Plan {
-		if entry.Action == deployplan.ActionTypeSkipString {
+		if entry.Action == deployplan.ActionTypeSkip {
 			entry.NewState = nil
 		}
 	}
@@ -312,7 +312,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 func getMaxAction(m map[string]*deployplan.ChangeDesc) deployplan.ActionType {
 	result := deployplan.ActionTypeSkip
 	for _, ch := range m {
-		result = max(result, deployplan.ActionTypeFromString(ch.Action))
+		result = deployplan.GetHigherAction(result, ch.Action)
 	}
 	return result
 }
@@ -373,17 +373,17 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 			// This could either be server-side default or a policy.
 			// In any case, this is not a change we should react to.
 			// Note, we only consider struct fields here. Adding/removing elements to/from maps and slices should trigger updates.
-			ch.Action = deployplan.ActionTypeSkipString
+			ch.Action = deployplan.ActionTypeSkip
 			ch.Reason = deployplan.ReasonServerSideDefault
 		} else if structdiff.IsEqual(ch.Remote, ch.New) {
-			ch.Action = deployplan.ActionTypeSkipString
+			ch.Action = deployplan.ActionTypeSkip
 			ch.Reason = deployplan.ReasonRemoteAlreadySet
 		} else if action, ok := fieldTriggers[pathString]; ok {
 			// TODO: should we check prefixes instead?
-			ch.Action = action.String()
+			ch.Action = action
 			ch.Reason = deployplan.ReasonFieldTriggers
 		} else {
-			ch.Action = deployplan.ActionTypeUpdateString
+			ch.Action = deployplan.ActionTypeUpdate
 		}
 
 		err = adapter.OverrideChangeDesc(ctx, path, ch, remoteState)
@@ -414,7 +414,7 @@ func (b *DeploymentBundle) LookupReferenceLocal(ctx context.Context, path *struc
 
 	defer b.Plan.ReadUnlockEntry(targetResourceKey)
 
-	targetAction := deployplan.ActionTypeFromString(targetEntry.Action)
+	targetAction := targetEntry.Action
 	if targetAction == deployplan.ActionTypeUndefined {
 		return nil, fmt.Errorf("internal error: %s: missing action in the plan", targetResourceKey)
 	}
@@ -755,7 +755,7 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 		}
 
 		p.Plan[n] = &deployplan.PlanEntry{
-			Action:    deployplan.ActionTypeDelete.String(),
+			Action:    deployplan.ActionTypeDelete,
 			DependsOn: entry.DependsOn,
 		}
 	}

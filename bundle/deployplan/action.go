@@ -22,52 +22,31 @@ func (a Action) IsChildResource() bool {
 	return len(items) == 4
 }
 
-type ActionType int
+type ActionType string
 
 // Actions are ordered in increasing severity.
 // If case of several options, action with highest severity wins.
 // Note, Create/Delete are handled explicitly and never compared.
 const (
-	ActionTypeUndefined ActionType = iota
-	ActionTypeSkip
-	ActionTypeResize
-	ActionTypeUpdate
-	ActionTypeUpdateWithID
-	ActionTypeCreate
-	ActionTypeRecreate
-	ActionTypeDelete
+	ActionTypeUndefined    ActionType = ""
+	ActionTypeSkip         ActionType = "skip"
+	ActionTypeResize       ActionType = "resize"
+	ActionTypeUpdate       ActionType = "update"
+	ActionTypeUpdateWithID ActionType = "update_id"
+	ActionTypeCreate       ActionType = "create"
+	ActionTypeRecreate     ActionType = "recreate"
+	ActionTypeDelete       ActionType = "delete"
 )
 
-const (
-	ActionTypeUndefinedString    = ""
-	ActionTypeSkipString         = "skip"
-	ActionTypeResizeString       = "resize"
-	ActionTypeUpdateString       = "update"
-	ActionTypeUpdateWithIDString = "update_id"
-	ActionTypeCreateString       = "create"
-	ActionTypeRecreateString     = "recreate"
-	ActionTypeDeleteString       = "delete"
-)
-
-var actionName = map[ActionType]string{
-	ActionTypeSkip:         ActionTypeSkipString,
-	ActionTypeResize:       ActionTypeResizeString,
-	ActionTypeUpdate:       ActionTypeUpdateString,
-	ActionTypeUpdateWithID: ActionTypeUpdateWithIDString,
-	ActionTypeCreate:       ActionTypeCreateString,
-	ActionTypeRecreate:     ActionTypeRecreateString,
-	ActionTypeDelete:       ActionTypeDeleteString,
-}
-
-var nameToAction = map[string]ActionType{}
-
-func init() {
-	for k, v := range actionName {
-		if _, ok := nameToAction[v]; ok {
-			panic("duplicate action string: " + v)
-		}
-		nameToAction[v] = k
-	}
+var actionOrder = map[ActionType]int{
+	ActionTypeUndefined:    0,
+	ActionTypeSkip:         1,
+	ActionTypeResize:       2,
+	ActionTypeUpdate:       3,
+	ActionTypeUpdateWithID: 4,
+	ActionTypeCreate:       5,
+	ActionTypeRecreate:     6,
+	ActionTypeDelete:       7,
 }
 
 func (a ActionType) KeepsID() bool {
@@ -81,30 +60,15 @@ func (a ActionType) KeepsID() bool {
 
 // StringShort short version of action string, without suffix
 func (a ActionType) StringShort() string {
-	items := strings.SplitN(actionName[a], "_", 2)
+	items := strings.SplitN(string(a), "_", 2)
 	return items[0]
 }
 
-// String returns the string representation of the action type.
-func (a ActionType) String() string {
-	return actionName[a]
-}
-
-func ActionTypeFromString(s string) ActionType {
-	actionType, ok := nameToAction[s]
-	if !ok {
-		return ActionTypeUndefined
+// GetHigherAction returns the action with higher severity between a and b.
+// Actions are ordered by severity in actionOrder map.
+func GetHigherAction(a, b ActionType) ActionType {
+	if actionOrder[a] > actionOrder[b] {
+		return a
 	}
-	return actionType
-}
-
-// Filter returns actions that match the specified action type
-func Filter(changes []Action, actionType ActionType) []Action {
-	var result []Action
-	for _, action := range changes {
-		if action.ActionType == actionType {
-			result = append(result, action)
-		}
-	}
-	return result
+	return b
 }

@@ -65,7 +65,7 @@ func LoadPlanFromFile(path string) (*Plan, error) {
 type PlanEntry struct {
 	ID          string                   `json:"id,omitempty"`
 	DependsOn   []DependsOnEntry         `json:"depends_on,omitempty"`
-	Action      string                   `json:"action,omitempty"`
+	Action      ActionType               `json:"action,omitempty"`
 	NewState    *structvar.StructVarJSON `json:"new_state,omitempty"`
 	RemoteState any                      `json:"remote_state,omitempty"`
 	Changes     Changes                  `json:"changes,omitempty"`
@@ -79,11 +79,11 @@ type DependsOnEntry struct {
 type Changes map[string]*ChangeDesc
 
 type ChangeDesc struct {
-	Action string `json:"action"`
-	Reason string `json:"reason,omitempty"`
-	Old    any    `json:"old,omitempty"`
-	New    any    `json:"new,omitempty"`
-	Remote any    `json:"remote,omitempty"`
+	Action ActionType `json:"action"`
+	Reason string     `json:"reason,omitempty"`
+	Old    any        `json:"old,omitempty"`
+	New    any        `json:"new,omitempty"`
+	Remote any        `json:"remote,omitempty"`
 }
 
 // Possible values for Reason field
@@ -118,10 +118,9 @@ func (c *Changes) HasChange(fieldPath string) bool {
 func (p *Plan) GetActions() []Action {
 	actions := make([]Action, 0, len(p.Plan))
 	for key, entry := range p.Plan {
-		at := ActionTypeFromString(entry.Action)
 		actions = append(actions, Action{
 			ResourceKey: key,
-			ActionType:  at,
+			ActionType:  entry.Action,
 		})
 	}
 

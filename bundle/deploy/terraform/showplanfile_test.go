@@ -66,13 +66,13 @@ func TestPopulatePlan(t *testing.T) {
 
 	// Also test that the plan was populated correctly with expected entries
 	assert.Contains(t, plan.Plan, "resources.pipelines.create pipeline")
-	assert.Equal(t, "create", plan.Plan["resources.pipelines.create pipeline"].Action)
+	assert.Equal(t, deployplan.ActionTypeCreate, plan.Plan["resources.pipelines.create pipeline"].Action)
 
 	assert.Contains(t, plan.Plan, "resources.pipelines.delete pipeline")
-	assert.Equal(t, "delete", plan.Plan["resources.pipelines.delete pipeline"].Action)
+	assert.Equal(t, deployplan.ActionTypeDelete, plan.Plan["resources.pipelines.delete pipeline"].Action)
 
 	assert.Contains(t, plan.Plan, "resources.pipelines.recreate pipeline")
-	assert.Equal(t, "recreate", plan.Plan["resources.pipelines.recreate pipeline"].Action)
+	assert.Equal(t, deployplan.ActionTypeRecreate, plan.Plan["resources.pipelines.recreate pipeline"].Action)
 
 	// Unknown resource type should not be in the plan
 	assert.NotContains(t, plan.Plan, "resources.recreate whatever")

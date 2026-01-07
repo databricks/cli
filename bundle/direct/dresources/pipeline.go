@@ -135,7 +135,7 @@ func (*ResourcePipeline) FieldTriggers() map[string]deployplan.ActionType {
 func (*ResourcePipeline) OverrideChangeDesc(ctx context.Context, path *structpath.PathNode, ch *ChangeDesc, _ *pipelines.GetPipelineResponse) error {
 	if path.String() == "run_as" {
 		if structdiff.IsEqual(ch.Old, ch.New) {
-			ch.Action = deployplan.ActionTypeSkipString
+			ch.Action = deployplan.ActionTypeSkip
 			ch.Reason = "override"
 		}
 	}
