@@ -4,12 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/libs/structs/structdiff"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -85,7 +84,7 @@ func (r *ResourceCluster) DoCreate(ctx context.Context, config *compute.ClusterS
 	return wait.ClusterId, nil, nil
 }
 
-func (r *ResourceCluster) DoUpdate(ctx context.Context, id string, config *compute.ClusterSpec, _ *Changes) (*compute.ClusterDetails, error) {
+func (r *ResourceCluster) DoUpdate(ctx context.Context, id string, config *compute.ClusterSpec, _ Changes) (*compute.ClusterDetails, error) {
 	// Same retry as in TF provider logic
 	// https://github.com/databricks/terraform-provider-databricks/blob/3eecd0f90cf99d7777e79a3d03c41f9b2aafb004/clusters/resource_cluster.go#L624
 	timeout := 15 * time.Minute
@@ -120,32 +119,29 @@ func (r *ResourceCluster) DoDelete(ctx context.Context, id string) error {
 	return r.client.Clusters.PermanentDeleteByClusterId(ctx, id)
 }
 
-func (r *ResourceCluster) ClassifyChange(change structdiff.Change, remoteState *compute.ClusterDetails, isLocal bool) (deployplan.ActionType, error) {
-	changedPath := change.Path.String()
-	if changedPath == "data_security_mode" && !isLocal {
+func (r *ResourceCluster) OverrideChangeDesc(ctx context.Context, p *structpath.PathNode, change *ChangeDesc, remoteState *compute.ClusterDetails) error {
+	path := p.Prefix(1).String()
+	switch path {
+	case "data_security_mode":
 		// We do change skip here in the same way TF provider does suppress diff if the alias is used.
 		// https://github.com/databricks/terraform-provider-databricks/blob/main/clusters/resource_cluster.go#L109-L117
-		if change.Old == compute.DataSecurityModeDataSecurityModeStandard && change.New == compute.DataSecurityModeUserIsolation {
-			return deployplan.ActionTypeSkip, nil
+		if change.New == compute.DataSecurityModeDataSecurityModeStandard && change.Remote == compute.DataSecurityModeUserIsolation && change.New == change.Old {
+			change.Action = deployplan.ActionTypeSkipString
+			change.Reason = deployplan.ReasonAlias
+		} else if change.New == compute.DataSecurityModeDataSecurityModeDedicated && change.Remote == compute.DataSecurityModeSingleUser && change.New == change.Old {
+			change.Action = deployplan.ActionTypeSkipString
+			change.Reason = deployplan.ReasonAlias
+		} else if change.New == compute.DataSecurityModeDataSecurityModeAuto && (change.Remote == compute.DataSecurityModeSingleUser || change.Remote == compute.DataSecurityModeUserIsolation) && change.New == change.Old {
+			change.Action = deployplan.ActionTypeSkipString
+			change.Reason = deployplan.ReasonAlias
 		}
-		if change.Old == compute.DataSecurityModeDataSecurityModeDedicated && change.New == compute.DataSecurityModeSingleUser {
-			return deployplan.ActionTypeSkip, nil
-		}
-		if change.Old == compute.DataSecurityModeDataSecurityModeAuto && (change.New == compute.DataSecurityModeSingleUser || change.New == compute.DataSecurityModeUserIsolation) {
-			return deployplan.ActionTypeSkip, nil
+
+	case "num_workers", "autoscale":
+		if remoteState.State == compute.StateRunning {
+			change.Action = deployplan.ActionTypeResizeString
 		}
 	}
-
-	// Always update if the cluster is not running.
-	if remoteState.State != compute.StateRunning {
-		return deployplan.ActionTypeUpdate, nil
-	}
-
-	if changedPath == "num_workers" || strings.HasPrefix(changedPath, "autoscale") {
-		return deployplan.ActionTypeResize, nil
-	}
-
-	return deployplan.ActionTypeUpdate, nil
+	return nil
 }
 
 func makeCreateCluster(config *compute.ClusterSpec) compute.CreateCluster {

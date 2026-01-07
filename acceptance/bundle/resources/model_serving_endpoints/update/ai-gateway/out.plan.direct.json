@@ -63,12 +63,11 @@
         "endpoint_id": "[UUID]"
       },
       "changes": {
-        "local": {
-          "ai_gateway.inference_table_config.catalog_name": {
-            "action": "update",
-            "old": "first-inference-catalog",
-            "new": "second-inference-catalog"
-          }
+        "ai_gateway.inference_table_config.catalog_name": {
+          "action": "update",
+          "old": "first-inference-catalog",
+          "new": "second-inference-catalog",
+          "remote": "first-inference-catalog"
         }
       }
     }

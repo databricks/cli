@@ -68,7 +68,7 @@ type PlanEntry struct {
 	Action      string                   `json:"action,omitempty"`
 	NewState    *structvar.StructVarJSON `json:"new_state,omitempty"`
 	RemoteState any                      `json:"remote_state,omitempty"`
-	Changes     *Changes                 `json:"changes,omitempty"`
+	Changes     Changes                  `json:"changes,omitempty"`
 }
 
 type DependsOnEntry struct {
@@ -76,17 +76,23 @@ type DependsOnEntry struct {
 	Label string `json:"label,omitempty"`
 }
 
-type Changes struct {
-	Local  map[string]ChangeDesc `json:"local,omitempty"`
-	Remote map[string]ChangeDesc `json:"remote,omitempty"`
-}
+type Changes map[string]*ChangeDesc
 
 type ChangeDesc struct {
 	Action string `json:"action"`
 	Reason string `json:"reason,omitempty"`
 	Old    any    `json:"old,omitempty"`
 	New    any    `json:"new,omitempty"`
+	Remote any    `json:"remote,omitempty"`
 }
+
+// Possible values for Reason field
+const (
+	ReasonServerSideDefault = "server_side_default"
+	ReasonAlias             = "alias"
+	ReasonRemoteAlreadySet  = "remote_already_set"
+	ReasonFieldTriggers     = "field_triggers"
+)
 
 // HasChange checks if there are any changes for fields with the given prefix.
 // This function is path-aware and correctly handles path component boundaries.
@@ -100,13 +106,7 @@ func (c *Changes) HasChange(fieldPath string) bool {
 		return false
 	}
 
-	for field := range c.Local {
-		if structpath.HasPrefix(field, fieldPath) {
-			return true
-		}
-	}
-
-	for field := range c.Remote {
+	for field := range *c {
 		if structpath.HasPrefix(field, fieldPath) {
 			return true
 		}

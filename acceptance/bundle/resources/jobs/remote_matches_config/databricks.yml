@@ -1,0 +1,18 @@
+bundle:
+  name: test-bundle
+
+resources:
+  jobs:
+    my_job:
+      name: "Test Job for Conflict Detection"
+      max_concurrent_runs: 1
+      tags:
+        environment: dev
+      tasks:
+        - task_key: main_task
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/test_notebook
+          new_cluster:
+            spark_version: 13.3.x-scala2.12
+            node_type_id: i3.xlarge
+            num_workers: 1
