@@ -43,8 +43,13 @@ func (p WorkspacePathPermissions) Compare(perms []resources.Permission) diag.Dia
 	if !ok {
 		diags = diags.Append(diag.Diagnostic{
 			Severity: diag.Warning,
-			Summary:  "untracked permissions apply to target workspace path",
-			Detail:   fmt.Sprintf("The following permissions apply to the workspace folder at %q but are not configured in the bundle:\n%s", p.Path, toString(missing)),
+			Summary:  "workspace folder has permissions not configured in bundle",
+			Detail: fmt.Sprintf(
+				"The following permissions apply to the workspace folder at %q "+
+					"but are not configured in the bundle:\n%s\n"+
+					"Add them to your bundle permissions or remove them from the folder.\n"+
+					"See https://docs.databricks.com/dev-tools/bundles/permissions",
+				p.Path, toString(missing)),
 		})
 	}
 

@@ -85,8 +85,11 @@ func TestWorkspacePathPermissionsCompare(t *testing.T) {
 			expected: diag.Diagnostics{
 				{
 					Severity: diag.Warning,
-					Summary:  "untracked permissions apply to target workspace path",
-					Detail:   "The following permissions apply to the workspace folder at \"path\" but are not configured in the bundle:\n- level: CAN_MANAGE, group_name: foo\n",
+					Summary:  "workspace folder has permissions not configured in bundle",
+					Detail: "The following permissions apply to the workspace folder at \"path\" " +
+						"but are not configured in the bundle:\n- level: CAN_MANAGE, group_name: foo\n\n" +
+						"Add them to your bundle permissions or remove them from the folder.\n" +
+						"See https://docs.databricks.com/dev-tools/bundles/permissions",
 				},
 			},
 		},
@@ -105,8 +108,11 @@ func TestWorkspacePathPermissionsCompare(t *testing.T) {
 			expected: diag.Diagnostics{
 				{
 					Severity: diag.Warning,
-					Summary:  "untracked permissions apply to target workspace path",
-					Detail:   "The following permissions apply to the workspace folder at \"path\" but are not configured in the bundle:\n- level: CAN_MANAGE, user_name: foo2@bar.com\n",
+					Summary:  "workspace folder has permissions not configured in bundle",
+					Detail: "The following permissions apply to the workspace folder at \"path\" " +
+						"but are not configured in the bundle:\n- level: CAN_MANAGE, user_name: foo2@bar.com\n\n" +
+						"Add them to your bundle permissions or remove them from the folder.\n" +
+						"See https://docs.databricks.com/dev-tools/bundles/permissions",
 				},
 			},
 		},
