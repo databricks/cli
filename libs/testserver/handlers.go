@@ -244,6 +244,20 @@ func AddDefaultHandlers(server *Server) {
 		return MapGet(req.Workspace, req.Workspace.PublishedDashboards, req.Vars["dashboard_id"])
 	})
 
+	// Genie Spaces:
+	server.Handle("GET", "/api/2.0/genie/spaces/{space_id}", func(req Request) any {
+		return MapGet(req.Workspace, req.Workspace.GenieSpaces, req.Vars["space_id"])
+	})
+	server.Handle("POST", "/api/2.0/genie/spaces", func(req Request) any {
+		return req.Workspace.GenieSpaceCreate(req)
+	})
+	server.Handle("PATCH", "/api/2.0/genie/spaces/{space_id}", func(req Request) any {
+		return req.Workspace.GenieSpaceUpdate(req, req.Vars["space_id"])
+	})
+	server.Handle("DELETE", "/api/2.0/genie/spaces/{space_id}", func(req Request) any {
+		return req.Workspace.GenieSpaceTrash(req.Vars["space_id"])
+	})
+
 	// Pipelines:
 
 	server.Handle("GET", "/api/2.0/pipelines/{pipeline_id}", func(req Request) any {

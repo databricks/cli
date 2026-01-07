@@ -42,6 +42,7 @@ type (
 	ClusterPermissionLevel              string
 	DashboardPermissionLevel            string
 	DatabaseInstancePermissionLevel     string
+	GenieSpacePermissionLevel           string
 	JobPermissionLevel                  string
 	MlflowExperimentPermissionLevel     string
 	MlflowModelPermissionLevel          string
@@ -93,6 +94,14 @@ type DashboardPermission struct {
 
 type DatabaseInstancePermission struct {
 	Level DatabaseInstancePermissionLevel `json:"level"`
+
+	UserName             string `json:"user_name,omitempty"`
+	ServicePrincipalName string `json:"service_principal_name,omitempty"`
+	GroupName            string `json:"group_name,omitempty"`
+}
+
+type GenieSpacePermission struct {
+	Level GenieSpacePermissionLevel `json:"level"`
 
 	UserName             string `json:"user_name,omitempty"`
 	ServicePrincipalName string `json:"service_principal_name,omitempty"`
@@ -154,6 +163,7 @@ func (p AppPermission) GetAPIRequestObjectType() string              { return "/
 func (p ClusterPermission) GetAPIRequestObjectType() string          { return "/clusters/" }
 func (p DashboardPermission) GetAPIRequestObjectType() string        { return "/dashboards/" }
 func (p DatabaseInstancePermission) GetAPIRequestObjectType() string { return "/database-instances/" }
+func (p GenieSpacePermission) GetAPIRequestObjectType() string       { return "/genie/spaces/" }
 func (p JobPermission) GetAPIRequestObjectType() string              { return "/jobs/" }
 func (p MlflowExperimentPermission) GetAPIRequestObjectType() string { return "/experiments/" }
 func (p MlflowModelPermission) GetAPIRequestObjectType() string      { return "/registered-models/" }
@@ -189,6 +199,11 @@ func (p DatabaseInstancePermission) GetLevel() string                { return st
 func (p DatabaseInstancePermission) GetUserName() string             { return p.UserName }
 func (p DatabaseInstancePermission) GetServicePrincipalName() string { return p.ServicePrincipalName }
 func (p DatabaseInstancePermission) GetGroupName() string            { return p.GroupName }
+
+func (p GenieSpacePermission) GetLevel() string                { return string(p.Level) }
+func (p GenieSpacePermission) GetUserName() string             { return p.UserName }
+func (p GenieSpacePermission) GetServicePrincipalName() string { return p.ServicePrincipalName }
+func (p GenieSpacePermission) GetGroupName() string            { return p.GroupName }
 
 func (p JobPermission) GetLevel() string                { return string(p.Level) }
 func (p JobPermission) GetUserName() string             { return p.UserName }

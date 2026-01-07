@@ -1,0 +1,23 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-genie-space-test-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] genie get-space [GENIE_ID]
+{
+  "title": "test bundle-deploy-genie-space [UUID]",
+  "parent_path": null
+}
+
+>>> [CLI] bundle plan -o json
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.genie_spaces.genie1
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-genie-space-test-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!
