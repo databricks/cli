@@ -15,7 +15,7 @@ import (
 )
 
 func TestDefaultWriterConfigure(t *testing.T) {
-	ctx := dbr.DetectRuntime(context.Background())
+	ctx := testContext(t)
 
 	// Test on local file system.
 	w := &defaultWriter{}
@@ -48,7 +48,7 @@ func TestDefaultWriterConfigureOnDBR(t *testing.T) {
 func TestMaterializeForNonTemplateDirectory(t *testing.T) {
 	tmpDir1 := t.TempDir()
 	tmpDir2 := t.TempDir()
-	ctx := dbr.DetectRuntime(context.Background())
+	ctx := testContext(t)
 
 	w := &defaultWriter{}
 	err := w.Configure(ctx, "/foo/bar", tmpDir1)
