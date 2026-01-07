@@ -1,0 +1,33 @@
+title "Deploy with 2 ACLs"
+trace $CLI bundle deploy
+
+# List ACLs after first deploy
+trace $CLI secrets list-acls test-scope | jq -c '.[] | {principal, permission}' | sort
+
+title "Remove all ACLs by updating bundle"
+cat > databricks.yml <<EOF
+bundle:
+  name: test-acl-delete
+
+resources:
+  secret_scopes:
+    my_scope:
+      name: test-scope
+      backend_type: "DATABRICKS"
+      permissions: []
+EOF
+
+title "Manually delete one ACL to simulate race condition"
+# This simulates a race condition where an ACL is deleted between when we
+# list them and when bundle deploy tries to delete them
+trace $CLI secrets delete-acl test-scope user1@example.com
+
+trace $CLI bundle deploy
+
+# List ACLs after update - should only have the owner
+# This verifies that even though user1 was already deleted (NotFound error),
+# the bundle correctly continued and deleted user2
+trace $CLI secrets list-acls test-scope | jq -c '.[] | {principal, permission}' | sort
+
+# Clean up request log (automatically captured by test framework)
+rm out.requests.txt

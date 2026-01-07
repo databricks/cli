@@ -1,0 +1,25 @@
+
+=== Deploy with 2 ACLs
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-acl-delete/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] secrets list-acls test-scope
+{"principal":"[USERNAME]","permission":"MANAGE"}
+{"principal":"user1@example.com","permission":"READ"}
+{"principal":"user2@example.com","permission":"READ"}
+
+=== Remove all ACLs by updating bundle
+=== Manually delete one ACL to simulate race condition
+>>> [CLI] secrets delete-acl test-scope user1@example.com
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-acl-delete/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] secrets list-acls test-scope
+{"principal":"[USERNAME]","permission":"MANAGE"}
