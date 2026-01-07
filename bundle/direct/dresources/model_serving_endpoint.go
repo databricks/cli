@@ -276,7 +276,7 @@ func (r *ResourceModelServingEndpoint) updateTags(ctx context.Context, id string
 	return nil
 }
 
-func (r *ResourceModelServingEndpoint) DoUpdate(ctx context.Context, id string, config *serving.CreateServingEndpoint, changes *Changes) (*RefreshOutput, error) {
+func (r *ResourceModelServingEndpoint) DoUpdate(ctx context.Context, id string, config *serving.CreateServingEndpoint, changes Changes) (*RefreshOutput, error) {
 	var err error
 
 	// Terraform makes these API calls sequentially. We do the same here.
@@ -317,7 +317,7 @@ func (r *ResourceModelServingEndpoint) DoDelete(ctx context.Context, id string) 
 	return r.client.ServingEndpoints.DeleteByName(ctx, id)
 }
 
-func (*ResourceModelServingEndpoint) FieldTriggers(_ bool) map[string]deployplan.ActionType {
+func (*ResourceModelServingEndpoint) FieldTriggers() map[string]deployplan.ActionType {
 	// TF implementation: https://github.com/databricks/terraform-provider-databricks/blob/6c106e8e7052bb2726148d66309fd460ed444236/mlflow/resource_mlflow_experiment.go#L22
 	return map[string]deployplan.ActionType{
 		"name":        deployplan.ActionTypeRecreate,

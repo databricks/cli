@@ -38,19 +38,20 @@
         }
       },
       "changes": {
-        "remote": {
-          "email_notifications": {
-            "action": "skip",
-            "reason": "server_side_default"
-          },
-          "timeout_seconds": {
-            "action": "skip",
-            "reason": "server_side_default"
-          },
-          "webhook_notifications": {
-            "action": "skip",
-            "reason": "server_side_default"
-          }
+        "email_notifications": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": {}
+        },
+        "timeout_seconds": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": 0
+        },
+        "webhook_notifications": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": {}
         }
       }
     },
@@ -103,13 +104,15 @@
         ]
       },
       "changes": {
-        "local": {
-          "permissions[user_name='test-dabs-1@databricks.com']": {
-            "action": "update",
-            "old": {
-              "permission_level": "CAN_MANAGE_RUN",
-              "user_name": "test-dabs-1@databricks.com"
-            }
+        "permissions[user_name='test-dabs-1@databricks.com']": {
+          "action": "update",
+          "old": {
+            "permission_level": "CAN_MANAGE_RUN",
+            "user_name": "test-dabs-1@databricks.com"
+          },
+          "remote": {
+            "permission_level": "CAN_MANAGE_RUN",
+            "user_name": "test-dabs-1@databricks.com"
           }
         }
       }

@@ -26,11 +26,10 @@
         "state": "IDLE"
       },
       "changes": {
-        "remote": {
-          "storage": {
-            "action": "skip",
-            "reason": "server_side_default"
-          }
+        "storage": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": "dbfs:/pipelines/[UUID]"
         }
       }
     },
@@ -62,11 +61,10 @@
         "state": "IDLE"
       },
       "changes": {
-        "remote": {
-          "storage": {
-            "action": "skip",
-            "reason": "server_side_default"
-          }
+        "storage": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": "dbfs:/pipelines/[UUID]"
         }
       }
     },
@@ -98,11 +96,10 @@
         "state": "IDLE"
       },
       "changes": {
-        "remote": {
-          "storage": {
-            "action": "skip",
-            "reason": "server_side_default"
-          }
+        "storage": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": "dbfs:/pipelines/[UUID]"
         }
       }
     },
@@ -134,11 +131,10 @@
         "state": "IDLE"
       },
       "changes": {
-        "remote": {
-          "storage": {
-            "action": "skip",
-            "reason": "server_side_default"
-          }
+        "storage": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": "dbfs:/pipelines/[UUID]"
         }
       }
     }

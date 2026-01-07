@@ -2,9 +2,9 @@
   "plan_version": 1,
   "cli_version": "[DEV_VERSION]",
   "lineage": "[UUID]",
-  "serial": 5,
+  "serial": 1,
   "plan": {
-    "resources.jobs.job_with_permissions": {
+    "resources.jobs.my_job": {
       "action": "skip",
       "remote_state": {
         "created_time": [UNIX_TIME_MILLIS],
@@ -14,23 +14,31 @@
         "settings": {
           "deployment": {
             "kind": "BUNDLE",
-            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/jobs-permissions-test/default/state/metadata.json"
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
           },
           "edit_mode": "UI_LOCKED",
           "email_notifications": {},
           "format": "MULTI_TASK",
-          "max_concurrent_runs": 1,
-          "name": "job with permissions",
+          "max_concurrent_runs": 2,
+          "name": "Test Job for Conflict Detection",
           "queue": {
             "enabled": true
           },
+          "tags": {
+            "environment": "dev"
+          },
           "tasks": [
             {
+              "new_cluster": {
+                "node_type_id": "[NODE_TYPE_ID]",
+                "num_workers": 1,
+                "spark_version": "13.3.x-scala2.12"
+              },
               "notebook_task": {
-                "notebook_path": "/Workspace/Users/user@example.com/notebook",
+                "notebook_path": "/Users/{{workspace_user_name}}/test_notebook",
                 "source": "WORKSPACE"
               },
-              "task_key": "main"
+              "task_key": "main_task"
             }
           ],
           "timeout_seconds": 0,
@@ -43,6 +51,18 @@
           "reason": "server_side_default",
           "remote": {}
         },
+        "max_concurrent_runs": {
+          "action": "skip",
+          "reason": "remote_already_set",
+          "old": 1,
+          "new": 2,
+          "remote": 2
+        },
+        "tasks[task_key='main_task'].notebook_task.source": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": "WORKSPACE"
+        },
         "timeout_seconds": {
           "action": "skip",
           "reason": "server_side_default",
@@ -53,32 +73,6 @@
           "reason": "server_side_default",
           "remote": {}
         }
-      }
-    },
-    "resources.jobs.job_with_permissions.permissions": {
-      "depends_on": [
-        {
-          "node": "resources.jobs.job_with_permissions",
-          "label": "${resources.jobs.job_with_permissions.id}"
-        }
-      ],
-      "action": "skip",
-      "remote_state": {
-        "object_id": "/jobs/[JOB_ID]",
-        "permissions": [
-          {
-            "permission_level": "CAN_VIEW",
-            "user_name": "viewer@example.com"
-          },
-          {
-            "group_name": "data-team",
-            "permission_level": "CAN_MANAGE"
-          },
-          {
-            "permission_level": "IS_OWNER",
-            "user_name": "[USERNAME]"
-          }
-        ]
       }
     }
   }

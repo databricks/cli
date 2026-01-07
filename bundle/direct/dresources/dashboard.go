@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -266,7 +267,7 @@ func (r *ResourceDashboard) DoCreate(ctx context.Context, config *resources.Dash
 	return createResp.DashboardId, responseToState(createResp, publishResp, dashboard.SerializedDashboard), nil
 }
 
-func (r *ResourceDashboard) DoUpdate(ctx context.Context, id string, config *resources.DashboardConfig, _ *Changes) (*resources.DashboardConfig, error) {
+func (r *ResourceDashboard) DoUpdate(ctx context.Context, id string, config *resources.DashboardConfig, _ Changes) (*resources.DashboardConfig, error) {
 	dashboard, err := prepareDashboardRequest(config)
 	if err != nil {
 		return nil, err
@@ -301,33 +302,31 @@ func (r *ResourceDashboard) DoDelete(ctx context.Context, id string) error {
 	})
 }
 
-func (*ResourceDashboard) FieldTriggers(isLocal bool) map[string]deployplan.ActionType {
-	// Common triggers for both local and remote.
-	triggers := map[string]deployplan.ActionType{
-		// change in parent_path should trigger a recreate
-		"parent_path": deployplan.ActionTypeRecreate,
-	}
-
-	if isLocal {
-		// Etags should only be compared for remote diffs, not local diffs.
-		triggers["etag"] = deployplan.ActionTypeSkip
-	} else {
-		// Note: If the etag changes remotely, it means the dashboard has been modified remotely
-		// and needs to be updated to match with the config. Since update is the default action type,
-		// we don't need to explicitly specify it here.
-		//
-		// Note: etags cannot be specified in the bundle config since we error if they are set.
-
+func (r *ResourceDashboard) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, _ *resources.DashboardConfig) error {
+	switch path.String() {
+	case "etag":
+		// change.New is always nil for etag because it's not present in the config
+		// We compare stored etag with remote one.
+		if change.Old == change.Remote {
+			change.Action = deployplan.ActionTypeSkipString
+		} else {
+			change.Action = deployplan.ActionTypeUpdateString
+		}
+	case "parent_path":
+		if change.Action == deployplan.ActionTypeUpdateString {
+			change.Action = deployplan.ActionTypeRecreateString
+		}
+	case "serialized_dashboard", "dataset_catalog", "dataset_schema":
 		// "serialized_dashboard" locally and remotely will have different diffs.
 		// We only need to rely on etag here, and can skip this field for diff computation.
-		triggers["serialized_dashboard"] = deployplan.ActionTypeSkip
 
 		// "dataset_catalog" and "dataset_schema" are write-only fields that are not returned by the server.
 		// They will always differ between local config (which has values) and remote state (which has empty strings),
 		// so we skip them for remote diff computation to avoid false positives.
-		triggers["dataset_catalog"] = deployplan.ActionTypeSkip
-		triggers["dataset_schema"] = deployplan.ActionTypeSkip
+		if change.Old == change.New {
+			change.Action = deployplan.ActionTypeSkipString
+		}
 	}
 
-	return triggers
+	return nil
 }

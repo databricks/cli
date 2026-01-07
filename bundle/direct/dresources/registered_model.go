@@ -63,7 +63,7 @@ func (r *ResourceRegisteredModel) DoCreate(ctx context.Context, config *catalog.
 	return response.FullName, response, nil
 }
 
-func (r *ResourceRegisteredModel) DoUpdate(ctx context.Context, id string, config *catalog.CreateRegisteredModelRequest, _ *Changes) (*catalog.RegisteredModelInfo, error) {
+func (r *ResourceRegisteredModel) DoUpdate(ctx context.Context, id string, config *catalog.CreateRegisteredModelRequest, _ Changes) (*catalog.RegisteredModelInfo, error) {
 	updateRequest := catalog.UpdateRegisteredModelRequest{
 		FullName:        id,
 		Comment:         config.Comment,
@@ -103,7 +103,7 @@ func (r *ResourceRegisteredModel) DoDelete(ctx context.Context, id string) error
 	})
 }
 
-func (*ResourceRegisteredModel) FieldTriggers(_ bool) map[string]deployplan.ActionType {
+func (*ResourceRegisteredModel) FieldTriggers() map[string]deployplan.ActionType {
 	return map[string]deployplan.ActionType{
 		// The name can technically be updated without recreated. We recreate for now though
 		// to match TF implementation.
