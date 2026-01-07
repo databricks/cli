@@ -32,5 +32,5 @@ acceptance TestAccept/bundle/resources/permissions/jobs/destroy_without_mgmtperm
 # +API message: The quota for the number of INTERNAL_HIDDEN jobs has been reached. The current quota for ALERT is 1000.
 * TestAccept/bundle/resources/alerts/basic/
 * TestAccept/bundle/deployment/bind/alert
-* TestAccept/bundle/generate/alert
+* TestAccept/bundle/generate/alert/
 * TestAccept/bundle/resources/alerts/with_file/
