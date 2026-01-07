@@ -1,5 +1,5 @@
 {
-  "plan_version": 1,
+  "plan_version": 2,
   "cli_version": "[DEV_VERSION]",
   "plan": {
     "resources.clusters.test_cluster": {
@@ -17,7 +17,7 @@
   }
 }
 {
-  "plan_version": 1,
+  "plan_version": 2,
   "cli_version": "[DEV_VERSION]",
   "lineage": "[UUID]",
   "serial": 1,
@@ -62,7 +62,7 @@
   }
 }
 {
-  "plan_version": 1,
+  "plan_version": 2,
   "cli_version": "[DEV_VERSION]",
   "lineage": "[UUID]",
   "serial": 2,
@@ -110,7 +110,7 @@
   }
 }
 {
-  "plan_version": 1,
+  "plan_version": 2,
   "cli_version": "[DEV_VERSION]",
   "lineage": "[UUID]",
   "serial": 3,
@@ -159,7 +159,7 @@
   }
 }
 {
-  "plan_version": 1,
+  "plan_version": 2,
   "cli_version": "[DEV_VERSION]",
   "lineage": "[UUID]",
   "serial": 4,
