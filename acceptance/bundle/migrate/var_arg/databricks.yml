@@ -1,0 +1,19 @@
+bundle:
+  name: migrate-var-test
+
+variables:
+  job_name:
+    default: "Default Job Name"
+
+resources:
+  jobs:
+    test_job:
+      name: "${var.job_name}"
+      tasks:
+        - task_key: "main"
+          notebook_task:
+            notebook_path: "./notebook.py"
+
+targets:
+  dev:
+    default: true

@@ -6,7 +6,7 @@ toolchain go1.25.5
 
 require (
 	dario.cat/mergo v1.0.2 // BSD 3-Clause
-	github.com/BurntSushi/toml v1.5.0 // MIT
+	github.com/BurntSushi/toml v1.6.0 // MIT
 	github.com/Masterminds/semver/v3 v3.4.0 // MIT
 	github.com/briandowns/spinner v1.23.1 // Apache 2.0
 	github.com/databricks/databricks-sdk-go v0.94.0 // Apache 2.0
@@ -31,7 +31,7 @@ require (
 	golang.org/x/crypto v0.46.0 // BSD-3-Clause
 	golang.org/x/exp v0.0.0-20250911091902-df9299821621
 	golang.org/x/mod v0.31.0
-	golang.org/x/oauth2 v0.33.0
+	golang.org/x/oauth2 v0.34.0
 	golang.org/x/sync v0.19.0
 	golang.org/x/sys v0.39.0 // indirect
 	golang.org/x/term v0.38.0
@@ -41,7 +41,7 @@ require (
 )
 
 // Dependencies for experimental MCP commands
-require github.com/google/jsonschema-go v0.3.0 // MIT
+require github.com/google/jsonschema-go v0.4.2 // MIT
 
 require (
 	cloud.google.com/go/auth v0.16.5 // indirect

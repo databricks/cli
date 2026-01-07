@@ -36,11 +36,7 @@ type ResourceEntry struct {
 	DependsOn []deployplan.DependsOnEntry `json:"depends_on,omitempty"`
 }
 
-func NewDatabase() Database {
-	return NewMigratedDatabase(uuid.New().String(), 1)
-}
-
-func NewMigratedDatabase(lineage string, serial int) Database {
+func NewDatabase(lineage string, serial int) Database {
 	return Database{
 		StateVersion: currentStateVersion,
 		CLIVersion:   build.GetInfo().Version,
@@ -114,7 +110,8 @@ func (db *DeploymentState) Open(path string) error {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
-			db.Data = NewDatabase()
+			// Create new database with serial=0, will be incremented to 1 in Finalize()
+			db.Data = NewDatabase("", 0)
 			db.Path = path
 			return nil
 		}
@@ -134,7 +131,12 @@ func (db *DeploymentState) Finalize() error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
-	db.Data.Serial += 1
+	// Generate lineage on first save
+	if db.Data.Lineage == "" {
+		db.Data.Lineage = uuid.New().String()
+	}
+
+	db.Data.Serial++
 
 	return db.unlockedSave()
 }

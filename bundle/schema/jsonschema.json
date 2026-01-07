@@ -76,6 +76,9 @@
                       "evaluation": {
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertV2Evaluation"
                       },
+                      "file_path": {
+                        "$ref": "#/$defs/string"
+                      },
                       "lifecycle": {
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
@@ -459,6 +462,14 @@
                       },
                       "dashboard_id": {
                         "description": "UUID identifying the dashboard.",
+                        "$ref": "#/$defs/string"
+                      },
+                      "dataset_catalog": {
+                        "description": "Sets the default catalog for all datasets in this dashboard. When set, this overrides the catalog specified in individual dataset definitions.",
+                        "$ref": "#/$defs/string"
+                      },
+                      "dataset_schema": {
+                        "description": "Sets the default schema for all datasets in this dashboard. When set, this overrides the schema specified in individual dataset definitions.",
                         "$ref": "#/$defs/string"
                       },
                       "display_name": {

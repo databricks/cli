@@ -19,6 +19,7 @@ type DetectedContext struct {
 	Template    string   // "appkit-typescript", "python", etc.
 	BundleInfo  *BundleInfo
 	Metadata    map[string]string
+	IsAppOnly   bool // True if project contains only app resources, no jobs/pipelines/etc.
 }
 
 // Detector detects project context from a working directory.

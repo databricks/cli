@@ -15,7 +15,7 @@ Use tRPC ONLY for:
 ```typescript
 // server/trpc.ts
 import { initTRPC } from '@trpc/server';
-import { getRequestContext } from '@databricks/app-kit';
+import { getRequestContext } from '@databricks/appkit';
 import { z } from 'zod';
 
 const t = initTRPC.create({ transformer: superjson });

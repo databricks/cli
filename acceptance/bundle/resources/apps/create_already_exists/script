@@ -1,0 +1,8 @@
+# Create an app with the same name outside of bundle
+trace $CLI apps create test-app-already-exists
+
+# Bundle deploy should fail because app already exists and is not in DELETING state
+trace musterr $CLI bundle deploy
+
+# Cleanup: delete the app we created
+trace $CLI apps delete test-app-already-exists
