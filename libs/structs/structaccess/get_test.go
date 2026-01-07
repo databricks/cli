@@ -268,12 +268,10 @@ func runCommonTests(t *testing.T, obj any) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			hasPathError := ValidateByString(reflect.TypeOf(obj), tt.path)
-			if tt.errFmt == "" && tt.notFound == "" || tt.typeHasPath {
+			if tt.errFmt == "" {
 				require.NoError(t, hasPathError)
-			} else if tt.errFmt != "" {
+			} else {
 				require.EqualError(t, hasPathError, tt.errFmt)
-			} else if tt.notFound != "" {
-				require.EqualError(t, hasPathError, tt.notFound)
 			}
 
 			got, err := GetByString(obj, tt.path)
