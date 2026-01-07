@@ -215,7 +215,7 @@ func runCommonTests(t *testing.T, obj any) {
 		{
 			name:        "nil pointer access",
 			path:        "connection_not_set.id",
-			errFmt:      "connection_not_set: cannot access nil value",
+			notFound:    "connection_not_set: cannot access nil value",
 			typeHasPath: true,
 		},
 		{

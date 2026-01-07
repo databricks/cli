@@ -53,7 +53,9 @@ func getValue(v any, path *structpath.PathNode) (reflect.Value, error) {
 		cur, ok = deref(cur)
 		if !ok {
 			// cannot proceed further due to nil encountered at current location
-			return reflect.Value{}, fmt.Errorf("%s: cannot access nil value", node.Parent().String())
+			// There could be 2 cases: the type is correct but value is not found due to nil, in this case NotFoundError is 100% correct.
+			// It could also be that path up to nil is correct, but not after. We don't know because we stop there. In this case NotFoundError refers to path up to nil.
+			return reflect.Value{}, &NotFoundError{fmt.Sprintf("%s: cannot access nil value", node.Parent().String())}
 		}
 
 		if idx, isIndex := node.Index(); isIndex {
