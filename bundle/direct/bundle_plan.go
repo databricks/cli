@@ -349,10 +349,8 @@ func prepareChanges(ctx context.Context, adapter *dresources.Adapter, localDiff,
 			// from remoteDiff we can find out remote value (ch.Old) and new config value (ch.New) but we don't know oldState value
 			oldStateVal, err := structaccess.Get(oldState, ch.Path)
 			var notFound *structaccess.NotFoundError
-			if errors.As(err, &notFound) {
-				oldStateVal = nil
-			} else if err != nil {
-				return nil, fmt.Errorf("accessing %q on %T: %w", ch.Path, oldState, err)
+			if err != nil && !errors.As(err, &notFound) {
+				log.Debugf(ctx, "Constructing diff: accessing %q on %T: %w", ch.Path, oldState, err)
 			}
 			m[ch.Path.String()] = &deployplan.ChangeDesc{
 				Old:    oldStateVal,
