@@ -350,7 +350,7 @@ func prepareChanges(ctx context.Context, adapter *dresources.Adapter, localDiff,
 			oldStateVal, err := structaccess.Get(oldState, ch.Path)
 			var notFound *structaccess.NotFoundError
 			if err != nil && !errors.As(err, &notFound) {
-				log.Debugf(ctx, "Constructing diff: accessing %q on %T: %w", ch.Path, oldState, err)
+				log.Debugf(ctx, "Constructing diff: accessing %q on %T: %s", ch.Path, oldState, err)
 			}
 			m[ch.Path.String()] = &deployplan.ChangeDesc{
 				Old:    oldStateVal,
