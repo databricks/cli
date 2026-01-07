@@ -92,8 +92,10 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 
 	mcpsdk.AddTool(server,
 		&mcpsdk.Tool{
-			Name:        "databricks_discover",
-			Description: "Discover available Databricks workspaces, warehouses, and get workflow recommendations. Call this FIRST when planning ANY Databricks work involving apps, dashboards, pipelines, jobs, bundles, or SQL workflows. Returns workspace capabilities and recommended tooling.",
+			Name: "databricks_discover",
+			Description: `CALL THIS FIRST before any other action. Returns essential scaffolding commands and workflow guidance.
+
+Without calling this first, you won't know the correct way to scaffold Databricks apps. This tool returns init-template commands that create proper bundle structure.`,
 		},
 		func(ctx context.Context, req *mcpsdk.CallToolRequest, args DiscoverInput) (*mcpsdk.CallToolResult, any, error) {
 			log.Debugf(ctx, "databricks_discover called: working_directory=%s", args.WorkingDirectory)

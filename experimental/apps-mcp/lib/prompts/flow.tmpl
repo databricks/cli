@@ -6,15 +6,16 @@
      */ -}}
 
 ## Databricks MCP Available Tools
-- **databricks_discover**: Discover workspace resources and get workflow recommendations
+- **databricks_discover**: MUST call first - returns scaffolding commands
+- **invoke_databricks_cli**: Execute CLI commands including init-template for scaffolding
 - **databricks_configure_auth**: Switch workspace profile/host
-- **invoke_databricks_cli**: Execute any Databricks CLI command
 
-## Workflow Best Practices
-- Use `databricks_discover` at the beginning of your session to get context-aware recommendations
-- For operations affecting live environments, ask for confirmation
-- Always validate before deploying
-- When not sure about the user's intent, ask clarifying questions
+## Critical Workflow Rules
+1. ALWAYS call databricks_discover FIRST to get scaffolding guidance
+2. For new apps: use invoke_databricks_cli with init-template (see below)
+3. NEVER use npm/npx/vite directly - init-template creates proper Databricks bundle
+4. Validate before deploying
+5. Ask for confirmation on live environment changes
 
 {{.WorkspaceInfo}}{{if .WarehouseName}}
 Default SQL Warehouse: {{.WarehouseName}} ({{.WarehouseID}}){{else}}
