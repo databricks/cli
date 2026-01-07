@@ -360,14 +360,9 @@ func (a *Adapter) validate() error {
 	}
 
 	// FieldTriggers validation
-	/*
+	if a.overrideChangeDesc == nil {
 		hasUpdateWithIDTrigger := false
-		for _, action := range a.fieldTriggersLocal {
-			if action == deployplan.ActionTypeUpdateWithID {
-				hasUpdateWithIDTrigger = true
-			}
-		}
-		for _, action := range a.fieldTriggersRemote {
+		for _, action := range a.fieldTriggers {
 			if action == deployplan.ActionTypeUpdateWithID {
 				hasUpdateWithIDTrigger = true
 			}
@@ -378,7 +373,7 @@ func (a *Adapter) validate() error {
 		if a.doUpdateWithID != nil && !hasUpdateWithIDTrigger {
 			return errors.New("DoUpdateWithID is implemented but FieldTriggers lacks update_with_id trigger")
 		}
-	*/
+	}
 
 	return nil
 }
