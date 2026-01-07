@@ -20,18 +20,16 @@
         "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
       },
       "changes": {
-        "local": {
-          "etag": {
-            "action": "skip",
-            "old": [ETAG]
-          }
+        "etag": {
+          "action": "skip",
+          "old": [ETAG],
+          "remote": [ETAG]
         },
-        "remote": {
-          "serialized_dashboard": {
-            "action": "skip",
-            "old": "{ }\n",
-            "new": "{}\n"
-          }
+        "serialized_dashboard": {
+          "action": "skip",
+          "old": "{ }\n",
+          "new": "{ }\n",
+          "remote": "{}\n"
         }
       }
     }

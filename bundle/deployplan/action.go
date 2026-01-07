@@ -38,16 +38,25 @@ const (
 	ActionTypeDelete
 )
 
-const ActionTypeSkipString = "skip"
+const (
+	ActionTypeUndefinedString    = ""
+	ActionTypeSkipString         = "skip"
+	ActionTypeResizeString       = "resize"
+	ActionTypeUpdateString       = "update"
+	ActionTypeUpdateWithIDString = "update_id"
+	ActionTypeCreateString       = "create"
+	ActionTypeRecreateString     = "recreate"
+	ActionTypeDeleteString       = "delete"
+)
 
 var actionName = map[ActionType]string{
 	ActionTypeSkip:         ActionTypeSkipString,
-	ActionTypeResize:       "resize",
-	ActionTypeUpdate:       "update",
-	ActionTypeUpdateWithID: "update_id",
-	ActionTypeCreate:       "create",
-	ActionTypeRecreate:     "recreate",
-	ActionTypeDelete:       "delete",
+	ActionTypeResize:       ActionTypeResizeString,
+	ActionTypeUpdate:       ActionTypeUpdateString,
+	ActionTypeUpdateWithID: ActionTypeUpdateWithIDString,
+	ActionTypeCreate:       ActionTypeCreateString,
+	ActionTypeRecreate:     ActionTypeRecreateString,
+	ActionTypeDelete:       ActionTypeDeleteString,
 }
 
 var nameToAction = map[string]ActionType{}

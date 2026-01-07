@@ -26,11 +26,10 @@
         "state": "IDLE"
       },
       "changes": {
-        "remote": {
-          "storage": {
-            "action": "skip",
-            "reason": "server_side_default"
-          }
+        "storage": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": "dbfs:/pipelines/[PIPELINE_ID]"
         }
       }
     },
@@ -79,12 +78,11 @@
         ]
       },
       "changes": {
-        "local": {
-          "permissions[user_name='viewer@example.com'].permission_level": {
-            "action": "update",
-            "old": "CAN_VIEW",
-            "new": "CAN_MANAGE"
-          }
+        "permissions[user_name='viewer@example.com'].permission_level": {
+          "action": "update",
+          "old": "CAN_VIEW",
+          "new": "CAN_MANAGE",
+          "remote": "CAN_VIEW"
         }
       }
     }

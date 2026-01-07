@@ -54,17 +54,17 @@
         ]
       },
       "changes": {
-        "local": {
-          "grants[0].privileges[0]": {
-            "action": "update",
-            "old": "CREATE_TABLE",
-            "new": "APPLY_TAG"
-          },
-          "grants[0].privileges[1]": {
-            "action": "update",
-            "old": "USE_SCHEMA",
-            "new": "CREATE_TABLE"
-          }
+        "grants[0].privileges[0]": {
+          "action": "update",
+          "old": "CREATE_TABLE",
+          "new": "APPLY_TAG",
+          "remote": "CREATE_TABLE"
+        },
+        "grants[0].privileges[1]": {
+          "action": "update",
+          "old": "USE_SCHEMA",
+          "new": "CREATE_TABLE",
+          "remote": "USE_SCHEMA"
         }
       }
     }

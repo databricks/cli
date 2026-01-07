@@ -30,19 +30,20 @@
         }
       },
       "changes": {
-        "remote": {
-          "email_notifications": {
-            "action": "skip",
-            "reason": "server_side_default"
-          },
-          "timeout_seconds": {
-            "action": "skip",
-            "reason": "server_side_default"
-          },
-          "webhook_notifications": {
-            "action": "skip",
-            "reason": "server_side_default"
-          }
+        "email_notifications": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": {}
+        },
+        "timeout_seconds": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": 0
+        },
+        "webhook_notifications": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": {}
         }
       }
     },
@@ -78,19 +79,20 @@
         }
       },
       "changes": {
-        "remote": {
-          "email_notifications": {
-            "action": "skip",
-            "reason": "server_side_default"
-          },
-          "timeout_seconds": {
-            "action": "skip",
-            "reason": "server_side_default"
-          },
-          "webhook_notifications": {
-            "action": "skip",
-            "reason": "server_side_default"
-          }
+        "email_notifications": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": {}
+        },
+        "timeout_seconds": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": 0
+        },
+        "webhook_notifications": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": {}
         }
       }
     },
@@ -126,19 +128,20 @@
         }
       },
       "changes": {
-        "remote": {
-          "email_notifications": {
-            "action": "skip",
-            "reason": "server_side_default"
-          },
-          "timeout_seconds": {
-            "action": "skip",
-            "reason": "server_side_default"
-          },
-          "webhook_notifications": {
-            "action": "skip",
-            "reason": "server_side_default"
-          }
+        "email_notifications": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": {}
+        },
+        "timeout_seconds": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": 0
+        },
+        "webhook_notifications": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": {}
         }
       }
     },
@@ -174,19 +177,20 @@
         }
       },
       "changes": {
-        "remote": {
-          "email_notifications": {
-            "action": "skip",
-            "reason": "server_side_default"
-          },
-          "timeout_seconds": {
-            "action": "skip",
-            "reason": "server_side_default"
-          },
-          "webhook_notifications": {
-            "action": "skip",
-            "reason": "server_side_default"
-          }
+        "email_notifications": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": {}
+        },
+        "timeout_seconds": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": 0
+        },
+        "webhook_notifications": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": {}
         }
       }
     },
@@ -222,19 +226,20 @@
         }
       },
       "changes": {
-        "remote": {
-          "email_notifications": {
-            "action": "skip",
-            "reason": "server_side_default"
-          },
-          "timeout_seconds": {
-            "action": "skip",
-            "reason": "server_side_default"
-          },
-          "webhook_notifications": {
-            "action": "skip",
-            "reason": "server_side_default"
-          }
+        "email_notifications": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": {}
+        },
+        "timeout_seconds": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": 0
+        },
+        "webhook_notifications": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": {}
         }
       }
     }

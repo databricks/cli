@@ -110,12 +110,12 @@ func (r *ResourceSecretScopeAcls) DoUpdateWithID(ctx context.Context, id string,
 	return state.ScopeName, nil, nil
 }
 
-func (r *ResourceSecretScopeAcls) DoUpdate(ctx context.Context, id string, state *SecretScopeAclsState, changes *deployplan.Changes) (*SecretScopeAclsState, error) {
+func (r *ResourceSecretScopeAcls) DoUpdate(ctx context.Context, id string, state *SecretScopeAclsState, changes Changes) (*SecretScopeAclsState, error) {
 	_, _, err := r.DoUpdateWithID(ctx, id, state)
 	return nil, err
 }
 
-func (r *ResourceSecretScopeAcls) FieldTriggers(isLocal bool) map[string]deployplan.ActionType {
+func (r *ResourceSecretScopeAcls) FieldTriggers() map[string]deployplan.ActionType {
 	// When scope name changes, we need  a DoUpdateWithID trigger. This is necessary so that subsequent
 	// DoRead operations use the correct ID and we do not end up with a persistent drift.
 	return map[string]deployplan.ActionType{

@@ -35,12 +35,14 @@
         "state": "IDLE"
       },
       "changes": {
-        "remote": {
-          "run_as": {
-            "action": "skip",
-            "old": {
-              "service_principal_name": "[UUID]"
-            }
+        "run_as": {
+          "action": "skip",
+          "reason": "override",
+          "old": {
+            "service_principal_name": "[UUID]"
+          },
+          "new": {
+            "service_principal_name": "[UUID]"
           }
         }
       }
