@@ -109,7 +109,7 @@ func (b *DeploymentBundle) InitForApply(ctx context.Context, client *databricks.
 	return nil
 }
 
-func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root, statePath string, migrateMode MigrateMode) (*deployplan.Plan, error) {
+func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root, statePath string) (*deployplan.Plan, error) {
 	err := b.StateDB.Open(statePath)
 	if err != nil {
 		return nil, fmt.Errorf("reading state from %s: %w", statePath, err)
@@ -167,11 +167,6 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		}
 
 		if entry.Action == deployplan.ActionTypeDelete.String() {
-			if migrateMode {
-				logdiag.LogError(ctx, fmt.Errorf("%s: is planned for deletion, cannot migrate. Must perform deployment first", errorPrefix))
-				return false
-			}
-
 			dbentry, hasEntry := b.StateDB.GetResourceEntry(resourceKey)
 			if !hasEntry {
 				logdiag.LogError(ctx, fmt.Errorf("%s: internal error, missing in state", errorPrefix))
@@ -198,11 +193,6 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		// Refs maps path inside resource to references e.g. "${resources.jobs.foo.id} ${resources.jobs.foo.name}"
 		if !b.resolveReferences(ctx, resourceKey, entry, errorPrefix, true) {
 			return false
-		}
-
-		if migrateMode {
-			entry.Action = deployplan.ActionTypeUpdateString
-			return true
 		}
 
 		dbentry, hasEntry := b.StateDB.GetResourceEntry(resourceKey)
