@@ -44,9 +44,6 @@ func mustLoadRegistry() map[string]map[string]*skillEntry {
 	if err != nil {
 		panic(fmt.Sprintf("failed to read skills root directory: %v", err))
 	}
-	if len(categories) == 0 {
-		panic("skills embed is empty - check //go:embed directive in skills.go includes all directories")
-	}
 
 	for _, cat := range categories {
 		if !cat.IsDir() {
@@ -69,10 +66,6 @@ func mustLoadRegistry() map[string]map[string]*skillEntry {
 			}
 			result[category][entry.Name()] = skill
 		}
-	}
-
-	if len(result) == 0 {
-		panic("skills registry is empty after loading - no skill directories found or all loads failed")
 	}
 
 	return result
