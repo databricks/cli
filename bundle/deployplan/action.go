@@ -28,30 +28,30 @@ type ActionType string
 // If case of several options, action with highest severity wins.
 // Note, Create/Delete are handled explicitly and never compared.
 const (
-	ActionTypeUndefined    ActionType = ""
-	ActionTypeSkip         ActionType = "skip"
-	ActionTypeResize       ActionType = "resize"
-	ActionTypeUpdate       ActionType = "update"
-	ActionTypeUpdateWithID ActionType = "update_id"
-	ActionTypeCreate       ActionType = "create"
-	ActionTypeRecreate     ActionType = "recreate"
-	ActionTypeDelete       ActionType = "delete"
+	Undefined    ActionType = ""
+	Skip         ActionType = "skip"
+	Resize       ActionType = "resize"
+	Update       ActionType = "update"
+	UpdateWithID ActionType = "update_id"
+	Create       ActionType = "create"
+	Recreate     ActionType = "recreate"
+	Delete       ActionType = "delete"
 )
 
 var actionOrder = map[ActionType]int{
-	ActionTypeUndefined:    0,
-	ActionTypeSkip:         1,
-	ActionTypeResize:       2,
-	ActionTypeUpdate:       3,
-	ActionTypeUpdateWithID: 4,
-	ActionTypeCreate:       5,
-	ActionTypeRecreate:     6,
-	ActionTypeDelete:       7,
+	Undefined:    0,
+	Skip:         1,
+	Resize:       2,
+	Update:       3,
+	UpdateWithID: 4,
+	Create:       5,
+	Recreate:     6,
+	Delete:       7,
 }
 
 func (a ActionType) KeepsID() bool {
 	switch a {
-	case ActionTypeCreate, ActionTypeUpdateWithID, ActionTypeRecreate, ActionTypeDelete:
+	case Create, UpdateWithID, Recreate, Delete:
 		return false
 	default:
 		return true

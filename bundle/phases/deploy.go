@@ -34,7 +34,7 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.P
 		return false, err
 	}
 
-	types := []deployplan.ActionType{deployplan.ActionTypeRecreate, deployplan.ActionTypeDelete}
+	types := []deployplan.ActionType{deployplan.Recreate, deployplan.Delete}
 	schemaActions := filterGroup(actions, "schemas", types...)
 	dltActions := filterGroup(actions, "pipelines", types...)
 	volumeActions := filterGroup(actions, "volumes", types...)
@@ -249,7 +249,7 @@ func RunPlan(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) *d
 			resourceKey := "resources." + group.Description.PluralName + "." + rKey
 			if _, ok := plan.Plan[resourceKey]; !ok {
 				plan.Plan[resourceKey] = &deployplan.PlanEntry{
-					Action: deployplan.ActionTypeSkip,
+					Action: deployplan.Skip,
 				}
 			}
 		}

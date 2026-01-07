@@ -55,14 +55,14 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 			errorPrefix = "cannot migrate " + resourceKey
 		}
 
-		if action == deployplan.ActionTypeUndefined {
+		if action == deployplan.Undefined {
 			logdiag.LogError(ctx, fmt.Errorf("cannot deploy %s: unknown action %q", resourceKey, action))
 			return false
 		}
 
 		// If a dependency failed, report and skip execution for this node by returning false
 		if failedDependency != nil {
-			if action != deployplan.ActionTypeSkip {
+			if action != deployplan.Skip {
 				logdiag.LogError(ctx, fmt.Errorf("%s: dependency failed: %s", errorPrefix, *failedDependency))
 			}
 			return false
@@ -80,7 +80,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 			DependsOn:   entry.DependsOn,
 		}
 
-		if action == deployplan.ActionTypeDelete {
+		if action == deployplan.Delete {
 			if migrateMode {
 				logdiag.LogError(ctx, fmt.Errorf("%s: Unexpected delete action during migration", errorPrefix))
 				return false
@@ -95,7 +95,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 
 		// We don't keep NewState around for 'skip' nodes
 
-		if action != deployplan.ActionTypeSkip {
+		if action != deployplan.Skip {
 			if !b.resolveReferences(ctx, resourceKey, entry, errorPrefix, false) {
 				return false
 			}
@@ -178,7 +178,7 @@ func (b *DeploymentBundle) LookupReferenceRemote(ctx context.Context, path *stru
 	defer b.Plan.ReadUnlockEntry(targetResourceKey)
 
 	targetAction := targetEntry.Action
-	if targetAction == deployplan.ActionTypeUndefined {
+	if targetAction == deployplan.Undefined {
 		return nil, fmt.Errorf("internal error: %s: missing action in the plan", targetResourceKey)
 	}
 

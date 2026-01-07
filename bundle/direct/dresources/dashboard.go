@@ -308,13 +308,13 @@ func (r *ResourceDashboard) OverrideChangeDesc(_ context.Context, path *structpa
 		// change.New is always nil for etag because it's not present in the config
 		// We compare stored etag with remote one.
 		if change.Old == change.Remote {
-			change.Action = deployplan.ActionTypeSkip
+			change.Action = deployplan.Skip
 		} else {
-			change.Action = deployplan.ActionTypeUpdate
+			change.Action = deployplan.Update
 		}
 	case "parent_path":
-		if change.Action == deployplan.ActionTypeUpdate {
-			change.Action = deployplan.ActionTypeRecreate
+		if change.Action == deployplan.Update {
+			change.Action = deployplan.Recreate
 		}
 	case "serialized_dashboard", "dataset_catalog", "dataset_schema":
 		// "serialized_dashboard" locally and remotely will have different diffs.
@@ -324,7 +324,7 @@ func (r *ResourceDashboard) OverrideChangeDesc(_ context.Context, path *structpa
 		// They will always differ between local config (which has values) and remote state (which has empty strings),
 		// so we skip them for remote diff computation to avoid false positives.
 		if change.Old == change.New {
-			change.Action = deployplan.ActionTypeSkip
+			change.Action = deployplan.Skip
 		}
 	}
 

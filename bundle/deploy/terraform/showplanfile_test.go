@@ -50,15 +50,15 @@ func TestPopulatePlan(t *testing.T) {
 	// Assert that the actions list contains all expected actions
 	expectedActions := []deployplan.Action{
 		{
-			ActionType:  deployplan.ActionTypeCreate,
+			ActionType:  deployplan.Create,
 			ResourceKey: "resources.pipelines.create pipeline",
 		},
 		{
-			ActionType:  deployplan.ActionTypeDelete,
+			ActionType:  deployplan.Delete,
 			ResourceKey: "resources.pipelines.delete pipeline",
 		},
 		{
-			ActionType:  deployplan.ActionTypeRecreate,
+			ActionType:  deployplan.Recreate,
 			ResourceKey: "resources.pipelines.recreate pipeline",
 		},
 	}
@@ -66,13 +66,13 @@ func TestPopulatePlan(t *testing.T) {
 
 	// Also test that the plan was populated correctly with expected entries
 	assert.Contains(t, plan.Plan, "resources.pipelines.create pipeline")
-	assert.Equal(t, deployplan.ActionTypeCreate, plan.Plan["resources.pipelines.create pipeline"].Action)
+	assert.Equal(t, deployplan.Create, plan.Plan["resources.pipelines.create pipeline"].Action)
 
 	assert.Contains(t, plan.Plan, "resources.pipelines.delete pipeline")
-	assert.Equal(t, deployplan.ActionTypeDelete, plan.Plan["resources.pipelines.delete pipeline"].Action)
+	assert.Equal(t, deployplan.Delete, plan.Plan["resources.pipelines.delete pipeline"].Action)
 
 	assert.Contains(t, plan.Plan, "resources.pipelines.recreate pipeline")
-	assert.Equal(t, deployplan.ActionTypeRecreate, plan.Plan["resources.pipelines.recreate pipeline"].Action)
+	assert.Equal(t, deployplan.Recreate, plan.Plan["resources.pipelines.recreate pipeline"].Action)
 
 	// Unknown resource type should not be in the plan
 	assert.NotContains(t, plan.Plan, "resources.recreate whatever")

@@ -72,15 +72,15 @@ func populatePlan(ctx context.Context, plan *deployplan.Plan, changes []*tfjson.
 		var actionType deployplan.ActionType
 		switch {
 		case rc.Change.Actions.Delete():
-			actionType = deployplan.ActionTypeDelete
+			actionType = deployplan.Delete
 		case rc.Change.Actions.Replace():
-			actionType = deployplan.ActionTypeRecreate
+			actionType = deployplan.Recreate
 		case rc.Change.Actions.Create():
-			actionType = deployplan.ActionTypeCreate
+			actionType = deployplan.Create
 		case rc.Change.Actions.Update():
-			actionType = deployplan.ActionTypeUpdate
+			actionType = deployplan.Update
 		case rc.Change.Actions.NoOp():
-			actionType = deployplan.ActionTypeSkip
+			actionType = deployplan.Skip
 		default:
 			continue
 		}
