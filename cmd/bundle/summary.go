@@ -81,6 +81,12 @@ func showFullConfig(ctx context.Context, cmd *cobra.Command) error {
 		return nil
 	}
 
+	// Include location information in the output
+	bundle.ApplyContext(ctx, b, mutator.PopulateLocations())
+	if logdiag.HasError(ctx) {
+		return nil
+	}
+
 	err := renderJsonOutput(cmd, b)
 	if err != nil {
 		return err
