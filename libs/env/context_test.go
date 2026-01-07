@@ -65,7 +65,9 @@ func TestGetBool(t *testing.T) {
 	for _, v := range trueValues {
 		t.Run("true_"+v, func(t *testing.T) {
 			ctx := Set(ctx, "TEST_BOOL", v)
-			assert.True(t, GetBool(ctx, "TEST_BOOL"), "expected %q to be true", v)
+			val, ok := GetBool(ctx, "TEST_BOOL")
+			assert.True(t, ok, "expected key to be set")
+			assert.True(t, val, "expected %q to be true", v)
 		})
 	}
 
@@ -74,26 +76,36 @@ func TestGetBool(t *testing.T) {
 	for _, v := range falseValues {
 		t.Run("false_"+v, func(t *testing.T) {
 			ctx := Set(ctx, "TEST_BOOL", v)
-			assert.False(t, GetBool(ctx, "TEST_BOOL"), "expected %q to be false", v)
+			val, ok := GetBool(ctx, "TEST_BOOL")
+			assert.True(t, ok, "expected key to be set")
+			assert.False(t, val, "expected %q to be false", v)
 		})
 	}
 
-	// Test invalid/unknown values default to false
+	// Test invalid/unknown values default to false but ok=true
 	invalidValues := []string{"invalid", "random", "2", "maybe"}
 	for _, v := range invalidValues {
 		t.Run("invalid_"+v, func(t *testing.T) {
 			ctx := Set(ctx, "TEST_BOOL", v)
-			assert.False(t, GetBool(ctx, "TEST_BOOL"), "expected %q to be false (invalid)", v)
+			val, ok := GetBool(ctx, "TEST_BOOL")
+			assert.True(t, ok, "expected key to be set")
+			assert.False(t, val, "expected %q to be false (invalid)", v)
 		})
 	}
 
-	// Test missing key defaults to false
-	assert.False(t, GetBool(ctx, "NON_EXISTENT_KEY"))
+	// Test missing key returns ok=false
+	val, ok := GetBool(ctx, "NON_EXISTENT_KEY")
+	assert.False(t, ok, "expected key to not be set")
+	assert.False(t, val, "expected value to be false when not set")
 
 	// Test from actual environment variable
 	t.Setenv("TEST_ENV_BOOL", "true")
-	assert.True(t, GetBool(context.Background(), "TEST_ENV_BOOL"))
+	val, ok = GetBool(context.Background(), "TEST_ENV_BOOL")
+	assert.True(t, ok)
+	assert.True(t, val)
 
 	t.Setenv("TEST_ENV_BOOL_FALSE", "0")
-	assert.False(t, GetBool(context.Background(), "TEST_ENV_BOOL_FALSE"))
+	val, ok = GetBool(context.Background(), "TEST_ENV_BOOL_FALSE")
+	assert.True(t, ok)
+	assert.False(t, val)
 }

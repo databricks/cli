@@ -109,8 +109,8 @@ func getCacheBaseDir(ctx context.Context) (string, error) {
 
 // NewCache creates a new file-based cache using UserCacheDir() + "databricks" + version + cached component name.
 // Including the CLI version in the path ensures cache isolation across different CLI versions.
-// By default, the cache is enabled and will return cached values when available.
-// Set DATABRICKS_CACHE_ENABLED=false to disable caching (measurement-only mode), which means it will:
+// By default, caching is enabled. Set DATABRICKS_CACHE_ENABLED to false/0/no/off to disable caching.
+// When caching is disabled (measurement-only mode), the cache will:
 // - Check if cached values exist
 // - Measure how much time would have been saved
 // - Emit metrics about potential savings
@@ -132,8 +132,14 @@ func NewCache(ctx context.Context, component string, expiry time.Duration, metri
 	}
 	fc.metrics = metrics
 
-	// Check if cache is enabled; default is false (measurement-only mode)
-	fc.cacheEnabled = env.GetBool(ctx, "DATABRICKS_CACHE_ENABLED")
+	// Check if cache is enabled
+	// Default is true (enabled) when DATABRICKS_CACHE_ENABLED is not set
+	// When set, parse it as a boolean
+	if enabled, ok := env.GetBool(ctx, "DATABRICKS_CACHE_ENABLED"); ok {
+		fc.cacheEnabled = enabled
+	} else {
+		fc.cacheEnabled = true
+	}
 	return &Cache{impl: fc}
 }
 

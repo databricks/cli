@@ -23,62 +23,80 @@ func TestCacheEnabledEnvVar(t *testing.T) {
 	tests := []struct {
 		name         string
 		envValue     string
+		setEnv       bool
 		expectCached bool
 	}{
 		{
 			name:         "cache enabled with 'true'",
 			envValue:     "true",
+			setEnv:       true,
 			expectCached: true,
 		},
 		{
 			name:         "cache enabled with 'TRUE'",
 			envValue:     "TRUE",
+			setEnv:       true,
 			expectCached: true,
 		},
 		{
 			name:         "cache enabled with '1'",
 			envValue:     "1",
+			setEnv:       true,
 			expectCached: true,
 		},
 		{
 			name:         "cache enabled with 'yes'",
 			envValue:     "yes",
+			setEnv:       true,
 			expectCached: true,
 		},
 		{
 			name:         "cache enabled with 'on'",
 			envValue:     "on",
+			setEnv:       true,
 			expectCached: true,
 		},
 		{
 			name:         "cache disabled with 'false'",
 			envValue:     "false",
+			setEnv:       true,
 			expectCached: false,
 		},
 		{
 			name:         "cache disabled with 'FALSE'",
 			envValue:     "FALSE",
+			setEnv:       true,
 			expectCached: false,
 		},
 		{
 			name:         "cache disabled with '0'",
 			envValue:     "0",
+			setEnv:       true,
 			expectCached: false,
 		},
 		{
 			name:         "cache disabled with 'no'",
 			envValue:     "no",
+			setEnv:       true,
 			expectCached: false,
 		},
 		{
-			name:         "cache disabled when empty",
+			name:         "cache disabled with empty string",
 			envValue:     "",
-			expectCached: true,
+			setEnv:       true,
+			expectCached: false,
 		},
 		{
 			name:         "cache disabled with invalid value",
 			envValue:     "invalid",
+			setEnv:       true,
 			expectCached: false,
+		},
+		{
+			name:         "cache enabled by default when not set",
+			envValue:     "",
+			setEnv:       false,
+			expectCached: true,
 		},
 	}
 
@@ -90,7 +108,7 @@ func TestCacheEnabledEnvVar(t *testing.T) {
 
 			// Set up context with environment variable
 			testCtx := ctx
-			if tt.envValue != "" {
+			if tt.setEnv {
 				testCtx = env.Set(testCtx, "DATABRICKS_CACHE_ENABLED", tt.envValue)
 			}
 			testCtx = env.Set(testCtx, "DATABRICKS_CACHE_DIR", testDir)
