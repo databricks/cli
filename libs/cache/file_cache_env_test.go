@@ -2,6 +2,7 @@ package cache
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -30,18 +31,8 @@ func TestCacheEnabledEnvVar(t *testing.T) {
 			expectCached: true,
 		},
 		{
-			name:         "cache disabled with 'false'",
-			envValue:     "false",
-			expectCached: false,
-		},
-		{
-			name:         "cache enabled when empty (default)",
-			envValue:     "",
-			expectCached: true,
-		},
-		{
-			name:         "cache enabled with other value",
-			envValue:     "yes",
+			name:         "cache enabled with 'TRUE'",
+			envValue:     "TRUE",
 			expectCached: true,
 		},
 		{
@@ -49,12 +40,53 @@ func TestCacheEnabledEnvVar(t *testing.T) {
 			envValue:     "1",
 			expectCached: true,
 		},
+		{
+			name:         "cache enabled with 'yes'",
+			envValue:     "yes",
+			expectCached: true,
+		},
+		{
+			name:         "cache enabled with 'on'",
+			envValue:     "on",
+			expectCached: true,
+		},
+		{
+			name:         "cache disabled with 'false'",
+			envValue:     "false",
+			expectCached: false,
+		},
+		{
+			name:         "cache disabled with 'FALSE'",
+			envValue:     "FALSE",
+			expectCached: false,
+		},
+		{
+			name:         "cache disabled with '0'",
+			envValue:     "0",
+			expectCached: false,
+		},
+		{
+			name:         "cache disabled with 'no'",
+			envValue:     "no",
+			expectCached: false,
+		},
+		{
+			name:         "cache disabled when empty",
+			envValue:     "",
+			expectCached: true,
+		},
+		{
+			name:         "cache disabled with invalid value",
+			envValue:     "invalid",
+			expectCached: false,
+		},
 	}
 
-	for _, tt := range tests {
+	for i, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Create a unique subdirectory for this test
-			testDir := filepath.Join(tempDir, tt.name)
+			// Use index to avoid case-sensitivity issues on macOS
+			testDir := filepath.Join(tempDir, fmt.Sprintf("test-%d-%s", i, tt.envValue))
 
 			// Set up context with environment variable
 			testCtx := ctx

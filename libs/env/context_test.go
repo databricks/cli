@@ -55,3 +55,45 @@ func TestHome(t *testing.T) {
 	assert.Equal(t, "...", home)
 	assert.NoError(t, err)
 }
+
+func TestGetBool(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+	ctx := context.Background()
+
+	// Test true values
+	trueValues := []string{"true", "TRUE", "True", "1", "t", "T", "yes", "YES", "Yes", "on", "ON", "On"}
+	for _, v := range trueValues {
+		t.Run("true_"+v, func(t *testing.T) {
+			ctx := Set(ctx, "TEST_BOOL", v)
+			assert.True(t, GetBool(ctx, "TEST_BOOL"), "expected %q to be true", v)
+		})
+	}
+
+	// Test false values
+	falseValues := []string{"false", "FALSE", "False", "0", "f", "F", "no", "NO", "No", "off", "OFF", "Off", ""}
+	for _, v := range falseValues {
+		t.Run("false_"+v, func(t *testing.T) {
+			ctx := Set(ctx, "TEST_BOOL", v)
+			assert.False(t, GetBool(ctx, "TEST_BOOL"), "expected %q to be false", v)
+		})
+	}
+
+	// Test invalid/unknown values default to false
+	invalidValues := []string{"invalid", "random", "2", "maybe"}
+	for _, v := range invalidValues {
+		t.Run("invalid_"+v, func(t *testing.T) {
+			ctx := Set(ctx, "TEST_BOOL", v)
+			assert.False(t, GetBool(ctx, "TEST_BOOL"), "expected %q to be false (invalid)", v)
+		})
+	}
+
+	// Test missing key defaults to false
+	assert.False(t, GetBool(ctx, "NON_EXISTENT_KEY"))
+
+	// Test from actual environment variable
+	t.Setenv("TEST_ENV_BOOL", "true")
+	assert.True(t, GetBool(context.Background(), "TEST_ENV_BOOL"))
+
+	t.Setenv("TEST_ENV_BOOL_FALSE", "0")
+	assert.False(t, GetBool(context.Background(), "TEST_ENV_BOOL_FALSE"))
+}

@@ -132,9 +132,8 @@ func NewCache(ctx context.Context, component string, expiry time.Duration, metri
 	}
 	fc.metrics = metrics
 
-	// Check if cache is enabled; default is true (caching enabled)
-	// Only "false" disables caching; any other value (including empty, "true", "1", etc.) keeps it enabled
-	fc.cacheEnabled = env.Get(ctx, "DATABRICKS_CACHE_ENABLED") != "false"
+	// Check if cache is enabled; default is false (measurement-only mode)
+	fc.cacheEnabled = env.GetBool(ctx, "DATABRICKS_CACHE_ENABLED")
 	return &Cache{impl: fc}
 }
 
