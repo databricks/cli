@@ -93,7 +93,7 @@ func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
 	mcpsdk.AddTool(server,
 		&mcpsdk.Tool{
 			Name: "databricks_discover",
-			Description: `CALL THIS FIRST before any other action. Returns essential scaffolding commands and workflow guidance.
+			Description: `CALL THIS FIRST before any other action. Returns essential scaffolding commands, workflow guidance, and guidance on writing and editing Databricks source code.
 
 Without calling this first, you won't know the correct way to scaffold Databricks apps. This tool returns init-template commands that create proper bundle structure.`,
 		},
