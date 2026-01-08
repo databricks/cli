@@ -68,7 +68,7 @@ func (r *ResourceMlflowModel) DoCreate(ctx context.Context, config *ml.CreateMod
 	return response.RegisteredModel.Name, modelDatabricks, nil
 }
 
-func (r *ResourceMlflowModel) DoUpdate(ctx context.Context, id string, config *ml.CreateModelRequest, _ *Changes) (*ml.ModelDatabricks, error) {
+func (r *ResourceMlflowModel) DoUpdate(ctx context.Context, id string, config *ml.CreateModelRequest, _ Changes) (*ml.ModelDatabricks, error) {
 	updateRequest := ml.UpdateModelRequest{
 		Name:            id,
 		Description:     config.Description,
@@ -108,7 +108,7 @@ func (r *ResourceMlflowModel) DoDelete(ctx context.Context, id string) error {
 	})
 }
 
-func (*ResourceMlflowModel) FieldTriggers(_ bool) map[string]deployplan.ActionType {
+func (*ResourceMlflowModel) FieldTriggers() map[string]deployplan.ActionType {
 	return map[string]deployplan.ActionType{
 		// Recreate matches current behavior of Terraform. It is possible to rename without recreate
 		// but that would require dynamic select of the method during update since

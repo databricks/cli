@@ -1,5 +1,5 @@
 {
-  "plan_version": 1,
+  "plan_version": 2,
   "cli_version": "[DEV_VERSION]",
   "lineage": "[UUID]",
   "serial": 7,
@@ -61,30 +61,31 @@
         }
       },
       "changes": {
-        "local": {
-          "name": {
-            "action": "update",
-            "old": "Test Migration Job",
-            "new": "Test Migrated Job"
-          }
+        "email_notifications": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": {}
         },
-        "remote": {
-          "email_notifications": {
-            "action": "skip",
-            "reason": "server_side_default"
-          },
-          "tasks[task_key='main'].notebook_task.source": {
-            "action": "skip",
-            "reason": "server_side_default"
-          },
-          "timeout_seconds": {
-            "action": "skip",
-            "reason": "server_side_default"
-          },
-          "webhook_notifications": {
-            "action": "skip",
-            "reason": "server_side_default"
-          }
+        "name": {
+          "action": "update",
+          "old": "Test Migration Job",
+          "new": "Test Migrated Job",
+          "remote": "Test Migration Job"
+        },
+        "tasks[task_key='main'].notebook_task.source": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": "WORKSPACE"
+        },
+        "timeout_seconds": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": 0
+        },
+        "webhook_notifications": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": {}
         }
       }
     },
@@ -177,23 +178,22 @@
         "state": "IDLE"
       },
       "changes": {
-        "local": {
-          "name": {
-            "action": "update",
-            "old": "Test Migration Pipeline",
-            "new": "Test Migrated Pipeline"
-          },
-          "tags['myjob_name']": {
-            "action": "update",
-            "old": "Test Migration Job",
-            "new": "Test Migrated Job"
-          }
+        "name": {
+          "action": "update",
+          "old": "Test Migration Pipeline",
+          "new": "Test Migrated Pipeline",
+          "remote": "Test Migration Pipeline"
         },
-        "remote": {
-          "storage": {
-            "action": "skip",
-            "reason": "server_side_default"
-          }
+        "storage": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": "dbfs:/pipelines/[UUID]"
+        },
+        "tags['myjob_name']": {
+          "action": "update",
+          "old": "Test Migration Job",
+          "new": "Test Migrated Job",
+          "remote": "Test Migration Job"
         }
       }
     },
@@ -212,11 +212,10 @@
         "volume_type": "MANAGED"
       },
       "changes": {
-        "remote": {
-          "storage_location": {
-            "action": "skip",
-            "reason": "server_side_default"
-          }
+        "storage_location": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": "s3://deco-uc-prod-isolated-aws-us-east-1/metastore/[UUID]/volumes/[UUID]"
         }
       }
     }

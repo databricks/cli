@@ -69,7 +69,7 @@ func (r *ResourceApp) DoCreate(ctx context.Context, config *apps.App) (string, *
 	return app.Name, nil, nil
 }
 
-func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *apps.App, _ *Changes) (*apps.App, error) {
+func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *apps.App, _ Changes) (*apps.App, error) {
 	request := apps.UpdateAppRequest{
 		App:  *config,
 		Name: id,
@@ -91,7 +91,7 @@ func (r *ResourceApp) DoDelete(ctx context.Context, id string) error {
 	return err
 }
 
-func (*ResourceApp) FieldTriggers(_ bool) map[string]deployplan.ActionType {
+func (*ResourceApp) FieldTriggers() map[string]deployplan.ActionType {
 	return map[string]deployplan.ActionType{
 		"name": deployplan.ActionTypeRecreate,
 	}

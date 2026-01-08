@@ -1,5 +1,5 @@
 {
-  "plan_version": 1,
+  "plan_version": 2,
   "cli_version": "[DEV_VERSION]",
   "lineage": "[UUID]",
   "serial": 1,
@@ -29,18 +29,17 @@
         "volume_type": "MANAGED"
       },
       "changes": {
-        "local": {
-          "name": {
-            "action": "update_id",
-            "old": "myvolume",
-            "new": "mynewvolume"
-          }
+        "name": {
+          "action": "update_id",
+          "reason": "field_triggers",
+          "old": "myvolume",
+          "new": "mynewvolume",
+          "remote": "myvolume"
         },
-        "remote": {
-          "storage_location": {
-            "action": "skip",
-            "reason": "server_side_default"
-          }
+        "storage_location": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": "s3://deco-uc-prod-isolated-aws-us-east-1/metastore/[UUID]/volumes/[UUID]"
         }
       }
     }

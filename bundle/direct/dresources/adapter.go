@@ -9,8 +9,13 @@ import (
 
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/calladapt"
-	"github.com/databricks/cli/libs/structs/structdiff"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go"
+)
+
+type (
+	Changes    = deployplan.Changes
+	ChangeDesc = deployplan.ChangeDesc
 )
 
 // IResource describes core methods for the resource implementation.
@@ -45,18 +50,12 @@ type IResource interface {
 	// Keys are field paths (e.g., "name", "catalog_name"). Values are actions.
 	// Unspecified changed fields default to ActionTypeUpdate.
 	//
-	// FieldTriggers(true) is applied on every change between state (last deployed config)
-	// and new state (current config) to determine action based on config changes.
-	//
-	// FieldTriggers(false) is called on every change between state and remote state to
-	// determine action based on remote drift.
-	//
 	// Note: these functions are called once per resource implementation initialization,
 	// not once per resource.
-	FieldTriggers(isLocal bool) map[string]deployplan.ActionType
-	// [Optional] ClassifyChange classifies a change using custom logic.
-	// The isLocal parameter indicates whether this is a local change (true) or remote change (false).
-	ClassifyChange(change structdiff.Change, remoteState any, isLocal bool) (deployplan.ActionType, error)
+	FieldTriggers() map[string]deployplan.ActionType
+
+	// [Optional] OverrideChangeDesc can implement custom logic to update a given ChangeDesc; it is run last after built-in classifiers and field triggers.
+	OverrideChangeDesc(ctx context.Context, path *structpath.PathNode, changedesc *ChangeDesc, remoteState any) error
 
 	// DoCreate creates a new resource from the newState. Returns id of the resource and optionally remote state.
 	// If remote state is available as part of the operation, return it; otherwise return nil.
@@ -65,8 +64,8 @@ type IResource interface {
 
 	// [Optional] DoUpdate updates the resource. ID must not change as a result of this operation. Returns optionally remote state.
 	// If remote state is available as part of the operation, return it; otherwise return nil.
-	// Example: func (r *ResourceSchema) DoUpdate(ctx context.Context, id string, newState *catalog.CreateSchema, changes *deployplan.Changes) (*catalog.SchemaInfo, error)
-	DoUpdate(ctx context.Context, id string, newState any, changes *deployplan.Changes) (remoteState any, e error)
+	// Example: func (r *ResourceSchema) DoUpdate(ctx context.Context, id string, newState *catalog.CreateSchema, changes Changes) (*catalog.SchemaInfo, error)
+	DoUpdate(ctx context.Context, id string, newState any, changes Changes) (remoteState any, e error)
 
 	// [Optional] DoUpdateWithID performs an update that may result in resource having a new ID. Returns new id and optionally remote state.
 	DoUpdateWithID(ctx context.Context, id string, newState any) (newID string, remoteState any, e error)
@@ -97,16 +96,15 @@ type Adapter struct {
 	doCreate     *calladapt.BoundCaller
 
 	// Optional:
-	doUpdate        *calladapt.BoundCaller
-	doUpdateWithID  *calladapt.BoundCaller
-	waitAfterCreate *calladapt.BoundCaller
-	waitAfterUpdate *calladapt.BoundCaller
-	classifyChange  *calladapt.BoundCaller
-	doResize        *calladapt.BoundCaller
+	doUpdate           *calladapt.BoundCaller
+	doUpdateWithID     *calladapt.BoundCaller
+	waitAfterCreate    *calladapt.BoundCaller
+	waitAfterUpdate    *calladapt.BoundCaller
+	overrideChangeDesc *calladapt.BoundCaller
+	doResize           *calladapt.BoundCaller
 
-	fieldTriggersLocal  map[string]deployplan.ActionType
-	fieldTriggersRemote map[string]deployplan.ActionType
-	keyedSlices         map[string]any
+	fieldTriggers map[string]deployplan.ActionType
+	keyedSlices   map[string]any
 }
 
 func NewAdapter(typedNil any, client *databricks.WorkspaceClient) (*Adapter, error) {
@@ -123,20 +121,19 @@ func NewAdapter(typedNil any, client *databricks.WorkspaceClient) (*Adapter, err
 	}
 	impl := outs[0]
 	adapter := &Adapter{
-		prepareState:        nil,
-		remapState:          nil,
-		doRefresh:           nil,
-		doDelete:            nil,
-		doCreate:            nil,
-		doUpdate:            nil,
-		doUpdateWithID:      nil,
-		doResize:            nil,
-		waitAfterCreate:     nil,
-		waitAfterUpdate:     nil,
-		classifyChange:      nil,
-		fieldTriggersLocal:  map[string]deployplan.ActionType{},
-		fieldTriggersRemote: map[string]deployplan.ActionType{},
-		keyedSlices:         nil,
+		prepareState:       nil,
+		remapState:         nil,
+		doRefresh:          nil,
+		doDelete:           nil,
+		doCreate:           nil,
+		doUpdate:           nil,
+		doUpdateWithID:     nil,
+		doResize:           nil,
+		waitAfterCreate:    nil,
+		waitAfterUpdate:    nil,
+		overrideChangeDesc: nil,
+		fieldTriggers:      map[string]deployplan.ActionType{},
+		keyedSlices:        nil,
 	}
 
 	err = adapter.initMethods(impl)
@@ -151,25 +148,7 @@ func NewAdapter(typedNil any, client *databricks.WorkspaceClient) (*Adapter, err
 	}
 	if triggerCall != nil {
 		// Validate FieldTriggers signature: func(bool) map[string]deployplan.ActionType
-		if len(triggerCall.InTypes) != 1 || triggerCall.InTypes[0] != reflect.TypeOf(false) {
-			return nil, errors.New("FieldTriggers must take a single bool parameter (isLocal)")
-		}
-		if len(triggerCall.OutTypes) != 1 {
-			return nil, errors.New("FieldTriggers must return a single value")
-		}
-		expectedReturnType := reflect.TypeOf(map[string]deployplan.ActionType{})
-		if triggerCall.OutTypes[0] != expectedReturnType {
-			return nil, fmt.Errorf("FieldTriggers must return map[string]deployplan.ActionType, got %v", triggerCall.OutTypes[0])
-		}
-
-		// Call with isLocal=true for local triggers
-		adapter.fieldTriggersLocal, err = loadFieldTriggers(triggerCall, true)
-		if err != nil {
-			return nil, err
-		}
-
-		// Call with isLocal=false for remote triggers
-		adapter.fieldTriggersRemote, err = loadFieldTriggers(triggerCall, false)
+		adapter.fieldTriggers, err = loadFieldTriggers(triggerCall)
 		if err != nil {
 			return nil, err
 		}
@@ -184,10 +163,10 @@ func NewAdapter(typedNil any, client *databricks.WorkspaceClient) (*Adapter, err
 }
 
 // loadFieldTriggers calls FieldTriggers with isLocal parameter and returns the resulting map.
-func loadFieldTriggers(triggerCall *calladapt.BoundCaller, isLocal bool) (map[string]deployplan.ActionType, error) {
-	outs, err := triggerCall.Call(isLocal)
+func loadFieldTriggers(triggerCall *calladapt.BoundCaller) (map[string]deployplan.ActionType, error) {
+	outs, err := triggerCall.Call()
 	if err != nil || len(outs) != 1 {
-		return nil, fmt.Errorf("failed to call FieldTriggers(%v): %w", isLocal, err)
+		return nil, fmt.Errorf("failed to call FieldTriggers(): %w", err)
 	}
 	fields := outs[0].(map[string]deployplan.ActionType)
 	result := make(map[string]deployplan.ActionType, len(fields))
@@ -258,7 +237,7 @@ func (a *Adapter) initMethods(resource any) error {
 		return err
 	}
 
-	a.classifyChange, err = calladapt.PrepareCall(resource, calladapt.TypeOf[IResource](), "ClassifyChange")
+	a.overrideChangeDesc, err = calladapt.PrepareCall(resource, calladapt.TypeOf[IResource](), "OverrideChangeDesc")
 	if err != nil {
 		return err
 	}
@@ -375,35 +354,25 @@ func (a *Adapter) validate() error {
 		validations = append(validations, "WaitAfterUpdate remoteState return", a.waitAfterUpdate.OutTypes[0], remoteType)
 	}
 
-	if a.classifyChange != nil {
-		validations = append(validations,
-			"ClassifyChange remoteState", a.classifyChange.InTypes[1], remoteType,
-			"ClassifyChange isLocal", a.classifyChange.InTypes[2], reflect.TypeOf(false),
-		)
-	}
-
 	err = validateTypes(validations...)
 	if err != nil {
 		return err
 	}
 
 	// FieldTriggers validation
-	hasUpdateWithIDTrigger := false
-	for _, action := range a.fieldTriggersLocal {
-		if action == deployplan.ActionTypeUpdateWithID {
-			hasUpdateWithIDTrigger = true
+	if a.overrideChangeDesc == nil {
+		hasUpdateWithIDTrigger := false
+		for _, action := range a.fieldTriggers {
+			if action == deployplan.ActionTypeUpdateWithID {
+				hasUpdateWithIDTrigger = true
+			}
 		}
-	}
-	for _, action := range a.fieldTriggersRemote {
-		if action == deployplan.ActionTypeUpdateWithID {
-			hasUpdateWithIDTrigger = true
+		if hasUpdateWithIDTrigger && a.doUpdateWithID == nil {
+			return errors.New("FieldTriggers includes update_with_id but DoUpdateWithID is not implemented")
 		}
-	}
-	if hasUpdateWithIDTrigger && a.doUpdateWithID == nil {
-		return errors.New("FieldTriggers includes update_with_id but DoUpdateWithID is not implemented")
-	}
-	if a.doUpdateWithID != nil && !hasUpdateWithIDTrigger {
-		return errors.New("DoUpdateWithID is implemented but FieldTriggers lacks update_with_id trigger")
+		if a.doUpdateWithID != nil && !hasUpdateWithIDTrigger {
+			return errors.New("DoUpdateWithID is implemented but FieldTriggers lacks update_with_id trigger")
+		}
 	}
 
 	return nil
@@ -419,6 +388,10 @@ func (a *Adapter) StateType() reflect.Type {
 
 func (a *Adapter) RemoteType() reflect.Type {
 	return a.doRefresh.OutTypes[0]
+}
+
+func (a *Adapter) FieldTriggers() map[string]deployplan.ActionType {
+	return a.fieldTriggers
 }
 
 func (a *Adapter) PrepareState(input any) (any, error) {
@@ -488,7 +461,7 @@ func (a *Adapter) HasDoUpdate() bool {
 
 // DoUpdate updates the resource with information about changes computed during plan.
 // Returns remote state if available, otherwise nil.
-func (a *Adapter) DoUpdate(ctx context.Context, id string, newState any, changes *deployplan.Changes) (any, error) {
+func (a *Adapter) DoUpdate(ctx context.Context, id string, newState any, changes Changes) (any, error) {
 	if a.doUpdate == nil {
 		return nil, errors.New("internal error: DoUpdate not found")
 	}
@@ -532,26 +505,6 @@ func (a *Adapter) DoResize(ctx context.Context, id string, newState any) error {
 	return err
 }
 
-// classifyByTriggers classifies a change using FieldTriggers.
-// Defaults to ActionTypeUpdate.
-// The isLocal parameter determines which trigger map to use:
-// - isLocal=true uses triggers from FieldTriggers(true)
-// - isLocal=false uses triggers from FieldTriggers(false)
-func (a *Adapter) classifyByTriggers(change structdiff.Change, isLocal bool) deployplan.ActionType {
-	var triggers map[string]deployplan.ActionType
-	if isLocal {
-		triggers = a.fieldTriggersLocal
-	} else {
-		triggers = a.fieldTriggersRemote
-	}
-
-	action, ok := triggers[change.Path.String()]
-	if ok {
-		return action
-	}
-	return deployplan.ActionTypeUpdate
-}
-
 // WaitAfterCreate waits for the resource to become ready after creation.
 // If the resource doesn't implement this method, this is a no-op.
 // Returns the updated remoteState if available, otherwise returns nil
@@ -587,26 +540,12 @@ func (a *Adapter) WaitAfterUpdate(ctx context.Context, newState any) (any, error
 }
 
 // ClassifyChange classifies a change using custom logic or FieldTriggers.
-// The isLocal parameter determines whether this is a local or remote change:
-// - isLocal=true: classifying local changes (user modifications)
-// - isLocal=false: classifying remote changes (drift detection)
-func (a *Adapter) ClassifyChange(change structdiff.Change, remoteState any, isLocal bool) (deployplan.ActionType, error) {
-	actionType := deployplan.ActionTypeUndefined
-
-	// If ClassifyChange is implemented, use it.
-	if a.classifyChange != nil {
-		outs, err := a.classifyChange.Call(change, remoteState, isLocal)
-		if err != nil {
-			return deployplan.ActionTypeUndefined, err
-		}
-		actionType = outs[0].(deployplan.ActionType)
+func (a *Adapter) OverrideChangeDesc(ctx context.Context, path *structpath.PathNode, change *ChangeDesc, remoteState any) error {
+	if a.overrideChangeDesc == nil {
+		return nil
 	}
-
-	// If ClassifyChange is not implemented or is implemented but returns undefined, use FieldTriggers.
-	if actionType == deployplan.ActionTypeUndefined {
-		return a.classifyByTriggers(change, isLocal), nil
-	}
-	return actionType, nil
+	_, err := a.overrideChangeDesc.Call(ctx, path, change, remoteState)
+	return err
 }
 
 // KeyedSlices returns a map from path patterns to KeyFunc for comparing slices by key.
