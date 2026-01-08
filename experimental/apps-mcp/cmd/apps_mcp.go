@@ -1,6 +1,11 @@
 package mcp
 
 import (
+	"context"
+	"os"
+	"os/signal"
+	"syscall"
+
 	mcplib "github.com/databricks/cli/experimental/apps-mcp/lib"
 	"github.com/databricks/cli/experimental/apps-mcp/lib/server"
 	"github.com/databricks/cli/libs/log"
@@ -25,7 +30,13 @@ The server communicates via stdio using the Model Context Protocol.`,
 		Example: `  # Start MCP server with required warehouse
   databricks experimental apps-mcp --warehouse-id abc123`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			ctx := cmd.Context()
+			// Create cancellable context for graceful shutdown
+			ctx, cancel := context.WithCancel(cmd.Context())
+			defer cancel()
+
+			// Handle shutdown signals (SIGINT, SIGTERM)
+			sigCh := make(chan os.Signal, 1)
+			signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
 
 			// Build MCP config from flags
 			cfg := &mcplib.Config{}
@@ -41,8 +52,29 @@ The server communicates via stdio using the Model Context Protocol.`,
 				return err
 			}
 
-			// Run server
-			return srv.Run(ctx)
+			// Run server in goroutine so we can handle signals
+			errCh := make(chan error, 1)
+			go func() {
+				errCh <- srv.Run(ctx)
+			}()
+
+			// Wait for either server error or shutdown signal
+			select {
+			case err := <-errCh:
+				// Server stopped (EOF, error, or context cancelled)
+				if shutdownErr := srv.Shutdown(ctx); shutdownErr != nil {
+					log.Warnf(ctx, "Shutdown error: %v", shutdownErr)
+				}
+				return err
+			case sig := <-sigCh:
+				// Received shutdown signal - exit gracefully
+				log.Infof(ctx, "Received signal %v, shutting down gracefully", sig)
+				cancel() // Cancel context to stop server.Run()
+				if shutdownErr := srv.Shutdown(ctx); shutdownErr != nil {
+					log.Warnf(ctx, "Shutdown error: %v", shutdownErr)
+				}
+				return nil
+			}
 		},
 	}
 
