@@ -27,12 +27,16 @@ type logFlags struct {
 	debug  bool
 }
 
-func (f *logFlags) makeLogHandler(opts slog.HandlerOptions) (slog.Handler, error) {
+func (f *logFlags) makeLogHandler(ctx context.Context, opts slog.HandlerOptions) (slog.Handler, error) {
 	switch f.output {
 	case flags.OutputJSON:
 		return slog.NewJSONHandler(f.file.Writer(), &opts), nil
 	case flags.OutputText:
 		w := f.file.Writer()
+		// If logging to stderr, use the coordinated writer to avoid interference with spinner
+		if f.file.String() == flags.LogFileStderr {
+			w = cmdio.CoordinatedWriter(ctx)
+		}
 		return handler.NewFriendlyHandler(w, &handler.Options{
 			Color:       cmdio.IsTTY(w),
 			Level:       opts.Level,
@@ -65,7 +69,7 @@ func (f *logFlags) initializeContext(ctx context.Context) (context.Context, erro
 		return nil, err
 	}
 
-	handler, err := f.makeLogHandler(opts)
+	handler, err := f.makeLogHandler(ctx, opts)
 	if err != nil {
 		return nil, err
 	}

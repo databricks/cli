@@ -16,6 +16,89 @@ import (
 	"github.com/mattn/go-isatty"
 )
 
+// writeRequest represents a write operation to be performed by the coordinator.
+type writeRequest struct {
+	data   []byte
+	result chan writeResult
+}
+
+type writeResult struct {
+	n   int
+	err error
+}
+
+type spinnerOp struct {
+	spinner *spinner.Spinner // nil means clear spinner
+}
+
+// coordinatedWriter coordinates writes to stderr, ensuring that spinner
+// updates and log messages don't interfere with each other.
+// All operations are lock-free and performed via channels.
+type coordinatedWriter struct {
+	underlying io.Writer
+	writeChan  chan writeRequest
+	spinnerOp  chan spinnerOp
+	stopChan   chan struct{}
+	spinner    *spinner.Spinner // only accessed by coordinator goroutine
+}
+
+func newCoordinatedWriter(underlying io.Writer) *coordinatedWriter {
+	w := &coordinatedWriter{
+		underlying: underlying,
+		writeChan:  make(chan writeRequest, 10),
+		spinnerOp:  make(chan spinnerOp, 1),
+		stopChan:   make(chan struct{}),
+	}
+	go w.coordinator()
+	return w
+}
+
+// coordinator runs in a goroutine and handles all writes sequentially.
+func (w *coordinatedWriter) coordinator() {
+	for {
+		select {
+		case <-w.stopChan:
+			return
+		case op := <-w.spinnerOp:
+			w.spinner = op.spinner
+		case req := <-w.writeChan:
+			// If spinner is active, pause it before writing
+			if w.spinner != nil && w.spinner.Active() {
+				w.spinner.Stop()
+				n, err := w.underlying.Write(req.data)
+				w.spinner.Start()
+				req.result <- writeResult{n: n, err: err}
+			} else {
+				n, err := w.underlying.Write(req.data)
+				req.result <- writeResult{n: n, err: err}
+			}
+		}
+	}
+}
+
+func (w *coordinatedWriter) Write(p []byte) (n int, err error) {
+	// Make a copy since p might be reused by the caller
+	data := make([]byte, len(p))
+	copy(data, p)
+
+	result := make(chan writeResult, 1)
+	w.writeChan <- writeRequest{data: data, result: result}
+	res := <-result
+	return res.n, res.err
+}
+
+func (w *coordinatedWriter) setSpinner(sp *spinner.Spinner) {
+	w.spinnerOp <- spinnerOp{spinner: sp}
+}
+
+func (w *coordinatedWriter) clearSpinner() {
+	w.spinnerOp <- spinnerOp{spinner: nil}
+}
+
+func (w *coordinatedWriter) close() {
+	close(w.stopChan)
+}
+
 // cmdIO is the private instance, that is not supposed to be accessed
 // outside of `cmdio` package. Use the public package-level functions
 // to access the inner state.
@@ -30,6 +113,7 @@ type cmdIO struct {
 	in             io.Reader
 	out            io.Writer
 	err            io.Writer
+	coordErr       *coordinatedWriter
 }
 
 func NewIO(ctx context.Context, outputFormat flags.Output, in io.Reader, out, err io.Writer, headerTemplate, template string) *cmdIO {
@@ -50,6 +134,8 @@ func NewIO(ctx context.Context, outputFormat flags.Output, in io.Reader, out, er
 	// - not to be running in Git Bash on Windows
 	prompt := interactive && IsTTY(in) && IsTTY(out) && !isGitBash(ctx)
 
+	coordErr := newCoordinatedWriter(err)
+
 	return &cmdIO{
 		interactive:    interactive,
 		prompt:         prompt,
@@ -59,6 +145,7 @@ func NewIO(ctx context.Context, outputFormat flags.Output, in io.Reader, out, er
 		in:             in,
 		out:            out,
 		err:            err,
+		coordErr:       coordErr,
 	}
 }
 
@@ -196,11 +283,14 @@ func (c *cmdIO) Spinner(ctx context.Context) chan string {
 			spinner.WithWriter(c.err),
 			spinner.WithColor("green"))
 		sp.Start()
+		// Register spinner with coordinated writer so it can pause during log writes
+		c.coordErr.setSpinner(sp)
 	}
 	updates := make(chan string)
 	go func() {
 		if c.interactive {
 			defer sp.Stop()
+			defer c.coordErr.clearSpinner()
 		}
 		for {
 			select {
@@ -224,6 +314,17 @@ func (c *cmdIO) Spinner(ctx context.Context) chan string {
 func Spinner(ctx context.Context) chan string {
 	c := fromContext(ctx)
 	return c.Spinner(ctx)
+}
+
+// CoordinatedWriter returns a writer that coordinates with the spinner
+// to avoid interference between spinner updates and log messages.
+func CoordinatedWriter(ctx context.Context) io.Writer {
+	io, ok := ctx.Value(cmdIOKey).(*cmdIO)
+	if !ok {
+		// cmdIO not yet initialized (e.g., during early logger setup)
+		return os.Stderr
+	}
+	return io.coordErr
 }
 
 type cmdIOType int
