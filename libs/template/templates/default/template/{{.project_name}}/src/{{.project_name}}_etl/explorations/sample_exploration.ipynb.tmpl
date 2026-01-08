@@ -37,7 +37,7 @@
    "source": [
     "# !!! Before performing any data analysis, make sure to run the pipeline to materialize the sample datasets. The tables referenced in this notebook depend on that step.\n",
     "\n",
-    "display(spark.sql(\"SELECT * FROM {{.default_catalog}}.{{short_name}}.sample_trips_{{.project_name}}\"))"
+    "display(spark.sql(\"SELECT * FROM {{if .default_catalog}}{{.default_catalog}}{{else}}{{default_catalog}}{{end}}.{{short_name}}.sample_trips_{{.project_name}}\"))"
    ]
   }
  ],

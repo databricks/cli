@@ -86,11 +86,11 @@
    "notebookName": "notebook",
    "widgets": {
     "catalog": {
-     "currentValue": "{{.default_catalog}}",
+     "currentValue": "{{if .default_catalog}}{{.default_catalog}}{{else}}{{default_catalog}}{{end}}",
      "nuid": "c4t4l0g-w1dg-3t12-3456-789012345678",
      "typedWidgetInfo": {
       "autoCreated": false,
-      "defaultValue": "{{.default_catalog}}",
+      "defaultValue": "{{if .default_catalog}}{{.default_catalog}}{{else}}{{default_catalog}}{{end}}",
       "label": "Catalog",
       "name": "catalog",
       "options": {
@@ -100,7 +100,7 @@
       "parameterDataType": "String"
      },
      "widgetInfo": {
-      "defaultValue": "{{.default_catalog}}",
+      "defaultValue": "{{if .default_catalog}}{{.default_catalog}}{{else}}{{default_catalog}}{{end}}",
       "label": "Catalog",
       "name": "catalog",
       "options": {

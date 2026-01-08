@@ -51,7 +51,7 @@ targets:
     workspace:
       host: {{workspace_host}}
     variables:
-      catalog: {{.default_catalog}}
+      catalog: {{if .default_catalog}}{{.default_catalog}}{{else}}{{default_catalog}}{{end}}
       schema: {{$dev_schema}}
   {{- if $with_classic}}
     presets:
@@ -64,7 +64,7 @@ targets:
       # We explicitly deploy to /Workspace/Users/{{user_name}} to make sure we only have a single copy.
       root_path: /Workspace/Users/{{user_name}}/.bundle/${bundle.name}/${bundle.target}
     variables:
-      catalog: {{.default_catalog}}
+      catalog: {{if .default_catalog}}{{.default_catalog}}{{else}}{{default_catalog}}{{end}}
       schema: {{$prod_schema}}
     permissions:
       - {{if is_service_principal}}service_principal{{else}}user{{end}}_name: {{user_name}}
