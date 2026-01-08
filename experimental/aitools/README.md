@@ -1,4 +1,4 @@
-# Databricks aitools Server
+# Databricks AI Tools
 
 A Model Context Protocol (MCP) server for working with Databricks through natural language. This server provides tools for data exploration, workspace management, and executing Databricks CLI commands through AI-powered conversations.
 
@@ -17,19 +17,19 @@ A Model Context Protocol (MCP) server for working with Databricks through natura
 - **Conversational interface**: Work with Databricks using natural language instead of memorizing CLI commands
 - **Context-aware**: Get relevant command suggestions based on your workspace configuration
 - **Unified workflow**: Combine data exploration, bundle management, and app deployment in one tool
-- **Transparency**: Every MCP tool call displays clear, branded output so you always know when Databricks aitools is working
+- **Transparency**: Every MCP tool call displays clear, branded output so you always know when Databricks AI Tools are working
 
 Perfect for data engineers and developers who want to streamline their Databricks workflows with AI-powered assistance.
 
 **Visual Feedback:**
-When using Databricks aitools, you'll see distinctive branded headers in your chat:
+When using Databricks AI Tools, you'll see distinctive branded headers in your chat:
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🚀 Databricks aitools: App scaffolded successfully
+🚀 Databricks AI Tools: App scaffolded successfully
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
-This makes it immediately clear you're using the Databricks aitools server, not just plain Claude or Cursor. If you don't see these headers, the MCP server isn't connected (see Troubleshooting below).
+This makes it immediately clear you're using the Databricks AI Tools MCP server, not just plain Claude or Cursor. If you don't see these headers, the MCP server isn't connected (see Troubleshooting below).
 
 ---
 
@@ -111,7 +111,7 @@ Then restart your MCP client for changes to take effect
 
 ### Troubleshooting
 
-#### 🚨 Not seeing Databricks aitools headers in your chat?
+#### 🚨 Not seeing Databricks AI Tools headers in your chat?
 
 If you ask about Databricks or apps but **don't see the distinctive headers** like:
 ```
@@ -120,7 +120,7 @@ If you ask about Databricks or apps but **don't see the distinctive headers** li
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
-**You're using plain Claude/Cursor, not the Databricks aitools server!** This means:
+**You're using plain Claude/Cursor, not the Databricks AI Tools MCP server!** This means:
 - ❌ No access to Databricks data or tools
 - ❌ Generic AI responses instead of actual app generation
 - ❌ No scaffolding, validation, or deployment capabilities
@@ -175,7 +175,7 @@ If issues persist, please report them at https://github.com/databricks/cli/issue
 
 ## Features
 
-The Databricks aitools server provides CLI-based tools for workspace interaction:
+The Databricks AI Tools provide CLI-based tools for workspace interaction:
 
 Execute Databricks CLI commands and explore workspace resources:
 

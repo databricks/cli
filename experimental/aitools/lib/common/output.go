@@ -8,7 +8,7 @@ const (
 
 // FormatBrandedHeader creates a branded header with the given emoji and message.
 func FormatBrandedHeader(emoji, message string) string {
-	return fmt.Sprintf("%s\n%s Databricks aitools: %s\n%s\n\n",
+	return fmt.Sprintf("%s\n%s Databricks AI Tools: %s\n%s\n\n",
 		headerLine, emoji, message, headerLine)
 }
 

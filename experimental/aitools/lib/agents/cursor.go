@@ -46,7 +46,7 @@ func DetectCursor() bool {
 	return err == nil
 }
 
-// InstallCursor installs the Databricks AI tools MCP server in Cursor.
+// InstallCursor installs the Databricks AI Tools MCP server in Cursor.
 func InstallCursor() error {
 	configPath, err := getCursorConfigPath()
 	if err != nil {
@@ -81,7 +81,7 @@ func InstallCursor() error {
 		return fmt.Errorf("failed to determine Databricks path: %w", err)
 	}
 
-	// Add or update the Databricks aitools server entry
+	// Add or update the Databricks AI Tools MCP server entry
 	config.McpServers["databricks-mcp"] = mcpServer{
 		Command: databricksPath,
 		Args:    []string{"experimental", "aitools"},

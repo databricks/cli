@@ -12,7 +12,7 @@ func TestFormatBrandedHeader(t *testing.T) {
 	if !strings.Contains(result, "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━") {
 		t.Error("Missing header line")
 	}
-	if !strings.Contains(result, "🚀 Databricks AI tools MCP server: Test message") {
+	if !strings.Contains(result, "🚀 Databricks AI Tools MCP server: Test message") {
 		t.Error("Missing branded message")
 	}
 }
@@ -21,7 +21,7 @@ func TestFormatScaffoldSuccess(t *testing.T) {
 	result := FormatScaffoldSuccess("appkit", "/path/to/app", 42)
 
 	// Check for key components
-	if !strings.Contains(result, "🚀 Databricks AI tools MCP server") {
+	if !strings.Contains(result, "🚀 Databricks AI Tools MCP server") {
 		t.Error("Missing branded header")
 	}
 	if !strings.Contains(result, "✅") {
@@ -41,7 +41,7 @@ func TestFormatScaffoldSuccess(t *testing.T) {
 func TestFormatValidationSuccess(t *testing.T) {
 	result := FormatValidationSuccess("All checks passed")
 
-	if !strings.Contains(result, "🔍 Databricks AI tools MCP server") {
+	if !strings.Contains(result, "🔍 Databricks AI Tools MCP server") {
 		t.Error("Missing branded header")
 	}
 	if !strings.Contains(result, "✅") {
@@ -55,7 +55,7 @@ func TestFormatValidationSuccess(t *testing.T) {
 func TestFormatValidationFailure(t *testing.T) {
 	result := FormatValidationFailure("Build failed", 1, "stdout output", "stderr output")
 
-	if !strings.Contains(result, "🔍 Databricks AI tools MCP server") {
+	if !strings.Contains(result, "🔍 Databricks AI Tools MCP server") {
 		t.Error("Missing branded header")
 	}
 	if !strings.Contains(result, "❌") {
@@ -78,7 +78,7 @@ func TestFormatValidationFailure(t *testing.T) {
 func TestFormatDeploymentSuccess(t *testing.T) {
 	result := FormatDeploymentSuccess("my-app", "https://example.com/app")
 
-	if !strings.Contains(result, "🚢 Databricks AI tools MCP server") {
+	if !strings.Contains(result, "🚢 Databricks AI Tools MCP server") {
 		t.Error("Missing branded header")
 	}
 	if !strings.Contains(result, "✅") {
@@ -95,7 +95,7 @@ func TestFormatDeploymentSuccess(t *testing.T) {
 func TestFormatDeploymentFailure(t *testing.T) {
 	result := FormatDeploymentFailure("my-app", "Connection timeout")
 
-	if !strings.Contains(result, "🚢 Databricks AI tools MCP server") {
+	if !strings.Contains(result, "🚢 Databricks AI Tools MCP server") {
 		t.Error("Missing branded header")
 	}
 	if !strings.Contains(result, "❌") {
