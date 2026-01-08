@@ -145,14 +145,14 @@ jobs:
       - name: Analyze slow tests
         run: make slowest
 
-  test-exp-apps-mcp:
+  test-exp-aitools:
     needs:
       - cleanups
       - testmask
 
     # Only run if the target is in the list of targets from testmask
-    if: ${{ contains(fromJSON(needs.testmask.outputs.targets), 'test-exp-apps-mcp') }}
-    name: "make test-exp-apps-mcp"
+    if: ${{ contains(fromJSON(needs.testmask.outputs.targets), 'test-exp-aitools') }}
+    name: "make test-exp-aitools"
     runs-on: ${{ matrix.os }}
 
     strategy:
@@ -171,11 +171,11 @@ jobs:
       - name: Setup build environment
         uses: ./.github/actions/setup-build-environment
         with:
-          cache-key: test-exp-apps-mcp
+          cache-key: test-exp-aitools
 
       - name: Run tests
         run: |
-          make test-exp-apps-mcp
+          make test-exp-aitools
 
   test-exp-ssh:
     needs:
@@ -251,7 +251,7 @@ jobs:
   test-result:
     needs:
       - test
-      - test-exp-apps-mcp
+      - test-exp-aitools
       - test-exp-ssh
       - test-pipelines
 
