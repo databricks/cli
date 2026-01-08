@@ -145,7 +145,7 @@ func (r *ResourceGrants) DoCreate(ctx context.Context, state *GrantsState) (stri
 	return makeGrantsID(state.SecurableType, state.FullName), nil, nil
 }
 
-func (r *ResourceGrants) DoUpdate(ctx context.Context, _ string, state *GrantsState, _ *Changes) (*GrantsState, error) {
+func (r *ResourceGrants) DoUpdate(ctx context.Context, _ string, state *GrantsState, _ Changes) (*GrantsState, error) {
 	return nil, r.applyGrants(ctx, state)
 }
 

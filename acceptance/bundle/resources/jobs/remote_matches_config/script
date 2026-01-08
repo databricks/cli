@@ -1,0 +1,22 @@
+trace $CLI bundle plan
+$CLI bundle deploy
+job_id="$(read_id.py jobs my_job)"
+echo "$job_id:JOB_ID" >> ACC_REPLS
+
+trace $CLI bundle plan | contains.py "0 to add, 0 to change, 0 to delete"
+
+title "Make local changes: update max_concurrent_runs to 2"
+update_file.py databricks.yml "max_concurrent_runs: 1" "max_concurrent_runs: 2"
+
+title "Make remote changes via CLI: add a new tag and set timeout\n"
+edit_resource.py jobs $job_id <<EOF
+r["max_concurrent_runs"] = 2
+EOF
+
+trace $CLI bundle plan
+$CLI bundle plan -o json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+
+rm out.requests.txt
+# XXX READPLAN
+trace $CLI bundle deploy
+trace print_requests.py //jobs

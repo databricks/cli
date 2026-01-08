@@ -5,6 +5,8 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/structs/structdiff"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
@@ -76,7 +78,7 @@ func (r *ResourcePipeline) DoCreate(ctx context.Context, config *pipelines.Creat
 	return response.PipelineId, nil, nil
 }
 
-func (r *ResourcePipeline) DoUpdate(ctx context.Context, id string, config *pipelines.CreatePipeline, _ *Changes) (*pipelines.GetPipelineResponse, error) {
+func (r *ResourcePipeline) DoUpdate(ctx context.Context, id string, config *pipelines.CreatePipeline, _ Changes) (*pipelines.GetPipelineResponse, error) {
 	request := pipelines.EditPipeline{
 		AllowDuplicateNames:  config.AllowDuplicateNames,
 		BudgetPolicyId:       config.BudgetPolicyId,
@@ -120,22 +122,25 @@ func (r *ResourcePipeline) DoDelete(ctx context.Context, id string) error {
 	return r.client.Pipelines.DeleteByPipelineId(ctx, id)
 }
 
-func (*ResourcePipeline) FieldTriggers(isLocal bool) map[string]deployplan.ActionType {
+func (*ResourcePipeline) FieldTriggers() map[string]deployplan.ActionType {
 	result := map[string]deployplan.ActionType{
-		"storage":                                   deployplan.ActionTypeRecreate,
-		"ingestion_definition.connection_name":      deployplan.ActionTypeRecreate,
-		"ingestion_definition.ingestion_gateway_id": deployplan.ActionTypeRecreate,
-	}
-
-	if !isLocal {
-		// We've seen that run_as is not consistently set by the backend
-		// TF also ignores it (by not copying it here:
-		// https://github.com/databricks/terraform-provider-databricks/blob/15e951f976e3857d9f01651c4b2513657f137796/pipelines/resource_pipeline.go#L304-L317
-		// TODO: Rather than skipping, consider ignoring the change if run_as is not present but still triggering an update if run_as is different.
-		result["run_as"] = deployplan.ActionTypeSkip
+		"storage":                                   deployplan.Recreate,
+		"ingestion_definition.connection_name":      deployplan.Recreate,
+		"ingestion_definition.ingestion_gateway_id": deployplan.Recreate,
 	}
 
 	return result
+}
+
+func (*ResourcePipeline) OverrideChangeDesc(ctx context.Context, path *structpath.PathNode, ch *ChangeDesc, _ *pipelines.GetPipelineResponse) error {
+	if path.String() == "run_as" {
+		if structdiff.IsEqual(ch.Old, ch.New) {
+			ch.Action = deployplan.Skip
+			ch.Reason = "override"
+		}
+	}
+
+	return nil
 }
 
 // Note, terraform provider either
