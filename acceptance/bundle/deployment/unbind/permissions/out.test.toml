@@ -2,5 +2,4 @@ Local = true
 Cloud = true
 
 [EnvMatrix]
-  DATABRICKS_BUNDLE_ENGINE = ["terraform"]
-  Ignore = [".databricks"]
+  DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]

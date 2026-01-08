@@ -4,6 +4,13 @@ Updating deployment state...
 Successfully bound dashboard with an id '[DASHBOARD_ID]'
 Run 'bundle deploy' to deploy changes to your workspace
 
+>>> print_state.py
+
+>>> [CLI] bundle plan
+recreate dashboards.dashboard1
+
+Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged
+
 >>> errcode [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 

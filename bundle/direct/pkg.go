@@ -44,6 +44,11 @@ type DeploymentBundle struct {
 	Plan             *deployplan.Plan
 	RemoteStateCache sync.Map
 	StructVarCache   structvar.Cache
+
+	// Temporary bind state fields (used during Bind/FinalizeBind flow)
+	tempBindDir       string
+	tempBindStatePath string
+	finalStatePath    string
 }
 
 // SetRemoteState updates the remote state with type validation and marks as fresh.

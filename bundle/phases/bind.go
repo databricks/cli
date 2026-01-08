@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/deploy/lock"
 	"github.com/databricks/cli/bundle/deploy/terraform"
+	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
@@ -34,33 +35,57 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions) {
 	}()
 
 	if eng.IsDirect() {
+		// Direct engine: import into temp state, run plan, check for changes
+		// This follows the same pattern as terraform import
+		groupName := terraform.TerraformToGroupName[opts.ResourceType]
+		resourceKey := fmt.Sprintf("resources.%s.%s", groupName, opts.ResourceKey)
+		_, statePath := b.StateFilenameDirect(ctx)
 
-		// Note, difference from Terraform engine:
-		// We simply always ask for confirmation or for --auto-approve.
-		// Terraform logic is to only do that if bind results in plan changes.
+		result, err := b.DeploymentBundle.Bind(ctx, b.WorkspaceClient(), &b.Config, statePath, resourceKey, opts.ResourceId)
+		if err != nil {
+			logdiag.LogError(ctx, err)
+			return
+		}
 
-		if !opts.AutoApprove {
+		// If there are changes and auto-approve is not set, show plan and ask for confirmation
+		if result.HasChanges && !opts.AutoApprove {
+			// Display the planned changes for the bound resource
+			cmdio.LogString(ctx, fmt.Sprintf("Plan: %s %s", result.Action, resourceKey))
+
+			// Show details of what will change
+			if result.Plan != nil {
+				if entry, ok := result.Plan.Plan[resourceKey]; ok && entry != nil && len(entry.Changes) > 0 {
+					cmdio.LogString(ctx, "\nChanges detected:")
+					for field, change := range entry.Changes {
+						if change.Action != deployplan.ActionTypeSkipString {
+							cmdio.LogString(ctx, fmt.Sprintf("  ~ %s: %v -> %v", field, change.Old, change.New))
+						}
+					}
+					cmdio.LogString(ctx, "")
+				}
+			}
+
 			if !cmdio.IsPromptSupported(ctx) {
+				b.DeploymentBundle.CancelBind()
 				logdiag.LogError(ctx, errors.New("This bind operation requires user confirmation, but the current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed."))
 				return
 			}
 
 			ans, err := cmdio.AskYesOrNo(ctx, "Confirm import changes? Changes will be remotely applied only after running 'bundle deploy'.")
 			if err != nil {
+				b.DeploymentBundle.CancelBind()
 				logdiag.LogError(ctx, err)
 				return
 			}
 			if !ans {
+				b.DeploymentBundle.CancelBind()
 				logdiag.LogError(ctx, errors.New("import aborted"))
 				return
 			}
 		}
 
-		// Direct engine: simply add the resource to state
-		groupName := terraform.TerraformToGroupName[opts.ResourceType]
-		resourceKey := fmt.Sprintf("resources.%s.%s", groupName, opts.ResourceKey)
-		_, statePath := b.StateFilenameDirect(ctx)
-		err := b.DeploymentBundle.Bind(ctx, statePath, resourceKey, opts.ResourceId)
+		// Finalize: move temp state to final location
+		err = b.DeploymentBundle.FinalizeBind(ctx)
 		if err != nil {
 			logdiag.LogError(ctx, err)
 			return
