@@ -1,2 +1,3 @@
+Badness = "Difference in GET request between direct and terraform; In direct, the prefix is /Workspace/Users, in TF it is /Users"
 Local = true
 Cloud = true

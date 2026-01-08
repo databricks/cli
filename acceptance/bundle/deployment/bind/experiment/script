@@ -25,7 +25,7 @@ title "Deploy bundle: "
 $CLI bundle deploy --force-lock --auto-approve
 
 title "Read the pre-defined experiment: "
-$CLI experiments get-experiment ${EXPERIMENT_ID} | jq '{name: .experiment.name, lifecycle_stage: .experiment.lifecycle_stage}'
+$CLI experiments get-experiment ${EXPERIMENT_ID} | jq '{name: .experiment.name, lifecycle_stage: .experiment.lifecycle_stage}' > out.get.$DATABRICKS_BUNDLE_ENGINE.json
 
 title "Unbind the experiment: "
 $CLI bundle deployment unbind experiment1
@@ -34,4 +34,6 @@ title "Destroy the bundle: "
 $CLI bundle destroy --auto-approve
 
 title "Read the pre-defined experiment again (expecting it still exists and is not deleted): "
-$CLI experiments get-experiment ${EXPERIMENT_ID} | jq '{name: .experiment.name, lifecycle_stage: .experiment.lifecycle_stage}'
+$CLI experiments get-experiment ${EXPERIMENT_ID} | jq '{name: .experiment.name, lifecycle_stage: .experiment.lifecycle_stage}' > out.get2.$DATABRICKS_BUNDLE_ENGINE.json
+diff out.get.$DATABRICKS_BUNDLE_ENGINE.json out.get2.$DATABRICKS_BUNDLE_ENGINE.json
+rm out.get2.$DATABRICKS_BUNDLE_ENGINE.json
