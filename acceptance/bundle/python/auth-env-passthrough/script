@@ -1,0 +1,10 @@
+echo "$DATABRICKS_BUNDLES_WHEEL" > "requirements-latest.txt"
+
+# Verify that auth env vars (DATABRICKS_HOST) are correctly passed to the
+# Python subprocess via auth.ProcessEnv. The Python code validates that
+# both DATABRICKS_HOST and HOME are present in the environment.
+
+trace uv run $UV_ARGS -q $CLI bundle validate --output json | \
+  jq '{job_name: .resources.jobs.test_job.name}'
+
+rm -fr .databricks __pycache__

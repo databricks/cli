@@ -31,6 +31,13 @@ func WithEnvs(envs map[string]string) execOption {
 	}
 }
 
+func WithEnviron(envs []string) execOption {
+	return func(ctx context.Context, c *exec.Cmd) error {
+		c.Env = envs
+		return nil
+	}
+}
+
 func WithDir(dir string) execOption {
 	return func(_ context.Context, c *exec.Cmd) error {
 		c.Dir = dir

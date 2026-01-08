@@ -1,0 +1,19 @@
+# This test verifies that auth env vars from the bundle config are correctly
+# passed to the Python subprocess via auth.ProcessEnv, and that conflicting
+# auth env vars are REMOVED to prevent auth issues.
+
+Local = true
+Cloud = false
+
+Ignore = [
+  "requirements-latest.txt",
+]
+
+[Env]
+DATABRICKS_CONFIG_PROFILE = "conflicting_profile"
+
+[EnvMatrix]
+UV_ARGS = [
+  "--with databricks-bundles==0.266.0",
+  "--with-requirements requirements-latest.txt --no-cache",
+]

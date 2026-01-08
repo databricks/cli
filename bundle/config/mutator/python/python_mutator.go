@@ -105,7 +105,7 @@ type runPythonMutatorOpts struct {
 	bundleRootPath string
 	pythonPath     string
 	loadLocations  bool
-	authEnvs       map[string]string
+	authEnvs       []string
 }
 
 // getOpts adapts deprecated PyDABs and upcoming Python configuration
@@ -224,7 +224,7 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 	var result applyPythonOutputResult
 	mutateDiagsHasError := errors.New("unexpected error")
 
-	authEnvs := auth.Env(b.Config.Workspace.Config())
+	authEnvs := auth.ProcessEnv(b.WorkspaceClient().Config)
 
 	err = b.Config.Mutate(func(leftRoot dyn.Value) (dyn.Value, error) {
 		pythonPath, err := detectExecutable(ctx, opts.venvPath)
@@ -369,7 +369,7 @@ func (m *pythonMutator) runPythonMutator(ctx context.Context, root dyn.Value, op
 		process.WithDir(opts.bundleRootPath),
 		process.WithStderrWriter(stderrWriter),
 		process.WithStdoutWriter(stdoutWriter),
-		process.WithEnvs(opts.authEnvs),
+		process.WithEnviron(opts.authEnvs),
 	)
 	if processErr != nil {
 		logger.Debugf(ctx, "python mutator process failed: %s", processErr)
