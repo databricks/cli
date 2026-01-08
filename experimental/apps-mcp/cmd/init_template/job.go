@@ -4,7 +4,6 @@ import (
 	"errors"
 
 	"github.com/databricks/cli/cmd/root"
-	"github.com/databricks/cli/experimental/apps-mcp/lib/middlewares"
 	"github.com/databricks/cli/libs/template"
 	"github.com/spf13/cobra"
 )
@@ -50,11 +49,6 @@ After initialization:
 			return errors.New("--name is required. Example: init-template job --name my_job")
 		}
 
-		// Default to workspace default catalog if not specified
-		if catalog == "" {
-			catalog = middlewares.GetDefaultCatalog(ctx)
-		}
-
 		configMap := map[string]any{
 			"project_name":     name,
 			"include_job":      "yes",
@@ -62,7 +56,12 @@ After initialization:
 			"include_python":   "yes",
 			"serverless":       "yes",
 			"personal_schemas": "yes",
-			"default_catalog":  catalog,
+		}
+
+		// Only set default_catalog if explicitly provided via --catalog flag
+		// Otherwise, let the template use its {{default_catalog}} helper fallback
+		if catalog != "" {
+			configMap["default_catalog"] = catalog
 		}
 
 		return MaterializeTemplate(ctx, TemplateConfig{

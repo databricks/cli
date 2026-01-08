@@ -126,7 +126,6 @@ func InitProject(ctx context.Context, args initProjectArgs) (string, error) {
 func runBundleInit(ctx context.Context, projectPath, projectName, language string) error {
 	configJSON, err := json.Marshal(map[string]string{
 		"project_name":     projectName,
-		"default_catalog":  "main",
 		"personal_schemas": "yes",
 		"language_choice":  language,
 	})
