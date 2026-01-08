@@ -108,9 +108,6 @@ const (
 	userReplacementsFilename = "ACC_REPLS"
 )
 
-// On CI, we want to increase timeout, to account for slower environment
-const CITimeoutMultiplier = 2
-
 var ApplyCITimeoutMultipler = os.Getenv("GITHUB_WORKFLOW") != ""
 
 var exeSuffix = func() string {
@@ -568,7 +565,7 @@ func runTest(t *testing.T,
 	}
 
 	if ApplyCITimeoutMultipler {
-		timeout *= CITimeoutMultiplier
+		timeout = time.Duration(float64(timeout) * config.TimeoutCIMultiplier)
 	}
 
 	ctx, cancelFunc := context.WithTimeout(context.Background(), timeout)
@@ -674,7 +671,7 @@ func runTest(t *testing.T,
 	require.NoError(t, err)
 	defer out.Close()
 
-	skipReason, err := runWithLog(t, cmd, out, tailOutput)
+	skipReason, err := runWithLog(t, cmd, out, tailOutput, timeout)
 
 	if skipReason != "" {
 		t.Skip("Skipping based on output: " + skipReason)
@@ -1211,14 +1208,14 @@ func isTruePtr(value *bool) bool {
 	return value != nil && *value
 }
 
-func runWithLog(t *testing.T, cmd *exec.Cmd, out *os.File, tail bool) (string, error) {
+func runWithLog(t *testing.T, cmd *exec.Cmd, out *os.File, tail bool, timeout time.Duration) (string, error) {
 	r, w := io.Pipe()
 	cmd.Stdout = w
 	cmd.Stderr = w
 	processErrCh := make(chan error, 1)
 
 	cmd.Cancel = func() error {
-		processErrCh <- errors.New("Test script killed due to a timeout")
+		processErrCh <- fmt.Errorf("Test script killed due to a timeout (%s)", timeout)
 		_ = cmd.Process.Kill()
 		_ = w.Close()
 		return nil
