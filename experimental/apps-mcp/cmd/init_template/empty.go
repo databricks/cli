@@ -67,8 +67,6 @@ After initialization:
 			"language_choice":  language,
 		}
 
-		// Only set default_catalog if explicitly provided via --catalog flag
-		// Otherwise, let the template use its {{default_catalog}} helper fallback
 		if catalog != "" {
 			configMap["default_catalog"] = catalog
 		}

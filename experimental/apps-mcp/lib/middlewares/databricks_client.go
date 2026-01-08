@@ -135,7 +135,7 @@ func newAuthError(ctx context.Context) error {
 }
 
 // GetDefaultCatalog fetches the workspace default catalog name.
-// Returns "main" as fallback if Unity Catalog default is not set, empty string if UC is not available.
+// Returns empty string if UC is not available or no default catalog is set.
 func GetDefaultCatalog(ctx context.Context) string {
 	w := cmdctx.WorkspaceClient(ctx)
 	if w == nil {
@@ -144,11 +144,7 @@ func GetDefaultCatalog(ctx context.Context) string {
 
 	metastore, err := w.Metastores.Current(ctx)
 	if err != nil {
-		return "" // gracefully handle any error (no UC, permission denied, etc.)
-	}
-
-	if metastore.DefaultCatalogName == "" {
-		return "main" // fallback to "main" when UC is enabled but no default catalog is set
+		return ""
 	}
 
 	return metastore.DefaultCatalogName
