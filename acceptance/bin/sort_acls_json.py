@@ -32,13 +32,14 @@ def sort_acls_recursive(obj):
 
 
 def main():
+    raw = sys.stdin.read()
     try:
-        data = json.load(sys.stdin)
-        normalized = sort_acls_recursive(data)
-        print(json.dumps(normalized, indent=2))
-    except json.JSONDecodeError as e:
-        print(f"Error: Invalid JSON input: {e}", file=sys.stderr)
-        sys.exit(1)
+        data = json.loads(raw)
+    except Exception:
+        print("Not json:\n" + raw, flush=True)
+        raise
+    normalized = sort_acls_recursive(data)
+    print(json.dumps(normalized, indent=2))
 
 
 if __name__ == "__main__":
