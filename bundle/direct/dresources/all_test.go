@@ -672,7 +672,7 @@ func TestFieldTriggersNoUpdateWhenNotImplemented(t *testing.T) {
 
 		t.Run(resourceName+"_local", func(t *testing.T) {
 			for field, action := range adapter.FieldTriggers() {
-				assert.NotEqual(t, deployplan.ActionTypeUpdate, action,
+				assert.NotEqual(t, deployplan.Update, action,
 					"resource %s does not implement DoUpdate but field %s triggers update action", resourceName, field)
 			}
 		})

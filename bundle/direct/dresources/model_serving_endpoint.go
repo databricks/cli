@@ -320,11 +320,11 @@ func (r *ResourceModelServingEndpoint) DoDelete(ctx context.Context, id string) 
 func (*ResourceModelServingEndpoint) FieldTriggers() map[string]deployplan.ActionType {
 	// TF implementation: https://github.com/databricks/terraform-provider-databricks/blob/6c106e8e7052bb2726148d66309fd460ed444236/mlflow/resource_mlflow_experiment.go#L22
 	return map[string]deployplan.ActionType{
-		"name":        deployplan.ActionTypeRecreate,
-		"description": deployplan.ActionTypeRecreate, // description is immutable, can't be updated via API
-		"config.auto_capture_config.catalog_name":      deployplan.ActionTypeRecreate,
-		"config.auto_capture_config.schema_name":       deployplan.ActionTypeRecreate,
-		"config.auto_capture_config.table_name_prefix": deployplan.ActionTypeRecreate,
-		"route_optimized":                              deployplan.ActionTypeRecreate,
+		"name":        deployplan.Recreate,
+		"description": deployplan.Recreate, // description is immutable, can't be updated via API
+		"config.auto_capture_config.catalog_name":      deployplan.Recreate,
+		"config.auto_capture_config.schema_name":       deployplan.Recreate,
+		"config.auto_capture_config.table_name_prefix": deployplan.Recreate,
+		"route_optimized":                              deployplan.Recreate,
 	}
 }

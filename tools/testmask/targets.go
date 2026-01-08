@@ -26,12 +26,6 @@ var fileTargetMappings = []targetMapping{
 	},
 	{
 		prefixes: slices.Concat(goTriggerPatterns, []string{
-			"experimental/aitools/",
-		}),
-		target: "test-exp-aitools",
-	},
-	{
-		prefixes: slices.Concat(goTriggerPatterns, []string{
 			"experimental/apps-mcp/",
 		}),
 		target: "test-exp-apps-mcp",

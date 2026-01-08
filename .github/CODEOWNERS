@@ -7,5 +7,4 @@
 /cmd/workspace/apps/      @databricks/eng-app-devex
 /libs/apps/               @databricks/eng-app-devex
 /acceptance/apps/         @databricks/eng-app-devex
-/experimental/aitools/    @databricks/eng-app-devex @lennartkats-db
 /experimental/apps-mcp/   @databricks/eng-app-devex @lennartkats-db

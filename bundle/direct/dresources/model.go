@@ -115,7 +115,7 @@ func (*ResourceMlflowModel) FieldTriggers() map[string]deployplan.ActionType {
 		// the [ml.RenameModel] needs to be called instead of [ml.UpdateModel].
 		//
 		// We might reasonably choose to never fix this because this is a legacy resource.
-		"name": deployplan.ActionTypeRecreate,
+		"name": deployplan.Recreate,
 
 		// Allowing updates for tags requires dynamic selection of the method since
 		// tags can only be updated by calling [ml.SetModelTag] or [ml.DeleteModelTag] methods.
@@ -123,6 +123,6 @@ func (*ResourceMlflowModel) FieldTriggers() map[string]deployplan.ActionType {
 		// Skip annotation matches the current behavior of Terraform where tags changes are showed
 		// in plan but are just ignored / not applied. Since this is a legacy resource we might
 		// reasonably choose to not fix it here as well.
-		"tags": deployplan.ActionTypeSkip,
+		"tags": deployplan.Skip,
 	}
 }
