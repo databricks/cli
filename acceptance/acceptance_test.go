@@ -1218,7 +1218,7 @@ func runWithLog(t *testing.T, cmd *exec.Cmd, out *os.File, tail bool, timeout ti
 	processErrCh := make(chan error, 1)
 
 	cmd.Cancel = func() error {
-		processErrCh <- errors.New(fmt.Sprintf("Test script killed due to a timeout (%s)", timeout))
+		processErrCh <- fmt.Errorf("Test script killed due to a timeout (%s)", timeout)
 		_ = cmd.Process.Kill()
 		_ = w.Close()
 		return nil
