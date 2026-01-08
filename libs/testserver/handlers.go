@@ -388,6 +388,14 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.VolumesCreate(req)
 	})
 
+	server.Handle("PATCH", "/api/2.1/unity-catalog/volumes/{full_name}", func(req Request) any {
+		return req.Workspace.VolumesUpdate(req, req.Vars["full_name"])
+	})
+
+	server.Handle("DELETE", "/api/2.1/unity-catalog/volumes/{full_name}", func(req Request) any {
+		return MapDelete(req.Workspace, req.Workspace.Volumes, req.Vars["full_name"])
+	})
+
 	// Repos:
 
 	server.Handle("POST", "/api/2.0/repos", func(req Request) any {
@@ -404,14 +412,6 @@ func AddDefaultHandlers(server *Server) {
 
 	server.Handle("DELETE", "/api/2.0/repos/{repo_id}", func(req Request) any {
 		return req.Workspace.ReposDelete(req)
-	})
-
-	server.Handle("PATCH", "/api/2.1/unity-catalog/volumes/{full_name}", func(req Request) any {
-		return req.Workspace.VolumesUpdate(req, req.Vars["full_name"])
-	})
-
-	server.Handle("DELETE", "/api/2.1/unity-catalog/volumes/{full_name}", func(req Request) any {
-		return MapDelete(req.Workspace, req.Workspace.Volumes, req.Vars["full_name"])
 	})
 
 	// SQL Warehouses:
