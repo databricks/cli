@@ -499,6 +499,12 @@ func AddDefaultHandlers(server *Server) {
 	server.Handle("POST", "/api/2.0/secrets/acls/delete", func(req Request) any {
 		return req.Workspace.SecretsAclsDelete(req)
 	})
+
+	// Groups:
+	server.Handle("POST", "/api/2.0/preview/scim/v2/Groups", func(req Request) any {
+		return req.Workspace.GroupsCreate(req)
+	})
+
 	// Database Instances:
 
 	server.Handle("POST", "/api/2.0/database/instances", func(req Request) any {
