@@ -145,37 +145,6 @@ jobs:
       - name: Analyze slow tests
         run: make slowest
 
-  test-exp-aitools:
-    needs:
-      - cleanups
-      - testmask
-
-    # Only run if the target is in the list of targets from testmask
-    if: ${{ contains(fromJSON(needs.testmask.outputs.targets), 'test-exp-aitools') }}
-    name: "make test-exp-aitools"
-    runs-on: ${{ matrix.os }}
-
-    strategy:
-      fail-fast: false
-      matrix:
-        os:
-          - macos-latest
-          - ubuntu-latest
-          - windows-latest
-
-    steps:
-      - name: Checkout repository and submodules
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-
-      - name: Setup build environment
-        uses: ./.github/actions/setup-build-environment
-        with:
-          cache-key: test-exp-aitools
-
-      - name: Run tests
-        run: |
-          make test-exp-aitools
-
   test-exp-apps-mcp:
     needs:
       - cleanups
@@ -282,7 +251,6 @@ jobs:
   test-result:
     needs:
       - test
-      - test-exp-aitools
       - test-exp-apps-mcp
       - test-exp-ssh
       - test-pipelines
