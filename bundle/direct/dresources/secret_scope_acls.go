@@ -119,7 +119,7 @@ func (r *ResourceSecretScopeAcls) FieldTriggers() map[string]deployplan.ActionTy
 	// When scope name changes, we need  a DoUpdateWithID trigger. This is necessary so that subsequent
 	// DoRead operations use the correct ID and we do not end up with a persistent drift.
 	return map[string]deployplan.ActionType{
-		"scope_name": deployplan.ActionTypeUpdateWithID,
+		"scope_name": deployplan.UpdateWithID,
 	}
 }
 

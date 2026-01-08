@@ -124,9 +124,9 @@ func (r *ResourcePipeline) DoDelete(ctx context.Context, id string) error {
 
 func (*ResourcePipeline) FieldTriggers() map[string]deployplan.ActionType {
 	result := map[string]deployplan.ActionType{
-		"storage":                                   deployplan.ActionTypeRecreate,
-		"ingestion_definition.connection_name":      deployplan.ActionTypeRecreate,
-		"ingestion_definition.ingestion_gateway_id": deployplan.ActionTypeRecreate,
+		"storage":                                   deployplan.Recreate,
+		"ingestion_definition.connection_name":      deployplan.Recreate,
+		"ingestion_definition.ingestion_gateway_id": deployplan.Recreate,
 	}
 
 	return result
@@ -135,7 +135,7 @@ func (*ResourcePipeline) FieldTriggers() map[string]deployplan.ActionType {
 func (*ResourcePipeline) OverrideChangeDesc(ctx context.Context, path *structpath.PathNode, ch *ChangeDesc, _ *pipelines.GetPipelineResponse) error {
 	if path.String() == "run_as" {
 		if structdiff.IsEqual(ch.Old, ch.New) {
-			ch.Action = deployplan.ActionTypeSkipString
+			ch.Action = deployplan.Skip
 			ch.Reason = "override"
 		}
 	}
