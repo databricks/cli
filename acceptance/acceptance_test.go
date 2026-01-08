@@ -108,9 +108,6 @@ const (
 	userReplacementsFilename = "ACC_REPLS"
 )
 
-// On CI, we want to increase timeout, to account for slower environment
-const CITimeoutMultiplier = 2
-
 var ApplyCITimeoutMultipler = os.Getenv("GITHUB_WORKFLOW") != ""
 
 var exeSuffix = func() string {
@@ -568,7 +565,7 @@ func runTest(t *testing.T,
 	}
 
 	if ApplyCITimeoutMultipler {
-		timeout *= CITimeoutMultiplier
+		timeout = time.Duration(float64(timeout) * config.TimeoutCIMultiplier)
 	}
 
 	ctx, cancelFunc := context.WithTimeout(context.Background(), timeout)
