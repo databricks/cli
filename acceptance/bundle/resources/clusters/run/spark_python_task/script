@@ -8,4 +8,9 @@ cleanup() {
 trap cleanup EXIT
 
 trace $CLI bundle deploy
+
+# Capture job ID and add to runtime replacements to avoid pattern matching ambiguity
+job_id=$(read_id.py jobs foo)
+echo "$job_id:JOB_ID" >> ACC_REPLS
+
 trace $CLI bundle run foo
