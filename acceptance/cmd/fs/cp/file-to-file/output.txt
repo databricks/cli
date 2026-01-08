@@ -2,6 +2,10 @@
 >>> [CLI] fs cp local.txt dbfs:/Volumes/main/default/data/uploaded.txt
 local.txt -> dbfs:/Volumes/main/default/data/uploaded.txt
 
->>> [CLI] fs cp dbfs:/Volumes/main/default/data/remote.txt downloaded.txt
-dbfs:/Volumes/main/default/data/remote.txt -> downloaded.txt
-content from volume
+>>> [CLI] fs cat dbfs:/Volumes/main/default/data/uploaded.txt
+hello world!
+>>> [CLI] fs cp dbfs:/Volumes/main/default/data/uploaded.txt downloaded.txt
+dbfs:/Volumes/main/default/data/uploaded.txt -> downloaded.txt
+
+>>> cat downloaded.txt
+hello world!

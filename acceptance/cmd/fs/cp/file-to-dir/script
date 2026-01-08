@@ -1,4 +1,8 @@
-echo -n "hello world!" > local.txt
+# Create target directory.
+$CLI fs mkdir dbfs:/Volumes/main/default/data/mydir
 
 # Copy file into a directory (trailing slash indicates directory target).
 trace $CLI fs cp local.txt dbfs:/Volumes/main/default/data/mydir/
+
+# Verify file was uploaded correctly.
+trace $CLI fs cat dbfs:/Volumes/main/default/data/mydir/local.txt

@@ -1,9 +1,15 @@
-echo -n "hello world!" > local.txt
+# Create parent directory.
+$CLI fs mkdir dbfs:/Volumes/main/default/data
 
 # Upload local file to volume.
 trace $CLI fs cp local.txt dbfs:/Volumes/main/default/data/uploaded.txt
 
-# Download file from volume to local.
-trace $CLI fs cp dbfs:/Volumes/main/default/data/remote.txt downloaded.txt
+# Verify file was uploaded correctly.
+trace $CLI fs cat dbfs:/Volumes/main/default/data/uploaded.txt
 
-cat downloaded.txt
+# Download the same file back to verify round-trip.
+trace $CLI fs cp dbfs:/Volumes/main/default/data/uploaded.txt downloaded.txt
+
+# Verify downloaded content matches original.
+trace cat downloaded.txt
+rm downloaded.txt

@@ -1,12 +1,2 @@
 Local = true
 Cloud = false
-Ignore = ["local.txt"]
-
-# Copy file into existing directory: local.txt -> mydir/local.txt.
-[[Server]]
-Pattern = "HEAD /api/2.0/fs/directories/Volumes/main/default/data/mydir"
-Response.StatusCode = 200
-
-[[Server]]
-Pattern = "PUT /api/2.0/fs/files/Volumes/main/default/data/mydir/local.txt"
-Response.StatusCode = 200

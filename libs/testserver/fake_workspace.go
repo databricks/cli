@@ -384,6 +384,30 @@ func (s *FakeWorkspace) WorkspaceFilesExportFile(path string) []byte {
 	return s.files[path].Data
 }
 
+// FileExists checks if a file exists at the given path.
+func (s *FakeWorkspace) FileExists(path string) bool {
+	if !strings.HasPrefix(path, "/") {
+		path = "/" + path
+	}
+
+	defer s.LockUnlock()()
+
+	_, exists := s.files[path]
+	return exists
+}
+
+// DirectoryExists checks if a directory exists at the given path.
+func (s *FakeWorkspace) DirectoryExists(path string) bool {
+	if !strings.HasPrefix(path, "/") {
+		path = "/" + path
+	}
+
+	defer s.LockUnlock()()
+
+	_, exists := s.directories[path]
+	return exists
+}
+
 // jsonConvert saves input to a value pointed by output
 func jsonConvert(input, output any) error {
 	writer := new(bytes.Buffer)

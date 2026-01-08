@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/compute"
@@ -145,15 +146,81 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	server.Handle("HEAD", "/api/2.0/fs/directories/{path:.*}", func(req Request) any {
-		return Response{
-			Body: "dir path: " + req.Vars["dir_path"],
+		path := req.Vars["path"]
+		if !strings.HasPrefix(path, "/") {
+			path = "/" + path
 		}
+
+		if req.Workspace.FileExists(path) {
+			return Response{StatusCode: 404}
+		}
+		if req.Workspace.DirectoryExists(path) {
+			return Response{StatusCode: 200}
+		}
+		return Response{StatusCode: 404}
+	})
+
+	server.Handle("HEAD", "/api/2.0/fs/files/{path:.*}", func(req Request) any {
+		path := req.Vars["path"]
+		if req.Workspace.FileExists(path) {
+			return Response{StatusCode: 200}
+		}
+		return Response{StatusCode: 404}
+	})
+
+	server.Handle("PUT", "/api/2.0/fs/directories/{path:.*}", func(req Request) any {
+		path := req.Vars["path"]
+		// Normalize path to start with "/".
+		if !strings.HasPrefix(path, "/") {
+			path = "/" + path
+		}
+		defer req.Workspace.LockUnlock()()
+
+		// Create this directory.
+		req.Workspace.directories[path] = workspace.ObjectInfo{
+			ObjectType: "DIRECTORY",
+			Path:       path,
+			ObjectId:   nextID(),
+		}
+
+		// Also create all parent directories.
+		for dir := path; dir != "/" && dir != ""; {
+			dir = strings.TrimSuffix(dir, "/")
+			idx := strings.LastIndex(dir, "/")
+			if idx <= 0 {
+				break
+			}
+			dir = dir[:idx]
+			if _, exists := req.Workspace.directories[dir]; !exists {
+				req.Workspace.directories[dir] = workspace.ObjectInfo{
+					ObjectType: "DIRECTORY",
+					Path:       dir,
+					ObjectId:   nextID(),
+				}
+			}
+		}
+
+		return Response{}
 	})
 
 	server.Handle("PUT", "/api/2.0/fs/files/{path:.*}", func(req Request) any {
 		path := req.Vars["path"]
 		overwrite := req.URL.Query().Get("overwrite") == "true"
 		return req.Workspace.WorkspaceFilesImportFile(path, req.Body, overwrite)
+	})
+
+	server.Handle("GET", "/api/2.0/fs/files/{path:.*}", func(req Request) any {
+		path := req.Vars["path"]
+		data := req.Workspace.WorkspaceFilesExportFile(path)
+		if data == nil {
+			return Response{
+				StatusCode: 404,
+				Body: map[string]string{
+					"message": "file does not exist",
+				},
+			}
+		}
+		return data
 	})
 
 	server.Handle("GET", "/api/2.1/unity-catalog/current-metastore-assignment", func(req Request) any {

@@ -1,20 +1,2 @@
 Local = true
 Cloud = false
-Ignore = ["localdir"]
-
-# Recursive copy: localdir/ -> uploaded-dir/.
-[[Server]]
-Pattern = "PUT /api/2.0/fs/directories/Volumes/main/default/data/uploaded-dir"
-Response.StatusCode = 200
-
-[[Server]]
-Pattern = "HEAD /api/2.0/fs/directories/Volumes/main/default/data/uploaded-dir"
-Response.StatusCode = 200
-
-[[Server]]
-Pattern = "PUT /api/2.0/fs/files/Volumes/main/default/data/uploaded-dir/file1.txt"
-Response.StatusCode = 200
-
-[[Server]]
-Pattern = "PUT /api/2.0/fs/files/Volumes/main/default/data/uploaded-dir/file2.txt"
-Response.StatusCode = 200

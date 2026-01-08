@@ -1,6 +1,9 @@
-mkdir -p localdir
-echo -n "file1 content" > localdir/file1.txt
-echo -n "file2 content" > localdir/file2.txt
+# Create parent directory.
+$CLI fs mkdir dbfs:/Volumes/main/default/data
 
 # Recursive directory copy (output sorted for deterministic ordering).
-$CLI fs cp -r localdir dbfs:/Volumes/main/default/data/uploaded-dir 2>&1 | sort
+trace $CLI fs cp -r localdir dbfs:/Volumes/main/default/data/uploaded-dir 2>&1 | sort
+
+# Verify files were uploaded correctly.
+trace $CLI fs cat dbfs:/Volumes/main/default/data/uploaded-dir/file1.txt
+trace $CLI fs cat dbfs:/Volumes/main/default/data/uploaded-dir/file2.txt
