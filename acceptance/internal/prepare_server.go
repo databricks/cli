@@ -221,7 +221,6 @@ func startLocalServer(t *testing.T,
 
 			if shouldKillCaller(stub, killCounters, killCountersMu) {
 				killCaller(t, stub.Pattern, req.Headers)
-				return testserver.Response{StatusCode: http.StatusOK}
 			}
 
 			return stub.Response
@@ -266,6 +265,9 @@ func killCaller(t *testing.T, pattern string, headers http.Header) {
 		return
 	}
 
+	if !waitForProcessExit(pid, 2*time.Second) {
+		t.Logf("KillCaller: timed out waiting for PID %d to exit (pattern: %s)", pid, pattern)
+	}
 	t.Logf("KillCaller: killed PID %d (pattern: %s)", pid, pattern)
 }
 

@@ -85,9 +85,9 @@ func (r *ResourceSecretScope) DoDelete(ctx context.Context, id string) error {
 
 func (r *ResourceSecretScope) FieldTriggers() map[string]deployplan.ActionType {
 	return map[string]deployplan.ActionType{
-		"scope":                    deployplan.ActionTypeRecreate,
-		"scope_backend_type":       deployplan.ActionTypeRecreate,
-		"backend_azure_keyvault":   deployplan.ActionTypeRecreate,
-		"initial_manage_principal": deployplan.ActionTypeRecreate,
+		"scope":                    deployplan.Recreate,
+		"scope_backend_type":       deployplan.Recreate,
+		"backend_azure_keyvault":   deployplan.Recreate,
+		"initial_manage_principal": deployplan.Recreate,
 	}
 }
