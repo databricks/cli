@@ -13,9 +13,10 @@
 ## Critical Workflow Rules
 1. ALWAYS call databricks_discover FIRST to get scaffolding guidance
 2. For new apps: use invoke_databricks_cli with init-template (see below)
-3. NEVER use npm/npx/vite directly - init-template creates proper Databricks bundle
-4. Validate before deploying
-5. Ask for confirmation on live environment changes
+3. For scaffolding: NEVER use `npm create vite` or `npx create-vite` - init-template creates proper Databricks bundle
+4. For development: `npm run dev`, `npm install`, `npm run build` are OK after scaffolding
+5. Validate before deploying
+6. Ask for confirmation on live environment changes
 
 {{.WorkspaceInfo}}{{if .WarehouseName}}
 Default SQL Warehouse: {{.WarehouseName}} ({{.WarehouseID}}){{else}}
