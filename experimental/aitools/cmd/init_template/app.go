@@ -17,7 +17,7 @@ import (
 
 const (
 	defaultTemplateRepo = "https://github.com/databricks/cli"
-	defaultTemplateDir  = "experimental/apps-mcp/templates/appkit" // TODO: Change to aitools/templates/appkit
+	defaultTemplateDir  = "experimental/aitools/templates/appkit"
 	defaultBranch       = "main"
 	templatePathEnvVar  = "DATABRICKS_APPKIT_TEMPLATE_PATH"
 )
