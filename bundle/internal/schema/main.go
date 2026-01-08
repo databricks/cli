@@ -183,8 +183,8 @@ func removeOutputOnlyFields(typ reflect.Type, s jsonschema.Schema) jsonschema.Sc
 }
 
 func main() {
-	if len(os.Args) != 3 {
-		fmt.Println("Usage: go run main.go <work-dir> <output-file>")
+	if len(os.Args) < 3 {
+		fmt.Println("Usage: go run main.go <work-dir> <output-file> [--skip-interpolation-pattern]")
 		os.Exit(1)
 	}
 
@@ -193,10 +193,12 @@ func main() {
 	// Output file, where the generated JSON schema will be written to.
 	outputFile := os.Args[2]
 
-	generateSchema(workdir, outputFile)
+	skipInterpolationPattern := len(os.Args) >= 4 && os.Args[3] == "--skip-interpolation-pattern"
+
+	generateSchema(workdir, outputFile, skipInterpolationPattern)
 }
 
-func generateSchema(workdir, outputFile string) {
+func generateSchema(workdir, outputFile string, skipInterpolationPattern bool) {
 	annotationsPath := filepath.Join(workdir, "annotations.yml")
 	annotationsOpenApiPath := filepath.Join(workdir, "annotations_openapi.yml")
 	annotationsOpenApiOverridesPath := filepath.Join(workdir, "annotations_openapi_overrides.yml")
@@ -220,15 +222,19 @@ func generateSchema(workdir, outputFile string) {
 		log.Fatal(err)
 	}
 
-	// Generate the JSON schema from the bundle Go struct.
-	s, err := jsonschema.FromType(reflect.TypeOf(config.Root{}), []func(reflect.Type, jsonschema.Schema) jsonschema.Schema{
+	transforms := []func(reflect.Type, jsonschema.Schema) jsonschema.Schema{
 		removeJobsFields,
 		removePipelineFields,
 		makeVolumeTypeOptional,
 		a.addAnnotations,
 		removeOutputOnlyFields,
-		addInterpolationPatterns,
-	})
+	}
+	if !skipInterpolationPattern {
+		transforms = append(transforms, addInterpolationPatterns)
+	}
+
+	// Generate the JSON schema from the bundle Go struct.
+	s, err := jsonschema.FromType(reflect.TypeOf(config.Root{}), transforms)
 
 	// AdditionalProperties is set to an empty schema to allow non-typed keys used as yaml-anchors
 	// Example:
