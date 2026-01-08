@@ -58,10 +58,10 @@ func newAppCmd() *cobra.Command {
 		Long: `Initialize a Databricks App using the appkit template.
 
 Examples:
-  experimental apps-mcp tools init-template app --name my-app
-  experimental apps-mcp tools init-template app --name my-app --warehouse abc123
-  experimental apps-mcp tools init-template app --name my-app --description "My cool app"
-  experimental apps-mcp tools init-template app --name my-app --output-dir ./projects
+  experimental aitools tools init-template app --name my-app
+  experimental aitools tools init-template app --name my-app --warehouse abc123
+  experimental aitools tools init-template app --name my-app --description "My cool app"
+  experimental aitools tools init-template app --name my-app --output-dir ./projects
 
 Environment variables:
   DATABRICKS_APPKIT_TEMPLATE_PATH  Override template source with local path (for development)

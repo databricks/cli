@@ -25,10 +25,10 @@ This creates a project with:
 - Personal schemas for development
 
 Examples:
-  experimental apps-mcp tools init-template pipeline --name my_pipeline --language python
-  experimental apps-mcp tools init-template pipeline --name my_pipeline --language sql
-  experimental apps-mcp tools init-template pipeline --name my_pipeline --language python --catalog my_catalog
-  experimental apps-mcp tools init-template pipeline --name my_pipeline --language sql --output-dir ./projects
+  experimental aitools tools init-template pipeline --name my_pipeline --language python
+  experimental aitools tools init-template pipeline --name my_pipeline --language sql
+  experimental aitools tools init-template pipeline --name my_pipeline --language python --catalog my_catalog
+  experimental aitools tools init-template pipeline --name my_pipeline --language sql --output-dir ./projects
 
 After initialization:
   databricks bundle deploy --target dev

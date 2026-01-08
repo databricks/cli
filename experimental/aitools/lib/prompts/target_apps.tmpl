@@ -9,13 +9,13 @@
 
 ### Validation
 ⚠️ Always validate before deploying:
-  invoke_databricks_cli 'experimental apps-mcp tools validate ./'
+  invoke_databricks_cli 'experimental aitools tools validate ./'
 
 This is battle-tested to catch common issues before deployment. Prefer using this over manual checks (e.g. `npm run lint`), as it covers more ground specific to Databricks Apps.
 
 ### Deployment
 ⚠️ USER CONSENT REQUIRED: Only deploy with explicit user permission.
-  invoke_databricks_cli 'experimental apps-mcp tools deploy'
+  invoke_databricks_cli 'experimental aitools tools deploy'
 
 ### View and Manage
   invoke_databricks_cli 'bundle summary'

@@ -15,8 +15,8 @@ import (
 func newInstallCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "install",
-		Short: "Install the Databricks aitools server in coding agents",
-		Long:  `Install the Databricks Databricks aitools server in coding agents like Claude Code and Cursor.`,
+		Short: "Install the Databricks AI tools MCP server in coding agents",
+		Long:  `Install the Databricks AI tools MCP server in coding agents like Claude Code and Cursor.`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runInstall(cmd.Context())
 		},
@@ -28,9 +28,9 @@ func newInstallCmd() *cobra.Command {
 func runInstall(ctx context.Context) error {
 	cmdio.LogString(ctx, "")
 	green := color.New(color.FgGreen).SprintFunc()
-	cmdio.LogString(ctx, " "+green("[")+"████████"+green("]")+"  Databricks Experimental Databricks aitools")
+	cmdio.LogString(ctx, " "+green("[")+"████████"+green("]")+"  Experimental Databricks AI tools MCP server")
 	cmdio.LogString(ctx, " "+green("[")+"██▌  ▐██"+green("]"))
-	cmdio.LogString(ctx, " "+green("[")+"████████"+green("]")+"  AI-powered Databricks Apps development and exploration")
+	cmdio.LogString(ctx, " "+green("[")+"████████"+green("]")+"  AI-powered Databricks development and exploration")
 	cmdio.LogString(ctx, "")
 
 	yellow := color.New(color.FgYellow).SprintFunc()

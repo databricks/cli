@@ -25,9 +25,9 @@ This creates a project with:
 - Personal schemas for development
 
 Examples:
-  experimental apps-mcp tools init-template job --name my_job
-  experimental apps-mcp tools init-template job --name my_job --catalog my_catalog
-  experimental apps-mcp tools init-template job --name my_job --output-dir ./projects
+  experimental aitools tools init-template job --name my_job
+  experimental aitools tools init-template job --name my_job --catalog my_catalog
+  experimental aitools tools init-template job --name my_job --output-dir ./projects
 
 After initialization:
   databricks bundle deploy --target dev

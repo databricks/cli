@@ -20,7 +20,7 @@ Example MCP server configuration:
   "mcpServers": {
     "databricks": {
       "command": "databricks",
-      "args": ["experimental", "apps-mcp"]
+      "args": ["experimental", "aitools"]
     }
   }
 }

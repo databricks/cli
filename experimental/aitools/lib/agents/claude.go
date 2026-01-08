@@ -13,7 +13,7 @@ func DetectClaude() bool {
 	return err == nil
 }
 
-// InstallClaude installs the Databricks aitools server in Claude Code.
+// InstallClaude installs the Databricks AI tools MCP server in Claude Code.
 func InstallClaude() error {
 	if !DetectClaude() {
 		return errors.New("claude Code CLI is not installed or not on PATH\n\nPlease install Claude Code and ensure 'claude' is available on your system PATH.\nFor installation instructions, visit: https://docs.anthropic.com/en/docs/claude-code")
@@ -32,7 +32,7 @@ func InstallClaude() error {
 		"--transport", "stdio",
 		"databricks-mcp",
 		"--",
-		databricksPath, "experimental", "apps-mcp")
+		databricksPath, "experimental", "aitools")
 
 	output, err := cmd.CombinedOutput()
 	if err != nil {

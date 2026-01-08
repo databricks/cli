@@ -94,7 +94,7 @@ If you prefer to configure manually or the automatic installation doesn't work:
   "mcpServers": {
     "databricks": {
       "command": "databricks",
-      "args": ["experimental", "apps-mcp"],
+      "args": ["experimental", "aitools"],
       "env": {
         "DATABRICKS_HOST": "https://your-workspace.databricks.com",
         "DATABRICKS_TOKEN": "dapi...",

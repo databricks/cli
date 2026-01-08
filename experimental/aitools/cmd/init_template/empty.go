@@ -30,9 +30,9 @@ This creates a minimal project structure without sample code. For apps, jobs, or
 use the dedicated 'app', 'job', or 'pipeline' commands instead.
 
 Examples:
-  experimental apps-mcp tools init-template empty --name my_dashboard_project
-  experimental apps-mcp tools init-template empty --name my_alerts --language sql --catalog my_catalog
-  experimental apps-mcp tools init-template empty --name my_project --output-dir ./projects
+  experimental aitools tools init-template empty --name my_dashboard_project
+  experimental aitools tools init-template empty --name my_alerts --language sql --catalog my_catalog
+  experimental aitools tools init-template empty --name my_project --output-dir ./projects
 
 After initialization:
   Add resource definitions in resources/ (e.g., resources/my_dashboard.dashboard.yml)
