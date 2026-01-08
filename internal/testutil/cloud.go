@@ -33,7 +33,7 @@ func (c Cloud) NodeTypeID() string {
 	case AWS:
 		return "i3.xlarge"
 	case Azure:
-		return "Standard_DS4_v2"
+		return "Standard_E4ds_v5"
 	case GCP:
 		return "n1-standard-4"
 	default:
