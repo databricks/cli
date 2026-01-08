@@ -20,7 +20,6 @@ def sort_acls_recursive(obj):
         result = {}
         for key, value in obj.items():
             if key == "acls" and isinstance(value, list):
-                # Sort ACLs by principal
                 result[key] = sorted(value, key=repr)
             else:
                 result[key] = sort_acls_recursive(value)
