@@ -6,6 +6,7 @@ import subprocess
 
 SERVERLESS = os.environ["SERVERLESS"] == "yes"
 INCLUDE_PYTHON = os.environ["PY"] == "yes"
+READPLAN = os.environ["READPLAN"] != ""
 
 CLOUD_ENV = os.environ.get("CLOUD_ENV")
 if CLOUD_ENV and SERVERLESS and not os.environ.get("TEST_METASTORE_ID"):
@@ -17,11 +18,11 @@ STATE = "Updating deployment state"
 
 
 def is_printable_line(line):
-    # only shown when include_python=yes
+    # only shown when include_python=yes and READPLAN is not set
     if line.startswith(BUILDING):
         return False
 
-    # only shown when include_python=yes
+    # only shown when include_python=yes and READPLAN is not set
     if UPLOADING_WHL.match(line):
         return False
 
@@ -36,7 +37,7 @@ p = subprocess.run(sys.argv[1:], stdout=subprocess.PIPE, stderr=subprocess.PIPE,
 try:
     assert p.returncode == 0, p.returncode
     assert p.stdout == ""
-    if INCLUDE_PYTHON:
+    if INCLUDE_PYTHON and not READPLAN:
         assert BUILDING in p.stderr, BUILDING
         assert UPLOADING_WHL.search(p.stderr), UPLOADING_WHL
     else:

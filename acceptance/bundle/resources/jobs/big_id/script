@@ -1,6 +1,6 @@
 trace $CLI bundle validate -o json | jq .resources > out.validate.json
 trace $CLI bundle plan -o json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
-$CLI bundle deploy
+$CLI bundle deploy $(readplanarg out.plan.direct.json)
 trace print_requests.py //jobs
 print_state.py > out.state.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle plan | contains.py '0 to add, 0 to change, 0 to delete'

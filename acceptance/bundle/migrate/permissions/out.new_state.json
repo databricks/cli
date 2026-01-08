@@ -42,7 +42,13 @@
       "user_name": "[USERNAME]"
      }
     ]
-   }
+   },
+   "depends_on": [
+    {
+     "node": "resources.jobs.test_job",
+     "label": "${resources.jobs.test_job.id}"
+    }
+   ]
   },
   "resources.pipelines.test_pipeline": {
    "__id__": "[UUID]",
@@ -77,7 +83,13 @@
       "user_name": "[USERNAME]"
      }
     ]
-   }
+   },
+   "depends_on": [
+    {
+     "node": "resources.pipelines.test_pipeline",
+     "label": "${resources.pipelines.test_pipeline.id}"
+    }
+   ]
   }
  }
 }

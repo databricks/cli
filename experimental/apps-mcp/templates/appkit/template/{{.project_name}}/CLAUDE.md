@@ -38,7 +38,7 @@ export const querySchemas = {
 
 ```typescript
 // client/src/App.tsx
-import { BarChart } from '@databricks/app-kit-ui/react';
+import { BarChart } from '@databricks/appkit-ui/react';
 
 <BarChart queryKey="my_data" parameters={{}} />
 ```
@@ -73,7 +73,7 @@ See the databricks experimental apps-mcp tools validate instead of running these
 **IMPORTANT**: Read the relevant docs below before implementing features. They contain critical information about common pitfalls (e.g., SQL numeric type handling, schema definitions, Radix UI constraints).
 
 - [SQL Queries](docs/sql-queries.md) - query files, schemas, type handling, parameterization
-- [App Kit SDK](docs/app-kit-sdk.md) - TypeScript imports, server setup, useAnalyticsQuery hook
+- [App Kit SDK](docs/appkit-sdk.md) - TypeScript imports, server setup, useAnalyticsQuery hook
 - [Frontend](docs/frontend.md) - visualization components, styling, layout, Radix constraints
 - [tRPC](docs/trpc.md) - custom endpoints for non-SQL operations (mutations, Databricks APIs)
 - [Testing](docs/testing.md) - vitest unit tests, Playwright smoke/E2E tests
