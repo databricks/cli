@@ -2,6 +2,7 @@ package bundle
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/render"
@@ -34,7 +35,8 @@ func newValidateCommand() *cobra.Command {
 
 Run validate before deploy to catch configuration issues early:
   databricks bundle validate                  # Validate default target
-  databricks bundle validate --target prod    # Validate specific target
+  databricks bundle validate --target prod   # Validate specific target
+  databricks bundle validate --strict         # Fail on warnings
 
 Validation checks the configuration syntax and schema, permissions etc.
 
@@ -43,8 +45,10 @@ Please run this command before deploying to ensure configuration quality.`,
 	}
 
 	var includeLocations bool
+	var strict bool
 	cmd.Flags().BoolVar(&includeLocations, "include-locations", false, "Include location information in the output")
 	cmd.Flags().MarkHidden("include-locations")
+	cmd.Flags().BoolVar(&strict, "strict", false, "Treat warnings as errors")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{
@@ -72,6 +76,18 @@ Please run this command before deploying to ensure configuration quality.`,
 			if err1 != nil {
 				return err1
 			}
+		}
+
+		// In strict mode, treat warnings as errors.
+		numWarnings := logdiag.NumWarnings(ctx)
+		if err == nil && strict && numWarnings > 0 {
+			prefix := ""
+			if numWarnings == 1 {
+				prefix = fmt.Sprintf("1 warning was found")
+			} else {
+				prefix = fmt.Sprintf("%d warnings were found", numWarnings)
+			}
+			return fmt.Errorf("%s. Warnings are not allowed in strict mode", prefix)
 		}
 
 		return err

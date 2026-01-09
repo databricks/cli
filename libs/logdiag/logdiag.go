@@ -77,6 +77,14 @@ func HasError(ctx context.Context) bool {
 	return val.Errors > 0
 }
 
+func NumWarnings(ctx context.Context) int {
+	val := read(ctx)
+	val.mu.Lock()
+	defer val.mu.Unlock()
+
+	return val.Warnings
+}
+
 func SetSeverity(ctx context.Context, target diag.Severity) {
 	val := read(ctx)
 	val.mu.Lock()

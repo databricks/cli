@@ -1,0 +1,49 @@
+
+>>> [CLI] bundle validate
+Warning: invalid value "INVALID_TYPE" for enum field. Valid values are [complex]
+  at variables.my_variable.type
+  in databricks.yml:6:11
+
+Name: test-bundle
+Target: foo
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/foo
+
+Found 1 warning
+
+>>> [CLI] bundle validate --strict
+Warning: invalid value "INVALID_TYPE" for enum field. Valid values are [complex]
+  at variables.my_variable.type
+  in databricks.yml:6:11
+
+Name: test-bundle
+Target: foo
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/foo
+
+Found 1 warning
+Error: 1 warning was found. Warnings are not allowed in strict mode
+
+Exit code: 1
+
+>>> [CLI] bundle validate --strict -t bar
+Warning: invalid value "INVALID_TYPE" for enum field. Valid values are [complex]
+  at variables.my_variable.type
+  in databricks.yml:6:11
+
+Warning: invalid value "INVALID_TYPE" for enum field. Valid values are [whl jar]
+  at artifacts.my_artifact.type
+  in databricks.yml:16:15
+
+Name: test-bundle
+Target: bar
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/test-bundle/bar
+
+Found 2 warnings
+Error: 2 warnings were found. Warnings are not allowed in strict mode
+
+Exit code: 1
