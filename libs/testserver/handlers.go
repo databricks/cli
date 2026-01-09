@@ -152,21 +152,34 @@ func AddDefaultHandlers(server *Server) {
 			path = "/" + path
 		}
 
-		// Heuristic: if path has a file extension (last . after last /), assume it's not a directory
-		lastSlash := strings.LastIndexAny(path, "/\\")
+		// The test server doesn't track Unity Catalog Volumes file/directory state.
+		// When the CLI checks if a path like "/Volumes/.../file.txt" is a directory
+		// (via HEAD request) before creating it (via PUT request), the path doesn't
+		// exist yet, so we have no state to check. We must answer based on the path
+		// string alone.
+		//
+		// Use a simple heuristic: if the path has a file extension (e.g., .txt),
+		// assume it's a file, not a directory. This handles the common case where
+		// files have extensions and directories don't.
+		//
+		// Assumption: paths with extensions like .txt, .json, .yaml are files.
+		// Limitation: this doesn't handle extensionless files or directories with
+		// dots in their names. For such cases, use test-specific Server overrides
+		// in test.toml files.
 		lastDot := strings.LastIndex(path, ".")
-		if lastDot > lastSlash && lastDot > 0 {
-			// Has a file extension like .txt, .json, etc.
+		if lastDot > strings.LastIndexAny(path, "/\\") {
 			return Response{StatusCode: 404}
 		}
 
+		// Check tracked workspace files and directories.
 		if req.Workspace.FileExists(path) {
 			return Response{StatusCode: 404}
 		}
 		if req.Workspace.DirectoryExists(path) {
 			return Response{StatusCode: 200}
 		}
-		// For volumes or other paths, assume it could be a directory
+
+		// For untracked paths (e.g., Unity Catalog Volumes), assume directory.
 		return Response{StatusCode: 200}
 	})
 
@@ -183,9 +196,10 @@ func AddDefaultHandlers(server *Server) {
 		if !strings.HasPrefix(dirPath, "/") {
 			dirPath = "/" + dirPath
 		}
+
 		defer req.Workspace.LockUnlock()()
 
-		// Create directory and all parents.
+		// Create directory and all parent directories.
 		for dir := dirPath; dir != "/" && dir != ""; dir = path.Dir(dir) {
 			if _, exists := req.Workspace.directories[dir]; !exists {
 				req.Workspace.directories[dir] = workspace.ObjectInfo{
