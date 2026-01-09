@@ -1,0 +1,4 @@
+
+=== Profile override allows destructive SQL
+>>> [CLI] query sql --warehouse-id wh-123 --sql INSERT INTO users VALUES (1, 'alice') --format table
+Statement stmt-allow-profile returned no results

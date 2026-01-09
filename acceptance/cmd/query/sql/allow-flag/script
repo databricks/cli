@@ -1,0 +1,2 @@
+title "Flag override allows destructive SQL"
+trace $CLI query sql --warehouse-id wh-123 --sql "DROP TABLE users" --format table --allow-destructive
