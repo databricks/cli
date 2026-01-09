@@ -1,0 +1,8 @@
+# Bind job that is already bound to the same ID.
+# This is a no-op, but terraform complains anyway.
+trace $CLI bundle deploy
+
+job_id=$(read_id.py foo)
+
+trace musterr $CLI bundle deployment bind foo $job_id &> out.bind.$DATABRICKS_BUNDLE_ENGINE.txt
+trace $CLI bundle plan | contains.py "1 unchanged"
