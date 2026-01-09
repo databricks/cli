@@ -10,6 +10,7 @@ To disable this, set the environment variable DATABRICKS_CACHE_ENABLED to false.
 
 ### Bundles
 * Enable caching user identity by default ([#4202](https://github.com/databricks/cli/pull/4202))
+* Pass additional Azure DevOps system variables ([#4236](https://github.com/databricks/cli/pull/4236))
 
 ### Dependency updates
 
