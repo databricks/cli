@@ -8,7 +8,7 @@
       "action": "skip",
       "remote_state": {
         "create_time": "[TIMESTAMP]",
-        "dashboard_id": "[DASHBOARD_ID]",
+        "dashboard_id": "[DASHBOARD1_ID]",
         "display_name": "my dashboard",
         "embed_credentials": true,
         "etag": "[NUMID]",
