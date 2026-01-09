@@ -1,7 +1,7 @@
-# This is a Databricks asset bundle definition for my_python_project.
+# This is a Databricks asset bundle definition for lakeflow_project.
 # See https://docs.databricks.com/dev-tools/bundles/index.html for documentation.
 bundle:
-  name: my_python_project
+  name: lakeflow_project
   uuid: [UUID]
 
 include:
@@ -26,7 +26,7 @@ targets:
     workspace:
       host: [DATABRICKS_URL]
     variables:
-      catalog: main
+      catalog: hive_metastore
       schema: ${workspace.current_user.short_name}
   prod:
     mode: production
@@ -35,7 +35,7 @@ targets:
       # We explicitly deploy to /Workspace/Users/[USERNAME] to make sure we only have a single copy.
       root_path: /Workspace/Users/[USERNAME]/.bundle/${bundle.name}/${bundle.target}
     variables:
-      catalog: main
+      catalog: hive_metastore
       schema: prod
     permissions:
       - user_name: [USERNAME]
