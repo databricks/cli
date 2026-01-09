@@ -55,21 +55,6 @@ func New(ctx context.Context) *cobra.Command {
 	// Add workspace subcommands.
 	workspaceCommands := workspace.All()
 	for _, cmd := range workspaceCommands {
-		// Built-in groups for the workspace commands.
-		groups := []cobra.Group{
-			{
-				ID:    mainGroup,
-				Title: "Available Commands",
-			},
-			{
-				ID:    permissionsGroup,
-				Title: "Permission Commands",
-			},
-		}
-		for i := range groups {
-			cmd.AddGroup(&groups[i])
-		}
-
 		// Order the permissions subcommands after the main commands.
 		for _, sub := range cmd.Commands() {
 			switch {
@@ -81,6 +66,20 @@ func New(ctx context.Context) *cobra.Command {
 		}
 
 		cli.AddCommand(cmd)
+
+		// Built-in groups for the workspace commands.
+		groups := []cobra.Group{
+			{
+				ID:    mainGroup,
+				Title: "Available Commands",
+			},
+			{
+				ID:    permissionsGroup,
+				Title: "Permission Commands",
+			},
+		}
+
+		configureGroups(cmd, groups)
 	}
 
 	// Add other subcommands.

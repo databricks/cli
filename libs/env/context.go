@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"runtime"
+	"strconv"
 	"strings"
 )
 
@@ -53,6 +54,41 @@ func Lookup(ctx context.Context, key string) (string, bool) {
 func Get(ctx context.Context, key string) string {
 	v, _ := Lookup(ctx, key)
 	return v
+}
+
+// GetBool gets a boolean value from the context or environment.
+// Returns (value, true) if the key is set, or (false, false) if not set.
+// It accepts various boolean-like values:
+// - True: "1", "t", "T", "true", "TRUE", "True", "yes", "YES", "Yes", "on", "ON", "On"
+// - False: "0", "f", "F", "false", "FALSE", "False", "no", "NO", "No", "off", "OFF", "Off", "" (empty string)
+// Invalid values are treated as false but still return ok=true.
+func GetBool(ctx context.Context, key string) (bool, bool) {
+	v, ok := Lookup(ctx, key)
+	if !ok {
+		return false, false
+	}
+
+	// Empty string is treated as false
+	if v == "" {
+		return false, true
+	}
+
+	// Handle additional boolean-like values not covered by strconv.ParseBool
+	switch strings.ToLower(v) {
+	case "yes", "on":
+		return true, true
+	case "no", "off":
+		return false, true
+	}
+
+	// Use strconv.ParseBool for standard boolean parsing
+	// It handles: "1", "t", "T", "true", "TRUE", "True" (true)
+	// and: "0", "f", "F", "false", "FALSE", "False" (false)
+	b, err := strconv.ParseBool(v)
+	if err != nil {
+		return false, true
+	}
+	return b, true
 }
 
 // Set key on the context.

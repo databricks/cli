@@ -51,9 +51,9 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.
 		cmdio.LogString(ctx, "")
 	}
 
-	schemaActions := filterGroup(deleteActions, "schemas", deployplan.ActionTypeDelete)
-	dltActions := filterGroup(deleteActions, "pipelines", deployplan.ActionTypeDelete)
-	volumeActions := filterGroup(deleteActions, "volumes", deployplan.ActionTypeDelete)
+	schemaActions := filterGroup(deleteActions, "schemas", deployplan.Delete)
+	dltActions := filterGroup(deleteActions, "pipelines", deployplan.Delete)
+	volumeActions := filterGroup(deleteActions, "volumes", deployplan.Delete)
 
 	if len(schemaActions) > 0 {
 		cmdio.LogString(ctx, deleteSchemaMessage)

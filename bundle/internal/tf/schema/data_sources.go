@@ -81,6 +81,12 @@ type DataSources struct {
 	Pipelines                              map[string]any `json:"databricks_pipelines,omitempty"`
 	PolicyInfo                             map[string]any `json:"databricks_policy_info,omitempty"`
 	PolicyInfos                            map[string]any `json:"databricks_policy_infos,omitempty"`
+	PostgresBranch                         map[string]any `json:"databricks_postgres_branch,omitempty"`
+	PostgresBranches                       map[string]any `json:"databricks_postgres_branches,omitempty"`
+	PostgresEndpoint                       map[string]any `json:"databricks_postgres_endpoint,omitempty"`
+	PostgresEndpoints                      map[string]any `json:"databricks_postgres_endpoints,omitempty"`
+	PostgresProject                        map[string]any `json:"databricks_postgres_project,omitempty"`
+	PostgresProjects                       map[string]any `json:"databricks_postgres_projects,omitempty"`
 	QualityMonitorV2                       map[string]any `json:"databricks_quality_monitor_v2,omitempty"`
 	QualityMonitorsV2                      map[string]any `json:"databricks_quality_monitors_v2,omitempty"`
 	RegisteredModel                        map[string]any `json:"databricks_registered_model,omitempty"`
@@ -196,6 +202,12 @@ func NewDataSources() *DataSources {
 		Pipelines:                              make(map[string]any),
 		PolicyInfo:                             make(map[string]any),
 		PolicyInfos:                            make(map[string]any),
+		PostgresBranch:                         make(map[string]any),
+		PostgresBranches:                       make(map[string]any),
+		PostgresEndpoint:                       make(map[string]any),
+		PostgresEndpoints:                      make(map[string]any),
+		PostgresProject:                        make(map[string]any),
+		PostgresProjects:                       make(map[string]any),
 		QualityMonitorV2:                       make(map[string]any),
 		QualityMonitorsV2:                      make(map[string]any),
 		RegisteredModel:                        make(map[string]any),
