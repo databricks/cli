@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Add entry to ACC_REPLS without clobering existing ones.
+Add entry to ACC_REPLS without clobbering existing ones.
 
 If entry already exists, it'll add suffix in _<number> format.
 """
