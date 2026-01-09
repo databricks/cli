@@ -10,19 +10,20 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
+	"github.com/databricks/cli/libs/dyn/yamlloader"
 	"github.com/databricks/cli/libs/dyn/yamlsaver"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v3"
 )
 
 type sdpPipeline struct {
 	name          string               `yaml:"name"`
-	storage       string               `yaml:"storage,omitempty"`
 	catalog       string               `yaml:"catalog,omitempty"`
 	database      string               `yaml:"database,omitempty"`
-	configuration map[string]string    `yaml:"configuration,omitempty"`
 	libraries     []sdpPipelineLibrary `yaml:"libraries,omitempty"`
+	configuration map[string]string    `yaml:"configuration,omitempty"`
+	// Ignored fields (read from YAML but not used)
+	_ string `yaml:"storage,omitempty"`
 }
 
 type sdpPipelineLibrary struct {
@@ -119,46 +120,28 @@ func validateAndParsePath(folderPath string) (*sdpPathInfo, error) {
 		folderPath = filepath.Dir(folderPath)
 	}
 
-	// Convert to absolute path
-	absPath, err := filepath.Abs(folderPath)
+	absFolderPath, err := filepath.Abs(folderPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve absolute path for %s: %w", folderPath, err)
 	}
 
-	// Get relative path from CWD
-	relPath, err := filepath.Rel(cwd, absPath)
+	normalizedFolderPath, err := filepath.Rel(cwd, absFolderPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get relative path: %w", err)
 	}
 
-	// Normalize to forward slashes for consistent parsing (works on Windows too)
-	relPath = filepath.ToSlash(relPath)
+	normalizedFolderPath = filepath.ToSlash(normalizedFolderPath)
 
-	// Check if path starts with ".." (outside of CWD)
-	if strings.HasPrefix(relPath, "..") {
-		return nil, fmt.Errorf("folder must be within the current project directory, got: %s", folderPath)
-	}
-
-	// Split path to check structure
-	parts := strings.Split(relPath, "/")
-
-	// Must be src/<folder_name>
+	// Specified folder must be src/<folder_name>
+	parts := strings.Split(normalizedFolderPath, "/")
 	if len(parts) != 2 || parts[0] != "src" {
-		return nil, fmt.Errorf("folder must be directly in 'src' directory (e.g., ./src/my_pipeline), got: %s", folderPath)
+		return nil, fmt.Errorf("pipeline folder must be moved into 'src' directory like src/my_pipeline, got: %s", folderPath)
 	}
 
 	pipelineName := parts[1]
 
 	// Return the relative path as pipelineDirectoryPath (keep it relative for later use)
-	srcFolder := filepath.FromSlash(relPath)
-
-	// Convert sparkPipelineFile to absolute if it was specified
-	if sparkPipelineFile != "" {
-		sparkPipelineFile, err = filepath.Abs(sparkPipelineFile)
-		if err != nil {
-			return nil, fmt.Errorf("failed to resolve absolute path for %s: %w", sparkPipelineFile, err)
-		}
-	}
+	srcFolder := filepath.FromSlash(normalizedFolderPath)
 
 	return &sdpPathInfo{
 		directoryName:         pipelineName,
@@ -198,32 +181,40 @@ func findSparkPipelineFile(folder string) (string, error) {
 
 // parseSparkPipelineYAML parses a spark-pipeline.yml file.
 func parseSparkPipelineYAML(filePath string) (*sdpPipeline, error) {
-	data, err := os.ReadFile(filePath)
+	file, err := os.Open(filePath)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to open %s: %w", filePath, err)
+	}
+	defer file.Close()
+
+	dv, err := yamlloader.LoadYAML(filePath, file)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load %s: %w", filePath, err)
 	}
 
-	var spec sdpPipeline
-	if err := yaml.Unmarshal(data, &spec); err != nil {
-		return nil, err
+	out := sdpPipeline{}
+
+	err = convert.ToTyped(&out, dv)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse %s: %w", filePath, err)
 	}
 
-	return &spec, nil
+	return &out, nil
 }
 
 // convertToResources converts a spark-pipeline.yml spec to DAB YAML format with "resources" property
-func convertToResources(spec *sdpPipeline, resourceName string, srcFolder string) (map[string]dyn.Value, error) {
+func convertToResources(spec *sdpPipeline, resourceName, srcFolder string) (map[string]dyn.Value, error) {
 	// YAML paths are relative to directory containing YAML file, in this case:
 	// DAB YAML is in "./resources/<directoryName>.pipeline.yml"
 	// SDP YAML is in "./<pipelineDirectoryPath>/spark-pipeline.yml"
 	relativePath := filepath.Join("..", srcFolder)
 
-	var catalog = "${var.catalog}"
+	catalog := "${var.catalog}"
 	if spec.catalog != "" {
 		catalog = spec.catalog
 	}
 
-	var schema = "${var.schema}"
+	schema := "${var.schema}"
 	if spec.database != "" {
 		schema = spec.database
 	}
@@ -255,29 +246,47 @@ func convertToResources(spec *sdpPipeline, resourceName string, srcFolder string
 		return nil, fmt.Errorf("failed to convert libraries into dyn.Value: %w", err)
 	}
 
-	pipelineDyn := dyn.V(
-		map[string]dyn.Value{
-			"name":        dyn.V(spec.name),
-			"catalog":     dyn.V(catalog),
-			"schema":      dyn.V(schema),
-			"rootPath":    dyn.V(relativePath),
-			"serverless":  dyn.V(true),
-			"libraries":   librariesDyn,
-			"environment": environmentDyn,
-		},
-	)
+	// maps are unordered, and saver is sorting keys by dyn.Location
+	// this is helper function to monotonically assign locations as keys are created
+	var line int
+	nextLocation := func() []dyn.Location {
+		line += 1
+		return []dyn.Location{{Line: line}}
+	}
+
+	pipelineMap := map[string]dyn.Value{
+		"name":       dyn.V(spec.name).WithLocations(nextLocation()),
+		"catalog":    dyn.V(catalog).WithLocations(nextLocation()),
+		"schema":     dyn.V(schema).WithLocations(nextLocation()),
+		"root_path":  dyn.V(relativePath).WithLocations(nextLocation()),
+		"serverless": dyn.V(true).WithLocations(nextLocation()),
+		"libraries":  librariesDyn.WithLocations(nextLocation()),
+	}
+
+	// configuration is optional field, skip if empty
+	if spec.configuration != nil {
+		dv, err := convert.FromTyped(spec.configuration, dyn.NilValue)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert configuration into dyn.Value: %w", err)
+		}
+
+		// NB: golang maps are unordered, and currently we don't preserve the order
+		pipelineMap["configuration"] = dv.WithLocations(nextLocation())
+	}
+
+	pipelineMap["environment"] = environmentDyn.WithLocations(nextLocation())
 
 	resourcesMap := map[string]dyn.Value{
 		"resources": dyn.V(map[string]dyn.Value{
 			"pipelines": dyn.V(map[string]dyn.Value{
-				resourceName: pipelineDyn,
+				resourceName: dyn.V(pipelineMap),
 			}),
 		}),
 	}
 
-	_, diag := convert.Normalize(&config.Resources{}, dyn.V(resourcesMap))
+	_, diag := convert.Normalize(&config.Root{}, dyn.V(resourcesMap))
 	if len(diag) > 0 {
-		return nil, fmt.Errorf("generated output doesn't match schema: %s", diag)
+		return nil, fmt.Errorf("generated output doesn't match schema: %v", diag)
 	}
 
 	return resourcesMap, nil

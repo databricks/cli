@@ -1,0 +1,12 @@
+resources:
+  pipelines:
+    my_pipeline:
+      name: ""
+      catalog: ${var.catalog}
+      schema: ${var.schema}
+      root_path: ../src/my_pipeline
+      serverless: true
+      libraries: null
+      environment:
+        dependencies:
+          - --editable ${workspace.file_path}
