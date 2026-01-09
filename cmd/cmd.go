@@ -57,6 +57,11 @@ func New(ctx context.Context) *cobra.Command {
 	for _, cmd := range workspaceCommands {
 		// Order the permissions subcommands after the main commands.
 		for _, sub := range cmd.Commands() {
+			// some commands override groups in overrides.go, leave them as-is
+			if sub.GroupID != "" {
+				continue
+			}
+
 			switch {
 			case strings.HasSuffix(sub.Name(), "-permissions"), strings.HasSuffix(sub.Name(), "-permission-levels"):
 				sub.GroupID = permissionsGroup
@@ -72,6 +77,10 @@ func New(ctx context.Context) *cobra.Command {
 			{
 				ID:    mainGroup,
 				Title: "Available Commands",
+			},
+			{
+				ID:    pipelines.ManagementGroupID,
+				Title: "Management Commands",
 			},
 			{
 				ID:    permissionsGroup,
