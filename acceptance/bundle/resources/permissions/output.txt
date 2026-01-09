@@ -65,7 +65,7 @@ DIFF  dashboards/create/out.requests.destroy.direct.json
 +  {
 +    "body": {},
 +    "method": "PUT",
-+    "path": "/api/2.0/permissions/dashboards/[DASHBOARD_ID]"
++    "path": "/api/2.0/permissions/dashboards/[FOO_ID]"
 +  }
 +]
 MATCH database_instances/current_can_manage/out.requests.deploy.direct.json
