@@ -3,6 +3,7 @@
 .codegen/_openapi_sha
 .release_metadata.json
 bundle/schema/jsonschema.json
+bundle/schema/jsonschema_ref_only.json
 python/docs/images/databricks-logo.svg
 **/*.dist-info/METADATA
 **/*.dist-info/WHEEL
