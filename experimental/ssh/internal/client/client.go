@@ -329,7 +329,7 @@ func submitSSHTunnelJob(ctx context.Context, client *databricks.WorkspaceClient,
 }
 
 func spawnSSHClient(ctx context.Context, userName, privateKeyPath string, serverPort int, clusterID string, opts ClientOptions) error {
-	proxyCommand, err := setup.GenerateProxyCommand(opts.SessionIdentifier(), clusterID, opts.IsServerlessMode(), opts.AutoStartCluster, opts.ShutdownDelay, opts.Profile, userName, serverPort, opts.HandoverTimeout)
+	proxyCommand, err := setup.GenerateProxyCommand(opts.SessionIdentifier(), clusterID, opts.IsServerlessMode(), opts.AutoStartCluster, opts.ShutdownDelay, opts.Profile, userName, serverPort, opts.HandoverTimeout, opts.Liteswap)
 	if err != nil {
 		return fmt.Errorf("failed to generate ProxyCommand: %w", err)
 	}
