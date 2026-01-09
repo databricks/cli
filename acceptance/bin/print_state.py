@@ -42,7 +42,8 @@ def get_state_files(target, backup):
         result.append(f"{target_dir}/terraform/terraform.tfstate.backup")
     else:
         result.append(f"{target_dir}/terraform/terraform.tfstate")
-    result.append(f"{target_dir}/resources.json")
+        result.append(f"{target_dir}/resources.json")
+
     return result
 
 
