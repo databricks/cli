@@ -5,5 +5,6 @@ localdir/file2.txt -> dbfs:/Volumes/main/default/data/uploaded-dir/file2.txt
 
 >>> [CLI] fs cat dbfs:/Volumes/main/default/data/uploaded-dir/file1.txt
 file1 content
+
 >>> [CLI] fs cat dbfs:/Volumes/main/default/data/uploaded-dir/file2.txt
 file2 content

@@ -4,6 +4,7 @@ local.txt -> dbfs:/Volumes/main/default/data/uploaded.txt
 
 >>> [CLI] fs cat dbfs:/Volumes/main/default/data/uploaded.txt
 hello world!
+
 >>> [CLI] fs cp dbfs:/Volumes/main/default/data/uploaded.txt downloaded.txt
 dbfs:/Volumes/main/default/data/uploaded.txt -> downloaded.txt
 
