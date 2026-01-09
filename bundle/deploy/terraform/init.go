@@ -180,6 +180,20 @@ func inheritEnvVars(ctx context.Context, environ map[string]string) error {
 		environ["SYSTEM_TEAMFOUNDATIONCOLLECTIONURI"] = systemCollectionUri
 	}
 
+	// Pass additional Azure DevOps system variables required for OIDC authentication.
+	// These variables are used by the Databricks Go SDK to authenticate with Azure DevOps OIDC.
+	azureDevOpsVars := []string{
+		"SYSTEM_PLANID",
+		"SYSTEM_COLLECTIONID",
+		"SYSTEM_TEAMPROJECTID",
+		"SYSTEM_OIDCREQUESTURI",
+	}
+	for _, varName := range azureDevOpsVars {
+		if val, ok := env.Lookup(ctx, varName); ok {
+			environ[varName] = val
+		}
+	}
+
 	// Map $DATABRICKS_TF_CLI_CONFIG_FILE to $TF_CLI_CONFIG_FILE
 	// VSCode extension provides a file with the "provider_installation.filesystem_mirror" configuration.
 	// We only use it if the provider version matches the currently used version,
