@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"path"
 	"strings"
 
 	"github.com/databricks/databricks-sdk-go/service/catalog"
@@ -169,28 +170,14 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	server.Handle("PUT", "/api/2.0/fs/directories/{path:.*}", func(req Request) any {
-		path := req.Vars["path"]
-		// Normalize path to start with "/".
-		if !strings.HasPrefix(path, "/") {
-			path = "/" + path
+		dirPath := req.Vars["path"]
+		if !strings.HasPrefix(dirPath, "/") {
+			dirPath = "/" + dirPath
 		}
 		defer req.Workspace.LockUnlock()()
 
-		// Create this directory.
-		req.Workspace.directories[path] = workspace.ObjectInfo{
-			ObjectType: "DIRECTORY",
-			Path:       path,
-			ObjectId:   nextID(),
-		}
-
-		// Also create all parent directories.
-		for dir := path; dir != "/" && dir != ""; {
-			dir = strings.TrimSuffix(dir, "/")
-			idx := strings.LastIndex(dir, "/")
-			if idx <= 0 {
-				break
-			}
-			dir = dir[:idx]
+		// Create directory and all parents.
+		for dir := dirPath; dir != "/" && dir != ""; dir = path.Dir(dir) {
 			if _, exists := req.Workspace.directories[dir]; !exists {
 				req.Workspace.directories[dir] = workspace.ObjectInfo{
 					ObjectType: "DIRECTORY",
@@ -199,7 +186,6 @@ func AddDefaultHandlers(server *Server) {
 				}
 			}
 		}
-
 		return Response{}
 	})
 
