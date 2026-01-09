@@ -1,4 +1,0 @@
-resources:
-  pipelines:
-    my_project_pipeline_2:
-      name: my_project_pipeline_2

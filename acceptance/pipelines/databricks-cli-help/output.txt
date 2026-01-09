@@ -22,6 +22,7 @@ Available Commands
   deploy                Deploy pipelines
   destroy               Destroy a pipelines project
   dry-run               Validate correctness of the pipeline's graph
+  generate              Generate Lakeflow SDP configuration from spark-pipeline.yml
   history               Retrieve past runs for a pipeline
   init                  Initialize a new pipelines project
   logs                  Retrieve events for a pipeline

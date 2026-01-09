@@ -4,7 +4,7 @@ title "Initialize pipeline project"
 trace $PIPELINES init --output-dir output
 
 title "Deploy pipeline"
-cd output/my_project
+cd output/lakeflow_project
 trace $PIPELINES deploy
 
 title "Run pipeline"

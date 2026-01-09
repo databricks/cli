@@ -1,4 +1,4 @@
-import dlt
+from pyspark import pipelines as dp
 from pyspark.sql.functions import col, sum
 
 
@@ -7,11 +7,11 @@ from pyspark.sql.functions import col, sum
 # using "+ Add" in the file browser.
 
 
-@dlt.table
-def sample_zones_my_project():
+@dp.table
+def sample_zones_lakeflow_project():
     # Read from the "sample_trips" table, then sum all the fares
     return (
-        spark.read.table(f"sample_trips_my_project")
+        spark.read.table(f"sample_trips_lakeflow_project")
         .groupBy(col("pickup_zip"))
         .agg(sum("fare_amount").alias("total_fare"))
     )

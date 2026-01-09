@@ -15,6 +15,7 @@ Available Commands:
   deploy      Deploy pipelines
   destroy     Destroy a pipelines project
   dry-run     Validate correctness of the pipeline's graph
+  generate    Generate Lakeflow SDP configuration from spark-pipeline.yml
   help        Help about any command
   history     Retrieve past runs for a pipeline
   init        Initialize a new pipelines project
@@ -61,6 +62,7 @@ Available Commands:
   deploy      Deploy pipelines
   destroy     Destroy a pipelines project
   dry-run     Validate correctness of the pipeline's graph
+  generate    Generate Lakeflow SDP configuration from spark-pipeline.yml
   help        Help about any command
   history     Retrieve past runs for a pipeline
   init        Initialize a new pipelines project
@@ -100,6 +102,7 @@ Available Commands:
   deploy      Deploy pipelines
   destroy     Destroy a pipelines project
   dry-run     Validate correctness of the pipeline's graph
+  generate    Generate Lakeflow SDP configuration from spark-pipeline.yml
   help        Help about any command
   history     Retrieve past runs for a pipeline
   init        Initialize a new pipelines project
