@@ -612,21 +612,10 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	err = adapter.DoDelete(ctx, createdID)
 	require.NoError(t, err)
 
-	path, err := structpath.Parse("name")
+	p, err := structpath.Parse("name")
 	require.NoError(t, err)
 
-	_, err = adapter.ClassifyChange(structdiff.Change{
-		Path: path,
-		Old:  nil,
-		New:  "mynewname",
-	}, remote, true)
-	require.NoError(t, err)
-
-	_, err = adapter.ClassifyChange(structdiff.Change{
-		Path: path,
-		Old:  nil,
-		New:  "mynewname",
-	}, remote, false)
+	err = adapter.OverrideChangeDesc(ctx, p, &deployplan.ChangeDesc{}, nil)
 	require.NoError(t, err)
 
 	deleteIsNoop := strings.HasSuffix(group, "permissions") || strings.HasSuffix(group, "grants")
@@ -665,10 +654,7 @@ func TestFieldTriggers(t *testing.T) {
 		require.NoError(t, err)
 
 		t.Run(resourceName+"_local", func(t *testing.T) {
-			validateFields(t, adapter.StateType(), adapter.fieldTriggersLocal)
-		})
-		t.Run(resourceName+"_remote", func(t *testing.T) {
-			validateFields(t, adapter.StateType(), adapter.fieldTriggersRemote)
+			validateFields(t, adapter.StateType(), adapter.FieldTriggers())
 		})
 	}
 }
@@ -685,15 +671,8 @@ func TestFieldTriggersNoUpdateWhenNotImplemented(t *testing.T) {
 		}
 
 		t.Run(resourceName+"_local", func(t *testing.T) {
-			for field, action := range adapter.fieldTriggersLocal {
-				assert.NotEqual(t, deployplan.ActionTypeUpdate, action,
-					"resource %s does not implement DoUpdate but field %s triggers update action", resourceName, field)
-			}
-		})
-
-		t.Run(resourceName+"_remote", func(t *testing.T) {
-			for field, action := range adapter.fieldTriggersRemote {
-				assert.NotEqual(t, deployplan.ActionTypeUpdate, action,
+			for field, action := range adapter.FieldTriggers() {
+				assert.NotEqual(t, deployplan.Update, action,
 					"resource %s does not implement DoUpdate but field %s triggers update action", resourceName, field)
 			}
 		})

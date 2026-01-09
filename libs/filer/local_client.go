@@ -58,9 +58,9 @@ func (w *LocalClient) Write(ctx context.Context, name string, reader io.Reader, 
 	if err != nil {
 		switch {
 		case errors.Is(err, fs.ErrNotExist):
-			return NoSuchDirectoryError{path: absPath}
+			return noSuchDirectoryError{path: absPath}
 		case errors.Is(err, fs.ErrExist):
-			return FileAlreadyExistsError{path: absPath}
+			return fileAlreadyExistsError{path: absPath}
 		default:
 			return err
 		}
@@ -87,13 +87,13 @@ func (w *LocalClient) Read(ctx context.Context, name string) (io.ReadCloser, err
 	stat, err := os.Stat(absPath)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
-			return nil, FileDoesNotExistError{path: absPath}
+			return nil, fileDoesNotExistError{path: absPath}
 		}
 		return nil, err
 	}
 
 	if stat.IsDir() {
-		return nil, NotAFile{path: absPath}
+		return nil, notAFile{path: absPath}
 	}
 
 	return os.Open(absPath)
@@ -107,7 +107,7 @@ func (w *LocalClient) Delete(ctx context.Context, name string, mode ...DeleteMod
 
 	// Illegal to delete the root path.
 	if absPath == w.root.rootPath {
-		return CannotDeleteRootError{}
+		return cannotDeleteRootError{}
 	}
 
 	err = os.Remove(absPath)
@@ -118,14 +118,14 @@ func (w *LocalClient) Delete(ctx context.Context, name string, mode ...DeleteMod
 	}
 
 	if errors.Is(err, fs.ErrNotExist) {
-		return FileDoesNotExistError{path: absPath}
+		return fileDoesNotExistError{path: absPath}
 	}
 
 	if errors.Is(err, fs.ErrExist) {
 		if slices.Contains(mode, DeleteRecursively) {
 			return os.RemoveAll(absPath)
 		}
-		return DirectoryNotEmptyError{path: absPath}
+		return directoryNotEmptyError{path: absPath}
 	}
 
 	return err
@@ -140,13 +140,13 @@ func (w *LocalClient) ReadDir(ctx context.Context, name string) ([]fs.DirEntry, 
 	stat, err := os.Stat(absPath)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
-			return nil, NoSuchDirectoryError{path: absPath}
+			return nil, noSuchDirectoryError{path: absPath}
 		}
 		return nil, err
 	}
 
 	if !stat.IsDir() {
-		return nil, NotADirectory{path: absPath}
+		return nil, notADirectory{path: absPath}
 	}
 
 	return os.ReadDir(absPath)
@@ -169,7 +169,7 @@ func (w *LocalClient) Stat(ctx context.Context, name string) (fs.FileInfo, error
 
 	stat, err := os.Stat(absPath)
 	if errors.Is(err, fs.ErrNotExist) {
-		return nil, FileDoesNotExistError{path: absPath}
+		return nil, fileDoesNotExistError{path: absPath}
 	}
 	return stat, err
 }

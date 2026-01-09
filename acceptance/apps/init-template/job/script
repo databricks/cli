@@ -1,0 +1,4 @@
+#!/bin/bash
+$CLI experimental aitools tools init-template job --name test_job --catalog main --output-dir output > /dev/null 2>&1 || exit 1
+echo "✓ Template instantiation succeeded"
+rm -rf output

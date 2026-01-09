@@ -1,3 +1,6 @@
+bundle:
+  name: test-bundle
+
 artifacts:
   artifact_with_custom_dist:
     type: whl

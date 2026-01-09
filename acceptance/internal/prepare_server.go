@@ -184,6 +184,10 @@ func startLocalServer(t *testing.T,
 		s.ResponseCallback = logResponseCallback(t)
 	}
 
+	// Track remaining kill counts per pattern (for KillCaller > 0)
+	killCounters := make(map[string]int)
+	killCountersMu := &sync.Mutex{}
+
 	for ind := range stubs {
 		// We want later stubs takes precedence, because then leaf configs take precedence over parent directory configs
 		// In gorilla/mux earlier handlers take precedence, so we need to reverse the order
@@ -191,6 +195,12 @@ func startLocalServer(t *testing.T,
 		require.NotEmpty(t, stub.Pattern)
 		items := strings.Split(stub.Pattern, " ")
 		require.Len(t, items, 2)
+
+		// Initialize kill counter for this pattern
+		if stub.KillCaller > 0 {
+			killCounters[stub.Pattern] = stub.KillCaller
+		}
+
 		s.Handle(items[0], items[1], func(req testserver.Request) any {
 			if stub.Delay > 0 {
 				ctx := req.Context
@@ -209,6 +219,10 @@ func startLocalServer(t *testing.T,
 				}
 			}
 
+			if shouldKillCaller(stub, killCounters, killCountersMu) {
+				killCaller(t, stub.Pattern, req.Headers)
+			}
+
 			return stub.Response
 		})
 	}
@@ -216,6 +230,45 @@ func startLocalServer(t *testing.T,
 	// The earliest handlers take precedence, add default handlers last
 	testserver.AddDefaultHandlers(s)
 	return s.URL
+}
+
+func shouldKillCaller(stub ServerStub, killCounters map[string]int, mu *sync.Mutex) bool {
+	if stub.KillCaller <= 0 {
+		return false
+	}
+	mu.Lock()
+	defer mu.Unlock()
+	if killCounters[stub.Pattern] <= 0 {
+		return false
+	}
+	killCounters[stub.Pattern]--
+	return true
+}
+
+func killCaller(t *testing.T, pattern string, headers http.Header) {
+	pid := testserver.ExtractPidFromHeaders(headers)
+	if pid == 0 {
+		t.Errorf("KillCaller configured but test-pid not found in User-Agent")
+		return
+	}
+
+	process, err := os.FindProcess(pid)
+	if err != nil {
+		t.Errorf("Failed to find process %d: %s", pid, err)
+		return
+	}
+
+	// Use process.Kill() for cross-platform compatibility.
+	// On Unix, this sends SIGKILL. On Windows, this calls TerminateProcess.
+	if err := process.Kill(); err != nil {
+		t.Errorf("Failed to kill process %d: %s", pid, err)
+		return
+	}
+
+	if !waitForProcessExit(pid, 2*time.Second) {
+		t.Logf("KillCaller: timed out waiting for PID %d to exit (pattern: %s)", pid, pattern)
+	}
+	t.Logf("KillCaller: killed PID %d (pattern: %s)", pid, pattern)
 }
 
 func startProxyServer(t *testing.T,

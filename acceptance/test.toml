@@ -11,11 +11,14 @@ TimeoutWindows = '60s'
 # http://go/deco/tests/14775362030/job/41482560953
 TimeoutCloud = '25m'
 
+TimeoutCIMultiplier = 2
+
 Env.PYTHONDONTWRITEBYTECODE = "1"
 Env.PYTHONUNBUFFERED = "1"
 Env.PYTHONUTF8 = "1"
 
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
+EnvMatrixExclude.noplantf = ["DATABRICKS_BUNDLE_ENGINE=terraform", "READPLAN=1"]
 EnvRepl.DATABRICKS_BUNDLE_ENGINE = false
 
 # >>> datetime.datetime.fromtimestamp(18000000000)

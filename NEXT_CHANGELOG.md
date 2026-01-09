@@ -1,16 +1,18 @@
 # NEXT CHANGELOG
 
-## Release v0.282.0
+## Release v0.283.0
 
 ### Notable Changes
+* Bundle commands now cache the user's account details to improve command latency.
+To disable this, set the environment variable DATABRICKS_CACHE_ENABLED to false.
 
 ### CLI
-* Skip non-exportable objects (e.g., `MLFLOW_EXPERIMENT`) during `workspace export-dir` instead of failing ([#4081](https://github.com/databricks/cli/issues/4081))
 
 * Improve performance of `databricks fs cp` command by parallelizing file uploads when
   copying directories with the `--recursive` flag.
 
 ### Bundles
+* Enable caching user identity by default ([#4202](https://github.com/databricks/cli/pull/4202))
 
 ### Dependency updates
 

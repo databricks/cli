@@ -1,5 +1,5 @@
 {
-  "plan_version": 1,
+  "plan_version": 2,
   "cli_version": "[DEV_VERSION]",
   "lineage": "[UUID]",
   "serial": 2,
@@ -23,12 +23,12 @@
         "scope_name": "test-scope-[UNIQUE_NAME]-2",
         "acls": [
           {
-            "permission": "WRITE",
-            "principal": "deco-test-user@databricks.com"
-          },
-          {
             "permission": "MANAGE",
             "principal": "[USERNAME]"
+          },
+          {
+            "permission": "WRITE",
+            "principal": "deco-test-user@databricks.com"
           }
         ]
       }

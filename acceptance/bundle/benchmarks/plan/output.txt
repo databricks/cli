@@ -1,0 +1,2 @@
+
+>>> benchmark.py $CLI bundle plan > /dev/null

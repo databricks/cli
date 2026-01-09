@@ -1,5 +1,5 @@
 {
-  "plan_version": 1,
+  "plan_version": 2,
   "cli_version": "[DEV_VERSION]",
   "lineage": "[UUID]",
   "serial": 2,
@@ -26,11 +26,10 @@
         "state": "IDLE"
       },
       "changes": {
-        "remote": {
-          "storage": {
-            "action": "skip",
-            "reason": "server_side_default"
-          }
+        "storage": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": "dbfs:/pipelines/[PIPELINE_ID]"
         }
       }
     },
@@ -75,13 +74,15 @@
         ]
       },
       "changes": {
-        "local": {
-          "permissions[group_name='data-team']": {
-            "action": "update",
-            "old": {
-              "group_name": "data-team",
-              "permission_level": "CAN_MANAGE"
-            }
+        "permissions[group_name='data-team']": {
+          "action": "update",
+          "old": {
+            "group_name": "data-team",
+            "permission_level": "CAN_MANAGE"
+          },
+          "remote": {
+            "group_name": "data-team",
+            "permission_level": "CAN_MANAGE"
           }
         }
       }

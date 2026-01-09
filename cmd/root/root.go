@@ -79,6 +79,7 @@ func New(ctx context.Context) *cobra.Command {
 		ctx = withCommandInUserAgent(ctx, cmd)
 		ctx = withCommandExecIdInUserAgent(ctx)
 		ctx = withUpstreamInUserAgent(ctx)
+		ctx = InjectTestPidToUserAgent(ctx)
 		cmd.SetContext(ctx)
 		return nil
 	}

@@ -14,7 +14,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"reflect"
 	"regexp"
 	"runtime"
 	"slices"
@@ -26,7 +25,6 @@ import (
 	"unicode/utf8"
 
 	"github.com/google/uuid"
-	"gopkg.in/yaml.v3"
 
 	"github.com/databricks/cli/acceptance/internal"
 	"github.com/databricks/cli/internal/testutil"
@@ -59,6 +57,12 @@ var (
 // CLI commands. The $CLI in test scripts is a helper that just forwards command-line arguments to this server (see bin/callserver.py).
 // Also disables parallelism in tests.
 var InprocessMode bool
+
+// lines with this prefix are not recorded in output.txt but logged instead
+const TestLogPrefix = "TESTLOG: "
+
+// In benchmark mode we disable parallel run of all tests that contain work "benchmark" in their path
+var benchmarkMode = os.Getenv("BENCHMARK_PARAMS") != ""
 
 func init() {
 	flag.BoolVar(&InprocessMode, "inprocess", false, "Run CLI in the same process as test (for debugging)")
@@ -103,9 +107,6 @@ const (
 	// TODO: this should be merged with repls.json functionality, currently these replacements are not parsed by diff.py
 	userReplacementsFilename = "ACC_REPLS"
 )
-
-// On CI, we want to increase timeout, to account for slower environment
-const CITimeoutMultiplier = 2
 
 var ApplyCITimeoutMultipler = os.Getenv("GITHUB_WORKFLOW") != ""
 
@@ -327,21 +328,17 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 				t.Skip(skipReason)
 			}
 
-			if !inprocessMode {
+			runParallel := !inprocessMode
+
+			if benchmarkMode && strings.Contains(dir, "benchmark") {
+				runParallel = false
+			}
+
+			if runParallel {
 				t.Parallel()
 			}
 
-			expanded := internal.ExpandEnvMatrix(config.EnvMatrix)
-
-			if testdiff.OverwriteMode && len(expanded) > 1 {
-				// All variants of the test are producing the same output,
-				// there is no need to run the concurrently when updating.
-				// Exception: if EnvVaryOutput is configured, we must
-				// run all variants to record variant-specific outputs.
-				if config.EnvVaryOutput == nil || len(config.EnvMatrix[*config.EnvVaryOutput]) <= 1 {
-					expanded = expanded[0:1]
-				}
-			}
+			expanded := internal.ExpandEnvMatrix(config.EnvMatrix, config.EnvMatrixExclude)
 
 			if len(expanded) == 1 {
 				// env vars aren't part of the test case name, so log them for debugging
@@ -351,12 +348,9 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 				runTest(t, dir, 0, coverDir, repls.Clone(), config, expanded[0], envFilters)
 			} else {
 				for ind, envset := range expanded {
-					if forbiddenEnvSet(envset) {
-						continue
-					}
 					envname := strings.Join(envset, "/")
 					t.Run(envname, func(t *testing.T) {
-						if !inprocessMode {
+						if runParallel {
 							t.Parallel()
 						}
 						runTest(t, dir, ind, coverDir, repls.Clone(), config, envset, envFilters)
@@ -369,23 +363,6 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	t.Logf("Summary (dirs): %d/%d/%d run/selected/total, %d skipped", selectedDirs-skippedDirs, selectedDirs, totalDirs, skippedDirs)
 
 	return selectedDirs - skippedDirs
-}
-
-func forbiddenEnvSet(envset []string) bool {
-	hasTerraform := false
-	hasReadplan := false
-
-	for _, pair := range envset {
-		if pair == "DATABRICKS_BUNDLE_ENGINE=terraform" {
-			hasTerraform = true
-		}
-		if pair == "READPLAN=1" {
-			hasReadplan = true
-		}
-	}
-
-	// Do not run terraform tests with --plan option:
-	return hasTerraform && hasReadplan
 }
 
 func getEnvFilters(t *testing.T) []string {
@@ -575,18 +552,6 @@ func runTest(t *testing.T,
 	// Add materialized config to outputs for comparison
 	outputs[internal.MaterializedConfigFile] = true
 
-	bundleConfigTarget := "databricks.yml"
-	if config.BundleConfigTarget != nil {
-		bundleConfigTarget = *config.BundleConfigTarget
-	}
-
-	if bundleConfigTarget != "" {
-		configCreated := applyBundleConfig(t, tmpDir, config.BundleConfig, bundleConfigTarget)
-		if configCreated {
-			inputs[bundleConfigTarget] = true
-		}
-	}
-
 	timeout := config.Timeout
 
 	if runtime.GOOS == "windows" {
@@ -600,7 +565,7 @@ func runTest(t *testing.T,
 	}
 
 	if ApplyCITimeoutMultipler {
-		timeout *= CITimeoutMultiplier
+		timeout = time.Duration(float64(timeout) * config.TimeoutCIMultiplier)
 	}
 
 	ctx, cancelFunc := context.WithTimeout(context.Background(), timeout)
@@ -706,7 +671,7 @@ func runTest(t *testing.T,
 	require.NoError(t, err)
 	defer out.Close()
 
-	skipReason, err := runWithLog(t, cmd, out, tailOutput)
+	skipReason, err := runWithLog(t, cmd, out, tailOutput, timeout)
 
 	if skipReason != "" {
 		t.Skip("Skipping based on output: " + skipReason)
@@ -1243,14 +1208,14 @@ func isTruePtr(value *bool) bool {
 	return value != nil && *value
 }
 
-func runWithLog(t *testing.T, cmd *exec.Cmd, out *os.File, tail bool) (string, error) {
+func runWithLog(t *testing.T, cmd *exec.Cmd, out *os.File, tail bool, timeout time.Duration) (string, error) {
 	r, w := io.Pipe()
 	cmd.Stdout = w
 	cmd.Stderr = w
 	processErrCh := make(chan error, 1)
 
 	cmd.Cancel = func() error {
-		processErrCh <- errors.New("Test script killed due to a timeout")
+		processErrCh <- fmt.Errorf("Test script killed due to a timeout (%s)", timeout)
 		_ = cmd.Process.Kill()
 		_ = w.Close()
 		return nil
@@ -1275,14 +1240,20 @@ func runWithLog(t *testing.T, cmd *exec.Cmd, out *os.File, tail bool) (string, e
 		if tail {
 			msg := strings.TrimRight(line, "\n")
 			if len(msg) > 0 {
-				d := time.Since(start)
-				t.Logf("%2d.%03d %s", d/time.Second, (d%time.Second)/time.Millisecond, msg)
+				logWithDurationSince(t, start, msg)
 			}
 		}
 		if len(line) > 0 {
 			mostRecentLine = line
-			_, err = out.WriteString(line)
-			require.NoError(t, err)
+			if strings.HasPrefix(line, TestLogPrefix) {
+				// if tail is true, we already logged it above
+				if !tail {
+					logWithDurationSince(t, start, strings.TrimRight(line, "\n"))
+				}
+			} else {
+				_, err = out.WriteString(line)
+				require.NoError(t, err)
+			}
 		}
 		if err == io.EOF {
 			break
@@ -1297,6 +1268,11 @@ func runWithLog(t *testing.T, cmd *exec.Cmd, out *os.File, tail bool) (string, e
 	}
 
 	return skipReason, <-processErrCh
+}
+
+func logWithDurationSince(t *testing.T, start time.Time, msg string) {
+	d := time.Since(start)
+	t.Logf("%2d.%03d %s", d/time.Second, (d%time.Second)/time.Millisecond, msg)
 }
 
 func getCloudEnvBase(cloudEnv string) string {
@@ -1324,7 +1300,7 @@ func getNodeTypeID(cloudEnv string) string {
 	case "aws":
 		return "i3.xlarge"
 	case "azure":
-		return "Standard_DS4_v2"
+		return "Standard_E4ds_v5"
 	case "gcp":
 		return "n1-standard-4"
 	case "":
@@ -1392,77 +1368,6 @@ func prepareWheelBuildDirectory(t *testing.T, dir string) string {
 	}
 
 	return latestWheel
-}
-
-// Applies BundleConfig setting to file named bundleConfigTarget and updates it in place if there were any changes.
-// Returns true if new file was created.
-func applyBundleConfig(t *testing.T, tmpDir string, bundleConfig map[string]any, bundleConfigTarget string) bool {
-	validConfig := make(map[string]map[string]any, len(bundleConfig))
-
-	for _, configName := range utils.SortedKeys(bundleConfig) {
-		configValue := bundleConfig[configName]
-		// Setting BundleConfig.<name> to empty string disables it.
-		// This is useful when parent directory defines some config that child test wants to cancel.
-		if configValue == "" {
-			continue
-		}
-		cfg, ok := configValue.(map[string]any)
-		if !ok {
-			t.Fatalf("Unexpected type for BundleConfig.%s: %#v", configName, configValue)
-		}
-		validConfig[configName] = cfg
-	}
-
-	if len(validConfig) == 0 {
-		return false
-	}
-
-	configPath := filepath.Join(tmpDir, bundleConfigTarget)
-	configData, configExists := tryReading(t, configPath)
-
-	newConfigData := configData
-	var applied []string
-
-	for _, configName := range utils.SortedKeys(validConfig) {
-		configValue := validConfig[configName]
-		updated, err := internal.MergeBundleConfig(newConfigData, configValue)
-		if err != nil {
-			t.Fatalf("Failed to merge BundleConfig.%s: %s\nvvalue: %#v\ntext:\n%s", configName, err, configValue, newConfigData)
-		}
-		if isSameYAMLContent(newConfigData, updated) {
-			t.Logf("No effective updates from BundleConfig.%s", configName)
-		} else {
-			newConfigData = updated
-			applied = append(applied, configName)
-		}
-	}
-
-	if newConfigData != configData {
-		t.Logf("Writing updated bundle config to %s. BundleConfig sections: %s", bundleConfigTarget, strings.Join(applied, ", "))
-		testutil.WriteFile(t, configPath, newConfigData)
-		return !configExists
-	}
-
-	return false
-}
-
-// Returns true if both strings are deep-equal after unmarshalling
-func isSameYAMLContent(str1, str2 string) bool {
-	var obj1, obj2 any
-
-	if str1 == str2 {
-		return true
-	}
-
-	if err := yaml.Unmarshal([]byte(str1), &obj1); err != nil {
-		return false
-	}
-
-	if err := yaml.Unmarshal([]byte(str2), &obj2); err != nil {
-		return false
-	}
-
-	return reflect.DeepEqual(obj1, obj2)
 }
 
 func BuildYamlfmt(t *testing.T) {

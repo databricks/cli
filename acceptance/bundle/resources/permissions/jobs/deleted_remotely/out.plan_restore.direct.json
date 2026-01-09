@@ -1,5 +1,5 @@
 {
-  "plan_version": 1,
+  "plan_version": 2,
   "cli_version": "[DEV_VERSION]",
   "lineage": "[UUID]",
   "serial": 1,
@@ -38,19 +38,20 @@
         }
       },
       "changes": {
-        "remote": {
-          "email_notifications": {
-            "action": "skip",
-            "reason": "server_side_default"
-          },
-          "timeout_seconds": {
-            "action": "skip",
-            "reason": "server_side_default"
-          },
-          "webhook_notifications": {
-            "action": "skip",
-            "reason": "server_side_default"
-          }
+        "email_notifications": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": {}
+        },
+        "timeout_seconds": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": 0
+        },
+        "webhook_notifications": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": {}
         }
       }
     },
@@ -91,20 +92,26 @@
         ]
       },
       "changes": {
-        "remote": {
-          "permissions[group_name='data-team']": {
-            "action": "update",
-            "old": {
-              "group_name": "data-team",
-              "permission_level": "CAN_MANAGE"
-            }
+        "permissions[group_name='data-team']": {
+          "action": "update",
+          "old": {
+            "group_name": "data-team",
+            "permission_level": "CAN_MANAGE"
           },
-          "permissions[user_name='viewer@example.com']": {
-            "action": "update",
-            "old": {
-              "permission_level": "CAN_VIEW",
-              "user_name": "viewer@example.com"
-            }
+          "new": {
+            "group_name": "data-team",
+            "permission_level": "CAN_MANAGE"
+          }
+        },
+        "permissions[user_name='viewer@example.com']": {
+          "action": "update",
+          "old": {
+            "permission_level": "CAN_VIEW",
+            "user_name": "viewer@example.com"
+          },
+          "new": {
+            "permission_level": "CAN_VIEW",
+            "user_name": "viewer@example.com"
           }
         }
       }
