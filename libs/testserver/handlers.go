@@ -148,26 +148,41 @@ func AddDefaultHandlers(server *Server) {
 
 	server.Handle("HEAD", "/api/2.0/fs/directories/{path:.*}", func(req Request) any {
 		path := req.Vars["path"]
+		// Normalize path to always start with "/".
 		if !strings.HasPrefix(path, "/") {
 			path = "/" + path
 		}
 
-		// Heuristic: if path has a file extension (last . after last /), assume it's not a directory
-		lastSlash := strings.LastIndexAny(path, "/\\")
-		lastDot := strings.LastIndex(path, ".")
-		if lastDot > lastSlash && lastDot > 0 {
-			// Has a file extension like .txt, .json, etc.
-			return Response{StatusCode: 404}
-		}
-
+		// Check tracked workspace files and directories first.
 		if req.Workspace.FileExists(path) {
 			return Response{StatusCode: 404}
 		}
 		if req.Workspace.DirectoryExists(path) {
 			return Response{StatusCode: 200}
 		}
-		// For volumes or other paths, assume it could be a directory
-		return Response{StatusCode: 200}
+
+		// Unity Catalog Volumes paths (/Volumes/...) are not tracked by the test server.
+		// When the CLI checks if a volume path is a directory (via HEAD request) before
+		// creating it (via PUT request), the path doesn't exist yet in our state.
+		//
+		// Use a simple heuristic: if the path has a file extension (e.g., .txt),
+		// assume it's a file, not a directory. This handles the common case where
+		// files have extensions and directories don't.
+		//
+		// Assumption: paths with extensions like .txt, .json, .yaml are files.
+		// Limitation: this doesn't handle extensionless files or directories with
+		// dots in their names. For such cases, use test-specific Server overrides
+		// in test.toml files.
+		if strings.HasPrefix(path, "/Volumes/") {
+			lastDot := strings.LastIndex(path, ".")
+			if lastDot > strings.LastIndexAny(path, "/\\") {
+				return Response{StatusCode: 404}
+			}
+			return Response{StatusCode: 200}
+		}
+
+		// Non-existent workspace path.
+		return Response{StatusCode: 404}
 	})
 
 	server.Handle("HEAD", "/api/2.0/fs/files/{path:.*}", func(req Request) any {
@@ -183,9 +198,10 @@ func AddDefaultHandlers(server *Server) {
 		if !strings.HasPrefix(dirPath, "/") {
 			dirPath = "/" + dirPath
 		}
+
 		defer req.Workspace.LockUnlock()()
 
-		// Create directory and all parents.
+		// Create directory and all parent directories.
 		for dir := dirPath; dir != "/" && dir != ""; dir = path.Dir(dir) {
 			if _, exists := req.Workspace.directories[dir]; !exists {
 				req.Workspace.directories[dir] = workspace.ObjectInfo{
