@@ -5,11 +5,9 @@ $CLI bundle plan -o json > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
 trace print_requests.py //jobs //pipelines > out.create.requests.json
 
-foo_id=`read_id.py pipelines foo`
-echo "$foo_id:FOO_ID" >> ACC_REPLS
+foo_id=`read_id.py foo`
 
-bar_id=`read_id.py jobs bar`
-echo "$bar_id:BAR_ID" >> ACC_REPLS
+bar_id=`read_id.py bar`
 
 trace $CLI bundle plan  # empty
 
@@ -20,8 +18,7 @@ $CLI bundle plan -o json > out.plan_update.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy --auto-approve
 trace print_requests.py //jobs //pipelines > out.update.requests.$DATABRICKS_BUNDLE_ENGINE.json
 
-foo_id_2=`read_id.py pipelines foo`
-echo "$foo_id:FOO_ID_2" >> ACC_REPLS
+foo_id_2=`read_id.py foo`
 
 title "Fetch resource IDs and verify remote state"
 

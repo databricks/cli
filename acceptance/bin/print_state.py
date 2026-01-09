@@ -11,11 +11,45 @@ import glob
 import argparse
 
 
-def write(filename):
+def print_file(filename):
     data = open(filename).read()
     print(data, end="")
     if not data.endswith("\n"):
         print()
+
+
+def get_state_files(target, backup):
+    default_target_dir = ".databricks/bundle/default"
+
+    if target:
+        target_dir = f".databricks/bundle/{target}"
+        if not os.path.exists(target_dir):
+            raise SystemExit(f"Invalid target {target!r}: {target_dir} does not exist")
+    elif os.path.exists(default_target_dir):
+        target_dir = default_target_dir
+    else:
+        targets = glob.glob(".databricks/bundle/*")
+        if not targets:
+            return
+        targets = [os.path.basename(x) for x in targets]
+        if len(targets) > 1:
+            raise SystemExit("Many targets found, specify one to use with -t: " + ", ".join(sorted(targets)))
+        target_dir = ".databricks/bundle/" + targets[0]
+
+    result = []
+
+    if backup:
+        result.append(f"{target_dir}/terraform/terraform.tfstate.backup")
+    else:
+        result.append(f"{target_dir}/terraform/terraform.tfstate")
+    result.append(f"{target_dir}/resources.json")
+    return result
+
+
+def get_state_file(target, backup):
+    result = get_state_files(target, backup)
+    filtered = [x for x in result if os.path.exists(x)]
+    return filtered[0] if filtered else result[0]
 
 
 def main():
@@ -24,31 +58,9 @@ def main():
     parser.add_argument("--backup", action="store_true")
     args = parser.parse_args()
 
-    if args.target:
-        target_dir = f".databricks/bundle/{args.target}"
-        if not os.path.exists(target_dir):
-            raise SystemExit(f"Invalid target {args.target!r}: {target_dir} does not exist")
-    else:
-        targets = glob.glob(".databricks/bundle/*")
-        if not targets:
-            return
-        targets = [os.path.basename(x) for x in targets]
-        if len(targets) > 1:
-            raise SystemExit("Many targets found, specify one to use with -t: " + ", ".join(sorted(targets)))
-        args.target = targets[0]
-
-    if args.backup:
-        filename = f".databricks/bundle/{args.target}/terraform/terraform.tfstate.backup"
+    for filename in get_state_files(args.target, args.backup):
         if os.path.exists(filename):
-            write(filename)
-    else:
-        filename = f".databricks/bundle/{args.target}/terraform/terraform.tfstate"
-        if os.path.exists(filename):
-            write(filename)
-
-        filename = f".databricks/bundle/{args.target}/resources.json"
-        if os.path.exists(filename):
-            write(filename)
+            print_file(filename)
 
 
 if __name__ == "__main__":
