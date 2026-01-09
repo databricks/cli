@@ -1,0 +1,18 @@
+{
+  "properties": {
+    "project_name": {
+      "type": "string",
+      "description": "Project Name",
+      "order": 1,
+      "pattern": "^[A-Za-z0-9_-]+$",
+      "pattern_match_failure_message": "Name must consist of letters, numbers, underscores, or hyphens."
+    },
+    "mlflow_experiment_name": {
+      "type": "string",
+      "description": "MLflow Experiment Name (Optional - will be created if not exists)",
+      "default": "",
+      "order": 2
+    }
+  },
+  "success_message": "\nYour new agent project has been created in the '{{.project_name}}' directory!\n\nNext steps:\n1. cd {{.project_name}}\n2. Run ./scripts/quickstart.sh to set up your environment\n3. Run 'uv run start-app' to start the agent server\n"
+}

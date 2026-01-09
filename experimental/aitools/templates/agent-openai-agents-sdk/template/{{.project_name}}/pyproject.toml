@@ -1,0 +1,36 @@
+[project]
+name = "agent-server"
+version = "0.1.0"
+description = "MLflow-compatible agent server with FastAPI"
+readme = "README.md"
+authors = [
+    { name = "Agent Developer", email = "developer@example.com" }
+]
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115.12",
+    "uvicorn>=0.34.2",
+    "databricks-openai>=0.8.0",
+    "mlflow>=3.8.0rc0",
+    "openai-agents>=0.4.1",
+    "python-dotenv",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv]
+prerelease = "allow"
+
+[dependency-groups]
+dev = [
+    "hatchling>=1.27.0",
+    "pytest>=7.0.0",
+]
+
+
+[project.scripts]
+start-app = "scripts.start_app:main"
+start-server = "agent_server.start_server:main"
+agent-evaluate = "agent_server.evaluate_agent:evaluate"

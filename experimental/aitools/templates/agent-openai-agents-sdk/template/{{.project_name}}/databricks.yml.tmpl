@@ -1,0 +1,38 @@
+bundle:
+  name: {{.project_name}}
+
+variables:
+  mlflow_experiment_id:
+    description: MLflow Experiment ID for agent tracing
+    {{if .mlflow_experiment_name}}default: "{{.mlflow_experiment_name}}"{{end}}
+
+resources:
+  apps:
+    {{.project_name}}:
+      name: "${bundle.target}-{{.project_name}}"
+      description: "OpenAI Agents SDK agent application"
+      source_code_path: ./
+
+      # Resources which this app has access to
+      resources:
+        - name: 'experiment'
+          experiment:
+            {{if .mlflow_experiment_name}}experiment_name: "{{.mlflow_experiment_name}}"
+            {{else}}experiment_id: "${var.mlflow_experiment_id}"{{end}}
+            permission: 'CAN_MANAGE'
+
+targets:
+  dev:
+    mode: development
+    default: true
+    workspace:
+      host: {{workspace_host}}
+
+  prod:
+    mode: production
+    # workspace:
+    #   host: https://...
+    resources:
+      apps:
+        {{.project_name}}:
+          name: {{.project_name}}
