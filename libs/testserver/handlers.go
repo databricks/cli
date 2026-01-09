@@ -161,18 +161,14 @@ func AddDefaultHandlers(server *Server) {
 			return Response{StatusCode: 200}
 		}
 
-		// Unity Catalog Volumes paths (/Volumes/...) are not tracked by the test server.
-		// When the CLI checks if a volume path is a directory (via HEAD request) before
-		// creating it (via PUT request), the path doesn't exist yet in our state.
+		// Unity Catalog Volumes paths (/Volumes/...) are not tracked by the
+		// test server. When the CLI checks if a volume path is a directory
+		// (via HEAD request) before creating it (via PUT request), the path
+		// doesn't exist yet in our state.
 		//
-		// Use a simple heuristic: if the path has a file extension (e.g., .txt),
-		// assume it's a file, not a directory. This handles the common case where
+		// Use a simple heuristic: if the path has a file extension then assume
+		// it's a file, not a directory. This handles the common case where
 		// files have extensions and directories don't.
-		//
-		// Assumption: paths with extensions like .txt, .json, .yaml are files.
-		// Limitation: this doesn't handle extensionless files or directories with
-		// dots in their names. For such cases, use test-specific Server overrides
-		// in test.toml files.
 		if strings.HasPrefix(path, "/Volumes/") {
 			lastDot := strings.LastIndex(path, ".")
 			if lastDot > strings.LastIndexAny(path, "/\\") {
