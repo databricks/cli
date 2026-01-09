@@ -34,3 +34,9 @@ acceptance TestAccept/bundle/resources/permissions/jobs/destroy_without_mgmtperm
 * TestAccept/bundle/deployment/bind/alert
 * TestAccept/bundle/generate/alert/
 * TestAccept/bundle/resources/alerts/with_file/
+
+# SSH test is flaky due to concurrent test suites (Linux/Windows) running on same cluster.
+# Current implementation uses cluster-id as server identifier, causing SIGTERM conflicts.
+# Fix exists in serverless connection mode (not yet merged).
+# Slack: https://databricks.slack.com/archives/C03AV2J5FSR/p1767964913136479
+acceptance TestAccept/ssh/connection
