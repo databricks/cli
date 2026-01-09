@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	configresources "github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/resources"
+	refs "github.com/databricks/cli/bundle/resources"
 	"github.com/databricks/cli/bundle/run"
 	"github.com/databricks/cli/libs/cmdio"
 	databricks "github.com/databricks/databricks-sdk-go"
@@ -333,4 +334,13 @@ func fetchPipelineUpdates(ctx context.Context, w *databricks.WorkspaceClient, st
 	}
 
 	return updates, nil
+}
+
+func isPipeline(ref refs.Reference) bool {
+	switch ref.Resource.(type) {
+	case *configresources.Pipeline:
+		return true
+	default:
+		return false
+	}
 }
