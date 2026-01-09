@@ -14,12 +14,42 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/listing"
+	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/spf13/cobra"
 )
 
 const (
 	templatePathEnvVar = "DATABRICKS_APPKIT_TEMPLATE_PATH"
 )
+
+// appCreationResult holds the result of async app creation.
+type appCreationResult struct {
+	app *apps.App
+	err error
+}
+
+// createAppAsync starts app creation in the background and returns a channel for the result.
+func createAppAsync(ctx context.Context, w *databricks.WorkspaceClient, name, description string) <-chan appCreationResult {
+	ch := make(chan appCreationResult, 1)
+	go func() {
+		defer close(ch)
+		wait, err := w.Apps.Create(ctx, apps.CreateAppRequest{
+			App: apps.App{
+				Name:        name,
+				Description: description,
+			},
+		})
+		if err != nil {
+			ch <- appCreationResult{err: err}
+			return
+		}
+		app, err := wait.Get()
+		ch <- appCreationResult{app: app, err: err}
+	}()
+	return ch
+}
 
 func validateAppNameLength(projectName string) error {
 	const maxAppNameLength = 30
@@ -43,6 +73,7 @@ func newInitCmd() *cobra.Command {
 		warehouse    string
 		description  string
 		outputDir    string
+		features     []string
 	)
 
 	cmd := &cobra.Command{
@@ -51,6 +82,7 @@ func newInitCmd() *cobra.Command {
 		Long: `Initialize a new AppKit application from a template.
 
 When run without arguments, an interactive prompt guides you through the setup.
+When run with --name, runs in non-interactive mode (all required flags must be provided).
 
 Examples:
   # Interactive mode (recommended)
@@ -59,17 +91,18 @@ Examples:
   # Non-interactive with flags
   databricks experimental appkit init --name my-app
 
+  # With analytics feature (requires --warehouse)
+  databricks experimental appkit init --name my-app --features=analytics --warehouse=abc123
+
   # With a custom template from a local path
   databricks experimental appkit init --template /path/to/template --name my-app
 
   # With a GitHub URL
   databricks experimental appkit init --template https://github.com/user/repo --name my-app
 
-  # With a GitHub URL and subdirectory
-  databricks experimental appkit init --template https://github.com/user/repo/tree/main/templates/starter --name my-app
-
-  # With explicit branch/tag
-  databricks experimental appkit init --template https://github.com/user/repo --branch v1.0.0 --name my-app
+Feature dependencies:
+  Some features require additional flags:
+  - analytics: requires --warehouse (SQL Warehouse ID)
 
 Environment variables:
   DATABRICKS_APPKIT_TEMPLATE_PATH  Override template source with local path`,
@@ -84,6 +117,7 @@ Environment variables:
 				warehouse:    warehouse,
 				description:  description,
 				outputDir:    outputDir,
+				features:     features,
 			})
 		},
 	}
@@ -94,6 +128,7 @@ Environment variables:
 	cmd.Flags().StringVar(&warehouse, "warehouse", "", "SQL warehouse ID")
 	cmd.Flags().StringVar(&description, "description", "", "App description")
 	cmd.Flags().StringVar(&outputDir, "output-dir", "", "Directory to write the project to")
+	cmd.Flags().StringSliceVar(&features, "features", nil, "Features to enable (comma-separated). Available: "+strings.Join(GetFeatureIDs(), ", "))
 
 	return cmd
 }
@@ -105,6 +140,7 @@ type createOptions struct {
 	warehouse    string
 	description  string
 	outputDir    string
+	features     []string
 }
 
 // templateVars holds the variables for template substitution.
@@ -201,17 +237,87 @@ func resolveTemplate(ctx context.Context, templatePath, branch string) (localPat
 	return tempDir, cleanup, nil
 }
 
+// listUserApps fetches apps owned by the current user from the workspace.
+func listUserApps(ctx context.Context) ([]apps.App, error) {
+	w := cmdctx.WorkspaceClient(ctx)
+	if w == nil {
+		return nil, nil
+	}
+
+	// Get current user to filter by creator
+	me, err := w.CurrentUser.Me(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	iter := w.Apps.List(ctx, apps.ListAppsRequest{})
+	allApps, err := listing.ToSlice(ctx, iter)
+	if err != nil {
+		return nil, err
+	}
+
+	// Filter apps by current user
+	var userApps []apps.App
+	for _, app := range allApps {
+		if app.Creator == me.UserName {
+			userApps = append(userApps, app)
+		}
+	}
+
+	return userApps, nil
+}
+
 func runCreate(ctx context.Context, opts createOptions) error {
 	var selectedFeatures []string
 	var dependencies map[string]string
+	var appCreationCh <-chan appCreationResult
 
-	// Interactive prompts when name is not provided
-	if opts.name == "" {
+	w := cmdctx.WorkspaceClient(ctx)
+
+	// Use features from flags if provided
+	if len(opts.features) > 0 {
+		selectedFeatures = opts.features
+	}
+
+	// Non-interactive mode: name provided via flag
+	if opts.name != "" {
+		// Build flag values map for dependency validation
+		flagValues := map[string]string{
+			"warehouse": opts.warehouse,
+		}
+
+		// Validate that required dependencies are provided via flags
+		if len(selectedFeatures) > 0 {
+			if err := ValidateFeatureDependencies(selectedFeatures, flagValues); err != nil {
+				return err
+			}
+		}
+
+		// Map flag values to dependencies
+		dependencies = make(map[string]string)
+		if opts.warehouse != "" {
+			dependencies["sql_warehouse_id"] = opts.warehouse
+		}
+	} else {
+		// Interactive mode: prompt for everything
 		if !cmdio.IsPromptSupported(ctx) {
 			return errors.New("--name is required in non-interactive mode")
 		}
 
-		config, err := PromptForProjectConfig()
+		// Fetch user's apps for the picker
+		var existingApps []apps.App
+		err := RunWithSpinner("Fetching your apps...", func() error {
+			var fetchErr error
+			existingApps, fetchErr = listUserApps(ctx)
+			return fetchErr
+		})
+		if err != nil {
+			// Non-fatal: continue without app picker if fetch fails
+			existingApps = nil
+		}
+
+		// Pass pre-selected features to skip that prompt if already provided via flag
+		config, err := PromptForProjectConfig(existingApps, selectedFeatures)
 		if err != nil {
 			return err
 		}
@@ -219,8 +325,20 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		if config.Description != "" {
 			opts.description = config.Description
 		}
-		selectedFeatures = config.Features
+		// Use features from prompt if not already set via flag
+		if len(selectedFeatures) == 0 {
+			selectedFeatures = config.Features
+		}
 		dependencies = config.Dependencies
+
+		// Start app creation in background if creating a new app
+		if config.IsNewApp && w != nil {
+			description := config.Description
+			if description == "" {
+				description = "A Databricks App powered by AppKit"
+			}
+			appCreationCh = createAppAsync(ctx, w, opts.name, description)
+		}
 
 		// Get warehouse from dependencies if provided
 		if wh, ok := dependencies["sql_warehouse_id"]; ok && wh != "" {
@@ -325,6 +443,22 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	})
 	if err != nil {
 		return err
+	}
+
+	// Wait for app creation to complete (if started in background)
+	if appCreationCh != nil {
+		err = RunWithSpinner("Creating app in Databricks...", func() error {
+			result := <-appCreationCh
+			if result.err != nil {
+				return result.err
+			}
+			return nil
+		})
+		if err != nil {
+			// Log warning but continue - user can create app later
+			cmdio.LogString(ctx, fmt.Sprintf("⚠ App creation failed: %v", err))
+			cmdio.LogString(ctx, "  You can create the app later with: databricks apps create "+opts.name)
+		}
 	}
 
 	// Run npm install

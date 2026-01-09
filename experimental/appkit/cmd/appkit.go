@@ -21,6 +21,9 @@ React, and Tailwind CSS.`,
 	}
 
 	cmd.AddCommand(newInitCmd())
+	cmd.AddCommand(newImportCmd())
+	cmd.AddCommand(newDeployCmd())
+	cmd.AddCommand(newDevRemoteCmd())
 	cmd.AddCommand(newListTemplatesCmd())
 	cmd.AddCommand(newLogsCmd())
 	cmd.AddCommand(newMetricsCmd())

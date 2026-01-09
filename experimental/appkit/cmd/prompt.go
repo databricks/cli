@@ -10,20 +10,21 @@ import (
 	"github.com/briandowns/spinner"
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/databricks/databricks-sdk-go/service/apps"
 )
 
 // AppkitTheme returns a custom theme for appkit prompts.
 func appkitTheme() *huh.Theme {
 	t := huh.ThemeBase()
 
-	// Customize colors
-	purple := lipgloss.Color("#a855f7")
-	gray := lipgloss.Color("#71717a")
-	green := lipgloss.Color("#22c55e")
+	// Databricks brand colors
+	red := lipgloss.Color("#BD2B26")
+	gray := lipgloss.Color("#71717A") // Mid-tone gray, readable on light and dark
+	yellow := lipgloss.Color("#FFAB00")
 
-	t.Focused.Title = t.Focused.Title.Foreground(purple).Bold(true)
+	t.Focused.Title = t.Focused.Title.Foreground(red).Bold(true)
 	t.Focused.Description = t.Focused.Description.Foreground(gray)
-	t.Focused.SelectedOption = t.Focused.SelectedOption.Foreground(green)
+	t.Focused.SelectedOption = t.Focused.SelectedOption.Foreground(yellow)
 	t.Focused.TextInput.Placeholder = t.Focused.TextInput.Placeholder.Foreground(gray)
 
 	return t
@@ -35,6 +36,7 @@ type CreateProjectConfig struct {
 	Description  string
 	Features     []string
 	Dependencies map[string]string // e.g., {"sql_warehouse_id": "abc123"}
+	IsNewApp     bool              // true if user chose to create a new app (vs selecting existing)
 }
 
 // projectNameValidator validates the project name.
@@ -62,27 +64,43 @@ func projectNameValidator(s string) error {
 }
 
 // PromptForProjectConfig shows an interactive form to gather project configuration.
-// Flow: name -> features -> feature dependencies -> description.
-func PromptForProjectConfig() (*CreateProjectConfig, error) {
+// Flow: app picker (if apps exist) -> name -> features -> feature dependencies -> description.
+// If preSelectedFeatures is provided, the feature selection prompt is skipped.
+// Returns the config and a callback to start app creation (if creating new app).
+func PromptForProjectConfig(existingApps []apps.App, preSelectedFeatures []string) (*CreateProjectConfig, error) {
 	config := &CreateProjectConfig{
 		Dependencies: make(map[string]string),
+		Features:     preSelectedFeatures,
 	}
 	theme := appkitTheme()
 
 	// Header
 	headerStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#a855f7")).
+		Foreground(lipgloss.Color("#BD2B26")).
 		Bold(true)
 
 	subtitleStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#71717a"))
+		Foreground(lipgloss.Color("#71717A"))
 
 	fmt.Println()
 	fmt.Println(headerStyle.Render("◆ Create a new Databricks AppKit project"))
 	fmt.Println(subtitleStyle.Render("  Full-stack TypeScript • React • Tailwind CSS"))
 	fmt.Println()
 
-	// Step 1: Project name
+	// Step 0: App picker (if existing apps are available)
+	var selectedApp *apps.App
+	if len(existingApps) > 0 {
+		selectedApp = promptForExistingApp(existingApps, theme)
+	}
+
+	// Track if user is creating a new app
+	config.IsNewApp = selectedApp == nil
+
+	// Step 1: Project name (pre-filled if app was selected)
+	if selectedApp != nil {
+		config.ProjectName = selectedApp.Name
+	}
+
 	err := huh.NewInput().
 		Title("Project name").
 		Description("lowercase letters, numbers, hyphens (max 26 chars)").
@@ -95,8 +113,8 @@ func PromptForProjectConfig() (*CreateProjectConfig, error) {
 		return nil, err
 	}
 
-	// Step 2: Feature selection
-	if len(AvailableFeatures) > 0 {
+	// Step 2: Feature selection (skip if features already provided via flag)
+	if len(config.Features) == 0 && len(AvailableFeatures) > 0 {
 		options := make([]huh.Option[string], 0, len(AvailableFeatures))
 		for _, f := range AvailableFeatures {
 			label := f.Name + " - " + f.Description
@@ -145,11 +163,17 @@ func PromptForProjectConfig() (*CreateProjectConfig, error) {
 		config.Dependencies[dep.ID] = value
 	}
 
-	// Step 4: Description
-	config.Description = "A Databricks App powered by AppKit"
+	// Step 4: Description (pre-filled if app was selected)
+	defaultDescription := "A Databricks App powered by AppKit"
+	if selectedApp != nil && selectedApp.Description != "" {
+		config.Description = selectedApp.Description
+	} else {
+		config.Description = defaultDescription
+	}
+
 	err = huh.NewInput().
 		Title("Description").
-		Placeholder("A Databricks App powered by AppKit").
+		Placeholder(defaultDescription).
 		Value(&config.Description).
 		WithTheme(theme).
 		Run()
@@ -158,10 +182,51 @@ func PromptForProjectConfig() (*CreateProjectConfig, error) {
 	}
 
 	if config.Description == "" {
-		config.Description = "A Databricks App powered by AppKit"
+		config.Description = defaultDescription
 	}
 
 	return config, nil
+}
+
+// promptForExistingApp shows a picker for existing apps and returns the selected app.
+// Returns nil if user chooses to create a new app.
+func promptForExistingApp(existingApps []apps.App, theme *huh.Theme) *apps.App {
+	const createNewOption = "__create_new__"
+
+	// Build options: "Create new" first, then existing apps
+	options := []huh.Option[string]{
+		huh.NewOption("✨ Create a new app", createNewOption),
+	}
+	appsByName := make(map[string]*apps.App)
+	for i := range existingApps {
+		app := &existingApps[i]
+		label := app.Name
+		if app.Description != "" {
+			// Truncate long descriptions
+			desc := app.Description
+			if len(desc) > 40 {
+				desc = desc[:37] + "..."
+			}
+			label += " — " + desc
+		}
+		options = append(options, huh.NewOption(label, app.Name))
+		appsByName[app.Name] = app
+	}
+
+	var selected string
+	err := huh.NewSelect[string]().
+		Title("Start from an existing app?").
+		Description(fmt.Sprintf("%d of your apps found", len(existingApps))).
+		Options(options...).
+		Value(&selected).
+		WithTheme(theme).
+		Run()
+
+	if err != nil || selected == createNewOption {
+		return nil
+	}
+
+	return appsByName[selected]
 }
 
 // RunWithSpinner runs a function while showing a spinner with the given title.
@@ -181,14 +246,14 @@ func RunWithSpinner(title string, action func() error) error {
 // PrintSuccess prints a success message after project creation.
 func PrintSuccess(projectName, outputDir string, fileCount int) {
 	successStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#22c55e")).
+		Foreground(lipgloss.Color("#FFAB00")). // Databricks yellow
 		Bold(true)
 
 	dimStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#71717a"))
+		Foreground(lipgloss.Color("#71717A")) // Mid-tone gray
 
 	codeStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#38bdf8"))
+		Foreground(lipgloss.Color("#FF3621")) // Databricks orange
 
 	fmt.Println()
 	fmt.Println(successStyle.Render("✔ Project created successfully!"))

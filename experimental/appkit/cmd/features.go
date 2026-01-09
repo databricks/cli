@@ -1,6 +1,7 @@
 package appkit
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -9,6 +10,7 @@ import (
 // FeatureDependency defines a prompt/input required by a feature.
 type FeatureDependency struct {
 	ID          string // e.g., "sql_warehouse_id"
+	FlagName    string // CLI flag name, e.g., "warehouse" (maps to --warehouse)
 	Title       string // e.g., "SQL Warehouse ID"
 	Description string // e.g., "Required for executing SQL queries"
 	Placeholder string
@@ -36,12 +38,44 @@ var AvailableFeatures = []Feature{
 		Dependencies: []FeatureDependency{
 			{
 				ID:          "sql_warehouse_id",
+				FlagName:    "warehouse",
 				Title:       "SQL Warehouse ID",
 				Description: "required for SQL queries",
 				Required:    true,
 			},
 		},
 	},
+}
+
+// ValidateFeatureDependencies checks that all required dependencies for the given features
+// are provided in the flagValues map. Returns an error listing missing required flags.
+func ValidateFeatureDependencies(featureIDs []string, flagValues map[string]string) error {
+	deps := CollectDependencies(featureIDs)
+	var missing []string
+
+	for _, dep := range deps {
+		if !dep.Required {
+			continue
+		}
+		value, ok := flagValues[dep.FlagName]
+		if !ok || value == "" {
+			missing = append(missing, "--"+dep.FlagName)
+		}
+	}
+
+	if len(missing) > 0 {
+		return fmt.Errorf("missing required flags for selected features: %s", strings.Join(missing, ", "))
+	}
+	return nil
+}
+
+// GetFeatureIDs returns a list of all available feature IDs for help text.
+func GetFeatureIDs() []string {
+	ids := make([]string, len(AvailableFeatures))
+	for i, f := range AvailableFeatures {
+		ids[i] = f.ID
+	}
+	return ids
 }
 
 // BuildPluginStrings builds the plugin import and usage strings from selected feature IDs.
