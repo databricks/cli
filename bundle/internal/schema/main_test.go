@@ -60,7 +60,7 @@ func TestRequiredAnnotationsForNewFields(t *testing.T) {
 	err = copyFile("annotations_openapi_overrides.yml", annotationsOpenApiOverridesPath)
 	assert.NoError(t, err)
 
-	generateSchema(workdir, path.Join(t.TempDir(), "schema.json"))
+	generateSchema(workdir, path.Join(t.TempDir(), "schema.json"), false)
 
 	originalFile, err := os.ReadFile("annotations.yml")
 	assert.NoError(t, err)

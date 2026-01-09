@@ -21,15 +21,8 @@ Common use cases:
 		Args: root.NoArgs,
 	}
 
-	var refOnly bool
-	cmd.Flags().BoolVar(&refOnly, "ref-only", false, "Output the schema without interpolation patterns")
-
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		data := schema.Bytes
-		if refOnly {
-			data = schema.BytesRefOnly
-		}
-		_, err := cmd.OutOrStdout().Write(data)
+		_, err := cmd.OutOrStdout().Write(schema.Bytes)
 		return err
 	}
 
