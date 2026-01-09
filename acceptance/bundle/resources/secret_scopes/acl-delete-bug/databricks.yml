@@ -1,0 +1,13 @@
+bundle:
+  name: test-acl-delete
+
+resources:
+  secret_scopes:
+    my_scope:
+      name: test-scope
+      backend_type: "DATABRICKS"
+      permissions:
+        - user_name: user1@example.com
+          level: READ
+        - user_name: user2@example.com
+          level: READ
