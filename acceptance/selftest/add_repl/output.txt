@@ -1,4 +1,8 @@
 my job is [JOB_ID]
-echo "$job_id:JOB_ID" >> ACC_REPLS
-echo "[MY_TEXT]:MY_TEXT" >> ACC_REPLS
+
+>>> add_repl.py [JOB_ID] JOB_ID
+
+>>> add_repl.py [MY_TEXT] MY_TEXT
+
+>>> add_repl.py [MY_TEXT_2] MY_TEXT
 grep ACC_REPLS script
