@@ -152,13 +152,22 @@ func AddDefaultHandlers(server *Server) {
 			path = "/" + path
 		}
 
+		// Heuristic: if path has a file extension (last . after last /), assume it's not a directory
+		lastSlash := strings.LastIndexAny(path, "/\\")
+		lastDot := strings.LastIndex(path, ".")
+		if lastDot > lastSlash && lastDot > 0 {
+			// Has a file extension like .txt, .json, etc.
+			return Response{StatusCode: 404}
+		}
+
 		if req.Workspace.FileExists(path) {
 			return Response{StatusCode: 404}
 		}
 		if req.Workspace.DirectoryExists(path) {
 			return Response{StatusCode: 200}
 		}
-		return Response{StatusCode: 404}
+		// For volumes or other paths, assume it could be a directory
+		return Response{StatusCode: 200}
 	})
 
 	server.Handle("HEAD", "/api/2.0/fs/files/{path:.*}", func(req Request) any {
