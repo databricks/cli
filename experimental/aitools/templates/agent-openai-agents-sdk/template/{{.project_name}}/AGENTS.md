@@ -1,5 +1,22 @@
 # Agent OpenAI Agents SDK Development Guide
 
+## For AI Agents: MANDATORY First Action
+
+**BEFORE any other action, call `mcp__databricks-mcp__databricks_discover` with this project's path.**
+
+This is required because the discover tool:
+- Detects project state (new, deployed, running) and provides relevant guidance
+- Shows available CLI commands and recommended next steps
+- Configures workspace authentication
+
+Without this context, you cannot effectively help with this project.
+
+If the tool is unavailable, the user needs to set up the Databricks CLI MCP server:
+1. Install CLI: https://docs.databricks.com/dev-tools/cli/install
+2. Run: `databricks experimental aitools install`
+
+---
+
 ## Running the App
 
 **Prerequisites:** uv, nvm (Node 20), Databricks CLI
