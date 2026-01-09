@@ -3,9 +3,8 @@ cp -r $TESTDIR/../interactive_cluster/{setup.py,my_test_code} .
 trap "errcode trace '$CLI' bundle destroy --auto-approve" EXIT
 trace $CLI bundle deploy
 
-# Capture job ID and add to runtime replacements to avoid pattern matching ambiguity
-job_id=$(read_id.py jobs some_other_job)
-echo "$job_id:JOB_ID" >> ACC_REPLS
+# Add all resource IDs to runtime replacements to avoid pattern matching ambiguity
+replace_ids.py
 
 trace $CLI bundle run some_other_job
 
