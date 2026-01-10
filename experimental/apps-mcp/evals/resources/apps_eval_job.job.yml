@@ -1,0 +1,68 @@
+# Apps-MCP Evaluation Job
+# Runs nightly + supports manual trigger via: databricks bundle run -t dev apps_eval_job
+
+resources:
+  jobs:
+    apps_eval_job:
+      name: "[${bundle.target}] Apps-MCP Continuous Evals"
+
+      # Nightly schedule (2am UTC)
+      trigger:
+        periodic:
+          interval: 1
+          unit: DAYS
+
+      # Health monitoring - alert if eval takes > 2 hours
+      health:
+        rules:
+          - metric: RUN_DURATION_SECONDS
+            op: GREATER_THAN
+            value: 7200
+
+      email_notifications:
+        on_failure:
+          - apps-mcp-team@databricks.com
+
+      parameters:
+        - name: mlflow_experiment
+          default: ${var.mlflow_experiment}
+        - name: parallelism
+          default: ${var.eval_parallelism}
+        - name: evals_git_url
+          default: ${var.evals_git_url}
+        - name: apps_volume
+          default: ${var.apps_volume}
+
+      job_clusters:
+        - job_cluster_key: eval_cluster
+          new_cluster:
+            spark_version: "16.2.x-scala2.12"
+            node_type_id: "n2-standard-4"
+            num_workers: 0
+            data_security_mode: SINGLE_USER
+            spark_conf:
+              spark.databricks.cluster.profile: singleNode
+              spark.master: "local[*]"
+            custom_tags:
+              ResourceClass: SingleNode
+            spark_env_vars:
+              DATABRICKS_HOST: ${workspace.host}
+              DATABRICKS_TOKEN: "{{secrets/apps-mcp-evals/databricks-token}}"
+            init_scripts:
+              - workspace:
+                  destination: ${workspace.file_path}/init/setup_eval.sh
+
+      tasks:
+        - task_key: run_evals
+          job_cluster_key: eval_cluster
+          spark_python_task:
+            python_file: ${workspace.file_path}/src/run_evals.py
+            parameters:
+              - --mlflow-experiment
+              - ${var.mlflow_experiment}
+              - --parallelism
+              - ${var.eval_parallelism}
+              - --evals-git-url
+              - ${var.evals_git_url}
+              - --apps-volume
+              - ${var.apps_volume}
