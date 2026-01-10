@@ -1,5 +1,5 @@
 {
-  "plan_version": 1,
+  "plan_version": 2,
   "cli_version": "[DEV_VERSION]",
   "lineage": "[UUID]",
   "serial": 1,
@@ -11,13 +11,40 @@
           "name": "[ENDPOINT_NAME_2]"
         }
       },
-      "changes": {
-        "local": {
-          "name": {
-            "action": "recreate",
-            "old": "[ENDPOINT_NAME_1]",
-            "new": "[ENDPOINT_NAME_2]"
+      "remote_state": {
+        "endpoint_details": {
+          "creation_timestamp": [UNIX_TIME_MILLIS][0],
+          "creator": "[USERNAME]",
+          "description": "",
+          "id": "[ENDPOINT_ID_1]",
+          "last_updated_timestamp": [UNIX_TIME_MILLIS][0],
+          "name": "[ENDPOINT_NAME_1]",
+          "permission_level": "CAN_MANAGE",
+          "route_optimized": false,
+          "state": {
+            "config_update": "NOT_UPDATING",
+            "ready": "NOT_READY"
           }
+        },
+        "endpoint_id": "[ENDPOINT_ID_1]"
+      },
+      "changes": {
+        "description": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": ""
+        },
+        "name": {
+          "action": "recreate",
+          "reason": "field_triggers",
+          "old": "[ENDPOINT_NAME_1]",
+          "new": "[ENDPOINT_NAME_2]",
+          "remote": "[ENDPOINT_NAME_1]"
+        },
+        "route_optimized": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": false
         }
       }
     },
@@ -61,12 +88,11 @@
         ]
       },
       "changes": {
-        "local": {
-          "object_id": {
-            "action": "update",
-            "old": "/serving-endpoints/[ENDPOINT_ID_1]",
-            "new": ""
-          }
+        "object_id": {
+          "action": "update",
+          "old": "/serving-endpoints/[ENDPOINT_ID_1]",
+          "new": "",
+          "remote": "/serving-endpoints/[ENDPOINT_ID_1]"
         }
       }
     }

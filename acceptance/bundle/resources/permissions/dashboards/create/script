@@ -12,8 +12,8 @@ $CLI bundle plan --output json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 rm out.requests.txt
 trace $CLI bundle deploy
 
-dashboard_id=$($CLI bundle summary --output json | jq -r '.resources.dashboards.foo.id')
-echo "$dashboard_id:DASHBOARD_ID" >> ACC_REPLS
+# Add all resource IDs to runtime replacements to avoid pattern matching ambiguity
+replace_ids.py
 
 print_requests.py //permissions > out.requests.deploy.$DATABRICKS_BUNDLE_ENGINE.json
 

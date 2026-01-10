@@ -1,5 +1,5 @@
 {
-  "plan_version": 1,
+  "plan_version": 2,
   "cli_version": "[DEV_VERSION]",
   "lineage": "[UUID]",
   "serial": 1,
@@ -31,13 +31,44 @@
           "name": "[ORIGINAL_ENDPOINT_ID]"
         }
       },
-      "changes": {
-        "local": {
-          "config.auto_capture_config.schema_name": {
-            "action": "recreate",
-            "old": "default",
-            "new": "other_schema"
+      "remote_state": {
+        "endpoint_details": {
+          "config": {
+            "auto_capture_config": {
+              "catalog_name": "main",
+              "schema_name": "default",
+              "table_name_prefix": "my_table"
+            },
+            "served_entities": [
+              {
+                "external_model": {
+                  "name": "gpt-4o-mini",
+                  "openai_config": {
+                    "openai_api_key": "{{secrets/test-scope/openai-key}}"
+                  },
+                  "provider": "openai",
+                  "task": "llm/v1/chat"
+                },
+                "name": "prod"
+              }
+            ]
+          },
+          "creator": "[USERNAME]",
+          "id": "[UUID]",
+          "name": "[ORIGINAL_ENDPOINT_ID]",
+          "state": {
+            "config_update": "NOT_UPDATING"
           }
+        },
+        "endpoint_id": "[UUID]"
+      },
+      "changes": {
+        "config.auto_capture_config.schema_name": {
+          "action": "recreate",
+          "reason": "field_triggers",
+          "old": "default",
+          "new": "other_schema",
+          "remote": "default"
         }
       }
     }

@@ -20,7 +20,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
 >>> [CLI] bundle plan -o json
 
->>> [CLI] permissions get jobs [JOB_ID]
+>>> [CLI] permissions get jobs [JOB_WITH_PERMISSIONS_ID]
 {
   "access_control_list": [
     {
@@ -65,7 +65,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
       "group_name":"admins"
     }
   ],
-  "object_id":"/jobs/[JOB_ID]",
+  "object_id":"/jobs/[JOB_WITH_PERMISSIONS_ID]",
   "object_type":"job"
 }
 
