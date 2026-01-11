@@ -45,6 +45,8 @@ func runInstall(ctx context.Context) error {
 			cmdio.LogString(ctx, color.YellowString("⚠️  Please restart Cursor for changes to take effect"))
 			return nil
 		}
+		// Unknown agent in non-interactive mode - show manual instructions
+		return agents.ShowCustomInstructions(ctx)
 	}
 
 	cmdio.LogString(ctx, "")
