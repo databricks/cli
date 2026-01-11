@@ -4,7 +4,8 @@ Validate bundle configuration for errors, warnings and recommendations.
 
 Run validate before deploy to catch configuration issues early:
   databricks bundle validate                  # Validate default target
-  databricks bundle validate --target prod    # Validate specific target
+  databricks bundle validate --target prod   # Validate specific target
+  databricks bundle validate --strict         # Fail on warnings
 
 Validation checks the configuration syntax and schema, permissions etc.
 
@@ -14,7 +15,8 @@ Usage:
   databricks bundle validate [flags]
 
 Flags:
-  -h, --help   help for validate
+  -h, --help     help for validate
+      --strict   Treat warnings as errors
 
 Global Flags:
       --debug            enable debug logging
