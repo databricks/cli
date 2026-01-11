@@ -1,0 +1,35 @@
+echo "=== Creating state file with serial 5 ==="
+mkdir -p .databricks/bundle/default
+cat > .databricks/bundle/default/resources.json << 'EOF'
+{
+  "state_version": 1,
+  "cli_version": "0.0.0",
+  "lineage": "test-lineage-123",
+  "serial": 5,
+  "state": {}
+}
+EOF
+
+echo "=== Creating WAL with corrupted entry ==="
+cat > .databricks/bundle/default/resources.json.wal << 'EOF'
+{"lineage":"test-lineage-123","serial":6}
+{"k":"resources.jobs.valid_job","v":{"__id__":"1111","state":{"name":"valid-job"}}}
+not valid json - this line should be skipped
+{"k":"resources.jobs.another_valid","v":{"__id__":"2222","state":{"name":"another-valid"}}}
+EOF
+
+echo "=== WAL content ==="
+cat .databricks/bundle/default/resources.json.wal
+
+echo "=== Deploy (should recover valid entries, skip corrupted) ==="
+trace $CLI bundle deploy 2>&1 | python3 sort_warnings.py
+
+echo "=== Final state (should have recovered entries) ==="
+cat .databricks/bundle/default/resources.json | jq -S '{serial: .serial, state_keys: (.state | keys | sort)}'
+
+echo "=== WAL after successful deploy ==="
+if [ -f ".databricks/bundle/default/resources.json.wal" ]; then
+    echo "WAL exists (unexpected)"
+else
+    echo "WAL deleted (expected)"
+fi
