@@ -11,7 +11,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/databricks/cli/experimental/apps-mcp/lib/prompts"
+	"github.com/databricks/cli/experimental/aitools/lib/prompts"
 )
 
 // skillsFS embeds the skills filesystem.
