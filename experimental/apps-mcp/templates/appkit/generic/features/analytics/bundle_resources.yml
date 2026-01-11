@@ -1,0 +1,4 @@
+        - name: 'warehouse'
+          sql_warehouse:
+            id: ${var.warehouse_id}
+            permission: 'CAN_USE'

@@ -93,22 +93,30 @@ Starts a local Vite development server and establishes a WebSocket bridge
 to the remote Databricks app for development with hot module replacement.
 
 Examples:
-  # Start development server for an app
-  databricks experimental appkit dev-remote --app-name my-app
+  # Interactive mode - select app from picker
+  databricks experimental appkit dev-remote
+
+  # Start development server for a specific app
+  databricks experimental appkit dev-remote --name my-app
 
   # Use a custom client path
-  databricks experimental appkit dev-remote --app-name my-app --client-path ./frontend
+  databricks experimental appkit dev-remote --name my-app --client-path ./frontend
 
   # Use a custom port
-  databricks experimental appkit dev-remote --app-name my-app --port 3000`,
+  databricks experimental appkit dev-remote --name my-app --port 3000`,
 		Args:    root.NoArgs,
 		PreRunE: root.MustWorkspaceClient,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			w := cmdctx.WorkspaceClient(ctx)
 
+			// Prompt for app name if not provided
 			if appName == "" {
-				return errors.New("app name is required (use --app-name)")
+				selected, err := PromptForAppSelection(ctx, "Select an app to connect to")
+				if err != nil {
+					return err
+				}
+				appName = selected
 			}
 
 			if _, err := os.Stat(clientPath); os.IsNotExist(err) {
@@ -163,7 +171,7 @@ Examples:
 		},
 	}
 
-	cmd.Flags().StringVar(&appName, "app-name", "", "Name of the app to connect to (required)")
+	cmd.Flags().StringVar(&appName, "name", "", "Name of the app to connect to (prompts if not provided)")
 	cmd.Flags().StringVar(&clientPath, "client-path", "./client", "Path to the Vite client directory")
 	cmd.Flags().IntVar(&port, "port", vitePort, "Port to run the Vite server on")
 

@@ -1,6 +1,7 @@
 package appkit
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"regexp"
@@ -10,6 +11,9 @@ import (
 	"github.com/briandowns/spinner"
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/databricks-sdk-go/listing"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 )
 
@@ -241,6 +245,89 @@ func RunWithSpinner(title string, action func() error) error {
 	err := action()
 	s.Stop()
 	return err
+}
+
+// ListUserApps fetches apps owned by the current user from the workspace.
+func ListUserApps(ctx context.Context) ([]apps.App, error) {
+	w := cmdctx.WorkspaceClient(ctx)
+	if w == nil {
+		return nil, errors.New("no workspace client available")
+	}
+
+	// Get current user to filter by creator
+	me, err := w.CurrentUser.Me(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	iter := w.Apps.List(ctx, apps.ListAppsRequest{})
+	allApps, err := listing.ToSlice(ctx, iter)
+	if err != nil {
+		return nil, err
+	}
+
+	// Filter apps by current user
+	var userApps []apps.App
+	for _, app := range allApps {
+		if app.Creator == me.UserName {
+			userApps = append(userApps, app)
+		}
+	}
+
+	return userApps, nil
+}
+
+// PromptForAppSelection shows a picker to select an existing app.
+// Returns the selected app name or error if cancelled/no apps found.
+func PromptForAppSelection(ctx context.Context, title string) (string, error) {
+	if !cmdio.IsPromptSupported(ctx) {
+		return "", errors.New("--name is required in non-interactive mode")
+	}
+
+	// Fetch user's apps
+	var existingApps []apps.App
+	err := RunWithSpinner("Fetching your apps...", func() error {
+		var fetchErr error
+		existingApps, fetchErr = ListUserApps(ctx)
+		return fetchErr
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to fetch apps: %w", err)
+	}
+
+	if len(existingApps) == 0 {
+		return "", errors.New("no apps found. Create one first with 'databricks apps create <name>'")
+	}
+
+	theme := appkitTheme()
+
+	// Build options
+	options := make([]huh.Option[string], 0, len(existingApps))
+	for _, app := range existingApps {
+		label := app.Name
+		if app.Description != "" {
+			desc := app.Description
+			if len(desc) > 40 {
+				desc = desc[:37] + "..."
+			}
+			label += " — " + desc
+		}
+		options = append(options, huh.NewOption(label, app.Name))
+	}
+
+	var selected string
+	err = huh.NewSelect[string]().
+		Title(title).
+		Description(fmt.Sprintf("%d of your apps found", len(existingApps))).
+		Options(options...).
+		Value(&selected).
+		WithTheme(theme).
+		Run()
+	if err != nil {
+		return "", err
+	}
+
+	return selected, nil
 }
 
 // PrintSuccess prints a success message after project creation.

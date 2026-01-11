@@ -33,26 +33,39 @@ type DeploymentMetrics struct {
 }
 
 func newMetricsCmd() *cobra.Command {
+	var name string
 	var timeRange string
 
 	cmd := &cobra.Command{
-		Use:   "metrics NAME",
+		Use:   "metrics",
 		Short: "Show metrics for an AppKit application",
 		Long: `Show metrics and statistics for an AppKit application.
 
 Displays information about app status, compute resources, and deployment history.
 
 Examples:
-  # Show metrics for an app
-  databricks experimental appkit metrics my-app
+  # Interactive mode - select app from picker
+  databricks experimental appkit metrics
+
+  # Show metrics for a specific app
+  databricks experimental appkit metrics --name my-app
 
   # Show metrics with JSON output
-  databricks experimental appkit metrics my-app --output json`,
-		Args:    root.ExactArgs(1),
+  databricks experimental appkit metrics --name my-app --output json`,
+		Args:    root.NoArgs,
 		PreRunE: root.MustWorkspaceClient,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
-			name := args[0]
+
+			// Prompt for app name if not provided
+			if name == "" {
+				selected, err := PromptForAppSelection(ctx, "Select an app to view metrics")
+				if err != nil {
+					return err
+				}
+				name = selected
+			}
+
 			w := cmdctx.WorkspaceClient(ctx)
 
 			// Get app details
@@ -99,6 +112,7 @@ Examples:
 		},
 	}
 
+	cmd.Flags().StringVar(&name, "name", "", "Name of the app to view metrics (prompts if not provided)")
 	cmd.Flags().StringVar(&timeRange, "time-range", "7d", "Time range for metrics (1h, 24h, 7d, 30d)")
 
 	return cmd

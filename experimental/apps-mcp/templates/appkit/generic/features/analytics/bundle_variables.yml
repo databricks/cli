@@ -1,0 +1,4 @@
+  warehouse_id:
+    description: The ID of the warehouse to use
+    lookup:
+      warehouse: Serverless Starter Warehouse

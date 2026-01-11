@@ -1,6 +1,7 @@
 package appkit
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -108,12 +109,19 @@ func runNpmBuild(ctx context.Context) error {
 		return fmt.Errorf("npm not found: please install Node.js")
 	}
 
-	return RunWithSpinner("Building frontend...", func() error {
+	var output bytes.Buffer
+
+	err := RunWithSpinner("Building frontend...", func() error {
 		cmd := exec.CommandContext(ctx, "npm", "run", "build")
-		cmd.Stdout = nil
-		cmd.Stderr = nil
+		cmd.Stdout = &output
+		cmd.Stderr = &output
 		return cmd.Run()
 	})
+
+	if err != nil && output.Len() > 0 {
+		return fmt.Errorf("build failed:\n%s", output.String())
+	}
+	return err
 }
 
 // detectApp finds the single app in the bundle configuration.

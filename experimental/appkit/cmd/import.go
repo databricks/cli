@@ -34,7 +34,10 @@ Downloads the source code of a deployed Databricks app to a local directory
 named after the app.
 
 Examples:
-  # Import an app's source code
+  # Interactive mode - select app from picker
+  databricks experimental appkit import
+
+  # Import a specific app's source code
   databricks experimental appkit import --name my-app
 
   # Force overwrite existing files
@@ -43,6 +46,16 @@ Examples:
 		PreRunE: root.MustWorkspaceClient,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
+
+			// Prompt for app name if not provided
+			if appName == "" {
+				selected, err := PromptForAppSelection(ctx, "Select an app to import")
+				if err != nil {
+					return err
+				}
+				appName = selected
+			}
+
 			return runImport(ctx, importOptions{
 				appName: appName,
 				force:   force,
@@ -50,8 +63,7 @@ Examples:
 		},
 	}
 
-	cmd.Flags().StringVar(&appName, "name", "", "Name of the app to import (required)")
-	cmd.MarkFlagRequired("name")
+	cmd.Flags().StringVar(&appName, "name", "", "Name of the app to import (prompts if not provided)")
 	cmd.Flags().BoolVar(&force, "force", false, "Overwrite existing files")
 
 	return cmd

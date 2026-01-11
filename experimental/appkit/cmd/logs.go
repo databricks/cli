@@ -37,6 +37,7 @@ var allowedSources = []string{"APP", "SYSTEM"}
 
 func newLogsCmd() *cobra.Command {
 	var (
+		name          string
 		tailLines     int
 		follow        bool
 		outputPath    string
@@ -46,7 +47,7 @@ func newLogsCmd() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:   "logs NAME",
+		Use:   "logs",
 		Short: "Stream logs for an AppKit application",
 		Long: `Stream stdout/stderr logs for an AppKit application.
 
@@ -56,15 +57,18 @@ Server-side filtering is available through --search and client-side filtering vi
 Use --output-file to mirror the stream to a local file.
 
 Examples:
+  # Interactive mode - select app from picker
+  databricks experimental appkit logs
+
   # Fetch the last 50 log lines
-  databricks experimental appkit logs my-app --tail-lines 50
+  databricks experimental appkit logs --name my-app --tail-lines 50
 
   # Follow logs until interrupted, searching for "ERROR" messages from app sources only
-  databricks experimental appkit logs my-app --follow --search ERROR --source APP
+  databricks experimental appkit logs --name my-app --follow --search ERROR --source APP
 
   # Mirror streamed logs to a local file while following for up to 5 minutes
-  databricks experimental appkit logs my-app --follow --timeout 5m --output-file /tmp/my-app.log`,
-		Args:    root.ExactArgs(1),
+  databricks experimental appkit logs --name my-app --follow --timeout 5m --output-file /tmp/my-app.log`,
+		Args:    root.NoArgs,
 		PreRunE: root.MustWorkspaceClient,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
@@ -79,7 +83,15 @@ Examples:
 				defer cancel()
 			}
 
-			name := args[0]
+			// Prompt for app name if not provided
+			if name == "" {
+				selected, err := PromptForAppSelection(ctx, "Select an app to view logs")
+				if err != nil {
+					return err
+				}
+				name = selected
+			}
+
 			w := cmdctx.WorkspaceClient(ctx)
 			app, err := w.Apps.Get(ctx, apps.GetAppRequest{Name: name})
 			if err != nil {
@@ -186,6 +198,7 @@ Examples:
 	wrappedCmd.AddFlagGroup(streamGroup)
 	wrappedCmd.AddFlagGroup(filterGroup)
 
+	cmd.Flags().StringVar(&name, "name", "", "Name of the app to view logs (prompts if not provided)")
 	cmd.Flags().StringVar(&outputPath, "output-file", "", "Mirror log output to a local file.")
 
 	return cmd

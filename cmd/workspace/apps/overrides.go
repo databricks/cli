@@ -23,6 +23,9 @@ func listDeploymentsOverride(listDeploymentsCmd *cobra.Command, listDeploymentsR
 }
 
 func createOverride(createCmd *cobra.Command, createReq *apps.CreateAppRequest) {
+	createCmd.Short = `Create an app in your workspace.`
+	createCmd.Long = `Create an app in your workspace.`
+
 	originalRunE := createCmd.RunE
 	createCmd.RunE = func(cmd *cobra.Command, args []string) error {
 		err := originalRunE(cmd, args)

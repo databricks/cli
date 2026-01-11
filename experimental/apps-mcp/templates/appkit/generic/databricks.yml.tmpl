@@ -1,11 +1,10 @@
 bundle:
   name: {{.project_name}}
+{{if .bundle_variables}}
 
 variables:
-  warehouse_id:
-    description: The ID of the warehouse to use
-    lookup:
-      warehouse: Serverless Starter Warehouse
+{{.bundle_variables}}
+{{- end}}
 
 resources:
   apps:
@@ -17,13 +16,12 @@ resources:
       # Uncomment to enable on behalf of user API scopes. Available scopes: sql, dashboards.genie, files.files
       # user_api_scopes:
       #   - sql
+{{if .bundle_resources}}
 
       # The resources which this app has access to.
       resources:
-        - name: 'warehouse'
-          sql_warehouse:
-            id: ${var.warehouse_id}
-            permission: 'CAN_USE'
+{{.bundle_resources}}
+{{- end}}
 
 targets:
   dev:
@@ -31,9 +29,11 @@ targets:
     default: true
     workspace:
       host: {{workspace_host}}
+{{if .target_variables}}
 
     variables:
-      warehouse_id: {{.sql_warehouse_id}}
+{{.target_variables}}
+{{- end}}
 
   prod:
     mode: production

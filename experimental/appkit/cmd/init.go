@@ -15,7 +15,6 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go"
-	"github.com/databricks/databricks-sdk-go/listing"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/spf13/cobra"
 )
@@ -70,7 +69,7 @@ func newInitCmd() *cobra.Command {
 		templatePath string
 		branch       string
 		name         string
-		warehouse    string
+		warehouseID  string
 		description  string
 		outputDir    string
 		features     []string
@@ -91,8 +90,8 @@ Examples:
   # Non-interactive with flags
   databricks experimental appkit init --name my-app
 
-  # With analytics feature (requires --warehouse)
-  databricks experimental appkit init --name my-app --features=analytics --warehouse=abc123
+  # With analytics feature (requires --warehouse-id)
+  databricks experimental appkit init --name my-app --features=analytics --warehouse-id=abc123
 
   # With a custom template from a local path
   databricks experimental appkit init --template /path/to/template --name my-app
@@ -102,7 +101,7 @@ Examples:
 
 Feature dependencies:
   Some features require additional flags:
-  - analytics: requires --warehouse (SQL Warehouse ID)
+  - analytics: requires --warehouse-id (SQL Warehouse ID)
 
 Environment variables:
   DATABRICKS_APPKIT_TEMPLATE_PATH  Override template source with local path`,
@@ -114,7 +113,7 @@ Environment variables:
 				templatePath: templatePath,
 				branch:       branch,
 				name:         name,
-				warehouse:    warehouse,
+				warehouseID:  warehouseID,
 				description:  description,
 				outputDir:    outputDir,
 				features:     features,
@@ -125,7 +124,7 @@ Environment variables:
 	cmd.Flags().StringVar(&templatePath, "template", "", "Template path (local directory or GitHub URL)")
 	cmd.Flags().StringVar(&branch, "branch", "", "Git branch or tag (for GitHub templates)")
 	cmd.Flags().StringVar(&name, "name", "", "Project name (prompts if not provided)")
-	cmd.Flags().StringVar(&warehouse, "warehouse", "", "SQL warehouse ID")
+	cmd.Flags().StringVar(&warehouseID, "warehouse-id", "", "SQL warehouse ID")
 	cmd.Flags().StringVar(&description, "description", "", "App description")
 	cmd.Flags().StringVar(&outputDir, "output-dir", "", "Directory to write the project to")
 	cmd.Flags().StringSliceVar(&features, "features", nil, "Features to enable (comma-separated). Available: "+strings.Join(GetFeatureIDs(), ", "))
@@ -137,7 +136,7 @@ type createOptions struct {
 	templatePath string
 	branch       string
 	name         string
-	warehouse    string
+	warehouseID  string
 	description  string
 	outputDir    string
 	features     []string
@@ -152,6 +151,103 @@ type templateVars struct {
 	WorkspaceHost  string
 	PluginImport   string
 	PluginUsage    string
+	// Feature resource fragments (aggregated from selected features)
+	BundleVariables string
+	BundleResources string
+	TargetVariables string
+	AppEnv          string
+	DotEnv          string
+	DotEnvExample   string
+}
+
+// featureFragments holds aggregated content from feature resource files.
+type featureFragments struct {
+	BundleVariables string
+	BundleResources string
+	TargetVariables string
+	AppEnv          string
+	DotEnv          string
+	DotEnvExample   string
+}
+
+// loadFeatureFragments reads and aggregates resource fragments for selected features.
+// templateDir is the path to the template directory (containing the "features" subdirectory).
+func loadFeatureFragments(templateDir string, featureIDs []string, vars templateVars) (*featureFragments, error) {
+	featuresDir := filepath.Join(templateDir, "features")
+
+	resourceFiles := CollectResourceFiles(featureIDs)
+	if len(resourceFiles) == 0 {
+		return &featureFragments{}, nil
+	}
+
+	var bundleVarsList, bundleResList, targetVarsList, appEnvList, dotEnvList, dotEnvExampleList []string
+
+	for _, rf := range resourceFiles {
+		if rf.BundleVariables != "" {
+			content, err := readAndSubstitute(filepath.Join(featuresDir, rf.BundleVariables), vars)
+			if err != nil {
+				return nil, fmt.Errorf("read bundle variables: %w", err)
+			}
+			bundleVarsList = append(bundleVarsList, content)
+		}
+		if rf.BundleResources != "" {
+			content, err := readAndSubstitute(filepath.Join(featuresDir, rf.BundleResources), vars)
+			if err != nil {
+				return nil, fmt.Errorf("read bundle resources: %w", err)
+			}
+			bundleResList = append(bundleResList, content)
+		}
+		if rf.TargetVariables != "" {
+			content, err := readAndSubstitute(filepath.Join(featuresDir, rf.TargetVariables), vars)
+			if err != nil {
+				return nil, fmt.Errorf("read target variables: %w", err)
+			}
+			targetVarsList = append(targetVarsList, content)
+		}
+		if rf.AppEnv != "" {
+			content, err := readAndSubstitute(filepath.Join(featuresDir, rf.AppEnv), vars)
+			if err != nil {
+				return nil, fmt.Errorf("read app env: %w", err)
+			}
+			appEnvList = append(appEnvList, content)
+		}
+		if rf.DotEnv != "" {
+			content, err := readAndSubstitute(filepath.Join(featuresDir, rf.DotEnv), vars)
+			if err != nil {
+				return nil, fmt.Errorf("read dotenv: %w", err)
+			}
+			dotEnvList = append(dotEnvList, content)
+		}
+		if rf.DotEnvExample != "" {
+			content, err := readAndSubstitute(filepath.Join(featuresDir, rf.DotEnvExample), vars)
+			if err != nil {
+				return nil, fmt.Errorf("read dotenv example: %w", err)
+			}
+			dotEnvExampleList = append(dotEnvExampleList, content)
+		}
+	}
+
+	// Join fragments (they already have proper indentation from the fragment files)
+	return &featureFragments{
+		BundleVariables: strings.TrimSuffix(strings.Join(bundleVarsList, ""), "\n"),
+		BundleResources: strings.TrimSuffix(strings.Join(bundleResList, ""), "\n"),
+		TargetVariables: strings.TrimSuffix(strings.Join(targetVarsList, ""), "\n"),
+		AppEnv:          strings.TrimSuffix(strings.Join(appEnvList, ""), "\n"),
+		DotEnv:          strings.TrimSuffix(strings.Join(dotEnvList, ""), "\n"),
+		DotEnvExample:   strings.TrimSuffix(strings.Join(dotEnvExampleList, ""), "\n"),
+	}, nil
+}
+
+// readAndSubstitute reads a file and applies variable substitution.
+func readAndSubstitute(path string, vars templateVars) (string, error) {
+	content, err := os.ReadFile(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return "", nil // Fragment file doesn't exist, skip it
+		}
+		return "", err
+	}
+	return substituteVars(string(content), vars), nil
 }
 
 // parseGitHubURL extracts the repository URL, subdirectory, and branch from a GitHub URL.
@@ -237,36 +333,6 @@ func resolveTemplate(ctx context.Context, templatePath, branch string) (localPat
 	return tempDir, cleanup, nil
 }
 
-// listUserApps fetches apps owned by the current user from the workspace.
-func listUserApps(ctx context.Context) ([]apps.App, error) {
-	w := cmdctx.WorkspaceClient(ctx)
-	if w == nil {
-		return nil, nil
-	}
-
-	// Get current user to filter by creator
-	me, err := w.CurrentUser.Me(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	iter := w.Apps.List(ctx, apps.ListAppsRequest{})
-	allApps, err := listing.ToSlice(ctx, iter)
-	if err != nil {
-		return nil, err
-	}
-
-	// Filter apps by current user
-	var userApps []apps.App
-	for _, app := range allApps {
-		if app.Creator == me.UserName {
-			userApps = append(userApps, app)
-		}
-	}
-
-	return userApps, nil
-}
-
 func runCreate(ctx context.Context, opts createOptions) error {
 	var selectedFeatures []string
 	var dependencies map[string]string
@@ -283,7 +349,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	if opts.name != "" {
 		// Build flag values map for dependency validation
 		flagValues := map[string]string{
-			"warehouse": opts.warehouse,
+			"warehouse-id": opts.warehouseID,
 		}
 
 		// Validate that required dependencies are provided via flags
@@ -295,8 +361,8 @@ func runCreate(ctx context.Context, opts createOptions) error {
 
 		// Map flag values to dependencies
 		dependencies = make(map[string]string)
-		if opts.warehouse != "" {
-			dependencies["sql_warehouse_id"] = opts.warehouse
+		if opts.warehouseID != "" {
+			dependencies["sql_warehouse_id"] = opts.warehouseID
 		}
 	} else {
 		// Interactive mode: prompt for everything
@@ -308,7 +374,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		var existingApps []apps.App
 		err := RunWithSpinner("Fetching your apps...", func() error {
 			var fetchErr error
-			existingApps, fetchErr = listUserApps(ctx)
+			existingApps, fetchErr = ListUserApps(ctx)
 			return fetchErr
 		})
 		if err != nil {
@@ -342,7 +408,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 
 		// Get warehouse from dependencies if provided
 		if wh, ok := dependencies["sql_warehouse_id"]; ok && wh != "" {
-			opts.warehouse = wh
+			opts.warehouseID = wh
 		}
 	}
 
@@ -409,16 +475,28 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	// Build plugin imports and usages from selected features
 	pluginImport, pluginUsage := BuildPluginStrings(selectedFeatures)
 
-	// Template variables
+	// Template variables (initial, without feature fragments)
 	vars := templateVars{
 		ProjectName:    opts.name,
-		SQLWarehouseID: opts.warehouse,
+		SQLWarehouseID: opts.warehouseID,
 		AppDescription: opts.description,
 		Profile:        profile,
 		WorkspaceHost:  workspaceHost,
 		PluginImport:   pluginImport,
 		PluginUsage:    pluginUsage,
 	}
+
+	// Load feature resource fragments
+	fragments, err := loadFeatureFragments(templateDir, selectedFeatures, vars)
+	if err != nil {
+		return fmt.Errorf("load feature fragments: %w", err)
+	}
+	vars.BundleVariables = fragments.BundleVariables
+	vars.BundleResources = fragments.BundleResources
+	vars.TargetVariables = fragments.TargetVariables
+	vars.AppEnv = fragments.AppEnv
+	vars.DotEnv = fragments.DotEnv
+	vars.DotEnvExample = fragments.DotEnvExample
 
 	// Copy template with variable substitution
 	var fileCount int
@@ -547,7 +625,8 @@ func copyTemplate(src, dest string, vars templateVars) (int, error) {
 		"databricks_template_schema.json": true,
 	}
 	skipDirs := map[string]bool{
-		"docs": true,
+		"docs":     true,
+		"features": true, // Feature fragments are processed separately, not copied
 	}
 
 	err = filepath.Walk(srcProjectDir, func(srcPath string, info os.FileInfo, err error) error {
@@ -685,6 +764,12 @@ func executeTemplate(path string, content []byte, vars templateVars) ([]byte, er
 		"workspace_host":   vars.WorkspaceHost,
 		"plugin_import":    vars.PluginImport,
 		"plugin_usage":     vars.PluginUsage,
+		"bundle_variables": vars.BundleVariables,
+		"bundle_resources": vars.BundleResources,
+		"target_variables": vars.TargetVariables,
+		"app_env":          vars.AppEnv,
+		"dotenv":           vars.DotEnv,
+		"dotenv_example":   vars.DotEnvExample,
 	}
 
 	var buf bytes.Buffer

@@ -10,21 +10,33 @@ import (
 // FeatureDependency defines a prompt/input required by a feature.
 type FeatureDependency struct {
 	ID          string // e.g., "sql_warehouse_id"
-	FlagName    string // CLI flag name, e.g., "warehouse" (maps to --warehouse)
+	FlagName    string // CLI flag name, e.g., "warehouse-id" (maps to --warehouse-id)
 	Title       string // e.g., "SQL Warehouse ID"
 	Description string // e.g., "Required for executing SQL queries"
 	Placeholder string
 	Required    bool
 }
 
+// FeatureResourceFiles defines paths to YAML fragment files for a feature's resources.
+// Paths are relative to the template's features directory (e.g., "analytics/bundle_variables.yml").
+type FeatureResourceFiles struct {
+	BundleVariables string // Variables section for databricks.yml
+	BundleResources string // Resources section for databricks.yml (app resources)
+	TargetVariables string // Dev target variables section for databricks.yml
+	AppEnv          string // Environment variables for app.yaml
+	DotEnv          string // Environment variables for .env (development)
+	DotEnvExample   string // Environment variables for .env.example
+}
+
 // Feature represents an optional feature that can be added to an AppKit project.
 type Feature struct {
-	ID           string
-	Name         string
-	Description  string
-	PluginImport string
-	PluginUsage  string
-	Dependencies []FeatureDependency
+	ID            string
+	Name          string
+	Description   string
+	PluginImport  string
+	PluginUsage   string
+	Dependencies  []FeatureDependency
+	ResourceFiles FeatureResourceFiles
 }
 
 // AvailableFeatures lists all features that can be selected when creating a project.
@@ -38,11 +50,19 @@ var AvailableFeatures = []Feature{
 		Dependencies: []FeatureDependency{
 			{
 				ID:          "sql_warehouse_id",
-				FlagName:    "warehouse",
+				FlagName:    "warehouse-id",
 				Title:       "SQL Warehouse ID",
 				Description: "required for SQL queries",
 				Required:    true,
 			},
+		},
+		ResourceFiles: FeatureResourceFiles{
+			BundleVariables: "analytics/bundle_variables.yml",
+			BundleResources: "analytics/bundle_resources.yml",
+			TargetVariables: "analytics/target_variables.yml",
+			AppEnv:          "analytics/app_env.yml",
+			DotEnv:          "analytics/dotenv.yml",
+			DotEnvExample:   "analytics/dotenv_example.yml",
 		},
 	},
 }
@@ -158,4 +178,29 @@ func CollectDependencies(featureIDs []string) []FeatureDependency {
 	}
 
 	return deps
+}
+
+// CollectResourceFiles returns all resource file paths for the selected features.
+func CollectResourceFiles(featureIDs []string) []FeatureResourceFiles {
+	featureMap := make(map[string]Feature)
+	for _, f := range AvailableFeatures {
+		featureMap[f.ID] = f
+	}
+
+	var resources []FeatureResourceFiles
+	for _, id := range featureIDs {
+		feature, ok := featureMap[id]
+		if !ok {
+			continue
+		}
+		// Only include if at least one resource file is defined
+		rf := feature.ResourceFiles
+		if rf.BundleVariables != "" || rf.BundleResources != "" ||
+			rf.TargetVariables != "" || rf.AppEnv != "" ||
+			rf.DotEnv != "" || rf.DotEnvExample != "" {
+			resources = append(resources, rf)
+		}
+	}
+
+	return resources
 }
