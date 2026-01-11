@@ -1,0 +1,28 @@
+echo "=== Creating state file (serial=2) ==="
+mkdir -p .databricks/bundle/default
+cat > .databricks/bundle/default/resources.json << 'EOF'
+{
+  "state_version": 1,
+  "cli_version": "0.0.0",
+  "lineage": "test-lineage-123",
+  "serial": 2,
+  "state": {
+    "resources.jobs.test_job": {
+      "__id__": "1001",
+      "state": {"name": "test-job"}
+    }
+  }
+}
+EOF
+
+echo "=== Creating WAL with future serial (serial=5, expected=3) ==="
+cat > .databricks/bundle/default/resources.json.wal << 'EOF'
+{"lineage":"test-lineage-123","serial":5}
+{"k":"resources.jobs.test_job","v":{"__id__":"1001","state":{"name":"test-job"}}}
+EOF
+
+echo "=== WAL content ==="
+cat .databricks/bundle/default/resources.json.wal
+
+echo "=== Deploy (should fail with corruption error) ==="
+trace errcode $CLI bundle deploy

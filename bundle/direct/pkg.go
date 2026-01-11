@@ -65,7 +65,7 @@ func (d *DeploymentUnit) SetRemoteState(remoteState any) error {
 }
 
 func (b *DeploymentBundle) ExportState(ctx context.Context, path string) (resourcestate.ExportedResourcesMap, error) {
-	err := b.StateDB.Open(path)
+	err := b.StateDB.Open(ctx, path)
 	if err != nil {
 		return nil, err
 	}

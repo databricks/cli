@@ -41,7 +41,7 @@ func (b *DeploymentBundle) init(client *databricks.WorkspaceClient) error {
 // ValidatePlanAgainstState validates that a plan's lineage and serial match the current state.
 // This should be called early in the deployment process, before any file operations.
 // If the plan has no lineage (first deployment), validation is skipped.
-func ValidatePlanAgainstState(statePath string, plan *deployplan.Plan) error {
+func ValidatePlanAgainstState(ctx context.Context, statePath string, plan *deployplan.Plan) error {
 	// If plan has no lineage, this is a first deployment before any state exists
 	// No validation needed
 	if plan.Lineage == "" {
@@ -49,7 +49,7 @@ func ValidatePlanAgainstState(statePath string, plan *deployplan.Plan) error {
 	}
 
 	var stateDB dstate.DeploymentState
-	err := stateDB.Open(statePath)
+	err := stateDB.Open(ctx, statePath)
 	if err != nil {
 		// If state file doesn't exist but plan has lineage, something is wrong
 		if os.IsNotExist(err) {
@@ -74,7 +74,7 @@ func ValidatePlanAgainstState(statePath string, plan *deployplan.Plan) error {
 // InitForApply initializes the DeploymentBundle for applying a pre-computed plan.
 // This is used when --plan is specified to skip the planning phase.
 func (b *DeploymentBundle) InitForApply(ctx context.Context, client *databricks.WorkspaceClient, statePath string, plan *deployplan.Plan) error {
-	err := b.StateDB.Open(statePath)
+	err := b.StateDB.Open(ctx, statePath)
 	if err != nil {
 		return fmt.Errorf("reading state from %s: %w", statePath, err)
 	}
@@ -110,7 +110,7 @@ func (b *DeploymentBundle) InitForApply(ctx context.Context, client *databricks.
 }
 
 func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root, statePath string) (*deployplan.Plan, error) {
-	err := b.StateDB.Open(statePath)
+	err := b.StateDB.Open(ctx, statePath)
 	if err != nil {
 		return nil, fmt.Errorf("reading state from %s: %w", statePath, err)
 	}

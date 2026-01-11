@@ -12,15 +12,18 @@ import (
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
 	"github.com/databricks/cli/internal/build"
+	"github.com/databricks/cli/libs/log"
 	"github.com/google/uuid"
 )
 
 const currentStateVersion = 1
 
 type DeploymentState struct {
-	Path string
-	Data Database
-	mu   sync.Mutex
+	Path             string
+	Data             Database
+	mu               sync.Mutex
+	wal              *WAL
+	recoveredFromWAL bool
 }
 
 type Database struct {
@@ -61,11 +64,21 @@ func (db *DeploymentState) SaveState(key, newID string, state any, dependsOn []d
 		return err
 	}
 
-	db.Data.State[key] = ResourceEntry{
+	entry := ResourceEntry{
 		ID:        newID,
 		State:     json.RawMessage(jsonMessage),
 		DependsOn: dependsOn,
 	}
+
+	// Write to WAL before updating memory
+	if err := db.ensureWALOpen(); err != nil {
+		return fmt.Errorf("failed to open WAL: %w", err)
+	}
+	if err := db.wal.writeEntry(key, &entry); err != nil {
+		return fmt.Errorf("failed to write WAL entry: %w", err)
+	}
+
+	db.Data.State[key] = entry
 
 	return nil
 }
@@ -79,8 +92,47 @@ func (db *DeploymentState) DeleteState(key string) error {
 		return nil
 	}
 
+	// Write to WAL before updating memory (nil entry means delete)
+	if err := db.ensureWALOpen(); err != nil {
+		return fmt.Errorf("failed to open WAL: %w", err)
+	}
+	if err := db.wal.writeEntry(key, nil); err != nil {
+		return fmt.Errorf("failed to write WAL entry: %w", err)
+	}
+
 	delete(db.Data.State, key)
 
+	return nil
+}
+
+// ensureWALOpen opens the WAL file and writes the header if not already done.
+// Must be called while holding db.mu.
+func (db *DeploymentState) ensureWALOpen() error {
+	if db.wal != nil {
+		return nil
+	}
+
+	wal, err := openWAL(db.Path)
+	if err != nil {
+		return err
+	}
+
+	// Generate lineage if this is a fresh deployment
+	lineage := db.Data.Lineage
+	if lineage == "" {
+		lineage = uuid.New().String()
+		db.Data.Lineage = lineage
+	}
+
+	// WAL serial is the NEXT serial (current + 1)
+	walSerial := db.Data.Serial + 1
+
+	if err := wal.writeHeader(lineage, walSerial); err != nil {
+		wal.close()
+		return err
+	}
+
+	db.wal = wal
 	return nil
 }
 
@@ -97,7 +149,7 @@ func (db *DeploymentState) GetResourceEntry(key string) (ResourceEntry, bool) {
 	return result, ok
 }
 
-func (db *DeploymentState) Open(path string) error {
+func (db *DeploymentState) Open(ctx context.Context, path string) error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
@@ -114,17 +166,36 @@ func (db *DeploymentState) Open(path string) error {
 			// Create new database with serial=0, will be incremented to 1 in Finalize()
 			db.Data = NewDatabase("", 0)
 			db.Path = path
-			return nil
+
+			// Write state file immediately to ensure it exists before any WAL operations.
+			// This guarantees we have a base state file for recovery validation.
+			if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+				return fmt.Errorf("failed to create state directory: %w", err)
+			}
+			if err := db.unlockedSave(); err != nil {
+				return err
+			}
+		} else {
+			return err
 		}
-		return err
+	} else {
+		err = json.Unmarshal(data, &db.Data)
+		if err != nil {
+			return err
+		}
+		db.Path = path
 	}
 
-	err = json.Unmarshal(data, &db.Data)
+	// Attempt WAL recovery
+	recovered, err := recoverFromWAL(path, &db.Data)
 	if err != nil {
-		return err
+		return fmt.Errorf("WAL recovery failed: %w", err)
+	}
+	if recovered {
+		log.Infof(ctx, "Recovered deployment state from WAL")
+		db.recoveredFromWAL = true
 	}
 
-	db.Path = path
 	return nil
 }
 
@@ -132,20 +203,45 @@ func (db *DeploymentState) Finalize() error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
-	// Generate lineage on first save
+	// Generate lineage on first save (if WAL wasn't opened)
 	if db.Data.Lineage == "" {
 		db.Data.Lineage = uuid.New().String()
 	}
 
 	db.Data.Serial++
 
-	return db.unlockedSave()
+	err := db.unlockedSave()
+	if err != nil {
+		return err
+	}
+
+	// Truncate WAL after successful state file write
+	if db.wal != nil {
+		if err := db.wal.truncate(); err != nil {
+			return fmt.Errorf("failed to truncate WAL: %w", err)
+		}
+		db.wal = nil
+	} else {
+		// No WAL was opened, but we should still clean up any stale WAL file
+		wp := walPath(db.Path)
+		if err := os.Remove(wp); err != nil && !os.IsNotExist(err) {
+			return fmt.Errorf("failed to remove stale WAL file: %w", err)
+		}
+	}
+
+	return nil
 }
 
 func (db *DeploymentState) AssertOpened() {
 	if db.Path == "" {
 		panic("internal error: DeploymentState must be opened first")
 	}
+}
+
+// RecoveredFromWAL returns true if state was recovered from WAL during Open().
+// This is used to determine if Finalize() should be called even with an empty plan.
+func (db *DeploymentState) RecoveredFromWAL() bool {
+	return db.recoveredFromWAL
 }
 
 func (db *DeploymentState) ExportState(ctx context.Context) resourcestate.ExportedResourcesMap {

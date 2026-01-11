@@ -1,0 +1,4 @@
+# WAL with serial ahead of state - indicates corruption, should error.
+# State has serial=2, WAL has serial=5 (expected would be 3).
+
+# No server stubs needed - deploy should fail before any API calls.

@@ -1,0 +1,48 @@
+echo "=== Creating state directory ==="
+mkdir -p .databricks/bundle/default
+
+echo "=== Creating state file (job exists) ==="
+cat > .databricks/bundle/default/resources.json << 'EOF'
+{
+  "state_version": 1,
+  "cli_version": "0.0.0",
+  "lineage": "delete-test-lineage",
+  "serial": 1,
+  "state": {
+    "resources.jobs.test_job": {
+      "__id__": "1001",
+      "state": {"name": "test-job"}
+    }
+  }
+}
+EOF
+
+echo "=== Creating WAL with delete entry (simulating crash during delete) ==="
+cat > .databricks/bundle/default/resources.json.wal << 'EOF'
+{"lineage":"delete-test-lineage","serial":2}
+{"k":"resources.jobs.test_job","v":null}
+EOF
+
+echo "=== WAL content ==="
+cat .databricks/bundle/default/resources.json.wal
+
+echo "=== Updating config to remove job ==="
+cat > databricks.yml << 'EOF'
+bundle:
+  name: wal-delete-test
+
+resources: {}
+EOF
+
+echo "=== Deploy (should recover delete from WAL) ==="
+trace $CLI bundle deploy
+
+echo "=== Final state (should have no jobs) ==="
+cat .databricks/bundle/default/resources.json | jq -S '{serial: .serial, state_keys: (.state | keys)}'
+
+echo "=== WAL after successful deploy ==="
+if [ -f ".databricks/bundle/default/resources.json.wal" ]; then
+    echo "WAL exists (unexpected)"
+else
+    echo "WAL deleted (expected)"
+fi

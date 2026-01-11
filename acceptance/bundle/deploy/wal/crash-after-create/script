@@ -1,0 +1,24 @@
+echo "=== Creating state directory ==="
+mkdir -p .databricks/bundle/default
+
+echo "=== Creating WAL file (simulating crash after job create) ==="
+cat > .databricks/bundle/default/resources.json.wal << 'EOF'
+{"lineage":"test-lineage-123","serial":1}
+{"k":"resources.jobs.job_a","v":{"__id__":"1001","state":{"name":"test-job-a"}}}
+EOF
+
+echo "=== WAL content before deploy ==="
+cat .databricks/bundle/default/resources.json.wal
+
+echo "=== Deploy (should recover from WAL) ==="
+trace $CLI bundle deploy
+
+echo "=== State file after recovery ==="
+cat .databricks/bundle/default/resources.json | jq -S '{lineage: .lineage, serial: .serial, state_keys: (.state | keys)}'
+
+echo "=== WAL file after successful deploy ==="
+if [ -f ".databricks/bundle/default/resources.json.wal" ]; then
+    echo "WAL file exists (unexpected)"
+else
+    echo "WAL file deleted (expected)"
+fi

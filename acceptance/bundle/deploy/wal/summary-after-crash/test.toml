@@ -1,0 +1,2 @@
+# Bundle summary should show resources recovered from WAL.
+# No server stubs needed - we just run bundle summary which reads state.
