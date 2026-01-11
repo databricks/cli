@@ -265,41 +265,217 @@ MLFLOW_EXPERIMENT_ID=<your-experiment-id>
 
 ## Deploying to Databricks Apps
 
-**Create app:**
+**Note:** This deployment approach requires the upcoming Databricks CLI release with experiment resource support. The examples use `databricks` as the CLI command, which will work once the feature is released.
+
+### Prerequisites
+
+1. **Databricks CLI** with OAuth authentication configured
+2. **Workspace Configuration** in `databricks.yml`
+
+### Initial Setup
+
+**1. Configure OAuth Authentication:**
 
 ```bash
-databricks apps create agent-openai-agents-sdk
+# Login to your workspace with OAuth (required for apps)
+databricks auth login --host https://your-workspace.cloud.databricks.com --profile <profile-name>
+
+# Verify authentication
+databricks current-user me --profile <profile-name>
 ```
 
-**Sync files:**
+**2. Configure `databricks.yml`:**
 
-```bash
-DATABRICKS_USERNAME=$(databricks current-user me | jq -r .userName)
-databricks sync . "/Users/$DATABRICKS_USERNAME/agent-openai-agents-sdk"
+Ensure your `databricks.yml` defines both the MLflow experiment and app with resources:
+
+```yaml
+bundle:
+  name: my-agent
+
+resources:
+  # MLflow experiment for agent tracing - bundle will create this
+  experiments:
+    agent-experiment:
+      name: /Users/${workspace.current_user.userName}/${bundle.name}-${bundle.target}
+
+  # Databricks App
+  apps:
+    my-agent:
+      name: "${bundle.target}-my-agent"
+      description: "OpenAI Agents SDK agent application"
+      source_code_path: ./
+
+      # Grant app access to the experiment
+      resources:
+        - name: 'experiment'
+          experiment:
+            experiment_id: "${resources.experiments.agent-experiment.id}"
+            permission: 'CAN_MANAGE'
+
+targets:
+  dev:
+    mode: development
+    default: true
+    workspace:
+      host: https://your-workspace.cloud.databricks.com
 ```
 
-**Deploy:**
+**3. Configure `app.yaml`:**
 
-```bash
-databricks apps deploy agent-openai-agents-sdk --source-code-path /Workspace/Users/$DATABRICKS_USERNAME/agent-openai-agents-sdk
+Reference the experiment resource:
+
+```yaml
+env:
+  - name: MLFLOW_EXPERIMENT_ID
+    valueFrom: "experiment"
+  - name: MLFLOW_TRACKING_URI
+    value: "databricks"
+  - name: MLFLOW_REGISTRY_URI
+    value: "databricks-uc"
 ```
 
-**Query deployed app:**
-
-Generate OAuth token (PATs are not supported):
+**4. Configure `.env.local` for Local Development:**
 
 ```bash
-databricks auth token
+DATABRICKS_CONFIG_PROFILE=<profile-name>
+API_PROXY=http://localhost:8000/invocations
+CHAT_APP_PORT=3000
+CHAT_PROXY_TIMEOUT_SECONDS=300
+MLFLOW_TRACKING_URI="databricks"
+MLFLOW_REGISTRY_URI="databricks-uc"
 ```
 
-Send request:
+### Deployment Workflow
+
+**Deploy the bundle:**
 
 ```bash
+# Deploy bundle - creates experiment and grants app permissions automatically
+DATABRICKS_CONFIG_PROFILE=<profile-name> databricks bundle deploy --target dev
+
+# Deploy the source code
+DATABRICKS_USERNAME=$(databricks current-user me --profile <profile-name> | jq -r .userName)
+DATABRICKS_CONFIG_PROFILE=<profile-name> databricks apps deploy <app-name> \
+  --source-code-path /Workspace/Users/$DATABRICKS_USERNAME/.bundle/<bundle-name>/dev/files
+```
+
+**Get app URL:**
+
+```bash
+DATABRICKS_CONFIG_PROFILE=<profile-name> databricks apps get <app-name> --output json | jq -r '.url'
+```
+
+**What happens during deployment:**
+- ✅ Bundle creates the MLflow experiment at `/Users/<your-username>/my-agent-dev`
+- ✅ App is created with automatic access to the experiment
+- ✅ App service principal receives CAN_MANAGE permission on the experiment
+- ✅ No manual permission configuration required
+
+**Note:** You may see warnings about "unknown field" during deployment - these can be ignored and will be resolved in the CLI release.
+
+### Additional App Resources
+
+Beyond MLflow experiments, you can grant apps access to other workspace resources by adding them to the `resources` array in databricks.yml:
+
+**Supported resource types:**
+- MLflow experiments (experiment tracking)
+- SQL warehouses (data querying)
+- Model serving endpoints (model inference)
+- Unity Catalog volumes (file storage)
+- Secrets (secure credential storage)
+- Vector search indexes (semantic search)
+
+See: https://docs.databricks.com/aws/en/dev-tools/databricks-apps/resources
+
+### Testing the Deployed App
+
+**1. Generate OAuth Token:**
+
+```bash
+# Generate a fresh OAuth token (expires after 1 hour)
+DATABRICKS_CONFIG_PROFILE=<profile-name> databricks auth token --host https://your-workspace.cloud.databricks.com
+```
+
+Save the `access_token` from the JSON output.
+
+**2. Send Test Request:**
+
+```bash
+# Non-streaming request
 curl -X POST <app-url>/invocations \
   -H "Authorization: Bearer <oauth-token>" \
   -H "Content-Type: application/json" \
-  -d '{ "input": [{ "role": "user", "content": "hi" }], "stream": true }'
+  -d '{"input": [{"role": "user", "content": "hi"}]}'
+
+# Streaming request
+curl -X POST <app-url>/invocations \
+  -H "Authorization: Bearer <oauth-token>" \
+  -H "Content-Type: application/json" \
+  -d '{"input": [{"role": "user", "content": "hi"}], "stream": true}'
 ```
+
+**Note:** OAuth tokens are required for Databricks Apps - PATs are not supported.
+
+### Debugging Deployed Apps
+
+**View app logs:**
+
+```bash
+# View recent logs (last 200 lines)
+DATABRICKS_CONFIG_PROFILE=<profile-name> databricks apps logs <app-name>
+
+# Follow logs in real-time
+DATABRICKS_CONFIG_PROFILE=<profile-name> databricks apps logs <app-name> --follow
+
+# Search logs for specific terms
+DATABRICKS_CONFIG_PROFILE=<profile-name> databricks apps logs <app-name> --search "ERROR"
+
+# Filter by source (APP or SYSTEM)
+DATABRICKS_CONFIG_PROFILE=<profile-name> databricks apps logs <app-name> --source APP
+```
+
+**Check app status:**
+
+```bash
+# Get detailed app status
+DATABRICKS_CONFIG_PROFILE=<profile-name> databricks apps get <app-name> --output json | jq '{app_status, compute_status}'
+
+# List all deployments
+DATABRICKS_CONFIG_PROFILE=<profile-name> databricks apps list-deployments <app-name>
+```
+
+**Common issues:**
+
+1. **502 Bad Gateway** - App container not running or startup failed
+   - Check logs: `databricks apps logs <app-name>`
+   - Verify app status: `databricks apps get <app-name>`
+
+2. **Authentication Failed** - OAuth token expired or invalid
+   - Regenerate token: `databricks auth token`
+   - Verify profile is configured with OAuth: `databricks auth login`
+
+3. **App crashed on startup** - Check logs for errors
+   - View recent logs: `databricks apps logs <app-name> --tail-lines 100`
+   - Look for Python errors, missing dependencies, or configuration issues
+
+### Development Loop
+
+For rapid iteration:
+
+1. **Make code changes locally**
+2. **Test locally:** `uv run start-app`
+3. **Deploy to Databricks:**
+   ```bash
+   DATABRICKS_CONFIG_PROFILE=<profile-name> databricks bundle deploy --target dev
+   DATABRICKS_CONFIG_PROFILE=<profile-name> databricks apps deploy <app-name> --source-code-path /Workspace/Users/$DATABRICKS_USERNAME/.bundle/<bundle-name>/dev/files
+   ```
+4. **Test deployed app:**
+   ```bash
+   TOKEN=$(DATABRICKS_CONFIG_PROFILE=<profile-name> databricks auth token --host <workspace-url> | jq -r '.access_token')
+   curl -X POST <app-url>/invocations -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d '{"input": [{"role": "user", "content": "test"}]}'
+   ```
+5. **Check logs:** `databricks apps logs <app-name> --follow`
+6. **Iterate**
 
 ---
 
