@@ -1,0 +1,19 @@
+NEW_PIPELINE_ID=$($CLI pipelines create --json @pipeline.json | jq -r .pipeline_id)
+add_repl.py $NEW_PIPELINE_ID NEW_PIPELINE_ID
+
+rm -f out.requests.txt
+trace musterr $CLI bundle deployment bind foo $NEW_PIPELINE_ID &> out.bind-fail.$DATABRICKS_BUNDLE_ENGINE.txt
+print_requests.py '^//import-file/' '^//workspace/delete'
+
+rm -f out.requests.txt
+trace $CLI bundle deployment bind foo $NEW_PIPELINE_ID --auto-approve &> out.bind-success.$DATABRICKS_BUNDLE_ENGINE.txt
+print_requests.py '^//import-file/' '^//workspace/delete'
+
+trace $CLI bundle summary -o json > out.summary.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle plan
+
+trace musterr $CLI bundle deploy
+
+rm -f out.requests.txt
+trace $CLI bundle deploy --auto-approve
+trace print_requests.py '^//import-file/' '^//workspace/delete' '^//telemetry-ext' > out.deploy.requests.$DATABRICKS_BUNDLE_ENGINE.json
