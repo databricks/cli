@@ -1,0 +1,10 @@
+# Multiple crashes during recovery - WAL should persist until successful finalize.
+
+[[Server]]
+Pattern = "POST /api/2.2/jobs/reset"
+KillCaller = 1
+Response.Body = '{}'
+
+[[Server]]
+Pattern = "GET /api/2.2/jobs/get"
+Response.Body = '{"job_id": 1001, "settings": {"name": "test-job"}}'
