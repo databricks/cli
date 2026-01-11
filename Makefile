@@ -133,6 +133,9 @@ snapshot-release:
 schema:
 	go run ./bundle/internal/schema ./bundle/internal/schema ./bundle/schema/jsonschema.json
 
+schema-ref-only:
+	go run ./bundle/internal/schema ./bundle/internal/schema ./bundle/schema/jsonschema_ref_only.json --skip-interpolation-pattern
+
 docs:
 	go run ./bundle/docsgen ./bundle/internal/schema ./bundle/docsgen
 

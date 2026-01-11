@@ -7,6 +7,7 @@ go test -timeout 240s -run TestConsistentDatabricksSdkVersion github.com/databri
 
 # Generate the bundle JSON schema.
 make schema
+make schema-ref-only
 
 # Generate bundle validation code for enuma and required fields.
 make generate-validation
