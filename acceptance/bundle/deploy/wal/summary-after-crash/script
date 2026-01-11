@@ -1,0 +1,11 @@
+echo "=== Creating state directory ==="
+mkdir -p .databricks/bundle/default
+
+echo "=== Creating WAL file (simulating crash after job create) ==="
+cat > .databricks/bundle/default/resources.json.wal << 'EOF'
+{"lineage":"summary-test-lineage","serial":1}
+{"k":"resources.jobs.test_job","v":{"__id__":"1001","state":{"name":"test-job"}}}
+EOF
+
+echo "=== Bundle summary (should show job from WAL with id) ==="
+trace $CLI bundle summary -o json | jq '{job_id: .resources.jobs.test_job.id, modified_status: .resources.jobs.test_job.modified_status}'
