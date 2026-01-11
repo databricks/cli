@@ -1,4 +1,4 @@
-package appkit
+package app
 
 import (
 	"context"

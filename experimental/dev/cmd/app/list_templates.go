@@ -1,4 +1,4 @@
-package appkit
+package app
 
 import (
 	"github.com/databricks/cli/libs/cmdio"
