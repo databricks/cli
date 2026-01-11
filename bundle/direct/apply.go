@@ -28,7 +28,7 @@ func (d *DeploymentUnit) Destroy(ctx context.Context, db *dstate.DeploymentState
 }
 
 func (d *DeploymentUnit) Deploy(ctx context.Context, db *dstate.DeploymentState, newState any, actionType deployplan.ActionType, changes deployplan.Changes) error {
-	if actionType == deployplan.ActionTypeCreate {
+	if actionType == deployplan.Create {
 		return d.Create(ctx, db, newState)
 	}
 
@@ -43,13 +43,13 @@ func (d *DeploymentUnit) Deploy(ctx context.Context, db *dstate.DeploymentState,
 	}
 
 	switch actionType {
-	case deployplan.ActionTypeRecreate:
+	case deployplan.Recreate:
 		return d.Recreate(ctx, db, oldID, newState)
-	case deployplan.ActionTypeUpdate:
+	case deployplan.Update:
 		return d.Update(ctx, db, oldID, newState, changes)
-	case deployplan.ActionTypeUpdateWithID:
+	case deployplan.UpdateWithID:
 		return d.UpdateWithID(ctx, db, oldID, newState)
-	case deployplan.ActionTypeResize:
+	case deployplan.Resize:
 		return d.Resize(ctx, db, oldID, newState)
 	default:
 		return fmt.Errorf("internal error: unexpected actionType: %#v", actionType)

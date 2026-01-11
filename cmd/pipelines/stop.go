@@ -36,7 +36,7 @@ func resolveStopArgument(ctx context.Context, b *bundle.Bundle, args []string) (
 	return "", errors.New("expected a KEY of the pipeline to stop")
 }
 
-func stopCommand() *cobra.Command {
+func StopCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "stop [KEY]",
 		Short: "Stop a pipeline",

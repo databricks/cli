@@ -124,6 +124,7 @@
             "retry_on_timeout": false,
             "run_as": [
               {
+                "group_name": "",
                 "service_principal_name": "",
                 "user_name": "[USERNAME]"
               }

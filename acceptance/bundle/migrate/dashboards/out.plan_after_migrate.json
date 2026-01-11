@@ -1,5 +1,5 @@
 {
-  "plan_version": 1,
+  "plan_version": 2,
   "cli_version": "[DEV_VERSION]",
   "lineage": "[UUID]",
   "serial": 3,
@@ -8,7 +8,7 @@
       "action": "skip",
       "remote_state": {
         "create_time": "[TIMESTAMP]",
-        "dashboard_id": "[DASHBOARD_ID]",
+        "dashboard_id": "[DASHBOARD1_ID]",
         "display_name": "my dashboard",
         "embed_credentials": true,
         "etag": "[NUMID]",

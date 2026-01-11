@@ -1,7 +1,7 @@
 default: checks fmt lint
 
 # Default packages to test (all)
-TEST_PACKAGES = ./acceptance/internal ./libs/... ./internal/... ./cmd/... ./bundle/... ./experimental/aitools/... ./experimental/ssh/... .
+TEST_PACKAGES = ./acceptance/internal ./libs/... ./internal/... ./cmd/... ./bundle/... ./experimental/ssh/... .
 
 # Default acceptance test filter (all)
 ACCEPTANCE_TEST_FILTER = ""
@@ -175,9 +175,6 @@ generate:
 
 test-exp-aitools:
 	make test TEST_PACKAGES="./experimental/aitools/..." ACCEPTANCE_TEST_FILTER="TestAccept/idontexistyet/aitools"
-
-test-exp-apps-mcp:
-	make test TEST_PACKAGES="./experimental/apps-mcp/..." ACCEPTANCE_TEST_FILTER="TestAccept/idontexistyet/apps-mcp"
 
 test-exp-ssh:
 	make test TEST_PACKAGES="./experimental/ssh/..." ACCEPTANCE_TEST_FILTER="TestAccept/ssh"

@@ -48,7 +48,7 @@ type IResource interface {
 
 	// [Optional] FieldTriggers returns actions to trigger when given fields are changed.
 	// Keys are field paths (e.g., "name", "catalog_name"). Values are actions.
-	// Unspecified changed fields default to ActionTypeUpdate.
+	// Unspecified changed fields default to Update.
 	//
 	// Note: these functions are called once per resource implementation initialization,
 	// not once per resource.
@@ -363,7 +363,7 @@ func (a *Adapter) validate() error {
 	if a.overrideChangeDesc == nil {
 		hasUpdateWithIDTrigger := false
 		for _, action := range a.fieldTriggers {
-			if action == deployplan.ActionTypeUpdateWithID {
+			if action == deployplan.UpdateWithID {
 				hasUpdateWithIDTrigger = true
 			}
 		}

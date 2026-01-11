@@ -12,7 +12,7 @@ Deployment complete!
 >>> [CLI] bundle plan
 Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 
->>> [CLI] permissions get pipelines [PIPELINE_ID]
+>>> [CLI] permissions get pipelines [FOO_ID]
 {
   "access_control_list": [
     {
@@ -45,7 +45,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
       "user_name":"[USERNAME]"
     }
   ],
-  "object_id":"/pipelines/[PIPELINE_ID]",
+  "object_id":"/pipelines/[FOO_ID]",
   "object_type":"pipelines"
 }
 

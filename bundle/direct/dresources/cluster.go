@@ -126,19 +126,19 @@ func (r *ResourceCluster) OverrideChangeDesc(ctx context.Context, p *structpath.
 		// We do change skip here in the same way TF provider does suppress diff if the alias is used.
 		// https://github.com/databricks/terraform-provider-databricks/blob/main/clusters/resource_cluster.go#L109-L117
 		if change.New == compute.DataSecurityModeDataSecurityModeStandard && change.Remote == compute.DataSecurityModeUserIsolation && change.New == change.Old {
-			change.Action = deployplan.ActionTypeSkipString
+			change.Action = deployplan.Skip
 			change.Reason = deployplan.ReasonAlias
 		} else if change.New == compute.DataSecurityModeDataSecurityModeDedicated && change.Remote == compute.DataSecurityModeSingleUser && change.New == change.Old {
-			change.Action = deployplan.ActionTypeSkipString
+			change.Action = deployplan.Skip
 			change.Reason = deployplan.ReasonAlias
 		} else if change.New == compute.DataSecurityModeDataSecurityModeAuto && (change.Remote == compute.DataSecurityModeSingleUser || change.Remote == compute.DataSecurityModeUserIsolation) && change.New == change.Old {
-			change.Action = deployplan.ActionTypeSkipString
+			change.Action = deployplan.Skip
 			change.Reason = deployplan.ReasonAlias
 		}
 
 	case "num_workers", "autoscale":
 		if remoteState.State == compute.StateRunning {
-			change.Action = deployplan.ActionTypeResizeString
+			change.Action = deployplan.Resize
 		}
 	}
 	return nil
