@@ -8,6 +8,9 @@ To disable this, set the environment variable DATABRICKS_CACHE_ENABLED to false.
 
 ### CLI
 
+* Improve performance of `databricks fs cp` command by parallelizing file uploads when
+  copying directories with the `--recursive` flag.
+
 ### Bundles
 * Enable caching user identity by default ([#4202](https://github.com/databricks/cli/pull/4202))
 * Fix false positive folder permission warnings and make them more actionable ([#4216](https://github.com/databricks/cli/pull/4216))
