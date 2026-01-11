@@ -1,0 +1,4 @@
+# WAL with different lineage than state - should error.
+# State has lineage "state-lineage-aaa", WAL has lineage "wal-lineage-bbb".
+
+# No server stubs needed - deploy should fail before any API calls.

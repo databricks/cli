@@ -1,0 +1,37 @@
+=== Creating state directory ===
+=== Creating empty WAL file ===
+=== Empty WAL file exists ===
+[FILE_INFO] .databricks/bundle/default/resources.json.wal
+=== Deploy (should handle empty WAL gracefully) ===
+
+>>> [CLI] bundle deploy
+Warning: Single node cluster is not correctly configured
+  at resources.jobs.test_job.tasks[0].new_cluster
+  in databricks.yml:13:13
+
+num_workers should be 0 only for single-node clusters. To create a
+valid single node cluster please ensure that the following properties
+are correctly set in the cluster specification:
+
+  spark_conf:
+    spark.databricks.cluster.profile: singleNode
+    spark.master: local[*]
+
+  custom_tags:
+    ResourceClass: SingleNode
+  
+
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/wal-empty-test/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+=== Checking WAL file after deploy ===
+Empty WAL deleted (expected)
+=== State file content ===
+{
+  "lineage": "[UUID]",
+  "serial": [SERIAL],
+  "state_keys": [
+    "resources.jobs.test_job"
+  ]
+}

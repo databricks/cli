@@ -1,0 +1,5 @@
+# WAL recovery after crash during delete operation.
+# Delete was recorded in WAL but not finalized. Deploy should complete the delete.
+
+# No server stubs needed - the delete was already done (recorded in WAL)
+# and the job no longer needs API calls

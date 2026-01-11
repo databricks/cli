@@ -1,0 +1,9 @@
+# WAL is created during deploy, used for state tracking, and deleted after Finalize.
+
+[[Server]]
+Pattern = "POST /api/2.2/jobs/create"
+Response.Body = '{"job_id": 1001}'
+
+[[Server]]
+Pattern = "GET /api/2.2/jobs/get"
+Response.Body = '{"job_id": 1001, "settings": {"name": "test-job"}}'

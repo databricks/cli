@@ -236,7 +236,7 @@ func ProcessBundleRet(cmd *cobra.Command, opts ProcessOptions) (b *bundle.Bundle
 
 		// Validate that the plan's lineage and serial match the current state
 		// This must happen before any file operations
-		err = direct.ValidatePlanAgainstState(&b.DeploymentBundle.StateDB, plan)
+		err = direct.ValidatePlanAgainstState(ctx, &b.DeploymentBundle.StateDB, plan)
 		if err != nil {
 			logdiag.LogError(ctx, err)
 			return b, stateDesc, root.ErrAlreadyPrinted

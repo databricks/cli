@@ -1,0 +1,29 @@
+=== Creating state file with lineage-A ===
+=== Creating WAL with lineage-B (mismatch) ===
+=== WAL content ===
+{"lineage":"wal-lineage-bbb","serial": [SERIAL]}
+{"k":"resources.jobs.test_job","v":{"__id__": "[ID]","state":{"name":"test-job"}}}
+=== Deploy (should fail with lineage mismatch error) ===
+
+>>> errcode [CLI] bundle deploy
+Warning: Single node cluster is not correctly configured
+  at resources.jobs.test_job.tasks[0].new_cluster
+  in databricks.yml:13:13
+
+num_workers should be 0 only for single-node clusters. To create a
+valid single node cluster please ensure that the following properties
+are correctly set in the cluster specification:
+
+  spark_conf:
+    spark.databricks.cluster.profile: singleNode
+    spark.master: local[*]
+
+  custom_tags:
+    ResourceClass: SingleNode
+  
+
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/wal-lineage-mismatch-test/default/files...
+Error: reading state from [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: WAL recovery failed: WAL lineage (wal-lineage-bbb) does not match state lineage (state-lineage-aaa)
+
+
+Exit code: [KILLED]
