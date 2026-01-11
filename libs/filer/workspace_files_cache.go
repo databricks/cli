@@ -385,7 +385,7 @@ func (c *cache) statFromReadDir(ctx context.Context, name string, entry *readDir
 		return e.wait(ctx)
 	}
 
-	return nil, FileDoesNotExistError{name}
+	return nil, fileDoesNotExistError{name}
 }
 
 // Stat returns the file info for a file or directory.

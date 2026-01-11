@@ -1,5 +1,5 @@
 {
-  "plan_version": 1,
+  "plan_version": 2,
   "cli_version": "[DEV_VERSION]",
   "lineage": "[UUID]",
   "serial": 1,
@@ -75,17 +75,17 @@
         "endpoint_id": "[UUID]"
       },
       "changes": {
-        "local": {
-          "ai_gateway.inference_table_config.catalog_name": {
-            "action": "update",
-            "old": "first-inference-catalog",
-            "new": "second-inference-catalog"
-          },
-          "tags[0].value": {
-            "action": "update",
-            "old": "my-team-one",
-            "new": "my-team-two"
-          }
+        "ai_gateway.inference_table_config.catalog_name": {
+          "action": "update",
+          "old": "first-inference-catalog",
+          "new": "second-inference-catalog",
+          "remote": "first-inference-catalog"
+        },
+        "tags[0].value": {
+          "action": "update",
+          "old": "my-team-one",
+          "new": "my-team-two",
+          "remote": "my-team-one"
         }
       }
     }

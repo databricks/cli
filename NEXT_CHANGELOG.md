@@ -1,16 +1,18 @@
 # NEXT CHANGELOG
 
-## Release v0.282.0
+## Release v0.283.0
 
 ### Notable Changes
+* Bundle commands now cache the user's account details to improve command latency.
+To disable this, set the environment variable DATABRICKS_CACHE_ENABLED to false.
 
 ### CLI
-* Skip non-exportable objects (e.g., `MLFLOW_EXPERIMENT`) during `workspace export-dir` instead of failing ([#4081](https://github.com/databricks/cli/issues/4081))
 
 ### Bundles
-
 * Add interactive SQL warehouse picker to `default-sql` and `dbt-sql` bundle templates ([#4170](https://github.com/databricks/cli/pull/4170))
+* Enable caching user identity by default ([#4202](https://github.com/databricks/cli/pull/4202))
 * Fix false positive folder permission warnings and make them more actionable ([#4216](https://github.com/databricks/cli/pull/4216))
+* Pass additional Azure DevOps system variables ([#4236](https://github.com/databricks/cli/pull/4236))
 
 ### Dependency updates
 

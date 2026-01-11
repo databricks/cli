@@ -1,8 +1,7 @@
 touch hello.whl
 $CLI bundle plan
 $CLI bundle deploy
-job_id="$(read_id.py jobs foo)"
-echo "$job_id:JOB_ID" >> ACC_REPLS
+job_id="$(read_id.py foo)"
 
 edit_resource.py jobs $job_id <<EOF
 r["tags"]["new_tag"] = "new_value"

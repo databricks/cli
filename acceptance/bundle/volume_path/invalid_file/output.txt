@@ -1,6 +1,6 @@
 Error: workspace.file_path /Volumes/test starts with /Volumes. /Volumes can only be used with workspace.artifact_path.
   at workspace.file_path
-  in databricks.yml:4:14
+  in databricks.yml:5:14
 
 For more information, see https://docs.databricks.com/aws/en/dev-tools/bundles/settings#workspace
 

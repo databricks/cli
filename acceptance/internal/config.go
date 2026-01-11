@@ -125,29 +125,11 @@ type TestConfig struct {
 	// For cloud+windows tests, max(Timeout, TimeoutWindows, TimeoutCloud) is used for timeout
 	TimeoutCloud time.Duration
 
-	// Maps a name (arbitrary string, can be used to override/disable setting in a child config) to a mapping that specifies how
-	// to update databricks.yml (or other file designated by BundleConfigTarget).
-	// Example:
-	// BundleConfig.header.bundle.name = "test-bundle"
-	// This overwrite bundle.name in the databricks.yml, so you can omit adding """
-	// bundle:
-	//   name: somename
-	// """ to every test.
-	// If child config wants to disable or override this, they can simply do
-	// BundleConfig.header = ""
-	BundleConfig map[string]any
-
-	// Target config for BundleConfig updates. Empty string disables BundleConfig updates.
-	// Null means "databricks.yml"
-	BundleConfigTarget *string
+	// On CI, we want to increase timeout, to account for slower environment
+	TimeoutCIMultiplier float64
 
 	// If true, skip this test when running on DBR / workspace file system.
 	SkipOnDbr *bool
-
-	// To be added:
-	// BundleConfigMatrix is to BundleConfig what EnvMatrix is to Env
-	// It creates different tests for each possible configuration update.
-	// BundleConfigMatrix map[string][]any
 }
 
 type ServerStub struct {
@@ -163,6 +145,12 @@ type ServerStub struct {
 	// Configure as "1ms", "2s", "3m", etc.
 	// See [time.ParseDuration] for details.
 	Delay time.Duration
+
+	// Number of times to kill the caller process before returning normal responses.
+	// 0 = never kill (default), 1 = kill once then allow, 2 = kill twice then allow, etc.
+	// Useful for testing crash recovery scenarios where first deploy crashes but retry succeeds.
+	// Requires DATABRICKS_CLI_TEST_PID=1 to be set in the test environment.
+	KillCaller int
 }
 
 // FindConfigs finds all the config relevant for this test,
@@ -237,9 +225,6 @@ func DoLoadConfig(t *testing.T, path string) TestConfig {
 
 	keys := meta.Undecoded()
 	for ind, key := range keys {
-		if len(key) > 0 && key[0] == "BundleConfig" {
-			continue
-		}
 		t.Errorf("Undecoded key in %s[%d]: %#v", path, ind, key)
 	}
 

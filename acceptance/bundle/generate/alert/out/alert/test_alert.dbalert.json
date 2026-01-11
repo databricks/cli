@@ -1,0 +1,22 @@
+{
+  "evaluation": {
+    "source": {
+      "name": "value"
+    },
+    "comparison_operator": "GREATER_THAN",
+    "threshold": {
+      "value": {
+        "double_value": 0.0
+      }
+    },
+    "notification": {}
+  },
+  "schedule": {
+    "quartz_cron_schedule": "0 0 * * * ?",
+    "timezone_id": "UTC"
+  },
+  "query_lines": [
+    "SELECT 1",
+    " as value"
+  ]
+}

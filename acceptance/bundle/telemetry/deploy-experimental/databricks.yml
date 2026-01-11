@@ -1,3 +1,6 @@
+bundle:
+  name: test-bundle
+
 experimental:
   use_legacy_run_as: true
 

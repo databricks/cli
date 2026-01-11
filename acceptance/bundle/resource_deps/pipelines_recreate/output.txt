@@ -43,12 +43,12 @@ Deployment complete!
 >>> musterr [CLI] pipelines get [FOO_ID]
 Error: The specified pipeline [FOO_ID] was not found.
 
->>> [CLI] pipelines get [UUID]
+>>> [CLI] pipelines get [FOO_ID_2]
 {
   "creator_user_name":"[USERNAME]",
   "last_modified":[UNIX_TIME_MILLIS][0],
   "name":"pipeline foo",
-  "pipeline_id":"[UUID]",
+  "pipeline_id":"[FOO_ID_2]",
   "run_as_user_name":"[USERNAME]",
   "spec": {
     "channel":"CURRENT",
@@ -57,7 +57,7 @@ Error: The specified pipeline [FOO_ID] was not found.
       "metadata_file_path":"/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
     },
     "edition":"ADVANCED",
-    "id":"[UUID]",
+    "id":"[FOO_ID_2]",
     "name":"pipeline foo",
     "storage":"dbfs:/my-new-storage"
   },
@@ -75,7 +75,7 @@ Error: The specified pipeline [FOO_ID] was not found.
       "kind": "BUNDLE",
       "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
     },
-    "description": "depends on foo id [UUID]",
+    "description": "depends on foo id [FOO_ID_2]",
     "edit_mode": "UI_LOCKED",
     "email_notifications": {},
     "format": "MULTI_TASK",
@@ -125,14 +125,14 @@ Destroy complete!
 }
 {
   "method": "DELETE",
-  "path": "/api/2.0/pipelines/[UUID]"
+  "path": "/api/2.0/pipelines/[FOO_ID_2]"
 }
 
 >>> musterr [CLI] pipelines get [FOO_ID]
 Error: The specified pipeline [FOO_ID] was not found.
 
->>> musterr [CLI] pipelines get [UUID]
-Error: The specified pipeline [UUID] was not found.
+>>> musterr [CLI] pipelines get [FOO_ID_2]
+Error: The specified pipeline [FOO_ID_2] was not found.
 
 >>> musterr [CLI] jobs get [BAR_ID]
 Error: Not Found

@@ -68,6 +68,7 @@ Flags:
       --description string         The description of the app.
   -h, --help                       help for update
       --json JSON                  either inline JSON string or @path/to/file.json with request body (default JSON (0 bytes))
+      --usage-policy-id string
 
 Global Flags:
       --debug            enable debug logging

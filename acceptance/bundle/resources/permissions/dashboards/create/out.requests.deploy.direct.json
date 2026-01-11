@@ -1,6 +1,6 @@
 {
   "method": "PUT",
-  "path": "/api/2.0/permissions/dashboards/[DASHBOARD_ID]",
+  "path": "/api/2.0/permissions/dashboards/[FOO_ID]",
   "body": {
     "access_control_list": [
       {
