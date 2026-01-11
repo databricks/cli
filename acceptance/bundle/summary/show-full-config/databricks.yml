@@ -3,6 +3,7 @@ bundle:
 
 include:
   - targets/*.yml
+  - resources/*.yml
 
 variables:
   mode:

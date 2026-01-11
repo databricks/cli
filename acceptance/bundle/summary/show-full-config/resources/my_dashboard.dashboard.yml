@@ -1,0 +1,6 @@
+resources:
+  dashboards:
+    my_dashboard:
+      display_name: My Dashboard
+      file_path: ../src/my_dashboard.lvdash.json
+      warehouse_id: 1234567890abcdef
