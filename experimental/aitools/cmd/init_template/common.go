@@ -6,12 +6,14 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 
 	"github.com/databricks/cli/experimental/aitools/lib/common"
 	"github.com/databricks/cli/experimental/aitools/lib/detector"
 	"github.com/databricks/cli/experimental/aitools/lib/prompts"
+	"github.com/databricks/cli/experimental/aitools/lib/skills"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/template"
 )
@@ -81,18 +83,26 @@ func MaterializeTemplate(ctx context.Context, cfg TemplateConfig, configMap map[
 
 	// Only write generic CLAUDE.md for non-app projects
 	// (app projects have their own template-specific CLAUDE.md)
-	if !detected.IsAppOnly {
+	isAppOnly := slices.Contains(detected.TargetTypes, "apps") && len(detected.TargetTypes) == 1
+	if !isAppOnly {
 		if err := writeAgentFiles(absOutputDir, map[string]any{}); err != nil {
 			return fmt.Errorf("failed to write agent files: %w", err)
 		}
 	}
 
+	// L2: resource-specific giudance (e.g., from target_jobs.tmpl)
+	cmdio.LogString(ctx, "--") // separator for prompt readability & tests
 	for _, targetType := range detected.TargetTypes {
 		templateName := fmt.Sprintf("target_%s.tmpl", targetType)
 		if prompts.TemplateExists(templateName) {
 			content := prompts.MustExecuteTemplate(templateName, map[string]any{})
 			cmdio.LogString(ctx, content)
 		}
+	}
+
+	// L3: list available skills
+	if skillsSection := skills.FormatSkillsSection(detected.TargetTypes); skillsSection != "" {
+		cmdio.LogString(ctx, "\n"+skillsSection)
 	}
 
 	return nil
