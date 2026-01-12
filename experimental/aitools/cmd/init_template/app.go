@@ -167,7 +167,7 @@ After initialization:
 
 		projectDir := filepath.Join(outputDir, name)
 
-		// Inject L3 (template-specific guidance from CLAUDE.md)
+		// Inject L4 (template-specific guidance from CLAUDE.md)
 		// (we only do this for the app template; other templates use a generic CLAUDE.md)
 		readClaudeMd(ctx, projectDir)
 
