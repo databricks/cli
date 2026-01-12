@@ -3,13 +3,13 @@
 
 ### Validation
 ⚠️ Always validate before deploying:
-  invoke_databricks_cli 'experimental apps-mcp tools validate ./'
+  invoke_databricks_cli 'experimental aitools tools validate ./'
 
 This is battle-tested to catch common issues before deployment. Prefer using this over manual checks (e.g. `npm run lint`), as it covers more ground specific to Databricks Apps.
 
 ### Deployment
 ⚠️ USER CONSENT REQUIRED: Only deploy with explicit user permission.
-  invoke_databricks_cli 'experimental apps-mcp tools deploy'
+  invoke_databricks_cli 'experimental aitools tools deploy'
 
 ### View and Manage
   invoke_databricks_cli 'bundle summary'
@@ -116,14 +116,14 @@ import { BarChart } from '@databricks/appkit-ui/react';
 - `npm run dev` - Start dev server with hot reload (**ALWAYS use during development**)
 
 ### Testing and Code Quality
-See the databricks experimental apps-mcp tools validate instead of running these individually.
+See the databricks experimental aitools tools validate instead of running these individually.
 
 ### Utility
 - `npm run clean` - Remove all build artifacts and node_modules
 
 **Common workflows:**
 - Development: `npm run dev` → make changes → `npm run typecheck` → `npm run lint:fix`
-- Pre-deploy: Validate with `databricks experimental apps-mcp tools validate .`
+- Pre-deploy: Validate with `databricks experimental aitools tools validate .`
 
 ## Documentation
 
