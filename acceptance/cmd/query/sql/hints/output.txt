@@ -1,0 +1,4 @@
+
+=== Preserves optimizer hints in submitted SQL
+>>> [CLI] query sql --warehouse-id wh-123 --sql SELECT /*+ BROADCAST(dim) */ * FROM fact JOIN dim --format json
+{"dummy":"ok"}

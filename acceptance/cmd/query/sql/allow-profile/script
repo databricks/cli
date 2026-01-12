@@ -1,0 +1,9 @@
+sethome "./home"
+cat > "$HOME/.databrickscfg" <<'CFG'
+[DEFAULT]
+cli.allow_destructive_sql = true
+CFG
+
+title "Profile override allows destructive SQL"
+trace $CLI query sql --warehouse-id wh-123 --sql "INSERT INTO users VALUES (1, 'alice')" --format table
+mv "$HOME/.databrickscfg" ./out.databrickscfg

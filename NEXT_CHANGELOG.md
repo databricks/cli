@@ -7,6 +7,7 @@
 To disable this, set the environment variable DATABRICKS_CACHE_ENABLED to false.
 
 ### CLI
+* Add `databricks query sql` for running SQL statements with NDJSON/CSV/table output, read-only safety gate, and Statement Execution polling.
 
 ### Bundles
 * Enable caching user identity by default ([#4202](https://github.com/databricks/cli/pull/4202))

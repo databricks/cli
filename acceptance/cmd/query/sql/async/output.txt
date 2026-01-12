@@ -1,0 +1,4 @@
+
+=== Returns immediately when wait-timeout is zero
+>>> [CLI] query sql --warehouse-id wh-123 --sql SELECT count(*) FROM system.builtin.current_queries --wait-timeout 0s
+Statement 1 submitted (id: stmt-async). Poll via GET /api/2.0/sql/statements/stmt-async

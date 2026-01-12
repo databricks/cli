@@ -1,0 +1,5 @@
+
+=== Inline SQL returns table output
+>>> [CLI] query sql --warehouse-id wh-123 --sql SELECT 1 AS one --format table
+one
+1
