@@ -35,7 +35,7 @@ func newValidateCommand() *cobra.Command {
 
 Run validate before deploy to catch configuration issues early:
   databricks bundle validate                  # Validate default target
-  databricks bundle validate --target prod   # Validate specific target
+  databricks bundle validate --target prod    # Validate specific target
   databricks bundle validate --strict         # Fail on warnings
 
 Validation checks the configuration syntax and schema, permissions etc.
