@@ -14,6 +14,7 @@ dependencies = [
 [dependency-groups]
 dev = [
     "pytest",
+    "ruff",
     "databricks-dlt",
     "databricks-connect>=15.4,<15.5",
     "ipykernel",
@@ -26,5 +27,5 @@ main = "my_default_python.main:main"
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
-[tool.black]
-line-length = 125
+[tool.ruff]
+line-length = 120
