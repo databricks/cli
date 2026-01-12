@@ -17,7 +17,7 @@ func TestValidateAndParsePath_ValidRelativePath(t *testing.T) {
 
 	assert.Equal(t, &sdpPathInfo{
 		directoryName:         "my_pipeline",
-		pipelineDirectoryPath: filepath.Join("src", "my_pipeline"),
+		pipelineDirectoryPath: "src/my_pipeline",
 		sparkPipelineFile:     "",
 	}, info)
 }
@@ -27,14 +27,15 @@ func TestValidateAndParsePath_ValidPathWithDotSlash(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Equal(t, &sdpPathInfo{
-		directoryName:         "my_pipeline",
-		pipelineDirectoryPath: filepath.Join("src", "my_pipeline"),
+		directoryName: "my_pipeline",
+		// Paths are stored as Unix-style (forward slashes) for platform independence
+		pipelineDirectoryPath: "src/my_pipeline",
 		sparkPipelineFile:     "",
 	}, info)
 }
 
 func TestValidateAndParsePath_ValidAbsolutePath(t *testing.T) {
-	absPath, err := filepath.Abs(filepath.Join("src", "my_pipeline"))
+	absPath, err := filepath.Abs("src/my_pipeline")
 	require.NoError(t, err)
 
 	info, err := validateAndParsePath(absPath)
@@ -42,7 +43,7 @@ func TestValidateAndParsePath_ValidAbsolutePath(t *testing.T) {
 
 	assert.Equal(t, &sdpPathInfo{
 		directoryName:         "my_pipeline",
-		pipelineDirectoryPath: filepath.Join("src", "my_pipeline"),
+		pipelineDirectoryPath: "src/my_pipeline",
 		sparkPipelineFile:     "",
 	}, info)
 }
@@ -52,7 +53,7 @@ func TestValidateAndParsePath_ValidNonNormalizedPath(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, &sdpPathInfo{
 		directoryName:         "my_pipeline",
-		pipelineDirectoryPath: filepath.Join("src", "my_pipeline"),
+		pipelineDirectoryPath: "src/my_pipeline",
 		sparkPipelineFile:     "",
 	}, info)
 }
@@ -63,7 +64,7 @@ func TestValidateAndParsePath_ValidDirectFilePath(t *testing.T) {
 
 	assert.Equal(t, &sdpPathInfo{
 		directoryName:         "my_pipeline",
-		pipelineDirectoryPath: filepath.Join("src", "my_pipeline"),
+		pipelineDirectoryPath: "src/my_pipeline",
 		sparkPipelineFile:     "src/my_pipeline/spark-pipeline.yml",
 	}, info)
 }
@@ -74,7 +75,7 @@ func TestValidateAndParsePath_ValidDirectFilePathWithSuffix(t *testing.T) {
 
 	assert.Equal(t, &sdpPathInfo{
 		directoryName:         "my_pipeline",
-		pipelineDirectoryPath: filepath.Join("src", "my_pipeline"),
+		pipelineDirectoryPath: "src/my_pipeline",
 		sparkPipelineFile:     "src/my_pipeline/prod.spark-pipeline.yml",
 	}, info)
 }

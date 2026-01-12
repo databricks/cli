@@ -155,7 +155,7 @@ func findSparkPipelineFile(folder string) (string, error) {
 		return "", fmt.Errorf("multiple spark-pipeline.yml files found in %s: %v. Please specify the full path to disambiguate", folder, candidates)
 	}
 
-	return filepath.Join(folder, candidates[0]), nil
+	return filepath.ToSlash(filepath.Join(folder, candidates[0])), nil
 }
 
 // sdpPipeline contains parsed SDP spark-pipeline.yml
