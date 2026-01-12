@@ -301,6 +301,23 @@ func TestInheritSystemTeamFoundationCollectionUri(t *testing.T) {
 	assert.Equal(t, "foobar", env["SYSTEM_TEAMFOUNDATIONCOLLECTIONURI"])
 }
 
+func TestInheritAzureDevOpsSystemVariables(t *testing.T) {
+	// Set Azure DevOps system variables
+	t.Setenv("SYSTEM_PLANID", "plan-id-123")
+	t.Setenv("SYSTEM_COLLECTIONID", "collection-id-456")
+	t.Setenv("SYSTEM_TEAMPROJECTID", "project-id-789")
+	t.Setenv("SYSTEM_OIDCREQUESTURI", "https://oidc.example.com")
+
+	ctx := context.Background()
+	env := map[string]string{}
+	err := inheritEnvVars(ctx, env)
+	require.NoError(t, err)
+	assert.Equal(t, "plan-id-123", env["SYSTEM_PLANID"])
+	assert.Equal(t, "collection-id-456", env["SYSTEM_COLLECTIONID"])
+	assert.Equal(t, "project-id-789", env["SYSTEM_TEAMPROJECTID"])
+	assert.Equal(t, "https://oidc.example.com", env["SYSTEM_OIDCREQUESTURI"])
+}
+
 func TestSetUserProfileFromInheritEnvVars(t *testing.T) {
 	t.Setenv("USERPROFILE", "c:\\foo\\c")
 

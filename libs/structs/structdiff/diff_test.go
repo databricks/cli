@@ -434,6 +434,12 @@ func TestGetStructDiff(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Nil(t, got)
 		})
+
+		t.Run(tt.name+" IsEqual", func(t *testing.T) {
+			equal := IsEqual(tt.a, tt.b)
+			expected := len(tt.want) == 0 && !tt.wantErr
+			assert.Equal(t, expected, equal)
+		})
 	}
 }
 

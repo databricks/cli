@@ -1,0 +1,39 @@
+{{- /*
+     * L2: Target-specific guidance for Databricks Apps.
+     *
+     * Injected when: target type "apps" is detected or after init-template.
+     * Contains: app naming constraints, validation, deployment consent.
+     */ -}}
+
+## Databricks Apps Development
+
+### Validation
+⚠️ Always validate before deploying:
+  invoke_databricks_cli 'experimental aitools tools validate ./'
+
+This is battle-tested to catch common issues before deployment. Prefer using this over manual checks (e.g. `npm run lint`), as it covers more ground specific to Databricks Apps.
+
+### Deployment
+⚠️ USER CONSENT REQUIRED: Only deploy with explicit user permission.
+  invoke_databricks_cli 'experimental aitools tools deploy'
+
+### View and Manage
+  invoke_databricks_cli 'bundle summary'
+
+### View App Logs
+To troubleshoot deployed apps, view their logs:
+  invoke_databricks_cli 'apps logs <app-name> --tail-lines 100'
+
+### Local Development vs Deployed Apps
+
+During development:
+- Start template-specific dev server (see project's CLAUDE.md for command and port)
+- Use localhost URL shown when dev server starts
+
+After deployment:
+- Get URL from: invoke_databricks_cli 'bundle summary'
+
+Decision tree:
+- "open the app" + not deployed → localhost
+- "open the app" + deployed → ask which environment
+- "localhost"/"local" → always localhost

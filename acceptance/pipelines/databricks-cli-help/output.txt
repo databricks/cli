@@ -1,0 +1,60 @@
+The Lakeflow Spark Declarative Pipelines API allows you to create, edit,
+  delete, start, and view details about pipelines.
+
+  Spark Declarative Pipelines is a framework for building reliable,
+  maintainable, and testable data processing pipelines. You define the
+  transformations to perform on your data, and Spark Declarative Pipelines
+  manages task orchestration, cluster management, monitoring, data quality, and
+  error handling.
+
+  Instead of defining your data pipelines using a series of separate Apache
+  Spark tasks, Spark Declarative Pipelines manages how your data is transformed
+  based on a target schema you define for each processing step. You can also
+  enforce data quality with Spark Declarative Pipelines expectations.
+  Expectations allow you to define expected data quality and specify how to
+  handle records that fail those expectations.
+
+Usage:
+  databricks pipelines [flags]
+  databricks pipelines [command]
+
+Available Commands
+  deploy                Deploy pipelines
+  destroy               Destroy a pipelines project
+  dry-run               Validate correctness of the pipeline's graph
+  history               Retrieve past runs for a pipeline
+  init                  Initialize a new pipelines project
+  logs                  Retrieve events for a pipeline
+  open                  Open a pipeline in the browser
+  run                   Run a pipeline
+  stop                  Stop a pipeline
+
+Management Commands
+  clone                 Clone a pipeline.
+  create                Create a pipeline.
+  delete                Delete a pipeline.
+  get                   Get a pipeline.
+  get-update            Get a pipeline update.
+  list-pipeline-events  List pipeline events.
+  list-pipelines        List pipelines.
+  list-updates          List pipeline updates.
+  start-update          Start a pipeline.
+  update                Edit a pipeline.
+
+Permission Commands
+  get-permission-levels Get pipeline permission levels.
+  get-permissions       Get pipeline permissions.
+  set-permissions       Set pipeline permissions.
+  update-permissions    Update pipeline permissions.
+
+Flags:
+  -h, --help          help for pipelines
+      --var strings   set values for variables defined in project config. Example: --var="foo=bar"
+
+Global Flags:
+      --debug            enable debug logging
+  -o, --output type      output type: text or json (default text)
+  -p, --profile string   ~/.databrickscfg profile
+  -t, --target string    bundle target to use (if applicable)
+
+Use "databricks pipelines [command] --help" for more information about a command.

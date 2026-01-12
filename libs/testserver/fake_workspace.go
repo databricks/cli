@@ -143,6 +143,8 @@ type FakeWorkspace struct {
 	// Generic permissions storage: key is "{object_type}:{object_id}"
 	Permissions map[string]iam.ObjectPermissions
 
+	Groups map[string]iam.Group
+
 	Repos map[string]workspace.RepoInfo
 
 	DatabaseInstances    map[string]database.DatabaseInstance
@@ -240,6 +242,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		Secrets:              map[string]map[string]string{},
 		Acls:                 map[string][]workspace.AclItem{},
 		Permissions:          map[string]iam.ObjectPermissions{},
+		Groups:               map[string]iam.Group{},
 		DatabaseInstances:    map[string]database.DatabaseInstance{},
 		DatabaseCatalogs:     map[string]database.DatabaseCatalog{},
 		SyncedDatabaseTables: map[string]database.SyncedDatabaseTable{},

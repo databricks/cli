@@ -1,5 +1,5 @@
 {
-  "plan_version": 1,
+  "plan_version": 2,
   "cli_version": "[DEV_VERSION]",
   "lineage": "[UUID]",
   "serial": 1,
@@ -65,12 +65,11 @@
         "endpoint_id": "[UUID]"
       },
       "changes": {
-        "local": {
-          "tags[0].value": {
-            "action": "update",
-            "old": "my-team-one",
-            "new": "my-team-two"
-          }
+        "tags[0].value": {
+          "action": "update",
+          "old": "my-team-one",
+          "new": "my-team-two",
+          "remote": "my-team-one"
         }
       }
     }
