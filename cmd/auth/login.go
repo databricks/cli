@@ -133,6 +133,15 @@ depends on the existing profiles you have set in your configuration file
 		if err != nil {
 			return err
 		}
+
+		// Load unified host flags from the profile if not explicitly set via CLI flag
+		if !cmd.Flag("experimental-is-unified-host").Changed && existingProfile != nil {
+			authArguments.IsUnifiedHost = existingProfile.IsUnifiedHost
+		}
+		if !cmd.Flag("workspace-id").Changed && existingProfile != nil {
+			authArguments.WorkspaceID = existingProfile.WorkspaceID
+		}
+
 		err = setHostAndAccountId(ctx, existingProfile, authArguments, args)
 		if err != nil {
 			return err
@@ -202,13 +211,15 @@ depends on the existing profiles you have set in your configuration file
 
 		if profileName != "" {
 			err = databrickscfg.SaveToProfile(ctx, &config.Config{
-				Profile:             profileName,
-				Host:                cfg.Host,
-				AuthType:            cfg.AuthType,
-				AccountID:           cfg.AccountID,
-				ClusterID:           cfg.ClusterID,
-				ConfigFile:          cfg.ConfigFile,
-				ServerlessComputeID: cfg.ServerlessComputeID,
+				Profile:                    profileName,
+				Host:                       cfg.Host,
+				AuthType:                   cfg.AuthType,
+				AccountID:                  cfg.AccountID,
+				WorkspaceId:                authArguments.WorkspaceID,
+				Experimental_IsUnifiedHost: authArguments.IsUnifiedHost,
+				ClusterID:                  cfg.ClusterID,
+				ConfigFile:                 cfg.ConfigFile,
+				ServerlessComputeID:        cfg.ServerlessComputeID,
 			})
 			if err != nil {
 				return err
@@ -260,24 +271,54 @@ func setHostAndAccountId(ctx context.Context, existingProfile *profile.Profile, 
 		}
 	}
 
-	// If the account-id was not provided as a cmd line flag, try to read it from
-	// the specified profile.
-	//nolint:staticcheck // SA1019: IsAccountClient is deprecated but is still used here to avoid breaking changes
-	isAccountClient := (&config.Config{Host: authArguments.Host}).IsAccountClient()
-	accountID := authArguments.AccountID
-	if isAccountClient && accountID == "" {
-		if existingProfile != nil && existingProfile.AccountID != "" {
-			authArguments.AccountID = existingProfile.AccountID
-		} else {
-			// Prompt user for the account-id if it we could not get it from a
-			// profile.
-			accountId, err := promptForAccountID(ctx)
+	// Determine the host type and handle account ID / workspace ID accordingly
+	cfg := &config.Config{
+		Host:                       authArguments.Host,
+		AccountID:                  authArguments.AccountID,
+		WorkspaceId:                authArguments.WorkspaceID,
+		Experimental_IsUnifiedHost: authArguments.IsUnifiedHost,
+	}
+
+	switch cfg.HostType() {
+	case config.AccountHost:
+		// Account host - prompt for account ID if not provided
+		if authArguments.AccountID == "" {
+			if existingProfile != nil && existingProfile.AccountID != "" {
+				authArguments.AccountID = existingProfile.AccountID
+			} else {
+				accountId, err := promptForAccountID(ctx)
+				if err != nil {
+					return err
+				}
+				authArguments.AccountID = accountId
+			}
+		}
+	case config.UnifiedHost:
+		// Unified host - prompt for either workspace ID or account ID
+		// User must specify exactly one of them
+		hasWorkspaceID := authArguments.WorkspaceID != ""
+		hasAccountID := authArguments.AccountID != ""
+
+		if hasWorkspaceID && hasAccountID {
+			return errors.New("unified host cannot have both workspace_id and account_id; please specify only one")
+		}
+
+		if !hasWorkspaceID && !hasAccountID {
+			// Neither provided - prompt user to choose
+			// For now, prompt for workspace ID by default (most common case)
+			// TODO: Could add a prompt to ask which one the user wants
+			workspaceId, err := promptForWorkspaceID(ctx)
 			if err != nil {
 				return err
 			}
-			authArguments.AccountID = accountId
+			authArguments.WorkspaceID = workspaceId
 		}
+	case config.WorkspaceHost:
+		// Workspace host - no additional prompts needed
+	default:
+		return fmt.Errorf("unknown host type: %v", cfg.HostType())
 	}
+
 	return nil
 }
 

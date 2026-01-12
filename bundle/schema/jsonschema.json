@@ -2699,6 +2699,9 @@
                       "description": "The client ID for the workspace",
                       "$ref": "#/$defs/string"
                     },
+                    "experimental_is_unified_host": {
+                      "$ref": "#/$defs/bool"
+                    },
                     "file_path": {
                       "description": "The file path to use within the workspace for both deployments and workflow runs",
                       "$ref": "#/$defs/string"
@@ -2725,6 +2728,9 @@
                     },
                     "state_path": {
                       "description": "The workspace state path",
+                      "$ref": "#/$defs/string"
+                    },
+                    "workspace_id": {
                       "$ref": "#/$defs/string"
                     }
                   },

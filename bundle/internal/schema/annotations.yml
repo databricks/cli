@@ -424,6 +424,9 @@ github.com/databricks/cli/bundle/config.Workspace:
   "client_id":
     "description": |-
       The client ID for the workspace
+  "experimental_is_unified_host":
+    "description": |-
+      PLACEHOLDER
   "file_path":
     "description": |-
       The file path to use within the workspace for both deployments and workflow runs
@@ -445,6 +448,9 @@ github.com/databricks/cli/bundle/config.Workspace:
   "state_path":
     "description": |-
       The workspace state path
+  "workspace_id":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.Alert:
   "create_time":
     "description": |-

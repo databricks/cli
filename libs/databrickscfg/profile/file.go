@@ -82,6 +82,8 @@ func (f FileProfilerImpl) LoadProfiles(ctx context.Context, fn ProfileMatchFunct
 			Name:                v.Name(),
 			Host:                host,
 			AccountID:           all["account_id"],
+			WorkspaceID:         all["workspace_id"],
+			IsUnifiedHost:       all["experimental_is_unified_host"] == "true",
 			ClusterID:           all["cluster_id"],
 			ServerlessComputeID: all["serverless_compute_id"],
 		}
