@@ -188,7 +188,7 @@ func (r *ResourceSecretScopeAcls) setACLs(ctx context.Context, scopeName string,
 		err := r.client.Secrets.DeleteAcl(ctx, acl)
 		// Ignore not found errors for ACLs.
 		if errors.Is(err, apierr.ErrNotFound) {
-			return nil
+			continue
 		}
 		if err != nil {
 			return fmt.Errorf("failed to delete ACL %v for principal %q: %w", acl, acl.Principal, err)
