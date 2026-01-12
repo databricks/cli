@@ -51,15 +51,14 @@ func (s *FakeWorkspace) ExperimentCreate(req Request) Response {
 	experimentId := strconv.FormatInt(nextID(), 10)
 
 	// Strip /Workspace prefix from experiment name to match cloud behavior
+	// Input: //Workspace/Users/foo -> Output: /Users/foo
 	experimentName := experiment.Name
-	if len(experimentName) > 0 && experimentName[0] == '/' {
-		// Remove leading slash that was doubled for Windows compatibility
+	// Remove double slash used for Windows compatibility
+	if strings.HasPrefix(experimentName, "//") {
 		experimentName = strings.TrimPrefix(experimentName, "/")
 	}
-	experimentName = strings.TrimPrefix(experimentName, "Workspace/")
-	if experimentName != "" && experimentName[0] != '/' {
-		experimentName = "/" + experimentName
-	}
+	// Remove /Workspace prefix
+	experimentName = strings.TrimPrefix(experimentName, "/Workspace")
 
 	// Create the experiment
 	exp := ml.Experiment{

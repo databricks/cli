@@ -12,7 +12,7 @@ Updating deployment state...
 Deployment complete!
 
 === Read the pre-defined experiment: {
-  "name": "/Workspace/Users/[USERNAME]/test-experiment[UNIQUE_NAME]",
+  "name": "/Users/[USERNAME]/test-experiment[UNIQUE_NAME]",
   "lifecycle_stage": "active"
 }
 
@@ -24,7 +24,7 @@ Deleting files...
 Destroy complete!
 
 === Read the pre-defined experiment again (expecting it still exists and is not deleted): {
-  "name": "/Workspace/Users/[USERNAME]/test-experiment[UNIQUE_NAME]",
+  "name": "/Users/[USERNAME]/test-experiment[UNIQUE_NAME]",
   "lifecycle_stage": "active"
 }
 

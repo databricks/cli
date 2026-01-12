@@ -14,8 +14,8 @@ Deployment complete!
 {
   "display_name": "test dashboard [UNIQUE_NAME]",
   "lifecycle_state": "ACTIVE",
-  "path": "/Users/[USERNAME]/test dashboard [UNIQUE_NAME].lvdash.json",
   "parent_path": "/Users/[USERNAME]",
+  "path": "/Users/[USERNAME]/test dashboard [UNIQUE_NAME].lvdash.json",
   "serialized_dashboard": {
     "pages": [
       {
@@ -40,8 +40,8 @@ Destroy complete!
 {
   "display_name": "test dashboard [UNIQUE_NAME]",
   "lifecycle_state": "ACTIVE",
-  "path": "/Users/[USERNAME]/test dashboard [UNIQUE_NAME].lvdash.json",
   "parent_path": "/Users/[USERNAME]",
+  "path": "/Users/[USERNAME]/test dashboard [UNIQUE_NAME].lvdash.json",
   "serialized_dashboard": {
     "pages": [
       {
