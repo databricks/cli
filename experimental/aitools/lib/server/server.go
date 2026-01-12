@@ -8,6 +8,7 @@ import (
 	mcpsdk "github.com/databricks/cli/experimental/aitools/lib/mcp"
 	"github.com/databricks/cli/experimental/aitools/lib/middlewares"
 	"github.com/databricks/cli/experimental/aitools/lib/providers/clitools"
+	"github.com/databricks/cli/experimental/aitools/lib/providers/sdkdocs"
 	"github.com/databricks/cli/experimental/aitools/lib/session"
 	"github.com/databricks/cli/experimental/aitools/lib/trajectory"
 	"github.com/databricks/cli/internal/build"
@@ -77,6 +78,11 @@ func (s *Server) RegisterTools(ctx context.Context) error {
 		return err
 	}
 
+	// Register SDK docs provider
+	if err := s.registerSDKDocsProvider(ctx); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -85,6 +91,22 @@ func (s *Server) registerCLIToolsProvider(ctx context.Context) error {
 	log.Info(ctx, "Registering CLI tools provider")
 
 	provider, err := clitools.NewProvider(ctx, s.config, s.session)
+	if err != nil {
+		return err
+	}
+
+	if err := provider.RegisterTools(s.server); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// registerSDKDocsProvider registers the SDK documentation provider
+func (s *Server) registerSDKDocsProvider(ctx context.Context) error {
+	log.Info(ctx, "Registering SDK docs provider")
+
+	provider, err := sdkdocs.NewProvider(ctx, s.config, s.session)
 	if err != nil {
 		return err
 	}
