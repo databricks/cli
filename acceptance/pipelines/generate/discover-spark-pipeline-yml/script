@@ -1,5 +1,5 @@
 export ENABLE_PIPELINES_CLI=1
 
-$CLI pipelines generate src/my_pipeline
+$CLI pipelines generate --existing-pipeline-dir src/my_pipeline
 
 mv resources output/

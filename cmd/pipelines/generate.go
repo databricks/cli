@@ -18,22 +18,24 @@ import (
 
 func generateCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "generate [dir]",
+		Use:   "generate",
 		Short: "Generate Lakeflow SDP configuration from spark-pipeline.yml",
 		Long: `Generate Lakeflow SDP configuration from spark-pipeline.yml.
 
-The dir must be located directly in the 'src' directory (e.g., ./src/my_pipeline).
+The directory must be located directly in the 'src' directory (e.g., ./src/my_pipeline).
 The command will find a spark-pipeline.yml or *.spark-pipeline.yml file in the folder
 and generate a corresponding .pipeline.yml file in the resources directory. If multiple
-files spark-pipeline.yml files exist, you can specify path to *.spark-pipeline.yml file.`,
-		Args: cobra.ExactArgs(1),
+spark-pipeline.yml files exist, you can specify the full path to a specific *.spark-pipeline.yml file.`,
 	}
 
+	var existingPipelineDir string
 	var force bool
+	cmd.Flags().StringVar(&existingPipelineDir, "existing-pipeline-dir", "", "Path to the existing pipeline directory in 'src' (e.g., src/my_pipeline).")
+	cmd.MarkFlagRequired("existing-pipeline-dir")
 	cmd.Flags().BoolVar(&force, "force", false, "Overwrite existing pipeline configuration file.")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		folderPath := args[0]
+		folderPath := existingPipelineDir
 		ctx := cmd.Context()
 
 		info, err := validateAndParsePath(folderPath)
