@@ -2,7 +2,6 @@ trace cat dash.lvdash.json
 
 title "deploy initial dashboard"
 trace $CLI bundle deploy
-replace_ids.py
 dashboard_id=$($CLI bundle summary --output json | jq -r '.resources.dashboards.test_dashboard.id')
 
 title "update the dashboard"

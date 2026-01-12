@@ -6,6 +6,10 @@ Ignore = [
     "databricks.yml",
 ]
 
+[[Repls]]
+Old = "[0-9a-f]{32}"
+New = "[DASHBOARD_ID]"
+
 [[Server]]
 Pattern = "POST /api/2.0/lakeview/dashboards"
 Response.Body = '''
