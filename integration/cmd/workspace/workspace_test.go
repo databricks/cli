@@ -279,7 +279,7 @@ func TestExport(t *testing.T) {
 	assert.Equal(t, "abc", string(b))
 
 	// Export python notebook
-	err = f.Write(ctx, "pyNotebook.py", strings.NewReader("# Databricks notebook source"))
+	err = f.Write(ctx, "pyNotebook.py", strings.NewReader("# Databricks notebook source\n"))
 	require.NoError(t, err)
 	stdout, _ = testcli.RequireSuccessfulRun(t, ctx, "workspace", "export", path.Join(sourceDir, "pyNotebook"))
 	b, err = io.ReadAll(&stdout)
@@ -311,7 +311,7 @@ func TestExportWithFileFlag(t *testing.T) {
 	assertLocalFileContents(t, filepath.Join(localTmpDir, "file.txt"), "abc")
 
 	// Export python notebook
-	err = f.Write(ctx, "pyNotebook.py", strings.NewReader("# Databricks notebook source"))
+	err = f.Write(ctx, "pyNotebook.py", strings.NewReader("# Databricks notebook source\n"))
 	require.NoError(t, err)
 	stdout, _ = testcli.RequireSuccessfulRun(t, ctx, "workspace", "export", path.Join(sourceDir, "pyNotebook"), "--file", filepath.Join(localTmpDir, "pyNb.py"))
 	b, err = io.ReadAll(&stdout)
