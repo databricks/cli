@@ -1,5 +1,8 @@
 Badness = "In TF error message talks about ingestion_definition being a list which is not the case. In direct error message says 'on invalid' which is confusing, should say about ingestion_definition being nil"
 
+[Env]
+DATABRICKS_CACHE_ENABLED = 'false'
+
 [[Repls]]
 Old = 'terraform.tfstate'
 New = 'resources.json'

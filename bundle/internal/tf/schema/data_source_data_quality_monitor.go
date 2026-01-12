@@ -3,6 +3,7 @@
 package schema
 
 type DataSourceDataQualityMonitorAnomalyDetectionConfig struct {
+	ExcludedTableFullNames []string `json:"excluded_table_full_names,omitempty"`
 }
 
 type DataSourceDataQualityMonitorDataProfilingConfigCustomMetrics struct {

@@ -42,7 +42,7 @@
       "remote_state": {
         "created_time": [UNIX_TIME_MILLIS],
         "creator_user_name": "[USERNAME]",
-        "job_id": [JOB_ID],
+        "job_id": [FOO_ID],
         "run_as_user_name": "[USERNAME]",
         "settings": {
           "deployment": {

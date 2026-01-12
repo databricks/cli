@@ -5,7 +5,7 @@
  "serial": 3,
  "state": {
   "resources.dashboards.dashboard1": {
-   "__id__": "[DASHBOARD_ID]",
+   "__id__": "[DASHBOARD1_ID]",
    "state": {
     "display_name": "my dashboard",
     "embed_credentials": true,

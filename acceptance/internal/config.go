@@ -125,6 +125,9 @@ type TestConfig struct {
 	// For cloud+windows tests, max(Timeout, TimeoutWindows, TimeoutCloud) is used for timeout
 	TimeoutCloud time.Duration
 
+	// On CI, we want to increase timeout, to account for slower environment
+	TimeoutCIMultiplier float64
+
 	// If true, skip this test when running on DBR / workspace file system.
 	SkipOnDbr *bool
 }

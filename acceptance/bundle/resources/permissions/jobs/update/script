@@ -11,8 +11,7 @@ trace print_requests > out.requests_create.json
 trace $CLI bundle plan
 trace $CLI bundle plan -o json > out.plan_post_create.$DATABRICKS_BUNDLE_ENGINE.json
 
-job_id="$(read_id.py jobs job_with_permissions)"
-echo "$job_id:JOB_ID" >> ACC_REPLS
+job_id="$(read_id.py job_with_permissions)"
 
 trace $CLI permissions get jobs "$job_id"
 rm -f out.requests.txt
