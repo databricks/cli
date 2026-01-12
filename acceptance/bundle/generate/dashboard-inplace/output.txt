@@ -10,10 +10,10 @@ Updating deployment state...
 Deployment complete!
 
 === update the dashboard
->>> [CLI] lakeview update [TEST_DASHBOARD_ID] --serialized-dashboard {"a":"b"}
+>>> [CLI] lakeview update [DASHBOARD_ID] --serialized-dashboard {"a":"b"}
 {
   "create_time":"[TIMESTAMP]",
-  "dashboard_id":"[TEST_DASHBOARD_ID]",
+  "dashboard_id":"[DASHBOARD_ID]",
   "display_name":"test dashboard",
   "etag":"[NUMID]",
   "lifecycle_state":"ACTIVE",
