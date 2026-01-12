@@ -1,4 +1,11 @@
-# Multiple crashes during recovery - WAL should persist until successful finalize.
+# Multiple real crashes during deployment - WAL should persist until successful finalize.
+# First deploy: crashes after job_a create (kill on jobs/get)
+# Second deploy: crashes during job_a update (kill on jobs/reset)
+# Third deploy: succeeds (both counters exhausted)
+
+[[Server]]
+Pattern = "POST /api/2.2/jobs/create"
+Response.Body = '{"job_id": 1001}'
 
 [[Server]]
 Pattern = "POST /api/2.2/jobs/reset"
@@ -7,4 +14,6 @@ Response.Body = '{}'
 
 [[Server]]
 Pattern = "GET /api/2.2/jobs/get"
+KillCaller = 1
 Response.Body = '{"job_id": 1001, "settings": {"name": "test-job"}}'
+

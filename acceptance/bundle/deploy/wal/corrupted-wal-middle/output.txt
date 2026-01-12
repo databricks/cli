@@ -1,0 +1,25 @@
+=== Creating state file with serial 5 ===
+=== Creating WAL with corrupted MIDDLE entry ===
+=== WAL content ===
+{"lineage":"test-lineage-456","serial": [SERIAL]}
+{"k":"resources.jobs.job_one","v":{"__id__": "[ID]","state":{"name":"job-one"}}}
+not valid json - CORRUPTED MIDDLE LINE
+{"k":"resources.jobs.job_two","v":{"__id__": "[ID]","state":{"name":"job-two"}}}
+=== Deploy (WAL should be deleted due to middle corruption) ===
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/wal-corrupted-middle-test/default/files...
+Warn: Failed to read WAL file, deleting and proceeding: WAL line 3: corrupted entry in middle of WAL: invalid character 'o' in literal null (expecting 'u')
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+=== Final state (fresh deploy, not recovered from WAL) ===
+{
+  "serial": [SERIAL],
+  "state_keys": [
+    "resources.jobs.job_one",
+    "resources.jobs.job_two"
+  ]
+}
+=== WAL after deploy ===
+WAL deleted (expected - due to middle corruption)

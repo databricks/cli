@@ -1,0 +1,17 @@
+# First 2 attempts should succeed (offset period)
+trace $CLI current-user me
+echo "Attempt 1 done - success (offset)"
+
+trace $CLI current-user me
+echo "Attempt 2 done - success (offset)"
+
+# Attempts 3-4 should be killed
+trace errcode $CLI current-user me
+echo "Attempt 3 done - killed"
+
+trace errcode $CLI current-user me
+echo "Attempt 4 done - killed"
+
+# Attempt 5 should succeed again
+trace $CLI current-user me
+echo "Attempt 5 done - success (past kill window)"

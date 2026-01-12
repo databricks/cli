@@ -1,5 +1,7 @@
-# WAL recovery after crash during delete operation.
+# WAL recovery after crash during delete operation (simulated).
 # Delete was recorded in WAL but not finalized. Deploy should complete the delete.
+# Note: Real crash testing for delete is not possible because there's no API call
+# after DeleteState (unlike create which has refreshRemoteState after SaveState).
 
 # No server stubs needed - the delete was already done (recorded in WAL)
 # and the job no longer needs API calls

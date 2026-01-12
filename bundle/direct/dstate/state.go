@@ -61,7 +61,7 @@ func (db *DeploymentState) SaveState(key, newID string, state any, dependsOn []d
 		db.Data.State = make(map[string]ResourceEntry)
 	}
 
-	jsonMessage, err := json.MarshalIndent(state, "  ", " ")
+	jsonMessage, err := json.MarshalIndent(state, "", " ")
 	if err != nil {
 		return err
 	}
@@ -72,7 +72,6 @@ func (db *DeploymentState) SaveState(key, newID string, state any, dependsOn []d
 		DependsOn: dependsOn,
 	}
 
-	// Write to WAL before updating memory
 	if err := db.ensureWALOpen(); err != nil {
 		return fmt.Errorf("failed to open WAL: %w", err)
 	}
@@ -94,7 +93,6 @@ func (db *DeploymentState) DeleteState(key string) error {
 		return nil
 	}
 
-	// Write to WAL before updating memory (nil entry means delete)
 	if err := db.ensureWALOpen(); err != nil {
 		return fmt.Errorf("failed to open WAL: %w", err)
 	}
@@ -119,7 +117,6 @@ func (db *DeploymentState) ensureWALOpen() error {
 		return err
 	}
 
-	// Generate lineage if this is a fresh deployment
 	lineage := db.Data.Lineage
 	if lineage == "" {
 		lineage = uuid.New().String()
@@ -196,8 +193,7 @@ func (db *DeploymentState) Open(ctx context.Context, path string) error {
 		db.Path = path
 	}
 
-	// Attempt WAL recovery
-	recovered, err := recoverFromWAL(path, &db.Data)
+	recovered, err := recoverFromWAL(ctx, path, &db.Data)
 	if err != nil {
 		return fmt.Errorf("WAL recovery failed: %w", err)
 	}
@@ -228,7 +224,6 @@ func (db *DeploymentState) Finalize() error {
 		return err
 	}
 
-	// Truncate WAL after successful state file write
 	if db.wal != nil {
 		if err := db.wal.truncate(); err != nil {
 			return fmt.Errorf("failed to truncate WAL: %w", err)
