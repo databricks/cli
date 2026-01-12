@@ -18,7 +18,6 @@ trap cleanupRemoveDashboard EXIT
 trace $CLI bundle deployment bind dashboard1 "${DASHBOARD_ID}" --auto-approve
 
 trace errcode $CLI bundle deploy
-replace_ids.py
 
 trace $CLI bundle deployment unbind dashboard1
 
