@@ -11,12 +11,12 @@ import (
 
 // unexported global test case type
 type testCase struct {
-	name        string
-	path        string
-	want        any
-	wantSelf    bool
-	errFmt      string
-	typeHasPath bool
+	name     string
+	path     string
+	want     any
+	wantSelf bool
+	errFmt   string
+	notFound string // if set, expect NotFoundError with this message
 }
 
 func testGet(t *testing.T, obj any, path string, want any) {
@@ -81,8 +81,8 @@ func makeOuterNoFSF() outerNoFSF {
 			Name: "x",
 		},
 		Items: []inner{
-			{ID: "i0"},
-			{ID: "i1"},
+			{ID: "i0", Name: "first"},
+			{ID: "i1", Name: "second"},
 		},
 		Labels: map[string]string{
 			"env": "dev",
@@ -101,8 +101,8 @@ func makeOuterWithFSF() outerWithFSF {
 			Name: "x",
 		},
 		Items: []inner{
-			{ID: "i0"},
-			{ID: "i1"},
+			{ID: "i0", Name: "first"},
+			{ID: "i1", Name: "second"},
 		},
 		Labels: map[string]string{
 			"env": "dev",
@@ -196,10 +196,9 @@ func runCommonTests(t *testing.T, obj any) {
 			errFmt: "connection[0]: cannot index struct",
 		},
 		{
-			name:        "out of range index",
-			path:        "items[5]",
-			errFmt:      "items[5]: index out of range, length is 2",
-			typeHasPath: true,
+			name:     "out of range index",
+			path:     "items[5]",
+			notFound: "items[5]: index out of range, length is 2",
 		},
 		{
 			name:   "no json tag field should not be accessible",
@@ -212,10 +211,9 @@ func runCommonTests(t *testing.T, obj any) {
 			errFmt: "items.id: cannot access key \"id\" on slice",
 		},
 		{
-			name:        "nil pointer access",
-			path:        "connection_not_set.id",
-			errFmt:      "connection_not_set: cannot access nil value",
-			typeHasPath: true,
+			name:     "nil pointer access",
+			path:     "connection_not_set.id",
+			notFound: "connection_not_set: cannot access nil value",
 		},
 		{
 			name:   "map non-string key type",
@@ -223,30 +221,64 @@ func runCommonTests(t *testing.T, obj any) {
 			errFmt: "map_int.any: map key must be string, got int",
 		},
 		{
-			name:        "map missing key",
-			path:        "labels.missing",
-			errFmt:      "labels.missing: key \"missing\" not found in map",
-			typeHasPath: true,
+			name:     "map missing key",
+			path:     "labels.missing",
+			notFound: "labels.missing: key \"missing\" not found in map",
 		},
 		{
 			name:   "json dash ignored",
 			path:   "ignored",
 			errFmt: "ignored: field \"ignored\" not found in " + typeName,
 		},
+
+		// Key-value selector tests
+		{
+			name: "key-value selector",
+			path: "items[id='i1']",
+			want: inner{ID: "i1", Name: "second"},
+		},
+		{
+			name: "key-value selector then field",
+			path: "items[id='i0'].name",
+			want: "first",
+		},
+		{
+			name:     "key-value no match",
+			path:     "items[id='missing']",
+			notFound: "items[id='missing']: no element found with id=\"missing\"",
+		},
+		{
+			name:   "key-value on non-slice",
+			path:   "connection[id='abc']",
+			errFmt: "connection[id='abc']: cannot use key-value syntax on struct",
+		},
+		{
+			name:     "key-value field not found",
+			path:     "items[missing='value']",
+			notFound: "items[missing='value']: no element found with missing=\"value\"",
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			hasPathError := ValidateByString(reflect.TypeOf(obj), tt.path)
-			if tt.errFmt == "" || tt.typeHasPath {
+			if tt.errFmt == "" {
 				require.NoError(t, hasPathError)
 			} else {
 				require.EqualError(t, hasPathError, tt.errFmt)
 			}
 
 			got, err := GetByString(obj, tt.path)
+			if tt.notFound != "" {
+				require.EqualError(t, err, tt.notFound)
+				var notFound *NotFoundError
+				require.ErrorAs(t, err, &notFound)
+				return
+			}
 			if tt.errFmt != "" {
 				require.EqualError(t, err, tt.errFmt)
+				var notFound *NotFoundError
+				require.NotErrorAs(t, err, &notFound, "non-NotFoundError should not match")
 				return
 			}
 			require.NoError(t, err)
@@ -699,4 +731,40 @@ func TestPipeline(t *testing.T) {
 	require.Error(t, err)
 	require.Equal(t, "ingestion_definition: cannot access nil value", err.Error())
 	require.Nil(t, v)
+}
+
+func TestGetKeyValue_NestedMultiple(t *testing.T) {
+	type Item struct {
+		ID   string `json:"id"`
+		Name string `json:"name"`
+	}
+	type Group struct {
+		GroupID string `json:"group_id"`
+		Items   []Item `json:"items"`
+	}
+	type Container struct {
+		Groups []Group `json:"groups"`
+	}
+
+	c := Container{
+		Groups: []Group{
+			{
+				GroupID: "g1",
+				Items: []Item{
+					{ID: "i1", Name: "item1"},
+					{ID: "i2", Name: "item2"},
+				},
+			},
+			{
+				GroupID: "g2",
+				Items: []Item{
+					{ID: "i3", Name: "item3"},
+				},
+			},
+		},
+	}
+
+	name, err := GetByString(&c, "groups[group_id='g2'].items[id='i3'].name")
+	require.NoError(t, err)
+	require.Equal(t, "item3", name)
 }

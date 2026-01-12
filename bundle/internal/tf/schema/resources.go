@@ -95,6 +95,9 @@ type Resources struct {
 	Permissions                                  map[string]any `json:"databricks_permissions,omitempty"`
 	Pipeline                                     map[string]any `json:"databricks_pipeline,omitempty"`
 	PolicyInfo                                   map[string]any `json:"databricks_policy_info,omitempty"`
+	PostgresBranch                               map[string]any `json:"databricks_postgres_branch,omitempty"`
+	PostgresEndpoint                             map[string]any `json:"databricks_postgres_endpoint,omitempty"`
+	PostgresProject                              map[string]any `json:"databricks_postgres_project,omitempty"`
 	Provider                                     map[string]any `json:"databricks_provider,omitempty"`
 	QualityMonitor                               map[string]any `json:"databricks_quality_monitor,omitempty"`
 	QualityMonitorV2                             map[string]any `json:"databricks_quality_monitor_v2,omitempty"`
@@ -235,6 +238,9 @@ func NewResources() *Resources {
 		Permissions:                           make(map[string]any),
 		Pipeline:                              make(map[string]any),
 		PolicyInfo:                            make(map[string]any),
+		PostgresBranch:                        make(map[string]any),
+		PostgresEndpoint:                      make(map[string]any),
+		PostgresProject:                       make(map[string]any),
 		Provider:                              make(map[string]any),
 		QualityMonitor:                        make(map[string]any),
 		QualityMonitorV2:                      make(map[string]any),

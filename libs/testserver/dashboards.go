@@ -277,3 +277,22 @@ func (s *FakeWorkspace) DashboardTrash(req Request) Response {
 		Body: dashboard,
 	}
 }
+
+func (s *FakeWorkspace) DashboardUnpublish(req Request) Response {
+	defer s.LockUnlock()()
+
+	dashboardId := req.Vars["dashboard_id"]
+	_, ok := s.Dashboards[dashboardId]
+	if !ok {
+		return Response{
+			StatusCode: 404,
+		}
+	}
+
+	// Delete the published dashboard entry.
+	delete(s.PublishedDashboards, dashboardId)
+
+	return Response{
+		Body: "",
+	}
+}

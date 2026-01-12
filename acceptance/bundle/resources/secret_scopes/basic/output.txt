@@ -23,6 +23,10 @@ Deployment complete!
   "value":"bXktc2VjcmV0LXZhbHVl"
 }
 
+>>> [CLI] secrets list-acls test-scope-[UNIQUE_NAME]-1
+{"permission":"MANAGE","principal":"[USERNAME]"}
+{"permission":"WRITE","principal":"deco-test-user@databricks.com"}
+
 >>> print_requests.py //secrets
 {
   "method": "POST",
@@ -76,6 +80,10 @@ Deployment complete!
   "key":"another-key",
   "value":"YW5vdGhlci1zZWNyZXQtdmFsdWU="
 }
+
+>>> [CLI] secrets list-acls test-scope-[UNIQUE_NAME]-2
+{"permission":"MANAGE","principal":"[USERNAME]"}
+{"permission":"WRITE","principal":"deco-test-user@databricks.com"}
 
 >>> print_requests.py //secrets
 {

@@ -38,6 +38,7 @@ Use --bind to automatically bind the generated resource to the existing workspac
 	cmd.AddCommand(generate.NewGenerateJobCommand())
 	cmd.AddCommand(generate.NewGeneratePipelineCommand())
 	cmd.AddCommand(generate.NewGenerateDashboardCommand())
+	cmd.AddCommand(generate.NewGenerateAlertCommand())
 	cmd.AddCommand(generate.NewGenerateAppCommand())
 	cmd.PersistentFlags().StringVar(&key, "key", "", `resource key to use for the generated configuration`)
 	return cmd

@@ -1,0 +1,16 @@
+{
+    "name": "lakeflow-pipeline",
+    "libraries": [
+        {
+            "glob": {
+                "include": "/Workspace/Users/tester@databricks.com/lakeflow_pipeline/transformations/**"
+            }
+        },
+        {
+            "glob": {
+                "include": "/Workspace/Users/foo@databricks.com/another/**"
+            }
+        }
+    ],
+    "root_path": "/Workspace/Users/tester@databricks.com/lakeflow_pipeline"
+}

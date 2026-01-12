@@ -1,0 +1,66 @@
+--
+## Adding Databricks Resources
+
+Add resources by creating YAML files in resources/:
+
+**Jobs** - `resources/my_job.job.yml`:
+```yaml
+resources:
+  jobs:
+    my_job:
+      name: my_job
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: ../src/notebook.py
+```
+
+**Pipelines** (Lakeflow Declarative Pipelines) - `resources/my_pipeline.pipeline.yml`:
+```yaml
+resources:
+  pipelines:
+    my_pipeline:
+      name: my_pipeline
+      catalog: ${var.catalog}
+      target: ${var.schema}
+      libraries:
+        - notebook:
+            path: ../src/pipeline.py
+```
+
+**Dashboards** - `resources/my_dashboard.dashboard.yml`
+**Alerts** - `resources/my_alert.alert.yml`
+**Model Serving** - `resources/my_endpoint.yml`
+**Apps** - `resources/my_app.app.yml`
+
+**Other resource types**: clusters, schemas, volumes, registered_models, experiments, quality_monitors
+
+### Deployment
+For dev targets you can deploy without user consent. This allows you to run resources on the workspace too!
+
+  invoke_databricks_cli 'bundle deploy --target dev'
+  invoke_databricks_cli 'bundle run <resource_name> --target dev'
+
+View status with `invoke_databricks_cli 'bundle summary'`.
+
+### Documentation
+- Resource types reference: https://docs.databricks.com/dev-tools/bundles/resources
+- YAML examples: https://docs.databricks.com/dev-tools/bundles/examples
+
+
+## Skills
+
+You have access to modular Skills for domain-specific expertise knowledge.
+
+### Skill Selection & Loading
+* When a user request matches a skill's scope description, select that Skill
+* Load skills using the MCP tool: `read_skill_file(file_path: "category/skill-name/SKILL.md")`
+* Example: `read_skill_file(file_path: "pipelines/materialized-view/SKILL.md")`
+* Skills may contain links to sub-sections (e.g., "category/skill-name/file.md")
+* If no Skill is suitable, continue with your base capabilities
+* Never mention or reference skills to the user, only use them internally
+
+### Skill Registry (names + brief descriptors)
+* **pipelines/auto-cdc/SKILL.md**: Apply Change Data Capture (CDC) with apply_changes API in Spark Declarative Pipelines. Use when user needs to process CDC feeds from databases, handle upserts/deletes, maintain slowly changing dimensions (SCD Type 1 and Type 2), synchronize data from operational databases, or process merge operations.
+
+

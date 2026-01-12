@@ -1,5 +1,5 @@
 {
-  "plan_version": 1,
+  "plan_version": 2,
   "cli_version": "[DEV_VERSION]",
   "plan": {
     "resources.clusters.test_cluster": {
@@ -20,7 +20,7 @@
   }
 }
 {
-  "plan_version": 1,
+  "plan_version": 2,
   "cli_version": "[DEV_VERSION]",
   "lineage": "[UUID]",
   "serial": 1,
@@ -51,19 +51,18 @@
         "spark_version": "13.3.x-snapshot-scala2.12"
       },
       "changes": {
-        "local": {
-          "num_workers": {
-            "action": "update",
-            "old": 2,
-            "new": 3
-          }
+        "num_workers": {
+          "action": "update",
+          "old": 2,
+          "new": 3,
+          "remote": 2
         }
       }
     }
   }
 }
 {
-  "plan_version": 1,
+  "plan_version": 2,
   "cli_version": "[DEV_VERSION]",
   "lineage": "[UUID]",
   "serial": 2,
@@ -95,19 +94,18 @@
         "state": "RUNNING"
       },
       "changes": {
-        "local": {
-          "num_workers": {
-            "action": "resize",
-            "old": 3,
-            "new": 4
-          }
+        "num_workers": {
+          "action": "resize",
+          "old": 3,
+          "new": 4,
+          "remote": 3
         }
       }
     }
   }
 }
 {
-  "plan_version": 1,
+  "plan_version": 2,
   "cli_version": "[DEV_VERSION]",
   "lineage": "[UUID]",
   "serial": 3,
@@ -139,17 +137,17 @@
         "state": "RUNNING"
       },
       "changes": {
-        "local": {
-          "num_workers": {
-            "action": "resize",
-            "old": 4,
-            "new": 5
-          },
-          "spark_conf['spark.executor.memory']": {
-            "action": "update",
-            "old": "2g",
-            "new": "4g"
-          }
+        "num_workers": {
+          "action": "resize",
+          "old": 4,
+          "new": 5,
+          "remote": 4
+        },
+        "spark_conf['spark.executor.memory']": {
+          "action": "update",
+          "old": "2g",
+          "new": "4g",
+          "remote": "2g"
         }
       }
     }

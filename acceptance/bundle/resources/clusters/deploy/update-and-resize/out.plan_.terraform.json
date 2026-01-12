@@ -1,5 +1,5 @@
 {
-  "plan_version": 1,
+  "plan_version": 2,
   "cli_version": "[DEV_VERSION]",
   "plan": {
     "resources.clusters.test_cluster": {
@@ -8,7 +8,7 @@
   }
 }
 {
-  "plan_version": 1,
+  "plan_version": 2,
   "cli_version": "[DEV_VERSION]",
   "plan": {
     "resources.clusters.test_cluster": {
@@ -17,7 +17,7 @@
   }
 }
 {
-  "plan_version": 1,
+  "plan_version": 2,
   "cli_version": "[DEV_VERSION]",
   "plan": {
     "resources.clusters.test_cluster": {
@@ -26,7 +26,7 @@
   }
 }
 {
-  "plan_version": 1,
+  "plan_version": 2,
   "cli_version": "[DEV_VERSION]",
   "plan": {
     "resources.clusters.test_cluster": {

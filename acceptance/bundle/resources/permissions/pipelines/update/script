@@ -15,8 +15,7 @@ trace $CLI bundle deploy
 trace print_requests > out.requests_create.json
 trace $CLI bundle plan
 
-pipeline_id="$(read_id.py pipelines foo)"
-echo "$pipeline_id:PIPELINE_ID" >> ACC_REPLS
+pipeline_id="$(read_id.py foo)"
 
 trace $CLI permissions get pipelines "$pipeline_id"
 rm -f out.requests.txt
