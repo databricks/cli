@@ -98,7 +98,7 @@ func validateAndParsePath(folderPath string) (*sdpPathInfo, error) {
 
 	// Check if this is a direct path to a spark-pipeline.yml file
 	if strings.HasSuffix(folderPath, ".spark-pipeline.yml") || strings.HasSuffix(folderPath, "spark-pipeline.yml") {
-		sparkPipelineFile = folderPath
+		sparkPipelineFile = filepath.ToSlash(folderPath)
 		folderPath = filepath.Dir(folderPath)
 	}
 
@@ -122,12 +122,9 @@ func validateAndParsePath(folderPath string) (*sdpPathInfo, error) {
 
 	pipelineName := parts[1]
 
-	// Return the relative path as pipelineDirectoryPath (keep it relative for later use)
-	srcFolder := filepath.FromSlash(normalizedFolderPath)
-
 	return &sdpPathInfo{
 		directoryName:         pipelineName,
-		pipelineDirectoryPath: srcFolder,
+		pipelineDirectoryPath: normalizedFolderPath,
 		sparkPipelineFile:     sparkPipelineFile,
 	}, nil
 }
@@ -207,7 +204,8 @@ func convertToResources(spec *sdpPipeline, resourceName, srcFolder string) (map[
 	// YAML paths are relative to directory containing YAML file, in this case:
 	// DAB YAML is in "./resources/<directoryName>.pipeline.yml"
 	// SDP YAML is in "./<pipelineDirectoryPath>/spark-pipeline.yml"
-	relativePath := filepath.Join("..", srcFolder)
+	// NB: all paths are /-based so Windows has the same output
+	relativePath := filepath.ToSlash(filepath.Join("..", srcFolder))
 
 	catalog := "${var.catalog}"
 	if spec.Catalog != "" {
@@ -228,7 +226,7 @@ func convertToResources(spec *sdpPipeline, resourceName, srcFolder string) (map[
 
 	for _, lib := range spec.Libraries {
 		if lib.Glob.Include != "" {
-			relativeIncludePath := filepath.Join(relativePath, lib.Glob.Include)
+			relativeIncludePath := filepath.ToSlash(filepath.Join(relativePath, lib.Glob.Include))
 
 			libraries = append(libraries, pipelines.PipelineLibrary{
 				Glob: &pipelines.PathPattern{Include: relativeIncludePath},
