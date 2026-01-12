@@ -6,8 +6,12 @@ Requirements:
 1. Not reporting ready until BOTH frontend and backend processes are ready
 2. Exiting as soon as EITHER process fails
 3. Printing error logs if either process fails
+
+Usage:
+    start-app [--port PORT] [--host HOST] [--workers N] [--reload]
 """
 
+import argparse
 import re
 import shutil
 import subprocess
@@ -141,7 +145,7 @@ class ProcessManager:
         if self.frontend_log:
             self.frontend_log.close()
 
-    def run(self):
+    def run(self, args=None):
         load_dotenv(dotenv_path=".env.local", override=True)
 
         if not self.clone_frontend_if_needed():
@@ -152,9 +156,21 @@ class ProcessManager:
         self.frontend_log = open("frontend.log", "w", buffering=1)
 
         try:
+            # Build backend command with optional arguments
+            backend_cmd = ["uv", "run", "start-server"]
+            if args:
+                if args.port:
+                    backend_cmd.extend(["--port", str(args.port)])
+                if args.host:
+                    backend_cmd.extend(["--host", args.host])
+                if args.workers:
+                    backend_cmd.extend(["--workers", str(args.workers)])
+                if args.reload:
+                    backend_cmd.append("--reload")
+
             # Start backend
             self.backend_process = self.start_process(
-                ["uv", "run", "start-server"], "backend", self.backend_log, BACKEND_READY
+                backend_cmd, "backend", self.backend_log, BACKEND_READY
             )
 
             # Setup and start frontend
@@ -211,7 +227,14 @@ class ProcessManager:
 
 
 def main():
-    sys.exit(ProcessManager().run())
+    parser = argparse.ArgumentParser(description="Start agent frontend and backend")
+    parser.add_argument("--port", type=int, help="Backend server port (default: 8000)")
+    parser.add_argument("--host", help="Backend server host (default: 0.0.0.0)")
+    parser.add_argument("--workers", type=int, help="Number of worker processes")
+    parser.add_argument("--reload", action="store_true", help="Enable auto-reload for development")
+    args = parser.parse_args()
+
+    sys.exit(ProcessManager().run(args))
 
 
 if __name__ == "__main__":

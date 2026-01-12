@@ -1,12 +1,12 @@
 bundle:
   name: {{.project_name}}
 
-variables:
-  mlflow_experiment_id:
-    description: MLflow Experiment ID for agent tracing
-    {{if .mlflow_experiment_name}}default: "{{.mlflow_experiment_name}}"{{end}}
-
 resources:
+  # MLflow experiment for agent tracing - automatically created by bundle
+  experiments:
+    {{.project_name}}_experiment:
+      name: {{if .mlflow_experiment_name}}{{.mlflow_experiment_name}}{{else}}/Users/${workspace.current_user.userName}/${bundle.name}-${bundle.target}{{end}}
+
   apps:
     {{.project_name}}:
       name: "${bundle.target}-{{.project_name}}"
@@ -17,8 +17,7 @@ resources:
       resources:
         - name: 'experiment'
           experiment:
-            {{if .mlflow_experiment_name}}experiment_name: "{{.mlflow_experiment_name}}"
-            {{else}}experiment_id: "${var.mlflow_experiment_id}"{{end}}
+            experiment_id: "${resources.experiments.{{.project_name}}_experiment.id}"
             permission: 'CAN_MANAGE'
 
 targets:

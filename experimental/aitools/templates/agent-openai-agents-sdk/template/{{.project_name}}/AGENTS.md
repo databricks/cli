@@ -24,9 +24,14 @@ If the tool is unavailable, the user needs to set up the Databricks CLI MCP serv
 **Quick Start:**
 
 ```bash
+# Initialize git repository (recommended for version control)
+git init
+
 ./scripts/quickstart.sh   # First-time setup (auth, MLflow experiment, env)
 uv run start-app          # Start app at http://localhost:8000
 ```
+
+**Note:** The template does not automatically initialize a git repository. Run `git init` if you want version control for your project.
 
 **Advanced Server Options:**
 
