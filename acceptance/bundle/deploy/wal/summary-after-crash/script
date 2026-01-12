@@ -1,11 +1,19 @@
-echo "=== Creating state directory ==="
-mkdir -p .databricks/bundle/default
+echo "=== Deploy (job_a created and saved, then crash on jobs/get) ==="
+trace errcode $CLI bundle deploy
 
-echo "=== Creating WAL file (simulating crash after job create) ==="
-cat > .databricks/bundle/default/resources.json.wal << 'EOF'
-{"lineage":"summary-test-lineage","serial":1}
-{"k":"resources.jobs.test_job","v":{"__id__":"1001","state":{"name":"test-job"}}}
-EOF
+echo "=== State directory contents after crash ==="
+ls .databricks/bundle/default/
 
-echo "=== Bundle summary (should show job from WAL with id) ==="
-trace $CLI bundle summary -o json | jq '{job_id: .resources.jobs.test_job.id, modified_status: .resources.jobs.test_job.modified_status}'
+echo "=== WAL should exist after crash ==="
+if [ -f ".databricks/bundle/default/resources.json.wal" ]; then
+    echo "WAL exists (expected)"
+    cat .databricks/bundle/default/resources.json.wal
+else
+    echo "WAL missing (unexpected)"
+fi
+
+echo "=== State file after crash ==="
+cat .databricks/bundle/default/resources.json | jq -S '{serial: .serial, state_keys: (.state | keys)}'
+
+echo "=== Bundle summary (should show job_a from WAL) ==="
+trace $CLI bundle summary -o json | jq '{job_a_id: .resources.jobs.job_a.id, job_b_id: .resources.jobs.job_b.id}'
