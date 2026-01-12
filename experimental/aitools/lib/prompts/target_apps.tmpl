@@ -7,6 +7,25 @@
 
 ## Databricks Apps Development
 
+### CRITICAL: AppKit TypeScript Workflow (for TypeScript/AppKit apps)
+
+After scaffolding an AppKit app, follow this workflow for EVERY query you add:
+
+1. Create SQL file: `config/queries/my_query.sql`
+2. Add schema: `config/queries/schema.ts` → add entry to `querySchemas`
+3. **RUN: `npm run typegen`** - REQUIRED to regenerate types
+4. Use data with explicit cast:
+   ```typescript
+   const { data } = useAnalyticsQuery('my_query', {});
+   const typedData = data as MyType[] | undefined;  // REQUIRED cast
+   typedData?.map(...)  // Now TypeScript works
+   ```
+
+⚠️ **Common build failures (avoid these):**
+- Skipping `npm run typegen` after schema changes → "not assignable to type" errors
+- Using `data?.map()` without casting → "Property 'map' does not exist on type '{}'" errors
+- Using `<BarChart queryKey="..."><Bar.../></BarChart>` → charts DON'T accept children
+
 ### Validation
 ⚠️ Always validate before deploying:
   invoke_databricks_cli 'experimental aitools tools validate ./'
