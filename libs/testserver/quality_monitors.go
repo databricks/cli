@@ -30,12 +30,14 @@ func (s *FakeWorkspace) QualityMonitorUpsert(req Request, tableName string, chec
 	defer s.LockUnlock()()
 
 	if checkExists {
-		_, ok := s.Monitors[tableName]
+		existing, ok := s.Monitors[tableName]
 		if !ok {
 			return Response{
 				StatusCode: 404,
 			}
 		}
+		// For updates, preserve fields that cannot be changed after creation
+		info.AssetsDir = existing.AssetsDir
 	}
 
 	if info.Status == "" {

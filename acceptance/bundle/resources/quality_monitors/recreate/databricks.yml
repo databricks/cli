@@ -1,0 +1,9 @@
+bundle:
+  name: test-bundle
+
+resources:
+  quality_monitors:
+    monitor1:
+      table_name: main.default.mytable
+      assets_dir: /Workspace/Users/me@example.com/assets1
+      output_schema_name: main.output

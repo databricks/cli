@@ -1,0 +1,55 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests
+{
+  "method": "POST",
+  "path": "/api/2.1/unity-catalog/tables/main.default.mytable/monitor",
+  "body": {
+    "assets_dir": "/Workspace/Users/me@example.com/assets",
+    "output_schema_name": "main.output1"
+  }
+}
+quality_monitors monitor1 output_schema_name='main.output1'
+
+=== Update output_schema_name and re-deploy
+>>> update_file.py databricks.yml main.output1 main.output2
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests
+{
+  "method": "PUT",
+  "path": "/api/2.1/unity-catalog/tables/main.default.mytable/monitor",
+  "body": {
+    "output_schema_name": "main.output2"
+  }
+}
+quality_monitors monitor1 output_schema_name='main.output2'
+
+=== Restore output_schema_name to original value and re-deploy
+>>> update_file.py databricks.yml main.output2 main.output1
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests
+{
+  "method": "PUT",
+  "path": "/api/2.1/unity-catalog/tables/main.default.mytable/monitor",
+  "body": {
+    "output_schema_name": "main.output1"
+  }
+}
+quality_monitors monitor1 output_schema_name='main.output1'
