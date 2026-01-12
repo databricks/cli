@@ -2,6 +2,10 @@
 
 package schema
 
+type ResourceAppsSettingsCustomTemplateManifestResourceSpecsExperimentSpec struct {
+	Permission string `json:"permission"`
+}
+
 type ResourceAppsSettingsCustomTemplateManifestResourceSpecsJobSpec struct {
 	Permission string `json:"permission"`
 }
@@ -25,6 +29,7 @@ type ResourceAppsSettingsCustomTemplateManifestResourceSpecsUcSecurableSpec stru
 
 type ResourceAppsSettingsCustomTemplateManifestResourceSpecs struct {
 	Description         string                                                                      `json:"description,omitempty"`
+	ExperimentSpec      *ResourceAppsSettingsCustomTemplateManifestResourceSpecsExperimentSpec      `json:"experiment_spec,omitempty"`
 	JobSpec             *ResourceAppsSettingsCustomTemplateManifestResourceSpecsJobSpec             `json:"job_spec,omitempty"`
 	Name                string                                                                      `json:"name"`
 	SecretSpec          *ResourceAppsSettingsCustomTemplateManifestResourceSpecsSecretSpec          `json:"secret_spec,omitempty"`

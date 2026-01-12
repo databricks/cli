@@ -1,7 +1,6 @@
 trace $CLI bundle plan
 $CLI bundle deploy
-job_id="$(read_id.py jobs my_job)"
-echo "$job_id:JOB_ID" >> ACC_REPLS
+job_id="$(read_id.py my_job)"
 
 trace $CLI bundle plan | contains.py "0 to add, 0 to change, 0 to delete"
 

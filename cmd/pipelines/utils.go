@@ -42,12 +42,10 @@ func promptResource(ctx context.Context, b *bundle.Bundle, filters ...resources.
 // autoSelectSinglePipeline checks if there's exactly one pipeline resource in the bundle and returns its key.
 // Returns empty string if there's not exactly one pipeline.
 func autoSelectSinglePipeline(b *bundle.Bundle) string {
-	completions := resources.Completions(b, run.IsRunnable)
+	completions := resources.Completions(b, isPipeline)
 	if len(completions) == 1 {
-		for key, ref := range completions {
-			if _, ok := ref.Resource.(*configresources.Pipeline); ok {
-				return key
-			}
+		for key := range completions {
+			return key
 		}
 	}
 	return ""
@@ -333,4 +331,13 @@ func fetchPipelineUpdates(ctx context.Context, w *databricks.WorkspaceClient, st
 	}
 
 	return updates, nil
+}
+
+func isPipeline(ref resources.Reference) bool {
+	switch ref.Resource.(type) {
+	case *configresources.Pipeline:
+		return true
+	default:
+		return false
+	}
 }

@@ -6,16 +6,39 @@ type DataSourceAppAppActiveDeploymentDeploymentArtifacts struct {
 	SourceCodePath string `json:"source_code_path,omitempty"`
 }
 
+type DataSourceAppAppActiveDeploymentEnvVars struct {
+	Name      string `json:"name,omitempty"`
+	Value     string `json:"value,omitempty"`
+	ValueFrom string `json:"value_from,omitempty"`
+}
+
+type DataSourceAppAppActiveDeploymentGitSourceGitRepository struct {
+	Provider string `json:"provider"`
+	Url      string `json:"url"`
+}
+
+type DataSourceAppAppActiveDeploymentGitSource struct {
+	Branch         string                                                  `json:"branch,omitempty"`
+	Commit         string                                                  `json:"commit,omitempty"`
+	GitRepository  *DataSourceAppAppActiveDeploymentGitSourceGitRepository `json:"git_repository,omitempty"`
+	ResolvedCommit string                                                  `json:"resolved_commit,omitempty"`
+	SourceCodePath string                                                  `json:"source_code_path,omitempty"`
+	Tag            string                                                  `json:"tag,omitempty"`
+}
+
 type DataSourceAppAppActiveDeploymentStatus struct {
 	Message string `json:"message,omitempty"`
 	State   string `json:"state,omitempty"`
 }
 
 type DataSourceAppAppActiveDeployment struct {
+	Command             []string                                             `json:"command,omitempty"`
 	CreateTime          string                                               `json:"create_time,omitempty"`
 	Creator             string                                               `json:"creator,omitempty"`
 	DeploymentArtifacts *DataSourceAppAppActiveDeploymentDeploymentArtifacts `json:"deployment_artifacts,omitempty"`
 	DeploymentId        string                                               `json:"deployment_id,omitempty"`
+	EnvVars             []DataSourceAppAppActiveDeploymentEnvVars            `json:"env_vars,omitempty"`
+	GitSource           *DataSourceAppAppActiveDeploymentGitSource           `json:"git_source,omitempty"`
 	Mode                string                                               `json:"mode,omitempty"`
 	SourceCodePath      string                                               `json:"source_code_path,omitempty"`
 	Status              *DataSourceAppAppActiveDeploymentStatus              `json:"status,omitempty"`
@@ -32,8 +55,33 @@ type DataSourceAppAppComputeStatus struct {
 	State   string `json:"state,omitempty"`
 }
 
+type DataSourceAppAppGitRepository struct {
+	Provider string `json:"provider"`
+	Url      string `json:"url"`
+}
+
 type DataSourceAppAppPendingDeploymentDeploymentArtifacts struct {
 	SourceCodePath string `json:"source_code_path,omitempty"`
+}
+
+type DataSourceAppAppPendingDeploymentEnvVars struct {
+	Name      string `json:"name,omitempty"`
+	Value     string `json:"value,omitempty"`
+	ValueFrom string `json:"value_from,omitempty"`
+}
+
+type DataSourceAppAppPendingDeploymentGitSourceGitRepository struct {
+	Provider string `json:"provider"`
+	Url      string `json:"url"`
+}
+
+type DataSourceAppAppPendingDeploymentGitSource struct {
+	Branch         string                                                   `json:"branch,omitempty"`
+	Commit         string                                                   `json:"commit,omitempty"`
+	GitRepository  *DataSourceAppAppPendingDeploymentGitSourceGitRepository `json:"git_repository,omitempty"`
+	ResolvedCommit string                                                   `json:"resolved_commit,omitempty"`
+	SourceCodePath string                                                   `json:"source_code_path,omitempty"`
+	Tag            string                                                   `json:"tag,omitempty"`
 }
 
 type DataSourceAppAppPendingDeploymentStatus struct {
@@ -42,10 +90,13 @@ type DataSourceAppAppPendingDeploymentStatus struct {
 }
 
 type DataSourceAppAppPendingDeployment struct {
+	Command             []string                                              `json:"command,omitempty"`
 	CreateTime          string                                                `json:"create_time,omitempty"`
 	Creator             string                                                `json:"creator,omitempty"`
 	DeploymentArtifacts *DataSourceAppAppPendingDeploymentDeploymentArtifacts `json:"deployment_artifacts,omitempty"`
 	DeploymentId        string                                                `json:"deployment_id,omitempty"`
+	EnvVars             []DataSourceAppAppPendingDeploymentEnvVars            `json:"env_vars,omitempty"`
+	GitSource           *DataSourceAppAppPendingDeploymentGitSource           `json:"git_source,omitempty"`
 	Mode                string                                                `json:"mode,omitempty"`
 	SourceCodePath      string                                                `json:"source_code_path,omitempty"`
 	Status              *DataSourceAppAppPendingDeploymentStatus              `json:"status,omitempty"`
@@ -55,6 +106,11 @@ type DataSourceAppAppPendingDeployment struct {
 type DataSourceAppAppResourcesDatabase struct {
 	DatabaseName string `json:"database_name"`
 	InstanceName string `json:"instance_name"`
+	Permission   string `json:"permission"`
+}
+
+type DataSourceAppAppResourcesExperiment struct {
+	ExperimentId string `json:"experiment_id"`
 	Permission   string `json:"permission"`
 }
 
@@ -94,6 +150,7 @@ type DataSourceAppAppResourcesUcSecurable struct {
 type DataSourceAppAppResources struct {
 	Database        *DataSourceAppAppResourcesDatabase        `json:"database,omitempty"`
 	Description     string                                    `json:"description,omitempty"`
+	Experiment      *DataSourceAppAppResourcesExperiment      `json:"experiment,omitempty"`
 	GenieSpace      *DataSourceAppAppResourcesGenieSpace      `json:"genie_space,omitempty"`
 	Job             *DataSourceAppAppResourcesJob             `json:"job,omitempty"`
 	Name            string                                    `json:"name"`
@@ -114,7 +171,9 @@ type DataSourceAppApp struct {
 	DefaultSourceCodePath    string                             `json:"default_source_code_path,omitempty"`
 	Description              string                             `json:"description,omitempty"`
 	EffectiveBudgetPolicyId  string                             `json:"effective_budget_policy_id,omitempty"`
+	EffectiveUsagePolicyId   string                             `json:"effective_usage_policy_id,omitempty"`
 	EffectiveUserApiScopes   []string                           `json:"effective_user_api_scopes,omitempty"`
+	GitRepository            *DataSourceAppAppGitRepository     `json:"git_repository,omitempty"`
 	Id                       string                             `json:"id,omitempty"`
 	Name                     string                             `json:"name"`
 	Oauth2AppClientId        string                             `json:"oauth2_app_client_id,omitempty"`
@@ -127,6 +186,7 @@ type DataSourceAppApp struct {
 	UpdateTime               string                             `json:"update_time,omitempty"`
 	Updater                  string                             `json:"updater,omitempty"`
 	Url                      string                             `json:"url,omitempty"`
+	UsagePolicyId            string                             `json:"usage_policy_id,omitempty"`
 	UserApiScopes            []string                           `json:"user_api_scopes,omitempty"`
 }
 

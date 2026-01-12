@@ -351,7 +351,7 @@ Refreshes all tables in the pipeline unless otherwise specified.`,
 		}
 
 		if len(args) == 0 {
-			completions := bundleresources.Completions(b, run.IsRunnable)
+			completions := bundleresources.Completions(b, isPipeline)
 			return maps.Keys(completions), cobra.ShellCompDirectiveNoFileComp
 		} else {
 			// If we know the resource to run, we can complete additional positional arguments.
