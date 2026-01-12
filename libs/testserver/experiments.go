@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/databricks/databricks-sdk-go/service/ml"
 )
@@ -47,12 +48,23 @@ func (s *FakeWorkspace) ExperimentCreate(req Request) Response {
 		},
 	}
 
-	experimentId := strconv.Itoa(len(s.Experiments) + 1000)
+	experimentId := strconv.FormatInt(nextID(), 10)
+
+	// Strip /Workspace prefix from experiment name to match cloud behavior
+	experimentName := experiment.Name
+	if len(experimentName) > 0 && experimentName[0] == '/' {
+		// Remove leading slash that was doubled for Windows compatibility
+		experimentName = strings.TrimPrefix(experimentName, "/")
+	}
+	experimentName = strings.TrimPrefix(experimentName, "Workspace/")
+	if experimentName != "" && experimentName[0] != '/' {
+		experimentName = "/" + experimentName
+	}
 
 	// Create the experiment
 	exp := ml.Experiment{
 		ExperimentId:     experimentId,
-		Name:             experiment.Name,
+		Name:             experimentName,
 		ArtifactLocation: experiment.ArtifactLocation,
 		Tags:             append(experiment.Tags, appendTags...),
 		LifecycleStage:   "active",

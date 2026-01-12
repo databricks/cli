@@ -3,10 +3,7 @@ title "Bind experiment test:"
 title "Substitute variables in the template"
 
 # double slash at the start prevents Windows to apply replacements to the path
-EXPERIMENT_NAME="//Workspace/Users/${CURRENT_USER_NAME}/test-experiment$(uuid)"
-if [ -z "$CLOUD_ENV" ]; then
-    EXPERIMENT_NAME="//Workspace/Users/${CURRENT_USER_NAME}/test-experiment6260d50f-e8ff-4905-8f28-812345678903"   # use hard-coded uuid when running locally
-fi
+EXPERIMENT_NAME="//Workspace/Users/${CURRENT_USER_NAME}/test-experiment$UNIQUE_NAME"
 export EXPERIMENT_NAME
 envsubst < databricks.yml.tmpl > databricks.yml
 
