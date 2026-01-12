@@ -1,37 +1,33 @@
-=== Creating state directory ===
-=== Creating WAL file (simulating crash after job create) ===
-=== WAL content before deploy ===
-{"lineage":"test-lineage-123","serial": [SERIAL]}
-{"k":"resources.jobs.job_a","v":{"__id__": "[ID]","state":{"name":"test-job-a"}}}
-=== Deploy (should recover from WAL) ===
+=== First deploy (crashes after job_a create, before job_b) ===
 
->>> [CLI] bundle deploy
-Warning: Single node cluster is not correctly configured
-  at resources.jobs.job_a.tasks[0].new_cluster
-  in databricks.yml:13:13
+>>> errcode [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/wal-crash-test/default/files...
+Deploying resources...
+[PROCESS_KILLED]
 
-num_workers should be 0 only for single-node clusters. To create a
-valid single node cluster please ensure that the following properties
-are correctly set in the cluster specification:
+Exit code: [KILLED]
+=== WAL should exist after crash ===
+WAL exists (expected)
+{"lineage":"[UUID]","serial": [SERIAL]}
+{"k":"resources.jobs.job_a","v":{"__id__": "[ID]","state":{"deployment":{"kind":"BUNDLE","metadata_file_path":"/Workspace/Users/[USERNAME]/.bundle/wal-crash-test/default/state/metadata.json"},"description":"first job","edit_mode":"UI_LOCKED","format":"MULTI_TASK","max_concurrent_runs":1,"name":"test-job-a","queue":{"enabled":true},"tasks":[{"new_cluster":{"node_type_id":"[NODE_TYPE_ID]","num_workers":0,"spark_version":"15.4.x-scala2.12"},"spark_python_task":{"python_file":"/Workspace/Users/[USERNAME]/.bundle/wal-crash-test/default/files/test.py"},"task_key":"task-a"}]}}}
+=== State file after crash (should be empty) ===
+{
+  "serial": [SERIAL],
+  "state_keys": []
+}
+=== Second deploy (should recover from WAL and complete) ===
 
-  spark_conf:
-    spark.databricks.cluster.profile: singleNode
-    spark.master: local[*]
-
-  custom_tags:
-    ResourceClass: SingleNode
-  
-
+>>> [CLI] bundle deploy --force-lock
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/wal-crash-test/default/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
 === State file after recovery ===
 {
-  "lineage": "test-lineage-123",
   "serial": [SERIAL],
   "state_keys": [
-    "resources.jobs.job_a"
+    "resources.jobs.job_a",
+    "resources.jobs.job_b"
   ]
 }
 === WAL file after successful deploy ===

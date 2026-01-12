@@ -1,20 +1,22 @@
-echo "=== Creating state directory ==="
-mkdir -p .databricks/bundle/default
+echo "=== First deploy (crashes after job_a create, before job_b) ==="
+trace errcode $CLI bundle deploy
 
-echo "=== Creating WAL file (simulating crash after job create) ==="
-cat > .databricks/bundle/default/resources.json.wal << 'EOF'
-{"lineage":"test-lineage-123","serial":1}
-{"k":"resources.jobs.job_a","v":{"__id__":"1001","state":{"name":"test-job-a"}}}
-EOF
+echo "=== WAL should exist after crash ==="
+if [ -f ".databricks/bundle/default/resources.json.wal" ]; then
+    echo "WAL exists (expected)"
+    cat .databricks/bundle/default/resources.json.wal
+else
+    echo "WAL missing (unexpected)"
+fi
 
-echo "=== WAL content before deploy ==="
-cat .databricks/bundle/default/resources.json.wal
+echo "=== State file after crash (should be empty) ==="
+cat .databricks/bundle/default/resources.json | jq -S '{serial: .serial, state_keys: (.state | keys)}'
 
-echo "=== Deploy (should recover from WAL) ==="
-trace $CLI bundle deploy
+echo "=== Second deploy (should recover from WAL and complete) ==="
+trace $CLI bundle deploy --force-lock
 
 echo "=== State file after recovery ==="
-cat .databricks/bundle/default/resources.json | jq -S '{lineage: .lineage, serial: .serial, state_keys: (.state | keys)}'
+cat .databricks/bundle/default/resources.json | jq -S '{serial: .serial, state_keys: (.state | keys)}'
 
 echo "=== WAL file after successful deploy ==="
 if [ -f ".databricks/bundle/default/resources.json.wal" ]; then

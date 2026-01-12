@@ -1,0 +1,22 @@
+echo "=== First deploy (crashes on job_10) ==="
+trace errcode $CLI bundle deploy
+
+echo ""
+echo "=== WAL content after crash ==="
+cat .databricks/bundle/default/resources.json.wal 2>/dev/null || echo "No WAL file"
+
+echo ""
+echo "=== Number of jobs saved in WAL ==="
+grep -c '"k":"resources.jobs' .databricks/bundle/default/resources.json.wal 2>/dev/null || echo "0"
+
+echo ""
+echo "=== Bundle summary (reads from WAL) ==="
+$CLI bundle summary
+
+echo ""
+echo "=== Second deploy (recovery) ==="
+trace $CLI bundle deploy --force-lock
+
+echo ""
+echo "=== WAL after successful deploy ==="
+cat .databricks/bundle/default/resources.json.wal 2>/dev/null || echo "WAL deleted (expected)"

@@ -1,2 +1,14 @@
-# Bundle summary should show resources recovered from WAL.
-# No server stubs needed - we just run bundle summary which reads state.
+# Bundle summary should show resources recovered from WAL after a real crash.
+# job_b depends on job_a, so after job_a is created and SaveState is called,
+# refreshRemoteState calls jobs/get to fetch job_a's state for job_b's reference.
+# We kill on jobs/get - AFTER job_a's SaveState, so WAL contains job_a.
+
+[[Server]]
+Pattern = "POST /api/2.2/jobs/create"
+Response.Body = '{"job_id": 1001}'
+
+[[Server]]
+Pattern = "GET /api/2.2/jobs/get"
+KillCaller = 1
+Response.Body = '{"job_id": 1001, "settings": {"name": "test-job"}}'
+

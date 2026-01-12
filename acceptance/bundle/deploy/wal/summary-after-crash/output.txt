@@ -1,25 +1,29 @@
-=== Creating state directory ===
-=== Creating WAL file (simulating crash after job create) ===
-=== Bundle summary (should show job from WAL with id) ===
+=== Deploy (job_a created and saved, then crash on jobs/get) ===
+
+>>> errcode [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/wal-summary-test/default/files...
+Deploying resources...
+[PROCESS_KILLED]
+
+Exit code: [KILLED]
+=== State directory contents after crash ===
+deployment.json
+resources.json
+resources.json.wal
+sync-snapshots
+=== WAL should exist after crash ===
+WAL exists (expected)
+{"lineage":"[UUID]","serial": [SERIAL]}
+{"k":"resources.jobs.job_a","v":{"__id__": "[ID]","state":{"deployment":{"kind":"BUNDLE","metadata_file_path":"/Workspace/Users/[USERNAME]/.bundle/wal-summary-test/default/state/metadata.json"},"description":"first job","edit_mode":"UI_LOCKED","format":"MULTI_TASK","max_concurrent_runs":1,"name":"job-a","queue":{"enabled":true},"tasks":[{"new_cluster":{"node_type_id":"[NODE_TYPE_ID]","num_workers":0,"spark_version":"15.4.x-scala2.12"},"spark_python_task":{"python_file":"/Workspace/Users/[USERNAME]/.bundle/wal-summary-test/default/files/test.py"},"task_key":"task-a"}]}}}
+=== State file after crash ===
+{
+  "serial": [SERIAL],
+  "state_keys": []
+}
+=== Bundle summary (should show job_a from WAL) ===
 
 >>> [CLI] bundle summary -o json
-Warning: Single node cluster is not correctly configured
-  at resources.jobs.test_job.tasks[0].new_cluster
-  in databricks.yml:13:13
-
-num_workers should be 0 only for single-node clusters. To create a
-valid single node cluster please ensure that the following properties
-are correctly set in the cluster specification:
-
-  spark_conf:
-    spark.databricks.cluster.profile: singleNode
-    spark.master: local[*]
-
-  custom_tags:
-    ResourceClass: SingleNode
-  
-
 {
-  "job_id": "[ID]",
-  "modified_status": null
+  "job_a_id": "1001",
+  "job_b_id": null
 }
