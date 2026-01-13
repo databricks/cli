@@ -1,5 +1,5 @@
 
->>> [PIPELINES] deploy
+>>> [ENTRYPOINT] deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/default/files...
 Deploying resources...
 Updating deployment state...
@@ -7,7 +7,7 @@ Deployment complete!
 View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?o=[NUMID]
 
 === Dry running pipeline with --restart flag, should stop the current pipeline and start a new run
->>> [PIPELINES] dry-run --restart
+>>> [ENTRYPOINT] dry-run --restart
 Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 
 Update ID: [UUID]

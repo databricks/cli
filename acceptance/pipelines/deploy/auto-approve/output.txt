@@ -1,5 +1,5 @@
 
->>> [PIPELINES] deploy
+>>> [ENTRYPOINT] deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-auto-approve/default/files...
 Deploying resources...
 Updating deployment state...
@@ -10,7 +10,7 @@ View your pipeline foo here: [DATABRICKS_URL]/pipelines/[UUID]?o=[NUMID]
 >>> rm resources.yml
 
 === Try to redeploy without --auto-approve - should fail
->>> errcode [PIPELINES] deploy
+>>> errcode [ENTRYPOINT] deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-auto-approve/default/files...
 
 This action will result in the deletion or recreation of the following Lakeflow Declarative Pipelines along with the
@@ -24,7 +24,7 @@ Error: the deployment requires destructive actions, but current console does not
 Exit code: 1
 
 === Redeploy with --auto-approve - should succeed
->>> [PIPELINES] deploy --auto-approve
+>>> [ENTRYPOINT] deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-auto-approve/default/files...
 
 This action will result in the deletion or recreation of the following Lakeflow Declarative Pipelines along with the

@@ -1,5 +1,5 @@
 title "Test with invalid project name (contains uppercase letters)"
-trace errcode $PIPELINES init --config-file ./invalid_input.json --output-dir invalid-output
+trace errcode $ENTRYPOINT init --config-file ./invalid_input.json --output-dir invalid-output
 
 title "Test with non-existent config file"
-trace errcode $PIPELINES init --config-file ./nonexistent.json --output-dir invalid-output-2
+trace errcode $ENTRYPOINT init --config-file ./nonexistent.json --output-dir invalid-output-2

@@ -1,12 +1,12 @@
 
->>> [PIPELINES] deploy
+>>> [ENTRYPOINT] deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-stop/default/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
 View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?o=[NUMID]
 
->>> [PIPELINES] run
+>>> [ENTRYPOINT] run
 Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 
 Update ID: [UUID]
@@ -17,7 +17,7 @@ Pipeline configurations for this update:
 • All tables are refreshed
 
 === Stopping pipeline
->>> [PIPELINES] stop
+>>> [ENTRYPOINT] stop
 Stopping my_pipeline...
 my_pipeline has been stopped.
 {
@@ -26,7 +26,7 @@ my_pipeline has been stopped.
 }
 
 === Stopping pipeline with KEY, expect same output as without KEY
->>> [PIPELINES] stop my_pipeline
+>>> [ENTRYPOINT] stop my_pipeline
 Stopping my_pipeline...
 my_pipeline has been stopped.
 {

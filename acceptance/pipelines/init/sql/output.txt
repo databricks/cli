@@ -1,6 +1,6 @@
 
 === Test pipelines init with SQL configuration
->>> [PIPELINES] init --config-file ./input.json --output-dir output
+>>> [ENTRYPOINT] init --config-file ./input.json --output-dir output
 Welcome to the template for Lakeflow Declarative Pipelines!
 
 Please answer the below to tailor your project to your preferences.
