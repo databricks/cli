@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/databricks/cli/experimental/aitools/lib/agent_skills"
+	appkitdocs "github.com/databricks/cli/experimental/aitools/templates/appkit"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
@@ -113,6 +114,7 @@ func installSkill(ctx context.Context, skillName string) error {
 		return fmt.Errorf("failed to create directory: %w", err)
 	}
 
+	// copy skill-specific files (SKILL.md, authentication.md, etc.)
 	err = fs.WalkDir(skillFS, ".", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -135,6 +137,39 @@ func installSkill(ctx context.Context, skillName string) error {
 		return fmt.Errorf("failed to copy skill files: %w", err)
 	}
 
+	// copy shared docs from appkit template
+	if err := copySharedDocs(destDir); err != nil {
+		return fmt.Errorf("failed to copy shared docs: %w", err)
+	}
+
 	cmdio.LogString(ctx, color.GreenString("✓ Installed %q to %s", skillName, destDir))
+	return nil
+}
+
+func copySharedDocs(destDir string) error {
+	refsDir := filepath.Join(destDir, "references")
+	if err := os.MkdirAll(refsDir, 0o755); err != nil {
+		return err
+	}
+
+	// docs from appkit template to copy as skill references
+	sharedDocs := []string{
+		"appkit-sdk.md",
+		"frontend.md",
+		"sql-queries.md",
+		"testing.md",
+		"trpc.md",
+	}
+
+	for _, doc := range sharedDocs {
+		content, err := appkitdocs.DocsFS.ReadFile("template/{{.project_name}}/docs/" + doc)
+		if err != nil {
+			return fmt.Errorf("failed to read %s: %w", doc, err)
+		}
+		if err := os.WriteFile(filepath.Join(refsDir, doc), content, 0o644); err != nil {
+			return fmt.Errorf("failed to write %s: %w", doc, err)
+		}
+	}
+
 	return nil
 }
