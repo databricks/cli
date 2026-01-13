@@ -2,7 +2,7 @@
 === E2E Test: Complete pipeline lifecycle (init, deploy, run, stop, destroy)
 === Initialize pipeline project
 >>> [PIPELINES] init --output-dir output
-Welcome to the template for Lakeflow Declarative Pipelines!
+Welcome to the template for Lakeflow Spark Declarative Pipelines!
 
 Please answer the below to tailor your project to your preferences.
 You can always change your mind and change your configuration in the databricks.yml file later.
