@@ -71,6 +71,67 @@ curl -X POST http://localhost:8000/invocations \
 
 ---
 
+## Discovering Available Tools and Data Sources
+
+Before building your agent, discover what tools and data sources are available in your workspace.
+
+**Run the discovery script:**
+
+```bash
+# Discover all available resources
+uv run discover-tools
+
+# Limit to a specific catalog
+uv run discover-tools --catalog my_catalog
+
+# Limit to a specific schema
+uv run discover-tools --catalog my_catalog --schema my_schema
+
+# Output as JSON
+uv run discover-tools --format json --output tools.json
+
+# Save markdown report
+uv run discover-tools --output tools.md
+```
+
+**What gets discovered:**
+
+1. **Unity Catalog Functions** - SQL UDFs that can be used as agent tools via MCP servers
+   - Example: `catalog.schema.get_customer_info(customer_id STRING)`
+   - Can be exposed via: `{workspace_host}/api/2.0/mcp/functions/{catalog}/{schema}`
+
+2. **Unity Catalog Tables** - Structured data that agents can query
+   - Includes table metadata, columns, and types
+   - Can be queried via UC functions or SQL tools
+
+3. **Vector Search Indexes** - For RAG applications with unstructured data
+   - Includes endpoint information and index status
+   - Can be queried via Databricks SDK or MCP servers
+
+4. **Genie Spaces** - Conversational data access
+   - Natural language interface to data
+   - Can be accessed via Genie MCP server
+
+5. **Custom MCP Servers** - Installed Python packages (mcp-*)
+   - Custom tool integrations
+   - Third-party MCP servers
+
+**Using discovered tools in your agent:**
+
+After discovering UC functions, configure your agent to use them:
+
+```python
+async def init_mcp_server():
+    return McpServer(
+        url=f"{host}/api/2.0/mcp/functions/{catalog}/{schema}",
+        name="your custom tools mcp server",
+    )
+```
+
+See the [MCP documentation](https://docs.databricks.com/aws/en/generative-ai/mcp/) for more details.
+
+---
+
 ## Testing the Agent
 
 **Run evaluation:**

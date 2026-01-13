@@ -34,3 +34,4 @@ dev = [
 start-app = "scripts.start_app:main"
 start-server = "agent_server.start_server:main"
 agent-evaluate = "agent_server.evaluate_agent:evaluate"
+discover-tools = "scripts.discover_tools:main"
