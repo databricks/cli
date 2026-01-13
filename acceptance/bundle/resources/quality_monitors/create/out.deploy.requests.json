@@ -1,0 +1,10 @@
+{
+  "method": "POST",
+  "path": "/api/2.1/unity-catalog/tables/main.qm_test_[UNIQUE_NAME].test_table/monitor",
+  "body": {
+    "assets_dir": "/Workspace/Users/[USERNAME]/monitor_assets_[UNIQUE_NAME]",
+    "output_schema_name": "main.qm_test_[UNIQUE_NAME]",
+    "snapshot": {},
+    "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
+  }
+}

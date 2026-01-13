@@ -1,0 +1,35 @@
+SCHEMA_NAME="main.qm_test_${UNIQUE_NAME}"
+TABLE_NAME="${SCHEMA_NAME}.test_table"
+OUTPUT_SCHEMA1="${SCHEMA_NAME}"
+
+# Clean up any existing monitor from previous runs (suppress errors)
+#$CLI quality-monitors delete "$TABLE_NAME" 2>/dev/null || true
+
+# Create schema and table via Python
+trace python3 create_table.py "$TABLE_NAME"
+
+# Create second output schema for testing updates
+trace $CLI schemas create "qm_test_${UNIQUE_NAME}_2" main -o json | jq '{browse_only, catalog_name, catalog_type, created_at, created_by, full_name, name, owner, updated_at, updated_by}' || true
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    # Clean up schemas and table (suppress errors since they may already be gone)
+    $CLI schemas delete "$SCHEMA_NAME" --force 2>/dev/null || true
+    $CLI schemas delete "qm_test_${UNIQUE_NAME}_2" --force 2>/dev/null || true
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+# Generate databricks.yml with all variables substituted
+envsubst < databricks.yml.tmpl > databricks.yml
+
+trace $CLI bundle plan -o json > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
+
+rm out.requests.txt
+trace $CLI bundle deploy &> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt
+trace print_requests.py '^//import-file/' '^//workspace/' '^//telemetry-ext' > out.deploy.requests.json
+
+# store state to ensure we have table_name there
+print_state.py | grep name > out.state.$DATABRICKS_BUNDLE_ENGINE.txt
+
+trace $CLI bundle plan -o json > out.plan_noop.$DATABRICKS_BUNDLE_ENGINE.json

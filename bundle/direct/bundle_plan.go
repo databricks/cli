@@ -671,6 +671,7 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 		}
 
 		newStateConfig, err := adapter.PrepareState(inputConfig)
+
 		if err != nil {
 			return nil, fmt.Errorf("%s: %w", prefix, err)
 		}

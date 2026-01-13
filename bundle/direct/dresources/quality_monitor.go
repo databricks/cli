@@ -5,10 +5,28 @@ import (
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 )
+
+type QualityMonitorState struct {
+	catalog.CreateMonitor
+
+	// The table name is a required field but not included as a JSON field in [catalog.CreateMonitor].
+	TableName string `json:"table_name"`
+}
+
+// We need to provide these custom marshaller from CreateMonitor takes over and ignores TableName field
+func (s *QualityMonitorState) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, s)
+}
+
+func (s QualityMonitorState) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(s)
+}
 
 type ResourceQualityMonitor struct {
 	client *databricks.WorkspaceClient
@@ -18,30 +36,35 @@ func (*ResourceQualityMonitor) New(client *databricks.WorkspaceClient) *Resource
 	return &ResourceQualityMonitor{client: client}
 }
 
-func (*ResourceQualityMonitor) PrepareState(input *resources.QualityMonitor) *catalog.CreateMonitor {
-	state := input.CreateMonitor
+func (*ResourceQualityMonitor) PrepareState(input *resources.QualityMonitor) *QualityMonitorState {
+	state := QualityMonitorState{
+		CreateMonitor: input.CreateMonitor,
+	}
 	state.TableName = input.TableName
 	return &state
 }
 
-func (*ResourceQualityMonitor) RemapState(info *catalog.MonitorInfo) *catalog.CreateMonitor {
-	return &catalog.CreateMonitor{
-		AssetsDir:                info.AssetsDir,
-		BaselineTableName:        info.BaselineTableName,
-		CustomMetrics:            info.CustomMetrics,
-		DataClassificationConfig: info.DataClassificationConfig,
-		InferenceLog:             info.InferenceLog,
-		LatestMonitorFailureMsg:  info.LatestMonitorFailureMsg,
-		Notifications:            info.Notifications,
-		OutputSchemaName:         info.OutputSchemaName,
-		Schedule:                 info.Schedule,
-		SkipBuiltinDashboard:     false,
-		SlicingExprs:             info.SlicingExprs,
-		Snapshot:                 info.Snapshot,
-		TableName:                info.TableName,
-		TimeSeries:               info.TimeSeries,
-		WarehouseId:              "",
-		ForceSendFields:          utils.FilterFields[catalog.CreateMonitor](info.ForceSendFields),
+func (*ResourceQualityMonitor) RemapState(info *catalog.MonitorInfo) *QualityMonitorState {
+	return &QualityMonitorState{
+		CreateMonitor: catalog.CreateMonitor{
+			AssetsDir:                info.AssetsDir,
+			BaselineTableName:        info.BaselineTableName,
+			CustomMetrics:            info.CustomMetrics,
+			DataClassificationConfig: info.DataClassificationConfig,
+			InferenceLog:             info.InferenceLog,
+			LatestMonitorFailureMsg:  info.LatestMonitorFailureMsg,
+			Notifications:            info.Notifications,
+			OutputSchemaName:         info.OutputSchemaName,
+			Schedule:                 info.Schedule,
+			SkipBuiltinDashboard:     false,
+			SlicingExprs:             info.SlicingExprs,
+			Snapshot:                 info.Snapshot,
+			TableName:                info.TableName,
+			TimeSeries:               info.TimeSeries,
+			WarehouseId:              "",
+			ForceSendFields:          utils.FilterFields[catalog.CreateMonitor](info.ForceSendFields),
+		},
+		TableName: info.TableName,
 	}
 }
 
@@ -51,15 +74,17 @@ func (r *ResourceQualityMonitor) DoRead(ctx context.Context, id string) (*catalo
 	})
 }
 
-func (r *ResourceQualityMonitor) DoCreate(ctx context.Context, config *catalog.CreateMonitor) (string, *catalog.MonitorInfo, error) {
-	response, err := r.client.QualityMonitors.Create(ctx, *config)
+func (r *ResourceQualityMonitor) DoCreate(ctx context.Context, config *QualityMonitorState) (string, *catalog.MonitorInfo, error) {
+	req := config.CreateMonitor
+	req.TableName = config.TableName
+	response, err := r.client.QualityMonitors.Create(ctx, req)
 	if err != nil || response == nil {
 		return "", nil, err
 	}
 	return response.TableName, response, nil
 }
 
-func (r *ResourceQualityMonitor) DoUpdate(ctx context.Context, id string, config *catalog.CreateMonitor, _ Changes) (*catalog.MonitorInfo, error) {
+func (r *ResourceQualityMonitor) DoUpdate(ctx context.Context, id string, config *QualityMonitorState, _ Changes) (*catalog.MonitorInfo, error) {
 	updateRequest := catalog.UpdateMonitor{
 		TableName:                id,
 		BaselineTableName:        config.BaselineTableName,
@@ -96,4 +121,12 @@ func (*ResourceQualityMonitor) FieldTriggers() map[string]deployplan.ActionType 
 	return map[string]deployplan.ActionType{
 		"assets_dir": deployplan.Recreate,
 	}
+}
+
+func (r *ResourceQualityMonitor) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, _ *catalog.MonitorInfo) error {
+	if path.String() == "warehouse_id" && change.Old == change.New {
+		change.Action = deployplan.Skip
+		change.Reason = deployplan.ReasonConfigOnly
+	}
+	return nil
 }
