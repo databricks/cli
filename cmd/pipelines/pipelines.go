@@ -13,6 +13,7 @@ func New(ctx context.Context) *cobra.Command {
 	cli := root.New(ctx)
 	initVariableFlag(cli)
 	cli.AddCommand(initCommand())
+	cli.AddCommand(generateCommand())
 	cli.AddCommand(openCommand())
 	cli.AddCommand(deployCommand())
 	cli.AddCommand(runCommand())
@@ -46,6 +47,7 @@ func Enabled() bool {
 func Commands() []*cobra.Command {
 	return []*cobra.Command{
 		initCommand(),
+		generateCommand(),
 		deployCommand(),
 		destroyCommand(),
 		runCommand(),
