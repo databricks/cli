@@ -313,6 +313,7 @@ func (r *ResourceDashboard) DoCreate(ctx context.Context, config *DashboardState
 				return "", nil, deleteErr
 			}
 			return "", nil, err
+			// QQQ: instead, we could store partial state with published=false
 		}
 	}
 
@@ -324,6 +325,8 @@ func (r *ResourceDashboard) DoUpdate(ctx context.Context, id string, config *Das
 	if err != nil {
 		return nil, err
 	}
+
+	// TODO: if the only thing that changed was "published", we can skip Update()?
 
 	updateResp, err := r.client.Lakeview.Update(ctx, dashboards.UpdateDashboardRequest{
 		DashboardId:    id,
@@ -345,6 +348,7 @@ func (r *ResourceDashboard) DoUpdate(ctx context.Context, id string, config *Das
 	if config.Published {
 		publishResp, err = r.publishDashboard(ctx, id, config)
 		if err != nil {
+			// TODO: store partial state with published=false?
 			return nil, err
 		}
 	}
