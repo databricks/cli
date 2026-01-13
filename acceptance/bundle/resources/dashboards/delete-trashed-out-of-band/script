@@ -21,8 +21,9 @@ trace $CLI lakeview get $DASHBOARD_ID | jq '{lifecycle_state, parent_path}'
 # This should succeed
 trace $CLI lakeview trash $DASHBOARD_ID
 
-$CLI bundle plan
+trace $CLI bundle plan
 
-$CLI bundle plan -o json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle plan -o json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 
-$CLI bundle destroy --auto-approve
+# Run destroy - should succeed even though dashboard is already trashed
+trace $CLI bundle destroy --auto-approve
