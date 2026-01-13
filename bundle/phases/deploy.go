@@ -58,7 +58,7 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.P
 
 	// One or more DLT pipelines is being recreated.
 	if len(dltActions) != 0 {
-		cmdio.LogString(ctx, deleteOrRecreateDltMessage)
+		cmdio.LogString(ctx, deleteOrRecreatePipelineMessage)
 		for _, action := range dltActions {
 			cmdio.Log(ctx, action)
 		}

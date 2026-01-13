@@ -68,7 +68,7 @@ var databricksTemplates = []Template{
 	{
 		name:        LakeflowPipelines,
 		hidden:      true,
-		description: "The default template for Lakeflow Declarative Pipelines",
+		description: "The default template for Lakeflow Spark Declarative Pipelines",
 		Reader:      &builtinReader{name: string(LakeflowPipelines)},
 		Writer:      &writerWithFullTelemetry{defaultWriter: defaultWriter{name: LakeflowPipelines}},
 	},
