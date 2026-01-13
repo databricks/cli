@@ -43,18 +43,24 @@ func (d *BundleDetector) Detect(ctx context.Context, workDir string, detected *D
 
 	// Detect all resource types present in the bundle
 	hasApps := false
+	hasExperiments := false
 	for _, group := range b.Config.Resources.AllResources() {
 		if len(group.Resources) > 0 {
 			detected.TargetTypes = append(detected.TargetTypes, group.Description.PluralName)
 			if group.Description.PluralName == "apps" {
 				hasApps = true
 			}
+			if group.Description.PluralName == "experiments" {
+				hasExperiments = true
+			}
 		}
 	}
 
-	// Determine if this is an app-only project (only app resources, nothing else).
+	// Determine if this is an app-only project. This includes:
+	// - Only app resources
+	// - Apps + experiments (experiments are typically for agent tracing)
 	// App-only projects get focused app guidance; others get general bundle guidance.
-	isAppOnly := hasApps && len(detected.TargetTypes) == 1
+	isAppOnly := hasApps && (len(detected.TargetTypes) == 1 || (len(detected.TargetTypes) == 2 && hasExperiments))
 
 	detected.IsAppOnly = isAppOnly
 
