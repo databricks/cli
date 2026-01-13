@@ -96,7 +96,7 @@ DIFF  experiments/current_can_manage/out.requests.destroy.direct.json
 +  {
 +    "body": {},
 +    "method": "PUT",
-+    "path": "/api/2.0/permissions/experiments/1000"
++    "path": "/api/2.0/permissions/experiments/[NUMID]"
 +  }
 +]
 MATCH jobs/current_can_manage/out.requests.deploy.direct.json

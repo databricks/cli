@@ -30,6 +30,7 @@ import (
 	"github.com/databricks/cli/internal/testutil"
 	"github.com/databricks/cli/libs/auth"
 	"github.com/databricks/cli/libs/testdiff"
+	"github.com/databricks/cli/libs/testserver"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/stretchr/testify/require"
 )
@@ -152,6 +153,7 @@ func TestInprocessMode(t *testing.T) {
 func setReplsForTestEnvVars(t *testing.T, repls *testdiff.ReplacementsContext) {
 	envVars := []string{
 		"TEST_DEFAULT_WAREHOUSE_ID",
+		"TEST_DEFAULT_CLUSTER_ID",
 		"TEST_INSTANCE_POOL_ID",
 	}
 	for _, envVar := range envVars {
@@ -244,7 +246,10 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	if cloudEnv == "" {
 		internal.StartDefaultServer(t, LogRequests)
 		if os.Getenv("TEST_DEFAULT_WAREHOUSE_ID") == "" {
-			t.Setenv("TEST_DEFAULT_WAREHOUSE_ID", "8ec9edc1-db0c-40df-af8d-7580020fe61e")
+			t.Setenv("TEST_DEFAULT_WAREHOUSE_ID", testserver.TestDefaultWarehouseId)
+		}
+		if os.Getenv("TEST_DEFAULT_CLUSTER_ID") == "" {
+			t.Setenv("TEST_DEFAULT_CLUSTER_ID", testserver.TestDefaultClusterId)
 		}
 	}
 
