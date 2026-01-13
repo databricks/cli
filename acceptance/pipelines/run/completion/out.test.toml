@@ -1,9 +1,6 @@
 Local = true
 Cloud = false
 
-[GOOS]
-  linux = false
-  windows = false
-
 [EnvMatrix]
   DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
+  ENTRYPOINT = ["$PIPELINES"]

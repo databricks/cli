@@ -1,16 +1,13 @@
 title "not deployed yet"
-errcode trace $PIPELINES open
+errcode trace $ENTRYPOINT open
 
-errcode trace $PIPELINES deploy
+errcode trace $ENTRYPOINT deploy
 
 title "Modify PATH so that real open is not run"
 export PATH=.:$PATH
 
 title "open after deployment. This will fail to open browser and complain, that's ok, we only want the message"
-musterr trace $PIPELINES open
+musterr trace $ENTRYPOINT open
 
 title "open with KEY, expect same output as opening without KEY"
-musterr trace $PIPELINES open test-pipelines-open
-
-title "test auto-completion handler"
-trace $PIPELINES __complete open ,
+musterr trace $ENTRYPOINT open test-pipelines-open
