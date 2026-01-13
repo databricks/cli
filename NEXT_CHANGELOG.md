@@ -9,6 +9,7 @@ To disable this, set the environment variable DATABRICKS_CACHE_ENABLED to false.
 ### CLI
 
 ### Bundles
+* Add support for configuring app.yaml options for apps via bundle config ([#4271](https://github.com/databricks/cli/pull/4271))
 * Enable caching user identity by default ([#4202](https://github.com/databricks/cli/pull/4202))
 * Fix false positive folder permission warnings and make them more actionable ([#4216](https://github.com/databricks/cli/pull/4216))
 * Pass additional Azure DevOps system variables ([#4236](https://github.com/databricks/cli/pull/4236))
