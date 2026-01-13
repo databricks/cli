@@ -1,0 +1,20 @@
+# The main pipeline for my_python_project
+
+resources:
+  pipelines:
+    my_python_project_etl:
+      name: my_python_project_etl
+      catalog: ${var.catalog}
+      schema: ${var.schema}
+      serverless: true
+      root_path: "../src/my_python_project_etl"
+
+      libraries:
+        - glob:
+            include: ../src/my_python_project_etl/transformations/**
+
+      environment:
+        dependencies:
+          # We include every dependency defined by pyproject.toml by defining an editable environment
+          # that points to the folder where pyproject.toml is deployed.
+          - --editable ${workspace.file_path}
