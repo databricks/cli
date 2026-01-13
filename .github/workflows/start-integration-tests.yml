@@ -22,7 +22,7 @@ jobs:
     if: "${{ !github.event.pull_request.head.repo.fork }}"
 
     steps:
-      - name: Generate GitHub App Token
+      - name: Generate GitHub App Token for Workflow Trigger
         id: generate-token
         uses: actions/create-github-app-token@df432ceedc7162793a195dd1713ff69aefc7379e # v2.0.6
         with:
@@ -31,11 +31,20 @@ jobs:
           owner: ${{ secrets.ORG_NAME }}
           repositories: ${{secrets.REPO_NAME}}
 
+      - name: Generate GitHub App Token for Check Updates
+        id: generate-check-token
+        uses: actions/create-github-app-token@df432ceedc7162793a195dd1713ff69aefc7379e # v2.0.6
+        with:
+          app-id: ${{ secrets.DECO_TEST_APPROVAL_APP_ID }}
+          private-key: ${{ secrets.DECO_TEST_APPROVAL_PRIVATE_KEY }}
+          owner: databricks
+
       - name: Fetch start_integration_tests.py
         run: wget https://raw.githubusercontent.com/databricks/cli/refs/heads/main/tools/start_integration_tests.py
 
       - name: Run start_integration_tests.py
         env:
           GH_TOKEN: ${{ steps.generate-token.outputs.token }}
+          GH_CHECK_TOKEN: ${{ steps.generate-check-token.outputs.token }}
         run: |-
           python3 ./start_integration_tests.py -R ${{ secrets.ORG_NAME }}/${{secrets.REPO_NAME}} --yes

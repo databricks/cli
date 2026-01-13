@@ -8,10 +8,9 @@ Start integration test jobs for PRs by non-team members that are approved by tea
 
 import argparse
 import json
+import os
 import subprocess
 import sys
-from pathlib import Path
-import re
 
 
 CLI_REPO = "databricks/cli"
@@ -20,20 +19,55 @@ ALLOWED_HEAD_REPOSITORY = {"id": "R_kgDOHVGMwQ", "name": "cli"}
 ALLOWED_HEAD_OWNER = {"id": "MDEyOk9yZ2FuaXphdGlvbjQ5OTgwNTI=", "login": "databricks"}
 
 
-def run(cmd):
+def run(cmd, env=None):
     sys.stderr.write("+ " + " ".join(cmd) + "\n")
-    return subprocess.run(cmd, check=True)
+    return subprocess.run(cmd, check=True, env=env)
 
 
-def run_json(cmd):
+def run_json(cmd, env=None):
     sys.stderr.write("+ " + " ".join(cmd) + "\n")
-    result = subprocess.run(cmd, stdout=subprocess.PIPE, encoding="utf-8", check=True)
+    run_env = os.environ.copy()
+    if env:
+        run_env.update(env)
+    result = subprocess.run(cmd, stdout=subprocess.PIPE, encoding="utf-8", check=True, env=run_env)
 
     try:
         return json.loads(result.stdout)
     except Exception:
         sys.stderr.write(f"Failed to JSON parse:\n{result.stdout}\n")
         raise
+
+
+def create_check(commit_sha):
+    """Create a check run for the given commit and return the check_run_id."""
+    check_token = os.environ.get("GH_CHECK_TOKEN")
+    if not check_token:
+        print("Warning: GH_CHECK_TOKEN not set, skipping check creation")
+        return None
+
+    response = run_json(
+        [
+            "gh",
+            "api",
+            "-X",
+            "POST",
+            f"/repos/{CLI_REPO}/check-runs",
+            "-f",
+            "name=Integration Tests",
+            "-f",
+            f"head_sha={commit_sha}",
+            "-f",
+            "status=queued",
+            "-f",
+            "output[title]=Integration Tests",
+            "-f",
+            "output[summary]=Tests queued and will be triggered shortly...",
+        ],
+        env={"GH_TOKEN": check_token},
+    )
+    check_run_id = response.get("id")
+    print(f"Created check run: {check_run_id}")
+    return check_run_id
 
 
 def get_approved_prs_by_non_team():
@@ -108,30 +142,40 @@ def start_job(pr_number, commit_sha, author, approved_by, workflow, repo, force=
         response = input("Start integration tests? (y/n): ")
 
     if response.lower() == "y":
-        result = run(
-            [
-                "gh",
-                "workflow",
-                "run",
-                workflow,
-                "-R",
-                repo,
-                "-F",
-                f"pull_request_number={pr_number}",
-                "-F",
-                f"commit_sha={commit_sha}",
-            ],
-        )
+        check_run_id = create_check(commit_sha)
+
+        cmd = [
+            "gh",
+            "workflow",
+            "run",
+            workflow,
+            "-R",
+            repo,
+            "-F",
+            f"pull_request_number={pr_number}",
+            "-F",
+            f"commit_sha={commit_sha}",
+        ]
+        if check_run_id:
+            cmd.extend(["-F", f"check_run_id={check_run_id}"])
+
+        run(cmd)
         print(f"Started integration tests for PR #{pr_number}")
 
 
 def get_status(commit_sha):
-    statuses = run_json(["gh", "api", f"repos/{CLI_REPO}/commits/{commit_sha}/statuses"])
+    response = run_json(["gh", "api", f"repos/{CLI_REPO}/commits/{commit_sha}/check-runs"])
     result = []
-    for st in statuses:
-        if st["context"] != "Integration Tests Check":
+    for check in response.get("check_runs", []):
+        if check["name"] != "Integration Tests":
             continue
-        result.append(f"{st['state']} {st['target_url']}")
+        status = check["status"]
+        conclusion = check.get("conclusion", "")
+        details_url = check.get("details_url", "")
+        if conclusion:
+            result.append(f"{conclusion} {details_url}")
+        else:
+            result.append(f"{status} {details_url}")
     return result
 
 
