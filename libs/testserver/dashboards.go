@@ -74,6 +74,11 @@ func (s *FakeWorkspace) DashboardCreate(req Request) Response {
 		}
 	}
 
+	// Default to user's home directory if parent_path is not provided (matches cloud behavior)
+	if dashboard.ParentPath == "" {
+		dashboard.ParentPath = "/Users/" + s.CurrentUser().UserName
+	}
+
 	if _, ok := s.directories[dashboard.ParentPath]; !ok {
 		return Response{
 			StatusCode: 404,
@@ -275,5 +280,24 @@ func (s *FakeWorkspace) DashboardTrash(req Request) Response {
 
 	return Response{
 		Body: dashboard,
+	}
+}
+
+func (s *FakeWorkspace) DashboardUnpublish(req Request) Response {
+	defer s.LockUnlock()()
+
+	dashboardId := req.Vars["dashboard_id"]
+	_, ok := s.Dashboards[dashboardId]
+	if !ok {
+		return Response{
+			StatusCode: 404,
+		}
+	}
+
+	// Delete the published dashboard entry.
+	delete(s.PublishedDashboards, dashboardId)
+
+	return Response{
+		Body: "",
 	}
 }
