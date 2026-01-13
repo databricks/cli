@@ -1,0 +1,6 @@
+Local = false
+Cloud = true
+
+[[Repls]]
+Old = '[A-Za-z0-9]{32}'
+New = '[DEPLOYMENT_ID]'
