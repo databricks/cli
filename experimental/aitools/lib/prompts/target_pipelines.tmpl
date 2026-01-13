@@ -1,16 +1,16 @@
 {{- /*
-     * L2: Target-specific guidance for Lakeflow Declarative Pipelines.
+     * L2: Target-specific guidance for Lakeflow Spark Declarative Pipelines.
      *
      * Injected when: target type "pipelines" is detected or after init-template pipeline.
      * Contains: pipeline-specific development patterns, transformation syntax, scheduling.
      * Note: For adding NEW resources (dashboards, alerts, etc.), see target_mixed.tmpl guidance.
      */ -}}
 
-## Lakeflow Declarative Pipelines Development
+## Lakeflow Spark Declarative Pipelines Development
 
 This guidance is for developing pipelines in this project.
 
-Lakeflow Declarative Pipelines (formerly Delta Live Tables) is a framework for building batch and streaming data pipelines.
+Lakeflow Spark Declarative Pipelines (formerly Delta Live Tables) is a framework for building batch and streaming data pipelines.
 
 ### Project Structure
 - `src/` - Pipeline transformations (Python or SQL)
@@ -57,5 +57,5 @@ resources:
 ```
 
 ### Documentation
-- Lakeflow Declarative Pipelines: https://docs.databricks.com/ldp
+- Lakeflow Spark Declarative Pipelines: https://docs.databricks.com/ldp
 - Databricks Asset Bundles / yml format examples: https://docs.databricks.com/dev-tools/bundles/examples

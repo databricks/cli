@@ -122,7 +122,7 @@ Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
 The following resources will be deleted:
   delete resources.pipelines.foo
 
-This action will result in the deletion of the following Lakeflow Declarative Pipelines along with the
+This action will result in the deletion of the following Lakeflow Spark Declarative Pipelines along with the
 Streaming Tables (STs) and Materialized Views (MVs) managed by them:
   delete resources.pipelines.foo
 
