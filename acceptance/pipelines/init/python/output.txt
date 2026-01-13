@@ -1,10 +1,14 @@
 
 === Test basic pipelines init with configuration file
 >>> [PIPELINES] init --config-file ./input.json --output-dir output
+Welcome to the template for Lakeflow Declarative Pipelines!
 
-Welcome to the template for pipelines!
+Please answer the below to tailor your project to your preferences.
+You can always change your mind and change your configuration in the databricks.yml file later.
 
+Note that [DATABRICKS_URL] is used for initialization
+(see https://docs.databricks.com/dev-tools/cli/profiles.html for how to change your profile).
 
-Your new project has been created in the 'my_python_project' directory!
+✨ Your new project has been created in the 'my_python_project' directory!
 
-Refer to the README.md file for "getting started" instructions!
+Please refer to the README.md file for "getting started" instructions.
