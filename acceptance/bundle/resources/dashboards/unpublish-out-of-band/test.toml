@@ -3,6 +3,8 @@ Cloud = true
 RequiresWarehouse = true
 RecordRequests = false
 
+Env.MSYS_NO_PATHCONV = ""
+
 Ignore = [
     "databricks.yml",
 ]
