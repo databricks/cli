@@ -138,26 +138,22 @@ uv run discover-tools --output tools.md
    - Natural language interface to data
    - Can be accessed via Genie MCP server at `{workspace_host}/api/2.0/mcp/genie/{space_id}`
 
-5. **MCP Server Packages** - Installed Python packages (mcp-* or containing "mcp")
-   - Local MCP tools installed via pip/uv in your environment
-   - Examples: `databricks-mcp`, `mcp-server-time`
-   - These run locally alongside your agent
-
-6. **Custom MCP Servers** - Your own MCP servers deployed as Databricks Apps
+5. **Custom MCP Servers** - Your own MCP servers deployed as Databricks Apps
    - MCP servers running on Databricks (app names starting with `mcp-`)
-   - Access via app URL: `{app_url}`
+   - Access via app URL: `{app_url}/mcp`
    - Example: Deploy your custom MCP server as an app named `mcp-my-tools`
-   - Configure in agent: `McpServer(url=f"{app_url}", name="my custom server")`
 
-7. **External MCP Servers** - Third-party MCP servers via Unity Catalog connections
+6. **External MCP Servers** - Third-party MCP servers via Unity Catalog connections
    - External MCP services configured as UC connections with `is_mcp_connection=true`
    - Provides secure access to external APIs and services through UC governance
    - Connection credentials managed by Unity Catalog
-   - Use connection name in your agent configuration
+   - Use the Databricks-provided proxy URL to connect to the server: `{workspace_host}/api/2.0/mcp/external/{connection_name}`
+
+`
 
 **Using discovered tools in your agent:**
 
-After discovering UC functions, configure your agent to use them:
+After discovering tools, configure your agent to use them (e.g. for UC functions):
 
 ```python
 async def init_mcp_server():
@@ -217,7 +213,7 @@ agent = Agent(
 
 #### 2. Sync and Async Databricks OpenAI Clients
 
-Set up Databricks-hosted OpenAI-compatible models:
+Query Databricks-hosted, OpenAI-compatible serving endpoints:
 
 ```python
 from databricks_openai import AsyncDatabricksOpenAI, DatabricksOpenAI
@@ -231,7 +227,7 @@ set_default_openai_api("chat_completions")
 client = DatabricksOpenAI()
 ```
 
-**Note:** This works for all Databricks models except GPT-OSS, which uses a slightly different API.
+**Note:** This works for all Databricks foundation models except GPT-OSS, which uses a slightly different API.
 
 ---
 
@@ -377,7 +373,8 @@ databricks current-user me --profile <profile-name>
 
 **2. Configure `databricks.yml`:**
 
-Ensure your `databricks.yml` defines both the MLflow experiment and app with resources:
+By default, `databricks.yml` defines a new MLflow experiment and app. You can specify an experiment ID
+manually if you want to use an existing experiment:
 
 ```yaml
 bundle:
@@ -464,9 +461,9 @@ DATABRICKS_CONFIG_PROFILE=<profile-name> databricks apps get <app-name> --output
 
 **Note:** You may see warnings about "unknown field" during deployment - these can be ignored and will be resolved in the CLI release.
 
-### Additional App Resources
+### Granting your app service principal permission to use resources
 
-Beyond MLflow experiments, you can grant apps access to other workspace resources by adding them to the `resources` array in databricks.yml:
+Beyond MLflow experiments, you can grant apps access to other workspace resources by adding them to the `resources` array in databricks.yml; the app service principal will be granted permission to the resource automatically:
 
 **Supported resource types:**
 - MLflow experiments (experiment tracking)
@@ -555,6 +552,8 @@ For rapid iteration:
 
 1. **Make code changes locally**
 2. **Test locally:** `uv run start-app`
+3. **Query locally-deployed app**
+   curl -X POST http://localhost:8000/invocations -d '{"input": [{"role": "user", "content": "test"}]}'
 3. **Deploy to Databricks:**
    ```bash
    DATABRICKS_CONFIG_PROFILE=<profile-name> databricks bundle deploy --target dev

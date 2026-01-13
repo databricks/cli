@@ -18,6 +18,7 @@ from typing import Any, Dict, List
 
 from databricks.sdk import WorkspaceClient
 
+TOOL_LIST_PAGE_SIZE = 100
 
 def run_databricks_cli(args: List[str]) -> str:
     """Run databricks CLI command and return output."""
@@ -158,18 +159,16 @@ def discover_genie_spaces(w: WorkspaceClient) -> List[Dict[str, Any]]:
     spaces = []
 
     try:
-        # Use CLI since SDK may not have full Genie support
-        output = run_databricks_cli(["genie", "list-spaces", "--output", "json"])
-        if output:
-            data = json.loads(output)
-            spaces_list = data.get("spaces", [])
-            for space in spaces_list:
-                spaces.append({
-                    "type": "genie_space",
-                    "id": space.get("space_id"),
-                    "name": space.get("display_name"),
-                    "description": space.get("description"),
-                })
+        # Use SDK to list genie spaces
+        response = w.genie.list_spaces()
+        genie_spaces = response.spaces if hasattr(response, "spaces") else []
+        for space in genie_spaces:
+            spaces.append({
+                "type": "genie_space",
+                "id": space.space_id,
+                "name": space.title,
+                "description": space.description,
+            })
     except Exception as e:
         print(f"Error discovering Genie spaces: {e}", file=sys.stderr)
 
@@ -304,15 +303,6 @@ def format_output_markdown(results: Dict[str, List[Dict[str, Any]]]) -> str:
                 lines.append(f"  - {space['description']}")
         lines.append("")
 
-    # MCP Server Packages
-    packages = results.get("mcp_server_packages", [])
-    if packages:
-        lines.append(f"## MCP Server Packages ({len(packages)})\n")
-        lines.append("Installed Python packages that provide MCP tools.\n")
-        for pkg in packages:
-            lines.append(f"- `{pkg['package']}` (v{pkg['version']})")
-        lines.append("")
-
     # Custom MCP Servers (Databricks Apps)
     custom_servers = results.get("custom_mcp_servers", [])
     if custom_servers:
@@ -367,27 +357,24 @@ def main():
 
     results = {}
 
-    # Discover each type
+    # Discover each type (limit to first 20 of each)
     print("- UC Functions...", file=sys.stderr)
-    results["uc_functions"] = discover_uc_functions(w, catalog=args.catalog)
+    results["uc_functions"] = discover_uc_functions(w, catalog=args.catalog)[:TOOL_LIST_PAGE_SIZE]
 
     print("- UC Tables...", file=sys.stderr)
-    results["uc_tables"] = discover_uc_tables(w, catalog=args.catalog, schema=args.schema)
+    results["uc_tables"] = discover_uc_tables(w, catalog=args.catalog, schema=args.schema)[:TOOL_LIST_PAGE_SIZE]
 
     print("- Vector Search Indexes...", file=sys.stderr)
-    results["vector_search_indexes"] = discover_vector_search_indexes(w)
+    results["vector_search_indexes"] = discover_vector_search_indexes(w)[:TOOL_LIST_PAGE_SIZE]
 
     print("- Genie Spaces...", file=sys.stderr)
-    results["genie_spaces"] = discover_genie_spaces(w)
-
-    print("- MCP Server Packages...", file=sys.stderr)
-    results["mcp_server_packages"] = discover_mcp_servers()
+    results["genie_spaces"] = discover_genie_spaces(w)[:TOOL_LIST_PAGE_SIZE]
 
     print("- Custom MCP Servers (Apps)...", file=sys.stderr)
-    results["custom_mcp_servers"] = discover_custom_mcp_servers(w)
+    results["custom_mcp_servers"] = discover_custom_mcp_servers(w)[:TOOL_LIST_PAGE_SIZE]
 
     print("- External MCP Servers (Connections)...", file=sys.stderr)
-    results["external_mcp_servers"] = discover_external_mcp_servers(w)
+    results["external_mcp_servers"] = discover_external_mcp_servers(w)[:TOOL_LIST_PAGE_SIZE]
 
     # Format output
     if args.format == "json":
@@ -408,7 +395,6 @@ def main():
     print(f"UC Tables: {len(results['uc_tables'])}", file=sys.stderr)
     print(f"Vector Search Indexes: {len(results['vector_search_indexes'])}", file=sys.stderr)
     print(f"Genie Spaces: {len(results['genie_spaces'])}", file=sys.stderr)
-    print(f"MCP Server Packages: {len(results['mcp_server_packages'])}", file=sys.stderr)
     print(f"Custom MCP Servers: {len(results['custom_mcp_servers'])}", file=sys.stderr)
     print(f"External MCP Servers: {len(results['external_mcp_servers'])}", file=sys.stderr)
 
