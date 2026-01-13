@@ -84,28 +84,28 @@ func TestValidateAndParsePath_InvalidPathNotInSrc(t *testing.T) {
 	_, err := validateAndParsePath("my_pipeline")
 	require.Error(t, err)
 
-	assert.Contains(t, err.Error(), "pipeline folder must be moved into 'src' directory")
+	assert.Contains(t, err.Error(), "please make sure the directory is located")
 }
 
 func TestValidateAndParsePath_InvalidPathJustSrc(t *testing.T) {
 	_, err := validateAndParsePath("src")
 	require.Error(t, err)
 
-	assert.Contains(t, err.Error(), "pipeline folder must be moved into 'src' directory")
+	assert.Contains(t, err.Error(), "please make sure the directory is located")
 }
 
 func TestValidateAndParsePath_InvalidPathTooDeep(t *testing.T) {
 	_, err := validateAndParsePath("src/folder/subfolder")
 	require.Error(t, err)
 
-	assert.Contains(t, err.Error(), "pipeline folder must be moved into 'src' directory")
+	assert.Contains(t, err.Error(), "please make sure the directory is located")
 }
 
 func TestValidateAndParsePath_InvalidPathOutsideProject(t *testing.T) {
 	_, err := validateAndParsePath("../other_project/src/my_pipeline")
 	require.Error(t, err)
 
-	assert.Contains(t, err.Error(), "pipeline folder must be moved into 'src' directory")
+	assert.Contains(t, err.Error(), "please make sure the directory is located")
 }
 
 func TestFindSparkPipelineFile_SingleFile(t *testing.T) {

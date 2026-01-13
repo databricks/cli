@@ -1,5 +1,5 @@
 
 >>> errcode [CLI] pipelines generate --existing-pipeline-dir /tmp/foo
-Error: pipeline folder must be moved into 'src' directory like src/my_pipeline, got: /tmp/foo
+Error: please make sure the directory is located in side 'src/' (for example 'src/my_pipeline'), got: /tmp/foo
 
 Exit code: 1

@@ -1,6 +1,7 @@
 package pipelines
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -19,20 +20,34 @@ import (
 func generateCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "generate",
-		Short: "Generate Lakeflow SDP configuration from spark-pipeline.yml",
-		Long: `Generate Lakeflow SDP configuration from spark-pipeline.yml.
+		Short: "Generate pipeline configuration",
+		Long: `Generate pipeline configuration
 
-The directory must be located directly in the 'src' directory (e.g., ./src/my_pipeline).
-The command will find a spark-pipeline.yml or *.spark-pipeline.yml file in the folder
-and generate a corresponding .pipeline.yml file in the resources directory. If multiple
-spark-pipeline.yml files exist, you can specify the full path to a specific *.spark-pipeline.yml file.`,
+Use --existing-pipeline-dir to generate pipeline configuration from spark-pipeline.yml
+
+	The directory must be located directly in the 'src' directory (e.g., ./src/my_pipeline).
+	The command will find a spark-pipeline.yml or *.spark-pipeline.yml file in the folder
+	and generate a corresponding .pipeline.yml file in the resources directory. If multiple
+	spark-pipeline.yml files exist, you can specify the full path to a specific *.spark-pipeline.yml file.`,
 	}
 
 	var existingPipelineDir string
 	var force bool
 	cmd.Flags().StringVar(&existingPipelineDir, "existing-pipeline-dir", "", "Path to the existing pipeline directory in 'src' (e.g., src/my_pipeline).")
-	cmd.MarkFlagRequired("existing-pipeline-dir")
 	cmd.Flags().BoolVar(&force, "force", false, "Overwrite existing pipeline configuration file.")
+
+	cmd.PreRunE = func(cmd *cobra.Command, args []string) error {
+		if existingPipelineDir == "" {
+			err := cmd.Help()
+			if err != nil {
+				return err
+			}
+
+			return errors.New("required flag \"existing-pipeline-dir\" not set")
+		}
+
+		return nil
+	}
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		folderPath := existingPipelineDir
@@ -119,7 +134,7 @@ func validateAndParsePath(folderPath string) (*sdpPathInfo, error) {
 	// Specified folder must be src/<folder_name>
 	parts := strings.Split(normalizedFolderPath, "/")
 	if len(parts) != 2 || parts[0] != "src" {
-		return nil, fmt.Errorf("pipeline folder must be moved into 'src' directory like src/my_pipeline, got: %s", folderPath)
+		return nil, fmt.Errorf("please make sure the directory is located in side 'src/' (for example 'src/my_pipeline'), got: %s", folderPath)
 	}
 
 	pipelineName := parts[1]
@@ -201,11 +216,12 @@ func parseSparkPipelineYAML(filePath string) (*sdpPipeline, error) {
 	return &out, nil
 }
 
-// convertToResources converts a spark-pipeline.yml spec to DAB YAML format with "resources" property
+// convertToResources converts a spark-pipeline.yml spec to DABs YAML format with "resources" property
 func convertToResources(spec *sdpPipeline, resourceName, srcFolder string) (map[string]dyn.Value, error) {
 	// YAML paths are relative to directory containing YAML file, in this case:
-	// DAB YAML is in "./resources/<directoryName>.pipeline.yml"
+	// DABs YAML is in "./resources/<directoryName>.pipeline.yml"
 	// SDP YAML is in "./<pipelineDirectoryPath>/spark-pipeline.yml"
+	//
 	// NB: all paths are /-based so Windows has the same output
 	relativePath := filepath.ToSlash(filepath.Join("..", srcFolder))
 
