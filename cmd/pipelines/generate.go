@@ -71,7 +71,7 @@ Use --existing-pipeline-dir to generate pipeline configuration from spark-pipeli
 			return fmt.Errorf("failed to parse %s: %w", sparkPipelineFile, err)
 		}
 
-		outputFile := filepath.Join("resources", info.directoryName+".pipeline.yml")
+		outputFile := filepath.ToSlash(filepath.Join("resources", info.directoryName+".pipeline.yml"))
 		resourceName := info.directoryName
 		resourcesMap, err := convertToResources(spec, resourceName, info.pipelineDirectoryPath)
 		if err != nil {
