@@ -24,7 +24,7 @@ trace $CLI lakeview unpublish $DASHBOARD_ID
 trace $CLI bundle plan > out.plan.$DATABRICKS_BUNDLE_ENGINE.txt
 
 $CLI bundle plan -o json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
-json_normalize_field.py out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+json_in_json_normalize.py out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 
 trace $CLI bundle deploy
 
