@@ -1,0 +1,17 @@
+# Test quality monitor output_schema_name updates
+Cloud = true
+Local = true
+RequiresUnityCatalog = true
+RecordRequests = true
+
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
+
+# Fake SQL endpoint for local tests
+[[Server]]
+Pattern = "POST /api/2.0/sql/statements/"
+Response.Body = '{"status": {"state": "SUCCEEDED"}, "manifest": {"schema": {"columns": []}}}'
+
+
+[[Repls]]
+Old = '"dashboard_id": "[0-9a-f]+",'
+New = '"dashboard_id": "(redacted)",'
