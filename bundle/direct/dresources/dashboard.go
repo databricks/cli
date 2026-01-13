@@ -30,6 +30,7 @@ type DashboardState struct {
 	Published bool `json:"published"`
 }
 
+// We need these dummy methiods otherwise custom marshaller from DashboardConfig takes over and ignores Published field
 func (s *DashboardState) UnmarshalJSON(b []byte) error {
 	return marshal.Unmarshal(b, s)
 }
