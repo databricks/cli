@@ -95,7 +95,7 @@ def discover_uc_tables(w: WorkspaceClient, catalog: str = None, schema: str = No
                             columns = []
                             if hasattr(tbl, "columns") and tbl.columns:
                                 columns = [
-                                    {"name": col.name, "type": col.type_name}
+                                    {"name": col.name, "type": col.type_name.value if hasattr(col.type_name, "value") else str(col.type_name)}
                                     for col in tbl.columns
                                 ]
 
@@ -194,7 +194,7 @@ def discover_mcp_servers() -> List[Dict[str, Any]]:
                 name = pkg.get("name", "")
                 if name.startswith("mcp-") or "mcp" in name.lower():
                     mcp_servers.append({
-                        "type": "mcp_server",
+                        "type": "mcp_server_package",
                         "package": name,
                         "version": pkg.get("version"),
                     })
@@ -202,6 +202,51 @@ def discover_mcp_servers() -> List[Dict[str, Any]]:
         print(f"Error discovering MCP servers: {e}", file=sys.stderr)
 
     return mcp_servers
+
+
+def discover_custom_mcp_servers(w: WorkspaceClient) -> List[Dict[str, Any]]:
+    """Discover custom MCP servers deployed as Databricks apps."""
+    custom_servers = []
+
+    try:
+        # List all apps and filter for those starting with mcp-
+        apps = w.apps.list()
+        for app in apps:
+            if app.name and app.name.startswith("mcp-"):
+                custom_servers.append({
+                    "type": "custom_mcp_server",
+                    "name": app.name,
+                    "url": app.url,
+                    "status": app.app_status.state.value if app.app_status and app.app_status.state else None,
+                    "description": app.description,
+                })
+    except Exception as e:
+        print(f"Error discovering custom MCP servers: {e}", file=sys.stderr)
+
+    return custom_servers
+
+
+def discover_external_mcp_servers(w: WorkspaceClient) -> List[Dict[str, Any]]:
+    """Discover external MCP servers configured via Unity Catalog connections."""
+    external_servers = []
+
+    try:
+        # List all connections and filter for MCP connections
+        connections = w.connections.list()
+        for conn in connections:
+            # Check if this is an MCP connection
+            if conn.options and conn.options.get("is_mcp_connection") == "true":
+                external_servers.append({
+                    "type": "external_mcp_server",
+                    "name": conn.name,
+                    "connection_type": conn.connection_type.value if hasattr(conn.connection_type, "value") else str(conn.connection_type),
+                    "comment": conn.comment,
+                    "full_name": conn.full_name,
+                })
+    except Exception as e:
+        print(f"Error discovering external MCP servers: {e}", file=sys.stderr)
+
+    return external_servers
 
 
 def format_output_markdown(results: Dict[str, List[Dict[str, Any]]]) -> str:
@@ -259,13 +304,41 @@ def format_output_markdown(results: Dict[str, List[Dict[str, Any]]]) -> str:
                 lines.append(f"  - {space['description']}")
         lines.append("")
 
-    # MCP Servers
-    servers = results.get("mcp_servers", [])
-    if servers:
-        lines.append(f"## Custom MCP Servers ({len(servers)})\n")
-        lines.append("These provide additional tools and capabilities.\n")
-        for server in servers:
-            lines.append(f"- `{server['package']}` (v{server['version']})")
+    # MCP Server Packages
+    packages = results.get("mcp_server_packages", [])
+    if packages:
+        lines.append(f"## MCP Server Packages ({len(packages)})\n")
+        lines.append("Installed Python packages that provide MCP tools.\n")
+        for pkg in packages:
+            lines.append(f"- `{pkg['package']}` (v{pkg['version']})")
+        lines.append("")
+
+    # Custom MCP Servers (Databricks Apps)
+    custom_servers = results.get("custom_mcp_servers", [])
+    if custom_servers:
+        lines.append(f"## Custom MCP Servers ({len(custom_servers)})\n")
+        lines.append("MCP servers deployed as Databricks Apps (names starting with mcp-).\n")
+        for server in custom_servers:
+            lines.append(f"- `{server['name']}`")
+            if server.get("url"):
+                lines.append(f"  - URL: {server['url']}")
+            if server.get("status"):
+                lines.append(f"  - Status: {server['status']}")
+            if server.get("description"):
+                lines.append(f"  - {server['description']}")
+        lines.append("")
+
+    # External MCP Servers (UC Connections)
+    external_servers = results.get("external_mcp_servers", [])
+    if external_servers:
+        lines.append(f"## External MCP Servers ({len(external_servers)})\n")
+        lines.append("External MCP servers configured via Unity Catalog connections.\n")
+        for server in external_servers:
+            lines.append(f"- `{server['name']}`")
+            if server.get("full_name"):
+                lines.append(f"  - Full name: {server['full_name']}")
+            if server.get("comment"):
+                lines.append(f"  - {server['comment']}")
         lines.append("")
 
     return "\n".join(lines)
@@ -307,8 +380,14 @@ def main():
     print("- Genie Spaces...", file=sys.stderr)
     results["genie_spaces"] = discover_genie_spaces(w)
 
-    print("- MCP Servers...", file=sys.stderr)
-    results["mcp_servers"] = discover_mcp_servers()
+    print("- MCP Server Packages...", file=sys.stderr)
+    results["mcp_server_packages"] = discover_mcp_servers()
+
+    print("- Custom MCP Servers (Apps)...", file=sys.stderr)
+    results["custom_mcp_servers"] = discover_custom_mcp_servers(w)
+
+    print("- External MCP Servers (Connections)...", file=sys.stderr)
+    results["external_mcp_servers"] = discover_external_mcp_servers(w)
 
     # Format output
     if args.format == "json":
@@ -329,7 +408,9 @@ def main():
     print(f"UC Tables: {len(results['uc_tables'])}", file=sys.stderr)
     print(f"Vector Search Indexes: {len(results['vector_search_indexes'])}", file=sys.stderr)
     print(f"Genie Spaces: {len(results['genie_spaces'])}", file=sys.stderr)
-    print(f"MCP Servers: {len(results['mcp_servers'])}", file=sys.stderr)
+    print(f"MCP Server Packages: {len(results['mcp_server_packages'])}", file=sys.stderr)
+    print(f"Custom MCP Servers: {len(results['custom_mcp_servers'])}", file=sys.stderr)
+    print(f"External MCP Servers: {len(results['external_mcp_servers'])}", file=sys.stderr)
 
 
 if __name__ == "__main__":

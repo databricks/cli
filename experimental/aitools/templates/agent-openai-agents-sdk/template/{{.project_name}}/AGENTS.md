@@ -69,11 +69,38 @@ curl -X POST http://localhost:8000/invocations \
   -d '{ "input": [{ "role": "user", "content": "hi" }] }'
 ```
 
+## Testing the Agent
+
+**Run evaluation:**
+
+```bash
+uv run agent-evaluate     # Uses MLflow scorers (RelevanceToQuery, Safety)
+```
+
+**Run unit tests:**
+
+```bash
+pytest [path]             # Standard pytest execution
+```
+
 ---
 
-## Discovering Available Tools and Data Sources
+## Modifying the Agent
 
-Before building your agent, discover what tools and data sources are available in your workspace.
+Anytime the user wants to modify the agent, look through the following resources to help them accomplish their goal:
+
+If the user wants to convert their agent input and output format into MLflow's Responses API-compatible interface, refer to https://mlflow.org/docs/latest/genai/serving/responses-agent/.
+
+1. Look through existing databricks-openai APIs to see if they can use one of these to accomplish their goal.
+2. Look through the folders in https://github.com/bbqiu/agent-on-app-prototype to see if there's an existing example similar to what they're looking to do.
+3. Reference the documentation available under https://docs.databricks.com/aws/en/generative-ai/agent-framework/ and its subpages.
+4. For adding tools and capabilities, refer to: https://docs.databricks.com/aws/en/generative-ai/agent-framework/agent-tool
+5. Reference the OpenAI Agents SDK documentation: https://platform.openai.com/docs/guides/agents-sdk
+
+
+### Discovering Available Tools and Data Sources
+
+When building your agent, you can discover what tools, MCP servers, and data sources are available in your workspace.
 
 **Run the discovery script:**
 
@@ -98,23 +125,35 @@ uv run discover-tools --output tools.md
 
 1. **Unity Catalog Functions** - SQL UDFs that can be used as agent tools via MCP servers
    - Example: `catalog.schema.get_customer_info(customer_id STRING)`
-   - Can be exposed via: `{workspace_host}/api/2.0/mcp/functions/{catalog}/{schema}`
+   - Can be accessed via the UC functions MCP server: `{workspace_host}/api/2.0/mcp/functions/{catalog}/{schema}` (all functions in a schema) or `{workspace_host}/api/2.0/mcp/functions/{catalog}/{schema}/{function_name}` (to include a single function as a tool)
 
 2. **Unity Catalog Tables** - Structured data that agents can query
-   - Includes table metadata, columns, and types
-   - Can be queried via UC functions or SQL tools
+   - Can be queried via UC SQL functions
 
 3. **Vector Search Indexes** - For RAG applications with unstructured data
-   - Includes endpoint information and index status
-   - Can be queried via Databricks SDK or MCP servers
+   - Can be accessed via the vector search MCP server at `{workspace_host}/api/2.0/mcp/vector-search/{catalog}/{schema}` or
+   `{workspace_host}/api/2.0/mcp/vector-search/{catalog}/{schema}/{index_name}`
 
 4. **Genie Spaces** - Conversational data access
    - Natural language interface to data
-   - Can be accessed via Genie MCP server
+   - Can be accessed via Genie MCP server at `{workspace_host}/api/2.0/mcp/genie/{space_id}`
 
-5. **Custom MCP Servers** - Installed Python packages (mcp-*)
-   - Custom tool integrations
-   - Third-party MCP servers
+5. **MCP Server Packages** - Installed Python packages (mcp-* or containing "mcp")
+   - Local MCP tools installed via pip/uv in your environment
+   - Examples: `databricks-mcp`, `mcp-server-time`
+   - These run locally alongside your agent
+
+6. **Custom MCP Servers** - Your own MCP servers deployed as Databricks Apps
+   - MCP servers running on Databricks (app names starting with `mcp-`)
+   - Access via app URL: `{app_url}`
+   - Example: Deploy your custom MCP server as an app named `mcp-my-tools`
+   - Configure in agent: `McpServer(url=f"{app_url}", name="my custom server")`
+
+7. **External MCP Servers** - Third-party MCP servers via Unity Catalog connections
+   - External MCP services configured as UC connections with `is_mcp_connection=true`
+   - Provides secure access to external APIs and services through UC governance
+   - Connection credentials managed by Unity Catalog
+   - Use connection name in your agent configuration
 
 **Using discovered tools in your agent:**
 
@@ -131,34 +170,6 @@ async def init_mcp_server():
 See the [MCP documentation](https://docs.databricks.com/aws/en/generative-ai/mcp/) for more details.
 
 ---
-
-## Testing the Agent
-
-**Run evaluation:**
-
-```bash
-uv run agent-evaluate     # Uses MLflow scorers (RelevanceToQuery, Safety)
-```
-
-**Run unit tests:**
-
-```bash
-pytest [path]             # Standard pytest execution
-```
-
----
-
-## Modifying the Agent
-
-Anytime the user wants to modify the agent, look through each of the following resources to help them accomplish their goal:
-
-If the user wants to convert something into Responses API, refer to https://mlflow.org/docs/latest/genai/serving/responses-agent/ for more information.
-
-1. Look through existing databricks-openai APIs to see if they can use one of these to accomplish their goal.
-2. Look through the folders in https://github.com/bbqiu/agent-on-app-prototype to see if there's an existing example similar to what they're looking to do.
-3. Reference the documentation available under https://docs.databricks.com/aws/en/generative-ai/agent-framework/ and its subpages.
-4. For adding tools and capabilities, refer to: https://docs.databricks.com/aws/en/generative-ai/agent-framework/agent-tool
-5. Reference the OpenAI Agents SDK documentation: https://platform.openai.com/docs/guides/agents-sdk
 
 **Main file to modify:** `agent_server/agent.py`
 
