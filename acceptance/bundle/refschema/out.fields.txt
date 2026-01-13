@@ -99,6 +99,13 @@ resources.apps.*.compute_size	apps.ComputeSize	ALL
 resources.apps.*.compute_status	*apps.ComputeStatus	ALL
 resources.apps.*.compute_status.message	string	ALL
 resources.apps.*.compute_status.state	apps.ComputeState	ALL
+resources.apps.*.config	*resources.AppConfig	INPUT
+resources.apps.*.config.command	[]string	INPUT
+resources.apps.*.config.command[*]	string	INPUT
+resources.apps.*.config.env	[]resources.AppEnvVar	INPUT
+resources.apps.*.config.env[*]	resources.AppEnvVar	INPUT
+resources.apps.*.config.env[*].name	string	INPUT
+resources.apps.*.config.env[*].value	string	INPUT
 resources.apps.*.create_time	string	ALL
 resources.apps.*.creator	string	ALL
 resources.apps.*.default_source_code_path	string	ALL
