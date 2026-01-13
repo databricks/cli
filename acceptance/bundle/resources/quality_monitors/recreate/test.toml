@@ -1,6 +1,0 @@
-# Terraform provider doesn't mark assets_dir as ForceNew, so recreation only works with direct engine
-Local = true
-Cloud = false
-
-[EnvMatrix]
-  DATABRICKS_BUNDLE_ENGINE = ["direct"]
