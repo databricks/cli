@@ -299,8 +299,8 @@ func (r *ResourceDashboard) DoCreate(ctx context.Context, config *DashboardState
 	// Persist the etag in state.
 	config.Etag = createResp.Etag
 
-	// Only publish if config.Published is true
 	var publishResp *dashboards.PublishedDashboard
+	// Note, today config.Published is always true (we do not have this field in input config).
 	if config.Published {
 		publishResp, err = r.publishDashboard(ctx, createResp.DashboardId, config)
 		if err != nil {
@@ -343,8 +343,8 @@ func (r *ResourceDashboard) DoUpdate(ctx context.Context, id string, config *Das
 	// Persist the etag in state.
 	config.Etag = updateResp.Etag
 
-	// Only publish if config.Published is true
 	var publishResp *dashboards.PublishedDashboard
+	// Note, today config.Published is always true (we do not have this field in input config).
 	if config.Published {
 		publishResp, err = r.publishDashboard(ctx, id, config)
 		if err != nil {
