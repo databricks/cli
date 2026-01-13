@@ -1,0 +1,18 @@
+
+>>> errcode [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/quality-monitor-update-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Error: terraform apply: exit status 1
+
+Error: failed to update monitor
+
+  with databricks_quality_monitor.monitor1,
+  on bundle.tf.json line 21, in resource.databricks_quality_monitor.monitor1:
+  21:       }
+
+Not Found
+
+
+Updating deployment state...
+
+Exit code: 1

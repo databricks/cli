@@ -1,0 +1,34 @@
+SCHEMA_NAME="main.qm_test_${UNIQUE_NAME}"
+TABLE_NAME="${SCHEMA_NAME}.test_table"
+
+# Create schema and table via Python
+trace python3 create_table.py "$TABLE_NAME"
+trace python3 create_table.py "${TABLE_NAME}_2"
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    # Clean up schemas and table (suppress errors since they may already be gone)
+    $CLI schemas delete "$SCHEMA_NAME" --force 2>/dev/null || true
+    $CLI schemas delete "qm_test_${UNIQUE_NAME}_2" --force 2>/dev/null || true
+    rm -f out.requests.txt
+}
+trap cleanup EXIT
+
+# Generate databricks.yml with all variables substituted
+envsubst < databricks.yml.tmpl > databricks.yml
+
+trace $CLI bundle deploy
+
+trace $CLI bundle plan | contains.py "1 unchanged"
+
+update_file.py databricks.yml "table_name: $TABLE_NAME" "table_name: ${TABLE_NAME}_2"
+
+trace errcode $CLI bundle plan &> out.plan.$DATABRICKS_BUNDLE_ENGINE.txt
+trace errcode $CLI bundle plan -o json &> out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+
+rm out.requests.txt
+trace errcode $CLI bundle deploy &> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt
+trace print_requests.py '^//import-file/' '^//workspace/' '^//telemetry-ext' > out.deploy.requests.$DATABRICKS_BUNDLE_ENGINE.json
+trace errcode $CLI bundle plan &> out.plan_after_deploy.$DATABRICKS_BUNDLE_ENGINE.txt
+
+trace errcode $CLI quality-monitors get ${TABLE_NAME}_2 &> out.get.$DATABRICKS_BUNDLE_ENGINE.json

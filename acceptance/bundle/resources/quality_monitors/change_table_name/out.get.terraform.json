@@ -1,0 +1,5 @@
+
+>>> errcode [CLI] quality-monitors get main.qm_test_[UNIQUE_NAME].test_table_2
+Error: Resource catalog.MonitorInfo not found: main.qm_test_[UNIQUE_NAME].test_table_2
+
+Exit code: 1
