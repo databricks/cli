@@ -19,11 +19,32 @@ Table main.qm_test_[UNIQUE_NAME].test_table is now visible (catalog_name=main)
   "updated_by": "[USERNAME]"
 }
 
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/quality-monitor-update-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+>>> [CLI] bundle plan
+update quality_monitors.monitor1
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+
 >>> [CLI] bundle plan -o json
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/quality-monitor-update-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
 
 >>> print_requests.py ^//import-file/ ^//workspace/ ^//telemetry-ext
 
->>> [CLI] bundle plan -o json
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

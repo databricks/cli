@@ -1,6 +1,5 @@
 SCHEMA_NAME="main.qm_test_${UNIQUE_NAME}"
 TABLE_NAME="${SCHEMA_NAME}.test_table"
-OUTPUT_SCHEMA1="${SCHEMA_NAME}"
 
 trace create_table.py "$TABLE_NAME"
 
@@ -19,13 +18,18 @@ trap cleanup EXIT
 # Generate databricks.yml with all variables substituted
 envsubst < databricks.yml.tmpl > databricks.yml
 
-trace $CLI bundle plan -o json > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle deploy
+
+trace $CLI bundle plan | contains.py "1 unchanged"
+
+update_file.py databricks.yml "output_schema_name: main.qm_test_${UNIQUE_NAME}" "output_schema_name: main.qm_test_${UNIQUE_NAME}_2"
+
+trace $CLI bundle plan | contains.py "1 to change"
+trace $CLI bundle plan -o json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 
 rm out.requests.txt
-trace $CLI bundle deploy &> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt
-trace print_requests.py '^//import-file/' '^//workspace/' '^//telemetry-ext' > out.deploy.requests.json
+trace $CLI bundle deploy
+# dashboard_id is output only field that terraform adds
+trace print_requests.py '^//import-file/' '^//workspace/' '^//telemetry-ext' | grep -v '"dashboard_id":' > out.deploy.requests.json
 
-# store state to ensure we have table_name there
-print_state.py | grep name > out.state.$DATABRICKS_BUNDLE_ENGINE.txt
-
-trace $CLI bundle plan -o json > out.plan_noop.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle plan | contains.py "1 unchanged"
