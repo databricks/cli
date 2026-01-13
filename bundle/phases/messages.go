@@ -5,7 +5,7 @@ const (
 	deleteOrRecreateSchemaMessage = `
 This action will result in the deletion or recreation of the following UC schemas. Any underlying data may be lost:`
 
-	deleteOrRecreateDltMessage = `
+	deleteOrRecreatePipelineMessage = `
 This action will result in the deletion or recreation of the following Lakeflow Spark Declarative Pipelines along with the
 Streaming Tables (STs) and Materialized Views (MVs) managed by them. Recreating the pipelines will
 restore the defined STs and MVs through full refresh. Note that recreation is necessary when pipeline
@@ -26,7 +26,7 @@ This will result in changed IDs and permanent URLs of the dashboards that will b
 const (
 	deleteSchemaMessage = `This action will result in the deletion of the following UC schemas. Any underlying data may be lost:`
 
-	deleteLSDPMessage = `This action will result in the deletion of the following Lakeflow Spark Declarative Pipelines along with the
+	deletePipelineMessage = `This action will result in the deletion of the following Lakeflow Spark Declarative Pipelines along with the
 Streaming Tables (STs) and Materialized Views (MVs) managed by them:`
 
 	deleteVolumeMessage = `This action will result in the deletion of the following volumes.

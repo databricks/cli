@@ -64,7 +64,7 @@ func approvalForDestroy(ctx context.Context, b *bundle.Bundle, plan *deployplan.
 	}
 
 	if len(dltActions) > 0 {
-		cmdio.LogString(ctx, deleteLSDPMessage)
+		cmdio.LogString(ctx, deletePipelineMessage)
 		for _, a := range dltActions {
 			cmdio.Log(ctx, a)
 		}
