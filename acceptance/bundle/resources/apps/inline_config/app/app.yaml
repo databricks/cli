@@ -1,0 +1,7 @@
+command:
+- python
+- app.py
+
+env:
+- name: MY_ENV_VAR
+  value: test_value_old
