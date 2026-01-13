@@ -1,4 +1,4 @@
-unsert MSYS_NO_PATHCONV
+unset MSYS_NO_PATHCONV
 envsubst < databricks.yml.tmpl > databricks.yml
 
 cleanup() {
