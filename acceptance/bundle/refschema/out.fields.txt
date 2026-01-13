@@ -484,6 +484,7 @@ resources.dashboards.*.permissions[*].group_name	string	INPUT
 resources.dashboards.*.permissions[*].level	resources.DashboardPermissionLevel	INPUT
 resources.dashboards.*.permissions[*].service_principal_name	string	INPUT
 resources.dashboards.*.permissions[*].user_name	string	INPUT
+resources.dashboards.*.published	bool	REMOTE	STATE
 resources.dashboards.*.serialized_dashboard	any	ALL
 resources.dashboards.*.update_time	string	ALL
 resources.dashboards.*.url	string	INPUT
