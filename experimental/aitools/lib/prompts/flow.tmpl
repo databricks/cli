@@ -37,7 +37,7 @@ For jobs (Python notebooks with wheel package):
 invoke_databricks_cli 'experimental aitools tools init-template job --name my_job'
 invoke_databricks_cli 'experimental aitools tools init-template job --name my_job --catalog my_catalog'
 
-For pipelines (Lakeflow Declarative Pipelines):
+For pipelines (Lakeflow Spark Declarative Pipelines):
 invoke_databricks_cli 'experimental aitools tools init-template pipeline --name my_pipeline --language python'
 invoke_databricks_cli 'experimental aitools tools init-template pipeline --name my_pipeline --language sql --catalog my_catalog'
 Note: --language is required (python or sql). Ask the user which language they prefer:
