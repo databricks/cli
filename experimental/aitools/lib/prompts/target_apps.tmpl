@@ -2,27 +2,11 @@
      * L2: Target-specific guidance for Databricks Apps.
      *
      * Injected when: target type "apps" is detected or after init-template.
-     * Contains: app naming constraints, validation, deployment consent.
+     * Contains: validation, deployment consent, operational commands.
+     * AppKit-specific guidance is in skills/apps/appkit/ - load via read_skill_file.
      */ -}}
 
 ## Databricks Apps Development
-
-### CRITICAL: AppKit TypeScript Workflow (for TypeScript/AppKit apps)
-
-After scaffolding an AppKit app, follow this workflow for EVERY query you add:
-
-1. Create SQL file: `config/queries/my_query.sql`
-2. Add schema: `config/queries/schema.ts` → add entry to `querySchemas`
-3. **RUN: `npm run typegen`** - REQUIRED to regenerate types
-4. Use data in components:
-   ```typescript
-   const { data } = useAnalyticsQuery('my_query', {});
-   data?.map(...)  // TypeScript infers types from schema
-   ```
-
-⚠️ **Common build failures (avoid these):**
-- Skipping `npm run typegen` after schema changes → "not assignable to type" errors
-- Using `<BarChart queryKey="..."><Bar.../></BarChart>` → charts DON'T accept children
 
 ### Validation
 ⚠️ Always validate before deploying:
