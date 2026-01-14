@@ -8,6 +8,10 @@ View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?o=[NUMID]
 
 === Run pipeline and display pipeline configuration summary and events durations
 >>> [ENTRYPOINT] run
+Recommendation: This command runs the last deployed version of the code
+
+If you've made local changes, run '[DEPLOYCMD]' first to ensure they are included.
+
 Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/test-update-123
 
 [TIMESTAMP] update_progress  "Update test-update-123 is COMPLETED."

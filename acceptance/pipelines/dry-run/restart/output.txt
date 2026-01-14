@@ -8,6 +8,10 @@ View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?o=[NUMID]
 
 === Dry running pipeline with --restart flag, should stop the current pipeline and start a new run
 >>> [ENTRYPOINT] dry-run --restart
+Recommendation: This command runs the last deployed version of the code
+
+If you've made local changes, run '[DEPLOYCMD]' first to ensure they are included.
+
 Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 
 Update ID: [UUID]

@@ -745,6 +745,20 @@ github.com/databricks/cli/bundle/config/resources.App:
   "resources":
     "sinceVersion": |-
       v0.239.0
+github.com/databricks/cli/bundle/config/resources.AppConfig:
+  "command":
+    "description": |-
+      PLACEHOLDER
+  "env":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.AppEnvVar:
+  "name":
+    "description": |-
+      PLACEHOLDER
+  "value":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.AppPermission:
   "group_name":
     "description": |-

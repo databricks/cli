@@ -10,6 +10,7 @@ To disable this, set the environment variable DATABRICKS_CACHE_ENABLED to false.
 * Add commands to pipelines command group ([#4275](https://github.com/databricks/cli/pull/4275))
 
 ### Bundles
+* Add support for configuring app.yaml options for apps via bundle config ([#4271](https://github.com/databricks/cli/pull/4271))
 * Enable caching user identity by default ([#4202](https://github.com/databricks/cli/pull/4202))
 * Do not show single node warning when is_single_node option is explicitly set ([#4272](https://github.com/databricks/cli/pull/4272))
 * Fix false positive folder permission warnings and make them more actionable ([#4216](https://github.com/databricks/cli/pull/4216))

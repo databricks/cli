@@ -190,6 +190,9 @@
                       "compute_size": {
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.ComputeSize"
                       },
+                      "config": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.AppConfig"
+                      },
                       "description": {
                         "description": "The description of the app.",
                         "$ref": "#/$defs/string",
@@ -232,6 +235,50 @@
                     "required": [
                       "source_code_path",
                       "name"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "resources.AppConfig": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "command": {
+                        "$ref": "#/$defs/slice/string"
+                      },
+                      "env": {
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.AppEnvVar"
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "resources.AppEnvVar": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "value": {
+                        "$ref": "#/$defs/string"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "name",
+                      "value"
                     ]
                   },
                   {
@@ -11076,6 +11123,20 @@
                       "type": "array",
                       "items": {
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.AlertPermission"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
+                "resources.AppEnvVar": {
+                  "oneOf": [
+                    {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.AppEnvVar"
                       }
                     },
                     {
