@@ -11,7 +11,6 @@ import (
 	"github.com/databricks/cli/bundle/deploy/lock"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/statemgmt"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
@@ -68,26 +67,26 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions) {
 			}
 
 			if !cmdio.IsPromptSupported(ctx) {
-				direct.CancelBind(result)
+				result.Cancel()
 				logdiag.LogError(ctx, errors.New("This bind operation requires user confirmation, but the current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed.")) //nolint
 				return
 			}
 
 			ans, err := cmdio.AskYesOrNo(ctx, "Confirm import changes? Changes will be remotely applied only after running 'bundle deploy'.")
 			if err != nil {
-				direct.CancelBind(result)
+				result.Cancel()
 				logdiag.LogError(ctx, err)
 				return
 			}
 			if !ans {
-				direct.CancelBind(result)
+				result.Cancel()
 				logdiag.LogError(ctx, errors.New("import aborted"))
 				return
 			}
 		}
 
 		// Finalize: rename temp state to final location
-		err = direct.FinalizeBind(result)
+		err = result.Finalize()
 		if err != nil {
 			logdiag.LogError(ctx, err)
 			return

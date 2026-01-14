@@ -58,7 +58,7 @@ type BindResult struct {
 // 4. Perform plan + update to populate state with resolved config
 // 5. Calculate plan again - this is the plan presented to the user
 //
-// Call FinalizeBind to commit the state or CancelBind to discard.
+// Call Finalize to commit the state or Cancel to discard.
 func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root, statePath, resourceKey, resourceID string) (*BindResult, error) {
 	// Check if the resource is already managed (bound to a different ID)
 	var checkStateDB dstate.DeploymentState
@@ -170,16 +170,16 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 	return result, nil
 }
 
-// FinalizeBind completes the bind operation by renaming the temp state to the final location.
-func FinalizeBind(result *BindResult) error {
+// Finalize completes the bind operation by renaming the temp state to the final location.
+func (result *BindResult) Finalize() error {
 	if result == nil || result.TempStatePath == "" {
 		return nil
 	}
 	return os.Rename(result.TempStatePath, result.StatePath)
 }
 
-// CancelBind cleans up temp state without committing changes.
-func CancelBind(result *BindResult) {
+// Cancel cleans up temp state without committing changes.
+func (result *BindResult) Cancel() {
 	if result != nil && result.TempStatePath != "" {
 		os.Remove(result.TempStatePath)
 	}
