@@ -10,7 +10,7 @@ type Descriptor struct {
 	DeprecationMessage  string `json:"deprecation_message,omitempty"`
 	Preview             string `json:"x-databricks-preview,omitempty"`
 	OutputOnly          *bool  `json:"x-databricks-field-behaviors_output_only,omitempty"`
-	SinceVersion        string `json:"since_version,omitempty"`
+	SinceVersion        string `json:"sinceVersion,omitempty"`
 }
 
 const Placeholder = "PLACEHOLDER"
