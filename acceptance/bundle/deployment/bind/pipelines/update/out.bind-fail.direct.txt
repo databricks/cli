@@ -3,12 +3,12 @@
 Plan: update resources.pipelines.foo
 
 Changes detected:
-  ~ catalog: <nil> -> main
-  ~ channel: <nil> -> CURRENT
-  ~ deployment: <nil> -> &{BUNDLE /Workspace/Users/[USERNAME]/.bundle/test-pipeline-recreate/default/state/metadata.json []}
-  ~ edition: <nil> -> ADVANCED
-  ~ libraries: <nil> -> [{<nil> <nil>  <nil> 0x140003d46c0  []}]
-  ~ name: <nil> -> test-pipeline
+  ~ catalog: main -> main
+  ~ channel: CURRENT -> CURRENT
+  ~ deployment: &{BUNDLE /Workspace/Users/[USERNAME]/.bundle/test-pipeline-recreate/default/state/metadata.json [Kind MetadataFilePath]} -> &{BUNDLE /Workspace/Users/[USERNAME]/.bundle/test-pipeline-recreate/default/state/metadata.json []}
+  ~ edition: ADVANCED -> ADVANCED
+  ~ libraries: [{<nil> <nil>  <nil> 0x[NUMID]e10  []}] -> [{<nil> <nil>  <nil> 0x[NUMID]  []}]
+  ~ name: test-pipeline -> test-pipeline
 
 Error: This bind operation requires user confirmation, but the current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed.
 
