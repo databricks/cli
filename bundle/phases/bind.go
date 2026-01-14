@@ -21,7 +21,7 @@ import (
 func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions) {
 	log.Info(ctx, "Phase: bind")
 
-	eng, err := engine.FromEnv(ctx)
+	engine, err := engine.FromEnv(ctx)
 	if err != nil {
 		logdiag.LogError(ctx, err)
 		return
@@ -36,7 +36,7 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions) {
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalBind))
 	}()
 
-	if eng.IsDirect() {
+	if engine.IsDirect() {
 		// Direct engine: import into temp state, run plan, check for changes
 		// This follows the same pattern as terraform import
 		groupName := terraform.TerraformToGroupName[opts.ResourceType]
@@ -104,7 +104,7 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions) {
 		}
 	}
 
-	statemgmt.PushResourcesState(ctx, b, eng)
+	statemgmt.PushResourcesState(ctx, b, engine)
 }
 
 func jsonDump(v any) string {
@@ -118,7 +118,7 @@ func jsonDump(v any) string {
 func Unbind(ctx context.Context, b *bundle.Bundle, bundleType, tfResourceType, resourceKey string) {
 	log.Info(ctx, "Phase: unbind")
 
-	eng, err := engine.FromEnv(ctx)
+	engine, err := engine.FromEnv(ctx)
 	if err != nil {
 		logdiag.LogError(ctx, err)
 		return
@@ -133,7 +133,7 @@ func Unbind(ctx context.Context, b *bundle.Bundle, bundleType, tfResourceType, r
 		bundle.ApplyContext(ctx, b, lock.Release(lock.GoalUnbind))
 	}()
 
-	if eng.IsDirect() {
+	if engine.IsDirect() {
 		// Direct engine: simply remove the resource from state
 		groupName := terraform.TerraformToGroupName[tfResourceType]
 		fullResourceKey := fmt.Sprintf("resources.%s.%s", groupName, resourceKey)
@@ -155,5 +155,5 @@ func Unbind(ctx context.Context, b *bundle.Bundle, bundleType, tfResourceType, r
 		}
 	}
 
-	statemgmt.PushResourcesState(ctx, b, eng)
+	statemgmt.PushResourcesState(ctx, b, engine)
 }
