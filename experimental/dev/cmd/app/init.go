@@ -11,9 +11,11 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/charmbracelet/huh"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/log"
 	"github.com/spf13/cobra"
 )
 
@@ -136,6 +138,116 @@ type featureFragments struct {
 	AppEnv          string
 	DotEnv          string
 	DotEnvExample   string
+}
+
+// parseDeployAndRunFlags parses the deploy and run flag values into typed values.
+func parseDeployAndRunFlags(deploy bool, run string) (bool, RunMode, error) {
+	var runMode RunMode
+	switch run {
+	case "dev":
+		runMode = RunModeDev
+	case "dev-remote":
+		runMode = RunModeDevRemote
+	case "", "none":
+		runMode = RunModeNone
+	default:
+		return false, RunModeNone, fmt.Errorf("invalid --run value: %q (must be none, dev, or dev-remote)", run)
+	}
+	return deploy, runMode, nil
+}
+
+// promptForFeaturesAndDeps prompts for features and their dependencies.
+// Used when the template uses the feature-fragment system.
+func promptForFeaturesAndDeps(ctx context.Context, preSelectedFeatures []string) (*CreateProjectConfig, error) {
+	config := &CreateProjectConfig{
+		Dependencies: make(map[string]string),
+		Features:     preSelectedFeatures,
+	}
+	theme := appkitTheme()
+
+	// Step 1: Feature selection (skip if features already provided via flag)
+	if len(config.Features) == 0 && len(AvailableFeatures) > 0 {
+		options := make([]huh.Option[string], 0, len(AvailableFeatures))
+		for _, f := range AvailableFeatures {
+			label := f.Name + " - " + f.Description
+			options = append(options, huh.NewOption(label, f.ID))
+		}
+
+		err := huh.NewMultiSelect[string]().
+			Title("Select features").
+			Description("space to toggle, enter to confirm").
+			Options(options...).
+			Value(&config.Features).
+			WithTheme(theme).
+			Run()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// Step 2: Prompt for feature dependencies
+	deps := CollectDependencies(config.Features)
+	for _, dep := range deps {
+		// Special handling for SQL warehouse - show picker instead of text input
+		if dep.ID == "sql_warehouse_id" {
+			warehouseID, err := PromptForWarehouse(ctx)
+			if err != nil {
+				return nil, err
+			}
+			config.Dependencies[dep.ID] = warehouseID
+			continue
+		}
+
+		var value string
+		description := dep.Description
+		if !dep.Required {
+			description += " (optional)"
+		}
+
+		input := huh.NewInput().
+			Title(dep.Title).
+			Description(description).
+			Placeholder(dep.Placeholder).
+			Value(&value)
+
+		if dep.Required {
+			input = input.Validate(func(s string) error {
+				if s == "" {
+					return errors.New("this field is required")
+				}
+				return nil
+			})
+		}
+
+		if err := input.WithTheme(theme).Run(); err != nil {
+			return nil, err
+		}
+		config.Dependencies[dep.ID] = value
+	}
+
+	// Step 3: Description
+	config.Description = DefaultAppDescription
+	err := huh.NewInput().
+		Title("Description").
+		Placeholder(DefaultAppDescription).
+		Value(&config.Description).
+		WithTheme(theme).
+		Run()
+	if err != nil {
+		return nil, err
+	}
+
+	if config.Description == "" {
+		config.Description = DefaultAppDescription
+	}
+
+	// Step 4: Deploy and run options
+	config.Deploy, config.RunMode, err = PromptForDeployAndRun()
+	if err != nil {
+		return nil, err
+	}
+
+	return config, nil
 }
 
 // loadFeatureFragments reads and aggregates resource fragments for selected features.
@@ -310,86 +422,11 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	var dependencies map[string]string
 	var shouldDeploy bool
 	var runMode RunMode = RunModeNone
+	isInteractive := cmdio.IsPromptSupported(ctx)
 
 	// Use features from flags if provided
 	if len(opts.features) > 0 {
 		selectedFeatures = opts.features
-	}
-
-	// Non-interactive mode: name provided via flag
-	if opts.name != "" {
-		// Build flag values map for dependency validation
-		flagValues := map[string]string{
-			"warehouse-id": opts.warehouseID,
-		}
-
-		// Validate that required dependencies are provided via flags
-		if len(selectedFeatures) > 0 {
-			if err := ValidateFeatureDependencies(selectedFeatures, flagValues); err != nil {
-				return err
-			}
-		}
-
-		// Map flag values to dependencies
-		dependencies = make(map[string]string)
-		if opts.warehouseID != "" {
-			dependencies["sql_warehouse_id"] = opts.warehouseID
-		}
-
-		// Use deploy and run flags
-		shouldDeploy = opts.deploy
-		switch opts.run {
-		case "dev":
-			runMode = RunModeDev
-		case "dev-remote":
-			runMode = RunModeDevRemote
-		case "", "none":
-			runMode = RunModeNone
-		default:
-			return fmt.Errorf("invalid --run value: %q (must be none, dev, or dev-remote)", opts.run)
-		}
-	} else {
-		// Interactive mode: prompt for everything
-		if !cmdio.IsPromptSupported(ctx) {
-			return errors.New("--name is required in non-interactive mode")
-		}
-
-		// Pass pre-selected features to skip that prompt if already provided via flag
-		config, err := PromptForProjectConfig(ctx, selectedFeatures)
-		if err != nil {
-			return err
-		}
-		opts.name = config.ProjectName
-		if config.Description != "" {
-			opts.description = config.Description
-		}
-		// Use features from prompt if not already set via flag
-		if len(selectedFeatures) == 0 {
-			selectedFeatures = config.Features
-		}
-		dependencies = config.Dependencies
-		shouldDeploy = config.Deploy
-		runMode = config.RunMode
-
-		// Get warehouse from dependencies if provided
-		if wh, ok := dependencies["sql_warehouse_id"]; ok && wh != "" {
-			opts.warehouseID = wh
-		}
-	}
-
-	// Validate project name
-	if err := ValidateProjectName(opts.name); err != nil {
-		return err
-	}
-
-	// Validate feature IDs
-	if err := ValidateFeatureIDs(selectedFeatures); err != nil {
-		return err
-	}
-
-	// Set defaults
-	if opts.description == "" {
-		opts.description = DefaultAppDescription
 	}
 
 	// Resolve template path (supports local paths and GitHub URLs)
@@ -401,7 +438,24 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		return errors.New("template path required: set DATABRICKS_APPKIT_TEMPLATE_PATH or use --template flag")
 	}
 
-	// Resolve template (handles GitHub URLs by cloning)
+	// Step 1: Get project name first (needed before we can check destination)
+	if opts.name == "" {
+		if !isInteractive {
+			return errors.New("--name is required in non-interactive mode")
+		}
+		name, err := PromptForProjectName()
+		if err != nil {
+			return err
+		}
+		opts.name = name
+	}
+
+	// Validate project name
+	if err := ValidateProjectName(opts.name); err != nil {
+		return err
+	}
+
+	// Step 2: Resolve template (handles GitHub URLs by cloning)
 	resolvedPath, cleanup, err := resolveTemplate(ctx, templateSrc, opts.branch)
 	if err != nil {
 		return err
@@ -417,6 +471,119 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		templateDir = resolvedPath
 		if _, err := os.Stat(templateDir); os.IsNotExist(err) {
 			return fmt.Errorf("template not found at %s (also checked %s/generic)", resolvedPath, resolvedPath)
+		}
+	}
+
+	// Step 3: Determine template type and gather configuration
+	usesFeatureFragments := HasFeaturesDirectory(templateDir)
+
+	if usesFeatureFragments {
+		// Feature-fragment template: prompt for features and their dependencies
+		if isInteractive && len(selectedFeatures) == 0 {
+			// Need to prompt for features (but we already have the name)
+			config, err := promptForFeaturesAndDeps(ctx, selectedFeatures)
+			if err != nil {
+				return err
+			}
+			selectedFeatures = config.Features
+			dependencies = config.Dependencies
+			if config.Description != "" {
+				opts.description = config.Description
+			}
+			shouldDeploy = config.Deploy
+			runMode = config.RunMode
+
+			// Get warehouse from dependencies if provided
+			if wh, ok := dependencies["sql_warehouse_id"]; ok && wh != "" {
+				opts.warehouseID = wh
+			}
+		} else {
+			// Non-interactive or features provided via flag
+			flagValues := map[string]string{
+				"warehouse-id": opts.warehouseID,
+			}
+			if len(selectedFeatures) > 0 {
+				if err := ValidateFeatureDependencies(selectedFeatures, flagValues); err != nil {
+					return err
+				}
+			}
+			dependencies = make(map[string]string)
+			if opts.warehouseID != "" {
+				dependencies["sql_warehouse_id"] = opts.warehouseID
+			}
+			var err error
+			shouldDeploy, runMode, err = parseDeployAndRunFlags(opts.deploy, opts.run)
+			if err != nil {
+				return err
+			}
+		}
+
+		// Validate feature IDs
+		if err := ValidateFeatureIDs(selectedFeatures); err != nil {
+			return err
+		}
+	} else {
+		// Pre-assembled template: detect plugins and prompt for their dependencies
+		detectedPlugins, err := DetectPluginsFromServer(templateDir)
+		if err != nil {
+			return fmt.Errorf("failed to detect plugins: %w", err)
+		}
+
+		log.Debugf(ctx, "Detected plugins: %v", detectedPlugins)
+
+		// Map detected plugins to feature IDs for ApplyFeatures
+		selectedFeatures = MapPluginsToFeatures(detectedPlugins)
+		log.Debugf(ctx, "Mapped to features: %v", selectedFeatures)
+
+		pluginDeps := GetPluginDependencies(detectedPlugins)
+
+		log.Debugf(ctx, "Plugin dependencies: %d", len(pluginDeps))
+
+		if isInteractive && len(pluginDeps) > 0 {
+			// Prompt for plugin dependencies
+			dependencies, err = PromptForPluginDependencies(ctx, pluginDeps)
+			if err != nil {
+				return err
+			}
+			if wh, ok := dependencies["sql_warehouse_id"]; ok && wh != "" {
+				opts.warehouseID = wh
+			}
+		} else {
+			// Non-interactive: check flags
+			dependencies = make(map[string]string)
+			if opts.warehouseID != "" {
+				dependencies["sql_warehouse_id"] = opts.warehouseID
+			}
+
+			// Validate required dependencies are provided
+			for _, dep := range pluginDeps {
+				if dep.Required {
+					if _, ok := dependencies[dep.ID]; !ok {
+						return fmt.Errorf("missing required flag --%s for detected plugin", dep.FlagName)
+					}
+				}
+			}
+		}
+
+		// Prompt for description and post-creation actions
+		if isInteractive {
+			if opts.description == "" {
+				opts.description = DefaultAppDescription
+			}
+			var deployVal bool
+			var runVal RunMode
+			deployVal, runVal, err = PromptForDeployAndRun()
+			if err != nil {
+				return err
+			}
+			shouldDeploy = deployVal
+			runMode = runVal
+		} else {
+			var err error
+			shouldDeploy, runMode, err = parseDeployAndRunFlags(opts.deploy, opts.run)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
@@ -440,6 +607,11 @@ func runCreate(ctx context.Context, opts createOptions) error {
 			os.RemoveAll(destDir)
 		}
 	}()
+
+	// Set description default
+	if opts.description == "" {
+		opts.description = DefaultAppDescription
+	}
 
 	// Get workspace host and profile from context
 	workspaceHost := ""
@@ -644,6 +816,8 @@ func copyTemplate(src, dest string, vars templateVars) (int, error) {
 		srcProjectDir = src
 	}
 
+	log.Debugf(context.Background(), "Copying template from: %s", srcProjectDir)
+
 	// Files and directories to skip
 	skipFiles := map[string]bool{
 		"CLAUDE.md":                       true,
@@ -664,11 +838,13 @@ func copyTemplate(src, dest string, vars templateVars) (int, error) {
 
 		// Skip certain files
 		if skipFiles[baseName] {
+			log.Debugf(context.Background(), "Skipping file: %s", baseName)
 			return nil
 		}
 
 		// Skip certain directories
 		if info.IsDir() && skipDirs[baseName] {
+			log.Debugf(context.Background(), "Skipping directory: %s", baseName)
 			return filepath.SkipDir
 		}
 
@@ -693,8 +869,11 @@ func copyTemplate(src, dest string, vars templateVars) (int, error) {
 		destPath := filepath.Join(dest, relPath)
 
 		if info.IsDir() {
+			log.Debugf(context.Background(), "Creating directory: %s", relPath)
 			return os.MkdirAll(destPath, info.Mode())
 		}
+
+		log.Debugf(context.Background(), "Copying file: %s", relPath)
 
 		// Read file content
 		content, err := os.ReadFile(srcPath)
@@ -735,6 +914,10 @@ func copyTemplate(src, dest string, vars templateVars) (int, error) {
 		fileCount++
 		return nil
 	})
+	if err != nil {
+		log.Debugf(context.Background(), "Error during template copy: %v", err)
+	}
+	log.Debugf(context.Background(), "Copied %d files", fileCount)
 
 	return fileCount, err
 }

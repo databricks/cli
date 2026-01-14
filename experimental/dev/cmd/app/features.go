@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 )
 
@@ -74,6 +75,124 @@ var featureByID = func() map[string]Feature {
 	}
 	return m
 }()
+
+// featureByPluginImport maps plugin import names to features.
+var featureByPluginImport = func() map[string]Feature {
+	m := make(map[string]Feature, len(AvailableFeatures))
+	for _, f := range AvailableFeatures {
+		if f.PluginImport != "" {
+			m[f.PluginImport] = f
+		}
+	}
+	return m
+}()
+
+// pluginPattern matches plugin function calls dynamically built from AvailableFeatures.
+// Matches patterns like: analytics(), genie(), oauth(), etc.
+var pluginPattern = func() *regexp.Regexp {
+	var plugins []string
+	for _, f := range AvailableFeatures {
+		if f.PluginImport != "" {
+			plugins = append(plugins, regexp.QuoteMeta(f.PluginImport))
+		}
+	}
+	if len(plugins) == 0 {
+		// Fallback pattern that matches nothing
+		return regexp.MustCompile(`$^`)
+	}
+	// Build pattern: \b(plugin1|plugin2|plugin3)\s*\(
+	pattern := `\b(` + strings.Join(plugins, "|") + `)\s*\(`
+	return regexp.MustCompile(pattern)
+}()
+
+// serverFilePaths lists common locations for the server entry file.
+var serverFilePaths = []string{
+	"src/server/index.ts",
+	"src/server/index.tsx",
+	"src/server.ts",
+	"server/index.ts",
+	"server/server.ts",
+	"server.ts",
+}
+
+// TODO: We should come to an agreement if we want to do it like this,
+// or maybe we should have an appkit.json manifest file in each project.
+func DetectPluginsFromServer(templateDir string) ([]string, error) {
+	var content []byte
+
+	for _, p := range serverFilePaths {
+		fullPath := filepath.Join(templateDir, p)
+		data, err := os.ReadFile(fullPath)
+		if err == nil {
+			content = data
+			break
+		}
+	}
+
+	if content == nil {
+		return nil, nil // No server file found
+	}
+
+	matches := pluginPattern.FindAllStringSubmatch(string(content), -1)
+	seen := make(map[string]bool)
+	var plugins []string
+
+	for _, m := range matches {
+		plugin := m[1]
+		if !seen[plugin] {
+			seen[plugin] = true
+			plugins = append(plugins, plugin)
+		}
+	}
+
+	return plugins, nil
+}
+
+// GetPluginDependencies returns all dependencies required by the given plugin names.
+func GetPluginDependencies(pluginNames []string) []FeatureDependency {
+	seen := make(map[string]bool)
+	var deps []FeatureDependency
+
+	for _, plugin := range pluginNames {
+		feature, ok := featureByPluginImport[plugin]
+		if !ok {
+			continue
+		}
+		for _, dep := range feature.Dependencies {
+			if !seen[dep.ID] {
+				seen[dep.ID] = true
+				deps = append(deps, dep)
+			}
+		}
+	}
+
+	return deps
+}
+
+// MapPluginsToFeatures maps plugin import names to feature IDs.
+// This is used to convert detected plugins (e.g., "analytics") to feature IDs
+// so that ApplyFeatures can properly retain feature-specific files.
+func MapPluginsToFeatures(pluginNames []string) []string {
+	seen := make(map[string]bool)
+	var features []string
+
+	for _, plugin := range pluginNames {
+		feature, ok := featureByPluginImport[plugin]
+		if ok && !seen[feature.ID] {
+			seen[feature.ID] = true
+			features = append(features, feature.ID)
+		}
+	}
+
+	return features
+}
+
+// HasFeaturesDirectory checks if the template uses the feature-fragment system.
+func HasFeaturesDirectory(templateDir string) bool {
+	featuresDir := filepath.Join(templateDir, "features")
+	info, err := os.Stat(featuresDir)
+	return err == nil && info.IsDir()
+}
 
 // ValidateFeatureIDs checks that all provided feature IDs are valid.
 // Returns an error if any feature ID is unknown.

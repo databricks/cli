@@ -91,17 +91,8 @@ func ValidateProjectName(s string) error {
 	return nil
 }
 
-// PromptForProjectConfig shows an interactive form to gather project configuration.
-// Flow: name -> features -> feature dependencies -> description.
-// If preSelectedFeatures is provided, the feature selection prompt is skipped.
-func PromptForProjectConfig(ctx context.Context, preSelectedFeatures []string) (*CreateProjectConfig, error) {
-	config := &CreateProjectConfig{
-		Dependencies: make(map[string]string),
-		Features:     preSelectedFeatures,
-	}
-	theme := appkitTheme()
-
-	// Header
+// printHeader prints the AppKit header banner.
+func printHeader() {
 	headerStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#BD2B26")).
 		Bold(true)
@@ -113,6 +104,123 @@ func PromptForProjectConfig(ctx context.Context, preSelectedFeatures []string) (
 	fmt.Println(headerStyle.Render("◆ Create a new Databricks AppKit project"))
 	fmt.Println(subtitleStyle.Render("  Full-stack TypeScript • React • Tailwind CSS"))
 	fmt.Println()
+}
+
+// PromptForProjectName prompts only for project name.
+// Used as the first step before resolving templates.
+func PromptForProjectName() (string, error) {
+	printHeader()
+	theme := appkitTheme()
+
+	var name string
+	err := huh.NewInput().
+		Title("Project name").
+		Description("lowercase letters, numbers, hyphens (max 26 chars)").
+		Placeholder("my-app").
+		Value(&name).
+		Validate(ValidateProjectName).
+		WithTheme(theme).
+		Run()
+	if err != nil {
+		return "", err
+	}
+
+	return name, nil
+}
+
+// PromptForPluginDependencies prompts for dependencies required by detected plugins.
+// Returns a map of dependency ID to value.
+func PromptForPluginDependencies(ctx context.Context, deps []FeatureDependency) (map[string]string, error) {
+	theme := appkitTheme()
+	result := make(map[string]string)
+
+	for _, dep := range deps {
+		// Special handling for SQL warehouse - show picker instead of text input
+		if dep.ID == "sql_warehouse_id" {
+			warehouseID, err := PromptForWarehouse(ctx)
+			if err != nil {
+				return nil, err
+			}
+			result[dep.ID] = warehouseID
+			continue
+		}
+
+		var value string
+		description := dep.Description
+		if !dep.Required {
+			description += " (optional)"
+		}
+
+		input := huh.NewInput().
+			Title(dep.Title).
+			Description(description).
+			Placeholder(dep.Placeholder).
+			Value(&value)
+
+		if dep.Required {
+			input = input.Validate(func(s string) error {
+				if s == "" {
+					return errors.New("this field is required")
+				}
+				return nil
+			})
+		}
+
+		if err := input.WithTheme(theme).Run(); err != nil {
+			return nil, err
+		}
+		result[dep.ID] = value
+	}
+
+	return result, nil
+}
+
+// PromptForDeployAndRun prompts for post-creation deploy and run options.
+func PromptForDeployAndRun() (deploy bool, runMode RunMode, err error) {
+	theme := appkitTheme()
+
+	// Deploy after creation?
+	err = huh.NewConfirm().
+		Title("Deploy after creation?").
+		Description("Run 'databricks experimental dev app deploy' after setup").
+		Value(&deploy).
+		WithTheme(theme).
+		Run()
+	if err != nil {
+		return false, RunModeNone, err
+	}
+
+	// Run the app?
+	runModeStr := string(RunModeNone)
+	err = huh.NewSelect[string]().
+		Title("Run the app after creation?").
+		Description("Choose how to start the development server").
+		Options(
+			huh.NewOption("No, I'll run it later", string(RunModeNone)),
+			huh.NewOption("Yes, run locally (npm run dev)", string(RunModeDev)),
+			huh.NewOption("Yes, run with remote bridge (dev-remote)", string(RunModeDevRemote)),
+		).
+		Value(&runModeStr).
+		WithTheme(theme).
+		Run()
+	if err != nil {
+		return false, RunModeNone, err
+	}
+
+	return deploy, RunMode(runModeStr), nil
+}
+
+// PromptForProjectConfig shows an interactive form to gather project configuration.
+// Flow: name -> features -> feature dependencies -> description.
+// If preSelectedFeatures is provided, the feature selection prompt is skipped.
+func PromptForProjectConfig(ctx context.Context, preSelectedFeatures []string) (*CreateProjectConfig, error) {
+	config := &CreateProjectConfig{
+		Dependencies: make(map[string]string),
+		Features:     preSelectedFeatures,
+	}
+	theme := appkitTheme()
+
+	printHeader()
 
 	// Step 1: Project name
 	err := huh.NewInput().

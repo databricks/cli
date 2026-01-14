@@ -236,3 +236,68 @@ func TestSubstituteVarsNoPlugins(t *testing.T) {
 		})
 	}
 }
+
+func TestParseDeployAndRunFlags(t *testing.T) {
+	tests := []struct {
+		name        string
+		deploy      bool
+		run         string
+		wantDeploy  bool
+		wantRunMode RunMode
+		wantErr     bool
+	}{
+		{
+			name:        "deploy true, run none",
+			deploy:      true,
+			run:         "none",
+			wantDeploy:  true,
+			wantRunMode: RunModeNone,
+			wantErr:     false,
+		},
+		{
+			name:        "deploy true, run dev",
+			deploy:      true,
+			run:         "dev",
+			wantDeploy:  true,
+			wantRunMode: RunModeDev,
+			wantErr:     false,
+		},
+		{
+			name:        "deploy false, run dev-remote",
+			deploy:      false,
+			run:         "dev-remote",
+			wantDeploy:  false,
+			wantRunMode: RunModeDevRemote,
+			wantErr:     false,
+		},
+		{
+			name:        "empty run value",
+			deploy:      false,
+			run:         "",
+			wantDeploy:  false,
+			wantRunMode: RunModeNone,
+			wantErr:     false,
+		},
+		{
+			name:        "invalid run value",
+			deploy:      true,
+			run:         "invalid",
+			wantDeploy:  false,
+			wantRunMode: RunModeNone,
+			wantErr:     true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			deploy, runMode, err := parseDeployAndRunFlags(tt.deploy, tt.run)
+			if tt.wantErr {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
+			assert.Equal(t, tt.wantDeploy, deploy)
+			assert.Equal(t, tt.wantRunMode, runMode)
+		})
+	}
+}

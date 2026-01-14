@@ -1,6 +1,8 @@
 package app
 
 import (
+	"fmt"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -247,4 +249,205 @@ func TestCollectResourceFiles(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestDetectPluginsFromServer(t *testing.T) {
+	tests := []struct {
+		name            string
+		serverContent   string
+		expectedPlugins []string
+	}{
+		{
+			name: "analytics plugin",
+			serverContent: `import { createApp, server, analytics } from '@databricks/appkit';
+createApp({
+  plugins: [
+    server(),
+    analytics(),
+  ],
+}).catch(console.error);`,
+			expectedPlugins: []string{"analytics"},
+		},
+		{
+			name: "analytics with other plugins not in AvailableFeatures",
+			serverContent: `import { createApp, server, analytics, genie } from '@databricks/appkit';
+createApp({
+  plugins: [
+    server(),
+    analytics(),
+    genie(),
+  ],
+}).catch(console.error);`,
+			expectedPlugins: []string{"analytics"}, // Only analytics is detected since genie is not in AvailableFeatures
+		},
+		{
+			name:            "no recognized plugins",
+			serverContent:   `import { createApp, server } from '@databricks/appkit';`,
+			expectedPlugins: nil,
+		},
+		{
+			name: "plugin not in AvailableFeatures",
+			serverContent: `createApp({
+  plugins: [oauth()],
+});`,
+			expectedPlugins: nil, // oauth is not in AvailableFeatures, so not detected
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create temp dir with server file
+			tempDir := t.TempDir()
+			serverDir := tempDir + "/src/server"
+			require.NoError(t, os.MkdirAll(serverDir, 0o755))
+			require.NoError(t, os.WriteFile(serverDir+"/index.ts", []byte(tt.serverContent), 0o644))
+
+			plugins, err := DetectPluginsFromServer(tempDir)
+			require.NoError(t, err)
+			assert.Equal(t, tt.expectedPlugins, plugins)
+		})
+	}
+}
+
+func TestDetectPluginsFromServerAlternatePath(t *testing.T) {
+	// Test server/server.ts path (common in some templates)
+	tempDir := t.TempDir()
+	serverDir := tempDir + "/server"
+	require.NoError(t, os.MkdirAll(serverDir, 0o755))
+
+	serverContent := `import { createApp, server, analytics } from '@databricks/appkit';
+createApp({
+  plugins: [
+    server(),
+    analytics(),
+  ],
+}).catch(console.error);`
+
+	require.NoError(t, os.WriteFile(serverDir+"/server.ts", []byte(serverContent), 0o644))
+
+	plugins, err := DetectPluginsFromServer(tempDir)
+	require.NoError(t, err)
+	assert.Equal(t, []string{"analytics"}, plugins)
+}
+
+func TestDetectPluginsFromServerNoFile(t *testing.T) {
+	tempDir := t.TempDir()
+	plugins, err := DetectPluginsFromServer(tempDir)
+	require.NoError(t, err)
+	assert.Nil(t, plugins)
+}
+
+func TestGetPluginDependencies(t *testing.T) {
+	tests := []struct {
+		name         string
+		pluginNames  []string
+		expectedDeps []string
+	}{
+		{
+			name:         "analytics plugin",
+			pluginNames:  []string{"analytics"},
+			expectedDeps: []string{"sql_warehouse_id"},
+		},
+		{
+			name:         "unknown plugin",
+			pluginNames:  []string{"server"},
+			expectedDeps: nil,
+		},
+		{
+			name:         "empty plugins",
+			pluginNames:  []string{},
+			expectedDeps: nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			deps := GetPluginDependencies(tt.pluginNames)
+			if tt.expectedDeps == nil {
+				assert.Empty(t, deps)
+			} else {
+				assert.Len(t, deps, len(tt.expectedDeps))
+				for i, dep := range deps {
+					assert.Equal(t, tt.expectedDeps[i], dep.ID)
+				}
+			}
+		})
+	}
+}
+
+func TestHasFeaturesDirectory(t *testing.T) {
+	// Test with features directory
+	tempDir := t.TempDir()
+	require.NoError(t, os.MkdirAll(tempDir+"/features", 0o755))
+	assert.True(t, HasFeaturesDirectory(tempDir))
+
+	// Test without features directory
+	tempDir2 := t.TempDir()
+	assert.False(t, HasFeaturesDirectory(tempDir2))
+}
+
+func TestMapPluginsToFeatures(t *testing.T) {
+	tests := []struct {
+		name             string
+		pluginNames      []string
+		expectedFeatures []string
+	}{
+		{
+			name:             "analytics plugin maps to analytics feature",
+			pluginNames:      []string{"analytics"},
+			expectedFeatures: []string{"analytics"},
+		},
+		{
+			name:             "unknown plugin",
+			pluginNames:      []string{"server", "unknown"},
+			expectedFeatures: nil,
+		},
+		{
+			name:             "empty plugins",
+			pluginNames:      []string{},
+			expectedFeatures: nil,
+		},
+		{
+			name:             "duplicate plugins",
+			pluginNames:      []string{"analytics", "analytics"},
+			expectedFeatures: []string{"analytics"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			features := MapPluginsToFeatures(tt.pluginNames)
+			if tt.expectedFeatures == nil {
+				assert.Empty(t, features)
+			} else {
+				assert.Equal(t, tt.expectedFeatures, features)
+			}
+		})
+	}
+}
+
+func TestPluginPatternGeneration(t *testing.T) {
+	// Test that the plugin pattern is dynamically generated from AvailableFeatures
+	// This ensures new features with PluginImport are automatically detected
+
+	// Get all plugin imports from AvailableFeatures
+	var expectedPlugins []string
+	for _, f := range AvailableFeatures {
+		if f.PluginImport != "" {
+			expectedPlugins = append(expectedPlugins, f.PluginImport)
+		}
+	}
+
+	// Test that each plugin is matched by the pattern
+	for _, plugin := range expectedPlugins {
+		testCode := fmt.Sprintf("plugins: [%s()]", plugin)
+		matches := pluginPattern.FindAllStringSubmatch(testCode, -1)
+		assert.NotEmpty(t, matches, "Pattern should match plugin: %s", plugin)
+		assert.Equal(t, plugin, matches[0][1], "Captured group should be plugin name: %s", plugin)
+	}
+
+	// Test that non-plugin function calls are not matched
+	testCode := "const x = someOtherFunction()"
+	matches := pluginPattern.FindAllStringSubmatch(testCode, -1)
+	assert.Empty(t, matches, "Pattern should not match non-plugin functions")
 }
