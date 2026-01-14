@@ -31,4 +31,4 @@ trace errcode $CLI bundle deploy &> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt
 trace print_requests.py '^//import-file/' '^//workspace/' '^//telemetry-ext' > out.deploy.requests.$DATABRICKS_BUNDLE_ENGINE.json
 trace errcode $CLI bundle plan &> out.plan_after_deploy.$DATABRICKS_BUNDLE_ENGINE.txt
 
-trace errcode $CLI quality-monitors get ${TABLE_NAME}_2 &> out.get.$DATABRICKS_BUNDLE_ENGINE.json
+trace errcode $CLI quality-monitors get ${TABLE_NAME}_2 2> /dev/null > out.get.$DATABRICKS_BUNDLE_ENGINE.json
