@@ -2,24 +2,33 @@
 === E2E Test: Complete pipeline lifecycle (init, deploy, run, stop, destroy)
 === Initialize pipeline project
 >>> [PIPELINES] init --output-dir output
+Welcome to the template for Lakeflow Spark Declarative Pipelines!
 
-Welcome to the template for pipelines!
+Please answer the below to tailor your project to your preferences.
+You can always change your mind and change your configuration in the databricks.yml file later.
 
+Note that [DATABRICKS_URL] is used for initialization
+(see https://docs.databricks.com/dev-tools/cli/profiles.html for how to change your profile).
 
-Your new project has been created in the 'my_project' directory!
+✨ Your new project has been created in the 'lakeflow_project' directory!
 
-Refer to the README.md file for "getting started" instructions!
+Please refer to the README.md file for "getting started" instructions.
 
 === Deploy pipeline
 >>> [PIPELINES] deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/my_project/dev/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lakeflow_project/dev/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
-View your pipeline my_project_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?o=[NUMID]
+View your job sample_job here: [DATABRICKS_URL]/jobs/[NUMID]?o=[NUMID]
+View your pipeline lakeflow_project_etl here: [DATABRICKS_URL]/pipelines/[UUID]?o=[NUMID]
 
 === Run pipeline
 >>> [PIPELINES] run
+Recommendation: This command runs the last deployed version of the code
+
+If you've made local changes, run '[DEPLOYCMD]' first to ensure they are included.
+
 Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 
 Update ID: [UUID]
@@ -31,31 +40,32 @@ Pipeline configurations for this update:
 
 === Edit project by creating and running a new second pipeline
 >>> [PIPELINES] deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/my_project/dev/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lakeflow_project/dev/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
-View your pipeline my_project_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?o=[NUMID]
-View your pipeline my_project_pipeline_2 here: [DATABRICKS_URL]/pipelines/[UUID]?o=[NUMID]
+View your job sample_job here: [DATABRICKS_URL]/jobs/[NUMID]?o=[NUMID]
+View your pipeline lakeflow_project_etl here: [DATABRICKS_URL]/pipelines/[UUID]?o=[NUMID]
+View your pipeline lakeflow_project_etl_2 here: [DATABRICKS_URL]/pipelines/[UUID]?o=[NUMID]
 
 === Assert the second pipeline is created
 >>> [CLI] pipelines get [UUID]
 {
   "creator_user_name":"[USERNAME]",
   "last_modified":[UNIX_TIME_MILLIS],
-  "name":"[dev [USERNAME]] my_project_pipeline_2",
+  "name":"[dev [USERNAME]] lakeflow_project_etl_2",
   "pipeline_id":"[UUID]",
   "run_as_user_name":"[USERNAME]",
   "spec": {
     "channel":"CURRENT",
     "deployment": {
       "kind":"BUNDLE",
-      "metadata_file_path":"/Workspace/Users/[USERNAME]/.bundle/my_project/dev/state/metadata.json"
+      "metadata_file_path":"/Workspace/Users/[USERNAME]/.bundle/lakeflow_project/dev/state/metadata.json"
     },
     "development":true,
     "edition":"ADVANCED",
     "id":"[UUID]",
-    "name":"[dev [USERNAME]] my_project_pipeline_2",
+    "name":"[dev [USERNAME]] lakeflow_project_etl_2",
     "storage":"dbfs:/pipelines/[UUID]",
     "tags": {
       "dev":"[USERNAME]"
@@ -64,7 +74,11 @@ View your pipeline my_project_pipeline_2 here: [DATABRICKS_URL]/pipelines/[UUID]
   "state":"IDLE"
 }
 
->>> [PIPELINES] run my_project_pipeline_2
+>>> [PIPELINES] run lakeflow_project_etl_2
+Recommendation: This command runs the last deployed version of the code
+
+If you've made local changes, run '[DEPLOYCMD]' first to ensure they are included.
+
 Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 
 Update ID: [UUID]
@@ -75,26 +89,27 @@ Pipeline configurations for this update:
 • All tables are refreshed
 
 === Stop both pipelines before destroy
->>> [PIPELINES] stop my_project_pipeline
-Stopping my_project_pipeline...
-my_project_pipeline has been stopped.
+>>> [PIPELINES] stop lakeflow_project_etl
+Stopping lakeflow_project_etl...
+lakeflow_project_etl has been stopped.
 
->>> [PIPELINES] stop my_project_pipeline_2
-Stopping my_project_pipeline_2...
-my_project_pipeline_2 has been stopped.
+>>> [PIPELINES] stop lakeflow_project_etl_2
+Stopping lakeflow_project_etl_2...
+lakeflow_project_etl_2 has been stopped.
 
 === Destroy project
 >>> [PIPELINES] destroy --auto-approve
 The following resources will be deleted:
-  delete resources.pipelines.my_project_pipeline
-  delete resources.pipelines.my_project_pipeline_2
+  delete resources.jobs.sample_job
+  delete resources.pipelines.lakeflow_project_etl
+  delete resources.pipelines.lakeflow_project_etl_2
 
-This action will result in the deletion of the following Lakeflow Declarative Pipelines along with the
+This action will result in the deletion of the following Lakeflow Spark Declarative Pipelines along with the
 Streaming Tables (STs) and Materialized Views (MVs) managed by them:
-  delete resources.pipelines.my_project_pipeline
-  delete resources.pipelines.my_project_pipeline_2
+  delete resources.pipelines.lakeflow_project_etl
+  delete resources.pipelines.lakeflow_project_etl_2
 
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/my_project/dev
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/lakeflow_project/dev
 
 Deleting files...
 Destroy complete!

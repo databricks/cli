@@ -1,0 +1,13 @@
+title "not deployed yet"
+errcode trace $ENTRYPOINT open
+
+errcode trace $ENTRYPOINT deploy
+
+title "Modify PATH so that real open is not run"
+export PATH=.:$PATH
+
+title "open after deployment. This will fail to open browser and complain, that's ok, we only want the message"
+musterr trace $ENTRYPOINT open
+
+title "open with KEY, expect same output as opening without KEY"
+musterr trace $ENTRYPOINT open test-pipelines-open

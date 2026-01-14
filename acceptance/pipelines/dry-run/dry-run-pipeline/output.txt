@@ -1,5 +1,5 @@
 
->>> [PIPELINES] deploy
+>>> [ENTRYPOINT] deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-run/default/files...
 Deploying resources...
 Updating deployment state...
@@ -7,7 +7,11 @@ Deployment complete!
 View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?o=[NUMID]
 
 === Dry running pipeline, should have validate_only set to true
->>> [PIPELINES] dry-run
+>>> [ENTRYPOINT] dry-run
+Recommendation: This command runs the last deployed version of the code
+
+If you've made local changes, run '[DEPLOYCMD]' first to ensure they are included.
+
 Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 
 Update ID: [UUID]
@@ -20,7 +24,11 @@ Update ID: [UUID]
 }
 
 === Dry running pipeline with KEY, expect same output as without KEY
->>> [PIPELINES] dry-run my_pipeline
+>>> [ENTRYPOINT] dry-run my_pipeline
+Recommendation: This command runs the last deployed version of the code
+
+If you've made local changes, run '[DEPLOYCMD]' first to ensure they are included.
+
 Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 
 Update ID: [UUID]

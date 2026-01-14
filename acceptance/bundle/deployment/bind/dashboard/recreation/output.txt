@@ -26,6 +26,6 @@ Deployment complete!
 
 >>> [CLI] lakeview get [DASHBOARD_ID]
 {
-  "display_name": "test dashboard [UUID]",
+  "display_name": "test dashboard [UNIQUE_NAME]",
   "lifecycle_state": "ACTIVE"
 }

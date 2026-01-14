@@ -56,8 +56,11 @@
           "creator": "[USERNAME]",
           "id": "[UUID]",
           "name": "[ENDPOINT_ID]",
+          "permission_level": "CAN_MANAGE",
+          "route_optimized": false,
           "state": {
-            "config_update": "NOT_UPDATING"
+            "config_update": "NOT_UPDATING",
+            "ready": "NOT_READY"
           }
         },
         "endpoint_id": "[UUID]"
@@ -68,6 +71,11 @@
           "old": "first-inference-catalog",
           "new": "second-inference-catalog",
           "remote": "first-inference-catalog"
+        },
+        "route_optimized": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": false
         }
       }
     }
