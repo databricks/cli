@@ -61,7 +61,7 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions) {
 					for _, field := range utils.SortedKeys(entry.Changes) {
 						change := entry.Changes[field]
 						if change.Action != deployplan.Skip {
-							cmdio.LogString(ctx, fmt.Sprintf("  ~ %s: %v -> %v", field, jsonDump(change.Remote), jsonDump(change.New)))
+							cmdio.LogString(ctx, fmt.Sprintf("  ~ %s: %v -> %v", field, jsonDump(ctx, change.Remote, field), jsonDump(ctx, change.New, field)))
 						}
 					}
 					cmdio.LogString(ctx, "")
@@ -108,10 +108,11 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions) {
 	statemgmt.PushResourcesState(ctx, b, engine)
 }
 
-func jsonDump(v any) string {
+func jsonDump(ctx context.Context, v any, field string) string {
 	b, err := json.Marshal(v)
 	if err != nil {
-		return fmt.Sprintf("value=%v marshall error=%s", v, err)
+		log.Warnf(ctx, "Cannot marshal %s: %s", field, err)
+		return "??"
 	}
 	return string(b)
 }
