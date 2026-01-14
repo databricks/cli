@@ -11700,9 +11700,6 @@
       "markdownDescription": "Specifies a list of path globs that contain configuration files to include within the bundle. See [include](https://docs.databricks.com/dev-tools/bundles/settings.html#include).",
       "x-since-version": "v0.228.1"
     },
-    "new_test_field": {
-      "$ref": "#/$defs/string"
-    },
     "permissions": {
       "description": "Defines a permission for a specific entity.",
       "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission",
