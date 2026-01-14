@@ -1,0 +1,12 @@
+
+>>> musterr [CLI] bundle deployment bind foo [FOO_ID]
+Error: terraform import: exit status 1
+
+Error: Resource already managed by Terraform
+
+Terraform is already managing a remote object for databricks_job.foo. To
+import to this address you must first remove the existing object from the
+state.
+
+
+

@@ -1,4 +1,4 @@
 
 >>> sleep 4
 
-Error: Test script killed due to a timeout
+Error: Test script killed due to a timeout (500ms)

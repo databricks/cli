@@ -21,8 +21,7 @@ rm out.requests.txt
 
 title "Fetch pipeline ID and verify remote state"
 
-ppid=`read_id.py pipelines my`
-echo "$ppid:PIPELINE_ID" >> ACC_REPLS
+ppid=`read_id.py my`
 trace $CLI pipelines get $ppid
 rm out.requests.txt
 

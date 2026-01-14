@@ -21,18 +21,24 @@ type NestedInfo struct {
 	Build   int    `json:"build"`
 }
 
+type NestedItem struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
 type TestStruct struct {
-	Name     string            `json:"name"`
-	Age      int               `json:"age"`
-	Score    float64           `json:"score"`
-	Active   bool              `json:"active"`
-	Priority uint8             `json:"priority"`
-	Tags     map[string]string `json:"tags"`
-	Items    []string          `json:"items"`
-	Count    *int              `json:"count,omitempty"`
-	Custom   CustomString      `json:"custom"`
-	Info     NestedInfo        `json:"info"`
-	Internal string            `json:"-"`
+	Name        string            `json:"name"`
+	Age         int               `json:"age"`
+	Score       float64           `json:"score"`
+	Active      bool              `json:"active"`
+	Priority    uint8             `json:"priority"`
+	Tags        map[string]string `json:"tags"`
+	Items       []string          `json:"items"`
+	NestedItems []NestedItem      `json:"nested_items"`
+	Count       *int              `json:"count,omitempty"`
+	Custom      CustomString      `json:"custom"`
+	Info        NestedInfo        `json:"info"`
+	Internal    string            `json:"-"`
 }
 
 // mustParsePath is a helper to parse path strings in tests
@@ -55,7 +61,11 @@ func newTestStruct() *TestStruct {
 		Tags: map[string]string{
 			"env": "old_env",
 		},
-		Items:  []string{"old_a", "old_b", "old_c"},
+		Items: []string{"old_a", "old_b", "old_c"},
+		NestedItems: []NestedItem{
+			{ID: "item1", Name: "first"},
+			{ID: "item2", Name: "second"},
+		},
 		Count:  nil,
 		Custom: CustomString("old custom"),
 		Info: NestedInfo{
@@ -438,6 +448,32 @@ func TestSet(t *testing.T) {
 					New:  uint8(0),
 				},
 			},
+		},
+
+		// Key-value selector tests
+		{
+			name:  "set field via key-value selector",
+			path:  "nested_items[id='item2'].name",
+			value: "updated",
+			expectedChanges: []structdiff.Change{
+				{
+					Path: mustParsePath("nested_items[1].name"),
+					Old:  "second",
+					New:  "updated",
+				},
+			},
+		},
+		{
+			name:     "cannot set key-value selector itself",
+			path:     "nested_items[id='item1']",
+			value:    "new value",
+			errorMsg: "cannot set value at key-value selector [id='item1'] - key-value syntax can only be used for path traversal, not as a final target",
+		},
+		{
+			name:     "key-value no matching element",
+			path:     "nested_items[id='nonexistent'].name",
+			value:    "value",
+			errorMsg: "failed to navigate to parent nested_items[id='nonexistent']: nested_items[id='nonexistent']: no element found with id=\"nonexistent\"",
 		},
 	}
 

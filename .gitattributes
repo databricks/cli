@@ -120,6 +120,7 @@ cmd/workspace/policies/policies.go linguist-generated=true
 cmd/workspace/policy-compliance-for-clusters/policy-compliance-for-clusters.go linguist-generated=true
 cmd/workspace/policy-compliance-for-jobs/policy-compliance-for-jobs.go linguist-generated=true
 cmd/workspace/policy-families/policy-families.go linguist-generated=true
+cmd/workspace/postgres/postgres.go linguist-generated=true
 cmd/workspace/provider-exchange-filters/provider-exchange-filters.go linguist-generated=true
 cmd/workspace/provider-exchanges/provider-exchanges.go linguist-generated=true
 cmd/workspace/provider-files/provider-files.go linguist-generated=true

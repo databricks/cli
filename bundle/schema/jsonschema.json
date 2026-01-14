@@ -78,6 +78,9 @@
                         "description": "Required.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertV2Evaluation"
                       },
+                      "file_path": {
+                        "$ref": "#/$defs/string"
+                      },
                       "lifecycle": {
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
@@ -182,9 +185,18 @@
                       "compute_size": {
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.ComputeSize"
                       },
+                      "config": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.AppConfig"
+                      },
                       "description": {
                         "description": "The description of the app.",
                         "$ref": "#/$defs/string"
+                      },
+                      "git_repository": {
+                        "description": "Git repository configuration for app deployments. When specified, deployments can\nreference code from this repository by providing only the git reference (branch, tag, or commit).",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.GitRepository",
+                        "x-databricks-preview": "PRIVATE",
+                        "doNotSuggest": true
                       },
                       "lifecycle": {
                         "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
@@ -205,6 +217,9 @@
                         "description": "Required.",
                         "$ref": "#/$defs/string"
                       },
+                      "usage_policy_id": {
+                        "$ref": "#/$defs/string"
+                      },
                       "user_api_scopes": {
                         "$ref": "#/$defs/slice/string"
                       }
@@ -213,6 +228,50 @@
                     "required": [
                       "source_code_path",
                       "name"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "resources.AppConfig": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "command": {
+                        "$ref": "#/$defs/slice/string"
+                      },
+                      "env": {
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.AppEnvVar"
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "resources.AppEnvVar": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "value": {
+                        "$ref": "#/$defs/string"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "name",
+                      "value"
                     ]
                   },
                   {
@@ -1914,7 +1973,6 @@
                         "$ref": "#/$defs/string"
                       },
                       "lifecycle": {
-                        "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "logical_database_name": {
@@ -2777,8 +2835,22 @@
                 {
                   "type": "object",
                   "properties": {
+                    "command": {
+                      "description": "The command with which to run the app. This will override the command specified in the app.yaml file.",
+                      "$ref": "#/$defs/slice/string"
+                    },
                     "deployment_id": {
                       "$ref": "#/$defs/string"
+                    },
+                    "env_vars": {
+                      "description": "The environment variables to set in the app runtime environment. This will override the environment variables specified in the app.yaml file.",
+                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/apps.EnvVar"
+                    },
+                    "git_source": {
+                      "description": "Git repository to use as the source for the app deployment.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.GitSource",
+                      "x-databricks-preview": "PRIVATE",
+                      "doNotSuggest": true
                     },
                     "mode": {
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppDeploymentMode"
@@ -2870,6 +2942,9 @@
                       "description": "Description of the App Resource.",
                       "$ref": "#/$defs/string"
                     },
+                    "experiment": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppResourceExperiment"
+                    },
                     "genie_space": {
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppResourceGenieSpace"
                     },
@@ -2942,6 +3017,46 @@
                   "description": "Valid values are: `CAN_CONNECT_AND_CREATE`.",
                   "enum": [
                     "CAN_CONNECT_AND_CREATE"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "apps.AppResourceExperiment": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "experiment_id": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "permission": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppResourceExperimentExperimentPermission"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "experiment_id",
+                    "permission"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "apps.AppResourceExperimentExperimentPermission": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "CAN_MANAGE",
+                    "CAN_EDIT",
+                    "CAN_READ"
                   ]
                 },
                 {
@@ -3215,7 +3330,10 @@
                   "description": "Valid values are: `READ_VOLUME` and `WRITE_VOLUME`.",
                   "enum": [
                     "READ_VOLUME",
-                    "WRITE_VOLUME"
+                    "WRITE_VOLUME",
+                    "SELECT",
+                    "EXECUTE",
+                    "USE_CONNECTION"
                   ]
                 },
                 {
@@ -3230,7 +3348,10 @@
                   "type": "string",
                   "description": "Valid values are: `VOLUME`.",
                   "enum": [
-                    "VOLUME"
+                    "VOLUME",
+                    "TABLE",
+                    "FUNCTION",
+                    "CONNECTION"
                   ]
                 },
                 {
@@ -3310,6 +3431,90 @@
               "oneOf": [
                 {
                   "type": "object",
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "apps.EnvVar": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "description": "The name of the environment variable.",
+                      "$ref": "#/$defs/string"
+                    },
+                    "value": {
+                      "description": "The value for the environment variable.",
+                      "$ref": "#/$defs/string"
+                    },
+                    "value_from": {
+                      "description": "The name of an external Databricks resource that contains the value, such as a secret or a database table.",
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "apps.GitRepository": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Git repository configuration specifying the location of the repository.",
+                  "properties": {
+                    "provider": {
+                      "description": "Git provider. Case insensitive. Supported values: gitHub, gitHubEnterprise, bitbucketCloud,\nbitbucketServer, azureDevOpsServices, gitLab, gitLabEnterpriseEdition, awsCodeCommit.",
+                      "$ref": "#/$defs/string"
+                    },
+                    "url": {
+                      "description": "URL of the Git repository.",
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "provider",
+                    "url"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "apps.GitSource": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Complete git source specification including repository location and reference.",
+                  "properties": {
+                    "branch": {
+                      "description": "Git branch to checkout.",
+                      "$ref": "#/$defs/string"
+                    },
+                    "commit": {
+                      "description": "Git commit SHA to checkout.",
+                      "$ref": "#/$defs/string"
+                    },
+                    "source_code_path": {
+                      "description": "Relative path to the app source code within the Git repository. If not specified, the root\nof the repository is used.",
+                      "$ref": "#/$defs/string"
+                    },
+                    "tag": {
+                      "description": "Git tag to checkout.",
+                      "$ref": "#/$defs/string"
+                    }
+                  },
                   "additionalProperties": false
                 },
                 {
@@ -5634,6 +5839,12 @@
                   "type": "object",
                   "description": "Write-only setting. Specifies the user or service principal that the job runs as. If not specified, the job runs as the user who created the job.\n\nEither `user_name` or `service_principal_name` should be specified. If not, an error is thrown.",
                   "properties": {
+                    "group_name": {
+                      "description": "Group name of an account group assigned to the workspace. Setting this field requires being a member of the group.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-preview": "PRIVATE",
+                      "doNotSuggest": true
+                    },
                     "service_principal_name": {
                       "description": "The application ID of an active service principal. Setting this field requires the `servicePrincipal/user` role.",
                       "$ref": "#/$defs/string"
@@ -7990,6 +8201,12 @@
                       "x-databricks-preview": "PRIVATE",
                       "doNotSuggest": true
                     },
+                    "row_filter": {
+                      "description": "(Optional, Immutable) The row filter condition to be applied to the table.\nIt must not contain the WHERE keyword, only the actual filter condition.\nIt must be in DBSQL format.",
+                      "$ref": "#/$defs/string",
+                      "x-databricks-preview": "PRIVATE",
+                      "doNotSuggest": true
+                    },
                     "salesforce_include_formula_fields": {
                       "description": "If true, formula fields defined in the table are included in the ingestion. This setting is only valid for the Salesforce connector",
                       "$ref": "#/$defs/bool",
@@ -10035,6 +10252,20 @@
                     }
                   ]
                 },
+                "resources.AppEnvVar": {
+                  "oneOf": [
+                    {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.AppEnvVar"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
                 "resources.AppPermission": {
                   "oneOf": [
                     {
@@ -10298,6 +10529,20 @@
                     "type": "array",
                     "items": {
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppResource"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "apps.EnvVar": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.EnvVar"
                     }
                   },
                   {

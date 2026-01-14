@@ -52,6 +52,11 @@ func (c *BoundCaller) call(args ...any) ([]reflect.Value, error) {
 	for i, a := range args {
 		it := c.InTypes[i]
 		if a == nil {
+			// Allow untyped nil for pointer types, converting to typed nil
+			if it.Kind() == reflect.Ptr {
+				in[i+1] = reflect.Zero(it)
+				continue
+			}
 			return nil, &CallAdaptError{Msg: fmt.Sprintf("%s: arg %d type mismatch: want %v, got nil", c.Name, i, it)}
 		}
 		v := reflect.ValueOf(a)

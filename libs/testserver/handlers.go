@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/compute"
@@ -241,7 +242,10 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.DashboardTrash(req)
 	})
 	server.Handle("GET", "/api/2.0/lakeview/dashboards/{dashboard_id}/published", func(req Request) any {
-		return MapGet(req.Workspace, req.Workspace.PublishedDashboards, req.Vars["dashboard_id"])
+		return req.Workspace.DashboardGetPublished(req)
+	})
+	server.Handle("DELETE", "/api/2.0/lakeview/dashboards/{dashboard_id}/published", func(req Request) any {
+		return req.Workspace.DashboardUnpublish(req)
 	})
 
 	// Pipelines:
@@ -279,6 +283,22 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	// Quality monitors:
+
+	// Simple handler for table existence check - returns a basic table info
+	server.Handle("GET", "/api/2.1/unity-catalog/tables/{full_name}", func(req Request) any {
+		parts := strings.Split(req.Vars["full_name"], ".")
+		if len(parts) != 3 {
+			return Response{StatusCode: 400, Body: "Invalid table name"}
+		}
+		return Response{
+			Body: catalog.TableInfo{
+				CatalogName: parts[0],
+				SchemaName:  parts[1],
+				Name:        parts[2],
+				FullName:    req.Vars["full_name"],
+			},
+		}
+	})
 
 	server.Handle("GET", "/api/2.1/unity-catalog/tables/{table_name}/monitor", func(req Request) any {
 		return MapGet(req.Workspace, req.Workspace.Monitors, req.Vars["table_name"])
@@ -388,6 +408,14 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.VolumesCreate(req)
 	})
 
+	server.Handle("PATCH", "/api/2.1/unity-catalog/volumes/{full_name}", func(req Request) any {
+		return req.Workspace.VolumesUpdate(req, req.Vars["full_name"])
+	})
+
+	server.Handle("DELETE", "/api/2.1/unity-catalog/volumes/{full_name}", func(req Request) any {
+		return MapDelete(req.Workspace, req.Workspace.Volumes, req.Vars["full_name"])
+	})
+
 	// Repos:
 
 	server.Handle("POST", "/api/2.0/repos", func(req Request) any {
@@ -404,14 +432,6 @@ func AddDefaultHandlers(server *Server) {
 
 	server.Handle("DELETE", "/api/2.0/repos/{repo_id}", func(req Request) any {
 		return req.Workspace.ReposDelete(req)
-	})
-
-	server.Handle("PATCH", "/api/2.1/unity-catalog/volumes/{full_name}", func(req Request) any {
-		return req.Workspace.VolumesUpdate(req, req.Vars["full_name"])
-	})
-
-	server.Handle("DELETE", "/api/2.1/unity-catalog/volumes/{full_name}", func(req Request) any {
-		return MapDelete(req.Workspace, req.Workspace.Volumes, req.Vars["full_name"])
 	})
 
 	// SQL Warehouses:
@@ -499,6 +519,12 @@ func AddDefaultHandlers(server *Server) {
 	server.Handle("POST", "/api/2.0/secrets/acls/delete", func(req Request) any {
 		return req.Workspace.SecretsAclsDelete(req)
 	})
+
+	// Groups:
+	server.Handle("POST", "/api/2.0/preview/scim/v2/Groups", func(req Request) any {
+		return req.Workspace.GroupsCreate(req)
+	})
+
 	// Database Instances:
 
 	server.Handle("POST", "/api/2.0/database/instances", func(req Request) any {

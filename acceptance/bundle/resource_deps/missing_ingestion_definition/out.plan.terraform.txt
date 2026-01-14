@@ -1,11 +1,13 @@
 Error: exit status 1
 
-Error: Invalid operation
+Error: Invalid index
 
   on bundle.tf.json line 22, in resource.databricks_pipeline.bar:
-  22:         "name": "pbar ${databricks_pipeline.foo.ingestion_definition.connection_name}"
+  22:         "name": "pbar ${databricks_pipeline.foo.ingestion_definition[0].connection_name}"
+    ├────────────────
+    │ databricks_pipeline.foo.ingestion_definition is empty list of object
 
-Block type "ingestion_definition" is represented by a list of objects, so it
-must be indexed using a numeric key, like .ingestion_definition[0].
+The given key does not identify an element in this collection value: the
+collection has no elements.
 
 

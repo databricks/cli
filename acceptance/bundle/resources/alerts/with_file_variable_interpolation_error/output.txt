@@ -1,0 +1,17 @@
+
+>>> [CLI] bundle validate
+Error: .alert file alert.dbalert.json must not contain variable interpolations.
+  at resources.alerts.myalert.file_path
+  in databricks.yml:9:18
+
+Please inline the alert configuration in the bundle configuration to use variables
+
+Name: alerts-variable-error
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/alerts-variable-error/default
+
+Found 1 error
+
+Exit code: 1

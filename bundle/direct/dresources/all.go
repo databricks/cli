@@ -24,6 +24,7 @@ var SupportedResources = map[string]any{
 	"dashboards":              (*ResourceDashboard)(nil),
 	"secret_scopes":           (*ResourceSecretScope)(nil),
 	"model_serving_endpoints": (*ResourceModelServingEndpoint)(nil),
+	"quality_monitors":        (*ResourceQualityMonitor)(nil),
 
 	// Permissions
 	"jobs.permissions":                    (*ResourcePermissions)(nil),

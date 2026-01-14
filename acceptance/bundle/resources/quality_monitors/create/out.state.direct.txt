@@ -1,0 +1,2 @@
+    "output_schema_name": "main.qm_test_[UNIQUE_NAME]",
+    "table_name": "main.qm_test_[UNIQUE_NAME].test_table",
