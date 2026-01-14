@@ -4,11 +4,9 @@ trace $CLI bundle plan
 trace $CLI bundle deploy
 trace print_requests.py //jobs > out.deploy1.requests.json
 
-foo_id=`read_id.py jobs foo`
-echo "$foo_id:FOO_ID" >> ACC_REPLS
+foo_id=`read_id.py foo`
 
-bar_id=`read_id.py jobs bar`
-echo "$bar_id:BAR_ID" >> ACC_REPLS
+bar_id=`read_id.py bar`
 
 trace $CLI bundle plan  # empty
 

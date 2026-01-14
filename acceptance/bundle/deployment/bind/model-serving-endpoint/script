@@ -1,7 +1,4 @@
-ENDPOINT_NAME="test-endpoint-$(uuid)"
-if [ -z "$CLOUD_ENV" ]; then
-    ENDPOINT_NAME="test-endpoint-6260d50f-e8ff-4905-8f28-812345678903"
-fi
+ENDPOINT_NAME="test-endpoint-$UNIQUE_NAME"
 export ENDPOINT_NAME
 envsubst < databricks.yml.tmpl > databricks.yml
 cat databricks.yml

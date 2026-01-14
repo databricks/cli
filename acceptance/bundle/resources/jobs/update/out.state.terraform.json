@@ -42,7 +42,7 @@
             "format": "MULTI_TASK",
             "git_source": [],
             "health": [],
-            "id": "[JOB_ID]",
+            "id": "[FOO_ID]",
             "job_cluster": [
               {
                 "job_cluster_key": "key",
@@ -110,6 +110,7 @@
             "retry_on_timeout": false,
             "run_as": [
               {
+                "group_name": "",
                 "service_principal_name": "",
                 "user_name": "[USERNAME]"
               }
@@ -137,7 +138,7 @@
                 "table_update": []
               }
             ],
-            "url": "[DATABRICKS_URL]/#job/[JOB_ID]",
+            "url": "[DATABRICKS_URL]/#job/[FOO_ID]",
             "usage_policy_id": null,
             "webhook_notifications": [
               {

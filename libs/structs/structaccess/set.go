@@ -85,6 +85,10 @@ func setValueAtNode(parentVal reflect.Value, node *structpath.PathNode, value an
 		return errors.New("wildcards not supported")
 	}
 
+	if key, matchValue, isKeyValue := node.KeyValue(); isKeyValue {
+		return fmt.Errorf("cannot set value at key-value selector [%s='%s'] - key-value syntax can only be used for path traversal, not as a final target", key, matchValue)
+	}
+
 	if key, hasKey := node.StringKey(); hasKey {
 		return setFieldOrMapValue(parentVal, key, valueVal)
 	}

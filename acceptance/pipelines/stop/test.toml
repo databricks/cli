@@ -1,1 +1,4 @@
 RecordRequests = true
+
+[EnvMatrix]
+ENTRYPOINT = ["$CLI pipelines", "$PIPELINES"]

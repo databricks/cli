@@ -1,5 +1,5 @@
 
->>> [PIPELINES] deploy
+>>> [ENTRYPOINT] deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/default/files...
 Deploying resources...
 Updating deployment state...
@@ -7,7 +7,11 @@ Deployment complete!
 View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?o=[NUMID]
 
 === test --no-wait flag
->>> [PIPELINES] run --no-wait
+>>> [ENTRYPOINT] run --no-wait
+Recommendation: This command runs the last deployed version of the code
+
+If you've made local changes, run '[DEPLOYCMD]' first to ensure they are included.
+
 Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 
 Update ID: [UUID]

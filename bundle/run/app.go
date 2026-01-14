@@ -159,18 +159,41 @@ func waitForDeploymentToComplete(ctx context.Context, w *databricks.WorkspaceCli
 	return nil
 }
 
+// buildAppDeployment creates an AppDeployment struct with inline config if provided
+func (a *appRunner) buildAppDeployment() apps.AppDeployment {
+	deployment := apps.AppDeployment{
+		Mode:           apps.AppDeploymentModeSnapshot,
+		SourceCodePath: a.app.SourceCodePath,
+	}
+
+	// Add inline config if provided
+	if a.app.Config != nil {
+		if len(a.app.Config.Command) > 0 {
+			deployment.Command = a.app.Config.Command
+		}
+
+		if len(a.app.Config.Env) > 0 {
+			deployment.EnvVars = make([]apps.EnvVar, len(a.app.Config.Env))
+			for i, env := range a.app.Config.Env {
+				deployment.EnvVars[i] = apps.EnvVar{
+					Name:  env.Name,
+					Value: env.Value,
+				}
+			}
+		}
+	}
+
+	return deployment
+}
+
 func (a *appRunner) deploy(ctx context.Context) error {
 	app := a.app
 	b := a.bundle
 	w := b.WorkspaceClient()
 
-	sourceCodePath := app.SourceCodePath
 	wait, err := w.Apps.Deploy(ctx, apps.CreateAppDeploymentRequest{
-		AppName: app.Name,
-		AppDeployment: apps.AppDeployment{
-			Mode:           apps.AppDeploymentModeSnapshot,
-			SourceCodePath: sourceCodePath,
-		},
+		AppName:       app.Name,
+		AppDeployment: a.buildAppDeployment(),
 	})
 	// If deploy returns an error, then there's an active deployment in progress, wait for it to complete.
 	// For this we first need to get an app and its acrive and pending deployments and then wait for them.
@@ -187,11 +210,8 @@ func (a *appRunner) deploy(ctx context.Context) error {
 
 		// Now we can try to deploy the app again
 		wait, err = w.Apps.Deploy(ctx, apps.CreateAppDeploymentRequest{
-			AppName: app.Name,
-			AppDeployment: apps.AppDeployment{
-				Mode:           apps.AppDeploymentModeSnapshot,
-				SourceCodePath: sourceCodePath,
-			},
+			AppName:       app.Name,
+			AppDeployment: a.buildAppDeployment(),
 		})
 		if err != nil {
 			return err

@@ -1,5 +1,5 @@
 {
-  "plan_version": 1,
+  "plan_version": 2,
   "cli_version": "[DEV_VERSION]",
   "lineage": "[UUID]",
   "serial": 1,
@@ -10,7 +10,7 @@
         "creator_user_name": "[USERNAME]",
         "last_modified": [UNIX_TIME_MILLIS],
         "name": "foo",
-        "pipeline_id": "[PIPELINE_ID]",
+        "pipeline_id": "[FOO_ID]",
         "run_as_user_name": "[USERNAME]",
         "spec": {
           "channel": "CURRENT",
@@ -19,18 +19,17 @@
             "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/permissions-test/default/state/metadata.json"
           },
           "edition": "ADVANCED",
-          "id": "[PIPELINE_ID]",
+          "id": "[FOO_ID]",
           "name": "foo",
-          "storage": "dbfs:/pipelines/[PIPELINE_ID]"
+          "storage": "dbfs:/pipelines/[FOO_ID]"
         },
         "state": "IDLE"
       },
       "changes": {
-        "remote": {
-          "storage": {
-            "action": "skip",
-            "reason": "server_side_default"
-          }
+        "storage": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": "dbfs:/pipelines/[FOO_ID]"
         }
       }
     },
@@ -44,7 +43,7 @@
       "action": "update",
       "new_state": {
         "value": {
-          "object_id": "/pipelines/[PIPELINE_ID]",
+          "object_id": "/pipelines/[FOO_ID]",
           "permissions": [
             {
               "permission_level": "CAN_MANAGE",
@@ -62,7 +61,7 @@
         }
       },
       "remote_state": {
-        "object_id": "/pipelines/[PIPELINE_ID]",
+        "object_id": "/pipelines/[FOO_ID]",
         "permissions": [
           {
             "permission_level": "CAN_VIEW",
@@ -79,12 +78,11 @@
         ]
       },
       "changes": {
-        "local": {
-          "permissions[user_name='viewer@example.com'].permission_level": {
-            "action": "update",
-            "old": "CAN_VIEW",
-            "new": "CAN_MANAGE"
-          }
+        "permissions[user_name='viewer@example.com'].permission_level": {
+          "action": "update",
+          "old": "CAN_VIEW",
+          "new": "CAN_MANAGE",
+          "remote": "CAN_VIEW"
         }
       }
     }

@@ -1,5 +1,5 @@
 {
-  "plan_version": 1,
+  "plan_version": 2,
   "cli_version": "[DEV_VERSION]",
   "lineage": "[UUID]",
   "serial": 1,
@@ -37,11 +37,10 @@
         "volume_type": "MANAGED"
       },
       "changes": {
-        "remote": {
-          "storage_location": {
-            "action": "skip",
-            "reason": "server_side_default"
-          }
+        "storage_location": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": "s3://deco-uc-prod-isolated-aws-us-east-1/metastore/[UUID]/volumes/[UUID]"
         }
       }
     },
@@ -82,17 +81,17 @@
         ]
       },
       "changes": {
-        "local": {
-          "grants[0].privileges[0]": {
-            "action": "update",
-            "old": "READ_VOLUME",
-            "new": "MANAGE"
-          },
-          "grants[0].privileges[1]": {
-            "action": "update",
-            "old": "WRITE_VOLUME",
-            "new": "READ_VOLUME"
-          }
+        "grants[0].privileges[0]": {
+          "action": "update",
+          "old": "READ_VOLUME",
+          "new": "MANAGE",
+          "remote": "READ_VOLUME"
+        },
+        "grants[0].privileges[1]": {
+          "action": "update",
+          "old": "WRITE_VOLUME",
+          "new": "READ_VOLUME",
+          "remote": "WRITE_VOLUME"
         }
       }
     }
