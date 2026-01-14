@@ -15,12 +15,12 @@ class PythonWheelTask:
 
     entry_point: VariableOr[str]
     """
-    Named entry point to use, if it does not exist in the metadata of the package it executes the function from the package directly using `$packageName.$entryPoint()`
+    Required. Named entry point to use, if it does not exist in the metadata of the package it executes the function from the package directly using `$packageName.$entryPoint()`
     """
 
     package_name: VariableOr[str]
     """
-    Name of the package to execute
+    Required. Name of the package to execute
     """
 
     named_parameters: VariableOrDict[str] = field(default_factory=dict)
@@ -46,12 +46,12 @@ class PythonWheelTaskDict(TypedDict, total=False):
 
     entry_point: VariableOr[str]
     """
-    Named entry point to use, if it does not exist in the metadata of the package it executes the function from the package directly using `$packageName.$entryPoint()`
+    Required. Named entry point to use, if it does not exist in the metadata of the package it executes the function from the package directly using `$packageName.$entryPoint()`
     """
 
     package_name: VariableOr[str]
     """
-    Name of the package to execute
+    Required. Name of the package to execute
     """
 
     named_parameters: VariableOrDict[str]

@@ -22,12 +22,18 @@ class JobsHealthRule:
     """"""
 
     metric: VariableOr[JobsHealthMetric]
+    """
+    Required.
+    """
 
     op: VariableOr[JobsHealthOperator]
+    """
+    Required.
+    """
 
     value: VariableOr[int]
     """
-    Specifies the threshold value that the health metric should obey to satisfy the health rule.
+    Required. Specifies the threshold value that the health metric should obey to satisfy the health rule.
     """
 
     @classmethod
@@ -42,12 +48,18 @@ class JobsHealthRuleDict(TypedDict, total=False):
     """"""
 
     metric: VariableOr[JobsHealthMetricParam]
+    """
+    Required.
+    """
 
     op: VariableOr[JobsHealthOperatorParam]
+    """
+    Required.
+    """
 
     value: VariableOr[int]
     """
-    Specifies the threshold value that the health metric should obey to satisfy the health rule.
+    Required. Specifies the threshold value that the health metric should obey to satisfy the health rule.
     """
 
 

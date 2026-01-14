@@ -3,6 +3,10 @@ from typing import Literal
 
 
 class RuntimeEngine(Enum):
+    """
+    Valid values are: `NULL`, `STANDARD`, and `PHOTON`.
+    """
+
     NULL = "NULL"
     STANDARD = "STANDARD"
     PHOTON = "PHOTON"

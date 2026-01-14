@@ -15,7 +15,7 @@ class FileArrivalTriggerConfiguration:
 
     url: VariableOr[str]
     """
-    URL to be monitored for file arrivals. The path must point to the root or a subpath of the external location.
+    Required. URL to be monitored for file arrivals. The path must point to the root or a subpath of the external location.
     """
 
     min_time_between_triggers_seconds: VariableOrOptional[int] = None
@@ -44,7 +44,7 @@ class FileArrivalTriggerConfigurationDict(TypedDict, total=False):
 
     url: VariableOr[str]
     """
-    URL to be monitored for file arrivals. The path must point to the root or a subpath of the external location.
+    Required. URL to be monitored for file arrivals. The path must point to the root or a subpath of the external location.
     """
 
     min_time_between_triggers_seconds: VariableOrOptional[int]

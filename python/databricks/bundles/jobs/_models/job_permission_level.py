@@ -3,6 +3,10 @@ from typing import Literal
 
 
 class JobPermissionLevel(Enum):
+    """
+    Valid values are: `CAN_MANAGE`, `CAN_MANAGE_RUN`, `CAN_VIEW`, and `IS_OWNER`.
+    """
+
     CAN_MANAGE = "CAN_MANAGE"
     CAN_MANAGE_RUN = "CAN_MANAGE_RUN"
     CAN_VIEW = "CAN_VIEW"

@@ -19,7 +19,7 @@ class MavenLibrary:
 
     coordinates: VariableOr[str]
     """
-    Gradle-style maven coordinates. For example: "org.jsoup:jsoup:1.7.2".
+    Required. Gradle-style maven coordinates. For example: "org.jsoup:jsoup:1.7.2".
     """
 
     exclusions: VariableOrList[str] = field(default_factory=list)
@@ -49,7 +49,7 @@ class MavenLibraryDict(TypedDict, total=False):
 
     coordinates: VariableOr[str]
     """
-    Gradle-style maven coordinates. For example: "org.jsoup:jsoup:1.7.2".
+    Required. Gradle-style maven coordinates. For example: "org.jsoup:jsoup:1.7.2".
     """
 
     exclusions: VariableOrList[str]

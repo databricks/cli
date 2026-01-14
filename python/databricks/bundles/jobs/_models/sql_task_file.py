@@ -16,7 +16,7 @@ class SqlTaskFile:
 
     path: VariableOr[str]
     """
-    Path of the SQL file. Must be relative if the source is a remote Git repository and absolute for workspace paths.
+    Required. Path of the SQL file. Must be relative if the source is a remote Git repository and absolute for workspace paths.
     """
 
     source: VariableOrOptional[Source] = None
@@ -42,7 +42,7 @@ class SqlTaskFileDict(TypedDict, total=False):
 
     path: VariableOr[str]
     """
-    Path of the SQL file. Must be relative if the source is a remote Git repository and absolute for workspace paths.
+    Required. Path of the SQL file. Must be relative if the source is a remote Git repository and absolute for workspace paths.
     """
 
     source: VariableOrOptional[SourceParam]

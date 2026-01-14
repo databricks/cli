@@ -27,7 +27,7 @@ class TableUpdateTriggerConfiguration:
 
     table_names: VariableOrList[str] = field(default_factory=list)
     """
-    A list of tables to monitor for changes. The table name must be in the format `catalog_name.schema_name.table_name`.
+    Required. A list of tables to monitor for changes. The table name must be in the format `catalog_name.schema_name.table_name`.
     """
 
     wait_after_last_change_seconds: VariableOrOptional[int] = None
@@ -61,7 +61,7 @@ class TableUpdateTriggerConfigurationDict(TypedDict, total=False):
 
     table_names: VariableOrList[str]
     """
-    A list of tables to monitor for changes. The table name must be in the format `catalog_name.schema_name.table_name`.
+    Required. A list of tables to monitor for changes. The table name must be in the format `catalog_name.schema_name.table_name`.
     """
 
     wait_after_last_change_seconds: VariableOrOptional[int]

@@ -15,7 +15,7 @@ class TaskDependency:
 
     task_key: VariableOr[str]
     """
-    The name of the task this task depends on.
+    Required. The name of the task this task depends on.
     """
 
     outcome: VariableOrOptional[str] = None
@@ -36,7 +36,7 @@ class TaskDependencyDict(TypedDict, total=False):
 
     task_key: VariableOr[str]
     """
-    The name of the task this task depends on.
+    Required. The name of the task this task depends on.
     """
 
     outcome: VariableOrOptional[str]

@@ -15,7 +15,7 @@ class PipelineTask:
 
     pipeline_id: VariableOr[str]
     """
-    The full name of the pipeline task to execute.
+    Required. The full name of the pipeline task to execute.
     """
 
     full_refresh: VariableOrOptional[bool] = None
@@ -36,7 +36,7 @@ class PipelineTaskDict(TypedDict, total=False):
 
     pipeline_id: VariableOr[str]
     """
-    The full name of the pipeline task to execute.
+    Required. The full name of the pipeline task to execute.
     """
 
     full_refresh: VariableOrOptional[bool]

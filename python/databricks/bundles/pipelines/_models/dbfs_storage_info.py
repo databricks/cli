@@ -17,7 +17,7 @@ class DbfsStorageInfo:
 
     destination: VariableOr[str]
     """
-    dbfs destination, e.g. `dbfs:/my/path`
+    Required. dbfs destination, e.g. `dbfs:/my/path`
     """
 
     @classmethod
@@ -33,7 +33,7 @@ class DbfsStorageInfoDict(TypedDict, total=False):
 
     destination: VariableOr[str]
     """
-    dbfs destination, e.g. `dbfs:/my/path`
+    Required. dbfs destination, e.g. `dbfs:/my/path`
     """
 
 

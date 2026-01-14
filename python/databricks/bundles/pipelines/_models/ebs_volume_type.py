@@ -5,7 +5,7 @@ from typing import Literal
 class EbsVolumeType(Enum):
     """
     All EBS volume types that Databricks supports.
-    See https://aws.amazon.com/ebs/details/ for details.
+    See https://aws.amazon.com/ebs/details/ for details. Valid values are: `GENERAL_PURPOSE_SSD` and `THROUGHPUT_OPTIMIZED_HDD`.
     """
 
     GENERAL_PURPOSE_SSD = "GENERAL_PURPOSE_SSD"

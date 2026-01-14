@@ -18,6 +18,9 @@ class PipelinePermission:
     """"""
 
     level: VariableOr[PipelinePermissionLevel]
+    """
+    Required.
+    """
 
     group_name: VariableOrOptional[str] = None
 
@@ -37,6 +40,9 @@ class PipelinePermissionDict(TypedDict, total=False):
     """"""
 
     level: VariableOr[PipelinePermissionLevelParam]
+    """
+    Required.
+    """
 
     group_name: VariableOrOptional[str]
 

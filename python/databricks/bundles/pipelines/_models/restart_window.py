@@ -22,7 +22,7 @@ class RestartWindow:
 
     start_hour: VariableOr[int]
     """
-    An integer between 0 and 23 denoting the start hour for the restart window in the 24-hour day.
+    Required. An integer between 0 and 23 denoting the start hour for the restart window in the 24-hour day.
     Continuous pipeline restart is triggered only within a five-hour window starting at this hour.
     """
 
@@ -51,7 +51,7 @@ class RestartWindowDict(TypedDict, total=False):
 
     start_hour: VariableOr[int]
     """
-    An integer between 0 and 23 denoting the start hour for the restart window in the 24-hour day.
+    Required. An integer between 0 and 23 denoting the start hour for the restart window in the 24-hour day.
     Continuous pipeline restart is triggered only within a five-hour window starting at this hour.
     """
 

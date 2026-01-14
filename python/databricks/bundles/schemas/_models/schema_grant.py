@@ -18,8 +18,14 @@ class SchemaGrant:
     """"""
 
     principal: VariableOr[str]
+    """
+    Required.
+    """
 
     privileges: VariableOrList[SchemaGrantPrivilege] = field(default_factory=list)
+    """
+    Required.
+    """
 
     @classmethod
     def from_dict(cls, value: "SchemaGrantDict") -> "Self":
@@ -33,8 +39,14 @@ class SchemaGrantDict(TypedDict, total=False):
     """"""
 
     principal: VariableOr[str]
+    """
+    Required.
+    """
 
     privileges: VariableOrList[SchemaGrantPrivilegeParam]
+    """
+    Required.
+    """
 
 
 SchemaGrantParam = SchemaGrantDict | SchemaGrant

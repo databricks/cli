@@ -32,7 +32,7 @@ class SqlTask:
 
     warehouse_id: VariableOr[str]
     """
-    The canonical identifier of the SQL warehouse. Recommended to use with serverless or pro SQL warehouses. Classic SQL warehouses are only supported for SQL alert, dashboard and query tasks and are limited to scheduled single-task jobs.
+    Required. The canonical identifier of the SQL warehouse. Recommended to use with serverless or pro SQL warehouses. Classic SQL warehouses are only supported for SQL alert, dashboard and query tasks and are limited to scheduled single-task jobs.
     """
 
     alert: VariableOrOptional[SqlTaskAlert] = None
@@ -73,7 +73,7 @@ class SqlTaskDict(TypedDict, total=False):
 
     warehouse_id: VariableOr[str]
     """
-    The canonical identifier of the SQL warehouse. Recommended to use with serverless or pro SQL warehouses. Classic SQL warehouses are only supported for SQL alert, dashboard and query tasks and are limited to scheduled single-task jobs.
+    Required. The canonical identifier of the SQL warehouse. Recommended to use with serverless or pro SQL warehouses. Classic SQL warehouses are only supported for SQL alert, dashboard and query tasks and are limited to scheduled single-task jobs.
     """
 
     alert: VariableOrOptional[SqlTaskAlertParam]

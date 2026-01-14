@@ -17,7 +17,7 @@ class GcsStorageInfo:
 
     destination: VariableOr[str]
     """
-    GCS destination/URI, e.g. `gs://my-bucket/some-prefix`
+    Required. GCS destination/URI, e.g. `gs://my-bucket/some-prefix`
     """
 
     @classmethod
@@ -33,7 +33,7 @@ class GcsStorageInfoDict(TypedDict, total=False):
 
     destination: VariableOr[str]
     """
-    GCS destination/URI, e.g. `gs://my-bucket/some-prefix`
+    Required. GCS destination/URI, e.g. `gs://my-bucket/some-prefix`
     """
 
 

@@ -25,7 +25,7 @@ class ModelTriggerConfiguration:
 
     condition: VariableOr[ModelTriggerConfigurationCondition]
     """
-    The condition based on which to trigger a job run.
+    Required. The condition based on which to trigger a job run.
     """
 
     aliases: VariableOrList[str] = field(default_factory=list)
@@ -65,7 +65,7 @@ class ModelTriggerConfigurationDict(TypedDict, total=False):
 
     condition: VariableOr[ModelTriggerConfigurationConditionParam]
     """
-    The condition based on which to trigger a job run.
+    Required. The condition based on which to trigger a job run.
     """
 
     aliases: VariableOrList[str]

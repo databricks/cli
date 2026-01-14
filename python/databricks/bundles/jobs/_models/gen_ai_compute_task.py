@@ -22,7 +22,7 @@ class GenAiComputeTask:
 
     dl_runtime_image: VariableOr[str]
     """
-    Runtime image
+    Required. Runtime image
     """
 
     command: VariableOrOptional[str] = None
@@ -75,7 +75,7 @@ class GenAiComputeTaskDict(TypedDict, total=False):
 
     dl_runtime_image: VariableOr[str]
     """
-    Runtime image
+    Required. Runtime image
     """
 
     command: VariableOrOptional[str]

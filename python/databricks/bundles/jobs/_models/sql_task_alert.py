@@ -23,7 +23,7 @@ class SqlTaskAlert:
 
     alert_id: VariableOr[str]
     """
-    The canonical identifier of the SQL alert.
+    Required. The canonical identifier of the SQL alert.
     """
 
     pause_subscriptions: VariableOrOptional[bool] = None
@@ -49,7 +49,7 @@ class SqlTaskAlertDict(TypedDict, total=False):
 
     alert_id: VariableOr[str]
     """
-    The canonical identifier of the SQL alert.
+    Required. The canonical identifier of the SQL alert.
     """
 
     pause_subscriptions: VariableOrOptional[bool]

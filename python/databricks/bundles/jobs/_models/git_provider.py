@@ -3,6 +3,10 @@ from typing import Literal
 
 
 class GitProvider(Enum):
+    """
+    Valid values are: `gitHub`, `bitbucketCloud`, `azureDevOpsServices`, `gitHubEnterprise`, `bitbucketServer`, `gitLab`, `gitLabEnterpriseEdition`, and `awsCodeCommit`.
+    """
+
     GIT_HUB = "gitHub"
     BITBUCKET_CLOUD = "bitbucketCloud"
     AZURE_DEV_OPS_SERVICES = "azureDevOpsServices"

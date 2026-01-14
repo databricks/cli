@@ -14,6 +14,9 @@ class Webhook:
     """"""
 
     id: VariableOr[str]
+    """
+    Required.
+    """
 
     @classmethod
     def from_dict(cls, value: "WebhookDict") -> "Self":
@@ -27,6 +30,9 @@ class WebhookDict(TypedDict, total=False):
     """"""
 
     id: VariableOr[str]
+    """
+    Required.
+    """
 
 
 WebhookParam = WebhookDict | Webhook

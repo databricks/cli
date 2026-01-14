@@ -21,7 +21,7 @@ class DbtTask:
 
     commands: VariableOrList[str] = field(default_factory=list)
     """
-    A list of dbt commands to execute. All commands must start with `dbt`. This parameter must not be empty. A maximum of up to 10 commands can be provided.
+    Required. A list of dbt commands to execute. All commands must start with `dbt`. This parameter must not be empty. A maximum of up to 10 commands can be provided.
     """
 
     profiles_directory: VariableOrOptional[str] = None
@@ -73,7 +73,7 @@ class DbtTaskDict(TypedDict, total=False):
 
     commands: VariableOrList[str]
     """
-    A list of dbt commands to execute. All commands must start with `dbt`. This parameter must not be empty. A maximum of up to 10 commands can be provided.
+    Required. A list of dbt commands to execute. All commands must start with `dbt`. This parameter must not be empty. A maximum of up to 10 commands can be provided.
     """
 
     profiles_directory: VariableOrOptional[str]
