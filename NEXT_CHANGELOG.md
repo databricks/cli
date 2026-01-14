@@ -15,6 +15,7 @@ To disable this, set the environment variable DATABRICKS_CACHE_ENABLED to false.
 * Fix false positive folder permission warnings and make them more actionable ([#4216](https://github.com/databricks/cli/pull/4216))
 * Pass additional Azure DevOps system variables ([#4236](https://github.com/databricks/cli/pull/4236))
 * Replace Black formatter with Ruff in Python bundle templates for faster, all-in-one linting and formatting ([#4196](https://github.com/databricks/cli/pull/4196))
+* engine/direct: support quality monitors ([#4278](https://github.com/databricks/cli/pull/4278))
 
 ### Dependency updates
 
