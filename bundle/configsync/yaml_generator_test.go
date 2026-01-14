@@ -369,16 +369,18 @@ func TestGenerateYAMLFiles_InvalidFieldPath(t *testing.T) {
 	}
 }
 
-func TestGenerateYAMLFiles_TargetOverride(t *testing.T) {
+func TestGenerateYAMLFiles_Include(t *testing.T) {
+	ctx := logdiag.InitContext(context.Background())
+
 	// Create a temporary directory for the bundle
 	tmpDir := t.TempDir()
 
-	// Create main databricks.yml
-	mainYAML := `resources:
-  jobs:
-    main_job:
-      name: "Main Job"
-      timeout_seconds: 3600
+	// Create main databricks.yml with bundle config and includes
+	mainYAML := `bundle:
+  name: test-bundle
+
+include:
+  - "targets/*.yml"
 `
 
 	mainPath := filepath.Join(tmpDir, "databricks.yml")
@@ -390,7 +392,7 @@ func TestGenerateYAMLFiles_TargetOverride(t *testing.T) {
 	err = os.MkdirAll(targetsDir, 0o755)
 	require.NoError(t, err)
 
-	// Create target override file
+	// Create included file with dev_job resource
 	devYAML := `resources:
   jobs:
     dev_job:
@@ -402,30 +404,81 @@ func TestGenerateYAMLFiles_TargetOverride(t *testing.T) {
 	err = os.WriteFile(devPath, []byte(devYAML), 0o644)
 	require.NoError(t, err)
 
-	// Create bundle config
-	bundleYAML := `bundle:
-  name: test-bundle
+	// Load the bundle
+	b, err := bundle.Load(ctx, tmpDir)
+	require.NoError(t, err)
 
-include:
-  - "*.yml"
-  - "targets/*.yml"
+	// Process includes and other default mutators
+	mutator.DefaultMutators(ctx, b)
+
+	// Create changes for the dev_job (which was defined in included file)
+	changes := map[string]deployplan.Changes{
+		"resources.jobs.dev_job": {
+			"timeout_seconds": &deployplan.ChangeDesc{
+				Action: deployplan.Update,
+				Old:    1800,
+				Remote: 3600,
+			},
+		},
+	}
+
+	// Generate YAML files
+	fileChanges, err := GenerateYAMLFiles(ctx, b, changes)
+	require.NoError(t, err)
+	require.Len(t, fileChanges, 1)
+
+	// Verify changes are written to targets/dev.yml (where resource was defined)
+	assert.Equal(t, devPath, fileChanges[0].Path)
+	assert.Contains(t, fileChanges[0].OriginalContent, "timeout_seconds: 1800")
+	assert.Contains(t, fileChanges[0].ModifiedContent, "timeout_seconds: 3600")
+	assert.NotContains(t, fileChanges[0].ModifiedContent, "timeout_seconds: 1800")
+}
+
+func TestGenerateYAMLFiles_TargetOverride(t *testing.T) {
+	ctx := logdiag.InitContext(context.Background())
+
+	tmpDir := t.TempDir()
+
+	mainYAML := `bundle:
+  name: test-bundle
 
 targets:
   dev:
     resources:
       jobs:
         dev_job:
-          name: "Dev Job Override"
+          name: "Dev Job"
+          timeout_seconds: 1800
 `
 
-	bundlePath := filepath.Join(tmpDir, "databricks.yml")
-	err = os.WriteFile(bundlePath, []byte(bundleYAML), 0o644)
+	mainPath := filepath.Join(tmpDir, "databricks.yml")
+	err := os.WriteFile(mainPath, []byte(mainYAML), 0o644)
 	require.NoError(t, err)
 
-	// Note: This test may need adjustment based on how bundle loading handles includes
-	// For now, we test with a simpler scenario
+	b, err := bundle.Load(ctx, tmpDir)
+	require.NoError(t, err)
 
-	t.Skip("Skipping target override test - requires more complex bundle setup with includes")
+	mutator.DefaultMutators(ctx, b)
+
+	diags := bundle.Apply(ctx, b, mutator.SelectTarget("dev"))
+	require.NoError(t, diags.Error())
+
+	changes := map[string]deployplan.Changes{
+		"resources.jobs.dev_job": {
+			"timeout_seconds": &deployplan.ChangeDesc{
+				Action: deployplan.Update,
+				Old:    1800,
+				Remote: 3600,
+			},
+		},
+	}
+
+	fileChanges, err := GenerateYAMLFiles(ctx, b, changes)
+	require.NoError(t, err)
+	require.Len(t, fileChanges, 1)
+
+	assert.Equal(t, mainPath, fileChanges[0].Path)
+	assert.Contains(t, fileChanges[0].ModifiedContent, "timeout_seconds: 3600")
 }
 
 func TestResourceKeyToDynPath(t *testing.T) {

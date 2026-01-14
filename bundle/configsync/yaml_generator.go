@@ -194,7 +194,27 @@ func findResourceInFile(_ context.Context, fileValue dyn.Value, resourceType, re
 		return resource, directPath, nil
 	}
 
-	// If not found, search with pattern for nested resources (e.g., in target overrides)
+	// Check if there's a targets section and search within each target
+	targetsValue, err := dyn.GetByPath(fileValue, dyn.Path{dyn.Key("targets")})
+	if err == nil && targetsValue.Kind() == dyn.KindMap {
+		targetsMap := targetsValue.MustMap()
+		for _, pair := range targetsMap.Pairs() {
+			targetName := pair.Key.MustString()
+			targetPath := dyn.Path{
+				dyn.Key("targets"),
+				dyn.Key(targetName),
+				dyn.Key("resources"),
+				dyn.Key(resourceType),
+				dyn.Key(resourceName),
+			}
+			resource, err := dyn.GetByPath(fileValue, targetPath)
+			if err == nil {
+				return resource, targetPath, nil
+			}
+		}
+	}
+
+	// If not found, search with pattern for nested resources (e.g., in includes)
 	pattern := dyn.MustPatternFromString(fmt.Sprintf("**.resources.%s.%s", resourceType, resourceName))
 	var foundResource dyn.Value
 	var foundPath dyn.Path
