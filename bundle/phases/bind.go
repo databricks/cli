@@ -136,7 +136,6 @@ func Unbind(ctx context.Context, b *bundle.Bundle, bundleType, tfResourceType, r
 	}()
 
 	if engine.IsDirect() {
-		// Direct engine: simply remove the resource from state
 		groupName := terraform.TerraformToGroupName[tfResourceType]
 		fullResourceKey := fmt.Sprintf("resources.%s.%s", groupName, resourceKey)
 		_, statePath := b.StateFilenameDirect(ctx)
@@ -146,7 +145,6 @@ func Unbind(ctx context.Context, b *bundle.Bundle, bundleType, tfResourceType, r
 			return
 		}
 	} else {
-		// Terraform engine: use terraform state rm
 		bundle.ApplySeqContext(ctx, b,
 			terraform.Interpolate(),
 			terraform.Write(),
