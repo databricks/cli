@@ -493,7 +493,73 @@ or activate the environment before running CLI commands:
 	assert.Equal(t, expected, out)
 }
 
+func TestPythonMutator_authEnvVarsPassedToSubprocess(t *testing.T) {
+	withFakeVEnv(t, ".venv")
+
+	b := loadYaml("databricks.yml", `
+experimental:
+  python:
+    venv_path: .venv
+    resources: ["resources:load_resources"]
+resources:
+  jobs:
+    job0:
+      name: job_0
+workspace:
+  host: https://acme.databricks.com`)
+
+	ctx := withProcessStubWithEnvCheck(
+		t,
+		[]string{
+			interpreterPath(".venv"),
+			"-m",
+			"databricks.bundles.build",
+			"--phase",
+			"load_resources",
+		},
+		`{
+			"experimental": {
+				"python": {
+					"resources": ["resources:load_resources"],
+					"venv_path": ".venv"
+				}
+			},
+			"resources": {
+				"jobs": {
+					"job0": {
+						name: "job_0"
+					}
+				}
+			},
+			"workspace": {
+				"host": "https://acme.databricks.com"
+			}
+		}`,
+		"",
+		"",
+		func(cmd *exec.Cmd) {
+			foundHost := false
+			for _, envVar := range cmd.Env {
+				if envVar == "DATABRICKS_HOST=https://acme.databricks.com" {
+					foundHost = true
+					break
+				}
+			}
+			assert.True(t, foundHost, "DATABRICKS_HOST should be passed to subprocess")
+		},
+	)
+
+	mutator := PythonMutator(PythonMutatorPhaseLoadResources)
+	diags := bundle.Apply(ctx, b, mutator)
+
+	assert.NoError(t, diags.Error())
+}
+
 func withProcessStub(t *testing.T, args []string, output, diagnostics, locations string) context.Context {
+	return withProcessStubWithEnvCheck(t, args, output, diagnostics, locations, nil)
+}
+
+func withProcessStubWithEnvCheck(t *testing.T, args []string, output, diagnostics, locations string, envCheck func(*exec.Cmd)) context.Context {
 	ctx := context.Background()
 	ctx, stub := process.WithStub(ctx)
 
@@ -534,6 +600,10 @@ func withProcessStub(t *testing.T, args []string, output, diagnostics, locations
 
 		err = os.WriteFile(diagnosticsPath, []byte(diagnostics), 0o600)
 		require.NoError(t, err)
+
+		if envCheck != nil {
+			envCheck(actual)
+		}
 
 		return nil
 	})

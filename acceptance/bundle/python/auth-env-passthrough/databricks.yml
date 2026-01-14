@@ -1,0 +1,8 @@
+bundle:
+  name: auth_env_test
+
+sync: {paths: []} # don't need to copy files
+
+python:
+  resources:
+    - "resources:load_resources"
