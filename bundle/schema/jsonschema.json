@@ -262,9 +262,11 @@
                     "type": "object",
                     "properties": {
                       "name": {
+                        "description": "Required.",
                         "$ref": "#/$defs/string"
                       },
                       "value": {
+                        "description": "Required.",
                         "$ref": "#/$defs/string"
                       }
                     },
@@ -3031,9 +3033,11 @@
                   "type": "object",
                   "properties": {
                     "experiment_id": {
+                      "description": "Required.",
                       "$ref": "#/$defs/string"
                     },
                     "permission": {
+                      "description": "Required.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppResourceExperimentExperimentPermission"
                     }
                   },
@@ -3053,6 +3057,7 @@
               "oneOf": [
                 {
                   "type": "string",
+                  "description": "Valid values are: `CAN_MANAGE`, `CAN_EDIT`, and `CAN_READ`.",
                   "enum": [
                     "CAN_MANAGE",
                     "CAN_EDIT",
@@ -3327,7 +3332,7 @@
               "oneOf": [
                 {
                   "type": "string",
-                  "description": "Valid values are: `READ_VOLUME` and `WRITE_VOLUME`.",
+                  "description": "Valid values are: `READ_VOLUME`, `WRITE_VOLUME`, `SELECT`, `EXECUTE`, and `USE_CONNECTION`.",
                   "enum": [
                     "READ_VOLUME",
                     "WRITE_VOLUME",
@@ -3346,7 +3351,7 @@
               "oneOf": [
                 {
                   "type": "string",
-                  "description": "Valid values are: `VOLUME`.",
+                  "description": "Valid values are: `VOLUME`, `TABLE`, `FUNCTION`, and `CONNECTION`.",
                   "enum": [
                     "VOLUME",
                     "TABLE",
@@ -3472,11 +3477,11 @@
                   "description": "Git repository configuration specifying the location of the repository.",
                   "properties": {
                     "provider": {
-                      "description": "Git provider. Case insensitive. Supported values: gitHub, gitHubEnterprise, bitbucketCloud,\nbitbucketServer, azureDevOpsServices, gitLab, gitLabEnterpriseEdition, awsCodeCommit.",
+                      "description": "Required. Git provider. Case insensitive. Supported values: gitHub, gitHubEnterprise, bitbucketCloud,\nbitbucketServer, azureDevOpsServices, gitLab, gitLabEnterpriseEdition, awsCodeCommit.",
                       "$ref": "#/$defs/string"
                     },
                     "url": {
-                      "description": "URL of the Git repository.",
+                      "description": "Required. URL of the Git repository.",
                       "$ref": "#/$defs/string"
                     }
                   },
