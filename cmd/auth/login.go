@@ -294,24 +294,35 @@ func setHostAndAccountId(ctx context.Context, existingProfile *profile.Profile, 
 			}
 		}
 	case config.UnifiedHost:
-		// Unified host - prompt for either workspace ID or account ID
-		// User must specify exactly one of them
-		hasWorkspaceID := authArguments.WorkspaceID != ""
-		hasAccountID := authArguments.AccountID != ""
-
-		if hasWorkspaceID && hasAccountID {
-			return errors.New("unified host cannot have both workspace_id and account_id; please specify only one")
+		// Unified host requires an account ID for OAuth URL construction
+		if authArguments.AccountID == "" {
+			if existingProfile != nil && existingProfile.AccountID != "" {
+				authArguments.AccountID = existingProfile.AccountID
+			} else {
+				accountId, err := promptForAccountID(ctx)
+				if err != nil {
+					return err
+				}
+				authArguments.AccountID = accountId
+			}
 		}
 
-		if !hasWorkspaceID && !hasAccountID {
-			// Neither provided - prompt user to choose
-			// For now, prompt for workspace ID by default (most common case)
-			// TODO: Could add a prompt to ask which one the user wants
-			workspaceId, err := promptForWorkspaceID(ctx)
-			if err != nil {
-				return err
+		// Workspace ID is optional and determines API access level:
+		// - With workspace ID: workspace-level APIs
+		// - Without workspace ID: account-level APIs
+		// If neither is provided via flags, prompt for workspace ID (most common case)
+		hasWorkspaceID := authArguments.WorkspaceID != ""
+		if !hasWorkspaceID {
+			if existingProfile != nil && existingProfile.WorkspaceID != "" {
+				authArguments.WorkspaceID = existingProfile.WorkspaceID
+			} else {
+				// Prompt for workspace ID for workspace-level access
+				workspaceId, err := promptForWorkspaceID(ctx)
+				if err != nil {
+					return err
+				}
+				authArguments.WorkspaceID = workspaceId
 			}
-			authArguments.WorkspaceID = workspaceId
 		}
 	case config.WorkspaceHost:
 		// Workspace host - no additional prompts needed

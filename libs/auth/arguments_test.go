@@ -58,6 +58,25 @@ func TestToOAuthArgument(t *testing.T) {
 			},
 			wantHost: "https://my-workspace.cloud.databricks.com",
 		},
+		{
+			name: "unified host with account ID only",
+			args: AuthArguments{
+				Host:          "https://unified.cloud.databricks.com",
+				AccountID:     "123456789",
+				IsUnifiedHost: true,
+			},
+			wantHost: "https://unified.cloud.databricks.com",
+		},
+		{
+			name: "unified host with both account ID and workspace ID",
+			args: AuthArguments{
+				Host:          "https://unified.cloud.databricks.com",
+				AccountID:     "968367da-7edd-44f7-9dea-3e0b20b0ec97",
+				WorkspaceID:   "470576644108500",
+				IsUnifiedHost: true,
+			},
+			wantHost: "https://unified.cloud.databricks.com",
+		},
 	}
 
 	for _, tt := range tests {
@@ -70,13 +89,18 @@ func TestToOAuthArgument(t *testing.T) {
 			assert.NoError(t, err)
 
 			// Check if we got the right type of argument and verify the hostname
-			if tt.args.AccountID != "" {
+			if tt.args.IsUnifiedHost {
+				// Unified hosts always return UnifiedOAuthArgument which implements AccountOAuthArgument
 				arg, ok := got.(u2m.AccountOAuthArgument)
-				assert.True(t, ok, "expected AccountOAuthArgument for account ID")
+				assert.True(t, ok, "expected AccountOAuthArgument (UnifiedOAuthArgument) for unified host")
+				assert.Equal(t, tt.wantHost, arg.GetAccountHost())
+			} else if tt.args.AccountID != "" {
+				arg, ok := got.(u2m.AccountOAuthArgument)
+				assert.True(t, ok, "expected AccountOAuthArgument for account host")
 				assert.Equal(t, tt.wantHost, arg.GetAccountHost())
 			} else {
 				arg, ok := got.(u2m.WorkspaceOAuthArgument)
-				assert.True(t, ok, "expected WorkspaceOAuthArgument for workspace")
+				assert.True(t, ok, "expected WorkspaceOAuthArgument for workspace host")
 				assert.Equal(t, tt.wantHost, arg.GetWorkspaceHost())
 			}
 		})

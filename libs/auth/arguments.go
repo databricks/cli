@@ -32,6 +32,8 @@ func (a AuthArguments) ToOAuthArgument() (u2m.OAuthArgument, error) {
 	case config.WorkspaceHost:
 		return u2m.NewBasicWorkspaceOAuthArgument(host)
 	case config.UnifiedHost:
+		// For unified hosts, always use the unified OAuth argument with account ID.
+		// The workspace ID is stored in the config for API routing, not OAuth.
 		return u2m.NewBasicUnifiedOAuthArgument(host, cfg.AccountID)
 	default:
 		return nil, fmt.Errorf("unknown host type: %v", cfg.HostType())
