@@ -1,22 +1,18 @@
 
+>>> [CLI] schemas create qm_test_[UNIQUE_NAME] main -o json
+{
+  "full_name": "main.qm_test_[UNIQUE_NAME]"
+}
+
+>>> [CLI] schemas create qm_test_[UNIQUE_NAME]_2 main -o json
+{
+  "full_name": "main.qm_test_[UNIQUE_NAME]_2"
+}
+
 >>> create_table.py main.qm_test_[UNIQUE_NAME].test_table
 Created table main.qm_test_[UNIQUE_NAME].test_table
 Inserted sample data into main.qm_test_[UNIQUE_NAME].test_table
 Table main.qm_test_[UNIQUE_NAME].test_table is now visible (catalog_name=main)
-
->>> [CLI] schemas create qm_test_[UNIQUE_NAME]_2 main -o json
-{
-  "browse_only": false,
-  "catalog_name": "main",
-  "catalog_type": "MANAGED_CATALOG",
-  "created_at": [UNIX_TIME_MILLIS][0],
-  "created_by": "[USERNAME]",
-  "full_name": "main.qm_test_[UNIQUE_NAME]_2",
-  "name": "qm_test_[UNIQUE_NAME]_2",
-  "owner": "[USERNAME]",
-  "updated_at": [UNIX_TIME_MILLIS][0],
-  "updated_by": "[USERNAME]"
-}
 
 >>> [CLI] bundle plan -o json
 
