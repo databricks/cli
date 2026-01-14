@@ -56,7 +56,7 @@ Examples:
 			}
 		}
 
-		result := []byte{}
+		var result []byte
 		if root.OutputType(cmd) == flags.OutputJSON {
 			diffOutput := &configsync.DiffOutput{
 				Files:   files,
