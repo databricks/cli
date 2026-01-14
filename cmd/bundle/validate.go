@@ -83,7 +83,7 @@ Please run this command before deploying to ensure configuration quality.`,
 		if err == nil && strict && numWarnings > 0 {
 			prefix := ""
 			if numWarnings == 1 {
-				prefix = fmt.Sprintf("1 warning was found")
+				prefix = "1 warning was found"
 			} else {
 				prefix = fmt.Sprintf("%d warnings were found", numWarnings)
 			}
