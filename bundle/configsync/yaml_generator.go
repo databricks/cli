@@ -62,7 +62,6 @@ func structpathToDynPath(_ context.Context, pathStr string, baseValue dyn.Value)
 		return nil, fmt.Errorf("failed to parse path %s: %w", pathStr, err)
 	}
 
-	// Convert PathNode linked list to slice for forward iteration
 	nodes := node.AsSlice()
 
 	var dynPath dyn.Path
@@ -137,11 +136,6 @@ func applyChanges(ctx context.Context, resource dyn.Value, changes deployplan.Ch
 	result := resource
 
 	for fieldPath, changeDesc := range changes {
-		// Skip if no remote value or action is Skip
-		if changeDesc.Remote == nil || changeDesc.Action == deployplan.Skip {
-			continue
-		}
-
 		// Convert structpath to dyn.Path
 		dynPath, err := structpathToDynPath(ctx, fieldPath, result)
 		if err != nil {
@@ -186,47 +180,23 @@ func parseResourceKey(resourceKey string) (resourceType, resourceName string, er
 }
 
 // findResourceInFile searches for a resource within a loaded file's dyn.Value
-func findResourceInFile(_ context.Context, fileValue dyn.Value, resourceType, resourceName string) (dyn.Value, dyn.Path, error) {
-	// Try direct path first: resources.TYPE.NAME
+func findResourceInFile(_ context.Context, fileValue dyn.Value, resourceType, resourceName, targetName string) (dyn.Value, dyn.Path, error) {
+	patternsToCheck := []dyn.Path{
+		{dyn.Key("targets"), dyn.Key(targetName), dyn.Key("resources"), dyn.Key(resourceType), dyn.Key(resourceName)},
+		{dyn.Key("resources"), dyn.Key(resourceType), dyn.Key(resourceName)},
+	}
+
+	for _, pattern := range patternsToCheck {
+		resource, err := dyn.GetByPath(fileValue, pattern)
+		if err == nil {
+			return resource, pattern, nil
+		}
+	}
+
 	directPath := dyn.Path{dyn.Key("resources"), dyn.Key(resourceType), dyn.Key(resourceName)}
 	resource, err := dyn.GetByPath(fileValue, directPath)
 	if err == nil {
 		return resource, directPath, nil
-	}
-
-	// Check if there's a targets section and search within each target
-	targetsValue, err := dyn.GetByPath(fileValue, dyn.Path{dyn.Key("targets")})
-	if err == nil && targetsValue.Kind() == dyn.KindMap {
-		targetsMap := targetsValue.MustMap()
-		for _, pair := range targetsMap.Pairs() {
-			targetName := pair.Key.MustString()
-			targetPath := dyn.Path{
-				dyn.Key("targets"),
-				dyn.Key(targetName),
-				dyn.Key("resources"),
-				dyn.Key(resourceType),
-				dyn.Key(resourceName),
-			}
-			resource, err := dyn.GetByPath(fileValue, targetPath)
-			if err == nil {
-				return resource, targetPath, nil
-			}
-		}
-	}
-
-	// If not found, search with pattern for nested resources (e.g., in includes)
-	pattern := dyn.MustPatternFromString(fmt.Sprintf("**.resources.%s.%s", resourceType, resourceName))
-	var foundResource dyn.Value
-	var foundPath dyn.Path
-
-	_, _ = dyn.MapByPattern(fileValue, pattern, func(p dyn.Path, v dyn.Value) (dyn.Value, error) {
-		foundResource = v
-		foundPath = p
-		return v, nil
-	})
-
-	if foundResource.IsValid() {
-		return foundResource, foundPath, nil
 	}
 
 	return dyn.NilValue, nil, fmt.Errorf("resource %s.%s not found in file", resourceType, resourceName)
@@ -234,17 +204,14 @@ func findResourceInFile(_ context.Context, fileValue dyn.Value, resourceType, re
 
 // GenerateYAMLFiles generates YAML files for the given changes.
 func GenerateYAMLFiles(ctx context.Context, b *bundle.Bundle, changes map[string]deployplan.Changes) ([]FileChange, error) {
-	// Get bundle config as dyn.Value
 	configValue := b.Config.Value()
 
-	// Group changes by file path
 	fileChanges := make(map[string][]struct {
 		resourceKey string
 		changes     deployplan.Changes
 	})
 
 	for resourceKey, resourceChanges := range changes {
-		// Get resource location from bundle config
 		_, loc, err := getResourceWithLocation(configValue, resourceKey)
 		if err != nil {
 			log.Warnf(ctx, "Failed to find resource %s in bundle config: %v", resourceKey, err)
@@ -258,11 +225,9 @@ func GenerateYAMLFiles(ctx context.Context, b *bundle.Bundle, changes map[string
 		}{resourceKey, resourceChanges})
 	}
 
-	// Process each file
 	var result []FileChange
 
 	for filePath, resourcesInFile := range fileChanges {
-		// Load original file content
 		content, err := os.ReadFile(filePath)
 		if err != nil {
 			log.Warnf(ctx, "Failed to read file %s: %v", filePath, err)
@@ -286,7 +251,7 @@ func GenerateYAMLFiles(ctx context.Context, b *bundle.Bundle, changes map[string
 			}
 
 			// Find resource in loaded file
-			resource, resourcePath, err := findResourceInFile(ctx, fileValue, resourceType, resourceName)
+			resource, resourcePath, err := findResourceInFile(ctx, fileValue, resourceType, resourceName, b.Config.Bundle.Target)
 			if err != nil {
 				log.Warnf(ctx, "Failed to find resource %s in file %s: %v", item.resourceKey, filePath, err)
 				continue
