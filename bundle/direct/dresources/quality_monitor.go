@@ -37,11 +37,10 @@ func (*ResourceQualityMonitor) New(client *databricks.WorkspaceClient) *Resource
 }
 
 func (*ResourceQualityMonitor) PrepareState(input *resources.QualityMonitor) *QualityMonitorState {
-	state := QualityMonitorState{
+	return &QualityMonitorState{
 		CreateMonitor: input.CreateMonitor,
+		TableName:     input.TableName,
 	}
-	state.TableName = input.TableName
-	return &state
 }
 
 func (*ResourceQualityMonitor) RemapState(info *catalog.MonitorInfo) *QualityMonitorState {
