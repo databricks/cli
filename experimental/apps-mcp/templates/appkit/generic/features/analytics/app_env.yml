@@ -1,2 +1,0 @@
-  - name: DATABRICKS_WAREHOUSE_ID
-    valueFrom: warehouse

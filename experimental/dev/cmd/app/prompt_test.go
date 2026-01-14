@@ -161,9 +161,9 @@ func TestRunWithSpinnerCtx(t *testing.T) {
 }
 
 func TestRunModeConstants(t *testing.T) {
-	assert.Equal(t, RunMode("none"), RunModeNone)
-	assert.Equal(t, RunMode("dev"), RunModeDev)
-	assert.Equal(t, RunMode("dev-remote"), RunModeDevRemote)
+	assert.Equal(t, RunModeNone, RunMode("none"))
+	assert.Equal(t, RunModeDev, RunMode("dev"))
+	assert.Equal(t, RunModeDevRemote, RunMode("dev-remote"))
 }
 
 func TestMaxAppNameLength(t *testing.T) {

@@ -101,7 +101,7 @@ func runImport(ctx context.Context, opts importOptions) error {
 		return errors.New("app has no source code path - it may not have been deployed yet")
 	}
 
-	cmdio.LogString(ctx, fmt.Sprintf("Source code path: %s", app.DefaultSourceCodePath))
+	cmdio.LogString(ctx, "Source code path: "+app.DefaultSourceCodePath)
 
 	// Step 3: Create output directory
 	destDir := opts.appName
@@ -155,7 +155,7 @@ func runImport(ctx context.Context, opts importOptions) error {
 // runNpmInstallInDir runs npm install in the specified directory.
 func runNpmInstallInDir(ctx context.Context, dir string) error {
 	if _, err := exec.LookPath("npm"); err != nil {
-		return fmt.Errorf("npm not found: please install Node.js")
+		return errors.New("npm not found: please install Node.js")
 	}
 
 	return RunWithSpinnerCtx(ctx, "Installing dependencies...", func() error {

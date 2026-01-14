@@ -1,1 +1,0 @@
-SELECT :message AS value;

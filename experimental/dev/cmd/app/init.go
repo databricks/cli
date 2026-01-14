@@ -21,6 +21,8 @@ import (
 
 const (
 	templatePathEnvVar = "DATABRICKS_APPKIT_TEMPLATE_PATH"
+	// TODO: Change this with appkit main once ready.
+	defaultTemplateURL = "https://github.com/databricks/appkit/tree/add-generic-template/template"
 )
 
 func newInitCmd() *cobra.Command {
@@ -41,11 +43,12 @@ func newInitCmd() *cobra.Command {
 		Short: "Initialize a new AppKit application from a template",
 		Long: `Initialize a new AppKit application from a template.
 
-When run without arguments, an interactive prompt guides you through the setup.
-When run with --name, runs in non-interactive mode (all required flags must be provided).
+When run without arguments, uses the default AppKit template and an interactive prompt
+guides you through the setup. When run with --name, runs in non-interactive mode
+(all required flags must be provided).
 
 Examples:
-  # Interactive mode (recommended)
+  # Interactive mode with default template (recommended)
   databricks experimental dev app init
 
   # Non-interactive with flags
@@ -68,7 +71,7 @@ Feature dependencies:
   - analytics: requires --warehouse-id (SQL Warehouse ID)
 
 Environment variables:
-  DATABRICKS_APPKIT_TEMPLATE_PATH  Override template source with local path`,
+  DATABRICKS_APPKIT_TEMPLATE_PATH  Override the default template source`,
 		Args:    cobra.NoArgs,
 		PreRunE: root.MustWorkspaceClient,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -421,7 +424,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	var selectedFeatures []string
 	var dependencies map[string]string
 	var shouldDeploy bool
-	var runMode RunMode = RunModeNone
+	var runMode RunMode
 	isInteractive := cmdio.IsPromptSupported(ctx)
 
 	// Use features from flags if provided
@@ -435,7 +438,8 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		templateSrc = os.Getenv(templatePathEnvVar)
 	}
 	if templateSrc == "" {
-		return errors.New("template path required: set DATABRICKS_APPKIT_TEMPLATE_PATH or use --template flag")
+		// Use default template from GitHub
+		templateSrc = defaultTemplateURL
 	}
 
 	// Step 1: Get project name first (needed before we can check destination)
