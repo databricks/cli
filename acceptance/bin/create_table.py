@@ -30,22 +30,13 @@ def execute_sql(warehouse_id, sql):
     return run_cli("api", "post", "/api/2.0/sql/statements/", "--json", payload)
 
 
-# Create schema if it doesn't exist
-result = run_cli("schemas", "get", full_schema_name)
-if result.returncode == 0:
-    print(f"Schema {full_schema_name} already exists")
-else:
-    result = run_cli("schemas", "create", schema_name, catalog_name)
-    if result.returncode != 0:
-        print(f"Failed to create schema: {result.stderr}", file=sys.stderr)
-        sys.exit(1)
-    print(f"Created schema {full_schema_name}")
+result = run_cli("schemas", "create", schema_name, catalog_name)
+if result.returncode != 0:
+    print(f"Failed to create schema: {result.stderr}", file=sys.stderr)
+    # continue, maybe schema already exists
 
 # Get warehouse ID from environment variable
-warehouse_id = os.environ.get("TEST_DEFAULT_WAREHOUSE_ID")
-if not warehouse_id:
-    print("TEST_DEFAULT_WAREHOUSE_ID environment variable is not set", file=sys.stderr)
-    sys.exit(1)
+warehouse_id = os.environ["TEST_DEFAULT_WAREHOUSE_ID"]
 
 # Create a simple table
 sql = f"CREATE TABLE IF NOT EXISTS {table_name} (id INT, value STRING, timestamp TIMESTAMP) USING DELTA"
