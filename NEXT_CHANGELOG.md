@@ -17,7 +17,10 @@ To disable this, set the environment variable DATABRICKS_CACHE_ENABLED to false.
 * Pass additional Azure DevOps system variables ([#4236](https://github.com/databricks/cli/pull/4236))
 * Replace Black formatter with Ruff in Python bundle templates for faster, all-in-one linting and formatting ([#4196](https://github.com/databricks/cli/pull/4196))
 * engine/direct: support quality monitors ([#4278](https://github.com/databricks/cli/pull/4278))
+* Improve folder permissions warning ([#4216](https://github.com/databricks/cli/pull/4216))
 
 ### Dependency updates
-
+* Upgrade TF provider to 1.102.0 ([#4235](https://github.com/databricks/cli/pull/4235))
+* Upgrade Go SDK to 0.96.0 ([#4206](https://github.com/databricks/cli/pull/4206))
+ 
 ### API Changes
