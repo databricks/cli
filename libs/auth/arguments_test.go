@@ -90,10 +90,10 @@ func TestToOAuthArgument(t *testing.T) {
 
 			// Check if we got the right type of argument and verify the hostname
 			if tt.args.IsUnifiedHost {
-				// Unified hosts always return UnifiedOAuthArgument which implements AccountOAuthArgument
-				arg, ok := got.(u2m.AccountOAuthArgument)
-				assert.True(t, ok, "expected AccountOAuthArgument (UnifiedOAuthArgument) for unified host")
-				assert.Equal(t, tt.wantHost, arg.GetAccountHost())
+				// Unified hosts return UnifiedOAuthArgument (distinct from Account/Workspace)
+				arg, ok := got.(u2m.UnifiedOAuthArgument)
+				assert.True(t, ok, "expected UnifiedOAuthArgument for unified host")
+				assert.Equal(t, tt.wantHost, arg.GetHost())
 			} else if tt.args.AccountID != "" {
 				arg, ok := got.(u2m.AccountOAuthArgument)
 				assert.True(t, ok, "expected AccountOAuthArgument for account host")
