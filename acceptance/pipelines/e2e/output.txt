@@ -25,6 +25,10 @@ View your pipeline lakeflow_project_etl here: [DATABRICKS_URL]/pipelines/[UUID]?
 
 === Run pipeline
 >>> [PIPELINES] run
+Recommendation: This command runs the last deployed version of the code
+
+If you've made local changes, run '[DEPLOYCMD]' first to ensure they are included.
+
 Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 
 Update ID: [UUID]
@@ -71,6 +75,10 @@ View your pipeline lakeflow_project_etl_2 here: [DATABRICKS_URL]/pipelines/[UUID
 }
 
 >>> [PIPELINES] run lakeflow_project_etl_2
+Recommendation: This command runs the last deployed version of the code
+
+If you've made local changes, run '[DEPLOYCMD]' first to ensure they are included.
+
 Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 
 Update ID: [UUID]

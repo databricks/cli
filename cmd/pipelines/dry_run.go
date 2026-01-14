@@ -32,13 +32,18 @@ If there is only one pipeline in the project, KEY is optional and the pipeline w
 	cmd.Flags().BoolVar(&restart, "restart", false, "Restart the run if it is already running.")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+		ctx := logdiag.InitContext(cmd.Context())
+		cmd.SetContext(ctx)
+
 		b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{
 			ErrorOnEmptyState: true,
+			SkipInitContext:   true,
 		})
 		if err != nil {
 			return err
 		}
-		ctx := cmd.Context()
+
+		suggestPipelineDeploy(ctx, cmd)
 
 		key, _, err := resolveRunArgument(ctx, b, args)
 		if err != nil {
