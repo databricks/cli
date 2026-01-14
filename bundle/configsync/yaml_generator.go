@@ -294,7 +294,6 @@ func GenerateYAMLFiles(ctx context.Context, b *bundle.Bundle, changes map[string
 			continue
 		}
 
-		// Create FileChange
 		result = append(result, FileChange{
 			Path:            filePath,
 			OriginalContent: string(content),
@@ -303,9 +302,4 @@ func GenerateYAMLFiles(ctx context.Context, b *bundle.Bundle, changes map[string
 	}
 
 	return result, nil
-}
-
-// SaveFiles writes all file changes to disk.
-func SaveFiles(ctx context.Context, b *bundle.Bundle, files []FileChange) error {
-	return nil
 }
