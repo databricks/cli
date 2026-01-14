@@ -1,20 +1,18 @@
 SCHEMA_NAME="main.qm_test_${UNIQUE_NAME}"
 TABLE_NAME="${SCHEMA_NAME}.test_table"
 
-# Create schema and table via Python
+trace $CLI schemas create "qm_test_${UNIQUE_NAME}" main -o json | jq '{full_name}'
 trace create_table.py "$TABLE_NAME"
 trace create_table.py "${TABLE_NAME}_2"
 
 cleanup() {
     trace $CLI bundle destroy --auto-approve
-    # Clean up schemas and table (suppress errors since they may already be gone)
     $CLI schemas delete "$SCHEMA_NAME" --force 2>/dev/null || true
     $CLI schemas delete "qm_test_${UNIQUE_NAME}_2" --force 2>/dev/null || true
     rm -f out.requests.txt
 }
 trap cleanup EXIT
 
-# Generate databricks.yml with all variables substituted
 envsubst < databricks.yml.tmpl > databricks.yml
 
 trace $CLI bundle deploy

@@ -1,4 +1,9 @@
 
+>>> [CLI] schemas create qm_test_[UNIQUE_NAME] main -o json
+{
+  "full_name": "main.qm_test_[UNIQUE_NAME]"
+}
+
 >>> create_table.py main.qm_test_[UNIQUE_NAME].test_table
 Created table main.qm_test_[UNIQUE_NAME].test_table
 Inserted sample data into main.qm_test_[UNIQUE_NAME].test_table
