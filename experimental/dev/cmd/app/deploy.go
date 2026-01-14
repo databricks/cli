@@ -135,7 +135,7 @@ func (b *syncBuffer) String() string {
 // runNpmTypegen runs npm run typegen in the current directory.
 func runNpmTypegen(ctx context.Context) error {
 	if _, err := exec.LookPath("npm"); err != nil {
-		return fmt.Errorf("npm not found: please install Node.js")
+		return errors.New("npm not found: please install Node.js")
 	}
 
 	var output syncBuffer
@@ -159,7 +159,7 @@ func runNpmTypegen(ctx context.Context) error {
 // runNpmBuild runs npm run build in the current directory.
 func runNpmBuild(ctx context.Context) error {
 	if _, err := exec.LookPath("npm"); err != nil {
-		return fmt.Errorf("npm not found: please install Node.js")
+		return errors.New("npm not found: please install Node.js")
 	}
 
 	var output syncBuffer

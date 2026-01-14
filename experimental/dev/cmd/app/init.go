@@ -421,7 +421,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	var selectedFeatures []string
 	var dependencies map[string]string
 	var shouldDeploy bool
-	var runMode RunMode = RunModeNone
+	var runMode RunMode
 	isInteractive := cmdio.IsPromptSupported(ctx)
 
 	// Use features from flags if provided
