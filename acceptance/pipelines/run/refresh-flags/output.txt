@@ -8,6 +8,10 @@ View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?o=[NUMID]
 
 === Running pipeline with --refresh flag and specific tables
 >>> [ENTRYPOINT] run --refresh table1,table2
+Recommendation: This command runs the last deployed version of the code
+
+If you've made local changes, run 'pipelines deploy' first to ensure they are included.
+
 Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 
 Update ID: [UUID]
@@ -31,6 +35,10 @@ Pipeline configurations for this update:
 
 === Running pipeline with --full-refresh-all flag
 >>> [ENTRYPOINT] run --full-refresh-all
+Recommendation: This command runs the last deployed version of the code
+
+If you've made local changes, run 'pipelines deploy' first to ensure they are included.
+
 Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 
 Update ID: [UUID]
@@ -51,6 +59,10 @@ Pipeline configurations for this update:
 
 === Running pipeline with --full-refresh flag and specific tables
 >>> [ENTRYPOINT] run --full-refresh table1,table2
+Recommendation: This command runs the last deployed version of the code
+
+If you've made local changes, run 'pipelines deploy' first to ensure they are included.
+
 Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 
 Update ID: [UUID]
@@ -74,6 +86,10 @@ Pipeline configurations for this update:
 
 === Running pipeline with --full-refresh flag and --refresh flag
 >>> [ENTRYPOINT] run --full-refresh table1,table2 --refresh table3,table4
+Recommendation: This command runs the last deployed version of the code
+
+If you've made local changes, run 'pipelines deploy' first to ensure they are included.
+
 Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 
 Update ID: [UUID]
