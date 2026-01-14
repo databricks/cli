@@ -31,6 +31,8 @@ const (
 	UserNameTokenPrefix         = "dbapi0"
 	ServicePrincipalTokenPrefix = "dbapi1"
 	UserID                      = "1000012345"
+	TestDefaultClusterId        = "0123-456789-cluster0"
+	TestDefaultWarehouseId      = "8ec9edc1-db0c-40df-af8d-7580020fe61e"
 )
 
 var TestUser = iam.User{
@@ -143,6 +145,8 @@ type FakeWorkspace struct {
 	// Generic permissions storage: key is "{object_type}:{object_id}"
 	Permissions map[string]iam.ObjectPermissions
 
+	Groups map[string]iam.Group
+
 	Repos map[string]workspace.RepoInfo
 
 	DatabaseInstances    map[string]database.DatabaseInstance
@@ -216,37 +220,64 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 				Path:       "/Workspace",
 				ObjectId:   nextID(),
 			},
+			"/Users": {
+				ObjectType: "DIRECTORY",
+				Path:       "/Users",
+				ObjectId:   nextID(),
+			},
+			"/Users/" + TestUser.UserName: {
+				ObjectType: "DIRECTORY",
+				Path:       "/Users/" + TestUser.UserName,
+				ObjectId:   nextID(),
+			},
+			"/Users/" + TestUserSP.UserName: {
+				ObjectType: "DIRECTORY",
+				Path:       "/Users/" + TestUserSP.UserName,
+				ObjectId:   nextID(),
+			},
 		},
 		files:        make(map[string]FileEntry),
 		repoIdByPath: make(map[string]int64),
 
-		Jobs:                 map[int64]jobs.Job{},
-		JobRuns:              map[int64]jobs.Run{},
-		Grants:               map[string][]catalog.PrivilegeAssignment{},
-		Pipelines:            map[string]pipelines.GetPipelineResponse{},
-		PipelineUpdates:      map[string]bool{},
-		Monitors:             map[string]catalog.MonitorInfo{},
-		Apps:                 map[string]apps.App{},
-		Catalogs:             map[string]catalog.CatalogInfo{},
-		Schemas:              map[string]catalog.SchemaInfo{},
-		RegisteredModels:     map[string]catalog.RegisteredModelInfo{},
-		Volumes:              map[string]catalog.VolumeInfo{},
-		Dashboards:           map[string]fakeDashboard{},
-		PublishedDashboards:  map[string]dashboards.PublishedDashboard{},
-		SqlWarehouses:        map[string]sql.GetWarehouseResponse{},
+		Jobs:                map[int64]jobs.Job{},
+		JobRuns:             map[int64]jobs.Run{},
+		Grants:              map[string][]catalog.PrivilegeAssignment{},
+		Pipelines:           map[string]pipelines.GetPipelineResponse{},
+		PipelineUpdates:     map[string]bool{},
+		Monitors:            map[string]catalog.MonitorInfo{},
+		Apps:                map[string]apps.App{},
+		Catalogs:            map[string]catalog.CatalogInfo{},
+		Schemas:             map[string]catalog.SchemaInfo{},
+		RegisteredModels:    map[string]catalog.RegisteredModelInfo{},
+		Volumes:             map[string]catalog.VolumeInfo{},
+		Dashboards:          map[string]fakeDashboard{},
+		PublishedDashboards: map[string]dashboards.PublishedDashboard{},
+		SqlWarehouses: map[string]sql.GetWarehouseResponse{
+			TestDefaultWarehouseId: {
+				Id:    TestDefaultWarehouseId,
+				Name:  "DEFAULT Test SQL Warehouse",
+				State: sql.StateRunning,
+			},
+		},
 		ServingEndpoints:     map[string]serving.ServingEndpointDetailed{},
 		Repos:                map[string]workspace.RepoInfo{},
 		SecretScopes:         map[string]workspace.SecretScope{},
 		Secrets:              map[string]map[string]string{},
 		Acls:                 map[string][]workspace.AclItem{},
 		Permissions:          map[string]iam.ObjectPermissions{},
+		Groups:               map[string]iam.Group{},
 		DatabaseInstances:    map[string]database.DatabaseInstance{},
 		DatabaseCatalogs:     map[string]database.DatabaseCatalog{},
 		SyncedDatabaseTables: map[string]database.SyncedDatabaseTable{},
 		Alerts:               map[string]sql.AlertV2{},
 		Experiments:          map[string]ml.GetExperimentResponse{},
 		ModelRegistryModels:  map[string]ml.Model{},
-		Clusters:             map[string]compute.ClusterDetails{},
+		Clusters: map[string]compute.ClusterDetails{
+			TestDefaultClusterId: {
+				ClusterId:   TestDefaultClusterId,
+				ClusterName: "DEFAULT Test Cluster",
+			},
+		},
 	}
 }
 

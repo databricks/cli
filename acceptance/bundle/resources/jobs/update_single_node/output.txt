@@ -32,11 +32,11 @@ Deployment complete!
 Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
 
 === Fetch job ID and verify remote state
->>> [CLI] jobs get [JOB_ID]
+>>> [CLI] jobs get [FOO_ID]
 {
   "created_time": [UNIX_TIME_MILLIS],
   "creator_user_name": "[USERNAME]",
-  "job_id": [JOB_ID],
+  "job_id": [FOO_ID],
   "run_as_user_name": "[USERNAME]",
   "settings": {
     "deployment": {
@@ -94,9 +94,9 @@ Destroy complete!
   "method": "POST",
   "path": "/api/2.2/jobs/delete",
   "body": {
-    "job_id": [JOB_ID]
+    "job_id": [FOO_ID]
   }
 }
 
->>> musterr [CLI] jobs get [JOB_ID]
+>>> musterr [CLI] jobs get [FOO_ID]
 Error: Not Found

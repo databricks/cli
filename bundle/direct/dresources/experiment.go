@@ -56,7 +56,7 @@ func (r *ResourceExperiment) DoCreate(ctx context.Context, config *ml.CreateExpe
 	return result.ExperimentId, nil, nil
 }
 
-func (r *ResourceExperiment) DoUpdate(ctx context.Context, id string, config *ml.CreateExperiment, _ *Changes) (*ml.Experiment, error) {
+func (r *ResourceExperiment) DoUpdate(ctx context.Context, id string, config *ml.CreateExperiment, _ Changes) (*ml.Experiment, error) {
 	updateReq := ml.UpdateExperiment{
 		ExperimentId:    id,
 		NewName:         config.Name,
@@ -72,13 +72,13 @@ func (r *ResourceExperiment) DoDelete(ctx context.Context, id string) error {
 	})
 }
 
-func (*ResourceExperiment) FieldTriggers(_ bool) map[string]deployplan.ActionType {
+func (*ResourceExperiment) FieldTriggers() map[string]deployplan.ActionType {
 	// TF implementation: https://github.com/databricks/terraform-provider-databricks/blob/6c106e8e7052bb2726148d66309fd460ed444236/mlflow/resource_mlflow_experiment.go#L22
 	return map[string]deployplan.ActionType{
-		"name":              deployplan.ActionTypeUpdate,
-		"artifact_location": deployplan.ActionTypeRecreate,
+		"name":              deployplan.Update,
+		"artifact_location": deployplan.Recreate,
 
 		// Tags updates are not supported by TF. This mirrors that behaviour.
-		"tags": deployplan.ActionTypeSkip,
+		"tags": deployplan.Skip,
 	}
 }

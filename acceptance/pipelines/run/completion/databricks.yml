@@ -1,0 +1,11 @@
+bundle:
+  name: test-pipeline-run
+
+resources:
+  pipelines:
+    my_pipeline:
+      name: test-pipeline
+  # job is runnable, but doesn't impact auto-selection of pipeline
+  jobs:
+    my_job:
+      name: "My Job"

@@ -30,13 +30,14 @@ const (
 	ExperimentalDefaultPython TemplateName = "experimental-default-python-vnext"
 	DefaultSql                TemplateName = "default-sql"
 	LakeflowPipelines         TemplateName = "lakeflow-pipelines"
-	CLIPipelines              TemplateName = "cli-pipelines"
-	DbtSql                    TemplateName = "dbt-sql"
-	MlopsStacks               TemplateName = "mlops-stacks"
-	Pydabs                    TemplateName = "pydabs"
-	Custom                    TemplateName = "custom"
-	ExperimentalJobsAsCode    TemplateName = "experimental-jobs-as-code"
-	Default                   TemplateName = "default"
+	// CLIPipelines is deprecated. Use LakeflowPipelines instead
+	CLIPipelines           TemplateName = "cli-pipelines"
+	DbtSql                 TemplateName = "dbt-sql"
+	MlopsStacks            TemplateName = "mlops-stacks"
+	Pydabs                 TemplateName = "pydabs"
+	Custom                 TemplateName = "custom"
+	ExperimentalJobsAsCode TemplateName = "experimental-jobs-as-code"
+	Default                TemplateName = "default"
 )
 
 var databricksTemplates = []Template{
@@ -67,7 +68,7 @@ var databricksTemplates = []Template{
 	{
 		name:        LakeflowPipelines,
 		hidden:      true,
-		description: "The default template for Lakeflow Declarative Pipelines",
+		description: "The default template for Lakeflow Spark Declarative Pipelines",
 		Reader:      &builtinReader{name: string(LakeflowPipelines)},
 		Writer:      &writerWithFullTelemetry{defaultWriter: defaultWriter{name: LakeflowPipelines}},
 	},
@@ -75,7 +76,7 @@ var databricksTemplates = []Template{
 		name:        CLIPipelines,
 		hidden:      true,
 		description: "The default template for CLI pipelines",
-		Reader:      &builtinReader{name: string(CLIPipelines)},
+		Reader:      &builtinReader{name: string(LakeflowPipelines)},
 		Writer:      &writerWithFullTelemetry{defaultWriter: defaultWriter{name: CLIPipelines}},
 	},
 	{

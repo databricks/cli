@@ -1,5 +1,5 @@
 title "Test --var flag usage"
-trace $PIPELINES deploy --var="catalog=custom_catalog" --var="schema=custom_schema" --auto-approve
+trace $ENTRYPOINT deploy --var="catalog=custom_catalog" --var="schema=custom_schema" --auto-approve
 
 title "Verify: Check that variables were substituted correctly"
 PIPELINE_ID=$($CLI bundle summary -o json | jq -r '.resources.pipelines.foo.id')

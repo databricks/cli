@@ -25,13 +25,6 @@ func TestGetTargets(t *testing.T) {
 			targets: []string{"test-exp-ssh"},
 		},
 		{
-			name: "experimental_aitools",
-			files: []string{
-				"experimental/aitools/server.go",
-			},
-			targets: []string{"test-exp-aitools"},
-		},
-		{
 			name: "pipelines",
 			files: []string{
 				"cmd/pipelines/main.go",
@@ -51,14 +44,14 @@ func TestGetTargets(t *testing.T) {
 			files: []string{
 				"go.mod",
 			},
-			targets: []string{"test", "test-exp-aitools", "test-exp-apps-mcp", "test-exp-ssh", "test-pipelines"},
+			targets: []string{"test", "test-exp-aitools", "test-exp-ssh", "test-pipelines"},
 		},
 		{
 			name: "go_sum_triggers_all",
 			files: []string{
 				"go.sum",
 			},
-			targets: []string{"test", "test-exp-aitools", "test-exp-apps-mcp", "test-exp-ssh", "test-pipelines"},
+			targets: []string{"test", "test-exp-aitools", "test-exp-ssh", "test-pipelines"},
 		},
 		{
 			name: "go_mod_with_other_files_triggers_all",
@@ -66,7 +59,7 @@ func TestGetTargets(t *testing.T) {
 				"experimental/ssh/main.go",
 				"go.mod",
 			},
-			targets: []string{"test", "test-exp-aitools", "test-exp-apps-mcp", "test-exp-ssh", "test-pipelines"},
+			targets: []string{"test", "test-exp-aitools", "test-exp-ssh", "test-pipelines"},
 		},
 		{
 			name:    "empty_files",

@@ -44,12 +44,13 @@ func deployCommand() *cobra.Command {
 					b.Config.Bundle.Deployment.FailOnActiveRuns = failOnActiveRuns
 				}
 			},
-			Verbose:        verbose,
-			AlwaysPull:     true,
-			FastValidate:   true,
-			Build:          true,
-			Deploy:         true,
-			IsPipelinesCLI: true,
+			Verbose:         verbose,
+			SkipInitContext: false,
+			AlwaysPull:      true,
+			FastValidate:    true,
+			Build:           true,
+			Deploy:          true,
+			IsPipelinesCLI:  true,
 		})
 		if err != nil {
 			return err

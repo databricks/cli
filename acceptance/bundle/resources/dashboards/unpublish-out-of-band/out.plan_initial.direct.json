@@ -1,0 +1,19 @@
+{
+  "plan_version": 2,
+  "cli_version": "[DEV_VERSION]",
+  "plan": {
+    "resources.dashboards.dashboard1": {
+      "action": "create",
+      "new_state": {
+        "value": {
+          "display_name": "test bundle-deploy-dashboard [UNIQUE_NAME]",
+          "embed_credentials": false,
+          "parent_path": "/Workspace/Users/[USERNAME]/.bundle/unpublish-out-of-band-[UNIQUE_NAME]/default/resources",
+          "published": true,
+          "serialized_dashboard": "{\"pages\":[{\"name\":\"test-page\",\"displayName\":\"Test Dashboard\"}]}\n",
+          "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
+        }
+      }
+    }
+  }
+}

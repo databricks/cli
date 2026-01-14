@@ -1,5 +1,5 @@
 
->>> [PIPELINES] deploy
+>>> [ENTRYPOINT] deploy
 Warning: unknown field: unknown_property
   at resources.pipelines.test-pipeline
   in databricks.yml:8:7

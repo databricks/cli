@@ -1,0 +1,5 @@
+# printed paths are different on Windows
+
+[[Repls]]
+Old = "got: .*"
+New = "got: [path]"

@@ -30,6 +30,7 @@ resources.alerts.*.evaluation.threshold.value	*sql.AlertV2OperandValue	ALL
 resources.alerts.*.evaluation.threshold.value.bool_value	bool	ALL
 resources.alerts.*.evaluation.threshold.value.double_value	float64	ALL
 resources.alerts.*.evaluation.threshold.value.string_value	string	ALL
+resources.alerts.*.file_path	string	INPUT
 resources.alerts.*.id	string	ALL
 resources.alerts.*.lifecycle	resources.Lifecycle	INPUT
 resources.alerts.*.lifecycle.prevent_destroy	bool	INPUT
@@ -63,11 +64,27 @@ resources.alerts.*.permissions.permissions[*].permission_level	iam.PermissionLev
 resources.alerts.*.permissions.permissions[*].service_principal_name	string	ALL
 resources.alerts.*.permissions.permissions[*].user_name	string	ALL
 resources.apps.*.active_deployment	*apps.AppDeployment	ALL
+resources.apps.*.active_deployment.command	[]string	ALL
+resources.apps.*.active_deployment.command[*]	string	ALL
 resources.apps.*.active_deployment.create_time	string	ALL
 resources.apps.*.active_deployment.creator	string	ALL
 resources.apps.*.active_deployment.deployment_artifacts	*apps.AppDeploymentArtifacts	ALL
 resources.apps.*.active_deployment.deployment_artifacts.source_code_path	string	ALL
 resources.apps.*.active_deployment.deployment_id	string	ALL
+resources.apps.*.active_deployment.env_vars	[]apps.EnvVar	ALL
+resources.apps.*.active_deployment.env_vars[*]	apps.EnvVar	ALL
+resources.apps.*.active_deployment.env_vars[*].name	string	ALL
+resources.apps.*.active_deployment.env_vars[*].value	string	ALL
+resources.apps.*.active_deployment.env_vars[*].value_from	string	ALL
+resources.apps.*.active_deployment.git_source	*apps.GitSource	ALL
+resources.apps.*.active_deployment.git_source.branch	string	ALL
+resources.apps.*.active_deployment.git_source.commit	string	ALL
+resources.apps.*.active_deployment.git_source.git_repository	*apps.GitRepository	ALL
+resources.apps.*.active_deployment.git_source.git_repository.provider	string	ALL
+resources.apps.*.active_deployment.git_source.git_repository.url	string	ALL
+resources.apps.*.active_deployment.git_source.resolved_commit	string	ALL
+resources.apps.*.active_deployment.git_source.source_code_path	string	ALL
+resources.apps.*.active_deployment.git_source.tag	string	ALL
 resources.apps.*.active_deployment.mode	apps.AppDeploymentMode	ALL
 resources.apps.*.active_deployment.source_code_path	string	ALL
 resources.apps.*.active_deployment.status	*apps.AppDeploymentStatus	ALL
@@ -87,8 +104,12 @@ resources.apps.*.creator	string	ALL
 resources.apps.*.default_source_code_path	string	ALL
 resources.apps.*.description	string	ALL
 resources.apps.*.effective_budget_policy_id	string	ALL
+resources.apps.*.effective_usage_policy_id	string	ALL
 resources.apps.*.effective_user_api_scopes	[]string	ALL
 resources.apps.*.effective_user_api_scopes[*]	string	ALL
+resources.apps.*.git_repository	*apps.GitRepository	ALL
+resources.apps.*.git_repository.provider	string	ALL
+resources.apps.*.git_repository.url	string	ALL
 resources.apps.*.id	string	ALL
 resources.apps.*.lifecycle	resources.Lifecycle	INPUT
 resources.apps.*.lifecycle.prevent_destroy	bool	INPUT
@@ -97,11 +118,27 @@ resources.apps.*.name	string	ALL
 resources.apps.*.oauth2_app_client_id	string	ALL
 resources.apps.*.oauth2_app_integration_id	string	ALL
 resources.apps.*.pending_deployment	*apps.AppDeployment	ALL
+resources.apps.*.pending_deployment.command	[]string	ALL
+resources.apps.*.pending_deployment.command[*]	string	ALL
 resources.apps.*.pending_deployment.create_time	string	ALL
 resources.apps.*.pending_deployment.creator	string	ALL
 resources.apps.*.pending_deployment.deployment_artifacts	*apps.AppDeploymentArtifacts	ALL
 resources.apps.*.pending_deployment.deployment_artifacts.source_code_path	string	ALL
 resources.apps.*.pending_deployment.deployment_id	string	ALL
+resources.apps.*.pending_deployment.env_vars	[]apps.EnvVar	ALL
+resources.apps.*.pending_deployment.env_vars[*]	apps.EnvVar	ALL
+resources.apps.*.pending_deployment.env_vars[*].name	string	ALL
+resources.apps.*.pending_deployment.env_vars[*].value	string	ALL
+resources.apps.*.pending_deployment.env_vars[*].value_from	string	ALL
+resources.apps.*.pending_deployment.git_source	*apps.GitSource	ALL
+resources.apps.*.pending_deployment.git_source.branch	string	ALL
+resources.apps.*.pending_deployment.git_source.commit	string	ALL
+resources.apps.*.pending_deployment.git_source.git_repository	*apps.GitRepository	ALL
+resources.apps.*.pending_deployment.git_source.git_repository.provider	string	ALL
+resources.apps.*.pending_deployment.git_source.git_repository.url	string	ALL
+resources.apps.*.pending_deployment.git_source.resolved_commit	string	ALL
+resources.apps.*.pending_deployment.git_source.source_code_path	string	ALL
+resources.apps.*.pending_deployment.git_source.tag	string	ALL
 resources.apps.*.pending_deployment.mode	apps.AppDeploymentMode	ALL
 resources.apps.*.pending_deployment.source_code_path	string	ALL
 resources.apps.*.pending_deployment.status	*apps.AppDeploymentStatus	ALL
@@ -121,6 +158,9 @@ resources.apps.*.resources[*].database.database_name	string	ALL
 resources.apps.*.resources[*].database.instance_name	string	ALL
 resources.apps.*.resources[*].database.permission	apps.AppResourceDatabaseDatabasePermission	ALL
 resources.apps.*.resources[*].description	string	ALL
+resources.apps.*.resources[*].experiment	*apps.AppResourceExperiment	ALL
+resources.apps.*.resources[*].experiment.experiment_id	string	ALL
+resources.apps.*.resources[*].experiment.permission	apps.AppResourceExperimentExperimentPermission	ALL
 resources.apps.*.resources[*].genie_space	*apps.AppResourceGenieSpace	ALL
 resources.apps.*.resources[*].genie_space.name	string	ALL
 resources.apps.*.resources[*].genie_space.permission	apps.AppResourceGenieSpaceGenieSpacePermission	ALL
@@ -150,6 +190,7 @@ resources.apps.*.source_code_path	string	INPUT
 resources.apps.*.update_time	string	ALL
 resources.apps.*.updater	string	ALL
 resources.apps.*.url	string	ALL
+resources.apps.*.usage_policy_id	string	ALL
 resources.apps.*.user_api_scopes	[]string	ALL
 resources.apps.*.user_api_scopes[*]	string	ALL
 resources.apps.*.permissions.object_id	string	ALL
@@ -443,6 +484,7 @@ resources.dashboards.*.permissions[*].group_name	string	INPUT
 resources.dashboards.*.permissions[*].level	resources.DashboardPermissionLevel	INPUT
 resources.dashboards.*.permissions[*].service_principal_name	string	INPUT
 resources.dashboards.*.permissions[*].user_name	string	INPUT
+resources.dashboards.*.published	bool	REMOTE	STATE
 resources.dashboards.*.serialized_dashboard	any	ALL
 resources.dashboards.*.update_time	string	ALL
 resources.dashboards.*.url	string	INPUT
@@ -738,6 +780,7 @@ resources.jobs.*.permissions[*].user_name	string	INPUT
 resources.jobs.*.queue	*jobs.QueueSettings	INPUT	STATE
 resources.jobs.*.queue.enabled	bool	INPUT	STATE
 resources.jobs.*.run_as	*jobs.JobRunAs	INPUT	STATE
+resources.jobs.*.run_as.group_name	string	INPUT	STATE
 resources.jobs.*.run_as.service_principal_name	string	INPUT	STATE
 resources.jobs.*.run_as.user_name	string	INPUT	STATE
 resources.jobs.*.run_as_user_name	string	REMOTE
@@ -914,6 +957,7 @@ resources.jobs.*.settings.performance_target	jobs.PerformanceTarget	REMOTE
 resources.jobs.*.settings.queue	*jobs.QueueSettings	REMOTE
 resources.jobs.*.settings.queue.enabled	bool	REMOTE
 resources.jobs.*.settings.run_as	*jobs.JobRunAs	REMOTE
+resources.jobs.*.settings.run_as.group_name	string	REMOTE
 resources.jobs.*.settings.run_as.service_principal_name	string	REMOTE
 resources.jobs.*.settings.run_as.user_name	string	REMOTE
 resources.jobs.*.settings.schedule	*jobs.CronSchedule	REMOTE
@@ -2943,6 +2987,7 @@ resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration
 resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.query_based_connector_config.cursor_columns[*]	string	INPUT	STATE
 resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.query_based_connector_config.deletion_condition	string	INPUT	STATE
 resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.query_based_connector_config.hard_deletion_sync_min_interval_in_seconds	int64	INPUT	STATE
+resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.row_filter	string	INPUT	STATE
 resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.salesforce_include_formula_fields	bool	INPUT	STATE
 resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.scd_type	pipelines.TableSpecificConfigScdType	INPUT	STATE
 resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.sequence_by	[]string	INPUT	STATE
@@ -2972,6 +3017,7 @@ resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration
 resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.query_based_connector_config.cursor_columns[*]	string	INPUT	STATE
 resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.query_based_connector_config.deletion_condition	string	INPUT	STATE
 resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.query_based_connector_config.hard_deletion_sync_min_interval_in_seconds	int64	INPUT	STATE
+resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.row_filter	string	INPUT	STATE
 resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.salesforce_include_formula_fields	bool	INPUT	STATE
 resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.scd_type	pipelines.TableSpecificConfigScdType	INPUT	STATE
 resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.sequence_by	[]string	INPUT	STATE
@@ -3003,6 +3049,7 @@ resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.
 resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.query_based_connector_config.cursor_columns[*]	string	INPUT	STATE
 resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.query_based_connector_config.deletion_condition	string	INPUT	STATE
 resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.query_based_connector_config.hard_deletion_sync_min_interval_in_seconds	int64	INPUT	STATE
+resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.row_filter	string	INPUT	STATE
 resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.salesforce_include_formula_fields	bool	INPUT	STATE
 resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.scd_type	pipelines.TableSpecificConfigScdType	INPUT	STATE
 resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.sequence_by	[]string	INPUT	STATE
@@ -3036,6 +3083,7 @@ resources.pipelines.*.ingestion_definition.table_configuration.query_based_conne
 resources.pipelines.*.ingestion_definition.table_configuration.query_based_connector_config.cursor_columns[*]	string	INPUT	STATE
 resources.pipelines.*.ingestion_definition.table_configuration.query_based_connector_config.deletion_condition	string	INPUT	STATE
 resources.pipelines.*.ingestion_definition.table_configuration.query_based_connector_config.hard_deletion_sync_min_interval_in_seconds	int64	INPUT	STATE
+resources.pipelines.*.ingestion_definition.table_configuration.row_filter	string	INPUT	STATE
 resources.pipelines.*.ingestion_definition.table_configuration.salesforce_include_formula_fields	bool	INPUT	STATE
 resources.pipelines.*.ingestion_definition.table_configuration.scd_type	pipelines.TableSpecificConfigScdType	INPUT	STATE
 resources.pipelines.*.ingestion_definition.table_configuration.sequence_by	[]string	INPUT	STATE
@@ -3240,6 +3288,7 @@ resources.pipelines.*.spec.ingestion_definition.objects[*].report.table_configur
 resources.pipelines.*.spec.ingestion_definition.objects[*].report.table_configuration.query_based_connector_config.cursor_columns[*]	string	REMOTE
 resources.pipelines.*.spec.ingestion_definition.objects[*].report.table_configuration.query_based_connector_config.deletion_condition	string	REMOTE
 resources.pipelines.*.spec.ingestion_definition.objects[*].report.table_configuration.query_based_connector_config.hard_deletion_sync_min_interval_in_seconds	int64	REMOTE
+resources.pipelines.*.spec.ingestion_definition.objects[*].report.table_configuration.row_filter	string	REMOTE
 resources.pipelines.*.spec.ingestion_definition.objects[*].report.table_configuration.salesforce_include_formula_fields	bool	REMOTE
 resources.pipelines.*.spec.ingestion_definition.objects[*].report.table_configuration.scd_type	pipelines.TableSpecificConfigScdType	REMOTE
 resources.pipelines.*.spec.ingestion_definition.objects[*].report.table_configuration.sequence_by	[]string	REMOTE
@@ -3269,6 +3318,7 @@ resources.pipelines.*.spec.ingestion_definition.objects[*].schema.table_configur
 resources.pipelines.*.spec.ingestion_definition.objects[*].schema.table_configuration.query_based_connector_config.cursor_columns[*]	string	REMOTE
 resources.pipelines.*.spec.ingestion_definition.objects[*].schema.table_configuration.query_based_connector_config.deletion_condition	string	REMOTE
 resources.pipelines.*.spec.ingestion_definition.objects[*].schema.table_configuration.query_based_connector_config.hard_deletion_sync_min_interval_in_seconds	int64	REMOTE
+resources.pipelines.*.spec.ingestion_definition.objects[*].schema.table_configuration.row_filter	string	REMOTE
 resources.pipelines.*.spec.ingestion_definition.objects[*].schema.table_configuration.salesforce_include_formula_fields	bool	REMOTE
 resources.pipelines.*.spec.ingestion_definition.objects[*].schema.table_configuration.scd_type	pipelines.TableSpecificConfigScdType	REMOTE
 resources.pipelines.*.spec.ingestion_definition.objects[*].schema.table_configuration.sequence_by	[]string	REMOTE
@@ -3300,6 +3350,7 @@ resources.pipelines.*.spec.ingestion_definition.objects[*].table.table_configura
 resources.pipelines.*.spec.ingestion_definition.objects[*].table.table_configuration.query_based_connector_config.cursor_columns[*]	string	REMOTE
 resources.pipelines.*.spec.ingestion_definition.objects[*].table.table_configuration.query_based_connector_config.deletion_condition	string	REMOTE
 resources.pipelines.*.spec.ingestion_definition.objects[*].table.table_configuration.query_based_connector_config.hard_deletion_sync_min_interval_in_seconds	int64	REMOTE
+resources.pipelines.*.spec.ingestion_definition.objects[*].table.table_configuration.row_filter	string	REMOTE
 resources.pipelines.*.spec.ingestion_definition.objects[*].table.table_configuration.salesforce_include_formula_fields	bool	REMOTE
 resources.pipelines.*.spec.ingestion_definition.objects[*].table.table_configuration.scd_type	pipelines.TableSpecificConfigScdType	REMOTE
 resources.pipelines.*.spec.ingestion_definition.objects[*].table.table_configuration.sequence_by	[]string	REMOTE
@@ -3333,6 +3384,7 @@ resources.pipelines.*.spec.ingestion_definition.table_configuration.query_based_
 resources.pipelines.*.spec.ingestion_definition.table_configuration.query_based_connector_config.cursor_columns[*]	string	REMOTE
 resources.pipelines.*.spec.ingestion_definition.table_configuration.query_based_connector_config.deletion_condition	string	REMOTE
 resources.pipelines.*.spec.ingestion_definition.table_configuration.query_based_connector_config.hard_deletion_sync_min_interval_in_seconds	int64	REMOTE
+resources.pipelines.*.spec.ingestion_definition.table_configuration.row_filter	string	REMOTE
 resources.pipelines.*.spec.ingestion_definition.table_configuration.salesforce_include_formula_fields	bool	REMOTE
 resources.pipelines.*.spec.ingestion_definition.table_configuration.scd_type	pipelines.TableSpecificConfigScdType	REMOTE
 resources.pipelines.*.spec.ingestion_definition.table_configuration.sequence_by	[]string	REMOTE

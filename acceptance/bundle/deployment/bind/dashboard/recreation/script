@@ -1,8 +1,4 @@
-DASHBOARD_DISPLAY_NAME="test dashboard $(uuid)"
-if [ -z "$CLOUD_ENV" ]; then
-    DASHBOARD_DISPLAY_NAME="test dashboard 6260d50f-e8ff-4905-8f28-812345678903"   # use hard-coded uuid when running locally
-    export TEST_DEFAULT_WAREHOUSE_ID="warehouse-1234"
-fi
+DASHBOARD_DISPLAY_NAME="test dashboard $UNIQUE_NAME"
 
 export DASHBOARD_DISPLAY_NAME
 envsubst < databricks.yml.tmpl > databricks.yml

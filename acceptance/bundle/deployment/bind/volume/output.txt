@@ -1,14 +1,14 @@
 
->>> [CLI] schemas create test-schema-[UUID] main
+>>> [CLI] schemas create test-schema-[UNIQUE_NAME] main
 {
-  "full_name": "main.test-schema-[UUID]",
+  "full_name": "main.test-schema-[UNIQUE_NAME]",
   "catalog_name": "main"
 }
 
 === Create a pre-defined volume:
->>> [CLI] bundle deployment bind volume1 main.test-schema-[UUID].volume-[UUID] --auto-approve
+>>> [CLI] bundle deployment bind volume1 main.test-schema-[UNIQUE_NAME].volume-[UNIQUE_NAME] --auto-approve
 Updating deployment state...
-Successfully bound volume with an id 'main.test-schema-[UUID].volume-[UUID]'
+Successfully bound volume with an id 'main.test-schema-[UNIQUE_NAME].volume-[UNIQUE_NAME]'
 Run 'bundle deploy' to deploy changes to your workspace
 
 >>> [CLI] bundle deploy
@@ -17,11 +17,11 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> [CLI] volumes read main.test-schema-[UUID].volume-[UUID]
+>>> [CLI] volumes read main.test-schema-[UNIQUE_NAME].volume-[UNIQUE_NAME]
 {
   "catalog_name": "main",
-  "full_name": "main.test-schema-[UUID].volume-[UUID]",
-  "schema_name": "test-schema-[UUID]",
+  "full_name": "main.test-schema-[UNIQUE_NAME].volume-[UNIQUE_NAME]",
+  "schema_name": "test-schema-[UNIQUE_NAME]",
   "volume_type": "MANAGED"
 }
 
@@ -34,10 +34,10 @@ All files and directories at the following location will be deleted: /Workspace/
 Deleting files...
 Destroy complete!
 
->>> [CLI] volumes read main.test-schema-[UUID].volume-[UUID]
+>>> [CLI] volumes read main.test-schema-[UNIQUE_NAME].volume-[UNIQUE_NAME]
 {
   "catalog_name": "main",
-  "full_name": "main.test-schema-[UUID].volume-[UUID]",
-  "schema_name": "test-schema-[UUID]",
+  "full_name": "main.test-schema-[UNIQUE_NAME].volume-[UNIQUE_NAME]",
+  "schema_name": "test-schema-[UNIQUE_NAME]",
   "volume_type": "MANAGED"
 }
