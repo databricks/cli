@@ -67,5 +67,5 @@ type Extension struct {
 	FieldBehaviors []string `json:"x-databricks-field-behaviors,omitempty"`
 
 	// SinceVersion indicates which CLI version introduced this field.
-	SinceVersion string `json:"x-since-version,omitempty"`
+	SinceVersion string `json:"since_version,omitempty"`
 }
