@@ -1,5 +1,5 @@
 
->>> [CLI] bundle summary --show-full-config
+>>> [CLI] bundle summary --show-full-config --include-locations
 {
   "__locations": {
     "files": [
