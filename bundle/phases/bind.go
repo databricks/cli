@@ -2,6 +2,7 @@ package phases
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -59,7 +60,7 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions) {
 					cmdio.LogString(ctx, "\nChanges detected:")
 					for field, change := range entry.Changes {
 						if change.Action != deployplan.Skip {
-							cmdio.LogString(ctx, fmt.Sprintf("  ~ %s: %v -> %v", field, change.Old, change.New))
+							cmdio.LogString(ctx, fmt.Sprintf("  ~ %s: %v -> %v", field, jsonDump(change.Remote), jsonDump(change.New)))
 						}
 					}
 					cmdio.LogString(ctx, "")
@@ -104,6 +105,14 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions) {
 	}
 
 	statemgmt.PushResourcesState(ctx, b, eng)
+}
+
+func jsonDump(v any) string {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return fmt.Sprintf("value=%v marshall error=%s", v, err)
+	}
+	return string(b)
 }
 
 func Unbind(ctx context.Context, b *bundle.Bundle, bundleType, tfResourceType, resourceKey string) {
