@@ -30,11 +30,6 @@ def execute_sql(warehouse_id, sql):
     return run_cli("api", "post", "/api/2.0/sql/statements/", "--json", payload)
 
 
-result = run_cli("schemas", "create", schema_name, catalog_name)
-if result.returncode != 0:
-    print(f"Failed to create schema: {result.stderr}", file=sys.stderr)
-    # continue, maybe schema already exists
-
 # Get warehouse ID from environment variable
 warehouse_id = os.environ["TEST_DEFAULT_WAREHOUSE_ID"]
 
