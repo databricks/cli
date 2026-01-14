@@ -2,7 +2,7 @@
 >>> errcode [CLI] quality-monitors get main.qm_test_[UNIQUE_NAME].test_table_2
 {
   "assets_dir":"/Workspace/Users/[USERNAME]/monitor_assets_[UNIQUE_NAME]",
-  "dashboard_id":"79af5353c102d7a879af5353c102d7a9",
+  "dashboard_id": "(redacted)",
   "drift_metrics_table_name":"main.qm_test_[UNIQUE_NAME].test_table_2_drift_metrics",
   "monitor_version":0,
   "output_schema_name":"main.qm_test_[UNIQUE_NAME]",

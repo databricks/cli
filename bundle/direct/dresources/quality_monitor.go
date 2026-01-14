@@ -120,6 +120,7 @@ func (r *ResourceQualityMonitor) DoDelete(ctx context.Context, id string) error 
 func (*ResourceQualityMonitor) FieldTriggers() map[string]deployplan.ActionType {
 	return map[string]deployplan.ActionType{
 		"assets_dir": deployplan.Recreate,
+		"table_name": deployplan.Recreate,
 	}
 }
 

@@ -48,6 +48,18 @@ func (s *FakeWorkspace) QualityMonitorUpsert(req Request, tableName string, chec
 		info.TableName = tableName
 	}
 
+	if info.DriftMetricsTableName == "" {
+		info.DriftMetricsTableName = tableName + "_drift_metrics"
+	}
+
+	if info.ProfileMetricsTableName == "" {
+		info.ProfileMetricsTableName = tableName + "_profile_metrics"
+	}
+
+	if info.DashboardId == "" {
+		info.DashboardId = nextDashboardID()
+	}
+
 	s.Monitors[tableName] = info
 	return Response{
 		Body: info,

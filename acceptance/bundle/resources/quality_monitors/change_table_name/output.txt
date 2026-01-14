@@ -1,11 +1,11 @@
 
->>> python3 create_table.py main.qm_test_[UNIQUE_NAME].test_table
+>>> create_table.py main.qm_test_[UNIQUE_NAME].test_table
 Created schema main.qm_test_[UNIQUE_NAME]
 Created table main.qm_test_[UNIQUE_NAME].test_table
 Inserted sample data into main.qm_test_[UNIQUE_NAME].test_table
 Table main.qm_test_[UNIQUE_NAME].test_table is now visible (catalog_name=main)
 
->>> python3 create_table.py main.qm_test_[UNIQUE_NAME].test_table_2
+>>> create_table.py main.qm_test_[UNIQUE_NAME].test_table_2
 Schema main.qm_test_[UNIQUE_NAME] already exists
 Created table main.qm_test_[UNIQUE_NAME].test_table_2
 Inserted sample data into main.qm_test_[UNIQUE_NAME].test_table_2

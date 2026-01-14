@@ -2,8 +2,8 @@ SCHEMA_NAME="main.qm_test_${UNIQUE_NAME}"
 TABLE_NAME="${SCHEMA_NAME}.test_table"
 
 # Create schema and table via Python
-trace python3 create_table.py "$TABLE_NAME"
-trace python3 create_table.py "${TABLE_NAME}_2"
+trace create_table.py "$TABLE_NAME"
+trace create_table.py "${TABLE_NAME}_2"
 
 cleanup() {
     trace $CLI bundle destroy --auto-approve
