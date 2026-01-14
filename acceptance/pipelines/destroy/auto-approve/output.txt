@@ -16,7 +16,7 @@ Exit code: 1
 The following resources will be deleted:
   delete resources.pipelines.my_pipeline
 
-This action will result in the deletion of the following Lakeflow Declarative Pipelines along with the
+This action will result in the deletion of the following Lakeflow Spark Declarative Pipelines along with the
 Streaming Tables (STs) and Materialized Views (MVs) managed by them:
   delete resources.pipelines.my_pipeline
 

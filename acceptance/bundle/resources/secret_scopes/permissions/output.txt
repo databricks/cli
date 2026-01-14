@@ -18,6 +18,10 @@ Deployment complete!
 }
 
 >>> [CLI] secrets list-acls test-scope-permissions-[UNIQUE_NAME]
+{"permission":"MANAGE","principal":"[USERNAME]"}
+{"permission":"READ","principal":"deco-test-user@databricks.com"}
+{"permission":"WRITE","principal":"[TEST_SP_APPLICATION_ID]"}
+{"permission":"WRITE","principal":"scopes-permissions-group-[UNIQUE_NAME]"}
 
 === update permissions (remove sp, change permission for user, add users and remove deco-test-group)
 >>> [CLI] bundle plan
@@ -29,6 +33,9 @@ Updating deployment state...
 Deployment complete!
 
 >>> [CLI] secrets list-acls test-scope-permissions-[UNIQUE_NAME]
+{"permission":"MANAGE","principal":"[USERNAME]"}
+{"permission":"MANAGE","principal":"users"}
+{"permission":"WRITE","principal":"deco-test-user@databricks.com"}
 
 === change scope name (should recreate scope and update permissions)
 >>> [CLI] bundle plan
@@ -46,6 +53,9 @@ Deployment complete!
 }
 
 >>> [CLI] secrets list-acls test-scope-permissions-[UNIQUE_NAME]-2
+{"permission":"MANAGE","principal":"[USERNAME]"}
+{"permission":"MANAGE","principal":"users"}
+{"permission":"WRITE","principal":"deco-test-user@databricks.com"}
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

@@ -5,12 +5,10 @@ trace print_requests.py //jobs
 
 trace $CLI bundle plan
 
-foo_id=`read_id.py jobs foo`
-echo "$foo_id:FOO_ID" >> ACC_REPLS
+foo_id=`read_id.py foo`
 export foo_id
 
-bar_id=`read_id.py jobs bar`
-echo "$bar_id:BAR_ID" >> ACC_REPLS
+bar_id=`read_id.py bar`
 
 title "Update trigger.periodic.unit remotely and re-deploy; jobs.bar is unchanged"
 trace envsubst < job_update.json > tmp.json && mv tmp.json job_update.json

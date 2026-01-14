@@ -151,7 +151,7 @@ type Bundle struct {
 	Tagging tags.Cloud
 
 	// Cache is used for caching API responses (e.g., current user).
-	// By default, operates in measurement-only mode. Set DATABRICKS_CACHE_ENABLED=true to enable actual caching.
+	// By default, caching is enabled. Set DATABRICKS_CACHE_ENABLED=false to disable caching.
 	Cache *cache.Cache
 
 	Metrics Metrics

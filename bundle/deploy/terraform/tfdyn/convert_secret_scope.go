@@ -19,6 +19,8 @@ type resourceSecretAcl struct {
 type secretScopeConverter struct{}
 
 func convertPermissionsSecretScope(key, scopeName string, permissions []dyn.Value, out *schema.Resources) {
+	var previousAclKey string
+
 	for idx, permission := range permissions {
 		level, _ := permission.Get("level").AsString()
 		userName, _ := permission.Get("user_name").AsString()
@@ -34,17 +36,27 @@ func convertPermissionsSecretScope(key, scopeName string, permissions []dyn.Valu
 			principal = servicePrincipalName
 		}
 
+		// Build depends_on list - always depend on scope, plus previous ACL if exists.
+		// This forces Terraform to execute ACL operations sequentially, avoiding
+		// a backend race condition where parallel ACL modifications return inconsistent results.
+		dependsOn := []string{"databricks_secret_scope." + key}
+		if previousAclKey != "" {
+			dependsOn = append(dependsOn, "databricks_secret_acl."+previousAclKey)
+		}
+
 		acl := &resourceSecretAcl{
 			ResourceSecretAcl: schema.ResourceSecretAcl{
 				Permission: level,
 				Principal:  principal,
 				Scope:      scopeName,
 			},
-			DependsOn: []string{"databricks_secret_scope." + key},
+			DependsOn: dependsOn,
 		}
 
 		aclKey := fmt.Sprintf("secret_acl_%s_%d", key, idx)
 		out.SecretAcl[aclKey] = acl
+
+		previousAclKey = aclKey
 	}
 }
 

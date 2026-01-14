@@ -10,13 +10,31 @@ import (
 	"net/http/httptest"
 	"net/url"
 	"reflect"
+	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 
-	"github.com/gorilla/mux"
-
 	"github.com/databricks/cli/internal/testutil"
+	"github.com/gorilla/mux"
 )
+
+const testPidKey = "test-pid"
+
+var testPidRegex = regexp.MustCompile(testPidKey + `/(\d+)`)
+
+func ExtractPidFromHeaders(headers http.Header) int {
+	ua := headers.Get("User-Agent")
+	matches := testPidRegex.FindStringSubmatch(ua)
+	if len(matches) < 2 {
+		return 0
+	}
+	pid, err := strconv.Atoi(matches[1])
+	if err != nil {
+		return 0
+	}
+	return pid
+}
 
 type Server struct {
 	*httptest.Server

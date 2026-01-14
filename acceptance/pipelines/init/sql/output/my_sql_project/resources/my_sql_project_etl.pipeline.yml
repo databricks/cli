@@ -1,0 +1,20 @@
+# The main pipeline for my_sql_project
+
+resources:
+  pipelines:
+    my_sql_project_etl:
+      name: my_sql_project_etl
+      catalog: ${var.catalog}
+      schema: ${var.schema}
+      serverless: true
+      root_path: "../src/my_sql_project_etl"
+
+      libraries:
+        - glob:
+            include: ../src/my_sql_project_etl/transformations/**
+
+      environment:
+        dependencies:
+          # We include every dependency defined by pyproject.toml by defining an editable environment
+          # that points to the folder where pyproject.toml is deployed.
+          - --editable ${workspace.file_path}

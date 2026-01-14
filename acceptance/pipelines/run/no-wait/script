@@ -1,3 +1,3 @@
-trace $PIPELINES deploy
+trace $ENTRYPOINT deploy
 title "test --no-wait flag"
-trace $PIPELINES run --no-wait
+trace $ENTRYPOINT run --no-wait

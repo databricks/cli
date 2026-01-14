@@ -13,7 +13,7 @@
 }
 {
   "method": "PUT",
-  "path": "/api/2.0/permissions/pipelines/[PIPELINE_ID]",
+  "path": "/api/2.0/permissions/pipelines/[FOO_ID]",
   "body": {
     "access_control_list": [
       {

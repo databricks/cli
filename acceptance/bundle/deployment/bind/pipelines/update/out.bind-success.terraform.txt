@@ -1,0 +1,5 @@
+
+>>> [CLI] bundle deployment bind foo [NEW_PIPELINE_ID] --auto-approve
+Updating deployment state...
+Successfully bound pipeline with an id '[NEW_PIPELINE_ID]'
+Run 'bundle deploy' to deploy changes to your workspace

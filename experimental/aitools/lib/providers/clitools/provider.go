@@ -1,0 +1,154 @@
+package clitools
+
+import (
+	"context"
+
+	mcp "github.com/databricks/cli/experimental/aitools/lib"
+	mcpsdk "github.com/databricks/cli/experimental/aitools/lib/mcp"
+	"github.com/databricks/cli/experimental/aitools/lib/providers"
+	"github.com/databricks/cli/experimental/aitools/lib/session"
+	"github.com/databricks/cli/experimental/aitools/lib/skills"
+	"github.com/databricks/cli/libs/log"
+)
+
+func init() {
+	providers.Register("clitools", func(ctx context.Context, cfg *mcp.Config, sess *session.Session) (providers.Provider, error) {
+		return NewProvider(ctx, cfg, sess)
+	}, providers.ProviderConfig{
+		Always: true,
+	})
+}
+
+// Provider represents the CLI provider that registers MCP tools for CLI operations
+type Provider struct {
+	config  *mcp.Config
+	session *session.Session
+	ctx     context.Context
+}
+
+// NewProvider creates a new CLI provider
+func NewProvider(ctx context.Context, cfg *mcp.Config, sess *session.Session) (*Provider, error) {
+	return &Provider{
+		config:  cfg,
+		session: sess,
+		ctx:     ctx,
+	}, nil
+}
+
+// Name returns the name of the provider.
+func (p *Provider) Name() string {
+	return "clitools"
+}
+
+// RegisterTools registers all CLI tools with the MCP server
+func (p *Provider) RegisterTools(server *mcpsdk.Server) error {
+	log.Info(p.ctx, "Registering CLI tools")
+
+	// Register databricks_configure_auth
+	type ConfigureAuthInput struct {
+		Host    *string `json:"host,omitempty" jsonschema_description:"Databricks workspace URL (e.g., https://example.cloud.databricks.com). If not provided, uses default from environment or config file"`
+		Profile *string `json:"profile,omitempty" jsonschema_description:"Profile name from ~/.databrickscfg. If not provided, uses default profile"`
+	}
+
+	mcpsdk.AddTool(server,
+		&mcpsdk.Tool{
+			Name:        "databricks_configure_auth",
+			Description: "Configure authentication for Databricks. Only call when Databricks authentication has failed to authenticate automatically or when the user explicitly asks for using a specific host or profile. Validates credentials and stores the authenticated client in the session.",
+		},
+		func(ctx context.Context, req *mcpsdk.CallToolRequest, args ConfigureAuthInput) (*mcpsdk.CallToolResult, any, error) {
+			log.Debug(ctx, "databricks_configure_auth called")
+
+			sess, err := session.GetSession(ctx)
+			if err != nil {
+				return nil, nil, err
+			}
+
+			client, err := ConfigureAuth(ctx, sess, args.Host, args.Profile)
+			if err != nil {
+				return nil, nil, err
+			}
+
+			message := "Authentication configured successfully"
+			if args.Host != nil {
+				message += " for host: " + *args.Host
+			}
+			if args.Profile != nil {
+				message += " using profile: " + *args.Profile
+			}
+
+			// Get user info to confirm auth
+			me, err := client.CurrentUser.Me(ctx)
+			if err == nil && me.UserName != "" {
+				message += "\nAuthenticated as: " + me.UserName
+			}
+
+			return mcpsdk.CreateNewTextContentResult(message), nil, nil
+		},
+	)
+
+	// Register databricks_discover tool
+	type DiscoverInput struct {
+		WorkingDirectory string `json:"working_directory" jsonschema:"required" jsonschema_description:"The directory to detect project context from."`
+	}
+
+	mcpsdk.AddTool(server,
+		&mcpsdk.Tool{
+			Name: "databricks_discover",
+			Description: `CALL THIS FIRST before any Databricks work. Returns essential scaffolding commands, workflow guidance, and guidance on writing and editing Databricks source code.
+
+This tool provides context needed for scaffolding new projects, editing existing code, deploying bundles, and querying data. Without calling this first, you won't know the correct CLI patterns or workspace configuration.`,
+		},
+		func(ctx context.Context, req *mcpsdk.CallToolRequest, args DiscoverInput) (*mcpsdk.CallToolResult, any, error) {
+			log.Debugf(ctx, "databricks_discover called: working_directory=%s", args.WorkingDirectory)
+			result, err := Discover(ctx, args.WorkingDirectory)
+			if err != nil {
+				return nil, nil, err
+			}
+			return mcpsdk.CreateNewTextContentResult(result), nil, nil
+		},
+	)
+
+	// Register invoke_databricks_cli tool
+	type InvokeDatabricksCLIInput struct {
+		WorkingDirectory string   `json:"working_directory" jsonschema:"required" jsonschema_description:"The directory to run the command in."`
+		Args             []string `json:"args" jsonschema:"required" jsonschema_description:"CLI arguments as array, e.g. [\"bundle\", \"deploy\"] or [\"bundle\", \"validate\", \"--target\", \"dev\"]. Do not include 'databricks' prefix."`
+	}
+
+	mcpsdk.AddTool(server,
+		&mcpsdk.Tool{
+			Name:        "invoke_databricks_cli",
+			Description: "Execute Databricks CLI command. Pass arguments as an array of strings.",
+		},
+		func(ctx context.Context, req *mcpsdk.CallToolRequest, args InvokeDatabricksCLIInput) (*mcpsdk.CallToolResult, any, error) {
+			log.Debugf(ctx, "invoke_databricks_cli called: args=%v, working_directory=%s", args.Args, args.WorkingDirectory)
+			result, err := InvokeDatabricksCLI(ctx, args.Args, args.WorkingDirectory)
+			if err != nil {
+				return nil, nil, err
+			}
+			return mcpsdk.CreateNewTextContentResult(result), nil, nil
+		},
+	)
+
+	// Register read_skill_file tool
+	type ReadSkillFileInput struct {
+		FilePath string `json:"file_path" jsonschema:"required" jsonschema_description:"Path to skill file, format: category/skill-name/file.md (e.g., pipelines/auto-cdc/SKILL.md)"`
+	}
+
+	mcpsdk.AddTool(server,
+		&mcpsdk.Tool{
+			Name:        "read_skill_file",
+			Description: "Read a skill file from the skills registry (skills are listed by databricks_discover). Provides domain-specific expertise for Databricks tasks (pipelines, jobs, apps, ...). Load when user requests match a skill's scope.",
+		},
+		func(ctx context.Context, req *mcpsdk.CallToolRequest, args ReadSkillFileInput) (*mcpsdk.CallToolResult, any, error) {
+			log.Debugf(ctx, "read_skill_file called: file_path=%s", args.FilePath)
+			result, err := skills.GetSkillFile(args.FilePath)
+			if err != nil {
+				return nil, nil, err
+			}
+			return mcpsdk.CreateNewTextContentResult(result), nil, nil
+		},
+	)
+
+	log.Infof(p.ctx, "Registered CLI tools: count=%d", 4)
+	return nil
+}

@@ -36,7 +36,13 @@ func resolveStopArgument(ctx context.Context, b *bundle.Bundle, args []string) (
 	return "", errors.New("expected a KEY of the pipeline to stop")
 }
 
-func stopCommand() *cobra.Command {
+type StopCommandOpts struct {
+	// SkipInitContext skips logdiag.InitContext, and can be used if it's already initialized
+	// since stop command is reused
+	SkipInitContext bool
+}
+
+func StopCommand(opts StopCommandOpts) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "stop [KEY]",
 		Short: "Stop a pipeline",
@@ -50,6 +56,7 @@ If there is only one pipeline in the project, KEY is optional and the pipeline w
 		var key string
 		b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{
 			ErrorOnEmptyState: true,
+			SkipInitContext:   opts.SkipInitContext,
 			PostInitFunc: func(ctx context.Context, b *bundle.Bundle) error {
 				var err error
 				key, err = resolveStopArgument(ctx, b, args)

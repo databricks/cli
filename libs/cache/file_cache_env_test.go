@@ -2,6 +2,7 @@ package cache
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -22,43 +23,92 @@ func TestCacheEnabledEnvVar(t *testing.T) {
 	tests := []struct {
 		name         string
 		envValue     string
+		setEnv       bool
 		expectCached bool
 	}{
 		{
 			name:         "cache enabled with 'true'",
 			envValue:     "true",
+			setEnv:       true,
+			expectCached: true,
+		},
+		{
+			name:         "cache enabled with 'TRUE'",
+			envValue:     "TRUE",
+			setEnv:       true,
+			expectCached: true,
+		},
+		{
+			name:         "cache enabled with '1'",
+			envValue:     "1",
+			setEnv:       true,
+			expectCached: true,
+		},
+		{
+			name:         "cache enabled with 'yes'",
+			envValue:     "yes",
+			setEnv:       true,
+			expectCached: true,
+		},
+		{
+			name:         "cache enabled with 'on'",
+			envValue:     "on",
+			setEnv:       true,
 			expectCached: true,
 		},
 		{
 			name:         "cache disabled with 'false'",
 			envValue:     "false",
+			setEnv:       true,
 			expectCached: false,
 		},
 		{
-			name:         "cache disabled when empty",
+			name:         "cache disabled with 'FALSE'",
+			envValue:     "FALSE",
+			setEnv:       true,
+			expectCached: false,
+		},
+		{
+			name:         "cache disabled with '0'",
+			envValue:     "0",
+			setEnv:       true,
+			expectCached: false,
+		},
+		{
+			name:         "cache disabled with 'no'",
+			envValue:     "no",
+			setEnv:       true,
+			expectCached: false,
+		},
+		{
+			name:         "cache disabled with empty string",
 			envValue:     "",
+			setEnv:       true,
 			expectCached: false,
 		},
 		{
 			name:         "cache disabled with invalid value",
-			envValue:     "yes",
+			envValue:     "invalid",
+			setEnv:       true,
 			expectCached: false,
 		},
 		{
-			name:         "cache disabled with '1'",
-			envValue:     "1",
-			expectCached: false,
+			name:         "cache enabled by default when not set",
+			envValue:     "",
+			setEnv:       false,
+			expectCached: true,
 		},
 	}
 
-	for _, tt := range tests {
+	for i, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Create a unique subdirectory for this test
-			testDir := filepath.Join(tempDir, tt.name)
+			// Use index to avoid case-sensitivity issues on macOS
+			testDir := filepath.Join(tempDir, fmt.Sprintf("test-%d-%s", i, tt.envValue))
 
 			// Set up context with environment variable
 			testCtx := ctx
-			if tt.envValue != "" {
+			if tt.setEnv {
 				testCtx = env.Set(testCtx, "DATABRICKS_CACHE_ENABLED", tt.envValue)
 			}
 			testCtx = env.Set(testCtx, "DATABRICKS_CACHE_DIR", testDir)
