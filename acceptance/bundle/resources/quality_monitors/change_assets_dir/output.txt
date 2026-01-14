@@ -1,5 +1,5 @@
 
->>> python3 create_table.py main.qm_test_[UNIQUE_NAME].test_table
+>>> create_table.py main.qm_test_[UNIQUE_NAME].test_table
 Created schema main.qm_test_[UNIQUE_NAME]
 Created table main.qm_test_[UNIQUE_NAME].test_table
 Inserted sample data into main.qm_test_[UNIQUE_NAME].test_table
