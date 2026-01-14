@@ -15,6 +15,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/cli/libs/utils"
 )
 
 func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions) {
@@ -57,7 +58,8 @@ func Bind(ctx context.Context, b *bundle.Bundle, opts *terraform.BindOptions) {
 			if result.Plan != nil {
 				if entry, ok := result.Plan.Plan[resourceKey]; ok && entry != nil && len(entry.Changes) > 0 {
 					cmdio.LogString(ctx, "\nChanges detected:")
-					for field, change := range entry.Changes {
+					for _, field := range utils.SortedKeys(entry.Changes) {
+						change := entry.Changes[field]
 						if change.Action != deployplan.Skip {
 							cmdio.LogString(ctx, fmt.Sprintf("  ~ %s: %v -> %v", field, jsonDump(change.Remote), jsonDump(change.New)))
 						}
