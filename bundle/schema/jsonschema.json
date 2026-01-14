@@ -799,12 +799,12 @@
                       "principal": {
                         "description": "The name of the principal that will be granted privileges",
                         "$ref": "#/$defs/string",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "privileges": {
                         "description": "The privileges to grant to the specified entity",
                         "$ref": "#/$defs/slice/string",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       }
                     },
                     "additionalProperties": false,
@@ -832,27 +832,27 @@
                       "continuous": {
                         "description": "An optional continuous property for this job. The continuous property will ensure that there is always one run executing. Only one of `schedule` and `continuous` can be used.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.Continuous",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "description": {
                         "description": "An optional description for the job. The maximum length is 27700 characters in UTF-8 encoding.",
                         "$ref": "#/$defs/string",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "email_notifications": {
                         "description": "An optional set of email addresses that is notified when runs of this job begin or complete as well as when this job is deleted.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.JobEmailNotifications",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "environments": {
                         "description": "A list of task execution environment specifications that can be referenced by serverless tasks of this job.\nFor serverless notebook tasks, if the environment_key is not specified, the notebook environment will be used if present. If a jobs environment is specified, it will override the notebook environment.\nFor other serverless tasks, the task environment is required to be specified using environment_key in the task settings.",
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/jobs.JobEnvironment",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "git_source": {
                         "description": "An optional specification for a remote Git repository containing the source code used by tasks. Version-controlled source code is supported by notebook, dbt, Python script, and SQL File tasks.\n\nIf `git_source` is set, these tasks retrieve the file from the remote repository by default. However, this behavior can be overridden by setting `source` to `WORKSPACE` on the task.\n\nNote: dbt and SQL File tasks support only version-controlled sources. If dbt or SQL File tasks are used, `git_source` must be defined on the job.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.GitSource",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "health": {
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.JobsHealthRules"
@@ -860,7 +860,7 @@
                       "job_clusters": {
                         "description": "A list of job cluster specifications that can be shared and reused by tasks of this job. Libraries cannot be declared in a shared job cluster. You must declare dependent libraries in task settings.",
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/jobs.JobCluster",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "lifecycle": {
                         "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
@@ -869,22 +869,22 @@
                       "max_concurrent_runs": {
                         "description": "An optional maximum allowed number of concurrent runs of the job.\nSet this value if you want to be able to execute multiple runs of the same job concurrently.\nThis is useful for example if you trigger your job on a frequent schedule and want to allow consecutive runs to overlap with each other, or if you want to trigger multiple runs which differ by their input parameters.\nThis setting affects only new runs. For example, suppose the job’s concurrency is 4 and there are 4 concurrent active runs. Then setting the concurrency to 3 won’t kill any of the active runs.\nHowever, from then on, new runs are skipped unless there are fewer than 3 active runs.\nThis value cannot exceed 1000. Setting this value to `0` causes all new runs to be skipped.",
                         "$ref": "#/$defs/int",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "name": {
                         "description": "An optional name for the job. The maximum length is 4096 bytes in UTF-8 encoding.",
                         "$ref": "#/$defs/string",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "notification_settings": {
                         "description": "Optional notification settings that are used when sending notifications to each of the `email_notifications` and `webhook_notifications` for this job.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.JobNotificationSettings",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "parameters": {
                         "description": "Job-level parameter definitions",
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/jobs.JobParameterDefinition",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "performance_target": {
                         "description": "The performance mode on a serverless job. This field determines the level of compute performance or cost-efficiency for the run.\nThe performance target does not apply to tasks that run on Serverless GPU compute.\n\n* `STANDARD`: Enables cost-efficient execution of serverless workloads.\n* `PERFORMANCE_OPTIMIZED`: Prioritizes fast startup and execution times through rapid scaling and optimized cluster performance.",
@@ -897,7 +897,7 @@
                       "queue": {
                         "description": "The queue settings of the job.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.QueueSettings",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "run_as": {
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.JobRunAs"
@@ -905,27 +905,27 @@
                       "schedule": {
                         "description": "An optional periodic schedule for this job. The default behavior is that the job only runs when triggered by clicking “Run Now” in the Jobs UI or sending an API request to `runNow`.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.CronSchedule",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "tags": {
                         "description": "A map of tags associated with the job. These are forwarded to the cluster as cluster tags for jobs clusters, and are subject to the same limitations as cluster tags. A maximum of 25 tags can be added to the job.",
                         "$ref": "#/$defs/map/string",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "tasks": {
                         "description": "A list of task specifications to be executed by this job.\nIt supports up to 1000 elements in write endpoints (:method:jobs/create, :method:jobs/reset, :method:jobs/update, :method:jobs/submit).\nRead endpoints return only 100 tasks. If more than 100 tasks are available, you can paginate through them using :method:jobs/get. Use the `next_page_token` field at the object root to determine if more results are available.",
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/jobs.Task",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "timeout_seconds": {
                         "description": "An optional timeout applied to each run of this job. A value of `0` means no timeout.",
                         "$ref": "#/$defs/int",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "trigger": {
                         "description": "A configuration to trigger a run when certain conditions are met. The default behavior is that the job runs only when triggered by clicking “Run Now” in the Jobs UI or sending an API request to `runNow`.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.TriggerSettings",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "usage_policy_id": {
                         "description": "The id of the user specified usage policy to use for this job.\nIf not specified, a default usage policy may be applied when creating or modifying the job.\nSee `effective_usage_policy_id` for the usage policy used by this workload.",
@@ -937,7 +937,7 @@
                       "webhook_notifications": {
                         "description": "A collection of system notification IDs to notify when runs of this job begin or complete.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.WebhookNotifications",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       }
                     },
                     "additionalProperties": false,
@@ -1026,7 +1026,7 @@
                       "artifact_location": {
                         "description": "Location where all artifacts for the experiment are stored.\nIf not provided, the remote server will select an appropriate default.",
                         "$ref": "#/$defs/string",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "lifecycle": {
                         "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
@@ -1035,7 +1035,7 @@
                       "name": {
                         "description": "Experiment name.",
                         "$ref": "#/$defs/string",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "permissions": {
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.MlflowExperimentPermission"
@@ -1043,7 +1043,7 @@
                       "tags": {
                         "description": "A collection of tags to set on the experiment. Maximum tag size and number of tags per request\ndepends on the storage backend. All storage backends are guaranteed to support tag keys up\nto 250 bytes in size and tag values up to 5000 bytes in size. All storage backends are also\nguaranteed to support up to 20 tags per request.",
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/ml.ExperimentTag",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       }
                     },
                     "additionalProperties": false,
@@ -1115,7 +1115,7 @@
                       "description": {
                         "description": "Optional description for registered model.",
                         "$ref": "#/$defs/string",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "lifecycle": {
                         "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
@@ -1124,7 +1124,7 @@
                       "name": {
                         "description": "Register models under this name",
                         "$ref": "#/$defs/string",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "permissions": {
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.MlflowModelPermission"
@@ -1132,7 +1132,7 @@
                       "tags": {
                         "description": "Additional metadata for registered model.",
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/ml.ModelTag",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       }
                     },
                     "additionalProperties": false,
@@ -1216,7 +1216,7 @@
                       "config": {
                         "description": "The core config of the serving endpoint.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.EndpointCoreConfigInput",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "description": {
                         "$ref": "#/$defs/string"
@@ -1233,7 +1233,7 @@
                       "name": {
                         "description": "The name of the serving endpoint. This field is required and must be unique across a Databricks workspace.\nAn endpoint name can consist of alphanumeric characters, dashes, and underscores.",
                         "$ref": "#/$defs/string",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "permissions": {
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.ModelServingEndpointPermission"
@@ -1242,18 +1242,18 @@
                         "description": "Rate limits to be applied to the serving endpoint. NOTE: this field is deprecated, please use AI Gateway to manage rate limits.",
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/serving.RateLimit",
                         "deprecationMessage": "This field is deprecated",
-                        "since_version": "v0.228.1",
+                        "since_version": "v0.229.0",
                         "deprecated": true
                       },
                       "route_optimized": {
                         "description": "Enable route optimization for the serving endpoint.",
                         "$ref": "#/$defs/bool",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "tags": {
                         "description": "Tags to be attached to the serving endpoint and automatically propagated to billing logs.",
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/serving.EndpointTag",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       }
                     },
                     "additionalProperties": false,
@@ -1325,22 +1325,22 @@
                       "group_name": {
                         "description": "The name of the group that has the permission set in level.",
                         "$ref": "#/$defs/string",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "level": {
                         "description": "The allowed permission for user, group, service principal defined for this permission.",
                         "$ref": "#/$defs/string",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "service_principal_name": {
                         "description": "The name of the service principal that has the permission set in level.",
                         "$ref": "#/$defs/string",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "user_name": {
                         "description": "The name of the user that has the permission set in level.",
                         "$ref": "#/$defs/string",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       }
                     },
                     "additionalProperties": false,
@@ -1372,37 +1372,37 @@
                       "catalog": {
                         "description": "A catalog in Unity Catalog to publish data from this pipeline to. If `target` is specified, tables in this pipeline are published to a `target` schema inside `catalog` (for example, `catalog`.`target`.`table`). If `target` is not specified, no data is published to Unity Catalog.",
                         "$ref": "#/$defs/string",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "channel": {
                         "description": "DLT Release Channel that specifies which version to use.",
                         "$ref": "#/$defs/string",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "clusters": {
                         "description": "Cluster settings for this pipeline deployment.",
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/pipelines.PipelineCluster",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "configuration": {
                         "description": "String-String configuration for this pipeline execution.",
                         "$ref": "#/$defs/map/string",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "continuous": {
                         "description": "Whether the pipeline is continuous or triggered. This replaces `trigger`.",
                         "$ref": "#/$defs/bool",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "development": {
                         "description": "Whether the pipeline is in Development mode. Defaults to false.",
                         "$ref": "#/$defs/bool",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "edition": {
                         "description": "Pipeline product edition.",
                         "$ref": "#/$defs/string",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "environment": {
                         "description": "Environment specification for this pipeline used to install dependencies.",
@@ -1417,29 +1417,29 @@
                       "filters": {
                         "description": "Filters on which Pipeline packages to include in the deployed graph.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.Filters",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "gateway_definition": {
                         "description": "The definition of a gateway pipeline to support change data capture.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.IngestionGatewayPipelineDefinition",
                         "x-databricks-preview": "PRIVATE",
                         "doNotSuggest": true,
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "id": {
                         "description": "Unique identifier for this pipeline.",
                         "$ref": "#/$defs/string",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "ingestion_definition": {
                         "description": "The configuration for a managed ingestion pipeline. These settings cannot be used with the 'libraries', 'schema', 'target', or 'catalog' settings.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.IngestionPipelineDefinition",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "libraries": {
                         "description": "Libraries or code needed by this deployment.",
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/pipelines.PipelineLibrary",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "lifecycle": {
                         "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
@@ -1448,12 +1448,12 @@
                       "name": {
                         "description": "Friendly identifier for this pipeline.",
                         "$ref": "#/$defs/string",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "notifications": {
                         "description": "List of notification settings for this pipeline.",
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/pipelines.Notifications",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "permissions": {
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.PipelinePermission"
@@ -1461,7 +1461,7 @@
                       "photon": {
                         "description": "Whether Photon is enabled for this pipeline.",
                         "$ref": "#/$defs/bool",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "restart_window": {
                         "description": "Restart window of this pipeline.",
@@ -1486,12 +1486,12 @@
                       "serverless": {
                         "description": "Whether serverless compute is enabled for this pipeline.",
                         "$ref": "#/$defs/bool",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "storage": {
                         "description": "DBFS root directory for storing checkpoints and tables.",
                         "$ref": "#/$defs/string",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "tags": {
                         "description": "A map of tags associated with the pipeline.\nThese are forwarded to the cluster as cluster tags, and are therefore subject to the same limitations.\nA maximum of 25 tags can be added to the pipeline.",
@@ -1502,7 +1502,7 @@
                         "description": "Target schema (database) to add tables in this pipeline to. Exactly one of `schema` or `target` must be specified. To publish to Unity Catalog, also specify `catalog`. This legacy field is deprecated for pipeline creation in favor of the `schema` field.",
                         "$ref": "#/$defs/string",
                         "deprecationMessage": "This field is deprecated",
-                        "since_version": "v0.228.1",
+                        "since_version": "v0.229.0",
                         "deprecated": true
                       },
                       "trigger": {
@@ -1586,24 +1586,24 @@
                       "assets_dir": {
                         "description": "[Create:REQ Update:IGN] Field for specifying the absolute path to a custom directory to store data-monitoring\nassets. Normally prepopulated to a default user location via UI and Python APIs.",
                         "$ref": "#/$defs/string",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "baseline_table_name": {
                         "description": "[Create:OPT Update:OPT] Baseline table name.\nBaseline data is used to compute drift from the data in the monitored `table_name`.\nThe baseline table and the monitored table shall have the same schema.",
                         "$ref": "#/$defs/string",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "custom_metrics": {
                         "description": "[Create:OPT Update:OPT] Custom metrics.",
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/catalog.MonitorMetric",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "data_classification_config": {
                         "description": "[Create:OPT Update:OPT] Data classification related config.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.MonitorDataClassificationConfig",
                         "x-databricks-preview": "PRIVATE",
                         "doNotSuggest": true,
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "inference_log": {
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.MonitorInferenceLog"
@@ -1620,32 +1620,32 @@
                       "notifications": {
                         "description": "[Create:OPT Update:OPT] Field for specifying notification settings.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.MonitorNotifications",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "output_schema_name": {
                         "description": "[Create:REQ Update:REQ] Schema where output tables are created. Needs to be in 2-level format {catalog}.{schema}",
                         "$ref": "#/$defs/string",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "schedule": {
                         "description": "[Create:OPT Update:OPT] The monitor schedule.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.MonitorCronSchedule",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "skip_builtin_dashboard": {
                         "description": "Whether to skip creating a default dashboard summarizing data quality metrics.",
                         "$ref": "#/$defs/bool",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "slicing_exprs": {
                         "description": "[Create:OPT Update:OPT] List of column expressions to slice data with for targeted analysis. The data is grouped by\neach expression independently, resulting in a separate slice for each predicate and its\ncomplements. For example `slicing_exprs=[“col_1”, “col_2 \u003e 10”]` will generate the following\nslices: two slices for `col_2 \u003e 10` (True and False), and one slice per unique value in\n`col1`. For high-cardinality columns, only the top 100 unique values by frequency will\ngenerate slices.",
                         "$ref": "#/$defs/slice/string",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "snapshot": {
                         "description": "Configuration for monitoring snapshot tables.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.MonitorSnapshot",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "table_name": {
                         "$ref": "#/$defs/string"
@@ -1653,12 +1653,12 @@
                       "time_series": {
                         "description": "Configuration for monitoring time series tables.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.MonitorTimeSeries",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "warehouse_id": {
                         "description": "Optional argument to specify the warehouse for dashboard creation. If not specified, the first running\nwarehouse will be used.",
                         "$ref": "#/$defs/string",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       }
                     },
                     "additionalProperties": false,
@@ -1689,12 +1689,12 @@
                       "catalog_name": {
                         "description": "The name of the catalog where the schema and the registered model reside",
                         "$ref": "#/$defs/string",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "comment": {
                         "description": "The comment attached to the registered model",
                         "$ref": "#/$defs/string",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "created_at": {
                         "$ref": "#/$defs/int64"
@@ -1718,7 +1718,7 @@
                       "name": {
                         "description": "The name of the registered model",
                         "$ref": "#/$defs/string",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "owner": {
                         "$ref": "#/$defs/string"
@@ -1726,12 +1726,12 @@
                       "schema_name": {
                         "description": "The name of the schema where the registered model resides",
                         "$ref": "#/$defs/string",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "storage_location": {
                         "description": "The storage location on the cloud under which model version data files are stored",
                         "$ref": "#/$defs/string",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "updated_at": {
                         "$ref": "#/$defs/int64"
@@ -1757,12 +1757,12 @@
                       "catalog_name": {
                         "description": "Name of parent catalog.",
                         "$ref": "#/$defs/string",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "comment": {
                         "description": "User-provided free-form text description.",
                         "$ref": "#/$defs/string",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "grants": {
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.SchemaGrant"
@@ -1774,7 +1774,7 @@
                       "name": {
                         "description": "Name of schema, relative to parent catalog.",
                         "$ref": "#/$defs/string",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "properties": {
                         "$ref": "#/$defs/map/string"
@@ -1782,7 +1782,7 @@
                       "storage_root": {
                         "description": "Storage root URL for managed tables within schema.",
                         "$ref": "#/$defs/string",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       }
                     },
                     "additionalProperties": false,
@@ -2225,37 +2225,37 @@
                       "alert": {
                         "description": "The name of the alert for which to retrieve an ID.",
                         "$ref": "#/$defs/string",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "cluster": {
                         "description": "The name of the cluster for which to retrieve an ID.",
                         "$ref": "#/$defs/string",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "cluster_policy": {
                         "description": "The name of the cluster_policy for which to retrieve an ID.",
                         "$ref": "#/$defs/string",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "dashboard": {
                         "description": "The name of the dashboard for which to retrieve an ID.",
                         "$ref": "#/$defs/string",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "instance_pool": {
                         "description": "The name of the instance_pool for which to retrieve an ID.",
                         "$ref": "#/$defs/string",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "job": {
                         "description": "The name of the job for which to retrieve an ID.",
                         "$ref": "#/$defs/string",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "metastore": {
                         "description": "The name of the metastore for which to retrieve an ID.",
                         "$ref": "#/$defs/string",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "notification_destination": {
                         "description": "The name of the notification_destination for which to retrieve an ID.",
@@ -2265,22 +2265,22 @@
                       "pipeline": {
                         "description": "The name of the pipeline for which to retrieve an ID.",
                         "$ref": "#/$defs/string",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "query": {
                         "description": "The name of the query for which to retrieve an ID.",
                         "$ref": "#/$defs/string",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "service_principal": {
                         "description": "The name of the service_principal for which to retrieve an ID.",
                         "$ref": "#/$defs/string",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "warehouse": {
                         "description": "The name of the warehouse for which to retrieve an ID.",
                         "$ref": "#/$defs/string",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       }
                     },
                     "additionalProperties": false
@@ -2299,22 +2299,22 @@
                       "default": {
                         "description": "The default value for the variable.",
                         "$ref": "#/$defs/interface",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "description": {
                         "description": "The description of the variable.",
                         "$ref": "#/$defs/string",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "lookup": {
                         "description": "The name of the alert, cluster_policy, cluster, dashboard, instance_pool, job, metastore, pipeline, query, service_principal, or warehouse object for which to retrieve an ID.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/variable.Lookup",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       },
                       "type": {
                         "description": "The type of the variable.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/variable.VariableType",
-                        "since_version": "v0.228.1"
+                        "since_version": "v0.229.0"
                       }
                     },
                     "additionalProperties": false
@@ -2329,23 +2329,23 @@
                   "default": {
                     "description": "The default value for the variable.",
                     "$ref": "#/$defs/interface",
-                    "since_version": "v0.228.1"
+                    "since_version": "v0.229.0"
                   },
                   "description": {
                     "description": "The description of the variable",
                     "$ref": "#/$defs/string",
-                    "since_version": "v0.228.1"
+                    "since_version": "v0.229.0"
                   },
                   "lookup": {
                     "description": "The name of the alert, cluster_policy, cluster, dashboard, instance_pool, job, metastore, pipeline, query, service_principal, or warehouse object for which to retrieve an ID.",
                     "$ref": "#/$defs/github.com/databricks/cli/bundle/config/variable.Lookup",
                     "markdownDescription": "The name of the `alert`, `cluster_policy`, `cluster`, `dashboard`, `instance_pool`, `job`, `metastore`, `pipeline`, `query`, `service_principal`, or `warehouse` object for which to retrieve an ID.",
-                    "since_version": "v0.228.1"
+                    "since_version": "v0.229.0"
                   },
                   "type": {
                     "description": "The type of the variable.",
                     "$ref": "#/$defs/github.com/databricks/cli/bundle/config/variable.VariableType",
-                    "since_version": "v0.228.1"
+                    "since_version": "v0.229.0"
                   }
                 },
                 "additionalProperties": false,
@@ -2363,7 +2363,7 @@
                     "build": {
                       "description": "An optional set of build commands to run locally before deployment.",
                       "$ref": "#/$defs/string",
-                      "since_version": "v0.228.1"
+                      "since_version": "v0.229.0"
                     },
                     "dynamic_version": {
                       "description": "Whether to patch the wheel version dynamically based on the timestamp of the whl file. If this is set to `true`, new code can be deployed without having to update the version in `setup.py` or `pyproject.toml`. This setting is only valid when `type` is set to `whl`. See [\\_](/dev-tools/bundles/settings.md#bundle-syntax-mappings-artifacts).",
@@ -2373,23 +2373,23 @@
                     "executable": {
                       "description": "The executable type. Valid values are `bash`, `sh`, and `cmd`.",
                       "$ref": "#/$defs/github.com/databricks/cli/libs/exec.ExecutableType",
-                      "since_version": "v0.228.1"
+                      "since_version": "v0.229.0"
                     },
                     "files": {
                       "description": "The relative or absolute path to the built artifact files.",
                       "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config.ArtifactFile",
-                      "since_version": "v0.228.1"
+                      "since_version": "v0.229.0"
                     },
                     "path": {
                       "description": "The local path of the directory for the artifact.",
                       "$ref": "#/$defs/string",
-                      "since_version": "v0.228.1"
+                      "since_version": "v0.229.0"
                     },
                     "type": {
                       "description": "Required if the artifact is a Python wheel. The type of the artifact. Valid values are `whl` and `jar`.",
                       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.ArtifactType",
                       "markdownDescription": "Required if the artifact is a Python wheel. The type of the artifact. Valid values are `whl` and `jar`.",
-                      "since_version": "v0.228.1"
+                      "since_version": "v0.229.0"
                     }
                   },
                   "additionalProperties": false
@@ -2408,7 +2408,7 @@
                     "source": {
                       "description": "Required. The artifact source file.",
                       "$ref": "#/$defs/string",
-                      "since_version": "v0.228.1"
+                      "since_version": "v0.229.0"
                     }
                   },
                   "additionalProperties": false,
@@ -2439,30 +2439,30 @@
                     "compute_id": {
                       "description": "Deprecated. The ID of the compute to use to run the bundle.",
                       "$ref": "#/$defs/string",
-                      "since_version": "v0.228.1"
+                      "since_version": "v0.229.0"
                     },
                     "databricks_cli_version": {
                       "description": "The Databricks CLI version to use for the bundle.",
                       "$ref": "#/$defs/string",
                       "markdownDescription": "The Databricks CLI version to use for the bundle. See [databricks_cli_version](https://docs.databricks.com/dev-tools/bundles/settings.html#databricks_cli_version).",
-                      "since_version": "v0.228.1"
+                      "since_version": "v0.229.0"
                     },
                     "deployment": {
                       "description": "The definition of the bundle deployment",
                       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Deployment",
                       "markdownDescription": "The definition of the bundle deployment. For supported attributes see [link](https://docs.databricks.com/dev-tools/bundles/deployment-modes.html).",
-                      "since_version": "v0.228.1"
+                      "since_version": "v0.229.0"
                     },
                     "git": {
                       "description": "The Git version control details that are associated with your bundle.",
                       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Git",
                       "markdownDescription": "The Git version control details that are associated with your bundle. For supported attributes see [git](https://docs.databricks.com/dev-tools/bundles/settings.html#git).",
-                      "since_version": "v0.228.1"
+                      "since_version": "v0.229.0"
                     },
                     "name": {
                       "description": "The name of the bundle.",
                       "$ref": "#/$defs/string",
-                      "since_version": "v0.228.1"
+                      "since_version": "v0.229.0"
                     },
                     "uuid": {
                       "description": "Reserved. A Universally Unique Identifier (UUID) for the bundle that uniquely identifies the bundle in internal Databricks systems. This is generated when a bundle project is initialized using a Databricks template (using the `databricks bundle init` command).",
@@ -2492,12 +2492,12 @@
                     "fail_on_active_runs": {
                       "description": "Whether to fail on active runs. If this is set to true a deployment that is running can be interrupted.",
                       "$ref": "#/$defs/bool",
-                      "since_version": "v0.228.1"
+                      "since_version": "v0.229.0"
                     },
                     "lock": {
                       "description": "The deployment lock attributes.",
                       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Lock",
-                      "since_version": "v0.228.1"
+                      "since_version": "v0.229.0"
                     }
                   },
                   "additionalProperties": false
@@ -2517,7 +2517,7 @@
                       "description": "The PyDABs configuration.",
                       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.PyDABs",
                       "deprecationMessage": "Deprecated: please use python instead",
-                      "since_version": "v0.228.1",
+                      "since_version": "v0.229.0",
                       "deprecated": true
                     },
                     "python": {
@@ -2528,12 +2528,12 @@
                     "python_wheel_wrapper": {
                       "description": "Whether to use a Python wheel wrapper.",
                       "$ref": "#/$defs/bool",
-                      "since_version": "v0.228.1"
+                      "since_version": "v0.229.0"
                     },
                     "scripts": {
                       "description": "The commands to run.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config.Command",
-                      "since_version": "v0.228.1"
+                      "since_version": "v0.229.0"
                     },
                     "skip_artifact_cleanup": {
                       "description": "Determines whether to skip cleaning up the .internal folder",
@@ -2548,7 +2548,7 @@
                     "use_legacy_run_as": {
                       "description": "Whether to use the legacy run_as behavior.",
                       "$ref": "#/$defs/bool",
-                      "since_version": "v0.228.1"
+                      "since_version": "v0.229.0"
                     }
                   },
                   "additionalProperties": false
@@ -2568,13 +2568,13 @@
                       "description": "The Git branch name.",
                       "$ref": "#/$defs/string",
                       "markdownDescription": "The Git branch name. See [git](https://docs.databricks.com/dev-tools/bundles/settings.html#git).",
-                      "since_version": "v0.228.1"
+                      "since_version": "v0.229.0"
                     },
                     "origin_url": {
                       "description": "The origin URL of the repository.",
                       "$ref": "#/$defs/string",
                       "markdownDescription": "The origin URL of the repository. See [git](https://docs.databricks.com/dev-tools/bundles/settings.html#git).",
-                      "since_version": "v0.228.1"
+                      "since_version": "v0.229.0"
                     }
                   },
                   "additionalProperties": false
@@ -2593,12 +2593,12 @@
                     "enabled": {
                       "description": "Whether this lock is enabled.",
                       "$ref": "#/$defs/bool",
-                      "since_version": "v0.228.1"
+                      "since_version": "v0.229.0"
                     },
                     "force": {
                       "description": "Whether to force this lock if it is enabled.",
                       "$ref": "#/$defs/bool",
-                      "since_version": "v0.228.1"
+                      "since_version": "v0.229.0"
                     }
                   },
                   "additionalProperties": false
@@ -2625,17 +2625,17 @@
                     "jobs_max_concurrent_runs": {
                       "description": "The maximum concurrent runs for a job.",
                       "$ref": "#/$defs/int",
-                      "since_version": "v0.228.1"
+                      "since_version": "v0.229.0"
                     },
                     "name_prefix": {
                       "description": "The prefix for job runs of the bundle.",
                       "$ref": "#/$defs/string",
-                      "since_version": "v0.228.1"
+                      "since_version": "v0.229.0"
                     },
                     "pipelines_development": {
                       "description": "Whether pipeline deployments should be locked in development mode.",
                       "$ref": "#/$defs/bool",
-                      "since_version": "v0.228.1"
+                      "since_version": "v0.229.0"
                     },
                     "source_linked_deployment": {
                       "description": "Whether to link the deployment to the bundle source.",
@@ -2645,12 +2645,12 @@
                     "tags": {
                       "description": "The tags for the bundle deployment.",
                       "$ref": "#/$defs/map/string",
-                      "since_version": "v0.228.1"
+                      "since_version": "v0.229.0"
                     },
                     "trigger_pause_status": {
                       "description": "A pause status to apply to all job triggers and schedules. Valid values are PAUSED or UNPAUSED.",
                       "$ref": "#/$defs/string",
-                      "since_version": "v0.228.1"
+                      "since_version": "v0.229.0"
                     }
                   },
                   "additionalProperties": false
@@ -2669,7 +2669,7 @@
                     "enabled": {
                       "description": "Whether or not PyDABs (Private Preview) is enabled",
                       "$ref": "#/$defs/bool",
-                      "since_version": "v0.228.1"
+                      "since_version": "v0.229.0"
                     }
                   },
                   "additionalProperties": false
@@ -2748,49 +2748,49 @@
                       "description": "The experiment definitions for the bundle, where each key is the name of the experiment.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.MlflowExperiment",
                       "markdownDescription": "The experiment definitions for the bundle, where each key is the name of the experiment. See [experiments](https://docs.databricks.com/dev-tools/bundles/resources.html#experiments).",
-                      "since_version": "v0.228.1"
+                      "since_version": "v0.229.0"
                     },
                     "jobs": {
                       "description": "The job definitions for the bundle, where each key is the name of the job.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Job",
                       "markdownDescription": "The job definitions for the bundle, where each key is the name of the job. See [jobs](https://docs.databricks.com/dev-tools/bundles/resources.html#jobs).",
-                      "since_version": "v0.228.1"
+                      "since_version": "v0.229.0"
                     },
                     "model_serving_endpoints": {
                       "description": "The model serving endpoint definitions for the bundle, where each key is the name of the model serving endpoint.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.ModelServingEndpoint",
                       "markdownDescription": "The model serving endpoint definitions for the bundle, where each key is the name of the model serving endpoint. See [model_serving_endpoints](https://docs.databricks.com/dev-tools/bundles/resources.html#model_serving_endpoints).",
-                      "since_version": "v0.228.1"
+                      "since_version": "v0.229.0"
                     },
                     "models": {
                       "description": "The model definitions for the bundle, where each key is the name of the model.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.MlflowModel",
                       "markdownDescription": "The model definitions for the bundle, where each key is the name of the model. See [models](https://docs.databricks.com/dev-tools/bundles/resources.html#models).",
-                      "since_version": "v0.228.1"
+                      "since_version": "v0.229.0"
                     },
                     "pipelines": {
                       "description": "The pipeline definitions for the bundle, where each key is the name of the pipeline.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Pipeline",
                       "markdownDescription": "The pipeline definitions for the bundle, where each key is the name of the pipeline. See [pipelines](https://docs.databricks.com/dev-tools/bundles/resources.html#pipelines).",
-                      "since_version": "v0.228.1"
+                      "since_version": "v0.229.0"
                     },
                     "quality_monitors": {
                       "description": "The quality monitor definitions for the bundle, where each key is the name of the quality monitor.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.QualityMonitor",
                       "markdownDescription": "The quality monitor definitions for the bundle, where each key is the name of the quality monitor. See [quality_monitors](https://docs.databricks.com/dev-tools/bundles/resources.html#quality_monitors).",
-                      "since_version": "v0.228.1"
+                      "since_version": "v0.229.0"
                     },
                     "registered_models": {
                       "description": "The registered model definitions for the bundle, where each key is the name of the Unity Catalog registered model.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.RegisteredModel",
                       "markdownDescription": "The registered model definitions for the bundle, where each key is the name of the Unity Catalog registered model. See [registered_models](https://docs.databricks.com/dev-tools/bundles/resources.html#registered_models)",
-                      "since_version": "v0.228.1"
+                      "since_version": "v0.229.0"
                     },
                     "schemas": {
                       "description": "The schema definitions for the bundle, where each key is the name of the schema.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Schema",
                       "markdownDescription": "The schema definitions for the bundle, where each key is the name of the schema. See [schemas](https://docs.databricks.com/dev-tools/bundles/resources.html#schemas).",
-                      "since_version": "v0.228.1"
+                      "since_version": "v0.229.0"
                     },
                     "secret_scopes": {
                       "description": "The secret scope definitions for the bundle, where each key is the name of the secret scope.",
@@ -2852,17 +2852,17 @@
                     "exclude": {
                       "description": "A list of files or folders to exclude from the bundle.",
                       "$ref": "#/$defs/slice/string",
-                      "since_version": "v0.228.1"
+                      "since_version": "v0.229.0"
                     },
                     "include": {
                       "description": "A list of files or folders to include in the bundle.",
                       "$ref": "#/$defs/slice/string",
-                      "since_version": "v0.228.1"
+                      "since_version": "v0.229.0"
                     },
                     "paths": {
                       "description": "The local folder paths, which can be outside the bundle root, to synchronize to the workspace when the bundle is deployed.",
                       "$ref": "#/$defs/slice/string",
-                      "since_version": "v0.228.1"
+                      "since_version": "v0.229.0"
                     }
                   },
                   "additionalProperties": false
@@ -2881,12 +2881,12 @@
                     "artifacts": {
                       "description": "The artifacts to include in the target deployment.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config.Artifact",
-                      "since_version": "v0.228.1"
+                      "since_version": "v0.229.0"
                     },
                     "bundle": {
                       "description": "The bundle attributes when deploying to this target.",
                       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Bundle",
-                      "since_version": "v0.228.1"
+                      "since_version": "v0.229.0"
                     },
                     "cluster_id": {
                       "description": "The ID of the cluster to use for this target.",
@@ -2897,60 +2897,60 @@
                       "description": "Deprecated. The ID of the compute to use for this target.",
                       "$ref": "#/$defs/string",
                       "deprecationMessage": "Deprecated: please use cluster_id instead",
-                      "since_version": "v0.228.1",
+                      "since_version": "v0.229.0",
                       "deprecated": true
                     },
                     "default": {
                       "description": "Whether this target is the default target.",
                       "$ref": "#/$defs/bool",
-                      "since_version": "v0.228.1"
+                      "since_version": "v0.229.0"
                     },
                     "git": {
                       "description": "The Git version control settings for the target.",
                       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Git",
-                      "since_version": "v0.228.1"
+                      "since_version": "v0.229.0"
                     },
                     "mode": {
                       "description": "The deployment mode for the target.",
                       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Mode",
                       "markdownDescription": "The deployment mode for the target. Valid values are `development` or `production`. See [link](https://docs.databricks.com/dev-tools/bundles/deployment-modes.html).",
-                      "since_version": "v0.228.1"
+                      "since_version": "v0.229.0"
                     },
                     "permissions": {
                       "description": "The permissions for deploying and running the bundle in the target.",
                       "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission",
-                      "since_version": "v0.228.1"
+                      "since_version": "v0.229.0"
                     },
                     "presets": {
                       "description": "The deployment presets for the target.",
                       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Presets",
-                      "since_version": "v0.228.1"
+                      "since_version": "v0.229.0"
                     },
                     "resources": {
                       "description": "The resource definitions for the target.",
                       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Resources",
-                      "since_version": "v0.228.1"
+                      "since_version": "v0.229.0"
                     },
                     "run_as": {
                       "description": "The identity to use to run the bundle.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.JobRunAs",
                       "markdownDescription": "The identity to use to run the bundle, see [link](https://docs.databricks.com/dev-tools/bundles/run-as.html).",
-                      "since_version": "v0.228.1"
+                      "since_version": "v0.229.0"
                     },
                     "sync": {
                       "description": "The local paths to sync to the target workspace when a bundle is run or deployed.",
                       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Sync",
-                      "since_version": "v0.228.1"
+                      "since_version": "v0.229.0"
                     },
                     "variables": {
                       "description": "The custom variable definitions for the target.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/variable.TargetVariable",
-                      "since_version": "v0.228.1"
+                      "since_version": "v0.229.0"
                     },
                     "workspace": {
                       "description": "The Databricks workspace for the target.",
                       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Workspace",
-                      "since_version": "v0.228.1"
+                      "since_version": "v0.229.0"
                     }
                   },
                   "additionalProperties": false
@@ -2969,67 +2969,67 @@
                     "artifact_path": {
                       "description": "The artifact path to use within the workspace for both deployments and workflow runs",
                       "$ref": "#/$defs/string",
-                      "since_version": "v0.228.1"
+                      "since_version": "v0.229.0"
                     },
                     "auth_type": {
                       "description": "The authentication type.",
                       "$ref": "#/$defs/string",
-                      "since_version": "v0.228.1"
+                      "since_version": "v0.229.0"
                     },
                     "azure_client_id": {
                       "description": "The Azure client ID",
                       "$ref": "#/$defs/string",
-                      "since_version": "v0.228.1"
+                      "since_version": "v0.229.0"
                     },
                     "azure_environment": {
                       "description": "The Azure environment",
                       "$ref": "#/$defs/string",
-                      "since_version": "v0.228.1"
+                      "since_version": "v0.229.0"
                     },
                     "azure_login_app_id": {
                       "description": "The Azure login app ID",
                       "$ref": "#/$defs/string",
-                      "since_version": "v0.228.1"
+                      "since_version": "v0.229.0"
                     },
                     "azure_tenant_id": {
                       "description": "The Azure tenant ID",
                       "$ref": "#/$defs/string",
-                      "since_version": "v0.228.1"
+                      "since_version": "v0.229.0"
                     },
                     "azure_use_msi": {
                       "description": "Whether to use MSI for Azure",
                       "$ref": "#/$defs/bool",
-                      "since_version": "v0.228.1"
+                      "since_version": "v0.229.0"
                     },
                     "azure_workspace_resource_id": {
                       "description": "The Azure workspace resource ID",
                       "$ref": "#/$defs/string",
-                      "since_version": "v0.228.1"
+                      "since_version": "v0.229.0"
                     },
                     "client_id": {
                       "description": "The client ID for the workspace",
                       "$ref": "#/$defs/string",
-                      "since_version": "v0.228.1"
+                      "since_version": "v0.229.0"
                     },
                     "file_path": {
                       "description": "The file path to use within the workspace for both deployments and workflow runs",
                       "$ref": "#/$defs/string",
-                      "since_version": "v0.228.1"
+                      "since_version": "v0.229.0"
                     },
                     "google_service_account": {
                       "description": "The Google service account name",
                       "$ref": "#/$defs/string",
-                      "since_version": "v0.228.1"
+                      "since_version": "v0.229.0"
                     },
                     "host": {
                       "description": "The Databricks workspace host URL",
                       "$ref": "#/$defs/string",
-                      "since_version": "v0.228.1"
+                      "since_version": "v0.229.0"
                     },
                     "profile": {
                       "description": "The Databricks workspace profile name",
                       "$ref": "#/$defs/string",
-                      "since_version": "v0.228.1"
+                      "since_version": "v0.229.0"
                     },
                     "resource_path": {
                       "description": "The workspace resource path",
@@ -3039,12 +3039,12 @@
                     "root_path": {
                       "description": "The Databricks workspace root path",
                       "$ref": "#/$defs/string",
-                      "since_version": "v0.228.1"
+                      "since_version": "v0.229.0"
                     },
                     "state_path": {
                       "description": "The workspace state path",
                       "$ref": "#/$defs/string",
-                      "since_version": "v0.228.1"
+                      "since_version": "v0.229.0"
                     }
                   },
                   "additionalProperties": false
@@ -11675,13 +11675,13 @@
       "description": "Defines the attributes to build an artifact",
       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config.Artifact",
       "markdownDescription": "Defines the attributes to build artifacts, where each key is the name of the artifact, and the value is a Map that defines the artifact build settings. For information about the `artifacts` mapping, see [artifacts](https://docs.databricks.com/dev-tools/bundles/settings.html#artifacts).\n\nArtifact settings defined in the top level of the bundle configuration can be overridden in the `targets` mapping. See [link](https://docs.databricks.com/dev-tools/bundles/artifact-overrides.html).",
-      "since_version": "v0.228.1"
+      "since_version": "v0.229.0"
     },
     "bundle": {
       "description": "The bundle attributes when deploying to this target.",
       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Bundle",
       "markdownDescription": "The bundle attributes when deploying to this target,",
-      "since_version": "v0.228.1"
+      "since_version": "v0.229.0"
     },
     "environments": {
       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config.Target",
@@ -11692,25 +11692,25 @@
     "experimental": {
       "description": "Defines attributes for experimental features.",
       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Experimental",
-      "since_version": "v0.228.1"
+      "since_version": "v0.229.0"
     },
     "include": {
       "description": "Specifies a list of path globs that contain configuration files to include within the bundle.",
       "$ref": "#/$defs/slice/string",
       "markdownDescription": "Specifies a list of path globs that contain configuration files to include within the bundle. See [include](https://docs.databricks.com/dev-tools/bundles/settings.html#include).",
-      "since_version": "v0.228.1"
+      "since_version": "v0.229.0"
     },
     "permissions": {
       "description": "Defines a permission for a specific entity.",
       "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Permission",
       "markdownDescription": "A Sequence that defines the permissions to apply to experiments, jobs, pipelines, and models defined in the bundle, where each item in the sequence is a permission for a specific entity.\n\nSee [permissions](https://docs.databricks.com/dev-tools/bundles/settings.html#permissions) and [link](https://docs.databricks.com/dev-tools/bundles/permissions.html).",
-      "since_version": "v0.228.1"
+      "since_version": "v0.229.0"
     },
     "presets": {
       "description": "Defines bundle deployment presets.",
       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Presets",
       "markdownDescription": "Defines bundle deployment presets. See [presets](https://docs.databricks.com/dev-tools/bundles/deployment-modes.html#presets).",
-      "since_version": "v0.228.1"
+      "since_version": "v0.229.0"
     },
     "python": {
       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Python",
@@ -11720,13 +11720,13 @@
       "description": "A Map that defines the resources for the bundle, where each key is the name of the resource, and the value is a Map that defines the resource.",
       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Resources",
       "markdownDescription": "A Map that defines the resources for the bundle, where each key is the name of the resource, and the value is a Map that defines the resource. For more information about Databricks Asset Bundles supported resources, and resource definition reference, see [link](https://docs.databricks.com/dev-tools/bundles/resources.html).\n\n```yaml\nresources:\n  \u003cresource-type\u003e:\n    \u003cresource-name\u003e:\n      \u003cresource-field-name\u003e: \u003cresource-field-value\u003e\n```",
-      "since_version": "v0.228.1"
+      "since_version": "v0.229.0"
     },
     "run_as": {
       "description": "The identity to use when running Databricks Asset Bundles workflows.",
       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.JobRunAs",
       "markdownDescription": "The identity to use when running Databricks Asset Bundles workflows. See [link](https://docs.databricks.com/dev-tools/bundles/run-as.html).",
-      "since_version": "v0.228.1"
+      "since_version": "v0.229.0"
     },
     "scripts": {
       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config.Script",
@@ -11736,24 +11736,24 @@
       "description": "The files and file paths to include or exclude in the bundle.",
       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Sync",
       "markdownDescription": "The files and file paths to include or exclude in the bundle. See [sync](https://docs.databricks.com/dev-tools/bundles/settings.html#sync).",
-      "since_version": "v0.228.1"
+      "since_version": "v0.229.0"
     },
     "targets": {
       "description": "Defines deployment targets for the bundle.",
       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config.Target",
       "markdownDescription": "Defines deployment targets for the bundle. See [targets](https://docs.databricks.com/dev-tools/bundles/settings.html#targets)",
-      "since_version": "v0.228.1"
+      "since_version": "v0.229.0"
     },
     "variables": {
       "description": "A Map that defines the custom variables for the bundle, where each key is the name of the variable, and the value is a Map that defines the variable.",
       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/variable.Variable",
-      "since_version": "v0.228.1"
+      "since_version": "v0.229.0"
     },
     "workspace": {
       "description": "Defines the Databricks workspace for the bundle.",
       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Workspace",
       "markdownDescription": "Defines the Databricks workspace for the bundle. See [workspace](https://docs.databricks.com/dev-tools/bundles/settings.html#workspace).",
-      "since_version": "v0.228.1"
+      "since_version": "v0.229.0"
     }
   },
   "additionalProperties": {}
