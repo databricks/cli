@@ -22,5 +22,5 @@ To disable this, set the environment variable DATABRICKS_CACHE_ENABLED to false.
 ### Dependency updates
 * Upgrade TF provider to 1.102.0 ([#4235](https://github.com/databricks/cli/pull/4235))
 * Upgrade Go SDK to 0.96.0 ([#4206](https://github.com/databricks/cli/pull/4206))
- 
+
 ### API Changes
