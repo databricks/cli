@@ -63,3 +63,14 @@ func TestConfigureWSFS_SwapSyncRoot(t *testing.T) {
 	assert.Empty(t, diags)
 	assert.NotEqual(t, originalSyncRoot, b.SyncRoot)
 }
+
+func TestConfigureWSFS_SkipsIfRunningOnServerless(t *testing.T) {
+	b := mockBundleForConfigureWSFS(t, "/Workspace/foo")
+	originalSyncRoot := b.SyncRoot
+
+	ctx := context.Background()
+	ctx = dbr.MockRuntime(ctx, dbr.Environment{IsDbr: true, Version: "client.1.13"})
+	diags := bundle.Apply(ctx, b, mutator.ConfigureWSFS())
+	assert.Empty(t, diags)
+	assert.Equal(t, originalSyncRoot, b.SyncRoot)
+}
