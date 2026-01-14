@@ -10,6 +10,8 @@ import (
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/structs/structaccess"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go"
 )
 
@@ -117,6 +119,19 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 		if entry != nil {
 			dependsOn = entry.DependsOn
 		}
+
+		// Copy etag from remote state for dashboards.
+		// Dashboards store "etag" in state which is not provided by user but comes from remote.
+		// If we don't store "etag" in state, we won't detect remote drift correctly.
+		if strings.Contains(resourceKey, ".dashboards.") && entry != nil && entry.RemoteState != nil {
+			etag, err := structaccess.Get(entry.RemoteState, structpath.NewStringKey(nil, "etag"))
+			if err == nil && etag != nil {
+				if etagStr, ok := etag.(string); ok && etagStr != "" {
+					_ = structaccess.Set(sv.Value, structpath.NewStringKey(nil, "etag"), etagStr)
+				}
+			}
+		}
+
 		err = b.StateDB.SaveState(resourceKey, resourceID, sv.Value, dependsOn)
 		if err != nil {
 			os.Remove(tmpStatePath)
