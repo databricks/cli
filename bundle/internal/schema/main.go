@@ -7,6 +7,8 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"slices"
+	"strings"
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
@@ -182,6 +184,68 @@ func removeOutputOnlyFields(typ reflect.Type, s jsonschema.Schema) jsonschema.Sc
 	return s
 }
 
+func enhanceDescriptions(_ reflect.Type, s jsonschema.Schema) jsonschema.Schema {
+	// Add enum values suffix for string types with enums
+	if s.Type == jsonschema.StringType && len(s.Enum) > 0 {
+		// Skip if description already contains 2+ enum values. This is a rubric / best effort to avoid
+		// duplicate information if the description already contains the enum values.
+		enumCount := 0
+		descLower := strings.ToLower(s.Description)
+		for _, v := range s.Enum {
+			if str, ok := v.(string); ok && strings.Contains(descLower, strings.ToLower(str)) {
+				enumCount++
+			}
+		}
+
+		if enumCount < 2 {
+			suffix := formatEnumSuffix(s.Enum)
+			if s.Description == "" {
+				s.Description = suffix
+			} else {
+				s.Description = strings.TrimSuffix(s.Description, ".") + ". " + suffix
+			}
+		}
+	}
+
+	// Add "Required." prefix for object properties that are required
+	if s.Type == jsonschema.ObjectType && s.Properties != nil {
+		for name, prop := range s.Properties {
+			// If the description contains "required" (case insensitive) we skip the prefix.
+			// This is a rubric to prevent malformed descriptions like "Required. Required, my field description".
+			// Adding the prefix is best effort.
+			if slices.Contains(s.Required, name) && !strings.Contains(strings.ToLower(prop.Description), "required") {
+				if prop.Description == "" {
+					prop.Description = "Required."
+				} else {
+					prop.Description = "Required. " + prop.Description
+				}
+			}
+		}
+	}
+
+	return s
+}
+
+func formatEnumSuffix(enum []any) string {
+	strs := make([]string, 0, len(enum))
+	for _, v := range enum {
+		if str, ok := v.(string); ok {
+			strs = append(strs, "`"+str+"`")
+		}
+	}
+
+	if len(strs) == 0 {
+		return ""
+	}
+	if len(strs) == 1 {
+		return "Valid values are: " + strs[0] + "."
+	}
+	if len(strs) == 2 {
+		return "Valid values are: " + strs[0] + " and " + strs[1] + "."
+	}
+	return "Valid values are: " + strings.Join(strs[:len(strs)-1], ", ") + ", and " + strs[len(strs)-1] + "."
+}
+
 func main() {
 	if len(os.Args) != 3 {
 		fmt.Println("Usage: go run main.go <work-dir> <output-file>")
@@ -227,6 +291,7 @@ func generateSchema(workdir, outputFile string) {
 		makeVolumeTypeOptional,
 		a.addAnnotations,
 		removeOutputOnlyFields,
+		enhanceDescriptions,
 		addInterpolationPatterns,
 	})
 

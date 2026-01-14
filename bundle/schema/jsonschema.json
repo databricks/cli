@@ -71,9 +71,11 @@
                         "$ref": "#/$defs/string"
                       },
                       "display_name": {
+                        "description": "Required.",
                         "$ref": "#/$defs/string"
                       },
                       "evaluation": {
+                        "description": "Required.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertV2Evaluation"
                       },
                       "lifecycle": {
@@ -86,6 +88,7 @@
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.AlertPermission"
                       },
                       "query_text": {
+                        "description": "Required.",
                         "$ref": "#/$defs/string"
                       },
                       "run_as": {
@@ -97,9 +100,11 @@
                         "deprecated": true
                       },
                       "schedule": {
+                        "description": "Required.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.CronSchedule"
                       },
                       "warehouse_id": {
+                        "description": "Required.",
                         "$ref": "#/$defs/string"
                       }
                     },
@@ -127,6 +132,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "level": {
+                        "description": "Required.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.AlertPermissionLevel"
                       },
                       "service_principal_name": {
@@ -151,6 +157,7 @@
                 "oneOf": [
                   {
                     "type": "string",
+                    "description": "Valid values are: `CAN_EDIT`, `CAN_MANAGE`, `CAN_READ`, and `CAN_RUN`.",
                     "enum": [
                       "CAN_EDIT",
                       "CAN_MANAGE",
@@ -184,7 +191,7 @@
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "name": {
-                        "description": "The name of the app. The name must contain only lowercase alphanumeric characters and hyphens.\nIt must be unique within the workspace.",
+                        "description": "Required. The name of the app. The name must contain only lowercase alphanumeric characters and hyphens.\nIt must be unique within the workspace.",
                         "$ref": "#/$defs/string"
                       },
                       "permissions": {
@@ -195,6 +202,7 @@
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/apps.AppResource"
                       },
                       "source_code_path": {
+                        "description": "Required.",
                         "$ref": "#/$defs/string"
                       },
                       "user_api_scopes": {
@@ -222,6 +230,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "level": {
+                        "description": "Required.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.AppPermissionLevel"
                       },
                       "service_principal_name": {
@@ -246,6 +255,7 @@
                 "oneOf": [
                   {
                     "type": "string",
+                    "description": "Valid values are: `CAN_MANAGE` and `CAN_USE`.",
                     "enum": [
                       "CAN_MANAGE",
                       "CAN_USE"
@@ -412,6 +422,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "level": {
+                        "description": "Required.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.ClusterPermissionLevel"
                       },
                       "service_principal_name": {
@@ -436,6 +447,7 @@
                 "oneOf": [
                   {
                     "type": "string",
+                    "description": "Valid values are: `CAN_MANAGE`, `CAN_RESTART`, and `CAN_ATTACH_TO`.",
                     "enum": [
                       "CAN_MANAGE",
                       "CAN_RESTART",
@@ -533,6 +545,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "level": {
+                        "description": "Required.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.DashboardPermissionLevel"
                       },
                       "service_principal_name": {
@@ -557,6 +570,7 @@
                 "oneOf": [
                   {
                     "type": "string",
+                    "description": "Valid values are: `CAN_READ`, `CAN_RUN`, `CAN_EDIT`, and `CAN_MANAGE`.",
                     "enum": [
                       "CAN_READ",
                       "CAN_RUN",
@@ -579,11 +593,11 @@
                         "$ref": "#/$defs/bool"
                       },
                       "database_instance_name": {
-                        "description": "The name of the DatabaseInstance housing the database.",
+                        "description": "Required. The name of the DatabaseInstance housing the database.",
                         "$ref": "#/$defs/string"
                       },
                       "database_name": {
-                        "description": "The name of the database (in a instance) associated with the catalog.",
+                        "description": "Required. The name of the database (in a instance) associated with the catalog.",
                         "$ref": "#/$defs/string"
                       },
                       "lifecycle": {
@@ -591,7 +605,7 @@
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "name": {
-                        "description": "The name of the catalog in UC.",
+                        "description": "Required. The name of the catalog in UC.",
                         "$ref": "#/$defs/string"
                       }
                     },
@@ -635,7 +649,7 @@
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "name": {
-                        "description": "The name of the instance. This is the unique identifier for the instance.",
+                        "description": "Required. The name of the instance. This is the unique identifier for the instance.",
                         "$ref": "#/$defs/string"
                       },
                       "node_count": {
@@ -682,6 +696,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "level": {
+                        "description": "Required.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.DatabaseInstancePermissionLevel"
                       },
                       "service_principal_name": {
@@ -706,6 +721,7 @@
                 "oneOf": [
                   {
                     "type": "string",
+                    "description": "Valid values are: `CAN_CREATE`, `CAN_USE`, and `CAN_MANAGE`.",
                     "enum": [
                       "CAN_CREATE",
                       "CAN_USE",
@@ -724,11 +740,11 @@
                     "type": "object",
                     "properties": {
                       "principal": {
-                        "description": "The name of the principal that will be granted privileges",
+                        "description": "Required. The name of the principal that will be granted privileges",
                         "$ref": "#/$defs/string"
                       },
                       "privileges": {
-                        "description": "The privileges to grant to the specified entity",
+                        "description": "Required. The privileges to grant to the specified entity",
                         "$ref": "#/$defs/slice/string"
                       }
                     },
@@ -863,6 +879,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "level": {
+                        "description": "Required.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.JobPermissionLevel"
                       },
                       "service_principal_name": {
@@ -887,6 +904,7 @@
                 "oneOf": [
                   {
                     "type": "string",
+                    "description": "Valid values are: `CAN_MANAGE`, `CAN_MANAGE_RUN`, `CAN_VIEW`, and `IS_OWNER`.",
                     "enum": [
                       "CAN_MANAGE",
                       "CAN_MANAGE_RUN",
@@ -932,7 +950,7 @@
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "name": {
-                        "description": "Experiment name.",
+                        "description": "Required. Experiment name.",
                         "$ref": "#/$defs/string"
                       },
                       "permissions": {
@@ -964,6 +982,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "level": {
+                        "description": "Required.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.MlflowExperimentPermissionLevel"
                       },
                       "service_principal_name": {
@@ -988,6 +1007,7 @@
                 "oneOf": [
                   {
                     "type": "string",
+                    "description": "Valid values are: `CAN_MANAGE`, `CAN_EDIT`, and `CAN_READ`.",
                     "enum": [
                       "CAN_MANAGE",
                       "CAN_EDIT",
@@ -1014,7 +1034,7 @@
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "name": {
-                        "description": "Register models under this name",
+                        "description": "Required. Register models under this name",
                         "$ref": "#/$defs/string"
                       },
                       "permissions": {
@@ -1046,6 +1066,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "level": {
+                        "description": "Required.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.MlflowModelPermissionLevel"
                       },
                       "service_principal_name": {
@@ -1070,6 +1091,7 @@
                 "oneOf": [
                   {
                     "type": "string",
+                    "description": "Valid values are: `CAN_EDIT`, `CAN_MANAGE`, `CAN_MANAGE_STAGING_VERSIONS`, `CAN_MANAGE_PRODUCTION_VERSIONS`, and `CAN_READ`.",
                     "enum": [
                       "CAN_EDIT",
                       "CAN_MANAGE",
@@ -1155,6 +1177,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "level": {
+                        "description": "Required.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.ModelServingEndpointPermissionLevel"
                       },
                       "service_principal_name": {
@@ -1179,6 +1202,7 @@
                 "oneOf": [
                   {
                     "type": "string",
+                    "description": "Valid values are: `CAN_MANAGE`, `CAN_QUERY`, and `CAN_VIEW`.",
                     "enum": [
                       "CAN_MANAGE",
                       "CAN_QUERY",
@@ -1201,7 +1225,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "level": {
-                        "description": "The allowed permission for user, group, service principal defined for this permission.",
+                        "description": "Required. The allowed permission for user, group, service principal defined for this permission.",
                         "$ref": "#/$defs/string"
                       },
                       "service_principal_name": {
@@ -1380,6 +1404,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "level": {
+                        "description": "Required.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.PipelinePermissionLevel"
                       },
                       "service_principal_name": {
@@ -1404,6 +1429,7 @@
                 "oneOf": [
                   {
                     "type": "string",
+                    "description": "Valid values are: `CAN_MANAGE`, `IS_OWNER`, `CAN_RUN`, and `CAN_VIEW`.",
                     "enum": [
                       "CAN_MANAGE",
                       "IS_OWNER",
@@ -1423,7 +1449,7 @@
                     "type": "object",
                     "properties": {
                       "assets_dir": {
-                        "description": "[Create:REQ Update:IGN] Field for specifying the absolute path to a custom directory to store data-monitoring\nassets. Normally prepopulated to a default user location via UI and Python APIs.",
+                        "description": "Required. [Create:REQ Update:IGN] Field for specifying the absolute path to a custom directory to store data-monitoring\nassets. Normally prepopulated to a default user location via UI and Python APIs.",
                         "$ref": "#/$defs/string"
                       },
                       "baseline_table_name": {
@@ -1456,7 +1482,7 @@
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.MonitorNotifications"
                       },
                       "output_schema_name": {
-                        "description": "[Create:REQ Update:REQ] Schema where output tables are created. Needs to be in 2-level format {catalog}.{schema}",
+                        "description": "Required. [Create:REQ Update:REQ] Schema where output tables are created. Needs to be in 2-level format {catalog}.{schema}",
                         "$ref": "#/$defs/string"
                       },
                       "schedule": {
@@ -1476,6 +1502,7 @@
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.MonitorSnapshot"
                       },
                       "table_name": {
+                        "description": "Required.",
                         "$ref": "#/$defs/string"
                       },
                       "time_series": {
@@ -1576,7 +1603,7 @@
                     "type": "object",
                     "properties": {
                       "catalog_name": {
-                        "description": "Name of parent catalog.",
+                        "description": "Required. Name of parent catalog.",
                         "$ref": "#/$defs/string"
                       },
                       "comment": {
@@ -1591,7 +1618,7 @@
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "name": {
-                        "description": "Name of schema, relative to parent catalog.",
+                        "description": "Required. Name of schema, relative to parent catalog.",
                         "$ref": "#/$defs/string"
                       },
                       "properties": {
@@ -1621,9 +1648,11 @@
                     "type": "object",
                     "properties": {
                       "principal": {
+                        "description": "Required.",
                         "$ref": "#/$defs/string"
                       },
                       "privileges": {
+                        "description": "Required.",
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.SchemaGrantPrivilege"
                       }
                     },
@@ -1643,6 +1672,7 @@
                 "oneOf": [
                   {
                     "type": "string",
+                    "description": "Valid values are: `ALL_PRIVILEGES`, `APPLY_TAG`, `CREATE_FUNCTION`, `CREATE_TABLE`, `CREATE_VOLUME`, `MANAGE`, `USE_SCHEMA`, `EXECUTE`, `MODIFY`, `REFRESH`, `SELECT`, `READ_VOLUME`, and `WRITE_VOLUME`.",
                     "enum": [
                       "ALL_PRIVILEGES",
                       "APPLY_TAG",
@@ -1683,7 +1713,7 @@
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "name": {
-                        "description": "Scope name requested by the user. Scope names are unique.",
+                        "description": "Required. Scope name requested by the user. Scope names are unique.",
                         "$ref": "#/$defs/string"
                       },
                       "permissions": {
@@ -1712,7 +1742,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "level": {
-                        "description": "The allowed permission for user, group, service principal defined for this permission.",
+                        "description": "Required. The allowed permission for user, group, service principal defined for this permission.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.SecretScopePermissionLevel"
                       },
                       "service_principal_name": {
@@ -1739,6 +1769,7 @@
                 "oneOf": [
                   {
                     "type": "string",
+                    "description": "Valid values are: `READ`, `WRITE`, and `MANAGE`.",
                     "enum": [
                       "READ",
                       "WRITE",
@@ -1834,6 +1865,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "level": {
+                        "description": "Required.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.SqlWarehousePermissionLevel"
                       },
                       "service_principal_name": {
@@ -1858,6 +1890,7 @@
                 "oneOf": [
                   {
                     "type": "string",
+                    "description": "Valid values are: `CAN_MANAGE`, `CAN_USE`, `CAN_MONITOR`, and `CAN_VIEW`.",
                     "enum": [
                       "CAN_MANAGE",
                       "CAN_USE",
@@ -1888,6 +1921,7 @@
                         "$ref": "#/$defs/string"
                       },
                       "name": {
+                        "description": "Required.",
                         "$ref": "#/$defs/string"
                       },
                       "spec": {
@@ -1911,7 +1945,7 @@
                     "type": "object",
                     "properties": {
                       "catalog_name": {
-                        "description": "The name of the catalog where the schema and the volume are",
+                        "description": "Required. The name of the catalog where the schema and the volume are",
                         "$ref": "#/$defs/string"
                       },
                       "comment": {
@@ -1926,11 +1960,11 @@
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
                       "name": {
-                        "description": "The name of the volume",
+                        "description": "Required. The name of the volume",
                         "$ref": "#/$defs/string"
                       },
                       "schema_name": {
-                        "description": "The name of the schema where the volume is",
+                        "description": "Required. The name of the schema where the volume is",
                         "$ref": "#/$defs/string"
                       },
                       "storage_location": {
@@ -1961,9 +1995,11 @@
                     "type": "object",
                     "properties": {
                       "principal": {
+                        "description": "Required.",
                         "$ref": "#/$defs/string"
                       },
                       "privileges": {
+                        "description": "Required.",
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.VolumeGrantPrivilege"
                       }
                     },
@@ -1983,6 +2019,7 @@
                 "oneOf": [
                   {
                     "type": "string",
+                    "description": "Valid values are: `ALL_PRIVILEGES`, `APPLY_TAG`, `MANAGE`, `READ_VOLUME`, and `WRITE_VOLUME`.",
                     "enum": [
                       "ALL_PRIVILEGES",
                       "APPLY_TAG",
@@ -2208,7 +2245,7 @@
                       "markdownDescription": "The Git version control details that are associated with your bundle. For supported attributes see [git](https://docs.databricks.com/dev-tools/bundles/settings.html#git)."
                     },
                     "name": {
-                      "description": "The name of the bundle.",
+                      "description": "Required. The name of the bundle.",
                       "$ref": "#/$defs/string"
                     },
                     "uuid": {
@@ -2533,6 +2570,7 @@
                   "type": "object",
                   "properties": {
                     "content": {
+                      "description": "Required.",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -2778,6 +2816,7 @@
               "oneOf": [
                 {
                   "type": "string",
+                  "description": "Valid values are: `SNAPSHOT` and `AUTO_SYNC`.",
                   "enum": [
                     "SNAPSHOT",
                     "AUTO_SYNC"
@@ -2793,6 +2832,7 @@
               "oneOf": [
                 {
                   "type": "string",
+                  "description": "Valid values are: `SUCCEEDED`, `FAILED`, `IN_PROGRESS`, and `CANCELLED`.",
                   "enum": [
                     "SUCCEEDED",
                     "FAILED",
@@ -2837,7 +2877,7 @@
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppResourceJob"
                     },
                     "name": {
-                      "description": "Name of the App Resource.",
+                      "description": "Required. Name of the App Resource.",
                       "$ref": "#/$defs/string"
                     },
                     "secret": {
@@ -2870,12 +2910,15 @@
                   "type": "object",
                   "properties": {
                     "database_name": {
+                      "description": "Required.",
                       "$ref": "#/$defs/string"
                     },
                     "instance_name": {
+                      "description": "Required.",
                       "$ref": "#/$defs/string"
                     },
                     "permission": {
+                      "description": "Required.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppResourceDatabaseDatabasePermission"
                     }
                   },
@@ -2896,6 +2939,7 @@
               "oneOf": [
                 {
                   "type": "string",
+                  "description": "Valid values are: `CAN_CONNECT_AND_CREATE`.",
                   "enum": [
                     "CAN_CONNECT_AND_CREATE"
                   ]
@@ -2912,12 +2956,15 @@
                   "type": "object",
                   "properties": {
                     "name": {
+                      "description": "Required.",
                       "$ref": "#/$defs/string"
                     },
                     "permission": {
+                      "description": "Required.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppResourceGenieSpaceGenieSpacePermission"
                     },
                     "space_id": {
+                      "description": "Required.",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -2938,6 +2985,7 @@
               "oneOf": [
                 {
                   "type": "string",
+                  "description": "Valid values are: `CAN_MANAGE`, `CAN_EDIT`, `CAN_RUN`, and `CAN_VIEW`.",
                   "enum": [
                     "CAN_MANAGE",
                     "CAN_EDIT",
@@ -2957,9 +3005,11 @@
                   "type": "object",
                   "properties": {
                     "id": {
+                      "description": "Required.",
                       "$ref": "#/$defs/string"
                     },
                     "permission": {
+                      "description": "Required.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppResourceJobJobPermission"
                     }
                   },
@@ -2979,6 +3029,7 @@
               "oneOf": [
                 {
                   "type": "string",
+                  "description": "Valid values are: `CAN_MANAGE`, `IS_OWNER`, `CAN_MANAGE_RUN`, and `CAN_VIEW`.",
                   "enum": [
                     "CAN_MANAGE",
                     "IS_OWNER",
@@ -2998,12 +3049,15 @@
                   "type": "object",
                   "properties": {
                     "key": {
+                      "description": "Required.",
                       "$ref": "#/$defs/string"
                     },
                     "permission": {
+                      "description": "Required.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppResourceSecretSecretPermission"
                     },
                     "scope": {
+                      "description": "Required.",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -3043,9 +3097,11 @@
                   "type": "object",
                   "properties": {
                     "name": {
+                      "description": "Required.",
                       "$ref": "#/$defs/string"
                     },
                     "permission": {
+                      "description": "Required.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppResourceServingEndpointServingEndpointPermission"
                     }
                   },
@@ -3065,6 +3121,7 @@
               "oneOf": [
                 {
                   "type": "string",
+                  "description": "Valid values are: `CAN_MANAGE`, `CAN_QUERY`, and `CAN_VIEW`.",
                   "enum": [
                     "CAN_MANAGE",
                     "CAN_QUERY",
@@ -3083,9 +3140,11 @@
                   "type": "object",
                   "properties": {
                     "id": {
+                      "description": "Required.",
                       "$ref": "#/$defs/string"
                     },
                     "permission": {
+                      "description": "Required.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppResourceSqlWarehouseSqlWarehousePermission"
                     }
                   },
@@ -3105,6 +3164,7 @@
               "oneOf": [
                 {
                   "type": "string",
+                  "description": "Valid values are: `CAN_MANAGE`, `CAN_USE`, and `IS_OWNER`.",
                   "enum": [
                     "CAN_MANAGE",
                     "CAN_USE",
@@ -3123,12 +3183,15 @@
                   "type": "object",
                   "properties": {
                     "permission": {
+                      "description": "Required.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppResourceUcSecurableUcSecurablePermission"
                     },
                     "securable_full_name": {
+                      "description": "Required.",
                       "$ref": "#/$defs/string"
                     },
                     "securable_type": {
+                      "description": "Required.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppResourceUcSecurableUcSecurableType"
                     }
                   },
@@ -3149,6 +3212,7 @@
               "oneOf": [
                 {
                   "type": "string",
+                  "description": "Valid values are: `READ_VOLUME` and `WRITE_VOLUME`.",
                   "enum": [
                     "READ_VOLUME",
                     "WRITE_VOLUME"
@@ -3164,6 +3228,7 @@
               "oneOf": [
                 {
                   "type": "string",
+                  "description": "Valid values are: `VOLUME`.",
                   "enum": [
                     "VOLUME"
                   ]
@@ -3178,6 +3243,7 @@
               "oneOf": [
                 {
                   "type": "string",
+                  "description": "Valid values are: `DEPLOYING`, `RUNNING`, `CRASHED`, and `UNAVAILABLE`.",
                   "enum": [
                     "DEPLOYING",
                     "RUNNING",
@@ -3207,6 +3273,7 @@
               "oneOf": [
                 {
                   "type": "string",
+                  "description": "Valid values are: `MEDIUM` and `LARGE`.",
                   "enum": [
                     "MEDIUM",
                     "LARGE"
@@ -3222,6 +3289,7 @@
               "oneOf": [
                 {
                   "type": "string",
+                  "description": "Valid values are: `ERROR`, `DELETING`, `STARTING`, `STOPPING`, `UPDATING`, `STOPPED`, and `ACTIVE`.",
                   "enum": [
                     "ERROR",
                     "DELETING",
@@ -3260,11 +3328,11 @@
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.MonitorCronSchedulePauseStatus"
                     },
                     "quartz_cron_expression": {
-                      "description": "The expression that determines when to run the monitor. See [examples](https://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/crontrigger.html).",
+                      "description": "Required. The expression that determines when to run the monitor. See [examples](https://www.quartz-scheduler.org/documentation/quartz-2.3.0/tutorials/crontrigger.html).",
                       "$ref": "#/$defs/string"
                     },
                     "timezone_id": {
-                      "description": "The timezone id (e.g., ``PST``) in which to evaluate the quartz expression.",
+                      "description": "Required. The timezone id (e.g., ``PST``) in which to evaluate the quartz expression.",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -3284,7 +3352,7 @@
               "oneOf": [
                 {
                   "type": "string",
-                  "description": "Source link: https://src.dev.databricks.com/databricks/universe/-/blob/elastic-spark-common/api/messages/schedule.proto\nMonitoring workflow schedule pause status.",
+                  "description": "Source link: https://src.dev.databricks.com/databricks/universe/-/blob/elastic-spark-common/api/messages/schedule.proto\nMonitoring workflow schedule pause status. Valid values are: `UNSPECIFIED`, `UNPAUSED`, and `PAUSED`.",
                   "enum": [
                     "UNSPECIFIED",
                     "UNPAUSED",
@@ -3340,7 +3408,7 @@
                   "type": "object",
                   "properties": {
                     "granularities": {
-                      "description": "Granularities for aggregating data into time windows based on their timestamp. Valid values are 5 minutes, 30 minutes, 1 hour, 1 day, n weeks, 1 month, or 1 year.",
+                      "description": "Required. Granularities for aggregating data into time windows based on their timestamp. Valid values are 5 minutes, 30 minutes, 1 hour, 1 day, n weeks, 1 month, or 1 year.",
                       "$ref": "#/$defs/slice/string"
                     },
                     "label_col": {
@@ -3348,11 +3416,11 @@
                       "$ref": "#/$defs/string"
                     },
                     "model_id_col": {
-                      "description": "Column for the model identifier.",
+                      "description": "Required. Column for the model identifier.",
                       "$ref": "#/$defs/string"
                     },
                     "prediction_col": {
-                      "description": "Column for the prediction.",
+                      "description": "Required. Column for the prediction.",
                       "$ref": "#/$defs/string"
                     },
                     "prediction_proba_col": {
@@ -3360,11 +3428,11 @@
                       "$ref": "#/$defs/string"
                     },
                     "problem_type": {
-                      "description": "Problem type the model aims to solve.",
+                      "description": "Required. Problem type the model aims to solve.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.MonitorInferenceLogProblemType"
                     },
                     "timestamp_col": {
-                      "description": "Column for the timestamp.",
+                      "description": "Required. Column for the timestamp.",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -3387,6 +3455,7 @@
               "oneOf": [
                 {
                   "type": "string",
+                  "description": "Valid values are: `PROBLEM_TYPE_CLASSIFICATION` and `PROBLEM_TYPE_REGRESSION`.",
                   "enum": [
                     "PROBLEM_TYPE_CLASSIFICATION",
                     "PROBLEM_TYPE_REGRESSION"
@@ -3405,23 +3474,23 @@
                   "description": "Custom metric definition.",
                   "properties": {
                     "definition": {
-                      "description": "Jinja template for a SQL expression that specifies how to compute the metric. See [create metric definition](https://docs.databricks.com/en/lakehouse-monitoring/custom-metrics.html#create-definition).",
+                      "description": "Required. Jinja template for a SQL expression that specifies how to compute the metric. See [create metric definition](https://docs.databricks.com/en/lakehouse-monitoring/custom-metrics.html#create-definition).",
                       "$ref": "#/$defs/string"
                     },
                     "input_columns": {
-                      "description": "A list of column names in the input table the metric should be computed for.\nCan use ``\":table\"`` to indicate that the metric needs information from multiple columns.",
+                      "description": "Required. A list of column names in the input table the metric should be computed for.\nCan use ``\":table\"`` to indicate that the metric needs information from multiple columns.",
                       "$ref": "#/$defs/slice/string"
                     },
                     "name": {
-                      "description": "Name of the metric in the output tables.",
+                      "description": "Required. Name of the metric in the output tables.",
                       "$ref": "#/$defs/string"
                     },
                     "output_data_type": {
-                      "description": "The output type of the custom metric.",
+                      "description": "Required. The output type of the custom metric.",
                       "$ref": "#/$defs/string"
                     },
                     "type": {
-                      "description": "Can only be one of ``\"CUSTOM_METRIC_TYPE_AGGREGATE\"``, ``\"CUSTOM_METRIC_TYPE_DERIVED\"``, or ``\"CUSTOM_METRIC_TYPE_DRIFT\"``.\nThe ``\"CUSTOM_METRIC_TYPE_AGGREGATE\"`` and ``\"CUSTOM_METRIC_TYPE_DERIVED\"`` metrics\nare computed on a single table, whereas the ``\"CUSTOM_METRIC_TYPE_DRIFT\"`` compare metrics across\nbaseline and input table, or across the two consecutive time windows.\n- CUSTOM_METRIC_TYPE_AGGREGATE: only depend on the existing columns in your table\n- CUSTOM_METRIC_TYPE_DERIVED: depend on previously computed aggregate metrics\n- CUSTOM_METRIC_TYPE_DRIFT:  depend on previously computed aggregate or derived metrics",
+                      "description": "Required. Can only be one of ``\"CUSTOM_METRIC_TYPE_AGGREGATE\"``, ``\"CUSTOM_METRIC_TYPE_DERIVED\"``, or ``\"CUSTOM_METRIC_TYPE_DRIFT\"``.\nThe ``\"CUSTOM_METRIC_TYPE_AGGREGATE\"`` and ``\"CUSTOM_METRIC_TYPE_DERIVED\"`` metrics\nare computed on a single table, whereas the ``\"CUSTOM_METRIC_TYPE_DRIFT\"`` compare metrics across\nbaseline and input table, or across the two consecutive time windows.\n- CUSTOM_METRIC_TYPE_AGGREGATE: only depend on the existing columns in your table\n- CUSTOM_METRIC_TYPE_DERIVED: depend on previously computed aggregate metrics\n- CUSTOM_METRIC_TYPE_DRIFT:  depend on previously computed aggregate or derived metrics",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.MonitorMetricType"
                     }
                   },
@@ -3501,11 +3570,11 @@
                   "description": "Time series analysis configuration.",
                   "properties": {
                     "granularities": {
-                      "description": "Granularities for aggregating data into time windows based on their timestamp. Valid values are 5 minutes, 30 minutes, 1 hour, 1 day, n weeks, 1 month, or 1 year.",
+                      "description": "Required. Granularities for aggregating data into time windows based on their timestamp. Valid values are 5 minutes, 30 minutes, 1 hour, 1 day, n weeks, 1 month, or 1 year.",
                       "$ref": "#/$defs/slice/string"
                     },
                     "timestamp_col": {
-                      "description": "Column for the timestamp.",
+                      "description": "Required. Column for the timestamp.",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -3559,6 +3628,7 @@
               "oneOf": [
                 {
                   "type": "string",
+                  "description": "Valid values are: `MANAGED` and `EXTERNAL`.",
                   "enum": [
                     "MANAGED",
                     "EXTERNAL"
@@ -3577,7 +3647,7 @@
                   "description": "A storage location in Adls Gen2",
                   "properties": {
                     "destination": {
-                      "description": "abfss destination, e.g. `abfss://\u003ccontainer-name\u003e@\u003cstorage-account-name\u003e.dfs.core.windows.net/\u003cdirectory-name\u003e`.",
+                      "description": "Required. abfss destination, e.g. `abfss://\u003ccontainer-name\u003e@\u003cstorage-account-name\u003e.dfs.core.windows.net/\u003cdirectory-name\u003e`.",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -3671,7 +3741,7 @@
               "oneOf": [
                 {
                   "type": "string",
-                  "description": "Availability type used for all subsequent nodes past the `first_on_demand` ones.\n\nNote: If `first_on_demand` is zero, this availability type will be used for the entire cluster.",
+                  "description": "Availability type used for all subsequent nodes past the `first_on_demand` ones.\n\nNote: If `first_on_demand` is zero, this availability type will be used for the entire cluster. Valid values are: `SPOT`, `ON_DEMAND`, and `SPOT_WITH_FALLBACK`.",
                   "enum": [
                     "SPOT",
                     "ON_DEMAND",
@@ -3718,7 +3788,7 @@
               "oneOf": [
                 {
                   "type": "string",
-                  "description": "Availability type used for all subsequent nodes past the `first_on_demand` ones.\nNote: If `first_on_demand` is zero, this availability type will be used for the entire cluster.",
+                  "description": "Availability type used for all subsequent nodes past the `first_on_demand` ones.\nNote: If `first_on_demand` is zero, this availability type will be used for the entire cluster. Valid values are: `SPOT_AZURE`, `ON_DEMAND_AZURE`, and `SPOT_WITH_FALLBACK_AZURE`.",
                   "enum": [
                     "SPOT_AZURE",
                     "ON_DEMAND_AZURE",
@@ -3949,7 +4019,7 @@
                   "description": "A storage location in DBFS",
                   "properties": {
                     "destination": {
-                      "description": "dbfs destination, e.g. `dbfs:/my/path`",
+                      "description": "Required. dbfs destination, e.g. `dbfs:/my/path`",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -4011,7 +4081,7 @@
               "oneOf": [
                 {
                   "type": "string",
-                  "description": "All EBS volume types that Databricks supports.\nSee https://aws.amazon.com/ebs/details/ for details.",
+                  "description": "All EBS volume types that Databricks supports.\nSee https://aws.amazon.com/ebs/details/ for details. Valid values are: `GENERAL_PURPOSE_SSD` and `THROUGHPUT_OPTIMIZED_HDD`.",
                   "enum": [
                     "GENERAL_PURPOSE_SSD",
                     "THROUGHPUT_OPTIMIZED_HDD"
@@ -4103,7 +4173,7 @@
               "oneOf": [
                 {
                   "type": "string",
-                  "description": "This field determines whether the instance pool will contain preemptible\nVMs, on-demand VMs, or preemptible VMs with a fallback to on-demand VMs if the former is unavailable.",
+                  "description": "This field determines whether the instance pool will contain preemptible\nVMs, on-demand VMs, or preemptible VMs with a fallback to on-demand VMs if the former is unavailable. Valid values are: `PREEMPTIBLE_GCP`, `ON_DEMAND_GCP`, and `PREEMPTIBLE_WITH_FALLBACK_GCP`.",
                   "enum": [
                     "PREEMPTIBLE_GCP",
                     "ON_DEMAND_GCP",
@@ -4123,7 +4193,7 @@
                   "description": "A storage location in Google Cloud Platform's GCS",
                   "properties": {
                     "destination": {
-                      "description": "GCS destination/URI, e.g. `gs://my-bucket/some-prefix`",
+                      "description": "Required. GCS destination/URI, e.g. `gs://my-bucket/some-prefix`",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -4187,6 +4257,7 @@
               "oneOf": [
                 {
                   "type": "string",
+                  "description": "Valid values are: `CLASSIC_PREVIEW`.",
                   "enum": [
                     "CLASSIC_PREVIEW"
                   ]
@@ -4247,7 +4318,7 @@
                   "type": "object",
                   "properties": {
                     "destination": {
-                      "description": "local file destination, e.g. `file:/my/local/file.sh`",
+                      "description": "Required. local file destination, e.g. `file:/my/local/file.sh`",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -4290,7 +4361,7 @@
                   "type": "object",
                   "properties": {
                     "coordinates": {
-                      "description": "Gradle-style maven coordinates. For example: \"org.jsoup:jsoup:1.7.2\".",
+                      "description": "Required. Gradle-style maven coordinates. For example: \"org.jsoup:jsoup:1.7.2\".",
                       "$ref": "#/$defs/string"
                     },
                     "exclusions": {
@@ -4319,7 +4390,7 @@
                   "type": "object",
                   "properties": {
                     "package": {
-                      "description": "The name of the pypi package to install. An optional exact version specification is also\nsupported. Examples: \"simplejson\" and \"simplejson==3.8.0\".",
+                      "description": "Required. The name of the pypi package to install. An optional exact version specification is also\nsupported. Examples: \"simplejson\" and \"simplejson==3.8.0\".",
                       "$ref": "#/$defs/string"
                     },
                     "repo": {
@@ -4344,7 +4415,7 @@
                   "type": "object",
                   "properties": {
                     "package": {
-                      "description": "The name of the CRAN package to install.",
+                      "description": "Required. The name of the CRAN package to install.",
                       "$ref": "#/$defs/string"
                     },
                     "repo": {
@@ -4367,6 +4438,7 @@
               "oneOf": [
                 {
                   "type": "string",
+                  "description": "Valid values are: `NULL`, `STANDARD`, and `PHOTON`.",
                   "enum": [
                     "NULL",
                     "STANDARD",
@@ -4390,7 +4462,7 @@
                       "$ref": "#/$defs/string"
                     },
                     "destination": {
-                      "description": "S3 destination, e.g. `s3://my-bucket/some-prefix` Note that logs will be delivered using\ncluster iam role, please make sure you set cluster iam role and the role has write access to the\ndestination. Please also note that you cannot use AWS keys to deliver logs.",
+                      "description": "Required. S3 destination, e.g. `s3://my-bucket/some-prefix` Note that logs will be delivered using\ncluster iam role, please make sure you set cluster iam role and the role has write access to the\ndestination. Please also note that you cannot use AWS keys to deliver logs.",
                       "$ref": "#/$defs/string"
                     },
                     "enable_encryption": {
@@ -4432,7 +4504,7 @@
                   "description": "A storage location back by UC Volumes.",
                   "properties": {
                     "destination": {
-                      "description": "UC Volumes destination, e.g. `/Volumes/catalog/schema/vol1/init-scripts/setup-datadog.sh`\nor `dbfs:/Volumes/catalog/schema/vol1/init-scripts/setup-datadog.sh`",
+                      "description": "Required. UC Volumes destination, e.g. `/Volumes/catalog/schema/vol1/init-scripts/setup-datadog.sh`\nor `dbfs:/Volumes/catalog/schema/vol1/init-scripts/setup-datadog.sh`",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -4454,7 +4526,7 @@
                   "description": "Cluster Attributes showing for clusters workload types.",
                   "properties": {
                     "clients": {
-                      "description": "defined what type of clients can use the cluster. E.g. Notebooks, Jobs",
+                      "description": "Required. defined what type of clients can use the cluster. E.g. Notebooks, Jobs",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.ClientsTypes"
                     }
                   },
@@ -4476,7 +4548,7 @@
                   "description": "A storage location in Workspace Filesystem (WSFS)",
                   "properties": {
                     "destination": {
-                      "description": "wsfs destination, e.g. `workspace:/cluster-init-scripts/setup-datadog.sh`",
+                      "description": "Required. wsfs destination, e.g. `workspace:/cluster-init-scripts/setup-datadog.sh`",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -4495,6 +4567,7 @@
               "oneOf": [
                 {
                   "type": "string",
+                  "description": "Valid values are: `ACTIVE` and `TRASHED`.",
                   "enum": [
                     "ACTIVE",
                     "TRASHED"
@@ -4559,6 +4632,7 @@
               "oneOf": [
                 {
                   "type": "string",
+                  "description": "Valid values are: `STARTING`, `AVAILABLE`, `DELETING`, `STOPPED`, `UPDATING`, and `FAILING_OVER`.",
                   "enum": [
                     "STARTING",
                     "AVAILABLE",
@@ -4617,6 +4691,7 @@
               "oneOf": [
                 {
                   "type": "string",
+                  "description": "Valid values are: `PROVISIONING`, `ACTIVE`, `FAILED`, `DELETING`, `UPDATING`, and `DEGRADED`.",
                   "enum": [
                     "PROVISIONING",
                     "ACTIVE",
@@ -4636,6 +4711,7 @@
               "oneOf": [
                 {
                   "type": "string",
+                  "description": "Valid values are: `PROVISIONING_PHASE_MAIN`, `PROVISIONING_PHASE_INDEX_SCAN`, and `PROVISIONING_PHASE_INDEX_SORT`.",
                   "enum": [
                     "PROVISIONING_PHASE_MAIN",
                     "PROVISIONING_PHASE_INDEX_SCAN",
@@ -4716,6 +4792,7 @@
               "oneOf": [
                 {
                   "type": "string",
+                  "description": "Valid values are: `CONTINUOUS`, `TRIGGERED`, and `SNAPSHOT`.",
                   "enum": [
                     "CONTINUOUS",
                     "TRIGGERED",
@@ -4775,7 +4852,7 @@
               "oneOf": [
                 {
                   "type": "string",
-                  "description": "The state of a synced table.",
+                  "description": "The state of a synced table. Valid values are: `SYNCED_TABLE_PROVISIONING`, `SYNCED_TABLE_PROVISIONING_PIPELINE_RESOURCES`, `SYNCED_TABLE_PROVISIONING_INITIAL_SNAPSHOT`, `SYNCED_TABLE_ONLINE`, `SYNCED_TABLE_ONLINE_CONTINUOUS_UPDATE`, `SYNCED_TABLE_ONLINE_TRIGGERED_UPDATE`, `SYNCED_TABLE_ONLINE_NO_PENDING_UPDATE`, `SYNCED_TABLED_OFFLINE`, `SYNCED_TABLE_OFFLINE_FAILED`, `SYNCED_TABLE_ONLINE_PIPELINE_FAILED`, and `SYNCED_TABLE_ONLINE_UPDATING_PIPELINE_RESOURCES`.",
                   "enum": [
                     "SYNCED_TABLE_PROVISIONING",
                     "SYNCED_TABLE_PROVISIONING_PIPELINE_RESOURCES",
@@ -4844,6 +4921,7 @@
               "oneOf": [
                 {
                   "type": "string",
+                  "description": "Valid values are: `OAUTH` and `PAT`.",
                   "enum": [
                     "OAUTH",
                     "PAT"
@@ -4862,7 +4940,7 @@
                   "description": "Clean Rooms notebook task for V1 Clean Room service (GA).\nReplaces the deprecated CleanRoomNotebookTask (defined above) which was for V0 service.",
                   "properties": {
                     "clean_room_name": {
-                      "description": "The clean room that the notebook belongs to.",
+                      "description": "Required. The clean room that the notebook belongs to.",
                       "$ref": "#/$defs/string"
                     },
                     "etag": {
@@ -4874,7 +4952,7 @@
                       "$ref": "#/$defs/map/string"
                     },
                     "notebook_name": {
-                      "description": "Name of the notebook being run.",
+                      "description": "Required. Name of the notebook being run.",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -4904,7 +4982,7 @@
                       "$ref": "#/$defs/string"
                     },
                     "num_gpus": {
-                      "description": "Number of GPUs.",
+                      "description": "Required. Number of GPUs.",
                       "$ref": "#/$defs/int"
                     }
                   },
@@ -4923,6 +5001,7 @@
               "oneOf": [
                 {
                   "type": "string",
+                  "description": "Valid values are: `ANY_UPDATED` and `ALL_UPDATED`.",
                   "enum": [
                     "ANY_UPDATED",
                     "ALL_UPDATED"
@@ -4940,15 +5019,15 @@
                   "type": "object",
                   "properties": {
                     "left": {
-                      "description": "The left operand of the condition task. Can be either a string value or a job state or parameter reference.",
+                      "description": "Required. The left operand of the condition task. Can be either a string value or a job state or parameter reference.",
                       "$ref": "#/$defs/string"
                     },
                     "op": {
-                      "description": "* `EQUAL_TO`, `NOT_EQUAL` operators perform string comparison of their operands. This means that `“12.0” == “12”` will evaluate to `false`.\n* `GREATER_THAN`, `GREATER_THAN_OR_EQUAL`, `LESS_THAN`, `LESS_THAN_OR_EQUAL` operators perform numeric comparison of their operands. `“12.0” \u003e= “12”` will evaluate to `true`, `“10.0” \u003e= “12”` will evaluate to `false`.\n\nThe boolean comparison to task values can be implemented with operators `EQUAL_TO`, `NOT_EQUAL`. If a task value was set to a boolean value, it will be serialized to `“true”` or `“false”` for the comparison.",
+                      "description": "Required. * `EQUAL_TO`, `NOT_EQUAL` operators perform string comparison of their operands. This means that `“12.0” == “12”` will evaluate to `false`.\n* `GREATER_THAN`, `GREATER_THAN_OR_EQUAL`, `LESS_THAN`, `LESS_THAN_OR_EQUAL` operators perform numeric comparison of their operands. `“12.0” \u003e= “12”` will evaluate to `true`, `“10.0” \u003e= “12”` will evaluate to `false`.\n\nThe boolean comparison to task values can be implemented with operators `EQUAL_TO`, `NOT_EQUAL`. If a task value was set to a boolean value, it will be serialized to `“true”` or `“false”` for the comparison.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.ConditionTaskOp"
                     },
                     "right": {
-                      "description": "The right operand of the condition task. Can be either a string value or a job state or parameter reference.",
+                      "description": "Required. The right operand of the condition task. Can be either a string value or a job state or parameter reference.",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -5117,7 +5196,7 @@
                       "$ref": "#/$defs/string"
                     },
                     "commands": {
-                      "description": "A list of dbt commands to execute. All commands must start with `dbt`. This parameter must not be empty. A maximum of up to 10 commands can be provided.",
+                      "description": "Required. A list of dbt commands to execute. All commands must start with `dbt`. This parameter must not be empty. A maximum of up to 10 commands can be provided.",
                       "$ref": "#/$defs/slice/string"
                     },
                     "profiles_directory": {
@@ -5162,7 +5241,7 @@
                       "$ref": "#/$defs/int"
                     },
                     "url": {
-                      "description": "URL to be monitored for file arrivals. The path must point to the root or a subpath of the external location.",
+                      "description": "Required. URL to be monitored for file arrivals. The path must point to the root or a subpath of the external location.",
                       "$ref": "#/$defs/string"
                     },
                     "wait_after_last_change_seconds": {
@@ -5191,11 +5270,11 @@
                       "$ref": "#/$defs/int"
                     },
                     "inputs": {
-                      "description": "Array for task to iterate on. This can be a JSON string or a reference to\nan array parameter.",
+                      "description": "Required. Array for task to iterate on. This can be a JSON string or a reference to\nan array parameter.",
                       "$ref": "#/$defs/string"
                     },
                     "task": {
-                      "description": "Configuration for the task that will be run for each element in the array",
+                      "description": "Required. Configuration for the task that will be run for each element in the array",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.Task"
                     }
                   },
@@ -5215,6 +5294,7 @@
               "oneOf": [
                 {
                   "type": "string",
+                  "description": "Valid values are: `SINGLE_TASK` and `MULTI_TASK`.",
                   "enum": [
                     "SINGLE_TASK",
                     "MULTI_TASK"
@@ -5239,7 +5319,7 @@
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.ComputeConfig"
                     },
                     "dl_runtime_image": {
-                      "description": "Runtime image",
+                      "description": "Required. Runtime image",
                       "$ref": "#/$defs/string"
                     },
                     "mlflow_experiment_name": {
@@ -5278,6 +5358,7 @@
               "oneOf": [
                 {
                   "type": "string",
+                  "description": "Valid values are: `gitHub`, `bitbucketCloud`, `azureDevOpsServices`, `gitHubEnterprise`, `bitbucketServer`, `gitLab`, `gitLabEnterpriseEdition`, and `awsCodeCommit`.",
                   "enum": [
                     "gitHub",
                     "bitbucketCloud",
@@ -5329,7 +5410,7 @@
                       "$ref": "#/$defs/string"
                     },
                     "git_provider": {
-                      "description": "Unique identifier of the service used to host the Git repository. The value is case insensitive.",
+                      "description": "Required. Unique identifier of the service used to host the Git repository. The value is case insensitive.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.GitProvider"
                     },
                     "git_tag": {
@@ -5337,7 +5418,7 @@
                       "$ref": "#/$defs/string"
                     },
                     "git_url": {
-                      "description": "URL of the repository to be cloned by this job.",
+                      "description": "Required. URL of the repository to be cloned by this job.",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -5363,7 +5444,7 @@
                       "$ref": "#/$defs/string"
                     },
                     "new_cluster": {
-                      "description": "If new_cluster, a description of a cluster that is created for each task.",
+                      "description": "Required. If new_cluster, a description of a cluster that is created for each task.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.ClusterSpec"
                     }
                   },
@@ -5385,7 +5466,7 @@
                   "type": "object",
                   "properties": {
                     "kind": {
-                      "description": "The kind of deployment that manages the job.\n\n* `BUNDLE`: The job is managed by Databricks Asset Bundle.",
+                      "description": "Required. The kind of deployment that manages the job.\n\n* `BUNDLE`: The job is managed by Databricks Asset Bundle.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.JobDeploymentKind"
                     },
                     "metadata_file_path": {
@@ -5408,7 +5489,7 @@
               "oneOf": [
                 {
                   "type": "string",
-                  "description": "* `BUNDLE`: The job is managed by Databricks Asset Bundle.",
+                  "description": "* `BUNDLE`: The job is managed by Databricks Asset Bundle. Valid values are: `BUNDLE`.",
                   "enum": [
                     "BUNDLE"
                   ]
@@ -5481,7 +5562,7 @@
                   "type": "object",
                   "properties": {
                     "environment_key": {
-                      "description": "The key of an environment. It has to be unique within a job.",
+                      "description": "Required. The key of an environment. It has to be unique within a job.",
                       "$ref": "#/$defs/string"
                     },
                     "spec": {
@@ -5527,11 +5608,11 @@
                   "type": "object",
                   "properties": {
                     "default": {
-                      "description": "Default value of the parameter.",
+                      "description": "Required. Default value of the parameter.",
                       "$ref": "#/$defs/string"
                     },
                     "name": {
-                      "description": "The name of the defined parameter. May only contain alphanumeric characters, `_`, `-`, and `.`",
+                      "description": "Required. The name of the defined parameter. May only contain alphanumeric characters, `_`, `-`, and `.`",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -5581,11 +5662,11 @@
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.JobSourceDirtyState"
                     },
                     "import_from_git_branch": {
-                      "description": "Name of the branch which the job is imported from.",
+                      "description": "Required. Name of the branch which the job is imported from.",
                       "$ref": "#/$defs/string"
                     },
                     "job_config_path": {
-                      "description": "Path of the job YAML file that contains the job specification.",
+                      "description": "Required. Path of the job YAML file that contains the job specification.",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -5640,7 +5721,7 @@
               "oneOf": [
                 {
                   "type": "string",
-                  "description": "Specifies the operator used to compare the health metric value with the specified threshold.",
+                  "description": "Specifies the operator used to compare the health metric value with the specified threshold. Valid values are: `GREATER_THAN`.",
                   "enum": [
                     "GREATER_THAN"
                   ]
@@ -5657,13 +5738,15 @@
                   "type": "object",
                   "properties": {
                     "metric": {
+                      "description": "Required.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.JobsHealthMetric"
                     },
                     "op": {
+                      "description": "Required.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.JobsHealthOperator"
                     },
                     "value": {
-                      "description": "Specifies the threshold value that the health metric should obey to satisfy the health rule.",
+                      "description": "Required. Specifies the threshold value that the health metric should obey to satisfy the health rule.",
                       "$ref": "#/$defs/int64"
                     }
                   },
@@ -5708,7 +5791,7 @@
                       "$ref": "#/$defs/slice/string"
                     },
                     "condition": {
-                      "description": "The condition based on which to trigger a job run.",
+                      "description": "Required. The condition based on which to trigger a job run.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.ModelTriggerConfigurationCondition"
                     },
                     "min_time_between_triggers_seconds": {
@@ -5739,6 +5822,7 @@
               "oneOf": [
                 {
                   "type": "string",
+                  "description": "Valid values are: `MODEL_CREATED`, `MODEL_VERSION_READY`, and `MODEL_ALIAS_SET`.",
                   "enum": [
                     "MODEL_CREATED",
                     "MODEL_VERSION_READY",
@@ -5788,6 +5872,7 @@
               "oneOf": [
                 {
                   "type": "string",
+                  "description": "Valid values are: `UNPAUSED` and `PAUSED`.",
                   "enum": [
                     "UNPAUSED",
                     "PAUSED"
@@ -5803,7 +5888,7 @@
               "oneOf": [
                 {
                   "type": "string",
-                  "description": "PerformanceTarget defines how performant (lower latency) or cost efficient the execution of run on serverless compute should be.\nThe performance mode on the job or pipeline should map to a performance setting that is passed to Cluster Manager\n(see cluster-common PerformanceTarget).",
+                  "description": "PerformanceTarget defines how performant (lower latency) or cost efficient the execution of run on serverless compute should be.\nThe performance mode on the job or pipeline should map to a performance setting that is passed to Cluster Manager\n(see cluster-common PerformanceTarget). Valid values are: `PERFORMANCE_OPTIMIZED` and `STANDARD`.",
                   "enum": [
                     "PERFORMANCE_OPTIMIZED",
                     "STANDARD"
@@ -5821,11 +5906,11 @@
                   "type": "object",
                   "properties": {
                     "interval": {
-                      "description": "The interval at which the trigger should run.",
+                      "description": "Required. The interval at which the trigger should run.",
                       "$ref": "#/$defs/int"
                     },
                     "unit": {
-                      "description": "The unit of time for the interval.",
+                      "description": "Required. The unit of time for the interval.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.PeriodicTriggerConfigurationTimeUnit"
                     }
                   },
@@ -5845,6 +5930,7 @@
               "oneOf": [
                 {
                   "type": "string",
+                  "description": "Valid values are: `HOURS`, `DAYS`, and `WEEKS`.",
                   "enum": [
                     "HOURS",
                     "DAYS",
@@ -5885,7 +5971,7 @@
                       "$ref": "#/$defs/bool"
                     },
                     "pipeline_id": {
-                      "description": "The full name of the pipeline task to execute.",
+                      "description": "Required. The full name of the pipeline task to execute.",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -6004,7 +6090,7 @@
                   "type": "object",
                   "properties": {
                     "entry_point": {
-                      "description": "Named entry point to use, if it does not exist in the metadata of the package it executes the function from the package directly using `$packageName.$entryPoint()`",
+                      "description": "Required. Named entry point to use, if it does not exist in the metadata of the package it executes the function from the package directly using `$packageName.$entryPoint()`",
                       "$ref": "#/$defs/string"
                     },
                     "named_parameters": {
@@ -6012,7 +6098,7 @@
                       "$ref": "#/$defs/map/string"
                     },
                     "package_name": {
-                      "description": "Name of the package to execute",
+                      "description": "Required. Name of the package to execute",
                       "$ref": "#/$defs/string"
                     },
                     "parameters": {
@@ -6095,7 +6181,7 @@
                       "deprecated": true
                     },
                     "job_id": {
-                      "description": "ID of the job to trigger.",
+                      "description": "Required. ID of the job to trigger.",
                       "$ref": "#/$defs/int64"
                     },
                     "job_parameters": {
@@ -6280,7 +6366,7 @@
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.SqlTaskQuery"
                     },
                     "warehouse_id": {
-                      "description": "The canonical identifier of the SQL warehouse. Recommended to use with serverless or pro SQL warehouses. Classic SQL warehouses are only supported for SQL alert, dashboard and query tasks and are limited to scheduled single-task jobs.",
+                      "description": "Required. The canonical identifier of the SQL warehouse. Recommended to use with serverless or pro SQL warehouses. Classic SQL warehouses are only supported for SQL alert, dashboard and query tasks and are limited to scheduled single-task jobs.",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -6301,7 +6387,7 @@
                   "type": "object",
                   "properties": {
                     "alert_id": {
-                      "description": "The canonical identifier of the SQL alert.",
+                      "description": "Required. The canonical identifier of the SQL alert.",
                       "$ref": "#/$defs/string"
                     },
                     "pause_subscriptions": {
@@ -6334,7 +6420,7 @@
                       "$ref": "#/$defs/string"
                     },
                     "dashboard_id": {
-                      "description": "The canonical identifier of the SQL dashboard.",
+                      "description": "Required. The canonical identifier of the SQL dashboard.",
                       "$ref": "#/$defs/string"
                     },
                     "pause_subscriptions": {
@@ -6363,7 +6449,7 @@
                   "type": "object",
                   "properties": {
                     "path": {
-                      "description": "Path of the SQL file. Must be relative if the source is a remote Git repository and absolute for workspace paths.",
+                      "description": "Required. Path of the SQL file. Must be relative if the source is a remote Git repository and absolute for workspace paths.",
                       "$ref": "#/$defs/string"
                     },
                     "source": {
@@ -6388,7 +6474,7 @@
                   "type": "object",
                   "properties": {
                     "query_id": {
-                      "description": "The canonical identifier of the SQL query.",
+                      "description": "Required. The canonical identifier of the SQL query.",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -6429,6 +6515,7 @@
               "oneOf": [
                 {
                   "type": "string",
+                  "description": "Valid values are: `DIRECT_QUERY`, `IMPORT`, and `DUAL`.",
                   "enum": [
                     "DIRECT_QUERY",
                     "IMPORT",
@@ -6500,7 +6587,7 @@
                       "$ref": "#/$defs/int"
                     },
                     "table_names": {
-                      "description": "A list of tables to monitor for changes. The table name must be in the format `catalog_name.schema_name.table_name`.",
+                      "description": "Required. A list of tables to monitor for changes. The table name must be in the format `catalog_name.schema_name.table_name`.",
                       "$ref": "#/$defs/slice/string"
                     },
                     "wait_after_last_change_seconds": {
@@ -6699,7 +6786,7 @@
                       "$ref": "#/$defs/string"
                     },
                     "task_key": {
-                      "description": "The name of the task this task depends on.",
+                      "description": "Required. The name of the task this task depends on.",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -6836,6 +6923,7 @@
                   "type": "object",
                   "properties": {
                     "id": {
+                      "description": "Required.",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -6974,7 +7062,7 @@
               "oneOf": [
                 {
                   "type": "string",
-                  "description": "Days of week in which the window is allowed to happen.\nIf not specified all days of the week will be used.",
+                  "description": "Days of week in which the window is allowed to happen.\nIf not specified all days of the week will be used. Valid values are: `MONDAY`, `TUESDAY`, `WEDNESDAY`, `THURSDAY`, `FRIDAY`, `SATURDAY`, and `SUNDAY`.",
                   "enum": [
                     "MONDAY",
                     "TUESDAY",
@@ -6995,7 +7083,7 @@
               "oneOf": [
                 {
                   "type": "string",
-                  "description": "The deployment method that manages the pipeline:\n- BUNDLE: The pipeline is managed by a Databricks Asset Bundle.",
+                  "description": "The deployment method that manages the pipeline:\n- BUNDLE: The pipeline is managed by a Databricks Asset Bundle. Valid values are: `BUNDLE`.",
                   "enum": [
                     "BUNDLE"
                   ]
@@ -7111,7 +7199,7 @@
                       "deprecated": true
                     },
                     "connection_name": {
-                      "description": "Immutable. The Unity Catalog connection that this gateway pipeline uses to communicate with the source.",
+                      "description": "Required. Immutable. The Unity Catalog connection that this gateway pipeline uses to communicate with the source.",
                       "$ref": "#/$defs/string"
                     },
                     "connection_parameters": {
@@ -7280,6 +7368,7 @@
               "oneOf": [
                 {
                   "type": "string",
+                  "description": "Valid values are: `MYSQL`, `POSTGRESQL`, `SQLSERVER`, `SALESFORCE`, `BIGQUERY`, `NETSUITE`, `WORKDAY_RAAS`, `GA4_RAW_DATA`, `SERVICENOW`, `MANAGED_POSTGRESQL`, `ORACLE`, `TERADATA`, `SHAREPOINT`, `DYNAMICS365`, and `FOREIGN_CATALOG`.",
                   "enum": [
                     "MYSQL",
                     "POSTGRESQL",
@@ -7470,11 +7559,11 @@
                   "type": "object",
                   "properties": {
                     "max_workers": {
-                      "description": "The maximum number of workers to which the cluster can scale up when overloaded. `max_workers` must be strictly greater than `min_workers`.",
+                      "description": "Required. The maximum number of workers to which the cluster can scale up when overloaded. `max_workers` must be strictly greater than `min_workers`.",
                       "$ref": "#/$defs/int"
                     },
                     "min_workers": {
-                      "description": "The minimum number of workers the cluster can scale down to when underutilized.\nIt is also the initial number of workers the cluster will have after creation.",
+                      "description": "Required. The minimum number of workers the cluster can scale down to when underutilized.\nIt is also the initial number of workers the cluster will have after creation.",
                       "$ref": "#/$defs/int"
                     },
                     "mode": {
@@ -7516,7 +7605,7 @@
                   "type": "object",
                   "properties": {
                     "kind": {
-                      "description": "The deployment method that manages the pipeline.",
+                      "description": "Required. The deployment method that manages the pipeline.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.DeploymentKind"
                     },
                     "metadata_file_path": {
@@ -7709,7 +7798,7 @@
                       "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/pipelines.DayOfWeek"
                     },
                     "start_hour": {
-                      "description": "An integer between 0 and 23 denoting the start hour for the restart window in the 24-hour day.\nContinuous pipeline restart is triggered only within a five-hour window starting at this hour.",
+                      "description": "Required. An integer between 0 and 23 denoting the start hour for the restart window in the 24-hour day.\nContinuous pipeline restart is triggered only within a five-hour window starting at this hour.",
                       "$ref": "#/$defs/int"
                     },
                     "time_zone_id": {
@@ -7935,7 +8024,7 @@
               "oneOf": [
                 {
                   "type": "string",
-                  "description": "The SCD type to use to ingest the table.",
+                  "description": "The SCD type to use to ingest the table. Valid values are: `SCD_TYPE_1`, `SCD_TYPE_2`, and `APPEND_ONLY`.",
                   "enum": [
                     "SCD_TYPE_1",
                     "SCD_TYPE_2",
@@ -8060,6 +8149,7 @@
               "oneOf": [
                 {
                   "type": "string",
+                  "description": "Valid values are: `NONE`, `BLOCK`, and `MASK`.",
                   "enum": [
                     "NONE",
                     "BLOCK",
@@ -8142,7 +8232,7 @@
                       "$ref": "#/$defs/string"
                     },
                     "renewal_period": {
-                      "description": "Renewal period field for a rate limit. Currently, only 'minute' is supported.",
+                      "description": "Required. Renewal period field for a rate limit. Currently, only 'minute' is supported.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.AiGatewayRateLimitRenewalPeriod"
                     },
                     "tokens": {
@@ -8165,6 +8255,7 @@
               "oneOf": [
                 {
                   "type": "string",
+                  "description": "Valid values are: `user`, `endpoint`, `user_group`, and `service_principal`.",
                   "enum": [
                     "user",
                     "endpoint",
@@ -8182,6 +8273,7 @@
               "oneOf": [
                 {
                   "type": "string",
+                  "description": "Valid values are: `minute`.",
                   "enum": [
                     "minute"
                   ]
@@ -8224,7 +8316,7 @@
                       "$ref": "#/$defs/string"
                     },
                     "aws_region": {
-                      "description": "The AWS region to use. Bedrock has to be enabled there.",
+                      "description": "Required. The AWS region to use. Bedrock has to be enabled there.",
                       "$ref": "#/$defs/string"
                     },
                     "aws_secret_access_key": {
@@ -8236,7 +8328,7 @@
                       "$ref": "#/$defs/string"
                     },
                     "bedrock_provider": {
-                      "description": "The underlying provider in Amazon Bedrock. Supported values (case\ninsensitive) include: Anthropic, Cohere, AI21Labs, Amazon.",
+                      "description": "Required. The underlying provider in Amazon Bedrock. Supported values (case\ninsensitive) include: Anthropic, Cohere, AI21Labs, Amazon.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.AmazonBedrockConfigBedrockProvider"
                     },
                     "instance_profile_arn": {
@@ -8260,6 +8352,7 @@
               "oneOf": [
                 {
                   "type": "string",
+                  "description": "Valid values are: `anthropic`, `cohere`, `ai21labs`, and `amazon`.",
                   "enum": [
                     "anthropic",
                     "cohere",
@@ -8301,7 +8394,7 @@
                   "type": "object",
                   "properties": {
                     "key": {
-                      "description": "The name of the API key parameter used for authentication.",
+                      "description": "Required. The name of the API key parameter used for authentication.",
                       "$ref": "#/$defs/string"
                     },
                     "value": {
@@ -8417,7 +8510,7 @@
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.BearerTokenAuth"
                     },
                     "custom_provider_url": {
-                      "description": "This is a field to provide the URL of the custom provider API.",
+                      "description": "Required. This is a field to provide the URL of the custom provider API.",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -8446,7 +8539,7 @@
                       "$ref": "#/$defs/string"
                     },
                     "databricks_workspace_url": {
-                      "description": "The URL of the Databricks workspace containing the model serving endpoint\npointed to by this external model.",
+                      "description": "Required. The URL of the Databricks workspace containing the model serving endpoint\npointed to by this external model.",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -8519,7 +8612,7 @@
                   "type": "object",
                   "properties": {
                     "key": {
-                      "description": "Key field for a serving endpoint tag.",
+                      "description": "Required. Key field for a serving endpoint tag.",
                       "$ref": "#/$defs/string"
                     },
                     "value": {
@@ -8572,7 +8665,7 @@
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.GoogleCloudVertexAiConfig"
                     },
                     "name": {
-                      "description": "The name of the external model.",
+                      "description": "Required. The name of the external model.",
                       "$ref": "#/$defs/string"
                     },
                     "openai_config": {
@@ -8584,11 +8677,11 @@
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.PaLmConfig"
                     },
                     "provider": {
-                      "description": "The name of the provider for the external model. Currently, the supported providers are 'ai21labs', 'anthropic', 'amazon-bedrock', 'cohere', 'databricks-model-serving', 'google-cloud-vertex-ai', 'openai', 'palm', and 'custom'.",
+                      "description": "Required. The name of the provider for the external model. Currently, the supported providers are 'ai21labs', 'anthropic', 'amazon-bedrock', 'cohere', 'databricks-model-serving', 'google-cloud-vertex-ai', 'openai', 'palm', and 'custom'.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.ExternalModelProvider"
                     },
                     "task": {
-                      "description": "The task type of the external model.",
+                      "description": "Required. The task type of the external model.",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -8609,6 +8702,7 @@
               "oneOf": [
                 {
                   "type": "string",
+                  "description": "Valid values are: `ai21labs`, `anthropic`, `amazon-bedrock`, `cohere`, `databricks-model-serving`, `google-cloud-vertex-ai`, `openai`, `palm`, and `custom`.",
                   "enum": [
                     "ai21labs",
                     "anthropic",
@@ -8633,7 +8727,7 @@
                   "type": "object",
                   "properties": {
                     "enabled": {
-                      "description": "Whether to enable traffic fallback. When a served entity in the serving endpoint returns specific error\ncodes (e.g. 500), the request will automatically be round-robin attempted with other served entities in the same\nendpoint, following the order of served entity list, until a successful response is returned.\nIf all attempts fail, return the last response with the error code.",
+                      "description": "Required. Whether to enable traffic fallback. When a served entity in the serving endpoint returns specific error\ncodes (e.g. 500), the request will automatically be round-robin attempted with other served entities in the same\nendpoint, following the order of served entity list, until a successful response is returned.\nIf all attempts fail, return the last response with the error code.",
                       "$ref": "#/$defs/bool"
                     }
                   },
@@ -8662,11 +8756,11 @@
                       "$ref": "#/$defs/string"
                     },
                     "project_id": {
-                      "description": "This is the Google Cloud project id that the service account is\nassociated with.",
+                      "description": "Required. This is the Google Cloud project id that the service account is\nassociated with.",
                       "$ref": "#/$defs/string"
                     },
                     "region": {
-                      "description": "This is the region for the Google Cloud Vertex AI Service. See [supported\nregions] for more details. Some models are only available in specific\nregions.\n\n[supported regions]: https://cloud.google.com/vertex-ai/docs/general/locations",
+                      "description": "Required. This is the region for the Google Cloud Vertex AI Service. See [supported\nregions] for more details. Some models are only available in specific\nregions.\n\n[supported regions]: https://cloud.google.com/vertex-ai/docs/general/locations",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -8769,7 +8863,7 @@
                   "type": "object",
                   "properties": {
                     "calls": {
-                      "description": "Used to specify how many calls are allowed for a key within the renewal_period.",
+                      "description": "Required. Used to specify how many calls are allowed for a key within the renewal_period.",
                       "$ref": "#/$defs/int64"
                     },
                     "key": {
@@ -8777,7 +8871,7 @@
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.RateLimitKey"
                     },
                     "renewal_period": {
-                      "description": "Renewal period field for a serving endpoint rate limit. Currently, only 'minute' is supported.",
+                      "description": "Required. Renewal period field for a serving endpoint rate limit. Currently, only 'minute' is supported.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.RateLimitRenewalPeriod"
                     }
                   },
@@ -8797,6 +8891,7 @@
               "oneOf": [
                 {
                   "type": "string",
+                  "description": "Valid values are: `user` and `endpoint`.",
                   "enum": [
                     "user",
                     "endpoint"
@@ -8812,6 +8907,7 @@
               "oneOf": [
                 {
                   "type": "string",
+                  "description": "Valid values are: `minute`.",
                   "enum": [
                     "minute"
                   ]
@@ -8835,7 +8931,7 @@
                       "$ref": "#/$defs/string"
                     },
                     "traffic_percentage": {
-                      "description": "The percentage of endpoint traffic to send to this route. It must be an integer between 0 and 100 inclusive.",
+                      "description": "Required. The percentage of endpoint traffic to send to this route. It must be an integer between 0 and 100 inclusive.",
                       "$ref": "#/$defs/int"
                     }
                   },
@@ -8949,9 +9045,11 @@
                       "$ref": "#/$defs/int"
                     },
                     "model_name": {
+                      "description": "Required.",
                       "$ref": "#/$defs/string"
                     },
                     "model_version": {
+                      "description": "Required.",
                       "$ref": "#/$defs/string"
                     },
                     "name": {
@@ -8963,7 +9061,7 @@
                       "$ref": "#/$defs/int64"
                     },
                     "scale_to_zero_enabled": {
-                      "description": "Whether the compute resources for the served entity should scale down to zero.",
+                      "description": "Required. Whether the compute resources for the served entity should scale down to zero.",
                       "$ref": "#/$defs/bool"
                     },
                     "workload_size": {
@@ -8992,7 +9090,7 @@
               "oneOf": [
                 {
                   "type": "string",
-                  "description": "Please keep this in sync with with workload types in InferenceEndpointEntities.scala",
+                  "description": "Please keep this in sync with with workload types in InferenceEndpointEntities.scala. Valid values are: `CPU`, `GPU_MEDIUM`, `GPU_SMALL`, `GPU_LARGE`, and `MULTIGPU_MEDIUM`.",
                   "enum": [
                     "CPU",
                     "GPU_MEDIUM",
@@ -9011,7 +9109,7 @@
               "oneOf": [
                 {
                   "type": "string",
-                  "description": "Please keep this in sync with with workload types in InferenceEndpointEntities.scala",
+                  "description": "Please keep this in sync with with workload types in InferenceEndpointEntities.scala. Valid values are: `CPU`, `GPU_MEDIUM`, `GPU_SMALL`, `GPU_LARGE`, and `MULTIGPU_MEDIUM`.",
                   "enum": [
                     "CPU",
                     "GPU_MEDIUM",
@@ -9048,6 +9146,7 @@
               "oneOf": [
                 {
                   "type": "string",
+                  "description": "Valid values are: `SUM`, `COUNT`, `COUNT_DISTINCT`, `AVG`, `MEDIAN`, `MIN`, `MAX`, and `STDDEV`.",
                   "enum": [
                     "SUM",
                     "COUNT",
@@ -9087,6 +9186,7 @@
               "oneOf": [
                 {
                   "type": "string",
+                  "description": "Valid values are: `ACTIVE` and `DELETED`.",
                   "enum": [
                     "ACTIVE",
                     "DELETED"
@@ -9104,7 +9204,7 @@
                   "type": "object",
                   "properties": {
                     "comparison_operator": {
-                      "description": "Operator used for comparison in alert evaluation.",
+                      "description": "Required. Operator used for comparison in alert evaluation.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.ComparisonOperator"
                     },
                     "empty_result_state": {
@@ -9116,7 +9216,7 @@
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertV2Notification"
                     },
                     "source": {
-                      "description": "Source column from result to use to evaluate alert",
+                      "description": "Required. Source column from result to use to evaluate alert",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertV2OperandColumn"
                     },
                     "threshold": {
@@ -9193,6 +9293,7 @@
                       "$ref": "#/$defs/string"
                     },
                     "name": {
+                      "description": "Required.",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -9297,6 +9398,7 @@
               "oneOf": [
                 {
                   "type": "string",
+                  "description": "Valid values are: `CHANNEL_NAME_PREVIEW`, `CHANNEL_NAME_CURRENT`, `CHANNEL_NAME_PREVIOUS`, and `CHANNEL_NAME_CUSTOM`.",
                   "enum": [
                     "CHANNEL_NAME_PREVIEW",
                     "CHANNEL_NAME_CURRENT",
@@ -9314,6 +9416,7 @@
               "oneOf": [
                 {
                   "type": "string",
+                  "description": "Valid values are: `LESS_THAN`, `GREATER_THAN`, `EQUAL`, `NOT_EQUAL`, `GREATER_THAN_OR_EQUAL`, `LESS_THAN_OR_EQUAL`, `IS_NULL`, and `IS_NOT_NULL`.",
                   "enum": [
                     "LESS_THAN",
                     "GREATER_THAN",
@@ -9335,6 +9438,7 @@
               "oneOf": [
                 {
                   "type": "string",
+                  "description": "Valid values are: `TYPE_UNSPECIFIED`, `CLASSIC`, and `PRO`.",
                   "enum": [
                     "TYPE_UNSPECIFIED",
                     "CLASSIC",
@@ -9357,11 +9461,11 @@
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.SchedulePauseStatus"
                     },
                     "quartz_cron_schedule": {
-                      "description": "A cron expression using quartz syntax that specifies the schedule for this pipeline.\nShould use the quartz format described here: http://www.quartz-scheduler.org/documentation/quartz-2.1.7/tutorials/tutorial-lesson-06.html",
+                      "description": "Required. A cron expression using quartz syntax that specifies the schedule for this pipeline.\nShould use the quartz format described here: http://www.quartz-scheduler.org/documentation/quartz-2.1.7/tutorials/tutorial-lesson-06.html",
                       "$ref": "#/$defs/string"
                     },
                     "timezone_id": {
-                      "description": "A Java timezone id. The schedule will be resolved using this timezone.\nThis will be combined with the quartz_cron_schedule to determine the schedule.\nSee https://docs.databricks.com/sql/language-manual/sql-ref-syntax-aux-conf-mgmt-set-timezone.html for details.",
+                      "description": "Required. A Java timezone id. The schedule will be resolved using this timezone.\nThis will be combined with the quartz_cron_schedule to determine the schedule.\nSee https://docs.databricks.com/sql/language-manual/sql-ref-syntax-aux-conf-mgmt-set-timezone.html for details.",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -9418,6 +9522,7 @@
               "oneOf": [
                 {
                   "type": "string",
+                  "description": "Valid values are: `UNPAUSED` and `PAUSED`.",
                   "enum": [
                     "UNPAUSED",
                     "PAUSED"
@@ -9453,11 +9558,11 @@
                   "description": "The metadata of the Azure KeyVault for a secret scope of type `AZURE_KEYVAULT`",
                   "properties": {
                     "dns_name": {
-                      "description": "The DNS of the KeyVault",
+                      "description": "Required. The DNS of the KeyVault",
                       "$ref": "#/$defs/string"
                     },
                     "resource_id": {
-                      "description": "The resource id of the azure KeyVault that user wants to associate the scope with.",
+                      "description": "Required. The resource id of the azure KeyVault that user wants to associate the scope with.",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -9477,7 +9582,7 @@
               "oneOf": [
                 {
                   "type": "string",
-                  "description": "The types of secret scope backends in the Secret Manager. Azure KeyVault backed secret scopes\nwill be supported in a later release.",
+                  "description": "The types of secret scope backends in the Secret Manager. Azure KeyVault backed secret scopes\nwill be supported in a later release. Valid values are: `DATABRICKS` and `AZURE_KEYVAULT`.",
                   "enum": [
                     "DATABRICKS",
                     "AZURE_KEYVAULT"
