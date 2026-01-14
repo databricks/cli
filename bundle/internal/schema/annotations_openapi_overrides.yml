@@ -701,12 +701,18 @@ github.com/databricks/databricks-sdk-go/service/apps.AppDeployment:
   "deployment_id":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.239.0
   "mode":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.239.0
   "source_code_path":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.239.0
   "status":
     "description": |-
       PLACEHOLDER
@@ -717,6 +723,8 @@ github.com/databricks/databricks-sdk-go/service/apps.AppDeploymentArtifacts:
   "source_code_path":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.239.0
 github.com/databricks/databricks-sdk-go/service/apps.AppDeploymentStatus:
   "message":
     "description": |-
@@ -728,85 +736,141 @@ github.com/databricks/databricks-sdk-go/service/apps.AppResource:
   "database":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.260.0
+  "description":
+    "since_version": |-
+      v0.239.0
   "genie_space":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.273.0
   "job":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.239.0
+  "name":
+    "since_version": |-
+      v0.239.0
   "secret":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.239.0
   "serving_endpoint":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.239.0
   "sql_warehouse":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.239.0
   "uc_securable":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.253.0
 github.com/databricks/databricks-sdk-go/service/apps.AppResourceDatabase:
   "database_name":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.260.0
   "instance_name":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.260.0
   "permission":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.260.0
 github.com/databricks/databricks-sdk-go/service/apps.AppResourceGenieSpace:
   "name":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.273.0
   "permission":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.273.0
   "space_id":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.273.0
 github.com/databricks/databricks-sdk-go/service/apps.AppResourceJob:
   "id":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.239.0
   "permission":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.239.0
 github.com/databricks/databricks-sdk-go/service/apps.AppResourceSecret:
   "key":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.239.0
   "permission":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.239.0
   "scope":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.239.0
 github.com/databricks/databricks-sdk-go/service/apps.AppResourceServingEndpoint:
   "name":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.239.0
   "permission":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.239.0
 github.com/databricks/databricks-sdk-go/service/apps.AppResourceSqlWarehouse:
   "id":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.239.0
   "permission":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.239.0
 github.com/databricks/databricks-sdk-go/service/apps.AppResourceUcSecurable:
   "permission":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.253.0
   "securable_full_name":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.253.0
   "securable_type":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.253.0
 github.com/databricks/databricks-sdk-go/service/apps.ApplicationStatus:
   "message":
     "description": |-
@@ -819,249 +883,2174 @@ github.com/databricks/databricks-sdk-go/service/apps.ComputeStatus:
     "description": |-
       PLACEHOLDER
   "state": {}
+github.com/databricks/databricks-sdk-go/service/catalog.MonitorCronSchedule:
+  "pause_status":
+    "since_version": |-
+      v0.228.1
+  "quartz_cron_expression":
+    "since_version": |-
+      v0.228.1
+  "timezone_id":
+    "since_version": |-
+      v0.228.1
+github.com/databricks/databricks-sdk-go/service/catalog.MonitorDataClassificationConfig:
+  "enabled":
+    "since_version": |-
+      v0.228.1
+github.com/databricks/databricks-sdk-go/service/catalog.MonitorDestination:
+  "email_addresses":
+    "since_version": |-
+      v0.228.1
 github.com/databricks/databricks-sdk-go/service/catalog.MonitorInferenceLog:
   "granularities":
     "description": |-
       Granularities for aggregating data into time windows based on their timestamp. Valid values are 5 minutes, 30 minutes, 1 hour, 1 day, n weeks, 1 month, or 1 year.
+    "since_version": |-
+      v0.228.1
+  "label_col":
+    "since_version": |-
+      v0.228.1
+  "model_id_col":
+    "since_version": |-
+      v0.228.1
+  "prediction_col":
+    "since_version": |-
+      v0.228.1
+  "prediction_proba_col":
+    "since_version": |-
+      v0.228.1
+  "problem_type":
+    "since_version": |-
+      v0.228.1
+  "timestamp_col":
+    "since_version": |-
+      v0.228.1
+github.com/databricks/databricks-sdk-go/service/catalog.MonitorMetric:
+  "definition":
+    "since_version": |-
+      v0.228.1
+  "input_columns":
+    "since_version": |-
+      v0.228.1
+  "name":
+    "since_version": |-
+      v0.228.1
+  "output_data_type":
+    "since_version": |-
+      v0.228.1
+  "type":
+    "since_version": |-
+      v0.228.1
+github.com/databricks/databricks-sdk-go/service/catalog.MonitorNotifications:
+  "on_failure":
+    "since_version": |-
+      v0.228.1
+  "on_new_classification_tag_detected":
+    "since_version": |-
+      v0.228.1
 github.com/databricks/databricks-sdk-go/service/catalog.MonitorTimeSeries:
   "granularities":
     "description": |-
       Granularities for aggregating data into time windows based on their timestamp. Valid values are 5 minutes, 30 minutes, 1 hour, 1 day, n weeks, 1 month, or 1 year.
+    "since_version": |-
+      v0.228.1
+  "timestamp_col":
+    "since_version": |-
+      v0.228.1
 github.com/databricks/databricks-sdk-go/service/catalog.RegisteredModelAlias:
+  "alias_name":
+    "since_version": |-
+      v0.273.0
   "catalog_name":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.273.0
   "id":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.273.0
   "model_name":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.273.0
   "schema_name":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.273.0
+  "version_num":
+    "since_version": |-
+      v0.273.0
+github.com/databricks/databricks-sdk-go/service/compute.Adlsgen2Info:
+  "destination":
+    "since_version": |-
+      v0.228.1
+github.com/databricks/databricks-sdk-go/service/compute.AutoScale:
+  "max_workers":
+    "since_version": |-
+      v0.228.1
+  "min_workers":
+    "since_version": |-
+      v0.228.1
 github.com/databricks/databricks-sdk-go/service/compute.AwsAttributes:
   "availability":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.228.1
+  "ebs_volume_count":
+    "since_version": |-
+      v0.228.1
+  "ebs_volume_iops":
+    "since_version": |-
+      v0.228.1
+  "ebs_volume_size":
+    "since_version": |-
+      v0.228.1
+  "ebs_volume_throughput":
+    "since_version": |-
+      v0.228.1
   "ebs_volume_type":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.228.1
+  "first_on_demand":
+    "since_version": |-
+      v0.228.1
+  "instance_profile_arn":
+    "since_version": |-
+      v0.228.1
+  "spot_bid_price_percent":
+    "since_version": |-
+      v0.228.1
+  "zone_id":
+    "since_version": |-
+      v0.228.1
 github.com/databricks/databricks-sdk-go/service/compute.AzureAttributes:
   "availability":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.228.1
+  "first_on_demand":
+    "since_version": |-
+      v0.228.1
+  "log_analytics_info":
+    "since_version": |-
+      v0.228.1
+  "spot_bid_max_price":
+    "since_version": |-
+      v0.228.1
+github.com/databricks/databricks-sdk-go/service/compute.ClientsTypes:
+  "jobs":
+    "since_version": |-
+      v0.228.1
+  "notebooks":
+    "since_version": |-
+      v0.228.1
+github.com/databricks/databricks-sdk-go/service/compute.ClusterLogConf:
+  "dbfs":
+    "since_version": |-
+      v0.228.1
+  "s3":
+    "since_version": |-
+      v0.228.1
+  "volumes":
+    "since_version": |-
+      v0.242.0
 github.com/databricks/databricks-sdk-go/service/compute.ClusterSpec:
+  "apply_policy_default_values":
+    "since_version": |-
+      v0.228.1
+  "autoscale":
+    "since_version": |-
+      v0.228.1
+  "autotermination_minutes":
+    "since_version": |-
+      v0.228.1
+  "aws_attributes":
+    "since_version": |-
+      v0.228.1
+  "azure_attributes":
+    "since_version": |-
+      v0.228.1
+  "cluster_log_conf":
+    "since_version": |-
+      v0.228.1
+  "cluster_name":
+    "since_version": |-
+      v0.228.1
+  "custom_tags":
+    "since_version": |-
+      v0.228.1
   "data_security_mode":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.228.1
   "docker_image":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.228.1
+  "driver_instance_pool_id":
+    "since_version": |-
+      v0.228.1
+  "driver_node_type_id":
+    "since_version": |-
+      v0.228.1
+  "enable_elastic_disk":
+    "since_version": |-
+      v0.228.1
+  "enable_local_disk_encryption":
+    "since_version": |-
+      v0.228.1
+  "gcp_attributes":
+    "since_version": |-
+      v0.228.1
+  "init_scripts":
+    "since_version": |-
+      v0.228.1
+  "instance_pool_id":
+    "since_version": |-
+      v0.228.1
+  "is_single_node":
+    "since_version": |-
+      v0.237.0
   "kind":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.237.0
+  "node_type_id":
+    "since_version": |-
+      v0.228.1
+  "num_workers":
+    "since_version": |-
+      v0.228.1
+  "policy_id":
+    "since_version": |-
+      v0.228.1
+  "remote_disk_throughput":
+    "since_version": |-
+      v0.257.0
   "runtime_engine":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.228.1
+  "single_user_name":
+    "since_version": |-
+      v0.228.1
+  "spark_conf":
+    "since_version": |-
+      v0.228.1
+  "spark_env_vars":
+    "since_version": |-
+      v0.228.1
+  "spark_version":
+    "since_version": |-
+      v0.228.1
+  "ssh_public_keys":
+    "since_version": |-
+      v0.228.1
+  "total_initial_remote_disk_size":
+    "since_version": |-
+      v0.257.0
+  "use_ml_runtime":
+    "since_version": |-
+      v0.237.0
   "workload_type":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.228.1
+github.com/databricks/databricks-sdk-go/service/compute.DbfsStorageInfo:
+  "destination":
+    "since_version": |-
+      v0.228.1
+github.com/databricks/databricks-sdk-go/service/compute.DockerBasicAuth:
+  "password":
+    "since_version": |-
+      v0.228.1
+  "username":
+    "since_version": |-
+      v0.228.1
 github.com/databricks/databricks-sdk-go/service/compute.DockerImage:
   "basic_auth":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.228.1
+  "url":
+    "since_version": |-
+      v0.228.1
 github.com/databricks/databricks-sdk-go/service/compute.Environment:
+  "client":
+    "since_version": |-
+      v0.228.1
   "dependencies":
     "description": |-
       List of pip dependencies, as supported by the version of pip in this environment.
+    "since_version": |-
+      v0.228.1
+  "environment_version":
+    "since_version": |-
+      v0.252.0
   "java_dependencies":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.271.0
 github.com/databricks/databricks-sdk-go/service/compute.GcpAttributes:
   "availability":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.228.1
+  "boot_disk_size":
+    "since_version": |-
+      v0.228.1
+  "first_on_demand":
+    "since_version": |-
+      v0.265.0
+  "google_service_account":
+    "since_version": |-
+      v0.228.1
+  "local_ssd_count":
+    "since_version": |-
+      v0.228.1
+  "use_preemptible_executors":
+    "since_version": |-
+      v0.228.1
+  "zone_id":
+    "since_version": |-
+      v0.228.1
+github.com/databricks/databricks-sdk-go/service/compute.GcsStorageInfo:
+  "destination":
+    "since_version": |-
+      v0.228.1
 github.com/databricks/databricks-sdk-go/service/compute.InitScriptInfo:
   "abfss":
     "description": |-
       Contains the Azure Data Lake Storage destination path
+    "since_version": |-
+      v0.228.1
+  "dbfs":
+    "since_version": |-
+      v0.228.1
+  "file":
+    "since_version": |-
+      v0.228.1
+  "gcs":
+    "since_version": |-
+      v0.228.1
+  "s3":
+    "since_version": |-
+      v0.228.1
+  "volumes":
+    "since_version": |-
+      v0.228.1
+  "workspace":
+    "since_version": |-
+      v0.228.1
 github.com/databricks/databricks-sdk-go/service/compute.Kind:
   "_":
     "enum":
       - |-
         CLASSIC_PREVIEW
+github.com/databricks/databricks-sdk-go/service/compute.Library:
+  "cran":
+    "since_version": |-
+      v0.228.1
+  "egg":
+    "since_version": |-
+      v0.228.1
+  "jar":
+    "since_version": |-
+      v0.228.1
+  "maven":
+    "since_version": |-
+      v0.228.1
+  "pypi":
+    "since_version": |-
+      v0.228.1
+  "requirements":
+    "since_version": |-
+      v0.228.1
+  "whl":
+    "since_version": |-
+      v0.228.1
+github.com/databricks/databricks-sdk-go/service/compute.LocalFileInfo:
+  "destination":
+    "since_version": |-
+      v0.228.1
 github.com/databricks/databricks-sdk-go/service/compute.LogAnalyticsInfo:
   "log_analytics_primary_key":
     "description": |-
       The primary key for the Azure Log Analytics agent configuration
+    "since_version": |-
+      v0.228.1
   "log_analytics_workspace_id":
     "description": |-
       The workspace ID for the Azure Log Analytics agent configuration
+    "since_version": |-
+      v0.228.1
+github.com/databricks/databricks-sdk-go/service/compute.MavenLibrary:
+  "coordinates":
+    "since_version": |-
+      v0.228.1
+  "exclusions":
+    "since_version": |-
+      v0.228.1
+  "repo":
+    "since_version": |-
+      v0.228.1
+github.com/databricks/databricks-sdk-go/service/compute.PythonPyPiLibrary:
+  "package":
+    "since_version": |-
+      v0.228.1
+  "repo":
+    "since_version": |-
+      v0.228.1
+github.com/databricks/databricks-sdk-go/service/compute.RCranLibrary:
+  "package":
+    "since_version": |-
+      v0.228.1
+  "repo":
+    "since_version": |-
+      v0.228.1
+github.com/databricks/databricks-sdk-go/service/compute.S3StorageInfo:
+  "canned_acl":
+    "since_version": |-
+      v0.228.1
+  "destination":
+    "since_version": |-
+      v0.228.1
+  "enable_encryption":
+    "since_version": |-
+      v0.228.1
+  "encryption_type":
+    "since_version": |-
+      v0.228.1
+  "endpoint":
+    "since_version": |-
+      v0.228.1
+  "kms_key":
+    "since_version": |-
+      v0.228.1
+  "region":
+    "since_version": |-
+      v0.228.1
+github.com/databricks/databricks-sdk-go/service/compute.VolumesStorageInfo:
+  "destination":
+    "since_version": |-
+      v0.228.1
+github.com/databricks/databricks-sdk-go/service/compute.WorkloadType:
+  "clients":
+    "since_version": |-
+      v0.228.1
+github.com/databricks/databricks-sdk-go/service/compute.WorkspaceStorageInfo:
+  "destination":
+    "since_version": |-
+      v0.228.1
+github.com/databricks/databricks-sdk-go/service/database.CustomTag:
+  "key":
+    "since_version": |-
+      v0.273.0
+  "value":
+    "since_version": |-
+      v0.273.0
+github.com/databricks/databricks-sdk-go/service/database.DatabaseInstanceRef:
+  "branch_time":
+    "since_version": |-
+      v0.265.0
+  "lsn":
+    "since_version": |-
+      v0.265.0
+  "name":
+    "since_version": |-
+      v0.265.0
+github.com/databricks/databricks-sdk-go/service/database.NewPipelineSpec:
+  "budget_policy_id":
+    "since_version": |-
+      v0.279.0
+  "storage_catalog":
+    "since_version": |-
+      v0.266.0
+  "storage_schema":
+    "since_version": |-
+      v0.266.0
 github.com/databricks/databricks-sdk-go/service/database.SyncedTablePosition:
   "delta_table_sync_info":
     "description": |-
       PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/database.SyncedTableSpec:
+  "create_database_objects_if_missing":
+    "since_version": |-
+      v0.266.0
+  "existing_pipeline_id":
+    "since_version": |-
+      v0.266.0
+  "new_pipeline_spec":
+    "since_version": |-
+      v0.266.0
+  "primary_key_columns":
+    "since_version": |-
+      v0.266.0
+  "scheduling_policy":
+    "since_version": |-
+      v0.266.0
+  "source_table_full_name":
+    "since_version": |-
+      v0.266.0
+  "timeseries_key":
+    "since_version": |-
+      v0.266.0
+github.com/databricks/databricks-sdk-go/service/database.SyncedTableStatus:
+  "continuous_update_status":
+    "since_version": |-
+      v0.266.0
+  "failed_status":
+    "since_version": |-
+      v0.266.0
+  "provisioning_status":
+    "since_version": |-
+      v0.266.0
+  "triggered_update_status":
+    "since_version": |-
+      v0.266.0
+github.com/databricks/databricks-sdk-go/service/jobs.CleanRoomsNotebookTask:
+  "clean_room_name":
+    "since_version": |-
+      v0.237.0
+  "etag":
+    "since_version": |-
+      v0.237.0
+  "notebook_base_parameters":
+    "since_version": |-
+      v0.237.0
+  "notebook_name":
+    "since_version": |-
+      v0.237.0
+github.com/databricks/databricks-sdk-go/service/jobs.ComputeConfig:
+  "gpu_node_pool_id":
+    "since_version": |-
+      v0.243.0
+  "gpu_type":
+    "since_version": |-
+      v0.243.0
+  "num_gpus":
+    "since_version": |-
+      v0.243.0
+github.com/databricks/databricks-sdk-go/service/jobs.ConditionTask:
+  "left":
+    "since_version": |-
+      v0.228.1
+  "op":
+    "since_version": |-
+      v0.228.1
+  "right":
+    "since_version": |-
+      v0.228.1
+github.com/databricks/databricks-sdk-go/service/jobs.Continuous:
+  "pause_status":
+    "since_version": |-
+      v0.228.1
+  "task_retry_mode":
+    "since_version": |-
+      v0.267.0
+github.com/databricks/databricks-sdk-go/service/jobs.CronSchedule:
+  "pause_status":
+    "since_version": |-
+      v0.228.1
+  "quartz_cron_expression":
+    "since_version": |-
+      v0.228.1
+  "timezone_id":
+    "since_version": |-
+      v0.228.1
 github.com/databricks/databricks-sdk-go/service/jobs.DashboardTask:
   "dashboard_id":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.248.0
   "subscription":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.248.0
+  "warehouse_id":
+    "since_version": |-
+      v0.248.0
+github.com/databricks/databricks-sdk-go/service/jobs.DbtCloudTask:
+  "connection_resource_name":
+    "since_version": |-
+      v0.256.0
+  "dbt_cloud_job_id":
+    "since_version": |-
+      v0.256.0
+github.com/databricks/databricks-sdk-go/service/jobs.DbtPlatformTask:
+  "connection_resource_name":
+    "since_version": |-
+      v0.257.0
+  "dbt_platform_job_id":
+    "since_version": |-
+      v0.257.0
+github.com/databricks/databricks-sdk-go/service/jobs.DbtTask:
+  "catalog":
+    "since_version": |-
+      v0.228.1
+  "commands":
+    "since_version": |-
+      v0.228.1
+  "profiles_directory":
+    "since_version": |-
+      v0.228.1
+  "project_directory":
+    "since_version": |-
+      v0.228.1
+  "schema":
+    "since_version": |-
+      v0.228.1
+  "source":
+    "since_version": |-
+      v0.228.1
+  "warehouse_id":
+    "since_version": |-
+      v0.228.1
+github.com/databricks/databricks-sdk-go/service/jobs.FileArrivalTriggerConfiguration:
+  "min_time_between_triggers_seconds":
+    "since_version": |-
+      v0.228.1
+  "url":
+    "since_version": |-
+      v0.228.1
+  "wait_after_last_change_seconds":
+    "since_version": |-
+      v0.228.1
+github.com/databricks/databricks-sdk-go/service/jobs.ForEachTask:
+  "concurrency":
+    "since_version": |-
+      v0.228.1
+  "inputs":
+    "since_version": |-
+      v0.228.1
+  "task":
+    "since_version": |-
+      v0.228.1
 github.com/databricks/databricks-sdk-go/service/jobs.GenAiComputeTask:
+  "command":
+    "since_version": |-
+      v0.243.0
   "compute":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.243.0
+  "dl_runtime_image":
+    "since_version": |-
+      v0.243.0
+  "mlflow_experiment_name":
+    "since_version": |-
+      v0.243.0
+  "source":
+    "since_version": |-
+      v0.243.0
+  "training_script_path":
+    "since_version": |-
+      v0.243.0
+  "yaml_parameters":
+    "since_version": |-
+      v0.243.0
+  "yaml_parameters_file_path":
+    "since_version": |-
+      v0.243.0
+github.com/databricks/databricks-sdk-go/service/jobs.GitSnapshot:
+  "used_commit":
+    "since_version": |-
+      v0.228.1
 github.com/databricks/databricks-sdk-go/service/jobs.GitSource:
+  "git_branch":
+    "since_version": |-
+      v0.228.1
+  "git_commit":
+    "since_version": |-
+      v0.228.1
+  "git_provider":
+    "since_version": |-
+      v0.228.1
   "git_snapshot":
     "description": |-
       PLACEHOLDER
+  "git_tag":
+    "since_version": |-
+      v0.228.1
+  "git_url":
+    "since_version": |-
+      v0.228.1
+github.com/databricks/databricks-sdk-go/service/jobs.JobCluster:
+  "job_cluster_key":
+    "since_version": |-
+      v0.228.1
+  "new_cluster":
+    "since_version": |-
+      v0.228.1
+github.com/databricks/databricks-sdk-go/service/jobs.JobDeployment:
+  "kind":
+    "since_version": |-
+      v0.228.1
+  "metadata_file_path":
+    "since_version": |-
+      v0.228.1
+github.com/databricks/databricks-sdk-go/service/jobs.JobEmailNotifications:
+  "no_alert_for_skipped_runs":
+    "since_version": |-
+      v0.228.1
+  "on_duration_warning_threshold_exceeded":
+    "since_version": |-
+      v0.228.1
+  "on_failure":
+    "since_version": |-
+      v0.228.1
+  "on_start":
+    "since_version": |-
+      v0.228.1
+  "on_streaming_backlog_exceeded":
+    "since_version": |-
+      v0.228.1
+  "on_success":
+    "since_version": |-
+      v0.228.1
 github.com/databricks/databricks-sdk-go/service/jobs.JobEnvironment:
+  "environment_key":
+    "since_version": |-
+      v0.228.1
   "spec":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.228.1
+github.com/databricks/databricks-sdk-go/service/jobs.JobNotificationSettings:
+  "no_alert_for_canceled_runs":
+    "since_version": |-
+      v0.228.1
+  "no_alert_for_skipped_runs":
+    "since_version": |-
+      v0.228.1
+github.com/databricks/databricks-sdk-go/service/jobs.JobParameterDefinition:
+  "default":
+    "since_version": |-
+      v0.228.1
+  "name":
+    "since_version": |-
+      v0.228.1
+github.com/databricks/databricks-sdk-go/service/jobs.JobSource:
+  "dirty_state":
+    "since_version": |-
+      v0.228.1
+  "import_from_git_branch":
+    "since_version": |-
+      v0.228.1
+  "job_config_path":
+    "since_version": |-
+      v0.228.1
 github.com/databricks/databricks-sdk-go/service/jobs.JobsHealthRule:
   "metric":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.228.1
   "op":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.228.1
+  "value":
+    "since_version": |-
+      v0.228.1
 github.com/databricks/databricks-sdk-go/service/jobs.JobsHealthRules:
   "rules":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.228.1
+github.com/databricks/databricks-sdk-go/service/jobs.ModelTriggerConfiguration:
+  "aliases":
+    "since_version": |-
+      v0.279.0
+  "condition":
+    "since_version": |-
+      v0.279.0
+  "min_time_between_triggers_seconds":
+    "since_version": |-
+      v0.279.0
+  "securable_name":
+    "since_version": |-
+      v0.279.0
+  "wait_after_last_change_seconds":
+    "since_version": |-
+      v0.279.0
+github.com/databricks/databricks-sdk-go/service/jobs.NotebookTask:
+  "base_parameters":
+    "since_version": |-
+      v0.228.1
+  "notebook_path":
+    "since_version": |-
+      v0.228.1
+  "source":
+    "since_version": |-
+      v0.228.1
+  "warehouse_id":
+    "since_version": |-
+      v0.228.1
+github.com/databricks/databricks-sdk-go/service/jobs.PeriodicTriggerConfiguration:
+  "interval":
+    "since_version": |-
+      v0.228.1
+  "unit":
+    "since_version": |-
+      v0.228.1
+github.com/databricks/databricks-sdk-go/service/jobs.PipelineParams:
+  "full_refresh":
+    "since_version": |-
+      v0.228.1
+github.com/databricks/databricks-sdk-go/service/jobs.PipelineTask:
+  "full_refresh":
+    "since_version": |-
+      v0.228.1
+  "pipeline_id":
+    "since_version": |-
+      v0.228.1
+github.com/databricks/databricks-sdk-go/service/jobs.PowerBiModel:
+  "authentication_method":
+    "since_version": |-
+      v0.248.0
+  "model_name":
+    "since_version": |-
+      v0.248.0
+  "overwrite_existing":
+    "since_version": |-
+      v0.248.0
+  "storage_mode":
+    "since_version": |-
+      v0.248.0
+  "workspace_name":
+    "since_version": |-
+      v0.248.0
+github.com/databricks/databricks-sdk-go/service/jobs.PowerBiTable:
+  "catalog":
+    "since_version": |-
+      v0.248.0
+  "name":
+    "since_version": |-
+      v0.248.0
+  "schema":
+    "since_version": |-
+      v0.248.0
+  "storage_mode":
+    "since_version": |-
+      v0.248.0
+github.com/databricks/databricks-sdk-go/service/jobs.PowerBiTask:
+  "connection_resource_name":
+    "since_version": |-
+      v0.248.0
+  "power_bi_model":
+    "since_version": |-
+      v0.248.0
+  "refresh_after_update":
+    "since_version": |-
+      v0.248.0
+  "tables":
+    "since_version": |-
+      v0.248.0
+  "warehouse_id":
+    "since_version": |-
+      v0.248.0
+github.com/databricks/databricks-sdk-go/service/jobs.PythonWheelTask:
+  "entry_point":
+    "since_version": |-
+      v0.228.1
+  "named_parameters":
+    "since_version": |-
+      v0.228.1
+  "package_name":
+    "since_version": |-
+      v0.228.1
+  "parameters":
+    "since_version": |-
+      v0.228.1
+github.com/databricks/databricks-sdk-go/service/jobs.QueueSettings:
+  "enabled":
+    "since_version": |-
+      v0.228.1
 github.com/databricks/databricks-sdk-go/service/jobs.RunJobTask:
+  "dbt_commands":
+    "since_version": |-
+      v0.228.1
+  "jar_params":
+    "since_version": |-
+      v0.228.1
+  "job_id":
+    "since_version": |-
+      v0.228.1
+  "job_parameters":
+    "since_version": |-
+      v0.228.1
+  "notebook_params":
+    "since_version": |-
+      v0.228.1
+  "pipeline_params":
+    "since_version": |-
+      v0.228.1
   "python_named_params":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.228.1
+  "python_params":
+    "since_version": |-
+      v0.228.1
+  "spark_submit_params":
+    "since_version": |-
+      v0.228.1
+  "sql_params":
+    "since_version": |-
+      v0.228.1
+github.com/databricks/databricks-sdk-go/service/jobs.SparkJarTask:
+  "jar_uri":
+    "since_version": |-
+      v0.228.1
+  "main_class_name":
+    "since_version": |-
+      v0.228.1
+  "parameters":
+    "since_version": |-
+      v0.228.1
+  "run_as_repl":
+    "since_version": |-
+      v0.240.0
+github.com/databricks/databricks-sdk-go/service/jobs.SparkPythonTask:
+  "parameters":
+    "since_version": |-
+      v0.228.1
+  "python_file":
+    "since_version": |-
+      v0.228.1
+  "source":
+    "since_version": |-
+      v0.228.1
+github.com/databricks/databricks-sdk-go/service/jobs.SparkSubmitTask:
+  "parameters":
+    "since_version": |-
+      v0.228.1
+github.com/databricks/databricks-sdk-go/service/jobs.SqlTask:
+  "alert":
+    "since_version": |-
+      v0.228.1
+  "dashboard":
+    "since_version": |-
+      v0.228.1
+  "file":
+    "since_version": |-
+      v0.228.1
+  "parameters":
+    "since_version": |-
+      v0.228.1
+  "query":
+    "since_version": |-
+      v0.228.1
+  "warehouse_id":
+    "since_version": |-
+      v0.228.1
+github.com/databricks/databricks-sdk-go/service/jobs.SqlTaskAlert:
+  "alert_id":
+    "since_version": |-
+      v0.228.1
+  "pause_subscriptions":
+    "since_version": |-
+      v0.228.1
+  "subscriptions":
+    "since_version": |-
+      v0.228.1
+github.com/databricks/databricks-sdk-go/service/jobs.SqlTaskDashboard:
+  "custom_subject":
+    "since_version": |-
+      v0.228.1
+  "dashboard_id":
+    "since_version": |-
+      v0.228.1
+  "pause_subscriptions":
+    "since_version": |-
+      v0.228.1
+  "subscriptions":
+    "since_version": |-
+      v0.228.1
+github.com/databricks/databricks-sdk-go/service/jobs.SqlTaskFile:
+  "path":
+    "since_version": |-
+      v0.228.1
+  "source":
+    "since_version": |-
+      v0.228.1
+github.com/databricks/databricks-sdk-go/service/jobs.SqlTaskQuery:
+  "query_id":
+    "since_version": |-
+      v0.228.1
+github.com/databricks/databricks-sdk-go/service/jobs.SqlTaskSubscription:
+  "destination_id":
+    "since_version": |-
+      v0.228.1
+  "user_name":
+    "since_version": |-
+      v0.228.1
 github.com/databricks/databricks-sdk-go/service/jobs.Subscription:
+  "custom_subject":
+    "since_version": |-
+      v0.248.0
+  "paused":
+    "since_version": |-
+      v0.248.0
   "subscribers":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.248.0
 github.com/databricks/databricks-sdk-go/service/jobs.SubscriptionSubscriber:
   "destination_id":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.248.0
   "user_name":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.248.0
+github.com/databricks/databricks-sdk-go/service/jobs.TableUpdateTriggerConfiguration:
+  "condition":
+    "since_version": |-
+      v0.228.1
+  "min_time_between_triggers_seconds":
+    "since_version": |-
+      v0.228.1
+  "table_names":
+    "since_version": |-
+      v0.228.1
+  "wait_after_last_change_seconds":
+    "since_version": |-
+      v0.228.1
 github.com/databricks/databricks-sdk-go/service/jobs.Task:
+  "clean_rooms_notebook_task":
+    "since_version": |-
+      v0.237.0
+  "condition_task":
+    "since_version": |-
+      v0.228.1
+  "dashboard_task":
+    "since_version": |-
+      v0.248.0
+  "dbt_cloud_task":
+    "since_version": |-
+      v0.256.0
   "dbt_platform_task":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.257.0
+  "dbt_task":
+    "since_version": |-
+      v0.228.1
+  "depends_on":
+    "since_version": |-
+      v0.228.1
+  "description":
+    "since_version": |-
+      v0.228.1
+  "disable_auto_optimization":
+    "since_version": |-
+      v0.228.1
+  "disabled":
+    "since_version": |-
+      v0.271.0
+  "email_notifications":
+    "since_version": |-
+      v0.228.1
+  "environment_key":
+    "since_version": |-
+      v0.228.1
+  "existing_cluster_id":
+    "since_version": |-
+      v0.228.1
+  "for_each_task":
+    "since_version": |-
+      v0.228.1
   "gen_ai_compute_task":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.243.0
   "health":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.228.1
+  "job_cluster_key":
+    "since_version": |-
+      v0.228.1
+  "libraries":
+    "since_version": |-
+      v0.228.1
+  "max_retries":
+    "since_version": |-
+      v0.228.1
+  "min_retry_interval_millis":
+    "since_version": |-
+      v0.228.1
+  "new_cluster":
+    "since_version": |-
+      v0.228.1
+  "notebook_task":
+    "since_version": |-
+      v0.228.1
+  "notification_settings":
+    "since_version": |-
+      v0.228.1
+  "pipeline_task":
+    "since_version": |-
+      v0.228.1
+  "power_bi_task":
+    "since_version": |-
+      v0.248.0
+  "python_wheel_task":
+    "since_version": |-
+      v0.228.1
+  "retry_on_timeout":
+    "since_version": |-
+      v0.228.1
+  "run_if":
+    "since_version": |-
+      v0.228.1
+  "run_job_task":
+    "since_version": |-
+      v0.228.1
+  "spark_jar_task":
+    "since_version": |-
+      v0.228.1
+  "spark_python_task":
+    "since_version": |-
+      v0.228.1
+  "spark_submit_task":
+    "since_version": |-
+      v0.228.1
+  "sql_task":
+    "since_version": |-
+      v0.228.1
+  "task_key":
+    "since_version": |-
+      v0.228.1
+  "timeout_seconds":
+    "since_version": |-
+      v0.228.1
+  "webhook_notifications":
+    "since_version": |-
+      v0.228.1
+github.com/databricks/databricks-sdk-go/service/jobs.TaskDependency:
+  "outcome":
+    "since_version": |-
+      v0.228.1
+  "task_key":
+    "since_version": |-
+      v0.228.1
+github.com/databricks/databricks-sdk-go/service/jobs.TaskEmailNotifications:
+  "no_alert_for_skipped_runs":
+    "since_version": |-
+      v0.228.1
+  "on_duration_warning_threshold_exceeded":
+    "since_version": |-
+      v0.228.1
+  "on_failure":
+    "since_version": |-
+      v0.228.1
+  "on_start":
+    "since_version": |-
+      v0.228.1
+  "on_streaming_backlog_exceeded":
+    "since_version": |-
+      v0.228.1
+  "on_success":
+    "since_version": |-
+      v0.228.1
+github.com/databricks/databricks-sdk-go/service/jobs.TaskNotificationSettings:
+  "alert_on_last_attempt":
+    "since_version": |-
+      v0.228.1
+  "no_alert_for_canceled_runs":
+    "since_version": |-
+      v0.228.1
+  "no_alert_for_skipped_runs":
+    "since_version": |-
+      v0.228.1
 github.com/databricks/databricks-sdk-go/service/jobs.TriggerSettings:
+  "file_arrival":
+    "since_version": |-
+      v0.228.1
   "model":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.279.0
+  "pause_status":
+    "since_version": |-
+      v0.228.1
+  "periodic":
+    "since_version": |-
+      v0.228.1
   "table_update":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.228.1
 github.com/databricks/databricks-sdk-go/service/jobs.Webhook:
   "id":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.228.1
+github.com/databricks/databricks-sdk-go/service/jobs.WebhookNotifications:
+  "on_duration_warning_threshold_exceeded":
+    "since_version": |-
+      v0.228.1
+  "on_failure":
+    "since_version": |-
+      v0.228.1
+  "on_start":
+    "since_version": |-
+      v0.228.1
+  "on_streaming_backlog_exceeded":
+    "since_version": |-
+      v0.228.1
+  "on_success":
+    "since_version": |-
+      v0.228.1
+github.com/databricks/databricks-sdk-go/service/ml.ExperimentTag:
+  "key":
+    "since_version": |-
+      v0.228.1
+  "value":
+    "since_version": |-
+      v0.228.1
+github.com/databricks/databricks-sdk-go/service/ml.ModelTag:
+  "key":
+    "since_version": |-
+      v0.228.1
+  "value":
+    "since_version": |-
+      v0.228.1
+github.com/databricks/databricks-sdk-go/service/pipelines.ConnectionParameters:
+  "source_catalog":
+    "since_version": |-
+      v0.279.0
 github.com/databricks/databricks-sdk-go/service/pipelines.CronTrigger:
   "quartz_cron_schedule":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.228.1
   "timezone_id":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.228.1
+github.com/databricks/databricks-sdk-go/service/pipelines.EventLogSpec:
+  "catalog":
+    "since_version": |-
+      v0.246.0
+  "name":
+    "since_version": |-
+      v0.246.0
+  "schema":
+    "since_version": |-
+      v0.246.0
+github.com/databricks/databricks-sdk-go/service/pipelines.FileLibrary:
+  "path":
+    "since_version": |-
+      v0.228.1
+github.com/databricks/databricks-sdk-go/service/pipelines.Filters:
+  "exclude":
+    "since_version": |-
+      v0.228.1
+  "include":
+    "since_version": |-
+      v0.228.1
+github.com/databricks/databricks-sdk-go/service/pipelines.IngestionConfig:
+  "report":
+    "since_version": |-
+      v0.231.0
+  "schema":
+    "since_version": |-
+      v0.228.1
+  "table":
+    "since_version": |-
+      v0.228.1
+github.com/databricks/databricks-sdk-go/service/pipelines.IngestionGatewayPipelineDefinition:
+  "connection_id":
+    "since_version": |-
+      v0.228.1
+  "connection_name":
+    "since_version": |-
+      v0.234.0
+  "connection_parameters":
+    "since_version": |-
+      v0.279.0
+  "gateway_storage_catalog":
+    "since_version": |-
+      v0.228.1
+  "gateway_storage_name":
+    "since_version": |-
+      v0.228.1
+  "gateway_storage_schema":
+    "since_version": |-
+      v0.228.1
 github.com/databricks/databricks-sdk-go/service/pipelines.IngestionPipelineDefinition:
+  "connection_name":
+    "since_version": |-
+      v0.228.1
+  "ingest_from_uc_foreign_catalog":
+    "since_version": |-
+      v0.279.0
+  "ingestion_gateway_id":
+    "since_version": |-
+      v0.228.1
   "netsuite_jar_path":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.271.0
+  "objects":
+    "since_version": |-
+      v0.228.1
+  "source_configurations":
+    "since_version": |-
+      v0.267.0
+  "table_configuration":
+    "since_version": |-
+      v0.228.1
+? github.com/databricks/databricks-sdk-go/service/pipelines.IngestionPipelineDefinitionTableSpecificConfigQueryBasedConnectorConfig
+: "cursor_columns":
+    "since_version": |-
+      v0.264.0
+  "deletion_condition":
+    "since_version": |-
+      v0.264.0
+  "hard_deletion_sync_min_interval_in_seconds":
+    "since_version": |-
+      v0.264.0
+github.com/databricks/databricks-sdk-go/service/pipelines.IngestionPipelineDefinitionWorkdayReportParameters:
+  "incremental":
+    "since_version": |-
+      v0.271.0
+  "parameters":
+    "since_version": |-
+      v0.271.0
+  "report_parameters":
+    "since_version": |-
+      v0.271.0
+github.com/databricks/databricks-sdk-go/service/pipelines.IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValue:
+  "key":
+    "since_version": |-
+      v0.271.0
+  "value":
+    "since_version": |-
+      v0.271.0
+github.com/databricks/databricks-sdk-go/service/pipelines.NotebookLibrary:
+  "path":
+    "since_version": |-
+      v0.228.1
+github.com/databricks/databricks-sdk-go/service/pipelines.Notifications:
+  "alerts":
+    "since_version": |-
+      v0.228.1
+  "email_recipients":
+    "since_version": |-
+      v0.228.1
+github.com/databricks/databricks-sdk-go/service/pipelines.PathPattern:
+  "include":
+    "since_version": |-
+      v0.252.0
+github.com/databricks/databricks-sdk-go/service/pipelines.PipelineCluster:
+  "apply_policy_default_values":
+    "since_version": |-
+      v0.228.1
+  "autoscale":
+    "since_version": |-
+      v0.228.1
+  "aws_attributes":
+    "since_version": |-
+      v0.228.1
+  "azure_attributes":
+    "since_version": |-
+      v0.228.1
+  "cluster_log_conf":
+    "since_version": |-
+      v0.228.1
+  "custom_tags":
+    "since_version": |-
+      v0.228.1
+  "driver_instance_pool_id":
+    "since_version": |-
+      v0.228.1
+  "driver_node_type_id":
+    "since_version": |-
+      v0.228.1
+  "enable_local_disk_encryption":
+    "since_version": |-
+      v0.228.1
+  "gcp_attributes":
+    "since_version": |-
+      v0.228.1
+  "init_scripts":
+    "since_version": |-
+      v0.228.1
+  "instance_pool_id":
+    "since_version": |-
+      v0.228.1
+  "label":
+    "since_version": |-
+      v0.228.1
+  "node_type_id":
+    "since_version": |-
+      v0.228.1
+  "num_workers":
+    "since_version": |-
+      v0.228.1
+  "policy_id":
+    "since_version": |-
+      v0.228.1
+  "spark_conf":
+    "since_version": |-
+      v0.228.1
+  "spark_env_vars":
+    "since_version": |-
+      v0.228.1
+  "ssh_public_keys":
+    "since_version": |-
+      v0.228.1
+github.com/databricks/databricks-sdk-go/service/pipelines.PipelineClusterAutoscale:
+  "max_workers":
+    "since_version": |-
+      v0.228.1
+  "min_workers":
+    "since_version": |-
+      v0.228.1
+  "mode":
+    "since_version": |-
+      v0.228.1
+github.com/databricks/databricks-sdk-go/service/pipelines.PipelineDeployment:
+  "kind":
+    "since_version": |-
+      v0.228.1
+  "metadata_file_path":
+    "since_version": |-
+      v0.228.1
 github.com/databricks/databricks-sdk-go/service/pipelines.PipelineLibrary:
+  "file":
+    "since_version": |-
+      v0.228.1
+  "glob":
+    "since_version": |-
+      v0.252.0
+  "jar":
+    "since_version": |-
+      v0.228.1
+  "maven":
+    "since_version": |-
+      v0.228.1
+  "notebook":
+    "since_version": |-
+      v0.228.1
   "whl":
+    "since_version": |-
+      v0.228.1
     "deprecation_message": |-
       This field is deprecated
 github.com/databricks/databricks-sdk-go/service/pipelines.PipelineTrigger:
   "cron":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.228.1
   "manual":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.228.1
+github.com/databricks/databricks-sdk-go/service/pipelines.PipelinesEnvironment:
+  "dependencies":
+    "since_version": |-
+      v0.257.0
+github.com/databricks/databricks-sdk-go/service/pipelines.PostgresCatalogConfig:
+  "slot_config":
+    "since_version": |-
+      v0.267.0
+github.com/databricks/databricks-sdk-go/service/pipelines.PostgresSlotConfig:
+  "publication_name":
+    "since_version": |-
+      v0.267.0
+  "slot_name":
+    "since_version": |-
+      v0.267.0
+github.com/databricks/databricks-sdk-go/service/pipelines.ReportSpec:
+  "destination_catalog":
+    "since_version": |-
+      v0.231.0
+  "destination_schema":
+    "since_version": |-
+      v0.231.0
+  "destination_table":
+    "since_version": |-
+      v0.231.0
+  "source_url":
+    "since_version": |-
+      v0.231.0
+  "table_configuration":
+    "since_version": |-
+      v0.231.0
+github.com/databricks/databricks-sdk-go/service/pipelines.RestartWindow:
+  "days_of_week":
+    "since_version": |-
+      v0.234.0
+  "start_hour":
+    "since_version": |-
+      v0.234.0
+  "time_zone_id":
+    "since_version": |-
+      v0.234.0
+github.com/databricks/databricks-sdk-go/service/pipelines.RunAs:
+  "service_principal_name":
+    "since_version": |-
+      v0.241.0
+  "user_name":
+    "since_version": |-
+      v0.241.0
+github.com/databricks/databricks-sdk-go/service/pipelines.SchemaSpec:
+  "destination_catalog":
+    "since_version": |-
+      v0.228.1
+  "destination_schema":
+    "since_version": |-
+      v0.228.1
+  "source_catalog":
+    "since_version": |-
+      v0.228.1
+  "source_schema":
+    "since_version": |-
+      v0.228.1
+  "table_configuration":
+    "since_version": |-
+      v0.228.1
+github.com/databricks/databricks-sdk-go/service/pipelines.SourceCatalogConfig:
+  "postgres":
+    "since_version": |-
+      v0.267.0
+  "source_catalog":
+    "since_version": |-
+      v0.267.0
+github.com/databricks/databricks-sdk-go/service/pipelines.SourceConfig:
+  "catalog":
+    "since_version": |-
+      v0.267.0
+github.com/databricks/databricks-sdk-go/service/pipelines.TableSpec:
+  "destination_catalog":
+    "since_version": |-
+      v0.228.1
+  "destination_schema":
+    "since_version": |-
+      v0.228.1
+  "destination_table":
+    "since_version": |-
+      v0.228.1
+  "source_catalog":
+    "since_version": |-
+      v0.228.1
+  "source_schema":
+    "since_version": |-
+      v0.228.1
+  "source_table":
+    "since_version": |-
+      v0.228.1
+  "table_configuration":
+    "since_version": |-
+      v0.228.1
 github.com/databricks/databricks-sdk-go/service/pipelines.TableSpecificConfig:
+  "exclude_columns":
+    "since_version": |-
+      v0.251.0
+  "include_columns":
+    "since_version": |-
+      v0.251.0
+  "primary_keys":
+    "since_version": |-
+      v0.228.1
+  "query_based_connector_config":
+    "since_version": |-
+      v0.264.0
+  "salesforce_include_formula_fields":
+    "since_version": |-
+      v0.228.1
+  "scd_type":
+    "since_version": |-
+      v0.228.1
+  "sequence_by":
+    "since_version": |-
+      v0.231.0
   "workday_report_parameters":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.271.0
+github.com/databricks/databricks-sdk-go/service/serving.Ai21LabsConfig:
+  "ai21labs_api_key":
+    "since_version": |-
+      v0.228.1
+  "ai21labs_api_key_plaintext":
+    "since_version": |-
+      v0.228.1
+github.com/databricks/databricks-sdk-go/service/serving.AiGatewayConfig:
+  "fallback_config":
+    "since_version": |-
+      v0.246.0
+  "guardrails":
+    "since_version": |-
+      v0.230.0
+  "inference_table_config":
+    "since_version": |-
+      v0.230.0
+  "rate_limits":
+    "since_version": |-
+      v0.230.0
+  "usage_tracking_config":
+    "since_version": |-
+      v0.230.0
+github.com/databricks/databricks-sdk-go/service/serving.AiGatewayGuardrailParameters:
+  "invalid_keywords":
+    "since_version": |-
+      v0.230.0
+  "pii":
+    "since_version": |-
+      v0.230.0
+  "safety":
+    "since_version": |-
+      v0.230.0
+  "valid_topics":
+    "since_version": |-
+      v0.230.0
+github.com/databricks/databricks-sdk-go/service/serving.AiGatewayGuardrailPiiBehavior:
+  "behavior":
+    "since_version": |-
+      v0.230.0
+github.com/databricks/databricks-sdk-go/service/serving.AiGatewayGuardrails:
+  "input":
+    "since_version": |-
+      v0.230.0
+  "output":
+    "since_version": |-
+      v0.230.0
+github.com/databricks/databricks-sdk-go/service/serving.AiGatewayInferenceTableConfig:
+  "catalog_name":
+    "since_version": |-
+      v0.230.0
+  "enabled":
+    "since_version": |-
+      v0.230.0
+  "schema_name":
+    "since_version": |-
+      v0.230.0
+  "table_name_prefix":
+    "since_version": |-
+      v0.230.0
+github.com/databricks/databricks-sdk-go/service/serving.AiGatewayRateLimit:
+  "calls":
+    "since_version": |-
+      v0.230.0
+  "key":
+    "since_version": |-
+      v0.230.0
+  "principal":
+    "since_version": |-
+      v0.260.0
+  "renewal_period":
+    "since_version": |-
+      v0.230.0
+  "tokens":
+    "since_version": |-
+      v0.265.0
+github.com/databricks/databricks-sdk-go/service/serving.AiGatewayUsageTrackingConfig:
+  "enabled":
+    "since_version": |-
+      v0.230.0
+github.com/databricks/databricks-sdk-go/service/serving.AmazonBedrockConfig:
+  "aws_access_key_id":
+    "since_version": |-
+      v0.228.1
+  "aws_access_key_id_plaintext":
+    "since_version": |-
+      v0.228.1
+  "aws_region":
+    "since_version": |-
+      v0.228.1
+  "aws_secret_access_key":
+    "since_version": |-
+      v0.228.1
+  "aws_secret_access_key_plaintext":
+    "since_version": |-
+      v0.228.1
+  "bedrock_provider":
+    "since_version": |-
+      v0.228.1
+  "instance_profile_arn":
+    "since_version": |-
+      v0.243.0
+github.com/databricks/databricks-sdk-go/service/serving.AnthropicConfig:
+  "anthropic_api_key":
+    "since_version": |-
+      v0.228.1
+  "anthropic_api_key_plaintext":
+    "since_version": |-
+      v0.228.1
+github.com/databricks/databricks-sdk-go/service/serving.ApiKeyAuth:
+  "key":
+    "since_version": |-
+      v0.246.0
+  "value":
+    "since_version": |-
+      v0.246.0
+  "value_plaintext":
+    "since_version": |-
+      v0.246.0
+github.com/databricks/databricks-sdk-go/service/serving.AutoCaptureConfigInput:
+  "catalog_name":
+    "since_version": |-
+      v0.228.1
+  "enabled":
+    "since_version": |-
+      v0.228.1
+  "schema_name":
+    "since_version": |-
+      v0.228.1
+  "table_name_prefix":
+    "since_version": |-
+      v0.228.1
+github.com/databricks/databricks-sdk-go/service/serving.BearerTokenAuth:
+  "token":
+    "since_version": |-
+      v0.246.0
+  "token_plaintext":
+    "since_version": |-
+      v0.246.0
+github.com/databricks/databricks-sdk-go/service/serving.CohereConfig:
+  "cohere_api_base":
+    "since_version": |-
+      v0.228.1
+  "cohere_api_key":
+    "since_version": |-
+      v0.228.1
+  "cohere_api_key_plaintext":
+    "since_version": |-
+      v0.228.1
+github.com/databricks/databricks-sdk-go/service/serving.CustomProviderConfig:
+  "api_key_auth":
+    "since_version": |-
+      v0.246.0
+  "bearer_token_auth":
+    "since_version": |-
+      v0.246.0
+  "custom_provider_url":
+    "since_version": |-
+      v0.246.0
+github.com/databricks/databricks-sdk-go/service/serving.DatabricksModelServingConfig:
+  "databricks_api_token":
+    "since_version": |-
+      v0.228.1
+  "databricks_api_token_plaintext":
+    "since_version": |-
+      v0.228.1
+  "databricks_workspace_url":
+    "since_version": |-
+      v0.228.1
+github.com/databricks/databricks-sdk-go/service/serving.EmailNotifications:
+  "on_update_failure":
+    "since_version": |-
+      v0.264.0
+  "on_update_success":
+    "since_version": |-
+      v0.264.0
+github.com/databricks/databricks-sdk-go/service/serving.EndpointCoreConfigInput:
+  "auto_capture_config":
+    "since_version": |-
+      v0.228.1
+  "served_entities":
+    "since_version": |-
+      v0.228.1
+  "served_models":
+    "since_version": |-
+      v0.228.1
+  "traffic_config":
+    "since_version": |-
+      v0.228.1
+github.com/databricks/databricks-sdk-go/service/serving.EndpointTag:
+  "key":
+    "since_version": |-
+      v0.228.1
+  "value":
+    "since_version": |-
+      v0.228.1
+github.com/databricks/databricks-sdk-go/service/serving.ExternalModel:
+  "ai21labs_config":
+    "since_version": |-
+      v0.228.1
+  "amazon_bedrock_config":
+    "since_version": |-
+      v0.228.1
+  "anthropic_config":
+    "since_version": |-
+      v0.228.1
+  "cohere_config":
+    "since_version": |-
+      v0.228.1
+  "custom_provider_config":
+    "since_version": |-
+      v0.246.0
+  "databricks_model_serving_config":
+    "since_version": |-
+      v0.228.1
+  "google_cloud_vertex_ai_config":
+    "since_version": |-
+      v0.228.1
+  "name":
+    "since_version": |-
+      v0.228.1
+  "openai_config":
+    "since_version": |-
+      v0.228.1
+  "palm_config":
+    "since_version": |-
+      v0.228.1
+  "provider":
+    "since_version": |-
+      v0.228.1
+  "task":
+    "since_version": |-
+      v0.228.1
+github.com/databricks/databricks-sdk-go/service/serving.FallbackConfig:
+  "enabled":
+    "since_version": |-
+      v0.246.0
+github.com/databricks/databricks-sdk-go/service/serving.GoogleCloudVertexAiConfig:
+  "private_key":
+    "since_version": |-
+      v0.228.1
+  "private_key_plaintext":
+    "since_version": |-
+      v0.228.1
+  "project_id":
+    "since_version": |-
+      v0.228.1
+  "region":
+    "since_version": |-
+      v0.228.1
+github.com/databricks/databricks-sdk-go/service/serving.OpenAiConfig:
+  "microsoft_entra_client_id":
+    "since_version": |-
+      v0.228.1
+  "microsoft_entra_client_secret":
+    "since_version": |-
+      v0.228.1
+  "microsoft_entra_client_secret_plaintext":
+    "since_version": |-
+      v0.228.1
+  "microsoft_entra_tenant_id":
+    "since_version": |-
+      v0.228.1
+  "openai_api_base":
+    "since_version": |-
+      v0.228.1
+  "openai_api_key":
+    "since_version": |-
+      v0.228.1
+  "openai_api_key_plaintext":
+    "since_version": |-
+      v0.228.1
+  "openai_api_type":
+    "since_version": |-
+      v0.228.1
+  "openai_api_version":
+    "since_version": |-
+      v0.228.1
+  "openai_deployment_name":
+    "since_version": |-
+      v0.228.1
+  "openai_organization":
+    "since_version": |-
+      v0.228.1
+github.com/databricks/databricks-sdk-go/service/serving.PaLmConfig:
+  "palm_api_key":
+    "since_version": |-
+      v0.228.1
+  "palm_api_key_plaintext":
+    "since_version": |-
+      v0.228.1
+github.com/databricks/databricks-sdk-go/service/serving.RateLimit:
+  "calls":
+    "since_version": |-
+      v0.228.1
+  "key":
+    "since_version": |-
+      v0.228.1
+  "renewal_period":
+    "since_version": |-
+      v0.228.1
 github.com/databricks/databricks-sdk-go/service/serving.Route:
   "served_entity_name":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.260.0
+  "served_model_name":
+    "since_version": |-
+      v0.228.1
+  "traffic_percentage":
+    "since_version": |-
+      v0.228.1
 github.com/databricks/databricks-sdk-go/service/serving.ServedEntityInput:
+  "entity_name":
+    "since_version": |-
+      v0.228.1
   "entity_version":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.228.1
+  "environment_vars":
+    "since_version": |-
+      v0.228.1
+  "external_model":
+    "since_version": |-
+      v0.228.1
+  "instance_profile_arn":
+    "since_version": |-
+      v0.228.1
+  "max_provisioned_concurrency":
+    "since_version": |-
+      v0.256.0
+  "max_provisioned_throughput":
+    "since_version": |-
+      v0.228.1
+  "min_provisioned_concurrency":
+    "since_version": |-
+      v0.256.0
+  "min_provisioned_throughput":
+    "since_version": |-
+      v0.228.1
+  "name":
+    "since_version": |-
+      v0.228.1
+  "provisioned_model_units":
+    "since_version": |-
+      v0.252.0
+  "scale_to_zero_enabled":
+    "since_version": |-
+      v0.228.1
+  "workload_size":
+    "since_version": |-
+      v0.228.1
+  "workload_type":
+    "since_version": |-
+      v0.228.1
 github.com/databricks/databricks-sdk-go/service/serving.ServedModelInput:
+  "environment_vars":
+    "since_version": |-
+      v0.228.1
+  "instance_profile_arn":
+    "since_version": |-
+      v0.228.1
+  "max_provisioned_concurrency":
+    "since_version": |-
+      v0.256.0
+  "max_provisioned_throughput":
+    "since_version": |-
+      v0.228.1
+  "min_provisioned_concurrency":
+    "since_version": |-
+      v0.256.0
+  "min_provisioned_throughput":
+    "since_version": |-
+      v0.228.1
   "model_name":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.228.1
   "model_version":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.228.1
+  "name":
+    "since_version": |-
+      v0.228.1
+  "provisioned_model_units":
+    "since_version": |-
+      v0.252.0
+  "scale_to_zero_enabled":
+    "since_version": |-
+      v0.228.1
+  "workload_size":
+    "since_version": |-
+      v0.228.1
+  "workload_type":
+    "since_version": |-
+      v0.228.1
+github.com/databricks/databricks-sdk-go/service/serving.TrafficConfig:
+  "routes":
+    "since_version": |-
+      v0.228.1
+github.com/databricks/databricks-sdk-go/service/sql.AlertV2Evaluation:
+  "comparison_operator":
+    "since_version": |-
+      v0.279.0
+  "empty_result_state":
+    "since_version": |-
+      v0.279.0
+  "notification":
+    "since_version": |-
+      v0.279.0
+  "source":
+    "since_version": |-
+      v0.279.0
+  "threshold":
+    "since_version": |-
+      v0.279.0
 github.com/databricks/databricks-sdk-go/service/sql.AlertV2Notification:
+  "notify_on_ok":
+    "since_version": |-
+      v0.279.0
+  "retrigger_seconds":
+    "since_version": |-
+      v0.279.0
   "subscriptions":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.279.0
 github.com/databricks/databricks-sdk-go/service/sql.AlertV2Operand:
   "column":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.279.0
   "value":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.279.0
 github.com/databricks/databricks-sdk-go/service/sql.AlertV2OperandColumn:
   "aggregation":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.279.0
   "display":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.279.0
   "name":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.279.0
 github.com/databricks/databricks-sdk-go/service/sql.AlertV2OperandValue:
   "bool_value":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.279.0
   "double_value":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.279.0
   "string_value":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.279.0
+github.com/databricks/databricks-sdk-go/service/sql.AlertV2RunAs:
+  "service_principal_name":
+    "since_version": |-
+      v0.279.0
+  "user_name":
+    "since_version": |-
+      v0.279.0
 github.com/databricks/databricks-sdk-go/service/sql.AlertV2Subscription:
   "destination_id":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.279.0
   "user_email":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.279.0
 github.com/databricks/databricks-sdk-go/service/sql.Channel:
   "dbsql_version":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.260.0
   "name":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.260.0
+github.com/databricks/databricks-sdk-go/service/sql.CronSchedule:
+  "pause_status":
+    "since_version": |-
+      v0.279.0
+  "quartz_cron_schedule":
+    "since_version": |-
+      v0.279.0
+  "timezone_id":
+    "since_version": |-
+      v0.279.0
 github.com/databricks/databricks-sdk-go/service/sql.EndpointTagPair:
   "key":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.260.0
   "value":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.260.0
 github.com/databricks/databricks-sdk-go/service/sql.EndpointTags:
   "custom_tags":
     "description": |-
       PLACEHOLDER
+    "since_version": |-
+      v0.260.0
+github.com/databricks/databricks-sdk-go/service/workspace.AzureKeyVaultSecretScopeMetadata:
+  "dns_name":
+    "since_version": |-
+      v0.252.0
+  "resource_id":
+    "since_version": |-
+      v0.252.0

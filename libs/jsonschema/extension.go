@@ -65,4 +65,7 @@ type Extension struct {
 	// FieldBehaviors defines field behaviors from the OpenAPI spec (e.g. OUTPUT_ONLY)
 	// This is used to filter out fields that should not be exposed to users
 	FieldBehaviors []string `json:"x-databricks-field-behaviors,omitempty"`
+
+	// SinceVersion indicates which CLI version introduced this field.
+	SinceVersion string `json:"x-since-version,omitempty"`
 }
