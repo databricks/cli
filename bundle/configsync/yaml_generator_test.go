@@ -9,7 +9,9 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
@@ -560,4 +562,186 @@ func TestParseResourceKey(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestApplyChangesWithEnumTypes(t *testing.T) {
+	ctx := context.Background()
+
+	resource := dyn.V(map[string]dyn.Value{
+		"edit_mode": dyn.V("EDITABLE"),
+		"name":      dyn.V("test_job"),
+	})
+
+	changes := deployplan.Changes{
+		"edit_mode": &deployplan.ChangeDesc{
+			Remote: jobs.JobEditModeUiLocked,
+		},
+	}
+
+	result, err := applyChanges(ctx, resource, changes)
+	require.NoError(t, err)
+
+	editMode, err := dyn.GetByPath(result, dyn.Path{dyn.Key("edit_mode")})
+	require.NoError(t, err)
+	assert.Equal(t, dyn.KindString, editMode.Kind())
+	assert.Equal(t, "UI_LOCKED", editMode.MustString())
+}
+
+func TestApplyChangesWithPrimitiveTypes(t *testing.T) {
+	ctx := context.Background()
+
+	resource := dyn.V(map[string]dyn.Value{
+		"name":        dyn.V("old_name"),
+		"timeout":     dyn.V(100),
+		"enabled":     dyn.V(false),
+		"max_retries": dyn.V(1.5),
+	})
+
+	changes := deployplan.Changes{
+		"name": &deployplan.ChangeDesc{
+			Remote: "new_name",
+		},
+		"timeout": &deployplan.ChangeDesc{
+			Remote: int64(200),
+		},
+		"enabled": &deployplan.ChangeDesc{
+			Remote: true,
+		},
+		"max_retries": &deployplan.ChangeDesc{
+			Remote: 2.5,
+		},
+	}
+
+	result, err := applyChanges(ctx, resource, changes)
+	require.NoError(t, err)
+
+	name, err := dyn.GetByPath(result, dyn.Path{dyn.Key("name")})
+	require.NoError(t, err)
+	assert.Equal(t, "new_name", name.MustString())
+
+	timeout, err := dyn.GetByPath(result, dyn.Path{dyn.Key("timeout")})
+	require.NoError(t, err)
+	assert.Equal(t, int64(200), timeout.MustInt())
+
+	enabled, err := dyn.GetByPath(result, dyn.Path{dyn.Key("enabled")})
+	require.NoError(t, err)
+	assert.True(t, enabled.MustBool())
+
+	maxRetries, err := dyn.GetByPath(result, dyn.Path{dyn.Key("max_retries")})
+	require.NoError(t, err)
+	assert.InDelta(t, 2.5, maxRetries.MustFloat(), 0.001)
+}
+
+func TestApplyChangesWithNilValues(t *testing.T) {
+	ctx := context.Background()
+
+	resource := dyn.V(map[string]dyn.Value{
+		"name":        dyn.V("test_job"),
+		"description": dyn.V("some description"),
+	})
+
+	changes := deployplan.Changes{
+		"description": &deployplan.ChangeDesc{
+			Remote: nil,
+		},
+	}
+
+	result, err := applyChanges(ctx, resource, changes)
+	require.NoError(t, err)
+
+	description, err := dyn.GetByPath(result, dyn.Path{dyn.Key("description")})
+	require.NoError(t, err)
+	assert.Equal(t, dyn.KindNil, description.Kind())
+}
+
+func TestApplyChangesWithStructValues(t *testing.T) {
+	ctx := context.Background()
+
+	resource := dyn.V(map[string]dyn.Value{
+		"name": dyn.V("test_job"),
+		"settings": dyn.V(map[string]dyn.Value{
+			"timeout": dyn.V(100),
+		}),
+	})
+
+	type Settings struct {
+		Timeout    int64  `json:"timeout"`
+		MaxRetries *int64 `json:"max_retries,omitempty"`
+	}
+
+	maxRetries := int64(3)
+	changes := deployplan.Changes{
+		"settings": &deployplan.ChangeDesc{
+			Remote: &Settings{
+				Timeout:    200,
+				MaxRetries: &maxRetries,
+			},
+		},
+	}
+
+	result, err := applyChanges(ctx, resource, changes)
+	require.NoError(t, err)
+
+	settings, err := dyn.GetByPath(result, dyn.Path{dyn.Key("settings")})
+	require.NoError(t, err)
+	assert.Equal(t, dyn.KindMap, settings.Kind())
+
+	timeout, err := dyn.GetByPath(settings, dyn.Path{dyn.Key("timeout")})
+	require.NoError(t, err)
+	assert.Equal(t, int64(200), timeout.MustInt())
+
+	retriesVal, err := dyn.GetByPath(settings, dyn.Path{dyn.Key("max_retries")})
+	require.NoError(t, err)
+	assert.Equal(t, int64(3), retriesVal.MustInt())
+}
+
+func TestGenerateYAMLFiles_WithEnumValues(t *testing.T) {
+	ctx := logdiag.InitContext(context.Background())
+
+	tmpDir := t.TempDir()
+
+	yamlContent := `resources:
+  jobs:
+    test_job:
+      name: "Test Job"
+      edit_mode: "EDITABLE"
+      timeout_seconds: 3600
+`
+
+	yamlPath := filepath.Join(tmpDir, "databricks.yml")
+	err := os.WriteFile(yamlPath, []byte(yamlContent), 0o644)
+	require.NoError(t, err)
+
+	b, err := bundle.Load(ctx, tmpDir)
+	require.NoError(t, err)
+
+	mutator.DefaultMutators(ctx, b)
+
+	changes := map[string]deployplan.Changes{
+		"resources.jobs.test_job": {
+			"edit_mode": &deployplan.ChangeDesc{
+				Action: deployplan.Update,
+				Old:    "EDITABLE",
+				Remote: jobs.JobEditModeUiLocked,
+			},
+		},
+	}
+
+	fileChanges, err := GenerateYAMLFiles(ctx, b, changes)
+	require.NoError(t, err)
+	require.Len(t, fileChanges, 1)
+
+	assert.Equal(t, yamlPath, fileChanges[0].Path)
+	assert.Contains(t, fileChanges[0].OriginalContent, "edit_mode: \"EDITABLE\"")
+	assert.Contains(t, fileChanges[0].ModifiedContent, "edit_mode: UI_LOCKED")
+	assert.NotContains(t, fileChanges[0].ModifiedContent, "edit_mode: EDITABLE")
+
+	var result map[string]any
+	err = yaml.Unmarshal([]byte(fileChanges[0].ModifiedContent), &result)
+	require.NoError(t, err)
+
+	resources := result["resources"].(map[string]any)
+	jobs := resources["jobs"].(map[string]any)
+	testJob := jobs["test_job"].(map[string]any)
+	assert.Equal(t, "UI_LOCKED", testJob["edit_mode"])
 }

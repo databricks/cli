@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/dyn/yamlloader"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structs/structpath"
@@ -143,13 +144,19 @@ func applyChanges(ctx context.Context, resource dyn.Value, changes deployplan.Ch
 			continue
 		}
 
-		// Set the remote value at the path
-		remoteValue := dyn.V(changeDesc.Remote)
-		result, err = dyn.SetByPath(result, dynPath, remoteValue)
+		// Convert remote value to dyn.Value, handling custom types like enums
+		remoteValue, err := convert.FromTyped(changeDesc.Remote, dyn.NilValue)
+		if err != nil {
+			log.Warnf(ctx, "Failed to convert remote value at path %s: %v", fieldPath, err)
+			continue
+		}
+
+		newResult, err := dyn.SetByPath(result, dynPath, remoteValue)
 		if err != nil {
 			log.Warnf(ctx, "Failed to set value at path %s: %v", fieldPath, err)
 			continue
 		}
+		result = newResult
 	}
 
 	return result, nil
