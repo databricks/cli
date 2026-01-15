@@ -69,22 +69,18 @@ func structpathToDynPath(_ context.Context, pathStr string, baseValue dyn.Value)
 	currentValue := baseValue
 
 	for _, n := range nodes {
-		// Check for string key (field access)
 		if key, ok := n.StringKey(); ok {
 			dynPath = append(dynPath, dyn.Key(key))
 
-			// Update currentValue for next iteration
 			if currentValue.IsValid() {
 				currentValue, _ = dyn.GetByPath(currentValue, dyn.Path{dyn.Key(key)})
 			}
 			continue
 		}
 
-		// Check for numeric index
 		if idx, ok := n.Index(); ok {
 			dynPath = append(dynPath, dyn.Index(idx))
 
-			// Update currentValue for next iteration
 			if currentValue.IsValid() {
 				currentValue, _ = dyn.GetByPath(currentValue, dyn.Path{dyn.Index(idx)})
 			}
@@ -93,7 +89,6 @@ func structpathToDynPath(_ context.Context, pathStr string, baseValue dyn.Value)
 
 		// Check for key-value selector: [key='value']
 		if key, value, ok := n.KeyValue(); ok {
-			// Need to search the array to find the matching index
 			if !currentValue.IsValid() || currentValue.Kind() != dyn.KindSequence {
 				return nil, fmt.Errorf("cannot apply [key='value'] selector to non-array value at path %s", dynPath.String())
 			}
@@ -246,44 +241,37 @@ func GenerateYAMLFiles(ctx context.Context, b *bundle.Bundle, changes map[string
 			continue
 		}
 
-		// Load file as dyn.Value
 		fileValue, err := yamlloader.LoadYAML(filePath, bytes.NewBuffer(content))
 		if err != nil {
 			log.Warnf(ctx, "Failed to parse YAML file %s: %v", filePath, err)
 			continue
 		}
 
-		// Apply changes for each resource in this file
 		for _, item := range resourcesInFile {
-			// Parse resource key
 			resourceType, resourceName, err := parseResourceKey(item.resourceKey)
 			if err != nil {
 				log.Warnf(ctx, "Failed to parse resource key %s: %v", item.resourceKey, err)
 				continue
 			}
 
-			// Find resource in loaded file
 			resource, resourcePath, err := findResourceInFile(ctx, fileValue, resourceType, resourceName, b.Config.Bundle.Target)
 			if err != nil {
 				log.Warnf(ctx, "Failed to find resource %s in file %s: %v", item.resourceKey, filePath, err)
 				continue
 			}
 
-			// Apply changes to the resource
 			modifiedResource, err := applyChanges(ctx, resource, item.changes)
 			if err != nil {
 				log.Warnf(ctx, "Failed to apply changes to resource %s: %v", item.resourceKey, err)
 				continue
 			}
 
-			// Ensure all intermediate nodes exist before setting
 			fileValue, err = ensurePathExists(fileValue, resourcePath)
 			if err != nil {
 				log.Warnf(ctx, "Failed to ensure path exists for resource %s: %v", item.resourceKey, err)
 				continue
 			}
 
-			// Update the file's dyn.Value with modified resource
 			fileValue, err = dyn.SetByPath(fileValue, resourcePath, modifiedResource)
 			if err != nil {
 				log.Warnf(ctx, "Failed to update file value for resource %s: %v", item.resourceKey, err)
@@ -291,7 +279,6 @@ func GenerateYAMLFiles(ctx context.Context, b *bundle.Bundle, changes map[string
 			}
 		}
 
-		// Convert modified dyn.Value to YAML string
 		modifiedContent, err := dynValueToYAML(fileValue)
 		if err != nil {
 			log.Warnf(ctx, "Failed to convert modified value to YAML for file %s: %v", filePath, err)
