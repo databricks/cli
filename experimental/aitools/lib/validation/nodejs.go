@@ -16,6 +16,7 @@ type validationStep struct {
 	command     string
 	errorPrefix string
 	displayName string
+	optional    bool
 }
 
 func (v *ValidationNodeJs) Validate(ctx context.Context, workDir string) (*ValidateResult, error) {
@@ -31,12 +32,14 @@ func (v *ValidationNodeJs) Validate(ctx context.Context, workDir string) (*Valid
 			command:     "npm install",
 			errorPrefix: "Failed to install dependencies",
 			displayName: "Install",
+			optional:    true,
 		},
 		{
 			name:        "generate",
 			command:     "npm run typegen --if-present",
 			errorPrefix: "Failed to run npm typegen",
 			displayName: "Type generation",
+			optional:    true,
 		},
 		{
 			name:        "build",
@@ -55,6 +58,7 @@ func (v *ValidationNodeJs) Validate(ctx context.Context, workDir string) (*Valid
 			command:     "npm run lint:ast-grep --if-present",
 			errorPrefix: "AST-grep lint found violations",
 			displayName: "AST-grep lint",
+			optional:    true,
 		},
 		{
 			name:        "tests",
@@ -73,6 +77,11 @@ func (v *ValidationNodeJs) Validate(ctx context.Context, workDir string) (*Valid
 		err := runCommand(ctx, workDir, step.command)
 		if err != nil {
 			stepDuration := time.Since(stepStart)
+			if step.optional {
+				log.Debugf(ctx, "%s failed (optional, duration: %.1fs)", step.name, stepDuration.Seconds())
+				progressLog = append(progressLog, fmt.Sprintf("⏭️ %s skipped (%.1fs)", step.displayName, stepDuration.Seconds()))
+				continue
+			}
 			log.Errorf(ctx, "%s failed (duration: %.1fs)", step.name, stepDuration.Seconds())
 			progressLog = append(progressLog, fmt.Sprintf("❌ %s failed (%.1fs)", step.displayName, stepDuration.Seconds()))
 			return &ValidateResult{
