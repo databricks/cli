@@ -28,7 +28,6 @@ func TestEnsurePathExists(t *testing.T) {
 		result, err := ensurePathExists(v, path)
 		require.NoError(t, err)
 
-		// Original key should still exist
 		existing, err := dyn.GetByPath(result, dyn.Path{dyn.Key("existing")})
 		require.NoError(t, err)
 		assert.Equal(t, "value", existing.MustString())
@@ -46,7 +45,6 @@ func TestEnsurePathExists(t *testing.T) {
 		result, err := ensurePathExists(v, path)
 		require.NoError(t, err)
 
-		// Check that all intermediate nodes exist
 		level1, err := dyn.GetByPath(result, dyn.Path{dyn.Key("level1")})
 		require.NoError(t, err)
 		assert.Equal(t, dyn.KindMap, level1.Kind())
@@ -72,12 +70,10 @@ func TestEnsurePathExists(t *testing.T) {
 		result, err := ensurePathExists(v, path)
 		require.NoError(t, err)
 
-		// Check that existing data is preserved
 		existing, err := dyn.GetByPath(result, dyn.Path{dyn.Key("resources"), dyn.Key("existing")})
 		require.NoError(t, err)
 		assert.Equal(t, "value", existing.MustString())
 
-		// Check that new intermediate node was created
 		jobs, err := dyn.GetByPath(result, dyn.Path{dyn.Key("resources"), dyn.Key("jobs")})
 		require.NoError(t, err)
 		assert.Equal(t, dyn.KindMap, jobs.Kind())
@@ -103,7 +99,6 @@ func TestEnsurePathExists(t *testing.T) {
 		result, err := ensurePathExists(v, path)
 		require.NoError(t, err)
 
-		// Check that existing nested data is preserved
 		name, err := dyn.GetByPath(result, dyn.Path{dyn.Key("resources"), dyn.Key("jobs"), dyn.Key("my_job"), dyn.Key("name")})
 		require.NoError(t, err)
 		assert.Equal(t, "test", name.MustString())
@@ -118,11 +113,9 @@ func TestEnsurePathExists(t *testing.T) {
 			dyn.Key("my_job"),
 		}
 
-		// Ensure path exists
 		result, err := ensurePathExists(v, path)
 		require.NoError(t, err)
 
-		// Now SetByPath should work without errors
 		finalValue := dyn.V(map[string]dyn.Value{
 			"name": dyn.V("test_job"),
 		})
@@ -130,7 +123,6 @@ func TestEnsurePathExists(t *testing.T) {
 		result, err = dyn.SetByPath(result, path, finalValue)
 		require.NoError(t, err)
 
-		// Verify the value was set correctly
 		job, err := dyn.GetByPath(result, path)
 		require.NoError(t, err)
 		jobMap, ok := job.AsMap()
@@ -154,7 +146,6 @@ func TestEnsurePathExists(t *testing.T) {
 		result, err := ensurePathExists(v, path)
 		require.NoError(t, err)
 
-		// Verify all intermediate nodes exist
 		intermediate, err := dyn.GetByPath(result, dyn.Path{dyn.Key("a"), dyn.Key("b"), dyn.Key("c"), dyn.Key("d")})
 		require.NoError(t, err)
 		assert.Equal(t, dyn.KindMap, intermediate.Kind())
@@ -178,13 +169,12 @@ func TestEnsurePathExists(t *testing.T) {
 		result, err := ensurePathExists(v, path)
 		require.NoError(t, err)
 
-		// Original sequence should still exist
 		tasks, err := dyn.GetByPath(result, dyn.Path{dyn.Key("tasks")})
 		require.NoError(t, err)
 		assert.Equal(t, dyn.KindSequence, tasks.Kind())
 	})
 
-	t.Run("fails when sequence index does not exist", func(t *testing.T) {
+	t.Run("creates sequence when index does not exist", func(t *testing.T) {
 		v := dyn.V(map[string]dyn.Value{})
 
 		path := dyn.Path{
@@ -193,15 +183,22 @@ func TestEnsurePathExists(t *testing.T) {
 			dyn.Key("timeout"),
 		}
 
-		_, err := ensurePathExists(v, path)
-		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "sequence index does not exist")
+		result, err := ensurePathExists(v, path)
+		require.NoError(t, err)
+
+		tasks, err := dyn.GetByPath(result, dyn.Path{dyn.Key("tasks")})
+		require.NoError(t, err)
+		assert.Equal(t, dyn.KindSequence, tasks.Kind())
+
+		seq, _ := tasks.AsSequence()
+		assert.Len(t, seq, 1)
+
+		assert.Equal(t, dyn.KindMap, seq[0].Kind())
 	})
 
 	t.Run("creates intermediate maps before sequence", func(t *testing.T) {
 		v := dyn.V(map[string]dyn.Value{})
 
-		// First ensure the path up to the sequence exists
 		pathToSeq := dyn.Path{
 			dyn.Key("resources"),
 			dyn.Key("jobs"),
@@ -210,7 +207,6 @@ func TestEnsurePathExists(t *testing.T) {
 		result, err := ensurePathExists(v, pathToSeq)
 		require.NoError(t, err)
 
-		// Manually add a sequence
 		result, err = dyn.SetByPath(result, pathToSeq, dyn.V([]dyn.Value{
 			dyn.V(map[string]dyn.Value{"name": dyn.V("job1")}),
 		}))
@@ -229,5 +225,51 @@ func TestEnsurePathExists(t *testing.T) {
 		job, err := dyn.GetByPath(result, dyn.Path{dyn.Key("resources"), dyn.Key("jobs"), dyn.Index(0)})
 		require.NoError(t, err)
 		assert.Equal(t, dyn.KindMap, job.Kind())
+	})
+
+	t.Run("creates sequence with multiple elements", func(t *testing.T) {
+		v := dyn.V(map[string]dyn.Value{})
+
+		path := dyn.Path{
+			dyn.Key("items"),
+			dyn.Index(5),
+			dyn.Key("value"),
+		}
+
+		result, err := ensurePathExists(v, path)
+		require.NoError(t, err)
+
+		items, err := dyn.GetByPath(result, dyn.Path{dyn.Key("items")})
+		require.NoError(t, err)
+		assert.Equal(t, dyn.KindSequence, items.Kind())
+
+		seq, _ := items.AsSequence()
+		assert.Len(t, seq, 6)
+
+		for i, elem := range seq {
+			assert.Equal(t, dyn.KindMap, elem.Kind(), "element %d should be a map", i)
+		}
+	})
+
+	t.Run("handles nested paths within created sequence elements", func(t *testing.T) {
+		v := dyn.V(map[string]dyn.Value{})
+
+		path := dyn.Path{
+			dyn.Key("jobs"),
+			dyn.Index(0),
+			dyn.Key("tasks"),
+			dyn.Key("main"),
+		}
+
+		result, err := ensurePathExists(v, path)
+		require.NoError(t, err)
+
+		tasks, err := dyn.GetByPath(result, dyn.Path{
+			dyn.Key("jobs"),
+			dyn.Index(0),
+			dyn.Key("tasks"),
+		})
+		require.NoError(t, err)
+		assert.Equal(t, dyn.KindMap, tasks.Kind())
 	})
 }
