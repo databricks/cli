@@ -11,7 +11,6 @@ Terraform will perform the following actions:
   # databricks_pipeline.foo must be replaced
 -/+ resource "databricks_pipeline" "foo" {
       - allow_duplicate_names  = false -> null
-      ~ catalog                = "old_catalog" -> "main" # forces replacement
       + cause                  = (known after apply)
       + channel                = "CURRENT"
       + cluster_id             = (known after apply)
@@ -23,26 +22,26 @@ Terraform will perform the following actions:
       + health                 = (known after apply)
       ~ id                     = "[NEW_PIPELINE_ID]" -> (known after apply)
       ~ last_modified          = [UNIX_TIME_MILLIS] -> (known after apply)
-      ~ name                   = "lakeflow-pipeline" -> "test-pipeline"
+      ~ name                   = "lakeflow-pipeline-[UNIQUE_NAME]" -> "test-pipeline-[UNIQUE_NAME]"
       - photon                 = false -> null
-      - root_path              = "/Workspace/Users/[USERNAME]/lakeflow_pipeline" -> null
+      - root_path              = "/Workspace/Users/someuser@databricks.com/lakeflow_pipeline" -> null
       ~ run_as_user_name       = "[USERNAME]" -> (known after apply)
       - serverless             = false -> null
       ~ state                  = "IDLE" -> (known after apply)
-      - storage                = "old_storage" -> null # forces replacement
+      ~ storage                = "/Shared/old_storage" -> "/Shared/new_storage" # forces replacement
       ~ url                    = "[DATABRICKS_URL]/#joblist/pipelines/[NEW_PIPELINE_ID]" -> (known after apply)
 
       + deployment {
           + kind               = "BUNDLE"
-          + metadata_file_path = "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-recreate/default/state/metadata.json"
+          + metadata_file_path = "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-recreate-[UNIQUE_NAME]/default/state/metadata.json"
         }
 
       ~ library {
           - glob {
-              - include = "/Workspace/Users/[USERNAME]/lakeflow_pipeline/transformations/**" -> null
+              - include = "/Workspace/Users/someuser@databricks.com/lakeflow_pipeline/transformations/**" -> null
             }
           + notebook {
-              + path = "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-recreate/default/files/nb"
+              + path = "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-recreate-[UNIQUE_NAME]/default/files/nb"
             }
         }
       - library {
