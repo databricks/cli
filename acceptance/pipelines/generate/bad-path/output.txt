@@ -1,0 +1,5 @@
+
+>>> errcode [CLI] pipelines generate --existing-pipeline-dir /tmp/foo
+Error: please make sure the directory is located in side 'src/' (for example 'src/my_pipeline'), got: [path]
+
+Exit code: 1

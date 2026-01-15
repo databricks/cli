@@ -1,4 +1,6 @@
 
+>>> print_requests.py ^//import-file/ ^//workspace/
+
 >>> [CLI] bundle summary -o json
 
 >>> [CLI] bundle plan
@@ -7,9 +9,9 @@ recreate pipelines.foo
 Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged
 
 >>> musterr [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-recreate/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-recreate-[UNIQUE_NAME]/default/files...
 
-This action will result in the deletion or recreation of the following Lakeflow Declarative Pipelines along with the
+This action will result in the deletion or recreation of the following Lakeflow Spark Declarative Pipelines along with the
 Streaming Tables (STs) and Materialized Views (MVs) managed by them. Recreating the pipelines will
 restore the defined STs and MVs through full refresh. Note that recreation is necessary when pipeline
 properties such as the 'catalog' or 'storage' are changed:
@@ -18,9 +20,9 @@ Error: the deployment requires destructive actions, but current console does not
 
 
 >>> [CLI] bundle deploy --auto-approve
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-recreate/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-recreate-[UNIQUE_NAME]/default/files...
 
-This action will result in the deletion or recreation of the following Lakeflow Declarative Pipelines along with the
+This action will result in the deletion or recreation of the following Lakeflow Spark Declarative Pipelines along with the
 Streaming Tables (STs) and Materialized Views (MVs) managed by them. Recreating the pipelines will
 restore the defined STs and MVs through full refresh. Note that recreation is necessary when pipeline
 properties such as the 'catalog' or 'storage' are changed:
@@ -29,4 +31,4 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> print_requests.py ^//import-file/ ^//workspace/delete ^//telemetry-ext
+>>> print_requests.py ^//import-file/ ^//workspace/ ^//telemetry-ext

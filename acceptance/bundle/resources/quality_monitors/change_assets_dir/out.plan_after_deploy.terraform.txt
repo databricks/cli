@@ -1,0 +1,5 @@
+
+>>> errcode [CLI] bundle plan
+update quality_monitors.monitor1
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged

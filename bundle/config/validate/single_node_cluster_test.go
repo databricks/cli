@@ -563,3 +563,41 @@ func TestValidateSingleNodeClusterPassJobForEachTaskCluster(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateSingleNodeClusterWithIsSingleNode(t *testing.T) {
+	ctx := context.Background()
+
+	// Test that when is_single_node is set to true, no warning is shown
+	// even if the manual single-node configuration is not present.
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Resources: config.Resources{
+				Jobs: map[string]*resources.Job{
+					"foo": {
+						JobSettings: jobs.JobSettings{
+							JobClusters: []jobs.JobCluster{
+								{
+									NewCluster: compute.ClusterSpec{
+										ClusterName: "my_cluster",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	// Set num_workers to 0 and is_single_node to true
+	bundletest.Mutate(t, b, func(v dyn.Value) (dyn.Value, error) {
+		v, err := dyn.Set(v, "resources.jobs.foo.job_clusters[0].new_cluster.num_workers", dyn.V(0))
+		if err != nil {
+			return v, err
+		}
+		return dyn.Set(v, "resources.jobs.foo.job_clusters[0].new_cluster.is_single_node", dyn.V(true))
+	})
+
+	diags := bundle.Apply(ctx, b, SingleNodeCluster())
+	assert.Empty(t, diags)
+}

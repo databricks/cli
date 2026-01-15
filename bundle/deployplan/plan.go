@@ -92,6 +92,7 @@ const (
 	ReasonAlias             = "alias"
 	ReasonRemoteAlreadySet  = "remote_already_set"
 	ReasonFieldTriggers     = "field_triggers"
+	ReasonConfigOnly        = "config_only"
 )
 
 // HasChange checks if there are any changes for fields with the given prefix.

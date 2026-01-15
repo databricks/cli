@@ -1,0 +1,24 @@
+
+=== not deployed yet
+>>> [ENTRYPOINT] open
+Error: pipeline does not have a URL associated with it (has it been deployed?)
+
+Exit code: 1
+
+>>> [ENTRYPOINT] deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/pipelines-open/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+View your pipeline test-pipelines-open here: [DATABRICKS_URL]/pipelines/[UUID]?o=[NUMID]
+
+=== Modify PATH so that real open is not run
+=== open after deployment. This will fail to open browser and complain, that's ok, we only want the message
+>>> [ENTRYPOINT] open
+Opening browser at [DATABRICKS_URL]/pipelines/[UUID]?o=[NUMID]
+Error: exec: "open": cannot run executable found relative to current directory
+
+=== open with KEY, expect same output as opening without KEY
+>>> [ENTRYPOINT] open test-pipelines-open
+Opening browser at [DATABRICKS_URL]/pipelines/[UUID]?o=[NUMID]
+Error: exec: "open": cannot run executable found relative to current directory
