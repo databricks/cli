@@ -71,8 +71,8 @@ func TestToOAuthArgument(t *testing.T) {
 			name: "unified host with both account ID and workspace ID",
 			args: AuthArguments{
 				Host:          "https://unified.cloud.databricks.com",
-				AccountID:     "968367da-7edd-44f7-9dea-3e0b20b0ec97",
-				WorkspaceID:   "470576644108500",
+				AccountID:     "123456789",
+				WorkspaceID:   "123456789",
 				IsUnifiedHost: true,
 			},
 			wantHost: "https://unified.cloud.databricks.com",
