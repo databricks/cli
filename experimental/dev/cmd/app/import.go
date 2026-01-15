@@ -4,20 +4,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 
+	"github.com/databricks/cli/bundle/generate"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/apps"
-	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/spf13/cobra"
-	"golang.org/x/sync/errgroup"
 )
 
 func newImportCmd() *cobra.Command {
@@ -112,16 +108,22 @@ func runImport(ctx context.Context, opts importOptions) error {
 		return err
 	}
 
-	// Step 4: Download files with spinner
-	var fileCount int
+	// Step 4: Download files using the Downloader
+	downloader := generate.NewDownloader(w, destDir, destDir)
+	sourceCodePath := app.DefaultSourceCodePath
+
 	err = RunWithSpinnerCtx(ctx, "Downloading files...", func() error {
-		var downloadErr error
-		fileCount, downloadErr = downloadDirectory(ctx, w, app.DefaultSourceCodePath, destDir, opts.force)
-		return downloadErr
+		if markErr := downloader.MarkDirectoryForDownload(ctx, &sourceCodePath); markErr != nil {
+			return fmt.Errorf("failed to list files: %w", markErr)
+		}
+		return downloader.FlushToDisk(ctx, opts.force)
 	})
 	if err != nil {
 		return fmt.Errorf("failed to download files for app '%s': %w", opts.appName, err)
 	}
+
+	// Count downloaded files
+	fileCount := countFiles(destDir)
 
 	// Get absolute path for display
 	absDestDir, err := filepath.Abs(destDir)
@@ -184,82 +186,14 @@ func ensureOutputDir(dir string, force bool) error {
 	return os.MkdirAll(dir, 0o755)
 }
 
-// downloadDirectory recursively downloads all files from a workspace path to a local directory.
-func downloadDirectory(ctx context.Context, w *databricks.WorkspaceClient, remotePath, localDir string, force bool) (int, error) {
-	// List all files recursively
-	objects, err := w.Workspace.RecursiveList(ctx, remotePath)
-	if err != nil {
-		return 0, fmt.Errorf("failed to list workspace files: %w", err)
-	}
-
-	// Filter out directories, keep only files
-	var files []workspace.ObjectInfo
-	for _, obj := range objects {
-		if obj.ObjectType != workspace.ObjectTypeDirectory {
-			files = append(files, obj)
+// countFiles counts the number of files (non-directories) in a directory tree.
+func countFiles(dir string) int {
+	count := 0
+	_ = filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+		if err == nil && !info.IsDir() {
+			count++
 		}
-	}
-
-	if len(files) == 0 {
-		return 0, errors.New("no files found in app source code path")
-	}
-
-	// Download files in parallel
-	errs, errCtx := errgroup.WithContext(ctx)
-	errs.SetLimit(10) // Limit concurrent downloads
-
-	for _, file := range files {
-		errs.Go(func() error {
-			return downloadFile(errCtx, w, file, remotePath, localDir, force)
-		})
-	}
-
-	if err := errs.Wait(); err != nil {
-		return 0, err
-	}
-
-	return len(files), nil
-}
-
-// downloadFile downloads a single file from the workspace to the local directory.
-func downloadFile(ctx context.Context, w *databricks.WorkspaceClient, file workspace.ObjectInfo, remotePath, localDir string, force bool) error {
-	// Calculate relative path from the remote root
-	relPath := strings.TrimPrefix(file.Path, remotePath)
-	relPath = strings.TrimPrefix(relPath, "/")
-
-	// Determine local file path
-	localPath := filepath.Join(localDir, relPath)
-
-	// Check if file exists
-	if !force {
-		if _, err := os.Stat(localPath); err == nil {
-			return fmt.Errorf("file %s already exists (use --force to overwrite)", localPath)
-		}
-	}
-
-	// Create parent directories
-	if err := os.MkdirAll(filepath.Dir(localPath), 0o755); err != nil {
-		return fmt.Errorf("failed to create directory for %s: %w", localPath, err)
-	}
-
-	// Download file content
-	reader, err := w.Workspace.Download(ctx, file.Path)
-	if err != nil {
-		return fmt.Errorf("failed to download %s: %w", file.Path, err)
-	}
-	defer reader.Close()
-
-	// Create local file
-	localFile, err := os.Create(localPath)
-	if err != nil {
-		return fmt.Errorf("failed to create %s: %w", localPath, err)
-	}
-	defer localFile.Close()
-
-	// Copy content
-	if _, err := io.Copy(localFile, reader); err != nil {
-		return fmt.Errorf("failed to write %s: %w", localPath, err)
-	}
-
-	return nil
+		return nil
+	})
+	return count
 }

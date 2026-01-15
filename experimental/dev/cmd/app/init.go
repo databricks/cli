@@ -21,8 +21,7 @@ import (
 
 const (
 	templatePathEnvVar = "DATABRICKS_APPKIT_TEMPLATE_PATH"
-	// TODO: Change this with appkit main once ready.
-	defaultTemplateURL = "https://github.com/databricks/appkit/tree/add-generic-template/template"
+	defaultTemplateURL = "https://github.com/databricks/appkit/tree/main/template"
 )
 
 func newInitCmd() *cobra.Command {
@@ -443,20 +442,35 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	}
 
 	// Step 1: Get project name first (needed before we can check destination)
+	// Determine output directory for validation
+	destDir := opts.name
+	if opts.outputDir != "" {
+		destDir = filepath.Join(opts.outputDir, opts.name)
+	}
+
 	if opts.name == "" {
 		if !isInteractive {
 			return errors.New("--name is required in non-interactive mode")
 		}
-		name, err := PromptForProjectName()
+		// Prompt includes validation for name format AND directory existence
+		name, err := PromptForProjectName(opts.outputDir)
 		if err != nil {
 			return err
 		}
 		opts.name = name
-	}
-
-	// Validate project name
-	if err := ValidateProjectName(opts.name); err != nil {
-		return err
+		// Update destDir with the actual name
+		destDir = opts.name
+		if opts.outputDir != "" {
+			destDir = filepath.Join(opts.outputDir, opts.name)
+		}
+	} else {
+		// Non-interactive mode: validate name and directory existence
+		if err := ValidateProjectName(opts.name); err != nil {
+			return err
+		}
+		if _, err := os.Stat(destDir); err == nil {
+			return fmt.Errorf("directory %s already exists", destDir)
+		}
 	}
 
 	// Step 2: Resolve template (handles GitHub URLs by cloning)
@@ -589,17 +603,6 @@ func runCreate(ctx context.Context, opts createOptions) error {
 				return err
 			}
 		}
-	}
-
-	// Determine output directory
-	destDir := opts.name
-	if opts.outputDir != "" {
-		destDir = filepath.Join(opts.outputDir, opts.name)
-	}
-
-	// Check if destination already exists
-	if _, err := os.Stat(destDir); err == nil {
-		return fmt.Errorf("directory %s already exists", destDir)
 	}
 
 	// Track whether we started creating the project for cleanup on failure

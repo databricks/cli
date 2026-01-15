@@ -1,13 +1,11 @@
 package app
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"os"
-	"os/exec"
-	"sync"
+	"path/filepath"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/resources"
@@ -21,17 +19,17 @@ import (
 
 func newDeployCmd() *cobra.Command {
 	var (
-		force     bool
-		skipBuild bool
+		force          bool
+		skipValidation bool
 	)
 
 	cmd := &cobra.Command{
 		Use:   "deploy",
-		Short: "Build, deploy the AppKit application and run it",
-		Long: `Build, deploy the AppKit application and run it.
+		Short: "Validate, deploy the AppKit application and run it",
+		Long: `Validate, deploy the AppKit application and run it.
 
 This command runs a deployment pipeline:
-1. Builds the frontend (npm run build)
+1. Validates the project (build, typecheck, tests for Node.js projects)
 2. Deploys the bundle to the workspace
 3. Runs the app
 
@@ -42,8 +40,8 @@ Examples:
   # Deploy to a specific target
   databricks experimental dev app deploy --target prod
 
-  # Skip frontend build (if already built)
-  databricks experimental dev app deploy --skip-build
+  # Skip validation (if already validated)
+  databricks experimental dev app deploy --skip-validation
 
   # Force deploy (override git branch validation)
   databricks experimental dev app deploy --force
@@ -52,19 +50,19 @@ Examples:
   databricks experimental dev app deploy --var="warehouse_id=abc123"`,
 		Args: root.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return runDeploy(cmd, force, skipBuild)
+			return runDeploy(cmd, force, skipValidation)
 		},
 	}
 
 	cmd.Flags().StringP("target", "t", "", "Deployment target (e.g., dev, prod)")
 	cmd.Flags().BoolVar(&force, "force", false, "Force-override Git branch validation")
-	cmd.Flags().BoolVar(&skipBuild, "skip-build", false, "Skip npm build step")
+	cmd.Flags().BoolVar(&skipValidation, "skip-validation", false, "Skip project validation (build, typecheck, tests)")
 	cmd.Flags().StringSlice("var", []string{}, `Set values for variables defined in bundle config. Example: --var="key=value"`)
 
 	return cmd
 }
 
-func runDeploy(cmd *cobra.Command, force, skipBuild bool) error {
+func runDeploy(cmd *cobra.Command, force, skipValidation bool) error {
 	ctx := cmd.Context()
 
 	// Check for bundle configuration
@@ -72,13 +70,29 @@ func runDeploy(cmd *cobra.Command, force, skipBuild bool) error {
 		return errors.New("no databricks.yml found; run this command from a bundle directory")
 	}
 
-	// Step 1: Build frontend (unless skipped)
-	if !skipBuild {
-		if err := runNpmTypegen(ctx); err != nil {
-			return err
-		}
-		if err := runNpmBuild(ctx); err != nil {
-			return err
+	// Get current working directory for validation
+	workDir, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("failed to get working directory: %w", err)
+	}
+
+	// Step 1: Validate project (unless skipped)
+	if !skipValidation {
+		validator := getProjectValidator(workDir)
+		if validator != nil {
+			result, err := validator.Validate(ctx, workDir)
+			if err != nil {
+				return fmt.Errorf("validation error: %w", err)
+			}
+
+			// Log validation progress
+			cmdio.LogString(ctx, result.String())
+
+			if !result.Success {
+				return errors.New("validation failed - fix errors before deploying")
+			}
+		} else {
+			log.Debugf(ctx, "No validator found for project type, skipping validation")
 		}
 	}
 
@@ -114,68 +128,13 @@ func runDeploy(cmd *cobra.Command, force, skipBuild bool) error {
 	return nil
 }
 
-// syncBuffer is a thread-safe buffer for capturing command output.
-type syncBuffer struct {
-	mu  sync.Mutex
-	buf bytes.Buffer
-}
-
-func (b *syncBuffer) Write(p []byte) (n int, err error) {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-	return b.buf.Write(p)
-}
-
-func (b *syncBuffer) String() string {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-	return b.buf.String()
-}
-
-// runNpmTypegen runs npm run typegen in the current directory.
-func runNpmTypegen(ctx context.Context) error {
-	if _, err := exec.LookPath("npm"); err != nil {
-		return errors.New("npm not found: please install Node.js")
-	}
-
-	var output syncBuffer
-
-	err := RunWithSpinnerCtx(ctx, "Generating types...", func() error {
-		cmd := exec.CommandContext(ctx, "npm", "run", "typegen")
-		cmd.Stdout = &output
-		cmd.Stderr = &output
-		return cmd.Run()
-	})
-	if err != nil {
-		out := output.String()
-		if out != "" {
-			return fmt.Errorf("typegen failed:\n%s", out)
-		}
-		return fmt.Errorf("typegen failed: %w", err)
-	}
-	return nil
-}
-
-// runNpmBuild runs npm run build in the current directory.
-func runNpmBuild(ctx context.Context) error {
-	if _, err := exec.LookPath("npm"); err != nil {
-		return errors.New("npm not found: please install Node.js")
-	}
-
-	var output syncBuffer
-
-	err := RunWithSpinnerCtx(ctx, "Building frontend...", func() error {
-		cmd := exec.CommandContext(ctx, "npm", "run", "build")
-		cmd.Stdout = &output
-		cmd.Stderr = &output
-		return cmd.Run()
-	})
-	if err != nil {
-		out := output.String()
-		if out != "" {
-			return fmt.Errorf("build failed:\n%s", out)
-		}
-		return fmt.Errorf("build failed: %w", err)
+// getProjectValidator returns the appropriate validator based on project type.
+// Returns nil if no validator is applicable.
+func getProjectValidator(workDir string) Validation {
+	// Check for Node.js project (package.json exists)
+	packageJSON := filepath.Join(workDir, "package.json")
+	if _, err := os.Stat(packageJSON); err == nil {
+		return &ValidationNodeJs{}
 	}
 	return nil
 }

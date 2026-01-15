@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"time"
@@ -108,7 +110,8 @@ func printHeader() {
 
 // PromptForProjectName prompts only for project name.
 // Used as the first step before resolving templates.
-func PromptForProjectName() (string, error) {
+// outputDir is used to check if the destination directory already exists.
+func PromptForProjectName(outputDir string) (string, error) {
 	printHeader()
 	theme := appkitTheme()
 
@@ -118,7 +121,21 @@ func PromptForProjectName() (string, error) {
 		Description("lowercase letters, numbers, hyphens (max 26 chars)").
 		Placeholder("my-app").
 		Value(&name).
-		Validate(ValidateProjectName).
+		Validate(func(s string) error {
+			// First validate the name format
+			if err := ValidateProjectName(s); err != nil {
+				return err
+			}
+			// Then check if directory already exists
+			destDir := s
+			if outputDir != "" {
+				destDir = filepath.Join(outputDir, s)
+			}
+			if _, err := os.Stat(destDir); err == nil {
+				return fmt.Errorf("directory %s already exists", destDir)
+			}
+			return nil
+		}).
 		WithTheme(theme).
 		Run()
 	if err != nil {
