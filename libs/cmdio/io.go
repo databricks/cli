@@ -16,6 +16,14 @@ import (
 // cmdIO is the private instance, that is not supposed to be accessed
 // outside of `cmdio` package. Use the public package-level functions
 // to access the inner state.
+//
+// Stream Architecture:
+//   - in:  stdin for user input (prompts, confirmations)
+//   - out: stdout for data output (JSON, tables, command results)
+//   - err: stderr for interactive UI (prompts, spinners, logs, diagnostics)
+//
+// This separation enables piping stdout while maintaining interactivity:
+//   databricks deploy --output json | jq  # User sees prompts, jq gets JSON
 type cmdIO struct {
 	capabilities   Capabilities
 	outputFormat   flags.Output
@@ -75,7 +83,8 @@ func (c *cmdIO) Select(items []Tuple, label string) (id string, err error) {
 			Active:   `{{.Name | bold}} ({{.Id|faint}})`,
 			Inactive: `{{.Name}}`,
 		},
-		Stdin: io.NopCloser(c.in),
+		Stdin:  io.NopCloser(c.in),
+		Stdout: nopWriteCloser{c.err},
 	}).Run()
 	if err != nil {
 		return id, err
@@ -110,6 +119,8 @@ func (c *cmdIO) Secret(label string) (value string, err error) {
 		Label:       label,
 		Mask:        '*',
 		HideEntered: true,
+		Stdin:       io.NopCloser(c.in),
+		Stdout:      nopWriteCloser{c.err},
 	})
 
 	return prompt.Run()
@@ -132,7 +143,7 @@ func Prompt(ctx context.Context) *promptui.Prompt {
 	c := fromContext(ctx)
 	return &promptui.Prompt{
 		Stdin:  io.NopCloser(c.in),
-		Stdout: nopWriteCloser{c.out},
+		Stdout: nopWriteCloser{c.err},
 	}
 }
 
