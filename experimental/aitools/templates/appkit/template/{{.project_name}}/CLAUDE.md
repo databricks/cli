@@ -53,7 +53,7 @@ import { BarChart } from '@databricks/appkit-ui/react';
 
 **That's it!** The component handles data fetching, loading states, and rendering automatically.
 
-**⚠️ CRITICAL: Always run `npm run typegen` after modifying `config/queries/schema.ts`**
+**⚠️ CRITICAL: Always run `npm run typegen` after modifying files in `config/queries/`**
 - DO NOT manually edit `client/src/appKitTypes.d.ts` - it is auto-generated
 - If you see errors like `'"my_query"' is not assignable to parameter of type`, run `npm run typegen`
 
