@@ -45,7 +45,7 @@ Examples:
 			return fmt.Errorf("failed to detect changes: %w", err)
 		}
 
-		files, err := configsync.GenerateYAMLFiles(ctx, b, changes)
+		files, err := configsync.ApplyChangesToYAML(ctx, b, changes)
 		if err != nil {
 			return fmt.Errorf("failed to generate YAML files: %w", err)
 		}

@@ -52,7 +52,7 @@ func TestGenerateYAMLFiles_SimpleFieldChange(t *testing.T) {
 		},
 	}
 
-	fileChanges, err := GenerateYAMLFiles(ctx, b, changes)
+	fileChanges, err := ApplyChangesToYAML(ctx, b, changes)
 	require.NoError(t, err)
 	require.Len(t, fileChanges, 1)
 
@@ -97,7 +97,7 @@ func TestGenerateYAMLFiles_NestedFieldChange(t *testing.T) {
 		},
 	}
 
-	fileChanges, err := GenerateYAMLFiles(ctx, b, changes)
+	fileChanges, err := ApplyChangesToYAML(ctx, b, changes)
 	require.NoError(t, err)
 	require.Len(t, fileChanges, 1)
 
@@ -155,7 +155,7 @@ func TestGenerateYAMLFiles_ArrayKeyValueAccess(t *testing.T) {
 		},
 	}
 
-	fileChanges, err := GenerateYAMLFiles(ctx, b, changes)
+	fileChanges, err := ApplyChangesToYAML(ctx, b, changes)
 	require.NoError(t, err)
 	require.Len(t, fileChanges, 1)
 
@@ -218,7 +218,7 @@ func TestGenerateYAMLFiles_MultipleResourcesSameFile(t *testing.T) {
 		},
 	}
 
-	fileChanges, err := GenerateYAMLFiles(ctx, b, changes)
+	fileChanges, err := ApplyChangesToYAML(ctx, b, changes)
 	require.NoError(t, err)
 
 	require.Len(t, fileChanges, 1)
@@ -270,7 +270,7 @@ func TestGenerateYAMLFiles_ResourceNotFound(t *testing.T) {
 		},
 	}
 
-	fileChanges, err := GenerateYAMLFiles(ctx, b, changes)
+	fileChanges, err := ApplyChangesToYAML(ctx, b, changes)
 	require.NoError(t, err)
 
 	assert.Len(t, fileChanges, 0)
@@ -306,7 +306,7 @@ func TestGenerateYAMLFiles_InvalidFieldPath(t *testing.T) {
 		},
 	}
 
-	fileChanges, err := GenerateYAMLFiles(ctx, b, changes)
+	fileChanges, err := ApplyChangesToYAML(ctx, b, changes)
 	require.NoError(t, err)
 
 	if len(fileChanges) > 0 {
@@ -369,7 +369,7 @@ include:
 		},
 	}
 
-	fileChanges, err := GenerateYAMLFiles(ctx, b, changes)
+	fileChanges, err := ApplyChangesToYAML(ctx, b, changes)
 	require.NoError(t, err)
 	require.Len(t, fileChanges, 1)
 
@@ -418,7 +418,7 @@ targets:
 		},
 	}
 
-	fileChanges, err := GenerateYAMLFiles(ctx, b, changes)
+	fileChanges, err := ApplyChangesToYAML(ctx, b, changes)
 	require.NoError(t, err)
 	require.Len(t, fileChanges, 1)
 
@@ -467,7 +467,7 @@ func TestGenerateYAMLFiles_WithStructValues(t *testing.T) {
 		},
 	}
 
-	fileChanges, err := GenerateYAMLFiles(ctx, b, changes)
+	fileChanges, err := ApplyChangesToYAML(ctx, b, changes)
 	require.NoError(t, err)
 	require.Len(t, fileChanges, 1)
 

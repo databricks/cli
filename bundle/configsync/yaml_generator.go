@@ -209,9 +209,11 @@ func findResourceInFile(_ context.Context, fileValue dyn.Value, resourceType, re
 	return dyn.NilValue, nil, fmt.Errorf("resource %s.%s not found in file", resourceType, resourceName)
 }
 
-// GenerateYAMLFiles generates YAML files for the given changes.
-func GenerateYAMLFiles(ctx context.Context, b *bundle.Bundle, changes map[string]deployplan.Changes) ([]FileChange, error) {
+// ApplyChangesToYAML generates YAML files for the given changes.
+func ApplyChangesToYAML(ctx context.Context, b *bundle.Bundle, changes map[string]deployplan.Changes) ([]FileChange, error) {
 	configValue := b.Config.Value()
+
+	// todo check yq
 
 	fileChanges := make(map[string][]struct {
 		resourceKey string
