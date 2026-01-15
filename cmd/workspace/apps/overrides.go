@@ -57,6 +57,7 @@ func startOverride(startCmd *cobra.Command, startReq *apps.StartAppRequest) {
 func init() {
 	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
 		cmd.AddCommand(newLogsCommand())
+		cmd.AddCommand(newImportCommand())
 	})
 	listOverrides = append(listOverrides, listOverride)
 	listDeploymentsOverrides = append(listDeploymentsOverrides, listDeploymentsOverride)
