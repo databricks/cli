@@ -70,7 +70,7 @@ func (v *ValidationNodeJs) Validate(ctx context.Context, workDir string) (*Valid
 		// Check if step should be skipped
 		if step.skipIf != nil && step.skipIf(workDir) {
 			log.Debugf(ctx, "skipping %s (condition met)", step.name)
-			cmdio.LogString(ctx, fmt.Sprintf("⏭️  Skipped %s", step.displayName))
+			cmdio.LogString(ctx, "⏭️  Skipped "+step.displayName)
 			continue
 		}
 

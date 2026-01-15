@@ -1,9 +1,9 @@
-package app
+package apps
 
 import (
 	"testing"
 
-	"github.com/databricks/cli/experimental/dev/lib/prompt"
+	"github.com/databricks/cli/libs/apps/prompt"
 	"github.com/stretchr/testify/assert"
 )
 

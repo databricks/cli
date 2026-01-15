@@ -1,4 +1,4 @@
-package app
+package apps
 
 import (
 	"bytes"
@@ -18,8 +18,8 @@ import (
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/cmd/root"
-	"github.com/databricks/cli/experimental/dev/lib/prompt"
-	"github.com/databricks/cli/experimental/dev/lib/vite"
+	"github.com/databricks/cli/libs/apps/prompt"
+	"github.com/databricks/cli/libs/apps/vite"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/spf13/cobra"
@@ -63,14 +63,14 @@ func detectAppNameFromBundle() string {
 	}
 
 	// Check for apps in the bundle
-	apps := rootConfig.Resources.Apps
-	if len(apps) == 0 {
+	bundleApps := rootConfig.Resources.Apps
+	if len(bundleApps) == 0 {
 		return ""
 	}
 
 	// If there's exactly one app, return its name
-	if len(apps) == 1 {
-		for _, app := range apps {
+	if len(bundleApps) == 1 {
+		for _, app := range bundleApps {
 			return app.Name
 		}
 	}
@@ -135,16 +135,16 @@ to the remote Databricks app for development with hot module replacement.
 
 Examples:
   # Interactive mode - select app from picker
-  databricks experimental dev app dev-remote
+  databricks apps dev-remote
 
   # Start development server for a specific app
-  databricks experimental dev app dev-remote --name my-app
+  databricks apps dev-remote --name my-app
 
   # Use a custom client path
-  databricks experimental dev app dev-remote --name my-app --client-path ./frontend
+  databricks apps dev-remote --name my-app --client-path ./frontend
 
   # Use a custom port
-  databricks experimental dev app dev-remote --name my-app --port 3000`,
+  databricks apps dev-remote --name my-app --port 3000`,
 		Args:    root.NoArgs,
 		PreRunE: root.MustWorkspaceClient,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -191,7 +191,7 @@ Examples:
 			})
 			if err != nil {
 				if strings.Contains(err.Error(), "does not exist") || strings.Contains(err.Error(), "is deleted") {
-					return fmt.Errorf("application '%s' has not been deployed yet. Run `databricks experimental dev app deploy` to deploy and then try again", appName)
+					return fmt.Errorf("application '%s' has not been deployed yet. Run `databricks apps deploy` to deploy and then try again", appName)
 				}
 				return fmt.Errorf("failed to get app domain: %w", err)
 			}

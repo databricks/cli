@@ -1,4 +1,4 @@
-package app
+package apps
 
 import (
 	"bytes"
@@ -13,8 +13,8 @@ import (
 
 	"github.com/charmbracelet/huh"
 	"github.com/databricks/cli/cmd/root"
-	"github.com/databricks/cli/experimental/dev/lib/features"
-	"github.com/databricks/cli/experimental/dev/lib/prompt"
+	"github.com/databricks/cli/libs/apps/features"
+	"github.com/databricks/cli/libs/apps/prompt"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
@@ -50,22 +50,22 @@ guides you through the setup. When run with --name, runs in non-interactive mode
 
 Examples:
   # Interactive mode with default template (recommended)
-  databricks experimental dev app init
+  databricks apps init
 
   # Non-interactive with flags
-  databricks experimental dev app init --name my-app
+  databricks apps init --name my-app
 
   # With analytics feature (requires --warehouse-id)
-  databricks experimental dev app init --name my-app --features=analytics --warehouse-id=abc123
+  databricks apps init --name my-app --features=analytics --warehouse-id=abc123
 
   # Create, deploy, and run with dev-remote
-  databricks experimental dev app init --name my-app --deploy --run=dev-remote
+  databricks apps init --name my-app --deploy --run=dev-remote
 
   # With a custom template from a local path
-  databricks experimental dev app init --template /path/to/template --name my-app
+  databricks apps init --template /path/to/template --name my-app
 
   # With a GitHub URL
-  databricks experimental dev app init --template https://github.com/user/repo --name my-app
+  databricks apps init --template https://github.com/user/repo --name my-app
 
 Feature dependencies:
   Some features require additional flags:
@@ -711,7 +711,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		cmdio.LogString(ctx, "Deploying app...")
 		if err := runPostCreateDeploy(ctx); err != nil {
 			cmdio.LogString(ctx, fmt.Sprintf("⚠ Deploy failed: %v", err))
-			cmdio.LogString(ctx, "  You can deploy manually with: databricks experimental dev app deploy")
+			cmdio.LogString(ctx, "  You can deploy manually with: databricks apps deploy")
 		}
 	}
 
@@ -729,7 +729,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 func runPostCreateDeploy(ctx context.Context) error {
 	// Use os.Args[0] to get the path to the current executable
 	executable := os.Args[0]
-	cmd := exec.CommandContext(ctx, executable, "experimental", "dev", "app", "deploy")
+	cmd := exec.CommandContext(ctx, executable, "apps", "deploy")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Stdin = os.Stdin
@@ -750,7 +750,7 @@ func runPostCreateDev(ctx context.Context, mode prompt.RunMode) error {
 		cmdio.LogString(ctx, "Starting remote development server...")
 		// Use os.Args[0] to get the path to the current executable
 		executable := os.Args[0]
-		cmd := exec.CommandContext(ctx, executable, "experimental", "dev", "app", "dev-remote")
+		cmd := exec.CommandContext(ctx, executable, "apps", "dev-remote")
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		cmd.Stdin = os.Stdin

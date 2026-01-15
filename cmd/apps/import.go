@@ -1,4 +1,4 @@
-package app
+package apps
 
 import (
 	"context"
@@ -10,7 +10,7 @@ import (
 
 	"github.com/databricks/cli/bundle/generate"
 	"github.com/databricks/cli/cmd/root"
-	"github.com/databricks/cli/experimental/dev/lib/prompt"
+	"github.com/databricks/cli/libs/apps/prompt"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go/service/apps"
@@ -34,16 +34,16 @@ named after the app.
 
 Examples:
   # Interactive mode - select app from picker
-  databricks experimental dev app import
+  databricks apps import
 
   # Import a specific app's source code
-  databricks experimental dev app import --name my-app
+  databricks apps import --name my-app
 
   # Import to a specific directory
-  databricks experimental dev app import --name my-app --output-dir ./projects
+  databricks apps import --name my-app --output-dir ./projects
 
   # Force overwrite existing files
-  databricks experimental dev app import --name my-app --force`,
+  databricks apps import --name my-app --force`,
 		Args:    root.NoArgs,
 		PreRunE: root.MustWorkspaceClient,
 		RunE: func(cmd *cobra.Command, args []string) error {

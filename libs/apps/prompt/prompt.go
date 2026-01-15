@@ -13,7 +13,7 @@ import (
 	"github.com/briandowns/spinner"
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/databricks/cli/experimental/dev/lib/features"
+	"github.com/databricks/cli/libs/apps/features"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go/listing"
@@ -200,7 +200,7 @@ func PromptForDeployAndRun() (deploy bool, runMode RunMode, err error) {
 	// Deploy after creation?
 	err = huh.NewConfirm().
 		Title("Deploy after creation?").
-		Description("Run 'databricks experimental dev app deploy' after setup").
+		Description("Run 'databricks apps deploy' after setup").
 		Value(&deploy).
 		WithTheme(theme).
 		Run()
@@ -333,7 +333,7 @@ func PromptForProjectConfig(ctx context.Context, preSelectedFeatures []string) (
 	// Step 5: Deploy after creation?
 	err = huh.NewConfirm().
 		Title("Deploy after creation?").
-		Description("Run 'databricks experimental dev app deploy' after setup").
+		Description("Run 'databricks apps deploy' after setup").
 		Value(&config.Deploy).
 		WithTheme(theme).
 		Run()
