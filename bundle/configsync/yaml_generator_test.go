@@ -20,10 +20,8 @@ import (
 func TestGenerateYAMLFiles_SimpleFieldChange(t *testing.T) {
 	ctx := logdiag.InitContext(context.Background())
 
-	// Create a temporary directory for the bundle
 	tmpDir := t.TempDir()
 
-	// Create a simple databricks.yml with a job
 	yamlContent := `resources:
   jobs:
     test_job:
@@ -39,14 +37,11 @@ func TestGenerateYAMLFiles_SimpleFieldChange(t *testing.T) {
 	err := os.WriteFile(yamlPath, []byte(yamlContent), 0o644)
 	require.NoError(t, err)
 
-	// Load the bundle (pass directory, not file)
 	b, err := bundle.Load(ctx, tmpDir)
 	require.NoError(t, err)
 
-	// Initialize the bundle config
 	mutator.DefaultMutators(ctx, b)
 
-	// Create changes map
 	changes := map[string]deployplan.Changes{
 		"resources.jobs.test_job": {
 			"timeout_seconds": &deployplan.ChangeDesc{
@@ -70,10 +65,8 @@ func TestGenerateYAMLFiles_SimpleFieldChange(t *testing.T) {
 func TestGenerateYAMLFiles_NestedFieldChange(t *testing.T) {
 	ctx := logdiag.InitContext(context.Background())
 
-	// Create a temporary directory for the bundle
 	tmpDir := t.TempDir()
 
-	// Create a simple databricks.yml with a job
 	yamlContent := `resources:
   jobs:
     test_job:
@@ -89,14 +82,11 @@ func TestGenerateYAMLFiles_NestedFieldChange(t *testing.T) {
 	err := os.WriteFile(yamlPath, []byte(yamlContent), 0o644)
 	require.NoError(t, err)
 
-	// Load the bundle (pass directory, not file)
 	b, err := bundle.Load(ctx, tmpDir)
 	require.NoError(t, err)
 
-	// Initialize the bundle config
 	mutator.DefaultMutators(ctx, b)
 
-	// Create changes map for nested field
 	changes := map[string]deployplan.Changes{
 		"resources.jobs.test_job": {
 			"tasks[0].timeout_seconds": &deployplan.ChangeDesc{
@@ -107,20 +97,16 @@ func TestGenerateYAMLFiles_NestedFieldChange(t *testing.T) {
 		},
 	}
 
-	// Generate YAML files
 	fileChanges, err := GenerateYAMLFiles(ctx, b, changes)
 	require.NoError(t, err)
 	require.Len(t, fileChanges, 1)
 
-	// Verify modified content contains the new value
 	assert.Contains(t, fileChanges[0].ModifiedContent, "timeout_seconds: 3600")
 
-	// Parse YAML to verify structure
 	var result map[string]any
 	err = yaml.Unmarshal([]byte(fileChanges[0].ModifiedContent), &result)
 	require.NoError(t, err)
 
-	// Navigate to verify the change
 	resources := result["resources"].(map[string]any)
 	jobs := resources["jobs"].(map[string]any)
 	testJob := jobs["test_job"].(map[string]any)
@@ -133,10 +119,8 @@ func TestGenerateYAMLFiles_NestedFieldChange(t *testing.T) {
 func TestGenerateYAMLFiles_ArrayKeyValueAccess(t *testing.T) {
 	ctx := logdiag.InitContext(context.Background())
 
-	// Create a temporary directory for the bundle
 	tmpDir := t.TempDir()
 
-	// Create a simple databricks.yml with a job with multiple tasks
 	yamlContent := `resources:
   jobs:
     test_job:
@@ -156,14 +140,11 @@ func TestGenerateYAMLFiles_ArrayKeyValueAccess(t *testing.T) {
 	err := os.WriteFile(yamlPath, []byte(yamlContent), 0o644)
 	require.NoError(t, err)
 
-	// Load the bundle (pass directory, not file)
 	b, err := bundle.Load(ctx, tmpDir)
 	require.NoError(t, err)
 
-	// Initialize the bundle config
 	mutator.DefaultMutators(ctx, b)
 
-	// Create changes map using key-value syntax
 	changes := map[string]deployplan.Changes{
 		"resources.jobs.test_job": {
 			"tasks[task_key='main_task'].timeout_seconds": &deployplan.ChangeDesc{
@@ -174,12 +155,10 @@ func TestGenerateYAMLFiles_ArrayKeyValueAccess(t *testing.T) {
 		},
 	}
 
-	// Generate YAML files
 	fileChanges, err := GenerateYAMLFiles(ctx, b, changes)
 	require.NoError(t, err)
 	require.Len(t, fileChanges, 1)
 
-	// Parse YAML to verify the correct task was updated
 	var result map[string]any
 	err = yaml.Unmarshal([]byte(fileChanges[0].ModifiedContent), &result)
 	require.NoError(t, err)
@@ -189,12 +168,10 @@ func TestGenerateYAMLFiles_ArrayKeyValueAccess(t *testing.T) {
 	testJob := jobs["test_job"].(map[string]any)
 	tasks := testJob["tasks"].([]any)
 
-	// Verify setup_task (index 0) is unchanged
 	task0 := tasks[0].(map[string]any)
 	assert.Equal(t, "setup_task", task0["task_key"])
 	assert.Equal(t, 600, task0["timeout_seconds"])
 
-	// Verify main_task (index 1) is updated
 	task1 := tasks[1].(map[string]any)
 	assert.Equal(t, "main_task", task1["task_key"])
 	assert.Equal(t, 3600, task1["timeout_seconds"])
@@ -203,10 +180,8 @@ func TestGenerateYAMLFiles_ArrayKeyValueAccess(t *testing.T) {
 func TestGenerateYAMLFiles_MultipleResourcesSameFile(t *testing.T) {
 	ctx := logdiag.InitContext(context.Background())
 
-	// Create a temporary directory for the bundle
 	tmpDir := t.TempDir()
 
-	// Create databricks.yml with multiple jobs
 	yamlContent := `resources:
   jobs:
     job1:
@@ -221,14 +196,11 @@ func TestGenerateYAMLFiles_MultipleResourcesSameFile(t *testing.T) {
 	err := os.WriteFile(yamlPath, []byte(yamlContent), 0o644)
 	require.NoError(t, err)
 
-	// Load the bundle (pass directory, not file)
 	b, err := bundle.Load(ctx, tmpDir)
 	require.NoError(t, err)
 
-	// Initialize the bundle config
 	mutator.DefaultMutators(ctx, b)
 
-	// Create changes for both jobs
 	changes := map[string]deployplan.Changes{
 		"resources.jobs.job1": {
 			"timeout_seconds": &deployplan.ChangeDesc{
@@ -246,19 +218,15 @@ func TestGenerateYAMLFiles_MultipleResourcesSameFile(t *testing.T) {
 		},
 	}
 
-	// Generate YAML files
 	fileChanges, err := GenerateYAMLFiles(ctx, b, changes)
 	require.NoError(t, err)
 
-	// Should only have one FileChange since both resources are in the same file
 	require.Len(t, fileChanges, 1)
 	assert.Equal(t, yamlPath, fileChanges[0].Path)
 
-	// Verify both changes are applied
 	assert.Contains(t, fileChanges[0].ModifiedContent, "job1")
 	assert.Contains(t, fileChanges[0].ModifiedContent, "job2")
 
-	// Parse and verify both jobs are updated
 	var result map[string]any
 	err = yaml.Unmarshal([]byte(fileChanges[0].ModifiedContent), &result)
 	require.NoError(t, err)
@@ -276,10 +244,8 @@ func TestGenerateYAMLFiles_MultipleResourcesSameFile(t *testing.T) {
 func TestGenerateYAMLFiles_ResourceNotFound(t *testing.T) {
 	ctx := logdiag.InitContext(context.Background())
 
-	// Create a temporary directory for the bundle
 	tmpDir := t.TempDir()
 
-	// Create a simple databricks.yml
 	yamlContent := `resources:
   jobs:
     existing_job:
@@ -290,14 +256,11 @@ func TestGenerateYAMLFiles_ResourceNotFound(t *testing.T) {
 	err := os.WriteFile(yamlPath, []byte(yamlContent), 0o644)
 	require.NoError(t, err)
 
-	// Load the bundle (pass directory, not file)
 	b, err := bundle.Load(ctx, tmpDir)
 	require.NoError(t, err)
 
-	// Initialize the bundle config
 	mutator.DefaultMutators(ctx, b)
 
-	// Create changes for a non-existent resource
 	changes := map[string]deployplan.Changes{
 		"resources.jobs.nonexistent_job": {
 			"timeout_seconds": &deployplan.ChangeDesc{
@@ -307,21 +270,17 @@ func TestGenerateYAMLFiles_ResourceNotFound(t *testing.T) {
 		},
 	}
 
-	// Generate YAML files - should not error, just skip the missing resource
 	fileChanges, err := GenerateYAMLFiles(ctx, b, changes)
 	require.NoError(t, err)
 
-	// Should return empty list since the resource was not found
 	assert.Len(t, fileChanges, 0)
 }
 
 func TestGenerateYAMLFiles_InvalidFieldPath(t *testing.T) {
 	ctx := logdiag.InitContext(context.Background())
 
-	// Create a temporary directory for the bundle
 	tmpDir := t.TempDir()
 
-	// Create a simple databricks.yml
 	yamlContent := `resources:
   jobs:
     test_job:
@@ -333,14 +292,11 @@ func TestGenerateYAMLFiles_InvalidFieldPath(t *testing.T) {
 	err := os.WriteFile(yamlPath, []byte(yamlContent), 0o644)
 	require.NoError(t, err)
 
-	// Load the bundle (pass directory, not file)
 	b, err := bundle.Load(ctx, tmpDir)
 	require.NoError(t, err)
 
-	// Initialize the bundle config
 	mutator.DefaultMutators(ctx, b)
 
-	// Create changes with invalid field path syntax
 	changes := map[string]deployplan.Changes{
 		"resources.jobs.test_job": {
 			"invalid[[[path": &deployplan.ChangeDesc{
@@ -350,16 +306,12 @@ func TestGenerateYAMLFiles_InvalidFieldPath(t *testing.T) {
 		},
 	}
 
-	// Generate YAML files - should handle gracefully
 	fileChanges, err := GenerateYAMLFiles(ctx, b, changes)
 	require.NoError(t, err)
 
-	// Should still return a FileChange, but the invalid field should be skipped
-	// The timeout_seconds value should remain unchanged
 	if len(fileChanges) > 0 {
 		assert.Contains(t, fileChanges[0].ModifiedContent, "timeout_seconds: 3600")
 
-		// Parse and verify structure is maintained
 		var result map[string]any
 		err = yaml.Unmarshal([]byte(fileChanges[0].ModifiedContent), &result)
 		require.NoError(t, err)
@@ -374,10 +326,8 @@ func TestGenerateYAMLFiles_InvalidFieldPath(t *testing.T) {
 func TestGenerateYAMLFiles_Include(t *testing.T) {
 	ctx := logdiag.InitContext(context.Background())
 
-	// Create a temporary directory for the bundle
 	tmpDir := t.TempDir()
 
-	// Create main databricks.yml with bundle config and includes
 	mainYAML := `bundle:
   name: test-bundle
 
@@ -389,12 +339,10 @@ include:
 	err := os.WriteFile(mainPath, []byte(mainYAML), 0o644)
 	require.NoError(t, err)
 
-	// Create targets subdirectory
 	targetsDir := filepath.Join(tmpDir, "targets")
 	err = os.MkdirAll(targetsDir, 0o755)
 	require.NoError(t, err)
 
-	// Create included file with dev_job resource
 	devYAML := `resources:
   jobs:
     dev_job:
@@ -406,14 +354,11 @@ include:
 	err = os.WriteFile(devPath, []byte(devYAML), 0o644)
 	require.NoError(t, err)
 
-	// Load the bundle
 	b, err := bundle.Load(ctx, tmpDir)
 	require.NoError(t, err)
 
-	// Process includes and other default mutators
 	mutator.DefaultMutators(ctx, b)
 
-	// Create changes for the dev_job (which was defined in included file)
 	changes := map[string]deployplan.Changes{
 		"resources.jobs.dev_job": {
 			"timeout_seconds": &deployplan.ChangeDesc{
@@ -424,12 +369,10 @@ include:
 		},
 	}
 
-	// Generate YAML files
 	fileChanges, err := GenerateYAMLFiles(ctx, b, changes)
 	require.NoError(t, err)
 	require.Len(t, fileChanges, 1)
 
-	// Verify changes are written to targets/dev.yml (where resource was defined)
 	assert.Equal(t, devPath, fileChanges[0].Path)
 	assert.Contains(t, fileChanges[0].OriginalContent, "timeout_seconds: 1800")
 	assert.Contains(t, fileChanges[0].ModifiedContent, "timeout_seconds: 3600")
