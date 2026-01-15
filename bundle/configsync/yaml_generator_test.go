@@ -714,3 +714,32 @@ func TestApplyChangesWithStructValues(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, int64(3), retriesVal.MustInt())
 }
+
+func TestApplyChanges_CreatesIntermediateNodes(t *testing.T) {
+	ctx := context.Background()
+
+	// Resource without tags field
+	resource := dyn.V(map[string]dyn.Value{
+		"name": dyn.V("test_job"),
+	})
+
+	// Change that requires creating tags map
+	changes := deployplan.Changes{
+		"tags['test']": &deployplan.ChangeDesc{
+			Remote: "val",
+		},
+	}
+
+	result, err := applyChanges(ctx, resource, changes)
+	require.NoError(t, err)
+
+	// Verify tags map was created
+	tags, err := dyn.GetByPath(result, dyn.Path{dyn.Key("tags")})
+	require.NoError(t, err)
+	assert.Equal(t, dyn.KindMap, tags.Kind())
+
+	// Verify test key was set
+	testVal, err := dyn.GetByPath(result, dyn.Path{dyn.Key("tags"), dyn.Key("test")})
+	require.NoError(t, err)
+	assert.Equal(t, "val", testVal.MustString())
+}

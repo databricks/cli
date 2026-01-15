@@ -144,10 +144,15 @@ func applyChanges(ctx context.Context, resource dyn.Value, changes deployplan.Ch
 			continue
 		}
 
-		// Convert remote value to dyn.Value, handling custom types like enums
 		remoteValue, err := convert.FromTyped(changeDesc.Remote, dyn.NilValue)
 		if err != nil {
 			log.Warnf(ctx, "Failed to convert remote value at path %s: %v", fieldPath, err)
+			continue
+		}
+
+		result, err = ensurePathExists(result, dynPath)
+		if err != nil {
+			log.Warnf(ctx, "Failed to ensure path exists for field %s: %v", fieldPath, err)
 			continue
 		}
 
@@ -268,6 +273,13 @@ func GenerateYAMLFiles(ctx context.Context, b *bundle.Bundle, changes map[string
 			modifiedResource, err := applyChanges(ctx, resource, item.changes)
 			if err != nil {
 				log.Warnf(ctx, "Failed to apply changes to resource %s: %v", item.resourceKey, err)
+				continue
+			}
+
+			// Ensure all intermediate nodes exist before setting
+			fileValue, err = ensurePathExists(fileValue, resourcePath)
+			if err != nil {
+				log.Warnf(ctx, "Failed to ensure path exists for resource %s: %v", item.resourceKey, err)
 				continue
 			}
 
