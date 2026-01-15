@@ -1,0 +1,25 @@
+{
+  "method": "DELETE",
+  "path": "/api/2.0/pipelines/[NEW_PIPELINE_ID]"
+}
+{
+  "method": "POST",
+  "path": "/api/2.0/pipelines",
+  "body": {
+    "channel": "CURRENT",
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-recreate-[UNIQUE_NAME]/default/state/metadata.json"
+    },
+    "edition": "ADVANCED",
+    "libraries": [
+      {
+        "notebook": {
+          "path": "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-recreate-[UNIQUE_NAME]/default/files/nb"
+        }
+      }
+    ],
+    "name": "test-pipeline-[UNIQUE_NAME]",
+    "storage": "/Shared/new_storage"
+  }
+}

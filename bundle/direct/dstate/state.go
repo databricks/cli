@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 
@@ -175,6 +176,12 @@ func (db *DeploymentState) unlockedSave() error {
 	data, err := json.MarshalIndent(db.Data, "", " ")
 	if err != nil {
 		return err
+	}
+
+	// Create parent directories if they don't exist
+	dir := filepath.Dir(db.Path)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return fmt.Errorf("failed to create directory %#v: %w", dir, err)
 	}
 
 	err = os.WriteFile(db.Path, data, 0o600)
