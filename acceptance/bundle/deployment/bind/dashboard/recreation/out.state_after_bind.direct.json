@@ -9,10 +9,10 @@
    "state": {
     "display_name": "test dashboard [UNIQUE_NAME]",
     "embed_credentials": true,
-    "etag": "[NUMID]",
+    "etag": [ETAG],
     "parent_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/resources",
     "published": true,
-    "serialized_dashboard": "{\"pages\":[{\"name\":\"02724bf2\",\"displayName\":\"Page One\"}]}\n",
+    "serialized_dashboard": "{\"pages\":[{\"displayName\":\"Page One\",\"name\":\"02724bf2\"}]}",
     "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
    }
   }

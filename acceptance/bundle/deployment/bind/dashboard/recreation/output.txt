@@ -5,6 +5,7 @@ Successfully bound dashboard with an id '[DASHBOARD_ID]'
 Run 'bundle deploy' to deploy changes to your workspace
 
 >>> print_state.py
+[ETAG]
 
 >>> [CLI] bundle plan
 recreate dashboards.dashboard1
