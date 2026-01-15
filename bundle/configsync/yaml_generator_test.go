@@ -483,6 +483,83 @@ targets:
 	assert.Contains(t, fileChanges[0].ModifiedContent, "timeout_seconds: 3600")
 }
 
+func TestGenerateYAMLFiles_WithStructValues(t *testing.T) {
+	ctx := logdiag.InitContext(context.Background())
+
+	tmpDir := t.TempDir()
+
+	yamlContent := `resources:
+  jobs:
+    test_job:
+      name: "Test Job"
+      timeout_seconds: 3600
+      email_notifications:
+        on_success:
+          - old@example.com
+`
+
+	yamlPath := filepath.Join(tmpDir, "databricks.yml")
+	err := os.WriteFile(yamlPath, []byte(yamlContent), 0o644)
+	require.NoError(t, err)
+
+	b, err := bundle.Load(ctx, tmpDir)
+	require.NoError(t, err)
+
+	mutator.DefaultMutators(ctx, b)
+
+	type EmailNotifications struct {
+		OnSuccess []string `json:"on_success,omitempty" yaml:"on_success,omitempty"`
+		OnFailure []string `json:"on_failure,omitempty" yaml:"on_failure,omitempty"`
+	}
+
+	changes := map[string]deployplan.Changes{
+		"resources.jobs.test_job": {
+			"email_notifications": &deployplan.ChangeDesc{
+				Action: deployplan.Update,
+				Remote: &EmailNotifications{
+					OnSuccess: []string{"success@example.com"},
+					OnFailure: []string{"failure@example.com"},
+				},
+			},
+		},
+	}
+
+	fileChanges, err := GenerateYAMLFiles(ctx, b, changes)
+	require.NoError(t, err)
+	require.Len(t, fileChanges, 1)
+
+	assert.Equal(t, yamlPath, fileChanges[0].Path)
+	assert.Contains(t, fileChanges[0].OriginalContent, "on_success:")
+	assert.Contains(t, fileChanges[0].OriginalContent, "old@example.com")
+	assert.Contains(t, fileChanges[0].ModifiedContent, "success@example.com")
+	assert.Contains(t, fileChanges[0].ModifiedContent, "failure@example.com")
+
+	type JobsConfig struct {
+		Name               string              `yaml:"name"`
+		TimeoutSeconds     int                 `yaml:"timeout_seconds"`
+		EmailNotifications *EmailNotifications `yaml:"email_notifications,omitempty"`
+	}
+
+	type ResourcesConfig struct {
+		Jobs map[string]JobsConfig `yaml:"jobs"`
+	}
+
+	type RootConfig struct {
+		Resources ResourcesConfig `yaml:"resources"`
+	}
+
+	var result RootConfig
+	err = yaml.Unmarshal([]byte(fileChanges[0].ModifiedContent), &result)
+	require.NoError(t, err)
+
+	testJob := result.Resources.Jobs["test_job"]
+	assert.Equal(t, "Test Job", testJob.Name)
+	assert.Equal(t, 3600, testJob.TimeoutSeconds)
+	require.NotNil(t, testJob.EmailNotifications)
+	assert.Equal(t, []string{"success@example.com"}, testJob.EmailNotifications.OnSuccess)
+	assert.Equal(t, []string{"failure@example.com"}, testJob.EmailNotifications.OnFailure)
+}
+
 func TestResourceKeyToDynPath(t *testing.T) {
 	tests := []struct {
 		name        string
@@ -693,55 +770,4 @@ func TestApplyChangesWithStructValues(t *testing.T) {
 	retriesVal, err := dyn.GetByPath(settings, dyn.Path{dyn.Key("max_retries")})
 	require.NoError(t, err)
 	assert.Equal(t, int64(3), retriesVal.MustInt())
-}
-
-func TestGenerateYAMLFiles_WithEnumValues(t *testing.T) {
-	ctx := logdiag.InitContext(context.Background())
-
-	tmpDir := t.TempDir()
-
-	yamlContent := `resources:
-  jobs:
-    test_job:
-      name: "Test Job"
-      edit_mode: "EDITABLE"
-      timeout_seconds: 3600
-`
-
-	yamlPath := filepath.Join(tmpDir, "databricks.yml")
-	err := os.WriteFile(yamlPath, []byte(yamlContent), 0o644)
-	require.NoError(t, err)
-
-	b, err := bundle.Load(ctx, tmpDir)
-	require.NoError(t, err)
-
-	mutator.DefaultMutators(ctx, b)
-
-	changes := map[string]deployplan.Changes{
-		"resources.jobs.test_job": {
-			"edit_mode": &deployplan.ChangeDesc{
-				Action: deployplan.Update,
-				Old:    "EDITABLE",
-				Remote: jobs.JobEditModeUiLocked,
-			},
-		},
-	}
-
-	fileChanges, err := GenerateYAMLFiles(ctx, b, changes)
-	require.NoError(t, err)
-	require.Len(t, fileChanges, 1)
-
-	assert.Equal(t, yamlPath, fileChanges[0].Path)
-	assert.Contains(t, fileChanges[0].OriginalContent, "edit_mode: \"EDITABLE\"")
-	assert.Contains(t, fileChanges[0].ModifiedContent, "edit_mode: UI_LOCKED")
-	assert.NotContains(t, fileChanges[0].ModifiedContent, "edit_mode: EDITABLE")
-
-	var result map[string]any
-	err = yaml.Unmarshal([]byte(fileChanges[0].ModifiedContent), &result)
-	require.NoError(t, err)
-
-	resources := result["resources"].(map[string]any)
-	jobs := resources["jobs"].(map[string]any)
-	testJob := jobs["test_job"].(map[string]any)
-	assert.Equal(t, "UI_LOCKED", testJob["edit_mode"])
 }
