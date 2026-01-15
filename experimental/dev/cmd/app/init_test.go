@@ -3,6 +3,7 @@ package app
 import (
 	"testing"
 
+	"github.com/databricks/cli/experimental/dev/lib/prompt"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -243,7 +244,7 @@ func TestParseDeployAndRunFlags(t *testing.T) {
 		deploy      bool
 		run         string
 		wantDeploy  bool
-		wantRunMode RunMode
+		wantRunMode prompt.RunMode
 		wantErr     bool
 	}{
 		{
@@ -251,7 +252,7 @@ func TestParseDeployAndRunFlags(t *testing.T) {
 			deploy:      true,
 			run:         "none",
 			wantDeploy:  true,
-			wantRunMode: RunModeNone,
+			wantRunMode: prompt.RunModeNone,
 			wantErr:     false,
 		},
 		{
@@ -259,7 +260,7 @@ func TestParseDeployAndRunFlags(t *testing.T) {
 			deploy:      true,
 			run:         "dev",
 			wantDeploy:  true,
-			wantRunMode: RunModeDev,
+			wantRunMode: prompt.RunModeDev,
 			wantErr:     false,
 		},
 		{
@@ -267,7 +268,7 @@ func TestParseDeployAndRunFlags(t *testing.T) {
 			deploy:      false,
 			run:         "dev-remote",
 			wantDeploy:  false,
-			wantRunMode: RunModeDevRemote,
+			wantRunMode: prompt.RunModeDevRemote,
 			wantErr:     false,
 		},
 		{
@@ -275,7 +276,7 @@ func TestParseDeployAndRunFlags(t *testing.T) {
 			deploy:      false,
 			run:         "",
 			wantDeploy:  false,
-			wantRunMode: RunModeNone,
+			wantRunMode: prompt.RunModeNone,
 			wantErr:     false,
 		},
 		{
@@ -283,7 +284,7 @@ func TestParseDeployAndRunFlags(t *testing.T) {
 			deploy:      true,
 			run:         "invalid",
 			wantDeploy:  false,
-			wantRunMode: RunModeNone,
+			wantRunMode: prompt.RunModeNone,
 			wantErr:     true,
 		},
 	}

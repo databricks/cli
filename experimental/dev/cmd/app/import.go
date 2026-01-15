@@ -10,6 +10,7 @@ import (
 
 	"github.com/databricks/cli/bundle/generate"
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/experimental/dev/lib/prompt"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go/service/apps"
@@ -50,7 +51,7 @@ Examples:
 
 			// Prompt for app name if not provided
 			if appName == "" {
-				selected, err := PromptForAppSelection(ctx, "Select an app to import")
+				selected, err := prompt.PromptForAppSelection(ctx, "Select an app to import")
 				if err != nil {
 					return err
 				}
@@ -83,7 +84,7 @@ func runImport(ctx context.Context, opts importOptions) error {
 
 	// Step 1: Fetch the app
 	var app *apps.App
-	err := RunWithSpinnerCtx(ctx, fmt.Sprintf("Fetching app '%s'...", opts.appName), func() error {
+	err := prompt.RunWithSpinnerCtx(ctx, fmt.Sprintf("Fetching app '%s'...", opts.appName), func() error {
 		var fetchErr error
 		app, fetchErr = w.Apps.Get(ctx, apps.GetAppRequest{Name: opts.appName})
 		return fetchErr
@@ -112,7 +113,7 @@ func runImport(ctx context.Context, opts importOptions) error {
 	downloader := generate.NewDownloader(w, destDir, destDir)
 	sourceCodePath := app.DefaultSourceCodePath
 
-	err = RunWithSpinnerCtx(ctx, "Downloading files...", func() error {
+	err = prompt.RunWithSpinnerCtx(ctx, "Downloading files...", func() error {
 		if markErr := downloader.MarkDirectoryForDownload(ctx, &sourceCodePath); markErr != nil {
 			return fmt.Errorf("failed to list files: %w", markErr)
 		}
@@ -149,7 +150,7 @@ func runImport(ctx context.Context, opts importOptions) error {
 	}
 
 	// Show success message with next steps
-	PrintSuccess(opts.appName, absDestDir, fileCount, true)
+	prompt.PrintSuccess(opts.appName, absDestDir, fileCount, true)
 
 	return nil
 }
@@ -160,7 +161,7 @@ func runNpmInstallInDir(ctx context.Context, dir string) error {
 		return errors.New("npm not found: please install Node.js")
 	}
 
-	return RunWithSpinnerCtx(ctx, "Installing dependencies...", func() error {
+	return prompt.RunWithSpinnerCtx(ctx, "Installing dependencies...", func() error {
 		cmd := exec.CommandContext(ctx, "npm", "install")
 		cmd.Dir = dir
 		cmd.Stdout = nil

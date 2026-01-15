@@ -1,4 +1,4 @@
-package app
+package vite
 
 import (
 	"context"
@@ -83,7 +83,7 @@ func TestValidateFilePath(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := validateFilePath(tt.path)
+			err := ValidateFilePath(tt.path)
 			if tt.expectError {
 				require.Error(t, err)
 				assert.Contains(t, err.Error(), tt.errorMsg)
@@ -94,21 +94,21 @@ func TestValidateFilePath(t *testing.T) {
 	}
 }
 
-func TestViteBridgeMessageSerialization(t *testing.T) {
+func TestBridgeMessageSerialization(t *testing.T) {
 	tests := []struct {
 		name string
-		msg  ViteBridgeMessage
+		msg  BridgeMessage
 	}{
 		{
 			name: "tunnel ready message",
-			msg: ViteBridgeMessage{
+			msg: BridgeMessage{
 				Type:     "tunnel:ready",
 				TunnelID: "test-tunnel-123",
 			},
 		},
 		{
 			name: "fetch request message",
-			msg: ViteBridgeMessage{
+			msg: BridgeMessage{
 				Type:      "fetch",
 				Path:      "/src/components/ui/card.tsx",
 				Method:    "GET",
@@ -117,7 +117,7 @@ func TestViteBridgeMessageSerialization(t *testing.T) {
 		},
 		{
 			name: "connection request message",
-			msg: ViteBridgeMessage{
+			msg: BridgeMessage{
 				Type:      "connection:request",
 				Viewer:    "user@example.com",
 				RequestID: "req-456",
@@ -125,7 +125,7 @@ func TestViteBridgeMessageSerialization(t *testing.T) {
 		},
 		{
 			name: "fetch response with headers",
-			msg: ViteBridgeMessage{
+			msg: BridgeMessage{
 				Type:   "fetch:response:meta",
 				Status: 200,
 				Headers: map[string]any{
@@ -141,7 +141,7 @@ func TestViteBridgeMessageSerialization(t *testing.T) {
 			data, err := json.Marshal(tt.msg)
 			require.NoError(t, err)
 
-			var decoded ViteBridgeMessage
+			var decoded BridgeMessage
 			err = json.Unmarshal(data, &decoded)
 			require.NoError(t, err)
 
@@ -154,21 +154,21 @@ func TestViteBridgeMessageSerialization(t *testing.T) {
 	}
 }
 
-func TestViteBridgeHandleMessage(t *testing.T) {
+func TestBridgeHandleMessage(t *testing.T) {
 	ctx := cmdio.MockDiscard(context.Background())
 
 	w := &databricks.WorkspaceClient{}
 
-	vb := NewViteBridge(ctx, w, "test-app", 5173)
+	vb := NewBridge(ctx, w, "test-app", 5173)
 
 	tests := []struct {
 		name        string
-		msg         *ViteBridgeMessage
+		msg         *BridgeMessage
 		expectError bool
 	}{
 		{
 			name: "tunnel ready message",
-			msg: &ViteBridgeMessage{
+			msg: &BridgeMessage{
 				Type:     "tunnel:ready",
 				TunnelID: "tunnel-123",
 			},
@@ -176,7 +176,7 @@ func TestViteBridgeHandleMessage(t *testing.T) {
 		},
 		{
 			name: "unknown message type",
-			msg: &ViteBridgeMessage{
+			msg: &BridgeMessage{
 				Type: "unknown:type",
 			},
 			expectError: false,
@@ -199,7 +199,7 @@ func TestViteBridgeHandleMessage(t *testing.T) {
 	}
 }
 
-func TestViteBridgeHandleFileReadRequest(t *testing.T) {
+func TestBridgeHandleFileReadRequest(t *testing.T) {
 	// Create a temporary directory structure
 	tmpDir := t.TempDir()
 	oldWd, err := os.Getwd()
@@ -250,12 +250,12 @@ func TestViteBridgeHandleFileReadRequest(t *testing.T) {
 		defer resp.Body.Close()
 		defer conn.Close()
 
-		vb := NewViteBridge(ctx, w, "test-app", 5173)
+		vb := NewBridge(ctx, w, "test-app", 5173)
 		vb.tunnelConn = conn
 
 		go func() { _ = vb.tunnelWriter(ctx) }()
 
-		msg := &ViteBridgeMessage{
+		msg := &BridgeMessage{
 			Type:      "file:read",
 			Path:      "config/queries/test_query.sql",
 			RequestID: "req-123",
@@ -268,7 +268,7 @@ func TestViteBridgeHandleFileReadRequest(t *testing.T) {
 		time.Sleep(100 * time.Millisecond)
 
 		// Parse the response
-		var response ViteBridgeMessage
+		var response BridgeMessage
 		err = json.Unmarshal(lastMessage, &response)
 		require.NoError(t, err)
 
@@ -307,12 +307,12 @@ func TestViteBridgeHandleFileReadRequest(t *testing.T) {
 		defer resp.Body.Close()
 		defer conn.Close()
 
-		vb := NewViteBridge(ctx, w, "test-app", 5173)
+		vb := NewBridge(ctx, w, "test-app", 5173)
 		vb.tunnelConn = conn
 
 		go func() { _ = vb.tunnelWriter(ctx) }()
 
-		msg := &ViteBridgeMessage{
+		msg := &BridgeMessage{
 			Type:      "file:read",
 			Path:      "config/queries/nonexistent.sql",
 			RequestID: "req-456",
@@ -324,7 +324,7 @@ func TestViteBridgeHandleFileReadRequest(t *testing.T) {
 		// Give the message time to be sent
 		time.Sleep(100 * time.Millisecond)
 
-		var response ViteBridgeMessage
+		var response BridgeMessage
 		err = json.Unmarshal(lastMessage, &response)
 		require.NoError(t, err)
 
@@ -334,11 +334,11 @@ func TestViteBridgeHandleFileReadRequest(t *testing.T) {
 	})
 }
 
-func TestViteBridgeStop(t *testing.T) {
+func TestBridgeStop(t *testing.T) {
 	ctx := cmdio.MockDiscard(context.Background())
 	w := &databricks.WorkspaceClient{}
 
-	vb := NewViteBridge(ctx, w, "test-app", 5173)
+	vb := NewBridge(ctx, w, "test-app", 5173)
 
 	// Call Stop multiple times to ensure it's idempotent
 	vb.Stop()
@@ -354,12 +354,12 @@ func TestViteBridgeStop(t *testing.T) {
 	}
 }
 
-func TestNewViteBridge(t *testing.T) {
+func TestNewBridge(t *testing.T) {
 	ctx := context.Background()
 	w := &databricks.WorkspaceClient{}
 	appName := "test-app"
 
-	vb := NewViteBridge(ctx, w, appName, 5173)
+	vb := NewBridge(ctx, w, appName, 5173)
 
 	assert.NotNil(t, vb)
 	assert.Equal(t, appName, vb.appName)

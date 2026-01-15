@@ -1,4 +1,4 @@
-package app
+package prompt
 
 import (
 	"context"
@@ -13,6 +13,7 @@ import (
 	"github.com/briandowns/spinner"
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/databricks/cli/experimental/dev/lib/features"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go/listing"
@@ -24,7 +25,7 @@ import (
 const DefaultAppDescription = "A Databricks App powered by AppKit"
 
 // AppkitTheme returns a custom theme for appkit prompts.
-func appkitTheme() *huh.Theme {
+func AppkitTheme() *huh.Theme {
 	t := huh.ThemeBase()
 
 	// Databricks brand colors
@@ -93,8 +94,8 @@ func ValidateProjectName(s string) error {
 	return nil
 }
 
-// printHeader prints the AppKit header banner.
-func printHeader() {
+// PrintHeader prints the AppKit header banner.
+func PrintHeader() {
 	headerStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#BD2B26")).
 		Bold(true)
@@ -112,8 +113,8 @@ func printHeader() {
 // Used as the first step before resolving templates.
 // outputDir is used to check if the destination directory already exists.
 func PromptForProjectName(outputDir string) (string, error) {
-	printHeader()
-	theme := appkitTheme()
+	PrintHeader()
+	theme := AppkitTheme()
 
 	var name string
 	err := huh.NewInput().
@@ -147,8 +148,8 @@ func PromptForProjectName(outputDir string) (string, error) {
 
 // PromptForPluginDependencies prompts for dependencies required by detected plugins.
 // Returns a map of dependency ID to value.
-func PromptForPluginDependencies(ctx context.Context, deps []FeatureDependency) (map[string]string, error) {
-	theme := appkitTheme()
+func PromptForPluginDependencies(ctx context.Context, deps []features.FeatureDependency) (map[string]string, error) {
+	theme := AppkitTheme()
 	result := make(map[string]string)
 
 	for _, dep := range deps {
@@ -194,7 +195,7 @@ func PromptForPluginDependencies(ctx context.Context, deps []FeatureDependency) 
 
 // PromptForDeployAndRun prompts for post-creation deploy and run options.
 func PromptForDeployAndRun() (deploy bool, runMode RunMode, err error) {
-	theme := appkitTheme()
+	theme := AppkitTheme()
 
 	// Deploy after creation?
 	err = huh.NewConfirm().
@@ -235,9 +236,9 @@ func PromptForProjectConfig(ctx context.Context, preSelectedFeatures []string) (
 		Dependencies: make(map[string]string),
 		Features:     preSelectedFeatures,
 	}
-	theme := appkitTheme()
+	theme := AppkitTheme()
 
-	printHeader()
+	PrintHeader()
 
 	// Step 1: Project name
 	err := huh.NewInput().
@@ -253,9 +254,9 @@ func PromptForProjectConfig(ctx context.Context, preSelectedFeatures []string) (
 	}
 
 	// Step 2: Feature selection (skip if features already provided via flag)
-	if len(config.Features) == 0 && len(AvailableFeatures) > 0 {
-		options := make([]huh.Option[string], 0, len(AvailableFeatures))
-		for _, f := range AvailableFeatures {
+	if len(config.Features) == 0 && len(features.AvailableFeatures) > 0 {
+		options := make([]huh.Option[string], 0, len(features.AvailableFeatures))
+		for _, f := range features.AvailableFeatures {
 			label := f.Name + " - " + f.Description
 			options = append(options, huh.NewOption(label, f.ID))
 		}
@@ -273,7 +274,7 @@ func PromptForProjectConfig(ctx context.Context, preSelectedFeatures []string) (
 	}
 
 	// Step 3: Prompt for feature dependencies
-	deps := CollectDependencies(config.Features)
+	deps := features.CollectDependencies(config.Features)
 	for _, dep := range deps {
 		// Special handling for SQL warehouse - show picker instead of text input
 		if dep.ID == "sql_warehouse_id" {
@@ -388,7 +389,7 @@ func PromptForWarehouse(ctx context.Context) (string, error) {
 		return "", errors.New("no SQL warehouses found. Create one in your workspace first")
 	}
 
-	theme := appkitTheme()
+	theme := AppkitTheme()
 
 	// Build options with warehouse name and state
 	options := make([]huh.Option[string], 0, len(warehouses))
@@ -482,7 +483,7 @@ func PromptForAppSelection(ctx context.Context, title string) (string, error) {
 		return "", errors.New("no apps found. Create one first with 'databricks apps create <name>'")
 	}
 
-	theme := appkitTheme()
+	theme := AppkitTheme()
 
 	// Build options
 	options := make([]huh.Option[string], 0, len(existingApps))

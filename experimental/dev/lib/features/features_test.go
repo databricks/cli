@@ -1,4 +1,4 @@
-package app
+package features
 
 import (
 	"fmt"

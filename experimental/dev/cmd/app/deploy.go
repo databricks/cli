@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/bundle/run"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/experimental/dev/lib/validation"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
 	"github.com/spf13/cobra"
@@ -56,7 +57,7 @@ Examples:
 
 	cmd.Flags().StringP("target", "t", "", "Deployment target (e.g., dev, prod)")
 	cmd.Flags().BoolVar(&force, "force", false, "Force-override Git branch validation")
-	cmd.Flags().BoolVar(&skipValidation, "skip-validation", false, "Skip project validation (build, typecheck, tests)")
+	cmd.Flags().BoolVar(&skipValidation, "skip-validation", false, "Skip project validation (build, typecheck, lint)")
 	cmd.Flags().StringSlice("var", []string{}, `Set values for variables defined in bundle config. Example: --var="key=value"`)
 
 	return cmd
@@ -85,12 +86,14 @@ func runDeploy(cmd *cobra.Command, force, skipValidation bool) error {
 				return fmt.Errorf("validation error: %w", err)
 			}
 
-			// Log validation progress
-			cmdio.LogString(ctx, result.String())
-
 			if !result.Success {
+				// Show error details
+				if result.Details != nil {
+					cmdio.LogString(ctx, result.Details.Error())
+				}
 				return errors.New("validation failed - fix errors before deploying")
 			}
+			cmdio.LogString(ctx, "✅ "+result.Message)
 		} else {
 			log.Debugf(ctx, "No validator found for project type, skipping validation")
 		}
@@ -130,11 +133,11 @@ func runDeploy(cmd *cobra.Command, force, skipValidation bool) error {
 
 // getProjectValidator returns the appropriate validator based on project type.
 // Returns nil if no validator is applicable.
-func getProjectValidator(workDir string) Validation {
+func getProjectValidator(workDir string) validation.Validation {
 	// Check for Node.js project (package.json exists)
 	packageJSON := filepath.Join(workDir, "package.json")
 	if _, err := os.Stat(packageJSON); err == nil {
-		return &ValidationNodeJs{}
+		return &validation.ValidationNodeJs{}
 	}
 	return nil
 }

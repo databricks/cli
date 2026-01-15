@@ -13,6 +13,8 @@ import (
 
 	"github.com/charmbracelet/huh"
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/experimental/dev/lib/features"
+	"github.com/databricks/cli/experimental/dev/lib/prompt"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
@@ -32,7 +34,7 @@ func newInitCmd() *cobra.Command {
 		warehouseID  string
 		description  string
 		outputDir    string
-		features     []string
+		featuresFlag []string
 		deploy       bool
 		run          string
 	)
@@ -82,7 +84,7 @@ Environment variables:
 				warehouseID:  warehouseID,
 				description:  description,
 				outputDir:    outputDir,
-				features:     features,
+				features:     featuresFlag,
 				deploy:       deploy,
 				run:          run,
 			})
@@ -95,7 +97,7 @@ Environment variables:
 	cmd.Flags().StringVar(&warehouseID, "warehouse-id", "", "SQL warehouse ID")
 	cmd.Flags().StringVar(&description, "description", "", "App description")
 	cmd.Flags().StringVar(&outputDir, "output-dir", "", "Directory to write the project to")
-	cmd.Flags().StringSliceVar(&features, "features", nil, "Features to enable (comma-separated). Available: "+strings.Join(GetFeatureIDs(), ", "))
+	cmd.Flags().StringSliceVar(&featuresFlag, "features", nil, "Features to enable (comma-separated). Available: "+strings.Join(features.GetFeatureIDs(), ", "))
 	cmd.Flags().BoolVar(&deploy, "deploy", false, "Deploy the app after creation")
 	cmd.Flags().StringVar(&run, "run", "", "Run the app after creation (none, dev, dev-remote)")
 
@@ -143,34 +145,34 @@ type featureFragments struct {
 }
 
 // parseDeployAndRunFlags parses the deploy and run flag values into typed values.
-func parseDeployAndRunFlags(deploy bool, run string) (bool, RunMode, error) {
-	var runMode RunMode
+func parseDeployAndRunFlags(deploy bool, run string) (bool, prompt.RunMode, error) {
+	var runMode prompt.RunMode
 	switch run {
 	case "dev":
-		runMode = RunModeDev
+		runMode = prompt.RunModeDev
 	case "dev-remote":
-		runMode = RunModeDevRemote
+		runMode = prompt.RunModeDevRemote
 	case "", "none":
-		runMode = RunModeNone
+		runMode = prompt.RunModeNone
 	default:
-		return false, RunModeNone, fmt.Errorf("invalid --run value: %q (must be none, dev, or dev-remote)", run)
+		return false, prompt.RunModeNone, fmt.Errorf("invalid --run value: %q (must be none, dev, or dev-remote)", run)
 	}
 	return deploy, runMode, nil
 }
 
 // promptForFeaturesAndDeps prompts for features and their dependencies.
 // Used when the template uses the feature-fragment system.
-func promptForFeaturesAndDeps(ctx context.Context, preSelectedFeatures []string) (*CreateProjectConfig, error) {
-	config := &CreateProjectConfig{
+func promptForFeaturesAndDeps(ctx context.Context, preSelectedFeatures []string) (*prompt.CreateProjectConfig, error) {
+	config := &prompt.CreateProjectConfig{
 		Dependencies: make(map[string]string),
 		Features:     preSelectedFeatures,
 	}
-	theme := appkitTheme()
+	theme := prompt.AppkitTheme()
 
 	// Step 1: Feature selection (skip if features already provided via flag)
-	if len(config.Features) == 0 && len(AvailableFeatures) > 0 {
-		options := make([]huh.Option[string], 0, len(AvailableFeatures))
-		for _, f := range AvailableFeatures {
+	if len(config.Features) == 0 && len(features.AvailableFeatures) > 0 {
+		options := make([]huh.Option[string], 0, len(features.AvailableFeatures))
+		for _, f := range features.AvailableFeatures {
 			label := f.Name + " - " + f.Description
 			options = append(options, huh.NewOption(label, f.ID))
 		}
@@ -188,11 +190,11 @@ func promptForFeaturesAndDeps(ctx context.Context, preSelectedFeatures []string)
 	}
 
 	// Step 2: Prompt for feature dependencies
-	deps := CollectDependencies(config.Features)
+	deps := features.CollectDependencies(config.Features)
 	for _, dep := range deps {
 		// Special handling for SQL warehouse - show picker instead of text input
 		if dep.ID == "sql_warehouse_id" {
-			warehouseID, err := PromptForWarehouse(ctx)
+			warehouseID, err := prompt.PromptForWarehouse(ctx)
 			if err != nil {
 				return nil, err
 			}
@@ -228,10 +230,10 @@ func promptForFeaturesAndDeps(ctx context.Context, preSelectedFeatures []string)
 	}
 
 	// Step 3: Description
-	config.Description = DefaultAppDescription
+	config.Description = prompt.DefaultAppDescription
 	err := huh.NewInput().
 		Title("Description").
-		Placeholder(DefaultAppDescription).
+		Placeholder(prompt.DefaultAppDescription).
 		Value(&config.Description).
 		WithTheme(theme).
 		Run()
@@ -240,11 +242,11 @@ func promptForFeaturesAndDeps(ctx context.Context, preSelectedFeatures []string)
 	}
 
 	if config.Description == "" {
-		config.Description = DefaultAppDescription
+		config.Description = prompt.DefaultAppDescription
 	}
 
 	// Step 4: Deploy and run options
-	config.Deploy, config.RunMode, err = PromptForDeployAndRun()
+	config.Deploy, config.RunMode, err = prompt.PromptForDeployAndRun()
 	if err != nil {
 		return nil, err
 	}
@@ -257,7 +259,7 @@ func promptForFeaturesAndDeps(ctx context.Context, preSelectedFeatures []string)
 func loadFeatureFragments(templateDir string, featureIDs []string, vars templateVars) (*featureFragments, error) {
 	featuresDir := filepath.Join(templateDir, "features")
 
-	resourceFiles := CollectResourceFiles(featureIDs)
+	resourceFiles := features.CollectResourceFiles(featureIDs)
 	if len(resourceFiles) == 0 {
 		return &featureFragments{}, nil
 	}
@@ -401,7 +403,7 @@ func resolveTemplate(ctx context.Context, templatePath, branch string) (localPat
 
 	// Clone to temp dir with spinner
 	var tempDir string
-	err = RunWithSpinnerCtx(ctx, "Cloning template...", func() error {
+	err = prompt.RunWithSpinnerCtx(ctx, "Cloning template...", func() error {
 		var cloneErr error
 		tempDir, cloneErr = cloneRepo(ctx, repoURL, branch)
 		return cloneErr
@@ -423,7 +425,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	var selectedFeatures []string
 	var dependencies map[string]string
 	var shouldDeploy bool
-	var runMode RunMode
+	var runMode prompt.RunMode
 	isInteractive := cmdio.IsPromptSupported(ctx)
 
 	// Use features from flags if provided
@@ -453,7 +455,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 			return errors.New("--name is required in non-interactive mode")
 		}
 		// Prompt includes validation for name format AND directory existence
-		name, err := PromptForProjectName(opts.outputDir)
+		name, err := prompt.PromptForProjectName(opts.outputDir)
 		if err != nil {
 			return err
 		}
@@ -465,7 +467,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		}
 	} else {
 		// Non-interactive mode: validate name and directory existence
-		if err := ValidateProjectName(opts.name); err != nil {
+		if err := prompt.ValidateProjectName(opts.name); err != nil {
 			return err
 		}
 		if _, err := os.Stat(destDir); err == nil {
@@ -493,7 +495,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	}
 
 	// Step 3: Determine template type and gather configuration
-	usesFeatureFragments := HasFeaturesDirectory(templateDir)
+	usesFeatureFragments := features.HasFeaturesDirectory(templateDir)
 
 	if usesFeatureFragments {
 		// Feature-fragment template: prompt for features and their dependencies
@@ -521,7 +523,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 				"warehouse-id": opts.warehouseID,
 			}
 			if len(selectedFeatures) > 0 {
-				if err := ValidateFeatureDependencies(selectedFeatures, flagValues); err != nil {
+				if err := features.ValidateFeatureDependencies(selectedFeatures, flagValues); err != nil {
 					return err
 				}
 			}
@@ -537,12 +539,12 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		}
 
 		// Validate feature IDs
-		if err := ValidateFeatureIDs(selectedFeatures); err != nil {
+		if err := features.ValidateFeatureIDs(selectedFeatures); err != nil {
 			return err
 		}
 	} else {
 		// Pre-assembled template: detect plugins and prompt for their dependencies
-		detectedPlugins, err := DetectPluginsFromServer(templateDir)
+		detectedPlugins, err := features.DetectPluginsFromServer(templateDir)
 		if err != nil {
 			return fmt.Errorf("failed to detect plugins: %w", err)
 		}
@@ -550,16 +552,16 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		log.Debugf(ctx, "Detected plugins: %v", detectedPlugins)
 
 		// Map detected plugins to feature IDs for ApplyFeatures
-		selectedFeatures = MapPluginsToFeatures(detectedPlugins)
+		selectedFeatures = features.MapPluginsToFeatures(detectedPlugins)
 		log.Debugf(ctx, "Mapped to features: %v", selectedFeatures)
 
-		pluginDeps := GetPluginDependencies(detectedPlugins)
+		pluginDeps := features.GetPluginDependencies(detectedPlugins)
 
 		log.Debugf(ctx, "Plugin dependencies: %d", len(pluginDeps))
 
 		if isInteractive && len(pluginDeps) > 0 {
 			// Prompt for plugin dependencies
-			dependencies, err = PromptForPluginDependencies(ctx, pluginDeps)
+			dependencies, err = prompt.PromptForPluginDependencies(ctx, pluginDeps)
 			if err != nil {
 				return err
 			}
@@ -586,11 +588,11 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		// Prompt for description and post-creation actions
 		if isInteractive {
 			if opts.description == "" {
-				opts.description = DefaultAppDescription
+				opts.description = prompt.DefaultAppDescription
 			}
 			var deployVal bool
-			var runVal RunMode
-			deployVal, runVal, err = PromptForDeployAndRun()
+			var runVal prompt.RunMode
+			deployVal, runVal, err = prompt.PromptForDeployAndRun()
 			if err != nil {
 				return err
 			}
@@ -617,7 +619,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 
 	// Set description default
 	if opts.description == "" {
-		opts.description = DefaultAppDescription
+		opts.description = prompt.DefaultAppDescription
 	}
 
 	// Get workspace host and profile from context
@@ -629,7 +631,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	}
 
 	// Build plugin imports and usages from selected features
-	pluginImport, pluginUsage := BuildPluginStrings(selectedFeatures)
+	pluginImport, pluginUsage := features.BuildPluginStrings(selectedFeatures)
 
 	// Template variables (initial, without feature fragments)
 	vars := templateVars{
@@ -656,7 +658,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 
 	// Copy template with variable substitution
 	var fileCount int
-	runErr = RunWithSpinnerCtx(ctx, "Creating project...", func() error {
+	runErr = prompt.RunWithSpinnerCtx(ctx, "Creating project...", func() error {
 		var copyErr error
 		fileCount, copyErr = copyTemplate(templateDir, destDir, vars)
 		return copyErr
@@ -673,8 +675,8 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	}
 
 	// Apply features (adds selected features, removes unselected feature files)
-	runErr = RunWithSpinnerCtx(ctx, "Configuring features...", func() error {
-		return ApplyFeatures(absOutputDir, selectedFeatures)
+	runErr = prompt.RunWithSpinnerCtx(ctx, "Configuring features...", func() error {
+		return features.ApplyFeatures(absOutputDir, selectedFeatures)
 	})
 	if runErr != nil {
 		return runErr
@@ -693,11 +695,11 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	}
 
 	// Show next steps only if user didn't choose to deploy or run
-	showNextSteps := !shouldDeploy && runMode == RunModeNone
-	PrintSuccess(opts.name, absOutputDir, fileCount, showNextSteps)
+	showNextSteps := !shouldDeploy && runMode == prompt.RunModeNone
+	prompt.PrintSuccess(opts.name, absOutputDir, fileCount, showNextSteps)
 
 	// Execute post-creation actions (deploy and/or run)
-	if shouldDeploy || runMode != RunModeNone {
+	if shouldDeploy || runMode != prompt.RunModeNone {
 		// Change to project directory for subsequent commands
 		if err := os.Chdir(absOutputDir); err != nil {
 			return fmt.Errorf("failed to change to project directory: %w", err)
@@ -713,7 +715,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		}
 	}
 
-	if runMode != RunModeNone {
+	if runMode != prompt.RunModeNone {
 		cmdio.LogString(ctx, "")
 		if err := runPostCreateDev(ctx, runMode); err != nil {
 			return err
@@ -735,16 +737,16 @@ func runPostCreateDeploy(ctx context.Context) error {
 }
 
 // runPostCreateDev runs the dev or dev-remote command in the current directory.
-func runPostCreateDev(ctx context.Context, mode RunMode) error {
+func runPostCreateDev(ctx context.Context, mode prompt.RunMode) error {
 	switch mode {
-	case RunModeDev:
+	case prompt.RunModeDev:
 		cmdio.LogString(ctx, "Starting development server (npm run dev)...")
 		cmd := exec.CommandContext(ctx, "npm", "run", "dev")
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		cmd.Stdin = os.Stdin
 		return cmd.Run()
-	case RunModeDevRemote:
+	case prompt.RunModeDevRemote:
 		cmdio.LogString(ctx, "Starting remote development server...")
 		// Use os.Args[0] to get the path to the current executable
 		executable := os.Args[0]
@@ -766,7 +768,7 @@ func runNpmInstall(ctx context.Context, projectDir string) error {
 		return nil
 	}
 
-	return RunWithSpinnerCtx(ctx, "Installing dependencies...", func() error {
+	return prompt.RunWithSpinnerCtx(ctx, "Installing dependencies...", func() error {
 		cmd := exec.CommandContext(ctx, "npm", "install")
 		cmd.Dir = projectDir
 		cmd.Stdout = nil // Suppress output
@@ -782,7 +784,7 @@ func runNpmSetup(ctx context.Context, projectDir string) error {
 		return nil
 	}
 
-	return RunWithSpinnerCtx(ctx, "Running setup...", func() error {
+	return prompt.RunWithSpinnerCtx(ctx, "Running setup...", func() error {
 		cmd := exec.CommandContext(ctx, "npx", "appkit-setup", "--write")
 		cmd.Dir = projectDir
 		cmd.Stdout = nil // Suppress output

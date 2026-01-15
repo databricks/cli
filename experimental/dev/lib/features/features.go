@@ -1,4 +1,4 @@
-package app
+package features
 
 import (
 	"fmt"
@@ -174,17 +174,17 @@ func GetPluginDependencies(pluginNames []string) []FeatureDependency {
 // so that ApplyFeatures can properly retain feature-specific files.
 func MapPluginsToFeatures(pluginNames []string) []string {
 	seen := make(map[string]bool)
-	var features []string
+	var featureIDs []string
 
 	for _, plugin := range pluginNames {
 		feature, ok := featureByPluginImport[plugin]
 		if ok && !seen[feature.ID] {
 			seen[feature.ID] = true
-			features = append(features, feature.ID)
+			featureIDs = append(featureIDs, feature.ID)
 		}
 	}
 
-	return features
+	return featureIDs
 }
 
 // HasFeaturesDirectory checks if the template uses the feature-fragment system.

@@ -3,7 +3,6 @@ package app
 import (
 	"bytes"
 	"context"
-	_ "embed"
 	"errors"
 	"fmt"
 	"net"
@@ -13,18 +12,18 @@ import (
 	"os/signal"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"syscall"
 	"time"
 
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/experimental/dev/lib/prompt"
+	"github.com/databricks/cli/experimental/dev/lib/vite"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/spf13/cobra"
 )
-
-//go:embed vite-server.js
-var viteServerScript []byte
 
 const (
 	vitePort               = 5173
@@ -83,7 +82,7 @@ func detectAppNameFromBundle() string {
 func startViteDevServer(ctx context.Context, appURL string, port int) (*exec.Cmd, chan error, error) {
 	// Pass script through stdin, and pass arguments in order <appURL> <port (optional)>
 	viteCmd := exec.Command("node", "-", appURL, strconv.Itoa(port))
-	viteCmd.Stdin = bytes.NewReader(viteServerScript)
+	viteCmd.Stdin = bytes.NewReader(vite.ServerScript)
 	viteCmd.Stdout = os.Stdout
 	viteCmd.Stderr = os.Stderr
 
@@ -174,23 +173,26 @@ Examples:
 
 			if appName == "" {
 				// Fall back to interactive prompt
-				selected, err := PromptForAppSelection(ctx, "Select an app to connect to")
+				selected, err := prompt.PromptForAppSelection(ctx, "Select an app to connect to")
 				if err != nil {
 					return err
 				}
 				appName = selected
 			}
 
-			bridge := NewViteBridge(ctx, w, appName, port)
+			bridge := vite.NewBridge(ctx, w, appName, port)
 
 			// Validate app exists and get domain before starting Vite
 			var appDomain *url.URL
-			err := RunWithSpinnerCtx(ctx, "Connecting to app...", func() error {
+			err := prompt.RunWithSpinnerCtx(ctx, "Connecting to app...", func() error {
 				var domainErr error
 				appDomain, domainErr = bridge.GetAppDomain()
 				return domainErr
 			})
 			if err != nil {
+				if strings.Contains(err.Error(), "does not exist") || strings.Contains(err.Error(), "is deleted") {
+					return fmt.Errorf("application '%s' has not been deployed yet. Run `databricks experimental dev app deploy` to deploy and then try again", appName)
+				}
 				return fmt.Errorf("failed to get app domain: %w", err)
 			}
 
