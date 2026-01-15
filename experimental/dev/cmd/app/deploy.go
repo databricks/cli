@@ -124,7 +124,8 @@ func runDeploy(cmd *cobra.Command, force, skipValidation bool) error {
 	log.Infof(ctx, "Running app: %s", appKey)
 	if err := runApp(ctx, b, appKey); err != nil {
 		cmdio.LogString(ctx, "✔ Deployment succeeded, but failed to start app")
-		return fmt.Errorf("failed to run app: %w", err)
+		appName := b.Config.Resources.Apps[appKey].Name
+		return fmt.Errorf("failed to run app: %w. Run `databricks apps logs %s` to view logs", err, appName)
 	}
 
 	cmdio.LogString(ctx, "✔ Deployment complete!")
