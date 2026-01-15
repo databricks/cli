@@ -1,11 +1,4 @@
 {
-  "method": "POST",
-  "path": "/api/2.0/workspace/mkdirs",
-  "body": {
-    "path": "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-recreate/default/artifacts/.internal"
-  }
-}
-{
   "method": "DELETE",
   "path": "/api/2.0/pipelines/[NEW_PIPELINE_ID]"
 }
@@ -13,20 +6,20 @@
   "method": "POST",
   "path": "/api/2.0/pipelines",
   "body": {
-    "catalog": "main",
     "channel": "CURRENT",
     "deployment": {
       "kind": "BUNDLE",
-      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-recreate/default/state/metadata.json"
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-recreate-[UNIQUE_NAME]/default/state/metadata.json"
     },
     "edition": "ADVANCED",
     "libraries": [
       {
         "notebook": {
-          "path": "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-recreate/default/files/nb"
+          "path": "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-recreate-[UNIQUE_NAME]/default/files/nb"
         }
       }
     ],
-    "name": "test-pipeline"
+    "name": "test-pipeline-[UNIQUE_NAME]",
+    "storage": "/Shared/new_storage"
   }
 }

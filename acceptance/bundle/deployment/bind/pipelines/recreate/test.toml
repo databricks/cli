@@ -1,5 +1,6 @@
+Cloud = true
 RecordRequests = true
-Ignore = [".databricks"]
+Ignore = [".databricks", "pipeline.json"]
 
 # Pipelines is marked for update, not recreation on direct.
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform"]
