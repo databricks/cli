@@ -145,7 +145,7 @@ via --source APP|SYSTEM. Use --output-file to mirror the stream to a local file 
 			}
 
 			outputFormat := root.OutputType(cmd)
-			colorizeLogs := outputPath == "" && outputFormat == flags.OutputText && cmdio.IsTTY(cmd.OutOrStdout())
+			colorizeLogs := outputPath == "" && outputFormat == flags.OutputText && cmdio.SupportsColor(ctx, cmd.OutOrStdout())
 
 			sourceMap, err := buildSourceFilter(sourceFilters)
 			if err != nil {
