@@ -17,7 +17,7 @@ import { MyInterface, MyType } from '../../shared/types';
 ## Server Setup
 
 ```typescript
-import { createApp, server, analytics } from '@databricks/app-kit';
+import { createApp, server, analytics } from '@databricks/appkit';
 
 const app = await createApp({
   plugins: [
