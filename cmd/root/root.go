@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/internal/build"
+	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/log"
@@ -79,6 +80,7 @@ func New(ctx context.Context) *cobra.Command {
 		ctx = withCommandInUserAgent(ctx, cmd)
 		ctx = withCommandExecIdInUserAgent(ctx)
 		ctx = withUpstreamInUserAgent(ctx)
+		ctx = withAgentInUserAgent(ctx)
 		ctx = InjectTestPidToUserAgent(ctx)
 		cmd.SetContext(ctx)
 		return nil
@@ -128,6 +130,9 @@ Stack Trace:
 
 	// Detect if the CLI is running on DBR and store this on the context.
 	ctx = dbr.DetectRuntime(ctx)
+
+	// Detect if the CLI is running under an agent.
+	ctx = agent.Detect(ctx)
 
 	// Set a command execution ID value in the context
 	ctx = cmdctx.GenerateExecId(ctx)

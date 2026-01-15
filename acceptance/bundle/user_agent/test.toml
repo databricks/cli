@@ -4,3 +4,7 @@ IncludeRequestHeaders = ["User-Agent"]
 
 [Env]
 DATABRICKS_CACHE_ENABLED = 'false'
+# Clear agent env vars to prevent them from affecting test output
+CLAUDECODE = ''
+GEMINI_CLI = ''
+CURSOR_AGENT = ''
