@@ -84,3 +84,10 @@ func TestContext_RuntimeVersionWithMock(t *testing.T) {
 	assert.Equal(t, "15.4", RuntimeVersion(MockRuntime(ctx, Environment{IsDbr: true, Version: "15.4"})))
 	assert.Empty(t, RuntimeVersion(MockRuntime(ctx, Environment{})))
 }
+
+func TestContext_RunsOnServerless(t *testing.T) {
+	ctx := context.Background()
+	assert.True(t, RunsOnServerless(MockRuntime(ctx, Environment{IsDbr: true, Version: "client.1.13"})))
+	assert.False(t, RunsOnServerless(MockRuntime(ctx, Environment{IsDbr: true, Version: "15.4"})))
+	assert.False(t, RunsOnServerless(MockRuntime(ctx, Environment{})))
+}
