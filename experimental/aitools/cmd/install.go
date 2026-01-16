@@ -26,8 +26,8 @@ func newInstallCmd() *cobra.Command {
 }
 
 func runInstall(ctx context.Context) error {
-	// Check if we can show interactive prompts
-	// If not, try auto-installing for known agents
+	// Check for non-interactive mode with agent detection
+	// If running in an AI agent, install automatically without prompts
 	if !cmdio.IsPromptSupported(ctx) {
 		if os.Getenv("CLAUDECODE") != "" {
 			if err := agents.InstallClaude(); err != nil {
