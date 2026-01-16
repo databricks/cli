@@ -1,0 +1,9 @@
+# Deploy with a stale WAL (old serial) - WAL should be deleted and ignored.
+
+[[Server]]
+Pattern = "POST /api/2.2/jobs/reset"
+Response.Body = '{}'
+
+[[Server]]
+Pattern = "GET /api/2.2/jobs/get"
+Response.Body = '{"job_id": 1001, "settings": {"name": "test-job"}}'

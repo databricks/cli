@@ -1,0 +1,16 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/wal-test/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+=== Checking WAL file after deploy ===
+WAL file deleted after successful deploy (expected)
+=== State file content ===
+{
+  "lineage": "[UUID]",
+  "serial": [SERIAL],
+  "state_keys": [
+    "resources.jobs.test_job"
+  ]
+}

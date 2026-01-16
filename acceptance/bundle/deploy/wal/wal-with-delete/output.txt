@@ -1,0 +1,21 @@
+=== Creating state directory ===
+=== Creating state file (job exists) ===
+=== Creating WAL with delete entry (simulating crash during delete) ===
+=== WAL content ===
+{"lineage":"delete-test-lineage","serial": [SERIAL]}
+{"k":"resources.jobs.test_job","v":null}
+=== Updating config to remove job ===
+=== Deploy (should recover delete from WAL) ===
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/wal-delete-test/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+=== Final state (should have no jobs) ===
+{
+  "serial": [SERIAL],
+  "state_keys": []
+}
+=== WAL after successful deploy ===
+WAL deleted (expected)
