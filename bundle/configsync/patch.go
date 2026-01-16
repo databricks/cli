@@ -15,16 +15,13 @@ import (
 
 // applyChanges applies all field changes to a YAML
 func applyChanges(ctx context.Context, filePath string, fieldLocations fieldLocations, targetName string) (string, error) {
-	// Load file content
 	content, err := os.ReadFile(filePath)
 	if err != nil {
 		return "", fmt.Errorf("failed to read file %s: %w", filePath, err)
 	}
 
-	// Build yamlpatch operations
 	var operations yamlpatch.Patch
 	for jsonPointer, changeDesc := range fieldLocations {
-		// Use the remote value directly - yamlpatch handles serialization
 		yamlValue := changeDesc.Remote
 
 		jsonPointers := []string{jsonPointer}
@@ -59,14 +56,12 @@ func applyChanges(ctx context.Context, filePath string, fieldLocations fieldLoca
 			continue
 		}
 
-		// Parse JSON Pointer path
 		path, err := yamlpatch.ParsePath(successfulPath)
 		if err != nil {
 			log.Warnf(ctx, "Failed to parse JSON Pointer %s: %v", successfulPath, err)
 			continue
 		}
 
-		// Create Replace operation
 		op := yamlpatch.Operation{
 			Type:  yamlpatch.OperationReplace,
 			Path:  path,
@@ -75,7 +70,6 @@ func applyChanges(ctx context.Context, filePath string, fieldLocations fieldLoca
 		operations = append(operations, op)
 	}
 
-	// Create patcher and apply all patches
 	patcher := gopkgv3yamlpatcher.New(gopkgv3yamlpatcher.IndentSpaces(2))
 	modifiedContent, err := patcher.Apply(content, operations)
 	if err != nil {
@@ -90,45 +84,25 @@ type fieldLocations map[string]*deployplan.ChangeDesc
 // getFieldLocations builds a map from file paths to lists of field changes
 func getFieldLocations(ctx context.Context, b *bundle.Bundle, changes map[string]deployplan.Changes) (map[string]fieldLocations, error) {
 	configValue := b.Config.Value()
-	targetName := b.Config.Bundle.Target
 	locationsByFile := make(map[string]fieldLocations)
 
 	for resourceKey, resourceChanges := range changes {
 		for fieldPath, changeDesc := range resourceChanges {
 			fullPath := resourceKey + "." + fieldPath
-
-			var found bool
-			var filePath string
-			var resolvedPath dyn.Path
-
-			dynPath, err := structpathToDynPath(ctx, fullPath, configValue)
+			path, err := structpathToDynPath(ctx, fullPath, configValue)
 			if err != nil {
 				log.Warnf(ctx, "Failed to convert path %s to dyn.Path: %v", fullPath, err)
 				continue
 			}
 
-			dynPathWithTarget := append(dyn.Path{dyn.Key("targets"), dyn.Key(targetName)}, dynPath...)
-			paths := []dyn.Path{dynPathWithTarget, dynPath}
-
-			for _, path := range paths {
-				value, err := dyn.GetByPath(configValue, path)
-				if err != nil {
-					log.Debugf(ctx, "Path %s not found in config: %v", path.String(), err)
-					continue
-				}
-
-				filePath = value.Location().File
-				resolvedPath = path
-				found = true
-				break
-			}
-
-			if !found {
-				log.Warnf(ctx, "Failed to find location for %s", fullPath)
+			value, err := dyn.GetByPath(configValue, path)
+			if err != nil {
+				log.Debugf(ctx, "Path %s not found in config: %v", path.String(), err)
 				continue
 			}
 
-			jsonPointer := dynPathToJSONPointer(resolvedPath)
+			filePath := value.Location().File
+			jsonPointer := dynPathToJSONPointer(path)
 
 			if _, ok := locationsByFile[filePath]; !ok {
 				locationsByFile[filePath] = make(fieldLocations)

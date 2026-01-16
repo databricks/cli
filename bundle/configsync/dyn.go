@@ -74,7 +74,6 @@ func structpathToDynPath(_ context.Context, pathStr string, baseValue dyn.Value)
 			continue
 		}
 
-		// Skip wildcards or other special node types
 		if n.DotStar() || n.BracketStar() {
 			return nil, errors.New("wildcard patterns are not supported in field paths")
 		}
