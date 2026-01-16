@@ -2,133 +2,203 @@ github.com/databricks/cli/bundle/config.Artifact:
   "build":
     "description": |-
       An optional set of build commands to run locally before deployment.
+    "sinceVersion": |-
+      v0.229.0
   "dynamic_version":
     "description": |-
       Whether to patch the wheel version dynamically based on the timestamp of the whl file. If this is set to `true`, new code can be deployed without having to update the version in `setup.py` or `pyproject.toml`. This setting is only valid when `type` is set to `whl`. See [\_](/dev-tools/bundles/settings.md#bundle-syntax-mappings-artifacts).
+    "sinceVersion": |-
+      v0.245.0
   "executable":
     "description": |-
       The executable type. Valid values are `bash`, `sh`, and `cmd`.
+    "sinceVersion": |-
+      v0.229.0
   "files":
     "description": |-
       The relative or absolute path to the built artifact files.
+    "sinceVersion": |-
+      v0.229.0
   "path":
     "description": |-
       The local path of the directory for the artifact.
+    "sinceVersion": |-
+      v0.229.0
   "type":
     "description": |-
       Required if the artifact is a Python wheel. The type of the artifact. Valid values are `whl` and `jar`.
     "markdown_description": |-
       Required if the artifact is a Python wheel. The type of the artifact. Valid values are `whl` and `jar`.
+    "sinceVersion": |-
+      v0.229.0
 github.com/databricks/cli/bundle/config.ArtifactFile:
   "source":
     "description": |-
       Required. The artifact source file.
+    "sinceVersion": |-
+      v0.229.0
 github.com/databricks/cli/bundle/config.Bundle:
   "cluster_id":
     "description": |-
       The ID of a cluster to use to run the bundle.
     "markdown_description": |-
       The ID of a cluster to use to run the bundle. See [\_](/dev-tools/bundles/settings.md#cluster_id).
+    "sinceVersion": |-
+      v0.229.0
   "compute_id":
     "description": |-
       Deprecated. The ID of the compute to use to run the bundle.
+    "sinceVersion": |-
+      v0.229.0
   "databricks_cli_version":
     "description": |-
       The Databricks CLI version to use for the bundle.
     "markdown_description": |-
       The Databricks CLI version to use for the bundle. See [\_](/dev-tools/bundles/settings.md#databricks_cli_version).
+    "sinceVersion": |-
+      v0.229.0
   "deployment":
     "description": |-
       The definition of the bundle deployment
     "markdown_description": |-
       The definition of the bundle deployment. For supported attributes see [\_](/dev-tools/bundles/deployment-modes.md).
+    "sinceVersion": |-
+      v0.229.0
   "git":
     "description": |-
       The Git version control details that are associated with your bundle.
     "markdown_description": |-
       The Git version control details that are associated with your bundle. For supported attributes see [\_](/dev-tools/bundles/settings.md#git).
+    "sinceVersion": |-
+      v0.229.0
   "name":
     "description": |-
       The name of the bundle.
+    "sinceVersion": |-
+      v0.229.0
   "uuid":
     "description": |-
       Reserved. A Universally Unique Identifier (UUID) for the bundle that uniquely identifies the bundle in internal Databricks systems. This is generated when a bundle project is initialized using a Databricks template (using the `databricks bundle init` command).
+    "sinceVersion": |-
+      v0.236.0
 github.com/databricks/cli/bundle/config.Deployment:
   "fail_on_active_runs":
     "description": |-
       Whether to fail on active runs. If this is set to true a deployment that is running can be interrupted.
+    "sinceVersion": |-
+      v0.229.0
   "lock":
     "description": |-
       The deployment lock attributes.
+    "sinceVersion": |-
+      v0.229.0
 github.com/databricks/cli/bundle/config.Experimental:
   "pydabs":
     "description": |-
       The PyDABs configuration.
     "deprecation_message": |-
       Deprecated: please use python instead
+    "sinceVersion": |-
+      v0.229.0
   "python":
     "description": |-
       Configures loading of Python code defined with 'databricks-bundles' package.
+    "sinceVersion": |-
+      v0.238.0
   "python_wheel_wrapper":
     "description": |-
       Whether to use a Python wheel wrapper.
+    "sinceVersion": |-
+      v0.229.0
   "scripts":
     "description": |-
       The commands to run.
+    "sinceVersion": |-
+      v0.229.0
   "skip_artifact_cleanup":
     "description": |-
       Determines whether to skip cleaning up the .internal folder
+    "sinceVersion": |-
+      v0.254.0
   "skip_name_prefix_for_schema":
     "description": |-
       Skip adding the prefix that is either set in `presets.name_prefix` or computed when `mode: development`
       is set, to the names of UC schemas defined in the bundle.
+    "sinceVersion": |-
+      v0.255.0
   "use_legacy_run_as":
     "description": |-
       Whether to use the legacy run_as behavior.
+    "sinceVersion": |-
+      v0.229.0
 github.com/databricks/cli/bundle/config.Git:
   "branch":
     "description": |-
       The Git branch name.
     "markdown_description": |-
       The Git branch name. See [\_](/dev-tools/bundles/settings.md#git).
+    "sinceVersion": |-
+      v0.229.0
   "origin_url":
     "description": |-
       The origin URL of the repository.
     "markdown_description": |-
       The origin URL of the repository. See [\_](/dev-tools/bundles/settings.md#git).
+    "sinceVersion": |-
+      v0.229.0
 github.com/databricks/cli/bundle/config.Lock:
   "enabled":
     "description": |-
       Whether this lock is enabled.
+    "sinceVersion": |-
+      v0.229.0
   "force":
     "description": |-
       Whether to force this lock if it is enabled.
+    "sinceVersion": |-
+      v0.229.0
 github.com/databricks/cli/bundle/config.Presets:
   "artifacts_dynamic_version":
     "description": |-
       Whether to enable dynamic_version on all artifacts.
+    "sinceVersion": |-
+      v0.256.0
   "jobs_max_concurrent_runs":
     "description": |-
       The maximum concurrent runs for a job.
+    "sinceVersion": |-
+      v0.229.0
   "name_prefix":
     "description": |-
       The prefix for job runs of the bundle.
+    "sinceVersion": |-
+      v0.229.0
   "pipelines_development":
     "description": |-
       Whether pipeline deployments should be locked in development mode.
+    "sinceVersion": |-
+      v0.229.0
   "source_linked_deployment":
     "description": |-
       Whether to link the deployment to the bundle source.
+    "sinceVersion": |-
+      v0.236.0
   "tags":
     "description": |-
       The tags for the bundle deployment.
+    "sinceVersion": |-
+      v0.229.0
   "trigger_pause_status":
     "description": |-
       A pause status to apply to all job triggers and schedules. Valid values are PAUSED or UNPAUSED.
+    "sinceVersion": |-
+      v0.229.0
 github.com/databricks/cli/bundle/config.PyDABs:
   "enabled":
     "description": |-
       Whether or not PyDABs (Private Preview) is enabled
+    "sinceVersion": |-
+      v0.229.0
   "import":
     "description": |-
       The PyDABs project to import to discover resources, resource generator and mutators
@@ -141,101 +211,143 @@ github.com/databricks/cli/bundle/config.Python:
       Mutators contains a list of fully qualified function paths to mutator functions.
 
       Example: ["my_project.mutators:add_default_cluster"]
+    "sinceVersion": |-
+      v0.238.0
   "resources":
     "description": |-
       Resources contains a list of fully qualified function paths to load resources
       defined in Python code.
 
       Example: ["my_project.resources:load_resources"]
+    "sinceVersion": |-
+      v0.238.0
   "venv_path":
     "description": |-
       VEnvPath is path to the virtual environment.
 
       If enabled, Python code will execute within this environment. If disabled,
       it defaults to using the Python interpreter available in the current shell.
+    "sinceVersion": |-
+      v0.238.0
 github.com/databricks/cli/bundle/config.Resources:
   "alerts":
     "description": |-
       PLACEHOLDER
+    "sinceVersion": |-
+      v0.279.0
   "apps":
     "description": |-
       The app resource defines a Databricks app.
     "markdown_description": |-
       The app resource defines a [Databricks app](/api/workspace/apps/create). For information about Databricks Apps, see [\_](/dev-tools/databricks-apps/index.md).
+    "sinceVersion": |-
+      v0.239.0
   "clusters":
     "description": |-
       The cluster definitions for the bundle, where each key is the name of a cluster.
     "markdown_description": |-
       The cluster definitions for the bundle, where each key is the name of a cluster. See [\_](/dev-tools/bundles/resources.md#clusters).
+    "sinceVersion": |-
+      v0.229.0
   "dashboards":
     "description": |-
       The dashboard definitions for the bundle, where each key is the name of the dashboard.
     "markdown_description": |-
       The dashboard definitions for the bundle, where each key is the name of the dashboard. See [\_](/dev-tools/bundles/resources.md#dashboards).
+    "sinceVersion": |-
+      v0.232.0
   "database_catalogs":
     "description": |-
       PLACEHOLDER
+    "sinceVersion": |-
+      v0.265.0
   "database_instances":
     "description": |-
       PLACEHOLDER
+    "sinceVersion": |-
+      v0.265.0
   "experiments":
     "description": |-
       The experiment definitions for the bundle, where each key is the name of the experiment.
     "markdown_description": |-
       The experiment definitions for the bundle, where each key is the name of the experiment. See [\_](/dev-tools/bundles/resources.md#experiments).
+    "sinceVersion": |-
+      v0.229.0
   "jobs":
     "description": |-
       The job definitions for the bundle, where each key is the name of the job.
     "markdown_description": |-
       The job definitions for the bundle, where each key is the name of the job. See [\_](/dev-tools/bundles/resources.md#jobs).
+    "sinceVersion": |-
+      v0.229.0
   "model_serving_endpoints":
     "description": |-
       The model serving endpoint definitions for the bundle, where each key is the name of the model serving endpoint.
     "markdown_description": |-
       The model serving endpoint definitions for the bundle, where each key is the name of the model serving endpoint. See [\_](/dev-tools/bundles/resources.md#model_serving_endpoints).
+    "sinceVersion": |-
+      v0.229.0
   "models":
     "description": |-
       The model definitions for the bundle, where each key is the name of the model.
     "markdown_description": |-
       The model definitions for the bundle, where each key is the name of the model. See [\_](/dev-tools/bundles/resources.md#models).
+    "sinceVersion": |-
+      v0.229.0
   "pipelines":
     "description": |-
       The pipeline definitions for the bundle, where each key is the name of the pipeline.
     "markdown_description": |-
       The pipeline definitions for the bundle, where each key is the name of the pipeline. See [\_](/dev-tools/bundles/resources.md#pipelines).
+    "sinceVersion": |-
+      v0.229.0
   "quality_monitors":
     "description": |-
       The quality monitor definitions for the bundle, where each key is the name of the quality monitor.
     "markdown_description": |-
       The quality monitor definitions for the bundle, where each key is the name of the quality monitor. See [\_](/dev-tools/bundles/resources.md#quality_monitors).
+    "sinceVersion": |-
+      v0.229.0
   "registered_models":
     "description": |-
       The registered model definitions for the bundle, where each key is the name of the Unity Catalog registered model.
     "markdown_description": |-
       The registered model definitions for the bundle, where each key is the name of the Unity Catalog registered model. See [\_](/dev-tools/bundles/resources.md#registered_models)
+    "sinceVersion": |-
+      v0.229.0
   "schemas":
     "description": |-
       The schema definitions for the bundle, where each key is the name of the schema.
     "markdown_description": |-
       The schema definitions for the bundle, where each key is the name of the schema. See [\_](/dev-tools/bundles/resources.md#schemas).
+    "sinceVersion": |-
+      v0.229.0
   "secret_scopes":
     "description": |-
       The secret scope definitions for the bundle, where each key is the name of the secret scope.
     "markdown_description": |-
       The secret scope definitions for the bundle, where each key is the name of the secret scope. See [\_](/dev-tools/bundles/resources.md#secret_scopes).
+    "sinceVersion": |-
+      v0.252.0
   "sql_warehouses":
     "description": |-
       The SQL warehouse definitions for the bundle, where each key is the name of the warehouse.
     "markdown_description": |-
       The SQL warehouse definitions for the bundle, where each key is the name of the warehouse. See [\_](/dev-tools/bundles/resources.md#sql_warehouses).
+    "sinceVersion": |-
+      v0.260.0
   "synced_database_tables":
     "description": |-
       PLACEHOLDER
+    "sinceVersion": |-
+      v0.266.0
   "volumes":
     "description": |-
       The volume definitions for the bundle, where each key is the name of the volume.
     "markdown_description": |-
       The volume definitions for the bundle, where each key is the name of the volume. See [\_](/dev-tools/bundles/resources.md#volumes).
+    "sinceVersion": |-
+      v0.236.0
 github.com/databricks/cli/bundle/config.Root:
   "artifacts":
     "description": |-
@@ -252,24 +364,34 @@ github.com/databricks/cli/bundle/config.Root:
           build: poetry build
           path: .
       ```
+    "sinceVersion": |-
+      v0.229.0
   "bundle":
     "description": |-
       The bundle attributes when deploying to this target.
     "markdown_description": |-
       The bundle attributes when deploying to this target,
+    "sinceVersion": |-
+      v0.229.0
   "environments":
     "description": |-
       PLACEHOLDER
     "deprecation_message": |-
       Deprecated: please use targets instead
+    "sinceVersion": |-
+      v0.243.0
   "experimental":
     "description": |-
       Defines attributes for experimental features.
+    "sinceVersion": |-
+      v0.229.0
   "include":
     "description": |-
       Specifies a list of path globs that contain configuration files to include within the bundle.
     "markdown_description": |-
       Specifies a list of path globs that contain configuration files to include within the bundle. See [\_](/dev-tools/bundles/settings.md#include).
+    "sinceVersion": |-
+      v0.229.0
   "permissions":
     "description": |-
       Defines a permission for a specific entity.
@@ -287,14 +409,20 @@ github.com/databricks/cli/bundle/config.Root:
         - level: CAN_RUN
           service_principal_name: 123456-abcdef
       ```
+    "sinceVersion": |-
+      v0.229.0
   "presets":
     "description": |-
       Defines bundle deployment presets.
     "markdown_description": |-
       Defines bundle deployment presets. See [\_](/dev-tools/bundles/deployment-modes.md#presets).
+    "sinceVersion": |-
+      v0.229.0
   "python":
     "description": |-
       PLACEHOLDER
+    "sinceVersion": |-
+      v0.275.0
   "resources":
     "description": |-
       A Map that defines the resources for the bundle, where each key is the name of the resource, and the value is a Map that defines the resource.
@@ -307,144 +435,226 @@ github.com/databricks/cli/bundle/config.Root:
           <resource-name>:
             <resource-field-name>: <resource-field-value>
       ```
+    "sinceVersion": |-
+      v0.229.0
   "run_as":
     "description": |-
       The identity to use when running Databricks Asset Bundles workflows.
     "markdown_description": |-
       The identity to use when running Databricks Asset Bundles workflows. See [\_](/dev-tools/bundles/run-as.md).
+    "sinceVersion": |-
+      v0.229.0
   "scripts":
     "description": |-
       PLACEHOLDER
+    "sinceVersion": |-
+      v0.259.0
   "sync":
     "description": |-
       The files and file paths to include or exclude in the bundle.
     "markdown_description": |-
       The files and file paths to include or exclude in the bundle. See [\_](/dev-tools/bundles/settings.md#sync).
+    "sinceVersion": |-
+      v0.229.0
   "targets":
     "description": |-
       Defines deployment targets for the bundle.
     "markdown_description": |-
       Defines deployment targets for the bundle. See [\_](/dev-tools/bundles/settings.md#targets)
+    "sinceVersion": |-
+      v0.229.0
   "variables":
     "description": |-
       A Map that defines the custom variables for the bundle, where each key is the name of the variable, and the value is a Map that defines the variable.
+    "sinceVersion": |-
+      v0.229.0
   "workspace":
     "description": |-
       Defines the Databricks workspace for the bundle.
     "markdown_description": |-
       Defines the Databricks workspace for the bundle. See [\_](/dev-tools/bundles/settings.md#workspace).
+    "sinceVersion": |-
+      v0.229.0
 github.com/databricks/cli/bundle/config.Script:
   "content":
     "description": |-
       PLACEHOLDER
+    "sinceVersion": |-
+      v0.259.0
 github.com/databricks/cli/bundle/config.Sync:
   "exclude":
     "description": |-
       A list of files or folders to exclude from the bundle.
+    "sinceVersion": |-
+      v0.229.0
   "include":
     "description": |-
       A list of files or folders to include in the bundle.
+    "sinceVersion": |-
+      v0.229.0
   "paths":
     "description": |-
       The local folder paths, which can be outside the bundle root, to synchronize to the workspace when the bundle is deployed.
+    "sinceVersion": |-
+      v0.229.0
 github.com/databricks/cli/bundle/config.Target:
   "artifacts":
     "description": |-
       The artifacts to include in the target deployment.
+    "sinceVersion": |-
+      v0.229.0
   "bundle":
     "description": |-
       The bundle attributes when deploying to this target.
+    "sinceVersion": |-
+      v0.229.0
   "cluster_id":
     "description": |-
       The ID of the cluster to use for this target.
+    "sinceVersion": |-
+      v0.229.0
   "compute_id":
     "description": |-
       Deprecated. The ID of the compute to use for this target.
     "deprecation_message": |-
       Deprecated: please use cluster_id instead
+    "sinceVersion": |-
+      v0.229.0
   "default":
     "description": |-
       Whether this target is the default target.
+    "sinceVersion": |-
+      v0.229.0
   "git":
     "description": |-
       The Git version control settings for the target.
+    "sinceVersion": |-
+      v0.229.0
   "mode":
     "description": |-
       The deployment mode for the target.
     "markdown_description": |-
       The deployment mode for the target. Valid values are `development` or `production`. See [\_](/dev-tools/bundles/deployment-modes.md).
+    "sinceVersion": |-
+      v0.229.0
   "permissions":
     "description": |-
       The permissions for deploying and running the bundle in the target.
+    "sinceVersion": |-
+      v0.229.0
   "presets":
     "description": |-
       The deployment presets for the target.
+    "sinceVersion": |-
+      v0.229.0
   "resources":
     "description": |-
       The resource definitions for the target.
+    "sinceVersion": |-
+      v0.229.0
   "run_as":
     "description": |-
       The identity to use to run the bundle.
     "markdown_description": |-
       The identity to use to run the bundle, see [\_](/dev-tools/bundles/run-as.md).
+    "sinceVersion": |-
+      v0.229.0
   "sync":
     "description": |-
       The local paths to sync to the target workspace when a bundle is run or deployed.
+    "sinceVersion": |-
+      v0.229.0
   "variables":
     "description": |-
       The custom variable definitions for the target.
+    "sinceVersion": |-
+      v0.229.0
   "workspace":
     "description": |-
       The Databricks workspace for the target.
+    "sinceVersion": |-
+      v0.229.0
 github.com/databricks/cli/bundle/config.Workspace:
   "artifact_path":
     "description": |-
       The artifact path to use within the workspace for both deployments and workflow runs
+    "sinceVersion": |-
+      v0.229.0
   "auth_type":
     "description": |-
       The authentication type.
+    "sinceVersion": |-
+      v0.229.0
   "azure_client_id":
     "description": |-
       The Azure client ID
+    "sinceVersion": |-
+      v0.229.0
   "azure_environment":
     "description": |-
       The Azure environment
+    "sinceVersion": |-
+      v0.229.0
   "azure_login_app_id":
     "description": |-
       The Azure login app ID
+    "sinceVersion": |-
+      v0.229.0
   "azure_tenant_id":
     "description": |-
       The Azure tenant ID
+    "sinceVersion": |-
+      v0.229.0
   "azure_use_msi":
     "description": |-
       Whether to use MSI for Azure
+    "sinceVersion": |-
+      v0.229.0
   "azure_workspace_resource_id":
     "description": |-
       The Azure workspace resource ID
+    "sinceVersion": |-
+      v0.229.0
   "client_id":
     "description": |-
       The client ID for the workspace
+    "sinceVersion": |-
+      v0.229.0
   "file_path":
     "description": |-
       The file path to use within the workspace for both deployments and workflow runs
+    "sinceVersion": |-
+      v0.229.0
   "google_service_account":
     "description": |-
       The Google service account name
+    "sinceVersion": |-
+      v0.229.0
   "host":
     "description": |-
       The Databricks workspace host URL
+    "sinceVersion": |-
+      v0.229.0
   "profile":
     "description": |-
       The Databricks workspace profile name
+    "sinceVersion": |-
+      v0.229.0
   "resource_path":
     "description": |-
       The workspace resource path
+    "sinceVersion": |-
+      v0.230.0
   "root_path":
     "description": |-
       The Databricks workspace root path
+    "sinceVersion": |-
+      v0.229.0
   "state_path":
     "description": |-
       The workspace state path
+    "sinceVersion": |-
+      v0.229.0
 github.com/databricks/cli/bundle/config/resources.Alert:
   "create_time":
     "description": |-
@@ -452,12 +662,18 @@ github.com/databricks/cli/bundle/config/resources.Alert:
   "custom_description":
     "description": |-
       PLACEHOLDER
+    "sinceVersion": |-
+      v0.279.0
   "custom_summary":
     "description": |-
       PLACEHOLDER
+    "sinceVersion": |-
+      v0.279.0
   "display_name":
     "description": |-
       PLACEHOLDER
+    "sinceVersion": |-
+      v0.279.0
   "effective_run_as":
     "description": |-
       PLACEHOLDER
@@ -473,34 +689,62 @@ github.com/databricks/cli/bundle/config/resources.Alert:
   "parent_path":
     "description": |-
       PLACEHOLDER
+    "sinceVersion": |-
+      v0.279.0
   "query_text":
     "description": |-
       PLACEHOLDER
+    "sinceVersion": |-
+      v0.279.0
   "run_as":
     "description": |-
       PLACEHOLDER
+    "sinceVersion": |-
+      v0.279.0
   "run_as_user_name":
     "description": |-
       PLACEHOLDER
+    "sinceVersion": |-
+      v0.279.0
   "update_time":
     "description": |-
       PLACEHOLDER
   "warehouse_id":
     "description": |-
       PLACEHOLDER
+    "sinceVersion": |-
+      v0.279.0
 github.com/databricks/cli/bundle/config/resources.AlertPermission:
   "group_name":
     "description": |-
       PLACEHOLDER
+    "sinceVersion": |-
+      v0.279.0
   "level":
     "description": |-
       PLACEHOLDER
+    "sinceVersion": |-
+      v0.279.0
   "service_principal_name":
     "description": |-
       PLACEHOLDER
+    "sinceVersion": |-
+      v0.279.0
   "user_name":
     "description": |-
       PLACEHOLDER
+    "sinceVersion": |-
+      v0.279.0
+github.com/databricks/cli/bundle/config/resources.App:
+  "description":
+    "sinceVersion": |-
+      v0.239.0
+  "name":
+    "sinceVersion": |-
+      v0.239.0
+  "resources":
+    "sinceVersion": |-
+      v0.239.0
 github.com/databricks/cli/bundle/config/resources.AppConfig:
   "command":
     "description": |-
@@ -519,128 +763,430 @@ github.com/databricks/cli/bundle/config/resources.AppPermission:
   "group_name":
     "description": |-
       PLACEHOLDER
+    "sinceVersion": |-
+      v0.247.0
   "level":
     "description": |-
       PLACEHOLDER
+    "sinceVersion": |-
+      v0.247.0
   "service_principal_name":
     "description": |-
       PLACEHOLDER
+    "sinceVersion": |-
+      v0.247.0
   "user_name":
     "description": |-
       PLACEHOLDER
+    "sinceVersion": |-
+      v0.247.0
+github.com/databricks/cli/bundle/config/resources.Cluster:
+  "apply_policy_default_values":
+    "sinceVersion": |-
+      v0.229.0
+  "autoscale":
+    "sinceVersion": |-
+      v0.229.0
+  "autotermination_minutes":
+    "sinceVersion": |-
+      v0.229.0
+  "aws_attributes":
+    "sinceVersion": |-
+      v0.229.0
+  "azure_attributes":
+    "sinceVersion": |-
+      v0.229.0
+  "cluster_log_conf":
+    "sinceVersion": |-
+      v0.229.0
+  "cluster_name":
+    "sinceVersion": |-
+      v0.229.0
+  "custom_tags":
+    "sinceVersion": |-
+      v0.229.0
+  "driver_instance_pool_id":
+    "sinceVersion": |-
+      v0.229.0
+  "driver_node_type_id":
+    "sinceVersion": |-
+      v0.229.0
+  "enable_elastic_disk":
+    "sinceVersion": |-
+      v0.229.0
+  "enable_local_disk_encryption":
+    "sinceVersion": |-
+      v0.229.0
+  "gcp_attributes":
+    "sinceVersion": |-
+      v0.229.0
+  "init_scripts":
+    "sinceVersion": |-
+      v0.229.0
+  "instance_pool_id":
+    "sinceVersion": |-
+      v0.229.0
+  "is_single_node":
+    "sinceVersion": |-
+      v0.237.0
+  "node_type_id":
+    "sinceVersion": |-
+      v0.229.0
+  "num_workers":
+    "sinceVersion": |-
+      v0.229.0
+  "policy_id":
+    "sinceVersion": |-
+      v0.229.0
+  "remote_disk_throughput":
+    "sinceVersion": |-
+      v0.257.0
+  "single_user_name":
+    "sinceVersion": |-
+      v0.229.0
+  "spark_conf":
+    "sinceVersion": |-
+      v0.229.0
+  "spark_env_vars":
+    "sinceVersion": |-
+      v0.229.0
+  "spark_version":
+    "sinceVersion": |-
+      v0.229.0
+  "ssh_public_keys":
+    "sinceVersion": |-
+      v0.229.0
+  "total_initial_remote_disk_size":
+    "sinceVersion": |-
+      v0.257.0
+  "use_ml_runtime":
+    "sinceVersion": |-
+      v0.237.0
 github.com/databricks/cli/bundle/config/resources.ClusterPermission:
   "group_name":
     "description": |-
       PLACEHOLDER
+    "sinceVersion": |-
+      v0.247.0
   "level":
     "description": |-
       PLACEHOLDER
+    "sinceVersion": |-
+      v0.247.0
   "service_principal_name":
     "description": |-
       PLACEHOLDER
+    "sinceVersion": |-
+      v0.247.0
   "user_name":
     "description": |-
       PLACEHOLDER
+    "sinceVersion": |-
+      v0.247.0
 github.com/databricks/cli/bundle/config/resources.Dashboard:
   "dataset_catalog":
     "description": |-
       Sets the default catalog for all datasets in this dashboard. When set, this overrides the catalog specified in individual dataset definitions.
+    "sinceVersion": |-
+      v0.281.0
   "dataset_schema":
     "description": |-
       Sets the default schema for all datasets in this dashboard. When set, this overrides the schema specified in individual dataset definitions.
+    "sinceVersion": |-
+      v0.281.0
 github.com/databricks/cli/bundle/config/resources.DashboardPermission:
   "group_name":
     "description": |-
       PLACEHOLDER
+    "sinceVersion": |-
+      v0.247.0
   "level":
     "description": |-
       PLACEHOLDER
+    "sinceVersion": |-
+      v0.247.0
   "service_principal_name":
     "description": |-
       PLACEHOLDER
+    "sinceVersion": |-
+      v0.247.0
   "user_name":
     "description": |-
       PLACEHOLDER
+    "sinceVersion": |-
+      v0.247.0
+github.com/databricks/cli/bundle/config/resources.DatabaseCatalog:
+  "database_instance_name":
+    "sinceVersion": |-
+      v0.265.0
+  "database_name":
+    "sinceVersion": |-
+      v0.265.0
+  "name":
+    "sinceVersion": |-
+      v0.265.0
 github.com/databricks/cli/bundle/config/resources.DatabaseInstance:
+  "capacity":
+    "sinceVersion": |-
+      v0.265.0
+  "custom_tags":
+    "sinceVersion": |-
+      v0.273.0
   "effective_capacity":
     "description": |-
       PLACEHOLDER
+  "enable_pg_native_login":
+    "sinceVersion": |-
+      v0.267.0
+  "enable_readable_secondaries":
+    "sinceVersion": |-
+      v0.265.0
+  "name":
+    "sinceVersion": |-
+      v0.265.0
+  "node_count":
+    "sinceVersion": |-
+      v0.265.0
+  "parent_instance_ref":
+    "sinceVersion": |-
+      v0.265.0
+  "retention_window_in_days":
+    "sinceVersion": |-
+      v0.265.0
+  "stopped":
+    "sinceVersion": |-
+      v0.265.0
+  "usage_policy_id":
+    "sinceVersion": |-
+      v0.273.0
 github.com/databricks/cli/bundle/config/resources.DatabaseInstancePermission:
   "group_name":
     "description": |-
       PLACEHOLDER
+    "sinceVersion": |-
+      v0.265.0
   "level":
     "description": |-
       PLACEHOLDER
+    "sinceVersion": |-
+      v0.265.0
   "service_principal_name":
     "description": |-
       PLACEHOLDER
+    "sinceVersion": |-
+      v0.265.0
   "user_name":
     "description": |-
       PLACEHOLDER
+    "sinceVersion": |-
+      v0.265.0
 github.com/databricks/cli/bundle/config/resources.Grant:
   "principal":
     "description": |-
       The name of the principal that will be granted privileges
+    "sinceVersion": |-
+      v0.229.0
   "privileges":
     "description": |-
       The privileges to grant to the specified entity
+    "sinceVersion": |-
+      v0.229.0
+github.com/databricks/cli/bundle/config/resources.Job:
+  "budget_policy_id":
+    "sinceVersion": |-
+      v0.231.0
+  "continuous":
+    "sinceVersion": |-
+      v0.229.0
+  "description":
+    "sinceVersion": |-
+      v0.229.0
+  "email_notifications":
+    "sinceVersion": |-
+      v0.229.0
+  "environments":
+    "sinceVersion": |-
+      v0.229.0
+  "git_source":
+    "sinceVersion": |-
+      v0.229.0
+  "job_clusters":
+    "sinceVersion": |-
+      v0.229.0
+  "max_concurrent_runs":
+    "sinceVersion": |-
+      v0.229.0
+  "name":
+    "sinceVersion": |-
+      v0.229.0
+  "notification_settings":
+    "sinceVersion": |-
+      v0.229.0
+  "parameters":
+    "sinceVersion": |-
+      v0.229.0
+  "performance_target":
+    "sinceVersion": |-
+      v0.241.0
+  "queue":
+    "sinceVersion": |-
+      v0.229.0
+  "schedule":
+    "sinceVersion": |-
+      v0.229.0
+  "tags":
+    "sinceVersion": |-
+      v0.229.0
+  "tasks":
+    "sinceVersion": |-
+      v0.229.0
+  "timeout_seconds":
+    "sinceVersion": |-
+      v0.229.0
+  "trigger":
+    "sinceVersion": |-
+      v0.229.0
+  "usage_policy_id":
+    "sinceVersion": |-
+      v0.265.0
+  "webhook_notifications":
+    "sinceVersion": |-
+      v0.229.0
 github.com/databricks/cli/bundle/config/resources.JobPermission:
   "group_name":
     "description": |-
       PLACEHOLDER
+    "sinceVersion": |-
+      v0.247.0
   "level":
     "description": |-
       PLACEHOLDER
+    "sinceVersion": |-
+      v0.247.0
   "service_principal_name":
     "description": |-
       PLACEHOLDER
+    "sinceVersion": |-
+      v0.247.0
   "user_name":
     "description": |-
       PLACEHOLDER
+    "sinceVersion": |-
+      v0.247.0
 github.com/databricks/cli/bundle/config/resources.Lifecycle:
   "prevent_destroy":
     "description": |-
       Lifecycle setting to prevent the resource from being destroyed.
+    "sinceVersion": |-
+      v0.268.0
+github.com/databricks/cli/bundle/config/resources.MlflowExperiment:
+  "artifact_location":
+    "sinceVersion": |-
+      v0.229.0
+  "name":
+    "sinceVersion": |-
+      v0.229.0
+  "tags":
+    "sinceVersion": |-
+      v0.229.0
 github.com/databricks/cli/bundle/config/resources.MlflowExperimentPermission:
   "group_name":
     "description": |-
       PLACEHOLDER
+    "sinceVersion": |-
+      v0.247.0
   "level":
     "description": |-
       PLACEHOLDER
+    "sinceVersion": |-
+      v0.247.0
   "service_principal_name":
     "description": |-
       PLACEHOLDER
+    "sinceVersion": |-
+      v0.247.0
   "user_name":
     "description": |-
       PLACEHOLDER
+    "sinceVersion": |-
+      v0.247.0
+github.com/databricks/cli/bundle/config/resources.MlflowModel:
+  "description":
+    "sinceVersion": |-
+      v0.229.0
+  "name":
+    "sinceVersion": |-
+      v0.229.0
+  "tags":
+    "sinceVersion": |-
+      v0.229.0
 github.com/databricks/cli/bundle/config/resources.MlflowModelPermission:
   "group_name":
     "description": |-
       PLACEHOLDER
+    "sinceVersion": |-
+      v0.247.0
   "level":
     "description": |-
       PLACEHOLDER
+    "sinceVersion": |-
+      v0.247.0
   "service_principal_name":
     "description": |-
       PLACEHOLDER
+    "sinceVersion": |-
+      v0.247.0
   "user_name":
     "description": |-
       PLACEHOLDER
+    "sinceVersion": |-
+      v0.247.0
+github.com/databricks/cli/bundle/config/resources.ModelServingEndpoint:
+  "ai_gateway":
+    "sinceVersion": |-
+      v0.230.0
+  "budget_policy_id":
+    "sinceVersion": |-
+      v0.244.0
+  "config":
+    "sinceVersion": |-
+      v0.229.0
+  "email_notifications":
+    "sinceVersion": |-
+      v0.264.0
+  "name":
+    "sinceVersion": |-
+      v0.229.0
+  "rate_limits":
+    "sinceVersion": |-
+      v0.229.0
+  "route_optimized":
+    "sinceVersion": |-
+      v0.229.0
+  "tags":
+    "sinceVersion": |-
+      v0.229.0
 github.com/databricks/cli/bundle/config/resources.ModelServingEndpointPermission:
   "group_name":
     "description": |-
       PLACEHOLDER
+    "sinceVersion": |-
+      v0.247.0
   "level":
     "description": |-
       PLACEHOLDER
+    "sinceVersion": |-
+      v0.247.0
   "service_principal_name":
     "description": |-
       PLACEHOLDER
+    "sinceVersion": |-
+      v0.247.0
   "user_name":
     "description": |-
       PLACEHOLDER
+    "sinceVersion": |-
+      v0.247.0
 github.com/databricks/cli/bundle/config/resources.Permission:
   "-":
     "description": |-
@@ -650,77 +1196,305 @@ github.com/databricks/cli/bundle/config/resources.Permission:
   "group_name":
     "description": |-
       The name of the group that has the permission set in level.
+    "sinceVersion": |-
+      v0.229.0
   "level":
     "description": |-
       The allowed permission for user, group, service principal defined for this permission.
+    "sinceVersion": |-
+      v0.229.0
   "service_principal_name":
     "description": |-
       The name of the service principal that has the permission set in level.
+    "sinceVersion": |-
+      v0.229.0
   "user_name":
     "description": |-
       The name of the user that has the permission set in level.
+    "sinceVersion": |-
+      v0.229.0
+github.com/databricks/cli/bundle/config/resources.Pipeline:
+  "allow_duplicate_names":
+    "sinceVersion": |-
+      v0.261.0
+  "budget_policy_id":
+    "sinceVersion": |-
+      v0.230.0
+  "catalog":
+    "sinceVersion": |-
+      v0.229.0
+  "channel":
+    "sinceVersion": |-
+      v0.229.0
+  "clusters":
+    "sinceVersion": |-
+      v0.229.0
+  "configuration":
+    "sinceVersion": |-
+      v0.229.0
+  "continuous":
+    "sinceVersion": |-
+      v0.229.0
+  "development":
+    "sinceVersion": |-
+      v0.229.0
+  "edition":
+    "sinceVersion": |-
+      v0.229.0
+  "environment":
+    "sinceVersion": |-
+      v0.257.0
+  "event_log":
+    "sinceVersion": |-
+      v0.246.0
+  "filters":
+    "sinceVersion": |-
+      v0.229.0
+  "gateway_definition":
+    "sinceVersion": |-
+      v0.229.0
+  "id":
+    "sinceVersion": |-
+      v0.229.0
+  "ingestion_definition":
+    "sinceVersion": |-
+      v0.229.0
+  "libraries":
+    "sinceVersion": |-
+      v0.229.0
+  "name":
+    "sinceVersion": |-
+      v0.229.0
+  "notifications":
+    "sinceVersion": |-
+      v0.229.0
+  "photon":
+    "sinceVersion": |-
+      v0.229.0
+  "restart_window":
+    "sinceVersion": |-
+      v0.234.0
+  "root_path":
+    "sinceVersion": |-
+      v0.253.0
+  "schema":
+    "sinceVersion": |-
+      v0.230.0
+  "serverless":
+    "sinceVersion": |-
+      v0.229.0
+  "storage":
+    "sinceVersion": |-
+      v0.229.0
+  "tags":
+    "sinceVersion": |-
+      v0.256.0
+  "target":
+    "sinceVersion": |-
+      v0.229.0
+  "usage_policy_id":
+    "sinceVersion": |-
+      v0.276.0
 github.com/databricks/cli/bundle/config/resources.PipelinePermission:
   "group_name":
     "description": |-
       PLACEHOLDER
+    "sinceVersion": |-
+      v0.247.0
   "level":
     "description": |-
       PLACEHOLDER
+    "sinceVersion": |-
+      v0.247.0
   "service_principal_name":
     "description": |-
       PLACEHOLDER
+    "sinceVersion": |-
+      v0.247.0
   "user_name":
     "description": |-
       PLACEHOLDER
+    "sinceVersion": |-
+      v0.247.0
+github.com/databricks/cli/bundle/config/resources.QualityMonitor:
+  "assets_dir":
+    "sinceVersion": |-
+      v0.229.0
+  "baseline_table_name":
+    "sinceVersion": |-
+      v0.229.0
+  "custom_metrics":
+    "sinceVersion": |-
+      v0.229.0
+  "data_classification_config":
+    "sinceVersion": |-
+      v0.229.0
+  "latest_monitor_failure_msg":
+    "sinceVersion": |-
+      v0.264.0
+  "notifications":
+    "sinceVersion": |-
+      v0.229.0
+  "output_schema_name":
+    "sinceVersion": |-
+      v0.229.0
+  "schedule":
+    "sinceVersion": |-
+      v0.229.0
+  "skip_builtin_dashboard":
+    "sinceVersion": |-
+      v0.229.0
+  "slicing_exprs":
+    "sinceVersion": |-
+      v0.229.0
+  "snapshot":
+    "sinceVersion": |-
+      v0.229.0
+  "time_series":
+    "sinceVersion": |-
+      v0.229.0
+  "warehouse_id":
+    "sinceVersion": |-
+      v0.229.0
+github.com/databricks/cli/bundle/config/resources.RegisteredModel:
+  "catalog_name":
+    "sinceVersion": |-
+      v0.229.0
+  "comment":
+    "sinceVersion": |-
+      v0.229.0
+  "name":
+    "sinceVersion": |-
+      v0.229.0
+  "schema_name":
+    "sinceVersion": |-
+      v0.229.0
+  "storage_location":
+    "sinceVersion": |-
+      v0.229.0
+github.com/databricks/cli/bundle/config/resources.Schema:
+  "catalog_name":
+    "sinceVersion": |-
+      v0.229.0
+  "comment":
+    "sinceVersion": |-
+      v0.229.0
+  "name":
+    "sinceVersion": |-
+      v0.229.0
+  "storage_root":
+    "sinceVersion": |-
+      v0.229.0
 github.com/databricks/cli/bundle/config/resources.SchemaGrant:
   "principal":
     "description": |-
       PLACEHOLDER
+    "sinceVersion": |-
+      v0.267.0
   "privileges":
     "description": |-
       PLACEHOLDER
+    "sinceVersion": |-
+      v0.267.0
 github.com/databricks/cli/bundle/config/resources.SecretScope:
   "backend_type":
     "description": |-
       The backend type the scope will be created with. If not specified, will default to `DATABRICKS`
+    "sinceVersion": |-
+      v0.252.0
   "keyvault_metadata":
     "description": |-
       The metadata for the secret scope if the `backend_type` is `AZURE_KEYVAULT`
+    "sinceVersion": |-
+      v0.252.0
   "lifecycle":
     "description": |-
       Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+    "sinceVersion": |-
+      v0.268.0
   "name":
     "description": |-
       Scope name requested by the user. Scope names are unique.
+    "sinceVersion": |-
+      v0.252.0
   "permissions":
     "description": |-
       The permissions to apply to the secret scope. Permissions are managed via secret scope ACLs.
+    "sinceVersion": |-
+      v0.252.0
 github.com/databricks/cli/bundle/config/resources.SecretScopePermission:
   "group_name":
     "description": |-
       The name of the group that has the permission set in level. This field translates to a `principal` field in secret scope ACL.
+    "sinceVersion": |-
+      v0.252.0
   "level":
     "description": |-
       The allowed permission for user, group, service principal defined for this permission.
+    "sinceVersion": |-
+      v0.252.0
   "service_principal_name":
     "description": |-
       The application ID of an active service principal. This field translates to a `principal` field in secret scope ACL.
+    "sinceVersion": |-
+      v0.252.0
   "user_name":
     "description": |-
       The name of the user that has the permission set in level. This field translates to a `principal` field in secret scope ACL.
+    "sinceVersion": |-
+      v0.252.0
+github.com/databricks/cli/bundle/config/resources.SqlWarehouse:
+  "auto_stop_mins":
+    "sinceVersion": |-
+      v0.260.0
+  "channel":
+    "sinceVersion": |-
+      v0.260.0
+  "cluster_size":
+    "sinceVersion": |-
+      v0.260.0
+  "creator_name":
+    "sinceVersion": |-
+      v0.260.0
+  "enable_serverless_compute":
+    "sinceVersion": |-
+      v0.260.0
+  "instance_profile_arn":
+    "sinceVersion": |-
+      v0.260.0
+  "max_num_clusters":
+    "sinceVersion": |-
+      v0.260.0
+  "min_num_clusters":
+    "sinceVersion": |-
+      v0.260.0
+  "name":
+    "sinceVersion": |-
+      v0.260.0
+  "tags":
+    "sinceVersion": |-
+      v0.260.0
 github.com/databricks/cli/bundle/config/resources.SqlWarehousePermission:
   "group_name":
     "description": |-
       PLACEHOLDER
+    "sinceVersion": |-
+      v0.260.0
   "level":
     "description": |-
       PLACEHOLDER
+    "sinceVersion": |-
+      v0.260.0
   "service_principal_name":
     "description": |-
       PLACEHOLDER
+    "sinceVersion": |-
+      v0.260.0
   "user_name":
     "description": |-
       PLACEHOLDER
+    "sinceVersion": |-
+      v0.260.0
 github.com/databricks/cli/bundle/config/resources.SyncedDatabaseTable:
   "data_synchronization_status":
     "description": |-
@@ -728,84 +1502,149 @@ github.com/databricks/cli/bundle/config/resources.SyncedDatabaseTable:
   "database_instance_name":
     "description": |-
       PLACEHOLDER
+    "sinceVersion": |-
+      v0.266.0
   "effective_database_instance_name":
     "description": |-
       PLACEHOLDER
   "effective_logical_database_name":
     "description": |-
       PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
+    "sinceVersion": |-
+      v0.268.0
   "logical_database_name":
     "description": |-
       PLACEHOLDER
+    "sinceVersion": |-
+      v0.266.0
   "name":
     "description": |-
       PLACEHOLDER
+    "sinceVersion": |-
+      v0.266.0
   "spec":
     "description": |-
       PLACEHOLDER
+    "sinceVersion": |-
+      v0.266.0
   "unity_catalog_provisioning_state":
     "description": |-
       PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.Volume:
+  "catalog_name":
+    "sinceVersion": |-
+      v0.236.0
+  "comment":
+    "sinceVersion": |-
+      v0.236.0
+  "name":
+    "sinceVersion": |-
+      v0.236.0
+  "schema_name":
+    "sinceVersion": |-
+      v0.236.0
+  "storage_location":
+    "sinceVersion": |-
+      v0.236.0
 github.com/databricks/cli/bundle/config/resources.VolumeGrant:
   "principal":
     "description": |-
       PLACEHOLDER
+    "sinceVersion": |-
+      v0.264.1
   "privileges":
     "description": |-
       PLACEHOLDER
+    "sinceVersion": |-
+      v0.264.1
 github.com/databricks/cli/bundle/config/variable.Lookup:
   "alert":
     "description": |-
       The name of the alert for which to retrieve an ID.
+    "sinceVersion": |-
+      v0.229.0
   "cluster":
     "description": |-
       The name of the cluster for which to retrieve an ID.
+    "sinceVersion": |-
+      v0.229.0
   "cluster_policy":
     "description": |-
       The name of the cluster_policy for which to retrieve an ID.
+    "sinceVersion": |-
+      v0.229.0
   "dashboard":
     "description": |-
       The name of the dashboard for which to retrieve an ID.
+    "sinceVersion": |-
+      v0.229.0
   "instance_pool":
     "description": |-
       The name of the instance_pool for which to retrieve an ID.
+    "sinceVersion": |-
+      v0.229.0
   "job":
     "description": |-
       The name of the job for which to retrieve an ID.
+    "sinceVersion": |-
+      v0.229.0
   "metastore":
     "description": |-
       The name of the metastore for which to retrieve an ID.
+    "sinceVersion": |-
+      v0.229.0
   "notification_destination":
     "description": |-
       The name of the notification_destination for which to retrieve an ID.
+    "sinceVersion": |-
+      v0.236.0
   "pipeline":
     "description": |-
       The name of the pipeline for which to retrieve an ID.
+    "sinceVersion": |-
+      v0.229.0
   "query":
     "description": |-
       The name of the query for which to retrieve an ID.
+    "sinceVersion": |-
+      v0.229.0
   "service_principal":
     "description": |-
       The name of the service_principal for which to retrieve an ID.
+    "sinceVersion": |-
+      v0.229.0
   "warehouse":
     "description": |-
       The name of the warehouse for which to retrieve an ID.
+    "sinceVersion": |-
+      v0.229.0
 github.com/databricks/cli/bundle/config/variable.TargetVariable:
   "default":
     "description": |-
       The default value for the variable.
+    "sinceVersion": |-
+      v0.229.0
   "description":
     "description": |-
       The description of the variable.
+    "sinceVersion": |-
+      v0.229.0
   "lookup":
     "description": |-
       The name of the alert, cluster_policy, cluster, dashboard, instance_pool, job, metastore, pipeline, query, service_principal, or warehouse object for which to retrieve an ID.
+    "sinceVersion": |-
+      v0.229.0
   "markdown_description":
     "description": |-
       The type of the variable.
   "type":
     "description": |-
       The type of the variable.
+    "sinceVersion": |-
+      v0.229.0
 github.com/databricks/cli/bundle/config/variable.Variable:
   "_":
     "description": |-
@@ -815,17 +1654,25 @@ github.com/databricks/cli/bundle/config/variable.Variable:
   "default":
     "description": |-
       The default value for the variable.
+    "sinceVersion": |-
+      v0.229.0
   "description":
     "description": |-
       The description of the variable
+    "sinceVersion": |-
+      v0.229.0
   "lookup":
     "description": |-
       The name of the alert, cluster_policy, cluster, dashboard, instance_pool, job, metastore, pipeline, query, service_principal, or warehouse object for which to retrieve an ID.
     "markdown_description": |-
       The name of the `alert`, `cluster_policy`, `cluster`, `dashboard`, `instance_pool`, `job`, `metastore`, `pipeline`, `query`, `service_principal`, or `warehouse` object for which to retrieve an ID.
+    "sinceVersion": |-
+      v0.229.0
   "type":
     "description": |-
       The type of the variable.
+    "sinceVersion": |-
+      v0.229.0
 github.com/databricks/databricks-sdk-go/service/jobs.JobRunAs:
   "service_principal_name":
     "description": |-
