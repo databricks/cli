@@ -23,11 +23,11 @@ linters:
     forbidigo:
       forbid:
         - pattern: 'term\.IsTerminal'
-          msg: Use cmdio.IsPromptSupported() instead of term.IsTerminal() for consistent capability detection
+          msg: Use cmdio functions for terminal capability detection.
         - pattern: 'isatty\.IsTerminal'
-          msg: Use cmdio capability detection instead of isatty.IsTerminal()
+          msg: Use cmdio functions for terminal capability detection.
         - pattern: 'isatty\.IsCygwinTerminal'
-          msg: Use cmdio capability detection instead of isatty.IsCygwinTerminal()
+          msg: Use cmdio functions for terminal capability detection.
       analyze-types: true
     copyloopvar:
       check-alias: true
