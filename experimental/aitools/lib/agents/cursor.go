@@ -84,7 +84,7 @@ func InstallCursor() error {
 	// Add or update the Databricks AI Tools MCP server entry
 	config.McpServers["databricks-mcp"] = mcpServer{
 		Command: databricksPath,
-		Args:    []string{"experimental", "aitools"},
+		Args:    []string{"experimental", "aitools", "mcp"},
 	}
 
 	// Write back to file with pretty printing
