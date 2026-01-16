@@ -114,7 +114,7 @@
       "changes": {
         "storage": {
           "action": "recreate",
-          "reason": "field_triggers",
+          "reason": "builtin_rule",
           "old": "dbfs:/my-storage",
           "new": "dbfs:/my-new-storage",
           "remote": "dbfs:/my-storage"

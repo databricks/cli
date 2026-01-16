@@ -68,7 +68,7 @@
       "changes": {
         "config.auto_capture_config.table_name_prefix": {
           "action": "recreate",
-          "reason": "field_triggers",
+          "reason": "builtin_rule",
           "old": "my_table",
           "new": "other_table",
           "remote": "my_table"

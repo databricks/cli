@@ -58,7 +58,7 @@
       "changes": {
         "name": {
           "action": "recreate",
-          "reason": "field_triggers",
+          "reason": "builtin_rule",
           "old": "[ORIGINAL_ENDPOINT_ID]",
           "new": "[NEW_ENDPOINT_ID]",
           "remote": "[ORIGINAL_ENDPOINT_ID]"

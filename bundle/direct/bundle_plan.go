@@ -380,7 +380,7 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 			ch.Reason = deployplan.ReasonRemoteAlreadySet
 		} else if action := getActionFromConfig(cfg, pathString); action != deployplan.Undefined {
 			ch.Action = action
-			ch.Reason = deployplan.ReasonResourceConfig
+			ch.Reason = deployplan.ReasonBuiltinRule
 		} else {
 			ch.Action = deployplan.Update
 		}

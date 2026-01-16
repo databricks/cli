@@ -19,7 +19,7 @@
       "changes": {
         "scope": {
           "action": "recreate",
-          "reason": "field_triggers",
+          "reason": "builtin_rule",
           "old": "test-scope-[UNIQUE_NAME]-1",
           "new": "test-scope-[UNIQUE_NAME]-2",
           "remote": "test-scope-[UNIQUE_NAME]-1"
@@ -68,7 +68,7 @@
       "changes": {
         "scope_name": {
           "action": "update_id",
-          "reason": "field_triggers",
+          "reason": "builtin_rule",
           "old": "test-scope-[UNIQUE_NAME]-1",
           "new": "",
           "remote": "test-scope-[UNIQUE_NAME]-1"
