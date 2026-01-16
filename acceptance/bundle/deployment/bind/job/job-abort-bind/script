@@ -23,6 +23,7 @@ JOB_ID=$($CLI jobs create --json '
 }' | jq -r '.job_id')
 
 echo "Created job with ID: $JOB_ID"
+echo "$JOB_ID:JOB_ID" >> ACC_REPLS
 
 envsubst < $TESTDIR/../job-spark-python-task/databricks.yml.tmpl > databricks.yml
 

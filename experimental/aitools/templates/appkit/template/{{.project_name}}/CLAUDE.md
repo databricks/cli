@@ -34,7 +34,15 @@ export const querySchemas = {
 };
 ```
 
-**Step 3: Add visualization to your app**
+**Step 3: Run typegen (REQUIRED after any schema change)**
+
+```bash
+npm run typegen
+```
+
+This regenerates `client/src/appKitTypes.d.ts` with your new query types. **Without this step, TypeScript will not recognize your query keys and builds will fail.**
+
+**Step 4: Add visualization to your app**
 
 ```typescript
 // client/src/App.tsx
@@ -45,9 +53,9 @@ import { BarChart } from '@databricks/appkit-ui/react';
 
 **That's it!** The component handles data fetching, loading states, and rendering automatically.
 
-**To refresh TypeScript types after adding queries:**
-- Run `npm run typegen` OR run `npm run dev` - both auto-generate type definitions in `client/src/appKitTypes.d.ts`
-- DO NOT manually edit `appKitTypes.d.ts`
+**⚠️ CRITICAL: Always run `npm run typegen` after modifying files in `config/queries/`**
+- DO NOT manually edit `client/src/appKitTypes.d.ts` - it is auto-generated
+- If you see errors like `'"my_query"' is not assignable to parameter of type`, run `npm run typegen`
 
 ## Installation
 

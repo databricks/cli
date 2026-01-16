@@ -6,12 +6,15 @@
   }
 }
 {
-  "method": "DELETE",
-  "path": "/api/2.0/pipelines/[NEW_PIPELINE_ID]"
+  "method": "POST",
+  "path": "/api/2.0/workspace/mkdirs",
+  "body": {
+    "path": "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-recreate/default/files"
+  }
 }
 {
-  "method": "POST",
-  "path": "/api/2.0/pipelines",
+  "method": "PUT",
+  "path": "/api/2.0/pipelines/[NEW_PIPELINE_ID]",
   "body": {
     "catalog": "main",
     "channel": "CURRENT",
