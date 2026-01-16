@@ -1,2 +1,3 @@
+Cloud = true
 RecordRequests = true
-Ignore = [".databricks"]
+Ignore = [".databricks", "pipeline.json"]

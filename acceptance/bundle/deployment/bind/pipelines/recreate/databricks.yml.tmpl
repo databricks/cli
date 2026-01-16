@@ -1,0 +1,11 @@
+bundle:
+  name: test-pipeline-recreate-$UNIQUE_NAME
+
+resources:
+  pipelines:
+    foo:
+      name: test-pipeline-$UNIQUE_NAME
+      libraries:
+        - notebook:
+            path: ./nb.sql
+      storage: /Shared/new_storage

@@ -13,28 +13,3 @@ Updating deployment state...
 Deployment complete!
 
 >>> [CLI] jobs get [NUMID] --output json
-{
-  "created_time":[UNIX_TIME_MILLIS],
-  "creator_user_name":"[USERNAME]",
-  "job_id":[NUMID],
-  "run_as_user_name":"[USERNAME]",
-  "settings": {
-    "deployment": {
-      "kind":"BUNDLE",
-      "metadata_file_path":"/Workspace/Users/[USERNAME]/.bundle/my_project/default/state/metadata.json"
-    },
-    "edit_mode":"UI_LOCKED",
-    "email_notifications": {},
-    "format":"MULTI_TASK",
-    "max_concurrent_runs":1,
-    "name":"Updated Job",
-    "queue": {
-      "enabled":true
-    },
-    "run_as": {
-      "user_name":"[USERNAME]"
-    },
-    "timeout_seconds":0,
-    "webhook_notifications": {}
-  }
-}
