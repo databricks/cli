@@ -270,3 +270,56 @@ func TestStopApp(t *testing.T) {
 	err := r.Cancel(ctx)
 	require.NoError(t, err)
 }
+
+func TestBuildAppDeploymentWithValueFrom(t *testing.T) {
+	app := &resources.App{
+		SourceCodePath: "/path/to/app",
+		Config: &resources.AppConfig{
+			Command: []string{"python", "app.py"},
+			Env: []resources.AppEnvVar{
+				{
+					Name:  "REGULAR_VAR",
+					Value: "regular_value",
+				},
+				{
+					Name:      "SECRET_VAR",
+					ValueFrom: "secrets/my-secret",
+				},
+				{
+					Name:      "COMBINED_VAR",
+					Value:     "default_value",
+					ValueFrom: "secrets/override",
+				},
+			},
+		},
+	}
+
+	runner := &appRunner{
+		app: app,
+	}
+
+	deployment := runner.buildAppDeployment()
+
+	require.Equal(t, apps.AppDeploymentModeSnapshot, deployment.Mode)
+	require.Equal(t, "/path/to/app", deployment.SourceCodePath)
+	require.Len(t, deployment.Command, 2)
+	require.Equal(t, "python", deployment.Command[0])
+	require.Equal(t, "app.py", deployment.Command[1])
+
+	require.Len(t, deployment.EnvVars, 3)
+
+	// Regular env var with value
+	require.Equal(t, "REGULAR_VAR", deployment.EnvVars[0].Name)
+	require.Equal(t, "regular_value", deployment.EnvVars[0].Value)
+	require.Equal(t, "", deployment.EnvVars[0].ValueFrom)
+
+	// Env var with value_from
+	require.Equal(t, "SECRET_VAR", deployment.EnvVars[1].Name)
+	require.Equal(t, "", deployment.EnvVars[1].Value)
+	require.Equal(t, "secrets/my-secret", deployment.EnvVars[1].ValueFrom)
+
+	// Env var with both value and value_from
+	require.Equal(t, "COMBINED_VAR", deployment.EnvVars[2].Name)
+	require.Equal(t, "default_value", deployment.EnvVars[2].Value)
+	require.Equal(t, "secrets/override", deployment.EnvVars[2].ValueFrom)
+}
