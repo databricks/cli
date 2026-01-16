@@ -4,4 +4,5 @@ trace $CLI bundle deployment bind job_1 $job_id --auto-approve
 
 trace $CLI bundle deploy
 
-trace $CLI jobs get $job_id --output json
+# there is a difference: in terraform there is also run_as entry
+trace $CLI jobs get $job_id --output json > out.job.$DATABRICKS_BUNDLE_ENGINE.json
