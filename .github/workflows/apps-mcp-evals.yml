@@ -1,0 +1,85 @@
+name: Apps-MCP Evaluations
+
+on:
+  # Nightly schedule (2am UTC)
+  schedule:
+    - cron: '0 2 * * *'
+
+  # On release
+  push:
+    tags:
+      - 'v*'
+
+  # Manual trigger
+  workflow_dispatch:
+    inputs:
+      prompts:
+        description: 'Prompt set (test, databricks, databricks_v2)'
+        default: 'databricks'
+        type: choice
+        options:
+          - test
+          - databricks
+          - databricks_v2
+
+jobs:
+  build-cli:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Build CLI for Linux
+        run: |
+          GOOS=linux GOARCH=amd64 go build -o databricks-linux ./cmd/cli
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cli-binary
+          path: databricks-linux
+
+  trigger-evals:
+    needs: build-cli
+    runs-on: ubuntu-latest
+    environment: apps-mcp-evals
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: cli-binary
+
+      - name: Setup Databricks CLI
+        uses: databricks/setup-cli@main
+
+      - name: Upload CLI binary to UC Volume
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+        run: |
+          chmod +x databricks-linux
+          databricks fs cp databricks-linux /Volumes/main/default/apps_mcp_artifacts/ --overwrite
+
+      - name: Checkout eng-app-devex
+        uses: actions/checkout@v4
+        with:
+          repository: neondatabase/eng-app-devex
+          path: evals-bundle
+
+      - name: Deploy and run generation job
+        working-directory: evals-bundle/apps-mcp-evals
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+        run: |
+          databricks bundle deploy -t dev
+          databricks bundle run -t dev apps_generation_job --refresh-all
+
+      - name: Run evaluation job
+        working-directory: evals-bundle/apps-mcp-evals
+        env:
+          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+        run: |
+          databricks bundle run -t dev apps_eval_job --refresh-all
