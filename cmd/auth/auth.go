@@ -65,7 +65,7 @@ func promptForWorkspaceID(ctx context.Context) (string, error) {
 	}
 
 	prompt := cmdio.Prompt(ctx)
-	prompt.Label = "Databricks workspace ID"
+	prompt.Label = "Databricks workspace ID (optional - provide only if using this profile for workspace operations, leave empty for account operations)"
 	prompt.Default = ""
 	prompt.AllowEdit = true
 	return prompt.Run()
