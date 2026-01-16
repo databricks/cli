@@ -32,7 +32,7 @@ func InstallClaude() error {
 		"--transport", "stdio",
 		"databricks-mcp",
 		"--",
-		databricksPath, "experimental", "aitools")
+		databricksPath, "experimental", "aitools", "mcp")
 
 	output, err := cmd.CombinedOutput()
 	if err != nil {
