@@ -496,13 +496,13 @@ var testDeps = map[string]prepareWorkspace{
 func TestAll(t *testing.T) {
 	_, client := setupTestServerClient(t)
 
-	for group, resource := range SupportedResources {
-		t.Run(group, func(t *testing.T) {
-			adapter, err := NewAdapter(resource, client)
+	for resourceType, resource := range SupportedResources {
+		t.Run(resourceType, func(t *testing.T) {
+			adapter, err := NewAdapter(resource, resourceType, client)
 			require.NoError(t, err)
 			require.NotNil(t, adapter)
 
-			testCRUD(t, group, adapter, client)
+			testCRUD(t, resourceType, adapter, client)
 		})
 	}
 
@@ -654,35 +654,30 @@ func validateFields(t *testing.T, configType reflect.Type, fields map[string]dep
 	}
 }
 
-// TestFieldTriggers validates that all trigger keys
-// exist in the corresponding ConfigType for each resource.
-func TestFieldTriggers(t *testing.T) {
-	for resourceName, resource := range SupportedResources {
-		adapter, err := NewAdapter(resource, nil)
+// TestResourceConfig validates that all field patterns in resource config
+// exist in the corresponding StateType for each resource.
+func TestResourceConfig(t *testing.T) {
+	for resourceType, resource := range SupportedResources {
+		adapter, err := NewAdapter(resource, resourceType, nil)
 		require.NoError(t, err)
 
-		t.Run(resourceName+"_local", func(t *testing.T) {
-			validateFields(t, adapter.StateType(), adapter.FieldTriggers())
-		})
-	}
-}
-
-// TestFieldTriggersNoUpdateWhenNotImplemented validates that resources without
-// DoUpdate implementation don't produce update actions in their FieldTriggers.
-func TestFieldTriggersNoUpdateWhenNotImplemented(t *testing.T) {
-	for resourceName, resource := range SupportedResources {
-		adapter, err := NewAdapter(resource, nil)
-		require.NoError(t, err)
-
-		if adapter.HasDoUpdate() {
+		cfg := adapter.ResourceConfig()
+		if cfg == nil {
 			continue
 		}
 
-		t.Run(resourceName+"_local", func(t *testing.T) {
-			for field, action := range adapter.FieldTriggers() {
-				assert.NotEqual(t, deployplan.Update, action,
-					"resource %s does not implement DoUpdate but field %s triggers update action", resourceName, field)
+		t.Run(resourceType, func(t *testing.T) {
+			fieldMap := make(map[string]deployplan.ActionType)
+			for _, p := range cfg.RecreateOnChanges {
+				fieldMap[p.String()] = deployplan.Recreate
 			}
+			for _, p := range cfg.UpdateIDOnChanges {
+				fieldMap[p.String()] = deployplan.UpdateWithID
+			}
+			for _, p := range cfg.IgnoreRemoteChanges {
+				fieldMap[p.String()] = deployplan.Skip
+			}
+			validateFields(t, adapter.StateType(), fieldMap)
 		})
 	}
 }

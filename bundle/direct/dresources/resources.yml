@@ -1,0 +1,80 @@
+# Resource lifecycle configuration for Databricks Asset Bundles.
+# This file defines how field changes affect resource operations.
+#
+# Available options:
+#   recreate_on_changes: fields that trigger delete + create
+#   update_id_on_changes: fields that trigger UpdateWithID (ID may change)
+#   ignore_remote_changes: fields where remote changes are ignored
+#   ignore_local_changes: if true, all local changes are ignored
+
+resources:
+  apps:
+    recreate_on_changes:
+      - name
+
+  experiments:
+    recreate_on_changes:
+      - artifact_location
+    ignore_remote_changes:
+      - tags
+
+  models:
+    recreate_on_changes:
+      - name
+    ignore_remote_changes:
+      - tags
+
+  model_serving_endpoints:
+    recreate_on_changes:
+      - name
+      - description
+      - config.auto_capture_config.catalog_name
+      - config.auto_capture_config.schema_name
+      - config.auto_capture_config.table_name_prefix
+      - route_optimized
+
+  pipelines:
+    recreate_on_changes:
+      - storage
+      - ingestion_definition.connection_name
+      - ingestion_definition.ingestion_gateway_id
+
+  quality_monitors:
+    recreate_on_changes:
+      - assets_dir
+      - table_name
+
+  registered_models:
+    recreate_on_changes:
+      - name
+      - catalog_name
+      - schema_name
+      - storage_location
+
+  schemas:
+    recreate_on_changes:
+      - name
+      - catalog_name
+      - storage_root
+
+  secret_scopes:
+    recreate_on_changes:
+      - scope
+      - scope_backend_type
+      - backend_azure_keyvault
+      - initial_manage_principal
+
+  volumes:
+    recreate_on_changes:
+      - catalog_name
+      - schema_name
+      - storage_location
+      - volume_type
+    update_id_on_changes:
+      - name
+
+  # Permissions for secret scopes use ResourceSecretScopeAcls
+  # which needs UpdateWithID when scope_name changes
+  secret_scopes.permissions:
+    update_id_on_changes:
+      - scope_name

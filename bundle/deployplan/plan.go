@@ -91,7 +91,7 @@ const (
 	ReasonServerSideDefault = "server_side_default"
 	ReasonAlias             = "alias"
 	ReasonRemoteAlreadySet  = "remote_already_set"
-	ReasonFieldTriggers     = "field_triggers"
+	ReasonResourceConfig    = "resource_config"
 	ReasonConfigOnly        = "config_only"
 )
 

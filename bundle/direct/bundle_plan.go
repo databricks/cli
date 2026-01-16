@@ -360,7 +360,7 @@ func prepareChanges(ctx context.Context, adapter *dresources.Adapter, localDiff,
 }
 
 func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, changes deployplan.Changes, remoteState any) error {
-	fieldTriggers := adapter.FieldTriggers()
+	cfg := adapter.ResourceConfig()
 
 	for pathString, ch := range changes {
 		path, err := structpath.Parse(pathString)
@@ -378,10 +378,9 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 		} else if structdiff.IsEqual(ch.Remote, ch.New) {
 			ch.Action = deployplan.Skip
 			ch.Reason = deployplan.ReasonRemoteAlreadySet
-		} else if action, ok := fieldTriggers[pathString]; ok {
-			// TODO: should we check prefixes instead?
+		} else if action := getActionFromConfig(cfg, pathString); action != deployplan.Undefined {
 			ch.Action = action
-			ch.Reason = deployplan.ReasonFieldTriggers
+			ch.Reason = deployplan.ReasonResourceConfig
 		} else {
 			ch.Action = deployplan.Update
 		}
@@ -393,6 +392,30 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 	}
 
 	return nil
+}
+
+// getActionFromConfig returns the action for a field path based on resource config.
+// Returns Undefined if no config applies.
+func getActionFromConfig(cfg *dresources.ResourceLifecycleConfig, pathString string) deployplan.ActionType {
+	if cfg == nil {
+		return deployplan.Undefined
+	}
+	for _, p := range cfg.RecreateOnChanges {
+		if structpath.HasPrefix(pathString, p.String()) {
+			return deployplan.Recreate
+		}
+	}
+	for _, p := range cfg.UpdateIDOnChanges {
+		if structpath.HasPrefix(pathString, p.String()) {
+			return deployplan.UpdateWithID
+		}
+	}
+	for _, p := range cfg.IgnoreRemoteChanges {
+		if structpath.HasPrefix(pathString, p.String()) {
+			return deployplan.Skip
+		}
+	}
+	return deployplan.Undefined
 }
 
 // TODO: calling this "Local" is not right, it can resolve "id" and remote refrences for "skip" targets
