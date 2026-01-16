@@ -59,7 +59,8 @@ def load_fixture(spark: SparkSession):
 def _enable_fallback_compute():
     """Enable serverless compute if no compute is specified."""
     conf = WorkspaceClient().config
-    if conf.serverless_compute_id or conf.cluster_id or os.environ.get("SPARK_REMOTE"):
+    has_serverles_compute_id = hasattr(conf, "serverless_compute_id") and conf.serverless_compute_id
+    if has_serverles_compute_id or conf.cluster_id or os.environ.get("SPARK_REMOTE"):
         return
 
     url = "https://docs.databricks.com/dev-tools/databricks-connect/cluster-config"
@@ -83,6 +84,8 @@ def _allow_stderr_output(config: pytest.Config):
 def pytest_configure(config: pytest.Config):
     """Configure pytest session."""
     with _allow_stderr_output(config):
+        src_path = pathlib.Path(__file__).parent.parent / "src"
+        sys.path.insert(0, str(src_path))
         _enable_fallback_compute()
 
         # Initialize Spark session eagerly, so it is available even when
