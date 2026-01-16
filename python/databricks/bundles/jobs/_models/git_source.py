@@ -22,12 +22,12 @@ class GitSource:
 
     git_provider: VariableOr[GitProvider]
     """
-    Unique identifier of the service used to host the Git repository. The value is case insensitive.
+    Required. Unique identifier of the service used to host the Git repository. The value is case insensitive.
     """
 
     git_url: VariableOr[str]
     """
-    URL of the repository to be cloned by this job.
+    Required. URL of the repository to be cloned by this job.
     """
 
     git_branch: VariableOrOptional[str] = None
@@ -58,12 +58,12 @@ class GitSourceDict(TypedDict, total=False):
 
     git_provider: VariableOr[GitProviderParam]
     """
-    Unique identifier of the service used to host the Git repository. The value is case insensitive.
+    Required. Unique identifier of the service used to host the Git repository. The value is case insensitive.
     """
 
     git_url: VariableOr[str]
     """
-    URL of the repository to be cloned by this job.
+    Required. URL of the repository to be cloned by this job.
     """
 
     git_branch: VariableOrOptional[str]

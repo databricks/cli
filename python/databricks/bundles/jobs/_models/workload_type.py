@@ -21,7 +21,7 @@ class WorkloadType:
 
     clients: VariableOr[ClientsTypes]
     """
-    defined what type of clients can use the cluster. E.g. Notebooks, Jobs
+    Required. defined what type of clients can use the cluster. E.g. Notebooks, Jobs
     """
 
     @classmethod
@@ -37,7 +37,7 @@ class WorkloadTypeDict(TypedDict, total=False):
 
     clients: VariableOr[ClientsTypesParam]
     """
-    defined what type of clients can use the cluster. E.g. Notebooks, Jobs
+    Required. defined what type of clients can use the cluster. E.g. Notebooks, Jobs
     """
 
 

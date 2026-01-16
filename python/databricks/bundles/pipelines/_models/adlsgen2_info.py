@@ -17,7 +17,7 @@ class Adlsgen2Info:
 
     destination: VariableOr[str]
     """
-    abfss destination, e.g. `abfss://<container-name>@<storage-account-name>.dfs.core.windows.net/<directory-name>`.
+    Required. abfss destination, e.g. `abfss://<container-name>@<storage-account-name>.dfs.core.windows.net/<directory-name>`.
     """
 
     @classmethod
@@ -33,7 +33,7 @@ class Adlsgen2InfoDict(TypedDict, total=False):
 
     destination: VariableOr[str]
     """
-    abfss destination, e.g. `abfss://<container-name>@<storage-account-name>.dfs.core.windows.net/<directory-name>`.
+    Required. abfss destination, e.g. `abfss://<container-name>@<storage-account-name>.dfs.core.windows.net/<directory-name>`.
     """
 
 

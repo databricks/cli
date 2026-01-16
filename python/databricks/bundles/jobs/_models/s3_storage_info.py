@@ -17,7 +17,7 @@ class S3StorageInfo:
 
     destination: VariableOr[str]
     """
-    S3 destination, e.g. `s3://my-bucket/some-prefix` Note that logs will be delivered using
+    Required. S3 destination, e.g. `s3://my-bucket/some-prefix` Note that logs will be delivered using
     cluster iam role, please make sure you set cluster iam role and the role has write access to the
     destination. Please also note that you cannot use AWS keys to deliver logs.
     """
@@ -74,7 +74,7 @@ class S3StorageInfoDict(TypedDict, total=False):
 
     destination: VariableOr[str]
     """
-    S3 destination, e.g. `s3://my-bucket/some-prefix` Note that logs will be delivered using
+    Required. S3 destination, e.g. `s3://my-bucket/some-prefix` Note that logs will be delivered using
     cluster iam role, please make sure you set cluster iam role and the role has write access to the
     destination. Please also note that you cannot use AWS keys to deliver logs.
     """

@@ -3,6 +3,10 @@ from typing import Literal
 
 
 class PeriodicTriggerConfigurationTimeUnit(Enum):
+    """
+    Valid values are: `HOURS`, `DAYS`, and `WEEKS`.
+    """
+
     HOURS = "HOURS"
     DAYS = "DAYS"
     WEEKS = "WEEKS"

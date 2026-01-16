@@ -3,6 +3,10 @@ from typing import Literal
 
 
 class AuthenticationMethod(Enum):
+    """
+    Valid values are: `OAUTH` and `PAT`.
+    """
+
     OAUTH = "OAUTH"
     PAT = "PAT"
 

@@ -19,12 +19,12 @@ class PipelineClusterAutoscale:
 
     max_workers: VariableOr[int]
     """
-    The maximum number of workers to which the cluster can scale up when overloaded. `max_workers` must be strictly greater than `min_workers`.
+    Required. The maximum number of workers to which the cluster can scale up when overloaded. `max_workers` must be strictly greater than `min_workers`.
     """
 
     min_workers: VariableOr[int]
     """
-    The minimum number of workers the cluster can scale down to when underutilized.
+    Required. The minimum number of workers the cluster can scale down to when underutilized.
     It is also the initial number of workers the cluster will have after creation.
     """
 
@@ -50,12 +50,12 @@ class PipelineClusterAutoscaleDict(TypedDict, total=False):
 
     max_workers: VariableOr[int]
     """
-    The maximum number of workers to which the cluster can scale up when overloaded. `max_workers` must be strictly greater than `min_workers`.
+    Required. The maximum number of workers to which the cluster can scale up when overloaded. `max_workers` must be strictly greater than `min_workers`.
     """
 
     min_workers: VariableOr[int]
     """
-    The minimum number of workers the cluster can scale down to when underutilized.
+    Required. The minimum number of workers the cluster can scale down to when underutilized.
     It is also the initial number of workers the cluster will have after creation.
     """
 

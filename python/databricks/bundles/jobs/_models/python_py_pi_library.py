@@ -15,7 +15,7 @@ class PythonPyPiLibrary:
 
     package: VariableOr[str]
     """
-    The name of the pypi package to install. An optional exact version specification is also
+    Required. The name of the pypi package to install. An optional exact version specification is also
     supported. Examples: "simplejson" and "simplejson==3.8.0".
     """
 
@@ -38,7 +38,7 @@ class PythonPyPiLibraryDict(TypedDict, total=False):
 
     package: VariableOr[str]
     """
-    The name of the pypi package to install. An optional exact version specification is also
+    Required. The name of the pypi package to install. An optional exact version specification is also
     supported. Examples: "simplejson" and "simplejson==3.8.0".
     """
 

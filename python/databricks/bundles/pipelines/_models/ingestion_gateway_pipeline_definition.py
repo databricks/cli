@@ -21,7 +21,7 @@ class IngestionGatewayPipelineDefinition:
 
     connection_name: VariableOr[str]
     """
-    Immutable. The Unity Catalog connection that this gateway pipeline uses to communicate with the source.
+    Required. Immutable. The Unity Catalog connection that this gateway pipeline uses to communicate with the source.
     """
 
     gateway_storage_catalog: VariableOr[str]
@@ -66,7 +66,7 @@ class IngestionGatewayPipelineDefinitionDict(TypedDict, total=False):
 
     connection_name: VariableOr[str]
     """
-    Immutable. The Unity Catalog connection that this gateway pipeline uses to communicate with the source.
+    Required. Immutable. The Unity Catalog connection that this gateway pipeline uses to communicate with the source.
     """
 
     gateway_storage_catalog: VariableOr[str]

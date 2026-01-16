@@ -4,7 +4,7 @@ from typing import Literal
 
 class JobsHealthOperator(Enum):
     """
-    Specifies the operator used to compare the health metric value with the specified threshold.
+    Specifies the operator used to compare the health metric value with the specified threshold. Valid values are: `GREATER_THAN`.
     """
 
     GREATER_THAN = "GREATER_THAN"

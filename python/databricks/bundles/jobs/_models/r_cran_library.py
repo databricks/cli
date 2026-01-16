@@ -15,7 +15,7 @@ class RCranLibrary:
 
     package: VariableOr[str]
     """
-    The name of the CRAN package to install.
+    Required. The name of the CRAN package to install.
     """
 
     repo: VariableOrOptional[str] = None
@@ -36,7 +36,7 @@ class RCranLibraryDict(TypedDict, total=False):
 
     package: VariableOr[str]
     """
-    The name of the CRAN package to install.
+    Required. The name of the CRAN package to install.
     """
 
     repo: VariableOrOptional[str]

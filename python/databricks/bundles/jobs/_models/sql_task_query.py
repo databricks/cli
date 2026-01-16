@@ -15,7 +15,7 @@ class SqlTaskQuery:
 
     query_id: VariableOr[str]
     """
-    The canonical identifier of the SQL query.
+    Required. The canonical identifier of the SQL query.
     """
 
     @classmethod
@@ -31,7 +31,7 @@ class SqlTaskQueryDict(TypedDict, total=False):
 
     query_id: VariableOr[str]
     """
-    The canonical identifier of the SQL query.
+    Required. The canonical identifier of the SQL query.
     """
 
 

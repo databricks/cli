@@ -22,7 +22,7 @@ class JobCluster:
 
     new_cluster: VariableOr[ClusterSpec]
     """
-    If new_cluster, a description of a cluster that is created for each task.
+    Required. If new_cluster, a description of a cluster that is created for each task.
     """
 
     @classmethod
@@ -44,7 +44,7 @@ class JobClusterDict(TypedDict, total=False):
 
     new_cluster: VariableOr[ClusterSpecParam]
     """
-    If new_cluster, a description of a cluster that is created for each task.
+    Required. If new_cluster, a description of a cluster that is created for each task.
     """
 
 

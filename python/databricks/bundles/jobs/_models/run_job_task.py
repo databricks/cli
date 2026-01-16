@@ -23,7 +23,7 @@ class RunJobTask:
 
     job_id: VariableOr[int]
     """
-    ID of the job to trigger.
+    Required. ID of the job to trigger.
     """
 
     job_parameters: VariableOrDict[str] = field(default_factory=dict)
@@ -49,7 +49,7 @@ class RunJobTaskDict(TypedDict, total=False):
 
     job_id: VariableOr[int]
     """
-    ID of the job to trigger.
+    Required. ID of the job to trigger.
     """
 
     job_parameters: VariableOrDict[str]

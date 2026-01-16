@@ -7,7 +7,7 @@ class DayOfWeek(Enum):
     :meta private: [EXPERIMENTAL]
 
     Days of week in which the window is allowed to happen.
-    If not specified all days of the week will be used.
+    If not specified all days of the week will be used. Valid values are: `MONDAY`, `TUESDAY`, `WEDNESDAY`, `THURSDAY`, `FRIDAY`, `SATURDAY`, and `SUNDAY`.
     """
 
     MONDAY = "MONDAY"

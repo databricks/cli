@@ -17,7 +17,7 @@ class ComputeConfig:
 
     num_gpus: VariableOr[int]
     """
-    Number of GPUs.
+    Required. Number of GPUs.
     """
 
     gpu_node_pool_id: VariableOrOptional[str] = None
@@ -43,7 +43,7 @@ class ComputeConfigDict(TypedDict, total=False):
 
     num_gpus: VariableOr[int]
     """
-    Number of GPUs.
+    Required. Number of GPUs.
     """
 
     gpu_node_pool_id: VariableOrOptional[str]

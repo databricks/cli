@@ -22,12 +22,12 @@ class CleanRoomsNotebookTask:
 
     clean_room_name: VariableOr[str]
     """
-    The clean room that the notebook belongs to.
+    Required. The clean room that the notebook belongs to.
     """
 
     notebook_name: VariableOr[str]
     """
-    Name of the notebook being run.
+    Required. Name of the notebook being run.
     """
 
     etag: VariableOrOptional[str] = None
@@ -54,12 +54,12 @@ class CleanRoomsNotebookTaskDict(TypedDict, total=False):
 
     clean_room_name: VariableOr[str]
     """
-    The clean room that the notebook belongs to.
+    Required. The clean room that the notebook belongs to.
     """
 
     notebook_name: VariableOr[str]
     """
-    Name of the notebook being run.
+    Required. Name of the notebook being run.
     """
 
     etag: VariableOrOptional[str]

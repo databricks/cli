@@ -23,7 +23,7 @@ class SqlTaskDashboard:
 
     dashboard_id: VariableOr[str]
     """
-    The canonical identifier of the SQL dashboard.
+    Required. The canonical identifier of the SQL dashboard.
     """
 
     custom_subject: VariableOrOptional[str] = None
@@ -54,7 +54,7 @@ class SqlTaskDashboardDict(TypedDict, total=False):
 
     dashboard_id: VariableOr[str]
     """
-    The canonical identifier of the SQL dashboard.
+    Required. The canonical identifier of the SQL dashboard.
     """
 
     custom_subject: VariableOrOptional[str]
