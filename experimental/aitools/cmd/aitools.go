@@ -83,6 +83,7 @@ The server communicates via stdio using the Model Context Protocol.`,
 	cmd.Flags().StringVar(&warehouseID, "warehouse-id", "", "Databricks SQL Warehouse ID")
 
 	cmd.AddCommand(newInstallCmd())
+	cmd.AddCommand(newSkillsCmd())
 	cmd.AddCommand(newToolsCmd())
 
 	return cmd
