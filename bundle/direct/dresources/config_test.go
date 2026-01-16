@@ -7,9 +7,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestLoadConfig(t *testing.T) {
-	cfg, err := LoadConfig()
-	require.NoError(t, err)
+func TestMustLoadConfig(t *testing.T) {
+	cfg := MustLoadConfig()
 	require.NotNil(t, cfg)
 	require.NotNil(t, cfg.Resources)
 

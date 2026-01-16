@@ -34,28 +34,27 @@ var resourcesYAML []byte
 var (
 	configOnce   sync.Once
 	globalConfig *Config
-	configErr    error
 )
 
-// LoadConfig loads and parses the embedded resources.yml configuration.
+// MustLoadConfig loads and parses the embedded resources.yml configuration.
 // The config is loaded once and cached for subsequent calls.
-func LoadConfig() (*Config, error) {
+// Panics if the embedded YAML is invalid.
+func MustLoadConfig() *Config {
 	configOnce.Do(func() {
 		globalConfig = &Config{
 			Resources: nil,
 		}
-		configErr = yaml.Unmarshal(resourcesYAML, globalConfig)
+		if err := yaml.Unmarshal(resourcesYAML, globalConfig); err != nil {
+			panic(err)
+		}
 	})
-	return globalConfig, configErr
+	return globalConfig
 }
 
 // GetResourceConfig returns the lifecycle config for a given resource type.
 // Returns nil if the resource type has no configuration.
 func GetResourceConfig(resourceType string) *ResourceLifecycleConfig {
-	cfg, err := LoadConfig()
-	if err != nil || cfg == nil {
-		return nil
-	}
+	cfg := MustLoadConfig()
 	if rc, ok := cfg.Resources[resourceType]; ok {
 		return &rc
 	}
