@@ -9,15 +9,13 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/logdiag"
-	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
 )
 
-func TestGenerateYAMLFiles_SimpleFieldChange(t *testing.T) {
+func TestApplyChangesToYAML_SimpleFieldChange(t *testing.T) {
 	ctx := logdiag.InitContext(context.Background())
 
 	tmpDir := t.TempDir()
@@ -62,7 +60,7 @@ func TestGenerateYAMLFiles_SimpleFieldChange(t *testing.T) {
 	assert.NotContains(t, fileChanges[0].ModifiedContent, "timeout_seconds: 3600")
 }
 
-func TestGenerateYAMLFiles_NestedFieldChange(t *testing.T) {
+func TestApplyChangesToYAML_NestedFieldChange(t *testing.T) {
 	ctx := logdiag.InitContext(context.Background())
 
 	tmpDir := t.TempDir()
@@ -116,7 +114,7 @@ func TestGenerateYAMLFiles_NestedFieldChange(t *testing.T) {
 	assert.Equal(t, 3600, task0["timeout_seconds"])
 }
 
-func TestGenerateYAMLFiles_ArrayKeyValueAccess(t *testing.T) {
+func TestApplyChangesToYAML_ArrayKeyValueAccess(t *testing.T) {
 	ctx := logdiag.InitContext(context.Background())
 
 	tmpDir := t.TempDir()
@@ -177,7 +175,7 @@ func TestGenerateYAMLFiles_ArrayKeyValueAccess(t *testing.T) {
 	assert.Equal(t, 3600, task1["timeout_seconds"])
 }
 
-func TestGenerateYAMLFiles_MultipleResourcesSameFile(t *testing.T) {
+func TestApplyChangesToYAML_MultipleResourcesSameFile(t *testing.T) {
 	ctx := logdiag.InitContext(context.Background())
 
 	tmpDir := t.TempDir()
@@ -241,7 +239,7 @@ func TestGenerateYAMLFiles_MultipleResourcesSameFile(t *testing.T) {
 	assert.Equal(t, 3600, job2["timeout_seconds"])
 }
 
-func TestGenerateYAMLFiles_ResourceNotFound(t *testing.T) {
+func TestApplyChangesToYAML_ResourceNotFound(t *testing.T) {
 	ctx := logdiag.InitContext(context.Background())
 
 	tmpDir := t.TempDir()
@@ -276,7 +274,7 @@ func TestGenerateYAMLFiles_ResourceNotFound(t *testing.T) {
 	assert.Len(t, fileChanges, 0)
 }
 
-func TestGenerateYAMLFiles_InvalidFieldPath(t *testing.T) {
+func TestApplyChangesToYAML_InvalidFieldPath(t *testing.T) {
 	ctx := logdiag.InitContext(context.Background())
 
 	tmpDir := t.TempDir()
@@ -323,7 +321,7 @@ func TestGenerateYAMLFiles_InvalidFieldPath(t *testing.T) {
 	}
 }
 
-func TestGenerateYAMLFiles_Include(t *testing.T) {
+func TestApplyChangesToYAML_Include(t *testing.T) {
 	ctx := logdiag.InitContext(context.Background())
 
 	tmpDir := t.TempDir()
@@ -386,7 +384,6 @@ func TestGenerateYAMLFiles_TargetOverride(t *testing.T) {
 
 	mainYAML := `bundle:
   name: test-bundle
-
 targets:
   dev:
     resources:
@@ -426,7 +423,7 @@ targets:
 	assert.Contains(t, fileChanges[0].ModifiedContent, "timeout_seconds: 3600")
 }
 
-func TestGenerateYAMLFiles_WithStructValues(t *testing.T) {
+func TestApplyChangesToYAML_WithStructValues(t *testing.T) {
 	ctx := logdiag.InitContext(context.Background())
 
 	tmpDir := t.TempDir()
@@ -503,243 +500,57 @@ func TestGenerateYAMLFiles_WithStructValues(t *testing.T) {
 	assert.Equal(t, []string{"failure@example.com"}, testJob.EmailNotifications.OnFailure)
 }
 
-func TestResourceKeyToDynPath(t *testing.T) {
-	tests := []struct {
-		name        string
-		resourceKey string
-		wantErr     bool
-		wantLen     int
-	}{
-		{
-			name:        "simple resource key",
-			resourceKey: "resources.jobs.my_job",
-			wantErr:     false,
-			wantLen:     3,
-		},
-		{
-			name:        "empty resource key",
-			resourceKey: "",
-			wantErr:     true,
-		},
-	}
+func TestApplyChangesToYAML_PreserveComments(t *testing.T) {
+	ctx := logdiag.InitContext(context.Background())
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			path, err := resourceKeyToDynPath(tt.resourceKey)
-			if tt.wantErr {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-				assert.Len(t, path, tt.wantLen)
-			}
-		})
-	}
-}
+	tmpDir := t.TempDir()
 
-func TestParseResourceKey(t *testing.T) {
-	tests := []struct {
-		name        string
-		resourceKey string
-		wantType    string
-		wantName    string
-		wantErr     bool
-	}{
-		{
-			name:        "valid job resource",
-			resourceKey: "resources.jobs.my_job",
-			wantType:    "jobs",
-			wantName:    "my_job",
-			wantErr:     false,
-		},
-		{
-			name:        "valid pipeline resource",
-			resourceKey: "resources.pipelines.my_pipeline",
-			wantType:    "pipelines",
-			wantName:    "my_pipeline",
-			wantErr:     false,
-		},
-		{
-			name:        "invalid format - too few parts",
-			resourceKey: "resources.jobs",
-			wantErr:     true,
-		},
-		{
-			name:        "invalid format - wrong prefix",
-			resourceKey: "targets.jobs.my_job",
-			wantErr:     true,
-		},
-	}
+	yamlContent := `# test_comment0
+resources:
+	# test_comment1
+  jobs:
+    test_job:
+		# test_comment2
+      name: "Test Job"
+		# test_comment3
+      timeout_seconds: 3600
+		# test_comment4
+`
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			resourceType, resourceName, err := parseResourceKey(tt.resourceKey)
-			if tt.wantErr {
-				assert.Error(t, err)
-			} else {
-				assert.NoError(t, err)
-				assert.Equal(t, tt.wantType, resourceType)
-				assert.Equal(t, tt.wantName, resourceName)
-			}
-		})
-	}
-}
-
-func TestApplyChangesWithEnumTypes(t *testing.T) {
-	ctx := context.Background()
-
-	resource := dyn.V(map[string]dyn.Value{
-		"edit_mode": dyn.V("EDITABLE"),
-		"name":      dyn.V("test_job"),
-	})
-
-	changes := deployplan.Changes{
-		"edit_mode": &deployplan.ChangeDesc{
-			Remote: jobs.JobEditModeUiLocked,
-		},
-	}
-
-	result, err := applyChanges(ctx, resource, changes)
+	yamlPath := filepath.Join(tmpDir, "databricks.yml")
+	err := os.WriteFile(yamlPath, []byte(yamlContent), 0o644)
 	require.NoError(t, err)
 
-	editMode, err := dyn.GetByPath(result, dyn.Path{dyn.Key("edit_mode")})
-	require.NoError(t, err)
-	assert.Equal(t, dyn.KindString, editMode.Kind())
-	assert.Equal(t, "UI_LOCKED", editMode.MustString())
-}
-
-func TestApplyChangesWithPrimitiveTypes(t *testing.T) {
-	ctx := context.Background()
-
-	resource := dyn.V(map[string]dyn.Value{
-		"name":        dyn.V("old_name"),
-		"timeout":     dyn.V(100),
-		"enabled":     dyn.V(false),
-		"max_retries": dyn.V(1.5),
-	})
-
-	changes := deployplan.Changes{
-		"name": &deployplan.ChangeDesc{
-			Remote: "new_name",
-		},
-		"timeout": &deployplan.ChangeDesc{
-			Remote: int64(200),
-		},
-		"enabled": &deployplan.ChangeDesc{
-			Remote: true,
-		},
-		"max_retries": &deployplan.ChangeDesc{
-			Remote: 2.5,
-		},
-	}
-
-	result, err := applyChanges(ctx, resource, changes)
+	b, err := bundle.Load(ctx, tmpDir)
 	require.NoError(t, err)
 
-	name, err := dyn.GetByPath(result, dyn.Path{dyn.Key("name")})
-	require.NoError(t, err)
-	assert.Equal(t, "new_name", name.MustString())
+	mutator.DefaultMutators(ctx, b)
 
-	timeout, err := dyn.GetByPath(result, dyn.Path{dyn.Key("timeout")})
-	require.NoError(t, err)
-	assert.Equal(t, int64(200), timeout.MustInt())
-
-	enabled, err := dyn.GetByPath(result, dyn.Path{dyn.Key("enabled")})
-	require.NoError(t, err)
-	assert.True(t, enabled.MustBool())
-
-	maxRetries, err := dyn.GetByPath(result, dyn.Path{dyn.Key("max_retries")})
-	require.NoError(t, err)
-	assert.InDelta(t, 2.5, maxRetries.MustFloat(), 0.001)
-}
-
-func TestApplyChangesWithNilValues(t *testing.T) {
-	ctx := context.Background()
-
-	resource := dyn.V(map[string]dyn.Value{
-		"name":        dyn.V("test_job"),
-		"description": dyn.V("some description"),
-	})
-
-	changes := deployplan.Changes{
-		"description": &deployplan.ChangeDesc{
-			Remote: nil,
-		},
-	}
-
-	result, err := applyChanges(ctx, resource, changes)
-	require.NoError(t, err)
-
-	description, err := dyn.GetByPath(result, dyn.Path{dyn.Key("description")})
-	require.NoError(t, err)
-	assert.Equal(t, dyn.KindNil, description.Kind())
-}
-
-func TestApplyChangesWithStructValues(t *testing.T) {
-	ctx := context.Background()
-
-	resource := dyn.V(map[string]dyn.Value{
-		"name": dyn.V("test_job"),
-		"settings": dyn.V(map[string]dyn.Value{
-			"timeout": dyn.V(100),
-		}),
-	})
-
-	type Settings struct {
-		Timeout    int64  `json:"timeout"`
-		MaxRetries *int64 `json:"max_retries,omitempty"`
-	}
-
-	maxRetries := int64(3)
-	changes := deployplan.Changes{
-		"settings": &deployplan.ChangeDesc{
-			Remote: &Settings{
-				Timeout:    200,
-				MaxRetries: &maxRetries,
+	changes := map[string]deployplan.Changes{
+		"resources.jobs.test_job": {
+			"timeout_seconds": &deployplan.ChangeDesc{
+				Action: deployplan.Update,
+				Remote: 7200,
+			},
+			"name": &deployplan.ChangeDesc{
+				Action: deployplan.Update,
+				Remote: "New Test Job",
+			},
+			"tags": &deployplan.ChangeDesc{
+				Action: deployplan.Update,
+				Remote: map[string]string{
+					"test": "value",
+				},
 			},
 		},
 	}
 
-	result, err := applyChanges(ctx, resource, changes)
+	fileChanges, err := ApplyChangesToYAML(ctx, b, changes)
 	require.NoError(t, err)
 
-	settings, err := dyn.GetByPath(result, dyn.Path{dyn.Key("settings")})
-	require.NoError(t, err)
-	assert.Equal(t, dyn.KindMap, settings.Kind())
+	assert.Equal(t, yamlPath, fileChanges[0].Path)
 
-	timeout, err := dyn.GetByPath(settings, dyn.Path{dyn.Key("timeout")})
-	require.NoError(t, err)
-	assert.Equal(t, int64(200), timeout.MustInt())
-
-	retriesVal, err := dyn.GetByPath(settings, dyn.Path{dyn.Key("max_retries")})
-	require.NoError(t, err)
-	assert.Equal(t, int64(3), retriesVal.MustInt())
-}
-
-func TestApplyChanges_CreatesIntermediateNodes(t *testing.T) {
-	ctx := context.Background()
-
-	// Resource without tags field
-	resource := dyn.V(map[string]dyn.Value{
-		"name": dyn.V("test_job"),
-	})
-
-	// Change that requires creating tags map
-	changes := deployplan.Changes{
-		"tags['test']": &deployplan.ChangeDesc{
-			Remote: "val",
-		},
-	}
-
-	result, err := applyChanges(ctx, resource, changes)
-	require.NoError(t, err)
-
-	// Verify tags map was created
-	tags, err := dyn.GetByPath(result, dyn.Path{dyn.Key("tags")})
-	require.NoError(t, err)
-	assert.Equal(t, dyn.KindMap, tags.Kind())
-
-	// Verify test key was set
-	testVal, err := dyn.GetByPath(result, dyn.Path{dyn.Key("tags"), dyn.Key("test")})
-	require.NoError(t, err)
-	assert.Equal(t, "val", testVal.MustString())
+	assert.Contains(t, fileChanges[0].ModifiedContent, "# test_comment0")
+	assert.Contains(t, fileChanges[0].ModifiedContent, "# test_comment1")
+	assert.Contains(t, fileChanges[0].ModifiedContent, "# test_comment2")
 }
