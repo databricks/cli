@@ -13,8 +13,8 @@ type ResourceLifecycleConfig struct {
 	// IgnoreRemoteChanges: field patterns where remote changes are ignored (output-only, policy-set).
 	IgnoreRemoteChanges []*structpath.PathNode `yaml:"ignore_remote_changes,omitempty"`
 
-	// IgnoreLocalChanges: if true, local config changes will be ignored (read-only resource).
-	IgnoreLocalChanges bool `yaml:"ignore_local_changes,omitempty"`
+	// IgnoreLocalChanges: field patterns where local changes are ignored (can't be updated via API).
+	IgnoreLocalChanges []*structpath.PathNode `yaml:"ignore_local_changes,omitempty"`
 
 	// RecreateOnChanges: field patterns that trigger delete + create when changed.
 	RecreateOnChanges []*structpath.PathNode `yaml:"recreate_on_changes,omitempty"`

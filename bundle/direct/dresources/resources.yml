@@ -5,7 +5,7 @@
 #   recreate_on_changes: fields that trigger delete + create
 #   update_id_on_changes: fields that trigger UpdateWithID (ID may change)
 #   ignore_remote_changes: fields where remote changes are ignored
-#   ignore_local_changes: if true, all local changes are ignored
+#   ignore_local_changes: fields where local changes are ignored (can't be updated via API)
 
 resources:
   # jobs: no special config
@@ -23,12 +23,14 @@ resources:
       # the ml.RenameModel needs to be called instead of ml.UpdateModel.
       # We might reasonably choose to never fix this because this is a legacy resource.
       - name
+    # Allowing updates for tags requires dynamic selection of the method since
+    # tags can only be updated by calling ml.SetModelTag or ml.DeleteModelTag methods.
+    # Skip annotation matches the current behavior of Terraform where tags changes are showed
+    # in plan but are just ignored / not applied. Since this is a legacy resource we might
+    # reasonably choose to not fix it here as well.
     ignore_remote_changes:
-      # Allowing updates for tags requires dynamic selection of the method since
-      # tags can only be updated by calling ml.SetModelTag or ml.DeleteModelTag methods.
-      # Skip annotation matches the current behavior of Terraform where tags changes are showed
-      # in plan but are just ignored / not applied. Since this is a legacy resource we might
-      # reasonably choose to not fix it here as well.
+      - tags
+    ignore_local_changes:
       - tags
 
   # TF implementation: https://github.com/databricks/terraform-provider-databricks/blob/6c106e8e7052bb2726148d66309fd460ed444236/mlflow/resource_mlflow_experiment.go#L22
