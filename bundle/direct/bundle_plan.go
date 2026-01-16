@@ -400,6 +400,11 @@ func getActionFromConfig(cfg *dresources.ResourceLifecycleConfig, pathString str
 	if cfg == nil {
 		return deployplan.Undefined
 	}
+	for _, p := range cfg.IgnoreRemoteChanges {
+		if structpath.HasPrefix(pathString, p.String()) {
+			return deployplan.Skip
+		}
+	}
 	for _, p := range cfg.RecreateOnChanges {
 		if structpath.HasPrefix(pathString, p.String()) {
 			return deployplan.Recreate
@@ -408,11 +413,6 @@ func getActionFromConfig(cfg *dresources.ResourceLifecycleConfig, pathString str
 	for _, p := range cfg.UpdateIDOnChanges {
 		if structpath.HasPrefix(pathString, p.String()) {
 			return deployplan.UpdateWithID
-		}
-	}
-	for _, p := range cfg.IgnoreRemoteChanges {
-		if structpath.HasPrefix(pathString, p.String()) {
-			return deployplan.Skip
 		}
 	}
 	return deployplan.Undefined
