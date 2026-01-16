@@ -71,8 +71,8 @@ func (opts importDirOptions) callback(ctx context.Context, workspaceFiler filer.
 			return err
 		}
 		if isNotebook {
-			ext := path.Ext(localName)
-			remoteName = strings.TrimSuffix(localName, ext)
+			ext := path.Ext(remoteName)
+			remoteName = strings.TrimSuffix(remoteName, ext)
 		}
 
 		// Open the local file

@@ -13,7 +13,7 @@ import (
 	"github.com/databricks/cli/libs/structs/structvar"
 )
 
-const currentPlanVersion = 1
+const currentPlanVersion = 2
 
 type Plan struct {
 	PlanVersion int                   `json:"plan_version,omitempty"`
@@ -65,7 +65,7 @@ func LoadPlanFromFile(path string) (*Plan, error) {
 type PlanEntry struct {
 	ID          string                   `json:"id,omitempty"`
 	DependsOn   []DependsOnEntry         `json:"depends_on,omitempty"`
-	Action      string                   `json:"action,omitempty"`
+	Action      ActionType               `json:"action,omitempty"`
 	NewState    *structvar.StructVarJSON `json:"new_state,omitempty"`
 	RemoteState any                      `json:"remote_state,omitempty"`
 	Changes     Changes                  `json:"changes,omitempty"`
@@ -79,11 +79,11 @@ type DependsOnEntry struct {
 type Changes map[string]*ChangeDesc
 
 type ChangeDesc struct {
-	Action string `json:"action"`
-	Reason string `json:"reason,omitempty"`
-	Old    any    `json:"old,omitempty"`
-	New    any    `json:"new,omitempty"`
-	Remote any    `json:"remote,omitempty"`
+	Action ActionType `json:"action"`
+	Reason string     `json:"reason,omitempty"`
+	Old    any        `json:"old,omitempty"`
+	New    any        `json:"new,omitempty"`
+	Remote any        `json:"remote,omitempty"`
 }
 
 // Possible values for Reason field
@@ -92,6 +92,7 @@ const (
 	ReasonAlias             = "alias"
 	ReasonRemoteAlreadySet  = "remote_already_set"
 	ReasonFieldTriggers     = "field_triggers"
+	ReasonConfigOnly        = "config_only"
 )
 
 // HasChange checks if there are any changes for fields with the given prefix.
@@ -118,10 +119,9 @@ func (c *Changes) HasChange(fieldPath string) bool {
 func (p *Plan) GetActions() []Action {
 	actions := make([]Action, 0, len(p.Plan))
 	for key, entry := range p.Plan {
-		at := ActionTypeFromString(entry.Action)
 		actions = append(actions, Action{
 			ResourceKey: key,
-			ActionType:  at,
+			ActionType:  entry.Action,
 		})
 	}
 

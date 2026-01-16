@@ -1,0 +1,7 @@
+job_id=100200300
+echo "my job is $job_id"
+trace add_repl.py $job_id JOB_ID
+trace add_repl.py ABCD:EFG MY_TEXT
+trace add_repl.py SECOND MY_TEXT
+
+grep ACC_REPLS script

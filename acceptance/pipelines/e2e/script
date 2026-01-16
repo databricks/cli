@@ -4,30 +4,30 @@ title "Initialize pipeline project"
 trace $PIPELINES init --output-dir output
 
 title "Deploy pipeline"
-cd output/my_project
+cd output/lakeflow_project
 trace $PIPELINES deploy
 
 title "Run pipeline"
 trace $PIPELINES run
 
 title "Edit project by creating and running a new second pipeline"
-cat <<EOF > my_project_pipeline_2.pipeline.yml
+cat <<EOF > resources/lakeflow_project_etl_2.pipeline.yml
 resources:
   pipelines:
-    my_project_pipeline_2:
-      name: my_project_pipeline_2
+    lakeflow_project_etl_2:
+      name: lakeflow_project_etl_2
 EOF
 trace $PIPELINES deploy
 
 title "Assert the second pipeline is created"
-PIPELINE_ID=$($CLI bundle summary -o json | jq -r '.resources.pipelines.my_project_pipeline_2.id')
+PIPELINE_ID=$($CLI bundle summary -o json | jq -r '.resources.pipelines.lakeflow_project_etl_2.id')
 trace $CLI pipelines get "${PIPELINE_ID}"
 
-trace $PIPELINES run my_project_pipeline_2
+trace $PIPELINES run lakeflow_project_etl_2
 
 title "Stop both pipelines before destroy"
-trace $PIPELINES stop my_project_pipeline
-trace $PIPELINES stop my_project_pipeline_2
+trace $PIPELINES stop lakeflow_project_etl
+trace $PIPELINES stop lakeflow_project_etl_2
 
 title "Destroy project"
 trace $PIPELINES destroy --auto-approve

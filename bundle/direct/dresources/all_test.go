@@ -183,6 +183,14 @@ var testConfig map[string]any = map[string]any{
 			},
 		},
 	},
+
+	"quality_monitors": &resources.QualityMonitor{
+		TableName: "main.myschema.mytable",
+		CreateMonitor: catalog.CreateMonitor{
+			AssetsDir:        "/Workspace/Users/user@example.com/assets",
+			OutputSchemaName: "main.myschema",
+		},
+	},
 }
 
 type prepareWorkspace func(client *databricks.WorkspaceClient) (any, error)
@@ -672,7 +680,7 @@ func TestFieldTriggersNoUpdateWhenNotImplemented(t *testing.T) {
 
 		t.Run(resourceName+"_local", func(t *testing.T) {
 			for field, action := range adapter.FieldTriggers() {
-				assert.NotEqual(t, deployplan.ActionTypeUpdate, action,
+				assert.NotEqual(t, deployplan.Update, action,
 					"resource %s does not implement DoUpdate but field %s triggers update action", resourceName, field)
 			}
 		})

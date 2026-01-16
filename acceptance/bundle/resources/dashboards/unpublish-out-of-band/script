@@ -1,0 +1,32 @@
+unset MSYS_NO_PATHCONV
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    $CLI bundle destroy --auto-approve > /dev/null 2>&1
+}
+trap cleanup EXIT
+
+trace $CLI bundle plan -o json > out.plan_initial.$DATABRICKS_BUNDLE_ENGINE.json
+
+# Deploy the dashboard
+trace $CLI bundle deploy
+DASHBOARD_ID=$(read_id.py dashboard1)
+
+trace print_state.py | grep publish > out.state.$DATABRICKS_BUNDLE_ENGINE.json
+
+# Verify dashboard was deployed and is published
+trace $CLI lakeview get-published $DASHBOARD_ID | jq '{embed_credentials}'
+
+# Unpublish the dashboard out of band (simulating external action)
+trace $CLI lakeview unpublish $DASHBOARD_ID
+
+# Terraform: shows "skip" because it only reads draft state, not published state
+# Direct: shows "update" because Published field changes from false to true
+trace $CLI bundle plan > out.plan.$DATABRICKS_BUNDLE_ENGINE.txt
+
+$CLI bundle plan -o json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+json_in_json_normalize.py out.plan.$DATABRICKS_BUNDLE_ENGINE.json
+
+trace $CLI bundle deploy
+
+trace errcode $CLI lakeview get-published $DASHBOARD_ID &> out.get_published.$DATABRICKS_BUNDLE_ENGINE.txt

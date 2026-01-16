@@ -93,7 +93,7 @@ func (r *ResourceApp) DoDelete(ctx context.Context, id string) error {
 
 func (*ResourceApp) FieldTriggers() map[string]deployplan.ActionType {
 	return map[string]deployplan.ActionType{
-		"name": deployplan.ActionTypeRecreate,
+		"name": deployplan.Recreate,
 	}
 }
 

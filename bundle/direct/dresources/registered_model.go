@@ -107,10 +107,10 @@ func (*ResourceRegisteredModel) FieldTriggers() map[string]deployplan.ActionType
 	return map[string]deployplan.ActionType{
 		// The name can technically be updated without recreated. We recreate for now though
 		// to match TF implementation.
-		"name": deployplan.ActionTypeRecreate,
+		"name": deployplan.Recreate,
 
-		"catalog_name":     deployplan.ActionTypeRecreate,
-		"schema_name":      deployplan.ActionTypeRecreate,
-		"storage_location": deployplan.ActionTypeRecreate,
+		"catalog_name":     deployplan.Recreate,
+		"schema_name":      deployplan.Recreate,
+		"storage_location": deployplan.Recreate,
 	}
 }

@@ -23,6 +23,7 @@ type Config struct {
 	DatabricksIdTokenFilepath  string `json:"databricks_id_token_filepath,omitempty"`
 	DebugHeaders               bool   `json:"debug_headers,omitempty"`
 	DebugTruncateBytes         int    `json:"debug_truncate_bytes,omitempty"`
+	DisableOauthRefreshToken   bool   `json:"disable_oauth_refresh_token,omitempty"`
 	ExperimentalIsUnifiedHost  bool   `json:"experimental_is_unified_host,omitempty"`
 	GoogleCredentials          string `json:"google_credentials,omitempty"`
 	GoogleServiceAccount       string `json:"google_service_account,omitempty"`

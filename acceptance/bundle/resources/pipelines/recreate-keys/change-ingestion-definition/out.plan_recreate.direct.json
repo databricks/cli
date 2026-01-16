@@ -1,5 +1,5 @@
 {
-  "plan_version": 1,
+  "plan_version": 2,
   "cli_version": "[DEV_VERSION]",
   "lineage": "[UUID]",
   "serial": 1,
@@ -34,7 +34,7 @@
         "creator_user_name": "[USERNAME]",
         "last_modified": [UNIX_TIME_MILLIS],
         "name": "test-pipeline-[UNIQUE_NAME]",
-        "pipeline_id": "[PIPELINE_ID_1]",
+        "pipeline_id": "[MY_ID]",
         "run_as_user_name": "[USERNAME]",
         "spec": {
           "channel": "CURRENT",
@@ -43,7 +43,7 @@
             "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/state/metadata.json"
           },
           "edition": "ADVANCED",
-          "id": "[PIPELINE_ID_1]",
+          "id": "[MY_ID]",
           "ingestion_definition": {
             "connection_name": "my_connection",
             "objects": [
@@ -58,7 +58,7 @@
             }
           ],
           "name": "test-pipeline-[UNIQUE_NAME]",
-          "storage": "dbfs:/pipelines/[PIPELINE_ID_1]"
+          "storage": "dbfs:/pipelines/[MY_ID]"
         },
         "state": "IDLE"
       },
@@ -73,7 +73,7 @@
         "storage": {
           "action": "skip",
           "reason": "server_side_default",
-          "remote": "dbfs:/pipelines/[PIPELINE_ID_1]"
+          "remote": "dbfs:/pipelines/[MY_ID]"
         }
       }
     }

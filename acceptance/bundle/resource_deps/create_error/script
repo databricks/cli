@@ -5,8 +5,8 @@ trace print_requests.py --sort //jobs
 
 trace $CLI bundle summary
 
-ind_id=`read_id.py jobs independent`
-echo "$ind_id:IND_ID" >> ACC_REPLS
+# Add all resource IDs to runtime replacements to avoid pattern matching ambiguity
+replace_ids.py
 
 title "Plan should still contain foo and bar"
 trace $CLI bundle plan

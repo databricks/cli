@@ -1,5 +1,5 @@
 {
-  "plan_version": 1,
+  "plan_version": 2,
   "cli_version": "[DEV_VERSION]",
   "lineage": "[UUID]",
   "serial": 1,
@@ -11,6 +11,7 @@
           "display_name": "test bundle-deploy-dashboard [UNIQUE_NAME])",
           "embed_credentials": false,
           "parent_path": "/Workspace/Users/[USERNAME]/.bundle/delete-trashed-out-of-band-[UNIQUE_NAME]/default/resources",
+          "published": true,
           "serialized_dashboard": "{\"pages\":[{\"name\":\"test-page\",\"displayName\":\"Test Dashboard\"}]}\n",
           "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
         }

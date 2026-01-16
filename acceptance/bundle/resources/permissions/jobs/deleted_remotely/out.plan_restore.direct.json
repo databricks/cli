@@ -1,5 +1,5 @@
 {
-  "plan_version": 1,
+  "plan_version": 2,
   "cli_version": "[DEV_VERSION]",
   "lineage": "[UUID]",
   "serial": 1,
@@ -9,7 +9,7 @@
       "remote_state": {
         "created_time": [UNIX_TIME_MILLIS],
         "creator_user_name": "[USERNAME]",
-        "job_id": [JOB_ID],
+        "job_id": [JOB_WITH_PERMISSIONS_ID],
         "run_as_user_name": "[USERNAME]",
         "settings": {
           "deployment": {
@@ -65,7 +65,7 @@
       "action": "update",
       "new_state": {
         "value": {
-          "object_id": "/jobs/[JOB_ID]",
+          "object_id": "/jobs/[JOB_WITH_PERMISSIONS_ID]",
           "permissions": [
             {
               "permission_level": "CAN_VIEW",
@@ -83,7 +83,7 @@
         }
       },
       "remote_state": {
-        "object_id": "/jobs/[JOB_ID]",
+        "object_id": "/jobs/[JOB_WITH_PERMISSIONS_ID]",
         "permissions": [
           {
             "permission_level": "IS_OWNER",

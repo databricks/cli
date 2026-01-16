@@ -1,0 +1,12 @@
+{
+  "plan_version": 2,
+  "cli_version": "[DEV_VERSION]",
+  "plan": {
+    "resources.jobs.sample_job": {
+      "action": "create"
+    },
+    "resources.pipelines.my_default_python_etl": {
+      "action": "create"
+    }
+  }
+}

@@ -1,4 +1,3 @@
 #!/bin/bash
-$CLI experimental apps-mcp tools init-template app --name test_app --sql-warehouse-id abc123 --output-dir output > /dev/null 2>&1
-echo "✓ Template instantiation succeeded"
+$CLI experimental aitools tools init-template app --name test_app --sql-warehouse-id abc123 --output-dir output 2>&1 | grep -A 9999 "^--$"
 rm -rf output

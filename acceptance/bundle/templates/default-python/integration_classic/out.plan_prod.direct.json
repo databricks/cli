@@ -1,0 +1,187 @@
+{
+  "plan_version": 2,
+  "cli_version": "[DEV_VERSION]",
+  "plan": {
+    "resources.jobs.sample_job": {
+      "depends_on": [
+        {
+          "node": "resources.pipelines.project_name_[UNIQUE_NAME]_etl",
+          "label": "${resources.pipelines.project_name_[UNIQUE_NAME]_etl.id}"
+        }
+      ],
+      "action": "create",
+      "new_state": {
+        "value": {
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/state/metadata.json"
+          },
+          "edit_mode": "UI_LOCKED",
+          "format": "MULTI_TASK",
+          "job_clusters": [
+            {
+              "job_cluster_key": "job_cluster",
+              "new_cluster": {
+                "autoscale": {
+                  "max_workers": 4,
+                  "min_workers": 1
+                },
+                "data_security_mode": "SINGLE_USER",
+                "node_type_id": "[NODE_TYPE_ID]",
+                "spark_version": "16.4.x-scala2.12"
+              }
+            }
+          ],
+          "max_concurrent_runs": 1,
+          "name": "sample_job",
+          "parameters": [
+            {
+              "default": "hive_metastore",
+              "name": "catalog"
+            },
+            {
+              "default": "prod",
+              "name": "schema"
+            }
+          ],
+          "queue": {
+            "enabled": true
+          },
+          "tasks": [
+            {
+              "job_cluster_key": "job_cluster",
+              "libraries": [
+                {
+                  "whl": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/artifacts/.internal/project_name_[UNIQUE_NAME]-0.0.1-py3-none-any.whl"
+                }
+              ],
+              "notebook_task": {
+                "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/files/src/sample_notebook"
+              },
+              "task_key": "notebook_task"
+            },
+            {
+              "depends_on": [
+                {
+                  "task_key": "notebook_task"
+                }
+              ],
+              "job_cluster_key": "job_cluster",
+              "libraries": [
+                {
+                  "whl": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/artifacts/.internal/project_name_[UNIQUE_NAME]-0.0.1-py3-none-any.whl"
+                }
+              ],
+              "python_wheel_task": {
+                "entry_point": "main",
+                "package_name": "project_name_[UNIQUE_NAME]",
+                "parameters": [
+                  "--catalog",
+                  "hive_metastore",
+                  "--schema",
+                  "prod"
+                ]
+              },
+              "task_key": "python_wheel_task"
+            },
+            {
+              "depends_on": [
+                {
+                  "task_key": "notebook_task"
+                }
+              ],
+              "pipeline_task": {
+                "pipeline_id": "${resources.pipelines.project_name_[UNIQUE_NAME]_etl.id}"
+              },
+              "task_key": "refresh_pipeline"
+            }
+          ],
+          "trigger": {
+            "pause_status": "UNPAUSED",
+            "periodic": {
+              "interval": 1,
+              "unit": "DAYS"
+            }
+          }
+        },
+        "vars": {
+          "tasks[2].pipeline_task.pipeline_id": "${resources.pipelines.project_name_[UNIQUE_NAME]_etl.id}"
+        }
+      }
+    },
+    "resources.jobs.sample_job.permissions": {
+      "depends_on": [
+        {
+          "node": "resources.jobs.sample_job",
+          "label": "${resources.jobs.sample_job.id}"
+        }
+      ],
+      "action": "create",
+      "new_state": {
+        "value": {
+          "object_id": "",
+          "permissions": [
+            {
+              "permission_level": "IS_OWNER",
+              "service_principal_name": "[USERNAME]"
+            }
+          ]
+        },
+        "vars": {
+          "object_id": "/jobs/${resources.jobs.sample_job.id}"
+        }
+      }
+    },
+    "resources.pipelines.project_name_[UNIQUE_NAME]_etl": {
+      "action": "create",
+      "new_state": {
+        "value": {
+          "channel": "CURRENT",
+          "deployment": {
+            "kind": "BUNDLE",
+            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/state/metadata.json"
+          },
+          "edition": "ADVANCED",
+          "environment": {
+            "dependencies": [
+              "--editable /Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/files"
+            ]
+          },
+          "libraries": [
+            {
+              "glob": {
+                "include": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/files/src/project_name_[UNIQUE_NAME]_etl/transformations/**"
+              }
+            }
+          ],
+          "name": "project_name_[UNIQUE_NAME]_etl",
+          "root_path": "/Workspace/Users/[USERNAME]/.bundle/project_name_[UNIQUE_NAME]/prod/files/src/project_name_[UNIQUE_NAME]_etl",
+          "schema": "prod"
+        }
+      }
+    },
+    "resources.pipelines.project_name_[UNIQUE_NAME]_etl.permissions": {
+      "depends_on": [
+        {
+          "node": "resources.pipelines.project_name_[UNIQUE_NAME]_etl",
+          "label": "${resources.pipelines.project_name_[UNIQUE_NAME]_etl.id}"
+        }
+      ],
+      "action": "create",
+      "new_state": {
+        "value": {
+          "object_id": "",
+          "permissions": [
+            {
+              "permission_level": "IS_OWNER",
+              "service_principal_name": "[USERNAME]"
+            }
+          ]
+        },
+        "vars": {
+          "object_id": "/pipelines/${resources.pipelines.project_name_[UNIQUE_NAME]_etl.id}"
+        }
+      }
+    }
+  }
+}
