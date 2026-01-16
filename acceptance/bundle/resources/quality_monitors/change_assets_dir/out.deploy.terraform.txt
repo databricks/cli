@@ -1,0 +1,22 @@
+
+>>> errcode [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/quality-monitor-update-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Error: terraform apply: exit status 1
+
+Error: Provider produced inconsistent result after apply
+
+When applying changes to databricks_quality_monitor.monitor1, provider
+"provider[\"registry.terraform.io/databricks/databricks\"]" produced an
+unexpected new value: .assets_dir: was
+cty.StringVal("/Workspace/Users/[USERNAME]/monitor_assets2_[UNIQUE_NAME]"),
+but now
+cty.StringVal("/Workspace/Users/[USERNAME]/monitor_assets_[UNIQUE_NAME]").
+
+This is a bug in the provider, which should be reported in the provider's own
+issue tracker.
+
+
+Updating deployment state...
+
+Exit code: 1

@@ -7,13 +7,14 @@ import (
 	"github.com/databricks/cli/experimental/aitools/lib/detector"
 	"github.com/databricks/cli/experimental/aitools/lib/middlewares"
 	"github.com/databricks/cli/experimental/aitools/lib/prompts"
+	"github.com/databricks/cli/experimental/aitools/lib/skills"
 	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 )
 
 // Discover provides workspace context and workflow guidance.
-// Returns L1 (flow) always + L2 (target) for detected target types.
+// Returns L1 (flow) always + L2 (target) for detected target types + L3 (skills) listing.
 func Discover(ctx context.Context, workingDirectory string) (string, error) {
 	warehouse, err := middlewares.GetWarehouseEndpoint(ctx)
 	if err != nil {
@@ -34,7 +35,7 @@ func Discover(ctx context.Context, workingDirectory string) (string, error) {
 	return generateDiscoverGuidance(ctx, warehouse, currentProfile, profiles, defaultCatalog, detected), nil
 }
 
-// generateDiscoverGuidance creates guidance with L1 (flow) + L2 (target) layers.
+// generateDiscoverGuidance creates guidance with L1 (flow) + L2 (target) + L3 (skills) layers.
 func generateDiscoverGuidance(ctx context.Context, warehouse *sql.EndpointInfo, currentProfile string, profiles profile.Profiles, defaultCatalog string, detected *detector.DetectedContext) string {
 	data := buildTemplateData(warehouse, currentProfile, profiles, defaultCatalog)
 
@@ -59,6 +60,11 @@ func generateDiscoverGuidance(ctx context.Context, warehouse *sql.EndpointInfo, 
 		if detected.Template != "" {
 			result += fmt.Sprintf(" (template: %s)", detected.Template)
 		}
+	}
+
+	// L3: list available skills
+	if skillsSection := skills.FormatSkillsSection(detected.TargetTypes); skillsSection != "" {
+		result += "\n\n" + skillsSection
 	}
 
 	return result

@@ -1,0 +1,9 @@
+# We should always treat new lines in integration test files on Windows as \n.
+# This is important because the characters themselves are semantically important in tests.
+# For example, an additional \r character in Windows changes the upload payload when
+# uploading file content to a workspace.
+*.py text eol=lf
+*.sql text eol=lf
+*.r text eol=lf
+*.scala text eol=lf
+*.ipynb text eol=lf

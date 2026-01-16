@@ -1,0 +1,17 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+    rm out.requests.txt
+}
+trap cleanup EXIT
+
+trace $CLI bundle deploy
+
+APP_NAME=$($CLI bundle summary -o json | jq -r '.resources.apps.myapp.name')
+$CLI bundle run myapp > /dev/null 2>&1
+
+DEPLOYMENT_ID=$($CLI apps get "$APP_NAME" | jq -r '.active_deployment.deployment_id')
+echo $DEPLOYMENT_ID:DEPLOYMENT_ID >> ACC_REPLS
+
+trace $CLI apps get-deployment "$APP_NAME" "$DEPLOYMENT_ID" | jq '{command, env_vars}'

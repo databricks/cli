@@ -1,0 +1,54 @@
+{
+  "plan_version": 2,
+  "cli_version": "[DEV_VERSION]",
+  "lineage": "[UUID]",
+  "serial": 1,
+  "plan": {
+    "resources.dashboards.dashboard1": {
+      "action": "update",
+      "new_state": {
+        "value": {
+          "display_name": "test bundle-deploy-dashboard [UNIQUE_NAME]",
+          "embed_credentials": false,
+          "parent_path": "/Workspace/Users/[USERNAME]/.bundle/unpublish-out-of-band-[UNIQUE_NAME]/default/resources",
+          "published": true,
+          "serialized_dashboard": "{\"pages\":[{\"displayName\":\"Test Dashboard\",\"name\":\"test-page\"}]}",
+          "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
+        }
+      },
+      "remote_state": {
+        "create_time": "[TIMESTAMP]",
+        "dashboard_id": "[DASHBOARD1_ID]",
+        "display_name": "test bundle-deploy-dashboard [UNIQUE_NAME]",
+        "embed_credentials": false,
+        "etag": [ETAG],
+        "lifecycle_state": "ACTIVE",
+        "parent_path": "/Workspace/Users/[USERNAME]/.bundle/unpublish-out-of-band-[UNIQUE_NAME]/default/resources",
+        "path": "/Users/[USERNAME]/.bundle/unpublish-out-of-band-[UNIQUE_NAME]/default/resources/test bundle-deploy-dashboard [UNIQUE_NAME].lvdash.json",
+        "published": false,
+        "serialized_dashboard": "{\"pages\":[{\"displayName\":\"Test Dashboard\",\"name\":\"test-page\",\"pageType\":\"PAGE_TYPE_CANVAS\"}]}",
+        "update_time": "[TIMESTAMP]",
+        "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
+      },
+      "changes": {
+        "etag": {
+          "action": "skip",
+          "old": [ETAG],
+          "remote": [ETAG]
+        },
+        "published": {
+          "action": "update",
+          "old": true,
+          "new": true,
+          "remote": false
+        },
+        "serialized_dashboard": {
+          "action": "skip",
+          "old": "{\"pages\":[{\"displayName\":\"Test Dashboard\",\"name\":\"test-page\"}]}",
+          "new": "{\"pages\":[{\"displayName\":\"Test Dashboard\",\"name\":\"test-page\"}]}",
+          "remote": "{\"pages\":[{\"displayName\":\"Test Dashboard\",\"name\":\"test-page\",\"pageType\":\"PAGE_TYPE_CANVAS\"}]}"
+        }
+      }
+    }
+  }
+}

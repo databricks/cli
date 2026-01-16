@@ -1,0 +1,5 @@
+
+>>> errcode [CLI] pipelines generate --existing-pipeline-dir src/my_pipeline
+Error: resources/my_pipeline.pipeline.yml already exists. Use --force to overwrite
+
+Exit code: 1

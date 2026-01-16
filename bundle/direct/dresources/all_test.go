@@ -183,6 +183,14 @@ var testConfig map[string]any = map[string]any{
 			},
 		},
 	},
+
+	"quality_monitors": &resources.QualityMonitor{
+		TableName: "main.myschema.mytable",
+		CreateMonitor: catalog.CreateMonitor{
+			AssetsDir:        "/Workspace/Users/user@example.com/assets",
+			OutputSchemaName: "main.myschema",
+		},
+	},
 }
 
 type prepareWorkspace func(client *databricks.WorkspaceClient) (any, error)

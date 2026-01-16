@@ -26,6 +26,29 @@ func newInstallCmd() *cobra.Command {
 }
 
 func runInstall(ctx context.Context) error {
+	// Check for non-interactive mode with agent detection
+	// If running in an AI agent, install automatically without prompts
+	if !cmdio.IsTTY(os.Stdin) {
+		if os.Getenv("CLAUDECODE") != "" {
+			if err := agents.InstallClaude(); err != nil {
+				return err
+			}
+			cmdio.LogString(ctx, color.GreenString("✓ Installed Databricks MCP server for Claude Code"))
+			cmdio.LogString(ctx, color.YellowString("⚠️  Please restart Claude Code for changes to take effect"))
+			return nil
+		}
+		if os.Getenv("CURSOR_AGENT") != "" {
+			if err := agents.InstallCursor(); err != nil {
+				return err
+			}
+			cmdio.LogString(ctx, color.GreenString("✓ Installed Databricks MCP server for Cursor"))
+			cmdio.LogString(ctx, color.YellowString("⚠️  Please restart Cursor for changes to take effect"))
+			return nil
+		}
+		// Unknown agent in non-interactive mode - show manual instructions
+		return agents.ShowCustomInstructions(ctx)
+	}
+
 	cmdio.LogString(ctx, "")
 	green := color.New(color.FgGreen).SprintFunc()
 	cmdio.LogString(ctx, " "+green("[")+"████████"+green("]")+"  Experimental Databricks AI Tools MCP server")
@@ -34,9 +57,9 @@ func runInstall(ctx context.Context) error {
 	cmdio.LogString(ctx, "")
 
 	yellow := color.New(color.FgYellow).SprintFunc()
-	cmdio.LogString(ctx, yellow("╔════════════════════════════════════════════════════════════════╗"))
-	cmdio.LogString(ctx, yellow("║  ⚠️  EXPERIMENTAL: This command may change in future versions   ║"))
-	cmdio.LogString(ctx, yellow("╚════════════════════════════════════════════════════════════════╝"))
+	cmdio.LogString(ctx, yellow("════════════════════════════════════════════════════════════════"))
+	cmdio.LogString(ctx, yellow("  ⚠️  EXPERIMENTAL: This command may change in future versions  "))
+	cmdio.LogString(ctx, yellow("════════════════════════════════════════════════════════════════"))
 	cmdio.LogString(ctx, "")
 
 	cmdio.LogString(ctx, "Which coding agents would you like to install the MCP server for?")

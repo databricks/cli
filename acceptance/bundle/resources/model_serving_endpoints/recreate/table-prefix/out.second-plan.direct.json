@@ -56,8 +56,11 @@
           "creator": "[USERNAME]",
           "id": "[UUID]",
           "name": "[ORIGINAL_ENDPOINT_ID]",
+          "permission_level": "CAN_MANAGE",
+          "route_optimized": false,
           "state": {
-            "config_update": "NOT_UPDATING"
+            "config_update": "NOT_UPDATING",
+            "ready": "NOT_READY"
           }
         },
         "endpoint_id": "[UUID]"
@@ -69,6 +72,11 @@
           "old": "my_table",
           "new": "other_table",
           "remote": "my_table"
+        },
+        "route_optimized": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": false
         }
       }
     }
