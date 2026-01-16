@@ -507,14 +507,14 @@ func TestApplyChangesToYAML_PreserveComments(t *testing.T) {
 
 	yamlContent := `# test_comment0
 resources:
-	# test_comment1
+  # test_comment1
   jobs:
     test_job:
-		# test_comment2
+      # test_comment2
       name: "Test Job"
-		# test_comment3
+      # test_comment3
       timeout_seconds: 3600
-		# test_comment4
+      # test_comment4
 `
 
 	yamlPath := filepath.Join(tmpDir, "databricks.yml")
@@ -547,10 +547,13 @@ resources:
 
 	fileChanges, err := ApplyChangesToYAML(ctx, b, changes)
 	require.NoError(t, err)
+	require.Len(t, fileChanges, 1)
 
 	assert.Equal(t, yamlPath, fileChanges[0].Path)
 
 	assert.Contains(t, fileChanges[0].ModifiedContent, "# test_comment0")
 	assert.Contains(t, fileChanges[0].ModifiedContent, "# test_comment1")
 	assert.Contains(t, fileChanges[0].ModifiedContent, "# test_comment2")
+	assert.Contains(t, fileChanges[0].ModifiedContent, "# test_comment3")
+	assert.Contains(t, fileChanges[0].ModifiedContent, "# test_comment4")
 }
