@@ -4,15 +4,14 @@ package bundle
 
 import (
 	"errors"
-	"os"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/spf13/cobra"
-	"golang.org/x/term"
 )
 
 func newDestroyCommand() *cobra.Command {
@@ -47,10 +46,12 @@ Typical use cases:
 }
 
 func CommandBundleDestroy(cmd *cobra.Command, args []string, autoApprove, forceDestroy bool) error {
-	// we require auto-approve for non tty terminals since interactive consent
-	// is not possible
-	if !term.IsTerminal(int(os.Stderr.Fd())) && !autoApprove {
-		return errors.New("please specify --auto-approve to skip interactive confirmation checks for non tty consoles")
+	ctx := cmd.Context()
+
+	// we require auto-approve for non-interactive terminals since prompts
+	// are not possible
+	if !cmdio.IsPromptSupported(ctx) && !autoApprove {
+		return errors.New("please specify --auto-approve since terminal does not support interactive prompts")
 	}
 
 	opts := utils.ProcessOptions{
@@ -70,8 +71,8 @@ func CommandBundleDestroy(cmd *cobra.Command, args []string, autoApprove, forceD
 		return err
 	}
 
-	phases.Destroy(cmd.Context(), b, stateDesc.Engine)
-	if logdiag.HasError(cmd.Context()) {
+	phases.Destroy(ctx, b, stateDesc.Engine)
+	if logdiag.HasError(ctx) {
 		return root.ErrAlreadyPrinted
 	}
 

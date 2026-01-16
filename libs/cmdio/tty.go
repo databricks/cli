@@ -20,7 +20,7 @@ func isTTY(v any) bool {
 		return false
 	}
 	fd := f.Fd()
-	return isatty.IsTerminal(fd) || isatty.IsCygwinTerminal(fd)
+	return isatty.IsTerminal(fd) || isatty.IsCygwinTerminal(fd) //nolint:forbidigo
 }
 
 // fakeTTY wraps an io.Writer and makes IsTTY return true for it.
