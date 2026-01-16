@@ -51,10 +51,18 @@ func New(ctx context.Context) *cobra.Command {
 	initProgressLoggerFlag(cmd, logFlags)
 
 	cmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
+		var err error
+
 		ctx := cmd.Context()
 
+		// Configure command IO
+		ctx, err = outputFlag.initializeIO(ctx, cmd)
+		if err != nil {
+			return err
+		}
+
 		// Configure default logger.
-		ctx, err := logFlags.initializeContext(ctx)
+		ctx, err = logFlags.initializeContext(ctx)
 		if err != nil {
 			return err
 		}
@@ -63,17 +71,6 @@ func New(ctx context.Context) *cobra.Command {
 		logger.Info("start",
 			slog.String("version", build.GetInfo().Version),
 			slog.String("args", strings.Join(os.Args, ", ")))
-
-		// set context, so that initializeIO can have the current context
-		cmd.SetContext(ctx)
-
-		// Configure command IO
-		err = outputFlag.initializeIO(cmd)
-		if err != nil {
-			return err
-		}
-		// get the context back
-		ctx = cmd.Context()
 
 		// Configure our user agent with the command that's about to be executed.
 		ctx = withCommandInUserAgent(ctx, cmd)
