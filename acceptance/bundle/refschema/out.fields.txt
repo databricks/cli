@@ -106,6 +106,7 @@ resources.apps.*.config.env	[]resources.AppEnvVar	INPUT
 resources.apps.*.config.env[*]	resources.AppEnvVar	INPUT
 resources.apps.*.config.env[*].name	string	INPUT
 resources.apps.*.config.env[*].value	string	INPUT
+resources.apps.*.config.env[*].value_from	string	INPUT
 resources.apps.*.create_time	string	ALL
 resources.apps.*.creator	string	ALL
 resources.apps.*.default_source_code_path	string	ALL

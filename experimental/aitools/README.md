@@ -94,7 +94,7 @@ If you prefer to configure manually or the automatic installation doesn't work:
   "mcpServers": {
     "databricks": {
       "command": "databricks",
-      "args": ["experimental", "aitools"],
+      "args": ["experimental", "aitools", "mcp"],
       "env": {
         "DATABRICKS_HOST": "https://your-workspace.databricks.com",
         "DATABRICKS_TOKEN": "dapi...",
@@ -156,7 +156,7 @@ If the MCP server doesn't connect or shows errors:
 5. **Check Databricks CLI:** Verify the CLI is installed and accessible:
    ```bash
    databricks --version
-   databricks experimental aitools --help
+   databricks experimental aitools mcp --help
    ```
 
 6. **Test authentication:** Try listing catalogs to verify credentials work:
@@ -323,8 +323,8 @@ The `invoke_databricks_cli` tool:
 # Install MCP server in coding agents (Claude Code, Cursor, etc.)
 databricks experimental aitools install
 
-# Start MCP server (default mode)
-databricks experimental aitools
+# Start MCP server
+databricks experimental aitools mcp
 ```
 
 ### Environment Variables

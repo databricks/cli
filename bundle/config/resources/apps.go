@@ -26,7 +26,10 @@ type AppEnvVar struct {
 	Name string `json:"name" yaml:"name"`
 
 	// Value is the environment variable value
-	Value string `json:"value" yaml:"value"`
+	Value string `json:"value,omitempty" yaml:"value,omitempty"`
+
+	// ValueFrom is the name of an external Databricks resource that contains the value, such as a secret or a database table.
+	ValueFrom string `json:"value_from,omitempty" yaml:"value_from,omitempty"`
 }
 
 type App struct {
