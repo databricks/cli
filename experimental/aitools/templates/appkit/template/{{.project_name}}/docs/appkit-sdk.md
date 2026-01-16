@@ -17,7 +17,7 @@ import { MyInterface, MyType } from '../../shared/types';
 ## Server Setup
 
 ```typescript
-import { createApp, server, analytics } from '@databricks/app-kit';
+import { createApp, server, analytics } from '@databricks/appkit';
 
 const app = await createApp({
   plugins: [
@@ -45,12 +45,11 @@ Use cases:
 - Data that needs transformation before display
 
 ```typescript
-import { useAnalyticsQuery, Skeleton } from '@databricks/app-kit-ui/react';
-
-interface QueryResult { column_name: string; value: number; }
+import { useAnalyticsQuery, Skeleton } from '@databricks/appkit-ui/react';
+import { sql } from '@databricks/appkit-ui/js';
 
 function CustomDisplay() {
-  const { data, loading, error } = useAnalyticsQuery<QueryResult[]>('query_name', {
+  const { data, loading, error } = useAnalyticsQuery('query_name', {
     start_date: sql.date(Date.now()),
     category: sql.string("tools")
   });
