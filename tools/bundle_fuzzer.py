@@ -423,26 +423,21 @@ def main():
             cli_path, script_path, generator, resource_types, seed, args.use_testserver
         )
 
+        print(config_yaml)
         print(output)
 
         error_counts[return_code] += 1
 
         if return_code == 0:
             print(f"Result: OK\n")
+        elif 1 <= return_code <= 9:
+            print(f"Result: Syntax error (code={return_code})\n")
+        elif 10 <= return_code <= 19:
+            print(f"Result: BUG DETECTED (code={return_code})")
+            save_result(args.output_dir, seed, return_code, config_yaml, output)
+            print()
         else:
-            # Print config on any failure
-            print("=== databricks.yml ===")
-            print(config_yaml)
-            print("=== end databricks.yml ===")
-
-            if 1 <= return_code <= 9:
-                print(f"Result: Syntax error (code={return_code})\n")
-            elif 10 <= return_code <= 19:
-                print(f"Result: BUG DETECTED (code={return_code})")
-                save_result(args.output_dir, seed, return_code, config_yaml, output)
-                print()
-            else:
-                print(f"Result: Unknown return code: {return_code}\n")
+            print(f"Result: Unknown return code: {return_code}\n")
 
     # Print summary
     print("=" * 60)
