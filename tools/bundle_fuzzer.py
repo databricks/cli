@@ -285,7 +285,7 @@ class TestServer:
         self.proc = subprocess.Popen(
             [str(TESTSERVER_PATH)],
             stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            stderr=None,  # Let stderr go to console for debugging
             text=True,
         )
         # First line of stdout is the URL
