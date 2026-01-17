@@ -124,6 +124,10 @@ class ConfigGenerator:
 
         # Handle additionalProperties (e.g., map[string]string like tags)
         if not properties and additional_props:
+            # 20% chance of empty map
+            if self.rng.random() < 0.2:
+                self.depth -= 1
+                return result
             count = self.rng.randint(1, 3)
             for _ in range(count):
                 if self.field_count >= self.max_fields:
