@@ -8,16 +8,14 @@ Return codes:
     2: bundle validate failed
     5: bundle deploy (direct) failed - assume wrong config
     10: bundle plan failed - BUG
-    11: Drift detected (plan shows changes) - BUG
+    11: Drift detected (plan shows non-skip actions) - BUG
 """
 
+import json
 import os
-import re
 import subprocess
 import sys
 from pathlib import Path
-
-PLAN_NO_CHANGES_RE = re.compile(r"0 to add, 0 to change, 0 to delete, \d+ unchanged")
 
 
 def run_cli(*args, env_extra: dict | None = None) -> tuple[int, str, str]:
@@ -83,16 +81,33 @@ def main():
             return 5
         deployed = True
 
-        # Step 3: Plan to check for drift
-        code, stdout, stderr = run_cli("plan", env_extra={"DATABRICKS_BUNDLE_ENGINE": "direct"})
+        # Step 3: Plan with JSON output to check for drift
+        code, stdout, stderr = run_cli("plan", "-o", "json", env_extra={"DATABRICKS_BUNDLE_ENGINE": "direct"})
         if code != 0:
             print(f"bundle plan failed (code={code}) - BUG")
             print(f"stdout: {stdout}")
             print(f"stderr: {stderr}")
             return 10
 
-        if not PLAN_NO_CHANGES_RE.search(stdout + stderr):
-            print("Drift detected: expected '0 to add, 0 to change, 0 to delete, N unchanged'")
+        # Parse JSON and check all actions are "skip"
+        try:
+            plan = json.loads(stdout)
+        except json.JSONDecodeError as e:
+            print(f"Failed to parse plan JSON: {e}")
+            print(f"stdout: {stdout}")
+            print(f"stderr: {stderr}")
+            return 10
+
+        non_skip_actions = []
+        for item in plan:
+            action = item.get("action")
+            if action != "skip":
+                non_skip_actions.append(item)
+
+        if non_skip_actions:
+            print(f"Drift detected: {len(non_skip_actions)} non-skip actions")
+            for item in non_skip_actions:
+                print(f"  - {item.get('resource_type')}: {item.get('action')}")
             print(f"stdout: {stdout}")
             print(f"stderr: {stderr}")
             return 11
