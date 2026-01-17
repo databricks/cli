@@ -91,30 +91,24 @@ def main():
 
         # Parse JSON and check all actions are "skip"
         try:
-            plan = json.loads(stdout)
+            data = json.loads(stdout)
         except json.JSONDecodeError as e:
             print(f"Failed to parse plan JSON: {e}")
             print(f"stdout: {stdout}")
             print(f"stderr: {stderr}")
             return 10
 
+        plan = data.get("plan", {})
         non_skip_actions = []
-        for item in plan:
-            if isinstance(item, dict):
-                action = item.get("action")
-                if action != "skip":
-                    non_skip_actions.append(item)
-            else:
-                # Unexpected format
-                print(f"Unexpected plan item format: {type(item)}")
-                print(f"stdout: {stdout}")
-                print(f"stderr: {stderr}")
-                return 10
+        for resource_key, resource_plan in plan.items():
+            action = resource_plan.get("action")
+            if action != "skip":
+                non_skip_actions.append((resource_key, resource_plan))
 
         if non_skip_actions:
             print(f"Drift detected: {len(non_skip_actions)} non-skip actions")
-            for item in non_skip_actions:
-                print(f"  - {item}")
+            for resource_key, resource_plan in non_skip_actions:
+                print(f"  - {resource_key}: {resource_plan.get('action')}")
             print(f"stdout: {stdout}")
             print(f"stderr: {stderr}")
             return 11

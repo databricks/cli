@@ -287,6 +287,7 @@ class TestServer:
             stdout=subprocess.PIPE,
             stderr=None,  # Let stderr go to console for debugging
             text=True,
+            start_new_session=True,  # Isolate from parent's signals
         )
         # First line of stdout is the URL
         self.url = self.proc.stdout.readline().strip()
