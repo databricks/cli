@@ -15,6 +15,7 @@ Environment variables (optional, for testserver mode):
 """
 
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -22,7 +23,7 @@ from pathlib import Path
 # Env vars to hide from trace output
 HIDDEN_ENV_VARS = {"DATABRICKS_HOST", "DATABRICKS_TOKEN"}
 
-PLAN_NO_CHANGES = "0 to add, 0 to change, 0 to delete, 1 unchanged"
+PLAN_NO_CHANGES_RE = re.compile(r"0 to add, 0 to change, 0 to delete, \d+ unchanged")
 
 
 def get_env_for_direct() -> dict:
@@ -98,8 +99,8 @@ def main():
             print(f"stderr: {stderr}")
             return 10
 
-        if PLAN_NO_CHANGES not in stdout + stderr:
-            print(f"Drift detected: expected '{PLAN_NO_CHANGES}'")
+        if not PLAN_NO_CHANGES_RE.search(stdout + stderr):
+            print("Drift detected: expected '0 to add, 0 to change, 0 to delete, N unchanged'")
             print(f"stdout: {stdout}")
             print(f"stderr: {stderr}")
             return 11
