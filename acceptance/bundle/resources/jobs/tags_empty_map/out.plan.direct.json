@@ -1,13 +1,8 @@
 {
-  "email_notifications.on_failure": {
-    "action": "skip",
-    "reason": "empty_slice",
-    "new": []
-  },
-  "tasks[task_key='usage_logs_grants'].notebook_task.source": {
+  "email_notifications": {
     "action": "skip",
     "reason": "server_side_default",
-    "remote": "WORKSPACE"
+    "remote": {}
   },
   "timeout_seconds": {
     "action": "skip",
