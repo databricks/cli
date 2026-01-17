@@ -100,14 +100,21 @@ def main():
 
         non_skip_actions = []
         for item in plan:
-            action = item.get("action")
-            if action != "skip":
-                non_skip_actions.append(item)
+            if isinstance(item, dict):
+                action = item.get("action")
+                if action != "skip":
+                    non_skip_actions.append(item)
+            else:
+                # Unexpected format
+                print(f"Unexpected plan item format: {type(item)}")
+                print(f"stdout: {stdout}")
+                print(f"stderr: {stderr}")
+                return 10
 
         if non_skip_actions:
             print(f"Drift detected: {len(non_skip_actions)} non-skip actions")
             for item in non_skip_actions:
-                print(f"  - {item.get('resource_type')}: {item.get('action')}")
+                print(f"  - {item}")
             print(f"stdout: {stdout}")
             print(f"stderr: {stderr}")
             return 11
