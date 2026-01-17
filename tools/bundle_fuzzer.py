@@ -368,6 +368,12 @@ def main():
         action="store_true",
         help="Use testserver (sets DATABRICKS_HOST/TOKEN env vars)",
     )
+    parser.add_argument(
+        "--max-bugs",
+        type=int,
+        default=10,
+        help="Stop after finding this many bugs (default: 10)",
+    )
     args = parser.parse_args()
 
     script_path = Path(args.script).resolve()
@@ -405,6 +411,7 @@ def main():
 
     try:
         error_counts = Counter()
+        bug_count = 0
 
         def print_summary():
             if not error_counts:
@@ -433,13 +440,17 @@ def main():
             elif 10 <= return_code <= 19:
                 print(f"Result: BUG DETECTED (code={return_code})")
                 save_result(args.output_dir, seed, return_code, config_yaml, output)
+                bug_count += 1
+                if bug_count >= args.max_bugs:
+                    print(f"Stopping: reached max bugs ({args.max_bugs})")
+                    break
                 print()
             else:
                 print(f"Result: Unknown return code: {return_code}\n")
 
         # Print summary
         print("=" * 60)
-        print(f"Summary: {iterations} total runs")
+        print(f"Summary: {i + 1} runs")
         for code in sorted(error_counts.keys()):
             count = error_counts[code]
             print(f"  code {code}: {count}")
