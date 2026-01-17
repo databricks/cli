@@ -9,9 +9,6 @@ Return codes:
     5: bundle deploy (direct) failed - assume wrong config
     10: bundle plan failed - BUG
     11: Drift detected (plan shows changes) - BUG
-
-Environment variables (optional, for testserver mode):
-    TESTSERVER_DIRECT_URL: URL for direct engine testserver
 """
 
 import os
@@ -20,22 +17,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-# Env vars to hide from trace output
-HIDDEN_ENV_VARS = {"DATABRICKS_HOST", "DATABRICKS_TOKEN"}
-
 PLAN_NO_CHANGES_RE = re.compile(r"0 to add, 0 to change, 0 to delete, \d+ unchanged")
-
-
-def get_env_for_direct() -> dict:
-    """Get environment variables for direct engine."""
-    env = {"DATABRICKS_BUNDLE_ENGINE": "direct"}
-
-    url = os.environ.get("TESTSERVER_DIRECT_URL")
-    if url:
-        env["DATABRICKS_HOST"] = url
-        env["DATABRICKS_TOKEN"] = "test-token"
-
-    return env
 
 
 def run_cli(*args, env_extra: dict | None = None) -> tuple[int, str, str]:
@@ -44,9 +26,7 @@ def run_cli(*args, env_extra: dict | None = None) -> tuple[int, str, str]:
     cmd = [cli, "bundle"] + list(args)
     env_str = ""
     if env_extra:
-        visible = {k: v for k, v in env_extra.items() if k not in HIDDEN_ENV_VARS}
-        if visible:
-            env_str = " ".join(f"{k}={v}" for k, v in visible.items()) + " "
+        env_str = " ".join(f"{k}={v}" for k, v in env_extra.items()) + " "
     print(f"+ {env_str}{' '.join(cmd)}", flush=True)
     env = os.environ.copy()
     if env_extra:
@@ -55,12 +35,21 @@ def run_cli(*args, env_extra: dict | None = None) -> tuple[int, str, str]:
     return result.returncode, result.stdout, result.stderr
 
 
+def reset_testserver():
+    """Reset testserver state via API call."""
+    cli = os.environ.get("CLI", "databricks")
+    subprocess.run(
+        [cli, "api", "post", "/testserver-reset-state"],
+        capture_output=True,
+    )
+
+
 def destroy_bundle(cwd: Path):
     """Destroy bundle, ignoring errors."""
     original_cwd = os.getcwd()
     try:
         os.chdir(cwd)
-        code, stdout, stderr = run_cli("destroy", "--auto-approve", env_extra=get_env_for_direct())
+        code, stdout, stderr = run_cli("destroy", "--auto-approve", env_extra={"DATABRICKS_BUNDLE_ENGINE": "direct"})
         if code != 0:
             print(f"bundle destroy failed (code={code})")
             print(f"stdout: {stdout}")
@@ -74,6 +63,9 @@ def main():
     deployed = False
 
     try:
+        # Reset testserver state before starting
+        reset_testserver()
+
         # Step 1: Validate
         code, stdout, stderr = run_cli("validate")
         if code != 0:
@@ -83,7 +75,7 @@ def main():
             return 2
 
         # Step 2: Deploy with direct engine
-        code, stdout, stderr = run_cli("deploy", env_extra=get_env_for_direct())
+        code, stdout, stderr = run_cli("deploy", env_extra={"DATABRICKS_BUNDLE_ENGINE": "direct"})
         if code != 0:
             print(f"bundle deploy (direct) failed (code={code})")
             print(f"stdout: {stdout}")
@@ -92,7 +84,7 @@ def main():
         deployed = True
 
         # Step 3: Plan to check for drift
-        code, stdout, stderr = run_cli("plan", env_extra=get_env_for_direct())
+        code, stdout, stderr = run_cli("plan", env_extra={"DATABRICKS_BUNDLE_ENGINE": "direct"})
         if code != 0:
             print(f"bundle plan failed (code={code}) - BUG")
             print(f"stdout: {stdout}")

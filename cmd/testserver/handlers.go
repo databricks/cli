@@ -28,6 +28,12 @@ func toTestserverRequest(req Request) testserver.Request {
 }
 
 func addDefaultHandlers(server *StandaloneServer) {
+	// Reset state endpoint for fuzzer
+	server.Handle("POST", "/testserver-reset-state", func(req Request) any {
+		server.resetState()
+		return map[string]string{"status": "ok"}
+	})
+
 	server.Handle("GET", "/api/2.0/policies/clusters/list", func(req Request) any {
 		return compute.ListPoliciesResponse{
 			Policies: []compute.Policy{

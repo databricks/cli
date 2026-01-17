@@ -273,26 +273,34 @@ def get_cli_path() -> Path:
     return REPO_ROOT / "cli"
 
 
-def start_testserver() -> tuple[subprocess.Popen, str]:
-    """Start a testserver and return (process, url)."""
-    proc = subprocess.Popen(
-        [str(TESTSERVER_PATH)],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-    )
-    # First line of stdout is the URL
-    url = proc.stdout.readline().strip()
-    return proc, url
+class TestServer:
+    """Manages a testserver process."""
 
+    def __init__(self):
+        self.proc = None
+        self.url = None
 
-def stop_testserver(proc: subprocess.Popen):
-    """Stop a testserver process."""
-    proc.terminate()
-    try:
-        proc.wait(timeout=5)
-    except subprocess.TimeoutExpired:
-        proc.kill()
+    def start(self):
+        """Start the testserver."""
+        self.proc = subprocess.Popen(
+            [str(TESTSERVER_PATH)],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+        )
+        # First line of stdout is the URL
+        self.url = self.proc.stdout.readline().strip()
+
+    def stop(self):
+        """Stop the testserver."""
+        if self.proc:
+            self.proc.terminate()
+            try:
+                self.proc.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                self.proc.kill()
+            self.proc = None
+            self.url = None
 
 
 def run_iteration(
@@ -301,45 +309,28 @@ def run_iteration(
     generator: ConfigGenerator,
     resource_types: list[str] | None,
     seed: int,
-    use_testserver: bool = False,
 ) -> tuple[int, str, str]:
     """Run a single fuzzing iteration. Returns (return_code, output, config_yaml)."""
     config = generator.generate_config(resource_types)
     config_yaml = yaml.safe_dump(config, default_flow_style=False, sort_keys=False)
 
-    terraform_proc = None
-    direct_proc = None
+    with tempfile.TemporaryDirectory() as tmpdir:
+        config_path = Path(tmpdir) / "databricks.yml"
+        config_path.write_text(config_yaml)
 
-    try:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            config_path = Path(tmpdir) / "databricks.yml"
-            config_path.write_text(config_yaml)
+        env = os.environ.copy()
+        env["CLI"] = str(cli_path)
 
-            # Run script
-            env = os.environ.copy()
-            env["CLI"] = str(cli_path)
+        result = subprocess.run(
+            [sys.executable, str(script_path)],
+            cwd=tmpdir,
+            capture_output=True,
+            text=True,
+            env=env,
+        )
 
-            if use_testserver:
-                terraform_proc, terraform_url = start_testserver()
-                direct_proc, direct_url = start_testserver()
-                env["TESTSERVER_TERRAFORM_URL"] = terraform_url
-                env["TESTSERVER_DIRECT_URL"] = direct_url
-
-            result = subprocess.run(
-                [sys.executable, str(script_path)],
-                cwd=tmpdir,
-                capture_output=True,
-                text=True,
-                env=env,
-            )
-
-            output = f"=== STDOUT ===\n{result.stdout}\n=== STDERR ===\n{result.stderr}"
-            return result.returncode, output, config_yaml
-    finally:
-        if terraform_proc:
-            stop_testserver(terraform_proc)
-        if direct_proc:
-            stop_testserver(direct_proc)
+        output = f"=== STDOUT ===\n{result.stdout}\n=== STDERR ===\n{result.stderr}"
+        return result.returncode, output, config_yaml
 
 
 def save_result(output_dir: Path, seed: int, error_code: int, config_yaml: str, output: str):
@@ -375,7 +366,7 @@ def main():
     parser.add_argument(
         "--use-testserver",
         action="store_true",
-        help="Use testserver for each iteration (starts separate servers for terraform/direct)",
+        help="Use testserver (sets DATABRICKS_HOST/TOKEN env vars)",
     )
     args = parser.parse_args()
 
@@ -404,47 +395,57 @@ def main():
     base_seed = args.seed if args.seed is not None else random.randint(0, 2**32 - 1)
     iterations = 1 if args.seed is not None else args.iterations
 
-    error_counts = Counter()
+    testserver = None
+    if args.use_testserver:
+        testserver = TestServer()
+        testserver.start()
+        os.environ["DATABRICKS_HOST"] = testserver.url
+        os.environ["DATABRICKS_TOKEN"] = "test-token"
+        print(f"Started testserver at {testserver.url}")
 
-    def print_summary():
-        if not error_counts:
-            return
-        parts = [f"code {c}: {error_counts[c]}" for c in sorted(error_counts)]
-        print(f"Summary so far: {', '.join(parts)}")
+    try:
+        error_counts = Counter()
 
-    for i in range(iterations):
-        seed = base_seed + i if args.seed is None else base_seed
-        generator = ConfigGenerator(resolver, seed)
+        def print_summary():
+            if not error_counts:
+                return
+            parts = [f"code {c}: {error_counts[c]}" for c in sorted(error_counts)]
+            print(f"Summary so far: {', '.join(parts)}")
 
-        print_summary()
-        print(f"=== Iteration {i + 1}/{iterations} (seed={seed}) ===")
+        for i in range(iterations):
+            seed = base_seed + i if args.seed is None else base_seed
+            generator = ConfigGenerator(resolver, seed)
 
-        return_code, output, config_yaml = run_iteration(
-            cli_path, script_path, generator, resource_types, seed, args.use_testserver
-        )
+            print_summary()
+            print(f"=== Iteration {i + 1}/{iterations} (seed={seed}) ===")
 
-        print(config_yaml)
-        print(output)
+            return_code, output, config_yaml = run_iteration(cli_path, script_path, generator, resource_types, seed)
 
-        error_counts[return_code] += 1
+            print(config_yaml)
+            print(output)
 
-        if return_code == 0:
-            print(f"Result: OK\n")
-        elif 1 <= return_code <= 9:
-            print(f"Result: Syntax error (code={return_code})\n")
-        elif 10 <= return_code <= 19:
-            print(f"Result: BUG DETECTED (code={return_code})")
-            save_result(args.output_dir, seed, return_code, config_yaml, output)
-            print()
-        else:
-            print(f"Result: Unknown return code: {return_code}\n")
+            error_counts[return_code] += 1
 
-    # Print summary
-    print("=" * 60)
-    print(f"Summary: {iterations} total runs")
-    for code in sorted(error_counts.keys()):
-        count = error_counts[code]
-        print(f"  code {code}: {count}")
+            if return_code == 0:
+                print(f"Result: OK\n")
+            elif 1 <= return_code <= 9:
+                print(f"Result: Syntax error (code={return_code})\n")
+            elif 10 <= return_code <= 19:
+                print(f"Result: BUG DETECTED (code={return_code})")
+                save_result(args.output_dir, seed, return_code, config_yaml, output)
+                print()
+            else:
+                print(f"Result: Unknown return code: {return_code}\n")
+
+        # Print summary
+        print("=" * 60)
+        print(f"Summary: {iterations} total runs")
+        for code in sorted(error_counts.keys()):
+            count = error_counts[code]
+            print(f"  code {code}: {count}")
+    finally:
+        if testserver:
+            testserver.stop()
 
 
 if __name__ == "__main__":

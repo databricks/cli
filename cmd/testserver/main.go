@@ -66,6 +66,12 @@ func (s *StandaloneServer) getWorkspaceForToken(token string) *testserver.FakeWo
 	return s.fakeWorkspaces[token]
 }
 
+func (s *StandaloneServer) resetState() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.fakeWorkspaces = map[string]*testserver.FakeWorkspace{}
+}
+
 func getToken(r *http.Request) string {
 	header := r.Header.Get("Authorization")
 	prefix := "Bearer "
