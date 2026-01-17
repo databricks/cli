@@ -119,7 +119,22 @@ class ConfigGenerator:
         self.depth += 1
         result = {}
         properties = schema.get("properties", {})
+        additional_props = schema.get("additionalProperties")
         required = set(schema.get("required", []))
+
+        # Handle additionalProperties (e.g., map[string]string like tags)
+        if not properties and additional_props:
+            count = self.rng.randint(1, 3)
+            for _ in range(count):
+                if self.field_count >= self.max_fields:
+                    break
+                key = self.rng.choice(STRINGS)
+                value = self.generate_value(additional_props)
+                if value is not None:
+                    result[key] = value
+                    self.field_count += 1
+            self.depth -= 1
+            return result
 
         # Include required fields with 90% probability
         for prop_name in required:
