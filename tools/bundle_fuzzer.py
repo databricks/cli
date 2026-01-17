@@ -29,6 +29,7 @@ import yaml
 
 REPO_ROOT = Path(__file__).parent.parent.resolve()
 SCHEMA_PATH = REPO_ROOT / "bundle" / "schema" / "jsonschema.json"
+TESTSERVER_PATH = REPO_ROOT / "testserver"
 
 # Value pools for generating realistic values
 STRINGS = ["test", "my_job", "my_pipeline", "task1", "key1", "default", "dev", "prod"]
@@ -272,36 +273,73 @@ def get_cli_path() -> Path:
     return REPO_ROOT / "cli"
 
 
+def start_testserver() -> tuple[subprocess.Popen, str]:
+    """Start a testserver and return (process, url)."""
+    proc = subprocess.Popen(
+        [str(TESTSERVER_PATH)],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    # First line of stdout is the URL
+    url = proc.stdout.readline().strip()
+    return proc, url
+
+
+def stop_testserver(proc: subprocess.Popen):
+    """Stop a testserver process."""
+    proc.terminate()
+    try:
+        proc.wait(timeout=5)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+
+
 def run_iteration(
     cli_path: Path,
     script_path: Path,
     generator: ConfigGenerator,
     resource_types: list[str] | None,
     seed: int,
+    use_testserver: bool = False,
 ) -> tuple[int, str, str]:
     """Run a single fuzzing iteration. Returns (return_code, output, config_yaml)."""
     config = generator.generate_config(resource_types)
     config_yaml = yaml.safe_dump(config, default_flow_style=False, sort_keys=False)
-    print(config_yaml, file=sys.stderr, flush=True)
 
-    with tempfile.TemporaryDirectory() as tmpdir:
-        config_path = Path(tmpdir) / "databricks.yml"
-        config_path.write_text(config_yaml)
+    terraform_proc = None
+    direct_proc = None
 
-        # Run script
-        env = os.environ.copy()
-        env["CLI"] = str(cli_path)
+    try:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config_path = Path(tmpdir) / "databricks.yml"
+            config_path.write_text(config_yaml)
 
-        result = subprocess.run(
-            [sys.executable, str(script_path)],
-            cwd=tmpdir,
-            capture_output=True,
-            text=True,
-            env=env,
-        )
+            # Run script
+            env = os.environ.copy()
+            env["CLI"] = str(cli_path)
 
-        output = f"=== STDOUT ===\n{result.stdout}\n=== STDERR ===\n{result.stderr}"
-        return result.returncode, output, config_yaml
+            if use_testserver:
+                terraform_proc, terraform_url = start_testserver()
+                direct_proc, direct_url = start_testserver()
+                env["TESTSERVER_TERRAFORM_URL"] = terraform_url
+                env["TESTSERVER_DIRECT_URL"] = direct_url
+
+            result = subprocess.run(
+                [sys.executable, str(script_path)],
+                cwd=tmpdir,
+                capture_output=True,
+                text=True,
+                env=env,
+            )
+
+            output = f"=== STDOUT ===\n{result.stdout}\n=== STDERR ===\n{result.stderr}"
+            return result.returncode, output, config_yaml
+    finally:
+        if terraform_proc:
+            stop_testserver(terraform_proc)
+        if direct_proc:
+            stop_testserver(direct_proc)
 
 
 def save_result(output_dir: Path, seed: int, error_code: int, config_yaml: str, output: str):
@@ -334,6 +372,11 @@ def main():
         default=Path("fuzzer_results"),
         help="Output directory for bug results",
     )
+    parser.add_argument(
+        "--use-testserver",
+        action="store_true",
+        help="Use testserver for each iteration (starts separate servers for terraform/direct)",
+    )
     args = parser.parse_args()
 
     script_path = Path(args.script).resolve()
@@ -344,6 +387,11 @@ def main():
     cli_path = get_cli_path()
     if not cli_path.exists():
         print(f"CLI binary not found: {cli_path}", file=sys.stderr)
+        sys.exit(1)
+
+    if args.use_testserver and not TESTSERVER_PATH.exists():
+        print(f"Testserver not found: {TESTSERVER_PATH}", file=sys.stderr)
+        print("Build it with: go build -o testserver ./cmd/testserver", file=sys.stderr)
         sys.exit(1)
 
     # Load schema
@@ -371,7 +419,9 @@ def main():
         print_summary()
         print(f"=== Iteration {i + 1}/{iterations} (seed={seed}) ===")
 
-        return_code, output, config_yaml = run_iteration(cli_path, script_path, generator, resource_types, seed)
+        return_code, output, config_yaml = run_iteration(
+            cli_path, script_path, generator, resource_types, seed, args.use_testserver
+        )
 
         print(output)
 
