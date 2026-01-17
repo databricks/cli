@@ -378,6 +378,14 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 		} else if structdiff.IsEqual(ch.Remote, ch.New) {
 			ch.Action = deployplan.Skip
 			ch.Reason = deployplan.ReasonRemoteAlreadySet
+		} else if isEmptySlice(ch.New) {
+			// Empty slice in config should not cause drift when remote has values
+			ch.Action = deployplan.Skip
+			ch.Reason = deployplan.ReasonEmptySlice
+		} else if isEmptyMap(ch.New) {
+			// Empty map in config should not cause drift when remote has values
+			ch.Action = deployplan.Skip
+			ch.Reason = deployplan.ReasonEmptyMap
 		} else if action, ok := fieldTriggers[pathString]; ok {
 			// TODO: should we check prefixes instead?
 			ch.Action = action
@@ -393,6 +401,22 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 	}
 
 	return nil
+}
+
+func isEmptySlice(v any) bool {
+	if v == nil {
+		return false
+	}
+	rv := reflect.ValueOf(v)
+	return rv.Kind() == reflect.Slice && rv.Len() == 0
+}
+
+func isEmptyMap(v any) bool {
+	if v == nil {
+		return false
+	}
+	rv := reflect.ValueOf(v)
+	return rv.Kind() == reflect.Map && rv.Len() == 0
 }
 
 // TODO: calling this "Local" is not right, it can resolve "id" and remote refrences for "skip" targets

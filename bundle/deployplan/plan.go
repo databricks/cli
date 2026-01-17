@@ -93,6 +93,8 @@ const (
 	ReasonRemoteAlreadySet  = "remote_already_set"
 	ReasonFieldTriggers     = "field_triggers"
 	ReasonConfigOnly        = "config_only"
+	ReasonEmptySlice        = "empty_slice"
+	ReasonEmptyMap          = "empty_map"
 )
 
 // HasChange checks if there are any changes for fields with the given prefix.
