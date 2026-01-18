@@ -152,18 +152,6 @@ depends on the existing profiles you have set in your configuration file
 		}
 		defer persistentAuth.Close()
 
-		// We need the config without the profile before it's used to initialise new workspace client below.
-		// Otherwise it will complain about non existing profile because it was not yet saved.
-		cfg := config.Config{
-			Host:      authArguments.Host,
-			AccountID: authArguments.AccountID,
-			AuthType:  "databricks-cli",
-		}
-		databricksCfgFile := os.Getenv("DATABRICKS_CONFIG_FILE")
-		if databricksCfgFile != "" {
-			cfg.ConfigFile = databricksCfgFile
-		}
-
 		ctx, cancel := context.WithTimeout(ctx, loginTimeout)
 		defer cancel()
 
@@ -171,21 +159,27 @@ depends on the existing profiles you have set in your configuration file
 			return err
 		}
 
+		var clusterID, serverlessComputeID string
 		switch {
 		case configureCluster:
-			w, err := databricks.NewWorkspaceClient((*databricks.Config)(&cfg))
+			// Create a workspace client with direct credentials (not from a profile)
+			// because the profile hasn't been saved yet.
+			w, err := databricks.NewWorkspaceClient(&databricks.Config{
+				Host:       authArguments.Host,
+				AccountID:  authArguments.AccountID,
+				AuthType:   "databricks-cli",
+				ConfigFile: os.Getenv("DATABRICKS_CONFIG_FILE"),
+			})
 			if err != nil {
 				return err
 			}
-			clusterID, err := cfgpickers.AskForCluster(ctx, w,
+			clusterID, err = cfgpickers.AskForCluster(ctx, w,
 				cfgpickers.WithDatabricksConnect(minimalDbConnectVersion))
 			if err != nil {
 				return err
 			}
-			cfg.ClusterID = clusterID
 		case configureServerless:
-			cfg.ClusterID = ""
-			cfg.ServerlessComputeID = "auto"
+			serverlessComputeID = "auto"
 		default:
 			// Respect the existing profile if it exists, even if it has
 			// both cluster and serverless configured. Tools relying on
@@ -195,20 +189,20 @@ depends on the existing profiles you have set in your configuration file
 			// to clean up the profile under the assumption that serverless
 			// is the preferred option.
 			if existingProfile != nil {
-				cfg.ClusterID = existingProfile.ClusterID
-				cfg.ServerlessComputeID = existingProfile.ServerlessComputeID
+				clusterID = existingProfile.ClusterID
+				serverlessComputeID = existingProfile.ServerlessComputeID
 			}
 		}
 
 		if profileName != "" {
 			err = databrickscfg.SaveToProfile(ctx, &config.Config{
 				Profile:             profileName,
-				Host:                cfg.Host,
-				AuthType:            cfg.AuthType,
-				AccountID:           cfg.AccountID,
-				ClusterID:           cfg.ClusterID,
-				ConfigFile:          cfg.ConfigFile,
-				ServerlessComputeID: cfg.ServerlessComputeID,
+				Host:                authArguments.Host,
+				AuthType:            "databricks-cli",
+				AccountID:           authArguments.AccountID,
+				ClusterID:           clusterID,
+				ConfigFile:          os.Getenv("DATABRICKS_CONFIG_FILE"),
+				ServerlessComputeID: serverlessComputeID,
 			})
 			if err != nil {
 				return err
