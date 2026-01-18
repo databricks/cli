@@ -31,6 +31,9 @@ func applyChanges(ctx context.Context, filePath string, fieldLocations fieldLoca
 		}
 
 		var successfulPath string
+		var opType string
+
+		// Try replace operation first (for existing fields)
 		for _, jsonPointer := range jsonPointers {
 			path, err := yamlpatch.ParsePath(jsonPointer)
 			if err != nil {
@@ -47,7 +50,32 @@ func applyChanges(ctx context.Context, filePath string, fieldLocations fieldLoca
 			_, err = patcher.Apply(content, yamlpatch.Patch{testOp})
 			if err == nil {
 				successfulPath = jsonPointer
+				opType = yamlpatch.OperationReplace
 				break
+			}
+		}
+
+		// If replace failed, try add operation (for new fields)
+		if successfulPath == "" {
+			for _, jsonPointer := range jsonPointers {
+				path, err := yamlpatch.ParsePath(jsonPointer)
+				if err != nil {
+					continue
+				}
+
+				testOp := yamlpatch.Operation{
+					Type:  yamlpatch.OperationAdd,
+					Path:  path,
+					Value: yamlValue,
+				}
+
+				patcher := gopkgv3yamlpatcher.New(gopkgv3yamlpatcher.IndentSpaces(2))
+				_, err = patcher.Apply(content, yamlpatch.Patch{testOp})
+				if err == nil {
+					successfulPath = jsonPointer
+					opType = yamlpatch.OperationAdd
+					break
+				}
 			}
 		}
 
@@ -63,7 +91,7 @@ func applyChanges(ctx context.Context, filePath string, fieldLocations fieldLoca
 		}
 
 		op := yamlpatch.Operation{
-			Type:  yamlpatch.OperationReplace,
+			Type:  opType,
 			Path:  path,
 			Value: yamlValue,
 		}
@@ -102,6 +130,16 @@ func getFieldLocations(ctx context.Context, b *bundle.Bundle, changes map[string
 			}
 
 			filePath := value.Location().File
+
+			// If field has no location, find the parent resource's location to then add a new field
+			if filePath == "" {
+				filePath = findResourceFileLocation(ctx, b, resourceKey)
+				if filePath == "" {
+					continue
+				}
+				log.Debugf(ctx, "Field %s has no location, using resource location: %s", fullPath, filePath)
+			}
+
 			jsonPointer := dynPathToJSONPointer(path)
 
 			if _, ok := locationsByFile[filePath]; !ok {
@@ -112,6 +150,26 @@ func getFieldLocations(ctx context.Context, b *bundle.Bundle, changes map[string
 	}
 
 	return locationsByFile, nil
+}
+
+// findResourceFileLocation finds the file where a resource is defined.
+// It checks both the root resources and target-specific overrides,
+// preferring the target override if it exists.
+func findResourceFileLocation(_ context.Context, b *bundle.Bundle, resourceKey string) string {
+	targetName := b.Config.Bundle.Target
+
+	// Try target override first if we have a target
+	if targetName != "" {
+		targetPath := "targets." + targetName + "." + resourceKey
+		loc := b.Config.GetLocation(targetPath)
+		if loc.File != "" {
+			return loc.File
+		}
+	}
+
+	// Fall back to root resource location
+	loc := b.Config.GetLocation(resourceKey)
+	return loc.File
 }
 
 // ApplyChangesToYAML generates YAML files for the given changes.

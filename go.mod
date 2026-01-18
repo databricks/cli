@@ -43,6 +43,8 @@ require (
 // Dependencies for experimental MCP commands
 require github.com/google/jsonschema-go v0.4.2 // MIT
 
+require github.com/palantir/pkg/yamlpatch v1.5.0
+
 require (
 	cloud.google.com/go/auth v0.16.5 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.8 // indirect
@@ -63,8 +65,6 @@ require (
 	github.com/hashicorp/go-retryablehttp v0.7.7 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
-	github.com/palantir/pkg v1.1.0 // indirect
-	github.com/palantir/pkg/yamlpatch v1.5.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect

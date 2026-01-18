@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -556,4 +557,61 @@ resources:
 	assert.Contains(t, fileChanges[0].ModifiedContent, "# test_comment2")
 	assert.Contains(t, fileChanges[0].ModifiedContent, "# test_comment3")
 	assert.Contains(t, fileChanges[0].ModifiedContent, "# test_comment4")
+}
+
+func TestApplyChangesToYAML_FieldWithoutFileLocation(t *testing.T) {
+	ctx := logdiag.InitContext(context.Background())
+
+	tmpDir := t.TempDir()
+
+	// Create bundle config with a job that doesn't define edit_mode
+	yamlContent := `bundle:
+  name: test-bundle
+targets:
+  dev:
+    resources:
+      jobs:
+        test_job:
+          name: "Test Job"
+          tasks:
+            - task_key: "main"
+              notebook_task:
+                notebook_path: "/notebook"
+`
+
+	yamlPath := filepath.Join(tmpDir, "databricks.yml")
+	err := os.WriteFile(yamlPath, []byte(yamlContent), 0o644)
+	require.NoError(t, err)
+
+	b, err := bundle.Load(ctx, tmpDir)
+	require.NoError(t, err)
+
+	mutator.DefaultMutators(ctx, b)
+
+	diags := bundle.Apply(ctx, b, mutator.SelectTarget("dev"))
+	require.NoError(t, diags.Error())
+
+	// Manually add edit_mode field to the config without a file location
+	// This simulates a server-side default field that was merged into the config
+	err = b.Config.Mutate(func(v dyn.Value) (dyn.Value, error) {
+		return dyn.SetByPath(v, dyn.MustPathFromString("resources.jobs.test_job.edit_mode"), dyn.V("UI_LOCKED"))
+	})
+	require.NoError(t, err)
+
+	changes := map[string]deployplan.Changes{
+		"resources.jobs.test_job": {
+			"edit_mode": &deployplan.ChangeDesc{
+				Action: deployplan.Update,
+				Old:    "UI_LOCKED",
+				Remote: "EDITABLE",
+			},
+		},
+	}
+
+	fileChanges, err := ApplyChangesToYAML(ctx, b, changes)
+	require.NoError(t, err)
+	require.Len(t, fileChanges, 1)
+
+	assert.Equal(t, yamlPath, fileChanges[0].Path)
+	assert.Contains(t, fileChanges[0].ModifiedContent, "edit_mode: EDITABLE")
 }
