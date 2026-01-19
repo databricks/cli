@@ -1,0 +1,25 @@
+sethome "./home"
+
+# Create an existing profile with a host
+cat > "./home/.databrickscfg" <<EOF
+[existing-profile]
+host = $DATABRICKS_HOST
+EOF
+
+title "Initial profile\n"
+cat "./home/.databrickscfg"
+
+# Use a fake browser that performs a GET on the authorization URL
+# and follows the redirect back to localhost.
+export BROWSER="browser.py"
+
+# Login with just the profile name - should use the host from the profile
+title "Login with existing profile (no host argument)"
+trace $CLI auth login --profile existing-profile
+
+title "Profile after login\n"
+cat "./home/.databrickscfg"
+
+# Track the .databrickscfg file that was created to surface changes.
+mv "./home/.databrickscfg" "./out.databrickscfg"
+

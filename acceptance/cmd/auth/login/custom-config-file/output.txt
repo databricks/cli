@@ -1,0 +1,15 @@
+
+=== Login with DATABRICKS_CONFIG_FILE set
+>>> [CLI] auth login --host [DATABRICKS_URL] --profile custom-test
+Profile custom-test was successfully saved
+
+=== Default config file should NOT exist
+OK: Default .databrickscfg does not exist
+
+=== Custom config file should exist
+; The profile defined in the DEFAULT section is to be used as a fallback when no profile is explicitly specified.
+[DEFAULT]
+
+[custom-test]
+host      = [DATABRICKS_URL]
+auth_type = databricks-cli

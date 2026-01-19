@@ -1,0 +1,25 @@
+sethome "./home"
+
+# Use a fake browser that performs a GET on the authorization URL
+# and follows the redirect back to localhost.
+export BROWSER="browser.py"
+
+# Set custom config file location via env var
+export DATABRICKS_CONFIG_FILE="./home/custom.databrickscfg"
+
+title "Login with DATABRICKS_CONFIG_FILE set"
+trace $CLI auth login --host $DATABRICKS_HOST --profile custom-test
+
+title "Default config file should NOT exist\n"
+if [ -f "./home/.databrickscfg" ]; then
+    echo "ERROR: Default .databrickscfg exists but should not"
+    cat "./home/.databrickscfg"
+else
+    echo "OK: Default .databrickscfg does not exist"
+fi
+
+title "Custom config file should exist\n"
+cat "./home/custom.databrickscfg"
+
+# Track the custom config file to surface changes
+mv "./home/custom.databrickscfg" "./out.databrickscfg"
