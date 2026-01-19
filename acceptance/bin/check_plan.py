@@ -6,18 +6,22 @@ import pprint
 
 def check_plan(path):
     with open(path) as fobj:
-        data = fobj.read()
+        raw = fobj.read()
 
     changes_detected = 0
 
-    data = json.loads(data)
-    for key, value in data["plan"].items():
-        if value["action"] != "skip":
-            print("Unexpected action in", key, value["action"])
-            changes_detected += 1
+    try:
+        data = json.loads(raw)
+        for key, value in data["plan"].items():
+            if value["action"] != "skip":
+                print(f"Unexpected {action=} for {key}")
+                changes_detected += 1
+    except Exception:
+        print(raw, flush=True)
+        raise
 
     if changes_detected:
-        print(data, flush=True)
+        print(raw, flush=True)
         sys.exit(10)
 
 
