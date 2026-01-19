@@ -175,6 +175,7 @@ def main():
         help="Omit lines starting with 'REPL' and containing 'Available replacements:'",
         action="store_true",
     )
+    parser.add_argument("--summary-file", help="Write summary line to this file")
 
     # This does not work because we don't store artifacts for unit tests. We could download logs instead but that requires different parsing method:
     # ~/work/cli % gh api -H "Accept: application/vnd.github+json" /repos/databricks/cli/actions/runs/15827411452/logs  > logs.zip
@@ -217,6 +218,8 @@ def main():
         cmd.append("--markdown")
     if args.omit_repl:
         cmd.append("--omit-repl")
+    if args.summary_file:
+        cmd.extend(["--summary-file", args.summary_file])
     cmd.append(f"{target_dir}")
     run(cmd, shell=True)
 
