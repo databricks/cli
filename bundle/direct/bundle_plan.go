@@ -434,6 +434,10 @@ func shouldUpdateOrRecreate(cfg *dresources.ResourceLifecycleConfig, pathString 
 	return deployplan.Undefined
 }
 
+// Empty slices and maps cannot be represented in proto and because of that they cannot be represented
+// by SDK's JSON encoder. However, they can be provided by users in the config and can be represented in
+// Bundle struct (currently libs/structs and libs/dyn use ForceSendFields for maps and slices, unlike SDK).
+// Thus we get permanent drift because we see that new config is [] but in the state it is omitted.
 func isEmptySlice(values ...any) bool {
 	for _, v := range values {
 		if v == nil {
