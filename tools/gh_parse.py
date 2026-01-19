@@ -353,7 +353,7 @@ def mark_known_failures(results, known_failures_config):
     return marked_results
 
 
-def print_report(filenames, filter, filter_env, show_output, markdown=False, omit_repl=False, summary_file=None):
+def print_report(filenames, filter, filter_env, show_output, markdown=False, omit_repl=False):
     known_failures_config = load_known_failures()
     outputs = {}  # test_key -> env -> [output]
     per_test_per_env_stats = {}  # test_key -> env -> action -> count
@@ -536,24 +536,11 @@ def print_report(filenames, filter, filter_env, show_output, markdown=False, omi
             }
         )
     table_txt = format_table(table, markdown=markdown)
-    summary_msg = None
     if len(table) > 5:
         summary_msg = make_summary_message(table, summary)
         table_txt = wrap_in_details(table_txt, summary_msg)
     if table_txt:
         print(table_txt)
-
-    # Write summary to file if requested
-    if summary_file:
-        if summary_msg:
-            Path(summary_file).write_text(summary_msg)
-        elif len(table) > 0:
-            # If we have tests but not enough for full summary, create a simple one
-            summary_msg = make_summary_message(table, summary)
-            Path(summary_file).write_text(summary_msg)
-        else:
-            # No interesting tests found
-            Path(summary_file).write_text("All tests passed")
 
     # Generate slowest tests table (tests slower than 10 minutes)
     all_durations = []  # [(env, package, testname, duration), ...]
@@ -704,7 +691,6 @@ def main():
         help="Omit lines starting with 'REPL' and containing 'Available replacements:'",
         action="store_true",
     )
-    parser.add_argument("--summary-file", help="Write summary line to this file")
     args = parser.parse_args()
     print_report(
         args.filenames,
@@ -713,7 +699,6 @@ def main():
         show_output=args.output,
         markdown=args.markdown,
         omit_repl=args.omit_repl,
-        summary_file=args.summary_file,
     )
 
 
