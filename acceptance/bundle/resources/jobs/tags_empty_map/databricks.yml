@@ -6,8 +6,3 @@ resources:
     test_job:
       name: Test Job with empty tags
       tags: {}
-
-targets:
-  dev:
-    default: true
-    mode: development

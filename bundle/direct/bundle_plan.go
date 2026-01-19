@@ -368,14 +368,7 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 			return err
 		}
 
-		if ch.New == nil && ch.Old == nil && ch.Remote != nil && path.IsDotString() {
-			// The field was not set by us, but comes from the remote state.
-			// This could either be server-side default or a policy.
-			// In any case, this is not a change we should react to.
-			// Note, we only consider struct fields here. Adding/removing elements to/from maps and slices should trigger updates.
-			ch.Action = deployplan.Skip
-			ch.Reason = deployplan.ReasonServerSideDefault
-		} else if structdiff.IsEqual(ch.Remote, ch.New) {
+		if structdiff.IsEqual(ch.Remote, ch.New) {
 			ch.Action = deployplan.Skip
 			ch.Reason = deployplan.ReasonRemoteAlreadySet
 		} else if isEmptySlice(ch.Old, ch.New, ch.Remote) {
@@ -389,6 +382,13 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 		} else if action := getActionFromConfig(cfg, pathString); action != deployplan.Undefined {
 			ch.Action = action
 			ch.Reason = deployplan.ReasonBuiltinRule
+		} else if ch.New == nil && ch.Old == nil && ch.Remote != nil && path.IsDotString() {
+			// The field was not set by us, but comes from the remote state.
+			// This could either be server-side default or a policy.
+			// In any case, this is not a change we should react to.
+			// Note, we only consider struct fields here. Adding/removing elements to/from maps and slices should trigger updates.
+			ch.Action = deployplan.Skip
+			ch.Reason = deployplan.ReasonServerSideDefault
 		} else {
 			ch.Action = deployplan.Update
 		}

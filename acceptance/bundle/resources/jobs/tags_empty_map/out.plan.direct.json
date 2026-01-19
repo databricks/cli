@@ -4,6 +4,11 @@
     "reason": "server_side_default",
     "remote": {}
   },
+  "tags": {
+    "action": "skip",
+    "reason": "empty_map",
+    "new": {}
+  },
   "timeout_seconds": {
     "action": "skip",
     "reason": "server_side_default",
