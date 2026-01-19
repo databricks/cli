@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/experimental/ssh/internal/client"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go/experimental/mocks"
 	"github.com/databricks/databricks-sdk-go/service/compute"
@@ -56,7 +57,12 @@ func TestValidateClusterAccess_ClusterNotFound(t *testing.T) {
 }
 
 func TestGenerateProxyCommand(t *testing.T) {
-	cmd, err := GenerateProxyCommand("cluster-123", "cluster-123", false, true, 45*time.Second, "", "", 0, 0, "")
+	opts := client.ClientOptions{
+		ClusterID:        "cluster-123",
+		AutoStartCluster: true,
+		ShutdownDelay:    45 * time.Second,
+	}
+	cmd, err := opts.ToProxyCommand()
 	assert.NoError(t, err)
 	assert.Contains(t, cmd, "ssh connect --proxy --cluster=cluster-123 --auto-start-cluster=true --shutdown-delay=45s")
 	assert.NotContains(t, cmd, "--metadata")
@@ -65,7 +71,15 @@ func TestGenerateProxyCommand(t *testing.T) {
 }
 
 func TestGenerateProxyCommand_WithExtraArgs(t *testing.T) {
-	cmd, err := GenerateProxyCommand("cluster-123", "cluster-123", false, true, 45*time.Second, "test-profile", "user", 2222, 2*time.Minute, "")
+	opts := client.ClientOptions{
+		ClusterID:        "cluster-123",
+		AutoStartCluster: true,
+		ShutdownDelay:    45 * time.Second,
+		Profile:          "test-profile",
+		ServerMetadata:   "user,2222",
+		HandoverTimeout:  2 * time.Minute,
+	}
+	cmd, err := opts.ToProxyCommand()
 	assert.NoError(t, err)
 	assert.Contains(t, cmd, "ssh connect --proxy --cluster=cluster-123 --auto-start-cluster=true --shutdown-delay=45s")
 	assert.Contains(t, cmd, " --metadata=user,2222")
@@ -74,9 +88,30 @@ func TestGenerateProxyCommand_WithExtraArgs(t *testing.T) {
 }
 
 func TestGenerateProxyCommand_ServerlessMode(t *testing.T) {
-	cmd, err := GenerateProxyCommand("my-connection", "serverless-cluster-id", true, false, 45*time.Second, "", "user", 2222, 0, "")
+	opts := client.ClientOptions{
+		ConnectionName: "my-connection",
+		ShutdownDelay:  45 * time.Second,
+		ServerMetadata: "user,2222,serverless-cluster-id",
+	}
+	cmd, err := opts.ToProxyCommand()
 	assert.NoError(t, err)
 	assert.Contains(t, cmd, "ssh connect --proxy --name=my-connection --shutdown-delay=45s")
+	assert.Contains(t, cmd, " --metadata=user,2222,serverless-cluster-id")
+	assert.NotContains(t, cmd, "--cluster=")
+	assert.NotContains(t, cmd, "--auto-start-cluster")
+}
+
+func TestGenerateProxyCommand_ServerlessModeWithAccelerator(t *testing.T) {
+	opts := client.ClientOptions{
+		ConnectionName: "my-connection",
+		ShutdownDelay:  45 * time.Second,
+		Accelerator:    "GPU_1xA10",
+		ServerMetadata: "user,2222,serverless-cluster-id",
+	}
+	cmd, err := opts.ToProxyCommand()
+	assert.NoError(t, err)
+	assert.Contains(t, cmd, "ssh connect --proxy --name=my-connection --shutdown-delay=45s")
+	assert.Contains(t, cmd, " --accelerator=GPU_1xA10")
 	assert.Contains(t, cmd, " --metadata=user,2222,serverless-cluster-id")
 	assert.NotContains(t, cmd, "--cluster=")
 	assert.NotContains(t, cmd, "--auto-start-cluster")
