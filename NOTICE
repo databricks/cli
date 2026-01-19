@@ -65,6 +65,10 @@ manifoldco/promptui - https://github.com/manifoldco/promptui
 Copyright (c) 2017, Arigato Machine Inc. All rights reserved.
 License - https://github.com/manifoldco/promptui/blob/master/LICENSE.md
 
+quasilyte/go-ruleguard - https://github.com/quasilyte/go-ruleguard
+Copyright (c) 2020 Iskander (Alex) Sharipov
+License - https://github.com/quasilyte/go-ruleguard/blob/master/LICENSE
+
 —--
 
 This Software contains code from the following open source projects, licensed under the MIT license:
@@ -130,3 +134,15 @@ https://github.com/darccio/mergo/blob/master/LICENSE
 https://github.com/gorilla/mux
 Copyright (c) 2023 The Gorilla Authors. All rights reserved.
 https://github.com/gorilla/mux/blob/main/LICENSE
+
+charmbracelet/huh - https://github.com/charmbracelet/huh
+Copyright (c) 2023 Charmbracelet, Inc.
+License - https://github.com/charmbracelet/huh/blob/main/LICENSE
+
+charmbracelet/lipgloss - https://github.com/charmbracelet/lipgloss
+Copyright (c) 2021 Charmbracelet, Inc.
+License - https://github.com/charmbracelet/lipgloss/blob/master/LICENSE
+
+google/jsonschema-go - https://github.com/google/jsonschema-go
+Copyright (c) 2020 Google LLC
+License - https://github.com/google/jsonschema-go/blob/main/LICENSE

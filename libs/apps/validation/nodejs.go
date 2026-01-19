@@ -1,16 +1,15 @@
 package validation
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"time"
 
 	"github.com/briandowns/spinner"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/exec"
 	"github.com/databricks/cli/libs/log"
 )
 
@@ -125,32 +124,27 @@ func hasNodeModules(workDir string) bool {
 
 // runValidationCommand executes a shell command in the specified directory.
 func runValidationCommand(ctx context.Context, workDir, command string) *ValidationDetail {
-	cmd := exec.CommandContext(ctx, "sh", "-c", command)
-	cmd.Dir = workDir
-
-	var stdout, stderr bytes.Buffer
-	cmd.Stdout = &stdout
-	cmd.Stderr = &stderr
-
-	err := cmd.Run()
-	exitCode := 0
+	executor, err := exec.NewCommandExecutor(workDir)
 	if err != nil {
-		if exitErr, ok := err.(*exec.ExitError); ok {
-			exitCode = exitErr.ExitCode()
-		} else {
-			return &ValidationDetail{
-				ExitCode: -1,
-				Stdout:   stdout.String(),
-				Stderr:   fmt.Sprintf("Failed to execute command: %v\nStderr: %s", err, stderr.String()),
-			}
+		return &ValidationDetail{
+			ExitCode: -1,
+			Stderr:   fmt.Sprintf("Failed to create command executor: %v", err),
 		}
 	}
 
-	if exitCode != 0 {
+	output, err := executor.ExecAndCapture(ctx, command)
+	if err != nil {
 		return &ValidationDetail{
-			ExitCode: exitCode,
-			Stdout:   stdout.String(),
-			Stderr:   stderr.String(),
+			ExitCode: -1,
+			Stderr:   fmt.Sprintf("Failed to execute command: %v", err),
+		}
+	}
+
+	if output.ExitCode != 0 {
+		return &ValidationDetail{
+			ExitCode: output.ExitCode,
+			Stdout:   string(output.Stdout),
+			Stderr:   string(output.Stderr),
 		}
 	}
 

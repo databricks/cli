@@ -51,13 +51,13 @@ var (
 )
 
 // PrintAnswered prints a completed prompt answer to keep history visible.
-func PrintAnswered(title, value string) {
-	fmt.Printf("%s %s\n", answeredTitleStyle.Render(title+":"), answeredValueStyle.Render(value))
+func PrintAnswered(ctx context.Context, title, value string) {
+	cmdio.LogString(ctx, fmt.Sprintf("%s %s", answeredTitleStyle.Render(title+":"), answeredValueStyle.Render(value)))
 }
 
 // printAnswered is an alias for internal use.
-func printAnswered(title, value string) {
-	PrintAnswered(title, value)
+func printAnswered(ctx context.Context, title, value string) {
+	PrintAnswered(ctx, title, value)
 }
 
 // RunMode specifies how to run the app after creation.
@@ -114,7 +114,7 @@ func ValidateProjectName(s string) error {
 }
 
 // PrintHeader prints the AppKit header banner.
-func PrintHeader() {
+func PrintHeader(ctx context.Context) {
 	headerStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#BD2B26")).
 		Bold(true)
@@ -122,17 +122,17 @@ func PrintHeader() {
 	subtitleStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#71717A"))
 
-	fmt.Println()
-	fmt.Println(headerStyle.Render("◆ Create a new Databricks AppKit project"))
-	fmt.Println(subtitleStyle.Render("  Full-stack TypeScript • React • Tailwind CSS"))
-	fmt.Println()
+	cmdio.LogString(ctx, "")
+	cmdio.LogString(ctx, headerStyle.Render("◆ Create a new Databricks AppKit project"))
+	cmdio.LogString(ctx, subtitleStyle.Render("  Full-stack TypeScript • React • Tailwind CSS"))
+	cmdio.LogString(ctx, "")
 }
 
 // PromptForProjectName prompts only for project name.
 // Used as the first step before resolving templates.
 // outputDir is used to check if the destination directory already exists.
-func PromptForProjectName(outputDir string) (string, error) {
-	PrintHeader()
+func PromptForProjectName(ctx context.Context, outputDir string) (string, error) {
+	PrintHeader(ctx)
 	theme := AppkitTheme()
 
 	var name string
@@ -160,7 +160,7 @@ func PromptForProjectName(outputDir string) (string, error) {
 		return "", err
 	}
 
-	printAnswered("Project name", name)
+	printAnswered(ctx, "Project name", name)
 	return name, nil
 }
 
@@ -205,7 +205,7 @@ func PromptForPluginDependencies(ctx context.Context, deps []features.FeatureDep
 		if err := input.WithTheme(theme).Run(); err != nil {
 			return nil, err
 		}
-		printAnswered(dep.Title, value)
+		printAnswered(ctx, dep.Title, value)
 		result[dep.ID] = value
 	}
 
@@ -213,7 +213,7 @@ func PromptForPluginDependencies(ctx context.Context, deps []features.FeatureDep
 }
 
 // PromptForDeployAndRun prompts for post-creation deploy and run options.
-func PromptForDeployAndRun() (deploy bool, runMode RunMode, err error) {
+func PromptForDeployAndRun(ctx context.Context) (deploy bool, runMode RunMode, err error) {
 	theme := AppkitTheme()
 
 	// Deploy after creation?
@@ -227,9 +227,9 @@ func PromptForDeployAndRun() (deploy bool, runMode RunMode, err error) {
 		return false, RunModeNone, err
 	}
 	if deploy {
-		printAnswered("Deploy after creation", "Yes")
+		printAnswered(ctx, "Deploy after creation", "Yes")
 	} else {
-		printAnswered("Deploy after creation", "No")
+		printAnswered(ctx, "Deploy after creation", "No")
 	}
 
 	// Run the app?
@@ -254,7 +254,7 @@ func PromptForDeployAndRun() (deploy bool, runMode RunMode, err error) {
 		string(RunModeDev):       "Yes (local)",
 		string(RunModeDevRemote): "Yes (remote)",
 	}
-	printAnswered("Run after creation", runModeLabels[runModeStr])
+	printAnswered(ctx, "Run after creation", runModeLabels[runModeStr])
 
 	return deploy, RunMode(runModeStr), nil
 }
@@ -269,7 +269,7 @@ func PromptForProjectConfig(ctx context.Context, preSelectedFeatures []string) (
 	}
 	theme := AppkitTheme()
 
-	PrintHeader()
+	PrintHeader(ctx)
 
 	// Step 1: Project name
 	err := huh.NewInput().
@@ -283,7 +283,7 @@ func PromptForProjectConfig(ctx context.Context, preSelectedFeatures []string) (
 	if err != nil {
 		return nil, err
 	}
-	printAnswered("Project name", config.ProjectName)
+	printAnswered(ctx, "Project name", config.ProjectName)
 
 	// Step 2: Feature selection (skip if features already provided via flag)
 	if len(config.Features) == 0 && len(features.AvailableFeatures) > 0 {
@@ -305,9 +305,9 @@ func PromptForProjectConfig(ctx context.Context, preSelectedFeatures []string) (
 			return nil, err
 		}
 		if len(config.Features) == 0 {
-			printAnswered("Features", "None")
+			printAnswered(ctx, "Features", "None")
 		} else {
-			printAnswered("Features", fmt.Sprintf("%d selected", len(config.Features)))
+			printAnswered(ctx, "Features", fmt.Sprintf("%d selected", len(config.Features)))
 		}
 	}
 
@@ -348,7 +348,7 @@ func PromptForProjectConfig(ctx context.Context, preSelectedFeatures []string) (
 		if err := input.WithTheme(theme).Run(); err != nil {
 			return nil, err
 		}
-		printAnswered(dep.Title, value)
+		printAnswered(ctx, dep.Title, value)
 		config.Dependencies[dep.ID] = value
 	}
 
@@ -366,7 +366,7 @@ func PromptForProjectConfig(ctx context.Context, preSelectedFeatures []string) (
 	if config.Description == "" {
 		config.Description = DefaultAppDescription
 	}
-	printAnswered("Description", config.Description)
+	printAnswered(ctx, "Description", config.Description)
 
 	// Step 5: Deploy after creation?
 	err = huh.NewConfirm().
@@ -379,9 +379,9 @@ func PromptForProjectConfig(ctx context.Context, preSelectedFeatures []string) (
 		return nil, err
 	}
 	if config.Deploy {
-		printAnswered("Deploy after creation", "Yes")
+		printAnswered(ctx, "Deploy after creation", "Yes")
 	} else {
-		printAnswered("Deploy after creation", "No")
+		printAnswered(ctx, "Deploy after creation", "No")
 	}
 
 	// Step 6: Run the app?
@@ -407,7 +407,7 @@ func PromptForProjectConfig(ctx context.Context, preSelectedFeatures []string) (
 		string(RunModeDev):       "Yes (local)",
 		string(RunModeDevRemote): "Yes (remote)",
 	}
-	printAnswered("Run after creation", runModeLabels[runModeStr])
+	printAnswered(ctx, "Run after creation", runModeLabels[runModeStr])
 
 	return config, nil
 }
@@ -465,7 +465,7 @@ func PromptForWarehouse(ctx context.Context) (string, error) {
 		return "", err
 	}
 
-	printAnswered("SQL Warehouse", warehouseNames[selected])
+	printAnswered(ctx, "SQL Warehouse", warehouseNames[selected])
 	return selected, nil
 }
 
@@ -567,13 +567,13 @@ func PromptForAppSelection(ctx context.Context, title string) (string, error) {
 		return "", err
 	}
 
-	printAnswered("App", selected)
+	printAnswered(ctx, "App", selected)
 	return selected, nil
 }
 
 // PrintSuccess prints a success message after project creation.
 // If showNextSteps is true, also prints the "Next steps" section.
-func PrintSuccess(projectName, outputDir string, fileCount int, showNextSteps bool) {
+func PrintSuccess(ctx context.Context, projectName, outputDir string, fileCount int, showNextSteps bool) {
 	successStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#FFAB00")). // Databricks yellow
 		Bold(true)
@@ -584,18 +584,18 @@ func PrintSuccess(projectName, outputDir string, fileCount int, showNextSteps bo
 	codeStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#FF3621")) // Databricks orange
 
-	fmt.Println()
-	fmt.Println(successStyle.Render("✔ Project created successfully!"))
-	fmt.Println()
-	fmt.Println(dimStyle.Render("  Location: " + outputDir))
-	fmt.Println(dimStyle.Render("  Files: " + strconv.Itoa(fileCount)))
+	cmdio.LogString(ctx, "")
+	cmdio.LogString(ctx, successStyle.Render("✔ Project created successfully!"))
+	cmdio.LogString(ctx, "")
+	cmdio.LogString(ctx, dimStyle.Render("  Location: "+outputDir))
+	cmdio.LogString(ctx, dimStyle.Render("  Files: "+strconv.Itoa(fileCount)))
 
 	if showNextSteps {
-		fmt.Println()
-		fmt.Println(dimStyle.Render("  Next steps:"))
-		fmt.Println()
-		fmt.Println(codeStyle.Render("    cd " + projectName))
-		fmt.Println(codeStyle.Render("    npm run dev"))
+		cmdio.LogString(ctx, "")
+		cmdio.LogString(ctx, dimStyle.Render("  Next steps:"))
+		cmdio.LogString(ctx, "")
+		cmdio.LogString(ctx, codeStyle.Render("    cd "+projectName))
+		cmdio.LogString(ctx, codeStyle.Render("    npm run dev"))
 	}
-	fmt.Println()
+	cmdio.LogString(ctx, "")
 }

@@ -189,9 +189,9 @@ func promptForFeaturesAndDeps(ctx context.Context, preSelectedFeatures []string)
 			return nil, err
 		}
 		if len(config.Features) == 0 {
-			prompt.PrintAnswered("Features", "None")
+			prompt.PrintAnswered(ctx, "Features", "None")
 		} else {
-			prompt.PrintAnswered("Features", fmt.Sprintf("%d selected", len(config.Features)))
+			prompt.PrintAnswered(ctx, "Features", fmt.Sprintf("%d selected", len(config.Features)))
 		}
 	}
 
@@ -232,7 +232,7 @@ func promptForFeaturesAndDeps(ctx context.Context, preSelectedFeatures []string)
 		if err := input.WithTheme(theme).Run(); err != nil {
 			return nil, err
 		}
-		prompt.PrintAnswered(dep.Title, value)
+		prompt.PrintAnswered(ctx, dep.Title, value)
 		config.Dependencies[dep.ID] = value
 	}
 
@@ -250,10 +250,10 @@ func promptForFeaturesAndDeps(ctx context.Context, preSelectedFeatures []string)
 	if config.Description == "" {
 		config.Description = prompt.DefaultAppDescription
 	}
-	prompt.PrintAnswered("Description", config.Description)
+	prompt.PrintAnswered(ctx, "Description", config.Description)
 
 	// Step 4: Deploy and run options
-	config.Deploy, config.RunMode, err = prompt.PromptForDeployAndRun()
+	config.Deploy, config.RunMode, err = prompt.PromptForDeployAndRun(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -462,7 +462,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 			return errors.New("--name is required in non-interactive mode")
 		}
 		// Prompt includes validation for name format AND directory existence
-		name, err := prompt.PromptForProjectName(opts.outputDir)
+		name, err := prompt.PromptForProjectName(ctx, opts.outputDir)
 		if err != nil {
 			return err
 		}
@@ -599,7 +599,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 			}
 			var deployVal bool
 			var runVal prompt.RunMode
-			deployVal, runVal, err = prompt.PromptForDeployAndRun()
+			deployVal, runVal, err = prompt.PromptForDeployAndRun(ctx)
 			if err != nil {
 				return err
 			}
@@ -703,7 +703,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 
 	// Show next steps only if user didn't choose to deploy or run
 	showNextSteps := !shouldDeploy && runMode == prompt.RunModeNone
-	prompt.PrintSuccess(opts.name, absOutputDir, fileCount, showNextSteps)
+	prompt.PrintSuccess(ctx, opts.name, absOutputDir, fileCount, showNextSteps)
 
 	// Execute post-creation actions (deploy and/or run)
 	if shouldDeploy || runMode != prompt.RunModeNone {
