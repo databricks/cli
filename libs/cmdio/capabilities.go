@@ -37,8 +37,9 @@ func (c Capabilities) SupportsInteractive() bool {
 }
 
 // SupportsPrompt returns true if terminal supports user prompting.
+// Prompts write to stderr and read from stdin, so we only need those to be TTYs.
 func (c Capabilities) SupportsPrompt() bool {
-	return c.SupportsInteractive() && c.stdinIsTTY && c.stdoutIsTTY && !c.isGitBash
+	return c.SupportsInteractive() && c.stdinIsTTY && !c.isGitBash
 }
 
 // SupportsColor returns true if the given writer supports colored output.

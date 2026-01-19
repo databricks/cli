@@ -115,9 +115,6 @@ func AskSelect(ctx context.Context, question string, choices []string) (string, 
 		return "", err
 	}
 
-	// Note: by default this prompt uses os.Stdin and os.Stdout.
-	// This is contrary to the rest of the original progress logger
-	// functions that write to stderr.
 	prompt := promptui.Select{
 		Label:    last,
 		Items:    choices,
@@ -126,6 +123,8 @@ func AskSelect(ctx context.Context, question string, choices []string) (string, 
 			Label:    "{{.}}: ",
 			Selected: last + ": {{.}}",
 		},
+		Stdin:  io.NopCloser(c.in),
+		Stdout: nopWriteCloser{c.err},
 	}
 
 	_, ans, err := prompt.Run()
