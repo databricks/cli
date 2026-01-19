@@ -5,8 +5,17 @@ Ignore = [
     ".databricks",
     "databricks.yml",
     "plan.json",
+    "*.py",
 ]
 
 EnvMatrix.INPUT_CONFIG = [
     "schema.yml.tmpl",
+    "job.yml.tmpl",
+    "pipeline.yml.tmpl",
+    "experiment.yml.tmpl",
+    "registered_model.yml.tmpl",
+    "volume.yml.tmpl",
+    "cluster.yml.tmpl",
+    "model_serving_endpoint.yml.tmpl",
+    "model.yml.tmpl",
 ]

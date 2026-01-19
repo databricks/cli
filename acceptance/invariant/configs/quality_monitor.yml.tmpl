@@ -1,0 +1,16 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+
+resources:
+  schemas:
+    schema1:
+      catalog_name: main
+      name: test-schema-$UNIQUE_NAME
+
+  quality_monitors:
+    foo:
+      table_name: main.test-schema-$UNIQUE_NAME.test_table
+      assets_dir: /Workspace/Users/$USER_NAME/monitor_assets_$UNIQUE_NAME
+      output_schema_name: main.test-schema-$UNIQUE_NAME
+      snapshot: {}
