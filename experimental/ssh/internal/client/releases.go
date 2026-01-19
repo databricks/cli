@@ -95,6 +95,9 @@ func getGithubRelease(ctx context.Context, architecture, version, releasesDir st
 	// TODO: download and check databricks_cli_<version>_SHA256SUMS
 	fileName := getReleaseName(architecture, version)
 	downloadURL := fmt.Sprintf("https://github.com/databricks/cli/releases/download/v%s/%s", version, fileName)
+	if strings.Contains(version, "dev") {
+		downloadURL = fmt.Sprintf("https://github.com/databricks/cli/releases/download/snapshot/%s", fileName)
+	}
 	cmdio.LogString(ctx, fmt.Sprintf("Downloading %s from %s", fileName, downloadURL))
 
 	resp, err := http.Get(downloadURL)
