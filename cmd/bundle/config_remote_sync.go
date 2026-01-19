@@ -1,4 +1,4 @@
-package debug
+package bundle
 
 import (
 	"encoding/json"
@@ -11,7 +11,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func NewConfigRemoteSyncCommand() *cobra.Command {
+func newConfigRemoteSyncCommand() *cobra.Command {
 	var save bool
 
 	cmd := &cobra.Command{
@@ -24,10 +24,10 @@ Otherwise, outputs diff without modifying files.
 
 Examples:
   # Show diff without saving
-  databricks bundle debug config-remote-sync
+  databricks bundle config-remote-sync
 
   # Show diff and save to files
-  databricks bundle debug config-remote-sync --save`,
+  databricks bundle config-remote-sync --save`,
 		Hidden: true, // Used by DABs in the Workspace only
 	}
 
