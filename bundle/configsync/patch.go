@@ -2,18 +2,62 @@ package configsync
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
+	"reflect"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/palantir/pkg/yamlpatch/gopkgv3yamlpatcher"
 	"github.com/palantir/pkg/yamlpatch/yamlpatch"
 )
 
 type resolvedChanges map[string]*deployplan.ChangeDesc
+
+// normalizeValue converts values to plain Go types suitable for YAML patching
+// by using SDK marshaling which properly handles ForceSendFields and other annotations.
+func normalizeValue(_ context.Context, v any) (any, error) {
+	if v == nil {
+		return nil, nil
+	}
+
+	switch v.(type) {
+	case bool, string, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64:
+		return v, nil
+	}
+
+	rv := reflect.ValueOf(v)
+	rt := rv.Type()
+
+	if rt.Kind() == reflect.Ptr {
+		rt = rt.Elem()
+	}
+
+	var data []byte
+	var err error
+
+	if rt.Kind() == reflect.Struct {
+		data, err = marshal.Marshal(v)
+	} else {
+		data, err = json.Marshal(v)
+	}
+
+	if err != nil {
+		return v, fmt.Errorf("failed to marshal value of type %T: %w", v, err)
+	}
+
+	var normalized any
+	err = json.Unmarshal(data, &normalized)
+	if err != nil {
+		return v, fmt.Errorf("failed to unmarshal value: %w", err)
+	}
+
+	return normalized, nil
+}
 
 // ApplyChangesToYAML generates YAML files for the given changes.
 func ApplyChangesToYAML(ctx context.Context, b *bundle.Bundle, planChanges map[string]deployplan.Changes) ([]FileChange, error) {
@@ -84,16 +128,26 @@ func applyChanges(ctx context.Context, filePath string, changes resolvedChanges,
 					Path: path,
 				}
 			} else if isReplacement {
+				normalizedRemote, err := normalizeValue(ctx, changeDesc.Remote)
+				if err != nil {
+					log.Warnf(ctx, "Failed to normalize replacement value for %s: %v", jsonPointer, err)
+					normalizedRemote = changeDesc.Remote // Fallback
+				}
 				testOp = yamlpatch.Operation{
 					Type:  yamlpatch.OperationReplace,
 					Path:  path,
-					Value: changeDesc.Remote,
+					Value: normalizedRemote,
 				}
 			} else if isAddition {
+				normalizedRemote, err := normalizeValue(ctx, changeDesc.Remote)
+				if err != nil {
+					log.Warnf(ctx, "Failed to normalize addition value for %s: %v", jsonPointer, err)
+					normalizedRemote = changeDesc.Remote // Fallback
+				}
 				testOp = yamlpatch.Operation{
 					Type:  yamlpatch.OperationAdd,
 					Path:  path,
-					Value: changeDesc.Remote,
+					Value: normalizedRemote,
 				}
 			} else {
 				log.Warnf(ctx, "Unknown operation type for field %s", fieldPath)

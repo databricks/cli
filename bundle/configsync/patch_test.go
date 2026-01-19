@@ -940,3 +940,50 @@ func TestApplyChangesToYAML_MultipleRemovalsInSameFile(t *testing.T) {
 	assert.Equal(t, "Job 2", job2["name"])
 	assert.Equal(t, 3, job2["max_retries"])
 }
+
+func TestApplyChangesToYAML_WithSDKStructValues(t *testing.T) {
+	ctx := logdiag.InitContext(context.Background())
+	tmpDir := t.TempDir()
+
+	type MockSDKStruct struct {
+		Name            string   `json:"name,omitempty"`
+		Enabled         bool     `json:"enabled,omitempty"`
+		ForceSendFields []string `json:"-"`
+	}
+
+	yamlContent := `resources:
+  jobs:
+    test_job:
+      name: test
+      timeout_seconds: 0
+`
+
+	yamlPath := filepath.Join(tmpDir, "databricks.yml")
+	err := os.WriteFile(yamlPath, []byte(yamlContent), 0o644)
+	require.NoError(t, err)
+
+	b, err := bundle.Load(ctx, tmpDir)
+	require.NoError(t, err)
+
+	mutator.DefaultMutators(ctx, b)
+
+	changes := map[string]deployplan.Changes{
+		"resources.jobs.test_job": {
+			"settings": &deployplan.ChangeDesc{
+				Action: deployplan.Update,
+				Remote: &MockSDKStruct{
+					Name:            "updated_name",
+					Enabled:         false,
+					ForceSendFields: []string{"Enabled"}, // Force send even though false
+				},
+			},
+		},
+	}
+
+	files, err := ApplyChangesToYAML(ctx, b, changes)
+	require.NoError(t, err)
+	require.Len(t, files, 1)
+
+	assert.Contains(t, files[0].ModifiedContent, "name: updated_name")
+	assert.Contains(t, files[0].ModifiedContent, "enabled: false")
+}
