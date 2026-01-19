@@ -615,3 +615,21 @@ targets:
 	assert.Equal(t, yamlPath, fileChanges[0].Path)
 	assert.Contains(t, fileChanges[0].ModifiedContent, "edit_mode: EDITABLE")
 }
+
+func TestStrPathToJSONPointer_SimplePaths(t *testing.T) {
+	pointer := strPathToJSONPointer("resources.jobs.test_job")
+	assert.Equal(t, "/resources/jobs/test_job", pointer)
+}
+
+func TestStrPathToJSONPointer_WithIndices(t *testing.T) {
+	pointer := strPathToJSONPointer("tasks[0].name")
+	assert.Equal(t, "/tasks/0/name", pointer)
+
+	pointer = strPathToJSONPointer("resources.jobs.test[0].tasks[1].timeout")
+	assert.Equal(t, "/resources/jobs/test/0/tasks/1/timeout", pointer)
+}
+
+func TestStrPathToJSONPointer_EmptyPath(t *testing.T) {
+	pointer := strPathToJSONPointer("")
+	assert.Equal(t, "", pointer)
+}
