@@ -31,7 +31,7 @@
       "changes": {
         "assets_dir": {
           "action": "recreate",
-          "reason": "field_triggers",
+          "reason": "builtin_rule",
           "old": "/Workspace/Users/[USERNAME]/monitor_assets_[UNIQUE_NAME]",
           "new": "/Workspace/Users/[USERNAME]/monitor_assets2_[UNIQUE_NAME]",
           "remote": "/Workspace/Users/[USERNAME]/monitor_assets_[UNIQUE_NAME]"

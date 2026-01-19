@@ -20,6 +20,15 @@ linters:
     - copyloopvar
     - forbidigo
   settings:
+    forbidigo:
+      forbid:
+        - pattern: 'term\.IsTerminal'
+          msg: Use cmdio.IsPromptSupported(ctx) to check for a TTY.
+        - pattern: 'isatty\.IsTerminal'
+          msg: Use cmdio.IsPromptSupported(ctx) to check for a TTY.
+        - pattern: 'isatty\.IsCygwinTerminal'
+          msg: Use cmdio.IsPromptSupported(ctx) to check for a TTY.
+      analyze-types: true
     copyloopvar:
       check-alias: true
     errcheck:
@@ -96,9 +105,6 @@ linters:
       - path: bundle/direct/dresources/.*_test.go
         linters:
           - exhaustruct
-      - path-except: ^cmd
-        linters:
-          - forbidigo
 issues:
   max-issues-per-linter: 1000
   max-same-issues: 1000
