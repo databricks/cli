@@ -2,5 +2,5 @@ Local = true
 Cloud = true
 
 [EnvMatrix]
-  DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
+  DATABRICKS_BUNDLE_ENGINE = ["direct"]
   INPUT_CONFIG = ["schema.yml.tmpl", "job.yml.tmpl", "pipeline.yml.tmpl", "experiment.yml.tmpl", "registered_model.yml.tmpl", "volume.yml.tmpl", "cluster.yml.tmpl", "model_serving_endpoint.yml.tmpl", "model.yml.tmpl", "alert.yml.tmpl", "dashboard.yml.tmpl", "app.yml.tmpl", "secret_scope.yml.tmpl", "database_instance.yml.tmpl", "database_catalog.yml.tmpl", "synced_database_table.yml.tmpl"]
