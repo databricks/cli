@@ -301,12 +301,67 @@ func TestInheritSystemTeamFoundationCollectionUri(t *testing.T) {
 	assert.Equal(t, "foobar", env["SYSTEM_TEAMFOUNDATIONCOLLECTIONURI"])
 }
 
+func TestInheritSystemJobId(t *testing.T) {
+	t.Setenv("SYSTEM_JOBID", "test-job-id-123")
+
+	ctx := context.Background()
+	env := map[string]string{}
+	err := inheritEnvVars(ctx, env)
+	require.NoError(t, err)
+	assert.Equal(t, "test-job-id-123", env["SYSTEM_JOBID"])
+}
+
+func TestInheritSystemHostType(t *testing.T) {
+	t.Setenv("SYSTEM_HOSTTYPE", "build")
+
+	ctx := context.Background()
+	env := map[string]string{}
+	err := inheritEnvVars(ctx, env)
+	require.NoError(t, err)
+	assert.Equal(t, "build", env["SYSTEM_HOSTTYPE"])
+}
+
+func TestInheritSystemTeamProject(t *testing.T) {
+	t.Setenv("SYSTEM_TEAMPROJECT", "my-project")
+
+	ctx := context.Background()
+	env := map[string]string{}
+	err := inheritEnvVars(ctx, env)
+	require.NoError(t, err)
+	assert.Equal(t, "my-project", env["SYSTEM_TEAMPROJECT"])
+}
+
+func TestInheritSystemDefinitionId(t *testing.T) {
+	t.Setenv("SYSTEM_DEFINITIONID", "42")
+
+	ctx := context.Background()
+	env := map[string]string{}
+	err := inheritEnvVars(ctx, env)
+	require.NoError(t, err)
+	assert.Equal(t, "42", env["SYSTEM_DEFINITIONID"])
+}
+
+func TestInheritSystemCollectionUri(t *testing.T) {
+	t.Setenv("SYSTEM_COLLECTIONURI", "https://dev.azure.com/myorg/")
+
+	ctx := context.Background()
+	env := map[string]string{}
+	err := inheritEnvVars(ctx, env)
+	require.NoError(t, err)
+	assert.Equal(t, "https://dev.azure.com/myorg/", env["SYSTEM_COLLECTIONURI"])
+}
+
 func TestInheritAzureDevOpsSystemVariables(t *testing.T) {
 	// Set Azure DevOps system variables
 	t.Setenv("SYSTEM_PLANID", "plan-id-123")
 	t.Setenv("SYSTEM_COLLECTIONID", "collection-id-456")
 	t.Setenv("SYSTEM_TEAMPROJECTID", "project-id-789")
 	t.Setenv("SYSTEM_OIDCREQUESTURI", "https://oidc.example.com")
+	t.Setenv("SYSTEM_HOSTTYPE", "build")
+	t.Setenv("SYSTEM_TEAMPROJECT", "my-project")
+	t.Setenv("SYSTEM_DEFINITIONID", "42")
+	t.Setenv("SYSTEM_COLLECTIONURI", "https://dev.azure.com/myorg/")
+	t.Setenv("SYSTEM_JOBID", "job-123")
 
 	ctx := context.Background()
 	env := map[string]string{}
@@ -316,6 +371,11 @@ func TestInheritAzureDevOpsSystemVariables(t *testing.T) {
 	assert.Equal(t, "collection-id-456", env["SYSTEM_COLLECTIONID"])
 	assert.Equal(t, "project-id-789", env["SYSTEM_TEAMPROJECTID"])
 	assert.Equal(t, "https://oidc.example.com", env["SYSTEM_OIDCREQUESTURI"])
+	assert.Equal(t, "build", env["SYSTEM_HOSTTYPE"])
+	assert.Equal(t, "my-project", env["SYSTEM_TEAMPROJECT"])
+	assert.Equal(t, "42", env["SYSTEM_DEFINITIONID"])
+	assert.Equal(t, "https://dev.azure.com/myorg/", env["SYSTEM_COLLECTIONURI"])
+	assert.Equal(t, "job-123", env["SYSTEM_JOBID"])
 }
 
 func TestSetUserProfileFromInheritEnvVars(t *testing.T) {
