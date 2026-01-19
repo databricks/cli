@@ -10,6 +10,12 @@ Ignore = [
     "app",
 ]
 
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = [
+    "direct",
+    # These tests work on terraform but commented out to save time on test run
+    #"terraform",
+]
+
 EnvMatrix.INPUT_CONFIG = [
     "schema.yml.tmpl",
     "job.yml.tmpl",
