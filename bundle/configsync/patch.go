@@ -7,7 +7,6 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
 	"github.com/palantir/pkg/yamlpatch/gopkgv3yamlpatcher"
 	"github.com/palantir/pkg/yamlpatch/yamlpatch"
@@ -111,25 +110,20 @@ type fieldLocations map[string]*deployplan.ChangeDesc
 
 // getFieldLocations builds a map from file paths to lists of field changes
 func getFieldLocations(ctx context.Context, b *bundle.Bundle, changes map[string]deployplan.Changes) (map[string]fieldLocations, error) {
-	configValue := b.Config.Value()
 	locationsByFile := make(map[string]fieldLocations)
 
 	for resourceKey, resourceChanges := range changes {
 		for fieldPath, changeDesc := range resourceChanges {
 			fullPath := resourceKey + "." + fieldPath
-			path, err := structpathToDynPath(ctx, fullPath, configValue)
+
+			resolvedPath, err := resolveSelectors(fullPath, b)
 			if err != nil {
-				log.Warnf(ctx, "Failed to convert path %s to dyn.Path: %v", fullPath, err)
+				log.Warnf(ctx, "Failed to resolve selectors in path %s: %v", fullPath, err)
 				continue
 			}
 
-			value, err := dyn.GetByPath(configValue, path)
-			if err != nil {
-				log.Debugf(ctx, "Path %s not found in config: %v", path.String(), err)
-				continue
-			}
-
-			filePath := value.Location().File
+			loc := b.Config.GetLocation(resolvedPath)
+			filePath := loc.File
 
 			// If field has no location, find the parent resource's location to then add a new field
 			if filePath == "" {
@@ -140,7 +134,11 @@ func getFieldLocations(ctx context.Context, b *bundle.Bundle, changes map[string
 				log.Debugf(ctx, "Field %s has no location, using resource location: %s", fullPath, filePath)
 			}
 
-			jsonPointer := dynPathToJSONPointer(path)
+			jsonPointer, err := strPathToJSONPointer(resolvedPath)
+			if err != nil {
+				log.Warnf(ctx, "Failed to convert path %s to JSON pointer: %v", resolvedPath, err)
+				continue
+			}
 
 			if _, ok := locationsByFile[filePath]; !ok {
 				locationsByFile[filePath] = make(fieldLocations)
@@ -158,7 +156,6 @@ func getFieldLocations(ctx context.Context, b *bundle.Bundle, changes map[string
 func findResourceFileLocation(_ context.Context, b *bundle.Bundle, resourceKey string) string {
 	targetName := b.Config.Bundle.Target
 
-	// Try target override first if we have a target
 	if targetName != "" {
 		targetPath := "targets." + targetName + "." + resourceKey
 		loc := b.Config.GetLocation(targetPath)
@@ -167,7 +164,6 @@ func findResourceFileLocation(_ context.Context, b *bundle.Bundle, resourceKey s
 		}
 	}
 
-	// Fall back to root resource location
 	loc := b.Config.GetLocation(resourceKey)
 	return loc.File
 }
