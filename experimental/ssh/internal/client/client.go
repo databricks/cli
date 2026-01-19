@@ -24,6 +24,7 @@ import (
 	sshWorkspace "github.com/databricks/cli/experimental/ssh/internal/workspace"
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -298,8 +299,8 @@ func getServerMetadata(ctx context.Context, client *databricks.WorkspaceClient, 
 	if err != nil {
 		return 0, "", "", err
 	}
-	cmdio.LogString(ctx, "Metadata response: "+string(bodyBytes))
-	cmdio.LogString(ctx, "Metadata response status code: "+strconv.Itoa(resp.StatusCode))
+	log.Debugf(ctx, "Metadata response: %s", string(bodyBytes))
+	log.Debugf(ctx, "Metadata response status code: %d", resp.StatusCode)
 
 	if resp.StatusCode != http.StatusOK {
 		return 0, "", "", errors.Join(errServerMetadata, fmt.Errorf("server is not ok, status code %d", resp.StatusCode))
