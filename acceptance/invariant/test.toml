@@ -1,0 +1,12 @@
+Local = true
+Cloud = true
+
+Ignore = [
+    ".databricks",
+    "databricks.yml",
+    "plan.json",
+]
+
+EnvMatrix.INPUT_CONFIG = [
+    "schema.yml.tmpl",
+]
