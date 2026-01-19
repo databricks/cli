@@ -278,7 +278,7 @@ func getServerMetadata(ctx context.Context, client *databricks.WorkspaceClient, 
 		return 0, "", "", err
 	}
 	metadataURL := fmt.Sprintf("%s/driver-proxy-api/o/%d/%s/%d/metadata", client.Config.Host, workspaceID, effectiveClusterID, wsMetadata.Port)
-	cmdio.LogString(ctx, "Metadata URL: "+metadataURL)
+	log.Debugf(ctx, "Metadata URL: %s", metadataURL)
 	req, err := http.NewRequestWithContext(ctx, "GET", metadataURL, nil)
 	if err != nil {
 		return 0, "", "", err
