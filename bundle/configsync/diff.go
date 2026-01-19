@@ -29,8 +29,12 @@ func DetectChanges(ctx context.Context, b *bundle.Bundle) (map[string]deployplan
 
 		if entry.Changes != nil {
 			for path, changeDesc := range entry.Changes {
+				if changeDesc.Remote == nil && changeDesc.Old == nil && changeDesc.New == nil {
+					continue
+				}
+
 				// TODO: distinguish action Skip between actual server-side defaults and remote-side changes
-				if changeDesc.Remote != nil && changeDesc.Action != deployplan.Skip {
+				if changeDesc.Action != deployplan.Skip {
 					resourceChanges[path] = changeDesc
 				}
 			}

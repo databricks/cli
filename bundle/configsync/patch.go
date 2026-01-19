@@ -38,11 +38,13 @@ func ApplyChangesToYAML(ctx context.Context, b *bundle.Bundle, planChanges map[s
 			continue
 		}
 
-		result = append(result, FileChange{
-			Path:            filePath,
-			OriginalContent: string(originalContent),
-			ModifiedContent: modifiedContent,
-		})
+		if modifiedContent != string(originalContent) {
+			result = append(result, FileChange{
+				Path:            filePath,
+				OriginalContent: string(originalContent),
+				ModifiedContent: modifiedContent,
+			})
+		}
 	}
 
 	return result, nil
@@ -55,10 +57,8 @@ func applyChanges(ctx context.Context, filePath string, changes resolvedChanges,
 		return "", fmt.Errorf("failed to read file %s: %w", filePath, err)
 	}
 
-	var operations yamlpatch.Patch
 	for fieldPath, changeDesc := range changes {
 		jsonPointer := strPathToJSONPointer(fieldPath)
-		yamlValue := changeDesc.Remote
 
 		jsonPointers := []string{jsonPointer}
 		if targetName != "" {
@@ -66,81 +66,53 @@ func applyChanges(ctx context.Context, filePath string, changes resolvedChanges,
 			jsonPointers = append(jsonPointers, targetPrefix+jsonPointer)
 		}
 
-		var successfulPath string
-		var opType string
+		hasConfigValue := changeDesc.Old != nil || changeDesc.New != nil
+		isRemoval := changeDesc.Remote == nil && hasConfigValue
+		isReplacement := changeDesc.Remote != nil && hasConfigValue
+		isAddition := changeDesc.Remote != nil && !hasConfigValue
 
-		// Try replace operation first (for existing fields)
 		for _, jsonPointer := range jsonPointers {
 			path, err := yamlpatch.ParsePath(jsonPointer)
 			if err != nil {
+				return "", fmt.Errorf("failed to parse JSON Pointer %s: %w", jsonPointer, err)
+			}
+
+			var testOp yamlpatch.Operation
+			if isRemoval {
+				testOp = yamlpatch.Operation{
+					Type: yamlpatch.OperationRemove,
+					Path: path,
+				}
+			} else if isReplacement {
+				testOp = yamlpatch.Operation{
+					Type:  yamlpatch.OperationReplace,
+					Path:  path,
+					Value: changeDesc.Remote,
+				}
+			} else if isAddition {
+				testOp = yamlpatch.Operation{
+					Type:  yamlpatch.OperationAdd,
+					Path:  path,
+					Value: changeDesc.Remote,
+				}
+			} else {
+				log.Warnf(ctx, "Unknown operation type for field %s", fieldPath)
 				continue
 			}
 
-			testOp := yamlpatch.Operation{
-				Type:  yamlpatch.OperationReplace,
-				Path:  path,
-				Value: yamlValue,
-			}
-
 			patcher := gopkgv3yamlpatcher.New(gopkgv3yamlpatcher.IndentSpaces(2))
-			_, err = patcher.Apply(content, yamlpatch.Patch{testOp})
+			modifiedContent, err := patcher.Apply(content, yamlpatch.Patch{testOp})
 			if err == nil {
-				successfulPath = jsonPointer
-				opType = yamlpatch.OperationReplace
+				content = modifiedContent
+				log.Debugf(ctx, "Applied %s change to %s", testOp.Type, jsonPointer)
 				break
+			} else {
+				log.Debugf(ctx, "Failed to apply change to %s: %v", jsonPointer, err)
 			}
 		}
-
-		// If replace failed, try add operation (for new fields)
-		if successfulPath == "" {
-			for _, jsonPointer := range jsonPointers {
-				path, err := yamlpatch.ParsePath(jsonPointer)
-				if err != nil {
-					continue
-				}
-
-				testOp := yamlpatch.Operation{
-					Type:  yamlpatch.OperationAdd,
-					Path:  path,
-					Value: yamlValue,
-				}
-
-				patcher := gopkgv3yamlpatcher.New(gopkgv3yamlpatcher.IndentSpaces(2))
-				_, err = patcher.Apply(content, yamlpatch.Patch{testOp})
-				if err == nil {
-					successfulPath = jsonPointer
-					opType = yamlpatch.OperationAdd
-					break
-				}
-			}
-		}
-
-		if successfulPath == "" {
-			log.Warnf(ctx, "Failed to find valid path for %s", jsonPointers)
-			continue
-		}
-
-		path, err := yamlpatch.ParsePath(successfulPath)
-		if err != nil {
-			log.Warnf(ctx, "Failed to parse JSON Pointer %s: %v", successfulPath, err)
-			continue
-		}
-
-		op := yamlpatch.Operation{
-			Type:  opType,
-			Path:  path,
-			Value: yamlValue,
-		}
-		operations = append(operations, op)
 	}
 
-	patcher := gopkgv3yamlpatcher.New(gopkgv3yamlpatcher.IndentSpaces(2))
-	modifiedContent, err := patcher.Apply(content, operations)
-	if err != nil {
-		return "", fmt.Errorf("failed to apply patches to %s: %w", filePath, err)
-	}
-
-	return string(modifiedContent), nil
+	return string(content), nil
 }
 
 // getResolvedFieldChanges builds a map from file paths to lists of field changes
@@ -153,8 +125,7 @@ func getResolvedFieldChanges(ctx context.Context, b *bundle.Bundle, planChanges 
 
 			resolvedPath, err := resolveSelectors(fullPath, b)
 			if err != nil {
-				log.Warnf(ctx, "Failed to resolve selectors in path %s: %v", fullPath, err)
-				continue
+				return nil, fmt.Errorf("failed to resolve selectors in path %s: %w", fullPath, err)
 			}
 
 			loc := b.Config.GetLocation(resolvedPath)
