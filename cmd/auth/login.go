@@ -158,6 +158,8 @@ depends on the existing profiles you have set in your configuration file
 		if err = persistentAuth.Challenge(); err != nil {
 			return err
 		}
+		// An OAuth token has been successfully obtained at this point.
+		// We now attempt to save the current configuration as a profile in the config file.
 
 		var clusterID, serverlessComputeID string
 		switch {
@@ -165,10 +167,9 @@ depends on the existing profiles you have set in your configuration file
 			// Create a workspace client with direct credentials (not from a profile)
 			// because the profile hasn't been saved yet.
 			w, err := databricks.NewWorkspaceClient(&databricks.Config{
-				Host:       authArguments.Host,
-				AccountID:  authArguments.AccountID,
-				AuthType:   "databricks-cli",
-				ConfigFile: os.Getenv("DATABRICKS_CONFIG_FILE"),
+				Host:      authArguments.Host,
+				AccountID: authArguments.AccountID,
+				AuthType:  "databricks-cli",
 			})
 			if err != nil {
 				return err
