@@ -702,3 +702,25 @@ func HasPrefix(s, prefix string) bool {
 
 	return true
 }
+
+// MarshalYAML implements yaml.Marshaler for PathNode.
+func (p *PathNode) MarshalYAML() (any, error) {
+	return p.String(), nil
+}
+
+// UnmarshalYAML implements yaml.Unmarshaler for PathNode.
+func (p *PathNode) UnmarshalYAML(unmarshal func(any) error) error {
+	var s string
+	if err := unmarshal(&s); err != nil {
+		return err
+	}
+	parsed, err := Parse(s)
+	if err != nil {
+		return err
+	}
+	if parsed == nil {
+		return nil
+	}
+	*p = *parsed
+	return nil
+}

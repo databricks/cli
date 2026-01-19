@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
@@ -101,16 +100,4 @@ func (r *ResourceRegisteredModel) DoDelete(ctx context.Context, id string) error
 	return r.client.RegisteredModels.Delete(ctx, catalog.DeleteRegisteredModelRequest{
 		FullName: id,
 	})
-}
-
-func (*ResourceRegisteredModel) FieldTriggers() map[string]deployplan.ActionType {
-	return map[string]deployplan.ActionType{
-		// The name can technically be updated without recreated. We recreate for now though
-		// to match TF implementation.
-		"name": deployplan.Recreate,
-
-		"catalog_name":     deployplan.Recreate,
-		"schema_name":      deployplan.Recreate,
-		"storage_location": deployplan.Recreate,
-	}
 }

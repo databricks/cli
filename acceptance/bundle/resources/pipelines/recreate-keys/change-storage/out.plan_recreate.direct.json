@@ -54,7 +54,7 @@
       "changes": {
         "storage": {
           "action": "recreate",
-          "reason": "field_triggers",
+          "reason": "builtin_rule",
           "old": "dbfs:/pipelines/custom",
           "new": "dbfs:/pipelines/newcustom",
           "remote": "dbfs:/pipelines/custom"

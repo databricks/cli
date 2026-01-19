@@ -116,13 +116,6 @@ func (r *ResourceQualityMonitor) DoDelete(ctx context.Context, id string) error 
 	return err
 }
 
-func (*ResourceQualityMonitor) FieldTriggers() map[string]deployplan.ActionType {
-	return map[string]deployplan.ActionType{
-		"assets_dir": deployplan.Recreate,
-		"table_name": deployplan.Recreate,
-	}
-}
-
 func (r *ResourceQualityMonitor) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, _ *catalog.MonitorInfo) error {
 	if path.String() == "warehouse_id" && change.Old == change.New {
 		change.Action = deployplan.Skip
