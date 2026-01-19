@@ -6,6 +6,8 @@ Ignore = [
     "databricks.yml",
     "plan.json",
     "*.py",
+    "*.json",
+    "app",
 ]
 
 EnvMatrix.INPUT_CONFIG = [
@@ -18,4 +20,8 @@ EnvMatrix.INPUT_CONFIG = [
     "cluster.yml.tmpl",
     "model_serving_endpoint.yml.tmpl",
     "model.yml.tmpl",
+    "alert.yml.tmpl",
+    "dashboard.yml.tmpl",
+    "app.yml.tmpl",
+    "secret_scope.yml.tmpl",
 ]
