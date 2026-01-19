@@ -23,4 +23,3 @@ cat "./home/.databrickscfg"
 
 # Track the .databrickscfg file that was created to surface changes.
 mv "./home/.databrickscfg" "./out.databrickscfg"
-
