@@ -248,8 +248,7 @@ func (e *Entrypoint) validLogin(cmd *cobra.Command) (*config.Config, error) {
 	// an account profile during installation (anymore) and just prompt for it, when context
 	// does require it. This also means that we always prompt for account-level commands, unless
 	// users specify a `--profile` flag.
-	//nolint:staticcheck // SA1019: IsAccountClient is deprecated but is still used here to avoid breaking changes
-	isACC := cfg.IsAccountClient()
+	isACC := cfg.ConfigType() == config.AccountConfig
 	if e.IsAccountLevel && cfg.Profile == "" {
 		if !cmdio.IsPromptSupported(ctx) {
 			return nil, config.ErrCannotConfigureDefault

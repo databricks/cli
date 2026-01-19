@@ -5,6 +5,7 @@
 ### Notable Changes
 
 ### CLI
+* Add support for unified host with experimental flag ([#4260](https://github.com/databricks/cli/pull/4260))
 
 ### Bundles
 * Add support for valueFrom property (similar to app.yaml) inside Apps config field in bundle configuration ([#4297](https://github.com/databricks/cli/pull/4297))

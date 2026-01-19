@@ -41,6 +41,10 @@ type Workspace struct {
 	AzureEnvironment string `json:"azure_environment,omitempty"`
 	AzureLoginAppID  string `json:"azure_login_app_id,omitempty"`
 
+	// Unified host specific attributes.
+	ExperimentalIsUnifiedHost bool   `json:"experimental_is_unified_host,omitempty"`
+	WorkspaceID               string `json:"workspace_id,omitempty"`
+
 	// CurrentUser holds the current user.
 	// This is set after configuration initialization.
 	CurrentUser *User `json:"current_user,omitempty" bundle:"readonly"`
@@ -117,6 +121,10 @@ func (w *Workspace) Config() *config.Config {
 		AzureTenantID:    w.AzureTenantID,
 		AzureEnvironment: w.AzureEnvironment,
 		AzureLoginAppID:  w.AzureLoginAppID,
+
+		// Unified host
+		Experimental_IsUnifiedHost: w.ExperimentalIsUnifiedHost,
+		WorkspaceId:                w.WorkspaceID,
 	}
 
 	for k := range config.ConfigAttributes {
