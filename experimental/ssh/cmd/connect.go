@@ -32,6 +32,7 @@ For serverless compute:
 	var connectionName string
 	var accelerator string
 	var proxyMode bool
+	var ide string
 	var serverMetadata string
 	var shutdownDelay time.Duration
 	var maxClients int
@@ -42,8 +43,9 @@ For serverless compute:
 	var liteswap string
 
 	cmd.Flags().StringVar(&clusterID, "cluster", "", "Databricks cluster ID (for dedicated clusters)")
-	cmd.Flags().StringVar(&connectionName, "name", "", "Connection name (for serverless compute)")
-	cmd.Flags().StringVar(&accelerator, "accelerator", "", "GPU accelerator type for serverless compute (GPU_1xA10 or GPU_8xH100)")
+	cmd.Flags().StringVar(&connectionName, "name", "", "Connection name")
+	cmd.Flags().StringVar(&accelerator, "accelerator", "", "GPU accelerator type (GPU_1xA10 or GPU_8xH100)")
+	cmd.Flags().StringVar(&ide, "ide", "", "Open remote IDE window (vscode or cursor)")
 	cmd.Flags().DurationVar(&shutdownDelay, "shutdown-delay", defaultShutdownDelay, "Delay before shutting down the server after the last client disconnects")
 	cmd.Flags().IntVar(&maxClients, "max-clients", defaultMaxClients, "Maximum number of SSH clients")
 	cmd.Flags().BoolVar(&autoStartCluster, "auto-start-cluster", true, "Automatically start the cluster if it is not running")
@@ -80,7 +82,7 @@ For serverless compute:
 		wsClient := cmdctx.WorkspaceClient(ctx)
 
 		if !proxyMode && clusterID == "" && connectionName == "" {
-			return errors.New("please provide --cluster flag with the cluster ID, or --name flag with the serverless connection name")
+			return errors.New("please provide --cluster flag with the cluster ID, or --name flag with the connection name (for serverless compute)")
 		}
 
 		if accelerator != "" && connectionName == "" {
@@ -89,7 +91,7 @@ For serverless compute:
 
 		// Remove when we add support for serverless CPU
 		if connectionName != "" && accelerator == "" {
-			return errors.New("--name flag requires --accelerator to be set (e.g. for now we only support serverless GPU compute)")
+			return errors.New("--name flag requires --accelerator to be set (for now we only support serverless GPU compute)")
 		}
 
 		// TODO: validate connectionName if provided
@@ -100,6 +102,7 @@ For serverless compute:
 			ConnectionName:       connectionName,
 			Accelerator:          accelerator,
 			ProxyMode:            proxyMode,
+			IDE:                  ide,
 			ServerMetadata:       serverMetadata,
 			ShutdownDelay:        shutdownDelay,
 			MaxClients:           maxClients,
