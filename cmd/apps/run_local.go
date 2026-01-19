@@ -234,9 +234,3 @@ func newRunLocal() *cobra.Command {
 
 	return cmd
 }
-
-func init() {
-	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
-		cmd.AddCommand(newRunLocal())
-	})
-}

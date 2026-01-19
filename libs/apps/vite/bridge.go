@@ -1,8 +1,9 @@
-package apps
+package vite
 
 import (
 	"bufio"
 	"context"
+	_ "embed"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -23,6 +24,9 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+//go:embed server.js
+var ServerScript []byte
+
 const (
 	localViteURL    = "http://localhost:%d"
 	localViteHMRURL = "ws://localhost:%d/dev-hmr"
@@ -38,12 +42,17 @@ const (
 	httpIdleConnTimeout = 90 * time.Second
 
 	// Bridge operation timeouts
-	bridgeFetchTimeout       = 30 * time.Second
-	bridgeConnTimeout        = 60 * time.Second
-	bridgeTunnelReadyTimeout = 30 * time.Second
+	BridgeFetchTimeout       = 30 * time.Second
+	BridgeConnTimeout        = 60 * time.Second
+	BridgeTunnelReadyTimeout = 30 * time.Second
+
+	// Retry configuration
+	tunnelConnectMaxRetries     = 10
+	tunnelConnectInitialBackoff = 2 * time.Second
+	tunnelConnectMaxBackoff     = 30 * time.Second
 )
 
-type ViteBridgeMessage struct {
+type BridgeMessage struct {
 	Type      string         `json:"type"`
 	TunnelID  string         `json:"tunnelId,omitempty"`
 	Path      string         `json:"path,omitempty"`
@@ -65,7 +74,7 @@ type prioritizedMessage struct {
 	priority    int // 0 = high (HMR), 1 = normal (fetch)
 }
 
-type ViteBridge struct {
+type Bridge struct {
 	ctx                context.Context
 	w                  *databricks.WorkspaceClient
 	appName            string
@@ -76,11 +85,13 @@ type ViteBridge struct {
 	stopChan           chan struct{}
 	stopOnce           sync.Once
 	httpClient         *http.Client
-	connectionRequests chan *ViteBridgeMessage
+	connectionRequests chan *BridgeMessage
 	port               int
+	keepaliveDone      chan struct{} // Signals keepalive goroutine to stop on reconnect
+	keepaliveMu        sync.Mutex    // Protects keepaliveDone
 }
 
-func NewViteBridge(ctx context.Context, w *databricks.WorkspaceClient, appName string, port int) *ViteBridge {
+func NewBridge(ctx context.Context, w *databricks.WorkspaceClient, appName string, port int) *Bridge {
 	// Configure HTTP client optimized for local high-volume requests
 	transport := &http.Transport{
 		MaxIdleConns:        100,
@@ -90,7 +101,7 @@ func NewViteBridge(ctx context.Context, w *databricks.WorkspaceClient, appName s
 		DisableCompression:  false,
 	}
 
-	return &ViteBridge{
+	return &Bridge{
 		ctx:     ctx,
 		w:       w,
 		appName: appName,
@@ -100,12 +111,12 @@ func NewViteBridge(ctx context.Context, w *databricks.WorkspaceClient, appName s
 		},
 		stopChan:           make(chan struct{}),
 		tunnelWriteChan:    make(chan prioritizedMessage, 100), // Buffered channel for async writes
-		connectionRequests: make(chan *ViteBridgeMessage, 10),
+		connectionRequests: make(chan *BridgeMessage, 10),
 		port:               port,
 	}
 }
 
-func (vb *ViteBridge) getAuthHeaders(wsURL string) (http.Header, error) {
+func (vb *Bridge) getAuthHeaders(wsURL string) (http.Header, error) {
 	req, err := http.NewRequestWithContext(vb.ctx, "GET", wsURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
@@ -119,7 +130,7 @@ func (vb *ViteBridge) getAuthHeaders(wsURL string) (http.Header, error) {
 	return req.Header, nil
 }
 
-func (vb *ViteBridge) GetAppDomain() (*url.URL, error) {
+func (vb *Bridge) GetAppDomain() (*url.URL, error) {
 	app, err := vb.w.Apps.Get(vb.ctx, apps.GetAppRequest{
 		Name: vb.appName,
 	})
@@ -134,7 +145,7 @@ func (vb *ViteBridge) GetAppDomain() (*url.URL, error) {
 	return url.Parse(app.Url)
 }
 
-func (vb *ViteBridge) connectToTunnel(appDomain *url.URL) error {
+func (vb *Bridge) connectToTunnel(appDomain *url.URL) error {
 	wsURL := fmt.Sprintf("wss://%s/dev-tunnel", appDomain.Host)
 
 	headers, err := vb.getAuthHeaders(wsURL)
@@ -189,13 +200,71 @@ func (vb *ViteBridge) connectToTunnel(appDomain *url.URL) error {
 
 	vb.tunnelConn = conn
 
-	// Start keepalive ping goroutine
-	go vb.tunnelKeepalive()
+	// Start keepalive ping goroutine (stop existing one first if any)
+	vb.keepaliveMu.Lock()
+	if vb.keepaliveDone != nil {
+		close(vb.keepaliveDone)
+	}
+	vb.keepaliveDone = make(chan struct{})
+	keepaliveDone := vb.keepaliveDone
+	vb.keepaliveMu.Unlock()
+
+	go vb.tunnelKeepalive(keepaliveDone)
 
 	return nil
 }
 
-func (vb *ViteBridge) connectToViteHMR() error {
+// ConnectToTunnelWithRetry attempts to connect to the tunnel with exponential backoff.
+// This handles cases where the app isn't fully ready yet (e.g., right after deployment).
+func (vb *Bridge) ConnectToTunnelWithRetry(appDomain *url.URL) error {
+	var lastErr error
+	backoff := tunnelConnectInitialBackoff
+
+	for attempt := 1; attempt <= tunnelConnectMaxRetries; attempt++ {
+		err := vb.connectToTunnel(appDomain)
+		if err == nil {
+			if attempt > 1 {
+				cmdio.LogString(vb.ctx, "✅ Connected to tunnel successfully!")
+			}
+			return nil
+		}
+
+		lastErr = err
+
+		// Check if context is cancelled
+		select {
+		case <-vb.ctx.Done():
+			return vb.ctx.Err()
+		default:
+		}
+
+		// Don't retry on the last attempt
+		if attempt == tunnelConnectMaxRetries {
+			break
+		}
+
+		// Log retry attempt
+		cmdio.LogString(vb.ctx, fmt.Sprintf("⏳ Connection attempt %d/%d failed, retrying in %v...", attempt, tunnelConnectMaxRetries, backoff))
+		log.Debugf(vb.ctx, "[vite_bridge] Connection error: %v", err)
+
+		// Wait before retrying
+		select {
+		case <-time.After(backoff):
+		case <-vb.ctx.Done():
+			return vb.ctx.Err()
+		}
+
+		// Exponential backoff with cap
+		backoff = time.Duration(float64(backoff) * 1.5)
+		if backoff > tunnelConnectMaxBackoff {
+			backoff = tunnelConnectMaxBackoff
+		}
+	}
+
+	return fmt.Errorf("failed to connect after %d attempts: %w", tunnelConnectMaxRetries, lastErr)
+}
+
+func (vb *Bridge) connectToViteHMR() error {
 	dialer := websocket.Dialer{
 		Subprotocols: []string{viteHMRProtocol},
 	}
@@ -216,14 +285,17 @@ func (vb *ViteBridge) connectToViteHMR() error {
 	return nil
 }
 
-// tunnelKeepalive sends periodic pings to keep the connection alive
-// Remote servers often have 30-60s idle timeouts
-func (vb *ViteBridge) tunnelKeepalive() {
+// tunnelKeepalive sends periodic pings to keep the connection alive.
+// Remote servers often have 30-60s idle timeouts.
+// The done channel is used to stop this goroutine on reconnect.
+func (vb *Bridge) tunnelKeepalive(done <-chan struct{}) {
 	ticker := time.NewTicker(wsKeepaliveInterval)
 	defer ticker.Stop()
 
 	for {
 		select {
+		case <-done:
+			return
 		case <-vb.stopChan:
 			return
 		case <-ticker.C:
@@ -244,7 +316,7 @@ func (vb *ViteBridge) tunnelKeepalive() {
 
 // tunnelWriter handles all writes to the tunnel websocket in a single goroutine
 // This eliminates mutex contention and ensures ordered delivery
-func (vb *ViteBridge) tunnelWriter(ctx context.Context) error {
+func (vb *Bridge) tunnelWriter(ctx context.Context) error {
 	for {
 		select {
 		case <-ctx.Done():
@@ -260,7 +332,7 @@ func (vb *ViteBridge) tunnelWriter(ctx context.Context) error {
 	}
 }
 
-func (vb *ViteBridge) handleTunnelMessages(ctx context.Context) error {
+func (vb *Bridge) handleTunnelMessages(ctx context.Context) error {
 	for {
 		select {
 		case <-ctx.Done():
@@ -273,15 +345,14 @@ func (vb *ViteBridge) handleTunnelMessages(ctx context.Context) error {
 		_, message, err := vb.tunnelConn.ReadMessage()
 		if err != nil {
 			if websocket.IsCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway, websocket.CloseNoStatusReceived, websocket.CloseAbnormalClosure) {
-				log.Infof(vb.ctx, "[vite_bridge] Tunnel closed, reconnecting...")
-				time.Sleep(time.Second)
+				cmdio.LogString(vb.ctx, "🔄 Tunnel closed, reconnecting...")
 
 				appDomain, err := vb.GetAppDomain()
 				if err != nil {
 					return fmt.Errorf("failed to get app domain for reconnection: %w", err)
 				}
 
-				if err := vb.connectToTunnel(appDomain); err != nil {
+				if err := vb.ConnectToTunnelWithRetry(appDomain); err != nil {
 					return fmt.Errorf("failed to reconnect to tunnel: %w", err)
 				}
 				continue
@@ -292,7 +363,7 @@ func (vb *ViteBridge) handleTunnelMessages(ctx context.Context) error {
 		// Debug: Log raw message
 		log.Debugf(vb.ctx, "[vite_bridge] Raw message: %s", string(message))
 
-		var msg ViteBridgeMessage
+		var msg BridgeMessage
 		if err := json.Unmarshal(message, &msg); err != nil {
 			log.Errorf(vb.ctx, "[vite_bridge] Failed to parse message: %v", err)
 			continue
@@ -307,7 +378,7 @@ func (vb *ViteBridge) handleTunnelMessages(ctx context.Context) error {
 	}
 }
 
-func (vb *ViteBridge) handleMessage(msg *ViteBridgeMessage) error {
+func (vb *Bridge) handleMessage(msg *BridgeMessage) error {
 	switch msg.Type {
 	case "tunnel:ready":
 		vb.tunnelID = msg.TunnelID
@@ -319,7 +390,7 @@ func (vb *ViteBridge) handleMessage(msg *ViteBridgeMessage) error {
 		return nil
 
 	case "fetch":
-		go func(fetchMsg ViteBridgeMessage) {
+		go func(fetchMsg BridgeMessage) {
 			if err := vb.handleFetchRequest(&fetchMsg); err != nil {
 				log.Errorf(vb.ctx, "[vite_bridge] Error handling fetch request for %s: %v", fetchMsg.Path, err)
 			}
@@ -328,7 +399,7 @@ func (vb *ViteBridge) handleMessage(msg *ViteBridgeMessage) error {
 
 	case "file:read":
 		// Handle file read requests in parallel like fetch requests
-		go func(fileReadMsg ViteBridgeMessage) {
+		go func(fileReadMsg BridgeMessage) {
 			if err := vb.handleFileReadRequest(&fileReadMsg); err != nil {
 				log.Errorf(vb.ctx, "[vite_bridge] Error handling file read request for %s: %v", fileReadMsg.Path, err)
 			}
@@ -344,7 +415,7 @@ func (vb *ViteBridge) handleMessage(msg *ViteBridgeMessage) error {
 	}
 }
 
-func (vb *ViteBridge) handleConnectionRequest(msg *ViteBridgeMessage) error {
+func (vb *Bridge) handleConnectionRequest(msg *BridgeMessage) error {
 	cmdio.LogString(vb.ctx, "")
 	cmdio.LogString(vb.ctx, "🔔 Connection Request")
 	cmdio.LogString(vb.ctx, "   User: "+msg.Viewer)
@@ -370,13 +441,13 @@ func (vb *ViteBridge) handleConnectionRequest(msg *ViteBridgeMessage) error {
 		approved = strings.ToLower(strings.TrimSpace(input)) == "y"
 	case err := <-errChan:
 		return fmt.Errorf("failed to read user input: %w", err)
-	case <-time.After(bridgeConnTimeout):
+	case <-time.After(BridgeConnTimeout):
 		// Default to denying after timeout
 		cmdio.LogString(vb.ctx, "⏱️  Timeout waiting for response, denying connection")
 		approved = false
 	}
 
-	response := ViteBridgeMessage{
+	response := BridgeMessage{
 		Type:      "connection:response",
 		RequestID: msg.RequestID,
 		Viewer:    msg.Viewer,
@@ -408,7 +479,7 @@ func (vb *ViteBridge) handleConnectionRequest(msg *ViteBridgeMessage) error {
 	return nil
 }
 
-func (vb *ViteBridge) handleFetchRequest(msg *ViteBridgeMessage) error {
+func (vb *Bridge) handleFetchRequest(msg *BridgeMessage) error {
 	targetURL := fmt.Sprintf(localViteURL, vb.port) + msg.Path
 	log.Debugf(vb.ctx, "[vite_bridge] Fetch request: %s %s", msg.Method, msg.Path)
 
@@ -437,7 +508,7 @@ func (vb *ViteBridge) handleFetchRequest(msg *ViteBridgeMessage) error {
 		}
 	}
 
-	metadataResponse := ViteBridgeMessage{
+	metadataResponse := BridgeMessage{
 		Type:      "fetch:response:meta",
 		Path:      msg.Path,
 		Status:    resp.StatusCode,
@@ -456,7 +527,7 @@ func (vb *ViteBridge) handleFetchRequest(msg *ViteBridgeMessage) error {
 		data:        responseData,
 		priority:    1, // Normal priority
 	}:
-	case <-time.After(bridgeFetchTimeout):
+	case <-time.After(BridgeFetchTimeout):
 		return errors.New("timeout sending fetch metadata")
 	}
 
@@ -467,7 +538,7 @@ func (vb *ViteBridge) handleFetchRequest(msg *ViteBridgeMessage) error {
 			data:        body,
 			priority:    1, // Normal priority
 		}:
-		case <-time.After(bridgeFetchTimeout):
+		case <-time.After(BridgeFetchTimeout):
 			return errors.New("timeout sending fetch body")
 		}
 	}
@@ -480,17 +551,17 @@ const (
 	allowedExtension = ".sql"
 )
 
-func (vb *ViteBridge) handleFileReadRequest(msg *ViteBridgeMessage) error {
+func (vb *Bridge) handleFileReadRequest(msg *BridgeMessage) error {
 	log.Debugf(vb.ctx, "[vite_bridge] File read request: %s", msg.Path)
 
-	if err := validateFilePath(msg.Path); err != nil {
+	if err := ValidateFilePath(msg.Path); err != nil {
 		log.Warnf(vb.ctx, "[vite_bridge] File validation failed for %s: %v", msg.Path, err)
 		return vb.sendFileReadError(msg.RequestID, fmt.Sprintf("Invalid file path: %v", err))
 	}
 
 	content, err := os.ReadFile(msg.Path)
 
-	response := ViteBridgeMessage{
+	response := BridgeMessage{
 		Type:      "file:read:response",
 		RequestID: msg.RequestID,
 	}
@@ -521,7 +592,7 @@ func (vb *ViteBridge) handleFileReadRequest(msg *ViteBridgeMessage) error {
 	return nil
 }
 
-func validateFilePath(requestedPath string) error {
+func ValidateFilePath(requestedPath string) error {
 	// Clean the path to resolve any ../ or ./ components
 	cleanPath := filepath.Clean(requestedPath)
 
@@ -561,8 +632,8 @@ func validateFilePath(requestedPath string) error {
 }
 
 // Helper to send error response
-func (vb *ViteBridge) sendFileReadError(requestID, errorMsg string) error {
-	response := ViteBridgeMessage{
+func (vb *Bridge) sendFileReadError(requestID, errorMsg string) error {
+	response := BridgeMessage{
 		Type:      "file:read:response",
 		RequestID: requestID,
 		Error:     errorMsg,
@@ -586,10 +657,10 @@ func (vb *ViteBridge) sendFileReadError(requestID, errorMsg string) error {
 	return nil
 }
 
-func (vb *ViteBridge) handleHMRMessage(msg *ViteBridgeMessage) error {
+func (vb *Bridge) handleHMRMessage(msg *BridgeMessage) error {
 	log.Debugf(vb.ctx, "[vite_bridge] HMR message received: %s", msg.Body)
 
-	response := ViteBridgeMessage{
+	response := BridgeMessage{
 		Type: "hmr:client",
 		Body: msg.Body,
 	}
@@ -613,7 +684,7 @@ func (vb *ViteBridge) handleHMRMessage(msg *ViteBridgeMessage) error {
 	return nil
 }
 
-func (vb *ViteBridge) handleViteHMRMessages(ctx context.Context) error {
+func (vb *Bridge) handleViteHMRMessages(ctx context.Context) error {
 	for {
 		select {
 		case <-ctx.Done():
@@ -636,7 +707,7 @@ func (vb *ViteBridge) handleViteHMRMessages(ctx context.Context) error {
 			return err
 		}
 
-		response := ViteBridgeMessage{
+		response := BridgeMessage{
 			Type: "hmr:message",
 			Body: string(message),
 		}
@@ -659,13 +730,14 @@ func (vb *ViteBridge) handleViteHMRMessages(ctx context.Context) error {
 	}
 }
 
-func (vb *ViteBridge) Start() error {
+func (vb *Bridge) Start() error {
 	appDomain, err := vb.GetAppDomain()
 	if err != nil {
 		return fmt.Errorf("failed to get app domain: %w", err)
 	}
 
-	if err := vb.connectToTunnel(appDomain); err != nil {
+	// Use retry logic for initial connection (app may not be ready yet)
+	if err := vb.ConnectToTunnelWithRetry(appDomain); err != nil {
 		return err
 	}
 
@@ -678,7 +750,7 @@ func (vb *ViteBridge) Start() error {
 				return
 			}
 
-			var msg ViteBridgeMessage
+			var msg BridgeMessage
 			if err := json.Unmarshal(message, &msg); err != nil {
 				continue
 			}
@@ -697,7 +769,7 @@ func (vb *ViteBridge) Start() error {
 		if err != nil {
 			return fmt.Errorf("failed waiting for tunnel ready: %w", err)
 		}
-	case <-time.After(bridgeTunnelReadyTimeout):
+	case <-time.After(BridgeTunnelReadyTimeout):
 		return errors.New("timeout waiting for tunnel ready")
 	}
 
@@ -753,7 +825,7 @@ func (vb *ViteBridge) Start() error {
 	return g.Wait()
 }
 
-func (vb *ViteBridge) Stop() {
+func (vb *Bridge) Stop() {
 	vb.stopOnce.Do(func() {
 		close(vb.stopChan)
 
