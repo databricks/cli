@@ -7,7 +7,21 @@ export BROWSER="browser.py"
 # Set custom config file location via env var
 export DATABRICKS_CONFIG_FILE="./home/custom.databrickscfg"
 
-title "Login with DATABRICKS_CONFIG_FILE set"
+# Create an existing custom config file with a DIFFERENT host.
+# The login command should use the host from --host argument, NOT from this file.
+# If the wrong host (from the config file) were used, the OAuth flow would fail
+# because the mock server only responds for $DATABRICKS_HOST.
+cat > "./home/custom.databrickscfg" <<EOF
+[custom-test]
+host = https://old-host.cloud.databricks.com
+auth_type = pat
+token = old-token-123
+EOF
+
+title "Initial custom config file (with old host)\n"
+cat "./home/custom.databrickscfg"
+
+title "Login with new host (should override old host)"
 trace $CLI auth login --host $DATABRICKS_HOST --profile custom-test
 
 title "Default config file should NOT exist\n"
@@ -18,7 +32,7 @@ else
     echo "OK: Default .databrickscfg does not exist"
 fi
 
-title "Custom config file should exist\n"
+title "Custom config file after login (old host should be replaced)\n"
 cat "./home/custom.databrickscfg"
 
 # Track the custom config file to surface changes

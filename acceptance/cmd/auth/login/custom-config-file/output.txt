@@ -1,12 +1,18 @@
 
-=== Login with DATABRICKS_CONFIG_FILE set
+=== Initial custom config file (with old host)
+[custom-test]
+host = https://old-host.cloud.databricks.com
+auth_type = pat
+token = old-token-123
+
+=== Login with new host (should override old host)
 >>> [CLI] auth login --host [DATABRICKS_URL] --profile custom-test
 Profile custom-test was successfully saved
 
 === Default config file should NOT exist
 OK: Default .databrickscfg does not exist
 
-=== Custom config file should exist
+=== Custom config file after login (old host should be replaced)
 ; The profile defined in the DEFAULT section is to be used as a fallback when no profile is explicitly specified.
 [DEFAULT]
 
