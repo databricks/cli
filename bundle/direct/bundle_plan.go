@@ -378,11 +378,11 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 		} else if structdiff.IsEqual(ch.Remote, ch.New) {
 			ch.Action = deployplan.Skip
 			ch.Reason = deployplan.ReasonRemoteAlreadySet
-		} else if isEmptySlice(ch.New) {
+		} else if isEmptySlice(ch.Old, ch.New, ch.Remote) {
 			// Empty slice in config should not cause drift when remote has values
 			ch.Action = deployplan.Skip
 			ch.Reason = deployplan.ReasonEmptySlice
-		} else if isEmptyMap(ch.New) {
+		} else if isEmptyMap(ch.Old, ch.New, ch.Remote) {
 			// Empty map in config should not cause drift when remote has values
 			ch.Action = deployplan.Skip
 			ch.Reason = deployplan.ReasonEmptyMap
@@ -426,20 +426,30 @@ func getActionFromConfig(cfg *dresources.ResourceLifecycleConfig, pathString str
 	return deployplan.Undefined
 }
 
-func isEmptySlice(v any) bool {
-	if v == nil {
-		return false
+func isEmptySlice(values ...any) bool {
+	for _, v := range values {
+		if v == nil {
+			continue
+		}
+		rv := reflect.ValueOf(v)
+		if rv.Kind() != reflect.Slice || rv.Len() != 0 {
+			return false
+		}
 	}
-	rv := reflect.ValueOf(v)
-	return rv.Kind() == reflect.Slice && rv.Len() == 0
+	return true
 }
 
-func isEmptyMap(v any) bool {
-	if v == nil {
-		return false
+func isEmptyMap(values ...any) bool {
+	for _, v := range values {
+		if v == nil {
+			continue
+		}
+		rv := reflect.ValueOf(v)
+		if rv.Kind() != reflect.Map || rv.Len() != 0 {
+			return false
+		}
 	}
-	rv := reflect.ValueOf(v)
-	return rv.Kind() == reflect.Map && rv.Len() == 0
+	return true
 }
 
 // TODO: calling this "Local" is not right, it can resolve "id" and remote refrences for "skip" targets
