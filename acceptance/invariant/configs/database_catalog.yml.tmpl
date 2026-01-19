@@ -1,0 +1,16 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+
+resources:
+  database_instances:
+    instance1:
+      name: test-db-instance-$UNIQUE_NAME
+      capacity: CU_1
+
+  database_catalogs:
+    foo:
+      database_instance_name: ${resources.database_instances.instance1.name}
+      database_name: test_db
+      name: test-catalog-$UNIQUE_NAME
+      create_database_if_not_exists: true

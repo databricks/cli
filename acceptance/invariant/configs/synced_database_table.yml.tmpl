@@ -1,0 +1,27 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+
+resources:
+  database_instances:
+    instance1:
+      name: test-db-instance-$UNIQUE_NAME
+      capacity: CU_1
+
+  database_catalogs:
+    catalog1:
+      database_instance_name: ${resources.database_instances.instance1.name}
+      database_name: test_db
+      name: test-catalog-$UNIQUE_NAME
+      create_database_if_not_exists: true
+
+  synced_database_tables:
+    foo:
+      name: ${resources.database_catalogs.catalog1.name}.${resources.database_catalogs.catalog1.database_name}.test_table
+      database_instance_name: ${resources.database_instances.instance1.name}
+      logical_database_name: ${resources.database_catalogs.catalog1.database_name}
+      spec:
+        source_table_full_name: samples.nyctaxi.trips
+        scheduling_policy: SNAPSHOT
+        primary_key_columns:
+          - tpep_pickup_datetime
