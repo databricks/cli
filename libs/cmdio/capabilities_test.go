@@ -84,7 +84,7 @@ func TestCapabilities_SupportsPrompt(t *testing.T) {
 			expected: false,
 		},
 		{
-			name: "stdout not TTY",
+			name: "stdout not TTY (prompts write to stderr, so this is OK)",
 			caps: Capabilities{
 				stdinIsTTY:  true,
 				stdoutIsTTY: false,
@@ -92,7 +92,7 @@ func TestCapabilities_SupportsPrompt(t *testing.T) {
 				color:       true,
 				isGitBash:   false,
 			},
-			expected: false,
+			expected: true,
 		},
 		{
 			name: "stderr not TTY",
