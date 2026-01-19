@@ -45,6 +45,8 @@ class SchemaResolver:
     def __init__(self, schema: dict):
         self.schema = schema
         self.defs = schema.get("$defs", {})
+        self._resource_types = None
+        self._resource_refs = None
 
     def resolve_ref(self, ref: str) -> dict:
         """Resolve a $ref pointer to its definition."""
@@ -65,6 +67,48 @@ class SchemaResolver:
         if "$ref" in schema:
             return self.resolve_ref(schema["$ref"])
         return schema
+
+    def get_available_resource_types(self) -> list[str]:
+        """Get list of all available resource types from schema."""
+        if self._resource_types is not None:
+            return self._resource_types
+        self._discover_resources()
+        return self._resource_types
+
+    def get_resource_ref(self, resource_type: str) -> str | None:
+        """Get the schema $ref for a resource type."""
+        if self._resource_refs is None:
+            self._discover_resources()
+        return self._resource_refs.get(resource_type)
+
+    def _discover_resources(self):
+        """Discover available resource types from schema."""
+        self._resource_types = []
+        self._resource_refs = {}
+
+        # Navigate to config.Resources
+        resources_schema = self.resolve_ref("#/$defs/github.com/databricks/cli/bundle/config.Resources")
+        if not resources_schema:
+            return
+
+        # It's a oneOf - find the object option
+        for opt in resources_schema.get("oneOf", []):
+            if opt.get("type") == "object":
+                for name, prop in opt.get("properties", {}).items():
+                    map_ref = prop.get("$ref", "")
+                    if not map_ref:
+                        continue
+                    # Resolve the map ref to get the actual resource ref
+                    map_schema = self.resolve_ref(map_ref)
+                    for map_opt in map_schema.get("oneOf", []):
+                        if map_opt.get("type") == "object":
+                            additional = map_opt.get("additionalProperties", {})
+                            resource_ref = additional.get("$ref")
+                            if resource_ref:
+                                self._resource_types.append(name)
+                                self._resource_refs[name] = resource_ref
+                                break
+                break
 
 
 class ConfigGenerator:
@@ -199,79 +243,49 @@ class ConfigGenerator:
 
         return None
 
-    def generate_job(self) -> dict:
-        """Generate a random job resource."""
-        job_ref = "#/$defs/github.com/databricks/cli/bundle/config/resources.Job"
-        job_schema = self.resolver.resolve_ref(job_ref)
-        if not job_schema:
-            return self._generate_minimal_job()
+    def generate_resource(self, resource_type: str) -> dict:
+        """Generate a random resource of the specified type."""
+        resource_ref = self.resolver.get_resource_ref(resource_type)
+        if not resource_ref:
+            return {}
 
-        job = self.generate_value(job_schema)
-        if not job:
-            job = {}
+        resource_schema = self.resolver.resolve_ref(resource_ref)
+        if not resource_schema:
+            return {}
 
-        # Ensure minimal required fields
-        if "name" not in job:
-            job["name"] = f"fuzz_job_{self.rng.randint(1000, 9999)}"
+        resource = self.generate_value(resource_schema)
+        if not resource:
+            resource = {}
 
-        return job
+        # Only add name if schema has a name property
+        schema_props = self._get_schema_properties(resource_schema)
+        if "name" in schema_props and "name" not in resource:
+            resource["name"] = f"fuzz_{resource_type}_{self.rng.randint(1000, 9999)}"
 
-    def _generate_minimal_job(self) -> dict:
-        """Generate a minimal valid job when schema resolution fails."""
-        return {
-            "name": f"fuzz_job_{self.rng.randint(1000, 9999)}",
-            "tasks": [
-                {
-                    "task_key": "main_task",
-                    "spark_python_task": {"python_file": self.rng.choice(PYTHON_FILES)},
-                    "new_cluster": {
-                        "spark_version": self.rng.choice(SPARK_VERSIONS),
-                        "num_workers": self.rng.randint(1, 4),
-                    },
-                }
-            ],
-        }
+        return resource
 
-    def generate_pipeline(self) -> dict:
-        """Generate a random pipeline resource."""
-        pipeline_ref = "#/$defs/github.com/databricks/cli/bundle/config/resources.Pipeline"
-        pipeline_schema = self.resolver.resolve_ref(pipeline_ref)
-        if not pipeline_schema:
-            return self._generate_minimal_pipeline()
+    def _get_schema_properties(self, schema: dict) -> dict:
+        """Get properties from schema, handling oneOf."""
+        schema = self.resolver.get_effective_schema(schema)
+        if "properties" in schema:
+            return schema["properties"]
+        if "oneOf" in schema:
+            for opt in schema["oneOf"]:
+                if opt.get("type") == "object" and "properties" in opt:
+                    return opt["properties"]
+        return {}
 
-        pipeline = self.generate_value(pipeline_schema)
-        if not pipeline:
-            pipeline = {}
-
-        if "name" not in pipeline:
-            pipeline["name"] = f"fuzz_pipeline_{self.rng.randint(1000, 9999)}"
-
-        return pipeline
-
-    def _generate_minimal_pipeline(self) -> dict:
-        """Generate a minimal valid pipeline."""
-        return {
-            "name": f"fuzz_pipeline_{self.rng.randint(1000, 9999)}",
-            "libraries": [{"notebook": {"path": "./notebook"}}],
-        }
-
-    def generate_config(self, resource_types: list[str] | None = None) -> dict:
-        """Generate a complete databricks.yml config."""
-        if resource_types is None:
-            resource_types = ["jobs"]
-
+    def generate_config(self, resource_type: str) -> dict:
+        """Generate a complete databricks.yml config with a single resource type."""
         config = {
             "bundle": {"name": f"fuzz_bundle_{self.rng.randint(10000, 99999)}"},
             "resources": {},
         }
 
-        for rtype in resource_types:
-            if rtype == "jobs":
-                job_name = f"job_{self.rng.randint(100, 999)}"
-                config["resources"]["jobs"] = {job_name: self.generate_job()}
-            elif rtype == "pipelines":
-                pipeline_name = f"pipeline_{self.rng.randint(100, 999)}"
-                config["resources"]["pipelines"] = {pipeline_name: self.generate_pipeline()}
+        # Remove trailing 's' for singular resource name
+        singular = resource_type.rstrip("s") if resource_type.endswith("s") else resource_type
+        resource_name = f"{singular}_{self.rng.randint(100, 999)}"
+        config["resources"][resource_type] = {resource_name: self.generate_resource(resource_type)}
 
         return config
 
@@ -323,15 +337,18 @@ class TestServer:
             self.url = None
 
 
+SCRIPT_TIMEOUT = 15  # seconds
+
+
 def run_iteration(
     cli_path: Path,
     script_path: Path,
     generator: ConfigGenerator,
-    resource_types: list[str] | None,
+    resource_type: str,
     seed: int,
 ) -> tuple[int, str, str]:
     """Run a single fuzzing iteration. Returns (return_code, output, config_yaml)."""
-    config = generator.generate_config(resource_types)
+    config = generator.generate_config(resource_type)
     config_yaml = yaml.safe_dump(config, default_flow_style=False, sort_keys=False)
 
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -341,28 +358,33 @@ def run_iteration(
         env = os.environ.copy()
         env["CLI"] = str(cli_path)
 
-        result = subprocess.run(
-            [sys.executable, str(script_path)],
-            cwd=tmpdir,
-            capture_output=True,
-            text=True,
-            env=env,
-        )
+        try:
+            result = subprocess.run(
+                [sys.executable, str(script_path)],
+                cwd=tmpdir,
+                capture_output=True,
+                text=True,
+                env=env,
+                timeout=SCRIPT_TIMEOUT,
+            )
+        except subprocess.TimeoutExpired:
+            output = f"=== TIMEOUT after {SCRIPT_TIMEOUT}s ==="
+            return 13, output, config_yaml  # 13 = timeout bug
 
         output = f"=== STDOUT ===\n{result.stdout}\n=== STDERR ===\n{result.stderr}"
         return result.returncode, output, config_yaml
 
 
-def save_result(output_dir: Path, seed: int, error_code: int, config_yaml: str, output: str):
+def save_result(output_dir: Path, seed: int, resource_type: str, error_code: int, config_yaml: str, output: str):
     """Save a bug result to disk."""
-    result_dir = output_dir / f"run_{seed}_{error_code}"
+    result_dir = output_dir / f"{resource_type}_{seed}_{error_code}"
     result_dir.mkdir(parents=True, exist_ok=True)
 
     (result_dir / "databricks.yml").write_text(config_yaml)
     (result_dir / "output.txt").write_text(output)
 
     print(f"Bug found! Saved to {result_dir}")
-    print(f"Replay with: {sys.argv[0]} --seed {seed} {sys.argv[-1]}")
+    print(f"Replay with: {sys.argv[0]} --seed {seed} --resource {resource_type} {sys.argv[-1]}")
 
 
 def main():
@@ -371,10 +393,8 @@ def main():
     parser.add_argument("--seed", type=int, help="Random seed for reproducibility")
     parser.add_argument(
         "--resource",
-        action="append",
-        dest="resources",
-        choices=["jobs", "pipelines"],
-        help="Resource types to generate (default: jobs)",
+        dest="resource",
+        help="Resource type to generate (default: random from schema)",
     )
     parser.add_argument("--iterations", type=int, default=100, help="Number of iterations")
     parser.add_argument(
@@ -416,7 +436,17 @@ def main():
         schema = json.load(f)
 
     resolver = SchemaResolver(schema)
-    resource_types = args.resources or ["jobs"]
+    available_resources = resolver.get_available_resource_types()
+    if not available_resources:
+        print("No resource types found in schema", file=sys.stderr)
+        sys.exit(1)
+
+    # Validate --resource if specified
+    fixed_resource = args.resource
+    if fixed_resource and fixed_resource not in available_resources:
+        print(f"Unknown resource type: {fixed_resource}", file=sys.stderr)
+        print(f"Available: {', '.join(sorted(available_resources))}", file=sys.stderr)
+        sys.exit(1)
 
     base_seed = args.seed if args.seed is not None else random.randint(0, 2**32 - 1)
     iterations = 1 if args.seed is not None else args.iterations
@@ -443,10 +473,16 @@ def main():
             seed = base_seed + i if args.seed is None else base_seed
             generator = ConfigGenerator(resolver, seed)
 
-            print_summary()
-            print(f"=== Iteration {i + 1}/{iterations} (seed={seed}) ===")
+            # Pick resource type (random if not fixed)
+            if fixed_resource:
+                resource_type = fixed_resource
+            else:
+                resource_type = generator.rng.choice(available_resources)
 
-            return_code, output, config_yaml = run_iteration(cli_path, script_path, generator, resource_types, seed)
+            print_summary()
+            print(f"=== Iteration {i + 1}/{iterations} (seed={seed}, resource={resource_type}) ===")
+
+            return_code, output, config_yaml = run_iteration(cli_path, script_path, generator, resource_type, seed)
 
             print(config_yaml)
             print(output)
@@ -454,12 +490,12 @@ def main():
             error_counts[return_code] += 1
 
             if return_code == 0:
-                print(f"Result: OK\n")
+                print("Result: OK\n")
             elif 1 <= return_code <= 9:
                 print(f"Result: Syntax error (code={return_code})\n")
             elif 10 <= return_code <= 19:
                 print(f"Result: BUG DETECTED (code={return_code})")
-                save_result(args.output_dir, seed, return_code, config_yaml, output)
+                save_result(args.output_dir, seed, resource_type, return_code, config_yaml, output)
                 bug_count += 1
                 if bug_count >= args.max_bugs:
                     print(f"Stopping: reached max bugs ({args.max_bugs})")

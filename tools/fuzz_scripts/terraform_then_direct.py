@@ -8,16 +8,37 @@ Return codes:
     2: bundle validate failed
     5: bundle deploy (terraform) failed - assume wrong config
     10: bundle deploy (direct) failed - BUG
+    12: panic in validate - BUG
+    13: internal error in validate - BUG
+    14: panic in terraform deploy - BUG
+    15: internal error in terraform deploy - BUG
+    16: panic in direct deploy - BUG
+    17: internal error in direct deploy - BUG
+    18: Timeout (set by fuzzer) - BUG
 """
 
 import os
+import re
 import shutil
 import subprocess
 import sys
 from pathlib import Path
 
+PANIC_RE = re.compile(r"panic", re.IGNORECASE)
+INTERNAL_ERROR_RE = re.compile(r"internal error", re.IGNORECASE)
 
-def run_cli(*args, env_extra: dict | None = None) -> tuple[int, str, str]:
+
+def check_for_bugs(stdout, stderr, panic_code, internal_error_code):
+    """Check output for panic or internal error. Returns error code or None."""
+    combined = stdout + stderr
+    if PANIC_RE.search(combined):
+        return panic_code
+    if INTERNAL_ERROR_RE.search(combined):
+        return internal_error_code
+    return None
+
+
+def run_cli(*args, env_extra=None):
     """Run CLI command and return (returncode, stdout, stderr)."""
     cli = os.environ.get("CLI", "databricks")
     cmd = [cli, "bundle"] + list(args)
@@ -67,18 +88,20 @@ def main():
 
         # Step 1: Validate
         code, stdout, stderr = run_cli("validate")
+        if bug_code := check_for_bugs(stdout, stderr, 12, 13):
+            print(f"BUG in validate (code={bug_code})\nstdout: {stdout}\nstderr: {stderr}")
+            return bug_code
         if code != 0:
-            print(f"bundle validate failed (code={code})")
-            print(f"stdout: {stdout}")
-            print(f"stderr: {stderr}")
+            print(f"bundle validate failed (code={code})\nstdout: {stdout}\nstderr: {stderr}")
             return 2
 
         # Step 2: Deploy with terraform engine
         code, stdout, stderr = run_cli("deploy", env_extra={"DATABRICKS_BUNDLE_ENGINE": "terraform"})
+        if bug_code := check_for_bugs(stdout, stderr, 14, 15):
+            print(f"BUG in terraform deploy (code={bug_code})\nstdout: {stdout}\nstderr: {stderr}")
+            return bug_code
         if code != 0:
-            print(f"bundle deploy (terraform) failed (code={code})")
-            print(f"stdout: {stdout}")
-            print(f"stderr: {stderr}")
+            print(f"bundle deploy (terraform) failed (code={code})\nstdout: {stdout}\nstderr: {stderr}")
             return 5
         terraform_deployed = True
 
@@ -92,10 +115,11 @@ def main():
 
         # Step 5: Deploy with direct engine
         code, stdout, stderr = run_cli("deploy", env_extra={"DATABRICKS_BUNDLE_ENGINE": "direct"})
+        if bug_code := check_for_bugs(stdout, stderr, 16, 17):
+            print(f"BUG in direct deploy (code={bug_code})\nstdout: {stdout}\nstderr: {stderr}")
+            return bug_code
         if code != 0:
-            print(f"bundle deploy (direct) failed (code={code}) - BUG")
-            print(f"stdout: {stdout}")
-            print(f"stderr: {stderr}")
+            print(f"bundle deploy (direct) failed (code={code}) - BUG\nstdout: {stdout}\nstderr: {stderr}")
             return 10
         direct_deployed = True
 

@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"reflect"
 	"regexp"
 	"strconv"
@@ -40,6 +41,9 @@ type Server struct {
 	*httptest.Server
 	Router *mux.Router
 
+	// standaloneURL is used for standalone mode when httptest.Server is not embedded.
+	standaloneURL string
+
 	t testutil.TestingT
 
 	fakeWorkspaces map[string]*FakeWorkspace
@@ -48,6 +52,14 @@ type Server struct {
 
 	RequestCallback  func(request *Request)
 	ResponseCallback func(request *Request, response *EncodedResponse)
+}
+
+// GetURL returns the server URL, handling both test and standalone modes.
+func (s *Server) GetURL() string {
+	if s.Server != nil {
+		return s.URL
+	}
+	return s.standaloneURL
 }
 
 type Request struct {
@@ -256,6 +268,61 @@ Response.Body = '<response body here>'
 	return s
 }
 
+// standaloneLogger implements testutil.TestingT for standalone server use.
+type standaloneLogger struct{}
+
+func (l standaloneLogger) Log(args ...any)                 { fmt.Println(args...) }
+func (l standaloneLogger) Logf(format string, args ...any) { fmt.Printf(format+"\n", args...) }
+func (l standaloneLogger) Error(args ...any)               { fmt.Println(append([]any{"ERROR:"}, args...)...) }
+func (l standaloneLogger) Errorf(format string, args ...any) {
+	fmt.Printf("ERROR: "+format+"\n", args...)
+}
+func (l standaloneLogger) Fatal(args ...any) { fmt.Println(append([]any{"FATAL:"}, args...)...) }
+func (l standaloneLogger) Fatalf(format string, args ...any) {
+	fmt.Printf("FATAL: "+format+"\n", args...)
+}
+func (l standaloneLogger) Skip(args ...any)                 {}
+func (l standaloneLogger) Skipf(format string, args ...any) {}
+func (l standaloneLogger) FailNow()                         {}
+func (l standaloneLogger) Cleanup(f func())                 {}
+func (l standaloneLogger) Setenv(key, value string)         { os.Setenv(key, value) }
+func (l standaloneLogger) TempDir() string                  { return os.TempDir() }
+func (l standaloneLogger) Helper()                          {}
+
+// NewStandalone creates a Server for standalone use (outside of tests).
+// It returns the server and router; the caller is responsible for serving.
+func NewStandalone(serverURL string) *Server {
+	router := mux.NewRouter()
+	logger := standaloneLogger{}
+
+	s := &Server{
+		Router:         router,
+		standaloneURL:  serverURL,
+		t:              logger,
+		fakeWorkspaces: map[string]*FakeWorkspace{},
+		fakeOidc:       &FakeOidc{url: serverURL},
+	}
+
+	// Set up the not found handler as fallback
+	notFoundFunc := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Printf("No handler for: %s %s\n", r.Method, r.URL.Path)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusNotImplemented)
+		fmt.Fprintf(w, `{"message": "No stub found for: %s %s"}`, r.Method, r.URL.Path)
+	})
+	router.NotFoundHandler = notFoundFunc
+	router.MethodNotAllowedHandler = notFoundFunc
+
+	return s
+}
+
+// ResetState clears all fake workspaces (useful for fuzzing).
+func (s *Server) ResetState() {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.fakeWorkspaces = map[string]*FakeWorkspace{}
+}
+
 func (s *Server) getWorkspaceForToken(token string) *FakeWorkspace {
 	if token == "" {
 		return nil
@@ -265,7 +332,7 @@ func (s *Server) getWorkspaceForToken(token string) *FakeWorkspace {
 	defer s.mu.Unlock()
 
 	if _, ok := s.fakeWorkspaces[token]; !ok {
-		s.fakeWorkspaces[token] = NewFakeWorkspace(s.URL, token)
+		s.fakeWorkspaces[token] = NewFakeWorkspace(s.GetURL(), token)
 	}
 
 	return s.fakeWorkspaces[token]
