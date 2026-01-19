@@ -9,6 +9,7 @@ const (
 	defaultHandoverTimeout = 30 * time.Minute
 
 	serverTimeout        = 24 * time.Hour
+	taskStartupTimeout   = 10 * time.Minute
 	serverPortRange      = 100
 	serverConfigDir      = ".ssh-tunnel"
 	serverPrivateKeyName = "server-private-key"

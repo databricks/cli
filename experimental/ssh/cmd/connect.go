@@ -30,7 +30,7 @@ For serverless compute:
 
 	var clusterID string
 	var connectionName string
-	// var accelerator string
+	var accelerator string
 	var proxyMode bool
 	var serverMetadata string
 	var shutdownDelay time.Duration
@@ -43,6 +43,7 @@ For serverless compute:
 
 	cmd.Flags().StringVar(&clusterID, "cluster", "", "Databricks cluster ID (for dedicated clusters)")
 	cmd.Flags().StringVar(&connectionName, "name", "", "Connection name (for serverless compute)")
+	cmd.Flags().StringVar(&accelerator, "accelerator", "", "GPU accelerator type for serverless compute (GPU_1xA10 or GPU_8xH100)")
 	cmd.Flags().DurationVar(&shutdownDelay, "shutdown-delay", defaultShutdownDelay, "Delay before shutting down the server after the last client disconnects")
 	cmd.Flags().IntVar(&maxClients, "max-clients", defaultMaxClients, "Maximum number of SSH clients")
 	cmd.Flags().BoolVar(&autoStartCluster, "auto-start-cluster", true, "Automatically start the cluster if it is not running")
@@ -82,12 +83,22 @@ For serverless compute:
 			return errors.New("please provide --cluster flag with the cluster ID, or --name flag with the serverless connection name")
 		}
 
+		if accelerator != "" && connectionName == "" {
+			return errors.New("--accelerator flag can only be used with serverless compute (--name flag)")
+		}
+
+		// Remove when we add support for serverless CPU
+		if connectionName != "" && accelerator == "" {
+			return errors.New("--name flag requires --accelerator to be set (e.g. for now we only support serverless GPU compute)")
+		}
+
 		// TODO: validate connectionName if provided
 
 		opts := client.ClientOptions{
 			Profile:              wsClient.Config.Profile,
 			ClusterID:            clusterID,
 			ConnectionName:       connectionName,
+			Accelerator:          accelerator,
 			ProxyMode:            proxyMode,
 			ServerMetadata:       serverMetadata,
 			ShutdownDelay:        shutdownDelay,
@@ -95,6 +106,7 @@ For serverless compute:
 			HandoverTimeout:      handoverTimeout,
 			ReleasesDir:          releasesDir,
 			ServerTimeout:        serverTimeout,
+			TaskStartupTimeout:   taskStartupTimeout,
 			AutoStartCluster:     autoStartCluster,
 			ClientPublicKeyName:  clientPublicKeyName,
 			ClientPrivateKeyName: clientPrivateKeyName,
