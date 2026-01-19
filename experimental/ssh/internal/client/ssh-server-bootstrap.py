@@ -17,6 +17,7 @@ dbutils.widgets.text("secretScopeName", "")
 dbutils.widgets.text("authorizedKeySecretName", "")
 dbutils.widgets.text("maxClients", "10")
 dbutils.widgets.text("shutdownDelay", "10m")
+dbutils.widgets.text("sessionId", "")  # Required: unique identifier for the session
 
 
 def cleanup():
@@ -111,6 +112,9 @@ def run_ssh_server():
 
     shutdown_delay = dbutils.widgets.get("shutdownDelay")
     max_clients = dbutils.widgets.get("maxClients")
+    session_id = dbutils.widgets.get("sessionId")
+    if not session_id:
+        raise RuntimeError("Session ID is required. Please provide it using the 'sessionId' widget.")
 
     arch = platform.machine()
     if arch == "x86_64":
@@ -127,29 +131,29 @@ def run_ssh_server():
 
     binary_path = f"/Workspace/Users/{user_name}/.databricks/ssh-tunnel/{version}/{cli_name}/databricks"
 
+    server_args = [
+        binary_path,
+        "ssh",
+        "server",
+        f"--cluster={ctx.clusterId}",
+        f"--session-id={session_id}",
+        f"--secret-scope-name={secrets_scope}",
+        f"--authorized-key-secret-name={public_key_secret_name}",
+        f"--max-clients={max_clients}",
+        f"--shutdown-delay={shutdown_delay}",
+        f"--version={version}",
+        # "info" has enough verbosity for debugging purposes, and "debug" log level prints too much (including secrets)
+        "--log-level=info",
+        "--log-format=json",
+        # To get the server logs:
+        # 1. Get a job run id from the "databricks ssh connect" output
+        # 2. Run "databricks jobs get-run <id>" and open a run_page_url
+        # TODO: file with log rotation
+        "--log-file=stdout",
+    ]
+
     try:
-        subprocess.run(
-            [
-                binary_path,
-                "ssh",
-                "server",
-                f"--cluster={ctx.clusterId}",
-                f"--secret-scope-name={secrets_scope}",
-                f"--authorized-key-secret-name={public_key_secret_name}",
-                f"--max-clients={max_clients}",
-                f"--shutdown-delay={shutdown_delay}",
-                f"--version={version}",
-                # "info" has enough verbosity for debugging purposes, and "debug" log level prints too much (including secrets)
-                "--log-level=info",
-                "--log-format=json",
-                # To get the server logs:
-                # 1. Get a job run id from the "databricks ssh connect" output
-                # 2. Run "databricks jobs get-run <id>" and open a run_page_url
-                # TODO: file with log rotation
-                "--log-file=stdout",
-            ],
-            check=True,
-        )
+        subprocess.run(server_args, check=True)
     finally:
         kill_all_children()
 
