@@ -31,14 +31,10 @@ func DetectChanges(ctx context.Context, b *bundle.Bundle) (map[string]deployplan
 
 		if entry.Changes != nil {
 			for path, changeDesc := range entry.Changes {
-				if changeDesc.Remote == nil && changeDesc.Old == nil && changeDesc.New == nil {
+				if shouldSkipField(path, changeDesc) {
 					continue
 				}
-
-				shouldSkip := (changeDesc.Action == deployplan.Skip && changeDesc.Reason != deployplan.ReasonServerSideDefault) || shouldSkipField(path, changeDesc)
-				if !shouldSkip {
-					resourceChanges[path] = changeDesc
-				}
+				resourceChanges[path] = changeDesc
 			}
 		}
 

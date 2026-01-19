@@ -72,14 +72,12 @@ func ApplyChangesToYAML(ctx context.Context, b *bundle.Bundle, planChanges map[s
 	for filePath, changes := range changesByFile {
 		originalContent, err := os.ReadFile(filePath)
 		if err != nil {
-			log.Warnf(ctx, "Failed to read file %s: %v", filePath, err)
-			continue
+			return nil, fmt.Errorf("failed to read file %s: %w", filePath, err)
 		}
 
 		modifiedContent, err := applyChanges(ctx, filePath, changes, targetName)
 		if err != nil {
-			log.Warnf(ctx, "Failed to apply changes to file %s: %v", filePath, err)
-			continue
+			return nil, fmt.Errorf("failed to apply changes to file %s: %w", filePath, err)
 		}
 
 		if modifiedContent != string(originalContent) {
@@ -115,6 +113,7 @@ func applyChanges(ctx context.Context, filePath string, changes resolvedChanges,
 		isReplacement := changeDesc.Remote != nil && hasConfigValue
 		isAddition := changeDesc.Remote != nil && !hasConfigValue
 
+		success := false
 		for _, jsonPointer := range jsonPointers {
 			path, err := yamlpatch.ParsePath(jsonPointer)
 			if err != nil {
@@ -130,8 +129,7 @@ func applyChanges(ctx context.Context, filePath string, changes resolvedChanges,
 			} else if isReplacement {
 				normalizedRemote, err := normalizeValue(ctx, changeDesc.Remote)
 				if err != nil {
-					log.Warnf(ctx, "Failed to normalize replacement value for %s: %v", jsonPointer, err)
-					normalizedRemote = changeDesc.Remote // Fallback
+					return "", fmt.Errorf("failed to normalize replacement value for %s: %w", jsonPointer, err)
 				}
 				testOp = yamlpatch.Operation{
 					Type:  yamlpatch.OperationReplace,
@@ -141,8 +139,7 @@ func applyChanges(ctx context.Context, filePath string, changes resolvedChanges,
 			} else if isAddition {
 				normalizedRemote, err := normalizeValue(ctx, changeDesc.Remote)
 				if err != nil {
-					log.Warnf(ctx, "Failed to normalize addition value for %s: %v", jsonPointer, err)
-					normalizedRemote = changeDesc.Remote // Fallback
+					return "", fmt.Errorf("failed to normalize addition value for %s: %w", jsonPointer, err)
 				}
 				testOp = yamlpatch.Operation{
 					Type:  yamlpatch.OperationAdd,
@@ -150,8 +147,7 @@ func applyChanges(ctx context.Context, filePath string, changes resolvedChanges,
 					Value: normalizedRemote,
 				}
 			} else {
-				log.Warnf(ctx, "Unknown operation type for field %s", fieldPath)
-				continue
+				return "", fmt.Errorf("unknown operation type for field %s", fieldPath)
 			}
 
 			patcher := gopkgv3yamlpatcher.New(gopkgv3yamlpatcher.IndentSpaces(2))
@@ -159,10 +155,14 @@ func applyChanges(ctx context.Context, filePath string, changes resolvedChanges,
 			if err == nil {
 				content = modifiedContent
 				log.Debugf(ctx, "Applied %s change to %s", testOp.Type, jsonPointer)
+				success = true
 				break
 			} else {
 				log.Debugf(ctx, "Failed to apply change to %s: %v", jsonPointer, err)
 			}
+		}
+		if !success {
+			return "", fmt.Errorf("failed to apply change %s: %w", jsonPointer, err)
 		}
 	}
 
