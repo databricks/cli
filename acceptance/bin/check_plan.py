@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import sys
 import json
+import pprint
 
 
 def check_plan(path):
@@ -13,11 +14,10 @@ def check_plan(path):
     for key, value in data["plan"].items():
         if value["action"] != "skip":
             print("Unexpected action in", key, value["action"])
-            pprint.pprint(value)
-            print()
             changes_detected += 1
 
     if changes_detected:
+        print(data, flush=True)
         sys.exit(10)
 
 
