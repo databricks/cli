@@ -42,7 +42,7 @@ func TestPopulatePlan(t *testing.T) {
 		},
 	}
 
-	plan := deployplan.NewPlan()
+	plan := deployplan.NewPlanTerraform()
 	populatePlan(ctx, plan, changes)
 
 	actions := plan.GetActions()

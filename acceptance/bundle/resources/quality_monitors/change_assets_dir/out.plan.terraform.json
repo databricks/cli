@@ -1,7 +1,6 @@
 
 >>> errcode [CLI] bundle plan -o json
 {
-  "plan_version": 2,
   "cli_version": "[DEV_VERSION]",
   "plan": {
     "resources.quality_monitors.monitor1": {

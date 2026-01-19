@@ -603,7 +603,7 @@ func (b *DeploymentBundle) resolveReferences(ctx context.Context, resourceKey st
 }
 
 func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root, db *dstate.Database) (*deployplan.Plan, error) {
-	p := deployplan.NewPlan()
+	p := deployplan.NewPlanDirect()
 
 	// Copy state metadata to plan for validation during apply
 	p.Lineage = db.Lineage
