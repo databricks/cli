@@ -24,7 +24,7 @@ import (
 //
 // This separation enables piping stdout while maintaining interactivity:
 //
-//	databricks deploy --output json | jq  # User sees prompts, jq gets JSON
+//	databricks clusters list --output json | jq  # User sees prompts, jq gets JSON
 type cmdIO struct {
 	capabilities   Capabilities
 	outputFormat   flags.Output

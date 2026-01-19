@@ -515,6 +515,9 @@ github.com/databricks/cli/bundle/config/resources.AppEnvVar:
   "value":
     "description": |-
       PLACEHOLDER
+  "value_from":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.AppPermission:
   "group_name":
     "description": |-
