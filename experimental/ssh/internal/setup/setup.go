@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/databricks/cli/experimental/ssh/internal/client"
 	"github.com/databricks/cli/experimental/ssh/internal/keys"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go"
@@ -32,6 +31,8 @@ type SetupOptions struct {
 	SSHKeysDir string
 	// Optional auth profile name. If present, will be added as --profile flag to the ProxyCommand
 	Profile string
+	// Proxy command to use for the SSH connection
+	ProxyCommand string
 }
 
 func validateClusterAccess(ctx context.Context, client *databricks.WorkspaceClient, clusterID string) error {
@@ -62,17 +63,6 @@ func generateHostConfig(opts SetupOptions) (string, error) {
 		return "", fmt.Errorf("failed to get local keys folder: %w", err)
 	}
 
-	clientOpts := client.ClientOptions{
-		ClusterID:        opts.ClusterID,
-		AutoStartCluster: opts.AutoStartCluster,
-		ShutdownDelay:    opts.ShutdownDelay,
-		Profile:          opts.Profile,
-	}
-	proxyCommand, err := clientOpts.ToProxyCommand()
-	if err != nil {
-		return "", fmt.Errorf("failed to generate ProxyCommand: %w", err)
-	}
-
 	hostConfig := fmt.Sprintf(`
 Host %s
     User root
@@ -81,7 +71,7 @@ Host %s
     IdentitiesOnly yes
     IdentityFile %q
     ProxyCommand %s
-`, opts.HostName, identityFilePath, proxyCommand)
+`, opts.HostName, identityFilePath, opts.ProxyCommand)
 
 	return hostConfig, nil
 }
