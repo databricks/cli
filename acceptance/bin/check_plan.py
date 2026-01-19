@@ -2,6 +2,7 @@
 """
 Check that all actions in plan are "skip".
 """
+
 import sys
 import json
 import pprint
