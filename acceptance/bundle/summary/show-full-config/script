@@ -1,1 +1,1 @@
-trace $CLI bundle summary --show-full-config
+trace $CLI bundle summary --show-full-config --include-locations

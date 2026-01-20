@@ -1,28 +1,10 @@
+Badness = "Difference in GET request between direct and terraform; In direct, the prefix is /Workspace/Users, in TF it is /Users"
 Local = true
-Cloud = true
 
-[[Server]]
-Pattern = "POST /api/2.0/mlflow/experiments/create"
-Response.Body = '''
-{
-    "experiment_id":"1234567890"
-}
-'''
+# Fails on Cloud with:
+#=== CONT  TestAccept/bundle/deployment/bind/experiment/DATABRICKS_BUNDLE_ENGINE=direct
+#                                -  "name": "/Workspace/Users/[USERNAME]/test-experiment[UNIQUE_NAME]",
+#                                +  "name": "/Users/[USERNAME]/test-experiment[UNIQUE_NAME]",
+# https://github.com/databricks/cli/issues/4285
 
-[[Server]]
-Pattern = "GET /api/2.0/mlflow/experiments/get"
-Response.Body = '''
-{
-    "experiment_id": "1234567890",
-    "experiment": {
-        "name": "/Users/[USERNAME]/test-experiment6260d50f-e8ff-4905-8f28-812345678903",
-        "lifecycle_stage": "active"
-    }
-}
-'''
-
-[[Server]]
-Pattern = "POST /api/2.0/mlflow/experiments/update"
-
-[[Server]]
-Pattern = "POST /api/2.0/mlflow/experiments/delete"
+Cloud = false

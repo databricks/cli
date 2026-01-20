@@ -16,7 +16,6 @@ import {
   SelectValue,
 } from '@databricks/appkit-ui/react';
 import { sql } from "@databricks/appkit-ui/js";
-import { Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import { trpc } from './lib/trpc';
 import { useState, useEffect } from 'react';
 
@@ -184,15 +183,13 @@ function App() {
             <CardTitle>Sales Trend Custom Line Chart</CardTitle>
           </CardHeader>
           <CardContent>
-            <LineChart queryKey="mocked_sales" parameters={salesParameters}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <Line type="monotone" dataKey="revenue" stroke="#40d1f5" />
-              <Line type="monotone" dataKey="expenses" stroke="#4462c9" />
-              <Line type="monotone" dataKey="customers" stroke="#EB1600" />
-              <XAxis dataKey="month" />
-              <YAxis />
-              <Tooltip />
-            </LineChart>
+            <LineChart
+              queryKey="mocked_sales"
+              parameters={salesParameters}
+              xKey="month"
+              yKey={["revenue", "expenses", "customers"]}
+              colors={['#40d1f5', '#4462c9', '#EB1600']}
+            />
           </CardContent>
         </Card>
         <Card className="shadow-lg flex min-w-0">

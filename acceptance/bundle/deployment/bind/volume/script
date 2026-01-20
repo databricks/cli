@@ -1,9 +1,5 @@
-VOLUME_NAME="volume-$(uuid)"
-SCHEMA_NAME="test-schema-$(uuid)"
-if [ -z "$CLOUD_ENV" ]; then
-    VOLUME_NAME="volume-6260d50f-e8ff-4905-8f28-812345678903"   # use hard-coded uuid when running locally
-    SCHEMA_NAME="test-schema-6260d50f-e8ff-4905-8f28-812345678903"
-fi
+VOLUME_NAME="volume-$UNIQUE_NAME"
+SCHEMA_NAME="test-schema-$UNIQUE_NAME"
 export VOLUME_NAME
 export SCHEMA_NAME
 export CATALOG_NAME="main"

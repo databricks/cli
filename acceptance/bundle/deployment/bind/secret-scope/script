@@ -1,7 +1,4 @@
-SECRET_SCOPE_NAME="test-secret-scope-$(uuid)"
-if [ -z "$CLOUD_ENV" ]; then
-    SECRET_SCOPE_NAME="test-secret-scope-6260d50f-e8ff-4905-8f28-812345678903" # use hard-coded uuid when running locally
-fi
+SECRET_SCOPE_NAME="test-secret-scope-$UNIQUE_NAME"
 export SECRET_SCOPE_NAME
 envsubst < databricks.yml.tmpl > databricks.yml
 

@@ -1,6 +1,8 @@
 package root
 
 import (
+	"context"
+
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/flags"
@@ -37,7 +39,7 @@ func OutputType(cmd *cobra.Command) flags.Output {
 	return *f
 }
 
-func (f *outputFlag) initializeIO(cmd *cobra.Command) error {
+func (f *outputFlag) initializeIO(ctx context.Context, cmd *cobra.Command) (context.Context, error) {
 	var headerTemplate, template string
 	if cmd.Annotations != nil {
 		// rely on zeroval being an empty string
@@ -45,9 +47,8 @@ func (f *outputFlag) initializeIO(cmd *cobra.Command) error {
 		headerTemplate = cmd.Annotations["headerTemplate"]
 	}
 
-	ctx := cmd.Context()
 	cmdIO := cmdio.NewIO(ctx, f.output, cmd.InOrStdin(), cmd.OutOrStdout(), cmd.ErrOrStderr(), headerTemplate, template)
 	ctx = cmdio.InContext(ctx, cmdIO)
 	cmd.SetContext(ctx)
-	return nil
+	return ctx, nil
 }

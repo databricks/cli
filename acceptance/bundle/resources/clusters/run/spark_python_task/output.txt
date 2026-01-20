@@ -10,7 +10,7 @@ Updating deployment state...
 Deployment complete!
 
 >>> [CLI] bundle run foo
-Run URL: [DATABRICKS_URL]/?o=[NUMID]#job/[JOB_ID]/run/[NUMID]
+Run URL: [DATABRICKS_URL]/?o=[NUMID]#job/[FOO_ID]/run/[NUMID]
 
 [TIMESTAMP] "test-job-with-cluster-[UNIQUE_NAME]" RUNNING
 [TIMESTAMP] "test-job-with-cluster-[UNIQUE_NAME]" TERMINATED SUCCESS

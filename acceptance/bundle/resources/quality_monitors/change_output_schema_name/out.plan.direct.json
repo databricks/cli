@@ -1,0 +1,45 @@
+{
+  "plan_version": 2,
+  "cli_version": "[DEV_VERSION]",
+  "lineage": "[UUID]",
+  "serial": 1,
+  "plan": {
+    "resources.quality_monitors.monitor1": {
+      "action": "update",
+      "new_state": {
+        "value": {
+          "assets_dir": "/Workspace/Users/[USERNAME]/monitor_assets_[UNIQUE_NAME]",
+          "output_schema_name": "main.qm_test_[UNIQUE_NAME]_2",
+          "snapshot": {},
+          "table_name": "main.qm_test_[UNIQUE_NAME].test_table",
+          "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
+        }
+      },
+      "remote_state": {
+        "assets_dir": "/Workspace/Users/[USERNAME]/monitor_assets_[UNIQUE_NAME]",
+        "dashboard_id": "(redacted)",
+        "drift_metrics_table_name": "main.qm_test_[UNIQUE_NAME].test_table_drift_metrics",
+        "monitor_version": 0,
+        "output_schema_name": "main.qm_test_[UNIQUE_NAME]",
+        "profile_metrics_table_name": "main.qm_test_[UNIQUE_NAME].test_table_profile_metrics",
+        "snapshot": {},
+        "status": "MONITOR_STATUS_ACTIVE",
+        "table_name": "main.qm_test_[UNIQUE_NAME].test_table"
+      },
+      "changes": {
+        "output_schema_name": {
+          "action": "update",
+          "old": "main.qm_test_[UNIQUE_NAME]",
+          "new": "main.qm_test_[UNIQUE_NAME]_2",
+          "remote": "main.qm_test_[UNIQUE_NAME]"
+        },
+        "warehouse_id": {
+          "action": "skip",
+          "reason": "config_only",
+          "old": "[TEST_DEFAULT_WAREHOUSE_ID]",
+          "new": "[TEST_DEFAULT_WAREHOUSE_ID]"
+        }
+      }
+    }
+  }
+}

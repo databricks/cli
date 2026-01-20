@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
@@ -81,13 +80,4 @@ func (r *ResourceSecretScope) DoCreate(ctx context.Context, state *SecretScopeCo
 
 func (r *ResourceSecretScope) DoDelete(ctx context.Context, id string) error {
 	return r.client.Secrets.DeleteScopeByScope(ctx, id)
-}
-
-func (r *ResourceSecretScope) FieldTriggers() map[string]deployplan.ActionType {
-	return map[string]deployplan.ActionType{
-		"scope":                    deployplan.Recreate,
-		"scope_backend_type":       deployplan.Recreate,
-		"backend_azure_keyvault":   deployplan.Recreate,
-		"initial_manage_principal": deployplan.Recreate,
-	}
 }

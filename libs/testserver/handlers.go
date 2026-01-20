@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/compute"
@@ -241,7 +242,10 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.DashboardTrash(req)
 	})
 	server.Handle("GET", "/api/2.0/lakeview/dashboards/{dashboard_id}/published", func(req Request) any {
-		return MapGet(req.Workspace, req.Workspace.PublishedDashboards, req.Vars["dashboard_id"])
+		return req.Workspace.DashboardGetPublished(req)
+	})
+	server.Handle("DELETE", "/api/2.0/lakeview/dashboards/{dashboard_id}/published", func(req Request) any {
+		return req.Workspace.DashboardUnpublish(req)
 	})
 
 	// Pipelines:
@@ -279,6 +283,22 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	// Quality monitors:
+
+	// Simple handler for table existence check - returns a basic table info
+	server.Handle("GET", "/api/2.1/unity-catalog/tables/{full_name}", func(req Request) any {
+		parts := strings.Split(req.Vars["full_name"], ".")
+		if len(parts) != 3 {
+			return Response{StatusCode: 400, Body: "Invalid table name"}
+		}
+		return Response{
+			Body: catalog.TableInfo{
+				CatalogName: parts[0],
+				SchemaName:  parts[1],
+				Name:        parts[2],
+				FullName:    req.Vars["full_name"],
+			},
+		}
+	})
 
 	server.Handle("GET", "/api/2.1/unity-catalog/tables/{table_name}/monitor", func(req Request) any {
 		return MapGet(req.Workspace, req.Workspace.Monitors, req.Vars["table_name"])

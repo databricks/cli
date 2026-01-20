@@ -1,9 +1,5 @@
-SCHEMA_NAME="test-schema-rmodel-$(uuid)"
-MODEL_NAME="test-registered-model-$(uuid)"
-if [ -z "$CLOUD_ENV" ]; then
-    SCHEMA_NAME="test-schema-rmodel-6260d50f-e8ff-4905-8f28-812345678903"   # use hard-coded uuid when running locally
-    MODEL_NAME="test-registered-model-6260d50f-e8ff-4905-8f28-812345678903"
-fi
+SCHEMA_NAME="test-schema-rmodel-$UNIQUE_NAME"
+MODEL_NAME="test-registered-model-$UNIQUE_NAME"
 CATALOG_NAME=main
 export SCHEMA_NAME MODEL_NAME CATALOG_NAME
 envsubst < databricks.yml.tmpl > databricks.yml

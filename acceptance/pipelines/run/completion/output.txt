@@ -1,0 +1,5 @@
+
+>>> [PIPELINES] __complete run ,
+my_pipeline
+:4
+Completion ended with directive: ShellCompDirectiveNoFileComp

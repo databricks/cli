@@ -1,19 +1,16 @@
 # NEXT CHANGELOG
 
-## Release v0.283.0
+## Release v0.284.0
 
 ### Notable Changes
-* Bundle commands now cache the user's account details to improve command latency.
-To disable this, set the environment variable DATABRICKS_CACHE_ENABLED to false.
 
 ### CLI
 
 ### Bundles
 * Pass authentication environment variables to Python mutator process ([#4172](https://github.com/databricks/cli/pull/4172))
-* Enable caching user identity by default ([#4202](https://github.com/databricks/cli/pull/4202))
-* Fix false positive folder permission warnings and make them more actionable ([#4216](https://github.com/databricks/cli/pull/4216))
-* Pass additional Azure DevOps system variables ([#4236](https://github.com/databricks/cli/pull/4236))
-* Replace Black formatter with Ruff in Python bundle templates for faster, all-in-one linting and formatting ([#4196](https://github.com/databricks/cli/pull/4196))
+* Pass additional Azure DevOps `SYSTEM_*` environment variables to Terraform for OIDC authentication: `SYSTEM_COLLECTIONURI`, `SYSTEM_DEFINITIONID`, `SYSTEM_HOSTTYPE`, `SYSTEM_JOBID`, `SYSTEM_TEAMPROJECT` ([#4318](https://github.com/databricks/cli/pull/4318))
+* Add support for valueFrom property (similar to app.yaml) inside Apps config field in bundle configuration ([#4297](https://github.com/databricks/cli/pull/4297))
+* engine/direct: Support bind & unbind. ([#4279](https://github.com/databricks/cli/pull/4279))
 
 ### Dependency updates
 

@@ -91,7 +91,8 @@ const (
 	ReasonServerSideDefault = "server_side_default"
 	ReasonAlias             = "alias"
 	ReasonRemoteAlreadySet  = "remote_already_set"
-	ReasonFieldTriggers     = "field_triggers"
+	ReasonBuiltinRule       = "builtin_rule"
+	ReasonConfigOnly        = "config_only"
 )
 
 // HasChange checks if there are any changes for fields with the given prefix.

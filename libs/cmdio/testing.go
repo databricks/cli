@@ -32,11 +32,16 @@ func SetupTest(ctx context.Context, opts TestOptions) (context.Context, *Test) {
 	rerr, werr := io.Pipe()
 
 	cmdio := &cmdIO{
-		interactive: true,
-		prompt:      opts.PromptSupported,
-		in:          rin,
-		out:         wout,
-		err:         werr,
+		capabilities: Capabilities{
+			stdinIsTTY:  opts.PromptSupported,
+			stdoutIsTTY: opts.PromptSupported,
+			stderrIsTTY: true,
+			color:       opts.PromptSupported,
+			isGitBash:   false,
+		},
+		in:  rin,
+		out: wout,
+		err: werr,
 	}
 
 	ctx, cancel := context.WithCancel(ctx)

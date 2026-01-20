@@ -1,3 +1,11 @@
 # All pipelines tests are local only
 Local = true
 Cloud = false
+
+[[Repls]]
+Old = "If you've made local changes, run 'pipelines deploy' first to ensure they are included"
+New = "If you've made local changes, run '[DEPLOYCMD]' first to ensure they are included"
+
+[[Repls]]
+Old = "If you've made local changes, run 'databricks pipelines deploy' first to ensure they are included"
+New = "If you've made local changes, run '[DEPLOYCMD]' first to ensure they are included"
