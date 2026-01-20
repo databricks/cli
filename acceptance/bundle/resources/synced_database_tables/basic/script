@@ -5,9 +5,9 @@ echo "Creating temporary source table: main.test_synced_$UNIQUE_NAME.trips_sourc
 # Create schema using CLI
 $CLI schemas create test_synced_$UNIQUE_NAME main -o json | jq '{full_name}'
 # Create source table from samples.nyctaxi.trips using SQL API
-$CLI api post /api/2.0/sql/statements/ --json "{
+$CLI api post "/api/2.0/sql/statements/" --json "{
     \"warehouse_id\": \"$TEST_DEFAULT_WAREHOUSE_ID\",
-    \"statement\": \"CREATE TABLE main.test_synced_$UNIQUE_NAME.trips_source AS SELECT * FROM samples.nyctaxi.trips LIMIT 1000\",
+    \"statement\": \"CREATE TABLE main.test_synced_$UNIQUE_NAME.trips_source AS SELECT * FROM samples.nyctaxi.trips LIMIT 10\",
     \"wait_timeout\": \"45s\"
   }" > /dev/null
 
@@ -15,8 +15,8 @@ cleanup() {
   trace $CLI bundle destroy --auto-approve
   # Clean up the temporary source table
   echo "Cleaning up temporary source table"
-  $CLI tables delete main.test_synced_$UNIQUE_NAME.trips_source 2>&1 || true
-  $CLI schemas delete main.test_synced_$UNIQUE_NAME 2>&1 || true
+  $CLI tables delete main.test_synced_$UNIQUE_NAME.trips_source || true
+  $CLI schemas delete main.test_synced_$UNIQUE_NAME || true
 }
  trap cleanup EXIT
 
