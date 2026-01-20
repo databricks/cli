@@ -187,7 +187,7 @@ To start using direct engine, deploy with DATABRICKS_BUNDLE_ENGINE=direct env va
 
 		// Run plan check unless --noplancheck is set
 		if !noPlanCheck {
-			fmt.Fprintf(cmd.OutOrStdout(), "Note: Migration should be done after a full deploy. Running plan now to verify that deployment was done:\n")
+			cmdio.LogString(ctx, "Note: Migration should be done after a full deploy. Running plan now to verify that deployment was done:")
 			if err = runPlanCheck(cmd, extraArgs, extraArgsStr); err != nil {
 				return err
 			}
