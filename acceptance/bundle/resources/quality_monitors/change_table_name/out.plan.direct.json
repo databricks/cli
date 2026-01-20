@@ -31,7 +31,7 @@
       "changes": {
         "table_name": {
           "action": "recreate",
-          "reason": "field_triggers",
+          "reason": "builtin_rule",
           "old": "main.qm_test_[UNIQUE_NAME].test_table",
           "new": "main.qm_test_[UNIQUE_NAME].test_table_2",
           "remote": "main.qm_test_[UNIQUE_NAME].test_table"
