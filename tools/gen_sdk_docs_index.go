@@ -4,15 +4,23 @@
 //
 //	go run tools/gen_sdk_docs_index.go -output experimental/aitools/lib/providers/sdkdocs/
 //
-// This tool parses the annotations_openapi.yml file and Go SDK interfaces to generate
-// a comprehensive SDK documentation index that is embedded into the CLI binary.
+// This tool parses the Go SDK source code to generate a comprehensive SDK documentation
+// index that is embedded into the CLI binary. It extracts service interfaces, method
+// signatures, type definitions, and enums directly from the SDK.
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"flag"
 	"fmt"
+	"go/ast"
+	"go/doc"
+	"go/parser"
+	"go/printer"
+	"go/token"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -26,6 +34,7 @@ import (
 type SDKDocsIndex struct {
 	Version     string                 `json:"version"`
 	GeneratedAt string                 `json:"generated_at"`
+	SDKVersion  string                 `json:"sdk_version"`
 	Services    map[string]*ServiceDoc `json:"services"`
 	Types       map[string]*TypeDoc    `json:"types"`
 	Enums       map[string]*EnumDoc    `json:"enums"`
@@ -46,9 +55,6 @@ type MethodDoc struct {
 	Signature   string     `json:"signature"`
 	Parameters  []ParamDoc `json:"parameters"`
 	Returns     *ReturnDoc `json:"returns,omitempty"`
-	Example     string     `json:"example,omitempty"`
-	HTTPMethod  string     `json:"http_method,omitempty"`
-	HTTPPath    string     `json:"http_path,omitempty"`
 }
 
 // ParamDoc represents documentation for a method parameter.
@@ -79,8 +85,6 @@ type FieldDoc struct {
 	Type        string `json:"type"`
 	Description string `json:"description"`
 	Required    bool   `json:"required"`
-	OutputOnly  bool   `json:"output_only,omitempty"`
-	Deprecated  bool   `json:"deprecated,omitempty"`
 }
 
 // EnumDoc represents documentation for an enum type.
@@ -96,9 +100,22 @@ type AnnotationsFile map[string]map[string]FieldAnnotation
 
 // FieldAnnotation represents annotations for a single field
 type FieldAnnotation struct {
-	Description        string `yaml:"description"`
-	OutputOnly         string `yaml:"x-databricks-field-behaviors_output_only"`
-	DeprecationMessage string `yaml:"deprecation_message"`
+	Description string `yaml:"description"`
+}
+
+// Priority services to include (most commonly used)
+var priorityServices = map[string]bool{
+	"apps":      true,
+	"catalog":   true,
+	"compute":   true,
+	"files":     true,
+	"iam":       true,
+	"jobs":      true,
+	"ml":        true,
+	"pipelines": true,
+	"serving":   true,
+	"sql":       true,
+	"workspace": true,
 }
 
 func main() {
@@ -113,18 +130,35 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Load annotations
+	// Find SDK path
+	sdkPath, sdkVersion, err := findSDKPath()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error finding SDK path: %v\n", err)
+		os.Exit(1)
+	}
+	fmt.Printf("Found SDK at: %s (version %s)\n", sdkPath, sdkVersion)
+
+	// Load annotations for additional type descriptions
 	annotations, err := loadAnnotations(filepath.Join(projectRoot, *annotationsPath))
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error loading annotations: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Warning: Could not load annotations: %v\n", err)
+		annotations = make(AnnotationsFile)
+	}
+
+	// Generate index from SDK
+	index, err := generateIndexFromSDK(sdkPath, sdkVersion, annotations)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error generating index: %v\n", err)
 		os.Exit(1)
 	}
 
-	// Generate index
-	index := generateIndex(annotations)
-
 	// Write output
-	outputPath := filepath.Join(projectRoot, *outputDir, "sdk_docs_index.json")
+	var outputPath string
+	if filepath.IsAbs(*outputDir) {
+		outputPath = filepath.Join(*outputDir, "sdk_docs_index.json")
+	} else {
+		outputPath = filepath.Join(projectRoot, *outputDir, "sdk_docs_index.json")
+	}
 	if err := writeIndex(index, outputPath); err != nil {
 		fmt.Fprintf(os.Stderr, "Error writing index: %v\n", err)
 		os.Exit(1)
@@ -154,6 +188,25 @@ func findProjectRoot() (string, error) {
 	}
 }
 
+func findSDKPath() (string, string, error) {
+	// Use go list to find the SDK module path
+	cmd := exec.Command("go", "list", "-m", "-json", "github.com/databricks/databricks-sdk-go")
+	output, err := cmd.Output()
+	if err != nil {
+		return "", "", fmt.Errorf("failed to find SDK: %w", err)
+	}
+
+	var modInfo struct {
+		Dir     string `json:"Dir"`
+		Version string `json:"Version"`
+	}
+	if err := json.Unmarshal(output, &modInfo); err != nil {
+		return "", "", fmt.Errorf("failed to parse module info: %w", err)
+	}
+
+	return modInfo.Dir, modInfo.Version, nil
+}
+
 func loadAnnotations(path string) (AnnotationsFile, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -168,16 +221,397 @@ func loadAnnotations(path string) (AnnotationsFile, error) {
 	return annotations, nil
 }
 
-func generateIndex(annotations AnnotationsFile) *SDKDocsIndex {
+func generateIndexFromSDK(sdkPath, sdkVersion string, annotations AnnotationsFile) (*SDKDocsIndex, error) {
 	index := &SDKDocsIndex{
 		Version:     "1.0",
 		GeneratedAt: time.Now().UTC().Format(time.RFC3339),
+		SDKVersion:  sdkVersion,
 		Services:    make(map[string]*ServiceDoc),
 		Types:       make(map[string]*TypeDoc),
 		Enums:       make(map[string]*EnumDoc),
 	}
 
-	// Extract types from annotations
+	servicePath := filepath.Join(sdkPath, "service")
+	entries, err := os.ReadDir(servicePath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read service directory: %w", err)
+	}
+
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+
+		pkgName := entry.Name()
+
+		// Skip non-priority services to keep index manageable
+		if !priorityServices[pkgName] {
+			continue
+		}
+
+		pkgPath := filepath.Join(servicePath, pkgName)
+
+		// Parse the package
+		serviceDoc, types, enums, err := parseServicePackage(pkgPath, pkgName)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: Failed to parse %s: %v\n", pkgName, err)
+			continue
+		}
+
+		if serviceDoc != nil && len(serviceDoc.Methods) > 0 {
+			index.Services[pkgName] = serviceDoc
+		}
+
+		// Add types
+		for typeName, typeDoc := range types {
+			index.Types[pkgName+"."+typeName] = typeDoc
+		}
+
+		// Add enums
+		for enumName, enumDoc := range enums {
+			index.Enums[pkgName+"."+enumName] = enumDoc
+		}
+	}
+
+	// Enrich with annotations
+	enrichWithAnnotations(index, annotations)
+
+	return index, nil
+}
+
+func parseServicePackage(pkgPath, pkgName string) (*ServiceDoc, map[string]*TypeDoc, map[string]*EnumDoc, error) {
+	fset := token.NewFileSet()
+
+	// Parse all Go files in the package
+	pkgs, err := parser.ParseDir(fset, pkgPath, func(fi os.FileInfo) bool {
+		// Skip test files
+		return !strings.HasSuffix(fi.Name(), "_test.go")
+	}, parser.ParseComments)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("failed to parse package: %w", err)
+	}
+
+	var serviceDoc *ServiceDoc
+	types := make(map[string]*TypeDoc)
+	enums := make(map[string]*EnumDoc)
+
+	for _, pkg := range pkgs {
+		// Create doc package for better comment extraction
+		docPkg := doc.New(pkg, pkgPath, doc.AllDecls)
+
+		// Find service interface
+		for _, typ := range docPkg.Types {
+			if strings.HasSuffix(typ.Name, "Service") && !strings.HasSuffix(typ.Name, "Interface") {
+				// This is a service interface
+				if serviceDoc == nil {
+					serviceDoc = parseServiceInterface(typ, pkgName, fset, pkg)
+				}
+			} else if isEnumType(typ, pkg) {
+				// This is an enum
+				enumDoc := parseEnumType(typ, pkgName, pkg)
+				if enumDoc != nil && len(enumDoc.Values) > 0 {
+					enums[typ.Name] = enumDoc
+				}
+			} else if isStructType(typ, pkg) {
+				// This is a struct type
+				typeDoc := parseStructType(typ, pkgName, fset, pkg)
+				if typeDoc != nil {
+					types[typ.Name] = typeDoc
+				}
+			}
+		}
+	}
+
+	return serviceDoc, types, enums, nil
+}
+
+func parseServiceInterface(typ *doc.Type, pkgName string, fset *token.FileSet, pkg *ast.Package) *ServiceDoc {
+	serviceDoc := &ServiceDoc{
+		Name:        strings.TrimSuffix(typ.Name, "Service"),
+		Description: cleanDescription(typ.Doc),
+		Package:     fmt.Sprintf("github.com/databricks/databricks-sdk-go/service/%s", pkgName),
+		Methods:     make(map[string]*MethodDoc),
+	}
+
+	// Find the interface declaration
+	for _, file := range pkg.Files {
+		for _, decl := range file.Decls {
+			genDecl, ok := decl.(*ast.GenDecl)
+			if !ok || genDecl.Tok != token.TYPE {
+				continue
+			}
+
+			for _, spec := range genDecl.Specs {
+				typeSpec, ok := spec.(*ast.TypeSpec)
+				if !ok || typeSpec.Name.Name != typ.Name {
+					continue
+				}
+
+				ifaceType, ok := typeSpec.Type.(*ast.InterfaceType)
+				if !ok {
+					continue
+				}
+
+				// Parse methods
+				for _, method := range ifaceType.Methods.List {
+					if len(method.Names) == 0 {
+						continue
+					}
+
+					methodName := method.Names[0].Name
+					funcType, ok := method.Type.(*ast.FuncType)
+					if !ok {
+						continue
+					}
+
+					methodDoc := parseMethod(methodName, funcType, method.Doc, fset)
+					if methodDoc != nil {
+						serviceDoc.Methods[methodName] = methodDoc
+					}
+				}
+			}
+		}
+	}
+
+	return serviceDoc
+}
+
+func parseMethod(name string, funcType *ast.FuncType, doc *ast.CommentGroup, fset *token.FileSet) *MethodDoc {
+	methodDoc := &MethodDoc{
+		Name:        name,
+		Description: cleanDescription(extractCommentText(doc)),
+		Parameters:  []ParamDoc{},
+	}
+
+	// Build signature
+	var sig bytes.Buffer
+	sig.WriteString(name)
+	sig.WriteString("(")
+
+	// Parse parameters
+	if funcType.Params != nil {
+		params := []string{}
+		for _, field := range funcType.Params.List {
+			typeStr := typeToString(field.Type, fset)
+
+			for _, name := range field.Names {
+				params = append(params, fmt.Sprintf("%s %s", name.Name, typeStr))
+
+				// Skip context parameter
+				if name.Name == "ctx" {
+					continue
+				}
+
+				methodDoc.Parameters = append(methodDoc.Parameters, ParamDoc{
+					Name:     name.Name,
+					Type:     typeStr,
+					Required: true,
+				})
+			}
+
+			// Handle unnamed parameters
+			if len(field.Names) == 0 {
+				params = append(params, typeStr)
+			}
+		}
+		sig.WriteString(strings.Join(params, ", "))
+	}
+	sig.WriteString(")")
+
+	// Parse return type
+	if funcType.Results != nil && len(funcType.Results.List) > 0 {
+		returns := []string{}
+		for _, field := range funcType.Results.List {
+			typeStr := typeToString(field.Type, fset)
+			returns = append(returns, typeStr)
+		}
+
+		if len(returns) == 1 {
+			sig.WriteString(" ")
+			sig.WriteString(returns[0])
+			if returns[0] != "error" {
+				methodDoc.Returns = &ReturnDoc{Type: returns[0]}
+			}
+		} else {
+			sig.WriteString(" (")
+			sig.WriteString(strings.Join(returns, ", "))
+			sig.WriteString(")")
+			// Find non-error return type
+			for _, ret := range returns {
+				if ret != "error" {
+					methodDoc.Returns = &ReturnDoc{Type: ret}
+					break
+				}
+			}
+		}
+	}
+
+	methodDoc.Signature = sig.String()
+	return methodDoc
+}
+
+func isEnumType(typ *doc.Type, pkg *ast.Package) bool {
+	// Check if type has constants defined (enum pattern)
+	return len(typ.Consts) > 0
+}
+
+func isStructType(typ *doc.Type, pkg *ast.Package) bool {
+	// Check if this is a struct type
+	for _, file := range pkg.Files {
+		for _, decl := range file.Decls {
+			genDecl, ok := decl.(*ast.GenDecl)
+			if !ok || genDecl.Tok != token.TYPE {
+				continue
+			}
+
+			for _, spec := range genDecl.Specs {
+				typeSpec, ok := spec.(*ast.TypeSpec)
+				if !ok || typeSpec.Name.Name != typ.Name {
+					continue
+				}
+
+				_, isStruct := typeSpec.Type.(*ast.StructType)
+				return isStruct
+			}
+		}
+	}
+	return false
+}
+
+func parseEnumType(typ *doc.Type, pkgName string, pkg *ast.Package) *EnumDoc {
+	enumDoc := &EnumDoc{
+		Name:        typ.Name,
+		Package:     pkgName,
+		Description: cleanDescription(typ.Doc),
+		Values:      []string{},
+	}
+
+	// Extract enum values from constants
+	for _, c := range typ.Consts {
+		for _, name := range c.Names {
+			// Extract the value part after the type prefix
+			value := strings.TrimPrefix(name, typ.Name)
+			if value != name && value != "" {
+				enumDoc.Values = append(enumDoc.Values, value)
+			}
+		}
+	}
+
+	return enumDoc
+}
+
+func parseStructType(typ *doc.Type, pkgName string, fset *token.FileSet, pkg *ast.Package) *TypeDoc {
+	typeDoc := &TypeDoc{
+		Name:        typ.Name,
+		Package:     pkgName,
+		Description: cleanDescription(typ.Doc),
+		Fields:      make(map[string]*FieldDoc),
+	}
+
+	// Find the struct declaration
+	for _, file := range pkg.Files {
+		for _, decl := range file.Decls {
+			genDecl, ok := decl.(*ast.GenDecl)
+			if !ok || genDecl.Tok != token.TYPE {
+				continue
+			}
+
+			for _, spec := range genDecl.Specs {
+				typeSpec, ok := spec.(*ast.TypeSpec)
+				if !ok || typeSpec.Name.Name != typ.Name {
+					continue
+				}
+
+				structType, ok := typeSpec.Type.(*ast.StructType)
+				if !ok {
+					continue
+				}
+
+				// Parse fields
+				for _, field := range structType.Fields.List {
+					if len(field.Names) == 0 {
+						continue
+					}
+
+					fieldName := field.Names[0].Name
+
+					// Skip internal fields
+					if fieldName == "ForceSendFields" {
+						continue
+					}
+
+					// Get JSON name from tag
+					jsonName := fieldName
+					if field.Tag != nil {
+						jsonName = extractJSONName(field.Tag.Value)
+						if jsonName == "" || jsonName == "-" {
+							continue
+						}
+					}
+
+					fieldDoc := &FieldDoc{
+						Name:        jsonName,
+						Type:        typeToString(field.Type, fset),
+						Description: cleanDescription(extractCommentText(field.Doc)),
+					}
+
+					typeDoc.Fields[jsonName] = fieldDoc
+				}
+			}
+		}
+	}
+
+	// Only return if we have fields
+	if len(typeDoc.Fields) == 0 {
+		return nil
+	}
+
+	return typeDoc
+}
+
+func typeToString(expr ast.Expr, fset *token.FileSet) string {
+	var buf bytes.Buffer
+	printer.Fprint(&buf, fset, expr)
+	return buf.String()
+}
+
+func extractCommentText(cg *ast.CommentGroup) string {
+	if cg == nil {
+		return ""
+	}
+	return cg.Text()
+}
+
+func extractJSONName(tag string) string {
+	// Parse struct tag to get JSON name
+	// Tag format: `json:"name,omitempty"`
+	re := regexp.MustCompile(`json:"([^",]+)`)
+	matches := re.FindStringSubmatch(tag)
+	if len(matches) > 1 {
+		return matches[1]
+	}
+	return ""
+}
+
+func cleanDescription(s string) string {
+	// Clean up description text
+	s = strings.TrimSpace(s)
+
+	// Remove "Deprecated:" notices for cleaner output
+	if idx := strings.Index(s, "\n\nDeprecated:"); idx > 0 {
+		s = s[:idx]
+	}
+
+	// Truncate very long descriptions
+	if len(s) > 500 {
+		s = s[:497] + "..."
+	}
+
+	return s
+}
+
+func enrichWithAnnotations(index *SDKDocsIndex, annotations AnnotationsFile) {
+	// Add type descriptions from annotations
 	for fullTypeName, fields := range annotations {
 		typeName := extractTypeName(fullTypeName)
 		packageName := extractPackageName(fullTypeName)
@@ -186,46 +620,50 @@ func generateIndex(annotations AnnotationsFile) *SDKDocsIndex {
 			continue
 		}
 
-		typeDoc := &TypeDoc{
-			Name:        typeName,
-			Package:     packageName,
-			Description: inferTypeDescription(typeName),
-			Fields:      make(map[string]*FieldDoc),
-		}
-
-		for fieldName, annotation := range fields {
-			if fieldName == "_" {
-				// Type-level description
-				if annotation.Description != "" {
-					typeDoc.Description = annotation.Description
-				}
-				continue
-			}
-
-			fieldDoc := &FieldDoc{
-				Name:        fieldName,
-				Type:        inferFieldType(fieldName),
-				Description: annotation.Description,
-				OutputOnly:  annotation.OutputOnly == "true",
-				Deprecated:  annotation.DeprecationMessage != "",
-			}
-			typeDoc.Fields[fieldName] = fieldDoc
-		}
-
-		// Determine the service this type belongs to
 		service := inferServiceFromPackage(packageName)
 		typePath := service + "." + typeName
-		index.Types[typePath] = typeDoc
+
+		// Check if type already exists
+		if existing, ok := index.Types[typePath]; ok {
+			// Enrich existing type with annotation descriptions
+			for fieldName, annotation := range fields {
+				if fieldName == "_" && annotation.Description != "" {
+					existing.Description = annotation.Description
+					continue
+				}
+				if field, ok := existing.Fields[fieldName]; ok && field.Description == "" {
+					field.Description = annotation.Description
+				}
+			}
+		} else {
+			// Create new type from annotations
+			typeDoc := &TypeDoc{
+				Name:        typeName,
+				Package:     packageName,
+				Description: "",
+				Fields:      make(map[string]*FieldDoc),
+			}
+
+			for fieldName, annotation := range fields {
+				if fieldName == "_" {
+					typeDoc.Description = annotation.Description
+					continue
+				}
+				typeDoc.Fields[fieldName] = &FieldDoc{
+					Name:        fieldName,
+					Type:        "any",
+					Description: annotation.Description,
+				}
+			}
+
+			if len(typeDoc.Fields) > 0 || typeDoc.Description != "" {
+				index.Types[typePath] = typeDoc
+			}
+		}
 	}
-
-	// Add well-known services with common methods
-	addCoreServices(index)
-
-	return index
 }
 
 func extractTypeName(fullPath string) string {
-	// Extract type name from paths like "github.com/databricks/cli/bundle/config/resources.Alert"
 	parts := strings.Split(fullPath, ".")
 	if len(parts) > 0 {
 		return parts[len(parts)-1]
@@ -234,7 +672,6 @@ func extractTypeName(fullPath string) string {
 }
 
 func extractPackageName(fullPath string) string {
-	// Extract package from paths like "github.com/databricks/cli/bundle/config/resources.Alert"
 	parts := strings.Split(fullPath, "/")
 	if len(parts) > 0 {
 		lastPart := parts[len(parts)-1]
@@ -247,7 +684,6 @@ func extractPackageName(fullPath string) string {
 }
 
 func inferServiceFromPackage(packageName string) string {
-	// Map package names to service names
 	serviceMap := map[string]string{
 		"resources": "bundle",
 		"jobs":      "jobs",
@@ -261,9 +697,7 @@ func inferServiceFromPackage(packageName string) string {
 		"ml":        "ml",
 		"workspace": "workspace",
 		"iam":       "iam",
-		"settings":  "settings",
 		"files":     "files",
-		"sharing":   "sharing",
 	}
 
 	if service, ok := serviceMap[packageName]; ok {
@@ -272,365 +706,14 @@ func inferServiceFromPackage(packageName string) string {
 	return packageName
 }
 
-func inferTypeDescription(typeName string) string {
-	// Generate reasonable descriptions based on type name patterns
-	if strings.HasSuffix(typeName, "Request") {
-		base := strings.TrimSuffix(typeName, "Request")
-		return fmt.Sprintf("Request parameters for %s operation.", toSentenceCase(base))
-	}
-	if strings.HasSuffix(typeName, "Response") {
-		base := strings.TrimSuffix(typeName, "Response")
-		return fmt.Sprintf("Response from %s operation.", toSentenceCase(base))
-	}
-	if strings.HasSuffix(typeName, "Settings") {
-		base := strings.TrimSuffix(typeName, "Settings")
-		return fmt.Sprintf("Configuration settings for %s.", toSentenceCase(base))
-	}
-	if strings.HasSuffix(typeName, "Spec") {
-		base := strings.TrimSuffix(typeName, "Spec")
-		return fmt.Sprintf("Specification for %s.", toSentenceCase(base))
-	}
-	return fmt.Sprintf("%s configuration.", toSentenceCase(typeName))
-}
-
-func inferFieldType(fieldName string) string {
-	// Infer type from common field name patterns
-	patterns := map[*regexp.Regexp]string{
-		regexp.MustCompile(`(?i)_id$`):        "string",
-		regexp.MustCompile(`(?i)_ids$`):       "[]string",
-		regexp.MustCompile(`(?i)_time$`):      "string (timestamp)",
-		regexp.MustCompile(`(?i)_at$`):        "string (timestamp)",
-		regexp.MustCompile(`(?i)^is_`):        "bool",
-		regexp.MustCompile(`(?i)^has_`):       "bool",
-		regexp.MustCompile(`(?i)^enable`):     "bool",
-		regexp.MustCompile(`(?i)_enabled$`):   "bool",
-		regexp.MustCompile(`(?i)_count$`):     "int",
-		regexp.MustCompile(`(?i)_size$`):      "int",
-		regexp.MustCompile(`(?i)_minutes$`):   "int",
-		regexp.MustCompile(`(?i)_seconds$`):   "int",
-		regexp.MustCompile(`(?i)_name$`):      "string",
-		regexp.MustCompile(`(?i)_path$`):      "string",
-		regexp.MustCompile(`(?i)_url$`):       "string",
-		regexp.MustCompile(`(?i)description`): "string",
-		regexp.MustCompile(`(?i)tags$`):       "map[string]string",
-	}
-
-	for pattern, typeName := range patterns {
-		if pattern.MatchString(fieldName) {
-			return typeName
-		}
-	}
-
-	return "any"
-}
-
-func toSentenceCase(s string) string {
-	// Convert CamelCase to sentence case
-	var result strings.Builder
-	for i, r := range s {
-		if i > 0 && r >= 'A' && r <= 'Z' {
-			result.WriteRune(' ')
-		}
-		result.WriteRune(r)
-	}
-	return strings.ToLower(result.String())
-}
-
-func addCoreServices(index *SDKDocsIndex) {
-	// Jobs service
-	index.Services["jobs"] = &ServiceDoc{
-		Name:        "Jobs",
-		Description: "The Jobs API allows you to create, edit, and delete jobs. Jobs are the primary unit of scheduled execution in Databricks.",
-		Package:     "github.com/databricks/databricks-sdk-go/service/jobs",
-		Methods: map[string]*MethodDoc{
-			"Create": {
-				Name:        "Create",
-				Description: "Create a new job.",
-				Signature:   "Create(ctx context.Context, request CreateJob) (*CreateResponse, error)",
-				Parameters: []ParamDoc{
-					{Name: "request", Type: "CreateJob", Description: "Job creation parameters including name, tasks, and schedule", Required: true},
-				},
-				Returns: &ReturnDoc{Type: "*CreateResponse", Description: "Contains the job_id of the created job"},
-				Example: "resp, err := w.Jobs.Create(ctx, jobs.CreateJob{\n    Name: \"my-job\",\n    Tasks: []jobs.Task{{TaskKey: \"main\", ...}},\n})",
-			},
-			"List": {
-				Name:        "List",
-				Description: "Retrieves a list of jobs.",
-				Signature:   "List(ctx context.Context, request ListJobsRequest) listing.Iterator[BaseJob]",
-				Parameters: []ParamDoc{
-					{Name: "request", Type: "ListJobsRequest", Description: "Filter and pagination parameters", Required: false},
-				},
-				Returns: &ReturnDoc{Type: "listing.Iterator[BaseJob]", Description: "Iterator over jobs matching the filter"},
-			},
-			"Get": {
-				Name:        "Get",
-				Description: "Retrieves the details for a single job.",
-				Signature:   "Get(ctx context.Context, request GetJobRequest) (*Job, error)",
-				Parameters: []ParamDoc{
-					{Name: "request", Type: "GetJobRequest", Description: "Contains job_id to retrieve", Required: true},
-				},
-				Returns: &ReturnDoc{Type: "*Job", Description: "Full job details including settings and run history"},
-			},
-			"Delete": {
-				Name:        "Delete",
-				Description: "Deletes a job.",
-				Signature:   "Delete(ctx context.Context, request DeleteJob) error",
-				Parameters: []ParamDoc{
-					{Name: "request", Type: "DeleteJob", Description: "Contains job_id to delete", Required: true},
-				},
-			},
-			"RunNow": {
-				Name:        "RunNow",
-				Description: "Triggers an immediate run of a job.",
-				Signature:   "RunNow(ctx context.Context, request RunNow) (*RunNowResponse, error)",
-				Parameters: []ParamDoc{
-					{Name: "request", Type: "RunNow", Description: "Job ID and optional parameters for the run", Required: true},
-				},
-				Returns: &ReturnDoc{Type: "*RunNowResponse", Description: "Contains run_id of the triggered run"},
-			},
-		},
-	}
-
-	// Clusters/Compute service
-	index.Services["compute"] = &ServiceDoc{
-		Name:        "Clusters",
-		Description: "The Clusters API allows you to create, start, edit, and terminate clusters. Clusters are managed cloud resources for running Spark workloads.",
-		Package:     "github.com/databricks/databricks-sdk-go/service/compute",
-		Methods: map[string]*MethodDoc{
-			"Create": {
-				Name:        "Create",
-				Description: "Create a new Spark cluster.",
-				Signature:   "Create(ctx context.Context, request CreateCluster) (*CreateClusterResponse, error)",
-				Parameters: []ParamDoc{
-					{Name: "request", Type: "CreateCluster", Description: "Cluster configuration including node types, autoscaling, and Spark version", Required: true},
-				},
-				Returns: &ReturnDoc{Type: "*CreateClusterResponse", Description: "Contains cluster_id of the created cluster"},
-			},
-			"List": {
-				Name:        "List",
-				Description: "Returns information about all clusters.",
-				Signature:   "List(ctx context.Context, request ListClustersRequest) listing.Iterator[ClusterDetails]",
-				Returns:     &ReturnDoc{Type: "listing.Iterator[ClusterDetails]", Description: "Iterator over cluster details"},
-			},
-			"Get": {
-				Name:        "Get",
-				Description: "Retrieves the information for a cluster given its identifier.",
-				Signature:   "Get(ctx context.Context, request GetClusterRequest) (*ClusterDetails, error)",
-				Parameters: []ParamDoc{
-					{Name: "request", Type: "GetClusterRequest", Description: "Contains cluster_id", Required: true},
-				},
-				Returns: &ReturnDoc{Type: "*ClusterDetails", Description: "Full cluster configuration and state"},
-			},
-			"Start": {
-				Name:        "Start",
-				Description: "Starts a terminated cluster.",
-				Signature:   "Start(ctx context.Context, request StartCluster) error",
-				Parameters: []ParamDoc{
-					{Name: "request", Type: "StartCluster", Description: "Contains cluster_id to start", Required: true},
-				},
-			},
-			"Delete": {
-				Name:        "Delete",
-				Description: "Permanently deletes a Spark cluster.",
-				Signature:   "Delete(ctx context.Context, request DeleteCluster) error",
-				Parameters: []ParamDoc{
-					{Name: "request", Type: "DeleteCluster", Description: "Contains cluster_id to delete", Required: true},
-				},
-			},
-		},
-	}
-
-	// Pipelines service
-	index.Services["pipelines"] = &ServiceDoc{
-		Name:        "Pipelines",
-		Description: "The Delta Live Tables API allows you to create, edit, and run pipelines for data transformation and ingestion.",
-		Package:     "github.com/databricks/databricks-sdk-go/service/pipelines",
-		Methods: map[string]*MethodDoc{
-			"Create": {
-				Name:        "Create",
-				Description: "Creates a new data processing pipeline.",
-				Signature:   "Create(ctx context.Context, request CreatePipeline) (*CreatePipelineResponse, error)",
-				Parameters: []ParamDoc{
-					{Name: "request", Type: "CreatePipeline", Description: "Pipeline configuration including clusters, libraries, and target", Required: true},
-				},
-				Returns: &ReturnDoc{Type: "*CreatePipelineResponse", Description: "Contains pipeline_id of the created pipeline"},
-			},
-			"List": {
-				Name:        "List",
-				Description: "Lists pipelines defined in the workspace.",
-				Signature:   "List(ctx context.Context, request ListPipelinesRequest) listing.Iterator[PipelineStateInfo]",
-				Returns:     &ReturnDoc{Type: "listing.Iterator[PipelineStateInfo]", Description: "Iterator over pipeline info"},
-			},
-			"StartUpdate": {
-				Name:        "StartUpdate",
-				Description: "Starts a new update for the pipeline.",
-				Signature:   "StartUpdate(ctx context.Context, request StartUpdate) (*StartUpdateResponse, error)",
-				Parameters: []ParamDoc{
-					{Name: "request", Type: "StartUpdate", Description: "Pipeline ID and update options", Required: true},
-				},
-				Returns: &ReturnDoc{Type: "*StartUpdateResponse", Description: "Contains update_id of the started update"},
-			},
-		},
-	}
-
-	// Catalog service
-	index.Services["catalog"] = &ServiceDoc{
-		Name:        "Catalog",
-		Description: "Unity Catalog APIs for managing catalogs, schemas, tables, and other data assets.",
-		Package:     "github.com/databricks/databricks-sdk-go/service/catalog",
-		Methods: map[string]*MethodDoc{
-			"ListCatalogs": {
-				Name:        "ListCatalogs",
-				Description: "Lists all catalogs in the metastore.",
-				Signature:   "List(ctx context.Context, request ListCatalogsRequest) listing.Iterator[CatalogInfo]",
-				Returns:     &ReturnDoc{Type: "listing.Iterator[CatalogInfo]", Description: "Iterator over catalog information"},
-			},
-			"ListSchemas": {
-				Name:        "ListSchemas",
-				Description: "Lists all schemas in a catalog.",
-				Signature:   "List(ctx context.Context, request ListSchemasRequest) listing.Iterator[SchemaInfo]",
-				Parameters: []ParamDoc{
-					{Name: "request", Type: "ListSchemasRequest", Description: "Contains catalog_name to list schemas from", Required: true},
-				},
-				Returns: &ReturnDoc{Type: "listing.Iterator[SchemaInfo]", Description: "Iterator over schema information"},
-			},
-			"ListTables": {
-				Name:        "ListTables",
-				Description: "Lists all tables in a schema.",
-				Signature:   "List(ctx context.Context, request ListTablesRequest) listing.Iterator[TableInfo]",
-				Parameters: []ParamDoc{
-					{Name: "request", Type: "ListTablesRequest", Description: "Contains catalog_name and schema_name", Required: true},
-				},
-				Returns: &ReturnDoc{Type: "listing.Iterator[TableInfo]", Description: "Iterator over table information"},
-			},
-		},
-	}
-
-	// Apps service
-	index.Services["apps"] = &ServiceDoc{
-		Name:        "Apps",
-		Description: "Databricks Apps API for deploying and managing web applications on Databricks.",
-		Package:     "github.com/databricks/databricks-sdk-go/service/apps",
-		Methods: map[string]*MethodDoc{
-			"Create": {
-				Name:        "Create",
-				Description: "Creates a new app.",
-				Signature:   "Create(ctx context.Context, request CreateAppRequest) (*App, error)",
-				Parameters: []ParamDoc{
-					{Name: "request", Type: "CreateAppRequest", Description: "App configuration including name and description", Required: true},
-				},
-				Returns: &ReturnDoc{Type: "*App", Description: "The created app details"},
-			},
-			"Deploy": {
-				Name:        "Deploy",
-				Description: "Deploys an app to Databricks Apps.",
-				Signature:   "Deploy(ctx context.Context, request CreateAppDeploymentRequest) (*AppDeployment, error)",
-				Parameters: []ParamDoc{
-					{Name: "request", Type: "CreateAppDeploymentRequest", Description: "Deployment configuration", Required: true},
-				},
-				Returns: &ReturnDoc{Type: "*AppDeployment", Description: "Deployment status and details"},
-			},
-			"List": {
-				Name:        "List",
-				Description: "Lists all apps in the workspace.",
-				Signature:   "List(ctx context.Context, request ListAppsRequest) listing.Iterator[App]",
-				Returns:     &ReturnDoc{Type: "listing.Iterator[App]", Description: "Iterator over apps"},
-			},
-		},
-	}
-
-	// SQL service
-	index.Services["sql"] = &ServiceDoc{
-		Name:        "SQL",
-		Description: "Databricks SQL APIs for managing warehouses, queries, and dashboards.",
-		Package:     "github.com/databricks/databricks-sdk-go/service/sql",
-		Methods: map[string]*MethodDoc{
-			"ExecuteStatement": {
-				Name:        "ExecuteStatement",
-				Description: "Execute a SQL statement and return results.",
-				Signature:   "ExecuteStatement(ctx context.Context, request ExecuteStatementRequest) (*ExecuteStatementResponse, error)",
-				Parameters: []ParamDoc{
-					{Name: "request", Type: "ExecuteStatementRequest", Description: "SQL statement, warehouse ID, and execution options", Required: true},
-				},
-				Returns: &ReturnDoc{Type: "*ExecuteStatementResponse", Description: "Query results or statement ID for async execution"},
-			},
-			"ListWarehouses": {
-				Name:        "ListWarehouses",
-				Description: "Lists all SQL warehouses.",
-				Signature:   "List(ctx context.Context, request ListWarehousesRequest) listing.Iterator[EndpointInfo]",
-				Returns:     &ReturnDoc{Type: "listing.Iterator[EndpointInfo]", Description: "Iterator over warehouse information"},
-			},
-		},
-	}
-
-	// Workspace service
-	index.Services["workspace"] = &ServiceDoc{
-		Name:        "Workspace",
-		Description: "Workspace API for managing notebooks, folders, and other workspace objects.",
-		Package:     "github.com/databricks/databricks-sdk-go/service/workspace",
-		Methods: map[string]*MethodDoc{
-			"List": {
-				Name:        "List",
-				Description: "Lists the contents of a directory.",
-				Signature:   "List(ctx context.Context, request ListWorkspaceRequest) listing.Iterator[ObjectInfo]",
-				Parameters: []ParamDoc{
-					{Name: "request", Type: "ListWorkspaceRequest", Description: "Contains path to list", Required: true},
-				},
-				Returns: &ReturnDoc{Type: "listing.Iterator[ObjectInfo]", Description: "Iterator over workspace objects"},
-			},
-			"GetStatus": {
-				Name:        "GetStatus",
-				Description: "Gets the status of a workspace object.",
-				Signature:   "GetStatus(ctx context.Context, request GetStatusRequest) (*ObjectInfo, error)",
-				Parameters: []ParamDoc{
-					{Name: "request", Type: "GetStatusRequest", Description: "Contains path to get status for", Required: true},
-				},
-				Returns: &ReturnDoc{Type: "*ObjectInfo", Description: "Object information including type and path"},
-			},
-			"Import": {
-				Name:        "Import",
-				Description: "Imports a notebook or file into the workspace.",
-				Signature:   "Import(ctx context.Context, request Import) error",
-				Parameters: []ParamDoc{
-					{Name: "request", Type: "Import", Description: "Path, content, and format of the object to import", Required: true},
-				},
-			},
-		},
-	}
-
-	// Add some common enums
-	index.Enums["jobs.RunLifeCycleState"] = &EnumDoc{
-		Name:        "RunLifeCycleState",
-		Package:     "jobs",
-		Description: "The current state of the run lifecycle.",
-		Values:      []string{"PENDING", "RUNNING", "TERMINATING", "TERMINATED", "SKIPPED", "INTERNAL_ERROR"},
-	}
-
-	index.Enums["compute.State"] = &EnumDoc{
-		Name:        "State",
-		Package:     "compute",
-		Description: "The state of a cluster.",
-		Values:      []string{"PENDING", "RUNNING", "RESTARTING", "RESIZING", "TERMINATING", "TERMINATED", "ERROR", "UNKNOWN"},
-	}
-
-	index.Enums["pipelines.PipelineState"] = &EnumDoc{
-		Name:        "PipelineState",
-		Package:     "pipelines",
-		Description: "The state of a pipeline.",
-		Values:      []string{"IDLE", "RUNNING", "STARTING", "STOPPING", "DELETED", "RECOVERING", "FAILED", "RESETTING"},
-	}
-}
-
 func writeIndex(index *SDKDocsIndex, path string) error {
-	// Ensure directory exists
 	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
 		return fmt.Errorf("failed to create output directory: %w", err)
 	}
 
-	// Sort maps for deterministic output
+	// Sort for deterministic output
 	sortIndex(index)
 
-	// Marshal with indentation for readability
 	data, err := json.MarshalIndent(index, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to marshal index: %w", err)
@@ -644,20 +727,6 @@ func writeIndex(index *SDKDocsIndex, path string) error {
 }
 
 func sortIndex(index *SDKDocsIndex) {
-	// Sort service methods
-	for _, service := range index.Services {
-		// Methods are already in a map, which will be sorted by JSON marshaling
-		_ = service
-	}
-
-	// Sort type fields
-	for _, typeDoc := range index.Types {
-		// Sort fields by converting to sorted slice would require changing structure
-		// For now, rely on JSON marshaling order
-		_ = typeDoc
-	}
-
-	// Sort enum values
 	for _, enumDoc := range index.Enums {
 		sort.Strings(enumDoc.Values)
 	}
