@@ -475,7 +475,6 @@ func isEmptyStruct(values ...any) bool {
 		}
 		rv := reflect.ValueOf(v)
 
-		// Handle pointer to struct
 		if rv.Kind() == reflect.Ptr {
 			if rv.IsNil() {
 				continue
@@ -483,17 +482,14 @@ func isEmptyStruct(values ...any) bool {
 			rv = rv.Elem()
 		}
 
-		// Check if it's a struct
 		if rv.Kind() != reflect.Struct {
 			return false
 		}
 
-		// Check if all fields are zero values
 		rt := rv.Type()
 		for i := range rt.NumField() {
 			field := rt.Field(i)
 
-			// Skip unexported fields
 			if !field.IsExported() {
 				continue
 			}
