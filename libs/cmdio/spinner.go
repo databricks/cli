@@ -98,15 +98,21 @@ func (c *cmdIO) Spinner(ctx context.Context) chan string {
 		tea.WithOutput(c.err),
 	)
 
+	// Channel to signal when program has finished and restored terminal
+	done := make(chan struct{})
+
 	// Start program in background
 	go func() {
 		_, _ = p.Run()
+		close(done)
 	}()
 
 	// Bridge goroutine: channel -> tea messages
 	go func() {
 		defer func() {
 			p.Send(quitMsg{})
+			// Wait for program to finish and restore terminal state
+			<-done
 		}()
 
 		for {
