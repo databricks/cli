@@ -1,28 +1,55 @@
 name: start-integration-tests
 
 on:
-  #schedule:
-  #  - cron: '*/10 * * * *'
   workflow_dispatch:
+  merge_group:
 
 jobs:
-  # Trigger for pull requests.
-  #
+  # Auto-approve integration tests for merge queue.
+  # The tests already passed on the PR, so we don't need to run them again.
+  auto-approve:
+    if: github.event_name == 'merge_group'
+
+    runs-on:
+      group: databricks-deco-testing-runner-group
+      labels: ubuntu-latest-deco
+
+    permissions:
+      checks: write
+      contents: read
+
+    steps:
+      - name: Auto-approve Check for Merge Queue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.checks.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              name: 'Integration Tests',
+              head_sha: context.sha,
+              status: 'completed',
+              conclusion: 'success',
+              output: {
+                title: 'Integration Tests',
+                summary: 'Auto-approved for merge queue (tests already passed on PR)'
+              }
+            });
+
+  # Trigger integration tests for PRs.
   # This workflow triggers the integration test workflow in a different repository.
   # It requires secrets from the "test-trigger-is" environment, which are only available to authorized users.
   trigger:
+    if: github.event_name == 'workflow_dispatch'
+
     runs-on:
       group: databricks-deco-testing-runner-group
       labels: ubuntu-latest-deco
 
     environment: "test-trigger-is"
 
-    # Only run this job for PRs from branches on the main repository and not from forks.
-    # Workflows triggered by PRs from forks don't have access to the "test-trigger-is" environment.
-    if: "${{ !github.event.pull_request.head.repo.fork }}"
-
     steps:
-      - name: Generate GitHub App Token
+      - name: Generate GitHub App Token for Workflow Trigger
         id: generate-token
         uses: actions/create-github-app-token@df432ceedc7162793a195dd1713ff69aefc7379e # v2.0.6
         with:
@@ -31,11 +58,20 @@ jobs:
           owner: ${{ secrets.ORG_NAME }}
           repositories: ${{secrets.REPO_NAME}}
 
+      - name: Generate GitHub App Token for Check Updates
+        id: generate-check-token
+        uses: actions/create-github-app-token@df432ceedc7162793a195dd1713ff69aefc7379e # v2.0.6
+        with:
+          app-id: ${{ secrets.DECO_TEST_APPROVAL_APP_ID }}
+          private-key: ${{ secrets.DECO_TEST_APPROVAL_PRIVATE_KEY }}
+          owner: databricks
+
       - name: Fetch start_integration_tests.py
         run: wget https://raw.githubusercontent.com/databricks/cli/refs/heads/main/tools/start_integration_tests.py
 
       - name: Run start_integration_tests.py
         env:
           GH_TOKEN: ${{ steps.generate-token.outputs.token }}
+          GH_CHECK_TOKEN: ${{ steps.generate-check-token.outputs.token }}
         run: |-
           python3 ./start_integration_tests.py -R ${{ secrets.ORG_NAME }}/${{secrets.REPO_NAME}} --yes

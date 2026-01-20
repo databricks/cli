@@ -26,12 +26,22 @@ type Plan struct {
 	lockmap lockmap    `json:"-"`
 }
 
-func NewPlan() *Plan {
+// NewPlanDirect creates a new Plan for direct engine with plan_version set.
+func NewPlanDirect() *Plan {
 	return &Plan{
 		PlanVersion: currentPlanVersion,
 		CLIVersion:  build.GetInfo().Version,
 		Plan:        make(map[string]*PlanEntry),
 		lockmap:     newLockmap(),
+	}
+}
+
+// NewPlanTerraform creates a new Plan for terraform engine without plan_version.
+func NewPlanTerraform() *Plan {
+	return &Plan{
+		CLIVersion: build.GetInfo().Version,
+		Plan:       make(map[string]*PlanEntry),
+		lockmap:    newLockmap(),
 	}
 }
 
@@ -93,6 +103,8 @@ const (
 	ReasonRemoteAlreadySet  = "remote_already_set"
 	ReasonBuiltinRule       = "builtin_rule"
 	ReasonConfigOnly        = "config_only"
+	ReasonEmptySlice        = "empty_slice"
+	ReasonEmptyMap          = "empty_map"
 )
 
 // HasChange checks if there are any changes for fields with the given prefix.
