@@ -152,7 +152,7 @@ def start_job(pr_number, commit_sha, author, approved_by, workflow, repo, force=
             "-R",
             repo,
             "--ref",
-            "main",
+            "omer-lachish_data/deco-26173-cli-report-in-checks",  # TEMPORARY: testing report-in-checks
             "-F",
             f"pull_request_number={pr_number}",
             "-F",
