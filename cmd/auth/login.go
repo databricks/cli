@@ -99,12 +99,15 @@ depends on the existing profiles you have set in your configuration file
 	var loginTimeout time.Duration
 	var configureCluster bool
 	var configureServerless bool
+	var scopes string
 	cmd.Flags().DurationVar(&loginTimeout, "timeout", defaultTimeout,
 		"Timeout for completing login challenge in the browser")
 	cmd.Flags().BoolVar(&configureCluster, "configure-cluster", false,
 		"Prompts to configure cluster")
 	cmd.Flags().BoolVar(&configureServerless, "configure-serverless", false,
 		"Prompts to configure serverless")
+	cmd.Flags().StringVar(&scopes, "scopes", "",
+		"Comma-separated list of OAuth scopes to request (defaults to 'all-apis')")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
@@ -138,14 +141,24 @@ depends on the existing profiles you have set in your configuration file
 			return err
 		}
 
+		var scopesList []string
+		if scopes != "" {
+			for _, s := range strings.Split(scopes, ",") {
+				scopesList = append(scopesList, strings.TrimSpace(s))
+			}
+		}
+
 		oauthArgument, err := authArguments.ToOAuthArgument()
 		if err != nil {
 			return err
 		}
 		persistentAuthOpts := []u2m.PersistentAuthOption{
 			u2m.WithOAuthArgument(oauthArgument),
+			u2m.WithBrowser(getBrowserFunc(cmd)),
 		}
-		persistentAuthOpts = append(persistentAuthOpts, u2m.WithBrowser(getBrowserFunc(cmd)))
+		if len(scopesList) > 0 {
+			persistentAuthOpts = append(persistentAuthOpts, u2m.WithScopes(scopesList))
+		}
 		persistentAuth, err := u2m.NewPersistentAuth(ctx, persistentAuthOpts...)
 		if err != nil {
 			return err
@@ -209,6 +222,7 @@ depends on the existing profiles you have set in your configuration file
 				ClusterID:           cfg.ClusterID,
 				ConfigFile:          cfg.ConfigFile,
 				ServerlessComputeID: cfg.ServerlessComputeID,
+				Scopes:              scopesList,
 			})
 			if err != nil {
 				return err
