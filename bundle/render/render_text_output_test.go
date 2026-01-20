@@ -13,7 +13,6 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/iam"
@@ -277,15 +276,12 @@ func TestRenderDiagnostics(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			writer := &bytes.Buffer{}
-			ctx := context.Background()
-			cmdIO := cmdio.NewIO(ctx, flags.OutputText, nil, io.Discard, writer, "", "")
-			ctx = cmdio.InContext(ctx, cmdIO)
+			ctx, stderr := cmdio.NewTestContextWithStderr(context.Background())
 
 			err := cmdio.RenderDiagnostics(ctx, tc.diags)
 			require.NoError(t, err)
 
-			assert.Equal(t, tc.expected, writer.String())
+			assert.Equal(t, tc.expected, stderr.String())
 		})
 	}
 }
