@@ -9,6 +9,9 @@ import (
 	"time"
 
 	"github.com/briandowns/spinner"
+	_ "github.com/charmbracelet/bubbles/spinner"
+	_ "github.com/charmbracelet/bubbletea"
+	_ "github.com/charmbracelet/lipgloss"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/manifoldco/promptui"
 )
