@@ -2,6 +2,7 @@ package cmdio
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"github.com/charmbracelet/bubbles/spinner"
@@ -92,7 +93,7 @@ func (c *cmdIO) Spinner(ctx context.Context) chan string {
 
 	// Create model and program
 	m := newSpinnerModel()
-	// Note: We don't let tea capture signals yet to match current behavior.
+	// Note: We don't let tea capture signals to match current behavior.
 	// This allows Ctrl-C to immediately terminate instead of being captured by Bubble Tea.
 	p := tea.NewProgram(
 		m,
@@ -104,17 +105,21 @@ func (c *cmdIO) Spinner(ctx context.Context) chan string {
 	// Acquire program slot (queues if another program is running)
 	c.acquireTeaProgram(p)
 
+	// Track both goroutines to ensure clean shutdown
+	var wg sync.WaitGroup
+
 	// Start program in background
+	wg.Add(1)
 	go func() {
-		defer c.releaseTeaProgram()
+		defer wg.Done()
 		_, _ = p.Run()
 	}()
 
 	// Bridge goroutine: channel -> tea messages
+	wg.Add(1)
 	go func() {
-		defer func() {
-			p.Send(quitMsg{})
-		}()
+		defer wg.Done()
+		defer p.Send(quitMsg{})
 
 		for {
 			select {
@@ -128,6 +133,12 @@ func (c *cmdIO) Spinner(ctx context.Context) chan string {
 				p.Send(suffixMsg(msg))
 			}
 		}
+	}()
+
+	// Wait for both goroutines, then release
+	go func() {
+		wg.Wait()
+		c.releaseTeaProgram()
 	}()
 
 	return updates
