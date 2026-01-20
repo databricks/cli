@@ -17,7 +17,8 @@ def check_plan(path):
     try:
         data = json.loads(raw)
         for key, value in data["plan"].items():
-            if value["action"] != "skip":
+            action = value.get("action")
+            if action != "skip":
                 print(f"Unexpected {action=} for {key}")
                 changes_detected += 1
     except Exception:
