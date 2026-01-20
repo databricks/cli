@@ -19,9 +19,11 @@ import (
 	"github.com/databricks/cli/libs/exec"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
+	sdkauth "github.com/databricks/databricks-sdk-go/config/experimental/auth"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m"
 	browserpkg "github.com/pkg/browser"
 	"github.com/spf13/cobra"
+	"golang.org/x/oauth2"
 )
 
 func promptForProfile(ctx context.Context, defaultValue string) (string, error) {
@@ -166,15 +168,16 @@ depends on the existing profiles you have set in your configuration file
 		var clusterID, serverlessComputeID string
 		switch {
 		case configureCluster:
-			// Get the token we just minted directly instead of spawning a child CLI process.
-			token, err := persistentAuth.Token()
-			if err != nil {
-				return err
-			}
+			// Create a workspace client to list clusters for interactive selection.
+			// We use a custom CredentialsStrategy that wraps the token we just minted,
+			// avoiding the need to spawn a child CLI process (which AuthType "databricks-cli" does).
+			tokenSource := sdkauth.TokenSourceFn(func(ctx context.Context) (*oauth2.Token, error) {
+				return persistentAuth.Token()
+			})
 			w, err := databricks.NewWorkspaceClient(&databricks.Config{
-				Host:      authArguments.Host,
-				AccountID: authArguments.AccountID,
-				Token:     token.AccessToken,
+				Host:        authArguments.Host,
+				AccountID:   authArguments.AccountID,
+				Credentials: config.NewTokenSourceStrategy("login-token", tokenSource),
 			})
 			if err != nil {
 				return err
