@@ -52,8 +52,11 @@
           "creator": "[USERNAME]",
           "id": "[UUID]",
           "name": "[ENDPOINT_ID]",
+          "permission_level": "CAN_MANAGE",
+          "route_optimized": false,
           "state": {
-            "config_update": "NOT_UPDATING"
+            "config_update": "NOT_UPDATING",
+            "ready": "NOT_READY"
           },
           "tags": [
             {
@@ -65,6 +68,11 @@
         "endpoint_id": "[UUID]"
       },
       "changes": {
+        "route_optimized": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": false
+        },
         "tags[0].value": {
           "action": "update",
           "old": "my-team-one",

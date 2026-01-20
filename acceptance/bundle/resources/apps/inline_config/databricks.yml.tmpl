@@ -1,0 +1,16 @@
+bundle:
+  name: app-inline-config-$UNIQUE_NAME
+
+resources:
+  apps:
+    myapp:
+      name: $UNIQUE_NAME
+      description: my_app_description
+      source_code_path: ./app
+      config:
+        command: ["flask", "--app", "app", "run"]
+        env:
+          - name: MY_ENV_VAR
+            value: test_value
+          - name: ANOTHER_VAR
+            value: another_value

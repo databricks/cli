@@ -4,9 +4,6 @@ Badness = "post deployment, bundle summary should print actual name that is full
 
 RecordRequests = false
 
-[EnvMatrix]
-DATABRICKS_BUNDLE_ENGINE = ["terraform"]
-
 [[Repls]]
 # clean up ?o=<num> suffix after URL since not all workspaces have that
 Old = '\?o=\[(NUMID|ALPHANUMID)\]'

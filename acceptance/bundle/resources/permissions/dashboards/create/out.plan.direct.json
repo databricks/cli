@@ -9,6 +9,7 @@
           "display_name": "test-dashboard-[UNIQUE_NAME]",
           "embed_credentials": false,
           "parent_path": "/Workspace/Users/[USERNAME]/folder1",
+          "published": true,
           "serialized_dashboard": "{\"pages\":[{\"name\":\"page1\",\"displayName\":\"Page 1\"}]}",
           "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
         }

@@ -1,9 +1,5 @@
-trace $PIPELINES deploy
 title "Run pipeline"
-trace $PIPELINES run
+trace $ENTRYPOINT run
 
 title "Run pipeline with KEY, expect same output as without KEY"
-trace $PIPELINES run my_pipeline
-
-title "completion handler"
-trace $PIPELINES __complete run ,
+trace $ENTRYPOINT run my_pipeline

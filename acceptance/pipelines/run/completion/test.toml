@@ -1,0 +1,2 @@
+[EnvMatrix]
+ENTRYPOINT = ["$PIPELINES"]

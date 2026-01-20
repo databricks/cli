@@ -16,7 +16,7 @@ func newPipelineCmd() *cobra.Command {
 		Use:   "pipeline",
 		Short: "Initialize a Lakeflow pipeline project",
 		Args:  cobra.NoArgs,
-		Long: `Initialize a Lakeflow Declarative Pipeline project.
+		Long: `Initialize a Lakeflow Spark Declarative Pipelines project.
 
 This creates a project with:
 - Pipeline definitions in src/ directory (Python or SQL)

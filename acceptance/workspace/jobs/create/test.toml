@@ -1,14 +1,6 @@
 RecordRequests = true
 IncludeRequestHeaders = ["Authorization", "User-Agent"]
 
-[[Server]]
-Pattern = "POST /api/2.2/jobs/create"
-Response.Body = '''
-{
-    "job_id": 1111
-}
-'''
-
 [[Repls]]
 Old = "(linux|darwin|windows)"
 New = "[OS]"

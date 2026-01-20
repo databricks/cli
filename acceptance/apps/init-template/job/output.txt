@@ -65,7 +65,7 @@ resources:
             notebook_path: ../src/notebook.py
 ```
 
-**Pipelines** (Lakeflow Declarative Pipelines) - `resources/my_pipeline.pipeline.yml`:
+**Pipelines** (Lakeflow Spark Declarative Pipelines) - `resources/my_pipeline.pipeline.yml`:
 ```yaml
 resources:
   pipelines:
