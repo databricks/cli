@@ -92,10 +92,13 @@ func (c *cmdIO) Spinner(ctx context.Context) chan string {
 
 	// Create model and program
 	m := newSpinnerModel()
+	// Note: We don't let tea capture signals yet to match current behavior.
+	// This allows Ctrl-C to immediately terminate instead of being captured by Bubble Tea.
 	p := tea.NewProgram(
 		m,
 		tea.WithInput(nil),
 		tea.WithOutput(c.err),
+		tea.WithoutSignalHandler(),
 	)
 
 	// Acquire program slot (queues if another program is running)
