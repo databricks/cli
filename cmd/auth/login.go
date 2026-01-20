@@ -158,8 +158,10 @@ depends on the existing profiles you have set in your configuration file
 		if err = persistentAuth.Challenge(); err != nil {
 			return err
 		}
-		// An OAuth token has been successfully obtained at this point.
-		// We now attempt to save the current configuration as a profile in the config file.
+		// At this point, an OAuth token has been successfully minted and stored 
+		// in the CLI cache. The rest of the command focuses on:
+		// 1. Configuring cluster and serverless;
+		// 2. Saving the profile. 
 
 		var clusterID, serverlessComputeID string
 		switch {
