@@ -368,17 +368,28 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 			return err
 		}
 
-		if ch.New == nil && ch.Old == nil && ch.Remote != nil && path.IsDotString() {
+		if structdiff.IsEqual(ch.Remote, ch.New) {
+			ch.Action = deployplan.Skip
+			ch.Reason = deployplan.ReasonRemoteAlreadySet
+		} else if isEmptySlice(ch.Old, ch.New, ch.Remote) {
+			// Empty slice in config should not cause drift when remote has values
+			ch.Action = deployplan.Skip
+			ch.Reason = deployplan.ReasonEmptySlice
+		} else if isEmptyMap(ch.Old, ch.New, ch.Remote) {
+			// Empty map in config should not cause drift when remote has values
+			ch.Action = deployplan.Skip
+			ch.Reason = deployplan.ReasonEmptyMap
+		} else if action := shouldIgnore(cfg, pathString); action != deployplan.Undefined {
+			ch.Action = action
+			ch.Reason = deployplan.ReasonBuiltinRule
+		} else if ch.New == nil && ch.Old == nil && ch.Remote != nil && path.IsDotString() {
 			// The field was not set by us, but comes from the remote state.
 			// This could either be server-side default or a policy.
 			// In any case, this is not a change we should react to.
 			// Note, we only consider struct fields here. Adding/removing elements to/from maps and slices should trigger updates.
 			ch.Action = deployplan.Skip
 			ch.Reason = deployplan.ReasonServerSideDefault
-		} else if structdiff.IsEqual(ch.Remote, ch.New) {
-			ch.Action = deployplan.Skip
-			ch.Reason = deployplan.ReasonRemoteAlreadySet
-		} else if action := getActionFromConfig(cfg, pathString); action != deployplan.Undefined {
+		} else if action := shouldUpdateOrRecreate(cfg, pathString); action != deployplan.Undefined {
 			ch.Action = action
 			ch.Reason = deployplan.ReasonBuiltinRule
 		} else {
@@ -394,9 +405,7 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 	return nil
 }
 
-// getActionFromConfig returns the action for a field path based on resource config.
-// Returns Undefined if no config applies.
-func getActionFromConfig(cfg *dresources.ResourceLifecycleConfig, pathString string) deployplan.ActionType {
+func shouldIgnore(cfg *dresources.ResourceLifecycleConfig, pathString string) deployplan.ActionType {
 	if cfg == nil {
 		return deployplan.Undefined
 	}
@@ -404,6 +413,13 @@ func getActionFromConfig(cfg *dresources.ResourceLifecycleConfig, pathString str
 		if structpath.HasPrefix(pathString, p.String()) {
 			return deployplan.Skip
 		}
+	}
+	return deployplan.Undefined
+}
+
+func shouldUpdateOrRecreate(cfg *dresources.ResourceLifecycleConfig, pathString string) deployplan.ActionType {
+	if cfg == nil {
+		return deployplan.Undefined
 	}
 	for _, p := range cfg.RecreateOnChanges {
 		if structpath.HasPrefix(pathString, p.String()) {
@@ -416,6 +432,36 @@ func getActionFromConfig(cfg *dresources.ResourceLifecycleConfig, pathString str
 		}
 	}
 	return deployplan.Undefined
+}
+
+// Empty slices and maps cannot be represented in proto and because of that they cannot be represented
+// by SDK's JSON encoder. However, they can be provided by users in the config and can be represented in
+// Bundle struct (currently libs/structs and libs/dyn use ForceSendFields for maps and slices, unlike SDK).
+// Thus we get permanent drift because we see that new config is [] but in the state it is omitted.
+func isEmptySlice(values ...any) bool {
+	for _, v := range values {
+		if v == nil {
+			continue
+		}
+		rv := reflect.ValueOf(v)
+		if rv.Kind() != reflect.Slice || rv.Len() != 0 {
+			return false
+		}
+	}
+	return true
+}
+
+func isEmptyMap(values ...any) bool {
+	for _, v := range values {
+		if v == nil {
+			continue
+		}
+		rv := reflect.ValueOf(v)
+		if rv.Kind() != reflect.Map || rv.Len() != 0 {
+			return false
+		}
+	}
+	return true
 }
 
 // TODO: calling this "Local" is not right, it can resolve "id" and remote refrences for "skip" targets
