@@ -68,7 +68,7 @@
       "changes": {
         "config.auto_capture_config.schema_name": {
           "action": "recreate",
-          "reason": "field_triggers",
+          "reason": "builtin_rule",
           "old": "default",
           "new": "other_schema",
           "remote": "default"
