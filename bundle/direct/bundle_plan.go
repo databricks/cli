@@ -379,6 +379,10 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 			// Empty map in config should not cause drift when remote has values
 			ch.Action = deployplan.Skip
 			ch.Reason = deployplan.ReasonEmptyMap
+		} else if isEmptyStruct(ch.Old, ch.New, ch.Remote) {
+			// Empty struct in config should not cause drift when remote has values
+			ch.Action = deployplan.Skip
+			ch.Reason = deployplan.ReasonEmptyStruct
 		} else if action := shouldIgnore(cfg, pathString); action != deployplan.Undefined {
 			ch.Action = action
 			ch.Reason = deployplan.ReasonBuiltinRule
@@ -459,6 +463,45 @@ func isEmptyMap(values ...any) bool {
 		rv := reflect.ValueOf(v)
 		if rv.Kind() != reflect.Map || rv.Len() != 0 {
 			return false
+		}
+	}
+	return true
+}
+
+func isEmptyStruct(values ...any) bool {
+	for _, v := range values {
+		if v == nil {
+			continue
+		}
+		rv := reflect.ValueOf(v)
+
+		// Handle pointer to struct
+		if rv.Kind() == reflect.Ptr {
+			if rv.IsNil() {
+				continue
+			}
+			rv = rv.Elem()
+		}
+
+		// Check if it's a struct
+		if rv.Kind() != reflect.Struct {
+			return false
+		}
+
+		// Check if all fields are zero values
+		rt := rv.Type()
+		for i := range rt.NumField() {
+			field := rt.Field(i)
+
+			// Skip unexported fields
+			if !field.IsExported() {
+				continue
+			}
+
+			fieldValue := rv.Field(i)
+			if !fieldValue.IsZero() {
+				return false
+			}
 		}
 	}
 	return true
