@@ -8,7 +8,6 @@ require (
 	dario.cat/mergo v1.0.2 // BSD 3-Clause
 	github.com/BurntSushi/toml v1.6.0 // MIT
 	github.com/Masterminds/semver/v3 v3.4.0 // MIT
-	github.com/briandowns/spinner v1.23.1 // Apache 2.0
 	github.com/charmbracelet/bubbles v0.21.0 // MIT
 	github.com/charmbracelet/bubbletea v1.3.10 // MIT
 	github.com/charmbracelet/lipgloss v1.1.0 // MIT
