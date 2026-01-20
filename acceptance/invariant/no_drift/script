@@ -2,7 +2,7 @@
 # Additional checks: no internal errors / panics in validate/plan/deploy
 
 # Copy data files to test directory
-cp -r $TESTDIR/../data/* . &> LOG.cp
+cp -r "$TESTDIR/../data/." . &> LOG.cp
 
 envsubst < $TESTDIR/../configs/$INPUT_CONFIG > databricks.yml
 
