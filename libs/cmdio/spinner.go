@@ -23,10 +23,10 @@ type (
 	quitMsg   struct{}
 )
 
-// newSpinnerModel creates a new spinner model with exact Brian Downs charset 11.
+// newSpinnerModel creates a new spinner model.
 func newSpinnerModel() spinnerModel {
 	s := spinner.New()
-	// CharSet 11 from briandowns/spinner: {"⣾", "⣽", "⣻", "⢿", "⡿", "⣟", "⣯", "⣷"}
+	// Braille spinner frames with 200ms timing
 	s.Spinner = spinner.Spinner{
 		Frames: []string{"⣾", "⣽", "⣻", "⢿", "⡿", "⣟", "⣯", "⣷"},
 		FPS:    time.Second / 5, // 200ms = 5 FPS
