@@ -1,5 +1,5 @@
 {
-  "plan_version": 1,
+  "plan_version": 2,
   "cli_version": "[DEV_VERSION]",
   "lineage": "[UUID]",
   "serial": 1,
@@ -46,26 +46,26 @@
         }
       },
       "changes": {
-        "local": {
-          "description": {
-            "action": "update",
-            "old": "aa_desc",
-            "new": "aa_new_desc"
-          }
+        "description": {
+          "action": "update",
+          "old": "aa_desc",
+          "new": "aa_new_desc",
+          "remote": "aa_desc"
         },
-        "remote": {
-          "email_notifications": {
-            "action": "skip",
-            "reason": "server_side_default"
-          },
-          "timeout_seconds": {
-            "action": "skip",
-            "reason": "server_side_default"
-          },
-          "webhook_notifications": {
-            "action": "skip",
-            "reason": "server_side_default"
-          }
+        "email_notifications": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": {}
+        },
+        "timeout_seconds": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": 0
+        },
+        "webhook_notifications": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": {}
         }
       }
     },
@@ -117,26 +117,26 @@
         }
       },
       "changes": {
-        "local": {
-          "description": {
-            "action": "update",
-            "old": "prefix [NUMID]",
-            "new": "new_prefix [NUMID]"
-          }
+        "description": {
+          "action": "update",
+          "old": "prefix [NUMID]",
+          "new": "new_prefix [NUMID]",
+          "remote": "prefix [NUMID]"
         },
-        "remote": {
-          "email_notifications": {
-            "action": "skip",
-            "reason": "server_side_default"
-          },
-          "timeout_seconds": {
-            "action": "skip",
-            "reason": "server_side_default"
-          },
-          "webhook_notifications": {
-            "action": "skip",
-            "reason": "server_side_default"
-          }
+        "email_notifications": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": {}
+        },
+        "timeout_seconds": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": 0
+        },
+        "webhook_notifications": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": {}
         }
       }
     },
@@ -188,26 +188,26 @@
         }
       },
       "changes": {
-        "local": {
-          "description": {
-            "action": "update",
-            "old": "prefix [NUMID]",
-            "new": "new_prefix [NUMID]"
-          }
+        "description": {
+          "action": "update",
+          "old": "prefix [NUMID]",
+          "new": "new_prefix [NUMID]",
+          "remote": "prefix [NUMID]"
         },
-        "remote": {
-          "email_notifications": {
-            "action": "skip",
-            "reason": "server_side_default"
-          },
-          "timeout_seconds": {
-            "action": "skip",
-            "reason": "server_side_default"
-          },
-          "webhook_notifications": {
-            "action": "skip",
-            "reason": "server_side_default"
-          }
+        "email_notifications": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": {}
+        },
+        "timeout_seconds": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": 0
+        },
+        "webhook_notifications": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": {}
         }
       }
     },
@@ -259,26 +259,26 @@
         }
       },
       "changes": {
-        "local": {
-          "description": {
-            "action": "update",
-            "old": "prefix [NUMID]",
-            "new": "new_prefix [NUMID]"
-          }
+        "description": {
+          "action": "update",
+          "old": "prefix [NUMID]",
+          "new": "new_prefix [NUMID]",
+          "remote": "prefix [NUMID]"
         },
-        "remote": {
-          "email_notifications": {
-            "action": "skip",
-            "reason": "server_side_default"
-          },
-          "timeout_seconds": {
-            "action": "skip",
-            "reason": "server_side_default"
-          },
-          "webhook_notifications": {
-            "action": "skip",
-            "reason": "server_side_default"
-          }
+        "email_notifications": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": {}
+        },
+        "timeout_seconds": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": 0
+        },
+        "webhook_notifications": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": {}
         }
       }
     },
@@ -330,26 +330,26 @@
         }
       },
       "changes": {
-        "local": {
-          "description": {
-            "action": "update",
-            "old": "prefix [NUMID]",
-            "new": "new_prefix [NUMID]"
-          }
+        "description": {
+          "action": "update",
+          "old": "prefix [NUMID]",
+          "new": "new_prefix [NUMID]",
+          "remote": "prefix [NUMID]"
         },
-        "remote": {
-          "email_notifications": {
-            "action": "skip",
-            "reason": "server_side_default"
-          },
-          "timeout_seconds": {
-            "action": "skip",
-            "reason": "server_side_default"
-          },
-          "webhook_notifications": {
-            "action": "skip",
-            "reason": "server_side_default"
-          }
+        "email_notifications": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": {}
+        },
+        "timeout_seconds": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": 0
+        },
+        "webhook_notifications": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": {}
         }
       }
     }

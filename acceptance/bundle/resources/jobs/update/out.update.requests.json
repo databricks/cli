@@ -2,7 +2,7 @@
   "method": "POST",
   "path": "/api/2.2/jobs/reset",
   "body": {
-    "job_id": [JOB_ID],
+    "job_id": [FOO_ID],
     "new_settings": {
       "deployment": {
         "kind": "BUNDLE",

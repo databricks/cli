@@ -1,5 +1,5 @@
 {
-  "plan_version": 1,
+  "plan_version": 2,
   "cli_version": "[DEV_VERSION]",
   "lineage": "[UUID]",
   "serial": 1,
@@ -52,8 +52,11 @@
           "creator": "[USERNAME]",
           "id": "[UUID]",
           "name": "[ENDPOINT_ID]",
+          "permission_level": "CAN_MANAGE",
+          "route_optimized": false,
           "state": {
-            "config_update": "NOT_UPDATING"
+            "config_update": "NOT_UPDATING",
+            "ready": "NOT_READY"
           },
           "tags": [
             {
@@ -65,12 +68,16 @@
         "endpoint_id": "[UUID]"
       },
       "changes": {
-        "local": {
-          "tags[0].value": {
-            "action": "update",
-            "old": "my-team-one",
-            "new": "my-team-two"
-          }
+        "route_optimized": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": false
+        },
+        "tags[0].value": {
+          "action": "update",
+          "old": "my-team-one",
+          "new": "my-team-two",
+          "remote": "my-team-one"
         }
       }
     }

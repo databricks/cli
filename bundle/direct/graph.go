@@ -23,7 +23,7 @@ func makeGraph(plan *deployplan.Plan) (*dagrun.Graph, error) {
 			continue
 		}
 
-		isDelete := entry.Action == deployplan.ActionTypeDelete.String()
+		isDelete := entry.Action == deployplan.Delete
 
 		for _, dep := range entry.DependsOn {
 			if _, exists := plan.Plan[dep.Node]; exists {

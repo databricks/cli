@@ -1,0 +1,6 @@
+resources:
+  alerts:
+    test_alert:
+      display_name: "test alert"
+      warehouse_id: [TEST_DEFAULT_WAREHOUSE_ID]
+      file_path: ../alert/test_alert.dbalert.json

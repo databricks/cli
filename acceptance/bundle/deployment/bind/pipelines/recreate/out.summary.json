@@ -1,0 +1,23 @@
+{
+  "pipelines": {
+    "foo": {
+      "channel": "CURRENT",
+      "deployment": {
+        "kind": "BUNDLE",
+        "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-recreate-[UNIQUE_NAME]/default/state/metadata.json"
+      },
+      "edition": "ADVANCED",
+      "id": "[NEW_PIPELINE_ID]",
+      "libraries": [
+        {
+          "notebook": {
+            "path": "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-recreate-[UNIQUE_NAME]/default/files/nb"
+          }
+        }
+      ],
+      "name": "test-pipeline-[UNIQUE_NAME]",
+      "storage": "/Shared/new_storage",
+      "url": "[DATABRICKS_URL]/pipelines/[NEW_PIPELINE_ID]?o=[NUMID]"
+    }
+  }
+}

@@ -3,6 +3,11 @@ Cloud = true
 RecordRequests = false
 Ignore = [".databricks"]
 
+# Alert tests timeout during bundle deploy (hang at file upload for 50+ minutes).
+# Use aggressive 5-minute timeout until the issue is resolved.
+# See: https://github.com/databricks/cli/issues/4221
+TimeoutCloud = "5m"
+
 # redact ?o=[NUMID]. Different clouds can have different URL serialization, like [DATABRICKS_URL]/sql/alerts-v2/[ALERT_ID] vs [DATABRICKS_URL]/sql/alerts-v2/[ALERT_ID]?o=[NUMID].
 [[Repls]]
 Old = '\?o=\d+'

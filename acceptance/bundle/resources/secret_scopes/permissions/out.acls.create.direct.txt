@@ -1,4 +1,0 @@
-{"permission":"MANAGE","principal":"[USERNAME]"}
-{"permission":"READ","principal":"deco-test-user@databricks.com"}
-{"permission":"WRITE","principal":"[TEST_SP_APPLICATION_ID]"}
-{"permission":"WRITE","principal":"scopes-permissions-group-[UNIQUE_NAME]"}

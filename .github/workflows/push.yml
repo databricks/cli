@@ -161,7 +161,8 @@ jobs:
         os:
           - macos-latest
           - ubuntu-latest
-          - windows-latest
+          # The Windows tests are broken; see https://github.com/databricks/cli/pull/4024.
+          # - windows-latest
 
     steps:
       - name: Checkout repository and submodules
@@ -175,38 +176,6 @@ jobs:
       - name: Run tests
         run: |
           make test-exp-aitools
-
-  test-exp-apps-mcp:
-    needs:
-      - cleanups
-      - testmask
-
-    # Only run if the target is in the list of targets from testmask
-    if: ${{ contains(fromJSON(needs.testmask.outputs.targets), 'test-exp-apps-mcp') }}
-    name: "make test-exp-apps-mcp"
-    runs-on: ${{ matrix.os }}
-
-    strategy:
-      fail-fast: false
-      matrix:
-        os:
-          - macos-latest
-          - ubuntu-latest
-          # The Windows tests are broken; see https://github.com/databricks/cli/pull/4024.
-          # - windows-latest
-
-    steps:
-      - name: Checkout repository and submodules
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-
-      - name: Setup build environment
-        uses: ./.github/actions/setup-build-environment
-        with:
-          cache-key: test-exp-apps-mcp
-
-      - name: Run tests
-        run: |
-          make test-exp-apps-mcp
 
   test-exp-ssh:
     needs:
@@ -283,7 +252,6 @@ jobs:
     needs:
       - test
       - test-exp-aitools
-      - test-exp-apps-mcp
       - test-exp-ssh
       - test-pipelines
 

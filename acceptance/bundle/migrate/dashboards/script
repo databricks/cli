@@ -1,6 +1,6 @@
 trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy
-DASHBOARD_ID=$(DATABRICKS_BUNDLE_ENGINE= $CLI bundle summary --output json | jq -r '.resources.dashboards.dashboard1.id')
-echo "$DASHBOARD_ID:DASHBOARD_ID" >> ACC_REPLS
+# Add all resource IDs to runtime replacements to avoid pattern matching ambiguity
+replace_ids.py
 print_state.py > out.original_state.json
 
 trace $CLI bundle deployment migrate 2>&1 | contains.py 'Migrated 1 resources'

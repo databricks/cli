@@ -87,8 +87,10 @@ func newCreate() *cobra.Command {
 	// TODO: complex arg: compute_status
 	cmd.Flags().StringVar(&createReq.App.Description, "description", createReq.App.Description, `The description of the app.`)
 	// TODO: array: effective_user_api_scopes
+	// TODO: complex arg: git_repository
 	// TODO: complex arg: pending_deployment
 	// TODO: array: resources
+	cmd.Flags().StringVar(&createReq.App.UsagePolicyId, "usage-policy-id", createReq.App.UsagePolicyId, ``)
 	// TODO: array: user_api_scopes
 
 	cmd.Use = "create NAME"
@@ -375,8 +377,11 @@ func newDeploy() *cobra.Command {
 
 	cmd.Flags().Var(&deployJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	// TODO: array: command
 	// TODO: complex arg: deployment_artifacts
 	cmd.Flags().StringVar(&deployReq.AppDeployment.DeploymentId, "deployment-id", deployReq.AppDeployment.DeploymentId, `The unique id of the deployment.`)
+	// TODO: array: env_vars
+	// TODO: complex arg: git_source
 	cmd.Flags().Var(&deployReq.AppDeployment.Mode, "mode", `The mode of which the deployment will manage the source code. Supported values: [AUTO_SYNC, SNAPSHOT]`)
 	cmd.Flags().StringVar(&deployReq.AppDeployment.SourceCodePath, "source-code-path", deployReq.AppDeployment.SourceCodePath, `The workspace file system path of the source code used to create the app deployment.`)
 	// TODO: complex arg: status
@@ -1107,8 +1112,10 @@ func newUpdate() *cobra.Command {
 	// TODO: complex arg: compute_status
 	cmd.Flags().StringVar(&updateReq.App.Description, "description", updateReq.App.Description, `The description of the app.`)
 	// TODO: array: effective_user_api_scopes
+	// TODO: complex arg: git_repository
 	// TODO: complex arg: pending_deployment
 	// TODO: array: resources
+	cmd.Flags().StringVar(&updateReq.App.UsagePolicyId, "usage-policy-id", updateReq.App.UsagePolicyId, ``)
 	// TODO: array: user_api_scopes
 
 	cmd.Use = "update NAME"

@@ -1,0 +1,13 @@
+Cloud = true
+Local = false
+
+# Alert tests timeout during bundle deploy (hang at file upload for 50+ minutes).
+# Use aggressive 5-minute timeout until the issue is resolved.
+# See: https://github.com/databricks/cli/issues/4221
+TimeoutCloud = "5m"
+
+[Env]
+# MSYS2 automatically converts absolute paths like /Users/$username/$UNIQUE_NAME to
+# C:/Program Files/Git/Users/$username/UNIQUE_NAME before passing it to the CLI
+# Setting this environment variable prevents that conversion on windows.
+MSYS_NO_PATHCONV = "1"

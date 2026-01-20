@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
@@ -49,7 +48,7 @@ func (r *ResourceVolume) DoCreate(ctx context.Context, config *catalog.CreateVol
 	return response.FullName, response, nil
 }
 
-func (r *ResourceVolume) DoUpdate(ctx context.Context, id string, config *catalog.CreateVolumeRequestContent, _ *Changes) (*catalog.VolumeInfo, error) {
+func (r *ResourceVolume) DoUpdate(ctx context.Context, id string, config *catalog.CreateVolumeRequestContent, _ Changes) (*catalog.VolumeInfo, error) {
 	updateRequest := catalog.UpdateVolumeRequestContent{
 		Comment: config.Comment,
 		Name:    id,
@@ -111,16 +110,6 @@ func (r *ResourceVolume) DoUpdateWithID(ctx context.Context, id string, config *
 
 func (r *ResourceVolume) DoDelete(ctx context.Context, id string) error {
 	return r.client.Volumes.DeleteByName(ctx, id)
-}
-
-func (*ResourceVolume) FieldTriggers(_ bool) map[string]deployplan.ActionType {
-	return map[string]deployplan.ActionType{
-		"catalog_name":     deployplan.ActionTypeRecreate,
-		"schema_name":      deployplan.ActionTypeRecreate,
-		"storage_location": deployplan.ActionTypeRecreate,
-		"volume_type":      deployplan.ActionTypeRecreate,
-		"name":             deployplan.ActionTypeUpdateWithID,
-	}
 }
 
 func getNameFromID(id string) (string, error) {

@@ -32,14 +32,19 @@ func (s *FakeWorkspace) SecretsAclsPut(req Request) Response {
 		}
 	}
 
-	// If the ACL already exists, delete it first.
-	for _, acl := range s.Acls[request.Scope] {
+	// If the ACL already exists, update it in place
+	scopeAcls := s.Acls[request.Scope]
+	for i, acl := range scopeAcls {
 		if acl.Principal == request.Principal {
-			delete(s.Acls, request.Scope)
-			break
+			s.Acls[request.Scope][i] = workspace.AclItem{
+				Principal:  request.Principal,
+				Permission: request.Permission,
+			}
+			return Response{}
 		}
 	}
 
+	// Otherwise, add a new ACL
 	s.Acls[request.Scope] = append(s.Acls[request.Scope], workspace.AclItem{
 		Principal:  request.Principal,
 		Permission: request.Permission,

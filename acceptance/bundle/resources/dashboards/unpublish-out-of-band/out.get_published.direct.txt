@@ -1,0 +1,8 @@
+
+>>> errcode [CLI] lakeview get-published [DASHBOARD1_ID]
+{
+  "display_name":"test bundle-deploy-dashboard [UNIQUE_NAME]",
+  "embed_credentials":false,
+  "revision_create_time":"[TIMESTAMP]",
+  "warehouse_id":"[TEST_DEFAULT_WAREHOUSE_ID]"
+}

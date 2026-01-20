@@ -1,20 +1,15 @@
 # NEXT CHANGELOG
 
-## Release v0.282.0
+## Release v0.284.0
 
 ### Notable Changes
 
 ### CLI
-* Skip non-exportable objects (e.g., `MLFLOW_EXPERIMENT`) during `workspace export-dir` instead of failing ([#4081](https://github.com/databricks/cli/issues/4081))
-* Allow domain_friendly_name to be used in name_prefix in development mode ([#4173](https://github.com/databricks/cli/pull/4173))
 
 ### Bundles
-* Pass SYSTEM_ACCESSTOKEN from env to the Terraform provider ([#4135](https://github.com/databricks/cli/pull/4135))
-* Added missing schema grants privileges ([#4139](https://github.com/databricks/cli/pull/4139))
-* Fix app deployment failure when app is in `DELETING` state ([#4176](https://github.com/databricks/cli/pull/4176))
-* Add `ipykernel` to the `default` template to enable Databricks Connect notebooks in Cursor/VS Code ([#4164](https://github.com/databricks/cli/pull/4164))
-* Add interactive SQL warehouse picker to `default-sql` and `dbt-sql` bundle templates ([#4170](https://github.com/databricks/cli/pull/4170))
-* Add `name`, `target` and `mode` fields to the deployment metadata file ([#4180](https://github.com/databricks/cli/pull/4180))
+* Pass additional Azure DevOps `SYSTEM_*` environment variables to Terraform for OIDC authentication: `SYSTEM_COLLECTIONURI`, `SYSTEM_DEFINITIONID`, `SYSTEM_HOSTTYPE`, `SYSTEM_JOBID`, `SYSTEM_TEAMPROJECT` ([#4318](https://github.com/databricks/cli/pull/4318))
+* Add support for valueFrom property (similar to app.yaml) inside Apps config field in bundle configuration ([#4297](https://github.com/databricks/cli/pull/4297))
+* engine/direct: Support bind & unbind. ([#4279](https://github.com/databricks/cli/pull/4279))
 * Log artifact build output in debug mode ([#4208](https://github.com/databricks/cli/pull/4208))
 
 ### Dependency updates

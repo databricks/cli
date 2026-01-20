@@ -26,7 +26,7 @@
         "kind": "BUNDLE",
         "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
       },
-      "description": "depends on foo id [UUID]",
+      "description": "depends on foo id [FOO_ID_2]",
       "edit_mode": "UI_LOCKED",
       "format": "MULTI_TASK",
       "max_concurrent_runs": 1,

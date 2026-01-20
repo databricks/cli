@@ -65,7 +65,7 @@ DIFF  dashboards/create/out.requests.destroy.direct.json
 +  {
 +    "body": {},
 +    "method": "PUT",
-+    "path": "/api/2.0/permissions/dashboards/[DASHBOARD_ID]"
++    "path": "/api/2.0/permissions/dashboards/[FOO_ID]"
 +  }
 +]
 MATCH database_instances/current_can_manage/out.requests.deploy.direct.json
@@ -96,7 +96,7 @@ DIFF  experiments/current_can_manage/out.requests.destroy.direct.json
 +  {
 +    "body": {},
 +    "method": "PUT",
-+    "path": "/api/2.0/permissions/experiments/1000"
++    "path": "/api/2.0/permissions/experiments/[NUMID]"
 +  }
 +]
 MATCH jobs/current_can_manage/out.requests.deploy.direct.json
@@ -276,7 +276,7 @@ DIFF  jobs/update/out.requests_delete_all.direct.json
 +      ]
 +    },
 +    "method": "PUT",
-+    "path": "/api/2.0/permissions/jobs/[JOB_ID]"
++    "path": "/api/2.0/permissions/jobs/[JOB_WITH_PERMISSIONS_ID]"
 +  }
 +]
 DIFF  jobs/update/out.requests_destroy.direct.json
@@ -294,11 +294,11 @@ DIFF  jobs/update/out.requests_destroy.direct.json
 +      ]
 +    },
 +    "method": "PUT",
-+    "path": "/api/2.0/permissions/jobs/[JOB_ID]"
++    "path": "/api/2.0/permissions/jobs/[JOB_WITH_PERMISSIONS_ID]"
 +  },
    {
      "body": {
-       "job_id": "[JOB_ID]"
+       "job_id": "[JOB_WITH_PERMISSIONS_ID]"
 EXACT jobs/update/out.requests_set_empty.direct.json
 MATCH jobs/viewers/out.requests.deploy.direct.json
 DIFF  jobs/viewers/out.requests.destroy.direct.json

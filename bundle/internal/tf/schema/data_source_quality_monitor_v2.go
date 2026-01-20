@@ -3,8 +3,9 @@
 package schema
 
 type DataSourceQualityMonitorV2AnomalyDetectionConfig struct {
-	LastRunId       string `json:"last_run_id,omitempty"`
-	LatestRunStatus string `json:"latest_run_status,omitempty"`
+	ExcludedTableFullNames []string `json:"excluded_table_full_names,omitempty"`
+	LastRunId              string   `json:"last_run_id,omitempty"`
+	LatestRunStatus        string   `json:"latest_run_status,omitempty"`
 }
 
 type DataSourceQualityMonitorV2 struct {

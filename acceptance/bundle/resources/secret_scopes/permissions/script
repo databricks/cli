@@ -41,8 +41,7 @@ trace $CLI bundle deploy
 scope_name=$($CLI bundle summary --output json | jq -r '.resources.secret_scopes.my_scope.name')
 
 trace $CLI secrets list-scopes -o json | jq ".[] | select(.name == \"$scope_name\")"
-
-trace $CLI secrets list-acls $scope_name | jq -c '.[]' | sort > out.acls.create.$DATABRICKS_BUNDLE_ENGINE.txt
+trace $CLI secrets list-acls $scope_name | jq -c '.[]' | sort
 
 title "update permissions (remove sp, change permission for user, add users and remove deco-test-group)"
 cat > databricks.yml.tmpl <<EOF
@@ -63,7 +62,7 @@ EOF
 envsubst < databricks.yml.tmpl > databricks.yml
 trace $CLI bundle plan > out.plan.update.$DATABRICKS_BUNDLE_ENGINE.txt
 trace $CLI bundle deploy
-trace $CLI secrets list-acls $scope_name | jq -c '.[]' | sort > out.acls.update.$DATABRICKS_BUNDLE_ENGINE.txt
+trace $CLI secrets list-acls $scope_name | jq -c '.[]' | sort
 
 title "change scope name (should recreate scope and update permissions)"
 export SECRET_SCOPE_NAME="test-scope-permissions-$UNIQUE_NAME-2"
@@ -72,4 +71,4 @@ trace $CLI bundle plan > out.plan.recreate.$DATABRICKS_BUNDLE_ENGINE.txt
 trace $CLI bundle deploy
 scope_name=$($CLI bundle summary --output json | jq -r '.resources.secret_scopes.my_scope.name')
 trace $CLI secrets list-scopes -o json | jq ".[] | select(.name == \"$scope_name\")"
-trace $CLI secrets list-acls $scope_name | jq -c '.[]' | sort > out.acls.recreate.$DATABRICKS_BUNDLE_ENGINE.txt
+trace $CLI secrets list-acls $scope_name | jq -c '.[]' | sort
