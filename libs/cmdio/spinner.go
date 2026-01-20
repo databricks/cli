@@ -112,16 +112,12 @@ func (c *cmdIO) Spinner(ctx context.Context) chan string {
 	var wg sync.WaitGroup
 
 	// Start program in background
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		_, _ = p.Run()
-	}()
+	})
 
 	// Bridge goroutine: channel -> tea messages
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		defer p.Send(quitMsg{})
 
 		for {
@@ -136,7 +132,7 @@ func (c *cmdIO) Spinner(ctx context.Context) chan string {
 				p.Send(suffixMsg(msg))
 			}
 		}
-	}()
+	})
 
 	// Wait for both goroutines, then release
 	go func() {
