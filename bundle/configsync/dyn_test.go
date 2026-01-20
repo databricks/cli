@@ -128,8 +128,10 @@ func TestResolveSelectors_SelectorOnNonArray(t *testing.T) {
 	ctx := logdiag.InitContext(context.Background())
 	tmpDir := t.TempDir()
 
-	yamlContent := `job:
-  name: "Test Job"
+	yamlContent := `resources:
+		jobs:
+			test_job:
+      	name: "Test Job"
 `
 	yamlPath := filepath.Join(tmpDir, "databricks.yml")
 	err := os.WriteFile(yamlPath, []byte(yamlContent), 0o644)
@@ -140,7 +142,7 @@ func TestResolveSelectors_SelectorOnNonArray(t *testing.T) {
 
 	mutator.DefaultMutators(ctx, b)
 
-	_, err = resolveSelectors("job[task_key='main'].name", b)
+	_, err = resolveSelectors("resources.jobs.test_job[task_key='main'].name", b)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "cannot apply [task_key='main'] selector to non-array value")
 }

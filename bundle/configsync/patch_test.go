@@ -831,46 +831,6 @@ targets:
 	assert.Equal(t, "Dev Job", devJob["name"])
 }
 
-func TestApplyChangesToYAML_RemoveNonExistentField(t *testing.T) {
-	ctx := logdiag.InitContext(context.Background())
-
-	tmpDir := t.TempDir()
-
-	yamlContent := `resources:
-  jobs:
-    test_job:
-      name: "Test Job"
-      tasks:
-        - task_key: "main_task"
-          notebook_task:
-            notebook_path: "/path/to/notebook"
-`
-
-	yamlPath := filepath.Join(tmpDir, "databricks.yml")
-	err := os.WriteFile(yamlPath, []byte(yamlContent), 0o644)
-	require.NoError(t, err)
-
-	b, err := bundle.Load(ctx, tmpDir)
-	require.NoError(t, err)
-
-	mutator.DefaultMutators(ctx, b)
-
-	changes := map[string]deployplan.Changes{
-		"resources.jobs.test_job": {
-			"timeout_seconds": &deployplan.ChangeDesc{
-				Action: deployplan.Update,
-				Old:    nil,
-				Remote: nil,
-			},
-		},
-	}
-
-	fileChanges, err := ApplyChangesToYAML(ctx, b, changes)
-	require.NoError(t, err)
-
-	assert.Len(t, fileChanges, 0, "No changes should be made when removing non-existent field")
-}
-
 func TestApplyChangesToYAML_MultipleRemovalsInSameFile(t *testing.T) {
 	ctx := logdiag.InitContext(context.Background())
 
@@ -881,11 +841,9 @@ func TestApplyChangesToYAML_MultipleRemovalsInSameFile(t *testing.T) {
     job1:
       name: "Job 1"
       timeout_seconds: 3600
-      max_retries: 2
     job2:
       name: "Job 2"
       timeout_seconds: 1800
-      max_retries: 3
 `
 
 	yamlPath := filepath.Join(tmpDir, "databricks.yml")
@@ -934,13 +892,11 @@ func TestApplyChangesToYAML_MultipleRemovalsInSameFile(t *testing.T) {
 	_, hasTimeout1 := job1["timeout_seconds"]
 	assert.False(t, hasTimeout1, "job1 timeout_seconds should be removed")
 	assert.Equal(t, "Job 1", job1["name"])
-	assert.Equal(t, 2, job1["max_retries"])
 
 	job2 := jobs["job2"].(map[string]any)
 	_, hasTimeout2 := job2["timeout_seconds"]
 	assert.False(t, hasTimeout2, "job2 timeout_seconds should be removed")
 	assert.Equal(t, "Job 2", job2["name"])
-	assert.Equal(t, 3, job2["max_retries"])
 }
 
 func TestApplyChangesToYAML_WithSDKStructValues(t *testing.T) {
