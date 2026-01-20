@@ -158,20 +158,23 @@ depends on the existing profiles you have set in your configuration file
 		if err = persistentAuth.Challenge(); err != nil {
 			return err
 		}
-		// At this point, an OAuth token has been successfully minted and stored 
+		// At this point, an OAuth token has been successfully minted and stored
 		// in the CLI cache. The rest of the command focuses on:
 		// 1. Configuring cluster and serverless;
-		// 2. Saving the profile. 
+		// 2. Saving the profile.
 
 		var clusterID, serverlessComputeID string
 		switch {
 		case configureCluster:
-			// Create a workspace client with direct credentials (not from a profile)
-			// because the profile hasn't been saved yet.
+			// Get the token we just minted directly instead of spawning a child CLI process.
+			token, err := persistentAuth.Token()
+			if err != nil {
+				return err
+			}
 			w, err := databricks.NewWorkspaceClient(&databricks.Config{
 				Host:      authArguments.Host,
 				AccountID: authArguments.AccountID,
-				AuthType:  "databricks-cli",
+				Token:     token.AccessToken,
 			})
 			if err != nil {
 				return err
