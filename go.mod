@@ -22,13 +22,13 @@ require (
 	github.com/manifoldco/promptui v0.9.0 // BSD-3-Clause
 	github.com/mattn/go-isatty v0.0.20 // MIT
 	github.com/nwidger/jsoncolor v0.3.2 // MIT
+	github.com/palantir/pkg/yamlpatch v1.5.0 // BSD-3-Clause
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // BSD-2-Clause
 	github.com/quasilyte/go-ruleguard/dsl v0.3.22 // BSD 3-Clause
 	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06 // MIT
 	github.com/spf13/cobra v1.10.1 // Apache 2.0
 	github.com/spf13/pflag v1.0.10 // BSD-3-Clause
 	github.com/stretchr/testify v1.11.1 // MIT
-	github.com/palantir/pkg/yamlpatch v1.5.0 // BSD-3-Clause
 	golang.org/x/crypto v0.46.0 // BSD-3-Clause
 	golang.org/x/exp v0.0.0-20250911091902-df9299821621
 	golang.org/x/mod v0.31.0
