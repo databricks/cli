@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"slices"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
@@ -21,6 +22,7 @@ var authTemplate = `{{"Host:" | bold}} {{.Status.Details.Host}}
 {{"User:" | bold}} {{.Status.Username}}
 {{- end}}
 {{"Authenticated with:" | bold}} {{.Status.Details.AuthType}}
+{{"Scopes:" | bold}} {{if (index .Status.Details.Configuration "scopes")}}{{(index .Status.Details.Configuration "scopes").Value}}{{else}}all-apis{{end}}
 -----
 ` + configurationTemplate
 
@@ -95,7 +97,7 @@ func getAuthStatus(cmd *cobra.Command, args []string, showSensitive bool, fn try
 		if err != nil {
 			return &authStatus{
 				Status:  "error",
-				Error:   err,
+				Error:   wrapAuthErrorWithScopeContext(err, cfg),
 				Details: getAuthDetails(cmd, cfg, showSensitive),
 			}, nil
 		}
@@ -115,7 +117,7 @@ func getAuthStatus(cmd *cobra.Command, args []string, showSensitive bool, fn try
 	if err != nil {
 		return &authStatus{
 			Status:  "error",
-			Error:   err,
+			Error:   wrapAuthErrorWithScopeContext(err, cfg),
 			Details: getAuthDetails(cmd, cfg, showSensitive),
 		}, nil
 	}
@@ -192,4 +194,19 @@ func getAuthDetails(cmd *cobra.Command, cfg *config.Config, showSensitive bool) 
 	}
 
 	return details
+}
+
+// wrapAuthErrorWithScopeContext adds context to an authentication error when the
+// configuration does not include the 'all-apis' scope, which may cause validation
+// API calls to fail even though the token itself is valid for its intended purpose.
+func wrapAuthErrorWithScopeContext(err error, cfg *config.Config) error {
+	if cfg == nil {
+		return err
+	}
+	scopes := cfg.GetScopes()
+	if slices.Contains(scopes, "all-apis") {
+		return err
+	}
+	return fmt.Errorf("%w\n\nNote: The error above may be due to the use of restricted scopes. "+
+		"Your authentication may still be valid for the scopes you requested", err)
 }

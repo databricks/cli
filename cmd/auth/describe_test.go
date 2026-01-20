@@ -224,3 +224,112 @@ func TestGetAccountAuthStatus(t *testing.T) {
 	require.Equal(t, "--profile flag", status.Details.Configuration["profile"].Source.String())
 	require.False(t, status.Details.Configuration["profile"].AuthTypeMismatch)
 }
+
+func TestGetWorkspaceAuthStatusWithScopes(t *testing.T) {
+	ctx := context.Background()
+	m := mocks.NewMockWorkspaceClient(t)
+	ctx = cmdctx.SetWorkspaceClient(ctx, m.WorkspaceClient)
+
+	cmd := &cobra.Command{}
+	cmd.SetContext(ctx)
+
+	showSensitive := false
+
+	currentUserApi := m.GetMockCurrentUserAPI()
+	currentUserApi.EXPECT().Me(mock.Anything).Return(&iam.User{
+		UserName: "test-user",
+	}, nil)
+
+	cmd.Flags().String("host", "", "")
+	cmd.Flags().String("profile", "", "")
+	err := cmd.Flag("profile").Value.Set("scoped-profile")
+	require.NoError(t, err)
+	cmd.Flag("profile").Changed = true
+
+	cfg := &config.Config{
+		Profile: "scoped-profile",
+		Scopes:  []string{"jobs", "pipelines", "clusters"},
+	}
+	m.WorkspaceClient.Config = cfg
+	err = config.ConfigAttributes.Configure(cfg)
+	require.NoError(t, err)
+
+	status, err := getAuthStatus(cmd, []string{}, showSensitive, func(cmd *cobra.Command, args []string) (*config.Config, bool, error) {
+		err := config.ConfigAttributes.ResolveFromStringMap(cfg, map[string]string{
+			"host":      "https://test.com",
+			"auth_type": "databricks-cli",
+		})
+		require.NoError(t, err)
+		return cfg, false, nil
+	})
+	require.NoError(t, err)
+	require.NotNil(t, status)
+	require.Equal(t, "success", status.Status)
+	require.Equal(t, "test-user", status.Username)
+	require.Equal(t, "https://test.com", status.Details.Host)
+	require.Equal(t, "databricks-cli", status.Details.AuthType)
+
+	scopesConfig := status.Details.Configuration["scopes"]
+	require.NotNil(t, scopesConfig)
+	// Scopes are stored in the order provided in config, not sorted
+	require.Equal(t, "jobs,pipelines,clusters", scopesConfig.Value)
+}
+
+func TestWrapAuthErrorWithScopeContext(t *testing.T) {
+	originalErr := errors.New("permission denied")
+
+	t.Run("nil config returns original error", func(t *testing.T) {
+		err := wrapAuthErrorWithScopeContext(originalErr, nil)
+		require.Equal(t, originalErr, err)
+	})
+
+	t.Run("restricted scopes appends note", func(t *testing.T) {
+		cfg := &config.Config{Scopes: []string{"jobs", "pipelines"}}
+		err := wrapAuthErrorWithScopeContext(originalErr, cfg)
+
+		require.ErrorIs(t, err, originalErr)
+		require.Contains(t, err.Error(), "restricted scopes")
+		require.Contains(t, err.Error(), "authentication may still be valid")
+	})
+
+	t.Run("empty scopes treated as all-apis", func(t *testing.T) {
+		cfg := &config.Config{}
+		err := wrapAuthErrorWithScopeContext(originalErr, cfg)
+		// Empty scopes defaults to all-apis, so original error returned
+		require.Equal(t, originalErr, err)
+	})
+}
+
+func TestGetWorkspaceAuthStatusErrorWithRestrictedScopes(t *testing.T) {
+	ctx := context.Background()
+	m := mocks.NewMockWorkspaceClient(t)
+	ctx = cmdctx.SetWorkspaceClient(ctx, m.WorkspaceClient)
+
+	cmd := &cobra.Command{}
+	cmd.SetContext(ctx)
+
+	// Simulate API failure due to restricted scopes
+	currentUserApi := m.GetMockCurrentUserAPI()
+	currentUserApi.EXPECT().Me(mock.Anything).Return(nil, errors.New("permission denied"))
+
+	cmd.Flags().String("host", "", "")
+	cmd.Flags().String("profile", "", "")
+
+	cfg := &config.Config{
+		Profile: "scoped-profile",
+		Scopes:  []string{"jobs", "pipelines"},
+	}
+	m.WorkspaceClient.Config = cfg
+
+	status, err := getAuthStatus(cmd, []string{}, false, func(cmd *cobra.Command, args []string) (*config.Config, bool, error) {
+		_ = config.ConfigAttributes.ResolveFromStringMap(cfg, map[string]string{
+			"host":      "https://test.com",
+			"auth_type": "databricks-cli",
+		})
+		return cfg, false, nil
+	})
+	require.NoError(t, err)
+	require.Equal(t, "error", status.Status)
+	require.Contains(t, status.Error.Error(), "permission denied")
+	require.Contains(t, status.Error.Error(), "restricted scopes")
+}
