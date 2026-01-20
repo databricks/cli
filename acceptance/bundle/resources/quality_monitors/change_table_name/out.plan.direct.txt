@@ -1,0 +1,5 @@
+
+>>> errcode [CLI] bundle plan
+recreate quality_monitors.monitor1
+
+Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged

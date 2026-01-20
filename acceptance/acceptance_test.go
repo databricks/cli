@@ -216,7 +216,11 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	repls.SetPath(execPath, "[CLI]")
 
 	pipelinesPath := filepath.Join(buildDir, "pipelines") + exeSuffix
-	err = copyFile(execPath, pipelinesPath)
+	if _, err := os.Stat(pipelinesPath); err == nil {
+		err := os.Remove(pipelinesPath)
+		require.NoError(t, err)
+	}
+	err = os.Symlink(execPath, pipelinesPath)
 	require.NoError(t, err)
 	t.Setenv("PIPELINES", pipelinesPath)
 	repls.SetPath(pipelinesPath, "[PIPELINES]")

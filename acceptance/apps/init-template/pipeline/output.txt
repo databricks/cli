@@ -49,11 +49,11 @@ Run unit tests locally with: `uv run pytest`
 - Task types: https://docs.databricks.com/jobs/configure-task
 - Databricks Asset Bundles / yml format examples: https://docs.databricks.com/dev-tools/bundles/examples
 
-## Lakeflow Declarative Pipelines Development
+## Lakeflow Spark Declarative Pipelines Development
 
 This guidance is for developing pipelines in this project.
 
-Lakeflow Declarative Pipelines (formerly Delta Live Tables) is a framework for building batch and streaming data pipelines.
+Lakeflow Spark Declarative Pipelines (formerly Delta Live Tables) is a framework for building batch and streaming data pipelines.
 
 ### Project Structure
 - `src/` - Pipeline transformations (Python or SQL)
@@ -100,7 +100,7 @@ resources:
 ```
 
 ### Documentation
-- Lakeflow Declarative Pipelines: https://docs.databricks.com/ldp
+- Lakeflow Spark Declarative Pipelines: https://docs.databricks.com/ldp
 - Databricks Asset Bundles / yml format examples: https://docs.databricks.com/dev-tools/bundles/examples
 
 ## Adding Databricks Resources
@@ -119,7 +119,7 @@ resources:
             notebook_path: ../src/notebook.py
 ```
 
-**Pipelines** (Lakeflow Declarative Pipelines) - `resources/my_pipeline.pipeline.yml`:
+**Pipelines** (Lakeflow Spark Declarative Pipelines) - `resources/my_pipeline.pipeline.yml`:
 ```yaml
 resources:
   pipelines:

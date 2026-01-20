@@ -1,1 +1,1 @@
-ENABLE_PIPELINES_CLI=1 $CLI pipelines
+$CLI pipelines

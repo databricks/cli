@@ -312,7 +312,7 @@ func rejectDefinitions(ctx context.Context, b *bundle.Bundle) {
 			filename = filepath.ToSlash(loc[0].File)
 		}
 		logdiag.LogError(ctx, errors.New(filename+` seems to be formatted for open-source Spark Declarative Pipelines.
-Pipelines CLI currently only supports Lakeflow Declarative Pipelines development.
+Pipelines CLI currently only supports Lakeflow Spark Declarative Pipelines development.
 To see an example of a supported pipelines template, create a new Pipelines CLI project with "pipelines init".`))
 	}
 }

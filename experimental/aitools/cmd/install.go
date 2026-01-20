@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/experimental/aitools/lib/agents"
+	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
@@ -26,6 +27,30 @@ func newInstallCmd() *cobra.Command {
 }
 
 func runInstall(ctx context.Context) error {
+	// Check for non-interactive mode with agent detection
+	// If running in an AI agent, install automatically without prompts
+	if !cmdio.IsPromptSupported(ctx) {
+		switch agent.Product(ctx) {
+		case agent.ClaudeCode:
+			if err := agents.InstallClaude(); err != nil {
+				return err
+			}
+			cmdio.LogString(ctx, color.GreenString("✓ Installed Databricks MCP server for Claude Code"))
+			cmdio.LogString(ctx, color.YellowString("⚠️  Please restart Claude Code for changes to take effect"))
+			return nil
+		case agent.Cursor:
+			if err := agents.InstallCursor(); err != nil {
+				return err
+			}
+			cmdio.LogString(ctx, color.GreenString("✓ Installed Databricks MCP server for Cursor"))
+			cmdio.LogString(ctx, color.YellowString("⚠️  Please restart Cursor for changes to take effect"))
+			return nil
+		default:
+			// Unknown agent in non-interactive mode - show manual instructions
+			return agents.ShowCustomInstructions(ctx)
+		}
+	}
+
 	cmdio.LogString(ctx, "")
 	green := color.New(color.FgGreen).SprintFunc()
 	cmdio.LogString(ctx, " "+green("[")+"████████"+green("]")+"  Experimental Databricks AI Tools MCP server")
@@ -34,9 +59,9 @@ func runInstall(ctx context.Context) error {
 	cmdio.LogString(ctx, "")
 
 	yellow := color.New(color.FgYellow).SprintFunc()
-	cmdio.LogString(ctx, yellow("╔════════════════════════════════════════════════════════════════╗"))
-	cmdio.LogString(ctx, yellow("║  ⚠️  EXPERIMENTAL: This command may change in future versions   ║"))
-	cmdio.LogString(ctx, yellow("╚════════════════════════════════════════════════════════════════╝"))
+	cmdio.LogString(ctx, yellow("════════════════════════════════════════════════════════════════"))
+	cmdio.LogString(ctx, yellow("  ⚠️  EXPERIMENTAL: This command may change in future versions  "))
+	cmdio.LogString(ctx, yellow("════════════════════════════════════════════════════════════════"))
 	cmdio.LogString(ctx, "")
 
 	cmdio.LogString(ctx, "Which coding agents would you like to install the MCP server for?")

@@ -1,0 +1,14 @@
+resources:
+  pipelines:
+    my_pipeline:
+      name: My Pipeline
+      catalog: ${var.catalog}
+      schema: ${var.schema}
+      root_path: ../src/my_pipeline
+      serverless: true
+      libraries:
+        - glob:
+            include: ../src/my_pipeline/transformations/**
+      environment:
+        dependencies:
+          - --editable ${workspace.file_path}

@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
@@ -111,16 +110,6 @@ func (r *ResourceVolume) DoUpdateWithID(ctx context.Context, id string, config *
 
 func (r *ResourceVolume) DoDelete(ctx context.Context, id string) error {
 	return r.client.Volumes.DeleteByName(ctx, id)
-}
-
-func (*ResourceVolume) FieldTriggers() map[string]deployplan.ActionType {
-	return map[string]deployplan.ActionType{
-		"catalog_name":     deployplan.Recreate,
-		"schema_name":      deployplan.Recreate,
-		"storage_location": deployplan.Recreate,
-		"volume_type":      deployplan.Recreate,
-		"name":             deployplan.UpdateWithID,
-	}
 }
 
 func getNameFromID(id string) (string, error) {

@@ -95,6 +95,13 @@ func nextUUID() string {
 	return u.String()
 }
 
+func nextDashboardID() string {
+	var b [16]byte
+	binary.BigEndian.PutUint64(b[0:8], uint64(nextID()))
+	binary.BigEndian.PutUint64(b[8:16], uint64(nextID()))
+	return fmt.Sprintf("%032x", b)
+}
+
 type FileEntry struct {
 	Info workspace.ObjectInfo
 	Data []byte

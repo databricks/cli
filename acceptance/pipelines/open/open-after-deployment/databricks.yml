@@ -1,0 +1,7 @@
+bundle:
+  name: pipelines-open
+
+resources:
+  pipelines:
+    test-pipelines-open:
+      name: test-pipelines-open
