@@ -18,8 +18,10 @@ type spinnerModel struct {
 }
 
 // Message types for spinner updates.
-type suffixMsg string
-type quitMsg struct{}
+type (
+	suffixMsg string
+	quitMsg   struct{}
+)
 
 // newSpinnerModel creates a new spinner model with exact Brian Downs charset 11.
 func newSpinnerModel() spinnerModel {
@@ -93,12 +95,13 @@ func (c *cmdIO) Spinner(ctx context.Context) chan string {
 
 	// Create model and program
 	m := newSpinnerModel()
-	// Note: We don't let tea capture signals to match current behavior.
-	// This allows Ctrl-C to immediately terminate instead of being captured by Bubble Tea.
 	p := tea.NewProgram(
 		m,
 		tea.WithInput(nil),
 		tea.WithOutput(c.err),
+
+		// Note: We don't let tea capture signals to match current behavior.
+		// This allows Ctrl-C to immediately terminate instead of being captured by Bubble Tea.
 		tea.WithoutSignalHandler(),
 	)
 
