@@ -172,21 +172,18 @@ func (e *Executor) ExecAndCapture(ctx context.Context, command string) (*ExecOut
 	// Read stdout and stderr concurrently to avoid pipe buffer deadlock
 	var stdout, stderr bytes.Buffer
 	var wg sync.WaitGroup
-	wg.Add(2)
 
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		if cmd.Stdout() != nil {
-			io.Copy(&stdout, cmd.Stdout())
+			_, _ = io.Copy(&stdout, cmd.Stdout())
 		}
-	}()
+	})
 
-	go func() {
-		defer wg.Done()
+	wg.Go(func() {
 		if cmd.Stderr() != nil {
-			io.Copy(&stderr, cmd.Stderr())
+			_, _ = io.Copy(&stderr, cmd.Stderr())
 		}
-	}()
+	})
 
 	wg.Wait()
 
