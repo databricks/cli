@@ -48,12 +48,12 @@ var SupportedResources = map[string]any{
 
 func InitAll(client *databricks.WorkspaceClient) (map[string]*Adapter, error) {
 	result := make(map[string]*Adapter)
-	for group, resource := range SupportedResources {
-		adapter, err := NewAdapter(resource, client)
+	for resourceType, resource := range SupportedResources {
+		adapter, err := NewAdapter(resource, resourceType, client)
 		if err != nil {
-			return nil, fmt.Errorf("%s: %w", group, err)
+			return nil, fmt.Errorf("%s: %w", resourceType, err)
 		}
-		result[group] = adapter
+		result[resourceType] = adapter
 	}
 	return result, nil
 }

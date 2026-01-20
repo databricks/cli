@@ -8,7 +8,7 @@ Deployment complete!
 View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?o=[NUMID]
 
 >>> errcode [PIPELINES] destroy
-Error: please specify --auto-approve to skip interactive confirmation checks for non tty consoles
+Error: please specify --auto-approve since terminal does not support interactive prompts
 
 Exit code: 1
 

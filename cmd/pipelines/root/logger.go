@@ -28,14 +28,14 @@ type logFlags struct {
 	debug  bool
 }
 
-func (f *logFlags) makeLogHandler(opts slog.HandlerOptions) (slog.Handler, error) {
+func (f *logFlags) makeLogHandler(ctx context.Context, opts slog.HandlerOptions) (slog.Handler, error) {
 	switch f.output {
 	case flags.OutputJSON:
 		return slog.NewJSONHandler(f.file.Writer(), &opts), nil
 	case flags.OutputText:
 		w := f.file.Writer()
 		return handler.NewFriendlyHandler(w, &handler.Options{
-			Color:       cmdio.IsTTY(w),
+			Color:       cmdio.SupportsColor(ctx, w),
 			Level:       opts.Level,
 			ReplaceAttr: opts.ReplaceAttr,
 		}), nil
@@ -66,7 +66,7 @@ func (f *logFlags) initializeContext(ctx context.Context) (context.Context, erro
 		return nil, err
 	}
 
-	handler, err := f.makeLogHandler(opts)
+	handler, err := f.makeLogHandler(ctx, opts)
 	if err != nil {
 		return nil, err
 	}

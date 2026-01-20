@@ -395,7 +395,7 @@ func getBrowserFunc(cmd *cobra.Command) func(url string) error {
 		return openURLSuppressingStderr
 	case "none":
 		return func(url string) error {
-			fmt.Fprintf(cmd.OutOrStdout(), "Please complete authentication by opening this link in your browser:\n%s\n", url)
+			cmdio.LogString(cmd.Context(), "Please complete authentication by opening this link in your browser:\n"+url)
 			return nil
 		}
 	default:
