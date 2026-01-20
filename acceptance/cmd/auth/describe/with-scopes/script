@@ -1,0 +1,11 @@
+sethome "./home"
+
+# Use a fake browser that performs a GET on the authorization URL
+# and follows the redirect back to localhost.
+export BROWSER="browser.py"
+
+# Login with restricted scopes to populate the OAuth token cache
+trace $CLI auth login --host $DATABRICKS_HOST --profile scoped-profile --scopes "jobs,pipelines,clusters"
+
+# Now describe should show the scopes from the cached OAuth token
+trace $CLI auth describe --profile scoped-profile

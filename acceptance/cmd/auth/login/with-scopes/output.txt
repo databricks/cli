@@ -1,0 +1,9 @@
+
+>>> [CLI] auth login --host [DATABRICKS_URL] --profile scoped-test --scopes jobs,pipelines,clusters
+Profile scoped-test was successfully saved
+
+>>> [CLI] auth profiles
+Name         Host                    Client ID  Scopes                   Valid
+scoped-test  [DATABRICKS_URL]  -          clusters,jobs,pipelines  -
+
+Note: Validation is skipped for profiles without the 'all-apis' scope because the validation API may not be accessible with restricted scopes.

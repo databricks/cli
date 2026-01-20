@@ -1,0 +1,28 @@
+sethome "./home"
+
+# Create profiles with different scope configurations
+cat > "./home/.databrickscfg" <<EOF
+[DEFAULT]
+
+[pat]
+host = $DATABRICKS_HOST
+auth_type = pat
+token = dapi1234567890
+
+[restricted-scopes]
+host = $DATABRICKS_HOST
+scopes = jobs,pipelines
+auth_type = databricks-cli
+
+[m2m]
+host = $DATABRICKS_HOST
+scopes = sql,files
+client_id = acbd1232123
+auth_type = m2m
+
+[default-scopes]
+host = $DATABRICKS_HOST
+auth_type = databricks-cli
+EOF
+
+trace $CLI auth profiles

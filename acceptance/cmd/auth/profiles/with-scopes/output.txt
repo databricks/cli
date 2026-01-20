@@ -1,0 +1,9 @@
+
+>>> [CLI] auth profiles
+Name               Host                    Client ID    Scopes          Valid
+pat                [DATABRICKS_URL]  -            all-apis        YES
+restricted-scopes  [DATABRICKS_URL]  -            jobs,pipelines  -
+m2m                [DATABRICKS_URL]  acbd1232123  files,sql       -
+default-scopes     [DATABRICKS_URL]  -            all-apis        NO
+
+Note: Validation is skipped for profiles without the 'all-apis' scope because the validation API may not be accessible with restricted scopes.
