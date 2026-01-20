@@ -3,14 +3,14 @@ print_requests() {
     rm out.requests.txt
 }
 
-trace $PIPELINES deploy
-trace $PIPELINES run
+trace $ENTRYPOINT deploy
+trace $ENTRYPOINT run
 rm out.requests.txt
 
 title "Stopping pipeline"
-trace $PIPELINES stop
+trace $ENTRYPOINT stop
 print_requests
 
 title "Stopping pipeline with KEY, expect same output as without KEY"
-trace $PIPELINES stop my_pipeline
+trace $ENTRYPOINT stop my_pipeline
 print_requests

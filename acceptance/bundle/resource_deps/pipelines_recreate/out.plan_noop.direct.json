@@ -1,5 +1,5 @@
 {
-  "plan_version": 1,
+  "plan_version": 2,
   "cli_version": "[DEV_VERSION]",
   "lineage": "[UUID]",
   "serial": 2,
@@ -22,7 +22,7 @@
             "kind": "BUNDLE",
             "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
           },
-          "description": "depends on foo id [UUID]",
+          "description": "depends on foo id [FOO_ID_2]",
           "edit_mode": "UI_LOCKED",
           "email_notifications": {},
           "format": "MULTI_TASK",
@@ -36,19 +36,20 @@
         }
       },
       "changes": {
-        "remote": {
-          "email_notifications": {
-            "action": "skip",
-            "reason": "server_side_default"
-          },
-          "timeout_seconds": {
-            "action": "skip",
-            "reason": "server_side_default"
-          },
-          "webhook_notifications": {
-            "action": "skip",
-            "reason": "server_side_default"
-          }
+        "email_notifications": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": {}
+        },
+        "timeout_seconds": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": 0
+        },
+        "webhook_notifications": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": {}
         }
       }
     },
@@ -58,7 +59,7 @@
         "creator_user_name": "[USERNAME]",
         "last_modified": [UNIX_TIME_MILLIS][1],
         "name": "pipeline foo",
-        "pipeline_id": "[UUID]",
+        "pipeline_id": "[FOO_ID_2]",
         "run_as_user_name": "[USERNAME]",
         "spec": {
           "channel": "CURRENT",
@@ -67,7 +68,7 @@
             "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
           },
           "edition": "ADVANCED",
-          "id": "[UUID]",
+          "id": "[FOO_ID_2]",
           "name": "pipeline foo",
           "storage": "dbfs:/my-new-storage"
         },

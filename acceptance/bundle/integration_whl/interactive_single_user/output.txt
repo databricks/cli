@@ -39,7 +39,7 @@ Updating deployment state...
 Deployment complete!
 
 >>> [CLI] bundle run some_other_job
-Run URL: [DATABRICKS_URL]/?o=[NUMID]#job/[NUMID]/run/[NUMID]
+Run URL: [DATABRICKS_URL]/?o=[NUMID]#job/[SOME_OTHER_JOB_ID]/run/[NUMID]
 
 [TIMESTAMP] "[default] Test Wheel Job [UNIQUE_NAME]" RUNNING
 [TIMESTAMP] "[default] Test Wheel Job [UNIQUE_NAME]" TERMINATED SUCCESS
@@ -54,7 +54,7 @@ Updating deployment state...
 Deployment complete!
 
 >>> [CLI] bundle run some_other_job
-Run URL: [DATABRICKS_URL]/?o=[NUMID]#job/[NUMID]/run/[NUMID]
+Run URL: [DATABRICKS_URL]/?o=[NUMID]#job/[SOME_OTHER_JOB_ID]/run/[NUMID]
 
 [TIMESTAMP] "[default] Test Wheel Job [UNIQUE_NAME]" RUNNING
 [TIMESTAMP] "[default] Test Wheel Job [UNIQUE_NAME]" TERMINATED SUCCESS

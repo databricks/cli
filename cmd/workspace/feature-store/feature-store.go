@@ -71,6 +71,7 @@ func newCreateOnlineStore() *cobra.Command {
 	cmd.Flags().Var(&createOnlineStoreJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().IntVar(&createOnlineStoreReq.OnlineStore.ReadReplicaCount, "read-replica-count", createOnlineStoreReq.OnlineStore.ReadReplicaCount, `The number of read replicas for the online store.`)
+	cmd.Flags().StringVar(&createOnlineStoreReq.OnlineStore.UsagePolicyId, "usage-policy-id", createOnlineStoreReq.OnlineStore.UsagePolicyId, `The usage policy applied to the online store to track billing.`)
 
 	cmd.Use = "create-online-store NAME CAPACITY"
 	cmd.Short = `Create an Online Feature Store.`
@@ -442,6 +443,7 @@ func newUpdateOnlineStore() *cobra.Command {
 	cmd.Flags().Var(&updateOnlineStoreJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
 	cmd.Flags().IntVar(&updateOnlineStoreReq.OnlineStore.ReadReplicaCount, "read-replica-count", updateOnlineStoreReq.OnlineStore.ReadReplicaCount, `The number of read replicas for the online store.`)
+	cmd.Flags().StringVar(&updateOnlineStoreReq.OnlineStore.UsagePolicyId, "usage-policy-id", updateOnlineStoreReq.OnlineStore.UsagePolicyId, `The usage policy applied to the online store to track billing.`)
 
 	cmd.Use = "update-online-store NAME UPDATE_MASK CAPACITY"
 	cmd.Short = `Update an Online Feature Store.`

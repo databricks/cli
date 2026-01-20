@@ -74,6 +74,11 @@ func (s *FakeWorkspace) DashboardCreate(req Request) Response {
 		}
 	}
 
+	// Default to user's home directory if parent_path is not provided (matches cloud behavior)
+	if dashboard.ParentPath == "" {
+		dashboard.ParentPath = "/Users/" + s.CurrentUser().UserName
+	}
+
 	if _, ok := s.directories[dashboard.ParentPath]; !ok {
 		return Response{
 			StatusCode: 404,
@@ -224,10 +229,11 @@ func (s *FakeWorkspace) DashboardPublish(req Request) Response {
 	}
 
 	publishedDashboard := dashboards.PublishedDashboard{
-		WarehouseId:      dashboard.WarehouseId,
-		DisplayName:      dashboard.DisplayName,
-		EmbedCredentials: publishReq.EmbedCredentials,
-		ForceSendFields:  []string{"EmbedCredentials"},
+		WarehouseId:        dashboard.WarehouseId,
+		DisplayName:        dashboard.DisplayName,
+		EmbedCredentials:   publishReq.EmbedCredentials,
+		RevisionCreateTime: time.Now().UTC().Format(time.RFC3339),
+		ForceSendFields:    []string{"EmbedCredentials"},
 	}
 
 	if publishReq.WarehouseId != "" {
@@ -241,10 +247,11 @@ func (s *FakeWorkspace) DashboardPublish(req Request) Response {
 
 	return Response{
 		Body: dashboards.PublishedDashboard{
-			WarehouseId:      publishedDashboard.WarehouseId,
-			DisplayName:      publishedDashboard.DisplayName,
-			EmbedCredentials: publishedDashboard.EmbedCredentials,
-			ForceSendFields:  []string{"EmbedCredentials"},
+			WarehouseId:        publishedDashboard.WarehouseId,
+			DisplayName:        publishedDashboard.DisplayName,
+			EmbedCredentials:   publishedDashboard.EmbedCredentials,
+			RevisionCreateTime: publishedDashboard.RevisionCreateTime,
+			ForceSendFields:    []string{"EmbedCredentials"},
 		},
 	}
 }
@@ -275,5 +282,43 @@ func (s *FakeWorkspace) DashboardTrash(req Request) Response {
 
 	return Response{
 		Body: dashboard,
+	}
+}
+
+func (s *FakeWorkspace) DashboardUnpublish(req Request) Response {
+	defer s.LockUnlock()()
+
+	dashboardId := req.Vars["dashboard_id"]
+	_, ok := s.Dashboards[dashboardId]
+	if !ok {
+		return Response{
+			StatusCode: 404,
+		}
+	}
+
+	// Delete the published dashboard entry.
+	delete(s.PublishedDashboards, dashboardId)
+
+	return Response{
+		Body: "",
+	}
+}
+
+func (s *FakeWorkspace) DashboardGetPublished(req Request) Response {
+	defer s.LockUnlock()()
+
+	dashboardId := req.Vars["dashboard_id"]
+	publishedDashboard, ok := s.PublishedDashboards[dashboardId]
+	if !ok {
+		return Response{
+			StatusCode: 404,
+			Body: map[string]string{
+				"message": fmt.Sprintf("Unable to find published dashboard [dashboardId=%s]", dashboardId),
+			},
+		}
+	}
+
+	return Response{
+		Body: publishedDashboard,
 	}
 }

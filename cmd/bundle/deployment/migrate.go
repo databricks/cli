@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle/deploy/terraform"
+	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/cmd/bundle/utils"
@@ -186,7 +187,7 @@ To start using direct engine, deploy with DATABRICKS_BUNDLE_ENGINE=direct env va
 
 		// Run plan check unless --noplancheck is set
 		if !noPlanCheck {
-			fmt.Fprintf(cmd.OutOrStdout(), "Note: Migration should be done after a full deploy. Running plan now to verify that deployment was done:\n")
+			cmdio.LogString(ctx, "Note: Migration should be done after a full deploy. Running plan now to verify that deployment was done:")
 			if err = runPlanCheck(cmd, extraArgs, extraArgsStr); err != nil {
 				return err
 			}
@@ -227,6 +228,11 @@ To start using direct engine, deploy with DATABRICKS_BUNDLE_ENGINE=direct env va
 		plan, err := deploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(), &b.Config, tempStatePath)
 		if err != nil {
 			return err
+		}
+
+		for _, entry := range plan.Plan {
+			// Force all actions to be "update" so that deploym below goes through every resource
+			entry.Action = deployplan.Update
 		}
 
 		// We need to copy ETag into new state.

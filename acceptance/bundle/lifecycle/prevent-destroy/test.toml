@@ -1,5 +1,3 @@
-EnvVaryOutput = "DATABRICKS_BUNDLE_ENGINE"
-
 Ignore = [
     ".databricks"
 ]

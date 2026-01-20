@@ -41,7 +41,7 @@ title "Deploy bundle:"
 trace $CLI bundle deploy --force-lock --auto-approve
 
 title "Read the pre-defined job:"
-trace $CLI jobs get $JOB_ID | jq '{job_id, settings: {name: .settings.name, tasks: [.settings.tasks[] | {task_key, spark_python_task: .spark_python_task}]}}'
+trace $CLI jobs get $JOB_ID | jq '{job_id, settings: {name: .settings.name, tasks: [.settings.tasks[] | {task_key, spark_python_task: {python_file: .spark_python_task.python_file}}]}}'
 
 title "Unbind the job:"
 trace $CLI bundle deployment unbind foo
@@ -53,4 +53,4 @@ title "Destroy the bundle:"
 trace $CLI bundle destroy --auto-approve
 
 title "Read the pre-defined job again (expecting it still exists):"
-trace $CLI jobs get ${JOB_ID} | jq '{job_id, settings: {name: .settings.name, tasks: [.settings.tasks[] | {task_key, spark_python_task: .spark_python_task}]}}'
+trace $CLI jobs get ${JOB_ID} | jq '{job_id, settings: {name: .settings.name, tasks: [.settings.tasks[] | {task_key, spark_python_task: {python_file: .spark_python_task.python_file}}]}}'

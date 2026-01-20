@@ -11,4 +11,5 @@ resources:
             custom_tags:
               ResourceClass: SingleNode
     bar:
-      name: "test ${resources.jobs.test.tasks[0].new_cluster.custom_tags.missing_tag}"
+      name: "test ${resources.jobs.test.tasks[0].new_cluster.custom_tags.missing_tag}" # direct engine syntax
+      #terraform syntax: name: "test ${resources.jobs.test.task[0].new_cluster[0].custom_tags.missing_tag}"

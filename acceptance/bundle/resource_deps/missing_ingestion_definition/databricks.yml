@@ -1,6 +1,10 @@
+bundle:
+  name: test-bundle
+
 resources:
   pipelines:
     foo:
       name: pfoo
     bar:
-      name: pbar ${resources.pipelines.foo.ingestion_definition.connection_name}
+      name: pbar ${resources.pipelines.foo.ingestion_definition.connection_name} # direct engine syntax
+      #terraform syntax: name: pbar ${resources.pipelines.foo.ingestion_definition[0].connection_name}

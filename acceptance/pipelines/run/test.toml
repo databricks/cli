@@ -1,0 +1,4 @@
+Ignore = ['.databricks']
+
+[EnvMatrix]
+ENTRYPOINT = ["$CLI pipelines", "$PIPELINES"]

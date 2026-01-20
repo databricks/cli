@@ -36,6 +36,11 @@ func (m *compute) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics 
 		BundleRootPath: b.Config.Bundle.Git.BundleRootPath,
 	}
 
+	// Set bundle name, target, and mode
+	b.Metadata.Config.Bundle.Name = b.Config.Bundle.Name
+	b.Metadata.Config.Bundle.Target = b.Config.Bundle.Target
+	b.Metadata.Config.Bundle.Mode = string(b.Config.Bundle.Mode)
+
 	// Set job config paths in metadata
 	jobsMetadata := make(map[string]*metadata.Resource)
 	for name, job := range b.Config.Resources.Jobs {

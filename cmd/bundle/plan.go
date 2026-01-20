@@ -75,17 +75,17 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 
 		for _, change := range plan.GetActions() {
 			switch change.ActionType {
-			case deployplan.ActionTypeCreate:
+			case deployplan.Create:
 				createCount++
-			case deployplan.ActionTypeUpdate, deployplan.ActionTypeUpdateWithID, deployplan.ActionTypeResize:
+			case deployplan.Update, deployplan.UpdateWithID, deployplan.Resize:
 				updateCount++
-			case deployplan.ActionTypeDelete:
+			case deployplan.Delete:
 				deleteCount++
-			case deployplan.ActionTypeRecreate:
+			case deployplan.Recreate:
 				// A recreate counts as both a delete and a create
 				deleteCount++
 				createCount++
-			case deployplan.ActionTypeSkip, deployplan.ActionTypeUndefined:
+			case deployplan.Skip, deployplan.Undefined:
 				unchangedCount++
 			}
 		}
@@ -99,7 +99,7 @@ It is useful for previewing changes before running 'bundle deploy'.`,
 			if totalChanges > 0 {
 				// Print all actions in the order they were processed
 				for _, action := range plan.GetActions() {
-					if action.ActionType == deployplan.ActionTypeSkip {
+					if action.ActionType == deployplan.Skip {
 						continue
 					}
 					key := strings.TrimPrefix(action.ResourceKey, "resources.")

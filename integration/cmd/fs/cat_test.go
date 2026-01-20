@@ -48,7 +48,7 @@ func TestFsCatOnADir(t *testing.T) {
 			require.NoError(t, err)
 
 			_, _, err = testcli.RequireErrorRun(t, ctx, "fs", "cat", path.Join(tmpDir, "dir1"))
-			assert.ErrorAs(t, err, &filer.NotAFile{})
+			assert.ErrorIs(t, err, fs.ErrInvalid)
 		})
 	}
 }

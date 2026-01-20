@@ -192,6 +192,10 @@ func newCreateKafkaConfig() *cobra.Command {
 	cmd.Short = `Create a Kafka config.`
 	cmd.Long = `Create a Kafka config.
 
+  Create a Kafka config. During PrPr, Kafka configs can be read and used when
+  creating features under the entire metastore. Only the creator of the Kafka
+  config can delete it.
+
   Arguments:
     NAME: Name that uniquely identifies this Kafka config within the metastore. This
       will be the identifier used from the Feature object to reference these
@@ -429,6 +433,10 @@ func newDeleteKafkaConfig() *cobra.Command {
 	cmd.Short = `Delete a Kafka config.`
 	cmd.Long = `Delete a Kafka config.
 
+  Delete a Kafka config. During PrPr, Kafka configs can be read and used when
+  creating features under the entire metastore. Only the creator of the Kafka
+  config can delete it.
+
   Arguments:
     NAME: Name of the Kafka config to delete.`
 
@@ -593,6 +601,10 @@ func newGetKafkaConfig() *cobra.Command {
 	cmd.Short = `Get a Kafka config.`
 	cmd.Long = `Get a Kafka config.
 
+  Get a Kafka config. During PrPr, Kafka configs can be read and used when
+  creating features under the entire metastore. Only the creator of the Kafka
+  config can delete it.
+
   Arguments:
     NAME: Name of the Kafka config to get.`
 
@@ -753,7 +765,11 @@ func newListKafkaConfigs() *cobra.Command {
 
 	cmd.Use = "list-kafka-configs"
 	cmd.Short = `List Kafka configs.`
-	cmd.Long = `List Kafka configs.`
+	cmd.Long = `List Kafka configs.
+
+  List Kafka configs. During PrPr, Kafka configs can be read and used when
+  creating features under the entire metastore. Only the creator of the Kafka
+  config can delete it.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -968,6 +984,10 @@ func newUpdateKafkaConfig() *cobra.Command {
 	cmd.Use = "update-kafka-config NAME UPDATE_MASK BOOTSTRAP_SERVERS SUBSCRIPTION_MODE AUTH_CONFIG"
 	cmd.Short = `Update a Kafka config.`
 	cmd.Long = `Update a Kafka config.
+
+  Update a Kafka config. During PrPr, Kafka configs can be read and used when
+  creating features under the entire metastore. Only the creator of the Kafka
+  config can delete it.
 
   Arguments:
     NAME: Name that uniquely identifies this Kafka config within the metastore. This

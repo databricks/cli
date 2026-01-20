@@ -17,19 +17,22 @@ import (
 type SchemaGrantPrivilege string
 
 const (
-	SchemaGrantPrivilegeAllPrivileges  SchemaGrantPrivilege = "ALL_PRIVILEGES"
-	SchemaGrantPrivilegeApplyTag       SchemaGrantPrivilege = "APPLY_TAG"
-	SchemaGrantPrivilegeCreateFunction SchemaGrantPrivilege = "CREATE_FUNCTION"
-	SchemaGrantPrivilegeCreateTable    SchemaGrantPrivilege = "CREATE_TABLE"
-	SchemaGrantPrivilegeCreateVolume   SchemaGrantPrivilege = "CREATE_VOLUME"
-	SchemaGrantPrivilegeManage         SchemaGrantPrivilege = "MANAGE"
-	SchemaGrantPrivilegeUseSchema      SchemaGrantPrivilege = "USE_SCHEMA"
-	SchemaGrantPrivilegeExecute        SchemaGrantPrivilege = "EXECUTE"
-	SchemaGrantPrivilegeModify         SchemaGrantPrivilege = "MODIFY"
-	SchemaGrantPrivilegeRefresh        SchemaGrantPrivilege = "REFRESH"
-	SchemaGrantPrivilegeSelect         SchemaGrantPrivilege = "SELECT"
-	SchemaGrantPrivilegeReadVolume     SchemaGrantPrivilege = "READ_VOLUME"
-	SchemaGrantPrivilegeWriteVolume    SchemaGrantPrivilege = "WRITE_VOLUME"
+	SchemaGrantPrivilegeAllPrivileges          SchemaGrantPrivilege = "ALL_PRIVILEGES"
+	SchemaGrantPrivilegeApplyTag               SchemaGrantPrivilege = "APPLY_TAG"
+	SchemaGrantPrivilegeCreateFunction         SchemaGrantPrivilege = "CREATE_FUNCTION"
+	SchemaGrantPrivilegeCreateMaterializedView SchemaGrantPrivilege = "CREATE_MATERIALIZED_VIEW"
+	SchemaGrantPrivilegeCreateModel            SchemaGrantPrivilege = "CREATE_MODEL"
+	SchemaGrantPrivilegeCreateTable            SchemaGrantPrivilege = "CREATE_TABLE"
+	SchemaGrantPrivilegeCreateVolume           SchemaGrantPrivilege = "CREATE_VOLUME"
+	SchemaGrantPrivilegeExecute                SchemaGrantPrivilege = "EXECUTE"
+	SchemaGrantPrivilegeExternalUseSchema      SchemaGrantPrivilege = "EXTERNAL_USE_SCHEMA"
+	SchemaGrantPrivilegeManage                 SchemaGrantPrivilege = "MANAGE"
+	SchemaGrantPrivilegeModify                 SchemaGrantPrivilege = "MODIFY"
+	SchemaGrantPrivilegeReadVolume             SchemaGrantPrivilege = "READ_VOLUME"
+	SchemaGrantPrivilegeRefresh                SchemaGrantPrivilege = "REFRESH"
+	SchemaGrantPrivilegeSelect                 SchemaGrantPrivilege = "SELECT"
+	SchemaGrantPrivilegeUseSchema              SchemaGrantPrivilege = "USE_SCHEMA"
+	SchemaGrantPrivilegeWriteVolume            SchemaGrantPrivilege = "WRITE_VOLUME"
 )
 
 // Values returns all valid SchemaGrantPrivilege values
@@ -38,15 +41,18 @@ func (SchemaGrantPrivilege) Values() []SchemaGrantPrivilege {
 		SchemaGrantPrivilegeAllPrivileges,
 		SchemaGrantPrivilegeApplyTag,
 		SchemaGrantPrivilegeCreateFunction,
+		SchemaGrantPrivilegeCreateMaterializedView,
+		SchemaGrantPrivilegeCreateModel,
 		SchemaGrantPrivilegeCreateTable,
 		SchemaGrantPrivilegeCreateVolume,
-		SchemaGrantPrivilegeManage,
-		SchemaGrantPrivilegeUseSchema,
 		SchemaGrantPrivilegeExecute,
+		SchemaGrantPrivilegeExternalUseSchema,
+		SchemaGrantPrivilegeManage,
 		SchemaGrantPrivilegeModify,
+		SchemaGrantPrivilegeReadVolume,
 		SchemaGrantPrivilegeRefresh,
 		SchemaGrantPrivilegeSelect,
-		SchemaGrantPrivilegeReadVolume,
+		SchemaGrantPrivilegeUseSchema,
 		SchemaGrantPrivilegeWriteVolume,
 	}
 }

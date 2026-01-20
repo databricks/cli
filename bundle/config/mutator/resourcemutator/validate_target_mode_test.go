@@ -192,4 +192,23 @@ func TestValidateDevelopmentMode(t *testing.T) {
 	b.Config.Workspace.ResourcePath = "/Users/lennart@company.com/.bundle/x/y/resources"
 	diags = validateDevelopmentMode(b)
 	require.NoError(t, diags.Error())
+
+	// Test with a bundle that has a prefix containing the domain_friendly_name
+	b = mockBundle(config.Development)
+	b.Config.Workspace.CurrentUser.DomainFriendlyName = "lennartfriendly"
+	b.Config.Presets.NamePrefix = "[dev-lennartfriendly]"
+	diags = validateDevelopmentMode(b)
+	require.NoError(t, diags.Error())
+
+	// Test with a bundle that has a prefix containing the short_name
+	b = mockBundle(config.Development)
+	b.Config.Presets.NamePrefix = "[dev-lennart]"
+	diags = validateDevelopmentMode(b)
+	require.NoError(t, diags.Error())
+
+	// Test with a bundle that has a prefix containing the username
+	b = mockBundle(config.Development)
+	b.Config.Presets.NamePrefix = "[dev-lennart@company.com]"
+	diags = validateDevelopmentMode(b)
+	require.NoError(t, diags.Error())
 }

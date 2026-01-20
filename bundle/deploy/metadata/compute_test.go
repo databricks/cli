@@ -29,6 +29,7 @@ func TestComputeMetadataMutator(t *testing.T) {
 			Bundle: config.Bundle{
 				Name:   "my-bundle",
 				Target: "development",
+				Mode:   config.Development,
 				Git: config.Git{
 					Branch:         "my-branch",
 					OriginURL:      "www.host.com",
@@ -81,6 +82,9 @@ func TestComputeMetadataMutator(t *testing.T) {
 				FilePath: "/Users/shreyas.goenka@databricks.com/files",
 			},
 			Bundle: metadata.Bundle{
+				Name:   "my-bundle",
+				Target: "development",
+				Mode:   "development",
 				Git: config.Git{
 					Branch:         "my-branch",
 					OriginURL:      "www.host.com",

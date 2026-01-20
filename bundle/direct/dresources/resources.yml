@@ -1,0 +1,114 @@
+# Resource lifecycle configuration for Databricks Asset Bundles.
+# This file defines how field changes affect resource operations.
+#
+# Available options:
+#   recreate_on_changes: fields that trigger delete + create
+#   update_id_on_changes: fields that trigger UpdateWithID (ID may change)
+#   ignore_remote_changes: fields where remote changes are ignored
+#   ignore_local_changes: fields where local changes are ignored (can't be updated via API)
+
+resources:
+  # jobs: no special config
+
+  pipelines:
+    recreate_on_changes:
+      - storage
+      - ingestion_definition.connection_name
+      - ingestion_definition.ingestion_gateway_id
+
+  models:
+    recreate_on_changes:
+      # Recreate matches current behavior of Terraform. It is possible to rename without recreate
+      # but that would require dynamic select of the method during update since
+      # the ml.RenameModel needs to be called instead of ml.UpdateModel.
+      # We might reasonably choose to never fix this because this is a legacy resource.
+      - name
+    # Allowing updates for tags requires dynamic selection of the method since
+    # tags can only be updated by calling ml.SetModelTag or ml.DeleteModelTag methods.
+    # Skip annotation matches the current behavior of Terraform where tags changes are showed
+    # in plan but are just ignored / not applied. Since this is a legacy resource we might
+    # reasonably choose to not fix it here as well.
+    ignore_remote_changes:
+      - tags
+    ignore_local_changes:
+      - tags
+
+  # TF implementation: https://github.com/databricks/terraform-provider-databricks/blob/6c106e8e7052bb2726148d66309fd460ed444236/mlflow/resource_mlflow_experiment.go#L22
+  experiments:
+    recreate_on_changes:
+      - artifact_location
+    ignore_remote_changes:
+      # Tags updates are not supported by TF. This mirrors that behaviour.
+      - tags
+
+  # TF implementation: https://github.com/databricks/terraform-provider-databricks/blob/6c106e8e7052bb2726148d66309fd460ed444236/mlflow/resource_mlflow_experiment.go#L22
+  model_serving_endpoints:
+    recreate_on_changes:
+      - name
+      # description is immutable, can't be updated via API
+      - description
+      - config.auto_capture_config.catalog_name
+      - config.auto_capture_config.schema_name
+      - config.auto_capture_config.table_name_prefix
+      - route_optimized
+
+  registered_models:
+    recreate_on_changes:
+      # The name can technically be updated without recreate. We recreate for now though
+      # to match TF implementation.
+      - name
+      - catalog_name
+      - schema_name
+      - storage_location
+
+  quality_monitors:
+    recreate_on_changes:
+      - assets_dir
+      - table_name
+
+  schemas:
+    recreate_on_changes:
+      - name
+      - catalog_name
+      - storage_root
+
+  volumes:
+    recreate_on_changes:
+      - catalog_name
+      - schema_name
+      - storage_location
+      - volume_type
+    update_id_on_changes:
+      - name
+
+  # clusters: no special config
+
+  # dashboards: no special config
+
+  apps:
+    recreate_on_changes:
+      - name
+
+  secret_scopes:
+    recreate_on_changes:
+      - scope
+      - scope_backend_type
+      - backend_azure_keyvault
+      - initial_manage_principal
+
+  # Permissions for secret scopes use ResourceSecretScopeAcls.
+  secret_scopes.permissions:
+    update_id_on_changes:
+      # When scope name changes, we need UpdateWithID trigger. This is necessary so that subsequent
+      # DoRead operations use the correct ID and we do not end up with a persistent drift.
+      - scope_name
+
+  # alerts: no special config
+
+  # sql_warehouses: no special config
+
+  # database_instances: no special config
+
+  # database_catalogs: no special config
+
+  # synced_database_tables: no special config

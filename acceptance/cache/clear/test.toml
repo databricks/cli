@@ -1,9 +1,6 @@
 Cloud = false
 Local = true
 
-[Env]
-DATABRICKS_CACHE_ENABLED = 'true'
-
 # Redact structured logging fields from debug output
 [[Repls]]
 Old = ' pid=[0-9]+'

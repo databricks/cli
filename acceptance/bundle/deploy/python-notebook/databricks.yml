@@ -1,3 +1,6 @@
+bundle:
+  name: test-bundle
+
 sync: {paths: []} # dont need to copy files
 
 resources:

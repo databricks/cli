@@ -1,5 +1,5 @@
 {
-  "plan_version": 1,
+  "plan_version": 2,
   "cli_version": "[DEV_VERSION]",
   "plan": {
     "resources.clusters.test_cluster": {
@@ -17,7 +17,7 @@
   }
 }
 {
-  "plan_version": 1,
+  "plan_version": 2,
   "cli_version": "[DEV_VERSION]",
   "lineage": "[UUID]",
   "serial": 1,
@@ -45,25 +45,24 @@
         "spark_version": "13.3.x-snapshot-scala2.12"
       },
       "changes": {
-        "local": {
-          "autoscale": {
-            "action": "update",
-            "new": {
-              "max_workers": 4,
-              "min_workers": 2
-            }
-          },
-          "num_workers": {
-            "action": "update",
-            "old": 2
+        "autoscale": {
+          "action": "update",
+          "new": {
+            "max_workers": 4,
+            "min_workers": 2
           }
+        },
+        "num_workers": {
+          "action": "update",
+          "old": 2,
+          "remote": 2
         }
       }
     }
   }
 }
 {
-  "plan_version": 1,
+  "plan_version": 2,
   "cli_version": "[DEV_VERSION]",
   "lineage": "[UUID]",
   "serial": 2,
@@ -94,24 +93,24 @@
         "spark_version": "13.3.x-snapshot-scala2.12"
       },
       "changes": {
-        "local": {
-          "autoscale.max_workers": {
-            "action": "update",
-            "old": 4,
-            "new": 5
-          },
-          "autoscale.min_workers": {
-            "action": "update",
-            "old": 2,
-            "new": 3
-          }
+        "autoscale.max_workers": {
+          "action": "update",
+          "old": 4,
+          "new": 5,
+          "remote": 4
+        },
+        "autoscale.min_workers": {
+          "action": "update",
+          "old": 2,
+          "new": 3,
+          "remote": 2
         }
       }
     }
   }
 }
 {
-  "plan_version": 1,
+  "plan_version": 2,
   "cli_version": "[DEV_VERSION]",
   "lineage": "[UUID]",
   "serial": 3,
@@ -143,24 +142,24 @@
         "state": "RUNNING"
       },
       "changes": {
-        "local": {
-          "autoscale.max_workers": {
-            "action": "resize",
-            "old": 5,
-            "new": 6
-          },
-          "autoscale.min_workers": {
-            "action": "resize",
-            "old": 3,
-            "new": 4
-          }
+        "autoscale.max_workers": {
+          "action": "resize",
+          "old": 5,
+          "new": 6,
+          "remote": 5
+        },
+        "autoscale.min_workers": {
+          "action": "resize",
+          "old": 3,
+          "new": 4,
+          "remote": 3
         }
       }
     }
   }
 }
 {
-  "plan_version": 1,
+  "plan_version": 2,
   "cli_version": "[DEV_VERSION]",
   "lineage": "[UUID]",
   "serial": 4,
@@ -189,18 +188,20 @@
         "state": "RUNNING"
       },
       "changes": {
-        "local": {
-          "autoscale": {
-            "action": "resize",
-            "old": {
-              "max_workers": 6,
-              "min_workers": 4
-            }
+        "autoscale": {
+          "action": "resize",
+          "old": {
+            "max_workers": 6,
+            "min_workers": 4
           },
-          "num_workers": {
-            "action": "resize",
-            "new": 3
+          "remote": {
+            "max_workers": 6,
+            "min_workers": 4
           }
+        },
+        "num_workers": {
+          "action": "resize",
+          "new": 3
         }
       }
     }

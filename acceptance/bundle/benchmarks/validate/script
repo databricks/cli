@@ -1,0 +1,4 @@
+gen_config.py ${BENCHMARK_PARAMS:-} > databricks.yml
+wc -l databricks.yml > LOG.wc
+trace head -n 10 databricks.yml
+trace benchmark.py $CLI bundle validate

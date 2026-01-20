@@ -22,6 +22,19 @@ Any file starting with "LOG" will be logged to test log (visible with go test -v
 
 See [selftest](./selftest) for more examples.
 
+## Benchmarks
+
+Benchmarks are regular acceptance test that log measurements in certain format. The output can be fed to `tools/bench_parse.py` to print a summary table.
+
+Test runner recognizes benchmark as having "benchmark" anywhere in the path. For these tests parallel execution is disabled if and only if BENCHMARK\_PARAMS variable is set.
+
+The benchmarks make use of two scripts:
+
+- `gen_config.py —jobs N` to generate a config with N jobs
+- `benchmark.py` command to run command a few times and log the time measurements.
+
+The default number of runs in benchmark.py depends on BENCHMARK\_PARAMS variable. If it’s set, the default number is 5. Otherwise it is 1.
+
 ## Running acceptance tests on Windows
 
 To run the acceptance tests from a terminal on Windows (eg. Git Bash from VS Code),

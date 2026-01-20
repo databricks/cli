@@ -1,3 +1,6 @@
+bundle:
+  name: test-bundle
+
 workspace:
   profile: profile_name
   root_path: ${var.workspace_root}/path/to/root

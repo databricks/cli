@@ -138,7 +138,7 @@ func (w *FilesClient) Write(ctx context.Context, name string, reader io.Reader, 
 
 			// This API returns a 404 if the file doesn't exist.
 			if aerr.StatusCode == http.StatusNotFound {
-				return NoSuchDirectoryError{path.Dir(absPath)}
+				return noSuchDirectoryError{path.Dir(absPath)}
 			}
 
 			return err
@@ -163,7 +163,7 @@ func (w *FilesClient) Write(ctx context.Context, name string, reader io.Reader, 
 
 	// This API returns 409 if the file already exists, when the object type is file
 	if aerr.StatusCode == http.StatusConflict && aerr.ErrorCode == "ALREADY_EXISTS" {
-		return FileAlreadyExistsError{absPath}
+		return fileAlreadyExistsError{absPath}
 	}
 
 	return err
@@ -193,11 +193,11 @@ func (w *FilesClient) Read(ctx context.Context, name string) (io.ReadCloser, err
 	if aerr.StatusCode == http.StatusNotFound {
 		// Check if the path is a directory. If so, return not a file error.
 		if _, err := w.statDir(ctx, name); err == nil {
-			return nil, NotAFile{absPath}
+			return nil, notAFile{absPath}
 		}
 
 		// No file or directory exists at the specified path. Return no such file error.
-		return nil, FileDoesNotExistError{absPath}
+		return nil, fileDoesNotExistError{absPath}
 	}
 
 	return nil, err
@@ -211,7 +211,7 @@ func (w *FilesClient) deleteFile(ctx context.Context, name string) error {
 
 	// Illegal to delete the root path.
 	if absPath == w.root.rootPath {
-		return CannotDeleteRootError{}
+		return cannotDeleteRootError{}
 	}
 
 	err = w.workspaceClient.Files.DeleteByFilePath(ctx, absPath)
@@ -229,7 +229,7 @@ func (w *FilesClient) deleteFile(ctx context.Context, name string) error {
 
 	// This files delete API returns a 404 if the specified path does not exist.
 	if aerr.StatusCode == http.StatusNotFound {
-		return FileDoesNotExistError{absPath}
+		return fileDoesNotExistError{absPath}
 	}
 
 	return err
@@ -243,7 +243,7 @@ func (w *FilesClient) deleteDirectory(ctx context.Context, name string) error {
 
 	// Illegal to delete the root path.
 	if absPath == w.root.rootPath {
-		return CannotDeleteRootError{}
+		return cannotDeleteRootError{}
 	}
 
 	err = w.workspaceClient.Files.DeleteDirectoryByDirectoryPath(ctx, absPath)
@@ -266,7 +266,7 @@ func (w *FilesClient) deleteDirectory(ctx context.Context, name string) error {
 		if !slices.Contains(reasons, "FILES_API_DIRECTORY_IS_NOT_EMPTY") {
 			return err
 		}
-		return DirectoryNotEmptyError{absPath}
+		return directoryNotEmptyError{absPath}
 	}
 
 	return err
@@ -395,11 +395,11 @@ func (w *FilesClient) ReadDir(ctx context.Context, name string) ([]fs.DirEntry, 
 	if apierr.StatusCode == http.StatusNotFound {
 		// Check if the path is a file. If so, return not a directory error.
 		if _, err := w.statFile(ctx, name); err == nil {
-			return nil, NotADirectory{absPath}
+			return nil, notADirectory{absPath}
 		}
 
 		// No file or directory exists at the specified path. Return no such directory error.
-		return nil, NoSuchDirectoryError{absPath}
+		return nil, noSuchDirectoryError{absPath}
 	}
 	return nil, err
 }
@@ -417,7 +417,7 @@ func (w *FilesClient) Mkdir(ctx context.Context, name string) error {
 	// Special handling of this error only if it is an API error.
 	var aerr *apierr.APIError
 	if errors.As(err, &aerr) && aerr.StatusCode == http.StatusConflict {
-		return FileAlreadyExistsError{absPath}
+		return fileAlreadyExistsError{absPath}
 	}
 
 	return err
@@ -449,7 +449,7 @@ func (w *FilesClient) statFile(ctx context.Context, name string) (fs.FileInfo, e
 
 	// This API returns a 404 if the specified path does not exist.
 	if aerr.StatusCode == http.StatusNotFound {
-		return nil, FileDoesNotExistError{absPath}
+		return nil, fileDoesNotExistError{absPath}
 	}
 
 	return nil, err
@@ -477,7 +477,7 @@ func (w *FilesClient) statDir(ctx context.Context, name string) (fs.FileInfo, er
 
 	// The directory metadata API returns a 404 if the specified path does not exist.
 	if aerr.StatusCode == http.StatusNotFound {
-		return nil, NoSuchDirectoryError{absPath}
+		return nil, noSuchDirectoryError{absPath}
 	}
 
 	return nil, err
@@ -492,8 +492,8 @@ func (w *FilesClient) Stat(ctx context.Context, name string) (fs.FileInfo, error
 		return dirInfo, nil
 	}
 
-	// Return early if the error is not a NoSuchDirectoryError.
-	if !errors.As(err, &NoSuchDirectoryError{}) {
+	// Return early if the error is not a noSuchDirectoryError.
+	if !errors.Is(err, fs.ErrNotExist) {
 		return nil, err
 	}
 

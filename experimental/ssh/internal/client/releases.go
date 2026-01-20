@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -49,7 +50,7 @@ func uploadReleases(ctx context.Context, workspaceFiler filer.Filer, getRelease 
 		if err == nil {
 			cmdio.LogString(ctx, fmt.Sprintf("File %s already exists in the workspace, skipping upload", remoteBinaryPath))
 			continue
-		} else if !errors.As(err, &filer.FileDoesNotExistError{}) {
+		} else if !errors.Is(err, fs.ErrNotExist) {
 			return fmt.Errorf("failed to check if file %s exists in workspace: %w", remoteBinaryPath, err)
 		}
 

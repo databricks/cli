@@ -11,10 +11,9 @@
         },
         "http_path": {
             "type": "string",
-            "pattern": "^/sql/.\\../warehouses/[a-z0-9]+$",
-            "pattern_match_failure_message": "Path must be of the form /sql/1.0/warehouses/<warehouse id>",
-            "description": "\nPlease provide the HTTP Path of the SQL warehouse you would like to use during development.\nYou can find this path by clicking on \"Connection details\" for your SQL warehouse.\nhttp_path [example: /sql/1.0/warehouses/abcdef1234567890]",
-            "order": 2
+            "description": "\nSelect a SQL warehouse to use during development (you can change this in databricks.yml later).",
+            "order": 2,
+            "format": "warehouse_path"
         },
         "default_catalog": {
             "type": "string",

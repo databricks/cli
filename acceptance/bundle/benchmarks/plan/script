@@ -1,0 +1,3 @@
+gen_config.py ${BENCHMARK_PARAMS:-} > databricks.yml
+wc -l databricks.yml > LOG.wc
+trace benchmark.py '$CLI bundle plan > /dev/null'

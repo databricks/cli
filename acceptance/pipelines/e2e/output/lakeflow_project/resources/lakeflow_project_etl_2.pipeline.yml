@@ -1,0 +1,4 @@
+resources:
+  pipelines:
+    lakeflow_project_etl_2:
+      name: lakeflow_project_etl_2

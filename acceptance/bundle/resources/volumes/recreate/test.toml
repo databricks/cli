@@ -3,8 +3,6 @@ Cloud = true
 RecordRequests = false
 RequiresUnityCatalog = true
 
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["terraform"]  # needs volume recreation, grants
-
 Ignore = [
     "databricks.yml",
 ]

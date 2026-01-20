@@ -2,8 +2,6 @@ package logdiag
 
 import (
 	"context"
-	"fmt"
-	"os"
 	"path/filepath"
 	"sync"
 
@@ -147,9 +145,9 @@ func LogDiag(ctx context.Context, d diag.Diagnostic) {
 	if val.Collect {
 		val.Collected = append(val.Collected, d)
 	} else {
-		err := cmdio.RenderDiagnostics(os.Stderr, []diag.Diagnostic{d})
+		err := cmdio.RenderDiagnostics(ctx, []diag.Diagnostic{d})
 		if err != nil {
-			fmt.Fprint(os.Stderr, "\nRendering error: "+err.Error()+"\n")
+			cmdio.LogString(ctx, "\nRendering error: "+err.Error())
 		}
 	}
 }

@@ -1,3 +1,6 @@
+bundle:
+  name: test-bundle
+
 resources:
   jobs:
     my_job:

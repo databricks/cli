@@ -9,4 +9,5 @@ type ResourceOnlineStore struct {
 	Name             string `json:"name"`
 	ReadReplicaCount int    `json:"read_replica_count,omitempty"`
 	State            string `json:"state,omitempty"`
+	UsagePolicyId    string `json:"usage_policy_id,omitempty"`
 }

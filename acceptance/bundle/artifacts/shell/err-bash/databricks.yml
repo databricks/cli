@@ -1,3 +1,6 @@
+bundle:
+  name: test-bundle
+
 artifacts:
   my_artifact:
     executable: bash

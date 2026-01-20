@@ -4,6 +4,7 @@ Error: Bundle root path contains glob pattern characters
 
 The path to the bundle root [TEST_TMP_DIR]/[abc] contains glob pattern character "[". Please remove the character from this path to use bundle commands.
 
+Name: test-bundle
 
 Found 1 error
 

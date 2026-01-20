@@ -185,6 +185,7 @@ type ResourcePipelineIngestionDefinitionObjectsReportTableConfiguration struct {
 	ExcludeColumns                 []string                                                                                     `json:"exclude_columns,omitempty"`
 	IncludeColumns                 []string                                                                                     `json:"include_columns,omitempty"`
 	PrimaryKeys                    []string                                                                                     `json:"primary_keys,omitempty"`
+	RowFilter                      string                                                                                       `json:"row_filter,omitempty"`
 	SalesforceIncludeFormulaFields bool                                                                                         `json:"salesforce_include_formula_fields,omitempty"`
 	ScdType                        string                                                                                       `json:"scd_type,omitempty"`
 	SequenceBy                     []string                                                                                     `json:"sequence_by,omitempty"`
@@ -221,6 +222,7 @@ type ResourcePipelineIngestionDefinitionObjectsSchemaTableConfiguration struct {
 	ExcludeColumns                 []string                                                                                     `json:"exclude_columns,omitempty"`
 	IncludeColumns                 []string                                                                                     `json:"include_columns,omitempty"`
 	PrimaryKeys                    []string                                                                                     `json:"primary_keys,omitempty"`
+	RowFilter                      string                                                                                       `json:"row_filter,omitempty"`
 	SalesforceIncludeFormulaFields bool                                                                                         `json:"salesforce_include_formula_fields,omitempty"`
 	ScdType                        string                                                                                       `json:"scd_type,omitempty"`
 	SequenceBy                     []string                                                                                     `json:"sequence_by,omitempty"`
@@ -257,6 +259,7 @@ type ResourcePipelineIngestionDefinitionObjectsTableTableConfiguration struct {
 	ExcludeColumns                 []string                                                                                    `json:"exclude_columns,omitempty"`
 	IncludeColumns                 []string                                                                                    `json:"include_columns,omitempty"`
 	PrimaryKeys                    []string                                                                                    `json:"primary_keys,omitempty"`
+	RowFilter                      string                                                                                      `json:"row_filter,omitempty"`
 	SalesforceIncludeFormulaFields bool                                                                                        `json:"salesforce_include_formula_fields,omitempty"`
 	ScdType                        string                                                                                      `json:"scd_type,omitempty"`
 	SequenceBy                     []string                                                                                    `json:"sequence_by,omitempty"`
@@ -319,6 +322,7 @@ type ResourcePipelineIngestionDefinitionTableConfiguration struct {
 	ExcludeColumns                 []string                                                                        `json:"exclude_columns,omitempty"`
 	IncludeColumns                 []string                                                                        `json:"include_columns,omitempty"`
 	PrimaryKeys                    []string                                                                        `json:"primary_keys,omitempty"`
+	RowFilter                      string                                                                          `json:"row_filter,omitempty"`
 	SalesforceIncludeFormulaFields bool                                                                            `json:"salesforce_include_formula_fields,omitempty"`
 	ScdType                        string                                                                          `json:"scd_type,omitempty"`
 	SequenceBy                     []string                                                                        `json:"sequence_by,omitempty"`

@@ -1,0 +1,9 @@
+bundle:
+  name: alerts-with-file-$UNIQUE_NAME
+
+resources:
+  alerts:
+    myalert:
+      warehouse_id: $TEST_DEFAULT_WAREHOUSE_ID
+      display_name: "myalert"
+      file_path: ./alert.dbalert.json

@@ -1,0 +1,18 @@
+{
+  "plan_version": 2,
+  "cli_version": "[DEV_VERSION]",
+  "plan": {
+    "resources.quality_monitors.monitor1": {
+      "action": "create",
+      "new_state": {
+        "value": {
+          "assets_dir": "/Workspace/Users/[USERNAME]/monitor_assets_[UNIQUE_NAME]",
+          "output_schema_name": "main.qm_test_[UNIQUE_NAME]",
+          "snapshot": {},
+          "table_name": "main.qm_test_[UNIQUE_NAME].test_table",
+          "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
+        }
+      }
+    }
+  }
+}

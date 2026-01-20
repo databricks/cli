@@ -1,3 +1,6 @@
+bundle:
+  name: test-bundle
+
 workspace:
   artifact_path: /Workspace/foo/bar/artifacts
 

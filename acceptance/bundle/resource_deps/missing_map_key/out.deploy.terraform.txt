@@ -1,12 +1,13 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/state/default/files...
 Error: exit status 1
 
-Error: Unsupported attribute
+Error: Missing map element
 
   on bundle.tf.json line 23, in resource.databricks_job.bar:
-  23:         "name": "test ${databricks_job.test.tasks[0].new_cluster.custom_tags.missing_tag}",
+  23:         "name": "test ${databricks_job.test.task[0].new_cluster[0].custom_tags.missing_tag}",
+    ├────────────────
+    │ databricks_job.test.task[0].new_cluster[0].custom_tags is map of string with 1 element
 
-This object has no argument, nested block, or exported attribute named
-"tasks". Did you mean "tags"?
+This map does not have an element with the key "missing_tag".
 
 

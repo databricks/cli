@@ -5,7 +5,7 @@ export SCHEMA_NAME="test-schema-$(uuid)"
 if [ -z "$CLOUD_ENV" ]; then
     export SCHEMA_NAME="test-schema-6260d50f-e8ff-4905-8f28-812345678903"   # use hard-coded uuid when running locally
 fi
-envsubst < databricks.yml > out.yml && mv out.yml databricks.yml
+envsubst < databricks.yml.tmpl > databricks.yml
 
 title "Create a pre-defined schema: "
 CATALOG_NAME=main

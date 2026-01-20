@@ -1,7 +1,0 @@
-trace $CLI bundle validate -o json | jq .resources
-musterr $CLI bundle plan &> out.plan.$DATABRICKS_BUNDLE_ENGINE.txt
-musterr $CLI bundle deploy &> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt
-
-title "Nothing is logged in telemetry because deploy has failed"
-trace print_telemetry_bool_values
-rm out.requests.txt

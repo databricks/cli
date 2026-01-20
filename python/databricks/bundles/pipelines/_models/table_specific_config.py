@@ -56,6 +56,15 @@ class TableSpecificConfig:
     Configurations that are only applicable for query-based ingestion connectors.
     """
 
+    row_filter: VariableOrOptional[str] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    (Optional, Immutable) The row filter condition to be applied to the table.
+    It must not contain the WHERE keyword, only the actual filter condition.
+    It must be in DBSQL format.
+    """
+
     salesforce_include_formula_fields: VariableOrOptional[bool] = None
     """
     :meta private: [EXPERIMENTAL]
@@ -122,6 +131,15 @@ class TableSpecificConfigDict(TypedDict, total=False):
     :meta private: [EXPERIMENTAL]
     
     Configurations that are only applicable for query-based ingestion connectors.
+    """
+
+    row_filter: VariableOrOptional[str]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    (Optional, Immutable) The row filter condition to be applied to the table.
+    It must not contain the WHERE keyword, only the actual filter condition.
+    It must be in DBSQL format.
     """
 
     salesforce_include_formula_fields: VariableOrOptional[bool]

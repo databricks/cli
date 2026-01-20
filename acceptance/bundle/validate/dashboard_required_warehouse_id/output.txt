@@ -2,7 +2,7 @@
 >>> [CLI] bundle validate
 Error: dashboard warehouse_id is required
   at resources.dashboards.my_dashboard
-  in databricks.yml:6:7
+  in databricks.yml:8:7
 
 Name: test-bundle
 Target: default

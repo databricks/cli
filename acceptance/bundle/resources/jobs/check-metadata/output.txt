@@ -23,12 +23,12 @@ Deployment complete!
 
 === Assert job 1 is created
 {
-  "name": "test-job-metadata-1-[UNIQUE_NAME]"
+  "name": "[dev [USERNAME]] test-job-metadata-1-[UNIQUE_NAME]"
 }
 
 === Assert job 2 is created
 {
-  "name": "test-job-metadata-2-[UNIQUE_NAME]"
+  "name": "[dev [USERNAME]] test-job-metadata-2-[UNIQUE_NAME]"
 }
 
 === Read metadata object from the workspace
@@ -39,6 +39,9 @@ Deployment complete!
   "version": 1,
   "config": {
     "bundle": {
+      "name": "deploy-jobs-check-metadata-[UNIQUE_NAME]",
+      "target": "default",
+      "mode": "development",
       "git": {
         "bundle_root_path": "."
       }
@@ -70,6 +73,16 @@ Deployment complete!
 
 >>> cat metadata.json
           "id": "[JOB_2_ID]",
+
+=== Check that metadata contains bundle name, target, and mode
+>>> cat metadata.json
+"deploy-jobs-check-metadata-[UNIQUE_NAME]"
+
+>>> cat metadata.json
+"default"
+
+>>> cat metadata.json
+"development"
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
