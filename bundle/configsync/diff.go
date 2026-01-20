@@ -74,6 +74,10 @@ var serverSideDefaults = []fieldDefault{
 		pattern:   regexp.MustCompile(`^usage_policy_id$`),
 		isDefault: alwaysDefault, // computed field
 	},
+	{
+		pattern:   regexp.MustCompile(`^edit_mode$`),
+		isDefault: alwaysDefault, // set by CLI
+	},
 
 	// Task-level fields (using regex to match any task_key)
 	{

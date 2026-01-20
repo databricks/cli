@@ -486,14 +486,16 @@ resources:
 		"resources.jobs.test_job": {
 			"timeout_seconds": &deployplan.ChangeDesc{
 				Action: deployplan.Update,
+				Old:    3600,
 				Remote: 7200,
 			},
 			"name": &deployplan.ChangeDesc{
 				Action: deployplan.Update,
+				Old:    "Test Job",
 				Remote: "New Test Job",
 			},
 			"tags": &deployplan.ChangeDesc{
-				Action: deployplan.Update,
+				Action: deployplan.Create,
 				Remote: map[string]string{
 					"test": "value",
 				},

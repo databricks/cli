@@ -114,6 +114,9 @@ func applyChanges(ctx context.Context, filePath string, changes resolvedChanges,
 		isAddition := changeDesc.Remote != nil && !hasConfigValue
 
 		success := false
+		var lastErr error
+		var lastPointer string
+
 		for _, jsonPointer := range jsonPointers {
 			path, err := yamlpatch.ParsePath(jsonPointer)
 			if err != nil {
@@ -159,10 +162,15 @@ func applyChanges(ctx context.Context, filePath string, changes resolvedChanges,
 				break
 			} else {
 				log.Debugf(ctx, "Failed to apply change to %s: %v", jsonPointer, err)
+				lastErr = err
+				lastPointer = jsonPointer
 			}
 		}
 		if !success {
-			return "", fmt.Errorf("failed to apply change %s: %w", jsonPointer, err)
+			if lastErr != nil {
+				return "", fmt.Errorf("failed to apply change %s: %w", lastPointer, lastErr)
+			}
+			return "", fmt.Errorf("failed to apply change for field %s: no valid target found", fieldPath)
 		}
 	}
 
