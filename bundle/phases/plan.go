@@ -24,6 +24,7 @@ func PreDeployChecks(ctx context.Context, b *bundle.Bundle, isPlan bool, engine 
 		resourcemutator.SecretScopeFixups(engine),
 		deploy.StatePull(),
 		mutator.ValidateGitDetails(),
+		mutator.ValidateCatalogsOnlyWithDirect(engine),
 		statemgmt.CheckRunningResource(engine),
 	)
 }

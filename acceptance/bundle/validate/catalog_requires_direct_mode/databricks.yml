@@ -1,0 +1,8 @@
+bundle:
+  name: "catalog_validation_test"
+
+resources:
+  catalogs:
+    test_catalog:
+      name: "test_catalog"
+      comment: "This should fail in Terraform mode"
