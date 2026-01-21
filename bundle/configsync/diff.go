@@ -64,14 +64,6 @@ type fieldDefault struct {
 var serverSideDefaults = []fieldDefault{
 	// Job-level fields
 	{
-		pattern:   regexp.MustCompile(`^email_notifications$`),
-		isDefault: isEmptyStruct,
-	},
-	{
-		pattern:   regexp.MustCompile(`^webhook_notifications$`),
-		isDefault: isEmptyStruct,
-	},
-	{
 		pattern:   regexp.MustCompile(`^timeout_seconds$`),
 		isDefault: isZero,
 	},
@@ -85,14 +77,6 @@ var serverSideDefaults = []fieldDefault{
 	},
 
 	// Task-level fields (using regex to match any task_key)
-	{
-		pattern:   regexp.MustCompile(`^tasks\[task_key='[^']+'\]\.email_notifications$`),
-		isDefault: isEmptyStruct,
-	},
-	{
-		pattern:   regexp.MustCompile(`^tasks\[task_key='[^']+'\]\.webhook_notifications$`),
-		isDefault: isEmptyStruct,
-	},
 	{
 		pattern:   regexp.MustCompile(`^tasks\[task_key='[^']+'\]\.run_if$`),
 		isDefault: isStringEqual("ALL_SUCCESS"),

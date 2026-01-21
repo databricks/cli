@@ -1,5 +1,2 @@
 GOOS.windows = false
 GOOS.linux = false
-
-[EnvMatrix]
-ENTRYPOINT = ["$CLI pipelines", "$PIPELINES"]
