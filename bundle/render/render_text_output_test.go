@@ -276,12 +276,12 @@ func TestRenderDiagnostics(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			writer := &bytes.Buffer{}
+			ctx, stderr := cmdio.NewTestContextWithStderr(context.Background())
 
-			err := cmdio.RenderDiagnostics(writer, tc.diags)
+			err := cmdio.RenderDiagnostics(ctx, tc.diags)
 			require.NoError(t, err)
 
-			assert.Equal(t, tc.expected, writer.String())
+			assert.Equal(t, tc.expected, stderr.String())
 		})
 	}
 }

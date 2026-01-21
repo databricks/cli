@@ -1,6 +1,6 @@
 
 === Run pipeline
->>> [ENTRYPOINT] run
+>>> [CLI] pipelines run
 Error: resource not found or not yet deployed. Did you forget to run 'databricks bundle deploy'?
 
 
