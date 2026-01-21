@@ -73,6 +73,21 @@ const (
 	// Resources can't be added or removed, and CLI rejects such changes. Python code is
 	// allowed to modify existing resources, but not other parts of bundle configuration.
 	PythonMutatorPhaseApplyMutators phase = "apply_mutators"
+
+	// PythonMutatorPhasePostDeploy is the phase in which resources have been successfully
+	// deployed to Databricks.
+	//
+	// At this stage, we execute Python code to perform post-deployment tasks.
+	//
+	// During this process, Python code can access:
+	// - selected deployment target
+	// - bundle variable values
+	// - deployed resource IDs (job IDs, pipeline IDs, etc.)
+	// - workspace client for API calls
+	//
+	// Python code in this phase cannot modify bundle configuration. It is meant for
+	// side effects such as triggering jobs, sending notifications, or running validations.
+	PythonMutatorPhasePostDeploy phase = "post_deploy"
 )
 
 type pythonMutator struct {
@@ -217,6 +232,11 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 		return diag.Errorf("Running Python code is not allowed when DATABRICKS_BUNDLE_RESTRICTED_CODE_EXECUTION is set")
 	}
 
+	// Post-deploy phase doesn't modify bundle configuration
+	if m.phase == PythonMutatorPhasePostDeploy {
+		return m.runPostDeploy(ctx, b, opts)
+	}
+
 	// mutateDiags is used because Mutate returns 'error' instead of 'diag.Diagnostics'
 	var mutateDiags diag.Diagnostics
 	var result applyPythonOutputResult
@@ -302,6 +322,33 @@ func (m *pythonMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 
 	resourcemutator.NormalizeResources(ctx, b, result.UpdatedResources)
 	return mutateDiags
+}
+
+// runPostDeploy executes Python post-deploy callbacks without modifying bundle configuration
+func (m *pythonMutator) runPostDeploy(ctx context.Context, b *bundle.Bundle, opts opts) diag.Diagnostics {
+	pythonPath, err := detectExecutable(ctx, opts.venvPath)
+	if err != nil {
+		return diag.Errorf("failed to get Python interpreter path: %s", err)
+	}
+
+	cacheDir, err := createCacheDir(ctx)
+	if err != nil {
+		return diag.Errorf("failed to create cache dir: %s", err)
+	}
+
+	// For post-deploy, we pass the current bundle config to Python
+	// Python code can read deployed resource IDs but cannot modify the bundle
+	root := b.Config.Value()
+
+	_, diags := m.runPythonMutator(ctx, root, runPythonMutatorOpts{
+		cacheDir:       cacheDir,
+		bundleRootPath: b.BundleRootPath,
+		pythonPath:     pythonPath,
+		loadLocations:  opts.loadLocations,
+	})
+
+	// We ignore the output for post-deploy phase as it shouldn't modify bundle
+	return diags
 }
 
 func createCacheDir(ctx context.Context) (string, error) {
