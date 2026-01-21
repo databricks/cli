@@ -390,7 +390,42 @@
                 ]
               },
               "resources.CatalogGrantPrivilege": {
-                "type": "string"
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "ALL_PRIVILEGES",
+                      "APPLY_TAG",
+                      "CREATE_CONNECTION",
+                      "CREATE_EXTERNAL_LOCATION",
+                      "CREATE_EXTERNAL_TABLE",
+                      "CREATE_EXTERNAL_VOLUME",
+                      "CREATE_FOREIGN_CATALOG",
+                      "CREATE_FUNCTION",
+                      "CREATE_MANAGED_STORAGE",
+                      "CREATE_MATERIALIZED_VIEW",
+                      "CREATE_MODEL",
+                      "CREATE_SCHEMA",
+                      "CREATE_STORAGE_CREDENTIAL",
+                      "CREATE_TABLE",
+                      "CREATE_VOLUME",
+                      "EXECUTE",
+                      "MANAGE",
+                      "MODIFY",
+                      "READ_VOLUME",
+                      "REFRESH",
+                      "SELECT",
+                      "USE_CATALOG",
+                      "USE_CONNECTION",
+                      "USE_SCHEMA",
+                      "WRITE_VOLUME"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
               },
               "resources.Cluster": {
                 "oneOf": [

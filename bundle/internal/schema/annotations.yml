@@ -572,6 +572,59 @@ github.com/databricks/cli/bundle/config/resources.CatalogGrant:
   "privileges":
     "description": |-
       PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.CatalogGrantPrivilege:
+  "_":
+    "enum":
+      - |-
+        ALL_PRIVILEGES
+      - |-
+        APPLY_TAG
+      - |-
+        CREATE_CONNECTION
+      - |-
+        CREATE_EXTERNAL_LOCATION
+      - |-
+        CREATE_EXTERNAL_TABLE
+      - |-
+        CREATE_EXTERNAL_VOLUME
+      - |-
+        CREATE_FOREIGN_CATALOG
+      - |-
+        CREATE_FUNCTION
+      - |-
+        CREATE_MANAGED_STORAGE
+      - |-
+        CREATE_MATERIALIZED_VIEW
+      - |-
+        CREATE_MODEL
+      - |-
+        CREATE_SCHEMA
+      - |-
+        CREATE_STORAGE_CREDENTIAL
+      - |-
+        CREATE_TABLE
+      - |-
+        CREATE_VOLUME
+      - |-
+        EXECUTE
+      - |-
+        MANAGE
+      - |-
+        MODIFY
+      - |-
+        READ_VOLUME
+      - |-
+        REFRESH
+      - |-
+        SELECT
+      - |-
+        USE_CATALOG
+      - |-
+        USE_CONNECTION
+      - |-
+        USE_SCHEMA
+      - |-
+        WRITE_VOLUME
 github.com/databricks/cli/bundle/config/resources.ClusterPermission:
   "group_name":
     "description": |-
