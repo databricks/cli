@@ -219,12 +219,10 @@ func (p *openapiParser) extractAnnotations(typ reflect.Type, outputPath, overrid
 		return err
 	}
 
-	err = saveYamlWithStyle(overridesPath, overrides)
-	if err != nil {
+	if err := overrides.Save(overridesPath); err != nil {
 		return err
 	}
-	err = saveYamlWithStyle(outputPath, annotations)
-	if err != nil {
+	if err := annotations.Save(outputPath); err != nil {
 		return err
 	}
 	err = prependCommentToFile(outputPath, "# This file is auto-generated. DO NOT EDIT.\n")

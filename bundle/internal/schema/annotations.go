@@ -6,17 +6,13 @@ import (
 	"os"
 	"reflect"
 	"regexp"
-	"slices"
 	"strings"
-
-	yaml3 "gopkg.in/yaml.v3"
 
 	"github.com/databricks/cli/bundle/internal/annotation"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/dyn/merge"
 	"github.com/databricks/cli/libs/dyn/yamlloader"
-	"github.com/databricks/cli/libs/dyn/yamlsaver"
 	"github.com/databricks/cli/libs/jsonschema"
 )
 
@@ -108,11 +104,7 @@ func (d *annotationHandler) syncWithMissingAnnotations(outputPath string) error 
 		return err
 	}
 
-	err = saveYamlWithStyle(outputPath, outputTyped)
-	if err != nil {
-		return err
-	}
-	return nil
+	return outputTyped.Save(outputPath)
 }
 
 func getPath(typ reflect.Type) string {
@@ -145,50 +137,10 @@ func assignAnnotation(s *jsonschema.Schema, a annotation.Descriptor) {
 	s.MarkdownDescription = convertLinksToAbsoluteUrl(a.MarkdownDescription)
 	s.Title = a.Title
 	s.Enum = a.Enum
-}
 
-func saveYamlWithStyle(outputPath string, annotations annotation.File) error {
-	annotationOrder := yamlsaver.NewOrder([]string{"description", "markdown_description", "title", "default", "enum"})
-	style := map[string]yaml3.Style{}
-
-	order := getAlphabeticalOrder(annotations)
-	dynMap := map[string]dyn.Value{}
-	for k, v := range annotations {
-		style[k] = yaml3.LiteralStyle
-
-		properties := map[string]dyn.Value{}
-		propertiesOrder := getAlphabeticalOrder(v)
-		for key, value := range v {
-			d, err := convert.FromTyped(value, dyn.NilValue)
-			if d.Kind() == dyn.KindNil || err != nil {
-				properties[key] = dyn.NewValue(map[string]dyn.Value{}, []dyn.Location{{Line: propertiesOrder.Get(key)}})
-				continue
-			}
-			val, err := yamlsaver.ConvertToMapValue(value, annotationOrder, []string{}, map[string]dyn.Value{})
-			if err != nil {
-				return err
-			}
-			properties[key] = val.WithLocations([]dyn.Location{{Line: propertiesOrder.Get(key)}})
-		}
-
-		dynMap[k] = dyn.NewValue(properties, []dyn.Location{{Line: order.Get(k)}})
+	if a.SinceVersion != "" {
+		s.SinceVersion = a.SinceVersion
 	}
-
-	saver := yamlsaver.NewSaverWithStyle(style)
-	err := saver.SaveAsYAML(dynMap, outputPath, true)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func getAlphabeticalOrder[T any](mapping map[string]T) *yamlsaver.Order {
-	var order []string
-	for k := range mapping {
-		order = append(order, k)
-	}
-	slices.Sort(order)
-	return yamlsaver.NewOrder(order)
 }
 
 func convertLinksToAbsoluteUrl(s string) string {

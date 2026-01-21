@@ -201,6 +201,11 @@ func generateSchema(workdir, outputFile string) {
 	annotationsOpenApiPath := filepath.Join(workdir, "annotations_openapi.yml")
 	annotationsOpenApiOverridesPath := filepath.Join(workdir, "annotations_openapi_overrides.yml")
 
+	// Update since_version annotations based on git version history
+	if err := updateSinceVersions(workdir); err != nil {
+		log.Printf("Warning: failed to update since_version annotations: %v", err)
+	}
+
 	// Input file, the databricks openapi spec.
 	inputFile := os.Getenv("DATABRICKS_OPENAPI_SPEC")
 	if inputFile != "" {
