@@ -10,13 +10,12 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"syscall"
 	"time"
 
-	"github.com/databricks/cli/bundle/config"
+	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/apps/prompt"
 	"github.com/databricks/cli/libs/apps/vite"
@@ -42,28 +41,21 @@ func isViteReady(port int) bool {
 
 // detectAppNameFromBundle tries to extract the app name from a databricks.yml bundle config.
 // Returns the app name if found, or empty string if no bundle or no apps found.
-func detectAppNameFromBundle() string {
-	const bundleFile = "databricks.yml"
+// This properly loads and initializes the bundle to resolve variables and apply prefixes.
+func detectAppNameFromBundle(cmd *cobra.Command) string {
+	ctx := cmd.Context()
 
-	// Check if databricks.yml exists
-	if _, err := os.Stat(bundleFile); os.IsNotExist(err) {
+	// Try to configure bundle (returns nil if no bundle found)
+	b := root.TryConfigureBundle(cmd)
+	if b == nil {
 		return ""
 	}
 
-	// Get current working directory
-	cwd, err := os.Getwd()
-	if err != nil {
-		return ""
-	}
-
-	// Load the bundle configuration directly
-	rootConfig, diags := config.Load(filepath.Join(cwd, bundleFile))
-	if diags.HasError() {
-		return ""
-	}
+	// Run initialization to resolve variables, apply prefixes, etc.
+	phases.Initialize(ctx, b)
 
 	// Check for apps in the bundle
-	bundleApps := rootConfig.Resources.Apps
+	bundleApps := b.Config.Resources.Apps
 	if len(bundleApps) == 0 {
 		return ""
 	}
@@ -165,7 +157,7 @@ Examples:
 			// Resolve app name with priority: flag > bundle config > prompt
 			if appName == "" {
 				// Try to detect from bundle config
-				appName = detectAppNameFromBundle()
+				appName = detectAppNameFromBundle(cmd)
 				if appName != "" {
 					cmdio.LogString(ctx, fmt.Sprintf("Using app '%s' from bundle configuration", appName))
 				}

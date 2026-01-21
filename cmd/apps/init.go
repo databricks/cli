@@ -667,7 +667,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	var fileCount int
 	runErr = prompt.RunWithSpinnerCtx(ctx, "Creating project...", func() error {
 		var copyErr error
-		fileCount, copyErr = copyTemplate(templateDir, destDir, vars)
+		fileCount, copyErr = copyTemplate(ctx, templateDir, destDir, vars)
 		return copyErr
 	})
 	if runErr != nil {
@@ -811,7 +811,7 @@ var renameFiles = map[string]string{
 }
 
 // copyTemplate copies the template directory to dest, substituting variables.
-func copyTemplate(src, dest string, vars templateVars) (int, error) {
+func copyTemplate(ctx context.Context, src, dest string, vars templateVars) (int, error) {
 	fileCount := 0
 
 	// Find the project_name placeholder directory
@@ -832,7 +832,7 @@ func copyTemplate(src, dest string, vars templateVars) (int, error) {
 		srcProjectDir = src
 	}
 
-	log.Debugf(context.Background(), "Copying template from: %s", srcProjectDir)
+	log.Debugf(ctx, "Copying template from: %s", srcProjectDir)
 
 	// Files and directories to skip
 	skipFiles := map[string]bool{
@@ -854,13 +854,13 @@ func copyTemplate(src, dest string, vars templateVars) (int, error) {
 
 		// Skip certain files
 		if skipFiles[baseName] {
-			log.Debugf(context.Background(), "Skipping file: %s", baseName)
+			log.Debugf(ctx, "Skipping file: %s", baseName)
 			return nil
 		}
 
 		// Skip certain directories
 		if info.IsDir() && skipDirs[baseName] {
-			log.Debugf(context.Background(), "Skipping directory: %s", baseName)
+			log.Debugf(ctx, "Skipping directory: %s", baseName)
 			return filepath.SkipDir
 		}
 
@@ -885,11 +885,11 @@ func copyTemplate(src, dest string, vars templateVars) (int, error) {
 		destPath := filepath.Join(dest, relPath)
 
 		if info.IsDir() {
-			log.Debugf(context.Background(), "Creating directory: %s", relPath)
+			log.Debugf(ctx, "Creating directory: %s", relPath)
 			return os.MkdirAll(destPath, info.Mode())
 		}
 
-		log.Debugf(context.Background(), "Copying file: %s", relPath)
+		log.Debugf(ctx, "Copying file: %s", relPath)
 
 		// Read file content
 		content, err := os.ReadFile(srcPath)
@@ -931,9 +931,9 @@ func copyTemplate(src, dest string, vars templateVars) (int, error) {
 		return nil
 	})
 	if err != nil {
-		log.Debugf(context.Background(), "Error during template copy: %v", err)
+		log.Debugf(ctx, "Error during template copy: %v", err)
 	}
-	log.Debugf(context.Background(), "Copied %d files", fileCount)
+	log.Debugf(ctx, "Copied %d files", fileCount)
 
 	return fileCount, err
 }

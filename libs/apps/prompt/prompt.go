@@ -137,7 +137,7 @@ func PromptForProjectName(ctx context.Context, outputDir string) (string, error)
 
 	var name string
 	err := huh.NewInput().
-		Title("Project name").
+		Title("App name").
 		Description("lowercase letters, numbers, hyphens (max 26 chars)").
 		Placeholder("my-app").
 		Value(&name).
