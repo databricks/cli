@@ -53,10 +53,10 @@ You can pass additional arguments to psql after a double-dash (--):
 		}
 
 		if argsBeforeDash != 1 {
-			promptSpinner := cmdio.Spinner(ctx)
-			promptSpinner <- "No DATABASE_INSTANCE_NAME argument specified. Loading names for Database instances drop-down."
+			sp := cmdio.NewSpinner(ctx)
+			sp.Update("No DATABASE_INSTANCE_NAME argument specified. Loading names for Database instances drop-down.")
 			instances, err := w.Database.ListDatabaseInstancesAll(ctx, database.ListDatabaseInstancesRequest{})
-			close(promptSpinner)
+			sp.Close()
 			if err != nil {
 				return fmt.Errorf("failed to load names for Database instances drop-down. Please manually specify required argument: DATABASE_INSTANCE_NAME. Original error: %w", err)
 			}

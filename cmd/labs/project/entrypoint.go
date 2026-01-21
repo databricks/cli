@@ -122,14 +122,14 @@ func (e *Entrypoint) preparePython(ctx context.Context, environment map[string]s
 }
 
 func (e *Entrypoint) ensureRunningCluster(ctx context.Context, cfg *config.Config) error {
-	feedback := cmdio.Spinner(ctx)
-	defer close(feedback)
+	sp := cmdio.NewSpinner(ctx)
+	defer sp.Close()
 	w, err := databricks.NewWorkspaceClient((*databricks.Config)(cfg))
 	if err != nil {
 		return fmt.Errorf("workspace client: %w", err)
 	}
 	// TODO: add in-progress callback to EnsureClusterIsRunning() in SDK
-	feedback <- "Ensuring the cluster is running..."
+	sp.Update("Ensuring the cluster is running...")
 	err = w.Clusters.EnsureClusterIsRunning(ctx, cfg.ClusterID)
 	if err != nil {
 		return fmt.Errorf("ensure running: %w", err)
