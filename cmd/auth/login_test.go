@@ -159,7 +159,7 @@ func TestSetWorkspaceIdForUnifiedHost(t *testing.T) {
 	assert.Equal(t, "", authArguments.WorkspaceId) // Empty is valid for account-level access
 }
 
-func TestPromptForWorkspaceIDInNonInteractiveMode(t *testing.T) {
+func TestPromptForWorkspaceIdInNonInteractiveMode(t *testing.T) {
 	// Setup non-interactive context
 	ctx, _ := cmdio.SetupTest(context.Background(), cmdio.TestOptions{})
 
