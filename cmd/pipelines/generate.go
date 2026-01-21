@@ -249,21 +249,10 @@ func convertToResources(spec *sdpPipeline, resourceName, srcFolder string) (map[
 		schema = spec.Database
 	}
 
-	var libraries []pipelines.PipelineLibrary
 	environment := pipelines.PipelinesEnvironment{
 		Dependencies: []string{
 			"--editable ${workspace.file_path}",
 		},
-	}
-
-	for _, lib := range spec.Libraries {
-		if lib.Glob.Include != "" {
-			relativeIncludePath := filepath.ToSlash(filepath.Join(relativePath, lib.Glob.Include))
-
-			libraries = append(libraries, pipelines.PipelineLibrary{
-				Glob: &pipelines.PathPattern{Include: relativeIncludePath},
-			})
-		}
 	}
 
 	environmentDyn, err := convert.FromTyped(environment, dyn.NilValue)
@@ -271,12 +260,9 @@ func convertToResources(spec *sdpPipeline, resourceName, srcFolder string) (map[
 		return nil, fmt.Errorf("failed to convert environments into dyn.Value: %w", err)
 	}
 
-	librariesDyn, err := convert.FromTyped(libraries, dyn.NilValue)
+	librariesDyn, err := convertLibraries(relativePath, spec.Libraries)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert libraries into dyn.Value: %w", err)
-	}
-	if librariesDyn.Kind() == dyn.KindNil {
-		librariesDyn = dyn.V([]dyn.Value{})
 	}
 
 	// maps are unordered, and saver is sorting keys by dyn.Location
@@ -323,4 +309,35 @@ func convertToResources(spec *sdpPipeline, resourceName, srcFolder string) (map[
 	}
 
 	return resourcesMap, nil
+}
+
+// convertLibraries converts SDP libraries into DABs YAML format
+//
+// relativePath contains a path to append into SDP libraries path to make
+// them relative to generated DABs YAML
+func convertLibraries(relativePath string, specLibraries []sdpPipelineLibrary) (dyn.Value, error) {
+	var libraries []pipelines.PipelineLibrary
+
+	for _, lib := range specLibraries {
+		if lib.Glob.Include != "" {
+			relativeIncludePath := filepath.ToSlash(filepath.Join(relativePath, lib.Glob.Include))
+
+			libraries = append(libraries, pipelines.PipelineLibrary{
+				Glob: &pipelines.PathPattern{Include: relativeIncludePath},
+			})
+		}
+	}
+
+	librariesDyn, err := convert.FromTyped(libraries, dyn.NilValue)
+	if err != nil {
+		return dyn.InvalidValue, fmt.Errorf("failed to convert libraries into dyn.Value: %w", err)
+	}
+
+	// FromTyped returns NilValue if libraries is an empty array
+	if librariesDyn.Kind() == dyn.KindNil {
+		// we always want to leave empty array as a placeholder in generated YAML
+		return dyn.V([]dyn.Value{}), nil
+	}
+
+	return librariesDyn, nil
 }
