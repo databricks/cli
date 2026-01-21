@@ -13,7 +13,7 @@ type Profile struct {
 	Name                string
 	Host                string
 	AccountID           string
-	WorkspaceID         string
+	WorkspaceId         string
 	IsUnifiedHost       bool
 	ClusterID           string
 	ServerlessComputeID string

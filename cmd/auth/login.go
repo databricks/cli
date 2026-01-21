@@ -139,7 +139,7 @@ depends on the existing profiles you have set in your configuration file
 			authArguments.IsUnifiedHost = existingProfile.IsUnifiedHost
 		}
 		if !cmd.Flag("workspace-id").Changed && existingProfile != nil {
-			authArguments.WorkspaceID = existingProfile.WorkspaceID
+			authArguments.WorkspaceId = existingProfile.WorkspaceId
 		}
 
 		err = setHostAndAccountId(ctx, existingProfile, authArguments, args)
@@ -164,9 +164,11 @@ depends on the existing profiles you have set in your configuration file
 		// We need the config without the profile before it's used to initialise new workspace client below.
 		// Otherwise it will complain about non existing profile because it was not yet saved.
 		cfg := config.Config{
-			Host:      authArguments.Host,
-			AccountID: authArguments.AccountID,
-			AuthType:  "databricks-cli",
+			Host:                       authArguments.Host,
+			AccountID:                  authArguments.AccountID,
+			WorkspaceId:                authArguments.WorkspaceId,
+			Experimental_IsUnifiedHost: authArguments.IsUnifiedHost,
+			AuthType:                   "databricks-cli",
 		}
 		databricksCfgFile := os.Getenv("DATABRICKS_CONFIG_FILE")
 		if databricksCfgFile != "" {
@@ -215,7 +217,7 @@ depends on the existing profiles you have set in your configuration file
 				Host:                       cfg.Host,
 				AuthType:                   cfg.AuthType,
 				AccountID:                  cfg.AccountID,
-				WorkspaceId:                authArguments.WorkspaceID,
+				WorkspaceId:                authArguments.WorkspaceId,
 				Experimental_IsUnifiedHost: authArguments.IsUnifiedHost,
 				ClusterID:                  cfg.ClusterID,
 				ConfigFile:                 cfg.ConfigFile,
@@ -275,7 +277,7 @@ func setHostAndAccountId(ctx context.Context, existingProfile *profile.Profile, 
 	cfg := &config.Config{
 		Host:                       authArguments.Host,
 		AccountID:                  authArguments.AccountID,
-		WorkspaceId:                authArguments.WorkspaceID,
+		WorkspaceId:                authArguments.WorkspaceId,
 		Experimental_IsUnifiedHost: authArguments.IsUnifiedHost,
 	}
 
@@ -311,17 +313,17 @@ func setHostAndAccountId(ctx context.Context, existingProfile *profile.Profile, 
 		// - With workspace ID: workspace-level APIs
 		// - Without workspace ID: account-level APIs
 		// If neither is provided via flags, prompt for workspace ID (most common case)
-		hasWorkspaceID := authArguments.WorkspaceID != ""
+		hasWorkspaceID := authArguments.WorkspaceId != ""
 		if !hasWorkspaceID {
-			if existingProfile != nil && existingProfile.WorkspaceID != "" {
-				authArguments.WorkspaceID = existingProfile.WorkspaceID
+			if existingProfile != nil && existingProfile.WorkspaceId != "" {
+				authArguments.WorkspaceId = existingProfile.WorkspaceId
 			} else {
 				// Prompt for workspace ID for workspace-level access
 				workspaceId, err := promptForWorkspaceID(ctx)
 				if err != nil {
 					return err
 				}
-				authArguments.WorkspaceID = workspaceId
+				authArguments.WorkspaceId = workspaceId
 			}
 		}
 	case config.WorkspaceHost:
