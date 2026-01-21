@@ -32,7 +32,7 @@ require (
 	github.com/stretchr/testify v1.11.1 // MIT
 	golang.org/x/crypto v0.46.0 // BSD-3-Clause
 	golang.org/x/exp v0.0.0-20250911091902-df9299821621
-	golang.org/x/mod v0.31.0
+	golang.org/x/mod v0.32.0
 	golang.org/x/oauth2 v0.34.0
 	golang.org/x/sync v0.19.0
 	golang.org/x/sys v0.40.0
