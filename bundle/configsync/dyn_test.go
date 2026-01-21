@@ -8,6 +8,7 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/mutator"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -125,7 +126,7 @@ func TestResolveSelectors_SelectorNotFound(t *testing.T) {
 }
 
 func TestResolveSelectors_SelectorOnNonArray(t *testing.T) {
-	ctx := logdiag.InitContext(context.Background())
+	ctx := cmdio.MockDiscard(logdiag.InitContext(context.Background()))
 	tmpDir := t.TempDir()
 
 	yamlContent := `resources:
