@@ -7,11 +7,13 @@ import (
 	"os"
 	"reflect"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/palantir/pkg/yamlpatch/gopkgv3yamlpatcher"
 	"github.com/palantir/pkg/yamlpatch/yamlpatch"
@@ -108,7 +110,10 @@ func applyChanges(ctx context.Context, filePath string, changes resolvedChanges,
 
 	for _, fieldPath := range fieldPaths {
 		changeDesc := changes[fieldPath]
-		jsonPointer := strPathToJSONPointer(fieldPath)
+		jsonPointer, err := strPathToJSONPointer(fieldPath)
+		if err != nil {
+			return "", fmt.Errorf("failed to convert field path %q to JSON pointer: %w", fieldPath, err)
+		}
 
 		jsonPointers := []string{jsonPointer}
 		if targetName != "" {
@@ -222,14 +227,31 @@ func getResolvedFieldChanges(ctx context.Context, b *bundle.Bundle, planChanges 
 
 // strPathToJSONPointer converts a structpath string to JSON Pointer format.
 // Example: "resources.jobs.test[0].name" -> "/resources/jobs/test/0/name"
-func strPathToJSONPointer(pathStr string) string {
-	if pathStr == "" {
-		return ""
+func strPathToJSONPointer(pathStr string) (string, error) {
+	node, err := structpath.Parse(pathStr)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse path %q: %w", pathStr, err)
 	}
-	res := strings.ReplaceAll(pathStr, ".", "/")
-	res = strings.ReplaceAll(res, "[", "/")
-	res = strings.ReplaceAll(res, "]", "")
-	return "/" + res
+
+	var parts []string
+	for _, n := range node.AsSlice() {
+		if key, ok := n.StringKey(); ok {
+			parts = append(parts, key)
+			continue
+		}
+
+		if idx, ok := n.Index(); ok {
+			parts = append(parts, strconv.Itoa(idx))
+			continue
+		}
+
+		return "", fmt.Errorf("unsupported path node type in path %q", pathStr)
+	}
+
+	if len(parts) == 0 {
+		return "", nil
+	}
+	return "/" + strings.Join(parts, "/"), nil
 }
 
 // findResourceFileLocation finds the file where a resource is defined.

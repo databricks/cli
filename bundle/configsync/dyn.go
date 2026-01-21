@@ -3,8 +3,6 @@ package configsync
 import (
 	"errors"
 	"fmt"
-	"strconv"
-	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/dyn"
@@ -20,16 +18,12 @@ func resolveSelectors(pathStr string, b *bundle.Bundle) (string, error) {
 	}
 
 	nodes := node.AsSlice()
-	var builder strings.Builder
+	var result *structpath.PathNode
 	currentValue := b.Config.Value()
 
-	for i, n := range nodes {
+	for _, n := range nodes {
 		if key, ok := n.StringKey(); ok {
-			if i > 0 {
-				builder.WriteString(".")
-			}
-			builder.WriteString(key)
-
+			result = structpath.NewStringKey(result, key)
 			if currentValue.IsValid() {
 				currentValue, _ = dyn.GetByPath(currentValue, dyn.Path{dyn.Key(key)})
 			}
@@ -37,10 +31,7 @@ func resolveSelectors(pathStr string, b *bundle.Bundle) (string, error) {
 		}
 
 		if idx, ok := n.Index(); ok {
-			builder.WriteString("[")
-			builder.WriteString(strconv.Itoa(idx))
-			builder.WriteString("]")
-
+			result = structpath.NewIndex(result, idx)
 			if currentValue.IsValid() {
 				currentValue, _ = dyn.GetByPath(currentValue, dyn.Path{dyn.Index(idx)})
 			}
@@ -72,9 +63,7 @@ func resolveSelectors(pathStr string, b *bundle.Bundle) (string, error) {
 				return "", fmt.Errorf("no array element found with %s='%s' in path %s", key, value, pathStr)
 			}
 
-			builder.WriteString("[")
-			builder.WriteString(strconv.Itoa(foundIndex))
-			builder.WriteString("]")
+			result = structpath.NewIndex(result, foundIndex)
 			currentValue = seq[foundIndex]
 			continue
 		}
@@ -84,5 +73,5 @@ func resolveSelectors(pathStr string, b *bundle.Bundle) (string, error) {
 		}
 	}
 
-	return builder.String(), nil
+	return result.String(), nil
 }
