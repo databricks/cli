@@ -1,0 +1,69 @@
+{
+  "plan_version": 2,
+  "cli_version": "[DEV_VERSION]",
+  "lineage": "[UUID]",
+  "serial": 1,
+  "plan": {
+    "resources.catalogs.grants_catalog": {
+      "action": "skip",
+      "remote_state": {
+        "catalog_type": "MANAGED_CATALOG",
+        "comment": "Test catalog for grants",
+        "full_name": "catalog_grants_[UNIQUE_NAME]",
+        "name": "catalog_grants_[UNIQUE_NAME]",
+        "owner": "[USERNAME]"
+      }
+    },
+    "resources.catalogs.grants_catalog.grants": {
+      "depends_on": [
+        {
+          "node": "resources.catalogs.grants_catalog",
+          "label": "${resources.catalogs.grants_catalog.id}"
+        }
+      ],
+      "action": "update",
+      "new_state": {
+        "value": {
+          "securable_type": "catalog",
+          "full_name": "catalog_grants_[UNIQUE_NAME]",
+          "grants": [
+            {
+              "principal": "deco-test-user@databricks.com",
+              "privileges": [
+                "USE_CATALOG",
+                "USE_SCHEMA"
+              ]
+            }
+          ]
+        }
+      },
+      "remote_state": {
+        "securable_type": "catalog",
+        "full_name": "catalog_grants_[UNIQUE_NAME]",
+        "grants": [
+          {
+            "principal": "deco-test-user@databricks.com",
+            "privileges": [
+              "CREATE_SCHEMA",
+              "USE_CATALOG"
+            ]
+          }
+        ]
+      },
+      "changes": {
+        "grants[0].privileges[0]": {
+          "action": "update",
+          "old": "CREATE_SCHEMA",
+          "new": "USE_CATALOG",
+          "remote": "CREATE_SCHEMA"
+        },
+        "grants[0].privileges[1]": {
+          "action": "update",
+          "old": "USE_CATALOG",
+          "new": "USE_SCHEMA",
+          "remote": "USE_CATALOG"
+        }
+      }
+    }
+  }
+}
