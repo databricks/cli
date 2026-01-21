@@ -16,31 +16,31 @@ import (
 type CatalogGrantPrivilege string
 
 const (
-	CatalogGrantPrivilegeAllPrivileges     CatalogGrantPrivilege = "ALL_PRIVILEGES"
-	CatalogGrantPrivilegeApplyTag          CatalogGrantPrivilege = "APPLY_TAG"
-	CatalogGrantPrivilegeCreateConnection  CatalogGrantPrivilege = "CREATE_CONNECTION"
-	CatalogGrantPrivilegeCreateExternalLocation CatalogGrantPrivilege = "CREATE_EXTERNAL_LOCATION"
-	CatalogGrantPrivilegeCreateExternalTable    CatalogGrantPrivilege = "CREATE_EXTERNAL_TABLE"
-	CatalogGrantPrivilegeCreateExternalVolume   CatalogGrantPrivilege = "CREATE_EXTERNAL_VOLUME"
-	CatalogGrantPrivilegeCreateForeignCatalog   CatalogGrantPrivilege = "CREATE_FOREIGN_CATALOG"
-	CatalogGrantPrivilegeCreateFunction         CatalogGrantPrivilege = "CREATE_FUNCTION"
-	CatalogGrantPrivilegeCreateManagedStorage   CatalogGrantPrivilege = "CREATE_MANAGED_STORAGE"
-	CatalogGrantPrivilegeCreateMaterializedView CatalogGrantPrivilege = "CREATE_MATERIALIZED_VIEW"
-	CatalogGrantPrivilegeCreateModel            CatalogGrantPrivilege = "CREATE_MODEL"
-	CatalogGrantPrivilegeCreateSchema           CatalogGrantPrivilege = "CREATE_SCHEMA"
+	CatalogGrantPrivilegeAllPrivileges           CatalogGrantPrivilege = "ALL_PRIVILEGES"
+	CatalogGrantPrivilegeApplyTag                CatalogGrantPrivilege = "APPLY_TAG"
+	CatalogGrantPrivilegeCreateConnection        CatalogGrantPrivilege = "CREATE_CONNECTION"
+	CatalogGrantPrivilegeCreateExternalLocation  CatalogGrantPrivilege = "CREATE_EXTERNAL_LOCATION"
+	CatalogGrantPrivilegeCreateExternalTable     CatalogGrantPrivilege = "CREATE_EXTERNAL_TABLE"
+	CatalogGrantPrivilegeCreateExternalVolume    CatalogGrantPrivilege = "CREATE_EXTERNAL_VOLUME"
+	CatalogGrantPrivilegeCreateForeignCatalog    CatalogGrantPrivilege = "CREATE_FOREIGN_CATALOG"
+	CatalogGrantPrivilegeCreateFunction          CatalogGrantPrivilege = "CREATE_FUNCTION"
+	CatalogGrantPrivilegeCreateManagedStorage    CatalogGrantPrivilege = "CREATE_MANAGED_STORAGE"
+	CatalogGrantPrivilegeCreateMaterializedView  CatalogGrantPrivilege = "CREATE_MATERIALIZED_VIEW"
+	CatalogGrantPrivilegeCreateModel             CatalogGrantPrivilege = "CREATE_MODEL"
+	CatalogGrantPrivilegeCreateSchema            CatalogGrantPrivilege = "CREATE_SCHEMA"
 	CatalogGrantPrivilegeCreateStorageCredential CatalogGrantPrivilege = "CREATE_STORAGE_CREDENTIAL"
-	CatalogGrantPrivilegeCreateTable            CatalogGrantPrivilege = "CREATE_TABLE"
-	CatalogGrantPrivilegeCreateVolume           CatalogGrantPrivilege = "CREATE_VOLUME"
-	CatalogGrantPrivilegeExecute                CatalogGrantPrivilege = "EXECUTE"
-	CatalogGrantPrivilegeManage                 CatalogGrantPrivilege = "MANAGE"
-	CatalogGrantPrivilegeModify                 CatalogGrantPrivilege = "MODIFY"
-	CatalogGrantPrivilegeReadVolume             CatalogGrantPrivilege = "READ_VOLUME"
-	CatalogGrantPrivilegeRefresh                CatalogGrantPrivilege = "REFRESH"
-	CatalogGrantPrivilegeSelect                 CatalogGrantPrivilege = "SELECT"
-	CatalogGrantPrivilegeUseCatalog             CatalogGrantPrivilege = "USE_CATALOG"
-	CatalogGrantPrivilegeUseConnection          CatalogGrantPrivilege = "USE_CONNECTION"
-	CatalogGrantPrivilegeUseSchema              CatalogGrantPrivilege = "USE_SCHEMA"
-	CatalogGrantPrivilegeWriteVolume            CatalogGrantPrivilege = "WRITE_VOLUME"
+	CatalogGrantPrivilegeCreateTable             CatalogGrantPrivilege = "CREATE_TABLE"
+	CatalogGrantPrivilegeCreateVolume            CatalogGrantPrivilege = "CREATE_VOLUME"
+	CatalogGrantPrivilegeExecute                 CatalogGrantPrivilege = "EXECUTE"
+	CatalogGrantPrivilegeManage                  CatalogGrantPrivilege = "MANAGE"
+	CatalogGrantPrivilegeModify                  CatalogGrantPrivilege = "MODIFY"
+	CatalogGrantPrivilegeReadVolume              CatalogGrantPrivilege = "READ_VOLUME"
+	CatalogGrantPrivilegeRefresh                 CatalogGrantPrivilege = "REFRESH"
+	CatalogGrantPrivilegeSelect                  CatalogGrantPrivilege = "SELECT"
+	CatalogGrantPrivilegeUseCatalog              CatalogGrantPrivilege = "USE_CATALOG"
+	CatalogGrantPrivilegeUseConnection           CatalogGrantPrivilege = "USE_CONNECTION"
+	CatalogGrantPrivilegeUseSchema               CatalogGrantPrivilege = "USE_SCHEMA"
+	CatalogGrantPrivilegeWriteVolume             CatalogGrantPrivilege = "WRITE_VOLUME"
 )
 
 // Values returns all valid CatalogGrantPrivilege values
@@ -85,14 +85,6 @@ type CatalogGrant struct {
 type Catalog struct {
 	BaseResource
 	catalog.CreateCatalog
-
-	// Whether predictive optimization should be enabled for this object and objects under it.
-	// This field is only used for updates and cannot be set during creation.
-	EnablePredictiveOptimization catalog.EnablePredictiveOptimization `json:"enable_predictive_optimization,omitempty"`
-
-	// Whether the current securable is accessible from all workspaces or a specific set of workspaces.
-	// This field is only used for updates and cannot be set during creation.
-	IsolationMode catalog.CatalogIsolationMode `json:"isolation_mode,omitempty"`
 
 	// List of grants to apply on this catalog.
 	Grants []CatalogGrant `json:"grants,omitempty"`

@@ -162,6 +162,9 @@ github.com/databricks/cli/bundle/config.Resources:
       The app resource defines a Databricks app.
     "markdown_description": |-
       The app resource defines a [Databricks app](/api/workspace/apps/create). For information about Databricks Apps, see [\_](/dev-tools/databricks-apps/index.md).
+  "catalogs":
+    "description": |-
+      PLACEHOLDER
   "clusters":
     "description": |-
       The cluster definitions for the bundle, where each key is the name of a cluster.
@@ -529,6 +532,44 @@ github.com/databricks/cli/bundle/config/resources.AppPermission:
     "description": |-
       PLACEHOLDER
   "user_name":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.Catalog:
+  "comment":
+    "description": |-
+      PLACEHOLDER
+  "connection_name":
+    "description": |-
+      PLACEHOLDER
+  "grants":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
+  "name":
+    "description": |-
+      PLACEHOLDER
+  "options":
+    "description": |-
+      PLACEHOLDER
+  "properties":
+    "description": |-
+      PLACEHOLDER
+  "provider_name":
+    "description": |-
+      PLACEHOLDER
+  "share_name":
+    "description": |-
+      PLACEHOLDER
+  "storage_root":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.CatalogGrant:
+  "principal":
+    "description": |-
+      PLACEHOLDER
+  "privileges":
     "description": |-
       PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.ClusterPermission:
