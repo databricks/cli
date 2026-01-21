@@ -20,7 +20,7 @@ type resolvedChanges map[string]*deployplan.ChangeDesc
 
 // normalizeValue converts values to plain Go types suitable for YAML patching
 // by using SDK marshaling which properly handles ForceSendFields and other annotations.
-func normalizeValue(_ context.Context, v any) (any, error) {
+func normalizeValue(v any) (any, error) {
 	if v == nil {
 		return nil, nil
 	}
@@ -130,7 +130,7 @@ func applyChanges(ctx context.Context, filePath string, changes resolvedChanges,
 					Path: path,
 				}
 			} else if isReplacement {
-				normalizedRemote, err := normalizeValue(ctx, changeDesc.Remote)
+				normalizedRemote, err := normalizeValue(changeDesc.Remote)
 				if err != nil {
 					return "", fmt.Errorf("failed to normalize replacement value for %s: %w", jsonPointer, err)
 				}
@@ -140,7 +140,7 @@ func applyChanges(ctx context.Context, filePath string, changes resolvedChanges,
 					Value: normalizedRemote,
 				}
 			} else if isAddition {
-				normalizedRemote, err := normalizeValue(ctx, changeDesc.Remote)
+				normalizedRemote, err := normalizeValue(changeDesc.Remote)
 				if err != nil {
 					return "", fmt.Errorf("failed to normalize addition value for %s: %w", jsonPointer, err)
 				}
