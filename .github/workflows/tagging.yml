@@ -2,14 +2,10 @@
 name: tagging
 
 on:
-  # Manual dispatch.
   workflow_dispatch:
-  # No inputs are required for the manual dispatch.
-
-  # Runs at 8:00 UTC on Tuesday, Wednesday, and Thursday. To enable automated
-  # tagging for a repository, simply add it to the if block of the tag job.
-  schedule:
-    - cron: '0 8 * * TUE,WED,THU'
+  # Enable for automatic tagging
+  #schedule:
+  #  - cron: '0 0 * * TUE'
 
 # Ensure that only a single instance of the workflow is running at a time.
 concurrency:
@@ -17,14 +13,6 @@ concurrency:
 
 jobs:
   tag:
-    # Only run the tag job if the trigger is manual (workflow_dispatch) or
-    # the repository has been approved for automated releases.
-    #
-    # To disable release for a repository, simply exclude it from the if
-    # condition.
-    if: >-
-      github.event_name == 'workflow_dispatch' ||
-      github.repository == 'databricks/databricks-sdk-go'
     environment: "release-is"
     runs-on:
       group: databricks-deco-testing-runner-group
