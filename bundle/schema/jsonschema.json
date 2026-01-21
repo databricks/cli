@@ -2749,7 +2749,7 @@
                       "$ref": "#/$defs/string"
                     },
                     "experimental_is_unified_host": {
-                      "description": "Flag to indicate if the host is a unified host",
+                      "description": "Experimental feature flag to indicate if the host is a unified host",
                       "$ref": "#/$defs/bool"
                     },
                     "file_path": {
