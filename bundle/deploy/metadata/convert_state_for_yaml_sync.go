@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
@@ -99,16 +100,21 @@ func (m *convertStateForYamlSync) convertState(ctx context.Context, b *bundle.Bu
 		},
 	}
 
-	// Create a copy of b.Config and reverse the interpolation
+	// Get the dynamic value from b.Config and reverse the interpolation
 	// b.Config has been modified by terraform.Interpolate which converts bundle-style
 	// references (${resources.pipelines.x.id}) to terraform-style (${databricks_pipeline.x.id})
-	// We need to reverse this transformation for the direct engine's CalculatePlan
-	uninterpolatedConfig := b.Config
-	err = uninterpolatedConfig.Mutate(func(root dyn.Value) (dyn.Value, error) {
-		return reverseInterpolate(root)
-	})
+	interpolatedRoot := b.Config.Value()
+	uninterpolatedRoot, err := reverseInterpolate(interpolatedRoot)
 	if err != nil {
 		return fmt.Errorf("failed to reverse interpolation: %w", err)
+	}
+
+	var uninterpolatedConfig config.Root
+	err = uninterpolatedConfig.Mutate(func(_ dyn.Value) (dyn.Value, error) {
+		return uninterpolatedRoot, nil
+	})
+	if err != nil {
+		return fmt.Errorf("failed to create uninterpolated config: %w", err)
 	}
 
 	plan, err := deploymentBundle.CalculatePlan(ctx, b.WorkspaceClient(), &uninterpolatedConfig, snapshotPath)
