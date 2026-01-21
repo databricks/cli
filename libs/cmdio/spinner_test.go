@@ -1,7 +1,9 @@
 package cmdio
 
 import (
+	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -52,4 +54,79 @@ func TestSpinnerModelViewQuitting(t *testing.T) {
 	view := m.View()
 
 	assert.Empty(t, view)
+}
+
+func TestSpinnerStructUpdateBeforeClose(t *testing.T) {
+	ctx := context.Background()
+	ctx, _ = NewTestContextWithStderr(ctx)
+
+	sp := NewSpinner(ctx)
+
+	sp.Update("test message 1")
+	sp.Update("test message 2")
+	sp.Close()
+
+	// No panics = success
+}
+
+func TestSpinnerStructCloseIdempotent(t *testing.T) {
+	ctx := context.Background()
+	ctx, _ = NewTestContextWithStderr(ctx)
+
+	sp := NewSpinner(ctx)
+
+	sp.Close()
+	sp.Close() // Should not panic
+	sp.Close() // Should not panic
+}
+
+func TestSpinnerStructUpdateAfterClose(t *testing.T) {
+	ctx := context.Background()
+	ctx, _ = NewTestContextWithStderr(ctx)
+
+	sp := NewSpinner(ctx)
+
+	sp.Close()
+	sp.Update("after close") // Should not panic
+}
+
+func TestSpinnerStructNonInteractive(t *testing.T) {
+	ctx := context.Background()
+	// Create context without TTY simulation (non-interactive)
+	ctx, _ = NewTestContextWithStderr(ctx)
+
+	sp := NewSpinner(ctx)
+	sp.Update("should be discarded")
+	sp.Close()
+
+	// Should complete without error in non-interactive mode
+}
+
+func TestSpinnerBackwardCompatibility(t *testing.T) {
+	ctx := context.Background()
+	ctx, _ = NewTestContextWithStderr(ctx)
+
+	// Old API should still work
+	spinner := Spinner(ctx)
+	spinner <- "old api message"
+	close(spinner)
+
+	// No panics = success
+}
+
+func TestSpinnerStructContextCancellation(t *testing.T) {
+	ctx := context.Background()
+	ctx, _ = NewTestContextWithStderr(ctx)
+
+	ctx, cancel := context.WithCancel(ctx)
+
+	sp := NewSpinner(ctx)
+
+	sp.Update("message")
+	cancel() // Should trigger cleanup
+	time.Sleep(100 * time.Millisecond)
+
+	// Spinner should handle cancellation gracefully
+	// Close should still be safe to call
+	sp.Close()
 }
