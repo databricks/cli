@@ -85,8 +85,6 @@ def _allow_stderr_output(config: pytest.Config):
 def pytest_configure(config: pytest.Config):
     """Configure pytest session."""
     with _allow_stderr_output(config):
-        src_path = pathlib.Path(__file__).parent.parent / "src"
-        sys.path.insert(0, str(src_path))
         _enable_fallback_compute()
 
         # Initialize Spark session eagerly, so it is available even when
