@@ -426,7 +426,7 @@ github.com/databricks/cli/bundle/config.Workspace:
       The client ID for the workspace
   "experimental_is_unified_host":
     "description": |-
-      Flag to indicate if the host is a unified host
+      Experimental feature flag to indicate if the host is a unified host
   "file_path":
     "description": |-
       The file path to use within the workspace for both deployments and workflow runs
