@@ -1,5 +1,5 @@
 Local = true
-Cloud = true
+Cloud = False
 RecordRequests = false
 Ignore = [".databricks"]
 
