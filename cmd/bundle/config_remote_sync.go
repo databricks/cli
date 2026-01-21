@@ -34,13 +34,13 @@ Examples:
 	cmd.Flags().BoolVar(&save, "save", false, "Write updated config files to disk")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		b, _, err := utils.ProcessBundleRet(cmd, utils.ProcessOptions{})
+		b, stateDesc, err := utils.ProcessBundleRet(cmd, utils.ProcessOptions{ReadState: true})
 		if err != nil {
 			return err
 		}
 
 		ctx := cmd.Context()
-		changes, err := configsync.DetectChanges(ctx, b)
+		changes, err := configsync.DetectChanges(ctx, b, stateDesc.Engine)
 		if err != nil {
 			return fmt.Errorf("failed to detect changes: %w", err)
 		}
