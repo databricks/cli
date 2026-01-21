@@ -3,7 +3,6 @@ package configsync
 import (
 	"context"
 	"fmt"
-	"reflect"
 	"regexp"
 
 	"github.com/databricks/cli/bundle"
@@ -119,39 +118,6 @@ func shouldSkipField(path string, changeDesc *deployplan.ChangeDesc) bool {
 
 // alwaysDefault always returns true (for computed fields).
 func alwaysDefault(*deployplan.ChangeDesc) bool {
-	return true
-}
-
-// isEmptyStruct checks if the remote value is an empty struct or map.
-func isEmptyStruct(changeDesc *deployplan.ChangeDesc) bool {
-	if changeDesc.Remote == nil {
-		return true
-	}
-
-	val := reflect.ValueOf(changeDesc.Remote)
-	switch val.Kind() {
-	case reflect.Map:
-		return val.Len() == 0
-	case reflect.Struct:
-		return isStructAllZeroValues(val)
-	case reflect.Ptr:
-		if val.IsNil() {
-			return true
-		}
-		return isEmptyStruct(&deployplan.ChangeDesc{Remote: val.Elem().Interface()})
-	default:
-		return false
-	}
-}
-
-// isStructAllZeroValues checks if all fields in a struct are zero values.
-func isStructAllZeroValues(val reflect.Value) bool {
-	for i := range val.NumField() {
-		field := val.Field(i)
-		if !field.IsZero() {
-			return false
-		}
-	}
 	return true
 }
 
