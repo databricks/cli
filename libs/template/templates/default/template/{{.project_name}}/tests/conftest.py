@@ -59,8 +59,8 @@ def load_fixture(spark: SparkSession):
 def _enable_fallback_compute():
     """Enable serverless compute if no compute is specified."""
     conf = WorkspaceClient().config
-    has_serverles_compute_id = hasattr(conf, "serverless_compute_id") and conf.serverless_compute_id
-    if has_serverles_compute_id or conf.cluster_id or os.environ.get("SPARK_REMOTE"):
+    has_serverless_compute_id = hasattr(conf, "serverless_compute_id") and conf.serverless_compute_id
+    if has_serverless_compute_id or conf.cluster_id or os.environ.get("SPARK_REMOTE"):
         return
 
     url = "https://docs.databricks.com/dev-tools/databricks-connect/cluster-config"
