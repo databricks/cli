@@ -1,5 +1,5 @@
 title "Testing pipelines --version"
-trace $PIPELINES --version
+trace $CLI pipelines --version
 
 title "Testing pipelines version command"
-trace $PIPELINES version
+trace $CLI pipelines version

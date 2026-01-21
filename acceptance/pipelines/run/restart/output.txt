@@ -1,5 +1,5 @@
 
->>> [ENTRYPOINT] deploy
+>>> [CLI] pipelines deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-run-flags/default/files...
 Deploying resources...
 Updating deployment state...
@@ -7,7 +7,7 @@ Deployment complete!
 View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?o=[NUMID]
 
 === Running pipeline with --restart flag
->>> [ENTRYPOINT] run --restart
+>>> [CLI] pipelines run --restart
 Recommendation: This command runs the last deployed version of the code
 
 If you've made local changes, run '[DEPLOYCMD]' first to ensure they are included.
