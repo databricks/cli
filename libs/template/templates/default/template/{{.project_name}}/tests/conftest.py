@@ -60,7 +60,9 @@ def _enable_fallback_compute():
     """Enable serverless compute if no compute is specified."""
     conf = WorkspaceClient().config
     # Guard the access with a hasattr for compatibility with older databricks SDK versions.
-    has_serverless_compute_id = hasattr(conf, "serverless_compute_id") and conf.serverless_compute_id
+    has_serverless_compute_id = (
+        hasattr(conf, "serverless_compute_id") and conf.serverless_compute_id
+    )
     if has_serverless_compute_id or conf.cluster_id or os.environ.get("SPARK_REMOTE"):
         return
 
