@@ -45,6 +45,7 @@ func promptForProfile(ctx context.Context, defaultValue string) (string, error) 
 const (
 	minimalDbConnectVersion = "13.1"
 	defaultTimeout          = 1 * time.Hour
+	authTypeDatabricksCLI   = "databricks-cli"
 )
 
 func newLoginCommand(authArguments *auth.AuthArguments) *cobra.Command {
@@ -203,7 +204,7 @@ depends on the existing profiles you have set in your configuration file
 			err = databrickscfg.SaveToProfile(ctx, &config.Config{
 				Profile:             profileName,
 				Host:                authArguments.Host,
-				AuthType:            "databricks-cli",
+				AuthType:            authTypeDatabricksCLI,
 				AccountID:           authArguments.AccountID,
 				ClusterID:           clusterID,
 				ConfigFile:          os.Getenv("DATABRICKS_CONFIG_FILE"),
