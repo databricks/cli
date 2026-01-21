@@ -21,8 +21,8 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "apps",
-		Short: `Apps run directly on a customer’s Databricks instance, integrate with their data, use and extend Databricks services, and enable users to interact through single sign-on.`,
-		Long: `Apps run directly on a customer’s Databricks instance, integrate with their
+		Short: `Apps run directly on a customer's Databricks instance, integrate with their data, use and extend Databricks services, and enable users to interact through single sign-on.`,
+		Long: `Apps run directly on a customer's Databricks instance, integrate with their
   data, use and extend Databricks services, and enable users to interact through
   single sign-on.`,
 		GroupID: "apps",
