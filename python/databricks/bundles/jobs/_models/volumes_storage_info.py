@@ -17,7 +17,7 @@ class VolumesStorageInfo:
 
     destination: VariableOr[str]
     """
-    UC Volumes destination, e.g. `/Volumes/catalog/schema/vol1/init-scripts/setup-datadog.sh`
+    Required. UC Volumes destination, e.g. `/Volumes/catalog/schema/vol1/init-scripts/setup-datadog.sh`
     or `dbfs:/Volumes/catalog/schema/vol1/init-scripts/setup-datadog.sh`
     """
 
@@ -34,7 +34,7 @@ class VolumesStorageInfoDict(TypedDict, total=False):
 
     destination: VariableOr[str]
     """
-    UC Volumes destination, e.g. `/Volumes/catalog/schema/vol1/init-scripts/setup-datadog.sh`
+    Required. UC Volumes destination, e.g. `/Volumes/catalog/schema/vol1/init-scripts/setup-datadog.sh`
     or `dbfs:/Volumes/catalog/schema/vol1/init-scripts/setup-datadog.sh`
     """
 

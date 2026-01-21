@@ -18,6 +18,9 @@ class JobPermission:
     """"""
 
     level: VariableOr[JobPermissionLevel]
+    """
+    Required.
+    """
 
     group_name: VariableOrOptional[str] = None
 
@@ -37,6 +40,9 @@ class JobPermissionDict(TypedDict, total=False):
     """"""
 
     level: VariableOr[JobPermissionLevelParam]
+    """
+    Required.
+    """
 
     group_name: VariableOrOptional[str]
 

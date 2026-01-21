@@ -3,6 +3,10 @@ from typing import Literal
 
 
 class VolumeGrantPrivilege(Enum):
+    """
+    Valid values are: `ALL_PRIVILEGES`, `APPLY_TAG`, `MANAGE`, `READ_VOLUME`, and `WRITE_VOLUME`.
+    """
+
     ALL_PRIVILEGES = "ALL_PRIVILEGES"
     APPLY_TAG = "APPLY_TAG"
     MANAGE = "MANAGE"

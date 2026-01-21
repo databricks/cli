@@ -18,8 +18,14 @@ class VolumeGrant:
     """"""
 
     principal: VariableOr[str]
+    """
+    Required.
+    """
 
     privileges: VariableOrList[VolumeGrantPrivilege] = field(default_factory=list)
+    """
+    Required.
+    """
 
     @classmethod
     def from_dict(cls, value: "VolumeGrantDict") -> "Self":
@@ -33,8 +39,14 @@ class VolumeGrantDict(TypedDict, total=False):
     """"""
 
     principal: VariableOr[str]
+    """
+    Required.
+    """
 
     privileges: VariableOrList[VolumeGrantPrivilegeParam]
+    """
+    Required.
+    """
 
 
 VolumeGrantParam = VolumeGrantDict | VolumeGrant

@@ -3,6 +3,10 @@ from typing import Literal
 
 
 class SchemaGrantPrivilege(Enum):
+    """
+    Valid values are: `ALL_PRIVILEGES`, `APPLY_TAG`, `CREATE_FUNCTION`, `CREATE_TABLE`, `CREATE_VOLUME`, `MANAGE`, `USE_SCHEMA`, `EXECUTE`, `MODIFY`, `REFRESH`, `SELECT`, `READ_VOLUME`, and `WRITE_VOLUME`.
+    """
+
     ALL_PRIVILEGES = "ALL_PRIVILEGES"
     APPLY_TAG = "APPLY_TAG"
     CREATE_FUNCTION = "CREATE_FUNCTION"

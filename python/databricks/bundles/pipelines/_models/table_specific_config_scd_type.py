@@ -6,7 +6,7 @@ class TableSpecificConfigScdType(Enum):
     """
     :meta private: [EXPERIMENTAL]
 
-    The SCD type to use to ingest the table.
+    The SCD type to use to ingest the table. Valid values are: `SCD_TYPE_1`, `SCD_TYPE_2`, and `APPEND_ONLY`.
     """
 
     SCD_TYPE_1 = "SCD_TYPE_1"

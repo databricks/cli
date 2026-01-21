@@ -16,7 +16,7 @@ class JobEnvironment:
 
     environment_key: VariableOr[str]
     """
-    The key of an environment. It has to be unique within a job.
+    Required. The key of an environment. It has to be unique within a job.
     """
 
     spec: VariableOrOptional[Environment] = None
@@ -34,7 +34,7 @@ class JobEnvironmentDict(TypedDict, total=False):
 
     environment_key: VariableOr[str]
     """
-    The key of an environment. It has to be unique within a job.
+    Required. The key of an environment. It has to be unique within a job.
     """
 
     spec: VariableOrOptional[EnvironmentParam]

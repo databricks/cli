@@ -17,13 +17,13 @@ class ForEachTask:
 
     inputs: VariableOr[str]
     """
-    Array for task to iterate on. This can be a JSON string or a reference to
+    Required. Array for task to iterate on. This can be a JSON string or a reference to
     an array parameter.
     """
 
     task: VariableOr["Task"]
     """
-    Configuration for the task that will be run for each element in the array
+    Required. Configuration for the task that will be run for each element in the array
     """
 
     concurrency: VariableOrOptional[int] = None
@@ -45,13 +45,13 @@ class ForEachTaskDict(TypedDict, total=False):
 
     inputs: VariableOr[str]
     """
-    Array for task to iterate on. This can be a JSON string or a reference to
+    Required. Array for task to iterate on. This can be a JSON string or a reference to
     an array parameter.
     """
 
     task: VariableOr["TaskParam"]
     """
-    Configuration for the task that will be run for each element in the array
+    Required. Configuration for the task that will be run for each element in the array
     """
 
     concurrency: VariableOrOptional[int]

@@ -15,7 +15,7 @@ class LocalFileInfo:
 
     destination: VariableOr[str]
     """
-    local file destination, e.g. `file:/my/local/file.sh`
+    Required. local file destination, e.g. `file:/my/local/file.sh`
     """
 
     @classmethod
@@ -31,7 +31,7 @@ class LocalFileInfoDict(TypedDict, total=False):
 
     destination: VariableOr[str]
     """
-    local file destination, e.g. `file:/my/local/file.sh`
+    Required. local file destination, e.g. `file:/my/local/file.sh`
     """
 
 

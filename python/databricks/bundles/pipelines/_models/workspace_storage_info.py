@@ -17,7 +17,7 @@ class WorkspaceStorageInfo:
 
     destination: VariableOr[str]
     """
-    wsfs destination, e.g. `workspace:/cluster-init-scripts/setup-datadog.sh`
+    Required. wsfs destination, e.g. `workspace:/cluster-init-scripts/setup-datadog.sh`
     """
 
     @classmethod
@@ -33,7 +33,7 @@ class WorkspaceStorageInfoDict(TypedDict, total=False):
 
     destination: VariableOr[str]
     """
-    wsfs destination, e.g. `workspace:/cluster-init-scripts/setup-datadog.sh`
+    Required. wsfs destination, e.g. `workspace:/cluster-init-scripts/setup-datadog.sh`
     """
 
 

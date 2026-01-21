@@ -26,12 +26,12 @@ class Schema(Resource):
 
     catalog_name: VariableOr[str]
     """
-    Name of parent catalog.
+    Required. Name of parent catalog.
     """
 
     name: VariableOr[str]
     """
-    Name of schema, relative to parent catalog.
+    Required. Name of schema, relative to parent catalog.
     """
 
     comment: VariableOrOptional[str] = None
@@ -66,12 +66,12 @@ class SchemaDict(TypedDict, total=False):
 
     catalog_name: VariableOr[str]
     """
-    Name of parent catalog.
+    Required. Name of parent catalog.
     """
 
     name: VariableOr[str]
     """
-    Name of schema, relative to parent catalog.
+    Required. Name of schema, relative to parent catalog.
     """
 
     comment: VariableOrOptional[str]

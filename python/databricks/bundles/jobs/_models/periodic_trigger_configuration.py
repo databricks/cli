@@ -19,12 +19,12 @@ class PeriodicTriggerConfiguration:
 
     interval: VariableOr[int]
     """
-    The interval at which the trigger should run.
+    Required. The interval at which the trigger should run.
     """
 
     unit: VariableOr[PeriodicTriggerConfigurationTimeUnit]
     """
-    The unit of time for the interval.
+    Required. The unit of time for the interval.
     """
 
     @classmethod
@@ -40,12 +40,12 @@ class PeriodicTriggerConfigurationDict(TypedDict, total=False):
 
     interval: VariableOr[int]
     """
-    The interval at which the trigger should run.
+    Required. The interval at which the trigger should run.
     """
 
     unit: VariableOr[PeriodicTriggerConfigurationTimeUnitParam]
     """
-    The unit of time for the interval.
+    Required. The unit of time for the interval.
     """
 
 

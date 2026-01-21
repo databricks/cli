@@ -15,12 +15,12 @@ class JobParameterDefinition:
 
     default: VariableOr[str]
     """
-    Default value of the parameter.
+    Required. Default value of the parameter.
     """
 
     name: VariableOr[str]
     """
-    The name of the defined parameter. May only contain alphanumeric characters, `_`, `-`, and `.`
+    Required. The name of the defined parameter. May only contain alphanumeric characters, `_`, `-`, and `.`
     """
 
     @classmethod
@@ -36,12 +36,12 @@ class JobParameterDefinitionDict(TypedDict, total=False):
 
     default: VariableOr[str]
     """
-    Default value of the parameter.
+    Required. Default value of the parameter.
     """
 
     name: VariableOr[str]
     """
-    The name of the defined parameter. May only contain alphanumeric characters, `_`, `-`, and `.`
+    Required. The name of the defined parameter. May only contain alphanumeric characters, `_`, `-`, and `.`
     """
 
 

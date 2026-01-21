@@ -5,7 +5,7 @@ from typing import Literal
 class GcpAvailability(Enum):
     """
     This field determines whether the instance pool will contain preemptible
-    VMs, on-demand VMs, or preemptible VMs with a fallback to on-demand VMs if the former is unavailable.
+    VMs, on-demand VMs, or preemptible VMs with a fallback to on-demand VMs if the former is unavailable. Valid values are: `PREEMPTIBLE_GCP`, `ON_DEMAND_GCP`, and `PREEMPTIBLE_WITH_FALLBACK_GCP`.
     """
 
     PREEMPTIBLE_GCP = "PREEMPTIBLE_GCP"

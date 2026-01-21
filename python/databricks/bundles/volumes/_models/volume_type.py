@@ -3,6 +3,10 @@ from typing import Literal
 
 
 class VolumeType(Enum):
+    """
+    Valid values are: `MANAGED` and `EXTERNAL`.
+    """
+
     MANAGED = "MANAGED"
     EXTERNAL = "EXTERNAL"
 

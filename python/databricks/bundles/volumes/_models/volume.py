@@ -26,17 +26,17 @@ class Volume(Resource):
 
     catalog_name: VariableOr[str]
     """
-    The name of the catalog where the schema and the volume are
+    Required. The name of the catalog where the schema and the volume are
     """
 
     name: VariableOr[str]
     """
-    The name of the volume
+    Required. The name of the volume
     """
 
     schema_name: VariableOr[str]
     """
-    The name of the schema where the volume is
+    Required. The name of the schema where the volume is
     """
 
     comment: VariableOrOptional[str] = None
@@ -71,17 +71,17 @@ class VolumeDict(TypedDict, total=False):
 
     catalog_name: VariableOr[str]
     """
-    The name of the catalog where the schema and the volume are
+    Required. The name of the catalog where the schema and the volume are
     """
 
     name: VariableOr[str]
     """
-    The name of the volume
+    Required. The name of the volume
     """
 
     schema_name: VariableOr[str]
     """
-    The name of the schema where the volume is
+    Required. The name of the schema where the volume is
     """
 
     comment: VariableOrOptional[str]

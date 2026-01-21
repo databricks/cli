@@ -5,6 +5,8 @@ from typing import Literal
 class ModelTriggerConfigurationCondition(Enum):
     """
     :meta private: [EXPERIMENTAL]
+
+    Valid values are: `MODEL_CREATED`, `MODEL_VERSION_READY`, and `MODEL_ALIAS_SET`.
     """
 
     MODEL_CREATED = "MODEL_CREATED"
