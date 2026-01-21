@@ -90,6 +90,10 @@ var serverSideDefaults = []fieldDefault{
 		isDefault: isEmptyStruct,
 	},
 	{
+		pattern:   regexp.MustCompile(`^tasks\[task_key='[^']+'\]\.webhook_notifications$`),
+		isDefault: isEmptyStruct,
+	},
+	{
 		pattern:   regexp.MustCompile(`^tasks\[task_key='[^']+'\]\.run_if$`),
 		isDefault: isStringEqual("ALL_SUCCESS"),
 	},
@@ -104,6 +108,12 @@ var serverSideDefaults = []fieldDefault{
 	{
 		pattern:   regexp.MustCompile(`^tasks\[task_key='[^']+'\]\.notebook_task\.source$`),
 		isDefault: isStringEqual("WORKSPACE"),
+	},
+
+	// Terraform defaults
+	{
+		pattern:   regexp.MustCompile(`^run_as$`),
+		isDefault: alwaysDefault,
 	},
 }
 
