@@ -5,7 +5,6 @@
 ### Notable Changes
 
 ### CLI
-* Add support for unified host with experimental flag ([#4260](https://github.com/databricks/cli/pull/4260))
 
 ### Bundles
 * Pass additional Azure DevOps `SYSTEM_*` environment variables to Terraform for OIDC authentication: `SYSTEM_COLLECTIONURI`, `SYSTEM_DEFINITIONID`, `SYSTEM_HOSTTYPE`, `SYSTEM_JOBID`, `SYSTEM_TEAMPROJECT` ([#4318](https://github.com/databricks/cli/pull/4318))
