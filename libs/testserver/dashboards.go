@@ -313,7 +313,7 @@ func (s *FakeWorkspace) DashboardGetPublished(req Request) Response {
 		return Response{
 			StatusCode: 404,
 			Body: map[string]string{
-				"message": fmt.Sprintf("Unable to find published dashboard [dashboardId=%s]", dashboardId),
+				"message": fmt.Sprintf("Unable to find published dashboard [%s]", dashboardId),
 			},
 		}
 	}
