@@ -22,7 +22,6 @@ var authTemplate = `{{"Host:" | bold}} {{.Status.Details.Host}}
 {{"User:" | bold}} {{.Status.Username}}
 {{- end}}
 {{"Authenticated with:" | bold}} {{.Status.Details.AuthType}}
-{{"Scopes:" | bold}} {{if (index .Status.Details.Configuration "scopes")}}{{(index .Status.Details.Configuration "scopes").Value}}{{else}}all-apis{{end}}
 -----
 ` + configurationTemplate
 

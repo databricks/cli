@@ -6,7 +6,6 @@ Profile scoped-profile was successfully saved
 Host: [DATABRICKS_URL]
 User: [USERNAME]
 Authenticated with: databricks-cli
-Scopes: clusters,jobs,pipelines
 -----
 Current configuration:
   ✓ host: [DATABRICKS_URL] (from DATABRICKS_HOST environment variable)
