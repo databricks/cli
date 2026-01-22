@@ -12,4 +12,3 @@ $CLI bundle config-remote-sync | contains.py "No changes detected"
 title "JSON output"
 $CLI bundle config-remote-sync -o json > out.json
 cat out.json
-contains.py '"files": \[\]' < out.json

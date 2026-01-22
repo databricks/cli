@@ -12,6 +12,3 @@ EOF
 title "JSON output format"
 $CLI bundle config-remote-sync -o json > out.json
 cat out.json
-
-# Verify JSON structure
-contains.py '"files"' '"changes"' '"path"' '"originalContent"' '"modifiedContent"' < out.json
