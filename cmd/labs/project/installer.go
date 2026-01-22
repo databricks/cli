@@ -16,6 +16,7 @@ import (
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/process"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/config"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/fatih/color"
@@ -177,8 +178,7 @@ func (i *installer) login(ctx context.Context) (*databricks.WorkspaceClient, err
 	} else if err != nil {
 		return nil, fmt.Errorf("valid: %w", err)
 	}
-	//nolint:staticcheck // SA1019: IsAccountClient is deprecated but is still used here to avoid breaking changes
-	if !i.HasAccountLevelCommands() && cfg.IsAccountClient() {
+	if !i.HasAccountLevelCommands() && cfg.ConfigType() == config.AccountConfig {
 		return nil, errors.New("got account-level client, but no account-level commands")
 	}
 	lc := &loginConfig{Entrypoint: i.Installer.Entrypoint}

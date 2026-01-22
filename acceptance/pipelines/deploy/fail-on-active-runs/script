@@ -1,4 +1,4 @@
-trace $ENTRYPOINT deploy
+trace $CLI pipelines deploy
 
 # We deploy the bundle again to check that the deploy is failing if the job is running
-errcode trace $ENTRYPOINT deploy --fail-on-active-runs
+errcode trace $CLI pipelines deploy --fail-on-active-runs
