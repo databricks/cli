@@ -13,6 +13,9 @@ resources:
             - success@example.com
           alerts:
             - on-update-success
+      permissions:
+        - level: CAN_VIEW
+          user_name: viewer@example.com
       libraries:
         - notebook:
             path: /Users/{{workspace_user_name}}/notebook

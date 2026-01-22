@@ -4,39 +4,44 @@ Updating deployment state...
 Deployment complete!
 
 === Modify pipeline fields remotely
+=== Modify pipeline permissions remotely{
+  "access_control_list": [
+    {
+      "all_permissions": [
+        {
+          "inherited":false,
+          "permission_level":"IS_OWNER"
+        }
+      ],
+      "display_name":"[USERNAME]",
+      "user_name":"[USERNAME]"
+    },
+    {
+      "all_permissions": [
+        {
+          "inherited":false,
+          "permission_level":"CAN_MANAGE"
+        }
+      ],
+      "display_name":"viewer@example.com",
+      "user_name":"viewer@example.com"
+    },
+    {
+      "all_permissions": [
+        {
+          "inherited":false,
+          "permission_level":"CAN_RUN"
+        }
+      ],
+      "display_name":"admin@example.com",
+      "user_name":"admin@example.com"
+    }
+  ],
+  "object_id":"/pipelines/[MY_PIPELINE_ID]",
+  "object_type":"pipelines"
+}
+
 === Detect and save changes
-Detected changes in 1 resource(s):
+Error: failed to generate YAML files: failed to resolve selectors in path resources.pipelines.my_pipeline.permissions.permissions[user_name='viewer@example.com'].permission_level: cannot apply [user_name='viewer@example.com'] selector to non-array value in path resources.pipelines.my_pipeline.permissions.permissions[user_name='viewer@example.com'].permission_level
 
-Resource: resources.pipelines.my_pipeline
-  configuration['key2']: update
-  notifications[0].alerts: update
-  notifications[0].email_recipients: update
-  schema: update
-
-
-=== Configuration changes
---- databricks.yml.backup	[TIMESTAMP]
-+++ databricks.yml	[TIMESTAMP]
-@@ -1,18 +1,20 @@
- bundle:
-   name: test-bundle
--
- resources:
-   pipelines:
-     my_pipeline:
-       catalog: main
--      schema: default
-+      schema: prod
-       configuration:
-         key1: value1
-+        key2: value2
-       notifications:
-         - email_recipients:
-             - success@example.com
-+            - admin@example.com
-           alerts:
-             - on-update-success
-+            - on-update-failure
-       libraries:
-         - notebook:
-             path: /Users/{{workspace_user_name}}/notebook
+Exit code: 1

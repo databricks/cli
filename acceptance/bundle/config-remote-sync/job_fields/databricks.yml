@@ -18,6 +18,9 @@ resources:
           unit: DAYS
       tags:
         env: dev
+      permissions:
+        - level: CAN_VIEW
+          user_name: viewer@example.com
       environments:
         - environment_key: default
           spec:
