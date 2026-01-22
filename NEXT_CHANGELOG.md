@@ -9,5 +9,6 @@
 ### Bundles
 
 ### Dependency updates
+* Upgrade to Go SDK 0.100.0 ([#4352](https://github.com/databricks/cli/pull/4352))
 
 ### API Changes
