@@ -1,0 +1,65 @@
+Uploading dummy.whl...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Modify job fields remotely
+=== Detect and save changes
+Detected changes in 1 resource(s):
+
+Resource: resources.jobs.my_job
+  email_notifications.no_alert_for_skipped_runs: skip
+  email_notifications.on_failure: skip
+  environments[0].spec.dependencies: update
+  parameters: update
+  tags['team']: update
+  trigger.periodic.interval: update
+
+
+=== Configuration changes
+--- databricks.yml.backup	[TIMESTAMP]
++++ databricks.yml	[TIMESTAMP]
+@@ -1,29 +1,35 @@
+ bundle:
+   name: test-bundle
+-
+ resources:
+   jobs:
+     my_job:
+       email_notifications:
+         on_success:
+           - success@example.com
++        no_alert_for_skipped_runs: true
++        on_failure:
++          - failure@example.com
+       parameters:
+-        - name: catalog
+-          default: main
+-        - name: env
+-          default: dev
++        - default: main
++          name: catalog
++        - default: dev
++          name: env
++        - default: us-east-1
++          name: region
+       trigger:
+         periodic:
+-          interval: 1
++          interval: 2
+           unit: DAYS
+       tags:
+         env: dev
++        team: data
+       environments:
+         - environment_key: default
+           spec:
+             environment_version: "3"
+             dependencies:
+-              - ./*.whl
++              - /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/dummy.whl
++              - ./*.jar
+       tasks:
+         - task_key: main
+           notebook_task:

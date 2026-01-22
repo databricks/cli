@@ -4,10 +4,15 @@ touch dummy.whl
 $CLI bundle deploy
 job_id="$(read_id.py my_job)"
 
-title "Modify job trigger from 1 day to 2 hours"
+
+title "Modify job fields remotely"
 edit_resource.py jobs $job_id <<EOF
+r["email_notifications"]["on_failure"] = ["failure@example.com"]
+r["email_notifications"]["no_alert_for_skipped_runs"] = True
+r["parameters"].append({"name": "region", "default": "us-east-1"})
 r["trigger"]["periodic"]["interval"] = 2
-r["trigger"]["periodic"]["unit"] = "HOURS"
+r["tags"]["team"] = "data"
+r["environments"][0]["spec"]["dependencies"].append("./*.jar")
 EOF
 
 title "Detect and save changes"

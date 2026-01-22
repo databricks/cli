@@ -1,13 +1,15 @@
 #!/bin/bash
 
-touch dummy.whl
 $CLI bundle deploy
 pipeline_id="$(read_id.py my_pipeline)"
 
-title "Modify pipeline catalog from main to staging"
+
+title "Modify pipeline fields remotely"
 edit_resource.py pipelines $pipeline_id <<EOF
-r["catalog"] = "staging"
-r["schema"] = "new_schema"
+r["configuration"]["key2"] = "value2"
+r["notifications"][0]["email_recipients"].append("admin@example.com")
+r["notifications"][0]["alerts"].append("on-update-failure")
+r["target"] = "prod"
 EOF
 
 title "Detect and save changes"

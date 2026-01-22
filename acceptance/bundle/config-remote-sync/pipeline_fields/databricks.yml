@@ -4,6 +4,10 @@ bundle:
 resources:
   pipelines:
     my_pipeline:
+      catalog: main
+      target: default
+      configuration:
+        key1: value1
       notifications:
         - email_recipients:
             - success@example.com
