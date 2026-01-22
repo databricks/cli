@@ -21,6 +21,7 @@ import (
 type ErrorWrapper func(cmd *cobra.Command, appName string, err error) error
 
 // isBundleDirectory checks if the current directory contains a databricks.yml file.
+// TODO: TryConfigureBundle
 func isBundleDirectory() bool {
 	_, err := os.Stat("databricks.yml")
 	return err == nil

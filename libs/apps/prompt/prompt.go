@@ -8,9 +8,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strconv"
-	"time"
 
-	"github.com/briandowns/spinner"
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/databricks/cli/libs/apps/features"
@@ -473,13 +471,8 @@ func PromptForWarehouse(ctx context.Context) (string, error) {
 // The spinner stops and the function returns early if the context is cancelled.
 // Panics in the action are recovered and returned as errors.
 func RunWithSpinnerCtx(ctx context.Context, title string, action func() error) error {
-	s := spinner.New(
-		spinner.CharSets[14],
-		80*time.Millisecond,
-		spinner.WithColor("yellow"), // Databricks brand color
-		spinner.WithSuffix(" "+title),
-	)
-	s.Start()
+	spinner := cmdio.Spinner(ctx)
+	spinner <- title
 
 	done := make(chan error, 1)
 	go func() {
@@ -493,10 +486,10 @@ func RunWithSpinnerCtx(ctx context.Context, title string, action func() error) e
 
 	select {
 	case err := <-done:
-		s.Stop()
+		close(spinner)
 		return err
 	case <-ctx.Done():
-		s.Stop()
+		close(spinner)
 		// Wait for action goroutine to complete to avoid orphaned goroutines.
 		// For exec.CommandContext, the process is killed when context is cancelled.
 		<-done
