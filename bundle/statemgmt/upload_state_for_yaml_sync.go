@@ -29,6 +29,7 @@ type uploadStateForYamlSync struct {
 // UploadStateForYamlSync converts the state to the direct format for YAML sync and uploads it to the Workspace.
 // This is simplified version of the `bundle migrate` command.
 // State file is saved in the same format as the direct engine but to the different path to avoid any side effects.
+// This is temporary solution that needs to be removed once all bundles in DABs in the Workspace are migrated to the direct engine.
 func UploadStateForYamlSync(targetEngine engine.EngineType) bundle.Mutator {
 	return &uploadStateForYamlSync{engine: targetEngine}
 }
