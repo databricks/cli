@@ -4,8 +4,6 @@ touch dummy.whl
 $CLI bundle deploy
 pipeline_id="$(read_id.py my_pipeline)"
 
-title "Initial configuration"
-cat databricks.yml
 
 title "Modify pipeline cluster num_workers from 2 to 5"
 edit_resource.py pipelines $pipeline_id <<EOF
@@ -16,4 +14,5 @@ title "Detect and save changes"
 $CLI bundle config-remote-sync --save
 
 title "Updated configuration"
+echo
 cat databricks.yml

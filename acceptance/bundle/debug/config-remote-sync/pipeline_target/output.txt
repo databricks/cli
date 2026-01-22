@@ -3,22 +3,21 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
-=== Initial configurationbundle:
-  name: test-bundle
+=== Modify pipeline target from dev_target to prod_target
+=== Detect and save changesDetected changes in 1 resource(s):
 
+Resource: resources.pipelines.my_pipeline
+  target: update
+
+
+=== Updated configuration
+bundle:
+  name: test-bundle
 resources:
   pipelines:
     my_pipeline:
       name: "Pipeline Target Test"
-      target: dev_target
+      target: prod_target
       libraries:
         - notebook:
             path: /Users/{{workspace_user_name}}/notebook
-
-=== Modify pipeline target from dev_target to prod_targetWarning: unknown field: spec
-  in (inline):1:49
-
-
-=== Detect and save changesError: failed to generate YAML files: failed to apply changes to file [TEST_TMP_DIR]/databricks.yml: failed to apply change /targets/default/resources/pipelines/my_pipeline/channel: op remove /targets/default/resources/pipelines/my_pipeline/channel: parent path /targets does not exist
-
-Exit code: 1

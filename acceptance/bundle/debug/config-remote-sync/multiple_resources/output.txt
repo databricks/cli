@@ -3,35 +3,6 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
-=== Initial configurationbundle:
-  name: test-bundle
-
-resources:
-  jobs:
-    job_one:
-      name: "Job One"
-      max_concurrent_runs: 1
-      tasks:
-        - task_key: main
-          notebook_task:
-            notebook_path: /Users/{{workspace_user_name}}/job1
-          new_cluster:
-            spark_version: 13.3.x-scala2.12
-            node_type_id: [NODE_TYPE_ID]
-            num_workers: 1
-
-    job_two:
-      name: "Job Two"
-      max_concurrent_runs: 2
-      tasks:
-        - task_key: main
-          notebook_task:
-            notebook_path: /Users/{{workspace_user_name}}/job2
-          new_cluster:
-            spark_version: 13.3.x-scala2.12
-            node_type_id: [NODE_TYPE_ID]
-            num_workers: 1
-
 === Modify both jobs
 === Detect and save changesDetected changes in 2 resource(s):
 
@@ -43,7 +14,8 @@ Resource: resources.jobs.job_two
   tags: skip
 
 
-=== Updated configurationbundle:
+=== Updated configuration
+bundle:
   name: test-bundle
 resources:
   jobs:

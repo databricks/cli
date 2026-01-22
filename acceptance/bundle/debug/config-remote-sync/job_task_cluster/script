@@ -4,8 +4,6 @@ touch dummy.whl
 $CLI bundle deploy
 job_id="$(read_id.py my_job)"
 
-title "Initial configuration"
-cat databricks.yml
 
 title "Modify task cluster num_workers from 2 to 5"
 edit_resource.py jobs $job_id <<EOF
@@ -16,4 +14,5 @@ title "Detect and save changes"
 $CLI bundle config-remote-sync --save
 
 title "Updated configuration"
+echo
 cat databricks.yml

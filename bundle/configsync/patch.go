@@ -100,14 +100,13 @@ func applyChanges(ctx context.Context, filePath string, changes resolvedChanges,
 		return "", fmt.Errorf("failed to read file %s: %w", filePath, err)
 	}
 
-	sortedChanges := make([]string, 0, len(changes))
+	fieldPaths := make([]string, 0, len(changes))
 	for fieldPath := range changes {
-		sortedChanges = append(sortedChanges, fieldPath)
+		fieldPaths = append(fieldPaths, fieldPath)
 	}
+	sort.Strings(fieldPaths)
 
-	sort.Strings(sortedChanges)
-
-	for _, fieldPath := range sortedChanges {
+	for _, fieldPath := range fieldPaths {
 		changeDesc := changes[fieldPath]
 		jsonPointer := strPathToJSONPointer(fieldPath)
 

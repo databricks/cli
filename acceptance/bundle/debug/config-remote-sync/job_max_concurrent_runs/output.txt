@@ -3,23 +3,6 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
-=== Initial configurationbundle:
-  name: test-bundle
-
-resources:
-  jobs:
-    my_job:
-      name: "Max Concurrent Runs Test"
-      max_concurrent_runs: 1
-      tasks:
-        - task_key: main
-          notebook_task:
-            notebook_path: /Users/{{workspace_user_name}}/notebook
-          new_cluster:
-            spark_version: 13.3.x-scala2.12
-            node_type_id: [NODE_TYPE_ID]
-            num_workers: 1
-
 === Modify max_concurrent_runs from 1 to 5
 === Detect and save changesDetected changes in 1 resource(s):
 
@@ -27,7 +10,8 @@ Resource: resources.jobs.my_job
   max_concurrent_runs: update
 
 
-=== Updated configurationbundle:
+=== Updated configuration
+bundle:
   name: test-bundle
 resources:
   jobs:

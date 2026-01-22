@@ -3,22 +3,6 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
-=== Initial configurationbundle:
-  name: test-bundle
-
-resources:
-  jobs:
-    my_job:
-      name: "Task Cluster Test"
-      tasks:
-        - task_key: main
-          notebook_task:
-            notebook_path: /Users/{{workspace_user_name}}/notebook
-          new_cluster:
-            spark_version: 13.3.x-scala2.12
-            node_type_id: [NODE_TYPE_ID]
-            num_workers: 2
-
 === Modify task cluster num_workers from 2 to 5
 === Detect and save changesDetected changes in 1 resource(s):
 
@@ -26,7 +10,8 @@ Resource: resources.jobs.my_job
   tasks[task_key='main'].new_cluster.num_workers: update
 
 
-=== Updated configurationbundle:
+=== Updated configuration
+bundle:
   name: test-bundle
 resources:
   jobs:

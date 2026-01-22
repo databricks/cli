@@ -4,8 +4,6 @@ touch dummy.whl
 $CLI bundle deploy
 job_id="$(read_id.py my_job)"
 
-title "Initial configuration"
-cat databricks.yml
 
 title "Modify task_a timeout from 1800 to 3600"
 edit_resource.py jobs $job_id <<EOF
@@ -18,4 +16,5 @@ title "Detect and save changes"
 $CLI bundle config-remote-sync --save
 
 title "Updated configuration"
+echo
 cat databricks.yml

@@ -2,6 +2,7 @@ package configsync
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/databricks/cli/bundle/deployplan"
@@ -18,10 +19,24 @@ func FormatTextOutput(changes map[string]deployplan.Changes) string {
 
 	output.WriteString(fmt.Sprintf("Detected changes in %d resource(s):\n\n", len(changes)))
 
-	for resourceKey, resourceChanges := range changes {
+	resourceKeys := make([]string, 0, len(changes))
+	for key := range changes {
+		resourceKeys = append(resourceKeys, key)
+	}
+	sort.Strings(resourceKeys)
+
+	for _, resourceKey := range resourceKeys {
+		resourceChanges := changes[resourceKey]
 		output.WriteString(fmt.Sprintf("Resource: %s\n", resourceKey))
 
-		for path, changeDesc := range resourceChanges {
+		paths := make([]string, 0, len(resourceChanges))
+		for path := range resourceChanges {
+			paths = append(paths, path)
+		}
+		sort.Strings(paths)
+
+		for _, path := range paths {
+			changeDesc := resourceChanges[path]
 			output.WriteString(fmt.Sprintf("  %s: %s\n", path, changeDesc.Action))
 		}
 	}

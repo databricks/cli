@@ -37,8 +37,7 @@ class pipelines:
         return run_json([CLI, "pipelines", "get", pipeline_id])["spec"]
 
     def set(self, pipeline_id, value):
-        payload = {"id": pipeline_id, "spec": value}
-        return run([CLI, "pipelines", "update", pipeline_id, "--json", json.dumps(payload)])
+        return run([CLI, "pipelines", "update", pipeline_id, "--json", json.dumps(value)])
 
 
 def main():

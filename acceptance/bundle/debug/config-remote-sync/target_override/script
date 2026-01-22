@@ -4,8 +4,6 @@ touch dummy.whl
 $CLI bundle deploy -t dev
 job_id="$(read_id.py my_job)"
 
-title "Initial configuration"
-cat databricks.yml
 
 title "Modify fields in target override"
 edit_resource.py jobs $job_id <<EOF
@@ -18,4 +16,5 @@ title "Detect and save changes"
 $CLI bundle config-remote-sync -t dev --save
 
 title "Updated configuration"
+echo
 cat databricks.yml

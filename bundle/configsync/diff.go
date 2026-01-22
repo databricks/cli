@@ -93,6 +93,12 @@ var serverSideDefaults = []fieldDefault{
 		pattern:   regexp.MustCompile(`^run_as$`),
 		isDefault: alwaysDefault,
 	},
+
+	// Pipeline fields
+	{
+		pattern:   regexp.MustCompile(`^storage$`),
+		isDefault: alwaysDefault, // computed field
+	},
 }
 
 // shouldSkipField checks if a given field path should be skipped as a hardcoded server-side default.

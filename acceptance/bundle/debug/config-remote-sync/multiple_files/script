@@ -6,12 +6,6 @@ $CLI bundle deploy
 job_one_id="$(read_id.py job_one)"
 job_two_id="$(read_id.py job_two)"
 
-title "Initial job1.yml"
-cat resources/job1.yml
-
-title "Initial job2.yml"
-cat resources/job2.yml
-
 title "Modify both jobs"
 edit_resource.py jobs $job_one_id <<EOF
 r["max_concurrent_runs"] = 5
@@ -25,7 +19,9 @@ title "Detect and save changes"
 $CLI bundle config-remote-sync --save
 
 title "Updated job1.yml"
+echo
 cat resources/job1.yml
 
 title "Updated job2.yml"
+echo
 cat resources/job2.yml

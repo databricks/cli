@@ -6,8 +6,6 @@ $CLI bundle deploy
 job_one_id="$(read_id.py job_one)"
 job_two_id="$(read_id.py job_two)"
 
-title "Initial configuration"
-cat databricks.yml
 
 title "Modify both jobs"
 edit_resource.py jobs $job_one_id <<EOF
@@ -24,4 +22,5 @@ title "Detect and save changes"
 $CLI bundle config-remote-sync --save
 
 title "Updated configuration"
+echo
 cat databricks.yml
