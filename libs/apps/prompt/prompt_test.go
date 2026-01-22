@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -102,7 +103,7 @@ func TestValidateProjectName(t *testing.T) {
 
 func TestRunWithSpinnerCtx(t *testing.T) {
 	t.Run("successful action", func(t *testing.T) {
-		ctx := context.Background()
+		ctx := cmdio.MockDiscard(context.Background())
 		executed := false
 
 		err := RunWithSpinnerCtx(ctx, "Testing...", func() error {
@@ -115,7 +116,7 @@ func TestRunWithSpinnerCtx(t *testing.T) {
 	})
 
 	t.Run("action returns error", func(t *testing.T) {
-		ctx := context.Background()
+		ctx := cmdio.MockDiscard(context.Background())
 		expectedErr := errors.New("action failed")
 
 		err := RunWithSpinnerCtx(ctx, "Testing...", func() error {
@@ -126,7 +127,7 @@ func TestRunWithSpinnerCtx(t *testing.T) {
 	})
 
 	t.Run("context cancelled", func(t *testing.T) {
-		ctx, cancel := context.WithCancel(context.Background())
+		ctx, cancel := context.WithCancel(cmdio.MockDiscard(context.Background()))
 		actionStarted := make(chan struct{})
 		actionDone := make(chan struct{})
 
@@ -148,7 +149,7 @@ func TestRunWithSpinnerCtx(t *testing.T) {
 	})
 
 	t.Run("action panics - recovered", func(t *testing.T) {
-		ctx := context.Background()
+		ctx := cmdio.MockDiscard(context.Background())
 
 		err := RunWithSpinnerCtx(ctx, "Testing...", func() error {
 			panic("test panic")
