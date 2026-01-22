@@ -35,7 +35,7 @@ import (
 )
 
 func newImportCommand() *cobra.Command {
-	var appName string
+	var name string
 	var outputDir string
 	var cleanup bool
 	var forceImport bool
@@ -63,19 +63,19 @@ workspace, with apps you own sorted to the top.
 
 Examples:
   # Import an app (creates directory named after the app)
-  databricks apps import --app-name my-streamlit-app
+  databricks apps import --name my-streamlit-app
 
   # Import with custom output directory
-  databricks apps import --app-name my-app --output-dir ~/my-apps/analytics
+  databricks apps import --name my-app --output-dir ~/my-apps/analytics
 
   # Import and clean up the old app folder
-  databricks apps import --app-name my-app --cleanup
+  databricks apps import --name my-app --cleanup
 
   # Force re-import of your own app (only works for apps you own)
-  databricks apps import --app-name my-app --force-import
+  databricks apps import --name my-app --force-import
 
   # Silent mode (only show errors and prompts)
-  databricks apps import --app-name my-app -q
+  databricks apps import --name my-app -q
 
   # List available apps (interactive selection)
   databricks apps import`,
@@ -92,7 +92,7 @@ Examples:
 			currentUserEmail := strings.ToLower(me.UserName)
 
 			// If no app name provided, list apps and let user select
-			if appName == "" {
+			if name == "" {
 				// List all apps
 				spinner := cmdio.Spinner(ctx)
 				spinner <- "Loading available apps..."
@@ -148,12 +148,12 @@ Examples:
 				if err != nil {
 					return err
 				}
-				appName = selectedLabel
+				name = selectedLabel
 			}
 
 			// If output directory is not set, default to the app name
 			if outputDir == "" {
-				outputDir = appName
+				outputDir = name
 			}
 
 			// Get absolute path for output directory
@@ -178,7 +178,7 @@ Examples:
 			var oldSourceCodePath string
 
 			// Run the import in the output directory
-			err = runImport(ctx, w, appName, outputDir, &oldSourceCodePath, forceImport, currentUserEmail, quiet)
+			err = runImport(ctx, w, name, outputDir, &oldSourceCodePath, forceImport, currentUserEmail, quiet)
 			if err != nil {
 				return err
 			}
@@ -202,7 +202,7 @@ Examples:
 			}
 
 			if !quiet {
-				cmdio.LogString(ctx, fmt.Sprintf("\n✓ App '%s' has been successfully imported to %s", appName, outputDir))
+				cmdio.LogString(ctx, fmt.Sprintf("\n✓ App '%s' has been successfully imported to %s", name, outputDir))
 				if cleanup && oldSourceCodePath != "" {
 					cmdio.LogString(ctx, "✓ Previous app folder has been cleaned up")
 				}
@@ -213,7 +213,7 @@ Examples:
 		},
 	}
 
-	cmd.Flags().StringVar(&appName, "app-name", "", "Name of the app to import (if not specified, lists all apps)")
+	cmd.Flags().StringVar(&name, "name", "", "Name of the app to import (if not specified, lists all apps)")
 	cmd.Flags().StringVar(&outputDir, "output-dir", "", "Directory to output the bundle to (defaults to app name)")
 	cmd.Flags().BoolVar(&cleanup, "cleanup", false, "Clean up the previous app folder and all its contents")
 	cmd.Flags().BoolVar(&forceImport, "force-import", false, "Force re-import of an app that was already imported (only works for apps you own)")
