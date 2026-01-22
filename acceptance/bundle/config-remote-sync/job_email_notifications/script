@@ -12,8 +12,10 @@ r["email_notifications"]["no_alert_for_skipped_runs"] = True
 EOF
 
 title "Detect and save changes"
+echo
+cp databricks.yml databricks.yml.backup
 $CLI bundle config-remote-sync --save
 
-title "Updated configuration"
+title "Configuration changes"
 echo
-cat databricks.yml
+diff -u databricks.yml.backup databricks.yml || true

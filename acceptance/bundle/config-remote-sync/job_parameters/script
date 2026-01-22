@@ -11,8 +11,10 @@ r["parameters"].append({"name": "schema", "default": "default"})
 EOF
 
 title "Detect and save changes"
+echo
+cp databricks.yml databricks.yml.backup
 $CLI bundle config-remote-sync --save
 
-title "Updated configuration"
+title "Configuration changes"
 echo
-cat databricks.yml
+diff -u databricks.yml.backup databricks.yml || true

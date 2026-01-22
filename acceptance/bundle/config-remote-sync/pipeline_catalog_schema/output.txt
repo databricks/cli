@@ -4,21 +4,28 @@ Updating deployment state...
 Deployment complete!
 
 === Modify pipeline catalog from main to staging
-=== Detect and save changesDetected changes in 1 resource(s):
+=== Detect and save changes
+Detected changes in 1 resource(s):
 
 Resource: resources.pipelines.my_pipeline
   catalog: update
   schema: update
 
 
-=== Updated configuration
-bundle:
-  name: test-bundle
-resources:
-  pipelines:
-    my_pipeline:
-      catalog: staging
-      schema: new_schema
-      libraries:
-        - notebook:
-            path: /Users/{{workspace_user_name}}/notebook
+=== Configuration changes
+--- databricks.yml.backup	[TIMESTAMP]
++++ databricks.yml	[TIMESTAMP]
+@@ -1,11 +1,10 @@
+ bundle:
+   name: test-bundle
+-
+ resources:
+   pipelines:
+     my_pipeline:
+-      catalog: main
+-      schema: default
++      catalog: staging
++      schema: new_schema
+       libraries:
+         - notebook:
+             path: /Users/{{workspace_user_name}}/notebook
