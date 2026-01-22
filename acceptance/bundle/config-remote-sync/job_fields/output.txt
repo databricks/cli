@@ -5,56 +5,52 @@ Updating deployment state...
 Deployment complete!
 
 === Modify job fields remotely
-=== Modify job permissions remotely{
-  "access_control_list": [
-    {
-      "all_permissions": [
-        {
-          "inherited":false,
-          "permission_level":"IS_OWNER"
-        }
-      ],
-      "display_name":"[USERNAME]",
-      "user_name":"[USERNAME]"
-    },
-    {
-      "all_permissions": [
-        {
-          "inherited":false,
-          "permission_level":"CAN_MANAGE"
-        }
-      ],
-      "display_name":"viewer@example.com",
-      "user_name":"viewer@example.com"
-    },
-    {
-      "all_permissions": [
-        {
-          "inherited":false,
-          "permission_level":"CAN_MANAGE_RUN"
-        }
-      ],
-      "display_name":"admin@example.com",
-      "user_name":"admin@example.com"
-    },
-    {
-      "all_permissions": [
-        {
-          "inherited":true,
-          "inherited_from_object": [
-            "/jobs/"
-          ],
-          "permission_level":"CAN_MANAGE"
-        }
-      ],
-      "group_name":"admins"
-    }
-  ],
-  "object_id":"/jobs/[MY_JOB_ID]",
-  "object_type":"job"
-}
-
 === Detect and save changes
-Error: failed to generate YAML files: failed to resolve selectors in path resources.jobs.my_job.permissions.permissions[user_name='viewer@example.com'].permission_level: cannot apply [user_name='viewer@example.com'] selector to non-array value in path resources.jobs.my_job.permissions.permissions[user_name='viewer@example.com'].permission_level
+Detected changes in 1 resource(s):
 
-Exit code: 1
+Resource: resources.jobs.my_job
+  email_notifications.no_alert_for_skipped_runs: skip
+  email_notifications.on_failure: skip
+  parameters: update
+  tags['team']: update
+  trigger.periodic.interval: update
+
+
+=== Configuration changes
+--- databricks.yml.backup	[TIMESTAMP]
++++ databricks.yml	[TIMESTAMP]
+@@ -1,23 +1,28 @@
+ bundle:
+   name: test-bundle
+-
+ resources:
+   jobs:
+     my_job:
+       email_notifications:
+         on_success:
+           - success@example.com
++        no_alert_for_skipped_runs: true
++        on_failure:
++          - failure@example.com
+       parameters:
+-        - name: catalog
+-          default: main
+-        - name: env
+-          default: dev
++        - default: main
++          name: catalog
++        - default: dev
++          name: env
++        - default: us-east-1
++          name: region
+       trigger:
+         periodic:
+-          interval: 1
++          interval: 2
+           unit: DAYS
+       tags:
+         env: dev
++        team: data
+       permissions:
+         - level: CAN_VIEW
+           user_name: viewer@example.com

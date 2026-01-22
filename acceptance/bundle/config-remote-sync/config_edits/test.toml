@@ -1,4 +1,6 @@
 RecordRequests = false
+Cloud = true
+
 Ignore = [".databricks", "dummy.whl"]
 
 [Env]

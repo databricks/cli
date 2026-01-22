@@ -14,19 +14,20 @@ r["trigger"]["periodic"]["interval"] = 2
 r["tags"]["team"] = "data"
 EOF
 
-title "Modify job permissions remotely"
-current_user=$($CLI current-user me --output json | jq -r .userName)
-cat > permissions.json <<EOF
-{
-  "access_control_list": [
-    {"permission_level": "IS_OWNER", "user_name": "$current_user"},
-    {"permission_level": "CAN_MANAGE", "user_name": "viewer@example.com"},
-    {"permission_level": "CAN_MANAGE_RUN", "user_name": "admin@example.com"}
-  ]
-}
-EOF
-$CLI permissions set jobs $job_id --json @permissions.json
-rm permissions.json
+# TODO add support for permissions
+# title "Modify job permissions remotely"
+# current_user=$($CLI current-user me --output json | jq -r .userName)
+# cat > permissions.json <<EOF
+# {
+#   "access_control_list": [
+#     {"permission_level": "IS_OWNER", "user_name": "$current_user"},
+#     {"permission_level": "CAN_MANAGE", "user_name": "viewer@example.com"},
+#     {"permission_level": "CAN_MANAGE_RUN", "user_name": "admin@example.com"}
+#   ]
+# }
+# EOF
+# $CLI permissions set jobs $job_id --json @permissions.json
+# rm permissions.json
 
 title "Detect and save changes"
 echo
