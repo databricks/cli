@@ -35,4 +35,4 @@ cat plan.json | contains.py '!panic' '!internal error' > /dev/null
 $CLI bundle plan | contains.py '!panic' '!internal error' 'Plan: 0 to add, 0 to change, 0 to delete' > LOG.plan
 
 $CLI bundle plan -o json > plan.json
-check_plan.py plan.json
+verify_no_drift.py plan.json
