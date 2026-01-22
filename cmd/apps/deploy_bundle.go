@@ -7,9 +7,11 @@ import (
 	"os"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/resources"
 	"github.com/databricks/cli/bundle/run"
 	"github.com/databricks/cli/cmd/bundle/utils"
+	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/apps/validation"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
@@ -20,10 +22,13 @@ import (
 // ErrorWrapper is a function type for wrapping deployment errors.
 type ErrorWrapper func(cmd *cobra.Command, appName string, err error) error
 
-// isBundleDirectory checks if the current directory contains a databricks.yml file.
-// TODO: TryConfigureBundle
-func isBundleDirectory() bool {
-	_, err := os.Stat("databricks.yml")
+// hasBundleConfig checks if the current directory contains a bundle configuration file.
+func hasBundleConfig() bool {
+	wd, err := os.Getwd()
+	if err != nil {
+		return false
+	}
+	_, err = config.FileNames.FindInPath(wd)
 	return err == nil
 }
 
@@ -44,25 +49,27 @@ func BundleDeployOverrideWithWrapper(wrapError ErrorWrapper) func(*cobra.Command
 
 		// Override Args to allow 0 or 1 arguments (bundle mode vs API mode)
 		deployCmd.Args = func(cmd *cobra.Command, args []string) error {
-			// In bundle mode, no arguments needed
-			if isBundleDirectory() {
-				if len(args) > 0 {
-					return errors.New("APP_NAME argument is not allowed when deploying from a bundle directory")
-				}
-				return nil
+			// Never allow more than 1 argument
+			if len(args) > 1 {
+				return fmt.Errorf("accepts at most 1 arg(s), received %d", len(args))
 			}
-			// In API mode, exactly 1 argument required
-			if len(args) != 1 {
+			// In non-bundle mode, exactly 1 argument is required
+			if !hasBundleConfig() && len(args) != 1 {
 				return fmt.Errorf("accepts 1 arg(s), received %d", len(args))
 			}
+			// In bundle mode: 0 args = bundle deploy, 1 arg = API fallback
 			return nil
 		}
 
 		originalRunE := deployCmd.RunE
 		deployCmd.RunE = func(cmd *cobra.Command, args []string) error {
-			// If we're in a bundle directory, use the enhanced deploy flow
-			if isBundleDirectory() {
-				return runBundleDeploy(cmd, force, skipValidation)
+			// If no APP_NAME provided, try to use bundle deploy flow
+			if len(args) == 0 {
+				// Try to load bundle configuration
+				b := root.TryConfigureBundle(cmd)
+				if b != nil {
+					return runBundleDeploy(cmd, force, skipValidation)
+				}
 			}
 
 			// Otherwise, fall back to the original API deploy command
@@ -73,22 +80,24 @@ func BundleDeployOverrideWithWrapper(wrapError ErrorWrapper) func(*cobra.Command
 		// Update the help text to explain the dual behavior
 		deployCmd.Long = `Create an app deployment.
 
-When run from a directory containing a databricks.yml bundle configuration,
-this command runs an enhanced deployment pipeline:
+When run from a directory containing a databricks.yml bundle configuration
+without an APP_NAME argument, this command runs an enhanced deployment pipeline:
 1. Validates the project (build, typecheck, lint for Node.js projects)
 2. Deploys the bundle to the workspace
 3. Runs the app
 
-When run from a non-bundle directory, creates an app deployment using the API.
+When an APP_NAME argument is provided (or when not in a bundle directory),
+creates an app deployment using the API directly.
 
 Arguments:
-  APP_NAME: The name of the app (required only when not in a bundle directory).
+  APP_NAME: The name of the app. Required when not in a bundle directory.
+            When provided in a bundle directory, uses API deploy instead of bundle deploy.
 
 Examples:
-  # Deploy from a bundle directory (no app name required)
+  # Deploy from a bundle directory (enhanced flow with validation)
   databricks apps deploy
 
-  # Deploy a specific app using the API
+  # Deploy a specific app using the API (even from a bundle directory)
   databricks apps deploy my-app
 
   # Deploy from bundle with validation skip

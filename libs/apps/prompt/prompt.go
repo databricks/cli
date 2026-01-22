@@ -487,9 +487,11 @@ func RunWithSpinnerCtx(ctx context.Context, title string, action func() error) e
 	select {
 	case err := <-done:
 		close(spinner)
+		cmdio.Wait(ctx)
 		return err
 	case <-ctx.Done():
 		close(spinner)
+		cmdio.Wait(ctx)
 		// Wait for action goroutine to complete to avoid orphaned goroutines.
 		// For exec.CommandContext, the process is killed when context is cancelled.
 		<-done
