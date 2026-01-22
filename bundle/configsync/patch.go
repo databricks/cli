@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"sort"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
@@ -99,7 +100,15 @@ func applyChanges(ctx context.Context, filePath string, changes resolvedChanges,
 		return "", fmt.Errorf("failed to read file %s: %w", filePath, err)
 	}
 
-	for fieldPath, changeDesc := range changes {
+	sortedChanges := make([]string, 0, len(changes))
+	for fieldPath := range changes {
+		sortedChanges = append(sortedChanges, fieldPath)
+	}
+
+	sort.Strings(sortedChanges)
+
+	for _, fieldPath := range sortedChanges {
+		changeDesc := changes[fieldPath]
 		jsonPointer := strPathToJSONPointer(fieldPath)
 
 		jsonPointers := []string{jsonPointer}

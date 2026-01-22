@@ -34,9 +34,9 @@ Deployment complete!
 === Modify both jobs
 === Detect and save changesDetected changes in 2 resource(s):
 
-Resource: resources.jobs.job_one
-  max_concurrent_runs: update
 Resource: resources.jobs.job_two
+  max_concurrent_runs: update
+Resource: resources.jobs.job_one
   max_concurrent_runs: update
 
 

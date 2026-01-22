@@ -25,8 +25,8 @@ resources:
 === Detect and save changesDetected changes in 1 resource(s):
 
 Resource: resources.jobs.my_job
-  tags['env']: update
   tags['team']: update
+  tags['env']: update
 
 
 === Updated configurationbundle:
