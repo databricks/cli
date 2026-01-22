@@ -12,8 +12,9 @@ import (
 
 func newValidateCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "validate",
-		Short: "Validate a Databricks App project",
+		Use:    "validate",
+		Short:  "Validate a Databricks App project",
+		Hidden: true,
 		Long: `Validate a Databricks App project by running build, typecheck, and lint checks.
 
 This command detects the project type and runs the appropriate validation:
