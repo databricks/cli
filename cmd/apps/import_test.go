@@ -218,6 +218,12 @@ func TestInlineAppConfigFileErrors(t *testing.T) {
 			cmd := exec.Command("icacls", filename, "/deny", username+":(R)")
 			err = cmd.Run()
 			require.NoError(t, err)
+
+			// Verify that the file is actually unreadable
+			_, err = os.ReadFile(filename)
+			if err == nil {
+				t.Skip("Unable to make file unreadable on Windows - skipping test")
+			}
 		} else {
 			// On Unix, use chmod to remove read permissions
 			err = os.Chmod(filename, 0o000)
