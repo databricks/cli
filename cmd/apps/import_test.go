@@ -2,6 +2,8 @@ package apps
 
 import (
 	"os"
+	"os/exec"
+	"runtime"
 	"strings"
 	"testing"
 
@@ -207,8 +209,20 @@ func TestInlineAppConfigFileErrors(t *testing.T) {
 
 		// Create file with no read permissions
 		filename := "app.yml"
-		err = os.WriteFile(filename, []byte("command: [\"test\"]"), 0o000)
+		err = os.WriteFile(filename, []byte("command: [\"test\"]"), 0o644)
 		require.NoError(t, err)
+
+		if runtime.GOOS == "windows" {
+			// On Windows, use icacls to deny read access to the current user
+			username := os.Getenv("USERNAME")
+			cmd := exec.Command("icacls", filename, "/deny", username+":(R)")
+			err = cmd.Run()
+			require.NoError(t, err)
+		} else {
+			// On Unix, use chmod to remove read permissions
+			err = os.Chmod(filename, 0o000)
+			require.NoError(t, err)
+		}
 
 		appValue := dyn.V(map[string]dyn.Value{"name": dyn.V("test")})
 		_, err = inlineAppConfigFile(&appValue)
