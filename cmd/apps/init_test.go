@@ -195,12 +195,20 @@ func TestParseDeployAndRunFlags(t *testing.T) {
 			wantErr:     false,
 		},
 		{
-			name:        "deploy false, run dev-remote",
+			name:        "deploy true, run dev-remote",
+			deploy:      true,
+			run:         "dev-remote",
+			wantDeploy:  true,
+			wantRunMode: prompt.RunModeDevRemote,
+			wantErr:     false,
+		},
+		{
+			name:        "deploy false, run dev-remote (error)",
 			deploy:      false,
 			run:         "dev-remote",
 			wantDeploy:  false,
-			wantRunMode: prompt.RunModeDevRemote,
-			wantErr:     false,
+			wantRunMode: prompt.RunModeNone,
+			wantErr:     true,
 		},
 		{
 			name:        "empty run value",
