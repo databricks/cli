@@ -2,24 +2,21 @@ package dsc
 
 import (
 	"encoding/json"
-	"fmt"
 	"reflect"
 
-	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
 func init() {
-	RegisterResourceWithMetadata("Databricks/Secret", &SecretHandler{}, secretMetadata())
-	RegisterResourceWithMetadata("Databricks/SecretScope", &SecretScopeHandler{}, secretScopeMetadata())
-	RegisterResourceWithMetadata("Databricks/SecretAcl", &SecretAclHandler{}, secretAclMetadata())
+	RegisterResourceWithMetadata("Databricks.DSC/Secret", &SecretHandler{}, secretMetadata())
+	RegisterResourceWithMetadata("Databricks.DSC/SecretScope", &SecretScopeHandler{}, secretScopeMetadata())
+	RegisterResourceWithMetadata("Databricks.DSC/SecretAcl", &SecretAclHandler{}, secretAclMetadata())
 }
 
 // ============================================================================
-// Metadata Definitions - Using SDK types for schema generation
+// Property Descriptions (from SDK documentation)
 // ============================================================================
 
-// Descriptions from SDK documentation
 var secretPropertyDescriptions = PropertyDescriptions{
 	"key":          "A unique name to identify the secret.",
 	"scope":        "The name of the scope to which the secret will be associated with.",
@@ -40,84 +37,45 @@ var secretAclPropertyDescriptions = PropertyDescriptions{
 	"permission": "The permission level applied to the principal (READ, WRITE, or MANAGE).",
 }
 
+// ============================================================================
+// Metadata Definitions
+// ============================================================================
+
 func secretMetadata() ResourceMetadata {
-	schema, _ := GenerateSchemaWithOptions(reflect.TypeOf(workspace.PutSecret{}), SchemaOptions{
-		Descriptions:      secretPropertyDescriptions,
+	return BuildMetadata(MetadataConfig{
+		ResourceType:      "Databricks.DSC/Secret",
+		Description:       "Manage Databricks secrets",
 		SchemaDescription: "Schema for managing Databricks secrets.",
 		ResourceName:      "secret",
+		Tags:              []string{"databricks", "secret", "workspace"},
+		Descriptions:      secretPropertyDescriptions,
+		SchemaType:        reflect.TypeOf(workspace.PutSecret{}),
 	})
-	return ResourceMetadata{
-		Type:        "Databricks.DSC/Secret",
-		Version:     "0.1.0",
-		Description: "Manage Databricks secrets",
-		Tags:        []string{"databricks", "secret", "workspace"},
-		ExitCodes: map[string]string{
-			"0": "Success",
-			"1": "Error",
-		},
-		Schema: ResourceSchema{
-			Embedded: schema,
-		},
-	}
 }
 
 func secretScopeMetadata() ResourceMetadata {
-	schema, _ := GenerateSchemaWithOptions(reflect.TypeOf(workspace.CreateScope{}), SchemaOptions{
-		Descriptions:      secretScopePropertyDescriptions,
+	return BuildMetadata(MetadataConfig{
+		ResourceType:      "Databricks.DSC/SecretScope",
+		Description:       "Manage Databricks secret scopes",
 		SchemaDescription: "Schema for managing Databricks secret scopes.",
 		ResourceName:      "secret scope",
+		Tags:              []string{"databricks", "secret", "scope", "workspace"},
+		Descriptions:      secretScopePropertyDescriptions,
+		SchemaType:        reflect.TypeOf(workspace.CreateScope{}),
 	})
-	return ResourceMetadata{
-		Type:        "Databricks.DSC/SecretScope",
-		Version:     "0.1.0",
-		Description: "Manage Databricks secret scopes",
-		Tags:        []string{"databricks", "secret", "scope", "workspace"},
-		ExitCodes: map[string]string{
-			"0": "Success",
-			"1": "Error",
-		},
-		Schema: ResourceSchema{
-			Embedded: schema,
-		},
-	}
 }
 
 func secretAclMetadata() ResourceMetadata {
-	schema, _ := GenerateSchemaWithOptions(reflect.TypeOf(workspace.PutAcl{}), SchemaOptions{
-		Descriptions:      secretAclPropertyDescriptions,
+	return BuildMetadata(MetadataConfig{
+		ResourceType:      "Databricks.DSC/SecretAcl",
+		Description:       "Manage Databricks secret ACLs",
 		SchemaDescription: "Schema for managing Databricks secret ACLs.",
 		ResourceName:      "secret ACL",
+		Tags:              []string{"databricks", "secret", "acl", "permissions", "workspace"},
+		Descriptions:      secretAclPropertyDescriptions,
+		SchemaType:        reflect.TypeOf(workspace.PutAcl{}),
 	})
-	return ResourceMetadata{
-		Type:        "Databricks.DSC/SecretAcl",
-		Version:     "0.1.0",
-		Description: "Manage Databricks secret ACLs",
-		Tags:        []string{"databricks", "secret", "acl", "permissions", "workspace"},
-		ExitCodes: map[string]string{
-			"0": "Success",
-			"1": "Error",
-		},
-		Schema: ResourceSchema{
-			Embedded: schema,
-		},
-	}
 }
-
-// ============================================================================
-// Helper function to unmarshal input to SDK types
-// ============================================================================
-
-func unmarshalInput[T any](input json.RawMessage) (T, error) {
-	var req T
-	if err := json.Unmarshal(input, &req); err != nil {
-		return req, fmt.Errorf("failed to parse input: %w", err)
-	}
-	return req, nil
-}
-
-// ============================================================================
-// Secret Resource - Uses workspace.PutSecret from SDK
-// ============================================================================
 
 type SecretState struct {
 	Scope string `json:"scope"`
@@ -131,15 +89,14 @@ func (h *SecretHandler) Get(ctx ResourceContext, input json.RawMessage) (any, er
 	if err != nil {
 		return nil, err
 	}
-	if req.Scope == "" {
-		return nil, fmt.Errorf("scope is required")
-	}
-	if req.Key == "" {
-		return nil, fmt.Errorf("key is required")
+	if err := validateRequired(
+		RequiredField{"scope", req.Scope},
+		RequiredField{"key", req.Key},
+	); err != nil {
+		return nil, err
 	}
 
-	cmdCtx := ctx.Cmd.Context()
-	w := cmdctx.WorkspaceClient(cmdCtx)
+	cmdCtx, w := getWorkspaceClient(ctx)
 
 	secrets := w.Secrets.ListSecrets(cmdCtx, workspace.ListSecretsRequest{Scope: req.Scope})
 	for {
@@ -151,35 +108,27 @@ func (h *SecretHandler) Get(ctx ResourceContext, input json.RawMessage) (any, er
 			return SecretState{Scope: req.Scope, Key: req.Key}, nil
 		}
 	}
-	return nil, fmt.Errorf("secret not found: scope=%s, key=%s", req.Scope, req.Key)
+	return nil, NotFoundError("secret", "scope="+req.Scope, "key="+req.Key)
 }
 
-func (h *SecretHandler) Set(ctx ResourceContext, input json.RawMessage) (any, error) {
+func (h *SecretHandler) Set(ctx ResourceContext, input json.RawMessage) error {
 	req, err := unmarshalInput[workspace.PutSecret](input)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	if req.Scope == "" {
-		return nil, fmt.Errorf("scope is required")
+	if err := validateRequired(
+		RequiredField{"scope", req.Scope},
+		RequiredField{"key", req.Key},
+	); err != nil {
+		return err
 	}
-	if req.Key == "" {
-		return nil, fmt.Errorf("key is required")
-	}
-	if req.StringValue == "" && req.BytesValue == "" {
-		return nil, fmt.Errorf("either string_value or bytes_value is required")
-	}
-
-	cmdCtx := ctx.Cmd.Context()
-	w := cmdctx.WorkspaceClient(cmdCtx)
-
-	if err := w.Secrets.PutSecret(cmdCtx, req); err != nil {
-		return nil, err
+	if err := validateAtLeastOne("string_value or bytes_value", req.StringValue, req.BytesValue); err != nil {
+		return err
 	}
 
-	return DSCResult{
-		ActualState:    SecretState{Scope: req.Scope, Key: req.Key},
-		InDesiredState: true,
-	}, nil
+	cmdCtx, w := getWorkspaceClient(ctx)
+
+	return w.Secrets.PutSecret(cmdCtx, req)
 }
 
 func (h *SecretHandler) Delete(ctx ResourceContext, input json.RawMessage) error {
@@ -187,22 +136,20 @@ func (h *SecretHandler) Delete(ctx ResourceContext, input json.RawMessage) error
 	if err != nil {
 		return err
 	}
-	if req.Scope == "" {
-		return fmt.Errorf("scope is required")
-	}
-	if req.Key == "" {
-		return fmt.Errorf("key is required")
+	if err := validateRequired(
+		RequiredField{"scope", req.Scope},
+		RequiredField{"key", req.Key},
+	); err != nil {
+		return err
 	}
 
-	cmdCtx := ctx.Cmd.Context()
-	w := cmdctx.WorkspaceClient(cmdCtx)
+	cmdCtx, w := getWorkspaceClient(ctx)
 
 	return w.Secrets.DeleteSecret(cmdCtx, req)
 }
 
 func (h *SecretHandler) Export(ctx ResourceContext) (any, error) {
-	cmdCtx := ctx.Cmd.Context()
-	w := cmdctx.WorkspaceClient(cmdCtx)
+	cmdCtx, w := getWorkspaceClient(ctx)
 
 	var allSecrets []SecretState
 
@@ -241,12 +188,11 @@ func (h *SecretScopeHandler) Get(ctx ResourceContext, input json.RawMessage) (an
 	if err != nil {
 		return nil, err
 	}
-	if req.Scope == "" {
-		return nil, fmt.Errorf("scope is required")
+	if err := validateRequired(RequiredField{"scope", req.Scope}); err != nil {
+		return nil, err
 	}
 
-	cmdCtx := ctx.Cmd.Context()
-	w := cmdctx.WorkspaceClient(cmdCtx)
+	cmdCtx, w := getWorkspaceClient(ctx)
 
 	scopes := w.Secrets.ListScopes(cmdCtx)
 	for {
@@ -261,20 +207,19 @@ func (h *SecretScopeHandler) Get(ctx ResourceContext, input json.RawMessage) (an
 			}, nil
 		}
 	}
-	return nil, fmt.Errorf("scope not found: %s", req.Scope)
+	return nil, NotFoundError("scope", req.Scope)
 }
 
-func (h *SecretScopeHandler) Set(ctx ResourceContext, input json.RawMessage) (any, error) {
+func (h *SecretScopeHandler) Set(ctx ResourceContext, input json.RawMessage) error {
 	req, err := unmarshalInput[workspace.CreateScope](input)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	if req.Scope == "" {
-		return nil, fmt.Errorf("scope is required")
+	if err := validateRequired(RequiredField{"scope", req.Scope}); err != nil {
+		return err
 	}
 
-	cmdCtx := ctx.Cmd.Context()
-	w := cmdctx.WorkspaceClient(cmdCtx)
+	cmdCtx, w := getWorkspaceClient(ctx)
 
 	// Check if scope exists
 	scopes := w.Secrets.ListScopes(cmdCtx)
@@ -284,34 +229,13 @@ func (h *SecretScopeHandler) Set(ctx ResourceContext, input json.RawMessage) (an
 			break
 		}
 		if scope.Name == req.Scope {
-			// Scope already exists
-			return DSCResult{
-				ActualState: SecretScopeState{
-					Scope:       scope.Name,
-					BackendType: scope.BackendType.String(),
-				},
-				InDesiredState: true,
-			}, nil
+			// Scope already exists, nothing to do
+			return nil
 		}
 	}
 
 	// Create new scope
-	if err := w.Secrets.CreateScope(cmdCtx, req); err != nil {
-		return nil, err
-	}
-
-	backendType := "DATABRICKS"
-	if req.ScopeBackendType != "" {
-		backendType = req.ScopeBackendType.String()
-	}
-
-	return DSCResult{
-		ActualState: SecretScopeState{
-			Scope:       req.Scope,
-			BackendType: backendType,
-		},
-		InDesiredState: true,
-	}, nil
+	return w.Secrets.CreateScope(cmdCtx, req)
 }
 
 func (h *SecretScopeHandler) Delete(ctx ResourceContext, input json.RawMessage) error {
@@ -319,19 +243,17 @@ func (h *SecretScopeHandler) Delete(ctx ResourceContext, input json.RawMessage) 
 	if err != nil {
 		return err
 	}
-	if req.Scope == "" {
-		return fmt.Errorf("scope is required")
+	if err := validateRequired(RequiredField{"scope", req.Scope}); err != nil {
+		return err
 	}
 
-	cmdCtx := ctx.Cmd.Context()
-	w := cmdctx.WorkspaceClient(cmdCtx)
+	cmdCtx, w := getWorkspaceClient(ctx)
 
 	return w.Secrets.DeleteScope(cmdCtx, req)
 }
 
 func (h *SecretScopeHandler) Export(ctx ResourceContext) (any, error) {
-	cmdCtx := ctx.Cmd.Context()
-	w := cmdctx.WorkspaceClient(cmdCtx)
+	cmdCtx, w := getWorkspaceClient(ctx)
 
 	var allScopes []SecretScopeState
 
@@ -363,15 +285,14 @@ func (h *SecretAclHandler) Get(ctx ResourceContext, input json.RawMessage) (any,
 	if err != nil {
 		return nil, err
 	}
-	if req.Scope == "" {
-		return nil, fmt.Errorf("scope is required")
-	}
-	if req.Principal == "" {
-		return nil, fmt.Errorf("principal is required")
+	if err := validateRequired(
+		RequiredField{"scope", req.Scope},
+		RequiredField{"principal", req.Principal},
+	); err != nil {
+		return nil, err
 	}
 
-	cmdCtx := ctx.Cmd.Context()
-	w := cmdctx.WorkspaceClient(cmdCtx)
+	cmdCtx, w := getWorkspaceClient(ctx)
 
 	acl, err := w.Secrets.GetAcl(cmdCtx, req)
 	if err != nil {
@@ -385,36 +306,22 @@ func (h *SecretAclHandler) Get(ctx ResourceContext, input json.RawMessage) (any,
 	}, nil
 }
 
-func (h *SecretAclHandler) Set(ctx ResourceContext, input json.RawMessage) (any, error) {
+func (h *SecretAclHandler) Set(ctx ResourceContext, input json.RawMessage) error {
 	req, err := unmarshalInput[workspace.PutAcl](input)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	if req.Scope == "" {
-		return nil, fmt.Errorf("scope is required")
-	}
-	if req.Principal == "" {
-		return nil, fmt.Errorf("principal is required")
-	}
-	if req.Permission == "" {
-		return nil, fmt.Errorf("permission is required")
+	if err := validateRequired(
+		RequiredField{"scope", req.Scope},
+		RequiredField{"principal", req.Principal},
+		RequiredField{"permission", string(req.Permission)},
+	); err != nil {
+		return err
 	}
 
-	cmdCtx := ctx.Cmd.Context()
-	w := cmdctx.WorkspaceClient(cmdCtx)
+	cmdCtx, w := getWorkspaceClient(ctx)
 
-	if err := w.Secrets.PutAcl(cmdCtx, req); err != nil {
-		return nil, err
-	}
-
-	return DSCResult{
-		ActualState: SecretAclState{
-			Scope:      req.Scope,
-			Principal:  req.Principal,
-			Permission: req.Permission.String(),
-		},
-		InDesiredState: true,
-	}, nil
+	return w.Secrets.PutAcl(cmdCtx, req)
 }
 
 func (h *SecretAclHandler) Delete(ctx ResourceContext, input json.RawMessage) error {
@@ -422,22 +329,20 @@ func (h *SecretAclHandler) Delete(ctx ResourceContext, input json.RawMessage) er
 	if err != nil {
 		return err
 	}
-	if req.Scope == "" {
-		return fmt.Errorf("scope is required")
-	}
-	if req.Principal == "" {
-		return fmt.Errorf("principal is required")
+	if err := validateRequired(
+		RequiredField{"scope", req.Scope},
+		RequiredField{"principal", req.Principal},
+	); err != nil {
+		return err
 	}
 
-	cmdCtx := ctx.Cmd.Context()
-	w := cmdctx.WorkspaceClient(cmdCtx)
+	cmdCtx, w := getWorkspaceClient(ctx)
 
 	return w.Secrets.DeleteAcl(cmdCtx, req)
 }
 
 func (h *SecretAclHandler) Export(ctx ResourceContext) (any, error) {
-	cmdCtx := ctx.Cmd.Context()
-	w := cmdctx.WorkspaceClient(cmdCtx)
+	cmdCtx, w := getWorkspaceClient(ctx)
 
 	var allAcls []SecretAclState
 

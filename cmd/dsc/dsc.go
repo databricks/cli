@@ -19,7 +19,7 @@ func New() *cobra.Command {
 This command provides a Microsoft DSC-compatible interface for managing Databricks resources,
 following the DSC resource manifest pattern used by Microsoft DSC.
 
-Operations:
+Commands:
   get      - Retrieve the current state of a resource
   set      - Create or update a resource to match desired state
   test     - Check if a resource matches desired state (if implemented)
@@ -28,21 +28,15 @@ Operations:
   schema   - Get the JSON schema for a resource type
   manifest - Get the full DSC manifest for all resources
 
-All operations accept JSON input via --input flag or stdin and produce JSON output.
-
-Resource categories:
-  secret  - Databricks secrets (secrets, scopes, ACLs)`,
+All commands accept JSON input via --input flag or stdin and produce JSON output.`,
 		RunE: root.ReportUnknownSubcommand,
 	}
 
 	cmd.SetHelpTemplate(`{{.Long}}
 
 Usage:
-  {{.UseLine}}
-{{if .HasAvailableLocalFlags}}
-Flags:
-{{.LocalFlags.FlagUsages | trimTrailingWhitespaces}}
-{{end}}{{if .HasAvailableInheritedFlags}}
+  databricks dsc [command] [flags]
+{{if .HasAvailableInheritedFlags}}
 Global Flags:
 {{.InheritedFlags.FlagUsages | trimTrailingWhitespaces}}
 {{end}}
@@ -58,15 +52,15 @@ Global Flags:
 	return cmd
 }
 
-// Define the interface for resource operations
+// The interface for resource operations
 type ResourceHandler interface {
 	Get(ctx ResourceContext, input json.RawMessage) (any, error)
-	Set(ctx ResourceContext, input json.RawMessage) (any, error)
+	Set(ctx ResourceContext, input json.RawMessage) error
 	Delete(ctx ResourceContext, input json.RawMessage) error
 	Export(ctx ResourceContext) (any, error)
 }
 
-// Define metadata for resources
+// Metadata for resources
 type ResourceMetadata struct {
 	Type        string            `json:"type"`
 	Version     string            `json:"version"`
@@ -109,12 +103,6 @@ type JSONInputArg struct {
 
 type ResourceContext struct {
 	Cmd *cobra.Command
-}
-
-type DSCResult struct {
-	ActualState         any      `json:"actualState"`
-	InDesiredState      bool     `json:"inDesiredState"`
-	DifferingProperties []string `json:"differingProperties,omitempty"`
 }
 
 var resourceRegistry = make(map[string]ResourceHandler)
