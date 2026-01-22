@@ -18,3 +18,4 @@ $CLI bundle config-remote-sync --save
 title "Configuration changes"
 echo
 diff -u databricks.yml.backup databricks.yml || true
+rm databricks.yml.backup

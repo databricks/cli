@@ -28,3 +28,4 @@ diff -u resources/job1.yml.backup resources/job1.yml || true
 title "Changes in job2.yml"
 echo
 diff -u resources/job2.yml.backup resources/job2.yml || true
+rm resources/job1.yml.backup resources/job2.yml.backup
