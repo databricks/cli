@@ -13,8 +13,3 @@ Deployment complete!
   "files": null,
   "changes": {}
 }
-{
-  "files": null,
-  "changes": {}
-}
-contains error: '"files": \\[\\]' not found in the output.

@@ -5,15 +5,21 @@ $CLI bundle deploy
 job_id="$(read_id.py my_job)"
 
 
-title "Add on_failure notifications"
+title "Modify job fields remotely"
 edit_resource.py jobs $job_id <<EOF
 r["email_notifications"]["on_failure"] = ["failure@example.com"]
 r["email_notifications"]["no_alert_for_skipped_runs"] = True
+r["parameters"].append({"name": "region", "default": "us-east-1"})
+r["trigger"]["periodic"]["interval"] = 2
+r["tags"]["team"] = "data"
 EOF
 
 title "Detect and save changes"
+echo
+cp databricks.yml databricks.yml.backup
 $CLI bundle config-remote-sync --save
 
-title "Updated configuration"
+title "Configuration changes"
 echo
-cat databricks.yml
+diff -u databricks.yml.backup databricks.yml || true
+rm databricks.yml.backup

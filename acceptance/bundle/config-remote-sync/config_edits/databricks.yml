@@ -1,0 +1,42 @@
+bundle:
+  name: test-bundle
+
+resources:
+  jobs:
+    my_job:
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/notebook
+          new_cluster:
+            spark_version: 13.3.x-scala2.12
+            node_type_id: i3.xlarge
+            num_workers: 1
+
+targets:
+  default:
+    resources:
+      jobs:
+        my_job:
+          email_notifications:
+            on_success:
+              - success@example.com
+          parameters:
+            - name: catalog
+              default: main
+            - name: env
+              default: dev
+          trigger:
+            periodic:
+              interval: 1
+              unit: DAYS
+          tags:
+            env: dev
+            version: v1
+          max_concurrent_runs: 1
+          environments:
+            - environment_key: default
+              spec:
+                environment_version: "3"
+                dependencies:
+                  - ./*.whl

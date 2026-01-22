@@ -4,7 +4,8 @@ Updating deployment state...
 Deployment complete!
 
 === Modify both jobs
-=== Detect and save changesDetected changes in 2 resource(s):
+=== Detect and save changes
+Detected changes in 2 resource(s):
 
 Resource: resources.jobs.job_one
   max_concurrent_runs: update
@@ -14,32 +15,37 @@ Resource: resources.jobs.job_two
   tags: skip
 
 
-=== Updated configuration
-bundle:
-  name: test-bundle
-resources:
-  jobs:
-    job_one:
-      max_concurrent_runs: 5
-      tasks:
-        - task_key: main
-          notebook_task:
-            notebook_path: /Users/{{workspace_user_name}}/job1
-          new_cluster:
-            spark_version: 13.3.x-scala2.12
-            node_type_id: [NODE_TYPE_ID]
-            num_workers: 1
-      tags:
-        team: data
-    job_two:
-      max_concurrent_runs: 10
-      tasks:
-        - task_key: main
-          notebook_task:
-            notebook_path: /Users/{{workspace_user_name}}/job2
-          new_cluster:
-            spark_version: 13.3.x-scala2.12
-            node_type_id: [NODE_TYPE_ID]
-            num_workers: 1
-      tags:
-        team: ml
+=== Configuration changes
+--- databricks.yml.backup	[TIMESTAMP]
++++ databricks.yml	[TIMESTAMP]
+@@ -1,10 +1,9 @@
+ bundle:
+   name: test-bundle
+-
+ resources:
+   jobs:
+     job_one:
+-      max_concurrent_runs: 1
++      max_concurrent_runs: 5
+       tasks:
+         - task_key: main
+           notebook_task:
+@@ -13,9 +12,10 @@
+             spark_version: 13.3.x-scala2.12
+             node_type_id: [NODE_TYPE_ID]
+             num_workers: 1
+-
++      tags:
++        team: data
+     job_two:
+-      max_concurrent_runs: 2
++      max_concurrent_runs: 10
+       tasks:
+         - task_key: main
+           notebook_task:
+@@ -24,3 +24,5 @@
+             spark_version: 13.3.x-scala2.12
+             node_type_id: [NODE_TYPE_ID]
+             num_workers: 1
++      tags:
++        team: ml

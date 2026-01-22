@@ -4,43 +4,49 @@ Updating deployment state...
 Deployment complete!
 
 === Modify only 'process' task num_workers and add timeout
-=== Detect and save changesDetected changes in 1 resource(s):
+=== Detect and save changes
+Detected changes in 1 resource(s):
 
 Resource: resources.jobs.my_job
-  tasks[task_key='process'].new_cluster.num_workers: update
-  tasks[task_key='process'].timeout_seconds: skip
+  tasks[task_key='task2']: update
+  tasks[task_key='task3'].depends_on[0].task_key: update
+  tasks[task_key='task3'].new_cluster.num_workers: update
+  tasks[task_key='task3'].timeout_seconds: skip
 
 
-=== Updated configuration
-bundle:
-  name: test-bundle
-resources:
-  jobs:
-    my_job:
-      tasks:
-        - task_key: setup
-          notebook_task:
-            notebook_path: /Users/{{workspace_user_name}}/setup
-          new_cluster:
-            spark_version: 13.3.x-scala2.12
-            node_type_id: [NODE_TYPE_ID]
-            num_workers: 1
-        - task_key: process
-          notebook_task:
-            notebook_path: /Users/{{workspace_user_name}}/process
-          new_cluster:
-            spark_version: 13.3.x-scala2.12
-            node_type_id: [NODE_TYPE_ID]
-            num_workers: 5
-          depends_on:
-            - task_key: setup
-          timeout_seconds: 3600
-        - task_key: cleanup
-          notebook_task:
-            notebook_path: /Users/{{workspace_user_name}}/cleanup
-          new_cluster:
-            spark_version: 13.3.x-scala2.12
-            node_type_id: [NODE_TYPE_ID]
-            num_workers: 1
-          depends_on:
-            - task_key: process
+=== Configuration changes
+--- databricks.yml.backup	[TIMESTAMP]
++++ databricks.yml	[TIMESTAMP]
+@@ -1,6 +1,5 @@
+ bundle:
+   name: test-bundle
+-
+ resources:
+   jobs:
+     my_job:
+@@ -12,15 +11,6 @@
+             spark_version: 13.3.x-scala2.12
+             node_type_id: [NODE_TYPE_ID]
+             num_workers: 1
+-        - task_key: task2
+-          notebook_task:
+-            notebook_path: /Users/{{workspace_user_name}}/task2
+-          new_cluster:
+-            spark_version: 13.3.x-scala2.12
+-            node_type_id: [NODE_TYPE_ID]
+-            num_workers: 2
+-          depends_on:
+-            - task_key: task1
+         - task_key: task3
+           notebook_task:
+             notebook_path: /Users/{{workspace_user_name}}/task3
+@@ -36,6 +26,7 @@
+           new_cluster:
+             spark_version: 13.3.x-scala2.12
+             node_type_id: [NODE_TYPE_ID]
+-            num_workers: 1
++            num_workers: 5
+           depends_on:
+-            - task_key: task3
++            - task_key: task1
++          timeout_seconds: 3600

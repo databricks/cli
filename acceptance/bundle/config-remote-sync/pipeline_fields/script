@@ -1,20 +1,16 @@
 #!/bin/bash
 
-touch dummy.whl
 $CLI bundle deploy
-job_id="$(read_id.py my_job)"
 pipeline_id="$(read_id.py my_pipeline)"
 
-title "Modify pipeline_task full_refresh to True"
-edit_resource.py jobs $job_id <<EOF
-r["tasks"][0]["pipeline_task"]["full_refresh"] = True
-EOF
 
-title "Modify pipeline development to True"
+title "Modify pipeline fields remotely"
 edit_resource.py pipelines $pipeline_id <<EOF
-r["development"] = True
+r["configuration"]["key2"] = "value2"
+r["notifications"][0]["email_recipients"].append("admin@example.com")
+r["notifications"][0]["alerts"].append("on-update-failure")
+r["schema"] = "prod"
 EOF
-
 
 title "Detect and save changes"
 echo

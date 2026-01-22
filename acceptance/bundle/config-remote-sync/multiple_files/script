@@ -16,12 +16,16 @@ r["max_concurrent_runs"] = 10
 EOF
 
 title "Detect and save changes"
+echo
+cp resources/job1.yml resources/job1.yml.backup
+cp resources/job2.yml resources/job2.yml.backup
 $CLI bundle config-remote-sync --save
 
-title "Updated job1.yml"
+title "Changes in job1.yml"
 echo
-cat resources/job1.yml
+diff -u resources/job1.yml.backup resources/job1.yml || true
 
-title "Updated job2.yml"
+title "Changes in job2.yml"
 echo
-cat resources/job2.yml
+diff -u resources/job2.yml.backup resources/job2.yml || true
+rm resources/job1.yml.backup resources/job2.yml.backup
