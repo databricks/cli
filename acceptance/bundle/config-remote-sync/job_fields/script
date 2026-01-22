@@ -12,7 +12,6 @@ r["email_notifications"]["no_alert_for_skipped_runs"] = True
 r["parameters"].append({"name": "region", "default": "us-east-1"})
 r["trigger"]["periodic"]["interval"] = 2
 r["tags"]["team"] = "data"
-r["environments"][0]["spec"]["dependencies"].append("./*.jar")
 EOF
 
 title "Detect and save changes"

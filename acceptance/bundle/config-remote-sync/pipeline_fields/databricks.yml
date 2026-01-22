@@ -5,7 +5,7 @@ resources:
   pipelines:
     my_pipeline:
       catalog: main
-      target: default
+      schema: default
       configuration:
         key1: value1
       notifications:

@@ -11,7 +11,6 @@ Detected changes in 1 resource(s):
 Resource: resources.jobs.my_job
   email_notifications.no_alert_for_skipped_runs: skip
   email_notifications.on_failure: skip
-  environments[0].spec.dependencies: update
   parameters: update
   tags['team']: update
   trigger.periodic.interval: update
@@ -20,7 +19,7 @@ Resource: resources.jobs.my_job
 === Configuration changes
 --- databricks.yml.backup	[TIMESTAMP]
 +++ databricks.yml	[TIMESTAMP]
-@@ -1,29 +1,35 @@
+@@ -1,23 +1,28 @@
  bundle:
    name: test-bundle
 -
@@ -55,11 +54,3 @@ Resource: resources.jobs.my_job
        environments:
          - environment_key: default
            spec:
-             environment_version: "3"
-             dependencies:
--              - ./*.whl
-+              - /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/dummy.whl
-+              - ./*.jar
-       tasks:
-         - task_key: main
-           notebook_task:

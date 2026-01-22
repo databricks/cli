@@ -5,28 +5,37 @@ resources:
   jobs:
     my_job:
       tasks:
-        - task_key: setup
+        - task_key: task1
           notebook_task:
-            notebook_path: /Users/{{workspace_user_name}}/setup
+            notebook_path: /Users/{{workspace_user_name}}/task1
           new_cluster:
             spark_version: 13.3.x-scala2.12
             node_type_id: i3.xlarge
             num_workers: 1
-        - task_key: process
+        - task_key: task2
           notebook_task:
-            notebook_path: /Users/{{workspace_user_name}}/process
+            notebook_path: /Users/{{workspace_user_name}}/task2
           new_cluster:
             spark_version: 13.3.x-scala2.12
             node_type_id: i3.xlarge
             num_workers: 2
           depends_on:
-            - task_key: setup
-        - task_key: cleanup
+            - task_key: task1
+        - task_key: task3
           notebook_task:
-            notebook_path: /Users/{{workspace_user_name}}/cleanup
+            notebook_path: /Users/{{workspace_user_name}}/task3
+          new_cluster:
+            spark_version: 13.3.x-scala2.12
+            node_type_id: i3.xlarge
+            num_workers: 2
+          depends_on:
+            - task_key: task2
+        - task_key: task4
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/task4
           new_cluster:
             spark_version: 13.3.x-scala2.12
             node_type_id: i3.xlarge
             num_workers: 1
           depends_on:
-            - task_key: process
+            - task_key: task3

@@ -11,7 +11,7 @@ Resource: resources.pipelines.my_pipeline
   configuration['key2']: update
   notifications[0].alerts: update
   notifications[0].email_recipients: update
-  target: update
+  schema: update
 
 
 === Configuration changes
@@ -25,8 +25,8 @@ Resource: resources.pipelines.my_pipeline
    pipelines:
      my_pipeline:
        catalog: main
--      target: default
-+      target: prod
+-      schema: default
++      schema: prod
        configuration:
          key1: value1
 +        key2: value2

@@ -8,8 +8,10 @@ Deployment complete!
 Detected changes in 1 resource(s):
 
 Resource: resources.jobs.my_job
-  tasks[task_key='process'].new_cluster.num_workers: update
-  tasks[task_key='process'].timeout_seconds: skip
+  tasks[task_key='task2']: update
+  tasks[task_key='task3'].depends_on[0].task_key: update
+  tasks[task_key='task3'].new_cluster.num_workers: update
+  tasks[task_key='task3'].timeout_seconds: skip
 
 
 === Configuration changes
@@ -22,15 +24,29 @@ Resource: resources.jobs.my_job
  resources:
    jobs:
      my_job:
-@@ -18,9 +17,10 @@
+@@ -12,15 +11,6 @@
+             spark_version: 13.3.x-scala2.12
+             node_type_id: [NODE_TYPE_ID]
+             num_workers: 1
+-        - task_key: task2
+-          notebook_task:
+-            notebook_path: /Users/{{workspace_user_name}}/task2
+-          new_cluster:
+-            spark_version: 13.3.x-scala2.12
+-            node_type_id: [NODE_TYPE_ID]
+-            num_workers: 2
+-          depends_on:
+-            - task_key: task1
+         - task_key: task3
+           notebook_task:
+             notebook_path: /Users/{{workspace_user_name}}/task3
+@@ -36,6 +26,7 @@
            new_cluster:
              spark_version: 13.3.x-scala2.12
              node_type_id: [NODE_TYPE_ID]
--            num_workers: 2
+-            num_workers: 1
 +            num_workers: 5
            depends_on:
-             - task_key: setup
+-            - task_key: task3
++            - task_key: task1
 +          timeout_seconds: 3600
-         - task_key: cleanup
-           notebook_task:
-             notebook_path: /Users/{{workspace_user_name}}/cleanup
