@@ -5,7 +5,7 @@ resources:
   pipelines:
     my_pipeline:
       catalog: main
-      target: my_schema
+      schema: default
       libraries:
         - notebook:
             path: /Users/{{workspace_user_name}}/notebook

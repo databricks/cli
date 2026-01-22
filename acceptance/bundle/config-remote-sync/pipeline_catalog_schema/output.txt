@@ -3,11 +3,12 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
-=== Modify pipeline target (schema) from my_schema to new_schema
+=== Modify pipeline catalog from main to staging
 === Detect and save changesDetected changes in 1 resource(s):
 
 Resource: resources.pipelines.my_pipeline
-  target: update
+  catalog: update
+  schema: update
 
 
 === Updated configuration
@@ -16,8 +17,8 @@ bundle:
 resources:
   pipelines:
     my_pipeline:
-      catalog: main
-      target: new_schema
+      catalog: staging
+      schema: new_schema
       libraries:
         - notebook:
             path: /Users/{{workspace_user_name}}/notebook

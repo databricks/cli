@@ -23,12 +23,3 @@ resources:
           name: env
         - default: default
           name: schema
-      tasks:
-        - task_key: run_pipeline
-          pipeline_task:
-            pipeline_id: ${resources.pipelines.my_pipeline.id}
-  pipelines:
-    my_pipeline:
-      libraries:
-        - notebook:
-            path: /Users/{{workspace_user_name}}/notebook

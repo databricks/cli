@@ -4,9 +4,10 @@ touch dummy.whl
 $CLI bundle deploy
 pipeline_id="$(read_id.py my_pipeline)"
 
-title "Modify pipeline target (schema) from my_schema to new_schema"
+title "Modify pipeline catalog from main to staging"
 edit_resource.py pipelines $pipeline_id <<EOF
-r["target"] = "new_schema"
+r["catalog"] = "staging"
+r["schema"] = "new_schema"
 EOF
 
 title "Detect and save changes"
