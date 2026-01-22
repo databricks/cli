@@ -4,10 +4,10 @@ touch dummy.whl
 $CLI bundle deploy
 job_id="$(read_id.py my_job)"
 
-
-title "Modify task cluster num_workers from 2 to 5"
+title "Modify job parameters: change catalog default and add new parameter"
 edit_resource.py jobs $job_id <<EOF
-r["tasks"][0]["new_cluster"]["num_workers"] = 5
+r["parameters"][0]["default"] = "staging"
+r["parameters"].append({"name": "schema", "default": "default"})
 EOF
 
 title "Detect and save changes"

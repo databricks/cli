@@ -1,0 +1,22 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Modify pipeline catalog from main to staging
+=== Detect and save changesDetected changes in 1 resource(s):
+
+Resource: resources.pipelines.my_pipeline
+  catalog: update
+
+
+=== Updated configuration
+bundle:
+  name: test-bundle
+resources:
+  pipelines:
+    my_pipeline:
+      catalog: staging
+      libraries:
+        - notebook:
+            path: /Users/{{workspace_user_name}}/notebook

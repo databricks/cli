@@ -3,22 +3,29 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
-=== Modify pipeline cluster num_workers from 2 to 5
+=== Modify job environment version from 3 to 4
 === Detect and save changesDetected changes in 1 resource(s):
 
-Resource: resources.pipelines.my_pipeline
-  clusters[0].num_workers: update
+Resource: resources.jobs.my_job
+  environments[0].spec.environment_version: update
 
 
 === Updated configuration
 bundle:
   name: test-bundle
 resources:
+  jobs:
+    my_job:
+      environments:
+        - environment_key: default
+          spec:
+            environment_version: "4"
+      tasks:
+        - task_key: run_pipeline
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.my_pipeline.id}
   pipelines:
     my_pipeline:
-      clusters:
-        - num_workers: 5
-          label: default
       libraries:
         - notebook:
             path: /Users/{{workspace_user_name}}/notebook

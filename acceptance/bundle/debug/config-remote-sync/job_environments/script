@@ -4,10 +4,9 @@ touch dummy.whl
 $CLI bundle deploy
 job_id="$(read_id.py my_job)"
 
-
-title "Modify timeout_seconds from 3600 to 7200"
+title "Modify job environment version from 3 to 4"
 edit_resource.py jobs $job_id <<EOF
-r["timeout_seconds"] = 7200
+r["environments"][0]["spec"]["environment_version"] = "4"
 EOF
 
 title "Detect and save changes"

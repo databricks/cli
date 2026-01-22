@@ -4,9 +4,8 @@ bundle:
 resources:
   pipelines:
     my_pipeline:
-      clusters:
-        - num_workers: 2
-          label: default
+      catalog: main
+      target: my_schema
       libraries:
         - notebook:
             path: /Users/{{workspace_user_name}}/notebook

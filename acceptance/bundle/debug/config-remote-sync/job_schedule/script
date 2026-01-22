@@ -4,10 +4,10 @@ touch dummy.whl
 $CLI bundle deploy
 job_id="$(read_id.py my_job)"
 
-
-title "Modify max_concurrent_runs from 1 to 5"
+title "Modify job trigger from 1 day to 2 hours"
 edit_resource.py jobs $job_id <<EOF
-r["max_concurrent_runs"] = 5
+r["trigger"]["periodic"]["interval"] = 2
+r["trigger"]["periodic"]["unit"] = "HOURS"
 EOF
 
 title "Detect and save changes"

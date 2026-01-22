@@ -4,12 +4,9 @@ touch dummy.whl
 $CLI bundle deploy
 job_id="$(read_id.py my_job)"
 
-
-title "Modify task_a timeout from 1800 to 3600"
+title "Modify max_concurrent_runs from 1 to 5"
 edit_resource.py jobs $job_id <<EOF
-for task in r["tasks"]:
-    if task["task_key"] == "task_a":
-        task["timeout_seconds"] = 3600
+r["max_concurrent_runs"] = 5
 EOF
 
 title "Detect and save changes"

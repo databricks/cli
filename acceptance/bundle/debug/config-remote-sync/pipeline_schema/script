@@ -4,10 +4,9 @@ touch dummy.whl
 $CLI bundle deploy
 pipeline_id="$(read_id.py my_pipeline)"
 
-
-title "Modify pipeline cluster num_workers from 2 to 5"
+title "Modify pipeline target (schema) from my_schema to new_schema"
 edit_resource.py pipelines $pipeline_id <<EOF
-r["clusters"][0]["num_workers"] = 5
+r["target"] = "new_schema"
 EOF
 
 title "Detect and save changes"

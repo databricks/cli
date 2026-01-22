@@ -1,0 +1,32 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Modify job trigger from 1 day to 2 hours
+=== Detect and save changesDetected changes in 1 resource(s):
+
+Resource: resources.jobs.my_job
+  trigger.periodic.interval: update
+  trigger.periodic.unit: update
+
+
+=== Updated configuration
+bundle:
+  name: test-bundle
+resources:
+  jobs:
+    my_job:
+      trigger:
+        periodic:
+          interval: 2
+          unit: HOURS
+      tasks:
+        - task_key: run_pipeline
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.my_pipeline.id}
+  pipelines:
+    my_pipeline:
+      libraries:
+        - notebook:
+            path: /Users/{{workspace_user_name}}/notebook
