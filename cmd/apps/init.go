@@ -161,7 +161,7 @@ func parseDeployAndRunFlags(deploy bool, run string) (bool, prompt.RunMode, erro
 
 	// dev-remote requires --deploy because it needs a deployed app to connect to
 	if runMode == prompt.RunModeDevRemote && !deploy {
-		return false, prompt.RunModeNone, fmt.Errorf("--run=dev-remote requires --deploy (dev-remote needs a deployed app to connect to)")
+		return false, prompt.RunModeNone, errors.New("--run=dev-remote requires --deploy (dev-remote needs a deployed app to connect to)")
 	}
 
 	return deploy, runMode, nil
