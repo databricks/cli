@@ -34,7 +34,10 @@ Examples:
 	cmd.Flags().BoolVar(&save, "save", false, "Write updated config files to disk")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
-		b, _, err := utils.ProcessBundleRet(cmd, utils.ProcessOptions{})
+		b, _, err := utils.ProcessBundleRet(cmd, utils.ProcessOptions{
+			Build:      true,
+			AlwaysPull: true,
+		})
 		if err != nil {
 			return err
 		}

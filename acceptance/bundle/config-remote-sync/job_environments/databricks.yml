@@ -8,3 +8,5 @@ resources:
         - environment_key: default
           spec:
             environment_version: "3"
+            dependencies:
+              - ./*.whl
