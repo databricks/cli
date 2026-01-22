@@ -174,6 +174,7 @@ func newCreatePrivateEndpointRule() *cobra.Command {
 
 	// TODO: array: domain_names
 	cmd.Flags().StringVar(&createPrivateEndpointRuleReq.PrivateEndpointRule.EndpointService, "endpoint-service", createPrivateEndpointRuleReq.PrivateEndpointRule.EndpointService, `The full target AWS endpoint service name that connects to the destination resources of the private endpoint.`)
+	cmd.Flags().StringVar(&createPrivateEndpointRuleReq.PrivateEndpointRule.ErrorMessage, "error-message", createPrivateEndpointRuleReq.PrivateEndpointRule.ErrorMessage, ``)
 	cmd.Flags().StringVar(&createPrivateEndpointRuleReq.PrivateEndpointRule.GroupId, "group-id", createPrivateEndpointRuleReq.PrivateEndpointRule.GroupId, `Not used by customer-managed private endpoint services.`)
 	cmd.Flags().StringVar(&createPrivateEndpointRuleReq.PrivateEndpointRule.ResourceId, "resource-id", createPrivateEndpointRuleReq.PrivateEndpointRule.ResourceId, `The Azure resource ID of the target resource.`)
 	// TODO: array: resource_names
@@ -599,6 +600,7 @@ func newUpdatePrivateEndpointRule() *cobra.Command {
 
 	// TODO: array: domain_names
 	cmd.Flags().BoolVar(&updatePrivateEndpointRuleReq.PrivateEndpointRule.Enabled, "enabled", updatePrivateEndpointRuleReq.PrivateEndpointRule.Enabled, `Only used by private endpoints towards an AWS S3 service.`)
+	cmd.Flags().StringVar(&updatePrivateEndpointRuleReq.PrivateEndpointRule.ErrorMessage, "error-message", updatePrivateEndpointRuleReq.PrivateEndpointRule.ErrorMessage, ``)
 	// TODO: array: resource_names
 
 	cmd.Use = "update-private-endpoint-rule NETWORK_CONNECTIVITY_CONFIG_ID PRIVATE_ENDPOINT_RULE_ID UPDATE_MASK"
