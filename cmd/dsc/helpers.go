@@ -55,7 +55,7 @@ func validateAtLeastOne(description string, values ...string) error {
 }
 
 // ============================================================================
-// Metadata Builder
+// Metadata builder
 // ============================================================================
 
 type MetadataConfig struct {
