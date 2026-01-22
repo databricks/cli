@@ -2,6 +2,7 @@ package cmdio
 
 import (
 	"context"
+	"sync"
 	"testing"
 	"time"
 
@@ -128,5 +129,34 @@ func TestSpinnerStructContextCancellation(t *testing.T) {
 
 	// Spinner should handle cancellation gracefully
 	// Close should still be safe to call
+	sp.Close()
+}
+
+func TestSpinnerStructConcurrentClose(t *testing.T) {
+	ctx := context.Background()
+	ctx, _ = NewTestContextWithStderr(ctx)
+
+	ctx, cancel := context.WithCancel(ctx)
+
+	sp := NewSpinner(ctx)
+	sp.Update("message")
+
+	// Trigger concurrent Close() from context cancellation and explicit call
+	var wg sync.WaitGroup
+
+	// Goroutine 1: Cancel context (triggers Close via context handler)
+	wg.Go(func() {
+		cancel()
+	})
+
+	// Goroutine 2: Explicit Close
+	wg.Go(func() {
+		sp.Close()
+	})
+
+	// Both should complete without deadlock or race
+	wg.Wait()
+
+	// Additional Close should still be safe
 	sp.Close()
 }

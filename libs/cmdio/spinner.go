@@ -105,10 +105,12 @@ func (sp *spinner) Close() {
 	sp.once.Do(func() {
 		if sp.p != nil {
 			sp.p.Send(quitMsg{})
-			// Wait for tea.Program to finish
-			<-sp.done
 		}
 	})
+	// Always wait for termination, even if we weren't the first caller
+	if sp.p != nil {
+		<-sp.done
+	}
 }
 
 // NewSpinner creates a new spinner for displaying progress.
