@@ -1,6 +1,6 @@
 # NEXT CHANGELOG
 
-## Release v0.285.0
+## Release v0.286.0
 
 ### Notable Changes
 
@@ -9,7 +9,5 @@
 ### Bundles
 
 ### Dependency updates
-* Upgrade to Go SDK 0.100.0 ([#4352](https://github.com/databricks/cli/pull/4352))
-* Upgrade TF provider to 1.104.0 ([#4354](https://github.com/databricks/cli/pull/4354))
 
 ### API Changes
