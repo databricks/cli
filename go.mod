@@ -30,6 +30,7 @@ require (
 	github.com/spf13/cobra v1.10.1 // Apache 2.0
 	github.com/spf13/pflag v1.0.10 // BSD-3-Clause
 	github.com/stretchr/testify v1.11.1 // MIT
+	go.yaml.in/yaml/v3 v3.0.4 // MIT, Apache 2.0
 	golang.org/x/crypto v0.47.0 // BSD-3-Clause
 	golang.org/x/exp v0.0.0-20250911091902-df9299821621
 	golang.org/x/mod v0.32.0
@@ -38,7 +39,6 @@ require (
 	golang.org/x/sys v0.40.0
 	golang.org/x/text v0.33.0
 	gopkg.in/ini.v1 v1.67.1 // Apache 2.0
-	gopkg.in/yaml.v3 v3.0.1
 )
 
 // Dependencies for experimental MCP commands
@@ -92,4 +92,5 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250922171735-9219d122eba9 // indirect
 	google.golang.org/grpc v1.75.1 // indirect
 	google.golang.org/protobuf v1.36.9 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

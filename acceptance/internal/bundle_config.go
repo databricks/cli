@@ -4,7 +4,7 @@ import (
 	"bytes"
 
 	"dario.cat/mergo"
-	"gopkg.in/yaml.v3"
+	"go.yaml.in/yaml/v3"
 )
 
 func MergeBundleConfig(source string, bundleConfig map[string]any) (string, error) {
