@@ -201,7 +201,7 @@ depends on the existing profiles you have set in your configuration file
 		}
 
 		if profileName != "" {
-			err = databrickscfg.SaveToProfile(ctx, &config.Config{
+			err := databrickscfg.SaveToProfile(ctx, &config.Config{
 				Profile:             profileName,
 				Host:                authArguments.Host,
 				AuthType:            authTypeDatabricksCLI,
