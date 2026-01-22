@@ -3,12 +3,15 @@ package statemgmt
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/engine"
+	"github.com/databricks/cli/bundle/deploy"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct"
@@ -17,6 +20,7 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynvar"
+	"github.com/databricks/cli/libs/filer"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structpath"
@@ -56,7 +60,37 @@ func (m *uploadStateForYamlSync) Apply(ctx context.Context, b *bundle.Bundle) di
 		return nil
 	}
 
+	err = uploadState(ctx, b)
+	if err != nil {
+		log.Warnf(ctx, "Failed to upload config snapshot to workspace: %v", err)
+		return nil
+	}
+
 	log.Infof(ctx, "Config snapshot created at %s", snapshotPath)
+	return nil
+}
+
+func uploadState(ctx context.Context, b *bundle.Bundle) error {
+	f, err := deploy.StateFiler(b)
+	if err != nil {
+		return fmt.Errorf("failed to get state filer: %w", err)
+	}
+
+	remotePath, localPath := b.StateFilenameConfigSnapshot(ctx)
+	local, err := os.Open(localPath)
+	if errors.Is(err, fs.ErrNotExist) {
+		return fmt.Errorf("config snapshot file does not exist at %s", localPath)
+	}
+	if err != nil {
+		return fmt.Errorf("failed to open config snapshot for upload: %w", err)
+	}
+	defer local.Close()
+
+	err = f.Write(ctx, remotePath, local, filer.CreateParentDirectories, filer.OverwriteIfExists)
+	if err != nil {
+		return fmt.Errorf("failed to upload config snapshot to workspace: %w", err)
+	}
+
 	return nil
 }
 
