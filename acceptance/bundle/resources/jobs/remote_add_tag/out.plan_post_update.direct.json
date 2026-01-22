@@ -83,7 +83,7 @@
       "changes": {
         "email_notifications": {
           "action": "skip",
-          "reason": "server_side_default",
+          "reason": "empty_struct",
           "remote": {}
         },
         "tags['new_tag']": {
@@ -97,7 +97,7 @@
         },
         "webhook_notifications": {
           "action": "skip",
-          "reason": "server_side_default",
+          "reason": "empty_struct",
           "remote": {}
         }
       }

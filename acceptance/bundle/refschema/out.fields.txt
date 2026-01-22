@@ -106,6 +106,7 @@ resources.apps.*.config.env	[]resources.AppEnvVar	INPUT
 resources.apps.*.config.env[*]	resources.AppEnvVar	INPUT
 resources.apps.*.config.env[*].name	string	INPUT
 resources.apps.*.config.env[*].value	string	INPUT
+resources.apps.*.config.env[*].value_from	string	INPUT
 resources.apps.*.create_time	string	ALL
 resources.apps.*.creator	string	ALL
 resources.apps.*.default_source_code_path	string	ALL
@@ -272,6 +273,9 @@ resources.clusters.*.driver.private_ip	string	REMOTE
 resources.clusters.*.driver.public_dns	string	REMOTE
 resources.clusters.*.driver.start_timestamp	int64	REMOTE
 resources.clusters.*.driver_instance_pool_id	string	ALL
+resources.clusters.*.driver_node_type_flexibility	*compute.NodeTypeFlexibility	ALL
+resources.clusters.*.driver_node_type_flexibility.alternate_node_type_ids	[]string	ALL
+resources.clusters.*.driver_node_type_flexibility.alternate_node_type_ids[*]	string	ALL
 resources.clusters.*.driver_node_type_id	string	ALL
 resources.clusters.*.enable_elastic_disk	bool	ALL
 resources.clusters.*.enable_local_disk_encryption	bool	ALL
@@ -390,6 +394,9 @@ resources.clusters.*.spec.docker_image.basic_auth.password	string	REMOTE
 resources.clusters.*.spec.docker_image.basic_auth.username	string	REMOTE
 resources.clusters.*.spec.docker_image.url	string	REMOTE
 resources.clusters.*.spec.driver_instance_pool_id	string	REMOTE
+resources.clusters.*.spec.driver_node_type_flexibility	*compute.NodeTypeFlexibility	REMOTE
+resources.clusters.*.spec.driver_node_type_flexibility.alternate_node_type_ids	[]string	REMOTE
+resources.clusters.*.spec.driver_node_type_flexibility.alternate_node_type_ids[*]	string	REMOTE
 resources.clusters.*.spec.driver_node_type_id	string	REMOTE
 resources.clusters.*.spec.enable_elastic_disk	bool	REMOTE
 resources.clusters.*.spec.enable_local_disk_encryption	bool	REMOTE
@@ -441,6 +448,9 @@ resources.clusters.*.spec.ssh_public_keys	[]string	REMOTE
 resources.clusters.*.spec.ssh_public_keys[*]	string	REMOTE
 resources.clusters.*.spec.total_initial_remote_disk_size	int	REMOTE
 resources.clusters.*.spec.use_ml_runtime	bool	REMOTE
+resources.clusters.*.spec.worker_node_type_flexibility	*compute.NodeTypeFlexibility	REMOTE
+resources.clusters.*.spec.worker_node_type_flexibility.alternate_node_type_ids	[]string	REMOTE
+resources.clusters.*.spec.worker_node_type_flexibility.alternate_node_type_ids[*]	string	REMOTE
 resources.clusters.*.spec.workload_type	*compute.WorkloadType	REMOTE
 resources.clusters.*.spec.workload_type.clients	compute.ClientsTypes	REMOTE
 resources.clusters.*.spec.workload_type.clients.jobs	bool	REMOTE
@@ -459,6 +469,9 @@ resources.clusters.*.termination_reason.type	compute.TerminationReasonType	REMOT
 resources.clusters.*.total_initial_remote_disk_size	int	ALL
 resources.clusters.*.url	string	INPUT
 resources.clusters.*.use_ml_runtime	bool	ALL
+resources.clusters.*.worker_node_type_flexibility	*compute.NodeTypeFlexibility	ALL
+resources.clusters.*.worker_node_type_flexibility.alternate_node_type_ids	[]string	ALL
+resources.clusters.*.worker_node_type_flexibility.alternate_node_type_ids[*]	string	ALL
 resources.clusters.*.workload_type	*compute.WorkloadType	ALL
 resources.clusters.*.workload_type.clients	compute.ClientsTypes	ALL
 resources.clusters.*.workload_type.clients.jobs	bool	ALL
@@ -708,6 +721,9 @@ resources.jobs.*.job_clusters[*].new_cluster.docker_image.basic_auth.password	st
 resources.jobs.*.job_clusters[*].new_cluster.docker_image.basic_auth.username	string	INPUT	STATE
 resources.jobs.*.job_clusters[*].new_cluster.docker_image.url	string	INPUT	STATE
 resources.jobs.*.job_clusters[*].new_cluster.driver_instance_pool_id	string	INPUT	STATE
+resources.jobs.*.job_clusters[*].new_cluster.driver_node_type_flexibility	*compute.NodeTypeFlexibility	INPUT	STATE
+resources.jobs.*.job_clusters[*].new_cluster.driver_node_type_flexibility.alternate_node_type_ids	[]string	INPUT	STATE
+resources.jobs.*.job_clusters[*].new_cluster.driver_node_type_flexibility.alternate_node_type_ids[*]	string	INPUT	STATE
 resources.jobs.*.job_clusters[*].new_cluster.driver_node_type_id	string	INPUT	STATE
 resources.jobs.*.job_clusters[*].new_cluster.enable_elastic_disk	bool	INPUT	STATE
 resources.jobs.*.job_clusters[*].new_cluster.enable_local_disk_encryption	bool	INPUT	STATE
@@ -759,6 +775,9 @@ resources.jobs.*.job_clusters[*].new_cluster.ssh_public_keys	[]string	INPUT	STAT
 resources.jobs.*.job_clusters[*].new_cluster.ssh_public_keys[*]	string	INPUT	STATE
 resources.jobs.*.job_clusters[*].new_cluster.total_initial_remote_disk_size	int	INPUT	STATE
 resources.jobs.*.job_clusters[*].new_cluster.use_ml_runtime	bool	INPUT	STATE
+resources.jobs.*.job_clusters[*].new_cluster.worker_node_type_flexibility	*compute.NodeTypeFlexibility	INPUT	STATE
+resources.jobs.*.job_clusters[*].new_cluster.worker_node_type_flexibility.alternate_node_type_ids	[]string	INPUT	STATE
+resources.jobs.*.job_clusters[*].new_cluster.worker_node_type_flexibility.alternate_node_type_ids[*]	string	INPUT	STATE
 resources.jobs.*.job_clusters[*].new_cluster.workload_type	*compute.WorkloadType	INPUT	STATE
 resources.jobs.*.job_clusters[*].new_cluster.workload_type.clients	compute.ClientsTypes	INPUT	STATE
 resources.jobs.*.job_clusters[*].new_cluster.workload_type.clients.jobs	bool	INPUT	STATE
@@ -896,6 +915,9 @@ resources.jobs.*.settings.job_clusters[*].new_cluster.docker_image.basic_auth.pa
 resources.jobs.*.settings.job_clusters[*].new_cluster.docker_image.basic_auth.username	string	REMOTE
 resources.jobs.*.settings.job_clusters[*].new_cluster.docker_image.url	string	REMOTE
 resources.jobs.*.settings.job_clusters[*].new_cluster.driver_instance_pool_id	string	REMOTE
+resources.jobs.*.settings.job_clusters[*].new_cluster.driver_node_type_flexibility	*compute.NodeTypeFlexibility	REMOTE
+resources.jobs.*.settings.job_clusters[*].new_cluster.driver_node_type_flexibility.alternate_node_type_ids	[]string	REMOTE
+resources.jobs.*.settings.job_clusters[*].new_cluster.driver_node_type_flexibility.alternate_node_type_ids[*]	string	REMOTE
 resources.jobs.*.settings.job_clusters[*].new_cluster.driver_node_type_id	string	REMOTE
 resources.jobs.*.settings.job_clusters[*].new_cluster.enable_elastic_disk	bool	REMOTE
 resources.jobs.*.settings.job_clusters[*].new_cluster.enable_local_disk_encryption	bool	REMOTE
@@ -947,6 +969,9 @@ resources.jobs.*.settings.job_clusters[*].new_cluster.ssh_public_keys	[]string	R
 resources.jobs.*.settings.job_clusters[*].new_cluster.ssh_public_keys[*]	string	REMOTE
 resources.jobs.*.settings.job_clusters[*].new_cluster.total_initial_remote_disk_size	int	REMOTE
 resources.jobs.*.settings.job_clusters[*].new_cluster.use_ml_runtime	bool	REMOTE
+resources.jobs.*.settings.job_clusters[*].new_cluster.worker_node_type_flexibility	*compute.NodeTypeFlexibility	REMOTE
+resources.jobs.*.settings.job_clusters[*].new_cluster.worker_node_type_flexibility.alternate_node_type_ids	[]string	REMOTE
+resources.jobs.*.settings.job_clusters[*].new_cluster.worker_node_type_flexibility.alternate_node_type_ids[*]	string	REMOTE
 resources.jobs.*.settings.job_clusters[*].new_cluster.workload_type	*compute.WorkloadType	REMOTE
 resources.jobs.*.settings.job_clusters[*].new_cluster.workload_type.clients	compute.ClientsTypes	REMOTE
 resources.jobs.*.settings.job_clusters[*].new_cluster.workload_type.clients.jobs	bool	REMOTE
@@ -1180,6 +1205,9 @@ resources.jobs.*.settings.tasks[*].for_each_task.task.new_cluster.docker_image.b
 resources.jobs.*.settings.tasks[*].for_each_task.task.new_cluster.docker_image.basic_auth.username	string	REMOTE
 resources.jobs.*.settings.tasks[*].for_each_task.task.new_cluster.docker_image.url	string	REMOTE
 resources.jobs.*.settings.tasks[*].for_each_task.task.new_cluster.driver_instance_pool_id	string	REMOTE
+resources.jobs.*.settings.tasks[*].for_each_task.task.new_cluster.driver_node_type_flexibility	*compute.NodeTypeFlexibility	REMOTE
+resources.jobs.*.settings.tasks[*].for_each_task.task.new_cluster.driver_node_type_flexibility.alternate_node_type_ids	[]string	REMOTE
+resources.jobs.*.settings.tasks[*].for_each_task.task.new_cluster.driver_node_type_flexibility.alternate_node_type_ids[*]	string	REMOTE
 resources.jobs.*.settings.tasks[*].for_each_task.task.new_cluster.driver_node_type_id	string	REMOTE
 resources.jobs.*.settings.tasks[*].for_each_task.task.new_cluster.enable_elastic_disk	bool	REMOTE
 resources.jobs.*.settings.tasks[*].for_each_task.task.new_cluster.enable_local_disk_encryption	bool	REMOTE
@@ -1231,6 +1259,9 @@ resources.jobs.*.settings.tasks[*].for_each_task.task.new_cluster.ssh_public_key
 resources.jobs.*.settings.tasks[*].for_each_task.task.new_cluster.ssh_public_keys[*]	string	REMOTE
 resources.jobs.*.settings.tasks[*].for_each_task.task.new_cluster.total_initial_remote_disk_size	int	REMOTE
 resources.jobs.*.settings.tasks[*].for_each_task.task.new_cluster.use_ml_runtime	bool	REMOTE
+resources.jobs.*.settings.tasks[*].for_each_task.task.new_cluster.worker_node_type_flexibility	*compute.NodeTypeFlexibility	REMOTE
+resources.jobs.*.settings.tasks[*].for_each_task.task.new_cluster.worker_node_type_flexibility.alternate_node_type_ids	[]string	REMOTE
+resources.jobs.*.settings.tasks[*].for_each_task.task.new_cluster.worker_node_type_flexibility.alternate_node_type_ids[*]	string	REMOTE
 resources.jobs.*.settings.tasks[*].for_each_task.task.new_cluster.workload_type	*compute.WorkloadType	REMOTE
 resources.jobs.*.settings.tasks[*].for_each_task.task.new_cluster.workload_type.clients	compute.ClientsTypes	REMOTE
 resources.jobs.*.settings.tasks[*].for_each_task.task.new_cluster.workload_type.clients.jobs	bool	REMOTE
@@ -1434,6 +1465,9 @@ resources.jobs.*.settings.tasks[*].new_cluster.docker_image.basic_auth.password	
 resources.jobs.*.settings.tasks[*].new_cluster.docker_image.basic_auth.username	string	REMOTE
 resources.jobs.*.settings.tasks[*].new_cluster.docker_image.url	string	REMOTE
 resources.jobs.*.settings.tasks[*].new_cluster.driver_instance_pool_id	string	REMOTE
+resources.jobs.*.settings.tasks[*].new_cluster.driver_node_type_flexibility	*compute.NodeTypeFlexibility	REMOTE
+resources.jobs.*.settings.tasks[*].new_cluster.driver_node_type_flexibility.alternate_node_type_ids	[]string	REMOTE
+resources.jobs.*.settings.tasks[*].new_cluster.driver_node_type_flexibility.alternate_node_type_ids[*]	string	REMOTE
 resources.jobs.*.settings.tasks[*].new_cluster.driver_node_type_id	string	REMOTE
 resources.jobs.*.settings.tasks[*].new_cluster.enable_elastic_disk	bool	REMOTE
 resources.jobs.*.settings.tasks[*].new_cluster.enable_local_disk_encryption	bool	REMOTE
@@ -1485,6 +1519,9 @@ resources.jobs.*.settings.tasks[*].new_cluster.ssh_public_keys	[]string	REMOTE
 resources.jobs.*.settings.tasks[*].new_cluster.ssh_public_keys[*]	string	REMOTE
 resources.jobs.*.settings.tasks[*].new_cluster.total_initial_remote_disk_size	int	REMOTE
 resources.jobs.*.settings.tasks[*].new_cluster.use_ml_runtime	bool	REMOTE
+resources.jobs.*.settings.tasks[*].new_cluster.worker_node_type_flexibility	*compute.NodeTypeFlexibility	REMOTE
+resources.jobs.*.settings.tasks[*].new_cluster.worker_node_type_flexibility.alternate_node_type_ids	[]string	REMOTE
+resources.jobs.*.settings.tasks[*].new_cluster.worker_node_type_flexibility.alternate_node_type_ids[*]	string	REMOTE
 resources.jobs.*.settings.tasks[*].new_cluster.workload_type	*compute.WorkloadType	REMOTE
 resources.jobs.*.settings.tasks[*].new_cluster.workload_type.clients	compute.ClientsTypes	REMOTE
 resources.jobs.*.settings.tasks[*].new_cluster.workload_type.clients.jobs	bool	REMOTE
@@ -1852,6 +1889,9 @@ resources.jobs.*.tasks[*].for_each_task.task.new_cluster.docker_image.basic_auth
 resources.jobs.*.tasks[*].for_each_task.task.new_cluster.docker_image.basic_auth.username	string	INPUT	STATE
 resources.jobs.*.tasks[*].for_each_task.task.new_cluster.docker_image.url	string	INPUT	STATE
 resources.jobs.*.tasks[*].for_each_task.task.new_cluster.driver_instance_pool_id	string	INPUT	STATE
+resources.jobs.*.tasks[*].for_each_task.task.new_cluster.driver_node_type_flexibility	*compute.NodeTypeFlexibility	INPUT	STATE
+resources.jobs.*.tasks[*].for_each_task.task.new_cluster.driver_node_type_flexibility.alternate_node_type_ids	[]string	INPUT	STATE
+resources.jobs.*.tasks[*].for_each_task.task.new_cluster.driver_node_type_flexibility.alternate_node_type_ids[*]	string	INPUT	STATE
 resources.jobs.*.tasks[*].for_each_task.task.new_cluster.driver_node_type_id	string	INPUT	STATE
 resources.jobs.*.tasks[*].for_each_task.task.new_cluster.enable_elastic_disk	bool	INPUT	STATE
 resources.jobs.*.tasks[*].for_each_task.task.new_cluster.enable_local_disk_encryption	bool	INPUT	STATE
@@ -1903,6 +1943,9 @@ resources.jobs.*.tasks[*].for_each_task.task.new_cluster.ssh_public_keys	[]strin
 resources.jobs.*.tasks[*].for_each_task.task.new_cluster.ssh_public_keys[*]	string	INPUT	STATE
 resources.jobs.*.tasks[*].for_each_task.task.new_cluster.total_initial_remote_disk_size	int	INPUT	STATE
 resources.jobs.*.tasks[*].for_each_task.task.new_cluster.use_ml_runtime	bool	INPUT	STATE
+resources.jobs.*.tasks[*].for_each_task.task.new_cluster.worker_node_type_flexibility	*compute.NodeTypeFlexibility	INPUT	STATE
+resources.jobs.*.tasks[*].for_each_task.task.new_cluster.worker_node_type_flexibility.alternate_node_type_ids	[]string	INPUT	STATE
+resources.jobs.*.tasks[*].for_each_task.task.new_cluster.worker_node_type_flexibility.alternate_node_type_ids[*]	string	INPUT	STATE
 resources.jobs.*.tasks[*].for_each_task.task.new_cluster.workload_type	*compute.WorkloadType	INPUT	STATE
 resources.jobs.*.tasks[*].for_each_task.task.new_cluster.workload_type.clients	compute.ClientsTypes	INPUT	STATE
 resources.jobs.*.tasks[*].for_each_task.task.new_cluster.workload_type.clients.jobs	bool	INPUT	STATE
@@ -2106,6 +2149,9 @@ resources.jobs.*.tasks[*].new_cluster.docker_image.basic_auth.password	string	IN
 resources.jobs.*.tasks[*].new_cluster.docker_image.basic_auth.username	string	INPUT	STATE
 resources.jobs.*.tasks[*].new_cluster.docker_image.url	string	INPUT	STATE
 resources.jobs.*.tasks[*].new_cluster.driver_instance_pool_id	string	INPUT	STATE
+resources.jobs.*.tasks[*].new_cluster.driver_node_type_flexibility	*compute.NodeTypeFlexibility	INPUT	STATE
+resources.jobs.*.tasks[*].new_cluster.driver_node_type_flexibility.alternate_node_type_ids	[]string	INPUT	STATE
+resources.jobs.*.tasks[*].new_cluster.driver_node_type_flexibility.alternate_node_type_ids[*]	string	INPUT	STATE
 resources.jobs.*.tasks[*].new_cluster.driver_node_type_id	string	INPUT	STATE
 resources.jobs.*.tasks[*].new_cluster.enable_elastic_disk	bool	INPUT	STATE
 resources.jobs.*.tasks[*].new_cluster.enable_local_disk_encryption	bool	INPUT	STATE
@@ -2157,6 +2203,9 @@ resources.jobs.*.tasks[*].new_cluster.ssh_public_keys	[]string	INPUT	STATE
 resources.jobs.*.tasks[*].new_cluster.ssh_public_keys[*]	string	INPUT	STATE
 resources.jobs.*.tasks[*].new_cluster.total_initial_remote_disk_size	int	INPUT	STATE
 resources.jobs.*.tasks[*].new_cluster.use_ml_runtime	bool	INPUT	STATE
+resources.jobs.*.tasks[*].new_cluster.worker_node_type_flexibility	*compute.NodeTypeFlexibility	INPUT	STATE
+resources.jobs.*.tasks[*].new_cluster.worker_node_type_flexibility.alternate_node_type_ids	[]string	INPUT	STATE
+resources.jobs.*.tasks[*].new_cluster.worker_node_type_flexibility.alternate_node_type_ids[*]	string	INPUT	STATE
 resources.jobs.*.tasks[*].new_cluster.workload_type	*compute.WorkloadType	INPUT	STATE
 resources.jobs.*.tasks[*].new_cluster.workload_type.clients	compute.ClientsTypes	INPUT	STATE
 resources.jobs.*.tasks[*].new_cluster.workload_type.clients.jobs	bool	INPUT	STATE
@@ -2972,6 +3021,11 @@ resources.pipelines.*.health	pipelines.GetPipelineResponseHealth	REMOTE
 resources.pipelines.*.id	string	INPUT	STATE
 resources.pipelines.*.ingestion_definition	*pipelines.IngestionPipelineDefinition	INPUT	STATE
 resources.pipelines.*.ingestion_definition.connection_name	string	INPUT	STATE
+resources.pipelines.*.ingestion_definition.full_refresh_window	*pipelines.OperationTimeWindow	INPUT	STATE
+resources.pipelines.*.ingestion_definition.full_refresh_window.days_of_week	[]pipelines.DayOfWeek	INPUT	STATE
+resources.pipelines.*.ingestion_definition.full_refresh_window.days_of_week[*]	pipelines.DayOfWeek	INPUT	STATE
+resources.pipelines.*.ingestion_definition.full_refresh_window.start_hour	int	INPUT	STATE
+resources.pipelines.*.ingestion_definition.full_refresh_window.time_zone_id	string	INPUT	STATE
 resources.pipelines.*.ingestion_definition.ingest_from_uc_foreign_catalog	bool	INPUT	STATE
 resources.pipelines.*.ingestion_definition.ingestion_gateway_id	string	INPUT	STATE
 resources.pipelines.*.ingestion_definition.netsuite_jar_path	string	INPUT	STATE
@@ -2983,6 +3037,9 @@ resources.pipelines.*.ingestion_definition.objects[*].report.destination_schema	
 resources.pipelines.*.ingestion_definition.objects[*].report.destination_table	string	INPUT	STATE
 resources.pipelines.*.ingestion_definition.objects[*].report.source_url	string	INPUT	STATE
 resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration	*pipelines.TableSpecificConfig	INPUT	STATE
+resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.auto_full_refresh_policy	*pipelines.AutoFullRefreshPolicy	INPUT	STATE
+resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.auto_full_refresh_policy.enabled	bool	INPUT	STATE
+resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.auto_full_refresh_policy.min_interval_hours	int	INPUT	STATE
 resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.exclude_columns	[]string	INPUT	STATE
 resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.exclude_columns[*]	string	INPUT	STATE
 resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.include_columns	[]string	INPUT	STATE
@@ -3013,6 +3070,9 @@ resources.pipelines.*.ingestion_definition.objects[*].schema.destination_schema	
 resources.pipelines.*.ingestion_definition.objects[*].schema.source_catalog	string	INPUT	STATE
 resources.pipelines.*.ingestion_definition.objects[*].schema.source_schema	string	INPUT	STATE
 resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration	*pipelines.TableSpecificConfig	INPUT	STATE
+resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.auto_full_refresh_policy	*pipelines.AutoFullRefreshPolicy	INPUT	STATE
+resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.auto_full_refresh_policy.enabled	bool	INPUT	STATE
+resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.auto_full_refresh_policy.min_interval_hours	int	INPUT	STATE
 resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.exclude_columns	[]string	INPUT	STATE
 resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.exclude_columns[*]	string	INPUT	STATE
 resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.include_columns	[]string	INPUT	STATE
@@ -3045,6 +3105,9 @@ resources.pipelines.*.ingestion_definition.objects[*].table.source_catalog	strin
 resources.pipelines.*.ingestion_definition.objects[*].table.source_schema	string	INPUT	STATE
 resources.pipelines.*.ingestion_definition.objects[*].table.source_table	string	INPUT	STATE
 resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration	*pipelines.TableSpecificConfig	INPUT	STATE
+resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.auto_full_refresh_policy	*pipelines.AutoFullRefreshPolicy	INPUT	STATE
+resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.auto_full_refresh_policy.enabled	bool	INPUT	STATE
+resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.auto_full_refresh_policy.min_interval_hours	int	INPUT	STATE
 resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.exclude_columns	[]string	INPUT	STATE
 resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.exclude_columns[*]	string	INPUT	STATE
 resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.include_columns	[]string	INPUT	STATE
@@ -3079,6 +3142,9 @@ resources.pipelines.*.ingestion_definition.source_configurations[*].catalog.post
 resources.pipelines.*.ingestion_definition.source_configurations[*].catalog.source_catalog	string	INPUT	STATE
 resources.pipelines.*.ingestion_definition.source_type	pipelines.IngestionSourceType	INPUT	STATE
 resources.pipelines.*.ingestion_definition.table_configuration	*pipelines.TableSpecificConfig	INPUT	STATE
+resources.pipelines.*.ingestion_definition.table_configuration.auto_full_refresh_policy	*pipelines.AutoFullRefreshPolicy	INPUT	STATE
+resources.pipelines.*.ingestion_definition.table_configuration.auto_full_refresh_policy.enabled	bool	INPUT	STATE
+resources.pipelines.*.ingestion_definition.table_configuration.auto_full_refresh_policy.min_interval_hours	int	INPUT	STATE
 resources.pipelines.*.ingestion_definition.table_configuration.exclude_columns	[]string	INPUT	STATE
 resources.pipelines.*.ingestion_definition.table_configuration.exclude_columns[*]	string	INPUT	STATE
 resources.pipelines.*.ingestion_definition.table_configuration.include_columns	[]string	INPUT	STATE
@@ -3273,6 +3339,11 @@ resources.pipelines.*.spec.gateway_definition.gateway_storage_schema	string	REMO
 resources.pipelines.*.spec.id	string	REMOTE
 resources.pipelines.*.spec.ingestion_definition	*pipelines.IngestionPipelineDefinition	REMOTE
 resources.pipelines.*.spec.ingestion_definition.connection_name	string	REMOTE
+resources.pipelines.*.spec.ingestion_definition.full_refresh_window	*pipelines.OperationTimeWindow	REMOTE
+resources.pipelines.*.spec.ingestion_definition.full_refresh_window.days_of_week	[]pipelines.DayOfWeek	REMOTE
+resources.pipelines.*.spec.ingestion_definition.full_refresh_window.days_of_week[*]	pipelines.DayOfWeek	REMOTE
+resources.pipelines.*.spec.ingestion_definition.full_refresh_window.start_hour	int	REMOTE
+resources.pipelines.*.spec.ingestion_definition.full_refresh_window.time_zone_id	string	REMOTE
 resources.pipelines.*.spec.ingestion_definition.ingest_from_uc_foreign_catalog	bool	REMOTE
 resources.pipelines.*.spec.ingestion_definition.ingestion_gateway_id	string	REMOTE
 resources.pipelines.*.spec.ingestion_definition.netsuite_jar_path	string	REMOTE
@@ -3284,6 +3355,9 @@ resources.pipelines.*.spec.ingestion_definition.objects[*].report.destination_sc
 resources.pipelines.*.spec.ingestion_definition.objects[*].report.destination_table	string	REMOTE
 resources.pipelines.*.spec.ingestion_definition.objects[*].report.source_url	string	REMOTE
 resources.pipelines.*.spec.ingestion_definition.objects[*].report.table_configuration	*pipelines.TableSpecificConfig	REMOTE
+resources.pipelines.*.spec.ingestion_definition.objects[*].report.table_configuration.auto_full_refresh_policy	*pipelines.AutoFullRefreshPolicy	REMOTE
+resources.pipelines.*.spec.ingestion_definition.objects[*].report.table_configuration.auto_full_refresh_policy.enabled	bool	REMOTE
+resources.pipelines.*.spec.ingestion_definition.objects[*].report.table_configuration.auto_full_refresh_policy.min_interval_hours	int	REMOTE
 resources.pipelines.*.spec.ingestion_definition.objects[*].report.table_configuration.exclude_columns	[]string	REMOTE
 resources.pipelines.*.spec.ingestion_definition.objects[*].report.table_configuration.exclude_columns[*]	string	REMOTE
 resources.pipelines.*.spec.ingestion_definition.objects[*].report.table_configuration.include_columns	[]string	REMOTE
@@ -3314,6 +3388,9 @@ resources.pipelines.*.spec.ingestion_definition.objects[*].schema.destination_sc
 resources.pipelines.*.spec.ingestion_definition.objects[*].schema.source_catalog	string	REMOTE
 resources.pipelines.*.spec.ingestion_definition.objects[*].schema.source_schema	string	REMOTE
 resources.pipelines.*.spec.ingestion_definition.objects[*].schema.table_configuration	*pipelines.TableSpecificConfig	REMOTE
+resources.pipelines.*.spec.ingestion_definition.objects[*].schema.table_configuration.auto_full_refresh_policy	*pipelines.AutoFullRefreshPolicy	REMOTE
+resources.pipelines.*.spec.ingestion_definition.objects[*].schema.table_configuration.auto_full_refresh_policy.enabled	bool	REMOTE
+resources.pipelines.*.spec.ingestion_definition.objects[*].schema.table_configuration.auto_full_refresh_policy.min_interval_hours	int	REMOTE
 resources.pipelines.*.spec.ingestion_definition.objects[*].schema.table_configuration.exclude_columns	[]string	REMOTE
 resources.pipelines.*.spec.ingestion_definition.objects[*].schema.table_configuration.exclude_columns[*]	string	REMOTE
 resources.pipelines.*.spec.ingestion_definition.objects[*].schema.table_configuration.include_columns	[]string	REMOTE
@@ -3346,6 +3423,9 @@ resources.pipelines.*.spec.ingestion_definition.objects[*].table.source_catalog	
 resources.pipelines.*.spec.ingestion_definition.objects[*].table.source_schema	string	REMOTE
 resources.pipelines.*.spec.ingestion_definition.objects[*].table.source_table	string	REMOTE
 resources.pipelines.*.spec.ingestion_definition.objects[*].table.table_configuration	*pipelines.TableSpecificConfig	REMOTE
+resources.pipelines.*.spec.ingestion_definition.objects[*].table.table_configuration.auto_full_refresh_policy	*pipelines.AutoFullRefreshPolicy	REMOTE
+resources.pipelines.*.spec.ingestion_definition.objects[*].table.table_configuration.auto_full_refresh_policy.enabled	bool	REMOTE
+resources.pipelines.*.spec.ingestion_definition.objects[*].table.table_configuration.auto_full_refresh_policy.min_interval_hours	int	REMOTE
 resources.pipelines.*.spec.ingestion_definition.objects[*].table.table_configuration.exclude_columns	[]string	REMOTE
 resources.pipelines.*.spec.ingestion_definition.objects[*].table.table_configuration.exclude_columns[*]	string	REMOTE
 resources.pipelines.*.spec.ingestion_definition.objects[*].table.table_configuration.include_columns	[]string	REMOTE
@@ -3380,6 +3460,9 @@ resources.pipelines.*.spec.ingestion_definition.source_configurations[*].catalog
 resources.pipelines.*.spec.ingestion_definition.source_configurations[*].catalog.source_catalog	string	REMOTE
 resources.pipelines.*.spec.ingestion_definition.source_type	pipelines.IngestionSourceType	REMOTE
 resources.pipelines.*.spec.ingestion_definition.table_configuration	*pipelines.TableSpecificConfig	REMOTE
+resources.pipelines.*.spec.ingestion_definition.table_configuration.auto_full_refresh_policy	*pipelines.AutoFullRefreshPolicy	REMOTE
+resources.pipelines.*.spec.ingestion_definition.table_configuration.auto_full_refresh_policy.enabled	bool	REMOTE
+resources.pipelines.*.spec.ingestion_definition.table_configuration.auto_full_refresh_policy.min_interval_hours	int	REMOTE
 resources.pipelines.*.spec.ingestion_definition.table_configuration.exclude_columns	[]string	REMOTE
 resources.pipelines.*.spec.ingestion_definition.table_configuration.exclude_columns[*]	string	REMOTE
 resources.pipelines.*.spec.ingestion_definition.table_configuration.include_columns	[]string	REMOTE

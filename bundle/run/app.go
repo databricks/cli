@@ -176,8 +176,9 @@ func (a *appRunner) buildAppDeployment() apps.AppDeployment {
 			deployment.EnvVars = make([]apps.EnvVar, len(a.app.Config.Env))
 			for i, env := range a.app.Config.Env {
 				deployment.EnvVars[i] = apps.EnvVar{
-					Name:  env.Name,
-					Value: env.Value,
+					Name:      env.Name,
+					Value:     env.Value,
+					ValueFrom: env.ValueFrom,
 				}
 			}
 		}

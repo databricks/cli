@@ -1,1 +1,1 @@
-trace $PIPELINES __complete open ,
+trace $CLI __complete pipelines open ,

@@ -26,8 +26,11 @@ func New() *cobra.Command {
 
 	// Add methods
 	cmd.AddCommand(newGetPublicAccountSetting())
+	cmd.AddCommand(newGetPublicAccountUserPreference())
 	cmd.AddCommand(newListAccountSettingsMetadata())
+	cmd.AddCommand(newListAccountUserPreferencesMetadata())
 	cmd.AddCommand(newPatchPublicAccountSetting())
+	cmd.AddCommand(newPatchPublicAccountUserPreference())
 
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
@@ -92,6 +95,70 @@ func newGetPublicAccountSetting() *cobra.Command {
 	return cmd
 }
 
+// start get-public-account-user-preference command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getPublicAccountUserPreferenceOverrides []func(
+	*cobra.Command,
+	*settingsv2.GetPublicAccountUserPreferenceRequest,
+)
+
+func newGetPublicAccountUserPreference() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getPublicAccountUserPreferenceReq settingsv2.GetPublicAccountUserPreferenceRequest
+
+	cmd.Use = "get-public-account-user-preference USER_ID NAME"
+	cmd.Short = `Get a user preference.`
+	cmd.Long = `Get a user preference.
+
+  Get a user preference for a specific user. User preferences are personal
+  settings that allow individual customization without affecting other users.
+  See :method:settingsv2/listaccountuserpreferencesmetadata for list of user
+  preferences available via public APIs.
+
+  Arguments:
+    USER_ID: User ID of the user whose setting is being retrieved.
+    NAME: User Setting name.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(2)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		a := cmdctx.AccountClient(ctx)
+
+		getPublicAccountUserPreferenceReq.UserId = args[0]
+		getPublicAccountUserPreferenceReq.Name = args[1]
+
+		response, err := a.SettingsV2.GetPublicAccountUserPreference(ctx, getPublicAccountUserPreferenceReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getPublicAccountUserPreferenceOverrides {
+		fn(cmd, &getPublicAccountUserPreferenceReq)
+	}
+
+	return cmd
+}
+
 // start list-account-settings-metadata command
 
 // Slice with functions to override default command behavior.
@@ -145,6 +212,69 @@ func newListAccountSettingsMetadata() *cobra.Command {
 	return cmd
 }
 
+// start list-account-user-preferences-metadata command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listAccountUserPreferencesMetadataOverrides []func(
+	*cobra.Command,
+	*settingsv2.ListAccountUserPreferencesMetadataRequest,
+)
+
+func newListAccountUserPreferencesMetadata() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listAccountUserPreferencesMetadataReq settingsv2.ListAccountUserPreferencesMetadataRequest
+
+	cmd.Flags().IntVar(&listAccountUserPreferencesMetadataReq.PageSize, "page-size", listAccountUserPreferencesMetadataReq.PageSize, `The maximum number of settings to return.`)
+	cmd.Flags().StringVar(&listAccountUserPreferencesMetadataReq.PageToken, "page-token", listAccountUserPreferencesMetadataReq.PageToken, `A page token, received from a previous ListAccountUserPreferencesMetadataRequest call.`)
+
+	cmd.Use = "list-account-user-preferences-metadata USER_ID"
+	cmd.Short = `List user preferences and their metadata.`
+	cmd.Long = `List user preferences and their metadata.
+
+  List valid user preferences and their metadata for a specific user. User
+  preferences are personal settings that allow individual customization without
+  affecting other users. These settings are available to be referenced via GET
+  :method:settingsv2/getpublicaccountuserpreference and PATCH
+  :method:settingsv2/patchpublicaccountuserpreference APIs
+
+  Arguments:
+    USER_ID: User ID of the user whose settings metadata is being retrieved.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		a := cmdctx.AccountClient(ctx)
+
+		listAccountUserPreferencesMetadataReq.UserId = args[0]
+
+		response := a.SettingsV2.ListAccountUserPreferencesMetadata(ctx, listAccountUserPreferencesMetadataReq)
+		return cmdio.RenderIterator(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listAccountUserPreferencesMetadataOverrides {
+		fn(cmd, &listAccountUserPreferencesMetadataReq)
+	}
+
+	return cmd
+}
+
 // start patch-public-account-setting command
 
 // Slice with functions to override default command behavior.
@@ -189,7 +319,9 @@ func newPatchPublicAccountSetting() *cobra.Command {
   :method:settingsv2/listaccountsettingsmetadata for list of setting available
   via public APIs at account level. To determine the correct field to include in
   a patch request, refer to the type field of the setting returned in the
-  :method:settingsv2/listaccountsettingsmetadata response.`
+  :method:settingsv2/listaccountsettingsmetadata response.
+
+  Note: Page refresh is required for changes to take effect in UI.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -231,6 +363,95 @@ func newPatchPublicAccountSetting() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range patchPublicAccountSettingOverrides {
 		fn(cmd, &patchPublicAccountSettingReq)
+	}
+
+	return cmd
+}
+
+// start patch-public-account-user-preference command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var patchPublicAccountUserPreferenceOverrides []func(
+	*cobra.Command,
+	*settingsv2.PatchPublicAccountUserPreferenceRequest,
+)
+
+func newPatchPublicAccountUserPreference() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var patchPublicAccountUserPreferenceReq settingsv2.PatchPublicAccountUserPreferenceRequest
+	patchPublicAccountUserPreferenceReq.Setting = settingsv2.UserPreference{}
+	var patchPublicAccountUserPreferenceJson flags.JsonFlag
+
+	cmd.Flags().Var(&patchPublicAccountUserPreferenceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	// TODO: complex arg: boolean_val
+	// TODO: complex arg: effective_boolean_val
+	// TODO: complex arg: effective_string_val
+	cmd.Flags().StringVar(&patchPublicAccountUserPreferenceReq.Setting.Name, "name", patchPublicAccountUserPreferenceReq.Setting.Name, `Name of the setting.`)
+	// TODO: complex arg: string_val
+	cmd.Flags().StringVar(&patchPublicAccountUserPreferenceReq.Setting.UserId, "user-id", patchPublicAccountUserPreferenceReq.Setting.UserId, `User ID of the user.`)
+
+	cmd.Use = "patch-public-account-user-preference USER_ID NAME"
+	cmd.Short = `Update a user preference.`
+	cmd.Long = `Update a user preference.
+
+  Update a user preference for a specific user. User preferences are personal
+  settings that allow individual customization without affecting other users.
+  See :method:settingsv2/listaccountuserpreferencesmetadata for list of user
+  preferences available via public APIs.
+
+  Note: Page refresh is required for changes to take effect in UI.
+
+  Arguments:
+    USER_ID: User ID of the user whose setting is being updated.
+    NAME: `
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(2)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustAccountClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		a := cmdctx.AccountClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := patchPublicAccountUserPreferenceJson.Unmarshal(&patchPublicAccountUserPreferenceReq.Setting)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		patchPublicAccountUserPreferenceReq.UserId = args[0]
+		patchPublicAccountUserPreferenceReq.Name = args[1]
+
+		response, err := a.SettingsV2.PatchPublicAccountUserPreference(ctx, patchPublicAccountUserPreferenceReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range patchPublicAccountUserPreferenceOverrides {
+		fn(cmd, &patchPublicAccountUserPreferenceReq)
 	}
 
 	return cmd
