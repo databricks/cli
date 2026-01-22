@@ -17,6 +17,7 @@ import (
 	"github.com/databricks/cli/libs/apps/prompt"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/git"
 	"github.com/databricks/cli/libs/log"
 	"github.com/spf13/cobra"
 )
@@ -341,31 +342,6 @@ func readAndSubstitute(path string, vars templateVars) (string, error) {
 	return substituteVars(string(content), vars), nil
 }
 
-// parseGitHubURL extracts the repository URL, subdirectory, and branch from a GitHub URL.
-// Input: https://github.com/user/repo/tree/main/templates/starter
-// Output: repoURL="https://github.com/user/repo", subdir="templates/starter", branch="main"
-func parseGitHubURL(url string) (repoURL, subdir, branch string) {
-	// Remove trailing slash
-	url = strings.TrimSuffix(url, "/")
-
-	// Check for /tree/branch/path pattern
-	if idx := strings.Index(url, "/tree/"); idx != -1 {
-		repoURL = url[:idx]
-		rest := url[idx+6:] // Skip "/tree/"
-
-		// Split into branch and path
-		parts := strings.SplitN(rest, "/", 2)
-		branch = parts[0]
-		if len(parts) > 1 {
-			subdir = parts[1]
-		}
-		return repoURL, subdir, branch
-	}
-
-	// No /tree/ pattern, just a repo URL
-	return url, "", ""
-}
-
 // cloneRepo clones a git repository to a temporary directory.
 func cloneRepo(ctx context.Context, repoURL, branch string) (string, error) {
 	tempDir, err := os.MkdirTemp("", "appkit-template-*")
@@ -373,22 +349,9 @@ func cloneRepo(ctx context.Context, repoURL, branch string) (string, error) {
 		return "", fmt.Errorf("create temp dir: %w", err)
 	}
 
-	args := []string{"clone", "--depth", "1"}
-	if branch != "" {
-		args = append(args, "--branch", branch)
-	}
-	args = append(args, repoURL, tempDir)
-
-	cmd := exec.CommandContext(ctx, "git", args...)
-	cmd.Stdout = nil
-	var stderr bytes.Buffer
-	cmd.Stderr = &stderr
-	if err := cmd.Run(); err != nil {
+	if err := git.Clone(ctx, repoURL, branch, tempDir); err != nil {
 		os.RemoveAll(tempDir)
-		if stderr.Len() > 0 {
-			return "", fmt.Errorf("git clone failed: %s: %w", strings.TrimSpace(stderr.String()), err)
-		}
-		return "", fmt.Errorf("git clone failed: %w", err)
+		return "", err
 	}
 
 	return tempDir, nil
@@ -403,7 +366,7 @@ func resolveTemplate(ctx context.Context, templatePath, branch string) (localPat
 	}
 
 	// Case 2: GitHub URL - parse and clone
-	repoURL, subdir, urlBranch := parseGitHubURL(templatePath)
+	repoURL, subdir, urlBranch := git.ParseGitHubURL(templatePath)
 	if branch == "" {
 		branch = urlBranch // Use branch from URL if not overridden by flag
 	}
@@ -734,8 +697,10 @@ func runCreate(ctx context.Context, opts createOptions) error {
 
 // runPostCreateDeploy runs the deploy command in the current directory.
 func runPostCreateDeploy(ctx context.Context) error {
-	// Use os.Args[0] to get the path to the current executable
-	executable := os.Args[0]
+	executable, err := os.Executable()
+	if err != nil {
+		return fmt.Errorf("failed to get executable path: %w", err)
+	}
 	cmd := exec.CommandContext(ctx, executable, "apps", "deploy")
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -755,8 +720,10 @@ func runPostCreateDev(ctx context.Context, mode prompt.RunMode) error {
 		return cmd.Run()
 	case prompt.RunModeDevRemote:
 		cmdio.LogString(ctx, "Starting remote development server...")
-		// Use os.Args[0] to get the path to the current executable
-		executable := os.Args[0]
+		executable, err := os.Executable()
+		if err != nil {
+			return fmt.Errorf("failed to get executable path: %w", err)
+		}
 		cmd := exec.CommandContext(ctx, executable, "apps", "dev-remote")
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
