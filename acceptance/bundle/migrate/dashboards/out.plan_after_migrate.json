@@ -1,5 +1,5 @@
 {
-  "plan_version": 1,
+  "plan_version": 2,
   "cli_version": "[DEV_VERSION]",
   "lineage": "[UUID]",
   "serial": 3,
@@ -8,30 +8,29 @@
       "action": "skip",
       "remote_state": {
         "create_time": "[TIMESTAMP]",
-        "dashboard_id": "[DASHBOARD_ID]",
+        "dashboard_id": "[DASHBOARD1_ID]",
         "display_name": "my dashboard",
         "embed_credentials": true,
         "etag": "[NUMID]",
         "lifecycle_state": "ACTIVE",
         "parent_path": "/Workspace/Users/[USERNAME]",
         "path": "/Users/[USERNAME]/my dashboard.lvdash.json",
+        "published": true,
         "serialized_dashboard": "{\"pages\":[{\"displayName\":\"Dashboard test bundle-deploy-dashboard\",\"name\":\"02724bf2\",\"pageType\":\"PAGE_TYPE_CANVAS\"}]}\n",
         "update_time": "[TIMESTAMP]",
         "warehouse_id": "123456"
       },
       "changes": {
-        "local": {
-          "etag": {
-            "action": "skip",
-            "old": "[NUMID]"
-          }
+        "etag": {
+          "action": "skip",
+          "old": "[NUMID]",
+          "remote": "[NUMID]"
         },
-        "remote": {
-          "serialized_dashboard": {
-            "action": "skip",
-            "old": "{\"pages\":[{\"name\":\"02724bf2\",\"displayName\":\"Dashboard test bundle-deploy-dashboard\"}]}\n",
-            "new": "{\"pages\":[{\"displayName\":\"Dashboard test bundle-deploy-dashboard\",\"name\":\"02724bf2\",\"pageType\":\"PAGE_TYPE_CANVAS\"}]}\n"
-          }
+        "serialized_dashboard": {
+          "action": "skip",
+          "old": "{\"pages\":[{\"name\":\"02724bf2\",\"displayName\":\"Dashboard test bundle-deploy-dashboard\"}]}\n",
+          "new": "{\"pages\":[{\"name\":\"02724bf2\",\"displayName\":\"Dashboard test bundle-deploy-dashboard\"}]}\n",
+          "remote": "{\"pages\":[{\"displayName\":\"Dashboard test bundle-deploy-dashboard\",\"name\":\"02724bf2\",\"pageType\":\"PAGE_TYPE_CANVAS\"}]}\n"
         }
       }
     }

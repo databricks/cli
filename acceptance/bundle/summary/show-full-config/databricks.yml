@@ -1,5 +1,9 @@
+bundle:
+  name: test-bundle
+
 include:
   - targets/*.yml
+  - resources/*.yml
 
 variables:
   mode:

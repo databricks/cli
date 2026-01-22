@@ -10,15 +10,18 @@ type ResourceMetastore struct {
 	DeltaSharingOrganizationName                string `json:"delta_sharing_organization_name,omitempty"`
 	DeltaSharingRecipientTokenLifetimeInSeconds int    `json:"delta_sharing_recipient_token_lifetime_in_seconds,omitempty"`
 	DeltaSharingScope                           string `json:"delta_sharing_scope,omitempty"`
+	ExternalAccessEnabled                       bool   `json:"external_access_enabled,omitempty"`
 	ForceDestroy                                bool   `json:"force_destroy,omitempty"`
 	GlobalMetastoreId                           string `json:"global_metastore_id,omitempty"`
 	Id                                          string `json:"id,omitempty"`
 	MetastoreId                                 string `json:"metastore_id,omitempty"`
-	Name                                        string `json:"name"`
+	Name                                        string `json:"name,omitempty"`
 	Owner                                       string `json:"owner,omitempty"`
+	PrivilegeModelVersion                       string `json:"privilege_model_version,omitempty"`
 	Region                                      string `json:"region,omitempty"`
 	StorageRoot                                 string `json:"storage_root,omitempty"`
 	StorageRootCredentialId                     string `json:"storage_root_credential_id,omitempty"`
+	StorageRootCredentialName                   string `json:"storage_root_credential_name,omitempty"`
 	UpdatedAt                                   int    `json:"updated_at,omitempty"`
 	UpdatedBy                                   string `json:"updated_by,omitempty"`
 }

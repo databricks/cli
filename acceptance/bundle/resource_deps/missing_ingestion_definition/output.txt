@@ -1,1 +1,0 @@
-"pbar ${resources.pipelines.foo.ingestion_definition.connection_name}"

@@ -1,32 +1,27 @@
 
-=== Bind experiment test:
-=== Substitute variables in the template
-=== Create a pre-defined experiment
-=== Bind experiment: Updating deployment state...
+>>> [CLI] bundle deployment bind experiment1 [NUMID] --auto-approve
+Updating deployment state...
 Successfully bound experiment with an id '[NUMID]'
 Run 'bundle deploy' to deploy changes to your workspace
 
-=== Deploy bundle: Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+>>> [CLI] bundle deploy --force-lock --auto-approve
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
 
-=== Read the pre-defined experiment: {
-  "name": "/Users/[USERNAME]/test-experiment[UUID]",
-  "lifecycle_stage": "active"
-}
+>>> [CLI] experiments get-experiment [NUMID]
 
-=== Unbind the experiment: Updating deployment state...
+>>> [CLI] bundle deployment unbind experiment1
+Updating deployment state...
 
-=== Destroy the bundle: All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+>>> [CLI] bundle destroy --auto-approve
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
 
 Deleting files...
 Destroy complete!
 
-=== Read the pre-defined experiment again (expecting it still exists and is not deleted): {
-  "name": "/Users/[USERNAME]/test-experiment[UUID]",
-  "lifecycle_stage": "active"
-}
+>>> [CLI] experiments get-experiment [NUMID]
 
 === Test cleanup:
 === Delete the pre-defined experiment: 0

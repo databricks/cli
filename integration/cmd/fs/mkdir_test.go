@@ -2,13 +2,13 @@ package fs_test
 
 import (
 	"context"
+	"io/fs"
 	"path"
 	"regexp"
 	"strings"
 	"testing"
 
 	"github.com/databricks/cli/internal/testcli"
-	"github.com/databricks/cli/libs/filer"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -129,6 +129,6 @@ func TestFsMkdirWhenFileExistsAtPath(t *testing.T) {
 		// assert mkdir fails
 		_, _, err = testcli.RequireErrorRun(t, ctx, "fs", "mkdir", path.Join(tmpDir, "hello"))
 
-		assert.ErrorAs(t, err, &filer.FileAlreadyExistsError{})
+		assert.ErrorIs(t, err, fs.ErrExist)
 	})
 }

@@ -34,6 +34,7 @@ $CLI lakeview update "${RESOURCE_ID}" --json "${DASHBOARD_JSON}" | jq '{lifecycl
 
 title "Try to redeploy the bundle and confirm that the out of band modification is detected:"
 trace $CLI bundle plan
+trace $CLI bundle plan -o json > out.plan.$DATABRICKS_BUNDLE_ENGINE.json
 trace errcode $CLI bundle deploy
 
 title "Redeploy the bundle with the --force flag and confirm that the out of band modification is ignored:"

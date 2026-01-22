@@ -1,0 +1,8 @@
+bundle:
+  name: test-app-already-exists
+
+resources:
+  apps:
+    myapp:
+      name: test-app-already-exists
+      source_code_path: ./app

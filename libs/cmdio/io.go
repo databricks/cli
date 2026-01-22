@@ -4,55 +4,45 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os"
 	"slices"
 	"strings"
-	"time"
+	"sync"
 
-	"github.com/briandowns/spinner"
-	"github.com/databricks/cli/libs/env"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/manifoldco/promptui"
-	"github.com/mattn/go-isatty"
 )
 
 // cmdIO is the private instance, that is not supposed to be accessed
 // outside of `cmdio` package. Use the public package-level functions
 // to access the inner state.
+//
+// Stream Architecture:
+//   - in:  stdin for user input (prompts, confirmations)
+//   - out: stdout for data output (JSON, tables, command results)
+//   - err: stderr for interactive UI (prompts, spinners, logs, diagnostics)
+//
+// This separation enables piping stdout while maintaining interactivity:
+//
+//	databricks clusters list --output json | jq  # User sees prompts, jq gets JSON
 type cmdIO struct {
-	// states if we are in the interactive mode
-	// e.g. if stdout is a terminal
-	interactive    bool
-	prompt         bool
+	capabilities   Capabilities
 	outputFormat   flags.Output
 	headerTemplate string
 	template       string
 	in             io.Reader
 	out            io.Writer
 	err            io.Writer
+
+	// Bubble Tea program lifecycle management
+	teaMu      sync.Mutex
+	teaProgram *tea.Program
+	teaDone    chan struct{}
 }
 
 func NewIO(ctx context.Context, outputFormat flags.Output, in io.Reader, out, err io.Writer, headerTemplate, template string) *cmdIO {
-	// The check below is similar to color.NoColor but uses the specified err writer.
-	dumb := env.Get(ctx, "NO_COLOR") != "" || env.Get(ctx, "TERM") == "dumb"
-	if f, ok := err.(*os.File); ok && !dumb {
-		dumb = !isatty.IsTerminal(f.Fd()) && !isatty.IsCygwinTerminal(f.Fd())
-	}
-
-	// Interactive mode is the opposite of "dumb" mode.
-	// TODO(@pietern): Clean this up later. Don't want to change more logic in this PR.
-	interactive := !dumb
-
-	// Prompting requires:
-	// - "interactive" mode (i.e. the terminal to not be dumb or use NO_COLOR (because promptui uses both)
-	// - stdin to be a TTY (for reading input)
-	// - stdout to be a TTY (for showing prompts)
-	// - not to be running in Git Bash on Windows
-	prompt := interactive && IsTTY(in) && IsTTY(out) && !isGitBash(ctx)
-
 	return &cmdIO{
-		interactive:    interactive,
-		prompt:         prompt,
+		capabilities:   newCapabilities(ctx, in, out, err),
 		outputFormat:   outputFormat,
 		headerTemplate: headerTemplate,
 		template:       template,
@@ -64,46 +54,25 @@ func NewIO(ctx context.Context, outputFormat flags.Output, in io.Reader, out, er
 
 func IsInteractive(ctx context.Context) bool {
 	c := fromContext(ctx)
-	return c.interactive
+	return c.capabilities.SupportsInteractive()
 }
 
 func IsPromptSupported(ctx context.Context) bool {
 	c := fromContext(ctx)
-	return c.prompt
+	return c.capabilities.SupportsPrompt()
 }
 
-// IsTTY detects if io.Writer is a terminal.
-func IsTTY(w any) bool {
-	f, ok := w.(*os.File)
-	if !ok {
-		return false
-	}
-	fd := f.Fd()
-	return isatty.IsTerminal(fd) || isatty.IsCygwinTerminal(fd)
-}
-
-// We do not allow prompting in non-interactive mode and in Git Bash on Windows.
-// Likely due to fact that Git Bash does not (correctly support ANSI escape sequences,
-// we cannot use promptui package there.
-// See known issues:
-// - https://github.com/manifoldco/promptui/issues/208
-// - https://github.com/chzyer/readline/issues/191
-func isGitBash(ctx context.Context) bool {
-	// Check if the MSYSTEM environment variable is set to "MINGW64"
-	msystem := env.Get(ctx, "MSYSTEM")
-	if strings.EqualFold(msystem, "MINGW64") {
-		// Check for typical Git Bash env variable for prompts
-		ps1 := env.Get(ctx, "PS1")
-		return strings.Contains(ps1, "MINGW") || strings.Contains(ps1, "MSYSTEM")
-	}
-
-	return false
+// SupportsColor returns true if the given writer supports colored output.
+// This checks both TTY status and environment variables (NO_COLOR, TERM=dumb).
+func SupportsColor(ctx context.Context, w io.Writer) bool {
+	c := fromContext(ctx)
+	return c.capabilities.SupportsColor(w)
 }
 
 type Tuple struct{ Name, Id string }
 
 func (c *cmdIO) Select(items []Tuple, label string) (id string, err error) {
-	if !c.interactive {
+	if !c.capabilities.SupportsInteractive() {
 		return "", fmt.Errorf("expected to have %s", label)
 	}
 
@@ -114,13 +83,14 @@ func (c *cmdIO) Select(items []Tuple, label string) (id string, err error) {
 		StartInSearchMode: true,
 		Searcher: func(input string, idx int) bool {
 			lower := strings.ToLower(items[idx].Name)
-			return strings.Contains(lower, input)
+			return strings.Contains(lower, strings.ToLower(input))
 		},
 		Templates: &promptui.SelectTemplates{
 			Active:   `{{.Name | bold}} ({{.Id|faint}})`,
 			Inactive: `{{.Name}}`,
 		},
-		Stdin: io.NopCloser(c.in),
+		Stdin:  io.NopCloser(c.in),
+		Stdout: nopWriteCloser{c.err},
 	}).Run()
 	if err != nil {
 		return id, err
@@ -155,6 +125,8 @@ func (c *cmdIO) Secret(label string) (value string, err error) {
 		Label:       label,
 		Mask:        '*',
 		HideEntered: true,
+		Stdin:       io.NopCloser(c.in),
+		Stdout:      nopWriteCloser{c.err},
 	})
 
 	return prompt.Run()
@@ -177,7 +149,7 @@ func Prompt(ctx context.Context) *promptui.Prompt {
 	c := fromContext(ctx)
 	return &promptui.Prompt{
 		Stdin:  io.NopCloser(c.in),
-		Stdout: nopWriteCloser{c.out},
+		Stdout: nopWriteCloser{c.err},
 	}
 }
 
@@ -186,39 +158,6 @@ func RunSelect(ctx context.Context, prompt *promptui.Select) (int, string, error
 	prompt.Stdin = io.NopCloser(c.in)
 	prompt.Stdout = nopWriteCloser{c.err}
 	return prompt.Run()
-}
-
-func (c *cmdIO) Spinner(ctx context.Context) chan string {
-	var sp *spinner.Spinner
-	if c.interactive {
-		charset := spinner.CharSets[11]
-		sp = spinner.New(charset, 200*time.Millisecond,
-			spinner.WithWriter(c.err),
-			spinner.WithColor("green"))
-		sp.Start()
-	}
-	updates := make(chan string)
-	go func() {
-		if c.interactive {
-			defer sp.Stop()
-		}
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case x, hasMore := <-updates:
-				if c.interactive {
-					// `sp`` access is isolated to this method,
-					// so it's safe to update it from this goroutine.
-					sp.Suffix = " " + x
-				}
-				if !hasMore {
-					return
-				}
-			}
-		}
-	}()
-	return updates
 }
 
 func Spinner(ctx context.Context) chan string {
@@ -245,10 +184,57 @@ func fromContext(ctx context.Context) *cmdIO {
 // Mocks the context with a cmdio object that discards all output.
 func MockDiscard(ctx context.Context) context.Context {
 	return InContext(ctx, &cmdIO{
-		interactive:  false,
+		capabilities: Capabilities{
+			stdinIsTTY:  false,
+			stdoutIsTTY: false,
+			stderrIsTTY: false,
+			color:       false,
+			isGitBash:   false,
+		},
 		outputFormat: flags.OutputText,
 		in:           io.NopCloser(strings.NewReader("")),
 		out:          io.Discard,
 		err:          io.Discard,
 	})
+}
+
+// acquireTeaProgram waits for any existing tea.Program to finish, then registers the new one.
+// This ensures only one tea.Program runs at a time (e.g., sequential spinners).
+func (c *cmdIO) acquireTeaProgram(p *tea.Program) {
+	c.teaMu.Lock()
+	defer c.teaMu.Unlock()
+
+	// Wait for existing program to finish
+	if c.teaDone != nil {
+		<-c.teaDone
+	}
+
+	// Register new program
+	c.teaProgram = p
+	c.teaDone = make(chan struct{})
+}
+
+// releaseTeaProgram signals that the current tea.Program has finished.
+func (c *cmdIO) releaseTeaProgram() {
+	c.teaMu.Lock()
+	defer c.teaMu.Unlock()
+
+	if c.teaDone != nil {
+		close(c.teaDone)
+		c.teaDone = nil
+	}
+	c.teaProgram = nil
+}
+
+// Wait blocks until any active tea.Program finishes.
+// This should be called before command termination to ensure terminal state is restored.
+func Wait(ctx context.Context) {
+	c := fromContext(ctx)
+	c.teaMu.Lock()
+	done := c.teaDone
+	c.teaMu.Unlock()
+
+	if done != nil {
+		<-done
+	}
 }

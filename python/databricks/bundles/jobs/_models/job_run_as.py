@@ -17,6 +17,13 @@ class JobRunAs:
     Either `user_name` or `service_principal_name` should be specified. If not, an error is thrown.
     """
 
+    group_name: VariableOrOptional[str] = None
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    Group name of an account group assigned to the workspace. Setting this field requires being a member of the group.
+    """
+
     service_principal_name: VariableOrOptional[str] = None
     """
     The application ID of an active service principal. Setting this field requires the `servicePrincipal/user` role.
@@ -37,6 +44,13 @@ class JobRunAs:
 
 class JobRunAsDict(TypedDict, total=False):
     """"""
+
+    group_name: VariableOrOptional[str]
+    """
+    :meta private: [EXPERIMENTAL]
+    
+    Group name of an account group assigned to the workspace. Setting this field requires being a member of the group.
+    """
 
     service_principal_name: VariableOrOptional[str]
     """

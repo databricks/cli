@@ -1,9 +1,5 @@
 
 >>> [CLI] workspace export-dir /test-dir [TEST_TMP_DIR]/export
 Exporting files from /test-dir
-Warning: /test-dir/file.py (skipped; file too large)
-
-The following files were skipped because they exceed the maximum size limit:
-  - /test-dir/file.py (skipped; file too large)
-
+/test-dir/file.py (skipped; file too large)
 Export complete

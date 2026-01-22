@@ -1,3 +1,6 @@
+bundle:
+  name: test-bundle
+
 workspace:
   resource_path: /foo/bar
 

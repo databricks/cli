@@ -194,7 +194,7 @@ func AskForCluster(ctx context.Context, w *databricks.WorkspaceClient, filters .
 		Items: compatible,
 		Searcher: func(input string, idx int) bool {
 			lower := strings.ToLower(compatible[idx].ClusterName)
-			return strings.Contains(lower, input)
+			return strings.Contains(lower, strings.ToLower(input))
 		},
 		StartInSearchMode: true,
 		Templates: &promptui.SelectTemplates{

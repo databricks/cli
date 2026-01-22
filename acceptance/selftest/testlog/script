@@ -1,0 +1,1 @@
+echo "TESTLOG: this is logged, not saved to output.txt"

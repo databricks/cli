@@ -281,14 +281,65 @@ func TestInheritOIDCTokenEnv(t *testing.T) {
 	assert.Equal(t, "", env["DATABRICKS_OIDC_TOKEN_ENV"])
 }
 
-func TestInheritSystemAccessToken(t *testing.T) {
-	t.Setenv("SYSTEM_ACCESSTOKEN", "foobar")
+func TestInheritAzureDevOpsSystemVariablesIndividual(t *testing.T) {
+	testCases := []struct {
+		envVar   string
+		envValue string
+	}{
+		{"SYSTEM_ACCESSTOKEN", "test-token"},
+		{"SYSTEM_COLLECTIONID", "collection-id-456"},
+		{"SYSTEM_COLLECTIONURI", "https://dev.azure.com/myorg/"},
+		{"SYSTEM_DEFINITIONID", "42"},
+		{"SYSTEM_HOSTTYPE", "build"},
+		{"SYSTEM_JOBID", "job-123"},
+		{"SYSTEM_OIDCREQUESTURI", "https://oidc.example.com"},
+		{"SYSTEM_PLANID", "plan-id-123"},
+		{"SYSTEM_TEAMFOUNDATIONCOLLECTIONURI", "https://dev.azure.com/org/"},
+		{"SYSTEM_TEAMPROJECT", "my-project"},
+		{"SYSTEM_TEAMPROJECTID", "project-id-789"},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.envVar, func(t *testing.T) {
+			t.Setenv(tc.envVar, tc.envValue)
+
+			ctx := context.Background()
+			env := map[string]string{}
+			err := inheritEnvVars(ctx, env)
+			require.NoError(t, err)
+			assert.Equal(t, tc.envValue, env[tc.envVar])
+		})
+	}
+}
+
+func TestInheritAzureDevOpsSystemVariables(t *testing.T) {
+	// Set all Azure DevOps system variables
+	vars := map[string]string{
+		"SYSTEM_ACCESSTOKEN":                 "test-token",
+		"SYSTEM_COLLECTIONID":                "collection-id-456",
+		"SYSTEM_COLLECTIONURI":               "https://dev.azure.com/myorg/",
+		"SYSTEM_DEFINITIONID":                "42",
+		"SYSTEM_HOSTTYPE":                    "build",
+		"SYSTEM_JOBID":                       "job-123",
+		"SYSTEM_OIDCREQUESTURI":              "https://oidc.example.com",
+		"SYSTEM_PLANID":                      "plan-id-123",
+		"SYSTEM_TEAMFOUNDATIONCOLLECTIONURI": "https://dev.azure.com/org/",
+		"SYSTEM_TEAMPROJECT":                 "my-project",
+		"SYSTEM_TEAMPROJECTID":               "project-id-789",
+	}
+
+	for k, v := range vars {
+		t.Setenv(k, v)
+	}
 
 	ctx := context.Background()
 	env := map[string]string{}
 	err := inheritEnvVars(ctx, env)
 	require.NoError(t, err)
-	assert.Equal(t, "foobar", env["SYSTEM_ACCESSTOKEN"])
+
+	for k, v := range vars {
+		assert.Equal(t, v, env[k])
+	}
 }
 
 func TestSetUserProfileFromInheritEnvVars(t *testing.T) {

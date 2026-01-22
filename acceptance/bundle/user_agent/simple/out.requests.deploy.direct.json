@@ -193,6 +193,8 @@
     "version": 1,
     "config": {
       "bundle": {
+        "name": "test-bundle",
+        "target": "default",
         "git": {
           "bundle_root_path": "."
         }

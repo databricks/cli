@@ -1,0 +1,26 @@
+
+>>> [CLI] bundle plan
+create jobs.my_job
+
+Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+=== Make local changes: update max_concurrent_runs to 2
+=== Make remote changes via CLI: add a new tag and set timeout
+
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py //jobs

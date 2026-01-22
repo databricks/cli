@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/ml"
@@ -56,7 +55,7 @@ func (r *ResourceExperiment) DoCreate(ctx context.Context, config *ml.CreateExpe
 	return result.ExperimentId, nil, nil
 }
 
-func (r *ResourceExperiment) DoUpdate(ctx context.Context, id string, config *ml.CreateExperiment, _ *Changes) (*ml.Experiment, error) {
+func (r *ResourceExperiment) DoUpdate(ctx context.Context, id string, config *ml.CreateExperiment, _ Changes) (*ml.Experiment, error) {
 	updateReq := ml.UpdateExperiment{
 		ExperimentId:    id,
 		NewName:         config.Name,
@@ -70,15 +69,4 @@ func (r *ResourceExperiment) DoDelete(ctx context.Context, id string) error {
 	return r.client.Experiments.DeleteExperiment(ctx, ml.DeleteExperiment{
 		ExperimentId: id,
 	})
-}
-
-func (*ResourceExperiment) FieldTriggers(_ bool) map[string]deployplan.ActionType {
-	// TF implementation: https://github.com/databricks/terraform-provider-databricks/blob/6c106e8e7052bb2726148d66309fd460ed444236/mlflow/resource_mlflow_experiment.go#L22
-	return map[string]deployplan.ActionType{
-		"name":              deployplan.ActionTypeUpdate,
-		"artifact_location": deployplan.ActionTypeRecreate,
-
-		// Tags updates are not supported by TF. This mirrors that behaviour.
-		"tags": deployplan.ActionTypeSkip,
-	}
 }

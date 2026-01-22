@@ -1,3 +1,6 @@
+bundle:
+  name: test-bundle
+
 # Note, I'm not testing jobs here. I'm testing how encoder/decoders work with int64, job_id is just a field that came up.
 resources:
   jobs:

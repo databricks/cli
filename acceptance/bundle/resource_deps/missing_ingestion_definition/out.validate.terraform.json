@@ -1,0 +1,20 @@
+{
+  "bar": {
+    "channel": "CURRENT",
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+    },
+    "edition": "ADVANCED",
+    "name": "pbar ${resources.pipelines.foo.ingestion_definition[0].connection_name}"
+  },
+  "foo": {
+    "channel": "CURRENT",
+    "deployment": {
+      "kind": "BUNDLE",
+      "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+    },
+    "edition": "ADVANCED",
+    "name": "pfoo"
+  }
+}

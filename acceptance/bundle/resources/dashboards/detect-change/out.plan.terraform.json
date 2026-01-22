@@ -1,0 +1,8 @@
+{
+  "cli_version": "[DEV_VERSION]",
+  "plan": {
+    "resources.dashboards.file_reference": {
+      "action": "update"
+    }
+  }
+}

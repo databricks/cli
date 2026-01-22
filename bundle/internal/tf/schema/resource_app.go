@@ -6,16 +6,39 @@ type ResourceAppActiveDeploymentDeploymentArtifacts struct {
 	SourceCodePath string `json:"source_code_path,omitempty"`
 }
 
+type ResourceAppActiveDeploymentEnvVars struct {
+	Name      string `json:"name,omitempty"`
+	Value     string `json:"value,omitempty"`
+	ValueFrom string `json:"value_from,omitempty"`
+}
+
+type ResourceAppActiveDeploymentGitSourceGitRepository struct {
+	Provider string `json:"provider"`
+	Url      string `json:"url"`
+}
+
+type ResourceAppActiveDeploymentGitSource struct {
+	Branch         string                                             `json:"branch,omitempty"`
+	Commit         string                                             `json:"commit,omitempty"`
+	GitRepository  *ResourceAppActiveDeploymentGitSourceGitRepository `json:"git_repository,omitempty"`
+	ResolvedCommit string                                             `json:"resolved_commit,omitempty"`
+	SourceCodePath string                                             `json:"source_code_path,omitempty"`
+	Tag            string                                             `json:"tag,omitempty"`
+}
+
 type ResourceAppActiveDeploymentStatus struct {
 	Message string `json:"message,omitempty"`
 	State   string `json:"state,omitempty"`
 }
 
 type ResourceAppActiveDeployment struct {
+	Command             []string                                        `json:"command,omitempty"`
 	CreateTime          string                                          `json:"create_time,omitempty"`
 	Creator             string                                          `json:"creator,omitempty"`
 	DeploymentArtifacts *ResourceAppActiveDeploymentDeploymentArtifacts `json:"deployment_artifacts,omitempty"`
 	DeploymentId        string                                          `json:"deployment_id,omitempty"`
+	EnvVars             []ResourceAppActiveDeploymentEnvVars            `json:"env_vars,omitempty"`
+	GitSource           *ResourceAppActiveDeploymentGitSource           `json:"git_source,omitempty"`
 	Mode                string                                          `json:"mode,omitempty"`
 	SourceCodePath      string                                          `json:"source_code_path,omitempty"`
 	Status              *ResourceAppActiveDeploymentStatus              `json:"status,omitempty"`
@@ -32,8 +55,33 @@ type ResourceAppComputeStatus struct {
 	State   string `json:"state,omitempty"`
 }
 
+type ResourceAppGitRepository struct {
+	Provider string `json:"provider"`
+	Url      string `json:"url"`
+}
+
 type ResourceAppPendingDeploymentDeploymentArtifacts struct {
 	SourceCodePath string `json:"source_code_path,omitempty"`
+}
+
+type ResourceAppPendingDeploymentEnvVars struct {
+	Name      string `json:"name,omitempty"`
+	Value     string `json:"value,omitempty"`
+	ValueFrom string `json:"value_from,omitempty"`
+}
+
+type ResourceAppPendingDeploymentGitSourceGitRepository struct {
+	Provider string `json:"provider"`
+	Url      string `json:"url"`
+}
+
+type ResourceAppPendingDeploymentGitSource struct {
+	Branch         string                                              `json:"branch,omitempty"`
+	Commit         string                                              `json:"commit,omitempty"`
+	GitRepository  *ResourceAppPendingDeploymentGitSourceGitRepository `json:"git_repository,omitempty"`
+	ResolvedCommit string                                              `json:"resolved_commit,omitempty"`
+	SourceCodePath string                                              `json:"source_code_path,omitempty"`
+	Tag            string                                              `json:"tag,omitempty"`
 }
 
 type ResourceAppPendingDeploymentStatus struct {
@@ -42,10 +90,13 @@ type ResourceAppPendingDeploymentStatus struct {
 }
 
 type ResourceAppPendingDeployment struct {
+	Command             []string                                         `json:"command,omitempty"`
 	CreateTime          string                                           `json:"create_time,omitempty"`
 	Creator             string                                           `json:"creator,omitempty"`
 	DeploymentArtifacts *ResourceAppPendingDeploymentDeploymentArtifacts `json:"deployment_artifacts,omitempty"`
 	DeploymentId        string                                           `json:"deployment_id,omitempty"`
+	EnvVars             []ResourceAppPendingDeploymentEnvVars            `json:"env_vars,omitempty"`
+	GitSource           *ResourceAppPendingDeploymentGitSource           `json:"git_source,omitempty"`
 	Mode                string                                           `json:"mode,omitempty"`
 	SourceCodePath      string                                           `json:"source_code_path,omitempty"`
 	Status              *ResourceAppPendingDeploymentStatus              `json:"status,omitempty"`
@@ -59,6 +110,11 @@ type ResourceAppProviderConfig struct {
 type ResourceAppResourcesDatabase struct {
 	DatabaseName string `json:"database_name"`
 	InstanceName string `json:"instance_name"`
+	Permission   string `json:"permission"`
+}
+
+type ResourceAppResourcesExperiment struct {
+	ExperimentId string `json:"experiment_id"`
 	Permission   string `json:"permission"`
 }
 
@@ -98,6 +154,7 @@ type ResourceAppResourcesUcSecurable struct {
 type ResourceAppResources struct {
 	Database        *ResourceAppResourcesDatabase        `json:"database,omitempty"`
 	Description     string                               `json:"description,omitempty"`
+	Experiment      *ResourceAppResourcesExperiment      `json:"experiment,omitempty"`
 	GenieSpace      *ResourceAppResourcesGenieSpace      `json:"genie_space,omitempty"`
 	Job             *ResourceAppResourcesJob             `json:"job,omitempty"`
 	Name            string                               `json:"name"`
@@ -118,7 +175,9 @@ type ResourceApp struct {
 	DefaultSourceCodePath    string                        `json:"default_source_code_path,omitempty"`
 	Description              string                        `json:"description,omitempty"`
 	EffectiveBudgetPolicyId  string                        `json:"effective_budget_policy_id,omitempty"`
+	EffectiveUsagePolicyId   string                        `json:"effective_usage_policy_id,omitempty"`
 	EffectiveUserApiScopes   []string                      `json:"effective_user_api_scopes,omitempty"`
+	GitRepository            *ResourceAppGitRepository     `json:"git_repository,omitempty"`
 	Id                       string                        `json:"id,omitempty"`
 	Name                     string                        `json:"name"`
 	NoCompute                bool                          `json:"no_compute,omitempty"`
@@ -133,5 +192,6 @@ type ResourceApp struct {
 	UpdateTime               string                        `json:"update_time,omitempty"`
 	Updater                  string                        `json:"updater,omitempty"`
 	Url                      string                        `json:"url,omitempty"`
+	UsagePolicyId            string                        `json:"usage_policy_id,omitempty"`
 	UserApiScopes            []string                      `json:"user_api_scopes,omitempty"`
 }

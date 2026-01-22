@@ -2,3 +2,4 @@
 Timeout = '500ms'
 TimeoutWindows = '500ms'
 TimeoutCloud = '500ms'
+TimeoutCIMultiplier = 1

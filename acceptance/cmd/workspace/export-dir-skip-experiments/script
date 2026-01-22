@@ -1,0 +1,2 @@
+mkdir -p "$TEST_TMP_DIR/export"
+trace $CLI workspace export-dir /test-dir "$TEST_TMP_DIR/export"

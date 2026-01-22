@@ -38,6 +38,9 @@ tools/yamlfmt.exe
 # Built by make for 'make lint'
 tools/golangci-lint
 
+# Built by make for test filtering
+tools/testmask/testmask
+
 # Cache for tools/gh_report.py
 .gh-logs
 

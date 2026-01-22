@@ -91,7 +91,7 @@ func setVariable(ctx context.Context, v dyn.Value, variable *variable.Variable, 
 	}
 
 	// We should have had a value to set for the variable at this point.
-	return dyn.InvalidValue, fmt.Errorf(`no value assigned to required variable %s. Assignment can be done using "--var", by setting the %s environment variable, or in %s file`, name, bundleVarPrefix+name, getDefaultVariableFilePath("<target>"))
+	return dyn.InvalidValue, fmt.Errorf(`no value assigned to required variable %s. Variables are usually assigned in databricks.yml, and they can be overridden using "--var", the %s environment variable, or %s`, name, bundleVarPrefix+name, getDefaultVariableFilePath("<target>"))
 }
 
 func readVariablesFromFile(b *bundle.Bundle) (dyn.Value, diag.Diagnostics) {

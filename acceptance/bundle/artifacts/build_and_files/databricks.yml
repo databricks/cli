@@ -1,3 +1,6 @@
+bundle:
+  name: test-bundle
+
 artifacts:
   custom:
     build: touch built.txt

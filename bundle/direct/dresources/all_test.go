@@ -183,6 +183,14 @@ var testConfig map[string]any = map[string]any{
 			},
 		},
 	},
+
+	"quality_monitors": &resources.QualityMonitor{
+		TableName: "main.myschema.mytable",
+		CreateMonitor: catalog.CreateMonitor{
+			AssetsDir:        "/Workspace/Users/user@example.com/assets",
+			OutputSchemaName: "main.myschema",
+		},
+	},
 }
 
 type prepareWorkspace func(client *databricks.WorkspaceClient) (any, error)
@@ -488,13 +496,13 @@ var testDeps = map[string]prepareWorkspace{
 func TestAll(t *testing.T) {
 	_, client := setupTestServerClient(t)
 
-	for group, resource := range SupportedResources {
-		t.Run(group, func(t *testing.T) {
-			adapter, err := NewAdapter(resource, client)
+	for resourceType, resource := range SupportedResources {
+		t.Run(resourceType, func(t *testing.T) {
+			adapter, err := NewAdapter(resource, resourceType, client)
 			require.NoError(t, err)
 			require.NotNil(t, adapter)
 
-			testCRUD(t, group, adapter, client)
+			testCRUD(t, resourceType, adapter, client)
 		})
 	}
 
@@ -612,21 +620,10 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	err = adapter.DoDelete(ctx, createdID)
 	require.NoError(t, err)
 
-	path, err := structpath.Parse("name")
+	p, err := structpath.Parse("name")
 	require.NoError(t, err)
 
-	_, err = adapter.ClassifyChange(structdiff.Change{
-		Path: path,
-		Old:  nil,
-		New:  "mynewname",
-	}, remote, true)
-	require.NoError(t, err)
-
-	_, err = adapter.ClassifyChange(structdiff.Change{
-		Path: path,
-		Old:  nil,
-		New:  "mynewname",
-	}, remote, false)
+	err = adapter.OverrideChangeDesc(ctx, p, &deployplan.ChangeDesc{}, nil)
 	require.NoError(t, err)
 
 	deleteIsNoop := strings.HasSuffix(group, "permissions") || strings.HasSuffix(group, "grants")
@@ -657,45 +654,30 @@ func validateFields(t *testing.T, configType reflect.Type, fields map[string]dep
 	}
 }
 
-// TestFieldTriggers validates that all trigger keys
-// exist in the corresponding ConfigType for each resource.
-func TestFieldTriggers(t *testing.T) {
-	for resourceName, resource := range SupportedResources {
-		adapter, err := NewAdapter(resource, nil)
+// TestResourceConfig validates that all field patterns in resource config
+// exist in the corresponding StateType for each resource.
+func TestResourceConfig(t *testing.T) {
+	for resourceType, resource := range SupportedResources {
+		adapter, err := NewAdapter(resource, resourceType, nil)
 		require.NoError(t, err)
 
-		t.Run(resourceName+"_local", func(t *testing.T) {
-			validateFields(t, adapter.StateType(), adapter.fieldTriggersLocal)
-		})
-		t.Run(resourceName+"_remote", func(t *testing.T) {
-			validateFields(t, adapter.StateType(), adapter.fieldTriggersRemote)
-		})
-	}
-}
-
-// TestFieldTriggersNoUpdateWhenNotImplemented validates that resources without
-// DoUpdate implementation don't produce update actions in their FieldTriggers.
-func TestFieldTriggersNoUpdateWhenNotImplemented(t *testing.T) {
-	for resourceName, resource := range SupportedResources {
-		adapter, err := NewAdapter(resource, nil)
-		require.NoError(t, err)
-
-		if adapter.HasDoUpdate() {
+		cfg := adapter.ResourceConfig()
+		if cfg == nil {
 			continue
 		}
 
-		t.Run(resourceName+"_local", func(t *testing.T) {
-			for field, action := range adapter.fieldTriggersLocal {
-				assert.NotEqual(t, deployplan.ActionTypeUpdate, action,
-					"resource %s does not implement DoUpdate but field %s triggers update action", resourceName, field)
+		t.Run(resourceType, func(t *testing.T) {
+			fieldMap := make(map[string]deployplan.ActionType)
+			for _, p := range cfg.RecreateOnChanges {
+				fieldMap[p.String()] = deployplan.Recreate
 			}
-		})
-
-		t.Run(resourceName+"_remote", func(t *testing.T) {
-			for field, action := range adapter.fieldTriggersRemote {
-				assert.NotEqual(t, deployplan.ActionTypeUpdate, action,
-					"resource %s does not implement DoUpdate but field %s triggers update action", resourceName, field)
+			for _, p := range cfg.UpdateIDOnChanges {
+				fieldMap[p.String()] = deployplan.UpdateWithID
 			}
+			for _, p := range cfg.IgnoreRemoteChanges {
+				fieldMap[p.String()] = deployplan.Skip
+			}
+			validateFields(t, adapter.StateType(), fieldMap)
 		})
 	}
 }

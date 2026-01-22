@@ -107,12 +107,12 @@ func commonFilerRecursiveDeleteTest(t *testing.T, ctx context.Context, f filer.F
 	assert.Equal(t, []string{"file1", "file2", "subdir1", "subdir2"}, names)
 
 	err = f.Delete(ctx, "dir")
-	assert.ErrorAs(t, err, &filer.DirectoryNotEmptyError{})
+	assert.ErrorIs(t, err, fs.ErrInvalid)
 
 	err = f.Delete(ctx, "dir", filer.DeleteRecursively)
 	assert.NoError(t, err)
 	_, err = f.ReadDir(ctx, "dir")
-	assert.ErrorAs(t, err, &filer.NoSuchDirectoryError{})
+	assert.ErrorIs(t, err, fs.ErrNotExist)
 }
 
 func TestFilerRecursiveDelete(t *testing.T) {
@@ -145,12 +145,10 @@ func commonFilerReadWriteTests(t *testing.T, ctx context.Context, f filer.Filer)
 
 	// Write should fail because the intermediate directory doesn't exist.
 	err = f.Write(ctx, "/foo/bar", strings.NewReader(`hello world`))
-	assert.ErrorAs(t, err, &filer.NoSuchDirectoryError{})
 	assert.ErrorIs(t, err, fs.ErrNotExist)
 
 	// Read should fail because the intermediate directory doesn't yet exist.
 	_, err = f.Read(ctx, "/foo/bar")
-	assert.ErrorAs(t, err, &filer.FileDoesNotExistError{})
 	assert.ErrorIs(t, err, fs.ErrNotExist)
 
 	// Read should fail because the path points to a directory
@@ -166,7 +164,6 @@ func commonFilerReadWriteTests(t *testing.T, ctx context.Context, f filer.Filer)
 
 	// Write should fail because there is an existing file at the specified path.
 	err = f.Write(ctx, "/foo/bar", strings.NewReader(`hello universe`))
-	assert.ErrorAs(t, err, &filer.FileAlreadyExistsError{})
 	assert.ErrorIs(t, err, fs.ErrExist)
 
 	// Write with OverwriteIfExists should succeed.
@@ -196,12 +193,10 @@ func commonFilerReadWriteTests(t *testing.T, ctx context.Context, f filer.Filer)
 
 	// Delete should fail if the file doesn't exist.
 	err = f.Delete(ctx, "/doesnt_exist")
-	assert.ErrorAs(t, err, &filer.FileDoesNotExistError{})
 	assert.ErrorIs(t, err, fs.ErrNotExist)
 
 	// Stat should fail if the file doesn't exist.
 	_, err = f.Stat(ctx, "/doesnt_exist")
-	assert.ErrorAs(t, err, &filer.FileDoesNotExistError{})
 	assert.ErrorIs(t, err, fs.ErrNotExist)
 
 	// Delete should succeed for file that does exist.
@@ -210,7 +205,6 @@ func commonFilerReadWriteTests(t *testing.T, ctx context.Context, f filer.Filer)
 
 	// Delete should fail for a non-empty directory.
 	err = f.Delete(ctx, "/foo")
-	assert.ErrorAs(t, err, &filer.DirectoryNotEmptyError{})
 	assert.ErrorIs(t, err, fs.ErrInvalid)
 
 	// Delete should succeed for a non-empty directory if the DeleteRecursively flag is set.
@@ -220,7 +214,6 @@ func commonFilerReadWriteTests(t *testing.T, ctx context.Context, f filer.Filer)
 	// Delete of the filer root should ALWAYS fail, otherwise subsequent writes would fail.
 	// It is not in the filer's purview to delete its root directory.
 	err = f.Delete(ctx, "/")
-	assert.ErrorAs(t, err, &filer.CannotDeleteRootError{})
 	assert.ErrorIs(t, err, fs.ErrInvalid)
 }
 
@@ -276,7 +269,6 @@ func commonFilerReadDirTest(t *testing.T, ctx context.Context, f filer.Filer) {
 
 	// Expect an error if the path doesn't exist.
 	_, err = f.ReadDir(ctx, "/dir/a/b/c/d/e")
-	assert.ErrorAs(t, err, &filer.NoSuchDirectoryError{}, err)
 	assert.ErrorIs(t, err, fs.ErrNotExist)
 
 	// Expect two entries in the root.

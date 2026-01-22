@@ -4,6 +4,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v3"
 )
 
 func TestPathNode(t *testing.T) {
@@ -750,4 +752,217 @@ func TestHasPrefix(t *testing.T) {
 			assert.Equal(t, tt.expected, result, "HasPrefix(%q, %q)", tt.s, tt.prefix)
 		})
 	}
+}
+
+func TestPathNodeYAMLMarshal(t *testing.T) {
+	tests := []struct {
+		name     string
+		node     *PathNode
+		expected string
+	}{
+		{
+			name:     "simple field",
+			node:     NewDotString(nil, "name"),
+			expected: "name\n",
+		},
+		{
+			name:     "nested path",
+			node:     NewDotString(NewDotString(nil, "config"), "database"),
+			expected: "config.database\n",
+		},
+		{
+			name:     "path with array index",
+			node:     NewDotString(NewIndex(NewDotString(nil, "items"), 0), "name"),
+			expected: "items[0].name\n",
+		},
+		{
+			name:     "path with key-value",
+			node:     NewDotString(NewKeyValue(NewDotString(nil, "tags"), "key", "value"), "name"),
+			expected: "tags[key='value'].name\n",
+		},
+		{
+			name:     "nil path",
+			node:     nil,
+			expected: "null\n",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			data, err := yaml.Marshal(tt.node)
+			require.NoError(t, err)
+			assert.Equal(t, tt.expected, string(data))
+		})
+	}
+}
+
+func TestPathNodeYAMLUnmarshal(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "simple field",
+			input:    "name",
+			expected: "name",
+		},
+		{
+			name:     "nested path",
+			input:    "config.database.host",
+			expected: "config.database.host",
+		},
+		{
+			name:     "path with array index",
+			input:    "items[0].name",
+			expected: "items[0].name",
+		},
+		{
+			name:     "path with wildcard",
+			input:    "tasks[*].name",
+			expected: "tasks[*].name",
+		},
+		{
+			name:     "path with key-value",
+			input:    "tags[key='server']",
+			expected: "tags[key='server']",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var node PathNode
+			err := yaml.Unmarshal([]byte(tt.input), &node)
+			require.NoError(t, err)
+			assert.Equal(t, tt.expected, node.String())
+		})
+	}
+}
+
+// TestPathNodeYAMLNullAndEmpty tests YAML null and empty string handling.
+func TestPathNodeYAMLNullAndEmpty(t *testing.T) {
+	type Config struct {
+		Path *PathNode `yaml:"path"`
+	}
+
+	// Null results in nil pointer (YAML doesn't call UnmarshalYAML for null)
+	var config Config
+	err := yaml.Unmarshal([]byte("path: null"), &config)
+	require.NoError(t, err)
+	assert.Nil(t, config.Path)
+
+	// Empty string results in allocated pointer with zero-value PathNode.
+	// The zero value has index=0, which represents "[0]" (array index 0).
+	// This is a quirk - in practice, use null for "no path" in YAML configs.
+	var config2 Config
+	err = yaml.Unmarshal([]byte("path: ''"), &config2)
+	require.NoError(t, err)
+	require.NotNil(t, config2.Path)
+	assert.Equal(t, "[0]", config2.Path.String())
+}
+
+func TestPathNodeYAMLUnmarshalErrors(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		error string
+	}{
+		{
+			name:  "unclosed bracket",
+			input: "field[0",
+			error: "unexpected end of input while parsing index",
+		},
+		{
+			name:  "invalid character",
+			input: "field..name",
+			error: "expected field name after '.' but got '.' at position 6",
+		},
+		{
+			name:  "unclosed quote",
+			input: "field['key",
+			error: "unexpected end of input while parsing map key",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var node PathNode
+			err := yaml.Unmarshal([]byte(tt.input), &node)
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), tt.error)
+		})
+	}
+}
+
+// TestPathNodeYAMLRoundtrip tests that marshalling and unmarshalling preserves the path.
+func TestPathNodeYAMLRoundtrip(t *testing.T) {
+	paths := []string{
+		"name",
+		"config.database",
+		"items[0].name",
+		"tasks[*].settings",
+		"tags[key='env'].value",
+		"resources.jobs['my-job'].tasks[0]",
+	}
+
+	for _, path := range paths {
+		t.Run(path, func(t *testing.T) {
+			// Parse -> Marshal -> Unmarshal -> compare
+			original, err := Parse(path)
+			require.NoError(t, err)
+
+			data, err := yaml.Marshal(original)
+			require.NoError(t, err)
+
+			var restored PathNode
+			err = yaml.Unmarshal(data, &restored)
+			require.NoError(t, err)
+
+			assert.Equal(t, path, restored.String())
+		})
+	}
+}
+
+// TestPathNodeYAMLInStruct tests PathNode as a field in a struct.
+func TestPathNodeYAMLInStruct(t *testing.T) {
+	type Config struct {
+		Paths []*PathNode `yaml:"paths"`
+	}
+
+	yamlInput := `
+paths:
+  - name
+  - config.database
+  - items[0].value
+  - tags[key='env']
+`
+
+	var config Config
+	err := yaml.Unmarshal([]byte(yamlInput), &config)
+	require.NoError(t, err)
+	require.Len(t, config.Paths, 4)
+
+	assert.Equal(t, "name", config.Paths[0].String())
+	assert.Equal(t, "config.database", config.Paths[1].String())
+	assert.Equal(t, "items[0].value", config.Paths[2].String())
+	assert.Equal(t, "tags[key='env']", config.Paths[3].String())
+}
+
+// TestPathNodeYAMLInStructWithErrors tests that invalid paths in YAML cause errors.
+func TestPathNodeYAMLInStructWithErrors(t *testing.T) {
+	type Config struct {
+		Paths []*PathNode `yaml:"paths"`
+	}
+
+	yamlInput := `
+paths:
+  - name
+  - field[invalid
+  - config.database
+`
+
+	var config Config
+	err := yaml.Unmarshal([]byte(yamlInput), &config)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "unexpected end of input")
 }

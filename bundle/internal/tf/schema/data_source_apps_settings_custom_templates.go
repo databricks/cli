@@ -2,6 +2,10 @@
 
 package schema
 
+type DataSourceAppsSettingsCustomTemplatesTemplatesManifestResourceSpecsExperimentSpec struct {
+	Permission string `json:"permission"`
+}
+
 type DataSourceAppsSettingsCustomTemplatesTemplatesManifestResourceSpecsJobSpec struct {
 	Permission string `json:"permission"`
 }
@@ -25,6 +29,7 @@ type DataSourceAppsSettingsCustomTemplatesTemplatesManifestResourceSpecsUcSecura
 
 type DataSourceAppsSettingsCustomTemplatesTemplatesManifestResourceSpecs struct {
 	Description         string                                                                                  `json:"description,omitempty"`
+	ExperimentSpec      *DataSourceAppsSettingsCustomTemplatesTemplatesManifestResourceSpecsExperimentSpec      `json:"experiment_spec,omitempty"`
 	JobSpec             *DataSourceAppsSettingsCustomTemplatesTemplatesManifestResourceSpecsJobSpec             `json:"job_spec,omitempty"`
 	Name                string                                                                                  `json:"name"`
 	SecretSpec          *DataSourceAppsSettingsCustomTemplatesTemplatesManifestResourceSpecsSecretSpec          `json:"secret_spec,omitempty"`

@@ -1,0 +1,4 @@
+
+$CLI pipelines generate --existing-pipeline-dir src/my_pipeline
+
+mv resources output/

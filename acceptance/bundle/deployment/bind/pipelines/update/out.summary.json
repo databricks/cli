@@ -1,0 +1,51 @@
+{
+  "bundle": {
+    "environment": "default",
+    "git": {
+      "bundle_root_path": "."
+    },
+    "name": "test-pipeline-recreate",
+    "target": "default"
+  },
+  "resources": {
+    "pipelines": {
+      "foo": {
+        "catalog": "main",
+        "channel": "CURRENT",
+        "deployment": {
+          "kind": "BUNDLE",
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-recreate/default/state/metadata.json"
+        },
+        "edition": "ADVANCED",
+        "id": "[NEW_PIPELINE_ID]",
+        "libraries": [
+          {
+            "notebook": {
+              "path": "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-recreate/default/files/nb"
+            }
+          }
+        ],
+        "name": "test-pipeline",
+        "url": "[DATABRICKS_URL]/pipelines/[NEW_PIPELINE_ID]?o=[NUMID]"
+      }
+    }
+  },
+  "sync": {
+    "paths": [
+      "."
+    ]
+  },
+  "workspace": {
+    "artifact_path": "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-recreate/default/artifacts",
+    "current_user": {
+      "domain_friendly_name": "[USERNAME]",
+      "id": "[USERID]",
+      "short_name": "[USERNAME]",
+      "userName": "[USERNAME]"
+    },
+    "file_path": "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-recreate/default/files",
+    "resource_path": "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-recreate/default/resources",
+    "root_path": "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-recreate/default",
+    "state_path": "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-recreate/default/state"
+  }
+}

@@ -1,3 +1,9 @@
-trace $CLI bundle validate -o json | jq .resources
+if [ "$DATABRICKS_BUNDLE_ENGINE" = "terraform" ]; then
+  grep -v "# direct engine syntax" databricks.yml > databricks.yml.tmp
+  update_file.py databricks.yml.tmp "#terraform syntax: " ""
+  mv databricks.yml.tmp databricks.yml
+fi
+
+trace $CLI bundle validate -o json | jq .resources > out.validate.$DATABRICKS_BUNDLE_ENGINE.json
 musterr $CLI bundle plan &> out.plan.$DATABRICKS_BUNDLE_ENGINE.txt
 musterr $CLI bundle deploy &> out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt

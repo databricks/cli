@@ -118,9 +118,13 @@ func TestValidateFolderPermissionsFailsOnMissingBundlePermission(t *testing.T) {
 	b.SetWorkpaceClient(m.WorkspaceClient)
 	diags := ValidateFolderPermissions().Apply(context.Background(), b)
 	require.Len(t, diags, 1)
-	require.Equal(t, "untracked permissions apply to target workspace path", diags[0].Summary)
+	require.Equal(t, "workspace folder has permissions not configured in bundle", diags[0].Summary)
 	require.Equal(t, diag.Warning, diags[0].Severity)
-	require.Equal(t, "The following permissions apply to the workspace folder at \"/Workspace/Users/foo@bar.com\" but are not configured in the bundle:\n- level: CAN_MANAGE, user_name: foo2@bar.com\n", diags[0].Detail)
+	expectedDetail := "The following permissions apply to the workspace folder at \"/Workspace/Users/foo@bar.com\" " +
+		"but are not configured in the bundle:\n- level: CAN_MANAGE, user_name: foo2@bar.com\n\n" +
+		"Add them to your bundle permissions or remove them from the folder.\n" +
+		"See https://docs.databricks.com/dev-tools/bundles/permissions"
+	require.Equal(t, expectedDetail, diags[0].Detail)
 }
 
 func TestValidateFolderPermissionsFailsOnPermissionMismatch(t *testing.T) {
@@ -162,7 +166,7 @@ func TestValidateFolderPermissionsFailsOnPermissionMismatch(t *testing.T) {
 	b.SetWorkpaceClient(m.WorkspaceClient)
 	diags := ValidateFolderPermissions().Apply(context.Background(), b)
 	require.Len(t, diags, 1)
-	require.Equal(t, "untracked permissions apply to target workspace path", diags[0].Summary)
+	require.Equal(t, "workspace folder has permissions not configured in bundle", diags[0].Summary)
 	require.Equal(t, diag.Warning, diags[0].Severity)
 }
 

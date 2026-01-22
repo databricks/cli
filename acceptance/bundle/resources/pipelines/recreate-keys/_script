@@ -5,8 +5,7 @@ trace $CLI bundle plan  # should show 'create'
 $CLI bundle plan -o json > out.plan_create.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
 
-ppid1=`read_id.py pipelines my`
-echo "$ppid1:PIPELINE_ID_1" >> ACC_REPLS
+ppid1=`read_id.py my`
 
 print_requests() {
     jq --sort-keys 'select(.method != "GET" and (.path | contains("/pipelines")))' < out.requests.txt
@@ -23,8 +22,7 @@ trace print_requests
 
 title "Fetch pipeline ID and verify remote state"
 
-ppid2=`read_id.py pipelines my`
-echo "$ppid2:PIPELINE_ID_2" >> ACC_REPLS
+ppid2=`read_id.py my`
 trace $CLI pipelines get $ppid2
 
 title "Verify that original pipeline is gone"

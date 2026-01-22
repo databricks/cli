@@ -1,2 +1,0 @@
-BundleConfig.default_name.bundle.name = "test-bundle-$UNIQUE_NAME"
-BundleConfigTarget = "databricks.yml.tmpl"

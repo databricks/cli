@@ -253,6 +253,9 @@ Refreshes all tables in the pipeline unless otherwise specified.`,
 	cmd.Flags().BoolVar(&restart, "restart", false, "Restart the run if it is already running.")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+		ctx := logdiag.InitContext(cmd.Context())
+		cmd.SetContext(ctx)
+
 		var key string
 		b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{
 			PostInitFunc: func(ctx context.Context, b *bundle.Bundle) error {
@@ -261,11 +264,13 @@ Refreshes all tables in the pipeline unless otherwise specified.`,
 				return err
 			},
 			ErrorOnEmptyState: true,
+			SkipInitContext:   true,
 		})
 		if err != nil {
 			return err
 		}
-		ctx := cmd.Context()
+
+		suggestPipelineDeploy(ctx, cmd)
 
 		runner, err := keyToRunner(b, key)
 		if err != nil {
@@ -351,7 +356,7 @@ Refreshes all tables in the pipeline unless otherwise specified.`,
 		}
 
 		if len(args) == 0 {
-			completions := bundleresources.Completions(b, run.IsRunnable)
+			completions := bundleresources.Completions(b, isPipeline)
 			return maps.Keys(completions), cobra.ShellCompDirectiveNoFileComp
 		} else {
 			// If we know the resource to run, we can complete additional positional arguments.

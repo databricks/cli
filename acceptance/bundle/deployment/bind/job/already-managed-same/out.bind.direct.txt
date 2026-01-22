@@ -1,0 +1,6 @@
+
+>>> musterr [CLI] bundle deployment bind foo [FOO_ID]
+Error: Resource already managed
+
+The bundle is already managing resource for resources.jobs.foo and it is bound to the requested ID [FOO_ID].
+

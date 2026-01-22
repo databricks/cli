@@ -48,6 +48,15 @@ async function startViteServer() {
       clientPath
     );
     const userConfig = loadedConfig?.config ?? {};
+
+    /**
+     * Vite uses the same port for the HMR server as the main server.
+     * Allowing the user to set this option breaks the system.
+     * By just providing the port override option, Vite will use the same port for the HMR server.
+     * Multiple servers will work, but if the user has this in their config we need to delete it.
+     */
+    delete userConfig.server?.hmr?.port;
+
     const coreConfig = {
       configFile: false,
       root: clientPath,
