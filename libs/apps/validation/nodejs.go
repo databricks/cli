@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/briandowns/spinner"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/exec"
 	"github.com/databricks/cli/libs/log"
@@ -79,17 +78,13 @@ func (v *ValidationNodeJs) Validate(ctx context.Context, workDir string) (*Valid
 		stepStart := time.Now()
 		var stepErr *ValidationDetail
 
-		s := spinner.New(
-			spinner.CharSets[14],
-			80*time.Millisecond,
-			spinner.WithColor("yellow"),
-			spinner.WithSuffix(" "+step.displayName+"..."),
-		)
-		s.Start()
+		spinner := cmdio.Spinner(ctx)
+		spinner <- step.displayName + "..."
 
 		stepErr = runValidationCommand(ctx, workDir, step.command)
 
-		s.Stop()
+		close(spinner)
+		cmdio.Wait(ctx) // Wait for spinner to fully clean up and restore terminal
 		stepDuration := time.Since(stepStart)
 
 		if stepErr != nil {
