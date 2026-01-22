@@ -5,6 +5,7 @@
 ### Notable Changes
 
 ### CLI
+* Add support for Unified Host with experimental flag ([#4260](https://github.com/databricks/cli/pull/4260))
 
 ### Bundles
 
