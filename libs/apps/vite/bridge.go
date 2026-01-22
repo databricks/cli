@@ -231,10 +231,12 @@ func (vb *Bridge) ConnectToTunnelWithRetry(appDomain *url.URL) error {
 
 		lastErr = err
 
-		// Check if context is cancelled
+		// Check if context is cancelled or stop signal received
 		select {
 		case <-vb.ctx.Done():
 			return vb.ctx.Err()
+		case <-vb.stopChan:
+			return errors.New("bridge stopped")
 		default:
 		}
 
@@ -247,11 +249,13 @@ func (vb *Bridge) ConnectToTunnelWithRetry(appDomain *url.URL) error {
 		cmdio.LogString(vb.ctx, fmt.Sprintf("⏳ Connection attempt %d/%d failed, retrying in %v...", attempt, tunnelConnectMaxRetries, backoff))
 		log.Debugf(vb.ctx, "[vite_bridge] Connection error: %v", err)
 
-		// Wait before retrying
+		// Wait before retrying, but also listen for stop signal
 		select {
 		case <-time.After(backoff):
 		case <-vb.ctx.Done():
 			return vb.ctx.Err()
+		case <-vb.stopChan:
+			return errors.New("bridge stopped")
 		}
 
 		// Exponential backoff with cap
