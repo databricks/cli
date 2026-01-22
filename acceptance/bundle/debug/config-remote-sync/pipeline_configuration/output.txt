@@ -1,0 +1,25 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Initial configurationbundle:
+  name: test-bundle
+
+resources:
+  pipelines:
+    my_pipeline:
+      name: "Pipeline Configuration Test"
+      configuration:
+        key1: value1
+      libraries:
+        - notebook:
+            path: /Users/{{workspace_user_name}}/notebook
+
+=== Add and modify pipeline configurationWarning: unknown field: spec
+  in (inline):1:49
+
+
+=== Detect and save changesError: failed to generate YAML files: failed to apply changes to file [TEST_TMP_DIR]/databricks.yml: failed to apply change /targets/default/resources/pipelines/my_pipeline/channel: op remove /targets/default/resources/pipelines/my_pipeline/channel: parent path /targets does not exist
+
+Exit code: 1

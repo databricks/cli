@@ -1,0 +1,15 @@
+bundle:
+  name: test-bundle
+
+resources:
+  pipelines:
+    my_pipeline:
+      name: "Pipeline Notifications Test"
+      notifications:
+        - email_recipients:
+            - success@example.com
+          alerts:
+            - on-update-success
+      libraries:
+        - notebook:
+            path: /Users/{{workspace_user_name}}/notebook

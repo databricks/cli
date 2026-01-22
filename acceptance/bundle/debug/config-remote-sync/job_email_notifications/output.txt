@@ -1,0 +1,52 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Initial configurationbundle:
+  name: test-bundle
+
+resources:
+  jobs:
+    my_job:
+      name: "Email Notifications Test"
+      email_notifications:
+        on_success:
+          - success@example.com
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/notebook
+          new_cluster:
+            spark_version: 13.3.x-scala2.12
+            node_type_id: [NODE_TYPE_ID]
+            num_workers: 1
+
+=== Add on_failure notifications
+=== Detect and save changesDetected changes in 1 resource(s):
+
+Resource: resources.jobs.my_job
+  email_notifications.no_alert_for_skipped_runs: skip
+  email_notifications.on_failure: skip
+
+
+=== Updated configurationbundle:
+  name: test-bundle
+resources:
+  jobs:
+    my_job:
+      name: "Email Notifications Test"
+      email_notifications:
+        on_success:
+          - success@example.com
+        no_alert_for_skipped_runs: true
+        on_failure:
+          - failure@example.com
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/notebook
+          new_cluster:
+            spark_version: 13.3.x-scala2.12
+            node_type_id: [NODE_TYPE_ID]
+            num_workers: 1

@@ -1,0 +1,12 @@
+bundle:
+  name: test-bundle
+
+resources:
+  pipelines:
+    my_pipeline:
+      name: "Pipeline Configuration Test"
+      configuration:
+        key1: value1
+      libraries:
+        - notebook:
+            path: /Users/{{workspace_user_name}}/notebook

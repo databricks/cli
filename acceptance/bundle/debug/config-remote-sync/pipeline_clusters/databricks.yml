@@ -1,0 +1,13 @@
+bundle:
+  name: test-bundle
+
+resources:
+  pipelines:
+    my_pipeline:
+      name: "Pipeline Clusters Test"
+      clusters:
+        - num_workers: 2
+          label: default
+      libraries:
+        - notebook:
+            path: /Users/{{workspace_user_name}}/notebook

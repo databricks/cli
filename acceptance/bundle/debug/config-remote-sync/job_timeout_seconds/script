@@ -1,0 +1,19 @@
+#!/bin/bash
+
+touch dummy.whl
+$CLI bundle deploy
+job_id="$(read_id.py my_job)"
+
+title "Initial configuration"
+cat databricks.yml
+
+title "Modify timeout_seconds from 3600 to 7200"
+edit_resource.py jobs $job_id <<EOF
+r["timeout_seconds"] = 7200
+EOF
+
+title "Detect and save changes"
+$CLI bundle config-remote-sync --save
+
+title "Updated configuration"
+cat databricks.yml

@@ -1,0 +1,20 @@
+#!/bin/bash
+
+touch dummy.whl
+$CLI bundle deploy
+job_id="$(read_id.py my_job)"
+
+title "Initial configuration"
+cat databricks.yml
+
+title "Add on_failure notifications"
+edit_resource.py jobs $job_id <<EOF
+r["email_notifications"]["on_failure"] = ["failure@example.com"]
+r["email_notifications"]["no_alert_for_skipped_runs"] = True
+EOF
+
+title "Detect and save changes"
+$CLI bundle config-remote-sync --save
+
+title "Updated configuration"
+cat databricks.yml
