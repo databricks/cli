@@ -1,0 +1,17 @@
+#!/bin/bash
+
+touch dummy.whl
+$CLI bundle deploy
+job_id="$(read_id.py my_job)"
+
+title "Modify max_concurrent_runs from 1 to 5"
+edit_resource.py jobs $job_id <<EOF
+r["max_concurrent_runs"] = 5
+EOF
+
+title "Detect and save changes"
+$CLI bundle config-remote-sync --save
+
+title "Updated configuration"
+echo
+cat databricks.yml

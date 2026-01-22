@@ -1,0 +1,18 @@
+#!/bin/bash
+
+touch dummy.whl
+$CLI bundle deploy
+job_id="$(read_id.py my_job)"
+
+title "Modify job trigger from 1 day to 2 hours"
+edit_resource.py jobs $job_id <<EOF
+r["trigger"]["periodic"]["interval"] = 2
+r["trigger"]["periodic"]["unit"] = "HOURS"
+EOF
+
+title "Detect and save changes"
+$CLI bundle config-remote-sync --save
+
+title "Updated configuration"
+echo
+cat databricks.yml

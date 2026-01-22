@@ -1,0 +1,29 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Add failure notification
+=== Detect and save changesDetected changes in 1 resource(s):
+
+Resource: resources.pipelines.my_pipeline
+  notifications[0].alerts: update
+  notifications[0].email_recipients: update
+
+
+=== Updated configuration
+bundle:
+  name: test-bundle
+resources:
+  pipelines:
+    my_pipeline:
+      notifications:
+        - email_recipients:
+            - success@example.com
+            - failure@example.com
+          alerts:
+            - on-update-success
+            - on-update-failure
+      libraries:
+        - notebook:
+            path: /Users/{{workspace_user_name}}/notebook

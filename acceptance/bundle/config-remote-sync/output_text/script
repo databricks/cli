@@ -1,0 +1,15 @@
+#!/bin/bash
+
+touch dummy.whl
+$CLI bundle deploy
+job_id="$(read_id.py test_job)"
+
+edit_resource.py jobs $job_id <<EOF
+r["max_concurrent_runs"] = 3
+EOF
+
+title "Text output format"
+$CLI bundle config-remote-sync
+
+# Verify text output has expected structure
+$CLI bundle config-remote-sync | contains.py "Detected changes" "Resource:" "max_concurrent_runs: update"

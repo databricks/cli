@@ -1,0 +1,11 @@
+bundle:
+  name: test-bundle
+
+resources:
+  pipelines:
+    my_pipeline:
+      catalog: main
+      schema: default
+      libraries:
+        - notebook:
+            path: /Users/{{workspace_user_name}}/notebook

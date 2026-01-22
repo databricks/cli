@@ -1,0 +1,17 @@
+#!/bin/bash
+
+touch dummy.whl
+$CLI bundle deploy
+job_id="$(read_id.py my_job)"
+
+title "Modify job environment version from 3 to 4"
+edit_resource.py jobs $job_id <<EOF
+r["environments"][0]["spec"]["environment_version"] = "4"
+EOF
+
+title "Detect and save changes"
+$CLI bundle config-remote-sync --save
+
+title "Updated configuration"
+echo
+cat databricks.yml

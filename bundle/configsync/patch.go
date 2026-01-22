@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -101,7 +102,14 @@ func applyChanges(ctx context.Context, filePath string, changes resolvedChanges,
 		return "", fmt.Errorf("failed to read file %s: %w", filePath, err)
 	}
 
-	for fieldPath, changeDesc := range changes {
+	fieldPaths := make([]string, 0, len(changes))
+	for fieldPath := range changes {
+		fieldPaths = append(fieldPaths, fieldPath)
+	}
+	sort.Strings(fieldPaths)
+
+	for _, fieldPath := range fieldPaths {
+		changeDesc := changes[fieldPath]
 		jsonPointer, err := strPathToJSONPointer(fieldPath)
 		if err != nil {
 			return "", fmt.Errorf("failed to convert field path %q to JSON pointer: %w", fieldPath, err)

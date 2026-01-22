@@ -1,0 +1,27 @@
+#!/bin/bash
+
+touch dummy.whl
+$CLI bundle deploy
+
+job_one_id="$(read_id.py job_one)"
+job_two_id="$(read_id.py job_two)"
+
+title "Modify both jobs"
+edit_resource.py jobs $job_one_id <<EOF
+r["max_concurrent_runs"] = 5
+EOF
+
+edit_resource.py jobs $job_two_id <<EOF
+r["max_concurrent_runs"] = 10
+EOF
+
+title "Detect and save changes"
+$CLI bundle config-remote-sync --save
+
+title "Updated job1.yml"
+echo
+cat resources/job1.yml
+
+title "Updated job2.yml"
+echo
+cat resources/job2.yml

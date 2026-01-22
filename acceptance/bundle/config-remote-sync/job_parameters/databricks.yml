@@ -1,0 +1,11 @@
+bundle:
+  name: test-bundle
+
+resources:
+  jobs:
+    my_job:
+      parameters:
+        - name: catalog
+          default: main
+        - name: env
+          default: dev

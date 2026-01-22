@@ -8,6 +8,10 @@ from databricks.bundles.pipelines._models.ingestion_config import (
     IngestionConfig,
     IngestionConfigParam,
 )
+from databricks.bundles.pipelines._models.operation_time_window import (
+    OperationTimeWindow,
+    OperationTimeWindowParam,
+)
 from databricks.bundles.pipelines._models.source_config import (
     SourceConfig,
     SourceConfigParam,
@@ -28,6 +32,11 @@ class IngestionPipelineDefinition:
     connection_name: VariableOrOptional[str] = None
     """
     Immutable. The Unity Catalog connection that this ingestion pipeline uses to communicate with the source. This is used with connectors for applications like Salesforce, Workday, and so on.
+    """
+
+    full_refresh_window: VariableOrOptional[OperationTimeWindow] = None
+    """
+    (Optional) A window that specifies a set of time ranges for snapshot queries in CDC.
     """
 
     ingest_from_uc_foreign_catalog: VariableOrOptional[bool] = None
@@ -79,6 +88,11 @@ class IngestionPipelineDefinitionDict(TypedDict, total=False):
     connection_name: VariableOrOptional[str]
     """
     Immutable. The Unity Catalog connection that this ingestion pipeline uses to communicate with the source. This is used with connectors for applications like Salesforce, Workday, and so on.
+    """
+
+    full_refresh_window: VariableOrOptional[OperationTimeWindowParam]
+    """
+    (Optional) A window that specifies a set of time ranges for snapshot queries in CDC.
     """
 
     ingest_from_uc_foreign_catalog: VariableOrOptional[bool]

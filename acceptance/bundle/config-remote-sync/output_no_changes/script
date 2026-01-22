@@ -1,0 +1,15 @@
+#!/bin/bash
+
+touch dummy.whl
+$CLI bundle deploy
+
+title "Check for changes immediately after deployment"
+$CLI bundle config-remote-sync
+
+title "Text output"
+$CLI bundle config-remote-sync | contains.py "No changes detected"
+
+title "JSON output"
+$CLI bundle config-remote-sync -o json > out.json
+cat out.json
+contains.py '"files": \[\]' < out.json

@@ -1,0 +1,21 @@
+#!/bin/bash
+
+touch dummy.whl
+$CLI bundle deploy
+job_id="$(read_id.py my_job)"
+
+
+title "Modify only 'process' task num_workers and add timeout"
+edit_resource.py jobs $job_id <<EOF
+for task in r["tasks"]:
+    if task["task_key"] == "process":
+        task["new_cluster"]["num_workers"] = 5
+        task["timeout_seconds"] = 3600
+EOF
+
+title "Detect and save changes"
+$CLI bundle config-remote-sync --save
+
+title "Updated configuration"
+echo
+cat databricks.yml

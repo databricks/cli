@@ -1,0 +1,15 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Text output formatDetected changes in 1 resource(s):
+
+Resource: resources.jobs.test_job
+  max_concurrent_runs: update
+
+Detected changes in 1 resource(s):
+
+Resource: resources.jobs.test_job
+  max_concurrent_runs: update
+

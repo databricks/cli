@@ -1,0 +1,25 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Modify job parameters: change catalog default and add new parameter
+=== Detect and save changesDetected changes in 1 resource(s):
+
+Resource: resources.jobs.my_job
+  parameters: update
+
+
+=== Updated configuration
+bundle:
+  name: test-bundle
+resources:
+  jobs:
+    my_job:
+      parameters:
+        - default: staging
+          name: catalog
+        - default: dev
+          name: env
+        - default: default
+          name: schema

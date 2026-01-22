@@ -1,0 +1,25 @@
+# Top-level comment about the bundle
+bundle:
+  name: test-bundle
+
+# Resources section with extra spacing
+resources:
+  jobs:
+    my_job:
+      # Comment about max concurrent runs
+      max_concurrent_runs: 1
+
+      # Task configuration
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/notebook
+          new_cluster:
+            spark_version: 13.3.x-scala2.12
+            node_type_id: i3.xlarge
+            num_workers: 1 # inline comment about workers
+
+      # Tags for categorization
+      tags:
+        env: dev # environment tag
+        team: data-eng

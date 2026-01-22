@@ -98,6 +98,12 @@ var serverSideDefaults = []fieldDefault{
 		pattern:   regexp.MustCompile(`^run_as$`),
 		isDefault: alwaysDefault,
 	},
+
+	// Pipeline fields
+	{
+		pattern:   regexp.MustCompile(`^storage$`),
+		isDefault: defaultIfNotSpecified, // TODO it is computed if not specified, probably we should not skip it
+	},
 }
 
 // shouldSkipField checks if a given field path should be skipped as a hardcoded server-side default.
@@ -119,6 +125,13 @@ func shouldSkipField(path string, changeDesc *deployplan.ChangeDesc) bool {
 // alwaysDefault always returns true (for computed fields).
 func alwaysDefault(*deployplan.ChangeDesc) bool {
 	return true
+}
+
+func defaultIfNotSpecified(changeDesc *deployplan.ChangeDesc) bool {
+	if changeDesc.Old == nil && changeDesc.New == nil {
+		return true
+	}
+	return false
 }
 
 // isStringEqual returns a function that checks if the remote value equals the given string.

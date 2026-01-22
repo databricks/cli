@@ -1,0 +1,19 @@
+#!/bin/bash
+
+touch dummy.whl
+$CLI bundle deploy
+pipeline_id="$(read_id.py my_pipeline)"
+
+
+title "Add failure notification"
+edit_resource.py pipelines $pipeline_id <<EOF
+r["notifications"][0]["email_recipients"].append("failure@example.com")
+r["notifications"][0]["alerts"].append("on-update-failure")
+EOF
+
+title "Detect and save changes"
+$CLI bundle config-remote-sync --save
+
+title "Updated configuration"
+echo
+cat databricks.yml

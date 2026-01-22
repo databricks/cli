@@ -1,0 +1,9 @@
+bundle:
+  name: test-bundle
+
+resources:
+  jobs:
+    my_job:
+      email_notifications:
+        on_success:
+          - success@example.com
