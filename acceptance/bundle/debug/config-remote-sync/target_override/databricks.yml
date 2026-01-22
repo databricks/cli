@@ -4,7 +4,6 @@ bundle:
 resources:
   jobs:
     my_job:
-      name: "Base Job"
       tasks:
         - task_key: main
           notebook_task:

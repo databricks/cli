@@ -4,7 +4,6 @@ bundle:
 resources:
   jobs:
     my_job:
-      name: "Timeout Test"
       timeout_seconds: 3600
       tasks:
         - task_key: main

@@ -4,7 +4,6 @@ bundle:
 resources:
   jobs:
     my_job:
-      name: "Multiple Tasks Test"
       tasks:
         - task_key: setup
           notebook_task:

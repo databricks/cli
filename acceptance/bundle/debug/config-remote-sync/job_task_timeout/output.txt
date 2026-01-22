@@ -16,7 +16,6 @@ bundle:
 resources:
   jobs:
     my_job:
-      name: "Task Timeout Test"
       tasks:
         - task_key: task_a
           timeout_seconds: 3600

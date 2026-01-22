@@ -4,7 +4,6 @@ bundle:
 resources:
   pipelines:
     my_pipeline:
-      name: "Pipeline Notifications Test"
       notifications:
         - email_recipients:
             - success@example.com

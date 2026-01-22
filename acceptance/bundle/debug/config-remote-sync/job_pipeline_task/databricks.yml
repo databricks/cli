@@ -1,0 +1,18 @@
+bundle:
+  name: test-bundle
+
+resources:
+  pipelines:
+    my_pipeline:
+      development: false
+      libraries:
+        - notebook:
+            path: /Users/{{workspace_user_name}}/notebook
+
+  jobs:
+    my_job:
+      tasks:
+        - task_key: run_pipeline
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.my_pipeline.id}
+            full_refresh: false

@@ -1,7 +1,6 @@
 resources:
   jobs:
     job_one:
-      name: "Job One"
       max_concurrent_runs: 1
       tasks:
         - task_key: main

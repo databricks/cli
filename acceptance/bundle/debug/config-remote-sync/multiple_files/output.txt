@@ -16,7 +16,6 @@ Resource: resources.jobs.job_two
 resources:
   jobs:
     job_one:
-      name: "Job One"
       max_concurrent_runs: 5
       tasks:
         - task_key: main
@@ -31,7 +30,6 @@ resources:
 resources:
   jobs:
     job_two:
-      name: "Job Two"
       max_concurrent_runs: 10
       tasks:
         - task_key: main

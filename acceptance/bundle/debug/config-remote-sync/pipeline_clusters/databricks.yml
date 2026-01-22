@@ -4,7 +4,6 @@ bundle:
 resources:
   pipelines:
     my_pipeline:
-      name: "Pipeline Clusters Test"
       clusters:
         - num_workers: 2
           label: default

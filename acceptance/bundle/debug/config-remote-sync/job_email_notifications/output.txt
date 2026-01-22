@@ -17,7 +17,6 @@ bundle:
 resources:
   jobs:
     my_job:
-      name: "Email Notifications Test"
       email_notifications:
         on_success:
           - success@example.com

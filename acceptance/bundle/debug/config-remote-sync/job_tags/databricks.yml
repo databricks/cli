@@ -4,7 +4,6 @@ bundle:
 resources:
   jobs:
     my_job:
-      name: "Tags Test"
       tags:
         env: dev
       tasks:

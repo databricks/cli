@@ -17,7 +17,6 @@ bundle:
 resources:
   pipelines:
     my_pipeline:
-      name: "Pipeline Configuration Test"
       configuration:
         key1: new_value
         key2: value2

@@ -16,7 +16,6 @@ bundle:
 resources:
   jobs:
     my_job:
-      name: "Max Concurrent Runs Test"
       max_concurrent_runs: 5
       tasks:
         - task_key: main
