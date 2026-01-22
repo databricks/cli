@@ -10,9 +10,9 @@ type PropertyDescriptions map[string]string
 
 // SchemaOptions contains options for schema generation.
 type SchemaOptions struct {
-	Descriptions PropertyDescriptions
+	Descriptions      PropertyDescriptions
 	SchemaDescription string
-	ResourceName string
+	ResourceName      string
 }
 
 func GenerateSchema(t reflect.Type) (any, error) {

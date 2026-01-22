@@ -2,8 +2,8 @@ package dsc
 
 import (
 	"encoding/json"
-	"reflect"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
+	"reflect"
 )
 
 func init() {

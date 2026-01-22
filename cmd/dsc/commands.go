@@ -21,9 +21,9 @@ func newGetCmd() *cobra.Command {
 	var input string
 
 	cmd := &cobra.Command{
-		Use:   "get",
-		Short: "Get the current state of a resource",
-		Long:  `Retrieves and returns the current state of a specified resource.`,
+		Use:     "get",
+		Short:   "Get the current state of a resource",
+		Long:    `Retrieves and returns the current state of a specified resource.`,
 		PreRunE: root.MustWorkspaceClient,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			handler, err := getResourceHandler(resourceType)
@@ -60,9 +60,9 @@ func newSetCmd() *cobra.Command {
 	var input string
 
 	cmd := &cobra.Command{
-		Use:   "set",
-		Short: "Create or update a resource to match desired state",
-		Long:  `Creates a new resource or updates an existing one to match the specified desired state.`,
+		Use:     "set",
+		Short:   "Create or update a resource to match desired state",
+		Long:    `Creates a new resource or updates an existing one to match the specified desired state.`,
 		PreRunE: root.MustWorkspaceClient,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			handler, err := getResourceHandler(resourceType)
@@ -94,9 +94,9 @@ func newDeleteCmd() *cobra.Command {
 	var input string
 
 	cmd := &cobra.Command{
-		Use:   "delete",
-		Short: "Delete a resource",
-		Long:  `Removes the specified resource.`,
+		Use:     "delete",
+		Short:   "Delete a resource",
+		Long:    `Removes the specified resource.`,
 		PreRunE: root.MustWorkspaceClient,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			handler, err := getResourceHandler(resourceType)
@@ -127,9 +127,9 @@ func newExportCmd() *cobra.Command {
 	var resourceType string
 
 	cmd := &cobra.Command{
-		Use:   "export",
-		Short: "Export all resources of a type",
-		Long:  `Lists and exports all resources of the specified type.`,
+		Use:     "export",
+		Short:   "Export all resources of a type",
+		Long:    `Lists and exports all resources of the specified type.`,
 		PreRunE: root.MustWorkspaceClient,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			handler, err := getResourceHandler(resourceType)
