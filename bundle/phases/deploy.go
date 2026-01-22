@@ -118,7 +118,7 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, ta
 		statemgmt.Load(targetEngine),
 		metadata.Compute(),
 		metadata.Upload(),
-		metadata.ConvertStateForYamlSync(targetEngine),
+		statemgmt.UploadStateForYamlSync(targetEngine),
 	)
 
 	if !logdiag.HasError(ctx) {

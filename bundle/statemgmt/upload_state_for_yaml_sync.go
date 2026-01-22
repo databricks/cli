@@ -1,4 +1,4 @@
-package metadata
+package statemgmt
 
 import (
 	"context"
@@ -16,26 +16,28 @@ import (
 	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structpath"
 )
 
-type convertStateForYamlSync struct {
+type uploadStateForYamlSync struct {
 	engine engine.EngineType
 }
 
-// ConvertStateForYamlSync converts the state to the direct format for YAML sync.
-// This is simplified version of the `bundle migrate` command. State file is saved in the same format as the direct engine but to the different path.
-func ConvertStateForYamlSync(targetEngine engine.EngineType) bundle.Mutator {
-	return &convertStateForYamlSync{engine: targetEngine}
+// UploadStateForYamlSync converts the state to the direct format for YAML sync and uploads it to the Workspace.
+// This is simplified version of the `bundle migrate` command.
+// State file is saved in the same format as the direct engine but to the different path to avoid any side effects.
+func UploadStateForYamlSync(targetEngine engine.EngineType) bundle.Mutator {
+	return &uploadStateForYamlSync{engine: targetEngine}
 }
 
-func (m *convertStateForYamlSync) Name() string {
-	return "metadata.ConvertStateForYamlSync"
+func (m *uploadStateForYamlSync) Name() string {
+	return "statemgmt.UploadStateForYamlSync"
 }
 
-func (m *convertStateForYamlSync) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
+func (m *uploadStateForYamlSync) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	if m.engine.IsDirect() {
 		return nil
 	}
@@ -57,7 +59,7 @@ func (m *convertStateForYamlSync) Apply(ctx context.Context, b *bundle.Bundle) d
 	return nil
 }
 
-func (m *convertStateForYamlSync) convertState(ctx context.Context, b *bundle.Bundle, snapshotPath string) error {
+func (m *uploadStateForYamlSync) convertState(ctx context.Context, b *bundle.Bundle, snapshotPath string) error {
 	terraformResources, err := terraform.ParseResourcesState(ctx, b)
 	if err != nil {
 		return err
@@ -144,4 +146,32 @@ func (m *convertStateForYamlSync) convertState(ctx context.Context, b *bundle.Bu
 	deploymentBundle.Apply(ctx, b.WorkspaceClient(), &uninterpolatedConfig, plan, direct.MigrateMode(true))
 
 	return nil
+}
+
+// reverseInterpolate reverses the terraform.Interpolate transformation.
+// It converts terraform-style resource references back to bundle-style.
+// Example: ${databricks_pipeline.my_etl.id} → ${resources.pipelines.my_etl.id}
+func reverseInterpolate(root dyn.Value) (dyn.Value, error) {
+	return dynvar.Resolve(root, func(path dyn.Path) (dyn.Value, error) {
+		// Need at least 2 components: resource_type.resource_name
+		if len(path) < 2 {
+			return dyn.InvalidValue, dynvar.ErrSkipResolution
+		}
+
+		resourceType := path[0].Key()
+		isAlreadyBundleFormat := resourceType == "resources"
+		if isAlreadyBundleFormat {
+			return dyn.InvalidValue, dynvar.ErrSkipResolution
+		}
+
+		bundleGroup, ok := terraform.TerraformToGroupName[resourceType]
+		if !ok {
+			return dyn.InvalidValue, dynvar.ErrSkipResolution
+		}
+
+		// Reconstruct path in bundle format:
+		// databricks_pipeline.my_pipeline.id → resources.pipelines.my_pipeline.id
+		bundlePath := dyn.NewPath(dyn.Key("resources"), dyn.Key(bundleGroup)).Append(path[1:]...)
+		return dyn.V(fmt.Sprintf("${%s}", bundlePath.String())), nil
+	})
 }
