@@ -18,13 +18,13 @@ func TestNewEnvFileBuilder(t *testing.T) {
 env:
   - name: FOO
     value: bar
-  - name: BAZ
-    value_from: WAREHOUSE_ID
+  - name: DATABRICKS_WAREHOUSE_ID
+    value_from: sql-warehouse
 `), 0o644)
 		require.NoError(t, err)
 
 		resources := map[string]string{
-			"WAREHOUSE_ID": "abc123",
+			"sql-warehouse": "abc123",
 		}
 
 		builder, err := NewEnvFileBuilder("https://test.cloud.databricks.com", appYml, resources)
@@ -33,8 +33,8 @@ env:
 		assert.Len(t, builder.env, 2)
 		assert.Equal(t, "FOO", builder.env[0].Name)
 		assert.Equal(t, "bar", builder.env[0].Value)
-		assert.Equal(t, "BAZ", builder.env[1].Name)
-		assert.Equal(t, "WAREHOUSE_ID", builder.env[1].ValueFrom)
+		assert.Equal(t, "DATABRICKS_WAREHOUSE_ID", builder.env[1].Name)
+		assert.Equal(t, "sql-warehouse", builder.env[1].ValueFrom)
 	})
 
 	t.Run("with missing app.yml", func(t *testing.T) {
@@ -94,19 +94,19 @@ func TestBuild(t *testing.T) {
 		builder := &EnvFileBuilder{
 			host: "https://test.cloud.databricks.com",
 			env: []EnvVar{
-				{Name: "WAREHOUSE_ID", ValueFrom: "WAREHOUSE_ID"},
-				{Name: "ENDPOINT_NAME", ValueFrom: "SERVING_ENDPOINT"},
+				{Name: "DATABRICKS_WAREHOUSE_ID", ValueFrom: "sql-warehouse"},
+				{Name: "SERVING_ENDPOINT_NAME", ValueFrom: "serving-endpoint"},
 			},
 			resources: map[string]string{
-				"WAREHOUSE_ID":      "abc123",
-				"SERVING_ENDPOINT":  "my-endpoint",
+				"sql-warehouse":     "abc123",
+				"serving-endpoint":  "my-endpoint",
 			},
 		}
 
 		content, err := builder.Build()
 		require.NoError(t, err)
-		assert.Contains(t, content, "WAREHOUSE_ID=abc123")
-		assert.Contains(t, content, "ENDPOINT_NAME=my-endpoint")
+		assert.Contains(t, content, "DATABRICKS_WAREHOUSE_ID=abc123")
+		assert.Contains(t, content, "SERVING_ENDPOINT_NAME=my-endpoint")
 	})
 
 	t.Run("with mixed value and value_from", func(t *testing.T) {
@@ -114,18 +114,18 @@ func TestBuild(t *testing.T) {
 			host: "https://test.cloud.databricks.com",
 			env: []EnvVar{
 				{Name: "STATIC_VAR", Value: "static-value"},
-				{Name: "DYNAMIC_VAR", ValueFrom: "WAREHOUSE_ID"},
+				{Name: "DATABRICKS_WAREHOUSE_ID", ValueFrom: "sql-warehouse"},
 				{Name: "ANOTHER_STATIC", Value: "another-value"},
 			},
 			resources: map[string]string{
-				"WAREHOUSE_ID": "xyz789",
+				"sql-warehouse": "xyz789",
 			},
 		}
 
 		content, err := builder.Build()
 		require.NoError(t, err)
 		assert.Contains(t, content, "STATIC_VAR=static-value")
-		assert.Contains(t, content, "DYNAMIC_VAR=xyz789")
+		assert.Contains(t, content, "DATABRICKS_WAREHOUSE_ID=xyz789")
 		assert.Contains(t, content, "ANOTHER_STATIC=another-value")
 	})
 
@@ -133,14 +133,14 @@ func TestBuild(t *testing.T) {
 		builder := &EnvFileBuilder{
 			host: "https://test.cloud.databricks.com",
 			env: []EnvVar{
-				{Name: "MISSING_REF", ValueFrom: "NONEXISTENT"},
+				{Name: "MISSING_REF", ValueFrom: "nonexistent-resource"},
 			},
 			resources: map[string]string{},
 		}
 
 		_, err := builder.Build()
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "resource reference \"NONEXISTENT\" not found")
+		assert.Contains(t, err.Error(), "resource reference \"nonexistent-resource\" not found")
 		assert.Contains(t, err.Error(), "MISSING_REF")
 	})
 
@@ -285,14 +285,14 @@ func TestWriteEnvFile(t *testing.T) {
 		builder := &EnvFileBuilder{
 			host: "https://test.cloud.databricks.com",
 			env: []EnvVar{
-				{Name: "BAD_REF", ValueFrom: "MISSING"},
+				{Name: "BAD_REF", ValueFrom: "missing-resource"},
 			},
 			resources: map[string]string{},
 		}
 
 		err := builder.WriteEnvFile(tmpDir)
 		assert.Error(t, err)
-		assert.Contains(t, err.Error(), "resource reference \"MISSING\" not found")
+		assert.Contains(t, err.Error(), "resource reference \"missing-resource\" not found")
 	})
 }
 
@@ -304,9 +304,11 @@ func TestEnvFileBuilderIntegration(t *testing.T) {
 		appYmlContent := `command: ["python", "app.py"]
 env:
   - name: DATABRICKS_WAREHOUSE_ID
-    value_from: WAREHOUSE_ID
+    value_from: sql-warehouse
   - name: MLFLOW_EXPERIMENT_ID
-    value_from: EXPERIMENT_ID
+    value_from: experiment
+  - name: SERVING_ENDPOINT_NAME
+    value_from: serving-endpoint
   - name: APP_NAME
     value: my-test-app
   - name: DEBUG
@@ -315,10 +317,11 @@ env:
 		err := os.WriteFile(appYml, []byte(appYmlContent), 0o644)
 		require.NoError(t, err)
 
-		// Create resource map
+		// Create resource map with names matching databricks.yml resource.name fields
 		resources := map[string]string{
-			"WAREHOUSE_ID":  "abc123xyz",
-			"EXPERIMENT_ID": "exp-456",
+			"sql-warehouse":     "abc123xyz",
+			"experiment":        "exp-456",
+			"serving-endpoint":  "my-endpoint",
 		}
 
 		// Build and write .env
@@ -337,6 +340,7 @@ env:
 		assert.Contains(t, contentStr, "DATABRICKS_HOST=https://my-workspace.cloud.databricks.com")
 		assert.Contains(t, contentStr, "DATABRICKS_WAREHOUSE_ID=abc123xyz")
 		assert.Contains(t, contentStr, "MLFLOW_EXPERIMENT_ID=exp-456")
+		assert.Contains(t, contentStr, "SERVING_ENDPOINT_NAME=my-endpoint")
 		assert.Contains(t, contentStr, "APP_NAME=my-test-app")
 		assert.Contains(t, contentStr, "DEBUG=true")
 		assert.Contains(t, contentStr, "# Environment variables from app.yml")

@@ -31,7 +31,9 @@ type EnvFileBuilder struct {
 // NewEnvFileBuilder creates a new EnvFileBuilder.
 // host: Databricks workspace host
 // appYmlPath: Path to app.yml or app.yaml file
-// resources: Map of resource references (e.g., "WAREHOUSE_ID" -> "abc123")
+// resources: Map of resource names from databricks.yml to their values
+//            (e.g., "sql-warehouse" -> "abc123", "experiment" -> "exp-456")
+//            These names match the resource.name field in databricks.yml
 func NewEnvFileBuilder(host string, appYmlPath string, resources map[string]string) (*EnvFileBuilder, error) {
 	// Read app.yml
 	data, err := os.ReadFile(appYmlPath)
@@ -93,10 +95,10 @@ func (b *EnvFileBuilder) Build() (string, error) {
 			// Direct value
 			value = envVar.Value
 		} else if envVar.ValueFrom != "" {
-			// Lookup from resources
+			// Lookup from resources (should match resource.name from databricks.yml)
 			resourceValue, ok := b.resources[envVar.ValueFrom]
 			if !ok {
-				return "", fmt.Errorf("resource reference %q not found for environment variable %q", envVar.ValueFrom, envVar.Name)
+				return "", fmt.Errorf("resource reference %q not found for environment variable %q (should match a resource.name from databricks.yml)", envVar.ValueFrom, envVar.Name)
 			}
 			value = resourceValue
 		} else {
