@@ -1,37 +1,14 @@
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Deploying resources...
+Error: cannot create resources.pipelines.my_pipeline: name must be set (400 INVALID_PARAMETER_VALUE)
+
+Endpoint: POST [DATABRICKS_URL]/api/2.0/pipelines
+HTTP Status: 400 Bad Request
+API error_code: INVALID_PARAMETER_VALUE
+API message: name must be set
+
+Error: cannot create resources.jobs.my_job: dependency failed: resources.pipelines.my_pipeline
+
 Updating deployment state...
-Deployment complete!
 
-=== Modify pipeline_task full_refresh to True
-=== Modify pipeline development to True
-=== Detect and save changes
-Detected changes in 2 resource(s):
-
-Resource: resources.jobs.my_job
-  tasks[task_key='run_pipeline'].pipeline_task.full_refresh: update
-Resource: resources.pipelines.my_pipeline
-  development: update
-
-
-=== Configuration changes
- bundle:
-   name: test-bundle-[UNIQUE_NAME]
--
- resources:
-   pipelines:
-     my_pipeline:
--      development: false
-+      development: true
-       libraries:
-         - notebook:
-             path: /Users/{{workspace_user_name}}/notebook
--
-   jobs:
-     my_job:
-       tasks:
-         - task_key: run_pipeline
-           pipeline_task:
-             pipeline_id: ${resources.pipelines.my_pipeline.id}
--            full_refresh: false
-+            full_refresh: true
+Exit code: 1

@@ -48,6 +48,6 @@ Resource: resources.jobs.my_job
        tags:
          env: dev
 +        team: data
-       permissions:
-         - level: CAN_VIEW
-           user_name: viewer@example.com
+       environments:
+         - environment_key: default
+           spec:

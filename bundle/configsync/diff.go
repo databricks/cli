@@ -99,16 +99,21 @@ var serverSideDefaults = map[string]func(*deployplan.ChangeDesc) bool{
 	"tasks[*].notebook_task.source": isStringEqual("WORKSPACE"),
 
 	// Cluster fields (tasks)
-	"tasks[*].new_cluster.aws_attributes.availability":   isStringEqual("ON_DEMAND"),
-	"tasks[*].new_cluster.azure_attributes.availability": isStringEqual("ON_DEMAND_AZURE"),
-	"tasks[*].new_cluster.gcp_attributes.availability":   isStringEqual("ON_DEMAND_GCP"),
-	"tasks[*].new_cluster.enable_elastic_disk":           isBoolEqual(true),
+	"tasks[*].new_cluster.aws_attributes.availability":              isStringEqual("ON_DEMAND"),
+	"tasks[*].new_cluster.azure_attributes.availability":            isStringEqual("ON_DEMAND_AZURE"),
+	"tasks[*].new_cluster.gcp_attributes":                           alwaysDefault, // parent object for GCP-specific defaults
+	"tasks[*].new_cluster.gcp_attributes.availability":              isStringEqual("ON_DEMAND_GCP"),
+	"tasks[*].new_cluster.gcp_attributes.use_preemptible_executors": isBoolEqual(false),
+
+	"tasks[*].new_cluster.enable_elastic_disk": alwaysDefault, // deprecated field
 
 	// Cluster fields (job_clusters)
-	"job_clusters[*].new_cluster.aws_attributes.availability":   isStringEqual("ON_DEMAND"),
-	"job_clusters[*].new_cluster.azure_attributes.availability": isStringEqual("ON_DEMAND_AZURE"),
-	"job_clusters[*].new_cluster.gcp_attributes.availability":   isStringEqual("ON_DEMAND_GCP"),
-	"job_clusters[*].new_cluster.enable_elastic_disk":           isBoolEqual(true),
+	"job_clusters[*].new_cluster.aws_attributes.availability":              isStringEqual("ON_DEMAND"),
+	"job_clusters[*].new_cluster.azure_attributes.availability":            isStringEqual("ON_DEMAND_AZURE"),
+	"job_clusters[*].new_cluster.gcp_attributes":                           alwaysDefault, // parent object for GCP-specific defaults
+	"job_clusters[*].new_cluster.gcp_attributes.availability":              isStringEqual("ON_DEMAND_GCP"),
+	"job_clusters[*].new_cluster.gcp_attributes.use_preemptible_executors": isBoolEqual(false),
+	"job_clusters[*].new_cluster.enable_elastic_disk":                      alwaysDefault, // deprecated field
 
 	// Terraform defaults
 	"run_as": alwaysDefault,
