@@ -1,5 +1,9 @@
 #!/bin/bash
 
+envsubst < databricks.yml.tmpl > databricks.yml
+envsubst < resources/job1.yml.tmpl > resources/job1.yml
+envsubst < resources/job2.yml.tmpl > resources/job2.yml
+
 touch dummy.whl
 $CLI bundle deploy
 

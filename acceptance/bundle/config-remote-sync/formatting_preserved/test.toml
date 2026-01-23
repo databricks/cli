@@ -1,5 +1,7 @@
+Cloud = true
+
 RecordRequests = false
-Ignore = [".databricks", "dummy.whl"]
+Ignore = [".databricks", "dummy.whl", "databricks.yml", "databricks.yml.backup"]
 
 [Env]
 DATABRICKS_BUNDLE_ENABLE_EXPERIMENTAL_YAML_SYNC = "true"

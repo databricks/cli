@@ -1,4 +1,4 @@
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
@@ -16,19 +16,19 @@ Resource: resources.jobs.my_job
 
 === Configuration changes
  bundle:
-   name: test-bundle
+   name: test-bundle-[UNIQUE_NAME]
 -
  resources:
    jobs:
      my_job:
-             spark_version: 13.3.x-scala2.12
+             spark_version: 13.3.x-snapshot-scala2.12
              node_type_id: [NODE_TYPE_ID]
              num_workers: 1
 -        - task_key: task2
 -          notebook_task:
 -            notebook_path: /Users/{{workspace_user_name}}/task2
 -          new_cluster:
--            spark_version: 13.3.x-scala2.12
+-            spark_version: 13.3.x-snapshot-scala2.12
 -            node_type_id: [NODE_TYPE_ID]
 -            num_workers: 2
 -          depends_on:
@@ -37,7 +37,7 @@ Resource: resources.jobs.my_job
            notebook_task:
              notebook_path: /Users/{{workspace_user_name}}/task3
            new_cluster:
-             spark_version: 13.3.x-scala2.12
+             spark_version: 13.3.x-snapshot-scala2.12
              node_type_id: [NODE_TYPE_ID]
 -            num_workers: 1
 +            num_workers: 5

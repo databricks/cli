@@ -1,5 +1,7 @@
 #!/bin/bash
 
+envsubst < databricks.yml.tmpl > databricks.yml
+
 touch dummy.whl
 $CLI bundle deploy -t dev
 job_id="$(read_id.py my_job)"

@@ -1,5 +1,5 @@
 bundle:
-  name: test-bundle
+  name: test-bundle-$UNIQUE_NAME
 
 resources:
   jobs:
@@ -9,15 +9,15 @@ resources:
           notebook_task:
             notebook_path: /Users/{{workspace_user_name}}/task1
           new_cluster:
-            spark_version: 13.3.x-scala2.12
-            node_type_id: i3.xlarge
+            spark_version: $DEFAULT_SPARK_VERSION
+            node_type_id: $NODE_TYPE_ID
             num_workers: 1
         - task_key: task2
           notebook_task:
             notebook_path: /Users/{{workspace_user_name}}/task2
           new_cluster:
-            spark_version: 13.3.x-scala2.12
-            node_type_id: i3.xlarge
+            spark_version: $DEFAULT_SPARK_VERSION
+            node_type_id: $NODE_TYPE_ID
             num_workers: 2
           depends_on:
             - task_key: task1
@@ -25,8 +25,8 @@ resources:
           notebook_task:
             notebook_path: /Users/{{workspace_user_name}}/task3
           new_cluster:
-            spark_version: 13.3.x-scala2.12
-            node_type_id: i3.xlarge
+            spark_version: $DEFAULT_SPARK_VERSION
+            node_type_id: $NODE_TYPE_ID
             num_workers: 2
           depends_on:
             - task_key: task2
@@ -34,8 +34,8 @@ resources:
           notebook_task:
             notebook_path: /Users/{{workspace_user_name}}/task4
           new_cluster:
-            spark_version: 13.3.x-scala2.12
-            node_type_id: i3.xlarge
+            spark_version: $DEFAULT_SPARK_VERSION
+            node_type_id: $NODE_TYPE_ID
             num_workers: 1
           depends_on:
             - task_key: task3

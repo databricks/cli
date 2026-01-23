@@ -1,5 +1,7 @@
 #!/bin/bash
 
+envsubst < databricks.yml.tmpl > databricks.yml
+
 touch dummy.whl
 $CLI bundle deploy
 job_id="$(read_id.py my_job)"
@@ -11,9 +13,9 @@ echo
 # Case 3: Remove field from config (version tag) - will also be removed remotely
 # Case 4: Update field in config (max_concurrent_runs) - will also be updated remotely with different value
 # Case 5: Update field in config (tags.env) - will also be updated remotely with different value
-cat > databricks.yml <<'EOF'
+cat > databricks.yml <<EOF
 bundle:
-  name: test-bundle
+  name: test-bundle-$UNIQUE_NAME
 
 resources:
   jobs:
@@ -23,8 +25,8 @@ resources:
           notebook_task:
             notebook_path: /Users/{{workspace_user_name}}/notebook
           new_cluster:
-            spark_version: 13.3.x-scala2.12
-            node_type_id: i3.xlarge
+            spark_version: $DEFAULT_SPARK_VERSION
+            node_type_id: $NODE_TYPE_ID
             num_workers: 1
 
 targets:

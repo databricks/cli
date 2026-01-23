@@ -7,6 +7,6 @@ resources:
           notebook_task:
             notebook_path: /Users/{{workspace_user_name}}/job2
           new_cluster:
-            spark_version: 13.3.x-scala2.12
-            node_type_id: i3.xlarge
+            spark_version: $DEFAULT_SPARK_VERSION
+            node_type_id: $NODE_TYPE_ID
             num_workers: 1

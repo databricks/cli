@@ -1,5 +1,7 @@
 #!/bin/bash
 
+envsubst < databricks.yml.tmpl > databricks.yml
+
 $CLI bundle deploy
 pipeline_id="$(read_id.py my_pipeline)"
 
