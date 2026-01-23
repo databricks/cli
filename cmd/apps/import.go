@@ -486,6 +486,16 @@ func generateAppBundle(ctx context.Context, w *databricks.WorkspaceClient, app *
 	if !quiet {
 		cmdio.LogString(ctx, "Bundle configuration created at "+databricksYml)
 	}
+
+	// Generate .env file from app.yml if it exists
+	err = generateEnvFile(ctx, w.Config.Host, app, quiet)
+	if err != nil {
+		// Log warning but don't fail - .env is optional
+		if !quiet {
+			cmdio.LogString(ctx, fmt.Sprintf("⚠ Failed to generate .env file: %v", err))
+		}
+	}
+
 	return appKey, nil
 }
 
@@ -625,6 +635,85 @@ func yamlNodeToDynValue(node *yaml.Node) (dyn.Value, error) {
 	default:
 		return dyn.NilValue, fmt.Errorf("unsupported YAML node kind: %v", node.Kind)
 	}
+}
+
+// buildResourcesMap creates a map of resource names to their IDs/values from app.Resources.
+func buildResourcesMap(app *apps.App) map[string]string {
+	resources := make(map[string]string)
+	if app.Resources == nil {
+		return resources
+	}
+
+	for _, resource := range app.Resources {
+		if resource.Name == "" {
+			continue
+		}
+
+		// Extract the resource ID/value based on type
+		var value string
+		switch {
+		case resource.SqlWarehouse != nil:
+			value = resource.SqlWarehouse.Id
+		case resource.ServingEndpoint != nil:
+			value = resource.ServingEndpoint.Name
+		case resource.Experiment != nil:
+			value = resource.Experiment.ExperimentId
+		case resource.Database != nil:
+			value = resource.Database.DatabaseName
+		case resource.Secret != nil:
+			value = resource.Secret.Key
+		case resource.GenieSpace != nil:
+			value = resource.GenieSpace.SpaceId
+		case resource.Job != nil:
+			value = resource.Job.Id
+		case resource.UcSecurable != nil:
+			value = resource.UcSecurable.SecurableFullName
+		}
+
+		if value != "" {
+			resources[resource.Name] = value
+		}
+	}
+
+	return resources
+}
+
+// generateEnvFile generates a .env file from app.yml and app resources.
+func generateEnvFile(ctx context.Context, host string, app *apps.App, quiet bool) error {
+	// Check if app.yml or app.yaml exists
+	var appYmlPath string
+	for _, filename := range []string{"app.yml", "app.yaml"} {
+		if _, err := os.Stat(filename); err == nil {
+			appYmlPath = filename
+			break
+		}
+	}
+
+	if appYmlPath == "" {
+		// No app.yml found, skip .env generation
+		return nil
+	}
+
+	// Build resources map from app.Resources
+	resources := buildResourcesMap(app)
+
+	// Create EnvFileBuilder
+	builder, err := NewEnvFileBuilder(host, appYmlPath, resources)
+	if err != nil {
+		return fmt.Errorf("failed to create env builder: %w", err)
+	}
+
+	// Write .env file
+	err = builder.WriteEnvFile(".")
+	if err != nil {
+		return fmt.Errorf("failed to write .env file: %w", err)
+	}
+
+	if !quiet {
+		cmdio.LogString(ctx, "✓ Generated .env file from app.yml")
+	}
+
+	return nil
 }
 
 // inlineAppConfigFile reads app.yml or app.yaml, inlines it into the app value, and returns the filename

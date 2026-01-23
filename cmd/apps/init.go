@@ -614,6 +614,62 @@ type resourceGetter struct {
 	errorMessage  string
 }
 
+// generateEnvFileForLegacyTemplate generates a .env file from app.yml for legacy templates.
+func generateEnvFileForLegacyTemplate(ctx context.Context, destDir, workspaceHost, warehouseID, servingEndpoint, experimentID, instanceName, databaseName, ucVolume string) error {
+	// Check if app.yml or app.yaml exists
+	var appYmlPath string
+	for _, filename := range []string{"app.yml", "app.yaml"} {
+		path := filepath.Join(destDir, filename)
+		if _, err := os.Stat(path); err == nil {
+			appYmlPath = path
+			break
+		}
+	}
+
+	if appYmlPath == "" {
+		// No app.yml found, skip .env generation
+		return nil
+	}
+
+	// Build resources map from collected parameters
+	// Resource names should match what's in databricks.yml
+	resources := make(map[string]string)
+
+	if warehouseID != "" {
+		resources["sql-warehouse"] = warehouseID
+	}
+	if servingEndpoint != "" {
+		resources["serving-endpoint"] = servingEndpoint
+	}
+	if experimentID != "" {
+		resources["experiment"] = experimentID
+	}
+	if instanceName != "" {
+		resources["database"] = instanceName
+	}
+	if databaseName != "" {
+		resources["database-name"] = databaseName
+	}
+	if ucVolume != "" {
+		resources["uc-volume"] = ucVolume
+	}
+
+	// Create EnvFileBuilder
+	builder, err := NewEnvFileBuilder(workspaceHost, appYmlPath, resources)
+	if err != nil {
+		return fmt.Errorf("failed to create env builder: %w", err)
+	}
+
+	// Write .env file
+	err = builder.WriteEnvFile(destDir)
+	if err != nil {
+		return fmt.Errorf("failed to write .env file: %w", err)
+	}
+
+	cmdio.LogString(ctx, "✓ Generated .env file from app.yml")
+	return nil
+}
+
 // resourceBinding represents a single resource binding in databricks.yml.
 type resourceBinding struct {
 	name        string
@@ -1264,6 +1320,12 @@ func runLegacyTemplateInit(ctx context.Context, selectedTemplate *appTemplateMan
 	// Check for app.yml in the destination directory and inline it into databricks.yml
 	if err := inlineAppYmlIntoBundle(ctx, destDir); err != nil {
 		return fmt.Errorf("failed to inline app.yml: %w", err)
+	}
+
+	// Generate .env file from app.yml if it exists
+	if err := generateEnvFileForLegacyTemplate(ctx, destDir, workspaceHost, warehouseID, servingEndpoint, experimentID, instanceName, databaseName, ucVolume); err != nil {
+		// Log warning but don't fail - .env is optional
+		cmdio.LogString(ctx, fmt.Sprintf("⚠ Failed to generate .env file: %v", err))
 	}
 
 	// Get absolute path
