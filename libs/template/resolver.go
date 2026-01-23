@@ -102,10 +102,12 @@ func (r Resolver) Resolve(ctx context.Context) (*Template, error) {
 	// This reference could be one of:
 	// 1. Path to a local template directory.
 	// 2. URL to a Git repository containing a template.
+	//
+	// We resolve the appropriate reader according to the reference provided by the user.
 	if tmpl == nil {
 		reader, _ := ResolveReader(r.TemplatePathOrUrl, r.TemplateDir, ref)
 		tmpl = &Template{
-			name: Custom,
+			name:   Custom,
 			Reader: reader,
 			// We use a writer that does not log verbose telemetry for custom templates.
 			// This is important because template definitions can contain PII that we
