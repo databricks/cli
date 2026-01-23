@@ -99,6 +99,9 @@ func TestRunAsWorksForAllowedResources(t *testing.T) {
 			Pipelines: map[string]*resources.Pipeline{
 				"pipeline_one": {},
 			},
+			Alerts: map[string]*resources.Alert{
+				"alert_one": {},
+			},
 		},
 	}
 
@@ -158,6 +161,7 @@ var allowList = []string{
 	"secret_scopes",
 	"sql_warehouses",
 	"volumes",
+	"alerts",
 }
 
 func TestRunAsErrorForUnsupportedResources(t *testing.T) {
