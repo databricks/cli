@@ -49,7 +49,7 @@ var EnumFields = map[string][]string{
 
 	"resources.jobs.*.continuous.pause_status":                                                        {"PAUSED", "UNPAUSED"},
 	"resources.jobs.*.continuous.task_retry_mode":                                                     {"NEVER", "ON_FAILURE"},
-	"resources.jobs.*.deployment.kind":                                                                {"BUNDLE"},
+	"resources.jobs.*.deployment.kind":                                                                {"BUNDLE", "SYSTEM_MANAGED"},
 	"resources.jobs.*.edit_mode":                                                                      {"EDITABLE", "UI_LOCKED"},
 	"resources.jobs.*.format":                                                                         {"MULTI_TASK", "SINGLE_TASK"},
 	"resources.jobs.*.git_source.git_provider":                                                        {"awsCodeCommit", "azureDevOpsServices", "bitbucketCloud", "bitbucketServer", "gitHub", "gitHubEnterprise", "gitLab", "gitLabEnterpriseEdition"},
@@ -125,6 +125,7 @@ var EnumFields = map[string][]string{
 	"resources.pipelines.*.clusters[*].azure_attributes.availability":                           {"ON_DEMAND_AZURE", "SPOT_AZURE", "SPOT_WITH_FALLBACK_AZURE"},
 	"resources.pipelines.*.clusters[*].gcp_attributes.availability":                             {"ON_DEMAND_GCP", "PREEMPTIBLE_GCP", "PREEMPTIBLE_WITH_FALLBACK_GCP"},
 	"resources.pipelines.*.deployment.kind":                                                     {"BUNDLE"},
+	"resources.pipelines.*.ingestion_definition.full_refresh_window.days_of_week[*]":            {"FRIDAY", "MONDAY", "SATURDAY", "SUNDAY", "THURSDAY", "TUESDAY", "WEDNESDAY"},
 	"resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.scd_type": {"APPEND_ONLY", "SCD_TYPE_1", "SCD_TYPE_2"},
 	"resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.scd_type": {"APPEND_ONLY", "SCD_TYPE_1", "SCD_TYPE_2"},
 	"resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.scd_type":  {"APPEND_ONLY", "SCD_TYPE_1", "SCD_TYPE_2"},

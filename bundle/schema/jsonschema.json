@@ -475,6 +475,10 @@
                         "description": "The optional ID of the instance pool for the driver of the cluster belongs.\nThe pool cluster uses the instance pool with id (instance_pool_id) if the driver pool is not\nassigned.",
                         "$ref": "#/$defs/string"
                       },
+                      "driver_node_type_flexibility": {
+                        "description": "Flexible node type configuration for the driver node.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.NodeTypeFlexibility"
+                      },
                       "driver_node_type_id": {
                         "description": "The node type of the Spark driver.\nNote that this field is optional; if unset, the driver node type will be set as the same value\nas `node_type_id` defined above.\n\nThis field, along with node_type_id, should not be set if virtual_cluster_size is set.\nIf both driver_node_type_id, node_type_id, and virtual_cluster_size are specified, driver_node_type_id and node_type_id take precedence.",
                         "$ref": "#/$defs/string"
@@ -559,6 +563,10 @@
                       "use_ml_runtime": {
                         "description": "This field can only be used when `kind = CLASSIC_PREVIEW`.\n\n`effective_spark_version` is determined by `spark_version` (DBR release), this field `use_ml_runtime`, and whether `node_type_id` is gpu node or not.",
                         "$ref": "#/$defs/bool"
+                      },
+                      "worker_node_type_flexibility": {
+                        "description": "Flexible node type configuration for worker nodes.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.NodeTypeFlexibility"
                       },
                       "workload_type": {
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.WorkloadType"
@@ -2860,6 +2868,10 @@
                       "description": "The client ID for the workspace",
                       "$ref": "#/$defs/string"
                     },
+                    "experimental_is_unified_host": {
+                      "description": "Experimental feature flag to indicate if the host is a unified host",
+                      "$ref": "#/$defs/bool"
+                    },
                     "file_path": {
                       "description": "The file path to use within the workspace for both deployments and workflow runs",
                       "$ref": "#/$defs/string"
@@ -2886,6 +2898,10 @@
                     },
                     "state_path": {
                       "description": "The workspace state path",
+                      "$ref": "#/$defs/string"
+                    },
+                    "workspace_id": {
+                      "description": "The Databricks workspace ID",
                       "$ref": "#/$defs/string"
                     }
                   },
@@ -4147,6 +4163,10 @@
                       "description": "The optional ID of the instance pool for the driver of the cluster belongs.\nThe pool cluster uses the instance pool with id (instance_pool_id) if the driver pool is not\nassigned.",
                       "$ref": "#/$defs/string"
                     },
+                    "driver_node_type_flexibility": {
+                      "description": "Flexible node type configuration for the driver node.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.NodeTypeFlexibility"
+                    },
                     "driver_node_type_id": {
                       "description": "The node type of the Spark driver.\nNote that this field is optional; if unset, the driver node type will be set as the same value\nas `node_type_id` defined above.\n\nThis field, along with node_type_id, should not be set if virtual_cluster_size is set.\nIf both driver_node_type_id, node_type_id, and virtual_cluster_size are specified, driver_node_type_id and node_type_id take precedence.",
                       "$ref": "#/$defs/string"
@@ -4224,6 +4244,10 @@
                     "use_ml_runtime": {
                       "description": "This field can only be used when `kind = CLASSIC_PREVIEW`.\n\n`effective_spark_version` is determined by `spark_version` (DBR release), this field `use_ml_runtime`, and whether `node_type_id` is gpu node or not.",
                       "$ref": "#/$defs/bool"
+                    },
+                    "worker_node_type_flexibility": {
+                      "description": "Flexible node type configuration for worker nodes.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.NodeTypeFlexibility"
                     },
                     "workload_type": {
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.WorkloadType"
@@ -4625,6 +4649,25 @@
                   "required": [
                     "coordinates"
                   ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "compute.NodeTypeFlexibility": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Configuration for flexible node types, allowing fallback to alternate node types during cluster launch and upscale.",
+                  "properties": {
+                    "alternate_node_type_ids": {
+                      "description": "A list of node type IDs to use as fallbacks when the primary node type is unavailable.",
+                      "$ref": "#/$defs/slice/string"
+                    }
+                  },
+                  "additionalProperties": false
                 },
                 {
                   "type": "string",
@@ -5704,7 +5747,7 @@
                   "type": "object",
                   "properties": {
                     "kind": {
-                      "description": "The kind of deployment that manages the job.\n\n* `BUNDLE`: The job is managed by Databricks Asset Bundle.",
+                      "description": "The kind of deployment that manages the job.\n\n* `BUNDLE`: The job is managed by Databricks Asset Bundle.\n* `SYSTEM_MANAGED`: The job is managed by Databricks and is read-only.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.JobDeploymentKind"
                     },
                     "metadata_file_path": {
@@ -5727,9 +5770,10 @@
               "oneOf": [
                 {
                   "type": "string",
-                  "description": "* `BUNDLE`: The job is managed by Databricks Asset Bundle.",
+                  "description": "* `BUNDLE`: The job is managed by Databricks Asset Bundle.\n* `SYSTEM_MANAGED`: The job is managed by Databricks and is read-only.",
                   "enum": [
-                    "BUNDLE"
+                    "BUNDLE",
+                    "SYSTEM_MANAGED"
                   ]
                 },
                 {
@@ -7255,6 +7299,32 @@
                 }
               ]
             },
+            "pipelines.AutoFullRefreshPolicy": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Policy for auto full refresh.",
+                  "properties": {
+                    "enabled": {
+                      "description": "(Required, Mutable) Whether to enable auto full refresh or not.",
+                      "$ref": "#/$defs/bool"
+                    },
+                    "min_interval_hours": {
+                      "description": "(Optional, Mutable) Specify the minimum interval in hours between the timestamp\nat which a table was last full refreshed and the current timestamp for triggering auto full\nIf unspecified and autoFullRefresh is enabled then by default min_interval_hours is 24 hours.",
+                      "$ref": "#/$defs/int"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "enabled"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
             "pipelines.ConnectionParameters": {
               "oneOf": [
                 {
@@ -7480,6 +7550,10 @@
                       "description": "Immutable. The Unity Catalog connection that this ingestion pipeline uses to communicate with the source. This is used with connectors for applications like Salesforce, Workday, and so on.",
                       "$ref": "#/$defs/string"
                     },
+                    "full_refresh_window": {
+                      "description": "(Optional) A window that specifies a set of time ranges for snapshot queries in CDC.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.OperationTimeWindow"
+                    },
                     "ingest_from_uc_foreign_catalog": {
                       "description": "Immutable. If set to true, the pipeline will ingest tables from the\nUC foreign catalogs directly without the need to specify a UC connection or ingestion gateway.\nThe `source_catalog` fields in objects of IngestionConfig are interpreted as\nthe UC foreign catalogs to ingest from.",
                       "$ref": "#/$defs/bool",
@@ -7674,6 +7748,36 @@
                     }
                   },
                   "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "pipelines.OperationTimeWindow": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "description": "Proto representing a window",
+                  "properties": {
+                    "days_of_week": {
+                      "description": "Days of week in which the window is allowed to happen\nIf not specified all days of the week will be used.",
+                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/pipelines.DayOfWeek"
+                    },
+                    "start_hour": {
+                      "description": "An integer between 0 and 23 denoting the start hour for the window in the 24-hour day.",
+                      "$ref": "#/$defs/int"
+                    },
+                    "time_zone_id": {
+                      "description": "Time zone id of window. See https://docs.databricks.com/sql/language-manual/sql-ref-syntax-aux-conf-mgmt-set-timezone.html for details.\nIf not specified, UTC will be used.",
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "start_hour"
+                  ]
                 },
                 {
                   "type": "string",
@@ -8208,6 +8312,10 @@
                 {
                   "type": "object",
                   "properties": {
+                    "auto_full_refresh_policy": {
+                      "description": "(Optional, Mutable) Policy for auto full refresh, if enabled pipeline will automatically try\nto fix issues by doing a full refresh on the table in the retry run. auto_full_refresh_policy\nin table configuration will override the above level auto_full_refresh_policy.\nFor example,\n{\n\"auto_full_refresh_policy\": {\n\"enabled\": true,\n\"min_interval_hours\": 23,\n}\n}\nIf unspecified, auto full refresh is disabled.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.AutoFullRefreshPolicy"
+                    },
                     "exclude_columns": {
                       "description": "A list of column names to be excluded for the ingestion.\nWhen not specified, include_columns fully controls what columns to be ingested.\nWhen specified, all other columns including future ones will be automatically included for ingestion.\nThis field in mutually exclusive with `include_columns`.",
                       "$ref": "#/$defs/slice/string"

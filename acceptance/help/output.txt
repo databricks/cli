@@ -33,7 +33,7 @@ Real-time Serving
   serving-endpoints                      The Serving Endpoints API allows you to create, update, and delete model serving endpoints.
 
 Apps
-  apps                                   Apps run directly on a customer’s Databricks instance, integrate with their data, use and extend Databricks services, and enable users to interact through single sign-on.
+  apps                                   Apps run directly on a customer's Databricks instance, integrate with their data, use and extend Databricks services, and enable users to interact through single sign-on.
 
 Vector Search
   vector-search-endpoints                **Endpoint**: Represents the compute resources to host vector search indexes.
@@ -81,7 +81,7 @@ Unity Catalog
   model-versions                         Databricks provides a hosted version of MLflow Model Registry in Unity Catalog.
   online-tables                          Online tables provide lower latency and higher QPS access to data from Delta tables.
   policies                               Attribute-Based Access Control (ABAC) provides high leverage governance for enforcing compliance policies in Unity Catalog.
-  quality-monitors                       A monitor computes and monitors data or model quality metrics for a table over time.
+  quality-monitors                       [DEPRECATED] This API is deprecated.
   registered-models                      Databricks provides a hosted version of MLflow Model Registry in Unity Catalog.
   resource-quotas                        Unity Catalog enforces resource quotas on all securable objects, which limits the number of resources that can be created.
   rfa                                    Request for Access enables users to request access for Unity Catalog securables.
@@ -136,7 +136,7 @@ Clean Rooms
   clean-rooms                            A clean room uses Delta Sharing and serverless compute to provide a secure and privacy-protecting environment where multiple parties can work together on sensitive enterprise data without direct access to each other's data.
 
 Quality Monitor
-  quality-monitor-v2                     Manage data quality of UC objects (currently support schema).
+  quality-monitor-v2                     [DEPRECATED] This API is deprecated.
 
 Data Quality Monitoring
   data-quality                           Manage the data quality of Unity Catalog objects (currently support schema and table).
@@ -148,6 +148,9 @@ Database Instances
 Tags
   tag-policies                           The Tag Policy API allows you to manage policies for governed tags in Databricks.
   workspace-entity-tag-assignments       Manage tag assignments on workspace-scoped objects.
+
+Postgres
+  postgres                               Use the Postgres API to create and manage Lakebase Autoscaling Postgres infrastructure, including projects, branches, compute endpoints, and roles.
 
 Developer Tools
   bundle                                 Databricks Asset Bundles let you express data/AI/analytics projects as code.

@@ -153,6 +153,9 @@ __all__ = [
     "ModelTriggerConfigurationConditionParam",
     "ModelTriggerConfigurationDict",
     "ModelTriggerConfigurationParam",
+    "NodeTypeFlexibility",
+    "NodeTypeFlexibilityDict",
+    "NodeTypeFlexibilityParam",
     "NotebookTask",
     "NotebookTaskDict",
     "NotebookTaskParam",
@@ -521,6 +524,11 @@ from databricks.bundles.jobs._models.model_trigger_configuration import (
 from databricks.bundles.jobs._models.model_trigger_configuration_condition import (
     ModelTriggerConfigurationCondition,
     ModelTriggerConfigurationConditionParam,
+)
+from databricks.bundles.jobs._models.node_type_flexibility import (
+    NodeTypeFlexibility,
+    NodeTypeFlexibilityDict,
+    NodeTypeFlexibilityParam,
 )
 from databricks.bundles.jobs._models.notebook_task import (
     NotebookTask,

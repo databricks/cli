@@ -61,6 +61,7 @@ type ResourceModelServingProvisionedThroughputAiGateway struct {
 }
 
 type ResourceModelServingProvisionedThroughputConfigServedEntities struct {
+	BurstScalingEnabled   bool   `json:"burst_scaling_enabled,omitempty"`
 	EntityName            string `json:"entity_name"`
 	EntityVersion         string `json:"entity_version"`
 	Name                  string `json:"name,omitempty"`

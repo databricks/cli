@@ -1,0 +1,16 @@
+
+=== Initial profile with old host
+[override-test]
+host = https://old-host.cloud.databricks.com
+
+=== Login with positional host argument (should override profile)
+>>> [CLI] auth login [DATABRICKS_URL] --profile override-test
+Profile override-test was successfully saved
+
+=== Profile after login (host should be updated)
+; The profile defined in the DEFAULT section is to be used as a fallback when no profile is explicitly specified.
+[DEFAULT]
+
+[override-test]
+host      = [DATABRICKS_URL]
+auth_type = databricks-cli
