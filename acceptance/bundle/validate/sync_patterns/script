@@ -1,5 +1,5 @@
 trace $CLI bundle validate
 trace $CLI bundle validate -o json | jq '.sync'
-trace $CLI bundle deploy
+trace $CLI bundle deploy > out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1
 jq 'select(.path | test("dir/test.yml"))' out.requests.txt  > out.sync.txt
 rm out.requests.txt

@@ -337,6 +337,7 @@ func TestDeploymentState_WALWithDependsOn(t *testing.T) {
 	var db DeploymentState
 	err := db.Open(ctx, statePath)
 	require.NoError(t, err)
+	t.Cleanup(func() { db.Close() })
 
 	dependsOn := []deployplan.DependsOnEntry{
 		{Node: "resources.clusters.cluster1", Label: "${resources.clusters.cluster1.id}"},

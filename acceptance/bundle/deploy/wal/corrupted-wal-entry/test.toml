@@ -11,4 +11,3 @@ Response.Body = '{"job_id": 1111, "settings": {"name": "valid-job"}}'
 [[Server]]
 Pattern = "GET /api/2.2/jobs/get?job_id=2222"
 Response.Body = '{"job_id": 2222, "settings": {"name": "another-valid"}}'
-
