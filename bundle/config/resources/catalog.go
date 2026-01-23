@@ -91,8 +91,6 @@ type Catalog struct {
 }
 
 func (c *Catalog) Exists(ctx context.Context, w *databricks.WorkspaceClient, name string) (bool, error) {
-	log.Tracef(ctx, "Checking if catalog with name=%s exists", name)
-
 	_, err := w.Catalogs.GetByName(ctx, name)
 	if err != nil {
 		log.Debugf(ctx, "catalog with name %s does not exist: %v", name, err)
