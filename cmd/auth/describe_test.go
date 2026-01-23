@@ -277,27 +277,38 @@ func TestGetWorkspaceAuthStatusWithScopes(t *testing.T) {
 
 func TestWrapAuthErrorWithScopeContext(t *testing.T) {
 	originalErr := errors.New("permission denied")
+	wrappedErr := "permission denied\n\nNote: The error above may be due to the use of restricted scopes. " +
+		"Your authentication may still be valid for the scopes you requested"
 
-	t.Run("nil config returns original error", func(t *testing.T) {
-		err := wrapAuthErrorWithScopeContext(originalErr, nil)
-		require.Equal(t, originalErr, err)
-	})
+	tests := []struct {
+		name        string
+		cfg         *config.Config
+		expectError string
+	}{
+		{
+			name:        "nil config",
+			cfg:         nil,
+			expectError: "permission denied",
+		},
+		{
+			name:        "restricted scopes",
+			cfg:         &config.Config{Scopes: []string{"jobs", "pipelines"}},
+			expectError: wrappedErr,
+		},
+		{
+			// Empty scopes defaults to "all-apis".
+			name:        "empty scopes",
+			cfg:         &config.Config{},
+			expectError: "permission denied",
+		},
+	}
 
-	t.Run("restricted scopes appends note", func(t *testing.T) {
-		cfg := &config.Config{Scopes: []string{"jobs", "pipelines"}}
-		err := wrapAuthErrorWithScopeContext(originalErr, cfg)
-
-		require.ErrorIs(t, err, originalErr)
-		require.Contains(t, err.Error(), "restricted scopes")
-		require.Contains(t, err.Error(), "authentication may still be valid")
-	})
-
-	t.Run("empty scopes treated as all-apis", func(t *testing.T) {
-		cfg := &config.Config{}
-		err := wrapAuthErrorWithScopeContext(originalErr, cfg)
-		// Empty scopes defaults to all-apis, so original error returned
-		require.Equal(t, originalErr, err)
-	})
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			err := wrapAuthErrorWithScopeContext(originalErr, tc.cfg)
+			require.EqualError(t, err, tc.expectError)
+		})
+	}
 }
 
 func TestGetWorkspaceAuthStatusErrorWithRestrictedScopes(t *testing.T) {
@@ -308,7 +319,6 @@ func TestGetWorkspaceAuthStatusErrorWithRestrictedScopes(t *testing.T) {
 	cmd := &cobra.Command{}
 	cmd.SetContext(ctx)
 
-	// Simulate API failure due to restricted scopes
 	currentUserApi := m.GetMockCurrentUserAPI()
 	currentUserApi.EXPECT().Me(mock.Anything).Return(nil, errors.New("permission denied"))
 

@@ -152,7 +152,6 @@ func newProfilesCommand() *cobra.Command {
 			return err
 		}
 
-		// Check if any profiles had validation skipped due to scopes
 		for _, p := range profiles {
 			if p.ValidationSkipped {
 				cmdio.LogString(cmd.Context(),

@@ -237,19 +237,15 @@ func TestSaveToProfile_WithScopes(t *testing.T) {
 		AuthType:   "databricks-cli",
 		Scopes:     []string{"jobs", "pipelines", "clusters"},
 	})
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
-	// Verify we can read the scopes back from the config file
 	file, err := loadOrCreateConfigFile(path)
 	require.NoError(t, err)
 	section, err := file.GetSection("scoped")
 	require.NoError(t, err)
 	raw := section.KeysHash()
+	assert.Len(t, raw, 3)
 	assert.Equal(t, "https://myworkspace.cloud.databricks.com", raw["host"])
 	assert.Equal(t, "databricks-cli", raw["auth_type"])
-	// Scopes are stored in the config file - verify they exist
-	assert.NotEmpty(t, raw["scopes"])
-	assert.Contains(t, raw["scopes"], "jobs")
-	assert.Contains(t, raw["scopes"], "pipelines")
-	assert.Contains(t, raw["scopes"], "clusters")
+	assert.Equal(t, "jobs,pipelines,clusters", raw["scopes"])
 }
