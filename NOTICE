@@ -12,6 +12,11 @@ go-ini/ini - https://github.com/go-ini/ini
 Copyright ini authors
 License - https://github.com/go-ini/ini/blob/main/LICENSE
 
+go-yaml/yaml - https://github.com/yaml/go-yaml
+Copyright (c) 2011-2019 Canonical Ltd
+Copyright (c) 2006-2011 Kirill Simonov
+License - https://github.com/yaml/go-yaml/blob/v3/LICENSE
+
 —--
 
 This software contains code from the following open source projects, licensed under the MPL 2.0 license:
@@ -134,3 +139,8 @@ https://github.com/darccio/mergo/blob/master/LICENSE
 https://github.com/gorilla/mux
 Copyright (c) 2023 The Gorilla Authors. All rights reserved.
 https://github.com/gorilla/mux/blob/main/LICENSE
+
+go-yaml/yaml - https://github.com/yaml/go-yaml
+Copyright (c) 2011-2019 Canonical Ltd
+Copyright (c) 2006-2011 Kirill Simonov
+License - https://github.com/yaml/go-yaml/blob/v3/LICENSE
