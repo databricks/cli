@@ -3,6 +3,8 @@ package apps
 import (
 	"bytes"
 	"context"
+	_ "embed"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -20,6 +22,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/git"
 	"github.com/databricks/cli/libs/log"
+	templatelib "github.com/databricks/cli/libs/template"
 	"github.com/spf13/cobra"
 )
 
@@ -28,34 +31,83 @@ const (
 	defaultTemplateURL = "https://github.com/databricks/appkit/tree/main/template"
 )
 
+//go:embed app-template-app-manifests.json
+var appTemplateManifestsJSON []byte
+
+// resourceSpec represents a resource specification in the template manifest.
+type resourceSpec struct {
+	Name                string          `json:"name"`
+	Description         string          `json:"description"`
+	SQLWarehouseSpec    *map[string]any `json:"sql_warehouse_spec,omitempty"`
+	ExperimentSpec      *map[string]any `json:"experiment_spec,omitempty"`
+	ServingEndpointSpec *map[string]any `json:"serving_endpoint_spec,omitempty"`
+	DatabaseSpec        *map[string]any `json:"database_spec,omitempty"`
+	UCSecurableSpec     *map[string]any `json:"uc_securable_spec,omitempty"`
+}
+
+// manifest represents the manifest section of a template.
+type manifest struct {
+	Version       int            `json:"version"`
+	Name          string         `json:"name"`
+	Description   string         `json:"description"`
+	ResourceSpecs []resourceSpec `json:"resource_specs,omitempty"`
+	UserAPIScopes []string       `json:"user_api_scopes,omitempty"`
+}
+
+// appTemplateManifest represents a single app template from the manifests JSON file.
+type appTemplateManifest struct {
+	Path     string   `json:"path"`
+	GitRepo  string   `json:"git_repo"`
+	Manifest manifest `json:"manifest"`
+}
+
+// appTemplateManifests holds all app templates.
+type appTemplateManifests struct {
+	Templates []appTemplateManifest `json:"appTemplateAppManifests"`
+}
+
+type templateType string
+
+const (
+	templateTypeAppKit templateType = "appkit"
+	templateTypeLegacy templateType = "legacy"
+)
+
 func newInitCmd() *cobra.Command {
 	var (
-		templatePath string
-		branch       string
-		name         string
-		warehouseID  string
-		description  string
-		outputDir    string
-		featuresFlag []string
-		deploy       bool
-		run          string
+		templatePath    string
+		branch          string
+		name            string
+		warehouseID     string
+		servingEndpoint string
+		experimentID    string
+		databaseName    string
+		instanceName    string
+		ucVolume        string
+		description     string
+		outputDir       string
+		featuresFlag    []string
+		deploy          bool
+		run             string
 	)
 
 	cmd := &cobra.Command{
 		Use:    "init",
 		Short:  "Initialize a new AppKit application from a template",
 		Hidden: true,
-		Long: `Initialize a new AppKit application from a template.
+		Long: `Initialize a new application from a template.
 
-When run without arguments, uses the default AppKit template and an interactive prompt
-guides you through the setup. When run with --name, runs in non-interactive mode
-(all required flags must be provided).
+When run without arguments, an interactive prompt allows you to choose between:
+  - AppKit (TypeScript): Modern TypeScript framework (default)
+  - Legacy template: Python/Dash/Streamlit/Gradio/Flask/Shiny templates
+
+When run with --name, runs in non-interactive mode (all required flags must be provided).
 
 Examples:
-  # Interactive mode with default template (recommended)
+  # Interactive mode - choose template type (recommended)
   databricks apps init
 
-  # Non-interactive with flags
+  # Non-interactive AppKit with flags
   databricks apps init --name my-app
 
   # With analytics feature (requires --warehouse-id)
@@ -63,6 +115,11 @@ Examples:
 
   # Create, deploy, and run with dev-remote
   databricks apps init --name my-app --deploy --run=dev-remote
+
+  # Use a legacy template by path identifier
+  databricks apps init --template streamlit-chatbot-app
+  databricks apps init --template dash-data-app
+  databricks apps init --template gradio-hello-world-app
 
   # With a custom template from a local path
   databricks apps init --template /path/to/template --name my-app
@@ -86,6 +143,11 @@ Environment variables:
 				name:            name,
 				nameProvided:    cmd.Flags().Changed("name"),
 				warehouseID:     warehouseID,
+				servingEndpoint: servingEndpoint,
+				experimentID:    experimentID,
+				databaseName:    databaseName,
+				instanceName:    instanceName,
+				ucVolume:        ucVolume,
 				description:     description,
 				outputDir:       outputDir,
 				features:        featuresFlag,
@@ -98,13 +160,23 @@ Environment variables:
 		},
 	}
 
-	cmd.Flags().StringVar(&templatePath, "template", "", "Template path (local directory or GitHub URL)")
+	// General flags
+	cmd.Flags().StringVar(&templatePath, "template", "", "Template identifier (legacy template path), local directory, or GitHub URL")
 	cmd.Flags().StringVar(&branch, "branch", "", "Git branch or tag (for GitHub templates)")
 	cmd.Flags().StringVar(&name, "name", "", "Project name (prompts if not provided)")
-	cmd.Flags().StringVar(&warehouseID, "warehouse-id", "", "SQL warehouse ID")
 	cmd.Flags().StringVar(&description, "description", "", "App description")
 	cmd.Flags().StringVar(&outputDir, "output-dir", "", "Directory to write the project to")
 	cmd.Flags().StringSliceVar(&featuresFlag, "features", nil, "Features to enable (comma-separated). Available: "+strings.Join(features.GetFeatureIDs(), ", "))
+
+	// Resource flags (for legacy templates)
+	cmd.Flags().StringVar(&warehouseID, "warehouse-id", "", "[Resource] SQL warehouse ID")
+	cmd.Flags().StringVar(&servingEndpoint, "serving-endpoint", "", "[Resource] Model serving endpoint name")
+	cmd.Flags().StringVar(&experimentID, "experiment-id", "", "[Resource] MLflow experiment ID")
+	cmd.Flags().StringVar(&databaseName, "database-name", "", "[Resource] Lakebase database name")
+	cmd.Flags().StringVar(&instanceName, "instance-name", "", "[Resource] Lakebase database instance name")
+	cmd.Flags().StringVar(&ucVolume, "uc-volume", "", "[Resource] Unity Catalog volume path")
+
+	// Post-creation flags
 	cmd.Flags().BoolVar(&deploy, "deploy", false, "Deploy the app after creation")
 	cmd.Flags().StringVar(&run, "run", "", "Run the app after creation (none, dev, dev-remote)")
 
@@ -117,6 +189,11 @@ type createOptions struct {
 	name            string
 	nameProvided    bool // true if --name flag was explicitly set (enables "flags mode")
 	warehouseID     string
+	servingEndpoint string
+	experimentID    string
+	databaseName    string
+	instanceName    string
+	ucVolume        string
 	description     string
 	outputDir       string
 	features        []string
@@ -410,12 +487,440 @@ func resolveTemplate(ctx context.Context, templatePath, branch string) (localPat
 	return tempDir, cleanup, nil
 }
 
+// loadLegacyTemplates loads the legacy app templates from the embedded JSON file.
+func loadLegacyTemplates() (*appTemplateManifests, error) {
+	var manifests appTemplateManifests
+	if err := json.Unmarshal(appTemplateManifestsJSON, &manifests); err != nil {
+		return nil, fmt.Errorf("failed to load app template manifests: %w", err)
+	}
+	return &manifests, nil
+}
+
+// findLegacyTemplateByPath finds a legacy template by its path identifier.
+// Returns nil if no matching template is found.
+func findLegacyTemplateByPath(manifests *appTemplateManifests, path string) *appTemplateManifest {
+	for i := range manifests.Templates {
+		if manifests.Templates[i].Path == path {
+			return &manifests.Templates[i]
+		}
+	}
+	return nil
+}
+
+// requiresSQLWarehouse checks if a template requires a SQL warehouse based on its resource_specs.
+func requiresSQLWarehouse(tmpl *appTemplateManifest) bool {
+	for _, spec := range tmpl.Manifest.ResourceSpecs {
+		if spec.SQLWarehouseSpec != nil {
+			return true
+		}
+	}
+	return false
+}
+
+// requiresServingEndpoint checks if a template requires a serving endpoint based on its resource_specs.
+func requiresServingEndpoint(tmpl *appTemplateManifest) bool {
+	for _, spec := range tmpl.Manifest.ResourceSpecs {
+		if spec.ServingEndpointSpec != nil {
+			return true
+		}
+	}
+	return false
+}
+
+// requiresExperiment checks if a template requires an experiment based on its resource_specs.
+func requiresExperiment(tmpl *appTemplateManifest) bool {
+	for _, spec := range tmpl.Manifest.ResourceSpecs {
+		if spec.ExperimentSpec != nil {
+			return true
+		}
+	}
+	return false
+}
+
+// requiresDatabase checks if a template requires a database based on its resource_specs.
+func requiresDatabase(tmpl *appTemplateManifest) bool {
+	for _, spec := range tmpl.Manifest.ResourceSpecs {
+		if spec.DatabaseSpec != nil {
+			return true
+		}
+	}
+	return false
+}
+
+// requiresUCVolume checks if a template requires a UC volume based on its resource_specs.
+func requiresUCVolume(tmpl *appTemplateManifest) bool {
+	for _, spec := range tmpl.Manifest.ResourceSpecs {
+		if spec.UCSecurableSpec != nil {
+			return true
+		}
+	}
+	return false
+}
+
+// promptForTemplateType prompts the user to choose between AppKit and Legacy templates.
+func promptForTemplateType(ctx context.Context) (templateType, error) {
+	var choice string
+	options := []huh.Option[string]{
+		huh.NewOption("AppKit (TypeScript)", string(templateTypeAppKit)),
+		huh.NewOption("Legacy template", string(templateTypeLegacy)),
+	}
+
+	err := huh.NewSelect[string]().
+		Title("Select template type").
+		Options(options...).
+		Value(&choice).
+		WithTheme(prompt.AppkitTheme()).
+		Run()
+	if err != nil {
+		return "", err
+	}
+
+	prompt.PrintAnswered(ctx, "Template type", choice)
+	return templateType(choice), nil
+}
+
+// promptForLegacyTemplate prompts the user to select a legacy template.
+func promptForLegacyTemplate(ctx context.Context, manifests *appTemplateManifests) (*appTemplateManifest, error) {
+	options := make([]huh.Option[int], len(manifests.Templates))
+	for i := range manifests.Templates {
+		tmpl := &manifests.Templates[i]
+		label := tmpl.Path
+		if tmpl.Manifest.Name != "" {
+			label = tmpl.Path + " - " + tmpl.Manifest.Name
+			if tmpl.Manifest.Description != "" {
+				label = tmpl.Path + " - " + tmpl.Manifest.Name + " - " + tmpl.Manifest.Description
+			}
+		}
+		options[i] = huh.NewOption(label, i)
+	}
+
+	var selectedIdx int
+	err := huh.NewSelect[int]().
+		Title("Select a template").
+		Description("Choose from available templates").
+		Options(options...).
+		Value(&selectedIdx).
+		Height(15).
+		WithTheme(prompt.AppkitTheme()).
+		Run()
+	if err != nil {
+		return nil, err
+	}
+
+	selectedTemplate := &manifests.Templates[selectedIdx]
+	prompt.PrintAnswered(ctx, "Template", selectedTemplate.Path)
+	return selectedTemplate, nil
+}
+
+// resourceGetter defines how to get a resource value for a template.
+type resourceGetter struct {
+	checkRequired func(*appTemplateManifest) bool
+	promptFunc    func(context.Context) (string, error)
+	errorMessage  string
+}
+
+// getResourceForTemplate is a generic function to get a resource value for a template.
+// It checks if the resource is required, uses the provided value if available,
+// prompts in interactive mode, or returns an error in non-interactive mode.
+func getResourceForTemplate(ctx context.Context, tmpl *appTemplateManifest, providedValue string, isInteractive bool, getter resourceGetter) (string, error) {
+	// Check if template requires this resource
+	if !getter.checkRequired(tmpl) {
+		return "", nil
+	}
+
+	// If value was provided via flag, use it
+	if providedValue != "" {
+		return providedValue, nil
+	}
+
+	// In interactive mode, prompt for resource
+	if isInteractive {
+		value, err := getter.promptFunc(ctx)
+		if err != nil {
+			return "", err
+		}
+		return value, nil
+	}
+
+	// Non-interactive mode without value - return error
+	return "", errors.New(getter.errorMessage)
+}
+
+// getWarehouseIDForTemplate ensures a warehouse ID is available if the template requires one.
+func getWarehouseIDForTemplate(ctx context.Context, tmpl *appTemplateManifest, providedWarehouseID string, isInteractive bool) (string, error) {
+	return getResourceForTemplate(ctx, tmpl, providedWarehouseID, isInteractive, resourceGetter{
+		checkRequired: requiresSQLWarehouse,
+		promptFunc:    prompt.PromptForWarehouse,
+		errorMessage:  "template requires a SQL warehouse. Please provide --warehouse-id",
+	})
+}
+
+// getServingEndpointForTemplate ensures a serving endpoint is available if the template requires one.
+func getServingEndpointForTemplate(ctx context.Context, tmpl *appTemplateManifest, providedEndpoint string, isInteractive bool) (string, error) {
+	return getResourceForTemplate(ctx, tmpl, providedEndpoint, isInteractive, resourceGetter{
+		checkRequired: requiresServingEndpoint,
+		promptFunc:    prompt.PromptForServingEndpoint,
+		errorMessage:  "template requires a serving endpoint. Please provide --serving-endpoint",
+	})
+}
+
+// getExperimentIDForTemplate ensures an experiment ID is available if the template requires one.
+func getExperimentIDForTemplate(ctx context.Context, tmpl *appTemplateManifest, providedExperimentID string, isInteractive bool) (string, error) {
+	return getResourceForTemplate(ctx, tmpl, providedExperimentID, isInteractive, resourceGetter{
+		checkRequired: requiresExperiment,
+		promptFunc:    prompt.PromptForExperiment,
+		errorMessage:  "template requires an MLflow experiment. Please provide --experiment-id",
+	})
+}
+
+// getDatabaseForTemplate ensures database instance and name are available if the template requires them.
+// Returns instanceName and databaseName or empty strings if not needed/available.
+func getDatabaseForTemplate(ctx context.Context, tmpl *appTemplateManifest, providedInstanceName, providedDatabaseName string, isInteractive bool) (string, string, error) {
+	// Check if template requires a database
+	if !requiresDatabase(tmpl) {
+		return "", "", nil
+	}
+
+	instanceName := providedInstanceName
+	databaseName := providedDatabaseName
+
+	// In interactive mode, prompt for both if not provided
+	if isInteractive {
+		// Prompt for instance name if not provided
+		if instanceName == "" {
+			var err error
+			instanceName, err = prompt.PromptForDatabaseInstance(ctx)
+			if err != nil {
+				return "", "", err
+			}
+		}
+
+		// Prompt for database name if not provided
+		if databaseName == "" {
+			var err error
+			databaseName, err = prompt.PromptForDatabaseName(ctx, instanceName)
+			if err != nil {
+				return "", "", err
+			}
+		}
+
+		return instanceName, databaseName, nil
+	}
+
+	// Non-interactive mode - both must be provided
+	if instanceName == "" || databaseName == "" {
+		return "", "", errors.New("template requires a database. Please provide both --instance-name and --database-name")
+	}
+
+	return instanceName, databaseName, nil
+}
+
+// getUCVolumeForTemplate ensures a UC volume path is available if the template requires one.
+func getUCVolumeForTemplate(ctx context.Context, tmpl *appTemplateManifest, providedVolume string, isInteractive bool) (string, error) {
+	return getResourceForTemplate(ctx, tmpl, providedVolume, isInteractive, resourceGetter{
+		checkRequired: requiresUCVolume,
+		promptFunc:    prompt.PromptForUCVolume,
+		errorMessage:  "template requires a Unity Catalog volume. Please provide --uc-volume",
+	})
+}
+
+// runLegacyTemplateInit initializes a project using a legacy template.
+// All resource parameters are optional and will be passed to the template if provided.
+func runLegacyTemplateInit(ctx context.Context, selectedTemplate *appTemplateManifest, outputDir, warehouseID, servingEndpoint, experimentID, instanceName, databaseName, ucVolume string) error {
+	var configFile string
+
+	// If any resource is provided, create a temporary config file
+	if warehouseID != "" || servingEndpoint != "" || experimentID != "" || instanceName != "" || databaseName != "" || ucVolume != "" {
+		tmpFile, err := os.CreateTemp("", "databricks-app-config-*.json")
+		if err != nil {
+			return fmt.Errorf("failed to create temp config file: %w", err)
+		}
+		configFile = tmpFile.Name()
+		defer os.Remove(configFile)
+
+		configData := make(map[string]string)
+
+		// Add warehouse ID if provided
+		if warehouseID != "" {
+			// Convert warehouse ID to http_path format if it's not already
+			httpPath := warehouseID
+			if !strings.HasPrefix(warehouseID, "/sql/") {
+				httpPath = "/sql/1.0/warehouses/" + warehouseID
+			}
+			configData["http_path"] = httpPath
+		}
+
+		// Add serving endpoint if provided
+		if servingEndpoint != "" {
+			configData["serving_endpoint"] = servingEndpoint
+		}
+
+		// Add experiment ID if provided
+		if experimentID != "" {
+			configData["experiment_id"] = experimentID
+		}
+
+		// Add database instance and name if provided
+		if instanceName != "" {
+			configData["database_instance"] = instanceName
+		}
+		if databaseName != "" {
+			configData["database_name"] = databaseName
+		}
+
+		// Add UC volume if provided
+		if ucVolume != "" {
+			configData["uc_volume_path"] = ucVolume
+		}
+
+		configJSON, err := json.MarshalIndent(configData, "", "  ")
+		if err != nil {
+			return fmt.Errorf("failed to marshal config: %w", err)
+		}
+
+		if err := os.WriteFile(tmpFile.Name(), configJSON, 0o600); err != nil {
+			return fmt.Errorf("failed to write config file: %w", err)
+		}
+		tmpFile.Close()
+	}
+
+	// Use the libs/template package similar to bundle init
+	r := templatelib.Resolver{
+		TemplatePathOrUrl: selectedTemplate.GitRepo,
+		OutputDir:         outputDir,
+		TemplateDir:       selectedTemplate.Path,
+		ConfigFile:        configFile,
+	}
+
+	tmpl, err := r.Resolve(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to resolve template: %w", err)
+	}
+	defer tmpl.Reader.Cleanup(ctx)
+
+	err = tmpl.Writer.Materialize(ctx, tmpl.Reader)
+	if err != nil {
+		return fmt.Errorf("failed to materialize template: %w", err)
+	}
+
+	tmpl.Writer.LogTelemetry(ctx)
+	return nil
+}
+
 func runCreate(ctx context.Context, opts createOptions) error {
 	var selectedFeatures []string
 	var dependencies map[string]string
 	var shouldDeploy bool
 	var runMode prompt.RunMode
 	isInteractive := cmdio.IsPromptSupported(ctx)
+
+	// Use features from flags if provided
+	if len(opts.features) > 0 {
+		selectedFeatures = opts.features
+	}
+
+	// Step 0: Check if --template flag specifies a legacy template path
+	if opts.templatePath != "" {
+		// Check if it's a legacy template identifier (not a URL or local path)
+		if !strings.HasPrefix(opts.templatePath, "https://") && !strings.HasPrefix(opts.templatePath, "/") && !strings.HasPrefix(opts.templatePath, "./") && !strings.HasPrefix(opts.templatePath, "../") {
+			manifests, err := loadLegacyTemplates()
+			if err != nil {
+				return err
+			}
+
+			// Check if the template path matches a legacy template
+			if legacyTemplate := findLegacyTemplateByPath(manifests, opts.templatePath); legacyTemplate != nil {
+				log.Infof(ctx, "Using legacy template: %s", opts.templatePath)
+
+				// Get warehouse ID if needed
+				warehouseID, err := getWarehouseIDForTemplate(ctx, legacyTemplate, opts.warehouseID, isInteractive)
+				if err != nil {
+					return err
+				}
+
+				// Get serving endpoint if needed
+				servingEndpoint, err := getServingEndpointForTemplate(ctx, legacyTemplate, opts.servingEndpoint, isInteractive)
+				if err != nil {
+					return err
+				}
+
+				// Get experiment ID if needed
+				experimentID, err := getExperimentIDForTemplate(ctx, legacyTemplate, opts.experimentID, isInteractive)
+				if err != nil {
+					return err
+				}
+
+				// Get database resources if needed
+				instanceName, databaseName, err := getDatabaseForTemplate(ctx, legacyTemplate, opts.instanceName, opts.databaseName, isInteractive)
+				if err != nil {
+					return err
+				}
+
+				// Get UC volume if needed
+				ucVolume, err := getUCVolumeForTemplate(ctx, legacyTemplate, opts.ucVolume, isInteractive)
+				if err != nil {
+					return err
+				}
+
+				return runLegacyTemplateInit(ctx, legacyTemplate, opts.outputDir, warehouseID, servingEndpoint, experimentID, instanceName, databaseName, ucVolume)
+			}
+		}
+	}
+
+	// Step 1: Prompt for template type (AppKit vs Legacy) in interactive mode
+	selectedTemplateType := templateTypeAppKit // default
+	if isInteractive && opts.templatePath == "" {
+		tmplType, err := promptForTemplateType(ctx)
+		if err != nil {
+			return err
+		}
+		selectedTemplateType = tmplType
+	}
+
+	// If legacy template is selected, use the legacy template flow
+	if selectedTemplateType == templateTypeLegacy {
+		manifests, err := loadLegacyTemplates()
+		if err != nil {
+			return err
+		}
+
+		selectedTemplate, err := promptForLegacyTemplate(ctx, manifests)
+		if err != nil {
+			return err
+		}
+
+		// Get warehouse ID if needed
+		warehouseID, err := getWarehouseIDForTemplate(ctx, selectedTemplate, opts.warehouseID, isInteractive)
+		if err != nil {
+			return err
+		}
+
+		// Get serving endpoint if needed
+		servingEndpoint, err := getServingEndpointForTemplate(ctx, selectedTemplate, opts.servingEndpoint, isInteractive)
+		if err != nil {
+			return err
+		}
+
+		// Get experiment ID if needed
+		experimentID, err := getExperimentIDForTemplate(ctx, selectedTemplate, opts.experimentID, isInteractive)
+		if err != nil {
+			return err
+		}
+
+		// Get database resources if needed
+		instanceName, databaseName, err := getDatabaseForTemplate(ctx, selectedTemplate, opts.instanceName, opts.databaseName, isInteractive)
+		if err != nil {
+			return err
+		}
+
+		// Get UC volume if needed
+		ucVolume, err := getUCVolumeForTemplate(ctx, selectedTemplate, opts.ucVolume, isInteractive)
+		if err != nil {
+			return err
+		}
+
+		return runLegacyTemplateInit(ctx, selectedTemplate, opts.outputDir, warehouseID, servingEndpoint, experimentID, instanceName, databaseName, ucVolume)
+	}
 
 	// Use features from flags if provided
 	if len(opts.features) > 0 {
