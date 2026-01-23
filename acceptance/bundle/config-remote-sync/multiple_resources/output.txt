@@ -16,9 +16,6 @@ Resource: resources.jobs.job_two
 
 
 === Configuration changes
---- databricks.yml.backup	[TIMESTAMP]
-+++ databricks.yml	[TIMESTAMP]
-@@ -1,10 +1,9 @@
  bundle:
    name: test-bundle
 -
@@ -30,7 +27,6 @@ Resource: resources.jobs.job_two
        tasks:
          - task_key: main
            notebook_task:
-@@ -13,9 +12,10 @@
              spark_version: 13.3.x-scala2.12
              node_type_id: [NODE_TYPE_ID]
              num_workers: 1
@@ -43,7 +39,6 @@ Resource: resources.jobs.job_two
        tasks:
          - task_key: main
            notebook_task:
-@@ -24,3 +24,5 @@
              spark_version: 13.3.x-scala2.12
              node_type_id: [NODE_TYPE_ID]
              num_workers: 1

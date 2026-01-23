@@ -23,9 +23,9 @@ $CLI bundle config-remote-sync --save
 
 title "Changes in job1.yml"
 echo
-diff -u resources/job1.yml.backup resources/job1.yml || true
+file_diff resources/job1.yml.backup resources/job1.yml
 
 title "Changes in job2.yml"
 echo
-diff -u resources/job2.yml.backup resources/job2.yml || true
+file_diff resources/job2.yml.backup resources/job2.yml
 rm resources/job1.yml.backup resources/job2.yml.backup

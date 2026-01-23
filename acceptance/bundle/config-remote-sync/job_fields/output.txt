@@ -17,9 +17,6 @@ Resource: resources.jobs.my_job
 
 
 === Configuration changes
---- databricks.yml.backup	[TIMESTAMP]
-+++ databricks.yml	[TIMESTAMP]
-@@ -1,23 +1,28 @@
  bundle:
    name: test-bundle
 -

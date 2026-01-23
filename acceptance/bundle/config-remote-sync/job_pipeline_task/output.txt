@@ -15,9 +15,6 @@ Resource: resources.pipelines.my_pipeline
 
 
 === Configuration changes
---- databricks.yml.backup	[TIMESTAMP]
-+++ databricks.yml	[TIMESTAMP]
-@@ -1,18 +1,16 @@
  bundle:
    name: test-bundle
 -
