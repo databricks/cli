@@ -9,10 +9,10 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"time"
 
+	"github.com/databricks/cli/experimental/aitools/lib/agents"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
@@ -59,191 +59,6 @@ func addGitHubAuth(req *http.Request) {
 	}
 }
 
-// AgentConfig defines how to detect and install skills for an agent.
-type AgentConfig struct {
-	Name           string
-	DisplayName    string
-	GlobalSkillDir func() (string, error) // returns global skills directory path
-	Detect         func() bool            // returns true if agent is installed
-}
-
-// getHomeDir returns home directory, handling Windows USERPROFILE.
-func getHomeDir() (string, error) {
-	if runtime.GOOS == "windows" {
-		if userProfile := os.Getenv("USERPROFILE"); userProfile != "" {
-			return userProfile, nil
-		}
-	}
-	return os.UserHomeDir()
-}
-
-// supportedAgents defines all agents we can install skills to.
-var supportedAgents = []AgentConfig{
-	{
-		Name:        "claude-code",
-		DisplayName: "Claude Code",
-		GlobalSkillDir: func() (string, error) {
-			home, err := getHomeDir()
-			if err != nil {
-				return "", err
-			}
-			return filepath.Join(home, ".claude", "skills"), nil
-		},
-		Detect: func() bool {
-			home, err := getHomeDir()
-			if err != nil {
-				return false
-			}
-			_, err = os.Stat(filepath.Join(home, ".claude"))
-			return err == nil
-		},
-	},
-	{
-		Name:        "cursor",
-		DisplayName: "Cursor",
-		GlobalSkillDir: func() (string, error) {
-			home, err := getHomeDir()
-			if err != nil {
-				return "", err
-			}
-			return filepath.Join(home, ".cursor", "skills"), nil
-		},
-		Detect: func() bool {
-			home, err := getHomeDir()
-			if err != nil {
-				return false
-			}
-			_, err = os.Stat(filepath.Join(home, ".cursor"))
-			return err == nil
-		},
-	},
-	{
-		Name:        "windsurf",
-		DisplayName: "Windsurf",
-		GlobalSkillDir: func() (string, error) {
-			home, err := getHomeDir()
-			if err != nil {
-				return "", err
-			}
-			return filepath.Join(home, ".codeium", "windsurf", "skills"), nil
-		},
-		Detect: func() bool {
-			home, err := getHomeDir()
-			if err != nil {
-				return false
-			}
-			_, err = os.Stat(filepath.Join(home, ".codeium", "windsurf"))
-			return err == nil
-		},
-	},
-	{
-		Name:        "cline",
-		DisplayName: "Cline",
-		GlobalSkillDir: func() (string, error) {
-			home, err := getHomeDir()
-			if err != nil {
-				return "", err
-			}
-			return filepath.Join(home, ".cline", "skills"), nil
-		},
-		Detect: func() bool {
-			home, err := getHomeDir()
-			if err != nil {
-				return false
-			}
-			_, err = os.Stat(filepath.Join(home, ".cline"))
-			return err == nil
-		},
-	},
-	{
-		Name:        "roo-code",
-		DisplayName: "Roo Code",
-		GlobalSkillDir: func() (string, error) {
-			home, err := getHomeDir()
-			if err != nil {
-				return "", err
-			}
-			return filepath.Join(home, ".roo-code", "skills"), nil
-		},
-		Detect: func() bool {
-			home, err := getHomeDir()
-			if err != nil {
-				return false
-			}
-			_, err = os.Stat(filepath.Join(home, ".roo-code"))
-			return err == nil
-		},
-	},
-	{
-		Name:        "codex",
-		DisplayName: "Codex CLI",
-		GlobalSkillDir: func() (string, error) {
-			home, err := getHomeDir()
-			if err != nil {
-				return "", err
-			}
-			return filepath.Join(home, ".codex", "skills"), nil
-		},
-		Detect: func() bool {
-			home, err := getHomeDir()
-			if err != nil {
-				return false
-			}
-			_, err = os.Stat(filepath.Join(home, ".codex"))
-			return err == nil
-		},
-	},
-	{
-		Name:        "amp",
-		DisplayName: "Amp",
-		GlobalSkillDir: func() (string, error) {
-			home, err := getHomeDir()
-			if err != nil {
-				return "", err
-			}
-			return filepath.Join(home, ".amp", "skills"), nil
-		},
-		Detect: func() bool {
-			home, err := getHomeDir()
-			if err != nil {
-				return false
-			}
-			_, err = os.Stat(filepath.Join(home, ".amp"))
-			return err == nil
-		},
-	},
-	{
-		Name:        "opencode",
-		DisplayName: "OpenCode",
-		GlobalSkillDir: func() (string, error) {
-			home, err := getHomeDir()
-			if err != nil {
-				return "", err
-			}
-			return filepath.Join(home, ".config", "opencode", "skills"), nil
-		},
-		Detect: func() bool {
-			home, err := getHomeDir()
-			if err != nil {
-				return false
-			}
-			_, err = os.Stat(filepath.Join(home, ".config", "opencode"))
-			return err == nil
-		},
-	},
-}
-
-// detectInstalledAgents returns list of agents that are installed on the system.
-func detectInstalledAgents() []AgentConfig {
-	var installed []AgentConfig
-	for _, agent := range supportedAgents {
-		if agent.Detect() {
-			installed = append(installed, agent)
-		}
-	}
-	return installed
-}
-
 type Manifest struct {
 	Version   string               `json:"version"`
 	UpdatedAt string               `json:"updated_at"`
@@ -288,7 +103,7 @@ Skills are installed globally to each agent's skills directory.
 When multiple agents are detected, skills are stored in a canonical location
 and symlinked to each agent to avoid duplication.
 
-Supported agents: Claude Code, Cursor, Windsurf, Cline, Roo Code, Codex CLI, Amp, OpenCode`,
+Supported agents: Claude Code, Cursor, Codex CLI, OpenCode, GitHub Copilot, Antigravity`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if len(args) > 0 {
 				return installSkill(cmd.Context(), args[0])
@@ -500,19 +315,19 @@ func installSkill(ctx context.Context, skillName string) error {
 		return fmt.Errorf("skill %q not found", skillName)
 	}
 
-	// detect installed agents
-	agents := detectInstalledAgents()
-	if len(agents) == 0 {
+	// detect installed agents using shared registry
+	detectedAgents := agents.DetectInstalled()
+	if len(detectedAgents) == 0 {
 		cmdio.LogString(ctx, color.YellowString("No supported coding agents detected."))
 		cmdio.LogString(ctx, "")
-		cmdio.LogString(ctx, "Supported agents: Claude Code, Cursor, Windsurf, Cline, Roo Code, Codex CLI, Amp, OpenCode")
+		cmdio.LogString(ctx, "Supported agents: Claude Code, Cursor, Codex CLI, OpenCode, GitHub Copilot, Antigravity")
 		cmdio.LogString(ctx, "Please install at least one coding agent first.")
 		return nil
 	}
 
 	// print detected agents
 	cmdio.LogString(ctx, "Detected coding agents:")
-	for _, agent := range agents {
+	for _, agent := range detectedAgents {
 		cmdio.LogString(ctx, "  - "+agent.DisplayName)
 	}
 	cmdio.LogString(ctx, "")
@@ -523,13 +338,13 @@ func installSkill(ctx context.Context, skillName string) error {
 		return fmt.Errorf("failed to list skill files: %w", err)
 	}
 
-	homeDir, err := getHomeDir()
+	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return fmt.Errorf("failed to get home directory: %w", err)
 	}
 
 	// determine installation strategy
-	useSymlinks := len(agents) > 1
+	useSymlinks := len(detectedAgents) > 1
 	var canonicalDir string
 
 	if useSymlinks {
@@ -541,8 +356,8 @@ func installSkill(ctx context.Context, skillName string) error {
 	}
 
 	// install/symlink to each agent
-	for _, agent := range agents {
-		agentSkillDir, err := agent.GlobalSkillDir()
+	for _, agent := range detectedAgents {
+		agentSkillDir, err := agent.SkillsDir()
 		if err != nil {
 			cmdio.LogString(ctx, color.YellowString("⊘ Skipped %s: %v", agent.DisplayName, err))
 			continue
