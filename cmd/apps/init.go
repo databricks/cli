@@ -33,6 +33,9 @@ const (
 //go:embed app-template-app-manifests.json
 var appTemplateManifestsJSON []byte
 
+//go:embed databricks-yml.tmpl
+var databricksYmlTemplate string
+
 // resourceSpec represents a resource specification in the template manifest.
 type resourceSpec struct {
 	Name                string          `json:"name"`
@@ -213,12 +216,13 @@ type templateVars struct {
 	PluginImport   string
 	PluginUsage    string
 	// Feature resource fragments (aggregated from selected features)
-	BundleVariables string
-	BundleResources string
-	TargetVariables string
-	AppEnv          string
-	DotEnv          string
-	DotEnvExample   string
+	BundleVariables  string
+	BundleResources  string
+	TargetVariables  string
+	AppEnv           string
+	DotEnv           string
+	DotEnvExample    string
+	ResourceBindings string // For databricks.yml resource bindings
 }
 
 // featureFragments holds aggregated content from feature resource files.
@@ -506,54 +510,42 @@ func findLegacyTemplateByPath(manifests *appTemplateManifests, path string) *app
 	return nil
 }
 
-// requiresSQLWarehouse checks if a template requires a SQL warehouse based on its resource_specs.
-func requiresSQLWarehouse(tmpl *appTemplateManifest) bool {
+// resourceSpecChecker is a function that checks if a resourceSpec has a specific field.
+type resourceSpecChecker func(*resourceSpec) bool
+
+// hasResourceSpec checks if a template requires a resource based on a spec checker.
+func hasResourceSpec(tmpl *appTemplateManifest, checker resourceSpecChecker) bool {
 	for _, spec := range tmpl.Manifest.ResourceSpecs {
-		if spec.SQLWarehouseSpec != nil {
+		if checker(&spec) {
 			return true
 		}
 	}
 	return false
+}
+
+// requiresSQLWarehouse checks if a template requires a SQL warehouse based on its resource_specs.
+func requiresSQLWarehouse(tmpl *appTemplateManifest) bool {
+	return hasResourceSpec(tmpl, func(s *resourceSpec) bool { return s.SQLWarehouseSpec != nil })
 }
 
 // requiresServingEndpoint checks if a template requires a serving endpoint based on its resource_specs.
 func requiresServingEndpoint(tmpl *appTemplateManifest) bool {
-	for _, spec := range tmpl.Manifest.ResourceSpecs {
-		if spec.ServingEndpointSpec != nil {
-			return true
-		}
-	}
-	return false
+	return hasResourceSpec(tmpl, func(s *resourceSpec) bool { return s.ServingEndpointSpec != nil })
 }
 
 // requiresExperiment checks if a template requires an experiment based on its resource_specs.
 func requiresExperiment(tmpl *appTemplateManifest) bool {
-	for _, spec := range tmpl.Manifest.ResourceSpecs {
-		if spec.ExperimentSpec != nil {
-			return true
-		}
-	}
-	return false
+	return hasResourceSpec(tmpl, func(s *resourceSpec) bool { return s.ExperimentSpec != nil })
 }
 
 // requiresDatabase checks if a template requires a database based on its resource_specs.
 func requiresDatabase(tmpl *appTemplateManifest) bool {
-	for _, spec := range tmpl.Manifest.ResourceSpecs {
-		if spec.DatabaseSpec != nil {
-			return true
-		}
-	}
-	return false
+	return hasResourceSpec(tmpl, func(s *resourceSpec) bool { return s.DatabaseSpec != nil })
 }
 
 // requiresUCVolume checks if a template requires a UC volume based on its resource_specs.
 func requiresUCVolume(tmpl *appTemplateManifest) bool {
-	for _, spec := range tmpl.Manifest.ResourceSpecs {
-		if spec.UCSecurableSpec != nil {
-			return true
-		}
-	}
-	return false
+	return hasResourceSpec(tmpl, func(s *resourceSpec) bool { return s.UCSecurableSpec != nil })
 }
 
 // promptForTemplateType prompts the user to choose between AppKit and Legacy templates.
@@ -616,6 +608,261 @@ type resourceGetter struct {
 	checkRequired func(*appTemplateManifest) bool
 	promptFunc    func(context.Context) (string, error)
 	errorMessage  string
+}
+
+// envVar represents a single environment variable.
+type envVar struct {
+	key   string
+	value string
+}
+
+// envBuilder builds environment variable content for .env files.
+type envBuilder struct {
+	vars []envVar
+}
+
+// newEnvBuilder creates a new envBuilder.
+func newEnvBuilder() *envBuilder {
+	return &envBuilder{vars: make([]envVar, 0)}
+}
+
+// addWarehouse adds warehouse configuration to the .env file.
+func (b *envBuilder) addWarehouse(warehouseID string) {
+	if warehouseID == "" {
+		return
+	}
+	if strings.HasPrefix(warehouseID, "/sql/") {
+		b.vars = append(b.vars, envVar{"DATABRICKS_WAREHOUSE_PATH", warehouseID})
+	} else {
+		b.vars = append(b.vars, envVar{"DATABRICKS_WAREHOUSE_ID", warehouseID})
+	}
+}
+
+// addServingEndpoint adds serving endpoint configuration to the .env file.
+func (b *envBuilder) addServingEndpoint(endpoint string) {
+	if endpoint != "" {
+		b.vars = append(b.vars, envVar{"DATABRICKS_SERVING_ENDPOINT", endpoint})
+	}
+}
+
+// addExperiment adds experiment configuration to the .env file.
+func (b *envBuilder) addExperiment(experimentID string) {
+	if experimentID != "" {
+		b.vars = append(b.vars, envVar{"DATABRICKS_EXPERIMENT_ID", experimentID})
+	}
+}
+
+// addDatabase adds database configuration to the .env file.
+func (b *envBuilder) addDatabase(instanceName, databaseName string) {
+	if instanceName != "" {
+		b.vars = append(b.vars, envVar{"DATABRICKS_DATABASE_INSTANCE", instanceName})
+	}
+	if databaseName != "" {
+		b.vars = append(b.vars, envVar{"DATABRICKS_DATABASE_NAME", databaseName})
+	}
+}
+
+// addUCVolume adds UC volume configuration to the .env file.
+func (b *envBuilder) addUCVolume(volume string) {
+	if volume != "" {
+		b.vars = append(b.vars, envVar{"DATABRICKS_UC_VOLUME", volume})
+	}
+}
+
+// build generates the .env file content.
+func (b *envBuilder) build() string {
+	if len(b.vars) == 0 {
+		return ""
+	}
+
+	var sb strings.Builder
+	sb.WriteString("# Resource configurations\n")
+	sb.WriteString("# Update your application code to use these resources\n\n")
+
+	for _, v := range b.vars {
+		sb.WriteString(fmt.Sprintf("%s=%s\n", v.key, v.value))
+	}
+
+	return sb.String()
+}
+
+// resourceBinding represents a single resource binding in databricks.yml.
+type resourceBinding struct {
+	name        string
+	description string
+	lines       []string // Comment lines for the binding
+}
+
+// resourceBindingsBuilder builds resource bindings for databricks.yml.
+type resourceBindingsBuilder struct {
+	bindings []resourceBinding
+}
+
+// newResourceBindingsBuilder creates a new resourceBindingsBuilder.
+func newResourceBindingsBuilder() *resourceBindingsBuilder {
+	return &resourceBindingsBuilder{bindings: make([]resourceBinding, 0)}
+}
+
+// addWarehouse adds a warehouse resource binding.
+func (b *resourceBindingsBuilder) addWarehouse(warehouseID string) {
+	if warehouseID == "" {
+		return
+	}
+	b.bindings = append(b.bindings, resourceBinding{
+		name:        "warehouse",
+		description: "SQL Warehouse for analytics",
+		lines: []string{
+			"          # sql_warehouse:",
+			"          #   id: " + warehouseID,
+			"          #   permission: CAN_USE",
+		},
+	})
+}
+
+// addServingEndpoint adds a serving endpoint resource binding.
+func (b *resourceBindingsBuilder) addServingEndpoint(endpoint string) {
+	if endpoint == "" {
+		return
+	}
+	b.bindings = append(b.bindings, resourceBinding{
+		name:        "serving-endpoint",
+		description: "Model serving endpoint",
+		lines: []string{
+			"          # serving_endpoint:",
+			"          #   name: " + endpoint,
+			"          #   permission: CAN_QUERY",
+		},
+	})
+}
+
+// addExperiment adds an experiment resource binding.
+func (b *resourceBindingsBuilder) addExperiment(experimentID string) {
+	if experimentID == "" {
+		return
+	}
+	b.bindings = append(b.bindings, resourceBinding{
+		name:        "experiment",
+		description: "MLflow experiment",
+		lines: []string{
+			"          # experiment:",
+			"          #   id: " + experimentID,
+			"          #   permission: CAN_MANAGE",
+		},
+	})
+}
+
+// build generates the resource bindings content for databricks.yml.
+func (b *resourceBindingsBuilder) build() string {
+	if len(b.bindings) == 0 {
+		return ""
+	}
+
+	var result []string
+	for _, binding := range b.bindings {
+		result = append(result, "        - name: "+binding.name)
+		result = append(result, "          description: "+binding.description)
+		result = append(result, binding.lines...)
+	}
+
+	return strings.Join(result, "\n")
+}
+
+// deployRunConfig handles deploy and run mode determination.
+type deployRunConfig struct {
+	// From flags
+	deploy        bool
+	deployChanged bool
+	run           string
+	runChanged    bool
+	// Context
+	isInteractive bool
+}
+
+// resolve determines the final deploy and run mode values.
+// It handles the logic of using flags vs prompting based on interactive mode.
+func (c *deployRunConfig) resolve(ctx context.Context) (bool, prompt.RunMode, error) {
+	// Parse flags first
+	shouldDeploy, runMode, err := parseDeployAndRunFlags(c.deploy, c.run)
+	if err != nil {
+		return false, prompt.RunModeNone, err
+	}
+
+	// Prompt if interactive and no flags were set
+	skipPrompt := c.deployChanged || c.runChanged
+	if c.isInteractive && !skipPrompt {
+		shouldDeploy, runMode, err = prompt.PromptForDeployAndRun(ctx)
+		if err != nil {
+			return false, prompt.RunModeNone, err
+		}
+	}
+
+	return shouldDeploy, runMode, nil
+}
+
+// legacyResourceCollector handles gathering all required resources for a legacy template.
+type legacyResourceCollector struct {
+	template      *appTemplateManifest
+	isInteractive bool
+	// Input values from flags
+	warehouseID     string
+	servingEndpoint string
+	experimentID    string
+	instanceName    string
+	databaseName    string
+	ucVolume        string
+}
+
+// legacyResources holds all collected resource values.
+type legacyResources struct {
+	warehouseID     string
+	servingEndpoint string
+	experimentID    string
+	instanceName    string
+	databaseName    string
+	ucVolume        string
+}
+
+// collectAll gathers all required resources for the template.
+func (c *legacyResourceCollector) collectAll(ctx context.Context) (*legacyResources, error) {
+	resources := &legacyResources{}
+
+	// Get warehouse ID if needed
+	warehouseID, err := getWarehouseIDForTemplate(ctx, c.template, c.warehouseID, c.isInteractive)
+	if err != nil {
+		return nil, err
+	}
+	resources.warehouseID = warehouseID
+
+	// Get serving endpoint if needed
+	servingEndpoint, err := getServingEndpointForTemplate(ctx, c.template, c.servingEndpoint, c.isInteractive)
+	if err != nil {
+		return nil, err
+	}
+	resources.servingEndpoint = servingEndpoint
+
+	// Get experiment ID if needed
+	experimentID, err := getExperimentIDForTemplate(ctx, c.template, c.experimentID, c.isInteractive)
+	if err != nil {
+		return nil, err
+	}
+	resources.experimentID = experimentID
+
+	// Get database resources if needed
+	instanceName, databaseName, err := getDatabaseForTemplate(ctx, c.template, c.instanceName, c.databaseName, c.isInteractive)
+	if err != nil {
+		return nil, err
+	}
+	resources.instanceName = instanceName
+	resources.databaseName = databaseName
+
+	// Get UC volume if needed
+	ucVolume, err := getUCVolumeForTemplate(ctx, c.template, c.ucVolume, c.isInteractive)
+	if err != nil {
+		return nil, err
+	}
+	resources.ucVolume = ucVolume
+
+	return resources, nil
 }
 
 // getResourceForTemplate is a generic function to get a resource value for a template.
@@ -791,7 +1038,7 @@ func copyFile(src, dst string) error {
 
 // runLegacyTemplateInit initializes a project using a legacy template.
 // All resource parameters are optional and will be passed to the template if provided.
-func runLegacyTemplateInit(ctx context.Context, selectedTemplate *appTemplateManifest, appName, outputDir, warehouseID, servingEndpoint, experimentID, instanceName, databaseName, ucVolume string) error {
+func runLegacyTemplateInit(ctx context.Context, selectedTemplate *appTemplateManifest, appName, outputDir, warehouseID, servingEndpoint, experimentID, instanceName, databaseName, ucVolume string, shouldDeploy bool, runMode prompt.RunMode) error {
 	// Determine the destination directory
 	destDir := appName
 	if outputDir != "" {
@@ -837,60 +1084,183 @@ func runLegacyTemplateInit(ctx context.Context, selectedTemplate *appTemplateMan
 		}
 	}
 
-	// Create a .env file with resource configurations if any were provided
-	if warehouseID != "" || servingEndpoint != "" || experimentID != "" || instanceName != "" || databaseName != "" || ucVolume != "" {
-		envContent := "# Resource configurations\n"
-		envContent += "# Update your application code to use these resources\n\n"
+	// Create a .env file with resource configurations
+	builder := newEnvBuilder()
+	builder.addWarehouse(warehouseID)
+	builder.addServingEndpoint(servingEndpoint)
+	builder.addExperiment(experimentID)
+	builder.addDatabase(instanceName, databaseName)
+	builder.addUCVolume(ucVolume)
 
-		if warehouseID != "" {
-			if !strings.HasPrefix(warehouseID, "/sql/") {
-				envContent += fmt.Sprintf("DATABRICKS_WAREHOUSE_ID=%s\n", warehouseID)
-			} else {
-				envContent += fmt.Sprintf("DATABRICKS_WAREHOUSE_PATH=%s\n", warehouseID)
-			}
-		}
-		if servingEndpoint != "" {
-			envContent += fmt.Sprintf("DATABRICKS_SERVING_ENDPOINT=%s\n", servingEndpoint)
-		}
-		if experimentID != "" {
-			envContent += fmt.Sprintf("DATABRICKS_EXPERIMENT_ID=%s\n", experimentID)
-		}
-		if instanceName != "" {
-			envContent += fmt.Sprintf("DATABRICKS_DATABASE_INSTANCE=%s\n", instanceName)
-		}
-		if databaseName != "" {
-			envContent += fmt.Sprintf("DATABRICKS_DATABASE_NAME=%s\n", databaseName)
-		}
-		if ucVolume != "" {
-			envContent += fmt.Sprintf("DATABRICKS_UC_VOLUME=%s\n", ucVolume)
-		}
-
-		envPath := filepath.Join(destDir, ".env.example")
+	envContent := builder.build()
+	if envContent != "" {
+		envPath := filepath.Join(destDir, ".env")
 		if err := os.WriteFile(envPath, []byte(envContent), 0o644); err != nil {
-			cmdio.LogString(ctx, fmt.Sprintf("⚠ Failed to write .env.example: %v", err))
+			cmdio.LogString(ctx, fmt.Sprintf("⚠ Failed to write .env: %v", err))
 		} else {
-			cmdio.LogString(ctx, "✓ Created .env.example with resource configurations")
+			cmdio.LogString(ctx, "✓ Created .env with resource configurations")
 		}
 	}
 
-	// Create databricks.yml for the app
-	databricksYml := fmt.Sprintf(`bundle:
-  name: %s
+	// Create or update .gitignore to protect .env file
+	gitignorePath := filepath.Join(destDir, ".gitignore")
+	gitignoreContent := ""
 
-resources:
-  apps:
-    %s:
-      name: %s
-      source_code_path: ./
-`, appName, appName, appName)
+	// Check if .gitignore already exists
+	if existingContent, err := os.ReadFile(gitignorePath); err == nil {
+		gitignoreContent = string(existingContent)
+		// Check if .env is already in .gitignore
+		if !strings.Contains(gitignoreContent, ".env") {
+			// Add .env to existing .gitignore
+			if !strings.HasSuffix(gitignoreContent, "\n") {
+				gitignoreContent += "\n"
+			}
+			gitignoreContent += "\n# Environment variables\n.env\n"
+		}
+	} else {
+		// Create new .gitignore with common patterns
+		gitignoreContent = `# Environment variables
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+`
+	}
+
+	if err := os.WriteFile(gitignorePath, []byte(gitignoreContent), 0o644); err != nil {
+		cmdio.LogString(ctx, fmt.Sprintf("⚠ Failed to write .gitignore: %v", err))
+	} else {
+		cmdio.LogString(ctx, "✓ Created .gitignore")
+	}
+
+	// Build resource bindings for databricks.yml
+	bindingsBuilder := newResourceBindingsBuilder()
+	bindingsBuilder.addWarehouse(warehouseID)
+	bindingsBuilder.addServingEndpoint(servingEndpoint)
+	bindingsBuilder.addExperiment(experimentID)
+
+	// Create databricks.yml using template
+	vars := templateVars{
+		ProjectName:      appName,
+		AppDescription:   selectedTemplate.Manifest.Description,
+		ResourceBindings: bindingsBuilder.build(),
+	}
+
+	tmpl, err := template.New("databricks.yml").Parse(databricksYmlTemplate)
+	if err != nil {
+		return fmt.Errorf("failed to parse databricks.yml template: %w", err)
+	}
+
+	var databricksYmlBuf bytes.Buffer
+	if err := tmpl.Execute(&databricksYmlBuf, vars); err != nil {
+		return fmt.Errorf("failed to execute databricks.yml template: %w", err)
+	}
 
 	databricksYmlPath := filepath.Join(destDir, "databricks.yml")
-	if err := os.WriteFile(databricksYmlPath, []byte(databricksYml), 0o644); err != nil {
+	if err := os.WriteFile(databricksYmlPath, databricksYmlBuf.Bytes(), 0o644); err != nil {
 		return fmt.Errorf("failed to write databricks.yml: %w", err)
 	}
 
 	cmdio.LogString(ctx, "✓ Created databricks.yml")
-	return nil
+
+	// Get absolute path
+	absOutputDir, err := filepath.Abs(destDir)
+	if err != nil {
+		absOutputDir = destDir
+	}
+
+	// Count files in destination directory
+	fileCount := 0
+	err = filepath.Walk(destDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() {
+			fileCount++
+		}
+		return nil
+	})
+	if err != nil {
+		fileCount = 0
+	}
+
+	return runPostCreationSteps(ctx, absOutputDir, appName, fileCount, shouldDeploy, runMode)
+}
+
+// handleLegacyTemplateInit handles the common logic for initializing a legacy template.
+// It gets the app name, collects resources, determines deploy/run options, and calls runLegacyTemplateInit.
+func handleLegacyTemplateInit(ctx context.Context, legacyTemplate *appTemplateManifest, opts createOptions, isInteractive bool) error {
+	// Get app name
+	appName := opts.name
+	if appName == "" {
+		if !isInteractive {
+			return errors.New("--name is required in non-interactive mode")
+		}
+		var err error
+		appName, err = prompt.PromptForProjectName(ctx, opts.outputDir)
+		if err != nil {
+			return err
+		}
+	} else {
+		// Validate name in non-interactive mode
+		if err := prompt.ValidateProjectName(appName); err != nil {
+			return err
+		}
+	}
+
+	// Collect all required resources
+	collector := &legacyResourceCollector{
+		template:        legacyTemplate,
+		isInteractive:   isInteractive,
+		warehouseID:     opts.warehouseID,
+		servingEndpoint: opts.servingEndpoint,
+		experimentID:    opts.experimentID,
+		instanceName:    opts.instanceName,
+		databaseName:    opts.databaseName,
+		ucVolume:        opts.ucVolume,
+	}
+	resources, err := collector.collectAll(ctx)
+	if err != nil {
+		return err
+	}
+
+	// Determine deploy and run options
+	deployRun := &deployRunConfig{
+		deploy:        opts.deploy,
+		deployChanged: opts.deployChanged,
+		run:           opts.run,
+		runChanged:    opts.runChanged,
+		isInteractive: isInteractive,
+	}
+	shouldDeploy, runMode, err := deployRun.resolve(ctx)
+	if err != nil {
+		return err
+	}
+
+	return runLegacyTemplateInit(ctx, legacyTemplate, appName, opts.outputDir,
+		resources.warehouseID, resources.servingEndpoint, resources.experimentID,
+		resources.instanceName, resources.databaseName, resources.ucVolume,
+		shouldDeploy, runMode)
 }
 
 func runCreate(ctx context.Context, opts createOptions) error {
@@ -917,56 +1287,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 			// Check if the template path matches a legacy template
 			if legacyTemplate := findLegacyTemplateByPath(manifests, opts.templatePath); legacyTemplate != nil {
 				log.Infof(ctx, "Using legacy template: %s", opts.templatePath)
-
-				// Get app name
-				appName := opts.name
-				if appName == "" {
-					if !isInteractive {
-						return errors.New("--name is required in non-interactive mode")
-					}
-					var err error
-					appName, err = prompt.PromptForProjectName(ctx, opts.outputDir)
-					if err != nil {
-						return err
-					}
-				} else {
-					// Validate name in non-interactive mode
-					if err := prompt.ValidateProjectName(appName); err != nil {
-						return err
-					}
-				}
-
-				// Get warehouse ID if needed
-				warehouseID, err := getWarehouseIDForTemplate(ctx, legacyTemplate, opts.warehouseID, isInteractive)
-				if err != nil {
-					return err
-				}
-
-				// Get serving endpoint if needed
-				servingEndpoint, err := getServingEndpointForTemplate(ctx, legacyTemplate, opts.servingEndpoint, isInteractive)
-				if err != nil {
-					return err
-				}
-
-				// Get experiment ID if needed
-				experimentID, err := getExperimentIDForTemplate(ctx, legacyTemplate, opts.experimentID, isInteractive)
-				if err != nil {
-					return err
-				}
-
-				// Get database resources if needed
-				instanceName, databaseName, err := getDatabaseForTemplate(ctx, legacyTemplate, opts.instanceName, opts.databaseName, isInteractive)
-				if err != nil {
-					return err
-				}
-
-				// Get UC volume if needed
-				ucVolume, err := getUCVolumeForTemplate(ctx, legacyTemplate, opts.ucVolume, isInteractive)
-				if err != nil {
-					return err
-				}
-
-				return runLegacyTemplateInit(ctx, legacyTemplate, appName, opts.outputDir, warehouseID, servingEndpoint, experimentID, instanceName, databaseName, ucVolume)
+				return handleLegacyTemplateInit(ctx, legacyTemplate, opts, isInteractive)
 			}
 		}
 	}
@@ -993,54 +1314,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 			return err
 		}
 
-		// Get app name
-		appName := opts.name
-		if appName == "" {
-			if !isInteractive {
-				return errors.New("--name is required in non-interactive mode")
-			}
-			appName, err = prompt.PromptForProjectName(ctx, opts.outputDir)
-			if err != nil {
-				return err
-			}
-		} else {
-			// Validate name in non-interactive mode
-			if err := prompt.ValidateProjectName(appName); err != nil {
-				return err
-			}
-		}
-
-		// Get warehouse ID if needed
-		warehouseID, err := getWarehouseIDForTemplate(ctx, selectedTemplate, opts.warehouseID, isInteractive)
-		if err != nil {
-			return err
-		}
-
-		// Get serving endpoint if needed
-		servingEndpoint, err := getServingEndpointForTemplate(ctx, selectedTemplate, opts.servingEndpoint, isInteractive)
-		if err != nil {
-			return err
-		}
-
-		// Get experiment ID if needed
-		experimentID, err := getExperimentIDForTemplate(ctx, selectedTemplate, opts.experimentID, isInteractive)
-		if err != nil {
-			return err
-		}
-
-		// Get database resources if needed
-		instanceName, databaseName, err := getDatabaseForTemplate(ctx, selectedTemplate, opts.instanceName, opts.databaseName, isInteractive)
-		if err != nil {
-			return err
-		}
-
-		// Get UC volume if needed
-		ucVolume, err := getUCVolumeForTemplate(ctx, selectedTemplate, opts.ucVolume, isInteractive)
-		if err != nil {
-			return err
-		}
-
-		return runLegacyTemplateInit(ctx, selectedTemplate, appName, opts.outputDir, warehouseID, servingEndpoint, experimentID, instanceName, databaseName, ucVolume)
+		return handleLegacyTemplateInit(ctx, selectedTemplate, opts, isInteractive)
 	}
 
 	// Use features from flags if provided
@@ -1241,23 +1515,17 @@ func runCreate(ctx context.Context, opts createOptions) error {
 			opts.description = prompt.DefaultAppDescription
 		}
 
-		// Only prompt for deploy/run if not in flags mode and no deploy/run flags were set
-		if isInteractive && !flagsMode && !opts.deployChanged && !opts.runChanged {
-			var deployVal bool
-			var runVal prompt.RunMode
-			deployVal, runVal, err = prompt.PromptForDeployAndRun(ctx)
-			if err != nil {
-				return err
-			}
-			shouldDeploy = deployVal
-			runMode = runVal
-		} else {
-			// Flags mode or explicit flags: use flag values (or defaults if not set)
-			var err error
-			shouldDeploy, runMode, err = parseDeployAndRunFlags(opts.deploy, opts.run)
-			if err != nil {
-				return err
-			}
+		// Determine deploy and run options
+		deployRun := &deployRunConfig{
+			deploy:        opts.deploy,
+			deployChanged: opts.deployChanged || flagsMode,
+			run:           opts.run,
+			runChanged:    opts.runChanged || flagsMode,
+			isInteractive: isInteractive,
+		}
+		shouldDeploy, runMode, err = deployRun.resolve(ctx)
+		if err != nil {
+			return err
 		}
 	}
 
@@ -1336,6 +1604,11 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		return runErr
 	}
 
+	return runPostCreationSteps(ctx, absOutputDir, opts.name, fileCount, shouldDeploy, runMode)
+}
+
+// runPostCreationSteps handles post-creation initialization, validation, and optional deploy/run actions.
+func runPostCreationSteps(ctx context.Context, absOutputDir, projectName string, fileCount int, shouldDeploy bool, runMode prompt.RunMode) error {
 	// Initialize project based on type (Node.js, Python, etc.)
 	var nextStepsCmd string
 	projectInitializer := initializer.GetProjectInitializer(absOutputDir)
@@ -1360,9 +1633,9 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	// Show next steps only if user didn't choose to deploy or run
 	showNextSteps := !shouldDeploy && runMode == prompt.RunModeNone
 	if showNextSteps {
-		prompt.PrintSuccess(ctx, opts.name, absOutputDir, fileCount, nextStepsCmd)
+		prompt.PrintSuccess(ctx, projectName, absOutputDir, fileCount, nextStepsCmd)
 	} else {
-		prompt.PrintSuccess(ctx, opts.name, absOutputDir, fileCount, "")
+		prompt.PrintSuccess(ctx, projectName, absOutputDir, fileCount, "")
 	}
 
 	// Execute post-creation actions (deploy and/or run)

@@ -1,0 +1,15 @@
+bundle:
+  name: {{.ProjectName}}
+
+resources:
+  apps:
+    {{.ProjectName}}:
+      name: {{.ProjectName}}
+{{- if .AppDescription}}
+      description: {{.AppDescription}}
+{{- end}}
+      source_code_path: ./
+{{- if .ResourceBindings}}
+      resources:
+{{.ResourceBindings}}
+{{- end}}
