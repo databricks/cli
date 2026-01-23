@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strconv"
+	"strings"
 
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
@@ -16,6 +17,9 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go/listing"
 	"github.com/databricks/databricks-sdk-go/service/apps"
+	"github.com/databricks/databricks-sdk-go/service/database"
+	"github.com/databricks/databricks-sdk-go/service/ml"
+	"github.com/databricks/databricks-sdk-go/service/serving"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 )
 
@@ -470,6 +474,242 @@ func PromptForWarehouse(ctx context.Context) (string, error) {
 
 	printAnswered(ctx, "SQL Warehouse", warehouseNames[selected])
 	return selected, nil
+}
+
+// ListServingEndpoints fetches all serving endpoints the user has access to.
+func ListServingEndpoints(ctx context.Context) ([]serving.ServingEndpoint, error) {
+	w := cmdctx.WorkspaceClient(ctx)
+	if w == nil {
+		return nil, errors.New("no workspace client available")
+	}
+
+	iter := w.ServingEndpoints.List(ctx)
+	return listing.ToSlice(ctx, iter)
+}
+
+// PromptForServingEndpoint shows a picker to select a serving endpoint.
+func PromptForServingEndpoint(ctx context.Context) (string, error) {
+	var endpoints []serving.ServingEndpoint
+	err := RunWithSpinnerCtx(ctx, "Fetching serving endpoints...", func() error {
+		var fetchErr error
+		endpoints, fetchErr = ListServingEndpoints(ctx)
+		return fetchErr
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to fetch serving endpoints: %w", err)
+	}
+
+	if len(endpoints) == 0 {
+		return "", errors.New("no serving endpoints found. Create one in your workspace first")
+	}
+
+	theme := AppkitTheme()
+
+	// Build options with endpoint name and state
+	options := make([]huh.Option[string], 0, len(endpoints))
+	for _, ep := range endpoints {
+		state := string(ep.State.ConfigUpdate)
+		if state == "" {
+			state = string(ep.State.Ready)
+		}
+		label := fmt.Sprintf("%s (%s)", ep.Name, state)
+		options = append(options, huh.NewOption(label, ep.Name))
+	}
+
+	var selected string
+	err = huh.NewSelect[string]().
+		Title("Select Serving Endpoint").
+		Description(fmt.Sprintf("%d endpoints available — type to filter", len(endpoints))).
+		Options(options...).
+		Value(&selected).
+		Filtering(true).
+		Height(8).
+		WithTheme(theme).
+		Run()
+	if err != nil {
+		return "", err
+	}
+
+	printAnswered(ctx, "Serving Endpoint", selected)
+	return selected, nil
+}
+
+// ListExperiments fetches all MLflow experiments the user has access to.
+func ListExperiments(ctx context.Context) ([]ml.Experiment, error) {
+	w := cmdctx.WorkspaceClient(ctx)
+	if w == nil {
+		return nil, errors.New("no workspace client available")
+	}
+
+	iter := w.Experiments.SearchExperiments(ctx, ml.SearchExperiments{})
+	return listing.ToSlice(ctx, iter)
+}
+
+// PromptForExperiment shows a picker to select an MLflow experiment.
+func PromptForExperiment(ctx context.Context) (string, error) {
+	var experiments []ml.Experiment
+	err := RunWithSpinnerCtx(ctx, "Fetching MLflow experiments...", func() error {
+		var fetchErr error
+		experiments, fetchErr = ListExperiments(ctx)
+		return fetchErr
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to fetch experiments: %w", err)
+	}
+
+	if len(experiments) == 0 {
+		return "", errors.New("no experiments found. Create one in your workspace first")
+	}
+
+	theme := AppkitTheme()
+
+	// Build options with experiment name and ID
+	options := make([]huh.Option[string], 0, len(experiments))
+	experimentNames := make(map[string]string) // id -> name for printing
+	for _, exp := range experiments {
+		label := fmt.Sprintf("%s (ID: %s)", exp.Name, exp.ExperimentId)
+		options = append(options, huh.NewOption(label, exp.ExperimentId))
+		experimentNames[exp.ExperimentId] = exp.Name
+	}
+
+	var selected string
+	err = huh.NewSelect[string]().
+		Title("Select MLflow Experiment").
+		Description(fmt.Sprintf("%d experiments available — type to filter", len(experiments))).
+		Options(options...).
+		Value(&selected).
+		Filtering(true).
+		Height(8).
+		WithTheme(theme).
+		Run()
+	if err != nil {
+		return "", err
+	}
+
+	printAnswered(ctx, "MLflow Experiment", experimentNames[selected])
+	return selected, nil
+}
+
+// ListDatabaseInstances fetches all database instances the user has access to.
+func ListDatabaseInstances(ctx context.Context) ([]database.DatabaseInstance, error) {
+	w := cmdctx.WorkspaceClient(ctx)
+	if w == nil {
+		return nil, errors.New("no workspace client available")
+	}
+
+	iter := w.Database.ListDatabaseInstances(ctx, database.ListDatabaseInstancesRequest{})
+	return listing.ToSlice(ctx, iter)
+}
+
+// ListDatabaseCatalogs fetches all database catalogs (databases) within an instance.
+// PromptForDatabaseInstance shows a picker to select a database instance.
+func PromptForDatabaseInstance(ctx context.Context) (string, error) {
+	var instances []database.DatabaseInstance
+	err := RunWithSpinnerCtx(ctx, "Fetching database instances...", func() error {
+		var fetchErr error
+		instances, fetchErr = ListDatabaseInstances(ctx)
+		return fetchErr
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to fetch database instances: %w", err)
+	}
+
+	if len(instances) == 0 {
+		return "", errors.New("no database instances found. Create one in your workspace first")
+	}
+
+	theme := AppkitTheme()
+
+	// Build options with instance name and state
+	options := make([]huh.Option[string], 0, len(instances))
+	for _, inst := range instances {
+		state := string(inst.State)
+		label := fmt.Sprintf("%s (%s)", inst.Name, state)
+		options = append(options, huh.NewOption(label, inst.Name))
+	}
+
+	var selected string
+	err = huh.NewSelect[string]().
+		Title("Select Database Instance").
+		Description(fmt.Sprintf("%d instances available — type to filter", len(instances))).
+		Options(options...).
+		Value(&selected).
+		Filtering(true).
+		Height(8).
+		WithTheme(theme).
+		Run()
+	if err != nil {
+		return "", err
+	}
+
+	printAnswered(ctx, "Database Instance", selected)
+	return selected, nil
+}
+
+// PromptForDatabaseName prompts the user to enter a database name within an instance.
+func PromptForDatabaseName(ctx context.Context, instanceName string) (string, error) {
+	theme := AppkitTheme()
+
+	databaseName := "databricks_postgres"
+	err := huh.NewInput().
+		Title("Database Name").
+		Description("Enter the database name within instance: " + instanceName).
+		Placeholder("databricks_postgres").
+		Value(&databaseName).
+		Validate(func(s string) error {
+			if s == "" {
+				return errors.New("database name is required")
+			}
+			if strings.TrimSpace(s) == "" {
+				return errors.New("database name cannot be empty")
+			}
+			return nil
+		}).
+		WithTheme(theme).
+		Run()
+	if err != nil {
+		return "", err
+	}
+
+	printAnswered(ctx, "Database Name", databaseName)
+	return databaseName, nil
+}
+
+// PromptForUCVolume prompts the user to enter a Unity Catalog volume path.
+func PromptForUCVolume(ctx context.Context) (string, error) {
+	theme := AppkitTheme()
+
+	var volumePath string
+	err := huh.NewInput().
+		Title("Unity Catalog Volume Path").
+		Description("Enter the volume path in the format: catalog.schema.volume").
+		Placeholder("main.default.my_volume").
+		Value(&volumePath).
+		Validate(func(s string) error {
+			if s == "" {
+				return errors.New("volume path is required")
+			}
+			// Validate format: should have exactly 3 parts separated by dots
+			parts := strings.Split(s, ".")
+			if len(parts) != 3 {
+				return errors.New("volume path must be in the format: catalog.schema.volume")
+			}
+			// Check each part is not empty
+			for _, part := range parts {
+				if strings.TrimSpace(part) == "" {
+					return errors.New("catalog, schema, and volume names cannot be empty")
+				}
+			}
+			return nil
+		}).
+		WithTheme(theme).
+		Run()
+	if err != nil {
+		return "", err
+	}
+
+	printAnswered(ctx, "UC Volume", volumePath)
+	return volumePath, nil
 }
 
 // RunWithSpinnerCtx runs a function while showing a spinner with the given title.
