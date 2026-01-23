@@ -122,7 +122,7 @@ func runBundleDeploy(cmd *cobra.Command, force, skipValidation bool) error {
 	if !skipValidation {
 		validator := validation.GetProjectValidator(workDir)
 		if validator != nil {
-			result, err := validator.Validate(ctx, workDir)
+			result, err := validator.Validate(ctx, workDir, validation.ValidateOptions{})
 			if err != nil {
 				return fmt.Errorf("validation error: %w", err)
 			}

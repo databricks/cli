@@ -572,8 +572,8 @@ func PromptForAppSelection(ctx context.Context, title string) (string, error) {
 }
 
 // PrintSuccess prints a success message after project creation.
-// If showNextSteps is true, also prints the "Next steps" section.
-func PrintSuccess(ctx context.Context, projectName, outputDir string, fileCount int, showNextSteps bool) {
+// If nextStepsCmd is non-empty, also prints the "Next steps" section with the given command.
+func PrintSuccess(ctx context.Context, projectName, outputDir string, fileCount int, nextStepsCmd string) {
 	successStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#FFAB00")). // Databricks yellow
 		Bold(true)
@@ -590,12 +590,12 @@ func PrintSuccess(ctx context.Context, projectName, outputDir string, fileCount 
 	cmdio.LogString(ctx, dimStyle.Render("  Location: "+outputDir))
 	cmdio.LogString(ctx, dimStyle.Render("  Files: "+strconv.Itoa(fileCount)))
 
-	if showNextSteps {
+	if nextStepsCmd != "" {
 		cmdio.LogString(ctx, "")
 		cmdio.LogString(ctx, dimStyle.Render("  Next steps:"))
 		cmdio.LogString(ctx, "")
 		cmdio.LogString(ctx, codeStyle.Render("    cd "+projectName))
-		cmdio.LogString(ctx, codeStyle.Render("    npm run dev"))
+		cmdio.LogString(ctx, codeStyle.Render("    "+nextStepsCmd))
 	}
 	cmdio.LogString(ctx, "")
 }
