@@ -726,7 +726,7 @@ func getUCVolumeForTemplate(ctx context.Context, tmpl *appTemplateManifest, prov
 
 // runLegacyTemplateInit initializes a project using a legacy template.
 // All resource parameters are optional and will be passed to the template if provided.
-func runLegacyTemplateInit(ctx context.Context, selectedTemplate *appTemplateManifest, outputDir, warehouseID, servingEndpoint, experimentID, instanceName, databaseName, ucVolume string) error {
+func runLegacyTemplateInit(ctx context.Context, selectedTemplate *appTemplateManifest, appName, outputDir, warehouseID, servingEndpoint, experimentID, instanceName, databaseName, ucVolume string) error {
 	var configFile string
 
 	// If any resource is provided, create a temporary config file
@@ -804,6 +804,31 @@ func runLegacyTemplateInit(ctx context.Context, selectedTemplate *appTemplateMan
 	}
 
 	tmpl.Writer.LogTelemetry(ctx)
+
+	// Determine the destination directory where the template was materialized
+	// If outputDir was provided, use it; otherwise use current directory with app name
+	destDir := outputDir
+	if destDir == "" {
+		destDir = "."
+	}
+
+	// Create databricks.yml for the app
+	databricksYml := fmt.Sprintf(`bundle:
+  name: %s
+
+resources:
+  apps:
+    %s:
+      name: %s
+      source_code_path: ./
+`, appName, appName, appName)
+
+	databricksYmlPath := filepath.Join(destDir, "databricks.yml")
+	if err := os.WriteFile(databricksYmlPath, []byte(databricksYml), 0o644); err != nil {
+		return fmt.Errorf("failed to write databricks.yml: %w", err)
+	}
+
+	cmdio.LogString(ctx, "✓ Created databricks.yml")
 	return nil
 }
 
@@ -831,6 +856,24 @@ func runCreate(ctx context.Context, opts createOptions) error {
 			// Check if the template path matches a legacy template
 			if legacyTemplate := findLegacyTemplateByPath(manifests, opts.templatePath); legacyTemplate != nil {
 				log.Infof(ctx, "Using legacy template: %s", opts.templatePath)
+
+				// Get app name
+				appName := opts.name
+				if appName == "" {
+					if !isInteractive {
+						return errors.New("--name is required in non-interactive mode")
+					}
+					var err error
+					appName, err = prompt.PromptForProjectName(ctx, opts.outputDir)
+					if err != nil {
+						return err
+					}
+				} else {
+					// Validate name in non-interactive mode
+					if err := prompt.ValidateProjectName(appName); err != nil {
+						return err
+					}
+				}
 
 				// Get warehouse ID if needed
 				warehouseID, err := getWarehouseIDForTemplate(ctx, legacyTemplate, opts.warehouseID, isInteractive)
@@ -862,7 +905,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 					return err
 				}
 
-				return runLegacyTemplateInit(ctx, legacyTemplate, opts.outputDir, warehouseID, servingEndpoint, experimentID, instanceName, databaseName, ucVolume)
+				return runLegacyTemplateInit(ctx, legacyTemplate, appName, opts.outputDir, warehouseID, servingEndpoint, experimentID, instanceName, databaseName, ucVolume)
 			}
 		}
 	}
@@ -887,6 +930,23 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		selectedTemplate, err := promptForLegacyTemplate(ctx, manifests)
 		if err != nil {
 			return err
+		}
+
+		// Get app name
+		appName := opts.name
+		if appName == "" {
+			if !isInteractive {
+				return errors.New("--name is required in non-interactive mode")
+			}
+			appName, err = prompt.PromptForProjectName(ctx, opts.outputDir)
+			if err != nil {
+				return err
+			}
+		} else {
+			// Validate name in non-interactive mode
+			if err := prompt.ValidateProjectName(appName); err != nil {
+				return err
+			}
 		}
 
 		// Get warehouse ID if needed
@@ -919,7 +979,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 			return err
 		}
 
-		return runLegacyTemplateInit(ctx, selectedTemplate, opts.outputDir, warehouseID, servingEndpoint, experimentID, instanceName, databaseName, ucVolume)
+		return runLegacyTemplateInit(ctx, selectedTemplate, appName, opts.outputDir, warehouseID, servingEndpoint, experimentID, instanceName, databaseName, ucVolume)
 	}
 
 	// Use features from flags if provided
