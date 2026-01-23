@@ -50,9 +50,24 @@ func NewEnvFileBuilder(host string, appYmlPath string, resources map[string]stri
 		return nil, fmt.Errorf("failed to read %s: %w", appYmlPath, err)
 	}
 
-	// Parse app.yml
+	// Parse into yaml.Node to handle camelCase conversion
+	var node yaml.Node
+	if err := yaml.Unmarshal(data, &node); err != nil {
+		return nil, fmt.Errorf("failed to parse %s: %w", appYmlPath, err)
+	}
+
+	// Convert camelCase keys to snake_case (legacy templates use camelCase)
+	convertKeysToSnakeCase(&node)
+
+	// Marshal back to YAML with snake_case keys
+	convertedData, err := yaml.Marshal(&node)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert %s to snake_case: %w", appYmlPath, err)
+	}
+
+	// Parse app.yml with snake_case keys
 	var appYml AppYml
-	if err := yaml.Unmarshal(data, &appYml); err != nil {
+	if err := yaml.Unmarshal(convertedData, &appYml); err != nil {
 		return nil, fmt.Errorf("failed to parse %s: %w", appYmlPath, err)
 	}
 
@@ -61,6 +76,38 @@ func NewEnvFileBuilder(host string, appYmlPath string, resources map[string]stri
 		env:       appYml.Env,
 		resources: resources,
 	}, nil
+}
+
+// convertKeysToSnakeCase recursively converts all mapping keys in a yaml.Node from camelCase to snake_case.
+func convertKeysToSnakeCase(node *yaml.Node) {
+	if node == nil {
+		return
+	}
+
+	switch node.Kind {
+	case yaml.DocumentNode:
+		for _, child := range node.Content {
+			convertKeysToSnakeCase(child)
+		}
+	case yaml.MappingNode:
+		// Process key-value pairs
+		for i := 0; i < len(node.Content); i += 2 {
+			keyNode := node.Content[i]
+			valueNode := node.Content[i+1]
+
+			// Convert key to snake_case
+			if keyNode.Kind == yaml.ScalarNode {
+				keyNode.Value = camelToSnake(keyNode.Value)
+			}
+
+			// Recursively process value
+			convertKeysToSnakeCase(valueNode)
+		}
+	case yaml.SequenceNode:
+		for _, child := range node.Content {
+			convertKeysToSnakeCase(child)
+		}
+	}
 }
 
 // Build generates the .env file content.
