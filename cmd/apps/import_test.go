@@ -283,6 +283,107 @@ resources:
 	})
 }
 
+func TestCamelToSnake(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{"valueFrom", "value_from"},
+		{"myValue", "my_value"},
+		{"value", "value"},
+		{"ID", "id"},
+		{"myID", "my_id"},
+		{"IDValue", "id_value"},
+		{"HTTPServer", "http_server"},
+		{"getHTTPResponseCode", "get_http_response_code"},
+		{"HTTPSConnection", "https_connection"},
+		{"", ""},
+		{"a", "a"},
+		{"A", "a"},
+		{"aB", "a_b"},
+		{"AB", "ab"},
+		{"ABC", "abc"},
+		{"ABc", "a_bc"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			result := camelToSnake(tt.input)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestInlineAppConfigFileCamelCaseConversion(t *testing.T) {
+	tmpDir := t.TempDir()
+	originalDir, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() {
+		_ = os.Chdir(originalDir)
+	}()
+	err = os.Chdir(tmpDir)
+	require.NoError(t, err)
+
+	// Create app.yml with camelCase field names (as might come from API)
+	err = os.WriteFile("app.yml", []byte(`command: ["python", "app.py"]
+env:
+  - name: FOO
+    valueFrom: some-secret
+  - name: BAR
+    value: baz`), 0o644)
+	require.NoError(t, err)
+
+	appValue := dyn.V(map[string]dyn.Value{
+		"name": dyn.V("test-app"),
+	})
+
+	filename, err := inlineAppConfigFile(&appValue)
+	require.NoError(t, err)
+	assert.Equal(t, "app.yml", filename)
+
+	// Verify that camelCase fields are converted to snake_case
+	appMap := appValue.MustMap()
+	var configValue dyn.Value
+	for _, pair := range appMap.Pairs() {
+		if pair.Key.MustString() == "config" {
+			configValue = pair.Value
+			break
+		}
+	}
+
+	require.NotEqual(t, dyn.KindInvalid, configValue.Kind(), "config section should exist")
+	configMap := configValue.MustMap()
+
+	var envValue dyn.Value
+	for _, pair := range configMap.Pairs() {
+		if pair.Key.MustString() == "env" {
+			envValue = pair.Value
+			break
+		}
+	}
+
+	require.NotEqual(t, dyn.KindInvalid, envValue.Kind(), "env should exist in config")
+	envList := envValue.MustSequence()
+	require.Len(t, envList, 2, "should have 2 env vars")
+
+	// Check first env var has value_from (snake_case), not valueFrom (camelCase)
+	firstEnv := envList[0].MustMap()
+	var hasValueFrom bool
+	var hasValueFromCamel bool
+	for _, pair := range firstEnv.Pairs() {
+		key := pair.Key.MustString()
+		if key == "value_from" {
+			hasValueFrom = true
+		}
+		if key == "valueFrom" {
+			hasValueFromCamel = true
+		}
+	}
+
+	assert.True(t, hasValueFrom, "should have value_from (snake_case) field")
+	assert.False(t, hasValueFromCamel, "should NOT have valueFrom (camelCase) field")
+}
+
 func TestPathContainsBundleFolder(t *testing.T) {
 	tests := []struct {
 		name     string

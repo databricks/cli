@@ -23,7 +23,6 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/dyn/yamlsaver"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/logdiag"
@@ -448,7 +447,7 @@ func generateAppBundle(ctx context.Context, w *databricks.WorkspaceClient, app *
 	}
 
 	// Create the bundle configuration with explicit line numbers to control ordering
-	// Use the app name for the bundle name
+	// Order: bundle (1), workspace (2), variables (3), resources (4)
 	bundleName := textutil.NormalizeString(app.Name)
 	bundleConfig := map[string]dyn.Value{
 		"bundle": dyn.NewValue(map[string]dyn.Value{
@@ -456,12 +455,12 @@ func generateAppBundle(ctx context.Context, w *databricks.WorkspaceClient, app *
 		}, []dyn.Location{{Line: 1}}),
 		"workspace": dyn.NewValue(map[string]dyn.Value{
 			"host": dyn.NewValue(w.Config.Host, []dyn.Location{{Line: 2}}),
-		}, []dyn.Location{{Line: 10}}),
+		}, []dyn.Location{{Line: 2}}),
 		"resources": dyn.NewValue(map[string]dyn.Value{
 			"apps": dyn.V(map[string]dyn.Value{
 				appKey: v,
 			}),
-		}, []dyn.Location{{Line: 20}}),
+		}, []dyn.Location{{Line: 4}}),
 	}
 
 	// Download the app source files
@@ -535,6 +534,99 @@ func addBlankLinesBetweenTopLevelKeys(filename string) error {
 	return writer.Flush()
 }
 
+// camelToSnake converts a camelCase string to snake_case.
+// Examples: valueFrom -> value_from, myValue -> my_value, ID -> id
+func camelToSnake(s string) string {
+	var result strings.Builder
+	for i, r := range s {
+		if i > 0 && r >= 'A' && r <= 'Z' {
+			// Check if the previous character was lowercase or if the next character is lowercase
+			// This handles cases like "ID" -> "id" vs "myID" -> "my_id"
+			prevLower := i > 0 && s[i-1] >= 'a' && s[i-1] <= 'z'
+			nextLower := i+1 < len(s) && s[i+1] >= 'a' && s[i+1] <= 'z'
+			if prevLower || nextLower {
+				result.WriteByte('_')
+			}
+		}
+		result.WriteRune(r)
+	}
+	return strings.ToLower(result.String())
+}
+
+// yamlNodeToDynValue converts a yaml.Node to dyn.Value, converting camelCase field names to snake_case.
+func yamlNodeToDynValue(node *yaml.Node) (dyn.Value, error) {
+	// yaml.Unmarshal wraps the document in a Document node, get the actual content
+	if node.Kind == yaml.DocumentNode && len(node.Content) > 0 {
+		node = node.Content[0]
+	}
+
+	switch node.Kind {
+	case yaml.MappingNode:
+		pairs := make([]dyn.Pair, 0, len(node.Content)/2)
+		for i := 0; i < len(node.Content); i += 2 {
+			keyNode := node.Content[i]
+			valueNode := node.Content[i+1]
+
+			// Convert camelCase keys to snake_case
+			snakeKey := camelToSnake(keyNode.Value)
+			key := dyn.V(snakeKey)
+			value, err := yamlNodeToDynValue(valueNode)
+			if err != nil {
+				return dyn.NilValue, err
+			}
+
+			pairs = append(pairs, dyn.Pair{Key: key, Value: value})
+		}
+		return dyn.NewValue(dyn.NewMappingFromPairs(pairs), []dyn.Location{}), nil
+
+	case yaml.SequenceNode:
+		items := make([]dyn.Value, 0, len(node.Content))
+		for _, itemNode := range node.Content {
+			item, err := yamlNodeToDynValue(itemNode)
+			if err != nil {
+				return dyn.NilValue, err
+			}
+			items = append(items, item)
+		}
+		return dyn.V(items), nil
+
+	case yaml.ScalarNode:
+		// Try to parse as different types
+		switch node.Tag {
+		case "!!str", "":
+			return dyn.V(node.Value), nil
+		case "!!bool":
+			if node.Value == "true" {
+				return dyn.V(true), nil
+			}
+			return dyn.V(false), nil
+		case "!!int":
+			var i int64
+			if err := yaml.Unmarshal([]byte(node.Value), &i); err != nil {
+				return dyn.NilValue, err
+			}
+			return dyn.V(i), nil
+		case "!!float":
+			var f float64
+			if err := yaml.Unmarshal([]byte(node.Value), &f); err != nil {
+				return dyn.NilValue, err
+			}
+			return dyn.V(f), nil
+		case "!!null":
+			return dyn.NilValue, nil
+		default:
+			// Default to string
+			return dyn.V(node.Value), nil
+		}
+
+	case yaml.AliasNode:
+		return yamlNodeToDynValue(node.Alias)
+
+	default:
+		return dyn.NilValue, fmt.Errorf("unsupported YAML node kind: %v", node.Kind)
+	}
+}
+
 // inlineAppConfigFile reads app.yml or app.yaml, inlines it into the app value, and returns the filename
 func inlineAppConfigFile(appValue *dyn.Value) (string, error) {
 	// Check for app.yml first, then app.yaml
@@ -558,11 +650,22 @@ func inlineAppConfigFile(appValue *dyn.Value) (string, error) {
 		return "", nil
 	}
 
-	// Parse the app config
-	var appConfig map[string]any
-	err = yaml.Unmarshal(appConfigData, &appConfig)
+	// Parse the app config as yaml.Node to preserve exact field names (e.g., value_from not valueFrom)
+	var appConfigNode yaml.Node
+	err = yaml.Unmarshal(appConfigData, &appConfigNode)
 	if err != nil {
 		return "", fmt.Errorf("failed to parse %s: %w", appConfigFile, err)
+	}
+
+	// Convert yaml.Node to dyn.Value preserving field names
+	appConfigValue, err := yamlNodeToDynValue(&appConfigNode)
+	if err != nil {
+		return "", fmt.Errorf("failed to convert app config: %w", err)
+	}
+
+	appConfigMap, ok := appConfigValue.AsMap()
+	if !ok {
+		return "", errors.New("app config is not a map")
 	}
 
 	// Get the current app value as a map
@@ -577,41 +680,31 @@ func inlineAppConfigFile(appValue *dyn.Value) (string, error) {
 	// Copy existing pairs
 	newPairs = append(newPairs, appMap.Pairs()...)
 
-	// Create config section
-	configMap := make(map[string]dyn.Value)
+	// Create config section from app.yml fields
+	var configPairs []dyn.Pair
+	var resourcesValue dyn.Value
 
-	// Add command if present
-	if cmd, ok := appConfig["command"]; ok {
-		cmdValue, err := convert.FromTyped(cmd, dyn.NilValue)
-		if err != nil {
-			return "", fmt.Errorf("failed to convert command: %w", err)
+	// Iterate through app config pairs to extract command, env, and resources
+	for _, pair := range appConfigMap.Pairs() {
+		key := pair.Key.MustString()
+		switch key {
+		case "command", "env":
+			configPairs = append(configPairs, pair)
+		case "resources":
+			resourcesValue = pair.Value
 		}
-		configMap["command"] = cmdValue
-	}
-
-	// Add env if present
-	if env, ok := appConfig["env"]; ok {
-		envValue, err := convert.FromTyped(env, dyn.NilValue)
-		if err != nil {
-			return "", fmt.Errorf("failed to convert env: %w", err)
-		}
-		configMap["env"] = envValue
 	}
 
 	// Add the config section if we have any items
-	if len(configMap) > 0 {
+	if len(configPairs) > 0 {
 		newPairs = append(newPairs, dyn.Pair{
 			Key:   dyn.V("config"),
-			Value: dyn.V(configMap),
+			Value: dyn.NewValue(dyn.NewMappingFromPairs(configPairs), []dyn.Location{}),
 		})
 	}
 
 	// Add resources at top level if present
-	if resources, ok := appConfig["resources"]; ok {
-		resourcesValue, err := convert.FromTyped(resources, dyn.NilValue)
-		if err != nil {
-			return "", fmt.Errorf("failed to convert resources: %w", err)
-		}
+	if resourcesValue.Kind() != dyn.KindInvalid {
 		newPairs = append(newPairs, dyn.Pair{
 			Key:   dyn.V("resources"),
 			Value: resourcesValue,
