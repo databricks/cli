@@ -54,7 +54,7 @@ func (r *ResourceCatalog) DoUpdate(ctx context.Context, id string, config *catal
 		EnablePredictiveOptimization: "", // Not supported by DABs
 		IsolationMode:                "", // Not supported by DABs
 		Name:                         id,
-		NewName:                      config.Name, // Support renaming catalogs
+		NewName:                      "", // Only set if name actually changes (see DoUpdateWithID)
 		Options:                      config.Options,
 		Owner:                        "", // Not supported by DABs
 		Properties:                   config.Properties,
@@ -67,6 +67,38 @@ func (r *ResourceCatalog) DoUpdate(ctx context.Context, id string, config *catal
 	}
 
 	return response, nil
+}
+
+// DoUpdateWithID updates the catalog and returns the new ID if the name changes.
+func (r *ResourceCatalog) DoUpdateWithID(ctx context.Context, id string, config *catalog.CreateCatalog) (string, *catalog.CatalogInfo, error) {
+	updateRequest := catalog.UpdateCatalog{
+		Comment:                      config.Comment,
+		EnablePredictiveOptimization: "", // Not supported by DABs
+		IsolationMode:                "", // Not supported by DABs
+		Name:                         id,
+		NewName:                      "", // Initialized below if needed
+		Options:                      config.Options,
+		Owner:                        "", // Not supported by DABs
+		Properties:                   config.Properties,
+		ForceSendFields:              utils.FilterFields[catalog.UpdateCatalog](config.ForceSendFields, "EnablePredictiveOptimization", "IsolationMode", "Owner"),
+	}
+
+	if config.Name != id {
+		updateRequest.NewName = config.Name
+	}
+
+	response, err := r.client.Catalogs.Update(ctx, updateRequest)
+	if err != nil {
+		return "", nil, err
+	}
+
+	// Return the new name as the ID if it changed, otherwise return the old ID
+	newID := id
+	if updateRequest.NewName != "" {
+		newID = updateRequest.NewName
+	}
+
+	return newID, response, nil
 }
 
 func (r *ResourceCatalog) DoDelete(ctx context.Context, id string) error {

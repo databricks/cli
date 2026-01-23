@@ -66,6 +66,15 @@ resources:
       - assets_dir
       - table_name
 
+  catalogs:
+    recreate_on_changes:
+      - storage_root
+      - connection_name
+      - provider_name
+      - share_name
+    update_id_on_changes:
+      - name
+
   schemas:
     recreate_on_changes:
       - name
