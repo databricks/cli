@@ -4,7 +4,7 @@ import (
 	"io"
 
 	"github.com/databricks/cli/libs/dyn"
-	"gopkg.in/yaml.v3"
+	"go.yaml.in/yaml/v3"
 )
 
 func LoadYAML(path string, r io.Reader) (dyn.Value, error) {
