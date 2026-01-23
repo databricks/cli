@@ -14,7 +14,7 @@ func newSpinner() *cobra.Command {
 		Run: func(cmd *cobra.Command, args []string) {
 			ctx := cmd.Context()
 
-			spinner := cmdio.Spinner(ctx)
+			sp := cmdio.NewSpinner(ctx)
 
 			// Test various status messages
 			messages := []struct {
@@ -29,11 +29,11 @@ func newSpinner() *cobra.Command {
 			}
 
 			for _, msg := range messages {
-				spinner <- msg.text
+				sp.Update(msg.text)
 				time.Sleep(msg.duration)
 			}
 
-			close(spinner)
+			sp.Close()
 
 			cmdio.LogString(ctx, "✓ Spinner test complete")
 		},

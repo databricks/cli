@@ -11,4 +11,5 @@ type ResourceGitCredential struct {
 	IsDefaultForProvider bool   `json:"is_default_for_provider,omitempty"`
 	Name                 string `json:"name,omitempty"`
 	PersonalAccessToken  string `json:"personal_access_token,omitempty"`
+	PrincipalId          int    `json:"principal_id,omitempty"`
 }

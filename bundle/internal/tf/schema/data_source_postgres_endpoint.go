@@ -3,8 +3,7 @@
 package schema
 
 type DataSourcePostgresEndpointSpecSettings struct {
-	PgSettings        map[string]string `json:"pg_settings,omitempty"`
-	PgbouncerSettings map[string]string `json:"pgbouncer_settings,omitempty"`
+	PgSettings map[string]string `json:"pg_settings,omitempty"`
 }
 
 type DataSourcePostgresEndpointSpec struct {
@@ -12,14 +11,17 @@ type DataSourcePostgresEndpointSpec struct {
 	AutoscalingLimitMinCu  int                                     `json:"autoscaling_limit_min_cu,omitempty"`
 	Disabled               bool                                    `json:"disabled,omitempty"`
 	EndpointType           string                                  `json:"endpoint_type"`
-	PoolerMode             string                                  `json:"pooler_mode,omitempty"`
+	NoSuspension           bool                                    `json:"no_suspension,omitempty"`
 	Settings               *DataSourcePostgresEndpointSpecSettings `json:"settings,omitempty"`
 	SuspendTimeoutDuration string                                  `json:"suspend_timeout_duration,omitempty"`
 }
 
+type DataSourcePostgresEndpointStatusHosts struct {
+	Host string `json:"host,omitempty"`
+}
+
 type DataSourcePostgresEndpointStatusSettings struct {
-	PgSettings        map[string]string `json:"pg_settings,omitempty"`
-	PgbouncerSettings map[string]string `json:"pgbouncer_settings,omitempty"`
+	PgSettings map[string]string `json:"pg_settings,omitempty"`
 }
 
 type DataSourcePostgresEndpointStatus struct {
@@ -28,13 +30,9 @@ type DataSourcePostgresEndpointStatus struct {
 	CurrentState           string                                    `json:"current_state,omitempty"`
 	Disabled               bool                                      `json:"disabled,omitempty"`
 	EndpointType           string                                    `json:"endpoint_type,omitempty"`
-	Host                   string                                    `json:"host,omitempty"`
-	LastActiveTime         string                                    `json:"last_active_time,omitempty"`
+	Hosts                  *DataSourcePostgresEndpointStatusHosts    `json:"hosts,omitempty"`
 	PendingState           string                                    `json:"pending_state,omitempty"`
-	PoolerMode             string                                    `json:"pooler_mode,omitempty"`
 	Settings               *DataSourcePostgresEndpointStatusSettings `json:"settings,omitempty"`
-	StartTime              string                                    `json:"start_time,omitempty"`
-	SuspendTime            string                                    `json:"suspend_time,omitempty"`
 	SuspendTimeoutDuration string                                    `json:"suspend_timeout_duration,omitempty"`
 }
 

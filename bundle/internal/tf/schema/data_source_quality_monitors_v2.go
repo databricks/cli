@@ -8,10 +8,33 @@ type DataSourceQualityMonitorsV2QualityMonitorsAnomalyDetectionConfig struct {
 	LatestRunStatus        string   `json:"latest_run_status,omitempty"`
 }
 
+type DataSourceQualityMonitorsV2QualityMonitorsValidityCheckConfigurationsPercentNullValidityCheck struct {
+	ColumnNames []string `json:"column_names,omitempty"`
+	UpperBound  int      `json:"upper_bound,omitempty"`
+}
+
+type DataSourceQualityMonitorsV2QualityMonitorsValidityCheckConfigurationsRangeValidityCheck struct {
+	ColumnNames []string `json:"column_names,omitempty"`
+	LowerBound  int      `json:"lower_bound,omitempty"`
+	UpperBound  int      `json:"upper_bound,omitempty"`
+}
+
+type DataSourceQualityMonitorsV2QualityMonitorsValidityCheckConfigurationsUniquenessValidityCheck struct {
+	ColumnNames []string `json:"column_names,omitempty"`
+}
+
+type DataSourceQualityMonitorsV2QualityMonitorsValidityCheckConfigurations struct {
+	Name                     string                                                                                         `json:"name,omitempty"`
+	PercentNullValidityCheck *DataSourceQualityMonitorsV2QualityMonitorsValidityCheckConfigurationsPercentNullValidityCheck `json:"percent_null_validity_check,omitempty"`
+	RangeValidityCheck       *DataSourceQualityMonitorsV2QualityMonitorsValidityCheckConfigurationsRangeValidityCheck       `json:"range_validity_check,omitempty"`
+	UniquenessValidityCheck  *DataSourceQualityMonitorsV2QualityMonitorsValidityCheckConfigurationsUniquenessValidityCheck  `json:"uniqueness_validity_check,omitempty"`
+}
+
 type DataSourceQualityMonitorsV2QualityMonitors struct {
-	AnomalyDetectionConfig *DataSourceQualityMonitorsV2QualityMonitorsAnomalyDetectionConfig `json:"anomaly_detection_config,omitempty"`
-	ObjectId               string                                                            `json:"object_id"`
-	ObjectType             string                                                            `json:"object_type"`
+	AnomalyDetectionConfig      *DataSourceQualityMonitorsV2QualityMonitorsAnomalyDetectionConfig       `json:"anomaly_detection_config,omitempty"`
+	ObjectId                    string                                                                  `json:"object_id"`
+	ObjectType                  string                                                                  `json:"object_type"`
+	ValidityCheckConfigurations []DataSourceQualityMonitorsV2QualityMonitorsValidityCheckConfigurations `json:"validity_check_configurations,omitempty"`
 }
 
 type DataSourceQualityMonitorsV2 struct {
