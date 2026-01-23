@@ -1,0 +1,27 @@
+{
+  "custom_summary": "test-alert",
+  "evaluation": {
+    "source": {
+      "name": "1",
+      "display": "1",
+      "aggregation": "MAX"
+    },
+    "comparison_operator": "EQUAL",
+    "threshold": {
+      "value": {
+        "double_value": 1.0
+      }
+    },
+    "notification": {
+      "retrigger_seconds": 60,
+      "notify_on_ok": false
+    }
+  },
+  "schedule": {
+    "quartz_cron_schedule": "0 0 * * * ?",
+    "timezone_id": "UTC"
+  },
+  "query_lines": [
+    "select 1"
+  ]
+}
