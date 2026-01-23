@@ -1,13 +1,11 @@
 package pipelines
 
 import (
-	"bytes"
 	"context"
 	"testing"
 	"time"
 
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
 	"github.com/stretchr/testify/assert"
 )
@@ -146,15 +144,11 @@ Pipeline configurations for this update:
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var buf bytes.Buffer
-
-			ctx := context.Background()
-			cmdIO := cmdio.NewIO(ctx, flags.OutputText, nil, &buf, &buf, "", "")
-			ctx = cmdio.InContext(ctx, cmdIO)
+			ctx, stdout := cmdio.NewTestContextWithStdout(context.Background())
 
 			err := displayPipelineUpdate(ctx, tt.update, tt.pipelineID, tt.events)
 			assert.NoError(t, err)
-			assert.Equal(t, tt.expected, buf.String())
+			assert.Equal(t, tt.expected, stdout.String())
 		})
 	}
 }
@@ -376,15 +370,11 @@ RUNNING                   750ms
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var buf bytes.Buffer
-
-			ctx := context.Background()
-			cmdIO := cmdio.NewIO(ctx, flags.OutputText, nil, &buf, &buf, "", "")
-			ctx = cmdio.InContext(ctx, cmdIO)
+			ctx, stdout := cmdio.NewTestContextWithStdout(context.Background())
 
 			err := displayProgressEventsDurations(ctx, tt.events)
 			assert.NoError(t, err)
-			assert.Equal(t, tt.expected, buf.String())
+			assert.Equal(t, tt.expected, stdout.String())
 		})
 	}
 }

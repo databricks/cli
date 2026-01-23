@@ -1,3 +1,2 @@
-export ENABLE_PIPELINES_CLI=1
 
 trace errcode $CLI pipelines generate --existing-pipeline-dir /tmp/foo
