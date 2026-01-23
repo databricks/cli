@@ -3,6 +3,9 @@ Local = true
 
 RecordRequests = true
 
+# Enable engine-specific output files
+EnvVaryOutput = "DATABRICKS_BUNDLE_ENGINE"
+
 # Redact structured logging fields from debug output
 [[Repls]]
 Old = ' pid=[0-9]+'

@@ -2,7 +2,7 @@
 mkdir -p whl
 echo "test wheel content" > whl/source.whl
 
-trace $CLI bundle deploy
+trace $CLI bundle deploy > out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1
 
 title "Expecting wheel to be uploaded"
 trace jq .path < out.requests.txt | grep import | grep whl | sort

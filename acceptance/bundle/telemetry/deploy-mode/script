@@ -1,6 +1,6 @@
-trace $CLI bundle deploy -t dev
+trace $CLI bundle deploy -t dev > out.deploy-dev.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1
 
-trace $CLI bundle deploy -t prod
+trace $CLI bundle deploy -t prod > out.deploy-prod.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1
 
 trace cat out.requests.txt | jq 'select(has("path") and .path == "/telemetry-ext") | .body.protoLogs[] | fromjson | .entry.databricks_cli_log.bundle_deploy_event.experimental | {bundle_mode}'
 
