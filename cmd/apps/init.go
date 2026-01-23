@@ -30,11 +30,14 @@ const (
 	defaultTemplateURL = "https://github.com/databricks/appkit/tree/main/template"
 )
 
-//go:embed app-template-app-manifests.json
+//go:embed legacy-template/app-template-app-manifests.json
 var appTemplateManifestsJSON []byte
 
-//go:embed databricks-yml.tmpl
+//go:embed legacy-template/databricks-yml.tmpl
 var databricksYmlTemplate string
+
+//go:embed legacy-template/gitignore.tmpl
+var gitignoreTemplate string
 
 // resourceSpec represents a resource specification in the template manifest.
 type resourceSpec struct {
@@ -669,6 +672,13 @@ func (b *envBuilder) addUCVolume(volume string) {
 	}
 }
 
+// addWorkspaceHost adds workspace host configuration to the .env file.
+func (b *envBuilder) addWorkspaceHost(host string) {
+	if host != "" {
+		b.vars = append(b.vars, envVar{"DATABRICKS_HOST", host})
+	}
+}
+
 // build generates the .env file content.
 func (b *envBuilder) build() string {
 	if len(b.vars) == 0 {
@@ -712,9 +722,9 @@ func (b *resourceBindingsBuilder) addWarehouse(warehouseID string) {
 		name:        "warehouse",
 		description: "SQL Warehouse for analytics",
 		lines: []string{
-			"          # sql_warehouse:",
-			"          #   id: " + warehouseID,
-			"          #   permission: CAN_USE",
+			"          sql_warehouse:",
+			"            id: " + warehouseID,
+			"            permission: CAN_USE",
 		},
 	})
 }
@@ -728,9 +738,9 @@ func (b *resourceBindingsBuilder) addServingEndpoint(endpoint string) {
 		name:        "serving-endpoint",
 		description: "Model serving endpoint",
 		lines: []string{
-			"          # serving_endpoint:",
-			"          #   name: " + endpoint,
-			"          #   permission: CAN_QUERY",
+			"          serving_endpoint:",
+			"            name: " + endpoint,
+			"            permission: CAN_QUERY",
 		},
 	})
 }
@@ -744,9 +754,9 @@ func (b *resourceBindingsBuilder) addExperiment(experimentID string) {
 		name:        "experiment",
 		description: "MLflow experiment",
 		lines: []string{
-			"          # experiment:",
-			"          #   id: " + experimentID,
-			"          #   permission: CAN_MANAGE",
+			"          experiment:",
+			"            id: " + experimentID,
+			"            permission: CAN_MANAGE",
 		},
 	})
 }
@@ -1038,7 +1048,7 @@ func copyFile(src, dst string) error {
 
 // runLegacyTemplateInit initializes a project using a legacy template.
 // All resource parameters are optional and will be passed to the template if provided.
-func runLegacyTemplateInit(ctx context.Context, selectedTemplate *appTemplateManifest, appName, outputDir, warehouseID, servingEndpoint, experimentID, instanceName, databaseName, ucVolume string, shouldDeploy bool, runMode prompt.RunMode) error {
+func runLegacyTemplateInit(ctx context.Context, selectedTemplate *appTemplateManifest, appName, outputDir, warehouseID, servingEndpoint, experimentID, instanceName, databaseName, ucVolume, workspaceHost string, shouldDeploy bool, runMode prompt.RunMode) error {
 	// Determine the destination directory
 	destDir := appName
 	if outputDir != "" {
@@ -1086,6 +1096,7 @@ func runLegacyTemplateInit(ctx context.Context, selectedTemplate *appTemplateMan
 
 	// Create a .env file with resource configurations
 	builder := newEnvBuilder()
+	builder.addWorkspaceHost(workspaceHost)
 	builder.addWarehouse(warehouseID)
 	builder.addServingEndpoint(servingEndpoint)
 	builder.addExperiment(experimentID)
@@ -1104,11 +1115,10 @@ func runLegacyTemplateInit(ctx context.Context, selectedTemplate *appTemplateMan
 
 	// Create or update .gitignore to protect .env file
 	gitignorePath := filepath.Join(destDir, ".gitignore")
-	gitignoreContent := ""
 
 	// Check if .gitignore already exists
 	if existingContent, err := os.ReadFile(gitignorePath); err == nil {
-		gitignoreContent = string(existingContent)
+		gitignoreContent := string(existingContent)
 		// Check if .env is already in .gitignore
 		if !strings.Contains(gitignoreContent, ".env") {
 			// Add .env to existing .gitignore
@@ -1116,41 +1126,19 @@ func runLegacyTemplateInit(ctx context.Context, selectedTemplate *appTemplateMan
 				gitignoreContent += "\n"
 			}
 			gitignoreContent += "\n# Environment variables\n.env\n"
+			if err := os.WriteFile(gitignorePath, []byte(gitignoreContent), 0o644); err != nil {
+				cmdio.LogString(ctx, fmt.Sprintf("⚠ Failed to write .gitignore: %v", err))
+			} else {
+				cmdio.LogString(ctx, "✓ Updated .gitignore")
+			}
 		}
 	} else {
-		// Create new .gitignore with common patterns
-		gitignoreContent = `# Environment variables
-.env
-
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-*.egg-info/
-dist/
-build/
-.venv/
-venv/
-
-# IDEs
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# OS
-.DS_Store
-Thumbs.db
-`
-	}
-
-	if err := os.WriteFile(gitignorePath, []byte(gitignoreContent), 0o644); err != nil {
-		cmdio.LogString(ctx, fmt.Sprintf("⚠ Failed to write .gitignore: %v", err))
-	} else {
-		cmdio.LogString(ctx, "✓ Created .gitignore")
+		// Create new .gitignore from template
+		if err := os.WriteFile(gitignorePath, []byte(gitignoreTemplate), 0o644); err != nil {
+			cmdio.LogString(ctx, fmt.Sprintf("⚠ Failed to write .gitignore: %v", err))
+		} else {
+			cmdio.LogString(ctx, "✓ Created .gitignore")
+		}
 	}
 
 	// Build resource bindings for databricks.yml
@@ -1163,6 +1151,7 @@ Thumbs.db
 	vars := templateVars{
 		ProjectName:      appName,
 		AppDescription:   selectedTemplate.Manifest.Description,
+		WorkspaceHost:    workspaceHost,
 		ResourceBindings: bindingsBuilder.build(),
 	}
 
@@ -1209,7 +1198,7 @@ Thumbs.db
 
 // handleLegacyTemplateInit handles the common logic for initializing a legacy template.
 // It gets the app name, collects resources, determines deploy/run options, and calls runLegacyTemplateInit.
-func handleLegacyTemplateInit(ctx context.Context, legacyTemplate *appTemplateManifest, opts createOptions, isInteractive bool) error {
+func handleLegacyTemplateInit(ctx context.Context, legacyTemplate *appTemplateManifest, opts createOptions, isInteractive bool, workspaceHost string) error {
 	// Get app name
 	appName := opts.name
 	if appName == "" {
@@ -1260,7 +1249,7 @@ func handleLegacyTemplateInit(ctx context.Context, legacyTemplate *appTemplateMa
 	return runLegacyTemplateInit(ctx, legacyTemplate, appName, opts.outputDir,
 		resources.warehouseID, resources.servingEndpoint, resources.experimentID,
 		resources.instanceName, resources.databaseName, resources.ucVolume,
-		shouldDeploy, runMode)
+		workspaceHost, shouldDeploy, runMode)
 }
 
 func runCreate(ctx context.Context, opts createOptions) error {
@@ -1269,6 +1258,14 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	var shouldDeploy bool
 	var runMode prompt.RunMode
 	isInteractive := cmdio.IsPromptSupported(ctx)
+
+	// Get workspace host and profile from context early (needed for legacy templates)
+	workspaceHost := ""
+	profile := ""
+	if w := cmdctx.WorkspaceClient(ctx); w != nil && w.Config != nil {
+		workspaceHost = w.Config.Host
+		profile = w.Config.Profile
+	}
 
 	// Use features from flags if provided
 	if len(opts.features) > 0 {
@@ -1287,7 +1284,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 			// Check if the template path matches a legacy template
 			if legacyTemplate := findLegacyTemplateByPath(manifests, opts.templatePath); legacyTemplate != nil {
 				log.Infof(ctx, "Using legacy template: %s", opts.templatePath)
-				return handleLegacyTemplateInit(ctx, legacyTemplate, opts, isInteractive)
+				return handleLegacyTemplateInit(ctx, legacyTemplate, opts, isInteractive, workspaceHost)
 			}
 		}
 	}
@@ -1314,7 +1311,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 			return err
 		}
 
-		return handleLegacyTemplateInit(ctx, selectedTemplate, opts, isInteractive)
+		return handleLegacyTemplateInit(ctx, selectedTemplate, opts, isInteractive, workspaceHost)
 	}
 
 	// Use features from flags if provided
@@ -1542,14 +1539,6 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	// Set description default
 	if opts.description == "" {
 		opts.description = prompt.DefaultAppDescription
-	}
-
-	// Get workspace host and profile from context
-	workspaceHost := ""
-	profile := ""
-	if w := cmdctx.WorkspaceClient(ctx); w != nil && w.Config != nil {
-		workspaceHost = w.Config.Host
-		profile = w.Config.Profile
 	}
 
 	// Build plugin imports and usages from selected features

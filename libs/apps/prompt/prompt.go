@@ -237,7 +237,7 @@ func PromptForDeployAndRun(ctx context.Context) (deploy bool, runMode RunMode, e
 	// Build run options - dev-remote requires deploy (needs a deployed app to connect to)
 	runOptions := []huh.Option[string]{
 		huh.NewOption("No, I'll run it later", string(RunModeNone)),
-		huh.NewOption("Yes, run locally (npm run dev)", string(RunModeDev)),
+		huh.NewOption("Yes, run locally", string(RunModeDev)),
 	}
 	if deploy {
 		runOptions = append(runOptions, huh.NewOption("Yes, run with remote bridge (dev-remote)", string(RunModeDevRemote)))
@@ -398,7 +398,7 @@ func PromptForProjectConfig(ctx context.Context, preSelectedFeatures []string) (
 		Description("Choose how to start the development server").
 		Options(
 			huh.NewOption("No, I'll run it later", string(RunModeNone)),
-			huh.NewOption("Yes, run locally (npm run dev)", string(RunModeDev)),
+			huh.NewOption("Yes, run locally", string(RunModeDev)),
 			huh.NewOption("Yes, run with remote bridge (dev-remote)", string(RunModeDevRemote)),
 		).
 		Value(&runModeStr).
