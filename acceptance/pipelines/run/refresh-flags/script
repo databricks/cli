@@ -3,21 +3,21 @@ print_requests() {
     rm out.requests.txt
 }
 
-trace $ENTRYPOINT deploy
+trace $CLI pipelines deploy
 rm out.requests.txt
 
 title "Running pipeline with --refresh flag and specific tables"
-trace $ENTRYPOINT run --refresh table1,table2
+trace $CLI pipelines run --refresh table1,table2
 trace print_requests
 
 title "Running pipeline with --full-refresh-all flag"
-trace $ENTRYPOINT run --full-refresh-all
+trace $CLI pipelines run --full-refresh-all
 trace print_requests
 
 title "Running pipeline with --full-refresh flag and specific tables"
-trace $ENTRYPOINT run --full-refresh table1,table2
+trace $CLI pipelines run --full-refresh table1,table2
 trace print_requests
 
 title "Running pipeline with --full-refresh flag and --refresh flag"
-trace $ENTRYPOINT run --full-refresh table1,table2 --refresh table3,table4
+trace $CLI pipelines run --full-refresh table1,table2 --refresh table3,table4
 trace print_requests

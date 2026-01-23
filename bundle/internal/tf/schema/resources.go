@@ -6,6 +6,7 @@ type Resources struct {
 	AccessControlRuleSet                         map[string]any `json:"databricks_access_control_rule_set,omitempty"`
 	AccountFederationPolicy                      map[string]any `json:"databricks_account_federation_policy,omitempty"`
 	AccountNetworkPolicy                         map[string]any `json:"databricks_account_network_policy,omitempty"`
+	AccountSettingUserPreferenceV2               map[string]any `json:"databricks_account_setting_user_preference_v2,omitempty"`
 	AccountSettingV2                             map[string]any `json:"databricks_account_setting_v2,omitempty"`
 	AibiDashboardEmbeddingAccessPolicySetting    map[string]any `json:"databricks_aibi_dashboard_embedding_access_policy_setting,omitempty"`
 	AibiDashboardEmbeddingApprovedDomainsSetting map[string]any `json:"databricks_aibi_dashboard_embedding_approved_domains_setting,omitempty"`
@@ -136,6 +137,7 @@ type Resources struct {
 	VectorSearchEndpoint                         map[string]any `json:"databricks_vector_search_endpoint,omitempty"`
 	VectorSearchIndex                            map[string]any `json:"databricks_vector_search_index,omitempty"`
 	Volume                                       map[string]any `json:"databricks_volume,omitempty"`
+	WarehousesDefaultWarehouseOverride           map[string]any `json:"databricks_warehouses_default_warehouse_override,omitempty"`
 	WorkspaceBinding                             map[string]any `json:"databricks_workspace_binding,omitempty"`
 	WorkspaceConf                                map[string]any `json:"databricks_workspace_conf,omitempty"`
 	WorkspaceEntityTagAssignment                 map[string]any `json:"databricks_workspace_entity_tag_assignment,omitempty"`
@@ -149,6 +151,7 @@ func NewResources() *Resources {
 		AccessControlRuleSet:                         make(map[string]any),
 		AccountFederationPolicy:                      make(map[string]any),
 		AccountNetworkPolicy:                         make(map[string]any),
+		AccountSettingUserPreferenceV2:               make(map[string]any),
 		AccountSettingV2:                             make(map[string]any),
 		AibiDashboardEmbeddingAccessPolicySetting:    make(map[string]any),
 		AibiDashboardEmbeddingApprovedDomainsSetting: make(map[string]any),
@@ -279,6 +282,7 @@ func NewResources() *Resources {
 		VectorSearchEndpoint:                  make(map[string]any),
 		VectorSearchIndex:                     make(map[string]any),
 		Volume:                                make(map[string]any),
+		WarehousesDefaultWarehouseOverride:    make(map[string]any),
 		WorkspaceBinding:                      make(map[string]any),
 		WorkspaceConf:                         make(map[string]any),
 		WorkspaceEntityTagAssignment:          make(map[string]any),

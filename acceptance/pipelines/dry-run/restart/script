@@ -3,9 +3,9 @@ print_requests() {
     rm out.requests.txt
 }
 
-trace $ENTRYPOINT deploy
+trace $CLI pipelines deploy
 rm out.requests.txt
 
 title "Dry running pipeline with --restart flag, should stop the current pipeline and start a new run"
-trace $ENTRYPOINT dry-run --restart
+trace $CLI pipelines dry-run --restart
 trace print_requests

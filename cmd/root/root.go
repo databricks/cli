@@ -14,6 +14,7 @@ import (
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/telemetry"
@@ -80,6 +81,12 @@ func New(ctx context.Context) *cobra.Command {
 		ctx = withAgentInUserAgent(ctx)
 		ctx = InjectTestPidToUserAgent(ctx)
 		cmd.SetContext(ctx)
+		return nil
+	}
+
+	cmd.PersistentPostRunE = func(cmd *cobra.Command, args []string) error {
+		// Wait for any active Bubble Tea programs to finish and restore terminal state
+		cmdio.Wait(cmd.Context())
 		return nil
 	}
 

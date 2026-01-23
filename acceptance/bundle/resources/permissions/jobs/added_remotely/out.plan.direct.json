@@ -40,7 +40,7 @@
       "changes": {
         "email_notifications": {
           "action": "skip",
-          "reason": "server_side_default",
+          "reason": "empty_struct",
           "remote": {}
         },
         "timeout_seconds": {
@@ -50,7 +50,7 @@
         },
         "webhook_notifications": {
           "action": "skip",
-          "reason": "server_side_default",
+          "reason": "empty_struct",
           "remote": {}
         }
       }

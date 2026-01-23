@@ -1,0 +1,1 @@
+command: ["flask", "--app", "app", "run"]

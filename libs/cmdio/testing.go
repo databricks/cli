@@ -2,8 +2,11 @@ package cmdio
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"io"
+
+	"github.com/databricks/cli/libs/flags"
 )
 
 type Test struct {
@@ -61,4 +64,20 @@ func SetupTest(ctx context.Context, opts TestOptions) (context.Context, *Test) {
 		Stdout: bufio.NewReader(rout),
 		Stderr: bufio.NewReader(rerr),
 	}
+}
+
+// NewTestContextWithStdout creates a cmdio context that captures stdout output.
+// Stderr is discarded. Use this for testing data output and results.
+func NewTestContextWithStdout(ctx context.Context) (context.Context, *bytes.Buffer) {
+	stdout := &bytes.Buffer{}
+	cmdIO := NewIO(ctx, flags.OutputText, nil, stdout, io.Discard, "", "")
+	return InContext(ctx, cmdIO), stdout
+}
+
+// NewTestContextWithStderr creates a cmdio context that captures stderr output.
+// Stdout is discarded. Use this for testing diagnostics, logs, and error messages.
+func NewTestContextWithStderr(ctx context.Context) (context.Context, *bytes.Buffer) {
+	stderr := &bytes.Buffer{}
+	cmdIO := NewIO(ctx, flags.OutputText, nil, io.Discard, stderr, "", "")
+	return InContext(ctx, cmdIO), stderr
 }

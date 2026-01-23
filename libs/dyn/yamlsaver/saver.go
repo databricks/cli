@@ -9,7 +9,7 @@ import (
 	"strconv"
 
 	"github.com/databricks/cli/libs/dyn"
-	"gopkg.in/yaml.v3"
+	"go.yaml.in/yaml/v3"
 )
 
 type saver struct {
