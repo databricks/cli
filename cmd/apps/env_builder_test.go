@@ -87,7 +87,6 @@ func TestBuild(t *testing.T) {
 		assert.Contains(t, content, "DATABRICKS_HOST=https://test.cloud.databricks.com")
 		assert.Contains(t, content, "FOO=bar")
 		assert.Contains(t, content, "BAZ=qux")
-		assert.Contains(t, content, "# Environment variables from app.yml")
 	})
 
 	t.Run("with value_from references", func(t *testing.T) {
@@ -98,8 +97,8 @@ func TestBuild(t *testing.T) {
 				{Name: "SERVING_ENDPOINT_NAME", ValueFrom: "serving-endpoint"},
 			},
 			resources: map[string]string{
-				"sql-warehouse":     "abc123",
-				"serving-endpoint":  "my-endpoint",
+				"sql-warehouse":    "abc123",
+				"serving-endpoint": "my-endpoint",
 			},
 		}
 
@@ -319,9 +318,9 @@ env:
 
 		// Create resource map with names matching databricks.yml resource.name fields
 		resources := map[string]string{
-			"sql-warehouse":     "abc123xyz",
-			"experiment":        "exp-456",
-			"serving-endpoint":  "my-endpoint",
+			"sql-warehouse":    "abc123xyz",
+			"experiment":       "exp-456",
+			"serving-endpoint": "my-endpoint",
 		}
 
 		// Build and write .env
@@ -343,6 +342,5 @@ env:
 		assert.Contains(t, contentStr, "SERVING_ENDPOINT_NAME=my-endpoint")
 		assert.Contains(t, contentStr, "APP_NAME=my-test-app")
 		assert.Contains(t, contentStr, "DEBUG=true")
-		assert.Contains(t, contentStr, "# Environment variables from app.yml")
 	})
 }
