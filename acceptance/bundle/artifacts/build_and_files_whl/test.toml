@@ -1,1 +1,2 @@
 RecordRequests = false
+EnvVaryOutput = "DATABRICKS_BUNDLE_ENGINE"

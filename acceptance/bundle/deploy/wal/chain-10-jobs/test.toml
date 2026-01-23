@@ -14,4 +14,3 @@ Response.Body = '{}'
 [[Server]]
 Pattern = "GET /api/2.2/jobs/get"
 Response.Body = '{"job_id": 1001, "settings": {"name": "test-job"}}'
-
