@@ -22,7 +22,6 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/git"
 	"github.com/databricks/cli/libs/log"
-	templatelib "github.com/databricks/cli/libs/template"
 	"github.com/spf13/cobra"
 )
 
@@ -724,92 +723,154 @@ func getUCVolumeForTemplate(ctx context.Context, tmpl *appTemplateManifest, prov
 	})
 }
 
+// copyDir recursively copies a directory tree from src to dst.
+func copyDir(src, dst string) error {
+	// Get source directory info
+	srcInfo, err := os.Stat(src)
+	if err != nil {
+		return err
+	}
+
+	// Create destination directory
+	if err := os.MkdirAll(dst, srcInfo.Mode()); err != nil {
+		return err
+	}
+
+	// Read source directory
+	entries, err := os.ReadDir(src)
+	if err != nil {
+		return err
+	}
+
+	for _, entry := range entries {
+		srcPath := filepath.Join(src, entry.Name())
+		dstPath := filepath.Join(dst, entry.Name())
+
+		if entry.IsDir() {
+			// Recursively copy subdirectory
+			if err := copyDir(srcPath, dstPath); err != nil {
+				return err
+			}
+		} else {
+			// Copy file
+			if err := copyFile(srcPath, dstPath); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+// copyFile copies a single file from src to dst.
+func copyFile(src, dst string) error {
+	srcFile, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer srcFile.Close()
+
+	// Get source file info for permissions
+	srcInfo, err := srcFile.Stat()
+	if err != nil {
+		return err
+	}
+
+	dstFile, err := os.OpenFile(dst, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, srcInfo.Mode())
+	if err != nil {
+		return err
+	}
+	defer dstFile.Close()
+
+	if _, err := srcFile.WriteTo(dstFile); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // runLegacyTemplateInit initializes a project using a legacy template.
 // All resource parameters are optional and will be passed to the template if provided.
 func runLegacyTemplateInit(ctx context.Context, selectedTemplate *appTemplateManifest, appName, outputDir, warehouseID, servingEndpoint, experimentID, instanceName, databaseName, ucVolume string) error {
-	var configFile string
+	// Determine the destination directory
+	destDir := appName
+	if outputDir != "" {
+		destDir = filepath.Join(outputDir, appName)
+	}
 
-	// If any resource is provided, create a temporary config file
+	// Check if directory already exists
+	if _, err := os.Stat(destDir); err == nil {
+		return fmt.Errorf("directory %s already exists", destDir)
+	}
+
+	// Create a temporary directory for cloning the repo
+	tmpDir, err := os.MkdirTemp("", "databricks-app-template-*")
+	if err != nil {
+		return fmt.Errorf("failed to create temp directory: %w", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	cmdio.LogString(ctx, "Cloning template repository...")
+
+	// Clone the repository (shallow clone)
+	if err := git.Clone(ctx, selectedTemplate.GitRepo, "", tmpDir); err != nil {
+		return fmt.Errorf("failed to clone repository: %w", err)
+	}
+
+	// Source path is the template directory within the cloned repo
+	srcPath := filepath.Join(tmpDir, selectedTemplate.Path)
+	if _, err := os.Stat(srcPath); err != nil {
+		return fmt.Errorf("template path %s not found in repository: %w", selectedTemplate.Path, err)
+	}
+
+	// Copy the template directory to the destination
+	cmdio.LogString(ctx, fmt.Sprintf("Copying template files to %s...", destDir))
+	if err := copyDir(srcPath, destDir); err != nil {
+		return fmt.Errorf("failed to copy template: %w", err)
+	}
+
+	// Remove .git directory if it exists in the destination
+	gitDir := filepath.Join(destDir, ".git")
+	if _, err := os.Stat(gitDir); err == nil {
+		if err := os.RemoveAll(gitDir); err != nil {
+			return fmt.Errorf("failed to remove .git directory: %w", err)
+		}
+	}
+
+	// Create a .env file with resource configurations if any were provided
 	if warehouseID != "" || servingEndpoint != "" || experimentID != "" || instanceName != "" || databaseName != "" || ucVolume != "" {
-		tmpFile, err := os.CreateTemp("", "databricks-app-config-*.json")
-		if err != nil {
-			return fmt.Errorf("failed to create temp config file: %w", err)
-		}
-		configFile = tmpFile.Name()
-		defer os.Remove(configFile)
+		envContent := "# Resource configurations\n"
+		envContent += "# Update your application code to use these resources\n\n"
 
-		configData := make(map[string]string)
-
-		// Add warehouse ID if provided
 		if warehouseID != "" {
-			// Convert warehouse ID to http_path format if it's not already
-			httpPath := warehouseID
 			if !strings.HasPrefix(warehouseID, "/sql/") {
-				httpPath = "/sql/1.0/warehouses/" + warehouseID
+				envContent += fmt.Sprintf("DATABRICKS_WAREHOUSE_ID=%s\n", warehouseID)
+			} else {
+				envContent += fmt.Sprintf("DATABRICKS_WAREHOUSE_PATH=%s\n", warehouseID)
 			}
-			configData["http_path"] = httpPath
 		}
-
-		// Add serving endpoint if provided
 		if servingEndpoint != "" {
-			configData["serving_endpoint"] = servingEndpoint
+			envContent += fmt.Sprintf("DATABRICKS_SERVING_ENDPOINT=%s\n", servingEndpoint)
 		}
-
-		// Add experiment ID if provided
 		if experimentID != "" {
-			configData["experiment_id"] = experimentID
+			envContent += fmt.Sprintf("DATABRICKS_EXPERIMENT_ID=%s\n", experimentID)
 		}
-
-		// Add database instance and name if provided
 		if instanceName != "" {
-			configData["database_instance"] = instanceName
+			envContent += fmt.Sprintf("DATABRICKS_DATABASE_INSTANCE=%s\n", instanceName)
 		}
 		if databaseName != "" {
-			configData["database_name"] = databaseName
+			envContent += fmt.Sprintf("DATABRICKS_DATABASE_NAME=%s\n", databaseName)
 		}
-
-		// Add UC volume if provided
 		if ucVolume != "" {
-			configData["uc_volume_path"] = ucVolume
+			envContent += fmt.Sprintf("DATABRICKS_UC_VOLUME=%s\n", ucVolume)
 		}
 
-		configJSON, err := json.MarshalIndent(configData, "", "  ")
-		if err != nil {
-			return fmt.Errorf("failed to marshal config: %w", err)
+		envPath := filepath.Join(destDir, ".env.example")
+		if err := os.WriteFile(envPath, []byte(envContent), 0o644); err != nil {
+			cmdio.LogString(ctx, fmt.Sprintf("⚠ Failed to write .env.example: %v", err))
+		} else {
+			cmdio.LogString(ctx, "✓ Created .env.example with resource configurations")
 		}
-
-		if err := os.WriteFile(tmpFile.Name(), configJSON, 0o600); err != nil {
-			return fmt.Errorf("failed to write config file: %w", err)
-		}
-		tmpFile.Close()
-	}
-
-	// Use the libs/template package similar to bundle init
-	r := templatelib.Resolver{
-		TemplatePathOrUrl: selectedTemplate.GitRepo,
-		OutputDir:         outputDir,
-		TemplateDir:       selectedTemplate.Path,
-		ConfigFile:        configFile,
-	}
-
-	tmpl, err := r.Resolve(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to resolve template: %w", err)
-	}
-	defer tmpl.Reader.Cleanup(ctx)
-
-	err = tmpl.Writer.Materialize(ctx, tmpl.Reader)
-	if err != nil {
-		return fmt.Errorf("failed to materialize template: %w", err)
-	}
-
-	tmpl.Writer.LogTelemetry(ctx)
-
-	// Determine the destination directory where the template was materialized
-	// If outputDir was provided, use it; otherwise use current directory with app name
-	destDir := outputDir
-	if destDir == "" {
-		destDir = "."
 	}
 
 	// Create databricks.yml for the app
