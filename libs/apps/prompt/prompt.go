@@ -476,8 +476,8 @@ func PromptForWarehouse(ctx context.Context) (string, error) {
 // The spinner stops and the function returns early if the context is cancelled.
 // Panics in the action are recovered and returned as errors.
 func RunWithSpinnerCtx(ctx context.Context, title string, action func() error) error {
-	spinner := cmdio.Spinner(ctx)
-	spinner <- title
+	spinner := cmdio.NewSpinner(ctx)
+	spinner.Update(title)
 
 	done := make(chan error, 1)
 	go func() {
@@ -491,12 +491,10 @@ func RunWithSpinnerCtx(ctx context.Context, title string, action func() error) e
 
 	select {
 	case err := <-done:
-		close(spinner)
-		cmdio.Wait(ctx)
+		spinner.Close()
 		return err
 	case <-ctx.Done():
-		close(spinner)
-		cmdio.Wait(ctx)
+		spinner.Close()
 		// Wait for action goroutine to complete to avoid orphaned goroutines.
 		// For exec.CommandContext, the process is killed when context is cancelled.
 		<-done

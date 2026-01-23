@@ -85,13 +85,12 @@ func (v *ValidationNodeJs) Validate(ctx context.Context, workDir string, opts Va
 		stepStart := time.Now()
 		var stepErr *ValidationDetail
 
-		spinner := cmdio.Spinner(ctx)
-		spinner <- step.displayName + "..."
+		spinner := cmdio.NewSpinner(ctx)
+		spinner.Update(step.displayName + "...")
 
 		stepErr = runValidationCommand(ctx, workDir, step.command)
 
-		close(spinner)
-		cmdio.Wait(ctx) // Wait for spinner to fully clean up and restore terminal
+		spinner.Close()
 		stepDuration := time.Since(stepStart)
 
 		if stepErr != nil {
