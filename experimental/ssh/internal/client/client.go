@@ -14,7 +14,6 @@ import (
 	"os/exec"
 	"os/signal"
 	"path/filepath"
-	"regexp"
 	"strconv"
 	"strings"
 	"syscall"
@@ -22,6 +21,7 @@ import (
 
 	"github.com/databricks/cli/experimental/ssh/internal/keys"
 	"github.com/databricks/cli/experimental/ssh/internal/proxy"
+	"github.com/databricks/cli/experimental/ssh/internal/sshconfig"
 	sshWorkspace "github.com/databricks/cli/experimental/ssh/internal/workspace"
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/cmdio"
@@ -277,7 +277,7 @@ func runIDE(ctx context.Context, client *databricks.WorkspaceClient, userName, k
 	databricksUserName := currentUser.UserName
 
 	// Ensure SSH config entry exists
-	configPath, err := getSSHConfigPath()
+	configPath, err := sshconfig.GetMainConfigPath()
 	if err != nil {
 		return fmt.Errorf("failed to get SSH config path: %w", err)
 	}
@@ -308,47 +308,11 @@ func runIDE(ctx context.Context, client *databricks.WorkspaceClient, userName, k
 	return ideCmd.Run()
 }
 
-func getSSHConfigPath() (string, error) {
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return "", fmt.Errorf("failed to get home directory: %w", err)
-	}
-	return filepath.Join(homeDir, ".ssh", "config"), nil
-}
-
 func ensureSSHConfigEntry(ctx context.Context, configPath, hostName, userName, keyPath string, serverPort int, clusterID string, opts ClientOptions) error {
-	// Ensure SSH directory and config file exist
-	sshDir := filepath.Dir(configPath)
-	err := os.MkdirAll(sshDir, 0o700)
+	// Ensure the Include directive exists in the main SSH config
+	err := sshconfig.EnsureIncludeDirective(configPath)
 	if err != nil {
-		return fmt.Errorf("failed to create SSH directory: %w", err)
-	}
-
-	_, err = os.Stat(configPath)
-	if os.IsNotExist(err) {
-		err = os.WriteFile(configPath, []byte(""), 0o600)
-		if err != nil {
-			return fmt.Errorf("failed to create SSH config file: %w", err)
-		}
-	} else if err != nil {
-		return fmt.Errorf("failed to check SSH config file: %w", err)
-	}
-
-	// Check if the host entry already exists
-	existingContent, err := os.ReadFile(configPath)
-	if err != nil {
-		return fmt.Errorf("failed to read SSH config file: %w", err)
-	}
-
-	hostPattern := fmt.Sprintf(`(?m)^\s*Host\s+%s\s*$`, regexp.QuoteMeta(hostName))
-	matched, err := regexp.Match(hostPattern, existingContent)
-	if err != nil {
-		return fmt.Errorf("failed to check for existing host: %w", err)
-	}
-
-	if matched {
-		cmdio.LogString(ctx, fmt.Sprintf("SSH config entry for '%s' already exists", hostName))
-		return nil
+		return err
 	}
 
 	// Generate ProxyCommand with server metadata
@@ -371,16 +335,21 @@ Host %s
     ProxyCommand %s
 `, hostName, userName, keyPath, proxyCommand)
 
-	// Append to config file
-	content := string(existingContent)
-	if !strings.HasSuffix(content, "\n") && content != "" {
-		content += "\n"
-	}
-	content += hostConfig
-
-	err = os.WriteFile(configPath, []byte(content), 0o600)
+	// Check if the host config already exists
+	exists, err := sshconfig.HostConfigExists(hostName)
 	if err != nil {
-		return fmt.Errorf("failed to update SSH config file: %w", err)
+		return err
+	}
+
+	if exists {
+		cmdio.LogString(ctx, fmt.Sprintf("SSH config entry for '%s' already exists, skipping", hostName))
+		return nil
+	}
+
+	// Create the host config file
+	_, err = sshconfig.CreateOrUpdateHostConfig(ctx, hostName, hostConfig, false)
+	if err != nil {
+		return err
 	}
 
 	cmdio.LogString(ctx, fmt.Sprintf("Added SSH config entry for '%s'", hostName))
