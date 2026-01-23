@@ -6,10 +6,15 @@ workspace:
   host: {{.WorkspaceHost}}
 {{- end}}
 
+{{- if .BundleVariables}}
+variables:
+{{.BundleVariables}}
+{{- end}}
+
 resources:
   apps:
-    {{.ProjectName}}:
-      name: {{.ProjectName}}
+    app:
+      name: {{.AppName}}
 {{- if .AppDescription}}
       description: {{.AppDescription}}
 {{- end}}

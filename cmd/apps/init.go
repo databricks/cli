@@ -20,9 +20,12 @@ import (
 	"github.com/databricks/cli/libs/apps/prompt"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/dyn/yamlsaver"
 	"github.com/databricks/cli/libs/git"
 	"github.com/databricks/cli/libs/log"
 	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v3"
 )
 
 const (
@@ -35,9 +38,6 @@ var appTemplateManifestsJSON []byte
 
 //go:embed legacy-template/databricks-yml.tmpl
 var databricksYmlTemplate string
-
-//go:embed legacy-template/gitignore.tmpl
-var gitignoreTemplate string
 
 // resourceSpec represents a resource specification in the template manifest.
 type resourceSpec struct {
@@ -212,6 +212,7 @@ type createOptions struct {
 // templateVars holds the variables for template substitution.
 type templateVars struct {
 	ProjectName    string
+	AppName        string
 	SQLWarehouseID string
 	AppDescription string
 	Profile        string
@@ -613,89 +614,6 @@ type resourceGetter struct {
 	errorMessage  string
 }
 
-// envVar represents a single environment variable.
-type envVar struct {
-	key   string
-	value string
-}
-
-// envBuilder builds environment variable content for .env files.
-type envBuilder struct {
-	vars []envVar
-}
-
-// newEnvBuilder creates a new envBuilder.
-func newEnvBuilder() *envBuilder {
-	return &envBuilder{vars: make([]envVar, 0)}
-}
-
-// addWarehouse adds warehouse configuration to the .env file.
-func (b *envBuilder) addWarehouse(warehouseID string) {
-	if warehouseID == "" {
-		return
-	}
-	if strings.HasPrefix(warehouseID, "/sql/") {
-		b.vars = append(b.vars, envVar{"DATABRICKS_WAREHOUSE_PATH", warehouseID})
-	} else {
-		b.vars = append(b.vars, envVar{"DATABRICKS_WAREHOUSE_ID", warehouseID})
-	}
-}
-
-// addServingEndpoint adds serving endpoint configuration to the .env file.
-func (b *envBuilder) addServingEndpoint(endpoint string) {
-	if endpoint != "" {
-		b.vars = append(b.vars, envVar{"DATABRICKS_SERVING_ENDPOINT", endpoint})
-	}
-}
-
-// addExperiment adds experiment configuration to the .env file.
-func (b *envBuilder) addExperiment(experimentID string) {
-	if experimentID != "" {
-		b.vars = append(b.vars, envVar{"DATABRICKS_EXPERIMENT_ID", experimentID})
-	}
-}
-
-// addDatabase adds database configuration to the .env file.
-func (b *envBuilder) addDatabase(instanceName, databaseName string) {
-	if instanceName != "" {
-		b.vars = append(b.vars, envVar{"DATABRICKS_DATABASE_INSTANCE", instanceName})
-	}
-	if databaseName != "" {
-		b.vars = append(b.vars, envVar{"DATABRICKS_DATABASE_NAME", databaseName})
-	}
-}
-
-// addUCVolume adds UC volume configuration to the .env file.
-func (b *envBuilder) addUCVolume(volume string) {
-	if volume != "" {
-		b.vars = append(b.vars, envVar{"DATABRICKS_UC_VOLUME", volume})
-	}
-}
-
-// addWorkspaceHost adds workspace host configuration to the .env file.
-func (b *envBuilder) addWorkspaceHost(host string) {
-	if host != "" {
-		b.vars = append(b.vars, envVar{"DATABRICKS_HOST", host})
-	}
-}
-
-// build generates the .env file content.
-func (b *envBuilder) build() string {
-	if len(b.vars) == 0 {
-		return ""
-	}
-
-	var sb strings.Builder
-	sb.WriteString("# Resource configurations\n")
-	sb.WriteString("# Update your application code to use these resources\n\n")
-
-	for _, v := range b.vars {
-		sb.WriteString(fmt.Sprintf("%s=%s\n", v.key, v.value))
-	}
-
-	return sb.String()
-}
-
 // resourceBinding represents a single resource binding in databricks.yml.
 type resourceBinding struct {
 	name        string
@@ -719,11 +637,11 @@ func (b *resourceBindingsBuilder) addWarehouse(warehouseID string) {
 		return
 	}
 	b.bindings = append(b.bindings, resourceBinding{
-		name:        "warehouse",
+		name:        "sql-warehouse",
 		description: "SQL Warehouse for analytics",
 		lines: []string{
 			"          sql_warehouse:",
-			"            id: " + warehouseID,
+			"            id: ${var.warehouse_id}",
 			"            permission: CAN_USE",
 		},
 	})
@@ -739,7 +657,7 @@ func (b *resourceBindingsBuilder) addServingEndpoint(endpoint string) {
 		description: "Model serving endpoint",
 		lines: []string{
 			"          serving_endpoint:",
-			"            name: " + endpoint,
+			"            name: ${var.serving_endpoint_name}",
 			"            permission: CAN_QUERY",
 		},
 	})
@@ -755,8 +673,25 @@ func (b *resourceBindingsBuilder) addExperiment(experimentID string) {
 		description: "MLflow experiment",
 		lines: []string{
 			"          experiment:",
-			"            id: " + experimentID,
+			"            experiment_id: ${var.experiment_id}",
 			"            permission: CAN_MANAGE",
+		},
+	})
+}
+
+// addDatabase adds a database resource binding.
+func (b *resourceBindingsBuilder) addDatabase(instanceName, databaseName string) {
+	if instanceName == "" || databaseName == "" {
+		return
+	}
+	b.bindings = append(b.bindings, resourceBinding{
+		name:        "database",
+		description: "Lakebase database",
+		lines: []string{
+			"          database:",
+			"            database_name: ${var.database_name}",
+			"            instance_name: ${var.instance_name}",
+			"            permission: CAN_CONNECT_AND_CREATE",
 		},
 	})
 }
@@ -772,6 +707,90 @@ func (b *resourceBindingsBuilder) build() string {
 		result = append(result, "        - name: "+binding.name)
 		result = append(result, "          description: "+binding.description)
 		result = append(result, binding.lines...)
+	}
+
+	return strings.Join(result, "\n")
+}
+
+// variablesBuilder builds bundle variables for databricks.yml.
+type variablesBuilder struct {
+	variables []struct {
+		name  string
+		value string
+	}
+}
+
+// newVariablesBuilder creates a new variablesBuilder.
+func newVariablesBuilder() *variablesBuilder {
+	return &variablesBuilder{}
+}
+
+// addWarehouse adds warehouse_id variable.
+func (b *variablesBuilder) addWarehouse(warehouseID string) {
+	if warehouseID != "" {
+		b.variables = append(b.variables, struct {
+			name  string
+			value string
+		}{"warehouse_id", warehouseID})
+	}
+}
+
+// addServingEndpoint adds serving_endpoint_name variable.
+func (b *variablesBuilder) addServingEndpoint(endpoint string) {
+	if endpoint != "" {
+		b.variables = append(b.variables, struct {
+			name  string
+			value string
+		}{"serving_endpoint_name", endpoint})
+	}
+}
+
+// addExperiment adds experiment_id variable.
+func (b *variablesBuilder) addExperiment(experimentID string) {
+	if experimentID != "" {
+		b.variables = append(b.variables, struct {
+			name  string
+			value string
+		}{"experiment_id", experimentID})
+	}
+}
+
+// addDatabase adds database_name and instance_name variables.
+func (b *variablesBuilder) addDatabase(instanceName, databaseName string) {
+	if databaseName != "" {
+		b.variables = append(b.variables, struct {
+			name  string
+			value string
+		}{"database_name", databaseName})
+	}
+	if instanceName != "" {
+		b.variables = append(b.variables, struct {
+			name  string
+			value string
+		}{"instance_name", instanceName})
+	}
+}
+
+// addUCVolume adds uc_volume variable.
+func (b *variablesBuilder) addUCVolume(volume string) {
+	if volume != "" {
+		b.variables = append(b.variables, struct {
+			name  string
+			value string
+		}{"uc_volume", volume})
+	}
+}
+
+// build generates the variables content for databricks.yml.
+func (b *variablesBuilder) build() string {
+	if len(b.variables) == 0 {
+		return ""
+	}
+
+	var result []string
+	for _, v := range b.variables {
+		result = append(result, "  "+v.name+":")
+		result = append(result, "    default: "+v.value)
 	}
 
 	return strings.Join(result, "\n")
@@ -980,6 +999,112 @@ func getUCVolumeForTemplate(ctx context.Context, tmpl *appTemplateManifest, prov
 	})
 }
 
+// inlineAppYmlIntoBundle checks for app.yml in the directory, inlines it into databricks.yml, and deletes app.yml.
+func inlineAppYmlIntoBundle(ctx context.Context, dir string) error {
+	// Change to the directory
+	originalDir, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("failed to get current directory: %w", err)
+	}
+
+	if err := os.Chdir(dir); err != nil {
+		return fmt.Errorf("failed to change to directory: %w", err)
+	}
+	defer func() {
+		_ = os.Chdir(originalDir)
+	}()
+
+	// Read the databricks.yml file
+	databricksYmlPath := "databricks.yml"
+	databricksData, err := os.ReadFile(databricksYmlPath)
+	if err != nil {
+		return fmt.Errorf("failed to read databricks.yml: %w", err)
+	}
+
+	// Parse databricks.yml as yaml.Node to preserve field names
+	var databricksNode yaml.Node
+	err = yaml.Unmarshal(databricksData, &databricksNode)
+	if err != nil {
+		return fmt.Errorf("failed to parse databricks.yml: %w", err)
+	}
+
+	// Convert yaml.Node to dyn.Value preserving field names
+	configValue, err := yamlNodeToDynValue(&databricksNode)
+	if err != nil {
+		return fmt.Errorf("failed to convert databricks config: %w", err)
+	}
+
+	// Get the app value from resources.apps.app
+	appValue, err := dyn.GetByPath(configValue, dyn.MustPathFromString("resources.apps.app"))
+	if err != nil {
+		return fmt.Errorf("failed to get app from databricks.yml: %w", err)
+	}
+
+	// Inline the app config file (checks for app.yml or app.yaml and inlines if found)
+	appConfigFile, err := inlineAppConfigFile(&appValue)
+	if err != nil {
+		return fmt.Errorf("failed to inline app config: %w", err)
+	}
+
+	// If no app config file was found, nothing to do
+	if appConfigFile == "" {
+		return nil
+	}
+
+	// Set the updated app value back
+	configValue, err = dyn.SetByPath(configValue, dyn.MustPathFromString("resources.apps.app"), appValue)
+	if err != nil {
+		return fmt.Errorf("failed to set updated app value: %w", err)
+	}
+
+	// Extract the top-level map back and set explicit line numbers for ordering
+	configMap, ok := configValue.AsMap()
+	if !ok {
+		return errors.New("config is not a map")
+	}
+
+	// Define the desired order with explicit line numbers
+	keyOrder := map[string]int{
+		"bundle":    1,
+		"workspace": 2,
+		"variables": 3,
+		"resources": 4,
+	}
+
+	updatedConfig := make(map[string]dyn.Value)
+	for _, pair := range configMap.Pairs() {
+		key := pair.Key.MustString()
+		value := pair.Value
+
+		// Set the line number based on the desired order
+		if lineNum, ok := keyOrder[key]; ok {
+			value = dyn.NewValue(value.Value(), []dyn.Location{{Line: lineNum}})
+		}
+
+		updatedConfig[key] = value
+	}
+
+	// Save the updated databricks.yml (force=true since we're updating the file we just created)
+	saver := yamlsaver.NewSaver()
+	err = saver.SaveAsYAML(updatedConfig, databricksYmlPath, true)
+	if err != nil {
+		return fmt.Errorf("failed to save databricks.yml: %w", err)
+	}
+
+	// Add blank lines between top-level keys for better readability
+	err = addBlankLinesBetweenTopLevelKeys(databricksYmlPath)
+	if err != nil {
+		return fmt.Errorf("failed to format databricks.yml: %w", err)
+	}
+
+	// Delete the app config file
+	if err := os.Remove(appConfigFile); err != nil {
+		return fmt.Errorf("failed to remove %s: %w", appConfigFile, err)
+	}
+	cmdio.LogString(ctx, "✓ Inlined and removed "+appConfigFile)
+	return nil
+}
+
 // copyDir recursively copies a directory tree from src to dst.
 func copyDir(src, dst string) error {
 	// Get source directory info
@@ -1094,64 +1219,28 @@ func runLegacyTemplateInit(ctx context.Context, selectedTemplate *appTemplateMan
 		}
 	}
 
-	// Create a .env file with resource configurations
-	builder := newEnvBuilder()
-	builder.addWorkspaceHost(workspaceHost)
-	builder.addWarehouse(warehouseID)
-	builder.addServingEndpoint(servingEndpoint)
-	builder.addExperiment(experimentID)
-	builder.addDatabase(instanceName, databaseName)
-	builder.addUCVolume(ucVolume)
-
-	envContent := builder.build()
-	if envContent != "" {
-		envPath := filepath.Join(destDir, ".env")
-		if err := os.WriteFile(envPath, []byte(envContent), 0o644); err != nil {
-			cmdio.LogString(ctx, fmt.Sprintf("⚠ Failed to write .env: %v", err))
-		} else {
-			cmdio.LogString(ctx, "✓ Created .env with resource configurations")
-		}
-	}
-
-	// Create or update .gitignore to protect .env file
-	gitignorePath := filepath.Join(destDir, ".gitignore")
-
-	// Check if .gitignore already exists
-	if existingContent, err := os.ReadFile(gitignorePath); err == nil {
-		gitignoreContent := string(existingContent)
-		// Check if .env is already in .gitignore
-		if !strings.Contains(gitignoreContent, ".env") {
-			// Add .env to existing .gitignore
-			if !strings.HasSuffix(gitignoreContent, "\n") {
-				gitignoreContent += "\n"
-			}
-			gitignoreContent += "\n# Environment variables\n.env\n"
-			if err := os.WriteFile(gitignorePath, []byte(gitignoreContent), 0o644); err != nil {
-				cmdio.LogString(ctx, fmt.Sprintf("⚠ Failed to write .gitignore: %v", err))
-			} else {
-				cmdio.LogString(ctx, "✓ Updated .gitignore")
-			}
-		}
-	} else {
-		// Create new .gitignore from template
-		if err := os.WriteFile(gitignorePath, []byte(gitignoreTemplate), 0o644); err != nil {
-			cmdio.LogString(ctx, fmt.Sprintf("⚠ Failed to write .gitignore: %v", err))
-		} else {
-			cmdio.LogString(ctx, "✓ Created .gitignore")
-		}
-	}
+	// Build bundle variables for databricks.yml
+	variablesBuilder := newVariablesBuilder()
+	variablesBuilder.addWarehouse(warehouseID)
+	variablesBuilder.addServingEndpoint(servingEndpoint)
+	variablesBuilder.addExperiment(experimentID)
+	variablesBuilder.addDatabase(instanceName, databaseName)
+	variablesBuilder.addUCVolume(ucVolume)
 
 	// Build resource bindings for databricks.yml
 	bindingsBuilder := newResourceBindingsBuilder()
 	bindingsBuilder.addWarehouse(warehouseID)
 	bindingsBuilder.addServingEndpoint(servingEndpoint)
 	bindingsBuilder.addExperiment(experimentID)
+	bindingsBuilder.addDatabase(instanceName, databaseName)
 
 	// Create databricks.yml using template
 	vars := templateVars{
 		ProjectName:      appName,
+		AppName:          appName,
 		AppDescription:   selectedTemplate.Manifest.Description,
 		WorkspaceHost:    workspaceHost,
+		BundleVariables:  variablesBuilder.build(),
 		ResourceBindings: bindingsBuilder.build(),
 	}
 
@@ -1171,6 +1260,11 @@ func runLegacyTemplateInit(ctx context.Context, selectedTemplate *appTemplateMan
 	}
 
 	cmdio.LogString(ctx, "✓ Created databricks.yml")
+
+	// Check for app.yml in the destination directory and inline it into databricks.yml
+	if err := inlineAppYmlIntoBundle(ctx, destDir); err != nil {
+		return fmt.Errorf("failed to inline app.yml: %w", err)
+	}
 
 	// Get absolute path
 	absOutputDir, err := filepath.Abs(destDir)
@@ -1206,7 +1300,7 @@ func handleLegacyTemplateInit(ctx context.Context, legacyTemplate *appTemplateMa
 			return errors.New("--name is required in non-interactive mode")
 		}
 		var err error
-		appName, err = prompt.PromptForProjectName(ctx, opts.outputDir)
+		appName, err = prompt.PromptForProjectName(ctx, opts.outputDir, legacyTemplate.Path)
 		if err != nil {
 			return err
 		}
@@ -1547,6 +1641,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	// Template variables (initial, without feature fragments)
 	vars := templateVars{
 		ProjectName:    opts.name,
+		AppName:        opts.name,
 		SQLWarehouseID: opts.warehouseID,
 		AppDescription: opts.description,
 		Profile:        profile,

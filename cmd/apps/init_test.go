@@ -242,73 +242,6 @@ func TestParseDeployAndRunFlags(t *testing.T) {
 	}
 }
 
-func TestEnvBuilder(t *testing.T) {
-	tests := []struct {
-		name     string
-		addOps   func(*envBuilder)
-		expected string
-	}{
-		{
-			name: "warehouse only",
-			addOps: func(b *envBuilder) {
-				b.addWarehouse("abc123")
-			},
-			expected: "# Resource configurations\n# Update your application code to use these resources\n\nDATABRICKS_WAREHOUSE_ID=abc123\n",
-		},
-		{
-			name: "warehouse with /sql/ prefix",
-			addOps: func(b *envBuilder) {
-				b.addWarehouse("/sql/1.0/warehouses/abc123")
-			},
-			expected: "# Resource configurations\n# Update your application code to use these resources\n\nDATABRICKS_WAREHOUSE_PATH=/sql/1.0/warehouses/abc123\n",
-		},
-		{
-			name: "multiple resources",
-			addOps: func(b *envBuilder) {
-				b.addWarehouse("warehouse123")
-				b.addServingEndpoint("endpoint-name")
-				b.addExperiment("exp456")
-			},
-			expected: "# Resource configurations\n# Update your application code to use these resources\n\nDATABRICKS_WAREHOUSE_ID=warehouse123\nDATABRICKS_SERVING_ENDPOINT=endpoint-name\nDATABRICKS_EXPERIMENT_ID=exp456\n",
-		},
-		{
-			name: "database resources",
-			addOps: func(b *envBuilder) {
-				b.addDatabase("instance1", "db_name")
-			},
-			expected: "# Resource configurations\n# Update your application code to use these resources\n\nDATABRICKS_DATABASE_INSTANCE=instance1\nDATABRICKS_DATABASE_NAME=db_name\n",
-		},
-		{
-			name: "empty resources",
-			addOps: func(b *envBuilder) {
-				b.addWarehouse("")
-				b.addServingEndpoint("")
-			},
-			expected: "",
-		},
-		{
-			name: "all resources",
-			addOps: func(b *envBuilder) {
-				b.addWarehouse("wh1")
-				b.addServingEndpoint("ep1")
-				b.addExperiment("exp1")
-				b.addDatabase("inst1", "db1")
-				b.addUCVolume("/Volumes/catalog/schema/volume")
-			},
-			expected: "# Resource configurations\n# Update your application code to use these resources\n\nDATABRICKS_WAREHOUSE_ID=wh1\nDATABRICKS_SERVING_ENDPOINT=ep1\nDATABRICKS_EXPERIMENT_ID=exp1\nDATABRICKS_DATABASE_INSTANCE=inst1\nDATABRICKS_DATABASE_NAME=db1\nDATABRICKS_UC_VOLUME=/Volumes/catalog/schema/volume\n",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			builder := newEnvBuilder()
-			tt.addOps(builder)
-			result := builder.build()
-			assert.Equal(t, tt.expected, result)
-		})
-	}
-}
-
 func TestResourceBindingsBuilder(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -320,7 +253,7 @@ func TestResourceBindingsBuilder(t *testing.T) {
 			addOps: func(b *resourceBindingsBuilder) {
 				b.addWarehouse("abc123")
 			},
-			expected: "        - name: warehouse\n          description: SQL Warehouse for analytics\n          sql_warehouse:\n            id: abc123\n            permission: CAN_USE",
+			expected: "        - name: sql-warehouse\n          description: SQL Warehouse for analytics\n          sql_warehouse:\n            id: ${var.warehouse_id}\n            permission: CAN_USE",
 		},
 		{
 			name: "multiple resources",
@@ -329,7 +262,7 @@ func TestResourceBindingsBuilder(t *testing.T) {
 				b.addServingEndpoint("ep1")
 				b.addExperiment("exp1")
 			},
-			expected: "        - name: warehouse\n          description: SQL Warehouse for analytics\n          sql_warehouse:\n            id: wh1\n            permission: CAN_USE\n        - name: serving-endpoint\n          description: Model serving endpoint\n          serving_endpoint:\n            name: ep1\n            permission: CAN_QUERY\n        - name: experiment\n          description: MLflow experiment\n          experiment:\n            id: exp1\n            permission: CAN_MANAGE",
+			expected: "        - name: sql-warehouse\n          description: SQL Warehouse for analytics\n          sql_warehouse:\n            id: ${var.warehouse_id}\n            permission: CAN_USE\n        - name: serving-endpoint\n          description: Model serving endpoint\n          serving_endpoint:\n            name: ${var.serving_endpoint_name}\n            permission: CAN_QUERY\n        - name: experiment\n          description: MLflow experiment\n          experiment:\n            experiment_id: ${var.experiment_id}\n            permission: CAN_MANAGE",
 		},
 		{
 			name: "empty resources",
