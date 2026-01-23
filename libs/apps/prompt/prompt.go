@@ -476,8 +476,8 @@ func PromptForWarehouse(ctx context.Context) (string, error) {
 // The spinner stops and the function returns early if the context is cancelled.
 // Panics in the action are recovered and returned as errors.
 func RunWithSpinnerCtx(ctx context.Context, title string, action func() error) error {
-	spinner := cmdio.Spinner(ctx)
-	spinner <- title
+	spinner := cmdio.NewSpinner(ctx)
+	spinner.Update(title)
 
 	done := make(chan error, 1)
 	go func() {
@@ -491,12 +491,10 @@ func RunWithSpinnerCtx(ctx context.Context, title string, action func() error) e
 
 	select {
 	case err := <-done:
-		close(spinner)
-		cmdio.Wait(ctx)
+		spinner.Close()
 		return err
 	case <-ctx.Done():
-		close(spinner)
-		cmdio.Wait(ctx)
+		spinner.Close()
 		// Wait for action goroutine to complete to avoid orphaned goroutines.
 		// For exec.CommandContext, the process is killed when context is cancelled.
 		<-done
@@ -572,8 +570,8 @@ func PromptForAppSelection(ctx context.Context, title string) (string, error) {
 }
 
 // PrintSuccess prints a success message after project creation.
-// If showNextSteps is true, also prints the "Next steps" section.
-func PrintSuccess(ctx context.Context, projectName, outputDir string, fileCount int, showNextSteps bool) {
+// If nextStepsCmd is non-empty, also prints the "Next steps" section with the given command.
+func PrintSuccess(ctx context.Context, projectName, outputDir string, fileCount int, nextStepsCmd string) {
 	successStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#FFAB00")). // Databricks yellow
 		Bold(true)
@@ -590,12 +588,12 @@ func PrintSuccess(ctx context.Context, projectName, outputDir string, fileCount 
 	cmdio.LogString(ctx, dimStyle.Render("  Location: "+outputDir))
 	cmdio.LogString(ctx, dimStyle.Render("  Files: "+strconv.Itoa(fileCount)))
 
-	if showNextSteps {
+	if nextStepsCmd != "" {
 		cmdio.LogString(ctx, "")
 		cmdio.LogString(ctx, dimStyle.Render("  Next steps:"))
 		cmdio.LogString(ctx, "")
 		cmdio.LogString(ctx, codeStyle.Render("    cd "+projectName))
-		cmdio.LogString(ctx, codeStyle.Render("    npm run dev"))
+		cmdio.LogString(ctx, codeStyle.Render("    "+nextStepsCmd))
 	}
 	cmdio.LogString(ctx, "")
 }
