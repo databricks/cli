@@ -320,7 +320,7 @@ func TestResourceBindingsBuilder(t *testing.T) {
 			addOps: func(b *resourceBindingsBuilder) {
 				b.addWarehouse("abc123")
 			},
-			expected: "        - name: warehouse\n          description: SQL Warehouse for analytics\n          # sql_warehouse:\n          #   id: abc123\n          #   permission: CAN_USE",
+			expected: "        - name: warehouse\n          description: SQL Warehouse for analytics\n          sql_warehouse:\n            id: abc123\n            permission: CAN_USE",
 		},
 		{
 			name: "multiple resources",
@@ -329,7 +329,7 @@ func TestResourceBindingsBuilder(t *testing.T) {
 				b.addServingEndpoint("ep1")
 				b.addExperiment("exp1")
 			},
-			expected: "        - name: warehouse\n          description: SQL Warehouse for analytics\n          # sql_warehouse:\n          #   id: wh1\n          #   permission: CAN_USE\n        - name: serving-endpoint\n          description: Model serving endpoint\n          # serving_endpoint:\n          #   name: ep1\n          #   permission: CAN_QUERY\n        - name: experiment\n          description: MLflow experiment\n          # experiment:\n          #   id: exp1\n          #   permission: CAN_MANAGE",
+			expected: "        - name: warehouse\n          description: SQL Warehouse for analytics\n          sql_warehouse:\n            id: wh1\n            permission: CAN_USE\n        - name: serving-endpoint\n          description: Model serving endpoint\n          serving_endpoint:\n            name: ep1\n            permission: CAN_QUERY\n        - name: experiment\n          description: MLflow experiment\n          experiment:\n            id: exp1\n            permission: CAN_MANAGE",
 		},
 		{
 			name: "empty resources",
