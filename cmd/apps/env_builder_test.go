@@ -69,6 +69,31 @@ env: []
 		require.NoError(t, err)
 		assert.Len(t, builder.env, 0)
 	})
+
+	t.Run("with camelCase valueFrom (legacy template format)", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		appYml := filepath.Join(tmpDir, "app.yml")
+		err := os.WriteFile(appYml, []byte(`command: ["python", "app.py"]
+env:
+  - name: DATABRICKS_WAREHOUSE_ID
+    valueFrom: sql-warehouse
+  - name: STATIC_VAR
+    value: static-value
+`), 0o644)
+		require.NoError(t, err)
+
+		resources := map[string]string{
+			"sql-warehouse": "abc123",
+		}
+
+		builder, err := NewEnvFileBuilder("https://test.cloud.databricks.com", appYml, resources)
+		require.NoError(t, err)
+		assert.Len(t, builder.env, 2)
+		assert.Equal(t, "DATABRICKS_WAREHOUSE_ID", builder.env[0].Name)
+		assert.Equal(t, "sql-warehouse", builder.env[0].ValueFrom)
+		assert.Equal(t, "STATIC_VAR", builder.env[1].Name)
+		assert.Equal(t, "static-value", builder.env[1].Value)
+	})
 }
 
 func TestBuild(t *testing.T) {
@@ -342,5 +367,55 @@ env:
 		assert.Contains(t, contentStr, "SERVING_ENDPOINT_NAME=my-endpoint")
 		assert.Contains(t, contentStr, "APP_NAME=my-test-app")
 		assert.Contains(t, contentStr, "DEBUG=true")
+	})
+
+	t.Run("end-to-end with camelCase (legacy template format)", func(t *testing.T) {
+		// Setup: Create a temporary directory with app.yml using camelCase
+		tmpDir := t.TempDir()
+		appYml := filepath.Join(tmpDir, "app.yml")
+		appYmlContent := `command: ["uv", "run", "start-app"]
+env:
+  - name: MLFLOW_TRACKING_URI
+    value: "databricks"
+  - name: MLFLOW_REGISTRY_URI
+    value: "databricks-uc"
+  - name: MLFLOW_EXPERIMENT_ID
+    valueFrom: experiment
+  - name: API_PROXY
+    value: "http://localhost:8000/invocations"
+  - name: CHAT_APP_PORT
+    value: "3000"
+`
+		err := os.WriteFile(appYml, []byte(appYmlContent), 0o644)
+		require.NoError(t, err)
+
+		// Create resource map
+		resources := map[string]string{
+			"experiment": "77131241535601",
+		}
+
+		// Build and write .env
+		builder, err := NewEnvFileBuilder("https://adb-1966697730403610.10.azuredatabricks.net", appYml, resources)
+		require.NoError(t, err)
+
+		err = builder.WriteEnvFile(tmpDir)
+		require.NoError(t, err)
+
+		// Verify the generated .env file
+		envPath := filepath.Join(tmpDir, ".env")
+		content, err := os.ReadFile(envPath)
+		require.NoError(t, err)
+
+		contentStr := string(content)
+		assert.Contains(t, contentStr, "DATABRICKS_HOST=https://adb-1966697730403610.10.azuredatabricks.net")
+		assert.Contains(t, contentStr, "MLFLOW_TRACKING_URI=databricks")
+		assert.Contains(t, contentStr, "MLFLOW_REGISTRY_URI=databricks-uc")
+		assert.Contains(t, contentStr, "MLFLOW_EXPERIMENT_ID=77131241535601")
+		assert.Contains(t, contentStr, "API_PROXY=http://localhost:8000/invocations")
+		assert.Contains(t, contentStr, "CHAT_APP_PORT=3000")
+
+		// Verify the experiment ID is not empty
+		assert.NotContains(t, contentStr, "MLFLOW_EXPERIMENT_ID=\n")
+		assert.NotContains(t, contentStr, "MLFLOW_EXPERIMENT_ID=$")
 	})
 }
