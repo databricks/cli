@@ -21,7 +21,6 @@
       "action": "create",
       "new_state": {
         "value": {
-          "securable_type": "catalog",
           "full_name": "",
           "grants": [
             {

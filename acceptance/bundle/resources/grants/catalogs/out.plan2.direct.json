@@ -24,7 +24,6 @@
       "action": "update",
       "new_state": {
         "value": {
-          "securable_type": "catalog",
           "full_name": "catalog_grants_[UNIQUE_NAME]",
           "grants": [
             {
@@ -38,7 +37,6 @@
         }
       },
       "remote_state": {
-        "securable_type": "catalog",
         "full_name": "catalog_grants_[UNIQUE_NAME]",
         "grants": [
           {
