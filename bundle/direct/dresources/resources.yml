@@ -109,6 +109,13 @@ resources:
 
   # database_instances: no special config
 
-  # database_catalogs: no special config
+  database_catalogs:
+    ignore_remote_changes:
+      # Backend does not set this:
+      - create_database_if_not_exists
 
-  # synced_database_tables: no special config
+  synced_database_tables:
+    ignore_remote_changes:
+      # Backend does not set these fields in response (it sets effective_ counterparts instead)
+      - database_instance_name
+      - logical_database_name
