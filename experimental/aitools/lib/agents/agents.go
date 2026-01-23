@@ -95,9 +95,10 @@ var Registry = []Agent{
 		ConfigDir:   homeSubdir(".copilot"),
 	},
 	{
-		Name:        "antigravity",
-		DisplayName: "Antigravity",
-		ConfigDir:   homeSubdir(".gemini", "antigravity"),
+		Name:         "antigravity",
+		DisplayName:  "Antigravity",
+		ConfigDir:    homeSubdir(".gemini", "antigravity"),
+		SkillsSubdir: "global_skills",
 	},
 }
 
