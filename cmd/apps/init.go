@@ -1317,15 +1317,15 @@ func runLegacyTemplateInit(ctx context.Context, selectedTemplate *appTemplateMan
 
 	cmdio.LogString(ctx, "✓ Created databricks.yml")
 
-	// Check for app.yml in the destination directory and inline it into databricks.yml
-	if err := inlineAppYmlIntoBundle(ctx, destDir); err != nil {
-		return fmt.Errorf("failed to inline app.yml: %w", err)
-	}
-
-	// Generate .env file from app.yml if it exists
+	// Generate .env file from app.yml BEFORE inlining (inlining deletes app.yml)
 	if err := generateEnvFileForLegacyTemplate(ctx, destDir, workspaceHost, warehouseID, servingEndpoint, experimentID, instanceName, databaseName, ucVolume); err != nil {
 		// Log warning but don't fail - .env is optional
 		cmdio.LogString(ctx, fmt.Sprintf("⚠ Failed to generate .env file: %v", err))
+	}
+
+	// Check for app.yml in the destination directory and inline it into databricks.yml
+	if err := inlineAppYmlIntoBundle(ctx, destDir); err != nil {
+		return fmt.Errorf("failed to inline app.yml: %w", err)
 	}
 
 	// Get absolute path
