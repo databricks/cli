@@ -166,14 +166,14 @@ func updateSSHConfigFile(configPath, hostConfig, hostName string) error {
 }
 
 func clusterSelectionPrompt(ctx context.Context, client *databricks.WorkspaceClient) (string, error) {
-	spinnerChan := cmdio.Spinner(ctx)
-	spinnerChan <- "Loading clusters."
+	sp := cmdio.NewSpinner(ctx)
+	sp.Update("Loading clusters.")
 	clusters, err := client.Clusters.ClusterDetailsClusterNameToClusterIdMap(ctx, compute.ListClustersRequest{
 		FilterBy: &compute.ListClustersFilterBy{
 			ClusterSources: []compute.ClusterSource{compute.ClusterSourceApi, compute.ClusterSourceUi},
 		},
 	})
-	close(spinnerChan)
+	sp.Close()
 	if err != nil {
 		return "", fmt.Errorf("failed to load names for Clusters drop-down. Please manually specify cluster argument. Original error: %w", err)
 	}
