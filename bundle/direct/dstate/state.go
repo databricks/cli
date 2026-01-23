@@ -227,6 +227,21 @@ func (db *DeploymentState) Finalize() error {
 	return nil
 }
 
+// Close closes the WAL file handle without finalizing or truncating.
+// Use this in tests or when you need to abort without saving state.
+func (db *DeploymentState) Close() error {
+	db.mu.Lock()
+	defer db.mu.Unlock()
+
+	if db.wal != nil {
+		if err := db.wal.close(); err != nil {
+			return err
+		}
+		db.wal = nil
+	}
+	return nil
+}
+
 func (db *DeploymentState) AssertOpened() {
 	if db.Path == "" {
 		panic("internal error: DeploymentState must be opened first")
