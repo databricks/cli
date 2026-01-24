@@ -1,12 +1,17 @@
 package apps
 
 import (
+	"bytes"
+	_ "embed"
 	"fmt"
 	"os"
-	"strings"
+	"text/template"
 
 	"gopkg.in/yaml.v3"
 )
+
+//go:embed legacy-template/env.tmpl
+var envFileTemplate string
 
 // EnvVar represents a single environment variable in app.yml.
 type EnvVar struct {
@@ -24,18 +29,22 @@ type AppYml struct {
 // EnvFileBuilder builds .env file content from app.yml and resource values.
 type EnvFileBuilder struct {
 	host      string
+	profile   string
+	appName   string
 	env       []EnvVar
 	resources map[string]string
 }
 
 // NewEnvFileBuilder creates a new EnvFileBuilder.
 // host: Databricks workspace host
+// profile: Databricks CLI profile name (empty or "DEFAULT" for default profile)
+// appName: Application name
 // appYmlPath: Path to app.yml or app.yaml file
 // resources: Map of resource names from databricks.yml to their values
 //
 //	(e.g., "sql-warehouse" -> "abc123", "experiment" -> "exp-456")
 //	These names match the resource.name field in databricks.yml
-func NewEnvFileBuilder(host string, appYmlPath string, resources map[string]string) (*EnvFileBuilder, error) {
+func NewEnvFileBuilder(host, profile, appName, appYmlPath string, resources map[string]string) (*EnvFileBuilder, error) {
 	// Read app.yml
 	data, err := os.ReadFile(appYmlPath)
 	if err != nil {
@@ -43,6 +52,8 @@ func NewEnvFileBuilder(host string, appYmlPath string, resources map[string]stri
 			// No app.yml, return empty builder
 			return &EnvFileBuilder{
 				host:      host,
+				profile:   profile,
+				appName:   appName,
 				env:       []EnvVar{},
 				resources: resources,
 			}, nil
@@ -73,9 +84,25 @@ func NewEnvFileBuilder(host string, appYmlPath string, resources map[string]stri
 
 	return &EnvFileBuilder{
 		host:      host,
+		profile:   profile,
+		appName:   appName,
 		env:       appYml.Env,
 		resources: resources,
 	}, nil
+}
+
+// envTemplateData holds data for rendering the .env file template.
+type envTemplateData struct {
+	DatabricksHost    string
+	AppName           string
+	MlflowTrackingURI string
+	AppYmlVars        []envVarPair
+}
+
+// envVarPair represents a single environment variable name-value pair.
+type envVarPair struct {
+	Name  string
+	Value string
 }
 
 // convertKeysToSnakeCase recursively converts all mapping keys in a yaml.Node from camelCase to snake_case.
@@ -107,18 +134,26 @@ func convertKeysToSnakeCase(node *yaml.Node) {
 		for _, child := range node.Content {
 			convertKeysToSnakeCase(child)
 		}
+	case yaml.ScalarNode:
+		// Leaf node, nothing to recurse into
+	case yaml.AliasNode:
+		// Alias nodes point to other nodes, no conversion needed
 	}
 }
 
 // Build generates the .env file content.
 func (b *EnvFileBuilder) Build() (string, error) {
-	if len(b.env) == 0 {
+	if len(b.env) == 0 && b.host == "" && b.profile == "" {
 		return "", nil
 	}
 
-	var sb strings.Builder
+	// Prepare template data
+	data := envTemplateData{
+		AppName:    b.appName,
+		AppYmlVars: make([]envVarPair, 0, len(b.env)),
+	}
 
-	// Add DATABRICKS_HOST if not already present in env vars
+	// Check if DATABRICKS_HOST is already present in env vars
 	hasHost := false
 	for _, envVar := range b.env {
 		if envVar.Name == "DATABRICKS_HOST" {
@@ -126,13 +161,22 @@ func (b *EnvFileBuilder) Build() (string, error) {
 			break
 		}
 	}
+
+	// Add DATABRICKS_HOST to template data if not in app.yml and we have a host
 	if !hasHost && b.host != "" {
-		sb.WriteString(fmt.Sprintf("DATABRICKS_HOST=%s\n", b.host))
+		data.DatabricksHost = b.host
 	}
 
-	// Process env vars from app.yml
+	// Always set MLFLOW_TRACKING_URI (override if present in app.yml)
+	// Format: "databricks" for default profile, "databricks://<profile>" for named profiles
+	data.MlflowTrackingURI = "databricks"
+	if b.profile != "" && b.profile != "DEFAULT" {
+		data.MlflowTrackingURI = "databricks://" + b.profile
+	}
+
+	// Process env vars from app.yml (skip MLFLOW_TRACKING_URI as we already added it)
 	for _, envVar := range b.env {
-		if envVar.Name == "" {
+		if envVar.Name == "" || envVar.Name == "MLFLOW_TRACKING_URI" {
 			continue
 		}
 
@@ -152,10 +196,24 @@ func (b *EnvFileBuilder) Build() (string, error) {
 			value = ""
 		}
 
-		sb.WriteString(fmt.Sprintf("%s=%s\n", envVar.Name, value))
+		data.AppYmlVars = append(data.AppYmlVars, envVarPair{
+			Name:  envVar.Name,
+			Value: value,
+		})
 	}
 
-	return sb.String(), nil
+	// Execute template
+	tmpl, err := template.New("env").Parse(envFileTemplate)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse .env template: %w", err)
+	}
+
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, data); err != nil {
+		return "", fmt.Errorf("failed to execute .env template: %w", err)
+	}
+
+	return buf.String(), nil
 }
 
 // WriteEnvFile writes the .env file to the specified directory.

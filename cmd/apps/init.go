@@ -615,7 +615,7 @@ type resourceGetter struct {
 }
 
 // generateEnvFileForLegacyTemplate generates a .env file from app.yml for legacy templates.
-func generateEnvFileForLegacyTemplate(ctx context.Context, destDir, workspaceHost, warehouseID, servingEndpoint, experimentID, instanceName, databaseName, ucVolume string) error {
+func generateEnvFileForLegacyTemplate(ctx context.Context, destDir, workspaceHost, profile, appName, warehouseID, servingEndpoint, experimentID, instanceName, databaseName, ucVolume string) error {
 	// Check if app.yml or app.yaml exists
 	var appYmlPath string
 	for _, filename := range []string{"app.yml", "app.yaml"} {
@@ -655,7 +655,7 @@ func generateEnvFileForLegacyTemplate(ctx context.Context, destDir, workspaceHos
 	}
 
 	// Create EnvFileBuilder
-	builder, err := NewEnvFileBuilder(workspaceHost, appYmlPath, resources)
+	builder, err := NewEnvFileBuilder(workspaceHost, profile, appName, appYmlPath, resources)
 	if err != nil {
 		return fmt.Errorf("failed to create env builder: %w", err)
 	}
@@ -1229,7 +1229,7 @@ func copyFile(src, dst string) error {
 
 // runLegacyTemplateInit initializes a project using a legacy template.
 // All resource parameters are optional and will be passed to the template if provided.
-func runLegacyTemplateInit(ctx context.Context, selectedTemplate *appTemplateManifest, appName, outputDir, warehouseID, servingEndpoint, experimentID, instanceName, databaseName, ucVolume, workspaceHost string, shouldDeploy bool, runMode prompt.RunMode) error {
+func runLegacyTemplateInit(ctx context.Context, selectedTemplate *appTemplateManifest, appName, outputDir, warehouseID, servingEndpoint, experimentID, instanceName, databaseName, ucVolume, workspaceHost, profile string, shouldDeploy bool, runMode prompt.RunMode) error {
 	// Determine the destination directory
 	destDir := appName
 	if outputDir != "" {
@@ -1318,7 +1318,7 @@ func runLegacyTemplateInit(ctx context.Context, selectedTemplate *appTemplateMan
 	cmdio.LogString(ctx, "✓ Created databricks.yml")
 
 	// Generate .env file from app.yml BEFORE inlining (inlining deletes app.yml)
-	if err := generateEnvFileForLegacyTemplate(ctx, destDir, workspaceHost, warehouseID, servingEndpoint, experimentID, instanceName, databaseName, ucVolume); err != nil {
+	if err := generateEnvFileForLegacyTemplate(ctx, destDir, workspaceHost, profile, appName, warehouseID, servingEndpoint, experimentID, instanceName, databaseName, ucVolume); err != nil {
 		// Log warning but don't fail - .env is optional
 		cmdio.LogString(ctx, fmt.Sprintf("⚠ Failed to generate .env file: %v", err))
 	}
@@ -1354,7 +1354,7 @@ func runLegacyTemplateInit(ctx context.Context, selectedTemplate *appTemplateMan
 
 // handleLegacyTemplateInit handles the common logic for initializing a legacy template.
 // It gets the app name, collects resources, determines deploy/run options, and calls runLegacyTemplateInit.
-func handleLegacyTemplateInit(ctx context.Context, legacyTemplate *appTemplateManifest, opts createOptions, isInteractive bool, workspaceHost string) error {
+func handleLegacyTemplateInit(ctx context.Context, legacyTemplate *appTemplateManifest, opts createOptions, isInteractive bool, workspaceHost, profile string) error {
 	// Get app name
 	appName := opts.name
 	if appName == "" {
@@ -1405,7 +1405,7 @@ func handleLegacyTemplateInit(ctx context.Context, legacyTemplate *appTemplateMa
 	return runLegacyTemplateInit(ctx, legacyTemplate, appName, opts.outputDir,
 		resources.warehouseID, resources.servingEndpoint, resources.experimentID,
 		resources.instanceName, resources.databaseName, resources.ucVolume,
-		workspaceHost, shouldDeploy, runMode)
+		workspaceHost, profile, shouldDeploy, runMode)
 }
 
 func runCreate(ctx context.Context, opts createOptions) error {
@@ -1440,7 +1440,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 			// Check if the template path matches a legacy template
 			if legacyTemplate := findLegacyTemplateByPath(manifests, opts.templatePath); legacyTemplate != nil {
 				log.Infof(ctx, "Using legacy template: %s", opts.templatePath)
-				return handleLegacyTemplateInit(ctx, legacyTemplate, opts, isInteractive, workspaceHost)
+				return handleLegacyTemplateInit(ctx, legacyTemplate, opts, isInteractive, workspaceHost, profile)
 			}
 		}
 	}
@@ -1467,7 +1467,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 			return err
 		}
 
-		return handleLegacyTemplateInit(ctx, selectedTemplate, opts, isInteractive, workspaceHost)
+		return handleLegacyTemplateInit(ctx, selectedTemplate, opts, isInteractive, workspaceHost, profile)
 	}
 
 	// Use features from flags if provided
