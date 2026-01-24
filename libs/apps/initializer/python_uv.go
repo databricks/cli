@@ -39,7 +39,7 @@ func (i *InitializerPythonUv) Initialize(ctx context.Context, workDir string) *I
 }
 
 func (i *InitializerPythonUv) NextSteps() string {
-	return "uv run --env-file .env python app.py"
+	return "uv run start-app"
 }
 
 func (i *InitializerPythonUv) RunDev(ctx context.Context, workDir string) error {
