@@ -82,8 +82,8 @@ func (i *InitializerPythonPip) createVenv(ctx context.Context, workDir string) e
 		return nil
 	}
 
-	return prompt.RunWithSpinnerCtx(ctx, "Creating virtual environment...", func() error {
-		cmd := exec.CommandContext(ctx, "uv", "venv")
+	return prompt.RunWithSpinnerCtx(ctx, "Creating virtual environment (Python "+pythonVersion+")...", func() error {
+		cmd := exec.CommandContext(ctx, "uv", "venv", "--python", pythonVersion)
 		cmd.Dir = workDir
 		cmd.Stdout = nil
 		cmd.Stderr = nil
