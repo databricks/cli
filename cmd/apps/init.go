@@ -55,6 +55,7 @@ type manifest struct {
 	Version       int            `json:"version"`
 	Name          string         `json:"name"`
 	Description   string         `json:"description"`
+	StartCommand  string         `json:"start_command,omitempty"`
 	ResourceSpecs []resourceSpec `json:"resource_specs,omitempty"`
 	UserAPIScopes []string       `json:"user_api_scopes,omitempty"`
 }
@@ -1229,6 +1230,7 @@ func copyFile(src, dst string) error {
 
 // runLegacyTemplateInit initializes a project using a legacy template.
 // All resource parameters are optional and will be passed to the template if provided.
+// startCommand from the manifest (if provided) overrides the default command for running the app.
 func runLegacyTemplateInit(ctx context.Context, selectedTemplate *appTemplateManifest, appName, outputDir, warehouseID, servingEndpoint, experimentID, instanceName, databaseName, ucVolume, workspaceHost, profile string, shouldDeploy bool, runMode prompt.RunMode) error {
 	// Determine the destination directory
 	destDir := appName
@@ -1349,7 +1351,7 @@ func runLegacyTemplateInit(ctx context.Context, selectedTemplate *appTemplateMan
 		fileCount = 0
 	}
 
-	return runPostCreationSteps(ctx, absOutputDir, appName, fileCount, shouldDeploy, runMode)
+	return runPostCreationSteps(ctx, absOutputDir, appName, fileCount, shouldDeploy, runMode, selectedTemplate.Manifest.StartCommand)
 }
 
 // handleLegacyTemplateInit handles the common logic for initializing a legacy template.
@@ -1754,7 +1756,8 @@ func runCreate(ctx context.Context, opts createOptions) error {
 }
 
 // runPostCreationSteps handles post-creation initialization, validation, and optional deploy/run actions.
-func runPostCreationSteps(ctx context.Context, absOutputDir, projectName string, fileCount int, shouldDeploy bool, runMode prompt.RunMode) error {
+// overrideStartCommand, if non-empty, overrides the default command from the initializer.
+func runPostCreationSteps(ctx context.Context, absOutputDir, projectName string, fileCount int, shouldDeploy bool, runMode prompt.RunMode, overrideStartCommand ...string) error {
 	// Initialize project based on type (Node.js, Python, etc.)
 	var nextStepsCmd string
 	projectInitializer := initializer.GetProjectInitializer(absOutputDir)
@@ -1767,6 +1770,11 @@ func runPostCreationSteps(ctx context.Context, absOutputDir, projectName string,
 			return errors.New(result.Message)
 		}
 		nextStepsCmd = projectInitializer.NextSteps()
+	}
+
+	// Override with start_command from manifest if provided
+	if len(overrideStartCommand) > 0 && overrideStartCommand[0] != "" {
+		nextStepsCmd = overrideStartCommand[0]
 	}
 
 	// Validate dev-remote is only supported for appkit projects

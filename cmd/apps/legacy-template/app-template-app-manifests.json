@@ -4,6 +4,7 @@
       "path": "agent-openai-agents-sdk",
       "git_repo": "https://github.com/databricks/app-templates.git",
       "manifest": {
+        "start_command": "uv run start-app",
         "version": 1,
         "name": "Agent - OpenAI Agents SDK",
         "description": "A conversational agent backend and UI using OpenAI Agents SDK and MLflow AgentServer",
