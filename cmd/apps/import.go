@@ -713,6 +713,11 @@ func generateEnvFile(ctx context.Context, host, profile string, app *apps.App, q
 		cmdio.LogString(ctx, "✓ Generated .env file from app.yml")
 	}
 
+	// Write .gitignore if it doesn't exist
+	if err := writeGitignoreIfMissing(ctx, "."); err != nil && !quiet {
+		cmdio.LogString(ctx, fmt.Sprintf("⚠ Failed to create .gitignore: %v", err))
+	}
+
 	return nil
 }
 
