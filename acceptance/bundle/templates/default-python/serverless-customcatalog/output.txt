@@ -69,3 +69,16 @@ To get started, refer to the project README.md file and the documentation at htt
 +      "defaultValue": "customcatalog",
        "label": "Catalog",
        "name": "catalog",
+--- [TESTROOT]/bundle/templates/default-python/serverless-customcatalog/../serverless/output/my_default_python/tests/conftest.py
++++ output/my_default_python/tests/conftest.py
+@@ -60,5 +60,9 @@
+     """Enable serverless compute if no compute is specified."""
+     conf = WorkspaceClient().config
+-    if conf.serverless_compute_id or conf.cluster_id or os.environ.get("SPARK_REMOTE"):
++    # Guard the access with a hasattr for compatibility with older databricks SDK versions.
++    has_serverless_compute_id = (
++        hasattr(conf, "serverless_compute_id") and conf.serverless_compute_id
++    )
++    if has_serverless_compute_id or conf.cluster_id or os.environ.get("SPARK_REMOTE"):
+         return
+
