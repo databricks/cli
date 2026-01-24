@@ -39,6 +39,9 @@ var appTemplateManifestsJSON []byte
 //go:embed legacy-template/databricks-yml.tmpl
 var databricksYmlTemplate string
 
+//go:embed legacy-template/gitignore.tmpl
+var gitignoreTemplate string
+
 // resourceSpec represents a resource specification in the template manifest.
 type resourceSpec struct {
 	Name                string          `json:"name"`
@@ -613,6 +616,25 @@ type resourceGetter struct {
 	checkRequired func(*appTemplateManifest) bool
 	promptFunc    func(context.Context) (string, error)
 	errorMessage  string
+}
+
+// writeGitignoreIfMissing writes a .gitignore file if one doesn't exist.
+func writeGitignoreIfMissing(ctx context.Context, destDir string) error {
+	gitignorePath := filepath.Join(destDir, ".gitignore")
+
+	// Check if .gitignore already exists
+	if _, err := os.Stat(gitignorePath); err == nil {
+		// .gitignore already exists, skip
+		return nil
+	}
+
+	// Write the gitignore template
+	if err := os.WriteFile(gitignorePath, []byte(gitignoreTemplate), 0o644); err != nil {
+		return fmt.Errorf("failed to write .gitignore: %w", err)
+	}
+
+	cmdio.LogString(ctx, "✓ Created .gitignore")
+	return nil
 }
 
 // generateEnvFileForLegacyTemplate generates a .env file from app.yml for legacy templates.
@@ -1318,6 +1340,12 @@ func runLegacyTemplateInit(ctx context.Context, selectedTemplate *appTemplateMan
 	}
 
 	cmdio.LogString(ctx, "✓ Created databricks.yml")
+
+	// Write .gitignore if it doesn't exist
+	if err := writeGitignoreIfMissing(ctx, destDir); err != nil {
+		// Log warning but don't fail - .gitignore is optional
+		cmdio.LogString(ctx, fmt.Sprintf("⚠ Failed to create .gitignore: %v", err))
+	}
 
 	// Generate .env file from app.yml BEFORE inlining (inlining deletes app.yml)
 	if err := generateEnvFileForLegacyTemplate(ctx, destDir, workspaceHost, profile, appName, warehouseID, servingEndpoint, experimentID, instanceName, databaseName, ucVolume); err != nil {
