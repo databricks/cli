@@ -59,6 +59,8 @@ func init() {
 		nonManagementCommands := []string{
 			// 'deploy' is overloaded as API and bundle command
 			"deploy",
+			// 'delete' is overloaded as API and bundle command
+			"delete",
 			// permission commands are assigned into "permission" group in cmd/cmd.go
 			"get-permission-levels",
 			"get-permissions",
@@ -90,6 +92,7 @@ func init() {
 	listDeploymentsOverrides = append(listDeploymentsOverrides, listDeploymentsOverride)
 	createOverrides = append(createOverrides, createOverride)
 	deployOverrides = append(deployOverrides, appsCli.BundleDeployOverrideWithWrapper(wrapDeploymentError))
+	deleteOverrides = append(deleteOverrides, appsCli.BundleDeleteOverrideWithWrapper(wrapDeploymentError))
 	createUpdateOverrides = append(createUpdateOverrides, createUpdateOverride)
 	startOverrides = append(startOverrides, startOverride)
 }

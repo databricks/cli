@@ -46,28 +46,28 @@ func BundleDeployOverrideWithWrapper(wrapError ErrorWrapper) func(*cobra.Command
 		deployCmd.Flags().BoolVar(&skipValidation, "skip-validation", false, "Skip project validation (build, typecheck, lint)")
 		deployCmd.Flags().BoolVar(&skipTests, "skip-tests", true, "Skip running tests during validation")
 
-		// Update the command usage to reflect that APP_NAME is optional when in bundle mode
+		// Update the command usage to reflect that APP_NAME is optional when in project mode
 		deployCmd.Use = "deploy [APP_NAME]"
 
-		// Override Args to allow 0 or 1 arguments (bundle mode vs API mode)
+		// Override Args to allow 0 or 1 arguments (project mode vs API mode)
 		deployCmd.Args = func(cmd *cobra.Command, args []string) error {
 			// Never allow more than 1 argument
 			if len(args) > 1 {
 				return fmt.Errorf("accepts at most 1 arg(s), received %d", len(args))
 			}
-			// In non-bundle mode, exactly 1 argument is required
+			// In non-project mode, exactly 1 argument is required
 			if !hasBundleConfig() && len(args) != 1 {
 				return fmt.Errorf("accepts 1 arg(s), received %d", len(args))
 			}
-			// In bundle mode: 0 args = bundle deploy, 1 arg = API fallback
+			// In project mode: 0 args = deploy project, 1 arg = API fallback
 			return nil
 		}
 
 		originalRunE := deployCmd.RunE
 		deployCmd.RunE = func(cmd *cobra.Command, args []string) error {
-			// If no APP_NAME provided, try to use bundle deploy flow
+			// If no APP_NAME provided, try to use project deploy flow
 			if len(args) == 0 {
-				// Try to load bundle configuration
+				// Try to load project configuration
 				b := root.TryConfigureBundle(cmd)
 				if b != nil {
 					return runBundleDeploy(cmd, force, skipValidation, skipTests)
@@ -82,27 +82,27 @@ func BundleDeployOverrideWithWrapper(wrapError ErrorWrapper) func(*cobra.Command
 		// Update the help text to explain the dual behavior
 		deployCmd.Long = `Create an app deployment.
 
-When run from a directory containing a databricks.yml bundle configuration
+When run from a Databricks Apps project directory (containing databricks.yml)
 without an APP_NAME argument, this command runs an enhanced deployment pipeline:
 1. Validates the project (build, typecheck, lint for Node.js projects)
-2. Deploys the bundle to the workspace
+2. Deploys the project to the workspace
 3. Runs the app
 
-When an APP_NAME argument is provided (or when not in a bundle directory),
+When an APP_NAME argument is provided (or when not in a project directory),
 creates an app deployment using the API directly.
 
 Arguments:
-  APP_NAME: The name of the app. Required when not in a bundle directory.
-            When provided in a bundle directory, uses API deploy instead of bundle deploy.
+  APP_NAME: The name of the app. Required when not in a project directory.
+            When provided in a project directory, uses API deploy instead of project deploy.
 
 Examples:
-  # Deploy from a bundle directory (enhanced flow with validation)
+  # Deploy from a project directory (enhanced flow with validation)
   databricks apps deploy
 
-  # Deploy a specific app using the API (even from a bundle directory)
+  # Deploy a specific app using the API (even from a project directory)
   databricks apps deploy my-app
 
-  # Deploy from bundle with validation skip
+  # Deploy from project with validation skip
   databricks apps deploy --skip-validation
 
   # Force deploy (override git branch validation)
@@ -110,7 +110,7 @@ Examples:
 	}
 }
 
-// runBundleDeploy executes the enhanced deployment flow for bundle directories.
+// runBundleDeploy executes the enhanced deployment flow for project directories.
 func runBundleDeploy(cmd *cobra.Command, force, skipValidation, skipTests bool) error {
 	ctx := cmd.Context()
 
@@ -145,8 +145,8 @@ func runBundleDeploy(cmd *cobra.Command, force, skipValidation, skipTests bool) 
 		}
 	}
 
-	// Step 2: Deploy bundle
-	cmdio.LogString(ctx, "Deploying bundle...")
+	// Step 2: Deploy project
+	cmdio.LogString(ctx, "Deploying project...")
 	b, err := utils.ProcessBundle(cmd, utils.ProcessOptions{
 		InitFunc: func(b *bundle.Bundle) {
 			b.Config.Bundle.Force = force
@@ -180,16 +180,16 @@ func runBundleDeploy(cmd *cobra.Command, force, skipValidation, skipTests bool) 
 	return nil
 }
 
-// detectBundleApp finds the single app in the bundle configuration.
+// detectBundleApp finds the single app in the project configuration.
 func detectBundleApp(b *bundle.Bundle) (string, error) {
 	bundleApps := b.Config.Resources.Apps
 
 	if len(bundleApps) == 0 {
-		return "", errors.New("no apps found in bundle configuration")
+		return "", errors.New("no apps found in project configuration")
 	}
 
 	if len(bundleApps) > 1 {
-		return "", errors.New("multiple apps found in bundle, cannot auto-detect")
+		return "", errors.New("multiple apps found in project, cannot auto-detect")
 	}
 
 	for key := range bundleApps {
