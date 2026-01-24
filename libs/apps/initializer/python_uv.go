@@ -10,6 +10,9 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 )
 
+// pythonVersion is the Python version to use for virtual environments.
+const pythonVersion = "3.11"
+
 // InitializerPythonUv implements initialization for Python projects using uv.
 type InitializerPythonUv struct{}
 
@@ -65,8 +68,8 @@ func (i *InitializerPythonUv) SupportsDevRemote() bool {
 
 // runUvSync runs uv sync to create the virtual environment and install dependencies.
 func (i *InitializerPythonUv) runUvSync(ctx context.Context, workDir string) error {
-	return prompt.RunWithSpinnerCtx(ctx, "Installing dependencies with uv...", func() error {
-		cmd := exec.CommandContext(ctx, "uv", "sync")
+	return prompt.RunWithSpinnerCtx(ctx, "Installing dependencies with uv (Python "+pythonVersion+")...", func() error {
+		cmd := exec.CommandContext(ctx, "uv", "sync", "--python", pythonVersion)
 		cmd.Dir = workDir
 		cmd.Stdout = nil
 		cmd.Stderr = nil
