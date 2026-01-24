@@ -40,7 +40,13 @@ func BundleStartOverrideWithWrapper(wrapError ErrorWrapper) func(*cobra.Command,
 				if appName != "" {
 					cmdio.LogString(ctx, fmt.Sprintf("Starting app '%s' from project configuration", appName))
 					startReq.Name = appName
-					return originalRunE(cmd, []string{appName})
+					err := originalRunE(cmd, []string{appName})
+					if err != nil {
+						return err
+					}
+					// In project mode, provide human-readable output instead of JSON
+					cmdio.LogString(ctx, fmt.Sprintf("✔ App '%s' started successfully", appName))
+					return nil
 				}
 				return errors.New("no app name provided and unable to detect from project configuration")
 			}
@@ -67,6 +73,9 @@ Arguments:
 Examples:
   # Start app from a project directory (auto-detects app name)
   databricks apps start
+
+  # Start app from a specific target
+  databricks apps start --target prod
 
   # Start a specific app using the API (even from a project directory)
   databricks apps start my-app`
@@ -104,7 +113,13 @@ func BundleStopOverrideWithWrapper(wrapError ErrorWrapper) func(*cobra.Command, 
 				if appName != "" {
 					cmdio.LogString(ctx, fmt.Sprintf("Stopping app '%s' from project configuration", appName))
 					stopReq.Name = appName
-					return originalRunE(cmd, []string{appName})
+					err := originalRunE(cmd, []string{appName})
+					if err != nil {
+						return err
+					}
+					// In project mode, provide human-readable output instead of JSON
+					cmdio.LogString(ctx, fmt.Sprintf("✔ App '%s' stopped successfully", appName))
+					return nil
 				}
 				return errors.New("no app name provided and unable to detect from project configuration")
 			}
@@ -131,6 +146,9 @@ Arguments:
 Examples:
   # Stop app from a project directory (auto-detects app name)
   databricks apps stop
+
+  # Stop app from a specific target
+  databricks apps stop --target prod
 
   # Stop a specific app using the API (even from a project directory)
   databricks apps stop my-app`

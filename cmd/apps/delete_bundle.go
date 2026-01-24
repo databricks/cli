@@ -66,10 +66,13 @@ Examples:
   # Destroy all project resources from a project directory
   databricks apps delete
 
+  # Destroy project resources from a specific target
+  databricks apps delete --target prod
+
   # Destroy project resources with auto-approval
   databricks apps delete --auto-approve
 
   # Delete a specific app resource using the API (even from a project directory)
-  databricks apps delete my-app-resource`
+  databricks apps delete my-app`
 	}
 }

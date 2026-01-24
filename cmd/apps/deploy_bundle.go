@@ -99,6 +99,9 @@ Examples:
   # Deploy from a project directory (enhanced flow with validation)
   databricks apps deploy
 
+  # Deploy from a specific target
+  databricks apps deploy --target prod
+
   # Deploy a specific app using the API (even from a project directory)
   databricks apps deploy my-app
 
