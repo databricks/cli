@@ -488,7 +488,7 @@ func generateAppBundle(ctx context.Context, w *databricks.WorkspaceClient, app *
 	}
 
 	// Generate .env file from app.yml if it exists
-	err = generateEnvFile(ctx, w.Config.Host, app, quiet)
+	err = generateEnvFile(ctx, w.Config.Host, w.Config.Profile, app, quiet)
 	if err != nil {
 		// Log warning but don't fail - .env is optional
 		if !quiet {
@@ -679,7 +679,7 @@ func buildResourcesMap(app *apps.App) map[string]string {
 }
 
 // generateEnvFile generates a .env file from app.yml and app resources.
-func generateEnvFile(ctx context.Context, host string, app *apps.App, quiet bool) error {
+func generateEnvFile(ctx context.Context, host, profile string, app *apps.App, quiet bool) error {
 	// Check if app.yml or app.yaml exists
 	var appYmlPath string
 	for _, filename := range []string{"app.yml", "app.yaml"} {
@@ -698,7 +698,7 @@ func generateEnvFile(ctx context.Context, host string, app *apps.App, quiet bool
 	resources := buildResourcesMap(app)
 
 	// Create EnvFileBuilder
-	builder, err := NewEnvFileBuilder(host, appYmlPath, resources)
+	builder, err := NewEnvFileBuilder(host, profile, app.Name, appYmlPath, resources)
 	if err != nil {
 		return fmt.Errorf("failed to create env builder: %w", err)
 	}
