@@ -99,16 +99,18 @@ var serverSideDefaults = map[string]func(*deployplan.ChangeDesc) bool{
 	"tasks[*].notebook_task.source": isStringEqual("WORKSPACE"),
 
 	// Cluster fields (tasks)
-	"tasks[*].new_cluster.aws_attributes":   alwaysDefault,
-	"tasks[*].new_cluster.azure_attributes": alwaysDefault,
-	"tasks[*].new_cluster.gcp_attributes":   alwaysDefault,
+	"tasks[*].new_cluster.aws_attributes":     alwaysDefault,
+	"tasks[*].new_cluster.azure_attributes":   alwaysDefault,
+	"tasks[*].new_cluster.gcp_attributes":     alwaysDefault,
+	"tasks[*].new_cluster.data_security_mode": isStringEqual("SINGLE_USER"), // TODO this field is computed on some workspaces in integration tests, check why and if we can skip it
 
 	"tasks[*].new_cluster.enable_elastic_disk": alwaysDefault, // deprecated field
 
 	// Cluster fields (job_clusters)
-	"job_clusters[*].new_cluster.aws_attributes":   alwaysDefault,
-	"job_clusters[*].new_cluster.azure_attributes": alwaysDefault,
-	"job_clusters[*].new_cluster.gcp_attributes":   alwaysDefault,
+	"job_clusters[*].new_cluster.aws_attributes":     alwaysDefault,
+	"job_clusters[*].new_cluster.azure_attributes":   alwaysDefault,
+	"job_clusters[*].new_cluster.gcp_attributes":     alwaysDefault,
+	"job_clusters[*].new_cluster.data_security_mode": isStringEqual("SINGLE_USER"), // TODO this field is computed on some workspaces in integration tests, check why and if we can skip it
 
 	"job_clusters[*].new_cluster.enable_elastic_disk": alwaysDefault, // deprecated field
 
