@@ -191,6 +191,23 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 					"alert1": {
 						AlertV2: sql.AlertV2{
 							DisplayName: "alert1",
+							Schedule: sql.CronSchedule{
+								QuartzCronSchedule: "0 0 12 * * ?",
+							},
+						},
+					},
+					"alert2": {
+						AlertV2: sql.AlertV2{
+							DisplayName: "alert2",
+							Schedule: sql.CronSchedule{
+								QuartzCronSchedule: "0 0 12 * * ?",
+								PauseStatus:        sql.SchedulePauseStatusUnpaused,
+							},
+						},
+					},
+					"alert3": {
+						AlertV2: sql.AlertV2{
+							DisplayName: "alert3",
 						},
 					},
 				},
@@ -258,6 +275,18 @@ func TestProcessTargetModeDevelopment(t *testing.T) {
 
 	// Dashboards
 	assert.Equal(t, "[dev lennart] dashboard1", b.Config.Resources.Dashboards["dashboard1"].DisplayName)
+
+	// Alert 1: has schedule without pause status set - should be paused
+	assert.Equal(t, "[dev lennart] alert1", b.Config.Resources.Alerts["alert1"].DisplayName)
+	assert.Equal(t, sql.SchedulePauseStatusPaused, b.Config.Resources.Alerts["alert1"].Schedule.PauseStatus)
+
+	// Alert 2: has schedule with pause status already set to unpaused - should remain unpaused
+	assert.Equal(t, "[dev lennart] alert2", b.Config.Resources.Alerts["alert2"].DisplayName)
+	assert.Equal(t, sql.SchedulePauseStatusUnpaused, b.Config.Resources.Alerts["alert2"].Schedule.PauseStatus)
+
+	// Alert 3: no schedule - pause status should remain empty
+	assert.Equal(t, "[dev lennart] alert3", b.Config.Resources.Alerts["alert3"].DisplayName)
+	assert.Empty(t, b.Config.Resources.Alerts["alert3"].Schedule.PauseStatus)
 }
 
 func TestProcessTargetModeDevelopmentTagNormalizationForAws(t *testing.T) {
