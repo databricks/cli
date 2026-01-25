@@ -83,24 +83,32 @@ Examples:
 		commandName)
 }
 
-// isIdempotencyError checks if an error message indicates the operation is already in the desired state.
-func isIdempotencyError(err error, keywords ...string) bool {
-	if err == nil {
-		return false
+// getWaitTimeout gets the timeout value for app wait operations.
+func getWaitTimeout(cmd *cobra.Command) time.Duration {
+	timeout, _ := cmd.Flags().GetDuration("timeout")
+	if timeout == 0 {
+		timeout = defaultAppWaitTimeout
 	}
-	errMsg := err.Error()
-	for _, keyword := range keywords {
-		if strings.Contains(errMsg, keyword) {
-			return true
-		}
-	}
-	return false
+	return timeout
 }
 
-// displayAppURL displays the app URL in a consistent format if available.
-func displayAppURL(ctx context.Context, appInfo *apps.App) {
-	if appInfo != nil && appInfo.Url != "" {
-		cmdio.LogString(ctx, fmt.Sprintf("\n🔗 %s\n", appInfo.Url))
+// shouldWaitForCompletion checks if the command should wait for app operation completion.
+func shouldWaitForCompletion(cmd *cobra.Command) bool {
+	skipWait, _ := cmd.Flags().GetBool("no-wait")
+	return !skipWait
+}
+
+// createAppProgressCallback creates a progress callback for app operations.
+func createAppProgressCallback(spinner chan<- string) func(*apps.App) {
+	return func(i *apps.App) {
+		if i.ComputeStatus == nil {
+			return
+		}
+		statusMessage := i.ComputeStatus.Message
+		if statusMessage == "" {
+			statusMessage = fmt.Sprintf("current status: %s", i.ComputeStatus.State)
+		}
+		spinner <- statusMessage
 	}
 }
 
@@ -131,65 +139,6 @@ func formatAppStatusMessage(appInfo *apps.App, appName, verb string) string {
 	}
 
 	return fmt.Sprintf("✔ App '%s' status: unknown", appName)
-}
-
-// getWaitTimeout gets the timeout value for app wait operations.
-func getWaitTimeout(cmd *cobra.Command) time.Duration {
-	timeout, _ := cmd.Flags().GetDuration("timeout")
-	if timeout == 0 {
-		timeout = defaultAppWaitTimeout
-	}
-	return timeout
-}
-
-// shouldWaitForCompletion checks if the command should wait for app operation completion.
-func shouldWaitForCompletion(cmd *cobra.Command) bool {
-	skipWait, _ := cmd.Flags().GetBool("no-wait")
-	return !skipWait
-}
-
-// spinnerInterface matches the interface provided by cmdio.NewSpinner.
-type spinnerInterface interface {
-	Update(msg string)
-	Close()
-}
-
-// createAppProgressCallback creates a progress callback for app operations.
-func createAppProgressCallback(spinner spinnerInterface) func(*apps.App) {
-	return func(i *apps.App) {
-		if i.ComputeStatus == nil {
-			return
-		}
-		statusMessage := i.ComputeStatus.Message
-		if statusMessage == "" {
-			statusMessage = fmt.Sprintf("current status: %s", i.ComputeStatus.State)
-		}
-		spinner.Update(statusMessage)
-	}
-}
-
-// handleAlreadyInStateError handles idempotency errors and displays appropriate status.
-// Returns true if the error was handled (already in desired state), false otherwise.
-func handleAlreadyInStateError(ctx context.Context, cmd *cobra.Command, err error, appName string, keywords []string, verb string, wrapError ErrorWrapper) (bool, error) {
-	if !isIdempotencyError(err, keywords...) {
-		return false, nil
-	}
-
-	outputFormat := root.OutputType(cmd)
-	if outputFormat != flags.OutputText {
-		return true, nil
-	}
-
-	w := cmdctx.WorkspaceClient(ctx)
-	appInfo, getErr := w.Apps.Get(ctx, apps.GetAppRequest{Name: appName})
-	if getErr != nil {
-		return true, wrapError(cmd, appName, getErr)
-	}
-
-	message := formatAppStatusMessage(appInfo, appName, verb)
-	cmdio.LogString(ctx, message)
-	displayAppURL(ctx, appInfo)
-	return true, nil
 }
 
 // BundleLogsOverride creates a logs override function that supports bundle mode.
@@ -232,4 +181,49 @@ Examples:
 
   # Show logs for a specific app using the API (even from a project directory)
   databricks apps logs my-app`
+}
+
+// isIdempotencyError checks if an error message indicates the operation is already in the desired state.
+func isIdempotencyError(err error, keywords ...string) bool {
+	if err == nil {
+		return false
+	}
+	errMsg := err.Error()
+	for _, keyword := range keywords {
+		if strings.Contains(errMsg, keyword) {
+			return true
+		}
+	}
+	return false
+}
+
+// displayAppURL displays the app URL in a consistent format if available.
+func displayAppURL(ctx context.Context, appInfo *apps.App) {
+	if appInfo != nil && appInfo.Url != "" {
+		cmdio.LogString(ctx, fmt.Sprintf("\n🔗 %s\n", appInfo.Url))
+	}
+}
+
+// handleAlreadyInStateError handles idempotency errors and displays appropriate status.
+// Returns true if the error was handled (already in desired state), false otherwise.
+func handleAlreadyInStateError(ctx context.Context, cmd *cobra.Command, err error, appName string, keywords []string, verb string, wrapError ErrorWrapper) (bool, error) {
+	if !isIdempotencyError(err, keywords...) {
+		return false, nil
+	}
+
+	outputFormat := root.OutputType(cmd)
+	if outputFormat != flags.OutputText {
+		return true, nil
+	}
+
+	w := cmdctx.WorkspaceClient(ctx)
+	appInfo, getErr := w.Apps.Get(ctx, apps.GetAppRequest{Name: appName})
+	if getErr != nil {
+		return true, wrapError(cmd, appName, getErr)
+	}
+
+	message := formatAppStatusMessage(appInfo, appName, verb)
+	cmdio.LogString(ctx, message)
+	displayAppURL(ctx, appInfo)
+	return true, nil
 }
