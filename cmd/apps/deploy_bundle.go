@@ -175,8 +175,7 @@ func runBundleDeploy(cmd *cobra.Command, force, skipValidation, skipTests bool) 
 	log.Infof(ctx, "Running app: %s", appKey)
 	if err := runBundleApp(ctx, b, appKey); err != nil {
 		cmdio.LogString(ctx, "✔ Deployment succeeded, but failed to start app")
-		appName := b.Config.Resources.Apps[appKey].Name
-		return fmt.Errorf("failed to run app: %w. Run `databricks apps logs %s` to view logs", err, appName)
+		return fmt.Errorf("failed to run app: %w. Run `databricks apps logs` to view logs", err)
 	}
 
 	cmdio.LogString(ctx, "✔ Deployment complete!")
