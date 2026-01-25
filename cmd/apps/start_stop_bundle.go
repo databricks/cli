@@ -4,8 +4,12 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
+	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/spf13/cobra"
 )
@@ -34,26 +38,61 @@ func BundleStartOverrideWithWrapper(wrapError ErrorWrapper) func(*cobra.Command,
 		originalRunE := startCmd.RunE
 		startCmd.RunE = func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
+			outputFormat := root.OutputType(cmd)
 
 			// If no NAME provided, try to detect from project config
 			if len(args) == 0 {
 				appName := detectAppNameFromBundle(cmd)
 				if appName != "" {
-					cmdio.LogString(ctx, fmt.Sprintf("Starting app '%s' from project configuration", appName))
 					startReq.Name = appName
-					err := originalRunE(cmd, []string{appName})
-					if err != nil {
-						// Make start idempotent - if app is already started, treat as success
-						errMsg := err.Error()
-						if strings.Contains(errMsg, "ACTIVE state") || strings.Contains(errMsg, "already") {
-							cmdio.LogString(ctx, fmt.Sprintf("✔ App '%s' is already started", appName))
-							return nil
+
+					// In text mode, handle the API call ourselves for clean output
+					if outputFormat == flags.OutputText {
+						cmdio.LogString(ctx, fmt.Sprintf("Starting app '%s' from project configuration", appName))
+
+						w := cmdctx.WorkspaceClient(ctx)
+						wait, err := w.Apps.Start(ctx, *startReq)
+						if err != nil {
+							// Make start idempotent
+							errMsg := err.Error()
+							if strings.Contains(errMsg, "ACTIVE state") || strings.Contains(errMsg, "already") {
+								cmdio.LogString(ctx, fmt.Sprintf("✔ App '%s' is already started", appName))
+								return nil
+							}
+							return wrapError(cmd, appName, err)
 						}
-						return err
+
+						// Get flags for wait behavior
+						skipWait, _ := cmd.Flags().GetBool("no-wait")
+						timeout, _ := cmd.Flags().GetDuration("timeout")
+						if timeout == 0 {
+							timeout = 20 * time.Minute
+						}
+
+						if !skipWait {
+							spinner := cmdio.Spinner(ctx)
+							_, err = wait.OnProgress(func(i *apps.App) {
+								if i.ComputeStatus == nil {
+									return
+								}
+								statusMessage := i.ComputeStatus.Message
+								if statusMessage == "" {
+									statusMessage = fmt.Sprintf("current status: %s", i.ComputeStatus.State)
+								}
+								spinner <- statusMessage
+							}).GetWithTimeout(timeout)
+							close(spinner)
+							if err != nil {
+								return wrapError(cmd, appName, err)
+							}
+						}
+
+						cmdio.LogString(ctx, fmt.Sprintf("✔ App '%s' started successfully", appName))
+						return nil
 					}
-					// In project mode, provide human-readable output instead of JSON
-					cmdio.LogString(ctx, fmt.Sprintf("✔ App '%s' started successfully", appName))
-					return nil
+
+					// In JSON mode, use the original command to render JSON
+					return originalRunE(cmd, []string{appName})
 				}
 				return errors.New("no app name provided and unable to detect from project configuration")
 			}
@@ -64,7 +103,9 @@ func BundleStartOverrideWithWrapper(wrapError ErrorWrapper) func(*cobra.Command,
 				// Make start idempotent in API mode too
 				errMsg := err.Error()
 				if strings.Contains(errMsg, "ACTIVE state") || strings.Contains(errMsg, "already") {
-					cmdio.LogString(cmd.Context(), fmt.Sprintf("App '%s' is already started", startReq.Name))
+					if outputFormat == flags.OutputText {
+						cmdio.LogString(cmd.Context(), fmt.Sprintf("App '%s' is already started", startReq.Name))
+					}
 					return nil
 				}
 			}
@@ -121,26 +162,61 @@ func BundleStopOverrideWithWrapper(wrapError ErrorWrapper) func(*cobra.Command, 
 		originalRunE := stopCmd.RunE
 		stopCmd.RunE = func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
+			outputFormat := root.OutputType(cmd)
 
 			// If no NAME provided, try to detect from project config
 			if len(args) == 0 {
 				appName := detectAppNameFromBundle(cmd)
 				if appName != "" {
-					cmdio.LogString(ctx, fmt.Sprintf("Stopping app '%s' from project configuration", appName))
 					stopReq.Name = appName
-					err := originalRunE(cmd, []string{appName})
-					if err != nil {
-						// Make stop idempotent - if app is already stopped, treat as success
-						errMsg := err.Error()
-						if strings.Contains(errMsg, "STOPPED state") || strings.Contains(errMsg, "already") {
-							cmdio.LogString(ctx, fmt.Sprintf("✔ App '%s' is already stopped", appName))
-							return nil
+
+					// In text mode, handle the API call ourselves for clean output
+					if outputFormat == flags.OutputText {
+						cmdio.LogString(ctx, fmt.Sprintf("Stopping app '%s' from project configuration", appName))
+
+						w := cmdctx.WorkspaceClient(ctx)
+						wait, err := w.Apps.Stop(ctx, *stopReq)
+						if err != nil {
+							// Make stop idempotent
+							errMsg := err.Error()
+							if strings.Contains(errMsg, "STOPPED state") || strings.Contains(errMsg, "already") {
+								cmdio.LogString(ctx, fmt.Sprintf("✔ App '%s' is already stopped", appName))
+								return nil
+							}
+							return wrapError(cmd, appName, err)
 						}
-						return err
+
+						// Get flags for wait behavior
+						skipWait, _ := cmd.Flags().GetBool("no-wait")
+						timeout, _ := cmd.Flags().GetDuration("timeout")
+						if timeout == 0 {
+							timeout = 20 * time.Minute
+						}
+
+						if !skipWait {
+							spinner := cmdio.Spinner(ctx)
+							_, err = wait.OnProgress(func(i *apps.App) {
+								if i.ComputeStatus == nil {
+									return
+								}
+								statusMessage := i.ComputeStatus.Message
+								if statusMessage == "" {
+									statusMessage = fmt.Sprintf("current status: %s", i.ComputeStatus.State)
+								}
+								spinner <- statusMessage
+							}).GetWithTimeout(timeout)
+							close(spinner)
+							if err != nil {
+								return wrapError(cmd, appName, err)
+							}
+						}
+
+						cmdio.LogString(ctx, fmt.Sprintf("✔ App '%s' stopped successfully", appName))
+						return nil
 					}
-					// In project mode, provide human-readable output instead of JSON
-					cmdio.LogString(ctx, fmt.Sprintf("✔ App '%s' stopped successfully", appName))
-					return nil
+
+					// In JSON mode, use the original command to render JSON
+					return originalRunE(cmd, []string{appName})
 				}
 				return errors.New("no app name provided and unable to detect from project configuration")
 			}
@@ -151,7 +227,9 @@ func BundleStopOverrideWithWrapper(wrapError ErrorWrapper) func(*cobra.Command, 
 				// Make stop idempotent in API mode too
 				errMsg := err.Error()
 				if strings.Contains(errMsg, "STOPPED state") || strings.Contains(errMsg, "already") {
-					cmdio.LogString(cmd.Context(), fmt.Sprintf("App '%s' is already stopped", stopReq.Name))
+					if outputFormat == flags.OutputText {
+						cmdio.LogString(cmd.Context(), fmt.Sprintf("App '%s' is already stopped", stopReq.Name))
+					}
 					return nil
 				}
 			}
