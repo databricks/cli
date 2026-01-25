@@ -52,11 +52,21 @@ func BundleStartOverrideWithWrapper(wrapError ErrorWrapper) func(*cobra.Command,
 
 						w := cmdctx.WorkspaceClient(ctx)
 						wait, err := w.Apps.Start(ctx, *startReq)
+
+						var appInfo *apps.App
 						if err != nil {
 							// Make start idempotent
 							errMsg := err.Error()
 							if strings.Contains(errMsg, "ACTIVE state") || strings.Contains(errMsg, "already") {
 								cmdio.LogString(ctx, fmt.Sprintf("✔ App '%s' is already started", appName))
+								// Get app info to display URL
+								appInfo, err = w.Apps.Get(ctx, apps.GetAppRequest{Name: appName})
+								if err != nil {
+									return wrapError(cmd, appName, err)
+								}
+								if appInfo.Url != "" {
+									cmdio.LogString(ctx, "App URL: "+appInfo.Url)
+								}
 								return nil
 							}
 							return wrapError(cmd, appName, err)
@@ -71,7 +81,7 @@ func BundleStartOverrideWithWrapper(wrapError ErrorWrapper) func(*cobra.Command,
 
 						if !skipWait {
 							spinner := cmdio.Spinner(ctx)
-							_, err = wait.OnProgress(func(i *apps.App) {
+							appInfo, err = wait.OnProgress(func(i *apps.App) {
 								if i.ComputeStatus == nil {
 									return
 								}
@@ -85,9 +95,18 @@ func BundleStartOverrideWithWrapper(wrapError ErrorWrapper) func(*cobra.Command,
 							if err != nil {
 								return wrapError(cmd, appName, err)
 							}
+						} else {
+							// If skipping wait, get app info separately
+							appInfo, err = w.Apps.Get(ctx, apps.GetAppRequest{Name: appName})
+							if err != nil {
+								return wrapError(cmd, appName, err)
+							}
 						}
 
 						cmdio.LogString(ctx, fmt.Sprintf("✔ App '%s' started successfully", appName))
+						if appInfo != nil && appInfo.Url != "" {
+							cmdio.LogString(ctx, "App URL: "+appInfo.Url)
+						}
 						return nil
 					}
 
@@ -104,7 +123,14 @@ func BundleStartOverrideWithWrapper(wrapError ErrorWrapper) func(*cobra.Command,
 				errMsg := err.Error()
 				if strings.Contains(errMsg, "ACTIVE state") || strings.Contains(errMsg, "already") {
 					if outputFormat == flags.OutputText {
-						cmdio.LogString(cmd.Context(), fmt.Sprintf("App '%s' is already started", startReq.Name))
+						appName := startReq.Name
+						cmdio.LogString(cmd.Context(), fmt.Sprintf("App '%s' is already started", appName))
+						// Get app info to display URL
+						w := cmdctx.WorkspaceClient(cmd.Context())
+						appInfo, getErr := w.Apps.Get(cmd.Context(), apps.GetAppRequest{Name: appName})
+						if getErr == nil && appInfo.Url != "" {
+							cmdio.LogString(cmd.Context(), "App URL: "+appInfo.Url)
+						}
 					}
 					return nil
 				}
