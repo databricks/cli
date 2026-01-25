@@ -204,6 +204,64 @@ func displayAppURL(ctx context.Context, appInfo *apps.App) {
 	}
 }
 
+// formatAppStatusMessage formats a user-friendly status message for an app.
+func formatAppStatusMessage(appInfo *apps.App, appName, verb string) string {
+	computeState := "unknown"
+	if appInfo != nil && appInfo.ComputeStatus != nil {
+		computeState = string(appInfo.ComputeStatus.State)
+	}
+
+	if appInfo != nil && appInfo.AppStatus != nil && appInfo.AppStatus.State == apps.ApplicationStateUnavailable {
+		return fmt.Sprintf("⚠ App '%s' %s but is unavailable (compute: %s, app: %s)", appName, verb, computeState, appInfo.AppStatus.State)
+	}
+
+	if appInfo != nil && appInfo.ComputeStatus != nil {
+		state := appInfo.ComputeStatus.State
+		switch state {
+		case apps.ComputeStateActive:
+			if verb == "is deployed" {
+				return fmt.Sprintf("✔ App '%s' is already running (status: %s)", appName, state)
+			}
+			return fmt.Sprintf("✔ App '%s' started successfully (status: %s)", appName, state)
+		case apps.ComputeStateStarting:
+			return fmt.Sprintf("⚠ App '%s' is already starting (status: %s)", appName, state)
+		default:
+			return fmt.Sprintf("✔ App '%s' status: %s", appName, state)
+		}
+	}
+
+	return fmt.Sprintf("✔ App '%s' status: unknown", appName)
+}
+
+// getWaitTimeout gets the timeout value for app wait operations.
+func getWaitTimeout(cmd *cobra.Command) time.Duration {
+	timeout, _ := cmd.Flags().GetDuration("timeout")
+	if timeout == 0 {
+		timeout = defaultAppWaitTimeout
+	}
+	return timeout
+}
+
+// shouldWaitForCompletion checks if the command should wait for app operation completion.
+func shouldWaitForCompletion(cmd *cobra.Command) bool {
+	skipWait, _ := cmd.Flags().GetBool("no-wait")
+	return !skipWait
+}
+
+// createAppProgressCallback creates a progress callback for app operations.
+func createAppProgressCallback(spinner chan<- string) func(*apps.App) {
+	return func(i *apps.App) {
+		if i.ComputeStatus == nil {
+			return
+		}
+		statusMessage := i.ComputeStatus.Message
+		if statusMessage == "" {
+			statusMessage = fmt.Sprintf("current status: %s", i.ComputeStatus.State)
+		}
+		spinner <- statusMessage
+	}
+}
+
 // handleAlreadyInStateError handles idempotency errors and displays appropriate status.
 // Returns true if the error was handled (already in desired state), false otherwise.
 func handleAlreadyInStateError(ctx context.Context, cmd *cobra.Command, err error, appName string, keywords []string, verb string, wrapError ErrorWrapper) (bool, error) {
