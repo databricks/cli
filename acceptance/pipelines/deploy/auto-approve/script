@@ -1,10 +1,10 @@
-trace $ENTRYPOINT deploy
+trace $CLI pipelines deploy
 
 title "Remove resources from configuration to test auto-approve"
 trace rm resources.yml
 
 title "Try to redeploy without --auto-approve - should fail"
-trace errcode $ENTRYPOINT deploy
+trace errcode $CLI pipelines deploy
 
 title "Redeploy with --auto-approve - should succeed"
-trace $ENTRYPOINT deploy --auto-approve
+trace $CLI pipelines deploy --auto-approve

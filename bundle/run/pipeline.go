@@ -179,10 +179,10 @@ func (r *pipelineRunner) Cancel(ctx context.Context) error {
 }
 
 func (r *pipelineRunner) Restart(ctx context.Context, opts *Options) (output.RunOutput, error) {
-	s := cmdio.Spinner(ctx)
-	s <- "Cancelling the active pipeline update"
+	sp := cmdio.NewSpinner(ctx)
+	sp.Update("Cancelling the active pipeline update")
 	err := r.Cancel(ctx)
-	close(s)
+	sp.Close()
 	if err != nil {
 		return nil, err
 	}

@@ -1,6 +1,7 @@
 {
   "email_notifications.on_failure": {
-    "action": "update",
+    "action": "skip",
+    "reason": "empty_slice",
     "new": []
   },
   "tasks[task_key='usage_logs_grants'].notebook_task.source": {
@@ -15,7 +16,7 @@
   },
   "webhook_notifications": {
     "action": "skip",
-    "reason": "server_side_default",
+    "reason": "empty_struct",
     "remote": {}
   }
 }

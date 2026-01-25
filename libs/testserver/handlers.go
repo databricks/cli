@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"path"
 	"strings"
 
 	"github.com/databricks/databricks-sdk-go/service/catalog"
@@ -146,15 +147,67 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	server.Handle("HEAD", "/api/2.0/fs/directories/{path:.*}", func(req Request) any {
-		return Response{
-			Body: "dir path: " + req.Vars["dir_path"],
+		dirPath := req.Vars["path"]
+		if !strings.HasPrefix(dirPath, "/") {
+			dirPath = "/" + dirPath
 		}
+
+		if req.Workspace.FileExists(dirPath) {
+			return Response{StatusCode: 404}
+		}
+		if req.Workspace.DirectoryExists(dirPath) {
+			return Response{StatusCode: 200}
+		}
+		return Response{StatusCode: 404}
+	})
+
+	server.Handle("HEAD", "/api/2.0/fs/files/{path:.*}", func(req Request) any {
+		path := req.Vars["path"]
+		if req.Workspace.FileExists(path) {
+			return Response{StatusCode: 200}
+		}
+		return Response{StatusCode: 404}
+	})
+
+	server.Handle("PUT", "/api/2.0/fs/directories/{path:.*}", func(req Request) any {
+		dirPath := req.Vars["path"]
+		if !strings.HasPrefix(dirPath, "/") {
+			dirPath = "/" + dirPath
+		}
+
+		defer req.Workspace.LockUnlock()()
+
+		// Create directory and all parent directories.
+		for dir := dirPath; dir != "/" && dir != ""; dir = path.Dir(dir) {
+			if _, exists := req.Workspace.directories[dir]; !exists {
+				req.Workspace.directories[dir] = workspace.ObjectInfo{
+					ObjectType: "DIRECTORY",
+					Path:       dir,
+					ObjectId:   nextID(),
+				}
+			}
+		}
+		return Response{}
 	})
 
 	server.Handle("PUT", "/api/2.0/fs/files/{path:.*}", func(req Request) any {
 		path := req.Vars["path"]
 		overwrite := req.URL.Query().Get("overwrite") == "true"
 		return req.Workspace.WorkspaceFilesImportFile(path, req.Body, overwrite)
+	})
+
+	server.Handle("GET", "/api/2.0/fs/files/{path:.*}", func(req Request) any {
+		path := req.Vars["path"]
+		data := req.Workspace.WorkspaceFilesExportFile(path)
+		if data == nil {
+			return Response{
+				StatusCode: 404,
+				Body: map[string]string{
+					"message": "file does not exist",
+				},
+			}
+		}
+		return data
 	})
 
 	server.Handle("GET", "/api/2.1/unity-catalog/current-metastore-assignment", func(req Request) any {

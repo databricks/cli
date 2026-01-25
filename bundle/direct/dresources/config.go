@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"github.com/databricks/cli/libs/structs/structpath"
-	"gopkg.in/yaml.v3"
+	"go.yaml.in/yaml/v3"
 )
 
 // ResourceLifecycleConfig defines lifecycle behavior for a resource type.

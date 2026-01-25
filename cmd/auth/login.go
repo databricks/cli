@@ -19,6 +19,7 @@ import (
 	"github.com/databricks/cli/libs/exec"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/config"
+	"github.com/databricks/databricks-sdk-go/config/experimental/auth/authconv"
 	"github.com/databricks/databricks-sdk-go/credentials/u2m"
 	browserpkg "github.com/pkg/browser"
 	"github.com/spf13/cobra"
@@ -44,6 +45,7 @@ func promptForProfile(ctx context.Context, defaultValue string) (string, error) 
 const (
 	minimalDbConnectVersion = "13.1"
 	defaultTimeout          = 1 * time.Hour
+	authTypeDatabricksCLI   = "databricks-cli"
 )
 
 func newLoginCommand(authArguments *auth.AuthArguments) *cobra.Command {
@@ -133,6 +135,15 @@ depends on the existing profiles you have set in your configuration file
 		if err != nil {
 			return err
 		}
+
+		// Load unified host flags from the profile if not explicitly set via CLI flag
+		if !cmd.Flag("experimental-is-unified-host").Changed && existingProfile != nil {
+			authArguments.IsUnifiedHost = existingProfile.IsUnifiedHost
+		}
+		if !cmd.Flag("workspace-id").Changed && existingProfile != nil {
+			authArguments.WorkspaceId = existingProfile.WorkspaceId
+		}
+
 		err = setHostAndAccountId(ctx, existingProfile, authArguments, args)
 		if err != nil {
 			return err
@@ -152,40 +163,40 @@ depends on the existing profiles you have set in your configuration file
 		}
 		defer persistentAuth.Close()
 
-		// We need the config without the profile before it's used to initialise new workspace client below.
-		// Otherwise it will complain about non existing profile because it was not yet saved.
-		cfg := config.Config{
-			Host:      authArguments.Host,
-			AccountID: authArguments.AccountID,
-			AuthType:  "databricks-cli",
-		}
-		databricksCfgFile := os.Getenv("DATABRICKS_CONFIG_FILE")
-		if databricksCfgFile != "" {
-			cfg.ConfigFile = databricksCfgFile
-		}
-
 		ctx, cancel := context.WithTimeout(ctx, loginTimeout)
 		defer cancel()
 
 		if err = persistentAuth.Challenge(); err != nil {
 			return err
 		}
+		// At this point, an OAuth token has been successfully minted and stored
+		// in the CLI cache. The rest of the command focuses on:
+		// 1. Configuring cluster and serverless;
+		// 2. Saving the profile.
 
+		var clusterID, serverlessComputeID string
 		switch {
 		case configureCluster:
-			w, err := databricks.NewWorkspaceClient((*databricks.Config)(&cfg))
+			// Create a workspace client to list clusters for interactive selection.
+			// We use a custom CredentialsStrategy that wraps the token we just minted,
+			// avoiding the need to spawn a child CLI process (which AuthType "databricks-cli" does).
+			w, err := databricks.NewWorkspaceClient(&databricks.Config{
+				Host:                       authArguments.Host,
+				AccountID:                  authArguments.AccountID,
+				WorkspaceId:                authArguments.WorkspaceId,
+				Experimental_IsUnifiedHost: authArguments.IsUnifiedHost,
+				Credentials:                config.NewTokenSourceStrategy("login-token", authconv.AuthTokenSource(persistentAuth)),
+			})
 			if err != nil {
 				return err
 			}
-			clusterID, err := cfgpickers.AskForCluster(ctx, w,
+			clusterID, err = cfgpickers.AskForCluster(ctx, w,
 				cfgpickers.WithDatabricksConnect(minimalDbConnectVersion))
 			if err != nil {
 				return err
 			}
-			cfg.ClusterID = clusterID
 		case configureServerless:
-			cfg.ClusterID = ""
-			cfg.ServerlessComputeID = "auto"
+			serverlessComputeID = "auto"
 		default:
 			// Respect the existing profile if it exists, even if it has
 			// both cluster and serverless configured. Tools relying on
@@ -195,20 +206,22 @@ depends on the existing profiles you have set in your configuration file
 			// to clean up the profile under the assumption that serverless
 			// is the preferred option.
 			if existingProfile != nil {
-				cfg.ClusterID = existingProfile.ClusterID
-				cfg.ServerlessComputeID = existingProfile.ServerlessComputeID
+				clusterID = existingProfile.ClusterID
+				serverlessComputeID = existingProfile.ServerlessComputeID
 			}
 		}
 
 		if profileName != "" {
-			err = databrickscfg.SaveToProfile(ctx, &config.Config{
-				Profile:             profileName,
-				Host:                cfg.Host,
-				AuthType:            cfg.AuthType,
-				AccountID:           cfg.AccountID,
-				ClusterID:           cfg.ClusterID,
-				ConfigFile:          cfg.ConfigFile,
-				ServerlessComputeID: cfg.ServerlessComputeID,
+			err := databrickscfg.SaveToProfile(ctx, &config.Config{
+				Profile:                    profileName,
+				Host:                       authArguments.Host,
+				AuthType:                   authTypeDatabricksCLI,
+				AccountID:                  authArguments.AccountID,
+				WorkspaceId:                authArguments.WorkspaceId,
+				Experimental_IsUnifiedHost: authArguments.IsUnifiedHost,
+				ClusterID:                  clusterID,
+				ConfigFile:                 os.Getenv("DATABRICKS_CONFIG_FILE"),
+				ServerlessComputeID:        serverlessComputeID,
 			})
 			if err != nil {
 				return err
@@ -260,24 +273,65 @@ func setHostAndAccountId(ctx context.Context, existingProfile *profile.Profile, 
 		}
 	}
 
-	// If the account-id was not provided as a cmd line flag, try to read it from
-	// the specified profile.
-	//nolint:staticcheck // SA1019: IsAccountClient is deprecated but is still used here to avoid breaking changes
-	isAccountClient := (&config.Config{Host: authArguments.Host}).IsAccountClient()
-	accountID := authArguments.AccountID
-	if isAccountClient && accountID == "" {
-		if existingProfile != nil && existingProfile.AccountID != "" {
-			authArguments.AccountID = existingProfile.AccountID
-		} else {
-			// Prompt user for the account-id if it we could not get it from a
-			// profile.
-			accountId, err := promptForAccountID(ctx)
-			if err != nil {
-				return err
-			}
-			authArguments.AccountID = accountId
-		}
+	// Determine the host type and handle account ID / workspace ID accordingly
+	cfg := &config.Config{
+		Host:                       authArguments.Host,
+		AccountID:                  authArguments.AccountID,
+		WorkspaceId:                authArguments.WorkspaceId,
+		Experimental_IsUnifiedHost: authArguments.IsUnifiedHost,
 	}
+
+	switch cfg.HostType() {
+	case config.AccountHost:
+		// Account host - prompt for account ID if not provided
+		if authArguments.AccountID == "" {
+			if existingProfile != nil && existingProfile.AccountID != "" {
+				authArguments.AccountID = existingProfile.AccountID
+			} else {
+				accountId, err := promptForAccountID(ctx)
+				if err != nil {
+					return err
+				}
+				authArguments.AccountID = accountId
+			}
+		}
+	case config.UnifiedHost:
+		// Unified host requires an account ID for OAuth URL construction
+		if authArguments.AccountID == "" {
+			if existingProfile != nil && existingProfile.AccountID != "" {
+				authArguments.AccountID = existingProfile.AccountID
+			} else {
+				accountId, err := promptForAccountID(ctx)
+				if err != nil {
+					return err
+				}
+				authArguments.AccountID = accountId
+			}
+		}
+
+		// Workspace ID is optional and determines API access level:
+		// - With workspace ID: workspace-level APIs
+		// - Without workspace ID: account-level APIs
+		// If neither is provided via flags, prompt for workspace ID (most common case)
+		hasWorkspaceID := authArguments.WorkspaceId != ""
+		if !hasWorkspaceID {
+			if existingProfile != nil && existingProfile.WorkspaceId != "" {
+				authArguments.WorkspaceId = existingProfile.WorkspaceId
+			} else {
+				// Prompt for workspace ID for workspace-level access
+				workspaceId, err := promptForWorkspaceID(ctx)
+				if err != nil {
+					return err
+				}
+				authArguments.WorkspaceId = workspaceId
+			}
+		}
+	case config.WorkspaceHost:
+		// Workspace host - no additional prompts needed
+	default:
+		return fmt.Errorf("unknown host type: %v", cfg.HostType())
+	}
+
 	return nil
 }
 
@@ -343,7 +397,7 @@ func getBrowserFunc(cmd *cobra.Command) func(url string) error {
 		return openURLSuppressingStderr
 	case "none":
 		return func(url string) error {
-			fmt.Fprintf(cmd.OutOrStdout(), "Please complete authentication by opening this link in your browser:\n%s\n", url)
+			cmdio.LogString(cmd.Context(), "Please complete authentication by opening this link in your browser:\n"+url)
 			return nil
 		}
 	default:
