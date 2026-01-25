@@ -112,11 +112,11 @@ func (r *gitReader) LoadSchemaAndTemplateFS(ctx context.Context) (*jsonschema.Sc
 	r.tmpRepoDir = repoDir
 
 	// start the spinner
-	promptSpinner := cmdio.Spinner(ctx)
-	promptSpinner <- "Downloading the template\n"
+	sp := cmdio.NewSpinner(ctx)
+	sp.Update("Downloading the template\n")
 
 	err = r.cloneFunc(ctx, r.gitUrl, r.ref, repoDir)
-	close(promptSpinner)
+	sp.Close()
 	if err != nil {
 		return nil, nil, err
 	}

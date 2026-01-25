@@ -215,6 +215,7 @@ func newCreate() *cobra.Command {
 ]`)
 	// TODO: complex arg: docker_image
 	cmd.Flags().StringVar(&createReq.DriverInstancePoolId, "driver-instance-pool-id", createReq.DriverInstancePoolId, `The optional ID of the instance pool for the driver of the cluster belongs.`)
+	// TODO: complex arg: driver_node_type_flexibility
 	cmd.Flags().StringVar(&createReq.DriverNodeTypeId, "driver-node-type-id", createReq.DriverNodeTypeId, `The node type of the Spark driver.`)
 	cmd.Flags().BoolVar(&createReq.EnableElasticDisk, "enable-elastic-disk", createReq.EnableElasticDisk, `Autoscaling Local Storage: when enabled, this cluster will dynamically acquire additional disk space when its Spark workers are running low on disk space.`)
 	cmd.Flags().BoolVar(&createReq.EnableLocalDiskEncryption, "enable-local-disk-encryption", createReq.EnableLocalDiskEncryption, `Whether to enable LUKS on cluster VMs' local disks.`)
@@ -234,6 +235,7 @@ func newCreate() *cobra.Command {
 	// TODO: array: ssh_public_keys
 	cmd.Flags().IntVar(&createReq.TotalInitialRemoteDiskSize, "total-initial-remote-disk-size", createReq.TotalInitialRemoteDiskSize, `If set, what the total initial volume size (in GB) of the remote disks should be.`)
 	cmd.Flags().BoolVar(&createReq.UseMlRuntime, "use-ml-runtime", createReq.UseMlRuntime, `This field can only be used when kind = CLASSIC_PREVIEW.`)
+	// TODO: complex arg: worker_node_type_flexibility
 	// TODO: complex arg: workload_type
 
 	cmd.Use = "create SPARK_VERSION"
@@ -490,6 +492,7 @@ func newEdit() *cobra.Command {
 ]`)
 	// TODO: complex arg: docker_image
 	cmd.Flags().StringVar(&editReq.DriverInstancePoolId, "driver-instance-pool-id", editReq.DriverInstancePoolId, `The optional ID of the instance pool for the driver of the cluster belongs.`)
+	// TODO: complex arg: driver_node_type_flexibility
 	cmd.Flags().StringVar(&editReq.DriverNodeTypeId, "driver-node-type-id", editReq.DriverNodeTypeId, `The node type of the Spark driver.`)
 	cmd.Flags().BoolVar(&editReq.EnableElasticDisk, "enable-elastic-disk", editReq.EnableElasticDisk, `Autoscaling Local Storage: when enabled, this cluster will dynamically acquire additional disk space when its Spark workers are running low on disk space.`)
 	cmd.Flags().BoolVar(&editReq.EnableLocalDiskEncryption, "enable-local-disk-encryption", editReq.EnableLocalDiskEncryption, `Whether to enable LUKS on cluster VMs' local disks.`)
@@ -509,6 +512,7 @@ func newEdit() *cobra.Command {
 	// TODO: array: ssh_public_keys
 	cmd.Flags().IntVar(&editReq.TotalInitialRemoteDiskSize, "total-initial-remote-disk-size", editReq.TotalInitialRemoteDiskSize, `If set, what the total initial volume size (in GB) of the remote disks should be.`)
 	cmd.Flags().BoolVar(&editReq.UseMlRuntime, "use-ml-runtime", editReq.UseMlRuntime, `This field can only be used when kind = CLASSIC_PREVIEW.`)
+	// TODO: complex arg: worker_node_type_flexibility
 	// TODO: complex arg: workload_type
 
 	cmd.Use = "edit CLUSTER_ID SPARK_VERSION"

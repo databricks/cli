@@ -1,7 +1,7 @@
 
 === E2E Test: Complete pipeline lifecycle (init, deploy, run, stop, destroy)
 === Initialize pipeline project
->>> [PIPELINES] init --output-dir output
+>>> [CLI] pipelines init --output-dir output
 Welcome to the template for Lakeflow Spark Declarative Pipelines!
 
 Please answer the below to tailor your project to your preferences.
@@ -15,7 +15,7 @@ Note that [DATABRICKS_URL] is used for initialization
 Please refer to the README.md file for "getting started" instructions.
 
 === Deploy pipeline
->>> [PIPELINES] deploy
+>>> [CLI] pipelines deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lakeflow_project/dev/files...
 Deploying resources...
 Updating deployment state...
@@ -24,10 +24,10 @@ View your job sample_job here: [DATABRICKS_URL]/jobs/[NUMID]?o=[NUMID]
 View your pipeline lakeflow_project_etl here: [DATABRICKS_URL]/pipelines/[UUID]?o=[NUMID]
 
 === Run pipeline
->>> [PIPELINES] run
+>>> [CLI] pipelines run
 Recommendation: This command runs the last deployed version of the code
 
-If you've made local changes, run '[DEPLOYCMD]' first to ensure they are included.
+If you've made local changes, run 'databricks pipelines deploy' first to ensure they are included.
 
 Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 
@@ -39,7 +39,7 @@ Pipeline configurations for this update:
 • All tables are refreshed
 
 === Edit project by creating and running a new second pipeline
->>> [PIPELINES] deploy
+>>> [CLI] pipelines deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/lakeflow_project/dev/files...
 Deploying resources...
 Updating deployment state...
@@ -74,10 +74,10 @@ View your pipeline lakeflow_project_etl_2 here: [DATABRICKS_URL]/pipelines/[UUID
   "state":"IDLE"
 }
 
->>> [PIPELINES] run lakeflow_project_etl_2
+>>> [CLI] pipelines run lakeflow_project_etl_2
 Recommendation: This command runs the last deployed version of the code
 
-If you've made local changes, run '[DEPLOYCMD]' first to ensure they are included.
+If you've made local changes, run 'databricks pipelines deploy' first to ensure they are included.
 
 Update URL: [DATABRICKS_URL]/#joblist/pipelines/[UUID]/updates/[UUID]
 
@@ -89,16 +89,16 @@ Pipeline configurations for this update:
 • All tables are refreshed
 
 === Stop both pipelines before destroy
->>> [PIPELINES] stop lakeflow_project_etl
+>>> [CLI] pipelines stop lakeflow_project_etl
 Stopping lakeflow_project_etl...
 lakeflow_project_etl has been stopped.
 
->>> [PIPELINES] stop lakeflow_project_etl_2
+>>> [CLI] pipelines stop lakeflow_project_etl_2
 Stopping lakeflow_project_etl_2...
 lakeflow_project_etl_2 has been stopped.
 
 === Destroy project
->>> [PIPELINES] destroy --auto-approve
+>>> [CLI] pipelines destroy --auto-approve
 The following resources will be deleted:
   delete resources.jobs.sample_job
   delete resources.pipelines.lakeflow_project_etl

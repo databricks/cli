@@ -1,0 +1,50 @@
+# Invariant to test: no drift after deploy
+# Additional checks: no internal errors / panics in validate/plan/deploy
+
+# Copy data files to test directory
+cp -r "$TESTDIR/../data/." . &> LOG.cp
+
+# Run init script if present
+INIT_SCRIPT="$TESTDIR/../configs/$INPUT_CONFIG-init.sh"
+if [ -f "$INIT_SCRIPT" ]; then
+    source "$INIT_SCRIPT" &> LOG.init
+fi
+
+envsubst < $TESTDIR/../configs/$INPUT_CONFIG > databricks.yml
+
+cp databricks.yml LOG.config
+
+# We redirect output rather than record it because some configs that are being tested may produce warnings
+trace $CLI bundle validate &> LOG.validate
+
+cat LOG.validate | contains.py '!panic' '!internal error' > /dev/null
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve &> LOG.destroy
+    cat LOG.destroy | contains.py '!panic' '!internal error' > /dev/null
+
+    # Run cleanup script if present
+    CLEANUP_SCRIPT="$TESTDIR/../configs/$INPUT_CONFIG-cleanup.sh"
+    if [ -f "$CLEANUP_SCRIPT" ]; then
+        source "$CLEANUP_SCRIPT" &> LOG.cleanup
+    fi
+}
+
+trap cleanup EXIT
+
+trace $CLI bundle deploy &> LOG.deploy
+cat LOG.deploy | contains.py '!panic' '!internal error' > /dev/null
+
+# Special message to fuzzer that generated config was fine.
+# Any failures after this point will be considered as "bug detected" by fuzzer.
+echo INPUT_CONFIG_OK
+
+$CLI bundle plan -o json &> plan.json
+cat plan.json | contains.py '!panic' '!internal error' > /dev/null
+
+# Check both text and JSON plan for no changes
+# Note, expect that there maybe more than one resource unchanged
+$CLI bundle plan | contains.py '!panic' '!internal error' 'Plan: 0 to add, 0 to change, 0 to delete' > LOG.plan
+
+$CLI bundle plan -o json > plan.json
+verify_no_drift.py plan.json
