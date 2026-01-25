@@ -3,6 +3,7 @@ package apps
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go/service/apps"
@@ -42,6 +43,12 @@ func BundleStartOverrideWithWrapper(wrapError ErrorWrapper) func(*cobra.Command,
 					startReq.Name = appName
 					err := originalRunE(cmd, []string{appName})
 					if err != nil {
+						// Make start idempotent - if app is already started, treat as success
+						errMsg := err.Error()
+						if strings.Contains(errMsg, "ACTIVE state") || strings.Contains(errMsg, "already") {
+							cmdio.LogString(ctx, fmt.Sprintf("✔ App '%s' is already started", appName))
+							return nil
+						}
 						return err
 					}
 					// In project mode, provide human-readable output instead of JSON
@@ -53,6 +60,14 @@ func BundleStartOverrideWithWrapper(wrapError ErrorWrapper) func(*cobra.Command,
 
 			// Otherwise, fall back to the original API start command
 			err := originalRunE(cmd, args)
+			if err != nil {
+				// Make start idempotent in API mode too
+				errMsg := err.Error()
+				if strings.Contains(errMsg, "ACTIVE state") || strings.Contains(errMsg, "already") {
+					cmdio.LogString(cmd.Context(), fmt.Sprintf("App '%s' is already started", startReq.Name))
+					return nil
+				}
+			}
 			return wrapError(cmd, startReq.Name, err)
 		}
 
@@ -115,6 +130,12 @@ func BundleStopOverrideWithWrapper(wrapError ErrorWrapper) func(*cobra.Command, 
 					stopReq.Name = appName
 					err := originalRunE(cmd, []string{appName})
 					if err != nil {
+						// Make stop idempotent - if app is already stopped, treat as success
+						errMsg := err.Error()
+						if strings.Contains(errMsg, "STOPPED state") || strings.Contains(errMsg, "already") {
+							cmdio.LogString(ctx, fmt.Sprintf("✔ App '%s' is already stopped", appName))
+							return nil
+						}
 						return err
 					}
 					// In project mode, provide human-readable output instead of JSON
@@ -126,6 +147,14 @@ func BundleStopOverrideWithWrapper(wrapError ErrorWrapper) func(*cobra.Command, 
 
 			// Otherwise, fall back to the original API stop command
 			err := originalRunE(cmd, args)
+			if err != nil {
+				// Make stop idempotent in API mode too
+				errMsg := err.Error()
+				if strings.Contains(errMsg, "STOPPED state") || strings.Contains(errMsg, "already") {
+					cmdio.LogString(cmd.Context(), fmt.Sprintf("App '%s' is already stopped", stopReq.Name))
+					return nil
+				}
+			}
 			return wrapError(cmd, stopReq.Name, err)
 		}
 
