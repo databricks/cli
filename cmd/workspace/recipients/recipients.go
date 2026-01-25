@@ -233,9 +233,9 @@ func newGet() *cobra.Command {
 	cmd.Short = `Get a share recipient.`
 	cmd.Long = `Get a share recipient.
 
-  Gets a share recipient from the metastore if:
-
-  * the caller is the owner of the share recipient, or: * is a metastore admin
+  Gets a share recipient from the metastore. The caller must be one of: * A user
+  with **USE_RECIPIENT** privilege on the metastore * The owner of the share
+  recipient * A metastore admin
 
   Arguments:
     NAME: Name of the recipient.`
@@ -440,7 +440,8 @@ func newSharePermissions() *cobra.Command {
 	cmd.Long = `Get recipient share permissions.
 
   Gets the share permissions for the specified Recipient. The caller must have
-  the USE_RECIPIENT privilege on the metastore or be the owner of the Recipient.
+  the **USE_RECIPIENT** privilege on the metastore or be the owner of the
+  Recipient.
 
   Arguments:
     NAME: The name of the Recipient.`

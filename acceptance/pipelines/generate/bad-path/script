@@ -1,0 +1,2 @@
+
+trace errcode $CLI pipelines generate --existing-pipeline-dir /tmp/foo

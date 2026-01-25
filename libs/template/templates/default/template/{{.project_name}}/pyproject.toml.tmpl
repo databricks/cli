@@ -14,6 +14,7 @@ dependencies = [
 [dependency-groups]
 dev = [
     "pytest",
+    "ruff",
     "databricks-dlt",
     "databricks-connect{{template "conservative_db_connect_version_spec"}}",
     "ipykernel",
@@ -38,5 +39,5 @@ build-backend = "hatchling.build"
 packages = ["src"]
 {{- end }}
 
-[tool.black]
-line-length = 125
+[tool.ruff]
+line-length = 120

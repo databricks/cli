@@ -22,7 +22,7 @@ func initCommand() *cobra.Command {
 		ctx := cmd.Context()
 
 		r := template.Resolver{
-			TemplatePathOrUrl: "cli-pipelines",
+			TemplatePathOrUrl: string(template.LakeflowPipelines),
 			ConfigFile:        configFile,
 			OutputDir:         outputDir,
 		}

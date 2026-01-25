@@ -17,8 +17,7 @@ trace $CLI bundle plan
 
 title "Fetch job ID and verify remote state"
 
-ppid=`read_id.py jobs foo`
-echo "$ppid:JOB_ID" >> ACC_REPLS
+ppid=`read_id.py foo`
 
 trace $CLI jobs get $ppid | jq 'del(.settings.run_as)'
 rm out.requests.txt

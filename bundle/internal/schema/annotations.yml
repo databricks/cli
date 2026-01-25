@@ -424,6 +424,9 @@ github.com/databricks/cli/bundle/config.Workspace:
   "client_id":
     "description": |-
       The client ID for the workspace
+  "experimental_is_unified_host":
+    "description": |-
+      Experimental feature flag to indicate if the host is a unified host
   "file_path":
     "description": |-
       The file path to use within the workspace for both deployments and workflow runs
@@ -445,6 +448,9 @@ github.com/databricks/cli/bundle/config.Workspace:
   "state_path":
     "description": |-
       The workspace state path
+  "workspace_id":
+    "description": |-
+      The Databricks workspace ID
 github.com/databricks/cli/bundle/config/resources.Alert:
   "create_time":
     "description": |-
@@ -499,6 +505,23 @@ github.com/databricks/cli/bundle/config/resources.AlertPermission:
     "description": |-
       PLACEHOLDER
   "user_name":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.AppConfig:
+  "command":
+    "description": |-
+      PLACEHOLDER
+  "env":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.AppEnvVar:
+  "name":
+    "description": |-
+      PLACEHOLDER
+  "value":
+    "description": |-
+      PLACEHOLDER
+  "value_from":
     "description": |-
       PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.AppPermission:

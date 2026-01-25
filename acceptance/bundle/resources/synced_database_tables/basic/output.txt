@@ -1,3 +1,7 @@
+Creating temporary source table: main.test_synced_[UNIQUE_NAME].trips_source
+{
+  "full_name": "main.test_synced_[UNIQUE_NAME]"
+}
 
 >>> [CLI] bundle summary
 Name: deploy-lakebase-synced-table-[UNIQUE_NAME]
@@ -50,3 +54,4 @@ All files and directories at the following location will be deleted: /Workspace/
 
 Deleting files...
 Destroy complete!
+Cleaning up temporary source table

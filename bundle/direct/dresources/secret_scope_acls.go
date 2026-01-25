@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/structs/structvar"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -115,14 +114,6 @@ func (r *ResourceSecretScopeAcls) DoUpdate(ctx context.Context, id string, state
 	return nil, err
 }
 
-func (r *ResourceSecretScopeAcls) FieldTriggers() map[string]deployplan.ActionType {
-	// When scope name changes, we need  a DoUpdateWithID trigger. This is necessary so that subsequent
-	// DoRead operations use the correct ID and we do not end up with a persistent drift.
-	return map[string]deployplan.ActionType{
-		"scope_name": deployplan.UpdateWithID,
-	}
-}
-
 // Removing ACLs is a no-op, to match the behavior for permissions and grants.
 func (r *ResourceSecretScopeAcls) DoDelete(ctx context.Context, id string) error {
 	return nil
@@ -188,7 +179,7 @@ func (r *ResourceSecretScopeAcls) setACLs(ctx context.Context, scopeName string,
 		err := r.client.Secrets.DeleteAcl(ctx, acl)
 		// Ignore not found errors for ACLs.
 		if errors.Is(err, apierr.ErrNotFound) {
-			return nil
+			continue
 		}
 		if err != nil {
 			return fmt.Errorf("failed to delete ACL %v for principal %q: %w", acl, acl.Principal, err)

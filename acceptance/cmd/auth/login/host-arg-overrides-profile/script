@@ -1,0 +1,25 @@
+sethome "./home"
+
+# Create an existing profile with a DIFFERENT host
+cat > "./home/.databrickscfg" <<EOF
+[override-test]
+host = https://old-host.cloud.databricks.com
+EOF
+
+title "Initial profile with old host\n"
+cat "./home/.databrickscfg"
+
+# Use a fake browser that performs a GET on the authorization URL
+# and follows the redirect back to localhost.
+export BROWSER="browser.py"
+
+# Login with profile but provide a different host as positional argument
+# The positional argument should override the profile's host
+title "Login with positional host argument (should override profile)"
+trace $CLI auth login $DATABRICKS_HOST --profile override-test
+
+title "Profile after login (host should be updated)\n"
+cat "./home/.databrickscfg"
+
+# Track the .databrickscfg file that was created to surface changes.
+mv "./home/.databrickscfg" "./out.databrickscfg"

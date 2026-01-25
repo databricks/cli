@@ -2,11 +2,9 @@ echo "*" > .gitignore
 trace $CLI bundle deploy
 trace print_requests.py //jobs
 
-foo_id=`read_id.py jobs foo`
-echo "$foo_id:FOO_ID" >> ACC_REPLS
+foo_id=`read_id.py foo`
 
-bar_id=`read_id.py jobs bar`
-echo "$bar_id:BAR_ID" >> ACC_REPLS
+bar_id=`read_id.py bar`
 
 title "Delete bar, keep foo (foo config updated to not depend on bar)"
 cp only_foo.yml databricks.yml

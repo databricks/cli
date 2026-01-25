@@ -64,7 +64,7 @@ Resources:
       URL:  (not deployed)
     independent:
       Name: independent
-      URL:  [DATABRICKS_URL]/jobs/[IND_ID]?o=[NUMID]
+      URL:  [DATABRICKS_URL]/jobs/[INDEPENDENT_ID]?o=[NUMID]
 
 === Plan should still contain foo and bar
 >>> [CLI] bundle plan
@@ -109,6 +109,6 @@ Destroy complete!
   "method": "POST",
   "path": "/api/2.2/jobs/delete",
   "body": {
-    "job_id": [IND_ID]
+    "job_id": [INDEPENDENT_ID]
   }
 }

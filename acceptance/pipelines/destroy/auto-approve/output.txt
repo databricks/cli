@@ -1,22 +1,22 @@
 
 === Test auto-approve pipelines destroy
->>> [PIPELINES] deploy
+>>> [CLI] pipelines deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-pipeline-destroy/default/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
 View your pipeline my_pipeline here: [DATABRICKS_URL]/pipelines/[UUID]?o=[NUMID]
 
->>> errcode [PIPELINES] destroy
-Error: please specify --auto-approve to skip interactive confirmation checks for non tty consoles
+>>> errcode [CLI] pipelines destroy
+Error: please specify --auto-approve since terminal does not support interactive prompts
 
 Exit code: 1
 
->>> [PIPELINES] destroy --auto-approve
+>>> [CLI] pipelines destroy --auto-approve
 The following resources will be deleted:
   delete resources.pipelines.my_pipeline
 
-This action will result in the deletion of the following Lakeflow Declarative Pipelines along with the
+This action will result in the deletion of the following Lakeflow Spark Declarative Pipelines along with the
 Streaming Tables (STs) and Materialized Views (MVs) managed by them:
   delete resources.pipelines.my_pipeline
 

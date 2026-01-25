@@ -36,7 +36,7 @@
         },
         "name": {
           "action": "recreate",
-          "reason": "field_triggers",
+          "reason": "builtin_rule",
           "old": "[ENDPOINT_NAME_1]",
           "new": "[ENDPOINT_NAME_2]",
           "remote": "[ENDPOINT_NAME_1]"
