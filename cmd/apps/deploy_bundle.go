@@ -46,40 +46,21 @@ func BundleDeployOverrideWithWrapper(wrapError ErrorWrapper) func(*cobra.Command
 		deployCmd.Flags().BoolVar(&skipValidation, "skip-validation", false, "Skip project validation (build, typecheck, lint)")
 		deployCmd.Flags().BoolVar(&skipTests, "skip-tests", true, "Skip running tests during validation")
 
-		// Update the command usage to reflect that APP_NAME is optional when in project mode
-		deployCmd.Use = "deploy [APP_NAME]"
-
-		// Override Args to allow 0 or 1 arguments (project mode vs API mode)
-		deployCmd.Args = func(cmd *cobra.Command, args []string) error {
-			// Never allow more than 1 argument
-			if len(args) > 1 {
-				return fmt.Errorf("accepts at most 1 arg(s), received %d", len(args))
-			}
-			// In non-project mode, exactly 1 argument is required
-			if !hasBundleConfig() && len(args) != 1 {
-				return fmt.Errorf("accepts 1 arg(s), received %d", len(args))
-			}
-			// In project mode: 0 args = deploy project, 1 arg = API fallback
-			return nil
-		}
+		makeArgsOptionalWithBundle(deployCmd, "deploy [APP_NAME]")
 
 		originalRunE := deployCmd.RunE
 		deployCmd.RunE = func(cmd *cobra.Command, args []string) error {
-			// If no APP_NAME provided, try to use project deploy flow
 			if len(args) == 0 {
-				// Try to load project configuration
 				b := root.TryConfigureBundle(cmd)
 				if b != nil {
 					return runBundleDeploy(cmd, force, skipValidation, skipTests)
 				}
 			}
 
-			// Otherwise, fall back to the original API deploy command
 			err := originalRunE(cmd, args)
 			return wrapError(cmd, deployReq.AppName, err)
 		}
 
-		// Update the help text to explain the dual behavior
 		deployCmd.Long = `Create an app deployment.
 
 When run from a Databricks Apps project directory (containing databricks.yml)

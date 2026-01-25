@@ -2,7 +2,6 @@ package apps
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/databricks/cli/cmd/root"
@@ -69,19 +68,9 @@ func BundleStartOverrideWithWrapper(wrapError ErrorWrapper) func(*cobra.Command,
 
 						var appInfo *apps.App
 						if err != nil {
-							errMsg := err.Error()
-							if strings.Contains(errMsg, "ACTIVE state") || strings.Contains(errMsg, "already") {
-								appInfo, err = w.Apps.Get(ctx, apps.GetAppRequest{Name: appName})
-								if err != nil {
-									return wrapError(cmd, appName, err)
-								}
-
-								message := formatAppStatusMessage(appInfo, appName, "is deployed")
-								cmdio.LogString(ctx, message)
-								if appInfo.Url != "" {
-									cmdio.LogString(ctx, fmt.Sprintf("\n🔗 %s\n", appInfo.Url))
-								}
-								return nil
+							handled, handledErr := handleAlreadyInStateError(ctx, cmd, err, appName, []string{"ACTIVE state", "already"}, "is deployed", wrapError)
+							if handled {
+								return handledErr
 							}
 							return wrapError(cmd, appName, err)
 						}
@@ -117,9 +106,7 @@ func BundleStartOverrideWithWrapper(wrapError ErrorWrapper) func(*cobra.Command,
 
 						message := formatAppStatusMessage(appInfo, appName, "started")
 						cmdio.LogString(ctx, message)
-						if appInfo != nil && appInfo.Url != "" {
-							cmdio.LogString(ctx, fmt.Sprintf("\n🔗 %s\n", appInfo.Url))
-						}
+						displayAppURL(ctx, appInfo)
 						return nil
 					}
 
@@ -129,23 +116,9 @@ func BundleStartOverrideWithWrapper(wrapError ErrorWrapper) func(*cobra.Command,
 
 			err := originalRunE(cmd, args)
 			if err != nil {
-				errMsg := err.Error()
-				if strings.Contains(errMsg, "ACTIVE state") || strings.Contains(errMsg, "already") {
-					if outputFormat == flags.OutputText {
-						appName := startReq.Name
-						w := cmdctx.WorkspaceClient(cmd.Context())
-						appInfo, getErr := w.Apps.Get(cmd.Context(), apps.GetAppRequest{Name: appName})
-						if getErr != nil {
-							return wrapError(cmd, appName, getErr)
-						}
-
-						message := formatAppStatusMessage(appInfo, appName, "is deployed")
-						cmdio.LogString(cmd.Context(), message)
-						if appInfo.Url != "" {
-							cmdio.LogString(cmd.Context(), fmt.Sprintf("\n🔗 %s\n", appInfo.Url))
-						}
-					}
-					return nil
+				handled, handledErr := handleAlreadyInStateError(ctx, cmd, err, startReq.Name, []string{"ACTIVE state", "already"}, "is deployed", wrapError)
+				if handled {
+					return handledErr
 				}
 			}
 			return wrapError(cmd, startReq.Name, err)
@@ -180,8 +153,7 @@ func BundleStopOverrideWithWrapper(wrapError ErrorWrapper) func(*cobra.Command, 
 						w := cmdctx.WorkspaceClient(ctx)
 						wait, err := w.Apps.Stop(ctx, *stopReq)
 						if err != nil {
-							errMsg := err.Error()
-							if strings.Contains(errMsg, "STOPPED state") || strings.Contains(errMsg, "already") {
+							if isIdempotencyError(err, "STOPPED state", "already") {
 								cmdio.LogString(ctx, fmt.Sprintf("✔ App '%s' is already stopped", appName))
 								return nil
 							}
@@ -222,10 +194,9 @@ func BundleStopOverrideWithWrapper(wrapError ErrorWrapper) func(*cobra.Command, 
 
 			err := originalRunE(cmd, args)
 			if err != nil {
-				errMsg := err.Error()
-				if strings.Contains(errMsg, "STOPPED state") || strings.Contains(errMsg, "already") {
+				if isIdempotencyError(err, "STOPPED state", "already") {
 					if outputFormat == flags.OutputText {
-						cmdio.LogString(cmd.Context(), fmt.Sprintf("App '%s' is already stopped", stopReq.Name))
+						cmdio.LogString(cmd.Context(), fmt.Sprintf("✔ App '%s' is already stopped", stopReq.Name))
 					}
 					return nil
 				}

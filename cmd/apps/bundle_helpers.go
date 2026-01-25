@@ -1,11 +1,16 @@
 package apps
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/spf13/cobra"
 )
 
@@ -115,4 +120,49 @@ Examples:
 
   # Show logs for a specific app using the API (even from a project directory)
   databricks apps logs my-app`
+}
+
+// isIdempotencyError checks if an error message indicates the operation is already in the desired state.
+func isIdempotencyError(err error, keywords ...string) bool {
+	if err == nil {
+		return false
+	}
+	errMsg := err.Error()
+	for _, keyword := range keywords {
+		if strings.Contains(errMsg, keyword) {
+			return true
+		}
+	}
+	return false
+}
+
+// displayAppURL displays the app URL in a consistent format if available.
+func displayAppURL(ctx context.Context, appInfo *apps.App) {
+	if appInfo != nil && appInfo.Url != "" {
+		cmdio.LogString(ctx, fmt.Sprintf("\n🔗 %s\n", appInfo.Url))
+	}
+}
+
+// handleAlreadyInStateError handles idempotency errors and displays appropriate status.
+// Returns true if the error was handled (already in desired state), false otherwise.
+func handleAlreadyInStateError(ctx context.Context, cmd *cobra.Command, err error, appName string, keywords []string, verb string, wrapError ErrorWrapper) (bool, error) {
+	if !isIdempotencyError(err, keywords...) {
+		return false, nil
+	}
+
+	outputFormat := root.OutputType(cmd)
+	if outputFormat != flags.OutputText {
+		return true, nil
+	}
+
+	w := cmdctx.WorkspaceClient(ctx)
+	appInfo, getErr := w.Apps.Get(ctx, apps.GetAppRequest{Name: appName})
+	if getErr != nil {
+		return true, wrapError(cmd, appName, getErr)
+	}
+
+	message := formatAppStatusMessage(appInfo, appName, verb)
+	cmdio.LogString(ctx, message)
+	displayAppURL(ctx, appInfo)
+	return true, nil
 }
