@@ -98,7 +98,6 @@ Examples:
 func runBundleDeploy(cmd *cobra.Command, force, skipValidation, skipTests bool) error {
 	ctx := cmd.Context()
 
-	// Get current working directory for validation
 	workDir, err := os.Getwd()
 	if err != nil {
 		return fmt.Errorf("failed to get working directory: %w", err)
@@ -117,7 +116,6 @@ func runBundleDeploy(cmd *cobra.Command, force, skipValidation, skipTests bool) 
 			}
 
 			if !result.Success {
-				// Show error details
 				if result.Details != nil {
 					cmdio.LogString(ctx, result.Details.Error())
 				}
