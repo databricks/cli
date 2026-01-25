@@ -45,8 +45,6 @@ require (
 // Dependencies for experimental MCP commands
 require github.com/google/jsonschema-go v0.4.2 // MIT
 
-require gopkg.in/yaml.v3 v3.0.1
-
 require (
 	cloud.google.com/go/auth v0.16.5 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.8 // indirect
@@ -100,4 +98,5 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250922171735-9219d122eba9 // indirect
 	google.golang.org/grpc v1.75.1 // indirect
 	google.golang.org/protobuf v1.36.9 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
