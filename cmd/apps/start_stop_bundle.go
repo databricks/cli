@@ -1,7 +1,6 @@
 package apps
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -14,39 +13,54 @@ import (
 	"github.com/spf13/cobra"
 )
 
+// formatAppStatusMessage formats a user-friendly status message for an app.
+func formatAppStatusMessage(appInfo *apps.App, appName, verb string) string {
+	computeState := "unknown"
+	if appInfo != nil && appInfo.ComputeStatus != nil {
+		computeState = string(appInfo.ComputeStatus.State)
+	}
+
+	if appInfo != nil && appInfo.AppStatus != nil && appInfo.AppStatus.State == apps.ApplicationStateUnavailable {
+		return fmt.Sprintf("⚠ App '%s' %s but is unavailable (compute: %s, app: %s)", appName, verb, computeState, appInfo.AppStatus.State)
+	}
+
+	if appInfo != nil && appInfo.ComputeStatus != nil {
+		state := appInfo.ComputeStatus.State
+		switch state {
+		case apps.ComputeStateActive:
+			if verb == "is deployed" {
+				return fmt.Sprintf("✔ App '%s' is already running (status: %s)", appName, state)
+			}
+			return fmt.Sprintf("✔ App '%s' started successfully (status: %s)", appName, state)
+		case apps.ComputeStateStarting:
+			return fmt.Sprintf("⚠ App '%s' is already starting (status: %s)", appName, state)
+		default:
+			return fmt.Sprintf("✔ App '%s' status: %s", appName, state)
+		}
+	}
+
+	return fmt.Sprintf("✔ App '%s' status: unknown", appName)
+}
+
 // BundleStartOverrideWithWrapper creates a start override function that uses
 // the provided error wrapper for API fallback errors.
 func BundleStartOverrideWithWrapper(wrapError ErrorWrapper) func(*cobra.Command, *apps.StartAppRequest) {
 	return func(startCmd *cobra.Command, startReq *apps.StartAppRequest) {
-		// Update the command usage to reflect that NAME is optional when in project mode
-		startCmd.Use = "start [NAME]"
-
-		// Override Args to allow 0 or 1 arguments (project mode vs API mode)
-		startCmd.Args = func(cmd *cobra.Command, args []string) error {
-			// Never allow more than 1 argument
-			if len(args) > 1 {
-				return fmt.Errorf("accepts at most 1 arg(s), received %d", len(args))
-			}
-			// In non-project mode, exactly 1 argument is required
-			if !hasBundleConfig() && len(args) != 1 {
-				return fmt.Errorf("accepts 1 arg(s), received %d", len(args))
-			}
-			// In project mode: 0 args = use bundle config, 1 arg = API fallback
-			return nil
-		}
+		makeArgsOptionalWithBundle(startCmd, "start [NAME]")
 
 		originalRunE := startCmd.RunE
 		startCmd.RunE = func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			outputFormat := root.OutputType(cmd)
 
-			// If no NAME provided, try to detect from project config
 			if len(args) == 0 {
-				appName := detectAppNameFromBundle(cmd)
-				if appName != "" {
+				appName, fromBundle, err := getAppNameFromArgs(cmd, args)
+				if err != nil {
+					return err
+				}
+				if fromBundle {
 					startReq.Name = appName
 
-					// In text mode, handle the API call ourselves for clean output
 					if outputFormat == flags.OutputText {
 						cmdio.LogString(ctx, fmt.Sprintf("Starting app '%s' from project configuration", appName))
 
@@ -55,15 +69,15 @@ func BundleStartOverrideWithWrapper(wrapError ErrorWrapper) func(*cobra.Command,
 
 						var appInfo *apps.App
 						if err != nil {
-							// Make start idempotent
 							errMsg := err.Error()
 							if strings.Contains(errMsg, "ACTIVE state") || strings.Contains(errMsg, "already") {
-								// Get app info to display URL
 								appInfo, err = w.Apps.Get(ctx, apps.GetAppRequest{Name: appName})
 								if err != nil {
 									return wrapError(cmd, appName, err)
 								}
-								cmdio.LogString(ctx, fmt.Sprintf("✔ App '%s' is already running", appName))
+
+								message := formatAppStatusMessage(appInfo, appName, "is deployed")
+								cmdio.LogString(ctx, message)
 								if appInfo.Url != "" {
 									cmdio.LogString(ctx, fmt.Sprintf("\n🔗 %s\n", appInfo.Url))
 								}
@@ -72,7 +86,6 @@ func BundleStartOverrideWithWrapper(wrapError ErrorWrapper) func(*cobra.Command,
 							return wrapError(cmd, appName, err)
 						}
 
-						// Get flags for wait behavior
 						skipWait, _ := cmd.Flags().GetBool("no-wait")
 						timeout, _ := cmd.Flags().GetDuration("timeout")
 						if timeout == 0 {
@@ -96,39 +109,39 @@ func BundleStartOverrideWithWrapper(wrapError ErrorWrapper) func(*cobra.Command,
 								return wrapError(cmd, appName, err)
 							}
 						} else {
-							// If skipping wait, get app info separately
 							appInfo, err = w.Apps.Get(ctx, apps.GetAppRequest{Name: appName})
 							if err != nil {
 								return wrapError(cmd, appName, err)
 							}
 						}
 
-						cmdio.LogString(ctx, fmt.Sprintf("✔ App '%s' started successfully", appName))
+						message := formatAppStatusMessage(appInfo, appName, "started")
+						cmdio.LogString(ctx, message)
 						if appInfo != nil && appInfo.Url != "" {
 							cmdio.LogString(ctx, fmt.Sprintf("\n🔗 %s\n", appInfo.Url))
 						}
 						return nil
 					}
 
-					// In JSON mode, use the original command to render JSON
 					return originalRunE(cmd, []string{appName})
 				}
-				return errors.New("no app name provided and unable to detect from project configuration")
 			}
 
-			// Otherwise, fall back to the original API start command
 			err := originalRunE(cmd, args)
 			if err != nil {
-				// Make start idempotent in API mode too
 				errMsg := err.Error()
 				if strings.Contains(errMsg, "ACTIVE state") || strings.Contains(errMsg, "already") {
 					if outputFormat == flags.OutputText {
 						appName := startReq.Name
-						// Get app info to display URL
 						w := cmdctx.WorkspaceClient(cmd.Context())
 						appInfo, getErr := w.Apps.Get(cmd.Context(), apps.GetAppRequest{Name: appName})
-						cmdio.LogString(cmd.Context(), fmt.Sprintf("✔ App '%s' is already running", appName))
-						if getErr == nil && appInfo.Url != "" {
+						if getErr != nil {
+							return wrapError(cmd, appName, getErr)
+						}
+
+						message := formatAppStatusMessage(appInfo, appName, "is deployed")
+						cmdio.LogString(cmd.Context(), message)
+						if appInfo.Url != "" {
 							cmdio.LogString(cmd.Context(), fmt.Sprintf("\n🔗 %s\n", appInfo.Url))
 						}
 					}
@@ -138,29 +151,7 @@ func BundleStartOverrideWithWrapper(wrapError ErrorWrapper) func(*cobra.Command,
 			return wrapError(cmd, startReq.Name, err)
 		}
 
-		// Update the help text to explain the dual behavior
-		startCmd.Long = `Start an app.
-
-When run from a Databricks Apps project directory (containing databricks.yml)
-without a NAME argument, this command automatically detects the app name from
-the project configuration and starts it.
-
-When a NAME argument is provided (or when not in a project directory),
-starts the specified app using the API directly.
-
-Arguments:
-  NAME: The name of the app. Required when not in a project directory.
-        When provided in a project directory, uses the specified name instead of auto-detection.
-
-Examples:
-  # Start app from a project directory (auto-detects app name)
-  databricks apps start
-
-  # Start app from a specific target
-  databricks apps start --target prod
-
-  # Start a specific app using the API (even from a project directory)
-  databricks apps start my-app`
+		updateCommandHelp(startCmd, "Start", "start")
 	}
 }
 
@@ -168,42 +159,27 @@ Examples:
 // the provided error wrapper for API fallback errors.
 func BundleStopOverrideWithWrapper(wrapError ErrorWrapper) func(*cobra.Command, *apps.StopAppRequest) {
 	return func(stopCmd *cobra.Command, stopReq *apps.StopAppRequest) {
-		// Update the command usage to reflect that NAME is optional when in project mode
-		stopCmd.Use = "stop [NAME]"
-
-		// Override Args to allow 0 or 1 arguments (project mode vs API mode)
-		stopCmd.Args = func(cmd *cobra.Command, args []string) error {
-			// Never allow more than 1 argument
-			if len(args) > 1 {
-				return fmt.Errorf("accepts at most 1 arg(s), received %d", len(args))
-			}
-			// In non-project mode, exactly 1 argument is required
-			if !hasBundleConfig() && len(args) != 1 {
-				return fmt.Errorf("accepts 1 arg(s), received %d", len(args))
-			}
-			// In project mode: 0 args = use bundle config, 1 arg = API fallback
-			return nil
-		}
+		makeArgsOptionalWithBundle(stopCmd, "stop [NAME]")
 
 		originalRunE := stopCmd.RunE
 		stopCmd.RunE = func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			outputFormat := root.OutputType(cmd)
 
-			// If no NAME provided, try to detect from project config
 			if len(args) == 0 {
-				appName := detectAppNameFromBundle(cmd)
-				if appName != "" {
+				appName, fromBundle, err := getAppNameFromArgs(cmd, args)
+				if err != nil {
+					return err
+				}
+				if fromBundle {
 					stopReq.Name = appName
 
-					// In text mode, handle the API call ourselves for clean output
 					if outputFormat == flags.OutputText {
 						cmdio.LogString(ctx, fmt.Sprintf("Stopping app '%s' from project configuration", appName))
 
 						w := cmdctx.WorkspaceClient(ctx)
 						wait, err := w.Apps.Stop(ctx, *stopReq)
 						if err != nil {
-							// Make stop idempotent
 							errMsg := err.Error()
 							if strings.Contains(errMsg, "STOPPED state") || strings.Contains(errMsg, "already") {
 								cmdio.LogString(ctx, fmt.Sprintf("✔ App '%s' is already stopped", appName))
@@ -212,7 +188,6 @@ func BundleStopOverrideWithWrapper(wrapError ErrorWrapper) func(*cobra.Command, 
 							return wrapError(cmd, appName, err)
 						}
 
-						// Get flags for wait behavior
 						skipWait, _ := cmd.Flags().GetBool("no-wait")
 						timeout, _ := cmd.Flags().GetDuration("timeout")
 						if timeout == 0 {
@@ -241,16 +216,12 @@ func BundleStopOverrideWithWrapper(wrapError ErrorWrapper) func(*cobra.Command, 
 						return nil
 					}
 
-					// In JSON mode, use the original command to render JSON
 					return originalRunE(cmd, []string{appName})
 				}
-				return errors.New("no app name provided and unable to detect from project configuration")
 			}
 
-			// Otherwise, fall back to the original API stop command
 			err := originalRunE(cmd, args)
 			if err != nil {
-				// Make stop idempotent in API mode too
 				errMsg := err.Error()
 				if strings.Contains(errMsg, "STOPPED state") || strings.Contains(errMsg, "already") {
 					if outputFormat == flags.OutputText {
@@ -262,28 +233,6 @@ func BundleStopOverrideWithWrapper(wrapError ErrorWrapper) func(*cobra.Command, 
 			return wrapError(cmd, stopReq.Name, err)
 		}
 
-		// Update the help text to explain the dual behavior
-		stopCmd.Long = `Stop an app.
-
-When run from a Databricks Apps project directory (containing databricks.yml)
-without a NAME argument, this command automatically detects the app name from
-the project configuration and stops it.
-
-When a NAME argument is provided (or when not in a project directory),
-stops the specified app using the API directly.
-
-Arguments:
-  NAME: The name of the app. Required when not in a project directory.
-        When provided in a project directory, uses the specified name instead of auto-detection.
-
-Examples:
-  # Stop app from a project directory (auto-detects app name)
-  databricks apps stop
-
-  # Stop app from a specific target
-  databricks apps stop --target prod
-
-  # Stop a specific app using the API (even from a project directory)
-  databricks apps stop my-app`
+		updateCommandHelp(stopCmd, "Stop", "stop")
 	}
 }

@@ -223,6 +223,9 @@ Examples:
 
 	cmd.Flags().StringVar(&outputPath, "output-file", "", "Optional file path to write logs in addition to stdout.")
 
+	// Apply bundle override to support auto-detection of app name from databricks.yml
+	BundleLogsOverride(cmd)
+
 	return cmd
 }
 
