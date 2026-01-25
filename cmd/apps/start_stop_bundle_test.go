@@ -14,14 +14,14 @@ func TestBundleStartOverrideWithWrapper(t *testing.T) {
 	}
 
 	overrideFunc := BundleStartOverrideWithWrapper(mockWrapper)
-	assert.NotNil(t, overrideFunc, "BundleStartOverrideWithWrapper should return a non-nil function")
+	assert.NotNil(t, overrideFunc)
 
 	cmd := &cobra.Command{}
 	startReq := &apps.StartAppRequest{}
 
 	overrideFunc(cmd, startReq)
 
-	assert.Equal(t, "start [NAME]", cmd.Use, "Command usage should be updated to show optional NAME")
+	assert.Equal(t, "start [NAME]", cmd.Use)
 }
 
 func TestBundleStopOverrideWithWrapper(t *testing.T) {
