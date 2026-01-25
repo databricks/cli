@@ -1,6 +1,6 @@
 
->>> [CLI] fs cp local.txt dbfs:/Volumes/main/default/data/mydir/
-local.txt -> dbfs:/Volumes/main/default/data/mydir/local.txt
+>>> [CLI] fs cp local.txt dbfs:/Volumes/main/default/fs-cp-test-[UNIQUE_NAME]/mydir/
+local.txt -> dbfs:/Volumes/main/default/fs-cp-test-[UNIQUE_NAME]/mydir/local.txt
 
->>> [CLI] fs cat dbfs:/Volumes/main/default/data/mydir/local.txt
+>>> [CLI] fs cat dbfs:/Volumes/main/default/fs-cp-test-[UNIQUE_NAME]/mydir/local.txt
 hello world!
