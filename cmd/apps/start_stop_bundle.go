@@ -2,7 +2,6 @@ package apps
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
@@ -11,35 +10,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/spf13/cobra"
 )
-
-// formatAppStatusMessage formats a user-friendly status message for an app.
-func formatAppStatusMessage(appInfo *apps.App, appName, verb string) string {
-	computeState := "unknown"
-	if appInfo != nil && appInfo.ComputeStatus != nil {
-		computeState = string(appInfo.ComputeStatus.State)
-	}
-
-	if appInfo != nil && appInfo.AppStatus != nil && appInfo.AppStatus.State == apps.ApplicationStateUnavailable {
-		return fmt.Sprintf("⚠ App '%s' %s but is unavailable (compute: %s, app: %s)", appName, verb, computeState, appInfo.AppStatus.State)
-	}
-
-	if appInfo != nil && appInfo.ComputeStatus != nil {
-		state := appInfo.ComputeStatus.State
-		switch state {
-		case apps.ComputeStateActive:
-			if verb == "is deployed" {
-				return fmt.Sprintf("✔ App '%s' is already running (status: %s)", appName, state)
-			}
-			return fmt.Sprintf("✔ App '%s' started successfully (status: %s)", appName, state)
-		case apps.ComputeStateStarting:
-			return fmt.Sprintf("⚠ App '%s' is already starting (status: %s)", appName, state)
-		default:
-			return fmt.Sprintf("✔ App '%s' status: %s", appName, state)
-		}
-	}
-
-	return fmt.Sprintf("✔ App '%s' status: unknown", appName)
-}
 
 // BundleStartOverrideWithWrapper creates a start override function that uses
 // the provided error wrapper for API fallback errors.
@@ -65,8 +35,6 @@ func BundleStartOverrideWithWrapper(wrapError ErrorWrapper) func(*cobra.Command,
 
 						w := cmdctx.WorkspaceClient(ctx)
 						wait, err := w.Apps.Start(ctx, *startReq)
-
-						var appInfo *apps.App
 						if err != nil {
 							handled, handledErr := handleAlreadyInStateError(ctx, cmd, err, appName, []string{"ACTIVE state", "already"}, "is deployed", wrapError)
 							if handled {
@@ -75,24 +43,10 @@ func BundleStartOverrideWithWrapper(wrapError ErrorWrapper) func(*cobra.Command,
 							return wrapError(cmd, appName, err)
 						}
 
-						skipWait, _ := cmd.Flags().GetBool("no-wait")
-						timeout, _ := cmd.Flags().GetDuration("timeout")
-						if timeout == 0 {
-							timeout = 20 * time.Minute
-						}
-
-						if !skipWait {
+						var appInfo *apps.App
+						if shouldWaitForCompletion(cmd) {
 							spinner := cmdio.Spinner(ctx)
-							appInfo, err = wait.OnProgress(func(i *apps.App) {
-								if i.ComputeStatus == nil {
-									return
-								}
-								statusMessage := i.ComputeStatus.Message
-								if statusMessage == "" {
-									statusMessage = fmt.Sprintf("current status: %s", i.ComputeStatus.State)
-								}
-								spinner <- statusMessage
-							}).GetWithTimeout(timeout)
+							appInfo, err = wait.OnProgress(createAppProgressCallback(spinner)).GetWithTimeout(getWaitTimeout(cmd))
 							close(spinner)
 							if err != nil {
 								return wrapError(cmd, appName, err)
@@ -153,38 +107,30 @@ func BundleStopOverrideWithWrapper(wrapError ErrorWrapper) func(*cobra.Command, 
 						w := cmdctx.WorkspaceClient(ctx)
 						wait, err := w.Apps.Stop(ctx, *stopReq)
 						if err != nil {
-							if isIdempotencyError(err, "STOPPED state", "already") {
-								cmdio.LogString(ctx, fmt.Sprintf("✔ App '%s' is already stopped", appName))
-								return nil
+							handled, handledErr := handleAlreadyInStateError(ctx, cmd, err, appName, []string{"STOPPED state", "already"}, "stopped", wrapError)
+							if handled {
+								return handledErr
 							}
 							return wrapError(cmd, appName, err)
 						}
 
-						skipWait, _ := cmd.Flags().GetBool("no-wait")
-						timeout, _ := cmd.Flags().GetDuration("timeout")
-						if timeout == 0 {
-							timeout = 20 * time.Minute
-						}
-
-						if !skipWait {
+						var appInfo *apps.App
+						if shouldWaitForCompletion(cmd) {
 							spinner := cmdio.Spinner(ctx)
-							_, err = wait.OnProgress(func(i *apps.App) {
-								if i.ComputeStatus == nil {
-									return
-								}
-								statusMessage := i.ComputeStatus.Message
-								if statusMessage == "" {
-									statusMessage = fmt.Sprintf("current status: %s", i.ComputeStatus.State)
-								}
-								spinner <- statusMessage
-							}).GetWithTimeout(timeout)
+							appInfo, err = wait.OnProgress(createAppProgressCallback(spinner)).GetWithTimeout(getWaitTimeout(cmd))
 							close(spinner)
+							if err != nil {
+								return wrapError(cmd, appName, err)
+							}
+						} else {
+							appInfo, err = w.Apps.Get(ctx, apps.GetAppRequest{Name: appName})
 							if err != nil {
 								return wrapError(cmd, appName, err)
 							}
 						}
 
-						cmdio.LogString(ctx, fmt.Sprintf("✔ App '%s' stopped successfully", appName))
+						message := formatAppStatusMessage(appInfo, appName, "stopped")
+						cmdio.LogString(ctx, message)
 						return nil
 					}
 
@@ -194,11 +140,9 @@ func BundleStopOverrideWithWrapper(wrapError ErrorWrapper) func(*cobra.Command, 
 
 			err := originalRunE(cmd, args)
 			if err != nil {
-				if isIdempotencyError(err, "STOPPED state", "already") {
-					if outputFormat == flags.OutputText {
-						cmdio.LogString(cmd.Context(), fmt.Sprintf("✔ App '%s' is already stopped", stopReq.Name))
-					}
-					return nil
+				handled, handledErr := handleAlreadyInStateError(ctx, cmd, err, stopReq.Name, []string{"STOPPED state", "already"}, "stopped", wrapError)
+				if handled {
+					return handledErr
 				}
 			}
 			return wrapError(cmd, stopReq.Name, err)
