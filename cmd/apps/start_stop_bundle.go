@@ -58,14 +58,14 @@ func BundleStartOverrideWithWrapper(wrapError ErrorWrapper) func(*cobra.Command,
 							// Make start idempotent
 							errMsg := err.Error()
 							if strings.Contains(errMsg, "ACTIVE state") || strings.Contains(errMsg, "already") {
-								cmdio.LogString(ctx, fmt.Sprintf("✔ App '%s' is already started", appName))
 								// Get app info to display URL
 								appInfo, err = w.Apps.Get(ctx, apps.GetAppRequest{Name: appName})
 								if err != nil {
 									return wrapError(cmd, appName, err)
 								}
+								cmdio.LogString(ctx, fmt.Sprintf("✔ App '%s' is already running", appName))
 								if appInfo.Url != "" {
-									cmdio.LogString(ctx, "App URL: "+appInfo.Url)
+									cmdio.LogString(ctx, fmt.Sprintf("\n🔗 %s\n", appInfo.Url))
 								}
 								return nil
 							}
@@ -105,7 +105,7 @@ func BundleStartOverrideWithWrapper(wrapError ErrorWrapper) func(*cobra.Command,
 
 						cmdio.LogString(ctx, fmt.Sprintf("✔ App '%s' started successfully", appName))
 						if appInfo != nil && appInfo.Url != "" {
-							cmdio.LogString(ctx, "App URL: "+appInfo.Url)
+							cmdio.LogString(ctx, fmt.Sprintf("\n🔗 %s\n", appInfo.Url))
 						}
 						return nil
 					}
@@ -124,12 +124,12 @@ func BundleStartOverrideWithWrapper(wrapError ErrorWrapper) func(*cobra.Command,
 				if strings.Contains(errMsg, "ACTIVE state") || strings.Contains(errMsg, "already") {
 					if outputFormat == flags.OutputText {
 						appName := startReq.Name
-						cmdio.LogString(cmd.Context(), fmt.Sprintf("App '%s' is already started", appName))
 						// Get app info to display URL
 						w := cmdctx.WorkspaceClient(cmd.Context())
 						appInfo, getErr := w.Apps.Get(cmd.Context(), apps.GetAppRequest{Name: appName})
+						cmdio.LogString(cmd.Context(), fmt.Sprintf("✔ App '%s' is already running", appName))
 						if getErr == nil && appInfo.Url != "" {
-							cmdio.LogString(cmd.Context(), "App URL: "+appInfo.Url)
+							cmdio.LogString(cmd.Context(), fmt.Sprintf("\n🔗 %s\n", appInfo.Url))
 						}
 					}
 					return nil
