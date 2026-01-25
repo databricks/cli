@@ -147,37 +147,17 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	server.Handle("HEAD", "/api/2.0/fs/directories/{path:.*}", func(req Request) any {
-		path := req.Vars["path"]
-		// Normalize path to always start with "/".
-		if !strings.HasPrefix(path, "/") {
-			path = "/" + path
+		dirPath := req.Vars["path"]
+		if !strings.HasPrefix(dirPath, "/") {
+			dirPath = "/" + dirPath
 		}
 
-		// Check tracked workspace files and directories first.
-		if req.Workspace.FileExists(path) {
+		if req.Workspace.FileExists(dirPath) {
 			return Response{StatusCode: 404}
 		}
-		if req.Workspace.DirectoryExists(path) {
+		if req.Workspace.DirectoryExists(dirPath) {
 			return Response{StatusCode: 200}
 		}
-
-		// Unity Catalog Volumes paths (/Volumes/...) are not tracked by the
-		// test server. When the CLI checks if a volume path is a directory
-		// (via HEAD request) before creating it (via PUT request), the path
-		// doesn't exist yet in our state.
-		//
-		// Use a simple heuristic: if the path has a file extension then assume
-		// it's a file, not a directory. This handles the common case where
-		// files have extensions and directories don't.
-		if strings.HasPrefix(path, "/Volumes/") {
-			lastDot := strings.LastIndex(path, ".")
-			if lastDot > strings.LastIndexAny(path, "/\\") {
-				return Response{StatusCode: 404}
-			}
-			return Response{StatusCode: 200}
-		}
-
-		// Non-existent workspace path.
 		return Response{StatusCode: 404}
 	})
 
