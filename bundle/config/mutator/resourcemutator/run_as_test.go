@@ -115,6 +115,10 @@ func TestRunAsWorksForAllowedResources(t *testing.T) {
 	for _, job := range b.Config.Resources.Jobs {
 		assert.Equal(t, "bob", job.RunAs.UserName)
 	}
+
+	for _, alert := range b.Config.Resources.Alerts {
+		assert.Equal(t, "bob", alert.RunAs.UserName)
+	}
 }
 
 // Bundle "run_as" has two modes of operation, each with a different set of
