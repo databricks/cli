@@ -1,0 +1,3 @@
+# Postgres branches tests
+Local = true
+Cloud = true

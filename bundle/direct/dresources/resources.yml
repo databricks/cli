@@ -124,3 +124,10 @@ resources:
     recreate_on_changes:
       # project_id is immutable (part of hierarchical name)
       - project_id
+
+  postgres_branches:
+    recreate_on_changes:
+      # branch_id is immutable (part of hierarchical name)
+      - branch_id
+      # parent (project name) is immutable
+      - parent

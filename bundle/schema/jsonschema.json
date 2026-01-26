@@ -1486,6 +1486,47 @@
                   }
                 ]
               },
+              "resources.PostgresBranch": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "branch_id": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "create_time": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/time.Time"
+                      },
+                      "lifecycle": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
+                      },
+                      "name": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "parent": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "spec": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.BranchSpec"
+                      },
+                      "status": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.BranchStatus"
+                      },
+                      "uid": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "update_time": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/time.Time"
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
               "resources.PostgresProject": {
                 "oneOf": [
                   {
@@ -2590,6 +2631,9 @@
                       "description": "The pipeline definitions for the bundle, where each key is the name of the pipeline.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Pipeline",
                       "markdownDescription": "The pipeline definitions for the bundle, where each key is the name of the pipeline. See [pipelines](https://docs.databricks.com/dev-tools/bundles/resources.html#pipelines)."
+                    },
+                    "postgres_branches": {
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.PostgresBranch"
                     },
                     "postgres_projects": {
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.PostgresProject"
@@ -8344,6 +8388,88 @@
                 }
               ]
             },
+            "postgres.BranchSpec": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "expire_time": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/time.Time"
+                    },
+                    "is_protected": {
+                      "$ref": "#/$defs/bool"
+                    },
+                    "no_expiry": {
+                      "$ref": "#/$defs/bool"
+                    },
+                    "source_branch": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "source_branch_lsn": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "source_branch_time": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/time.Time"
+                    },
+                    "ttl": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/duration.Duration"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "postgres.BranchStatus": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "current_state": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.BranchStatusState"
+                    },
+                    "default": {
+                      "$ref": "#/$defs/bool"
+                    },
+                    "expire_time": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/time.Time"
+                    },
+                    "is_protected": {
+                      "$ref": "#/$defs/bool"
+                    },
+                    "logical_size_bytes": {
+                      "$ref": "#/$defs/int64"
+                    },
+                    "pending_state": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.BranchStatusState"
+                    },
+                    "source_branch": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "source_branch_lsn": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "source_branch_time": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/time.Time"
+                    },
+                    "state_change_time": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/time.Time"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "postgres.BranchStatusState": {
+              "type": "string"
+            },
             "postgres.ProjectDefaultEndpointSettings": {
               "oneOf": [
                 {
@@ -10186,6 +10312,20 @@
                       "type": "object",
                       "additionalProperties": {
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Pipeline"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
+                "resources.PostgresBranch": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.PostgresBranch"
                       }
                     },
                     {
