@@ -1,0 +1,12 @@
+
+>>> [CLI] fs cp local.txt dbfs:/Volumes/main/default/fs-cp-test-[UNIQUE_NAME]/uploaded.txt
+local.txt -> dbfs:/Volumes/main/default/fs-cp-test-[UNIQUE_NAME]/uploaded.txt
+
+>>> [CLI] fs cat dbfs:/Volumes/main/default/fs-cp-test-[UNIQUE_NAME]/uploaded.txt
+hello world!
+
+>>> [CLI] fs cp dbfs:/Volumes/main/default/fs-cp-test-[UNIQUE_NAME]/uploaded.txt downloaded.txt
+dbfs:/Volumes/main/default/fs-cp-test-[UNIQUE_NAME]/uploaded.txt -> downloaded.txt
+
+>>> cat downloaded.txt
+hello world!
