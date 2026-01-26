@@ -1,0 +1,3 @@
+RequiresUnityCatalog = true
+RecordRequests = true
+CloudEnvs.gcp = false # lakebase v2 (postgres) is not available in GCP as of January 2026

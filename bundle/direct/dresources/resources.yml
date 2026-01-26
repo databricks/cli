@@ -119,3 +119,8 @@ resources:
       # Backend does not set these fields in response (it sets effective_ counterparts instead)
       - database_instance_name
       - logical_database_name
+
+  postgres_projects:
+    recreate_on_changes:
+      # project_id is immutable (part of hierarchical name)
+      - project_id

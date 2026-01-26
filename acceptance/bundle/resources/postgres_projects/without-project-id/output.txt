@@ -1,0 +1,38 @@
+
+>>> [CLI] bundle validate
+Warning: expected map, found string
+  at resources.postgres_projects.my_project.spec.history_retention_duration
+  in databricks.yml:14:37
+
+Warning: expected map, found string
+  at resources.postgres_projects.my_project.spec.default_endpoint_settings.suspend_timeout_duration
+  in databricks.yml:18:37
+
+Warning: There are no files to sync, please check your .gitignore and sync.exclude configuration
+  at sync.exclude
+  in databricks.yml:6:5
+
+Name: deploy-postgres-no-id-[UNIQUE_NAME]
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-no-id-[UNIQUE_NAME]/default
+
+Found 3 warnings
+
+>>> [CLI] bundle deploy
+Warning: expected map, found string
+  at resources.postgres_projects.my_project.spec.history_retention_duration
+  in databricks.yml:14:37
+
+Warning: expected map, found string
+  at resources.postgres_projects.my_project.spec.default_endpoint_settings.suspend_timeout_duration
+  in databricks.yml:18:37
+
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-no-id-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Error: cannot create resources.postgres_projects.my_project: project_id must be specified
+
+Updating deployment state...
+
+Exit code: 1

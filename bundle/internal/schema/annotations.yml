@@ -203,6 +203,9 @@ github.com/databricks/cli/bundle/config.Resources:
       The pipeline definitions for the bundle, where each key is the name of the pipeline.
     "markdown_description": |-
       The pipeline definitions for the bundle, where each key is the name of the pipeline. See [\_](/dev-tools/bundles/resources.md#pipelines).
+  "postgres_projects":
+    "description": |-
+      PLACEHOLDER
   "quality_monitors":
     "description": |-
       The quality monitor definitions for the bundle, where each key is the name of the quality monitor.
@@ -679,6 +682,31 @@ github.com/databricks/cli/bundle/config/resources.PipelinePermission:
     "description": |-
       PLACEHOLDER
   "user_name":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.PostgresProject:
+  "create_time":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
+  "name":
+    "description": |-
+      PLACEHOLDER
+  "project_id":
+    "description": |-
+      PLACEHOLDER
+  "spec":
+    "description": |-
+      PLACEHOLDER
+  "status":
+    "description": |-
+      PLACEHOLDER
+  "uid":
+    "description": |-
+      PLACEHOLDER
+  "update_time":
     "description": |-
       PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.SchemaGrant:

@@ -1,0 +1,14 @@
+Local = true
+Cloud = true
+
+# Mitigates running into quota limits in workspaces
+CloudSlow = true
+
+# Run only on direct mode (not Terraform)
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+Ignore = [
+    "databricks.yml",
+    "out.requests.txt",
+    ".databricks",
+]

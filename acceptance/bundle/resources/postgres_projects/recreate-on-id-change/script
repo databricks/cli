@@ -1,0 +1,55 @@
+#!/bin/bash
+
+# Cleanup function to delete both projects
+cleanup() {
+   # Try to delete with current config
+   trace $CLI bundle destroy --auto-approve
+
+   # Also try to delete the old project directly in case it wasn't cleaned up
+   $CLI postgres delete-project "projects/test-pg-old-${UNIQUE_NAME}" 2>/dev/null || true
+}
+trap cleanup EXIT
+
+# Deploy with first project_id
+envsubst < databricks.yml.tmpl | sed "s/PROJECT_ID_PLACEHOLDER/test-pg-old-${UNIQUE_NAME}/" > databricks.yml
+
+trace cat databricks.yml
+
+trace $CLI bundle plan
+rm -f out.requests.txt
+trace $CLI bundle deploy
+
+project_id_1=`read_id.py my_project`
+
+print_requests() {
+    jq --sort-keys 'select(.method != "GET" and (.path | contains("/postgres")))' < out.requests.txt
+    rm -f out.requests.txt
+}
+
+trace print_requests
+
+# Change project_id (should trigger recreation)
+sed "s/test-pg-old-${UNIQUE_NAME}/test-pg-new-${UNIQUE_NAME}/" databricks.yml > databricks.yml.new
+mv databricks.yml.new databricks.yml
+
+trace cat databricks.yml
+
+trace $CLI bundle plan
+trace $CLI bundle deploy --auto-approve
+
+trace print_requests
+
+title "Fetch new project ID and verify remote state"
+
+project_id_2=`read_id.py my_project`
+trace $CLI postgres get-project $project_id_2
+
+title "Verify that original project is gone"
+trace musterr $CLI postgres get-project $project_id_1
+
+title "Destroy the project and verify that it's removed from the state and from remote"
+trace $CLI bundle destroy --auto-approve
+
+trace print_requests
+trace musterr $CLI postgres get-project $project_id_2
+rm -f out.requests.txt

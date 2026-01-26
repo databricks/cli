@@ -1486,6 +1486,44 @@
                   }
                 ]
               },
+              "resources.PostgresProject": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "create_time": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/time.Time"
+                      },
+                      "lifecycle": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
+                      },
+                      "name": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "project_id": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "spec": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.ProjectSpec"
+                      },
+                      "status": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.ProjectStatus"
+                      },
+                      "uid": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "update_time": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/time.Time"
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
               "resources.QualityMonitor": {
                 "oneOf": [
                   {
@@ -2553,6 +2591,9 @@
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Pipeline",
                       "markdownDescription": "The pipeline definitions for the bundle, where each key is the name of the pipeline. See [pipelines](https://docs.databricks.com/dev-tools/bundles/resources.html#pipelines)."
                     },
+                    "postgres_projects": {
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.PostgresProject"
+                    },
                     "quality_monitors": {
                       "description": "The quality monitor definitions for the bundle, where each key is the name of the quality monitor.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.QualityMonitor",
@@ -2809,6 +2850,34 @@
           }
         },
         "databricks-sdk-go": {
+          "common": {
+            "types": {
+              "duration.Duration": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "time.Time": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              }
+            }
+          },
           "service": {
             "apps.AppDeployment": {
               "oneOf": [
@@ -8275,6 +8344,96 @@
                 }
               ]
             },
+            "postgres.ProjectDefaultEndpointSettings": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "autoscaling_limit_max_cu": {
+                      "$ref": "#/$defs/float64"
+                    },
+                    "autoscaling_limit_min_cu": {
+                      "$ref": "#/$defs/float64"
+                    },
+                    "no_suspension": {
+                      "$ref": "#/$defs/bool"
+                    },
+                    "pg_settings": {
+                      "$ref": "#/$defs/map/string"
+                    },
+                    "suspend_timeout_duration": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/duration.Duration"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "postgres.ProjectSpec": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "default_endpoint_settings": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.ProjectDefaultEndpointSettings"
+                    },
+                    "display_name": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "history_retention_duration": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/duration.Duration"
+                    },
+                    "pg_version": {
+                      "$ref": "#/$defs/int"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "postgres.ProjectStatus": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "branch_logical_size_limit_bytes": {
+                      "$ref": "#/$defs/int64"
+                    },
+                    "default_endpoint_settings": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.ProjectDefaultEndpointSettings"
+                    },
+                    "display_name": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "history_retention_duration": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/duration.Duration"
+                    },
+                    "owner": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "pg_version": {
+                      "$ref": "#/$defs/int"
+                    },
+                    "synthetic_storage_size_bytes": {
+                      "$ref": "#/$defs/int64"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
             "serving.Ai21LabsConfig": {
               "oneOf": [
                 {
@@ -10027,6 +10186,20 @@
                       "type": "object",
                       "additionalProperties": {
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Pipeline"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
+                "resources.PostgresProject": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.PostgresProject"
                       }
                     },
                     {
