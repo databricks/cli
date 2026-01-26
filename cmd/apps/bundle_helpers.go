@@ -83,48 +83,6 @@ Examples:
 		commandName)
 }
 
-// BundleLogsOverride creates a logs override function that supports bundle mode.
-func BundleLogsOverride(logsCmd *cobra.Command) {
-	makeArgsOptionalWithBundle(logsCmd, "logs [NAME]")
-
-	originalRunE := logsCmd.RunE
-	logsCmd.RunE = func(cmd *cobra.Command, args []string) error {
-		appName, fromBundle, err := getAppNameFromArgs(cmd, args)
-		if err != nil {
-			return err
-		}
-
-		if fromBundle && root.OutputType(cmd) != flags.OutputJSON {
-			fmt.Fprintf(cmd.ErrOrStderr(), "Streaming logs for app '%s' from project configuration\n", appName)
-		}
-
-		return originalRunE(cmd, []string{appName})
-	}
-
-	logsCmd.Long = `Show Databricks app logs.
-
-When run from a Databricks Apps project directory (containing databricks.yml)
-without a NAME argument, this command automatically detects the app name from
-the project configuration and shows its logs.
-
-When a NAME argument is provided (or when not in a project directory),
-shows logs for the specified app using the API directly.
-
-Arguments:
-  NAME: The name of the app. Required when not in a project directory.
-        When provided in a project directory, uses the specified name instead of auto-detection.
-
-Examples:
-  # Show logs from a project directory (auto-detects app name)
-  databricks apps logs
-
-  # Show logs from a specific target
-  databricks apps logs --target prod
-
-  # Show logs for a specific app using the API (even from a project directory)
-  databricks apps logs my-app`
-}
-
 // isIdempotencyError checks if an error message indicates the operation is already in the desired state.
 func isIdempotencyError(err error, keywords ...string) bool {
 	if err == nil {
