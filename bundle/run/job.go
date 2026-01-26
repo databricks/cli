@@ -294,10 +294,10 @@ func (r *jobRunner) Restart(ctx context.Context, opts *Options) (output.RunOutpu
 		return r.Run(ctx, opts)
 	}
 
-	s := cmdio.Spinner(ctx)
-	s <- "Cancelling all active job runs"
+	sp := cmdio.NewSpinner(ctx)
+	sp.Update("Cancelling all active job runs")
 	err := r.Cancel(ctx)
-	close(s)
+	sp.Close()
 	if err != nil {
 		return nil, err
 	}

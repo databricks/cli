@@ -1,5 +1,7 @@
 #!/bin/bash
 
+envsubst < databricks.yml.tmpl > databricks.yml
+
 $CLI bundle deploy
 pipeline_id="$(read_id.py my_pipeline)"
 
@@ -12,6 +14,21 @@ r["notifications"][0]["alerts"].append("on-update-failure")
 r["schema"] = "prod"
 EOF
 
+# TODO add support for permissions
+# title "Modify pipeline permissions remotely"
+# current_user=$($CLI current-user me --output json | jq -r .userName)
+# cat > permissions.json <<EOF
+# {
+#   "access_control_list": [
+#     {"permission_level": "IS_OWNER", "user_name": "$current_user"},
+#     {"permission_level": "CAN_MANAGE", "user_name": "viewer@example.com"},
+#     {"permission_level": "CAN_RUN", "user_name": "admin@example.com"}
+#   ]
+# }
+# EOF
+# $CLI permissions set pipelines $pipeline_id --json @permissions.json
+# rm permissions.json
+
 title "Detect and save changes"
 echo
 cp databricks.yml databricks.yml.backup
@@ -19,5 +36,5 @@ $CLI bundle config-remote-sync --save
 
 title "Configuration changes"
 echo
-diff -u databricks.yml.backup databricks.yml || true
+file_diff databricks.yml.backup databricks.yml
 rm databricks.yml.backup

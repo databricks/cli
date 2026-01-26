@@ -1,4 +1,4 @@
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
@@ -15,15 +15,13 @@ Resource: resources.pipelines.my_pipeline
 
 
 === Configuration changes
---- databricks.yml.backup	[TIMESTAMP]
-+++ databricks.yml	[TIMESTAMP]
-@@ -1,18 +1,16 @@
  bundle:
-   name: test-bundle
+   name: test-bundle-[UNIQUE_NAME]
 -
  resources:
    pipelines:
      my_pipeline:
+       name: test-pipeline-[UNIQUE_NAME]
 -      development: false
 +      development: true
        libraries:

@@ -1,5 +1,8 @@
+Cloud = true
+RequiresUnityCatalog = true
+
 RecordRequests = false
-Ignore = [".databricks"]
+Ignore = [".databricks", "databricks.yml", "databricks.yml.backup"]
 
 [Env]
 DATABRICKS_BUNDLE_ENABLE_EXPERIMENTAL_YAML_SYNC = "true"

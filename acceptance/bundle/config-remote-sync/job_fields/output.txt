@@ -1,5 +1,5 @@
 Uploading dummy.whl...
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
@@ -17,11 +17,8 @@ Resource: resources.jobs.my_job
 
 
 === Configuration changes
---- databricks.yml.backup	[TIMESTAMP]
-+++ databricks.yml	[TIMESTAMP]
-@@ -1,23 +1,28 @@
  bundle:
-   name: test-bundle
+   name: test-bundle-[UNIQUE_NAME]
 -
  resources:
    jobs:

@@ -1,0 +1,16 @@
+
+=== Initial profile
+[existing-profile]
+host = [DATABRICKS_URL]
+
+=== Login with existing profile (no host argument)
+>>> [CLI] auth login --profile existing-profile
+Profile existing-profile was successfully saved
+
+=== Profile after login
+; The profile defined in the DEFAULT section is to be used as a fallback when no profile is explicitly specified.
+[DEFAULT]
+
+[existing-profile]
+host      = [DATABRICKS_URL]
+auth_type = databricks-cli

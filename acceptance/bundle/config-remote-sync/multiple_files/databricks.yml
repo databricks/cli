@@ -1,5 +1,0 @@
-bundle:
-  name: test-bundle
-
-include:
-  - "resources/*.yml"

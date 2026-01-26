@@ -194,9 +194,9 @@ func (i *installer) login(ctx context.Context) (*databricks.WorkspaceClient, err
 }
 
 func (i *installer) downloadLibrary(ctx context.Context) error {
-	feedback := cmdio.Spinner(ctx)
-	defer close(feedback)
-	feedback <- "Cleaning up previous installation if necessary"
+	sp := cmdio.NewSpinner(ctx)
+	defer sp.Close()
+	sp.Update("Cleaning up previous installation if necessary")
 	err := i.cleanupLib(ctx)
 	if err != nil {
 		return fmt.Errorf("cleanup: %w", err)
@@ -204,7 +204,7 @@ func (i *installer) downloadLibrary(ctx context.Context) error {
 	libTarget := i.LibDir()
 	// we may support wheels, jars, and golang binaries. but those are not zipballs
 	if i.IsZipball() {
-		feedback <- "Downloading and unpacking zipball for " + i.version
+		sp.Update("Downloading and unpacking zipball for " + i.version)
 		return i.downloadAndUnpackZipball(ctx, libTarget)
 	}
 	return errors.New("we only support zipballs for now")
@@ -224,9 +224,9 @@ func (i *installer) setupPythonVirtualEnvironment(ctx context.Context, w *databr
 	if !i.HasPython() {
 		return nil
 	}
-	feedback := cmdio.Spinner(ctx)
-	defer close(feedback)
-	feedback <- "Detecting all installed Python interpreters on the system"
+	sp := cmdio.NewSpinner(ctx)
+	defer sp.Close()
+	sp.Update("Detecting all installed Python interpreters on the system")
 	pythonInterpreters, err := DetectInterpreters(ctx)
 	if err != nil {
 		return fmt.Errorf("detect: %w", err)
@@ -238,13 +238,13 @@ func (i *installer) setupPythonVirtualEnvironment(ctx context.Context, w *databr
 	log.Debugf(ctx, "Detected Python %s at: %s", py.Version, py.Path)
 	venvPath := i.virtualEnvPath(ctx)
 	log.Debugf(ctx, "Creating Python Virtual Environment at: %s", venvPath)
-	feedback <- "Creating Virtual Environment with Python " + py.Version
+	sp.Update("Creating Virtual Environment with Python " + py.Version)
 	_, err = process.Background(ctx, []string{py.Path, "-m", "venv", venvPath})
 	if err != nil {
 		return fmt.Errorf("create venv: %w", err)
 	}
 	if i.Installer != nil && i.Installer.RequireDatabricksConnect {
-		feedback <- "Determining Databricks Connect version"
+		sp.Update("Determining Databricks Connect version")
 		cluster, err := w.Clusters.Get(ctx, compute.GetClusterRequest{
 			ClusterId: w.Config.ClusterID,
 		})
@@ -255,14 +255,14 @@ func (i *installer) setupPythonVirtualEnvironment(ctx context.Context, w *databr
 		if !ok {
 			return fmt.Errorf("unsupported runtime: %s", cluster.SparkVersion)
 		}
-		feedback <- "Installing Databricks Connect v" + runtimeVersion
+		sp.Update("Installing Databricks Connect v" + runtimeVersion)
 		pipSpec := "databricks-connect==" + runtimeVersion
 		err = i.installPythonDependencies(ctx, pipSpec)
 		if err != nil {
 			return fmt.Errorf("dbconnect: %w", err)
 		}
 	}
-	feedback <- "Installing Python library dependencies"
+	sp.Update("Installing Python library dependencies")
 	if i.Installer.Extras != "" {
 		// install main and optional dependencies
 		return i.installPythonDependencies(ctx, fmt.Sprintf(".[%s]", i.Installer.Extras))

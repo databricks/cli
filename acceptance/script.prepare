@@ -131,3 +131,20 @@ readplanarg() {
         printf ""
     fi
 }
+
+file_diff() {
+    # Diff two files without unified diff headers (---, +++, @@)
+    local file1="$1"
+    local file2="$2"
+    local line
+    local skip=2
+    (diff -u "$file1" "$file2" || true) | while IFS= read -r line; do
+        if [ $skip -gt 0 ]; then
+            skip=$((skip - 1))
+            continue
+        fi
+        if [[ "$line" != @@* ]]; then
+            printf "%s\n" "$line"
+        fi
+    done
+}

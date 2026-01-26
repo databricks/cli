@@ -3,7 +3,7 @@ package configsync
 import (
 	"context"
 	"fmt"
-	"regexp"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/engine"
@@ -52,58 +52,78 @@ func DetectChanges(ctx context.Context, b *bundle.Bundle, engine engine.EngineTy
 	return changes, nil
 }
 
-// fieldDefault represents a field with its default check function.
-type fieldDefault struct {
-	pattern   *regexp.Regexp
-	isDefault func(*deployplan.ChangeDesc) bool
+func matchParts(patternParts, pathParts []string) bool {
+	if len(patternParts) == 0 && len(pathParts) == 0 {
+		return true
+	}
+	if len(patternParts) == 0 || len(pathParts) == 0 {
+		return false
+	}
+
+	patternPart := patternParts[0]
+	pathPart := pathParts[0]
+
+	if patternPart == "*" {
+		return matchParts(patternParts[1:], pathParts[1:])
+	}
+
+	if strings.Contains(patternPart, "[*]") {
+		prefix := strings.Split(patternPart, "[*]")[0]
+
+		if strings.HasPrefix(pathPart, prefix) && strings.Contains(pathPart, "[") {
+			return matchParts(patternParts[1:], pathParts[1:])
+		}
+		return false
+	}
+
+	if patternPart == pathPart {
+		return matchParts(patternParts[1:], pathParts[1:])
+	}
+
+	return false
+}
+
+func matchPattern(pattern, path string) bool {
+	patternParts := strings.Split(pattern, ".")
+	pathParts := strings.Split(path, ".")
+	return matchParts(patternParts, pathParts)
 }
 
 // serverSideDefaults contains all hardcoded server-side defaults.
 // This is a temporary solution until the bundle plan issue is resolved.
-var serverSideDefaults = []fieldDefault{
+var serverSideDefaults = map[string]func(*deployplan.ChangeDesc) bool{
 	// Job-level fields
-	{
-		pattern:   regexp.MustCompile(`^timeout_seconds$`),
-		isDefault: isZero,
-	},
-	{
-		pattern:   regexp.MustCompile(`^usage_policy_id$`),
-		isDefault: alwaysDefault, // computed field
-	},
-	{
-		pattern:   regexp.MustCompile(`^edit_mode$`),
-		isDefault: alwaysDefault, // set by CLI
-	},
+	"timeout_seconds": isZero,
+	"usage_policy_id": alwaysDefault, // computed field
+	"edit_mode":       alwaysDefault, // set by CLI
 
-	// Task-level fields (using regex to match any task_key)
-	{
-		pattern:   regexp.MustCompile(`^tasks\[task_key='[^']+'\]\.run_if$`),
-		isDefault: isStringEqual("ALL_SUCCESS"),
-	},
-	{
-		pattern:   regexp.MustCompile(`^tasks\[task_key='[^']+'\]\.disabled$`),
-		isDefault: isBoolEqual(false),
-	},
-	{
-		pattern:   regexp.MustCompile(`^tasks\[task_key='[^']+'\]\.timeout_seconds$`),
-		isDefault: isZero,
-	},
-	{
-		pattern:   regexp.MustCompile(`^tasks\[task_key='[^']+'\]\.notebook_task\.source$`),
-		isDefault: isStringEqual("WORKSPACE"),
-	},
+	// Task-level fields
+	"tasks[*].run_if":               isStringEqual("ALL_SUCCESS"),
+	"tasks[*].disabled":             isBoolEqual(false),
+	"tasks[*].timeout_seconds":      isZero,
+	"tasks[*].notebook_task.source": isStringEqual("WORKSPACE"),
+
+	// Cluster fields (tasks)
+	"tasks[*].new_cluster.aws_attributes":     alwaysDefault,
+	"tasks[*].new_cluster.azure_attributes":   alwaysDefault,
+	"tasks[*].new_cluster.gcp_attributes":     alwaysDefault,
+	"tasks[*].new_cluster.data_security_mode": isStringEqual("SINGLE_USER"), // TODO this field is computed on some workspaces in integration tests, check why and if we can skip it
+
+	"tasks[*].new_cluster.enable_elastic_disk": alwaysDefault, // deprecated field
+
+	// Cluster fields (job_clusters)
+	"job_clusters[*].new_cluster.aws_attributes":     alwaysDefault,
+	"job_clusters[*].new_cluster.azure_attributes":   alwaysDefault,
+	"job_clusters[*].new_cluster.gcp_attributes":     alwaysDefault,
+	"job_clusters[*].new_cluster.data_security_mode": isStringEqual("SINGLE_USER"), // TODO this field is computed on some workspaces in integration tests, check why and if we can skip it
+
+	"job_clusters[*].new_cluster.enable_elastic_disk": alwaysDefault, // deprecated field
 
 	// Terraform defaults
-	{
-		pattern:   regexp.MustCompile(`^run_as$`),
-		isDefault: alwaysDefault,
-	},
+	"run_as": alwaysDefault,
 
 	// Pipeline fields
-	{
-		pattern:   regexp.MustCompile(`^storage$`),
-		isDefault: defaultIfNotSpecified, // TODO it is computed if not specified, probably we should not skip it
-	},
+	"storage": defaultIfNotSpecified, // TODO it is computed if not specified, probably we should not skip it
 }
 
 // shouldSkipField checks if a given field path should be skipped as a hardcoded server-side default.
@@ -114,9 +134,9 @@ func shouldSkipField(path string, changeDesc *deployplan.ChangeDesc) bool {
 		return true
 	}
 
-	for _, def := range serverSideDefaults {
-		if def.pattern.MatchString(path) {
-			return def.isDefault(changeDesc)
+	for pattern, isDefault := range serverSideDefaults {
+		if matchPattern(pattern, path) {
+			return isDefault(changeDesc)
 		}
 	}
 	return false

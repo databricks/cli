@@ -1,4 +1,4 @@
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
@@ -14,9 +14,6 @@ Resource: resources.jobs.job_two
 
 
 === Changes in job1.yml
---- resources/job1.yml.backup	[TIMESTAMP]
-+++ resources/job1.yml	[TIMESTAMP]
-@@ -1,7 +1,7 @@
  resources:
    jobs:
      job_one:
@@ -27,9 +24,6 @@ Resource: resources.jobs.job_two
            notebook_task:
 
 === Changes in job2.yml
---- resources/job2.yml.backup	[TIMESTAMP]
-+++ resources/job2.yml	[TIMESTAMP]
-@@ -1,7 +1,7 @@
  resources:
    jobs:
      job_two:
