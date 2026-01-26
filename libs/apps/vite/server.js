@@ -143,7 +143,7 @@ function queriesHMRPlugin(options = {}) {
           const handleFileChange = (file) => {
             if (file.includes("config/queries") && file.endsWith(".sql")) {
               const fileName = path.basename(file);
-              const queryKey = fileName.replace(/\.(sql)$/, "");
+              const queryKey = fileName.replace(/\.(obo\.)?sql$/, "");
 
               console.log("🔄 Query updated:", queryKey, fileName);
 

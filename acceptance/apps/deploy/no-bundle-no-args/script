@@ -1,0 +1,3 @@
+# Test: apps deploy without databricks.yml and no APP_NAME
+# Expected: Error about missing argument
+errcode $CLI apps deploy
