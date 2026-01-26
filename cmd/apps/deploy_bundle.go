@@ -39,10 +39,12 @@ func BundleDeployOverrideWithWrapper(wrapError ErrorWrapper) func(*cobra.Command
 		var (
 			force          bool
 			skipValidation bool
+			skipTests      bool
 		)
 
 		deployCmd.Flags().BoolVar(&force, "force", false, "Force-override Git branch validation")
 		deployCmd.Flags().BoolVar(&skipValidation, "skip-validation", false, "Skip project validation (build, typecheck, lint)")
+		deployCmd.Flags().BoolVar(&skipTests, "skip-tests", true, "Skip running tests during validation")
 
 		// Update the command usage to reflect that APP_NAME is optional when in bundle mode
 		deployCmd.Use = "deploy [APP_NAME]"
@@ -68,7 +70,7 @@ func BundleDeployOverrideWithWrapper(wrapError ErrorWrapper) func(*cobra.Command
 				// Try to load bundle configuration
 				b := root.TryConfigureBundle(cmd)
 				if b != nil {
-					return runBundleDeploy(cmd, force, skipValidation)
+					return runBundleDeploy(cmd, force, skipValidation, skipTests)
 				}
 			}
 
@@ -109,7 +111,7 @@ Examples:
 }
 
 // runBundleDeploy executes the enhanced deployment flow for bundle directories.
-func runBundleDeploy(cmd *cobra.Command, force, skipValidation bool) error {
+func runBundleDeploy(cmd *cobra.Command, force, skipValidation, skipTests bool) error {
 	ctx := cmd.Context()
 
 	// Get current working directory for validation
@@ -122,7 +124,10 @@ func runBundleDeploy(cmd *cobra.Command, force, skipValidation bool) error {
 	if !skipValidation {
 		validator := validation.GetProjectValidator(workDir)
 		if validator != nil {
-			result, err := validator.Validate(ctx, workDir)
+			opts := validation.ValidateOptions{
+				SkipTests: skipTests,
+			}
+			result, err := validator.Validate(ctx, workDir, opts)
 			if err != nil {
 				return fmt.Errorf("validation error: %w", err)
 			}
