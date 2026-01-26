@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/direct/dresources"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/structs/structpath"
@@ -37,6 +38,39 @@ func NewRefSchemaCommand() *cobra.Command {
 
 // dumpRemoteSchemas walks through all supported resources and dumps their schema fields.
 func dumpRemoteSchemas(out io.Writer) error {
+	// path -> typeLabel -> set of sources
+	pathTypes := make(map[string]map[string]map[string]struct{})
+
+	collect := func(fullPath string, typ reflect.Type, source string) {
+		t := strings.ReplaceAll(fmt.Sprint(typ), "interface {}", "any")
+		byType, ok := pathTypes[fullPath]
+		if !ok {
+			byType = make(map[string]map[string]struct{})
+			pathTypes[fullPath] = byType
+		}
+		sources, ok := byType[t]
+		if !ok {
+			sources = make(map[string]struct{})
+			byType[t] = sources
+		}
+		sources[source] = struct{}{}
+	}
+
+	// Walk config.Resources for INPUT - this naturally gives us the map structure
+	// including entries like "resources.volumes" and "resources.volumes.*"
+	err := structwalk.WalkType(reflect.TypeOf(config.Resources{}), func(path *structpath.PathNode, typ reflect.Type, field *reflect.StructField) bool {
+		if path == nil {
+			return true
+		}
+		p := strings.TrimPrefix(path.String(), ".")
+		collect("resources."+p, typ, "INPUT")
+		return true
+	})
+	if err != nil {
+		return fmt.Errorf("failed to walk config.Resources: %w", err)
+	}
+
+	// Use adapters for STATE and REMOTE (and sub-resource INPUT like permissions/grants)
 	adapters, err := dresources.InitAll(nil)
 	if err != nil {
 		return fmt.Errorf("failed to initialize adapters: %w", err)
@@ -46,68 +80,56 @@ func dumpRemoteSchemas(out io.Writer) error {
 		adapter := adapters[resourceName]
 
 		var resourcePrefix string
+		isSubResource := strings.Contains(resourceName, ".")
 
-		if strings.Contains(resourceName, ".") {
+		if isSubResource {
 			// "jobs.permissions" -> "resources.jobs.*.permissions"
 			resourcePrefix = "resources." + strings.ReplaceAll(resourceName, ".", ".*.")
 		} else {
 			resourcePrefix = "resources." + resourceName + ".*"
 		}
 
-		// TODO: fields with bundle: tag has variety of behaviors
-		// id is REMOTE but it shows up in inputType
-		// "url" is remote on some resources
-		// "modified_status" in internal
-
-		// path -> typeLabel -> set of sources
-		pathTypes := make(map[string]map[string]map[string]struct{})
-
-		collect := func(root reflect.Type, source string) error {
+		collectFromType := func(root reflect.Type, source string) error {
 			return structwalk.WalkType(root, func(path *structpath.PathNode, typ reflect.Type, field *reflect.StructField) bool {
+				var fullPath string
 				if path == nil {
-					return true
+					fullPath = resourcePrefix
+				} else {
+					fullPath = resourcePrefix + "." + strings.TrimPrefix(path.String(), ".")
 				}
-				p := path.String()
-				p = strings.TrimPrefix(p, ".")
-				t := strings.ReplaceAll(fmt.Sprint(typ), "interface {}", "any")
-				byType, ok := pathTypes[p]
-				if !ok {
-					byType = make(map[string]map[string]struct{})
-					pathTypes[p] = byType
-				}
-				sources, ok := byType[t]
-				if !ok {
-					sources = make(map[string]struct{})
-					byType[t] = sources
-				}
-				sources[source] = struct{}{}
+				collect(fullPath, typ, source)
 				return true
 			})
 		}
 
-		if err := collect(adapter.InputConfigType(), "INPUT"); err != nil {
-			return fmt.Errorf("failed to walk input type for %s: %w", resourceName, err)
-		}
-		if err := collect(adapter.StateType(), "STATE"); err != nil {
-			return fmt.Errorf("failed to walk config type for %s: %w", resourceName, err)
-		}
-		if err := collect(adapter.RemoteType(), "REMOTE"); err != nil {
-			return fmt.Errorf("failed to walk remote type for %s: %w", resourceName, err)
-		}
-
-		var lines []string
-		for _, p := range utils.SortedKeys(pathTypes) {
-			byType := pathTypes[p]
-			for _, t := range utils.SortedKeys(byType) {
-				info := formatTags(byType[t])
-				lines = append(lines, fmt.Sprintf("%s.%s\t%s\t%s\n", resourcePrefix, p, t, info))
+		// For sub-resources (permissions, grants), collect INPUT since they're not in config.Resources
+		if isSubResource {
+			if err := collectFromType(adapter.InputConfigType(), "INPUT"); err != nil {
+				return fmt.Errorf("failed to walk input type for %s: %w", resourceName, err)
 			}
 		}
 
-		sort.Strings(lines)
-		for _, l := range lines {
-			fmt.Fprint(out, l)
+		if err := collectFromType(adapter.StateType(), "STATE"); err != nil {
+			return fmt.Errorf("failed to walk state type for %s: %w", resourceName, err)
 		}
+		if err := collectFromType(adapter.RemoteType(), "REMOTE"); err != nil {
+			return fmt.Errorf("failed to walk remote type for %s: %w", resourceName, err)
+		}
+	}
+
+	// Output all collected paths
+	var lines []string
+	for _, p := range utils.SortedKeys(pathTypes) {
+		byType := pathTypes[p]
+		for _, t := range utils.SortedKeys(byType) {
+			info := formatTags(byType[t])
+			lines = append(lines, fmt.Sprintf("%s\t%s\t%s\n", p, t, info))
+		}
+	}
+
+	sort.Strings(lines)
+	for _, l := range lines {
+		fmt.Fprint(out, l)
 	}
 
 	return nil
