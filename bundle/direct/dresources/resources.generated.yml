@@ -1,0 +1,141 @@
+# API field behaviors from OpenAPI schema.
+# Generated, do not edit.
+#
+# Available options:
+#   recreate_on_changes: fields that trigger delete + create (from IMMUTABLE)
+#   ignore_remote_changes: fields where remote changes are ignored (from OUTPUT_ONLY, INPUT_ONLY)
+
+resources:
+  alerts:
+
+    ignore_remote_changes:
+      # OUTPUT_ONLY:
+      - create_time
+      - effective_run_as
+      - evaluation.last_evaluated_at
+      - evaluation.state
+      - id
+      - lifecycle_state
+      - owner_user_name
+      - update_time
+
+  apps:
+
+    ignore_remote_changes:
+      # OUTPUT_ONLY:
+      - active_deployment
+      - app_status
+      - compute_status
+      - create_time
+      - creator
+      - default_source_code_path
+      - effective_budget_policy_id
+      - effective_usage_policy_id
+      - effective_user_api_scopes
+      - id
+      - oauth2_app_client_id
+      - oauth2_app_integration_id
+      - pending_deployment
+      - service_principal_client_id
+      - service_principal_id
+      - service_principal_name
+      - update_time
+      - updater
+      - url
+
+  # clusters: no api field behaviors
+
+  dashboards:
+
+    recreate_on_changes:
+      # IMMUTABLE:
+      - parent_path
+
+    ignore_remote_changes:
+      # OUTPUT_ONLY:
+      - create_time
+      - dashboard_id
+      - lifecycle_state
+      - path
+      - update_time
+
+  database_catalogs:
+
+    ignore_remote_changes:
+      # INPUT_ONLY:
+      - create_database_if_not_exists
+
+      # OUTPUT_ONLY:
+      - uid
+
+  database_instances:
+
+    recreate_on_changes:
+      # IMMUTABLE:
+      - parent_instance_ref
+
+    ignore_remote_changes:
+      # INPUT_ONLY:
+      - custom_tags
+      - enable_pg_native_login
+      - enable_readable_secondaries
+      - node_count
+      - parent_instance_ref.lsn
+      - retention_window_in_days
+      - stopped
+      - usage_policy_id
+
+      # OUTPUT_ONLY:
+      - child_instance_refs
+      - creation_time
+      - creator
+      - effective_capacity
+      - effective_custom_tags
+      - effective_enable_pg_native_login
+      - effective_enable_readable_secondaries
+      - effective_node_count
+      - effective_retention_window_in_days
+      - effective_stopped
+      - effective_usage_policy_id
+      - parent_instance_ref.effective_lsn
+      - parent_instance_ref.uid
+      - pg_version
+      - read_only_dns
+      - read_write_dns
+      - state
+      - uid
+
+  # experiments: no api field behaviors
+  # jobs: no api field behaviors
+  # model_serving_endpoints: no api field behaviors
+  # models: no api field behaviors
+
+  pipelines:
+
+    ignore_remote_changes:
+      # OUTPUT_ONLY:
+      - ingestion_definition.source_type
+
+  # quality_monitors: no api field behaviors
+  # registered_models: no api field behaviors
+  # schemas: no api field behaviors
+  # secret_scopes: no api field behaviors
+  # sql_warehouses: no api field behaviors
+
+  synced_database_tables:
+
+    ignore_remote_changes:
+      # INPUT_ONLY:
+      - database_instance_name
+      - logical_database_name
+      - spec.create_database_objects_if_missing
+      - spec.existing_pipeline_id
+      - spec.new_pipeline_spec
+
+      # OUTPUT_ONLY:
+      - data_synchronization_status
+      - effective_database_instance_name
+      - effective_logical_database_name
+      - unity_catalog_provisioning_state
+
+  # volumes: no api field behaviors

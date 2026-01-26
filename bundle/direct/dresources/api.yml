@@ -1,0 +1,245 @@
+# Field behaviors from OpenAPI schema (.codegen/apischema.json).
+# Filtered to only include fields that exist in STATE type.
+#
+# Behavior types from x-databricks-field-behaviors:
+#   OUTPUT_ONLY: Field is set by server only, not accepted in create/update
+#   INPUT_ONLY: Field is accepted in create/update but not returned by read
+#   IMMUTABLE: Field cannot be changed after creation
+#   REQUIRED: Field must be provided
+#   OPTIONAL: Field is optional
+#   UNORDERED_LIST: List where order doesn't matter for comparison
+#
+# Additional annotations mapped to behaviors:
+#   COMPUTED: from x-databricks-computed: true
+#   READ_ONLY: from readOnly: true (OpenAPI standard)
+#
+# Type prefixes:
+#   state:<type>  - Type used for local state (PrepareState return type)
+#   remote:<type> - Type returned by DoRead (filtered to STATE fields only)
+
+resources:
+  alerts:
+    state:sql.AlertV2:
+      create_time: [OUTPUT_ONLY, READ_ONLY]
+      custom_description: [OPTIONAL]
+      custom_summary: [OPTIONAL]
+      display_name: [REQUIRED]
+      effective_run_as: [OUTPUT_ONLY, READ_ONLY]
+      effective_run_as.service_principal_name: [OPTIONAL]
+      effective_run_as.user_name: [OPTIONAL]
+      evaluation: [REQUIRED]
+      evaluation.comparison_operator: [REQUIRED]
+      evaluation.empty_result_state: [OPTIONAL]
+      evaluation.last_evaluated_at: [OUTPUT_ONLY, READ_ONLY]
+      evaluation.notification: [OPTIONAL]
+      evaluation.notification.notify_on_ok: [OPTIONAL]
+      evaluation.notification.retrigger_seconds: [OPTIONAL]
+      evaluation.notification.subscriptions: [OPTIONAL, UNORDERED_LIST]
+      evaluation.source: [REQUIRED]
+      evaluation.source.aggregation: [OPTIONAL]
+      evaluation.source.display: [OPTIONAL]
+      evaluation.source.name: [REQUIRED]
+      evaluation.state: [OUTPUT_ONLY, READ_ONLY]
+      evaluation.threshold: [OPTIONAL]
+      evaluation.threshold.column: [OPTIONAL]
+      evaluation.threshold.value: [OPTIONAL]
+      evaluation.threshold.value.bool_value: [OPTIONAL]
+      evaluation.threshold.value.double_value: [OPTIONAL]
+      evaluation.threshold.value.string_value: [OPTIONAL]
+      id: [OUTPUT_ONLY, READ_ONLY]
+      lifecycle_state: [OUTPUT_ONLY, READ_ONLY]
+      owner_user_name: [OUTPUT_ONLY, READ_ONLY]
+      parent_path: [OPTIONAL]
+      query_text: [REQUIRED]
+      run_as: [OPTIONAL]
+      run_as_user_name: [OPTIONAL]
+      schedule: [REQUIRED]
+      schedule.pause_status: [OPTIONAL]
+      schedule.quartz_cron_schedule: [REQUIRED]
+      schedule.timezone_id: [REQUIRED]
+      update_time: [OUTPUT_ONLY, READ_ONLY]
+      warehouse_id: [REQUIRED]
+
+  apps:
+    state:apps.App:
+      active_deployment: [COMPUTED, OUTPUT_ONLY, READ_ONLY]
+      active_deployment.create_time: [COMPUTED, OUTPUT_ONLY, READ_ONLY]
+      active_deployment.creator: [COMPUTED, OUTPUT_ONLY, READ_ONLY]
+      active_deployment.deployment_artifacts: [COMPUTED, OUTPUT_ONLY, READ_ONLY]
+      active_deployment.git_source.git_repository: [COMPUTED, OUTPUT_ONLY, READ_ONLY]
+      active_deployment.git_source.resolved_commit: [COMPUTED, OUTPUT_ONLY, READ_ONLY]
+      active_deployment.status: [COMPUTED, OUTPUT_ONLY, READ_ONLY]
+      active_deployment.status.message: [COMPUTED, OUTPUT_ONLY, READ_ONLY]
+      active_deployment.status.state: [COMPUTED, OUTPUT_ONLY, READ_ONLY]
+      active_deployment.update_time: [COMPUTED, OUTPUT_ONLY, READ_ONLY]
+      app_status: [COMPUTED, OUTPUT_ONLY, READ_ONLY]
+      app_status.message: [COMPUTED, OUTPUT_ONLY, READ_ONLY]
+      app_status.state: [COMPUTED, OUTPUT_ONLY, READ_ONLY]
+      compute_status: [COMPUTED, OUTPUT_ONLY, READ_ONLY]
+      compute_status.message: [COMPUTED, OUTPUT_ONLY, READ_ONLY]
+      compute_status.state: [COMPUTED, OUTPUT_ONLY, READ_ONLY]
+      create_time: [COMPUTED, OUTPUT_ONLY, READ_ONLY]
+      creator: [COMPUTED, OUTPUT_ONLY, READ_ONLY]
+      default_source_code_path: [OUTPUT_ONLY, READ_ONLY]
+      effective_budget_policy_id: [COMPUTED, OUTPUT_ONLY, READ_ONLY]
+      effective_usage_policy_id: [COMPUTED, OUTPUT_ONLY, READ_ONLY]
+      effective_user_api_scopes: [COMPUTED, OUTPUT_ONLY, READ_ONLY]
+      id: [COMPUTED, OUTPUT_ONLY, READ_ONLY]
+      oauth2_app_client_id: [COMPUTED, OUTPUT_ONLY, READ_ONLY]
+      oauth2_app_integration_id: [COMPUTED, OUTPUT_ONLY, READ_ONLY]
+      pending_deployment: [COMPUTED, OUTPUT_ONLY, READ_ONLY]
+      service_principal_client_id: [COMPUTED, OUTPUT_ONLY, READ_ONLY]
+      service_principal_id: [COMPUTED, OUTPUT_ONLY, READ_ONLY]
+      service_principal_name: [COMPUTED, OUTPUT_ONLY, READ_ONLY]
+      update_time: [COMPUTED, OUTPUT_ONLY, READ_ONLY]
+      updater: [COMPUTED, OUTPUT_ONLY, READ_ONLY]
+      url: [COMPUTED, OUTPUT_ONLY, READ_ONLY]
+
+  clusters:
+    state:compute.ClusterSpec: {}
+    remote:compute.ClusterDetails: {}
+
+  dashboards:
+    state: (custom type)
+
+  database_catalogs:
+    state:database.DatabaseCatalog:
+      create_database_if_not_exists: [INPUT_ONLY, OPTIONAL]
+      uid: [OUTPUT_ONLY, READ_ONLY]
+
+  database_instances:
+    state:database.DatabaseInstance:
+      capacity: [OPTIONAL]
+      child_instance_refs: [OUTPUT_ONLY, READ_ONLY]
+      creation_time: [OUTPUT_ONLY, READ_ONLY]
+      creator: [OUTPUT_ONLY, READ_ONLY]
+      custom_tags: [INPUT_ONLY, OPTIONAL]
+      effective_capacity: [OUTPUT_ONLY, READ_ONLY]
+      effective_custom_tags: [OUTPUT_ONLY, READ_ONLY]
+      effective_enable_pg_native_login: [OUTPUT_ONLY, READ_ONLY]
+      effective_enable_readable_secondaries: [OUTPUT_ONLY, READ_ONLY]
+      effective_node_count: [OUTPUT_ONLY, READ_ONLY]
+      effective_retention_window_in_days: [OUTPUT_ONLY, READ_ONLY]
+      effective_stopped: [OUTPUT_ONLY, READ_ONLY]
+      effective_usage_policy_id: [OUTPUT_ONLY, READ_ONLY]
+      enable_pg_native_login: [INPUT_ONLY, OPTIONAL]
+      enable_readable_secondaries: [INPUT_ONLY, OPTIONAL]
+      node_count: [INPUT_ONLY, OPTIONAL]
+      parent_instance_ref: [IMMUTABLE, OPTIONAL]
+      parent_instance_ref.branch_time: [OPTIONAL]
+      parent_instance_ref.effective_lsn: [OUTPUT_ONLY, READ_ONLY]
+      parent_instance_ref.lsn: [INPUT_ONLY, OPTIONAL]
+      parent_instance_ref.name: [OPTIONAL]
+      parent_instance_ref.uid: [OUTPUT_ONLY, READ_ONLY]
+      pg_version: [OUTPUT_ONLY, READ_ONLY]
+      read_only_dns: [OUTPUT_ONLY, READ_ONLY]
+      read_write_dns: [OUTPUT_ONLY, READ_ONLY]
+      retention_window_in_days: [INPUT_ONLY, OPTIONAL]
+      state: [OUTPUT_ONLY, READ_ONLY]
+      stopped: [INPUT_ONLY, OPTIONAL]
+      uid: [OUTPUT_ONLY, READ_ONLY]
+      usage_policy_id: [INPUT_ONLY, OPTIONAL]
+
+  experiments:
+    state:ml.CreateExperiment: {}
+    remote:ml.Experiment: {}
+
+  jobs:
+    state:jobs.JobSettings:
+      trigger.table_update.table_names: [REQUIRED]
+    remote:jobs.Job: {}
+
+  model_serving_endpoints:
+    state:serving.CreateServingEndpoint: {}
+    remote: (custom RefreshOutput type)
+
+  models:
+    state:ml.CreateModelRequest: {}
+    remote:ml.ModelDatabricks: {}
+
+  pipelines:
+    state:pipelines.CreatePipeline:
+      ingestion_definition.source_type: [OUTPUT_ONLY, READ_ONLY]
+    remote:pipelines.GetPipelineResponse: {}
+
+  quality_monitors:
+    state: (custom QualityMonitorState type)
+    remote:catalog.MonitorInfo:
+      inference_log.granularities: [REQUIRED]
+      inference_log.model_id_col: [REQUIRED]
+      inference_log.prediction_col: [REQUIRED]
+      inference_log.problem_type: [REQUIRED]
+      inference_log.timestamp_col: [REQUIRED]
+      output_schema_name: [REQUIRED]
+      schedule.quartz_cron_expression: [REQUIRED]
+      schedule.timezone_id: [REQUIRED]
+      time_series.granularities: [REQUIRED]
+      time_series.timestamp_col: [REQUIRED]
+
+  registered_models:
+    state:catalog.CreateRegisteredModelRequest: {}
+    remote:catalog.RegisteredModelInfo: {}
+
+  schemas:
+    state:catalog.CreateSchema: {}
+    remote:catalog.SchemaInfo: {}
+
+  secret_scopes:
+    state: (custom SecretScopeConfig type)
+    remote:workspace.SecretScope: {}
+
+  sql_warehouses:
+    state:sql.CreateWarehouseRequest: {}
+    remote:sql.GetWarehouseResponse: {}
+
+  synced_database_tables:
+    state:database.SyncedDatabaseTable:
+      data_synchronization_status: [OUTPUT_ONLY, READ_ONLY]
+      data_synchronization_status.continuous_update_status: [OPTIONAL]
+      data_synchronization_status.continuous_update_status.initial_pipeline_sync_progress: [OUTPUT_ONLY, READ_ONLY]
+      data_synchronization_status.continuous_update_status.initial_pipeline_sync_progress.estimated_completion_time_seconds: [OUTPUT_ONLY, READ_ONLY]
+      data_synchronization_status.continuous_update_status.initial_pipeline_sync_progress.latest_version_currently_processing: [OUTPUT_ONLY, READ_ONLY]
+      data_synchronization_status.continuous_update_status.initial_pipeline_sync_progress.provisioning_phase: [OUTPUT_ONLY, READ_ONLY]
+      data_synchronization_status.continuous_update_status.initial_pipeline_sync_progress.sync_progress_completion: [OUTPUT_ONLY, READ_ONLY]
+      data_synchronization_status.continuous_update_status.initial_pipeline_sync_progress.synced_row_count: [OUTPUT_ONLY, READ_ONLY]
+      data_synchronization_status.continuous_update_status.initial_pipeline_sync_progress.total_row_count: [OUTPUT_ONLY, READ_ONLY]
+      data_synchronization_status.continuous_update_status.last_processed_commit_version: [OUTPUT_ONLY, READ_ONLY]
+      data_synchronization_status.continuous_update_status.timestamp: [OUTPUT_ONLY, READ_ONLY]
+      data_synchronization_status.detailed_state: [OUTPUT_ONLY, READ_ONLY]
+      data_synchronization_status.failed_status: [OPTIONAL]
+      data_synchronization_status.failed_status.last_processed_commit_version: [OUTPUT_ONLY, READ_ONLY]
+      data_synchronization_status.failed_status.timestamp: [OUTPUT_ONLY, READ_ONLY]
+      data_synchronization_status.last_sync: [OUTPUT_ONLY, READ_ONLY]
+      data_synchronization_status.last_sync.delta_table_sync_info: [OUTPUT_ONLY, READ_ONLY]
+      data_synchronization_status.last_sync.delta_table_sync_info.delta_commit_timestamp: [OUTPUT_ONLY, READ_ONLY]
+      data_synchronization_status.last_sync.delta_table_sync_info.delta_commit_version: [OUTPUT_ONLY, READ_ONLY]
+      data_synchronization_status.last_sync.sync_end_timestamp: [OUTPUT_ONLY, READ_ONLY]
+      data_synchronization_status.last_sync.sync_start_timestamp: [OUTPUT_ONLY, READ_ONLY]
+      data_synchronization_status.message: [OUTPUT_ONLY, READ_ONLY]
+      data_synchronization_status.pipeline_id: [OUTPUT_ONLY, READ_ONLY]
+      data_synchronization_status.provisioning_status: [OPTIONAL]
+      data_synchronization_status.provisioning_status.initial_pipeline_sync_progress: [OUTPUT_ONLY, READ_ONLY]
+      data_synchronization_status.triggered_update_status: [OPTIONAL]
+      data_synchronization_status.triggered_update_status.last_processed_commit_version: [OUTPUT_ONLY, READ_ONLY]
+      data_synchronization_status.triggered_update_status.timestamp: [OUTPUT_ONLY, READ_ONLY]
+      data_synchronization_status.triggered_update_status.triggered_update_progress: [OUTPUT_ONLY, READ_ONLY]
+      database_instance_name: [INPUT_ONLY, OPTIONAL]
+      effective_database_instance_name: [OUTPUT_ONLY, READ_ONLY]
+      effective_logical_database_name: [OUTPUT_ONLY, READ_ONLY]
+      logical_database_name: [INPUT_ONLY, OPTIONAL]
+      spec: [OPTIONAL]
+      spec.create_database_objects_if_missing: [INPUT_ONLY, OPTIONAL]
+      spec.existing_pipeline_id: [INPUT_ONLY, OPTIONAL]
+      spec.new_pipeline_spec: [INPUT_ONLY, OPTIONAL]
+      spec.new_pipeline_spec.budget_policy_id: [OPTIONAL]
+      spec.new_pipeline_spec.storage_catalog: [OPTIONAL]
+      spec.new_pipeline_spec.storage_schema: [OPTIONAL]
+      spec.primary_key_columns: [OPTIONAL]
+      spec.scheduling_policy: [OPTIONAL]
+      spec.source_table_full_name: [OPTIONAL]
+      spec.timeseries_key: [OPTIONAL]
+      unity_catalog_provisioning_state: [OUTPUT_ONLY, READ_ONLY]
+
+  volumes:
+    state:catalog.CreateVolumeRequestContent: {}
+    remote:catalog.VolumeInfo: {}

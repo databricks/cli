@@ -162,14 +162,33 @@ generate-validation:
 UNIVERSE_DIR ?= $(HOME)/universe
 GENKIT_BINARY := $(UNIVERSE_DIR)/bazel-bin/openapi/genkit/genkit_/genkit
 
-generate:
+genkit-binary:
 	@echo "Checking out universe at SHA: $$(cat .codegen/_openapi_sha)"
 	cd $(UNIVERSE_DIR) && git fetch origin master && git checkout $$(cat $(PWD)/.codegen/_openapi_sha)
 	@echo "Building genkit..."
 	cd $(UNIVERSE_DIR) && bazel build //openapi/genkit
+
+.PHONY: genkit-binary
+
+generate: genkit-binary
 	@echo "Generating CLI code..."
 	$(GENKIT_BINARY) update-sdk
 
+.codegen/openapi.json: .codegen/_openapi_sha
+	$(GENKIT_BINARY) get `cat $<` > $@
+
+generate-direct: generate-direct-apitypes generate-direct-resources
+generate-direct-apitypes: bundle/direct/dresources/apitypes.generated.yml
+generate-direct-resources: bundle/direct/dresources/resources.generated.yml
+generate-direct-clean:
+	rm -f bundle/direct/dresources/apitypes.generated.yml bundle/direct/dresources/resources.generated.yml
+.PHONY: generate-direct generate-direct-apitypes generate-direct-resources generate-direct-clean
+
+bundle/direct/dresources/apitypes.generated.yml: .codegen/apischema.json acceptance/bundle/refschema/out.fields.txt
+	python3 ./bundle/direct/tools/generate_apitypes.py $^ > $@
+
+bundle/direct/dresources/resources.generated.yml: .codegen/apischema.json bundle/direct/dresources/apitypes.generated.yml acceptance/bundle/refschema/out.fields.txt
+	python3 ./bundle/direct/tools/generate_resources.py $^ > $@
 
 .PHONY: lint lintfull tidy lintcheck fmt fmtfull test test-unit test-acc test-slow test-slow-unit test-slow-acc cover showcover build snapshot snapshot-release schema integration integration-short acc-cover acc-showcover docs ws wsfix links checks test-update test-update-templates generate-out-test-toml test-update-aws test-update-all generate-validation
 
