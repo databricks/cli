@@ -13,6 +13,8 @@ r["email_notifications"]["on_failure"] = ["failure@example.com"]
 r["email_notifications"]["no_alert_for_skipped_runs"] = True
 r["parameters"].append({"name": "region", "default": "us-east-1"})
 r["trigger"]["periodic"]["interval"] = 2
+if "tags" not in r:
+    r["tags"] = {}
 r["tags"]["team"] = "data"
 EOF
 

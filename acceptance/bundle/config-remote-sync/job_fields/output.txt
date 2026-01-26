@@ -6,8 +6,9 @@ Deployment complete!
 
 === Modify job fields remotely
 === Detect and save changes
-Detected changes in 1 resource(s):
+Error: failed to generate YAML files: failed to apply changes to file [TEST_TMP_DIR]/databricks.yml: failed to apply change /targets/default/resources/jobs/my_job/tags/team: op add /targets/default/resources/jobs/my_job/tags/team: parent path /targets/default/resources does not exist
 
+<<<<<<< HEAD
 Resource: resources.jobs.my_job
   email_notifications.no_alert_for_skipped_runs: skip
   email_notifications.on_failure: skip
@@ -54,3 +55,6 @@ Resource: resources.jobs.my_job
 +        team: data
        environments:
          - environment_key: default
+=======
+Exit code: 1
+>>>>>>> d9b1dcd7c (Capture incorrect behavior with the test)

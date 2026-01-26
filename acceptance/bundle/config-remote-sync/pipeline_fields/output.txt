@@ -5,8 +5,9 @@ Deployment complete!
 
 === Modify pipeline fields remotely
 === Detect and save changes
-Detected changes in 1 resource(s):
+Error: failed to generate YAML files: failed to apply changes to file [TEST_TMP_DIR]/databricks.yml: failed to apply change /targets/default/resources/pipelines/my_pipeline/tags/foo: op add /targets/default/resources/pipelines/my_pipeline/tags/foo: parent path /targets/default/resources does not exist
 
+<<<<<<< HEAD
 Resource: resources.pipelines.my_pipeline
   configuration['key2']: update
   notifications[0].alerts: update
@@ -42,3 +43,6 @@ Resource: resources.pipelines.my_pipeline
 +            - on-update-failure
        libraries:
          - notebook:
+=======
+Exit code: 1
+>>>>>>> d9b1dcd7c (Capture incorrect behavior with the test)
