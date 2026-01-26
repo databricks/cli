@@ -32,6 +32,7 @@ type Resources struct {
 	SyncedDatabaseTables  map[string]*resources.SyncedDatabaseTable  `json:"synced_database_tables,omitempty"`
 	PostgresProjects      map[string]*resources.PostgresProject      `json:"postgres_projects,omitempty"`
 	PostgresBranches      map[string]*resources.PostgresBranch       `json:"postgres_branches,omitempty"`
+	PostgresEndpoints     map[string]*resources.PostgresEndpoint     `json:"postgres_endpoints,omitempty"`
 }
 
 type ConfigResource interface {
@@ -102,6 +103,7 @@ func (r *Resources) AllResources() []ResourceGroup {
 		collectResourceMap(descriptions["synced_database_tables"], r.SyncedDatabaseTables),
 		collectResourceMap(descriptions["postgres_projects"], r.PostgresProjects),
 		collectResourceMap(descriptions["postgres_branches"], r.PostgresBranches),
+		collectResourceMap(descriptions["postgres_endpoints"], r.PostgresEndpoints),
 	}
 }
 
@@ -221,6 +223,12 @@ func (r *Resources) FindResourceByConfigKey(key string) (ConfigResource, error) 
 		}
 	}
 
+	for k := range r.PostgresEndpoints {
+		if k == key {
+			found = append(found, r.PostgresEndpoints[k])
+		}
+	}
+
 	if len(found) == 0 {
 		return nil, fmt.Errorf("no such resource: %s", key)
 	}
@@ -259,5 +267,6 @@ func SupportedResources() map[string]resources.ResourceDescription {
 		"synced_database_tables":  (&resources.SyncedDatabaseTable{}).ResourceDescription(),
 		"postgres_projects":       (&resources.PostgresProject{}).ResourceDescription(),
 		"postgres_branches":       (&resources.PostgresBranch{}).ResourceDescription(),
+		"postgres_endpoints":      (&resources.PostgresEndpoint{}).ResourceDescription(),
 	}
 }

@@ -206,6 +206,9 @@ github.com/databricks/cli/bundle/config.Resources:
   "postgres_branches":
     "description": |-
       PLACEHOLDER
+  "postgres_endpoints":
+    "description": |-
+      PLACEHOLDER
   "postgres_projects":
     "description": |-
       PLACEHOLDER
@@ -692,6 +695,34 @@ github.com/databricks/cli/bundle/config/resources.PostgresBranch:
     "description": |-
       PLACEHOLDER
   "create_time":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
+  "name":
+    "description": |-
+      PLACEHOLDER
+  "parent":
+    "description": |-
+      PLACEHOLDER
+  "spec":
+    "description": |-
+      PLACEHOLDER
+  "status":
+    "description": |-
+      PLACEHOLDER
+  "uid":
+    "description": |-
+      PLACEHOLDER
+  "update_time":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.PostgresEndpoint:
+  "create_time":
+    "description": |-
+      PLACEHOLDER
+  "endpoint_id":
     "description": |-
       PLACEHOLDER
   "lifecycle":

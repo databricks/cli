@@ -131,3 +131,12 @@ resources:
       - branch_id
       # parent (project name) is immutable
       - parent
+
+  postgres_endpoints:
+    recreate_on_changes:
+      # endpoint_id is immutable (part of hierarchical name)
+      - endpoint_id
+      # parent (branch name) is immutable
+      - parent
+      # endpoint_type (READ_WRITE or READ_ONLY) is immutable
+      - spec.endpoint_type

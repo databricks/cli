@@ -1,0 +1,3 @@
+# Postgres endpoints tests
+Local = true
+Cloud = true

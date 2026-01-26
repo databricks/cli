@@ -1527,6 +1527,47 @@
                   }
                 ]
               },
+              "resources.PostgresEndpoint": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "create_time": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/time.Time"
+                      },
+                      "endpoint_id": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "lifecycle": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
+                      },
+                      "name": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "parent": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "spec": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.EndpointSpec"
+                      },
+                      "status": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.EndpointStatus"
+                      },
+                      "uid": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "update_time": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/time.Time"
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
               "resources.PostgresProject": {
                 "oneOf": [
                   {
@@ -2634,6 +2675,9 @@
                     },
                     "postgres_branches": {
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.PostgresBranch"
+                    },
+                    "postgres_endpoints": {
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.PostgresEndpoint"
                     },
                     "postgres_projects": {
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.PostgresProject"
@@ -8470,6 +8514,125 @@
             "postgres.BranchStatusState": {
               "type": "string"
             },
+            "postgres.EndpointHosts": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "host": {
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "postgres.EndpointSettings": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "pg_settings": {
+                      "$ref": "#/$defs/map/string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "postgres.EndpointSpec": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "autoscaling_limit_max_cu": {
+                      "$ref": "#/$defs/float64"
+                    },
+                    "autoscaling_limit_min_cu": {
+                      "$ref": "#/$defs/float64"
+                    },
+                    "disabled": {
+                      "$ref": "#/$defs/bool"
+                    },
+                    "endpoint_type": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.EndpointType"
+                    },
+                    "no_suspension": {
+                      "$ref": "#/$defs/bool"
+                    },
+                    "settings": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.EndpointSettings"
+                    },
+                    "suspend_timeout_duration": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/duration.Duration"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "endpoint_type"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "postgres.EndpointStatus": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "autoscaling_limit_max_cu": {
+                      "$ref": "#/$defs/float64"
+                    },
+                    "autoscaling_limit_min_cu": {
+                      "$ref": "#/$defs/float64"
+                    },
+                    "current_state": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.EndpointStatusState"
+                    },
+                    "disabled": {
+                      "$ref": "#/$defs/bool"
+                    },
+                    "endpoint_type": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.EndpointType"
+                    },
+                    "hosts": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.EndpointHosts"
+                    },
+                    "pending_state": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.EndpointStatusState"
+                    },
+                    "settings": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.EndpointSettings"
+                    },
+                    "suspend_timeout_duration": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/duration.Duration"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "postgres.EndpointStatusState": {
+              "type": "string"
+            },
+            "postgres.EndpointType": {
+              "type": "string"
+            },
             "postgres.ProjectDefaultEndpointSettings": {
               "oneOf": [
                 {
@@ -10326,6 +10489,20 @@
                       "type": "object",
                       "additionalProperties": {
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.PostgresBranch"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
+                "resources.PostgresEndpoint": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.PostgresEndpoint"
                       }
                     },
                     {

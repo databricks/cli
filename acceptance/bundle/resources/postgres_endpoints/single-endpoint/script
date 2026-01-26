@@ -1,0 +1,27 @@
+#!/bin/bash
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+   # Wait for endpoint to fully stabilize before destroying
+   sleep 10
+   trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+trace $CLI bundle validate
+
+trace $CLI bundle summary
+
+rm -f out.requests.txt
+trace $CLI bundle deploy
+
+# Get endpoint details
+project_name="projects/test-pg-proj-${UNIQUE_NAME}"
+branch_name="${project_name}/branches/main"
+endpoint_name="${branch_name}/endpoints/primary"
+trace $CLI postgres get-endpoint "${endpoint_name}" | jq 'del(.create_time, .update_time)'
+
+trace $CLI bundle summary
+
+# Filter requests to only show postgres operations (exclude workspace, telemetry, and operation polling)
+trace print_requests.py --keep --get '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.json

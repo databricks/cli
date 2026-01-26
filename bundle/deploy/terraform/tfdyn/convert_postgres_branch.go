@@ -3,11 +3,11 @@ package tfdyn
 import (
 	"context"
 
-	"github.com/databricks/databricks-sdk-go/service/postgres"
 	"github.com/databricks/cli/bundle/internal/tf/schema"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/databricks-sdk-go/service/postgres"
 )
 
 type postgresBranchConverter struct{}
