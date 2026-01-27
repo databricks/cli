@@ -1,0 +1,5 @@
+
+>>> [CLI] bundle plan
+delete secret_scopes.second
+
+Plan: 0 to add, 0 to change, 1 to delete, 1 unchanged
