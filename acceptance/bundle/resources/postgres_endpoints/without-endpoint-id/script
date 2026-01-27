@@ -1,0 +1,6 @@
+#!/bin/bash
+envsubst < databricks.yml.tmpl > databricks.yml
+
+trace $CLI bundle validate
+
+trace $CLI bundle deploy

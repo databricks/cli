@@ -1,0 +1,34 @@
+bundle:
+  name: deploy-postgres-endpoint-no-id-$UNIQUE_NAME
+
+sync:
+  exclude:
+    - "*"
+
+resources:
+  postgres_projects:
+    my_project:
+      project_id: test-pg-proj-$UNIQUE_NAME
+      spec:
+        display_name: "Test Project"
+        pg_version: 16
+        history_retention_duration: "7d"
+        default_endpoint_settings:
+          autoscaling_limit_min_cu: 0.5
+          autoscaling_limit_max_cu: 4
+          suspend_timeout_duration: "5m"
+
+  postgres_branches:
+    main:
+      parent: ${resources.postgres_projects.my_project.name}
+      branch_id: main
+      spec:
+        no_expiry: true
+
+  postgres_endpoints:
+    primary:
+      parent: ${resources.postgres_branches.main.name}
+      spec:
+        endpoint_type: ENDPOINT_TYPE_READ_WRITE
+        autoscaling_limit_min_cu: 0.5
+        autoscaling_limit_max_cu: 2

@@ -131,6 +131,10 @@ resources:
       - branch_id
       # parent (project name) is immutable
       - parent
+      # source_branch, source_branch_lsn, source_branch_time define the point-in-time data source (immutable)
+      - spec.source_branch
+      - spec.source_branch_lsn
+      - spec.source_branch_time
 
   postgres_endpoints:
     recreate_on_changes:

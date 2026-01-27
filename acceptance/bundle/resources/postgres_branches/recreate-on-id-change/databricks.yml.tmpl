@@ -1,0 +1,26 @@
+bundle:
+  name: deploy-postgres-branch-recreate-$UNIQUE_NAME
+
+sync:
+  exclude:
+    - "*"
+
+resources:
+  postgres_projects:
+    my_project:
+      project_id: test-pg-proj-$UNIQUE_NAME
+      spec:
+        display_name: "Test Project"
+        pg_version: 16
+        history_retention_duration: "7d"
+        default_endpoint_settings:
+          autoscaling_limit_min_cu: 0.5
+          autoscaling_limit_max_cu: 4
+          suspend_timeout_duration: "5m"
+
+  postgres_branches:
+    main:
+      parent: ${resources.postgres_projects.my_project.name}
+      branch_id: BRANCH_ID_PLACEHOLDER
+      spec:
+        no_expiry: true

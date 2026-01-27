@@ -1,0 +1,306 @@
+
+>>> cat databricks.yml
+bundle:
+  name: deploy-postgres-endpoint-recreate-[UNIQUE_NAME]
+
+sync:
+  exclude:
+    - "*"
+
+resources:
+  postgres_projects:
+    my_project:
+      project_id: test-pg-proj-[UNIQUE_NAME]
+      spec:
+        display_name: "Test Project"
+        pg_version: 16
+        history_retention_duration: "7d"
+        default_endpoint_settings:
+          autoscaling_limit_min_cu: 0.5
+          autoscaling_limit_max_cu: 4
+          suspend_timeout_duration: "5m"
+
+  postgres_branches:
+    main:
+      parent: ${resources.postgres_projects.my_project.name}
+      branch_id: main
+      spec:
+        no_expiry: true
+
+  postgres_endpoints:
+    my_endpoint:
+      parent: ${resources.postgres_branches.main.name}
+      endpoint_id: test-endpoint-[UNIQUE_NAME]
+      spec:
+        endpoint_type: ENDPOINT_TYPE_READ_WRITE
+        autoscaling_limit_min_cu: 0.5
+        autoscaling_limit_max_cu: 2
+
+>>> [CLI] bundle plan
+Warning: expected map, found string
+  at resources.postgres_projects.my_project.spec.history_retention_duration
+  in databricks.yml:15:37
+
+Warning: expected map, found string
+  at resources.postgres_projects.my_project.spec.default_endpoint_settings.suspend_timeout_duration
+  in databricks.yml:19:37
+
+create postgres_branches.main
+create postgres_endpoints.my_endpoint
+create postgres_projects.my_project
+
+Plan: 3 to add, 0 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy
+Warning: expected map, found string
+  at resources.postgres_projects.my_project.spec.history_retention_duration
+  in databricks.yml:15:37
+
+Warning: expected map, found string
+  at resources.postgres_projects.my_project.spec.default_endpoint_settings.suspend_timeout_duration
+  in databricks.yml:19:37
+
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-endpoint-recreate-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests
+{
+  "body": {
+    "spec": {
+      "default_endpoint_settings": {
+        "autoscaling_limit_max_cu": 4,
+        "autoscaling_limit_min_cu": 0.5
+      },
+      "display_name": "Test Project",
+      "pg_version": 16
+    }
+  },
+  "method": "POST",
+  "path": "/api/2.0/postgres/projects",
+  "q": {
+    "project_id": "test-pg-proj-[UNIQUE_NAME]"
+  }
+}
+{
+  "body": {
+    "parent": "projects/test-pg-proj-[UNIQUE_NAME]",
+    "spec": {
+      "no_expiry": true
+    }
+  },
+  "method": "POST",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches",
+  "q": {
+    "branch_id": "main"
+  }
+}
+{
+  "body": {
+    "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
+    "spec": {
+      "autoscaling_limit_max_cu": 2,
+      "autoscaling_limit_min_cu": 0.5,
+      "endpoint_type": "ENDPOINT_TYPE_READ_WRITE"
+    }
+  },
+  "method": "POST",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main/endpoints",
+  "q": {
+    "endpoint_id": "test-endpoint-[UNIQUE_NAME]"
+  }
+}
+
+>>> cat databricks.yml
+bundle:
+  name: deploy-postgres-endpoint-recreate-[UNIQUE_NAME]
+
+sync:
+  exclude:
+    - "*"
+
+resources:
+  postgres_projects:
+    my_project:
+      project_id: test-pg-proj-[UNIQUE_NAME]
+      spec:
+        display_name: "Test Project"
+        pg_version: 16
+        history_retention_duration: "7d"
+        default_endpoint_settings:
+          autoscaling_limit_min_cu: 0.5
+          autoscaling_limit_max_cu: 4
+          suspend_timeout_duration: "5m"
+
+  postgres_branches:
+    main:
+      parent: ${resources.postgres_projects.my_project.name}
+      branch_id: main
+      spec:
+        no_expiry: true
+
+  postgres_endpoints:
+    my_endpoint:
+      parent: ${resources.postgres_branches.main.name}
+      endpoint_id: test-endpoint-[UNIQUE_NAME]
+      spec:
+        endpoint_type: ENDPOINT_TYPE_READ_ONLY
+        autoscaling_limit_min_cu: 0.5
+        autoscaling_limit_max_cu: 2
+
+>>> [CLI] bundle plan
+Warning: expected map, found string
+  at resources.postgres_projects.my_project.spec.history_retention_duration
+  in databricks.yml:15:37
+
+Warning: expected map, found string
+  at resources.postgres_projects.my_project.spec.default_endpoint_settings.suspend_timeout_duration
+  in databricks.yml:19:37
+
+recreate postgres_branches.main
+recreate postgres_endpoints.my_endpoint
+recreate postgres_projects.my_project
+
+Plan: 3 to add, 0 to change, 3 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy --auto-approve
+Warning: expected map, found string
+  at resources.postgres_projects.my_project.spec.history_retention_duration
+  in databricks.yml:15:37
+
+Warning: expected map, found string
+  at resources.postgres_projects.my_project.spec.default_endpoint_settings.suspend_timeout_duration
+  in databricks.yml:19:37
+
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-endpoint-recreate-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests
+{
+  "method": "DELETE",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]"
+}
+{
+  "body": {
+    "spec": {
+      "default_endpoint_settings": {
+        "autoscaling_limit_max_cu": 4,
+        "autoscaling_limit_min_cu": 0.5
+      },
+      "display_name": "Test Project",
+      "pg_version": 16
+    }
+  },
+  "method": "POST",
+  "path": "/api/2.0/postgres/projects",
+  "q": {
+    "project_id": "test-pg-proj-[UNIQUE_NAME]"
+  }
+}
+{
+  "method": "DELETE",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main"
+}
+{
+  "body": {
+    "parent": "projects/test-pg-proj-[UNIQUE_NAME]",
+    "spec": {
+      "no_expiry": true
+    }
+  },
+  "method": "POST",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches",
+  "q": {
+    "branch_id": "main"
+  }
+}
+{
+  "method": "DELETE",
+  "path": "/api/2.0/postgres/[MY_ENDPOINT_ID]"
+}
+{
+  "body": {
+    "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
+    "spec": {
+      "autoscaling_limit_max_cu": 2,
+      "autoscaling_limit_min_cu": 0.5,
+      "endpoint_type": "ENDPOINT_TYPE_READ_ONLY"
+    }
+  },
+  "method": "POST",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main/endpoints",
+  "q": {
+    "endpoint_id": "test-endpoint-[UNIQUE_NAME]"
+  }
+}
+
+=== Fetch endpoint ID and verify it has the new type (READ_ONLY)
+>>> [CLI] postgres get-endpoint [MY_ENDPOINT_ID]
+Warning: expected map, found string
+  at resources.postgres_projects.my_project.spec.history_retention_duration
+  in databricks.yml:15:37
+
+Warning: expected map, found string
+  at resources.postgres_projects.my_project.spec.default_endpoint_settings.suspend_timeout_duration
+  in databricks.yml:19:37
+
+"ENDPOINT_TYPE_READ_ONLY"
+
+=== Destroy the endpoint and verify that it's removed from the state and from remote
+>>> [CLI] bundle destroy --auto-approve
+Warning: expected map, found string
+  at resources.postgres_projects.my_project.spec.history_retention_duration
+  in databricks.yml:15:37
+
+Warning: expected map, found string
+  at resources.postgres_projects.my_project.spec.default_endpoint_settings.suspend_timeout_duration
+  in databricks.yml:19:37
+
+The following resources will be deleted:
+  delete resources.postgres_branches.main
+  delete resources.postgres_endpoints.my_endpoint
+  delete resources.postgres_projects.my_project
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-endpoint-recreate-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!
+
+>>> print_requests
+{
+  "method": "DELETE",
+  "path": "/api/2.0/postgres/[MY_ENDPOINT_ID]"
+}
+{
+  "method": "DELETE",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main"
+}
+{
+  "method": "DELETE",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]"
+}
+
+>>> musterr [CLI] postgres get-endpoint [MY_ENDPOINT_ID]
+Warning: expected map, found string
+  at resources.postgres_projects.my_project.spec.history_retention_duration
+  in databricks.yml:15:37
+
+Warning: expected map, found string
+  at resources.postgres_projects.my_project.spec.default_endpoint_settings.suspend_timeout_duration
+  in databricks.yml:19:37
+
+Error: project id not found [TraceId: [TRACE_ID]]
+
+>>> [CLI] bundle destroy --auto-approve
+Warning: expected map, found string
+  at resources.postgres_projects.my_project.spec.history_retention_duration
+  in databricks.yml:15:37
+
+Warning: expected map, found string
+  at resources.postgres_projects.my_project.spec.default_endpoint_settings.suspend_timeout_duration
+  in databricks.yml:19:37
+
+No active deployment found to destroy!

@@ -1,0 +1,55 @@
+#!/bin/bash
+
+# Cleanup function to delete both branches
+cleanup() {
+   # Try to delete with current config
+   trace $CLI bundle destroy --auto-approve
+
+   # Also try to delete the old branch directly in case it wasn't cleaned up
+   $CLI postgres delete-branch "projects/test-pg-proj-${UNIQUE_NAME}/branches/old-branch-${UNIQUE_NAME}" 2>/dev/null || true
+}
+trap cleanup EXIT
+
+# Deploy with first branch_id
+envsubst < databricks.yml.tmpl | sed "s/BRANCH_ID_PLACEHOLDER/old-branch-${UNIQUE_NAME}/" > databricks.yml
+
+trace cat databricks.yml
+
+trace $CLI bundle plan
+rm -f out.requests.txt
+trace $CLI bundle deploy
+
+branch_id_1=`read_id.py main`
+
+print_requests() {
+    jq --sort-keys 'select(.method != "GET" and (.path | contains("/postgres")))' < out.requests.txt
+    rm -f out.requests.txt
+}
+
+trace print_requests
+
+# Change branch_id (should trigger recreation)
+sed "s/old-branch-${UNIQUE_NAME}/new-branch-${UNIQUE_NAME}/" databricks.yml > databricks.yml.new
+mv databricks.yml.new databricks.yml
+
+trace cat databricks.yml
+
+trace $CLI bundle plan
+trace $CLI bundle deploy --auto-approve
+
+trace print_requests
+
+title "Fetch new branch ID and verify remote state"
+
+branch_id_2=`read_id.py main`
+trace $CLI postgres get-branch $branch_id_2 | jq 'del(.create_time, .update_time)'
+
+title "Verify that original branch is gone"
+trace musterr $CLI postgres get-branch $branch_id_1
+
+title "Destroy the branch and verify that it's removed from the state and from remote"
+trace $CLI bundle destroy --auto-approve
+
+trace print_requests
+trace musterr $CLI postgres get-branch $branch_id_2
+rm -f out.requests.txt
