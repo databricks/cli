@@ -1,12 +1,12 @@
 
 >>> [CLI] bundle validate
 Warning: expected map, found string
-  at resources.postgres_projects.my_project.spec.history_retention_duration
-  in databricks.yml:15:37
+  at resources.postgres_projects.my_project.history_retention_duration
+  in databricks.yml:14:35
 
 Warning: expected map, found string
-  at resources.postgres_projects.my_project.spec.default_endpoint_settings.suspend_timeout_duration
-  in databricks.yml:19:37
+  at resources.postgres_projects.my_project.default_endpoint_settings.suspend_timeout_duration
+  in databricks.yml:18:35
 
 Warning: There are no files to sync, please check your .gitignore and sync.exclude configuration
   at sync.exclude
@@ -22,12 +22,12 @@ Found 3 warnings
 
 >>> [CLI] bundle summary
 Warning: expected map, found string
-  at resources.postgres_projects.my_project.spec.history_retention_duration
-  in databricks.yml:15:37
+  at resources.postgres_projects.my_project.history_retention_duration
+  in databricks.yml:14:35
 
 Warning: expected map, found string
-  at resources.postgres_projects.my_project.spec.default_endpoint_settings.suspend_timeout_duration
-  in databricks.yml:19:37
+  at resources.postgres_projects.my_project.default_endpoint_settings.suspend_timeout_duration
+  in databricks.yml:18:35
 
 Name: deploy-postgres-single-project-[UNIQUE_NAME]
 Target: default
@@ -42,12 +42,12 @@ Resources:
 
 >>> [CLI] bundle deploy
 Warning: expected map, found string
-  at resources.postgres_projects.my_project.spec.history_retention_duration
-  in databricks.yml:15:37
+  at resources.postgres_projects.my_project.history_retention_duration
+  in databricks.yml:14:35
 
 Warning: expected map, found string
-  at resources.postgres_projects.my_project.spec.default_endpoint_settings.suspend_timeout_duration
-  in databricks.yml:19:37
+  at resources.postgres_projects.my_project.default_endpoint_settings.suspend_timeout_duration
+  in databricks.yml:18:35
 
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-single-project-[UNIQUE_NAME]/default/files...
 Deploying resources...
@@ -56,12 +56,12 @@ Deployment complete!
 
 >>> [CLI] postgres get-project projects/test-pg-proj-[UNIQUE_NAME]
 Warning: expected map, found string
-  at resources.postgres_projects.my_project.spec.history_retention_duration
-  in databricks.yml:15:37
+  at resources.postgres_projects.my_project.history_retention_duration
+  in databricks.yml:14:35
 
 Warning: expected map, found string
-  at resources.postgres_projects.my_project.spec.default_endpoint_settings.suspend_timeout_duration
-  in databricks.yml:19:37
+  at resources.postgres_projects.my_project.default_endpoint_settings.suspend_timeout_duration
+  in databricks.yml:18:35
 
 {
   "name": "projects/test-pg-proj-[UNIQUE_NAME]",
@@ -83,12 +83,12 @@ Warning: expected map, found string
 
 >>> [CLI] bundle summary
 Warning: expected map, found string
-  at resources.postgres_projects.my_project.spec.history_retention_duration
-  in databricks.yml:15:37
+  at resources.postgres_projects.my_project.history_retention_duration
+  in databricks.yml:14:35
 
 Warning: expected map, found string
-  at resources.postgres_projects.my_project.spec.default_endpoint_settings.suspend_timeout_duration
-  in databricks.yml:19:37
+  at resources.postgres_projects.my_project.default_endpoint_settings.suspend_timeout_duration
+  in databricks.yml:18:35
 
 Name: deploy-postgres-single-project-[UNIQUE_NAME]
 Target: default
@@ -105,12 +105,12 @@ Resources:
 
 >>> [CLI] bundle destroy --auto-approve
 Warning: expected map, found string
-  at resources.postgres_projects.my_project.spec.history_retention_duration
-  in databricks.yml:15:37
+  at resources.postgres_projects.my_project.history_retention_duration
+  in databricks.yml:14:35
 
 Warning: expected map, found string
-  at resources.postgres_projects.my_project.spec.default_endpoint_settings.suspend_timeout_duration
-  in databricks.yml:19:37
+  at resources.postgres_projects.my_project.default_endpoint_settings.suspend_timeout_duration
+  in databricks.yml:18:35
 
 The following resources will be deleted:
   delete resources.postgres_projects.my_project

@@ -26,7 +26,11 @@ func (*ResourcePostgresBranch) New(client *databricks.WorkspaceClient) *Resource
 
 func (*ResourcePostgresBranch) PrepareState(input *resources.PostgresBranch) *PostgresBranchState {
 	return &PostgresBranchState{
-		Branch:   input.Branch,
+		Branch: postgres.Branch{
+			Name:   input.Name,
+			Parent: input.Parent,
+			Spec:   &input.BranchSpec,
+		},
 		BranchId: input.BranchId,
 	}
 }

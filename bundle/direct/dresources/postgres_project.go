@@ -26,7 +26,10 @@ func (*ResourcePostgresProject) New(client *databricks.WorkspaceClient) *Resourc
 
 func (*ResourcePostgresProject) PrepareState(input *resources.PostgresProject) *PostgresProjectState {
 	return &PostgresProjectState{
-		Project:   input.Project,
+		Project: postgres.Project{
+			Name: input.Name,
+			Spec: &input.ProjectSpec,
+		},
 		ProjectId: input.ProjectId,
 	}
 }

@@ -11,23 +11,22 @@ resources:
   postgres_projects:
     my_project:
       project_id: test-pg-old-[UNIQUE_NAME]
-      spec:
-        display_name: "Test Recreate"
-        pg_version: 16
-        history_retention_duration: "7d"
-        default_endpoint_settings:
-          autoscaling_limit_min_cu: 0.5
-          autoscaling_limit_max_cu: 4
-          suspend_timeout_duration: "5m"
+      display_name: "Test Recreate"
+      pg_version: 16
+      history_retention_duration: "7d"
+      default_endpoint_settings:
+        autoscaling_limit_min_cu: 0.5
+        autoscaling_limit_max_cu: 4
+        suspend_timeout_duration: "5m"
 
 >>> [CLI] bundle plan
 Warning: expected map, found string
-  at resources.postgres_projects.my_project.spec.history_retention_duration
-  in databricks.yml:15:37
+  at resources.postgres_projects.my_project.history_retention_duration
+  in databricks.yml:14:35
 
 Warning: expected map, found string
-  at resources.postgres_projects.my_project.spec.default_endpoint_settings.suspend_timeout_duration
-  in databricks.yml:19:37
+  at resources.postgres_projects.my_project.default_endpoint_settings.suspend_timeout_duration
+  in databricks.yml:18:35
 
 create postgres_projects.my_project
 
@@ -35,12 +34,12 @@ Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy
 Warning: expected map, found string
-  at resources.postgres_projects.my_project.spec.history_retention_duration
-  in databricks.yml:15:37
+  at resources.postgres_projects.my_project.history_retention_duration
+  in databricks.yml:14:35
 
 Warning: expected map, found string
-  at resources.postgres_projects.my_project.spec.default_endpoint_settings.suspend_timeout_duration
-  in databricks.yml:19:37
+  at resources.postgres_projects.my_project.default_endpoint_settings.suspend_timeout_duration
+  in databricks.yml:18:35
 
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-recreate-[UNIQUE_NAME]/default/files...
 Deploying resources...
@@ -78,23 +77,22 @@ resources:
   postgres_projects:
     my_project:
       project_id: test-pg-new-[UNIQUE_NAME]
-      spec:
-        display_name: "Test Recreate"
-        pg_version: 16
-        history_retention_duration: "7d"
-        default_endpoint_settings:
-          autoscaling_limit_min_cu: 0.5
-          autoscaling_limit_max_cu: 4
-          suspend_timeout_duration: "5m"
+      display_name: "Test Recreate"
+      pg_version: 16
+      history_retention_duration: "7d"
+      default_endpoint_settings:
+        autoscaling_limit_min_cu: 0.5
+        autoscaling_limit_max_cu: 4
+        suspend_timeout_duration: "5m"
 
 >>> [CLI] bundle plan
 Warning: expected map, found string
-  at resources.postgres_projects.my_project.spec.history_retention_duration
-  in databricks.yml:15:37
+  at resources.postgres_projects.my_project.history_retention_duration
+  in databricks.yml:14:35
 
 Warning: expected map, found string
-  at resources.postgres_projects.my_project.spec.default_endpoint_settings.suspend_timeout_duration
-  in databricks.yml:19:37
+  at resources.postgres_projects.my_project.default_endpoint_settings.suspend_timeout_duration
+  in databricks.yml:18:35
 
 recreate postgres_projects.my_project
 
@@ -102,12 +100,12 @@ Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged
 
 >>> [CLI] bundle deploy --auto-approve
 Warning: expected map, found string
-  at resources.postgres_projects.my_project.spec.history_retention_duration
-  in databricks.yml:15:37
+  at resources.postgres_projects.my_project.history_retention_duration
+  in databricks.yml:14:35
 
 Warning: expected map, found string
-  at resources.postgres_projects.my_project.spec.default_endpoint_settings.suspend_timeout_duration
-  in databricks.yml:19:37
+  at resources.postgres_projects.my_project.default_endpoint_settings.suspend_timeout_duration
+  in databricks.yml:18:35
 
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-recreate-[UNIQUE_NAME]/default/files...
 Deploying resources...
@@ -140,12 +138,12 @@ Deployment complete!
 === Fetch new project ID and verify remote state
 >>> [CLI] postgres get-project [MY_PROJECT_ID_2]
 Warning: expected map, found string
-  at resources.postgres_projects.my_project.spec.history_retention_duration
-  in databricks.yml:15:37
+  at resources.postgres_projects.my_project.history_retention_duration
+  in databricks.yml:14:35
 
 Warning: expected map, found string
-  at resources.postgres_projects.my_project.spec.default_endpoint_settings.suspend_timeout_duration
-  in databricks.yml:19:37
+  at resources.postgres_projects.my_project.default_endpoint_settings.suspend_timeout_duration
+  in databricks.yml:18:35
 
 {
   "create_time":"[TIMESTAMP]",
@@ -170,24 +168,24 @@ Warning: expected map, found string
 === Verify that original project is gone
 >>> musterr [CLI] postgres get-project [MY_PROJECT_ID]
 Warning: expected map, found string
-  at resources.postgres_projects.my_project.spec.history_retention_duration
-  in databricks.yml:15:37
+  at resources.postgres_projects.my_project.history_retention_duration
+  in databricks.yml:14:35
 
 Warning: expected map, found string
-  at resources.postgres_projects.my_project.spec.default_endpoint_settings.suspend_timeout_duration
-  in databricks.yml:19:37
+  at resources.postgres_projects.my_project.default_endpoint_settings.suspend_timeout_duration
+  in databricks.yml:18:35
 
 Error: project id not found [TraceId: [TRACE_ID]]
 
 === Destroy the project and verify that it's removed from the state and from remote
 >>> [CLI] bundle destroy --auto-approve
 Warning: expected map, found string
-  at resources.postgres_projects.my_project.spec.history_retention_duration
-  in databricks.yml:15:37
+  at resources.postgres_projects.my_project.history_retention_duration
+  in databricks.yml:14:35
 
 Warning: expected map, found string
-  at resources.postgres_projects.my_project.spec.default_endpoint_settings.suspend_timeout_duration
-  in databricks.yml:19:37
+  at resources.postgres_projects.my_project.default_endpoint_settings.suspend_timeout_duration
+  in databricks.yml:18:35
 
 The following resources will be deleted:
   delete resources.postgres_projects.my_project
@@ -205,22 +203,22 @@ Destroy complete!
 
 >>> musterr [CLI] postgres get-project [MY_PROJECT_ID_2]
 Warning: expected map, found string
-  at resources.postgres_projects.my_project.spec.history_retention_duration
-  in databricks.yml:15:37
+  at resources.postgres_projects.my_project.history_retention_duration
+  in databricks.yml:14:35
 
 Warning: expected map, found string
-  at resources.postgres_projects.my_project.spec.default_endpoint_settings.suspend_timeout_duration
-  in databricks.yml:19:37
+  at resources.postgres_projects.my_project.default_endpoint_settings.suspend_timeout_duration
+  in databricks.yml:18:35
 
 Error: project id not found [TraceId: [TRACE_ID]]
 
 >>> [CLI] bundle destroy --auto-approve
 Warning: expected map, found string
-  at resources.postgres_projects.my_project.spec.history_retention_duration
-  in databricks.yml:15:37
+  at resources.postgres_projects.my_project.history_retention_duration
+  in databricks.yml:14:35
 
 Warning: expected map, found string
-  at resources.postgres_projects.my_project.spec.default_endpoint_settings.suspend_timeout_duration
-  in databricks.yml:19:37
+  at resources.postgres_projects.my_project.default_endpoint_settings.suspend_timeout_duration
+  in databricks.yml:18:35
 
 No active deployment found to destroy!

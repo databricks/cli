@@ -26,7 +26,11 @@ func (*ResourcePostgresEndpoint) New(client *databricks.WorkspaceClient) *Resour
 
 func (*ResourcePostgresEndpoint) PrepareState(input *resources.PostgresEndpoint) *PostgresEndpointState {
 	return &PostgresEndpointState{
-		Endpoint:   input.Endpoint,
+		Endpoint: postgres.Endpoint{
+			Name:   input.Name,
+			Parent: input.Parent,
+			Spec:   &input.EndpointSpec,
+		},
 		EndpointId: input.EndpointId,
 	}
 }

@@ -12,11 +12,17 @@ import (
 
 type PostgresEndpoint struct {
 	BaseResource
-	postgres.Endpoint
+	postgres.EndpointSpec
+
+	// Parent is the branch containing this endpoint. Format: "projects/{project_id}/branches/{branch_id}"
+	Parent string `json:"parent,omitempty"`
 
 	// EndpointId is the user-specified ID for the endpoint (becomes part of the hierarchical name).
 	// This is specified during creation and becomes part of Name: "projects/{project_id}/branches/{branch_id}/endpoints/{endpoint_id}"
 	EndpointId string `json:"endpoint_id,omitempty"`
+
+	// Name is the hierarchical resource name (output-only). Format: "projects/{project_id}/branches/{branch_id}/endpoints/{endpoint_id}"
+	Name string `json:"name,omitempty" bundle:"readonly"`
 
 	// TODO: Enable when PostgresEndpointPermission is defined in Task 6
 	// Permissions []PostgresEndpointPermission `json:"permissions,omitempty"`

@@ -12,11 +12,14 @@ import (
 
 type PostgresProject struct {
 	BaseResource
-	postgres.Project
+	postgres.ProjectSpec
 
 	// ProjectId is the user-specified ID for the project (becomes part of the hierarchical name).
 	// This is specified during creation and becomes part of Name: "projects/{project_id}"
 	ProjectId string `json:"project_id,omitempty"`
+
+	// Name is the hierarchical resource name (output-only). Format: "projects/{project_id}"
+	Name string `json:"name,omitempty" bundle:"readonly"`
 
 	// TODO: Enable when PostgresProjectPermission is defined in Task 6
 	// Permissions []PostgresProjectPermission `json:"permissions,omitempty"`
@@ -41,15 +44,8 @@ func (p *PostgresProject) ResourceDescription() ResourceDescription {
 }
 
 func (p *PostgresProject) GetName() string {
-	// Use display_name from spec if set
-	if p.Spec != nil && p.Spec.DisplayName != "" {
-		return p.Spec.DisplayName
-	}
-	// Use display_name from status if set (after deployment)
-	if p.Status != nil && p.Status.DisplayName != "" {
-		return p.Status.DisplayName
-	}
-	return ""
+	// Return display_name directly (now embedded from ProjectSpec)
+	return p.DisplayName
 }
 
 func (p *PostgresProject) GetURL() string {

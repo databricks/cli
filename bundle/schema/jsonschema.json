@@ -1494,29 +1494,32 @@
                       "branch_id": {
                         "$ref": "#/$defs/string"
                       },
-                      "create_time": {
+                      "expire_time": {
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/time.Time"
+                      },
+                      "is_protected": {
+                        "$ref": "#/$defs/bool"
                       },
                       "lifecycle": {
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
-                      "name": {
-                        "$ref": "#/$defs/string"
+                      "no_expiry": {
+                        "$ref": "#/$defs/bool"
                       },
                       "parent": {
                         "$ref": "#/$defs/string"
                       },
-                      "spec": {
-                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.BranchSpec"
-                      },
-                      "status": {
-                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.BranchStatus"
-                      },
-                      "uid": {
+                      "source_branch": {
                         "$ref": "#/$defs/string"
                       },
-                      "update_time": {
+                      "source_branch_lsn": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "source_branch_time": {
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/time.Time"
+                      },
+                      "ttl": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/duration.Duration"
                       }
                     },
                     "additionalProperties": false
@@ -1532,35 +1535,41 @@
                   {
                     "type": "object",
                     "properties": {
-                      "create_time": {
-                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/time.Time"
+                      "autoscaling_limit_max_cu": {
+                        "$ref": "#/$defs/float64"
+                      },
+                      "autoscaling_limit_min_cu": {
+                        "$ref": "#/$defs/float64"
+                      },
+                      "disabled": {
+                        "$ref": "#/$defs/bool"
                       },
                       "endpoint_id": {
                         "$ref": "#/$defs/string"
                       },
+                      "endpoint_type": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.EndpointType"
+                      },
                       "lifecycle": {
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
-                      "name": {
-                        "$ref": "#/$defs/string"
+                      "no_suspension": {
+                        "$ref": "#/$defs/bool"
                       },
                       "parent": {
                         "$ref": "#/$defs/string"
                       },
-                      "spec": {
-                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.EndpointSpec"
+                      "settings": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.EndpointSettings"
                       },
-                      "status": {
-                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.EndpointStatus"
-                      },
-                      "uid": {
-                        "$ref": "#/$defs/string"
-                      },
-                      "update_time": {
-                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/time.Time"
+                      "suspend_timeout_duration": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/duration.Duration"
                       }
                     },
-                    "additionalProperties": false
+                    "additionalProperties": false,
+                    "required": [
+                      "endpoint_type"
+                    ]
                   },
                   {
                     "type": "string",
@@ -1573,29 +1582,23 @@
                   {
                     "type": "object",
                     "properties": {
-                      "create_time": {
-                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/time.Time"
+                      "default_endpoint_settings": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.ProjectDefaultEndpointSettings"
+                      },
+                      "display_name": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "history_retention_duration": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/duration.Duration"
                       },
                       "lifecycle": {
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                       },
-                      "name": {
-                        "$ref": "#/$defs/string"
+                      "pg_version": {
+                        "$ref": "#/$defs/int"
                       },
                       "project_id": {
                         "$ref": "#/$defs/string"
-                      },
-                      "spec": {
-                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.ProjectSpec"
-                      },
-                      "status": {
-                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.ProjectStatus"
-                      },
-                      "uid": {
-                        "$ref": "#/$defs/string"
-                      },
-                      "update_time": {
-                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/time.Time"
                       }
                     },
                     "additionalProperties": false
@@ -8432,105 +8435,6 @@
                 }
               ]
             },
-            "postgres.BranchSpec": {
-              "oneOf": [
-                {
-                  "type": "object",
-                  "properties": {
-                    "expire_time": {
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/time.Time"
-                    },
-                    "is_protected": {
-                      "$ref": "#/$defs/bool"
-                    },
-                    "no_expiry": {
-                      "$ref": "#/$defs/bool"
-                    },
-                    "source_branch": {
-                      "$ref": "#/$defs/string"
-                    },
-                    "source_branch_lsn": {
-                      "$ref": "#/$defs/string"
-                    },
-                    "source_branch_time": {
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/time.Time"
-                    },
-                    "ttl": {
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/duration.Duration"
-                    }
-                  },
-                  "additionalProperties": false
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
-                }
-              ]
-            },
-            "postgres.BranchStatus": {
-              "oneOf": [
-                {
-                  "type": "object",
-                  "properties": {
-                    "current_state": {
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.BranchStatusState"
-                    },
-                    "default": {
-                      "$ref": "#/$defs/bool"
-                    },
-                    "expire_time": {
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/time.Time"
-                    },
-                    "is_protected": {
-                      "$ref": "#/$defs/bool"
-                    },
-                    "logical_size_bytes": {
-                      "$ref": "#/$defs/int64"
-                    },
-                    "pending_state": {
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.BranchStatusState"
-                    },
-                    "source_branch": {
-                      "$ref": "#/$defs/string"
-                    },
-                    "source_branch_lsn": {
-                      "$ref": "#/$defs/string"
-                    },
-                    "source_branch_time": {
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/time.Time"
-                    },
-                    "state_change_time": {
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/time.Time"
-                    }
-                  },
-                  "additionalProperties": false
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
-                }
-              ]
-            },
-            "postgres.BranchStatusState": {
-              "type": "string"
-            },
-            "postgres.EndpointHosts": {
-              "oneOf": [
-                {
-                  "type": "object",
-                  "properties": {
-                    "host": {
-                      "$ref": "#/$defs/string"
-                    }
-                  },
-                  "additionalProperties": false
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
-                }
-              ]
-            },
             "postgres.EndpointSettings": {
               "oneOf": [
                 {
@@ -8547,88 +8451,6 @@
                   "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
                 }
               ]
-            },
-            "postgres.EndpointSpec": {
-              "oneOf": [
-                {
-                  "type": "object",
-                  "properties": {
-                    "autoscaling_limit_max_cu": {
-                      "$ref": "#/$defs/float64"
-                    },
-                    "autoscaling_limit_min_cu": {
-                      "$ref": "#/$defs/float64"
-                    },
-                    "disabled": {
-                      "$ref": "#/$defs/bool"
-                    },
-                    "endpoint_type": {
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.EndpointType"
-                    },
-                    "no_suspension": {
-                      "$ref": "#/$defs/bool"
-                    },
-                    "settings": {
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.EndpointSettings"
-                    },
-                    "suspend_timeout_duration": {
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/duration.Duration"
-                    }
-                  },
-                  "additionalProperties": false,
-                  "required": [
-                    "endpoint_type"
-                  ]
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
-                }
-              ]
-            },
-            "postgres.EndpointStatus": {
-              "oneOf": [
-                {
-                  "type": "object",
-                  "properties": {
-                    "autoscaling_limit_max_cu": {
-                      "$ref": "#/$defs/float64"
-                    },
-                    "autoscaling_limit_min_cu": {
-                      "$ref": "#/$defs/float64"
-                    },
-                    "current_state": {
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.EndpointStatusState"
-                    },
-                    "disabled": {
-                      "$ref": "#/$defs/bool"
-                    },
-                    "endpoint_type": {
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.EndpointType"
-                    },
-                    "hosts": {
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.EndpointHosts"
-                    },
-                    "pending_state": {
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.EndpointStatusState"
-                    },
-                    "settings": {
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.EndpointSettings"
-                    },
-                    "suspend_timeout_duration": {
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/duration.Duration"
-                    }
-                  },
-                  "additionalProperties": false
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
-                }
-              ]
-            },
-            "postgres.EndpointStatusState": {
-              "type": "string"
             },
             "postgres.EndpointType": {
               "type": "string"
@@ -8652,67 +8474,6 @@
                     },
                     "suspend_timeout_duration": {
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/duration.Duration"
-                    }
-                  },
-                  "additionalProperties": false
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
-                }
-              ]
-            },
-            "postgres.ProjectSpec": {
-              "oneOf": [
-                {
-                  "type": "object",
-                  "properties": {
-                    "default_endpoint_settings": {
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.ProjectDefaultEndpointSettings"
-                    },
-                    "display_name": {
-                      "$ref": "#/$defs/string"
-                    },
-                    "history_retention_duration": {
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/duration.Duration"
-                    },
-                    "pg_version": {
-                      "$ref": "#/$defs/int"
-                    }
-                  },
-                  "additionalProperties": false
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
-                }
-              ]
-            },
-            "postgres.ProjectStatus": {
-              "oneOf": [
-                {
-                  "type": "object",
-                  "properties": {
-                    "branch_logical_size_limit_bytes": {
-                      "$ref": "#/$defs/int64"
-                    },
-                    "default_endpoint_settings": {
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.ProjectDefaultEndpointSettings"
-                    },
-                    "display_name": {
-                      "$ref": "#/$defs/string"
-                    },
-                    "history_retention_duration": {
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/duration.Duration"
-                    },
-                    "owner": {
-                      "$ref": "#/$defs/string"
-                    },
-                    "pg_version": {
-                      "$ref": "#/$defs/int"
-                    },
-                    "synthetic_storage_size_bytes": {
-                      "$ref": "#/$defs/int64"
                     }
                   },
                   "additionalProperties": false

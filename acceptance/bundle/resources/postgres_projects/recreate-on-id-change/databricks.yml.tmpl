@@ -9,11 +9,10 @@ resources:
   postgres_projects:
     my_project:
       project_id: PROJECT_ID_PLACEHOLDER
-      spec:
-        display_name: "Test Recreate"
-        pg_version: 16
-        history_retention_duration: "7d"
-        default_endpoint_settings:
-          autoscaling_limit_min_cu: 0.5
-          autoscaling_limit_max_cu: 4
-          suspend_timeout_duration: "5m"
+      display_name: "Test Recreate"
+      pg_version: 16
+      history_retention_duration: "7d"
+      default_endpoint_settings:
+        autoscaling_limit_min_cu: 0.5
+        autoscaling_limit_max_cu: 4
+        suspend_timeout_duration: "5m"

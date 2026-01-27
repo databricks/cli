@@ -9,27 +9,24 @@ resources:
   postgres_projects:
     my_project:
       project_id: test-pg-proj-$UNIQUE_NAME
-      spec:
-        display_name: "Test Project"
-        pg_version: 16
-        history_retention_duration: "7d"
-        default_endpoint_settings:
-          autoscaling_limit_min_cu: 0.5
-          autoscaling_limit_max_cu: 4
-          suspend_timeout_duration: "5m"
+      display_name: "Test Project"
+      pg_version: 16
+      history_retention_duration: "7d"
+      default_endpoint_settings:
+        autoscaling_limit_min_cu: 0.5
+        autoscaling_limit_max_cu: 4
+        suspend_timeout_duration: "5m"
 
   postgres_branches:
     main:
       parent: ${resources.postgres_projects.my_project.name}
       branch_id: main
-      spec:
-        no_expiry: true
+      no_expiry: true
 
   postgres_endpoints:
     my_endpoint:
       parent: ${resources.postgres_branches.main.name}
       endpoint_id: test-endpoint-$UNIQUE_NAME
-      spec:
-        endpoint_type: ENDPOINT_TYPE_PLACEHOLDER
-        autoscaling_limit_min_cu: 0.5
-        autoscaling_limit_max_cu: 2
+      endpoint_type: ENDPOINT_TYPE_PLACEHOLDER
+      autoscaling_limit_min_cu: 0.5
+      autoscaling_limit_max_cu: 2

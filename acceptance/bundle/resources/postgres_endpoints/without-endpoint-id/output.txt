@@ -1,12 +1,12 @@
 
 >>> [CLI] bundle validate
 Warning: expected map, found string
-  at resources.postgres_projects.my_project.spec.history_retention_duration
-  in databricks.yml:15:37
+  at resources.postgres_projects.my_project.history_retention_duration
+  in databricks.yml:14:35
 
 Warning: expected map, found string
-  at resources.postgres_projects.my_project.spec.default_endpoint_settings.suspend_timeout_duration
-  in databricks.yml:19:37
+  at resources.postgres_projects.my_project.default_endpoint_settings.suspend_timeout_duration
+  in databricks.yml:18:35
 
 Warning: There are no files to sync, please check your .gitignore and sync.exclude configuration
   at sync.exclude
@@ -22,12 +22,12 @@ Found 3 warnings
 
 >>> [CLI] bundle deploy
 Warning: expected map, found string
-  at resources.postgres_projects.my_project.spec.history_retention_duration
-  in databricks.yml:15:37
+  at resources.postgres_projects.my_project.history_retention_duration
+  in databricks.yml:14:35
 
 Warning: expected map, found string
-  at resources.postgres_projects.my_project.spec.default_endpoint_settings.suspend_timeout_duration
-  in databricks.yml:19:37
+  at resources.postgres_projects.my_project.default_endpoint_settings.suspend_timeout_duration
+  in databricks.yml:18:35
 
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-endpoint-no-id-[UNIQUE_NAME]/default/files...
 Deploying resources...
