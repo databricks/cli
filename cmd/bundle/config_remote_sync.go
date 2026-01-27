@@ -18,11 +18,13 @@ func newConfigRemoteSyncCommand() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "config-remote-sync",
-		Short: "Sync remote resource changes to bundle configuration (experimental)",
-		Long: `Compares deployed state with current remote state and generates updated configuration files.
+		Short: "[EXPERIMENTAL] Sync remote resource changes to bundle configuration",
+		Long: `[EXPERIMENTAL] Compares deployed state with current remote state and generates updated configuration files.
 
 When --save is specified, writes updated YAML files to disk.
 Otherwise, outputs diff without modifying files.
+
+IMPORTANT: This is an experimental feature and is subject to change. Windows is not yet supported.
 
 Examples:
   # Show diff without saving
