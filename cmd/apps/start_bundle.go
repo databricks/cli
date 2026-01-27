@@ -45,9 +45,9 @@ func BundleStartOverrideWithWrapper(wrapError ErrorWrapper) func(*cobra.Command,
 
 						var appInfo *apps.App
 						if shouldWaitForCompletion(cmd) {
-							spinner := cmdio.Spinner(ctx)
+							spinner := cmdio.NewSpinner(ctx)
 							appInfo, err = wait.OnProgress(createAppProgressCallback(spinner)).GetWithTimeout(getWaitTimeout(cmd))
-							close(spinner)
+							spinner.Close()
 							if err != nil {
 								return wrapError(cmd, appName, err)
 							}
