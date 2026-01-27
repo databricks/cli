@@ -19,6 +19,12 @@ resources:
       description: {{.AppDescription}}
 {{- end}}
       source_code_path: ./
+{{- if .UserAPIScopes}}
+      user_api_scopes:
+{{- range .UserAPIScopes}}
+        - {{.}}
+{{- end}}
+{{- end}}
 {{- if .ResourceBindings}}
       resources:
 {{.ResourceBindings}}
