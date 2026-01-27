@@ -297,12 +297,36 @@ func installAllSkills(ctx context.Context) error {
 		return err
 	}
 
+	// detect agents once for all skills
+	detectedAgents := agents.DetectInstalled()
+	if len(detectedAgents) == 0 {
+		printNoAgentsDetected(ctx)
+		return nil
+	}
+
+	printDetectedAgents(ctx, detectedAgents)
+
 	for name := range manifest.Skills {
-		if err := installSkill(ctx, name); err != nil {
+		if err := installSkillForAgents(ctx, name, detectedAgents); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+func printNoAgentsDetected(ctx context.Context) {
+	cmdio.LogString(ctx, color.YellowString("No supported coding agents detected."))
+	cmdio.LogString(ctx, "")
+	cmdio.LogString(ctx, "Supported agents: Claude Code, Cursor, Codex CLI, OpenCode, GitHub Copilot, Antigravity")
+	cmdio.LogString(ctx, "Please install at least one coding agent first.")
+}
+
+func printDetectedAgents(ctx context.Context, detectedAgents []*agents.Agent) {
+	cmdio.LogString(ctx, "Detected coding agents:")
+	for _, agent := range detectedAgents {
+		cmdio.LogString(ctx, "  - "+agent.DisplayName)
+	}
+	cmdio.LogString(ctx, "")
 }
 
 func installSkill(ctx context.Context, skillName string) error {
@@ -315,23 +339,18 @@ func installSkill(ctx context.Context, skillName string) error {
 		return fmt.Errorf("skill %q not found", skillName)
 	}
 
-	// detect installed agents using shared registry
 	detectedAgents := agents.DetectInstalled()
 	if len(detectedAgents) == 0 {
-		cmdio.LogString(ctx, color.YellowString("No supported coding agents detected."))
-		cmdio.LogString(ctx, "")
-		cmdio.LogString(ctx, "Supported agents: Claude Code, Cursor, Codex CLI, OpenCode, GitHub Copilot, Antigravity")
-		cmdio.LogString(ctx, "Please install at least one coding agent first.")
+		printNoAgentsDetected(ctx)
 		return nil
 	}
 
-	// print detected agents
-	cmdio.LogString(ctx, "Detected coding agents:")
-	for _, agent := range detectedAgents {
-		cmdio.LogString(ctx, "  - "+agent.DisplayName)
-	}
-	cmdio.LogString(ctx, "")
+	printDetectedAgents(ctx, detectedAgents)
 
+	return installSkillForAgents(ctx, skillName, detectedAgents)
+}
+
+func installSkillForAgents(ctx context.Context, skillName string, detectedAgents []*agents.Agent) error {
 	// get list of files in skill
 	files, err := fetchSkillFileList(ctx, skillName)
 	if err != nil {
