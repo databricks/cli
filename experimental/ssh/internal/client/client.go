@@ -26,6 +26,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/retries"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
@@ -391,34 +392,8 @@ func submitSSHTunnelJob(ctx context.Context, client *databricks.WorkspaceClient,
 	}
 
 	cmdio.LogString(ctx, fmt.Sprintf("Job submitted successfully with run ID: %d", waiter.RunId))
-	cmdio.LogString(ctx, "Waiting for the SSH server task to start...")
-	var prevState jobs.RunLifeCycleState
 
-	_, err = waiter.OnProgress(func(run *jobs.Run) {
-		var sshTask *jobs.RunTask
-		for i := range run.Tasks {
-			if run.Tasks[i].TaskKey == sshServerTaskKey {
-				sshTask = &run.Tasks[i]
-				break
-			}
-		}
-
-		if sshTask == nil || sshTask.State == nil {
-			return
-		}
-
-		currentState := sshTask.State.LifeCycleState
-
-		if currentState != prevState {
-			cmdio.LogString(ctx, fmt.Sprintf("Task status: %s", currentState))
-			prevState = currentState
-		}
-
-		if currentState == jobs.RunLifeCycleStateRunning {
-			cmdio.LogString(ctx, "SSH server task is now running, proceeding to connect...")
-		}
-	}).GetWithTimeout(opts.TaskStartupTimeout)
-	return err
+	return waitForJobToStart(ctx, client, waiter.RunId, opts.TaskStartupTimeout)
 }
 
 // submitSSHTunnelJobManual submits a job using manual HTTP call for features not yet supported by the SDK.
@@ -583,20 +558,14 @@ func checkClusterState(ctx context.Context, client *databricks.WorkspaceClient, 
 // Returns an error if the task fails to start or if polling times out.
 func waitForJobToStart(ctx context.Context, client *databricks.WorkspaceClient, runID int64, taskStartupTimeout time.Duration) error {
 	cmdio.LogString(ctx, "Waiting for the SSH server task to start...")
-	const pollInterval = 2 * time.Second
-	maxRetries := int(taskStartupTimeout / pollInterval)
 	var prevState jobs.RunLifecycleStateV2State
 
-	for retries := range maxRetries {
-		if ctx.Err() != nil {
-			return ctx.Err()
-		}
-
+	_, err := retries.Poll(ctx, taskStartupTimeout, func() (*jobs.RunTask, *retries.Err) {
 		run, err := client.Jobs.GetRun(ctx, jobs.GetRunRequest{
 			RunId: runID,
 		})
 		if err != nil {
-			return fmt.Errorf("failed to get job run status: %w", err)
+			return nil, retries.Halt(fmt.Errorf("failed to get job run status: %w", err))
 		}
 
 		// Find the SSH server task
@@ -609,11 +578,11 @@ func waitForJobToStart(ctx context.Context, client *databricks.WorkspaceClient, 
 		}
 
 		if sshTask == nil {
-			return fmt.Errorf("SSH server task '%s' not found in job run", sshServerTaskKey)
+			return nil, retries.Halt(fmt.Errorf("SSH server task '%s' not found in job run", sshServerTaskKey))
 		}
 
 		if sshTask.Status == nil {
-			return fmt.Errorf("task status is nil")
+			return nil, retries.Halt(errors.New("task status is nil"))
 		}
 
 		currentState := sshTask.Status.State
@@ -627,23 +596,19 @@ func waitForJobToStart(ctx context.Context, client *databricks.WorkspaceClient, 
 		// Check if task is running
 		if currentState == jobs.RunLifecycleStateV2StateRunning {
 			cmdio.LogString(ctx, "SSH server task is now running, proceeding to connect...")
-			return nil
+			return sshTask, nil
 		}
 
 		// Check for terminal failure states
 		if currentState == jobs.RunLifecycleStateV2StateTerminated {
-			return fmt.Errorf("task terminated before reaching running state")
+			return nil, retries.Halt(errors.New("task terminated before reaching running state"))
 		}
 
-		// Continue polling
-		if retries < maxRetries-1 {
-			time.Sleep(pollInterval)
-		} else {
-			return fmt.Errorf("timeout waiting for task to start (state: %s)", currentState)
-		}
-	}
+		// Continue polling for other states
+		return nil, retries.Continues(fmt.Sprintf("waiting for task to start (current state: %s)", currentState))
+	})
 
-	return fmt.Errorf("timeout waiting for task to start")
+	return err
 }
 
 func ensureSSHServerIsRunning(ctx context.Context, client *databricks.WorkspaceClient, version, secretScopeName string, opts ClientOptions) (string, int, string, error) {
