@@ -14,10 +14,12 @@ type ResourcePostgresBranch struct {
 	client *databricks.WorkspaceClient
 }
 
-// PostgresBranchState wraps the postgres.Branch with additional fields needed for creation.
+// PostgresBranchState contains only the fields needed for creation/update.
+// It does NOT include output-only fields like Name, which are only available after API response.
 type PostgresBranchState struct {
-	postgres.Branch
-	BranchId string `json:"branch_id,omitempty"`
+	Parent   string               `json:"parent,omitempty"`
+	Spec     *postgres.BranchSpec `json:"spec,omitempty"`
+	BranchId string               `json:"branch_id,omitempty"`
 }
 
 func (*ResourcePostgresBranch) New(client *databricks.WorkspaceClient) *ResourcePostgresBranch {
@@ -26,18 +28,16 @@ func (*ResourcePostgresBranch) New(client *databricks.WorkspaceClient) *Resource
 
 func (*ResourcePostgresBranch) PrepareState(input *resources.PostgresBranch) *PostgresBranchState {
 	return &PostgresBranchState{
-		Branch: postgres.Branch{
-			Name:   input.Name,
-			Parent: input.Parent,
-			Spec:   &input.BranchSpec,
-		},
+		Parent:   input.Parent,
+		Spec:     &input.BranchSpec,
 		BranchId: input.BranchId,
 	}
 }
 
 func (*ResourcePostgresBranch) RemapState(remote *postgres.Branch) *PostgresBranchState {
 	return &PostgresBranchState{
-		Branch: *remote,
+		Parent: remote.Parent,
+		Spec:   remote.Spec,
 		// BranchId is not available in remote state, it's already part of the Name
 	}
 }
@@ -60,7 +60,9 @@ func (r *ResourcePostgresBranch) DoCreate(ctx context.Context, config *PostgresB
 	waiter, err := r.client.Postgres.CreateBranch(ctx, postgres.CreateBranchRequest{
 		BranchId: branchId,
 		Parent:   parent,
-		Branch:   config.Branch,
+		Branch: postgres.Branch{
+			Spec: config.Spec,
+		},
 	})
 	if err != nil {
 		return "", nil, err
@@ -77,8 +79,11 @@ func (r *ResourcePostgresBranch) DoCreate(ctx context.Context, config *PostgresB
 
 func (r *ResourcePostgresBranch) DoUpdate(ctx context.Context, id string, config *PostgresBranchState, _ Changes) (*postgres.Branch, error) {
 	waiter, err := r.client.Postgres.UpdateBranch(ctx, postgres.UpdateBranchRequest{
-		Branch: config.Branch,
-		Name:   id,
+		Branch: postgres.Branch{
+			Name: id,
+			Spec: config.Spec,
+		},
+		Name: id,
 		UpdateMask: fieldmask.FieldMask{
 			Paths: []string{"*"},
 		},

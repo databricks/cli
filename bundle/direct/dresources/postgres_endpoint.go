@@ -14,10 +14,12 @@ type ResourcePostgresEndpoint struct {
 	client *databricks.WorkspaceClient
 }
 
-// PostgresEndpointState wraps the postgres.Endpoint with additional fields needed for creation.
+// PostgresEndpointState contains only the fields needed for creation/update.
+// It does NOT include output-only fields like Name, which are only available after API response.
 type PostgresEndpointState struct {
-	postgres.Endpoint
-	EndpointId string `json:"endpoint_id,omitempty"`
+	Parent     string                 `json:"parent,omitempty"`
+	Spec       *postgres.EndpointSpec `json:"spec,omitempty"`
+	EndpointId string                 `json:"endpoint_id,omitempty"`
 }
 
 func (*ResourcePostgresEndpoint) New(client *databricks.WorkspaceClient) *ResourcePostgresEndpoint {
@@ -26,18 +28,16 @@ func (*ResourcePostgresEndpoint) New(client *databricks.WorkspaceClient) *Resour
 
 func (*ResourcePostgresEndpoint) PrepareState(input *resources.PostgresEndpoint) *PostgresEndpointState {
 	return &PostgresEndpointState{
-		Endpoint: postgres.Endpoint{
-			Name:   input.Name,
-			Parent: input.Parent,
-			Spec:   &input.EndpointSpec,
-		},
+		Parent:     input.Parent,
+		Spec:       &input.EndpointSpec,
 		EndpointId: input.EndpointId,
 	}
 }
 
 func (*ResourcePostgresEndpoint) RemapState(remote *postgres.Endpoint) *PostgresEndpointState {
 	return &PostgresEndpointState{
-		Endpoint: *remote,
+		Parent: remote.Parent,
+		Spec:   remote.Spec,
 		// EndpointId is not available in remote state, it's already part of the Name
 	}
 }
@@ -60,7 +60,9 @@ func (r *ResourcePostgresEndpoint) DoCreate(ctx context.Context, config *Postgre
 	waiter, err := r.client.Postgres.CreateEndpoint(ctx, postgres.CreateEndpointRequest{
 		EndpointId: endpointId,
 		Parent:     parent,
-		Endpoint:   config.Endpoint,
+		Endpoint: postgres.Endpoint{
+			Spec: config.Spec,
+		},
 	})
 	if err != nil {
 		return "", nil, err
@@ -77,8 +79,11 @@ func (r *ResourcePostgresEndpoint) DoCreate(ctx context.Context, config *Postgre
 
 func (r *ResourcePostgresEndpoint) DoUpdate(ctx context.Context, id string, config *PostgresEndpointState, _ Changes) (*postgres.Endpoint, error) {
 	waiter, err := r.client.Postgres.UpdateEndpoint(ctx, postgres.UpdateEndpointRequest{
-		Endpoint: config.Endpoint,
-		Name:     id,
+		Endpoint: postgres.Endpoint{
+			Name: id,
+			Spec: config.Spec,
+		},
+		Name: id,
 		UpdateMask: fieldmask.FieldMask{
 			Paths: []string{"*"},
 		},

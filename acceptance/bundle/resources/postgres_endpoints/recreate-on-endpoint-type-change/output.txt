@@ -82,7 +82,6 @@ Deployment complete!
 }
 {
   "body": {
-    "parent": "projects/test-pg-proj-[UNIQUE_NAME]",
     "spec": {
       "no_expiry": true
     }
@@ -95,7 +94,6 @@ Deployment complete!
 }
 {
   "body": {
-    "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
     "spec": {
       "autoscaling_limit_max_cu": 2,
       "autoscaling_limit_min_cu": 0.5,
@@ -200,7 +198,6 @@ Deployment complete!
 }
 {
   "body": {
-    "parent": "projects/test-pg-proj-[UNIQUE_NAME]",
     "spec": {
       "no_expiry": true
     }
@@ -217,7 +214,6 @@ Deployment complete!
 }
 {
   "body": {
-    "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
     "spec": {
       "autoscaling_limit_max_cu": 2,
       "autoscaling_limit_min_cu": 0.5,

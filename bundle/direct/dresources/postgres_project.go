@@ -14,10 +14,11 @@ type ResourcePostgresProject struct {
 	client *databricks.WorkspaceClient
 }
 
-// PostgresProjectState wraps the postgres.Project with additional fields needed for creation.
+// PostgresProjectState contains only the fields needed for creation/update.
+// It does NOT include output-only fields like Name, which are only available after API response.
 type PostgresProjectState struct {
-	postgres.Project
-	ProjectId string `json:"project_id,omitempty"`
+	Spec      *postgres.ProjectSpec `json:"spec,omitempty"`
+	ProjectId string                `json:"project_id,omitempty"`
 }
 
 func (*ResourcePostgresProject) New(client *databricks.WorkspaceClient) *ResourcePostgresProject {
@@ -26,17 +27,14 @@ func (*ResourcePostgresProject) New(client *databricks.WorkspaceClient) *Resourc
 
 func (*ResourcePostgresProject) PrepareState(input *resources.PostgresProject) *PostgresProjectState {
 	return &PostgresProjectState{
-		Project: postgres.Project{
-			Name: input.Name,
-			Spec: &input.ProjectSpec,
-		},
+		Spec:      &input.ProjectSpec,
 		ProjectId: input.ProjectId,
 	}
 }
 
 func (*ResourcePostgresProject) RemapState(remote *postgres.Project) *PostgresProjectState {
 	return &PostgresProjectState{
-		Project: *remote,
+		Spec: remote.Spec,
 		// ProjectId is not available in remote state, it's already part of the Name
 	}
 }
@@ -53,7 +51,9 @@ func (r *ResourcePostgresProject) DoCreate(ctx context.Context, config *Postgres
 
 	waiter, err := r.client.Postgres.CreateProject(ctx, postgres.CreateProjectRequest{
 		ProjectId: projectId,
-		Project:   config.Project,
+		Project: postgres.Project{
+			Spec: config.Spec,
+		},
 	})
 	if err != nil {
 		return "", nil, err
@@ -70,8 +70,11 @@ func (r *ResourcePostgresProject) DoCreate(ctx context.Context, config *Postgres
 
 func (r *ResourcePostgresProject) DoUpdate(ctx context.Context, id string, config *PostgresProjectState, _ Changes) (*postgres.Project, error) {
 	waiter, err := r.client.Postgres.UpdateProject(ctx, postgres.UpdateProjectRequest{
-		Project: config.Project,
-		Name:    id,
+		Project: postgres.Project{
+			Name: id,
+			Spec: config.Spec,
+		},
+		Name: id,
 		UpdateMask: fieldmask.FieldMask{
 			Paths: []string{"*"},
 		},

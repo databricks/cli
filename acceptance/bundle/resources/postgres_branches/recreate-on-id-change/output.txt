@@ -73,7 +73,6 @@ Deployment complete!
 }
 {
   "body": {
-    "parent": "projects/test-pg-proj-[UNIQUE_NAME]",
     "spec": {
       "no_expiry": true
     }
@@ -167,7 +166,6 @@ Deployment complete!
 }
 {
   "body": {
-    "parent": "projects/test-pg-proj-[UNIQUE_NAME]",
     "spec": {
       "no_expiry": true
     }

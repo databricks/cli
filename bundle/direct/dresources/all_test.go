@@ -25,6 +25,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	"github.com/databricks/databricks-sdk-go/service/postgres"
 	"github.com/databricks/databricks-sdk-go/service/serving"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
@@ -158,6 +159,28 @@ var testConfig map[string]any = map[string]any{
 					},
 				},
 			},
+		},
+	},
+
+	"postgres_projects": &resources.PostgresProject{
+		ProjectId: "test-project",
+		ProjectSpec: postgres.ProjectSpec{
+			DisplayName: "Test Project",
+			PgVersion:   16,
+		},
+	},
+
+	"postgres_branches": &resources.PostgresBranch{
+		Parent:     "projects/test-project",
+		BranchId:   "test-branch",
+		BranchSpec: postgres.BranchSpec{},
+	},
+
+	"postgres_endpoints": &resources.PostgresEndpoint{
+		Parent:     "projects/test-project/branches/test-branch",
+		EndpointId: "test-endpoint",
+		EndpointSpec: postgres.EndpointSpec{
+			EndpointType: postgres.EndpointTypeEndpointTypeReadWrite,
 		},
 	},
 
