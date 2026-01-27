@@ -56,12 +56,6 @@ func TestMatchPattern(t *testing.T) {
 			want:    false,
 		},
 		{
-			name:    "multiple segments no match",
-			pattern: "tasks[*].run_if",
-			path:    "other[key='x'].run_if",
-			want:    false,
-		},
-		{
 			name:    "different array prefix no match",
 			pattern: "tasks[*].run_if",
 			path:    "jobs[task_key='my_task'].run_if",

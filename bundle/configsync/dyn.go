@@ -10,7 +10,7 @@ import (
 )
 
 // resolveSelectors converts key-value selectors to numeric indices.
-// Example: "tasks[task_key='main'].name" -> "tasks[1].name"
+// Example: "resources.jobs.foo.tasks[task_key='main'].name" -> "resources.jobs.foo.tasks[1].name"
 func resolveSelectors(pathStr string, b *bundle.Bundle) (string, error) {
 	node, err := structpath.Parse(pathStr)
 	if err != nil {

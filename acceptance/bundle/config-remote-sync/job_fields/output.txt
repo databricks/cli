@@ -17,13 +17,17 @@ Resource: resources.jobs.my_job
 
 
 === Configuration changes
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -1,5 +1,4 @@
  bundle:
    name: test-bundle-[UNIQUE_NAME]
 -
  resources:
    jobs:
-     my_job:
-       email_notifications:
+@@ -8,15 +7,21 @@
          on_success:
            - success@example.com
 +        no_alert_for_skipped_runs: true
@@ -50,4 +54,3 @@ Resource: resources.jobs.my_job
 +        team: data
        environments:
          - environment_key: default
-           spec:

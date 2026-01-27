@@ -18,28 +18,30 @@ Resource: resources.jobs.my_job
 
 
 === Configuration changes
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -1,5 +1,4 @@
  bundle:
    name: test-bundle-[UNIQUE_NAME]
 -
  resources:
    jobs:
-     my_job:
-             spark_version: 13.3.x-snapshot-scala2.12
+@@ -13,5 +12,4 @@
              node_type_id: [NODE_TYPE_ID]
              num_workers: 1
 -
  targets:
    default:
-     resources:
-             on_success:
+@@ -23,5 +21,5 @@
                - success@example.com
              on_failure:
 -              - config-failure@example.com
 +              - remote-failure@example.com
            parameters:
              - name: catalog
-               default: main
-               interval: 1
+@@ -34,6 +32,6 @@
                unit: DAYS
            tags:
 -            env: config-production
@@ -48,4 +50,3 @@ Resource: resources.jobs.my_job
 +          max_concurrent_runs: 5
            timeout_seconds: 3600
            environments:
-             - environment_key: default

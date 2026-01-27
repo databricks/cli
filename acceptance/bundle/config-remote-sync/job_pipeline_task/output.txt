@@ -15,6 +15,11 @@ Resource: resources.pipelines.my_pipeline
 
 
 === Configuration changes
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -1,14 +1,12 @@
  bundle:
    name: test-bundle-[UNIQUE_NAME]
 -
@@ -30,8 +35,7 @@ Resource: resources.pipelines.my_pipeline
 -
    jobs:
      my_job:
-       tasks:
-         - task_key: run_pipeline
+@@ -17,3 +15,3 @@
            pipeline_task:
              pipeline_id: ${resources.pipelines.my_pipeline.id}
 -            full_refresh: false

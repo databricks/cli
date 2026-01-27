@@ -15,13 +15,17 @@ Resource: resources.jobs.my_job
 
 
 === Configuration changes
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -1,5 +1,4 @@
  bundle:
    name: test-bundle-[UNIQUE_NAME]
 -
  resources:
    jobs:
-     my_job:
-             spark_version: 13.3.x-snapshot-scala2.12
+@@ -13,13 +12,4 @@
              node_type_id: [NODE_TYPE_ID]
              num_workers: 1
 -        - task_key: task2
@@ -35,8 +39,7 @@ Resource: resources.jobs.my_job
 -            - task_key: task1
          - task_key: task3
            notebook_task:
-             notebook_path: /Users/{{workspace_user_name}}/task3
-           new_cluster:
+@@ -37,5 +27,6 @@
              spark_version: 13.3.x-snapshot-scala2.12
              node_type_id: [NODE_TYPE_ID]
 -            num_workers: 1
