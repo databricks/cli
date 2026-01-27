@@ -44,6 +44,11 @@ func createUpdateOverride(createUpdateCmd *cobra.Command, createUpdateReq *apps.
 	}
 }
 
+func deleteOverride(deleteCmd *cobra.Command, deleteReq *apps.DeleteAppRequest) {
+	// Add "destroy" as an alias for "delete"
+	deleteCmd.Aliases = []string{"destroy"}
+}
+
 func init() {
 	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
 		// Commands that should NOT go into the management group
@@ -88,7 +93,7 @@ func init() {
 	listDeploymentsOverrides = append(listDeploymentsOverrides, listDeploymentsOverride)
 	createOverrides = append(createOverrides, createOverride)
 	deployOverrides = append(deployOverrides, appsCli.BundleDeployOverrideWithWrapper(wrapDeploymentError))
-	deleteOverrides = append(deleteOverrides, appsCli.BundleDeleteOverrideWithWrapper(wrapDeploymentError))
+	deleteOverrides = append(deleteOverrides, deleteOverride, appsCli.BundleDeleteOverrideWithWrapper(wrapDeploymentError))
 	startOverrides = append(startOverrides, appsCli.BundleStartOverrideWithWrapper(wrapDeploymentError))
 	stopOverrides = append(stopOverrides, appsCli.BundleStopOverrideWithWrapper(wrapDeploymentError))
 	createUpdateOverrides = append(createUpdateOverrides, createUpdateOverride)
