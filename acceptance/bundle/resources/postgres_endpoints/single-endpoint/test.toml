@@ -9,8 +9,7 @@ EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 
 Ignore = [
     "databricks.yml",
-    "out.requests.txt",   # Full request log (for debugging)
-    "out.requests.json",  # Filtered postgres requests (for debugging)
+    "out.requests.txt",
 ]
 
 [[Repls]]
