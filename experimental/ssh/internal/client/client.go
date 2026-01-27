@@ -21,6 +21,7 @@ import (
 
 	"github.com/databricks/cli/experimental/ssh/internal/keys"
 	"github.com/databricks/cli/experimental/ssh/internal/proxy"
+	"github.com/databricks/cli/experimental/ssh/internal/sshconfig"
 	sshWorkspace "github.com/databricks/cli/experimental/ssh/internal/workspace"
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/cmdio"
@@ -55,6 +56,8 @@ type ClientOptions struct {
 	// to the cluster and proxy all traffic through stdin/stdout.
 	// In the non proxy mode the CLI spawns an ssh client with the ProxyCommand config.
 	ProxyMode bool
+	// Open remote IDE window with a specific ssh config (empty, 'vscode', or 'cursor')
+	IDE string
 	// Expected format: "<user_name>,<port>,<cluster_id>".
 	// If present, the CLI won't attempt to start the server.
 	ServerMetadata string
@@ -168,8 +171,7 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 	}
 
 	// Only check cluster state for dedicated clusters
-	// TODO: we can remove liteswap check when we can start serverless GPU clusters via API.
-	if !opts.IsServerlessMode() && opts.Liteswap == "" {
+	if !opts.IsServerlessMode() {
 		err := checkClusterState(ctx, client, opts.ClusterID, opts.AutoStartCluster)
 		if err != nil {
 			return err
@@ -247,10 +249,111 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 
 	if opts.ProxyMode {
 		return runSSHProxy(ctx, client, serverPort, clusterID, opts)
+	} else if opts.IDE != "" {
+		return runIDE(ctx, client, userName, keyPath, serverPort, clusterID, opts)
 	} else {
 		cmdio.LogString(ctx, fmt.Sprintf("Additional SSH arguments: %v", opts.AdditionalArgs))
 		return spawnSSHClient(ctx, userName, keyPath, serverPort, clusterID, opts)
 	}
+}
+
+func runIDE(ctx context.Context, client *databricks.WorkspaceClient, userName, keyPath string, serverPort int, clusterID string, opts ClientOptions) error {
+	// Validate IDE value
+	if opts.IDE != "vscode" && opts.IDE != "cursor" {
+		return fmt.Errorf("invalid IDE value: %s, expected 'vscode' or 'cursor'", opts.IDE)
+	}
+
+	// Get connection name
+	connectionName := opts.SessionIdentifier()
+	if connectionName == "" {
+		return errors.New("connection name is required for IDE integration")
+	}
+
+	// Get Databricks user name for the workspace path
+	currentUser, err := client.CurrentUser.Me(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get current user: %w", err)
+	}
+	databricksUserName := currentUser.UserName
+
+	// Ensure SSH config entry exists
+	configPath, err := sshconfig.GetMainConfigPath()
+	if err != nil {
+		return fmt.Errorf("failed to get SSH config path: %w", err)
+	}
+
+	err = ensureSSHConfigEntry(ctx, configPath, connectionName, userName, keyPath, serverPort, clusterID, opts)
+	if err != nil {
+		return fmt.Errorf("failed to ensure SSH config entry: %w", err)
+	}
+
+	// Determine the IDE command
+	ideCommand := "code"
+	if opts.IDE == "cursor" {
+		ideCommand = "cursor"
+	}
+
+	// Construct the remote SSH URI
+	// Format: ssh-remote+<server_user_name>@<connection_name> /Workspace/Users/<databricks_user_name>/
+	remoteURI := fmt.Sprintf("ssh-remote+%s@%s", userName, connectionName)
+	remotePath := fmt.Sprintf("/Workspace/Users/%s/", databricksUserName)
+
+	cmdio.LogString(ctx, fmt.Sprintf("Launching %s with remote URI: %s and path: %s", opts.IDE, remoteURI, remotePath))
+
+	// Launch the IDE
+	ideCmd := exec.CommandContext(ctx, ideCommand, "--remote", remoteURI, remotePath)
+	ideCmd.Stdout = os.Stdout
+	ideCmd.Stderr = os.Stderr
+
+	return ideCmd.Run()
+}
+
+func ensureSSHConfigEntry(ctx context.Context, configPath, hostName, userName, keyPath string, serverPort int, clusterID string, opts ClientOptions) error {
+	// Ensure the Include directive exists in the main SSH config
+	err := sshconfig.EnsureIncludeDirective(configPath)
+	if err != nil {
+		return err
+	}
+
+	// Generate ProxyCommand with server metadata
+	optsWithMetadata := opts
+	optsWithMetadata.ServerMetadata = FormatMetadata(userName, serverPort, clusterID)
+
+	proxyCommand, err := optsWithMetadata.ToProxyCommand()
+	if err != nil {
+		return fmt.Errorf("failed to generate ProxyCommand: %w", err)
+	}
+
+	// Generate host config
+	hostConfig := fmt.Sprintf(`
+Host %s
+    User %s
+    ConnectTimeout 360
+    StrictHostKeyChecking accept-new
+    IdentitiesOnly yes
+    IdentityFile %q
+    ProxyCommand %s
+`, hostName, userName, keyPath, proxyCommand)
+
+	// Check if the host config already exists
+	exists, err := sshconfig.HostConfigExists(hostName)
+	if err != nil {
+		return err
+	}
+
+	if exists {
+		cmdio.LogString(ctx, fmt.Sprintf("SSH config entry for '%s' already exists, skipping", hostName))
+		return nil
+	}
+
+	// Create the host config file
+	_, err = sshconfig.CreateOrUpdateHostConfig(ctx, hostName, hostConfig, false)
+	if err != nil {
+		return err
+	}
+
+	cmdio.LogString(ctx, fmt.Sprintf("Added SSH config entry for '%s'", hostName))
+	return nil
 }
 
 // getServerMetadata retrieves the server metadata from the workspace and validates it via Driver Proxy.
