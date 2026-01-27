@@ -3,6 +3,7 @@ package bundle
 import (
 	"encoding/json"
 	"fmt"
+	"runtime"
 
 	"github.com/databricks/cli/bundle/configsync"
 	"github.com/databricks/cli/cmd/bundle/utils"
@@ -34,6 +35,10 @@ Examples:
 	cmd.Flags().BoolVar(&save, "save", false, "Write updated config files to disk")
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+		if runtime.GOOS == "windows" {
+			return fmt.Errorf("config-remote-sync command is not supported on Windows")
+		}
+
 		b, _, err := utils.ProcessBundleRet(cmd, utils.ProcessOptions{
 			Build:      true,
 			AlwaysPull: true,
