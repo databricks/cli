@@ -1,6 +1,7 @@
 package convert
 
 import (
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"strconv"
@@ -35,6 +36,11 @@ func ToTyped(dst any, src dyn.Value) error {
 	// Verify that vv is settable.
 	if !dstv.CanSet() {
 		panic("cannot set destination value")
+	}
+
+	// Handle SDK's duration.Duration type using JSON unmarshaling.
+	if isSDKDurationType(dstv.Type()) {
+		return toTypedDuration(dstv, src)
 	}
 
 	switch dstv.Kind() {
@@ -348,4 +354,25 @@ func toTypedInterface(dst reflect.Value, src dyn.Value) error {
 
 	dst.Set(reflect.ValueOf(src.AsAny()))
 	return nil
+}
+
+// toTypedDuration converts a dyn.Value to the SDK's duration.Duration type.
+// The SDK's duration.Duration type uses JSON marshaling with string representation.
+func toTypedDuration(dst reflect.Value, src dyn.Value) error {
+	switch src.Kind() {
+	case dyn.KindString:
+		// Use JSON unmarshaling since duration.Duration implements json.Unmarshaler.
+		jsonStr := fmt.Sprintf("%q", src.MustString())
+		return json.Unmarshal([]byte(jsonStr), dst.Addr().Interface())
+	case dyn.KindNil:
+		dst.SetZero()
+		return nil
+	default:
+		// Fall through to the error case.
+	}
+
+	return TypeError{
+		value: src,
+		msg:   fmt.Sprintf("expected a string, found a %s", src.Kind()),
+	}
 }

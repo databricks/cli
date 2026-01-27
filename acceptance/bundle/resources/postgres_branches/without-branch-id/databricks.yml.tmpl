@@ -11,11 +11,11 @@ resources:
       project_id: test-pg-proj-$UNIQUE_NAME
       display_name: "Test Project"
       pg_version: 16
-      history_retention_duration: "7d"
+      history_retention_duration: "604800s"
       default_endpoint_settings:
         autoscaling_limit_min_cu: 0.5
         autoscaling_limit_max_cu: 4
-        suspend_timeout_duration: "5m"
+        suspend_timeout_duration: "300s"
 
   postgres_branches:
     main:

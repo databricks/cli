@@ -1,13 +1,5 @@
 
 >>> [CLI] bundle validate
-Warning: expected map, found string
-  at resources.postgres_projects.my_project.history_retention_duration
-  in databricks.yml:14:35
-
-Warning: expected map, found string
-  at resources.postgres_projects.my_project.default_endpoint_settings.suspend_timeout_duration
-  in databricks.yml:18:35
-
 Warning: There are no files to sync, please check your .gitignore and sync.exclude configuration
   at sync.exclude
   in databricks.yml:6:5
@@ -18,17 +10,9 @@ Workspace:
   User: [USERNAME]
   Path: /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-endpoint-[UNIQUE_NAME]/default
 
-Found 3 warnings
+Found 1 warning
 
 >>> [CLI] bundle summary
-Warning: expected map, found string
-  at resources.postgres_projects.my_project.history_retention_duration
-  in databricks.yml:14:35
-
-Warning: expected map, found string
-  at resources.postgres_projects.my_project.default_endpoint_settings.suspend_timeout_duration
-  in databricks.yml:18:35
-
 Name: deploy-postgres-endpoint-[UNIQUE_NAME]
 Target: default
 Workspace:
@@ -49,28 +33,12 @@ Resources:
       URL:  (not deployed)
 
 >>> [CLI] bundle deploy
-Warning: expected map, found string
-  at resources.postgres_projects.my_project.history_retention_duration
-  in databricks.yml:14:35
-
-Warning: expected map, found string
-  at resources.postgres_projects.my_project.default_endpoint_settings.suspend_timeout_duration
-  in databricks.yml:18:35
-
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-endpoint-[UNIQUE_NAME]/default/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
 
 >>> [CLI] postgres get-endpoint projects/test-pg-proj-[UNIQUE_NAME]/branches/main/endpoints/primary
-Warning: expected map, found string
-  at resources.postgres_projects.my_project.history_retention_duration
-  in databricks.yml:14:35
-
-Warning: expected map, found string
-  at resources.postgres_projects.my_project.default_endpoint_settings.suspend_timeout_duration
-  in databricks.yml:18:35
-
 {
   "name": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/endpoints/primary",
   "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
@@ -84,20 +52,12 @@ Warning: expected map, found string
       "host": "[ENDPOINT_UID].database.us-east-1.cloud.databricks.com"
     },
     "settings": {},
-    "suspend_timeout_duration": "0s"
+    "suspend_timeout_duration": "300s"
   },
   "uid": "[ENDPOINT_UID]"
 }
 
 >>> [CLI] bundle summary
-Warning: expected map, found string
-  at resources.postgres_projects.my_project.history_retention_duration
-  in databricks.yml:14:35
-
-Warning: expected map, found string
-  at resources.postgres_projects.my_project.default_endpoint_settings.suspend_timeout_duration
-  in databricks.yml:18:35
-
 Name: deploy-postgres-endpoint-[UNIQUE_NAME]
 Target: default
 Workspace:
@@ -120,14 +80,6 @@ Resources:
 >>> print_requests.py --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 
 >>> [CLI] bundle destroy --auto-approve
-Warning: expected map, found string
-  at resources.postgres_projects.my_project.history_retention_duration
-  in databricks.yml:14:35
-
-Warning: expected map, found string
-  at resources.postgres_projects.my_project.default_endpoint_settings.suspend_timeout_duration
-  in databricks.yml:18:35
-
 The following resources will be deleted:
   delete resources.postgres_branches.main
   delete resources.postgres_endpoints.primary
