@@ -95,6 +95,11 @@ func ApplyChangesToYAML(ctx context.Context, b *bundle.Bundle, planChanges map[s
 	return result, nil
 }
 
+type parentNode struct {
+	path        yamlpatch.Path
+	missingPath yamlpatch.Path
+}
+
 // applyChanges applies all field changes to a YAML
 func applyChanges(ctx context.Context, filePath string, changes resolvedChanges, targetName string) (string, error) {
 	content, err := os.ReadFile(filePath)
@@ -129,6 +134,12 @@ func applyChanges(ctx context.Context, filePath string, changes resolvedChanges,
 		success := false
 		var lastErr error
 		var lastPointer string
+		var parentPathErrors []parentNode
+
+		normalizedRemote, err := normalizeValue(changeDesc.Remote)
+		if err != nil {
+			return "", fmt.Errorf("failed to normalize remote value for %s: %w", jsonPointer, err)
+		}
 
 		for _, jsonPointer := range jsonPointers {
 			path, err := yamlpatch.ParsePath(jsonPointer)
@@ -136,13 +147,10 @@ func applyChanges(ctx context.Context, filePath string, changes resolvedChanges,
 				return "", fmt.Errorf("failed to parse JSON Pointer %s: %w", jsonPointer, err)
 			}
 
-			normalizedRemote, err := normalizeValue(changeDesc.Remote)
-			if err != nil {
-				return "", fmt.Errorf("failed to normalize remote value for %s: %w", jsonPointer, err)
-			}
+			patcher := gopkgv3yamlpatcher.New(gopkgv3yamlpatcher.IndentSpaces(2))
 			var modifiedContent []byte
 			var patchErr error
-			patcher := gopkgv3yamlpatcher.New(gopkgv3yamlpatcher.IndentSpaces(2))
+
 			if isRemoval {
 				modifiedContent, patchErr = patcher.Apply(content, yamlpatch.Patch{yamlpatch.Operation{
 					Type: yamlpatch.OperationRemove,
@@ -160,6 +168,13 @@ func applyChanges(ctx context.Context, filePath string, changes resolvedChanges,
 					Path:  path,
 					Value: normalizedRemote,
 				}})
+
+				// Collect parent path errors for later retry
+				if patchErr != nil && isParentPathError(patchErr) {
+					if missingPath, extractErr := extractMissingPath(patchErr); extractErr == nil {
+						parentPathErrors = append(parentPathErrors, parentNode{path, missingPath})
+					}
+				}
 			} else {
 				return "", fmt.Errorf("unknown operation type for field %s", fieldPath)
 			}
@@ -169,12 +184,35 @@ func applyChanges(ctx context.Context, filePath string, changes resolvedChanges,
 				log.Debugf(ctx, "Applied changes to %s", jsonPointer)
 				success = true
 				break
-			} else {
-				log.Debugf(ctx, "Failed to apply change to %s: %v", jsonPointer, patchErr)
-				lastErr = patchErr
-				lastPointer = jsonPointer
+			}
+
+			log.Debugf(ctx, "Failed to apply change to %s: %v", jsonPointer, patchErr)
+			lastErr = patchErr
+			lastPointer = jsonPointer
+		}
+
+		// If all attempts failed with parent path errors, try creating nested structures
+		if !success && len(parentPathErrors) > 0 {
+			for _, errInfo := range parentPathErrors {
+				nestedValue := buildNestedStructure(errInfo.path, errInfo.missingPath, normalizedRemote)
+
+				patcher := gopkgv3yamlpatcher.New(gopkgv3yamlpatcher.IndentSpaces(2))
+				modifiedContent, patchErr := patcher.Apply(content, yamlpatch.Patch{yamlpatch.Operation{
+					Type:  yamlpatch.OperationAdd,
+					Path:  errInfo.missingPath,
+					Value: nestedValue,
+				}})
+
+				if patchErr == nil {
+					content = modifiedContent
+					log.Debugf(ctx, "Created nested structure at %s", errInfo.missingPath.String())
+					success = true
+					break
+				}
+				log.Debugf(ctx, "Failed to create nested structure at %s: %v", errInfo.missingPath.String(), patchErr)
 			}
 		}
+
 		if !success {
 			if lastErr != nil {
 				return "", fmt.Errorf("failed to apply change %s: %w", lastPointer, lastErr)
@@ -221,6 +259,63 @@ func getResolvedFieldChanges(ctx context.Context, b *bundle.Bundle, planChanges 
 	}
 
 	return resolvedChangesByFile, nil
+}
+
+// isParentPathError checks if error indicates missing parent path.
+func isParentPathError(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := err.Error()
+	return strings.Contains(msg, "parent path") && strings.Contains(msg, "does not exist")
+}
+
+// extractMissingPath extracts the missing path from error message like:
+// "op add /a/b/c/d: parent path /a/b does not exist"
+// Returns: "/a/b"
+func extractMissingPath(err error) (yamlpatch.Path, error) {
+	msg := err.Error()
+	start := strings.Index(msg, "parent path ")
+	if start == -1 {
+		return nil, fmt.Errorf("could not find 'parent path' in error message")
+	}
+	start += len("parent path ")
+
+	end := strings.Index(msg[start:], " does not exist")
+	if end == -1 {
+		return nil, fmt.Errorf("could not find 'does not exist' in error message")
+	}
+
+	pathStr := msg[start : start+end]
+	return yamlpatch.ParsePath(pathStr)
+}
+
+// buildNestedStructure creates a nested map structure from targetPath to missingPath.
+// Example:
+//
+//	targetPath: /a/b/c/d/e
+//	missingPath: /a/b
+//	leafValue: "foo"
+//
+// Returns: {c: {d: {e: "foo"}}}
+func buildNestedStructure(targetPath, missingPath yamlpatch.Path, leafValue any) any {
+	missingLen := len(missingPath)
+	targetLen := len(targetPath)
+
+	if missingLen >= targetLen {
+		// Missing path is not a parent of target path
+		return leafValue
+	}
+
+	// Build nested structure from leaf to missing parent
+	result := leafValue
+	for i := targetLen - 1; i >= missingLen; i-- {
+		result = map[string]any{
+			targetPath[i]: result,
+		}
+	}
+
+	return result
 }
 
 // strPathToJSONPointer converts a structpath string to JSON Pointer format.

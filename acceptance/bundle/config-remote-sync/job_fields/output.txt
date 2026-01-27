@@ -6,9 +6,12 @@ Deployment complete!
 
 === Modify job fields remotely
 === Detect and save changes
-Error: failed to generate YAML files: failed to apply changes to file [TEST_TMP_DIR]/databricks.yml: failed to apply change /targets/default/resources/jobs/my_job/tags/team: op add /targets/default/resources/jobs/my_job/tags/team: parent path /targets/default/resources does not exist
+Detected changes in 1 resource(s):
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> d9d740fa6 (Create parent nodes)
 Resource: resources.jobs.my_job
   email_notifications.no_alert_for_skipped_runs: skip
   email_notifications.on_failure: skip
@@ -18,17 +21,25 @@ Resource: resources.jobs.my_job
 
 
 === Configuration changes
+<<<<<<< HEAD
 
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml
 @@ -1,5 +1,4 @@
+=======
+>>>>>>> d9d740fa6 (Create parent nodes)
  bundle:
    name: test-bundle-[UNIQUE_NAME]
 -
  resources:
    jobs:
+<<<<<<< HEAD
 @@ -8,15 +7,21 @@
+=======
+     my_job:
+       email_notifications:
+>>>>>>> d9d740fa6 (Create parent nodes)
          on_success:
            - success@example.com
 +        no_alert_for_skipped_runs: true
@@ -50,6 +61,7 @@ Resource: resources.jobs.my_job
 -          interval: 1
 +          interval: 2
            unit: DAYS
+<<<<<<< HEAD
        tags:
          env: dev
 +        team: data
@@ -58,3 +70,16 @@ Resource: resources.jobs.my_job
 =======
 Exit code: 1
 >>>>>>> d9b1dcd7c (Capture incorrect behavior with the test)
+=======
+       environments:
+         - environment_key: default
+             spark_version: 13.3.x-snapshot-scala2.12
+             node_type_id: [NODE_TYPE_ID]
+             num_workers: 1
+-
++      tags:
++        team: data
+ targets:
+   default:
+     mode: development
+>>>>>>> d9d740fa6 (Create parent nodes)

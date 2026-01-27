@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/palantir/pkg/yamlpatch/yamlpatch"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
@@ -897,4 +898,25 @@ func TestApplyChangesToYAML_WithSDKStructValues(t *testing.T) {
 
 	assert.Contains(t, files[0].ModifiedContent, "name: updated_name")
 	assert.Contains(t, files[0].ModifiedContent, "enabled: false")
+}
+
+func TestBuildNestedStructure(t *testing.T) {
+	targetPath, err := yamlpatch.ParsePath("/targets/default/resources/pipelines/my_pipeline/tags/foo")
+	require.NoError(t, err)
+
+	missingPath, err := yamlpatch.ParsePath("/targets/default/resources")
+	require.NoError(t, err)
+
+	result := buildNestedStructure(targetPath, missingPath, "bar")
+
+	expected := map[string]any{
+		"pipelines": map[string]any{
+			"my_pipeline": map[string]any{
+				"tags": map[string]any{
+					"foo": "bar",
+				},
+			},
+		},
+	}
+	assert.Equal(t, expected, result)
 }

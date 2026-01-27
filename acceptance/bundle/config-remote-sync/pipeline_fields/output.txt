@@ -5,14 +5,18 @@ Deployment complete!
 
 === Modify pipeline fields remotely
 === Detect and save changes
-Error: failed to generate YAML files: failed to apply changes to file [TEST_TMP_DIR]/databricks.yml: failed to apply change /targets/default/resources/pipelines/my_pipeline/tags/foo: op add /targets/default/resources/pipelines/my_pipeline/tags/foo: parent path /targets/default/resources does not exist
+Detected changes in 1 resource(s):
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> d9d740fa6 (Create parent nodes)
 Resource: resources.pipelines.my_pipeline
   configuration['key2']: update
   notifications[0].alerts: update
   notifications[0].email_recipients: update
   schema: update
+<<<<<<< HEAD
 
 
 === Configuration changes
@@ -21,12 +25,22 @@ Resource: resources.pipelines.my_pipeline
 --- databricks.yml.backup
 +++ databricks.yml
 @@ -1,5 +1,4 @@
+=======
+  tags['foo']: update
+
+
+=== Configuration changes
+>>>>>>> d9d740fa6 (Create parent nodes)
  bundle:
    name: test-bundle-[UNIQUE_NAME]
 -
  resources:
    pipelines:
+<<<<<<< HEAD
 @@ -7,12 +6,15 @@
+=======
+     my_pipeline:
+>>>>>>> d9d740fa6 (Create parent nodes)
        name: test-pipeline-[UNIQUE_NAME]
        catalog: main
 -      schema: default
@@ -43,6 +57,16 @@ Resource: resources.pipelines.my_pipeline
 +            - on-update-failure
        libraries:
          - notebook:
+<<<<<<< HEAD
 =======
 Exit code: 1
 >>>>>>> d9b1dcd7c (Capture incorrect behavior with the test)
+=======
+             path: /Users/{{workspace_user_name}}/notebook
+-
++      tags:
++        foo: bar
+ targets:
+   default:
+     mode: development
+>>>>>>> d9d740fa6 (Create parent nodes)
