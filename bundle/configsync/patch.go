@@ -136,46 +136,42 @@ func applyChanges(ctx context.Context, filePath string, changes resolvedChanges,
 				return "", fmt.Errorf("failed to parse JSON Pointer %s: %w", jsonPointer, err)
 			}
 
-			var testOp yamlpatch.Operation
+			normalizedRemote, err := normalizeValue(changeDesc.Remote)
+			if err != nil {
+				return "", fmt.Errorf("failed to normalize remote value for %s: %w", jsonPointer, err)
+			}
+			var modifiedContent []byte
+			var patchErr error
+			patcher := gopkgv3yamlpatcher.New(gopkgv3yamlpatcher.IndentSpaces(2))
 			if isRemoval {
-				testOp = yamlpatch.Operation{
+				modifiedContent, patchErr = patcher.Apply(content, yamlpatch.Patch{yamlpatch.Operation{
 					Type: yamlpatch.OperationRemove,
 					Path: path,
-				}
+				}})
 			} else if isReplacement {
-				normalizedRemote, err := normalizeValue(changeDesc.Remote)
-				if err != nil {
-					return "", fmt.Errorf("failed to normalize replacement value for %s: %w", jsonPointer, err)
-				}
-				testOp = yamlpatch.Operation{
+				modifiedContent, patchErr = patcher.Apply(content, yamlpatch.Patch{yamlpatch.Operation{
 					Type:  yamlpatch.OperationReplace,
 					Path:  path,
 					Value: normalizedRemote,
-				}
+				}})
 			} else if isAddition {
-				normalizedRemote, err := normalizeValue(changeDesc.Remote)
-				if err != nil {
-					return "", fmt.Errorf("failed to normalize addition value for %s: %w", jsonPointer, err)
-				}
-				testOp = yamlpatch.Operation{
+				modifiedContent, patchErr = patcher.Apply(content, yamlpatch.Patch{yamlpatch.Operation{
 					Type:  yamlpatch.OperationAdd,
 					Path:  path,
 					Value: normalizedRemote,
-				}
+				}})
 			} else {
 				return "", fmt.Errorf("unknown operation type for field %s", fieldPath)
 			}
 
-			patcher := gopkgv3yamlpatcher.New(gopkgv3yamlpatcher.IndentSpaces(2))
-			modifiedContent, err := patcher.Apply(content, yamlpatch.Patch{testOp})
-			if err == nil {
+			if patchErr == nil {
 				content = modifiedContent
-				log.Debugf(ctx, "Applied %s change to %s", testOp.Type, jsonPointer)
+				log.Debugf(ctx, "Applied changes to %s", jsonPointer)
 				success = true
 				break
 			} else {
-				log.Debugf(ctx, "Failed to apply change to %s: %v", jsonPointer, err)
-				lastErr = err
+				log.Debugf(ctx, "Failed to apply change to %s: %v", jsonPointer, patchErr)
+				lastErr = patchErr
 				lastPointer = jsonPointer
 			}
 		}
@@ -208,10 +204,12 @@ func getResolvedFieldChanges(ctx context.Context, b *bundle.Bundle, planChanges 
 
 			// If field has no location, find the parent resource's location to then add a new field
 			if filePath == "" {
-				filePath = findResourceFileLocation(ctx, b, resourceKey)
+				resourceLocation := b.Config.GetLocation(resourceKey)
+				filePath = resourceLocation.File
 				if filePath == "" {
-					continue
+					return nil, fmt.Errorf("failed to find location for resource %s for a field %s", resourceKey, fieldPath)
 				}
+
 				log.Debugf(ctx, "Field %s has no location, using resource location: %s", fullPath, filePath)
 			}
 
@@ -252,22 +250,4 @@ func strPathToJSONPointer(pathStr string) (string, error) {
 		return "", nil
 	}
 	return "/" + strings.Join(parts, "/"), nil
-}
-
-// findResourceFileLocation finds the file where a resource is defined.
-// It checks both the root resources and target-specific overrides,
-// preferring the target override if it exists.
-func findResourceFileLocation(_ context.Context, b *bundle.Bundle, resourceKey string) string {
-	targetName := b.Config.Bundle.Target
-
-	if targetName != "" {
-		targetPath := "targets." + targetName + "." + resourceKey
-		loc := b.Config.GetLocation(targetPath)
-		if loc.File != "" {
-			return loc.File
-		}
-	}
-
-	loc := b.Config.GetLocation(resourceKey)
-	return loc.File
 }

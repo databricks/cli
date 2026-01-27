@@ -239,41 +239,6 @@ func TestApplyChangesToYAML_MultipleResourcesSameFile(t *testing.T) {
 	assert.Equal(t, 3600, job2["timeout_seconds"])
 }
 
-func TestApplyChangesToYAML_ResourceNotFound(t *testing.T) {
-	ctx := logdiag.InitContext(context.Background())
-
-	tmpDir := t.TempDir()
-
-	yamlContent := `resources:
-  jobs:
-    existing_job:
-      name: "Existing Job"
-`
-
-	yamlPath := filepath.Join(tmpDir, "databricks.yml")
-	err := os.WriteFile(yamlPath, []byte(yamlContent), 0o644)
-	require.NoError(t, err)
-
-	b, err := bundle.Load(ctx, tmpDir)
-	require.NoError(t, err)
-
-	mutator.DefaultMutators(ctx, b)
-
-	changes := map[string]deployplan.Changes{
-		"resources.jobs.nonexistent_job": {
-			"timeout_seconds": &deployplan.ChangeDesc{
-				Action: deployplan.Update,
-				Remote: 3600,
-			},
-		},
-	}
-
-	fileChanges, err := ApplyChangesToYAML(ctx, b, changes)
-	require.NoError(t, err)
-
-	assert.Len(t, fileChanges, 0)
-}
-
 func TestApplyChangesToYAML_Include(t *testing.T) {
 	ctx := logdiag.InitContext(context.Background())
 
