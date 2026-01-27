@@ -165,6 +165,25 @@ func Spinner(ctx context.Context) chan string {
 	return c.Spinner(ctx)
 }
 
+// NewSpinner creates a new spinner for displaying progress indicators.
+// The returned spinner should be closed when done to release resources.
+//
+// Example:
+//
+//	sp := cmdio.NewSpinner(ctx)
+//	defer sp.Close()
+//	for i := range 100 {
+//		sp.Update(fmt.Sprintf("processing item %d", i))
+//		time.Sleep(100 * time.Millisecond)
+//	}
+//
+// The spinner automatically degrades in non-interactive terminals (no output).
+// Context cancellation will automatically close the spinner.
+func NewSpinner(ctx context.Context) *spinner {
+	c := fromContext(ctx)
+	return c.NewSpinner(ctx)
+}
+
 type cmdIOType int
 
 var cmdIOKey cmdIOType

@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/databricks/cli/libs/apps/vite"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -46,10 +47,10 @@ func TestIsViteReady(t *testing.T) {
 
 func TestViteServerScriptContent(t *testing.T) {
 	// Verify the embedded script is not empty
-	assert.NotEmpty(t, viteServerScript)
+	assert.NotEmpty(t, vite.ServerScript)
 
 	// Verify it's a JavaScript file with expected content
-	assert.Contains(t, string(viteServerScript), "startViteServer")
+	assert.Contains(t, string(vite.ServerScript), "startViteServer")
 }
 
 func TestStartViteDevServerNoNode(t *testing.T) {
@@ -81,9 +82,9 @@ func TestStartViteDevServerNoNode(t *testing.T) {
 }
 
 func TestViteServerScriptEmbedded(t *testing.T) {
-	assert.NotEmpty(t, viteServerScript)
+	assert.NotEmpty(t, vite.ServerScript)
 
-	scriptContent := string(viteServerScript)
+	scriptContent := string(vite.ServerScript)
 	assert.Contains(t, scriptContent, "startViteServer")
 	assert.Contains(t, scriptContent, "createServer")
 	assert.Contains(t, scriptContent, "queriesHMRPlugin")
