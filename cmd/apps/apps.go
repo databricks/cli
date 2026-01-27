@@ -15,5 +15,6 @@ func Commands() []*cobra.Command {
 		newLogsCommand(),
 		newRunLocal(),
 		newValidateCmd(),
+		newImportCommand(),
 	}
 }
