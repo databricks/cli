@@ -1,10 +1,14 @@
 package apps
 
 import (
+	"bytes"
+	"strings"
 	"testing"
+	"text/template"
 
 	"github.com/databricks/cli/libs/apps/prompt"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestIsTextFile(t *testing.T) {
@@ -333,4 +337,90 @@ func TestHasResourceSpec(t *testing.T) {
 			assert.Equal(t, tt.expected, result)
 		})
 	}
+}
+
+func TestDatabricksYmlTemplateWithUserAPIScopes(t *testing.T) {
+	tests := []struct {
+		name          string
+		vars          templateVars
+		expectScopes  bool
+		expectedScope string
+	}{
+		{
+			name: "with user_api_scopes",
+			vars: templateVars{
+				ProjectName:    "test-app",
+				AppName:        "test-app",
+				AppDescription: "Test application",
+				UserAPIScopes:  []string{"sql", "catalog.connections"},
+			},
+			expectScopes:  true,
+			expectedScope: "user_api_scopes:\n        - sql\n        - catalog.connections",
+		},
+		{
+			name: "without user_api_scopes",
+			vars: templateVars{
+				ProjectName:    "test-app",
+				AppName:        "test-app",
+				AppDescription: "Test application",
+				UserAPIScopes:  nil,
+			},
+			expectScopes: false,
+		},
+		{
+			name: "with empty user_api_scopes",
+			vars: templateVars{
+				ProjectName:    "test-app",
+				AppName:        "test-app",
+				AppDescription: "Test application",
+				UserAPIScopes:  []string{},
+			},
+			expectScopes: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tmpl, err := template.New("databricks.yml").Parse(databricksYmlTemplate)
+			require.NoError(t, err)
+
+			var buf bytes.Buffer
+			err = tmpl.Execute(&buf, tt.vars)
+			require.NoError(t, err)
+
+			output := buf.String()
+
+			if tt.expectScopes {
+				assert.Contains(t, output, tt.expectedScope)
+			} else {
+				assert.NotContains(t, output, "user_api_scopes")
+			}
+
+			// Verify basic structure is present
+			assert.Contains(t, output, "bundle:")
+			assert.Contains(t, output, "name: test-app")
+			assert.Contains(t, output, "resources:")
+			assert.Contains(t, output, "apps:")
+		})
+	}
+}
+
+func TestUserAPIScopesInLegacyManifest(t *testing.T) {
+	// Verify that the manifest JSON includes templates with user_api_scopes
+	manifests, err := loadLegacyTemplates()
+	require.NoError(t, err)
+	require.NotNil(t, manifests)
+
+	// Find a template with user_api_scopes (e.g., dash-data-app-obo-user)
+	var foundWithScopes bool
+	for i := range manifests.Templates {
+		tmpl := &manifests.Templates[i]
+		if strings.Contains(tmpl.Path, "obo-user") {
+			foundWithScopes = true
+			assert.NotEmpty(t, tmpl.Manifest.UserAPIScopes, "Template %s should have user_api_scopes", tmpl.Path)
+			assert.Contains(t, tmpl.Manifest.UserAPIScopes, "sql", "Template %s should include 'sql' scope", tmpl.Path)
+		}
+	}
+
+	assert.True(t, foundWithScopes, "Should have found at least one template with user_api_scopes")
 }

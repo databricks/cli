@@ -25,7 +25,7 @@ import (
 	"github.com/databricks/cli/libs/git"
 	"github.com/databricks/cli/libs/log"
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v3"
+	"go.yaml.in/yaml/v3"
 )
 
 const (
@@ -230,7 +230,8 @@ type templateVars struct {
 	AppEnv           string
 	DotEnv           string
 	DotEnvExample    string
-	ResourceBindings string // For databricks.yml resource bindings
+	ResourceBindings string   // For databricks.yml resource bindings
+	UserAPIScopes    []string // User API scopes for legacy templates
 }
 
 // featureFragments holds aggregated content from feature resource files.
@@ -1322,6 +1323,7 @@ func runLegacyTemplateInit(ctx context.Context, selectedTemplate *appTemplateMan
 		WorkspaceHost:    workspaceHost,
 		BundleVariables:  variablesBuilder.build(),
 		ResourceBindings: bindingsBuilder.build(),
+		UserAPIScopes:    selectedTemplate.Manifest.UserAPIScopes,
 	}
 
 	tmpl, err := template.New("databricks.yml").Parse(databricksYmlTemplate)
