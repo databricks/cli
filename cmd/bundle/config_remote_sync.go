@@ -2,6 +2,7 @@ package bundle
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"runtime"
 
@@ -36,7 +37,7 @@ Examples:
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		if runtime.GOOS == "windows" {
-			return fmt.Errorf("config-remote-sync command is not supported on Windows")
+			return errors.New("config-remote-sync command is not supported on Windows")
 		}
 
 		b, _, err := utils.ProcessBundleRet(cmd, utils.ProcessOptions{
