@@ -12,13 +12,17 @@ Resource: resources.jobs.my_job
 
 
 === Configuration changes
- # Top-level comment about the bundle
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -2,5 +2,4 @@
  bundle:
    name: test-bundle-[UNIQUE_NAME]
 -
  # Resources section with extra spacing
  resources:
-   jobs:
+@@ -8,6 +7,5 @@
      my_job:
        # Comment about max concurrent runs
 -      max_concurrent_runs: 1
@@ -26,11 +30,9 @@ Resource: resources.jobs.my_job
 +      max_concurrent_runs: 5
        # Task configuration
        tasks:
-         - task_key: main
-             spark_version: 13.3.x-snapshot-scala2.12
+@@ -19,5 +17,4 @@
              node_type_id: [NODE_TYPE_ID]
              num_workers: 1 # inline comment about workers
 -
        # Tags for categorization
        tags:
-         env: dev # environment tag

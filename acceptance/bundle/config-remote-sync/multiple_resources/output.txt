@@ -16,6 +16,11 @@ Resource: resources.jobs.job_two
 
 
 === Configuration changes
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -1,9 +1,8 @@
  bundle:
    name: test-bundle-[UNIQUE_NAME]
 -
@@ -26,8 +31,7 @@ Resource: resources.jobs.job_two
 +      max_concurrent_runs: 5
        tasks:
          - task_key: main
-           notebook_task:
-             spark_version: 13.3.x-snapshot-scala2.12
+@@ -14,7 +13,8 @@
              node_type_id: [NODE_TYPE_ID]
              num_workers: 1
 -
@@ -38,8 +42,7 @@ Resource: resources.jobs.job_two
 +      max_concurrent_runs: 10
        tasks:
          - task_key: main
-           notebook_task:
-             spark_version: 13.3.x-snapshot-scala2.12
+@@ -25,2 +25,4 @@
              node_type_id: [NODE_TYPE_ID]
              num_workers: 1
 +      tags:
