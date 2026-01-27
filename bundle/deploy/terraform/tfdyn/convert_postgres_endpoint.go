@@ -7,13 +7,46 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/databricks-sdk-go/service/postgres"
 )
 
 type postgresEndpointConverter struct{}
 
 func (c postgresEndpointConverter) Convert(ctx context.Context, key string, vin dyn.Value, out *schema.Resources) error {
-	vout, diags := convert.Normalize(postgres.Endpoint{}, vin)
+	// The bundle config has flattened EndpointSpec fields at the top level.
+	// Terraform expects them nested in a "spec" block. We need to restructure:
+	// - Keep endpoint_id, parent at top level
+	// - Move autoscaling_limit_max_cu, autoscaling_limit_min_cu, disabled, endpoint_type, no_suspension, settings, suspend_timeout_duration into spec
+
+	specFields := []string{"autoscaling_limit_max_cu", "autoscaling_limit_min_cu", "disabled", "endpoint_type", "no_suspension", "settings", "suspend_timeout_duration"}
+	topLevelFields := []string{"endpoint_id", "parent"}
+
+	// Build the spec block from the flattened fields
+	specMap := make(map[string]dyn.Value)
+	for _, field := range specFields {
+		if v := vin.Get(field); v.Kind() != dyn.KindInvalid {
+			specMap[field] = v
+		}
+	}
+
+	// Build the output with top-level fields and spec
+	outMap := make(map[string]dyn.Value)
+
+	// Keep top-level fields
+	for _, field := range topLevelFields {
+		if v := vin.Get(field); v.Kind() != dyn.KindInvalid {
+			outMap[field] = v
+		}
+	}
+
+	// Add spec block if we have any spec fields
+	if len(specMap) > 0 {
+		outMap["spec"] = dyn.V(specMap)
+	}
+
+	vout := dyn.V(outMap)
+
+	// Normalize the output value to the Terraform schema.
+	vout, diags := convert.Normalize(schema.ResourcePostgresEndpoint{}, vout)
 	for _, diag := range diags {
 		log.Debugf(ctx, "postgres endpoint normalization diagnostic: %s", diag.Summary)
 	}
