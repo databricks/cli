@@ -99,6 +99,9 @@ func TestRunAsWorksForAllowedResources(t *testing.T) {
 			Pipelines: map[string]*resources.Pipeline{
 				"pipeline_one": {},
 			},
+			Alerts: map[string]*resources.Alert{
+				"alert_one": {},
+			},
 		},
 	}
 
@@ -111,6 +114,10 @@ func TestRunAsWorksForAllowedResources(t *testing.T) {
 
 	for _, job := range b.Config.Resources.Jobs {
 		assert.Equal(t, "bob", job.RunAs.UserName)
+	}
+
+	for _, alert := range b.Config.Resources.Alerts {
+		assert.Equal(t, "bob", alert.RunAs.UserName)
 	}
 }
 
@@ -158,6 +165,7 @@ var allowList = []string{
 	"secret_scopes",
 	"sql_warehouses",
 	"volumes",
+	"alerts",
 }
 
 func TestRunAsErrorForUnsupportedResources(t *testing.T) {
