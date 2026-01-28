@@ -5,7 +5,6 @@ sethome "./home"
 export BROWSER="browser.py"
 
 trace $CLI auth login --host $DATABRICKS_HOST --profile scoped-test --scopes "jobs,pipelines,clusters"
-trace $CLI auth profiles
 
 # Track the .databrickscfg file that was created to surface changes.
 mv "./home/.databrickscfg" "./out.databrickscfg"

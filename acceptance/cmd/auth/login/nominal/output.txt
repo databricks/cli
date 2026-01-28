@@ -3,5 +3,5 @@
 Profile test was successfully saved
 
 >>> [CLI] auth profiles
-Name  Host                    Client ID  Scopes    Valid
-test  [DATABRICKS_URL]  -          all-apis  YES
+Name  Host                    Valid
+test  [DATABRICKS_URL]  YES

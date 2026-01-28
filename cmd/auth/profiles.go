@@ -5,8 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
-	"slices"
-	"strings"
 	"sync"
 	"time"
 
@@ -20,15 +18,12 @@ import (
 )
 
 type profileMetadata struct {
-	Name              string `json:"name"`
-	Host              string `json:"host,omitempty"`
-	AccountID         string `json:"account_id,omitempty"`
-	Cloud             string `json:"cloud"`
-	AuthType          string `json:"auth_type"`
-	Scopes            string `json:"scopes,omitempty"`
-	ClientID          string `json:"client_id,omitempty"`
-	Valid             bool   `json:"valid"`
-	ValidationSkipped bool   `json:"validation_skipped,omitempty"`
+	Name      string `json:"name"`
+	Host      string `json:"host,omitempty"`
+	AccountID string `json:"account_id,omitempty"`
+	Cloud     string `json:"cloud"`
+	AuthType  string `json:"auth_type"`
+	Valid     bool   `json:"valid"`
 }
 
 func (c *profileMetadata) IsEmpty() bool {
@@ -50,23 +45,9 @@ func (c *profileMetadata) Load(ctx context.Context, configFilePath string, skipV
 		c.Cloud = "gcp"
 	}
 
-	c.Scopes = strings.Join(cfg.GetScopes(), ",")
-	c.ClientID = cfg.ClientID
-
-	// Check if all-apis scope is present. If not, validation may be unreliable
-	// because the validation API calls may not be accessible with restricted scopes.
-	hasAllApisScope := slices.Contains(cfg.GetScopes(), "all-apis")
-
 	if skipValidate {
 		c.Host = cfg.CanonicalHostName()
 		c.AuthType = cfg.AuthType
-		return
-	}
-
-	if !hasAllApisScope {
-		c.Host = cfg.CanonicalHostName()
-		c.AuthType = cfg.AuthType
-		c.ValidationSkipped = true
 		return
 	}
 
@@ -107,8 +88,8 @@ func newProfilesCommand() *cobra.Command {
 		Short: "Lists profiles from ~/.databrickscfg",
 		Annotations: map[string]string{
 			"template": cmdio.Heredoc(`
-			{{header "Name"}}	{{header "Host"}}	{{header "Client ID"}}	{{header "Scopes"}}	{{header "Valid"}}
-			{{range .}}{{.Name | green}}	{{.Host | cyan}}	{{if .ClientID}}{{.ClientID | magenta}}{{else}}{{ "-" | magenta}}{{end}}	{{if .Scopes}}{{.Scopes | yellow}}{{else}}{{"all-apis" | yellow}}{{end}}	{{if .ValidationSkipped}}{{ "-" | yellow}}{{else}}{{bool .Valid}}{{end}}
+			{{header "Name"}}	{{header "Host"}}	{{header "Valid"}}
+			{{range .Profiles}}{{.Name | green}}	{{.Host|cyan}}	{{bool .Valid}}
 			{{end}}`),
 		},
 	}
@@ -147,21 +128,9 @@ func newProfilesCommand() *cobra.Command {
 			profiles = append(profiles, profile)
 		}
 		wg.Wait()
-		err = cmdio.Render(cmd.Context(), profiles)
-		if err != nil {
-			return err
-		}
-
-		for _, p := range profiles {
-			if p.ValidationSkipped {
-				cmdio.LogString(cmd.Context(),
-					"\nNote: Validation is skipped for profiles without the 'all-apis' scope "+
-						"because the validation API may not be accessible with restricted scopes.")
-				break
-			}
-		}
-
-		return nil
+		return cmdio.Render(cmd.Context(), struct {
+			Profiles []*profileMetadata `json:"profiles"`
+		}{profiles})
 	}
 
 	return cmd

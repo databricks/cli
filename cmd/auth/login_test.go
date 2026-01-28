@@ -255,23 +255,3 @@ func TestLoadProfileByNameAndClusterID(t *testing.T) {
 		})
 	}
 }
-
-func TestLoadProfileWithScopes(t *testing.T) {
-	t.Setenv("DATABRICKS_CONFIG_FILE", "./testdata/.databrickscfg")
-	ctx := context.Background()
-
-	profile := loadTestProfile(t, ctx, "scoped-profile")
-
-	assert.Equal(t, "scoped-profile", profile.Name)
-	assert.Equal(t, "https://www.host1.com", profile.Host)
-}
-
-func TestLoadProfileWithScopesAndClientID(t *testing.T) {
-	t.Setenv("DATABRICKS_CONFIG_FILE", "./testdata/.databrickscfg")
-	ctx := context.Background()
-
-	profile := loadTestProfile(t, ctx, "scoped-profile-with-client")
-
-	assert.Equal(t, "scoped-profile-with-client", profile.Name)
-	assert.Equal(t, "https://www.host2.com", profile.Host)
-}
