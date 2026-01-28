@@ -1,0 +1,40 @@
+#!/bin/bash
+
+mkdir -p bundle1 bundle2
+
+export BUNDLE_NAME="snapshot-test-1-${UNIQUE_NAME}"
+envsubst < databricks.yml.tmpl > bundle1/databricks.yml
+cp notebook.py bundle1/
+cp pipeline_notebook.py bundle1/
+
+export BUNDLE_NAME="snapshot-test-2-${UNIQUE_NAME}"
+envsubst < databricks.yml.tmpl > bundle2/databricks.yml
+cp notebook.py bundle2/
+cp pipeline_notebook.py bundle2/
+
+cleanup() {
+    title "Cleanup bundle 1"
+    (cd bundle1 && unset DATABRICKS_BUNDLE_ENGINE && trace $CLI bundle destroy --auto-approve)
+    title "Cleanup bundle 2"
+    (cd bundle2 && unset DATABRICKS_BUNDLE_ENGINE && trace $CLI bundle destroy --auto-approve)
+}
+trap cleanup EXIT
+
+title "Deploy bundle 1 with terraform"
+(cd bundle1 && trace DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy)
+
+title "Run migrate on bundle 1"
+(cd bundle1 && trace $CLI bundle deployment migrate 2>&1 | contains.py 'Migrated 2 resources')
+
+title "Deploy bundle 2 with terraform and YamlSync"
+(cd bundle2 && trace DATABRICKS_BUNDLE_ENABLE_EXPERIMENTAL_YAML_SYNC=true DATABRICKS_BUNDLE_ENGINE=terraform $CLI bundle deploy)
+
+title "Normalize bundle names for comparison"
+trace cp bundle1/.databricks/bundle/default/resources.json out.bundle1.json
+trace cp bundle2/.databricks/bundle/default/resources-config-sync-snapshot.json out.bundle2.json
+
+trace sed -i '' 's/snapshot-test-1-/snapshot-test-NORMALIZED-/g' out.bundle1.json
+trace sed -i '' 's/snapshot-test-2-/snapshot-test-NORMALIZED-/g' out.bundle2.json
+
+title "Compare normalized snapshots"
+trace diff.py out.bundle1.json out.bundle2.json
