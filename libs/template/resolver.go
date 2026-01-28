@@ -13,7 +13,7 @@ var gitUrlPrefixes = []string{
 	"git@",
 }
 
-func isRepoUrl(url string) bool {
+func IsRepoUrl(url string) bool {
 	result := false
 	for _, prefix := range gitUrlPrefixes {
 		if strings.HasPrefix(url, prefix) {
@@ -22,6 +22,19 @@ func isRepoUrl(url string) bool {
 		}
 	}
 	return result
+}
+
+// ResolveReader resolves a template path/URL to a Reader (built-in, git or local)
+func ResolveReader(templatePathOrUrl, templateDir, ref string) (Reader, bool) {
+	if tmpl := GetDatabricksTemplate(TemplateName(templatePathOrUrl)); tmpl != nil {
+		return tmpl.Reader, false
+	}
+
+	if IsRepoUrl(templatePathOrUrl) {
+		return NewGitReader(templatePathOrUrl, ref, templateDir, git.Clone), true
+	}
+
+	return NewLocalReader(templatePathOrUrl), false
 }
 
 type Resolver struct {
@@ -92,25 +105,14 @@ func (r Resolver) Resolve(ctx context.Context) (*Template, error) {
 	//
 	// We resolve the appropriate reader according to the reference provided by the user.
 	if tmpl == nil {
+		reader, _ := ResolveReader(r.TemplatePathOrUrl, r.TemplateDir, ref)
 		tmpl = &Template{
-			name: Custom,
+			name:   Custom,
+			Reader: reader,
 			// We use a writer that does not log verbose telemetry for custom templates.
 			// This is important because template definitions can contain PII that we
 			// do not want to centralize.
 			Writer: &defaultWriter{name: Custom},
-		}
-
-		if isRepoUrl(r.TemplatePathOrUrl) {
-			tmpl.Reader = &gitReader{
-				gitUrl:      r.TemplatePathOrUrl,
-				ref:         ref,
-				templateDir: r.TemplateDir,
-				cloneFunc:   git.Clone,
-			}
-		} else {
-			tmpl.Reader = &localReader{
-				path: r.TemplatePathOrUrl,
-			}
 		}
 	}
 	err = tmpl.Writer.Configure(ctx, r.ConfigFile, r.OutputDir)
