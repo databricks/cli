@@ -31,9 +31,9 @@ Deployment complete!
 
 >>> cp bundle2/.databricks/bundle/default/resources-config-sync-snapshot.json out.bundle2.json
 
->>> sed -i  s/snapshot-test-1-/snapshot-test-NORMALIZED-/g out.bundle1.json
+>>> update_file.py out.bundle1.json snapshot-test-1- snapshot-test-NORMALIZED-
 
->>> sed -i  s/snapshot-test-2-/snapshot-test-NORMALIZED-/g out.bundle2.json
+>>> update_file.py out.bundle2.json snapshot-test-2- snapshot-test-NORMALIZED-
 
 === Compare normalized snapshots
 >>> diff.py out.bundle1.json out.bundle2.json

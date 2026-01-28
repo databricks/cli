@@ -33,8 +33,8 @@ title "Normalize bundle names for comparison"
 trace cp bundle1/.databricks/bundle/default/resources.json out.bundle1.json
 trace cp bundle2/.databricks/bundle/default/resources-config-sync-snapshot.json out.bundle2.json
 
-trace sed -i '' 's/snapshot-test-1-/snapshot-test-NORMALIZED-/g' out.bundle1.json
-trace sed -i '' 's/snapshot-test-2-/snapshot-test-NORMALIZED-/g' out.bundle2.json
+trace update_file.py out.bundle1.json "snapshot-test-1-" "snapshot-test-NORMALIZED-"
+trace update_file.py out.bundle2.json "snapshot-test-2-" "snapshot-test-NORMALIZED-"
 
 title "Compare normalized snapshots"
 trace diff.py out.bundle1.json out.bundle2.json
