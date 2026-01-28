@@ -47,6 +47,7 @@
       "changes": {
         "autoscale": {
           "action": "update",
+          "reason": "override",
           "new": {
             "max_workers": 4,
             "min_workers": 2
@@ -54,6 +55,7 @@
         },
         "num_workers": {
           "action": "update",
+          "reason": "override",
           "old": 2,
           "remote": 2
         }
@@ -95,12 +97,14 @@
       "changes": {
         "autoscale.max_workers": {
           "action": "update",
+          "reason": "override",
           "old": 4,
           "new": 5,
           "remote": 4
         },
         "autoscale.min_workers": {
           "action": "update",
+          "reason": "override",
           "old": 2,
           "new": 3,
           "remote": 2
@@ -144,12 +148,14 @@
       "changes": {
         "autoscale.max_workers": {
           "action": "resize",
+          "reason": "override",
           "old": 5,
           "new": 6,
           "remote": 5
         },
         "autoscale.min_workers": {
           "action": "resize",
+          "reason": "override",
           "old": 3,
           "new": 4,
           "remote": 3
@@ -190,6 +196,7 @@
       "changes": {
         "autoscale": {
           "action": "resize",
+          "reason": "override",
           "old": {
             "max_workers": 6,
             "min_workers": 4
@@ -201,6 +208,7 @@
         },
         "num_workers": {
           "action": "resize",
+          "reason": "override",
           "new": 3
         }
       }

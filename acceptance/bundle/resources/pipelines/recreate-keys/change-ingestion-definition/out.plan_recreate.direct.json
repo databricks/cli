@@ -65,14 +65,14 @@
       "changes": {
         "ingestion_definition.connection_name": {
           "action": "recreate",
-          "reason": "builtin_rule",
+          "reason": "override",
           "old": "my_connection",
           "new": "my_new_connection",
           "remote": "my_connection"
         },
         "storage": {
           "action": "skip",
-          "reason": "server_side_default",
+          "reason": "override",
           "remote": "dbfs:/pipelines/[MY_ID]"
         }
       }

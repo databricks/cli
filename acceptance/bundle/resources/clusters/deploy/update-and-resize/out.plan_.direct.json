@@ -53,6 +53,7 @@
       "changes": {
         "num_workers": {
           "action": "update",
+          "reason": "override",
           "old": 2,
           "new": 3,
           "remote": 2
@@ -96,6 +97,7 @@
       "changes": {
         "num_workers": {
           "action": "resize",
+          "reason": "override",
           "old": 3,
           "new": 4,
           "remote": 3
@@ -139,12 +141,14 @@
       "changes": {
         "num_workers": {
           "action": "resize",
+          "reason": "override",
           "old": 4,
           "new": 5,
           "remote": 4
         },
         "spark_conf['spark.executor.memory']": {
           "action": "update",
+          "reason": "override",
           "old": "2g",
           "new": "4g",
           "remote": "2g"
