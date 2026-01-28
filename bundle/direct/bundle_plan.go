@@ -400,17 +400,19 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 			ch.Action = deployplan.Update
 		}
 
-		savedCh := *ch
-		savedReason := ch.Reason
+		if adapter.HasOverrideChangeDesc() {
+			savedCh := *ch
+			savedReason := ch.Reason
 
-		err = adapter.OverrideChangeDesc(ctx, path, ch, remoteState)
-		if err != nil {
-			return fmt.Errorf("internal error: failed to classify change: %w", err)
-		}
+			err = adapter.OverrideChangeDesc(ctx, path, ch, remoteState)
+			if err != nil {
+				return fmt.Errorf("internal error: failed to classify change: %w", err)
+			}
 
-		if !structdiff.IsEqual(savedCh, ch) && savedReason == ch.Reason {
-			// ch was changed but not Reason field; set it to default
-			ch.Reason = deployplan.ReasonOverrideFunc
+			if !structdiff.IsEqual(savedCh, ch) && savedReason == ch.Reason {
+				// ch was changed but not Reason field; set it to default
+				ch.Reason = deployplan.ReasonOverrideFunc
+			}
 		}
 	}
 
