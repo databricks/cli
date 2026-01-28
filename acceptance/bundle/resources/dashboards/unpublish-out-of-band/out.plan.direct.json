@@ -33,17 +33,20 @@
       "changes": {
         "etag": {
           "action": "skip",
+          "reason": "overridefunc",
           "old": [ETAG],
           "remote": [ETAG]
         },
         "published": {
           "action": "update",
+          "reason": "overridefunc",
           "old": true,
           "new": true,
           "remote": false
         },
         "serialized_dashboard": {
           "action": "skip",
+          "reason": "overridefunc",
           "old": "{\"pages\":[{\"displayName\":\"Test Dashboard\",\"name\":\"test-page\"}]}",
           "new": "{\"pages\":[{\"displayName\":\"Test Dashboard\",\"name\":\"test-page\"}]}",
           "remote": "{\"pages\":[{\"displayName\":\"Test Dashboard\",\"name\":\"test-page\",\"pageType\":\"PAGE_TYPE_CANVAS\"}]}"

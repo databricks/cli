@@ -23,16 +23,19 @@
       "changes": {
         "dataset_catalog": {
           "action": "skip",
+          "reason": "overridefunc",
           "old": "main",
           "new": "main"
         },
         "dataset_schema": {
           "action": "skip",
+          "reason": "overridefunc",
           "old": "default",
           "new": "default"
         },
         "etag": {
           "action": "skip",
+          "reason": "overridefunc",
           "old": [ETAG],
           "remote": [ETAG]
         },

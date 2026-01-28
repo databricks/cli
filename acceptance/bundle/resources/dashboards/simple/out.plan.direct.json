@@ -23,11 +23,13 @@
       "changes": {
         "etag": {
           "action": "skip",
+          "reason": "overridefunc",
           "old": [ETAG],
           "remote": [ETAG]
         },
         "serialized_dashboard": {
           "action": "skip",
+          "reason": "overridefunc",
           "old": "{ }\n",
           "new": "{ }\n",
           "remote": "{}\n"
