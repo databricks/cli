@@ -106,6 +106,7 @@ const (
 	ReasonEmptySlice        = "empty_slice"
 	ReasonEmptyMap          = "empty_map"
 	ReasonEmptyStruct       = "empty_struct"
+	ReasonOverrideFunc      = "overridefunc"
 )
 
 // HasChange checks if there are any changes for fields with the given prefix.
