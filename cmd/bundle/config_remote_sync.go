@@ -42,7 +42,8 @@ Examples:
 			return errors.New("config-remote-sync command is not supported on Windows")
 		}
 
-		b, _, err := utils.ProcessBundleRet(cmd, utils.ProcessOptions{
+		b, stateDesc, err := utils.ProcessBundleRet(cmd, utils.ProcessOptions{
+			ReadState:  true,
 			Build:      true,
 			AlwaysPull: true,
 		})
@@ -51,7 +52,7 @@ Examples:
 		}
 
 		ctx := cmd.Context()
-		changes, err := configsync.DetectChanges(ctx, b)
+		changes, err := configsync.DetectChanges(ctx, b, stateDesc.Engine)
 		if err != nil {
 			return fmt.Errorf("failed to detect changes: %w", err)
 		}

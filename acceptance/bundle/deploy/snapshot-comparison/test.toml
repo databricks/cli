@@ -1,0 +1,17 @@
+Cloud = true
+
+RecordRequests = true
+
+Ignore = [
+    ".databricks",
+    "databricks.yml",
+    "out.*",
+    "bundle1",
+    "bundle2"
+]
+
+[Env]
+DATABRICKS_BUNDLE_ENABLE_EXPERIMENTAL_YAML_SYNC = "true"
+
+[EnvMatrix]
+DATABRICKS_BUNDLE_ENGINE = ["terraform"]
