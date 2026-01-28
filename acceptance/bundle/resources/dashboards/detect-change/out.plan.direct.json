@@ -33,7 +33,6 @@
       "changes": {
         "etag": {
           "action": "update",
-          "reason": "override",
           "old": [ETAG],
           "remote": [ETAG]
         },

@@ -39,7 +39,6 @@
         },
         "published": {
           "action": "update",
-          "reason": "override",
           "old": true,
           "new": true,
           "remote": false

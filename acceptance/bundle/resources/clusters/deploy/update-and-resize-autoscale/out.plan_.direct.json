@@ -47,7 +47,6 @@
       "changes": {
         "autoscale": {
           "action": "update",
-          "reason": "override",
           "new": {
             "max_workers": 4,
             "min_workers": 2
@@ -55,7 +54,6 @@
         },
         "num_workers": {
           "action": "update",
-          "reason": "override",
           "old": 2,
           "remote": 2
         }
@@ -97,14 +95,12 @@
       "changes": {
         "autoscale.max_workers": {
           "action": "update",
-          "reason": "override",
           "old": 4,
           "new": 5,
           "remote": 4
         },
         "autoscale.min_workers": {
           "action": "update",
-          "reason": "override",
           "old": 2,
           "new": 3,
           "remote": 2

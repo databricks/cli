@@ -126,7 +126,6 @@ func (*ResourcePipeline) OverrideChangeDesc(ctx context.Context, path *structpat
 	if path.String() == "run_as" {
 		if structdiff.IsEqual(ch.Old, ch.New) {
 			ch.Action = deployplan.Skip
-			ch.Reason = "override"
 		}
 	}
 
