@@ -19,13 +19,13 @@ New = ''
 Order = 1000
 
 [[Repls]]
-# Normalize branch UIDs (br-xxx-yyy format)
-Old = 'br-[a-z]+-[a-z]+-[a-z0-9]+'
+# Normalize branch UIDs (br-xxx-yyy-zzz format, supports both word-based and hex-based UIDs)
+Old = 'br-[a-z0-9-]+'
 New = '[BRANCH_UID]'
 Order = 1
 
 [[Repls]]
-# Normalize LSN values (format: 0/HEXVALUE)
-Old = '"source_branch_lsn": "0/[A-F0-9]+"'
+# Normalize LSN values (format: 0/HEXVALUE or 0/0)
+Old = '"source_branch_lsn": "0/[A-F0-9]*"'
 New = '"source_branch_lsn": "[LSN]"'
 Order = 1
