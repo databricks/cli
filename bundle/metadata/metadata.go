@@ -25,9 +25,20 @@ type Resource struct {
 	RelativePath string `json:"relative_path"`
 }
 
+type DashboardResource struct {
+	ID string `json:"id,omitempty"`
+	// Relative path from the bundle root to the configuration file that holds
+	// the dashboard definition
+	RelativePath string `json:"relative_path"`
+	// Relative path from the bundle root to the `.lvdash.json` file containing
+	// the dashboard source
+	FilePath string `json:"file_path"`
+}
+
 type Resources struct {
-	Jobs      map[string]*Resource `json:"jobs,omitempty"`
-	Pipelines map[string]*Resource `json:"pipelines,omitempty"`
+	Jobs       map[string]*Resource          `json:"jobs,omitempty"`
+	Pipelines  map[string]*Resource          `json:"pipelines,omitempty"`
+	Dashboards map[string]*DashboardResource `json:"dashboards,omitempty"`
 }
 
 type Presets struct {

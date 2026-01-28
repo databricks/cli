@@ -597,23 +597,29 @@ github.com/databricks/cli/bundle/config/resources.SchemaGrantPrivilege:
       - |-
         CREATE_FUNCTION
       - |-
+        CREATE_MATERIALIZED_VIEW
+      - |-
+        CREATE_MODEL
+      - |-
         CREATE_TABLE
       - |-
         CREATE_VOLUME
       - |-
-        MANAGE
-      - |-
-        USE_SCHEMA
-      - |-
         EXECUTE
       - |-
+        EXTERNAL_USE_SCHEMA
+      - |-
+        MANAGE
+      - |-
         MODIFY
+      - |-
+        READ_VOLUME
       - |-
         REFRESH
       - |-
         SELECT
       - |-
-        READ_VOLUME
+        USE_SCHEMA
       - |-
         WRITE_VOLUME
 github.com/databricks/cli/bundle/config/resources.SecretScopePermissionLevel:
