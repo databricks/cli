@@ -1,4 +1,4 @@
-package apps
+package yamlutil
 
 import (
 	"bufio"
@@ -30,8 +30,8 @@ func camelToSnake(s string) string {
 	return strings.ToLower(result.String())
 }
 
-// yamlNodeToDynValue converts a yaml.Node to dyn.Value, converting camelCase field names to snake_case.
-func yamlNodeToDynValue(node *yaml.Node) (dyn.Value, error) {
+// YamlNodeToDynValue converts a yaml.Node to dyn.Value, converting camelCase field names to snake_case.
+func YamlNodeToDynValue(node *yaml.Node) (dyn.Value, error) {
 	// yaml.Unmarshal wraps the document in a Document node, get the actual content
 	if node.Kind == yaml.DocumentNode && len(node.Content) > 0 {
 		node = node.Content[0]
@@ -47,7 +47,7 @@ func yamlNodeToDynValue(node *yaml.Node) (dyn.Value, error) {
 			// Convert camelCase keys to snake_case
 			snakeKey := camelToSnake(keyNode.Value)
 			key := dyn.V(snakeKey)
-			value, err := yamlNodeToDynValue(valueNode)
+			value, err := YamlNodeToDynValue(valueNode)
 			if err != nil {
 				return dyn.NilValue, err
 			}
@@ -59,7 +59,7 @@ func yamlNodeToDynValue(node *yaml.Node) (dyn.Value, error) {
 	case yaml.SequenceNode:
 		items := make([]dyn.Value, 0, len(node.Content))
 		for _, itemNode := range node.Content {
-			item, err := yamlNodeToDynValue(itemNode)
+			item, err := YamlNodeToDynValue(itemNode)
 			if err != nil {
 				return dyn.NilValue, err
 			}
@@ -97,15 +97,15 @@ func yamlNodeToDynValue(node *yaml.Node) (dyn.Value, error) {
 		}
 
 	case yaml.AliasNode:
-		return yamlNodeToDynValue(node.Alias)
+		return YamlNodeToDynValue(node.Alias)
 
 	default:
 		return dyn.NilValue, fmt.Errorf("unsupported YAML node kind: %v", node.Kind)
 	}
 }
 
-// addBlankLinesBetweenTopLevelKeys adds blank lines between top-level sections in YAML.
-func addBlankLinesBetweenTopLevelKeys(filename string) error {
+// AddBlankLinesBetweenTopLevelKeys adds blank lines between top-level sections in YAML.
+func AddBlankLinesBetweenTopLevelKeys(filename string) error {
 	// Read the file
 	file, err := os.Open(filename)
 	if err != nil {
@@ -149,8 +149,8 @@ func addBlankLinesBetweenTopLevelKeys(filename string) error {
 	return writer.Flush()
 }
 
-// inlineAppConfigFile reads app.yml or app.yaml, inlines it into the app value, and returns the filename.
-func inlineAppConfigFile(appValue *dyn.Value) (string, error) {
+// InlineAppConfigFile reads app.yml or app.yaml, inlines it into the app value, and returns the filename.
+func InlineAppConfigFile(appValue *dyn.Value) (string, error) {
 	var appConfigFile string
 	var appConfigData []byte
 	var err error
@@ -176,7 +176,7 @@ func inlineAppConfigFile(appValue *dyn.Value) (string, error) {
 		return "", fmt.Errorf("failed to parse %s: %w", appConfigFile, err)
 	}
 
-	appConfigValue, err := yamlNodeToDynValue(&appConfigNode)
+	appConfigValue, err := YamlNodeToDynValue(&appConfigNode)
 	if err != nil {
 		return "", fmt.Errorf("failed to convert app config: %w", err)
 	}

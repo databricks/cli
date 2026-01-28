@@ -1,16 +1,17 @@
-package apps
+package legacytemplates
 
 import (
 	"bytes"
 	_ "embed"
 	"fmt"
 	"os"
+	"strings"
 	"text/template"
 
 	"gopkg.in/yaml.v3"
 )
 
-//go:embed legacy-template/env.tmpl
+//go:embed env.tmpl
 var envFileTemplate string
 
 // EnvVar represents a single environment variable in app.yml.
@@ -103,6 +104,25 @@ type envTemplateData struct {
 type envVarPair struct {
 	Name  string
 	Value string
+}
+
+// camelToSnake converts a camelCase string to snake_case.
+// Examples: valueFrom -> value_from, myValue -> my_value, ID -> id
+func camelToSnake(s string) string {
+	var result strings.Builder
+	for i, r := range s {
+		if i > 0 && r >= 'A' && r <= 'Z' {
+			// Check if the previous character was lowercase or if the next character is lowercase
+			// This handles cases like "ID" -> "id" vs "myID" -> "my_id"
+			prevLower := i > 0 && s[i-1] >= 'a' && s[i-1] <= 'z'
+			nextLower := i+1 < len(s) && s[i+1] >= 'a' && s[i+1] <= 'z'
+			if prevLower || nextLower {
+				result.WriteByte('_')
+			}
+		}
+		result.WriteRune(r)
+	}
+	return strings.ToLower(result.String())
 }
 
 // convertKeysToSnakeCase recursively converts all mapping keys in a yaml.Node from camelCase to snake_case.
