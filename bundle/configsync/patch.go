@@ -3,6 +3,7 @@ package configsync
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"reflect"
@@ -277,13 +278,13 @@ func extractMissingPath(err error) (yamlpatch.Path, error) {
 	msg := err.Error()
 	start := strings.Index(msg, "parent path ")
 	if start == -1 {
-		return nil, fmt.Errorf("could not find 'parent path' in error message")
+		return nil, errors.New("could not find 'parent path' in error message")
 	}
 	start += len("parent path ")
 
 	end := strings.Index(msg[start:], " does not exist")
 	if end == -1 {
-		return nil, fmt.Errorf("could not find 'does not exist' in error message")
+		return nil, errors.New("could not find 'does not exist' in error message")
 	}
 
 	pathStr := msg[start : start+end]
