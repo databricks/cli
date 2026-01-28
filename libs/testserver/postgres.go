@@ -15,16 +15,22 @@ func nowTime() *sdktime.Time {
 	return sdktime.New(time.Now().UTC())
 }
 
-// postgresErrorResponse creates an error response with trace ID for postgres API.
+// postgresErrorResponse creates an error response with error code and trace ID for postgres API.
 // The trace ID is included directly in the message to match the real API behavior.
-func postgresErrorResponse(statusCode int, message string) Response {
+func postgresErrorResponse(statusCode int, errorCode, message string) Response {
 	traceID := fmt.Sprintf("%x", nextID())
 	return Response{
 		StatusCode: statusCode,
 		Body: map[string]string{
-			"message": fmt.Sprintf("%s [TraceId: %s]", message, traceID),
+			"error_code": errorCode,
+			"message":    fmt.Sprintf("%s [TraceId: %s]", message, traceID),
 		},
 	}
+}
+
+// postgresNotFoundResponse creates a NOT_FOUND error response for a resource type.
+func postgresNotFoundResponse(resourceType string) Response {
+	return postgresErrorResponse(404, "NOT_FOUND", resourceType+" id not found")
 }
 
 // PostgresProjectCreate creates a new postgres project.
@@ -45,7 +51,7 @@ func (s *FakeWorkspace) PostgresProjectCreate(req Request, projectID string) Res
 
 	// Check for duplicate
 	if _, exists := s.PostgresProjects[name]; exists {
-		return postgresErrorResponse(409, "project with such id already exists in the workspace")
+		return postgresErrorResponse(409, "ALREADY_EXISTS", "project with such id already exists in the workspace")
 	}
 
 	now := nowTime()
@@ -57,11 +63,11 @@ func (s *FakeWorkspace) PostgresProjectCreate(req Request, projectID string) Res
 	// Copy spec fields to status (API returns status as materialized view)
 	if project.Spec != nil {
 		project.Status = &postgres.ProjectStatus{
-			DisplayName:                project.Spec.DisplayName,
-			PgVersion:                  project.Spec.PgVersion,
-			HistoryRetentionDuration:   project.Spec.HistoryRetentionDuration,
-			Owner:                      TestUser.UserName,
-			BranchLogicalSizeLimitBytes: 1073741824, // 1 GB default
+			DisplayName:                 project.Spec.DisplayName,
+			PgVersion:                   project.Spec.PgVersion,
+			HistoryRetentionDuration:    project.Spec.HistoryRetentionDuration,
+			Owner:                       TestUser.UserName,
+			BranchLogicalSizeLimitBytes: 8796093022208, // 8 TB (real API default)
 			SyntheticStorageSizeBytes:   0,
 			ForceSendFields:             []string{"SyntheticStorageSizeBytes"},
 		}
@@ -92,7 +98,7 @@ func (s *FakeWorkspace) PostgresProjectGet(name string) Response {
 
 	project, exists := s.PostgresProjects[name]
 	if !exists {
-		return postgresErrorResponse(404, "project id not found")
+		return postgresNotFoundResponse("project")
 	}
 
 	return Response{
@@ -122,7 +128,7 @@ func (s *FakeWorkspace) PostgresProjectUpdate(req Request, name string) Response
 
 	project, exists := s.PostgresProjects[name]
 	if !exists {
-		return postgresErrorResponse(404, "project id not found")
+		return postgresNotFoundResponse("project")
 	}
 
 	var updateProject postgres.Project
@@ -169,7 +175,7 @@ func (s *FakeWorkspace) PostgresProjectDelete(name string) Response {
 	defer s.LockUnlock()()
 
 	if _, exists := s.PostgresProjects[name]; !exists {
-		return postgresErrorResponse(404, "project id not found")
+		return postgresNotFoundResponse("project")
 	}
 
 	delete(s.PostgresProjects, name)
@@ -185,7 +191,7 @@ func (s *FakeWorkspace) PostgresBranchCreate(req Request, parent, branchID strin
 
 	// Check if parent project exists
 	if _, exists := s.PostgresProjects[parent]; !exists {
-		return postgresErrorResponse(404, "project id not found")
+		return postgresNotFoundResponse("project")
 	}
 
 	var branch postgres.Branch
@@ -202,7 +208,7 @@ func (s *FakeWorkspace) PostgresBranchCreate(req Request, parent, branchID strin
 
 	// Check for duplicate
 	if _, exists := s.PostgresBranches[name]; exists {
-		return postgresErrorResponse(409, "branch with such id already exists")
+		return postgresErrorResponse(409, "ALREADY_EXISTS", "branch with such id already exists")
 	}
 
 	now := nowTime()
@@ -258,13 +264,13 @@ func (s *FakeWorkspace) PostgresBranchGet(name string) Response {
 	if len(parts) == 2 {
 		projectName := parts[0]
 		if _, exists := s.PostgresProjects[projectName]; !exists {
-			return postgresErrorResponse(404, "project id not found")
+			return postgresNotFoundResponse("project")
 		}
 	}
 
 	branch, exists := s.PostgresBranches[name]
 	if !exists {
-		return postgresErrorResponse(404, "branch id not found")
+		return postgresNotFoundResponse("branch")
 	}
 
 	return Response{
@@ -278,7 +284,7 @@ func (s *FakeWorkspace) PostgresBranchList(parent string) Response {
 
 	// Check if parent project exists
 	if _, exists := s.PostgresProjects[parent]; !exists {
-		return postgresErrorResponse(404, "project id not found")
+		return postgresNotFoundResponse("project")
 	}
 
 	var branches []postgres.Branch
@@ -302,7 +308,7 @@ func (s *FakeWorkspace) PostgresBranchUpdate(req Request, name string) Response 
 
 	branch, exists := s.PostgresBranches[name]
 	if !exists {
-		return postgresErrorResponse(404, "branch id not found")
+		return postgresNotFoundResponse("branch")
 	}
 
 	var updateBranch postgres.Branch
@@ -337,12 +343,12 @@ func (s *FakeWorkspace) PostgresBranchDelete(name string) Response {
 
 	branch, exists := s.PostgresBranches[name]
 	if !exists {
-		return postgresErrorResponse(404, "branch id not found")
+		return postgresNotFoundResponse("branch")
 	}
 
 	// Check if branch is protected
 	if branch.Status != nil && branch.Status.IsProtected {
-		return postgresErrorResponse(400, "cannot delete protected branch")
+		return postgresErrorResponse(400, "BAD_REQUEST", "cannot delete protected branch")
 	}
 
 	delete(s.PostgresBranches, name)
@@ -359,7 +365,7 @@ func (s *FakeWorkspace) PostgresEndpointCreate(req Request, parent, endpointID s
 	// Check if parent branch exists
 	branch, exists := s.PostgresBranches[parent]
 	if !exists {
-		return postgresErrorResponse(404, "branch id not found")
+		return postgresNotFoundResponse("branch")
 	}
 
 	var endpoint postgres.Endpoint
@@ -376,7 +382,7 @@ func (s *FakeWorkspace) PostgresEndpointCreate(req Request, parent, endpointID s
 
 	// Check for duplicate
 	if _, exists := s.PostgresEndpoints[name]; exists {
-		return postgresErrorResponse(409, "endpoint with such id already exists")
+		return postgresErrorResponse(409, "ALREADY_EXISTS", "endpoint with such id already exists")
 	}
 
 	now := nowTime()
@@ -438,21 +444,21 @@ func (s *FakeWorkspace) PostgresEndpointGet(name string) Response {
 	if len(parts) == 2 {
 		projectName := parts[0]
 		if _, exists := s.PostgresProjects[projectName]; !exists {
-			return postgresErrorResponse(404, "project id not found")
+			return postgresNotFoundResponse("project")
 		}
 		// Check if branch exists
 		branchParts := strings.Split(parts[1], "/endpoints/")
 		if len(branchParts) == 2 {
 			branchName := projectName + "/branches/" + branchParts[0]
 			if _, exists := s.PostgresBranches[branchName]; !exists {
-				return postgresErrorResponse(404, "branch id not found")
+				return postgresNotFoundResponse("branch")
 			}
 		}
 	}
 
 	endpoint, exists := s.PostgresEndpoints[name]
 	if !exists {
-		return postgresErrorResponse(404, "endpoint id not found")
+		return postgresNotFoundResponse("endpoint")
 	}
 
 	return Response{
@@ -466,7 +472,7 @@ func (s *FakeWorkspace) PostgresEndpointList(parent string) Response {
 
 	// Check if parent branch exists
 	if _, exists := s.PostgresBranches[parent]; !exists {
-		return postgresErrorResponse(404, "branch id not found")
+		return postgresNotFoundResponse("branch")
 	}
 
 	var endpoints []postgres.Endpoint
@@ -490,7 +496,7 @@ func (s *FakeWorkspace) PostgresEndpointUpdate(req Request, name string) Respons
 
 	endpoint, exists := s.PostgresEndpoints[name]
 	if !exists {
-		return postgresErrorResponse(404, "endpoint id not found")
+		return postgresNotFoundResponse("endpoint")
 	}
 
 	var updateEndpoint postgres.Endpoint
@@ -530,7 +536,7 @@ func (s *FakeWorkspace) PostgresEndpointDelete(name string) Response {
 	defer s.LockUnlock()()
 
 	if _, exists := s.PostgresEndpoints[name]; !exists {
-		return postgresErrorResponse(404, "endpoint id not found")
+		return postgresNotFoundResponse("endpoint")
 	}
 
 	delete(s.PostgresEndpoints, name)
@@ -546,7 +552,7 @@ func (s *FakeWorkspace) PostgresOperationGet(name string) Response {
 
 	operation, exists := s.PostgresOperations[name]
 	if !exists {
-		return postgresErrorResponse(404, "operation not found")
+		return postgresNotFoundResponse("operation")
 	}
 
 	return Response{
@@ -559,17 +565,25 @@ func (s *FakeWorkspace) createOperationLocked(resourceName string, response any)
 	operationID := nextUUID()
 	operationName := resourceName + "/operations/" + operationID
 
+	// Determine resource type from name for metadata @type
+	resourceType := "Project"
+	if strings.Contains(resourceName, "/endpoints/") {
+		resourceType = "Endpoint"
+	} else if strings.Contains(resourceName, "/branches/") {
+		resourceType = "Branch"
+	}
+
 	op := postgres.Operation{
-		Name: operationName,
-		Done: true,
+		Name:     operationName,
+		Done:     true,
+		Metadata: []byte(fmt.Sprintf(`{"@type":"type.googleapis.com/databricks.postgres.v1.%sOperationMetadata"}`, resourceType)),
 	}
 	if response != nil {
 		data, _ := json.Marshal(response)
 		op.Response = data
 	} else {
-		// For delete operations, provide an empty JSON object as response
-		// The SDK requires non-nil Response even for delete operations
-		op.Response = []byte("{}")
+		// For delete operations, provide Empty response with @type
+		op.Response = []byte(`{"@type":"type.googleapis.com/google.protobuf.Empty"}`)
 	}
 
 	s.PostgresOperations[operationName] = op
