@@ -17,6 +17,7 @@ __all__ = [
     "load_resources_from_module",
     "load_resources_from_modules",
     "load_resources_from_package_module",
+    "model_serving_endpoint_mutator",
     "pipeline_mutator",
     "schema_mutator",
     "variables",
@@ -40,6 +41,7 @@ from databricks.bundles.core._resource import Resource
 from databricks.bundles.core._resource_mutator import (
     ResourceMutator,
     job_mutator,
+    model_serving_endpoint_mutator,
     pipeline_mutator,
     schema_mutator,
     volume_mutator,

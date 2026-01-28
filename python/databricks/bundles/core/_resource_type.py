@@ -32,6 +32,9 @@ class _ResourceType:
         # be imported in databricks.bundles.<resource_type>
 
         from databricks.bundles.jobs._models.job import Job
+        from databricks.bundles.model_serving_endpoints._models.model_serving_endpoint import (
+            ModelServingEndpoint,
+        )
         from databricks.bundles.pipelines._models.pipeline import Pipeline
         from databricks.bundles.schemas._models.schema import Schema
         from databricks.bundles.volumes._models.volume import Volume
@@ -56,5 +59,10 @@ class _ResourceType:
                 resource_type=Schema,
                 plural_name="schemas",
                 singular_name="schema",
+            ),
+            _ResourceType(
+                resource_type=ModelServingEndpoint,
+                plural_name="model_serving_endpoints",
+                singular_name="model_serving_endpoint",
             ),
         )

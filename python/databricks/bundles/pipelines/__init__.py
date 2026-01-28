@@ -147,6 +147,10 @@ __all__ = [
     "TableSpecificConfigParam",
     "TableSpecificConfigScdType",
     "TableSpecificConfigScdTypeParam",
+    "VariableOr",
+    "VariableOrDict",
+    "VariableOrList",
+    "VariableOrOptional",
     "VolumesStorageInfo",
     "VolumesStorageInfoDict",
     "VolumesStorageInfoParam",
@@ -156,6 +160,12 @@ __all__ = [
 ]
 
 
+from databricks.bundles.core import (
+    VariableOr,
+    VariableOrDict,
+    VariableOrList,
+    VariableOrOptional,
+)
 from databricks.bundles.pipelines._models.adlsgen2_info import (
     Adlsgen2Info,
     Adlsgen2InfoDict,

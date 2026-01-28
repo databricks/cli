@@ -1,3 +1,4 @@
+import os
 import re
 from typing import Optional
 
@@ -7,6 +8,7 @@ RESOURCE_NAMESPACE = {
     "resources.Pipeline": "pipelines",
     "resources.Schema": "schemas",
     "resources.Volume": "volumes",
+    "resources.ModelServingEndpoint": "model_serving_endpoints",  # serving
 }
 
 RESOURCE_TYPES = list(RESOURCE_NAMESPACE.keys())
@@ -20,6 +22,8 @@ LOADED_NAMESPACES = [
     "pipelines",
     "resources",
     "catalog",
+    "model_serving_endpoints",
+    "serving",  # this exists within model_serving_endpoints and for some reason needs to be loaded separately
 ]
 
 RENAMES = {

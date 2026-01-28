@@ -123,6 +123,43 @@ def _generate_code(
     return dataclasses, enums
 
 
+def _get_cross_namespace_imports(
+    namespace: str,
+    dataclasses: dict[str, GeneratedDataclass],
+    enums: dict[str, GeneratedEnum],
+) -> tuple[list[str], dict[str, list[str]]]:
+    """
+    Collect cross-namespace imports (types from other packages referenced by this namespace).
+    Returns (export_list, import_dict) where import_dict maps package -> list of class names.
+    """
+    cross_namespace_packages = {}
+    cross_namespace_exports = []
+
+    root_package = packages.get_root_package(namespace)
+
+    # Collect all referenced packages from dataclasses
+    for dataclass in dataclasses.values():
+        for field in dataclass.fields:
+            if field.type_name.package and field.type_name.package != root_package:
+                if field.type_name.package not in cross_namespace_packages:
+                    cross_namespace_packages[field.type_name.package] = []
+                class_name = field.type_name.name.strip('"')
+                if class_name not in cross_namespace_packages[field.type_name.package]:
+                    cross_namespace_packages[field.type_name.package].append(class_name)
+                    cross_namespace_exports.append(class_name)
+
+    # Collect all referenced packages from enums
+    for enum in enums.values():
+        if enum.package and enum.package != root_package:
+            if enum.package not in cross_namespace_packages:
+                cross_namespace_packages[enum.package] = []
+            if enum.class_name not in cross_namespace_packages[enum.package]:
+                cross_namespace_packages[enum.package].append(enum.class_name)
+                cross_namespace_exports.append(enum.class_name)
+
+    return cross_namespace_exports, cross_namespace_packages
+
+
 def _write_exports(
     namespace: str,
     dataclasses: dict[str, GeneratedDataclass],
@@ -141,6 +178,13 @@ def _write_exports(
     for _, enum in enums.items():
         exports += [enum.class_name, f"{enum.class_name}Param"]
 
+    # Add cross-namespace imports to exports
+    cross_ns_exports, cross_ns_packages = _get_cross_namespace_imports(
+        namespace, dataclasses, enums
+    )
+    exports.extend(cross_ns_exports)
+
+    exports = list(set(exports))  # Remove duplicates
     exports.sort()
 
     b = CodeBuilder()
@@ -154,6 +198,14 @@ def _write_exports(
 
     generated_imports.append_dataclass_imports(b, dataclasses, exclude_packages=[])
     generated_imports.append_enum_imports(b, enums, exclude_packages=[])
+
+    # Add cross-namespace re-exports
+    for package, class_names in sorted(cross_ns_packages.items()):
+        for class_name in sorted(set(class_names)):
+            b.append(f"from {package} import {class_name}").newline()
+
+    if cross_ns_packages:
+        b.newline()
 
     # FIXME should be better generalized
     if namespace == "jobs":

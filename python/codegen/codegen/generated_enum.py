@@ -80,6 +80,7 @@ def get_code(generated: GeneratedEnum) -> str:
 
 
 def _camel_to_upper_snake(value):
-    s1 = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", value)
+    s1 = value.replace("-", "_")  # TODO: regex sanitzer
+    s2 = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", s1)
 
-    return re.sub("([a-z0-9])([A-Z])", r"\1_\2", s1).upper()
+    return re.sub("([a-z0-9])([A-Z])", r"\1_\2", s2).upper()

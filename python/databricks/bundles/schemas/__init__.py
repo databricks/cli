@@ -10,9 +10,19 @@ __all__ = [
     "SchemaGrantPrivilege",
     "SchemaGrantPrivilegeParam",
     "SchemaParam",
+    "VariableOr",
+    "VariableOrDict",
+    "VariableOrList",
+    "VariableOrOptional",
 ]
 
 
+from databricks.bundles.core import (
+    VariableOr,
+    VariableOrDict,
+    VariableOrList,
+    VariableOrOptional,
+)
 from databricks.bundles.schemas._models.lifecycle import (
     Lifecycle,
     LifecycleDict,
