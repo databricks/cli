@@ -39,10 +39,30 @@ func (*ResourcePostgresEndpoint) PrepareState(input *resources.PostgresEndpoint)
 }
 
 func (*ResourcePostgresEndpoint) RemapState(remote *postgres.Endpoint) *PostgresEndpointState {
+	// Extract endpoint_id from hierarchical name: "projects/{project_id}/branches/{branch_id}/endpoints/{endpoint_id}"
+	endpointId := ""
+	if remote.Name != "" {
+		parts := strings.Split(remote.Name, "/")
+		if len(parts) >= 6 {
+			endpointId = parts[5]
+		}
+	}
+
+	// Populate spec from status (effective values)
+	spec := &postgres.EndpointSpec{}
+	if remote.Status != nil {
+		spec.AutoscalingLimitMaxCu = remote.Status.AutoscalingLimitMaxCu
+		spec.AutoscalingLimitMinCu = remote.Status.AutoscalingLimitMinCu
+		spec.Disabled = remote.Status.Disabled
+		spec.EndpointType = remote.Status.EndpointType
+		spec.Settings = remote.Status.Settings
+		spec.SuspendTimeoutDuration = remote.Status.SuspendTimeoutDuration
+	}
+
 	return &PostgresEndpointState{
-		Parent: remote.Parent,
-		Spec:   remote.Spec,
-		// EndpointId is not available in remote state, it's already part of the Name
+		Parent:     remote.Parent,
+		Spec:       spec,
+		EndpointId: endpointId,
 	}
 }
 

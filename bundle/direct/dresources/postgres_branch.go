@@ -3,6 +3,7 @@ package dresources
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go"
@@ -35,10 +36,29 @@ func (*ResourcePostgresBranch) PrepareState(input *resources.PostgresBranch) *Po
 }
 
 func (*ResourcePostgresBranch) RemapState(remote *postgres.Branch) *PostgresBranchState {
+	// Extract branch_id from hierarchical name: "projects/{project_id}/branches/{branch_id}"
+	branchId := ""
+	if remote.Name != "" {
+		parts := strings.Split(remote.Name, "/")
+		if len(parts) >= 4 {
+			branchId = parts[3]
+		}
+	}
+
+	// Populate spec from status (effective values)
+	spec := &postgres.BranchSpec{}
+	if remote.Status != nil {
+		spec.ExpireTime = remote.Status.ExpireTime
+		spec.IsProtected = remote.Status.IsProtected
+		spec.SourceBranch = remote.Status.SourceBranch
+		spec.SourceBranchLsn = remote.Status.SourceBranchLsn
+		spec.SourceBranchTime = remote.Status.SourceBranchTime
+	}
+
 	return &PostgresBranchState{
-		Parent: remote.Parent,
-		Spec:   remote.Spec,
-		// BranchId is not available in remote state, it's already part of the Name
+		Parent:   remote.Parent,
+		Spec:     spec,
+		BranchId: branchId,
 	}
 }
 

@@ -1,0 +1,13 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+resources:
+  postgres_projects:
+    project:
+      project_id: test-pg-project-$UNIQUE_NAME
+      display_name: Test Postgres Project
+
+  postgres_branches:
+    foo:
+      parent: ${resources.postgres_projects.project.name}
+      branch_id: test-branch-$UNIQUE_NAME

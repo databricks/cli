@@ -3,6 +3,7 @@ package dresources
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go"
@@ -33,9 +34,21 @@ func (*ResourcePostgresProject) PrepareState(input *resources.PostgresProject) *
 }
 
 func (*ResourcePostgresProject) RemapState(remote *postgres.Project) *PostgresProjectState {
+	// Extract project_id from hierarchical name: "projects/{project_id}"
+	projectId := strings.TrimPrefix(remote.Name, "projects/")
+
+	// Populate spec from status (effective values)
+	spec := &postgres.ProjectSpec{}
+	if remote.Status != nil {
+		spec.DisplayName = remote.Status.DisplayName
+		spec.PgVersion = remote.Status.PgVersion
+		spec.HistoryRetentionDuration = remote.Status.HistoryRetentionDuration
+		spec.DefaultEndpointSettings = remote.Status.DefaultEndpointSettings
+	}
+
 	return &PostgresProjectState{
-		Spec: remote.Spec,
-		// ProjectId is not available in remote state, it's already part of the Name
+		Spec:      spec,
+		ProjectId: projectId,
 	}
 }
 
