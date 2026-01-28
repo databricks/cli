@@ -2,6 +2,7 @@ package apps
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -146,4 +147,82 @@ func addBlankLinesBetweenTopLevelKeys(filename string) error {
 		}
 	}
 	return writer.Flush()
+}
+
+// inlineAppConfigFile reads app.yml or app.yaml, inlines it into the app value, and returns the filename.
+func inlineAppConfigFile(appValue *dyn.Value) (string, error) {
+	var appConfigFile string
+	var appConfigData []byte
+	var err error
+
+	for _, filename := range []string{"app.yml", "app.yaml"} {
+		if _, statErr := os.Stat(filename); statErr == nil {
+			appConfigFile = filename
+			appConfigData, err = os.ReadFile(filename)
+			if err != nil {
+				return "", fmt.Errorf("failed to read %s: %w", filename, err)
+			}
+			break
+		}
+	}
+
+	if appConfigFile == "" {
+		return "", nil
+	}
+
+	var appConfigNode yaml.Node
+	err = yaml.Unmarshal(appConfigData, &appConfigNode)
+	if err != nil {
+		return "", fmt.Errorf("failed to parse %s: %w", appConfigFile, err)
+	}
+
+	appConfigValue, err := yamlNodeToDynValue(&appConfigNode)
+	if err != nil {
+		return "", fmt.Errorf("failed to convert app config: %w", err)
+	}
+
+	appConfigMap, ok := appConfigValue.AsMap()
+	if !ok {
+		return "", errors.New("app config is not a map")
+	}
+
+	appMap, ok := appValue.AsMap()
+	if !ok {
+		return "", errors.New("app value is not a map")
+	}
+
+	newPairs := make([]dyn.Pair, 0, len(appMap.Pairs())+2)
+	newPairs = append(newPairs, appMap.Pairs()...)
+
+	var configPairs []dyn.Pair
+	var resourcesValue dyn.Value
+
+	for _, pair := range appConfigMap.Pairs() {
+		key := pair.Key.MustString()
+		switch key {
+		case "command", "env":
+			configPairs = append(configPairs, pair)
+		case "resources":
+			resourcesValue = pair.Value
+		}
+	}
+
+	if len(configPairs) > 0 {
+		newPairs = append(newPairs, dyn.Pair{
+			Key:   dyn.V("config"),
+			Value: dyn.NewValue(dyn.NewMappingFromPairs(configPairs), []dyn.Location{}),
+		})
+	}
+
+	if resourcesValue.Kind() != dyn.KindInvalid {
+		newPairs = append(newPairs, dyn.Pair{
+			Key:   dyn.V("resources"),
+			Value: resourcesValue,
+		})
+	}
+
+	newMapping := dyn.NewMappingFromPairs(newPairs)
+	*appValue = dyn.NewValue(newMapping, appValue.Locations())
+
+	return appConfigFile, nil
 }

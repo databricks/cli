@@ -9,8 +9,6 @@ import (
 	"sort"
 	"strings"
 
-	"go.yaml.in/yaml/v3"
-
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/generate"
@@ -220,6 +218,8 @@ Examples:
 	return cmd
 }
 
+// runImport orchestrates the app import process: loads the app from workspace,
+// generates bundle files, binds to the existing app, deploys, and starts it.
 func runImport(ctx context.Context, w *databricks.WorkspaceClient, appName, outputDir string, oldSourceCodePath *string, forceImport bool, currentUserEmail string, quiet bool) error {
 	// Step 1: Load the app from workspace
 	if !quiet {
@@ -405,6 +405,7 @@ func runImport(ctx context.Context, w *databricks.WorkspaceClient, appName, outp
 	return nil
 }
 
+// generateAppBundle creates a databricks.yml configuration file and downloads the app source code.
 func generateAppBundle(ctx context.Context, w *databricks.WorkspaceClient, app *apps.App, quiet bool) (string, error) {
 	// Use constant "app" as the resource key
 	appKey := "app"
@@ -579,95 +580,4 @@ func generateEnvFile(ctx context.Context, host, profile string, app *apps.App, q
 	}
 
 	return nil
-}
-
-// inlineAppConfigFile reads app.yml or app.yaml, inlines it into the app value, and returns the filename
-func inlineAppConfigFile(appValue *dyn.Value) (string, error) {
-	// Check for app.yml first, then app.yaml
-	var appConfigFile string
-	var appConfigData []byte
-	var err error
-
-	for _, filename := range []string{"app.yml", "app.yaml"} {
-		if _, statErr := os.Stat(filename); statErr == nil {
-			appConfigFile = filename
-			appConfigData, err = os.ReadFile(filename)
-			if err != nil {
-				return "", fmt.Errorf("failed to read %s: %w", filename, err)
-			}
-			break
-		}
-	}
-
-	// No app config file found
-	if appConfigFile == "" {
-		return "", nil
-	}
-
-	// Parse the app config as yaml.Node to preserve exact field names (e.g., value_from not valueFrom)
-	var appConfigNode yaml.Node
-	err = yaml.Unmarshal(appConfigData, &appConfigNode)
-	if err != nil {
-		return "", fmt.Errorf("failed to parse %s: %w", appConfigFile, err)
-	}
-
-	// Convert yaml.Node to dyn.Value preserving field names
-	appConfigValue, err := yamlNodeToDynValue(&appConfigNode)
-	if err != nil {
-		return "", fmt.Errorf("failed to convert app config: %w", err)
-	}
-
-	appConfigMap, ok := appConfigValue.AsMap()
-	if !ok {
-		return "", errors.New("app config is not a map")
-	}
-
-	// Get the current app value as a map
-	appMap, ok := appValue.AsMap()
-	if !ok {
-		return "", errors.New("app value is not a map")
-	}
-
-	// Build the new app map with the config section
-	newPairs := make([]dyn.Pair, 0, len(appMap.Pairs())+2)
-
-	// Copy existing pairs
-	newPairs = append(newPairs, appMap.Pairs()...)
-
-	// Create config section from app.yml fields
-	var configPairs []dyn.Pair
-	var resourcesValue dyn.Value
-
-	// Iterate through app config pairs to extract command, env, and resources
-	for _, pair := range appConfigMap.Pairs() {
-		key := pair.Key.MustString()
-		switch key {
-		case "command", "env":
-			configPairs = append(configPairs, pair)
-		case "resources":
-			resourcesValue = pair.Value
-		}
-	}
-
-	// Add the config section if we have any items
-	if len(configPairs) > 0 {
-		newPairs = append(newPairs, dyn.Pair{
-			Key:   dyn.V("config"),
-			Value: dyn.NewValue(dyn.NewMappingFromPairs(configPairs), []dyn.Location{}),
-		})
-	}
-
-	// Add resources at top level if present
-	if resourcesValue.Kind() != dyn.KindInvalid {
-		newPairs = append(newPairs, dyn.Pair{
-			Key:   dyn.V("resources"),
-			Value: resourcesValue,
-		})
-	}
-
-	// Create the new app value with the config section
-	newMapping := dyn.NewMappingFromPairs(newPairs)
-	*appValue = dyn.NewValue(newMapping, appValue.Locations())
-
-	return appConfigFile, nil
 }
