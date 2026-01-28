@@ -135,7 +135,7 @@ func applyChanges(ctx context.Context, filePath string, changes resolvedChanges,
 		success := false
 		var lastErr error
 		var lastPointer string
-		var parentPathErrors []parentNode
+		var parentNodes []parentNode
 
 		normalizedRemote, err := normalizeValue(changeDesc.Remote)
 		if err != nil {
@@ -173,7 +173,7 @@ func applyChanges(ctx context.Context, filePath string, changes resolvedChanges,
 				// Collect parent path errors for later retry
 				if patchErr != nil && isParentPathError(patchErr) {
 					if missingPath, extractErr := extractMissingPath(patchErr); extractErr == nil {
-						parentPathErrors = append(parentPathErrors, parentNode{path, missingPath})
+						parentNodes = append(parentNodes, parentNode{path, missingPath})
 					}
 				}
 			} else {
@@ -193,8 +193,8 @@ func applyChanges(ctx context.Context, filePath string, changes resolvedChanges,
 		}
 
 		// If all attempts failed with parent path errors, try creating nested structures
-		if !success && len(parentPathErrors) > 0 {
-			for _, errInfo := range parentPathErrors {
+		if !success && len(parentNodes) > 0 {
+			for _, errInfo := range parentNodes {
 				nestedValue := buildNestedStructure(errInfo.path, errInfo.missingPath, normalizedRemote)
 
 				patcher := gopkgv3yamlpatcher.New(gopkgv3yamlpatcher.IndentSpaces(2))
