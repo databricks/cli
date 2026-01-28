@@ -1782,6 +1782,11 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		return runErr
 	}
 
+	// Write .gitignore if it doesn't exist
+	if err := writeGitignoreIfMissing(ctx, absOutputDir); err != nil {
+		cmdio.LogString(ctx, fmt.Sprintf("⚠ Failed to create .gitignore: %v", err))
+	}
+
 	return runPostCreationSteps(ctx, absOutputDir, opts.name, fileCount, shouldDeploy, runMode)
 }
 
