@@ -38,8 +38,6 @@ Deployment complete!
 === Compare normalized snapshots
 >>> diff.py out.bundle1.json out.bundle2.json
 
-=== Test completed successfullyBoth snapshots are identical after normalizing bundle names
-
 === Cleanup bundle 1
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
