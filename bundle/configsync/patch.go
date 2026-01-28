@@ -116,15 +116,15 @@ func applyChanges(ctx context.Context, filePath string, changes resolvedChanges,
 
 	for _, fieldPath := range fieldPaths {
 		changeDesc := changes[fieldPath]
-		jsonPointer, err := strPathToJSONPointer(fieldPath)
+		fieldJsonPointer, err := strPathToJSONPointer(fieldPath)
 		if err != nil {
 			return "", fmt.Errorf("failed to convert field path %q to JSON pointer: %w", fieldPath, err)
 		}
 
-		jsonPointers := []string{jsonPointer}
+		jsonPointers := []string{fieldJsonPointer}
 		if targetName != "" {
 			targetPrefix := "/targets/" + targetName
-			jsonPointers = append(jsonPointers, targetPrefix+jsonPointer)
+			jsonPointers = append(jsonPointers, targetPrefix+fieldJsonPointer)
 		}
 
 		hasConfigValue := changeDesc.Old != nil || changeDesc.New != nil
@@ -134,12 +134,11 @@ func applyChanges(ctx context.Context, filePath string, changes resolvedChanges,
 
 		success := false
 		var lastErr error
-		var lastPointer string
-		var parentNodes []parentNode
+		var parentNodesToCreate []parentNode
 
 		normalizedRemote, err := normalizeValue(changeDesc.Remote)
 		if err != nil {
-			return "", fmt.Errorf("failed to normalize remote value for %s: %w", jsonPointer, err)
+			return "", fmt.Errorf("failed to normalize remote value for %s: %w", fieldJsonPointer, err)
 		}
 
 		for _, jsonPointer := range jsonPointers {
@@ -173,7 +172,7 @@ func applyChanges(ctx context.Context, filePath string, changes resolvedChanges,
 				// Collect parent path errors for later retry
 				if patchErr != nil && isParentPathError(patchErr) {
 					if missingPath, extractErr := extractMissingPath(patchErr); extractErr == nil {
-						parentNodes = append(parentNodes, parentNode{path, missingPath})
+						parentNodesToCreate = append(parentNodesToCreate, parentNode{path, missingPath})
 					}
 				}
 			} else {
@@ -184,17 +183,17 @@ func applyChanges(ctx context.Context, filePath string, changes resolvedChanges,
 				content = modifiedContent
 				log.Debugf(ctx, "Applied changes to %s", jsonPointer)
 				success = true
+				lastErr = nil
 				break
 			}
 
 			log.Debugf(ctx, "Failed to apply change to %s: %v", jsonPointer, patchErr)
 			lastErr = patchErr
-			lastPointer = jsonPointer
 		}
 
 		// If all attempts failed with parent path errors, try creating nested structures
-		if !success && len(parentNodes) > 0 {
-			for _, errInfo := range parentNodes {
+		if !success && len(parentNodesToCreate) > 0 {
+			for _, errInfo := range parentNodesToCreate {
 				nestedValue := buildNestedStructure(errInfo.path, errInfo.missingPath, normalizedRemote)
 
 				patcher := gopkgv3yamlpatcher.New(gopkgv3yamlpatcher.IndentSpaces(2))
@@ -206,20 +205,22 @@ func applyChanges(ctx context.Context, filePath string, changes resolvedChanges,
 
 				if patchErr == nil {
 					content = modifiedContent
+					lastErr = nil
 					log.Debugf(ctx, "Created nested structure at %s", errInfo.missingPath.String())
-					success = true
 					break
 				}
+				lastErr = patchErr
 				log.Debugf(ctx, "Failed to create nested structure at %s: %v", errInfo.missingPath.String(), patchErr)
 			}
 		}
 
-		if !success {
-			if lastErr != nil {
-				return "", fmt.Errorf("failed to apply change %s: %w", lastPointer, lastErr)
+		if lastErr != nil {
+			if (isRemoval || isReplacement) && isPathNotFoundError(lastErr) {
+				return "", fmt.Errorf("failed to apply change %s: field not found in YAML configuration: %w", fieldJsonPointer, lastErr)
 			}
-			return "", fmt.Errorf("failed to apply change for field %s: no valid target found", fieldPath)
+			return "", fmt.Errorf("failed to apply change %s: %w", fieldJsonPointer, lastErr)
 		}
+
 	}
 
 	return string(content), nil
@@ -269,6 +270,15 @@ func isParentPathError(err error) bool {
 	}
 	msg := err.Error()
 	return strings.Contains(msg, "parent path") && strings.Contains(msg, "does not exist")
+}
+
+// isPathNotFoundError checks if error indicates the path itself does not exist.
+func isPathNotFoundError(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := err.Error()
+	return strings.Contains(msg, "does not exist")
 }
 
 // extractMissingPath extracts the missing path from error message like:
