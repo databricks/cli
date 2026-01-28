@@ -2,10 +2,14 @@ package dresources
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"strings"
+	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/apierr"
 	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
 	"github.com/databricks/databricks-sdk-go/service/postgres"
 )
@@ -46,6 +50,30 @@ func (r *ResourcePostgresEndpoint) DoRead(ctx context.Context, id string) (*post
 	return r.client.Postgres.GetEndpoint(ctx, postgres.GetEndpointRequest{Name: id})
 }
 
+// waitForReconciliation polls the endpoint until PendingState is empty.
+// This is needed because the operation can complete while internal reconciliation
+// is still in progress, which would cause subsequent operations to fail.
+func (r *ResourcePostgresEndpoint) waitForReconciliation(ctx context.Context, name string) (*postgres.Endpoint, error) {
+	for {
+		endpoint, err := r.client.Postgres.GetEndpoint(ctx, postgres.GetEndpointRequest{Name: name})
+		if err != nil {
+			return nil, err
+		}
+
+		// If there's no pending state, reconciliation is complete
+		if endpoint.Status == nil || endpoint.Status.PendingState == "" {
+			return endpoint, nil
+		}
+
+		// Wait before polling again
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-time.After(2 * time.Second):
+		}
+	}
+}
+
 func (r *ResourcePostgresEndpoint) DoCreate(ctx context.Context, config *PostgresEndpointState) (string, *postgres.Endpoint, error) {
 	endpointId := config.EndpointId
 	if endpointId == "" {
@@ -68,8 +96,14 @@ func (r *ResourcePostgresEndpoint) DoCreate(ctx context.Context, config *Postgre
 		return "", nil, err
 	}
 
-	// Wait for the endpoint to be ready (long-running operation)
+	// Wait for the operation to complete
 	result, err := waiter.Wait(ctx)
+	if err != nil {
+		return "", nil, err
+	}
+
+	// Wait for reconciliation to complete
+	result, err = r.waitForReconciliation(ctx, result.Name)
 	if err != nil {
 		return "", nil, err
 	}
@@ -93,16 +127,36 @@ func (r *ResourcePostgresEndpoint) DoUpdate(ctx context.Context, id string, conf
 	}
 
 	// Wait for the update to complete
-	result, err := waiter.Wait(ctx)
-	return result, err
+	_, err = waiter.Wait(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Wait for reconciliation to complete
+	return r.waitForReconciliation(ctx, id)
 }
 
 func (r *ResourcePostgresEndpoint) DoDelete(ctx context.Context, id string) error {
-	waiter, err := r.client.Postgres.DeleteEndpoint(ctx, postgres.DeleteEndpointRequest{
-		Name: id,
-	})
-	if err != nil {
-		return err
+	// Retry loop to handle "Endpoint reconciliation still in progress" errors
+	for {
+		waiter, err := r.client.Postgres.DeleteEndpoint(ctx, postgres.DeleteEndpointRequest{
+			Name: id,
+		})
+		if err != nil {
+			// Check if this is a reconciliation in progress error
+			var apiErr *apierr.APIError
+			if errors.As(err, &apiErr) && apiErr.StatusCode == 409 &&
+				strings.Contains(apiErr.Message, "reconciliation") {
+				// Wait and retry
+				select {
+				case <-ctx.Done():
+					return ctx.Err()
+				case <-time.After(2 * time.Second):
+					continue
+				}
+			}
+			return err
+		}
+		return waiter.Wait(ctx)
 	}
-	return waiter.Wait(ctx)
 }

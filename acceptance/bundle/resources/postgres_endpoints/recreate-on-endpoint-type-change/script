@@ -2,9 +2,6 @@
 
 # Cleanup function to delete endpoint and other resources
 cleanup() {
-   # Wait for endpoint to fully stabilize before destroying (only in cloud mode)
-   [ -n "$CLOUD_ENV" ] && sleep 10
-
    # Try to delete with current config
    trace $CLI bundle destroy --auto-approve
 
@@ -25,7 +22,9 @@ trace $CLI bundle deploy
 endpoint_id_1=`read_id.py my_endpoint`
 
 print_requests() {
-    jq --sort-keys 'select(.method != "GET" and (.path | contains("/postgres")))' < out.requests.txt
+    # Filter postgres requests (excluding GET), then deduplicate consecutive retries
+    jq --sort-keys 'select(.method != "GET" and (.path | contains("/postgres")))' < out.requests.txt | \
+        awk '!seen[$0]++ {print}'
     rm -f out.requests.txt
 }
 
@@ -38,7 +37,6 @@ mv databricks.yml.new databricks.yml
 trace cat databricks.yml
 
 trace $CLI bundle plan
-[ -n "$CLOUD_ENV" ] && sleep 10  # Wait before recreation (only in cloud mode)
 trace $CLI bundle deploy --auto-approve
 
 trace print_requests
@@ -53,7 +51,6 @@ trace $CLI postgres get-endpoint $endpoint_id_2 | jq 'del(.create_time, .update_
 # (endpoint_id didn't change, only endpoint_type). The DELETE/POST in requests proves recreation.
 
 title "Destroy the endpoint and verify that it's removed from the state and from remote"
-[ -n "$CLOUD_ENV" ] && sleep 10  # Wait before final cleanup (only in cloud mode)
 trace $CLI bundle destroy --auto-approve
 
 trace print_requests

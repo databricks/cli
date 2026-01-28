@@ -66,32 +66,14 @@ Deployment complete!
     "project_id": "test-pg-proj-[UNIQUE_NAME]"
   }
 }
-{
-  "body": {
-    "spec": {
       "no_expiry": true
-    }
-  },
-  "method": "POST",
   "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches",
-  "q": {
     "branch_id": "main"
-  }
-}
-{
-  "body": {
-    "spec": {
       "autoscaling_limit_max_cu": 2,
       "autoscaling_limit_min_cu": 0.5,
       "endpoint_type": "ENDPOINT_TYPE_READ_WRITE"
-    }
-  },
-  "method": "POST",
   "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main/endpoints",
-  "q": {
     "endpoint_id": "test-endpoint-[UNIQUE_NAME]"
-  }
-}
 
 >>> cat databricks.yml
 bundle:
@@ -145,7 +127,6 @@ Deployment complete!
   "method": "DELETE",
   "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]"
 }
-{
   "body": {
     "spec": {
       "default_endpoint_settings": {
@@ -163,41 +144,16 @@ Deployment complete!
   "q": {
     "project_id": "test-pg-proj-[UNIQUE_NAME]"
   }
-}
-{
-  "method": "DELETE",
   "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main"
-}
-{
-  "body": {
-    "spec": {
       "no_expiry": true
-    }
-  },
-  "method": "POST",
   "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches",
-  "q": {
     "branch_id": "main"
-  }
-}
-{
-  "method": "DELETE",
   "path": "/api/2.0/postgres/[MY_ENDPOINT_ID]"
-}
-{
-  "body": {
-    "spec": {
       "autoscaling_limit_max_cu": 2,
       "autoscaling_limit_min_cu": 0.5,
       "endpoint_type": "ENDPOINT_TYPE_READ_ONLY"
-    }
-  },
-  "method": "POST",
   "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main/endpoints",
-  "q": {
     "endpoint_id": "test-endpoint-[UNIQUE_NAME]"
-  }
-}
 
 === Fetch endpoint ID and verify it has the new type (READ_ONLY)
 >>> [CLI] postgres get-endpoint [MY_ENDPOINT_ID]
@@ -220,14 +176,8 @@ Destroy complete!
   "method": "DELETE",
   "path": "/api/2.0/postgres/[MY_ENDPOINT_ID]"
 }
-{
-  "method": "DELETE",
   "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main"
-}
-{
-  "method": "DELETE",
   "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]"
-}
 
 >>> musterr [CLI] postgres get-endpoint [MY_ENDPOINT_ID]
 Error: project id not found [TraceId: [TRACE_ID]]

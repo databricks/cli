@@ -2,8 +2,6 @@
 envsubst < databricks.yml.tmpl > databricks.yml
 
 cleanup() {
-   # Wait for endpoint to fully stabilize before destroying
-   sleep 10
    trace $CLI bundle destroy --auto-approve
 }
 trap cleanup EXIT
