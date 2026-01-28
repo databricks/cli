@@ -23,13 +23,13 @@
       "changes": {
         "etag": {
           "action": "skip",
-          "reason": "override",
+          "reason": "custom",
           "old": "[NUMID]",
           "remote": "[NUMID]"
         },
         "serialized_dashboard": {
           "action": "skip",
-          "reason": "override",
+          "reason": "custom",
           "old": "{\"pages\":[{\"name\":\"02724bf2\",\"displayName\":\"Dashboard test bundle-deploy-dashboard\"}]}\n",
           "new": "{\"pages\":[{\"name\":\"02724bf2\",\"displayName\":\"Dashboard test bundle-deploy-dashboard\"}]}\n",
           "remote": "{\"pages\":[{\"displayName\":\"Dashboard test bundle-deploy-dashboard\",\"name\":\"02724bf2\",\"pageType\":\"PAGE_TYPE_CANVAS\"}]}\n"

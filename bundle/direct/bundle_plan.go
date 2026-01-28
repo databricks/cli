@@ -411,7 +411,7 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 
 			if !structdiff.IsEqual(savedCh, *ch) && savedReason == ch.Reason {
 				// ch was changed but not Reason field; set it to default
-				ch.Reason = deployplan.ReasonOverrideFunc
+				ch.Reason = deployplan.ReasonCustom
 			}
 		}
 	}

@@ -19,7 +19,7 @@
       "changes": {
         "etag": {
           "action": "update",
-          "reason": "override",
+          "reason": "custom",
           "old": [ETAG]
         }
       }
