@@ -1,4 +1,4 @@
-package apps
+package legacytemplates
 
 import (
 	"os"

@@ -15,6 +15,8 @@ import (
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/resources"
 	"github.com/databricks/cli/bundle/run"
+	"github.com/databricks/cli/cmd/apps/internal/yamlutil"
+	"github.com/databricks/cli/cmd/apps/legacytemplates"
 	bundleutils "github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
@@ -430,7 +432,7 @@ func generateAppBundle(ctx context.Context, w *databricks.WorkspaceClient, app *
 	}
 
 	// Check for app.yml or app.yaml and inline its contents
-	appConfigFile, err := inlineAppConfigFile(&v)
+	appConfigFile, err := yamlutil.InlineAppConfigFile(&v)
 	if err != nil {
 		return "", fmt.Errorf("failed to inline app config: %w", err)
 	}
@@ -477,7 +479,7 @@ func generateAppBundle(ctx context.Context, w *databricks.WorkspaceClient, app *
 	}
 
 	// Add blank lines between top-level keys for better readability
-	err = addBlankLinesBetweenTopLevelKeys(databricksYml)
+	err = yamlutil.AddBlankLinesBetweenTopLevelKeys(databricksYml)
 	if err != nil {
 		return "", fmt.Errorf("failed to format databricks.yml: %w", err)
 	}
@@ -559,7 +561,7 @@ func generateEnvFile(ctx context.Context, host, profile string, app *apps.App, q
 	resources := buildResourcesMap(app)
 
 	// Create EnvFileBuilder
-	builder, err := NewEnvFileBuilder(host, profile, app.Name, appYmlPath, resources)
+	builder, err := legacytemplates.NewEnvFileBuilder(host, profile, app.Name, appYmlPath, resources)
 	if err != nil {
 		return fmt.Errorf("failed to create env builder: %w", err)
 	}
@@ -575,7 +577,7 @@ func generateEnvFile(ctx context.Context, host, profile string, app *apps.App, q
 	}
 
 	// Write .gitignore if it doesn't exist
-	if err := writeGitignoreIfMissing(ctx, "."); err != nil && !quiet {
+	if err := legacytemplates.WriteGitignoreIfMissing(ctx, ".", ""); err != nil && !quiet {
 		cmdio.LogString(ctx, fmt.Sprintf("⚠ Failed to create .gitignore: %v", err))
 	}
 
