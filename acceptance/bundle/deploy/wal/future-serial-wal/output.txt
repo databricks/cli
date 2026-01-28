@@ -1,0 +1,13 @@
+=== Creating state file (serial=2) ===
+=== Creating WAL with future serial (serial=5, expected=3) ===
+=== WAL content ===
+{"lineage":"test-lineage-123","serial": [SERIAL]}
+{"k":"resources.jobs.test_job","v":{"__id__": "[ID]","state":{"name":"test-job"}}}
+=== Deploy (should fail with corruption error) ===
+
+>>> errcode [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/wal-future-serial-test/default/files...
+Error: reading state from [TEST_TMP_DIR]/.databricks/bundle/default/resources.json: WAL recovery failed: WAL serial (5) is ahead of expected (3), state may be corrupted
+
+
+Exit code: [KILLED]

@@ -1,0 +1,28 @@
+echo "=== Creating state file with lineage-A ==="
+mkdir -p .databricks/bundle/default
+cat > .databricks/bundle/default/resources.json << 'EOF'
+{
+  "state_version": 1,
+  "cli_version": "0.0.0",
+  "lineage": "state-lineage-aaa",
+  "serial": 1,
+  "state": {
+    "resources.jobs.test_job": {
+      "__id__": "1001",
+      "state": {"name": "test-job"}
+    }
+  }
+}
+EOF
+
+echo "=== Creating WAL with lineage-B (mismatch) ==="
+cat > .databricks/bundle/default/resources.json.wal << 'EOF'
+{"lineage":"wal-lineage-bbb","serial":2}
+{"k":"resources.jobs.test_job","v":{"__id__":"1001","state":{"name":"test-job"}}}
+EOF
+
+echo "=== WAL content ==="
+cat .databricks/bundle/default/resources.json.wal
+
+echo "=== Deploy (should fail with lineage mismatch error) ==="
+trace errcode $CLI bundle deploy

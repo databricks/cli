@@ -62,7 +62,7 @@ type BindResult struct {
 func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.WorkspaceClient, configRoot *config.Root, statePath, resourceKey, resourceID string) (*BindResult, error) {
 	// Check if the resource is already managed (bound to a different ID)
 	var checkStateDB dstate.DeploymentState
-	if err := checkStateDB.Open(statePath); err == nil {
+	if err := checkStateDB.Open(ctx, statePath); err == nil {
 		if existing, ok := checkStateDB.GetResourceEntry(resourceKey); ok {
 			return nil, ErrResourceAlreadyBound{
 				ResourceKey: resourceKey,
@@ -82,7 +82,7 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 	}
 
 	// Open temp state
-	err := b.StateDB.Open(tmpStatePath)
+	err := b.StateDB.Open(ctx, tmpStatePath)
 	if err != nil {
 		os.Remove(tmpStatePath)
 		return nil, err
@@ -188,7 +188,7 @@ func (result *BindResult) Cancel() {
 // Unbind removes a resource from direct engine state without deleting
 // the workspace resource. Also removes associated permissions/grants entries.
 func (b *DeploymentBundle) Unbind(ctx context.Context, statePath, resourceKey string) error {
-	err := b.StateDB.Open(statePath)
+	err := b.StateDB.Open(ctx, statePath)
 	if err != nil {
 		return err
 	}
