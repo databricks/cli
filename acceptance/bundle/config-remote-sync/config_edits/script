@@ -6,85 +6,109 @@ touch dummy.whl
 $CLI bundle deploy
 job_id="$(read_id.py my_job)"
 
-title "Edit config locally"
+title "Case 1: Added locally, updated remotely with different value"
 echo
-# Case 1: Add field in config (on_failure) - will also be added remotely with different value
-# Case 2: Add field in config (timeout_seconds) - will be removed remotely
-# Case 3: Remove field from config (version tag) - will also be removed remotely
-# Case 4: Update field in config (max_concurrent_runs) - will also be updated remotely with different value
-# Case 5: Update field in config (tags.env) - will also be updated remotely with different value
-cat > databricks.yml <<EOF
-bundle:
-  name: test-bundle-$UNIQUE_NAME
-
-resources:
-  jobs:
-    my_job:
-      tasks:
-        - task_key: main
-          notebook_task:
-            notebook_path: /Users/{{workspace_user_name}}/notebook
-          new_cluster:
-            spark_version: $DEFAULT_SPARK_VERSION
-            node_type_id: $NODE_TYPE_ID
-            num_workers: 1
-
-targets:
-  default:
-    resources:
-      jobs:
-        my_job:
+old=$(cat <<'EOF'
+          email_notifications:
+            on_success:
+              - success@example.com
+EOF
+)
+new=$(cat <<'EOF'
           email_notifications:
             on_success:
               - success@example.com
             on_failure:
               - config-failure@example.com
-          parameters:
-            - name: catalog
-              default: main
-            - name: env
-              default: dev
-          trigger:
-            periodic:
-              interval: 1
-              unit: DAYS
-          tags:
-            env: config-production
-          max_concurrent_runs: 3
+EOF
+)
+update_file.py databricks.yml "$old" "$new"
+read -r -d '' case1 <<'EOF' || true
+r["email_notifications"]["on_failure"] = ["remote-failure@example.com"]
+EOF
+
+title "Case 2: Added locally, removed remotely"
+echo
+old=$(cat <<'EOF'
+          max_concurrent_runs: 1
+EOF
+)
+new=$(cat <<'EOF'
+          max_concurrent_runs: 1
           timeout_seconds: 3600
-          environments:
-            - environment_key: default
-              spec:
-                environment_version: "3"
-                dependencies:
-                  - ./*.whl
+EOF
+)
+update_file.py databricks.yml "$old" "$new"
+read -r -d '' case2 <<'EOF' || true
+r.pop("timeout_seconds", None)
+EOF
+
+title "Case 3: Removed locally, removed remotely"
+echo
+old=$(cat <<'EOF'
+          tags:
+            env: dev
+            version: v1
+            team: data-team
+EOF
+)
+new=$(cat <<'EOF'
+          tags:
+            env: dev
+            team: data-team
+EOF
+)
+update_file.py databricks.yml "$old" "$new"
+read -r -d '' case3 <<'EOF' || true
+r["tags"].pop("version", None)
+EOF
+
+title "Case 4: Updated locally, updated remotely with different value"
+echo
+update_file.py databricks.yml 'max_concurrent_runs: 1' 'max_concurrent_runs: 3'
+read -r -d '' case4 <<'EOF' || true
+r["max_concurrent_runs"] = 5
+EOF
+
+title "Case 5: Updated locally, removed remotely"
+echo
+update_file.py databricks.yml 'env: dev' 'env: config-production'
+read -r -d '' case5 <<'EOF' || true
+r["tags"].pop("env", None)
+EOF
+
+title "Case 6: Added locally and remotely with same value (no drift expected)"
+echo
+old=$(cat <<'EOF'
+        my_job:
+          email_notifications:
+EOF
+)
+new=$(cat <<'EOF'
+        my_job:
+          description: A test job
+          email_notifications:
+EOF
+)
+update_file.py databricks.yml "$old" "$new"
+read -r -d '' case6 <<'EOF' || true
+r["description"] = "A test job"
 EOF
 
 title "Edit job remotely"
 echo
-# Case 1: Add field remotely (on_failure) - also added in config with different value
 edit_resource.py jobs $job_id <<EOF
-r["email_notifications"]["on_failure"] = ["remote-failure@example.com"]
-EOF
+$case1
 
-# Case 2: Remove field remotely (timeout_seconds) - added in config
-edit_resource.py jobs $job_id <<EOF
-r.pop("timeout_seconds", None)
-EOF
+$case2
 
-# Case 3: Remove field remotely (version tag) - also removed in config
-edit_resource.py jobs $job_id <<EOF
-r["tags"].pop("version", None)
-EOF
+$case3
 
-# Case 4: Update field remotely (max_concurrent_runs) - also updated in config with different value
-edit_resource.py jobs $job_id <<EOF
-r["max_concurrent_runs"] = 5
-EOF
+$case4
 
-# Case 5: Update field remotely (tags.env) - also updated in config with different value
-edit_resource.py jobs $job_id <<EOF
-r["tags"]["env"] = "remote-staging"
+$case5
+
+$case6
 EOF
 
 title "Detect and save changes"

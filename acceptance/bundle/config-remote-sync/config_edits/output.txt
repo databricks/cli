@@ -4,7 +4,17 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
-=== Edit config locally
+=== Case 1: Added locally, updated remotely with different value
+
+=== Case 2: Added locally, removed remotely
+
+=== Case 3: Removed locally, removed remotely
+
+=== Case 4: Updated locally, updated remotely with different value
+
+=== Case 5: Updated locally, removed remotely
+
+=== Case 6: Added locally and remotely with same value (no drift expected)
 
 === Edit job remotely
 
@@ -34,19 +44,19 @@ Resource: resources.jobs.my_job
 -
  targets:
    default:
-@@ -23,5 +21,5 @@
+@@ -24,5 +22,5 @@
                - success@example.com
              on_failure:
 -              - config-failure@example.com
 +              - remote-failure@example.com
            parameters:
              - name: catalog
-@@ -34,6 +32,6 @@
+@@ -35,7 +33,6 @@
                unit: DAYS
            tags:
 -            env: config-production
+             team: data-team
 -          max_concurrent_runs: 3
-+            env: remote-staging
 +          max_concurrent_runs: 5
            timeout_seconds: 3600
            environments:
