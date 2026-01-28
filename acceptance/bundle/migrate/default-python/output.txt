@@ -110,7 +110,7 @@ Building python_artifact...
 {
   "storage": {
     "action": "skip",
-    "reason": "override",
+    "reason": "server_side_default",
     "remote": "dbfs:/pipelines/[UUID]"
   }
 }
@@ -184,7 +184,7 @@ Building python_artifact...
 {
   "storage": {
     "action": "skip",
-    "reason": "override",
+    "reason": "server_side_default",
     "remote": "dbfs:/pipelines/[UUID]"
   }
 }

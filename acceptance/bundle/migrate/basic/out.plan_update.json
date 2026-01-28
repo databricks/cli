@@ -180,19 +180,17 @@
       "changes": {
         "name": {
           "action": "update",
-          "reason": "override",
           "old": "Test Migration Pipeline",
           "new": "Test Migrated Pipeline",
           "remote": "Test Migration Pipeline"
         },
         "storage": {
           "action": "skip",
-          "reason": "override",
+          "reason": "server_side_default",
           "remote": "dbfs:/pipelines/[UUID]"
         },
         "tags['myjob_name']": {
           "action": "update",
-          "reason": "override",
           "old": "Test Migration Job",
           "new": "Test Migrated Job",
           "remote": "Test Migration Job"
