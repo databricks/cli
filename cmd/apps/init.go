@@ -532,27 +532,22 @@ func hasResourceSpec(tmpl *appTemplateManifest, checker resourceSpecChecker) boo
 	return false
 }
 
-// requiresSQLWarehouse checks if a template requires a SQL warehouse based on its resource_specs.
 func requiresSQLWarehouse(tmpl *appTemplateManifest) bool {
 	return hasResourceSpec(tmpl, func(s *resourceSpec) bool { return s.SQLWarehouseSpec != nil })
 }
 
-// requiresServingEndpoint checks if a template requires a serving endpoint based on its resource_specs.
 func requiresServingEndpoint(tmpl *appTemplateManifest) bool {
 	return hasResourceSpec(tmpl, func(s *resourceSpec) bool { return s.ServingEndpointSpec != nil })
 }
 
-// requiresExperiment checks if a template requires an experiment based on its resource_specs.
 func requiresExperiment(tmpl *appTemplateManifest) bool {
 	return hasResourceSpec(tmpl, func(s *resourceSpec) bool { return s.ExperimentSpec != nil })
 }
 
-// requiresDatabase checks if a template requires a database based on its resource_specs.
 func requiresDatabase(tmpl *appTemplateManifest) bool {
 	return hasResourceSpec(tmpl, func(s *resourceSpec) bool { return s.DatabaseSpec != nil })
 }
 
-// requiresUCVolume checks if a template requires a UC volume based on its resource_specs.
 func requiresUCVolume(tmpl *appTemplateManifest) bool {
 	return hasResourceSpec(tmpl, func(s *resourceSpec) bool { return s.UCSecurableSpec != nil })
 }
@@ -619,7 +614,6 @@ type resourceGetter struct {
 	errorMessage  string
 }
 
-// writeGitignoreIfMissing writes a .gitignore file if one doesn't exist.
 func writeGitignoreIfMissing(ctx context.Context, destDir string) error {
 	gitignorePath := filepath.Join(destDir, ".gitignore")
 
@@ -638,7 +632,7 @@ func writeGitignoreIfMissing(ctx context.Context, destDir string) error {
 	return nil
 }
 
-// generateEnvFileForLegacyTemplate generates a .env file from app.yml for legacy templates.
+// generateEnvFileForLegacyTemplate creates a .env file from app.yml with resource configuration.
 func generateEnvFileForLegacyTemplate(ctx context.Context, destDir, workspaceHost, profile, appName, warehouseID, servingEndpoint, experimentID, instanceName, databaseName, ucVolume string) error {
 	// Check if app.yml or app.yaml exists
 	var appYmlPath string
@@ -660,22 +654,22 @@ func generateEnvFileForLegacyTemplate(ctx context.Context, destDir, workspaceHos
 	resources := make(map[string]string)
 
 	if warehouseID != "" {
-		resources["sql-warehouse"] = warehouseID
+		resources[ResourceNameSQLWarehouse] = warehouseID
 	}
 	if servingEndpoint != "" {
-		resources["serving-endpoint"] = servingEndpoint
+		resources[ResourceNameServingEndpoint] = servingEndpoint
 	}
 	if experimentID != "" {
-		resources["experiment"] = experimentID
+		resources[ResourceNameExperiment] = experimentID
 	}
 	if instanceName != "" {
-		resources["database"] = instanceName
+		resources[ResourceNameDatabase] = instanceName
 	}
 	if databaseName != "" {
-		resources["database-name"] = databaseName
+		resources[ResourceNameDatabaseName] = databaseName
 	}
 	if ucVolume != "" {
-		resources["uc-volume"] = ucVolume
+		resources[ResourceNameUCVolume] = ucVolume
 	}
 
 	// Create EnvFileBuilder
@@ -701,23 +695,22 @@ type resourceBinding struct {
 	lines       []string // Comment lines for the binding
 }
 
-// resourceBindingsBuilder builds resource bindings for databricks.yml.
+// resourceBindingsBuilder constructs databricks.yml resource bindings.
+// Each add method appends a binding for a specific resource type.
 type resourceBindingsBuilder struct {
 	bindings []resourceBinding
 }
 
-// newResourceBindingsBuilder creates a new resourceBindingsBuilder.
 func newResourceBindingsBuilder() *resourceBindingsBuilder {
 	return &resourceBindingsBuilder{bindings: make([]resourceBinding, 0)}
 }
 
-// addWarehouse adds a warehouse resource binding.
 func (b *resourceBindingsBuilder) addWarehouse(warehouseID string) {
 	if warehouseID == "" {
 		return
 	}
 	b.bindings = append(b.bindings, resourceBinding{
-		name:        "sql-warehouse",
+		name:        ResourceNameSQLWarehouse,
 		description: "SQL Warehouse for analytics",
 		lines: []string{
 			"          sql_warehouse:",
@@ -727,13 +720,12 @@ func (b *resourceBindingsBuilder) addWarehouse(warehouseID string) {
 	})
 }
 
-// addServingEndpoint adds a serving endpoint resource binding.
 func (b *resourceBindingsBuilder) addServingEndpoint(endpoint string) {
 	if endpoint == "" {
 		return
 	}
 	b.bindings = append(b.bindings, resourceBinding{
-		name:        "serving-endpoint",
+		name:        ResourceNameServingEndpoint,
 		description: "Model serving endpoint",
 		lines: []string{
 			"          serving_endpoint:",
@@ -743,13 +735,12 @@ func (b *resourceBindingsBuilder) addServingEndpoint(endpoint string) {
 	})
 }
 
-// addExperiment adds an experiment resource binding.
 func (b *resourceBindingsBuilder) addExperiment(experimentID string) {
 	if experimentID == "" {
 		return
 	}
 	b.bindings = append(b.bindings, resourceBinding{
-		name:        "experiment",
+		name:        ResourceNameExperiment,
 		description: "MLflow experiment",
 		lines: []string{
 			"          experiment:",
@@ -759,13 +750,12 @@ func (b *resourceBindingsBuilder) addExperiment(experimentID string) {
 	})
 }
 
-// addDatabase adds a database resource binding.
 func (b *resourceBindingsBuilder) addDatabase(instanceName, databaseName string) {
 	if instanceName == "" || databaseName == "" {
 		return
 	}
 	b.bindings = append(b.bindings, resourceBinding{
-		name:        "database",
+		name:        ResourceNameDatabase,
 		description: "Lakebase database",
 		lines: []string{
 			"          database:",
@@ -800,12 +790,10 @@ type variablesBuilder struct {
 	}
 }
 
-// newVariablesBuilder creates a new variablesBuilder.
 func newVariablesBuilder() *variablesBuilder {
 	return &variablesBuilder{}
 }
 
-// addWarehouse adds warehouse_id variable.
 func (b *variablesBuilder) addWarehouse(warehouseID string) {
 	if warehouseID != "" {
 		b.variables = append(b.variables, struct {
@@ -815,7 +803,6 @@ func (b *variablesBuilder) addWarehouse(warehouseID string) {
 	}
 }
 
-// addServingEndpoint adds serving_endpoint_name variable.
 func (b *variablesBuilder) addServingEndpoint(endpoint string) {
 	if endpoint != "" {
 		b.variables = append(b.variables, struct {
@@ -825,7 +812,6 @@ func (b *variablesBuilder) addServingEndpoint(endpoint string) {
 	}
 }
 
-// addExperiment adds experiment_id variable.
 func (b *variablesBuilder) addExperiment(experimentID string) {
 	if experimentID != "" {
 		b.variables = append(b.variables, struct {
@@ -835,7 +821,6 @@ func (b *variablesBuilder) addExperiment(experimentID string) {
 	}
 }
 
-// addDatabase adds database_name and instance_name variables.
 func (b *variablesBuilder) addDatabase(instanceName, databaseName string) {
 	if databaseName != "" {
 		b.variables = append(b.variables, struct {
@@ -851,7 +836,6 @@ func (b *variablesBuilder) addDatabase(instanceName, databaseName string) {
 	}
 }
 
-// addUCVolume adds uc_volume variable.
 func (b *variablesBuilder) addUCVolume(volume string) {
 	if volume != "" {
 		b.variables = append(b.variables, struct {
@@ -1346,13 +1330,13 @@ func runLegacyTemplateInit(ctx context.Context, selectedTemplate *appTemplateMan
 	// Write .gitignore if it doesn't exist
 	if err := writeGitignoreIfMissing(ctx, destDir); err != nil {
 		// Log warning but don't fail - .gitignore is optional
-		cmdio.LogString(ctx, fmt.Sprintf("⚠ Failed to create .gitignore: %v", err))
+		cmdio.LogString(ctx, fmt.Sprintf("⚠ failed to create .gitignore: %v", err))
 	}
 
 	// Generate .env file from app.yml BEFORE inlining (inlining deletes app.yml)
 	if err := generateEnvFileForLegacyTemplate(ctx, destDir, workspaceHost, profile, appName, warehouseID, servingEndpoint, experimentID, instanceName, databaseName, ucVolume); err != nil {
 		// Log warning but don't fail - .env is optional
-		cmdio.LogString(ctx, fmt.Sprintf("⚠ Failed to generate .env file: %v", err))
+		cmdio.LogString(ctx, fmt.Sprintf("⚠ failed to generate .env file: %v", err))
 	}
 
 	// Check for app.yml in the destination directory and inline it into databricks.yml
@@ -1784,7 +1768,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 
 	// Write .gitignore if it doesn't exist
 	if err := writeGitignoreIfMissing(ctx, absOutputDir); err != nil {
-		cmdio.LogString(ctx, fmt.Sprintf("⚠ Failed to create .gitignore: %v", err))
+		cmdio.LogString(ctx, fmt.Sprintf("⚠ failed to create .gitignore: %v", err))
 	}
 
 	return runPostCreationSteps(ctx, absOutputDir, opts.name, fileCount, shouldDeploy, runMode)
