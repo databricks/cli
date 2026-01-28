@@ -148,8 +148,14 @@ func shouldWaitForCompletion(cmd *cobra.Command) bool {
 	return !skipWait
 }
 
+// spinnerInterface matches the interface provided by cmdio.NewSpinner.
+type spinnerInterface interface {
+	Update(msg string)
+	Close()
+}
+
 // createAppProgressCallback creates a progress callback for app operations.
-func createAppProgressCallback(spinner chan<- string) func(*apps.App) {
+func createAppProgressCallback(spinner spinnerInterface) func(*apps.App) {
 	return func(i *apps.App) {
 		if i.ComputeStatus == nil {
 			return
@@ -158,7 +164,7 @@ func createAppProgressCallback(spinner chan<- string) func(*apps.App) {
 		if statusMessage == "" {
 			statusMessage = fmt.Sprintf("current status: %s", i.ComputeStatus.State)
 		}
-		spinner <- statusMessage
+		spinner.Update(statusMessage)
 	}
 }
 
