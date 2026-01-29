@@ -30,7 +30,6 @@ const (
 	templatePathEnvVar = "DATABRICKS_APPKIT_TEMPLATE_PATH"
 	defaultTemplateURL = "https://github.com/databricks/appkit/tree/main/template"
 	templateTypeAppKit = "appkit"
-	templateTypeLegacy = "legacy"
 )
 
 func newInitCmd() *cobra.Command {
@@ -57,9 +56,9 @@ func newInitCmd() *cobra.Command {
 		Hidden: true,
 		Long: `Initialize a new application from a template.
 
-When run without arguments, an interactive prompt allows you to choose between:
+When run without arguments, an interactive prompt allows you to choose a framework:
   - AppKit (TypeScript): Modern TypeScript framework (default)
-  - Legacy template: Python/Dash/Streamlit/Gradio/Flask/Shiny templates
+  - Dash, Flask, Gradio, Node.js, Shiny, Streamlit: Python/Node.js frameworks
 
 When run with --name, runs in non-interactive mode (all required flags must be provided).
 
@@ -503,7 +502,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		}
 	}
 
-	// Step 1: Prompt for template type (AppKit vs Legacy) in interactive mode
+	// Step 1: Prompt for template type (AppKit or framework type) in interactive mode
 	selectedTemplateType := templateTypeAppKit // default
 	if isInteractive && opts.templatePath == "" {
 		tmplType, err := legacytemplates.PromptForTemplateType(ctx)
@@ -513,21 +512,15 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		selectedTemplateType = tmplType
 	}
 
-	// If legacy template is selected, use the legacy template flow
-	if selectedTemplateType == templateTypeLegacy {
+	// Check if a framework type was selected (any value other than "appkit")
+	if selectedTemplateType != templateTypeAppKit {
 		templates, err := legacytemplates.LoadLegacyTemplates()
 		if err != nil {
 			return err
 		}
 
-		// Prompt for framework type first
-		frameworkType, err := legacytemplates.PromptForFrameworkType(ctx)
-		if err != nil {
-			return err
-		}
-
-		// Then prompt for template filtered by framework type
-		selectedTemplate, err := legacytemplates.PromptForLegacyTemplate(ctx, templates, frameworkType)
+		// Use the selected template type as the framework type filter
+		selectedTemplate, err := legacytemplates.PromptForLegacyTemplate(ctx, templates, selectedTemplateType)
 		if err != nil {
 			return err
 		}

@@ -11,25 +11,41 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 )
 
-// PromptForTemplateType prompts the user to choose between AppKit and Legacy templates.
+// PromptForTemplateType prompts the user to choose between AppKit and framework types.
 func PromptForTemplateType(ctx context.Context) (string, error) {
 	var choice string
 	options := []huh.Option[string]{
 		huh.NewOption("AppKit (TypeScript)", "appkit"),
-		huh.NewOption("Legacy template", "legacy"),
+		huh.NewOption("Dash", "dash"),
+		huh.NewOption("Flask", "flask"),
+		huh.NewOption("Gradio", "gradio"),
+		huh.NewOption("Node.js", "nodejs"),
+		huh.NewOption("Shiny", "shiny"),
+		huh.NewOption("Streamlit", "streamlit"),
 	}
 
 	err := huh.NewSelect[string]().
 		Title("Select template type").
 		Options(options...).
 		Value(&choice).
+		Height(10).
 		WithTheme(prompt.AppkitTheme()).
 		Run()
 	if err != nil {
 		return "", err
 	}
 
-	prompt.PrintAnswered(ctx, "Template type", choice)
+	// Get display name for printing
+	displayName := choice
+	if choice != "appkit" {
+		if name, ok := frameworkTypeNames[choice]; ok {
+			displayName = name
+		}
+	} else {
+		displayName = "AppKit (TypeScript)"
+	}
+
+	prompt.PrintAnswered(ctx, "Template type", displayName)
 	return choice, nil
 }
 
@@ -41,35 +57,6 @@ var frameworkTypeNames = map[string]string{
 	"flask":     "Flask",
 	"shiny":     "Shiny",
 	"nodejs":    "Node.js",
-}
-
-// PromptForFrameworkType prompts the user to select a framework type.
-func PromptForFrameworkType(ctx context.Context) (string, error) {
-	// Get available framework types from the map, sorted for consistent ordering
-	frameworkTypes := []string{"dash", "flask", "gradio", "nodejs", "shiny", "streamlit"}
-
-	options := make([]huh.Option[string], len(frameworkTypes))
-	for i, ft := range frameworkTypes {
-		displayName := frameworkTypeNames[ft]
-		options[i] = huh.NewOption(displayName, ft)
-	}
-
-	var choice string
-	err := huh.NewSelect[string]().
-		Title("Select framework type").
-		Description("Choose the framework for your app").
-		Options(options...).
-		Value(&choice).
-		Height(8).
-		WithTheme(prompt.AppkitTheme()).
-		Run()
-	if err != nil {
-		return "", err
-	}
-
-	displayName := frameworkTypeNames[choice]
-	prompt.PrintAnswered(ctx, "Framework type", displayName)
-	return choice, nil
 }
 
 // PromptForLegacyTemplate prompts the user to select a legacy template.
