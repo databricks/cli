@@ -12,6 +12,17 @@ import (
 
 type interpolateMutator struct{}
 
+// isPostgresResource returns true if the resource type is a postgres resource.
+// Postgres resources use "uid" instead of "id" as their identifier attribute.
+func isPostgresResource(resourceType string) bool {
+	switch resourceType {
+	case "postgres_projects", "postgres_branches", "postgres_endpoints":
+		return true
+	default:
+		return false
+	}
+}
+
 func Interpolate() bundle.Mutator {
 	return &interpolateMutator{}
 }
@@ -49,6 +60,16 @@ func (m *interpolateMutator) Apply(ctx context.Context, b *bundle.Bundle) diag.D
 
 			// Replace the resource type with the Terraform resource name.
 			path = dyn.NewPath(dyn.Key(tfResourceName)).Append(path[2:]...)
+
+			// Postgres resources use "name" (resource path) instead of "id" as the identifier.
+			// Map .id references to .name for these resources so cross-resource references
+			// (like branch.parent -> project) resolve to the resource path format.
+			if isPostgresResource(resourceType) && len(path) >= 3 {
+				if lastKey := path[len(path)-1].Key(); lastKey == "id" {
+					path = path[:len(path)-1].Append(dyn.Key("name"))
+				}
+			}
+
 			return dyn.V(fmt.Sprintf("${%s}", path.String())), nil
 		})
 	})

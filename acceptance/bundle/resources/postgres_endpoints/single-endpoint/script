@@ -22,4 +22,4 @@ trace $CLI postgres get-endpoint "${endpoint_name}" | jq 'del(.create_time, .upd
 trace $CLI bundle summary
 
 # Filter requests to only show postgres operations (exclude workspace, telemetry, and operation polling)
-trace print_requests.py --keep --get '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.json
+trace print_requests.py --keep --get '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.$DATABRICKS_BUNDLE_ENGINE.json
