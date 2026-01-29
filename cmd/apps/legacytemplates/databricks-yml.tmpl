@@ -1,0 +1,31 @@
+bundle:
+  name: {{.ProjectName}}
+
+workspace:
+{{- if .WorkspaceHost}}
+  host: {{.WorkspaceHost}}
+{{- end}}
+
+{{- if .BundleVariables}}
+variables:
+{{.BundleVariables}}
+{{- end}}
+
+resources:
+  apps:
+    app:
+      name: {{.AppName}}
+{{- if .AppDescription}}
+      description: {{.AppDescription}}
+{{- end}}
+      source_code_path: ./
+{{- if .UserAPIScopes}}
+      user_api_scopes:
+{{- range .UserAPIScopes}}
+        - {{.}}
+{{- end}}
+{{- end}}
+{{- if .ResourceBindings}}
+      resources:
+{{.ResourceBindings}}
+{{- end}}

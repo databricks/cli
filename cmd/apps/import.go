@@ -1,7 +1,6 @@
 package apps
 
 import (
-	"bufio"
 	"context"
 	"errors"
 	"fmt"
@@ -10,20 +9,19 @@ import (
 	"sort"
 	"strings"
 
-	"go.yaml.in/yaml/v3"
-
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/generate"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/resources"
 	"github.com/databricks/cli/bundle/run"
+	"github.com/databricks/cli/cmd/apps/internal"
+	"github.com/databricks/cli/cmd/apps/legacytemplates"
 	bundleutils "github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/dyn/yamlsaver"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/logdiag"
@@ -222,6 +220,8 @@ Examples:
 	return cmd
 }
 
+// runImport orchestrates the app import process: loads the app from workspace,
+// generates bundle files, binds to the existing app, deploys, and starts it.
 func runImport(ctx context.Context, w *databricks.WorkspaceClient, appName, outputDir string, oldSourceCodePath *string, forceImport bool, currentUserEmail string, quiet bool) error {
 	// Step 1: Load the app from workspace
 	if !quiet {
@@ -407,6 +407,7 @@ func runImport(ctx context.Context, w *databricks.WorkspaceClient, appName, outp
 	return nil
 }
 
+// generateAppBundle creates a databricks.yml configuration file and downloads the app source code.
 func generateAppBundle(ctx context.Context, w *databricks.WorkspaceClient, app *apps.App, quiet bool) (string, error) {
 	// Use constant "app" as the resource key
 	appKey := "app"
@@ -431,7 +432,7 @@ func generateAppBundle(ctx context.Context, w *databricks.WorkspaceClient, app *
 	}
 
 	// Check for app.yml or app.yaml and inline its contents
-	appConfigFile, err := inlineAppConfigFile(&v)
+	appConfigFile, err := internal.InlineAppConfigFile(&v)
 	if err != nil {
 		return "", fmt.Errorf("failed to inline app config: %w", err)
 	}
@@ -448,7 +449,6 @@ func generateAppBundle(ctx context.Context, w *databricks.WorkspaceClient, app *
 	}
 
 	// Create the bundle configuration with explicit line numbers to control ordering
-	// Use the app name for the bundle name
 	bundleName := textutil.NormalizeString(app.Name)
 	bundleConfig := map[string]dyn.Value{
 		"bundle": dyn.NewValue(map[string]dyn.Value{
@@ -456,12 +456,12 @@ func generateAppBundle(ctx context.Context, w *databricks.WorkspaceClient, app *
 		}, []dyn.Location{{Line: 1}}),
 		"workspace": dyn.NewValue(map[string]dyn.Value{
 			"host": dyn.NewValue(w.Config.Host, []dyn.Location{{Line: 2}}),
-		}, []dyn.Location{{Line: 10}}),
+		}, []dyn.Location{{Line: 2}}),
 		"resources": dyn.NewValue(map[string]dyn.Value{
 			"apps": dyn.V(map[string]dyn.Value{
 				appKey: v,
 			}),
-		}, []dyn.Location{{Line: 20}}),
+		}, []dyn.Location{{Line: 4}}),
 	}
 
 	// Download the app source files
@@ -479,7 +479,7 @@ func generateAppBundle(ctx context.Context, w *databricks.WorkspaceClient, app *
 	}
 
 	// Add blank lines between top-level keys for better readability
-	err = addBlankLinesBetweenTopLevelKeys(databricksYml)
+	err = internal.AddBlankLinesBetweenTopLevelKeys(databricksYml)
 	if err != nil {
 		return "", fmt.Errorf("failed to format databricks.yml: %w", err)
 	}
@@ -487,140 +487,99 @@ func generateAppBundle(ctx context.Context, w *databricks.WorkspaceClient, app *
 	if !quiet {
 		cmdio.LogString(ctx, "Bundle configuration created at "+databricksYml)
 	}
+
+	// Generate .env file from app.yml if it exists
+	err = generateEnvFile(ctx, w.Config.Host, w.Config.Profile, app, quiet)
+	if err != nil {
+		// Log warning but don't fail - .env is optional
+		if !quiet {
+			cmdio.LogString(ctx, fmt.Sprintf("⚠ Failed to generate .env file: %v", err))
+		}
+	}
+
 	return appKey, nil
 }
 
-// addBlankLinesBetweenTopLevelKeys adds blank lines between top-level sections in YAML
-func addBlankLinesBetweenTopLevelKeys(filename string) error {
-	// Read the file
-	file, err := os.Open(filename)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	var lines []string
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		lines = append(lines, scanner.Text())
-	}
-	if err := scanner.Err(); err != nil {
-		return err
+// buildResourcesMap creates a map of resource names to their IDs/values from app.Resources.
+func buildResourcesMap(app *apps.App) map[string]string {
+	resources := make(map[string]string)
+	if app.Resources == nil {
+		return resources
 	}
 
-	// Add blank lines before top-level keys (lines that don't start with space/tab and contain ':')
-	var result []string
-	for i, line := range lines {
-		// Add blank line before top-level keys (except the first line)
-		if i > 0 && len(line) > 0 && line[0] != ' ' && line[0] != '\t' && strings.Contains(line, ":") {
-			result = append(result, "")
+	for _, resource := range app.Resources {
+		if resource.Name == "" {
+			continue
 		}
-		result = append(result, line)
-	}
 
-	// Write back to file
-	file, err = os.Create(filename)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
+		// Extract the resource ID/value based on type
+		var value string
+		switch {
+		case resource.SqlWarehouse != nil:
+			value = resource.SqlWarehouse.Id
+		case resource.ServingEndpoint != nil:
+			value = resource.ServingEndpoint.Name
+		case resource.Experiment != nil:
+			value = resource.Experiment.ExperimentId
+		case resource.Database != nil:
+			value = resource.Database.DatabaseName
+		case resource.Secret != nil:
+			value = resource.Secret.Key
+		case resource.GenieSpace != nil:
+			value = resource.GenieSpace.SpaceId
+		case resource.Job != nil:
+			value = resource.Job.Id
+		case resource.UcSecurable != nil:
+			value = resource.UcSecurable.SecurableFullName
+		}
 
-	writer := bufio.NewWriter(file)
-	for _, line := range result {
-		_, err := writer.WriteString(line + "\n")
-		if err != nil {
-			return err
+		if value != "" {
+			resources[resource.Name] = value
 		}
 	}
-	return writer.Flush()
+
+	return resources
 }
 
-// inlineAppConfigFile reads app.yml or app.yaml, inlines it into the app value, and returns the filename
-func inlineAppConfigFile(appValue *dyn.Value) (string, error) {
-	// Check for app.yml first, then app.yaml
-	var appConfigFile string
-	var appConfigData []byte
-	var err error
-
+// generateEnvFile generates a .env file from app.yml and app resources.
+func generateEnvFile(ctx context.Context, host, profile string, app *apps.App, quiet bool) error {
+	// Check if app.yml or app.yaml exists
+	var appYmlPath string
 	for _, filename := range []string{"app.yml", "app.yaml"} {
-		if _, statErr := os.Stat(filename); statErr == nil {
-			appConfigFile = filename
-			appConfigData, err = os.ReadFile(filename)
-			if err != nil {
-				return "", fmt.Errorf("failed to read %s: %w", filename, err)
-			}
+		if _, err := os.Stat(filename); err == nil {
+			appYmlPath = filename
 			break
 		}
 	}
 
-	// No app config file found
-	if appConfigFile == "" {
-		return "", nil
+	if appYmlPath == "" {
+		// No app.yml found, skip .env generation
+		return nil
 	}
 
-	// Parse the app config
-	var appConfig map[string]any
-	err = yaml.Unmarshal(appConfigData, &appConfig)
+	// Build resources map from app.Resources
+	resources := buildResourcesMap(app)
+
+	// Create EnvFileBuilder
+	builder, err := legacytemplates.NewEnvFileBuilder(host, profile, app.Name, appYmlPath, resources)
 	if err != nil {
-		return "", fmt.Errorf("failed to parse %s: %w", appConfigFile, err)
+		return fmt.Errorf("failed to create env builder: %w", err)
 	}
 
-	// Get the current app value as a map
-	appMap, ok := appValue.AsMap()
-	if !ok {
-		return "", errors.New("app value is not a map")
+	// Write .env file
+	err = builder.WriteEnvFile(".")
+	if err != nil {
+		return fmt.Errorf("failed to write .env file: %w", err)
 	}
 
-	// Build the new app map with the config section
-	newPairs := make([]dyn.Pair, 0, len(appMap.Pairs())+2)
-
-	// Copy existing pairs
-	newPairs = append(newPairs, appMap.Pairs()...)
-
-	// Create config section
-	configMap := make(map[string]dyn.Value)
-
-	// Add command if present
-	if cmd, ok := appConfig["command"]; ok {
-		cmdValue, err := convert.FromTyped(cmd, dyn.NilValue)
-		if err != nil {
-			return "", fmt.Errorf("failed to convert command: %w", err)
-		}
-		configMap["command"] = cmdValue
+	if !quiet {
+		cmdio.LogString(ctx, "✓ Generated .env file from app.yml")
 	}
 
-	// Add env if present
-	if env, ok := appConfig["env"]; ok {
-		envValue, err := convert.FromTyped(env, dyn.NilValue)
-		if err != nil {
-			return "", fmt.Errorf("failed to convert env: %w", err)
-		}
-		configMap["env"] = envValue
+	// Write .gitignore if it doesn't exist
+	if err := legacytemplates.WriteGitignoreIfMissing(ctx, ".", ""); err != nil && !quiet {
+		cmdio.LogString(ctx, fmt.Sprintf("⚠ Failed to create .gitignore: %v", err))
 	}
 
-	// Add the config section if we have any items
-	if len(configMap) > 0 {
-		newPairs = append(newPairs, dyn.Pair{
-			Key:   dyn.V("config"),
-			Value: dyn.V(configMap),
-		})
-	}
-
-	// Add resources at top level if present
-	if resources, ok := appConfig["resources"]; ok {
-		resourcesValue, err := convert.FromTyped(resources, dyn.NilValue)
-		if err != nil {
-			return "", fmt.Errorf("failed to convert resources: %w", err)
-		}
-		newPairs = append(newPairs, dyn.Pair{
-			Key:   dyn.V("resources"),
-			Value: resourcesValue,
-		})
-	}
-
-	// Create the new app value with the config section
-	newMapping := dyn.NewMappingFromPairs(newPairs)
-	*appValue = dyn.NewValue(newMapping, appValue.Locations())
-
-	return appConfigFile, nil
+	return nil
 }

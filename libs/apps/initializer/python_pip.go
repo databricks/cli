@@ -5,7 +5,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strings"
 
 	"github.com/databricks/cli/libs/apps/prompt"
@@ -13,7 +12,7 @@ import (
 	"github.com/databricks/cli/libs/log"
 )
 
-// InitializerPythonPip implements initialization for Python projects using pip and venv.
+// InitializerPythonPip implements initialization for Python projects using uv.
 type InitializerPythonPip struct{}
 
 func (i *InitializerPythonPip) Initialize(ctx context.Context, workDir string) *InitResult {
@@ -42,44 +41,32 @@ func (i *InitializerPythonPip) Initialize(ctx context.Context, workDir string) *
 }
 
 func (i *InitializerPythonPip) NextSteps() string {
-	if runtime.GOOS == "windows" {
-		return ".venv\\Scripts\\activate && python app.py"
-	}
-	return "source .venv/bin/activate && python app.py"
+	return "uv run --env-file .env python app.py"
 }
 
 func (i *InitializerPythonPip) RunDev(ctx context.Context, workDir string) error {
-	cmd := detectPythonCommand(workDir)
-	cmdStr := strings.Join(cmd, " ")
+	appCmd := detectPythonCommand(workDir)
+	cmdStr := "uv run --env-file .env " + strings.Join(appCmd, " ")
 
 	cmdio.LogString(ctx, "Starting development server ("+cmdStr+")...")
 
-	// Get the path to the venv bin directory
-	var venvBin string
-	if runtime.GOOS == "windows" {
-		venvBin = filepath.Join(workDir, ".venv", "Scripts")
-	} else {
-		venvBin = filepath.Join(workDir, ".venv", "bin")
-	}
+	// Build the uv run command with --env-file .env flag
+	args := []string{"run", "--env-file", ".env"}
+	args = append(args, appCmd...)
+	cmd := exec.CommandContext(ctx, "uv", args...)
+	cmd.Dir = workDir
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Stdin = os.Stdin
 
-	// Use the full path to the executable in the venv
-	execPath := filepath.Join(venvBin, cmd[0])
-	execCmd := exec.CommandContext(ctx, execPath, cmd[1:]...)
-	execCmd.Dir = workDir
-	execCmd.Stdout = os.Stdout
-	execCmd.Stderr = os.Stderr
-	execCmd.Stdin = os.Stdin
-	// Also set PATH for any child processes the command might spawn
-	execCmd.Env = append(os.Environ(), "PATH="+venvBin+string(os.PathListSeparator)+os.Getenv("PATH"))
-
-	return execCmd.Run()
+	return cmd.Run()
 }
 
 func (i *InitializerPythonPip) SupportsDevRemote() bool {
 	return false
 }
 
-// createVenv creates a virtual environment in the project directory.
+// createVenv creates a virtual environment in the project directory using uv.
 func (i *InitializerPythonPip) createVenv(ctx context.Context, workDir string) error {
 	venvPath := filepath.Join(workDir, ".venv")
 
@@ -89,18 +76,14 @@ func (i *InitializerPythonPip) createVenv(ctx context.Context, workDir string) e
 		return nil
 	}
 
-	// Check if python3 is available
-	pythonCmd := "python3"
-	if _, err := exec.LookPath(pythonCmd); err != nil {
-		pythonCmd = "python"
-		if _, err := exec.LookPath(pythonCmd); err != nil {
-			cmdio.LogString(ctx, "⚠ Python not found. Please install Python and create a virtual environment manually.")
-			return nil
-		}
+	// Check if uv is available
+	if _, err := exec.LookPath("uv"); err != nil {
+		cmdio.LogString(ctx, "⚠ uv not found. Please install uv (https://docs.astral.sh/uv/) and run 'uv venv' manually.")
+		return nil
 	}
 
-	return prompt.RunWithSpinnerCtx(ctx, "Creating virtual environment...", func() error {
-		cmd := exec.CommandContext(ctx, pythonCmd, "-m", "venv", ".venv")
+	return prompt.RunWithSpinnerCtx(ctx, "Creating virtual environment (Python "+pythonVersion+")...", func() error {
+		cmd := exec.CommandContext(ctx, "uv", "venv", "--python", pythonVersion)
 		cmd.Dir = workDir
 		cmd.Stdout = nil
 		cmd.Stderr = nil
@@ -108,7 +91,7 @@ func (i *InitializerPythonPip) createVenv(ctx context.Context, workDir string) e
 	})
 }
 
-// installDependencies installs dependencies from requirements.txt.
+// installDependencies installs dependencies from requirements.txt using uv.
 func (i *InitializerPythonPip) installDependencies(ctx context.Context, workDir string) error {
 	requirementsPath := filepath.Join(workDir, "requirements.txt")
 	if _, err := os.Stat(requirementsPath); os.IsNotExist(err) {
@@ -116,22 +99,14 @@ func (i *InitializerPythonPip) installDependencies(ctx context.Context, workDir 
 		return nil
 	}
 
-	// Get the pip path inside the venv
-	var pipPath string
-	if runtime.GOOS == "windows" {
-		pipPath = filepath.Join(workDir, ".venv", "Scripts", "pip")
-	} else {
-		pipPath = filepath.Join(workDir, ".venv", "bin", "pip")
-	}
-
-	// Check if pip exists in venv
-	if _, err := os.Stat(pipPath); os.IsNotExist(err) {
-		cmdio.LogString(ctx, "⚠ pip not found in virtual environment. Please install dependencies manually.")
+	// Check if uv is available
+	if _, err := exec.LookPath("uv"); err != nil {
+		cmdio.LogString(ctx, "⚠ uv not found. Please install dependencies manually with 'uv pip install -r requirements.txt'.")
 		return nil
 	}
 
 	return prompt.RunWithSpinnerCtx(ctx, "Installing dependencies...", func() error {
-		cmd := exec.CommandContext(ctx, pipPath, "install", "-r", "requirements.txt")
+		cmd := exec.CommandContext(ctx, "uv", "pip", "install", "-r", "requirements.txt")
 		cmd.Dir = workDir
 		cmd.Stdout = nil
 		cmd.Stderr = nil

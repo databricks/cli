@@ -10,6 +10,9 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 )
 
+// pythonVersion is the Python version to use for virtual environments.
+const pythonVersion = "3.11"
+
 // InitializerPythonUv implements initialization for Python projects using uv.
 type InitializerPythonUv struct{}
 
@@ -39,17 +42,17 @@ func (i *InitializerPythonUv) Initialize(ctx context.Context, workDir string) *I
 }
 
 func (i *InitializerPythonUv) NextSteps() string {
-	return "uv run python app.py"
+	return "uv run start-app"
 }
 
 func (i *InitializerPythonUv) RunDev(ctx context.Context, workDir string) error {
 	appCmd := detectPythonCommand(workDir)
-	cmdStr := "uv run " + strings.Join(appCmd, " ")
+	cmdStr := "uv run --env-file .env " + strings.Join(appCmd, " ")
 
 	cmdio.LogString(ctx, "Starting development server ("+cmdStr+")...")
 
-	// Build the uv run command with the app command
-	args := append([]string{"run"}, appCmd...)
+	// Build the uv run command with --env-file flag and the app command
+	args := append([]string{"run", "--env-file", ".env"}, appCmd...)
 	cmd := exec.CommandContext(ctx, "uv", args...)
 	cmd.Dir = workDir
 	cmd.Stdout = os.Stdout
@@ -65,8 +68,8 @@ func (i *InitializerPythonUv) SupportsDevRemote() bool {
 
 // runUvSync runs uv sync to create the virtual environment and install dependencies.
 func (i *InitializerPythonUv) runUvSync(ctx context.Context, workDir string) error {
-	return prompt.RunWithSpinnerCtx(ctx, "Installing dependencies with uv...", func() error {
-		cmd := exec.CommandContext(ctx, "uv", "sync")
+	return prompt.RunWithSpinnerCtx(ctx, "Installing dependencies with uv (Python "+pythonVersion+")...", func() error {
+		cmd := exec.CommandContext(ctx, "uv", "sync", "--python", pythonVersion)
 		cmd.Dir = workDir
 		cmd.Stdout = nil
 		cmd.Stderr = nil
