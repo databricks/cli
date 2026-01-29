@@ -23,7 +23,7 @@ func TestConvertPostgresProject(t *testing.T) {
 			PgVersion:                17,
 			HistoryRetentionDuration: duration.New(86400 * time.Second),
 			DefaultEndpointSettings: &postgres.ProjectDefaultEndpointSettings{
-				AutoscalingLimitMinCu:  1,
+				AutoscalingLimitMinCu:  0.5,
 				AutoscalingLimitMaxCu:  4,
 				SuspendTimeoutDuration: duration.New(300 * time.Second),
 			},
@@ -46,8 +46,8 @@ func TestConvertPostgresProject(t *testing.T) {
 			"pg_version":                 int64(17),
 			"history_retention_duration": "86400s",
 			"default_endpoint_settings": map[string]any{
-				"autoscaling_limit_min_cu": int64(1),
-				"autoscaling_limit_max_cu": int64(4),
+				"autoscaling_limit_min_cu": 0.5,
+				"autoscaling_limit_max_cu": float64(4),
 				"suspend_timeout_duration": "300s",
 			},
 		},

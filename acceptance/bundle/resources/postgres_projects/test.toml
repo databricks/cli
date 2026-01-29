@@ -11,6 +11,7 @@ EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct", "terraform"]
 Ignore = [
     "databricks.yml",
     "out.requests.txt",
+    ".databricks",
 ]
 
 [[Repls]]

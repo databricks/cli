@@ -7,8 +7,8 @@ type DataSourcePostgresEndpointSpecSettings struct {
 }
 
 type DataSourcePostgresEndpointSpec struct {
-	AutoscalingLimitMaxCu  float64                                 `json:"autoscaling_limit_max_cu,omitempty"`
-	AutoscalingLimitMinCu  float64                                 `json:"autoscaling_limit_min_cu,omitempty"`
+	AutoscalingLimitMaxCu  float64                                     `json:"autoscaling_limit_max_cu,omitempty"`
+	AutoscalingLimitMinCu  float64                                     `json:"autoscaling_limit_min_cu,omitempty"`
 	Disabled               bool                                    `json:"disabled,omitempty"`
 	EndpointType           string                                  `json:"endpoint_type"`
 	NoSuspension           bool                                    `json:"no_suspension,omitempty"`
@@ -25,8 +25,8 @@ type DataSourcePostgresEndpointStatusSettings struct {
 }
 
 type DataSourcePostgresEndpointStatus struct {
-	AutoscalingLimitMaxCu  float64                                   `json:"autoscaling_limit_max_cu,omitempty"`
-	AutoscalingLimitMinCu  float64                                   `json:"autoscaling_limit_min_cu,omitempty"`
+	AutoscalingLimitMaxCu  float64                                       `json:"autoscaling_limit_max_cu,omitempty"`
+	AutoscalingLimitMinCu  float64                                       `json:"autoscaling_limit_min_cu,omitempty"`
 	CurrentState           string                                    `json:"current_state,omitempty"`
 	Disabled               bool                                      `json:"disabled,omitempty"`
 	EndpointType           string                                    `json:"endpoint_type,omitempty"`

@@ -21,7 +21,7 @@ func TestConvertPostgresEndpoint(t *testing.T) {
 		Parent:     "projects/my-project/branches/main",
 		EndpointSpec: postgres.EndpointSpec{
 			EndpointType:           postgres.EndpointTypeEndpointTypeReadWrite,
-			AutoscalingLimitMinCu:  1,
+			AutoscalingLimitMinCu:  0.5,
 			AutoscalingLimitMaxCu:  4,
 			SuspendTimeoutDuration: duration.New(300 * time.Second),
 		},
@@ -41,8 +41,8 @@ func TestConvertPostgresEndpoint(t *testing.T) {
 		"parent":      "projects/my-project/branches/main",
 		"spec": map[string]any{
 			"endpoint_type":            "ENDPOINT_TYPE_READ_WRITE",
-			"autoscaling_limit_min_cu": int64(1),
-			"autoscaling_limit_max_cu": int64(4),
+			"autoscaling_limit_min_cu": 0.5,
+			"autoscaling_limit_max_cu": float64(4),
 			"suspend_timeout_duration": "300s",
 		},
 	}, postgresEndpoint)

@@ -1,1 +1,2 @@
-# All configuration inherited from parent test.toml
+# Override to only run with direct mode - output format differs between engines
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
