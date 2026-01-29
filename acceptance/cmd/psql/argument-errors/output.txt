@@ -58,3 +58,19 @@ Error: invalid resource path: missing branch ID
 === Invalid path with missing endpoint ID should error:
 >>> musterr [CLI] psql projects/my-project/branches/main/endpoints/
 Error: invalid resource path: missing endpoint ID
+
+=== Provisioned flag with --project should error:
+>>> musterr [CLI] psql --provisioned --project foo
+Error: cannot use --project, --branch, or --endpoint flags with --provisioned
+
+=== Provisioned flag with autoscaling path should error:
+>>> musterr [CLI] psql --provisioned projects/my-project/branches/main/endpoints/primary
+Error: cannot use --provisioned flag with an autoscaling resource path
+
+=== Autoscaling flag with provisioned instance should error:
+>>> musterr [CLI] psql --autoscaling my-instance
+Error: cannot use --autoscaling flag with a provisioned instance name
+
+=== Provisioned and autoscaling flags are mutually exclusive:
+>>> musterr [CLI] psql --provisioned --autoscaling
+Error: if any flags in the group [provisioned autoscaling] are set none of the others can be; [autoscaling provisioned] were all set

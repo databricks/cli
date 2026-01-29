@@ -1,7 +1,7 @@
 
 === Command should use default number of retries:
 >>> musterr [CLI] psql my-database -- --dbname=db1 -p 3000
-Instance: my-database (provisioned)
+Instance: my-database
 Connecting...
 Simulating connection failure with exit code '2'
 Connection failed with retryable error: connection failed (retryable): psql exited with code 2
@@ -17,7 +17,7 @@ Error: failed to connect after 3 attempts, last error: connection failed (retrya
 
 === Command should use custom number of retries:
 >>> musterr [CLI] psql my-database --max-retries 5 -- --dbname=db1 -p 3000
-Instance: my-database (provisioned)
+Instance: my-database
 Connecting...
 Simulating connection failure with exit code '2'
 Connection failed with retryable error: connection failed (retryable): psql exited with code 2
@@ -41,6 +41,6 @@ Error: failed to connect after 5 attempts, last error: connection failed (retrya
 
 === Command should not use retries:
 >>> musterr [CLI] psql my-database --max-retries 0 -- --dbname=db1 -p 3000
-Instance: my-database (provisioned)
+Instance: my-database
 Connecting...
 Simulating connection failure with exit code '2'

@@ -50,6 +50,10 @@ Usage modes:
 4. Interactive selection (shows dropdown with all available databases):
    databricks psql
 
+5. Interactive selection limited to a specific product:
+   databricks psql --provisioned
+   databricks psql --autoscaling
+
 You can pass additional arguments to psql after a double-dash (--):
   databricks psql my-database -- -c "SELECT * FROM my_table"
   databricks psql --project my-project -- --echo-all -d "my-db"
@@ -58,6 +62,11 @@ You can pass additional arguments to psql after a double-dash (--):
 
 	// Add retry configuration flag
 	cmd.Flags().Int("max-retries", 3, "Maximum number of connection retry attempts (set to 0 to disable retries)")
+
+	// Add product selection flags
+	cmd.Flags().Bool("provisioned", false, "Connect to a Lakebase Provisioned database instance")
+	cmd.Flags().Bool("autoscaling", false, "Connect to a Lakebase Autoscaling endpoint")
+	cmd.MarkFlagsMutuallyExclusive("provisioned", "autoscaling")
 
 	// Add Lakebase Autoscaling flags
 	cmd.Flags().String("project", "", "Lakebase Autoscaling project ID")
@@ -82,6 +91,8 @@ You can pass additional arguments to psql after a double-dash (--):
 		extraArgs := args[argsLenAtDash:]
 
 		// Read flags
+		provisionedFlag, _ := cmd.Flags().GetBool("provisioned")
+		autoscalingFlag, _ := cmd.Flags().GetBool("autoscaling")
 		projectFlag, _ := cmd.Flags().GetString("project")
 		branchFlag, _ := cmd.Flags().GetString("branch")
 		endpointFlag, _ := cmd.Flags().GetString("endpoint")
@@ -96,9 +107,18 @@ You can pass additional arguments to psql after a double-dash (--):
 
 		hasAutoscalingFlags := projectFlag != "" || branchFlag != "" || endpointFlag != ""
 
+		// Check for conflicting flags
+		if provisionedFlag && hasAutoscalingFlags {
+			return errors.New("cannot use --project, --branch, or --endpoint flags with --provisioned")
+		}
+
 		// Positional argument takes precedence
 		if target != "" {
 			if strings.HasPrefix(target, "projects/") {
+				if provisionedFlag {
+					return errors.New("cannot use --provisioned flag with an autoscaling resource path")
+				}
+
 				projectID, branchID, endpointID, err := parseResourcePath(target)
 				if err != nil {
 					return err
@@ -130,6 +150,9 @@ You can pass additional arguments to psql after a double-dash (--):
 			if hasAutoscalingFlags {
 				return errors.New("cannot use --project, --branch, or --endpoint flags with a provisioned instance name")
 			}
+			if autoscalingFlag {
+				return errors.New("cannot use --autoscaling flag with a provisioned instance name")
+			}
 			return connectProvisioned(ctx, target, retryConfig, extraArgs)
 		}
 
@@ -139,6 +162,14 @@ You can pass additional arguments to psql after a double-dash (--):
 				return errors.New("--project is required when using --branch or --endpoint")
 			}
 			return connectAutoscaling(ctx, projectFlag, branchFlag, endpointFlag, retryConfig, extraArgs)
+		}
+
+		// Product-specific interactive selection
+		if provisionedFlag {
+			return connectProvisioned(ctx, "", retryConfig, extraArgs)
+		}
+		if autoscalingFlag {
+			return connectAutoscaling(ctx, "", "", "", retryConfig, extraArgs)
 		}
 
 		// No args, no flags -> interactive selection

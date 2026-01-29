@@ -1,29 +1,29 @@
 
 === Command should exit if the instance is not available
 >>> musterr [CLI] psql database-starting
-Instance: database-starting (provisioned)
+Instance: database-starting
 Instance status: STARTING
 Please retry when the instance becomes available
 Error: database instance is not ready for accepting connections
 
 >>> musterr [CLI] psql database-updating
-Instance: database-updating (provisioned)
+Instance: database-updating
 Instance status: UPDATING
 Please retry when the instance becomes available
 Error: database instance is not ready for accepting connections
 
 >>> musterr [CLI] psql database-stopped
-Instance: database-stopped (provisioned)
+Instance: database-stopped
 Instance status: STOPPED
 Error: database instance is not ready for accepting connections
 
 >>> musterr [CLI] psql database-failing-over
-Instance: database-failing-over (provisioned)
+Instance: database-failing-over
 Instance status: FAILING_OVER
 Please retry when the instance becomes available
 Error: database instance is not ready for accepting connections
 
 >>> musterr [CLI] psql database-deleting
-Instance: database-deleting (provisioned)
+Instance: database-deleting
 Instance status: DELETING
 Error: database instance is not ready for accepting connections

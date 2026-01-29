@@ -42,3 +42,15 @@ trace musterr $CLI psql projects/my-project/branches/
 
 title "Invalid path with missing endpoint ID should error:"
 trace musterr $CLI psql projects/my-project/branches/main/endpoints/
+
+title "Provisioned flag with --project should error:"
+trace musterr $CLI psql --provisioned --project foo
+
+title "Provisioned flag with autoscaling path should error:"
+trace musterr $CLI psql --provisioned projects/my-project/branches/main/endpoints/primary
+
+title "Autoscaling flag with provisioned instance should error:"
+trace musterr $CLI psql --autoscaling my-instance
+
+title "Provisioned and autoscaling flags are mutually exclusive:"
+trace musterr $CLI psql --provisioned --autoscaling
