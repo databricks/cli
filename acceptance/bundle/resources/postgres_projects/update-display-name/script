@@ -13,46 +13,46 @@ print_requests() {
 
 title "Initial deployment"
 trace $CLI bundle validate
-trace $CLI bundle plan
+trace $CLI bundle plan -o json | jq '.plan."resources.postgres_projects.my_project" // .' > out.plan.create.json
 rm -f out.requests.txt
 trace $CLI bundle deploy
 
 print_requests
-mv out.requests.json out.create.requests.json
+mv out.requests.json out.requests.create.json
 
 project_name="projects/test-pg-proj-${UNIQUE_NAME}"
 project_id_1=`read_id.py my_project`
 trace $CLI postgres get-project "${project_name}" | jq 'del(.create_time, .update_time)'
 
-title "Verify idempotency (no changes)"
-trace $CLI bundle plan
+title "Verify no changes"
+trace $CLI bundle plan -o json | jq '.plan."resources.postgres_projects.my_project" // .' > out.plan.no_change.json
 rm -f out.requests.txt
 trace $CLI bundle deploy
 
 print_requests
-mv out.requests.json out.idempotency.requests.json
+mv out.requests.json out.requests.no_change.json
 
 title "Update display_name and re-deploy"
 trace update_file.py databricks.yml "Original Name" "Updated Name"
 trace cat databricks.yml
 
-trace $CLI bundle plan
+trace $CLI bundle plan -o json | jq '.plan."resources.postgres_projects.my_project" // .' > out.plan.update.json
 rm -f out.requests.txt
 trace $CLI bundle deploy
 
 print_requests
-mv out.requests.json out.update.requests.json
+mv out.requests.json out.requests.update.json
 
 project_id_2=`read_id.py my_project`
 trace $CLI postgres get-project "${project_name}" | jq 'del(.create_time, .update_time)'
 
 title "Restore display_name to original value"
 trace update_file.py databricks.yml "Updated Name" "Original Name"
-trace $CLI bundle plan
+trace $CLI bundle plan -o json | jq '.plan."resources.postgres_projects.my_project" // .' > out.plan.restore.json
 rm -f out.requests.txt
 trace $CLI bundle deploy
 
 print_requests
-mv out.requests.json out.restore.requests.json
+mv out.requests.json out.requests.restore.json
 
 trace $CLI postgres get-project "${project_name}" | jq 'del(.create_time, .update_time)'
