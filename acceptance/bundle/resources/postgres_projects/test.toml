@@ -5,8 +5,8 @@ CloudEnvs.gcp = false # lakebase v2 (postgres) is not available in GCP as of Jan
 # Mitigates running into quota limits in workspaces
 CloudSlow = true
 
-# Run only on direct mode (not Terraform)
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+# Run on both direct and Terraform modes
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct", "terraform"]
 
 Ignore = [
     "databricks.yml",
