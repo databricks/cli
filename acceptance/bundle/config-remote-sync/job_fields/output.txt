@@ -5,6 +5,7 @@ Updating deployment state...
 Deployment complete!
 
 === Modify job fields remotely
+
 === Detect and save changes
 Detected changes in 1 resource(s):
 
@@ -27,7 +28,7 @@ Resource: resources.jobs.my_job
 -
  resources:
    jobs:
-@@ -8,15 +7,21 @@
+@@ -8,12 +7,17 @@
          on_success:
            - success@example.com
 +        no_alert_for_skipped_runs: true
@@ -49,8 +50,12 @@ Resource: resources.jobs.my_job
 -          interval: 1
 +          interval: 2
            unit: DAYS
-       tags:
-         env: dev
-+        team: data
        environments:
-         - environment_key: default
+@@ -31,5 +35,6 @@
+             node_type_id: [NODE_TYPE_ID]
+             num_workers: 1
+-
++      tags:
++        team: data
+ targets:
+   default:

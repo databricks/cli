@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/logdiag"
+	"github.com/palantir/pkg/yamlpatch/yamlpatch"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
@@ -237,41 +238,6 @@ func TestApplyChangesToYAML_MultipleResourcesSameFile(t *testing.T) {
 
 	job2 := jobs["job2"].(map[string]any)
 	assert.Equal(t, 3600, job2["timeout_seconds"])
-}
-
-func TestApplyChangesToYAML_ResourceNotFound(t *testing.T) {
-	ctx := logdiag.InitContext(context.Background())
-
-	tmpDir := t.TempDir()
-
-	yamlContent := `resources:
-  jobs:
-    existing_job:
-      name: "Existing Job"
-`
-
-	yamlPath := filepath.Join(tmpDir, "databricks.yml")
-	err := os.WriteFile(yamlPath, []byte(yamlContent), 0o644)
-	require.NoError(t, err)
-
-	b, err := bundle.Load(ctx, tmpDir)
-	require.NoError(t, err)
-
-	mutator.DefaultMutators(ctx, b)
-
-	changes := map[string]deployplan.Changes{
-		"resources.jobs.nonexistent_job": {
-			"timeout_seconds": &deployplan.ChangeDesc{
-				Action: deployplan.Update,
-				Remote: 3600,
-			},
-		},
-	}
-
-	fileChanges, err := ApplyChangesToYAML(ctx, b, changes)
-	require.NoError(t, err)
-
-	assert.Len(t, fileChanges, 0)
 }
 
 func TestApplyChangesToYAML_Include(t *testing.T) {
@@ -932,4 +898,25 @@ func TestApplyChangesToYAML_WithSDKStructValues(t *testing.T) {
 
 	assert.Contains(t, files[0].ModifiedContent, "name: updated_name")
 	assert.Contains(t, files[0].ModifiedContent, "enabled: false")
+}
+
+func TestBuildNestedMaps(t *testing.T) {
+	targetPath, err := yamlpatch.ParsePath("/targets/default/resources/pipelines/my_pipeline/tags/foo")
+	require.NoError(t, err)
+
+	missingPath, err := yamlpatch.ParsePath("/targets/default/resources")
+	require.NoError(t, err)
+
+	result := buildNestedMaps(targetPath, missingPath, "bar")
+
+	expected := map[string]any{
+		"pipelines": map[string]any{
+			"my_pipeline": map[string]any{
+				"tags": map[string]any{
+					"foo": "bar",
+				},
+			},
+		},
+	}
+	assert.Equal(t, expected, result)
 }

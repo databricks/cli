@@ -15,6 +15,8 @@ resources:
       - storage
       - ingestion_definition.connection_name
       - ingestion_definition.ingestion_gateway_id
+    ignore_remote_changes:
+      - run_as
 
   models:
     recreate_on_changes:
@@ -67,6 +69,8 @@ resources:
     recreate_on_changes:
       - assets_dir
       - table_name
+    ignore_remote_changes:
+      - warehouse_id
 
   schemas:
     recreate_on_changes:
@@ -85,7 +89,19 @@ resources:
 
   # clusters: no special config
 
-  # dashboards: no special config
+  dashboards:
+    recreate_on_changes:
+      - parent_path
+
+    ignore_remote_changes:
+      # "serialized_dashboard" locally and remotely will have different contents
+      # We only need to rely on etag here, and can skip this field for diff computation.
+      - serialized_dashboard
+
+      # "dataset_catalog" and "dataset_schema" are write-only fields that are not returned by the server.
+      # They will always differ between local config (which has values) and remote state (which has empty strings).
+      - dataset_catalog
+      - dataset_schema
 
   apps:
     recreate_on_changes:
