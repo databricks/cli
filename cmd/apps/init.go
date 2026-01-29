@@ -492,7 +492,13 @@ func runCreate(ctx context.Context, opts createOptions) error {
 			// Check if the template path matches a legacy template
 			if legacyTemplate := legacytemplates.FindLegacyTemplateByPath(templates, opts.templatePath); legacyTemplate != nil {
 				log.Infof(ctx, "Using legacy template: %s", opts.templatePath)
-				return legacytemplates.HandleLegacyTemplateInit(ctx, legacyTemplate, opts.name, opts.nameProvided, opts.outputDir, opts.warehouseID, opts.servingEndpoint, opts.experimentID, opts.instanceName, opts.databaseName, opts.ucVolume, opts.deploy, opts.deployChanged, opts.run, opts.runChanged, isInteractive, workspaceHost, profile)
+				absOutputDir, startCommand, shouldDeploy, runMode, err := legacytemplates.HandleLegacyTemplateInit(ctx, legacyTemplate, opts.name, opts.nameProvided, opts.outputDir, opts.warehouseID, opts.servingEndpoint, opts.experimentID, opts.instanceName, opts.databaseName, opts.ucVolume, opts.deploy, opts.deployChanged, opts.run, opts.runChanged, isInteractive, workspaceHost, profile)
+				if err != nil {
+					return err
+				}
+				// Extract project name from the absolute output directory
+				projectName := filepath.Base(absOutputDir)
+				return runPostCreationSteps(ctx, absOutputDir, projectName, 0, shouldDeploy, runMode, startCommand)
 			}
 		}
 	}
@@ -519,7 +525,13 @@ func runCreate(ctx context.Context, opts createOptions) error {
 			return err
 		}
 
-		return legacytemplates.HandleLegacyTemplateInit(ctx, selectedTemplate, opts.name, opts.nameProvided, opts.outputDir, opts.warehouseID, opts.servingEndpoint, opts.experimentID, opts.instanceName, opts.databaseName, opts.ucVolume, opts.deploy, opts.deployChanged, opts.run, opts.runChanged, isInteractive, workspaceHost, profile)
+		absOutputDir, startCommand, shouldDeploy, runMode, err := legacytemplates.HandleLegacyTemplateInit(ctx, selectedTemplate, opts.name, opts.nameProvided, opts.outputDir, opts.warehouseID, opts.servingEndpoint, opts.experimentID, opts.instanceName, opts.databaseName, opts.ucVolume, opts.deploy, opts.deployChanged, opts.run, opts.runChanged, isInteractive, workspaceHost, profile)
+		if err != nil {
+			return err
+		}
+		// Extract project name from the absolute output directory
+		projectName := filepath.Base(absOutputDir)
+		return runPostCreationSteps(ctx, absOutputDir, projectName, 0, shouldDeploy, runMode, startCommand)
 	}
 
 	// Use features from flags if provided

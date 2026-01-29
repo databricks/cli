@@ -19,6 +19,7 @@ import (
 	"github.com/databricks/cli/cmd/apps/legacytemplates"
 	bundleutils "github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/apps/initializer"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dyn"
@@ -277,6 +278,14 @@ func runImport(ctx context.Context, w *databricks.WorkspaceClient, appName, outp
 		return fmt.Errorf("failed to generate bundle: %w", err)
 	}
 
+	// Initialize project dependencies (venv for Python, npm for Node.js)
+	if err := initializeProjectDependencies(ctx, outputDir, quiet); err != nil {
+		// Log warning but don't fail - dependency initialization is optional
+		if !quiet {
+			cmdio.LogString(ctx, fmt.Sprintf("⚠ Failed to initialize project dependencies: %v", err))
+		}
+	}
+
 	// Set DATABRICKS_BUNDLE_ENGINE to direct mode
 	ctx = env.Set(ctx, "DATABRICKS_BUNDLE_ENGINE", "direct")
 
@@ -407,6 +416,33 @@ func runImport(ctx context.Context, w *databricks.WorkspaceClient, appName, outp
 	return nil
 }
 
+// initializeProjectDependencies initializes project dependencies based on project type.
+func initializeProjectDependencies(ctx context.Context, workDir string, quiet bool) error {
+	projectInitializer := initializer.GetProjectInitializer(workDir)
+	if projectInitializer == nil {
+		// No initializer found, nothing to do
+		return nil
+	}
+
+	if !quiet {
+		cmdio.LogString(ctx, "Initializing project dependencies...")
+	}
+
+	result := projectInitializer.Initialize(ctx, workDir)
+	if !result.Success {
+		if result.Error != nil {
+			return fmt.Errorf("%s: %w", result.Message, result.Error)
+		}
+		return fmt.Errorf("%s", result.Message)
+	}
+
+	if !quiet {
+		cmdio.LogString(ctx, "✓ Project dependencies initialized")
+	}
+
+	return nil
+}
+
 // generateAppBundle creates a databricks.yml configuration file and downloads the app source code.
 func generateAppBundle(ctx context.Context, w *databricks.WorkspaceClient, app *apps.App, quiet bool) (string, error) {
 	// Use constant "app" as the resource key
@@ -442,9 +478,6 @@ func generateAppBundle(ctx context.Context, w *databricks.WorkspaceClient, app *
 		err = os.Remove(appConfigFile)
 		if err != nil {
 			return "", fmt.Errorf("failed to remove %s: %w", appConfigFile, err)
-		}
-		if !quiet {
-			cmdio.LogString(ctx, "Inlined and removed "+appConfigFile)
 		}
 	}
 

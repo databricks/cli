@@ -37,8 +37,8 @@ type TemplateVars struct {
 
 // RunLegacyTemplateInit initializes a project using a legacy template.
 // All resource parameters are optional and will be passed to the template if provided.
-// startCommand from the manifest (if provided) overrides the default command for running the app.
-func RunLegacyTemplateInit(ctx context.Context, selectedTemplate *AppTemplateManifest, appName, outputDir, warehouseID, servingEndpoint, experimentID, instanceName, databaseName, ucVolume, workspaceHost, profile string, shouldDeploy bool, runMode prompt.RunMode) error {
+// Returns the absolute output directory, start command from manifest, and error.
+func RunLegacyTemplateInit(ctx context.Context, selectedTemplate *AppTemplateManifest, appName, outputDir, warehouseID, servingEndpoint, experimentID, instanceName, databaseName, ucVolume, workspaceHost, profile string, shouldDeploy bool, runMode prompt.RunMode) (string, string, error) {
 	// Determine the destination directory
 	destDir := appName
 	if outputDir != "" {
@@ -47,13 +47,13 @@ func RunLegacyTemplateInit(ctx context.Context, selectedTemplate *AppTemplateMan
 
 	// Check if directory already exists
 	if _, err := os.Stat(destDir); err == nil {
-		return fmt.Errorf("directory %s already exists", destDir)
+		return "", "", fmt.Errorf("directory %s already exists", destDir)
 	}
 
 	// Create a temporary directory for cloning the repo
 	tmpDir, err := os.MkdirTemp("", "databricks-app-template-*")
 	if err != nil {
-		return fmt.Errorf("failed to create temp directory: %w", err)
+		return "", "", fmt.Errorf("failed to create temp directory: %w", err)
 	}
 	defer os.RemoveAll(tmpDir)
 
@@ -61,26 +61,26 @@ func RunLegacyTemplateInit(ctx context.Context, selectedTemplate *AppTemplateMan
 
 	// Clone the repository (shallow clone)
 	if err := git.Clone(ctx, selectedTemplate.GitRepo, "", tmpDir); err != nil {
-		return fmt.Errorf("failed to clone repository: %w", err)
+		return "", "", fmt.Errorf("failed to clone repository: %w", err)
 	}
 
 	// Source path is the template directory within the cloned repo
 	srcPath := filepath.Join(tmpDir, selectedTemplate.Path)
 	if _, err := os.Stat(srcPath); err != nil {
-		return fmt.Errorf("template path %s not found in repository: %w", selectedTemplate.Path, err)
+		return "", "", fmt.Errorf("template path %s not found in repository: %w", selectedTemplate.Path, err)
 	}
 
 	// Copy the template directory to the destination
 	cmdio.LogString(ctx, fmt.Sprintf("Copying template files to %s...", destDir))
 	if err := copyDir(srcPath, destDir); err != nil {
-		return fmt.Errorf("failed to copy template: %w", err)
+		return "", "", fmt.Errorf("failed to copy template: %w", err)
 	}
 
 	// Remove .git directory if it exists in the destination
 	gitDir := filepath.Join(destDir, ".git")
 	if _, err := os.Stat(gitDir); err == nil {
 		if err := os.RemoveAll(gitDir); err != nil {
-			return fmt.Errorf("failed to remove .git directory: %w", err)
+			return "", "", fmt.Errorf("failed to remove .git directory: %w", err)
 		}
 	}
 
@@ -105,17 +105,17 @@ func RunLegacyTemplateInit(ctx context.Context, selectedTemplate *AppTemplateMan
 	// Create template with custom functions for resource handling
 	tmpl, err := template.New("databricks.yml").Funcs(getTemplateFuncs(resourceValues)).Parse(databricksYmlTemplate)
 	if err != nil {
-		return fmt.Errorf("failed to parse databricks.yml template: %w", err)
+		return "", "", fmt.Errorf("failed to parse databricks.yml template: %w", err)
 	}
 
 	var databricksYmlBuf bytes.Buffer
 	if err := tmpl.Execute(&databricksYmlBuf, vars); err != nil {
-		return fmt.Errorf("failed to execute databricks.yml template: %w", err)
+		return "", "", fmt.Errorf("failed to execute databricks.yml template: %w", err)
 	}
 
 	databricksYmlPath := filepath.Join(destDir, "databricks.yml")
 	if err := os.WriteFile(databricksYmlPath, databricksYmlBuf.Bytes(), 0o644); err != nil {
-		return fmt.Errorf("failed to write databricks.yml: %w", err)
+		return "", "", fmt.Errorf("failed to write databricks.yml: %w", err)
 	}
 
 	cmdio.LogString(ctx, "✓ Created databricks.yml")
@@ -134,7 +134,7 @@ func RunLegacyTemplateInit(ctx context.Context, selectedTemplate *AppTemplateMan
 
 	// Check for app.yml in the destination directory and inline it into databricks.yml
 	if err := inlineAppYmlIntoBundle(ctx, destDir); err != nil {
-		return fmt.Errorf("failed to inline app.yml: %w", err)
+		return "", "", fmt.Errorf("failed to inline app.yml: %w", err)
 	}
 
 	// Get absolute path
@@ -144,27 +144,31 @@ func RunLegacyTemplateInit(ctx context.Context, selectedTemplate *AppTemplateMan
 	}
 
 	cmdio.LogString(ctx, fmt.Sprintf("✓ Successfully created %s in %s", appName, absOutputDir))
-	return nil
+
+	// Return the absolute path and start command for post-creation steps
+	startCommand := selectedTemplate.Manifest.StartCommand
+	return absOutputDir, startCommand, nil
 }
 
 // HandleLegacyTemplateInit handles the common logic for initializing a legacy template.
 // It gets the app name, collects resources, determines deploy/run options, and calls RunLegacyTemplateInit.
-func HandleLegacyTemplateInit(ctx context.Context, legacyTemplate *AppTemplateManifest, name string, nameProvided bool, outputDir, warehouseID, servingEndpoint, experimentID, instanceName, databaseName, ucVolume string, deploy, deployChanged bool, run string, runChanged, isInteractive bool, workspaceHost, profile string) error {
+// Returns the absolute output directory, start command, should deploy, run mode, and error.
+func HandleLegacyTemplateInit(ctx context.Context, legacyTemplate *AppTemplateManifest, name string, nameProvided bool, outputDir, warehouseID, servingEndpoint, experimentID, instanceName, databaseName, ucVolume string, deploy, deployChanged bool, run string, runChanged, isInteractive bool, workspaceHost, profile string) (string, string, bool, prompt.RunMode, error) {
 	// Get app name
 	appName := name
 	if appName == "" {
 		if !isInteractive {
-			return errors.New("--name is required in non-interactive mode")
+			return "", "", false, prompt.RunModeNone, errors.New("--name is required in non-interactive mode")
 		}
 		var err error
 		appName, err = prompt.PromptForProjectName(ctx, outputDir, legacyTemplate.Path)
 		if err != nil {
-			return err
+			return "", "", false, prompt.RunModeNone, err
 		}
 	} else {
 		// Validate name in non-interactive mode
 		if err := prompt.ValidateProjectName(appName); err != nil {
-			return err
+			return "", "", false, prompt.RunModeNone, err
 		}
 	}
 
@@ -181,20 +185,20 @@ func HandleLegacyTemplateInit(ctx context.Context, legacyTemplate *AppTemplateMa
 	)
 	resourceValues, err := collector.CollectAll(ctx)
 	if err != nil {
-		return err
+		return "", "", false, prompt.RunModeNone, err
 	}
 
 	// Parse deploy and run flags
 	shouldDeploy, runMode, err := internal.ParseDeployAndRunFlags(deploy, run)
 	if err != nil {
-		return err
+		return "", "", false, prompt.RunModeNone, err
 	}
 
 	// Prompt for deploy/run if in interactive mode and no flags were set
 	if isInteractive && !deployChanged && !runChanged {
 		shouldDeploy, runMode, err = prompt.PromptForDeployAndRun(ctx)
 		if err != nil {
-			return err
+			return "", "", false, prompt.RunModeNone, err
 		}
 	}
 
@@ -217,10 +221,15 @@ func HandleLegacyTemplateInit(ctx context.Context, legacyTemplate *AppTemplateMa
 		ucVolumeValue = val.SingleValue()
 	}
 
-	return RunLegacyTemplateInit(ctx, legacyTemplate, appName, outputDir,
+	absOutputDir, startCommand, err := RunLegacyTemplateInit(ctx, legacyTemplate, appName, outputDir,
 		warehouseIDValue, servingEndpointValue, experimentIDValue,
 		instanceNameValue, databaseNameValue, ucVolumeValue,
 		workspaceHost, profile, shouldDeploy, runMode)
+	if err != nil {
+		return "", "", false, prompt.RunModeNone, err
+	}
+
+	return absOutputDir, startCommand, shouldDeploy, runMode, nil
 }
 
 // copyDir recursively copies a directory tree from src to dst.
@@ -447,6 +456,5 @@ func inlineAppYmlIntoBundle(ctx context.Context, dir string) error {
 	if err := os.Remove(appConfigFile); err != nil {
 		return fmt.Errorf("failed to remove %s: %w", appConfigFile, err)
 	}
-	cmdio.LogString(ctx, "✓ Inlined and removed "+appConfigFile)
 	return nil
 }
