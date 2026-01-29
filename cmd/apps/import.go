@@ -177,7 +177,7 @@ Examples:
 			var oldSourceCodePath string
 
 			// Run the import in the output directory
-			err = runImport(ctx, w, name, outputDir, &oldSourceCodePath, forceImport, currentUserEmail, quiet)
+			projectInitializer, err := runImport(ctx, w, name, outputDir, &oldSourceCodePath, forceImport, currentUserEmail, quiet)
 			if err != nil {
 				return err
 			}
@@ -208,7 +208,6 @@ Examples:
 				cmdio.LogString(ctx, "\nYou can now deploy changes with: databricks bundle deploy")
 
 				// Show how to run locally
-				projectInitializer := initializer.GetProjectInitializer(outputDir)
 				if projectInitializer != nil {
 					nextSteps := projectInitializer.NextSteps()
 					if nextSteps != "" {
@@ -232,14 +231,15 @@ Examples:
 
 // runImport orchestrates the app import process: loads the app from workspace,
 // generates bundle files, binds to the existing app, deploys, and starts it.
-func runImport(ctx context.Context, w *databricks.WorkspaceClient, appName, outputDir string, oldSourceCodePath *string, forceImport bool, currentUserEmail string, quiet bool) error {
+// Returns the project initializer (or nil) and any error.
+func runImport(ctx context.Context, w *databricks.WorkspaceClient, appName, outputDir string, oldSourceCodePath *string, forceImport bool, currentUserEmail string, quiet bool) (initializer.Initializer, error) {
 	// Step 1: Load the app from workspace
 	if !quiet {
 		cmdio.LogString(ctx, fmt.Sprintf("Loading app '%s' configuration", appName))
 	}
 	app, err := w.Apps.Get(ctx, apps.GetAppRequest{Name: appName})
 	if err != nil {
-		return fmt.Errorf("failed to get app: %w", err)
+		return nil, fmt.Errorf("failed to get app: %w", err)
 	}
 
 	// Save the old source code path for cleanup
@@ -249,13 +249,13 @@ func runImport(ctx context.Context, w *databricks.WorkspaceClient, appName, outp
 	alreadyImported := app.DefaultSourceCodePath != "" && strings.Contains(app.DefaultSourceCodePath, "/.bundle/")
 	if alreadyImported {
 		if !forceImport {
-			return fmt.Errorf("app '%s' appears to have already been imported (workspace path '%s' is inside a .bundle folder). Use --force-import to import anyway", appName, app.DefaultSourceCodePath)
+			return nil, fmt.Errorf("app '%s' appears to have already been imported (workspace path '%s' is inside a .bundle folder). Use --force-import to import anyway", appName, app.DefaultSourceCodePath)
 		}
 
 		// Check if the app is owned by the current user
 		appOwner := strings.ToLower(app.Creator)
 		if appOwner != currentUserEmail {
-			return fmt.Errorf("--force-import can only be used for apps you own. App '%s' is owned by '%s'", appName, app.Creator)
+			return nil, fmt.Errorf("--force-import can only be used for apps you own. App '%s' is owned by '%s'", appName, app.Creator)
 		}
 
 		if !quiet {
@@ -266,11 +266,11 @@ func runImport(ctx context.Context, w *databricks.WorkspaceClient, appName, outp
 	// Change to output directory
 	originalDir, err := os.Getwd()
 	if err != nil {
-		return fmt.Errorf("failed to get current directory: %w", err)
+		return nil, fmt.Errorf("failed to get current directory: %w", err)
 	}
 
 	if err := os.Chdir(outputDir); err != nil {
-		return fmt.Errorf("failed to change to output directory: %w", err)
+		return nil, fmt.Errorf("failed to change to output directory: %w", err)
 	}
 	defer func() {
 		_ = os.Chdir(originalDir)
@@ -284,11 +284,12 @@ func runImport(ctx context.Context, w *databricks.WorkspaceClient, appName, outp
 	// Use the bundle generate app command logic
 	appKey, err := generateAppBundle(ctx, w, app, quiet)
 	if err != nil {
-		return fmt.Errorf("failed to generate bundle: %w", err)
+		return nil, fmt.Errorf("failed to generate bundle: %w", err)
 	}
 
 	// Initialize project dependencies (venv for Python, npm for Node.js)
-	if err := initializeProjectDependencies(ctx, outputDir, quiet); err != nil {
+	projectInitializer, err := initializeProjectDependencies(ctx, outputDir, quiet)
+	if err != nil {
 		// Log warning but don't fail - dependency initialization is optional
 		if !quiet {
 			cmdio.LogString(ctx, fmt.Sprintf("⚠ Failed to initialize project dependencies: %v", err))
@@ -320,22 +321,22 @@ func runImport(ctx context.Context, w *databricks.WorkspaceClient, appName, outp
 			},
 		})
 		if err != nil {
-			return fmt.Errorf("failed to initialize bundle: %w", err)
+			return projectInitializer, fmt.Errorf("failed to initialize bundle: %w", err)
 		}
 
 		// Find the app resource
 		resource, err := b.Config.Resources.FindResourceByConfigKey(appKey)
 		if err != nil {
-			return fmt.Errorf("failed to find resource: %w", err)
+			return projectInitializer, fmt.Errorf("failed to find resource: %w", err)
 		}
 
 		// Verify the app exists
 		exists, err := resource.Exists(ctx, b.WorkspaceClient(), app.Name)
 		if err != nil {
-			return fmt.Errorf("failed to verify app exists: %w", err)
+			return projectInitializer, fmt.Errorf("failed to verify app exists: %w", err)
 		}
 		if !exists {
-			return fmt.Errorf("app '%s' no longer exists in workspace", app.Name)
+			return projectInitializer, fmt.Errorf("app '%s' no longer exists in workspace", app.Name)
 		}
 
 		// Bind the resource
@@ -347,7 +348,7 @@ func runImport(ctx context.Context, w *databricks.WorkspaceClient, appName, outp
 			ResourceId:   app.Name,
 		})
 		if logdiag.HasError(ctx) {
-			return errors.New("failed to bind resource")
+			return projectInitializer, errors.New("failed to bind resource")
 		}
 
 		if !quiet {
@@ -378,7 +379,7 @@ func runImport(ctx context.Context, w *databricks.WorkspaceClient, appName, outp
 		},
 	})
 	if err != nil {
-		return fmt.Errorf("failed to deploy bundle: %w", err)
+		return projectInitializer, fmt.Errorf("failed to deploy bundle: %w", err)
 	}
 
 	if !quiet {
@@ -393,26 +394,26 @@ func runImport(ctx context.Context, w *databricks.WorkspaceClient, appName, outp
 	// Locate the app resource
 	ref, err := resources.Lookup(b, appKey, run.IsRunnable)
 	if err != nil {
-		return fmt.Errorf("failed to find app resource: %w", err)
+		return projectInitializer, fmt.Errorf("failed to find app resource: %w", err)
 	}
 
 	// Convert the resource to a runner
 	runner, err := run.ToRunner(b, ref)
 	if err != nil {
-		return fmt.Errorf("failed to create runner: %w", err)
+		return projectInitializer, fmt.Errorf("failed to create runner: %w", err)
 	}
 
 	// Run the app with default options
 	runOptions := &run.Options{}
 	output, err := runner.Run(ctx, runOptions)
 	if err != nil {
-		return fmt.Errorf("failed to start app: %w", err)
+		return projectInitializer, fmt.Errorf("failed to start app: %w", err)
 	}
 
 	if output != nil {
 		resultString, err := output.String()
 		if err != nil {
-			return fmt.Errorf("failed to get run output: %w", err)
+			return projectInitializer, fmt.Errorf("failed to get run output: %w", err)
 		}
 		if !quiet {
 			cmdio.LogString(ctx, resultString)
@@ -422,15 +423,16 @@ func runImport(ctx context.Context, w *databricks.WorkspaceClient, appName, outp
 	if !quiet {
 		cmdio.LogString(ctx, "App started successfully")
 	}
-	return nil
+	return projectInitializer, nil
 }
 
 // initializeProjectDependencies initializes project dependencies based on project type.
-func initializeProjectDependencies(ctx context.Context, workDir string, quiet bool) error {
+// Returns the project initializer (or nil) and any error.
+func initializeProjectDependencies(ctx context.Context, workDir string, quiet bool) (initializer.Initializer, error) {
 	projectInitializer := initializer.GetProjectInitializer(workDir)
 	if projectInitializer == nil {
 		// No initializer found, nothing to do
-		return nil
+		return nil, nil
 	}
 
 	if !quiet {
@@ -440,16 +442,16 @@ func initializeProjectDependencies(ctx context.Context, workDir string, quiet bo
 	result := projectInitializer.Initialize(ctx, workDir)
 	if !result.Success {
 		if result.Error != nil {
-			return fmt.Errorf("%s: %w", result.Message, result.Error)
+			return projectInitializer, fmt.Errorf("%s: %w", result.Message, result.Error)
 		}
-		return fmt.Errorf("%s", result.Message)
+		return projectInitializer, fmt.Errorf("%s", result.Message)
 	}
 
 	if !quiet {
 		cmdio.LogString(ctx, "✓ Project dependencies initialized")
 	}
 
-	return nil
+	return projectInitializer, nil
 }
 
 // generateAppBundle creates a databricks.yml configuration file and downloads the app source code.
