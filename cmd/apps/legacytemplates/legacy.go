@@ -6,49 +6,45 @@ import (
 	"fmt"
 )
 
-//go:embed app-template-app-manifests.json
-var appTemplateManifestsJSON []byte
+//go:embed apps-templates.json
+var appTemplatesJSON []byte
 
-// resourceSpec represents a resource specification in the template manifest.
+// resourceSpec represents a resource specification in the template.
 type resourceSpec struct {
-	Name                string          `json:"name"`
-	Description         string          `json:"description"`
-	SQLWarehouseSpec    *map[string]any `json:"sql_warehouse_spec,omitempty"`
-	ExperimentSpec      *map[string]any `json:"experiment_spec,omitempty"`
-	ServingEndpointSpec *map[string]any `json:"serving_endpoint_spec,omitempty"`
-	DatabaseSpec        *map[string]any `json:"database_spec,omitempty"`
-	UCSecurableSpec     *map[string]any `json:"uc_securable_spec,omitempty"`
+	Name            string          `json:"name"`
+	Description     string          `json:"description"`
+	SQLWarehouse    *map[string]any `json:"sql_warehouse,omitempty"`
+	Experiment      *map[string]any `json:"experiment,omitempty"`
+	ServingEndpoint *map[string]any `json:"serving_endpoint,omitempty"`
+	Database        *map[string]any `json:"database,omitempty"`
+	UCSecurable     *map[string]any `json:"uc_securable,omitempty"`
 }
 
-// manifest represents the manifest section of a template.
-type manifest struct {
-	Version       int            `json:"version"`
+// AppTemplateManifest represents a single app template from the templates JSON file.
+type AppTemplateManifest struct {
 	Name          string         `json:"name"`
 	Description   string         `json:"description"`
-	StartCommand  string         `json:"start_command,omitempty"`
-	ResourceSpecs []resourceSpec `json:"resource_specs,omitempty"`
+	Resources     []resourceSpec `json:"resources,omitempty"`
+	GitRepo       string         `json:"git_repo"`
+	Path          string         `json:"path"`
+	GitProvider   string         `json:"git_provider"`
+	UseCase       string         `json:"use_case,omitempty"`
+	FrameworkType string         `json:"framework_type,omitempty"`
 	UserAPIScopes []string       `json:"user_api_scopes,omitempty"`
 }
 
-// AppTemplateManifest represents a single app template from the manifests JSON file.
-type AppTemplateManifest struct {
-	Path     string   `json:"path"`
-	GitRepo  string   `json:"git_repo"`
-	Manifest manifest `json:"manifest"`
-}
-
-// appTemplateManifests holds all app templates.
-type appTemplateManifests struct {
-	Templates []AppTemplateManifest `json:"appTemplateAppManifests"`
+// appTemplates holds all app templates.
+type appTemplates struct {
+	Templates []AppTemplateManifest `json:"templates"`
 }
 
 // LoadLegacyTemplates loads the legacy app templates from the embedded JSON file.
 func LoadLegacyTemplates() ([]AppTemplateManifest, error) {
-	var manifests appTemplateManifests
-	if err := json.Unmarshal(appTemplateManifestsJSON, &manifests); err != nil {
-		return nil, fmt.Errorf("failed to load app template manifests: %w", err)
+	var templates appTemplates
+	if err := json.Unmarshal(appTemplatesJSON, &templates); err != nil {
+		return nil, fmt.Errorf("failed to load app templates: %w", err)
 	}
-	return manifests.Templates, nil
+	return templates.Templates, nil
 }
 
 // FindLegacyTemplateByPath finds a legacy template by its path identifier.
@@ -67,7 +63,7 @@ type resourceSpecChecker func(*resourceSpec) bool
 
 // hasResourceSpec checks if a template requires a resource based on a spec checker.
 func hasResourceSpec(tmpl *AppTemplateManifest, checker resourceSpecChecker) bool {
-	for _, spec := range tmpl.Manifest.ResourceSpecs {
+	for _, spec := range tmpl.Resources {
 		if checker(&spec) {
 			return true
 		}

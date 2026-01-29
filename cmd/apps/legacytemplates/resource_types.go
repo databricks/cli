@@ -15,11 +15,11 @@ const (
 type ResourceSpecKey string
 
 const (
-	SpecKeySQLWarehouse    ResourceSpecKey = "SQLWarehouseSpec"
-	SpecKeyServingEndpoint ResourceSpecKey = "ServingEndpointSpec"
-	SpecKeyExperiment      ResourceSpecKey = "ExperimentSpec"
-	SpecKeyDatabase        ResourceSpecKey = "DatabaseSpec"
-	SpecKeyUCVolume        ResourceSpecKey = "UCSecurableSpec"
+	SpecKeySQLWarehouse    ResourceSpecKey = "SQLWarehouse"
+	SpecKeyServingEndpoint ResourceSpecKey = "ServingEndpoint"
+	SpecKeyExperiment      ResourceSpecKey = "Experiment"
+	SpecKeyDatabase        ResourceSpecKey = "Database"
+	SpecKeyUCVolume        ResourceSpecKey = "UCSecurable"
 )
 
 // ResourceValue holds the collected value(s) for a resource.

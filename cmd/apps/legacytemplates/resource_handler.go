@@ -77,15 +77,15 @@ func (h *BaseResourceHandler) ErrorMessage() string {
 func hasSpecKey(spec *resourceSpec, key ResourceSpecKey) bool {
 	switch key {
 	case SpecKeySQLWarehouse:
-		return spec.SQLWarehouseSpec != nil
+		return spec.SQLWarehouse != nil
 	case SpecKeyServingEndpoint:
-		return spec.ServingEndpointSpec != nil
+		return spec.ServingEndpoint != nil
 	case SpecKeyExperiment:
-		return spec.ExperimentSpec != nil
+		return spec.Experiment != nil
 	case SpecKeyDatabase:
-		return spec.DatabaseSpec != nil
+		return spec.Database != nil
 	case SpecKeyUCVolume:
-		return spec.UCSecurableSpec != nil
+		return spec.UCSecurable != nil
 	default:
 		return false
 	}

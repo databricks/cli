@@ -133,21 +133,20 @@ func PrintHeader(ctx context.Context) {
 // PromptForProjectName prompts only for project name.
 // Used as the first step before resolving templates.
 // outputDir is used to check if the destination directory already exists.
-// suggestedName is used as the placeholder/default if provided.
+// suggestedName is used as the prefilled default if provided.
 func PromptForProjectName(ctx context.Context, outputDir string, suggestedName ...string) (string, error) {
 	PrintHeader(ctx)
 	theme := AppkitTheme()
 
-	placeholder := "my-app"
+	// Prefill with suggested name or default
+	name := "my-app"
 	if len(suggestedName) > 0 && suggestedName[0] != "" {
-		placeholder = suggestedName[0]
+		name = suggestedName[0]
 	}
 
-	var name string
 	err := huh.NewInput().
 		Title("App name").
 		Description("lowercase letters, numbers, hyphens (max 26 chars)").
-		Placeholder(placeholder).
 		Value(&name).
 		Validate(func(s string) error {
 			if err := ValidateProjectName(s); err != nil {

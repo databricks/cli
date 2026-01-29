@@ -492,13 +492,13 @@ func runCreate(ctx context.Context, opts createOptions) error {
 			// Check if the template path matches a legacy template
 			if legacyTemplate := legacytemplates.FindLegacyTemplateByPath(templates, opts.templatePath); legacyTemplate != nil {
 				log.Infof(ctx, "Using legacy template: %s", opts.templatePath)
-				absOutputDir, startCommand, shouldDeploy, runMode, err := legacytemplates.HandleLegacyTemplateInit(ctx, legacyTemplate, opts.name, opts.nameProvided, opts.outputDir, opts.warehouseID, opts.servingEndpoint, opts.experimentID, opts.instanceName, opts.databaseName, opts.ucVolume, opts.deploy, opts.deployChanged, opts.run, opts.runChanged, isInteractive, workspaceHost, profile)
+				absOutputDir, shouldDeploy, runMode, err := legacytemplates.HandleLegacyTemplateInit(ctx, legacyTemplate, opts.name, opts.nameProvided, opts.outputDir, opts.warehouseID, opts.servingEndpoint, opts.experimentID, opts.instanceName, opts.databaseName, opts.ucVolume, opts.deploy, opts.deployChanged, opts.run, opts.runChanged, isInteractive, workspaceHost, profile)
 				if err != nil {
 					return err
 				}
 				// Extract project name from the absolute output directory
 				projectName := filepath.Base(absOutputDir)
-				return runPostCreationSteps(ctx, absOutputDir, projectName, 0, shouldDeploy, runMode, startCommand)
+				return runPostCreationSteps(ctx, absOutputDir, projectName, 0, shouldDeploy, runMode)
 			}
 		}
 	}
@@ -520,18 +520,25 @@ func runCreate(ctx context.Context, opts createOptions) error {
 			return err
 		}
 
-		selectedTemplate, err := legacytemplates.PromptForLegacyTemplate(ctx, templates)
+		// Prompt for framework type first
+		frameworkType, err := legacytemplates.PromptForFrameworkType(ctx)
 		if err != nil {
 			return err
 		}
 
-		absOutputDir, startCommand, shouldDeploy, runMode, err := legacytemplates.HandleLegacyTemplateInit(ctx, selectedTemplate, opts.name, opts.nameProvided, opts.outputDir, opts.warehouseID, opts.servingEndpoint, opts.experimentID, opts.instanceName, opts.databaseName, opts.ucVolume, opts.deploy, opts.deployChanged, opts.run, opts.runChanged, isInteractive, workspaceHost, profile)
+		// Then prompt for template filtered by framework type
+		selectedTemplate, err := legacytemplates.PromptForLegacyTemplate(ctx, templates, frameworkType)
+		if err != nil {
+			return err
+		}
+
+		absOutputDir, shouldDeploy, runMode, err := legacytemplates.HandleLegacyTemplateInit(ctx, selectedTemplate, opts.name, opts.nameProvided, opts.outputDir, opts.warehouseID, opts.servingEndpoint, opts.experimentID, opts.instanceName, opts.databaseName, opts.ucVolume, opts.deploy, opts.deployChanged, opts.run, opts.runChanged, isInteractive, workspaceHost, profile)
 		if err != nil {
 			return err
 		}
 		// Extract project name from the absolute output directory
 		projectName := filepath.Base(absOutputDir)
-		return runPostCreationSteps(ctx, absOutputDir, projectName, 0, shouldDeploy, runMode, startCommand)
+		return runPostCreationSteps(ctx, absOutputDir, projectName, 0, shouldDeploy, runMode)
 	}
 
 	// Use features from flags if provided
@@ -818,8 +825,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 }
 
 // runPostCreationSteps handles post-creation initialization, validation, and optional deploy/run actions.
-// overrideStartCommand, if non-empty, overrides the default command from the initializer.
-func runPostCreationSteps(ctx context.Context, absOutputDir, projectName string, fileCount int, shouldDeploy bool, runMode prompt.RunMode, overrideStartCommand ...string) error {
+func runPostCreationSteps(ctx context.Context, absOutputDir, projectName string, fileCount int, shouldDeploy bool, runMode prompt.RunMode) error {
 	// Initialize project based on type (Node.js, Python, etc.)
 	var nextStepsCmd string
 	projectInitializer := initializer.GetProjectInitializer(absOutputDir)
@@ -832,11 +838,6 @@ func runPostCreationSteps(ctx context.Context, absOutputDir, projectName string,
 			return errors.New(result.Message)
 		}
 		nextStepsCmd = projectInitializer.NextSteps()
-	}
-
-	// Override with start_command from manifest if provided
-	if len(overrideStartCommand) > 0 && overrideStartCommand[0] != "" {
-		nextStepsCmd = overrideStartCommand[0]
 	}
 
 	// Validate dev-remote is only supported for appkit projects
