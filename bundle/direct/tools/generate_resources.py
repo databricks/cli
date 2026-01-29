@@ -78,7 +78,7 @@ def filter_prefixes(fields):
 
 def write_field_group(lines, header, fields):
     """Write a group of fields with behavior type comments."""
-    lines.append(f"    {header}:")
+    lines.append(f"\n    {header}:")
     by_behavior = {}
     for field, behavior in fields:
         by_behavior.setdefault(behavior, []).append(field)
@@ -99,11 +99,9 @@ def generate(resource_behaviors):
 #
 # For manual edits and schema description, see resources.yml.
 
-resources:
-"""
+resources:"""
     ]
 
-    prev_had_content = False
     for resource in sorted(resource_behaviors):
         behaviors = resource_behaviors[resource]
 
@@ -120,26 +118,16 @@ resources:
         recreate = filter_prefixes(recreate)
 
         if not ignore_remote and not recreate:
-            if prev_had_content:
-                lines.append("")
-                prev_had_content = False
-            lines.append(f"  # {resource}: no api field behaviors")
+            lines.append(f"\n  # {resource}: no api field behaviors")
             continue
 
-        if prev_had_content or lines[-1].startswith("  #"):
-            lines.append("")
-        lines.append(f"  {resource}:")
-        lines.append("")
-        prev_had_content = True
+        lines.append(f"\n  {resource}:")
 
         if recreate:
             write_field_group(lines, "recreate_on_changes", recreate)
-            lines.append("")
 
         if ignore_remote:
             write_field_group(lines, "ignore_remote_changes", ignore_remote)
-
-        lines.append("")
 
     while lines and lines[-1] == "":
         lines.pop()

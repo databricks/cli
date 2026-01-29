@@ -17,7 +17,6 @@ resources:
       - owner_user_name
       - update_time
 
-
   apps:
 
     ignore_remote_changes:
@@ -42,7 +41,6 @@ resources:
       - updater
       - url
 
-
   # clusters: no api field behaviors
 
   dashboards:
@@ -59,7 +57,6 @@ resources:
       - path
       - update_time
 
-
   database_catalogs:
 
     ignore_remote_changes:
@@ -68,7 +65,6 @@ resources:
 
       # OUTPUT_ONLY:
       - uid
-
 
   database_instances:
 
@@ -107,10 +103,12 @@ resources:
       - state
       - uid
 
-
   # experiments: no api field behaviors
+
   # jobs: no api field behaviors
+
   # model_serving_endpoints: no api field behaviors
+
   # models: no api field behaviors
 
   pipelines:
@@ -119,11 +117,14 @@ resources:
       # OUTPUT_ONLY:
       - ingestion_definition.source_type
 
-
   # quality_monitors: no api field behaviors
+
   # registered_models: no api field behaviors
+
   # schemas: no api field behaviors
+
   # secret_scopes: no api field behaviors
+
   # sql_warehouses: no api field behaviors
 
   synced_database_tables:
@@ -141,6 +142,5 @@ resources:
       - effective_database_instance_name
       - effective_logical_database_name
       - unity_catalog_provisioning_state
-
 
   # volumes: no api field behaviors
