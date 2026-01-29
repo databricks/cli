@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/lakebase/psql"
 	"github.com/databricks/databricks-sdk-go"
@@ -29,10 +28,8 @@ func GetDatabaseInstance(ctx context.Context, w *databricks.WorkspaceClient, nam
 }
 
 // Connect connects to a database instance with retry logic.
-func Connect(ctx context.Context, db *database.DatabaseInstance, retryConfig psql.RetryConfig, extraArgs ...string) error {
+func Connect(ctx context.Context, w *databricks.WorkspaceClient, db *database.DatabaseInstance, retryConfig psql.RetryConfig, extraArgs ...string) error {
 	cmdio.LogString(ctx, "Connecting to Databricks Database Instance "+db.Name+" ...")
-
-	w := cmdctx.WorkspaceClient(ctx)
 
 	user, err := w.CurrentUser.Me(ctx)
 	if err != nil {

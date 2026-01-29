@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/lakebase/psql"
 	"github.com/databricks/databricks-sdk-go"
@@ -38,11 +37,9 @@ func GetEndpoint(ctx context.Context, w *databricks.WorkspaceClient, projectID, 
 }
 
 // Connect connects to a Postgres endpoint with retry logic.
-func Connect(ctx context.Context, endpoint *postgres.Endpoint, retryConfig psql.RetryConfig, extraArgs ...string) error {
+func Connect(ctx context.Context, w *databricks.WorkspaceClient, endpoint *postgres.Endpoint, retryConfig psql.RetryConfig, extraArgs ...string) error {
 	endpointID := ExtractIDFromName(endpoint.Name, "endpoints")
 	cmdio.LogString(ctx, fmt.Sprintf("Connecting to Postgres endpoint %s ...", endpointID))
-
-	w := cmdctx.WorkspaceClient(ctx)
 
 	user, err := w.CurrentUser.Me(ctx)
 	if err != nil {

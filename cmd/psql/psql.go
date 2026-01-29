@@ -165,7 +165,7 @@ func connectViaDatabaseAPI(ctx context.Context, instanceName string, retryConfig
 		return err
 	}
 
-	return lakebasev1.Connect(ctx, db, retryConfig, extraArgs...)
+	return lakebasev1.Connect(ctx, w, db, retryConfig, extraArgs...)
 }
 
 // connectViaPostgresAPI connects using the new Postgres API with flags.
@@ -177,7 +177,7 @@ func connectViaPostgresAPI(ctx context.Context, projectID, branchID, endpointID 
 		return err
 	}
 
-	return lakebasev2.Connect(ctx, endpoint, retryConfig, extraArgs...)
+	return lakebasev2.Connect(ctx, w, endpoint, retryConfig, extraArgs...)
 }
 
 // connectViaPostgresPath connects using the new Postgres API with a resource path.
@@ -195,7 +195,7 @@ func connectViaPostgresPath(ctx context.Context, path string, retryConfig lakeba
 		return err
 	}
 
-	return lakebasev2.Connect(ctx, endpoint, retryConfig, extraArgs...)
+	return lakebasev2.Connect(ctx, w, endpoint, retryConfig, extraArgs...)
 }
 
 // resolveEndpoint resolves a partial specification to a full endpoint.
@@ -431,7 +431,7 @@ func showCombinedSelectionAndConnect(ctx context.Context, retryConfig lakebaseps
 
 	if inst, ok := instancesByID[selected]; ok {
 		cmdio.LogString(ctx, "Selected provisioned database instance: "+inst.Name)
-		return lakebasev1.Connect(ctx, &inst, retryConfig, extraArgs...)
+		return lakebasev1.Connect(ctx, w, &inst, retryConfig, extraArgs...)
 	}
 
 	if proj, ok := projectsByID[selected]; ok {
