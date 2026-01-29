@@ -1,0 +1,12 @@
+Local = true
+Cloud = true
+RequiresWarehouse = true
+
+# Genie spaces are direct mode only
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+[Env]
+# MSYS2 automatically converts absolute paths like /Users/$username/$UNIQUE_NAME to
+# C:/Program Files/Git/Users/$username/UNIQUE_NAME before passing it to the CLI
+# Setting this environment variable prevents that conversion on windows.
+MSYS_NO_PATHCONV = "1"
