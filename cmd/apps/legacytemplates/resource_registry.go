@@ -135,7 +135,7 @@ func init() {
 		specKey: SpecKeyDatabase,
 	})
 
-	// Register UC Volume resource (no bindings, only variables)
+	// Register UC Volume resource
 	globalRegistry.Register(&BaseResourceHandler{
 		metadata: &ResourceMetadata{
 			Type:          ResourceTypeUCVolume,
@@ -144,7 +144,13 @@ func init() {
 			Description:   "Unity Catalog volume",
 			FlagNames:     []string{"uc-volume"},
 			VariableNames: []string{"uc_volume"},
-			BindingLines:  nil, // UC Volume doesn't have bindings
+			BindingLines: func(values []string) []string {
+				return []string{
+					"          volume:",
+					"            name: ${var.uc_volume}",
+					"            permission: READ_WRITE",
+				}
+			},
 		},
 		specKey:      SpecKeyUCVolume,
 		promptFunc:   prompt.PromptForUCVolume,

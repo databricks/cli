@@ -88,8 +88,11 @@ func TestResourceRegistryBindingLines(t *testing.T) {
 	assert.Contains(t, strings.Join(lines, "\n"), "sql_warehouse:")
 	assert.Contains(t, strings.Join(lines, "\n"), "id: ${var.warehouse_id}")
 
-	// Test UC Volume (should have no binding lines)
+	// Test UC Volume binding lines
 	volumeHandler, _ := registry.Get(legacytemplates.ResourceTypeUCVolume)
 	volumeMeta := volumeHandler.Metadata()
-	assert.Nil(t, volumeMeta.BindingLines, "UC Volume should have no binding lines")
+	volumeLines := volumeMeta.BindingLines([]string{"my-volume"})
+	assert.NotEmpty(t, volumeLines)
+	assert.Contains(t, strings.Join(volumeLines, "\n"), "volume:")
+	assert.Contains(t, strings.Join(volumeLines, "\n"), "name: ${var.uc_volume}")
 }

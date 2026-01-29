@@ -128,3 +128,8 @@ func getTemplateFuncs(resources *ResourceValues, appConfig *AppConfig) template.
 		},
 	}
 }
+
+// GetTemplateFuncsForTest exposes template functions for testing.
+func GetTemplateFuncsForTest(resources *ResourceValues, appConfig *AppConfig) template.FuncMap {
+	return getTemplateFuncs(resources, appConfig)
+}
