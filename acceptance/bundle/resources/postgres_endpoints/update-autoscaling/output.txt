@@ -1,0 +1,164 @@
+
+=== Initial deployment
+>>> [CLI] bundle validate
+Warning: There are no files to sync, please check your .gitignore and sync.exclude configuration
+  at sync.exclude
+  in databricks.yml:6:5
+
+Name: update-postgres-endpoint-[UNIQUE_NAME]
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/update-postgres-endpoint-[UNIQUE_NAME]/default
+
+Found 1 warning
+
+>>> [CLI] bundle plan -o json
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-postgres-endpoint-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
+
+>>> [CLI] postgres get-endpoint [MY_ENDPOINT_ID]
+{
+  "name": "[MY_ENDPOINT_ID]",
+  "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
+  "status": {
+    "autoscaling_limit_max_cu": 8,
+    "autoscaling_limit_min_cu": 0.5,
+    "current_state": "ACTIVE",
+    "disabled": false,
+    "endpoint_type": "ENDPOINT_TYPE_READ_WRITE",
+    "hosts": {
+      "host": "[ENDPOINT_UID].database.us-east-1.cloud.databricks.com"
+    },
+    "settings": {},
+    "suspend_timeout_duration": "300s"
+  },
+  "uid": "[ENDPOINT_UID]"
+}
+
+=== Verify no changes
+>>> [CLI] bundle plan -o json
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-postgres-endpoint-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
+
+=== Update endpoint autoscaling and re-deploy
+>>> update_file.py databricks.yml autoscaling_limit_max_cu: 8 autoscaling_limit_max_cu: 4
+
+>>> cat databricks.yml
+bundle:
+  name: update-postgres-endpoint-[UNIQUE_NAME]
+
+sync:
+  exclude:
+    - "*"
+
+resources:
+  postgres_projects:
+    my_project:
+      project_id: test-pg-proj-[UNIQUE_NAME]
+      display_name: "Test Project for Endpoint Update"
+      pg_version: 16
+      history_retention_duration: 604800s
+      default_endpoint_settings:
+        autoscaling_limit_min_cu: 0.5
+        autoscaling_limit_max_cu: 4
+        suspend_timeout_duration: 300s
+
+  postgres_branches:
+    main:
+      parent: ${resources.postgres_projects.my_project.id}
+      branch_id: main
+      no_expiry: true
+
+  postgres_endpoints:
+    my_endpoint:
+      parent: ${resources.postgres_branches.main.id}
+      endpoint_id: my-endpoint
+      endpoint_type: ENDPOINT_TYPE_READ_WRITE
+      autoscaling_limit_min_cu: 0.5
+      autoscaling_limit_max_cu: 4
+      suspend_timeout_duration: 300s
+
+>>> [CLI] bundle plan -o json
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-postgres-endpoint-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
+
+>>> [CLI] postgres get-endpoint [MY_ENDPOINT_ID]
+{
+  "name": "[MY_ENDPOINT_ID]",
+  "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
+  "status": {
+    "autoscaling_limit_max_cu": 4,
+    "autoscaling_limit_min_cu": 0.5,
+    "current_state": "ACTIVE",
+    "disabled": false,
+    "endpoint_type": "ENDPOINT_TYPE_READ_WRITE",
+    "hosts": {
+      "host": "[ENDPOINT_UID].database.us-east-1.cloud.databricks.com"
+    },
+    "settings": {},
+    "suspend_timeout_duration": "300s"
+  },
+  "uid": "[ENDPOINT_UID]"
+}
+
+=== Restore endpoint autoscaling to original value
+>>> update_file.py databricks.yml autoscaling_limit_max_cu: 4 autoscaling_limit_max_cu: 8
+
+>>> [CLI] bundle plan -o json
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-postgres-endpoint-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
+
+>>> [CLI] postgres get-endpoint [MY_ENDPOINT_ID]
+{
+  "name": "[MY_ENDPOINT_ID]",
+  "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
+  "status": {
+    "autoscaling_limit_max_cu": 8,
+    "autoscaling_limit_min_cu": 0.5,
+    "current_state": "ACTIVE",
+    "disabled": false,
+    "endpoint_type": "ENDPOINT_TYPE_READ_WRITE",
+    "hosts": {
+      "host": "[ENDPOINT_UID].database.us-east-1.cloud.databricks.com"
+    },
+    "settings": {},
+    "suspend_timeout_duration": "300s"
+  },
+  "uid": "[ENDPOINT_UID]"
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.postgres_branches.main
+  delete resources.postgres_endpoints.my_endpoint
+  delete resources.postgres_projects.my_project
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/update-postgres-endpoint-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!

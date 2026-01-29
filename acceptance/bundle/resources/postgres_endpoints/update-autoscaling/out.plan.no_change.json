@@ -1,0 +1,55 @@
+{
+  "depends_on": [
+    {
+      "node": "resources.postgres_branches.main",
+      "label": "${resources.postgres_branches.main.id}"
+    }
+  ],
+  "action": "skip",
+  "remote_state": {
+    "create_time": "[TIMESTAMP]",
+    "name": "[MY_ENDPOINT_ID]",
+    "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
+    "status": {
+      "autoscaling_limit_max_cu": 8,
+      "autoscaling_limit_min_cu": 0.5,
+      "current_state": "ACTIVE",
+      "disabled": false,
+      "endpoint_type": "ENDPOINT_TYPE_READ_WRITE",
+      "hosts": {
+        "host": "[ENDPOINT_UID].database.us-east-1.cloud.databricks.com"
+      },
+      "settings": {},
+      "suspend_timeout_duration": "300s"
+    },
+    "uid": "[ENDPOINT_UID]",
+    "update_time": "[TIMESTAMP]"
+  },
+  "changes": {
+    "spec.autoscaling_limit_max_cu": {
+      "action": "skip",
+      "reason": "builtin_rule",
+      "old": 8,
+      "new": 8
+    },
+    "spec.autoscaling_limit_min_cu": {
+      "action": "skip",
+      "reason": "builtin_rule",
+      "old": 0.5,
+      "new": 0.5
+    },
+    "spec.endpoint_type": {
+      "action": "skip",
+      "reason": "builtin_rule",
+      "old": "ENDPOINT_TYPE_READ_WRITE",
+      "new": "ENDPOINT_TYPE_READ_WRITE",
+      "remote": ""
+    },
+    "spec.suspend_timeout_duration": {
+      "action": "skip",
+      "reason": "empty_struct",
+      "old": "300s",
+      "new": "300s"
+    }
+  }
+}

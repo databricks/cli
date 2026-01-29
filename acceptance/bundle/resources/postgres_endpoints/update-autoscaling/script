@@ -1,0 +1,60 @@
+#!/bin/bash
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+   trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+print_requests() {
+    trace print_requests.py --keep --get '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.json
+    rm -f out.requests.txt
+}
+
+title "Initial deployment"
+trace $CLI bundle validate
+trace $CLI bundle plan -o json | jq '.plan."resources.postgres_endpoints.my_endpoint" // .' > out.plan.create.json
+rm -f out.requests.txt
+trace $CLI bundle deploy
+
+print_requests
+mv out.requests.json out.requests.create.json
+
+project_name="projects/test-pg-proj-${UNIQUE_NAME}"
+branch_name="${project_name}/branches/main"
+endpoint_name="${branch_name}/endpoints/my-endpoint"
+endpoint_id_1=`read_id.py my_endpoint`
+trace $CLI postgres get-endpoint "${endpoint_name}" | jq 'del(.create_time, .update_time, .reconciling)'
+
+title "Verify no changes"
+trace $CLI bundle plan -o json | jq '.plan."resources.postgres_endpoints.my_endpoint" // .' > out.plan.no_change.json
+rm -f out.requests.txt
+trace $CLI bundle deploy
+
+print_requests
+mv out.requests.json out.requests.no_change.json
+
+title "Update endpoint autoscaling and re-deploy"
+trace update_file.py databricks.yml "autoscaling_limit_max_cu: 8" "autoscaling_limit_max_cu: 4"
+trace cat databricks.yml
+
+trace $CLI bundle plan -o json | jq '.plan."resources.postgres_endpoints.my_endpoint" // .' > out.plan.update.json
+rm -f out.requests.txt
+trace $CLI bundle deploy
+
+print_requests
+mv out.requests.json out.requests.update.json
+
+endpoint_id_2=`read_id.py my_endpoint`
+trace $CLI postgres get-endpoint "${endpoint_name}" | jq 'del(.create_time, .update_time, .reconciling)'
+
+title "Restore endpoint autoscaling to original value"
+trace update_file.py databricks.yml "autoscaling_limit_max_cu: 4" "autoscaling_limit_max_cu: 8"
+trace $CLI bundle plan -o json | jq '.plan."resources.postgres_endpoints.my_endpoint" // .' > out.plan.restore.json
+rm -f out.requests.txt
+trace $CLI bundle deploy
+
+print_requests
+mv out.requests.json out.requests.restore.json
+
+trace $CLI postgres get-endpoint "${endpoint_name}" | jq 'del(.create_time, .update_time, .reconciling)'
