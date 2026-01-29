@@ -12,8 +12,9 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	lakebasev1 "github.com/databricks/cli/libs/lakebase/v1"
 	lakebasev2 "github.com/databricks/cli/libs/lakebase/v2"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/database"
-	pg "github.com/databricks/databricks-sdk-go/service/postgres"
+	"github.com/databricks/databricks-sdk-go/service/postgres"
 	"github.com/spf13/cobra"
 )
 
@@ -110,7 +111,7 @@ You can pass additional arguments to psql after a double-dash (--):
 				return connectViaPostgresPath(ctx, target, retryConfig, extraArgs)
 			}
 			// Positional arg is database instance name -> Old Database API
-			return lakebasev1.ConnectWithRetryConfig(ctx, target, retryConfig, extraArgs...)
+			return connectViaDatabaseAPI(ctx, target, retryConfig, extraArgs)
 		}
 
 		// 3. No args, no flags -> Show combined dropdown
@@ -141,7 +142,7 @@ You can pass additional arguments to psql after a double-dash (--):
 		}
 
 		// Add postgres projects
-		projects, err := w.Postgres.ListProjectsAll(ctx, pg.ListProjectsRequest{})
+		projects, err := w.Postgres.ListProjectsAll(ctx, postgres.ListProjectsRequest{})
 		if err == nil {
 			for _, project := range projects {
 				names = append(names, project.Name)
@@ -154,11 +155,23 @@ You can pass additional arguments to psql after a double-dash (--):
 	return cmd
 }
 
+// connectViaDatabaseAPI connects using the old Database API.
+func connectViaDatabaseAPI(ctx context.Context, instanceName string, retryConfig lakebasev1.RetryConfig, extraArgs []string) error {
+	w := cmdctx.WorkspaceClient(ctx)
+
+	db, err := lakebasev1.GetDatabaseInstance(ctx, w, instanceName)
+	if err != nil {
+		return err
+	}
+
+	return lakebasev1.ConnectWithRetryConfig(ctx, db, retryConfig, extraArgs...)
+}
+
 // connectViaPostgresAPI connects using the new Postgres API with flags.
 func connectViaPostgresAPI(ctx context.Context, projectID, branchID, endpointID string, retryConfig lakebasev1.RetryConfig, extraArgs []string) error {
 	w := cmdctx.WorkspaceClient(ctx)
 
-	endpoint, err := lakebasev2.ResolveEndpoint(ctx, w, projectID, branchID, endpointID)
+	endpoint, err := resolveEndpoint(ctx, w, projectID, branchID, endpointID)
 	if err != nil {
 		return err
 	}
@@ -176,12 +189,132 @@ func connectViaPostgresPath(ctx context.Context, path string, retryConfig lakeba
 		return fmt.Errorf("invalid resource path: %s", path)
 	}
 
-	endpoint, err := lakebasev2.ResolveEndpoint(ctx, w, projectID, branchID, endpointID)
+	endpoint, err := resolveEndpoint(ctx, w, projectID, branchID, endpointID)
 	if err != nil {
 		return err
 	}
 
 	return lakebasev2.ConnectWithRetryConfig(ctx, endpoint, retryConfig, extraArgs...)
+}
+
+// resolveEndpoint resolves a partial specification to a full endpoint.
+// Uses interactive selection when components are missing.
+func resolveEndpoint(ctx context.Context, w *databricks.WorkspaceClient, projectID, branchID, endpointID string) (*postgres.Endpoint, error) {
+	projectName := "projects/" + projectID
+
+	// If branch not specified, select one
+	if branchID == "" {
+		branch, err := selectBranch(ctx, w, projectName)
+		if err != nil {
+			return nil, fmt.Errorf("failed to select branch: %w", err)
+		}
+		branchID = lakebasev2.ExtractIDFromName(branch.Name, "branches")
+	}
+
+	branchName := fmt.Sprintf("%s/branches/%s", projectName, branchID)
+
+	// If endpoint not specified, select one
+	if endpointID == "" {
+		endpoint, err := selectEndpoint(ctx, w, branchName)
+		if err != nil {
+			return nil, fmt.Errorf("failed to select endpoint: %w", err)
+		}
+		return endpoint, nil
+	}
+
+	return lakebasev2.GetEndpoint(ctx, w, projectID, branchID, endpointID)
+}
+
+// selectBranch auto-selects if there's only one branch, otherwise prompts user to select.
+func selectBranch(ctx context.Context, w *databricks.WorkspaceClient, projectName string) (*postgres.Branch, error) {
+	sp := cmdio.NewSpinner(ctx)
+	sp.Update("Loading branches...")
+	branches, err := w.Postgres.ListBranchesAll(ctx, postgres.ListBranchesRequest{
+		Parent: projectName,
+	})
+	sp.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	if len(branches) == 0 {
+		return nil, errors.New("no branches found in project")
+	}
+
+	// Auto-select if there's only one branch
+	if len(branches) == 1 {
+		branchID := lakebasev2.ExtractIDFromName(branches[0].Name, "branches")
+		cmdio.LogString(ctx, "Selected branch: "+branchID)
+		return &branches[0], nil
+	}
+
+	// Multiple branches, prompt user to select
+	var items []cmdio.Tuple
+	for _, branch := range branches {
+		branchID := lakebasev2.ExtractIDFromName(branch.Name, "branches")
+		items = append(items, cmdio.Tuple{Name: branchID, Id: branchID})
+	}
+
+	selectedID, err := cmdio.SelectOrdered(ctx, items, "Select branch")
+	if err != nil {
+		return nil, err
+	}
+
+	cmdio.LogString(ctx, "Selected branch: "+selectedID)
+
+	for i := range branches {
+		if lakebasev2.ExtractIDFromName(branches[i].Name, "branches") == selectedID {
+			return &branches[i], nil
+		}
+	}
+
+	return nil, errors.New("selected branch not found")
+}
+
+// selectEndpoint auto-selects if there's only one endpoint, otherwise prompts user to select.
+func selectEndpoint(ctx context.Context, w *databricks.WorkspaceClient, branchName string) (*postgres.Endpoint, error) {
+	sp := cmdio.NewSpinner(ctx)
+	sp.Update("Loading endpoints...")
+	endpoints, err := w.Postgres.ListEndpointsAll(ctx, postgres.ListEndpointsRequest{
+		Parent: branchName,
+	})
+	sp.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	if len(endpoints) == 0 {
+		return nil, errors.New("no endpoints found in branch")
+	}
+
+	// Auto-select if there's only one endpoint
+	if len(endpoints) == 1 {
+		endpointID := lakebasev2.ExtractIDFromName(endpoints[0].Name, "endpoints")
+		cmdio.LogString(ctx, "Selected endpoint: "+endpointID)
+		return &endpoints[0], nil
+	}
+
+	// Multiple endpoints, prompt user to select
+	var items []cmdio.Tuple
+	for _, endpoint := range endpoints {
+		endpointID := lakebasev2.ExtractIDFromName(endpoint.Name, "endpoints")
+		items = append(items, cmdio.Tuple{Name: endpointID, Id: endpointID})
+	}
+
+	selectedID, err := cmdio.SelectOrdered(ctx, items, "Select endpoint")
+	if err != nil {
+		return nil, err
+	}
+
+	cmdio.LogString(ctx, "Selected endpoint: "+selectedID)
+
+	for i := range endpoints {
+		if lakebasev2.ExtractIDFromName(endpoints[i].Name, "endpoints") == selectedID {
+			return &endpoints[i], nil
+		}
+	}
+
+	return nil, errors.New("selected endpoint not found")
 }
 
 // parseResourcePath extracts project, branch, and endpoint IDs from a resource path.
@@ -219,7 +352,7 @@ func showCombinedSelectionAndConnect(ctx context.Context, retryConfig lakebasev1
 		err       error
 	}
 	type projectsResult struct {
-		projects []pg.Project
+		projects []postgres.Project
 		err      error
 	}
 
@@ -232,7 +365,7 @@ func showCombinedSelectionAndConnect(ctx context.Context, retryConfig lakebasev1
 	}()
 
 	go func() {
-		projects, err := w.Postgres.ListProjectsAll(ctx, pg.ListProjectsRequest{})
+		projects, err := w.Postgres.ListProjectsAll(ctx, postgres.ListProjectsRequest{})
 		projectsCh <- projectsResult{projects, err}
 	}()
 
@@ -242,7 +375,7 @@ func showCombinedSelectionAndConnect(ctx context.Context, retryConfig lakebasev1
 
 	// Build maps from IDs to full objects
 	instancesByID := make(map[string]database.DatabaseInstance)
-	projectsByID := make(map[string]pg.Project)
+	projectsByID := make(map[string]postgres.Project)
 
 	// Build ordered selection list
 	var items []cmdio.Tuple
@@ -297,7 +430,7 @@ func showCombinedSelectionAndConnect(ctx context.Context, retryConfig lakebasev1
 
 	if inst, ok := instancesByID[selected]; ok {
 		cmdio.LogString(ctx, "Selected provisioned database instance: "+inst.Name)
-		return lakebasev1.ConnectWithRetryConfig(ctx, inst.Name, retryConfig, extraArgs...)
+		return lakebasev1.ConnectWithRetryConfig(ctx, &inst, retryConfig, extraArgs...)
 	}
 
 	if proj, ok := projectsByID[selected]; ok {

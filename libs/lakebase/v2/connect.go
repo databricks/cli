@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"regexp"
 	"strings"
 	"time"
 
@@ -19,63 +18,21 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/postgres"
 )
 
-// parseResourcePath extracts project, branch, and endpoint IDs from a resource path.
-// Supported formats:
-//   - "projects/{project_id}" -> project only
-//   - "projects/{project_id}/branches/{branch_id}" -> project and branch
-//   - "projects/{project_id}/branches/{branch_id}/endpoints/{endpoint_id}" -> all three
-func parseResourcePath(input string) (project, branch, endpoint string) {
-	// Match full endpoint path
-	endpointRe := regexp.MustCompile(`^projects/([^/]+)/branches/([^/]+)/endpoints/([^/]+)$`)
-	if matches := endpointRe.FindStringSubmatch(input); len(matches) == 4 {
-		return matches[1], matches[2], matches[3]
+// ExtractIDFromName extracts the ID component from a resource name.
+// For example, ExtractIDFromName("projects/foo/branches/bar", "branches") returns "bar".
+func ExtractIDFromName(name, component string) string {
+	parts := strings.Split(name, "/")
+	for i := range len(parts) - 1 {
+		if parts[i] == component {
+			return parts[i+1]
+		}
 	}
-
-	// Match branch path
-	branchRe := regexp.MustCompile(`^projects/([^/]+)/branches/([^/]+)$`)
-	if matches := branchRe.FindStringSubmatch(input); len(matches) == 3 {
-		return matches[1], matches[2], ""
-	}
-
-	// Match project path
-	projectRe := regexp.MustCompile(`^projects/([^/]+)$`)
-	if matches := projectRe.FindStringSubmatch(input); len(matches) == 2 {
-		return matches[1], "", ""
-	}
-
-	return "", "", ""
+	return name
 }
 
-// ResolveEndpoint resolves a partial specification to a full endpoint.
-// Uses interactive selection when components are missing.
-func ResolveEndpoint(ctx context.Context, w *databricks.WorkspaceClient,
-	projectID, branchID, endpointID string) (*postgres.Endpoint, error) {
-
-	// Build the full resource name
-	projectName := fmt.Sprintf("projects/%s", projectID)
-
-	// If branch not specified, select one
-	if branchID == "" {
-		branch, err := selectBranch(ctx, w, projectName)
-		if err != nil {
-			return nil, fmt.Errorf("failed to select branch: %w", err)
-		}
-		// Extract branch ID from the branch name
-		branchID = extractIDFromName(branch.Name, "branches")
-	}
-
-	branchName := fmt.Sprintf("%s/branches/%s", projectName, branchID)
-
-	// If endpoint not specified, select one
-	if endpointID == "" {
-		endpoint, err := selectEndpoint(ctx, w, branchName)
-		if err != nil {
-			return nil, fmt.Errorf("failed to select endpoint: %w", err)
-		}
-		return endpoint, nil
-	}
-
-	endpointName := fmt.Sprintf("%s/endpoints/%s", branchName, endpointID)
+// GetEndpoint retrieves an endpoint by its full resource name.
+func GetEndpoint(ctx context.Context, w *databricks.WorkspaceClient, projectID, branchID, endpointID string) (*postgres.Endpoint, error) {
+	endpointName := fmt.Sprintf("projects/%s/branches/%s/endpoints/%s", projectID, branchID, endpointID)
 	endpoint, err := w.Postgres.GetEndpoint(ctx, postgres.GetEndpointRequest{
 		Name: endpointName,
 	})
@@ -85,115 +42,9 @@ func ResolveEndpoint(ctx context.Context, w *databricks.WorkspaceClient,
 	return endpoint, nil
 }
 
-// selectBranch auto-selects if there's only one branch, otherwise prompts user to select.
-func selectBranch(ctx context.Context, w *databricks.WorkspaceClient, projectName string) (*postgres.Branch, error) {
-	sp := cmdio.NewSpinner(ctx)
-	sp.Update("Loading branches...")
-	branches, err := w.Postgres.ListBranchesAll(ctx, postgres.ListBranchesRequest{
-		Parent: projectName,
-	})
-	sp.Close()
-	if err != nil {
-		return nil, err
-	}
-
-	if len(branches) == 0 {
-		return nil, errors.New("no branches found in project")
-	}
-
-	// Auto-select if there's only one branch
-	if len(branches) == 1 {
-		branchID := extractIDFromName(branches[0].Name, "branches")
-		cmdio.LogString(ctx, "Selected branch: "+branchID)
-		return &branches[0], nil
-	}
-
-	// Multiple branches, prompt user to select
-	var items []cmdio.Tuple
-	for _, branch := range branches {
-		branchID := extractIDFromName(branch.Name, "branches")
-		items = append(items, cmdio.Tuple{Name: branchID, Id: branchID})
-	}
-
-	selectedID, err := cmdio.SelectOrdered(ctx, items, "Select branch")
-	if err != nil {
-		return nil, err
-	}
-
-	cmdio.LogString(ctx, "Selected branch: "+selectedID)
-
-	// Find the selected branch by matching the ID
-	for i := range branches {
-		if extractIDFromName(branches[i].Name, "branches") == selectedID {
-			return &branches[i], nil
-		}
-	}
-
-	return nil, errors.New("selected branch not found")
-}
-
-// selectEndpoint auto-selects if there's only one endpoint, otherwise prompts user to select.
-func selectEndpoint(ctx context.Context, w *databricks.WorkspaceClient, branchName string) (*postgres.Endpoint, error) {
-	sp := cmdio.NewSpinner(ctx)
-	sp.Update("Loading endpoints...")
-	endpoints, err := w.Postgres.ListEndpointsAll(ctx, postgres.ListEndpointsRequest{
-		Parent: branchName,
-	})
-	sp.Close()
-	if err != nil {
-		return nil, err
-	}
-
-	if len(endpoints) == 0 {
-		return nil, errors.New("no endpoints found in branch")
-	}
-
-	// Auto-select if there's only one endpoint
-	if len(endpoints) == 1 {
-		endpointID := extractIDFromName(endpoints[0].Name, "endpoints")
-		cmdio.LogString(ctx, "Selected endpoint: "+endpointID)
-		return &endpoints[0], nil
-	}
-
-	// Multiple endpoints, prompt user to select
-	var items []cmdio.Tuple
-	for _, endpoint := range endpoints {
-		endpointID := extractIDFromName(endpoint.Name, "endpoints")
-		items = append(items, cmdio.Tuple{Name: endpointID, Id: endpointID})
-	}
-
-	selectedID, err := cmdio.SelectOrdered(ctx, items, "Select endpoint")
-	if err != nil {
-		return nil, err
-	}
-
-	cmdio.LogString(ctx, fmt.Sprintf("Selected endpoint: %s", selectedID))
-
-	// Find the selected endpoint by matching the ID
-	for i := range endpoints {
-		if extractIDFromName(endpoints[i].Name, "endpoints") == selectedID {
-			return &endpoints[i], nil
-		}
-	}
-
-	return nil, errors.New("selected endpoint not found")
-}
-
-// extractIDFromName extracts the ID component from a resource name.
-// For example, extractIDFromName("projects/foo/branches/bar", "branches") returns "bar".
-func extractIDFromName(name, component string) string {
-	parts := strings.Split(name, "/")
-	for i := 0; i < len(parts)-1; i++ {
-		if parts[i] == component {
-			return parts[i+1]
-		}
-	}
-	return name
-}
-
 // ConnectWithRetryConfig connects to a Postgres endpoint with retry logic.
 func ConnectWithRetryConfig(ctx context.Context, endpoint *postgres.Endpoint, retryConfig lakebasev1.RetryConfig, extraArgs ...string) error {
-	endpointID := extractIDFromName(endpoint.Name, "endpoints")
+	endpointID := ExtractIDFromName(endpoint.Name, "endpoints")
 	cmdio.LogString(ctx, fmt.Sprintf("Connecting to Postgres endpoint %s ...", endpointID))
 
 	w := cmdctx.WorkspaceClient(ctx)

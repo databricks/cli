@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/execv"
+	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/database"
 	"github.com/google/uuid"
 )
@@ -22,6 +23,21 @@ type RetryConfig struct {
 	InitialDelay  time.Duration
 	MaxDelay      time.Duration
 	BackoffFactor float64
+}
+
+// GetDatabaseInstance retrieves a database instance by name.
+func GetDatabaseInstance(ctx context.Context, w *databricks.WorkspaceClient, name string) (*database.DatabaseInstance, error) {
+	db, err := w.Database.GetDatabaseInstance(ctx, database.GetDatabaseInstanceRequest{
+		Name: name,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("error getting Database Instance. Please confirm that database instance %s exists: %w", name, err)
+	}
+	// Ensure Name is set (API response may not include it)
+	if db.Name == "" {
+		db.Name = name
+	}
+	return db, nil
 }
 
 // attemptConnection launches psql interactively and returns an error if connection fails
@@ -51,8 +67,9 @@ func attemptConnection(ctx context.Context, args, env []string) error {
 	return err
 }
 
-func ConnectWithRetryConfig(ctx context.Context, databaseInstanceName string, retryConfig RetryConfig, extraArgs ...string) error {
-	cmdio.LogString(ctx, fmt.Sprintf("Connecting to Databricks Database Instance %s ...", databaseInstanceName))
+// ConnectWithRetryConfig connects to a database instance with retry logic.
+func ConnectWithRetryConfig(ctx context.Context, db *database.DatabaseInstance, retryConfig RetryConfig, extraArgs ...string) error {
+	cmdio.LogString(ctx, "Connecting to Databricks Database Instance "+db.Name+" ...")
 
 	w := cmdctx.WorkspaceClient(ctx)
 
@@ -60,14 +77,6 @@ func ConnectWithRetryConfig(ctx context.Context, databaseInstanceName string, re
 	user, err := w.CurrentUser.Me(ctx)
 	if err != nil {
 		return fmt.Errorf("error getting current user: %w", err)
-	}
-
-	// get database:
-	db, err := w.Database.GetDatabaseInstance(ctx, database.GetDatabaseInstanceRequest{
-		Name: databaseInstanceName,
-	})
-	if err != nil {
-		return fmt.Errorf("error getting Database Instance. Please confirm that database instance %s exists: %w", databaseInstanceName, err)
 	}
 
 	cmdio.LogString(ctx, "Postgres version: "+db.PgVersion)
@@ -82,7 +91,7 @@ func ConnectWithRetryConfig(ctx context.Context, databaseInstanceName string, re
 
 	// get credentials:
 	cred, err := w.Database.GenerateDatabaseCredential(ctx, database.GenerateDatabaseCredentialRequest{
-		InstanceNames: []string{databaseInstanceName},
+		InstanceNames: []string{db.Name},
 		RequestId:     uuid.NewString(),
 	})
 	if err != nil {
