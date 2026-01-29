@@ -55,4 +55,3 @@ print_requests destroy
 $CLI postgres delete-project $project_id_1 2>/dev/null || true
 
 rm -f out.requests.txt
-

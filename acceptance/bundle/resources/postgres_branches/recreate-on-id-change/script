@@ -55,4 +55,3 @@ print_requests destroy
 $CLI postgres delete-branch $branch_id_1 2>/dev/null || true
 
 rm -f out.requests.txt
-

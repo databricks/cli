@@ -5,4 +5,3 @@ Badness = "Terraform provider bug: missing ForceNew on branch_id causes PATCH in
 Old = 'TraceId: [a-f0-9]+'
 New = 'TraceId: [TRACE_ID]'
 Order = 1
-
