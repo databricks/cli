@@ -13,6 +13,7 @@ import (
 	"text/template"
 
 	"github.com/charmbracelet/huh"
+	"github.com/databricks/cli/cmd/apps/internal"
 	"github.com/databricks/cli/cmd/apps/legacytemplates"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/apps/features"
@@ -192,28 +193,6 @@ type featureFragments struct {
 	AppEnv          string
 	DotEnv          string
 	DotEnvExample   string
-}
-
-// parseDeployAndRunFlags parses the deploy and run flag values into typed values.
-func parseDeployAndRunFlags(deploy bool, run string) (bool, prompt.RunMode, error) {
-	var runMode prompt.RunMode
-	switch run {
-	case "dev":
-		runMode = prompt.RunModeDev
-	case "dev-remote":
-		runMode = prompt.RunModeDevRemote
-	case "", "none":
-		runMode = prompt.RunModeNone
-	default:
-		return false, prompt.RunModeNone, fmt.Errorf("invalid --run value: %q (must be none, dev, or dev-remote)", run)
-	}
-
-	// dev-remote requires --deploy because it needs a deployed app to connect to
-	if runMode == prompt.RunModeDevRemote && !deploy {
-		return false, prompt.RunModeNone, errors.New("--run=dev-remote requires --deploy (dev-remote needs a deployed app to connect to)")
-	}
-
-	return deploy, runMode, nil
 }
 
 // promptForFeaturesAndDeps prompts for features and their dependencies.
@@ -464,7 +443,7 @@ type deployRunConfig struct {
 // It handles the logic of using flags vs prompting based on interactive mode.
 func (c *deployRunConfig) resolve(ctx context.Context) (bool, prompt.RunMode, error) {
 	// Parse flags first
-	shouldDeploy, runMode, err := parseDeployAndRunFlags(c.deploy, c.run)
+	shouldDeploy, runMode, err := internal.ParseDeployAndRunFlags(c.deploy, c.run)
 	if err != nil {
 		return false, prompt.RunModeNone, err
 	}
@@ -683,7 +662,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		// Apply flag values for deploy/run when in flags mode, flags were explicitly set, or non-interactive
 		if skipDeployRunPrompt || !isInteractive {
 			var err error
-			shouldDeploy, runMode, err = parseDeployAndRunFlags(opts.deploy, opts.run)
+			shouldDeploy, runMode, err = internal.ParseDeployAndRunFlags(opts.deploy, opts.run)
 			if err != nil {
 				return err
 			}

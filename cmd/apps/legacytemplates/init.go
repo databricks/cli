@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"text/template"
 
-	"github.com/databricks/cli/cmd/apps/internal/yamlutil"
+	"github.com/databricks/cli/cmd/apps/internal"
 	"github.com/databricks/cli/libs/apps/prompt"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dyn"
@@ -193,7 +193,7 @@ func HandleLegacyTemplateInit(ctx context.Context, legacyTemplate *AppTemplateMa
 	}
 
 	// Parse deploy and run flags
-	shouldDeploy, runMode, err := parseDeployAndRunFlags(deploy, run)
+	shouldDeploy, runMode, err := internal.ParseDeployAndRunFlags(deploy, run)
 	if err != nil {
 		return err
 	}
@@ -210,28 +210,6 @@ func HandleLegacyTemplateInit(ctx context.Context, legacyTemplate *AppTemplateMa
 		resources.WarehouseID, resources.ServingEndpoint, resources.ExperimentID,
 		resources.InstanceName, resources.DatabaseName, resources.UCVolume,
 		workspaceHost, profile, shouldDeploy, runMode)
-}
-
-// parseDeployAndRunFlags parses the deploy and run flag values into typed values.
-func parseDeployAndRunFlags(deploy bool, run string) (bool, prompt.RunMode, error) {
-	var runMode prompt.RunMode
-	switch run {
-	case "dev":
-		runMode = prompt.RunModeDev
-	case "dev-remote":
-		runMode = prompt.RunModeDevRemote
-	case "", "none":
-		runMode = prompt.RunModeNone
-	default:
-		return false, prompt.RunModeNone, fmt.Errorf("invalid --run value: %q (must be none, dev, or dev-remote)", run)
-	}
-
-	// dev-remote requires --deploy because it needs a deployed app to connect to
-	if runMode == prompt.RunModeDevRemote && !deploy {
-		return false, prompt.RunModeNone, errors.New("--run=dev-remote requires --deploy (dev-remote needs a deployed app to connect to)")
-	}
-
-	return deploy, runMode, nil
 }
 
 // copyDir recursively copies a directory tree from src to dst.
@@ -322,22 +300,22 @@ func generateEnvFileForLegacyTemplate(ctx context.Context, destDir, workspaceHos
 	resources := make(map[string]string)
 
 	if warehouseID != "" {
-		resources[resourceNameSQLWarehouse] = warehouseID
+		resources[internal.ResourceNameSQLWarehouse] = warehouseID
 	}
 	if servingEndpoint != "" {
-		resources[resourceNameServingEndpoint] = servingEndpoint
+		resources[internal.ResourceNameServingEndpoint] = servingEndpoint
 	}
 	if experimentID != "" {
-		resources[resourceNameExperiment] = experimentID
+		resources[internal.ResourceNameExperiment] = experimentID
 	}
 	if instanceName != "" {
-		resources[resourceNameDatabase] = instanceName
+		resources[internal.ResourceNameDatabase] = instanceName
 	}
 	if databaseName != "" {
-		resources[resourceNameDatabaseName] = databaseName
+		resources[internal.ResourceNameDatabaseName] = databaseName
 	}
 	if ucVolume != "" {
-		resources[resourceNameUCVolume] = ucVolume
+		resources[internal.ResourceNameUCVolume] = ucVolume
 	}
 
 	// Create EnvFileBuilder
@@ -386,7 +364,7 @@ func inlineAppYmlIntoBundle(ctx context.Context, dir string) error {
 	}
 
 	// Convert yaml.Node to dyn.Value preserving field names
-	configValue, err := yamlutil.YamlNodeToDynValue(&databricksNode)
+	configValue, err := internal.YamlNodeToDynValue(&databricksNode)
 	if err != nil {
 		return fmt.Errorf("failed to convert databricks config: %w", err)
 	}
@@ -398,7 +376,7 @@ func inlineAppYmlIntoBundle(ctx context.Context, dir string) error {
 	}
 
 	// Inline the app config file (checks for app.yml or app.yaml and inlines if found)
-	appConfigFile, err := yamlutil.InlineAppConfigFile(&appValue)
+	appConfigFile, err := internal.InlineAppConfigFile(&appValue)
 	if err != nil {
 		return fmt.Errorf("failed to inline app config: %w", err)
 	}
@@ -449,7 +427,7 @@ func inlineAppYmlIntoBundle(ctx context.Context, dir string) error {
 	}
 
 	// Add blank lines between top-level keys for better readability
-	err = yamlutil.AddBlankLinesBetweenTopLevelKeys(databricksYmlPath)
+	err = internal.AddBlankLinesBetweenTopLevelKeys(databricksYmlPath)
 	if err != nil {
 		return fmt.Errorf("failed to format databricks.yml: %w", err)
 	}

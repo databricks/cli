@@ -15,7 +15,7 @@ import (
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/resources"
 	"github.com/databricks/cli/bundle/run"
-	"github.com/databricks/cli/cmd/apps/internal/yamlutil"
+	"github.com/databricks/cli/cmd/apps/internal"
 	"github.com/databricks/cli/cmd/apps/legacytemplates"
 	bundleutils "github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
@@ -432,7 +432,7 @@ func generateAppBundle(ctx context.Context, w *databricks.WorkspaceClient, app *
 	}
 
 	// Check for app.yml or app.yaml and inline its contents
-	appConfigFile, err := yamlutil.InlineAppConfigFile(&v)
+	appConfigFile, err := internal.InlineAppConfigFile(&v)
 	if err != nil {
 		return "", fmt.Errorf("failed to inline app config: %w", err)
 	}
@@ -479,7 +479,7 @@ func generateAppBundle(ctx context.Context, w *databricks.WorkspaceClient, app *
 	}
 
 	// Add blank lines between top-level keys for better readability
-	err = yamlutil.AddBlankLinesBetweenTopLevelKeys(databricksYml)
+	err = internal.AddBlankLinesBetweenTopLevelKeys(databricksYml)
 	if err != nil {
 		return "", fmt.Errorf("failed to format databricks.yml: %w", err)
 	}

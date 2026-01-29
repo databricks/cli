@@ -1,4 +1,4 @@
-package yamlutil
+package internal
 
 import (
 	"bufio"
