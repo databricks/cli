@@ -3,6 +3,8 @@
 Find candidate types from apischema.json that match resource shapes in out.fields.txt and save them (apitypes.generated.yml).
 
 The types are found based on top level field overlap between bundle schema and API type.
+
+Note, we could search for exact type but that may not always work if we create a custom type or embed SDK type.
 """
 
 import argparse
