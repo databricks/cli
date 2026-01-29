@@ -7,7 +7,7 @@ PGSSLMODE=
 
 === Full endpoint path should connect to the endpoint:
 >>> [CLI] psql projects/my-project/branches/main/endpoints/primary
-Project: my-project
+Project: My Project
 Branch: main
 Endpoint: primary
 Connecting to read-write endpoint...
@@ -17,7 +17,7 @@ PGSSLMODE=require
 
 === Project flag with auto-selection should connect:
 >>> [CLI] psql --project auto-project
-Project: auto-project
+Project: Auto Project
 Branch: default-branch
 Endpoint: read-write-ep
 Connecting to read-write endpoint...
@@ -27,7 +27,7 @@ PGSSLMODE=require
 
 === Project and branch flags should connect:
 >>> [CLI] psql --project explicit-project --branch explicit-branch
-Project: explicit-project
+Project: Explicit Project
 Branch: explicit-branch
 Endpoint: main-ep
 Connecting to read-write endpoint (idle, waking up)...
@@ -37,7 +37,7 @@ PGSSLMODE=require
 
 === Project, branch, and endpoint flags should connect:
 >>> [CLI] psql --project explicit-project --branch explicit-branch --endpoint main-ep
-Project: explicit-project
+Project: Explicit Project
 Branch: explicit-branch
 Endpoint: main-ep
 Connecting to read-write endpoint (idle, waking up)...
@@ -47,7 +47,7 @@ PGSSLMODE=require
 
 === Endpoint in INIT state should fail:
 >>> musterr [CLI] psql projects/init-project/branches/main/endpoints/init-ep
-Project: init-project
+Project: Init Project
 Branch: main
 Endpoint: init-ep
 Endpoint is initializing, please retry when it becomes active
@@ -63,7 +63,7 @@ Error: --project is required when using --branch or --endpoint
 
 === Extra arguments should be passed through with full path:
 >>> [CLI] psql projects/my-project/branches/main/endpoints/primary -- -c SELECT 1
-Project: my-project
+Project: My Project
 Branch: main
 Endpoint: primary
 Connecting to read-write endpoint...
@@ -73,7 +73,7 @@ PGSSLMODE=require
 
 === Extra arguments should be passed through with project flag:
 >>> [CLI] psql --project auto-project -- --echo-all -d my-db
-Project: auto-project
+Project: Auto Project
 Branch: default-branch
 Endpoint: read-write-ep
 Connecting to read-write endpoint...
@@ -83,7 +83,7 @@ PGSSLMODE=require
 
 === No retries with max-retries 0:
 >>> [CLI] psql --project auto-project --max-retries 0
-Project: auto-project
+Project: Auto Project
 Branch: default-branch
 Endpoint: read-write-ep
 Connecting to read-write endpoint...

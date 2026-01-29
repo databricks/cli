@@ -2,6 +2,16 @@
 # the current argument capturing method does not work on windows-latest GitHub Runner.
 GOOS.windows = false
 
+# GetProject response
+[[Server]]
+Pattern = "GET /api/2.0/postgres/projects/my-project"
+Response.Body = '''
+{
+    "name": "projects/my-project",
+    "status": { "display_name": "My Project" }
+}
+'''
+
 # Provisioned instance lookup
 [[Server]]
 Pattern = "GET /api/2.0/database/instances/my-instance"

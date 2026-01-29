@@ -29,7 +29,7 @@ Error: --branch flag conflicts with branch in path: other vs main
 
 === Partial path (project only) with --branch flag should supplement:
 >>> [CLI] psql projects/my-project --branch main --max-retries 0
-Project: my-project
+Project: My Project
 Branch: main
 Endpoint: primary
 Connecting to read-write endpoint...
@@ -39,7 +39,7 @@ PGSSLMODE=require
 
 === Partial path (project+branch) with --endpoint flag should supplement:
 >>> [CLI] psql projects/my-project/branches/dev --endpoint custom --max-retries 0
-Project: my-project
+Project: My Project
 Branch: dev
 Endpoint: custom
 Connecting to read-write endpoint...

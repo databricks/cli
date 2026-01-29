@@ -188,7 +188,6 @@ func connectProvisioned(ctx context.Context, instanceName string, retryConfig la
 func connectAutoscaling(ctx context.Context, projectID, branchID, endpointID string, retryConfig lakebasepsql.RetryConfig, extraArgs []string) error {
 	w := cmdctx.WorkspaceClient(ctx)
 
-	cmdio.LogString(ctx, "Project: "+projectID)
 	endpoint, err := resolveEndpoint(ctx, w, projectID, branchID, endpointID)
 	if err != nil {
 		return err
@@ -201,6 +200,17 @@ func connectAutoscaling(ctx context.Context, projectID, branchID, endpointID str
 // Uses interactive selection when components are missing.
 func resolveEndpoint(ctx context.Context, w *databricks.WorkspaceClient, projectID, branchID, endpointID string) (*postgres.Endpoint, error) {
 	projectName := "projects/" + projectID
+
+	// Get project to display its name
+	project, err := w.Postgres.GetProject(ctx, postgres.GetProjectRequest{Name: projectName})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get project: %w", err)
+	}
+	displayName := projectID
+	if project.Status != nil && project.Status.DisplayName != "" {
+		displayName = project.Status.DisplayName
+	}
+	cmdio.LogString(ctx, "Project: "+displayName)
 
 	// If branch not specified, select one
 	if branchID == "" {

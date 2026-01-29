@@ -5,6 +5,43 @@
 # https://github.com/databricks/cli/pull/3228
 GOOS.windows = false
 
+# GetProject responses
+[[Server]]
+Pattern = "GET /api/2.0/postgres/projects/my-project"
+Response.Body = '''
+{
+    "name": "projects/my-project",
+    "status": { "display_name": "My Project" }
+}
+'''
+
+[[Server]]
+Pattern = "GET /api/2.0/postgres/projects/auto-project"
+Response.Body = '''
+{
+    "name": "projects/auto-project",
+    "status": { "display_name": "Auto Project" }
+}
+'''
+
+[[Server]]
+Pattern = "GET /api/2.0/postgres/projects/explicit-project"
+Response.Body = '''
+{
+    "name": "projects/explicit-project",
+    "status": { "display_name": "Explicit Project" }
+}
+'''
+
+[[Server]]
+Pattern = "GET /api/2.0/postgres/projects/init-project"
+Response.Body = '''
+{
+    "name": "projects/init-project",
+    "status": { "display_name": "Init Project" }
+}
+'''
+
 # Full endpoint path - projects/my-project/branches/main/endpoints/primary
 [[Server]]
 Pattern = "GET /api/2.0/postgres/projects/my-project/branches/main/endpoints/primary"
