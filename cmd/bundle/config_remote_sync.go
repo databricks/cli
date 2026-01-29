@@ -57,7 +57,7 @@ Examples:
 			return fmt.Errorf("failed to detect changes: %w", err)
 		}
 
-		changesByFile, err := configsync.GetResolvedFieldChanges(ctx, b, changes)
+		changesByFile, err := configsync.ResolveChanges(ctx, b, changes)
 		if err != nil {
 			return fmt.Errorf("failed to resolve field changes: %w", err)
 		}

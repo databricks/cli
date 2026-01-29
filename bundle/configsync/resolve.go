@@ -78,9 +78,9 @@ func resolveSelectors(pathStr string, b *bundle.Bundle) (string, error) {
 	return result.String(), nil
 }
 
-// GetResolvedFieldChanges builds a map from file paths to lists of field changes.
+// ResolveChanges builds a map from file paths to lists of field changes.
 // It resolves key-value selectors to numeric indices and maps each change to the file where it should be applied.
-func GetResolvedFieldChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes) (map[string]ResourceChanges, error) {
+func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes) (map[string]ResourceChanges, error) {
 	resolvedChangesByFile := make(map[string]ResourceChanges)
 
 	for resourceKey, resourceChanges := range configChanges {

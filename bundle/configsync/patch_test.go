@@ -49,7 +49,7 @@ func TestApplyChangesToYAML_SimpleFieldChange(t *testing.T) {
 		},
 	}
 
-	changesByFile, err := GetResolvedFieldChanges(ctx, b, changes)
+	changesByFile, err := ResolveChanges(ctx, b, changes)
 	require.NoError(t, err)
 
 	fileChanges, err := ApplyChangesToYAML(ctx, b, changesByFile)
@@ -96,7 +96,7 @@ func TestApplyChangesToYAML_NestedFieldChange(t *testing.T) {
 		},
 	}
 
-	changesByFile, err := GetResolvedFieldChanges(ctx, b, changes)
+	changesByFile, err := ResolveChanges(ctx, b, changes)
 	require.NoError(t, err)
 
 	fileChanges, err := ApplyChangesToYAML(ctx, b, changesByFile)
@@ -156,7 +156,7 @@ func TestApplyChangesToYAML_ArrayKeyValueAccess(t *testing.T) {
 		},
 	}
 
-	changesByFile, err := GetResolvedFieldChanges(ctx, b, changes)
+	changesByFile, err := ResolveChanges(ctx, b, changes)
 	require.NoError(t, err)
 
 	fileChanges, err := ApplyChangesToYAML(ctx, b, changesByFile)
@@ -220,7 +220,7 @@ func TestApplyChangesToYAML_MultipleResourcesSameFile(t *testing.T) {
 		},
 	}
 
-	changesByFile, err := GetResolvedFieldChanges(ctx, b, changes)
+	changesByFile, err := ResolveChanges(ctx, b, changes)
 	require.NoError(t, err)
 
 	fileChanges, err := ApplyChangesToYAML(ctx, b, changesByFile)
@@ -291,7 +291,7 @@ include:
 		},
 	}
 
-	changesByFile, err := GetResolvedFieldChanges(ctx, b, changes)
+	changesByFile, err := ResolveChanges(ctx, b, changes)
 	require.NoError(t, err)
 
 	fileChanges, err := ApplyChangesToYAML(ctx, b, changesByFile)
@@ -341,7 +341,7 @@ targets:
 		},
 	}
 
-	changesByFile, err := GetResolvedFieldChanges(ctx, b, changes)
+	changesByFile, err := ResolveChanges(ctx, b, changes)
 	require.NoError(t, err)
 
 	fileChanges, err := ApplyChangesToYAML(ctx, b, changesByFile)
@@ -388,7 +388,7 @@ func TestApplyChangesToYAML_WithStructValues(t *testing.T) {
 		},
 	}
 
-	changesByFile, err := GetResolvedFieldChanges(ctx, b, changes)
+	changesByFile, err := ResolveChanges(ctx, b, changes)
 	require.NoError(t, err)
 
 	fileChanges, err := ApplyChangesToYAML(ctx, b, changesByFile)
@@ -477,7 +477,7 @@ resources:
 		},
 	}
 
-	changesByFile, err := GetResolvedFieldChanges(ctx, b, changes)
+	changesByFile, err := ResolveChanges(ctx, b, changes)
 	require.NoError(t, err)
 
 	fileChanges, err := ApplyChangesToYAML(ctx, b, changesByFile)
@@ -533,7 +533,7 @@ func TestApplyChangesToYAML_RemoveSimpleField(t *testing.T) {
 		},
 	}
 
-	changesByFile, err := GetResolvedFieldChanges(ctx, b, changes)
+	changesByFile, err := ResolveChanges(ctx, b, changes)
 	require.NoError(t, err)
 
 	fileChanges, err := ApplyChangesToYAML(ctx, b, changesByFile)
@@ -591,7 +591,7 @@ func TestApplyChangesToYAML_RemoveNestedField(t *testing.T) {
 		},
 	}
 
-	changesByFile, err := GetResolvedFieldChanges(ctx, b, changes)
+	changesByFile, err := ResolveChanges(ctx, b, changes)
 	require.NoError(t, err)
 
 	fileChanges, err := ApplyChangesToYAML(ctx, b, changesByFile)
@@ -653,7 +653,7 @@ func TestApplyChangesToYAML_RemoveFieldWithKeyValueAccess(t *testing.T) {
 		},
 	}
 
-	changesByFile, err := GetResolvedFieldChanges(ctx, b, changes)
+	changesByFile, err := ResolveChanges(ctx, b, changes)
 	require.NoError(t, err)
 
 	fileChanges, err := ApplyChangesToYAML(ctx, b, changesByFile)
@@ -714,7 +714,7 @@ func TestApplyChangesToYAML_RemoveStructField(t *testing.T) {
 		},
 	}
 
-	changesByFile, err := GetResolvedFieldChanges(ctx, b, changes)
+	changesByFile, err := ResolveChanges(ctx, b, changes)
 	require.NoError(t, err)
 
 	fileChanges, err := ApplyChangesToYAML(ctx, b, changesByFile)
@@ -777,7 +777,7 @@ targets:
 		},
 	}
 
-	changesByFile, err := GetResolvedFieldChanges(ctx, b, changes)
+	changesByFile, err := ResolveChanges(ctx, b, changes)
 	require.NoError(t, err)
 
 	fileChanges, err := ApplyChangesToYAML(ctx, b, changesByFile)
@@ -842,7 +842,7 @@ func TestApplyChangesToYAML_MultipleRemovalsInSameFile(t *testing.T) {
 		},
 	}
 
-	changesByFile, err := GetResolvedFieldChanges(ctx, b, changes)
+	changesByFile, err := ResolveChanges(ctx, b, changes)
 	require.NoError(t, err)
 
 	fileChanges, err := ApplyChangesToYAML(ctx, b, changesByFile)
@@ -904,7 +904,7 @@ func TestApplyChangesToYAML_WithSDKStructValues(t *testing.T) {
 		},
 	}
 
-	changesByFile, err := GetResolvedFieldChanges(ctx, b, changes)
+	changesByFile, err := ResolveChanges(ctx, b, changes)
 	require.NoError(t, err)
 
 	files, err := ApplyChangesToYAML(ctx, b, changesByFile)
