@@ -155,22 +155,14 @@ You can pass additional arguments to psql after a double-dash (--):
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
 
+		instances, projects := listAllDatabases(ctx, w)
+
 		var names []string
-
-		// Add Lakebase Provisioned instances
-		instances, err := w.Database.ListDatabaseInstancesAll(ctx, database.ListDatabaseInstancesRequest{})
-		if err == nil {
-			for _, instance := range instances {
-				names = append(names, instance.Name)
-			}
+		for _, inst := range instances {
+			names = append(names, inst.Name)
 		}
-
-		// Add Lakebase Autoscaling projects
-		projects, err := w.Postgres.ListProjectsAll(ctx, postgres.ListProjectsRequest{})
-		if err == nil {
-			for _, project := range projects {
-				names = append(names, project.Name)
-			}
+		for _, proj := range projects {
+			names = append(names, proj.Name)
 		}
 
 		return names, cobra.ShellCompDirectiveNoFileComp
@@ -346,14 +338,9 @@ func parseResourcePath(input string) (project, branch, endpoint string, err erro
 	return project, branch, endpoint, nil
 }
 
-// showSelectionAndConnect shows a combined dropdown of Lakebase databases.
-func showSelectionAndConnect(ctx context.Context, retryConfig lakebasepsql.RetryConfig, extraArgs []string) error {
-	w := cmdctx.WorkspaceClient(ctx)
-
-	sp := cmdio.NewSpinner(ctx)
-	sp.Update("Loading Lakebase databases...")
-
-	// Fetch both in parallel
+// listAllDatabases fetches all database instances and projects in parallel.
+// Errors are silently ignored; callers should check for empty results.
+func listAllDatabases(ctx context.Context, w *databricks.WorkspaceClient) ([]database.DatabaseInstance, []postgres.Project) {
 	type result[T any] struct {
 		value []T
 		err   error
@@ -374,6 +361,26 @@ func showSelectionAndConnect(ctx context.Context, retryConfig lakebasepsql.Retry
 
 	instResult := <-instancesCh
 	projResult := <-projectsCh
+
+	var instances []database.DatabaseInstance
+	var projects []postgres.Project
+	if instResult.err == nil {
+		instances = instResult.value
+	}
+	if projResult.err == nil {
+		projects = projResult.value
+	}
+
+	return instances, projects
+}
+
+// showSelectionAndConnect shows a combined dropdown of Lakebase databases.
+func showSelectionAndConnect(ctx context.Context, retryConfig lakebasepsql.RetryConfig, extraArgs []string) error {
+	w := cmdctx.WorkspaceClient(ctx)
+
+	sp := cmdio.NewSpinner(ctx)
+	sp.Update("Loading Lakebase databases...")
+	instances, projects := listAllDatabases(ctx, w)
 	sp.Close()
 
 	// Build selection list with connect functions
@@ -383,45 +390,31 @@ func showSelectionAndConnect(ctx context.Context, retryConfig lakebasepsql.Retry
 	}
 	var options []selectable
 
-	if instResult.err == nil {
-		for _, inst := range instResult.value {
-			options = append(options, selectable{
-				label: inst.Name + " (provisioned)",
-				connect: func() error {
-					cmdio.LogString(ctx, "Instance: "+inst.Name+" (provisioned)")
-					return lakebasev1.Connect(ctx, w, &inst, retryConfig, extraArgs...)
-				},
-			})
-		}
+	for _, inst := range instances {
+		options = append(options, selectable{
+			label: inst.Name + " (provisioned)",
+			connect: func() error {
+				cmdio.LogString(ctx, "Instance: "+inst.Name+" (provisioned)")
+				return lakebasev1.Connect(ctx, w, &inst, retryConfig, extraArgs...)
+			},
+		})
 	}
 
-	if projResult.err == nil {
-		for _, proj := range projResult.value {
-			projectID := lakebasev2.ExtractIDFromName(proj.Name, "projects")
-			displayName := projectID
-			if proj.Status != nil && proj.Status.DisplayName != "" {
-				displayName = proj.Status.DisplayName
-			}
-			options = append(options, selectable{
-				label: displayName + " (autoscaling)",
-				connect: func() error {
-					return connectAutoscaling(ctx, projectID, "", "", retryConfig, extraArgs)
-				},
-			})
+	for _, proj := range projects {
+		projectID := lakebasev2.ExtractIDFromName(proj.Name, "projects")
+		displayName := projectID
+		if proj.Status != nil && proj.Status.DisplayName != "" {
+			displayName = proj.Status.DisplayName
 		}
+		options = append(options, selectable{
+			label: displayName + " (autoscaling)",
+			connect: func() error {
+				return connectAutoscaling(ctx, projectID, "", "", retryConfig, extraArgs)
+			},
+		})
 	}
 
 	if len(options) == 0 {
-		var errMsgs []string
-		if instResult.err != nil {
-			errMsgs = append(errMsgs, fmt.Sprintf("failed to load database instances: %v", instResult.err))
-		}
-		if projResult.err != nil {
-			errMsgs = append(errMsgs, fmt.Sprintf("failed to load Lakebase Autoscaling projects: %v", projResult.err))
-		}
-		if len(errMsgs) > 0 {
-			return fmt.Errorf("could not find any databases: %s", strings.Join(errMsgs, "; "))
-		}
 		return errors.New("could not find any Lakebase databases in the workspace")
 	}
 
