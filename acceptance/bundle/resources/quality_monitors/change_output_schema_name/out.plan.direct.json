@@ -35,7 +35,7 @@
         },
         "warehouse_id": {
           "action": "skip",
-          "reason": "config_only",
+          "reason": "builtin_rule",
           "old": "[TEST_DEFAULT_WAREHOUSE_ID]",
           "new": "[TEST_DEFAULT_WAREHOUSE_ID]"
         }

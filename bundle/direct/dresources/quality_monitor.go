@@ -4,8 +4,6 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/marshal"
@@ -114,12 +112,4 @@ func (r *ResourceQualityMonitor) DoDelete(ctx context.Context, id string) error 
 		TableName: id,
 	})
 	return err
-}
-
-func (r *ResourceQualityMonitor) OverrideChangeDesc(_ context.Context, path *structpath.PathNode, change *ChangeDesc, _ *catalog.MonitorInfo) error {
-	if path.String() == "warehouse_id" && change.Old == change.New {
-		change.Action = deployplan.Skip
-		change.Reason = deployplan.ReasonConfigOnly
-	}
-	return nil
 }

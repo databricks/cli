@@ -29,7 +29,7 @@
         },
         "serialized_dashboard": {
           "action": "skip",
-          "reason": "custom",
+          "reason": "builtin_rule",
           "old": "{ }\n",
           "new": "{ }\n",
           "remote": "{}\n"

@@ -373,20 +373,6 @@ func (r *ResourceDashboard) OverrideChangeDesc(_ context.Context, path *structpa
 		} else {
 			change.Action = deployplan.Update
 		}
-	case "parent_path":
-		if change.Action == deployplan.Update {
-			change.Action = deployplan.Recreate
-		}
-	case "serialized_dashboard", "dataset_catalog", "dataset_schema":
-		// "serialized_dashboard" locally and remotely will have different diffs.
-		// We only need to rely on etag here, and can skip this field for diff computation.
-
-		// "dataset_catalog" and "dataset_schema" are write-only fields that are not returned by the server.
-		// They will always differ between local config (which has values) and remote state (which has empty strings),
-		// so we skip them for remote diff computation to avoid false positives.
-		if change.Old == change.New {
-			change.Action = deployplan.Skip
-		}
 	}
 
 	return nil

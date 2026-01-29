@@ -4,9 +4,6 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/bundle/deployplan"
-	"github.com/databricks/cli/libs/structs/structdiff"
-	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
@@ -120,16 +117,6 @@ func (r *ResourcePipeline) DoUpdate(ctx context.Context, id string, config *pipe
 
 func (r *ResourcePipeline) DoDelete(ctx context.Context, id string) error {
 	return r.client.Pipelines.DeleteByPipelineId(ctx, id)
-}
-
-func (*ResourcePipeline) OverrideChangeDesc(ctx context.Context, path *structpath.PathNode, ch *ChangeDesc, _ *pipelines.GetPipelineResponse) error {
-	if path.String() == "run_as" {
-		if structdiff.IsEqual(ch.Old, ch.New) {
-			ch.Action = deployplan.Skip
-		}
-	}
-
-	return nil
 }
 
 // Note, terraform provider either
