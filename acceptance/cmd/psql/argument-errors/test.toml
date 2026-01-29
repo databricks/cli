@@ -23,6 +23,23 @@ Response.Body = '''
 }
 '''
 
+# GetBranch responses
+[[Server]]
+Pattern = "GET /api/2.0/postgres/projects/my-project/branches/main"
+Response.Body = '''
+{
+    "name": "projects/my-project/branches/main"
+}
+'''
+
+[[Server]]
+Pattern = "GET /api/2.0/postgres/projects/my-project/branches/dev"
+Response.Body = '''
+{
+    "name": "projects/my-project/branches/dev"
+}
+'''
+
 # Full endpoint for supplement tests
 [[Server]]
 Pattern = "GET /api/2.0/postgres/projects/my-project/branches/main/endpoints/primary"

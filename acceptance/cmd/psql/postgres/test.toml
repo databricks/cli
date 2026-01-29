@@ -42,6 +42,39 @@ Response.Body = '''
 }
 '''
 
+# GetBranch responses
+[[Server]]
+Pattern = "GET /api/2.0/postgres/projects/my-project/branches/main"
+Response.Body = '''
+{
+    "name": "projects/my-project/branches/main"
+}
+'''
+
+[[Server]]
+Pattern = "GET /api/2.0/postgres/projects/auto-project/branches/default-branch"
+Response.Body = '''
+{
+    "name": "projects/auto-project/branches/default-branch"
+}
+'''
+
+[[Server]]
+Pattern = "GET /api/2.0/postgres/projects/explicit-project/branches/explicit-branch"
+Response.Body = '''
+{
+    "name": "projects/explicit-project/branches/explicit-branch"
+}
+'''
+
+[[Server]]
+Pattern = "GET /api/2.0/postgres/projects/init-project/branches/main"
+Response.Body = '''
+{
+    "name": "projects/init-project/branches/main"
+}
+'''
+
 # Full endpoint path - projects/my-project/branches/main/endpoints/primary
 [[Server]]
 Pattern = "GET /api/2.0/postgres/projects/my-project/branches/main/endpoints/primary"

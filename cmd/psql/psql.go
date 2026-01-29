@@ -199,40 +199,57 @@ func connectAutoscaling(ctx context.Context, projectID, branchID, endpointID str
 // resolveEndpoint resolves a partial specification to a full endpoint.
 // Uses interactive selection when components are missing.
 func resolveEndpoint(ctx context.Context, w *databricks.WorkspaceClient, projectID, branchID, endpointID string) (*postgres.Endpoint, error) {
-	projectName := "projects/" + projectID
+	// If project not specified, select one
+	if projectID == "" {
+		var err error
+		projectID, err = selectProjectID(ctx, w)
+		if err != nil {
+			return nil, fmt.Errorf("failed to select project: %w", err)
+		}
+	}
 
 	// Get project to display its name
-	project, err := w.Postgres.GetProject(ctx, postgres.GetProjectRequest{Name: projectName})
+	project, err := w.Postgres.GetProject(ctx, postgres.GetProjectRequest{Name: "projects/" + projectID})
 	if err != nil {
 		return nil, fmt.Errorf("failed to get project: %w", err)
 	}
-	displayName := projectID
+	projectDisplayName := projectID
 	if project.Status != nil && project.Status.DisplayName != "" {
-		displayName = project.Status.DisplayName
+		projectDisplayName = project.Status.DisplayName
 	}
-	cmdio.LogString(ctx, "Project: "+displayName)
+	cmdio.LogString(ctx, "Project: "+projectDisplayName)
 
 	// If branch not specified, select one
 	if branchID == "" {
-		var err error
-		branchID, err = selectBranchID(ctx, w, projectName)
+		branchID, err = selectBranchID(ctx, w, project.Name)
 		if err != nil {
 			return nil, fmt.Errorf("failed to select branch: %w", err)
 		}
+	}
+
+	// Get branch to validate it exists
+	branch, err := w.Postgres.GetBranch(ctx, postgres.GetBranchRequest{Name: project.Name + "/branches/" + branchID})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get branch: %w", err)
 	}
 	cmdio.LogString(ctx, "Branch: "+branchID)
 
 	// If endpoint not specified, select one
 	if endpointID == "" {
-		var err error
-		endpointID, err = selectEndpointID(ctx, w, projectName+"/branches/"+branchID)
+		endpointID, err = selectEndpointID(ctx, w, branch.Name)
 		if err != nil {
 			return nil, fmt.Errorf("failed to select endpoint: %w", err)
 		}
 	}
+
+	// Get endpoint to validate and return it
+	endpoint, err := w.Postgres.GetEndpoint(ctx, postgres.GetEndpointRequest{Name: branch.Name + "/endpoints/" + endpointID})
+	if err != nil {
+		return nil, fmt.Errorf("failed to get endpoint: %w", err)
+	}
 	cmdio.LogString(ctx, "Endpoint: "+endpointID)
 
-	return lakebasev2.GetEndpoint(ctx, w, projectID, branchID, endpointID)
+	return endpoint, nil
 }
 
 // selectProjectID auto-selects if there's only one project, otherwise prompts user to select.
