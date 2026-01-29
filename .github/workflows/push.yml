@@ -437,7 +437,6 @@ jobs:
               }
             });
 
-
       - name: Trigger integration tests (push to main)
         if: ${{ github.event_name == 'push' }}
         env:
