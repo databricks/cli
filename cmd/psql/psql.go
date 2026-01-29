@@ -235,6 +235,40 @@ func resolveEndpoint(ctx context.Context, w *databricks.WorkspaceClient, project
 	return lakebasev2.GetEndpoint(ctx, w, projectID, branchID, endpointID)
 }
 
+// selectProjectID auto-selects if there's only one project, otherwise prompts user to select.
+// Returns the project ID (not the full project object).
+func selectProjectID(ctx context.Context, w *databricks.WorkspaceClient) (string, error) {
+	sp := cmdio.NewSpinner(ctx)
+	sp.Update("Loading projects...")
+	projects, err := w.Postgres.ListProjectsAll(ctx, postgres.ListProjectsRequest{})
+	sp.Close()
+	if err != nil {
+		return "", err
+	}
+
+	if len(projects) == 0 {
+		return "", errors.New("no projects found in workspace")
+	}
+
+	// Auto-select if there's only one project
+	if len(projects) == 1 {
+		return lakebasev2.ExtractIDFromName(projects[0].Name, "projects"), nil
+	}
+
+	// Multiple projects, prompt user to select
+	var items []cmdio.Tuple
+	for _, project := range projects {
+		projectID := lakebasev2.ExtractIDFromName(project.Name, "projects")
+		displayName := projectID
+		if project.Status != nil && project.Status.DisplayName != "" {
+			displayName = project.Status.DisplayName
+		}
+		items = append(items, cmdio.Tuple{Name: displayName, Id: projectID})
+	}
+
+	return cmdio.SelectOrdered(ctx, items, "Select project")
+}
+
 // selectBranchID auto-selects if there's only one branch, otherwise prompts user to select.
 // Returns the branch ID (not the full branch object).
 func selectBranchID(ctx context.Context, w *databricks.WorkspaceClient, projectName string) (string, error) {
