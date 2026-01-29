@@ -147,6 +147,13 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 						},
 					},
 				},
+				GenieSpaces: map[string]*resources.GenieSpace{
+					"geniespace1": {
+						GenieSpaceConfig: resources.GenieSpaceConfig{
+							Title: "geniespace1",
+						},
+					},
+				},
 				Apps: map[string]*resources.App{
 					"app1": {
 						App: apps.App{
@@ -275,6 +282,9 @@ func TestProcessTargetModeDevelopment(t *testing.T) {
 
 	// Dashboards
 	assert.Equal(t, "[dev lennart] dashboard1", b.Config.Resources.Dashboards["dashboard1"].DisplayName)
+
+	// Genie Spaces
+	assert.Equal(t, "[dev lennart] geniespace1", b.Config.Resources.GenieSpaces["geniespace1"].Title)
 
 	// Alert 1: has schedule without pause status set - should be paused
 	assert.Equal(t, "[dev lennart] alert1", b.Config.Resources.Alerts["alert1"].DisplayName)

@@ -45,6 +45,13 @@ var (
 			permissions.CAN_MANAGE: "CAN_MANAGE",
 			permissions.CAN_VIEW:   "CAN_READ",
 		},
+		"genie_spaces": {
+			// Genie spaces also support CAN_EDIT, but bundle-level permissions
+			// don't have an equivalent. Users can set CAN_EDIT directly on the resource.
+			permissions.CAN_MANAGE: "CAN_MANAGE",
+			permissions.CAN_VIEW:   "CAN_VIEW",
+			permissions.CAN_RUN:    "CAN_RUN",
+		},
 		"apps": {
 			permissions.CAN_MANAGE: "CAN_MANAGE",
 			permissions.CAN_VIEW:   "CAN_USE",

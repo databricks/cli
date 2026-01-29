@@ -227,6 +227,17 @@ github.com/databricks/cli/bundle/config/resources.DashboardPermissionLevel:
         CAN_EDIT
       - |-
         CAN_MANAGE
+github.com/databricks/cli/bundle/config/resources.GenieSpacePermissionLevel:
+  "_":
+    "enum":
+      - |-
+        CAN_EDIT
+      - |-
+        CAN_MANAGE
+      - |-
+        CAN_RUN
+      - |-
+        CAN_VIEW
 github.com/databricks/cli/bundle/config/resources.DatabaseCatalog:
   "create_database_if_not_exists":
     "description": |-

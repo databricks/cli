@@ -1,0 +1,13 @@
+#
+# Acceptance test for deploying genie spaces
+#
+bundle:
+  name: deploy-genie-space-test-$UNIQUE_NAME
+
+resources:
+  genie_spaces:
+    genie1:
+      title: $GENIE_TITLE
+      warehouse_id: $TEST_DEFAULT_WAREHOUSE_ID
+      parent_path: /Users/$CURRENT_USER_NAME
+      serialized_space: '{"version":1,"config":{"sample_questions":[{"id":"a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4","question":["What is the total count?"]}]},"data_sources":{"tables":[]}}'

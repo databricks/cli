@@ -57,6 +57,8 @@ var RequiredFields = map[string][]string{
 	"resources.experiments.*":                {"name"},
 	"resources.experiments.*.permissions[*]": {"level"},
 
+	"resources.genie_spaces.*.permissions[*]": {"level"},
+
 	"resources.jobs.*.deployment":                                                                                  {"kind"},
 	"resources.jobs.*.environments[*]":                                                                             {"environment_key"},
 	"resources.jobs.*.git_source":                                                                                  {"git_provider", "git_url"},
