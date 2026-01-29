@@ -151,6 +151,7 @@ def main():
     parser = argparse.ArgumentParser(description="Generate resources YAML from OpenAPI schema")
     parser.add_argument("apischema", type=Path, help="Path to OpenAPI schema JSON file")
     parser.add_argument("apitypes", type=Path, help="Path to apitypes.generated.yml file")
+    # TODO: add non-generated apitypes.yml here once the need to override generated ones arises
     parser.add_argument("out_fields", type=Path, help="Path to out.fields.txt file")
     args = parser.parse_args()
 
