@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 
@@ -283,44 +282,27 @@ func showSelectionAndConnect(ctx context.Context, retryConfig lakebasepsql.Retry
 	instances, projects := listAllDatabases(ctx, w)
 	sp.Close()
 
-	// Build selection list with connect functions
-	type selectable struct {
-		label   string
-		connect func() error
-	}
-	var options []selectable
-
-	for _, inst := range instances {
-		options = append(options, selectable{
-			label: inst.Name + " (provisioned)",
-			connect: func() error {
-				return connectProvisioned(ctx, inst.Name, retryConfig, extraArgs)
-			},
-		})
-	}
-
-	for _, proj := range projects {
-		projectID := lakebasev2.ExtractIDFromName(proj.Name, "projects")
-		displayName := projectID
-		if proj.Status != nil && proj.Status.DisplayName != "" {
-			displayName = proj.Status.DisplayName
-		}
-		options = append(options, selectable{
-			label: displayName + " (autoscaling)",
-			connect: func() error {
-				return connectAutoscaling(ctx, projectID, "", "", retryConfig, extraArgs)
-			},
-		})
-	}
-
-	if len(options) == 0 {
+	if len(instances) == 0 && len(projects) == 0 {
 		return errors.New("no Lakebase databases found in workspace")
 	}
 
 	// Build selection items
 	var items []cmdio.Tuple
-	for i, opt := range options {
-		items = append(items, cmdio.Tuple{Name: opt.label, Id: strconv.Itoa(i)})
+	for _, inst := range instances {
+		items = append(items, cmdio.Tuple{
+			Name: inst.Name + " (provisioned)",
+			Id:   "provisioned:" + inst.Name,
+		})
+	}
+	for _, proj := range projects {
+		displayName := lakebasev2.ExtractIDFromName(proj.Name, "projects")
+		if proj.Status != nil && proj.Status.DisplayName != "" {
+			displayName = proj.Status.DisplayName
+		}
+		items = append(items, cmdio.Tuple{
+			Name: displayName + " (autoscaling)",
+			Id:   "autoscaling:" + proj.Name,
+		})
 	}
 
 	selected, err := cmdio.SelectOrdered(ctx, items, "Select database to connect to")
@@ -328,10 +310,15 @@ func showSelectionAndConnect(ctx context.Context, retryConfig lakebasepsql.Retry
 		return err
 	}
 
-	idx, err := strconv.Atoi(selected)
-	if err != nil || idx < 0 || idx >= len(options) {
-		return fmt.Errorf("unexpected selection: %s", selected)
+	if strings.HasPrefix(selected, "provisioned:") {
+		instanceName := strings.TrimPrefix(selected, "provisioned:")
+		return connectProvisioned(ctx, instanceName, retryConfig, extraArgs)
+	}
+	if strings.HasPrefix(selected, "autoscaling:") {
+		projectName := strings.TrimPrefix(selected, "autoscaling:")
+		projectID := lakebasev2.ExtractIDFromName(projectName, "projects")
+		return connectAutoscaling(ctx, projectID, "", "", retryConfig, extraArgs)
 	}
 
-	return options[idx].connect()
+	return fmt.Errorf("unexpected selection: %s", selected)
 }
