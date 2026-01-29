@@ -8,6 +8,7 @@ job_id="$(read_id.py my_job)"
 
 
 title "Modify job fields remotely"
+echo
 edit_resource.py jobs $job_id <<EOF
 r["email_notifications"]["on_failure"] = ["failure@example.com"]
 r["email_notifications"]["no_alert_for_skipped_runs"] = True
@@ -16,6 +17,14 @@ r["trigger"]["periodic"]["interval"] = 2
 if "tags" not in r:
     r["tags"] = {}
 r["tags"]["team"] = "data"
+r["job_clusters"] = [{
+    "job_cluster_key": "shared_cluster",
+    "new_cluster": {
+        "spark_version": "$DEFAULT_SPARK_VERSION",
+        "node_type_id": "$NODE_TYPE_ID",
+        "num_workers": 2
+    }
+}]
 EOF
 
 # TODO add support for permissions
