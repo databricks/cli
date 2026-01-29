@@ -13,21 +13,169 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// Equality check functions for SDK native types
+
+func assertDurationEqual(t *testing.T, expected, actual any) {
+	e := expected.(sdkduration.Duration)
+	a := actual.(sdkduration.Duration)
+	assert.Equal(t, e.AsDuration(), a.AsDuration())
+}
+
+func assertTimeEqual(t *testing.T, expected, actual any) {
+	e := expected.(sdktime.Time)
+	a := actual.(sdktime.Time)
+	assert.Equal(t, e.AsTime(), a.AsTime())
+}
+
+func assertFieldMaskEqual(t *testing.T, expected, actual any) {
+	e := expected.(sdkfieldmask.FieldMask)
+	a := actual.(sdkfieldmask.FieldMask)
+	assert.Equal(t, e.Paths, a.Paths)
+}
+
+// Roundtrip test - verifies SDK native types convert to dyn.Value and back for both value and pointer types
+
+func TestSDKNativeTypesRoundtrip(t *testing.T) {
+	tests := []struct {
+		name           string
+		typed          any
+		expectedString string
+		assertEqual    func(t *testing.T, expected, actual any)
+	}{
+		{
+			name:           "duration_5min",
+			typed:          *sdkduration.New(5 * time.Minute),
+			expectedString: "300s",
+			assertEqual:    assertDurationEqual,
+		},
+		{
+			name:           "duration_7days",
+			typed:          *sdkduration.New(7 * 24 * time.Hour),
+			expectedString: "604800s",
+			assertEqual:    assertDurationEqual,
+		},
+		{
+			name:           "duration_1hour",
+			typed:          *sdkduration.New(1 * time.Hour),
+			expectedString: "3600s",
+			assertEqual:    assertDurationEqual,
+		},
+		{
+			name:           "time_no_nanos",
+			typed:          *sdktime.New(time.Date(2023, 12, 25, 10, 30, 0, 0, time.UTC)),
+			expectedString: "2023-12-25T10:30:00Z",
+			assertEqual:    assertTimeEqual,
+		},
+		{
+			name:           "time_with_nanos",
+			typed:          *sdktime.New(time.Date(2023, 12, 25, 10, 30, 0, 123456789, time.UTC)),
+			expectedString: "2023-12-25T10:30:00.123456789Z",
+			assertEqual:    assertTimeEqual,
+		},
+		{
+			name:           "time_epoch",
+			typed:          *sdktime.New(time.Date(1970, 1, 1, 0, 0, 0, 0, time.UTC)),
+			expectedString: "1970-01-01T00:00:00Z",
+			assertEqual:    assertTimeEqual,
+		},
+		{
+			name:           "fieldmask_single",
+			typed:          *sdkfieldmask.New([]string{"name"}),
+			expectedString: "name",
+			assertEqual:    assertFieldMaskEqual,
+		},
+		{
+			name:           "fieldmask_multiple",
+			typed:          *sdkfieldmask.New([]string{"name", "age", "email"}),
+			expectedString: "name,age,email",
+			assertEqual:    assertFieldMaskEqual,
+		},
+		{
+			name:           "fieldmask_nested",
+			typed:          *sdkfieldmask.New([]string{"user.name", "user.email"}),
+			expectedString: "user.name,user.email",
+			assertEqual:    assertFieldMaskEqual,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Test value type
+			t.Run("value", func(t *testing.T) {
+				dynValue, err := FromTyped(tt.typed, dyn.NilValue)
+				require.NoError(t, err)
+				assert.Equal(t, tt.expectedString, dynValue.MustString())
+
+				// Convert back and check equality based on type
+				switch tt.typed.(type) {
+				case sdkduration.Duration:
+					var out sdkduration.Duration
+					err = ToTyped(&out, dynValue)
+					require.NoError(t, err)
+					tt.assertEqual(t, tt.typed, out)
+				case sdktime.Time:
+					var out sdktime.Time
+					err = ToTyped(&out, dynValue)
+					require.NoError(t, err)
+					tt.assertEqual(t, tt.typed, out)
+				case sdkfieldmask.FieldMask:
+					var out sdkfieldmask.FieldMask
+					err = ToTyped(&out, dynValue)
+					require.NoError(t, err)
+					tt.assertEqual(t, tt.typed, out)
+				}
+			})
+
+			// Test pointer type
+			t.Run("pointer", func(t *testing.T) {
+				// Create a typed pointer for FromTyped based on the actual type
+				var dynValue dyn.Value
+				var err error
+				switch v := tt.typed.(type) {
+				case sdkduration.Duration:
+					src := v
+					dynValue, err = FromTyped(&src, dyn.NilValue)
+					require.NoError(t, err)
+				case sdktime.Time:
+					src := v
+					dynValue, err = FromTyped(&src, dyn.NilValue)
+					require.NoError(t, err)
+				case sdkfieldmask.FieldMask:
+					src := v
+					dynValue, err = FromTyped(&src, dyn.NilValue)
+					require.NoError(t, err)
+				default:
+					t.Fatalf("unsupported type: %T", tt.typed)
+				}
+				assert.Equal(t, tt.expectedString, dynValue.MustString())
+
+				// Convert back and check equality based on type
+				switch tt.typed.(type) {
+				case sdkduration.Duration:
+					var out *sdkduration.Duration
+					err = ToTyped(&out, dynValue)
+					require.NoError(t, err)
+					require.NotNil(t, out)
+					tt.assertEqual(t, tt.typed, *out)
+				case sdktime.Time:
+					var out *sdktime.Time
+					err = ToTyped(&out, dynValue)
+					require.NoError(t, err)
+					require.NotNil(t, out)
+					tt.assertEqual(t, tt.typed, *out)
+				case sdkfieldmask.FieldMask:
+					var out *sdkfieldmask.FieldMask
+					err = ToTyped(&out, dynValue)
+					require.NoError(t, err)
+					require.NotNil(t, out)
+					tt.assertEqual(t, tt.typed, *out)
+				}
+			})
+		})
+	}
+}
+
 // Duration tests
-
-func TestFromTypedDuration(t *testing.T) {
-	src := sdkduration.New(300 * time.Second)
-	nv, err := FromTyped(src, dyn.NilValue)
-	require.NoError(t, err)
-	assert.Equal(t, dyn.V("300s"), nv)
-}
-
-func TestFromTypedDurationPointer(t *testing.T) {
-	src := sdkduration.New(5 * time.Minute)
-	nv, err := FromTyped(src, dyn.NilValue)
-	require.NoError(t, err)
-	assert.Equal(t, dyn.V("300s"), nv)
-}
 
 func TestFromTypedDurationInStruct(t *testing.T) {
 	type Tmp struct {
@@ -106,25 +254,6 @@ func TestNormalizeDurationNil(t *testing.T) {
 	assert.Equal(t, dyn.InvalidValue, vout)
 }
 
-func TestToTypedDuration(t *testing.T) {
-	var out sdkduration.Duration
-	v := dyn.V("300s")
-
-	err := ToTyped(&out, v)
-	require.NoError(t, err)
-	assert.Equal(t, 300*time.Second, out.AsDuration())
-}
-
-func TestToTypedDurationPointer(t *testing.T) {
-	var out *sdkduration.Duration
-	v := dyn.V("300s") // 5 minutes in protobuf duration format
-
-	err := ToTyped(&out, v)
-	require.NoError(t, err)
-	require.NotNil(t, out)
-	assert.Equal(t, 5*time.Minute, out.AsDuration())
-}
-
 func TestToTypedDurationInStruct(t *testing.T) {
 	type Tmp struct {
 		Timeout *sdkduration.Duration `json:"timeout"`
@@ -175,20 +304,6 @@ func TestToTypedDurationInvalidFormat(t *testing.T) {
 }
 
 // Time tests
-
-func TestFromTypedSDKTime(t *testing.T) {
-	src := sdktime.New(time.Date(2023, 12, 25, 10, 30, 0, 0, time.UTC))
-	nv, err := FromTyped(src, dyn.NilValue)
-	require.NoError(t, err)
-	assert.Equal(t, dyn.V("2023-12-25T10:30:00Z"), nv)
-}
-
-func TestFromTypedSDKTimePointer(t *testing.T) {
-	src := sdktime.New(time.Date(2023, 12, 25, 10, 30, 0, 123456789, time.UTC))
-	nv, err := FromTyped(src, dyn.NilValue)
-	require.NoError(t, err)
-	assert.Equal(t, dyn.V("2023-12-25T10:30:00.123456789Z"), nv)
-}
 
 func TestFromTypedSDKTimeInStruct(t *testing.T) {
 	type Tmp struct {
@@ -259,27 +374,6 @@ func TestNormalizeSDKTimeNil(t *testing.T) {
 	assert.Equal(t, dyn.InvalidValue, vout)
 }
 
-func TestToTypedSDKTime(t *testing.T) {
-	var out sdktime.Time
-	v := dyn.V("2023-12-25T10:30:00Z")
-
-	err := ToTyped(&out, v)
-	require.NoError(t, err)
-	expected := time.Date(2023, 12, 25, 10, 30, 0, 0, time.UTC)
-	assert.Equal(t, expected, out.AsTime())
-}
-
-func TestToTypedSDKTimePointer(t *testing.T) {
-	var out *sdktime.Time
-	v := dyn.V("2023-12-25T10:30:00.123456789Z")
-
-	err := ToTyped(&out, v)
-	require.NoError(t, err)
-	require.NotNil(t, out)
-	expected := time.Date(2023, 12, 25, 10, 30, 0, 123456789, time.UTC)
-	assert.Equal(t, expected, out.AsTime())
-}
-
 func TestToTypedSDKTimeInStruct(t *testing.T) {
 	type Tmp struct {
 		CreatedAt *sdktime.Time `json:"created_at"`
@@ -319,20 +413,6 @@ func TestToTypedSDKTimeError(t *testing.T) {
 }
 
 // FieldMask tests
-
-func TestFromTypedFieldMask(t *testing.T) {
-	src := sdkfieldmask.New([]string{"name", "age", "email"})
-	nv, err := FromTyped(src, dyn.NilValue)
-	require.NoError(t, err)
-	assert.Equal(t, dyn.V("name,age,email"), nv)
-}
-
-func TestFromTypedFieldMaskPointer(t *testing.T) {
-	src := sdkfieldmask.New([]string{"first_name", "last_name"})
-	nv, err := FromTyped(src, dyn.NilValue)
-	require.NoError(t, err)
-	assert.Equal(t, dyn.V("first_name,last_name"), nv)
-}
 
 func TestFromTypedFieldMaskInStruct(t *testing.T) {
 	type Tmp struct {
@@ -406,25 +486,6 @@ func TestNormalizeFieldMaskNil(t *testing.T) {
 		Paths:     []dyn.Path{dyn.EmptyPath},
 	}, err[0])
 	assert.Equal(t, dyn.InvalidValue, vout)
-}
-
-func TestToTypedFieldMask(t *testing.T) {
-	var out sdkfieldmask.FieldMask
-	v := dyn.V("name,age,email")
-
-	err := ToTyped(&out, v)
-	require.NoError(t, err)
-	assert.Equal(t, []string{"name", "age", "email"}, out.Paths)
-}
-
-func TestToTypedFieldMaskPointer(t *testing.T) {
-	var out *sdkfieldmask.FieldMask
-	v := dyn.V("first_name,last_name")
-
-	err := ToTyped(&out, v)
-	require.NoError(t, err)
-	require.NotNil(t, out)
-	assert.Equal(t, []string{"first_name", "last_name"}, out.Paths)
 }
 
 func TestToTypedFieldMaskInStruct(t *testing.T) {

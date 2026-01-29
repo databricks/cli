@@ -50,7 +50,8 @@ func fromTypedSDKNative(src reflect.Value, ref dyn.Value, options ...fromTypedOp
 		return dyn.InvalidValue, err
 	}
 
-	// The JSON marshaling produces a quoted string, unmarshal to get the raw string.
+	// All SDK native types marshal to JSON strings. Unmarshal to get the raw string value.
+	// For example: duration.Duration(300s) -> JSON "300s" -> string "300s"
 	var str string
 	if err := json.Unmarshal(jsonBytes, &str); err != nil {
 		return dyn.InvalidValue, err
@@ -71,8 +72,12 @@ func toTypedSDKNative(dst reflect.Value, src dyn.Value) error {
 	switch src.Kind() {
 	case dyn.KindString:
 		// Use JSON unmarshaling since SDK native types implement json.Unmarshaler.
-		jsonStr := fmt.Sprintf("%q", src.MustString())
-		return json.Unmarshal([]byte(jsonStr), dst.Addr().Interface())
+		// Marshal the string to create a valid JSON string literal for unmarshaling.
+		jsonBytes, err := json.Marshal(src.MustString())
+		if err != nil {
+			return err
+		}
+		return json.Unmarshal(jsonBytes, dst.Addr().Interface())
 	case dyn.KindNil:
 		dst.SetZero()
 		return nil
