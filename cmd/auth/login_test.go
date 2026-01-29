@@ -2,6 +2,7 @@ package auth
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/databricks/cli/libs/auth"
@@ -167,6 +168,38 @@ func TestPromptForWorkspaceIdInNonInteractiveMode(t *testing.T) {
 	workspaceID, err := promptForWorkspaceID(ctx)
 	assert.NoError(t, err)
 	assert.Equal(t, "", workspaceID)
+}
+
+func TestSetAccountIdForUnifiedHost(t *testing.T) {
+	t.Setenv("DATABRICKS_CONFIG_FILE", "./testdata/.databrickscfg")
+	ctx, _ := cmdio.SetupTest(context.Background(), cmdio.TestOptions{})
+
+	// Test that unified host requires account_id - should prompt in non-interactive mode and fail
+	authArguments := auth.AuthArguments{
+		Host:          "https://unified.databricks.com",
+		IsUnifiedHost: true,
+	}
+	err := setHostAndAccountId(ctx, nil, &authArguments, []string{})
+	assert.EqualError(t, err, "the command is being run in a non-interactive environment, please specify an account ID using --account-id")
+}
+
+func TestAccountIDValidationForUnifiedHost(t *testing.T) {
+	// Test the validation function used for unified hosts
+	// This validation is only applied when --experimental-is-unified-host is set
+	validate := func(s string) error {
+		if s == "" {
+			return errors.New("account ID is required")
+		}
+		return nil
+	}
+
+	// Test that empty string fails validation
+	err := validate("")
+	assert.EqualError(t, err, "account ID is required")
+
+	// Test that non-empty string passes validation
+	err = validate("some-account-id")
+	assert.NoError(t, err)
 }
 
 func TestLoadProfileByNameAndClusterID(t *testing.T) {

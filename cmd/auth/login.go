@@ -315,7 +315,7 @@ func setHostAndAccountId(ctx context.Context, existingProfile *profile.Profile, 
 			if existingProfile != nil && existingProfile.AccountID != "" {
 				authArguments.AccountID = existingProfile.AccountID
 			} else {
-				accountId, err := promptForAccountID(ctx)
+				accountId, err := promptForAccountIDRequired(ctx)
 				if err != nil {
 					return err
 				}

@@ -1,0 +1,7 @@
+# Test that unified host login requires account_id
+# In non-interactive mode, this should fail with a helpful error message
+
+sethome "./home"
+
+title "Without account_id (should error)\n"
+errcode $CLI auth login --host https://unified.databricks.com --experimental-is-unified-host --profile test
