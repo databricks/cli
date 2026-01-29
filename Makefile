@@ -184,11 +184,11 @@ generate-direct-clean:
 	rm -f bundle/direct/dresources/apitypes.generated.yml bundle/direct/dresources/resources.generated.yml
 .PHONY: generate-direct generate-direct-apitypes generate-direct-resources generate-direct-clean
 
-bundle/direct/dresources/apitypes.generated.yml: .codegen/apischema.json acceptance/bundle/refschema/out.fields.txt
-	python3 ./bundle/direct/tools/generate_apitypes.py $^ > $@
+bundle/direct/dresources/apitypes.generated.yml: ./bundle/direct/tools/generate_apitypes.py .codegen/apischema.json acceptance/bundle/refschema/out.fields.txt
+	python3 $^ > $@
 
-bundle/direct/dresources/resources.generated.yml: .codegen/apischema.json bundle/direct/dresources/apitypes.generated.yml acceptance/bundle/refschema/out.fields.txt
-	python3 ./bundle/direct/tools/generate_resources.py $^ > $@
+bundle/direct/dresources/resources.generated.yml: ./bundle/direct/tools/generate_resources.py .codegen/apischema.json bundle/direct/dresources/apitypes.generated.yml acceptance/bundle/refschema/out.fields.txt
+	python3 $^ > $@
 
 .PHONY: lint lintfull tidy lintcheck fmt fmtfull test test-unit test-acc test-slow test-slow-unit test-slow-acc cover showcover build snapshot snapshot-release schema integration integration-short acc-cover acc-showcover docs ws wsfix links checks test-update test-update-templates generate-out-test-toml test-update-aws test-update-all generate-validation
 

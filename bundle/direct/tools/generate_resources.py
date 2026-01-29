@@ -94,15 +94,12 @@ def write_field_group(lines, header, fields):
 
 def generate_yaml(resource_behaviors):
     """Generate YAML content."""
-    lines = [
-        "# API field behaviors from OpenAPI schema.",
-        "# Generated, do not edit.",
-        "#",
-        "# Available options:",
-        "#   recreate_on_changes: fields that trigger delete + create (from IMMUTABLE)",
-        "#   ignore_remote_changes: fields where remote changes are ignored (from OUTPUT_ONLY, INPUT_ONLY)",
-        "",
-        "resources:",
+    lines = ["""Generated, do not edit. API field behaviors from OpenAPI schema.
+
+For manual edits and schema description, see resources.yml.
+
+resources:
+"""
     ]
 
     prev_had_content = False
