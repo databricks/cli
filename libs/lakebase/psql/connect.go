@@ -36,7 +36,6 @@ func Connect(ctx context.Context, opts ConnectOptions, retryConfig RetryConfig) 
 
 	// If retries are disabled, go directly to interactive session
 	if retryConfig.MaxRetries <= 0 {
-		cmdio.LogString(ctx, fmt.Sprintf("Launching psql with connection to %s...", opts.Host))
 		return execv.Execv(execv.Options{
 			Args: args,
 			Env:  env,
@@ -104,10 +103,8 @@ func connectWithRetry(ctx context.Context, host string, args, env []string, retr
 			}
 		}
 
-		if attempt == 0 {
-			cmdio.LogString(ctx, fmt.Sprintf("Launching psql with connection to %s...", host))
-		} else {
-			cmdio.LogString(ctx, fmt.Sprintf("Launching psql session to %s (attempt %d/%d)...", host, attempt+1, maxRetries))
+		if attempt > 0 {
+			cmdio.LogString(ctx, fmt.Sprintf("Retrying connection (attempt %d/%d)...", attempt+1, maxRetries))
 		}
 
 		err := attemptConnection(ctx, args, env)

@@ -11,11 +11,9 @@ Pattern = "GET /api/2.0/postgres/projects/my-project/branches/main/endpoints/pri
 Response.Body = '''
 {
     "name": "projects/my-project/branches/main/endpoints/primary",
-    "spec": {
-        "endpoint_type": "ENDPOINT_TYPE_READ_WRITE"
-    },
     "status": {
         "current_state": "ACTIVE",
+        "endpoint_type": "ENDPOINT_TYPE_READ_WRITE",
         "hosts": {
             "host": "my-endpoint.postgres.example.com"
         }
@@ -47,11 +45,9 @@ Response.Body = '''
     "endpoints": [
         {
             "name": "projects/auto-project/branches/default-branch/endpoints/read-write-ep",
-            "spec": {
-                "endpoint_type": "ENDPOINT_TYPE_READ_WRITE"
-            },
             "status": {
                 "current_state": "ACTIVE",
+                "endpoint_type": "ENDPOINT_TYPE_READ_WRITE",
                 "hosts": {
                     "host": "auto-endpoint.postgres.example.com"
                 }
@@ -66,11 +62,9 @@ Pattern = "GET /api/2.0/postgres/projects/auto-project/branches/default-branch/e
 Response.Body = '''
 {
     "name": "projects/auto-project/branches/default-branch/endpoints/read-write-ep",
-    "spec": {
-        "endpoint_type": "ENDPOINT_TYPE_READ_WRITE"
-    },
     "status": {
         "current_state": "ACTIVE",
+        "endpoint_type": "ENDPOINT_TYPE_READ_WRITE",
         "hosts": {
             "host": "auto-endpoint.postgres.example.com"
         }
@@ -86,11 +80,9 @@ Response.Body = '''
     "endpoints": [
         {
             "name": "projects/explicit-project/branches/explicit-branch/endpoints/main-ep",
-            "spec": {
-                "endpoint_type": "ENDPOINT_TYPE_READ_WRITE"
-            },
             "status": {
                 "current_state": "IDLE",
+                "endpoint_type": "ENDPOINT_TYPE_READ_WRITE",
                 "hosts": {
                     "host": "explicit-endpoint.postgres.example.com"
                 }
@@ -105,11 +97,9 @@ Pattern = "GET /api/2.0/postgres/projects/explicit-project/branches/explicit-bra
 Response.Body = '''
 {
     "name": "projects/explicit-project/branches/explicit-branch/endpoints/main-ep",
-    "spec": {
-        "endpoint_type": "ENDPOINT_TYPE_READ_WRITE"
-    },
     "status": {
         "current_state": "IDLE",
+        "endpoint_type": "ENDPOINT_TYPE_READ_WRITE",
         "hosts": {
             "host": "explicit-endpoint.postgres.example.com"
         }
@@ -123,11 +113,9 @@ Pattern = "GET /api/2.0/postgres/projects/init-project/branches/main/endpoints/i
 Response.Body = '''
 {
     "name": "projects/init-project/branches/main/endpoints/init-ep",
-    "spec": {
-        "endpoint_type": "ENDPOINT_TYPE_READ_WRITE"
-    },
     "status": {
         "current_state": "INIT",
+        "endpoint_type": "ENDPOINT_TYPE_READ_WRITE",
         "hosts": {
             "host": "init-endpoint.postgres.example.com"
         }

@@ -29,22 +29,20 @@ func GetDatabaseInstance(ctx context.Context, w *databricks.WorkspaceClient, nam
 
 // Connect connects to a database instance with retry logic.
 func Connect(ctx context.Context, w *databricks.WorkspaceClient, db *database.DatabaseInstance, retryConfig psql.RetryConfig, extraArgs ...string) error {
-	cmdio.LogString(ctx, "Connecting to Databricks Database Instance "+db.Name+" ...")
-
 	user, err := w.CurrentUser.Me(ctx)
 	if err != nil {
 		return fmt.Errorf("error getting current user: %w", err)
 	}
 
-	cmdio.LogString(ctx, "Postgres version: "+db.PgVersion)
-	cmdio.LogString(ctx, fmt.Sprintf("Database instance status: %s", db.State))
-
 	if db.State != database.DatabaseInstanceStateAvailable {
+		cmdio.LogString(ctx, fmt.Sprintf("Instance status: %s", db.State))
 		if db.State == database.DatabaseInstanceStateStarting || db.State == database.DatabaseInstanceStateUpdating || db.State == database.DatabaseInstanceStateFailingOver {
 			cmdio.LogString(ctx, "Please retry when the instance becomes available")
 		}
 		return errors.New("database instance is not ready for accepting connections")
 	}
+
+	cmdio.LogString(ctx, "Connecting...")
 
 	cred, err := w.Database.GenerateDatabaseCredential(ctx, database.GenerateDatabaseCredentialRequest{
 		InstanceNames: []string{db.Name},
@@ -53,7 +51,6 @@ func Connect(ctx context.Context, w *databricks.WorkspaceClient, db *database.Da
 	if err != nil {
 		return fmt.Errorf("error getting database credentials: %w", err)
 	}
-	cmdio.LogString(ctx, "Successfully fetched database credentials")
 
 	return psql.Connect(ctx, psql.ConnectOptions{
 		Host:            db.ReadWriteDns,

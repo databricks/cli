@@ -36,11 +36,34 @@ func GetEndpoint(ctx context.Context, w *databricks.WorkspaceClient, projectID, 
 	return endpoint, nil
 }
 
+// FormatEndpointType returns a human-readable endpoint type string.
+func FormatEndpointType(endpointType postgres.EndpointType) string {
+	switch endpointType {
+	case postgres.EndpointTypeEndpointTypeReadWrite:
+		return "read-write"
+	case postgres.EndpointTypeEndpointTypeReadOnly:
+		return "read-only"
+	default:
+		return string(endpointType)
+	}
+}
+
+// FormatEndpointState returns a human-readable state description.
+func FormatEndpointState(state postgres.EndpointStatusState) string {
+	switch state {
+	case postgres.EndpointStatusStateActive:
+		return ""
+	case postgres.EndpointStatusStateIdle:
+		return "idle, waking up"
+	case postgres.EndpointStatusStateInit:
+		return "initializing"
+	default:
+		return strings.ToLower(string(state))
+	}
+}
+
 // Connect connects to a Postgres endpoint with retry logic.
 func Connect(ctx context.Context, w *databricks.WorkspaceClient, endpoint *postgres.Endpoint, retryConfig psql.RetryConfig, extraArgs ...string) error {
-	endpointID := ExtractIDFromName(endpoint.Name, "endpoints")
-	cmdio.LogString(ctx, fmt.Sprintf("Connecting to Postgres endpoint %s ...", endpointID))
-
 	user, err := w.CurrentUser.Me(ctx)
 	if err != nil {
 		return fmt.Errorf("error getting current user: %w", err)
@@ -51,13 +74,20 @@ func Connect(ctx context.Context, w *databricks.WorkspaceClient, endpoint *postg
 	}
 
 	state := endpoint.Status.CurrentState
-	cmdio.LogString(ctx, fmt.Sprintf("Endpoint state: %s", state))
-
 	if state != postgres.EndpointStatusStateActive && state != postgres.EndpointStatusStateIdle {
 		if state == postgres.EndpointStatusStateInit {
-			cmdio.LogString(ctx, "Please retry when the endpoint becomes active")
+			cmdio.LogString(ctx, "Endpoint is initializing, please retry when it becomes active")
 		}
 		return errors.New("endpoint is not ready for accepting connections")
+	}
+
+	// Log connection details
+	endpointType := FormatEndpointType(endpoint.Status.EndpointType)
+	stateDesc := FormatEndpointState(state)
+	if stateDesc != "" {
+		cmdio.LogString(ctx, fmt.Sprintf("Connecting to %s endpoint (%s)...", endpointType, stateDesc))
+	} else {
+		cmdio.LogString(ctx, fmt.Sprintf("Connecting to %s endpoint...", endpointType))
 	}
 
 	if endpoint.Status.Hosts == nil || endpoint.Status.Hosts.Host == "" {
@@ -71,7 +101,6 @@ func Connect(ctx context.Context, w *databricks.WorkspaceClient, endpoint *postg
 	if err != nil {
 		return fmt.Errorf("error getting database credentials: %w", err)
 	}
-	cmdio.LogString(ctx, "Successfully fetched database credentials")
 
 	return psql.Connect(ctx, psql.ConnectOptions{
 		Host:            host,

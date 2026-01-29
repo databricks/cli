@@ -1,34 +1,29 @@
 
 === Command should exit if the instance is not available
 >>> musterr [CLI] psql database-starting
-Connecting to Databricks Database Instance database-starting ...
-Postgres version: 14
-Database instance status: STARTING
+Instance: database-starting (provisioned)
+Instance status: STARTING
 Please retry when the instance becomes available
 Error: database instance is not ready for accepting connections
 
 >>> musterr [CLI] psql database-updating
-Connecting to Databricks Database Instance database-updating ...
-Postgres version: 14
-Database instance status: UPDATING
+Instance: database-updating (provisioned)
+Instance status: UPDATING
 Please retry when the instance becomes available
 Error: database instance is not ready for accepting connections
 
 >>> musterr [CLI] psql database-stopped
-Connecting to Databricks Database Instance database-stopped ...
-Postgres version: 14
-Database instance status: STOPPED
+Instance: database-stopped (provisioned)
+Instance status: STOPPED
 Error: database instance is not ready for accepting connections
 
 >>> musterr [CLI] psql database-failing-over
-Connecting to Databricks Database Instance database-failing-over ...
-Postgres version: 14
-Database instance status: FAILING_OVER
+Instance: database-failing-over (provisioned)
+Instance status: FAILING_OVER
 Please retry when the instance becomes available
 Error: database instance is not ready for accepting connections
 
 >>> musterr [CLI] psql database-deleting
-Connecting to Databricks Database Instance database-deleting ...
-Postgres version: 14
-Database instance status: DELETING
+Instance: database-deleting (provisioned)
+Instance status: DELETING
 Error: database instance is not ready for accepting connections

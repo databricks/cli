@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -67,15 +68,19 @@ You can pass additional arguments to psql after a double-dash (--):
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		argsLenAtDash := cmd.ArgsLenAtDash()
 
-		// If -- was used, only count args before the dash
-		var argsBeforeDash int
-		if argsLenAtDash >= 0 {
-			argsBeforeDash = argsLenAtDash
-		} else {
-			argsBeforeDash = len(args)
+		// Split args at --
+		argsLenAtDash := cmd.ArgsLenAtDash()
+		if argsLenAtDash < 0 {
+			argsLenAtDash = len(args)
 		}
+		target := ""
+		if argsLenAtDash == 1 {
+			target = args[0]
+		} else if argsLenAtDash > 1 {
+			return errors.New("expected at most one positional argument for target")
+		}
+		extraArgs := args[argsLenAtDash:]
 
 		// Read flags
 		projectFlag, _ := cmd.Flags().GetString("project")
@@ -90,37 +95,25 @@ You can pass additional arguments to psql after a double-dash (--):
 			BackoffFactor: 2.0,
 		}
 
-		// Get extra args for psql
-		var extraArgs []string
-		if argsBeforeDash < len(args) {
-			extraArgs = args[argsBeforeDash:]
-		}
-
-		// Determine which connection mode to use based on input
-		// 1. If --project, --branch, or --endpoint flags are set -> Lakebase Autoscaling
+		// Flags take precedence
 		if projectFlag != "" || branchFlag != "" || endpointFlag != "" {
 			if projectFlag == "" {
 				return errors.New("--project is required when using --branch or --endpoint")
 			}
-			return connectViaAutoscaling(ctx, projectFlag, branchFlag, endpointFlag, retryConfig, extraArgs)
+			return connectAutoscaling(ctx, projectFlag, branchFlag, endpointFlag, retryConfig, extraArgs)
 		}
 
-		// 2. If positional arg starts with "projects/" -> Lakebase Autoscaling
-		if argsBeforeDash == 1 {
-			target := args[0]
+		// Positional argument
+		if target != "" {
 			if strings.HasPrefix(target, "projects/") {
-				return connectViaAutoscalingPath(ctx, target, retryConfig, extraArgs)
+				projectID, branchID, endpointID := parseResourcePath(target)
+				return connectAutoscaling(ctx, projectID, branchID, endpointID, retryConfig, extraArgs)
 			}
-			// Positional arg is database instance name -> Lakebase Provisioned
-			return connectViaProvisioned(ctx, target, retryConfig, extraArgs)
+			return connectProvisioned(ctx, target, retryConfig, extraArgs)
 		}
 
-		// 3. No args, no flags -> Show combined dropdown
-		if argsBeforeDash == 0 {
-			return showCombinedSelectionAndConnect(ctx, retryConfig, extraArgs)
-		}
-
-		return errors.New("expected at most one positional argument for target")
+		// No args, no flags -> interactive selection
+		return showSelectionAndConnect(ctx, retryConfig, extraArgs)
 	}
 
 	cmd.ValidArgsFunction = func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
@@ -156,8 +149,8 @@ You can pass additional arguments to psql after a double-dash (--):
 	return cmd
 }
 
-// connectViaProvisioned connects to a Lakebase Provisioned database instance.
-func connectViaProvisioned(ctx context.Context, instanceName string, retryConfig lakebasepsql.RetryConfig, extraArgs []string) error {
+// connectProvisioned connects to a Lakebase Provisioned database instance.
+func connectProvisioned(ctx context.Context, instanceName string, retryConfig lakebasepsql.RetryConfig, extraArgs []string) error {
 	w := cmdctx.WorkspaceClient(ctx)
 
 	db, err := lakebasev1.GetDatabaseInstance(ctx, w, instanceName)
@@ -165,31 +158,15 @@ func connectViaProvisioned(ctx context.Context, instanceName string, retryConfig
 		return err
 	}
 
+	cmdio.LogString(ctx, "Instance: "+db.Name+" (provisioned)")
 	return lakebasev1.Connect(ctx, w, db, retryConfig, extraArgs...)
 }
 
-// connectViaAutoscaling connects to a Lakebase Autoscaling endpoint using flags.
-func connectViaAutoscaling(ctx context.Context, projectID, branchID, endpointID string, retryConfig lakebasepsql.RetryConfig, extraArgs []string) error {
+// connectAutoscaling connects to a Lakebase Autoscaling endpoint.
+func connectAutoscaling(ctx context.Context, projectID, branchID, endpointID string, retryConfig lakebasepsql.RetryConfig, extraArgs []string) error {
 	w := cmdctx.WorkspaceClient(ctx)
 
-	endpoint, err := resolveEndpoint(ctx, w, projectID, branchID, endpointID)
-	if err != nil {
-		return err
-	}
-
-	return lakebasev2.Connect(ctx, w, endpoint, retryConfig, extraArgs...)
-}
-
-// connectViaAutoscalingPath connects to a Lakebase Autoscaling endpoint using a resource path.
-func connectViaAutoscalingPath(ctx context.Context, path string, retryConfig lakebasepsql.RetryConfig, extraArgs []string) error {
-	w := cmdctx.WorkspaceClient(ctx)
-
-	// Parse the resource path to extract project, branch, endpoint IDs
-	projectID, branchID, endpointID := parseResourcePath(path)
-	if projectID == "" {
-		return fmt.Errorf("invalid resource path: %s", path)
-	}
-
+	cmdio.LogString(ctx, "Project: "+projectID)
 	endpoint, err := resolveEndpoint(ctx, w, projectID, branchID, endpointID)
 	if err != nil {
 		return err
@@ -211,17 +188,17 @@ func resolveEndpoint(ctx context.Context, w *databricks.WorkspaceClient, project
 		}
 		branchID = lakebasev2.ExtractIDFromName(branch.Name, "branches")
 	}
-
-	branchName := fmt.Sprintf("%s/branches/%s", projectName, branchID)
+	cmdio.LogString(ctx, "Branch: "+branchID)
 
 	// If endpoint not specified, select one
 	if endpointID == "" {
-		endpoint, err := selectEndpoint(ctx, w, branchName)
+		var err error
+		endpointID, err = selectEndpointID(ctx, w, projectName+"/branches/"+branchID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to select endpoint: %w", err)
 		}
-		return endpoint, nil
 	}
+	cmdio.LogString(ctx, "Endpoint: "+endpointID)
 
 	return lakebasev2.GetEndpoint(ctx, w, projectID, branchID, endpointID)
 }
@@ -244,8 +221,6 @@ func selectBranch(ctx context.Context, w *databricks.WorkspaceClient, projectNam
 
 	// Auto-select if there's only one branch
 	if len(branches) == 1 {
-		branchID := lakebasev2.ExtractIDFromName(branches[0].Name, "branches")
-		cmdio.LogString(ctx, "Selected branch: "+branchID)
 		return &branches[0], nil
 	}
 
@@ -261,8 +236,6 @@ func selectBranch(ctx context.Context, w *databricks.WorkspaceClient, projectNam
 		return nil, err
 	}
 
-	cmdio.LogString(ctx, "Selected branch: "+selectedID)
-
 	for i := range branches {
 		if lakebasev2.ExtractIDFromName(branches[i].Name, "branches") == selectedID {
 			return &branches[i], nil
@@ -272,8 +245,9 @@ func selectBranch(ctx context.Context, w *databricks.WorkspaceClient, projectNam
 	return nil, errors.New("selected branch not found")
 }
 
-// selectEndpoint auto-selects if there's only one endpoint, otherwise prompts user to select.
-func selectEndpoint(ctx context.Context, w *databricks.WorkspaceClient, branchName string) (*postgres.Endpoint, error) {
+// selectEndpointID auto-selects if there's only one endpoint, otherwise prompts user to select.
+// Returns the endpoint ID (not the full endpoint object).
+func selectEndpointID(ctx context.Context, w *databricks.WorkspaceClient, branchName string) (string, error) {
 	sp := cmdio.NewSpinner(ctx)
 	sp.Update("Loading endpoints...")
 	endpoints, err := w.Postgres.ListEndpointsAll(ctx, postgres.ListEndpointsRequest{
@@ -281,18 +255,16 @@ func selectEndpoint(ctx context.Context, w *databricks.WorkspaceClient, branchNa
 	})
 	sp.Close()
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	if len(endpoints) == 0 {
-		return nil, errors.New("no endpoints found in branch")
+		return "", errors.New("no endpoints found in branch")
 	}
 
 	// Auto-select if there's only one endpoint
 	if len(endpoints) == 1 {
-		endpointID := lakebasev2.ExtractIDFromName(endpoints[0].Name, "endpoints")
-		cmdio.LogString(ctx, "Selected endpoint: "+endpointID)
-		return &endpoints[0], nil
+		return lakebasev2.ExtractIDFromName(endpoints[0].Name, "endpoints"), nil
 	}
 
 	// Multiple endpoints, prompt user to select
@@ -302,20 +274,7 @@ func selectEndpoint(ctx context.Context, w *databricks.WorkspaceClient, branchNa
 		items = append(items, cmdio.Tuple{Name: endpointID, Id: endpointID})
 	}
 
-	selectedID, err := cmdio.SelectOrdered(ctx, items, "Select endpoint")
-	if err != nil {
-		return nil, err
-	}
-
-	cmdio.LogString(ctx, "Selected endpoint: "+selectedID)
-
-	for i := range endpoints {
-		if lakebasev2.ExtractIDFromName(endpoints[i].Name, "endpoints") == selectedID {
-			return &endpoints[i], nil
-		}
-	}
-
-	return nil, errors.New("selected endpoint not found")
+	return cmdio.SelectOrdered(ctx, items, "Select endpoint")
 }
 
 // parseResourcePath extracts project, branch, and endpoint IDs from a resource path.
@@ -340,77 +299,72 @@ func parseResourcePath(input string) (project, branch, endpoint string) {
 	return project, branch, endpoint
 }
 
-// showCombinedSelectionAndConnect shows a combined dropdown of Lakebase databases.
-func showCombinedSelectionAndConnect(ctx context.Context, retryConfig lakebasepsql.RetryConfig, extraArgs []string) error {
+// showSelectionAndConnect shows a combined dropdown of Lakebase databases.
+func showSelectionAndConnect(ctx context.Context, retryConfig lakebasepsql.RetryConfig, extraArgs []string) error {
 	w := cmdctx.WorkspaceClient(ctx)
 
 	sp := cmdio.NewSpinner(ctx)
 	sp.Update("Loading Lakebase databases...")
 
 	// Fetch both in parallel
-	type instancesResult struct {
-		instances []database.DatabaseInstance
-		err       error
-	}
-	type projectsResult struct {
-		projects []postgres.Project
-		err      error
+	type result[T any] struct {
+		value []T
+		err   error
 	}
 
-	instancesCh := make(chan instancesResult, 1)
-	projectsCh := make(chan projectsResult, 1)
+	instancesCh := make(chan result[database.DatabaseInstance], 1)
+	projectsCh := make(chan result[postgres.Project], 1)
 
 	go func() {
 		instances, err := w.Database.ListDatabaseInstancesAll(ctx, database.ListDatabaseInstancesRequest{})
-		instancesCh <- instancesResult{instances, err}
+		instancesCh <- result[database.DatabaseInstance]{instances, err}
 	}()
 
 	go func() {
 		projects, err := w.Postgres.ListProjectsAll(ctx, postgres.ListProjectsRequest{})
-		projectsCh <- projectsResult{projects, err}
+		projectsCh <- result[postgres.Project]{projects, err}
 	}()
 
 	instResult := <-instancesCh
 	projResult := <-projectsCh
 	sp.Close()
 
-	// Build maps from IDs to full objects
-	instancesByID := make(map[string]database.DatabaseInstance)
-	projectsByID := make(map[string]postgres.Project)
-
-	// Build ordered selection list
-	var items []cmdio.Tuple
+	// Build selection list with connect functions
+	type selectable struct {
+		label   string
+		connect func() error
+	}
+	var options []selectable
 
 	if instResult.err == nil {
-		for _, inst := range instResult.instances {
-			id := "provisioned:" + inst.Name
-			instancesByID[id] = inst
-			label := inst.Name + " (provisioned)"
-			items = append(items, cmdio.Tuple{Name: label, Id: id})
+		for _, inst := range instResult.value {
+			options = append(options, selectable{
+				label: inst.Name + " (provisioned)",
+				connect: func() error {
+					cmdio.LogString(ctx, "Instance: "+inst.Name+" (provisioned)")
+					return lakebasev1.Connect(ctx, w, &inst, retryConfig, extraArgs...)
+				},
+			})
 		}
 	}
 
 	if projResult.err == nil {
-		for _, proj := range projResult.projects {
-			// Extract project ID from name like "projects/my-project"
-			projectID := proj.Name
-			if parts := strings.Split(proj.Name, "/"); len(parts) >= 2 {
-				projectID = parts[1]
-			}
-			id := "autoscaling:projects/" + projectID
-			projectsByID[id] = proj
-			// Use display name from API if available, otherwise use project ID
+		for _, proj := range projResult.value {
+			projectID := lakebasev2.ExtractIDFromName(proj.Name, "projects")
 			displayName := projectID
 			if proj.Status != nil && proj.Status.DisplayName != "" {
 				displayName = proj.Status.DisplayName
 			}
-			label := displayName + " (autoscaling)"
-			items = append(items, cmdio.Tuple{Name: label, Id: id})
+			options = append(options, selectable{
+				label: displayName + " (autoscaling)",
+				connect: func() error {
+					return connectAutoscaling(ctx, projectID, "", "", retryConfig, extraArgs)
+				},
+			})
 		}
 	}
 
-	if len(items) == 0 {
-		// Build error message
+	if len(options) == 0 {
 		var errMsgs []string
 		if instResult.err != nil {
 			errMsgs = append(errMsgs, fmt.Sprintf("failed to load database instances: %v", instResult.err))
@@ -424,30 +378,21 @@ func showCombinedSelectionAndConnect(ctx context.Context, retryConfig lakebaseps
 		return errors.New("could not find any Lakebase databases in the workspace")
 	}
 
+	// Build selection items
+	var items []cmdio.Tuple
+	for i, opt := range options {
+		items = append(items, cmdio.Tuple{Name: opt.label, Id: strconv.Itoa(i)})
+	}
+
 	selected, err := cmdio.SelectOrdered(ctx, items, "Select database to connect to")
 	if err != nil {
 		return err
 	}
 
-	if inst, ok := instancesByID[selected]; ok {
-		cmdio.LogString(ctx, "Selected Lakebase Provisioned instance: "+inst.Name)
-		return lakebasev1.Connect(ctx, w, &inst, retryConfig, extraArgs...)
+	idx, err := strconv.Atoi(selected)
+	if err != nil || idx < 0 || idx >= len(options) {
+		return fmt.Errorf("unexpected selection: %s", selected)
 	}
 
-	if proj, ok := projectsByID[selected]; ok {
-		// Extract project ID from name
-		projectID := proj.Name
-		if parts := strings.Split(proj.Name, "/"); len(parts) >= 2 {
-			projectID = parts[1]
-		}
-		// Use display name for logging
-		displayName := projectID
-		if proj.Status != nil && proj.Status.DisplayName != "" {
-			displayName = proj.Status.DisplayName
-		}
-		cmdio.LogString(ctx, "Selected Lakebase Autoscaling project: "+displayName)
-		return connectViaAutoscaling(ctx, projectID, "", "", retryConfig, extraArgs)
-	}
-
-	return fmt.Errorf("unexpected selection: %s", selected)
+	return options[idx].connect()
 }
