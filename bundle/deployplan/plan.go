@@ -121,8 +121,17 @@ func (c *Changes) HasChange(fieldPath string) bool {
 		return false
 	}
 
+	fieldPathNode, err := structpath.Parse(fieldPath)
+	if err != nil {
+		return false
+	}
+
 	for field := range *c {
-		if structpath.HasPrefix(field, fieldPath) {
+		fieldNode, err := structpath.Parse(field)
+		if err != nil {
+			continue
+		}
+		if fieldNode.HasPrefix(fieldPathNode) {
 			return true
 		}
 	}
