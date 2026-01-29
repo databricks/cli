@@ -476,10 +476,10 @@ func TestSDKTypesRoundTripWithPostgresBranchSpec(t *testing.T) {
 	// Import the postgres package types to test real SDK usage
 	// postgres.BranchSpec uses time.Time and duration.Duration
 	type BranchSpec struct {
-		ExpireTime       *sdktime.Time        `json:"expire_time,omitempty"`
-		SourceBranchTime *sdktime.Time        `json:"source_branch_time,omitempty"`
+		ExpireTime       *sdktime.Time         `json:"expire_time,omitempty"`
+		SourceBranchTime *sdktime.Time         `json:"source_branch_time,omitempty"`
 		Ttl              *sdkduration.Duration `json:"ttl,omitempty"`
-		IsProtected      bool                 `json:"is_protected,omitempty"`
+		IsProtected      bool                  `json:"is_protected,omitempty"`
 	}
 
 	// Create a BranchSpec with SDK native types
@@ -498,7 +498,7 @@ func TestSDKTypesRoundTripWithPostgresBranchSpec(t *testing.T) {
 	assert.Equal(t, "2024-12-31T23:59:59Z", dynValue.Get("expire_time").MustString())
 	assert.Equal(t, "2024-01-01T00:00:00Z", dynValue.Get("source_branch_time").MustString())
 	assert.Equal(t, "604800s", dynValue.Get("ttl").MustString())
-	assert.Equal(t, true, dynValue.Get("is_protected").MustBool())
+	assert.True(t, dynValue.Get("is_protected").MustBool())
 
 	// Convert back to typed
 	var roundtrip BranchSpec
@@ -519,8 +519,8 @@ func TestSDKTypesRoundTripWithUpdateRequest(t *testing.T) {
 	// Test with a struct similar to postgres.UpdateBranchRequest
 	// which uses fieldmask.FieldMask
 	type UpdateRequest struct {
-		Name       string                  `json:"name"`
-		UpdateMask sdkfieldmask.FieldMask  `json:"update_mask"`
+		Name       string                 `json:"name"`
+		UpdateMask sdkfieldmask.FieldMask `json:"update_mask"`
 	}
 
 	// Create an update request with FieldMask
@@ -550,9 +550,9 @@ func TestSDKTypesRoundTripWithUpdateRequest(t *testing.T) {
 func TestSDKTypesNormalizeWithPostgresBranchSpec(t *testing.T) {
 	// Test normalization with postgres.BranchSpec-like structure
 	type BranchSpec struct {
-		ExpireTime  *sdktime.Time        `json:"expire_time,omitempty"`
+		ExpireTime  *sdktime.Time         `json:"expire_time,omitempty"`
 		Ttl         *sdkduration.Duration `json:"ttl,omitempty"`
-		IsProtected bool                 `json:"is_protected,omitempty"`
+		IsProtected bool                  `json:"is_protected,omitempty"`
 	}
 
 	var typ BranchSpec
@@ -568,7 +568,7 @@ func TestSDKTypesNormalizeWithPostgresBranchSpec(t *testing.T) {
 	// Verify normalized values preserve string representations
 	assert.Equal(t, "2024-12-31T23:59:59Z", vout.Get("expire_time").MustString())
 	assert.Equal(t, "604800s", vout.Get("ttl").MustString())
-	assert.Equal(t, true, vout.Get("is_protected").MustBool())
+	assert.True(t, vout.Get("is_protected").MustBool())
 
 	// Convert to typed to verify it works
 	var out BranchSpec
@@ -578,5 +578,5 @@ func TestSDKTypesNormalizeWithPostgresBranchSpec(t *testing.T) {
 	require.NotNil(t, out.Ttl)
 	assert.Equal(t, time.Date(2024, 12, 31, 23, 59, 59, 0, time.UTC), out.ExpireTime.AsTime())
 	assert.Equal(t, 7*24*time.Hour, out.Ttl.AsDuration())
-	assert.Equal(t, true, out.IsProtected)
+	assert.True(t, out.IsProtected)
 }
