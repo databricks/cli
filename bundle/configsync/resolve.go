@@ -1,11 +1,13 @@
 package configsync
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structs/structpath"
 )
 
@@ -74,4 +76,42 @@ func resolveSelectors(pathStr string, b *bundle.Bundle) (string, error) {
 	}
 
 	return result.String(), nil
+}
+
+// GetResolvedFieldChanges builds a map from file paths to lists of field changes.
+// It resolves key-value selectors to numeric indices and maps each change to the file where it should be applied.
+func GetResolvedFieldChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes) (map[string]ResourceChanges, error) {
+	resolvedChangesByFile := make(map[string]ResourceChanges)
+
+	for resourceKey, resourceChanges := range configChanges {
+		for fieldPath, configChange := range resourceChanges {
+			fullPath := resourceKey + "." + fieldPath
+
+			resolvedPath, err := resolveSelectors(fullPath, b)
+			if err != nil {
+				return nil, fmt.Errorf("failed to resolve selectors in path %s: %w", fullPath, err)
+			}
+
+			loc := b.Config.GetLocation(resolvedPath)
+			filePath := loc.File
+
+			// If field has no location, find the parent resource's location to then add a new field
+			if filePath == "" {
+				resourceLocation := b.Config.GetLocation(resourceKey)
+				filePath = resourceLocation.File
+				if filePath == "" {
+					return nil, fmt.Errorf("failed to find location for resource %s for a field %s", resourceKey, fieldPath)
+				}
+
+				log.Debugf(ctx, "Field %s has no location, using resource location: %s", fullPath, filePath)
+			}
+
+			if _, ok := resolvedChangesByFile[filePath]; !ok {
+				resolvedChangesByFile[filePath] = make(ResourceChanges)
+			}
+			resolvedChangesByFile[filePath][resolvedPath] = configChange
+		}
+	}
+
+	return resolvedChangesByFile, nil
 }

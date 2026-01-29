@@ -16,15 +16,9 @@ import (
 	"github.com/palantir/pkg/yamlpatch/yamlpatch"
 )
 
-type resolvedChanges map[string]*ConfigChangeDesc
-
 // ApplyChangesToYAML generates YAML files for the given changes.
-func ApplyChangesToYAML(ctx context.Context, b *bundle.Bundle, configChanges map[string]map[string]*ConfigChangeDesc) ([]FileChange, error) {
-	changesByFile, err := getResolvedFieldChanges(ctx, b, configChanges)
-	if err != nil {
-		return nil, err
-	}
-
+// The changes parameter should be a map from file paths to resource changes (already resolved).
+func ApplyChangesToYAML(ctx context.Context, b *bundle.Bundle, changesByFile map[string]ResourceChanges) ([]FileChange, error) {
 	var result []FileChange
 	targetName := b.Config.Bundle.Target
 
@@ -57,7 +51,7 @@ type parentNode struct {
 }
 
 // applyChanges applies all field changes to a YAML
-func applyChanges(ctx context.Context, filePath string, changes resolvedChanges, targetName string) (string, error) {
+func applyChanges(ctx context.Context, filePath string, changes ResourceChanges, targetName string) (string, error) {
 	content, err := os.ReadFile(filePath)
 	if err != nil {
 		return "", fmt.Errorf("failed to read file %s: %w", filePath, err)
@@ -170,43 +164,6 @@ func applyChanges(ctx context.Context, filePath string, changes resolvedChanges,
 	}
 
 	return string(content), nil
-}
-
-// getResolvedFieldChanges builds a map from file paths to lists of field changes
-func getResolvedFieldChanges(ctx context.Context, b *bundle.Bundle, configChanges map[string]map[string]*ConfigChangeDesc) (map[string]resolvedChanges, error) {
-	resolvedChangesByFile := make(map[string]resolvedChanges)
-
-	for resourceKey, resourceChanges := range configChanges {
-		for fieldPath, configChange := range resourceChanges {
-			fullPath := resourceKey + "." + fieldPath
-
-			resolvedPath, err := resolveSelectors(fullPath, b)
-			if err != nil {
-				return nil, fmt.Errorf("failed to resolve selectors in path %s: %w", fullPath, err)
-			}
-
-			loc := b.Config.GetLocation(resolvedPath)
-			filePath := loc.File
-
-			// If field has no location, find the parent resource's location to then add a new field
-			if filePath == "" {
-				resourceLocation := b.Config.GetLocation(resourceKey)
-				filePath = resourceLocation.File
-				if filePath == "" {
-					return nil, fmt.Errorf("failed to find location for resource %s for a field %s", resourceKey, fieldPath)
-				}
-
-				log.Debugf(ctx, "Field %s has no location, using resource location: %s", fullPath, filePath)
-			}
-
-			if _, ok := resolvedChangesByFile[filePath]; !ok {
-				resolvedChangesByFile[filePath] = make(resolvedChanges)
-			}
-			resolvedChangesByFile[filePath][resolvedPath] = configChange
-		}
-	}
-
-	return resolvedChangesByFile, nil
 }
 
 // isParentPathError checks if error indicates missing parent path.

@@ -8,20 +8,12 @@ import (
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/mutator"
-	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/logdiag"
 	"github.com/palantir/pkg/yamlpatch/yamlpatch"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
 )
-
-// Helper function to convert test ChangeDesc to ConfigChangeDesc
-func convertToConfigChanges(t *testing.T, planChanges map[string]deployplan.Changes) map[string]map[string]*ConfigChangeDesc {
-	result, err := toConfigChanges(planChanges)
-	require.NoError(t, err)
-	return result
-}
 
 func TestApplyChangesToYAML_SimpleFieldChange(t *testing.T) {
 	ctx := logdiag.InitContext(context.Background())
@@ -48,17 +40,19 @@ func TestApplyChangesToYAML_SimpleFieldChange(t *testing.T) {
 
 	mutator.DefaultMutators(ctx, b)
 
-	changes := map[string]deployplan.Changes{
-		"resources.jobs.test_job": {
-			"timeout_seconds": &deployplan.ChangeDesc{
-				Action: deployplan.Update,
-				Old:    3600,
-				Remote: 7200,
+	changes := Changes{
+		"resources.jobs.test_job": ResourceChanges{
+			"timeout_seconds": &ConfigChangeDesc{
+				Operation: OperationReplace,
+				Value:     7200,
 			},
 		},
 	}
 
-	fileChanges, err := ApplyChangesToYAML(ctx, b, convertToConfigChanges(t, changes))
+	changesByFile, err := GetResolvedFieldChanges(ctx, b, changes)
+	require.NoError(t, err)
+
+	fileChanges, err := ApplyChangesToYAML(ctx, b, changesByFile)
 	require.NoError(t, err)
 	require.Len(t, fileChanges, 1)
 
@@ -93,17 +87,19 @@ func TestApplyChangesToYAML_NestedFieldChange(t *testing.T) {
 
 	mutator.DefaultMutators(ctx, b)
 
-	changes := map[string]deployplan.Changes{
-		"resources.jobs.test_job": {
-			"tasks[0].timeout_seconds": &deployplan.ChangeDesc{
-				Action: deployplan.Update,
-				Old:    1800,
-				Remote: 3600,
+	changes := Changes{
+		"resources.jobs.test_job": ResourceChanges{
+			"tasks[0].timeout_seconds": &ConfigChangeDesc{
+				Operation: OperationReplace,
+				Value:     3600,
 			},
 		},
 	}
 
-	fileChanges, err := ApplyChangesToYAML(ctx, b, convertToConfigChanges(t, changes))
+	changesByFile, err := GetResolvedFieldChanges(ctx, b, changes)
+	require.NoError(t, err)
+
+	fileChanges, err := ApplyChangesToYAML(ctx, b, changesByFile)
 	require.NoError(t, err)
 	require.Len(t, fileChanges, 1)
 
@@ -151,17 +147,19 @@ func TestApplyChangesToYAML_ArrayKeyValueAccess(t *testing.T) {
 
 	mutator.DefaultMutators(ctx, b)
 
-	changes := map[string]deployplan.Changes{
-		"resources.jobs.test_job": {
-			"tasks[task_key='main_task'].timeout_seconds": &deployplan.ChangeDesc{
-				Action: deployplan.Update,
-				Old:    1800,
-				Remote: 3600,
+	changes := Changes{
+		"resources.jobs.test_job": ResourceChanges{
+			"tasks[task_key='main_task'].timeout_seconds": &ConfigChangeDesc{
+				Operation: OperationReplace,
+				Value:     3600,
 			},
 		},
 	}
 
-	fileChanges, err := ApplyChangesToYAML(ctx, b, convertToConfigChanges(t, changes))
+	changesByFile, err := GetResolvedFieldChanges(ctx, b, changes)
+	require.NoError(t, err)
+
+	fileChanges, err := ApplyChangesToYAML(ctx, b, changesByFile)
 	require.NoError(t, err)
 	require.Len(t, fileChanges, 1)
 
@@ -207,24 +205,25 @@ func TestApplyChangesToYAML_MultipleResourcesSameFile(t *testing.T) {
 
 	mutator.DefaultMutators(ctx, b)
 
-	changes := map[string]deployplan.Changes{
-		"resources.jobs.job1": {
-			"timeout_seconds": &deployplan.ChangeDesc{
-				Action: deployplan.Update,
-				Old:    3600,
-				Remote: 7200,
+	changes := Changes{
+		"resources.jobs.job1": ResourceChanges{
+			"timeout_seconds": &ConfigChangeDesc{
+				Operation: OperationReplace,
+				Value:     7200,
 			},
 		},
-		"resources.jobs.job2": {
-			"timeout_seconds": &deployplan.ChangeDesc{
-				Action: deployplan.Update,
-				Old:    1800,
-				Remote: 3600,
+		"resources.jobs.job2": ResourceChanges{
+			"timeout_seconds": &ConfigChangeDesc{
+				Operation: OperationReplace,
+				Value:     3600,
 			},
 		},
 	}
 
-	fileChanges, err := ApplyChangesToYAML(ctx, b, convertToConfigChanges(t, changes))
+	changesByFile, err := GetResolvedFieldChanges(ctx, b, changes)
+	require.NoError(t, err)
+
+	fileChanges, err := ApplyChangesToYAML(ctx, b, changesByFile)
 	require.NoError(t, err)
 
 	require.Len(t, fileChanges, 1)
@@ -283,17 +282,19 @@ include:
 
 	mutator.DefaultMutators(ctx, b)
 
-	changes := map[string]deployplan.Changes{
-		"resources.jobs.dev_job": {
-			"timeout_seconds": &deployplan.ChangeDesc{
-				Action: deployplan.Update,
-				Old:    1800,
-				Remote: 3600,
+	changes := Changes{
+		"resources.jobs.dev_job": ResourceChanges{
+			"timeout_seconds": &ConfigChangeDesc{
+				Operation: OperationReplace,
+				Value:     3600,
 			},
 		},
 	}
 
-	fileChanges, err := ApplyChangesToYAML(ctx, b, convertToConfigChanges(t, changes))
+	changesByFile, err := GetResolvedFieldChanges(ctx, b, changes)
+	require.NoError(t, err)
+
+	fileChanges, err := ApplyChangesToYAML(ctx, b, changesByFile)
 	require.NoError(t, err)
 	require.Len(t, fileChanges, 1)
 
@@ -331,17 +332,19 @@ targets:
 	diags := bundle.Apply(ctx, b, mutator.SelectTarget("dev"))
 	require.NoError(t, diags.Error())
 
-	changes := map[string]deployplan.Changes{
-		"resources.jobs.dev_job": {
-			"timeout_seconds": &deployplan.ChangeDesc{
-				Action: deployplan.Update,
-				Old:    1800,
-				Remote: 3600,
+	changes := Changes{
+		"resources.jobs.dev_job": ResourceChanges{
+			"timeout_seconds": &ConfigChangeDesc{
+				Operation: OperationReplace,
+				Value:     3600,
 			},
 		},
 	}
 
-	fileChanges, err := ApplyChangesToYAML(ctx, b, convertToConfigChanges(t, changes))
+	changesByFile, err := GetResolvedFieldChanges(ctx, b, changes)
+	require.NoError(t, err)
+
+	fileChanges, err := ApplyChangesToYAML(ctx, b, changesByFile)
 	require.NoError(t, err)
 	require.Len(t, fileChanges, 1)
 
@@ -373,27 +376,22 @@ func TestApplyChangesToYAML_WithStructValues(t *testing.T) {
 
 	mutator.DefaultMutators(ctx, b)
 
-	type EmailNotifications struct {
-		OnSuccess []string `json:"on_success,omitempty" yaml:"on_success,omitempty"`
-		OnFailure []string `json:"on_failure,omitempty" yaml:"on_failure,omitempty"`
-	}
-
-	changes := map[string]deployplan.Changes{
-		"resources.jobs.test_job": {
-			"email_notifications": &deployplan.ChangeDesc{
-				Action: deployplan.Update,
-				Old: &EmailNotifications{
-					OnSuccess: []string{"old@example.com"},
-				},
-				Remote: &EmailNotifications{
-					OnSuccess: []string{"success@example.com"},
-					OnFailure: []string{"failure@example.com"},
+	changes := Changes{
+		"resources.jobs.test_job": ResourceChanges{
+			"email_notifications": &ConfigChangeDesc{
+				Operation: OperationReplace,
+				Value: map[string]any{
+					"on_success": []any{"success@example.com"},
+					"on_failure": []any{"failure@example.com"},
 				},
 			},
 		},
 	}
 
-	fileChanges, err := ApplyChangesToYAML(ctx, b, convertToConfigChanges(t, changes))
+	changesByFile, err := GetResolvedFieldChanges(ctx, b, changes)
+	require.NoError(t, err)
+
+	fileChanges, err := ApplyChangesToYAML(ctx, b, changesByFile)
 	require.NoError(t, err)
 	require.Len(t, fileChanges, 1)
 
@@ -402,6 +400,11 @@ func TestApplyChangesToYAML_WithStructValues(t *testing.T) {
 	assert.Contains(t, fileChanges[0].OriginalContent, "old@example.com")
 	assert.Contains(t, fileChanges[0].ModifiedContent, "success@example.com")
 	assert.Contains(t, fileChanges[0].ModifiedContent, "failure@example.com")
+
+	type EmailNotifications struct {
+		OnSuccess []string `yaml:"on_success,omitempty"`
+		OnFailure []string `yaml:"on_failure,omitempty"`
+	}
 
 	type JobsConfig struct {
 		Name               string              `yaml:"name"`
@@ -455,28 +458,29 @@ resources:
 
 	mutator.DefaultMutators(ctx, b)
 
-	changes := map[string]deployplan.Changes{
-		"resources.jobs.test_job": {
-			"timeout_seconds": &deployplan.ChangeDesc{
-				Action: deployplan.Update,
-				Old:    3600,
-				Remote: 7200,
+	changes := Changes{
+		"resources.jobs.test_job": ResourceChanges{
+			"timeout_seconds": &ConfigChangeDesc{
+				Operation: OperationReplace,
+				Value:     7200,
 			},
-			"name": &deployplan.ChangeDesc{
-				Action: deployplan.Update,
-				Old:    "Test Job",
-				Remote: "New Test Job",
+			"name": &ConfigChangeDesc{
+				Operation: OperationReplace,
+				Value:     "New Test Job",
 			},
-			"tags": &deployplan.ChangeDesc{
-				Action: deployplan.Create,
-				Remote: map[string]string{
+			"tags": &ConfigChangeDesc{
+				Operation: OperationAdd,
+				Value: map[string]any{
 					"test": "value",
 				},
 			},
 		},
 	}
 
-	fileChanges, err := ApplyChangesToYAML(ctx, b, convertToConfigChanges(t, changes))
+	changesByFile, err := GetResolvedFieldChanges(ctx, b, changes)
+	require.NoError(t, err)
+
+	fileChanges, err := ApplyChangesToYAML(ctx, b, changesByFile)
 	require.NoError(t, err)
 	require.Len(t, fileChanges, 1)
 
@@ -520,17 +524,19 @@ func TestApplyChangesToYAML_RemoveSimpleField(t *testing.T) {
 
 	mutator.DefaultMutators(ctx, b)
 
-	changes := map[string]deployplan.Changes{
-		"resources.jobs.test_job": {
-			"timeout_seconds": &deployplan.ChangeDesc{
-				Action: deployplan.Update,
-				Old:    3600,
-				Remote: nil,
+	changes := Changes{
+		"resources.jobs.test_job": ResourceChanges{
+			"timeout_seconds": &ConfigChangeDesc{
+				Operation: OperationRemove,
+				Value:     nil,
 			},
 		},
 	}
 
-	fileChanges, err := ApplyChangesToYAML(ctx, b, convertToConfigChanges(t, changes))
+	changesByFile, err := GetResolvedFieldChanges(ctx, b, changes)
+	require.NoError(t, err)
+
+	fileChanges, err := ApplyChangesToYAML(ctx, b, changesByFile)
 	require.NoError(t, err)
 	require.Len(t, fileChanges, 1)
 
@@ -576,17 +582,19 @@ func TestApplyChangesToYAML_RemoveNestedField(t *testing.T) {
 
 	mutator.DefaultMutators(ctx, b)
 
-	changes := map[string]deployplan.Changes{
-		"resources.jobs.test_job": {
-			"tasks[0].timeout_seconds": &deployplan.ChangeDesc{
-				Action: deployplan.Update,
-				Old:    1800,
-				Remote: nil,
+	changes := Changes{
+		"resources.jobs.test_job": ResourceChanges{
+			"tasks[0].timeout_seconds": &ConfigChangeDesc{
+				Operation: OperationRemove,
+				Value:     nil,
 			},
 		},
 	}
 
-	fileChanges, err := ApplyChangesToYAML(ctx, b, convertToConfigChanges(t, changes))
+	changesByFile, err := GetResolvedFieldChanges(ctx, b, changes)
+	require.NoError(t, err)
+
+	fileChanges, err := ApplyChangesToYAML(ctx, b, changesByFile)
 	require.NoError(t, err)
 	require.Len(t, fileChanges, 1)
 
@@ -636,17 +644,19 @@ func TestApplyChangesToYAML_RemoveFieldWithKeyValueAccess(t *testing.T) {
 
 	mutator.DefaultMutators(ctx, b)
 
-	changes := map[string]deployplan.Changes{
-		"resources.jobs.test_job": {
-			"tasks[task_key='main_task'].timeout_seconds": &deployplan.ChangeDesc{
-				Action: deployplan.Update,
-				Old:    1800,
-				Remote: nil,
+	changes := Changes{
+		"resources.jobs.test_job": ResourceChanges{
+			"tasks[task_key='main_task'].timeout_seconds": &ConfigChangeDesc{
+				Operation: OperationRemove,
+				Value:     nil,
 			},
 		},
 	}
 
-	fileChanges, err := ApplyChangesToYAML(ctx, b, convertToConfigChanges(t, changes))
+	changesByFile, err := GetResolvedFieldChanges(ctx, b, changes)
+	require.NoError(t, err)
+
+	fileChanges, err := ApplyChangesToYAML(ctx, b, changesByFile)
 	require.NoError(t, err)
 	require.Len(t, fileChanges, 1)
 
@@ -695,20 +705,19 @@ func TestApplyChangesToYAML_RemoveStructField(t *testing.T) {
 
 	mutator.DefaultMutators(ctx, b)
 
-	changes := map[string]deployplan.Changes{
-		"resources.jobs.test_job": {
-			"email_notifications": &deployplan.ChangeDesc{
-				Action: deployplan.Update,
-				Old: map[string]any{
-					"on_success": []string{"success@example.com"},
-					"on_failure": []string{"failure@example.com"},
-				},
-				Remote: nil,
+	changes := Changes{
+		"resources.jobs.test_job": ResourceChanges{
+			"email_notifications": &ConfigChangeDesc{
+				Operation: OperationRemove,
+				Value:     nil,
 			},
 		},
 	}
 
-	fileChanges, err := ApplyChangesToYAML(ctx, b, convertToConfigChanges(t, changes))
+	changesByFile, err := GetResolvedFieldChanges(ctx, b, changes)
+	require.NoError(t, err)
+
+	fileChanges, err := ApplyChangesToYAML(ctx, b, changesByFile)
 	require.NoError(t, err)
 	require.Len(t, fileChanges, 1)
 
@@ -759,17 +768,19 @@ targets:
 	diags := bundle.Apply(ctx, b, mutator.SelectTarget("dev"))
 	require.NoError(t, diags.Error())
 
-	changes := map[string]deployplan.Changes{
-		"resources.jobs.dev_job": {
-			"timeout_seconds": &deployplan.ChangeDesc{
-				Action: deployplan.Update,
-				Old:    1800,
-				Remote: nil,
+	changes := Changes{
+		"resources.jobs.dev_job": ResourceChanges{
+			"timeout_seconds": &ConfigChangeDesc{
+				Operation: OperationRemove,
+				Value:     nil,
 			},
 		},
 	}
 
-	fileChanges, err := ApplyChangesToYAML(ctx, b, convertToConfigChanges(t, changes))
+	changesByFile, err := GetResolvedFieldChanges(ctx, b, changes)
+	require.NoError(t, err)
+
+	fileChanges, err := ApplyChangesToYAML(ctx, b, changesByFile)
 	require.NoError(t, err)
 	require.Len(t, fileChanges, 1)
 
@@ -816,24 +827,25 @@ func TestApplyChangesToYAML_MultipleRemovalsInSameFile(t *testing.T) {
 
 	mutator.DefaultMutators(ctx, b)
 
-	changes := map[string]deployplan.Changes{
-		"resources.jobs.job1": {
-			"timeout_seconds": &deployplan.ChangeDesc{
-				Action: deployplan.Update,
-				Old:    3600,
-				Remote: nil,
+	changes := Changes{
+		"resources.jobs.job1": ResourceChanges{
+			"timeout_seconds": &ConfigChangeDesc{
+				Operation: OperationRemove,
+				Value:     nil,
 			},
 		},
-		"resources.jobs.job2": {
-			"timeout_seconds": &deployplan.ChangeDesc{
-				Action: deployplan.Update,
-				Old:    1800,
-				Remote: nil,
+		"resources.jobs.job2": ResourceChanges{
+			"timeout_seconds": &ConfigChangeDesc{
+				Operation: OperationRemove,
+				Value:     nil,
 			},
 		},
 	}
 
-	fileChanges, err := ApplyChangesToYAML(ctx, b, convertToConfigChanges(t, changes))
+	changesByFile, err := GetResolvedFieldChanges(ctx, b, changes)
+	require.NoError(t, err)
+
+	fileChanges, err := ApplyChangesToYAML(ctx, b, changesByFile)
 	require.NoError(t, err)
 	require.Len(t, fileChanges, 1)
 
@@ -864,12 +876,6 @@ func TestApplyChangesToYAML_WithSDKStructValues(t *testing.T) {
 	ctx := logdiag.InitContext(context.Background())
 	tmpDir := t.TempDir()
 
-	type MockSDKStruct struct {
-		Name            string   `json:"name,omitempty"`
-		Enabled         bool     `json:"enabled,omitempty"`
-		ForceSendFields []string `json:"-"`
-	}
-
 	yamlContent := `resources:
   jobs:
     test_job:
@@ -886,20 +892,22 @@ func TestApplyChangesToYAML_WithSDKStructValues(t *testing.T) {
 
 	mutator.DefaultMutators(ctx, b)
 
-	changes := map[string]deployplan.Changes{
-		"resources.jobs.test_job": {
-			"settings": &deployplan.ChangeDesc{
-				Action: deployplan.Update,
-				Remote: &MockSDKStruct{
-					Name:            "updated_name",
-					Enabled:         false,
-					ForceSendFields: []string{"Enabled"}, // Force send even though false
+	changes := Changes{
+		"resources.jobs.test_job": ResourceChanges{
+			"settings": &ConfigChangeDesc{
+				Operation: OperationAdd,
+				Value: map[string]any{
+					"name":    "updated_name",
+					"enabled": false,
 				},
 			},
 		},
 	}
 
-	files, err := ApplyChangesToYAML(ctx, b, convertToConfigChanges(t, changes))
+	changesByFile, err := GetResolvedFieldChanges(ctx, b, changes)
+	require.NoError(t, err)
+
+	files, err := ApplyChangesToYAML(ctx, b, changesByFile)
 	require.NoError(t, err)
 	require.Len(t, files, 1)
 
