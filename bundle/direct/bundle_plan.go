@@ -419,14 +419,24 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 	return nil
 }
 
+func matchesAnyPrefix(path *structpath.PathNode, prefixes []*structpath.PathNode) bool {
+	for _, p := range prefixes {
+		if path.HasPrefix(p) {
+			return true
+		}
+	}
+	return false
+}
+
 func shouldSkip(cfg *dresources.ResourceLifecycleConfig, path *structpath.PathNode, ch *deployplan.ChangeDesc) bool {
 	if cfg == nil {
 		return false
 	}
-	for _, p := range cfg.IgnoreRemoteChanges {
-		if path.HasPrefix(p) && structdiff.IsEqual(ch.Old, ch.New) {
-			return true
-		}
+	if matchesAnyPrefix(path, cfg.IgnoreLocalChanges) && !structdiff.IsEqual(ch.Old, ch.New) {
+		return true
+	}
+	if matchesAnyPrefix(path, cfg.IgnoreRemoteChanges) && structdiff.IsEqual(ch.Old, ch.New) {
+		return true
 	}
 	return false
 }
@@ -435,15 +445,11 @@ func shouldUpdateOrRecreate(cfg *dresources.ResourceLifecycleConfig, path *struc
 	if cfg == nil {
 		return deployplan.Undefined
 	}
-	for _, p := range cfg.RecreateOnChanges {
-		if path.HasPrefix(p) {
-			return deployplan.Recreate
-		}
+	if matchesAnyPrefix(path, cfg.RecreateOnChanges) {
+		return deployplan.Recreate
 	}
-	for _, p := range cfg.UpdateIDOnChanges {
-		if path.HasPrefix(p) {
-			return deployplan.UpdateWithID
-		}
+	if matchesAnyPrefix(path, cfg.UpdateIDOnChanges) {
+		return deployplan.UpdateWithID
 	}
 	return deployplan.Undefined
 }
