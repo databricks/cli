@@ -175,137 +175,189 @@ func TestSDKNativeTypesRoundtrip(t *testing.T) {
 	}
 }
 
+// Edge case tests
+
+func TestSDKNativeTypesNilValues(t *testing.T) {
+	tests := []struct {
+		name     string
+		testFunc func(t *testing.T)
+	}{
+		{
+			name: "duration_fromtyped",
+			testFunc: func(t *testing.T) {
+				var src *sdkduration.Duration
+				nv, err := FromTyped(src, dyn.NilValue)
+				require.NoError(t, err)
+				assert.Equal(t, dyn.NilValue, nv)
+			},
+		},
+		{
+			name: "duration_normalize",
+			testFunc: func(t *testing.T) {
+				var typ *sdkduration.Duration
+				vin := dyn.NilValue
+				vout, diags := Normalize(typ, vin)
+				assert.Len(t, diags, 1)
+				assert.Equal(t, diag.Diagnostic{
+					Severity:  diag.Warning,
+					Summary:   `expected a string value, found null`,
+					Locations: []dyn.Location{vin.Location()},
+					Paths:     []dyn.Path{dyn.EmptyPath},
+				}, diags[0])
+				assert.Equal(t, dyn.InvalidValue, vout)
+			},
+		},
+		{
+			name: "time_fromtyped",
+			testFunc: func(t *testing.T) {
+				var src *sdktime.Time
+				nv, err := FromTyped(src, dyn.NilValue)
+				require.NoError(t, err)
+				assert.Equal(t, dyn.NilValue, nv)
+			},
+		},
+		{
+			name: "time_normalize",
+			testFunc: func(t *testing.T) {
+				var typ *sdktime.Time
+				vin := dyn.NilValue
+				vout, diags := Normalize(typ, vin)
+				assert.Len(t, diags, 1)
+				assert.Equal(t, diag.Diagnostic{
+					Severity:  diag.Warning,
+					Summary:   `expected a string value, found null`,
+					Locations: []dyn.Location{vin.Location()},
+					Paths:     []dyn.Path{dyn.EmptyPath},
+				}, diags[0])
+				assert.Equal(t, dyn.InvalidValue, vout)
+			},
+		},
+		{
+			name: "fieldmask_fromtyped",
+			testFunc: func(t *testing.T) {
+				var src *sdkfieldmask.FieldMask
+				nv, err := FromTyped(src, dyn.NilValue)
+				require.NoError(t, err)
+				assert.Equal(t, dyn.NilValue, nv)
+			},
+		},
+		{
+			name: "fieldmask_normalize",
+			testFunc: func(t *testing.T) {
+				var typ *sdkfieldmask.FieldMask
+				vin := dyn.NilValue
+				vout, diags := Normalize(typ, vin)
+				assert.Len(t, diags, 1)
+				assert.Equal(t, diag.Diagnostic{
+					Severity:  diag.Warning,
+					Summary:   `expected a string value, found null`,
+					Locations: []dyn.Location{vin.Location()},
+					Paths:     []dyn.Path{dyn.EmptyPath},
+				}, diags[0])
+				assert.Equal(t, dyn.InvalidValue, vout)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.testFunc(t)
+		})
+	}
+}
+
+func TestSDKNativeTypesErrors(t *testing.T) {
+	tests := []struct {
+		name          string
+		input         dyn.Value
+		expectedError string
+		testFunc      func(t *testing.T, input dyn.Value, expectedError string)
+	}{
+		{
+			name:          "duration_wrong_type",
+			input:         dyn.V(map[string]dyn.Value{"foo": dyn.V("bar")}),
+			expectedError: "expected a string",
+			testFunc: func(t *testing.T, input dyn.Value, expectedError string) {
+				var out sdkduration.Duration
+				err := ToTyped(&out, input)
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), expectedError)
+			},
+		},
+		{
+			name:          "duration_invalid_format",
+			input:         dyn.V("7d"),
+			expectedError: "invalid google.protobuf.Duration value",
+			testFunc: func(t *testing.T, input dyn.Value, expectedError string) {
+				var out sdkduration.Duration
+				err := ToTyped(&out, input)
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), expectedError)
+			},
+		},
+		{
+			name:          "time_wrong_type",
+			input:         dyn.V(map[string]dyn.Value{"foo": dyn.V("bar")}),
+			expectedError: "expected a string",
+			testFunc: func(t *testing.T, input dyn.Value, expectedError string) {
+				var out sdktime.Time
+				err := ToTyped(&out, input)
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), expectedError)
+			},
+		},
+		{
+			name:          "fieldmask_wrong_type",
+			input:         dyn.V(map[string]dyn.Value{"foo": dyn.V("bar")}),
+			expectedError: "expected a string",
+			testFunc: func(t *testing.T, input dyn.Value, expectedError string) {
+				var out sdkfieldmask.FieldMask
+				err := ToTyped(&out, input)
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), expectedError)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.testFunc(t, tt.input, tt.expectedError)
+		})
+	}
+}
+
+func TestSDKNativeTypesSpecialCases(t *testing.T) {
+	t.Run("duration_zero", func(t *testing.T) {
+		var src sdkduration.Duration
+		nv, err := FromTyped(src, dyn.NilValue)
+		require.NoError(t, err)
+		assert.Equal(t, dyn.NilValue, nv)
+	})
+
+	t.Run("fieldmask_empty_fromtyped", func(t *testing.T) {
+		src := sdkfieldmask.New([]string{})
+		nv, err := FromTyped(src, dyn.NilValue)
+		require.NoError(t, err)
+		// Empty field mask marshals to empty string
+		assert.Equal(t, dyn.V(""), nv)
+	})
+
+	t.Run("fieldmask_empty_totyped", func(t *testing.T) {
+		var out sdkfieldmask.FieldMask
+		v := dyn.V("")
+
+		err := ToTyped(&out, v)
+		require.NoError(t, err)
+		assert.Empty(t, out.Paths)
+	})
+}
+
+
 // Duration tests
-
-func TestFromTypedDurationNil(t *testing.T) {
-	var src *sdkduration.Duration
-	nv, err := FromTyped(src, dyn.NilValue)
-	require.NoError(t, err)
-	assert.Equal(t, dyn.NilValue, nv)
-}
-
-func TestFromTypedDurationZero(t *testing.T) {
-	var src sdkduration.Duration
-	nv, err := FromTyped(src, dyn.NilValue)
-	require.NoError(t, err)
-	// Zero value duration should return nil when not forced
-	assert.Equal(t, dyn.NilValue, nv)
-}
-
-func TestNormalizeDurationNil(t *testing.T) {
-	var typ *sdkduration.Duration
-	vin := dyn.NilValue
-	vout, err := Normalize(typ, vin)
-	assert.Len(t, err, 1)
-	assert.Equal(t, diag.Diagnostic{
-		Severity:  diag.Warning,
-		Summary:   `expected a string value, found null`,
-		Locations: []dyn.Location{vin.Location()},
-		Paths:     []dyn.Path{dyn.EmptyPath},
-	}, err[0])
-	assert.Equal(t, dyn.InvalidValue, vout)
-}
-
-func TestToTypedDurationError(t *testing.T) {
-	var out sdkduration.Duration
-	v := dyn.V(map[string]dyn.Value{"foo": dyn.V("bar")})
-
-	err := ToTyped(&out, v)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "expected a string")
-}
-
-func TestToTypedDurationInvalidFormat(t *testing.T) {
-	var out sdkduration.Duration
-	// The SDK's duration.Duration uses protobuf format which only supports
-	// seconds notation (e.g., "604800s"), not human-readable formats like "7d".
-	v := dyn.V("7d")
-
-	err := ToTyped(&out, v)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "invalid google.protobuf.Duration value")
-}
 
 // Time tests
 
-func TestFromTypedSDKTimeNil(t *testing.T) {
-	var src *sdktime.Time
-	nv, err := FromTyped(src, dyn.NilValue)
-	require.NoError(t, err)
-	assert.Equal(t, dyn.NilValue, nv)
-}
-
-func TestNormalizeSDKTimeNil(t *testing.T) {
-	var typ *sdktime.Time
-	vin := dyn.NilValue
-	vout, err := Normalize(typ, vin)
-	assert.Len(t, err, 1)
-	assert.Equal(t, diag.Diagnostic{
-		Severity:  diag.Warning,
-		Summary:   `expected a string value, found null`,
-		Locations: []dyn.Location{vin.Location()},
-		Paths:     []dyn.Path{dyn.EmptyPath},
-	}, err[0])
-	assert.Equal(t, dyn.InvalidValue, vout)
-}
-
-func TestToTypedSDKTimeError(t *testing.T) {
-	var out sdktime.Time
-	v := dyn.V(map[string]dyn.Value{"foo": dyn.V("bar")})
-
-	err := ToTyped(&out, v)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "expected a string")
-}
-
 // FieldMask tests
-
-func TestFromTypedFieldMaskNil(t *testing.T) {
-	var src *sdkfieldmask.FieldMask
-	nv, err := FromTyped(src, dyn.NilValue)
-	require.NoError(t, err)
-	assert.Equal(t, dyn.NilValue, nv)
-}
-
-func TestFromTypedFieldMaskEmpty(t *testing.T) {
-	src := sdkfieldmask.New([]string{})
-	nv, err := FromTyped(src, dyn.NilValue)
-	require.NoError(t, err)
-	// Empty field mask marshals to empty string
-	assert.Equal(t, dyn.V(""), nv)
-}
-
-func TestNormalizeFieldMaskNil(t *testing.T) {
-	var typ *sdkfieldmask.FieldMask
-	vin := dyn.NilValue
-	vout, err := Normalize(typ, vin)
-	assert.Len(t, err, 1)
-	assert.Equal(t, diag.Diagnostic{
-		Severity:  diag.Warning,
-		Summary:   `expected a string value, found null`,
-		Locations: []dyn.Location{vin.Location()},
-		Paths:     []dyn.Path{dyn.EmptyPath},
-	}, err[0])
-	assert.Equal(t, dyn.InvalidValue, vout)
-}
-
-func TestToTypedFieldMaskError(t *testing.T) {
-	var out sdkfieldmask.FieldMask
-	v := dyn.V(map[string]dyn.Value{"foo": dyn.V("bar")})
-
-	err := ToTyped(&out, v)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "expected a string")
-}
-
-func TestToTypedFieldMaskEmpty(t *testing.T) {
-	var out sdkfieldmask.FieldMask
-	v := dyn.V("")
-
-	err := ToTyped(&out, v)
-	require.NoError(t, err)
-	assert.Equal(t, []string{}, out.Paths)
-}
 
 // End-to-end tests using actual SDK types
 
