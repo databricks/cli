@@ -58,7 +58,7 @@ func selectInstanceID(ctx context.Context, w *databricks.WorkspaceClient) (strin
 	}
 
 	if len(instances) == 0 {
-		return "", errors.New("no database instances found in workspace")
+		return "", errors.New("no Lakebase Provisioned instances found in workspace")
 	}
 
 	// Auto-select if there's only one instance

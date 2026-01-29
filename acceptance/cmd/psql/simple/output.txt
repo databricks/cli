@@ -7,11 +7,11 @@ PGSSLMODE=
 
 === Command should require instance name:
 >>> musterr [CLI] psql
-Error: could not find any Lakebase databases in the workspace
+Error: no Lakebase databases found in workspace
 
 === Command should require instance name even if extra arguments are provided:
 >>> musterr [CLI] psql -- --dbname=my-database
-Error: could not find any Lakebase databases in the workspace
+Error: no Lakebase databases found in workspace
 
 === Command should use default db name if it is not specified:
 >>> [CLI] psql my-database

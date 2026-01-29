@@ -316,7 +316,7 @@ func showSelectionAndConnect(ctx context.Context, retryConfig lakebasepsql.Retry
 	}
 
 	if len(options) == 0 {
-		return errors.New("could not find any Lakebase databases in the workspace")
+		return errors.New("no Lakebase databases found in workspace")
 	}
 
 	// Build selection items

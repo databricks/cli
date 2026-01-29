@@ -93,7 +93,7 @@ func selectProjectID(ctx context.Context, w *databricks.WorkspaceClient) (string
 	}
 
 	if len(projects) == 0 {
-		return "", errors.New("no projects found in workspace")
+		return "", errors.New("no Lakebase Autoscaling projects found in workspace")
 	}
 
 	// Auto-select if there's only one project
