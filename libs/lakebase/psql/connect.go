@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"strings"
@@ -42,7 +43,7 @@ func Connect(ctx context.Context, opts ConnectOptions, retryConfig RetryConfig) 
 		})
 	}
 
-	return connectWithRetry(ctx, opts.Host, args, env, retryConfig)
+	return connectWithRetry(ctx, args, env, retryConfig)
 }
 
 func buildCommand(opts ConnectOptions) (args, env []string) {
@@ -82,7 +83,7 @@ func buildCommand(opts ConnectOptions) (args, env []string) {
 	return args, env
 }
 
-func connectWithRetry(ctx context.Context, host string, args, env []string, retryConfig RetryConfig) error {
+func connectWithRetry(ctx context.Context, args, env []string, retryConfig RetryConfig) error {
 	maxRetries := retryConfig.MaxRetries
 	delay := retryConfig.InitialDelay
 
@@ -114,7 +115,7 @@ func connectWithRetry(ctx context.Context, host string, args, env []string, retr
 
 		lastErr = err
 
-		if !strings.Contains(err.Error(), "connection failed (retryable)") {
+		if !errors.Is(err, errRetryable) {
 			return err
 		}
 
@@ -131,15 +132,33 @@ func attemptConnection(ctx context.Context, args, env []string) error {
 	cmd.Env = env
 	cmd.Stdin = os.Stdin
 	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
 
-	err := cmd.Run()
+	// Capture stderr to analyze error messages
+	stderrPipe, err := cmd.StderrPipe()
+	if err != nil {
+		return fmt.Errorf("failed to create stderr pipe: %w", err)
+	}
+
+	if err := cmd.Start(); err != nil {
+		return err
+	}
+
+	// Capture stderr for error analysis.
+	// Note: this could be problematic if stderr output is very large.
+	stderrBytes, _ := io.ReadAll(io.TeeReader(stderrPipe, os.Stderr))
+	stderrOutput := string(stderrBytes)
+
+	err = cmd.Wait()
 	if err != nil {
 		var exitError *exec.ExitError
 		if errors.As(err, &exitError) {
-			// psql returns exit code 2 for connection failures
+			// psql returns exit code 2 for fatal errors
 			if exitError.ExitCode() == 2 {
-				return fmt.Errorf("connection failed (retryable): psql exited with code %d", exitError.ExitCode())
+				connErr := fmt.Errorf("connection failed: psql exited with code %d", exitError.ExitCode())
+				if isNonRetryableError(stderrOutput) {
+					return connErr
+				}
+				return &retryableError{err: connErr}
 			}
 		}
 	}
