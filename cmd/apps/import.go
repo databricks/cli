@@ -42,18 +42,18 @@ func newImportCommand() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "import",
-		Short: "(Experimental) Import an existing Databricks app as a bundle",
-		Long: `(Experimental) Import an existing Databricks app and convert it to a bundle configuration.
+		Short: "(Experimental) Import an existing Databricks app as a project",
+		Long: `(Experimental) Import an existing Databricks app and convert it to an app project.
 
-This command creates a new bundle directory with the app configuration, downloads
-the app source code, binds the bundle to the existing app, and deploys it using
+This command creates a new project directory with the app configuration, downloads
+the app source code, binds the project to the existing app, and deploys it using
 direct deployment mode. This allows you to manage the app as code going forward.
 
 The command will:
-1. Create an empty bundle folder with databricks.yml
+1. Create an empty project folder with databricks.yml
 2. Download the app and add it to databricks.yml
-3. Bind the bundle to the existing app
-4. Deploy the bundle in direct mode
+3. Bind the project to the existing app
+4. Deploy the project in direct mode
 5. Start the app
 6. Optionally clean up the previous app folder (if --cleanup is set)
 
@@ -221,7 +221,7 @@ Examples:
 	}
 
 	cmd.Flags().StringVar(&name, "name", "", "Name of the app to import (if not specified, lists all apps)")
-	cmd.Flags().StringVar(&outputDir, "output-dir", "", "Directory to output the bundle to (defaults to app name)")
+	cmd.Flags().StringVar(&outputDir, "output-dir", "", "Directory to output the project to (defaults to app name)")
 	cmd.Flags().BoolVar(&cleanup, "cleanup", false, "Clean up the previous app folder and all its contents")
 	cmd.Flags().BoolVar(&forceImport, "force-import", false, "Force re-import of an app that was already imported (only works for apps you own)")
 	cmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "Suppress informational messages (only show errors and prompts)")
@@ -230,7 +230,7 @@ Examples:
 }
 
 // runImport orchestrates the app import process: loads the app from workspace,
-// generates bundle files, binds to the existing app, deploys, and starts it.
+// generates app project files, binds to the existing app, deploys, and starts it.
 // Returns the project initializer (or nil) and any error.
 func runImport(ctx context.Context, w *databricks.WorkspaceClient, appName, outputDir string, oldSourceCodePath *string, forceImport bool, currentUserEmail string, quiet bool) (initializer.Initializer, error) {
 	// Step 1: Load the app from workspace
@@ -249,7 +249,7 @@ func runImport(ctx context.Context, w *databricks.WorkspaceClient, appName, outp
 	alreadyImported := app.DefaultSourceCodePath != "" && strings.Contains(app.DefaultSourceCodePath, "/.bundle/")
 	if alreadyImported {
 		if !forceImport {
-			return nil, fmt.Errorf("app '%s' appears to have already been imported (workspace path '%s' is inside a .bundle folder). Use --force-import to import anyway", appName, app.DefaultSourceCodePath)
+			return nil, fmt.Errorf("app '%s' appears to have already been imported (source code path '%s' is inside a .bundle folder). Use --force-import to import anyway", appName, app.DefaultSourceCodePath)
 		}
 
 		// Check if the app is owned by the current user
@@ -278,7 +278,7 @@ func runImport(ctx context.Context, w *databricks.WorkspaceClient, appName, outp
 
 	// Step 2: Generate bundle files
 	if !quiet {
-		cmdio.LogString(ctx, "Creating bundle configuration")
+		cmdio.LogString(ctx, "Creating project configuration")
 	}
 
 	// Use the bundle generate app command logic
@@ -303,7 +303,7 @@ func runImport(ctx context.Context, w *databricks.WorkspaceClient, appName, outp
 	var b *bundle.Bundle
 	if !alreadyImported {
 		if !quiet {
-			cmdio.LogString(ctx, "\nBinding bundle to existing app")
+			cmdio.LogString(ctx, "\nBinding project to existing app")
 		}
 
 		// Create a command for binding with required flags
@@ -360,7 +360,7 @@ func runImport(ctx context.Context, w *databricks.WorkspaceClient, appName, outp
 
 	// Step 4: Deploy the bundle
 	if !quiet {
-		cmdio.LogString(ctx, "\nDeploying bundle")
+		cmdio.LogString(ctx, "\nDeploying project")
 	}
 
 	// Create a new command for deployment
@@ -383,7 +383,7 @@ func runImport(ctx context.Context, w *databricks.WorkspaceClient, appName, outp
 	}
 
 	if !quiet {
-		cmdio.LogString(ctx, "Bundle deployed successfully")
+		cmdio.LogString(ctx, "Project deployed successfully")
 	}
 
 	// Step 5: Run the app (equivalent to "databricks bundle run app")
@@ -529,7 +529,7 @@ func generateAppBundle(ctx context.Context, w *databricks.WorkspaceClient, app *
 	}
 
 	if !quiet {
-		cmdio.LogString(ctx, "Bundle configuration created at "+databricksYml)
+		cmdio.LogString(ctx, "Project configuration created at "+databricksYml)
 	}
 
 	// Generate .env file from app.yml if it exists
