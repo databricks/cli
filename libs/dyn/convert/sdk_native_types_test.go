@@ -469,3 +469,114 @@ func TestToTypedFieldMaskEmpty(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, []string{}, out.Paths)
 }
+
+// End-to-end tests using actual SDK types
+
+func TestSDKTypesRoundTripWithPostgresBranchSpec(t *testing.T) {
+	// Import the postgres package types to test real SDK usage
+	// postgres.BranchSpec uses time.Time and duration.Duration
+	type BranchSpec struct {
+		ExpireTime       *sdktime.Time        `json:"expire_time,omitempty"`
+		SourceBranchTime *sdktime.Time        `json:"source_branch_time,omitempty"`
+		Ttl              *sdkduration.Duration `json:"ttl,omitempty"`
+		IsProtected      bool                 `json:"is_protected,omitempty"`
+	}
+
+	// Create a BranchSpec with SDK native types
+	original := BranchSpec{
+		ExpireTime:       sdktime.New(time.Date(2024, 12, 31, 23, 59, 59, 0, time.UTC)),
+		SourceBranchTime: sdktime.New(time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)),
+		Ttl:              sdkduration.New(7 * 24 * time.Hour),
+		IsProtected:      true,
+	}
+
+	// Convert to dyn.Value
+	dynValue, err := FromTyped(original, dyn.NilValue)
+	require.NoError(t, err)
+
+	// Verify the dyn.Value has string representations
+	assert.Equal(t, "2024-12-31T23:59:59Z", dynValue.Get("expire_time").MustString())
+	assert.Equal(t, "2024-01-01T00:00:00Z", dynValue.Get("source_branch_time").MustString())
+	assert.Equal(t, "604800s", dynValue.Get("ttl").MustString())
+	assert.Equal(t, true, dynValue.Get("is_protected").MustBool())
+
+	// Convert back to typed
+	var roundtrip BranchSpec
+	err = ToTyped(&roundtrip, dynValue)
+	require.NoError(t, err)
+
+	// Verify round-trip preserves values
+	require.NotNil(t, roundtrip.ExpireTime)
+	require.NotNil(t, roundtrip.SourceBranchTime)
+	require.NotNil(t, roundtrip.Ttl)
+	assert.Equal(t, original.ExpireTime.AsTime(), roundtrip.ExpireTime.AsTime())
+	assert.Equal(t, original.SourceBranchTime.AsTime(), roundtrip.SourceBranchTime.AsTime())
+	assert.Equal(t, original.Ttl.AsDuration(), roundtrip.Ttl.AsDuration())
+	assert.Equal(t, original.IsProtected, roundtrip.IsProtected)
+}
+
+func TestSDKTypesRoundTripWithUpdateRequest(t *testing.T) {
+	// Test with a struct similar to postgres.UpdateBranchRequest
+	// which uses fieldmask.FieldMask
+	type UpdateRequest struct {
+		Name       string                  `json:"name"`
+		UpdateMask sdkfieldmask.FieldMask  `json:"update_mask"`
+	}
+
+	// Create an update request with FieldMask
+	original := UpdateRequest{
+		Name:       "projects/123/branches/456",
+		UpdateMask: *sdkfieldmask.New([]string{"spec.ttl", "spec.is_protected"}),
+	}
+
+	// Convert to dyn.Value
+	dynValue, err := FromTyped(original, dyn.NilValue)
+	require.NoError(t, err)
+
+	// Verify the dyn.Value has string representation for field mask
+	assert.Equal(t, "projects/123/branches/456", dynValue.Get("name").MustString())
+	assert.Equal(t, "spec.ttl,spec.is_protected", dynValue.Get("update_mask").MustString())
+
+	// Convert back to typed
+	var roundtrip UpdateRequest
+	err = ToTyped(&roundtrip, dynValue)
+	require.NoError(t, err)
+
+	// Verify round-trip preserves values
+	assert.Equal(t, original.Name, roundtrip.Name)
+	assert.Equal(t, []string{"spec.ttl", "spec.is_protected"}, roundtrip.UpdateMask.Paths)
+}
+
+func TestSDKTypesNormalizeWithPostgresBranchSpec(t *testing.T) {
+	// Test normalization with postgres.BranchSpec-like structure
+	type BranchSpec struct {
+		ExpireTime  *sdktime.Time        `json:"expire_time,omitempty"`
+		Ttl         *sdkduration.Duration `json:"ttl,omitempty"`
+		IsProtected bool                 `json:"is_protected,omitempty"`
+	}
+
+	var typ BranchSpec
+	vin := dyn.V(map[string]dyn.Value{
+		"expire_time":  dyn.V("2024-12-31T23:59:59Z"),
+		"ttl":          dyn.V("604800s"),
+		"is_protected": dyn.V(true),
+	})
+
+	vout, diags := Normalize(typ, vin)
+	assert.Empty(t, diags)
+
+	// Verify normalized values preserve string representations
+	assert.Equal(t, "2024-12-31T23:59:59Z", vout.Get("expire_time").MustString())
+	assert.Equal(t, "604800s", vout.Get("ttl").MustString())
+	assert.Equal(t, true, vout.Get("is_protected").MustBool())
+
+	// Convert to typed to verify it works
+	var out BranchSpec
+	err := ToTyped(&out, vout)
+	require.NoError(t, err)
+	require.NotNil(t, out.ExpireTime)
+	require.NotNil(t, out.Ttl)
+	assert.Equal(t, time.Date(2024, 12, 31, 23, 59, 59, 0, time.UTC), out.ExpireTime.AsTime())
+	assert.Equal(t, 7*24*time.Hour, out.Ttl.AsDuration())
+	assert.Equal(t, true, out.IsProtected)
+}
