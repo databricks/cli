@@ -1,0 +1,50 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Modify only 'process' task num_workers and add timeout
+=== Detect and save changes
+Detected changes in 1 resource(s):
+
+Resource: resources.jobs.my_job
+  tasks[task_key='task2']: update
+  tasks[task_key='task3'].depends_on[0].task_key: update
+  tasks[task_key='task3'].new_cluster.num_workers: update
+  tasks[task_key='task3'].timeout_seconds: skip
+
+
+=== Configuration changes
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -1,5 +1,4 @@
+ bundle:
+   name: test-bundle-[UNIQUE_NAME]
+-
+ resources:
+   jobs:
+@@ -13,13 +12,4 @@
+             node_type_id: [NODE_TYPE_ID]
+             num_workers: 1
+-        - task_key: task2
+-          notebook_task:
+-            notebook_path: /Users/{{workspace_user_name}}/task2
+-          new_cluster:
+-            spark_version: 13.3.x-snapshot-scala2.12
+-            node_type_id: [NODE_TYPE_ID]
+-            num_workers: 2
+-          depends_on:
+-            - task_key: task1
+         - task_key: task3
+           notebook_task:
+@@ -37,5 +27,6 @@
+             spark_version: 13.3.x-snapshot-scala2.12
+             node_type_id: [NODE_TYPE_ID]
+-            num_workers: 1
++            num_workers: 5
+           depends_on:
+-            - task_key: task3
++            - task_key: task1
++          timeout_seconds: 3600

@@ -1,0 +1,15 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Check for changes immediately after deploymentNo changes detected.
+
+
+=== Text outputNo changes detected.
+
+
+=== JSON output{
+  "files": null,
+  "changes": {}
+}

@@ -40,6 +40,8 @@ resources:
     ignore_remote_changes:
       # Tags updates are not supported by TF. This mirrors that behaviour.
       - tags
+    ignore_local_changes:
+      - tags
 
   # TF implementation: https://github.com/databricks/terraform-provider-databricks/blob/6c106e8e7052bb2726148d66309fd460ed444236/mlflow/resource_mlflow_experiment.go#L22
   model_serving_endpoints:
