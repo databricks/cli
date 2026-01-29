@@ -383,8 +383,8 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 			// Empty struct in config should not cause drift when remote has values
 			ch.Action = deployplan.Skip
 			ch.Reason = deployplan.ReasonEmptyStruct
-		} else if action := shouldIgnore(cfg, path); action != deployplan.Undefined {
-			ch.Action = action
+		} else if shouldSkip(cfg, path, ch) {
+			ch.Action = deployplan.Skip
 			ch.Reason = deployplan.ReasonBuiltinRule
 		} else if ch.New == nil && ch.Old == nil && ch.Remote != nil && path.IsDotString() {
 			// The field was not set by us, but comes from the remote state.
@@ -419,16 +419,16 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 	return nil
 }
 
-func shouldIgnore(cfg *dresources.ResourceLifecycleConfig, path *structpath.PathNode) deployplan.ActionType {
+func shouldSkip(cfg *dresources.ResourceLifecycleConfig, path *structpath.PathNode, ch *deployplan.ChangeDesc) bool {
 	if cfg == nil {
-		return deployplan.Undefined
+		return false
 	}
 	for _, p := range cfg.IgnoreRemoteChanges {
-		if path.HasPrefix(p) {
-			return deployplan.Skip
+		if path.HasPrefix(p) && structdiff.IsEqual(ch.Old, ch.New) {
+			return true
 		}
 	}
-	return deployplan.Undefined
+	return false
 }
 
 func shouldUpdateOrRecreate(cfg *dresources.ResourceLifecycleConfig, path *structpath.PathNode) deployplan.ActionType {
