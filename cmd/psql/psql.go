@@ -10,6 +10,7 @@ import (
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	lakebasepsql "github.com/databricks/cli/libs/lakebase/psql"
 	lakebasev1 "github.com/databricks/cli/libs/lakebase/v1"
 	lakebasev2 "github.com/databricks/cli/libs/lakebase/v2"
 	"github.com/databricks/databricks-sdk-go"
@@ -82,7 +83,7 @@ You can pass additional arguments to psql after a double-dash (--):
 		endpointFlag, _ := cmd.Flags().GetString("endpoint")
 		maxRetries, _ := cmd.Flags().GetInt("max-retries")
 
-		retryConfig := lakebasev1.RetryConfig{
+		retryConfig := lakebasepsql.RetryConfig{
 			MaxRetries:    maxRetries,
 			InitialDelay:  time.Second,
 			MaxDelay:      10 * time.Second,
@@ -156,7 +157,7 @@ You can pass additional arguments to psql after a double-dash (--):
 }
 
 // connectViaDatabaseAPI connects using the old Database API.
-func connectViaDatabaseAPI(ctx context.Context, instanceName string, retryConfig lakebasev1.RetryConfig, extraArgs []string) error {
+func connectViaDatabaseAPI(ctx context.Context, instanceName string, retryConfig lakebasepsql.RetryConfig, extraArgs []string) error {
 	w := cmdctx.WorkspaceClient(ctx)
 
 	db, err := lakebasev1.GetDatabaseInstance(ctx, w, instanceName)
@@ -164,11 +165,11 @@ func connectViaDatabaseAPI(ctx context.Context, instanceName string, retryConfig
 		return err
 	}
 
-	return lakebasev1.ConnectWithRetryConfig(ctx, db, retryConfig, extraArgs...)
+	return lakebasev1.Connect(ctx, db, retryConfig, extraArgs...)
 }
 
 // connectViaPostgresAPI connects using the new Postgres API with flags.
-func connectViaPostgresAPI(ctx context.Context, projectID, branchID, endpointID string, retryConfig lakebasev1.RetryConfig, extraArgs []string) error {
+func connectViaPostgresAPI(ctx context.Context, projectID, branchID, endpointID string, retryConfig lakebasepsql.RetryConfig, extraArgs []string) error {
 	w := cmdctx.WorkspaceClient(ctx)
 
 	endpoint, err := resolveEndpoint(ctx, w, projectID, branchID, endpointID)
@@ -176,11 +177,11 @@ func connectViaPostgresAPI(ctx context.Context, projectID, branchID, endpointID 
 		return err
 	}
 
-	return lakebasev2.ConnectWithRetryConfig(ctx, endpoint, retryConfig, extraArgs...)
+	return lakebasev2.Connect(ctx, endpoint, retryConfig, extraArgs...)
 }
 
 // connectViaPostgresPath connects using the new Postgres API with a resource path.
-func connectViaPostgresPath(ctx context.Context, path string, retryConfig lakebasev1.RetryConfig, extraArgs []string) error {
+func connectViaPostgresPath(ctx context.Context, path string, retryConfig lakebasepsql.RetryConfig, extraArgs []string) error {
 	w := cmdctx.WorkspaceClient(ctx)
 
 	// Parse the resource path to extract project, branch, endpoint IDs
@@ -194,7 +195,7 @@ func connectViaPostgresPath(ctx context.Context, path string, retryConfig lakeba
 		return err
 	}
 
-	return lakebasev2.ConnectWithRetryConfig(ctx, endpoint, retryConfig, extraArgs...)
+	return lakebasev2.Connect(ctx, endpoint, retryConfig, extraArgs...)
 }
 
 // resolveEndpoint resolves a partial specification to a full endpoint.
@@ -340,7 +341,7 @@ func parseResourcePath(input string) (project, branch, endpoint string) {
 }
 
 // showCombinedSelectionAndConnect shows a combined dropdown of database instances and postgres projects.
-func showCombinedSelectionAndConnect(ctx context.Context, retryConfig lakebasev1.RetryConfig, extraArgs []string) error {
+func showCombinedSelectionAndConnect(ctx context.Context, retryConfig lakebasepsql.RetryConfig, extraArgs []string) error {
 	w := cmdctx.WorkspaceClient(ctx)
 
 	sp := cmdio.NewSpinner(ctx)
@@ -430,7 +431,7 @@ func showCombinedSelectionAndConnect(ctx context.Context, retryConfig lakebasev1
 
 	if inst, ok := instancesByID[selected]; ok {
 		cmdio.LogString(ctx, "Selected provisioned database instance: "+inst.Name)
-		return lakebasev1.ConnectWithRetryConfig(ctx, &inst, retryConfig, extraArgs...)
+		return lakebasev1.Connect(ctx, &inst, retryConfig, extraArgs...)
 	}
 
 	if proj, ok := projectsByID[selected]; ok {

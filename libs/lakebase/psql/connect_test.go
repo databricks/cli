@@ -1,4 +1,4 @@
-package lakebasev1
+package psql
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestTryPsqlInteractive(t *testing.T) {
+func TestAttemptConnection(t *testing.T) {
 	ctx := context.Background()
 
 	// Test successful execution (exit code 0)
