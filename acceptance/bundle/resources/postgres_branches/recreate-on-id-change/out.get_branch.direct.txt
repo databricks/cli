@@ -1,0 +1,15 @@
+{
+  "name": "[MAIN_ID_2]",
+  "parent": "projects/test-pg-proj-[UNIQUE_NAME]",
+  "status": {
+    "current_state": "READY",
+    "default": false,
+    "is_protected": false,
+    "logical_size_bytes": 0,
+    "source_branch": "projects/test-pg-proj-[UNIQUE_NAME]/branches/[BRANCH_UID]",
+    "source_branch_lsn": "[LSN]",
+    "source_branch_time": "[TIMESTAMP]",
+    "state_change_time": "[TIMESTAMP]"
+  },
+  "uid": "[BRANCH_UID]"
+}

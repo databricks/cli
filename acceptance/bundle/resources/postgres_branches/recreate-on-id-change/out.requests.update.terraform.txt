@@ -1,0 +1,14 @@
+{
+  "body": {
+    "name": "[MAIN_ID]",
+    "parent": "projects/test-pg-proj-[UNIQUE_NAME]",
+    "spec": {
+      "no_expiry": true
+    }
+  },
+  "method": "PATCH",
+  "path": "/api/2.0/postgres/[MAIN_ID]",
+  "q": {
+    "update_mask": "spec"
+  }
+}

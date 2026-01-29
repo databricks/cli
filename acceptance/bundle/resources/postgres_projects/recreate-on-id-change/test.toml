@@ -1,8 +1,8 @@
-# Override to only run with direct mode - recreation behavior differs between engines
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+Badness = "Terraform provider bug: missing ForceNew on project_id causes PATCH instead of DELETE+POST when project_id changes"
 
 [[Repls]]
 # Normalize TraceId in error messages (run before default NUMID replacement at Order 9-10)
 Old = 'TraceId: [a-f0-9]+'
 New = 'TraceId: [TRACE_ID]'
 Order = 1
+

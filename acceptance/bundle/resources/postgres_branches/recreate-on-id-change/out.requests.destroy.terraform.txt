@@ -1,0 +1,8 @@
+{
+  "method": "DELETE",
+  "path": "/api/2.0/postgres/[MAIN_ID]"
+}
+{
+  "method": "DELETE",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]"
+}

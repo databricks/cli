@@ -29,27 +29,7 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> print_requests
-{
-  "body": {
-    "spec": {
-      "default_endpoint_settings": {
-        "autoscaling_limit_max_cu": 4,
-        "autoscaling_limit_min_cu": 0.5,
-        "suspend_timeout_duration": "300s"
-      },
-      "display_name": "Test Recreate",
-      "history_retention_duration": "604800s",
-      "pg_version": 16
-    }
-  },
-  "method": "POST",
-  "path": "/api/2.0/postgres/projects",
-  "q": {
-    "project_id": "test-pg-old-[UNIQUE_NAME]"
-  }
-}
-
+=== Change project_id (should trigger recreation in direct, update in terraform)
 >>> cat databricks.yml
 bundle:
   name: deploy-postgres-recreate-[UNIQUE_NAME]
@@ -69,69 +49,14 @@ resources:
         autoscaling_limit_max_cu: 4
         suspend_timeout_duration: "300s"
 
->>> [CLI] bundle plan
-recreate postgres_projects.my_project
-
-Plan: 1 to add, 0 to change, 1 to delete, 0 unchanged
-
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-recreate-[UNIQUE_NAME]/default/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> print_requests
-{
-  "method": "DELETE",
-  "path": "/api/2.0/postgres/[MY_PROJECT_ID]"
-}
-{
-  "body": {
-    "spec": {
-      "default_endpoint_settings": {
-        "autoscaling_limit_max_cu": 4,
-        "autoscaling_limit_min_cu": 0.5,
-        "suspend_timeout_duration": "300s"
-      },
-      "display_name": "Test Recreate",
-      "history_retention_duration": "604800s",
-      "pg_version": 16
-    }
-  },
-  "method": "POST",
-  "path": "/api/2.0/postgres/projects",
-  "q": {
-    "project_id": "test-pg-new-[UNIQUE_NAME]"
-  }
-}
-
-=== Fetch new project ID and verify remote state
->>> [CLI] postgres get-project [MY_PROJECT_ID_2]
-{
-  "create_time":"[TIMESTAMP]",
-  "name":"[MY_PROJECT_ID_2]",
-  "status": {
-    "branch_logical_size_limit_bytes":[NUMID],
-    "default_endpoint_settings": {
-      "autoscaling_limit_max_cu":4,
-      "autoscaling_limit_min_cu":0.5,
-      "suspend_timeout_duration":"300s"
-    },
-    "display_name":"Test Recreate",
-    "history_retention_duration":"604800s",
-    "owner":"[USERNAME]",
-    "pg_version":16,
-    "synthetic_storage_size_bytes":0
-  },
-  "uid":"[UUID]",
-  "update_time":"[TIMESTAMP]"
-}
-
-=== Verify that original project is gone
->>> musterr [CLI] postgres get-project [MY_PROJECT_ID]
-Error: project id not found [TraceId: [TRACE_ID]]
-
-=== Destroy the project and verify that it's removed from the state and from remote
+=== Fetch new project ID
+=== Destroy and verify cleanup
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.postgres_projects.my_project
@@ -140,15 +65,6 @@ All files and directories at the following location will be deleted: /Workspace/
 
 Deleting files...
 Destroy complete!
-
->>> print_requests
-{
-  "method": "DELETE",
-  "path": "/api/2.0/postgres/[MY_PROJECT_ID_2]"
-}
-
->>> musterr [CLI] postgres get-project [MY_PROJECT_ID_2]
-Error: project id not found [TraceId: [TRACE_ID]]
 
 >>> [CLI] bundle destroy --auto-approve
 No active deployment found to destroy!

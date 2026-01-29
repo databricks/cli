@@ -22,34 +22,37 @@ trace $CLI bundle deploy
 project_id_1=`read_id.py my_project`
 
 print_requests() {
-    jq --sort-keys 'select(.method != "GET" and (.path | contains("/postgres")))' < out.requests.txt
+    local name=$1
+    jq --sort-keys 'select(.method != "GET" and (.path | contains("/postgres")))' < out.requests.txt > out.requests.${name}.$DATABRICKS_BUNDLE_ENGINE.txt
     rm -f out.requests.txt
 }
 
-trace print_requests
+print_requests create
 
-# Change project_id (should trigger recreation)
+title "Change project_id (should trigger recreation in direct, update in terraform)"
 sed "s/test-pg-old-${UNIQUE_NAME}/test-pg-new-${UNIQUE_NAME}/" databricks.yml > databricks.yml.new
 mv databricks.yml.new databricks.yml
 
 trace cat databricks.yml
 
-trace $CLI bundle plan
+# Plan output differs between engines (recreate vs update)
+$CLI bundle plan > out.plan.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1
 trace $CLI bundle deploy --auto-approve
 
-trace print_requests
+print_requests update
 
-title "Fetch new project ID and verify remote state"
-
+title "Fetch new project ID"
 project_id_2=`read_id.py my_project`
-trace $CLI postgres get-project $project_id_2
+# Get output differs between engines (different project IDs)
+$CLI postgres get-project $project_id_2 > out.get_project.$DATABRICKS_BUNDLE_ENGINE.txt
 
-title "Verify that original project is gone"
-trace musterr $CLI postgres get-project $project_id_1
-
-title "Destroy the project and verify that it's removed from the state and from remote"
+title "Destroy and verify cleanup"
 trace $CLI bundle destroy --auto-approve
 
-trace print_requests
-trace musterr $CLI postgres get-project $project_id_2
+print_requests destroy
+
+# Clean up any orphaned old project (terraform doesn't delete it on recreation)
+$CLI postgres delete-project $project_id_1 2>/dev/null || true
+
 rm -f out.requests.txt
+

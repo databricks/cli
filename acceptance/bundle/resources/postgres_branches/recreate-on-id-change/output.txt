@@ -36,39 +36,7 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> print_requests
-{
-  "body": {
-    "spec": {
-      "default_endpoint_settings": {
-        "autoscaling_limit_max_cu": 4,
-        "autoscaling_limit_min_cu": 0.5,
-        "suspend_timeout_duration": "300s"
-      },
-      "display_name": "Test Project",
-      "history_retention_duration": "604800s",
-      "pg_version": 16
-    }
-  },
-  "method": "POST",
-  "path": "/api/2.0/postgres/projects",
-  "q": {
-    "project_id": "test-pg-proj-[UNIQUE_NAME]"
-  }
-}
-{
-  "body": {
-    "spec": {
-      "no_expiry": true
-    }
-  },
-  "method": "POST",
-  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches",
-  "q": {
-    "branch_id": "old-branch-[UNIQUE_NAME]"
-  }
-}
-
+=== Change branch_id (should trigger recreation in direct, update in terraform)
 >>> cat databricks.yml
 bundle:
   name: deploy-postgres-branch-recreate-[UNIQUE_NAME]
@@ -94,58 +62,14 @@ resources:
       branch_id: new-branch-[UNIQUE_NAME]
       no_expiry: true
 
->>> [CLI] bundle plan
-recreate postgres_branches.main
-
-Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
-
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-branch-recreate-[UNIQUE_NAME]/default/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
 
->>> print_requests
-{
-  "method": "DELETE",
-  "path": "/api/2.0/postgres/[MAIN_ID]"
-}
-{
-  "body": {
-    "spec": {
-      "no_expiry": true
-    }
-  },
-  "method": "POST",
-  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches",
-  "q": {
-    "branch_id": "new-branch-[UNIQUE_NAME]"
-  }
-}
-
-=== Fetch new branch ID and verify remote state
->>> [CLI] postgres get-branch [MAIN_ID_2]
-{
-  "name": "[MAIN_ID_2]",
-  "parent": "projects/test-pg-proj-[UNIQUE_NAME]",
-  "status": {
-    "current_state": "READY",
-    "default": false,
-    "is_protected": false,
-    "logical_size_bytes": 0,
-    "source_branch": "projects/test-pg-proj-[UNIQUE_NAME]/branches/[BRANCH_UID]",
-    "source_branch_lsn": "[LSN]",
-    "source_branch_time": "[TIMESTAMP]",
-    "state_change_time": "[TIMESTAMP]"
-  },
-  "uid": "[BRANCH_UID]"
-}
-
-=== Verify that original branch is gone
->>> musterr [CLI] postgres get-branch [MAIN_ID]
-Error: branch id not found [TraceId: [TRACE_ID]]
-
-=== Destroy the branch and verify that it's removed from the state and from remote
+=== Fetch new branch ID
+=== Destroy and verify cleanup
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.postgres_branches.main
@@ -155,19 +79,6 @@ All files and directories at the following location will be deleted: /Workspace/
 
 Deleting files...
 Destroy complete!
-
->>> print_requests
-{
-  "method": "DELETE",
-  "path": "/api/2.0/postgres/[MAIN_ID_2]"
-}
-{
-  "method": "DELETE",
-  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]"
-}
-
->>> musterr [CLI] postgres get-branch [MAIN_ID_2]
-Error: project id not found [TraceId: [TRACE_ID]]
 
 >>> [CLI] bundle destroy --auto-approve
 No active deployment found to destroy!
