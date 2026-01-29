@@ -6,4 +6,4 @@ RequiresUnityCatalog = true
   windows = false
 
 [EnvMatrix]
-  DATABRICKS_BUNDLE_ENGINE = ["direct"]
+  DATABRICKS_BUNDLE_ENGINE = ["direct", "terraform"]

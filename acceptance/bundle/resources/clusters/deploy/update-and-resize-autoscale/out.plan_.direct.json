@@ -144,12 +144,14 @@
       "changes": {
         "autoscale.max_workers": {
           "action": "resize",
+          "reason": "custom",
           "old": 5,
           "new": 6,
           "remote": 5
         },
         "autoscale.min_workers": {
           "action": "resize",
+          "reason": "custom",
           "old": 3,
           "new": 4,
           "remote": 3
@@ -190,6 +192,7 @@
       "changes": {
         "autoscale": {
           "action": "resize",
+          "reason": "custom",
           "old": {
             "max_workers": 6,
             "min_workers": 4
@@ -201,6 +204,7 @@
         },
         "num_workers": {
           "action": "resize",
+          "reason": "custom",
           "new": 3
         }
       }
