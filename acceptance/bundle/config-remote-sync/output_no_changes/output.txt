@@ -6,19 +6,25 @@ Deployment complete!
 === Check for changes immediately after deploymentDetected changes in 1 resource(s):
 
 Resource: resources.jobs.test_job
-  email_notifications: skip
-  tasks[task_key='main'].notebook_task.source: skip
-  timeout_seconds: skip
-  webhook_notifications: skip
+
+  # skipped:
+  email_notifications
+  tasks[task_key='main'].notebook_task.source
+  timeout_seconds
+  webhook_notifications
+
 
 
 === Text outputDetected changes in 1 resource(s):
 
 Resource: resources.jobs.test_job
-  email_notifications: skip
-  tasks[task_key='main'].notebook_task.source: skip
-  timeout_seconds: skip
-  webhook_notifications: skip
+
+  # skipped:
+  email_notifications
+  tasks[task_key='main'].notebook_task.source
+  timeout_seconds
+  webhook_notifications
+
 
 contains error: 'No changes detected' not found in the output.
 

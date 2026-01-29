@@ -27,6 +27,9 @@ func FormatTextOutput(changes Changes) string {
 		resourceChanges := changes[resourceKey]
 		output.WriteString(fmt.Sprintf("Resource: %s\n", resourceKey))
 
+		var activePaths []string
+		var skippedPaths []string
+
 		paths := make([]string, 0, len(resourceChanges))
 		for path := range resourceChanges {
 			paths = append(paths, path)
@@ -34,9 +37,26 @@ func FormatTextOutput(changes Changes) string {
 		sort.Strings(paths)
 
 		for _, path := range paths {
+			if resourceChanges[path].Operation == OperationSkip {
+				skippedPaths = append(skippedPaths, path)
+			} else {
+				activePaths = append(activePaths, path)
+			}
+		}
+
+		for _, path := range activePaths {
 			configChange := resourceChanges[path]
 			output.WriteString(fmt.Sprintf("  %s: %s\n", path, configChange.Operation))
 		}
+
+		if len(skippedPaths) > 0 {
+			output.WriteString("\n  # skipped:\n")
+			for _, path := range skippedPaths {
+				output.WriteString(fmt.Sprintf("  %s\n", path))
+			}
+		}
+
+		output.WriteString("\n")
 	}
 
 	return output.String()

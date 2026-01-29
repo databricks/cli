@@ -15,6 +15,7 @@ Resource: resources.pipelines.my_pipeline
   tags['foo']: add
 
 
+
 === Configuration changes
 
 >>> diff.py databricks.yml.backup databricks.yml

@@ -8,11 +8,14 @@ Deployment complete!
 Detected changes in 1 resource(s):
 
 Resource: resources.jobs.my_job
-  email_notifications: skip
   max_concurrent_runs: replace
-  tasks[task_key='main'].notebook_task.source: skip
-  timeout_seconds: skip
-  webhook_notifications: skip
+
+  # skipped:
+  email_notifications
+  tasks[task_key='main'].notebook_task.source
+  timeout_seconds
+  webhook_notifications
+
 
 
 === Configuration changes

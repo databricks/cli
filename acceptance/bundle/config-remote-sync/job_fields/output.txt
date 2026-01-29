@@ -14,10 +14,13 @@ Resource: resources.jobs.my_job
   email_notifications.on_failure: add
   parameters: replace
   tags['team']: add
-  tasks[task_key='main'].notebook_task.source: skip
-  timeout_seconds: skip
   trigger.periodic.interval: replace
-  webhook_notifications: skip
+
+  # skipped:
+  tasks[task_key='main'].notebook_task.source
+  timeout_seconds
+  webhook_notifications
+
 
 
 === Configuration changes
