@@ -16,31 +16,43 @@ import (
 	"github.com/palantir/pkg/yamlpatch/yamlpatch"
 )
 
-// ApplyChangesToYAML generates YAML files for the given changes.
-// The changes parameter should be a map from file paths to resource changes (already resolved).
-func ApplyChangesToYAML(ctx context.Context, b *bundle.Bundle, changesByFile map[string]ResourceChanges) ([]FileChange, error) {
-	var result []FileChange
-	targetName := b.Config.Bundle.Target
+// ApplyChangesToYAML generates YAML files for the given field changes.
+func ApplyChangesToYAML(ctx context.Context, b *bundle.Bundle, fieldChanges []FieldChange) ([]FileChange, error) {
+	originalFiles := make(map[string][]byte)
+	modifiedFiles := make(map[string][]byte)
 
-	for filePath, changes := range changesByFile {
-		originalContent, err := os.ReadFile(filePath)
+	for _, fieldChange := range fieldChanges {
+		filePath := fieldChange.FilePath
+
+		if _, exists := modifiedFiles[filePath]; !exists {
+			content, err := os.ReadFile(filePath)
+			if err != nil {
+				return nil, fmt.Errorf("failed to read file %s: %w", filePath, err)
+			}
+			originalFiles[filePath] = content
+			modifiedFiles[filePath] = content
+		}
+
+		modifiedContent, err := applyChange(ctx, modifiedFiles[filePath], fieldChange)
 		if err != nil {
-			return nil, fmt.Errorf("failed to read file %s: %w", filePath, err)
+			return nil, fmt.Errorf("failed to apply change to file %s for a field %s: %w", filePath, fieldChange.FieldCandidates[0], err)
 		}
 
-		modifiedContent, err := applyChanges(ctx, filePath, changes, targetName)
-		if err != nil {
-			return nil, fmt.Errorf("failed to apply changes to file %s: %w", filePath, err)
-		}
-
-		if modifiedContent != string(originalContent) {
-			result = append(result, FileChange{
-				Path:            filePath,
-				OriginalContent: string(originalContent),
-				ModifiedContent: modifiedContent,
-			})
-		}
+		modifiedFiles[filePath] = modifiedContent
 	}
+
+	var result []FileChange
+	for filePath := range modifiedFiles {
+		result = append(result, FileChange{
+			Path:            filePath,
+			OriginalContent: string(originalFiles[filePath]),
+			ModifiedContent: string(modifiedFiles[filePath]),
+		})
+	}
+
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].Path < result[j].Path
+	})
 
 	return result, nil
 }
@@ -50,120 +62,99 @@ type parentNode struct {
 	missingPath yamlpatch.Path
 }
 
-// applyChanges applies all field changes to a YAML
-func applyChanges(ctx context.Context, filePath string, changes ResourceChanges, targetName string) (string, error) {
-	content, err := os.ReadFile(filePath)
-	if err != nil {
-		return "", fmt.Errorf("failed to read file %s: %w", filePath, err)
-	}
+// applyChange applies a single field change to YAML content.
+func applyChange(ctx context.Context, content []byte, fieldChange FieldChange) ([]byte, error) {
+	success := false
+	var lastErr error
+	var parentNodesToCreate []parentNode
 
-	fieldPaths := make([]string, 0, len(changes))
-	for fieldPath := range changes {
-		fieldPaths = append(fieldPaths, fieldPath)
-	}
-	sort.Strings(fieldPaths)
-
-	for _, fieldPath := range fieldPaths {
-		configChange := changes[fieldPath]
-		fieldJsonPointer, err := strPathToJSONPointer(fieldPath)
+	for _, fieldPathCandidate := range fieldChange.FieldCandidates {
+		jsonPointer, err := strPathToJSONPointer(fieldPathCandidate)
 		if err != nil {
-			return "", fmt.Errorf("failed to convert field path %q to JSON pointer: %w", fieldPath, err)
+			return nil, fmt.Errorf("failed to convert field path %q to JSON pointer: %w", fieldPathCandidate, err)
 		}
 
-		jsonPointers := []string{fieldJsonPointer}
-		if targetName != "" {
-			targetPrefix := "/targets/" + targetName
-			jsonPointers = append(jsonPointers, targetPrefix+fieldJsonPointer)
+		path, err := yamlpatch.ParsePath(jsonPointer)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse JSON Pointer %s: %w", jsonPointer, err)
 		}
 
-		success := false
-		var lastErr error
-		var parentNodesToCreate []parentNode
+		patcher := gopkgv3yamlpatcher.New(gopkgv3yamlpatcher.IndentSpaces(2))
+		var modifiedContent []byte
+		var patchErr error
 
-		for _, jsonPointer := range jsonPointers {
-			path, err := yamlpatch.ParsePath(jsonPointer)
-			if err != nil {
-				return "", fmt.Errorf("failed to parse JSON Pointer %s: %w", jsonPointer, err)
+		switch fieldChange.Change.Operation {
+		case OperationRemove:
+			modifiedContent, patchErr = patcher.Apply(content, yamlpatch.Patch{yamlpatch.Operation{
+				Type: yamlpatch.OperationRemove,
+				Path: path,
+			}})
+		case OperationReplace:
+			modifiedContent, patchErr = patcher.Apply(content, yamlpatch.Patch{yamlpatch.Operation{
+				Type:  yamlpatch.OperationReplace,
+				Path:  path,
+				Value: fieldChange.Change.Value,
+			}})
+		case OperationAdd:
+			modifiedContent, patchErr = patcher.Apply(content, yamlpatch.Patch{yamlpatch.Operation{
+				Type:  yamlpatch.OperationAdd,
+				Path:  path,
+				Value: fieldChange.Change.Value,
+			}})
+
+			// Collect parent path errors for later retry
+			if patchErr != nil && isParentPathError(patchErr) {
+				if missingPath, extractErr := extractMissingPath(patchErr); extractErr == nil {
+					parentNodesToCreate = append(parentNodesToCreate, parentNode{path, missingPath})
+				}
 			}
+		default:
+			return nil, fmt.Errorf("unknown operation type %q", fieldChange.Change.Operation)
+		}
+
+		if patchErr == nil {
+			content = modifiedContent
+			log.Debugf(ctx, "Applied changes to %s", jsonPointer)
+			success = true
+			lastErr = nil
+			break
+		}
+
+		log.Debugf(ctx, "Failed to apply change to %s: %v", jsonPointer, patchErr)
+		lastErr = patchErr
+	}
+
+	// If all attempts failed with parent path errors, try creating nested structures
+	if !success && len(parentNodesToCreate) > 0 {
+		for _, errInfo := range parentNodesToCreate {
+			nestedValue := buildNestedMaps(errInfo.path, errInfo.missingPath, fieldChange.Change.Value)
 
 			patcher := gopkgv3yamlpatcher.New(gopkgv3yamlpatcher.IndentSpaces(2))
-			var modifiedContent []byte
-			var patchErr error
-
-			switch configChange.Operation {
-			case OperationRemove:
-				modifiedContent, patchErr = patcher.Apply(content, yamlpatch.Patch{yamlpatch.Operation{
-					Type: yamlpatch.OperationRemove,
-					Path: path,
-				}})
-			case OperationReplace:
-				modifiedContent, patchErr = patcher.Apply(content, yamlpatch.Patch{yamlpatch.Operation{
-					Type:  yamlpatch.OperationReplace,
-					Path:  path,
-					Value: configChange.Value,
-				}})
-			case OperationAdd:
-				modifiedContent, patchErr = patcher.Apply(content, yamlpatch.Patch{yamlpatch.Operation{
-					Type:  yamlpatch.OperationAdd,
-					Path:  path,
-					Value: configChange.Value,
-				}})
-
-				// Collect parent path errors for later retry
-				if patchErr != nil && isParentPathError(patchErr) {
-					if missingPath, extractErr := extractMissingPath(patchErr); extractErr == nil {
-						parentNodesToCreate = append(parentNodesToCreate, parentNode{path, missingPath})
-					}
-				}
-			default:
-				return "", fmt.Errorf("unknown operation type %q for field %s", configChange.Operation, fieldPath)
-			}
+			modifiedContent, patchErr := patcher.Apply(content, yamlpatch.Patch{yamlpatch.Operation{
+				Type:  yamlpatch.OperationAdd,
+				Path:  errInfo.missingPath,
+				Value: nestedValue,
+			}})
 
 			if patchErr == nil {
 				content = modifiedContent
-				log.Debugf(ctx, "Applied changes to %s", jsonPointer)
-				success = true
 				lastErr = nil
+				log.Debugf(ctx, "Created nested structure at %s", errInfo.missingPath.String())
 				break
 			}
-
-			log.Debugf(ctx, "Failed to apply change to %s: %v", jsonPointer, patchErr)
 			lastErr = patchErr
+			log.Debugf(ctx, "Failed to create nested structure at %s: %v", errInfo.missingPath.String(), patchErr)
 		}
-
-		// If all attempts failed with parent path errors, try creating nested structures
-		if !success && len(parentNodesToCreate) > 0 {
-			for _, errInfo := range parentNodesToCreate {
-				nestedValue := buildNestedMaps(errInfo.path, errInfo.missingPath, configChange.Value)
-
-				patcher := gopkgv3yamlpatcher.New(gopkgv3yamlpatcher.IndentSpaces(2))
-				modifiedContent, patchErr := patcher.Apply(content, yamlpatch.Patch{yamlpatch.Operation{
-					Type:  yamlpatch.OperationAdd,
-					Path:  errInfo.missingPath,
-					Value: nestedValue,
-				}})
-
-				if patchErr == nil {
-					content = modifiedContent
-					lastErr = nil
-					log.Debugf(ctx, "Created nested structure at %s", errInfo.missingPath.String())
-					break
-				}
-				lastErr = patchErr
-				log.Debugf(ctx, "Failed to create nested structure at %s: %v", errInfo.missingPath.String(), patchErr)
-			}
-		}
-
-		if lastErr != nil {
-			if (configChange.Operation == OperationRemove || configChange.Operation == OperationReplace) && isPathNotFoundError(lastErr) {
-				return "", fmt.Errorf("failed to apply change %s: field not found in YAML configuration: %w", fieldJsonPointer, lastErr)
-			}
-			return "", fmt.Errorf("failed to apply change %s: %w", fieldJsonPointer, lastErr)
-		}
-
 	}
 
-	return string(content), nil
+	if lastErr != nil {
+		if (fieldChange.Change.Operation == OperationRemove || fieldChange.Change.Operation == OperationReplace) && isPathNotFoundError(lastErr) {
+			return nil, fmt.Errorf("field not found in YAML configuration: %w", lastErr)
+		}
+		return nil, fmt.Errorf("failed to apply change: %w", lastErr)
+	}
+
+	return content, nil
 }
 
 // isParentPathError checks if error indicates missing parent path.

@@ -49,10 +49,10 @@ func TestApplyChangesToYAML_SimpleFieldChange(t *testing.T) {
 		},
 	}
 
-	changesByFile, err := ResolveChanges(ctx, b, changes)
+	fieldChanges, err := ResolveChanges(ctx, b, changes)
 	require.NoError(t, err)
 
-	fileChanges, err := ApplyChangesToYAML(ctx, b, changesByFile)
+	fileChanges, err := ApplyChangesToYAML(ctx, b, fieldChanges)
 	require.NoError(t, err)
 	require.Len(t, fileChanges, 1)
 
@@ -96,10 +96,10 @@ func TestApplyChangesToYAML_NestedFieldChange(t *testing.T) {
 		},
 	}
 
-	changesByFile, err := ResolveChanges(ctx, b, changes)
+	fieldChanges, err := ResolveChanges(ctx, b, changes)
 	require.NoError(t, err)
 
-	fileChanges, err := ApplyChangesToYAML(ctx, b, changesByFile)
+	fileChanges, err := ApplyChangesToYAML(ctx, b, fieldChanges)
 	require.NoError(t, err)
 	require.Len(t, fileChanges, 1)
 
@@ -156,10 +156,10 @@ func TestApplyChangesToYAML_ArrayKeyValueAccess(t *testing.T) {
 		},
 	}
 
-	changesByFile, err := ResolveChanges(ctx, b, changes)
+	fieldChanges, err := ResolveChanges(ctx, b, changes)
 	require.NoError(t, err)
 
-	fileChanges, err := ApplyChangesToYAML(ctx, b, changesByFile)
+	fileChanges, err := ApplyChangesToYAML(ctx, b, fieldChanges)
 	require.NoError(t, err)
 	require.Len(t, fileChanges, 1)
 
@@ -220,10 +220,10 @@ func TestApplyChangesToYAML_MultipleResourcesSameFile(t *testing.T) {
 		},
 	}
 
-	changesByFile, err := ResolveChanges(ctx, b, changes)
+	fieldChanges, err := ResolveChanges(ctx, b, changes)
 	require.NoError(t, err)
 
-	fileChanges, err := ApplyChangesToYAML(ctx, b, changesByFile)
+	fileChanges, err := ApplyChangesToYAML(ctx, b, fieldChanges)
 	require.NoError(t, err)
 
 	require.Len(t, fileChanges, 1)
@@ -291,10 +291,10 @@ include:
 		},
 	}
 
-	changesByFile, err := ResolveChanges(ctx, b, changes)
+	fieldChanges, err := ResolveChanges(ctx, b, changes)
 	require.NoError(t, err)
 
-	fileChanges, err := ApplyChangesToYAML(ctx, b, changesByFile)
+	fileChanges, err := ApplyChangesToYAML(ctx, b, fieldChanges)
 	require.NoError(t, err)
 	require.Len(t, fileChanges, 1)
 
@@ -341,10 +341,10 @@ targets:
 		},
 	}
 
-	changesByFile, err := ResolveChanges(ctx, b, changes)
+	fieldChanges, err := ResolveChanges(ctx, b, changes)
 	require.NoError(t, err)
 
-	fileChanges, err := ApplyChangesToYAML(ctx, b, changesByFile)
+	fileChanges, err := ApplyChangesToYAML(ctx, b, fieldChanges)
 	require.NoError(t, err)
 	require.Len(t, fileChanges, 1)
 
@@ -388,10 +388,10 @@ func TestApplyChangesToYAML_WithStructValues(t *testing.T) {
 		},
 	}
 
-	changesByFile, err := ResolveChanges(ctx, b, changes)
+	fieldChanges, err := ResolveChanges(ctx, b, changes)
 	require.NoError(t, err)
 
-	fileChanges, err := ApplyChangesToYAML(ctx, b, changesByFile)
+	fileChanges, err := ApplyChangesToYAML(ctx, b, fieldChanges)
 	require.NoError(t, err)
 	require.Len(t, fileChanges, 1)
 
@@ -477,10 +477,10 @@ resources:
 		},
 	}
 
-	changesByFile, err := ResolveChanges(ctx, b, changes)
+	fieldChanges, err := ResolveChanges(ctx, b, changes)
 	require.NoError(t, err)
 
-	fileChanges, err := ApplyChangesToYAML(ctx, b, changesByFile)
+	fileChanges, err := ApplyChangesToYAML(ctx, b, fieldChanges)
 	require.NoError(t, err)
 	require.Len(t, fileChanges, 1)
 
@@ -533,10 +533,10 @@ func TestApplyChangesToYAML_RemoveSimpleField(t *testing.T) {
 		},
 	}
 
-	changesByFile, err := ResolveChanges(ctx, b, changes)
+	fieldChanges, err := ResolveChanges(ctx, b, changes)
 	require.NoError(t, err)
 
-	fileChanges, err := ApplyChangesToYAML(ctx, b, changesByFile)
+	fileChanges, err := ApplyChangesToYAML(ctx, b, fieldChanges)
 	require.NoError(t, err)
 	require.Len(t, fileChanges, 1)
 
@@ -591,10 +591,10 @@ func TestApplyChangesToYAML_RemoveNestedField(t *testing.T) {
 		},
 	}
 
-	changesByFile, err := ResolveChanges(ctx, b, changes)
+	fieldChanges, err := ResolveChanges(ctx, b, changes)
 	require.NoError(t, err)
 
-	fileChanges, err := ApplyChangesToYAML(ctx, b, changesByFile)
+	fileChanges, err := ApplyChangesToYAML(ctx, b, fieldChanges)
 	require.NoError(t, err)
 	require.Len(t, fileChanges, 1)
 
@@ -653,10 +653,10 @@ func TestApplyChangesToYAML_RemoveFieldWithKeyValueAccess(t *testing.T) {
 		},
 	}
 
-	changesByFile, err := ResolveChanges(ctx, b, changes)
+	fieldChanges, err := ResolveChanges(ctx, b, changes)
 	require.NoError(t, err)
 
-	fileChanges, err := ApplyChangesToYAML(ctx, b, changesByFile)
+	fileChanges, err := ApplyChangesToYAML(ctx, b, fieldChanges)
 	require.NoError(t, err)
 	require.Len(t, fileChanges, 1)
 
@@ -714,10 +714,10 @@ func TestApplyChangesToYAML_RemoveStructField(t *testing.T) {
 		},
 	}
 
-	changesByFile, err := ResolveChanges(ctx, b, changes)
+	fieldChanges, err := ResolveChanges(ctx, b, changes)
 	require.NoError(t, err)
 
-	fileChanges, err := ApplyChangesToYAML(ctx, b, changesByFile)
+	fileChanges, err := ApplyChangesToYAML(ctx, b, fieldChanges)
 	require.NoError(t, err)
 	require.Len(t, fileChanges, 1)
 
@@ -777,10 +777,10 @@ targets:
 		},
 	}
 
-	changesByFile, err := ResolveChanges(ctx, b, changes)
+	fieldChanges, err := ResolveChanges(ctx, b, changes)
 	require.NoError(t, err)
 
-	fileChanges, err := ApplyChangesToYAML(ctx, b, changesByFile)
+	fileChanges, err := ApplyChangesToYAML(ctx, b, fieldChanges)
 	require.NoError(t, err)
 	require.Len(t, fileChanges, 1)
 
@@ -842,10 +842,10 @@ func TestApplyChangesToYAML_MultipleRemovalsInSameFile(t *testing.T) {
 		},
 	}
 
-	changesByFile, err := ResolveChanges(ctx, b, changes)
+	fieldChanges, err := ResolveChanges(ctx, b, changes)
 	require.NoError(t, err)
 
-	fileChanges, err := ApplyChangesToYAML(ctx, b, changesByFile)
+	fileChanges, err := ApplyChangesToYAML(ctx, b, fieldChanges)
 	require.NoError(t, err)
 	require.Len(t, fileChanges, 1)
 
@@ -904,10 +904,10 @@ func TestApplyChangesToYAML_WithSDKStructValues(t *testing.T) {
 		},
 	}
 
-	changesByFile, err := ResolveChanges(ctx, b, changes)
+	fieldChanges, err := ResolveChanges(ctx, b, changes)
 	require.NoError(t, err)
 
-	files, err := ApplyChangesToYAML(ctx, b, changesByFile)
+	files, err := ApplyChangesToYAML(ctx, b, fieldChanges)
 	require.NoError(t, err)
 	require.Len(t, files, 1)
 

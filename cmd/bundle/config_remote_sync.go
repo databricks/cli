@@ -57,12 +57,12 @@ Examples:
 			return fmt.Errorf("failed to detect changes: %w", err)
 		}
 
-		changesByFile, err := configsync.ResolveChanges(ctx, b, changes)
+		fieldChanges, err := configsync.ResolveChanges(ctx, b, changes)
 		if err != nil {
 			return fmt.Errorf("failed to resolve field changes: %w", err)
 		}
 
-		files, err := configsync.ApplyChangesToYAML(ctx, b, changesByFile)
+		files, err := configsync.ApplyChangesToYAML(ctx, b, fieldChanges)
 		if err != nil {
 			return fmt.Errorf("failed to generate YAML files: %w", err)
 		}

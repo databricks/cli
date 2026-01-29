@@ -4,12 +4,19 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sort"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structs/structpath"
 )
+
+type FieldChange struct {
+	FilePath        string
+	Change          *ConfigChangeDesc
+	FieldCandidates []string
+}
 
 // resolveSelectors converts key-value selectors to numeric indices.
 // Example: "resources.jobs.foo.tasks[task_key='main'].name" -> "resources.jobs.foo.tasks[1].name"
@@ -78,13 +85,28 @@ func resolveSelectors(pathStr string, b *bundle.Bundle) (string, error) {
 	return result.String(), nil
 }
 
-// ResolveChanges builds a map from file paths to lists of field changes.
-// It resolves key-value selectors to numeric indices and maps each change to the file where it should be applied.
-func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes) (map[string]ResourceChanges, error) {
-	resolvedChangesByFile := make(map[string]ResourceChanges)
+// ResolveChanges resolves selectors and computes field path candidates for each change.
+func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes) ([]FieldChange, error) {
+	var result []FieldChange
+	targetName := b.Config.Bundle.Target
 
-	for resourceKey, resourceChanges := range configChanges {
-		for fieldPath, configChange := range resourceChanges {
+	resourceKeys := make([]string, 0, len(configChanges))
+	for resourceKey := range configChanges {
+		resourceKeys = append(resourceKeys, resourceKey)
+	}
+	sort.Strings(resourceKeys)
+
+	for _, resourceKey := range resourceKeys {
+		resourceChanges := configChanges[resourceKey]
+
+		fieldPaths := make([]string, 0, len(resourceChanges))
+		for fieldPath := range resourceChanges {
+			fieldPaths = append(fieldPaths, fieldPath)
+		}
+		sort.Strings(fieldPaths)
+
+		for _, fieldPath := range fieldPaths {
+			configChange := resourceChanges[fieldPath]
 			fullPath := resourceKey + "." + fieldPath
 
 			resolvedPath, err := resolveSelectors(fullPath, b)
@@ -92,10 +114,15 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 				return nil, fmt.Errorf("failed to resolve selectors in path %s: %w", fullPath, err)
 			}
 
+			candidates := []string{resolvedPath}
+			if targetName != "" {
+				targetPrefixedPath := "targets." + targetName + "." + resolvedPath
+				candidates = append(candidates, targetPrefixedPath)
+			}
+
 			loc := b.Config.GetLocation(resolvedPath)
 			filePath := loc.File
 
-			// If field has no location, find the parent resource's location to then add a new field
 			if filePath == "" {
 				resourceLocation := b.Config.GetLocation(resourceKey)
 				filePath = resourceLocation.File
@@ -106,12 +133,13 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 				log.Debugf(ctx, "Field %s has no location, using resource location: %s", fullPath, filePath)
 			}
 
-			if _, ok := resolvedChangesByFile[filePath]; !ok {
-				resolvedChangesByFile[filePath] = make(ResourceChanges)
-			}
-			resolvedChangesByFile[filePath][resolvedPath] = configChange
+			result = append(result, FieldChange{
+				FilePath:        filePath,
+				Change:          configChange,
+				FieldCandidates: candidates,
+			})
 		}
 	}
 
-	return resolvedChangesByFile, nil
+	return result, nil
 }
