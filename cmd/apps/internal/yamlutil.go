@@ -11,9 +11,9 @@ import (
 	"go.yaml.in/yaml/v3"
 )
 
-// camelToSnake converts a camelCase string to snake_case.
+// CamelToSnake converts a camelCase string to snake_case.
 // Examples: valueFrom -> value_from, myValue -> my_value, ID -> id
-func camelToSnake(s string) string {
+func CamelToSnake(s string) string {
 	var result strings.Builder
 	for i, r := range s {
 		if i > 0 && r >= 'A' && r <= 'Z' {
@@ -45,7 +45,7 @@ func YamlNodeToDynValue(node *yaml.Node) (dyn.Value, error) {
 			valueNode := node.Content[i+1]
 
 			// Convert camelCase keys to snake_case
-			snakeKey := camelToSnake(keyNode.Value)
+			snakeKey := CamelToSnake(keyNode.Value)
 			key := dyn.V(snakeKey)
 			value, err := YamlNodeToDynValue(valueNode)
 			if err != nil {
