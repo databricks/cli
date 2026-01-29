@@ -206,6 +206,15 @@ Examples:
 					cmdio.LogString(ctx, "✓ Previous app folder has been cleaned up")
 				}
 				cmdio.LogString(ctx, "\nYou can now deploy changes with: databricks bundle deploy")
+
+				// Show how to run locally
+				projectInitializer := initializer.GetProjectInitializer(outputDir)
+				if projectInitializer != nil {
+					nextSteps := projectInitializer.NextSteps()
+					if nextSteps != "" {
+						cmdio.LogString(ctx, fmt.Sprintf("To run locally: cd %s && %s", name, nextSteps))
+					}
+				}
 			}
 
 			return nil
