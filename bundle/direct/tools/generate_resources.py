@@ -95,9 +95,9 @@ def write_field_group(lines, header, fields):
 def generate(resource_behaviors):
     """Generate resources.yml."""
     lines = [
-        """Generated, do not edit. API field behaviors from OpenAPI schema.
-
-For manual edits and schema description, see resources.yml.
+        """# Generated, do not edit. API field behaviors from OpenAPI schema.
+#
+# For manual edits and schema description, see resources.yml.
 
 resources:
 """
