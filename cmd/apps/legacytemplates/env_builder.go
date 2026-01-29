@@ -69,7 +69,7 @@ func NewEnvFileBuilder(host, profile, appName, appYmlPath string, resources map[
 	}
 
 	// Convert camelCase keys to snake_case (legacy templates use camelCase)
-	convertKeysToSnakeCase(&node)
+	ConvertKeysToSnakeCase(&node)
 
 	// Marshal back to YAML with snake_case keys
 	convertedData, err := yaml.Marshal(&node)
@@ -106,8 +106,8 @@ type envVarPair struct {
 	Value string
 }
 
-// convertKeysToSnakeCase recursively converts all mapping keys in a yaml.Node from camelCase to snake_case.
-func convertKeysToSnakeCase(node *yaml.Node) {
+// ConvertKeysToSnakeCase recursively converts all mapping keys in a yaml.Node from camelCase to snake_case.
+func ConvertKeysToSnakeCase(node *yaml.Node) {
 	if node == nil {
 		return
 	}
@@ -115,7 +115,7 @@ func convertKeysToSnakeCase(node *yaml.Node) {
 	switch node.Kind {
 	case yaml.DocumentNode:
 		for _, child := range node.Content {
-			convertKeysToSnakeCase(child)
+			ConvertKeysToSnakeCase(child)
 		}
 	case yaml.MappingNode:
 		// Process key-value pairs
@@ -129,11 +129,11 @@ func convertKeysToSnakeCase(node *yaml.Node) {
 			}
 
 			// Recursively process value
-			convertKeysToSnakeCase(valueNode)
+			ConvertKeysToSnakeCase(valueNode)
 		}
 	case yaml.SequenceNode:
 		for _, child := range node.Content {
-			convertKeysToSnakeCase(child)
+			ConvertKeysToSnakeCase(child)
 		}
 	case yaml.ScalarNode:
 		// Leaf node, nothing to recurse into

@@ -13,10 +13,8 @@ import (
 	"github.com/databricks/cli/cmd/apps/internal"
 	"github.com/databricks/cli/libs/apps/prompt"
 	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/yamlsaver"
 	"github.com/databricks/cli/libs/git"
-	"go.yaml.in/yaml/v3"
+	"gopkg.in/yaml.v3"
 )
 
 //go:embed databricks-yml.tmpl
@@ -33,6 +31,90 @@ type TemplateVars struct {
 	WorkspaceHost  string
 	Resources      *ResourceValues
 	UserAPIScopes  []string
+	AppConfig      *AppConfig
+}
+
+// AppConfig represents the parsed content of app.yml from a legacy template.
+type AppConfig struct {
+	Command       []string
+	Env           []EnvVar
+	ResourcesYAML string // Pre-formatted YAML string with proper indentation
+}
+
+// ParseAppYmlForTemplate reads app.yml from the source template directory,
+// converts camelCase keys to snake_case, and returns structured data for template rendering.
+// Returns nil if app.yml doesn't exist (not an error - some templates don't have it).
+func ParseAppYmlForTemplate(templateSrcPath string) (*AppConfig, error) {
+	// Try both app.yml and app.yaml
+	var appYmlPath string
+	for _, name := range []string{"app.yml", "app.yaml"} {
+		path := filepath.Join(templateSrcPath, name)
+		if _, err := os.Stat(path); err == nil {
+			appYmlPath = path
+			break
+		}
+	}
+
+	if appYmlPath == "" {
+		return nil, nil // No app.yml, not an error
+	}
+
+	// Read app.yml
+	data, err := os.ReadFile(appYmlPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read app.yml: %w", err)
+	}
+
+	// Parse into yaml.Node
+	var node yaml.Node
+	if err := yaml.Unmarshal(data, &node); err != nil {
+		return nil, fmt.Errorf("failed to parse app.yml: %w", err)
+	}
+
+	// Convert camelCase to snake_case
+	ConvertKeysToSnakeCase(&node)
+
+	// Marshal back to get snake_case YAML
+	snakeCaseData, err := yaml.Marshal(&node)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert app.yml to snake_case: %w", err)
+	}
+
+	// Parse into structured format
+	var parsed struct {
+		Command   []string       `yaml:"command"`
+		Env       []EnvVar       `yaml:"env"`
+		Resources map[string]any `yaml:"resources"`
+	}
+
+	if err := yaml.Unmarshal(snakeCaseData, &parsed); err != nil {
+		return nil, fmt.Errorf("failed to parse app.yml structure: %w", err)
+	}
+
+	config := &AppConfig{
+		Command: parsed.Command,
+		Env:     parsed.Env,
+	}
+
+	// If resources exist, format them as indented YAML for template inclusion
+	if len(parsed.Resources) > 0 {
+		resourcesData, err := yaml.Marshal(parsed.Resources)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal resources: %w", err)
+		}
+
+		// Add proper indentation (10 spaces for "resources:" under "config:" under "app:")
+		lines := bytes.Split(bytes.TrimSpace(resourcesData), []byte("\n"))
+		indentedLines := make([][]byte, len(lines))
+		for i, line := range lines {
+			if len(line) > 0 {
+				indentedLines[i] = append([]byte("          "), line...)
+			}
+		}
+		config.ResourcesYAML = string(bytes.Join(indentedLines, []byte("\n")))
+	}
+
+	return config, nil
 }
 
 // RunLegacyTemplateInit initializes a project using a legacy template.
@@ -70,6 +152,12 @@ func RunLegacyTemplateInit(ctx context.Context, selectedTemplate *AppTemplateMan
 		return "", "", fmt.Errorf("template path %s not found in repository: %w", selectedTemplate.Path, err)
 	}
 
+	// Parse app.yml from the source template directory BEFORE copying
+	appConfig, err := ParseAppYmlForTemplate(srcPath)
+	if err != nil {
+		return "", "", fmt.Errorf("failed to parse app.yml: %w", err)
+	}
+
 	// Copy the template directory to the destination
 	cmdio.LogString(ctx, fmt.Sprintf("Copying template files to %s...", destDir))
 	if err := copyDir(srcPath, destDir); err != nil {
@@ -100,10 +188,11 @@ func RunLegacyTemplateInit(ctx context.Context, selectedTemplate *AppTemplateMan
 		WorkspaceHost:  workspaceHost,
 		Resources:      resourceValues,
 		UserAPIScopes:  selectedTemplate.Manifest.UserAPIScopes,
+		AppConfig:      appConfig,
 	}
 
 	// Create template with custom functions for resource handling
-	tmpl, err := template.New("databricks.yml").Funcs(getTemplateFuncs(resourceValues)).Parse(databricksYmlTemplate)
+	tmpl, err := template.New("databricks.yml").Funcs(getTemplateFuncs(resourceValues, appConfig)).Parse(databricksYmlTemplate)
 	if err != nil {
 		return "", "", fmt.Errorf("failed to parse databricks.yml template: %w", err)
 	}
@@ -126,15 +215,21 @@ func RunLegacyTemplateInit(ctx context.Context, selectedTemplate *AppTemplateMan
 		cmdio.LogString(ctx, fmt.Sprintf("⚠ failed to create .gitignore: %v", err))
 	}
 
-	// Generate .env file from app.yml BEFORE inlining (inlining deletes app.yml)
+	// Generate .env file from app.yml in destination directory
 	if err := generateEnvFileForLegacyTemplate(ctx, destDir, workspaceHost, profile, appName, warehouseID, servingEndpoint, experimentID, instanceName, databaseName, ucVolume); err != nil {
 		// Log warning but don't fail - .env is optional
 		cmdio.LogString(ctx, fmt.Sprintf("⚠ failed to generate .env file: %v", err))
 	}
 
-	// Check for app.yml in the destination directory and inline it into databricks.yml
-	if err := inlineAppYmlIntoBundle(ctx, destDir); err != nil {
-		return "", "", fmt.Errorf("failed to inline app.yml: %w", err)
+	// Delete app.yml from destination if it exists (already inlined into databricks.yml)
+	for _, name := range []string{"app.yml", "app.yaml"} {
+		appYmlPath := filepath.Join(destDir, name)
+		if _, err := os.Stat(appYmlPath); err == nil {
+			if err := os.Remove(appYmlPath); err != nil {
+				cmdio.LogString(ctx, fmt.Sprintf("⚠ failed to remove %s: %v", name, err))
+			}
+			break
+		}
 	}
 
 	// Get absolute path
@@ -351,110 +446,5 @@ func generateEnvFileForLegacyTemplate(ctx context.Context, destDir, workspaceHos
 	}
 
 	cmdio.LogString(ctx, "✓ Generated .env file from app.yml")
-	return nil
-}
-
-// inlineAppYmlIntoBundle checks for app.yml in the directory, inlines it into databricks.yml, and deletes app.yml.
-func inlineAppYmlIntoBundle(ctx context.Context, dir string) error {
-	// Change to the directory
-	originalDir, err := os.Getwd()
-	if err != nil {
-		return fmt.Errorf("failed to get current directory: %w", err)
-	}
-
-	if err := os.Chdir(dir); err != nil {
-		return fmt.Errorf("failed to change to directory: %w", err)
-	}
-	defer func() {
-		_ = os.Chdir(originalDir)
-	}()
-
-	// Read the databricks.yml file
-	databricksYmlPath := "databricks.yml"
-	databricksData, err := os.ReadFile(databricksYmlPath)
-	if err != nil {
-		return fmt.Errorf("failed to read databricks.yml: %w", err)
-	}
-
-	// Parse databricks.yml as yaml.Node to preserve field names
-	var databricksNode yaml.Node
-	err = yaml.Unmarshal(databricksData, &databricksNode)
-	if err != nil {
-		return fmt.Errorf("failed to parse databricks.yml: %w", err)
-	}
-
-	// Convert yaml.Node to dyn.Value preserving field names
-	configValue, err := internal.YamlNodeToDynValue(&databricksNode)
-	if err != nil {
-		return fmt.Errorf("failed to convert databricks config: %w", err)
-	}
-
-	// Get the app value from resources.apps.app
-	appValue, err := dyn.GetByPath(configValue, dyn.MustPathFromString("resources.apps.app"))
-	if err != nil {
-		return fmt.Errorf("failed to get app from databricks.yml: %w", err)
-	}
-
-	// Inline the app config file (checks for app.yml or app.yaml and inlines if found)
-	appConfigFile, err := internal.InlineAppConfigFile(&appValue)
-	if err != nil {
-		return fmt.Errorf("failed to inline app config: %w", err)
-	}
-
-	// If no app config file was found, nothing to do
-	if appConfigFile == "" {
-		return nil
-	}
-
-	// Set the updated app value back
-	configValue, err = dyn.SetByPath(configValue, dyn.MustPathFromString("resources.apps.app"), appValue)
-	if err != nil {
-		return fmt.Errorf("failed to set updated app value: %w", err)
-	}
-
-	// Extract the top-level map back and set explicit line numbers for ordering
-	configMap, ok := configValue.AsMap()
-	if !ok {
-		return errors.New("config is not a map")
-	}
-
-	// Define the desired order with explicit line numbers
-	keyOrder := map[string]int{
-		"bundle":    1,
-		"workspace": 2,
-		"variables": 3,
-		"resources": 4,
-	}
-
-	updatedConfig := make(map[string]dyn.Value)
-	for _, pair := range configMap.Pairs() {
-		key := pair.Key.MustString()
-		value := pair.Value
-
-		// Set the line number based on the desired order
-		if lineNum, ok := keyOrder[key]; ok {
-			value = dyn.NewValue(value.Value(), []dyn.Location{{Line: lineNum}})
-		}
-
-		updatedConfig[key] = value
-	}
-
-	// Save the updated databricks.yml (force=true since we're updating the file we just created)
-	saver := yamlsaver.NewSaver()
-	err = saver.SaveAsYAML(updatedConfig, databricksYmlPath, true)
-	if err != nil {
-		return fmt.Errorf("failed to save databricks.yml: %w", err)
-	}
-
-	// Add blank lines between top-level keys for better readability
-	err = internal.AddBlankLinesBetweenTopLevelKeys(databricksYmlPath)
-	if err != nil {
-		return fmt.Errorf("failed to format databricks.yml: %w", err)
-	}
-
-	// Delete the app config file
-	if err := os.Remove(appConfigFile); err != nil {
-		return fmt.Errorf("failed to remove %s: %w", appConfigFile, err)
-	}
 	return nil
 }

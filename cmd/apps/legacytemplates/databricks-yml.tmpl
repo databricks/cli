@@ -51,6 +51,31 @@ resources:
         - {{.}}
 {{- end}}
 {{- end}}
+{{- if hasAppConfig}}
+      config:
+{{- if hasAppCommand}}
+        command:
+{{- range getAppCommand}}
+          - {{.}}
+{{- end}}
+{{- end}}
+{{- if hasAppEnv}}
+        env:
+{{- range getAppEnv}}
+          - name: {{.Name}}
+{{- if .Value}}
+            value: {{.Value}}
+{{- end}}
+{{- if .ValueFrom}}
+            value_from: {{.ValueFrom}}
+{{- end}}
+{{- end}}
+{{- end}}
+{{- if hasAppResources}}
+        resources:
+{{getAppResources}}
+{{- end}}
+{{- end}}
 {{- $hasBindings := false}}
 {{- range resourceTypes}}
 {{- if and (hasResource .) (hasBindings .)}}

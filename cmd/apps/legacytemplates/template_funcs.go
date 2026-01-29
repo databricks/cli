@@ -3,7 +3,7 @@ package legacytemplates
 import "text/template"
 
 // getTemplateFuncs returns template functions for databricks.yml generation.
-func getTemplateFuncs(resources *ResourceValues) template.FuncMap {
+func getTemplateFuncs(resources *ResourceValues, appConfig *AppConfig) template.FuncMap {
 	registry := GetGlobalRegistry()
 
 	return template.FuncMap{
@@ -87,6 +87,44 @@ func getTemplateFuncs(resources *ResourceValues) template.FuncMap {
 				return false
 			}
 			return handler.Metadata().BindingLines != nil
+		},
+
+		// App config functions
+		"hasAppConfig": func() bool {
+			return appConfig != nil
+		},
+
+		"hasAppCommand": func() bool {
+			return appConfig != nil && len(appConfig.Command) > 0
+		},
+
+		"hasAppEnv": func() bool {
+			return appConfig != nil && len(appConfig.Env) > 0
+		},
+
+		"getAppCommand": func() []string {
+			if appConfig == nil {
+				return nil
+			}
+			return appConfig.Command
+		},
+
+		"getAppEnv": func() []EnvVar {
+			if appConfig == nil {
+				return nil
+			}
+			return appConfig.Env
+		},
+
+		"hasAppResources": func() bool {
+			return appConfig != nil && appConfig.ResourcesYAML != ""
+		},
+
+		"getAppResources": func() string {
+			if appConfig == nil {
+				return ""
+			}
+			return appConfig.ResourcesYAML
 		},
 	}
 }
