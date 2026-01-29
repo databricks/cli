@@ -21,6 +21,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	"github.com/databricks/databricks-sdk-go/service/postgres"
 	"github.com/databricks/databricks-sdk-go/service/serving"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/stretchr/testify/assert"
@@ -211,6 +212,29 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 						},
 					},
 				},
+				PostgresProjects: map[string]*resources.PostgresProject{
+					"postgres_project1": {
+						ProjectId: "postgres-project-1",
+						ProjectSpec: postgres.ProjectSpec{
+							DisplayName: "postgres_project1",
+						},
+					},
+				},
+				PostgresBranches: map[string]*resources.PostgresBranch{
+					"postgres_branch1": {
+						BranchId: "postgres-branch-1",
+						Parent:   "projects/postgres-project-1",
+					},
+				},
+				PostgresEndpoints: map[string]*resources.PostgresEndpoint{
+					"postgres_endpoint1": {
+						EndpointId: "postgres-endpoint-1",
+						Parent:     "projects/postgres-project-1/branches/postgres-branch-1",
+						EndpointSpec: postgres.EndpointSpec{
+							EndpointType: postgres.EndpointTypeEndpointTypeReadWrite,
+						},
+					},
+				},
 			},
 		},
 		SyncRoot: vfs.MustNew("/Users/lennart.kats@databricks.com"),
@@ -390,8 +414,9 @@ func TestAllNonUcResourcesAreRenamed(t *testing.T) {
 				nameField := resource.Elem().FieldByName("Name")
 				resourceType := resources.Type().Field(i).Name
 
-				// Skip resources that are not renamed
-				if resourceType == "Apps" || resourceType == "SecretScopes" || resourceType == "DatabaseInstances" || resourceType == "DatabaseCatalogs" || resourceType == "SyncedDatabaseTables" {
+				// Skip resources that are not renamed (either because they don't have a user-facing Name field,
+				// or because their Name is server-generated rather than user-specified)
+				if resourceType == "Apps" || resourceType == "SecretScopes" || resourceType == "DatabaseInstances" || resourceType == "DatabaseCatalogs" || resourceType == "SyncedDatabaseTables" || resourceType == "PostgresProjects" || resourceType == "PostgresBranches" || resourceType == "PostgresEndpoints" {
 					continue
 				}
 

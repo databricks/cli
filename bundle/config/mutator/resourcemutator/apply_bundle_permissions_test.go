@@ -25,6 +25,9 @@ var unsupportedResources = []string{
 	"registered_models",
 	"database_catalogs",
 	"synced_database_tables",
+	"postgres_projects",
+	"postgres_branches",
+	"postgres_endpoints",
 }
 
 func TestApplyBundlePermissions(t *testing.T) {

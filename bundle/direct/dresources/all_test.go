@@ -170,20 +170,6 @@ var testConfig map[string]any = map[string]any{
 		},
 	},
 
-	"postgres_branches": &resources.PostgresBranch{
-		Parent:     "projects/test-project",
-		BranchId:   "test-branch",
-		BranchSpec: postgres.BranchSpec{},
-	},
-
-	"postgres_endpoints": &resources.PostgresEndpoint{
-		Parent:     "projects/test-project/branches/test-branch",
-		EndpointId: "test-endpoint",
-		EndpointSpec: postgres.EndpointSpec{
-			EndpointType: postgres.EndpointTypeEndpointTypeReadWrite,
-		},
-	},
-
 	"alerts": &resources.Alert{
 		AlertV2: sql.AlertV2{
 			DisplayName: "my-alert",
@@ -514,6 +500,62 @@ var testDeps = map[string]prepareWorkspace{
 			},
 		}, nil
 	},
+
+	"postgres_branches": func(client *databricks.WorkspaceClient) (any, error) {
+		// Create parent project first
+		_, err := client.Postgres.CreateProject(context.Background(), postgres.CreateProjectRequest{
+			ProjectId: "test-project-for-branch",
+			Project: postgres.Project{
+				Spec: &postgres.ProjectSpec{
+					DisplayName: "Test Project for Branch",
+					PgVersion:   16,
+				},
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return &resources.PostgresBranch{
+			Parent:     "projects/test-project-for-branch",
+			BranchId:   "test-branch",
+			BranchSpec: postgres.BranchSpec{},
+		}, nil
+	},
+
+	"postgres_endpoints": func(client *databricks.WorkspaceClient) (any, error) {
+		// Create parent project first
+		_, err := client.Postgres.CreateProject(context.Background(), postgres.CreateProjectRequest{
+			ProjectId: "test-project-for-endpoint",
+			Project: postgres.Project{
+				Spec: &postgres.ProjectSpec{
+					DisplayName: "Test Project for Endpoint",
+					PgVersion:   16,
+				},
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		// Create parent branch
+		_, err = client.Postgres.CreateBranch(context.Background(), postgres.CreateBranchRequest{
+			Parent:   "projects/test-project-for-endpoint",
+			BranchId: "test-branch-for-endpoint",
+			Branch:   postgres.Branch{},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return &resources.PostgresEndpoint{
+			Parent:     "projects/test-project-for-endpoint/branches/test-branch-for-endpoint",
+			EndpointId: "test-endpoint",
+			EndpointSpec: postgres.EndpointSpec{
+				EndpointType: postgres.EndpointTypeEndpointTypeReadWrite,
+			},
+		}, nil
+	},
 }
 
 func TestAll(t *testing.T) {
@@ -637,6 +679,12 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 		// t.Logf("Testing %s v=%#v, remoteValue=%#v", path.String(), val, remoteValue)
 		// We expect fields set explicitly to be preserved by testserver, which is true for all resources as of today.
 		// If not true for your resource, add exception here:
+		//
+		// Postgres resources: the real API does not return spec fields in read responses.
+		// The spec is input-only; only status (effective values) is returned.
+		if strings.HasPrefix(group, "postgres_") && strings.HasPrefix(path.String(), "spec.") {
+			return
+		}
 		assert.Equal(t, val, remoteValue, "path=%q\nnewState=%s\nremappedState=%s", path.String(), jsonDump(newState), jsonDump(remappedState))
 	}))
 

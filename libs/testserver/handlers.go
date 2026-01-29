@@ -844,4 +844,16 @@ func AddDefaultHandlers(server *Server) {
 		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/endpoints/" + req.Vars["endpoint_id"]
 		return req.Workspace.PostgresEndpointDelete(name)
 	})
+
+	// Catch-all handler for invalid postgres resource names.
+	// This handles cases like GET /api/2.0/postgres/1234 where "1234" is not a valid resource name.
+	server.Handle("GET", "/api/2.0/postgres/{name}", func(req Request) any {
+		return Response{
+			StatusCode: 404,
+			Body: map[string]string{
+				"error_code": "NOT_FOUND",
+				"message":    "resource not found",
+			},
+		}
+	})
 }

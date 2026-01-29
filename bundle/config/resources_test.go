@@ -21,6 +21,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	"github.com/databricks/databricks-sdk-go/service/postgres"
 	"github.com/stretchr/testify/mock"
 
 	"github.com/stretchr/testify/assert"
@@ -200,6 +201,29 @@ func TestResourcesBindSupport(t *testing.T) {
 				SyncedDatabaseTable: database.SyncedDatabaseTable{},
 			},
 		},
+		PostgresProjects: map[string]*resources.PostgresProject{
+			"my_postgres_project": {
+				ProjectId: "my-postgres-project",
+				ProjectSpec: postgres.ProjectSpec{
+					DisplayName: "my_postgres_project",
+				},
+			},
+		},
+		PostgresBranches: map[string]*resources.PostgresBranch{
+			"my_postgres_branch": {
+				BranchId: "my-postgres-branch",
+				Parent:   "projects/my-postgres-project",
+			},
+		},
+		PostgresEndpoints: map[string]*resources.PostgresEndpoint{
+			"my_postgres_endpoint": {
+				EndpointId: "my-postgres-endpoint",
+				Parent:     "projects/my-postgres-project/branches/my-postgres-branch",
+				EndpointSpec: postgres.EndpointSpec{
+					EndpointType: postgres.EndpointTypeEndpointTypeReadWrite,
+				},
+			},
+		},
 	}
 	unbindableResources := map[string]bool{"model": true}
 
@@ -224,6 +248,9 @@ func TestResourcesBindSupport(t *testing.T) {
 	m.GetMockDatabaseAPI().EXPECT().GetDatabaseInstance(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockDatabaseAPI().EXPECT().GetDatabaseCatalog(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockDatabaseAPI().EXPECT().GetSyncedDatabaseTable(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockPostgresAPI().EXPECT().GetProject(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockPostgresAPI().EXPECT().GetBranch(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockPostgresAPI().EXPECT().GetEndpoint(mock.Anything, mock.Anything).Return(nil, nil)
 
 	allResources := supportedResources.AllResources()
 	for _, group := range allResources {
