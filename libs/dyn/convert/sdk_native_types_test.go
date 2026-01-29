@@ -177,23 +177,6 @@ func TestSDKNativeTypesRoundtrip(t *testing.T) {
 
 // Duration tests
 
-func TestFromTypedDurationInStruct(t *testing.T) {
-	type Tmp struct {
-		Timeout *sdkduration.Duration `json:"timeout"`
-		Ttl     *sdkduration.Duration `json:"ttl"`
-	}
-
-	src := Tmp{
-		Timeout: sdkduration.New(300 * time.Second),
-		Ttl:     sdkduration.New(7 * 24 * time.Hour),
-	}
-
-	nv, err := FromTyped(src, dyn.NilValue)
-	require.NoError(t, err)
-	assert.Equal(t, "300s", nv.Get("timeout").MustString())
-	assert.Equal(t, "604800s", nv.Get("ttl").MustString())
-}
-
 func TestFromTypedDurationNil(t *testing.T) {
 	var src *sdkduration.Duration
 	nv, err := FromTyped(src, dyn.NilValue)
@@ -209,37 +192,6 @@ func TestFromTypedDurationZero(t *testing.T) {
 	assert.Equal(t, dyn.NilValue, nv)
 }
 
-func TestNormalizeDuration(t *testing.T) {
-	var typ sdkduration.Duration
-	vin := dyn.NewValue("300s", []dyn.Location{{File: "file", Line: 1, Column: 1}})
-	vout, err := Normalize(&typ, vin)
-	assert.Empty(t, err)
-	assert.Equal(t, dyn.NewValue("300s", vin.Locations()), vout)
-}
-
-func TestNormalizeDurationPointer(t *testing.T) {
-	var typ *sdkduration.Duration
-	vin := dyn.NewValue("604800s", []dyn.Location{{File: "file", Line: 1, Column: 1}})
-	vout, err := Normalize(typ, vin)
-	assert.Empty(t, err)
-	assert.Equal(t, dyn.NewValue("604800s", vin.Locations()), vout)
-}
-
-func TestNormalizeDurationInStruct(t *testing.T) {
-	type Tmp struct {
-		Timeout *sdkduration.Duration `json:"timeout"`
-	}
-
-	var typ Tmp
-	vin := dyn.V(map[string]dyn.Value{
-		"timeout": dyn.NewValue("300s", []dyn.Location{{File: "file", Line: 1, Column: 1}}),
-	})
-
-	vout, diags := Normalize(typ, vin)
-	assert.Empty(t, diags)
-	assert.Equal(t, "300s", vout.Get("timeout").MustString())
-}
-
 func TestNormalizeDurationNil(t *testing.T) {
 	var typ *sdkduration.Duration
 	vin := dyn.NilValue
@@ -252,35 +204,6 @@ func TestNormalizeDurationNil(t *testing.T) {
 		Paths:     []dyn.Path{dyn.EmptyPath},
 	}, err[0])
 	assert.Equal(t, dyn.InvalidValue, vout)
-}
-
-func TestToTypedDurationInStruct(t *testing.T) {
-	type Tmp struct {
-		Timeout *sdkduration.Duration `json:"timeout"`
-		Ttl     *sdkduration.Duration `json:"ttl"`
-	}
-
-	var out Tmp
-	v := dyn.V(map[string]dyn.Value{
-		"timeout": dyn.V("300s"),
-		"ttl":     dyn.V("604800s"), // 7 days in seconds
-	})
-
-	err := ToTyped(&out, v)
-	require.NoError(t, err)
-	require.NotNil(t, out.Timeout)
-	require.NotNil(t, out.Ttl)
-	assert.Equal(t, 300*time.Second, out.Timeout.AsDuration())
-	assert.Equal(t, 7*24*time.Hour, out.Ttl.AsDuration())
-}
-
-func TestToTypedDurationNil(t *testing.T) {
-	var out *sdkduration.Duration
-	v := dyn.NilValue
-
-	err := ToTyped(&out, v)
-	require.NoError(t, err)
-	assert.Nil(t, out)
 }
 
 func TestToTypedDurationError(t *testing.T) {
@@ -305,59 +228,11 @@ func TestToTypedDurationInvalidFormat(t *testing.T) {
 
 // Time tests
 
-func TestFromTypedSDKTimeInStruct(t *testing.T) {
-	type Tmp struct {
-		CreatedAt *sdktime.Time `json:"created_at"`
-		UpdatedAt *sdktime.Time `json:"updated_at"`
-	}
-
-	src := Tmp{
-		CreatedAt: sdktime.New(time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)),
-		UpdatedAt: sdktime.New(time.Date(2023, 12, 31, 23, 59, 59, 0, time.UTC)),
-	}
-
-	nv, err := FromTyped(src, dyn.NilValue)
-	require.NoError(t, err)
-	assert.Equal(t, "2023-01-01T00:00:00Z", nv.Get("created_at").MustString())
-	assert.Equal(t, "2023-12-31T23:59:59Z", nv.Get("updated_at").MustString())
-}
-
 func TestFromTypedSDKTimeNil(t *testing.T) {
 	var src *sdktime.Time
 	nv, err := FromTyped(src, dyn.NilValue)
 	require.NoError(t, err)
 	assert.Equal(t, dyn.NilValue, nv)
-}
-
-func TestNormalizeSDKTime(t *testing.T) {
-	var typ sdktime.Time
-	vin := dyn.NewValue("2023-12-25T10:30:00Z", []dyn.Location{{File: "file", Line: 1, Column: 1}})
-	vout, err := Normalize(&typ, vin)
-	assert.Empty(t, err)
-	assert.Equal(t, dyn.NewValue("2023-12-25T10:30:00Z", vin.Locations()), vout)
-}
-
-func TestNormalizeSDKTimePointer(t *testing.T) {
-	var typ *sdktime.Time
-	vin := dyn.NewValue("2023-12-25T10:30:00.123456789Z", []dyn.Location{{File: "file", Line: 1, Column: 1}})
-	vout, err := Normalize(typ, vin)
-	assert.Empty(t, err)
-	assert.Equal(t, dyn.NewValue("2023-12-25T10:30:00.123456789Z", vin.Locations()), vout)
-}
-
-func TestNormalizeSDKTimeInStruct(t *testing.T) {
-	type Tmp struct {
-		CreatedAt *sdktime.Time `json:"created_at"`
-	}
-
-	var typ Tmp
-	vin := dyn.V(map[string]dyn.Value{
-		"created_at": dyn.NewValue("2023-01-01T00:00:00Z", []dyn.Location{{File: "file", Line: 1, Column: 1}}),
-	})
-
-	vout, diags := Normalize(typ, vin)
-	assert.Empty(t, diags)
-	assert.Equal(t, "2023-01-01T00:00:00Z", vout.Get("created_at").MustString())
 }
 
 func TestNormalizeSDKTimeNil(t *testing.T) {
@@ -374,35 +249,6 @@ func TestNormalizeSDKTimeNil(t *testing.T) {
 	assert.Equal(t, dyn.InvalidValue, vout)
 }
 
-func TestToTypedSDKTimeInStruct(t *testing.T) {
-	type Tmp struct {
-		CreatedAt *sdktime.Time `json:"created_at"`
-		UpdatedAt *sdktime.Time `json:"updated_at"`
-	}
-
-	var out Tmp
-	v := dyn.V(map[string]dyn.Value{
-		"created_at": dyn.V("2023-01-01T00:00:00Z"),
-		"updated_at": dyn.V("2023-12-31T23:59:59Z"),
-	})
-
-	err := ToTyped(&out, v)
-	require.NoError(t, err)
-	require.NotNil(t, out.CreatedAt)
-	require.NotNil(t, out.UpdatedAt)
-	assert.Equal(t, time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC), out.CreatedAt.AsTime())
-	assert.Equal(t, time.Date(2023, 12, 31, 23, 59, 59, 0, time.UTC), out.UpdatedAt.AsTime())
-}
-
-func TestToTypedSDKTimeNil(t *testing.T) {
-	var out *sdktime.Time
-	v := dyn.NilValue
-
-	err := ToTyped(&out, v)
-	require.NoError(t, err)
-	assert.Nil(t, out)
-}
-
 func TestToTypedSDKTimeError(t *testing.T) {
 	var out sdktime.Time
 	v := dyn.V(map[string]dyn.Value{"foo": dyn.V("bar")})
@@ -413,20 +259,6 @@ func TestToTypedSDKTimeError(t *testing.T) {
 }
 
 // FieldMask tests
-
-func TestFromTypedFieldMaskInStruct(t *testing.T) {
-	type Tmp struct {
-		Fields *sdkfieldmask.FieldMask `json:"fields"`
-	}
-
-	src := Tmp{
-		Fields: sdkfieldmask.New([]string{"id", "name", "status"}),
-	}
-
-	nv, err := FromTyped(src, dyn.NilValue)
-	require.NoError(t, err)
-	assert.Equal(t, "id,name,status", nv.Get("fields").MustString())
-}
 
 func TestFromTypedFieldMaskNil(t *testing.T) {
 	var src *sdkfieldmask.FieldMask
@@ -443,37 +275,6 @@ func TestFromTypedFieldMaskEmpty(t *testing.T) {
 	assert.Equal(t, dyn.V(""), nv)
 }
 
-func TestNormalizeFieldMask(t *testing.T) {
-	var typ sdkfieldmask.FieldMask
-	vin := dyn.NewValue("name,age,email", []dyn.Location{{File: "file", Line: 1, Column: 1}})
-	vout, err := Normalize(&typ, vin)
-	assert.Empty(t, err)
-	assert.Equal(t, dyn.NewValue("name,age,email", vin.Locations()), vout)
-}
-
-func TestNormalizeFieldMaskPointer(t *testing.T) {
-	var typ *sdkfieldmask.FieldMask
-	vin := dyn.NewValue("first_name,last_name", []dyn.Location{{File: "file", Line: 1, Column: 1}})
-	vout, err := Normalize(typ, vin)
-	assert.Empty(t, err)
-	assert.Equal(t, dyn.NewValue("first_name,last_name", vin.Locations()), vout)
-}
-
-func TestNormalizeFieldMaskInStruct(t *testing.T) {
-	type Tmp struct {
-		Fields *sdkfieldmask.FieldMask `json:"fields"`
-	}
-
-	var typ Tmp
-	vin := dyn.V(map[string]dyn.Value{
-		"fields": dyn.NewValue("id,name,status", []dyn.Location{{File: "file", Line: 1, Column: 1}}),
-	})
-
-	vout, diags := Normalize(typ, vin)
-	assert.Empty(t, diags)
-	assert.Equal(t, "id,name,status", vout.Get("fields").MustString())
-}
-
 func TestNormalizeFieldMaskNil(t *testing.T) {
 	var typ *sdkfieldmask.FieldMask
 	vin := dyn.NilValue
@@ -486,31 +287,6 @@ func TestNormalizeFieldMaskNil(t *testing.T) {
 		Paths:     []dyn.Path{dyn.EmptyPath},
 	}, err[0])
 	assert.Equal(t, dyn.InvalidValue, vout)
-}
-
-func TestToTypedFieldMaskInStruct(t *testing.T) {
-	type Tmp struct {
-		Fields *sdkfieldmask.FieldMask `json:"fields"`
-	}
-
-	var out Tmp
-	v := dyn.V(map[string]dyn.Value{
-		"fields": dyn.V("id,name,status"),
-	})
-
-	err := ToTyped(&out, v)
-	require.NoError(t, err)
-	require.NotNil(t, out.Fields)
-	assert.Equal(t, []string{"id", "name", "status"}, out.Fields.Paths)
-}
-
-func TestToTypedFieldMaskNil(t *testing.T) {
-	var out *sdkfieldmask.FieldMask
-	v := dyn.NilValue
-
-	err := ToTyped(&out, v)
-	require.NoError(t, err)
-	assert.Nil(t, out)
 }
 
 func TestToTypedFieldMaskError(t *testing.T) {
