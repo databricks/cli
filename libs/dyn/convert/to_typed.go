@@ -37,6 +37,11 @@ func ToTyped(dst any, src dyn.Value) error {
 		panic("cannot set destination value")
 	}
 
+	// Handle SDK native types using JSON unmarshaling.
+	if isSDKNativeType(dstv.Type()) {
+		return toTypedSDKNative(dstv, src)
+	}
+
 	switch dstv.Kind() {
 	case reflect.Struct:
 		return toTypedStruct(dstv, src)

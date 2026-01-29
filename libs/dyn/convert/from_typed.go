@@ -55,6 +55,16 @@ func fromTyped(src any, ref dyn.Value, options ...fromTypedOptions) (dyn.Value, 
 		}
 	}
 
+	// Handle SDK native types using JSON marshaling.
+	// Check for Invalid kind first to avoid panic when calling Type() on invalid value.
+	if srcv.Kind() != reflect.Invalid && isSDKNativeType(srcv.Type()) {
+		v, err := fromTypedSDKNative(srcv, ref, options...)
+		if err != nil {
+			return dyn.InvalidValue, err
+		}
+		return v.WithLocations(ref.Locations()), nil
+	}
+
 	var v dyn.Value
 	var err error
 	switch srcv.Kind() {
