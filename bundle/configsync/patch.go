@@ -194,7 +194,7 @@ func applyChanges(ctx context.Context, filePath string, changes resolvedChanges,
 		// If all attempts failed with parent path errors, try creating nested structures
 		if !success && len(parentNodesToCreate) > 0 {
 			for _, errInfo := range parentNodesToCreate {
-				nestedValue := buildNestedStructure(errInfo.path, errInfo.missingPath, normalizedRemote)
+				nestedValue := buildNestedMaps(errInfo.path, errInfo.missingPath, normalizedRemote)
 
 				patcher := gopkgv3yamlpatcher.New(gopkgv3yamlpatcher.IndentSpaces(2))
 				modifiedContent, patchErr := patcher.Apply(content, yamlpatch.Patch{yamlpatch.Operation{
@@ -301,7 +301,7 @@ func extractMissingPath(err error) (yamlpatch.Path, error) {
 	return yamlpatch.ParsePath(pathStr)
 }
 
-// buildNestedStructure creates a nested map structure from targetPath to missingPath.
+// buildNestedMaps creates a nested map structure from targetPath to missingPath.
 // Example:
 //
 //	targetPath: /a/b/c/d/e
@@ -309,7 +309,7 @@ func extractMissingPath(err error) (yamlpatch.Path, error) {
 //	leafValue: "foo"
 //
 // Returns: {c: {d: {e: "foo"}}}
-func buildNestedStructure(targetPath, missingPath yamlpatch.Path, leafValue any) any {
+func buildNestedMaps(targetPath, missingPath yamlpatch.Path, leafValue any) any {
 	missingLen := len(missingPath)
 	targetLen := len(targetPath)
 

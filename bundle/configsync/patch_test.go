@@ -900,14 +900,14 @@ func TestApplyChangesToYAML_WithSDKStructValues(t *testing.T) {
 	assert.Contains(t, files[0].ModifiedContent, "enabled: false")
 }
 
-func TestBuildNestedStructure(t *testing.T) {
+func TestBuildNestedMaps(t *testing.T) {
 	targetPath, err := yamlpatch.ParsePath("/targets/default/resources/pipelines/my_pipeline/tags/foo")
 	require.NoError(t, err)
 
 	missingPath, err := yamlpatch.ParsePath("/targets/default/resources")
 	require.NoError(t, err)
 
-	result := buildNestedStructure(targetPath, missingPath, "bar")
+	result := buildNestedMaps(targetPath, missingPath, "bar")
 
 	expected := map[string]any{
 		"pipelines": map[string]any{
