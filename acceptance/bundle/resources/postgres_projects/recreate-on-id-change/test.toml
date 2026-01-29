@@ -1,4 +1,4 @@
-# Override to only run with direct mode - plan output format differs between engines
+# Override to only run with direct mode - recreation behavior differs between engines
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 
 [[Repls]]
