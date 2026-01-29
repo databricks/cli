@@ -214,11 +214,11 @@ func resolveEndpoint(ctx context.Context, w *databricks.WorkspaceClient, project
 
 	// If branch not specified, select one
 	if branchID == "" {
-		branch, err := selectBranch(ctx, w, projectName)
+		var err error
+		branchID, err = selectBranchID(ctx, w, projectName)
 		if err != nil {
 			return nil, fmt.Errorf("failed to select branch: %w", err)
 		}
-		branchID = lakebasev2.ExtractIDFromName(branch.Name, "branches")
 	}
 	cmdio.LogString(ctx, "Branch: "+branchID)
 
@@ -235,8 +235,9 @@ func resolveEndpoint(ctx context.Context, w *databricks.WorkspaceClient, project
 	return lakebasev2.GetEndpoint(ctx, w, projectID, branchID, endpointID)
 }
 
-// selectBranch auto-selects if there's only one branch, otherwise prompts user to select.
-func selectBranch(ctx context.Context, w *databricks.WorkspaceClient, projectName string) (*postgres.Branch, error) {
+// selectBranchID auto-selects if there's only one branch, otherwise prompts user to select.
+// Returns the branch ID (not the full branch object).
+func selectBranchID(ctx context.Context, w *databricks.WorkspaceClient, projectName string) (string, error) {
 	sp := cmdio.NewSpinner(ctx)
 	sp.Update("Loading branches...")
 	branches, err := w.Postgres.ListBranchesAll(ctx, postgres.ListBranchesRequest{
@@ -244,16 +245,16 @@ func selectBranch(ctx context.Context, w *databricks.WorkspaceClient, projectNam
 	})
 	sp.Close()
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	if len(branches) == 0 {
-		return nil, errors.New("no branches found in project")
+		return "", errors.New("no branches found in project")
 	}
 
 	// Auto-select if there's only one branch
 	if len(branches) == 1 {
-		return &branches[0], nil
+		return lakebasev2.ExtractIDFromName(branches[0].Name, "branches"), nil
 	}
 
 	// Multiple branches, prompt user to select
@@ -263,18 +264,7 @@ func selectBranch(ctx context.Context, w *databricks.WorkspaceClient, projectNam
 		items = append(items, cmdio.Tuple{Name: branchID, Id: branchID})
 	}
 
-	selectedID, err := cmdio.SelectOrdered(ctx, items, "Select branch")
-	if err != nil {
-		return nil, err
-	}
-
-	for i := range branches {
-		if lakebasev2.ExtractIDFromName(branches[i].Name, "branches") == selectedID {
-			return &branches[i], nil
-		}
-	}
-
-	return nil, errors.New("selected branch not found")
+	return cmdio.SelectOrdered(ctx, items, "Select branch")
 }
 
 // selectEndpointID auto-selects if there's only one endpoint, otherwise prompts user to select.
