@@ -658,208 +658,136 @@ func TestPureReferenceToPath(t *testing.T) {
 	}
 }
 
-func TestPathNodeHasPrefix(t *testing.T) {
+func TestHasPrefix(t *testing.T) {
 	tests := []struct {
 		name     string
-		path     string
+		s        string
 		prefix   string
 		expected bool
 	}{
 		// Edge cases
 		{
-			name:     "nil prefix matches any path",
-			path:     "a.b.c",
+			name:     "empty prefix",
+			s:        "a.b.c",
 			prefix:   "",
 			expected: true,
 		},
 		{
-			name:     "nil path with non-nil prefix",
-			path:     "",
+			name:     "empty string",
+			s:        "",
 			prefix:   "a",
 			expected: false,
 		},
 		{
 			name:     "exact match",
-			path:     "config",
+			s:        "config",
 			prefix:   "config",
 			expected: true,
 		},
-		{
-			name:     "both nil",
-			path:     "",
-			prefix:   "",
-			expected: true,
-		},
 
-		// Simple field matches
+		// Correct matches - path boundary aware
 		{
-			name:     "single field prefix",
-			path:     "a.b.c",
+			name:     "simple field match",
+			s:        "a.b",
 			prefix:   "a",
 			expected: true,
 		},
 		{
-			name:     "two field prefix",
-			path:     "a.b.c",
-			prefix:   "a.b",
+			name:     "nested field match",
+			s:        "config.database.name",
+			prefix:   "config.database",
 			expected: true,
 		},
 		{
-			name:     "full path as prefix",
-			path:     "a.b.c",
-			prefix:   "a.b.c",
-			expected: true,
-		},
-		{
-			name:     "prefix longer than path",
-			path:     "a.b",
-			prefix:   "a.b.c",
-			expected: false,
-		},
-
-		// Array index matches
-		{
-			name:     "array index in path, field prefix",
-			path:     "items[0].name",
+			name:     "field with array index",
+			s:        "items[3].name",
 			prefix:   "items",
 			expected: true,
 		},
 		{
-			name:     "array index in prefix",
-			path:     "items[0].name.value",
+			name:     "array with prefix match",
+			s:        "items[0].name",
 			prefix:   "items[0]",
 			expected: true,
 		},
 		{
-			name:     "array index full match",
-			path:     "items[0].name",
-			prefix:   "items[0].name",
+			name:     "field with bracket notation",
+			s:        "config['spark.conf'].value",
+			prefix:   "config['spark.conf']",
 			expected: true,
+		},
+
+		// Incorrect matches - should NOT match
+		{
+			name:     "substring match without boundary",
+			s:        "ai_gateway",
+			prefix:   "ai",
+			expected: false,
+		},
+		{
+			name:     "different nested field",
+			s:        "configuration.name",
+			prefix:   "config",
+			expected: false,
+		},
+
+		// wildcard patterns are NOT supported - treated as literals
+		{
+			name:     "regex pattern not respected - star quantifier",
+			s:        "aaa",
+			prefix:   "a*",
+			expected: false,
+		},
+		{
+			name:     "regex pattern not respected - bracket class",
+			s:        "a[1]",
+			prefix:   "a[*]",
+			expected: false,
+		},
+
+		// Exact component matching - array indices, bracket keys, and key-value notation
+		{
+			name:     "prefix longer than path",
+			s:        "a.b",
+			prefix:   "a.b.c",
+			expected: false,
 		},
 		{
 			name:     "different array indices",
-			path:     "items[0].name",
+			s:        "items[0].name",
 			prefix:   "items[1]",
 			expected: false,
 		},
 		{
-			name:     "array index mismatch in middle",
-			path:     "a[0].b.c",
-			prefix:   "a[1].b",
-			expected: false,
-		},
-
-		// Bracket notation matches
-		{
-			name:     "bracket string key",
-			path:     "config['spark.conf'].value",
-			prefix:   "config",
-			expected: true,
-		},
-		{
-			name:     "bracket string key in prefix",
-			path:     "config['spark.conf'].value.nested",
-			prefix:   "config['spark.conf']",
-			expected: true,
-		},
-		{
 			name:     "different bracket keys",
-			path:     "config['spark.conf']",
+			s:        "config['spark.conf']",
 			prefix:   "config['other.conf']",
 			expected: false,
 		},
-
-		// Wildcard matches
-		{
-			name:     "dot star in prefix",
-			path:     "items.*[0]",
-			prefix:   "items.*",
-			expected: true,
-		},
-		{
-			name:     "bracket star in prefix",
-			path:     "items[*].name",
-			prefix:   "items[*]",
-			expected: true,
-		},
-		{
-			name:     "wildcard mismatch - dot vs bracket",
-			path:     "items.*",
-			prefix:   "items[*]",
-			expected: false,
-		},
-
-		// Key-value matches
-		{
-			name:     "key-value in path",
-			path:     "tasks[task_key='my_task'].name",
-			prefix:   "tasks",
-			expected: true,
-		},
 		{
 			name:     "key-value in prefix",
-			path:     "tasks[task_key='my_task'].notebook_task.source",
+			s:        "tasks[task_key='my_task'].notebook_task.source",
 			prefix:   "tasks[task_key='my_task']",
 			expected: true,
 		},
 		{
-			name:     "different key-value keys",
-			path:     "tasks[task_key='my_task']",
-			prefix:   "tasks[other_key='my_task']",
-			expected: false,
-		},
-		{
 			name:     "different key-value values",
-			path:     "tasks[task_key='my_task']",
+			s:        "tasks[task_key='my_task']",
 			prefix:   "tasks[task_key='other_task']",
-			expected: false,
-		},
-
-		// Complex paths
-		{
-			name:     "complex nested path",
-			path:     "resources.jobs['my-job'].tasks[0].notebook_task.source",
-			prefix:   "resources.jobs['my-job'].tasks",
-			expected: true,
-		},
-		{
-			name:     "complex path with key-value",
-			path:     "resources.jobs.my_job.tasks[task_key='ingest'].depends_on[0]",
-			prefix:   "resources.jobs.my_job.tasks[task_key='ingest']",
-			expected: true,
-		},
-		{
-			name:     "mismatch in middle of complex path",
-			path:     "resources.jobs.job1.tasks[0]",
-			prefix:   "resources.jobs.job2.tasks",
-			expected: false,
-		},
-
-		// Field name differences
-		{
-			name:     "field name substring not a match",
-			path:     "configuration.name",
-			prefix:   "config",
-			expected: false,
-		},
-		{
-			name:     "different field entirely",
-			path:     "user.name",
-			prefix:   "admin",
 			expected: false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			path, err := Parse(tt.path)
+			path, err := Parse(tt.s)
 			require.NoError(t, err)
 
 			prefix, err := Parse(tt.prefix)
 			require.NoError(t, err)
 
 			result := path.HasPrefix(prefix)
-			assert.Equal(t, tt.expected, result, "path.HasPrefix(prefix) where path=%q, prefix=%q", tt.path, tt.prefix)
+			assert.Equal(t, tt.expected, result, "path.HasPrefix(prefix) where path=%q, prefix=%q", tt.s, tt.prefix)
 		})
 	}
 }
