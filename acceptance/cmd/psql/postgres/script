@@ -1,0 +1,35 @@
+mv echo-arguments.sh psql
+
+cleanup() {
+  rm psql
+}
+trap cleanup EXIT
+
+export PATH="$(pwd):$PATH"
+
+title "Test should use a fake psql command:"
+trace psql --version
+
+title "Full endpoint path should connect to the endpoint:"
+trace $CLI psql projects/my-project/branches/main/endpoints/primary
+
+title "Project flag with auto-selection should connect:"
+trace $CLI psql --project auto-project
+
+title "Project and branch flags should connect:"
+trace $CLI psql --project explicit-project --branch explicit-branch
+
+title "Endpoint in INIT state should fail:"
+trace musterr $CLI psql projects/init-project/branches/main/endpoints/init-ep
+
+title "Branch flag without project should fail:"
+trace musterr $CLI psql --branch some-branch
+
+title "Endpoint flag without project should fail:"
+trace musterr $CLI psql --endpoint some-endpoint
+
+title "Extra arguments should be passed through:"
+trace $CLI psql projects/my-project/branches/main/endpoints/primary -- -c "SELECT 1"
+
+title "No retries with max-retries 0:"
+trace $CLI psql --project auto-project --max-retries 0

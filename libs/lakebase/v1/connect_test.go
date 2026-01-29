@@ -1,4 +1,4 @@
-package lakebase
+package lakebasev1
 
 import (
 	"context"

@@ -1,0 +1,181 @@
+# This acceptance test is disabled on Windows runners because
+# the current argument capturing method does not work on windows-latest GitHub Runner.
+#
+# See PR #3228 for documented attempts to fix this issue:
+# https://github.com/databricks/cli/pull/3228
+GOOS.windows = false
+
+# Full endpoint path - projects/my-project/branches/main/endpoints/primary
+[[Server]]
+Pattern = "GET /api/2.0/postgres/projects/my-project/branches/main/endpoints/primary"
+Response.Body = '''
+{
+    "name": "projects/my-project/branches/main/endpoints/primary",
+    "spec": {
+        "endpoint_type": "ENDPOINT_TYPE_READ_WRITE"
+    },
+    "status": {
+        "current_state": "ACTIVE",
+        "hosts": {
+            "host": "my-endpoint.postgres.example.com"
+        }
+    }
+}
+'''
+
+# Project list for auto-selection (used when only --project is specified)
+[[Server]]
+Pattern = "GET /api/2.0/postgres/projects/auto-project/branches"
+Response.Body = '''
+{
+    "branches": [
+        {
+            "name": "projects/auto-project/branches/default-branch",
+            "status": {
+                "default": true
+            }
+        },
+        {
+            "name": "projects/auto-project/branches/feature-branch",
+            "status": {
+                "default": false
+            }
+        }
+    ]
+}
+'''
+
+[[Server]]
+Pattern = "GET /api/2.0/postgres/projects/auto-project/branches/default-branch/endpoints"
+Response.Body = '''
+{
+    "endpoints": [
+        {
+            "name": "projects/auto-project/branches/default-branch/endpoints/read-write-ep",
+            "spec": {
+                "endpoint_type": "ENDPOINT_TYPE_READ_WRITE"
+            },
+            "status": {
+                "current_state": "ACTIVE",
+                "hosts": {
+                    "host": "auto-endpoint.postgres.example.com"
+                }
+            }
+        },
+        {
+            "name": "projects/auto-project/branches/default-branch/endpoints/read-only-ep",
+            "spec": {
+                "endpoint_type": "ENDPOINT_TYPE_READ_ONLY"
+            },
+            "status": {
+                "current_state": "ACTIVE",
+                "hosts": {
+                    "host": "auto-endpoint-ro.postgres.example.com"
+                }
+            }
+        }
+    ]
+}
+'''
+
+[[Server]]
+Pattern = "GET /api/2.0/postgres/projects/auto-project/branches/default-branch/endpoints/read-write-ep"
+Response.Body = '''
+{
+    "name": "projects/auto-project/branches/default-branch/endpoints/read-write-ep",
+    "spec": {
+        "endpoint_type": "ENDPOINT_TYPE_READ_WRITE"
+    },
+    "status": {
+        "current_state": "ACTIVE",
+        "hosts": {
+            "host": "auto-endpoint.postgres.example.com"
+        }
+    }
+}
+'''
+
+# Project with explicit branch (--project and --branch)
+[[Server]]
+Pattern = "GET /api/2.0/postgres/projects/explicit-project/branches/explicit-branch/endpoints"
+Response.Body = '''
+{
+    "endpoints": [
+        {
+            "name": "projects/explicit-project/branches/explicit-branch/endpoints/main-ep",
+            "spec": {
+                "endpoint_type": "ENDPOINT_TYPE_READ_WRITE"
+            },
+            "status": {
+                "current_state": "IDLE",
+                "hosts": {
+                    "host": "explicit-endpoint.postgres.example.com"
+                }
+            }
+        }
+    ]
+}
+'''
+
+[[Server]]
+Pattern = "GET /api/2.0/postgres/projects/explicit-project/branches/explicit-branch/endpoints/main-ep"
+Response.Body = '''
+{
+    "name": "projects/explicit-project/branches/explicit-branch/endpoints/main-ep",
+    "spec": {
+        "endpoint_type": "ENDPOINT_TYPE_READ_WRITE"
+    },
+    "status": {
+        "current_state": "IDLE",
+        "hosts": {
+            "host": "explicit-endpoint.postgres.example.com"
+        }
+    }
+}
+'''
+
+# Endpoint in INIT state (not ready)
+[[Server]]
+Pattern = "GET /api/2.0/postgres/projects/init-project/branches/main/endpoints/init-ep"
+Response.Body = '''
+{
+    "name": "projects/init-project/branches/main/endpoints/init-ep",
+    "spec": {
+        "endpoint_type": "ENDPOINT_TYPE_READ_WRITE"
+    },
+    "status": {
+        "current_state": "INIT",
+        "hosts": {
+            "host": "init-endpoint.postgres.example.com"
+        }
+    }
+}
+'''
+
+# Credential generation endpoint
+[[Server]]
+Pattern = "POST /api/2.0/postgres/credentials"
+Response.Body = '''
+{
+    "token": "postgres-secret-token",
+    "expire_time": "2025-01-01T00:00:00Z"
+}
+'''
+
+# Database instances for combined selection test
+[[Server]]
+Pattern = "GET /api/2.0/database/instances"
+Response.Body = '''
+{
+    "database_instances": []
+}
+'''
+
+# Postgres projects for combined selection test
+[[Server]]
+Pattern = "GET /api/2.0/postgres/projects"
+Response.Body = '''
+{
+    "projects": []
+}
+'''

@@ -1,0 +1,22 @@
+
+=== Test should use a fake psql command:
+>>> psql --version
+echo-arguments.sh was called with the following arguments: --version
+PGPASSWORD=
+PGSSLMODE=
+
+=== Full endpoint path should connect to the endpoint:
+>>> [CLI] psql projects/my-project/branches/main/endpoints/primary
+Connecting to Postgres endpoint primary ...
+Endpoint state: ACTIVE
+Successfully fetched database credentials
+Launching psql session to my-endpoint.postgres.example.com (attempt 1/3)...
+echo-arguments.sh was called with the following arguments: --host=my-endpoint.postgres.example.com --username=[USERNAME] --port=5432 --dbname=postgres
+PGPASSWORD=postgres-secret-token
+PGSSLMODE=require
+
+=== Project flag with auto-selection should connect:
+>>> [CLI] psql --project auto-project
+Error: failed to select branch: expected to have Select branch
+
+Exit code: 1

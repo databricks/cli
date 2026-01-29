@@ -7,11 +7,11 @@ PGSSLMODE=
 
 === Command should require instance name:
 >>> musterr [CLI] psql
-Error: could not find any Database instances in the workspace. Please manually specify required argument: DATABASE_INSTANCE_NAME
+Error: could not find any Database instances or Postgres projects in the workspace
 
 === Command should require instance name even if extra arguments are provided:
 >>> musterr [CLI] psql -- --dbname=my-database
-Error: could not find any Database instances in the workspace. Please manually specify required argument: DATABASE_INSTANCE_NAME
+Error: could not find any Database instances or Postgres projects in the workspace
 
 === Command should use default db name if it is not specified:
 >>> [CLI] psql my-database
