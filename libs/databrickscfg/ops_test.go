@@ -225,3 +225,27 @@ func TestSaveToProfile_ClearingPreviousProfile(t *testing.T) {
 	assert.Equal(t, "https://foo", raw["host"])
 	assert.Equal(t, "databricks-cli", raw["auth_type"])
 }
+
+func TestSaveToProfile_WithScopes(t *testing.T) {
+	ctx := context.Background()
+	path := filepath.Join(t.TempDir(), "databrickscfg")
+
+	err := SaveToProfile(ctx, &config.Config{
+		ConfigFile: path,
+		Profile:    "scoped",
+		Host:       "https://myworkspace.cloud.databricks.com",
+		AuthType:   "databricks-cli",
+		Scopes:     []string{"jobs", "pipelines", "clusters"},
+	})
+	require.NoError(t, err)
+
+	file, err := loadOrCreateConfigFile(path)
+	require.NoError(t, err)
+	section, err := file.GetSection("scoped")
+	require.NoError(t, err)
+	raw := section.KeysHash()
+	assert.Len(t, raw, 3)
+	assert.Equal(t, "https://myworkspace.cloud.databricks.com", raw["host"])
+	assert.Equal(t, "databricks-cli", raw["auth_type"])
+	assert.Equal(t, "jobs,pipelines,clusters", raw["scopes"])
+}

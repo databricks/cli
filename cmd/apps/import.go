@@ -94,8 +94,8 @@ Examples:
 			// If no app name provided, list apps and let user select
 			if name == "" {
 				// List all apps
-				spinner := cmdio.Spinner(ctx)
-				spinner <- "Loading available apps..."
+				spinner := cmdio.NewSpinner(ctx)
+				spinner.Update("Loading available apps...")
 				allApps := w.Apps.List(ctx, apps.ListAppsRequest{})
 
 				// Collect all apps
@@ -103,12 +103,12 @@ Examples:
 				for allApps.HasNext(ctx) {
 					app, err := allApps.Next(ctx)
 					if err != nil {
-						close(spinner)
+						spinner.Close()
 						return fmt.Errorf("failed to iterate apps: %w", err)
 					}
 					appList = append(appList, app)
 				}
-				close(spinner)
+				spinner.Close()
 
 				if len(appList) == 0 {
 					return errors.New("no apps found in workspace")

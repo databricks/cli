@@ -28,6 +28,7 @@ Provides commands to:
 
 	cmd.AddCommand(newMcpCmd())
 	cmd.AddCommand(newInstallCmd())
+	cmd.AddCommand(newSkillsCmd())
 	cmd.AddCommand(newToolsCmd())
 
 	return cmd

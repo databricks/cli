@@ -341,10 +341,16 @@ func (s *FakeWorkspace) WorkspaceDelete(path string, recursive bool) {
 	defer s.LockUnlock()()
 	if !recursive {
 		delete(s.files, path)
+		delete(s.directories, path)
 	} else {
 		for key := range s.files {
 			if strings.HasPrefix(key, path) {
 				delete(s.files, key)
+			}
+		}
+		for key := range s.directories {
+			if strings.HasPrefix(key, path) {
+				delete(s.directories, key)
 			}
 		}
 	}

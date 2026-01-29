@@ -122,6 +122,10 @@ func (r *ResourceCluster) DoDelete(ctx context.Context, id string) error {
 }
 
 func (r *ResourceCluster) OverrideChangeDesc(ctx context.Context, p *structpath.PathNode, change *ChangeDesc, remoteState *compute.ClusterDetails) error {
+	if change.Action == deployplan.Skip {
+		return nil
+	}
+
 	path := p.Prefix(1).String()
 	switch path {
 	case "data_security_mode":

@@ -383,7 +383,7 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 			// Empty struct in config should not cause drift when remote has values
 			ch.Action = deployplan.Skip
 			ch.Reason = deployplan.ReasonEmptyStruct
-		} else if action := shouldIgnore(cfg, pathString); action != deployplan.Undefined {
+		} else if action := shouldIgnore(cfg, path); action != deployplan.Undefined {
 			ch.Action = action
 			ch.Reason = deployplan.ReasonBuiltinRule
 		} else if ch.New == nil && ch.Old == nil && ch.Remote != nil && path.IsDotString() {
@@ -393,45 +393,55 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 			// Note, we only consider struct fields here. Adding/removing elements to/from maps and slices should trigger updates.
 			ch.Action = deployplan.Skip
 			ch.Reason = deployplan.ReasonServerSideDefault
-		} else if action := shouldUpdateOrRecreate(cfg, pathString); action != deployplan.Undefined {
+		} else if action := shouldUpdateOrRecreate(cfg, path); action != deployplan.Undefined {
 			ch.Action = action
 			ch.Reason = deployplan.ReasonBuiltinRule
 		} else {
 			ch.Action = deployplan.Update
 		}
 
-		err = adapter.OverrideChangeDesc(ctx, path, ch, remoteState)
-		if err != nil {
-			return fmt.Errorf("internal error: failed to classify change: %w", err)
+		if adapter.HasOverrideChangeDesc() {
+			savedAction := ch.Action
+			savedReason := ch.Reason
+
+			err = adapter.OverrideChangeDesc(ctx, path, ch, remoteState)
+			if err != nil {
+				return fmt.Errorf("internal error: failed to classify change: %w", err)
+			}
+
+			if savedAction != ch.Action && savedReason == ch.Reason {
+				// ch.Action was changed but not Reason field; set it to "custom"
+				ch.Reason = deployplan.ReasonCustom
+			}
 		}
 	}
 
 	return nil
 }
 
-func shouldIgnore(cfg *dresources.ResourceLifecycleConfig, pathString string) deployplan.ActionType {
+func shouldIgnore(cfg *dresources.ResourceLifecycleConfig, path *structpath.PathNode) deployplan.ActionType {
 	if cfg == nil {
 		return deployplan.Undefined
 	}
 	for _, p := range cfg.IgnoreRemoteChanges {
-		if structpath.HasPrefix(pathString, p.String()) {
+		if path.HasPrefix(p) {
 			return deployplan.Skip
 		}
 	}
 	return deployplan.Undefined
 }
 
-func shouldUpdateOrRecreate(cfg *dresources.ResourceLifecycleConfig, pathString string) deployplan.ActionType {
+func shouldUpdateOrRecreate(cfg *dresources.ResourceLifecycleConfig, path *structpath.PathNode) deployplan.ActionType {
 	if cfg == nil {
 		return deployplan.Undefined
 	}
 	for _, p := range cfg.RecreateOnChanges {
-		if structpath.HasPrefix(pathString, p.String()) {
+		if path.HasPrefix(p) {
 			return deployplan.Recreate
 		}
 	}
 	for _, p := range cfg.UpdateIDOnChanges {
-		if structpath.HasPrefix(pathString, p.String()) {
+		if path.HasPrefix(p) {
 			return deployplan.UpdateWithID
 		}
 	}

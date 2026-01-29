@@ -500,11 +500,13 @@ func (a *Adapter) WaitAfterUpdate(ctx context.Context, newState any) (any, error
 	return remoteState, nil
 }
 
+// HasOverrideChangeDesc returns true if OverrideChangeDesc is defined for this resource impl
+func (a *Adapter) HasOverrideChangeDesc() bool {
+	return a.overrideChangeDesc != nil
+}
+
 // OverrideChangeDesc allows custom logic to override change classification.
 func (a *Adapter) OverrideChangeDesc(ctx context.Context, path *structpath.PathNode, change *ChangeDesc, remoteState any) error {
-	if a.overrideChangeDesc == nil {
-		return nil
-	}
 	_, err := a.overrideChangeDesc.Call(ctx, path, change, remoteState)
 	return err
 }
