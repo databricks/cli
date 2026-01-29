@@ -95,21 +95,51 @@ You can pass additional arguments to psql after a double-dash (--):
 			BackoffFactor: 2.0,
 		}
 
-		// Flags take precedence
-		if projectFlag != "" || branchFlag != "" || endpointFlag != "" {
+		hasAutoscalingFlags := projectFlag != "" || branchFlag != "" || endpointFlag != ""
+
+		// Positional argument takes precedence
+		if target != "" {
+			if strings.HasPrefix(target, "projects/") {
+				projectID, branchID, endpointID, err := parseResourcePath(target)
+				if err != nil {
+					return err
+				}
+
+				// Check for conflicts between path and flags
+				if projectFlag != "" && projectFlag != projectID {
+					return fmt.Errorf("--project flag conflicts with project in path: %s vs %s", projectFlag, projectID)
+				}
+				if branchFlag != "" && branchID != "" && branchFlag != branchID {
+					return fmt.Errorf("--branch flag conflicts with branch in path: %s vs %s", branchFlag, branchID)
+				}
+				if endpointFlag != "" && endpointID != "" && endpointFlag != endpointID {
+					return fmt.Errorf("--endpoint flag conflicts with endpoint in path: %s vs %s", endpointFlag, endpointID)
+				}
+
+				// Flags supplement missing components
+				if branchID == "" {
+					branchID = branchFlag
+				}
+				if endpointID == "" {
+					endpointID = endpointFlag
+				}
+
+				return connectAutoscaling(ctx, projectID, branchID, endpointID, retryConfig, extraArgs)
+			}
+
+			// Provisioned instance name - cannot mix with autoscaling flags
+			if hasAutoscalingFlags {
+				return errors.New("cannot use --project, --branch, or --endpoint flags with a provisioned instance name")
+			}
+			return connectProvisioned(ctx, target, retryConfig, extraArgs)
+		}
+
+		// No positional argument - use flags only
+		if hasAutoscalingFlags {
 			if projectFlag == "" {
 				return errors.New("--project is required when using --branch or --endpoint")
 			}
 			return connectAutoscaling(ctx, projectFlag, branchFlag, endpointFlag, retryConfig, extraArgs)
-		}
-
-		// Positional argument
-		if target != "" {
-			if strings.HasPrefix(target, "projects/") {
-				projectID, branchID, endpointID := parseResourcePath(target)
-				return connectAutoscaling(ctx, projectID, branchID, endpointID, retryConfig, extraArgs)
-			}
-			return connectProvisioned(ctx, target, retryConfig, extraArgs)
 		}
 
 		// No args, no flags -> interactive selection
@@ -278,25 +308,42 @@ func selectEndpointID(ctx context.Context, w *databricks.WorkspaceClient, branch
 }
 
 // parseResourcePath extracts project, branch, and endpoint IDs from a resource path.
-func parseResourcePath(input string) (project, branch, endpoint string) {
+// Returns an error for malformed paths.
+func parseResourcePath(input string) (project, branch, endpoint string, err error) {
 	parts := strings.Split(input, "/")
 
-	// projects/{project_id}
-	if len(parts) >= 2 && parts[0] == "projects" {
-		project = parts[1]
+	// Must start with projects/{project_id}
+	if len(parts) < 2 || parts[0] != "projects" {
+		return "", "", "", fmt.Errorf("invalid resource path: %s", input)
 	}
+	if parts[1] == "" {
+		return "", "", "", errors.New("invalid resource path: missing project ID")
+	}
+	project = parts[1]
 
-	// projects/{project_id}/branches/{branch_id}
-	if len(parts) >= 4 && parts[2] == "branches" {
+	// Optional: branches/{branch_id}
+	if len(parts) > 2 {
+		if len(parts) < 4 || parts[2] != "branches" {
+			return "", "", "", errors.New("invalid resource path: expected 'branches' after project")
+		}
+		if parts[3] == "" {
+			return "", "", "", errors.New("invalid resource path: missing branch ID")
+		}
 		branch = parts[3]
 	}
 
-	// projects/{project_id}/branches/{branch_id}/endpoints/{endpoint_id}
-	if len(parts) >= 6 && parts[4] == "endpoints" {
+	// Optional: endpoints/{endpoint_id}
+	if len(parts) > 4 {
+		if len(parts) < 6 || parts[4] != "endpoints" {
+			return "", "", "", errors.New("invalid resource path: expected 'endpoints' after branch")
+		}
+		if parts[5] == "" {
+			return "", "", "", errors.New("invalid resource path: missing endpoint ID")
+		}
 		endpoint = parts[5]
 	}
 
-	return project, branch, endpoint
+	return project, branch, endpoint, nil
 }
 
 // showSelectionAndConnect shows a combined dropdown of Lakebase databases.

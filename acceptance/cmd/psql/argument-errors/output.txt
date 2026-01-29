@@ -1,0 +1,60 @@
+
+=== Provisioned instance with --project flag should error:
+>>> musterr [CLI] psql my-instance --project foo
+Error: cannot use --project, --branch, or --endpoint flags with a provisioned instance name
+
+=== Provisioned instance with --branch flag should error:
+>>> musterr [CLI] psql my-instance --branch main
+Error: cannot use --project, --branch, or --endpoint flags with a provisioned instance name
+
+=== Provisioned instance with --endpoint flag should error:
+>>> musterr [CLI] psql my-instance --endpoint primary
+Error: cannot use --project, --branch, or --endpoint flags with a provisioned instance name
+
+=== Full path with conflicting --project flag should error:
+>>> musterr [CLI] psql projects/my-project/branches/main/endpoints/primary --project other
+Error: --project flag conflicts with project in path: other vs my-project
+
+=== Full path with conflicting --branch flag should error:
+>>> musterr [CLI] psql projects/my-project/branches/main/endpoints/primary --branch other
+Error: --branch flag conflicts with branch in path: other vs main
+
+=== Full path with conflicting --endpoint flag should error:
+>>> musterr [CLI] psql projects/my-project/branches/main/endpoints/primary --endpoint other
+Error: --endpoint flag conflicts with endpoint in path: other vs primary
+
+=== Partial path (project+branch) with conflicting --branch flag should error:
+>>> musterr [CLI] psql projects/my-project/branches/main --branch other
+Error: --branch flag conflicts with branch in path: other vs main
+
+=== Partial path (project only) with --branch flag should supplement:
+>>> [CLI] psql projects/my-project --branch main --max-retries 0
+Project: my-project
+Branch: main
+Endpoint: primary
+Connecting to read-write endpoint...
+echo-arguments.sh was called with the following arguments: --host=my-endpoint.postgres.example.com --username=[USERNAME] --port=5432 --dbname=postgres
+PGPASSWORD=postgres-secret-token
+PGSSLMODE=require
+
+=== Partial path (project+branch) with --endpoint flag should supplement:
+>>> [CLI] psql projects/my-project/branches/dev --endpoint custom --max-retries 0
+Project: my-project
+Branch: dev
+Endpoint: custom
+Connecting to read-write endpoint...
+echo-arguments.sh was called with the following arguments: --host=custom-endpoint.postgres.example.com --username=[USERNAME] --port=5432 --dbname=postgres
+PGPASSWORD=postgres-secret-token
+PGSSLMODE=require
+
+=== Invalid path with just 'projects/' should error:
+>>> musterr [CLI] psql projects/
+Error: invalid resource path: missing project ID
+
+=== Invalid path with missing branch ID should error:
+>>> musterr [CLI] psql projects/my-project/branches/
+Error: invalid resource path: missing branch ID
+
+=== Invalid path with missing endpoint ID should error:
+>>> musterr [CLI] psql projects/my-project/branches/main/endpoints/
+Error: invalid resource path: missing endpoint ID
