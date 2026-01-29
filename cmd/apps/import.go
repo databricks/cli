@@ -293,7 +293,7 @@ func runImport(ctx context.Context, w *databricks.WorkspaceClient, appName, outp
 	var b *bundle.Bundle
 	if !alreadyImported {
 		if !quiet {
-			cmdio.LogString(ctx, "Binding bundle to existing app")
+			cmdio.LogString(ctx, "\nBinding bundle to existing app")
 		}
 
 		// Create a command for binding with required flags
@@ -350,7 +350,7 @@ func runImport(ctx context.Context, w *databricks.WorkspaceClient, appName, outp
 
 	// Step 4: Deploy the bundle
 	if !quiet {
-		cmdio.LogString(ctx, "Deploying bundle")
+		cmdio.LogString(ctx, "\nDeploying bundle")
 	}
 
 	// Create a new command for deployment
@@ -378,7 +378,7 @@ func runImport(ctx context.Context, w *databricks.WorkspaceClient, appName, outp
 
 	// Step 5: Run the app (equivalent to "databricks bundle run app")
 	if !quiet {
-		cmdio.LogString(ctx, "Starting app")
+		cmdio.LogString(ctx, "\nStarting app")
 	}
 
 	// Locate the app resource
@@ -425,7 +425,7 @@ func initializeProjectDependencies(ctx context.Context, workDir string, quiet bo
 	}
 
 	if !quiet {
-		cmdio.LogString(ctx, "Initializing project dependencies...")
+		cmdio.LogString(ctx, "\nInitializing project dependencies...")
 	}
 
 	result := projectInitializer.Initialize(ctx, workDir)
