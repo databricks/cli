@@ -25,7 +25,8 @@
   },
   "body": {
     "spec": {
-      "is_protected": false
+      "is_protected": false,
+      "no_expiry": true
     }
   }
 }

@@ -15,12 +15,14 @@ New = ''
 Order = 1000
 
 [[Repls]]
-Old = 'ep-[a-z0-9]+-[a-z0-9]+-[a-z0-9]+-[a-z0-9]'
+# Normalize endpoint UIDs (ep-xxx-yyy-zzz format, supports both word-based and hex-based UIDs)
+Old = 'ep-[a-z0-9-]+'
 New = '[ENDPOINT_UID]'
 Order = 1
 
 [[Repls]]
-Old = 'br-[a-z0-9]+-[a-z0-9]+-[a-z0-9]+-[a-z0-9]'
+# Normalize branch UIDs (br-xxx-yyy-zzz format, supports both word-based and hex-based UIDs)
+Old = 'br-[a-z0-9-]+'
 New = '[BRANCH_UID]'
 Order = 1
 

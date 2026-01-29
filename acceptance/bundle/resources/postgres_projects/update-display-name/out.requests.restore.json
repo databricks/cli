@@ -6,7 +6,7 @@
   "method": "PATCH",
   "path": "/api/2.0/postgres/[MY_PROJECT_ID]",
   "q": {
-    "update_mask": "*"
+    "update_mask": "spec.display_name"
   },
   "body": {
     "name": "[MY_PROJECT_ID]",

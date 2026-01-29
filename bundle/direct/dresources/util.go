@@ -1,6 +1,7 @@
 package dresources
 
 import (
+	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/databricks-sdk-go/retries"
 )
 
@@ -15,4 +16,16 @@ func shouldRetry(err error) bool {
 		return false
 	}
 	return !e.Halt
+}
+
+// collectUpdatePaths extracts field paths from Changes that have action=Update.
+// This builds the precise update_mask for API requests, excluding immutable and unchanged fields.
+func collectUpdatePaths(changes Changes) []string {
+	var paths []string
+	for path, change := range changes {
+		if change.Action == deployplan.Update {
+			paths = append(paths, path)
+		}
+	}
+	return paths
 }

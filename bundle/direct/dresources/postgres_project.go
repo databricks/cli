@@ -2,7 +2,7 @@ package dresources
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"strings"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -54,7 +54,7 @@ func (r *ResourcePostgresProject) DoRead(ctx context.Context, id string) (*postg
 func (r *ResourcePostgresProject) DoCreate(ctx context.Context, config *PostgresProjectState) (string, *postgres.Project, error) {
 	projectId := config.ProjectId
 	if projectId == "" {
-		return "", nil, fmt.Errorf("project_id must be specified")
+		return "", nil, errors.New("project_id must be specified")
 	}
 
 	waiter, err := r.client.Postgres.CreateProject(ctx, postgres.CreateProjectRequest{
@@ -76,7 +76,11 @@ func (r *ResourcePostgresProject) DoCreate(ctx context.Context, config *Postgres
 	return result.Name, result, nil
 }
 
-func (r *ResourcePostgresProject) DoUpdate(ctx context.Context, id string, config *PostgresProjectState, _ Changes) (*postgres.Project, error) {
+func (r *ResourcePostgresProject) DoUpdate(ctx context.Context, id string, config *PostgresProjectState, changes Changes) (*postgres.Project, error) {
+	// Build update mask from fields that have action="update" in the changes map.
+	// This excludes immutable fields and fields that haven't changed.
+	fieldPaths := collectUpdatePaths(changes)
+
 	waiter, err := r.client.Postgres.UpdateProject(ctx, postgres.UpdateProjectRequest{
 		Project: postgres.Project{
 			Name: id,
@@ -84,7 +88,7 @@ func (r *ResourcePostgresProject) DoUpdate(ctx context.Context, id string, confi
 		},
 		Name: id,
 		UpdateMask: fieldmask.FieldMask{
-			Paths: []string{"*"},
+			Paths: fieldPaths,
 		},
 	})
 	if err != nil {

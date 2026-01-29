@@ -3,7 +3,6 @@ package dresources
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strings"
 	"time"
 
@@ -90,12 +89,12 @@ func (r *ResourcePostgresEndpoint) waitForReconciliation(ctx context.Context, na
 func (r *ResourcePostgresEndpoint) DoCreate(ctx context.Context, config *PostgresEndpointState) (string, *postgres.Endpoint, error) {
 	endpointId := config.EndpointId
 	if endpointId == "" {
-		return "", nil, fmt.Errorf("endpoint_id must be specified")
+		return "", nil, errors.New("endpoint_id must be specified")
 	}
 
 	parent := config.Parent
 	if parent == "" {
-		return "", nil, fmt.Errorf("parent (branch name) must be specified")
+		return "", nil, errors.New("parent (branch name) must be specified")
 	}
 
 	waiter, err := r.client.Postgres.CreateEndpoint(ctx, postgres.CreateEndpointRequest{
@@ -124,7 +123,11 @@ func (r *ResourcePostgresEndpoint) DoCreate(ctx context.Context, config *Postgre
 	return result.Name, result, nil
 }
 
-func (r *ResourcePostgresEndpoint) DoUpdate(ctx context.Context, id string, config *PostgresEndpointState, _ Changes) (*postgres.Endpoint, error) {
+func (r *ResourcePostgresEndpoint) DoUpdate(ctx context.Context, id string, config *PostgresEndpointState, changes Changes) (*postgres.Endpoint, error) {
+	// Build update mask from fields that have action="update" in the changes map.
+	// This excludes immutable fields and fields that haven't changed.
+	fieldPaths := collectUpdatePaths(changes)
+
 	waiter, err := r.client.Postgres.UpdateEndpoint(ctx, postgres.UpdateEndpointRequest{
 		Endpoint: postgres.Endpoint{
 			Name: id,
@@ -132,7 +135,7 @@ func (r *ResourcePostgresEndpoint) DoUpdate(ctx context.Context, id string, conf
 		},
 		Name: id,
 		UpdateMask: fieldmask.FieldMask{
-			Paths: []string{"*"},
+			Paths: fieldPaths,
 		},
 	})
 	if err != nil {

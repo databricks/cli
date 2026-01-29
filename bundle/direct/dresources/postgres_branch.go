@@ -2,7 +2,7 @@ package dresources
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"strings"
 
 	"github.com/databricks/cli/bundle/config/resources"
@@ -63,12 +63,12 @@ func (r *ResourcePostgresBranch) DoRead(ctx context.Context, id string) (*postgr
 func (r *ResourcePostgresBranch) DoCreate(ctx context.Context, config *PostgresBranchState) (string, *postgres.Branch, error) {
 	branchId := config.BranchId
 	if branchId == "" {
-		return "", nil, fmt.Errorf("branch_id must be specified")
+		return "", nil, errors.New("branch_id must be specified")
 	}
 
 	parent := config.Parent
 	if parent == "" {
-		return "", nil, fmt.Errorf("parent (project name) must be specified")
+		return "", nil, errors.New("parent (project name) must be specified")
 	}
 
 	waiter, err := r.client.Postgres.CreateBranch(ctx, postgres.CreateBranchRequest{
@@ -91,7 +91,11 @@ func (r *ResourcePostgresBranch) DoCreate(ctx context.Context, config *PostgresB
 	return result.Name, result, nil
 }
 
-func (r *ResourcePostgresBranch) DoUpdate(ctx context.Context, id string, config *PostgresBranchState, _ Changes) (*postgres.Branch, error) {
+func (r *ResourcePostgresBranch) DoUpdate(ctx context.Context, id string, config *PostgresBranchState, changes Changes) (*postgres.Branch, error) {
+	// Build update mask from fields that have action="update" in the changes map.
+	// This excludes immutable fields and fields that haven't changed.
+	fieldPaths := collectUpdatePaths(changes)
+
 	waiter, err := r.client.Postgres.UpdateBranch(ctx, postgres.UpdateBranchRequest{
 		Branch: postgres.Branch{
 			Name: id,
@@ -99,7 +103,7 @@ func (r *ResourcePostgresBranch) DoUpdate(ctx context.Context, id string, config
 		},
 		Name: id,
 		UpdateMask: fieldmask.FieldMask{
-			Paths: []string{"*"},
+			Paths: fieldPaths,
 		},
 	})
 	if err != nil {

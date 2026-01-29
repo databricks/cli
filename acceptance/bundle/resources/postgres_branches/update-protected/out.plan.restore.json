@@ -10,7 +10,8 @@
     "value": {
       "parent": "projects/test-pg-proj-[UNIQUE_NAME]",
       "spec": {
-        "is_protected": false
+        "is_protected": false,
+        "no_expiry": true
       },
       "branch_id": "dev-branch"
     }
@@ -37,6 +38,12 @@
       "action": "update",
       "old": true,
       "new": false
+    },
+    "spec.no_expiry": {
+      "action": "skip",
+      "reason": "builtin_rule",
+      "old": true,
+      "new": true
     }
   }
 }

@@ -14,12 +14,13 @@
   "method": "PATCH",
   "path": "/api/2.0/postgres/[DEV_BRANCH_ID]",
   "q": {
-    "update_mask": "*"
+    "update_mask": "spec.is_protected"
   },
   "body": {
     "name": "[DEV_BRANCH_ID]",
     "spec": {
-      "is_protected": false
+      "is_protected": false,
+      "no_expiry": true
     }
   }
 }

@@ -29,6 +29,12 @@
       "reason": "builtin_rule",
       "old": false,
       "new": false
+    },
+    "spec.no_expiry": {
+      "action": "skip",
+      "reason": "builtin_rule",
+      "old": true,
+      "new": true
     }
   }
 }

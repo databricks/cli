@@ -10,7 +10,8 @@
     "value": {
       "parent": "${resources.postgres_projects.my_project.id}",
       "spec": {
-        "is_protected": false
+        "is_protected": false,
+        "no_expiry": true
       },
       "branch_id": "dev-branch"
     },

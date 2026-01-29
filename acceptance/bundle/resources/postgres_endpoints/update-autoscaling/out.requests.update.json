@@ -22,7 +22,7 @@
   "method": "PATCH",
   "path": "/api/2.0/postgres/[MY_ENDPOINT_ID]",
   "q": {
-    "update_mask": "*"
+    "update_mask": "spec.autoscaling_limit_max_cu"
   },
   "body": {
     "name": "[MY_ENDPOINT_ID]",
