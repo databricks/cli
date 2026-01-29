@@ -19,13 +19,13 @@ resources:
 
   postgres_branches:
     main:
-      parent: ${resources.postgres_projects.my_project.name}
+      parent: ${resources.postgres_projects.my_project.id}
       branch_id: main
       no_expiry: true
 
   postgres_endpoints:
     primary:
-      parent: ${resources.postgres_branches.main.name}
+      parent: ${resources.postgres_branches.main.id}
       endpoint_id: primary
       endpoint_type: ENDPOINT_TYPE_READ_WRITE
       autoscaling_limit_min_cu: 0.5

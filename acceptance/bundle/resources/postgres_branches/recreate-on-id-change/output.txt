@@ -21,7 +21,7 @@ resources:
 
   postgres_branches:
     main:
-      parent: ${resources.postgres_projects.my_project.name}
+      parent: ${resources.postgres_projects.my_project.id}
       branch_id: old-branch-[UNIQUE_NAME]
       no_expiry: true
 
@@ -92,15 +92,14 @@ resources:
 
   postgres_branches:
     main:
-      parent: ${resources.postgres_projects.my_project.name}
+      parent: ${resources.postgres_projects.my_project.id}
       branch_id: new-branch-[UNIQUE_NAME]
       no_expiry: true
 
 >>> [CLI] bundle plan
 recreate postgres_branches.main
-recreate postgres_projects.my_project
 
-Plan: 2 to add, 0 to change, 2 to delete, 0 unchanged
+Plan: 1 to add, 0 to change, 1 to delete, 1 unchanged
 
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-branch-recreate-[UNIQUE_NAME]/default/files...
@@ -109,29 +108,6 @@ Updating deployment state...
 Deployment complete!
 
 >>> print_requests
-{
-  "method": "DELETE",
-  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]"
-}
-{
-  "body": {
-    "spec": {
-      "default_endpoint_settings": {
-        "autoscaling_limit_max_cu": 4,
-        "autoscaling_limit_min_cu": 0.5,
-        "suspend_timeout_duration": "300s"
-      },
-      "display_name": "Test Project",
-      "history_retention_duration": "604800s",
-      "pg_version": 16
-    }
-  },
-  "method": "POST",
-  "path": "/api/2.0/postgres/projects",
-  "q": {
-    "project_id": "test-pg-proj-[UNIQUE_NAME]"
-  }
-}
 {
   "method": "DELETE",
   "path": "/api/2.0/postgres/[MAIN_ID]"

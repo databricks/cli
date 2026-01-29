@@ -19,6 +19,6 @@ resources:
 
   postgres_branches:
     main:
-      parent: ${resources.postgres_projects.my_project.name}
+      parent: ${resources.postgres_projects.my_project.id}
       branch_id: main
       no_expiry: true
