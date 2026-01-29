@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"strconv"
 	"strings"
 
 	"github.com/charmbracelet/huh"
@@ -828,7 +827,7 @@ func PromptForAppSelection(ctx context.Context, title string) (string, error) {
 
 // PrintSuccess prints a success message after project creation.
 // If nextStepsCmd is non-empty, also prints the "Next steps" section with the given command.
-func PrintSuccess(ctx context.Context, projectName, outputDir string, fileCount int, nextStepsCmd string) {
+func PrintSuccess(ctx context.Context, projectName, outputDir, nextStepsCmd string) {
 	successStyle := lipgloss.NewStyle().
 		Foreground(lipgloss.Color("#FFAB00")). // Databricks yellow
 		Bold(true)
@@ -843,9 +842,6 @@ func PrintSuccess(ctx context.Context, projectName, outputDir string, fileCount 
 	cmdio.LogString(ctx, successStyle.Render("✔ Project created successfully!"))
 	cmdio.LogString(ctx, "")
 	cmdio.LogString(ctx, dimStyle.Render("  Location: "+outputDir))
-	if fileCount > 0 {
-		cmdio.LogString(ctx, dimStyle.Render("  Files: "+strconv.Itoa(fileCount)))
-	}
 
 	if nextStepsCmd != "" {
 		cmdio.LogString(ctx, "")

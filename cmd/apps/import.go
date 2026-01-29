@@ -20,6 +20,7 @@ import (
 	bundleutils "github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/apps/initializer"
+	"github.com/databricks/cli/libs/apps/prompt"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dyn"
@@ -201,19 +202,17 @@ Examples:
 			}
 
 			if !quiet {
-				cmdio.LogString(ctx, fmt.Sprintf("\n✓ App '%s' has been successfully imported to %s", name, outputDir))
 				if cleanup && oldSourceCodePath != "" {
-					cmdio.LogString(ctx, "✓ Previous app folder has been cleaned up")
+					cmdio.LogString(ctx, "\n✓ Previous app folder has been cleaned up")
 				}
-				cmdio.LogString(ctx, "\nYou can now deploy changes with: databricks bundle deploy")
 
-				// Show how to run locally
+				// Get next steps command for local development
+				var nextStepsCmd string
 				if projectInitializer != nil {
-					nextSteps := projectInitializer.NextSteps()
-					if nextSteps != "" {
-						cmdio.LogString(ctx, fmt.Sprintf("To run locally: cd %s && %s", name, nextSteps))
-					}
+					nextStepsCmd = projectInitializer.NextSteps()
 				}
+
+				prompt.PrintSuccess(ctx, name, outputDir, nextStepsCmd)
 			}
 
 			return nil

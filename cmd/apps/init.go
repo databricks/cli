@@ -497,7 +497,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 				}
 				// Extract project name from the absolute output directory
 				projectName := filepath.Base(absOutputDir)
-				return runPostCreationSteps(ctx, absOutputDir, projectName, 0, shouldDeploy, runMode)
+				return runPostCreationSteps(ctx, absOutputDir, projectName, shouldDeploy, runMode)
 			}
 		}
 	}
@@ -531,7 +531,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		}
 		// Extract project name from the absolute output directory
 		projectName := filepath.Base(absOutputDir)
-		return runPostCreationSteps(ctx, absOutputDir, projectName, 0, shouldDeploy, runMode)
+		return runPostCreationSteps(ctx, absOutputDir, projectName, shouldDeploy, runMode)
 	}
 
 	// Use features from flags if provided
@@ -789,11 +789,8 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	vars.DotEnvExample = fragments.DotEnvExample
 
 	// Copy template with variable substitution
-	var fileCount int
 	runErr = prompt.RunWithSpinnerCtx(ctx, "Creating project...", func() error {
-		var copyErr error
-		fileCount, copyErr = copyTemplate(ctx, templateDir, destDir, vars)
-		return copyErr
+		return copyTemplate(ctx, templateDir, destDir, vars)
 	})
 	if runErr != nil {
 		return runErr
@@ -814,11 +811,11 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		return runErr
 	}
 
-	return runPostCreationSteps(ctx, absOutputDir, opts.name, fileCount, shouldDeploy, runMode)
+	return runPostCreationSteps(ctx, absOutputDir, opts.name, shouldDeploy, runMode)
 }
 
 // runPostCreationSteps handles post-creation initialization, validation, and optional deploy/run actions.
-func runPostCreationSteps(ctx context.Context, absOutputDir, projectName string, fileCount int, shouldDeploy bool, runMode prompt.RunMode) error {
+func runPostCreationSteps(ctx context.Context, absOutputDir, projectName string, shouldDeploy bool, runMode prompt.RunMode) error {
 	// Initialize project based on type (Node.js, Python, etc.)
 	var nextStepsCmd string
 	projectInitializer := initializer.GetProjectInitializer(absOutputDir)
@@ -843,9 +840,9 @@ func runPostCreationSteps(ctx context.Context, absOutputDir, projectName string,
 	// Show next steps only if user didn't choose to deploy or run
 	showNextSteps := !shouldDeploy && runMode == prompt.RunModeNone
 	if showNextSteps {
-		prompt.PrintSuccess(ctx, projectName, absOutputDir, fileCount, nextStepsCmd)
+		prompt.PrintSuccess(ctx, projectName, absOutputDir, nextStepsCmd)
 	} else {
-		prompt.PrintSuccess(ctx, projectName, absOutputDir, fileCount, "")
+		prompt.PrintSuccess(ctx, projectName, absOutputDir, "")
 	}
 
 	// Execute post-creation actions (deploy and/or run)
@@ -925,14 +922,12 @@ var renameFiles = map[string]string{
 }
 
 // copyTemplate copies the template directory to dest, substituting variables.
-func copyTemplate(ctx context.Context, src, dest string, vars templateVars) (int, error) {
-	fileCount := 0
-
+func copyTemplate(ctx context.Context, src, dest string, vars templateVars) error {
 	// Find the project_name placeholder directory
 	srcProjectDir := ""
 	entries, err := os.ReadDir(src)
 	if err != nil {
-		return 0, err
+		return err
 	}
 	for _, e := range entries {
 		if e.IsDir() && strings.Contains(e.Name(), "{{.project_name}}") {
@@ -1041,15 +1036,13 @@ func copyTemplate(ctx context.Context, src, dest string, vars templateVars) (int
 			return err
 		}
 
-		fileCount++
 		return nil
 	})
 	if err != nil {
 		log.Debugf(ctx, "Error during template copy: %v", err)
 	}
-	log.Debugf(ctx, "Copied %d files", fileCount)
 
-	return fileCount, err
+	return err
 }
 
 // processPackageJSON updates the package.json with project-specific values.
