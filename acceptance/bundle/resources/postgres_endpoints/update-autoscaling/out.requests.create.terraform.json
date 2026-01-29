@@ -6,11 +6,6 @@
   },
   "body": {
     "spec": {
-      "default_endpoint_settings": {
-        "autoscaling_limit_max_cu": 4,
-        "autoscaling_limit_min_cu": 0.5,
-        "suspend_timeout_duration": "300s"
-      },
       "display_name": "Test Project for Endpoint Update",
       "history_retention_duration": "604800s",
       "pg_version": 16

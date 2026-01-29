@@ -1,5 +1,5 @@
-# Test both engines to investigate the difference
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct", "terraform"]
+Badness = "Terraform provider doesn't wait for endpoint reconciliation to complete after delete, causing subsequent create to fail with 'endpoint reconciliation still in progress'"
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
 
 [[Repls]]
 # Normalize TraceId in error messages (run before default NUMID replacement at Order 9-10)

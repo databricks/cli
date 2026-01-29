@@ -4,6 +4,7 @@ CloudSlow = true
 RequiresUnityCatalog = true
 
 [CloudEnvs]
+  azure = false
   gcp = false
 
 [EnvMatrix]

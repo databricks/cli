@@ -1,6 +1,11 @@
 # Postgres endpoints tests
 Local = true
 Cloud = true
+RequiresUnityCatalog = true
+
+# Lakebase v2 (postgres) is only available in AWS as of January 2026
+CloudEnvs.gcp = false
+CloudEnvs.azure = false
 
 # Mitigates running into quota limits in workspaces
 CloudSlow = true

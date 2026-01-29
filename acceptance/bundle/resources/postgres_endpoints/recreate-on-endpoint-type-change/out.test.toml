@@ -1,6 +1,11 @@
 Local = true
 Cloud = true
 CloudSlow = true
+RequiresUnityCatalog = true
+
+[CloudEnvs]
+  azure = false
+  gcp = false
 
 [EnvMatrix]
-  DATABRICKS_BUNDLE_ENGINE = ["direct", "terraform"]
+  DATABRICKS_BUNDLE_ENGINE = ["direct"]

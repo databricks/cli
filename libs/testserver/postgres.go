@@ -414,6 +414,9 @@ func (s *FakeWorkspace) PostgresEndpointCreate(req Request, parent, endpointID s
 		endpoint.Status.EndpointType = endpoint.Spec.EndpointType
 		endpoint.Status.AutoscalingLimitMinCu = endpoint.Spec.AutoscalingLimitMinCu
 		endpoint.Status.AutoscalingLimitMaxCu = endpoint.Spec.AutoscalingLimitMaxCu
+		if endpoint.Spec.SuspendTimeoutDuration != nil {
+			endpoint.Status.SuspendTimeoutDuration = endpoint.Spec.SuspendTimeoutDuration
+		}
 		if endpoint.Spec.Disabled {
 			endpoint.Status.Disabled = true
 		}
@@ -519,6 +522,9 @@ func (s *FakeWorkspace) PostgresEndpointUpdate(req Request, name string) Respons
 		}
 		if updateEndpoint.Spec.AutoscalingLimitMaxCu != 0 {
 			endpoint.Status.AutoscalingLimitMaxCu = updateEndpoint.Spec.AutoscalingLimitMaxCu
+		}
+		if updateEndpoint.Spec.SuspendTimeoutDuration != nil {
+			endpoint.Status.SuspendTimeoutDuration = updateEndpoint.Spec.SuspendTimeoutDuration
 		}
 		endpoint.Status.Disabled = updateEndpoint.Spec.Disabled
 	}
