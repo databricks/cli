@@ -16,8 +16,6 @@ resources:
         periodic:
           interval: 1
           unit: DAYS
-      tags:
-        env: dev
       environments:
         - environment_key: default
           spec:
@@ -32,3 +30,7 @@ resources:
             spark_version: $DEFAULT_SPARK_VERSION
             node_type_id: $NODE_TYPE_ID
             num_workers: 1
+
+targets:
+  default:
+    mode: development

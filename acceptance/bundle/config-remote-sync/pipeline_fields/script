@@ -12,6 +12,9 @@ r["configuration"]["key2"] = "value2"
 r["notifications"][0]["email_recipients"].append("admin@example.com")
 r["notifications"][0]["alerts"].append("on-update-failure")
 r["schema"] = "prod"
+if "tags" not in r:
+    r["tags"] = {}
+r["tags"]["foo"] = "bar"
 EOF
 
 # TODO add support for permissions
