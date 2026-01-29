@@ -744,12 +744,50 @@ func TestHasPrefix(t *testing.T) {
 			prefix:   "a[*]",
 			expected: false,
 		},
+
+		// Exact component matching - array indices, bracket keys, and key-value notation
+		{
+			name:     "prefix longer than path",
+			s:        "a.b",
+			prefix:   "a.b.c",
+			expected: false,
+		},
+		{
+			name:     "different array indices",
+			s:        "items[0].name",
+			prefix:   "items[1]",
+			expected: false,
+		},
+		{
+			name:     "different bracket keys",
+			s:        "config['spark.conf']",
+			prefix:   "config['other.conf']",
+			expected: false,
+		},
+		{
+			name:     "key-value in prefix",
+			s:        "tasks[task_key='my_task'].notebook_task.source",
+			prefix:   "tasks[task_key='my_task']",
+			expected: true,
+		},
+		{
+			name:     "different key-value values",
+			s:        "tasks[task_key='my_task']",
+			prefix:   "tasks[task_key='other_task']",
+			expected: false,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := HasPrefix(tt.s, tt.prefix)
-			assert.Equal(t, tt.expected, result, "HasPrefix(%q, %q)", tt.s, tt.prefix)
+			path, err := Parse(tt.s)
+			require.NoError(t, err)
+
+			prefix, err := Parse(tt.prefix)
+			require.NoError(t, err)
+
+			result := path.HasPrefix(prefix)
+			assert.Equal(t, tt.expected, result, "path.HasPrefix(prefix) where path=%q, prefix=%q", tt.s, tt.prefix)
 		})
 	}
 }
