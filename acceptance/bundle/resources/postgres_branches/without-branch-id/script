@@ -3,4 +3,6 @@ envsubst < databricks.yml.tmpl > databricks.yml
 
 trace $CLI bundle validate
 
-trace $CLI bundle deploy
+# Deploy output differs between engines, so capture to per-engine file only
+$CLI bundle deploy > out.deploy.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1 || true
+

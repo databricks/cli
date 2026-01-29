@@ -7,12 +7,3 @@ Workspace:
   Path: /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-branch-no-id-[UNIQUE_NAME]/default
 
 Validation OK!
-
->>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-branch-no-id-[UNIQUE_NAME]/default/files...
-Deploying resources...
-Error: cannot create resources.postgres_branches.main: branch_id must be specified
-
-Updating deployment state...
-
-Exit code: 1

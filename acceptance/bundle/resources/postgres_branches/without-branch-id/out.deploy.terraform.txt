@@ -1,0 +1,11 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-branch-no-id-[UNIQUE_NAME]/default/files...
+Error: exit status 1
+
+Error: Missing required argument
+
+  on bundle.tf.json line 20, in resource.databricks_postgres_branch.main:
+  20:       }
+
+The argument "branch_id" is required, but no definition was found.
+
+
