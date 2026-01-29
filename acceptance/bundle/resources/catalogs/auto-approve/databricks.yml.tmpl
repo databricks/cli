@@ -1,0 +1,19 @@
+bundle:
+  name: uc-catalog-$UNIQUE_NAME
+
+workspace:
+  root_path: ~/.bundle/$UNIQUE_NAME
+
+resources:
+  schemas:
+    foo:
+      name: test-schema-$UNIQUE_NAME
+      catalog_name: ${resources.catalogs.bar.name}
+      comment: This schema is in the test catalog
+
+include:
+  - "*.yml"
+
+targets:
+  development:
+    default: true

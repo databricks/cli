@@ -34,6 +34,7 @@ func allResourceTypes(t *testing.T) []string {
 	require.Equal(t, []string{
 		"alerts",
 		"apps",
+		"catalogs",
 		"clusters",
 		"dashboards",
 		"database_catalogs",
@@ -145,6 +146,7 @@ func TestRunAsWorksForAllowedResources(t *testing.T) {
 // some point in the future. These resources are (implicitly) on the deny list, since
 // they are not on the allow list below.
 var allowList = []string{
+	"catalogs",
 	"clusters",
 	"database_catalogs",
 	"database_instances",

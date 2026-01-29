@@ -39,6 +39,15 @@ var testConfig map[string]any = map[string]any{
 		},
 	},
 
+	"catalogs": &resources.Catalog{
+		CreateCatalog: catalog.CreateCatalog{
+			Name:    "mycatalog",
+			Comment: "Test catalog",
+		},
+		// Note: EnablePredictiveOptimization and IsolationMode cannot be set during creation,
+		// only during updates. They are not included in the test config.
+	},
+
 	"schemas": &resources.Schema{
 		CreateSchema: catalog.CreateSchema{
 			CatalogName: "main",
@@ -431,6 +440,17 @@ var testDeps = map[string]prepareWorkspace{
 			Permissions: []iam.AccessControlRequest{{
 				PermissionLevel: "CAN_MANAGE",
 				UserName:        "user@example.com",
+			}},
+		}, nil
+	},
+
+	"catalogs.grants": func(client *databricks.WorkspaceClient) (any, error) {
+		return &GrantsState{
+			SecurableType: "catalog",
+			FullName:      "mycatalog",
+			Grants: []GrantAssignment{{
+				Privileges: []catalog.Privilege{catalog.PrivilegeUseCatalog},
+				Principal:  "user@example.com",
 			}},
 		}, nil
 	},

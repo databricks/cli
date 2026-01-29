@@ -275,3 +275,64 @@ func TestCaptureSchemaDependencyForPipelinesWithSchema(t *testing.T) {
 		assert.Empty(t, b.Config.Resources.Pipelines[k].Schema)
 	}
 }
+
+func TestCaptureCatalogDependencyForSchema(t *testing.T) {
+	b := &bundle.Bundle{
+		Config: config.Root{
+			Resources: config.Resources{
+				Catalogs: map[string]*resources.Catalog{
+					"catalog1": {
+						CreateCatalog: catalog.CreateCatalog{
+							Name: "catalog1",
+						},
+					},
+					"catalog2": {
+						CreateCatalog: catalog.CreateCatalog{
+							Name: "catalog2",
+						},
+					},
+					"nilcatalog":   nil,
+					"emptycatalog": {},
+				},
+				Schemas: map[string]*resources.Schema{
+					"schema1": {
+						CreateSchema: catalog.CreateSchema{
+							CatalogName: "catalog1",
+							Name:        "schema1",
+						},
+					},
+					"schema2": {
+						CreateSchema: catalog.CreateSchema{
+							CatalogName: "catalog2",
+							Name:        "schema2",
+						},
+					},
+					"schema3": {
+						CreateSchema: catalog.CreateSchema{
+							CatalogName: "catalogX",
+							Name:        "schema3",
+						},
+					},
+					"schema4": {
+						CreateSchema: catalog.CreateSchema{
+							CatalogName: "",
+							Name:        "schema4",
+						},
+					},
+					"nilschema":   nil,
+					"emptyschema": {},
+				},
+			},
+		},
+	}
+
+	d := bundle.Apply(context.Background(), b, CaptureSchemaDependency())
+	require.Nil(t, d)
+
+	assert.Equal(t, "${resources.catalogs.catalog1.name}", b.Config.Resources.Schemas["schema1"].CatalogName)
+	assert.Equal(t, "${resources.catalogs.catalog2.name}", b.Config.Resources.Schemas["schema2"].CatalogName)
+	assert.Equal(t, "catalogX", b.Config.Resources.Schemas["schema3"].CatalogName)
+	assert.Equal(t, "", b.Config.Resources.Schemas["schema4"].CatalogName)
+
+	assert.Nil(t, b.Config.Resources.Schemas["nilschema"])
+}

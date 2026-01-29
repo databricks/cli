@@ -19,6 +19,7 @@ type Resources struct {
 	ModelServingEndpoints map[string]*resources.ModelServingEndpoint `json:"model_serving_endpoints,omitempty"`
 	RegisteredModels      map[string]*resources.RegisteredModel      `json:"registered_models,omitempty"`
 	QualityMonitors       map[string]*resources.QualityMonitor       `json:"quality_monitors,omitempty"`
+	Catalogs              map[string]*resources.Catalog              `json:"catalogs,omitempty"`
 	Schemas               map[string]*resources.Schema               `json:"schemas,omitempty"`
 	Volumes               map[string]*resources.Volume               `json:"volumes,omitempty"`
 	Clusters              map[string]*resources.Cluster              `json:"clusters,omitempty"`
@@ -87,6 +88,7 @@ func (r *Resources) AllResources() []ResourceGroup {
 		collectResourceMap(descriptions["model_serving_endpoints"], r.ModelServingEndpoints),
 		collectResourceMap(descriptions["registered_models"], r.RegisteredModels),
 		collectResourceMap(descriptions["quality_monitors"], r.QualityMonitors),
+		collectResourceMap(descriptions["catalogs"], r.Catalogs),
 		collectResourceMap(descriptions["schemas"], r.Schemas),
 		collectResourceMap(descriptions["clusters"], r.Clusters),
 		collectResourceMap(descriptions["dashboards"], r.Dashboards),
@@ -118,6 +120,12 @@ func (r *Resources) FindResourceByConfigKey(key string) (ConfigResource, error) 
 	for k := range r.Apps {
 		if k == key {
 			found = append(found, r.Apps[k])
+		}
+	}
+
+	for k := range r.Catalogs {
+		if k == key {
+			found = append(found, r.Catalogs[k])
 		}
 	}
 
@@ -230,6 +238,7 @@ func SupportedResources() map[string]resources.ResourceDescription {
 		"model_serving_endpoints": (&resources.ModelServingEndpoint{}).ResourceDescription(),
 		"registered_models":       (&resources.RegisteredModel{}).ResourceDescription(),
 		"quality_monitors":        (&resources.QualityMonitor{}).ResourceDescription(),
+		"catalogs":                (&resources.Catalog{}).ResourceDescription(),
 		"schemas":                 (&resources.Schema{}).ResourceDescription(),
 		"clusters":                (&resources.Cluster{}).ResourceDescription(),
 		"dashboards":              (&resources.Dashboard{}).ResourceDescription(),
