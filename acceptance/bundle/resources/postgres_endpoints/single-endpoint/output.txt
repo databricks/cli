@@ -1,16 +1,12 @@
 
 >>> [CLI] bundle validate
-Warning: There are no files to sync, please check your .gitignore and sync.exclude configuration
-  at sync.exclude
-  in databricks.yml:6:5
-
 Name: deploy-postgres-endpoint-[UNIQUE_NAME]
 Target: default
 Workspace:
   User: [USERNAME]
   Path: /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-endpoint-[UNIQUE_NAME]/default
 
-Found 1 warning
+Validation OK!
 
 >>> [CLI] bundle summary
 Name: deploy-postgres-endpoint-[UNIQUE_NAME]

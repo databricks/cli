@@ -4,8 +4,7 @@ bundle:
   name: deploy-postgres-endpoint-recreate-[UNIQUE_NAME]
 
 sync:
-  exclude:
-    - "*"
+  paths: []
 
 resources:
   postgres_projects:
@@ -80,8 +79,7 @@ bundle:
   name: deploy-postgres-endpoint-recreate-[UNIQUE_NAME]
 
 sync:
-  exclude:
-    - "*"
+  paths: []
 
 resources:
   postgres_projects:
