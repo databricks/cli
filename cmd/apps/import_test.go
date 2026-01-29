@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/databricks/cli/cmd/apps/internal/yamlutil"
+	"github.com/databricks/cli/cmd/apps/internal"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -121,7 +121,7 @@ env: []`,
 
 			// Run function
 			appValue := tt.inputValue
-			filename, err := yamlutil.InlineAppConfigFile(&appValue)
+			filename, err := internal.InlineAppConfigFile(&appValue)
 
 			if tt.expectError {
 				assert.Error(t, err)
@@ -174,7 +174,7 @@ func TestInlineAppConfigFileErrors(t *testing.T) {
 		require.NoError(t, err)
 
 		appValue := dyn.V(map[string]dyn.Value{"name": dyn.V("test")})
-		_, err = yamlutil.InlineAppConfigFile(&appValue)
+		_, err = internal.InlineAppConfigFile(&appValue)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "failed to parse")
 	})
@@ -193,7 +193,7 @@ func TestInlineAppConfigFileErrors(t *testing.T) {
 		require.NoError(t, err)
 
 		appValue := dyn.V("not a map")
-		_, err = yamlutil.InlineAppConfigFile(&appValue)
+		_, err = internal.InlineAppConfigFile(&appValue)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "app value is not a map")
 	})
@@ -232,7 +232,7 @@ func TestInlineAppConfigFileErrors(t *testing.T) {
 		}
 
 		appValue := dyn.V(map[string]dyn.Value{"name": dyn.V("test")})
-		_, err = yamlutil.InlineAppConfigFile(&appValue)
+		_, err = internal.InlineAppConfigFile(&appValue)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "failed to read")
 	})
@@ -264,7 +264,7 @@ resources:
 			"description": dyn.V("existing description"),
 		})
 
-		filename, err := yamlutil.InlineAppConfigFile(&appValue)
+		filename, err := internal.InlineAppConfigFile(&appValue)
 		require.NoError(t, err)
 		assert.Equal(t, "app.yml", filename)
 
@@ -307,7 +307,7 @@ env:
 		"name": dyn.V("test-app"),
 	})
 
-	filename, err := yamlutil.InlineAppConfigFile(&appValue)
+	filename, err := internal.InlineAppConfigFile(&appValue)
 	require.NoError(t, err)
 	assert.Equal(t, "app.yml", filename)
 

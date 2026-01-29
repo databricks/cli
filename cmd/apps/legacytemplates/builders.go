@@ -2,16 +2,8 @@ package legacytemplates
 
 import (
 	"strings"
-)
 
-// Resource name constants for databricks.yml resource bindings.
-const (
-	resourceNameSQLWarehouse    = "sql-warehouse"
-	resourceNameServingEndpoint = "serving-endpoint"
-	resourceNameExperiment      = "experiment"
-	resourceNameDatabase        = "database"
-	resourceNameDatabaseName    = "database-name"
-	resourceNameUCVolume        = "uc-volume"
+	"github.com/databricks/cli/cmd/apps/internal"
 )
 
 // resourceBinding represents a single resource binding in databricks.yml.
@@ -36,7 +28,7 @@ func (b *resourceBindingsBuilder) addWarehouse(warehouseID string) {
 		return
 	}
 	b.bindings = append(b.bindings, resourceBinding{
-		name:        resourceNameSQLWarehouse,
+		name:        internal.ResourceNameSQLWarehouse,
 		description: "SQL Warehouse for analytics",
 		lines: []string{
 			"          sql_warehouse:",
@@ -51,7 +43,7 @@ func (b *resourceBindingsBuilder) addServingEndpoint(endpoint string) {
 		return
 	}
 	b.bindings = append(b.bindings, resourceBinding{
-		name:        resourceNameServingEndpoint,
+		name:        internal.ResourceNameServingEndpoint,
 		description: "Model serving endpoint",
 		lines: []string{
 			"          serving_endpoint:",
@@ -66,7 +58,7 @@ func (b *resourceBindingsBuilder) addExperiment(experimentID string) {
 		return
 	}
 	b.bindings = append(b.bindings, resourceBinding{
-		name:        resourceNameExperiment,
+		name:        internal.ResourceNameExperiment,
 		description: "MLflow experiment",
 		lines: []string{
 			"          experiment:",
@@ -81,7 +73,7 @@ func (b *resourceBindingsBuilder) addDatabase(instanceName, databaseName string)
 		return
 	}
 	b.bindings = append(b.bindings, resourceBinding{
-		name:        resourceNameDatabase,
+		name:        internal.ResourceNameDatabase,
 		description: "Lakebase database",
 		lines: []string{
 			"          database:",

@@ -1,13 +1,14 @@
 package apps
 
+import "github.com/databricks/cli/cmd/apps/internal"
+
 // Resource name constants for databricks.yml resource bindings.
-// These names are used in resource.name fields in databricks.yml and must match
-// the keys used in environment variable resolution.
+// Re-exported from internal/appflags for convenience.
 const (
-	ResourceNameSQLWarehouse    = "sql-warehouse"
-	ResourceNameServingEndpoint = "serving-endpoint"
-	ResourceNameExperiment      = "experiment"
-	ResourceNameDatabase        = "database"
-	ResourceNameDatabaseName    = "database-name"
-	ResourceNameUCVolume        = "uc-volume"
+	ResourceNameSQLWarehouse    = internal.ResourceNameSQLWarehouse
+	ResourceNameServingEndpoint = internal.ResourceNameServingEndpoint
+	ResourceNameExperiment      = internal.ResourceNameExperiment
+	ResourceNameDatabase        = internal.ResourceNameDatabase
+	ResourceNameDatabaseName    = internal.ResourceNameDatabaseName
+	ResourceNameUCVolume        = internal.ResourceNameUCVolume
 )
