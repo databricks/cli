@@ -22,9 +22,15 @@ Deployment complete!
 Detected changes in 1 resource(s):
 
 Resource: resources.jobs.my_job
+  description: skip
+  email_notifications.on_failure: skip
   email_notifications.on_failure[0]: replace
   max_concurrent_runs: replace
   tags['env']: remove
+  tags['version']: skip
+  tasks[task_key='main'].notebook_task.source: skip
+  timeout_seconds: skip
+  webhook_notifications: skip
 
 
 === Configuration changes

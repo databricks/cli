@@ -22,6 +22,10 @@ func ApplyChangesToYAML(ctx context.Context, b *bundle.Bundle, fieldChanges []Fi
 	modifiedFiles := make(map[string][]byte)
 
 	for _, fieldChange := range fieldChanges {
+		if fieldChange.Change.Operation == OperationSkip {
+			continue
+		}
+
 		filePath := fieldChange.FilePath
 
 		if _, exists := modifiedFiles[filePath]; !exists {

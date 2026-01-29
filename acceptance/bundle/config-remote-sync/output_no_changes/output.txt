@@ -3,13 +3,41 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
-=== Check for changes immediately after deploymentNo changes detected.
+=== Check for changes immediately after deploymentDetected changes in 1 resource(s):
+
+Resource: resources.jobs.test_job
+  email_notifications: skip
+  tasks[task_key='main'].notebook_task.source: skip
+  timeout_seconds: skip
+  webhook_notifications: skip
 
 
-=== Text outputNo changes detected.
+=== Text outputDetected changes in 1 resource(s):
 
+Resource: resources.jobs.test_job
+  email_notifications: skip
+  tasks[task_key='main'].notebook_task.source: skip
+  timeout_seconds: skip
+  webhook_notifications: skip
+
+contains error: 'No changes detected' not found in the output.
 
 === JSON output{
   "files": null,
-  "changes": {}
+  "changes": {
+    "resources.jobs.test_job": {
+      "email_notifications": {
+        "operation": "skip"
+      },
+      "tasks[task_key='main'].notebook_task.source": {
+        "operation": "skip"
+      },
+      "timeout_seconds": {
+        "operation": "skip"
+      },
+      "webhook_notifications": {
+        "operation": "skip"
+      }
+    }
+  }
 }

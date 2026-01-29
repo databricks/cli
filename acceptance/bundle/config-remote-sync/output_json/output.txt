@@ -13,6 +13,9 @@ Deployment complete!
   ],
   "changes": {
     "resources.jobs.test_job": {
+      "email_notifications": {
+        "operation": "skip"
+      },
       "max_concurrent_runs": {
         "operation": "replace",
         "value": 3
@@ -22,6 +25,15 @@ Deployment complete!
         "value": {
           "env": "test"
         }
+      },
+      "tasks[task_key='main'].notebook_task.source": {
+        "operation": "skip"
+      },
+      "timeout_seconds": {
+        "operation": "skip"
+      },
+      "webhook_notifications": {
+        "operation": "skip"
       }
     }
   }

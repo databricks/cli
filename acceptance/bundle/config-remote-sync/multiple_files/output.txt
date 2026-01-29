@@ -8,9 +8,17 @@ Deployment complete!
 Detected changes in 2 resource(s):
 
 Resource: resources.jobs.job_one
+  email_notifications: skip
   max_concurrent_runs: replace
+  tasks[task_key='main'].notebook_task.source: skip
+  timeout_seconds: skip
+  webhook_notifications: skip
 Resource: resources.jobs.job_two
+  email_notifications: skip
   max_concurrent_runs: replace
+  tasks[task_key='main'].notebook_task.source: skip
+  timeout_seconds: skip
+  webhook_notifications: skip
 
 
 === Changes in job1.yml

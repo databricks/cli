@@ -22,6 +22,7 @@ const (
 	OperationAdd     OperationType = "add"
 	OperationRemove  OperationType = "remove"
 	OperationReplace OperationType = "replace"
+	OperationSkip    OperationType = "skip"
 )
 
 type ConfigChangeDesc struct {
@@ -74,10 +75,16 @@ func normalizeValue(v any) (any, error) {
 	return normalized, nil
 }
 
-func toConfigChangeDesc(cd *deployplan.ChangeDesc) (*ConfigChangeDesc, error) {
+func convertChangeDesc(path string, cd *deployplan.ChangeDesc) (*ConfigChangeDesc, error) {
 	hasConfigValue := cd.Old != nil || cd.New != nil
 
 	op := OperationUnknown
+	if shouldSkipField(path, cd) {
+		return &ConfigChangeDesc{
+			Operation: OperationSkip,
+		}, nil
+	}
+
 	if cd.Remote == nil && hasConfigValue {
 		op = OperationRemove
 	}
@@ -126,14 +133,11 @@ func DetectChanges(ctx context.Context, b *bundle.Bundle, engine engine.EngineTy
 
 		if entry.Changes != nil {
 			for path, changeDesc := range entry.Changes {
-				if shouldSkipField(path, changeDesc) {
-					continue
-				}
-				configChange, err := toConfigChangeDesc(changeDesc)
+				change, err := convertChangeDesc(path, changeDesc)
 				if err != nil {
 					return nil, fmt.Errorf("failed to compute config change for path %s: %w", path, err)
 				}
-				resourceChanges[path] = configChange
+				resourceChanges[path] = change
 			}
 		}
 

@@ -8,10 +8,16 @@ Deployment complete!
 Detected changes in 1 resource(s):
 
 Resource: resources.jobs.my_job
+  email_notifications: skip
+  tasks[task_key='task1'].notebook_task.source: skip
   tasks[task_key='task2']: remove
   tasks[task_key='task3'].depends_on[0].task_key: replace
   tasks[task_key='task3'].new_cluster.num_workers: replace
+  tasks[task_key='task3'].notebook_task.source: skip
   tasks[task_key='task3'].timeout_seconds: add
+  tasks[task_key='task4'].notebook_task.source: skip
+  timeout_seconds: skip
+  webhook_notifications: skip
 
 
 === Configuration changes
