@@ -77,7 +77,7 @@ func toSnakeCase(s string) string {
 	return strings.ToLower(result.String())
 }
 
-func processAttributeType(typ cty.Type, resourceName string, attributePath string) string {
+func processAttributeType(typ cty.Type, resourceName, attributePath string) string {
 	var out string
 
 	switch {
