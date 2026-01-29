@@ -324,7 +324,6 @@ func ensureSSHConfigEntry(ctx context.Context, configPath, hostName, userName, k
 		return fmt.Errorf("failed to generate ProxyCommand: %w", err)
 	}
 
-	// Generate host config
 	hostConfig := fmt.Sprintf(`
 Host %s
     User %s
@@ -335,24 +334,12 @@ Host %s
     ProxyCommand %s
 `, hostName, userName, keyPath, proxyCommand)
 
-	// Check if the host config already exists
-	exists, err := sshconfig.HostConfigExists(hostName)
+	_, err = sshconfig.CreateOrUpdateHostConfig(ctx, hostName, hostConfig, true)
 	if err != nil {
 		return err
 	}
 
-	if exists {
-		cmdio.LogString(ctx, fmt.Sprintf("SSH config entry for '%s' already exists, skipping", hostName))
-		return nil
-	}
-
-	// Create the host config file
-	_, err = sshconfig.CreateOrUpdateHostConfig(ctx, hostName, hostConfig, false)
-	if err != nil {
-		return err
-	}
-
-	cmdio.LogString(ctx, fmt.Sprintf("Added SSH config entry for '%s'", hostName))
+	cmdio.LogString(ctx, fmt.Sprintf("Updated SSH config entry for '%s'", hostName))
 	return nil
 }
 

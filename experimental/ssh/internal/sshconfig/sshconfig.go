@@ -151,7 +151,6 @@ func CreateOrUpdateHostConfig(ctx context.Context, hostName, hostConfig string, 
 		return false, nil
 	}
 
-	// Ensure the config directory exists
 	configDir := filepath.Dir(configPath)
 	err = os.MkdirAll(configDir, 0o700)
 	if err != nil {
