@@ -24,18 +24,6 @@ func ExtractIDFromName(name, component string) string {
 	return name
 }
 
-// GetEndpoint retrieves an endpoint by its full resource name.
-func GetEndpoint(ctx context.Context, w *databricks.WorkspaceClient, projectID, branchID, endpointID string) (*postgres.Endpoint, error) {
-	endpointName := fmt.Sprintf("projects/%s/branches/%s/endpoints/%s", projectID, branchID, endpointID)
-	endpoint, err := w.Postgres.GetEndpoint(ctx, postgres.GetEndpointRequest{
-		Name: endpointName,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to get endpoint %s: %w", endpointName, err)
-	}
-	return endpoint, nil
-}
-
 // FormatEndpointType returns a human-readable endpoint type string.
 func FormatEndpointType(endpointType postgres.EndpointType) string {
 	switch endpointType {
