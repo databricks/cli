@@ -225,15 +225,21 @@ func PromptForDeployAndRun(ctx context.Context) (deploy bool, runMode RunMode, e
 	theme := AppkitTheme()
 
 	// Deploy after creation?
-	err = huh.NewConfirm().
+	deployChoice := "no"
+	err = huh.NewSelect[string]().
 		Title("Deploy after creation?").
 		Description("Run 'databricks apps deploy' after setup").
-		Value(&deploy).
+		Options(
+			huh.NewOption("No", "no"),
+			huh.NewOption("Yes", "yes"),
+		).
+		Value(&deployChoice).
 		WithTheme(theme).
 		Run()
 	if err != nil {
 		return false, RunModeNone, err
 	}
+	deploy = deployChoice == "yes"
 	if deploy {
 		printAnswered(ctx, "Deploy after creation", "Yes")
 	} else {
@@ -382,15 +388,21 @@ func PromptForProjectConfig(ctx context.Context, preSelectedFeatures []string) (
 	printAnswered(ctx, "Description", config.Description)
 
 	// Step 5: Deploy after creation?
-	err = huh.NewConfirm().
+	deployChoice := "no"
+	err = huh.NewSelect[string]().
 		Title("Deploy after creation?").
 		Description("Run 'databricks apps deploy' after setup").
-		Value(&config.Deploy).
+		Options(
+			huh.NewOption("No", "no"),
+			huh.NewOption("Yes", "yes"),
+		).
+		Value(&deployChoice).
 		WithTheme(theme).
 		Run()
 	if err != nil {
 		return nil, err
 	}
+	config.Deploy = deployChoice == "yes"
 	if config.Deploy {
 		printAnswered(ctx, "Deploy after creation", "Yes")
 	} else {
