@@ -110,10 +110,9 @@ resources:
       autoscaling_limit_max_cu: 2
 
 >>> [CLI] bundle plan
-update postgres_branches.main
 recreate postgres_endpoints.my_endpoint
 
-Plan: 1 to add, 1 to change, 1 to delete, 1 unchanged
+Plan: 1 to add, 0 to change, 1 to delete, 2 unchanged
 
 >>> [CLI] bundle deploy --auto-approve
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-endpoint-recreate-[UNIQUE_NAME]/default/files...
@@ -123,26 +122,21 @@ Deployment complete!
 
 >>> print_requests
 {
-  "body": {
-    "name": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
-    "spec": {
-      "no_expiry": true
-    }
-  },
-  "method": "PATCH",
-  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
-  "q": {
-    "update_mask": "*"
-  }
-}
   "method": "DELETE",
   "path": "/api/2.0/postgres/[MY_ENDPOINT_ID]"
+}
+  "body": {
+    "spec": {
       "autoscaling_limit_max_cu": 2,
       "autoscaling_limit_min_cu": 0.5,
       "endpoint_type": "ENDPOINT_TYPE_READ_ONLY"
+    }
+  },
   "method": "POST",
   "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main/endpoints",
+  "q": {
     "endpoint_id": "test-endpoint-[UNIQUE_NAME]"
+  }
 
 === Fetch endpoint ID and verify it has the new type (READ_ONLY)
 >>> [CLI] postgres get-endpoint [MY_ENDPOINT_ID]

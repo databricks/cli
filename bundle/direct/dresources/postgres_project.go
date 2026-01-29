@@ -37,14 +37,9 @@ func (*ResourcePostgresProject) RemapState(remote *postgres.Project) *PostgresPr
 	// Extract project_id from hierarchical name: "projects/{project_id}"
 	projectId := strings.TrimPrefix(remote.Name, "projects/")
 
-	// Populate spec from status (effective values)
+	// The read API does not return the spec, only the status.
+	// This means we cannot detect remote drift.
 	spec := &postgres.ProjectSpec{}
-	if remote.Status != nil {
-		spec.DisplayName = remote.Status.DisplayName
-		spec.PgVersion = remote.Status.PgVersion
-		spec.HistoryRetentionDuration = remote.Status.HistoryRetentionDuration
-		spec.DefaultEndpointSettings = remote.Status.DefaultEndpointSettings
-	}
 
 	return &PostgresProjectState{
 		Spec:      spec,

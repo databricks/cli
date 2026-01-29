@@ -45,15 +45,9 @@ func (*ResourcePostgresBranch) RemapState(remote *postgres.Branch) *PostgresBran
 		}
 	}
 
-	// Populate spec from status (effective values)
+	// The read API does not return the spec, only the status.
+	// This means we cannot detect remote drift.
 	spec := &postgres.BranchSpec{}
-	if remote.Status != nil {
-		spec.ExpireTime = remote.Status.ExpireTime
-		spec.IsProtected = remote.Status.IsProtected
-		spec.SourceBranch = remote.Status.SourceBranch
-		spec.SourceBranchLsn = remote.Status.SourceBranchLsn
-		spec.SourceBranchTime = remote.Status.SourceBranchTime
-	}
 
 	return &PostgresBranchState{
 		Parent:   remote.Parent,

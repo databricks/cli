@@ -48,16 +48,9 @@ func (*ResourcePostgresEndpoint) RemapState(remote *postgres.Endpoint) *Postgres
 		}
 	}
 
-	// Populate spec from status (effective values)
+	// The read API does not return the spec, only the status.
+	// This means we cannot detect remote drift.
 	spec := &postgres.EndpointSpec{}
-	if remote.Status != nil {
-		spec.AutoscalingLimitMaxCu = remote.Status.AutoscalingLimitMaxCu
-		spec.AutoscalingLimitMinCu = remote.Status.AutoscalingLimitMinCu
-		spec.Disabled = remote.Status.Disabled
-		spec.EndpointType = remote.Status.EndpointType
-		spec.Settings = remote.Status.Settings
-		spec.SuspendTimeoutDuration = remote.Status.SuspendTimeoutDuration
-	}
 
 	return &PostgresEndpointState{
 		Parent:     remote.Parent,
