@@ -5,9 +5,9 @@ import (
 	_ "embed"
 	"fmt"
 	"os"
-	"strings"
 	"text/template"
 
+	"github.com/databricks/cli/cmd/apps/internal"
 	"gopkg.in/yaml.v3"
 )
 
@@ -106,25 +106,6 @@ type envVarPair struct {
 	Value string
 }
 
-// camelToSnake converts a camelCase string to snake_case.
-// Examples: valueFrom -> value_from, myValue -> my_value, ID -> id
-func camelToSnake(s string) string {
-	var result strings.Builder
-	for i, r := range s {
-		if i > 0 && r >= 'A' && r <= 'Z' {
-			// Check if the previous character was lowercase or if the next character is lowercase
-			// This handles cases like "ID" -> "id" vs "myID" -> "my_id"
-			prevLower := i > 0 && s[i-1] >= 'a' && s[i-1] <= 'z'
-			nextLower := i+1 < len(s) && s[i+1] >= 'a' && s[i+1] <= 'z'
-			if prevLower || nextLower {
-				result.WriteByte('_')
-			}
-		}
-		result.WriteRune(r)
-	}
-	return strings.ToLower(result.String())
-}
-
 // convertKeysToSnakeCase recursively converts all mapping keys in a yaml.Node from camelCase to snake_case.
 func convertKeysToSnakeCase(node *yaml.Node) {
 	if node == nil {
@@ -144,7 +125,7 @@ func convertKeysToSnakeCase(node *yaml.Node) {
 
 			// Convert key to snake_case
 			if keyNode.Kind == yaml.ScalarNode {
-				keyNode.Value = camelToSnake(keyNode.Value)
+				keyNode.Value = internal.CamelToSnake(keyNode.Value)
 			}
 
 			// Recursively process value
