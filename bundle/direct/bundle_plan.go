@@ -386,8 +386,8 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 		} else if shouldSkip(cfg, path, ch) {
 			ch.Action = deployplan.Skip
 			ch.Reason = deployplan.ReasonBuiltinRule
-		} else if action := shouldIgnore(generatedCfg, pathString); action != deployplan.Undefined {
-			ch.Action = action
+		} else if shouldSkip(generatedCfg, path, ch) {
+			ch.Action = deployplan.Skip
 			ch.Reason = deployplan.ReasonAPISchema
 		} else if ch.New == nil && ch.Old == nil && ch.Remote != nil && path.IsDotString() {
 			// The field was not set by us, but comes from the remote state.
@@ -399,7 +399,7 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 		} else if action := shouldUpdateOrRecreate(cfg, path); action != deployplan.Undefined {
 			ch.Action = action
 			ch.Reason = deployplan.ReasonBuiltinRule
-		} else if action := shouldUpdateOrRecreate(generatedCfg, pathString); action != deployplan.Undefined {
+		} else if action := shouldUpdateOrRecreate(generatedCfg, path); action != deployplan.Undefined {
 			ch.Action = action
 			ch.Reason = deployplan.ReasonAPISchema
 		} else {
