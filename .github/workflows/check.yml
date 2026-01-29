@@ -55,3 +55,6 @@ jobs:
         run: |-
           make checks
           git diff --exit-code
+
+      - name: Verify SDK docs index is up to date
+        run: make verify-sdk-docs-index
