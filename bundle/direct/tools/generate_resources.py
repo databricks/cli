@@ -50,7 +50,7 @@ def get_field_behaviors(schemas, type_name):
         results = {}
         for name, prop in schema.get("properties", {}).items():
             path = f"{prefix}.{name}" if prefix else name
-            behaviors = list(prop.get("x-databricks-field-behaviors", []))
+            behaviors = prop.get("x-databricks-field-behaviors", [])
             if prop.get("x-databricks-immutable") and "IMMUTABLE" not in behaviors:
                 behaviors.append("IMMUTABLE")
 
@@ -92,9 +92,10 @@ def write_field_group(lines, header, fields):
             lines.append(f"      - {field}")
 
 
-def generate_yaml(resource_behaviors):
-    """Generate YAML content."""
-    lines = ["""Generated, do not edit. API field behaviors from OpenAPI schema.
+def generate(resource_behaviors):
+    """Generate resources.yml."""
+    lines = [
+        """Generated, do not edit. API field behaviors from OpenAPI schema.
 
 For manual edits and schema description, see resources.yml.
 
@@ -168,7 +169,7 @@ def main():
                 print(f"    {field}: {all_behaviors[field]}", file=sys.stderr)
         resource_behaviors[resource] = {f: b for f, b in all_behaviors.items() if f in fields}
 
-    print(generate_yaml(resource_behaviors))
+    print(generate(resource_behaviors))
 
 
 if __name__ == "__main__":
