@@ -96,8 +96,6 @@ resources:
       - name
 
   dashboards:
-    recreate_on_changes:
-      - parent_path
 
     ignore_remote_changes:
       # "serialized_dashboard" locally and remotely will have different contents
