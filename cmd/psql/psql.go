@@ -10,6 +10,7 @@ import (
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgroup"
 	"github.com/databricks/cli/libs/cmdio"
 	lakebasepsql "github.com/databricks/cli/libs/lakebase/psql"
 	lakebasev2 "github.com/databricks/cli/libs/lakebase/v2"
@@ -25,53 +26,58 @@ func New() *cobra.Command {
 
 func newLakebaseConnectCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "psql [TARGET] [-- PSQL_ARGS...]",
+		Use:     "psql [TARGET] [flags] [-- PSQL_ARGS...]",
 		Short:   "Connect to a Lakebase Postgres database",
 		GroupID: "database",
 		Long: `Connect to a Lakebase Postgres database.
 
-This command requires a psql client to be installed on your machine for the connection to work.
+Requires psql to be installed.
 
-The command includes automatic retry logic for connection failures. You can configure the retry behavior using the flags below.
+Examples:
 
-Usage modes:
+  # Interactive selection (shows all available databases)
+  databricks psql
+  databricks psql --provisioned
+  databricks psql --autoscaling
 
-1. Lakebase Provisioned (database instances):
-   databricks psql my-database-instance
+  # Lakebase Provisioned
+  databricks psql my-instance
 
-2. Lakebase Autoscaling with full endpoint path:
-   databricks psql projects/my-project/branches/main/endpoints/primary
+  # Lakebase Autoscaling (auto-selects branch/endpoint if only one exists)
+  databricks psql projects/my-project/branches/main/endpoints/primary
+  databricks psql --project my-project
+  databricks psql --project my-project --branch main --endpoint primary
 
-3. Lakebase Autoscaling using flags (prompts for branch/endpoint if multiple exist):
-   databricks psql --project my-project
-   databricks psql --project my-project --branch main
-   databricks psql --project my-project --branch main --endpoint primary
+  # Pass additional arguments to psql
+  databricks psql my-instance -- -c "SELECT 1"
+  databricks psql --project my-project -- -d mydb
 
-4. Interactive selection (shows dropdown with all available databases):
-   databricks psql
-
-5. Interactive selection limited to a specific product:
-   databricks psql --provisioned
-   databricks psql --autoscaling
-
-You can pass additional arguments to psql after a double-dash (--):
-  databricks psql my-database -- -c "SELECT * FROM my_table"
-  databricks psql --project my-project -- --echo-all -d "my-db"
+For more information, see: https://docs.databricks.com/aws/en/oltp/
 `,
 	}
 
-	// Add retry configuration flag
-	cmd.Flags().Int("max-retries", 3, "Maximum number of connection retry attempts (set to 0 to disable retries)")
+	var maxRetries int
+	var provisionedFlag, autoscalingFlag bool
+	var projectFlag, branchFlag, endpointFlag string
 
-	// Add product selection flags
-	cmd.Flags().Bool("provisioned", false, "Connect to a Lakebase Provisioned database instance")
-	cmd.Flags().Bool("autoscaling", false, "Connect to a Lakebase Autoscaling endpoint")
+	cmd.Flags().IntVar(&maxRetries, "max-retries", 3, "Connection retries; 0 to disable")
+
+	productGroup := cmdgroup.NewFlagGroup("Product Selection")
+	productGroup.FlagSet().SortFlags = false
+	productGroup.FlagSet().BoolVar(&provisionedFlag, "provisioned", false, "Only show Lakebase Provisioned instances")
+	productGroup.FlagSet().BoolVar(&autoscalingFlag, "autoscaling", false, "Only show Lakebase Autoscaling projects")
+
+	autoscalingGroup := cmdgroup.NewFlagGroup("Autoscaling")
+	autoscalingGroup.FlagSet().SortFlags = false
+	autoscalingGroup.FlagSet().StringVar(&projectFlag, "project", "", "Project ID")
+	autoscalingGroup.FlagSet().StringVar(&branchFlag, "branch", "", "Branch ID (default: auto-select)")
+	autoscalingGroup.FlagSet().StringVar(&endpointFlag, "endpoint", "", "Endpoint ID (default: auto-select)")
+
+	wrappedCmd := cmdgroup.NewCommandWithGroupFlag(cmd)
+	wrappedCmd.AddFlagGroup(productGroup)
+	wrappedCmd.AddFlagGroup(autoscalingGroup)
+
 	cmd.MarkFlagsMutuallyExclusive("provisioned", "autoscaling")
-
-	// Add Lakebase Autoscaling flags
-	cmd.Flags().String("project", "", "Lakebase Autoscaling project ID")
-	cmd.Flags().String("branch", "", "Lakebase Autoscaling branch ID (default: auto-select)")
-	cmd.Flags().String("endpoint", "", "Lakebase Autoscaling endpoint ID (default: auto-select)")
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
@@ -89,14 +95,6 @@ You can pass additional arguments to psql after a double-dash (--):
 			return errors.New("expected at most one positional argument for target")
 		}
 		extraArgs := args[argsLenAtDash:]
-
-		// Read flags
-		provisionedFlag, _ := cmd.Flags().GetBool("provisioned")
-		autoscalingFlag, _ := cmd.Flags().GetBool("autoscaling")
-		projectFlag, _ := cmd.Flags().GetString("project")
-		branchFlag, _ := cmd.Flags().GetString("branch")
-		endpointFlag, _ := cmd.Flags().GetString("endpoint")
-		maxRetries, _ := cmd.Flags().GetInt("max-retries")
 
 		retryConfig := lakebasepsql.RetryConfig{
 			MaxRetries:    maxRetries,
