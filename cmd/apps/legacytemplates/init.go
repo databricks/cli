@@ -27,13 +27,12 @@ var gitignoreTemplate string
 
 // TemplateVars holds the variables for template substitution.
 type TemplateVars struct {
-	ProjectName      string
-	AppName          string
-	AppDescription   string
-	WorkspaceHost    string
-	BundleVariables  string
-	ResourceBindings string
-	UserAPIScopes    []string
+	ProjectName    string
+	AppName        string
+	AppDescription string
+	WorkspaceHost  string
+	Resources      *ResourceValues
+	UserAPIScopes  []string
 }
 
 // RunLegacyTemplateInit initializes a project using a legacy template.
@@ -85,33 +84,26 @@ func RunLegacyTemplateInit(ctx context.Context, selectedTemplate *AppTemplateMan
 		}
 	}
 
-	// Build bundle variables for databricks.yml
-	variablesBuilder := newVariablesBuilder()
-	variablesBuilder.addWarehouse(warehouseID)
-	variablesBuilder.addServingEndpoint(servingEndpoint)
-	variablesBuilder.addExperiment(experimentID)
-	variablesBuilder.addDatabase(instanceName, databaseName)
-	variablesBuilder.addUCVolume(ucVolume)
-
-	// Build resource bindings for databricks.yml
-	bindingsBuilder := newResourceBindingsBuilder()
-	bindingsBuilder.addWarehouse(warehouseID)
-	bindingsBuilder.addServingEndpoint(servingEndpoint)
-	bindingsBuilder.addExperiment(experimentID)
-	bindingsBuilder.addDatabase(instanceName, databaseName)
+	// Build resource values from collected parameters
+	resourceValues := NewResourceValues()
+	resourceValues.Set(ResourceTypeSQLWarehouse, warehouseID)
+	resourceValues.Set(ResourceTypeServingEndpoint, servingEndpoint)
+	resourceValues.Set(ResourceTypeExperiment, experimentID)
+	resourceValues.Set(ResourceTypeDatabase, instanceName, databaseName)
+	resourceValues.Set(ResourceTypeUCVolume, ucVolume)
 
 	// Create databricks.yml using template
 	vars := TemplateVars{
-		ProjectName:      appName,
-		AppName:          appName,
-		AppDescription:   selectedTemplate.Manifest.Description,
-		WorkspaceHost:    workspaceHost,
-		BundleVariables:  variablesBuilder.build(),
-		ResourceBindings: bindingsBuilder.build(),
-		UserAPIScopes:    selectedTemplate.Manifest.UserAPIScopes,
+		ProjectName:    appName,
+		AppName:        appName,
+		AppDescription: selectedTemplate.Manifest.Description,
+		WorkspaceHost:  workspaceHost,
+		Resources:      resourceValues,
+		UserAPIScopes:  selectedTemplate.Manifest.UserAPIScopes,
 	}
 
-	tmpl, err := template.New("databricks.yml").Parse(databricksYmlTemplate)
+	// Create template with custom functions for resource handling
+	tmpl, err := template.New("databricks.yml").Funcs(getTemplateFuncs(resourceValues)).Parse(databricksYmlTemplate)
 	if err != nil {
 		return fmt.Errorf("failed to parse databricks.yml template: %w", err)
 	}
@@ -177,7 +169,7 @@ func HandleLegacyTemplateInit(ctx context.Context, legacyTemplate *AppTemplateMa
 	}
 
 	// Collect all required resources
-	collector := NewLegacyResourceCollector(
+	collector := NewResourceCollector(
 		legacyTemplate,
 		isInteractive,
 		warehouseID,
@@ -187,7 +179,7 @@ func HandleLegacyTemplateInit(ctx context.Context, legacyTemplate *AppTemplateMa
 		databaseName,
 		ucVolume,
 	)
-	resources, err := collector.CollectAll(ctx)
+	resourceValues, err := collector.CollectAll(ctx)
 	if err != nil {
 		return err
 	}
@@ -206,9 +198,28 @@ func HandleLegacyTemplateInit(ctx context.Context, legacyTemplate *AppTemplateMa
 		}
 	}
 
+	// Extract individual resource values for RunLegacyTemplateInit
+	var warehouseIDValue, servingEndpointValue, experimentIDValue, instanceNameValue, databaseNameValue, ucVolumeValue string
+	if val := resourceValues.Get(ResourceTypeSQLWarehouse); val != nil {
+		warehouseIDValue = val.SingleValue()
+	}
+	if val := resourceValues.Get(ResourceTypeServingEndpoint); val != nil {
+		servingEndpointValue = val.SingleValue()
+	}
+	if val := resourceValues.Get(ResourceTypeExperiment); val != nil {
+		experimentIDValue = val.SingleValue()
+	}
+	if val := resourceValues.Get(ResourceTypeDatabase); val != nil && len(val.Values) >= 2 {
+		instanceNameValue = val.Values[0]
+		databaseNameValue = val.Values[1]
+	}
+	if val := resourceValues.Get(ResourceTypeUCVolume); val != nil {
+		ucVolumeValue = val.SingleValue()
+	}
+
 	return RunLegacyTemplateInit(ctx, legacyTemplate, appName, outputDir,
-		resources.WarehouseID, resources.ServingEndpoint, resources.ExperimentID,
-		resources.InstanceName, resources.DatabaseName, resources.UCVolume,
+		warehouseIDValue, servingEndpointValue, experimentIDValue,
+		instanceNameValue, databaseNameValue, ucVolumeValue,
 		workspaceHost, profile, shouldDeploy, runMode)
 }
 

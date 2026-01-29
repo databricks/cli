@@ -6,9 +6,35 @@ workspace:
   host: {{.WorkspaceHost}}
 {{- end}}
 
-{{- if .BundleVariables}}
+{{- $hasVariables := false}}
+{{- range resourceTypes}}
+{{- if hasResource .}}
+{{- $hasVariables = true}}
+{{- end}}
+{{- end}}
+{{- if $hasVariables}}
 variables:
-{{.BundleVariables}}
+{{- range resourceTypes}}
+{{- if hasResource .}}
+{{- if eq . "database"}}
+{{- /* Database has two variables: database_name and instance_name */}}
+{{- $values := getValues .}}
+{{- if ge (len $values) 2}}
+  database_name:
+    default: {{index $values 1}}
+  instance_name:
+    default: {{index $values 0}}
+{{- end}}
+{{- else}}
+{{- /* Regular single-value resources */}}
+{{- $varName := getVariableName .}}
+{{- if $varName}}
+  {{$varName}}:
+    default: {{getValue .}}
+{{- end}}
+{{- end}}
+{{- end}}
+{{- end}}
 {{- end}}
 
 resources:
@@ -25,7 +51,25 @@ resources:
         - {{.}}
 {{- end}}
 {{- end}}
-{{- if .ResourceBindings}}
+{{- $hasBindings := false}}
+{{- range resourceTypes}}
+{{- if and (hasResource .) (hasBindings .)}}
+{{- $hasBindings = true}}
+{{- end}}
+{{- end}}
+{{- if $hasBindings}}
       resources:
-{{.ResourceBindings}}
+{{- range resourceTypes}}
+{{- if hasResource .}}
+{{- $meta := getMetadata .}}
+{{- $bindingLines := getBindingLines .}}
+{{- if $bindingLines}}
+        - name: {{$meta.YamlName}}
+          description: {{$meta.Description}}
+{{- range $bindingLines}}
+{{.}}
+{{- end}}
+{{- end}}
+{{- end}}
+{{- end}}
 {{- end}}

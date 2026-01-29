@@ -74,28 +74,3 @@ func hasResourceSpec(tmpl *AppTemplateManifest, checker resourceSpecChecker) boo
 	}
 	return false
 }
-
-// RequiresSQLWarehouse checks if the template requires a SQL warehouse.
-func RequiresSQLWarehouse(tmpl *AppTemplateManifest) bool {
-	return hasResourceSpec(tmpl, func(s *resourceSpec) bool { return s.SQLWarehouseSpec != nil })
-}
-
-// RequiresServingEndpoint checks if the template requires a serving endpoint.
-func RequiresServingEndpoint(tmpl *AppTemplateManifest) bool {
-	return hasResourceSpec(tmpl, func(s *resourceSpec) bool { return s.ServingEndpointSpec != nil })
-}
-
-// RequiresExperiment checks if the template requires an experiment.
-func RequiresExperiment(tmpl *AppTemplateManifest) bool {
-	return hasResourceSpec(tmpl, func(s *resourceSpec) bool { return s.ExperimentSpec != nil })
-}
-
-// RequiresDatabase checks if the template requires a database.
-func RequiresDatabase(tmpl *AppTemplateManifest) bool {
-	return hasResourceSpec(tmpl, func(s *resourceSpec) bool { return s.DatabaseSpec != nil })
-}
-
-// RequiresUCVolume checks if the template requires a UC volume.
-func RequiresUCVolume(tmpl *AppTemplateManifest) bool {
-	return hasResourceSpec(tmpl, func(s *resourceSpec) bool { return s.UCSecurableSpec != nil })
-}
