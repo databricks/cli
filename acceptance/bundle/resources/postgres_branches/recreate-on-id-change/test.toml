@@ -1,37 +1,5 @@
-Local = true
-Cloud = true
-
-# Mitigates running into quota limits in workspaces
-CloudSlow = true
-
-# Run only on direct mode (not Terraform)
-EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
-
-Ignore = [
-    "databricks.yml",
-    "out.requests.txt",
-]
-
-[[Repls]]
-# Clean up ?o=<num> suffix after URL since not all workspaces have that
-Old = '\?o=\[(NUMID|ALPHANUMID)\]'
-New = ''
-Order = 1000
-
 [[Repls]]
 # Normalize TraceId in error messages (run before default NUMID replacement at Order 9-10)
 Old = 'TraceId: [a-f0-9]+'
 New = 'TraceId: [TRACE_ID]'
-Order = 1
-
-[[Repls]]
-# Normalize branch UIDs (br-xxx-yyy format, supports both word-based and hex-based UIDs)
-Old = 'br-[a-z0-9-]+'
-New = '[BRANCH_UID]'
-Order = 1
-
-[[Repls]]
-# Normalize LSN values (format: 0/HEXVALUE or 0/0)
-Old = '"source_branch_lsn": "0/[A-F0-9]*"'
-New = '"source_branch_lsn": "[LSN]"'
 Order = 1

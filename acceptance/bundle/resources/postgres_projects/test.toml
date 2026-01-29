@@ -1,3 +1,32 @@
 RequiresUnityCatalog = true
 RecordRequests = true
 CloudEnvs.gcp = false # lakebase v2 (postgres) is not available in GCP as of January 2026
+
+# Mitigates running into quota limits in workspaces
+CloudSlow = true
+
+# Run only on direct mode (not Terraform)
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+Ignore = [
+    "databricks.yml",
+    "out.requests.txt",
+]
+
+[[Repls]]
+# Clean up ?o=<num> suffix after URL since not all workspaces have that
+Old = '\?o=\[(NUMID|ALPHANUMID)\]'
+New = ''
+Order = 1000
+
+[[Repls]]
+# Normalize project UIDs (proj-xxx-yyy-zzz format, supports both word-based and hex-based UIDs)
+Old = 'proj-[a-z]+-[a-z]+-[a-z0-9]+'
+New = '[PROJECT_UID]'
+Order = 1
+
+[[Repls]]
+# Normalize postgres operation IDs in paths (unique per operation)
+Old = '/operations/[A-Za-z0-9+/=]+'
+New = '/operations/[OPERATION_ID]'
+Order = 2000
