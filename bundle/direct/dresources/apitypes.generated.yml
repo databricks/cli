@@ -1,55 +1,37 @@
 # Generated, do not edit. Override via apitypes.yml
 
-alerts:
-  - sql.AlertV2
+alerts: sql.AlertV2
 
-apps:
-  - apps.App
+apps: apps.App
 
-clusters:
-  - compute.ClusterSpec
+clusters: compute.ClusterSpec
 
-dashboards:
-  - dashboards.Dashboard
+dashboards: dashboards.Dashboard
 
-database_catalogs:
-  - database.DatabaseCatalog
+database_catalogs: database.DatabaseCatalog
 
-database_instances:
-  - database.DatabaseInstance
+database_instances: database.DatabaseInstance
 
-experiments:
-  - ml.CreateExperiment
+experiments: ml.CreateExperiment
 
-jobs:
-  - jobs.JobSettings
+jobs: jobs.JobSettings
 
-model_serving_endpoints:
-  - serving.CreateServingEndpoint
+model_serving_endpoints: serving.CreateServingEndpoint
 
-models:
-  - ml.CreateModelRequest
+models: ml.CreateModelRequest
 
-pipelines:
-  - pipelines.CreatePipeline
+pipelines: pipelines.CreatePipeline
 
-quality_monitors:
-  - catalog.CreateMonitor
+quality_monitors: catalog.CreateMonitor
 
-registered_models:
-  - catalog.RegisteredModelInfo
+registered_models: catalog.RegisteredModelInfo
 
-schemas:
-  - catalog.CreateSchema
+schemas: catalog.CreateSchema
 
-secret_scopes:
-  - workspace.CreateScope
+secret_scopes: workspace.CreateScope
 
-sql_warehouses:
-  - sql.EditWarehouseRequest
+sql_warehouses: sql.EditWarehouseRequest
 
-synced_database_tables:
-  - database.SyncedDatabaseTable
+synced_database_tables: database.SyncedDatabaseTable
 
-volumes:
-  - catalog.CreateVolumeRequestContent
+volumes: catalog.CreateVolumeRequestContent

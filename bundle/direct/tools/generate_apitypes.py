@@ -104,8 +104,7 @@ def main():
     print("# Generated, do not edit. Override via apitypes.yml")
     for resource in sorted(top_matches):
         print("")
-        print(f"{resource}:")
-        print(f"  - {top_matches[resource]}")
+        print(f"{resource}: {top_matches[resource]}")
 
 
 if __name__ == "__main__":

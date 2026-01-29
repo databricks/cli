@@ -15,7 +15,7 @@ import yaml
 def parse_apitypes(path):
     """Parse apitypes.generated.yml to get resource types."""
     data = yaml.safe_load(path.read_text())
-    return {resource: types[0] for resource, types in data.items() if types}
+    return {resource: type_name for resource, type_name in data.items() if type_name}
 
 
 def parse_out_fields(path):
