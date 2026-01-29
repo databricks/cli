@@ -19,6 +19,9 @@ trace $CLI psql --project auto-project
 title "Project and branch flags should connect:"
 trace $CLI psql --project explicit-project --branch explicit-branch
 
+title "Project, branch, and endpoint flags should connect:"
+trace $CLI psql --project explicit-project --branch explicit-branch --endpoint main-ep
+
 title "Endpoint in INIT state should fail:"
 trace musterr $CLI psql projects/init-project/branches/main/endpoints/init-ep
 
@@ -28,8 +31,11 @@ trace musterr $CLI psql --branch some-branch
 title "Endpoint flag without project should fail:"
 trace musterr $CLI psql --endpoint some-endpoint
 
-title "Extra arguments should be passed through:"
+title "Extra arguments should be passed through with full path:"
 trace $CLI psql projects/my-project/branches/main/endpoints/primary -- -c "SELECT 1"
+
+title "Extra arguments should be passed through with project flag:"
+trace $CLI psql --project auto-project -- --echo-all -d "my-db"
 
 title "No retries with max-retries 0:"
 trace $CLI psql --project auto-project --max-retries 0

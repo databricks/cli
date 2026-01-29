@@ -26,9 +26,9 @@ func New() *cobra.Command {
 func newLakebaseConnectCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "psql [TARGET] [-- PSQL_ARGS...]",
-		Short:   "Connect to a Database Instance or Postgres endpoint",
+		Short:   "Connect to a Lakebase Postgres database",
 		GroupID: "database",
-		Long: `Connect to a Database Instance or Postgres endpoint.
+		Long: `Connect to a Lakebase Postgres database.
 
 This command requires a psql client to be installed on your machine for the connection to work.
 
@@ -36,18 +36,18 @@ The command includes automatic retry logic for connection failures. You can conf
 
 Usage modes:
 
-1. Old Database API (existing behavior):
+1. Lakebase Provisioned (database instances):
    databricks psql my-database-instance
 
-2. New Postgres API with full endpoint path:
+2. Lakebase Autoscaling with full endpoint path:
    databricks psql projects/my-project/branches/main/endpoints/primary
 
-3. New Postgres API using flags (auto-selects default branch and read-write endpoint):
+3. Lakebase Autoscaling using flags (prompts for branch/endpoint if multiple exist):
    databricks psql --project my-project
    databricks psql --project my-project --branch main
    databricks psql --project my-project --branch main --endpoint primary
 
-4. Interactive selection (shows dropdown - lists both database instances and projects):
+4. Interactive selection (shows dropdown with all available databases):
    databricks psql
 
 You can pass additional arguments to psql after a double-dash (--):
@@ -59,10 +59,10 @@ You can pass additional arguments to psql after a double-dash (--):
 	// Add retry configuration flag
 	cmd.Flags().Int("max-retries", 3, "Maximum number of connection retry attempts (set to 0 to disable retries)")
 
-	// Add Postgres API flags
-	cmd.Flags().String("project", "", "Postgres project ID (triggers new API)")
-	cmd.Flags().String("branch", "", "Postgres branch ID (default: auto-select default branch)")
-	cmd.Flags().String("endpoint", "", "Postgres endpoint ID (default: auto-select read-write endpoint)")
+	// Add Lakebase Autoscaling flags
+	cmd.Flags().String("project", "", "Lakebase Autoscaling project ID")
+	cmd.Flags().String("branch", "", "Lakebase Autoscaling branch ID (default: auto-select)")
+	cmd.Flags().String("endpoint", "", "Lakebase Autoscaling endpoint ID (default: auto-select)")
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
@@ -96,23 +96,23 @@ You can pass additional arguments to psql after a double-dash (--):
 			extraArgs = args[argsBeforeDash:]
 		}
 
-		// Determine which API to use based on input
-		// 1. If --project, --branch, or --endpoint flags are set -> New Postgres API
+		// Determine which connection mode to use based on input
+		// 1. If --project, --branch, or --endpoint flags are set -> Lakebase Autoscaling
 		if projectFlag != "" || branchFlag != "" || endpointFlag != "" {
 			if projectFlag == "" {
 				return errors.New("--project is required when using --branch or --endpoint")
 			}
-			return connectViaPostgresAPI(ctx, projectFlag, branchFlag, endpointFlag, retryConfig, extraArgs)
+			return connectViaAutoscaling(ctx, projectFlag, branchFlag, endpointFlag, retryConfig, extraArgs)
 		}
 
-		// 2. If positional arg starts with "projects/" -> New Postgres API
+		// 2. If positional arg starts with "projects/" -> Lakebase Autoscaling
 		if argsBeforeDash == 1 {
 			target := args[0]
 			if strings.HasPrefix(target, "projects/") {
-				return connectViaPostgresPath(ctx, target, retryConfig, extraArgs)
+				return connectViaAutoscalingPath(ctx, target, retryConfig, extraArgs)
 			}
-			// Positional arg is database instance name -> Old Database API
-			return connectViaDatabaseAPI(ctx, target, retryConfig, extraArgs)
+			// Positional arg is database instance name -> Lakebase Provisioned
+			return connectViaProvisioned(ctx, target, retryConfig, extraArgs)
 		}
 
 		// 3. No args, no flags -> Show combined dropdown
@@ -134,7 +134,7 @@ You can pass additional arguments to psql after a double-dash (--):
 
 		var names []string
 
-		// Add database instances
+		// Add Lakebase Provisioned instances
 		instances, err := w.Database.ListDatabaseInstancesAll(ctx, database.ListDatabaseInstancesRequest{})
 		if err == nil {
 			for _, instance := range instances {
@@ -142,7 +142,7 @@ You can pass additional arguments to psql after a double-dash (--):
 			}
 		}
 
-		// Add postgres projects
+		// Add Lakebase Autoscaling projects
 		projects, err := w.Postgres.ListProjectsAll(ctx, postgres.ListProjectsRequest{})
 		if err == nil {
 			for _, project := range projects {
@@ -156,8 +156,8 @@ You can pass additional arguments to psql after a double-dash (--):
 	return cmd
 }
 
-// connectViaDatabaseAPI connects using the old Database API.
-func connectViaDatabaseAPI(ctx context.Context, instanceName string, retryConfig lakebasepsql.RetryConfig, extraArgs []string) error {
+// connectViaProvisioned connects to a Lakebase Provisioned database instance.
+func connectViaProvisioned(ctx context.Context, instanceName string, retryConfig lakebasepsql.RetryConfig, extraArgs []string) error {
 	w := cmdctx.WorkspaceClient(ctx)
 
 	db, err := lakebasev1.GetDatabaseInstance(ctx, w, instanceName)
@@ -168,8 +168,8 @@ func connectViaDatabaseAPI(ctx context.Context, instanceName string, retryConfig
 	return lakebasev1.Connect(ctx, w, db, retryConfig, extraArgs...)
 }
 
-// connectViaPostgresAPI connects using the new Postgres API with flags.
-func connectViaPostgresAPI(ctx context.Context, projectID, branchID, endpointID string, retryConfig lakebasepsql.RetryConfig, extraArgs []string) error {
+// connectViaAutoscaling connects to a Lakebase Autoscaling endpoint using flags.
+func connectViaAutoscaling(ctx context.Context, projectID, branchID, endpointID string, retryConfig lakebasepsql.RetryConfig, extraArgs []string) error {
 	w := cmdctx.WorkspaceClient(ctx)
 
 	endpoint, err := resolveEndpoint(ctx, w, projectID, branchID, endpointID)
@@ -180,8 +180,8 @@ func connectViaPostgresAPI(ctx context.Context, projectID, branchID, endpointID 
 	return lakebasev2.Connect(ctx, w, endpoint, retryConfig, extraArgs...)
 }
 
-// connectViaPostgresPath connects using the new Postgres API with a resource path.
-func connectViaPostgresPath(ctx context.Context, path string, retryConfig lakebasepsql.RetryConfig, extraArgs []string) error {
+// connectViaAutoscalingPath connects to a Lakebase Autoscaling endpoint using a resource path.
+func connectViaAutoscalingPath(ctx context.Context, path string, retryConfig lakebasepsql.RetryConfig, extraArgs []string) error {
 	w := cmdctx.WorkspaceClient(ctx)
 
 	// Parse the resource path to extract project, branch, endpoint IDs
@@ -340,12 +340,12 @@ func parseResourcePath(input string) (project, branch, endpoint string) {
 	return project, branch, endpoint
 }
 
-// showCombinedSelectionAndConnect shows a combined dropdown of database instances and postgres projects.
+// showCombinedSelectionAndConnect shows a combined dropdown of Lakebase databases.
 func showCombinedSelectionAndConnect(ctx context.Context, retryConfig lakebasepsql.RetryConfig, extraArgs []string) error {
 	w := cmdctx.WorkspaceClient(ctx)
 
 	sp := cmdio.NewSpinner(ctx)
-	sp.Update("Loading database instances and Postgres projects...")
+	sp.Update("Loading Lakebase databases...")
 
 	// Fetch both in parallel
 	type instancesResult struct {
@@ -416,12 +416,12 @@ func showCombinedSelectionAndConnect(ctx context.Context, retryConfig lakebaseps
 			errMsgs = append(errMsgs, fmt.Sprintf("failed to load database instances: %v", instResult.err))
 		}
 		if projResult.err != nil {
-			errMsgs = append(errMsgs, fmt.Sprintf("failed to load Postgres projects: %v", projResult.err))
+			errMsgs = append(errMsgs, fmt.Sprintf("failed to load Lakebase Autoscaling projects: %v", projResult.err))
 		}
 		if len(errMsgs) > 0 {
 			return fmt.Errorf("could not find any databases: %s", strings.Join(errMsgs, "; "))
 		}
-		return errors.New("could not find any Database instances or Postgres projects in the workspace")
+		return errors.New("could not find any Lakebase databases in the workspace")
 	}
 
 	selected, err := cmdio.SelectOrdered(ctx, items, "Select database to connect to")
@@ -430,7 +430,7 @@ func showCombinedSelectionAndConnect(ctx context.Context, retryConfig lakebaseps
 	}
 
 	if inst, ok := instancesByID[selected]; ok {
-		cmdio.LogString(ctx, "Selected provisioned database instance: "+inst.Name)
+		cmdio.LogString(ctx, "Selected Lakebase Provisioned instance: "+inst.Name)
 		return lakebasev1.Connect(ctx, w, &inst, retryConfig, extraArgs...)
 	}
 
@@ -445,8 +445,8 @@ func showCombinedSelectionAndConnect(ctx context.Context, retryConfig lakebaseps
 		if proj.Status != nil && proj.Status.DisplayName != "" {
 			displayName = proj.Status.DisplayName
 		}
-		cmdio.LogString(ctx, "Selected autoscaling project: "+displayName)
-		return connectViaPostgresAPI(ctx, projectID, "", "", retryConfig, extraArgs)
+		cmdio.LogString(ctx, "Selected Lakebase Autoscaling project: "+displayName)
+		return connectViaAutoscaling(ctx, projectID, "", "", retryConfig, extraArgs)
 	}
 
 	return fmt.Errorf("unexpected selection: %s", selected)

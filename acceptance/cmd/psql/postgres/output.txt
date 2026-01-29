@@ -17,6 +17,82 @@ PGSSLMODE=require
 
 === Project flag with auto-selection should connect:
 >>> [CLI] psql --project auto-project
-Error: failed to select branch: expected to have Select branch
+Selected branch: default-branch
+Selected endpoint: read-write-ep
+Connecting to Postgres endpoint read-write-ep ...
+Endpoint state: ACTIVE
+Successfully fetched database credentials
+Launching psql with connection to auto-endpoint.postgres.example.com...
+echo-arguments.sh was called with the following arguments: --host=auto-endpoint.postgres.example.com --username=[USERNAME] --port=5432 --dbname=postgres
+PGPASSWORD=postgres-secret-token
+PGSSLMODE=require
 
-Exit code: 1
+=== Project and branch flags should connect:
+>>> [CLI] psql --project explicit-project --branch explicit-branch
+Selected endpoint: main-ep
+Connecting to Postgres endpoint main-ep ...
+Endpoint state: IDLE
+Successfully fetched database credentials
+Launching psql with connection to explicit-endpoint.postgres.example.com...
+echo-arguments.sh was called with the following arguments: --host=explicit-endpoint.postgres.example.com --username=[USERNAME] --port=5432 --dbname=postgres
+PGPASSWORD=postgres-secret-token
+PGSSLMODE=require
+
+=== Project, branch, and endpoint flags should connect:
+>>> [CLI] psql --project explicit-project --branch explicit-branch --endpoint main-ep
+Connecting to Postgres endpoint main-ep ...
+Endpoint state: IDLE
+Successfully fetched database credentials
+Launching psql with connection to explicit-endpoint.postgres.example.com...
+echo-arguments.sh was called with the following arguments: --host=explicit-endpoint.postgres.example.com --username=[USERNAME] --port=5432 --dbname=postgres
+PGPASSWORD=postgres-secret-token
+PGSSLMODE=require
+
+=== Endpoint in INIT state should fail:
+>>> musterr [CLI] psql projects/init-project/branches/main/endpoints/init-ep
+Connecting to Postgres endpoint init-ep ...
+Endpoint state: INIT
+Please retry when the endpoint becomes active
+Error: endpoint is not ready for accepting connections
+
+=== Branch flag without project should fail:
+>>> musterr [CLI] psql --branch some-branch
+Error: --project is required when using --branch or --endpoint
+
+=== Endpoint flag without project should fail:
+>>> musterr [CLI] psql --endpoint some-endpoint
+Error: --project is required when using --branch or --endpoint
+
+=== Extra arguments should be passed through with full path:
+>>> [CLI] psql projects/my-project/branches/main/endpoints/primary -- -c SELECT 1
+Connecting to Postgres endpoint primary ...
+Endpoint state: ACTIVE
+Successfully fetched database credentials
+Launching psql with connection to my-endpoint.postgres.example.com...
+echo-arguments.sh was called with the following arguments: --host=my-endpoint.postgres.example.com --username=[USERNAME] --port=5432 --dbname=postgres -c SELECT 1
+PGPASSWORD=postgres-secret-token
+PGSSLMODE=require
+
+=== Extra arguments should be passed through with project flag:
+>>> [CLI] psql --project auto-project -- --echo-all -d my-db
+Selected branch: default-branch
+Selected endpoint: read-write-ep
+Connecting to Postgres endpoint read-write-ep ...
+Endpoint state: ACTIVE
+Successfully fetched database credentials
+Launching psql with connection to auto-endpoint.postgres.example.com...
+echo-arguments.sh was called with the following arguments: --host=auto-endpoint.postgres.example.com --username=[USERNAME] --port=5432 --echo-all -d my-db
+PGPASSWORD=postgres-secret-token
+PGSSLMODE=require
+
+=== No retries with max-retries 0:
+>>> [CLI] psql --project auto-project --max-retries 0
+Selected branch: default-branch
+Selected endpoint: read-write-ep
+Connecting to Postgres endpoint read-write-ep ...
+Endpoint state: ACTIVE
+Successfully fetched database credentials
+Launching psql with connection to auto-endpoint.postgres.example.com...
+echo-arguments.sh was called with the following arguments: --host=auto-endpoint.postgres.example.com --username=[USERNAME] --port=5432 --dbname=postgres
+PGPASSWORD=postgres-secret-token
+PGSSLMODE=require

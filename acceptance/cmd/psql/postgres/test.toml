@@ -24,6 +24,7 @@ Response.Body = '''
 '''
 
 # Project list for auto-selection (used when only --project is specified)
+# Single branch and single endpoint to enable auto-selection without prompts
 [[Server]]
 Pattern = "GET /api/2.0/postgres/projects/auto-project/branches"
 Response.Body = '''
@@ -33,12 +34,6 @@ Response.Body = '''
             "name": "projects/auto-project/branches/default-branch",
             "status": {
                 "default": true
-            }
-        },
-        {
-            "name": "projects/auto-project/branches/feature-branch",
-            "status": {
-                "default": false
             }
         }
     ]
@@ -59,18 +54,6 @@ Response.Body = '''
                 "current_state": "ACTIVE",
                 "hosts": {
                     "host": "auto-endpoint.postgres.example.com"
-                }
-            }
-        },
-        {
-            "name": "projects/auto-project/branches/default-branch/endpoints/read-only-ep",
-            "spec": {
-                "endpoint_type": "ENDPOINT_TYPE_READ_ONLY"
-            },
-            "status": {
-                "current_state": "ACTIVE",
-                "hosts": {
-                    "host": "auto-endpoint-ro.postgres.example.com"
                 }
             }
         }
