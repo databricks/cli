@@ -1,0 +1,24 @@
+{
+  "method": "GET",
+  "path": "/api/2.0/postgres/[MY_PROJECT_ID]"
+}
+{
+  "method": "PATCH",
+  "path": "/api/2.0/postgres/[MY_PROJECT_ID]",
+  "q": {
+    "update_mask": "*"
+  },
+  "body": {
+    "name": "[MY_PROJECT_ID]",
+    "spec": {
+      "default_endpoint_settings": {
+        "autoscaling_limit_max_cu": 4,
+        "autoscaling_limit_min_cu": 0.5,
+        "suspend_timeout_duration": "300s"
+      },
+      "display_name": "Updated Name",
+      "history_retention_duration": "604800s",
+      "pg_version": 16
+    }
+  }
+}
