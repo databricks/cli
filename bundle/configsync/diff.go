@@ -2,7 +2,9 @@ package configsync
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"reflect"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
@@ -10,12 +12,101 @@ import (
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/databricks-sdk-go/marshal"
 )
+
+type OperationType string
+
+const (
+	OperationUnknown OperationType = "unknown"
+	OperationAdd     OperationType = "add"
+	OperationRemove  OperationType = "remove"
+	OperationReplace OperationType = "replace"
+)
+
+type ConfigChangeDesc struct {
+	Operation OperationType `json:"operation"`
+	Value     any           `json:"value,omitempty"` // Normalized remote value (nil for remove operations)
+}
+
+type ResourceChanges map[string]*ConfigChangeDesc
+
+type Changes map[string]ResourceChanges
+
+// normalizeValue converts values to plain Go types suitable for YAML patching
+// by using SDK marshaling which properly handles ForceSendFields and other annotations.
+func normalizeValue(v any) (any, error) {
+	if v == nil {
+		return nil, nil
+	}
+
+	switch v.(type) {
+	case bool, string, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64:
+		return v, nil
+	}
+
+	rv := reflect.ValueOf(v)
+	rt := rv.Type()
+
+	if rt.Kind() == reflect.Ptr {
+		rt = rt.Elem()
+	}
+
+	var data []byte
+	var err error
+
+	if rt.Kind() == reflect.Struct {
+		data, err = marshal.Marshal(v)
+	} else {
+		data, err = json.Marshal(v)
+	}
+
+	if err != nil {
+		return v, fmt.Errorf("failed to marshal value of type %T: %w", v, err)
+	}
+
+	var normalized any
+	err = json.Unmarshal(data, &normalized)
+	if err != nil {
+		return v, fmt.Errorf("failed to unmarshal value: %w", err)
+	}
+
+	return normalized, nil
+}
+
+func toConfigChangeDesc(cd *deployplan.ChangeDesc) (*ConfigChangeDesc, error) {
+	hasConfigValue := cd.Old != nil || cd.New != nil
+
+	op := OperationUnknown
+	if cd.Remote == nil && hasConfigValue {
+		op = OperationRemove
+	}
+	if cd.Remote != nil && hasConfigValue {
+		op = OperationReplace
+	}
+	if cd.Remote != nil && !hasConfigValue {
+		op = OperationAdd
+	}
+
+	var normalizedValue any
+	var err error
+	if op != OperationRemove {
+		normalizedValue, err = normalizeValue(cd.Remote)
+		if err != nil {
+			return nil, fmt.Errorf("failed to normalize remote value: %w", err)
+		}
+	}
+
+	return &ConfigChangeDesc{
+		Operation: op,
+		Value:     normalizedValue,
+	}, nil
+}
 
 // DetectChanges compares current remote state with the last deployed state
 // and returns a map of resource changes.
-func DetectChanges(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) (map[string]deployplan.Changes, error) {
-	changes := make(map[string]deployplan.Changes)
+func DetectChanges(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) (Changes, error) {
+	changes := make(Changes)
 
 	deployBundle := &direct.DeploymentBundle{}
 	var statePath string
@@ -31,14 +122,18 @@ func DetectChanges(ctx context.Context, b *bundle.Bundle, engine engine.EngineTy
 	}
 
 	for resourceKey, entry := range plan.Plan {
-		resourceChanges := make(deployplan.Changes)
+		resourceChanges := make(ResourceChanges)
 
 		if entry.Changes != nil {
 			for path, changeDesc := range entry.Changes {
 				if shouldSkipField(path, changeDesc) {
 					continue
 				}
-				resourceChanges[path] = changeDesc
+				configChange, err := toConfigChangeDesc(changeDesc)
+				if err != nil {
+					return nil, fmt.Errorf("failed to compute config change for path %s: %w", path, err)
+				}
+				resourceChanges[path] = configChange
 			}
 		}
 

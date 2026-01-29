@@ -8,10 +8,10 @@ Deployment complete!
 Detected changes in 1 resource(s):
 
 Resource: resources.jobs.my_job
-  tasks[task_key='task2']: update
-  tasks[task_key='task3'].depends_on[0].task_key: update
-  tasks[task_key='task3'].new_cluster.num_workers: update
-  tasks[task_key='task3'].timeout_seconds: skip
+  tasks[task_key='task2']: remove
+  tasks[task_key='task3'].depends_on[0].task_key: replace
+  tasks[task_key='task3'].new_cluster.num_workers: replace
+  tasks[task_key='task3'].timeout_seconds: add
 
 
 === Configuration changes

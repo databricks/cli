@@ -16,6 +16,13 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// Helper function to convert test ChangeDesc to ConfigChangeDesc
+func convertToConfigChanges(t *testing.T, planChanges map[string]deployplan.Changes) map[string]map[string]*ConfigChangeDesc {
+	result, err := toConfigChanges(planChanges)
+	require.NoError(t, err)
+	return result
+}
+
 func TestApplyChangesToYAML_SimpleFieldChange(t *testing.T) {
 	ctx := logdiag.InitContext(context.Background())
 
@@ -51,7 +58,7 @@ func TestApplyChangesToYAML_SimpleFieldChange(t *testing.T) {
 		},
 	}
 
-	fileChanges, err := ApplyChangesToYAML(ctx, b, changes)
+	fileChanges, err := ApplyChangesToYAML(ctx, b, convertToConfigChanges(t, changes))
 	require.NoError(t, err)
 	require.Len(t, fileChanges, 1)
 
@@ -96,7 +103,7 @@ func TestApplyChangesToYAML_NestedFieldChange(t *testing.T) {
 		},
 	}
 
-	fileChanges, err := ApplyChangesToYAML(ctx, b, changes)
+	fileChanges, err := ApplyChangesToYAML(ctx, b, convertToConfigChanges(t, changes))
 	require.NoError(t, err)
 	require.Len(t, fileChanges, 1)
 
@@ -154,7 +161,7 @@ func TestApplyChangesToYAML_ArrayKeyValueAccess(t *testing.T) {
 		},
 	}
 
-	fileChanges, err := ApplyChangesToYAML(ctx, b, changes)
+	fileChanges, err := ApplyChangesToYAML(ctx, b, convertToConfigChanges(t, changes))
 	require.NoError(t, err)
 	require.Len(t, fileChanges, 1)
 
@@ -217,7 +224,7 @@ func TestApplyChangesToYAML_MultipleResourcesSameFile(t *testing.T) {
 		},
 	}
 
-	fileChanges, err := ApplyChangesToYAML(ctx, b, changes)
+	fileChanges, err := ApplyChangesToYAML(ctx, b, convertToConfigChanges(t, changes))
 	require.NoError(t, err)
 
 	require.Len(t, fileChanges, 1)
@@ -286,7 +293,7 @@ include:
 		},
 	}
 
-	fileChanges, err := ApplyChangesToYAML(ctx, b, changes)
+	fileChanges, err := ApplyChangesToYAML(ctx, b, convertToConfigChanges(t, changes))
 	require.NoError(t, err)
 	require.Len(t, fileChanges, 1)
 
@@ -334,7 +341,7 @@ targets:
 		},
 	}
 
-	fileChanges, err := ApplyChangesToYAML(ctx, b, changes)
+	fileChanges, err := ApplyChangesToYAML(ctx, b, convertToConfigChanges(t, changes))
 	require.NoError(t, err)
 	require.Len(t, fileChanges, 1)
 
@@ -386,7 +393,7 @@ func TestApplyChangesToYAML_WithStructValues(t *testing.T) {
 		},
 	}
 
-	fileChanges, err := ApplyChangesToYAML(ctx, b, changes)
+	fileChanges, err := ApplyChangesToYAML(ctx, b, convertToConfigChanges(t, changes))
 	require.NoError(t, err)
 	require.Len(t, fileChanges, 1)
 
@@ -469,7 +476,7 @@ resources:
 		},
 	}
 
-	fileChanges, err := ApplyChangesToYAML(ctx, b, changes)
+	fileChanges, err := ApplyChangesToYAML(ctx, b, convertToConfigChanges(t, changes))
 	require.NoError(t, err)
 	require.Len(t, fileChanges, 1)
 
@@ -523,7 +530,7 @@ func TestApplyChangesToYAML_RemoveSimpleField(t *testing.T) {
 		},
 	}
 
-	fileChanges, err := ApplyChangesToYAML(ctx, b, changes)
+	fileChanges, err := ApplyChangesToYAML(ctx, b, convertToConfigChanges(t, changes))
 	require.NoError(t, err)
 	require.Len(t, fileChanges, 1)
 
@@ -579,7 +586,7 @@ func TestApplyChangesToYAML_RemoveNestedField(t *testing.T) {
 		},
 	}
 
-	fileChanges, err := ApplyChangesToYAML(ctx, b, changes)
+	fileChanges, err := ApplyChangesToYAML(ctx, b, convertToConfigChanges(t, changes))
 	require.NoError(t, err)
 	require.Len(t, fileChanges, 1)
 
@@ -639,7 +646,7 @@ func TestApplyChangesToYAML_RemoveFieldWithKeyValueAccess(t *testing.T) {
 		},
 	}
 
-	fileChanges, err := ApplyChangesToYAML(ctx, b, changes)
+	fileChanges, err := ApplyChangesToYAML(ctx, b, convertToConfigChanges(t, changes))
 	require.NoError(t, err)
 	require.Len(t, fileChanges, 1)
 
@@ -701,7 +708,7 @@ func TestApplyChangesToYAML_RemoveStructField(t *testing.T) {
 		},
 	}
 
-	fileChanges, err := ApplyChangesToYAML(ctx, b, changes)
+	fileChanges, err := ApplyChangesToYAML(ctx, b, convertToConfigChanges(t, changes))
 	require.NoError(t, err)
 	require.Len(t, fileChanges, 1)
 
@@ -762,7 +769,7 @@ targets:
 		},
 	}
 
-	fileChanges, err := ApplyChangesToYAML(ctx, b, changes)
+	fileChanges, err := ApplyChangesToYAML(ctx, b, convertToConfigChanges(t, changes))
 	require.NoError(t, err)
 	require.Len(t, fileChanges, 1)
 
@@ -826,7 +833,7 @@ func TestApplyChangesToYAML_MultipleRemovalsInSameFile(t *testing.T) {
 		},
 	}
 
-	fileChanges, err := ApplyChangesToYAML(ctx, b, changes)
+	fileChanges, err := ApplyChangesToYAML(ctx, b, convertToConfigChanges(t, changes))
 	require.NoError(t, err)
 	require.Len(t, fileChanges, 1)
 
@@ -892,7 +899,7 @@ func TestApplyChangesToYAML_WithSDKStructValues(t *testing.T) {
 		},
 	}
 
-	files, err := ApplyChangesToYAML(ctx, b, changes)
+	files, err := ApplyChangesToYAML(ctx, b, convertToConfigChanges(t, changes))
 	require.NoError(t, err)
 	require.Len(t, files, 1)
 

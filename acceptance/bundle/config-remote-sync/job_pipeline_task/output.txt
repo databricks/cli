@@ -9,9 +9,9 @@ Deployment complete!
 Detected changes in 2 resource(s):
 
 Resource: resources.jobs.my_job
-  tasks[task_key='run_pipeline'].pipeline_task.full_refresh: update
+  tasks[task_key='run_pipeline'].pipeline_task.full_refresh: replace
 Resource: resources.pipelines.my_pipeline
-  development: update
+  development: replace
 
 
 === Configuration changes

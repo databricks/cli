@@ -2,70 +2,25 @@ package configsync
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
-	"reflect"
 	"sort"
 	"strconv"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structs/structpath"
-	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/palantir/pkg/yamlpatch/gopkgv3yamlpatcher"
 	"github.com/palantir/pkg/yamlpatch/yamlpatch"
 )
 
-type resolvedChanges map[string]*deployplan.ChangeDesc
-
-// normalizeValue converts values to plain Go types suitable for YAML patching
-// by using SDK marshaling which properly handles ForceSendFields and other annotations.
-func normalizeValue(v any) (any, error) {
-	if v == nil {
-		return nil, nil
-	}
-
-	switch v.(type) {
-	case bool, string, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64:
-		return v, nil
-	}
-
-	rv := reflect.ValueOf(v)
-	rt := rv.Type()
-
-	if rt.Kind() == reflect.Ptr {
-		rt = rt.Elem()
-	}
-
-	var data []byte
-	var err error
-
-	if rt.Kind() == reflect.Struct {
-		data, err = marshal.Marshal(v)
-	} else {
-		data, err = json.Marshal(v)
-	}
-
-	if err != nil {
-		return v, fmt.Errorf("failed to marshal value of type %T: %w", v, err)
-	}
-
-	var normalized any
-	err = json.Unmarshal(data, &normalized)
-	if err != nil {
-		return v, fmt.Errorf("failed to unmarshal value: %w", err)
-	}
-
-	return normalized, nil
-}
+type resolvedChanges map[string]*ConfigChangeDesc
 
 // ApplyChangesToYAML generates YAML files for the given changes.
-func ApplyChangesToYAML(ctx context.Context, b *bundle.Bundle, planChanges map[string]deployplan.Changes) ([]FileChange, error) {
-	changesByFile, err := getResolvedFieldChanges(ctx, b, planChanges)
+func ApplyChangesToYAML(ctx context.Context, b *bundle.Bundle, configChanges map[string]map[string]*ConfigChangeDesc) ([]FileChange, error) {
+	changesByFile, err := getResolvedFieldChanges(ctx, b, configChanges)
 	if err != nil {
 		return nil, err
 	}
@@ -115,7 +70,7 @@ func applyChanges(ctx context.Context, filePath string, changes resolvedChanges,
 	sort.Strings(fieldPaths)
 
 	for _, fieldPath := range fieldPaths {
-		changeDesc := changes[fieldPath]
+		configChange := changes[fieldPath]
 		fieldJsonPointer, err := strPathToJSONPointer(fieldPath)
 		if err != nil {
 			return "", fmt.Errorf("failed to convert field path %q to JSON pointer: %w", fieldPath, err)
@@ -127,19 +82,9 @@ func applyChanges(ctx context.Context, filePath string, changes resolvedChanges,
 			jsonPointers = append(jsonPointers, targetPrefix+fieldJsonPointer)
 		}
 
-		hasConfigValue := changeDesc.Old != nil || changeDesc.New != nil
-		isRemoval := changeDesc.Remote == nil && hasConfigValue
-		isReplacement := changeDesc.Remote != nil && hasConfigValue
-		isAddition := changeDesc.Remote != nil && !hasConfigValue
-
 		success := false
 		var lastErr error
 		var parentNodesToCreate []parentNode
-
-		normalizedRemote, err := normalizeValue(changeDesc.Remote)
-		if err != nil {
-			return "", fmt.Errorf("failed to normalize remote value for %s: %w", fieldJsonPointer, err)
-		}
 
 		for _, jsonPointer := range jsonPointers {
 			path, err := yamlpatch.ParsePath(jsonPointer)
@@ -151,22 +96,23 @@ func applyChanges(ctx context.Context, filePath string, changes resolvedChanges,
 			var modifiedContent []byte
 			var patchErr error
 
-			if isRemoval {
+			switch configChange.Operation {
+			case OperationRemove:
 				modifiedContent, patchErr = patcher.Apply(content, yamlpatch.Patch{yamlpatch.Operation{
 					Type: yamlpatch.OperationRemove,
 					Path: path,
 				}})
-			} else if isReplacement {
+			case OperationReplace:
 				modifiedContent, patchErr = patcher.Apply(content, yamlpatch.Patch{yamlpatch.Operation{
 					Type:  yamlpatch.OperationReplace,
 					Path:  path,
-					Value: normalizedRemote,
+					Value: configChange.Value,
 				}})
-			} else if isAddition {
+			case OperationAdd:
 				modifiedContent, patchErr = patcher.Apply(content, yamlpatch.Patch{yamlpatch.Operation{
 					Type:  yamlpatch.OperationAdd,
 					Path:  path,
-					Value: normalizedRemote,
+					Value: configChange.Value,
 				}})
 
 				// Collect parent path errors for later retry
@@ -175,8 +121,8 @@ func applyChanges(ctx context.Context, filePath string, changes resolvedChanges,
 						parentNodesToCreate = append(parentNodesToCreate, parentNode{path, missingPath})
 					}
 				}
-			} else {
-				return "", fmt.Errorf("unknown operation type for field %s", fieldPath)
+			default:
+				return "", fmt.Errorf("unknown operation type %q for field %s", configChange.Operation, fieldPath)
 			}
 
 			if patchErr == nil {
@@ -194,7 +140,7 @@ func applyChanges(ctx context.Context, filePath string, changes resolvedChanges,
 		// If all attempts failed with parent path errors, try creating nested structures
 		if !success && len(parentNodesToCreate) > 0 {
 			for _, errInfo := range parentNodesToCreate {
-				nestedValue := buildNestedMaps(errInfo.path, errInfo.missingPath, normalizedRemote)
+				nestedValue := buildNestedMaps(errInfo.path, errInfo.missingPath, configChange.Value)
 
 				patcher := gopkgv3yamlpatcher.New(gopkgv3yamlpatcher.IndentSpaces(2))
 				modifiedContent, patchErr := patcher.Apply(content, yamlpatch.Patch{yamlpatch.Operation{
@@ -215,7 +161,7 @@ func applyChanges(ctx context.Context, filePath string, changes resolvedChanges,
 		}
 
 		if lastErr != nil {
-			if (isRemoval || isReplacement) && isPathNotFoundError(lastErr) {
+			if (configChange.Operation == OperationRemove || configChange.Operation == OperationReplace) && isPathNotFoundError(lastErr) {
 				return "", fmt.Errorf("failed to apply change %s: field not found in YAML configuration: %w", fieldJsonPointer, lastErr)
 			}
 			return "", fmt.Errorf("failed to apply change %s: %w", fieldJsonPointer, lastErr)
@@ -227,11 +173,11 @@ func applyChanges(ctx context.Context, filePath string, changes resolvedChanges,
 }
 
 // getResolvedFieldChanges builds a map from file paths to lists of field changes
-func getResolvedFieldChanges(ctx context.Context, b *bundle.Bundle, planChanges map[string]deployplan.Changes) (map[string]resolvedChanges, error) {
+func getResolvedFieldChanges(ctx context.Context, b *bundle.Bundle, configChanges map[string]map[string]*ConfigChangeDesc) (map[string]resolvedChanges, error) {
 	resolvedChangesByFile := make(map[string]resolvedChanges)
 
-	for resourceKey, resourceChanges := range planChanges {
-		for fieldPath, changeDesc := range resourceChanges {
+	for resourceKey, resourceChanges := range configChanges {
+		for fieldPath, configChange := range resourceChanges {
 			fullPath := resourceKey + "." + fieldPath
 
 			resolvedPath, err := resolveSelectors(fullPath, b)
@@ -256,7 +202,7 @@ func getResolvedFieldChanges(ctx context.Context, b *bundle.Bundle, planChanges 
 			if _, ok := resolvedChangesByFile[filePath]; !ok {
 				resolvedChangesByFile[filePath] = make(resolvedChanges)
 			}
-			resolvedChangesByFile[filePath][resolvedPath] = changeDesc
+			resolvedChangesByFile[filePath][resolvedPath] = configChange
 		}
 	}
 

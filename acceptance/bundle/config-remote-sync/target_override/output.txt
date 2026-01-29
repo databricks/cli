@@ -8,9 +8,9 @@ Deployment complete!
 Detected changes in 1 resource(s):
 
 Resource: resources.jobs.my_job
-  max_concurrent_runs: update
-  tags['env']: update
-  tags['owner']: update
+  max_concurrent_runs: replace
+  tags['env']: replace
+  tags['owner']: add
 
 
 === Configuration changes
