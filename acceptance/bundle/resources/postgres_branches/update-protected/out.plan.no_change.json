@@ -1,0 +1,34 @@
+{
+  "depends_on": [
+    {
+      "node": "resources.postgres_projects.my_project",
+      "label": "${resources.postgres_projects.my_project.id}"
+    }
+  ],
+  "action": "skip",
+  "remote_state": {
+    "create_time": "[TIMESTAMP]",
+    "name": "[DEV_BRANCH_ID]",
+    "parent": "projects/test-pg-proj-[UNIQUE_NAME]",
+    "status": {
+      "current_state": "READY",
+      "default": false,
+      "is_protected": false,
+      "logical_size_bytes": 0,
+      "source_branch": "projects/test-pg-proj-[UNIQUE_NAME]/branches/[BRANCH_UID]",
+      "source_branch_lsn": "[LSN]",
+      "source_branch_time": "[TIMESTAMP]",
+      "state_change_time": "[TIMESTAMP]"
+    },
+    "uid": "[BRANCH_UID]",
+    "update_time": "[TIMESTAMP]"
+  },
+  "changes": {
+    "spec.is_protected": {
+      "action": "skip",
+      "reason": "builtin_rule",
+      "old": false,
+      "new": false
+    }
+  }
+}

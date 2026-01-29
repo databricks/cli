@@ -1,0 +1,59 @@
+#!/bin/bash
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+   trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+print_requests() {
+    trace print_requests.py --keep --get '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.json
+    rm -f out.requests.txt
+}
+
+title "Initial deployment"
+trace $CLI bundle validate
+trace $CLI bundle plan -o json | jq '.plan."resources.postgres_branches.dev_branch" // .' > out.plan.create.json
+rm -f out.requests.txt
+trace $CLI bundle deploy
+
+print_requests
+mv out.requests.json out.requests.create.json
+
+project_name="projects/test-pg-proj-${UNIQUE_NAME}"
+branch_name="${project_name}/branches/dev-branch"
+branch_id_1=`read_id.py dev_branch`
+trace $CLI postgres get-branch "${branch_name}" | jq 'del(.create_time, .update_time)'
+
+title "Verify no_change (no changes)"
+trace $CLI bundle plan -o json | jq '.plan."resources.postgres_branches.dev_branch" // .' > out.plan.no_change.json
+rm -f out.requests.txt
+trace $CLI bundle deploy
+
+print_requests
+mv out.requests.json out.requests.no_change.json
+
+title "Update is_protected to true and re-deploy"
+trace update_file.py databricks.yml "is_protected: false" "is_protected: true"
+trace cat databricks.yml
+
+trace $CLI bundle plan -o json | jq '.plan."resources.postgres_branches.dev_branch" // .' > out.plan.update.json
+rm -f out.requests.txt
+trace $CLI bundle deploy
+
+print_requests
+mv out.requests.json out.requests.update.json
+
+branch_id_2=`read_id.py dev_branch`
+trace $CLI postgres get-branch "${branch_name}" | jq 'del(.create_time, .update_time)'
+
+title "Restore is_protected to false"
+trace update_file.py databricks.yml "is_protected: true" "is_protected: false"
+trace $CLI bundle plan -o json | jq '.plan."resources.postgres_branches.dev_branch" // .' > out.plan.restore.json
+rm -f out.requests.txt
+trace $CLI bundle deploy
+
+print_requests
+mv out.requests.json out.requests.restore.json
+
+trace $CLI postgres get-branch "${branch_name}" | jq 'del(.create_time, .update_time)'

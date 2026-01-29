@@ -1,0 +1,21 @@
+{
+  "depends_on": [
+    {
+      "node": "resources.postgres_projects.my_project",
+      "label": "${resources.postgres_projects.my_project.id}"
+    }
+  ],
+  "action": "create",
+  "new_state": {
+    "value": {
+      "parent": "${resources.postgres_projects.my_project.id}",
+      "spec": {
+        "is_protected": false
+      },
+      "branch_id": "dev-branch"
+    },
+    "vars": {
+      "parent": "${resources.postgres_projects.my_project.id}"
+    }
+  }
+}
