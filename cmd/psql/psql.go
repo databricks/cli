@@ -394,8 +394,7 @@ func showSelectionAndConnect(ctx context.Context, retryConfig lakebasepsql.Retry
 		options = append(options, selectable{
 			label: inst.Name + " (provisioned)",
 			connect: func() error {
-				cmdio.LogString(ctx, "Instance: "+inst.Name+" (provisioned)")
-				return lakebasev1.Connect(ctx, w, &inst, retryConfig, extraArgs...)
+				return connectProvisioned(ctx, inst.Name, retryConfig, extraArgs)
 			},
 		})
 	}
