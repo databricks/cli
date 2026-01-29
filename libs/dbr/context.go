@@ -1,6 +1,9 @@
 package dbr
 
-import "context"
+import (
+	"context"
+	"strings"
+)
 
 // key is a package-local type to use for context keys.
 //
@@ -60,4 +63,10 @@ func RuntimeVersion(ctx context.Context) string {
 	}
 
 	return v.(Environment).Version
+}
+
+// RunsOnServerless returns true if running on serverless compute.
+// Serverless runtime versions are prefixed with "client.".
+func RunsOnServerless(ctx context.Context) bool {
+	return strings.HasPrefix(RuntimeVersion(ctx), "client.")
 }
