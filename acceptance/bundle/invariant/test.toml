@@ -36,6 +36,9 @@ EnvMatrix.INPUT_CONFIG = [
     "volume.yml.tmpl",
 ]
 
+[EnvMatrixExclude]
+no_alert_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=alert.yml.tmpl"]
+
 # Fake SQL endpoint for local tests
 [[Server]]
 Pattern = "POST /api/2.0/sql/statements/"

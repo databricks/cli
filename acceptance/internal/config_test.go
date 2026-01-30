@@ -8,10 +8,11 @@ import (
 
 func TestExpandEnvMatrix(t *testing.T) {
 	tests := []struct {
-		name     string
-		matrix   map[string][]string
-		exclude  map[string][]string
-		expected [][]string
+		name      string
+		matrix    map[string][]string
+		exclude   map[string][]string
+		extraVars []string
+		expected  [][]string
 	}{
 		{
 			name:     "empty matrix",
@@ -160,11 +161,38 @@ func TestExpandEnvMatrix(t *testing.T) {
 				{"KEY1=A"},
 			},
 		},
+		{
+			name: "extraVars used for exclusion matching but stripped from result",
+			matrix: map[string][]string{
+				"KEY": {"A", "B"},
+			},
+			exclude: map[string][]string{
+				"rule1": {"KEY=A", "CONFIG_Cloud=true"},
+			},
+			extraVars: []string{"CONFIG_Cloud=true"},
+			expected: [][]string{
+				{"KEY=B"},
+			},
+		},
+		{
+			name: "extraVars not matching exclusion rule",
+			matrix: map[string][]string{
+				"KEY": {"A", "B"},
+			},
+			exclude: map[string][]string{
+				"rule1": {"KEY=A", "CONFIG_Cloud=true"},
+			},
+			extraVars: nil,
+			expected: [][]string{
+				{"KEY=A"},
+				{"KEY=B"},
+			},
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := ExpandEnvMatrix(tt.matrix, tt.exclude)
+			result := ExpandEnvMatrix(tt.matrix, tt.exclude, tt.extraVars)
 			assert.Equal(t, tt.expected, result)
 		})
 	}
