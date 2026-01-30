@@ -281,10 +281,10 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			action = getMaxAction(entry.Changes)
 		}
 
-		if action == deployplan.Skip {
-			// resource is not going to change, can use remoteState to resolve references
-			b.RemoteStateCache.Store(resourceKey, remoteState)
-		}
+		//if action == deployplan.Skip {
+		// resource is not going to change, can use remoteState to resolve references
+		b.RemoteStateCache.Store(resourceKey, remoteState)
+		//}
 
 		// Validate that resources without DoUpdate don't have update actions
 		if action == deployplan.Update && !adapter.HasDoUpdate() {
@@ -519,8 +519,7 @@ func isEmptyStruct(values ...any) bool {
 	return true
 }
 
-// TODO: calling this "Local" is not right, it can resolve "id" and remote refrences for "skip" targets
-func (b *DeploymentBundle) LookupReferenceLocal(ctx context.Context, path *structpath.PathNode) (any, error) {
+func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *structpath.PathNode) (any, error) {
 	// TODO: Prefix(3) assumes resources.jobs.foo but not resources.jobs.foo.permissions
 	targetResourceKey := path.Prefix(3).String()
 
@@ -598,15 +597,15 @@ func (b *DeploymentBundle) LookupReferenceLocal(ctx context.Context, path *struc
 		return value, nil
 	}
 
+	canReadRemoteCache := targetAction == deployplan.Skip || (targetAction.KeepsID() && adapter.IsImmutableField(fieldPath))
+
 	if configValidErr != nil && remoteValidErr == nil {
 		// The field is only present in remote state schema.
-		if targetAction != deployplan.Skip {
-			// The resource is going to be updated, so remoteState can change
-			return nil, errDelayed
-		}
-		remoteState, ok := b.RemoteStateCache.Load(targetResourceKey)
-		if ok {
-			return structaccess.Get(remoteState, fieldPath)
+		if canReadRemoteCache {
+			remoteState, ok := b.RemoteStateCache.Load(targetResourceKey)
+			if ok {
+				return structaccess.Get(remoteState, fieldPath)
+			}
 		}
 		return nil, errDelayed
 	}
@@ -619,7 +618,7 @@ func (b *DeploymentBundle) LookupReferenceLocal(ctx context.Context, path *struc
 		return value, nil
 	}
 
-	if targetAction == deployplan.Skip {
+	if canReadRemoteCache {
 		remoteState, ok := b.RemoteStateCache.Load(targetResourceKey)
 		if ok {
 			return structaccess.Get(remoteState, fieldPath)
@@ -640,8 +639,6 @@ func (b *DeploymentBundle) getStructVar(resourceKey string) (*structvar.StructVa
 }
 
 // resolveReferences processes all references in entry.NewState.Refs.
-// If isLocal is true, uses LookupReferenceLocal (for planning phase).
-// If isLocal is false, uses LookupReferenceRemote (for apply phase).
 func (b *DeploymentBundle) resolveReferences(ctx context.Context, resourceKey string, entry *deployplan.PlanEntry, errorPrefix string, isLocal bool) bool {
 	sv, err := b.getStructVar(resourceKey)
 	if err != nil {
@@ -667,7 +664,7 @@ func (b *DeploymentBundle) resolveReferences(ctx context.Context, resourceKey st
 
 			var value any
 			if isLocal {
-				value, err = b.LookupReferenceLocal(ctx, targetPath)
+				value, err = b.LookupReferencePreDeploy(ctx, targetPath)
 				if err != nil {
 					if errors.Is(err, errDelayed) {
 						continue
@@ -676,7 +673,7 @@ func (b *DeploymentBundle) resolveReferences(ctx context.Context, resourceKey st
 					return false
 				}
 			} else {
-				value, err = b.LookupReferenceRemote(ctx, targetPath)
+				value, err = b.LookupReferencePostDeploy(ctx, targetPath)
 				if err != nil {
 					logdiag.LogError(ctx, fmt.Errorf("%s: cannot resolve %q: %w", errorPrefix, ref, err))
 					return false

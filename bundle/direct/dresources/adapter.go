@@ -355,6 +355,15 @@ func (a *Adapter) ResourceConfig() *ResourceLifecycleConfig {
 	return a.resourceConfig
 }
 
+func (a *Adapter) IsImmutableField(path *structpath.PathNode) bool {
+	for _, p := range a.resourceConfig.RecreateOnChanges {
+		if path.HasPrefix(p) {
+			return true
+		}
+	}
+	return false
+}
+
 func (a *Adapter) PrepareState(input any) (any, error) {
 	outs, err := a.prepareState.Call(input)
 	if err != nil {
