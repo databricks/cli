@@ -159,6 +159,7 @@ func TestRunAsWorksForAllowedResources(t *testing.T) {
 var allowList = []string{
 	"alerts",
 	"clusters",
+	"dashboards",
 	"database_catalogs",
 	"database_instances",
 	"synced_database_tables",
@@ -276,4 +277,70 @@ func TestRunAsNoErrorForSupportedResources(t *testing.T) {
 		diags := bundle.Apply(context.Background(), b, SetRunAs())
 		require.NoError(t, diags.Error())
 	}
+}
+
+func TestRunAsErrorForDashboardsWithEmbedCredentials(t *testing.T) {
+	config := config.Root{
+		Workspace: config.Workspace{
+			CurrentUser: &config.User{
+				User: &iam.User{
+					UserName: "alice",
+				},
+			},
+		},
+		RunAs: &jobs.JobRunAs{
+			UserName: "bob",
+		},
+		Resources: config.Resources{
+			Dashboards: map[string]*resources.Dashboard{
+				"dash_with_embed": {
+					DashboardConfig: resources.DashboardConfig{
+						DisplayName:      "Dashboard with embed",
+						EmbedCredentials: true,
+					},
+				},
+			},
+		},
+	}
+
+	b := &bundle.Bundle{
+		Config: config,
+	}
+
+	diags := bundle.Apply(context.Background(), b, SetRunAs())
+	require.Error(t, diags.Error())
+	assert.Contains(t, diags.Error().Error(), "dashboards with embed_credentials set to true do not support a run_as identity")
+	assert.Contains(t, diags.Error().Error(), "Current identity: alice. Run as identity: bob.")
+}
+
+func TestRunAsAllowsDashboardsWithoutEmbedCredentials(t *testing.T) {
+	config := config.Root{
+		Workspace: config.Workspace{
+			CurrentUser: &config.User{
+				User: &iam.User{
+					UserName: "alice",
+				},
+			},
+		},
+		RunAs: &jobs.JobRunAs{
+			UserName: "bob",
+		},
+		Resources: config.Resources{
+			Dashboards: map[string]*resources.Dashboard{
+				"dash_without_embed": {
+					DashboardConfig: resources.DashboardConfig{
+						DisplayName:      "Dashboard without embed",
+						EmbedCredentials: false,
+					},
+				},
+			},
+		},
+	}
+
+	b := &bundle.Bundle{
+		Config: config,
+	}
+
+	diags := bundle.Apply(context.Background(), b, SetRunAs())
+	require.NoError(t, diags.Error())
 }
