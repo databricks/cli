@@ -16,11 +16,6 @@ Resource: resources.jobs.my_job
   tags['team']: add
   trigger.periodic.interval: replace
 
-  # skipped:
-  tasks[task_key='main'].notebook_task.source
-  timeout_seconds
-  webhook_notifications
-
 
 
 === Configuration changes

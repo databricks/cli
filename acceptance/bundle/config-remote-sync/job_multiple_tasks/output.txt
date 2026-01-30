@@ -13,14 +13,6 @@ Resource: resources.jobs.my_job
   tasks[task_key='task3'].new_cluster.num_workers: replace
   tasks[task_key='task3'].timeout_seconds: add
 
-  # skipped:
-  email_notifications
-  tasks[task_key='task1'].notebook_task.source
-  tasks[task_key='task3'].notebook_task.source
-  tasks[task_key='task4'].notebook_task.source
-  timeout_seconds
-  webhook_notifications
-
 
 
 === Configuration changes

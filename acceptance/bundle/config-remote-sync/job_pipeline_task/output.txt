@@ -11,16 +11,8 @@ Detected changes in 2 resource(s):
 Resource: resources.jobs.my_job
   tasks[task_key='run_pipeline'].pipeline_task.full_refresh: replace
 
-  # skipped:
-  email_notifications
-  timeout_seconds
-  webhook_notifications
-
 Resource: resources.pipelines.my_pipeline
   development: replace
-
-  # skipped:
-  storage
 
 
 

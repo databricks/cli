@@ -10,20 +10,8 @@ Detected changes in 2 resource(s):
 Resource: resources.jobs.job_one
   max_concurrent_runs: replace
 
-  # skipped:
-  email_notifications
-  tasks[task_key='main'].notebook_task.source
-  timeout_seconds
-  webhook_notifications
-
 Resource: resources.jobs.job_two
   max_concurrent_runs: replace
-
-  # skipped:
-  email_notifications
-  tasks[task_key='main'].notebook_task.source
-  timeout_seconds
-  webhook_notifications
 
 
 

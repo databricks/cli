@@ -7,23 +7,11 @@ Deployment complete!
 
 Resource: resources.jobs.test_job
 
-  # skipped:
-  email_notifications
-  tasks[task_key='main'].notebook_task.source
-  timeout_seconds
-  webhook_notifications
-
 
 
 === Text outputDetected changes in 1 resource(s):
 
 Resource: resources.jobs.test_job
-
-  # skipped:
-  email_notifications
-  tasks[task_key='main'].notebook_task.source
-  timeout_seconds
-  webhook_notifications
 
 
 contains error: 'No changes detected' not found in the output.

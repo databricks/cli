@@ -26,14 +26,6 @@ Resource: resources.jobs.my_job
   max_concurrent_runs: replace
   tags['env']: remove
 
-  # skipped:
-  description
-  email_notifications.on_failure
-  tags['version']
-  tasks[task_key='main'].notebook_task.source
-  timeout_seconds
-  webhook_notifications
-
 
 
 === Configuration changes
