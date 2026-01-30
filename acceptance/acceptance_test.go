@@ -337,7 +337,15 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 				t.Parallel()
 			}
 
-			expanded := internal.ExpandEnvMatrix(config.EnvMatrix, config.EnvMatrixExclude)
+			// Build extra vars for exclusion matching (config state as env vars)
+			var extraVars []string
+			if cloudEnv != "" {
+				extraVars = append(extraVars, "CONFIG_Cloud=true")
+			} else {
+				extraVars = append(extraVars, "CONFIG_Local=true")
+			}
+
+			expanded := internal.ExpandEnvMatrix(config.EnvMatrix, config.EnvMatrixExclude, extraVars)
 
 			if len(expanded) == 1 {
 				// env vars aren't part of the test case name, so log them for debugging
