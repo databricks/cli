@@ -196,24 +196,24 @@ func matchPattern(pattern, path string) bool {
 var serverSideDefaults = map[string]func(*deployplan.ChangeDesc) bool{
 	// Job-level fields
 	"timeout_seconds": isZero,
-	"usage_policy_id": alwaysDefault, // computed field
-	"edit_mode":       alwaysDefault, // set by CLI
-	"email_notifications.no_alert_for_skipped_runs": isBoolEqual(false),
-	"environments":       defaultIfNotSpecified,
-	"performance_target": isStringEqual("PERFORMANCE_OPTIMIZED"),
+	// "usage_policy_id":     alwaysDefault, // computed field
+	"edit_mode":           alwaysDefault, // set by CLI
+	"email_notifications": isDefaultEmailNotifications,
+	"performance_target":  isStringEqual("PERFORMANCE_OPTIMIZED"),
 
 	// Task-level fields
-	"tasks[*].run_if":               isStringEqual("ALL_SUCCESS"),
-	"tasks[*].disabled":             isBoolEqual(false),
-	"tasks[*].timeout_seconds":      isZero,
-	"tasks[*].notebook_task.source": isStringEqual("WORKSPACE"),
-	"tasks[*].email_notifications":  defaultIfNotSpecified,
+	"tasks[*].run_if":                     isStringEqual("ALL_SUCCESS"),
+	"tasks[*].disabled":                   isBoolEqual(false),
+	"tasks[*].timeout_seconds":            isZero,
+	"tasks[*].notebook_task.source":       isStringEqual("WORKSPACE"),
+	"tasks[*].email_notifications":        isDefaultEmailNotifications,
+	"tasks[*].pipeline_task.full_refresh": isBoolEqual(false),
 
 	"tasks[*].for_each_task.task.run_if":               isStringEqual("ALL_SUCCESS"),
 	"tasks[*].for_each_task.task.disabled":             isBoolEqual(false),
 	"tasks[*].for_each_task.task.timeout_seconds":      isZero,
 	"tasks[*].for_each_task.task.notebook_task.source": isStringEqual("WORKSPACE"),
-	"tasks[*].for_each_task.task.email_notifications":  defaultIfNotSpecified,
+	"tasks[*].for_each_task.task.email_notifications":  isDefaultEmailNotifications,
 
 	// Cluster fields (tasks)
 	"tasks[*].new_cluster.aws_attributes":      alwaysDefault,
@@ -305,4 +305,36 @@ func isZero(changeDesc *deployplan.ChangeDesc) bool {
 	default:
 		return false
 	}
+}
+
+// isDefaultEmailNotifications checks if email_notifications only contains default values.
+func isDefaultEmailNotifications(changeDesc *deployplan.ChangeDesc) bool {
+	// If user specified email_notifications in config, don't skip
+	if changeDesc.Old != nil || changeDesc.New != nil {
+		return false
+	}
+
+	if changeDesc.Remote == nil {
+		return false
+	}
+
+	normalized, err := normalizeValue(changeDesc.Remote)
+	if err != nil {
+		return false
+	}
+
+	m, ok := normalized.(map[string]any)
+	if !ok {
+		return false
+	}
+
+	if len(m) == 1 {
+		if val, exists := m["no_alert_for_skipped_runs"]; exists {
+			if boolVal, ok := val.(bool); ok && !boolVal {
+				return true
+			}
+		}
+	}
+
+	return false
 }
