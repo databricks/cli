@@ -239,6 +239,13 @@ func TestToTypedErrors(t *testing.T) {
 		assert.Contains(t, err.Error(), "expected a string")
 	})
 
+	t.Run("time_invalid_format", func(t *testing.T) {
+		var out sdktime.Time
+		err := ToTyped(&out, dyn.V("not-a-time"))
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "invalid google.protobuf.Timestamp value")
+	})
+
 	t.Run("fieldmask_wrong_type", func(t *testing.T) {
 		var out sdkfieldmask.FieldMask
 		err := ToTyped(&out, wrongTypeInput)
