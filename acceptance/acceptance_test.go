@@ -341,8 +341,6 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 			var extraVars []string
 			if cloudEnv != "" {
 				extraVars = append(extraVars, "CONFIG_Cloud=true")
-			} else {
-				extraVars = append(extraVars, "CONFIG_Local=true")
 			}
 
 			expanded := internal.ExpandEnvMatrix(config.EnvMatrix, config.EnvMatrixExclude, extraVars)

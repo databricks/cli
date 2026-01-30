@@ -182,7 +182,7 @@ func TestExpandEnvMatrix(t *testing.T) {
 			exclude: map[string][]string{
 				"rule1": {"KEY=A", "CONFIG_Cloud=true"},
 			},
-			extraVars: []string{"CONFIG_Local=true"},
+			extraVars: nil,
 			expected: [][]string{
 				{"KEY=A"},
 				{"KEY=B"},

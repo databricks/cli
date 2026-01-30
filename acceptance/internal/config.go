@@ -105,9 +105,7 @@ type TestConfig struct {
 	// The key is arbitrary string and the value is a list of KEY=value pairs to exclude.
 	// For example:
 	//   EnvMatrixExclude.noplantf = ["READPLAN=1", "DATABRICKS_BUNDLE_ENGINE=terraform"]
-	// Special pseudo-vars are available for matching test config state:
-	//   CONFIG_Cloud=true - matches when running in cloud mode (CLOUD_ENV is set)
-	//   CONFIG_Local=true - matches when running in local mode (CLOUD_ENV is not set)
+	// Special pseudo-var CONFIG_Cloud=true is available for excluding combinations on cloud runs.
 	EnvMatrixExclude map[string][]string
 
 	// List of keys for which to do string replacement value -> [KEY]. If not set, defaults to true.
