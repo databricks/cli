@@ -11,7 +11,7 @@ Project: My Project
 Branch: main
 Endpoint: primary
 Connecting to read-write endpoint...
-echo-arguments.sh was called with the following arguments: --host=my-endpoint.postgres.example.com --username=[USERNAME] --port=5432 --dbname=postgres
+echo-arguments.sh was called with the following arguments: --host=my-endpoint.postgres.example.com --username=[USERNAME] --port=5432 --dbname=databricks_postgres
 PGPASSWORD=postgres-secret-token
 PGSSLMODE=require
 
@@ -21,7 +21,7 @@ Project: Auto Project
 Branch: default-branch
 Endpoint: read-write-ep
 Connecting to read-write endpoint...
-echo-arguments.sh was called with the following arguments: --host=auto-endpoint.postgres.example.com --username=[USERNAME] --port=5432 --dbname=postgres
+echo-arguments.sh was called with the following arguments: --host=auto-endpoint.postgres.example.com --username=[USERNAME] --port=5432 --dbname=databricks_postgres
 PGPASSWORD=postgres-secret-token
 PGSSLMODE=require
 
@@ -31,7 +31,7 @@ Project: Explicit Project
 Branch: explicit-branch
 Endpoint: main-ep
 Connecting to read-write endpoint (idle, waking up)...
-echo-arguments.sh was called with the following arguments: --host=explicit-endpoint.postgres.example.com --username=[USERNAME] --port=5432 --dbname=postgres
+echo-arguments.sh was called with the following arguments: --host=explicit-endpoint.postgres.example.com --username=[USERNAME] --port=5432 --dbname=databricks_postgres
 PGPASSWORD=postgres-secret-token
 PGSSLMODE=require
 
@@ -41,7 +41,7 @@ Project: Explicit Project
 Branch: explicit-branch
 Endpoint: main-ep
 Connecting to read-write endpoint (idle, waking up)...
-echo-arguments.sh was called with the following arguments: --host=explicit-endpoint.postgres.example.com --username=[USERNAME] --port=5432 --dbname=postgres
+echo-arguments.sh was called with the following arguments: --host=explicit-endpoint.postgres.example.com --username=[USERNAME] --port=5432 --dbname=databricks_postgres
 PGPASSWORD=postgres-secret-token
 PGSSLMODE=require
 
@@ -66,7 +66,7 @@ Project: My Project
 Branch: main
 Endpoint: primary
 Connecting to read-write endpoint...
-echo-arguments.sh was called with the following arguments: --host=my-endpoint.postgres.example.com --username=[USERNAME] --port=5432 --dbname=postgres -c SELECT 1
+echo-arguments.sh was called with the following arguments: --host=my-endpoint.postgres.example.com --username=[USERNAME] --port=5432 --dbname=databricks_postgres -c SELECT 1
 PGPASSWORD=postgres-secret-token
 PGSSLMODE=require
 
@@ -86,6 +86,6 @@ Project: Auto Project
 Branch: default-branch
 Endpoint: read-write-ep
 Connecting to read-write endpoint...
-echo-arguments.sh was called with the following arguments: --host=auto-endpoint.postgres.example.com --username=[USERNAME] --port=5432 --dbname=postgres
+echo-arguments.sh was called with the following arguments: --host=auto-endpoint.postgres.example.com --username=[USERNAME] --port=5432 --dbname=databricks_postgres
 PGPASSWORD=postgres-secret-token
 PGSSLMODE=require

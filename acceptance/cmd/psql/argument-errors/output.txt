@@ -33,7 +33,7 @@ Project: My Project
 Branch: main
 Endpoint: primary
 Connecting to read-write endpoint...
-echo-arguments.sh was called with the following arguments: --host=my-endpoint.postgres.example.com --username=[USERNAME] --port=5432 --dbname=postgres
+echo-arguments.sh was called with the following arguments: --host=my-endpoint.postgres.example.com --username=[USERNAME] --port=5432 --dbname=databricks_postgres
 PGPASSWORD=postgres-secret-token
 PGSSLMODE=require
 
@@ -43,7 +43,7 @@ Project: My Project
 Branch: dev
 Endpoint: custom
 Connecting to read-write endpoint...
-echo-arguments.sh was called with the following arguments: --host=custom-endpoint.postgres.example.com --username=[USERNAME] --port=5432 --dbname=postgres
+echo-arguments.sh was called with the following arguments: --host=custom-endpoint.postgres.example.com --username=[USERNAME] --port=5432 --dbname=databricks_postgres
 PGPASSWORD=postgres-secret-token
 PGSSLMODE=require
 
