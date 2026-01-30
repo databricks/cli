@@ -34,10 +34,6 @@ func FormatTextOutput(changes Changes) string {
 		sort.Strings(paths)
 
 		for _, path := range paths {
-			if resourceChanges[path].Operation == OperationSkip {
-				continue
-			}
-
 			configChange := resourceChanges[path]
 			output.WriteString(fmt.Sprintf("  %s: %s\n", path, configChange.Operation))
 		}

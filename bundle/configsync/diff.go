@@ -137,6 +137,9 @@ func DetectChanges(ctx context.Context, b *bundle.Bundle, engine engine.EngineTy
 				if err != nil {
 					return nil, fmt.Errorf("failed to compute config change for path %s: %w", path, err)
 				}
+				if change.Operation == OperationSkip {
+					continue
+				}
 				resourceChanges[path] = change
 			}
 		}
