@@ -158,8 +158,6 @@ func TestFieldMaskRoundtrip(t *testing.T) {
 
 // Edge case tests
 
-// Edge case tests
-
 func TestNilValuesFromTyped(t *testing.T) {
 	t.Run("duration", func(t *testing.T) {
 		var src *sdkduration.Duration
@@ -280,13 +278,7 @@ func TestSpecialCases(t *testing.T) {
 	})
 }
 
-// Duration tests
-
-// Time tests
-
-// FieldMask tests
-
-// End-to-end tests using actual SDK types
+// End-to-end tests with structs containing SDK native types
 
 func TestSDKTypesRoundTripWithPostgresBranchSpec(t *testing.T) {
 	// Import the postgres package types to test real SDK usage
