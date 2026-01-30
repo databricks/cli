@@ -55,8 +55,8 @@ func (n normalizeOptions) normalizeType(typ reflect.Type, src dyn.Value, seen []
 		typ = typ.Elem()
 	}
 
-	// Handle SDK's duration.Duration type as a string since it has custom JSON marshaling.
-	if isSDKDurationType(typ) {
+	// Handle SDK native types as strings since they use custom JSON marshaling.
+	if isSDKNativeType(typ) {
 		return n.normalizeString(reflect.TypeOf(""), src, path)
 	}
 

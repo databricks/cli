@@ -38,9 +38,9 @@ func ToTyped(dst any, src dyn.Value) error {
 		panic("cannot set destination value")
 	}
 
-	// Handle SDK's duration.Duration type using JSON unmarshaling.
-	if isSDKDurationType(dstv.Type()) {
-		return toTypedDuration(dstv, src)
+	// Handle SDK native types using JSON unmarshaling.
+	if isSDKNativeType(dstv.Type()) {
+		return toTypedSDKNative(dstv, src)
 	}
 
 	switch dstv.Kind() {
