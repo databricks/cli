@@ -10,11 +10,12 @@ Deployment complete!
 Detected changes in 1 resource(s):
 
 Resource: resources.jobs.my_job
-  email_notifications.no_alert_for_skipped_runs: skip
-  email_notifications.on_failure: skip
-  parameters: update
-  tags['team']: update
-  trigger.periodic.interval: update
+  email_notifications.no_alert_for_skipped_runs: add
+  email_notifications.on_failure: add
+  parameters: replace
+  tags['team']: add
+  trigger.periodic.interval: replace
+
 
 
 === Configuration changes

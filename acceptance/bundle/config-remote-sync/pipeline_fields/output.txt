@@ -8,11 +8,12 @@ Deployment complete!
 Detected changes in 1 resource(s):
 
 Resource: resources.pipelines.my_pipeline
-  configuration['key2']: update
-  notifications[0].alerts: update
-  notifications[0].email_recipients: update
-  schema: update
-  tags['foo']: update
+  configuration['key2']: add
+  notifications[0].alerts: replace
+  notifications[0].email_recipients: replace
+  schema: replace
+  tags['foo']: add
+
 
 
 === Configuration changes
