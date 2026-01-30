@@ -143,7 +143,7 @@ Data Quality Monitoring
 
 Database Instances
   database                               Database Instances provide access to a database via REST API or direct SQL.
-  psql                                   Connect to the specified Database Instance
+  psql                                   Connect to a Lakebase Postgres database
 
 Tags
   tag-policies                           The Tag Policy API allows you to manage policies for governed tags in Databricks.
