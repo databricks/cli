@@ -3,18 +3,22 @@ package psql
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
-	lakebasepsql "github.com/databricks/cli/libs/lakebase/psql"
-	lakebasev1 "github.com/databricks/cli/libs/lakebase/v1"
+	libpsql "github.com/databricks/cli/libs/psql"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/database"
+	"github.com/google/uuid"
 )
+
+// provisionedDefaultDatabase is the default database for Lakebase Provisioned instances.
+const provisionedDefaultDatabase = "databricks_postgres"
 
 // connectProvisioned connects to a Lakebase Provisioned database instance.
 // If instanceName is empty, prompts the user to select one.
-func connectProvisioned(ctx context.Context, instanceName string, retryConfig lakebasepsql.RetryConfig, extraArgs []string) error {
+func connectProvisioned(ctx context.Context, instanceName string, retryConfig libpsql.RetryConfig, extraArgs []string) error {
 	w := cmdctx.WorkspaceClient(ctx)
 
 	instance, err := resolveInstance(ctx, w, instanceName)
@@ -22,7 +26,36 @@ func connectProvisioned(ctx context.Context, instanceName string, retryConfig la
 		return err
 	}
 
-	return lakebasev1.Connect(ctx, w, instance, retryConfig, extraArgs...)
+	user, err := w.CurrentUser.Me(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get current user: %w", err)
+	}
+
+	if instance.State != database.DatabaseInstanceStateAvailable {
+		cmdio.LogString(ctx, fmt.Sprintf("Instance status: %s", instance.State))
+		if instance.State == database.DatabaseInstanceStateStarting || instance.State == database.DatabaseInstanceStateUpdating || instance.State == database.DatabaseInstanceStateFailingOver {
+			cmdio.LogString(ctx, "Please retry when the instance becomes available")
+		}
+		return errors.New("database instance is not ready for accepting connections")
+	}
+
+	cmdio.LogString(ctx, "Connecting to database instance...")
+
+	cred, err := w.Database.GenerateDatabaseCredential(ctx, database.GenerateDatabaseCredentialRequest{
+		InstanceNames: []string{instance.Name},
+		RequestId:     uuid.NewString(),
+	})
+	if err != nil {
+		return fmt.Errorf("failed to get database credentials: %w", err)
+	}
+
+	return libpsql.Connect(ctx, libpsql.ConnectOptions{
+		Host:            instance.ReadWriteDns,
+		Username:        user.UserName,
+		Password:        cred.Token,
+		DefaultDatabase: provisionedDefaultDatabase,
+		ExtraArgs:       extraArgs,
+	}, retryConfig)
 }
 
 // resolveInstance resolves an instance name to a full instance object.
@@ -37,9 +70,15 @@ func resolveInstance(ctx context.Context, w *databricks.WorkspaceClient, instanc
 		}
 	}
 
-	instance, err := lakebasev1.GetDatabaseInstance(ctx, w, instanceName)
+	instance, err := w.Database.GetDatabaseInstance(ctx, database.GetDatabaseInstanceRequest{
+		Name: instanceName,
+	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get database instance: %w", err)
+	}
+	// Ensure Name is set (API response may not include it)
+	if instance.Name == "" {
+		instance.Name = instanceName
 	}
 
 	cmdio.LogString(ctx, "Instance: "+instance.Name)

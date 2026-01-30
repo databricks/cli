@@ -11,8 +11,7 @@ import (
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdgroup"
 	"github.com/databricks/cli/libs/cmdio"
-	lakebasepsql "github.com/databricks/cli/libs/lakebase/psql"
-	lakebasev2 "github.com/databricks/cli/libs/lakebase/v2"
+	libpsql "github.com/databricks/cli/libs/psql"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/database"
 	"github.com/databricks/databricks-sdk-go/service/postgres"
@@ -95,7 +94,7 @@ For more information, see: https://docs.databricks.com/aws/en/oltp/
 		}
 		extraArgs := args[argsLenAtDash:]
 
-		retryConfig := lakebasepsql.RetryConfig{
+		retryConfig := libpsql.RetryConfig{
 			MaxRetries:    maxRetries,
 			InitialDelay:  time.Second,
 			MaxDelay:      10 * time.Second,
@@ -274,7 +273,7 @@ func listAllDatabases(ctx context.Context, w *databricks.WorkspaceClient) ([]dat
 }
 
 // showSelectionAndConnect shows a combined dropdown of Lakebase databases.
-func showSelectionAndConnect(ctx context.Context, retryConfig lakebasepsql.RetryConfig, extraArgs []string) error {
+func showSelectionAndConnect(ctx context.Context, retryConfig libpsql.RetryConfig, extraArgs []string) error {
 	w := cmdctx.WorkspaceClient(ctx)
 
 	sp := cmdio.NewSpinner(ctx)
@@ -295,7 +294,7 @@ func showSelectionAndConnect(ctx context.Context, retryConfig lakebasepsql.Retry
 		})
 	}
 	for _, proj := range projects {
-		displayName := lakebasev2.ExtractIDFromName(proj.Name, "projects")
+		displayName := extractIDFromName(proj.Name, "projects")
 		if proj.Status != nil && proj.Status.DisplayName != "" {
 			displayName = proj.Status.DisplayName
 		}
@@ -316,7 +315,7 @@ func showSelectionAndConnect(ctx context.Context, retryConfig lakebasepsql.Retry
 	}
 	if strings.HasPrefix(selected, "autoscaling:") {
 		projectName := strings.TrimPrefix(selected, "autoscaling:")
-		projectID := lakebasev2.ExtractIDFromName(projectName, "projects")
+		projectID := extractIDFromName(projectName, "projects")
 		return connectAutoscaling(ctx, projectID, "", "", retryConfig, extraArgs)
 	}
 

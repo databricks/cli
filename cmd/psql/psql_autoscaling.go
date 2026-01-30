@@ -4,17 +4,32 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
-	lakebasepsql "github.com/databricks/cli/libs/lakebase/psql"
-	lakebasev2 "github.com/databricks/cli/libs/lakebase/v2"
+	libpsql "github.com/databricks/cli/libs/psql"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/postgres"
 )
 
+// autoscalingDefaultDatabase is the default database for Lakebase Autoscaling projects.
+const autoscalingDefaultDatabase = "lakebase"
+
+// extractIDFromName extracts the ID component from a resource name.
+// For example, extractIDFromName("projects/foo/branches/bar", "branches") returns "bar".
+func extractIDFromName(name, component string) string {
+	parts := strings.Split(name, "/")
+	for i := range len(parts) - 1 {
+		if parts[i] == component {
+			return parts[i+1]
+		}
+	}
+	return name
+}
+
 // connectAutoscaling connects to a Lakebase Autoscaling endpoint.
-func connectAutoscaling(ctx context.Context, projectID, branchID, endpointID string, retryConfig lakebasepsql.RetryConfig, extraArgs []string) error {
+func connectAutoscaling(ctx context.Context, projectID, branchID, endpointID string, retryConfig libpsql.RetryConfig, extraArgs []string) error {
 	w := cmdctx.WorkspaceClient(ctx)
 
 	endpoint, err := resolveEndpoint(ctx, w, projectID, branchID, endpointID)
@@ -22,7 +37,57 @@ func connectAutoscaling(ctx context.Context, projectID, branchID, endpointID str
 		return err
 	}
 
-	return lakebasev2.Connect(ctx, w, endpoint, retryConfig, extraArgs...)
+	user, err := w.CurrentUser.Me(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to get current user: %w", err)
+	}
+
+	if endpoint.Status == nil {
+		return errors.New("endpoint status is not available")
+	}
+
+	var endpointType string
+	switch endpoint.Status.EndpointType {
+	case postgres.EndpointTypeEndpointTypeReadWrite:
+		endpointType = "read-write"
+	case postgres.EndpointTypeEndpointTypeReadOnly:
+		endpointType = "read-only"
+	default:
+		endpointType = string(endpoint.Status.EndpointType)
+	}
+
+	state := endpoint.Status.CurrentState
+	var suffix string
+	switch state {
+	case postgres.EndpointStatusStateActive:
+		// No need to inform the user that the endpoint is active.
+	case postgres.EndpointStatusStateIdle:
+		suffix = " (idle, waking up)"
+	default:
+		return errors.New("endpoint is not ready for accepting connections")
+	}
+
+	cmdio.LogString(ctx, fmt.Sprintf("Connecting to %s endpoint%s...", endpointType, suffix))
+
+	if endpoint.Status.Hosts == nil || endpoint.Status.Hosts.Host == "" {
+		return errors.New("endpoint host information is not available")
+	}
+	host := endpoint.Status.Hosts.Host
+
+	cred, err := w.Postgres.GenerateDatabaseCredential(ctx, postgres.GenerateDatabaseCredentialRequest{
+		Endpoint: endpoint.Name,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to get database credentials: %w", err)
+	}
+
+	return libpsql.Connect(ctx, libpsql.ConnectOptions{
+		Host:            host,
+		Username:        user.UserName,
+		Password:        cred.Token,
+		DefaultDatabase: autoscalingDefaultDatabase,
+		ExtraArgs:       extraArgs,
+	}, retryConfig)
 }
 
 // resolveEndpoint resolves a partial specification to a full endpoint.
@@ -98,13 +163,13 @@ func selectProjectID(ctx context.Context, w *databricks.WorkspaceClient) (string
 
 	// Auto-select if there's only one project
 	if len(projects) == 1 {
-		return lakebasev2.ExtractIDFromName(projects[0].Name, "projects"), nil
+		return extractIDFromName(projects[0].Name, "projects"), nil
 	}
 
 	// Multiple projects, prompt user to select
 	var items []cmdio.Tuple
 	for _, project := range projects {
-		projectID := lakebasev2.ExtractIDFromName(project.Name, "projects")
+		projectID := extractIDFromName(project.Name, "projects")
 		displayName := projectID
 		if project.Status != nil && project.Status.DisplayName != "" {
 			displayName = project.Status.DisplayName
@@ -134,13 +199,13 @@ func selectBranchID(ctx context.Context, w *databricks.WorkspaceClient, projectN
 
 	// Auto-select if there's only one branch
 	if len(branches) == 1 {
-		return lakebasev2.ExtractIDFromName(branches[0].Name, "branches"), nil
+		return extractIDFromName(branches[0].Name, "branches"), nil
 	}
 
 	// Multiple branches, prompt user to select
 	var items []cmdio.Tuple
 	for _, branch := range branches {
-		branchID := lakebasev2.ExtractIDFromName(branch.Name, "branches")
+		branchID := extractIDFromName(branch.Name, "branches")
 		items = append(items, cmdio.Tuple{Name: branchID, Id: branchID})
 	}
 
@@ -166,13 +231,13 @@ func selectEndpointID(ctx context.Context, w *databricks.WorkspaceClient, branch
 
 	// Auto-select if there's only one endpoint
 	if len(endpoints) == 1 {
-		return lakebasev2.ExtractIDFromName(endpoints[0].Name, "endpoints"), nil
+		return extractIDFromName(endpoints[0].Name, "endpoints"), nil
 	}
 
 	// Multiple endpoints, prompt user to select
 	var items []cmdio.Tuple
 	for _, endpoint := range endpoints {
-		endpointID := lakebasev2.ExtractIDFromName(endpoint.Name, "endpoints")
+		endpointID := extractIDFromName(endpoint.Name, "endpoints")
 		items = append(items, cmdio.Tuple{Name: endpointID, Id: endpointID})
 	}
 

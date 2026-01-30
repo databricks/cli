@@ -2,6 +2,10 @@
 # the current argument capturing method does not work on windows-latest GitHub Runner.
 GOOS.windows = false
 
+Ignore = [
+    "psql"
+]
+
 # GetProject response
 [[Server]]
 Pattern = "GET /api/2.0/postgres/projects/my-project"

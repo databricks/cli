@@ -1,10 +1,5 @@
 mv echo-arguments.sh psql
 
-cleanup() {
-  rm psql
-}
-trap cleanup EXIT
-
 export PATH="$(pwd):$PATH"
 
 title "Provisioned instance with --project flag should error:"

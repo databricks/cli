@@ -50,7 +50,6 @@ PGSSLMODE=require
 Project: Init Project
 Branch: main
 Endpoint: init-ep
-Endpoint is initializing, please retry when it becomes active
 Error: endpoint is not ready for accepting connections
 
 === Branch flag without project should fail:
