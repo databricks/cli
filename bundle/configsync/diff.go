@@ -13,6 +13,7 @@ import (
 	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go/marshal"
+	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
 type OperationType string
@@ -76,6 +77,47 @@ func normalizeValue(v any) (any, error) {
 }
 
 func convertChangeDesc(path string, cd *deployplan.ChangeDesc) (*ConfigChangeDesc, error) {
+	if path == "queue" && cd.Remote == nil {
+		// Check if New has the default enabled value
+		isDefaultEnabled := false
+		if cd.New != nil && cd.New.(*jobs.QueueSettings).Enabled {
+			isDefaultEnabled = true
+		}
+
+		if isDefaultEnabled {
+			cd = &deployplan.ChangeDesc{
+				Old: nil,
+				New: nil,
+				Remote: &jobs.QueueSettings{
+					Enabled: false,
+				},
+				Action: cd.Action,
+				Reason: cd.Reason,
+			}
+		}
+	}
+
+	if path == "max_concurrent_runs" {
+		isDefault := false
+		if cd.Old != nil && cd.New != nil {
+			oldVal, oldOk := cd.Old.(int)
+			newVal, newOk := cd.New.(int)
+			if oldOk && newOk && oldVal == 4 && newVal == 4 {
+				isDefault = true
+			}
+		}
+
+		if isDefault {
+			cd = &deployplan.ChangeDesc{
+				Old:    nil,
+				New:    nil,
+				Remote: cd.Remote,
+				Action: cd.Action,
+				Reason: cd.Reason,
+			}
+		}
+	}
+
 	hasConfigValue := cd.Old != nil || cd.New != nil
 
 	op := OperationUnknown
