@@ -13,26 +13,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-// Equality check functions for SDK native types
-
-func assertDurationEqual(t *testing.T, expected, actual any) {
-	e := expected.(sdkduration.Duration)
-	a := actual.(sdkduration.Duration)
-	assert.Equal(t, e.AsDuration(), a.AsDuration())
-}
-
-func assertTimeEqual(t *testing.T, expected, actual any) {
-	e := expected.(sdktime.Time)
-	a := actual.(sdktime.Time)
-	assert.Equal(t, e.AsTime(), a.AsTime())
-}
-
-func assertFieldMaskEqual(t *testing.T, expected, actual any) {
-	e := expected.(sdkfieldmask.FieldMask)
-	a := actual.(sdkfieldmask.FieldMask)
-	assert.Equal(t, e.Paths, a.Paths)
-}
-
 // Roundtrip tests - verify SDK native types convert to dyn.Value and back for both value and pointer types
 
 func TestDurationRoundtrip(t *testing.T) {
@@ -58,7 +38,7 @@ func TestDurationRoundtrip(t *testing.T) {
 				var out sdkduration.Duration
 				err = ToTyped(&out, dynValue)
 				require.NoError(t, err)
-				assertDurationEqual(t, src, out)
+				assert.Equal(t, src.AsDuration(), out.AsDuration())
 			})
 
 			// Test pointer type
@@ -72,7 +52,7 @@ func TestDurationRoundtrip(t *testing.T) {
 				err = ToTyped(&out, dynValue)
 				require.NoError(t, err)
 				require.NotNil(t, out)
-				assertDurationEqual(t, src, *out)
+				assert.Equal(t, src.AsDuration(), out.AsDuration())
 			})
 		})
 	}
@@ -113,7 +93,7 @@ func TestTimeRoundtrip(t *testing.T) {
 				var out sdktime.Time
 				err = ToTyped(&out, dynValue)
 				require.NoError(t, err)
-				assertTimeEqual(t, src, out)
+				assert.Equal(t, src.AsTime(), out.AsTime())
 			})
 
 			// Test pointer type
@@ -127,7 +107,7 @@ func TestTimeRoundtrip(t *testing.T) {
 				err = ToTyped(&out, dynValue)
 				require.NoError(t, err)
 				require.NotNil(t, out)
-				assertTimeEqual(t, src, *out)
+				assert.Equal(t, src.AsTime(), out.AsTime())
 			})
 		})
 	}
@@ -156,7 +136,7 @@ func TestFieldMaskRoundtrip(t *testing.T) {
 				var out sdkfieldmask.FieldMask
 				err = ToTyped(&out, dynValue)
 				require.NoError(t, err)
-				assertFieldMaskEqual(t, src, out)
+				assert.Equal(t, src.Paths, out.Paths)
 			})
 
 			// Test pointer type
@@ -170,14 +150,11 @@ func TestFieldMaskRoundtrip(t *testing.T) {
 				err = ToTyped(&out, dynValue)
 				require.NoError(t, err)
 				require.NotNil(t, out)
-				assertFieldMaskEqual(t, src, *out)
+				assert.Equal(t, src.Paths, out.Paths)
 			})
 		})
 	}
 }
-
-
-// Roundtrip test - verifies SDK native types convert to dyn.Value and back for both value and pointer types
 
 // Edge case tests
 
