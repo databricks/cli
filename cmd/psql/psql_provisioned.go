@@ -39,8 +39,6 @@ func connectProvisioned(ctx context.Context, instanceName string, retryConfig li
 		return errors.New("database instance is not ready for accepting connections")
 	}
 
-	cmdio.LogString(ctx, "Connecting to database instance...")
-
 	cred, err := w.Database.GenerateDatabaseCredential(ctx, database.GenerateDatabaseCredentialRequest{
 		InstanceNames: []string{instance.Name},
 		RequestId:     uuid.NewString(),
@@ -48,6 +46,8 @@ func connectProvisioned(ctx context.Context, instanceName string, retryConfig li
 	if err != nil {
 		return fmt.Errorf("failed to get database credentials: %w", err)
 	}
+
+	cmdio.LogString(ctx, "Connecting to database instance...")
 
 	return libpsql.Connect(ctx, libpsql.ConnectOptions{
 		Host:            instance.ReadWriteDns,

@@ -14,7 +14,7 @@ import (
 )
 
 // autoscalingDefaultDatabase is the default database for Lakebase Autoscaling projects.
-const autoscalingDefaultDatabase = "lakebase"
+const autoscalingDefaultDatabase = "databricks_postgres"
 
 // extractIDFromName extracts the ID component from a resource name.
 // For example, extractIDFromName("projects/foo/branches/bar", "branches") returns "bar".
@@ -46,6 +46,17 @@ func connectAutoscaling(ctx context.Context, projectID, branchID, endpointID str
 		return errors.New("endpoint status is not available")
 	}
 
+	if endpoint.Status.Hosts == nil || endpoint.Status.Hosts.Host == "" {
+		return errors.New("endpoint host information is not available")
+	}
+
+	cred, err := w.Postgres.GenerateDatabaseCredential(ctx, postgres.GenerateDatabaseCredentialRequest{
+		Endpoint: endpoint.Name,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to get database credentials: %w", err)
+	}
+
 	var endpointType string
 	switch endpoint.Status.EndpointType {
 	case postgres.EndpointTypeEndpointTypeReadWrite:
@@ -69,20 +80,8 @@ func connectAutoscaling(ctx context.Context, projectID, branchID, endpointID str
 
 	cmdio.LogString(ctx, fmt.Sprintf("Connecting to %s endpoint%s...", endpointType, suffix))
 
-	if endpoint.Status.Hosts == nil || endpoint.Status.Hosts.Host == "" {
-		return errors.New("endpoint host information is not available")
-	}
-	host := endpoint.Status.Hosts.Host
-
-	cred, err := w.Postgres.GenerateDatabaseCredential(ctx, postgres.GenerateDatabaseCredentialRequest{
-		Endpoint: endpoint.Name,
-	})
-	if err != nil {
-		return fmt.Errorf("failed to get database credentials: %w", err)
-	}
-
 	return libpsql.Connect(ctx, libpsql.ConnectOptions{
-		Host:            host,
+		Host:            endpoint.Status.Hosts.Host,
 		Username:        user.UserName,
 		Password:        cred.Token,
 		DefaultDatabase: autoscalingDefaultDatabase,
