@@ -188,20 +188,6 @@ func TestExpandEnvMatrix(t *testing.T) {
 				{"KEY=B"},
 			},
 		},
-		{
-			name:      "extraVars with empty matrix and exclusion",
-			matrix:    map[string][]string{},
-			exclude:   map[string][]string{"rule1": {"CONFIG_Cloud=true"}},
-			extraVars: []string{"CONFIG_Cloud=true"},
-			expected:  nil,
-		},
-		{
-			name:      "extraVars with empty matrix no exclusion match",
-			matrix:    map[string][]string{},
-			exclude:   map[string][]string{"rule1": {"CONFIG_Cloud=true"}},
-			extraVars: []string{"CONFIG_Local=true"},
-			expected:  [][]string{{}},
-		},
 	}
 
 	for _, tt := range tests {

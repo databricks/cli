@@ -271,16 +271,6 @@ func ExpandEnvMatrix(matrix, exclude map[string][]string, extraVars []string) []
 	result := [][]string{{}}
 
 	if len(matrix) == 0 {
-		if len(exclude) > 0 && len(extraVars) > 0 {
-			// Even with empty matrix, we need to check if the single empty result
-			// should be excluded based on extraVars
-			result[0] = append(result[0], extraVars...)
-			result = filterExcludedEnvSets(result, exclude)
-			// Strip extraVars from result
-			for i := range result {
-				result[i] = []string{}
-			}
-		}
 		return result
 	}
 
@@ -293,13 +283,6 @@ func ExpandEnvMatrix(matrix, exclude map[string][]string, extraVars []string) []
 	}
 
 	if len(filteredMatrix) == 0 {
-		if len(exclude) > 0 && len(extraVars) > 0 {
-			result[0] = append(result[0], extraVars...)
-			result = filterExcludedEnvSets(result, exclude)
-			for i := range result {
-				result[i] = []string{}
-			}
-		}
 		return result
 	}
 
