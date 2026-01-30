@@ -24,14 +24,41 @@ import (
 )
 
 const (
-	templatePathEnvVar = "DATABRICKS_APPKIT_TEMPLATE_PATH"
-	defaultTemplateURL = "https://github.com/databricks/appkit/tree/main/template"
+	templatePathEnvVar  = "DATABRICKS_APPKIT_TEMPLATE_PATH"
+	appkitRepoURL       = "https://github.com/databricks/appkit"
+	appkitTemplateDir   = "template"
+	appkitDefaultBranch = "main"
+	appkitRepoOwner     = "databricks"
+	appkitRepoName      = "appkit"
 )
+
+// fetchLatestRelease fetches the latest release tag from GitHub using gh CLI.
+// Returns the tag name (e.g., "v0.1.0") or an error.
+func fetchLatestRelease(ctx context.Context) (string, error) {
+	cmd := exec.CommandContext(ctx, "gh", "release", "view", "--repo", appkitRepoOwner+"/"+appkitRepoName, "--json", "tagName", "-q", ".tagName")
+	output, err := cmd.Output()
+	if err != nil {
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) {
+			return "", fmt.Errorf("failed to fetch latest release: %s", string(exitErr.Stderr))
+		}
+		if errors.Is(err, exec.ErrNotFound) {
+			return "", errors.New("gh CLI not found, please install it or use --version to specify a version")
+		}
+		return "", fmt.Errorf("failed to fetch latest release: %w", err)
+	}
+	tag := strings.TrimSpace(string(output))
+	if tag == "" {
+		return "", errors.New("no releases found for appkit repository")
+	}
+	return tag, nil
+}
 
 func newInitCmd() *cobra.Command {
 	var (
 		templatePath string
 		branch       string
+		version      string
 		name         string
 		warehouseID  string
 		description  string
@@ -51,9 +78,18 @@ When run without arguments, uses the default AppKit template and an interactive 
 guides you through the setup. When run with --name, runs in non-interactive mode
 (all required flags must be provided).
 
+By default, the command uses the latest released version of AppKit. Use --version
+to specify a different version, or --version latest to use the main branch.
+
 Examples:
   # Interactive mode with default template (recommended)
   databricks apps init
+
+  # Use a specific AppKit version
+  databricks apps init --version v0.2.0
+
+  # Use the latest development version (main branch)
+  databricks apps init --version latest
 
   # Non-interactive with flags
   databricks apps init --name my-app
@@ -80,9 +116,17 @@ Environment variables:
 		PreRunE: root.MustWorkspaceClient,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
+
+			// Validate mutual exclusivity of --branch and --version
+			if cmd.Flags().Changed("branch") && cmd.Flags().Changed("version") {
+				return errors.New("--branch and --version are mutually exclusive")
+			}
+
 			return runCreate(ctx, createOptions{
 				templatePath:    templatePath,
 				branch:          branch,
+				version:         version,
+				versionChanged:  cmd.Flags().Changed("version"),
 				name:            name,
 				nameProvided:    cmd.Flags().Changed("name"),
 				warehouseID:     warehouseID,
@@ -99,7 +143,8 @@ Environment variables:
 	}
 
 	cmd.Flags().StringVar(&templatePath, "template", "", "Template path (local directory or GitHub URL)")
-	cmd.Flags().StringVar(&branch, "branch", "", "Git branch or tag (for GitHub templates)")
+	cmd.Flags().StringVar(&branch, "branch", "", "Git branch or tag (for GitHub templates, mutually exclusive with --version)")
+	cmd.Flags().StringVar(&version, "version", "", "AppKit version to use (default: latest release, use 'latest' for main branch)")
 	cmd.Flags().StringVar(&name, "name", "", "Project name (prompts if not provided)")
 	cmd.Flags().StringVar(&warehouseID, "warehouse-id", "", "SQL warehouse ID")
 	cmd.Flags().StringVar(&description, "description", "", "App description")
@@ -114,6 +159,8 @@ Environment variables:
 type createOptions struct {
 	templatePath    string
 	branch          string
+	version         string
+	versionChanged  bool // true if --version flag was explicitly set
 	name            string
 	nameProvided    bool // true if --name flag was explicitly set (enables "flags mode")
 	warehouseID     string
@@ -427,9 +474,33 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	if templateSrc == "" {
 		templateSrc = os.Getenv(templatePathEnvVar)
 	}
+
+	// Resolve the git reference (branch/tag) to use for default appkit template
+	gitRef := opts.branch
 	if templateSrc == "" {
-		// Use default template from GitHub
-		templateSrc = defaultTemplateURL
+		// Using default appkit template - resolve version
+		switch {
+		case opts.branch != "":
+			// --branch takes precedence (already set in gitRef)
+		case opts.version == "latest":
+			gitRef = appkitDefaultBranch
+		case opts.version != "":
+			gitRef = opts.version
+		default:
+			// Default: fetch latest release
+			var tag string
+			err := prompt.RunWithSpinnerCtx(ctx, "Fetching latest AppKit version...", func() error {
+				var fetchErr error
+				tag, fetchErr = fetchLatestRelease(ctx)
+				return fetchErr
+			})
+			if err != nil {
+				return err
+			}
+			gitRef = tag
+			log.Infof(ctx, "Using AppKit version %s", tag)
+		}
+		templateSrc = fmt.Sprintf("%s/tree/%s/%s", appkitRepoURL, gitRef, appkitTemplateDir)
 	}
 
 	// Step 1: Get project name first (needed before we can check destination)
@@ -465,7 +536,14 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	}
 
 	// Step 2: Resolve template (handles GitHub URLs by cloning)
-	resolvedPath, cleanup, err := resolveTemplate(ctx, templateSrc, opts.branch)
+	// For custom templates, --branch can override the URL's branch
+	// For default appkit template, gitRef is already embedded in templateSrc
+	branchOverride := opts.branch
+	if opts.templatePath == "" && os.Getenv(templatePathEnvVar) == "" {
+		// Using default appkit - no override needed, gitRef is in URL
+		branchOverride = ""
+	}
+	resolvedPath, cleanup, err := resolveTemplate(ctx, templateSrc, branchOverride)
 	if err != nil {
 		return err
 	}

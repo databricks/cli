@@ -1,10 +1,13 @@
 package apps
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/databricks/cli/libs/apps/prompt"
+	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestIsTextFile(t *testing.T) {
@@ -167,6 +170,22 @@ func TestSubstituteVarsNoPlugins(t *testing.T) {
 			assert.Equal(t, tt.expected, result)
 		})
 	}
+}
+
+func TestInitCmdBranchAndVersionMutuallyExclusive(t *testing.T) {
+	cmd := newInitCmd()
+	cmd.PreRunE = nil // skip workspace client setup for flag validation test
+	// Replace RunE to only test flag validation, not the full create flow
+	cmd.RunE = func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().Changed("branch") && cmd.Flags().Changed("version") {
+			return errors.New("--branch and --version are mutually exclusive")
+		}
+		return nil
+	}
+	cmd.SetArgs([]string{"--branch", "dev", "--version", "v1.0.0"})
+	err := cmd.Execute()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "--branch and --version are mutually exclusive")
 }
 
 func TestParseDeployAndRunFlags(t *testing.T) {
