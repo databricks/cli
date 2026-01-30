@@ -28,7 +28,7 @@ Refer to the README.md file for full "getting started" guide and production setu
         "template_enum_args": [
           {
             "key": "personal_schemas",
-            "value": "yes, use a schema based on the current user name during development"
+            "value": "yes"
           },
           {
             "key": "serverless",
