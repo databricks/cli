@@ -198,20 +198,29 @@ var serverSideDefaults = map[string]func(*deployplan.ChangeDesc) bool{
 	"timeout_seconds": isZero,
 	"usage_policy_id": alwaysDefault, // computed field
 	"edit_mode":       alwaysDefault, // set by CLI
+	"email_notifications.no_alert_for_skipped_runs": isBoolEqual(false),
+	"environments":       defaultIfNotSpecified,
+	"performance_target": isStringEqual("PERFORMANCE_OPTIMIZED"),
 
 	// Task-level fields
 	"tasks[*].run_if":               isStringEqual("ALL_SUCCESS"),
 	"tasks[*].disabled":             isBoolEqual(false),
 	"tasks[*].timeout_seconds":      isZero,
 	"tasks[*].notebook_task.source": isStringEqual("WORKSPACE"),
+	"tasks[*].email_notifications":  defaultIfNotSpecified,
+
+	"tasks[*].for_each_task.task.run_if":               isStringEqual("ALL_SUCCESS"),
+	"tasks[*].for_each_task.task.disabled":             isBoolEqual(false),
+	"tasks[*].for_each_task.task.timeout_seconds":      isZero,
+	"tasks[*].for_each_task.task.notebook_task.source": isStringEqual("WORKSPACE"),
+	"tasks[*].for_each_task.task.email_notifications":  defaultIfNotSpecified,
 
 	// Cluster fields (tasks)
-	"tasks[*].new_cluster.aws_attributes":     alwaysDefault,
-	"tasks[*].new_cluster.azure_attributes":   alwaysDefault,
-	"tasks[*].new_cluster.gcp_attributes":     alwaysDefault,
-	"tasks[*].new_cluster.data_security_mode": isStringEqual("SINGLE_USER"), // TODO this field is computed on some workspaces in integration tests, check why and if we can skip it
-
-	"tasks[*].new_cluster.enable_elastic_disk": alwaysDefault, // deprecated field
+	"tasks[*].new_cluster.aws_attributes":      alwaysDefault,
+	"tasks[*].new_cluster.azure_attributes":    alwaysDefault,
+	"tasks[*].new_cluster.gcp_attributes":      alwaysDefault,
+	"tasks[*].new_cluster.data_security_mode":  isStringEqual("SINGLE_USER"), // TODO this field is computed on some workspaces in integration tests, check why and if we can skip it
+	"tasks[*].new_cluster.enable_elastic_disk": alwaysDefault,                // deprecated field
 
 	// Cluster fields (job_clusters)
 	"job_clusters[*].new_cluster.aws_attributes":     alwaysDefault,
@@ -225,7 +234,9 @@ var serverSideDefaults = map[string]func(*deployplan.ChangeDesc) bool{
 	"run_as": alwaysDefault,
 
 	// Pipeline fields
-	"storage": defaultIfNotSpecified, // TODO it is computed if not specified, probably we should not skip it
+	"storage":    defaultIfNotSpecified, // TODO it is computed if not specified, probably we should not skip it
+	"channel":    alwaysDefault,         // server-managed DLT release channel
+	"continuous": isBoolEqual(false),    // default is triggered mode (not continuous)
 }
 
 // shouldSkipField checks if a given field path should be skipped as a hardcoded server-side default.
