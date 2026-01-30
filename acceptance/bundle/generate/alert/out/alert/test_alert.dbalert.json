@@ -12,7 +12,7 @@
     "notification": {}
   },
   "schedule": {
-    "quartz_cron_schedule": "0 0 * * * ?",
+    "quartz_cron_schedule": "0 0 9 10 1 ?",
     "timezone_id": "UTC"
   },
   "query_lines": [
