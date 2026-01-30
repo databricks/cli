@@ -1,0 +1,3 @@
+trace $CLI bundle deploy
+trace update_file.py databricks.yml "comment1" "comment2"
+trace $CLI bundle plan | contains.py '1 to change, 0 to delete, 2 unchanged'
