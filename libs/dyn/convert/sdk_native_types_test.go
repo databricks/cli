@@ -270,9 +270,7 @@ func TestSpecialCases(t *testing.T) {
 
 	t.Run("fieldmask_empty_totyped", func(t *testing.T) {
 		var out sdkfieldmask.FieldMask
-		v := dyn.V("")
-
-		err := ToTyped(&out, v)
+		err := ToTyped(&out, dyn.V(""))
 		require.NoError(t, err)
 		assert.Empty(t, out.Paths)
 	})
@@ -281,8 +279,6 @@ func TestSpecialCases(t *testing.T) {
 // End-to-end tests with structs containing SDK native types
 
 func TestSDKTypesRoundTripWithPostgresBranchSpec(t *testing.T) {
-	// Import the postgres package types to test real SDK usage
-	// postgres.BranchSpec uses time.Time and duration.Duration
 	type BranchSpec struct {
 		ExpireTime       *sdktime.Time         `json:"expire_time,omitempty"`
 		SourceBranchTime *sdktime.Time         `json:"source_branch_time,omitempty"`
@@ -290,7 +286,6 @@ func TestSDKTypesRoundTripWithPostgresBranchSpec(t *testing.T) {
 		IsProtected      bool                  `json:"is_protected,omitempty"`
 	}
 
-	// Create a BranchSpec with SDK native types
 	original := BranchSpec{
 		ExpireTime:       sdktime.New(time.Date(2024, 12, 31, 23, 59, 59, 0, time.UTC)),
 		SourceBranchTime: sdktime.New(time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)),
@@ -298,22 +293,16 @@ func TestSDKTypesRoundTripWithPostgresBranchSpec(t *testing.T) {
 		IsProtected:      true,
 	}
 
-	// Convert to dyn.Value
 	dynValue, err := FromTyped(original, dyn.NilValue)
 	require.NoError(t, err)
-
-	// Verify the dyn.Value has string representations
 	assert.Equal(t, "2024-12-31T23:59:59Z", dynValue.Get("expire_time").MustString())
 	assert.Equal(t, "2024-01-01T00:00:00Z", dynValue.Get("source_branch_time").MustString())
 	assert.Equal(t, "604800s", dynValue.Get("ttl").MustString())
 	assert.True(t, dynValue.Get("is_protected").MustBool())
 
-	// Convert back to typed
 	var roundtrip BranchSpec
 	err = ToTyped(&roundtrip, dynValue)
 	require.NoError(t, err)
-
-	// Verify round-trip preserves values
 	require.NotNil(t, roundtrip.ExpireTime)
 	require.NotNil(t, roundtrip.SourceBranchTime)
 	require.NotNil(t, roundtrip.Ttl)
@@ -324,39 +313,29 @@ func TestSDKTypesRoundTripWithPostgresBranchSpec(t *testing.T) {
 }
 
 func TestSDKTypesRoundTripWithUpdateRequest(t *testing.T) {
-	// Test with a struct similar to postgres.UpdateBranchRequest
-	// which uses fieldmask.FieldMask
 	type UpdateRequest struct {
 		Name       string                 `json:"name"`
 		UpdateMask sdkfieldmask.FieldMask `json:"update_mask"`
 	}
 
-	// Create an update request with FieldMask
 	original := UpdateRequest{
 		Name:       "projects/123/branches/456",
 		UpdateMask: *sdkfieldmask.New([]string{"spec.ttl", "spec.is_protected"}),
 	}
 
-	// Convert to dyn.Value
 	dynValue, err := FromTyped(original, dyn.NilValue)
 	require.NoError(t, err)
-
-	// Verify the dyn.Value has string representation for field mask
 	assert.Equal(t, "projects/123/branches/456", dynValue.Get("name").MustString())
 	assert.Equal(t, "spec.ttl,spec.is_protected", dynValue.Get("update_mask").MustString())
 
-	// Convert back to typed
 	var roundtrip UpdateRequest
 	err = ToTyped(&roundtrip, dynValue)
 	require.NoError(t, err)
-
-	// Verify round-trip preserves values
 	assert.Equal(t, original.Name, roundtrip.Name)
 	assert.Equal(t, []string{"spec.ttl", "spec.is_protected"}, roundtrip.UpdateMask.Paths)
 }
 
-func TestSDKTypesNormalizeWithPostgresBranchSpec(t *testing.T) {
-	// Test normalization with postgres.BranchSpec-like structure
+func TestSDKTypesNormalizeWithStruct(t *testing.T) {
 	type BranchSpec struct {
 		ExpireTime  *sdktime.Time         `json:"expire_time,omitempty"`
 		Ttl         *sdkduration.Duration `json:"ttl,omitempty"`
@@ -372,13 +351,10 @@ func TestSDKTypesNormalizeWithPostgresBranchSpec(t *testing.T) {
 
 	vout, diags := Normalize(typ, vin)
 	assert.Empty(t, diags)
-
-	// Verify normalized values preserve string representations
 	assert.Equal(t, "2024-12-31T23:59:59Z", vout.Get("expire_time").MustString())
 	assert.Equal(t, "604800s", vout.Get("ttl").MustString())
 	assert.True(t, vout.Get("is_protected").MustBool())
 
-	// Convert to typed to verify it works
 	var out BranchSpec
 	err := ToTyped(&out, vout)
 	require.NoError(t, err)
