@@ -3,8 +3,8 @@
 package schema
 
 type ResourcePostgresProjectSpecDefaultEndpointSettings struct {
-	AutoscalingLimitMaxCu  int               `json:"autoscaling_limit_max_cu,omitempty"`
-	AutoscalingLimitMinCu  int               `json:"autoscaling_limit_min_cu,omitempty"`
+	AutoscalingLimitMaxCu  float64           `json:"autoscaling_limit_max_cu,omitempty"`
+	AutoscalingLimitMinCu  float64           `json:"autoscaling_limit_min_cu,omitempty"`
 	NoSuspension           bool              `json:"no_suspension,omitempty"`
 	PgSettings             map[string]string `json:"pg_settings,omitempty"`
 	SuspendTimeoutDuration string            `json:"suspend_timeout_duration,omitempty"`
@@ -18,8 +18,8 @@ type ResourcePostgresProjectSpec struct {
 }
 
 type ResourcePostgresProjectStatusDefaultEndpointSettings struct {
-	AutoscalingLimitMaxCu  int               `json:"autoscaling_limit_max_cu,omitempty"`
-	AutoscalingLimitMinCu  int               `json:"autoscaling_limit_min_cu,omitempty"`
+	AutoscalingLimitMaxCu  float64           `json:"autoscaling_limit_max_cu,omitempty"`
+	AutoscalingLimitMinCu  float64           `json:"autoscaling_limit_min_cu,omitempty"`
 	NoSuspension           bool              `json:"no_suspension,omitempty"`
 	PgSettings             map[string]string `json:"pg_settings,omitempty"`
 	SuspendTimeoutDuration string            `json:"suspend_timeout_duration,omitempty"`
