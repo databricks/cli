@@ -184,7 +184,7 @@ func removeOutputOnlyFields(typ reflect.Type, s jsonschema.Schema) jsonschema.Sc
 
 func main() {
 	if len(os.Args) < 3 {
-		fmt.Println("Usage: go run main.go <work-dir> <output-file> [--skip-interpolation-pattern]")
+		fmt.Println("Usage: go run main.go <work-dir> <output-file> [--docs]")
 		os.Exit(1)
 	}
 
@@ -193,12 +193,14 @@ func main() {
 	// Output file, where the generated JSON schema will be written to.
 	outputFile := os.Args[2]
 
-	skipInterpolationPattern := len(os.Args) >= 4 && os.Args[3] == "--skip-interpolation-pattern"
+	// When --docs is passed, skip interpolation patterns and add sinceVersion annotations.
+	// This generates a schema optimized for documentation.
+	docsMode := len(os.Args) >= 4 && os.Args[3] == "--docs"
 
-	generateSchema(workdir, outputFile, skipInterpolationPattern)
+	generateSchema(workdir, outputFile, docsMode)
 }
 
-func generateSchema(workdir, outputFile string, skipInterpolationPattern bool) {
+func generateSchema(workdir, outputFile string, docsMode bool) {
 	annotationsPath := filepath.Join(workdir, "annotations.yml")
 	annotationsOpenApiPath := filepath.Join(workdir, "annotations_openapi.yml")
 	annotationsOpenApiOverridesPath := filepath.Join(workdir, "annotations_openapi_overrides.yml")
@@ -229,7 +231,7 @@ func generateSchema(workdir, outputFile string, skipInterpolationPattern bool) {
 		a.addAnnotations,
 		removeOutputOnlyFields,
 	}
-	if !skipInterpolationPattern {
+	if !docsMode {
 		transforms = append(transforms, addInterpolationPatterns)
 	}
 
@@ -252,6 +254,16 @@ func generateSchema(workdir, outputFile string, skipInterpolationPattern bool) {
 	err = a.syncWithMissingAnnotations(annotationsPath)
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	// In docs mode, add sinceVersion annotations by analyzing git history.
+	if docsMode {
+		sinceVersions, err := computeSinceVersions()
+		if err != nil {
+			fmt.Printf("Warning: could not compute sinceVersion annotations: %v\n", err)
+		} else {
+			addSinceVersionToSchema(&s, sinceVersions)
+		}
 	}
 
 	b, err := json.MarshalIndent(s, "", "  ")
