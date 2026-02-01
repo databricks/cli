@@ -39,7 +39,7 @@ jobs:
         run: go tool -modfile=tools/go.mod golangci-lint run --timeout=15m
 
       - name: Run ruff (Python linter and formatter)
-        uses: astral-sh/ruff-action@57714a7c8a2e59f32539362ba31877a1957dded1 # v3.5.1
+        uses: astral-sh/ruff-action@4919ec5cf1f49eff0871dbcea0da843445b837e6 # v3.6.1
         with:
           version: "0.9.1"
           args: "format --check"
