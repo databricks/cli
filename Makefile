@@ -133,8 +133,8 @@ snapshot-release:
 schema:
 	go run ./bundle/internal/schema ./bundle/internal/schema ./bundle/schema/jsonschema.json
 
-schema-ref-only:
-	go run ./bundle/internal/schema ./bundle/internal/schema ./bundle/schema/jsonschema_ref_only.json --skip-interpolation-pattern
+schema-for-docs:
+	go run ./bundle/internal/schema ./bundle/internal/schema ./bundle/schema/jsonschema_for_docs.json --docs
 
 docs:
 	go run ./bundle/docsgen ./bundle/internal/schema ./bundle/docsgen
@@ -174,7 +174,7 @@ generate:
 	$(GENKIT_BINARY) update-sdk
 
 
-.PHONY: lint lintfull tidy lintcheck fmt fmtfull test test-unit test-acc test-slow test-slow-unit test-slow-acc cover showcover build snapshot snapshot-release schema integration integration-short acc-cover acc-showcover docs ws wsfix links checks test-update test-update-templates generate-out-test-toml test-update-aws test-update-all generate-validation
+.PHONY: lint lintfull tidy lintcheck fmt fmtfull test test-unit test-acc test-slow test-slow-unit test-slow-acc cover showcover build snapshot snapshot-release schema schema-for-docs integration integration-short acc-cover acc-showcover docs ws wsfix links checks test-update test-update-templates generate-out-test-toml test-update-aws test-update-all generate-validation
 
 test-exp-aitools:
 	make test TEST_PACKAGES="./experimental/aitools/..." ACCEPTANCE_TEST_FILTER="TestAccept/idontexistyet/aitools"
