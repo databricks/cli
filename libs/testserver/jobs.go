@@ -75,7 +75,10 @@ func (s *FakeWorkspace) JobsReset(req Request) Response {
 
 func jobFixUps(jobSettings *jobs.JobSettings) {
 	if jobSettings.EmailNotifications == nil {
-		jobSettings.EmailNotifications = &jobs.JobEmailNotifications{}
+		jobSettings.EmailNotifications = &jobs.JobEmailNotifications{
+			NoAlertForSkippedRuns: false,
+			ForceSendFields:       []string{"NoAlertForSkippedRuns"},
+		}
 	}
 
 	if jobSettings.WebhookNotifications == nil {

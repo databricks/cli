@@ -287,7 +287,13 @@ func isDefaultEmailNotifications(changeDesc *deployplan.ChangeDesc) bool {
 		return false
 	}
 
-	return reflect.DeepEqual(changeDesc.Remote, map[string]any{
+	// Normalize SDK structs to maps before comparing
+	normalized, err := normalizeValue(changeDesc.Remote)
+	if err != nil {
+		return false
+	}
+
+	return reflect.DeepEqual(normalized, map[string]any{
 		"no_alert_for_skipped_runs": false,
 	})
 }
