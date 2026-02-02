@@ -28,3 +28,29 @@ title "Configuration changes"
 echo
 trace diff.py databricks.yml.backup databricks.yml
 rm databricks.yml.backup
+
+title "Add new task remotely"
+echo
+edit_resource.py jobs $job_id <<EOF
+r["tasks"].append({
+    "task_key": "new_task",
+    "notebook_task": {
+        "notebook_path": "/Users/\${CURRENT_USER_NAME}/new_task"
+    },
+    "new_cluster": {
+        "spark_version": "\${DEFAULT_SPARK_VERSION}",
+        "node_type_id": "\${NODE_TYPE_ID}",
+        "num_workers": 1
+    }
+})
+EOF
+
+title "Sync new task"
+echo
+cp databricks.yml databricks.yml.backup
+$CLI bundle config-remote-sync --save
+
+title "Configuration changes for new task"
+echo
+trace diff.py databricks.yml.backup databricks.yml
+rm databricks.yml.backup

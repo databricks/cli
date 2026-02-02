@@ -49,3 +49,10 @@ Resource: resources.jobs.my_job
 -            - task_key: task3
 +            - task_key: task1
 +          timeout_seconds: 3600
+
+=== Add new task remotely
+
+=== Sync new task
+Error: failed to resolve field changes: failed to resolve selectors in path resources.jobs.my_job.tasks[task_key='new_task']: no array element found with task_key='new_task' in path resources.jobs.my_job.tasks[task_key='new_task']
+
+Exit code: 1
