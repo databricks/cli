@@ -1,22 +1,15 @@
 name: update-sdk-docs
 
-# This workflow automatically updates the SDK docs index when:
-# 1. Manually triggered
-# 2. On a schedule (daily) to catch SDK updates
-# 3. When go.mod changes (SDK version bump)
+# Fully automated SDK docs index updates:
+# - On PRs that change go.mod: regenerate and commit to PR branch
+# - On push to main: commit directly if needed
+# - Daily schedule: create PR if SDK changed upstream
 
 on:
-  workflow_dispatch:
-    inputs:
-      create_pr:
-        description: 'Create a PR with the changes'
-        required: false
-        default: 'true'
-        type: boolean
-
-  schedule:
-    # Run daily at 6 AM UTC to check for SDK updates
-    - cron: '0 6 * * *'
+  pull_request:
+    paths:
+      - 'go.mod'
+      - 'go.sum'
 
   push:
     branches:
@@ -25,11 +18,14 @@ on:
       - 'go.mod'
       - 'go.sum'
 
+  schedule:
+    - cron: '0 6 * * *'
+
+  workflow_dispatch:
+
 jobs:
   update-sdk-docs:
     runs-on: ubuntu-latest
-
-    # Don't run on forks
     if: github.repository == 'databricks/cli'
 
     permissions:
@@ -40,7 +36,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
-          # Use a token that can trigger workflows
+          ref: ${{ github.head_ref || github.ref }}
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Go
@@ -48,12 +44,11 @@ jobs:
         with:
           go-version-file: go.mod
 
-      - name: Get current SDK version
-        id: sdk-version
+      - name: Get SDK version
+        id: sdk
         run: |
-          SDK_VERSION=$(go list -m -json github.com/databricks/databricks-sdk-go | jq -r '.Version')
-          echo "version=$SDK_VERSION" >> $GITHUB_OUTPUT
-          echo "Current SDK version: $SDK_VERSION"
+          VERSION=$(go list -m -json github.com/databricks/databricks-sdk-go | jq -r '.Version')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Regenerate SDK docs index
         run: make sdk-docs-index
@@ -61,54 +56,41 @@ jobs:
       - name: Check for changes
         id: changes
         run: |
-          if git diff --quiet experimental/aitools/lib/providers/sdkdocs/sdk_docs_index.json; then
+          if git diff --quiet experimental/aitools/lib/providers/sdkdocs/sdk_docs_index.json 2>/dev/null; then
             echo "changed=false" >> $GITHUB_OUTPUT
-            echo "No changes detected in SDK docs index"
           else
             echo "changed=true" >> $GITHUB_OUTPUT
-            echo "Changes detected in SDK docs index"
-            git diff --stat experimental/aitools/lib/providers/sdkdocs/sdk_docs_index.json
           fi
 
-      - name: Commit and push changes (direct to main)
+      - name: Commit to PR branch
+        if: steps.changes.outputs.changed == 'true' && github.event_name == 'pull_request'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add experimental/aitools/lib/providers/sdkdocs/sdk_docs_index.json
+          git commit -m "Auto-update SDK docs index for ${{ steps.sdk.outputs.version }}"
+          git push
+
+      - name: Commit to main
         if: steps.changes.outputs.changed == 'true' && github.event_name == 'push'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add experimental/aitools/lib/providers/sdkdocs/sdk_docs_index.json
-          git commit -m "Auto-update SDK docs index for ${{ steps.sdk-version.outputs.version }}"
+          git commit -m "Auto-update SDK docs index for ${{ steps.sdk.outputs.version }}"
           git push
 
-      - name: Create Pull Request
+      - name: Create PR (scheduled/manual)
         if: steps.changes.outputs.changed == 'true' && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
         uses: peter-evans/create-pull-request@v7
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: "Auto-update SDK docs index for ${{ steps.sdk-version.outputs.version }}"
-          title: "Auto-update SDK docs index for SDK ${{ steps.sdk-version.outputs.version }}"
+          commit-message: "Auto-update SDK docs index for ${{ steps.sdk.outputs.version }}"
+          title: "Auto-update SDK docs index for SDK ${{ steps.sdk.outputs.version }}"
           body: |
-            This PR was automatically generated to update the SDK documentation index.
+            Auto-generated update for SDK docs index.
 
-            **SDK Version:** ${{ steps.sdk-version.outputs.version }}
-
-            The index was regenerated because:
-            - ${{ github.event_name == 'schedule' && 'Scheduled daily check detected changes' || 'Manual workflow trigger' }}
-
-            ## What changed
-            The SDK docs index (`experimental/aitools/lib/providers/sdkdocs/sdk_docs_index.json`)
-            was regenerated from the current Go SDK to include any new or updated:
-            - Service methods and signatures
-            - Type definitions
-            - Enum values
-
-            ## Verification
-            - [ ] CI checks pass
-            - [ ] Index contains expected services
-
-            ---
-            *This PR was auto-generated by the update-sdk-docs workflow.*
+            **SDK Version:** ${{ steps.sdk.outputs.version }}
           branch: auto-update-sdk-docs
           delete-branch: true
-          labels: |
-            automated
-            sdk-docs
+          labels: automated
