@@ -243,6 +243,12 @@ func strPathToJSONPointer(pathStr string) (string, error) {
 			continue
 		}
 
+		// Handle append marker: /-/ is a syntax for appending to an array in JSON Pointer
+		if n.DotStar() {
+			parts = append(parts, "-")
+			continue
+		}
+
 		return "", fmt.Errorf("unsupported path node type in path %q", pathStr)
 	}
 

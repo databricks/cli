@@ -20,7 +20,7 @@ type FieldChange struct {
 
 // resolveSelectors converts key-value selectors to numeric indices.
 // Example: "resources.jobs.foo.tasks[task_key='main'].name" -> "resources.jobs.foo.tasks[1].name"
-func resolveSelectors(pathStr string, b *bundle.Bundle) (string, error) {
+func resolveSelectors(pathStr string, b *bundle.Bundle, operation OperationType) (string, error) {
 	node, err := structpath.Parse(pathStr)
 	if err != nil {
 		return "", fmt.Errorf("failed to parse path %s: %w", pathStr, err)
@@ -69,6 +69,12 @@ func resolveSelectors(pathStr string, b *bundle.Bundle) (string, error) {
 			}
 
 			if foundIndex == -1 {
+				if operation == OperationAdd {
+					result = structpath.NewDotStar(result)
+					// Can't navigate further into non-existent element
+					currentValue = dyn.Value{}
+					continue
+				}
 				return "", fmt.Errorf("no array element found with %s='%s' in path %s", key, value, pathStr)
 			}
 
@@ -109,7 +115,7 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 			configChange := resourceChanges[fieldPath]
 			fullPath := resourceKey + "." + fieldPath
 
-			resolvedPath, err := resolveSelectors(fullPath, b)
+			resolvedPath, err := resolveSelectors(fullPath, b, configChange.Operation)
 			if err != nil {
 				return nil, fmt.Errorf("failed to resolve selectors in path %s: %w", fullPath, err)
 			}

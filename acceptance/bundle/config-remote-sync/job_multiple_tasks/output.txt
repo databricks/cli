@@ -8,6 +8,7 @@ Deployment complete!
 Detected changes in 1 resource(s):
 
 Resource: resources.jobs.my_job
+  tasks[task_key='new_task']: add
   tasks[task_key='task2']: remove
   tasks[task_key='task3'].depends_on[0].task_key: replace
   tasks[task_key='task3'].new_cluster.num_workers: replace
@@ -15,7 +16,7 @@ Resource: resources.jobs.my_job
 
 
 
-=== Configuration changes
+=== Configuration changes for new task
 
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
@@ -40,19 +41,20 @@ Resource: resources.jobs.my_job
 -            - task_key: task1
          - task_key: task3
            notebook_task:
-@@ -37,5 +27,6 @@
+@@ -37,5 +27,14 @@
              spark_version: 13.3.x-snapshot-scala2.12
              node_type_id: [NODE_TYPE_ID]
--            num_workers: 1
 +            num_workers: 5
-           depends_on:
--            - task_key: task3
++          depends_on:
 +            - task_key: task1
 +          timeout_seconds: 3600
-
-=== Add new task remotely
-
-=== Sync new task
-Error: failed to resolve field changes: failed to resolve selectors in path resources.jobs.my_job.tasks[task_key='new_task']: no array element found with task_key='new_task' in path resources.jobs.my_job.tasks[task_key='new_task']
-
-Exit code: 1
++        - new_cluster:
++            node_type_id: ${NODE_TYPE_ID}
+             num_workers: 1
+-          depends_on:
+-            - task_key: task3
++            spark_version: ${DEFAULT_SPARK_VERSION}
++          notebook_task:
++            notebook_path: /Users/${CURRENT_USER_NAME}/new_task
++            source: WORKSPACE
++          task_key: new_task
