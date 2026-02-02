@@ -15,40 +15,13 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 )
 
-// When a new resource is added to configuration, we apply bundle
-// settings and defaults to it. Initialization is applied only once.
-//
-// If bundle is modified outside of 'resources' section, these changes are discarded.
-func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) {
-	bundle.ApplySeqContext(
-		ctx,
-		b,
-		// Reads (typed): b.Config.RunAs, b.Config.Workspace.CurrentUser (validates run_as configuration)
-		// Reads (dynamic): run_as (checks if run_as is specified)
-		// Updates (typed): b.Config.Resources.Jobs[].RunAs (sets job run_as fields to bundle run_as; only if Experimental.UseLegacyRunAs is set)
-		// Updates (typed): range b.Config.Resources.Pipelines[].Permissions (set permission based on bundle run_as; only if Experimental.UseLegacyRunAs is set)
-		SetRunAs(),
-
-		// Reads (typed): b.Config.Bundle.{Mode,ClusterId} (checks mode and cluster ID settings)
-		// Reads (env): DATABRICKS_CLUSTER_ID (environment variable for backward compatibility)
-		// Reads (typed): b.Config.Resources.Jobs.*.Tasks.*.ForEachTask
-		// Updates (typed): b.Config.Bundle.ClusterId (sets from environment if in development mode)
-		// Updates (typed): b.Config.Resources.Jobs.*.Tasks.*.{NewCluster,ExistingClusterId,JobClusterKey,EnvironmentKey} (replaces compute settings with specified cluster ID)
-		// OR corresponding fields on ForEachTask if that is present
-		// Overrides job compute settings with a specified cluster ID for development or testing
-		OverrideCompute(),
-
-		// ApplyPresets should have more priority than defaults below, so it should be run first
-		ApplyPresets(),
-	)
-
-	if logdiag.HasError(ctx) {
-		return
-	}
-
+func GetDefaultResourceMutations(b *bundle.Bundle) []struct {
+	Pattern string
+	Value   any
+} {
 	defaults := []struct {
-		pattern string
-		value   any
+		Pattern string
+		Value   any
 	}{
 		{"resources.dashboards.*.parent_path", b.Config.Workspace.ResourcePath},
 		{"resources.dashboards.*.embed_credentials", false},
@@ -101,9 +74,43 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) {
 		{"resources.clusters.*.workload_type.clients.notebooks", true},
 		{"resources.clusters.*.workload_type.clients.jobs", true},
 	}
+	return defaults
+}
 
+// When a new resource is added to configuration, we apply bundle
+// settings and defaults to it. Initialization is applied only once.
+//
+// If bundle is modified outside of 'resources' section, these changes are discarded.
+func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) {
+	bundle.ApplySeqContext(
+		ctx,
+		b,
+		// Reads (typed): b.Config.RunAs, b.Config.Workspace.CurrentUser (validates run_as configuration)
+		// Reads (dynamic): run_as (checks if run_as is specified)
+		// Updates (typed): b.Config.Resources.Jobs[].RunAs (sets job run_as fields to bundle run_as; only if Experimental.UseLegacyRunAs is set)
+		// Updates (typed): range b.Config.Resources.Pipelines[].Permissions (set permission based on bundle run_as; only if Experimental.UseLegacyRunAs is set)
+		SetRunAs(),
+
+		// Reads (typed): b.Config.Bundle.{Mode,ClusterId} (checks mode and cluster ID settings)
+		// Reads (env): DATABRICKS_CLUSTER_ID (environment variable for backward compatibility)
+		// Reads (typed): b.Config.Resources.Jobs.*.Tasks.*.ForEachTask
+		// Updates (typed): b.Config.Bundle.ClusterId (sets from environment if in development mode)
+		// Updates (typed): b.Config.Resources.Jobs.*.Tasks.*.{NewCluster,ExistingClusterId,JobClusterKey,EnvironmentKey} (replaces compute settings with specified cluster ID)
+		// OR corresponding fields on ForEachTask if that is present
+		// Overrides job compute settings with a specified cluster ID for development or testing
+		OverrideCompute(),
+
+		// ApplyPresets should have more priority than defaults below, so it should be run first
+		ApplyPresets(),
+	)
+
+	if logdiag.HasError(ctx) {
+		return
+	}
+
+	defaults := GetDefaultResourceMutations(b)
 	for _, defaultDef := range defaults {
-		bundle.SetDefault(ctx, b, defaultDef.pattern, defaultDef.value)
+		bundle.SetDefault(ctx, b, defaultDef.Pattern, defaultDef.Value)
 		if logdiag.HasError(ctx) {
 			return
 		}
