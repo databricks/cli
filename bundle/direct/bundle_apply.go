@@ -101,7 +101,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 			}
 
 			// Get the cached StructVar to check for unresolved refs and get value
-			sv, ok := b.StructVarCache.Load(resourceKey)
+			sv, ok := b.StateCache.Load(resourceKey)
 			if !ok {
 				logdiag.LogError(ctx, fmt.Errorf("%s: internal error: missing cached StructVar", errorPrefix))
 				return false
@@ -160,7 +160,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 	}
 }
 
-func (b *DeploymentBundle) LookupReferenceRemote(ctx context.Context, path *structpath.PathNode) (any, error) {
+func (b *DeploymentBundle) LookupReferencePostDeploy(ctx context.Context, path *structpath.PathNode) (any, error) {
 	// TODO: Prefix(3) assumes resources.jobs.foo but not resources.jobs.foo.permissions
 	targetResourceKey := path.Prefix(3).String()
 	fieldPath := path.SkipPrefix(3)
