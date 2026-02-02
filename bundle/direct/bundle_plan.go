@@ -202,7 +202,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		}
 
 		if dbentry.ID == "" {
-			logdiag.LogError(ctx, fmt.Errorf("%s: invalid state empty id", errorPrefix))
+			logdiag.LogError(ctx, fmt.Errorf("%s: invalid state: empty id", errorPrefix))
 			return false
 		}
 
