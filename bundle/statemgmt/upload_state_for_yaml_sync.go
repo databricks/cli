@@ -166,7 +166,7 @@ func (m *uploadStateForYamlSync) convertState(ctx context.Context, b *bundle.Bun
 		if etag == "" {
 			continue
 		}
-		sv, ok := deploymentBundle.StructVarCache.Load(key)
+		sv, ok := deploymentBundle.StateCache.Load(key)
 		if !ok {
 			continue
 		}
