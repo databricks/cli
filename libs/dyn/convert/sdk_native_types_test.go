@@ -1,6 +1,7 @@
 package convert
 
 import (
+	"reflect"
 	"testing"
 	"time"
 
@@ -237,6 +238,67 @@ func TestToTypedErrors(t *testing.T) {
 			err := ToTyped(tt.destValue, tt.input)
 			require.Error(t, err)
 			assert.Contains(t, err.Error(), tt.expectedError)
+		})
+	}
+}
+
+func TestFromTypedVariableReferences(t *testing.T) {
+	tests := []struct {
+		name string
+		src  any
+	}{
+		{
+			name: "duration",
+			src:  *sdkduration.New(5 * time.Minute),
+		},
+		{
+			name: "time",
+			src:  *sdktime.New(time.Date(2023, 12, 25, 10, 30, 0, 0, time.UTC)),
+		},
+		{
+			name: "fieldmask",
+			src:  *sdkfieldmask.New([]string{"name", "age"}),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ref := dyn.V("${var.foo}")
+			nv, err := FromTyped(tt.src, ref)
+			require.NoError(t, err)
+			assert.Equal(t, dyn.V("${var.foo}"), nv)
+		})
+	}
+}
+
+func TestToTypedVariableReferences(t *testing.T) {
+	tests := []struct {
+		name string
+		dst  any
+		zero any
+	}{
+		{
+			name: "duration",
+			dst:  sdkduration.New(5 * time.Minute),
+			zero: sdkduration.Duration{},
+		},
+		{
+			name: "time",
+			dst:  sdktime.New(time.Date(2023, 12, 25, 10, 30, 0, 0, time.UTC)),
+			zero: sdktime.Time{},
+		},
+		{
+			name: "fieldmask",
+			dst:  sdkfieldmask.New([]string{"name", "age"}),
+			zero: sdkfieldmask.FieldMask{},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := ToTyped(tt.dst, dyn.V("${var.foo}"))
+			require.NoError(t, err)
+			assert.Equal(t, tt.zero, reflect.ValueOf(tt.dst).Elem().Interface())
 		})
 	}
 }
