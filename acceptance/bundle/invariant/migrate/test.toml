@@ -3,8 +3,3 @@ EnvMatrixExclude.no_catalog = ["INPUT_CONFIG=catalog.yml.tmpl"]
 
 # Unexpected action='create' for resources.secret_scopes.foo.permissions
 EnvMatrixExclude.no_secret_scope = ["INPUT_CONFIG=secret_scope.yml.tmpl"]
-
-# Error: cannot plan resources.database_instances.foo: invalid state empty id
-EnvMatrixExclude.no_database_instance = ["INPUT_CONFIG=database_instance.yml.tmpl"]
-EnvMatrixExclude.no_database_catalog = ["INPUT_CONFIG=database_catalog.yml.tmpl"]
-EnvMatrixExclude.no_synced_database_table = ["INPUT_CONFIG=synced_database_table.yml.tmpl"]
