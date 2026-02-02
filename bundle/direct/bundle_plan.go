@@ -281,7 +281,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			action = getMaxAction(entry.Changes)
 		}
 
-		//if action == deployplan.Skip {
+		// if action == deployplan.Skip {
 		// resource is not going to change, can use remoteState to resolve references
 		b.RemoteStateCache.Store(resourceKey, remoteState)
 		//}
