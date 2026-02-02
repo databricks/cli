@@ -8,9 +8,11 @@ Deployment complete!
 Detected changes in 2 resource(s):
 
 Resource: resources.jobs.job_one
-  max_concurrent_runs: update
+  max_concurrent_runs: replace
+
 Resource: resources.jobs.job_two
-  max_concurrent_runs: update
+  max_concurrent_runs: replace
+
 
 
 === Changes in job1.yml

@@ -8,11 +8,13 @@ Deployment complete!
 Detected changes in 2 resource(s):
 
 Resource: resources.jobs.job_one
-  max_concurrent_runs: update
-  tags: skip
+  max_concurrent_runs: replace
+  tags: add
+
 Resource: resources.jobs.job_two
-  max_concurrent_runs: update
-  tags: skip
+  max_concurrent_runs: replace
+  tags: add
+
 
 
 === Configuration changes
