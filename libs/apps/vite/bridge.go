@@ -410,6 +410,15 @@ func (vb *Bridge) handleMessage(msg *BridgeMessage) error {
 		}(*msg)
 		return nil
 
+	case "dir:list":
+		// Handle directory list requests in parallel
+		go func(dirListMsg BridgeMessage) {
+			if err := vb.handleDirListRequest(&dirListMsg); err != nil {
+				log.Errorf(vb.ctx, "[vite_bridge] Error handling dir list request for %s: %v", dirListMsg.Path, err)
+			}
+		}(*msg)
+		return nil
+
 	case "hmr:message":
 		return vb.handleHMRMessage(msg)
 
@@ -596,6 +605,88 @@ func (vb *Bridge) handleFileReadRequest(msg *BridgeMessage) error {
 	return nil
 }
 
+func (vb *Bridge) handleDirListRequest(msg *BridgeMessage) error {
+	log.Debugf(vb.ctx, "[vite_bridge] Dir list request: %s", msg.Path)
+
+	if err := ValidateDirPath(msg.Path); err != nil {
+		log.Warnf(vb.ctx, "[vite_bridge] Dir validation failed for %s: %v", msg.Path, err)
+		return vb.sendDirListError(msg.RequestID, fmt.Sprintf("Invalid directory path: %v", err))
+	}
+
+	entries, err := os.ReadDir(msg.Path)
+
+	response := BridgeMessage{
+		Type:      "dir:list:response",
+		RequestID: msg.RequestID,
+	}
+
+	if err != nil {
+		log.Errorf(vb.ctx, "[vite_bridge] Failed to read directory %s: %v", msg.Path, err)
+		response.Error = err.Error()
+	} else {
+		files := make([]string, 0, len(entries))
+		for _, entry := range entries {
+			if !entry.IsDir() && filepath.Ext(entry.Name()) == allowedExtension {
+				files = append(files, entry.Name())
+			}
+		}
+		log.Debugf(vb.ctx, "[vite_bridge] Listed directory %s (%d SQL files)", msg.Path, len(files))
+		// Client expects files as JSON string in content field
+		filesJSON, err := json.Marshal(files)
+		if err != nil {
+			log.Errorf(vb.ctx, "[vite_bridge] Failed to marshal file list: %v", err)
+			response.Error = fmt.Sprintf("Failed to marshal file list: %v", err)
+		} else {
+			response.Content = string(filesJSON)
+		}
+	}
+
+	responseData, err := json.Marshal(response)
+	if err != nil {
+		return fmt.Errorf("failed to marshal dir list response: %w", err)
+	}
+
+	log.Debugf(vb.ctx, "[vite_bridge] Sending dir list response: %s", string(responseData))
+
+	select {
+	case vb.tunnelWriteChan <- prioritizedMessage{
+		messageType: websocket.TextMessage,
+		data:        responseData,
+		priority:    1,
+	}:
+		log.Debugf(vb.ctx, "[vite_bridge] Dir list response sent successfully")
+	case <-time.After(wsWriteTimeout):
+		return errors.New("timeout sending dir list response")
+	}
+
+	return nil
+}
+
+func (vb *Bridge) sendDirListError(requestID, errMsg string) error {
+	response := BridgeMessage{
+		Type:      "dir:list:response",
+		RequestID: requestID,
+		Error:     errMsg,
+	}
+
+	responseData, err := json.Marshal(response)
+	if err != nil {
+		return fmt.Errorf("failed to marshal dir list error response: %w", err)
+	}
+
+	select {
+	case vb.tunnelWriteChan <- prioritizedMessage{
+		messageType: websocket.TextMessage,
+		data:        responseData,
+		priority:    1,
+	}:
+	case <-time.After(wsWriteTimeout):
+		return errors.New("timeout sending dir list error response")
+	}
+
+	return nil
+}
+
 func ValidateFilePath(requestedPath string) error {
 	// Clean the path to resolve any ../ or ./ components
 	cleanPath := filepath.Clean(requestedPath)
@@ -630,6 +721,50 @@ func ValidateFilePath(requestedPath string) error {
 	// Additional check: no hidden files
 	if strings.HasPrefix(filepath.Base(absPath), ".") {
 		return errors.New("hidden files are not allowed")
+	}
+
+	return nil
+}
+
+// ValidateDirPath validates that a directory path is within the allowed directory.
+func ValidateDirPath(requestedPath string) error {
+	// Clean the path to resolve any ../ or ./ components
+	cleanPath := filepath.Clean(requestedPath)
+
+	// Get absolute path
+	absPath, err := filepath.Abs(cleanPath)
+	if err != nil {
+		return fmt.Errorf("failed to resolve absolute path: %w", err)
+	}
+
+	// Get the working directory
+	cwd, err := os.Getwd()
+	if err != nil {
+		return fmt.Errorf("failed to get working directory: %w", err)
+	}
+
+	// Construct the allowed base directory (absolute path)
+	allowedDir := filepath.Join(cwd, allowedBasePath)
+
+	// Ensure the resolved path is within the allowed directory
+	// Add trailing separator to prevent prefix attacks (e.g., queries-malicious/)
+	allowedDirWithSep := allowedDir + string(filepath.Separator)
+	if absPath != allowedDir && !strings.HasPrefix(absPath, allowedDirWithSep) {
+		return fmt.Errorf("path %s is outside allowed directory %s", absPath, allowedBasePath)
+	}
+
+	// Additional check: no hidden directories
+	if strings.HasPrefix(filepath.Base(absPath), ".") {
+		return errors.New("hidden directories are not allowed")
+	}
+
+	// Verify it's actually a directory
+	info, err := os.Stat(absPath)
+	if err != nil {
+		return fmt.Errorf("failed to stat path: %w", err)
+	}
+	if !info.IsDir() {
+		return fmt.Errorf("path %s is not a directory", requestedPath)
 	}
 
 	return nil
