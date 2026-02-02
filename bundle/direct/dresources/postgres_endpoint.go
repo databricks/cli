@@ -53,7 +53,7 @@ func (*ResourcePostgresEndpoint) RemapState(remote *postgres.Endpoint) *Postgres
 
 	// The read API does not return the spec, only the status.
 	// This means we cannot detect remote drift for spec fields.
-	spec := &postgres.EndpointSpec{}
+	var spec *postgres.EndpointSpec
 
 	return &PostgresEndpointState{
 		Parent:     remote.Parent,
@@ -112,6 +112,15 @@ func (r *ResourcePostgresEndpoint) DoCreate(ctx context.Context, config *Postgre
 		Parent:     parent,
 		Endpoint: postgres.Endpoint{
 			Spec: config.Spec,
+
+			// Output-only fields.
+			CreateTime:      nil,
+			Name:            "",
+			Parent:          "",
+			Status:          nil,
+			Uid:             "",
+			UpdateTime:      nil,
+			ForceSendFields: nil,
 		},
 	})
 	if err != nil {
@@ -140,8 +149,16 @@ func (r *ResourcePostgresEndpoint) DoUpdate(ctx context.Context, id string, conf
 
 	waiter, err := r.client.Postgres.UpdateEndpoint(ctx, postgres.UpdateEndpointRequest{
 		Endpoint: postgres.Endpoint{
-			Name: id,
 			Spec: config.Spec,
+
+			// Output-only fields.
+			CreateTime:      nil,
+			Name:            "",
+			Parent:          "",
+			Status:          nil,
+			Uid:             "",
+			UpdateTime:      nil,
+			ForceSendFields: nil,
 		},
 		Name: id,
 		UpdateMask: fieldmask.FieldMask{

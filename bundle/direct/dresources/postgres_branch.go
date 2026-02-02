@@ -47,7 +47,7 @@ func (*ResourcePostgresBranch) RemapState(remote *postgres.Branch) *PostgresBran
 
 	// The read API does not return the spec, only the status.
 	// This means we cannot detect remote drift for spec fields.
-	spec := &postgres.BranchSpec{}
+	var spec *postgres.BranchSpec
 
 	return &PostgresBranchState{
 		Parent:   remote.Parent,
@@ -76,6 +76,15 @@ func (r *ResourcePostgresBranch) DoCreate(ctx context.Context, config *PostgresB
 		Parent:   parent,
 		Branch: postgres.Branch{
 			Spec: config.Spec,
+
+			// Output-only fields.
+			CreateTime:      nil,
+			Name:            "",
+			Parent:          "",
+			Status:          nil,
+			Uid:             "",
+			UpdateTime:      nil,
+			ForceSendFields: nil,
 		},
 	})
 	if err != nil {
@@ -98,8 +107,16 @@ func (r *ResourcePostgresBranch) DoUpdate(ctx context.Context, id string, config
 
 	waiter, err := r.client.Postgres.UpdateBranch(ctx, postgres.UpdateBranchRequest{
 		Branch: postgres.Branch{
-			Name: id,
 			Spec: config.Spec,
+
+			// Output-only fields.
+			CreateTime:      nil,
+			Name:            "",
+			Parent:          "",
+			Status:          nil,
+			Uid:             "",
+			UpdateTime:      nil,
+			ForceSendFields: nil,
 		},
 		Name: id,
 		UpdateMask: fieldmask.FieldMask{

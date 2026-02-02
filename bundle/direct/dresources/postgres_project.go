@@ -39,7 +39,7 @@ func (*ResourcePostgresProject) RemapState(remote *postgres.Project) *PostgresPr
 
 	// The read API does not return the spec, only the status.
 	// This means we cannot detect remote drift for spec fields.
-	spec := &postgres.ProjectSpec{}
+	var spec *postgres.ProjectSpec
 
 	return &PostgresProjectState{
 		Spec:      spec,
@@ -61,6 +61,14 @@ func (r *ResourcePostgresProject) DoCreate(ctx context.Context, config *Postgres
 		ProjectId: projectId,
 		Project: postgres.Project{
 			Spec: config.Spec,
+
+			// Output-only fields.
+			CreateTime:      nil,
+			Name:            "",
+			Status:          nil,
+			Uid:             "",
+			UpdateTime:      nil,
+			ForceSendFields: nil,
 		},
 	})
 	if err != nil {
@@ -83,8 +91,15 @@ func (r *ResourcePostgresProject) DoUpdate(ctx context.Context, id string, confi
 
 	waiter, err := r.client.Postgres.UpdateProject(ctx, postgres.UpdateProjectRequest{
 		Project: postgres.Project{
-			Name: id,
 			Spec: config.Spec,
+
+			// Output-only fields.
+			CreateTime:      nil,
+			Name:            "",
+			Status:          nil,
+			Uid:             "",
+			UpdateTime:      nil,
+			ForceSendFields: nil,
 		},
 		Name: id,
 		UpdateMask: fieldmask.FieldMask{
