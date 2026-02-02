@@ -158,26 +158,7 @@ func TestFieldMaskRoundtrip(t *testing.T) {
 
 // Edge case tests
 
-func TestNilValuesFromTyped(t *testing.T) {
-	tests := []struct {
-		name string
-		src  any
-	}{
-		{"duration", (*sdkduration.Duration)(nil)},
-		{"time", (*sdktime.Time)(nil)},
-		{"fieldmask", (*sdkfieldmask.FieldMask)(nil)},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			nv, err := FromTyped(tt.src, dyn.NilValue)
-			require.NoError(t, err)
-			assert.Equal(t, dyn.NilValue, nv)
-		})
-	}
-}
-
-func TestNilValuesNormalize(t *testing.T) {
+func TestNilValues(t *testing.T) {
 	tests := []struct {
 		name string
 		typ  any
@@ -187,15 +168,27 @@ func TestNilValuesNormalize(t *testing.T) {
 		{"fieldmask", (*sdkfieldmask.FieldMask)(nil)},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			vout, diags := Normalize(tt.typ, dyn.NilValue)
-			assert.Len(t, diags, 1)
-			assert.Equal(t, diag.Warning, diags[0].Severity)
-			assert.Equal(t, `expected a string value, found null`, diags[0].Summary)
-			assert.Equal(t, dyn.InvalidValue, vout)
-		})
-	}
+	t.Run("from_typed", func(t *testing.T) {
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				nv, err := FromTyped(tt.typ, dyn.NilValue)
+				require.NoError(t, err)
+				assert.Equal(t, dyn.NilValue, nv)
+			})
+		}
+	})
+
+	t.Run("normalize", func(t *testing.T) {
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				vout, diags := Normalize(tt.typ, dyn.NilValue)
+				assert.Len(t, diags, 1)
+				assert.Equal(t, diag.Warning, diags[0].Severity)
+				assert.Equal(t, `expected a string value, found null`, diags[0].Summary)
+				assert.Equal(t, dyn.InvalidValue, vout)
+			})
+		}
+	})
 }
 
 func TestToTypedErrors(t *testing.T) {
