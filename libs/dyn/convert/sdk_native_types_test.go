@@ -159,97 +159,93 @@ func TestFieldMaskRoundtrip(t *testing.T) {
 // Edge case tests
 
 func TestNilValuesFromTyped(t *testing.T) {
-	t.Run("duration", func(t *testing.T) {
-		var src *sdkduration.Duration
-		nv, err := FromTyped(src, dyn.NilValue)
-		require.NoError(t, err)
-		assert.Equal(t, dyn.NilValue, nv)
-	})
+	tests := []struct {
+		name string
+		src  any
+	}{
+		{"duration", (*sdkduration.Duration)(nil)},
+		{"time", (*sdktime.Time)(nil)},
+		{"fieldmask", (*sdkfieldmask.FieldMask)(nil)},
+	}
 
-	t.Run("time", func(t *testing.T) {
-		var src *sdktime.Time
-		nv, err := FromTyped(src, dyn.NilValue)
-		require.NoError(t, err)
-		assert.Equal(t, dyn.NilValue, nv)
-	})
-
-	t.Run("fieldmask", func(t *testing.T) {
-		var src *sdkfieldmask.FieldMask
-		nv, err := FromTyped(src, dyn.NilValue)
-		require.NoError(t, err)
-		assert.Equal(t, dyn.NilValue, nv)
-	})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			nv, err := FromTyped(tt.src, dyn.NilValue)
+			require.NoError(t, err)
+			assert.Equal(t, dyn.NilValue, nv)
+		})
+	}
 }
 
 func TestNilValuesNormalize(t *testing.T) {
-	t.Run("duration", func(t *testing.T) {
-		var typ *sdkduration.Duration
-		vin := dyn.NilValue
-		vout, diags := Normalize(typ, vin)
-		assert.Len(t, diags, 1)
-		assert.Equal(t, diag.Warning, diags[0].Severity)
-		assert.Equal(t, `expected a string value, found null`, diags[0].Summary)
-		assert.Equal(t, dyn.InvalidValue, vout)
-	})
+	tests := []struct {
+		name string
+		typ  any
+	}{
+		{"duration", (*sdkduration.Duration)(nil)},
+		{"time", (*sdktime.Time)(nil)},
+		{"fieldmask", (*sdkfieldmask.FieldMask)(nil)},
+	}
 
-	t.Run("time", func(t *testing.T) {
-		var typ *sdktime.Time
-		vin := dyn.NilValue
-		vout, diags := Normalize(typ, vin)
-		assert.Len(t, diags, 1)
-		assert.Equal(t, diag.Warning, diags[0].Severity)
-		assert.Equal(t, `expected a string value, found null`, diags[0].Summary)
-		assert.Equal(t, dyn.InvalidValue, vout)
-	})
-
-	t.Run("fieldmask", func(t *testing.T) {
-		var typ *sdkfieldmask.FieldMask
-		vin := dyn.NilValue
-		vout, diags := Normalize(typ, vin)
-		assert.Len(t, diags, 1)
-		assert.Equal(t, diag.Warning, diags[0].Severity)
-		assert.Equal(t, `expected a string value, found null`, diags[0].Summary)
-		assert.Equal(t, dyn.InvalidValue, vout)
-	})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			vout, diags := Normalize(tt.typ, dyn.NilValue)
+			assert.Len(t, diags, 1)
+			assert.Equal(t, diag.Warning, diags[0].Severity)
+			assert.Equal(t, `expected a string value, found null`, diags[0].Summary)
+			assert.Equal(t, dyn.InvalidValue, vout)
+		})
+	}
 }
 
 func TestToTypedErrors(t *testing.T) {
 	wrongTypeInput := dyn.V(map[string]dyn.Value{"foo": dyn.V("bar")})
 
-	t.Run("duration_wrong_type", func(t *testing.T) {
-		var out sdkduration.Duration
-		err := ToTyped(&out, wrongTypeInput)
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "expected a string")
-	})
+	tests := []struct {
+		name          string
+		destValue     any
+		input         dyn.Value
+		expectedError string
+	}{
+		{
+			name:          "duration_wrong_type",
+			destValue:     new(sdkduration.Duration),
+			input:         wrongTypeInput,
+			expectedError: "expected a string",
+		},
+		{
+			name:          "duration_invalid_format",
+			destValue:     new(sdkduration.Duration),
+			input:         dyn.V("7d"),
+			expectedError: "invalid google.protobuf.Duration value",
+		},
+		{
+			name:          "time_wrong_type",
+			destValue:     new(sdktime.Time),
+			input:         wrongTypeInput,
+			expectedError: "expected a string",
+		},
+		{
+			name:          "time_invalid_format",
+			destValue:     new(sdktime.Time),
+			input:         dyn.V("not-a-time"),
+			expectedError: "invalid google.protobuf.Timestamp value",
+		},
+		{
+			name:          "fieldmask_wrong_type",
+			destValue:     new(sdkfieldmask.FieldMask),
+			input:         wrongTypeInput,
+			expectedError: "expected a string",
+		},
+	}
 
-	t.Run("duration_invalid_format", func(t *testing.T) {
-		var out sdkduration.Duration
-		err := ToTyped(&out, dyn.V("7d"))
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "invalid google.protobuf.Duration value")
-	})
-
-	t.Run("time_wrong_type", func(t *testing.T) {
-		var out sdktime.Time
-		err := ToTyped(&out, wrongTypeInput)
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "expected a string")
-	})
-
-	t.Run("time_invalid_format", func(t *testing.T) {
-		var out sdktime.Time
-		err := ToTyped(&out, dyn.V("not-a-time"))
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "invalid google.protobuf.Timestamp value")
-	})
-
-	t.Run("fieldmask_wrong_type", func(t *testing.T) {
-		var out sdkfieldmask.FieldMask
-		err := ToTyped(&out, wrongTypeInput)
-		require.Error(t, err)
-		assert.Contains(t, err.Error(), "expected a string")
-	})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := ToTyped(tt.destValue, tt.input)
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), tt.expectedError)
+		})
+	}
 }
 
 func TestSpecialCases(t *testing.T) {
