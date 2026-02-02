@@ -1,0 +1,7 @@
+# Without --strict, warnings don't cause exit code 1
+trace $CLI bundle validate
+
+# With --strict, warnings cause exit code 1
+errcode trace $CLI bundle validate --strict
+
+errcode trace $CLI bundle validate --strict -t bar

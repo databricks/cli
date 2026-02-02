@@ -643,8 +643,10 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	p, err := structpath.Parse("name")
 	require.NoError(t, err)
 
-	err = adapter.OverrideChangeDesc(ctx, p, &deployplan.ChangeDesc{}, nil)
-	require.NoError(t, err)
+	if adapter.HasOverrideChangeDesc() {
+		err = adapter.OverrideChangeDesc(ctx, p, &deployplan.ChangeDesc{}, nil)
+		require.NoError(t, err)
+	}
 
 	deleteIsNoop := strings.HasSuffix(group, "permissions") || strings.HasSuffix(group, "grants")
 

@@ -1,0 +1,5 @@
+Warning: unknown field: unknown_attribute
+  in src/my_pipeline/spark-pipeline.yml:2:1
+
+Generated pipeline configuration: resources/my_pipeline.pipeline.yml
+

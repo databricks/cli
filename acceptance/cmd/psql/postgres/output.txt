@@ -1,0 +1,91 @@
+
+=== Test should use a fake psql command:
+>>> psql --version
+echo-arguments.sh was called with the following arguments: --version
+PGPASSWORD=
+PGSSLMODE=
+
+=== Full endpoint path should connect to the endpoint:
+>>> [CLI] psql projects/my-project/branches/main/endpoints/primary
+Project: My Project
+Branch: main
+Endpoint: primary
+Connecting to read-write endpoint...
+echo-arguments.sh was called with the following arguments: --host=my-endpoint.postgres.example.com --username=[USERNAME] --port=5432 --dbname=databricks_postgres
+PGPASSWORD=postgres-secret-token
+PGSSLMODE=require
+
+=== Project flag with auto-selection should connect:
+>>> [CLI] psql --project auto-project
+Project: Auto Project
+Branch: default-branch
+Endpoint: read-write-ep
+Connecting to read-write endpoint...
+echo-arguments.sh was called with the following arguments: --host=auto-endpoint.postgres.example.com --username=[USERNAME] --port=5432 --dbname=databricks_postgres
+PGPASSWORD=postgres-secret-token
+PGSSLMODE=require
+
+=== Project and branch flags should connect:
+>>> [CLI] psql --project explicit-project --branch explicit-branch
+Project: Explicit Project
+Branch: explicit-branch
+Endpoint: main-ep
+Connecting to read-write endpoint (idle, waking up)...
+echo-arguments.sh was called with the following arguments: --host=explicit-endpoint.postgres.example.com --username=[USERNAME] --port=5432 --dbname=databricks_postgres
+PGPASSWORD=postgres-secret-token
+PGSSLMODE=require
+
+=== Project, branch, and endpoint flags should connect:
+>>> [CLI] psql --project explicit-project --branch explicit-branch --endpoint main-ep
+Project: Explicit Project
+Branch: explicit-branch
+Endpoint: main-ep
+Connecting to read-write endpoint (idle, waking up)...
+echo-arguments.sh was called with the following arguments: --host=explicit-endpoint.postgres.example.com --username=[USERNAME] --port=5432 --dbname=databricks_postgres
+PGPASSWORD=postgres-secret-token
+PGSSLMODE=require
+
+=== Endpoint in INIT state should fail:
+>>> musterr [CLI] psql projects/init-project/branches/main/endpoints/init-ep
+Project: Init Project
+Branch: main
+Endpoint: init-ep
+Error: endpoint is not ready for accepting connections
+
+=== Branch flag without project should fail:
+>>> musterr [CLI] psql --branch some-branch
+Error: --project is required when using --branch or --endpoint
+
+=== Endpoint flag without project should fail:
+>>> musterr [CLI] psql --endpoint some-endpoint
+Error: --project is required when using --branch or --endpoint
+
+=== Extra arguments should be passed through with full path:
+>>> [CLI] psql projects/my-project/branches/main/endpoints/primary -- -c SELECT 1
+Project: My Project
+Branch: main
+Endpoint: primary
+Connecting to read-write endpoint...
+echo-arguments.sh was called with the following arguments: --host=my-endpoint.postgres.example.com --username=[USERNAME] --port=5432 --dbname=databricks_postgres -c SELECT 1
+PGPASSWORD=postgres-secret-token
+PGSSLMODE=require
+
+=== Extra arguments should be passed through with project flag:
+>>> [CLI] psql --project auto-project -- --echo-all -d my-db
+Project: Auto Project
+Branch: default-branch
+Endpoint: read-write-ep
+Connecting to read-write endpoint...
+echo-arguments.sh was called with the following arguments: --host=auto-endpoint.postgres.example.com --username=[USERNAME] --port=5432 --echo-all -d my-db
+PGPASSWORD=postgres-secret-token
+PGSSLMODE=require
+
+=== No retries with max-retries 0:
+>>> [CLI] psql --project auto-project --max-retries 0
+Project: Auto Project
+Branch: default-branch
+Endpoint: read-write-ep
+Connecting to read-write endpoint...
+echo-arguments.sh was called with the following arguments: --host=auto-endpoint.postgres.example.com --username=[USERNAME] --port=5432 --dbname=databricks_postgres
+PGPASSWORD=postgres-secret-token
+PGSSLMODE=require

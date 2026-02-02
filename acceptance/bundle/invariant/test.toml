@@ -36,3 +36,15 @@ EnvMatrix.INPUT_CONFIG = [
     "synced_database_table.yml.tmpl",
     "volume.yml.tmpl",
 ]
+
+[EnvMatrixExclude]
+no_alert_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=alert.yml.tmpl"]
+
+# Fake SQL endpoint for local tests
+[[Server]]
+Pattern = "POST /api/2.0/sql/statements/"
+Response.Body = '{"status": {"state": "SUCCEEDED"}, "manifest": {"schema": {"columns": []}}}'
+
+[[Server]]
+Pattern = "DELETE /api/2.1/unity-catalog/tables/{name}"
+Response.Body = '{"status": "OK"}'

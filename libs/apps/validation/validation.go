@@ -51,9 +51,14 @@ func (vr *ValidateResult) String() string {
 	return result
 }
 
+// ValidateOptions configures validation behavior.
+type ValidateOptions struct {
+	SkipTests bool // Skip running tests for faster validation
+}
+
 // Validation defines the interface for project validation strategies.
 type Validation interface {
-	Validate(ctx context.Context, workDir string) (*ValidateResult, error)
+	Validate(ctx context.Context, workDir string, opts ValidateOptions) (*ValidateResult, error)
 }
 
 // GetProjectValidator returns the appropriate validator based on project type.

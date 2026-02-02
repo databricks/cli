@@ -37,7 +37,7 @@
       "changes": {
         "run_as": {
           "action": "skip",
-          "reason": "override",
+          "reason": "builtin_rule",
           "old": {
             "service_principal_name": "[UUID]"
           },

@@ -14,6 +14,7 @@ import (
 	"github.com/charmbracelet/huh"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/apps/features"
+	"github.com/databricks/cli/libs/apps/initializer"
 	"github.com/databricks/cli/libs/apps/prompt"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
@@ -80,15 +81,19 @@ Environment variables:
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 			return runCreate(ctx, createOptions{
-				templatePath: templatePath,
-				branch:       branch,
-				name:         name,
-				warehouseID:  warehouseID,
-				description:  description,
-				outputDir:    outputDir,
-				features:     featuresFlag,
-				deploy:       deploy,
-				run:          run,
+				templatePath:    templatePath,
+				branch:          branch,
+				name:            name,
+				nameProvided:    cmd.Flags().Changed("name"),
+				warehouseID:     warehouseID,
+				description:     description,
+				outputDir:       outputDir,
+				features:        featuresFlag,
+				deploy:          deploy,
+				deployChanged:   cmd.Flags().Changed("deploy"),
+				run:             run,
+				runChanged:      cmd.Flags().Changed("run"),
+				featuresChanged: cmd.Flags().Changed("features"),
 			})
 		},
 	}
@@ -107,15 +112,19 @@ Environment variables:
 }
 
 type createOptions struct {
-	templatePath string
-	branch       string
-	name         string
-	warehouseID  string
-	description  string
-	outputDir    string
-	features     []string
-	deploy       bool
-	run          string
+	templatePath    string
+	branch          string
+	name            string
+	nameProvided    bool // true if --name flag was explicitly set (enables "flags mode")
+	warehouseID     string
+	description     string
+	outputDir       string
+	features        []string
+	deploy          bool
+	deployChanged   bool // true if --deploy flag was explicitly set
+	run             string
+	runChanged      bool // true if --run flag was explicitly set
+	featuresChanged bool // true if --features flag was explicitly set
 }
 
 // templateVars holds the variables for template substitution.
@@ -170,7 +179,8 @@ func parseDeployAndRunFlags(deploy bool, run string) (bool, prompt.RunMode, erro
 
 // promptForFeaturesAndDeps prompts for features and their dependencies.
 // Used when the template uses the feature-fragment system.
-func promptForFeaturesAndDeps(ctx context.Context, preSelectedFeatures []string) (*prompt.CreateProjectConfig, error) {
+// skipDeployRunPrompt indicates whether to skip prompting for deploy/run (because flags were provided).
+func promptForFeaturesAndDeps(ctx context.Context, preSelectedFeatures []string, skipDeployRunPrompt bool) (*prompt.CreateProjectConfig, error) {
 	config := &prompt.CreateProjectConfig{
 		Dependencies: make(map[string]string),
 		Features:     preSelectedFeatures,
@@ -260,10 +270,12 @@ func promptForFeaturesAndDeps(ctx context.Context, preSelectedFeatures []string)
 	}
 	prompt.PrintAnswered(ctx, "Description", config.Description)
 
-	// Step 4: Deploy and run options
-	config.Deploy, config.RunMode, err = prompt.PromptForDeployAndRun(ctx)
-	if err != nil {
-		return nil, err
+	// Step 4: Deploy and run options (skip if any deploy/run flag was provided)
+	if !skipDeployRunPrompt {
+		config.Deploy, config.RunMode, err = prompt.PromptForDeployAndRun(ctx)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return config, nil
@@ -474,11 +486,17 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	// Step 3: Determine template type and gather configuration
 	usesFeatureFragments := features.HasFeaturesDirectory(templateDir)
 
+	// When --name is provided, user is in "flags mode" - use defaults instead of prompting
+	flagsMode := opts.nameProvided
+
 	if usesFeatureFragments {
 		// Feature-fragment template: prompt for features and their dependencies
-		if isInteractive && len(selectedFeatures) == 0 {
-			// Need to prompt for features (but we already have the name)
-			config, err := promptForFeaturesAndDeps(ctx, selectedFeatures)
+		// Skip deploy/run prompts if in flags mode or if deploy/run flags were explicitly set
+		skipDeployRunPrompt := flagsMode || opts.deployChanged || opts.runChanged
+
+		if isInteractive && !opts.featuresChanged && !flagsMode {
+			// Interactive mode without --features flag: prompt for features, dependencies, description
+			config, err := promptForFeaturesAndDeps(ctx, selectedFeatures, skipDeployRunPrompt)
 			if err != nil {
 				return err
 			}
@@ -487,15 +505,18 @@ func runCreate(ctx context.Context, opts createOptions) error {
 			if config.Description != "" {
 				opts.description = config.Description
 			}
-			shouldDeploy = config.Deploy
-			runMode = config.RunMode
+			// Use prompted values for deploy/run (only set if we prompted)
+			if !skipDeployRunPrompt {
+				shouldDeploy = config.Deploy
+				runMode = config.RunMode
+			}
 
 			// Get warehouse from dependencies if provided
 			if wh, ok := dependencies["sql_warehouse_id"]; ok && wh != "" {
 				opts.warehouseID = wh
 			}
-		} else {
-			// Non-interactive or features provided via flag
+		} else if isInteractive && opts.featuresChanged && !flagsMode {
+			// Interactive mode with --features flag: validate features, prompt for deploy/run if no flags
 			flagValues := map[string]string{
 				"warehouse-id": opts.warehouseID,
 			}
@@ -508,6 +529,33 @@ func runCreate(ctx context.Context, opts createOptions) error {
 			if opts.warehouseID != "" {
 				dependencies["sql_warehouse_id"] = opts.warehouseID
 			}
+
+			// Prompt for deploy/run if no flags were set
+			if !skipDeployRunPrompt {
+				var err error
+				shouldDeploy, runMode, err = prompt.PromptForDeployAndRun(ctx)
+				if err != nil {
+					return err
+				}
+			}
+		} else {
+			// Flags mode or non-interactive: validate features and use flag values
+			flagValues := map[string]string{
+				"warehouse-id": opts.warehouseID,
+			}
+			if len(selectedFeatures) > 0 {
+				if err := features.ValidateFeatureDependencies(selectedFeatures, flagValues); err != nil {
+					return err
+				}
+			}
+			dependencies = make(map[string]string)
+			if opts.warehouseID != "" {
+				dependencies["sql_warehouse_id"] = opts.warehouseID
+			}
+		}
+
+		// Apply flag values for deploy/run when in flags mode, flags were explicitly set, or non-interactive
+		if skipDeployRunPrompt || !isInteractive {
 			var err error
 			shouldDeploy, runMode, err = parseDeployAndRunFlags(opts.deploy, opts.run)
 			if err != nil {
@@ -562,11 +610,13 @@ func runCreate(ctx context.Context, opts createOptions) error {
 			}
 		}
 
-		// Prompt for description and post-creation actions
-		if isInteractive {
-			if opts.description == "" {
-				opts.description = prompt.DefaultAppDescription
-			}
+		// Set default description if not provided
+		if opts.description == "" {
+			opts.description = prompt.DefaultAppDescription
+		}
+
+		// Only prompt for deploy/run if not in flags mode and no deploy/run flags were set
+		if isInteractive && !flagsMode && !opts.deployChanged && !opts.runChanged {
 			var deployVal bool
 			var runVal prompt.RunMode
 			deployVal, runVal, err = prompt.PromptForDeployAndRun(ctx)
@@ -576,6 +626,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 			shouldDeploy = deployVal
 			runMode = runVal
 		} else {
+			// Flags mode or explicit flags: use flag values (or defaults if not set)
 			var err error
 			shouldDeploy, runMode, err = parseDeployAndRunFlags(opts.deploy, opts.run)
 			if err != nil {
@@ -659,21 +710,34 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		return runErr
 	}
 
-	// Run npm install
-	runErr = runNpmInstall(ctx, absOutputDir)
-	if runErr != nil {
-		return runErr
+	// Initialize project based on type (Node.js, Python, etc.)
+	var nextStepsCmd string
+	projectInitializer := initializer.GetProjectInitializer(absOutputDir)
+	if projectInitializer != nil {
+		result := projectInitializer.Initialize(ctx, absOutputDir)
+		if !result.Success {
+			if result.Error != nil {
+				return fmt.Errorf("%s: %w", result.Message, result.Error)
+			}
+			return errors.New(result.Message)
+		}
+		nextStepsCmd = projectInitializer.NextSteps()
 	}
 
-	// Run npm run setup
-	runErr = runNpmSetup(ctx, absOutputDir)
-	if runErr != nil {
-		return runErr
+	// Validate dev-remote is only supported for appkit projects
+	if runMode == prompt.RunModeDevRemote {
+		if projectInitializer == nil || !projectInitializer.SupportsDevRemote() {
+			return errors.New("--run=dev-remote is only supported for Node.js projects with @databricks/appkit")
+		}
 	}
 
 	// Show next steps only if user didn't choose to deploy or run
 	showNextSteps := !shouldDeploy && runMode == prompt.RunModeNone
-	prompt.PrintSuccess(ctx, opts.name, absOutputDir, fileCount, showNextSteps)
+	if showNextSteps {
+		prompt.PrintSuccess(ctx, opts.name, absOutputDir, fileCount, nextStepsCmd)
+	} else {
+		prompt.PrintSuccess(ctx, opts.name, absOutputDir, fileCount, "")
+	}
 
 	// Execute post-creation actions (deploy and/or run)
 	if shouldDeploy || runMode != prompt.RunModeNone {
@@ -694,7 +758,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 
 	if runMode != prompt.RunModeNone {
 		cmdio.LogString(ctx, "")
-		if err := runPostCreateDev(ctx, runMode); err != nil {
+		if err := runPostCreateDev(ctx, runMode, projectInitializer, absOutputDir); err != nil {
 			return err
 		}
 	}
@@ -716,15 +780,15 @@ func runPostCreateDeploy(ctx context.Context) error {
 }
 
 // runPostCreateDev runs the dev or dev-remote command in the current directory.
-func runPostCreateDev(ctx context.Context, mode prompt.RunMode) error {
+func runPostCreateDev(ctx context.Context, mode prompt.RunMode, projectInit initializer.Initializer, workDir string) error {
 	switch mode {
 	case prompt.RunModeDev:
-		cmdio.LogString(ctx, "Starting development server (npm run dev)...")
-		cmd := exec.CommandContext(ctx, "npm", "run", "dev")
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
-		cmd.Stdin = os.Stdin
-		return cmd.Run()
+		if projectInit != nil {
+			return projectInit.RunDev(ctx, workDir)
+		}
+		// Fallback for unknown project types
+		cmdio.LogString(ctx, "⚠ Unknown project type, cannot start development server automatically")
+		return nil
 	case prompt.RunModeDevRemote:
 		cmdio.LogString(ctx, "Starting remote development server...")
 		executable, err := os.Executable()
@@ -739,39 +803,6 @@ func runPostCreateDev(ctx context.Context, mode prompt.RunMode) error {
 	default:
 		return nil
 	}
-}
-
-// runNpmInstall runs npm install in the project directory.
-func runNpmInstall(ctx context.Context, projectDir string) error {
-	// Check if npm is available
-	if _, err := exec.LookPath("npm"); err != nil {
-		cmdio.LogString(ctx, "⚠ npm not found. Please install Node.js and run 'npm install' manually.")
-		return nil
-	}
-
-	return prompt.RunWithSpinnerCtx(ctx, "Installing dependencies...", func() error {
-		cmd := exec.CommandContext(ctx, "npm", "install")
-		cmd.Dir = projectDir
-		cmd.Stdout = nil // Suppress output
-		cmd.Stderr = nil
-		return cmd.Run()
-	})
-}
-
-// runNpmSetup runs npx appkit-setup in the project directory.
-func runNpmSetup(ctx context.Context, projectDir string) error {
-	// Check if npx is available
-	if _, err := exec.LookPath("npx"); err != nil {
-		return nil
-	}
-
-	return prompt.RunWithSpinnerCtx(ctx, "Running setup...", func() error {
-		cmd := exec.CommandContext(ctx, "npx", "appkit-setup", "--write")
-		cmd.Dir = projectDir
-		cmd.Stdout = nil // Suppress output
-		cmd.Stderr = nil
-		return cmd.Run()
-	})
 }
 
 // renameFiles maps source file names to destination names (for files that can't use special chars).

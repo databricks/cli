@@ -42,6 +42,9 @@ const resourcesFilename = "resources.json"
 // Filename where resources are stored for DATABRICKS_BUNDLE_ENGINE=terraform
 const terraformStateFilename = "terraform.tfstate"
 
+// Filename where config snapshot is stored for experimental YAML sync
+const configSnapshotFilename = "resources-config-sync-snapshot.json"
+
 // This struct is used as a communication channel to collect metrics
 // from all over the bundle codebase to finally be emitted as telemetry.
 type Metrics struct {
@@ -343,4 +346,9 @@ func (b *Bundle) StateFilenameDirect(ctx context.Context) (string, string) {
 
 func (b *Bundle) StateFilenameTerraform(ctx context.Context) (string, string) {
 	return terraformStateFilename, filepath.ToSlash(filepath.Join(b.GetLocalStateDir(ctx), "terraform", terraformStateFilename))
+}
+
+// StateFilenameConfigSnapshot returns (relative remote path, relative local path) for config snapshot state
+func (b *Bundle) StateFilenameConfigSnapshot(ctx context.Context) (string, string) {
+	return configSnapshotFilename, filepath.ToSlash(filepath.Join(b.GetLocalStateDir(ctx), configSnapshotFilename))
 }
