@@ -20,9 +20,6 @@ type PostgresProject struct {
 
 	// Name is the hierarchical resource name (output-only). Format: "projects/{project_id}"
 	Name string `json:"name,omitempty" bundle:"readonly"`
-
-	// TODO: Enable when PostgresProjectPermission is defined in Task 6
-	// Permissions []PostgresProjectPermission `json:"permissions,omitempty"`
 }
 
 func (p *PostgresProject) Exists(ctx context.Context, w *databricks.WorkspaceClient, name string) (bool, error) {

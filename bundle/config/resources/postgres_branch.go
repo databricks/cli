@@ -23,9 +23,6 @@ type PostgresBranch struct {
 
 	// Name is the hierarchical resource name (output-only). Format: "projects/{project_id}/branches/{branch_id}"
 	Name string `json:"name,omitempty" bundle:"readonly"`
-
-	// TODO: Enable when PostgresBranchPermission is defined in Task 6
-	// Permissions []PostgresBranchPermission `json:"permissions,omitempty"`
 }
 
 func (b *PostgresBranch) Exists(ctx context.Context, w *databricks.WorkspaceClient, name string) (bool, error) {

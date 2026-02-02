@@ -23,9 +23,6 @@ type PostgresEndpoint struct {
 
 	// Name is the hierarchical resource name (output-only). Format: "projects/{project_id}/branches/{branch_id}/endpoints/{endpoint_id}"
 	Name string `json:"name,omitempty" bundle:"readonly"`
-
-	// TODO: Enable when PostgresEndpointPermission is defined in Task 6
-	// Permissions []PostgresEndpointPermission `json:"permissions,omitempty"`
 }
 
 func (e *PostgresEndpoint) Exists(ctx context.Context, w *databricks.WorkspaceClient, name string) (bool, error) {
