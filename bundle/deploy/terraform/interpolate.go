@@ -13,7 +13,7 @@ import (
 type interpolateMutator struct{}
 
 // isPostgresResource returns true if the resource type is a postgres resource.
-// Postgres resources use "uid" instead of "id" as their identifier attribute.
+// Postgres resources use "name" instead of "id" as their identifier attribute.
 func isPostgresResource(resourceType string) bool {
 	switch resourceType {
 	case "postgres_projects", "postgres_branches", "postgres_endpoints":
