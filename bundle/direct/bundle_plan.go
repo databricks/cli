@@ -596,7 +596,7 @@ func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *s
 		return value, nil
 	}
 
-	canReadRemoteCache := targetAction == deployplan.Skip || (targetAction.KeepsID() && adapter.IsImmutableField(fieldPath))
+	canReadRemoteCache := targetAction == deployplan.Skip || (targetAction.KeepsID() && adapter.IsFieldInRecreateOnChanges(fieldPath))
 
 	if configValidErr != nil && remoteValidErr == nil {
 		// The field is only present in remote state schema.
