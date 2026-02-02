@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 
 	"github.com/databricks/cli/libs/cmdio"
@@ -82,20 +81,15 @@ func EnsureIncludeDirective(configPath string) error {
 		return fmt.Errorf("failed to read SSH config file: %w", err)
 	}
 
-	// Check if Include directive already exists
-	includePattern := fmt.Sprintf(`(?m)^\s*Include\s+.*%s/\*\s*$`, regexp.QuoteMeta(ConfigDirName))
-	matched, err := regexp.Match(includePattern, content)
-	if err != nil {
-		return fmt.Errorf("failed to check for existing Include directive: %w", err)
-	}
+	// Convert path to forward slashes for SSH config compatibility across platforms
+	configDirUnix := filepath.ToSlash(configDir)
 
-	if matched {
+	includeLine := fmt.Sprintf("Include %s/*", configDirUnix)
+	if strings.Contains(string(content), includeLine) {
 		return nil
 	}
 
-	// Prepend the Include directive
-	includeLine := fmt.Sprintf("Include %s/*\n", configDir)
-	newContent := includeLine
+	newContent := includeLine + "\n"
 	if len(content) > 0 && !strings.HasPrefix(string(content), "\n") {
 		newContent += "\n"
 	}

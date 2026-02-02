@@ -205,9 +205,8 @@ func TestGenerateHostConfig_PathEscaping(t *testing.T) {
 func TestSetup_SuccessfulWithNewConfigFile(t *testing.T) {
 	ctx := cmdio.MockDiscard(context.Background())
 	tmpDir := t.TempDir()
-	homeDir := os.Getenv("HOME")
-	defer func() { os.Setenv("HOME", homeDir) }()
-	os.Setenv("HOME", tmpDir)
+	t.Setenv("HOME", tmpDir)
+	t.Setenv("USERPROFILE", tmpDir)
 
 	configPath := filepath.Join(tmpDir, "ssh_config")
 
@@ -245,10 +244,11 @@ func TestSetup_SuccessfulWithNewConfigFile(t *testing.T) {
 	assert.NoError(t, err)
 	configStr := string(content)
 	assert.Contains(t, configStr, "Include")
+	// SSH config uses forward slashes on all platforms
 	assert.Contains(t, configStr, ".databricks/ssh-tunnel-configs/*")
 
 	// Check that host config file was created
-	hostConfigPath := filepath.Join(tmpDir, ".databricks/ssh-tunnel-configs/test-host")
+	hostConfigPath := filepath.Join(tmpDir, ".databricks", "ssh-tunnel-configs", "test-host")
 	hostContent, err := os.ReadFile(hostConfigPath)
 	assert.NoError(t, err)
 	hostConfigStr := string(hostContent)
@@ -260,9 +260,8 @@ func TestSetup_SuccessfulWithNewConfigFile(t *testing.T) {
 func TestSetup_SuccessfulWithExistingConfigFile(t *testing.T) {
 	ctx := cmdio.MockDiscard(context.Background())
 	tmpDir := t.TempDir()
-	homeDir := os.Getenv("HOME")
-	defer func() { os.Setenv("HOME", homeDir) }()
-	os.Setenv("HOME", tmpDir)
+	t.Setenv("HOME", tmpDir)
+	t.Setenv("USERPROFILE", tmpDir)
 
 	configPath := filepath.Join(tmpDir, "ssh_config")
 
@@ -304,12 +303,13 @@ func TestSetup_SuccessfulWithExistingConfigFile(t *testing.T) {
 	assert.NoError(t, err)
 	configStr := string(content)
 	assert.Contains(t, configStr, "Include")
+	// SSH config uses forward slashes on all platforms
 	assert.Contains(t, configStr, ".databricks/ssh-tunnel-configs/*")
 	assert.Contains(t, configStr, "# Existing SSH Config")
 	assert.Contains(t, configStr, "Host existing-host")
 
 	// Check that host config file was created
-	hostConfigPath := filepath.Join(tmpDir, ".databricks/ssh-tunnel-configs/new-host")
+	hostConfigPath := filepath.Join(tmpDir, ".databricks", "ssh-tunnel-configs", "new-host")
 	hostContent, err := os.ReadFile(hostConfigPath)
 	assert.NoError(t, err)
 	hostConfigStr := string(hostContent)
