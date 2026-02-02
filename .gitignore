@@ -56,4 +56,4 @@ go.work
 go.work.sum
 
 # Fetched based on recorded hash
-.codegen/apischema.json
+.codegen/openapi.json

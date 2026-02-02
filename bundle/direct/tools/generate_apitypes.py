@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Find candidate types from apischema.json that match resource shapes in out.fields.txt and save them (apitypes.generated.yml).
+Find candidate types from openapi.json that match resource shapes in out.fields.txt and save them (apitypes.generated.yml).
 
 The types are found based on top level field overlap between bundle schema and API type.
 
