@@ -121,36 +121,6 @@ func validateRunAs(b *bundle.Bundle) diag.Diagnostics {
 		))
 	}
 
-	// Postgres projects do not support run_as in the API.
-	if len(b.Config.Resources.PostgresProjects) > 0 {
-		diags = diags.Extend(reportRunAsNotSupported(
-			"postgres_projects",
-			b.Config.GetLocation("resources.postgres_projects"),
-			b.Config.Workspace.CurrentUser.UserName,
-			identity,
-		))
-	}
-
-	// Postgres branches do not support run_as in the API.
-	if len(b.Config.Resources.PostgresBranches) > 0 {
-		diags = diags.Extend(reportRunAsNotSupported(
-			"postgres_branches",
-			b.Config.GetLocation("resources.postgres_branches"),
-			b.Config.Workspace.CurrentUser.UserName,
-			identity,
-		))
-	}
-
-	// Postgres endpoints do not support run_as in the API.
-	if len(b.Config.Resources.PostgresEndpoints) > 0 {
-		diags = diags.Extend(reportRunAsNotSupported(
-			"postgres_endpoints",
-			b.Config.GetLocation("resources.postgres_endpoints"),
-			b.Config.Workspace.CurrentUser.UserName,
-			identity,
-		))
-	}
-
 	return diags
 }
 
