@@ -50,3 +50,7 @@ dist/
 # Local development notes, tmp
 /pr-*
 /tmp/
+
+# Go workspace file
+go.work
+go.work.sum
