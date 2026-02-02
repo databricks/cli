@@ -7,12 +7,22 @@ import (
 
 // SearchResult represents a single search result.
 type SearchResult struct {
-	Type        string  `json:"type"` // "service", "method", "type", "enum"
-	Name        string  `json:"name"`
-	Path        string  `json:"path"`
-	Service     string  `json:"service,omitempty"`
-	Description string  `json:"description"`
-	Score       float64 `json:"score"`
+	Type        string         `json:"type"` // "service", "method", "type", "enum"
+	Name        string         `json:"name"`
+	Path        string         `json:"path"`
+	Service     string         `json:"service,omitempty"`
+	Description string         `json:"description"`
+	Signature   string         `json:"signature,omitempty"`
+	Fields      []FieldSummary `json:"fields,omitempty"`
+	Values      []string       `json:"values,omitempty"`
+	Score       float64        `json:"score"`
+}
+
+// FieldSummary is a simplified field representation for search results.
+type FieldSummary struct {
+	Name        string `json:"name"`
+	Type        string `json:"type"`
+	Description string `json:"description"`
 }
 
 // SearchOptions configures the search behavior.
@@ -78,6 +88,7 @@ func (idx *SDKDocsIndex) Search(opts SearchOptions) []SearchResult {
 						Path:        serviceName + "." + methodName,
 						Service:     serviceName,
 						Description: truncate(method.Description, 200),
+						Signature:   method.Signature,
 						Score:       score,
 					})
 				}
@@ -93,12 +104,27 @@ func (idx *SDKDocsIndex) Search(opts SearchOptions) []SearchResult {
 			}
 			score := computeScore(terms, typeDoc.Name, typePath, typeDoc.Description)
 			if score > 0 {
+				// Convert fields to summary (limit to first 10)
+				var fields []FieldSummary
+				count := 0
+				for _, field := range typeDoc.Fields {
+					if count >= 10 {
+						break
+					}
+					fields = append(fields, FieldSummary{
+						Name:        field.Name,
+						Type:        field.Type,
+						Description: truncate(field.Description, 100),
+					})
+					count++
+				}
 				results = append(results, SearchResult{
 					Type:        "type",
 					Name:        typeDoc.Name,
 					Path:        typePath,
 					Service:     typeDoc.Package,
 					Description: truncate(typeDoc.Description, 200),
+					Fields:      fields,
 					Score:       score,
 				})
 			}
@@ -121,6 +147,7 @@ func (idx *SDKDocsIndex) Search(opts SearchOptions) []SearchResult {
 					Path:        enumPath,
 					Service:     enumDoc.Package,
 					Description: truncate(enumDoc.Description, 200),
+					Values:      enumDoc.Values,
 					Score:       score,
 				})
 			}
