@@ -444,33 +444,6 @@ github.com/databricks/cli/bundle/config/resources.PipelinePermissionLevel:
         CAN_RUN
       - |-
         CAN_VIEW
-github.com/databricks/cli/bundle/config/resources.PostgresBranch:
-  "branch_id":
-    "description": |-
-      PLACEHOLDER
-  "lifecycle":
-    "description": |-
-      PLACEHOLDER
-  "parent":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.PostgresEndpoint:
-  "endpoint_id":
-    "description": |-
-      PLACEHOLDER
-  "lifecycle":
-    "description": |-
-      PLACEHOLDER
-  "parent":
-    "description": |-
-      PLACEHOLDER
-github.com/databricks/cli/bundle/config/resources.PostgresProject:
-  "lifecycle":
-    "description": |-
-      PLACEHOLDER
-  "project_id":
-    "description": |-
-      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.QualityMonitor:
   "_":
     "markdown_description": |-
