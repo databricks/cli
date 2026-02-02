@@ -2,11 +2,9 @@ package convert
 
 import (
 	"testing"
-	"time"
 
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynassert"
-	"github.com/databricks/databricks-sdk-go/common/types/duration"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -927,50 +925,4 @@ func TestFromTypedForceSendFieldsEmbedded(t *testing.T) {
 	assert.True(t, field.IsValid(), "embedded field should be present due to ForceSendFields")
 	assert.Equal(t, dyn.KindNil, field.Kind(), "embedded field should be present due to ForceSendFields")
 	assert.Equal(t, dyn.V("value"), other)
-}
-
-func TestFromTypedDuration(t *testing.T) {
-	src := duration.New(300 * time.Second)
-	nv, err := FromTyped(src, dyn.NilValue)
-	require.NoError(t, err)
-	assert.Equal(t, dyn.V("300s"), nv)
-}
-
-func TestFromTypedDurationPointer(t *testing.T) {
-	src := duration.New(5 * time.Minute)
-	nv, err := FromTyped(src, dyn.NilValue)
-	require.NoError(t, err)
-	assert.Equal(t, dyn.V("300s"), nv)
-}
-
-func TestFromTypedDurationInStruct(t *testing.T) {
-	type Tmp struct {
-		Timeout *duration.Duration `json:"timeout"`
-		Ttl     *duration.Duration `json:"ttl"`
-	}
-
-	src := Tmp{
-		Timeout: duration.New(300 * time.Second),
-		Ttl:     duration.New(7 * 24 * time.Hour),
-	}
-
-	nv, err := FromTyped(src, dyn.NilValue)
-	require.NoError(t, err)
-	assert.Equal(t, "300s", nv.Get("timeout").MustString())
-	assert.Equal(t, "604800s", nv.Get("ttl").MustString())
-}
-
-func TestFromTypedDurationNil(t *testing.T) {
-	var src *duration.Duration
-	nv, err := FromTyped(src, dyn.NilValue)
-	require.NoError(t, err)
-	assert.Equal(t, dyn.NilValue, nv)
-}
-
-func TestFromTypedDurationZero(t *testing.T) {
-	var src duration.Duration
-	nv, err := FromTyped(src, dyn.NilValue)
-	require.NoError(t, err)
-	// Zero value duration should return nil when not forced
-	assert.Equal(t, dyn.NilValue, nv)
 }

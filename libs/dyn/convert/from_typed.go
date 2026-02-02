@@ -1,7 +1,6 @@
 package convert
 
 import (
-	"encoding/json"
 	"fmt"
 	"reflect"
 	"slices"
@@ -360,32 +359,4 @@ func fromTypedFloat(src reflect.Value, ref dyn.Value, options ...fromTypedOption
 	}
 
 	return dyn.InvalidValue, fmt.Errorf("cannot convert float field to dynamic type %#v: src=%#v ref=%#v", ref.Kind().String(), src, ref.AsAny())
-}
-
-// fromTypedDuration converts the SDK's duration.Duration type to a dyn.Value.
-// The SDK's duration.Duration type uses JSON marshaling with string representation.
-func fromTypedDuration(src reflect.Value, ref dyn.Value, options ...fromTypedOptions) (dyn.Value, error) {
-	// Check for zero value first.
-	if src.IsZero() && !slices.Contains(options, includeZeroValues) {
-		return dyn.NilValue, nil
-	}
-
-	// Use JSON marshaling since duration.Duration implements json.Marshaler.
-	jsonBytes, err := json.Marshal(src.Interface())
-	if err != nil {
-		return dyn.InvalidValue, err
-	}
-
-	// The JSON marshaling produces a quoted string, unmarshal to get the raw string.
-	var str string
-	if err := json.Unmarshal(jsonBytes, &str); err != nil {
-		return dyn.InvalidValue, err
-	}
-
-	// Handle empty string as zero value.
-	if str == "" && !slices.Contains(options, includeZeroValues) {
-		return dyn.NilValue, nil
-	}
-
-	return dyn.V(str), nil
 }

@@ -2,10 +2,8 @@ package convert
 
 import (
 	"testing"
-	"time"
 
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/databricks-sdk-go/common/types/duration"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -755,61 +753,4 @@ func TestToTypedFieldByNameBugRegressionTest(t *testing.T) {
 	assert.Empty(t, out.ForceSendFields)
 	assert.Equal(t, "test-job", out.Name)
 	assert.Empty(t, out.Permissions)
-}
-
-func TestToTypedDuration(t *testing.T) {
-	var out duration.Duration
-	v := dyn.V("300s")
-
-	err := ToTyped(&out, v)
-	require.NoError(t, err)
-	assert.Equal(t, 300*time.Second, out.AsDuration())
-}
-
-func TestToTypedDurationPointer(t *testing.T) {
-	var out *duration.Duration
-	v := dyn.V("300s") // 5 minutes in protobuf duration format
-
-	err := ToTyped(&out, v)
-	require.NoError(t, err)
-	require.NotNil(t, out)
-	assert.Equal(t, 5*time.Minute, out.AsDuration())
-}
-
-func TestToTypedDurationInStruct(t *testing.T) {
-	type Tmp struct {
-		Timeout *duration.Duration `json:"timeout"`
-		Ttl     *duration.Duration `json:"ttl"`
-	}
-
-	var out Tmp
-	v := dyn.V(map[string]dyn.Value{
-		"timeout": dyn.V("300s"),
-		"ttl":     dyn.V("604800s"), // 7 days in seconds
-	})
-
-	err := ToTyped(&out, v)
-	require.NoError(t, err)
-	require.NotNil(t, out.Timeout)
-	require.NotNil(t, out.Ttl)
-	assert.Equal(t, 300*time.Second, out.Timeout.AsDuration())
-	assert.Equal(t, 7*24*time.Hour, out.Ttl.AsDuration())
-}
-
-func TestToTypedDurationNil(t *testing.T) {
-	var out *duration.Duration
-	v := dyn.NilValue
-
-	err := ToTyped(&out, v)
-	require.NoError(t, err)
-	assert.Nil(t, out)
-}
-
-func TestToTypedDurationError(t *testing.T) {
-	var out duration.Duration
-	v := dyn.V(map[string]dyn.Value{"foo": dyn.V("bar")})
-
-	err := ToTyped(&out, v)
-	require.Error(t, err)
-	assert.Contains(t, err.Error(), "expected a string")
 }

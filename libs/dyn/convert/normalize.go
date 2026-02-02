@@ -9,7 +9,6 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynvar"
-	"github.com/databricks/databricks-sdk-go/common/types/duration"
 )
 
 // NormalizeOption is the type for options that can be passed to Normalize.
@@ -35,19 +34,6 @@ func Normalize(dst any, src dyn.Value, opts ...NormalizeOption) (dyn.Value, diag
 	}
 
 	return n.normalizeType(reflect.TypeOf(dst), src, []reflect.Type{}, dyn.EmptyPath)
-}
-
-// sdkDurationType is the reflect.Type for the SDK's duration.Duration type.
-// This type has custom JSON marshaling that represents durations as strings.
-var sdkDurationType = reflect.TypeFor[duration.Duration]()
-
-// isSDKDurationType checks if the given type is the SDK's duration.Duration type.
-// This type has custom JSON marshaling that represents durations as strings (e.g., "7d", "300s").
-func isSDKDurationType(typ reflect.Type) bool {
-	for typ.Kind() == reflect.Ptr {
-		typ = typ.Elem()
-	}
-	return typ == sdkDurationType
 }
 
 func (n normalizeOptions) normalizeType(typ reflect.Type, src dyn.Value, seen []reflect.Type, path dyn.Path) (dyn.Value, diag.Diagnostics) {

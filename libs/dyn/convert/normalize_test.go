@@ -6,7 +6,6 @@ import (
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynassert"
-	"github.com/databricks/databricks-sdk-go/common/types/duration"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -901,49 +900,4 @@ func TestNormalizeAnyFromTime(t *testing.T) {
 	vout, err := Normalize(&typ, vin)
 	assert.Empty(t, err)
 	assert.Equal(t, dyn.NewValue("2024-08-29", vin.Locations()), vout)
-}
-
-func TestNormalizeDuration(t *testing.T) {
-	var typ duration.Duration
-	vin := dyn.NewValue("300s", []dyn.Location{{File: "file", Line: 1, Column: 1}})
-	vout, err := Normalize(&typ, vin)
-	assert.Empty(t, err)
-	assert.Equal(t, dyn.NewValue("300s", vin.Locations()), vout)
-}
-
-func TestNormalizeDurationPointer(t *testing.T) {
-	var typ *duration.Duration
-	vin := dyn.NewValue("604800s", []dyn.Location{{File: "file", Line: 1, Column: 1}})
-	vout, err := Normalize(typ, vin)
-	assert.Empty(t, err)
-	assert.Equal(t, dyn.NewValue("604800s", vin.Locations()), vout)
-}
-
-func TestNormalizeDurationInStruct(t *testing.T) {
-	type Tmp struct {
-		Timeout *duration.Duration `json:"timeout"`
-	}
-
-	var typ Tmp
-	vin := dyn.V(map[string]dyn.Value{
-		"timeout": dyn.NewValue("300s", []dyn.Location{{File: "file", Line: 1, Column: 1}}),
-	})
-
-	vout, diags := Normalize(typ, vin)
-	assert.Empty(t, diags)
-	assert.Equal(t, "300s", vout.Get("timeout").MustString())
-}
-
-func TestNormalizeDurationNil(t *testing.T) {
-	var typ *duration.Duration
-	vin := dyn.NilValue
-	vout, err := Normalize(typ, vin)
-	assert.Len(t, err, 1)
-	assert.Equal(t, diag.Diagnostic{
-		Severity:  diag.Warning,
-		Summary:   `expected a string value, found null`,
-		Locations: []dyn.Location{vin.Location()},
-		Paths:     []dyn.Path{dyn.EmptyPath},
-	}, err[0])
-	assert.Equal(t, dyn.InvalidValue, vout)
 }
