@@ -66,6 +66,12 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) {
 		{"resources.jobs.*.trigger.pause_status", "UNPAUSED"},
 		{"resources.jobs.*.continuous.pause_status", "UNPAUSED"},
 
+		// Enable queueing for jobs by default, following the behavior from API 2.2+.
+		// As of 2024-04, we're still using API 2.1 which has queueing disabled by default.
+		{"resources.jobs.*.queue", map[string]dyn.Value{
+			"enabled": dyn.V(true),
+		}},
+
 		// This is converted from single-task to multi-task
 		{"resources.jobs.*.task[*].dbt_task.schema", "default"},
 		{"resources.jobs.*.task[*].for_each_task.task.dbt_task.schema", "default"},
@@ -104,11 +110,6 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) {
 	}
 
 	bundle.ApplySeqContext(ctx, b,
-		// Reads (typed): b.Config.Resources.Jobs (checks job configurations)
-		// Updates (typed): b.Config.Resources.Jobs[].Queue (sets Queue.Enabled to true for jobs without queue settings)
-		// Enable queueing for jobs by default, following the behavior from API 2.2+.
-		DefaultQueueing(),
-
 		// Reads (typed): b.Config.Resources.Dashboards (checks dashboard configurations)
 		// Updates (typed): b.Config.Resources.Dashboards[].ParentPath (ensures /Workspace prefix is present)
 		// Ensures dashboard parent paths have the required /Workspace prefix

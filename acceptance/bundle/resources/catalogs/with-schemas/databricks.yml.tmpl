@@ -1,0 +1,23 @@
+bundle:
+  name: uc-catalog-schemas-$UNIQUE_NAME
+
+workspace:
+  root_path: ~/.bundle/$UNIQUE_NAME
+
+resources:
+  catalogs:
+    test_catalog:
+      name: test_catalog_$UNIQUE_NAME
+      comment: "Catalog created from DABs"
+      properties:
+        purpose: "testing"
+
+  schemas:
+    test_schema:
+      name: schema1
+      catalog_name: ${resources.catalogs.test_catalog.name}
+      comment: "Schema in custom catalog"
+
+targets:
+  development:
+    default: true

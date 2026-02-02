@@ -1,0 +1,12 @@
+resources:
+  jobs:
+    job_two:
+      max_concurrent_runs: 2
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/job2
+          new_cluster:
+            spark_version: $DEFAULT_SPARK_VERSION
+            node_type_id: $NODE_TYPE_ID
+            num_workers: 1

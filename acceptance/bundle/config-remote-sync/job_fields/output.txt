@@ -1,0 +1,62 @@
+Uploading dummy.whl...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Modify job fields remotely
+
+=== Detect and save changes
+Detected changes in 1 resource(s):
+
+Resource: resources.jobs.my_job
+  email_notifications.no_alert_for_skipped_runs: add
+  email_notifications.on_failure: add
+  parameters: replace
+  tags['team']: add
+  trigger.periodic.interval: replace
+
+
+
+=== Configuration changes
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -1,5 +1,4 @@
+ bundle:
+   name: test-bundle-[UNIQUE_NAME]
+-
+ resources:
+   jobs:
+@@ -8,12 +7,17 @@
+         on_success:
+           - success@example.com
++        no_alert_for_skipped_runs: true
++        on_failure:
++          - failure@example.com
+       parameters:
+-        - name: catalog
+-          default: main
+-        - name: env
+-          default: dev
++        - default: main
++          name: catalog
++        - default: dev
++          name: env
++        - default: us-east-1
++          name: region
+       trigger:
+         periodic:
+-          interval: 1
++          interval: 2
+           unit: DAYS
+       environments:
+@@ -31,5 +35,6 @@
+             node_type_id: [NODE_TYPE_ID]
+             num_workers: 1
+-
++      tags:
++        team: data
+ targets:
+   default:

@@ -1,0 +1,22 @@
+
+>>> [CLI] apps deploy --skip-validation
+Deploying project...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+✓ Getting the status of the app myapp
+✓ App is in RUNNING state
+✓ App compute is in ACTIVE state
+✓ Deployment succeeded
+You can access the app at myapp-123.cloud.databricksapps.com
+✔ Deployment complete!
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.apps.myapp
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle/default
+
+Deleting files...
+Destroy complete!

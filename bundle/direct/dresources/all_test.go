@@ -39,6 +39,15 @@ var testConfig map[string]any = map[string]any{
 		},
 	},
 
+	"catalogs": &resources.Catalog{
+		CreateCatalog: catalog.CreateCatalog{
+			Name:    "mycatalog",
+			Comment: "Test catalog",
+		},
+		// Note: EnablePredictiveOptimization and IsolationMode cannot be set during creation,
+		// only during updates. They are not included in the test config.
+	},
+
 	"schemas": &resources.Schema{
 		CreateSchema: catalog.CreateSchema{
 			CatalogName: "main",
@@ -435,6 +444,17 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
+	"catalogs.grants": func(client *databricks.WorkspaceClient) (any, error) {
+		return &GrantsState{
+			SecurableType: "catalog",
+			FullName:      "mycatalog",
+			Grants: []GrantAssignment{{
+				Privileges: []catalog.Privilege{catalog.PrivilegeUseCatalog},
+				Principal:  "user@example.com",
+			}},
+		}, nil
+	},
+
 	"schemas.grants": func(client *databricks.WorkspaceClient) (any, error) {
 		return &GrantsState{
 			SecurableType: "schema",
@@ -623,8 +643,10 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	p, err := structpath.Parse("name")
 	require.NoError(t, err)
 
-	err = adapter.OverrideChangeDesc(ctx, p, &deployplan.ChangeDesc{}, nil)
-	require.NoError(t, err)
+	if adapter.HasOverrideChangeDesc() {
+		err = adapter.OverrideChangeDesc(ctx, p, &deployplan.ChangeDesc{}, nil)
+		require.NoError(t, err)
+	}
 
 	deleteIsNoop := strings.HasSuffix(group, "permissions") || strings.HasSuffix(group, "grants")
 

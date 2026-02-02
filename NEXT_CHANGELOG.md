@@ -1,15 +1,18 @@
 # NEXT CHANGELOG
 
-## Release v0.284.0
+## Release v0.287.0
 
 ### Notable Changes
 
 ### CLI
 
+* Add Lakebase Autoscaling support to `psql` command ([#4399](https://github.com/databricks/cli/pull/4399))
+
 ### Bundles
-* Pass additional Azure DevOps `SYSTEM_*` environment variables to Terraform for OIDC authentication: `SYSTEM_COLLECTIONURI`, `SYSTEM_DEFINITIONID`, `SYSTEM_HOSTTYPE`, `SYSTEM_JOBID`, `SYSTEM_TEAMPROJECT` ([#4318](https://github.com/databricks/cli/pull/4318))
-* Add support for valueFrom property (similar to app.yaml) inside Apps config field in bundle configuration ([#4297](https://github.com/databricks/cli/pull/4297))
-* engine/direct: Support bind & unbind. ([#4279](https://github.com/databricks/cli/pull/4279))
+
+* Add missing values to SchemaGrantPrivilege enum ([#4380](https://github.com/databricks/cli/pull/4380))
+* Added support for UC catalogs (only in direct mode) ([#4342](https://github.com/databricks/cli/pull/4342))
+* engine/direct: Fix updates to fields being ignored for database_catalogs, synced_database_tables (([#4388](https://github.com/databricks/cli/pull/4388)))
 
 ### Dependency updates
 

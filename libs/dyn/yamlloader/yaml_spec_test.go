@@ -265,7 +265,7 @@ func TestYAMLSpecExample_2_11(t *testing.T) {
 	input, err := os.ReadFile(file)
 	require.NoError(t, err)
 
-	// Note: non-string mapping keys are not supported by "gopkg.in/yaml.v3".
+	// Note: non-string mapping keys are not supported by "go.yaml.in/yaml/v3".
 	_, err = yamlloader.LoadYAML(file, bytes.NewBuffer(input))
 	assert.ErrorContains(t, err, `: key is not a scalar`)
 }
@@ -530,7 +530,7 @@ func TestYAMLSpecExample_2_22(t *testing.T) {
 			),
 			"spaced": dyn.NewValue(
 				// This is parsed as a string, not a timestamp,
-				// both by "gopkg.in/yaml.v3" and by our implementation.
+				// both by "go.yaml.in/yaml/v3" and by our implementation.
 				"2001-12-14 21:59:43.10 -5",
 				[]dyn.Location{{File: file, Line: 5, Column: 9}},
 			),

@@ -246,7 +246,7 @@ To start using direct engine, deploy with DATABRICKS_BUNDLE_ENGINE=direct env va
 			if etag == "" {
 				continue
 			}
-			sv, ok := deploymentBundle.StructVarCache.Load(key)
+			sv, ok := deploymentBundle.StateCache.Load(key)
 			if !ok {
 				return fmt.Errorf("failed to read state for %q", key)
 			}

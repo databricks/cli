@@ -1,0 +1,7 @@
+# Test: apps deploy in a bundle directory without APP_NAME
+# Expected: Bundle deploy flow with validation + deploy + run app
+# Using --skip-validation since we're testing the deploy flow, not validation
+
+trace $CLI apps deploy --skip-validation
+
+trace $CLI bundle destroy --auto-approve

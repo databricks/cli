@@ -341,10 +341,16 @@ func (s *FakeWorkspace) WorkspaceDelete(path string, recursive bool) {
 	defer s.LockUnlock()()
 	if !recursive {
 		delete(s.files, path)
+		delete(s.directories, path)
 	} else {
 		for key := range s.files {
 			if strings.HasPrefix(key, path) {
 				delete(s.files, key)
+			}
+		}
+		for key := range s.directories {
+			if strings.HasPrefix(key, path) {
+				delete(s.directories, key)
 			}
 		}
 	}
@@ -420,6 +426,30 @@ func (s *FakeWorkspace) WorkspaceFilesExportFile(path string) []byte {
 	defer s.LockUnlock()()
 
 	return s.files[path].Data
+}
+
+// FileExists checks if a file exists at the given path.
+func (s *FakeWorkspace) FileExists(path string) bool {
+	if !strings.HasPrefix(path, "/") {
+		path = "/" + path
+	}
+
+	defer s.LockUnlock()()
+
+	_, exists := s.files[path]
+	return exists
+}
+
+// DirectoryExists checks if a directory exists at the given path.
+func (s *FakeWorkspace) DirectoryExists(path string) bool {
+	if !strings.HasPrefix(path, "/") {
+		path = "/" + path
+	}
+
+	defer s.LockUnlock()()
+
+	_, exists := s.directories[path]
+	return exists
 }
 
 // jsonConvert saves input to a value pointed by output

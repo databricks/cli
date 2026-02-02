@@ -1,0 +1,17 @@
+bundle:
+  name: test-bundle
+
+variables:
+  my_variable:
+    type: INVALID_TYPE
+    default: "value"
+
+targets:
+  foo:
+    default: true
+
+  bar:
+    artifacts:
+      my_artifact:
+        type: INVALID_TYPE
+        build: "echo 'hello'"

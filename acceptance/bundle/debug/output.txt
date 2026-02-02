@@ -4,8 +4,8 @@ Usage:
   databricks bundle debug [command]
 
 Available Commands:
-  refschema   Dump all relevant fields all bundle resources
-  states      Show available state files
+  refschema              Dump all relevant fields all bundle resources
+  states                 Show available state files
 
 Flags:
   -h, --help   help for debug

@@ -1,0 +1,35 @@
+#!/bin/bash
+
+envsubst < databricks.yml.tmpl > databricks.yml
+envsubst < resources/job1.yml.tmpl > resources/job1.yml
+envsubst < resources/job2.yml.tmpl > resources/job2.yml
+
+touch dummy.whl
+$CLI bundle deploy
+
+job_one_id="$(read_id.py job_one)"
+job_two_id="$(read_id.py job_two)"
+
+title "Modify both jobs"
+edit_resource.py jobs $job_one_id <<EOF
+r["max_concurrent_runs"] = 5
+EOF
+
+edit_resource.py jobs $job_two_id <<EOF
+r["max_concurrent_runs"] = 10
+EOF
+
+title "Detect and save changes"
+echo
+cp resources/job1.yml resources/job1.yml.backup
+cp resources/job2.yml resources/job2.yml.backup
+$CLI bundle config-remote-sync --save
+
+title "Changes in job1.yml"
+echo
+trace diff.py resources/job1.yml.backup resources/job1.yml
+
+title "Changes in job2.yml"
+echo
+trace diff.py resources/job2.yml.backup resources/job2.yml
+rm resources/job1.yml.backup resources/job2.yml.backup
