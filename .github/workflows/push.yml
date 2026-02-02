@@ -42,7 +42,7 @@ jobs:
           fetch-depth: 0
 
       - name: Setup Go
-        uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6.1.0
+        uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
         with:
           go-version-file: tools/go.mod
 
@@ -276,7 +276,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Setup Go
-        uses: actions/setup-go@4dc6199c7b1a012772edbd06daecab0f50c9053c # v6.1.0
+        uses: actions/setup-go@7a3fe6cf4cb3a834922a1244abfce67bcef6a0c5 # v6.2.0
         with:
           go-version-file: go.mod
           # Use different schema from regular job, to avoid overwriting the same key
@@ -401,7 +401,7 @@ jobs:
       # Use Checks API (not Statuses API) to match the required "Integration Tests" check.
       - name: Skip integration tests (pull request)
         if: ${{ github.event_name == 'pull_request' && !contains(fromJSON(needs.testmask.outputs.targets), 'test') }}
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             await github.rest.checks.create({
@@ -421,7 +421,7 @@ jobs:
       # Use Checks API (not Statuses API) to match the required "Integration Tests" check.
       - name: Auto-approve for merge group
         if: ${{ github.event_name == 'merge_group' }}
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           script: |
             await github.rest.checks.create({
