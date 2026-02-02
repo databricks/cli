@@ -662,6 +662,13 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	}
 
 	require.NoError(t, structwalk.Walk(newState, func(path *structpath.PathNode, val any, field *reflect.StructField) {
+		// Postgres resources: the real API does not return spec fields in read responses.
+		// The spec is input-only; only status (effective values) is returned.
+		// Skip these fields before attempting to access them in the remapped state.
+		if strings.HasPrefix(group, "postgres_") && strings.HasPrefix(path.String(), "spec.") {
+			return
+		}
+
 		remoteValue, err := structaccess.Get(remappedState, path)
 		if err != nil {
 			t.Errorf("Failed to read %s from remapped remote state %#v", path.String(), remappedState)
@@ -678,13 +685,7 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 		}
 		// t.Logf("Testing %s v=%#v, remoteValue=%#v", path.String(), val, remoteValue)
 		// We expect fields set explicitly to be preserved by testserver, which is true for all resources as of today.
-		// If not true for your resource, add exception here:
-		//
-		// Postgres resources: the real API does not return spec fields in read responses.
-		// The spec is input-only; only status (effective values) is returned.
-		if strings.HasPrefix(group, "postgres_") && strings.HasPrefix(path.String(), "spec.") {
-			return
-		}
+		// If not true for your resource, add exception here.
 		assert.Equal(t, val, remoteValue, "path=%q\nnewState=%s\nremappedState=%s", path.String(), jsonDump(newState), jsonDump(remappedState))
 	}))
 
