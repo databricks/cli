@@ -21,7 +21,7 @@ type profileMetadata struct {
 	Name        string `json:"name"`
 	Host        string `json:"host,omitempty"`
 	AccountID   string `json:"account_id,omitempty"`
-	WorkspaceID string `json:"workspace_id,omitempty"`
+	WorkspaceId string `json:"workspace_id,omitempty"`
 	Cloud       string `json:"cloud"`
 	AuthType    string `json:"auth_type"`
 	Valid       bool   `json:"valid"`
@@ -116,7 +116,7 @@ func newProfilesCommand() *cobra.Command {
 				Name:        v.Name(),
 				Host:        hash["host"],
 				AccountID:   hash["account_id"],
-				WorkspaceID: hash["workspace_id"],
+				WorkspaceId: hash["workspace_id"],
 			}
 			if profile.IsEmpty() {
 				continue
