@@ -55,6 +55,12 @@ func promptForAccountID(ctx context.Context) (string, error) {
 	prompt.Label = "Databricks account ID"
 	prompt.Default = ""
 	prompt.AllowEdit = true
+	prompt.Validate = func(s string) error {
+		if s == "" {
+			return errors.New("account ID is required")
+		}
+		return nil
+	}
 	return prompt.Run()
 }
 
