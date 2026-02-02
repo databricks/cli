@@ -1,3 +1,5 @@
 trace $CLI bundle deploy
 trace update_file.py databricks.yml "comment1" "comment2"
-trace $CLI bundle plan | contains.py '1 to change, 0 to delete, 2 unchanged'
+# Even though we have remote reference in jobs.bar (to volumes.foo.storage_location), since that field is immutable
+# we skip updating the job.
+trace $CLI bundle plan | contains.py '1 to change, 0 to delete, 2 unchanged' 'update volumes.foo' '!update jobs' '!update schemas'
