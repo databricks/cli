@@ -40,7 +40,6 @@ func (p *PostgresProject) ResourceDescription() ResourceDescription {
 }
 
 func (p *PostgresProject) GetName() string {
-	// Return display_name directly (now embedded from ProjectSpec)
 	return p.DisplayName
 }
 
