@@ -162,15 +162,11 @@ generate-validation:
 UNIVERSE_DIR ?= $(HOME)/universe
 GENKIT_BINARY := $(UNIVERSE_DIR)/bazel-bin/openapi/genkit/genkit_/genkit
 
-genkit-binary:
+generate:
 	@echo "Checking out universe at SHA: $$(cat .codegen/_openapi_sha)"
 	cd $(UNIVERSE_DIR) && git fetch origin master && git checkout $$(cat $(PWD)/.codegen/_openapi_sha)
 	@echo "Building genkit..."
 	cd $(UNIVERSE_DIR) && bazel build //openapi/genkit
-
-.PHONY: genkit-binary
-
-generate: genkit-binary
 	@echo "Generating CLI code..."
 	$(GENKIT_BINARY) update-sdk
 
