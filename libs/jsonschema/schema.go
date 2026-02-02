@@ -86,6 +86,12 @@ type Schema struct {
 	// in the future.
 	// https://json-schema.org/understanding-json-schema/reference/annotations
 	Deprecated bool `json:"deprecated,omitempty"`
+
+	// A boolean that indicates the field is managed by the server and should
+	// not be set by clients.
+	// This is equivalent to OUTPUT_ONLY annotation in the OpenAPI spec.
+	// https://json-schema.org/understanding-json-schema/reference/annotations
+	ReadOnly bool `json:"readOnly,omitempty"`
 }
 
 func anyToSchema(a any) (*Schema, error) {

@@ -64,6 +64,10 @@
                   {
                     "type": "object",
                     "properties": {
+                      "create_time": {
+                        "$ref": "#/$defs/string",
+                        "readOnly": true
+                      },
                       "custom_description": {
                         "$ref": "#/$defs/string"
                       },
@@ -73,11 +77,27 @@
                       "display_name": {
                         "$ref": "#/$defs/string"
                       },
+                      "effective_run_as": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertV2RunAs",
+                        "readOnly": true
+                      },
                       "evaluation": {
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertV2Evaluation"
                       },
+                      "id": {
+                        "$ref": "#/$defs/string",
+                        "readOnly": true
+                      },
                       "lifecycle": {
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
+                      },
+                      "lifecycle_state": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertLifecycleState",
+                        "readOnly": true
+                      },
+                      "owner_user_name": {
+                        "$ref": "#/$defs/string",
+                        "readOnly": true
                       },
                       "parent_path": {
                         "$ref": "#/$defs/string"
@@ -98,6 +118,10 @@
                       },
                       "schedule": {
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.CronSchedule"
+                      },
+                      "update_time": {
+                        "$ref": "#/$defs/string",
+                        "readOnly": true
                       },
                       "warehouse_id": {
                         "$ref": "#/$defs/string"
@@ -169,15 +193,57 @@
                   {
                     "type": "object",
                     "properties": {
+                      "active_deployment": {
+                        "description": "The active deployment of the app. A deployment is considered active when it has been deployed\nto the app compute.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppDeployment",
+                        "readOnly": true
+                      },
+                      "app_status": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.ApplicationStatus",
+                        "readOnly": true
+                      },
                       "budget_policy_id": {
                         "$ref": "#/$defs/string"
                       },
                       "compute_size": {
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.ComputeSize"
                       },
+                      "compute_status": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.ComputeStatus",
+                        "readOnly": true
+                      },
+                      "create_time": {
+                        "description": "The creation time of the app. Formatted timestamp in ISO 6801.",
+                        "$ref": "#/$defs/string",
+                        "readOnly": true
+                      },
+                      "creator": {
+                        "description": "The email of the user that created the app.",
+                        "$ref": "#/$defs/string",
+                        "readOnly": true
+                      },
+                      "default_source_code_path": {
+                        "description": "The default workspace file system path of the source code from which app deployment are\ncreated. This field tracks the workspace source code path of the last active deployment.",
+                        "$ref": "#/$defs/string",
+                        "readOnly": true
+                      },
                       "description": {
                         "description": "The description of the app.",
                         "$ref": "#/$defs/string"
+                      },
+                      "effective_budget_policy_id": {
+                        "$ref": "#/$defs/string",
+                        "readOnly": true
+                      },
+                      "effective_user_api_scopes": {
+                        "description": "The effective api scopes granted to the user access token.",
+                        "$ref": "#/$defs/slice/string",
+                        "readOnly": true
+                      },
+                      "id": {
+                        "description": "The unique identifier of the app.",
+                        "$ref": "#/$defs/string",
+                        "readOnly": true
                       },
                       "lifecycle": {
                         "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
@@ -187,6 +253,19 @@
                         "description": "The name of the app. The name must contain only lowercase alphanumeric characters and hyphens.\nIt must be unique within the workspace.",
                         "$ref": "#/$defs/string"
                       },
+                      "oauth2_app_client_id": {
+                        "$ref": "#/$defs/string",
+                        "readOnly": true
+                      },
+                      "oauth2_app_integration_id": {
+                        "$ref": "#/$defs/string",
+                        "readOnly": true
+                      },
+                      "pending_deployment": {
+                        "description": "The pending deployment of the app. A deployment is considered pending when it is being prepared\nfor deployment to the app compute.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppDeployment",
+                        "readOnly": true
+                      },
                       "permissions": {
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.AppPermission"
                       },
@@ -194,8 +273,35 @@
                         "description": "Resources for the app.",
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/apps.AppResource"
                       },
+                      "service_principal_client_id": {
+                        "$ref": "#/$defs/string",
+                        "readOnly": true
+                      },
+                      "service_principal_id": {
+                        "$ref": "#/$defs/int64",
+                        "readOnly": true
+                      },
+                      "service_principal_name": {
+                        "$ref": "#/$defs/string",
+                        "readOnly": true
+                      },
                       "source_code_path": {
                         "$ref": "#/$defs/string"
+                      },
+                      "update_time": {
+                        "description": "The update time of the app. Formatted timestamp in ISO 6801.",
+                        "$ref": "#/$defs/string",
+                        "readOnly": true
+                      },
+                      "updater": {
+                        "description": "The email of the user that last updated the app.",
+                        "$ref": "#/$defs/string",
+                        "readOnly": true
+                      },
+                      "url": {
+                        "description": "The URL of the app once it is deployed.",
+                        "$ref": "#/$defs/string",
+                        "readOnly": true
                       },
                       "user_api_scopes": {
                         "$ref": "#/$defs/slice/string"
@@ -320,6 +426,10 @@
                       "gcp_attributes": {
                         "description": "Attributes related to clusters running on Google Cloud Platform.\nIf not specified at cluster creation, a set of default values will be used.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.GcpAttributes"
+                      },
+                      "id": {
+                        "$ref": "#/$defs/string",
+                        "readOnly": true
                       },
                       "init_scripts": {
                         "description": "The configuration for storing init scripts. Any number of destinations can be specified.\nThe scripts are executed sequentially in the order provided.\nIf `cluster_log_conf` is specified, init script logs are sent to `\u003cdestination\u003e/\u003ccluster-ID\u003e/init_scripts`.",
@@ -475,6 +585,10 @@
                       "file_path": {
                         "$ref": "#/$defs/string"
                       },
+                      "id": {
+                        "$ref": "#/$defs/string",
+                        "readOnly": true
+                      },
                       "lifecycle": {
                         "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
@@ -578,6 +692,10 @@
                         "description": "The name of the database (in a instance) associated with the catalog.",
                         "$ref": "#/$defs/string"
                       },
+                      "id": {
+                        "$ref": "#/$defs/string",
+                        "readOnly": true
+                      },
                       "lifecycle": {
                         "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
@@ -585,6 +703,10 @@
                       "name": {
                         "description": "The name of the catalog in UC.",
                         "$ref": "#/$defs/string"
+                      },
+                      "uid": {
+                        "$ref": "#/$defs/string",
+                        "readOnly": true
                       }
                     },
                     "additionalProperties": false,
@@ -610,9 +732,65 @@
                         "description": "The sku of the instance. Valid values are \"CU_1\", \"CU_2\", \"CU_4\", \"CU_8\".",
                         "$ref": "#/$defs/string"
                       },
+                      "child_instance_refs": {
+                        "description": "The refs of the child instances. This is only available if the instance is\nparent instance.",
+                        "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/database.DatabaseInstanceRef",
+                        "readOnly": true
+                      },
+                      "creation_time": {
+                        "description": "The timestamp when the instance was created.",
+                        "$ref": "#/$defs/string",
+                        "readOnly": true
+                      },
+                      "creator": {
+                        "description": "The email of the creator of the instance.",
+                        "$ref": "#/$defs/string",
+                        "readOnly": true
+                      },
                       "custom_tags": {
                         "description": "Custom tags associated with the instance. This field is only included on create and update responses.",
                         "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/database.CustomTag"
+                      },
+                      "effective_capacity": {
+                        "$ref": "#/$defs/string",
+                        "deprecationMessage": "This field is deprecated",
+                        "deprecated": true,
+                        "readOnly": true
+                      },
+                      "effective_custom_tags": {
+                        "description": "The recorded custom tags associated with the instance.",
+                        "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/database.CustomTag",
+                        "readOnly": true
+                      },
+                      "effective_enable_pg_native_login": {
+                        "description": "Whether the instance has PG native password login enabled.",
+                        "$ref": "#/$defs/bool",
+                        "readOnly": true
+                      },
+                      "effective_enable_readable_secondaries": {
+                        "description": "Whether secondaries serving read-only traffic are enabled. Defaults to false.",
+                        "$ref": "#/$defs/bool",
+                        "readOnly": true
+                      },
+                      "effective_node_count": {
+                        "description": "The number of nodes in the instance, composed of 1 primary and 0 or more secondaries. Defaults to\n1 primary and 0 secondaries.",
+                        "$ref": "#/$defs/int",
+                        "readOnly": true
+                      },
+                      "effective_retention_window_in_days": {
+                        "description": "The retention window for the instance. This is the time window in days\nfor which the historical data is retained.",
+                        "$ref": "#/$defs/int",
+                        "readOnly": true
+                      },
+                      "effective_stopped": {
+                        "description": "Whether the instance is stopped.",
+                        "$ref": "#/$defs/bool",
+                        "readOnly": true
+                      },
+                      "effective_usage_policy_id": {
+                        "description": "The policy that is applied to the instance.",
+                        "$ref": "#/$defs/string",
+                        "readOnly": true
                       },
                       "enable_pg_native_login": {
                         "description": "Whether to enable PG native password login on the instance. Defaults to false.",
@@ -621,6 +799,10 @@
                       "enable_readable_secondaries": {
                         "description": "Whether to enable secondaries to serve read-only traffic. Defaults to false.",
                         "$ref": "#/$defs/bool"
+                      },
+                      "id": {
+                        "$ref": "#/$defs/string",
+                        "readOnly": true
                       },
                       "lifecycle": {
                         "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
@@ -641,13 +823,38 @@
                       "permissions": {
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.DatabaseInstancePermission"
                       },
+                      "pg_version": {
+                        "description": "The version of Postgres running on the instance.",
+                        "$ref": "#/$defs/string",
+                        "readOnly": true
+                      },
+                      "read_only_dns": {
+                        "description": "The DNS endpoint to connect to the instance for read only access. This is only available if\nenable_readable_secondaries is true.",
+                        "$ref": "#/$defs/string",
+                        "readOnly": true
+                      },
+                      "read_write_dns": {
+                        "description": "The DNS endpoint to connect to the instance for read+write access.",
+                        "$ref": "#/$defs/string",
+                        "readOnly": true
+                      },
                       "retention_window_in_days": {
                         "description": "The retention window for the instance. This is the time window in days\nfor which the historical data is retained. The default value is 7 days.\nValid values are 2 to 35 days.",
                         "$ref": "#/$defs/int"
                       },
+                      "state": {
+                        "description": "The current state of the instance.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.DatabaseInstanceState",
+                        "readOnly": true
+                      },
                       "stopped": {
                         "description": "Whether to stop the instance. An input only param, see effective_stopped for the output.",
                         "$ref": "#/$defs/bool"
+                      },
+                      "uid": {
+                        "description": "An immutable UUID identifier for the instance.",
+                        "$ref": "#/$defs/string",
+                        "readOnly": true
                       },
                       "usage_policy_id": {
                         "description": "The desired usage policy to associate with the instance.",
@@ -767,6 +974,10 @@
                       },
                       "health": {
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.JobsHealthRules"
+                      },
+                      "id": {
+                        "$ref": "#/$defs/string",
+                        "readOnly": true
                       },
                       "job_clusters": {
                         "description": "A list of job cluster specifications that can be shared and reused by tasks of this job. Libraries cannot be declared in a shared job cluster. You must declare dependent libraries in task settings.",
@@ -919,6 +1130,10 @@
                         "description": "Location where all artifacts for the experiment are stored.\nIf not provided, the remote server will select an appropriate default.",
                         "$ref": "#/$defs/string"
                       },
+                      "id": {
+                        "$ref": "#/$defs/string",
+                        "readOnly": true
+                      },
                       "lifecycle": {
                         "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
@@ -1000,6 +1215,10 @@
                       "description": {
                         "description": "Optional description for registered model.",
                         "$ref": "#/$defs/string"
+                      },
+                      "id": {
+                        "$ref": "#/$defs/string",
+                        "readOnly": true
                       },
                       "lifecycle": {
                         "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
@@ -1099,6 +1318,10 @@
                       "email_notifications": {
                         "description": "Email notification settings.",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/serving.EmailNotifications"
+                      },
+                      "id": {
+                        "$ref": "#/$defs/string",
+                        "readOnly": true
                       },
                       "lifecycle": {
                         "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
@@ -1277,7 +1500,8 @@
                       },
                       "id": {
                         "description": "Unique identifier for this pipeline.",
-                        "$ref": "#/$defs/string"
+                        "$ref": "#/$defs/string",
+                        "readOnly": true
                       },
                       "ingestion_definition": {
                         "description": "The configuration for a managed ingestion pipeline. These settings cannot be used with the 'libraries', 'schema', 'target', or 'catalog' settings.",
@@ -1432,6 +1656,10 @@
                         "x-databricks-preview": "PRIVATE",
                         "doNotSuggest": true
                       },
+                      "id": {
+                        "$ref": "#/$defs/string",
+                        "readOnly": true
+                      },
                       "inference_log": {
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.MonitorInferenceLog"
                       },
@@ -1524,6 +1752,10 @@
                       "grants": {
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Grant"
                       },
+                      "id": {
+                        "$ref": "#/$defs/string",
+                        "readOnly": true
+                      },
                       "lifecycle": {
                         "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
@@ -1577,6 +1809,10 @@
                       },
                       "grants": {
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.SchemaGrant"
+                      },
+                      "id": {
+                        "$ref": "#/$defs/string",
+                        "readOnly": true
                       },
                       "lifecycle": {
                         "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
@@ -1665,6 +1901,10 @@
                       "backend_type": {
                         "description": "The backend type the scope will be created with. If not specified, will default to `DATABRICKS`",
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/workspace.ScopeBackendType"
+                      },
+                      "id": {
+                        "$ref": "#/$defs/string",
+                        "readOnly": true
                       },
                       "keyvault_metadata": {
                         "description": "The metadata for the secret scope if the `backend_type` is `AZURE_KEYVAULT`",
@@ -1773,6 +2013,10 @@
                         "description": "Configures whether the warehouse should use serverless compute",
                         "$ref": "#/$defs/bool"
                       },
+                      "id": {
+                        "$ref": "#/$defs/string",
+                        "readOnly": true
+                      },
                       "instance_profile_arn": {
                         "description": "Deprecated. Instance profile used to pass IAM role to the cluster",
                         "$ref": "#/$defs/string",
@@ -1869,8 +2113,24 @@
                     "type": "object",
                     "description": "Next field marker: 18",
                     "properties": {
+                      "data_synchronization_status": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.SyncedTableStatus",
+                        "readOnly": true
+                      },
                       "database_instance_name": {
                         "$ref": "#/$defs/string"
+                      },
+                      "effective_database_instance_name": {
+                        "$ref": "#/$defs/string",
+                        "readOnly": true
+                      },
+                      "effective_logical_database_name": {
+                        "$ref": "#/$defs/string",
+                        "readOnly": true
+                      },
+                      "id": {
+                        "$ref": "#/$defs/string",
+                        "readOnly": true
                       },
                       "lifecycle": {
                         "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
@@ -1884,6 +2144,10 @@
                       },
                       "spec": {
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.SyncedTableSpec"
+                      },
+                      "unity_catalog_provisioning_state": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.ProvisioningInfoState",
+                        "readOnly": true
                       }
                     },
                     "additionalProperties": false,
@@ -1912,6 +2176,10 @@
                       },
                       "grants": {
                         "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.VolumeGrant"
+                      },
+                      "id": {
+                        "$ref": "#/$defs/string",
+                        "readOnly": true
                       },
                       "lifecycle": {
                         "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
@@ -2071,6 +2339,10 @@
                       "type": {
                         "description": "The type of the variable.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/variable.VariableType"
+                      },
+                      "value": {
+                        "$ref": "#/$defs/interface",
+                        "readOnly": true
                       }
                     },
                     "additionalProperties": false
@@ -2098,6 +2370,10 @@
                   "type": {
                     "description": "The type of the variable.",
                     "$ref": "#/$defs/github.com/databricks/cli/bundle/config/variable.VariableType"
+                  },
+                  "value": {
+                    "$ref": "#/$defs/interface",
+                    "readOnly": true
                   }
                 },
                 "additionalProperties": false,
@@ -2151,6 +2427,14 @@
                 {
                   "type": "object",
                   "properties": {
+                    "patched": {
+                      "$ref": "#/$defs/string",
+                      "readOnly": true
+                    },
+                    "remote_path": {
+                      "$ref": "#/$defs/string",
+                      "readOnly": true
+                    },
                     "source": {
                       "description": "Required. The artifact source file.",
                       "$ref": "#/$defs/string"
@@ -2194,14 +2478,34 @@
                       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Deployment",
                       "markdownDescription": "The definition of the bundle deployment. For supported attributes see [link](https://docs.databricks.com/dev-tools/bundles/deployment-modes.html)."
                     },
+                    "environment": {
+                      "$ref": "#/$defs/string",
+                      "readOnly": true
+                    },
+                    "force": {
+                      "$ref": "#/$defs/bool",
+                      "readOnly": true
+                    },
                     "git": {
                       "description": "The Git version control details that are associated with your bundle.",
                       "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Git",
                       "markdownDescription": "The Git version control details that are associated with your bundle. For supported attributes see [git](https://docs.databricks.com/dev-tools/bundles/settings.html#git)."
                     },
+                    "mode": {
+                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Mode",
+                      "readOnly": true
+                    },
                     "name": {
                       "description": "The name of the bundle.",
                       "$ref": "#/$defs/string"
+                    },
+                    "target": {
+                      "$ref": "#/$defs/string",
+                      "readOnly": true
+                    },
+                    "terraform": {
+                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Terraform",
+                      "readOnly": true
                     },
                     "uuid": {
                       "description": "Reserved. A Universally Unique Identifier (UUID) for the bundle that uniquely identifies the bundle in internal Databricks systems. This is generated when a bundle project is initialized using a Databricks template (using the `databricks bundle init` command).",
@@ -2293,10 +2597,22 @@
                 {
                   "type": "object",
                   "properties": {
+                    "actual_branch": {
+                      "$ref": "#/$defs/string",
+                      "readOnly": true
+                    },
                     "branch": {
                       "description": "The Git branch name.",
                       "$ref": "#/$defs/string",
                       "markdownDescription": "The Git branch name. See [git](https://docs.databricks.com/dev-tools/bundles/settings.html#git)."
+                    },
+                    "bundle_root_path": {
+                      "$ref": "#/$defs/string",
+                      "readOnly": true
+                    },
+                    "commit": {
+                      "$ref": "#/$defs/string",
+                      "readOnly": true
                     },
                     "origin_url": {
                       "description": "The origin URL of the repository.",
@@ -2639,6 +2955,90 @@
                 }
               ]
             },
+            "config.Terraform": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "exec_path": {
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "exec_path"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "config.User": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "active": {
+                      "description": "If this user is active",
+                      "$ref": "#/$defs/bool"
+                    },
+                    "displayName": {
+                      "description": "String that represents a concatenation of given and family names. For example `John Smith`. This field cannot be updated through the Workspace SCIM APIs when [identity federation is enabled](https://docs.databricks.com/administration-guide/users-groups/best-practices.html#enable-identity-federation). Use Account SCIM APIs to update `displayName`.",
+                      "$ref": "#/$defs/string"
+                    },
+                    "domain_friendly_name": {
+                      "$ref": "#/$defs/string",
+                      "readOnly": true
+                    },
+                    "emails": {
+                      "description": "All the emails associated with the Databricks user.",
+                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/iam.ComplexValue"
+                    },
+                    "entitlements": {
+                      "description": "Entitlements assigned to the user. See [assigning entitlements](https://docs.databricks.com/administration-guide/users-groups/index.html#assigning-entitlements) for a full list of supported values.",
+                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/iam.ComplexValue"
+                    },
+                    "externalId": {
+                      "description": "External ID is not currently supported. It is reserved for future use.",
+                      "$ref": "#/$defs/string"
+                    },
+                    "groups": {
+                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/iam.ComplexValue"
+                    },
+                    "id": {
+                      "description": "Databricks user ID.",
+                      "$ref": "#/$defs/string"
+                    },
+                    "name": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/iam.Name"
+                    },
+                    "roles": {
+                      "description": "Corresponds to AWS instance profile/arn role.",
+                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/iam.ComplexValue"
+                    },
+                    "schemas": {
+                      "description": "The schema of the user.",
+                      "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/iam.UserSchema"
+                    },
+                    "short_name": {
+                      "$ref": "#/$defs/string",
+                      "readOnly": true
+                    },
+                    "userName": {
+                      "description": "Email address of the Databricks user.",
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
             "config.Workspace": {
               "oneOf": [
                 {
@@ -2679,6 +3079,10 @@
                     "client_id": {
                       "description": "The client ID for the workspace",
                       "$ref": "#/$defs/string"
+                    },
+                    "current_user": {
+                      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.User",
+                      "readOnly": true
                     },
                     "file_path": {
                       "description": "The file path to use within the workspace for both deployments and workflow runs",
@@ -2731,6 +3135,18 @@
                 {
                   "type": "object",
                   "properties": {
+                    "create_time": {
+                      "$ref": "#/$defs/string",
+                      "readOnly": true
+                    },
+                    "creator": {
+                      "$ref": "#/$defs/string",
+                      "readOnly": true
+                    },
+                    "deployment_artifacts": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppDeploymentArtifacts",
+                      "readOnly": true
+                    },
                     "deployment_id": {
                       "$ref": "#/$defs/string"
                     },
@@ -2739,6 +3155,14 @@
                     },
                     "source_code_path": {
                       "$ref": "#/$defs/string"
+                    },
+                    "status": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppDeploymentStatus",
+                      "readOnly": true
+                    },
+                    "update_time": {
+                      "$ref": "#/$defs/string",
+                      "readOnly": true
                     }
                   },
                   "additionalProperties": false
@@ -2802,6 +3226,16 @@
               "oneOf": [
                 {
                   "type": "object",
+                  "properties": {
+                    "message": {
+                      "$ref": "#/$defs/string",
+                      "readOnly": true
+                    },
+                    "state": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppDeploymentState",
+                      "readOnly": true
+                    }
+                  },
                   "additionalProperties": false
                 },
                 {
@@ -3187,6 +3621,16 @@
               "oneOf": [
                 {
                   "type": "object",
+                  "properties": {
+                    "message": {
+                      "$ref": "#/$defs/string",
+                      "readOnly": true
+                    },
+                    "state": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.ApplicationState",
+                      "readOnly": true
+                    }
+                  },
                   "additionalProperties": false
                 },
                 {
@@ -3201,7 +3645,8 @@
                   "type": "string",
                   "enum": [
                     "MEDIUM",
-                    "LARGE"
+                    "LARGE",
+                    "LIQUID"
                   ]
                 },
                 {
@@ -3234,6 +3679,17 @@
               "oneOf": [
                 {
                   "type": "object",
+                  "properties": {
+                    "message": {
+                      "$ref": "#/$defs/string",
+                      "readOnly": true
+                    },
+                    "state": {
+                      "description": "State of the app compute.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.ComputeState",
+                      "readOnly": true
+                    }
+                  },
                   "additionalProperties": false
                 },
                 {
@@ -4530,6 +4986,11 @@
                       "description": "Branch time of the ref database instance.\nFor a parent ref instance, this is the point in time on the parent instance from which the\ninstance was created.\nFor a child ref instance, this is the point in time on the instance from which the child\ninstance was created.\nInput: For specifying the point in time to create a child instance. Optional.\nOutput: Only populated if provided as input to create a child instance.",
                       "$ref": "#/$defs/string"
                     },
+                    "effective_lsn": {
+                      "description": "For a parent ref instance, this is the LSN on the parent instance from which the\ninstance was created.\nFor a child ref instance, this is the LSN on the instance from which the child instance\nwas created.",
+                      "$ref": "#/$defs/string",
+                      "readOnly": true
+                    },
                     "lsn": {
                       "description": "User-specified WAL LSN of the ref database instance.\n\nInput: For specifying the WAL LSN to create a child instance. Optional.\nOutput: Only populated if provided as input to create a child instance.",
                       "$ref": "#/$defs/string"
@@ -4537,6 +4998,11 @@
                     "name": {
                       "description": "Name of the ref database instance.",
                       "$ref": "#/$defs/string"
+                    },
+                    "uid": {
+                      "description": "Id of the ref database instance.",
+                      "$ref": "#/$defs/string",
+                      "readOnly": true
                     }
                   },
                   "additionalProperties": false
@@ -4570,6 +5036,18 @@
               "oneOf": [
                 {
                   "type": "object",
+                  "properties": {
+                    "delta_commit_timestamp": {
+                      "description": "The timestamp when the above Delta version was committed in the source Delta table.\nNote: This is the Delta commit time, not the time the data was written to the synced table.",
+                      "$ref": "#/$defs/string",
+                      "readOnly": true
+                    },
+                    "delta_commit_version": {
+                      "description": "The Delta Lake commit version that was last successfully synced.",
+                      "$ref": "#/$defs/int64",
+                      "readOnly": true
+                    }
+                  },
                   "additionalProperties": false
                 },
                 {
@@ -4645,6 +5123,23 @@
                 {
                   "type": "object",
                   "description": "Detailed status of a synced table. Shown if the synced table is in the SYNCED_CONTINUOUS_UPDATE\nor the SYNCED_UPDATING_PIPELINE_RESOURCES state.",
+                  "properties": {
+                    "initial_pipeline_sync_progress": {
+                      "description": "Progress of the initial data synchronization.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.SyncedTablePipelineProgress",
+                      "readOnly": true
+                    },
+                    "last_processed_commit_version": {
+                      "description": "The last source table Delta version that was successfully synced to the synced table.",
+                      "$ref": "#/$defs/int64",
+                      "readOnly": true
+                    },
+                    "timestamp": {
+                      "description": "The end timestamp of the last time any data was synchronized from the source table to the synced\ntable. This is when the data is available in the synced table.",
+                      "$ref": "#/$defs/string",
+                      "readOnly": true
+                    }
+                  },
                   "additionalProperties": false
                 },
                 {
@@ -4658,6 +5153,18 @@
                 {
                   "type": "object",
                   "description": "Detailed status of a synced table. Shown if the synced table is in the OFFLINE_FAILED or the\nSYNCED_PIPELINE_FAILED state.",
+                  "properties": {
+                    "last_processed_commit_version": {
+                      "description": "The last source table Delta version that was successfully synced to the synced table.\nThe last source table Delta version that was synced to the synced table.\nOnly populated if the table is still\nsynced and available for serving.",
+                      "$ref": "#/$defs/int64",
+                      "readOnly": true
+                    },
+                    "timestamp": {
+                      "description": "The end timestamp of the last time any data was synchronized from the source table to the synced\ntable. Only populated if the table is still synced and available for serving.",
+                      "$ref": "#/$defs/string",
+                      "readOnly": true
+                    }
+                  },
                   "additionalProperties": false
                 },
                 {
@@ -4671,6 +5178,38 @@
                 {
                   "type": "object",
                   "description": "Progress information of the Synced Table data synchronization pipeline.",
+                  "properties": {
+                    "estimated_completion_time_seconds": {
+                      "description": "The estimated time remaining to complete this update in seconds.",
+                      "$ref": "#/$defs/float64",
+                      "readOnly": true
+                    },
+                    "latest_version_currently_processing": {
+                      "description": "The source table Delta version that was last processed by the pipeline. The pipeline may not\nhave completely processed this version yet.",
+                      "$ref": "#/$defs/int64",
+                      "readOnly": true
+                    },
+                    "provisioning_phase": {
+                      "description": "The current phase of the data synchronization pipeline.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.ProvisioningPhase",
+                      "readOnly": true
+                    },
+                    "sync_progress_completion": {
+                      "description": "The completion ratio of this update. This is a number between 0 and 1.",
+                      "$ref": "#/$defs/float64",
+                      "readOnly": true
+                    },
+                    "synced_row_count": {
+                      "description": "The number of rows that have been synced in this update.",
+                      "$ref": "#/$defs/int64",
+                      "readOnly": true
+                    },
+                    "total_row_count": {
+                      "description": "The total number of rows that need to be synced in this update. This number may be an estimate.",
+                      "$ref": "#/$defs/int64",
+                      "readOnly": true
+                    }
+                  },
                   "additionalProperties": false
                 },
                 {
@@ -4683,6 +5222,22 @@
               "oneOf": [
                 {
                   "type": "object",
+                  "properties": {
+                    "delta_table_sync_info": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.DeltaTableSyncInfo",
+                      "readOnly": true
+                    },
+                    "sync_end_timestamp": {
+                      "description": "The end timestamp of the most recent successful synchronization.\nThis is the time when the data is available in the synced table.",
+                      "$ref": "#/$defs/string",
+                      "readOnly": true
+                    },
+                    "sync_start_timestamp": {
+                      "description": "The starting timestamp of the most recent successful synchronization from the source table\nto the destination (synced) table.\nNote this is the starting timestamp of the sync operation, not the end time.\nE.g., for a batch, this is the time when the sync operation started.",
+                      "$ref": "#/$defs/string",
+                      "readOnly": true
+                    }
+                  },
                   "additionalProperties": false
                 },
                 {
@@ -4696,6 +5251,13 @@
                 {
                   "type": "object",
                   "description": "Detailed status of a synced table. Shown if the synced table is in the\nPROVISIONING_PIPELINE_RESOURCES or the PROVISIONING_INITIAL_SNAPSHOT state.",
+                  "properties": {
+                    "initial_pipeline_sync_progress": {
+                      "description": "Details about initial data synchronization. Only populated when in the\nPROVISIONING_INITIAL_SNAPSHOT state.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.SyncedTablePipelineProgress",
+                      "readOnly": true
+                    }
+                  },
                   "additionalProperties": false
                 },
                 {
@@ -4798,9 +5360,29 @@
                       "description": "Detailed status of a synced table. Shown if the synced table is in the SYNCED_CONTINUOUS_UPDATE\nor the SYNCED_UPDATING_PIPELINE_RESOURCES state.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.SyncedTableContinuousUpdateStatus"
                     },
+                    "detailed_state": {
+                      "description": "The state of the synced table.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.SyncedTableState",
+                      "readOnly": true
+                    },
                     "failed_status": {
                       "description": "Detailed status of a synced table. Shown if the synced table is in the OFFLINE_FAILED or the\nSYNCED_PIPELINE_FAILED state.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.SyncedTableFailedStatus"
+                    },
+                    "last_sync": {
+                      "description": "Summary of the last successful synchronization from source to destination.\n\nWill always be present if there has been a successful sync. Even if the most recent syncs have failed.\n\nLimitation:\nThe only exception is if the synced table is doing a FULL REFRESH, then the last sync information\nwill not be available until the full refresh is complete. This limitation will be addressed in a future version.\n\nThis top-level field is a convenience for consumers who want easy access to last sync information\nwithout having to traverse detailed_status.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.SyncedTablePosition",
+                      "readOnly": true
+                    },
+                    "message": {
+                      "description": "A text description of the current state of the synced table.",
+                      "$ref": "#/$defs/string",
+                      "readOnly": true
+                    },
+                    "pipeline_id": {
+                      "description": "ID of the associated pipeline. The pipeline ID may have been provided by the client\n(in the case of bin packing), or generated by the server (when creating a new pipeline).",
+                      "$ref": "#/$defs/string",
+                      "readOnly": true
                     },
                     "provisioning_status": {
                       "description": "Detailed status of a synced table. Shown if the synced table is in the\nPROVISIONING_PIPELINE_RESOURCES or the PROVISIONING_INITIAL_SNAPSHOT state.",
@@ -4824,7 +5406,90 @@
                 {
                   "type": "object",
                   "description": "Detailed status of a synced table. Shown if the synced table is in the SYNCED_TRIGGERED_UPDATE\nor the SYNCED_NO_PENDING_UPDATE state.",
+                  "properties": {
+                    "last_processed_commit_version": {
+                      "description": "The last source table Delta version that was successfully synced to the synced table.",
+                      "$ref": "#/$defs/int64",
+                      "readOnly": true
+                    },
+                    "timestamp": {
+                      "description": "The end timestamp of the last time any data was synchronized from the source table to the synced\ntable. This is when the data is available in the synced table.",
+                      "$ref": "#/$defs/string",
+                      "readOnly": true
+                    },
+                    "triggered_update_progress": {
+                      "description": "Progress of the active data synchronization pipeline.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.SyncedTablePipelineProgress",
+                      "readOnly": true
+                    }
+                  },
                   "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "iam.ComplexValue": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "$ref": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "display": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "primary": {
+                      "$ref": "#/$defs/bool"
+                    },
+                    "type": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "value": {
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "iam.Name": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "familyName": {
+                      "description": "Family name of the Databricks user.",
+                      "$ref": "#/$defs/string"
+                    },
+                    "givenName": {
+                      "description": "Given name of the Databricks user.",
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "iam.UserSchema": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "urn:ietf:params:scim:schemas:core:2.0:User",
+                    "urn:ietf:params:scim:schemas:extension:workspace:2.0:User"
+                  ]
                 },
                 {
                   "type": "string",
@@ -7170,6 +7835,11 @@
                       "description": "Top-level source configurations",
                       "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/pipelines.SourceConfig"
                     },
+                    "source_type": {
+                      "description": "The type of the foreign source.\nThe source type will be inferred from the source connection or ingestion gateway.\nThis field is output only and will be ignored if provided.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.IngestionSourceType",
+                      "readOnly": true
+                    },
                     "table_configuration": {
                       "description": "Configuration settings to control the ingestion of tables. These settings are applied to all tables in the pipeline.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.TableSpecificConfig"
@@ -7275,6 +7945,8 @@
                   "enum": [
                     "MYSQL",
                     "POSTGRESQL",
+                    "REDSHIFT",
+                    "SQLDW",
                     "SQLSERVER",
                     "SALESFORCE",
                     "BIGQUERY",
@@ -7287,6 +7959,16 @@
                     "TERADATA",
                     "SHAREPOINT",
                     "DYNAMICS365",
+                    "CONFLUENCE",
+                    "META_MARKETING",
+                    "GOOGLE_ADS",
+                    "TIKTOK_ADS",
+                    "SALESFORCE_MARKETING_CLOUD",
+                    "HUBSPOT",
+                    "WORKDAY_HCM",
+                    "GUIDEWIRE",
+                    "ZENDESK",
+                    "SLACK_AUDIT_LOGS",
                     "FOREIGN_CATALOG"
                   ]
                 },
@@ -9103,6 +9785,11 @@
                       "description": "Alert state if result is empty. Please avoid setting this field to be `UNKNOWN` because `UNKNOWN` state is planned to be deprecated.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertEvaluationState"
                     },
+                    "last_evaluated_at": {
+                      "description": "Timestamp of the last evaluation.",
+                      "$ref": "#/$defs/string",
+                      "readOnly": true
+                    },
                     "notification": {
                       "description": "User or Notification Destination to notify when alert is triggered.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertV2Notification"
@@ -9110,6 +9797,11 @@
                     "source": {
                       "description": "Source column from result to use to evaluate alert",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertV2OperandColumn"
+                    },
+                    "state": {
+                      "description": "Latest state of alert evaluation.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertEvaluationState",
+                      "readOnly": true
                     },
                     "threshold": {
                       "description": "Threshold to user for alert evaluation, can be a column or a value.",
@@ -10269,6 +10961,34 @@
                     "type": "array",
                     "items": {
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.DatabaseInstanceRef"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "iam.ComplexValue": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/iam.ComplexValue"
+                    }
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "iam.UserSchema": {
+                "oneOf": [
+                  {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/iam.UserSchema"
                     }
                   },
                   {

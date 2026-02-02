@@ -1,3 +1,16 @@
+github.com/databricks/cli/bundle/config.User:
+  "domain_friendly_name":
+    "description": |-
+      PLACEHOLDER
+  "groups":
+    "description": |-
+      PLACEHOLDER
+  "name":
+    "description": |-
+      PLACEHOLDER
+  "short_name":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.Alert:
   "evaluation":
     "description": |-
@@ -111,6 +124,9 @@ github.com/databricks/cli/bundle/config/resources.Cluster:
   "docker_image":
     "description": |-
       PLACEHOLDER
+  "id":
+    "description": |-
+      PLACEHOLDER
   "kind":
     "description": |-
       PLACEHOLDER
@@ -222,6 +238,9 @@ github.com/databricks/cli/bundle/config/resources.DatabaseCatalog:
   "create_database_if_not_exists":
     "description": |-
       PLACEHOLDER
+  "id":
+    "description": |-
+      PLACEHOLDER
   "lifecycle":
     "description": |-
       Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
@@ -229,6 +248,9 @@ github.com/databricks/cli/bundle/config/resources.DatabaseCatalog:
     "description": |-
       PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.DatabaseInstance:
+  "id":
+    "description": |-
+      PLACEHOLDER
   "lifecycle":
     "description": |-
       Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
@@ -264,6 +286,9 @@ github.com/databricks/cli/bundle/config/resources.Job:
 
       For information about defining job tasks and overriding job settings, see [_](/dev-tools/bundles/job-task-types.md), [_](/dev-tools/bundles/job-task-override.md), and [_](/dev-tools/bundles/cluster-override.md).
   "health":
+    "description": |-
+      PLACEHOLDER
+  "id":
     "description": |-
       PLACEHOLDER
   "lifecycle":
@@ -303,6 +328,9 @@ github.com/databricks/cli/bundle/config/resources.MlflowExperiment:
                 group_name: users
             description: MLflow experiment used to track runs
       ```
+  "id":
+    "description": |-
+      PLACEHOLDER
   "lifecycle":
     "description": |-
       Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
@@ -322,6 +350,9 @@ github.com/databricks/cli/bundle/config/resources.MlflowModel:
   "_":
     "markdown_description": |-
       The model resource allows you to define [legacy models](/api/workspace/modelregistry/createmodel) in bundles. Databricks recommends you use Unity Catalog [registered models](#registered-model) instead.
+  "id":
+    "description": |-
+      PLACEHOLDER
   "lifecycle":
     "description": |-
       Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
@@ -368,6 +399,9 @@ github.com/databricks/cli/bundle/config/resources.ModelServingEndpoint:
               value: "data science"
       ```
   "description":
+    "description": |-
+      PLACEHOLDER
+  "id":
     "description": |-
       PLACEHOLDER
   "lifecycle":
@@ -460,6 +494,9 @@ github.com/databricks/cli/bundle/config/resources.QualityMonitor:
               quartz_cron_expression: 0 0 8 * * ? # Run Every day at 8am
               timezone_id: UTC
       ```
+  "id":
+    "description": |-
+      PLACEHOLDER
   "inference_log":
     "description": |-
       PLACEHOLDER
@@ -505,6 +542,9 @@ github.com/databricks/cli/bundle/config/resources.RegisteredModel:
     "description": |-
       PLACEHOLDER
   "grants":
+    "description": |-
+      PLACEHOLDER
+  "id":
     "description": |-
       PLACEHOLDER
   "lifecycle":
@@ -572,6 +612,9 @@ github.com/databricks/cli/bundle/config/resources.Schema:
   "grants":
     "description": |-
       PLACEHOLDER
+  "id":
+    "description": |-
+      PLACEHOLDER
   "lifecycle":
     "description": |-
       Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
@@ -622,6 +665,9 @@ github.com/databricks/cli/bundle/config/resources.SqlWarehouse:
       Configures whether the warehouse should use Photon optimized clusters.
 
       Defaults to true.
+  "id":
+    "description": |-
+      PLACEHOLDER
   "lifecycle":
     "description": |-
       Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
@@ -645,6 +691,10 @@ github.com/databricks/cli/bundle/config/resources.SqlWarehousePermissionLevel:
         CAN_MONITOR
       - |-
         CAN_VIEW
+github.com/databricks/cli/bundle/config/resources.SyncedDatabaseTable:
+  "id":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.Volume:
   "_":
     "markdown_description": |-
@@ -667,6 +717,9 @@ github.com/databricks/cli/bundle/config/resources.Volume:
 
       For an example bundle that runs a job that writes to a file in Unity Catalog volume, see the [bundle-examples GitHub repository](https://github.com/databricks/bundle-examples/tree/main/knowledge_base/write_from_job_to_volume).
   "grants":
+    "description": |-
+      PLACEHOLDER
+  "id":
     "description": |-
       PLACEHOLDER
   "lifecycle":
@@ -900,6 +953,22 @@ github.com/databricks/databricks-sdk-go/service/compute.LogAnalyticsInfo:
       The workspace ID for the Azure Log Analytics agent configuration
 github.com/databricks/databricks-sdk-go/service/database.SyncedTablePosition:
   "delta_table_sync_info":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/iam.ComplexValue:
+  "$ref":
+    "description": |-
+      PLACEHOLDER
+  "display":
+    "description": |-
+      PLACEHOLDER
+  "primary":
+    "description": |-
+      PLACEHOLDER
+  "type":
+    "description": |-
+      PLACEHOLDER
+  "value":
     "description": |-
       PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/jobs.DashboardTask:
