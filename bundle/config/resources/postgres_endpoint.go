@@ -3,7 +3,6 @@ package resources
 import (
 	"context"
 	"net/url"
-	"strings"
 
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
@@ -49,23 +48,10 @@ func (e *PostgresEndpoint) GetName() string {
 }
 
 func (e *PostgresEndpoint) GetURL() string {
-	return e.URL
+	// The IDs in the API do not (yet) map to IDs in the web UI.
+	return ""
 }
 
-func (e *PostgresEndpoint) InitializeURL(baseURL url.URL) {
-	if e.ModifiedStatus == ModifiedStatusCreated {
-		return
-	}
-	if e.Name == "" {
-		return
-	}
-	// Parse: projects/{project_id}/branches/{branch_id}/endpoints/{endpoint_id}
-	parts := strings.Split(e.Name, "/")
-	if len(parts) >= 6 {
-		projectId := parts[1]
-		branchId := parts[3]
-		endpointId := parts[5]
-		baseURL.Path = "postgres/projects/" + projectId + "/branches/" + branchId + "/endpoints/" + endpointId
-		e.URL = baseURL.String()
-	}
+func (e *PostgresEndpoint) InitializeURL(_ url.URL) {
+	// The IDs in the API do not (yet) map to IDs in the web UI.
 }
