@@ -1,5 +1,5 @@
 # Invariant to test: migrate is successful, no drift after deploy
-# Additional checks: no internal errors / panics in validate/plan/deploy
+# Additional checks: no internal errors / panics in any commands
 
 unset DATABRICKS_BUNDLE_ENGINE
 
