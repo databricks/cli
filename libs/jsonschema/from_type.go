@@ -11,10 +11,6 @@ import (
 )
 
 var skipTags = []string{
-	// Fields tagged "readonly" should not be emitted in the schema as they are
-	// computed at runtime, and should not be assigned a value by the bundle author.
-	"readonly",
-
 	// Annotation for internal bundle fields that should not be exposed to customers.
 	// Fields can be tagged as "internal" to remove them from the generated schema.
 	"internal",
@@ -255,8 +251,7 @@ func (c *constructor) fromTypeStruct(typ reflect.Type) (Schema, error) {
 	structFields := getStructFields(typ)
 	for _, structField := range structFields {
 		bundleTags := strings.Split(structField.Tag.Get("bundle"), ",")
-		// Fields marked as "readonly" or "internal" are skipped while generating
-		// the schema
+		// Fields marked as "internal" are skipped while generating the schema
 		skip := false
 		for _, tag := range skipTags {
 			if slices.Contains(bundleTags, tag) {
@@ -299,9 +294,19 @@ func (c *constructor) fromTypeStruct(typ reflect.Type) (Schema, error) {
 		// For every property in the struct, add a $ref to the corresponding
 		// $defs block.
 		refPath := path.Join("#/$defs", typPath)
-		res.Properties[fieldName] = &Schema{
+		s := &Schema{
 			Reference: &refPath,
 		}
+
+		// Fields tagged as "readonly" are computed at runtime and should not be
+		// set by the user. Mark them as readOnly in the schema.
+		if slices.Contains(bundleTags, "readonly") {
+			s.FieldBehaviors = append(s.FieldBehaviors, "OUTPUT_ONLY")
+			s.ReadOnly = true
+			s.DoNotSuggest = true
+		}
+
+		res.Properties[fieldName] = s
 	}
 
 	return res, nil

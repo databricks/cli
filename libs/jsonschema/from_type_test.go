@@ -20,7 +20,9 @@ func TestFromTypeBasic(t *testing.T) {
 		NotAnnotated   string
 		DashedTag      string `json:"-"`
 		InternalTagged string `json:"internal_tagged" bundle:"internal"`
-		ReadOnlyTagged string `json:"readonly_tagged" bundle:"readonly"`
+
+		// This field should be included with readOnly: true
+		ReadOnlyTagged string `json:"readonly_tagged,omitempty" bundle:"readonly"`
 	}
 
 	strRef := "#/$defs/string"
@@ -87,6 +89,14 @@ func TestFromTypeBasic(t *testing.T) {
 					},
 					"triple_pointer": {
 						Reference: &intRef,
+					},
+					"readonly_tagged": {
+						Reference: &strRef,
+						Extension: Extension{
+							DoNotSuggest:   true,
+							FieldBehaviors: []string{"OUTPUT_ONLY"},
+						},
+						ReadOnly: true,
 					},
 				},
 				AdditionalProperties: false,

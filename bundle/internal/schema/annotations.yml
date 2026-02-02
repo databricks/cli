@@ -20,6 +20,12 @@ github.com/databricks/cli/bundle/config.Artifact:
     "markdown_description": |-
       Required if the artifact is a Python wheel. The type of the artifact. Valid values are `whl` and `jar`.
 github.com/databricks/cli/bundle/config.ArtifactFile:
+  "patched":
+    "description": |-
+      PLACEHOLDER
+  "remote_path":
+    "description": |-
+      PLACEHOLDER
   "source":
     "description": |-
       Required. The artifact source file.
@@ -42,14 +48,29 @@ github.com/databricks/cli/bundle/config.Bundle:
       The definition of the bundle deployment
     "markdown_description": |-
       The definition of the bundle deployment. For supported attributes see [\_](/dev-tools/bundles/deployment-modes.md).
+  "environment":
+    "description": |-
+      PLACEHOLDER
+  "force":
+    "description": |-
+      PLACEHOLDER
   "git":
     "description": |-
       The Git version control details that are associated with your bundle.
     "markdown_description": |-
       The Git version control details that are associated with your bundle. For supported attributes see [\_](/dev-tools/bundles/settings.md#git).
+  "mode":
+    "description": |-
+      PLACEHOLDER
   "name":
     "description": |-
       The name of the bundle.
+  "target":
+    "description": |-
+      PLACEHOLDER
+  "terraform":
+    "description": |-
+      PLACEHOLDER
   "uuid":
     "description": |-
       Reserved. A Universally Unique Identifier (UUID) for the bundle that uniquely identifies the bundle in internal Databricks systems. This is generated when a bundle project is initialized using a Databricks template (using the `databricks bundle init` command).
@@ -86,11 +107,20 @@ github.com/databricks/cli/bundle/config.Experimental:
     "description": |-
       Whether to use the legacy run_as behavior.
 github.com/databricks/cli/bundle/config.Git:
+  "actual_branch":
+    "description": |-
+      PLACEHOLDER
   "branch":
     "description": |-
       The Git branch name.
     "markdown_description": |-
       The Git branch name. See [\_](/dev-tools/bundles/settings.md#git).
+  "bundle_root_path":
+    "description": |-
+      PLACEHOLDER
+  "commit":
+    "description": |-
+      PLACEHOLDER
   "origin_url":
     "description": |-
       The origin URL of the repository.
@@ -396,6 +426,10 @@ github.com/databricks/cli/bundle/config.Target:
   "workspace":
     "description": |-
       The Databricks workspace for the target.
+github.com/databricks/cli/bundle/config.Terraform:
+  "exec_path":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config.Workspace:
   "artifact_path":
     "description": |-
@@ -424,6 +458,9 @@ github.com/databricks/cli/bundle/config.Workspace:
   "client_id":
     "description": |-
       The client ID for the workspace
+  "current_user":
+    "description": |-
+      PLACEHOLDER
   "experimental_is_unified_host":
     "description": |-
       Experimental feature flag to indicate if the host is a unified host
@@ -557,6 +594,9 @@ github.com/databricks/cli/bundle/config/resources.Dashboard:
   "dataset_schema":
     "description": |-
       Sets the default schema for all datasets in this dashboard. When set, this overrides the schema specified in individual dataset definitions.
+  "id":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.DashboardPermission:
   "group_name":
     "description": |-
@@ -692,6 +732,9 @@ github.com/databricks/cli/bundle/config/resources.SecretScope:
   "backend_type":
     "description": |-
       The backend type the scope will be created with. If not specified, will default to `DATABRICKS`
+  "id":
+    "description": |-
+      PLACEHOLDER
   "keyvault_metadata":
     "description": |-
       The metadata for the secret scope if the `backend_type` is `AZURE_KEYVAULT`
@@ -815,6 +858,9 @@ github.com/databricks/cli/bundle/config/variable.TargetVariable:
   "type":
     "description": |-
       The type of the variable.
+  "value":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config/variable.Variable:
   "_":
     "description": |-
@@ -835,6 +881,9 @@ github.com/databricks/cli/bundle/config/variable.Variable:
   "type":
     "description": |-
       The type of the variable.
+  "value":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/databricks-sdk-go/service/jobs.JobRunAs:
   "service_principal_name":
     "description": |-
