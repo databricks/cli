@@ -13,6 +13,10 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/postgres"
 )
 
+// endpointReconciliationTimeout is the maximum time to wait for endpoint reconciliation.
+// This value is a heuristic and is being discussed with the backend team.
+const endpointReconciliationTimeout = 2 * time.Minute
+
 type ResourcePostgresEndpoint struct {
 	client *databricks.WorkspaceClient
 }
@@ -66,6 +70,7 @@ func (r *ResourcePostgresEndpoint) DoRead(ctx context.Context, id string) (*post
 // This is needed because the operation can complete while internal reconciliation
 // is still in progress, which would cause subsequent operations to fail.
 func (r *ResourcePostgresEndpoint) waitForReconciliation(ctx context.Context, name string) (*postgres.Endpoint, error) {
+	deadline := time.Now().Add(endpointReconciliationTimeout)
 	for {
 		endpoint, err := r.client.Postgres.GetEndpoint(ctx, postgres.GetEndpointRequest{Name: name})
 		if err != nil {
@@ -75,6 +80,11 @@ func (r *ResourcePostgresEndpoint) waitForReconciliation(ctx context.Context, na
 		// If there's no pending state, reconciliation is complete
 		if endpoint.Status == nil || endpoint.Status.PendingState == "" {
 			return endpoint, nil
+		}
+
+		// Check if we've exceeded the timeout
+		if time.Now().After(deadline) {
+			return nil, errors.New("timeout waiting for endpoint reconciliation to complete")
 		}
 
 		// Wait before polling again
@@ -154,6 +164,7 @@ func (r *ResourcePostgresEndpoint) DoUpdate(ctx context.Context, id string, conf
 
 func (r *ResourcePostgresEndpoint) DoDelete(ctx context.Context, id string) error {
 	// Retry loop to handle "Endpoint reconciliation still in progress" errors
+	deadline := time.Now().Add(endpointReconciliationTimeout)
 	for {
 		waiter, err := r.client.Postgres.DeleteEndpoint(ctx, postgres.DeleteEndpointRequest{
 			Name: id,
@@ -163,6 +174,10 @@ func (r *ResourcePostgresEndpoint) DoDelete(ctx context.Context, id string) erro
 			var apiErr *apierr.APIError
 			if errors.As(err, &apiErr) && apiErr.StatusCode == 409 &&
 				strings.Contains(apiErr.Message, "reconciliation") {
+				// Check if we've exceeded the timeout
+				if time.Now().After(deadline) {
+					return errors.New("timeout waiting for endpoint reconciliation to complete before delete")
+				}
 				// Wait and retry
 				select {
 				case <-ctx.Done():
