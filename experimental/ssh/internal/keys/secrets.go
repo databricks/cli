@@ -18,10 +18,23 @@ func CreateKeysSecretScope(ctx context.Context, client *databricks.WorkspaceClie
 		return "", fmt.Errorf("failed to get current user: %w", err)
 	}
 	secretScopeName := fmt.Sprintf("%s-%s-ssh-tunnel-keys", me.UserName, sessionID)
+
+	// Do not create the scope if it already exists.
+	// We can instead filter out "resource already exists" errors from CreateScope,
+	// but that API can also lead to "limit exceeded" errors, even if the scope does actually exist.
+	scope, err := client.Secrets.ListSecretsByScope(ctx, secretScopeName)
+	if err != nil && !errors.Is(err, databricks.ErrResourceDoesNotExist) {
+		return "", fmt.Errorf("failed to check if secret scope %s exists: %w", secretScopeName, err)
+	}
+
+	if scope != nil && err == nil {
+		return secretScopeName, nil
+	}
+
 	err = client.Secrets.CreateScope(ctx, workspace.CreateScope{
 		Scope: secretScopeName,
 	})
-	if err != nil && !errors.Is(err, databricks.ErrResourceAlreadyExists) {
+	if err != nil {
 		return "", fmt.Errorf("failed to create secrets scope: %w", err)
 	}
 	return secretScopeName, nil
