@@ -68,7 +68,7 @@ func revertCliDefaults(b *bundle.Bundle, path string, cd *deployplan.ChangeDesc)
 	return cd
 }
 
-func isMapsStringsEqual(m1 map[string]string, m2 map[string]string) bool {
+func isMapsStringsEqual(m1, m2 map[string]string) bool {
 	if len(m1) != len(m2) {
 		return false
 	}

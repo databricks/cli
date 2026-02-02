@@ -2,7 +2,6 @@ package configsync
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"reflect"
 	"strings"
@@ -11,8 +10,9 @@ import (
 	"github.com/databricks/cli/bundle/config/engine"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct"
+	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/databricks-sdk-go/marshal"
 )
 
 type OperationType string
@@ -34,45 +34,13 @@ type ResourceChanges map[string]*ConfigChangeDesc
 
 type Changes map[string]ResourceChanges
 
-// normalizeValue converts values to plain Go types suitable for YAML patching
-// by using SDK marshaling which properly handles ForceSendFields and other annotations.
 func normalizeValue(v any) (any, error) {
-	if v == nil {
-		return nil, nil
-	}
-
-	switch v.(type) {
-	case bool, string, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64:
-		return v, nil
-	}
-
-	rv := reflect.ValueOf(v)
-	rt := rv.Type()
-
-	if rt.Kind() == reflect.Ptr {
-		rt = rt.Elem()
-	}
-
-	var data []byte
-	var err error
-
-	if rt.Kind() == reflect.Struct {
-		data, err = marshal.Marshal(v)
-	} else {
-		data, err = json.Marshal(v)
-	}
-
+	dynValue, err := convert.FromTyped(v, dyn.NilValue)
 	if err != nil {
-		return v, fmt.Errorf("failed to marshal value of type %T: %w", v, err)
+		return nil, fmt.Errorf("failed to convert value of type %T: %w", v, err)
 	}
 
-	var normalized any
-	err = json.Unmarshal(data, &normalized)
-	if err != nil {
-		return v, fmt.Errorf("failed to unmarshal value: %w", err)
-	}
-
-	return normalized, nil
+	return dynValue.AsAny(), nil
 }
 
 func convertChangeDesc(path string, cd *deployplan.ChangeDesc) (*ConfigChangeDesc, error) {
@@ -319,23 +287,7 @@ func isDefaultEmailNotifications(changeDesc *deployplan.ChangeDesc) bool {
 		return false
 	}
 
-	normalized, err := normalizeValue(changeDesc.Remote)
-	if err != nil {
-		return false
-	}
-
-	m, ok := normalized.(map[string]any)
-	if !ok {
-		return false
-	}
-
-	if len(m) == 1 {
-		if val, exists := m["no_alert_for_skipped_runs"]; exists {
-			if boolVal, ok := val.(bool); ok && !boolVal {
-				return true
-			}
-		}
-	}
-
-	return false
+	return reflect.DeepEqual(changeDesc.Remote, map[string]any{
+		"no_alert_for_skipped_runs": false,
+	})
 }
