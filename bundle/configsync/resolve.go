@@ -129,7 +129,20 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 			loc := b.Config.GetLocation(resolvedPath)
 			filePath := loc.File
 
-			if filePath == "" {
+			isDefinedInConfig := filePath != ""
+			if !isDefinedInConfig {
+				if configChange.Operation == OperationRemove {
+					// If the field is not defined in the config and the operation is remove, it is more likely a CLI default
+					// in this case we skip the change
+					continue
+				}
+
+				if configChange.Operation == OperationReplace {
+					// If the field is not defined in the config and the operation is replace, it is more likely a CLI default
+					// in this case we add it explicitly to the resource location
+					configChange.Operation = OperationAdd
+				}
+
 				resourceLocation := b.Config.GetLocation(resourceKey)
 				filePath = resourceLocation.File
 				if filePath == "" {
