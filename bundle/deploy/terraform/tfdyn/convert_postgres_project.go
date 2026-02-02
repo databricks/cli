@@ -13,11 +13,8 @@ type postgresProjectConverter struct{}
 
 func (c postgresProjectConverter) Convert(ctx context.Context, key string, vin dyn.Value, out *schema.Resources) error {
 	// The bundle config has flattened ProjectSpec fields at the top level.
-	// Terraform expects them nested in a "spec" block. We need to restructure:
-	// - Keep project_id at top level
-	// - Move display_name, pg_version, history_retention_duration, default_endpoint_settings into spec
-
-	specFields := []string{"display_name", "pg_version", "history_retention_duration", "default_endpoint_settings"}
+	// Terraform expects them nested in a "spec" block.
+	specFields := specFieldNames(schema.ResourcePostgresProjectSpec{})
 
 	// Build the spec block from the flattened fields
 	specMap := make(map[string]dyn.Value)
@@ -54,13 +51,6 @@ func (c postgresProjectConverter) Convert(ctx context.Context, key string, vin d
 	}
 
 	out.PostgresProject[key] = vout.AsAny()
-
-	// TODO: Enable permissions in Task 6
-	// Configure permissions for this resource.
-	// if permissions := convertPermissionsResource(ctx, vin); permissions != nil {
-	// 	permissions.PostgresProjectName = fmt.Sprintf("${databricks_postgres_project.%s.name}", key)
-	// 	out.Permissions["postgres_project_"+key] = permissions
-	// }
 
 	return nil
 }

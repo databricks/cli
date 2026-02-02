@@ -13,11 +13,8 @@ type postgresEndpointConverter struct{}
 
 func (c postgresEndpointConverter) Convert(ctx context.Context, key string, vin dyn.Value, out *schema.Resources) error {
 	// The bundle config has flattened EndpointSpec fields at the top level.
-	// Terraform expects them nested in a "spec" block. We need to restructure:
-	// - Keep endpoint_id, parent at top level
-	// - Move autoscaling_limit_max_cu, autoscaling_limit_min_cu, disabled, endpoint_type, no_suspension, settings, suspend_timeout_duration into spec
-
-	specFields := []string{"autoscaling_limit_max_cu", "autoscaling_limit_min_cu", "disabled", "endpoint_type", "no_suspension", "settings", "suspend_timeout_duration"}
+	// Terraform expects them nested in a "spec" block.
+	specFields := specFieldNames(schema.ResourcePostgresEndpointSpec{})
 	topLevelFields := []string{"endpoint_id", "parent"}
 
 	// Build the spec block from the flattened fields
@@ -57,12 +54,6 @@ func (c postgresEndpointConverter) Convert(ctx context.Context, key string, vin 
 	}
 
 	out.PostgresEndpoint[key] = vout.AsAny()
-
-	// TODO: Enable when PostgresEndpointPermission is defined in Task 6
-	// if permissions := convertPermissionsResource(ctx, vin); permissions != nil {
-	// 	permissions.PostgresEndpointName = fmt.Sprintf("${databricks_postgres_endpoint.%s.name}", key)
-	// 	out.Permissions["postgres_endpoint_"+key] = permissions
-	// }
 
 	return nil
 }
