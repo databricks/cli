@@ -21,20 +21,6 @@ var sdkNativeTypes = []reflect.Type{
 	reflect.TypeFor[sdkfieldmask.FieldMask](), // Comma-separated paths (e.g., "name,age,email")
 }
 
-// isSDKNativeType checks if the given type is one of the SDK's native types
-// that use custom JSON marshaling and should be treated as strings.
-func isSDKNativeType(typ reflect.Type) bool {
-	for typ.Kind() == reflect.Ptr {
-		typ = typ.Elem()
-	}
-	for _, sdkType := range sdkNativeTypes {
-		if typ == sdkType {
-			return true
-		}
-	}
-	return false
-}
-
 // fromTypedSDKNative converts SDK native types to dyn.Value.
 // SDK native types (duration.Duration, time.Time, fieldmask.FieldMask) use
 // custom JSON marshaling with string representations.
