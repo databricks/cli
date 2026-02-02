@@ -113,7 +113,7 @@ func (b *DeploymentBundle) Bind(ctx context.Context, client *databricks.Workspac
 
 	// Populate the state with the resolved config
 	entry := plan.Plan[resourceKey]
-	sv, ok := b.StructVarCache.Load(resourceKey)
+	sv, ok := b.StateCache.Load(resourceKey)
 	if ok && sv != nil {
 		var dependsOn []deployplan.DependsOnEntry
 		if entry != nil {

@@ -102,7 +102,7 @@ func (b *DeploymentBundle) InitForApply(ctx context.Context, client *databricks.
 			return fmt.Errorf("loading plan entry %s: %w", resourceKey, err)
 		}
 
-		b.StructVarCache.Store(resourceKey, sv)
+		b.StateCache.Store(resourceKey, sv)
 	}
 
 	b.Plan = plan
@@ -218,9 +218,9 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		// for integers: compare 0 with actual object ID. As long as real object IDs are never 0 we're good.
 		// Once we add non-id fields or add per-field details to "bundle plan", we must read dynamic data and deal with references as first class citizen.
 		// This means distinguishing between 0 that are actually object ids and 0 that are there because typed struct integer cannot contain ${...} string.
-		sv, ok := b.StructVarCache.Load(resourceKey)
+		sv, ok := b.StateCache.Load(resourceKey)
 		if !ok {
-			logdiag.LogError(ctx, fmt.Errorf("%s: internal error: no state found for %q", errorPrefix, resourceKey))
+			logdiag.LogError(ctx, fmt.Errorf("%s: internal error: no state cache entry found for %q", errorPrefix, resourceKey))
 			return false
 		}
 		localDiff, err := structdiff.GetStructDiff(savedState, sv.Value, adapter.KeyedSlices())
@@ -558,10 +558,9 @@ func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *s
 		return nil, fmt.Errorf("internal error: %s: action is %q missing new_state", targetResourceKey, targetEntry.Action)
 	}
 
-	// Get StructVar from cache
-	sv, ok := b.StructVarCache.Load(targetResourceKey)
+	sv, ok := b.StateCache.Load(targetResourceKey)
 	if !ok {
-		return nil, fmt.Errorf("internal error: %s: missing cached StructVar", targetResourceKey)
+		return nil, fmt.Errorf("internal error: %s: missing state cache entry", targetResourceKey)
 	}
 
 	_, isUnresolved := sv.Refs[fieldPathS]
@@ -604,6 +603,8 @@ func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *s
 			remoteState, ok := b.RemoteStateCache.Load(targetResourceKey)
 			if ok {
 				return structaccess.Get(remoteState, fieldPath)
+			} else {
+				return nil, fmt.Errorf("internal error: no entry in remote state cache for %q (remote-only)", targetResourceKey)
 			}
 		}
 		return nil, errDelayed
@@ -621,27 +622,19 @@ func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *s
 		remoteState, ok := b.RemoteStateCache.Load(targetResourceKey)
 		if ok {
 			return structaccess.Get(remoteState, fieldPath)
+		} else {
+			return nil, fmt.Errorf("internal error: no entry in remote state cache for %q", targetResourceKey)
 		}
 	}
 
 	return nil, errDelayed
 }
 
-// getStructVar returns the cached StructVar for the given resource key.
-// The StructVar must have been eagerly loaded during plan creation or InitForApply.
-func (b *DeploymentBundle) getStructVar(resourceKey string) (*structvar.StructVar, error) {
-	sv, ok := b.StructVarCache.Load(resourceKey)
-	if !ok {
-		return nil, fmt.Errorf("internal error: StructVar not found in cache for %s", resourceKey)
-	}
-	return sv, nil
-}
-
 // resolveReferences processes all references in entry.NewState.Refs.
-func (b *DeploymentBundle) resolveReferences(ctx context.Context, resourceKey string, entry *deployplan.PlanEntry, errorPrefix string, isLocal bool) bool {
-	sv, err := b.getStructVar(resourceKey)
-	if err != nil {
-		logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
+func (b *DeploymentBundle) resolveReferences(ctx context.Context, resourceKey string, entry *deployplan.PlanEntry, errorPrefix string, isPreDeploy bool) bool {
+	sv, ok := b.StateCache.Load(resourceKey)
+	if !ok {
+		logdiag.LogError(ctx, fmt.Errorf("%s: internal error: no cache entry found for %q", errorPrefix, resourceKey))
 		return false
 	}
 
@@ -662,7 +655,7 @@ func (b *DeploymentBundle) resolveReferences(ctx context.Context, resourceKey st
 			}
 
 			var value any
-			if isLocal {
+			if isPreDeploy {
 				value, err = b.LookupReferencePreDeploy(ctx, targetPath)
 				if err != nil {
 					if errors.Is(err, errDelayed) {
@@ -853,7 +846,7 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 		}
 
 		// Store in cache for use during planning phase
-		b.StructVarCache.Store(node, newState)
+		b.StateCache.Store(node, newState)
 
 		// Convert to JSON for serialization in plan
 		newStateJSON, err := newState.ToJSON()

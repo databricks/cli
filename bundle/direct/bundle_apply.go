@@ -101,7 +101,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 			}
 
 			// Get the cached StructVar to check for unresolved refs and get value
-			sv, ok := b.StructVarCache.Load(resourceKey)
+			sv, ok := b.StateCache.Load(resourceKey)
 			if !ok {
 				logdiag.LogError(ctx, fmt.Errorf("%s: internal error: missing cached StructVar", errorPrefix))
 				return false
