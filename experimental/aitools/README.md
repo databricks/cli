@@ -191,6 +191,12 @@ Execute Databricks CLI commands and explore workspace resources:
   - Run catalog commands: `catalogs list`, `schemas list`, `tables list`
   - Supports all Databricks CLI functionality with proper user allowlisting
 
+- **`databricks_query_sdk_docs`** - Search SDK documentation for methods, types, and enums
+  - Find API methods: "how to create a job", "list clusters"
+  - Look up type definitions: "JobSettings fields", "ClusterSpec parameters"
+  - Search enums: "run lifecycle states", "cluster state values"
+  - Returns method signatures, descriptions, and parameter information
+
 *These tools provide a conversational interface to the full Databricks CLI, including Unity Catalog exploration and SQL query execution.*
 
 ---
@@ -325,6 +331,10 @@ databricks experimental aitools install
 
 # Start MCP server
 databricks experimental aitools mcp
+
+# Search SDK documentation (CLI alternative to MCP tool)
+databricks experimental aitools tools query-sdk-docs "create job"
+databricks experimental aitools tools query-sdk-docs "list" --service jobs --category methods
 ```
 
 ### Environment Variables
