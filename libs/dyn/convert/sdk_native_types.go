@@ -7,6 +7,7 @@ import (
 	"slices"
 
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/dyn/dynvar"
 	sdkduration "github.com/databricks/databricks-sdk-go/common/types/duration"
 	sdkfieldmask "github.com/databricks/databricks-sdk-go/common/types/fieldmask"
 	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
@@ -21,24 +22,23 @@ var sdkNativeTypes = []reflect.Type{
 	reflect.TypeFor[sdkfieldmask.FieldMask](), // Comma-separated paths (e.g., "name,age,email")
 }
 
-// isSDKNativeType checks if the given type is one of the SDK's native types
-// that use custom JSON marshaling and should be treated as strings.
-func isSDKNativeType(typ reflect.Type) bool {
-	for typ.Kind() == reflect.Ptr {
-		typ = typ.Elem()
-	}
-	for _, sdkType := range sdkNativeTypes {
-		if typ == sdkType {
-			return true
-		}
-	}
-	return false
-}
-
 // fromTypedSDKNative converts SDK native types to dyn.Value.
 // SDK native types (duration.Duration, time.Time, fieldmask.FieldMask) use
 // custom JSON marshaling with string representations.
 func fromTypedSDKNative(src reflect.Value, ref dyn.Value, options ...fromTypedOptions) (dyn.Value, error) {
+	// Check that the reference value is compatible or nil.
+	switch ref.Kind() {
+	case dyn.KindString:
+		// Ignore pure variable references (e.g. ${var.foo}).
+		if dynvar.IsPureVariableReference(ref.MustString()) {
+			return ref, nil
+		}
+	case dyn.KindNil:
+		// Allow nil reference.
+	default:
+		return dyn.InvalidValue, fmt.Errorf("cannot convert SDK native type to dynamic type %#v", ref.Kind().String())
+	}
+
 	// Check for zero value first.
 	if src.IsZero() && !slices.Contains(options, includeZeroValues) {
 		return dyn.NilValue, nil
@@ -71,6 +71,11 @@ func fromTypedSDKNative(src reflect.Value, ref dyn.Value, options ...fromTypedOp
 func toTypedSDKNative(dst reflect.Value, src dyn.Value) error {
 	switch src.Kind() {
 	case dyn.KindString:
+		// Ignore pure variable references (e.g. ${var.foo}).
+		if dynvar.IsPureVariableReference(src.MustString()) {
+			dst.SetZero()
+			return nil
+		}
 		// Use JSON unmarshaling since SDK native types implement json.Unmarshaler.
 		// Marshal the string to create a valid JSON string literal for unmarshaling.
 		jsonBytes, err := json.Marshal(src.MustString())

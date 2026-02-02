@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"slices"
 	"strconv"
 
 	"github.com/databricks/cli/libs/dyn"
@@ -38,13 +39,12 @@ func ToTyped(dst any, src dyn.Value) error {
 		panic("cannot set destination value")
 	}
 
-	// Handle SDK native types using JSON unmarshaling.
-	if isSDKNativeType(dstv.Type()) {
-		return toTypedSDKNative(dstv, src)
-	}
-
 	switch dstv.Kind() {
 	case reflect.Struct:
+		// Handle SDK native types using JSON unmarshaling.
+		if slices.Contains(sdkNativeTypes, dstv.Type()) {
+			return toTypedSDKNative(dstv, src)
+		}
 		return toTypedStruct(dstv, src)
 	case reflect.Map:
 		return toTypedMap(dstv, src)
