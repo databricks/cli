@@ -360,6 +360,7 @@ func prepareChanges(ctx context.Context, adapter *dresources.Adapter, localDiff,
 
 func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, changes deployplan.Changes, remoteState any) error {
 	cfg := adapter.ResourceConfig()
+	generatedCfg := adapter.GeneratedResourceConfig()
 
 	for pathString, ch := range changes {
 		path, err := structpath.Parse(pathString)
@@ -385,6 +386,9 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 		} else if shouldSkip(cfg, path, ch) {
 			ch.Action = deployplan.Skip
 			ch.Reason = deployplan.ReasonBuiltinRule
+		} else if shouldSkip(generatedCfg, path, ch) {
+			ch.Action = deployplan.Skip
+			ch.Reason = deployplan.ReasonAPISchema
 		} else if ch.New == nil && ch.Old == nil && ch.Remote != nil && path.IsDotString() {
 			// The field was not set by us, but comes from the remote state.
 			// This could either be server-side default or a policy.
@@ -395,6 +399,9 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 		} else if action := shouldUpdateOrRecreate(cfg, path); action != deployplan.Undefined {
 			ch.Action = action
 			ch.Reason = deployplan.ReasonBuiltinRule
+		} else if action := shouldUpdateOrRecreate(generatedCfg, path); action != deployplan.Undefined {
+			ch.Action = action
+			ch.Reason = deployplan.ReasonAPISchema
 		} else {
 			ch.Action = deployplan.Update
 		}
