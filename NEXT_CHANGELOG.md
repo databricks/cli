@@ -6,6 +6,8 @@
 
 ### CLI
 
+* Add Lakebase Autoscaling support to `psql` command ([#4399](https://github.com/databricks/cli/pull/4399))
+
 ### Bundles
 
 * Add missing values to SchemaGrantPrivilege enum ([#4380](https://github.com/databricks/cli/pull/4380))
