@@ -126,13 +126,8 @@ class Pipeline(Resource):
     gateway_definition: VariableOrOptional[IngestionGatewayPipelineDefinition] = None
     """
     :meta private: [EXPERIMENTAL]
-    
-    The definition of a gateway pipeline to support change data capture.
-    """
 
-    id: VariableOrOptional[str] = None
-    """
-    Unique identifier for this pipeline.
+    The definition of a gateway pipeline to support change data capture.
     """
 
     ingestion_definition: VariableOrOptional[IngestionPipelineDefinition] = None
@@ -170,7 +165,7 @@ class Pipeline(Resource):
     restart_window: VariableOrOptional[RestartWindow] = None
     """
     :meta private: [EXPERIMENTAL]
-    
+
     Restart window of this pipeline.
     """
 
@@ -213,7 +208,7 @@ class Pipeline(Resource):
     usage_policy_id: VariableOrOptional[str] = None
     """
     :meta private: [EXPERIMENTAL]
-    
+
     Usage policy of this pipeline.
     """
 
@@ -291,13 +286,8 @@ class PipelineDict(TypedDict, total=False):
     gateway_definition: VariableOrOptional[IngestionGatewayPipelineDefinitionParam]
     """
     :meta private: [EXPERIMENTAL]
-    
-    The definition of a gateway pipeline to support change data capture.
-    """
 
-    id: VariableOrOptional[str]
-    """
-    Unique identifier for this pipeline.
+    The definition of a gateway pipeline to support change data capture.
     """
 
     ingestion_definition: VariableOrOptional[IngestionPipelineDefinitionParam]
@@ -335,7 +325,7 @@ class PipelineDict(TypedDict, total=False):
     restart_window: VariableOrOptional[RestartWindowParam]
     """
     :meta private: [EXPERIMENTAL]
-    
+
     Restart window of this pipeline.
     """
 
@@ -378,7 +368,7 @@ class PipelineDict(TypedDict, total=False):
     usage_policy_id: VariableOrOptional[str]
     """
     :meta private: [EXPERIMENTAL]
-    
+
     Usage policy of this pipeline.
     """
 

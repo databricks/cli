@@ -62,3 +62,26 @@ def remove_unsupported_fields(schemas: dict[str, Schema]):
             output[name] = schema
 
     return output
+
+
+def remove_readonly_fields(schemas: dict[str, Schema]):
+    """
+    Remove fields that are marked as readOnly in the JSON schema.
+    These fields are computed at runtime and should not be set by the user.
+    """
+    output = {}
+
+    for name, schema in schemas.items():
+        new_properties = {
+            field: prop
+            for field, prop in schema.properties.items()
+            if not prop.read_only
+        }
+
+        if new_properties != schema.properties:
+            new_schema = replace(schema, properties=new_properties)
+            output[name] = new_schema
+        else:
+            output[name] = schema
+
+    return output

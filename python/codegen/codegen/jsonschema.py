@@ -17,6 +17,7 @@ class Property:
     description: Optional[str] = None
     deprecated: Optional[bool] = None
     stage: Optional[str] = None
+    read_only: Optional[bool] = None
 
 
 class SchemaType(Enum):
@@ -102,6 +103,7 @@ def _parse_schema(schema: dict) -> Schema:
             description=v.get("description"),
             deprecated=_parse_bool(v.get("deprecated")),
             stage=v.get("x-databricks-preview"),
+            read_only=_parse_bool(v.get("readOnly")),
         )
 
         properties[k] = prop

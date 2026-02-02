@@ -1,4 +1,34 @@
 # This file is auto-generated. DO NOT EDIT.
+github.com/databricks/cli/bundle/config.User:
+  "active":
+    "description": |-
+      If this user is active
+  "displayName":
+    "description": |-
+      String that represents a concatenation of given and family names. For example `John Smith`. This field cannot be updated through the Workspace SCIM APIs when [identity federation is enabled](https://docs.databricks.com/administration-guide/users-groups/best-practices.html#enable-identity-federation). Use Account SCIM APIs to update `displayName`.
+  "emails":
+    "description": |-
+      All the emails associated with the Databricks user.
+  "entitlements":
+    "description": |-
+      Entitlements assigned to the user. See [assigning entitlements](https://docs.databricks.com/administration-guide/users-groups/index.html#assigning-entitlements) for a full list of supported values.
+  "externalId":
+    "description": |-
+      External ID is not currently supported. It is reserved for future use.
+  "groups": {}
+  "id":
+    "description": |-
+      Databricks user ID.
+  "name": {}
+  "roles":
+    "description": |-
+      Corresponds to AWS instance profile/arn role.
+  "schemas":
+    "description": |-
+      The schema of the user.
+  "userName":
+    "description": |-
+      Email address of the Databricks user.
 github.com/databricks/cli/bundle/config/resources.Alert:
   "create_time":
     "description": |-
@@ -1330,6 +1360,8 @@ github.com/databricks/databricks-sdk-go/service/apps.ComputeSize:
         MEDIUM
       - |-
         LARGE
+      - |-
+        LIQUID
 github.com/databricks/databricks-sdk-go/service/apps.ComputeState:
   "_":
     "enum":
@@ -2661,6 +2693,26 @@ github.com/databricks/databricks-sdk-go/service/database.SyncedTableTriggeredUpd
       Progress of the active data synchronization pipeline.
     "x-databricks-field-behaviors_output_only": |-
       true
+github.com/databricks/databricks-sdk-go/service/iam.ComplexValue:
+  "$ref": {}
+  "display": {}
+  "primary": {}
+  "type": {}
+  "value": {}
+github.com/databricks/databricks-sdk-go/service/iam.Name:
+  "familyName":
+    "description": |-
+      Family name of the Databricks user.
+  "givenName":
+    "description": |-
+      Given name of the Databricks user.
+github.com/databricks/databricks-sdk-go/service/iam.UserSchema:
+  "_":
+    "enum":
+      - |-
+        urn:ietf:params:scim:schemas:core:2.0:User
+      - |-
+        urn:ietf:params:scim:schemas:extension:workspace:2.0:User
 github.com/databricks/databricks-sdk-go/service/jobs.AuthenticationMethod:
   "_":
     "enum":
@@ -4042,6 +4094,10 @@ github.com/databricks/databricks-sdk-go/service/pipelines.IngestionSourceType:
       - |-
         POSTGRESQL
       - |-
+        REDSHIFT
+      - |-
+        SQLDW
+      - |-
         SQLSERVER
       - |-
         SALESFORCE
@@ -4065,6 +4121,26 @@ github.com/databricks/databricks-sdk-go/service/pipelines.IngestionSourceType:
         SHAREPOINT
       - |-
         DYNAMICS365
+      - |-
+        CONFLUENCE
+      - |-
+        META_MARKETING
+      - |-
+        GOOGLE_ADS
+      - |-
+        TIKTOK_ADS
+      - |-
+        SALESFORCE_MARKETING_CLOUD
+      - |-
+        HUBSPOT
+      - |-
+        WORKDAY_HCM
+      - |-
+        GUIDEWIRE
+      - |-
+        ZENDESK
+      - |-
+        SLACK_AUDIT_LOGS
       - |-
         FOREIGN_CATALOG
 github.com/databricks/databricks-sdk-go/service/pipelines.ManualTrigger: {}
