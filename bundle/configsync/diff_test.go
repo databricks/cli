@@ -3,7 +3,6 @@ package configsync
 import (
 	"testing"
 
-	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -126,96 +125,120 @@ func TestMatchPattern(t *testing.T) {
 	}
 }
 
-func TestFilterFunctions(t *testing.T) {
+func TestShouldSkipField(t *testing.T) {
 	tests := []struct {
-		name   string
-		filter func(*deployplan.ChangeDesc) bool
-		desc   *deployplan.ChangeDesc
-		want   bool
+		name  string
+		path  string
+		value any
+		want  bool
 	}{
 		{
-			name:   "isBoolEqual(false) with false value",
-			filter: isBoolEqual(false),
-			desc:   &deployplan.ChangeDesc{Remote: false},
-			want:   true,
+			name:  "timeout_seconds with nil",
+			path:  "timeout_seconds",
+			value: nil,
+			want:  true,
 		},
 		{
-			name:   "isBoolEqual(false) with true value",
-			filter: isBoolEqual(false),
-			desc:   &deployplan.ChangeDesc{Remote: true},
-			want:   false,
+			name:  "timeout_seconds with non-zero",
+			path:  "timeout_seconds",
+			value: 42,
+			want:  false,
 		},
 		{
-			name:   "isBoolEqual(false) with non-bool value",
-			filter: isBoolEqual(false),
-			desc:   &deployplan.ChangeDesc{Remote: "false"},
-			want:   false,
+			name:  "tasks timeout_seconds with nil",
+			path:  "tasks[task_key='my_task'].timeout_seconds",
+			value: nil,
+			want:  true,
 		},
 		{
-			name:   "isStringEqual with matching value",
-			filter: isStringEqual("PERFORMANCE_OPTIMIZED"),
-			desc:   &deployplan.ChangeDesc{Remote: "PERFORMANCE_OPTIMIZED"},
-			want:   true,
+			name:  "performance_target with matching value",
+			path:  "performance_target",
+			value: "PERFORMANCE_OPTIMIZED",
+			want:  true,
 		},
 		{
-			name:   "isStringEqual with non-matching value",
-			filter: isStringEqual("PERFORMANCE_OPTIMIZED"),
-			desc:   &deployplan.ChangeDesc{Remote: "STANDARD"},
-			want:   false,
+			name:  "performance_target with non-matching value",
+			path:  "performance_target",
+			value: "STANDARD",
+			want:  false,
 		},
 		{
-			name:   "isStringEqual with nil remote",
-			filter: isStringEqual(""),
-			desc:   &deployplan.ChangeDesc{Remote: nil},
-			want:   true,
+			name:  "tasks run_if with matching value",
+			path:  "tasks[task_key='my_task'].run_if",
+			value: "ALL_SUCCESS",
+			want:  true,
 		},
 		{
-			name:   "defaultIfNotSpecified with nil Old and New",
-			filter: defaultIfNotSpecified,
-			desc:   &deployplan.ChangeDesc{Old: nil, New: nil, Remote: "something"},
-			want:   true,
+			name:  "tasks run_if with non-matching value",
+			path:  "tasks[task_key='my_task'].run_if",
+			value: "ALL_DONE",
+			want:  false,
 		},
 		{
-			name:   "defaultIfNotSpecified with non-nil New",
-			filter: defaultIfNotSpecified,
-			desc:   &deployplan.ChangeDesc{Old: nil, New: "value", Remote: "something"},
-			want:   false,
+			name:  "tasks disabled with false",
+			path:  "tasks[task_key='my_task'].disabled",
+			value: false,
+			want:  true,
 		},
 		{
-			name:   "defaultIfNotSpecified with non-nil Old",
-			filter: defaultIfNotSpecified,
-			desc:   &deployplan.ChangeDesc{Old: "value", New: nil, Remote: "something"},
-			want:   false,
+			name:  "tasks disabled with true",
+			path:  "tasks[task_key='my_task'].disabled",
+			value: true,
+			want:  false,
 		},
 		{
-			name:   "alwaysDefault always returns true",
-			filter: alwaysDefault,
-			desc:   &deployplan.ChangeDesc{Remote: "anything"},
-			want:   true,
+			name:  "email_notifications with default value",
+			path:  "email_notifications",
+			value: map[string]any{"no_alert_for_skipped_runs": false},
+			want:  true,
 		},
 		{
-			name:   "isZero with zero int",
-			filter: isZero,
-			desc:   &deployplan.ChangeDesc{Remote: 0},
-			want:   true,
+			name:  "email_notifications with non-default value",
+			path:  "email_notifications",
+			value: map[string]any{"no_alert_for_skipped_runs": true},
+			want:  false,
 		},
 		{
-			name:   "isZero with non-zero int",
-			filter: isZero,
-			desc:   &deployplan.ChangeDesc{Remote: 42},
-			want:   false,
+			name:  "edit_mode always skipped",
+			path:  "edit_mode",
+			value: "anything",
+			want:  true,
 		},
 		{
-			name:   "isZero with nil",
-			filter: isZero,
-			desc:   &deployplan.ChangeDesc{Remote: nil},
-			want:   true,
+			name:  "run_as always skipped",
+			path:  "run_as",
+			value: map[string]any{"user_name": "someone"},
+			want:  true,
+		},
+		{
+			name:  "aws_attributes always skipped",
+			path:  "tasks[task_key='my_task'].new_cluster.aws_attributes",
+			value: map[string]any{"availability": "SPOT"},
+			want:  true,
+		},
+		{
+			name:  "continuous with false",
+			path:  "continuous",
+			value: false,
+			want:  true,
+		},
+		{
+			name:  "continuous with true",
+			path:  "continuous",
+			value: true,
+			want:  false,
+		},
+		{
+			name:  "unmatched field not skipped",
+			path:  "some_other_field",
+			value: "anything",
+			want:  false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := tt.filter(tt.desc)
+			got := shouldSkipField(tt.path, tt.value)
 			assert.Equal(t, tt.want, got)
 		})
 	}
