@@ -281,10 +281,9 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			action = getMaxAction(entry.Changes)
 		}
 
-		// if action == deployplan.Skip {
-		// resource is not going to change, can use remoteState to resolve references
+		// Note, this unconditionally stores remoteState. However, it may updated post-deploy, so whether
+		// it can be used for variable resolution depends on several factors, see canReadRemoteCache in LookupReferencePreDeploy
 		b.RemoteStateCache.Store(resourceKey, remoteState)
-		//}
 
 		// Validate that resources without DoUpdate don't have update actions
 		if action == deployplan.Update && !adapter.HasDoUpdate() {
