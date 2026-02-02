@@ -18,8 +18,8 @@ type ResourcePostgresProject struct {
 // PostgresProjectState contains only the fields needed for creation/update.
 // It does NOT include output-only fields like Name, which are only available after API response.
 type PostgresProjectState struct {
-	Spec      *postgres.ProjectSpec `json:"spec,omitempty"`
 	ProjectId string                `json:"project_id,omitempty"`
+	Spec      *postgres.ProjectSpec `json:"spec,omitempty"`
 }
 
 func (*ResourcePostgresProject) New(client *databricks.WorkspaceClient) *ResourcePostgresProject {
@@ -37,13 +37,12 @@ func (*ResourcePostgresProject) RemapState(remote *postgres.Project) *PostgresPr
 	// Extract project_id from hierarchical name: "projects/{project_id}"
 	projectId := strings.TrimPrefix(remote.Name, "projects/")
 
-	// The read API does not return the spec, only the status.
-	// This means we cannot detect remote drift for spec fields.
-	var spec *postgres.ProjectSpec
-
 	return &PostgresProjectState{
-		Spec:      spec,
 		ProjectId: projectId,
+
+		// The read API does not return the spec, only the status.
+		// This means we cannot detect remote drift for spec fields.
+		Spec: nil,
 	}
 }
 

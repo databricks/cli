@@ -18,9 +18,9 @@ type ResourcePostgresBranch struct {
 // PostgresBranchState contains only the fields needed for creation/update.
 // It does NOT include output-only fields like Name, which are only available after API response.
 type PostgresBranchState struct {
+	BranchId string               `json:"branch_id,omitempty"`
 	Parent   string               `json:"parent,omitempty"`
 	Spec     *postgres.BranchSpec `json:"spec,omitempty"`
-	BranchId string               `json:"branch_id,omitempty"`
 }
 
 func (*ResourcePostgresBranch) New(client *databricks.WorkspaceClient) *ResourcePostgresBranch {
@@ -29,9 +29,9 @@ func (*ResourcePostgresBranch) New(client *databricks.WorkspaceClient) *Resource
 
 func (*ResourcePostgresBranch) PrepareState(input *resources.PostgresBranch) *PostgresBranchState {
 	return &PostgresBranchState{
+		BranchId: input.BranchId,
 		Parent:   input.Parent,
 		Spec:     &input.BranchSpec,
-		BranchId: input.BranchId,
 	}
 }
 
@@ -45,14 +45,13 @@ func (*ResourcePostgresBranch) RemapState(remote *postgres.Branch) *PostgresBran
 		}
 	}
 
-	// The read API does not return the spec, only the status.
-	// This means we cannot detect remote drift for spec fields.
-	var spec *postgres.BranchSpec
-
 	return &PostgresBranchState{
-		Parent:   remote.Parent,
-		Spec:     spec,
 		BranchId: branchId,
+		Parent:   remote.Parent,
+
+		// The read API does not return the spec, only the status.
+		// This means we cannot detect remote drift for spec fields.
+		Spec: nil,
 	}
 }
 

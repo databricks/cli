@@ -24,9 +24,9 @@ type ResourcePostgresEndpoint struct {
 // PostgresEndpointState contains only the fields needed for creation/update.
 // It does NOT include output-only fields like Name, which are only available after API response.
 type PostgresEndpointState struct {
+	EndpointId string                 `json:"endpoint_id,omitempty"`
 	Parent     string                 `json:"parent,omitempty"`
 	Spec       *postgres.EndpointSpec `json:"spec,omitempty"`
-	EndpointId string                 `json:"endpoint_id,omitempty"`
 }
 
 func (*ResourcePostgresEndpoint) New(client *databricks.WorkspaceClient) *ResourcePostgresEndpoint {
@@ -35,9 +35,9 @@ func (*ResourcePostgresEndpoint) New(client *databricks.WorkspaceClient) *Resour
 
 func (*ResourcePostgresEndpoint) PrepareState(input *resources.PostgresEndpoint) *PostgresEndpointState {
 	return &PostgresEndpointState{
+		EndpointId: input.EndpointId,
 		Parent:     input.Parent,
 		Spec:       &input.EndpointSpec,
-		EndpointId: input.EndpointId,
 	}
 }
 
@@ -51,14 +51,13 @@ func (*ResourcePostgresEndpoint) RemapState(remote *postgres.Endpoint) *Postgres
 		}
 	}
 
-	// The read API does not return the spec, only the status.
-	// This means we cannot detect remote drift for spec fields.
-	var spec *postgres.EndpointSpec
-
 	return &PostgresEndpointState{
-		Parent:     remote.Parent,
-		Spec:       spec,
 		EndpointId: endpointId,
+		Parent:     remote.Parent,
+
+		// The read API does not return the spec, only the status.
+		// This means we cannot detect remote drift for spec fields.
+		Spec: nil,
 	}
 }
 
