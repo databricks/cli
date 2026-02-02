@@ -6,6 +6,9 @@ Cloud = false
 Timeout = '30s'
 TimeoutWindows = '60s'
 
+# DBR tests run on workspace filesystem which can be slower
+TimeoutDbr = '30m'
+
 # Slowest test I saw:
 # github.com/databricks/cli/acceptance TestAccept/bundle/integration_whl/interactive_single_user 18m8.69s
 # http://go/deco/tests/14775362030/job/41482560953

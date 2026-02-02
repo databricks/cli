@@ -108,9 +108,10 @@ dbr-test:
 # Run dev mode test on an interactive cluster (fast iteration)
 # Before running, edit TestDbrAcceptanceDev in acceptance/dbr_test.go to set:
 #   - clusterID: your interactive cluster ID
-#   - testFilter: the acceptance test(s) you want to run
+#   - cloudTestFilter: the cloud acceptance test(s) you want to run
+#   - localTestFilter: the local acceptance test(s) you want to run
 dbr-test-dev:
-	deco env run -i -n aws-prod-ucws -- go test -v -timeout 30m -run TestDbrAcceptanceDev ./acceptance
+	deco env run -i -n aws-prod-ucws -- go test -v -timeout 90m -run TestDbrAcceptanceDev ./acceptance
 
 slowest:
 	${GO_TOOL} gotestsum tool slowest --jsonfile test-output.json --threshold 1s --num 50
