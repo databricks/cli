@@ -1,6 +1,6 @@
 Local = false
 Cloud = true
-RunsOnDbr = true
+RunsOnDbr = false
 
 [CloudEnvs]
   azure = false
