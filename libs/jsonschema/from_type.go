@@ -303,6 +303,7 @@ func (c *constructor) fromTypeStruct(typ reflect.Type) (Schema, error) {
 		if slices.Contains(bundleTags, "readonly") {
 			s.FieldBehaviors = append(s.FieldBehaviors, "OUTPUT_ONLY")
 			s.ReadOnly = true
+			s.DoNotSuggest = true
 		}
 
 		res.Properties[fieldName] = s

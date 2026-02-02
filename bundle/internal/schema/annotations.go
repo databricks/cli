@@ -140,6 +140,7 @@ func assignAnnotation(s *jsonschema.Schema, a annotation.Descriptor) {
 
 	if a.OutputOnly != nil && *a.OutputOnly {
 		s.ReadOnly = true
+		s.DoNotSuggest = true
 		s.FieldBehaviors = append(s.FieldBehaviors, "OUTPUT_ONLY")
 	}
 

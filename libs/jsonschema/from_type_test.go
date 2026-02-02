@@ -92,7 +92,11 @@ func TestFromTypeBasic(t *testing.T) {
 					},
 					"readonly_tagged": {
 						Reference: &strRef,
-						ReadOnly:  true,
+						Extension: Extension{
+							DoNotSuggest:   true,
+							FieldBehaviors: []string{"OUTPUT_ONLY"},
+						},
+						ReadOnly: true,
 					},
 				},
 				AdditionalProperties: false,
