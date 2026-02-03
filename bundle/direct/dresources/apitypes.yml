@@ -1,2 +1,5 @@
 # Override apitypes.generated.yml here.
 # This file is not auto-generated and can be manually edited.
+#
+# Set a value to null to remove a type:
+# jobs: null

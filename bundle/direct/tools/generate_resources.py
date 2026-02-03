@@ -14,11 +14,15 @@ import yaml
 
 def parse_apitypes(generated_path, override_path):
     """Parse apitypes.generated.yml and override with apitypes.yml."""
-    data = yaml.safe_load(generated_path.read_text())
-    result = {resource: type_name for resource, type_name in data.items() if type_name}
+    result = yaml.safe_load(generated_path.read_text()) or {}
 
-    # Override with non-generated apitypes.yml
-    result.update(yaml.safe_load(override_path.read_text()) or {})
+    # Override with non-generated apitypes.yml (null values remove entries)
+    override_data = yaml.safe_load(override_path.read_text()) or {}
+    for resource, type_name in override_data.items():
+        if type_name:
+            result[resource] = type_name
+        else:
+            result.pop(resource, None)
 
     return result
 
