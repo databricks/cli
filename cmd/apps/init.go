@@ -32,35 +32,14 @@ const (
 	appkitRepoName      = "appkit"
 )
 
-// fetchLatestRelease fetches the latest release tag from GitHub using gh CLI.
-// Returns the tag name (e.g., "v0.1.0") or an error.
-// If gh CLI is not found or fails, returns empty string (caller should fall back to latest).
-func fetchLatestRelease(ctx context.Context) (string, error) {
-	cmd := exec.CommandContext(ctx, "gh", "release", "view", "--repo", appkitRepoOwner+"/"+appkitRepoName, "--json", "tagName", "-q", ".tagName")
-	output, err := cmd.Output()
-	if err != nil {
-		// If gh CLI is not installed, return empty string to signal fallback
-		if errors.Is(err, exec.ErrNotFound) {
-			return "", nil
-		}
-		var exitErr *exec.ExitError
-		if errors.As(err, &exitErr) {
-			return "", fmt.Errorf("failed to fetch latest release: %s", string(exitErr.Stderr))
-		}
-		return "", fmt.Errorf("failed to fetch latest release: %w", err)
-	}
-	tag := strings.TrimSpace(string(output))
-	if tag == "" {
-		return "", errors.New("no releases found for appkit repository")
-	}
-	return tag, nil
-}
-
 // normalizeVersion ensures the version string has a "v" prefix if it looks like a semver.
-// Examples: "0.3.0" -> "v0.3.0", "v0.3.0" -> "v0.3.0", "latest" -> "latest"
+// Examples: "0.3.0" -> "v0.3.0", "v0.3.0" -> "v0.3.0", "latest" -> "main"
 func normalizeVersion(version string) string {
-	if version == "" || version == "latest" {
+	if version == "" {
 		return version
+	}
+	if version == "latest" {
+		return appkitDefaultBranch
 	}
 	// If it starts with a digit, prepend "v"
 	if len(version) > 0 && version[0] >= '0' && version[0] <= '9' {
@@ -141,7 +120,6 @@ Environment variables:
 				templatePath:    templatePath,
 				branch:          branch,
 				version:         version,
-				versionChanged:  cmd.Flags().Changed("version"),
 				name:            name,
 				nameProvided:    cmd.Flags().Changed("name"),
 				warehouseID:     warehouseID,
@@ -175,7 +153,6 @@ type createOptions struct {
 	templatePath    string
 	branch          string
 	version         string
-	versionChanged  bool // true if --version flag was explicitly set
 	name            string
 	nameProvided    bool // true if --name flag was explicitly set (enables "flags mode")
 	warehouseID     string
@@ -503,29 +480,11 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		switch {
 		case opts.branch != "":
 			// --branch takes precedence (already set in gitRef)
-		case opts.version == "latest":
-			gitRef = appkitDefaultBranch
 		case opts.version != "":
 			gitRef = normalizeVersion(opts.version)
 		default:
-			// Default: fetch latest release
-			var tag string
-			err := prompt.RunWithSpinnerCtx(ctx, "Fetching latest AppKit version...", func() error {
-				var fetchErr error
-				tag, fetchErr = fetchLatestRelease(ctx)
-				return fetchErr
-			})
-			if err != nil {
-				return err
-			}
-			if tag == "" {
-				// gh CLI not found - fall back to main branch with warning
-				gitRef = appkitDefaultBranch
-				cmdio.LogString(ctx, "Warning: gh CLI not found, using main branch. Install gh CLI or use --version to pin to a specific release.")
-			} else {
-				gitRef = tag
-				log.Infof(ctx, "Using AppKit version %s", tag)
-			}
+			// Default: use main branch
+			gitRef = appkitDefaultBranch
 		}
 		templateSrc = appkitRepoURL
 	}
