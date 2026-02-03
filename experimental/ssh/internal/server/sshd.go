@@ -52,15 +52,13 @@ func prepareSSHDConfig(ctx context.Context, client *databricks.WorkspaceClient, 
 		return "", err
 	}
 
-	// Set all available env vars, wrapping values in quotes and escaping quotes inside values
+	// Set all available env vars, wrapping values in quotes, escaping quotes, and stripping newlines
 	setEnv := "SetEnv"
 	for _, env := range os.Environ() {
 		parts := strings.SplitN(env, "=", 2)
-		if len(parts) != 2 {
-			continue
+		if len(parts) == 2 {
+			setEnv += " " + parts[0] + "=\"" + escapeEnvValue(parts[1]) + "\""
 		}
-		valEscaped := strings.ReplaceAll(parts[1], "\"", "\\\"")
-		setEnv += " " + parts[0] + "=\"" + valEscaped + "\""
 	}
 	setEnv += " DATABRICKS_CLI_UPSTREAM=databricks_ssh_tunnel"
 	setEnv += " DATABRICKS_CLI_UPSTREAM_VERSION=" + opts.Version
@@ -93,4 +91,13 @@ func prepareSSHDConfig(ctx context.Context, client *databricks.WorkspaceClient, 
 
 func createSSHDProcess(ctx context.Context, configPath string) *exec.Cmd {
 	return exec.CommandContext(ctx, "/usr/sbin/sshd", "-f", configPath, "-i")
+}
+
+// escapeEnvValue escapes a value for use in sshd SetEnv directive.
+// It strips newlines and escapes quotes.
+func escapeEnvValue(val string) string {
+	val = strings.ReplaceAll(val, "\r", "")
+	val = strings.ReplaceAll(val, "\n", "")
+	val = strings.ReplaceAll(val, "\"", "\\\"")
+	return val
 }
