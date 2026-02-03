@@ -7,6 +7,7 @@
 ### CLI
 
 * Add Lakebase Autoscaling support to `psql` command ([#4399](https://github.com/databricks/cli/pull/4399))
+* Add `workspace_id` to the profiles command ([#4404](https://github.com/databricks/cli/pull/4404))
 
 ### Bundles
 
