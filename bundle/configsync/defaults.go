@@ -109,3 +109,21 @@ func matchParts(patternParts, pathParts []string) bool {
 
 	return false
 }
+
+// resetValues contains all values that should be used to reset CLI-defaulted fields.
+// If CLI-defaulted field is changed on remote and should be disabled (e.g. queueing disabled -> remote field is nil)
+// we can't define it in the config as "null" because CLI default will be applied again.
+var resetValues = map[string]any{
+	"queue": map[string]any{
+		"enabled": false,
+	},
+}
+
+func resetValueIfNeeded(path string, value any) any {
+	for pattern, expected := range resetValues {
+		if matchPattern(pattern, path) {
+			return expected
+		}
+	}
+	return value
+}

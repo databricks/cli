@@ -55,14 +55,16 @@ func convertChangeDesc(path string, cd *deployplan.ChangeDesc) (*ConfigChangeDes
 		}, nil
 	}
 
-	if cd.Remote == nil && hasConfigValue {
+	normalizedValue = resetValueIfNeeded(path, normalizedValue)
+
+	if normalizedValue == nil && hasConfigValue {
 		op = OperationRemove
-	}
-	if cd.Remote != nil && hasConfigValue {
+	} else if normalizedValue != nil && hasConfigValue {
 		op = OperationReplace
-	}
-	if cd.Remote != nil && !hasConfigValue {
+	} else if normalizedValue != nil && !hasConfigValue {
 		op = OperationAdd
+	} else {
+		op = OperationSkip
 	}
 
 	return &ConfigChangeDesc{

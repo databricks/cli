@@ -21,7 +21,7 @@ Resource: resources.jobs.job1
   trigger.pause_status: add
 
 Resource: resources.jobs.job2
-  queue.enabled: add
+  queue: add
 
 Resource: resources.pipelines.pipeline1
   channel: add
@@ -64,7 +64,7 @@ Resource: resources.pipelines.pipeline1
              notebook_path: /Users/{{workspace_user_name}}/notebook
 -
 +      queue:
-+        enabled: null
++        enabled: false
    pipelines:
      pipeline1:
 @@ -30,2 +33,4 @@
