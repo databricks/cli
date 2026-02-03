@@ -197,7 +197,7 @@ func TestNormalizeVersion(t *testing.T) {
 		{"1.0.0", "v1.0.0"},
 		{"v0.3.0", "v0.3.0"},
 		{"v1.0.0", "v1.0.0"},
-		{"latest", "latest"},
+		{"latest", "main"},
 		{"", ""},
 		{"main", "main"},
 		{"feat/something", "feat/something"},
