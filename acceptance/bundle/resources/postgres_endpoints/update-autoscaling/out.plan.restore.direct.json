@@ -8,14 +8,14 @@
   "action": "update",
   "new_state": {
     "value": {
+      "endpoint_id": "my-endpoint",
       "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
       "spec": {
         "autoscaling_limit_max_cu": 8,
         "autoscaling_limit_min_cu": 0.5,
         "endpoint_type": "ENDPOINT_TYPE_READ_WRITE",
         "suspend_timeout_duration": "300s"
-      },
-      "endpoint_id": "my-endpoint"
+      }
     }
   },
   "remote_state": {

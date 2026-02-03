@@ -42,7 +42,14 @@ func (*ResourcePostgresProject) RemapState(remote *postgres.Project) *PostgresPr
 
 		// The read API does not return the spec, only the status.
 		// This means we cannot detect remote drift for spec fields.
-		Spec: nil,
+		// Use an empty struct (not nil) so field-level diffing works correctly.
+		Spec: &postgres.ProjectSpec{
+			DefaultEndpointSettings:  nil,
+			DisplayName:              "",
+			HistoryRetentionDuration: nil,
+			PgVersion:                0,
+			ForceSendFields:          nil,
+		},
 	}
 }
 

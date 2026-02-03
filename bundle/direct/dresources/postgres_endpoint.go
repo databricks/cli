@@ -52,7 +52,17 @@ func (*ResourcePostgresEndpoint) RemapState(remote *postgres.Endpoint) *Postgres
 
 		// The read API does not return the spec, only the status.
 		// This means we cannot detect remote drift for spec fields.
-		Spec: nil,
+		// Use an empty struct (not nil) so field-level diffing works correctly.
+		Spec: &postgres.EndpointSpec{
+			AutoscalingLimitMaxCu:  0,
+			AutoscalingLimitMinCu:  0,
+			Disabled:               false,
+			EndpointType:           "",
+			NoSuspension:           false,
+			Settings:               nil,
+			SuspendTimeoutDuration: nil,
+			ForceSendFields:        nil,
+		},
 	}
 }
 

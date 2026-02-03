@@ -8,14 +8,14 @@
   "action": "create",
   "new_state": {
     "value": {
+      "endpoint_id": "my-endpoint",
       "parent": "${resources.postgres_branches.main.id}",
       "spec": {
         "autoscaling_limit_max_cu": 8,
         "autoscaling_limit_min_cu": 0.5,
         "endpoint_type": "ENDPOINT_TYPE_READ_WRITE",
         "suspend_timeout_duration": "300s"
-      },
-      "endpoint_id": "my-endpoint"
+      }
     },
     "vars": {
       "parent": "${resources.postgres_branches.main.id}"

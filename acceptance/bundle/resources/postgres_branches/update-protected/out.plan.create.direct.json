@@ -8,12 +8,12 @@
   "action": "create",
   "new_state": {
     "value": {
+      "branch_id": "dev-branch",
       "parent": "${resources.postgres_projects.my_project.id}",
       "spec": {
         "is_protected": false,
         "no_expiry": true
-      },
-      "branch_id": "dev-branch"
+      }
     },
     "vars": {
       "parent": "${resources.postgres_projects.my_project.id}"

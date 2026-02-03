@@ -45,7 +45,17 @@ func (*ResourcePostgresBranch) RemapState(remote *postgres.Branch) *PostgresBran
 
 		// The read API does not return the spec, only the status.
 		// This means we cannot detect remote drift for spec fields.
-		Spec: nil,
+		// Use an empty struct (not nil) so field-level diffing works correctly.
+		Spec: &postgres.BranchSpec{
+			ExpireTime:       nil,
+			IsProtected:      false,
+			NoExpiry:         false,
+			SourceBranch:     "",
+			SourceBranchLsn:  "",
+			SourceBranchTime: nil,
+			Ttl:              nil,
+			ForceSendFields:  nil,
+		},
 	}
 }
 

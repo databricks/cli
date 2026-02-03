@@ -2,6 +2,7 @@
   "action": "update",
   "new_state": {
     "value": {
+      "project_id": "test-pg-proj-[UNIQUE_NAME]",
       "spec": {
         "default_endpoint_settings": {
           "autoscaling_limit_max_cu": 4,
@@ -11,8 +12,7 @@
         "display_name": "Updated Name",
         "history_retention_duration": "604800s",
         "pg_version": 16
-      },
-      "project_id": "test-pg-proj-[UNIQUE_NAME]"
+      }
     }
   },
   "remote_state": {

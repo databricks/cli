@@ -8,12 +8,12 @@
   "action": "update",
   "new_state": {
     "value": {
+      "branch_id": "dev-branch",
       "parent": "projects/test-pg-proj-[UNIQUE_NAME]",
       "spec": {
         "is_protected": false,
         "no_expiry": true
-      },
-      "branch_id": "dev-branch"
+      }
     }
   },
   "remote_state": {
