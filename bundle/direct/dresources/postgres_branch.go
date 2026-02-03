@@ -3,7 +3,6 @@ package dresources
 import (
 	"context"
 	"errors"
-	"strings"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go"
@@ -37,16 +36,11 @@ func (*ResourcePostgresBranch) PrepareState(input *resources.PostgresBranch) *Po
 
 func (*ResourcePostgresBranch) RemapState(remote *postgres.Branch) *PostgresBranchState {
 	// Extract branch_id from hierarchical name: "projects/{project_id}/branches/{branch_id}"
-	branchId := ""
-	if remote.Name != "" {
-		parts := strings.Split(remote.Name, "/")
-		if len(parts) >= 4 {
-			branchId = parts[3]
-		}
-	}
+	// TODO: log error when we have access to the context
+	components, _ := ParsePostgresName(remote.Name)
 
 	return &PostgresBranchState{
-		BranchId: branchId,
+		BranchId: components.BranchID,
 		Parent:   remote.Parent,
 
 		// The read API does not return the spec, only the status.

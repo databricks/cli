@@ -43,16 +43,11 @@ func (*ResourcePostgresEndpoint) PrepareState(input *resources.PostgresEndpoint)
 
 func (*ResourcePostgresEndpoint) RemapState(remote *postgres.Endpoint) *PostgresEndpointState {
 	// Extract endpoint_id from hierarchical name: "projects/{project_id}/branches/{branch_id}/endpoints/{endpoint_id}"
-	endpointId := ""
-	if remote.Name != "" {
-		parts := strings.Split(remote.Name, "/")
-		if len(parts) >= 6 {
-			endpointId = parts[5]
-		}
-	}
+	// TODO: log error when we have access to the context
+	components, _ := ParsePostgresName(remote.Name)
 
 	return &PostgresEndpointState{
-		EndpointId: endpointId,
+		EndpointId: components.EndpointID,
 		Parent:     remote.Parent,
 
 		// The read API does not return the spec, only the status.

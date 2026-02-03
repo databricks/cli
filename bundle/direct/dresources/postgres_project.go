@@ -3,7 +3,6 @@ package dresources
 import (
 	"context"
 	"errors"
-	"strings"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go"
@@ -35,10 +34,11 @@ func (*ResourcePostgresProject) PrepareState(input *resources.PostgresProject) *
 
 func (*ResourcePostgresProject) RemapState(remote *postgres.Project) *PostgresProjectState {
 	// Extract project_id from hierarchical name: "projects/{project_id}"
-	projectId := strings.TrimPrefix(remote.Name, "projects/")
+	// TODO: log error when we have access to the context
+	components, _ := ParsePostgresName(remote.Name)
 
 	return &PostgresProjectState{
-		ProjectId: projectId,
+		ProjectId: components.ProjectID,
 
 		// The read API does not return the spec, only the status.
 		// This means we cannot detect remote drift for spec fields.
