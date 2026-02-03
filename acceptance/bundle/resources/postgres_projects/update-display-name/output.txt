@@ -9,6 +9,11 @@ Workspace:
 
 Validation OK!
 
+>>> [CLI] bundle plan
+create postgres_projects.my_project
+
+Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
+
 >>> [CLI] bundle plan -o json
 
 >>> [CLI] bundle deploy
@@ -39,6 +44,9 @@ Deployment complete!
 }
 
 === Verify no changes
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
 >>> [CLI] bundle plan -o json
 
 >>> [CLI] bundle deploy
@@ -71,6 +79,11 @@ resources:
         autoscaling_limit_max_cu: 4
         suspend_timeout_duration: 300s
 
+>>> [CLI] bundle plan
+update postgres_projects.my_project
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+
 >>> [CLI] bundle plan -o json
 
 >>> [CLI] bundle deploy
@@ -102,6 +115,11 @@ Deployment complete!
 
 === Restore display_name to original value
 >>> update_file.py databricks.yml Updated Name Original Name
+
+>>> [CLI] bundle plan
+update postgres_projects.my_project
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle plan -o json
 

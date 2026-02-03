@@ -9,6 +9,13 @@ Workspace:
 
 Validation OK!
 
+>>> [CLI] bundle plan
+create postgres_branches.main
+create postgres_endpoints.my_endpoint
+create postgres_projects.my_project
+
+Plan: 3 to add, 0 to change, 0 to delete, 0 unchanged
+
 >>> [CLI] bundle plan -o json
 
 >>> [CLI] bundle deploy
@@ -39,6 +46,9 @@ Deployment complete!
 }
 
 === Verify no changes
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 3 unchanged
+
 >>> [CLI] bundle plan -o json
 
 >>> [CLI] bundle deploy
@@ -82,6 +92,11 @@ resources:
       autoscaling_limit_max_cu: 4
       suspend_timeout_duration: 300s
 
+>>> [CLI] bundle plan
+update postgres_endpoints.my_endpoint
+
+Plan: 0 to add, 1 to change, 0 to delete, 2 unchanged
+
 >>> [CLI] bundle plan -o json
 
 >>> [CLI] bundle deploy
@@ -113,6 +128,11 @@ Deployment complete!
 
 === Restore endpoint autoscaling to original value
 >>> update_file.py databricks.yml autoscaling_limit_max_cu: 4 autoscaling_limit_max_cu: 8
+
+>>> [CLI] bundle plan
+update postgres_endpoints.my_endpoint
+
+Plan: 0 to add, 1 to change, 0 to delete, 2 unchanged
 
 >>> [CLI] bundle plan -o json
 

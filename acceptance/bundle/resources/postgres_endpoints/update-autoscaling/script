@@ -13,6 +13,7 @@ print_requests() {
 
 title "Initial deployment"
 trace $CLI bundle validate
+trace $CLI bundle plan
 trace $CLI bundle plan -o json | jq '.plan."resources.postgres_endpoints.my_endpoint" // .' > out.plan.create.$DATABRICKS_BUNDLE_ENGINE.json
 rm -f out.requests.txt
 trace $CLI bundle deploy
@@ -26,6 +27,7 @@ endpoint_id_1=`read_id.py my_endpoint`
 trace $CLI postgres get-endpoint "${endpoint_name}" | jq 'del(.create_time, .update_time, .reconciling)'
 
 title "Verify no changes"
+trace $CLI bundle plan
 trace $CLI bundle plan -o json | jq '.plan."resources.postgres_endpoints.my_endpoint" // .' > out.plan.no_change.$DATABRICKS_BUNDLE_ENGINE.json
 rm -f out.requests.txt
 trace $CLI bundle deploy
@@ -36,6 +38,7 @@ title "Update endpoint autoscaling and re-deploy"
 trace update_file.py databricks.yml "autoscaling_limit_max_cu: 8" "autoscaling_limit_max_cu: 4"
 trace cat databricks.yml
 
+trace $CLI bundle plan
 trace $CLI bundle plan -o json | jq '.plan."resources.postgres_endpoints.my_endpoint" // .' > out.plan.update.$DATABRICKS_BUNDLE_ENGINE.json
 rm -f out.requests.txt
 trace $CLI bundle deploy
@@ -47,6 +50,7 @@ trace $CLI postgres get-endpoint "${endpoint_name}" | jq 'del(.create_time, .upd
 
 title "Restore endpoint autoscaling to original value"
 trace update_file.py databricks.yml "autoscaling_limit_max_cu: 4" "autoscaling_limit_max_cu: 8"
+trace $CLI bundle plan
 trace $CLI bundle plan -o json | jq '.plan."resources.postgres_endpoints.my_endpoint" // .' > out.plan.restore.$DATABRICKS_BUNDLE_ENGINE.json
 rm -f out.requests.txt
 trace $CLI bundle deploy

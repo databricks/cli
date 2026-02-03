@@ -9,6 +9,12 @@ Workspace:
 
 Validation OK!
 
+>>> [CLI] bundle plan
+create postgres_branches.dev_branch
+create postgres_projects.my_project
+
+Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
+
 >>> [CLI] bundle plan -o json
 
 >>> [CLI] bundle deploy
@@ -37,6 +43,9 @@ Deployment complete!
 }
 
 === Verify no_change (no changes)
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
 >>> [CLI] bundle plan -o json
 
 >>> [CLI] bundle deploy
@@ -76,6 +85,11 @@ resources:
       no_expiry: true
       is_protected: true
 
+>>> [CLI] bundle plan
+update postgres_branches.dev_branch
+
+Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
+
 >>> [CLI] bundle plan -o json
 
 >>> [CLI] bundle deploy
@@ -105,6 +119,11 @@ Deployment complete!
 
 === Restore is_protected to false
 >>> update_file.py databricks.yml is_protected: true is_protected: false
+
+>>> [CLI] bundle plan
+update postgres_branches.dev_branch
+
+Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
 
 >>> [CLI] bundle plan -o json
 
