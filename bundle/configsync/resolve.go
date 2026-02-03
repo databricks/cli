@@ -101,68 +101,6 @@ func pathDepth(pathStr string) int {
 	return len(node.AsSlice())
 }
 
-// tryReplaceStarWithIndex replaces the last DotStar or BracketStar node in the path with a concrete index
-// if a reusable index is available in indicesMap. Returns the modified path or the original path if no replacement is made.
-func tryReplaceStarWithIndex(resolvedPath *structpath.PathNode, indicesMap map[string]int) *structpath.PathNode {
-	nodes := resolvedPath.AsSlice()
-	if len(nodes) == 0 {
-		return resolvedPath
-	}
-
-	// Find the last DotStar or BracketStar node in the path
-	lastStarPos := -1
-	for i, node := range nodes {
-		if node.DotStar() || node.BracketStar() {
-			lastStarPos = i
-		}
-	}
-
-	if lastStarPos == -1 {
-		return resolvedPath // No star found, return as-is
-	}
-
-	// Build the prefix path up to (but not including) the star node
-	var prefixPath *structpath.PathNode
-	for i := range lastStarPos {
-		node := nodes[i]
-		if key, ok := node.StringKey(); ok {
-			prefixPath = structpath.NewStringKey(prefixPath, key)
-		} else if index, ok := node.Index(); ok {
-			prefixPath = structpath.NewIndex(prefixPath, index)
-		} else if key, value, ok := node.KeyValue(); ok {
-			prefixPath = structpath.NewKeyValue(prefixPath, key, value)
-		}
-	}
-
-	// Look up if we have a reusable index
-	pathKey := prefixPath.String()
-	reusableIdx, ok := indicesMap[pathKey]
-	if !ok {
-		return resolvedPath // No reusable index, return as-is with star
-	}
-
-	// Remove from map after use to ensure one-time use
-	delete(indicesMap, pathKey)
-
-	// Rebuild the path: prefix + index + suffix
-	result := prefixPath
-	result = structpath.NewIndex(result, reusableIdx)
-
-	// Add remaining nodes after the star
-	for i := lastStarPos + 1; i < len(nodes); i++ {
-		node := nodes[i]
-		if key, ok := node.StringKey(); ok {
-			result = structpath.NewStringKey(result, key)
-		} else if index, ok := node.Index(); ok {
-			result = structpath.NewIndex(result, index)
-		} else if key, value, ok := node.KeyValue(); ok {
-			result = structpath.NewKeyValue(result, key, value)
-		}
-	}
-
-	return result
-}
-
 // ResolveChanges resolves selectors and computes field path candidates for each change.
 func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes) ([]FieldChange, error) {
 	var result []FieldChange
