@@ -39,3 +39,22 @@ resources:
             num_workers: 1
           depends_on:
             - task_key: task3
+
+    rename_task_job:
+      tasks:
+        - task_key: task_rename_1
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/rename_task_1
+          new_cluster:
+            spark_version: $DEFAULT_SPARK_VERSION
+            node_type_id: $NODE_TYPE_ID
+            num_workers: 1
+        - task_key: task_rename_2
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/rename_task_2
+          new_cluster:
+            spark_version: $DEFAULT_SPARK_VERSION
+            node_type_id: $NODE_TYPE_ID
+            num_workers: 1
+          depends_on:
+            - task_key: task_rename_1

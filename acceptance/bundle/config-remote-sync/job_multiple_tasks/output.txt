@@ -41,7 +41,7 @@ Resource: resources.jobs.my_job
 -            - task_key: task1
          - task_key: task3
            notebook_task:
-@@ -37,5 +27,14 @@
+@@ -37,8 +27,16 @@
              spark_version: 13.3.x-snapshot-scala2.12
              node_type_id: [NODE_TYPE_ID]
 +            num_workers: 5
@@ -53,8 +53,23 @@ Resource: resources.jobs.my_job
              num_workers: 1
 -          depends_on:
 -            - task_key: task3
+-
 +            spark_version: ${DEFAULT_SPARK_VERSION}
 +          notebook_task:
 +            notebook_path: /Users/${CURRENT_USER_NAME}/new_task
 +            source: WORKSPACE
 +          task_key: new_task
+     rename_task_job:
+       tasks:
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Rename task_rename_1 to task_rename_new
+=== Detect task key rename
+Error: failed to generate YAML files: failed to apply change to file [TEST_TMP_DIR]/databricks.yml for a field resources.jobs.rename_task_job.tasks[1].depends_on[0].task_key: field not found in YAML configuration: op replace /resources/jobs/rename_task_job/tasks/1/depends_on/0/task_key: parent path /resources/jobs/rename_task_job/tasks/1 does not exist
+
+=== Configuration changes for task key rename
+
+>>> diff.py databricks.yml.backup2 databricks.yml
