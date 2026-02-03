@@ -70,7 +70,7 @@ func resolveSelectors(pathStr string, b *bundle.Bundle, operation OperationType)
 
 			if foundIndex == -1 {
 				if operation == OperationAdd {
-					result = structpath.NewDotStar(result)
+					result = structpath.NewBracketStar(result)
 					// Can't navigate further into non-existent element
 					currentValue = dyn.Value{}
 					continue
@@ -208,8 +208,8 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 			return fieldPaths[i] < fieldPaths[j]
 		})
 
-		// Create indices map for this resource, path -> index that we could use to replace with added element
-		indicesToReplaceMap := make(map[string]int)
+		// Create indices map for this resource, path -> indices that we could use to replace with added elements
+		indicesToReplaceMap := make(map[string][]int)
 		for _, fieldPath := range fieldPaths {
 			configChange := resourceChanges[fieldPath]
 			fullPath := resourceKey + "." + fieldPath
@@ -224,13 +224,17 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 			if configChange.Operation == OperationRemove {
 				freeIndex, ok := resolvedPath.Index()
 				if ok {
-					indicesToReplaceMap[resolvedPath.Parent().String()] = freeIndex
+					parentPath := resolvedPath.Parent().String()
+					indicesToReplaceMap[parentPath] = append(indicesToReplaceMap[parentPath], freeIndex)
 				}
 			}
 
 			if configChange.Operation == OperationAdd && resolvedPath.BracketStar() {
-				index, ok := indicesToReplaceMap[resolvedPath.Parent().String()]
-				if ok {
+				parentPath := resolvedPath.Parent().String()
+				indices, ok := indicesToReplaceMap[parentPath]
+				if ok && len(indices) > 0 {
+					index := indices[0]
+					indicesToReplaceMap[parentPath] = indices[1:]
 					resolvedPath = structpath.NewIndex(resolvedPath.Parent(), index)
 				}
 			}

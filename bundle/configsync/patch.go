@@ -248,7 +248,7 @@ func strPathToJSONPointer(pathStr string) (string, error) {
 		}
 
 		// Handle append marker: /-/ is a syntax for appending to an array in JSON Pointer
-		if n.DotStar() {
+		if n.BracketStar() {
 			parts = append(parts, "-")
 			continue
 		}
