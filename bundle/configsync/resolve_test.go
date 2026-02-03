@@ -34,7 +34,7 @@ func TestResolveSelectors_NoSelectors(t *testing.T) {
 
 	result, err := resolveSelectors("resources.jobs.test_job.name", b, OperationReplace)
 	require.NoError(t, err)
-	assert.Equal(t, "resources.jobs.test_job.name", result)
+	assert.Equal(t, "resources.jobs.test_job.name", result.String())
 }
 
 func TestResolveSelectors_NumericIndices(t *testing.T) {
@@ -59,11 +59,11 @@ func TestResolveSelectors_NumericIndices(t *testing.T) {
 
 	result, err := resolveSelectors("resources.jobs.test_job.tasks[0].task_key", b, OperationReplace)
 	require.NoError(t, err)
-	assert.Equal(t, "resources.jobs.test_job.tasks[0].task_key", result)
+	assert.Equal(t, "resources.jobs.test_job.tasks[0].task_key", result.String())
 
 	result, err = resolveSelectors("resources.jobs.test_job.tasks[1].task_key", b, OperationReplace)
 	require.NoError(t, err)
-	assert.Equal(t, "resources.jobs.test_job.tasks[1].task_key", result)
+	assert.Equal(t, "resources.jobs.test_job.tasks[1].task_key", result.String())
 }
 
 func TestResolveSelectors_KeyValueSelector(t *testing.T) {
@@ -92,11 +92,11 @@ func TestResolveSelectors_KeyValueSelector(t *testing.T) {
 
 	result, err := resolveSelectors("resources.jobs.test_job.tasks[task_key='main'].notebook_task.notebook_path", b, OperationReplace)
 	require.NoError(t, err)
-	assert.Equal(t, "resources.jobs.test_job.tasks[1].notebook_task.notebook_path", result)
+	assert.Equal(t, "resources.jobs.test_job.tasks[1].notebook_task.notebook_path", result.String())
 
 	result, err = resolveSelectors("resources.jobs.test_job.tasks[task_key='setup'].notebook_task.notebook_path", b, OperationReplace)
 	require.NoError(t, err)
-	assert.Equal(t, "resources.jobs.test_job.tasks[0].notebook_task.notebook_path", result)
+	assert.Equal(t, "resources.jobs.test_job.tasks[0].notebook_task.notebook_path", result.String())
 }
 
 func TestResolveSelectors_SelectorNotFound(t *testing.T) {
@@ -176,7 +176,7 @@ func TestResolveSelectors_NestedSelectors(t *testing.T) {
 
 	result, err := resolveSelectors("resources.jobs.test_job.tasks[task_key='main'].libraries[0].pypi.package", b, OperationReplace)
 	require.NoError(t, err)
-	assert.Equal(t, "resources.jobs.test_job.tasks[1].libraries[0].pypi.package", result)
+	assert.Equal(t, "resources.jobs.test_job.tasks[1].libraries[0].pypi.package", result.String())
 }
 
 func TestResolveSelectors_WildcardNotSupported(t *testing.T) {

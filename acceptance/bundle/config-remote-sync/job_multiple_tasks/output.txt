@@ -27,11 +27,15 @@ Resource: resources.jobs.my_job
 -
  resources:
    jobs:
-@@ -13,13 +12,4 @@
+@@ -13,13 +12,12 @@
              node_type_id: [NODE_TYPE_ID]
              num_workers: 1
 -        - task_key: task2
--          notebook_task:
++        - new_cluster:
++            node_type_id: [NODE_TYPE_ID]
++            num_workers: 1
++            spark_version: 13.3.x-snapshot-scala2.12
+           notebook_task:
 -            notebook_path: /Users/{{workspace_user_name}}/task2
 -          new_cluster:
 -            spark_version: 13.3.x-snapshot-scala2.12
@@ -39,9 +43,12 @@ Resource: resources.jobs.my_job
 -            num_workers: 2
 -          depends_on:
 -            - task_key: task1
++            notebook_path: /Users/[USERNAME]/new_task
++            source: WORKSPACE
++          task_key: new_task
          - task_key: task3
            notebook_task:
-@@ -28,7 +18,8 @@
+@@ -28,7 +26,8 @@
              spark_version: 13.3.x-snapshot-scala2.12
              node_type_id: [NODE_TYPE_ID]
 -            num_workers: 2
@@ -52,18 +59,10 @@ Resource: resources.jobs.my_job
 +          timeout_seconds: 3600
          - task_key: task4
            notebook_task:
-@@ -40,5 +31,12 @@
+@@ -40,5 +39,4 @@
            depends_on:
              - task_key: task3
 -
-+        - new_cluster:
-+            node_type_id: [NODE_TYPE_ID]
-+            num_workers: 1
-+            spark_version: 13.3.x-snapshot-scala2.12
-+          notebook_task:
-+            notebook_path: /Users/[USERNAME]/new_task
-+            source: WORKSPACE
-+          task_key: new_task
      rename_task_job:
        tasks:
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
@@ -87,28 +86,26 @@ Resource: resources.jobs.rename_task_job
 >>> diff.py databricks.yml.backup2 databricks.yml
 --- databricks.yml.backup2
 +++ databricks.yml
-@@ -41,11 +41,4 @@
+@@ -41,11 +41,12 @@
      rename_task_job:
        tasks:
 -        - task_key: task_rename_1
--          notebook_task:
--            notebook_path: /Users/{{workspace_user_name}}/rename_task_1
--          new_cluster:
--            spark_version: 13.3.x-snapshot-scala2.12
--            node_type_id: [NODE_TYPE_ID]
--            num_workers: 1
-         - task_key: task_rename_2
-           notebook_task:
-@@ -56,3 +49,11 @@
-             num_workers: 1
-           depends_on:
--            - task_key: task_rename_1
-+            - task_key: task_rename_new
 +        - new_cluster:
 +            node_type_id: [NODE_TYPE_ID]
 +            num_workers: 1
 +            spark_version: 13.3.x-snapshot-scala2.12
-+          notebook_task:
-+            notebook_path: /Users/{{workspace_user_name}}/rename_task_1
+           notebook_task:
+             notebook_path: /Users/{{workspace_user_name}}/rename_task_1
+-          new_cluster:
+-            spark_version: 13.3.x-snapshot-scala2.12
+-            node_type_id: [NODE_TYPE_ID]
+-            num_workers: 1
 +            source: WORKSPACE
 +          task_key: task_rename_new
+         - task_key: task_rename_2
+           notebook_task:
+@@ -56,3 +57,3 @@
+             num_workers: 1
+           depends_on:
+-            - task_key: task_rename_1
++            - task_key: task_rename_new
