@@ -32,6 +32,7 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 		"resources.model_serving_endpoints.test_model_serving":        {ID: "1"},
 		"resources.registered_models.test_registered_model":           {ID: "1"},
 		"resources.quality_monitors.test_monitor":                     {ID: "1"},
+		"resources.catalogs.test_catalog":                             {ID: "1"},
 		"resources.schemas.test_schema":                               {ID: "1"},
 		"resources.volumes.test_volume":                               {ID: "1"},
 		"resources.clusters.test_cluster":                             {ID: "1"},
@@ -67,6 +68,9 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 
 	assert.Equal(t, "1", config.Resources.QualityMonitors["test_monitor"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.QualityMonitors["test_monitor"].ModifiedStatus)
+
+	assert.Equal(t, "1", config.Resources.Catalogs["test_catalog"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Catalogs["test_catalog"].ModifiedStatus)
 
 	assert.Equal(t, "1", config.Resources.Schemas["test_schema"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Schemas["test_schema"].ModifiedStatus)
@@ -148,6 +152,13 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 				"test_monitor": {
 					CreateMonitor: catalog.CreateMonitor{
 						TableName: "test_monitor",
+					},
+				},
+			},
+			Catalogs: map[string]*resources.Catalog{
+				"test_catalog": {
+					CreateCatalog: catalog.CreateCatalog{
+						Name: "test_catalog",
 					},
 				},
 			},
@@ -252,6 +263,9 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 
 	assert.Equal(t, "", config.Resources.QualityMonitors["test_monitor"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.QualityMonitors["test_monitor"].ModifiedStatus)
+
+	assert.Equal(t, "", config.Resources.Catalogs["test_catalog"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Catalogs["test_catalog"].ModifiedStatus)
 
 	assert.Equal(t, "", config.Resources.Schemas["test_schema"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Schemas["test_schema"].ModifiedStatus)
@@ -373,6 +387,18 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 				"test_monitor_new": {
 					CreateMonitor: catalog.CreateMonitor{
 						TableName: "test_monitor_new",
+					},
+				},
+			},
+			Catalogs: map[string]*resources.Catalog{
+				"test_catalog": {
+					CreateCatalog: catalog.CreateCatalog{
+						Name: "test_catalog",
+					},
+				},
+				"test_catalog_new": {
+					CreateCatalog: catalog.CreateCatalog{
+						Name: "test_catalog_new",
 					},
 				},
 			},
@@ -521,6 +547,8 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 		"resources.registered_models.test_registered_model_old":    {ID: "2"},
 		"resources.quality_monitors.test_monitor":                  {ID: "test_monitor"},
 		"resources.quality_monitors.test_monitor_old":              {ID: "test_monitor_old"},
+		"resources.catalogs.test_catalog":                          {ID: "1"},
+		"resources.catalogs.test_catalog_old":                      {ID: "2"},
 		"resources.schemas.test_schema":                            {ID: "1"},
 		"resources.schemas.test_schema_old":                        {ID: "2"},
 		"resources.volumes.test_volume":                            {ID: "1"},
@@ -591,6 +619,13 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.QualityMonitors["test_monitor_old"].ModifiedStatus)
 	assert.Equal(t, "", config.Resources.QualityMonitors["test_monitor_new"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.QualityMonitors["test_monitor_new"].ModifiedStatus)
+
+	assert.Equal(t, "1", config.Resources.Catalogs["test_catalog"].ID)
+	assert.Equal(t, "", config.Resources.Catalogs["test_catalog"].ModifiedStatus)
+	assert.Equal(t, "2", config.Resources.Catalogs["test_catalog_old"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Catalogs["test_catalog_old"].ModifiedStatus)
+	assert.Equal(t, "", config.Resources.Catalogs["test_catalog_new"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Catalogs["test_catalog_new"].ModifiedStatus)
 
 	assert.Equal(t, "1", config.Resources.Schemas["test_schema"].ID)
 	assert.Equal(t, "", config.Resources.Schemas["test_schema"].ModifiedStatus)

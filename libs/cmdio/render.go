@@ -454,12 +454,6 @@ func RenderDiagnostics(ctx context.Context, diags diag.Diagnostics) error {
 	return renderDiagnostics(c.err, diags)
 }
 
-// RenderDiagnosticsToErrorOut is a compatibility alias for RenderDiagnostics.
-// Deprecated: Use RenderDiagnostics instead.
-func RenderDiagnosticsToErrorOut(ctx context.Context, diags diag.Diagnostics) error {
-	return RenderDiagnostics(ctx, diags)
-}
-
 func renderDiagnostics(out io.Writer, diags diag.Diagnostics) error {
 	errorT := template.Must(template.New("error").Funcs(renderFuncMap).Parse(errorTemplate))
 	warningT := template.Must(template.New("warning").Funcs(renderFuncMap).Parse(warningTemplate))
