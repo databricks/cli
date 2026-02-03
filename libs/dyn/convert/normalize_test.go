@@ -90,6 +90,45 @@ func TestNormalizeStructUnknownField(t *testing.T) {
 	}, vout.AsAny())
 }
 
+func TestNormalizeStructCamelCaseWarning(t *testing.T) {
+	type Tmp struct {
+		ValueFrom string `json:"value_from"`
+	}
+
+	var typ Tmp
+
+	m := dyn.NewMapping()
+	// Use camelCase instead of snake_case
+	m.SetLoc("valueFrom", []dyn.Location{
+		{File: "test.yaml", Line: 1, Column: 1},
+	}, dyn.V("secret://my_secret"))
+
+	vin := dyn.V(m)
+
+	vout, diags := Normalize(typ, vin)
+	assert.Len(t, diags, 1)
+	assert.Equal(t, diag.Diagnostic{
+		Severity: diag.Warning,
+		Summary:  "Use 'value_from' instead of 'valueFrom'",
+		Detail:   "The field 'valueFrom' should be 'value_from' (snake_case). The 'valueFrom' field will be ignored.",
+		Locations: []dyn.Location{
+			{File: "test.yaml", Line: 1, Column: 1},
+		},
+		Paths: []dyn.Path{dyn.EmptyPath},
+	}, diags[0])
+
+	// The incorrectly named field should be ignored
+	assert.Equal(t, map[string]any{}, vout.AsAny())
+}
+
+func TestCamelToSnake(t *testing.T) {
+	assert.Equal(t, "value_from", camelToSnake("valueFrom"))
+	assert.Equal(t, "my_field_name", camelToSnake("myFieldName"))
+	assert.Equal(t, "a_b_c", camelToSnake("ABC"))
+	assert.Equal(t, "simple", camelToSnake("simple"))
+	assert.Equal(t, "already_snake", camelToSnake("already_snake"))
+}
+
 func TestNormalizeStructNil(t *testing.T) {
 	type Tmp struct {
 		Foo string `json:"foo"`
