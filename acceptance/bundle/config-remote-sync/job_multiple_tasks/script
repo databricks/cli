@@ -20,11 +20,11 @@ r["tasks"] = [task for task in r["tasks"] if task["task_key"] != "task2"]
 r["tasks"].append({
     "task_key": "new_task",
     "notebook_task": {
-        "notebook_path": "/Users/\${CURRENT_USER_NAME}/new_task"
+        "notebook_path": "/Users/${CURRENT_USER_NAME}/new_task"
     },
     "new_cluster": {
-        "spark_version": "\${DEFAULT_SPARK_VERSION}",
-        "node_type_id": "\${NODE_TYPE_ID}",
+        "spark_version": "${DEFAULT_SPARK_VERSION}",
+        "node_type_id": "${NODE_TYPE_ID}",
         "num_workers": 1
     }
 })
