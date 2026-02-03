@@ -519,9 +519,9 @@ func runCreate(ctx context.Context, opts createOptions) error {
 				return err
 			}
 			if tag == "" {
-				// gh CLI not found - fall back to main branch
+				// gh CLI not found - fall back to main branch with warning
 				gitRef = appkitDefaultBranch
-				log.Infof(ctx, "Using AppKit main branch (install gh CLI to use specific versions)")
+				cmdio.LogString(ctx, "Warning: gh CLI not found, using main branch. Install gh CLI or use --version to pin to a specific release.")
 			} else {
 				gitRef = tag
 				log.Infof(ctx, "Using AppKit version %s", tag)
