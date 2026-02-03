@@ -194,7 +194,7 @@ func LoadState(workDir string) (*State, error) {
 
 	var state State
 	if err := json.Unmarshal(data, &state); err != nil {
-		return nil, fmt.Errorf("failed to parse state file: %w", err)
+		return nil, fmt.Errorf("failed to parse state file (file may be corrupted, delete %s to reset): %w", statePath, err)
 	}
 
 	return &state, nil
@@ -211,6 +211,8 @@ func SaveState(workDir string, state *State) error {
 
 	// Write to temp file first for atomicity
 	tmpPath := statePath + ".tmp"
+	// Clean up any leftover temp file from previous failed attempt
+	os.Remove(tmpPath)
 	if err := os.WriteFile(tmpPath, data, 0o644); err != nil {
 		return fmt.Errorf("failed to write temp state file: %w", err)
 	}

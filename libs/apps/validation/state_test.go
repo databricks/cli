@@ -154,3 +154,42 @@ func TestSaveStateAtomic(t *testing.T) {
 	_, err = os.Stat(filepath.Join(dir, StateFileName))
 	assert.NoError(t, err)
 }
+
+func TestLoadStateCorrupted(t *testing.T) {
+	dir := t.TempDir()
+	statePath := filepath.Join(dir, StateFileName)
+	require.NoError(t, os.WriteFile(statePath, []byte("not valid json"), 0o644))
+
+	state, err := LoadState(dir)
+	require.Error(t, err)
+	assert.Nil(t, state)
+	assert.Contains(t, err.Error(), "corrupted")
+}
+
+func TestComputeChecksumEmptyDir(t *testing.T) {
+	dir := t.TempDir()
+
+	checksum, err := ComputeChecksum(dir)
+	require.NoError(t, err)
+	assert.Len(t, checksum, 64) // Should still produce valid checksum
+}
+
+func TestSaveStateCleansTempFile(t *testing.T) {
+	dir := t.TempDir()
+	tmpPath := filepath.Join(dir, StateFileName+".tmp")
+
+	// Create a leftover temp file
+	require.NoError(t, os.WriteFile(tmpPath, []byte("leftover"), 0o644))
+
+	state := &State{
+		State:       StateValidated,
+		ValidatedAt: time.Now().UTC(),
+		Checksum:    "test123",
+	}
+
+	require.NoError(t, SaveState(dir, state))
+
+	// Temp file should be gone
+	_, err := os.Stat(tmpPath)
+	assert.True(t, os.IsNotExist(err))
+}
