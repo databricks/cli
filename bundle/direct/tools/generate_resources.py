@@ -12,10 +12,15 @@ from pathlib import Path
 import yaml
 
 
-def parse_apitypes(path):
-    """Parse apitypes.generated.yml to get resource types."""
-    data = yaml.safe_load(path.read_text())
-    return {resource: type_name for resource, type_name in data.items() if type_name}
+def parse_apitypes(generated_path, override_path):
+    """Parse apitypes.generated.yml and override with apitypes.yml."""
+    data = yaml.safe_load(generated_path.read_text())
+    result = {resource: type_name for resource, type_name in data.items() if type_name}
+
+    # Override with non-generated apitypes.yml
+    result.update(yaml.safe_load(override_path.read_text()) or {})
+
+    return result
 
 
 def parse_out_fields(path):
@@ -139,11 +144,11 @@ def main():
     parser = argparse.ArgumentParser(description="Generate resources YAML from OpenAPI schema")
     parser.add_argument("apischema", type=Path, help="Path to OpenAPI schema JSON file")
     parser.add_argument("apitypes", type=Path, help="Path to apitypes.generated.yml file")
-    # TODO: add non-generated apitypes.yml here once the need to override generated ones arises
+    parser.add_argument("apitypes_override", type=Path, help="Path to apitypes.yml override file")
     parser.add_argument("out_fields", type=Path, help="Path to out.fields.txt file")
     args = parser.parse_args()
 
-    resource_types = parse_apitypes(args.apitypes)
+    resource_types = parse_apitypes(args.apitypes, args.apitypes_override)
     state_fields = parse_out_fields(args.out_fields)
     schemas = json.loads(args.apischema.read_text()).get("components", {}).get("schemas", {})
 
