@@ -48,7 +48,6 @@ func convertChangeDesc(path string, cd *deployplan.ChangeDesc) (*ConfigChangeDes
 		return nil, fmt.Errorf("failed to normalize remote value: %w", err)
 	}
 
-	op := OperationUnknown
 	if shouldSkipField(path, normalizedValue) {
 		return &ConfigChangeDesc{
 			Operation: OperationSkip,
@@ -57,6 +56,7 @@ func convertChangeDesc(path string, cd *deployplan.ChangeDesc) (*ConfigChangeDes
 
 	normalizedValue = resetValueIfNeeded(path, normalizedValue)
 
+	var op OperationType
 	if normalizedValue == nil && hasConfigValue {
 		op = OperationRemove
 	} else if normalizedValue != nil && hasConfigValue {
