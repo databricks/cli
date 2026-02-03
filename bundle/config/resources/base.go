@@ -7,7 +7,3 @@ type BaseResource struct {
 	URL            string         `json:"url,omitempty" bundle:"internal"`
 	Lifecycle      Lifecycle      `json:"lifecycle,omitempty"`
 }
-
-func (b *BaseResource) GetID() string {
-	return b.ID
-}
