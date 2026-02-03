@@ -4,6 +4,8 @@ alerts: sql.AlertV2
 
 apps: apps.App
 
+catalogs: catalog.CreateCatalog
+
 clusters: compute.ClusterSpec
 
 dashboards: dashboards.Dashboard
