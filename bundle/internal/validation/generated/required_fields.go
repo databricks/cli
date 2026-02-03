@@ -34,6 +34,9 @@ var RequiredFields = map[string][]string{
 	"resources.apps.*.resources[*].sql_warehouse":                   {"id", "permission"},
 	"resources.apps.*.resources[*].uc_securable":                    {"permission", "securable_full_name", "securable_type"},
 
+	"resources.catalogs.*":           {"name"},
+	"resources.catalogs.*.grants[*]": {"privileges", "principal"},
+
 	"resources.clusters.*.cluster_log_conf.dbfs":     {"destination"},
 	"resources.clusters.*.cluster_log_conf.s3":       {"destination"},
 	"resources.clusters.*.cluster_log_conf.volumes":  {"destination"},

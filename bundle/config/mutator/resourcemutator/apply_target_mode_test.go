@@ -132,6 +132,9 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 						},
 					},
 				},
+				Catalogs: map[string]*resources.Catalog{
+					"catalog1": {CreateCatalog: catalog.CreateCatalog{Name: "catalog1"}},
+				},
 				Schemas: map[string]*resources.Schema{
 					"schema1": {CreateSchema: catalog.CreateSchema{Name: "schema1"}},
 				},
@@ -366,6 +369,7 @@ func TestProcessTargetModeDefault(t *testing.T) {
 	assert.Equal(t, "servingendpoint1", b.Config.Resources.ModelServingEndpoints["servingendpoint1"].Name)
 	assert.Equal(t, "registeredmodel1", b.Config.Resources.RegisteredModels["registeredmodel1"].Name)
 	assert.Equal(t, "qualityMonitor1", b.Config.Resources.QualityMonitors["qualityMonitor1"].TableName)
+	assert.Equal(t, "catalog1", b.Config.Resources.Catalogs["catalog1"].Name)
 	assert.Equal(t, "schema1", b.Config.Resources.Schemas["schema1"].Name)
 	assert.Equal(t, "volume1", b.Config.Resources.Volumes["volume1"].Name)
 	assert.Equal(t, "cluster1", b.Config.Resources.Clusters["cluster1"].ClusterName)
@@ -395,9 +399,10 @@ func TestAllNonUcResourcesAreRenamed(t *testing.T) {
 	b := mockBundle(config.Development)
 
 	// UC resources should not have a prefix added to their name. Right now
-	// this list only contains the Volume resource since we have yet to remove
+	// this list only contains the Volume and Catalog resources since we have yet to remove
 	// prefixing support for UC schemas and registered models.
 	ucFields := []reflect.Type{
+		reflect.TypeOf(&resources.Catalog{}),
 		reflect.TypeOf(&resources.Volume{}),
 	}
 

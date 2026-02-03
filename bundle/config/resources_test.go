@@ -140,6 +140,11 @@ func TestResourcesBindSupport(t *testing.T) {
 				CreateRegisteredModelRequest: catalog.CreateRegisteredModelRequest{},
 			},
 		},
+		Catalogs: map[string]*resources.Catalog{
+			"my_catalog": {
+				CreateCatalog: catalog.CreateCatalog{},
+			},
+		},
 		Schemas: map[string]*resources.Schema{
 			"my_schema": {
 				CreateSchema: catalog.CreateSchema{},
@@ -233,6 +238,7 @@ func TestResourcesBindSupport(t *testing.T) {
 	m.GetMockPipelinesAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockExperimentsAPI().EXPECT().GetExperiment(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockRegisteredModelsAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockCatalogsAPI().EXPECT().GetByName(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockSchemasAPI().EXPECT().GetByFullName(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockClustersAPI().EXPECT().GetByClusterId(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockLakeviewAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)

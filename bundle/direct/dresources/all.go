@@ -10,6 +10,7 @@ var SupportedResources = map[string]any{
 	"jobs":                    (*ResourceJob)(nil),
 	"pipelines":               (*ResourcePipeline)(nil),
 	"experiments":             (*ResourceExperiment)(nil),
+	"catalogs":                (*ResourceCatalog)(nil),
 	"schemas":                 (*ResourceSchema)(nil),
 	"volumes":                 (*ResourceVolume)(nil),
 	"models":                  (*ResourceMlflowModel)(nil),
@@ -44,6 +45,7 @@ var SupportedResources = map[string]any{
 	"dashboards.permissions":              (*ResourcePermissions)(nil),
 
 	// Grants
+	"catalogs.grants":          (*ResourceGrants)(nil),
 	"schemas.grants":           (*ResourceGrants)(nil),
 	"volumes.grants":           (*ResourceGrants)(nil),
 	"registered_models.grants": (*ResourceGrants)(nil),
