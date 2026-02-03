@@ -53,10 +53,10 @@ Resource: resources.pipelines.pipeline1
            notebook_task:
              notebook_path: /Users/{{workspace_user_name}}/notebook
 -
-+      max_concurrent_runs: 5
-+      name: Custom Job Name
 +      tags:
 +        dev: default_tag_changed
++      max_concurrent_runs: 5
++      name: Custom Job Name
      job2:
        tasks:
 @@ -23,5 +25,6 @@

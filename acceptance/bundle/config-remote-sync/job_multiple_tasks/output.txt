@@ -41,22 +41,27 @@ Resource: resources.jobs.my_job
 -            - task_key: task1
          - task_key: task3
            notebook_task:
-@@ -37,8 +27,16 @@
+@@ -28,7 +18,8 @@
              spark_version: 13.3.x-snapshot-scala2.12
              node_type_id: [NODE_TYPE_ID]
+-            num_workers: 2
 +            num_workers: 5
-+          depends_on:
+           depends_on:
+-            - task_key: task2
 +            - task_key: task1
 +          timeout_seconds: 3600
-+        - new_cluster:
-+            node_type_id: ${NODE_TYPE_ID}
-             num_workers: 1
--          depends_on:
--            - task_key: task3
+         - task_key: task4
+           notebook_task:
+@@ -40,5 +31,12 @@
+           depends_on:
+             - task_key: task3
 -
-+            spark_version: ${DEFAULT_SPARK_VERSION}
++        - new_cluster:
++            node_type_id: [NODE_TYPE_ID]
++            num_workers: 1
++            spark_version: 13.3.x-snapshot-scala2.12
 +          notebook_task:
-+            notebook_path: /Users/${CURRENT_USER_NAME}/new_task
++            notebook_path: /Users/[USERNAME]/new_task
 +            source: WORKSPACE
 +          task_key: new_task
      rename_task_job:
@@ -68,8 +73,42 @@ Deployment complete!
 
 === Rename task_rename_1 to task_rename_new
 === Detect task key rename
-Error: failed to generate YAML files: failed to apply change to file [TEST_TMP_DIR]/databricks.yml for a field resources.jobs.rename_task_job.tasks[1].depends_on[0].task_key: field not found in YAML configuration: op replace /resources/jobs/rename_task_job/tasks/1/depends_on/0/task_key: parent path /resources/jobs/rename_task_job/tasks/1 does not exist
+Detected changes in 1 resource(s):
+
+Resource: resources.jobs.rename_task_job
+  tasks[task_key='task_rename_1']: remove
+  tasks[task_key='task_rename_2'].depends_on[0].task_key: replace
+  tasks[task_key='task_rename_new']: add
+
+
 
 === Configuration changes for task key rename
 
 >>> diff.py databricks.yml.backup2 databricks.yml
+--- databricks.yml.backup2
++++ databricks.yml
+@@ -41,11 +41,4 @@
+     rename_task_job:
+       tasks:
+-        - task_key: task_rename_1
+-          notebook_task:
+-            notebook_path: /Users/{{workspace_user_name}}/rename_task_1
+-          new_cluster:
+-            spark_version: 13.3.x-snapshot-scala2.12
+-            node_type_id: [NODE_TYPE_ID]
+-            num_workers: 1
+         - task_key: task_rename_2
+           notebook_task:
+@@ -56,3 +49,11 @@
+             num_workers: 1
+           depends_on:
+-            - task_key: task_rename_1
++            - task_key: task_rename_new
++        - new_cluster:
++            node_type_id: [NODE_TYPE_ID]
++            num_workers: 1
++            spark_version: 13.3.x-snapshot-scala2.12
++          notebook_task:
++            notebook_path: /Users/{{workspace_user_name}}/rename_task_1
++            source: WORKSPACE
++          task_key: task_rename_new

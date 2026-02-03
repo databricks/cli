@@ -91,6 +91,16 @@ func resolveSelectors(pathStr string, b *bundle.Bundle, operation OperationType)
 	return result.String(), nil
 }
 
+// pathDepth returns the number of segments in a struct path.
+// Used for sorting changes so deeper (leaf) changes are applied before shallower (structural) changes.
+func pathDepth(pathStr string) int {
+	node, err := structpath.Parse(pathStr)
+	if err != nil {
+		return 0
+	}
+	return len(node.AsSlice())
+}
+
 // ResolveChanges resolves selectors and computes field path candidates for each change.
 func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes) ([]FieldChange, error) {
 	var result []FieldChange
@@ -109,7 +119,20 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 		for fieldPath := range resourceChanges {
 			fieldPaths = append(fieldPaths, fieldPath)
 		}
-		sort.Strings(fieldPaths)
+
+		// Sort field paths by depth (deeper first) to ensure leaf changes
+		// are applied before structural/identifier changes
+		sort.SliceStable(fieldPaths, func(i, j int) bool {
+			depthI := pathDepth(fieldPaths[i])
+			depthJ := pathDepth(fieldPaths[j])
+
+			// If depths differ, sort by depth descending (deeper paths first)
+			if depthI != depthJ {
+				return depthI > depthJ
+			}
+			// Otherwise maintain alphabetical order for determinism
+			return fieldPaths[i] < fieldPaths[j]
+		})
 
 		for _, fieldPath := range fieldPaths {
 			configChange := resourceChanges[fieldPath]
