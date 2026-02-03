@@ -1,5 +1,3 @@
-RecordRequests = true
-
 # Workspace file system does not allow initializing python envs on it.
 # I suspect something about the default python env on DBR interferes with it.
 # We'll likely need a first class venv abstraction in acceptance tests to fix this.

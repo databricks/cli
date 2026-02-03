@@ -1,6 +1,7 @@
 Local = true
 Cloud = true
 RequiresUnityCatalog = true
+RecordRequests = true
 
 # Each cloud has its specific storage url, we record AWS's one in the output (which is also emulated by Local):
 CloudEnvs.gcp = false

@@ -1,6 +1,7 @@
 Local = false
 RequiresWarehouse = true
 Cloud = true
+RecordRequests = true
 
 # The current user on GCP is a user and not a SP. This causes different permissions to be set.
 # Thus we skip this test on GCP.

@@ -1,3 +1,5 @@
+RecordRequests = true
+
 [[Repls]]
 Old = 'abfss://decotestprod-unity-iso@decotestprodunityiso.dfs.core.windows.net'
 New = 's3://deco-uc-prod-isolated-aws-us-east-1/metastore'
