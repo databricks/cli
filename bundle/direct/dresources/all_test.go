@@ -39,6 +39,15 @@ var testConfig map[string]any = map[string]any{
 		},
 	},
 
+	"catalogs": &resources.Catalog{
+		CreateCatalog: catalog.CreateCatalog{
+			Name:    "mycatalog",
+			Comment: "Test catalog",
+		},
+		// Note: EnablePredictiveOptimization and IsolationMode cannot be set during creation,
+		// only during updates. They are not included in the test config.
+	},
+
 	"schemas": &resources.Schema{
 		CreateSchema: catalog.CreateSchema{
 			CatalogName: "main",
@@ -435,6 +444,17 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
+	"catalogs.grants": func(client *databricks.WorkspaceClient) (any, error) {
+		return &GrantsState{
+			SecurableType: "catalog",
+			FullName:      "mycatalog",
+			Grants: []GrantAssignment{{
+				Privileges: []catalog.Privilege{catalog.PrivilegeUseCatalog},
+				Principal:  "user@example.com",
+			}},
+		}, nil
+	},
+
 	"schemas.grants": func(client *databricks.WorkspaceClient) (any, error) {
 		return &GrantsState{
 			SecurableType: "schema",
@@ -639,23 +659,6 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	}
 }
 
-// validateFields uses structwalk to generate all valid field paths and checks membership.
-func validateFields(t *testing.T, configType reflect.Type, fields map[string]deployplan.ActionType) {
-	validPaths := make(map[string]struct{})
-
-	err := structwalk.WalkType(configType, func(path *structpath.PathNode, typ reflect.Type, field *reflect.StructField) bool {
-		validPaths[path.String()] = struct{}{}
-		return true // continue walking
-	})
-	require.NoError(t, err)
-
-	for fieldPath := range fields {
-		if _, exists := validPaths[fieldPath]; !exists {
-			t.Errorf("invalid field '%s' for %s", fieldPath, configType)
-		}
-	}
-}
-
 // TestResourceConfig validates that all field patterns in resource config
 // exist in the corresponding StateType for each resource.
 func TestResourceConfig(t *testing.T) {
@@ -669,18 +672,38 @@ func TestResourceConfig(t *testing.T) {
 		}
 
 		t.Run(resourceType, func(t *testing.T) {
-			fieldMap := make(map[string]deployplan.ActionType)
-			for _, p := range cfg.RecreateOnChanges {
-				fieldMap[p.String()] = deployplan.Recreate
-			}
-			for _, p := range cfg.UpdateIDOnChanges {
-				fieldMap[p.String()] = deployplan.UpdateWithID
-			}
-			for _, p := range cfg.IgnoreRemoteChanges {
-				fieldMap[p.String()] = deployplan.Skip
-			}
-			validateFields(t, adapter.StateType(), fieldMap)
+			validateResourceConfig(t, adapter.StateType(), cfg)
 		})
+	}
+}
+
+// TestGeneratedResourceConfig validates that all field patterns in generated resource config
+// exist in the corresponding StateType for each resource.
+func TestGeneratedResourceConfig(t *testing.T) {
+	for resourceType, resource := range SupportedResources {
+		adapter, err := NewAdapter(resource, resourceType, nil)
+		require.NoError(t, err)
+
+		cfg := adapter.GeneratedResourceConfig()
+		if cfg == nil {
+			continue
+		}
+
+		t.Run(resourceType, func(t *testing.T) {
+			validateResourceConfig(t, adapter.StateType(), cfg)
+		})
+	}
+}
+
+func validateResourceConfig(t *testing.T, stateType reflect.Type, cfg *ResourceLifecycleConfig) {
+	for _, p := range cfg.RecreateOnChanges {
+		assert.NoError(t, structaccess.Validate(stateType, p), "RecreateOnChanges: %s", p)
+	}
+	for _, p := range cfg.UpdateIDOnChanges {
+		assert.NoError(t, structaccess.Validate(stateType, p), "UpdateIDOnChanges: %s", p)
+	}
+	for _, p := range cfg.IgnoreRemoteChanges {
+		assert.NoError(t, structaccess.Validate(stateType, p), "IgnoreRemoteChanges: %s", p)
 	}
 }
 

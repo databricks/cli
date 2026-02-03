@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/deployplan"
 )
 
 // FileChange represents a change to a bundle configuration file
@@ -18,8 +17,8 @@ type FileChange struct {
 
 // DiffOutput represents the complete output of the config-remote-sync command
 type DiffOutput struct {
-	Files   []FileChange                  `json:"files"`
-	Changes map[string]deployplan.Changes `json:"changes"`
+	Files   []FileChange `json:"files"`
+	Changes Changes      `json:"changes"`
 }
 
 // SaveFiles writes all file changes to disk.

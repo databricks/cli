@@ -94,8 +94,9 @@ type Adapter struct {
 	overrideChangeDesc *calladapt.BoundCaller
 	doResize           *calladapt.BoundCaller
 
-	resourceConfig *ResourceLifecycleConfig
-	keyedSlices    map[string]any
+	resourceConfig          *ResourceLifecycleConfig
+	generatedResourceConfig *ResourceLifecycleConfig
+	keyedSlices             map[string]any
 }
 
 func NewAdapter(typedNil any, resourceType string, client *databricks.WorkspaceClient) (*Adapter, error) {
@@ -112,19 +113,20 @@ func NewAdapter(typedNil any, resourceType string, client *databricks.WorkspaceC
 	}
 	impl := outs[0]
 	adapter := &Adapter{
-		prepareState:       nil,
-		remapState:         nil,
-		doRefresh:          nil,
-		doDelete:           nil,
-		doCreate:           nil,
-		doUpdate:           nil,
-		doUpdateWithID:     nil,
-		doResize:           nil,
-		waitAfterCreate:    nil,
-		waitAfterUpdate:    nil,
-		overrideChangeDesc: nil,
-		resourceConfig:     GetResourceConfig(resourceType),
-		keyedSlices:        nil,
+		prepareState:            nil,
+		remapState:              nil,
+		doRefresh:               nil,
+		doDelete:                nil,
+		doCreate:                nil,
+		doUpdate:                nil,
+		doUpdateWithID:          nil,
+		doResize:                nil,
+		waitAfterCreate:         nil,
+		waitAfterUpdate:         nil,
+		overrideChangeDesc:      nil,
+		resourceConfig:          GetResourceConfig(resourceType),
+		generatedResourceConfig: GetGeneratedResourceConfig(resourceType),
+		keyedSlices:             nil,
 	}
 
 	err = adapter.initMethods(impl)
@@ -353,6 +355,19 @@ func (a *Adapter) RemoteType() reflect.Type {
 
 func (a *Adapter) ResourceConfig() *ResourceLifecycleConfig {
 	return a.resourceConfig
+}
+
+func (a *Adapter) GeneratedResourceConfig() *ResourceLifecycleConfig {
+	return a.generatedResourceConfig
+}
+
+func (a *Adapter) IsFieldInRecreateOnChanges(path *structpath.PathNode) bool {
+	for _, p := range a.resourceConfig.RecreateOnChanges {
+		if path.HasPrefix(p) {
+			return true
+		}
+	}
+	return false
 }
 
 func (a *Adapter) PrepareState(input any) (any, error) {

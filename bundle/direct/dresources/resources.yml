@@ -8,7 +8,6 @@
 #   ignore_local_changes: fields where local changes are ignored (can't be updated via API)
 
 resources:
-  # jobs: no special config
 
   pipelines:
     recreate_on_changes:
@@ -72,6 +71,15 @@ resources:
     ignore_remote_changes:
       - warehouse_id
 
+  catalogs:
+    recreate_on_changes:
+      - storage_root
+      - connection_name
+      - provider_name
+      - share_name
+    update_id_on_changes:
+      - name
+
   schemas:
     recreate_on_changes:
       - name
@@ -87,11 +95,7 @@ resources:
     update_id_on_changes:
       - name
 
-  # clusters: no special config
-
   dashboards:
-    recreate_on_changes:
-      - parent_path
 
     ignore_remote_changes:
       # "serialized_dashboard" locally and remotely will have different contents
@@ -120,20 +124,3 @@ resources:
       # When scope name changes, we need UpdateWithID trigger. This is necessary so that subsequent
       # DoRead operations use the correct ID and we do not end up with a persistent drift.
       - scope_name
-
-  # alerts: no special config
-
-  # sql_warehouses: no special config
-
-  # database_instances: no special config
-
-  database_catalogs:
-    ignore_remote_changes:
-      # Backend does not set this:
-      - create_database_if_not_exists
-
-  synced_database_tables:
-    ignore_remote_changes:
-      # Backend does not set these fields in response (it sets effective_ counterparts instead)
-      - database_instance_name
-      - logical_database_name

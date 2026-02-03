@@ -1,0 +1,27 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+CATALOG_NAME="test_catalog_${UNIQUE_NAME}"
+
+cleanup() {
+  title "Test cleanup"
+  trace $CLI bundle destroy --auto-approve
+
+  title "Assert the catalog is deleted"
+  trace errcode $CLI catalogs get "${CATALOG_NAME}" 2>/dev/null
+}
+trap cleanup EXIT
+
+title "Deploy bundle with catalog"
+trace $CLI bundle deploy
+
+title "Assert the catalog is created"
+trace $CLI catalogs get "${CATALOG_NAME}" | jq "{name, comment, properties}"
+
+title "Update catalog comment"
+update_file.py databricks.yml "This catalog was created from DABs" "Updated comment from DABs"
+
+title "Redeploy with updated comment"
+trace $CLI bundle deploy
+
+title "Assert the catalog comment is updated"
+trace $CLI catalogs get "${CATALOG_NAME}" | jq "{name, comment}"

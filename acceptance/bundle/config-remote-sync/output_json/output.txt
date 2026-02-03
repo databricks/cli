@@ -14,15 +14,12 @@ Deployment complete!
   "changes": {
     "resources.jobs.test_job": {
       "max_concurrent_runs": {
-        "action": "update",
-        "old": 1,
-        "new": 1,
-        "remote": 3
+        "operation": "replace",
+        "value": 3
       },
       "tags": {
-        "action": "skip",
-        "reason": "server_side_default",
-        "remote": {
+        "operation": "add",
+        "value": {
           "env": "test"
         }
       }

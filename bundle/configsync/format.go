@@ -4,12 +4,10 @@ import (
 	"fmt"
 	"sort"
 	"strings"
-
-	"github.com/databricks/cli/bundle/deployplan"
 )
 
 // FormatTextOutput formats the config changes as human-readable text. Useful for debugging
-func FormatTextOutput(changes map[string]deployplan.Changes) string {
+func FormatTextOutput(changes Changes) string {
 	var output strings.Builder
 
 	if len(changes) == 0 {
@@ -36,9 +34,11 @@ func FormatTextOutput(changes map[string]deployplan.Changes) string {
 		sort.Strings(paths)
 
 		for _, path := range paths {
-			changeDesc := resourceChanges[path]
-			output.WriteString(fmt.Sprintf("  %s: %s\n", path, changeDesc.Action))
+			configChange := resourceChanges[path]
+			output.WriteString(fmt.Sprintf("  %s: %s\n", path, configChange.Operation))
 		}
+
+		output.WriteString("\n")
 	}
 
 	return output.String()

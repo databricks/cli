@@ -1,0 +1,64 @@
+
+=== Deploy bundle with catalog and schema
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Assert the catalog is created
+>>> [CLI] catalogs get test_catalog_[UNIQUE_NAME]
+{
+  "name": "test_catalog_[UNIQUE_NAME]",
+  "comment": "Catalog created from DABs",
+  "properties": {
+    "purpose": "testing"
+  }
+}
+
+=== Assert schema is created in the custom catalog
+>>> [CLI] schemas get test_catalog_[UNIQUE_NAME].schema1
+{
+  "full_name": "test_catalog_[UNIQUE_NAME].schema1",
+  "catalog_name": "test_catalog_[UNIQUE_NAME]",
+  "comment": "Schema in custom catalog"
+}
+
+=== Verify schema belongs to the test catalog
+=== Update catalog comment
+=== Redeploy with updated catalog
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Assert catalog comment is updated
+>>> [CLI] catalogs get test_catalog_[UNIQUE_NAME]
+{
+  "name": "test_catalog_[UNIQUE_NAME]",
+  "comment": "Updated catalog comment"
+}
+
+=== Assert schema still exists after catalog update
+>>> [CLI] schemas get test_catalog_[UNIQUE_NAME].schema1
+{
+  "full_name": "test_catalog_[UNIQUE_NAME].schema1"
+}
+
+=== Test cleanup
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.catalogs.test_catalog
+  delete resources.schemas.test_schema
+
+This action will result in the deletion of the following UC schemas. Any underlying data may be lost:
+  delete resources.schemas.test_schema
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+
+Deleting files...
+Destroy complete!
+
+=== Assert schema is deleted
+=== Assert the catalog is deleted
