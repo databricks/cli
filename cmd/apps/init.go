@@ -34,16 +34,18 @@ const (
 
 // fetchLatestRelease fetches the latest release tag from GitHub using gh CLI.
 // Returns the tag name (e.g., "v0.1.0") or an error.
+// If gh CLI is not found or fails, returns empty string (caller should fall back to latest).
 func fetchLatestRelease(ctx context.Context) (string, error) {
 	cmd := exec.CommandContext(ctx, "gh", "release", "view", "--repo", appkitRepoOwner+"/"+appkitRepoName, "--json", "tagName", "-q", ".tagName")
 	output, err := cmd.Output()
 	if err != nil {
+		// If gh CLI is not installed, return empty string to signal fallback
+		if errors.Is(err, exec.ErrNotFound) {
+			return "", nil
+		}
 		var exitErr *exec.ExitError
 		if errors.As(err, &exitErr) {
 			return "", fmt.Errorf("failed to fetch latest release: %s", string(exitErr.Stderr))
-		}
-		if errors.Is(err, exec.ErrNotFound) {
-			return "", errors.New("gh CLI not found, please install it or use --version to specify a version")
 		}
 		return "", fmt.Errorf("failed to fetch latest release: %w", err)
 	}
@@ -52,6 +54,19 @@ func fetchLatestRelease(ctx context.Context) (string, error) {
 		return "", errors.New("no releases found for appkit repository")
 	}
 	return tag, nil
+}
+
+// normalizeVersion ensures the version string has a "v" prefix if it looks like a semver.
+// Examples: "0.3.0" -> "v0.3.0", "v0.3.0" -> "v0.3.0", "latest" -> "latest"
+func normalizeVersion(version string) string {
+	if version == "" || version == "latest" {
+		return version
+	}
+	// If it starts with a digit, prepend "v"
+	if len(version) > 0 && version[0] >= '0' && version[0] <= '9' {
+		return "v" + version
+	}
+	return version
 }
 
 func newInitCmd() *cobra.Command {
@@ -424,17 +439,22 @@ func cloneRepo(ctx context.Context, repoURL, branch string) (string, error) {
 }
 
 // resolveTemplate resolves a template path, handling both local paths and GitHub URLs.
+// branch is used for cloning (can contain "/" for feature branches).
+// subdir is an optional subdirectory within the repo to use (for default appkit template).
 // Returns the local path to use, a cleanup function (for temp dirs), and any error.
-func resolveTemplate(ctx context.Context, templatePath, branch string) (localPath string, cleanup func(), err error) {
+func resolveTemplate(ctx context.Context, templatePath, branch, subdir string) (localPath string, cleanup func(), err error) {
 	// Case 1: Local path - return as-is
 	if !strings.HasPrefix(templatePath, "https://") {
 		return templatePath, nil, nil
 	}
 
 	// Case 2: GitHub URL - parse and clone
-	repoURL, subdir, urlBranch := git.ParseGitHubURL(templatePath)
+	repoURL, urlSubdir, urlBranch := git.ParseGitHubURL(templatePath)
 	if branch == "" {
 		branch = urlBranch // Use branch from URL if not overridden by flag
+	}
+	if subdir == "" {
+		subdir = urlSubdir // Use subdir from URL if not overridden
 	}
 
 	// Clone to temp dir with spinner
@@ -477,7 +497,8 @@ func runCreate(ctx context.Context, opts createOptions) error {
 
 	// Resolve the git reference (branch/tag) to use for default appkit template
 	gitRef := opts.branch
-	if templateSrc == "" {
+	usingDefaultTemplate := templateSrc == ""
+	if usingDefaultTemplate {
 		// Using default appkit template - resolve version
 		switch {
 		case opts.branch != "":
@@ -485,7 +506,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		case opts.version == "latest":
 			gitRef = appkitDefaultBranch
 		case opts.version != "":
-			gitRef = opts.version
+			gitRef = normalizeVersion(opts.version)
 		default:
 			// Default: fetch latest release
 			var tag string
@@ -497,10 +518,16 @@ func runCreate(ctx context.Context, opts createOptions) error {
 			if err != nil {
 				return err
 			}
-			gitRef = tag
-			log.Infof(ctx, "Using AppKit version %s", tag)
+			if tag == "" {
+				// gh CLI not found - fall back to main branch
+				gitRef = appkitDefaultBranch
+				log.Infof(ctx, "Using AppKit main branch (install gh CLI to use specific versions)")
+			} else {
+				gitRef = tag
+				log.Infof(ctx, "Using AppKit version %s", tag)
+			}
 		}
-		templateSrc = fmt.Sprintf("%s/tree/%s/%s", appkitRepoURL, gitRef, appkitTemplateDir)
+		templateSrc = appkitRepoURL
 	}
 
 	// Step 1: Get project name first (needed before we can check destination)
@@ -537,13 +564,14 @@ func runCreate(ctx context.Context, opts createOptions) error {
 
 	// Step 2: Resolve template (handles GitHub URLs by cloning)
 	// For custom templates, --branch can override the URL's branch
-	// For default appkit template, gitRef is already embedded in templateSrc
-	branchOverride := opts.branch
-	if opts.templatePath == "" && os.Getenv(templatePathEnvVar) == "" {
-		// Using default appkit - no override needed, gitRef is in URL
-		branchOverride = ""
+	// For default appkit template, pass gitRef directly (supports branches with "/" in name)
+	branchForClone := opts.branch
+	subdirForClone := ""
+	if usingDefaultTemplate {
+		branchForClone = gitRef
+		subdirForClone = appkitTemplateDir
 	}
-	resolvedPath, cleanup, err := resolveTemplate(ctx, templateSrc, branchOverride)
+	resolvedPath, cleanup, err := resolveTemplate(ctx, templateSrc, branchForClone, subdirForClone)
 	if err != nil {
 		return err
 	}

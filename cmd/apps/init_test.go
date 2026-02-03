@@ -188,6 +188,29 @@ func TestInitCmdBranchAndVersionMutuallyExclusive(t *testing.T) {
 	assert.Contains(t, err.Error(), "--branch and --version are mutually exclusive")
 }
 
+func TestNormalizeVersion(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected string
+	}{
+		{"0.3.0", "v0.3.0"},
+		{"1.0.0", "v1.0.0"},
+		{"v0.3.0", "v0.3.0"},
+		{"v1.0.0", "v1.0.0"},
+		{"latest", "latest"},
+		{"", ""},
+		{"main", "main"},
+		{"feat/something", "feat/something"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			result := normalizeVersion(tt.input)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
 func TestParseDeployAndRunFlags(t *testing.T) {
 	tests := []struct {
 		name        string
