@@ -41,6 +41,8 @@ resources:
       - updater
       - url
 
+  # catalogs: no api field behaviors
+
   # clusters: no api field behaviors
 
   dashboards:
