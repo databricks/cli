@@ -1,5 +1,3 @@
-#!/bin/bash
-
 # Cleanup function to delete endpoint and other resources
 cleanup() {
    # Try to delete with current config

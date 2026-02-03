@@ -1,5 +1,3 @@
-#!/bin/bash
-
 # Cleanup function to delete both branches
 cleanup() {
    # Try to delete with current config

@@ -1,4 +1,3 @@
-#!/bin/bash
 envsubst < databricks.yml.tmpl > databricks.yml
 
 cleanup() {

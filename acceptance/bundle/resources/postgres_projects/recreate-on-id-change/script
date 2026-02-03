@@ -1,5 +1,3 @@
-#!/bin/bash
-
 # Cleanup function to delete both projects
 cleanup() {
    # Try to delete with current config
