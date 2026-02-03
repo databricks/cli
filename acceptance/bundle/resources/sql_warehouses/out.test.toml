@@ -1,6 +1,7 @@
 Local = true
 Cloud = false
 CloudSlow = false
+RecordRequests = true
 
 [EnvMatrix]
   DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]
