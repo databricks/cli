@@ -57,11 +57,11 @@ Resources:
   Postgres branches:
     main:
       Name: 
-      URL:  (not deployed)
+      URL:  (not available)
   Postgres projects:
     my_project:
       Name: Test Project for Branch
-      URL:  (not deployed)
+      URL:  (not available)
 
 >>> print_requests.py --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 

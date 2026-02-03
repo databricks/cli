@@ -395,11 +395,11 @@ Resources:
       URL:  https://url3
     pipeline2:
       Name: pipeline2-name
-      URL:  (not deployed)
+      URL:  (not available)
   Schemas:
     schema1:
       Name: schema
-      URL:  (not deployed)
+      URL:  (not available)
 `
 	assert.Equal(t, expectedSummary, writer.String())
 }

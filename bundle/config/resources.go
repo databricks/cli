@@ -50,6 +50,9 @@ type ConfigResource interface {
 	// GetURL returns the URL of the resource.
 	GetURL() string
 
+	// GetID returns the ID of the resource.
+	GetID() string
+
 	// InitializeURL initializes the URL field of the resource.
 	InitializeURL(baseURL url.URL)
 }

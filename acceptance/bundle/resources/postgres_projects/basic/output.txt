@@ -55,7 +55,7 @@ Resources:
   Postgres projects:
     my_project:
       Name: Test Postgres Project
-      URL:  (not deployed)
+      URL:  (not available)
 
 >>> print_requests.py --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
 

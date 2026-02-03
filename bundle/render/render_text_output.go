@@ -54,7 +54,7 @@ const resourcesTemplate = `Resources:
   {{- range .Resources }}
     {{ .Key | bold }}:
       Name: {{ .Name }}
-      URL:  {{ if .URL }}{{ .URL | cyan }}{{ else }}{{ "(not deployed)" | cyan }}{{ end }}
+      URL:  {{ if .ID }}{{ if .URL }}{{ .URL | cyan }}{{ else }}{{ "(not available)" | cyan }}{{ end }}{{ else }}{{ "(not deployed)" | cyan }}{{ end }}
   {{- end }}
 {{- end }}
 `
@@ -68,6 +68,7 @@ type ResourceInfo struct {
 	Key  string
 	Name string
 	URL  string
+	ID   string
 }
 
 func pluralize(n int, singular, plural string) string {
@@ -167,6 +168,7 @@ func RenderSummary(ctx context.Context, out io.Writer, b *bundle.Bundle) error {
 				Key:  key,
 				Name: resource.GetName(),
 				URL:  resource.GetURL(),
+				ID:   resource.GetID(),
 			})
 		}
 
