@@ -162,6 +162,9 @@ github.com/databricks/cli/bundle/config.Resources:
       The app resource defines a Databricks app.
     "markdown_description": |-
       The app resource defines a [Databricks app](/api/workspace/apps/create). For information about Databricks Apps, see [\_](/dev-tools/databricks-apps/index.md).
+  "catalogs":
+    "description": |-
+      PLACEHOLDER
   "clusters":
     "description": |-
       The cluster definitions for the bundle, where each key is the name of a cluster.
@@ -537,6 +540,97 @@ github.com/databricks/cli/bundle/config/resources.AppPermission:
   "user_name":
     "description": |-
       PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.Catalog:
+  "comment":
+    "description": |-
+      PLACEHOLDER
+  "connection_name":
+    "description": |-
+      PLACEHOLDER
+  "grants":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
+  "name":
+    "description": |-
+      PLACEHOLDER
+  "options":
+    "description": |-
+      PLACEHOLDER
+  "properties":
+    "description": |-
+      PLACEHOLDER
+  "provider_name":
+    "description": |-
+      PLACEHOLDER
+  "share_name":
+    "description": |-
+      PLACEHOLDER
+  "storage_root":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.CatalogGrant:
+  "principal":
+    "description": |-
+      PLACEHOLDER
+  "privileges":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.CatalogGrantPrivilege:
+  "_":
+    "enum":
+      - |-
+        ALL_PRIVILEGES
+      - |-
+        APPLY_TAG
+      - |-
+        CREATE_CONNECTION
+      - |-
+        CREATE_EXTERNAL_LOCATION
+      - |-
+        CREATE_EXTERNAL_TABLE
+      - |-
+        CREATE_EXTERNAL_VOLUME
+      - |-
+        CREATE_FOREIGN_CATALOG
+      - |-
+        CREATE_FUNCTION
+      - |-
+        CREATE_MANAGED_STORAGE
+      - |-
+        CREATE_MATERIALIZED_VIEW
+      - |-
+        CREATE_MODEL
+      - |-
+        CREATE_SCHEMA
+      - |-
+        CREATE_STORAGE_CREDENTIAL
+      - |-
+        CREATE_TABLE
+      - |-
+        CREATE_VOLUME
+      - |-
+        EXECUTE
+      - |-
+        MANAGE
+      - |-
+        MODIFY
+      - |-
+        READ_VOLUME
+      - |-
+        REFRESH
+      - |-
+        SELECT
+      - |-
+        USE_CATALOG
+      - |-
+        USE_CONNECTION
+      - |-
+        USE_SCHEMA
+      - |-
+        WRITE_VOLUME
 github.com/databricks/cli/bundle/config/resources.ClusterPermission:
   "group_name":
     "description": |-

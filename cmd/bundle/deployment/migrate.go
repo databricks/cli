@@ -176,6 +176,12 @@ To start using direct engine, deploy with DATABRICKS_BUNDLE_ENGINE=direct env va
 			return fmt.Errorf("failed to parse terraform state: %w", err)
 		}
 
+		for key, resourceEntry := range terraformResources {
+			if resourceEntry.ID == "" {
+				return fmt.Errorf("failed to intepret terraform state for %s: missing ID", key)
+			}
+		}
+
 		_, localPath := b.StateFilenameDirect(ctx)
 		tempStatePath := localPath + ".temp-migration"
 		if _, err = os.Stat(tempStatePath); err == nil {

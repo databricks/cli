@@ -1,0 +1,5 @@
+# Error: Catalog resources are only supported with direct deployment mode
+EnvMatrixExclude.no_catalog = ["INPUT_CONFIG=catalog.yml.tmpl"]
+
+# Unexpected action='create' for resources.secret_scopes.foo.permissions
+EnvMatrixExclude.no_secret_scope = ["INPUT_CONFIG=secret_scope.yml.tmpl"]

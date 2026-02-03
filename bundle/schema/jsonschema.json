@@ -318,6 +318,115 @@
                   }
                 ]
               },
+              "resources.Catalog": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "comment": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "connection_name": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "grants": {
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.CatalogGrant"
+                      },
+                      "lifecycle": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
+                      },
+                      "name": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "options": {
+                        "$ref": "#/$defs/map/string"
+                      },
+                      "properties": {
+                        "$ref": "#/$defs/map/string"
+                      },
+                      "provider_name": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "share_name": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "storage_root": {
+                        "$ref": "#/$defs/string"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "name"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "resources.CatalogGrant": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "principal": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "privileges": {
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.CatalogGrantPrivilege"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "privileges",
+                      "principal"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "resources.CatalogGrantPrivilege": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "ALL_PRIVILEGES",
+                      "APPLY_TAG",
+                      "CREATE_CONNECTION",
+                      "CREATE_EXTERNAL_LOCATION",
+                      "CREATE_EXTERNAL_TABLE",
+                      "CREATE_EXTERNAL_VOLUME",
+                      "CREATE_FOREIGN_CATALOG",
+                      "CREATE_FUNCTION",
+                      "CREATE_MANAGED_STORAGE",
+                      "CREATE_MATERIALIZED_VIEW",
+                      "CREATE_MODEL",
+                      "CREATE_SCHEMA",
+                      "CREATE_STORAGE_CREDENTIAL",
+                      "CREATE_TABLE",
+                      "CREATE_VOLUME",
+                      "EXECUTE",
+                      "MANAGE",
+                      "MODIFY",
+                      "READ_VOLUME",
+                      "REFRESH",
+                      "SELECT",
+                      "USE_CATALOG",
+                      "USE_CONNECTION",
+                      "USE_SCHEMA",
+                      "WRITE_VOLUME"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
               "resources.Cluster": {
                 "oneOf": [
                   {
@@ -2514,6 +2623,9 @@
                       "description": "The app resource defines a Databricks app.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.App",
                       "markdownDescription": "The app resource defines a [Databricks app](https://docs.databricks.com/api/workspace/apps/create). For information about Databricks Apps, see [link](https://docs.databricks.com/dev-tools/databricks-apps/index.html)."
+                    },
+                    "catalogs": {
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Catalog"
                     },
                     "clusters": {
                       "description": "The cluster definitions for the bundle, where each key is the name of a cluster.",
@@ -9912,6 +10024,20 @@
                     }
                   ]
                 },
+                "resources.Catalog": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Catalog"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
                 "resources.Cluster": {
                   "oneOf": [
                     {
@@ -10280,6 +10406,34 @@
                       "type": "array",
                       "items": {
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.AppPermission"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
+                "resources.CatalogGrant": {
+                  "oneOf": [
+                    {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.CatalogGrant"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
+                "resources.CatalogGrantPrivilege": {
+                  "oneOf": [
+                    {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.CatalogGrantPrivilege"
                       }
                     },
                     {
