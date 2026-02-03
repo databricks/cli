@@ -5,31 +5,11 @@ import (
 	"reflect"
 	"slices"
 	"strconv"
-	"strings"
-	"unicode"
 
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/dynvar"
 )
-
-// camelToSnake converts a camelCase string to snake_case.
-// For example, "valueFrom" becomes "value_from".
-func camelToSnake(s string) string {
-	var result strings.Builder
-	for i, r := range s {
-		if unicode.IsUpper(r) {
-			// Add underscore before uppercase letter (unless it's the first character)
-			if i > 0 {
-				result.WriteRune('_')
-			}
-			result.WriteRune(unicode.ToLower(r))
-		} else {
-			result.WriteRune(r)
-		}
-	}
-	return result.String()
-}
 
 // NormalizeOption is the type for options that can be passed to Normalize.
 type NormalizeOption int
@@ -122,26 +102,26 @@ func (n normalizeOptions) normalizeStruct(typ reflect.Type, src dyn.Value, seen 
 			index, ok := info.Fields[fieldName]
 			if !ok {
 				if !pv.IsAnchor() {
-					// Check if this might be a camelCase version of a snake_case field
-					snakeCaseName := camelToSnake(fieldName)
-					_, hasSnakeCase := info.Fields[snakeCaseName]
-
-					if hasSnakeCase && snakeCaseName != fieldName {
-						diags = diags.Append(diag.Diagnostic{
-							Severity:  diag.Warning,
-							Summary:   "Use '" + snakeCaseName + "' instead of '" + fieldName + "'",
-							Detail:    "The field '" + fieldName + "' should be '" + snakeCaseName + "' (snake_case). The '" + fieldName + "' field will be ignored.",
-							Locations: pk.Locations(),
-							Paths:     []dyn.Path{path},
-						})
-					} else {
-						diags = diags.Append(diag.Diagnostic{
-							Severity:  diag.Warning,
-							Summary:   "unknown field: " + fieldName,
-							Locations: pk.Locations(),
-							Paths:     []dyn.Path{path},
-						})
+					// Special case: provide a more helpful message for "valueFrom" vs "value_from"
+					if fieldName == "valueFrom" {
+						if _, hasValueFrom := info.Fields["value_from"]; hasValueFrom {
+							diags = diags.Append(diag.Diagnostic{
+								Severity:  diag.Warning,
+								Summary:   "Use 'value_from' instead of 'valueFrom'",
+								Detail:    "The field 'valueFrom' should be 'value_from' (snake_case). The 'valueFrom' field will be ignored.",
+								Locations: pk.Locations(),
+								Paths:     []dyn.Path{path},
+							})
+							continue
+						}
 					}
+
+					diags = diags.Append(diag.Diagnostic{
+						Severity:  diag.Warning,
+						Summary:   "unknown field: " + fieldName,
+						Locations: pk.Locations(),
+						Paths:     []dyn.Path{path},
+					})
 				}
 				continue
 			}
