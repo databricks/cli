@@ -28,8 +28,6 @@ const (
 	appkitRepoURL       = "https://github.com/databricks/appkit"
 	appkitTemplateDir   = "template"
 	appkitDefaultBranch = "main"
-	appkitRepoOwner     = "databricks"
-	appkitRepoName      = "appkit"
 )
 
 // normalizeVersion ensures the version string has a "v" prefix if it looks like a semver.
