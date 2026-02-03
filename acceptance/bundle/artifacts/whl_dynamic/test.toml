@@ -1,3 +1,5 @@
+RecordRequests = true
+
 [[Repls]]
 Old = '\\\\'
 New = '/'

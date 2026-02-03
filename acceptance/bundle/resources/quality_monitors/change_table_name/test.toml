@@ -1,2 +1,4 @@
+RecordRequests = true
+
 # this does not work on terraform
 EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct"]

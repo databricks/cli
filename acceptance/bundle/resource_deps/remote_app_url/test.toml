@@ -1,1 +1,2 @@
+RecordRequests = true
 Env.DATABRICKS_CLI_DISABLE_TELEMETRY = "1"

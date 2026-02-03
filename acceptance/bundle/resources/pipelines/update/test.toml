@@ -1,3 +1,4 @@
 Timeout = '30s'
 Cloud = true
+RecordRequests = true
 Ignore = ["bar.py", "foo.py"]
