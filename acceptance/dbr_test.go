@@ -367,6 +367,10 @@ func runDbrAcceptanceTests(t *testing.T, config dbrTestConfig) {
 //	OR
 //	make dbr-test
 func TestDbrAcceptance(t *testing.T) {
+	if os.Getenv("DBR_ENABLED") != "true" {
+		t.Skip("Skipping DBR test: DBR_ENABLED not set")
+	}
+
 	if os.Getenv("CLOUD_ENV") == "" {
 		t.Skip("Skipping DBR test: CLOUD_ENV not set")
 	}
