@@ -1,0 +1,39 @@
+# Generated, do not edit. Override via apitypes.yml
+
+alerts: sql.AlertV2
+
+apps: apps.App
+
+catalogs: catalog.CreateCatalog
+
+clusters: compute.ClusterSpec
+
+dashboards: dashboards.Dashboard
+
+database_catalogs: database.DatabaseCatalog
+
+database_instances: database.DatabaseInstance
+
+experiments: ml.CreateExperiment
+
+jobs: jobs.JobSettings
+
+model_serving_endpoints: serving.CreateServingEndpoint
+
+models: ml.CreateModelRequest
+
+pipelines: pipelines.CreatePipeline
+
+quality_monitors: catalog.CreateMonitor
+
+registered_models: catalog.RegisteredModelInfo
+
+schemas: catalog.CreateSchema
+
+secret_scopes: workspace.CreateScope
+
+sql_warehouses: sql.EditWarehouseRequest
+
+synced_database_tables: database.SyncedDatabaseTable
+
+volumes: catalog.CreateVolumeRequestContent

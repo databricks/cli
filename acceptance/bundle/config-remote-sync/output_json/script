@@ -1,0 +1,16 @@
+#!/bin/bash
+
+envsubst < databricks.yml.tmpl > databricks.yml
+
+touch dummy.whl
+$CLI bundle deploy
+job_id="$(read_id.py test_job)"
+
+edit_resource.py jobs $job_id <<EOF
+r["max_concurrent_runs"] = 3
+r["tags"] = {"env": "test"}
+EOF
+
+title "JSON output format"
+$CLI bundle config-remote-sync -o json > out.json
+cat out.json

@@ -102,7 +102,7 @@ func (b *DeploymentBundle) InitForApply(ctx context.Context, client *databricks.
 			return fmt.Errorf("loading plan entry %s: %w", resourceKey, err)
 		}
 
-		b.StructVarCache.Store(resourceKey, sv)
+		b.StateCache.Store(resourceKey, sv)
 	}
 
 	b.Plan = plan
@@ -202,7 +202,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		}
 
 		if dbentry.ID == "" {
-			logdiag.LogError(ctx, fmt.Errorf("%s: invalid state empty id", errorPrefix))
+			logdiag.LogError(ctx, fmt.Errorf("%s: invalid state: empty id", errorPrefix))
 			return false
 		}
 
@@ -218,9 +218,9 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 		// for integers: compare 0 with actual object ID. As long as real object IDs are never 0 we're good.
 		// Once we add non-id fields or add per-field details to "bundle plan", we must read dynamic data and deal with references as first class citizen.
 		// This means distinguishing between 0 that are actually object ids and 0 that are there because typed struct integer cannot contain ${...} string.
-		sv, ok := b.StructVarCache.Load(resourceKey)
+		sv, ok := b.StateCache.Load(resourceKey)
 		if !ok {
-			logdiag.LogError(ctx, fmt.Errorf("%s: internal error: no state found for %q", errorPrefix, resourceKey))
+			logdiag.LogError(ctx, fmt.Errorf("%s: internal error: no state cache entry found for %q", errorPrefix, resourceKey))
 			return false
 		}
 		localDiff, err := structdiff.GetStructDiff(savedState, sv.Value, adapter.KeyedSlices())
@@ -281,10 +281,9 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			action = getMaxAction(entry.Changes)
 		}
 
-		if action == deployplan.Skip {
-			// resource is not going to change, can use remoteState to resolve references
-			b.RemoteStateCache.Store(resourceKey, remoteState)
-		}
+		// Note, this unconditionally stores remoteState. However, it may updated post-deploy, so whether
+		// it can be used for variable resolution depends on several factors, see canReadRemoteCache in LookupReferencePreDeploy
+		b.RemoteStateCache.Store(resourceKey, remoteState)
 
 		// Validate that resources without DoUpdate don't have update actions
 		if action == deployplan.Update && !adapter.HasDoUpdate() {
@@ -361,6 +360,7 @@ func prepareChanges(ctx context.Context, adapter *dresources.Adapter, localDiff,
 
 func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, changes deployplan.Changes, remoteState any) error {
 	cfg := adapter.ResourceConfig()
+	generatedCfg := adapter.GeneratedResourceConfig()
 
 	for pathString, ch := range changes {
 		path, err := structpath.Parse(pathString)
@@ -383,9 +383,12 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 			// Empty struct in config should not cause drift when remote has values
 			ch.Action = deployplan.Skip
 			ch.Reason = deployplan.ReasonEmptyStruct
-		} else if action := shouldIgnore(cfg, pathString); action != deployplan.Undefined {
-			ch.Action = action
+		} else if shouldSkip(cfg, path, ch) {
+			ch.Action = deployplan.Skip
 			ch.Reason = deployplan.ReasonBuiltinRule
+		} else if shouldSkip(generatedCfg, path, ch) {
+			ch.Action = deployplan.Skip
+			ch.Reason = deployplan.ReasonAPISchema
 		} else if ch.New == nil && ch.Old == nil && ch.Remote != nil && path.IsDotString() {
 			// The field was not set by us, but comes from the remote state.
 			// This could either be server-side default or a policy.
@@ -393,47 +396,66 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 			// Note, we only consider struct fields here. Adding/removing elements to/from maps and slices should trigger updates.
 			ch.Action = deployplan.Skip
 			ch.Reason = deployplan.ReasonServerSideDefault
-		} else if action := shouldUpdateOrRecreate(cfg, pathString); action != deployplan.Undefined {
+		} else if action := shouldUpdateOrRecreate(cfg, path); action != deployplan.Undefined {
 			ch.Action = action
 			ch.Reason = deployplan.ReasonBuiltinRule
+		} else if action := shouldUpdateOrRecreate(generatedCfg, path); action != deployplan.Undefined {
+			ch.Action = action
+			ch.Reason = deployplan.ReasonAPISchema
 		} else {
 			ch.Action = deployplan.Update
 		}
 
-		err = adapter.OverrideChangeDesc(ctx, path, ch, remoteState)
-		if err != nil {
-			return fmt.Errorf("internal error: failed to classify change: %w", err)
+		if adapter.HasOverrideChangeDesc() {
+			savedAction := ch.Action
+			savedReason := ch.Reason
+
+			err = adapter.OverrideChangeDesc(ctx, path, ch, remoteState)
+			if err != nil {
+				return fmt.Errorf("internal error: failed to classify change: %w", err)
+			}
+
+			if savedAction != ch.Action && savedReason == ch.Reason {
+				// ch.Action was changed but not Reason field; set it to "custom"
+				ch.Reason = deployplan.ReasonCustom
+			}
 		}
 	}
 
 	return nil
 }
 
-func shouldIgnore(cfg *dresources.ResourceLifecycleConfig, pathString string) deployplan.ActionType {
-	if cfg == nil {
-		return deployplan.Undefined
-	}
-	for _, p := range cfg.IgnoreRemoteChanges {
-		if structpath.HasPrefix(pathString, p.String()) {
-			return deployplan.Skip
+func matchesAnyPrefix(path *structpath.PathNode, prefixes []*structpath.PathNode) bool {
+	for _, p := range prefixes {
+		if path.HasPrefix(p) {
+			return true
 		}
 	}
-	return deployplan.Undefined
+	return false
 }
 
-func shouldUpdateOrRecreate(cfg *dresources.ResourceLifecycleConfig, pathString string) deployplan.ActionType {
+func shouldSkip(cfg *dresources.ResourceLifecycleConfig, path *structpath.PathNode, ch *deployplan.ChangeDesc) bool {
+	if cfg == nil {
+		return false
+	}
+	if matchesAnyPrefix(path, cfg.IgnoreLocalChanges) && !structdiff.IsEqual(ch.Old, ch.New) {
+		return true
+	}
+	if matchesAnyPrefix(path, cfg.IgnoreRemoteChanges) && structdiff.IsEqual(ch.Old, ch.New) {
+		return true
+	}
+	return false
+}
+
+func shouldUpdateOrRecreate(cfg *dresources.ResourceLifecycleConfig, path *structpath.PathNode) deployplan.ActionType {
 	if cfg == nil {
 		return deployplan.Undefined
 	}
-	for _, p := range cfg.RecreateOnChanges {
-		if structpath.HasPrefix(pathString, p.String()) {
-			return deployplan.Recreate
-		}
+	if matchesAnyPrefix(path, cfg.RecreateOnChanges) {
+		return deployplan.Recreate
 	}
-	for _, p := range cfg.UpdateIDOnChanges {
-		if structpath.HasPrefix(pathString, p.String()) {
-			return deployplan.UpdateWithID
-		}
+	if matchesAnyPrefix(path, cfg.UpdateIDOnChanges) {
+		return deployplan.UpdateWithID
 	}
 	return deployplan.Undefined
 }
@@ -503,8 +525,7 @@ func isEmptyStruct(values ...any) bool {
 	return true
 }
 
-// TODO: calling this "Local" is not right, it can resolve "id" and remote refrences for "skip" targets
-func (b *DeploymentBundle) LookupReferenceLocal(ctx context.Context, path *structpath.PathNode) (any, error) {
+func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *structpath.PathNode) (any, error) {
 	// TODO: Prefix(3) assumes resources.jobs.foo but not resources.jobs.foo.permissions
 	targetResourceKey := path.Prefix(3).String()
 
@@ -544,10 +565,9 @@ func (b *DeploymentBundle) LookupReferenceLocal(ctx context.Context, path *struc
 		return nil, fmt.Errorf("internal error: %s: action is %q missing new_state", targetResourceKey, targetEntry.Action)
 	}
 
-	// Get StructVar from cache
-	sv, ok := b.StructVarCache.Load(targetResourceKey)
+	sv, ok := b.StateCache.Load(targetResourceKey)
 	if !ok {
-		return nil, fmt.Errorf("internal error: %s: missing cached StructVar", targetResourceKey)
+		return nil, fmt.Errorf("internal error: %s: missing state cache entry", targetResourceKey)
 	}
 
 	_, isUnresolved := sv.Refs[fieldPathS]
@@ -582,15 +602,17 @@ func (b *DeploymentBundle) LookupReferenceLocal(ctx context.Context, path *struc
 		return value, nil
 	}
 
+	canReadRemoteCache := targetAction == deployplan.Skip || (targetAction.KeepsID() && adapter.IsFieldInRecreateOnChanges(fieldPath))
+
 	if configValidErr != nil && remoteValidErr == nil {
 		// The field is only present in remote state schema.
-		if targetAction != deployplan.Skip {
-			// The resource is going to be updated, so remoteState can change
-			return nil, errDelayed
-		}
-		remoteState, ok := b.RemoteStateCache.Load(targetResourceKey)
-		if ok {
-			return structaccess.Get(remoteState, fieldPath)
+		if canReadRemoteCache {
+			remoteState, ok := b.RemoteStateCache.Load(targetResourceKey)
+			if ok {
+				return structaccess.Get(remoteState, fieldPath)
+			} else {
+				return nil, fmt.Errorf("internal error: no entry in remote state cache for %q (remote-only)", targetResourceKey)
+			}
 		}
 		return nil, errDelayed
 	}
@@ -603,33 +625,23 @@ func (b *DeploymentBundle) LookupReferenceLocal(ctx context.Context, path *struc
 		return value, nil
 	}
 
-	if targetAction == deployplan.Skip {
+	if canReadRemoteCache {
 		remoteState, ok := b.RemoteStateCache.Load(targetResourceKey)
 		if ok {
 			return structaccess.Get(remoteState, fieldPath)
+		} else {
+			return nil, fmt.Errorf("internal error: no entry in remote state cache for %q", targetResourceKey)
 		}
 	}
 
 	return nil, errDelayed
 }
 
-// getStructVar returns the cached StructVar for the given resource key.
-// The StructVar must have been eagerly loaded during plan creation or InitForApply.
-func (b *DeploymentBundle) getStructVar(resourceKey string) (*structvar.StructVar, error) {
-	sv, ok := b.StructVarCache.Load(resourceKey)
-	if !ok {
-		return nil, fmt.Errorf("internal error: StructVar not found in cache for %s", resourceKey)
-	}
-	return sv, nil
-}
-
 // resolveReferences processes all references in entry.NewState.Refs.
-// If isLocal is true, uses LookupReferenceLocal (for planning phase).
-// If isLocal is false, uses LookupReferenceRemote (for apply phase).
-func (b *DeploymentBundle) resolveReferences(ctx context.Context, resourceKey string, entry *deployplan.PlanEntry, errorPrefix string, isLocal bool) bool {
-	sv, err := b.getStructVar(resourceKey)
-	if err != nil {
-		logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
+func (b *DeploymentBundle) resolveReferences(ctx context.Context, resourceKey string, entry *deployplan.PlanEntry, errorPrefix string, isPreDeploy bool) bool {
+	sv, ok := b.StateCache.Load(resourceKey)
+	if !ok {
+		logdiag.LogError(ctx, fmt.Errorf("%s: internal error: no cache entry found for %q", errorPrefix, resourceKey))
 		return false
 	}
 
@@ -650,8 +662,8 @@ func (b *DeploymentBundle) resolveReferences(ctx context.Context, resourceKey st
 			}
 
 			var value any
-			if isLocal {
-				value, err = b.LookupReferenceLocal(ctx, targetPath)
+			if isPreDeploy {
+				value, err = b.LookupReferencePreDeploy(ctx, targetPath)
 				if err != nil {
 					if errors.Is(err, errDelayed) {
 						continue
@@ -660,7 +672,7 @@ func (b *DeploymentBundle) resolveReferences(ctx context.Context, resourceKey st
 					return false
 				}
 			} else {
-				value, err = b.LookupReferenceRemote(ctx, targetPath)
+				value, err = b.LookupReferencePostDeploy(ctx, targetPath)
 				if err != nil {
 					logdiag.LogError(ctx, fmt.Errorf("%s: cannot resolve %q: %w", errorPrefix, ref, err))
 					return false
@@ -841,7 +853,7 @@ func (b *DeploymentBundle) makePlan(ctx context.Context, configRoot *config.Root
 		}
 
 		// Store in cache for use during planning phase
-		b.StructVarCache.Store(node, newState)
+		b.StateCache.Store(node, newState)
 
 		// Convert to JSON for serialization in plan
 		newStateJSON, err := newState.ToJSON()

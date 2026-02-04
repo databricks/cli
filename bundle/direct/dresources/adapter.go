@@ -94,8 +94,9 @@ type Adapter struct {
 	overrideChangeDesc *calladapt.BoundCaller
 	doResize           *calladapt.BoundCaller
 
-	resourceConfig *ResourceLifecycleConfig
-	keyedSlices    map[string]any
+	resourceConfig          *ResourceLifecycleConfig
+	generatedResourceConfig *ResourceLifecycleConfig
+	keyedSlices             map[string]any
 }
 
 func NewAdapter(typedNil any, resourceType string, client *databricks.WorkspaceClient) (*Adapter, error) {
@@ -112,19 +113,20 @@ func NewAdapter(typedNil any, resourceType string, client *databricks.WorkspaceC
 	}
 	impl := outs[0]
 	adapter := &Adapter{
-		prepareState:       nil,
-		remapState:         nil,
-		doRefresh:          nil,
-		doDelete:           nil,
-		doCreate:           nil,
-		doUpdate:           nil,
-		doUpdateWithID:     nil,
-		doResize:           nil,
-		waitAfterCreate:    nil,
-		waitAfterUpdate:    nil,
-		overrideChangeDesc: nil,
-		resourceConfig:     GetResourceConfig(resourceType),
-		keyedSlices:        nil,
+		prepareState:            nil,
+		remapState:              nil,
+		doRefresh:               nil,
+		doDelete:                nil,
+		doCreate:                nil,
+		doUpdate:                nil,
+		doUpdateWithID:          nil,
+		doResize:                nil,
+		waitAfterCreate:         nil,
+		waitAfterUpdate:         nil,
+		overrideChangeDesc:      nil,
+		resourceConfig:          GetResourceConfig(resourceType),
+		generatedResourceConfig: GetGeneratedResourceConfig(resourceType),
+		keyedSlices:             nil,
 	}
 
 	err = adapter.initMethods(impl)
@@ -355,6 +357,19 @@ func (a *Adapter) ResourceConfig() *ResourceLifecycleConfig {
 	return a.resourceConfig
 }
 
+func (a *Adapter) GeneratedResourceConfig() *ResourceLifecycleConfig {
+	return a.generatedResourceConfig
+}
+
+func (a *Adapter) IsFieldInRecreateOnChanges(path *structpath.PathNode) bool {
+	for _, p := range a.resourceConfig.RecreateOnChanges {
+		if path.HasPrefix(p) {
+			return true
+		}
+	}
+	return false
+}
+
 func (a *Adapter) PrepareState(input any) (any, error) {
 	outs, err := a.prepareState.Call(input)
 	if err != nil {
@@ -500,11 +515,13 @@ func (a *Adapter) WaitAfterUpdate(ctx context.Context, newState any) (any, error
 	return remoteState, nil
 }
 
+// HasOverrideChangeDesc returns true if OverrideChangeDesc is defined for this resource impl
+func (a *Adapter) HasOverrideChangeDesc() bool {
+	return a.overrideChangeDesc != nil
+}
+
 // OverrideChangeDesc allows custom logic to override change classification.
 func (a *Adapter) OverrideChangeDesc(ctx context.Context, path *structpath.PathNode, change *ChangeDesc, remoteState any) error {
-	if a.overrideChangeDesc == nil {
-		return nil
-	}
 	_, err := a.overrideChangeDesc.Call(ctx, path, change, remoteState)
 	return err
 }

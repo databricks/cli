@@ -4,9 +4,8 @@
 /acceptance/pipelines/    @jefferycheng1 @kanterov @lennartkats-db
 /cmd/pipelines/           @jefferycheng1 @kanterov @lennartkats-db
 /cmd/labs/                @alexott @nfx
-/cmd/apps/                @databricks/eng-app-devex
-/libs/apps/               @databricks/eng-app-devex
-/cmd/workspace/apps/      @databricks/eng-app-devex
-/libs/apps/               @databricks/eng-app-devex
-/acceptance/apps/         @databricks/eng-app-devex
-/experimental/aitools/    @databricks/eng-app-devex @lennartkats-db
+/cmd/apps/                @databricks/eng-apps-devex
+/cmd/workspace/apps/      @databricks/eng-apps-devex
+/libs/apps/               @databricks/eng-apps-devex
+/acceptance/apps/         @databricks/eng-apps-devex
+/experimental/aitools/    @databricks/eng-apps-devex @lennartkats-db

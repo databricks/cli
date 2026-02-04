@@ -43,7 +43,7 @@ type DeploymentBundle struct {
 	Adapters         map[string]*dresources.Adapter
 	Plan             *deployplan.Plan
 	RemoteStateCache sync.Map
-	StructVarCache   structvar.Cache
+	StateCache       structvar.Cache
 }
 
 // SetRemoteState updates the remote state with type validation and marks as fresh.

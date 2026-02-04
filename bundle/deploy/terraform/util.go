@@ -86,10 +86,7 @@ func parseResourcesState(ctx context.Context, path string) (ExportedResourcesMap
 			var resourceState ResourceState
 
 			switch groupName {
-			case "apps":
-				resourceKey = "resources." + groupName + "." + resource.Name
-				resourceState = ResourceState{ID: instance.Attributes.Name}
-			case "secret_scopes":
+			case "apps", "secret_scopes", "database_instances", "database_catalogs", "synced_database_tables":
 				resourceKey = "resources." + groupName + "." + resource.Name
 				resourceState = ResourceState{ID: instance.Attributes.Name}
 			case "dashboards":

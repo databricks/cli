@@ -1,0 +1,51 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Modify both jobs
+=== Detect and save changes
+Detected changes in 2 resource(s):
+
+Resource: resources.jobs.job_one
+  max_concurrent_runs: replace
+  tags: add
+
+Resource: resources.jobs.job_two
+  max_concurrent_runs: replace
+  tags: add
+
+
+
+=== Configuration changes
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -1,9 +1,8 @@
+ bundle:
+   name: test-bundle-[UNIQUE_NAME]
+-
+ resources:
+   jobs:
+     job_one:
+-      max_concurrent_runs: 1
++      max_concurrent_runs: 5
+       tasks:
+         - task_key: main
+@@ -14,7 +13,8 @@
+             node_type_id: [NODE_TYPE_ID]
+             num_workers: 1
+-
++      tags:
++        team: data
+     job_two:
+-      max_concurrent_runs: 2
++      max_concurrent_runs: 10
+       tasks:
+         - task_key: main
+@@ -25,2 +25,4 @@
+             node_type_id: [NODE_TYPE_ID]
+             num_workers: 1
++      tags:
++        team: ml

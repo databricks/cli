@@ -8,13 +8,14 @@
 #   ignore_local_changes: fields where local changes are ignored (can't be updated via API)
 
 resources:
-  # jobs: no special config
 
   pipelines:
     recreate_on_changes:
       - storage
       - ingestion_definition.connection_name
       - ingestion_definition.ingestion_gateway_id
+    ignore_remote_changes:
+      - run_as
 
   models:
     recreate_on_changes:
@@ -39,6 +40,8 @@ resources:
       - artifact_location
     ignore_remote_changes:
       # Tags updates are not supported by TF. This mirrors that behaviour.
+      - tags
+    ignore_local_changes:
       - tags
 
   # TF implementation: https://github.com/databricks/terraform-provider-databricks/blob/6c106e8e7052bb2726148d66309fd460ed444236/mlflow/resource_mlflow_experiment.go#L22
@@ -65,6 +68,17 @@ resources:
     recreate_on_changes:
       - assets_dir
       - table_name
+    ignore_remote_changes:
+      - warehouse_id
+
+  catalogs:
+    recreate_on_changes:
+      - storage_root
+      - connection_name
+      - provider_name
+      - share_name
+    update_id_on_changes:
+      - name
 
   schemas:
     recreate_on_changes:
@@ -81,9 +95,17 @@ resources:
     update_id_on_changes:
       - name
 
-  # clusters: no special config
+  dashboards:
 
-  # dashboards: no special config
+    ignore_remote_changes:
+      # "serialized_dashboard" locally and remotely will have different contents
+      # We only need to rely on etag here, and can skip this field for diff computation.
+      - serialized_dashboard
+
+      # "dataset_catalog" and "dataset_schema" are write-only fields that are not returned by the server.
+      # They will always differ between local config (which has values) and remote state (which has empty strings).
+      - dataset_catalog
+      - dataset_schema
 
   apps:
     recreate_on_changes:
@@ -102,20 +124,3 @@ resources:
       # When scope name changes, we need UpdateWithID trigger. This is necessary so that subsequent
       # DoRead operations use the correct ID and we do not end up with a persistent drift.
       - scope_name
-
-  # alerts: no special config
-
-  # sql_warehouses: no special config
-
-  # database_instances: no special config
-
-  database_catalogs:
-    ignore_remote_changes:
-      # Backend does not set this:
-      - create_database_if_not_exists
-
-  synced_database_tables:
-    ignore_remote_changes:
-      # Backend does not set these fields in response (it sets effective_ counterparts instead)
-      - database_instance_name
-      - logical_database_name

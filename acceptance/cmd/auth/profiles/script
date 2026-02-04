@@ -1,0 +1,20 @@
+sethome "./home"
+
+# Create profiles including one with workspace_id
+cat > "./home/.databrickscfg" <<EOF
+[workspace-profile]
+host = https://test.cloud.databricks.com
+
+[account-profile]
+host = https://accounts.cloud.databricks.com
+account_id = test-account-123
+
+[unified-profile]
+host = https://unified.databricks.com
+account_id = unified-account-456
+workspace_id = 987654321
+experimental_is_unified_host = true
+EOF
+
+title "Profiles with workspace_id (JSON output)\n"
+$CLI auth profiles --skip-validate --output json

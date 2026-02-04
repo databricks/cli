@@ -25,6 +25,7 @@ require (
 	github.com/manifoldco/promptui v0.9.0 // BSD-3-Clause
 	github.com/mattn/go-isatty v0.0.20 // MIT
 	github.com/nwidger/jsoncolor v0.3.2 // MIT
+	github.com/palantir/pkg/yamlpatch v1.5.0 // BSD-3-Clause
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // BSD-2-Clause
 	github.com/quasilyte/go-ruleguard/dsl v0.3.22 // BSD 3-Clause
 	github.com/sabhiram/go-gitignore v0.0.0-20210923224102-525f6e181f06 // MIT
@@ -45,7 +46,7 @@ require (
 // Dependencies for experimental MCP commands
 require github.com/google/jsonschema-go v0.4.2 // MIT
 
-require gopkg.in/yaml.v3 v3.0.1
+require gopkg.in/yaml.v3 v3.0.1 // indirect
 
 require (
 	cloud.google.com/go/auth v0.16.5 // indirect
@@ -84,6 +85,7 @@ require (
 	github.com/muesli/ansi v0.0.0-20230316100256-276c6243b2f6 // indirect
 	github.com/muesli/cancelreader v0.2.2 // indirect
 	github.com/muesli/termenv v0.16.0 // indirect
+	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect

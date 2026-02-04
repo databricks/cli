@@ -1,0 +1,42 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Modify both jobs
+=== Detect and save changes
+Detected changes in 2 resource(s):
+
+Resource: resources.jobs.job_one
+  max_concurrent_runs: replace
+
+Resource: resources.jobs.job_two
+  max_concurrent_runs: replace
+
+
+
+=== Changes in job1.yml
+
+>>> diff.py resources/job1.yml.backup resources/job1.yml
+--- resources/job1.yml.backup
++++ resources/job1.yml
+@@ -2,5 +2,5 @@
+   jobs:
+     job_one:
+-      max_concurrent_runs: 1
++      max_concurrent_runs: 5
+       tasks:
+         - task_key: main
+
+=== Changes in job2.yml
+
+>>> diff.py resources/job2.yml.backup resources/job2.yml
+--- resources/job2.yml.backup
++++ resources/job2.yml
+@@ -2,5 +2,5 @@
+   jobs:
+     job_two:
+-      max_concurrent_runs: 2
++      max_concurrent_runs: 10
+       tasks:
+         - task_key: main

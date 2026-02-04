@@ -14,6 +14,7 @@ import (
 )
 
 var grantResourceToSecurableType = map[string]string{
+	"catalogs":          "catalog",
 	"schemas":           "schema",
 	"volumes":           "volume",
 	"registered_models": "function",

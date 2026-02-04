@@ -20,6 +20,7 @@ EnvMatrix.DATABRICKS_BUNDLE_ENGINE = [
 EnvMatrix.INPUT_CONFIG = [
     "alert.yml.tmpl",
     "app.yml.tmpl",
+    "catalog.yml.tmpl",
     "cluster.yml.tmpl",
     "dashboard.yml.tmpl",
     "database_catalog.yml.tmpl",
@@ -35,6 +36,9 @@ EnvMatrix.INPUT_CONFIG = [
     "synced_database_table.yml.tmpl",
     "volume.yml.tmpl",
 ]
+
+[EnvMatrixExclude]
+no_alert_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=alert.yml.tmpl"]
 
 # Fake SQL endpoint for local tests
 [[Server]]

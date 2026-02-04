@@ -18,12 +18,13 @@ import (
 )
 
 type profileMetadata struct {
-	Name      string `json:"name"`
-	Host      string `json:"host,omitempty"`
-	AccountID string `json:"account_id,omitempty"`
-	Cloud     string `json:"cloud"`
-	AuthType  string `json:"auth_type"`
-	Valid     bool   `json:"valid"`
+	Name        string `json:"name"`
+	Host        string `json:"host,omitempty"`
+	AccountID   string `json:"account_id,omitempty"`
+	WorkspaceID string `json:"workspace_id,omitempty"`
+	Cloud       string `json:"cloud"`
+	AuthType    string `json:"auth_type"`
+	Valid       bool   `json:"valid"`
 }
 
 func (c *profileMetadata) IsEmpty() bool {
@@ -112,9 +113,10 @@ func newProfilesCommand() *cobra.Command {
 		for _, v := range iniFile.Sections() {
 			hash := v.KeysHash()
 			profile := &profileMetadata{
-				Name:      v.Name(),
-				Host:      hash["host"],
-				AccountID: hash["account_id"],
+				Name:        v.Name(),
+				Host:        hash["host"],
+				AccountID:   hash["account_id"],
+				WorkspaceID: hash["workspace_id"],
 			}
 			if profile.IsEmpty() {
 				continue

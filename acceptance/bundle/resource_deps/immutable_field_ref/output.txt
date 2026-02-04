@@ -1,0 +1,13 @@
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> update_file.py databricks.yml comment1 comment2
+
+>>> [CLI] bundle plan
+update volumes.foo
+
+Plan: 0 to add, 1 to change, 0 to delete, 2 unchanged

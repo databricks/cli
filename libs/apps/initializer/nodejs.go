@@ -76,7 +76,8 @@ func (i *InitializerNodeJs) runNpmInstall(ctx context.Context, workDir string) e
 	}
 
 	return prompt.RunWithSpinnerCtx(ctx, "Installing dependencies...", func() error {
-		cmd := exec.CommandContext(ctx, "npm", "install")
+		// Faster npm install command.
+		cmd := exec.CommandContext(ctx, "npm", "ci", "--no-audit", "--no-fund", "--prefer-offline")
 		cmd.Dir = workDir
 		cmd.Stdout = nil
 		cmd.Stderr = nil
@@ -93,7 +94,7 @@ func (i *InitializerNodeJs) runAppkitSetup(ctx context.Context, workDir string) 
 	}
 
 	return prompt.RunWithSpinnerCtx(ctx, "Running setup...", func() error {
-		cmd := exec.CommandContext(ctx, "npx", "appkit-setup", "--write")
+		cmd := exec.CommandContext(ctx, "npx", "appkit", "setup", "--write")
 		cmd.Dir = workDir
 		cmd.Stdout = nil
 		cmd.Stderr = nil
