@@ -200,6 +200,26 @@ var testConfig map[string]any = map[string]any{
 			OutputSchemaName: "main.myschema",
 		},
 	},
+
+	"dashboards": &resources.Dashboard{
+		DashboardConfig: resources.DashboardConfig{
+			DisplayName: "my-dashboard",
+			ParentPath:  "/Workspace/Users/user@example.com",
+			WarehouseId: "test-warehouse-id",
+			SerializedDashboard: map[string]any{
+				"pages": []map[string]any{
+					{
+						"name":        "page1",
+						"displayName": "Page 1",
+						"pageType":    "PAGE_TYPE_CANVAS",
+					},
+				},
+			},
+
+			DatasetCatalog: "main",
+			DatasetSchema:  "myschema",
+		},
+	},
 }
 
 type prepareWorkspace func(client *databricks.WorkspaceClient) (any, error)
@@ -531,6 +551,60 @@ func TestAll(t *testing.T) {
 	require.Len(t, m, len(SupportedResources))
 }
 
+// testIgnoreFilter encapsulates the logic for filtering fields based on ignore_remote_changes config.
+type testIgnoreFilter struct {
+	ignoreFields map[string]bool
+}
+
+// newTestIgnoreFilter creates a filter from the adapter's resource configs.
+func newTestIgnoreFilter(adapter *Adapter) *testIgnoreFilter {
+	ignoreFields := make(map[string]bool)
+	for _, cfg := range []*ResourceLifecycleConfig{adapter.ResourceConfig(), adapter.GeneratedResourceConfig()} {
+		if cfg == nil {
+			continue
+		}
+		for _, p := range cfg.IgnoreRemoteChanges {
+			ignoreFields[p.String()] = true
+		}
+	}
+	return &testIgnoreFilter{ignoreFields: ignoreFields}
+}
+
+// shouldIgnore returns true if the field at the given path should be ignored.
+func (f *testIgnoreFilter) shouldIgnore(path string) bool {
+	if f.ignoreFields[path] {
+		return true
+	}
+	// Check if this is a nested field under an ignored top-level field
+	topLevelField := path
+	if prefix, _, ok := strings.Cut(path, "."); ok {
+		topLevelField = prefix
+	}
+	return f.ignoreFields[topLevelField]
+}
+
+// filterChanges returns only the changes that should not be ignored.
+// It also filters out the "updated_at" timestamp field.
+func (f *testIgnoreFilter) filterChanges(changes []structdiff.Change) []structdiff.Change {
+	var relevantChanges []structdiff.Change
+	for _, change := range changes {
+		fieldName := change.Path.String()
+		if !f.shouldIgnore(fieldName) {
+			relevantChanges = append(relevantChanges, change)
+		}
+	}
+	return relevantChanges
+}
+
+// requireEqual compares two structs and fails the test if there are differences
+// that are not in the ignore_remote_changes list.
+func (f *testIgnoreFilter) requireEqual(t *testing.T, expected, actual any, msgAndArgs ...any) {
+	changes, err := structdiff.GetStructDiff(expected, actual, nil)
+	require.NoError(t, err)
+	relevantChanges := f.filterChanges(changes)
+	require.Empty(t, relevantChanges, msgAndArgs...)
+}
+
 func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.WorkspaceClient) {
 	var inputConfig any
 	var err error
@@ -576,10 +650,14 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	require.NoError(t, err)
 	require.NotNil(t, remappedState)
 
+	// Create filter for fields that should be ignored based on ignore_remote_changes config.
+	ignoreFilter := newTestIgnoreFilter(adapter)
+
 	if remoteStateFromCreate != nil {
 		remappedRemoteStateFromCreate, err := adapter.RemapState(remoteStateFromCreate)
 		require.NoError(t, err)
-		require.Equal(t, remappedState, remappedRemoteStateFromCreate)
+		ignoreFilter.requireEqual(t, remappedState, remappedRemoteStateFromCreate,
+			"unexpected differences between remappedState and remappedRemoteStateFromCreate")
 	}
 
 	remoteStateFromWaitCreate, err := adapter.WaitAfterCreate(ctx, newState)
@@ -594,17 +672,8 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 		if remoteStateFromUpdate != nil {
 			remappedStateFromUpdate, err := adapter.RemapState(remoteStateFromUpdate)
 			require.NoError(t, err)
-			changes, err := structdiff.GetStructDiff(remappedState, remappedStateFromUpdate, nil)
-			require.NoError(t, err)
-			// Filter out timestamp fields that are expected to differ in value
-			var relevantChanges []structdiff.Change
-			for _, change := range changes {
-				fieldName := change.Path.String()
-				if fieldName != "updated_at" {
-					relevantChanges = append(relevantChanges, change)
-				}
-			}
-			require.Empty(t, relevantChanges, "unexpected differences found: %v", relevantChanges)
+			ignoreFilter.requireEqual(t, remappedState, remappedStateFromUpdate,
+				"unexpected differences between remappedState and remappedStateFromUpdate")
 		}
 
 		remoteStateFromWaitUpdate, err := adapter.WaitAfterUpdate(ctx, newState)
@@ -612,7 +681,8 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 		if remoteStateFromWaitUpdate != nil {
 			remappedStateFromWaitUpdate, err := adapter.RemapState(remoteStateFromWaitUpdate)
 			require.NoError(t, err)
-			require.Equal(t, remappedState, remappedStateFromWaitUpdate)
+			ignoreFilter.requireEqual(t, remappedState, remappedStateFromWaitUpdate,
+				"unexpected differences between remappedState and remappedStateFromWaitUpdate")
 		}
 	}
 
@@ -629,6 +699,10 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 		if v.IsZero() {
 			// t.Logf("Ignoring %s zero (%#v), remoteValue=%#v", path.String(), val, remoteValue)
 			// testserver can set field to backend-generated value
+			return
+		}
+		// Skip fields configured in ignore_remote_changes.
+		if ignoreFilter.shouldIgnore(path.String()) {
 			return
 		}
 		// t.Logf("Testing %s v=%#v, remoteValue=%#v", path.String(), val, remoteValue)
