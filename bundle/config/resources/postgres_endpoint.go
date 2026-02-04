@@ -14,11 +14,11 @@ type PostgresEndpoint struct {
 	postgres.EndpointSpec
 
 	// Parent is the branch containing this endpoint. Format: "projects/{project_id}/branches/{branch_id}"
-	Parent string `json:"parent,omitempty"`
+	Parent string `json:"parent"`
 
 	// EndpointId is the user-specified ID for the endpoint (becomes part of the hierarchical name).
 	// This is specified during creation and becomes part of Name: "projects/{project_id}/branches/{branch_id}/endpoints/{endpoint_id}"
-	EndpointId string `json:"endpoint_id,omitempty"`
+	EndpointId string `json:"endpoint_id"`
 
 	// Name is the hierarchical resource name (output-only). Format: "projects/{project_id}/branches/{branch_id}/endpoints/{endpoint_id}"
 	Name string `json:"name,omitempty" bundle:"readonly"`

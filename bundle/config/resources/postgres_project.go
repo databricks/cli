@@ -15,7 +15,7 @@ type PostgresProject struct {
 
 	// ProjectId is the user-specified ID for the project (becomes part of the hierarchical name).
 	// This is specified during creation and becomes part of Name: "projects/{project_id}"
-	ProjectId string `json:"project_id,omitempty"`
+	ProjectId string `json:"project_id"`
 
 	// Name is the hierarchical resource name (output-only). Format: "projects/{project_id}"
 	Name string `json:"name,omitempty" bundle:"readonly"`

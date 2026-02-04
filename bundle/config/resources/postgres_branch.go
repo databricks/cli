@@ -14,11 +14,11 @@ type PostgresBranch struct {
 	postgres.BranchSpec
 
 	// Parent is the project containing this branch. Format: "projects/{project_id}"
-	Parent string `json:"parent,omitempty"`
+	Parent string `json:"parent"`
 
 	// BranchId is the user-specified ID for the branch (becomes part of the hierarchical name).
 	// This is specified during creation and becomes part of Name: "projects/{project_id}/branches/{branch_id}"
-	BranchId string `json:"branch_id,omitempty"`
+	BranchId string `json:"branch_id"`
 
 	// Name is the hierarchical resource name (output-only). Format: "projects/{project_id}/branches/{branch_id}"
 	Name string `json:"name,omitempty" bundle:"readonly"`

@@ -1,3 +1,7 @@
+Warning: required field "project_id" is not set
+  at resources.postgres_projects.my_project
+  in databricks.yml:10:7
+
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-no-id-[UNIQUE_NAME]/default/files...
 Error: exit status 1
 

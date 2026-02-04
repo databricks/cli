@@ -1631,7 +1631,11 @@
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/duration.Duration"
                       }
                     },
-                    "additionalProperties": false
+                    "additionalProperties": false,
+                    "required": [
+                      "parent",
+                      "branch_id"
+                    ]
                   },
                   {
                     "type": "string",
@@ -1677,6 +1681,8 @@
                     },
                     "additionalProperties": false,
                     "required": [
+                      "parent",
+                      "endpoint_id",
                       "endpoint_type"
                     ]
                   },
@@ -1710,7 +1716,10 @@
                         "$ref": "#/$defs/string"
                       }
                     },
-                    "additionalProperties": false
+                    "additionalProperties": false,
+                    "required": [
+                      "project_id"
+                    ]
                   },
                   {
                     "type": "string",

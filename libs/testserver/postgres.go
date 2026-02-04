@@ -15,15 +15,13 @@ func nowTime() *sdktime.Time {
 	return sdktime.New(time.Now().UTC())
 }
 
-// postgresErrorResponse creates an error response with error code and trace ID for postgres API.
-// The trace ID is included directly in the message to match the real API behavior.
+// postgresErrorResponse creates an error response with error code for postgres API.
 func postgresErrorResponse(statusCode int, errorCode, message string) Response {
-	traceID := fmt.Sprintf("%x", nextID())
 	return Response{
 		StatusCode: statusCode,
 		Body: map[string]string{
 			"error_code": errorCode,
-			"message":    fmt.Sprintf("%s [TraceId: %s]", message, traceID),
+			"message":    message,
 		},
 	}
 }
@@ -36,6 +34,11 @@ func postgresNotFoundResponse(resourceType string) Response {
 // PostgresProjectCreate creates a new postgres project.
 func (s *FakeWorkspace) PostgresProjectCreate(req Request, projectID string) Response {
 	defer s.LockUnlock()()
+
+	// Validate that project_id is provided
+	if projectID == "" {
+		return postgresErrorResponse(400, "INVALID_PARAMETER_VALUE", `Field 'project_id' is required, expected non-default value (not "")!`)
+	}
 
 	var project postgres.Project
 	if len(req.Body) > 0 {
@@ -188,6 +191,11 @@ func (s *FakeWorkspace) PostgresProjectDelete(name string) Response {
 // PostgresBranchCreate creates a new postgres branch.
 func (s *FakeWorkspace) PostgresBranchCreate(req Request, parent, branchID string) Response {
 	defer s.LockUnlock()()
+
+	// Validate that branch_id is provided
+	if branchID == "" {
+		return postgresErrorResponse(400, "INVALID_PARAMETER_VALUE", `Field 'branch_id' is required, expected non-default value (not "")!`)
+	}
 
 	// Check if parent project exists
 	if _, exists := s.PostgresProjects[parent]; !exists {
@@ -361,6 +369,11 @@ func (s *FakeWorkspace) PostgresBranchDelete(name string) Response {
 // PostgresEndpointCreate creates a new postgres endpoint.
 func (s *FakeWorkspace) PostgresEndpointCreate(req Request, parent, endpointID string) Response {
 	defer s.LockUnlock()()
+
+	// Validate that endpoint_id is provided
+	if endpointID == "" {
+		return postgresErrorResponse(400, "INVALID_PARAMETER_VALUE", `Field 'endpoint_id' is required, expected non-default value (not "")!`)
+	}
 
 	// Check if parent branch exists
 	branch, exists := s.PostgresBranches[parent]

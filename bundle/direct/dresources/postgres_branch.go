@@ -2,7 +2,6 @@ package dresources
 
 import (
 	"context"
-	"errors"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go"
@@ -64,19 +63,9 @@ func (r *ResourcePostgresBranch) DoRead(ctx context.Context, id string) (*postgr
 }
 
 func (r *ResourcePostgresBranch) DoCreate(ctx context.Context, config *PostgresBranchState) (string, *postgres.Branch, error) {
-	branchId := config.BranchId
-	if branchId == "" {
-		return "", nil, errors.New("branch_id must be specified")
-	}
-
-	parent := config.Parent
-	if parent == "" {
-		return "", nil, errors.New("parent (project name) must be specified")
-	}
-
 	waiter, err := r.client.Postgres.CreateBranch(ctx, postgres.CreateBranchRequest{
-		BranchId: branchId,
-		Parent:   parent,
+		BranchId: config.BranchId,
+		Parent:   config.Parent,
 		Branch: postgres.Branch{
 			Spec: config.Spec,
 

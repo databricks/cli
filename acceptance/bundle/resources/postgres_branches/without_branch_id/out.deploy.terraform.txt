@@ -1,3 +1,7 @@
+Warning: required field "branch_id" is not set
+  at resources.postgres_branches.main
+  in databricks.yml:21:7
+
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-branch-no-id-[UNIQUE_NAME]/default/files...
 Error: exit status 1
 

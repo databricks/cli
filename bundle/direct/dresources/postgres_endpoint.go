@@ -101,19 +101,9 @@ func (r *ResourcePostgresEndpoint) waitForReconciliation(ctx context.Context, na
 }
 
 func (r *ResourcePostgresEndpoint) DoCreate(ctx context.Context, config *PostgresEndpointState) (string, *postgres.Endpoint, error) {
-	endpointId := config.EndpointId
-	if endpointId == "" {
-		return "", nil, errors.New("endpoint_id must be specified")
-	}
-
-	parent := config.Parent
-	if parent == "" {
-		return "", nil, errors.New("parent (branch name) must be specified")
-	}
-
 	waiter, err := r.client.Postgres.CreateEndpoint(ctx, postgres.CreateEndpointRequest{
-		EndpointId: endpointId,
-		Parent:     parent,
+		EndpointId: config.EndpointId,
+		Parent:     config.Parent,
 		Endpoint: postgres.Endpoint{
 			Spec: config.Spec,
 

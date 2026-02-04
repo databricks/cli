@@ -1,5 +1,14 @@
+Warning: required field "endpoint_id" is not set
+  at resources.postgres_endpoints.primary
+  in databricks.yml:27:7
+
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-endpoint-no-id-[UNIQUE_NAME]/default/files...
 Deploying resources...
-Error: cannot create resources.postgres_endpoints.primary: endpoint_id must be specified
+Error: cannot create resources.postgres_endpoints.primary: Field 'endpoint_id' is required, expected non-default value (not "")! (400 INVALID_PARAMETER_VALUE)
+
+Endpoint: POST [DATABRICKS_URL]/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main/endpoints
+HTTP Status: 400 Bad Request
+API error_code: INVALID_PARAMETER_VALUE
+API message: Field 'endpoint_id' is required, expected non-default value (not "")!
 
 Updating deployment state...

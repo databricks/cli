@@ -1,3 +1,7 @@
+Warning: required field "endpoint_id" is not set
+  at resources.postgres_endpoints.primary
+  in databricks.yml:27:7
+
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-endpoint-no-id-[UNIQUE_NAME]/default/files...
 Error: exit status 1
 

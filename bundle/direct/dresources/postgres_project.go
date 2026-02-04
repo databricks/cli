@@ -2,7 +2,6 @@ package dresources
 
 import (
 	"context"
-	"errors"
 
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/databricks-sdk-go"
@@ -58,13 +57,8 @@ func (r *ResourcePostgresProject) DoRead(ctx context.Context, id string) (*postg
 }
 
 func (r *ResourcePostgresProject) DoCreate(ctx context.Context, config *PostgresProjectState) (string, *postgres.Project, error) {
-	projectId := config.ProjectId
-	if projectId == "" {
-		return "", nil, errors.New("project_id must be specified")
-	}
-
 	waiter, err := r.client.Postgres.CreateProject(ctx, postgres.CreateProjectRequest{
-		ProjectId: projectId,
+		ProjectId: config.ProjectId,
 		Project: postgres.Project{
 			Spec: config.Spec,
 
