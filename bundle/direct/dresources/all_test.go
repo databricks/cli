@@ -172,10 +172,12 @@ var testConfig map[string]any = map[string]any{
 	},
 
 	"postgres_projects": &resources.PostgresProject{
-		ProjectId: "test-project",
-		ProjectSpec: postgres.ProjectSpec{
-			DisplayName: "Test Project",
-			PgVersion:   16,
+		PostgresProjectConfig: resources.PostgresProjectConfig{
+			ProjectId: "test-project",
+			ProjectSpec: postgres.ProjectSpec{
+				DisplayName: "Test Project",
+				PgVersion:   16,
+			},
 		},
 	},
 
@@ -537,9 +539,11 @@ var testDeps = map[string]prepareWorkspace{
 		}
 
 		return &resources.PostgresBranch{
-			Parent:     "projects/test-project-for-branch",
-			BranchId:   "test-branch",
-			BranchSpec: postgres.BranchSpec{},
+			PostgresBranchConfig: resources.PostgresBranchConfig{
+				Parent:     "projects/test-project-for-branch",
+				BranchId:   "test-branch",
+				BranchSpec: postgres.BranchSpec{},
+			},
 		}, nil
 	},
 
@@ -569,10 +573,12 @@ var testDeps = map[string]prepareWorkspace{
 		}
 
 		return &resources.PostgresEndpoint{
-			Parent:     "projects/test-project-for-endpoint/branches/test-branch-for-endpoint",
-			EndpointId: "test-endpoint",
-			EndpointSpec: postgres.EndpointSpec{
-				EndpointType: postgres.EndpointTypeEndpointTypeReadWrite,
+			PostgresEndpointConfig: resources.PostgresEndpointConfig{
+				Parent:     "projects/test-project-for-endpoint/branches/test-branch-for-endpoint",
+				EndpointId: "test-endpoint",
+				EndpointSpec: postgres.EndpointSpec{
+					EndpointType: postgres.EndpointTypeEndpointTypeReadWrite,
+				},
 			},
 		}, nil
 	},
@@ -681,11 +687,32 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 		}
 	}
 
+	// Build set of fields to ignore from resource config (ignore_remote_changes).
+	// These are fields that the API doesn't return or that we intentionally skip for diff.
+	// Include both manual config (resources.yml) and generated config (resources.generated.yml).
+	ignoreFields := make(map[string]bool)
+	for _, cfg := range []*ResourceLifecycleConfig{adapter.ResourceConfig(), adapter.GeneratedResourceConfig()} {
+		if cfg == nil {
+			continue
+		}
+		for _, p := range cfg.IgnoreRemoteChanges {
+			ignoreFields[p.String()] = true
+		}
+	}
+
 	require.NoError(t, structwalk.Walk(newState, func(path *structpath.PathNode, val any, field *reflect.StructField) {
-		// Postgres resources: the real API does not return spec fields in read responses.
-		// The spec is input-only; only status (effective values) is returned.
-		// Skip these fields before attempting to access them in the remapped state.
-		if strings.HasPrefix(group, "postgres_") && strings.HasPrefix(path.String(), "spec.") {
+		// Skip fields configured in ignore_remote_changes.
+		// Check both exact match and prefix match for nested fields.
+		pathStr := path.String()
+		if ignoreFields[pathStr] {
+			return
+		}
+		// Check if this is a nested field under an ignored top-level field
+		topLevelField := pathStr
+		if idx := strings.Index(pathStr, "."); idx != -1 {
+			topLevelField = pathStr[:idx]
+		}
+		if ignoreFields[topLevelField] {
 			return
 		}
 
