@@ -129,8 +129,12 @@ var knownMissingInStateType = map[string][]string{
 	},
 }
 
-// TestInputSubset validates that all fields in InputType
-// exist in StateType for each resource. StateType may have extra fields.
+// TestInputSubset validates that all fields in InputType exist in StateType.
+//
+// This is important because he "changes" block in JSON plan contains paths that work on StateType.
+// If that does not align with config, we cannot use the path to relate changes back to input config.
+//
+// We also resolve pre-deploy references against state, not input.
 func TestInputSubset(t *testing.T) {
 	for resourceType, resource := range SupportedResources {
 		adapter, err := NewAdapter(resource, resourceType, nil)
@@ -185,8 +189,16 @@ func TestInputSubset(t *testing.T) {
 	}
 }
 
-// TestRemoteSuperset validates that all fields in StateType
-// exist in RemoteType for each resource. RemoteType may have extra fields.
+// TestRemoteSuperset validates that all fields in StateType exist in RemoteType.
+//
+// This is important because:
+// 1. The JSON plan contains paths that work on StateType.
+// 2. We include the raw (not remapped) remote value in the "remote_state" field.
+// 3. To find a remote value corresponding to a given change, paths must work on RemoteType as well.
+//
+// Why not include result of RemapState(RemoteType) as remote_state? Because remote_state is also used
+// to resolve remote references, which may have more fields than state by design. It's useful
+// for debugging to see those values in the detailed plan.
 func TestRemoteSuperset(t *testing.T) {
 	for resourceType, resource := range SupportedResources {
 		adapter, err := NewAdapter(resource, resourceType, nil)
