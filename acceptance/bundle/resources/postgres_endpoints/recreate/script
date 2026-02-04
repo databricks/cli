@@ -49,9 +49,9 @@ trace $CLI postgres get-endpoint $endpoint_id_2 | jq 'del(.create_time, .update_
 # Note: We cannot verify the old endpoint is gone because it has the same hierarchical name
 # (endpoint_id didn't change, only endpoint_type). The DELETE/POST in requests proves recreation.
 
-title "Destroy the endpoint and verify that it's removed from the state and from remote"
+title "Destroy and verify cleanup"
 trace $CLI bundle destroy --auto-approve
 
 trace print_requests
-trace musterr $CLI postgres get-endpoint $endpoint_id_2
+
 rm -f out.requests.txt

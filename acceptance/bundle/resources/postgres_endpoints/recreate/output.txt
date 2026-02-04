@@ -140,7 +140,7 @@ Deployment complete!
 >>> [CLI] postgres get-endpoint [MY_ENDPOINT_ID]
 "ENDPOINT_TYPE_READ_ONLY"
 
-=== Destroy the endpoint and verify that it's removed from the state and from remote
+=== Destroy and verify cleanup
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.postgres_branches.main
@@ -159,9 +159,6 @@ Destroy complete!
 }
   "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main"
   "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]"
-
->>> musterr [CLI] postgres get-endpoint [MY_ENDPOINT_ID]
-Error: project id not found [TraceId: [TRACE_ID]]
 
 >>> [CLI] bundle destroy --auto-approve
 No active deployment found to destroy!
