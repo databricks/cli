@@ -65,11 +65,6 @@ type dbrTestConfig struct {
 	// If empty, all cloud tests are run.
 	cloudTestFilter string
 
-	// localTestFilter is a regex filter for local acceptance tests (Local=true).
-	// These tests run WITHOUT CLOUD_ENV (use mock servers).
-	// If empty, all local tests are run.
-	localTestFilter string
-
 	// short enables short mode for tests.
 	short bool
 

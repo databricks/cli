@@ -105,6 +105,6 @@ func TestGotestsumDownloader(t *testing.T) {
 		require.NoError(t, err)
 
 		// Verify the binary is executable
-		assert.True(t, info.Mode()&0o111 != 0, "gotestsum binary should be executable")
+		assert.NotEqual(t, 0, info.Mode()&0o111, "gotestsum binary should be executable")
 	}
 }

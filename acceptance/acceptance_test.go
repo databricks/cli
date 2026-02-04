@@ -555,10 +555,6 @@ func runTest(t *testing.T,
 		timeout = max(timeout, config.TimeoutCloud)
 	}
 
-	if WorkspaceTmpDir {
-		timeout = max(timeout, config.TimeoutDbr)
-	}
-
 	if ApplyCITimeoutMultipler {
 		timeout = time.Duration(float64(timeout) * config.TimeoutCIMultiplier)
 	}

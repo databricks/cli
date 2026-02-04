@@ -4,6 +4,7 @@ import (
 	"archive/tar"
 	"compress/gzip"
 	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"net/http"
@@ -39,7 +40,7 @@ func getCacheDir() (string, error) {
 // getCacheKey returns a stable cache key for a URL.
 func getCacheKey(url string) string {
 	hash := sha256.Sum256([]byte(url))
-	return fmt.Sprintf("%x", hash[:8])
+	return hex.EncodeToString(hash[:8])
 }
 
 func downloadFile(url, outputPath string) error {

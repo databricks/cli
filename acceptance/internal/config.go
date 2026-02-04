@@ -126,9 +126,6 @@ type TestConfig struct {
 	// For cloud+windows tests, max(Timeout, TimeoutWindows, TimeoutCloud) is used for timeout
 	TimeoutCloud time.Duration
 
-	// For DBR tests (WorkspaceTmpDir=true), max(Timeout, TimeoutDbr) is used for timeout
-	TimeoutDbr time.Duration
-
 	// On CI, we want to increase timeout, to account for slower environment
 	TimeoutCIMultiplier float64
 
