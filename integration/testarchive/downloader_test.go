@@ -84,27 +84,3 @@ func TestGoDownloader(t *testing.T) {
 		require.NoError(t, err)
 	}
 }
-
-func TestGotestsumDownloader(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping test in short mode")
-	}
-
-	t.Parallel()
-
-	testutil.GetEnvOrSkipTest(t, "CLOUD_ENV")
-
-	tmpDir := t.TempDir()
-
-	for _, arch := range []string{"arm64", "amd64"} {
-		err := testarchive.GotestsumDownloader{Arch: arch, BinDir: tmpDir, RepoRoot: "../.."}.Download()
-		require.NoError(t, err)
-
-		binaryPath := filepath.Join(tmpDir, arch, "gotestsum")
-		info, err := os.Stat(binaryPath)
-		require.NoError(t, err)
-
-		// Verify the binary is executable
-		assert.NotEqual(t, 0, info.Mode()&0o111, "gotestsum binary should be executable")
-	}
-}

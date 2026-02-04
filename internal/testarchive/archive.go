@@ -107,14 +107,12 @@ func CreateArchive(archiveDir, binDir, repoRoot string) error {
 	// the CPU architecture to keep the door open for future optimizations.
 	downloaders := []downloader{
 		GoDownloader{Arch: "amd64", BinDir: binDir, RepoRoot: repoRoot},
-		GotestsumDownloader{Arch: "amd64", BinDir: binDir, RepoRoot: repoRoot},
 		UvDownloader{Arch: "amd64", BinDir: binDir},
 		JqDownloader{Arch: "amd64", BinDir: binDir},
 
 		// TODO: Serverless clusters do not support arm64 yet.
 		// Enable ARM64 once serverless clusters support it.
 		// GoDownloader{Arch: "arm64", BinDir: binDir, RepoRoot: repoRoot},
-		// GotestsumDownloader{Arch: "arm64", BinDir: binDir, RepoRoot: repoRoot},
 		// UvDownloader{Arch: "arm64", BinDir: binDir},
 		// JqDownloader{Arch: "arm64", BinDir: binDir},
 	}
