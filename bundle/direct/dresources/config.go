@@ -78,7 +78,7 @@ func GetResourceConfig(resourceType string) *ResourceLifecycleConfig {
 	if rc, ok := cfg.Resources[resourceType]; ok {
 		return &rc
 	}
-	return nil
+	return &ResourceLifecycleConfig{}
 }
 
 // GetGeneratedResourceConfig returns the generated lifecycle config for a given resource type.
@@ -88,5 +88,5 @@ func GetGeneratedResourceConfig(resourceType string) *ResourceLifecycleConfig {
 	if rc, ok := cfg.Resources[resourceType]; ok {
 		return &rc
 	}
-	return nil
+	return &ResourceLifecycleConfig{}
 }
