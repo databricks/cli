@@ -43,6 +43,11 @@ EnvMatrix.INPUT_CONFIG = [
 [EnvMatrixExclude]
 no_alert_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=alert.yml.tmpl"]
 
+# Postgres resources only work on AWS
+no_postgres_project_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=postgres_project.yml.tmpl"]
+no_postgres_branch_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=postgres_branch.yml.tmpl"]
+no_postgres_endpoint_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=postgres_endpoint.yml.tmpl"]
+
 # Fake SQL endpoint for local tests
 [[Server]]
 Pattern = "POST /api/2.0/sql/statements/"
