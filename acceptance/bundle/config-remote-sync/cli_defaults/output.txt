@@ -6,8 +6,6 @@ Deployment complete!
 === Modify jobs
 Change max_concurrent_runs, name, change default tag
 
-Disable queueing
-
 === Modify pipeline
 Change edition and channel
 
