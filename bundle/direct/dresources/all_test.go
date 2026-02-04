@@ -757,35 +757,7 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 		}
 	}
 
-	// Build set of fields to ignore from resource config (ignore_remote_changes).
-	// These are fields that the API doesn't return or that we intentionally skip for diff.
-	// Include both manual config (resources.yml) and generated config (resources.generated.yml).
-	ignoreFields := make(map[string]bool)
-	for _, cfg := range []*ResourceLifecycleConfig{adapter.ResourceConfig(), adapter.GeneratedResourceConfig()} {
-		if cfg == nil {
-			continue
-		}
-		for _, p := range cfg.IgnoreRemoteChanges {
-			ignoreFields[p.String()] = true
-		}
-	}
-
 	require.NoError(t, structwalk.Walk(newState, func(path *structpath.PathNode, val any, field *reflect.StructField) {
-		// Skip fields configured in ignore_remote_changes.
-		// Check both exact match and prefix match for nested fields.
-		pathStr := path.String()
-		if ignoreFields[pathStr] {
-			return
-		}
-		// Check if this is a nested field under an ignored top-level field
-		topLevelField := pathStr
-		if idx := strings.Index(pathStr, "."); idx != -1 {
-			topLevelField = pathStr[:idx]
-		}
-		if ignoreFields[topLevelField] {
-			return
-		}
-
 		remoteValue, err := structaccess.Get(remappedState, path)
 		if err != nil {
 			t.Errorf("Failed to read %s from remapped remote state %#v", path.String(), remappedState)
@@ -806,7 +778,7 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 		}
 		// t.Logf("Testing %s v=%#v, remoteValue=%#v", path.String(), val, remoteValue)
 		// We expect fields set explicitly to be preserved by testserver, which is true for all resources as of today.
-		// If not true for your resource, add exception here.
+		// If not true for your resource, add exception here:
 		assert.Equal(t, val, remoteValue, "path=%q\nnewState=%s\nremappedState=%s", path.String(), jsonDump(newState), jsonDump(remappedState))
 	}))
 
