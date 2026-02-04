@@ -22,6 +22,7 @@ resources:
       - field: ingestion_definition.ingestion_gateway_id
         reason: immutable
     ignore_remote_changes:
+      - id
       - field: run_as
         reason: not_returned_by_api
 
