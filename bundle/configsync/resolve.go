@@ -101,6 +101,47 @@ func pathDepth(pathStr string) int {
 	return len(node.AsSlice())
 }
 
+// adjustArrayIndex adjusts the index in a PathNode based on previous operations.
+// When operations are applied sequentially, removals and additions shift array indices.
+// This function adjusts the index to account for those shifts.
+func adjustArrayIndex(path *structpath.PathNode, operations map[string][]struct {
+	index     int
+	operation OperationType
+},
+) *structpath.PathNode {
+	originalIndex, ok := path.Index()
+	if !ok {
+		return path
+	}
+
+	parentPath := path.Parent()
+	parentPathStr := parentPath.String()
+	ops := operations[parentPathStr]
+
+	// Calculate adjustment based on operations at lower indices
+	// Only operations at indices < originalIndex affect this operation
+	adjustment := 0
+	for _, op := range ops {
+		if op.index < originalIndex {
+			switch op.operation {
+			case OperationRemove:
+				adjustment-- // Removals shift indices down
+			case OperationAdd:
+				adjustment++ // Additions shift indices up
+			default:
+				// Other operations (Replace, Unknown, Skip) don't affect array structure
+			}
+		}
+	}
+
+	adjustedIndex := originalIndex + adjustment
+	if adjustedIndex < 0 {
+		adjustedIndex = 0
+	}
+
+	return structpath.NewIndex(parentPath, adjustedIndex)
+}
+
 // ResolveChanges resolves selectors and computes field path candidates for each change.
 func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes) ([]FieldChange, error) {
 	var result []FieldChange
@@ -148,6 +189,12 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 
 		// Create indices map for this resource, path -> indices that we could use to replace with added elements
 		indicesToReplaceMap := make(map[string][]int)
+
+		indexOperations := make(map[string][]struct {
+			index     int
+			operation OperationType
+		})
+
 		for _, fieldPath := range fieldPaths {
 			configChange := resourceChanges[fieldPath]
 			fullPath := resourceKey + "." + fieldPath
@@ -175,6 +222,20 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 					indicesToReplaceMap[parentPath] = indices[1:]
 					resolvedPath = structpath.NewIndex(resolvedPath.Parent(), index)
 				}
+			}
+
+			// Adjust array indices based on previous operations
+			// Operations use indices from the original state, but when applied sequentially,
+			// removals and additions shift indices. We adjust here before creating the path string.
+			resolvedPath = adjustArrayIndex(resolvedPath, indexOperations)
+
+			// Track this operation for future index adjustments (only for array element operations)
+			if originalIndex, ok := resolvedPath.Index(); ok {
+				parentPath := resolvedPath.Parent().String()
+				indexOperations[parentPath] = append(indexOperations[parentPath], struct {
+					index     int
+					operation OperationType
+				}{originalIndex, configChange.Operation})
 			}
 
 			resolvedPathStr := resolvedPath.String()
