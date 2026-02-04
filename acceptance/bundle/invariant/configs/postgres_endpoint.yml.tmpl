@@ -11,6 +11,7 @@ resources:
     branch:
       parent: ${resources.postgres_projects.project.name}
       branch_id: test-branch-$UNIQUE_NAME
+      no_expiry: true
 
   postgres_endpoints:
     foo:
