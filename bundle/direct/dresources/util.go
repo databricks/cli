@@ -49,12 +49,6 @@ func shouldRetry(err error) bool {
 	return !e.Halt
 }
 
-// collectUpdatePaths extracts field paths from Changes that have action=Update.
-// This builds the precise update_mask for API requests, excluding immutable and unchanged fields.
-func collectUpdatePaths(changes Changes) []string {
-	return collectUpdatePathsWithPrefix(changes, "")
-}
-
 // collectUpdatePathsWithPrefix extracts field paths from Changes that have action=Update,
 // adding a prefix to each path. This is used when the state type has a flattened structure
 // but the API expects paths relative to a nested object (e.g., "spec.display_name").
