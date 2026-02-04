@@ -41,7 +41,7 @@
     },
     "spec.no_expiry": {
       "action": "skip",
-      "reason": "builtin_rule",
+      "reason": "api_schema",
       "old": true,
       "new": true
     }

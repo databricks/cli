@@ -26,13 +26,13 @@
   "changes": {
     "spec.is_protected": {
       "action": "skip",
-      "reason": "builtin_rule",
+      "reason": "api_schema",
       "old": false,
       "new": false
     },
     "spec.no_expiry": {
       "action": "skip",
-      "reason": "builtin_rule",
+      "reason": "api_schema",
       "old": true,
       "new": true
     }

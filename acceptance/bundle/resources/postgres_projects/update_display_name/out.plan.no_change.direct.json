@@ -22,7 +22,7 @@
   "changes": {
     "spec.default_endpoint_settings": {
       "action": "skip",
-      "reason": "builtin_rule",
+      "reason": "api_schema",
       "old": {
         "autoscaling_limit_max_cu": 4,
         "autoscaling_limit_min_cu": 0.5,
@@ -36,7 +36,7 @@
     },
     "spec.display_name": {
       "action": "skip",
-      "reason": "builtin_rule",
+      "reason": "api_schema",
       "old": "Original Name",
       "new": "Original Name"
     },
@@ -48,7 +48,7 @@
     },
     "spec.pg_version": {
       "action": "skip",
-      "reason": "builtin_rule",
+      "reason": "api_schema",
       "old": 16,
       "new": 16
     }
