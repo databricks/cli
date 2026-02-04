@@ -25,10 +25,11 @@ var (
 // Other fields are compared using reflect.DeepEqual.
 var serverSideDefaults = map[string]any{
 	// Job-level fields
-	"timeout_seconds":     zeroOrNil,
-	"email_notifications": emptyEmailNotifications,
-	"edit_mode":           alwaysSkip, // set by CLI
-	"performance_target":  "PERFORMANCE_OPTIMIZED",
+	"timeout_seconds":       zeroOrNil,
+	"email_notifications":   emptyEmailNotifications,
+	"webhook_notifications": map[string]any{},
+	"edit_mode":             alwaysSkip, // set by CLI
+	"performance_target":    "PERFORMANCE_OPTIMIZED",
 
 	// Task-level fields
 	"tasks[*].run_if":                     "ALL_SUCCESS",
@@ -36,13 +37,15 @@ var serverSideDefaults = map[string]any{
 	"tasks[*].timeout_seconds":            zeroOrNil,
 	"tasks[*].notebook_task.source":       "WORKSPACE",
 	"tasks[*].email_notifications":        emptyEmailNotifications,
+	"tasks[*].webhook_notifications":      map[string]any{},
 	"tasks[*].pipeline_task.full_refresh": false,
 
-	"tasks[*].for_each_task.task.run_if":               "ALL_SUCCESS",
-	"tasks[*].for_each_task.task.disabled":             false,
-	"tasks[*].for_each_task.task.timeout_seconds":      zeroOrNil,
-	"tasks[*].for_each_task.task.notebook_task.source": "WORKSPACE",
-	"tasks[*].for_each_task.task.email_notifications":  emptyEmailNotifications,
+	"tasks[*].for_each_task.task.run_if":                "ALL_SUCCESS",
+	"tasks[*].for_each_task.task.disabled":              false,
+	"tasks[*].for_each_task.task.timeout_seconds":       zeroOrNil,
+	"tasks[*].for_each_task.task.notebook_task.source":  "WORKSPACE",
+	"tasks[*].for_each_task.task.email_notifications":   emptyEmailNotifications,
+	"tasks[*].for_each_task.task.webhook_notifications": map[string]any{},
 
 	// Cluster fields (tasks)
 	"tasks[*].new_cluster.aws_attributes":      alwaysSkip,
