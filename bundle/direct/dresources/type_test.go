@@ -97,9 +97,9 @@ var knownMissingInRemoteType = map[string][]string{
 	},
 }
 
-// TestRemoteTypeIsSupersetOfStateType validates that all fields in StateType
+// TestRemoteSuperset validates that all fields in StateType
 // exist in RemoteType for each resource. RemoteType may have extra fields.
-func TestRemoteTypeIsSupersetOfStateType(t *testing.T) {
+func TestRemoteSuperset(t *testing.T) {
 	for resourceType, resource := range SupportedResources {
 		adapter, err := NewAdapter(resource, resourceType, nil)
 		require.NoError(t, err)
@@ -107,11 +107,6 @@ func TestRemoteTypeIsSupersetOfStateType(t *testing.T) {
 		t.Run(resourceType, func(t *testing.T) {
 			stateType := adapter.StateType()
 			remoteType := adapter.RemoteType()
-
-			// If types are the same, trivially satisfied
-			if stateType == remoteType {
-				return
-			}
 
 			// Validate that all fields in StateType exist in RemoteType
 			var missingFields []string
@@ -172,7 +167,6 @@ func collectTypeIssues(t *testing.T, stateType, remoteType reflect.Type, prefix 
 			continue
 		}
 
-		// Check that types are compatible
 		if stateField.Type == remoteField.Type {
 			continue
 		}
