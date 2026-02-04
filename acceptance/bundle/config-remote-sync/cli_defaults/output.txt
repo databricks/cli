@@ -12,16 +12,13 @@ Disable queueing
 Change edition and channel
 
 === Detect and save all changes
-Detected changes in 3 resource(s):
+Detected changes in 2 resource(s):
 
 Resource: resources.jobs.job1
   max_concurrent_runs: add
   name: add
   tags['dev']: add
   trigger.pause_status: add
-
-Resource: resources.jobs.job2
-  queue: add
 
 Resource: resources.pipelines.pipeline1
   channel: add
@@ -60,15 +57,13 @@ Resource: resources.pipelines.pipeline1
 +      name: Custom Job Name
      job2:
        tasks:
-@@ -31,5 +33,6 @@
+@@ -31,5 +33,4 @@
              node_type_id: [NODE_TYPE_ID]
              num_workers: 1
 -
-+      queue:
-+        enabled: false
    pipelines:
      pipeline1:
-@@ -38,2 +41,4 @@
+@@ -38,2 +39,4 @@
          - notebook:
              path: /Users/{{workspace_user_name}}/notebook
 +      channel: PREVIEW

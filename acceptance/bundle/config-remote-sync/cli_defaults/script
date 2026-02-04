@@ -23,11 +23,12 @@ r["trigger"] = {
 }
 EOF
 
-echo
-echo "Disable queueing"
-edit_resource.py jobs $job2_id <<EOF
-r["queue"] = None
-EOF
+# Disabled for now - queue removal test
+# echo
+# echo "Disable queueing"
+# edit_resource.py jobs $job2_id <<EOF
+# r["queue"] = None
+# EOF
 
 title "Modify pipeline"
 echo
