@@ -11,6 +11,7 @@
 
 ### Bundles
 
+* Standardize `personal_schemas` enum across bundle templates ([#4401](https://github.com/databricks/cli/pull/4401))
 * Add missing values to SchemaGrantPrivilege enum ([#4380](https://github.com/databricks/cli/pull/4380))
 * Added support for UC catalogs (only in direct mode) ([#4342](https://github.com/databricks/cli/pull/4342))
 * engine/direct: Fix updates to fields being ignored for database_catalogs, synced_database_tables (([#4388](https://github.com/databricks/cli/pull/4388)))

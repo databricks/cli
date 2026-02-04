@@ -28,7 +28,7 @@ See also the documentation at https://docs.databricks.com/dev-tools/bundles/inde
         "template_enum_args": [
           {
             "key": "personal_schemas",
-            "value": "yes, automatically use a schema based on the current user name during development"
+            "value": "yes"
           }
         ]
       }
