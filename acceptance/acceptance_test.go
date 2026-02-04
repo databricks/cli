@@ -164,7 +164,7 @@ func setReplsForTestEnvVars(t *testing.T, repls *testdiff.ReplacementsContext) {
 }
 
 func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
-	t.SetParallelism(16)
+	t.SetParallelism(64)
 
 	repls := testdiff.ReplacementsContext{}
 	cwd, err := os.Getwd()
