@@ -210,9 +210,9 @@ var RequiredFields = map[string][]string{
 	"resources.pipelines.*.permissions[*]":                                                                      {"level"},
 	"resources.pipelines.*.restart_window":                                                                      {"start_hour"},
 
-	"resources.postgres_branches.*": {"parent", "branch_id"},
+	"resources.postgres_branches.*": {"branch_id", "parent"},
 
-	"resources.postgres_endpoints.*": {"endpoint_type", "parent", "endpoint_id"},
+	"resources.postgres_endpoints.*": {"endpoint_type", "endpoint_id", "parent"},
 
 	"resources.postgres_projects.*": {"project_id"},
 
