@@ -211,16 +211,6 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	t.Setenv("CLI", execPath)
 	repls.SetPath(execPath, "[CLI]")
 
-	pipelinesPath := filepath.Join(buildDir, "pipelines") + exeSuffix
-	if _, err := os.Stat(pipelinesPath); err == nil {
-		err := os.Remove(pipelinesPath)
-		require.NoError(t, err)
-	}
-	err = os.Symlink(execPath, pipelinesPath)
-	require.NoError(t, err)
-	t.Setenv("PIPELINES", pipelinesPath)
-	repls.SetPath(pipelinesPath, "[PIPELINES]")
-
 	paths := []string{
 		// Make helper scripts available
 		filepath.Join(cwd, "bin"),
@@ -333,7 +323,13 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 				t.Parallel()
 			}
 
-			expanded := internal.ExpandEnvMatrix(config.EnvMatrix, config.EnvMatrixExclude)
+			// Build extra vars for exclusion matching (config state as env vars)
+			var extraVars []string
+			if cloudEnv != "" {
+				extraVars = append(extraVars, "CONFIG_Cloud=true")
+			}
+
+			expanded := internal.ExpandEnvMatrix(config.EnvMatrix, config.EnvMatrixExclude, extraVars)
 
 			if len(expanded) == 1 {
 				// env vars aren't part of the test case name, so log them for debugging

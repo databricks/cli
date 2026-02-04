@@ -4,12 +4,14 @@ package warehouses
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/spf13/cobra"
 )
@@ -31,17 +33,22 @@ func New() *cobra.Command {
 
 	// Add methods
 	cmd.AddCommand(newCreate())
+	cmd.AddCommand(newCreateDefaultWarehouseOverride())
 	cmd.AddCommand(newDelete())
+	cmd.AddCommand(newDeleteDefaultWarehouseOverride())
 	cmd.AddCommand(newEdit())
 	cmd.AddCommand(newGet())
+	cmd.AddCommand(newGetDefaultWarehouseOverride())
 	cmd.AddCommand(newGetPermissionLevels())
 	cmd.AddCommand(newGetPermissions())
 	cmd.AddCommand(newGetWorkspaceWarehouseConfig())
 	cmd.AddCommand(newList())
+	cmd.AddCommand(newListDefaultWarehouseOverrides())
 	cmd.AddCommand(newSetPermissions())
 	cmd.AddCommand(newSetWorkspaceWarehouseConfig())
 	cmd.AddCommand(newStart())
 	cmd.AddCommand(newStop())
+	cmd.AddCommand(newUpdateDefaultWarehouseOverride())
 	cmd.AddCommand(newUpdatePermissions())
 
 	// Apply optional overrides to this command.
@@ -113,7 +120,7 @@ func newCreate() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -153,6 +160,103 @@ func newCreate() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range createOverrides {
 		fn(cmd, &createReq)
+	}
+
+	return cmd
+}
+
+// start create-default-warehouse-override command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createDefaultWarehouseOverrideOverrides []func(
+	*cobra.Command,
+	*sql.CreateDefaultWarehouseOverrideRequest,
+)
+
+func newCreateDefaultWarehouseOverride() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var createDefaultWarehouseOverrideReq sql.CreateDefaultWarehouseOverrideRequest
+	createDefaultWarehouseOverrideReq.DefaultWarehouseOverride = sql.DefaultWarehouseOverride{}
+	var createDefaultWarehouseOverrideJson flags.JsonFlag
+
+	cmd.Flags().Var(&createDefaultWarehouseOverrideJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().StringVar(&createDefaultWarehouseOverrideReq.DefaultWarehouseOverride.Name, "name", createDefaultWarehouseOverrideReq.DefaultWarehouseOverride.Name, `The resource name of the default warehouse override.`)
+	cmd.Flags().StringVar(&createDefaultWarehouseOverrideReq.DefaultWarehouseOverride.WarehouseId, "warehouse-id", createDefaultWarehouseOverrideReq.DefaultWarehouseOverride.WarehouseId, `The specific warehouse ID when type is CUSTOM.`)
+
+	cmd.Use = "create-default-warehouse-override DEFAULT_WAREHOUSE_OVERRIDE_ID TYPE"
+	cmd.Short = `Create default warehouse override.`
+	cmd.Long = `Create default warehouse override.
+
+  Creates a new default warehouse override for a user. Users can create their
+  own override. Admins can create overrides for any user.
+
+  Arguments:
+    DEFAULT_WAREHOUSE_OVERRIDE_ID: Required. The ID to use for the override, which will become the final
+      component of the override's resource name. Can be a numeric user ID or the
+      literal string "me" for the current user.
+    TYPE: The type of override behavior.
+      Supported values: [CUSTOM, LAST_SELECTED]`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().Changed("json") {
+			err := root.ExactArgs(1)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, provide only DEFAULT_WAREHOUSE_OVERRIDE_ID as positional arguments. Provide 'type' in your JSON input")
+			}
+			return nil
+		}
+		check := root.ExactArgs(2)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := createDefaultWarehouseOverrideJson.Unmarshal(&createDefaultWarehouseOverrideReq.DefaultWarehouseOverride)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		createDefaultWarehouseOverrideReq.DefaultWarehouseOverrideId = args[0]
+		if !cmd.Flags().Changed("json") {
+			_, err = fmt.Sscan(args[1], &createDefaultWarehouseOverrideReq.DefaultWarehouseOverride.Type)
+			if err != nil {
+				return fmt.Errorf("invalid TYPE: %s", args[1])
+			}
+
+		}
+
+		response, err := w.Warehouses.CreateDefaultWarehouseOverride(ctx, createDefaultWarehouseOverrideReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createDefaultWarehouseOverrideOverrides {
+		fn(cmd, &createDefaultWarehouseOverrideReq)
 	}
 
 	return cmd
@@ -226,6 +330,82 @@ func newDelete() *cobra.Command {
 	return cmd
 }
 
+// start delete-default-warehouse-override command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deleteDefaultWarehouseOverrideOverrides []func(
+	*cobra.Command,
+	*sql.DeleteDefaultWarehouseOverrideRequest,
+)
+
+func newDeleteDefaultWarehouseOverride() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deleteDefaultWarehouseOverrideReq sql.DeleteDefaultWarehouseOverrideRequest
+
+	cmd.Use = "delete-default-warehouse-override NAME"
+	cmd.Short = `Delete default warehouse override.`
+	cmd.Long = `Delete default warehouse override.
+
+  Deletes the default warehouse override for a user. Users can delete their own
+  override. Admins can delete overrides for any user. After deletion, the
+  workspace default warehouse will be used.
+
+  Arguments:
+    NAME: Required. The resource name of the default warehouse override to delete.
+      Format: default-warehouse-overrides/{default_warehouse_override_id} The
+      default_warehouse_override_id can be a numeric user ID or the literal
+      string "me" for the current user.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No NAME argument specified. Loading names for Warehouses drop-down."
+			names, err := w.Warehouses.EndpointInfoNameToIdMap(ctx, sql.ListWarehousesRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Warehouses drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "Required")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have required")
+		}
+		deleteDefaultWarehouseOverrideReq.Name = args[0]
+
+		err = w.Warehouses.DeleteDefaultWarehouseOverride(ctx, deleteDefaultWarehouseOverrideReq)
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deleteDefaultWarehouseOverrideOverrides {
+		fn(cmd, &deleteDefaultWarehouseOverrideReq)
+	}
+
+	return cmd
+}
+
 // start edit command
 
 // Slice with functions to override default command behavior.
@@ -285,7 +465,7 @@ func newEdit() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -411,6 +591,82 @@ func newGet() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range getOverrides {
 		fn(cmd, &getReq)
+	}
+
+	return cmd
+}
+
+// start get-default-warehouse-override command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getDefaultWarehouseOverrideOverrides []func(
+	*cobra.Command,
+	*sql.GetDefaultWarehouseOverrideRequest,
+)
+
+func newGetDefaultWarehouseOverride() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getDefaultWarehouseOverrideReq sql.GetDefaultWarehouseOverrideRequest
+
+	cmd.Use = "get-default-warehouse-override NAME"
+	cmd.Short = `Get default warehouse override.`
+	cmd.Long = `Get default warehouse override.
+
+  Returns the default warehouse override for a user. Users can fetch their own
+  override. Admins can fetch overrides for any user. If no override exists, the
+  UI will fallback to the workspace default warehouse.
+
+  Arguments:
+    NAME: Required. The resource name of the default warehouse override to retrieve.
+      Format: default-warehouse-overrides/{default_warehouse_override_id} The
+      default_warehouse_override_id can be a numeric user ID or the literal
+      string "me" for the current user.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if len(args) == 0 {
+			promptSpinner := cmdio.Spinner(ctx)
+			promptSpinner <- "No NAME argument specified. Loading names for Warehouses drop-down."
+			names, err := w.Warehouses.EndpointInfoNameToIdMap(ctx, sql.ListWarehousesRequest{})
+			close(promptSpinner)
+			if err != nil {
+				return fmt.Errorf("failed to load names for Warehouses drop-down. Please manually specify required arguments. Original error: %w", err)
+			}
+			id, err := cmdio.Select(ctx, names, "Required")
+			if err != nil {
+				return err
+			}
+			args = append(args, id)
+		}
+		if len(args) != 1 {
+			return fmt.Errorf("expected to have required")
+		}
+		getDefaultWarehouseOverrideReq.Name = args[0]
+
+		response, err := w.Warehouses.GetDefaultWarehouseOverride(ctx, getDefaultWarehouseOverrideReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getDefaultWarehouseOverrideOverrides {
+		fn(cmd, &getDefaultWarehouseOverrideReq)
 	}
 
 	return cmd
@@ -648,6 +904,61 @@ func newList() *cobra.Command {
 	return cmd
 }
 
+// start list-default-warehouse-overrides command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listDefaultWarehouseOverridesOverrides []func(
+	*cobra.Command,
+	*sql.ListDefaultWarehouseOverridesRequest,
+)
+
+func newListDefaultWarehouseOverrides() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listDefaultWarehouseOverridesReq sql.ListDefaultWarehouseOverridesRequest
+
+	cmd.Flags().IntVar(&listDefaultWarehouseOverridesReq.PageSize, "page-size", listDefaultWarehouseOverridesReq.PageSize, `The maximum number of overrides to return.`)
+	cmd.Flags().StringVar(&listDefaultWarehouseOverridesReq.PageToken, "page-token", listDefaultWarehouseOverridesReq.PageToken, `A page token, received from a previous ListDefaultWarehouseOverrides call.`)
+
+	cmd.Use = "list-default-warehouse-overrides"
+	cmd.Short = `List default warehouse overrides.`
+	cmd.Long = `List default warehouse overrides.
+
+  Lists all default warehouse overrides in the workspace. Only workspace
+  administrators can list all overrides.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(0)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		response := w.Warehouses.ListDefaultWarehouseOverrides(ctx, listDefaultWarehouseOverridesReq)
+		return cmdio.RenderIterator(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listDefaultWarehouseOverridesOverrides {
+		fn(cmd, &listDefaultWarehouseOverridesReq)
+	}
+
+	return cmd
+}
+
 // start set-permissions command
 
 // Slice with functions to override default command behavior.
@@ -691,7 +1002,7 @@ func newSetPermissions() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -788,7 +1099,7 @@ func newSetWorkspaceWarehouseConfig() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -1000,6 +1311,125 @@ func newStop() *cobra.Command {
 	return cmd
 }
 
+// start update-default-warehouse-override command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updateDefaultWarehouseOverrideOverrides []func(
+	*cobra.Command,
+	*sql.UpdateDefaultWarehouseOverrideRequest,
+)
+
+func newUpdateDefaultWarehouseOverride() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updateDefaultWarehouseOverrideReq sql.UpdateDefaultWarehouseOverrideRequest
+	updateDefaultWarehouseOverrideReq.DefaultWarehouseOverride = sql.DefaultWarehouseOverride{}
+	var updateDefaultWarehouseOverrideJson flags.JsonFlag
+
+	cmd.Flags().Var(&updateDefaultWarehouseOverrideJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().BoolVar(&updateDefaultWarehouseOverrideReq.AllowMissing, "allow-missing", updateDefaultWarehouseOverrideReq.AllowMissing, `If set to true, and the override is not found, a new override will be created.`)
+	cmd.Flags().StringVar(&updateDefaultWarehouseOverrideReq.DefaultWarehouseOverride.Name, "name", updateDefaultWarehouseOverrideReq.DefaultWarehouseOverride.Name, `The resource name of the default warehouse override.`)
+	cmd.Flags().StringVar(&updateDefaultWarehouseOverrideReq.DefaultWarehouseOverride.WarehouseId, "warehouse-id", updateDefaultWarehouseOverrideReq.DefaultWarehouseOverride.WarehouseId, `The specific warehouse ID when type is CUSTOM.`)
+
+	cmd.Use = "update-default-warehouse-override NAME UPDATE_MASK TYPE"
+	cmd.Short = `Update default warehouse override.`
+	cmd.Long = `Update default warehouse override.
+
+  Updates an existing default warehouse override for a user. Users can update
+  their own override. Admins can update overrides for any user.
+
+  Arguments:
+    NAME: The resource name of the default warehouse override. Format:
+      default-warehouse-overrides/{default_warehouse_override_id}
+    UPDATE_MASK: Required. Field mask specifying which fields to update. Only the fields
+      specified in the mask will be updated. Use "*" to update all fields. When
+      allow_missing is true, this field is ignored and all fields are applied.
+    TYPE: The type of override behavior.
+      Supported values: [CUSTOM, LAST_SELECTED]`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().Changed("json") {
+			err := root.ExactArgs(2)(cmd, args)
+			if err != nil {
+				return fmt.Errorf("when --json flag is specified, provide only NAME, UPDATE_MASK as positional arguments. Provide 'type' in your JSON input")
+			}
+			return nil
+		}
+		return nil
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := updateDefaultWarehouseOverrideJson.Unmarshal(&updateDefaultWarehouseOverrideReq.DefaultWarehouseOverride)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		} else {
+			if len(args) == 0 {
+				promptSpinner := cmdio.Spinner(ctx)
+				promptSpinner <- "No TYPE argument specified. Loading names for Warehouses drop-down."
+				names, err := w.Warehouses.EndpointInfoNameToIdMap(ctx, sql.ListWarehousesRequest{})
+				close(promptSpinner)
+				if err != nil {
+					return fmt.Errorf("failed to load names for Warehouses drop-down. Please manually specify required arguments. Original error: %w", err)
+				}
+				id, err := cmdio.Select(ctx, names, "The type of override behavior")
+				if err != nil {
+					return err
+				}
+				args = append(args, id)
+			}
+			if len(args) != 1 {
+				return fmt.Errorf("expected to have the type of override behavior")
+			}
+			updateDefaultWarehouseOverrideReq.Name = args[0]
+			if args[1] != "" {
+				updateMaskArray := strings.Split(args[1], ",")
+				updateDefaultWarehouseOverrideReq.UpdateMask = *fieldmask.New(updateMaskArray)
+			}
+			_, err = fmt.Sscan(args[2], &updateDefaultWarehouseOverrideReq.DefaultWarehouseOverride.Type)
+			if err != nil {
+				return fmt.Errorf("invalid TYPE: %s", args[2])
+			}
+
+		}
+
+		response, err := w.Warehouses.UpdateDefaultWarehouseOverride(ctx, updateDefaultWarehouseOverrideReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updateDefaultWarehouseOverrideOverrides {
+		fn(cmd, &updateDefaultWarehouseOverrideReq)
+	}
+
+	return cmd
+}
+
 // start update-permissions command
 
 // Slice with functions to override default command behavior.
@@ -1042,7 +1472,7 @@ func newUpdatePermissions() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}

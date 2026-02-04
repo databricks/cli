@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/databricks/cli/experimental/aitools/lib/agents"
+	"github.com/databricks/cli/libs/agent"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
@@ -29,20 +30,20 @@ func runInstall(ctx context.Context) error {
 	// Check for non-interactive mode with agent detection
 	// If running in an AI agent, install automatically without prompts
 	if !cmdio.IsPromptSupported(ctx) {
-		if os.Getenv("CLAUDECODE") != "" {
-			if err := agents.InstallClaude(); err != nil {
-				return err
-			}
-			cmdio.LogString(ctx, color.GreenString("✓ Installed Databricks MCP server for Claude Code"))
-			cmdio.LogString(ctx, color.YellowString("⚠️  Please restart Claude Code for changes to take effect"))
-			return nil
+		var targetAgent *agents.Agent
+		switch agent.Product(ctx) {
+		case agent.ClaudeCode:
+			targetAgent = agents.GetByName("claude-code")
+		case agent.Cursor:
+			targetAgent = agents.GetByName("cursor")
 		}
-		if os.Getenv("CURSOR_AGENT") != "" {
-			if err := agents.InstallCursor(); err != nil {
+
+		if targetAgent != nil && targetAgent.InstallMCP != nil {
+			if err := targetAgent.InstallMCP(); err != nil {
 				return err
 			}
-			cmdio.LogString(ctx, color.GreenString("✓ Installed Databricks MCP server for Cursor"))
-			cmdio.LogString(ctx, color.YellowString("⚠️  Please restart Cursor for changes to take effect"))
+			cmdio.LogString(ctx, color.GreenString("✓ Installed Databricks MCP server for %s", targetAgent.DisplayName))
+			cmdio.LogString(ctx, color.YellowString("⚠️  Please restart %s for changes to take effect", targetAgent.DisplayName))
 			return nil
 		}
 		// Unknown agent in non-interactive mode - show manual instructions
@@ -67,39 +68,32 @@ func runInstall(ctx context.Context) error {
 
 	anySuccess := false
 
-	ans, err := cmdio.AskSelect(ctx, "Install for Claude Code?", []string{"yes", "no"})
-	if err != nil {
-		return err
-	}
-	if ans == "yes" {
-		fmt.Fprint(os.Stderr, "Installing MCP server for Claude Code...")
-		if err := agents.InstallClaude(); err != nil {
-			fmt.Fprint(os.Stderr, "\r"+color.YellowString("⊘ Skipped Claude Code: "+err.Error())+"\n")
-		} else {
-			fmt.Fprint(os.Stderr, "\r"+color.GreenString("✓ Installed for Claude Code")+"                 \n")
-			anySuccess = true
+	// Install for agents that have MCP support
+	for i := range agents.Registry {
+		a := &agents.Registry[i]
+		if a.InstallMCP == nil {
+			continue
 		}
-		cmdio.LogString(ctx, "")
+
+		ans, err := cmdio.AskSelect(ctx, fmt.Sprintf("Install for %s?", a.DisplayName), []string{"yes", "no"})
+		if err != nil {
+			return err
+		}
+		if ans == "yes" {
+			fmt.Fprintf(os.Stderr, "Installing MCP server for %s...", a.DisplayName)
+			if err := a.InstallMCP(); err != nil {
+				fmt.Fprint(os.Stderr, "\r"+color.YellowString("⊘ Skipped %s: %s", a.DisplayName, err.Error())+"\n")
+			} else {
+				// Brief delay so users see the "Installing..." message before it's replaced
+				time.Sleep(500 * time.Millisecond)
+				fmt.Fprint(os.Stderr, "\r"+color.GreenString("✓ Installed for %s", a.DisplayName)+"                 \n")
+				anySuccess = true
+			}
+			cmdio.LogString(ctx, "")
+		}
 	}
 
-	ans, err = cmdio.AskSelect(ctx, "Install for Cursor?", []string{"yes", "no"})
-	if err != nil {
-		return err
-	}
-	if ans == "yes" {
-		fmt.Fprint(os.Stderr, "Installing MCP server for Cursor...")
-		if err := agents.InstallCursor(); err != nil {
-			fmt.Fprint(os.Stderr, "\r"+color.YellowString("⊘ Skipped Cursor: "+err.Error())+"\n")
-		} else {
-			// Brief delay so users see the "Installing..." message before it's replaced
-			time.Sleep(1 * time.Second)
-			fmt.Fprint(os.Stderr, "\r"+color.GreenString("✓ Installed for Cursor")+"                 \n")
-			anySuccess = true
-		}
-		cmdio.LogString(ctx, "")
-	}
-
-	ans, err = cmdio.AskSelect(ctx, "Show manual installation instructions for other agents?", []string{"yes", "no"})
+	ans, err := cmdio.AskSelect(ctx, "Show manual installation instructions for other agents?", []string{"yes", "no"})
 	if err != nil {
 		return err
 	}

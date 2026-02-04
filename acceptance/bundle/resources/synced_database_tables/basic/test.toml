@@ -13,3 +13,12 @@ RunsOnDbr = false
 Old = '\?o=\[(NUMID|ALPHANUMID)\]'
 New = ''
 Order = 1000
+
+# Fake SQL endpoint for local tests
+[[Server]]
+Pattern = "POST /api/2.0/sql/statements/"
+Response.Body = '{"status": {"state": "SUCCEEDED"}, "manifest": {"schema": {"columns": []}}}'
+
+[[Server]]
+Pattern = "DELETE /api/2.1/unity-catalog/tables/{name}"
+Response.Body = '{"status": "OK"}'

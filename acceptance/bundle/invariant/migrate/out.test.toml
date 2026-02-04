@@ -1,0 +1,7 @@
+Local = true
+Cloud = true
+RequiresUnityCatalog = true
+
+[EnvMatrix]
+  DATABRICKS_BUNDLE_ENGINE = ["direct"]
+  INPUT_CONFIG = ["alert.yml.tmpl", "app.yml.tmpl", "catalog.yml.tmpl", "cluster.yml.tmpl", "dashboard.yml.tmpl", "database_catalog.yml.tmpl", "database_instance.yml.tmpl", "experiment.yml.tmpl", "job.yml.tmpl", "model.yml.tmpl", "model_serving_endpoint.yml.tmpl", "pipeline.yml.tmpl", "registered_model.yml.tmpl", "schema.yml.tmpl", "secret_scope.yml.tmpl", "synced_database_table.yml.tmpl", "volume.yml.tmpl"]

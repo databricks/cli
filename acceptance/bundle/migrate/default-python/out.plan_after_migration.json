@@ -219,7 +219,7 @@
       "changes": {
         "email_notifications": {
           "action": "skip",
-          "reason": "server_side_default",
+          "reason": "empty_struct",
           "remote": {}
         },
         "tasks[task_key='notebook_task'].libraries[0].whl": {
@@ -246,7 +246,7 @@
         },
         "webhook_notifications": {
           "action": "skip",
-          "reason": "server_side_default",
+          "reason": "empty_struct",
           "remote": {}
         }
       }

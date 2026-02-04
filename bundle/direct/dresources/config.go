@@ -5,7 +5,7 @@ import (
 	"sync"
 
 	"github.com/databricks/cli/libs/structs/structpath"
-	"gopkg.in/yaml.v3"
+	"go.yaml.in/yaml/v3"
 )
 
 // ResourceLifecycleConfig defines lifecycle behavior for a resource type.
@@ -31,9 +31,20 @@ type Config struct {
 //go:embed resources.yml
 var resourcesYAML []byte
 
+//go:embed resources.generated.yml
+var resourcesGeneratedYAML []byte
+
 var (
-	configOnce   sync.Once
-	globalConfig *Config
+	configOnce          sync.Once
+	globalConfig        *Config
+	generatedConfigOnce sync.Once
+	generatedConfig     *Config
+	empty               = ResourceLifecycleConfig{
+		IgnoreRemoteChanges: nil,
+		IgnoreLocalChanges:  nil,
+		RecreateOnChanges:   nil,
+		UpdateIDOnChanges:   nil,
+	}
 )
 
 // MustLoadConfig loads and parses the embedded resources.yml configuration.
@@ -51,6 +62,21 @@ func MustLoadConfig() *Config {
 	return globalConfig
 }
 
+// MustLoadGeneratedConfig loads and parses the embedded resources.generated.yml configuration.
+// The config is loaded once and cached for subsequent calls.
+// Panics if the embedded YAML is invalid.
+func MustLoadGeneratedConfig() *Config {
+	generatedConfigOnce.Do(func() {
+		generatedConfig = &Config{
+			Resources: nil,
+		}
+		if err := yaml.Unmarshal(resourcesGeneratedYAML, generatedConfig); err != nil {
+			panic(err)
+		}
+	})
+	return generatedConfig
+}
+
 // GetResourceConfig returns the lifecycle config for a given resource type.
 // Returns nil if the resource type has no configuration.
 func GetResourceConfig(resourceType string) *ResourceLifecycleConfig {
@@ -58,5 +84,15 @@ func GetResourceConfig(resourceType string) *ResourceLifecycleConfig {
 	if rc, ok := cfg.Resources[resourceType]; ok {
 		return &rc
 	}
-	return nil
+	return &empty
+}
+
+// GetGeneratedResourceConfig returns the generated lifecycle config for a given resource type.
+// Returns nil if the resource type has no configuration.
+func GetGeneratedResourceConfig(resourceType string) *ResourceLifecycleConfig {
+	cfg := MustLoadGeneratedConfig()
+	if rc, ok := cfg.Resources[resourceType]; ok {
+		return &rc
+	}
+	return &empty
 }

@@ -242,6 +242,9 @@ github.com/databricks/cli/bundle/config/resources.Cluster:
       The optional ID of the instance pool for the driver of the cluster belongs.
       The pool cluster uses the instance pool with id (instance_pool_id) if the driver pool is not
       assigned.
+  "driver_node_type_flexibility":
+    "description": |-
+      Flexible node type configuration for the driver node.
   "driver_node_type_id":
     "description": |-
       The node type of the Spark driver.
@@ -356,6 +359,9 @@ github.com/databricks/cli/bundle/config/resources.Cluster:
       This field can only be used when `kind = CLASSIC_PREVIEW`.
 
       `effective_spark_version` is determined by `spark_version` (DBR release), this field `use_ml_runtime`, and whether `node_type_id` is gpu node or not.
+  "worker_node_type_flexibility":
+    "description": |-
+      Flexible node type configuration for worker nodes.
   "workload_type":
     "description": |-
       Cluster Attributes showing for clusters workload types.
@@ -402,6 +408,8 @@ github.com/databricks/cli/bundle/config/resources.DatabaseInstance:
   "effective_capacity":
     "description": |-
       Deprecated. The sku of the instance; this field will always match the value of capacity.
+      This is an output only field that contains the value computed from the input field combined with
+      server side defaults. Use the field without the effective_ prefix to set the value.
     "deprecation_message": |-
       This field is deprecated
     "x-databricks-field-behaviors_output_only": |-
@@ -409,38 +417,52 @@ github.com/databricks/cli/bundle/config/resources.DatabaseInstance:
   "effective_custom_tags":
     "description": |-
       The recorded custom tags associated with the instance.
+      This is an output only field that contains the value computed from the input field combined with
+      server side defaults. Use the field without the effective_ prefix to set the value.
     "x-databricks-field-behaviors_output_only": |-
       true
   "effective_enable_pg_native_login":
     "description": |-
       Whether the instance has PG native password login enabled.
+      This is an output only field that contains the value computed from the input field combined with
+      server side defaults. Use the field without the effective_ prefix to set the value.
     "x-databricks-field-behaviors_output_only": |-
       true
   "effective_enable_readable_secondaries":
     "description": |-
       Whether secondaries serving read-only traffic are enabled. Defaults to false.
+      This is an output only field that contains the value computed from the input field combined with
+      server side defaults. Use the field without the effective_ prefix to set the value.
     "x-databricks-field-behaviors_output_only": |-
       true
   "effective_node_count":
     "description": |-
       The number of nodes in the instance, composed of 1 primary and 0 or more secondaries. Defaults to
       1 primary and 0 secondaries.
+      This is an output only field that contains the value computed from the input field combined with
+      server side defaults. Use the field without the effective_ prefix to set the value.
     "x-databricks-field-behaviors_output_only": |-
       true
   "effective_retention_window_in_days":
     "description": |-
       The retention window for the instance. This is the time window in days
       for which the historical data is retained.
+      This is an output only field that contains the value computed from the input field combined with
+      server side defaults. Use the field without the effective_ prefix to set the value.
     "x-databricks-field-behaviors_output_only": |-
       true
   "effective_stopped":
     "description": |-
       Whether the instance is stopped.
+      This is an output only field that contains the value computed from the input field combined with
+      server side defaults. Use the field without the effective_ prefix to set the value.
     "x-databricks-field-behaviors_output_only": |-
       true
   "effective_usage_policy_id":
     "description": |-
       The policy that is applied to the instance.
+      This is an output only field that contains the value computed from the input field combined with
+      server side defaults. Use the field without the effective_ prefix to set the value.
     "x-databricks-field-behaviors_output_only": |-
       true
   "enable_pg_native_login":
@@ -990,11 +1012,15 @@ github.com/databricks/cli/bundle/config/resources.SyncedDatabaseTable:
     "description": |-
       The name of the database instance that this table is registered to. This field is always returned, and for
       tables inside database catalogs is inferred database instance associated with the catalog.
+      This is an output only field that contains the value computed from the input field combined with
+      server side defaults. Use the field without the effective_ prefix to set the value.
     "x-databricks-field-behaviors_output_only": |-
       true
   "effective_logical_database_name":
     "description": |-
       The name of the logical database that this table is registered to.
+      This is an output only field that contains the value computed from the input field combined with
+      server side defaults. Use the field without the effective_ prefix to set the value.
     "x-databricks-field-behaviors_output_only": |-
       true
   "logical_database_name":
@@ -1790,6 +1816,9 @@ github.com/databricks/databricks-sdk-go/service/compute.ClusterSpec:
       The optional ID of the instance pool for the driver of the cluster belongs.
       The pool cluster uses the instance pool with id (instance_pool_id) if the driver pool is not
       assigned.
+  "driver_node_type_flexibility":
+    "description": |-
+      Flexible node type configuration for the driver node.
   "driver_node_type_id":
     "description": |-
       The node type of the Spark driver.
@@ -1904,6 +1933,9 @@ github.com/databricks/databricks-sdk-go/service/compute.ClusterSpec:
       This field can only be used when `kind = CLASSIC_PREVIEW`.
 
       `effective_spark_version` is determined by `spark_version` (DBR release), this field `use_ml_runtime`, and whether `node_type_id` is gpu node or not.
+  "worker_node_type_flexibility":
+    "description": |-
+      Flexible node type configuration for worker nodes.
   "workload_type":
     "description": |-
       Cluster Attributes showing for clusters workload types.
@@ -2164,6 +2196,13 @@ github.com/databricks/databricks-sdk-go/service/compute.MavenLibrary:
     "description": |-
       Maven repo to install the Maven package from. If omitted, both Maven Central Repository
       and Spark Packages are searched.
+github.com/databricks/databricks-sdk-go/service/compute.NodeTypeFlexibility:
+  "_":
+    "description": |-
+      Configuration for flexible node types, allowing fallback to alternate node types during cluster launch and upscale.
+  "alternate_node_type_ids":
+    "description": |-
+      A list of node type IDs to use as fallbacks when the primary node type is unavailable.
 github.com/databricks/databricks-sdk-go/service/compute.PythonPyPiLibrary:
   "package":
     "description": |-
@@ -2287,6 +2326,8 @@ github.com/databricks/databricks-sdk-go/service/database.DatabaseInstanceRef:
       instance was created.
       For a child ref instance, this is the LSN on the instance from which the child instance
       was created.
+      This is an output only field that contains the value computed from the input field combined with
+      server side defaults. Use the field without the effective_ prefix to set the value.
     "x-databricks-field-behaviors_output_only": |-
       true
   "lsn":
@@ -2904,6 +2945,7 @@ github.com/databricks/databricks-sdk-go/service/jobs.JobDeployment:
       The kind of deployment that manages the job.
 
       * `BUNDLE`: The job is managed by Databricks Asset Bundle.
+      * `SYSTEM_MANAGED`: The job is managed by Databricks and is read-only.
   "metadata_file_path":
     "description": |-
       Path of the file that contains deployment metadata.
@@ -2911,9 +2953,12 @@ github.com/databricks/databricks-sdk-go/service/jobs.JobDeploymentKind:
   "_":
     "description": |-
       * `BUNDLE`: The job is managed by Databricks Asset Bundle.
+      * `SYSTEM_MANAGED`: The job is managed by Databricks and is read-only.
     "enum":
       - |-
         BUNDLE
+      - |-
+        SYSTEM_MANAGED
 github.com/databricks/databricks-sdk-go/service/jobs.JobEditMode:
   "_":
     "description": |-
@@ -3766,6 +3811,18 @@ github.com/databricks/databricks-sdk-go/service/ml.ModelTag:
   "value":
     "description": |-
       The tag value.
+github.com/databricks/databricks-sdk-go/service/pipelines.AutoFullRefreshPolicy:
+  "_":
+    "description": |-
+      Policy for auto full refresh.
+  "enabled":
+    "description": |-
+      (Required, Mutable) Whether to enable auto full refresh or not.
+  "min_interval_hours":
+    "description": |-
+      (Optional, Mutable) Specify the minimum interval in hours between the timestamp
+      at which a table was last full refreshed and the current timestamp for triggering auto full
+      If unspecified and autoFullRefresh is enabled then by default min_interval_hours is 24 hours.
 github.com/databricks/databricks-sdk-go/service/pipelines.ConnectionParameters:
   "source_catalog":
     "description": |-
@@ -3869,6 +3926,9 @@ github.com/databricks/databricks-sdk-go/service/pipelines.IngestionPipelineDefin
   "connection_name":
     "description": |-
       Immutable. The Unity Catalog connection that this ingestion pipeline uses to communicate with the source. This is used with connectors for applications like Salesforce, Workday, and so on.
+  "full_refresh_window":
+    "description": |-
+      (Optional) A window that specifies a set of time ranges for snapshot queries in CDC.
   "ingest_from_uc_foreign_catalog":
     "description": |-
       Immutable. If set to true, the pipeline will ingest tables from the
@@ -4025,6 +4085,21 @@ github.com/databricks/databricks-sdk-go/service/pipelines.Notifications:
   "email_recipients":
     "description": |-
       A list of email addresses notified when a configured alert is triggered.
+github.com/databricks/databricks-sdk-go/service/pipelines.OperationTimeWindow:
+  "_":
+    "description": |-
+      Proto representing a window
+  "days_of_week":
+    "description": |-
+      Days of week in which the window is allowed to happen
+      If not specified all days of the week will be used.
+  "start_hour":
+    "description": |-
+      An integer between 0 and 23 denoting the start hour for the window in the 24-hour day.
+  "time_zone_id":
+    "description": |-
+      Time zone id of window. See https://docs.databricks.com/sql/language-manual/sql-ref-syntax-aux-conf-mgmt-set-timezone.html for details.
+      If not specified, UTC will be used.
 github.com/databricks/databricks-sdk-go/service/pipelines.PathPattern:
   "include":
     "description": |-
@@ -4313,6 +4388,19 @@ github.com/databricks/databricks-sdk-go/service/pipelines.TableSpec:
     "description": |-
       Configuration settings to control the ingestion of tables. These settings override the table_configuration defined in the IngestionPipelineDefinition object and the SchemaSpec.
 github.com/databricks/databricks-sdk-go/service/pipelines.TableSpecificConfig:
+  "auto_full_refresh_policy":
+    "description": |-
+      (Optional, Mutable) Policy for auto full refresh, if enabled pipeline will automatically try
+      to fix issues by doing a full refresh on the table in the retry run. auto_full_refresh_policy
+      in table configuration will override the above level auto_full_refresh_policy.
+      For example,
+      {
+      "auto_full_refresh_policy": {
+      "enabled": true,
+      "min_interval_hours": 23,
+      }
+      }
+      If unspecified, auto full refresh is disabled.
   "exclude_columns":
     "description": |-
       A list of column names to be excluded for the ingestion.

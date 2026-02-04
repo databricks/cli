@@ -1,14 +1,14 @@
 title "E2E Test: Complete pipeline lifecycle (init, deploy, run, stop, destroy)"
 
 title "Initialize pipeline project"
-trace $PIPELINES init --output-dir output
+trace $CLI pipelines init --output-dir output
 
 title "Deploy pipeline"
 cd output/lakeflow_project
-trace $PIPELINES deploy
+trace $CLI pipelines deploy
 
 title "Run pipeline"
-trace $PIPELINES run
+trace $CLI pipelines run
 
 title "Edit project by creating and running a new second pipeline"
 cat <<EOF > resources/lakeflow_project_etl_2.pipeline.yml
@@ -17,20 +17,20 @@ resources:
     lakeflow_project_etl_2:
       name: lakeflow_project_etl_2
 EOF
-trace $PIPELINES deploy
+trace $CLI pipelines deploy
 
 title "Assert the second pipeline is created"
 PIPELINE_ID=$($CLI bundle summary -o json | jq -r '.resources.pipelines.lakeflow_project_etl_2.id')
 trace $CLI pipelines get "${PIPELINE_ID}"
 
-trace $PIPELINES run lakeflow_project_etl_2
+trace $CLI pipelines run lakeflow_project_etl_2
 
 title "Stop both pipelines before destroy"
-trace $PIPELINES stop lakeflow_project_etl
-trace $PIPELINES stop lakeflow_project_etl_2
+trace $CLI pipelines stop lakeflow_project_etl
+trace $CLI pipelines stop lakeflow_project_etl_2
 
 title "Destroy project"
-trace $PIPELINES destroy --auto-approve
+trace $CLI pipelines destroy --auto-approve
 
 # Do not affect this repository's git behaviour
 mv .gitignore out.gitignore

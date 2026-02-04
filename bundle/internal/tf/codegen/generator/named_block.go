@@ -43,7 +43,7 @@ func (b *namedBlock) camelName() string {
 }
 
 func (b *namedBlock) Generate(path string) error {
-	w, err := walk(b.block, []string{b.typeNamePrefix, b.camelName()})
+	w, err := walk(b.block, []string{b.typeNamePrefix, b.camelName()}, b.name)
 	if err != nil {
 		return err
 	}

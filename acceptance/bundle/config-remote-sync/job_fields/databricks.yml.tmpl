@@ -1,0 +1,36 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+resources:
+  jobs:
+    my_job:
+      email_notifications:
+        on_success:
+          - success@example.com
+      parameters:
+        - name: catalog
+          default: main
+        - name: env
+          default: dev
+      trigger:
+        periodic:
+          interval: 1
+          unit: DAYS
+      environments:
+        - environment_key: default
+          spec:
+            environment_version: "3"
+            dependencies:
+              - ./*.whl
+      tasks:
+        - task_key: main
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/notebook
+          new_cluster:
+            spark_version: $DEFAULT_SPARK_VERSION
+            node_type_id: $NODE_TYPE_ID
+            num_workers: 1
+
+targets:
+  default:
+    mode: development

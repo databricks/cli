@@ -1,0 +1,3 @@
+# Test: apps deploy with APP_NAME in a bundle directory
+# Expected: Falls back to API deploy (ignores bundle, no validation)
+trace $CLI apps deploy test-app --no-wait

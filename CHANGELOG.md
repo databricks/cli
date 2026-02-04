@@ -1,5 +1,33 @@
 # Version changelog
 
+## Release v0.286.0 (2026-01-28)
+
+### CLI
+* Improve performance of `databricks fs cp` command by parallelizing file uploads when
+  copying directories with the `--recursive` flag. ([#4132](https://github.com/databricks/cli/pull/4132))
+
+### Bundles
+* Fix: Support trigger_pause_status preset in alerts ([#4323](https://github.com/databricks/cli/pull/4323))
+
+
+## Release v0.285.0 (2026-01-22)
+
+### Dependency updates
+* Upgrade to Go SDK 0.100.0 ([#4352](https://github.com/databricks/cli/pull/4352))
+* Upgrade TF provider to 1.104.0 ([#4354](https://github.com/databricks/cli/pull/4354))
+
+
+## Release v0.284.0 (2026-01-21)
+
+### Bundles
+* Pass additional Azure DevOps `SYSTEM_*` environment variables to Terraform for OIDC authentication: `SYSTEM_COLLECTIONURI`, `SYSTEM_DEFINITIONID`, `SYSTEM_HOSTTYPE`, `SYSTEM_JOBID`, `SYSTEM_TEAMPROJECT` ([#4318](https://github.com/databricks/cli/pull/4318))
+* Add support for valueFrom property (similar to app.yaml) inside Apps config field in bundle configuration ([#4297](https://github.com/databricks/cli/pull/4297))
+* engine/direct: Support bind & unbind. ([#4279](https://github.com/databricks/cli/pull/4279))
+* engine/direct: Ignore changes between nulls and empty slices/maps (([#4313](https://github.com/databricks/cli/pull/4313)))
+* engine/direct: Ignore changes between nulls and empty structs (([#4338](https://github.com/databricks/cli/pull/4338)))
+* On terraform `bundle plan -o json` will no longer include plan_version key, it's intended for direct engine only (([#4314](https://github.com/databricks/cli/pull/4314)))
+
+
 ## Release v0.283.0 (2026-01-14)
 
 ### Notable Changes

@@ -137,7 +137,4 @@ Resources:
       URL:  (not deployed)
 
 >>> [CLI] bundle destroy --auto-approve
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test_sql_warehouse/default
-
-Deleting files...
-Destroy complete!
+No active deployment found to destroy!
