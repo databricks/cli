@@ -3,9 +3,11 @@ package dresources
 import (
 	"reflect"
 	"slices"
-	"strings"
 	"testing"
 
+	"github.com/databricks/cli/libs/structs/structaccess"
+	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structwalk"
 	"github.com/stretchr/testify/require"
 )
 
@@ -110,7 +112,17 @@ func TestRemoteSuperset(t *testing.T) {
 
 			// Validate that all fields in StateType exist in RemoteType
 			var missingFields []string
-			collectTypeIssues(t, stateType.Elem(), remoteType.Elem(), "", &missingFields)
+			err := structwalk.WalkType(stateType, func(path *structpath.PathNode, typ reflect.Type, field *reflect.StructField) bool {
+				if path.IsRoot() {
+					return true
+				}
+				if structaccess.Validate(remoteType, path) != nil {
+					missingFields = append(missingFields, path.String())
+					return false // don't recurse into missing field
+				}
+				return true
+			})
+			require.NoError(t, err)
 
 			knownMissing := make(map[string]bool)
 			for _, f := range knownMissingInRemoteType[resourceType] {
@@ -136,47 +148,5 @@ func TestRemoteSuperset(t *testing.T) {
 				t.Errorf("fields in StateType not found in RemoteType: %v", unexpectedMissing)
 			}
 		})
-	}
-}
-
-func collectTypeIssues(t *testing.T, stateType, remoteType reflect.Type, prefix string, missingFields *[]string) {
-	for i := range stateType.NumField() {
-		stateField := stateType.Field(i)
-
-		// Skip fields that are not serialized to JSON
-		jsonTag := stateField.Tag.Get("json")
-		if jsonTag == "-" {
-			continue
-		}
-
-		// For embedded structs, check their fields against remoteType directly
-		if stateField.Anonymous && stateField.Type.Kind() == reflect.Struct {
-			collectTypeIssues(t, stateField.Type, remoteType, prefix, missingFields)
-			continue
-		}
-
-		jsonName := strings.Split(jsonTag, ",")[0]
-		if jsonName == "" {
-			jsonName = stateField.Name
-		}
-		fieldPath := prefix + jsonName
-
-		remoteField, found := remoteType.FieldByName(stateField.Name)
-		if !found {
-			*missingFields = append(*missingFields, fieldPath)
-			continue
-		}
-
-		if stateField.Type == remoteField.Type {
-			continue
-		}
-
-		// For nested structs, recurse
-		if stateField.Type.Kind() == reflect.Struct && remoteField.Type.Kind() == reflect.Struct {
-			collectTypeIssues(t, stateField.Type, remoteField.Type, fieldPath+".", missingFields)
-		} else {
-			t.Logf("type mismatch (not an error): %s: StateType has %s, RemoteType has %s",
-				fieldPath, stateField.Type.String(), remoteField.Type.String())
-		}
 	}
 }

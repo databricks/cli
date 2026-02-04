@@ -52,9 +52,21 @@ func Validate(t reflect.Type, path *structpath.PathNode) error {
 			continue
 		}
 
-		// Handle wildcards
-		if node.DotStar() || node.BracketStar() {
-			return fmt.Errorf("wildcards not supported: %s", path.String())
+		// Handle wildcards - treat like index/key access
+		if node.BracketStar() {
+			kind := cur.Kind()
+			if kind != reflect.Slice && kind != reflect.Array {
+				return fmt.Errorf("%s: cannot use [*] on %s", node.String(), kind)
+			}
+			cur = cur.Elem()
+			continue
+		}
+		if node.DotStar() {
+			if cur.Kind() != reflect.Map {
+				return fmt.Errorf("%s: cannot use .* on %s", node.String(), cur.Kind())
+			}
+			cur = cur.Elem()
+			continue
 		}
 
 		// Handle key-value selector: validates that we can index the slice/array
