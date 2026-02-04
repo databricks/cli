@@ -7,6 +7,7 @@ import (
 
 	"github.com/databricks/cli/libs/structs/structaccess"
 	"github.com/databricks/cli/libs/structs/structpath"
+	"github.com/databricks/cli/libs/structs/structtag"
 	"github.com/databricks/cli/libs/structs/structwalk"
 	"github.com/stretchr/testify/require"
 )
@@ -102,139 +103,87 @@ var knownMissingInRemoteType = map[string][]string{
 // knownMissingInStateType lists fields that exist in InputType but not in StateType.
 // These are known issues that should be fixed. If a field listed here is found in StateType,
 // the test fails to ensure the entry is removed from this map.
+// Note: Fields with bundle:"internal" or bundle:"readonly" tags are automatically skipped.
 var knownMissingInStateType = map[string][]string{
 	"alerts": {
 		"file_path",
 		"lifecycle",
-		"modified_status",
 		"permissions",
-		"url",
 	},
 	"apps": {
 		"config",
 		"lifecycle",
-		"modified_status",
 		"permissions",
 		"source_code_path",
 	},
 	"catalogs": {
 		"grants",
-		"id",
 		"lifecycle",
-		"modified_status",
-		"url",
 	},
 	"clusters": {
-		"id",
 		"lifecycle",
-		"modified_status",
 		"permissions",
-		"url",
 	},
 	"dashboards": {
 		"file_path",
-		"id",
 		"lifecycle",
-		"modified_status",
 		"permissions",
-		"url",
 	},
 	"database_catalogs": {
-		"id",
 		"lifecycle",
-		"modified_status",
-		"url",
 	},
 	"database_instances": {
-		"id",
 		"lifecycle",
-		"modified_status",
 		"permissions",
-		"url",
 	},
 	"experiments": {
-		"id",
 		"lifecycle",
-		"modified_status",
 		"permissions",
-		"url",
 	},
 	"jobs": {
-		"id",
 		"lifecycle",
-		"modified_status",
 		"permissions",
-		"url",
 	},
 	"model_serving_endpoints": {
-		"id",
 		"lifecycle",
-		"modified_status",
 		"permissions",
-		"url",
 	},
 	"models": {
-		"id",
 		"lifecycle",
-		"modified_status",
 		"permissions",
-		"url",
 	},
 	"pipelines": {
 		"lifecycle",
-		"modified_status",
 		"permissions",
-		"url",
 	},
 	"quality_monitors": {
-		"id",
 		"lifecycle",
-		"modified_status",
-		"url",
 	},
 	"registered_models": {
 		"grants",
-		"id",
 		"lifecycle",
-		"modified_status",
-		"url",
 	},
 	"schemas": {
 		"grants",
-		"id",
 		"lifecycle",
-		"modified_status",
-		"url",
 	},
 	"secret_scopes": {
 		"backend_type",
-		"id",
 		"keyvault_metadata",
 		"lifecycle",
-		"modified_status",
 		"name",
 		"permissions",
-		"url",
 	},
 	"sql_warehouses": {
-		"id",
 		"lifecycle",
-		"modified_status",
 		"permissions",
-		"url",
 	},
 	"synced_database_tables": {
-		"id",
 		"lifecycle",
-		"modified_status",
-		"url",
 	},
 	"volumes": {
 		"grants",
-		"id",
 		"lifecycle",
-		"modified_status",
-		"url",
 	},
 }
 
@@ -254,6 +203,13 @@ func TestInputSubset(t *testing.T) {
 			err := structwalk.WalkType(inputType, func(path *structpath.PathNode, typ reflect.Type, field *reflect.StructField) bool {
 				if path.IsRoot() {
 					return true
+				}
+				// Skip fields marked as internal or readonly in bundle tags
+				if field != nil {
+					btag := structtag.BundleTag(field.Tag.Get("bundle"))
+					if btag.Internal() || btag.ReadOnly() {
+						return false // don't recurse into internal/readonly fields
+					}
 				}
 				if structaccess.Validate(stateType, path) != nil {
 					missingFields = append(missingFields, path.String())
