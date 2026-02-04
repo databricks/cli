@@ -34,7 +34,7 @@ echo
 echo "Change edition and channel"
 edit_resource.py pipelines $pipeline1_id <<EOF
 r["edition"] = "CORE"
-r["channel"] = "PRODUCTION"
+r["channel"] = "PREVIEW"
 EOF
 
 title "Detect and save all changes"

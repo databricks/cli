@@ -71,5 +71,5 @@ Resource: resources.pipelines.pipeline1
 @@ -38,2 +41,4 @@
          - notebook:
              path: /Users/{{workspace_user_name}}/notebook
-+      channel: PRODUCTION
++      channel: PREVIEW
 +      edition: CORE
