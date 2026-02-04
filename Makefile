@@ -72,10 +72,10 @@ test-slow-unit:
 	${GOTESTSUM_CMD} --packages "${TEST_PACKAGES}" -- -timeout=${LOCAL_TIMEOUT}
 
 test-acc:
-	${GOTESTSUM_CMD} --packages ./acceptance/... -- -timeout=${LOCAL_TIMEOUT} -short -run ${ACCEPTANCE_TEST_FILTER}
+	${GOTESTSUM_CMD} --packages ./acceptance/... -- -timeout=${LOCAL_TIMEOUT} -parallel 64 -short -run ${ACCEPTANCE_TEST_FILTER}
 
 test-slow-acc:
-	${GOTESTSUM_CMD} --packages ./acceptance/... -- -timeout=${LOCAL_TIMEOUT} -run ${ACCEPTANCE_TEST_FILTER}
+	${GOTESTSUM_CMD} --packages ./acceptance/... -- -timeout=${LOCAL_TIMEOUT} -parallel 64 -run ${ACCEPTANCE_TEST_FILTER}
 
 # Updates acceptance test output (local tests)
 test-update:
@@ -103,7 +103,7 @@ slowest:
 cover:
 	rm -fr ./acceptance/build/cover/
 	VERBOSE_TEST=1 ${GOTESTSUM_CMD} --packages "${TEST_PACKAGES}" -- -coverprofile=coverage.txt -timeout=${LOCAL_TIMEOUT}
-	VERBOSE_TEST=1 CLI_GOCOVERDIR=build/cover ${GOTESTSUM_CMD} --packages ./acceptance/... -- -timeout=${LOCAL_TIMEOUT} -run ${ACCEPTANCE_TEST_FILTER}
+	VERBOSE_TEST=1 CLI_GOCOVERDIR=build/cover ${GOTESTSUM_CMD} --packages ./acceptance/... -- -timeout=${LOCAL_TIMEOUT} -parallel 64 -run ${ACCEPTANCE_TEST_FILTER}
 	rm -fr ./acceptance/build/cover-merged/
 	mkdir -p acceptance/build/cover-merged/
 	go tool covdata merge -i $$(printf '%s,' acceptance/build/cover/* | sed 's/,$$//') -o acceptance/build/cover-merged/
@@ -136,7 +136,7 @@ schema:
 docs:
 	go run ./bundle/docsgen ./bundle/internal/schema ./bundle/docsgen
 
-INTEGRATION = go run -modfile=tools/go.mod ./tools/testrunner/main.go ${GO_TOOL} gotestsum --format github-actions --rerun-fails --jsonfile output.json --packages "./acceptance ./integration/..." -- -parallel 4 -timeout=2h
+INTEGRATION = go run -modfile=tools/go.mod ./tools/testrunner/main.go ${GO_TOOL} gotestsum --format github-actions --rerun-fails --jsonfile output.json --packages "./acceptance ./integration/..." -- -parallel 64 -timeout=2h
 
 integration:
 	$(INTEGRATION)
