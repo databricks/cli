@@ -91,8 +91,6 @@ func resolveSelectors(pathStr string, b *bundle.Bundle, operation OperationType)
 	return result, nil
 }
 
-// pathDepth returns the number of segments in a struct path.
-// Used for sorting changes so deeper (leaf) changes are applied before shallower (structural) changes.
 func pathDepth(pathStr string) int {
 	node, err := structpath.Parse(pathStr)
 	if err != nil {
@@ -118,18 +116,15 @@ func adjustArrayIndex(path *structpath.PathNode, operations map[string][]struct 
 	parentPathStr := parentPath.String()
 	ops := operations[parentPathStr]
 
-	// Calculate adjustment based on operations at lower indices
-	// Only operations at indices < originalIndex affect this operation
 	adjustment := 0
 	for _, op := range ops {
 		if op.index < originalIndex {
 			switch op.operation {
 			case OperationRemove:
-				adjustment-- // Removals shift indices down
+				adjustment--
 			case OperationAdd:
-				adjustment++ // Additions shift indices up
+				adjustment++
 			default:
-				// Other operations (Replace, Unknown, Skip) don't affect array structure
 			}
 		}
 	}
@@ -157,22 +152,21 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 		resourceChanges := configChanges[resourceKey]
 
 		fieldPaths := make([]string, 0, len(resourceChanges))
+		fieldPathsDepths := map[string]int{}
 		for fieldPath := range resourceChanges {
 			fieldPaths = append(fieldPaths, fieldPath)
+			fieldPathsDepths[fieldPath] = pathDepth(fieldPath)
 		}
 
 		// Sort field paths by depth (deeper first), then operation type (removals before adds), then alphabetically
 		sort.SliceStable(fieldPaths, func(i, j int) bool {
-			depthI := pathDepth(fieldPaths[i])
-			depthJ := pathDepth(fieldPaths[j])
+			depthI := fieldPathsDepths[fieldPaths[i]]
+			depthJ := fieldPathsDepths[fieldPaths[j]]
 
-			// If depths differ, sort by depth descending (deeper paths first)
 			if depthI != depthJ {
 				return depthI > depthJ
 			}
 
-			// Within same depth, sort removals before adding to be able fill removed indices
-			// and minimize the diff in cases when the task is recreated because of renaming
 			opI := resourceChanges[fieldPaths[i]].Operation
 			opJ := resourceChanges[fieldPaths[j]].Operation
 
@@ -183,11 +177,10 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 				return false
 			}
 
-			// Otherwise maintain alphabetical order for determinism
 			return fieldPaths[i] < fieldPaths[j]
 		})
 
-		// Create indices map for this resource, path -> indices that we could use to replace with added elements
+		// Create indices map for this resource, path -> indices, that we could use to replace with added elements
 		indicesToReplaceMap := make(map[string][]int)
 
 		indexOperations := make(map[string][]struct {
@@ -224,9 +217,6 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 				}
 			}
 
-			// Adjust array indices based on previous operations
-			// Operations use indices from the original state, but when applied sequentially,
-			// removals and additions shift indices. We adjust here before creating the path string.
 			resolvedPath = adjustArrayIndex(resolvedPath, indexOperations)
 
 			// Track this operation for future index adjustments (only for array element operations)
