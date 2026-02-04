@@ -17,6 +17,17 @@ for task in r["tasks"]:
 
 r["tasks"] = [task for task in r["tasks"] if task["task_key"] != "task2"]
 
+r["tasks"].append({
+    "task_key": "new_task",
+    "notebook_task": {
+        "notebook_path": "/Users/${CURRENT_USER_NAME}/new_task"
+    },
+    "new_cluster": {
+        "spark_version": "${DEFAULT_SPARK_VERSION}",
+        "node_type_id": "${NODE_TYPE_ID}",
+        "num_workers": 1
+    }
+})
 EOF
 
 title "Detect and save changes"
@@ -24,7 +35,39 @@ echo
 cp databricks.yml databricks.yml.backup
 $CLI bundle config-remote-sync --save
 
-title "Configuration changes"
+title "Configuration changes for new task"
 echo
 trace diff.py databricks.yml.backup databricks.yml
 rm databricks.yml.backup
+
+# Resolve environment variables that may have been added by config-remote-sync
+envsubst < databricks.yml > databricks.yml.resolved
+mv databricks.yml.resolved databricks.yml
+
+# Deploy the updated configuration to sync state
+$CLI bundle deploy
+
+title "Rename task_rename_1 to task_rename_new"
+rename_job_id="$(read_id.py rename_task_job)"
+edit_resource.py jobs $rename_job_id <<'EOF'
+for task in r["tasks"]:
+    if task["task_key"] == "task_rename_1":
+        task["task_key"] = "task_rename_new"
+    # Update dependencies that reference the old key
+    if "depends_on" in task:
+        for dep in task["depends_on"]:
+            if dep["task_key"] == "task_rename_1":
+                dep["task_key"] = "task_rename_new"
+EOF
+
+title "Detect task key rename"
+echo
+cp databricks.yml databricks.yml.backup2
+$CLI bundle config-remote-sync --save || true
+
+title "Configuration changes for task key rename"
+echo
+if [ -f databricks.yml.backup2 ]; then
+    trace diff.py databricks.yml.backup2 databricks.yml || true
+    rm databricks.yml.backup2
+fi

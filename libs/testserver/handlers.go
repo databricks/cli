@@ -607,7 +607,7 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	server.Handle("GET", "/api/2.0/database/catalogs/{name}", func(req Request) any {
-		return MapGet(req.Workspace, req.Workspace.DatabaseCatalogs, req.Vars["name"])
+		return req.Workspace.DatabaseCatalogGet(req.Vars["name"])
 	})
 
 	server.Handle("PATCH", "/api/2.0/database/catalogs/{name}", func(req Request) any {
