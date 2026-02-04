@@ -119,11 +119,43 @@ resources:
       # OUTPUT_ONLY:
       - ingestion_definition.source_type
 
-  # postgres_branches: no api field behaviors
+  postgres_branches:
 
-  # postgres_endpoints: no api field behaviors
+    recreate_on_changes:
+      # IMMUTABLE:
+      - spec.source_branch
+      - spec.source_branch_lsn
+      - spec.source_branch_time
 
-  # postgres_projects: no api field behaviors
+    ignore_remote_changes:
+      # INPUT_ONLY:
+      - spec
+
+      # OUTPUT_ONLY:
+      - parent
+
+  postgres_endpoints:
+
+    recreate_on_changes:
+      # IMMUTABLE:
+      - spec.endpoint_type
+
+    ignore_remote_changes:
+      # INPUT_ONLY:
+      - spec
+
+      # OUTPUT_ONLY:
+      - parent
+
+  postgres_projects:
+
+    recreate_on_changes:
+      # IMMUTABLE:
+      - spec.pg_version
+
+    ignore_remote_changes:
+      # INPUT_ONLY:
+      - spec
 
   # quality_monitors: no api field behaviors
 

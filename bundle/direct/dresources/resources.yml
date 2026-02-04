@@ -130,37 +130,14 @@ resources:
       # project_id is immutable (part of hierarchical name)
       - project_id
 
-    # The read API does not return the spec, only the status.
-    # This means we cannot detect remote drift.
-    ignore_remote_changes:
-      - spec
-
   postgres_branches:
     recreate_on_changes:
-      # branch_id is immutable (part of hierarchical name)
-      - branch_id
-      # parent (project name) is immutable
+      # parent and branch_id are immutable (part of hierarchical name)
       - parent
-      # source_branch, source_branch_lsn, source_branch_time define the point-in-time data source (immutable)
-      - spec.source_branch
-      - spec.source_branch_lsn
-      - spec.source_branch_time
-
-    # The read API does not return the spec, only the status.
-    # This means we cannot detect remote drift.
-    ignore_remote_changes:
-      - spec
+      - branch_id
 
   postgres_endpoints:
     recreate_on_changes:
-      # endpoint_id is immutable (part of hierarchical name)
-      - endpoint_id
-      # parent (branch name) is immutable
+      # parent and endpoint_id are immutable (part of hierarchical name)
       - parent
-      # endpoint_type (READ_WRITE or READ_ONLY) is immutable
-      - spec.endpoint_type
-
-    # The read API does not return the spec, only the status.
-    # This means we cannot detect remote drift.
-    ignore_remote_changes:
-      - spec
+      - endpoint_id
