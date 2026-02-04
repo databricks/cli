@@ -1,2 +1,4 @@
 
 >>> [CLI] bundle validate -o json
+
+Exit code: 1

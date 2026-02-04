@@ -176,7 +176,7 @@
       "changes": {
         "id": {
           "action": "skip",
-          "reason": "server_side_default",
+          "reason": "builtin_rule",
           "remote": "[UUID]"
         }
       }
