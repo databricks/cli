@@ -18,7 +18,7 @@ for line in sys.stdin:
             found.add(t)
     for t in must_not_find:
         if t in line:
-            sys.stderr.write(f"contains error: {t!r} was not expected\n")
+            sys.stderr.write(f"contains error: {t!r} was not expected: {line.strip()!r}\n")
 
 sys.stdout.flush()
 

@@ -98,13 +98,27 @@ func (n normalizeOptions) normalizeStruct(typ reflect.Type, src dyn.Value, seen 
 			pk := pair.Key
 			pv := pair.Value
 
-			index, ok := info.Fields[pk.MustString()]
+			fieldName := pk.MustString()
+			index, ok := info.Fields[fieldName]
 			if !ok {
 				if !pv.IsAnchor() {
+					// Special case: provide a more helpful message for "valueFrom" vs "value_from"
+					if fieldName == "valueFrom" {
+						if _, hasValueFrom := info.Fields["value_from"]; hasValueFrom {
+							diags = diags.Append(diag.Diagnostic{
+								Severity:  diag.Warning,
+								Summary:   "Use 'value_from' instead of 'valueFrom'",
+								Detail:    "The field 'valueFrom' should be 'value_from' (snake_case). The 'valueFrom' field will be ignored.",
+								Locations: pk.Locations(),
+								Paths:     []dyn.Path{path},
+							})
+							continue
+						}
+					}
+
 					diags = diags.Append(diag.Diagnostic{
-						Severity: diag.Warning,
-						Summary:  "unknown field: " + pk.MustString(),
-						// Show all locations the unknown field is defined at.
+						Severity:  diag.Warning,
+						Summary:   "unknown field: " + fieldName,
 						Locations: pk.Locations(),
 						Paths:     []dyn.Path{path},
 					})

@@ -39,6 +39,12 @@ var (
 	globalConfig        *Config
 	generatedConfigOnce sync.Once
 	generatedConfig     *Config
+	empty               = ResourceLifecycleConfig{
+		IgnoreRemoteChanges: nil,
+		IgnoreLocalChanges:  nil,
+		RecreateOnChanges:   nil,
+		UpdateIDOnChanges:   nil,
+	}
 )
 
 // MustLoadConfig loads and parses the embedded resources.yml configuration.
@@ -78,7 +84,7 @@ func GetResourceConfig(resourceType string) *ResourceLifecycleConfig {
 	if rc, ok := cfg.Resources[resourceType]; ok {
 		return &rc
 	}
-	return nil
+	return &empty
 }
 
 // GetGeneratedResourceConfig returns the generated lifecycle config for a given resource type.
@@ -88,5 +94,5 @@ func GetGeneratedResourceConfig(resourceType string) *ResourceLifecycleConfig {
 	if rc, ok := cfg.Resources[resourceType]; ok {
 		return &rc
 	}
-	return nil
+	return &empty
 }
