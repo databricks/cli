@@ -111,130 +111,72 @@ func (r *Resources) AllResources() []ResourceGroup {
 
 func (r *Resources) FindResourceByConfigKey(key string) (ConfigResource, error) {
 	var found []ConfigResource
-	for k := range r.Jobs {
-		if k == key {
-			found = append(found, r.Jobs[k])
-		}
-	}
 
-	for k := range r.Pipelines {
-		if k == key {
-			found = append(found, r.Pipelines[k])
-		}
+	if v, ok := r.Jobs[key]; ok {
+		found = append(found, v)
 	}
-
-	for k := range r.Apps {
-		if k == key {
-			found = append(found, r.Apps[k])
-		}
+	if v, ok := r.Pipelines[key]; ok {
+		found = append(found, v)
 	}
-
-	for k := range r.Catalogs {
-		if k == key {
-			found = append(found, r.Catalogs[k])
-		}
+	if v, ok := r.Models[key]; ok {
+		found = append(found, v)
 	}
-
-	for k := range r.Schemas {
-		if k == key {
-			found = append(found, r.Schemas[k])
-		}
+	if v, ok := r.Experiments[key]; ok {
+		found = append(found, v)
 	}
-
-	for k := range r.Experiments {
-		if k == key {
-			found = append(found, r.Experiments[k])
-		}
+	if v, ok := r.ModelServingEndpoints[key]; ok {
+		found = append(found, v)
 	}
-
-	for k := range r.Clusters {
-		if k == key {
-			found = append(found, r.Clusters[k])
-		}
+	if v, ok := r.RegisteredModels[key]; ok {
+		found = append(found, v)
 	}
-
-	for k := range r.Volumes {
-		if k == key {
-			found = append(found, r.Volumes[k])
-		}
+	if v, ok := r.QualityMonitors[key]; ok {
+		found = append(found, v)
 	}
-
-	for k := range r.Dashboards {
-		if k == key {
-			found = append(found, r.Dashboards[k])
-		}
+	if v, ok := r.Catalogs[key]; ok {
+		found = append(found, v)
 	}
-
-	for k := range r.RegisteredModels {
-		if k == key {
-			found = append(found, r.RegisteredModels[k])
-		}
+	if v, ok := r.Schemas[key]; ok {
+		found = append(found, v)
 	}
-
-	for k := range r.QualityMonitors {
-		if k == key {
-			found = append(found, r.QualityMonitors[k])
-		}
+	if v, ok := r.Clusters[key]; ok {
+		found = append(found, v)
 	}
-
-	for k := range r.ModelServingEndpoints {
-		if k == key {
-			found = append(found, r.ModelServingEndpoints[k])
-		}
+	if v, ok := r.Dashboards[key]; ok {
+		found = append(found, v)
 	}
-
-	for k := range r.SecretScopes {
-		if k == key {
-			found = append(found, r.SecretScopes[k])
-		}
+	if v, ok := r.Volumes[key]; ok {
+		found = append(found, v)
 	}
-
-	for k := range r.Alerts {
-		if k == key {
-			found = append(found, r.Alerts[k])
-		}
+	if v, ok := r.Apps[key]; ok {
+		found = append(found, v)
 	}
-
-	for k := range r.SqlWarehouses {
-		if k == key {
-			found = append(found, r.SqlWarehouses[k])
-		}
+	if v, ok := r.Alerts[key]; ok {
+		found = append(found, v)
 	}
-
-	for k := range r.DatabaseInstances {
-		if k == key {
-			found = append(found, r.DatabaseInstances[k])
-		}
+	if v, ok := r.SecretScopes[key]; ok {
+		found = append(found, v)
 	}
-
-	for k := range r.DatabaseCatalogs {
-		if k == key {
-			found = append(found, r.DatabaseCatalogs[k])
-		}
+	if v, ok := r.SqlWarehouses[key]; ok {
+		found = append(found, v)
 	}
-
-	for k := range r.SyncedDatabaseTables {
-		if k == key {
-			found = append(found, r.SyncedDatabaseTables[k])
-		}
+	if v, ok := r.DatabaseInstances[key]; ok {
+		found = append(found, v)
 	}
-
-	for k := range r.PostgresProjects {
-		if k == key {
-			found = append(found, r.PostgresProjects[k])
-		}
+	if v, ok := r.DatabaseCatalogs[key]; ok {
+		found = append(found, v)
 	}
-
-	for k := range r.PostgresBranches {
-		if k == key {
-			found = append(found, r.PostgresBranches[k])
-		}
+	if v, ok := r.SyncedDatabaseTables[key]; ok {
+		found = append(found, v)
 	}
-
-	for k := range r.PostgresEndpoints {
-		if k == key {
-			found = append(found, r.PostgresEndpoints[k])
-		}
+	if v, ok := r.PostgresProjects[key]; ok {
+		found = append(found, v)
+	}
+	if v, ok := r.PostgresBranches[key]; ok {
+		found = append(found, v)
+	}
+	if v, ok := r.PostgresEndpoints[key]; ok {
+		found = append(found, v)
 	}
 
 	if len(found) == 0 {
