@@ -1,7 +1,7 @@
 Local = false
 Cloud = true
 RequiresWarehouse = true
-RunsOnDbr = true
+RecordRequests = true
 
 [CloudEnvs]
   gcp = false

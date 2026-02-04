@@ -1,6 +1,5 @@
 Local = true
 Cloud = false
-RunsOnDbr = true
 
 [GOOS]
   windows = false

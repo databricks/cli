@@ -1,6 +1,7 @@
 Local = true
 Cloud = true
 RunsOnDbr = true
+RecordRequests = false
 
 [CloudEnvs]
   gcp = false

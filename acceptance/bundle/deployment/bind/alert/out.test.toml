@@ -1,6 +1,5 @@
 Local = false
 Cloud = true
-RunsOnDbr = true
 
 [CloudEnvs]
   aws = false

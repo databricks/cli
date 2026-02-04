@@ -2,6 +2,7 @@ Local = true
 Cloud = true
 CloudSlow = true
 RunsOnDbr = true
+RecordRequests = false
 
 [CloudEnvs]
   gcp = false

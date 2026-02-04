@@ -1,6 +1,7 @@
 Local = false
 Cloud = true
 RunsOnDbr = false
+RecordRequests = false
 
 [CloudEnvs]
   azure = false
