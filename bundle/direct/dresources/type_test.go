@@ -100,90 +100,32 @@ var knownMissingInRemoteType = map[string][]string{
 	},
 }
 
-// knownMissingInStateType lists fields that exist in InputType but not in StateType.
-// These are known issues that should be fixed. If a field listed here is found in StateType,
-// the test fails to ensure the entry is removed from this map.
+// commonMissingInStateType lists fields that are commonly missing across all resource types.
+// These are bundle-specific fields that exist in InputType but not in StateType.
+var commonMissingInStateType = []string{
+	"grants",
+	"lifecycle",
+	"permissions",
+}
+
+// knownMissingInStateType lists resource-specific fields that exist in InputType but not in StateType.
+// Fields in commonMissingInStateType are automatically included for all types.
 // Note: Fields with bundle:"internal" or bundle:"readonly" tags are automatically skipped.
 var knownMissingInStateType = map[string][]string{
 	"alerts": {
 		"file_path",
-		"lifecycle",
-		"permissions",
 	},
 	"apps": {
 		"config",
-		"lifecycle",
-		"permissions",
 		"source_code_path",
-	},
-	"catalogs": {
-		"grants",
-		"lifecycle",
-	},
-	"clusters": {
-		"lifecycle",
-		"permissions",
 	},
 	"dashboards": {
 		"file_path",
-		"lifecycle",
-		"permissions",
-	},
-	"database_catalogs": {
-		"lifecycle",
-	},
-	"database_instances": {
-		"lifecycle",
-		"permissions",
-	},
-	"experiments": {
-		"lifecycle",
-		"permissions",
-	},
-	"jobs": {
-		"lifecycle",
-		"permissions",
-	},
-	"model_serving_endpoints": {
-		"lifecycle",
-		"permissions",
-	},
-	"models": {
-		"lifecycle",
-		"permissions",
-	},
-	"pipelines": {
-		"lifecycle",
-		"permissions",
-	},
-	"quality_monitors": {
-		"lifecycle",
-	},
-	"registered_models": {
-		"grants",
-		"lifecycle",
-	},
-	"schemas": {
-		"grants",
-		"lifecycle",
 	},
 	"secret_scopes": {
 		"backend_type",
 		"keyvault_metadata",
-		"lifecycle",
 		"name",
-		"permissions",
-	},
-	"sql_warehouses": {
-		"lifecycle",
-		"permissions",
-	},
-	"synced_database_tables": {
-		"lifecycle",
-	},
-	"volumes": {
-		"grants",
-		"lifecycle",
 	},
 }
 
@@ -219,10 +161,10 @@ func TestInputSubset(t *testing.T) {
 			})
 			require.NoError(t, err)
 
-			known := knownMissingInStateType[resourceType]
+			known := append(commonMissingInStateType, knownMissingInStateType[resourceType]...)
 
-			// Check that known missing fields are actually missing
-			for _, f := range known {
+			// Check that resource-specific known missing fields are actually missing
+			for _, f := range knownMissingInStateType[resourceType] {
 				if !slices.Contains(missingFields, f) {
 					t.Errorf("field %q is listed in knownMissingInStateType but exists in StateType; remove it from the list", f)
 				}
