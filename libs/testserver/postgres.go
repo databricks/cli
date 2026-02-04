@@ -28,7 +28,15 @@ func postgresErrorResponse(statusCode int, errorCode, message string) Response {
 
 // postgresNotFoundResponse creates a NOT_FOUND error response for a resource type.
 func postgresNotFoundResponse(resourceType string) Response {
-	return postgresErrorResponse(404, "NOT_FOUND", resourceType+" id not found")
+	// Include trace ID to match real API behavior for not found errors
+	message := resourceType + " id not found [TraceId: " + nextUUID() + "]"
+	return Response{
+		StatusCode: 404,
+		Body: map[string]string{
+			"error_code": "NOT_FOUND",
+			"message":    message,
+		},
+	}
 }
 
 // PostgresProjectCreate creates a new postgres project.
