@@ -7,7 +7,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"strings"
 	"testing"
 	"time"
 
@@ -77,10 +76,6 @@ type dbrTestConfig struct {
 	// timeout is the maximum duration to wait for the job to complete.
 	timeout time.Duration
 
-	// clusterID is the ID of an existing interactive cluster to run tests on.
-	// If empty, serverless compute is used.
-	clusterID string
-
 	// verbose enables detailed output during test setup.
 	// If false, only essential information is printed.
 	verbose bool
@@ -101,46 +96,17 @@ func setupDbrTestDir(ctx context.Context, t *testing.T, uniqueID string) (*datab
 	err = w.Workspace.MkdirsByPath(ctx, apiPath)
 	require.NoError(t, err)
 
-	t.Cleanup(func() {
-		t.Logf("Cleaning up test directory: %s", apiPath)
-		err := w.Workspace.Delete(ctx, workspace.Delete{
-			Path:      apiPath,
-			Recursive: true,
-		})
-		if err != nil {
-			t.Logf("Warning: failed to clean up test directory: %v", err)
-		}
-	})
-
-	f, err := filer.NewWorkspaceFilesClient(w, apiPath)
-	require.NoError(t, err)
-
-	return w, f, apiPath
-}
-
-// setupDbrTestDirDev creates a fixed test directory for dev mode.
-// It deletes any existing content first to ensure a clean state.
-func setupDbrTestDirDev(ctx context.Context, t *testing.T, verbose bool) (*databricks.WorkspaceClient, filer.Filer, string) {
-	w, err := databricks.NewWorkspaceClient()
-	require.NoError(t, err)
-
-	currentUser, err := w.CurrentUser.Me(ctx)
-	require.NoError(t, err)
-
-	// Fixed path for dev mode - no unique ID, so we can reuse the directory.
-	apiPath := path.Join("/Users", currentUser.UserName, "dbr-acceptance-test", "dev")
-
-	// Delete existing content first to ensure clean state
-	if verbose {
-		t.Log("Cleaning up dev test directory before upload...")
-	}
-	_ = w.Workspace.Delete(ctx, workspace.Delete{
-		Path:      apiPath,
-		Recursive: true,
-	})
-
-	err = w.Workspace.MkdirsByPath(ctx, apiPath)
-	require.NoError(t, err)
+	// TODO: Re-enable cleanup after debugging TCP dial errors.
+	// t.Cleanup(func() {
+	// 	t.Logf("Cleaning up test directory: %s", apiPath)
+	// 	err := w.Workspace.Delete(ctx, workspace.Delete{
+	// 		Path:      apiPath,
+	// 		Recursive: true,
+	// 	})
+	// 	if err != nil {
+	// 		t.Logf("Warning: failed to clean up test directory: %v", err)
+	// 	}
+	// })
 
 	f, err := filer.NewWorkspaceFilesClient(w, apiPath)
 	require.NoError(t, err)
@@ -218,6 +184,7 @@ func buildBaseParams(testDir, archiveName string, config dbrTestConfig) map[stri
 		"test_instance_pool_id":     os.Getenv("TEST_INSTANCE_POOL_ID"),
 		"test_metastore_id":         os.Getenv("TEST_METASTORE_ID"),
 		"test_user_email":           os.Getenv("TEST_USER_EMAIL"),
+		"test_sp_application_id":    os.Getenv("TEST_SP_APPLICATION_ID"),
 	}
 
 	if config.short {
@@ -229,7 +196,7 @@ func buildBaseParams(testDir, archiveName string, config dbrTestConfig) map[stri
 	return params
 }
 
-// runDbrTests submits a job to run cloud and local acceptance tests on DBR.
+// runDbrTests creates a job and runs it to execute cloud and local acceptance tests on DBR.
 func runDbrTests(ctx context.Context, t *testing.T, w *databricks.WorkspaceClient, testDir, archiveName, runnerName string, config dbrTestConfig) {
 	cloudEnv := os.Getenv("CLOUD_ENV")
 	if cloudEnv == "" {
@@ -241,14 +208,15 @@ func runDbrTests(ctx context.Context, t *testing.T, w *databricks.WorkspaceClien
 	cloudParams["test_type"] = "cloud"
 	cloudParams["test_filter"] = config.cloudTestFilter
 
+	// TODO: Re-enable local tests once performance is acceptable.
 	// Build local test parameters (Local=true tests, run WITHOUT CLOUD_ENV)
-	localParams := buildBaseParams(testDir, archiveName, config)
-	localParams["test_type"] = "local"
-	localParams["test_filter"] = config.localTestFilter
+	// localParams := buildBaseParams(testDir, archiveName, config)
+	// localParams["test_type"] = "local"
+	// localParams["test_filter"] = config.localTestFilter
 
-	runName := "DBR Tests"
+	jobName := "DBR Tests"
 	if config.cloudTestFilter != "" {
-		runName = fmt.Sprintf("DBR Tests (%s)", config.cloudTestFilter)
+		jobName = fmt.Sprintf("DBR Tests (%s)", config.cloudTestFilter)
 	}
 
 	// Print summary of what will run
@@ -259,93 +227,83 @@ func runDbrTests(ctx context.Context, t *testing.T, w *databricks.WorkspaceClien
 	} else {
 		t.Log("  Cloud tests: (all)")
 	}
-	if config.localTestFilter != "" {
-		t.Logf("  Local tests: %s", config.localTestFilter)
-	} else {
-		t.Log("  Local tests: (all)")
-	}
+	// TODO: Re-enable local tests once performance is acceptable.
+	// if config.localTestFilter != "" {
+	// 	t.Logf("  Local tests: %s", config.localTestFilter)
+	// } else {
+	// 	t.Log("  Local tests: (all)")
+	// }
 	if config.verbose {
 		t.Logf("  Short mode: %v", config.short)
 	}
 
 	notebookPath := path.Join(testDir, runnerName)
 
-	var submitRun jobs.SubmitRun
-	if config.clusterID != "" {
-		t.Logf("  Cluster: %s", config.clusterID)
-		submitRun = jobs.SubmitRun{
-			RunName: runName,
-			Tasks: []jobs.SubmitTask{
-				{
-					TaskKey:           "cloud_tests",
-					ExistingClusterId: config.clusterID,
-					NotebookTask: &jobs.NotebookTask{
-						NotebookPath:   notebookPath,
-						BaseParameters: cloudParams,
-						Source:         jobs.SourceWorkspace,
-					},
-				},
-				{
-					TaskKey:           "local_tests",
-					ExistingClusterId: config.clusterID,
-					NotebookTask: &jobs.NotebookTask{
-						NotebookPath:   notebookPath,
-						BaseParameters: localParams,
-						Source:         jobs.SourceWorkspace,
-					},
+	// Create a job (not a one-time run) so we can use MaxRetries on tasks.
+	// Always use serverless compute.
+	t.Log("  Cluster: serverless")
+	createJob := jobs.CreateJob{
+		Name: jobName,
+		Environments: []jobs.JobEnvironment{
+			{
+				EnvironmentKey: "default",
+				Spec: &compute.Environment{
+					EnvironmentVersion: "4",
 				},
 			},
-		}
-	} else {
-		t.Log("  Cluster: serverless")
-		submitRun = jobs.SubmitRun{
-			RunName: runName,
-			Environments: []jobs.JobEnvironment{
-				{
-					EnvironmentKey: "default",
-					Spec: &compute.Environment{
-						EnvironmentVersion: "4",
-					},
+		},
+		Tasks: []jobs.Task{
+			{
+				TaskKey:        "cloud_tests",
+				EnvironmentKey: "default",
+				MaxRetries:     0,
+				NotebookTask: &jobs.NotebookTask{
+					NotebookPath:   notebookPath,
+					BaseParameters: cloudParams,
+					Source:         jobs.SourceWorkspace,
 				},
 			},
-			Tasks: []jobs.SubmitTask{
-				{
-					TaskKey:        "cloud_tests",
-					EnvironmentKey: "default",
-					NotebookTask: &jobs.NotebookTask{
-						NotebookPath:   notebookPath,
-						BaseParameters: cloudParams,
-						Source:         jobs.SourceWorkspace,
-					},
-				},
-				{
-					TaskKey:        "local_tests",
-					EnvironmentKey: "default",
-					NotebookTask: &jobs.NotebookTask{
-						NotebookPath:   notebookPath,
-						BaseParameters: localParams,
-						Source:         jobs.SourceWorkspace,
-					},
-				},
-			},
-		}
+			// TODO: Re-enable local tests once performance is acceptable.
+			// {
+			// 	TaskKey:        "local_tests",
+			// 	EnvironmentKey: "default",
+			// 	MaxRetries:     0,
+			// 	NotebookTask: &jobs.NotebookTask{
+			// 		NotebookPath:   notebookPath,
+			// 		BaseParameters: localParams,
+			// 		Source:         jobs.SourceWorkspace,
+			// 	},
+			// },
+		},
 	}
 
-	job, err := w.Jobs.Submit(ctx, submitRun)
+	// Create the job
+	job, err := w.Jobs.Create(ctx, createJob)
+	require.NoError(t, err)
+
+	// TODO: Re-enable cleanup after debugging TCP dial errors.
+	// Clean up the job after the test completes
+	// t.Cleanup(func() {
+	// 	t.Logf("Deleting job: %d", job.JobId)
+	// 	_ = w.Jobs.Delete(ctx, jobs.DeleteJob{JobId: job.JobId})
+	// })
+
+	// Trigger a run of the job
+	wait, err := w.Jobs.RunNow(ctx, jobs.RunNow{JobId: job.JobId})
 	require.NoError(t, err)
 
 	// Fetch run details immediately to get the URL
-	runDetails, err := w.Jobs.GetRun(ctx, jobs.GetRunRequest{RunId: job.RunId})
+	runDetails, err := w.Jobs.GetRun(ctx, jobs.GetRunRequest{RunId: wait.RunId})
 	require.NoError(t, err)
 
 	t.Log("")
 	t.Logf("Run URL: %s", runDetails.RunPageUrl)
 	t.Logf("Waiting for completion (timeout: %v)...", config.timeout)
 
-	run, err := job.GetWithTimeout(config.timeout)
+	run, err := wait.GetWithTimeout(config.timeout)
 	if err != nil {
 		// Try to fetch the run details for the URL and task output
-		runDetails, fetchErr := w.Jobs.GetRun(ctx, jobs.GetRunRequest{RunId: job.RunId})
+		runDetails, fetchErr := w.Jobs.GetRun(ctx, jobs.GetRunRequest{RunId: wait.RunId})
 		if fetchErr == nil {
 			// Try to get the task output for debugging
 			for _, task := range runDetails.Tasks {
@@ -404,31 +362,15 @@ func runDbrAcceptanceTests(t *testing.T, config dbrTestConfig) {
 	runDbrTests(ctx, t, w, testDir, archiveName, runnerName, config)
 }
 
-// runDbrAcceptanceTestsDev is the entry point for dev mode DBR tests.
-// It uses a fixed directory and cleans it before each run (not after).
-func runDbrAcceptanceTestsDev(t *testing.T, config dbrTestConfig) {
-	ctx := context.Background()
-
-	w, f, testDir := setupDbrTestDirDev(ctx, t, config.verbose)
-	if config.verbose {
-		t.Logf("Test directory: %s", testDir)
-	}
-
-	archiveName := buildAndUploadArchive(ctx, t, f, config.verbose)
-	runnerName := uploadRunner(ctx, t, w, testDir, config.verbose)
-
-	runDbrTests(ctx, t, w, testDir, archiveName, runnerName, config)
-}
-
 // TestDbrAcceptance runs all acceptance and integration tests on DBR using serverless compute.
 // Only acceptance tests with RunsOnDbr=true in their test.toml will be executed.
 // Both test types run in parallel tasks.
 //
 // Run with:
 //
-//		deco env run -i -n aws-prod-ucws -- go test -v -timeout 4h -run TestDbrAcceptance$ ./acceptance
-//	 OR
-//	    make dbr-test-dev
+//	deco env run -i -n aws-prod-ucws -- go test -v -timeout 4h -run TestDbrAcceptance$ ./acceptance
+//	OR
+//	make dbr-test
 func TestDbrAcceptance(t *testing.T) {
 	if os.Getenv("CLOUD_ENV") == "" {
 		t.Skip("Skipping DBR test: CLOUD_ENV not set")
@@ -438,51 +380,5 @@ func TestDbrAcceptance(t *testing.T) {
 		short:   false,
 		timeout: 3 * time.Hour,
 		verbose: os.Getenv("DBR_TEST_VERBOSE") != "",
-	})
-}
-
-// TestDbrAcceptanceDev runs tests on an existing interactive cluster for fast iteration.
-// This is useful during development when you want quick feedback on test changes.
-//
-// To use:
-//  1. Start an interactive cluster in your workspace
-//  2. Set clusterID below to your cluster ID
-//  3. Set test filters below to the test(s) you want to run
-//  4. Run:
-//     deco env run -i -n aws-prod-ucws -- go test -v -timeout 30m -run TestDbrAcceptanceDev ./acceptance
-//     OR
-//     make dbr-test-dev
-func TestDbrAcceptanceDev(t *testing.T) {
-	if os.Getenv("CLOUD_ENV") == "" {
-		t.Skip("Skipping DBR test: CLOUD_ENV not set")
-	}
-
-	// Set this to your interactive cluster ID. You can create one in the workspace UI.
-	// This allows for a faster devloop since you don't have to wait for a serverless cluster to spin up.
-	clusterID := "0202-015858-jxrd1afl" // e.g., "0123-456789-abcd1234"
-
-	// Filter for cloud tests (Cloud=true, run with CLOUD_ENV set).
-	// Leave empty to run all cloud tests with RunsOnDbr=true.
-	cloudTestFilter := strings.Join([]string{
-		"bundle/deploy",
-		"bundle/deployment",
-		"bundle/destroy",
-		"bundle/generate",
-		"bundle/resources",
-	}, "|")
-
-	// Filter for local tests (Local=true, run WITHOUT CLOUD_ENV).
-	// Leave empty to run all local tests.
-	localTestFilter := ""
-
-	require.NotEmpty(t, clusterID, "set clusterID in TestDbrAcceptanceDev")
-
-	runDbrAcceptanceTestsDev(t, dbrTestConfig{
-		cloudTestFilter: cloudTestFilter,
-		localTestFilter: localTestFilter,
-		short:           false,
-		timeout:         60 * time.Minute,
-		clusterID:       clusterID,
-		verbose:         os.Getenv("DBR_TEST_VERBOSE") != "",
 	})
 }

@@ -1,6 +1,5 @@
 Local = true
 Cloud = false
-RecordRequests = false
 
 [GOOS]
   darwin = false

@@ -1,6 +1,7 @@
 Local = true
 Cloud = true
 RecordRequests = false
+RunsOnDbr = false
 Ignore = [".databricks"]
 
 # Alert tests timeout during bundle deploy (hang at file upload for 50+ minutes).

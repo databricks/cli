@@ -34,6 +34,13 @@ func (m *configureWSFS) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 		return nil
 	}
 
+	// On serverless, use the native sync root directly via FUSE.
+	// The /Workspace/ FUSE mount provides direct file system access without
+	// needing the workspace files extensions client.
+	if dbr.RunsOnServerless(ctx) {
+		return nil
+	}
+
 	// If so, swap out vfs.Path instance of the sync root with one that
 	// makes all Workspace File System interactions extension aware.
 	p, err := vfs.NewFilerPath(ctx, root, func(path string) (filer.Filer, error) {

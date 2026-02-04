@@ -1,7 +1,6 @@
 Local = false
 Cloud = true
 RequiresWarehouse = true
-RecordRequests = true
 
 [CloudEnvs]
   gcp = false

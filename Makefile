@@ -97,21 +97,11 @@ test-update-aws:
 
 test-update-all: test-update test-update-aws
 
-# DBR acceptance tests - run on Databricks Runtime
+# DBR acceptance tests - run on Databricks Runtime using serverless compute
 # These require deco env run for authentication
-# Set DBR_TEST_VERBOSE=1 for detailed output (e.g., DBR_TEST_VERBOSE=1 make dbr-test-dev)
-
-# Run all DBR tests with RunsOnDbr=true (serverless)
+# Set DBR_TEST_VERBOSE=1 for detailed output (e.g., DBR_TEST_VERBOSE=1 make dbr-test)
 dbr-test:
 	deco env run -i -n aws-prod-ucws -- go test -v -timeout 4h -run TestDbrAcceptance$$ ./acceptance
-
-# Run dev mode test on an interactive cluster (fast iteration)
-# Before running, edit TestDbrAcceptanceDev in acceptance/dbr_test.go to set:
-#   - clusterID: your interactive cluster ID
-#   - cloudTestFilter: the cloud acceptance test(s) you want to run
-#   - localTestFilter: the local acceptance test(s) you want to run
-dbr-test-dev:
-	deco env run -i -n aws-prod-ucws -- go test -v -timeout 90m -run TestDbrAcceptanceDev ./acceptance
 
 slowest:
 	${GO_TOOL} gotestsum tool slowest --jsonfile test-output.json --threshold 1s --num 50

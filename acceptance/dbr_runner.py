@@ -15,6 +15,7 @@
 # - test_default_cluster_id: Default cluster ID (for cloud tests)
 # - test_instance_pool_id: Instance pool ID (for cloud tests)
 # - test_metastore_id: Unity Catalog metastore ID (for cloud tests)
+# - test_sp_application_id: Service principal application ID (for cloud tests)
 
 import os
 import platform
@@ -88,7 +89,7 @@ def copy_debug_log_to_workspace(local_log_path: Path, test_type: str) -> tuple[s
     # Build URL
     workspace_url = get_workspace_url()
     # Remove /Workspace prefix for the URL fragment
-    url_path = workspace_path[len("/Workspace"):]
+    url_path = workspace_path[len("/Workspace") :]
     debug_url = f"{workspace_url}#files{url_path}"
 
     return workspace_path, debug_url
@@ -202,40 +203,31 @@ def run_tests(
     test_instance_pool_id: str = "",
     test_metastore_id: str = "",
     test_user_email: str = "",
+    test_sp_application_id: str = "",
 ) -> TestResult:
     """Run CLI acceptance tests (cloud or local)."""
     cli_dir = extract_dir / "cli"
 
     # Create debug log file
     debug_log_path = get_debug_log_path(test_type)
-    print(f"Debug log: {debug_log_path}")
 
-    # Build the test command using gotestsum for better output and retry support
     cmd = [
-        "gotestsum",
-        "--format",
-        "pkgname-and-test-fails",
-        "--rerun-fails=2",
-        "--packages",
-        "github.com/databricks/cli/acceptance",
-        "--",
+        "go",
+        "test",
+        "./acceptance",
         "-timeout",
         "14400s",
         "-v",
+        "-workspace-tmp-dir",
     ]
 
     if short:
         cmd.append("-short")
 
-    # Add test filter
     if test_filter:
         cmd.extend(["-run", f"^TestAccept/{test_filter}"])
     else:
         cmd.extend(["-run", "^TestAccept"])
-
-    # Both test types run their scripts on top of the workspace file system
-    # and not the local file mount.
-    cmd.append("-workspace-tmp-dir")
 
     # Configure based on test type
     if test_type == "cloud":
@@ -255,6 +247,8 @@ def run_tests(
             env["TEST_METASTORE_ID"] = test_metastore_id
         if test_user_email:
             env["TEST_USER_EMAIL"] = test_user_email
+        if test_sp_application_id:
+            env["TEST_SP_APPLICATION_ID"] = test_sp_application_id
     else:
         # Local tests: run WITHOUT CLOUD_ENV (uses mock servers).
         # The test framework will set DATABRICKS_HOST and DATABRICKS_TOKEN
@@ -328,8 +322,8 @@ def run_tests(
         log_file.write("=" * 60 + "\n")
 
     # Copy debug log to workspace for persistent access
-    workspace_path, debug_log_url = copy_debug_log_to_workspace(debug_log_path, test_type)
-    print(f"\nDebug log copied to workspace: {workspace_path}")
+    _, debug_log_url = copy_debug_log_to_workspace(debug_log_path, test_type)
+    print(f"\nDebug log URL: {debug_log_url}")
 
     print("\n" + "=" * 60)
     print(f"Tests finished with return code: {process.returncode}")
@@ -354,6 +348,7 @@ def main():
     dbutils.widgets.text("test_instance_pool_id", "")
     dbutils.widgets.text("test_metastore_id", "")
     dbutils.widgets.text("test_user_email", "")
+    dbutils.widgets.text("test_sp_application_id", "")
 
     archive_path = dbutils.widgets.get("archive_path")
     cloud_env = dbutils.widgets.get("cloud_env")
@@ -365,6 +360,7 @@ def main():
     test_instance_pool_id = dbutils.widgets.get("test_instance_pool_id")
     test_metastore_id = dbutils.widgets.get("test_metastore_id")
     test_user_email = dbutils.widgets.get("test_user_email")
+    test_sp_application_id = dbutils.widgets.get("test_sp_application_id")
 
     if not archive_path:
         raise ValueError("archive_path parameter is required")
@@ -403,6 +399,7 @@ def main():
         test_instance_pool_id=test_instance_pool_id,
         test_metastore_id=test_metastore_id,
         test_user_email=test_user_email,
+        test_sp_application_id=test_sp_application_id,
     )
 
     print("=" * 60)

@@ -1,6 +1,5 @@
 Local = true
 Cloud = true
-RecordRequests = true
 
 [CloudEnvs]
   gcp = false

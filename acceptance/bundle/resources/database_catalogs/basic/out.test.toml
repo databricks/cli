@@ -3,7 +3,6 @@ Cloud = true
 CloudSlow = true
 RequiresUnityCatalog = true
 RunsOnDbr = true
-RecordRequests = false
 
 [CloudEnvs]
   gcp = false

@@ -3,5 +3,3 @@ Ignore = [
     '.databricks',
     '__pycache__',
 ]
-
-RunsOnDbr = true

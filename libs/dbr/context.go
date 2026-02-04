@@ -1,6 +1,10 @@
 package dbr
 
-import "context"
+import (
+	"context"
+	"strconv"
+	"strings"
+)
 
 // key is a package-local type to use for context keys.
 //
@@ -60,4 +64,28 @@ func RuntimeVersion(ctx context.Context) string {
 	}
 
 	return v.(Environment).Version
+}
+
+// RunsOnServerless returns true if running on serverless compute with client version 2+.
+// Serverless runtime versions are formatted as "client.X" where X is the major version.
+// Only client version 2+ supports direct FUSE access without the workspace files extensions client.
+func RunsOnServerless(ctx context.Context) bool {
+	version := RuntimeVersion(ctx)
+	if !strings.HasPrefix(version, "client.") {
+		return false
+	}
+
+	// Extract the major version number after "client."
+	majorStr := strings.TrimPrefix(version, "client.")
+	// Handle versions like "client.2.1" by taking only the first component
+	if idx := strings.Index(majorStr, "."); idx != -1 {
+		majorStr = majorStr[:idx]
+	}
+
+	major, err := strconv.Atoi(majorStr)
+	if err != nil {
+		return false
+	}
+
+	return major >= 2
 }
