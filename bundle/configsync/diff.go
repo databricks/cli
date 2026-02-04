@@ -11,6 +11,7 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/structs/structpath"
 )
 
 type OperationType string
@@ -41,6 +42,43 @@ func normalizeValue(v any) (any, error) {
 	return dynValue.AsAny(), nil
 }
 
+func isEntityPath(path string) bool {
+	pathNode, err := structpath.Parse(path)
+	if err != nil {
+		return false
+	}
+
+	if _, _, ok := pathNode.KeyValue(); ok {
+		return true
+	}
+
+	return false
+}
+
+func filterEntityDefaults(basePath string, value any) any {
+	m, ok := value.(map[string]any)
+	if !ok {
+		return value
+	}
+
+	result := make(map[string]any)
+	for key, val := range m {
+		fieldPath := basePath + "." + key
+
+		if shouldSkipField(fieldPath, val) {
+			continue
+		}
+
+		if nestedMap, ok := val.(map[string]any); ok {
+			result[key] = filterEntityDefaults(fieldPath, nestedMap)
+		} else {
+			result[key] = val
+		}
+	}
+
+	return result
+}
+
 func convertChangeDesc(path string, cd *deployplan.ChangeDesc) (*ConfigChangeDesc, error) {
 	hasConfigValue := cd.Old != nil || cd.New != nil
 	normalizedValue, err := normalizeValue(cd.Remote)
@@ -65,6 +103,10 @@ func convertChangeDesc(path string, cd *deployplan.ChangeDesc) (*ConfigChangeDes
 		op = OperationAdd
 	} else {
 		op = OperationSkip
+	}
+
+	if op == OperationAdd && isEntityPath(path) {
+		normalizedValue = filterEntityDefaults(path, normalizedValue)
 	}
 
 	return &ConfigChangeDesc{

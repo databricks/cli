@@ -5,10 +5,19 @@ import (
 	"strings"
 )
 
-// skipAlways is a marker type for fields that should always be considered server-side defaults
-type skipAlways struct{}
+type (
+	skipAlways           struct{}
+	skipIfZeroOrNil      struct{}
+	skipIfEmptyOrDefault struct {
+		defaults map[string]any
+	}
+)
 
-var alwaysSkip = skipAlways{}
+var (
+	alwaysSkip              = skipAlways{}
+	zeroOrNil               = skipIfZeroOrNil{}
+	emptyEmailNotifications = skipIfEmptyOrDefault{defaults: map[string]any{"no_alert_for_skipped_runs": false}}
+)
 
 // serverSideDefaults contains all hardcoded server-side defaults.
 // This is a temporary solution until the bundle plan issue is resolved.
@@ -16,27 +25,24 @@ var alwaysSkip = skipAlways{}
 // Other fields are compared using reflect.DeepEqual.
 var serverSideDefaults = map[string]any{
 	// Job-level fields
-	"timeout_seconds": nil,
-	// "usage_policy_id":     alwaysSkip, // computed field
-	"edit_mode": alwaysSkip, // set by CLI
-	"email_notifications": map[string]any{
-		"no_alert_for_skipped_runs": false,
-	},
-	"performance_target": "PERFORMANCE_OPTIMIZED",
+	"timeout_seconds":     zeroOrNil,
+	"email_notifications": emptyEmailNotifications,
+	"edit_mode":           alwaysSkip, // set by CLI
+	"performance_target":  "PERFORMANCE_OPTIMIZED",
 
 	// Task-level fields
 	"tasks[*].run_if":                     "ALL_SUCCESS",
 	"tasks[*].disabled":                   false,
-	"tasks[*].timeout_seconds":            nil,
+	"tasks[*].timeout_seconds":            zeroOrNil,
 	"tasks[*].notebook_task.source":       "WORKSPACE",
-	"tasks[*].email_notifications":        map[string]any{"no_alert_for_skipped_runs": false},
+	"tasks[*].email_notifications":        emptyEmailNotifications,
 	"tasks[*].pipeline_task.full_refresh": false,
 
 	"tasks[*].for_each_task.task.run_if":               "ALL_SUCCESS",
 	"tasks[*].for_each_task.task.disabled":             false,
-	"tasks[*].for_each_task.task.timeout_seconds":      nil,
+	"tasks[*].for_each_task.task.timeout_seconds":      zeroOrNil,
 	"tasks[*].for_each_task.task.notebook_task.source": "WORKSPACE",
-	"tasks[*].for_each_task.task.email_notifications":  map[string]any{"no_alert_for_skipped_runs": false},
+	"tasks[*].for_each_task.task.email_notifications":  emptyEmailNotifications,
 
 	// Cluster fields (tasks)
 	"tasks[*].new_cluster.aws_attributes":      alwaysSkip,
@@ -66,6 +72,19 @@ func shouldSkipField(path string, value any) bool {
 		if matchPattern(pattern, path) {
 			if _, ok := expected.(skipAlways); ok {
 				return true
+			}
+			if _, ok := expected.(skipIfZeroOrNil); ok {
+				return value == nil || value == int64(0)
+			}
+			if marker, ok := expected.(skipIfEmptyOrDefault); ok {
+				m, ok := value.(map[string]any)
+				if !ok {
+					return false
+				}
+				if len(m) == 0 {
+					return true
+				}
+				return reflect.DeepEqual(m, marker.defaults)
 			}
 			return reflect.DeepEqual(value, expected)
 		}
