@@ -42,7 +42,7 @@ print_requests update
 title "Fetch new branch ID"
 branch_id_2=`read_id.py main`
 # Get output differs between engines (different branch IDs)
-$CLI postgres get-branch $branch_id_2 | jq 'del(.create_time, .update_time)' > out.get_branch.$DATABRICKS_BUNDLE_ENGINE.txt
+$CLI postgres get-branch $branch_id_2 | jq 'del(.create_time, .update_time, .status.logical_size_bytes)' > out.get_branch.$DATABRICKS_BUNDLE_ENGINE.txt
 
 title "Destroy and verify cleanup"
 trace $CLI bundle destroy --auto-approve

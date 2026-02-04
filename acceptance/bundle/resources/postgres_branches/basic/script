@@ -15,7 +15,7 @@ trace $CLI bundle deploy
 # Get branch details
 project_name="projects/test-pg-proj-${UNIQUE_NAME}"
 branch_name="${project_name}/branches/main"
-trace $CLI postgres get-branch "${branch_name}" | jq 'del(.create_time, .update_time)'
+trace $CLI postgres get-branch "${branch_name}" | jq 'del(.create_time, .update_time, .status.logical_size_bytes)'
 
 trace $CLI bundle summary
 

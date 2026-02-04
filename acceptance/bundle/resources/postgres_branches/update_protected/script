@@ -23,7 +23,7 @@ print_requests create
 project_name="projects/test-pg-proj-${UNIQUE_NAME}"
 branch_name="${project_name}/branches/dev-branch"
 branch_id_1=`read_id.py dev_branch`
-trace $CLI postgres get-branch "${branch_name}" | jq 'del(.create_time, .update_time)'
+trace $CLI postgres get-branch "${branch_name}" | jq 'del(.create_time, .update_time, .status.logical_size_bytes)'
 
 title "Verify no_change (no changes)"
 trace $CLI bundle plan
@@ -45,7 +45,7 @@ trace $CLI bundle deploy
 print_requests update
 
 branch_id_2=`read_id.py dev_branch`
-trace $CLI postgres get-branch "${branch_name}" | jq 'del(.create_time, .update_time)'
+trace $CLI postgres get-branch "${branch_name}" | jq 'del(.create_time, .update_time, .status.logical_size_bytes)'
 
 title "Restore is_protected to false"
 trace update_file.py databricks.yml "is_protected: true" "is_protected: false"
@@ -56,4 +56,4 @@ trace $CLI bundle deploy
 
 print_requests restore
 
-trace $CLI postgres get-branch "${branch_name}" | jq 'del(.create_time, .update_time)'
+trace $CLI postgres get-branch "${branch_name}" | jq 'del(.create_time, .update_time, .status.logical_size_bytes)'
