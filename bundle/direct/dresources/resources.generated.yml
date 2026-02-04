@@ -119,6 +119,12 @@ resources:
       # OUTPUT_ONLY:
       - ingestion_definition.source_type
 
+  # postgres_branches: no api field behaviors
+
+  # postgres_endpoints: no api field behaviors
+
+  # postgres_projects: no api field behaviors
+
   # quality_monitors: no api field behaviors
 
   # registered_models: no api field behaviors

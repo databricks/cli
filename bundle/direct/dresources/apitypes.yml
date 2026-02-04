@@ -3,3 +3,9 @@
 #
 # Set a value to null to remove a type:
 # jobs: null
+
+postgres_branches: postgres.CreateBranchRequest
+
+postgres_endpoints: postgres.CreateEndpointRequest
+
+postgres_projects: postgres.CreateProjectRequest
