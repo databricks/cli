@@ -19,6 +19,71 @@ const (
 	dbrKey = key(1)
 )
 
+// ClusterType represents the type of Databricks cluster.
+type ClusterType int
+
+const (
+	ClusterTypeUnknown ClusterType = iota
+	ClusterTypeInteractive
+	ClusterTypeServerless
+)
+
+func (t ClusterType) String() string {
+	switch t {
+	case ClusterTypeInteractive:
+		return "interactive"
+	case ClusterTypeServerless:
+		return "serverless"
+	default:
+		return "unknown"
+	}
+}
+
+// Version represents a parsed DBR version.
+type Version struct {
+	Type  ClusterType
+	Major int
+	Minor int
+	Raw   string
+}
+
+// ParseVersion parses a DBR version string and returns structured version info.
+// Examples:
+//   - "16.3" -> Interactive, Major=16, Minor=3
+//   - "client.4.9" -> Serverless, Major=4, Minor=9
+func ParseVersion(version string) Version {
+	result := Version{Raw: version}
+
+	if version == "" {
+		return result
+	}
+
+	// Serverless versions have "client." prefix
+	if strings.HasPrefix(version, "client.") {
+		result.Type = ClusterTypeServerless
+		// Parse "client.X.Y" format
+		parts := strings.Split(strings.TrimPrefix(version, "client."), ".")
+		if len(parts) >= 1 {
+			result.Major, _ = strconv.Atoi(parts[0])
+		}
+		if len(parts) >= 2 {
+			result.Minor, _ = strconv.Atoi(parts[1])
+		}
+		return result
+	}
+
+	// Interactive versions are "X.Y" format
+	result.Type = ClusterTypeInteractive
+	parts := strings.Split(version, ".")
+	if len(parts) >= 1 {
+		result.Major, _ = strconv.Atoi(parts[0])
+	}
+	if len(parts) >= 2 {
+		result.Minor, _ = strconv.Atoi(parts[1])
+	}
+	return result
+}
+
 type Environment struct {
 	IsDbr   bool
 	Version string
@@ -66,26 +131,8 @@ func RuntimeVersion(ctx context.Context) string {
 	return v.(Environment).Version
 }
 
-// RunsOnServerless returns true if running on serverless compute with client version 2+.
-// Serverless runtime versions are formatted as "client.X" where X is the major version.
-// Only client version 2+ supports direct FUSE access without the workspace files extensions client.
-func RunsOnServerless(ctx context.Context) bool {
-	version := RuntimeVersion(ctx)
-	if !strings.HasPrefix(version, "client.") {
-		return false
-	}
-
-	// Extract the major version number after "client."
-	majorStr := strings.TrimPrefix(version, "client.")
-	// Handle versions like "client.2.1" by taking only the first component
-	if idx := strings.Index(majorStr, "."); idx != -1 {
-		majorStr = majorStr[:idx]
-	}
-
-	major, err := strconv.Atoi(majorStr)
-	if err != nil {
-		return false
-	}
-
-	return major >= 2
+// GetVersion returns the parsed runtime version from the context.
+// It expects a context returned by [DetectRuntime] or [MockRuntime].
+func GetVersion(ctx context.Context) Version {
+	return ParseVersion(RuntimeVersion(ctx))
 }
