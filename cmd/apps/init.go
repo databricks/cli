@@ -3,6 +3,7 @@ package apps
 import (
 	"bytes"
 	"context"
+	_ "embed" // For embedding template files
 	"errors"
 	"fmt"
 	"os"
@@ -12,6 +13,8 @@ import (
 	"text/template"
 
 	"github.com/charmbracelet/huh"
+	"github.com/databricks/cli/cmd/apps/internal"
+	"github.com/databricks/cli/cmd/apps/legacytemplates"
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/apps/features"
 	"github.com/databricks/cli/libs/apps/initializer"
@@ -26,36 +29,44 @@ import (
 const (
 	templatePathEnvVar = "DATABRICKS_APPKIT_TEMPLATE_PATH"
 	defaultTemplateURL = "https://github.com/databricks/appkit/tree/main/template"
+	templateTypeAppKit = "appkit"
 )
 
 func newInitCmd() *cobra.Command {
 	var (
-		templatePath string
-		branch       string
-		name         string
-		warehouseID  string
-		description  string
-		outputDir    string
-		featuresFlag []string
-		deploy       bool
-		run          string
+		templatePath    string
+		branch          string
+		name            string
+		warehouseID     string
+		servingEndpoint string
+		experimentID    string
+		databaseName    string
+		instanceName    string
+		ucVolume        string
+		description     string
+		outputDir       string
+		featuresFlag    []string
+		deploy          bool
+		run             string
 	)
 
 	cmd := &cobra.Command{
 		Use:    "init",
 		Short:  "Initialize a new AppKit application from a template",
 		Hidden: true,
-		Long: `Initialize a new AppKit application from a template.
+		Long: `Initialize a new application from a template.
 
-When run without arguments, uses the default AppKit template and an interactive prompt
-guides you through the setup. When run with --name, runs in non-interactive mode
-(all required flags must be provided).
+When run without arguments, an interactive prompt allows you to choose a framework:
+  - AppKit (TypeScript): Modern TypeScript framework (default)
+  - Dash, Flask, Gradio, Node.js, Shiny, Streamlit: Python/Node.js frameworks
+
+When run with --name, runs in non-interactive mode (all required flags must be provided).
 
 Examples:
-  # Interactive mode with default template (recommended)
+  # Interactive mode - choose template type (recommended)
   databricks apps init
 
-  # Non-interactive with flags
+  # Non-interactive AppKit with flags
   databricks apps init --name my-app
 
   # With analytics feature (requires --warehouse-id)
@@ -63,6 +74,11 @@ Examples:
 
   # Create, deploy, and run with dev-remote
   databricks apps init --name my-app --deploy --run=dev-remote
+
+  # Use a legacy template by path identifier
+  databricks apps init --template streamlit-chatbot-app
+  databricks apps init --template dash-data-app
+  databricks apps init --template gradio-hello-world-app
 
   # With a custom template from a local path
   databricks apps init --template /path/to/template --name my-app
@@ -86,6 +102,11 @@ Environment variables:
 				name:            name,
 				nameProvided:    cmd.Flags().Changed("name"),
 				warehouseID:     warehouseID,
+				servingEndpoint: servingEndpoint,
+				experimentID:    experimentID,
+				databaseName:    databaseName,
+				instanceName:    instanceName,
+				ucVolume:        ucVolume,
 				description:     description,
 				outputDir:       outputDir,
 				features:        featuresFlag,
@@ -98,13 +119,23 @@ Environment variables:
 		},
 	}
 
-	cmd.Flags().StringVar(&templatePath, "template", "", "Template path (local directory or GitHub URL)")
+	// General flags
+	cmd.Flags().StringVar(&templatePath, "template", "", "Template identifier (legacy template path), local directory, or GitHub URL")
 	cmd.Flags().StringVar(&branch, "branch", "", "Git branch or tag (for GitHub templates)")
 	cmd.Flags().StringVar(&name, "name", "", "Project name (prompts if not provided)")
-	cmd.Flags().StringVar(&warehouseID, "warehouse-id", "", "SQL warehouse ID")
 	cmd.Flags().StringVar(&description, "description", "", "App description")
 	cmd.Flags().StringVar(&outputDir, "output-dir", "", "Directory to write the project to")
 	cmd.Flags().StringSliceVar(&featuresFlag, "features", nil, "Features to enable (comma-separated). Available: "+strings.Join(features.GetFeatureIDs(), ", "))
+
+	// Resource flags (for legacy templates)
+	cmd.Flags().StringVar(&warehouseID, "warehouse-id", "", "[Resource] SQL warehouse ID")
+	cmd.Flags().StringVar(&servingEndpoint, "serving-endpoint", "", "[Resource] Model serving endpoint name")
+	cmd.Flags().StringVar(&experimentID, "experiment-id", "", "[Resource] MLflow experiment ID")
+	cmd.Flags().StringVar(&databaseName, "database-name", "", "[Resource] Lakebase database name")
+	cmd.Flags().StringVar(&instanceName, "instance-name", "", "[Resource] Lakebase database instance name")
+	cmd.Flags().StringVar(&ucVolume, "uc-volume", "", "[Resource] Unity Catalog volume path")
+
+	// Post-creation flags
 	cmd.Flags().BoolVar(&deploy, "deploy", false, "Deploy the app after creation")
 	cmd.Flags().StringVar(&run, "run", "", "Run the app after creation (none, dev, dev-remote)")
 
@@ -117,6 +148,11 @@ type createOptions struct {
 	name            string
 	nameProvided    bool // true if --name flag was explicitly set (enables "flags mode")
 	warehouseID     string
+	servingEndpoint string
+	experimentID    string
+	databaseName    string
+	instanceName    string
+	ucVolume        string
 	description     string
 	outputDir       string
 	features        []string
@@ -130,6 +166,7 @@ type createOptions struct {
 // templateVars holds the variables for template substitution.
 type templateVars struct {
 	ProjectName    string
+	AppName        string
 	SQLWarehouseID string
 	AppDescription string
 	Profile        string
@@ -137,12 +174,14 @@ type templateVars struct {
 	PluginImport   string
 	PluginUsage    string
 	// Feature resource fragments (aggregated from selected features)
-	BundleVariables string
-	BundleResources string
-	TargetVariables string
-	AppEnv          string
-	DotEnv          string
-	DotEnvExample   string
+	BundleVariables  string
+	BundleResources  string
+	TargetVariables  string
+	AppEnv           string
+	DotEnv           string
+	DotEnvExample    string
+	ResourceBindings string   // For databricks.yml resource bindings
+	UserAPIScopes    []string // User API scopes for legacy templates
 }
 
 // featureFragments holds aggregated content from feature resource files.
@@ -153,28 +192,6 @@ type featureFragments struct {
 	AppEnv          string
 	DotEnv          string
 	DotEnvExample   string
-}
-
-// parseDeployAndRunFlags parses the deploy and run flag values into typed values.
-func parseDeployAndRunFlags(deploy bool, run string) (bool, prompt.RunMode, error) {
-	var runMode prompt.RunMode
-	switch run {
-	case "dev":
-		runMode = prompt.RunModeDev
-	case "dev-remote":
-		runMode = prompt.RunModeDevRemote
-	case "", "none":
-		runMode = prompt.RunModeNone
-	default:
-		return false, prompt.RunModeNone, fmt.Errorf("invalid --run value: %q (must be none, dev, or dev-remote)", run)
-	}
-
-	// dev-remote requires --deploy because it needs a deployed app to connect to
-	if runMode == prompt.RunModeDevRemote && !deploy {
-		return false, prompt.RunModeNone, errors.New("--run=dev-remote requires --deploy (dev-remote needs a deployed app to connect to)")
-	}
-
-	return deploy, runMode, nil
 }
 
 // promptForFeaturesAndDeps prompts for features and their dependencies.
@@ -410,12 +427,112 @@ func resolveTemplate(ctx context.Context, templatePath, branch string) (localPat
 	return tempDir, cleanup, nil
 }
 
+// deployRunConfig handles deploy and run mode determination.
+type deployRunConfig struct {
+	// From flags
+	deploy        bool
+	deployChanged bool
+	run           string
+	runChanged    bool
+	// Context
+	isInteractive bool
+}
+
+// resolve determines the final deploy and run mode values.
+// It handles the logic of using flags vs prompting based on interactive mode.
+func (c *deployRunConfig) resolve(ctx context.Context) (bool, prompt.RunMode, error) {
+	// Parse flags first
+	shouldDeploy, runMode, err := internal.ParseDeployAndRunFlags(c.deploy, c.run)
+	if err != nil {
+		return false, prompt.RunModeNone, err
+	}
+
+	// Prompt if interactive and no flags were set
+	skipPrompt := c.deployChanged || c.runChanged
+	if c.isInteractive && !skipPrompt {
+		shouldDeploy, runMode, err = prompt.PromptForDeployAndRun(ctx)
+		if err != nil {
+			return false, prompt.RunModeNone, err
+		}
+	}
+
+	return shouldDeploy, runMode, nil
+}
+
 func runCreate(ctx context.Context, opts createOptions) error {
 	var selectedFeatures []string
 	var dependencies map[string]string
 	var shouldDeploy bool
 	var runMode prompt.RunMode
 	isInteractive := cmdio.IsPromptSupported(ctx)
+
+	// Get workspace host and profile from context early (needed for legacy templates)
+	workspaceHost := ""
+	profile := ""
+	if w := cmdctx.WorkspaceClient(ctx); w != nil && w.Config != nil {
+		workspaceHost = w.Config.Host
+		profile = w.Config.Profile
+	}
+
+	// Use features from flags if provided
+	if len(opts.features) > 0 {
+		selectedFeatures = opts.features
+	}
+
+	// Step 0: Check if --template flag specifies a legacy template path
+	if opts.templatePath != "" {
+		// Check if it's a legacy template identifier (not a URL or local path)
+		if !strings.HasPrefix(opts.templatePath, "https://") && !strings.HasPrefix(opts.templatePath, "/") && !strings.HasPrefix(opts.templatePath, "./") && !strings.HasPrefix(opts.templatePath, "../") {
+			templates, err := legacytemplates.LoadLegacyTemplates()
+			if err != nil {
+				return err
+			}
+
+			// Check if the template path matches a legacy template
+			if legacyTemplate := legacytemplates.FindLegacyTemplateByPath(templates, opts.templatePath); legacyTemplate != nil {
+				log.Infof(ctx, "Using legacy template: %s", opts.templatePath)
+				absOutputDir, shouldDeploy, runMode, err := legacytemplates.HandleLegacyTemplateInit(ctx, legacyTemplate, opts.name, opts.nameProvided, opts.outputDir, opts.warehouseID, opts.servingEndpoint, opts.experimentID, opts.instanceName, opts.databaseName, opts.ucVolume, opts.deploy, opts.deployChanged, opts.run, opts.runChanged, isInteractive, workspaceHost, profile)
+				if err != nil {
+					return err
+				}
+				// Extract project name from the absolute output directory
+				projectName := filepath.Base(absOutputDir)
+				return runPostCreationSteps(ctx, absOutputDir, projectName, shouldDeploy, runMode)
+			}
+		}
+	}
+
+	// Step 1: Prompt for template type (AppKit or framework type) in interactive mode
+	selectedTemplateType := templateTypeAppKit // default
+	if isInteractive && opts.templatePath == "" {
+		tmplType, err := legacytemplates.PromptForTemplateType(ctx)
+		if err != nil {
+			return err
+		}
+		selectedTemplateType = tmplType
+	}
+
+	// Check if a framework type was selected (any value other than "appkit")
+	if selectedTemplateType != templateTypeAppKit {
+		templates, err := legacytemplates.LoadLegacyTemplates()
+		if err != nil {
+			return err
+		}
+
+		// Use the selected template type as the framework type filter
+		selectedTemplate, err := legacytemplates.PromptForLegacyTemplate(ctx, templates, selectedTemplateType)
+		if err != nil {
+			return err
+		}
+
+		absOutputDir, shouldDeploy, runMode, err := legacytemplates.HandleLegacyTemplateInit(ctx, selectedTemplate, opts.name, opts.nameProvided, opts.outputDir, opts.warehouseID, opts.servingEndpoint, opts.experimentID, opts.instanceName, opts.databaseName, opts.ucVolume, opts.deploy, opts.deployChanged, opts.run, opts.runChanged, isInteractive, workspaceHost, profile)
+		if err != nil {
+			return err
+		}
+		// Extract project name from the absolute output directory
+		projectName := filepath.Base(absOutputDir)
+		return runPostCreationSteps(ctx, absOutputDir, projectName, shouldDeploy, runMode)
+	}
 
 	// Use features from flags if provided
 	if len(opts.features) > 0 {
@@ -557,7 +674,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		// Apply flag values for deploy/run when in flags mode, flags were explicitly set, or non-interactive
 		if skipDeployRunPrompt || !isInteractive {
 			var err error
-			shouldDeploy, runMode, err = parseDeployAndRunFlags(opts.deploy, opts.run)
+			shouldDeploy, runMode, err = internal.ParseDeployAndRunFlags(opts.deploy, opts.run)
 			if err != nil {
 				return err
 			}
@@ -615,23 +732,17 @@ func runCreate(ctx context.Context, opts createOptions) error {
 			opts.description = prompt.DefaultAppDescription
 		}
 
-		// Only prompt for deploy/run if not in flags mode and no deploy/run flags were set
-		if isInteractive && !flagsMode && !opts.deployChanged && !opts.runChanged {
-			var deployVal bool
-			var runVal prompt.RunMode
-			deployVal, runVal, err = prompt.PromptForDeployAndRun(ctx)
-			if err != nil {
-				return err
-			}
-			shouldDeploy = deployVal
-			runMode = runVal
-		} else {
-			// Flags mode or explicit flags: use flag values (or defaults if not set)
-			var err error
-			shouldDeploy, runMode, err = parseDeployAndRunFlags(opts.deploy, opts.run)
-			if err != nil {
-				return err
-			}
+		// Determine deploy and run options
+		deployRun := &deployRunConfig{
+			deploy:        opts.deploy,
+			deployChanged: opts.deployChanged || flagsMode,
+			run:           opts.run,
+			runChanged:    opts.runChanged || flagsMode,
+			isInteractive: isInteractive,
+		}
+		shouldDeploy, runMode, err = deployRun.resolve(ctx)
+		if err != nil {
+			return err
 		}
 	}
 
@@ -650,20 +761,13 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		opts.description = prompt.DefaultAppDescription
 	}
 
-	// Get workspace host and profile from context
-	workspaceHost := ""
-	profile := ""
-	if w := cmdctx.WorkspaceClient(ctx); w != nil && w.Config != nil {
-		workspaceHost = w.Config.Host
-		profile = w.Config.Profile
-	}
-
 	// Build plugin imports and usages from selected features
 	pluginImport, pluginUsage := features.BuildPluginStrings(selectedFeatures)
 
 	// Template variables (initial, without feature fragments)
 	vars := templateVars{
 		ProjectName:    opts.name,
+		AppName:        opts.name,
 		SQLWarehouseID: opts.warehouseID,
 		AppDescription: opts.description,
 		Profile:        profile,
@@ -685,11 +789,8 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	vars.DotEnvExample = fragments.DotEnvExample
 
 	// Copy template with variable substitution
-	var fileCount int
 	runErr = prompt.RunWithSpinnerCtx(ctx, "Creating project...", func() error {
-		var copyErr error
-		fileCount, copyErr = copyTemplate(ctx, templateDir, destDir, vars)
-		return copyErr
+		return copyTemplate(ctx, templateDir, destDir, vars)
 	})
 	if runErr != nil {
 		return runErr
@@ -710,6 +811,11 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		return runErr
 	}
 
+	return runPostCreationSteps(ctx, absOutputDir, opts.name, shouldDeploy, runMode)
+}
+
+// runPostCreationSteps handles post-creation initialization, validation, and optional deploy/run actions.
+func runPostCreationSteps(ctx context.Context, absOutputDir, projectName string, shouldDeploy bool, runMode prompt.RunMode) error {
 	// Initialize project based on type (Node.js, Python, etc.)
 	var nextStepsCmd string
 	projectInitializer := initializer.GetProjectInitializer(absOutputDir)
@@ -734,9 +840,9 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	// Show next steps only if user didn't choose to deploy or run
 	showNextSteps := !shouldDeploy && runMode == prompt.RunModeNone
 	if showNextSteps {
-		prompt.PrintSuccess(ctx, opts.name, absOutputDir, fileCount, nextStepsCmd)
+		prompt.PrintSuccess(ctx, projectName, absOutputDir, nextStepsCmd)
 	} else {
-		prompt.PrintSuccess(ctx, opts.name, absOutputDir, fileCount, "")
+		prompt.PrintSuccess(ctx, projectName, absOutputDir, "")
 	}
 
 	// Execute post-creation actions (deploy and/or run)
@@ -816,14 +922,12 @@ var renameFiles = map[string]string{
 }
 
 // copyTemplate copies the template directory to dest, substituting variables.
-func copyTemplate(ctx context.Context, src, dest string, vars templateVars) (int, error) {
-	fileCount := 0
-
+func copyTemplate(ctx context.Context, src, dest string, vars templateVars) error {
 	// Find the project_name placeholder directory
 	srcProjectDir := ""
 	entries, err := os.ReadDir(src)
 	if err != nil {
-		return 0, err
+		return err
 	}
 	for _, e := range entries {
 		if e.IsDir() && strings.Contains(e.Name(), "{{.project_name}}") {
@@ -932,15 +1036,13 @@ func copyTemplate(ctx context.Context, src, dest string, vars templateVars) (int
 			return err
 		}
 
-		fileCount++
 		return nil
 	})
 	if err != nil {
 		log.Debugf(ctx, "Error during template copy: %v", err)
 	}
-	log.Debugf(ctx, "Copied %d files", fileCount)
 
-	return fileCount, err
+	return err
 }
 
 // processPackageJSON updates the package.json with project-specific values.

@@ -3,6 +3,7 @@ package apps
 import (
 	"testing"
 
+	"github.com/databricks/cli/cmd/apps/internal"
 	"github.com/databricks/cli/libs/apps/prompt"
 	"github.com/stretchr/testify/assert"
 )
@@ -230,7 +231,7 @@ func TestParseDeployAndRunFlags(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			deploy, runMode, err := parseDeployAndRunFlags(tt.deploy, tt.run)
+			deploy, runMode, err := internal.ParseDeployAndRunFlags(tt.deploy, tt.run)
 			if tt.wantErr {
 				assert.Error(t, err)
 				return

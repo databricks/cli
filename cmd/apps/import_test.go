@@ -7,6 +7,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/databricks/cli/cmd/apps/internal"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -120,7 +121,7 @@ env: []`,
 
 			// Run function
 			appValue := tt.inputValue
-			filename, err := inlineAppConfigFile(&appValue)
+			filename, err := internal.InlineAppConfigFile(&appValue)
 
 			if tt.expectError {
 				assert.Error(t, err)
@@ -173,7 +174,7 @@ func TestInlineAppConfigFileErrors(t *testing.T) {
 		require.NoError(t, err)
 
 		appValue := dyn.V(map[string]dyn.Value{"name": dyn.V("test")})
-		_, err = inlineAppConfigFile(&appValue)
+		_, err = internal.InlineAppConfigFile(&appValue)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "failed to parse")
 	})
@@ -192,7 +193,7 @@ func TestInlineAppConfigFileErrors(t *testing.T) {
 		require.NoError(t, err)
 
 		appValue := dyn.V("not a map")
-		_, err = inlineAppConfigFile(&appValue)
+		_, err = internal.InlineAppConfigFile(&appValue)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "app value is not a map")
 	})
@@ -231,7 +232,7 @@ func TestInlineAppConfigFileErrors(t *testing.T) {
 		}
 
 		appValue := dyn.V(map[string]dyn.Value{"name": dyn.V("test")})
-		_, err = inlineAppConfigFile(&appValue)
+		_, err = internal.InlineAppConfigFile(&appValue)
 		assert.Error(t, err)
 		assert.Contains(t, err.Error(), "failed to read")
 	})
@@ -263,7 +264,7 @@ resources:
 			"description": dyn.V("existing description"),
 		})
 
-		filename, err := inlineAppConfigFile(&appValue)
+		filename, err := internal.InlineAppConfigFile(&appValue)
 		require.NoError(t, err)
 		assert.Equal(t, "app.yml", filename)
 
@@ -281,6 +282,76 @@ resources:
 		assert.NotNil(t, result["config"])
 		assert.NotNil(t, result["resources"])
 	})
+}
+
+func TestInlineAppConfigFileCamelCaseConversion(t *testing.T) {
+	tmpDir := t.TempDir()
+	originalDir, err := os.Getwd()
+	require.NoError(t, err)
+	defer func() {
+		_ = os.Chdir(originalDir)
+	}()
+	err = os.Chdir(tmpDir)
+	require.NoError(t, err)
+
+	// Create app.yml with camelCase field names (as might come from API)
+	err = os.WriteFile("app.yml", []byte(`command: ["python", "app.py"]
+env:
+  - name: FOO
+    valueFrom: some-secret
+  - name: BAR
+    value: baz`), 0o644)
+	require.NoError(t, err)
+
+	appValue := dyn.V(map[string]dyn.Value{
+		"name": dyn.V("test-app"),
+	})
+
+	filename, err := internal.InlineAppConfigFile(&appValue)
+	require.NoError(t, err)
+	assert.Equal(t, "app.yml", filename)
+
+	// Verify that camelCase fields are converted to snake_case
+	appMap := appValue.MustMap()
+	var configValue dyn.Value
+	for _, pair := range appMap.Pairs() {
+		if pair.Key.MustString() == "config" {
+			configValue = pair.Value
+			break
+		}
+	}
+
+	require.NotEqual(t, dyn.KindInvalid, configValue.Kind(), "config section should exist")
+	configMap := configValue.MustMap()
+
+	var envValue dyn.Value
+	for _, pair := range configMap.Pairs() {
+		if pair.Key.MustString() == "env" {
+			envValue = pair.Value
+			break
+		}
+	}
+
+	require.NotEqual(t, dyn.KindInvalid, envValue.Kind(), "env should exist in config")
+	envList := envValue.MustSequence()
+	require.Len(t, envList, 2, "should have 2 env vars")
+
+	// Check first env var has value_from (snake_case), not valueFrom (camelCase)
+	firstEnv := envList[0].MustMap()
+	var hasValueFrom bool
+	var hasValueFromCamel bool
+	for _, pair := range firstEnv.Pairs() {
+		key := pair.Key.MustString()
+		if key == "value_from" {
+			hasValueFrom = true
+		}
+		if key == "valueFrom" {
+			hasValueFromCamel = true
+		}
+	}
+
+	assert.True(t, hasValueFrom, "should have value_from (snake_case) field")
+	assert.False(t, hasValueFromCamel, "should NOT have valueFrom (camelCase) field")
 }
 
 func TestPathContainsBundleFolder(t *testing.T) {

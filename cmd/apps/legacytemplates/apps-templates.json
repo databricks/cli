@@ -1,0 +1,361 @@
+{
+    "templates": [
+        {
+            "name": "Agent - OpenAI Agents SDK",
+            "description": "A conversational agent backend and UI using OpenAI Agents SDK and MLflow AgentServer.",
+            "resources": [
+                {
+                    "name": "experiment",
+                    "description": "The experiment that the agent uses to trace the agent's execution.",
+                    "experiment": {
+                        "permission": "CAN_EDIT"
+                    }
+                }
+            ],
+            "git_repo": "https://github.com/databricks/app-templates.git",
+            "path": "agent-openai-agents-sdk",
+            "git_provider": "github",
+            "use_case": "agents"
+        },
+        {
+            "name": "Agent - LangGraph",
+            "description": "A conversational agent backend and UI using LangGraph and MLflow AgentServer.",
+            "resources": [
+                {
+                    "name": "experiment",
+                    "description": "The experiment that the agent uses to trace the agent's execution.",
+                    "experiment": {
+                        "permission": "CAN_EDIT"
+                    }
+                }
+            ],
+            "git_repo": "https://github.com/databricks/app-templates.git",
+            "path": "agent-langgraph",
+            "git_provider": "github",
+            "use_case": "agents"
+        },
+        {
+            "name": "Chat UI",
+            "description": "Create a chat UI that queries a remote agent endpoint or foundation model.",
+            "resources": [
+                {
+                    "name": "serving-endpoint",
+                    "description": "A LLM serving endpoint for the chatbot app.",
+                    "serving_endpoint": {
+                        "permission": "CAN_QUERY"
+                    }
+                }
+            ],
+            "git_repo": "https://github.com/databricks/app-templates.git",
+            "path": "e2e-chatbot-app-next",
+            "git_provider": "github",
+            "use_case": "agents"
+        },
+        {
+            "name": "Chatbot",
+            "description": "Create a chat UI using a large language model and Model Serving.",
+            "framework_type": "dash",
+            "resources": [
+                {
+                    "name": "serving-endpoint",
+                    "description": "A LLM serving endpoint for the chatbot app.",
+                    "serving_endpoint": {
+                        "permission": "CAN_QUERY"
+                    }
+                }
+            ],
+            "git_repo": "https://github.com/databricks/app-templates.git",
+            "path": "dash-chatbot-app",
+            "git_provider": "github"
+        },
+        {
+            "name": "Data app",
+            "description": "Create an app that reads from a SQL warehouse and visualizes the data using the app user's permissions.",
+            "framework_type": "dash",
+            "resources": [
+                {
+                    "name": "sql-warehouse",
+                    "description": "A warehouse for the data app.",
+                    "sql_warehouse": {
+                        "permission": "CAN_USE"
+                    }
+                }
+            ],
+            "git_repo": "https://github.com/databricks/app-templates.git",
+            "path": "dash-data-app-obo-user",
+            "user_api_scopes": [
+                "sql"
+            ],
+            "git_provider": "github",
+            "use_case": "data_app"
+        },
+        {
+            "name": "Lakebase Postgres app",
+            "description": "Create a todo app that stores tasks in a postgres database hosted on Databricks.",
+            "framework_type": "dash",
+            "resources": [
+                {
+                    "name": "database",
+                    "description": "A database for the todo app to store tasks.",
+                    "database": {
+                        "permission": "CAN_CONNECT_AND_CREATE"
+                    }
+                }
+            ],
+            "git_repo": "https://github.com/databricks/app-templates.git",
+            "path": "dash-database-app",
+            "git_provider": "github",
+            "use_case": "database_app"
+        },
+        {
+            "name": "Hello world",
+            "description": "Create a simple app.",
+            "framework_type": "dash",
+            "git_repo": "https://github.com/databricks/app-templates.git",
+            "path": "dash-hello-world-app",
+            "git_provider": "github",
+            "use_case": "hello_world"
+        },
+        {
+            "name": "Hello world",
+            "description": "Create a simple app.",
+            "framework_type": "flask",
+            "git_repo": "https://github.com/databricks/app-templates.git",
+            "path": "flask-hello-world-app",
+            "git_provider": "github",
+            "use_case": "hello_world"
+        },
+        {
+            "name": "Lakebase Postgres app",
+            "description": "Create a todo app that stores tasks in a postgres database hosted on Databricks.",
+            "framework_type": "flask",
+            "resources": [
+                {
+                    "name": "database",
+                    "description": "A database for the todo app to store tasks.",
+                    "database": {
+                        "permission": "CAN_CONNECT_AND_CREATE"
+                    }
+                }
+            ],
+            "git_repo": "https://github.com/databricks/app-templates.git",
+            "path": "flask-database-app",
+            "git_provider": "github",
+            "use_case": "database_app"
+        },
+        {
+            "name": "Chatbot",
+            "description": "Create a chat UI using a large language model and Model Serving.",
+            "framework_type": "gradio",
+            "resources": [
+                {
+                    "name": "serving-endpoint",
+                    "description": "A LLM serving endpoint for the chatbot app.",
+                    "serving_endpoint": {
+                        "permission": "CAN_QUERY"
+                    }
+                }
+            ],
+            "git_repo": "https://github.com/databricks/app-templates.git",
+            "path": "gradio-chatbot-app",
+            "git_provider": "github"
+        },
+        {
+            "name": "Data app",
+            "description": "Create an app that reads from a SQL warehouse and visualizes the data using the app user's permissions.",
+            "framework_type": "gradio",
+            "resources": [
+                {
+                    "name": "sql-warehouse",
+                    "description": "A warehouse for the data app.",
+                    "sql_warehouse": {
+                        "permission": "CAN_USE"
+                    }
+                }
+            ],
+            "git_repo": "https://github.com/databricks/app-templates.git",
+            "path": "gradio-data-app-obo-user",
+            "user_api_scopes": [
+                "sql"
+            ],
+            "git_provider": "github",
+            "use_case": "data_app"
+        },
+        {
+            "name": "Hello world",
+            "description": "Create a simple app.",
+            "framework_type": "gradio",
+            "git_repo": "https://github.com/databricks/app-templates.git",
+            "path": "gradio-hello-world-app",
+            "git_provider": "github",
+            "use_case": "hello_world"
+        },
+        {
+            "name": "Chatbot",
+            "description": "Create a chat UI using a large language model and Model Serving.",
+            "framework_type": "shiny",
+            "resources": [
+                {
+                    "name": "serving-endpoint",
+                    "description": "A LLM serving endpoint for the chatbot app.",
+                    "serving_endpoint": {
+                        "permission": "CAN_QUERY"
+                    }
+                }
+            ],
+            "git_repo": "https://github.com/databricks/app-templates.git",
+            "path": "shiny-chatbot-app",
+            "git_provider": "github"
+        },
+        {
+            "name": "Data app",
+            "description": "Create an app that reads from a SQL warehouse and visualizes the data using the app user's permissions.",
+            "framework_type": "shiny",
+            "resources": [
+                {
+                    "name": "sql-warehouse",
+                    "description": "A warehouse for the data app.",
+                    "sql_warehouse": {
+                        "permission": "CAN_USE"
+                    }
+                }
+            ],
+            "git_repo": "https://github.com/databricks/app-templates.git",
+            "path": "shiny-data-app-obo-user",
+            "user_api_scopes": [
+                "sql"
+            ],
+            "git_provider": "github",
+            "use_case": "data_app"
+        },
+        {
+            "name": "Hello world",
+            "description": "Create a simple app.",
+            "framework_type": "shiny",
+            "git_repo": "https://github.com/databricks/app-templates.git",
+            "path": "shiny-hello-world-app",
+            "git_provider": "github",
+            "use_case": "hello_world"
+        },
+        {
+            "name": "Chatbot",
+            "description": "Create a chat UI using a large language model and Model Serving.",
+            "framework_type": "streamlit",
+            "resources": [
+                {
+                    "name": "serving-endpoint",
+                    "description": "A LLM serving endpoint for the chatbot app.",
+                    "serving_endpoint": {
+                        "permission": "CAN_QUERY"
+                    }
+                }
+            ],
+            "git_repo": "https://github.com/databricks/app-templates.git",
+            "path": "streamlit-chatbot-app",
+            "git_provider": "github"
+        },
+        {
+            "name": "Data app",
+            "description": "Create an app that reads from a SQL warehouse and visualizes the data using the app user's permissions.",
+            "framework_type": "streamlit",
+            "resources": [
+                {
+                    "name": "sql-warehouse",
+                    "description": "A warehouse for the data app.",
+                    "sql_warehouse": {
+                        "permission": "CAN_USE"
+                    }
+                }
+            ],
+            "git_repo": "https://github.com/databricks/app-templates.git",
+            "path": "streamlit-data-app-obo-user",
+            "user_api_scopes": [
+                "sql"
+            ],
+            "git_provider": "github",
+            "use_case": "data_app"
+        },
+        {
+            "name": "Lakebase Postgres app",
+            "description": "Create a todo app that stores tasks in a postgres database hosted on Databricks.",
+            "framework_type": "streamlit",
+            "resources": [
+                {
+                    "name": "database",
+                    "description": "A database for the todo app to store tasks.",
+                    "database": {
+                        "permission": "CAN_CONNECT_AND_CREATE"
+                    }
+                }
+            ],
+            "git_repo": "https://github.com/databricks/app-templates.git",
+            "path": "streamlit-database-app",
+            "git_provider": "github",
+            "use_case": "database_app"
+        },
+        {
+            "name": "Hello world",
+            "description": "Create a simple app.",
+            "framework_type": "streamlit",
+            "git_repo": "https://github.com/databricks/app-templates.git",
+            "path": "streamlit-hello-world-app",
+            "git_provider": "github",
+            "use_case": "hello_world"
+        },
+        {
+            "name": "Hello world",
+            "description": "Create a simple app.",
+            "framework_type": "nodejs",
+            "git_repo": "https://github.com/databricks/app-templates.git",
+            "path": "nodejs-fastapi-hello-world-app",
+            "git_provider": "github",
+            "use_case": "hello_world"
+        },
+        {
+            "name": "MCP Server - Hello World",
+            "description": "A basic MCP server.",
+            "git_repo": "https://github.com/databricks/app-templates.git",
+            "path": "mcp-server-hello-world",
+            "git_provider": "github",
+            "use_case": "agents"
+        },
+        {
+            "name": "MCP Server - OpenAPI Spec",
+            "description": "Make any REST API usable by agents by wrapping it in an MCP server. Deploys an MCP server that exposes REST API operations from an OpenAPI specification stored in a Unity Catalog volume.",
+            "resources": [
+                {
+                    "name": "uc-volume",
+                    "description": "The Unity Catalog volume where your OpenAPI specification file (spec.json) is stored.",
+                    "uc_securable": {
+                        "securable_type": "VOLUME",
+                        "permission": "READ_VOLUME"
+                    }
+                }
+            ],
+            "git_repo": "https://github.com/databricks/app-templates.git",
+            "path": "mcp-server-open-api-spec",
+            "user_api_scopes": [
+                "catalog.connections"
+            ],
+            "git_provider": "github",
+            "use_case": "agents"
+        },
+        {
+            "name": "Non-Conversational Agent",
+            "description": "A non-conversational GenAI agent that processes structured financial document questions and provides yes/no answers with detailed reasoning.",
+            "resources": [
+                {
+                    "name": "experiment",
+                    "description": "The experiment that the agent uses to trace the agent's execution.",
+                    "experiment": {
+                        "permission": "CAN_EDIT"
+                    }
+                }
+            ],
+            "git_repo": "https://github.com/databricks/app-templates.git",
+            "path": "agent-non-conversational",
+            "git_provider": "github",
+            "use_case": "agents"
+        }
+    ]
+}

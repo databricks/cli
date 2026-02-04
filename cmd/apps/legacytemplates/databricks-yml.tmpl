@@ -1,0 +1,100 @@
+bundle:
+  name: {{.ProjectName}}
+
+workspace:
+{{- if .WorkspaceHost}}
+  host: {{.WorkspaceHost}}
+{{- end}}
+
+{{- $hasVariables := false}}
+{{- range resourceTypes}}
+{{- if hasResource .}}
+{{- $hasVariables = true}}
+{{- end}}
+{{- end}}
+{{- if $hasVariables}}
+variables:
+{{- range resourceTypes}}
+{{- if hasResource .}}
+{{- if eq . "database"}}
+{{- /* Database has two variables: database_name and instance_name */}}
+{{- $values := getValues .}}
+{{- if ge (len $values) 2}}
+  database_name:
+    default: {{index $values 1}}
+  instance_name:
+    default: {{index $values 0}}
+{{- end}}
+{{- else}}
+{{- /* Regular single-value resources */}}
+{{- $varName := getVariableName .}}
+{{- if $varName}}
+  {{$varName}}:
+    default: {{getValue .}}
+{{- end}}
+{{- end}}
+{{- end}}
+{{- end}}
+{{- end}}
+
+resources:
+  apps:
+    app:
+      name: {{.AppName}}
+{{- if .AppDescription}}
+      description: {{.AppDescription}}
+{{- end}}
+      source_code_path: ./
+{{- if .UserAPIScopes}}
+      user_api_scopes:
+{{- range .UserAPIScopes}}
+        - {{.}}
+{{- end}}
+{{- end}}
+{{- if hasAppConfig}}
+      config:
+{{- if hasAppCommand}}
+        command:
+{{- range getAppCommand}}
+          - {{.}}
+{{- end}}
+{{- end}}
+{{- if hasAppEnv}}
+        env:
+{{- range getAppEnv}}
+          - name: {{.Name}}
+{{- if .Value}}
+            value: {{.Value}}
+{{- end}}
+{{- if .ValueFrom}}
+            value_from: {{.ValueFrom}}
+{{- end}}
+{{- end}}
+{{- end}}
+{{- if hasAppResources}}
+        resources:
+{{getAppResources}}
+{{- end}}
+{{- end}}
+{{- $hasBindings := false}}
+{{- range resourceTypes}}
+{{- if and (hasResource .) (hasBindings .)}}
+{{- $hasBindings = true}}
+{{- end}}
+{{- end}}
+{{- if $hasBindings}}
+      resources:
+{{- range resourceTypes}}
+{{- if hasResource .}}
+{{- $meta := getMetadata .}}
+{{- $bindingLines := getBindingLines .}}
+{{- if $bindingLines}}
+        - name: {{$meta.YamlName}}
+          description: {{$meta.Description}}
+{{- range $bindingLines}}
+{{.}}
+{{- end}}
+{{- end}}
+{{- end}}
+{{- end}}
+{{- end}}

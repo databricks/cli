@@ -1,7 +1,6 @@
 package apps
 
 import (
-	"bufio"
 	"context"
 	"errors"
 	"fmt"
@@ -10,20 +9,21 @@ import (
 	"sort"
 	"strings"
 
-	"go.yaml.in/yaml/v3"
-
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/deploy/terraform"
 	"github.com/databricks/cli/bundle/generate"
 	"github.com/databricks/cli/bundle/phases"
 	"github.com/databricks/cli/bundle/resources"
 	"github.com/databricks/cli/bundle/run"
+	"github.com/databricks/cli/cmd/apps/internal"
+	"github.com/databricks/cli/cmd/apps/legacytemplates"
 	bundleutils "github.com/databricks/cli/cmd/bundle/utils"
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/libs/apps/initializer"
+	"github.com/databricks/cli/libs/apps/prompt"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/dyn/yamlsaver"
 	"github.com/databricks/cli/libs/env"
 	"github.com/databricks/cli/libs/logdiag"
@@ -43,18 +43,18 @@ func newImportCommand() *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:   "import",
-		Short: "(Experimental) Import an existing Databricks app as a bundle",
-		Long: `(Experimental) Import an existing Databricks app and convert it to a bundle configuration.
+		Short: "(Experimental) Import an existing Databricks app as a project",
+		Long: `(Experimental) Import an existing Databricks app and convert it to an app project.
 
-This command creates a new bundle directory with the app configuration, downloads
-the app source code, binds the bundle to the existing app, and deploys it using
+This command creates a new project directory with the app configuration, downloads
+the app source code, binds the project to the existing app, and deploys it using
 direct deployment mode. This allows you to manage the app as code going forward.
 
 The command will:
-1. Create an empty bundle folder with databricks.yml
+1. Create an empty project folder with databricks.yml
 2. Download the app and add it to databricks.yml
-3. Bind the bundle to the existing app
-4. Deploy the bundle in direct mode
+3. Bind the project to the existing app
+4. Deploy the project in direct mode
 5. Start the app
 6. Optionally clean up the previous app folder (if --cleanup is set)
 
@@ -178,7 +178,7 @@ Examples:
 			var oldSourceCodePath string
 
 			// Run the import in the output directory
-			err = runImport(ctx, w, name, outputDir, &oldSourceCodePath, forceImport, currentUserEmail, quiet)
+			projectInitializer, err := runImport(ctx, w, name, outputDir, &oldSourceCodePath, forceImport, currentUserEmail, quiet)
 			if err != nil {
 				return err
 			}
@@ -202,11 +202,17 @@ Examples:
 			}
 
 			if !quiet {
-				cmdio.LogString(ctx, fmt.Sprintf("\n✓ App '%s' has been successfully imported to %s", name, outputDir))
 				if cleanup && oldSourceCodePath != "" {
-					cmdio.LogString(ctx, "✓ Previous app folder has been cleaned up")
+					cmdio.LogString(ctx, "\n✓ Previous app folder has been cleaned up")
 				}
-				cmdio.LogString(ctx, "\nYou can now deploy changes with: databricks bundle deploy")
+
+				// Get next steps command for local development
+				var nextStepsCmd string
+				if projectInitializer != nil {
+					nextStepsCmd = projectInitializer.NextSteps()
+				}
+
+				prompt.PrintSuccess(ctx, name, outputDir, nextStepsCmd)
 			}
 
 			return nil
@@ -214,7 +220,7 @@ Examples:
 	}
 
 	cmd.Flags().StringVar(&name, "name", "", "Name of the app to import (if not specified, lists all apps)")
-	cmd.Flags().StringVar(&outputDir, "output-dir", "", "Directory to output the bundle to (defaults to app name)")
+	cmd.Flags().StringVar(&outputDir, "output-dir", "", "Directory to output the project to (defaults to app name)")
 	cmd.Flags().BoolVar(&cleanup, "cleanup", false, "Clean up the previous app folder and all its contents")
 	cmd.Flags().BoolVar(&forceImport, "force-import", false, "Force re-import of an app that was already imported (only works for apps you own)")
 	cmd.Flags().BoolVarP(&quiet, "quiet", "q", false, "Suppress informational messages (only show errors and prompts)")
@@ -222,14 +228,17 @@ Examples:
 	return cmd
 }
 
-func runImport(ctx context.Context, w *databricks.WorkspaceClient, appName, outputDir string, oldSourceCodePath *string, forceImport bool, currentUserEmail string, quiet bool) error {
+// runImport orchestrates the app import process: loads the app from workspace,
+// generates app project files, binds to the existing app, deploys, and starts it.
+// Returns the project initializer (or nil) and any error.
+func runImport(ctx context.Context, w *databricks.WorkspaceClient, appName, outputDir string, oldSourceCodePath *string, forceImport bool, currentUserEmail string, quiet bool) (initializer.Initializer, error) {
 	// Step 1: Load the app from workspace
 	if !quiet {
 		cmdio.LogString(ctx, fmt.Sprintf("Loading app '%s' configuration", appName))
 	}
 	app, err := w.Apps.Get(ctx, apps.GetAppRequest{Name: appName})
 	if err != nil {
-		return fmt.Errorf("failed to get app: %w", err)
+		return nil, fmt.Errorf("failed to get app: %w", err)
 	}
 
 	// Save the old source code path for cleanup
@@ -239,13 +248,13 @@ func runImport(ctx context.Context, w *databricks.WorkspaceClient, appName, outp
 	alreadyImported := app.DefaultSourceCodePath != "" && strings.Contains(app.DefaultSourceCodePath, "/.bundle/")
 	if alreadyImported {
 		if !forceImport {
-			return fmt.Errorf("app '%s' appears to have already been imported (workspace path '%s' is inside a .bundle folder). Use --force-import to import anyway", appName, app.DefaultSourceCodePath)
+			return nil, fmt.Errorf("app '%s' appears to have already been imported (source code path '%s' is inside a .bundle folder). Use --force-import to import anyway", appName, app.DefaultSourceCodePath)
 		}
 
 		// Check if the app is owned by the current user
 		appOwner := strings.ToLower(app.Creator)
 		if appOwner != currentUserEmail {
-			return fmt.Errorf("--force-import can only be used for apps you own. App '%s' is owned by '%s'", appName, app.Creator)
+			return nil, fmt.Errorf("--force-import can only be used for apps you own. App '%s' is owned by '%s'", appName, app.Creator)
 		}
 
 		if !quiet {
@@ -256,11 +265,11 @@ func runImport(ctx context.Context, w *databricks.WorkspaceClient, appName, outp
 	// Change to output directory
 	originalDir, err := os.Getwd()
 	if err != nil {
-		return fmt.Errorf("failed to get current directory: %w", err)
+		return nil, fmt.Errorf("failed to get current directory: %w", err)
 	}
 
 	if err := os.Chdir(outputDir); err != nil {
-		return fmt.Errorf("failed to change to output directory: %w", err)
+		return nil, fmt.Errorf("failed to change to output directory: %w", err)
 	}
 	defer func() {
 		_ = os.Chdir(originalDir)
@@ -268,13 +277,22 @@ func runImport(ctx context.Context, w *databricks.WorkspaceClient, appName, outp
 
 	// Step 2: Generate bundle files
 	if !quiet {
-		cmdio.LogString(ctx, "Creating bundle configuration")
+		cmdio.LogString(ctx, "Creating project configuration")
 	}
 
 	// Use the bundle generate app command logic
 	appKey, err := generateAppBundle(ctx, w, app, quiet)
 	if err != nil {
-		return fmt.Errorf("failed to generate bundle: %w", err)
+		return nil, fmt.Errorf("failed to generate bundle: %w", err)
+	}
+
+	// Initialize project dependencies (venv for Python, npm for Node.js)
+	projectInitializer, err := initializeProjectDependencies(ctx, outputDir, quiet)
+	if err != nil {
+		// Log warning but don't fail - dependency initialization is optional
+		if !quiet {
+			cmdio.LogString(ctx, fmt.Sprintf("⚠ Failed to initialize project dependencies: %v", err))
+		}
 	}
 
 	// Set DATABRICKS_BUNDLE_ENGINE to direct mode
@@ -284,7 +302,7 @@ func runImport(ctx context.Context, w *databricks.WorkspaceClient, appName, outp
 	var b *bundle.Bundle
 	if !alreadyImported {
 		if !quiet {
-			cmdio.LogString(ctx, "Binding bundle to existing app")
+			cmdio.LogString(ctx, "\nBinding project to existing app")
 		}
 
 		// Create a command for binding with required flags
@@ -302,22 +320,22 @@ func runImport(ctx context.Context, w *databricks.WorkspaceClient, appName, outp
 			},
 		})
 		if err != nil {
-			return fmt.Errorf("failed to initialize bundle: %w", err)
+			return projectInitializer, fmt.Errorf("failed to initialize bundle: %w", err)
 		}
 
 		// Find the app resource
 		resource, err := b.Config.Resources.FindResourceByConfigKey(appKey)
 		if err != nil {
-			return fmt.Errorf("failed to find resource: %w", err)
+			return projectInitializer, fmt.Errorf("failed to find resource: %w", err)
 		}
 
 		// Verify the app exists
 		exists, err := resource.Exists(ctx, b.WorkspaceClient(), app.Name)
 		if err != nil {
-			return fmt.Errorf("failed to verify app exists: %w", err)
+			return projectInitializer, fmt.Errorf("failed to verify app exists: %w", err)
 		}
 		if !exists {
-			return fmt.Errorf("app '%s' no longer exists in workspace", app.Name)
+			return projectInitializer, fmt.Errorf("app '%s' no longer exists in workspace", app.Name)
 		}
 
 		// Bind the resource
@@ -329,7 +347,7 @@ func runImport(ctx context.Context, w *databricks.WorkspaceClient, appName, outp
 			ResourceId:   app.Name,
 		})
 		if logdiag.HasError(ctx) {
-			return errors.New("failed to bind resource")
+			return projectInitializer, errors.New("failed to bind resource")
 		}
 
 		if !quiet {
@@ -341,7 +359,7 @@ func runImport(ctx context.Context, w *databricks.WorkspaceClient, appName, outp
 
 	// Step 4: Deploy the bundle
 	if !quiet {
-		cmdio.LogString(ctx, "Deploying bundle")
+		cmdio.LogString(ctx, "\nDeploying project")
 	}
 
 	// Create a new command for deployment
@@ -360,41 +378,41 @@ func runImport(ctx context.Context, w *databricks.WorkspaceClient, appName, outp
 		},
 	})
 	if err != nil {
-		return fmt.Errorf("failed to deploy bundle: %w", err)
+		return projectInitializer, fmt.Errorf("failed to deploy bundle: %w", err)
 	}
 
 	if !quiet {
-		cmdio.LogString(ctx, "Bundle deployed successfully")
+		cmdio.LogString(ctx, "Project deployed successfully")
 	}
 
 	// Step 5: Run the app (equivalent to "databricks bundle run app")
 	if !quiet {
-		cmdio.LogString(ctx, "Starting app")
+		cmdio.LogString(ctx, "\nStarting app")
 	}
 
 	// Locate the app resource
 	ref, err := resources.Lookup(b, appKey, run.IsRunnable)
 	if err != nil {
-		return fmt.Errorf("failed to find app resource: %w", err)
+		return projectInitializer, fmt.Errorf("failed to find app resource: %w", err)
 	}
 
 	// Convert the resource to a runner
 	runner, err := run.ToRunner(b, ref)
 	if err != nil {
-		return fmt.Errorf("failed to create runner: %w", err)
+		return projectInitializer, fmt.Errorf("failed to create runner: %w", err)
 	}
 
 	// Run the app with default options
 	runOptions := &run.Options{}
 	output, err := runner.Run(ctx, runOptions)
 	if err != nil {
-		return fmt.Errorf("failed to start app: %w", err)
+		return projectInitializer, fmt.Errorf("failed to start app: %w", err)
 	}
 
 	if output != nil {
 		resultString, err := output.String()
 		if err != nil {
-			return fmt.Errorf("failed to get run output: %w", err)
+			return projectInitializer, fmt.Errorf("failed to get run output: %w", err)
 		}
 		if !quiet {
 			cmdio.LogString(ctx, resultString)
@@ -404,9 +422,38 @@ func runImport(ctx context.Context, w *databricks.WorkspaceClient, appName, outp
 	if !quiet {
 		cmdio.LogString(ctx, "App started successfully")
 	}
-	return nil
+	return projectInitializer, nil
 }
 
+// initializeProjectDependencies initializes project dependencies based on project type.
+// Returns the project initializer (or nil) and any error.
+func initializeProjectDependencies(ctx context.Context, workDir string, quiet bool) (initializer.Initializer, error) {
+	projectInitializer := initializer.GetProjectInitializer(workDir)
+	if projectInitializer == nil {
+		// No initializer found, nothing to do
+		return nil, nil
+	}
+
+	if !quiet {
+		cmdio.LogString(ctx, "\nInitializing project dependencies...")
+	}
+
+	result := projectInitializer.Initialize(ctx, workDir)
+	if !result.Success {
+		if result.Error != nil {
+			return projectInitializer, fmt.Errorf("%s: %w", result.Message, result.Error)
+		}
+		return projectInitializer, fmt.Errorf("%s", result.Message)
+	}
+
+	if !quiet {
+		cmdio.LogString(ctx, "✓ Project dependencies initialized")
+	}
+
+	return projectInitializer, nil
+}
+
+// generateAppBundle creates a databricks.yml configuration file and downloads the app source code.
 func generateAppBundle(ctx context.Context, w *databricks.WorkspaceClient, app *apps.App, quiet bool) (string, error) {
 	// Use constant "app" as the resource key
 	appKey := "app"
@@ -431,7 +478,7 @@ func generateAppBundle(ctx context.Context, w *databricks.WorkspaceClient, app *
 	}
 
 	// Check for app.yml or app.yaml and inline its contents
-	appConfigFile, err := inlineAppConfigFile(&v)
+	appConfigFile, err := internal.InlineAppConfigFile(&v)
 	if err != nil {
 		return "", fmt.Errorf("failed to inline app config: %w", err)
 	}
@@ -442,13 +489,9 @@ func generateAppBundle(ctx context.Context, w *databricks.WorkspaceClient, app *
 		if err != nil {
 			return "", fmt.Errorf("failed to remove %s: %w", appConfigFile, err)
 		}
-		if !quiet {
-			cmdio.LogString(ctx, "Inlined and removed "+appConfigFile)
-		}
 	}
 
 	// Create the bundle configuration with explicit line numbers to control ordering
-	// Use the app name for the bundle name
 	bundleName := textutil.NormalizeString(app.Name)
 	bundleConfig := map[string]dyn.Value{
 		"bundle": dyn.NewValue(map[string]dyn.Value{
@@ -456,12 +499,12 @@ func generateAppBundle(ctx context.Context, w *databricks.WorkspaceClient, app *
 		}, []dyn.Location{{Line: 1}}),
 		"workspace": dyn.NewValue(map[string]dyn.Value{
 			"host": dyn.NewValue(w.Config.Host, []dyn.Location{{Line: 2}}),
-		}, []dyn.Location{{Line: 10}}),
+		}, []dyn.Location{{Line: 2}}),
 		"resources": dyn.NewValue(map[string]dyn.Value{
 			"apps": dyn.V(map[string]dyn.Value{
 				appKey: v,
 			}),
-		}, []dyn.Location{{Line: 20}}),
+		}, []dyn.Location{{Line: 4}}),
 	}
 
 	// Download the app source files
@@ -479,148 +522,107 @@ func generateAppBundle(ctx context.Context, w *databricks.WorkspaceClient, app *
 	}
 
 	// Add blank lines between top-level keys for better readability
-	err = addBlankLinesBetweenTopLevelKeys(databricksYml)
+	err = internal.AddBlankLinesBetweenTopLevelKeys(databricksYml)
 	if err != nil {
 		return "", fmt.Errorf("failed to format databricks.yml: %w", err)
 	}
 
 	if !quiet {
-		cmdio.LogString(ctx, "Bundle configuration created at "+databricksYml)
+		cmdio.LogString(ctx, "Project configuration created at "+databricksYml)
 	}
+
+	// Generate .env file from app.yml if it exists
+	err = generateEnvFile(ctx, w.Config.Host, w.Config.Profile, app, quiet)
+	if err != nil {
+		// Log warning but don't fail - .env is optional
+		if !quiet {
+			cmdio.LogString(ctx, fmt.Sprintf("⚠ Failed to generate .env file: %v", err))
+		}
+	}
+
 	return appKey, nil
 }
 
-// addBlankLinesBetweenTopLevelKeys adds blank lines between top-level sections in YAML
-func addBlankLinesBetweenTopLevelKeys(filename string) error {
-	// Read the file
-	file, err := os.Open(filename)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	var lines []string
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		lines = append(lines, scanner.Text())
-	}
-	if err := scanner.Err(); err != nil {
-		return err
+// buildResourcesMap creates a map of resource names to their IDs/values from app.Resources.
+func buildResourcesMap(app *apps.App) map[string]string {
+	resources := make(map[string]string)
+	if app.Resources == nil {
+		return resources
 	}
 
-	// Add blank lines before top-level keys (lines that don't start with space/tab and contain ':')
-	var result []string
-	for i, line := range lines {
-		// Add blank line before top-level keys (except the first line)
-		if i > 0 && len(line) > 0 && line[0] != ' ' && line[0] != '\t' && strings.Contains(line, ":") {
-			result = append(result, "")
+	for _, resource := range app.Resources {
+		if resource.Name == "" {
+			continue
 		}
-		result = append(result, line)
-	}
 
-	// Write back to file
-	file, err = os.Create(filename)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
+		// Extract the resource ID/value based on type
+		var value string
+		switch {
+		case resource.SqlWarehouse != nil:
+			value = resource.SqlWarehouse.Id
+		case resource.ServingEndpoint != nil:
+			value = resource.ServingEndpoint.Name
+		case resource.Experiment != nil:
+			value = resource.Experiment.ExperimentId
+		case resource.Database != nil:
+			value = resource.Database.DatabaseName
+		case resource.Secret != nil:
+			value = resource.Secret.Key
+		case resource.GenieSpace != nil:
+			value = resource.GenieSpace.SpaceId
+		case resource.Job != nil:
+			value = resource.Job.Id
+		case resource.UcSecurable != nil:
+			value = resource.UcSecurable.SecurableFullName
+		}
 
-	writer := bufio.NewWriter(file)
-	for _, line := range result {
-		_, err := writer.WriteString(line + "\n")
-		if err != nil {
-			return err
+		if value != "" {
+			resources[resource.Name] = value
 		}
 	}
-	return writer.Flush()
+
+	return resources
 }
 
-// inlineAppConfigFile reads app.yml or app.yaml, inlines it into the app value, and returns the filename
-func inlineAppConfigFile(appValue *dyn.Value) (string, error) {
-	// Check for app.yml first, then app.yaml
-	var appConfigFile string
-	var appConfigData []byte
-	var err error
-
+// generateEnvFile generates a .env file from app.yml and app resources.
+func generateEnvFile(ctx context.Context, host, profile string, app *apps.App, quiet bool) error {
+	// Check if app.yml or app.yaml exists
+	var appYmlPath string
 	for _, filename := range []string{"app.yml", "app.yaml"} {
-		if _, statErr := os.Stat(filename); statErr == nil {
-			appConfigFile = filename
-			appConfigData, err = os.ReadFile(filename)
-			if err != nil {
-				return "", fmt.Errorf("failed to read %s: %w", filename, err)
-			}
+		if _, err := os.Stat(filename); err == nil {
+			appYmlPath = filename
 			break
 		}
 	}
 
-	// No app config file found
-	if appConfigFile == "" {
-		return "", nil
+	if appYmlPath == "" {
+		// No app.yml found, skip .env generation
+		return nil
 	}
 
-	// Parse the app config
-	var appConfig map[string]any
-	err = yaml.Unmarshal(appConfigData, &appConfig)
+	// Build resources map from app.Resources
+	resources := buildResourcesMap(app)
+
+	// Create EnvFileBuilder
+	builder, err := legacytemplates.NewEnvFileBuilder(host, profile, app.Name, appYmlPath, resources)
 	if err != nil {
-		return "", fmt.Errorf("failed to parse %s: %w", appConfigFile, err)
+		return fmt.Errorf("failed to create env builder: %w", err)
 	}
 
-	// Get the current app value as a map
-	appMap, ok := appValue.AsMap()
-	if !ok {
-		return "", errors.New("app value is not a map")
+	// Write .env file
+	err = builder.WriteEnvFile(".")
+	if err != nil {
+		return fmt.Errorf("failed to write .env file: %w", err)
 	}
 
-	// Build the new app map with the config section
-	newPairs := make([]dyn.Pair, 0, len(appMap.Pairs())+2)
-
-	// Copy existing pairs
-	newPairs = append(newPairs, appMap.Pairs()...)
-
-	// Create config section
-	configMap := make(map[string]dyn.Value)
-
-	// Add command if present
-	if cmd, ok := appConfig["command"]; ok {
-		cmdValue, err := convert.FromTyped(cmd, dyn.NilValue)
-		if err != nil {
-			return "", fmt.Errorf("failed to convert command: %w", err)
-		}
-		configMap["command"] = cmdValue
+	if !quiet {
+		cmdio.LogString(ctx, "✓ Generated .env file from app.yml")
 	}
 
-	// Add env if present
-	if env, ok := appConfig["env"]; ok {
-		envValue, err := convert.FromTyped(env, dyn.NilValue)
-		if err != nil {
-			return "", fmt.Errorf("failed to convert env: %w", err)
-		}
-		configMap["env"] = envValue
+	// Write .gitignore if it doesn't exist
+	if err := legacytemplates.WriteGitignoreIfMissing(ctx, ".", ""); err != nil && !quiet {
+		cmdio.LogString(ctx, fmt.Sprintf("⚠ Failed to create .gitignore: %v", err))
 	}
 
-	// Add the config section if we have any items
-	if len(configMap) > 0 {
-		newPairs = append(newPairs, dyn.Pair{
-			Key:   dyn.V("config"),
-			Value: dyn.V(configMap),
-		})
-	}
-
-	// Add resources at top level if present
-	if resources, ok := appConfig["resources"]; ok {
-		resourcesValue, err := convert.FromTyped(resources, dyn.NilValue)
-		if err != nil {
-			return "", fmt.Errorf("failed to convert resources: %w", err)
-		}
-		newPairs = append(newPairs, dyn.Pair{
-			Key:   dyn.V("resources"),
-			Value: resourcesValue,
-		})
-	}
-
-	// Create the new app value with the config section
-	newMapping := dyn.NewMappingFromPairs(newPairs)
-	*appValue = dyn.NewValue(newMapping, appValue.Locations())
-
-	return appConfigFile, nil
+	return nil
 }

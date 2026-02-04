@@ -87,7 +87,7 @@ func TestNextSteps(t *testing.T) {
 	assert.Contains(t, pythonUv.NextSteps(), "uv run")
 
 	pythonPip := &InitializerPythonPip{}
-	assert.Contains(t, pythonPip.NextSteps(), ".venv")
+	assert.Contains(t, pythonPip.NextSteps(), "uv run")
 }
 
 func TestSupportsDevRemote(t *testing.T) {
