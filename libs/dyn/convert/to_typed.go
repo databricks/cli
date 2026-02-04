@@ -38,6 +38,16 @@ func ToTyped(dst any, src dyn.Value) error {
 		panic("cannot set destination value")
 	}
 
+	// For destination types that cannot hold a string variable reference,
+	// check if source is a pure variable reference and zero the destination.
+	// String and Interface are excluded because they can hold the reference as a value.
+	if dstv.Kind() != reflect.String && dstv.Kind() != reflect.Interface {
+		if src.Kind() == dyn.KindString && dynvar.IsPureVariableReference(src.MustString()) {
+			dstv.SetZero()
+			return nil
+		}
+	}
+
 	switch dstv.Kind() {
 	case reflect.Struct:
 		// Handle SDK native types using JSON unmarshaling.
@@ -140,12 +150,6 @@ func toTypedStruct(dst reflect.Value, src dyn.Value) error {
 	case dyn.KindNil:
 		dst.SetZero()
 		return nil
-	case dyn.KindString:
-		// Ignore pure variable references (e.g. ${var.foo}).
-		if dynvar.IsPureVariableReference(src.MustString()) {
-			dst.SetZero()
-			return nil
-		}
 	default:
 		// Fall through to the error case.
 	}
@@ -179,12 +183,6 @@ func toTypedMap(dst reflect.Value, src dyn.Value) error {
 	case dyn.KindNil:
 		dst.SetZero()
 		return nil
-	case dyn.KindString:
-		// Ignore pure variable references (e.g. ${var.foo}).
-		if dynvar.IsPureVariableReference(src.MustString()) {
-			dst.SetZero()
-			return nil
-		}
 	default:
 		// Fall through to the error case.
 	}
@@ -212,12 +210,6 @@ func toTypedSlice(dst reflect.Value, src dyn.Value) error {
 	case dyn.KindNil:
 		dst.SetZero()
 		return nil
-	case dyn.KindString:
-		// Ignore pure variable references (e.g. ${var.foo}).
-		if dynvar.IsPureVariableReference(src.MustString()) {
-			dst.SetZero()
-			return nil
-		}
 	default:
 		// Fall through to the error case.
 	}
@@ -267,11 +259,6 @@ func toTypedBool(dst reflect.Value, src dyn.Value) error {
 			dst.SetBool(false)
 			return nil
 		}
-		// Ignore pure variable references (e.g. ${var.foo}).
-		if dynvar.IsPureVariableReference(src.MustString()) {
-			dst.SetZero()
-			return nil
-		}
 	default:
 		// Fall through to the error case.
 	}
@@ -305,11 +292,6 @@ func toTypedInt(dst reflect.Value, src dyn.Value) error {
 			dst.SetInt(i64)
 			return nil
 		}
-		// Ignore pure variable references (e.g. ${var.foo}).
-		if dynvar.IsPureVariableReference(src.MustString()) {
-			dst.SetZero()
-			return nil
-		}
 	default:
 		// Fall through to the error case.
 	}
@@ -328,11 +310,6 @@ func toTypedFloat(dst reflect.Value, src dyn.Value) error {
 	case dyn.KindString:
 		if f64, err := strconv.ParseFloat(src.MustString(), 64); err == nil {
 			dst.SetFloat(f64)
-			return nil
-		}
-		// Ignore pure variable references (e.g. ${var.foo}).
-		if dynvar.IsPureVariableReference(src.MustString()) {
-			dst.SetZero()
 			return nil
 		}
 	default:
