@@ -48,6 +48,13 @@ func equalValues(v1, v2 reflect.Value) bool {
 
 	kind := v1.Kind()
 
+	// Handle SDK native types by comparing their string representation.
+	if isSDKNativeType(v1Type) {
+		str1, _ := marshalSDKNative(v1)
+		str2, _ := marshalSDKNative(v2)
+		return str1 == str2
+	}
+
 	// Perform nil checks for nilable types.
 	switch kind {
 	case reflect.Pointer, reflect.Map, reflect.Slice, reflect.Interface, reflect.Chan, reflect.Func:

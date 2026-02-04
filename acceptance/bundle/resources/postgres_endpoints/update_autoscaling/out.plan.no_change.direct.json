@@ -47,7 +47,7 @@
     },
     "suspend_timeout_duration": {
       "action": "skip",
-      "reason": "empty_struct",
+      "reason": "builtin_rule",
       "old": "300s",
       "new": "300s"
     }
