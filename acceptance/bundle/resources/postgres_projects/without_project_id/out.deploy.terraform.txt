@@ -1,0 +1,15 @@
+Warning: required field "project_id" is not set
+  at resources.postgres_projects.my_project
+  in databricks.yml:10:7
+
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-no-id-[UNIQUE_NAME]/default/files...
+Error: exit status 1
+
+Error: Missing required argument
+
+  on bundle.tf.json line 26, in resource.databricks_postgres_project.my_project:
+  26:       }
+
+The argument "project_id" is required, but no definition was found.
+
+

@@ -25,6 +25,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	"github.com/databricks/databricks-sdk-go/service/postgres"
 	"github.com/databricks/databricks-sdk-go/service/serving"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
@@ -166,6 +167,16 @@ var testConfig map[string]any = map[string]any{
 						},
 					},
 				},
+			},
+		},
+	},
+
+	"postgres_projects": &resources.PostgresProject{
+		PostgresProjectConfig: resources.PostgresProjectConfig{
+			ProjectId: "test-project",
+			ProjectSpec: postgres.ProjectSpec{
+				DisplayName: "Test Project",
+				PgVersion:   16,
 			},
 		},
 	},
@@ -527,6 +538,66 @@ var testDeps = map[string]prepareWorkspace{
 				{
 					Principal:  "user@example.com",
 					Permission: workspace.AclPermissionManage,
+				},
+			},
+		}, nil
+	},
+
+	"postgres_branches": func(client *databricks.WorkspaceClient) (any, error) {
+		// Create parent project first
+		_, err := client.Postgres.CreateProject(context.Background(), postgres.CreateProjectRequest{
+			ProjectId: "test-project-for-branch",
+			Project: postgres.Project{
+				Spec: &postgres.ProjectSpec{
+					DisplayName: "Test Project for Branch",
+					PgVersion:   16,
+				},
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return &resources.PostgresBranch{
+			PostgresBranchConfig: resources.PostgresBranchConfig{
+				Parent:     "projects/test-project-for-branch",
+				BranchId:   "test-branch",
+				BranchSpec: postgres.BranchSpec{},
+			},
+		}, nil
+	},
+
+	"postgres_endpoints": func(client *databricks.WorkspaceClient) (any, error) {
+		// Create parent project first
+		_, err := client.Postgres.CreateProject(context.Background(), postgres.CreateProjectRequest{
+			ProjectId: "test-project-for-endpoint",
+			Project: postgres.Project{
+				Spec: &postgres.ProjectSpec{
+					DisplayName: "Test Project for Endpoint",
+					PgVersion:   16,
+				},
+			},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		// Create parent branch
+		_, err = client.Postgres.CreateBranch(context.Background(), postgres.CreateBranchRequest{
+			Parent:   "projects/test-project-for-endpoint",
+			BranchId: "test-branch-for-endpoint",
+			Branch:   postgres.Branch{},
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		return &resources.PostgresEndpoint{
+			PostgresEndpointConfig: resources.PostgresEndpointConfig{
+				Parent:     "projects/test-project-for-endpoint/branches/test-branch-for-endpoint",
+				EndpointId: "test-endpoint",
+				EndpointSpec: postgres.EndpointSpec{
+					EndpointType: postgres.EndpointTypeEndpointTypeReadWrite,
 				},
 			},
 		}, nil

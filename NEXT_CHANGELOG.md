@@ -11,6 +11,7 @@
 
 ### Bundles
 
+* Add support for Lakebase resources (postgres_projects, postgres_branches, postgres_endpoints) ([#4423](https://github.com/databricks/cli/pull/4423))
 * Add missing values to SchemaGrantPrivilege enum ([#4380](https://github.com/databricks/cli/pull/4380))
 * Added support for UC catalogs (only in direct mode) ([#4342](https://github.com/databricks/cli/pull/4342))
 * engine/direct: Fix updates to fields being ignored for database_catalogs, synced_database_tables (([#4388](https://github.com/databricks/cli/pull/4388)))

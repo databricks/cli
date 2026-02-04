@@ -14,6 +14,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	"github.com/databricks/databricks-sdk-go/service/postgres"
 	"github.com/databricks/databricks-sdk-go/service/serving"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/stretchr/testify/assert"
@@ -44,6 +45,9 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 		"resources.database_catalogs.test_database_catalog":           {ID: "1"},
 		"resources.synced_database_tables.test_synced_database_table": {ID: "1"},
 		"resources.alerts.test_alert":                                 {ID: "1"},
+		"resources.postgres_projects.test_postgres_project":           {ID: "projects/test-project"},
+		"resources.postgres_branches.test_postgres_branch":            {ID: "projects/test-project/branches/main"},
+		"resources.postgres_endpoints.test_postgres_endpoint":         {ID: "projects/test-project/branches/main/endpoints/primary"},
 	}
 	err := StateToBundle(context.Background(), state, &config)
 	assert.NoError(t, err)
@@ -99,6 +103,15 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 
 	assert.Equal(t, "1", config.Resources.Alerts["test_alert"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Alerts["test_alert"].ModifiedStatus)
+
+	assert.Equal(t, "projects/test-project", config.Resources.PostgresProjects["test_postgres_project"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.PostgresProjects["test_postgres_project"].ModifiedStatus)
+
+	assert.Equal(t, "projects/test-project/branches/main", config.Resources.PostgresBranches["test_postgres_branch"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.PostgresBranches["test_postgres_branch"].ModifiedStatus)
+
+	assert.Equal(t, "projects/test-project/branches/main/endpoints/primary", config.Resources.PostgresEndpoints["test_postgres_endpoint"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.PostgresEndpoints["test_postgres_endpoint"].ModifiedStatus)
 
 	AssertFullResourceCoverage(t, &config)
 }
@@ -237,6 +250,32 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 					},
 				},
 			},
+			PostgresProjects: map[string]*resources.PostgresProject{
+				"test_postgres_project": {
+					PostgresProjectConfig: resources.PostgresProjectConfig{
+						ProjectId: "test-project",
+						ProjectSpec: postgres.ProjectSpec{
+							DisplayName: "test_postgres_project",
+						},
+					},
+				},
+			},
+			PostgresBranches: map[string]*resources.PostgresBranch{
+				"test_postgres_branch": {
+					PostgresBranchConfig: resources.PostgresBranchConfig{
+						BranchId: "main",
+						Parent:   "projects/test-project",
+					},
+				},
+			},
+			PostgresEndpoints: map[string]*resources.PostgresEndpoint{
+				"test_postgres_endpoint": {
+					PostgresEndpointConfig: resources.PostgresEndpointConfig{
+						EndpointId: "primary",
+						Parent:     "projects/test-project/branches/main",
+					},
+				},
+			},
 		},
 	}
 
@@ -299,6 +338,15 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 
 	assert.Equal(t, "", config.Resources.Alerts["test_alert"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Alerts["test_alert"].ModifiedStatus)
+
+	assert.Equal(t, "", config.Resources.PostgresProjects["test_postgres_project"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.PostgresProjects["test_postgres_project"].ModifiedStatus)
+
+	assert.Equal(t, "", config.Resources.PostgresBranches["test_postgres_branch"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.PostgresBranches["test_postgres_branch"].ModifiedStatus)
+
+	assert.Equal(t, "", config.Resources.PostgresEndpoints["test_postgres_endpoint"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.PostgresEndpoints["test_postgres_endpoint"].ModifiedStatus)
 
 	AssertFullResourceCoverage(t, &config)
 }
@@ -530,6 +578,52 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 					},
 				},
 			},
+			PostgresProjects: map[string]*resources.PostgresProject{
+				"test_postgres_project": {
+					PostgresProjectConfig: resources.PostgresProjectConfig{
+						ProjectId: "test-project",
+						ProjectSpec: postgres.ProjectSpec{
+							DisplayName: "test_postgres_project",
+						},
+					},
+				},
+				"test_postgres_project_new": {
+					PostgresProjectConfig: resources.PostgresProjectConfig{
+						ProjectId: "test-project-new",
+						ProjectSpec: postgres.ProjectSpec{
+							DisplayName: "test_postgres_project_new",
+						},
+					},
+				},
+			},
+			PostgresBranches: map[string]*resources.PostgresBranch{
+				"test_postgres_branch": {
+					PostgresBranchConfig: resources.PostgresBranchConfig{
+						BranchId: "main",
+						Parent:   "projects/test-project",
+					},
+				},
+				"test_postgres_branch_new": {
+					PostgresBranchConfig: resources.PostgresBranchConfig{
+						BranchId: "dev",
+						Parent:   "projects/test-project-new",
+					},
+				},
+			},
+			PostgresEndpoints: map[string]*resources.PostgresEndpoint{
+				"test_postgres_endpoint": {
+					PostgresEndpointConfig: resources.PostgresEndpointConfig{
+						EndpointId: "primary",
+						Parent:     "projects/test-project/branches/main",
+					},
+				},
+				"test_postgres_endpoint_new": {
+					PostgresEndpointConfig: resources.PostgresEndpointConfig{
+						EndpointId: "replica",
+						Parent:     "projects/test-project-new/branches/dev",
+					},
+				},
+			},
 		},
 	}
 	state := ExportedResourcesMap{
@@ -567,6 +661,12 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 		"resources.database_instances.test_database_instance_old":  {ID: "2"},
 		"resources.alerts.test_alert":                              {ID: "1"},
 		"resources.alerts.test_alert_old":                          {ID: "2"},
+		"resources.postgres_projects.test_postgres_project":        {ID: "projects/test-project"},
+		"resources.postgres_projects.test_postgres_project_old":    {ID: "projects/test-project-old"},
+		"resources.postgres_branches.test_postgres_branch":         {ID: "projects/test-project/branches/main"},
+		"resources.postgres_branches.test_postgres_branch_old":     {ID: "projects/test-project/branches/old"},
+		"resources.postgres_endpoints.test_postgres_endpoint":      {ID: "projects/test-project/branches/main/endpoints/primary"},
+		"resources.postgres_endpoints.test_postgres_endpoint_old":  {ID: "projects/test-project/branches/main/endpoints/old"},
 	}
 	err := StateToBundle(context.Background(), state, &config)
 	assert.NoError(t, err)
@@ -691,6 +791,27 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Alerts["test_alert_old"].ModifiedStatus)
 	assert.Equal(t, "", config.Resources.Alerts["test_alert_new"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Alerts["test_alert_new"].ModifiedStatus)
+
+	assert.Equal(t, "projects/test-project", config.Resources.PostgresProjects["test_postgres_project"].ID)
+	assert.Equal(t, "", config.Resources.PostgresProjects["test_postgres_project"].ModifiedStatus)
+	assert.Equal(t, "projects/test-project-old", config.Resources.PostgresProjects["test_postgres_project_old"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.PostgresProjects["test_postgres_project_old"].ModifiedStatus)
+	assert.Equal(t, "", config.Resources.PostgresProjects["test_postgres_project_new"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.PostgresProjects["test_postgres_project_new"].ModifiedStatus)
+
+	assert.Equal(t, "projects/test-project/branches/main", config.Resources.PostgresBranches["test_postgres_branch"].ID)
+	assert.Equal(t, "", config.Resources.PostgresBranches["test_postgres_branch"].ModifiedStatus)
+	assert.Equal(t, "projects/test-project/branches/old", config.Resources.PostgresBranches["test_postgres_branch_old"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.PostgresBranches["test_postgres_branch_old"].ModifiedStatus)
+	assert.Equal(t, "", config.Resources.PostgresBranches["test_postgres_branch_new"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.PostgresBranches["test_postgres_branch_new"].ModifiedStatus)
+
+	assert.Equal(t, "projects/test-project/branches/main/endpoints/primary", config.Resources.PostgresEndpoints["test_postgres_endpoint"].ID)
+	assert.Equal(t, "", config.Resources.PostgresEndpoints["test_postgres_endpoint"].ModifiedStatus)
+	assert.Equal(t, "projects/test-project/branches/main/endpoints/old", config.Resources.PostgresEndpoints["test_postgres_endpoint_old"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.PostgresEndpoints["test_postgres_endpoint_old"].ModifiedStatus)
+	assert.Equal(t, "", config.Resources.PostgresEndpoints["test_postgres_endpoint_new"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.PostgresEndpoints["test_postgres_endpoint_new"].ModifiedStatus)
 
 	AssertFullResourceCoverage(t, &config)
 }

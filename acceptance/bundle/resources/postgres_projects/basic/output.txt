@@ -1,0 +1,69 @@
+
+>>> [CLI] bundle validate
+Name: deploy-postgres-single-project-[UNIQUE_NAME]
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-single-project-[UNIQUE_NAME]/default
+
+Validation OK!
+
+>>> [CLI] bundle summary
+Name: deploy-postgres-single-project-[UNIQUE_NAME]
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-single-project-[UNIQUE_NAME]/default
+Resources:
+  Postgres projects:
+    my_project:
+      Name: Test Postgres Project
+      URL:  (not deployed)
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-single-project-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] postgres get-project projects/test-pg-proj-[UNIQUE_NAME]
+{
+  "name": "projects/test-pg-proj-[UNIQUE_NAME]",
+  "status": {
+    "branch_logical_size_limit_bytes": [NUMID],
+    "default_endpoint_settings": {
+      "autoscaling_limit_max_cu": 4,
+      "autoscaling_limit_min_cu": 0.5,
+      "suspend_timeout_duration": "300s"
+    },
+    "display_name": "Test Postgres Project",
+    "history_retention_duration": "604800s",
+    "owner": "[USERNAME]",
+    "pg_version": 16,
+    "synthetic_storage_size_bytes": 0
+  },
+  "uid": "[UUID]"
+}
+
+>>> [CLI] bundle summary
+Name: deploy-postgres-single-project-[UNIQUE_NAME]
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-single-project-[UNIQUE_NAME]/default
+Resources:
+  Postgres projects:
+    my_project:
+      Name: Test Postgres Project
+      URL:  (not deployed)
+
+>>> print_requests.py --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.postgres_projects.my_project
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-single-project-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!

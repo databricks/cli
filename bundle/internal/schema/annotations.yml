@@ -206,6 +206,15 @@ github.com/databricks/cli/bundle/config.Resources:
       The pipeline definitions for the bundle, where each key is the name of the pipeline.
     "markdown_description": |-
       The pipeline definitions for the bundle, where each key is the name of the pipeline. See [\_](/dev-tools/bundles/resources.md#pipelines).
+  "postgres_branches":
+    "description": |-
+      PLACEHOLDER
+  "postgres_endpoints":
+    "description": |-
+      PLACEHOLDER
+  "postgres_projects":
+    "description": |-
+      PLACEHOLDER
   "quality_monitors":
     "description": |-
       The quality monitor definitions for the bundle, where each key is the name of the quality monitor.
@@ -773,6 +782,141 @@ github.com/databricks/cli/bundle/config/resources.PipelinePermission:
     "description": |-
       PLACEHOLDER
   "user_name":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.PostgresBranch:
+  "branch_id":
+    "description": |-
+      PLACEHOLDER
+  "create_time":
+    "description": |-
+      PLACEHOLDER
+  "expire_time":
+    "description": |-
+      PLACEHOLDER
+  "is_protected":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
+  "name":
+    "description": |-
+      PLACEHOLDER
+  "no_expiry":
+    "description": |-
+      PLACEHOLDER
+  "parent":
+    "description": |-
+      PLACEHOLDER
+  "source_branch":
+    "description": |-
+      PLACEHOLDER
+  "source_branch_lsn":
+    "description": |-
+      PLACEHOLDER
+  "source_branch_time":
+    "description": |-
+      PLACEHOLDER
+  "spec":
+    "description": |-
+      PLACEHOLDER
+  "status":
+    "description": |-
+      PLACEHOLDER
+  "ttl":
+    "description": |-
+      PLACEHOLDER
+  "uid":
+    "description": |-
+      PLACEHOLDER
+  "update_time":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.PostgresEndpoint:
+  "autoscaling_limit_max_cu":
+    "description": |-
+      PLACEHOLDER
+  "autoscaling_limit_min_cu":
+    "description": |-
+      PLACEHOLDER
+  "create_time":
+    "description": |-
+      PLACEHOLDER
+  "disabled":
+    "description": |-
+      PLACEHOLDER
+  "endpoint_id":
+    "description": |-
+      PLACEHOLDER
+  "endpoint_type":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
+  "name":
+    "description": |-
+      PLACEHOLDER
+  "no_suspension":
+    "description": |-
+      PLACEHOLDER
+  "parent":
+    "description": |-
+      PLACEHOLDER
+  "settings":
+    "description": |-
+      PLACEHOLDER
+  "spec":
+    "description": |-
+      PLACEHOLDER
+  "status":
+    "description": |-
+      PLACEHOLDER
+  "suspend_timeout_duration":
+    "description": |-
+      PLACEHOLDER
+  "uid":
+    "description": |-
+      PLACEHOLDER
+  "update_time":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.PostgresProject:
+  "create_time":
+    "description": |-
+      PLACEHOLDER
+  "default_endpoint_settings":
+    "description": |-
+      PLACEHOLDER
+  "display_name":
+    "description": |-
+      PLACEHOLDER
+  "history_retention_duration":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
+  "name":
+    "description": |-
+      PLACEHOLDER
+  "pg_version":
+    "description": |-
+      PLACEHOLDER
+  "project_id":
+    "description": |-
+      PLACEHOLDER
+  "spec":
+    "description": |-
+      PLACEHOLDER
+  "status":
+    "description": |-
+      PLACEHOLDER
+  "uid":
+    "description": |-
+      PLACEHOLDER
+  "update_time":
     "description": |-
       PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.SchemaGrant:
