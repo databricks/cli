@@ -1,9 +1,3 @@
 Cloud = true
 RecordRequests = true
 Ignore = [".databricks", "pipeline.json"]
-
-# This test consistent fails with this error on DBR:
-# +Error: Post "[DATABRICKS_URL]/api/2.0/pipelines": dial tcp [DATABRICKS_HOST]: connect: connection refused
-#
-# Not sure why. TODO(shreyas), investigate and allowlist this test on DBR.
-RunsOnDbr = false
