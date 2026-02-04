@@ -1,21 +1,17 @@
 # Databricks notebook source
 
-# This notebook runs CLI acceptance tests on a DBR cluster.
+# This notebook runs CLI cloud acceptance tests on a DBR cluster.
 # It is meant to be submitted as a job task from the TestDbrAcceptance* tests.
 #
 # The notebook expects the following parameters:
 # - archive_path: Path to the archive.tar.gz file in the workspace
-# - test_type: Type of tests to run:
-#     - "cloud": Cloud acceptance tests (Cloud=true), run with CLOUD_ENV set
-#     - "local": Local acceptance tests (Local=true), run without CLOUD_ENV
-# - cloud_env: Cloud environment (e.g., "aws", "azure", "gcp") - only for cloud tests
+# - cloud_env: Cloud environment (e.g., "aws", "azure", "gcp")
 # - test_filter: Optional regex filter for test names (e.g., "bundle/generate")
-# - short: "true" to run in short mode, "false" otherwise
-# - test_default_warehouse_id: Default SQL warehouse ID (for cloud tests)
-# - test_default_cluster_id: Default cluster ID (for cloud tests)
-# - test_instance_pool_id: Instance pool ID (for cloud tests)
-# - test_metastore_id: Unity Catalog metastore ID (for cloud tests)
-# - test_sp_application_id: Service principal application ID (for cloud tests)
+# - test_default_warehouse_id: Default SQL warehouse ID
+# - test_default_cluster_id: Default cluster ID
+# - test_instance_pool_id: Instance pool ID
+# - test_metastore_id: Unity Catalog metastore ID
+# - test_sp_application_id: Service principal application ID
 
 import os
 import platform
@@ -57,17 +53,17 @@ def get_current_user_email() -> str:
     return w.current_user.me().user_name
 
 
-def get_debug_log_path(test_type: str) -> Path:
+def get_debug_log_path() -> Path:
     """Get a stable path for debug logs under the user's home directory."""
     import uuid
 
     unique_id = uuid.uuid4().hex[:8]
     log_dir = Path.home() / "dbr_test_logs"
     log_dir.mkdir(parents=True, exist_ok=True)
-    return log_dir / f"{test_type}_{unique_id}.log"
+    return log_dir / f"cloud_{unique_id}.log"
 
 
-def copy_debug_log_to_workspace(local_log_path: Path, test_type: str) -> tuple[str, str]:
+def copy_debug_log_to_workspace(local_log_path: Path) -> tuple[str, str]:
     """Copy debug log from driver filesystem to workspace and return (workspace_path, url)."""
     import uuid
 
@@ -77,7 +73,7 @@ def copy_debug_log_to_workspace(local_log_path: Path, test_type: str) -> tuple[s
 
     # Workspace FUSE path
     workspace_dir = f"/Workspace/Users/{user_email}/dbr_acceptance_tests"
-    workspace_path = f"{workspace_dir}/debug-{test_type}-{timestamp}-{unique_id}.log"
+    workspace_path = f"{workspace_dir}/debug-cloud-{timestamp}-{unique_id}.log"
 
     # Create directory and copy file
     os.makedirs(workspace_dir, exist_ok=True)
@@ -194,9 +190,7 @@ class TestResult:
 def run_tests(
     extract_dir: Path,
     env: dict,
-    test_type: str = "cloud",
     test_filter: str = "",
-    short: bool = False,
     cloud_env: str = "",
     test_default_warehouse_id: str = "",
     test_default_cluster_id: str = "",
@@ -205,11 +199,11 @@ def run_tests(
     test_user_email: str = "",
     test_sp_application_id: str = "",
 ) -> TestResult:
-    """Run CLI acceptance tests (cloud or local)."""
+    """Run CLI cloud acceptance tests."""
     cli_dir = extract_dir / "cli"
 
     # Create debug log file
-    debug_log_path = get_debug_log_path(test_type)
+    debug_log_path = get_debug_log_path()
 
     cmd = [
         "go",
@@ -221,63 +215,44 @@ def run_tests(
         "-workspace-tmp-dir",
     ]
 
-    if short:
-        cmd.append("-short")
-
     if test_filter:
         cmd.extend(["-run", f"^TestAccept/{test_filter}"])
     else:
         cmd.extend(["-run", "^TestAccept"])
 
-    # Configure based on test type
-    if test_type == "cloud":
-        # Cloud tests: run with CLOUD_ENV set and workspace access
-        env["CLOUD_ENV"] = cloud_env
-        # Only tests using direct deployment are run on DBR.
-        # Terraform based tests are out of scope for DBR.
-        env["ENVFILTER"] = "DATABRICKS_BUNDLE_ENGINE=direct"
+    # Cloud tests: run with CLOUD_ENV set and workspace access
+    env["CLOUD_ENV"] = cloud_env
+    # Only tests using direct deployment are run on DBR.
+    # Terraform based tests are out of scope for DBR.
+    env["ENVFILTER"] = "DATABRICKS_BUNDLE_ENGINE=direct"
 
-        if test_default_warehouse_id:
-            env["TEST_DEFAULT_WAREHOUSE_ID"] = test_default_warehouse_id
-        if test_default_cluster_id:
-            env["TEST_DEFAULT_CLUSTER_ID"] = test_default_cluster_id
-        if test_instance_pool_id:
-            env["TEST_INSTANCE_POOL_ID"] = test_instance_pool_id
-        if test_metastore_id:
-            env["TEST_METASTORE_ID"] = test_metastore_id
-        if test_user_email:
-            env["TEST_USER_EMAIL"] = test_user_email
-        if test_sp_application_id:
-            env["TEST_SP_APPLICATION_ID"] = test_sp_application_id
-    else:
-        # Local tests: run WITHOUT CLOUD_ENV (uses mock servers).
-        # The test framework will set DATABRICKS_HOST and DATABRICKS_TOKEN
-        # to point to its mock server.
-        pass
+    if test_default_warehouse_id:
+        env["TEST_DEFAULT_WAREHOUSE_ID"] = test_default_warehouse_id
+    if test_default_cluster_id:
+        env["TEST_DEFAULT_CLUSTER_ID"] = test_default_cluster_id
+    if test_instance_pool_id:
+        env["TEST_INSTANCE_POOL_ID"] = test_instance_pool_id
+    if test_metastore_id:
+        env["TEST_METASTORE_ID"] = test_metastore_id
+    if test_user_email:
+        env["TEST_USER_EMAIL"] = test_user_email
+    if test_sp_application_id:
+        env["TEST_SP_APPLICATION_ID"] = test_sp_application_id
 
     # Write header to debug log
     with open(debug_log_path, "w") as log_file:
-        log_file.write(f"Test type: {test_type}\n")
         log_file.write(f"Command: {' '.join(cmd)}\n")
         log_file.write(f"Working directory: {cli_dir}\n")
-        if test_type == "cloud":
-            log_file.write(f"CLOUD_ENV: {cloud_env}\n")
-        else:
-            log_file.write("CLOUD_ENV: (not set - local tests)\n")
+        log_file.write(f"CLOUD_ENV: {cloud_env}\n")
         log_file.write(f"Test filter: {test_filter or '(all tests)'}\n")
         log_file.write(f"PATH: {env.get('PATH', '')[:200]}...\n")
         log_file.write(f"GOROOT: {env.get('GOROOT', '')}\n")
         log_file.write("\n" + "=" * 60 + "\n")
         log_file.write("TEST OUTPUT:\n")
         log_file.write("=" * 60 + "\n")
-
-    print(f"Test type: {test_type}")
     print(f"Running command: {' '.join(cmd)}")
     print(f"Working directory: {cli_dir}")
-    if test_type == "cloud":
-        print(f"CLOUD_ENV: {cloud_env}")
-    else:
-        print("CLOUD_ENV: (not set - local tests)")
+    print(f"CLOUD_ENV: {cloud_env}")
     print(f"Test filter: {test_filter or '(all tests)'}")
     print(f"Go version: ", end="", flush=True)
 
@@ -322,7 +297,7 @@ def run_tests(
         log_file.write("=" * 60 + "\n")
 
     # Copy debug log to workspace for persistent access
-    _, debug_log_url = copy_debug_log_to_workspace(debug_log_path, test_type)
+    _, debug_log_url = copy_debug_log_to_workspace(debug_log_path)
     print(f"\nDebug log URL: {debug_log_url}")
 
     print("\n" + "=" * 60)
@@ -340,9 +315,7 @@ def main():
     # Get parameters from widgets
     dbutils.widgets.text("archive_path", "")
     dbutils.widgets.text("cloud_env", "")
-    dbutils.widgets.text("test_type", "cloud")
     dbutils.widgets.text("test_filter", "")
-    dbutils.widgets.text("short", "false")
     dbutils.widgets.text("test_default_warehouse_id", "")
     dbutils.widgets.text("test_default_cluster_id", "")
     dbutils.widgets.text("test_instance_pool_id", "")
@@ -352,9 +325,7 @@ def main():
 
     archive_path = dbutils.widgets.get("archive_path")
     cloud_env = dbutils.widgets.get("cloud_env")
-    test_type = dbutils.widgets.get("test_type") or "cloud"
     test_filter = dbutils.widgets.get("test_filter")
-    short = dbutils.widgets.get("short").lower() == "true"
     test_default_warehouse_id = dbutils.widgets.get("test_default_warehouse_id")
     test_default_cluster_id = dbutils.widgets.get("test_default_cluster_id")
     test_instance_pool_id = dbutils.widgets.get("test_instance_pool_id")
@@ -364,20 +335,15 @@ def main():
 
     if not archive_path:
         raise ValueError("archive_path parameter is required")
-    if test_type not in ("cloud", "local"):
-        raise ValueError(f"test_type must be 'cloud' or 'local', got '{test_type}'")
-    if test_type == "cloud" and not cloud_env:
-        raise ValueError("cloud_env parameter is required for cloud tests")
+    if not cloud_env:
+        raise ValueError("cloud_env parameter is required")
 
     print("=" * 60)
-    print(f"DBR Test Runner ({test_type.upper()})")
+    print("DBR Cloud Test Runner")
     print("=" * 60)
     print(f"Archive path: {archive_path}")
-    print(f"Test type: {test_type}")
-    if test_type == "cloud":
-        print(f"Cloud environment: {cloud_env}")
+    print(f"Cloud environment: {cloud_env}")
     print(f"Test filter: {test_filter or '(none)'}")
-    print(f"Short mode: {short}")
     print("=" * 60)
 
     # Extract the archive
@@ -390,9 +356,7 @@ def main():
     result = run_tests(
         extract_dir=extract_dir,
         env=env,
-        test_type=test_type,
         test_filter=test_filter,
-        short=short,
         cloud_env=cloud_env,
         test_default_warehouse_id=test_default_warehouse_id,
         test_default_cluster_id=test_default_cluster_id,
@@ -416,7 +380,7 @@ def main():
         # Include relevant output in the exception for debugging
         stdout_preview = result.stdout[-100000:] if result.stdout else "(no stdout)"
         stderr_preview = result.stderr[-100000:] if result.stderr else "(no stderr)"
-        error_msg = f"""{test_type.capitalize()} tests failed with return code {result.return_code}
+        error_msg = f"""Cloud tests failed with return code {result.return_code}
 
 Debug log: {result.debug_log_url}
 

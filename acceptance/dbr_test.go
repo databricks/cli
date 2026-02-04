@@ -65,9 +65,6 @@ type dbrTestConfig struct {
 	// If empty, all cloud tests are run.
 	cloudTestFilter string
 
-	// short enables short mode for tests.
-	short bool
-
 	// timeout is the maximum duration to wait for the job to complete.
 	timeout time.Duration
 
@@ -170,8 +167,8 @@ func uploadRunner(ctx context.Context, t *testing.T, w *databricks.WorkspaceClie
 }
 
 // buildBaseParams builds the common parameters for test tasks.
-func buildBaseParams(testDir, archiveName string, config dbrTestConfig) map[string]string {
-	params := map[string]string{
+func buildBaseParams(testDir, archiveName string) map[string]string {
+	return map[string]string{
 		"archive_path":              path.Join(testDir, archiveName),
 		"cloud_env":                 os.Getenv("CLOUD_ENV"),
 		"test_default_warehouse_id": os.Getenv("TEST_DEFAULT_WAREHOUSE_ID"),
@@ -181,14 +178,6 @@ func buildBaseParams(testDir, archiveName string, config dbrTestConfig) map[stri
 		"test_user_email":           os.Getenv("TEST_USER_EMAIL"),
 		"test_sp_application_id":    os.Getenv("TEST_SP_APPLICATION_ID"),
 	}
-
-	if config.short {
-		params["short"] = "true"
-	} else {
-		params["short"] = "false"
-	}
-
-	return params
 }
 
 // runDbrTests creates a job and runs it to execute cloud and local acceptance tests on DBR.
@@ -199,15 +188,8 @@ func runDbrTests(ctx context.Context, t *testing.T, w *databricks.WorkspaceClien
 	}
 
 	// Build cloud test parameters (Cloud=true tests, run with CLOUD_ENV set)
-	cloudParams := buildBaseParams(testDir, archiveName, config)
-	cloudParams["test_type"] = "cloud"
+	cloudParams := buildBaseParams(testDir, archiveName)
 	cloudParams["test_filter"] = config.cloudTestFilter
-
-	// TODO: Re-enable local tests once performance is acceptable.
-	// Build local test parameters (Local=true tests, run WITHOUT CLOUD_ENV)
-	// localParams := buildBaseParams(testDir, archiveName, config)
-	// localParams["test_type"] = "local"
-	// localParams["test_filter"] = config.localTestFilter
 
 	jobName := "DBR Tests"
 	if config.cloudTestFilter != "" {
@@ -228,9 +210,6 @@ func runDbrTests(ctx context.Context, t *testing.T, w *databricks.WorkspaceClien
 	// } else {
 	// 	t.Log("  Local tests: (all)")
 	// }
-	if config.verbose {
-		t.Logf("  Short mode: %v", config.short)
-	}
 
 	notebookPath := path.Join(testDir, runnerName)
 
@@ -376,7 +355,6 @@ func TestDbrAcceptance(t *testing.T) {
 	}
 
 	runDbrAcceptanceTests(t, dbrTestConfig{
-		short:   false,
 		timeout: 3 * time.Hour,
 		verbose: os.Getenv("DBR_TEST_VERBOSE") != "",
 	})
