@@ -120,6 +120,11 @@ func convertChangeDesc(path string, cd *deployplan.ChangeDesc) (*ConfigChangeDes
 func DetectChanges(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) (Changes, error) {
 	changes := make(Changes)
 
+	err := ensureSnapshotAvailable(ctx, b, engine)
+	if err != nil {
+		return nil, fmt.Errorf("state snapshot not available: %w", err)
+	}
+
 	deployBundle := &direct.DeploymentBundle{}
 	var statePath string
 	if engine.IsDirect() {

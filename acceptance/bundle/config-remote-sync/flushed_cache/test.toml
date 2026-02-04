@@ -7,4 +7,4 @@ Ignore = [".databricks", "databricks.yml"]
 DATABRICKS_BUNDLE_ENABLE_EXPERIMENTAL_YAML_SYNC = "true"
 
 [EnvMatrix]
-DATABRICKS_BUNDLE_ENGINE = ["terraform"]
+DATABRICKS_BUNDLE_ENGINE = ["direct", "terraform"]

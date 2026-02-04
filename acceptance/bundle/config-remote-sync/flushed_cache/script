@@ -22,5 +22,4 @@ ls -la .databricks 2>&1 || echo "Cache directory removed"
 
 title "Check for changes after cache flush"
 echo
-echo "State is not pulled, so no diff is detected even though resource was modified"
 $CLI bundle config-remote-sync
