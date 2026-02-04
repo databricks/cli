@@ -1,7 +1,6 @@
 package dresources
 
 import (
-	"fmt"
 	"reflect"
 	"slices"
 	"strings"
@@ -116,8 +115,7 @@ func TestRemoteTypeIsSupersetOfStateType(t *testing.T) {
 
 			// Validate that all fields in StateType exist in RemoteType
 			var missingFields []string
-			var typeMismatches []string
-			collectTypeIssues(stateType.Elem(), remoteType.Elem(), "", &missingFields, &typeMismatches)
+			collectTypeIssues(t, stateType.Elem(), remoteType.Elem(), "", &missingFields)
 
 			knownMissing := make(map[string]bool)
 			for _, f := range knownMissingInRemoteType[resourceType] {
@@ -142,14 +140,11 @@ func TestRemoteTypeIsSupersetOfStateType(t *testing.T) {
 			if len(unexpectedMissing) > 0 {
 				t.Errorf("fields in StateType not found in RemoteType: %v", unexpectedMissing)
 			}
-			if len(typeMismatches) > 0 {
-				t.Logf("type mismatches (not an error): %v", typeMismatches)
-			}
 		})
 	}
 }
 
-func collectTypeIssues(stateType, remoteType reflect.Type, prefix string, missingFields, typeMismatches *[]string) {
+func collectTypeIssues(t *testing.T, stateType, remoteType reflect.Type, prefix string, missingFields *[]string) {
 	for i := range stateType.NumField() {
 		stateField := stateType.Field(i)
 
@@ -161,7 +156,7 @@ func collectTypeIssues(stateType, remoteType reflect.Type, prefix string, missin
 
 		// For embedded structs, check their fields against remoteType directly
 		if stateField.Anonymous && stateField.Type.Kind() == reflect.Struct {
-			collectTypeIssues(stateField.Type, remoteType, prefix, missingFields, typeMismatches)
+			collectTypeIssues(t, stateField.Type, remoteType, prefix, missingFields)
 			continue
 		}
 
@@ -184,11 +179,10 @@ func collectTypeIssues(stateType, remoteType reflect.Type, prefix string, missin
 
 		// For nested structs, recurse
 		if stateField.Type.Kind() == reflect.Struct && remoteField.Type.Kind() == reflect.Struct {
-			collectTypeIssues(stateField.Type, remoteField.Type, fieldPath+".", missingFields, typeMismatches)
+			collectTypeIssues(t, stateField.Type, remoteField.Type, fieldPath+".", missingFields)
 		} else {
-			*typeMismatches = append(*typeMismatches,
-				fmt.Sprintf("%s: StateType has %s, RemoteType has %s",
-					fieldPath, stateField.Type.String(), remoteField.Type.String()))
+			t.Logf("type mismatch (not an error): %s: StateType has %s, RemoteType has %s",
+				fieldPath, stateField.Type.String(), remoteField.Type.String())
 		}
 	}
 }
