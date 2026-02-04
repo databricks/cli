@@ -208,24 +208,30 @@ func TestResourcesBindSupport(t *testing.T) {
 		},
 		PostgresProjects: map[string]*resources.PostgresProject{
 			"my_postgres_project": {
-				ProjectId: "my-postgres-project",
-				ProjectSpec: postgres.ProjectSpec{
-					DisplayName: "my_postgres_project",
+				PostgresProjectConfig: resources.PostgresProjectConfig{
+					ProjectId: "my-postgres-project",
+					ProjectSpec: postgres.ProjectSpec{
+						DisplayName: "my_postgres_project",
+					},
 				},
 			},
 		},
 		PostgresBranches: map[string]*resources.PostgresBranch{
 			"my_postgres_branch": {
-				BranchId: "my-postgres-branch",
-				Parent:   "projects/my-postgres-project",
+				PostgresBranchConfig: resources.PostgresBranchConfig{
+					BranchId: "my-postgres-branch",
+					Parent:   "projects/my-postgres-project",
+				},
 			},
 		},
 		PostgresEndpoints: map[string]*resources.PostgresEndpoint{
 			"my_postgres_endpoint": {
-				EndpointId: "my-postgres-endpoint",
-				Parent:     "projects/my-postgres-project/branches/my-postgres-branch",
-				EndpointSpec: postgres.EndpointSpec{
-					EndpointType: postgres.EndpointTypeEndpointTypeReadWrite,
+				PostgresEndpointConfig: resources.PostgresEndpointConfig{
+					EndpointId: "my-postgres-endpoint",
+					Parent:     "projects/my-postgres-project/branches/my-postgres-branch",
+					EndpointSpec: postgres.EndpointSpec{
+						EndpointType: postgres.EndpointTypeEndpointTypeReadWrite,
+					},
 				},
 			},
 		},

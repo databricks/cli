@@ -123,39 +123,21 @@ resources:
 
     recreate_on_changes:
       # IMMUTABLE:
-      - spec.source_branch
-      - spec.source_branch_lsn
-      - spec.source_branch_time
-
-    ignore_remote_changes:
-      # INPUT_ONLY:
-      - spec
-
-      # OUTPUT_ONLY:
-      - parent
+      - source_branch
+      - source_branch_lsn
+      - source_branch_time
 
   postgres_endpoints:
 
     recreate_on_changes:
       # IMMUTABLE:
-      - spec.endpoint_type
-
-    ignore_remote_changes:
-      # INPUT_ONLY:
-      - spec
-
-      # OUTPUT_ONLY:
-      - parent
+      - endpoint_type
 
   postgres_projects:
 
     recreate_on_changes:
       # IMMUTABLE:
-      - spec.pg_version
-
-    ignore_remote_changes:
-      # INPUT_ONLY:
-      - spec
+      - pg_version
 
   # quality_monitors: no api field behaviors
 

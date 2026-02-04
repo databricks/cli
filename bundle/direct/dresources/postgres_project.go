@@ -13,12 +13,7 @@ type ResourcePostgresProject struct {
 	client *databricks.WorkspaceClient
 }
 
-// PostgresProjectState contains only the fields needed for creation/update.
-// It does NOT include output-only fields like Name, which are only available after API response.
-type PostgresProjectState struct {
-	ProjectId string                `json:"project_id,omitempty"`
-	Spec      *postgres.ProjectSpec `json:"spec,omitempty"`
-}
+type PostgresProjectState = resources.PostgresProjectConfig
 
 func (*ResourcePostgresProject) New(client *databricks.WorkspaceClient) *ResourcePostgresProject {
 	return &ResourcePostgresProject{client: client}
@@ -26,8 +21,8 @@ func (*ResourcePostgresProject) New(client *databricks.WorkspaceClient) *Resourc
 
 func (*ResourcePostgresProject) PrepareState(input *resources.PostgresProject) *PostgresProjectState {
 	return &PostgresProjectState{
-		Spec:      &input.ProjectSpec,
-		ProjectId: input.ProjectId,
+		ProjectId:   input.ProjectId,
+		ProjectSpec: input.ProjectSpec,
 	}
 }
 
@@ -42,7 +37,7 @@ func (*ResourcePostgresProject) RemapState(remote *postgres.Project) *PostgresPr
 		// The read API does not return the spec, only the status.
 		// This means we cannot detect remote drift for spec fields.
 		// Use an empty struct (not nil) so field-level diffing works correctly.
-		Spec: &postgres.ProjectSpec{
+		ProjectSpec: postgres.ProjectSpec{
 			DefaultEndpointSettings:  nil,
 			DisplayName:              "",
 			HistoryRetentionDuration: nil,
@@ -60,7 +55,7 @@ func (r *ResourcePostgresProject) DoCreate(ctx context.Context, config *Postgres
 	waiter, err := r.client.Postgres.CreateProject(ctx, postgres.CreateProjectRequest{
 		ProjectId: config.ProjectId,
 		Project: postgres.Project{
-			Spec: config.Spec,
+			Spec: &config.ProjectSpec,
 
 			// Output-only fields.
 			CreateTime:      nil,
@@ -87,11 +82,13 @@ func (r *ResourcePostgresProject) DoCreate(ctx context.Context, config *Postgres
 func (r *ResourcePostgresProject) DoUpdate(ctx context.Context, id string, config *PostgresProjectState, changes Changes) (*postgres.Project, error) {
 	// Build update mask from fields that have action="update" in the changes map.
 	// This excludes immutable fields and fields that haven't changed.
-	fieldPaths := collectUpdatePaths(changes)
+	// Prefix with "spec." because the API expects paths relative to the Project object,
+	// not relative to our flattened state type.
+	fieldPaths := collectUpdatePathsWithPrefix(changes, "spec.")
 
 	waiter, err := r.client.Postgres.UpdateProject(ctx, postgres.UpdateProjectRequest{
 		Project: postgres.Project{
-			Spec: config.Spec,
+			Spec: &config.ProjectSpec,
 
 			// Output-only fields.
 			CreateTime:      nil,

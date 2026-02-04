@@ -17,15 +17,17 @@ import (
 
 func TestConvertPostgresProject(t *testing.T) {
 	src := resources.PostgresProject{
-		ProjectId: "my-project",
-		ProjectSpec: postgres.ProjectSpec{
-			DisplayName:              "My Postgres Project",
-			PgVersion:                17,
-			HistoryRetentionDuration: duration.New(86400 * time.Second),
-			DefaultEndpointSettings: &postgres.ProjectDefaultEndpointSettings{
-				AutoscalingLimitMinCu:  0.5,
-				AutoscalingLimitMaxCu:  4,
-				SuspendTimeoutDuration: duration.New(300 * time.Second),
+		PostgresProjectConfig: resources.PostgresProjectConfig{
+			ProjectId: "my-project",
+			ProjectSpec: postgres.ProjectSpec{
+				DisplayName:              "My Postgres Project",
+				PgVersion:                17,
+				HistoryRetentionDuration: duration.New(86400 * time.Second),
+				DefaultEndpointSettings: &postgres.ProjectDefaultEndpointSettings{
+					AutoscalingLimitMinCu:  0.5,
+					AutoscalingLimitMaxCu:  4,
+					SuspendTimeoutDuration: duration.New(300 * time.Second),
+				},
 			},
 		},
 	}
@@ -56,7 +58,9 @@ func TestConvertPostgresProject(t *testing.T) {
 
 func TestConvertPostgresProjectMinimal(t *testing.T) {
 	src := resources.PostgresProject{
-		ProjectId: "minimal-project",
+		PostgresProjectConfig: resources.PostgresProjectConfig{
+			ProjectId: "minimal-project",
+		},
 	}
 
 	vin, err := convert.FromTyped(src, dyn.NilValue)

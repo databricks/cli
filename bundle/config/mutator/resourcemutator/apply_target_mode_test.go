@@ -217,24 +217,30 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 				},
 				PostgresProjects: map[string]*resources.PostgresProject{
 					"postgres_project1": {
-						ProjectId: "postgres-project-1",
-						ProjectSpec: postgres.ProjectSpec{
-							DisplayName: "postgres_project1",
+						PostgresProjectConfig: resources.PostgresProjectConfig{
+							ProjectId: "postgres-project-1",
+							ProjectSpec: postgres.ProjectSpec{
+								DisplayName: "postgres_project1",
+							},
 						},
 					},
 				},
 				PostgresBranches: map[string]*resources.PostgresBranch{
 					"postgres_branch1": {
-						BranchId: "postgres-branch-1",
-						Parent:   "projects/postgres-project-1",
+						PostgresBranchConfig: resources.PostgresBranchConfig{
+							BranchId: "postgres-branch-1",
+							Parent:   "projects/postgres-project-1",
+						},
 					},
 				},
 				PostgresEndpoints: map[string]*resources.PostgresEndpoint{
 					"postgres_endpoint1": {
-						EndpointId: "postgres-endpoint-1",
-						Parent:     "projects/postgres-project-1/branches/postgres-branch-1",
-						EndpointSpec: postgres.EndpointSpec{
-							EndpointType: postgres.EndpointTypeEndpointTypeReadWrite,
+						PostgresEndpointConfig: resources.PostgresEndpointConfig{
+							EndpointId: "postgres-endpoint-1",
+							Parent:     "projects/postgres-project-1/branches/postgres-branch-1",
+							EndpointSpec: postgres.EndpointSpec{
+								EndpointType: postgres.EndpointTypeEndpointTypeReadWrite,
+							},
 						},
 					},
 				},

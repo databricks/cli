@@ -9,11 +9,9 @@
   "new_state": {
     "value": {
       "branch_id": "dev-branch",
-      "parent": "${resources.postgres_projects.my_project.id}",
-      "spec": {
-        "is_protected": false,
-        "no_expiry": true
-      }
+      "is_protected": false,
+      "no_expiry": true,
+      "parent": "${resources.postgres_projects.my_project.id}"
     },
     "vars": {
       "parent": "${resources.postgres_projects.my_project.id}"

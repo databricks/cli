@@ -129,15 +129,42 @@ resources:
     recreate_on_changes:
       # project_id is immutable (part of hierarchical name)
       - project_id
+    ignore_remote_changes:
+      # The read API does not return spec fields, only status.
+      # We cannot detect remote drift for these fields.
+      - display_name
+      - pg_version
+      - history_retention_duration
+      - default_endpoint_settings
 
   postgres_branches:
     recreate_on_changes:
       # parent and branch_id are immutable (part of hierarchical name)
       - parent
       - branch_id
+    ignore_remote_changes:
+      # The read API does not return spec fields, only status.
+      # We cannot detect remote drift for these fields.
+      - source_branch
+      - source_branch_lsn
+      - source_branch_time
+      - ttl
+      - expire_time
+      - is_protected
+      - no_expiry
 
   postgres_endpoints:
     recreate_on_changes:
       # parent and endpoint_id are immutable (part of hierarchical name)
       - parent
       - endpoint_id
+    ignore_remote_changes:
+      # The read API does not return spec fields, only status.
+      # We cannot detect remote drift for these fields.
+      - endpoint_type
+      - autoscaling_limit_min_cu
+      - autoscaling_limit_max_cu
+      - suspend_timeout_duration
+      - disabled
+      - no_suspension
+      - settings

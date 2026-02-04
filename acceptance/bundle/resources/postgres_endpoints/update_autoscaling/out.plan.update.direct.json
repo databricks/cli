@@ -8,14 +8,12 @@
   "action": "update",
   "new_state": {
     "value": {
+      "autoscaling_limit_max_cu": 4,
+      "autoscaling_limit_min_cu": 0.5,
       "endpoint_id": "my-endpoint",
+      "endpoint_type": "ENDPOINT_TYPE_READ_WRITE",
       "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
-      "spec": {
-        "autoscaling_limit_max_cu": 4,
-        "autoscaling_limit_min_cu": 0.5,
-        "endpoint_type": "ENDPOINT_TYPE_READ_WRITE",
-        "suspend_timeout_duration": "300s"
-      }
+      "suspend_timeout_duration": "300s"
     }
   },
   "remote_state": {
@@ -38,25 +36,25 @@
     "update_time": "[TIMESTAMP]"
   },
   "changes": {
-    "spec.autoscaling_limit_max_cu": {
+    "autoscaling_limit_max_cu": {
       "action": "update",
       "old": 8,
       "new": 4
     },
-    "spec.autoscaling_limit_min_cu": {
+    "autoscaling_limit_min_cu": {
       "action": "skip",
-      "reason": "api_schema",
+      "reason": "builtin_rule",
       "old": 0.5,
       "new": 0.5
     },
-    "spec.endpoint_type": {
+    "endpoint_type": {
       "action": "skip",
-      "reason": "api_schema",
+      "reason": "builtin_rule",
       "old": "ENDPOINT_TYPE_READ_WRITE",
       "new": "ENDPOINT_TYPE_READ_WRITE",
       "remote": ""
     },
-    "spec.suspend_timeout_duration": {
+    "suspend_timeout_duration": {
       "action": "skip",
       "reason": "empty_struct",
       "old": "300s",

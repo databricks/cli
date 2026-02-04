@@ -9,11 +9,9 @@
   "new_state": {
     "value": {
       "branch_id": "dev-branch",
-      "parent": "projects/test-pg-proj-[UNIQUE_NAME]",
-      "spec": {
-        "is_protected": false,
-        "no_expiry": true
-      }
+      "is_protected": false,
+      "no_expiry": true,
+      "parent": "projects/test-pg-proj-[UNIQUE_NAME]"
     }
   },
   "remote_state": {
@@ -34,14 +32,14 @@
     "update_time": "[TIMESTAMP]"
   },
   "changes": {
-    "spec.is_protected": {
+    "is_protected": {
       "action": "update",
       "old": true,
       "new": false
     },
-    "spec.no_expiry": {
+    "no_expiry": {
       "action": "skip",
-      "reason": "api_schema",
+      "reason": "builtin_rule",
       "old": true,
       "new": true
     }

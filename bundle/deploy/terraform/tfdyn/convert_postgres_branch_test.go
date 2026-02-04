@@ -17,11 +17,13 @@ import (
 
 func TestConvertPostgresBranch(t *testing.T) {
 	src := resources.PostgresBranch{
-		BranchId: "my-branch",
-		Parent:   "projects/my-project",
-		BranchSpec: postgres.BranchSpec{
-			IsProtected: true,
-			NoExpiry:    true,
+		PostgresBranchConfig: resources.PostgresBranchConfig{
+			BranchId: "my-branch",
+			Parent:   "projects/my-project",
+			BranchSpec: postgres.BranchSpec{
+				IsProtected: true,
+				NoExpiry:    true,
+			},
 		},
 	}
 
@@ -46,12 +48,14 @@ func TestConvertPostgresBranch(t *testing.T) {
 
 func TestConvertPostgresBranchWithSourceBranch(t *testing.T) {
 	src := resources.PostgresBranch{
-		BranchId: "feature-branch",
-		Parent:   "projects/my-project",
-		BranchSpec: postgres.BranchSpec{
-			SourceBranch:    "projects/my-project/branches/main",
-			SourceBranchLsn: "0/1234ABCD",
-			Ttl:             duration.New(86400 * time.Second),
+		PostgresBranchConfig: resources.PostgresBranchConfig{
+			BranchId: "feature-branch",
+			Parent:   "projects/my-project",
+			BranchSpec: postgres.BranchSpec{
+				SourceBranch:    "projects/my-project/branches/main",
+				SourceBranchLsn: "0/1234ABCD",
+				Ttl:             duration.New(86400 * time.Second),
+			},
 		},
 	}
 
@@ -77,8 +81,10 @@ func TestConvertPostgresBranchWithSourceBranch(t *testing.T) {
 
 func TestConvertPostgresBranchMinimal(t *testing.T) {
 	src := resources.PostgresBranch{
-		BranchId: "minimal-branch",
-		Parent:   "projects/minimal-project",
+		PostgresBranchConfig: resources.PostgresBranchConfig{
+			BranchId: "minimal-branch",
+			Parent:   "projects/minimal-project",
+		},
 	}
 
 	vin, err := convert.FromTyped(src, dyn.NilValue)

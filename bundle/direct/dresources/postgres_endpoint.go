@@ -21,13 +21,7 @@ type ResourcePostgresEndpoint struct {
 	client *databricks.WorkspaceClient
 }
 
-// PostgresEndpointState contains only the fields needed for creation/update.
-// It does NOT include output-only fields like Name, which are only available after API response.
-type PostgresEndpointState struct {
-	EndpointId string                 `json:"endpoint_id,omitempty"`
-	Parent     string                 `json:"parent,omitempty"`
-	Spec       *postgres.EndpointSpec `json:"spec,omitempty"`
-}
+type PostgresEndpointState = resources.PostgresEndpointConfig
 
 func (*ResourcePostgresEndpoint) New(client *databricks.WorkspaceClient) *ResourcePostgresEndpoint {
 	return &ResourcePostgresEndpoint{client: client}
@@ -35,9 +29,9 @@ func (*ResourcePostgresEndpoint) New(client *databricks.WorkspaceClient) *Resour
 
 func (*ResourcePostgresEndpoint) PrepareState(input *resources.PostgresEndpoint) *PostgresEndpointState {
 	return &PostgresEndpointState{
-		EndpointId: input.EndpointId,
-		Parent:     input.Parent,
-		Spec:       &input.EndpointSpec,
+		EndpointId:   input.EndpointId,
+		Parent:       input.Parent,
+		EndpointSpec: input.EndpointSpec,
 	}
 }
 
@@ -53,7 +47,7 @@ func (*ResourcePostgresEndpoint) RemapState(remote *postgres.Endpoint) *Postgres
 		// The read API does not return the spec, only the status.
 		// This means we cannot detect remote drift for spec fields.
 		// Use an empty struct (not nil) so field-level diffing works correctly.
-		Spec: &postgres.EndpointSpec{
+		EndpointSpec: postgres.EndpointSpec{
 			AutoscalingLimitMaxCu:  0,
 			AutoscalingLimitMinCu:  0,
 			Disabled:               false,
@@ -105,7 +99,7 @@ func (r *ResourcePostgresEndpoint) DoCreate(ctx context.Context, config *Postgre
 		EndpointId: config.EndpointId,
 		Parent:     config.Parent,
 		Endpoint: postgres.Endpoint{
-			Spec: config.Spec,
+			Spec: &config.EndpointSpec,
 
 			// Output-only fields.
 			CreateTime:      nil,
@@ -139,11 +133,13 @@ func (r *ResourcePostgresEndpoint) DoCreate(ctx context.Context, config *Postgre
 func (r *ResourcePostgresEndpoint) DoUpdate(ctx context.Context, id string, config *PostgresEndpointState, changes Changes) (*postgres.Endpoint, error) {
 	// Build update mask from fields that have action="update" in the changes map.
 	// This excludes immutable fields and fields that haven't changed.
-	fieldPaths := collectUpdatePaths(changes)
+	// Prefix with "spec." because the API expects paths relative to the Endpoint object,
+	// not relative to our flattened state type.
+	fieldPaths := collectUpdatePathsWithPrefix(changes, "spec.")
 
 	waiter, err := r.client.Postgres.UpdateEndpoint(ctx, postgres.UpdateEndpointRequest{
 		Endpoint: postgres.Endpoint{
-			Spec: config.Spec,
+			Spec: &config.EndpointSpec,
 
 			// Output-only fields.
 			CreateTime:      nil,

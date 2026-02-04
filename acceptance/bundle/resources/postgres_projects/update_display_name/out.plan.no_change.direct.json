@@ -20,9 +20,9 @@
     "update_time": "[TIMESTAMP]"
   },
   "changes": {
-    "spec.default_endpoint_settings": {
+    "default_endpoint_settings": {
       "action": "skip",
-      "reason": "api_schema",
+      "reason": "builtin_rule",
       "old": {
         "autoscaling_limit_max_cu": 4,
         "autoscaling_limit_min_cu": 0.5,
@@ -34,21 +34,21 @@
         "suspend_timeout_duration": "300s"
       }
     },
-    "spec.display_name": {
+    "display_name": {
       "action": "skip",
-      "reason": "api_schema",
+      "reason": "builtin_rule",
       "old": "Original Name",
       "new": "Original Name"
     },
-    "spec.history_retention_duration": {
+    "history_retention_duration": {
       "action": "skip",
       "reason": "empty_struct",
       "old": "604800s",
       "new": "604800s"
     },
-    "spec.pg_version": {
+    "pg_version": {
       "action": "skip",
-      "reason": "api_schema",
+      "reason": "builtin_rule",
       "old": 16,
       "new": 16
     }

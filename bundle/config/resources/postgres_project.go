@@ -6,19 +6,29 @@ import (
 
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/postgres"
 )
 
-type PostgresProject struct {
-	BaseResource
+type PostgresProjectConfig struct {
 	postgres.ProjectSpec
 
 	// ProjectId is the user-specified ID for the project (becomes part of the hierarchical name).
 	// This is specified during creation and becomes part of Name: "projects/{project_id}"
 	ProjectId string `json:"project_id"`
+}
 
-	// Name is the hierarchical resource name (output-only). Format: "projects/{project_id}"
-	Name string `json:"name,omitempty" bundle:"readonly"`
+func (c *PostgresProjectConfig) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, c)
+}
+
+func (c *PostgresProjectConfig) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(c)
+}
+
+type PostgresProject struct {
+	BaseResource
+	PostgresProjectConfig
 }
 
 func (p *PostgresProject) Exists(ctx context.Context, w *databricks.WorkspaceClient, name string) (bool, error) {

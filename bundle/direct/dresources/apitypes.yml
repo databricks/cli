@@ -4,8 +4,8 @@
 # Set a value to null to remove a type:
 # jobs: null
 
-postgres_branches: postgres.Branch
+postgres_branches: postgres.BranchSpec
 
-postgres_endpoints: postgres.Endpoint
+postgres_endpoints: postgres.EndpointSpec
 
-postgres_projects: postgres.Project
+postgres_projects: postgres.ProjectSpec

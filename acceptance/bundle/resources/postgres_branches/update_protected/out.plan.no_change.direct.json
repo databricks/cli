@@ -24,15 +24,15 @@
     "update_time": "[TIMESTAMP]"
   },
   "changes": {
-    "spec.is_protected": {
+    "is_protected": {
       "action": "skip",
-      "reason": "api_schema",
+      "reason": "builtin_rule",
       "old": false,
       "new": false
     },
-    "spec.no_expiry": {
+    "no_expiry": {
       "action": "skip",
-      "reason": "api_schema",
+      "reason": "builtin_rule",
       "old": true,
       "new": true
     }

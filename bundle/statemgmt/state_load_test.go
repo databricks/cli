@@ -252,19 +252,28 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 			},
 			PostgresProjects: map[string]*resources.PostgresProject{
 				"test_postgres_project": {
-					ProjectSpec: postgres.ProjectSpec{
-						DisplayName: "test_postgres_project",
+					PostgresProjectConfig: resources.PostgresProjectConfig{
+						ProjectId: "test-project",
+						ProjectSpec: postgres.ProjectSpec{
+							DisplayName: "test_postgres_project",
+						},
 					},
 				},
 			},
 			PostgresBranches: map[string]*resources.PostgresBranch{
 				"test_postgres_branch": {
-					BranchId: "main",
+					PostgresBranchConfig: resources.PostgresBranchConfig{
+						BranchId: "main",
+						Parent:   "projects/test-project",
+					},
 				},
 			},
 			PostgresEndpoints: map[string]*resources.PostgresEndpoint{
 				"test_postgres_endpoint": {
-					EndpointId: "primary",
+					PostgresEndpointConfig: resources.PostgresEndpointConfig{
+						EndpointId: "primary",
+						Parent:     "projects/test-project/branches/main",
+					},
 				},
 			},
 		},
@@ -571,30 +580,48 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 			},
 			PostgresProjects: map[string]*resources.PostgresProject{
 				"test_postgres_project": {
-					ProjectSpec: postgres.ProjectSpec{
-						DisplayName: "test_postgres_project",
+					PostgresProjectConfig: resources.PostgresProjectConfig{
+						ProjectId: "test-project",
+						ProjectSpec: postgres.ProjectSpec{
+							DisplayName: "test_postgres_project",
+						},
 					},
 				},
 				"test_postgres_project_new": {
-					ProjectSpec: postgres.ProjectSpec{
-						DisplayName: "test_postgres_project_new",
+					PostgresProjectConfig: resources.PostgresProjectConfig{
+						ProjectId: "test-project-new",
+						ProjectSpec: postgres.ProjectSpec{
+							DisplayName: "test_postgres_project_new",
+						},
 					},
 				},
 			},
 			PostgresBranches: map[string]*resources.PostgresBranch{
 				"test_postgres_branch": {
-					BranchId: "main",
+					PostgresBranchConfig: resources.PostgresBranchConfig{
+						BranchId: "main",
+						Parent:   "projects/test-project",
+					},
 				},
 				"test_postgres_branch_new": {
-					BranchId: "dev",
+					PostgresBranchConfig: resources.PostgresBranchConfig{
+						BranchId: "dev",
+						Parent:   "projects/test-project-new",
+					},
 				},
 			},
 			PostgresEndpoints: map[string]*resources.PostgresEndpoint{
 				"test_postgres_endpoint": {
-					EndpointId: "primary",
+					PostgresEndpointConfig: resources.PostgresEndpointConfig{
+						EndpointId: "primary",
+						Parent:     "projects/test-project/branches/main",
+					},
 				},
 				"test_postgres_endpoint_new": {
-					EndpointId: "replica",
+					PostgresEndpointConfig: resources.PostgresEndpointConfig{
+						EndpointId: "replica",
+						Parent:     "projects/test-project-new/branches/dev",
+					},
 				},
 			},
 		},

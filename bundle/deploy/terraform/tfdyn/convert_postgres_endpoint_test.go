@@ -17,13 +17,15 @@ import (
 
 func TestConvertPostgresEndpoint(t *testing.T) {
 	src := resources.PostgresEndpoint{
-		EndpointId: "my-endpoint",
-		Parent:     "projects/my-project/branches/main",
-		EndpointSpec: postgres.EndpointSpec{
-			EndpointType:           postgres.EndpointTypeEndpointTypeReadWrite,
-			AutoscalingLimitMinCu:  0.5,
-			AutoscalingLimitMaxCu:  4,
-			SuspendTimeoutDuration: duration.New(300 * time.Second),
+		PostgresEndpointConfig: resources.PostgresEndpointConfig{
+			EndpointId: "my-endpoint",
+			Parent:     "projects/my-project/branches/main",
+			EndpointSpec: postgres.EndpointSpec{
+				EndpointType:           postgres.EndpointTypeEndpointTypeReadWrite,
+				AutoscalingLimitMinCu:  0.5,
+				AutoscalingLimitMaxCu:  4,
+				SuspendTimeoutDuration: duration.New(300 * time.Second),
+			},
 		},
 	}
 
@@ -50,11 +52,13 @@ func TestConvertPostgresEndpoint(t *testing.T) {
 
 func TestConvertPostgresEndpointReadOnly(t *testing.T) {
 	src := resources.PostgresEndpoint{
-		EndpointId: "readonly-endpoint",
-		Parent:     "projects/my-project/branches/main",
-		EndpointSpec: postgres.EndpointSpec{
-			EndpointType: postgres.EndpointTypeEndpointTypeReadOnly,
-			NoSuspension: true,
+		PostgresEndpointConfig: resources.PostgresEndpointConfig{
+			EndpointId: "readonly-endpoint",
+			Parent:     "projects/my-project/branches/main",
+			EndpointSpec: postgres.EndpointSpec{
+				EndpointType: postgres.EndpointTypeEndpointTypeReadOnly,
+				NoSuspension: true,
+			},
 		},
 	}
 
@@ -79,20 +83,22 @@ func TestConvertPostgresEndpointReadOnly(t *testing.T) {
 
 func TestConvertPostgresEndpointWithSettings(t *testing.T) {
 	src := resources.PostgresEndpoint{
-		EndpointId: "settings-endpoint",
-		Parent:     "projects/my-project/branches/main",
-		EndpointSpec: postgres.EndpointSpec{
-			EndpointType: postgres.EndpointTypeEndpointTypeReadWrite,
-			Settings: &postgres.EndpointSettings{
-				PgSettings: map[string]string{
-					"max_connections":          "100",
-					"shared_buffers":           "256MB",
-					"effective_cache_size":     "1GB",
-					"maintenance_work_mem":     "64MB",
-					"checkpoint_timeout":       "15min",
-					"work_mem":                 "4MB",
-					"random_page_cost":         "1.1",
-					"effective_io_concurrency": "200",
+		PostgresEndpointConfig: resources.PostgresEndpointConfig{
+			EndpointId: "settings-endpoint",
+			Parent:     "projects/my-project/branches/main",
+			EndpointSpec: postgres.EndpointSpec{
+				EndpointType: postgres.EndpointTypeEndpointTypeReadWrite,
+				Settings: &postgres.EndpointSettings{
+					PgSettings: map[string]string{
+						"max_connections":          "100",
+						"shared_buffers":           "256MB",
+						"effective_cache_size":     "1GB",
+						"maintenance_work_mem":     "64MB",
+						"checkpoint_timeout":       "15min",
+						"work_mem":                 "4MB",
+						"random_page_cost":         "1.1",
+						"effective_io_concurrency": "200",
+					},
 				},
 			},
 		},
