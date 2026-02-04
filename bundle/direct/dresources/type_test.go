@@ -124,13 +124,10 @@ func TestRemoteSuperset(t *testing.T) {
 			})
 			require.NoError(t, err)
 
-			knownMissing := make(map[string]bool)
-			for _, f := range knownMissingInRemoteType[resourceType] {
-				knownMissing[f] = true
-			}
+			known := knownMissingInRemoteType[resourceType]
 
 			// Check that known missing fields are actually missing
-			for _, f := range knownMissingInRemoteType[resourceType] {
+			for _, f := range known {
 				if !slices.Contains(missingFields, f) {
 					t.Errorf("field %q is listed in knownMissingInRemoteType but exists in RemoteType; remove it from the list", f)
 				}
@@ -139,7 +136,7 @@ func TestRemoteSuperset(t *testing.T) {
 			// Filter out known missing fields
 			var unexpectedMissing []string
 			for _, f := range missingFields {
-				if !knownMissing[f] {
+				if !slices.Contains(known, f) {
 					unexpectedMissing = append(unexpectedMissing, f)
 				}
 			}
