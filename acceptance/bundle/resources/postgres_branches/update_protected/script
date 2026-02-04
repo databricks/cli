@@ -27,7 +27,7 @@ trace $CLI postgres get-branch "${branch_name}" | jq 'del(.create_time, .update_
 
 title "Verify no_change (no changes)"
 trace $CLI bundle plan
-trace $CLI bundle plan -o json | jq '.plan."resources.postgres_branches.dev_branch" // .' > out.plan.no_change.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle plan -o json | jq '(.plan."resources.postgres_branches.dev_branch" // .) | del(.remote_state.status.logical_size_bytes)' > out.plan.no_change.$DATABRICKS_BUNDLE_ENGINE.json
 rm -f out.requests.txt
 trace $CLI bundle deploy
 
@@ -38,7 +38,7 @@ trace update_file.py databricks.yml "is_protected: false" "is_protected: true"
 trace cat databricks.yml
 
 trace $CLI bundle plan
-trace $CLI bundle plan -o json | jq '.plan."resources.postgres_branches.dev_branch" // .' > out.plan.update.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle plan -o json | jq '(.plan."resources.postgres_branches.dev_branch" // .) | del(.remote_state.status.logical_size_bytes)' > out.plan.update.$DATABRICKS_BUNDLE_ENGINE.json
 rm -f out.requests.txt
 trace $CLI bundle deploy
 
@@ -50,7 +50,7 @@ trace $CLI postgres get-branch "${branch_name}" | jq 'del(.create_time, .update_
 title "Restore is_protected to false"
 trace update_file.py databricks.yml "is_protected: true" "is_protected: false"
 trace $CLI bundle plan
-trace $CLI bundle plan -o json | jq '.plan."resources.postgres_branches.dev_branch" // .' > out.plan.restore.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle plan -o json | jq '(.plan."resources.postgres_branches.dev_branch" // .) | del(.remote_state.status.logical_size_bytes)' > out.plan.restore.$DATABRICKS_BUNDLE_ENGINE.json
 rm -f out.requests.txt
 trace $CLI bundle deploy
 

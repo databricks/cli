@@ -22,7 +22,6 @@
       "current_state": "READY",
       "default": false,
       "is_protected": true,
-      "logical_size_bytes": 0,
       "source_branch": "projects/test-pg-proj-[UNIQUE_NAME]/branches/[BRANCH_UID]",
       "source_branch_lsn": "[LSN]",
       "source_branch_time": "[TIMESTAMP]",
