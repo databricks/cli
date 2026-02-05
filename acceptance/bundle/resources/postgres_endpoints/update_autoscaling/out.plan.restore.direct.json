@@ -43,13 +43,13 @@
     },
     "autoscaling_limit_min_cu": {
       "action": "skip",
-      "reason": "api_schema",
+      "reason": "spec:input_only",
       "old": 0.5,
       "new": 0.5
     },
     "endpoint_type": {
       "action": "skip",
-      "reason": "api_schema",
+      "reason": "spec:input_only",
       "old": "ENDPOINT_TYPE_READ_WRITE",
       "new": "ENDPOINT_TYPE_READ_WRITE",
       "remote": ""

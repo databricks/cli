@@ -29,7 +29,7 @@
         },
         "serialized_dashboard": {
           "action": "skip",
-          "reason": "builtin_rule",
+          "reason": "etag_based",
           "old": "{ }\n",
           "new": "{ }\n",
           "remote": "{}\n"

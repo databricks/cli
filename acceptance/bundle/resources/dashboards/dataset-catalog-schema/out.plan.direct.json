@@ -23,13 +23,13 @@
       "changes": {
         "dataset_catalog": {
           "action": "skip",
-          "reason": "builtin_rule",
+          "reason": "input_only",
           "old": "main",
           "new": "main"
         },
         "dataset_schema": {
           "action": "skip",
-          "reason": "builtin_rule",
+          "reason": "input_only",
           "old": "default",
           "new": "default"
         },

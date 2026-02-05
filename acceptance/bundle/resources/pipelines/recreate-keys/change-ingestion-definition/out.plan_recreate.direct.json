@@ -65,7 +65,7 @@
       "changes": {
         "ingestion_definition.connection_name": {
           "action": "recreate",
-          "reason": "builtin_rule",
+          "reason": "immutable",
           "old": "my_connection",
           "new": "my_new_connection",
           "remote": "my_connection"
