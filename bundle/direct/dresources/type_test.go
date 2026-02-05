@@ -131,7 +131,7 @@ var knownMissingInStateType = map[string][]string{
 
 // TestInputSubset validates that all fields in InputType exist in StateType.
 //
-// This is important because he "changes" block in JSON plan contains paths that work on StateType.
+// This is important because the "changes" block in JSON plan contains paths that work on StateType.
 // If that does not align with config, we cannot use the path to relate changes back to input config.
 //
 // We also resolve pre-deploy references against state, not input.
