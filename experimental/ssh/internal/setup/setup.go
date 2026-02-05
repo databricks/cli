@@ -49,16 +49,7 @@ func generateHostConfig(opts SetupOptions) (string, error) {
 		return "", fmt.Errorf("failed to get local keys folder: %w", err)
 	}
 
-	hostConfig := fmt.Sprintf(`
-Host %s
-    User root
-    ConnectTimeout 360
-    StrictHostKeyChecking accept-new
-    IdentitiesOnly yes
-    IdentityFile %q
-    ProxyCommand %s
-`, opts.HostName, identityFilePath, opts.ProxyCommand)
-
+	hostConfig := sshconfig.GenerateHostConfig(opts.HostName, "root", identityFilePath, opts.ProxyCommand)
 	return hostConfig, nil
 }
 

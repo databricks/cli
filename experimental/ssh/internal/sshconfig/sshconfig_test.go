@@ -143,7 +143,7 @@ func TestHostConfigExists(t *testing.T) {
 	assert.NoError(t, err)
 	assert.False(t, exists)
 
-	configDir := filepath.Join(tmpDir, ConfigDirName)
+	configDir := filepath.Join(tmpDir, configDirName)
 	err = os.MkdirAll(configDir, 0o700)
 	require.NoError(t, err)
 	err = os.WriteFile(filepath.Join(configDir, "existing-host"), []byte("config"), 0o600)
@@ -178,7 +178,7 @@ func TestCreateOrUpdateHostConfig_ExistingConfigNoRecreate(t *testing.T) {
 	t.Setenv("HOME", tmpDir)
 	t.Setenv("USERPROFILE", tmpDir)
 
-	configDir := filepath.Join(tmpDir, ConfigDirName)
+	configDir := filepath.Join(tmpDir, configDirName)
 	err := os.MkdirAll(configDir, 0o700)
 	require.NoError(t, err)
 	existingConfig := "Host test\n    User admin\n"
@@ -203,7 +203,7 @@ func TestCreateOrUpdateHostConfig_ExistingConfigWithRecreate(t *testing.T) {
 	t.Setenv("HOME", tmpDir)
 	t.Setenv("USERPROFILE", tmpDir)
 
-	configDir := filepath.Join(tmpDir, ConfigDirName)
+	configDir := filepath.Join(tmpDir, configDirName)
 	err := os.MkdirAll(configDir, 0o700)
 	require.NoError(t, err)
 	existingConfig := "Host test\n    User admin\n"
