@@ -14,7 +14,7 @@ import (
 	"time"
 )
 
-const StateFileName = ".databricks_app_state"
+const StateFileName = "app_validation_state.json"
 
 // AppState represents the validation state of a Databricks App.
 type AppState string
@@ -63,7 +63,6 @@ var excludedPatterns = []string{
 	"*.swp",
 	"*.swo",
 	// Databricks
-	StateFileName,
 	".databricks/",
 }
 
@@ -180,9 +179,10 @@ func ComputeChecksum(workDir string) (string, error) {
 	return hex.EncodeToString(h.Sum(nil)), nil
 }
 
-// LoadState reads the state file from workDir.
-func LoadState(workDir string) (*State, error) {
-	statePath := filepath.Join(workDir, StateFileName)
+// LoadState reads the state file from stateDir.
+// stateDir should be the bundle's local state directory (e.g., .databricks/bundle/<target>/).
+func LoadState(stateDir string) (*State, error) {
+	statePath := filepath.Join(stateDir, StateFileName)
 
 	data, err := os.ReadFile(statePath)
 	if err != nil {
@@ -200,9 +200,13 @@ func LoadState(workDir string) (*State, error) {
 	return &state, nil
 }
 
-// SaveState writes the state file to workDir atomically.
-func SaveState(workDir string, state *State) error {
-	statePath := filepath.Join(workDir, StateFileName)
+// SaveState writes the state file to stateDir atomically.
+// stateDir should be the bundle's local state directory (e.g., .databricks/bundle/<target>/).
+func SaveState(stateDir string, state *State) error {
+	if err := os.MkdirAll(stateDir, 0o700); err != nil {
+		return fmt.Errorf("failed to create state directory: %w", err)
+	}
+	statePath := filepath.Join(stateDir, StateFileName)
 
 	data, err := json.MarshalIndent(state, "", "  ")
 	if err != nil {

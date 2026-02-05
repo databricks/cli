@@ -52,7 +52,7 @@ func BundleDeployOverrideWithWrapper(wrapError ErrorWrapper) func(*cobra.Command
 			if len(args) == 0 {
 				b := root.TryConfigureBundle(cmd)
 				if b != nil {
-					return runBundleDeploy(cmd, force, skipValidation)
+					return runBundleDeploy(cmd, b, force, skipValidation)
 				}
 			}
 
@@ -98,7 +98,7 @@ Examples:
 }
 
 // runBundleDeploy executes the enhanced deployment flow for project directories.
-func runBundleDeploy(cmd *cobra.Command, force, skipValidation bool) error {
+func runBundleDeploy(cmd *cobra.Command, initialBundle *bundle.Bundle, force, skipValidation bool) error {
 	ctx := cmd.Context()
 
 	workDir, err := os.Getwd()
@@ -106,9 +106,12 @@ func runBundleDeploy(cmd *cobra.Command, force, skipValidation bool) error {
 		return fmt.Errorf("failed to get working directory: %w", err)
 	}
 
+	// Get state directory from the initial bundle (before ProcessBundle reinitializes it)
+	stateDir := initialBundle.GetLocalStateDir(ctx)
+
 	// Step 1: Validate if needed (unless --skip-validation)
 	if !skipValidation {
-		if err := validateIfNeeded(cmd, workDir); err != nil {
+		if err := validateIfNeeded(cmd, workDir, stateDir); err != nil {
 			return err
 		}
 	} else {
@@ -146,7 +149,7 @@ func runBundleDeploy(cmd *cobra.Command, force, skipValidation bool) error {
 	}
 
 	// Step 4: Update state to deployed
-	if err := updateStateToDeployed(workDir); err != nil {
+	if err := updateStateToDeployed(stateDir); err != nil {
 		log.Warnf(ctx, "Failed to update state file: %v", err)
 	}
 
@@ -202,10 +205,11 @@ func runBundleApp(ctx context.Context, b *bundle.Bundle, appKey string) error {
 }
 
 // validateIfNeeded checks validation state and runs validation if needed.
-func validateIfNeeded(cmd *cobra.Command, workDir string) error {
+// stateDir is the bundle's local state directory for storing validation state.
+func validateIfNeeded(cmd *cobra.Command, workDir, stateDir string) error {
 	ctx := cmd.Context()
 
-	state, err := validation.LoadState(workDir)
+	state, err := validation.LoadState(stateDir)
 	if err != nil {
 		return fmt.Errorf("failed to load validation state: %w", err)
 	}
@@ -254,7 +258,7 @@ func validateIfNeeded(cmd *cobra.Command, workDir string) error {
 		ValidatedAt: time.Now().UTC(),
 		Checksum:    currentChecksum,
 	}
-	if err := validation.SaveState(workDir, newState); err != nil {
+	if err := validation.SaveState(stateDir, newState); err != nil {
 		return fmt.Errorf("failed to save state: %w", err)
 	}
 
@@ -262,8 +266,9 @@ func validateIfNeeded(cmd *cobra.Command, workDir string) error {
 }
 
 // updateStateToDeployed updates the state file to mark the project as deployed.
-func updateStateToDeployed(workDir string) error {
-	state, err := validation.LoadState(workDir)
+// stateDir is the bundle's local state directory.
+func updateStateToDeployed(stateDir string) error {
+	state, err := validation.LoadState(stateDir)
 	if err != nil {
 		return err
 	}
@@ -274,5 +279,5 @@ func updateStateToDeployed(workDir string) error {
 	}
 
 	state.State = validation.StateDeployed
-	return validation.SaveState(workDir, state)
+	return validation.SaveState(stateDir, state)
 }

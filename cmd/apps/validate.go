@@ -6,8 +6,10 @@ import (
 	"os"
 	"time"
 
+	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/apps/validation"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/log"
 	"github.com/spf13/cobra"
 )
 
@@ -53,6 +55,13 @@ func runValidate(cmd *cobra.Command) error {
 		}
 	}
 
+	// Try to get bundle context for state storage
+	var stateDir string
+	b := root.TryConfigureBundle(cmd)
+	if b != nil {
+		stateDir = b.GetLocalStateDir(ctx)
+	}
+
 	opts := validation.ValidateOptions{}
 
 	// Get validator for project type
@@ -75,6 +84,12 @@ func runValidate(cmd *cobra.Command) error {
 		cmdio.LogString(ctx, "✅ No validator found for project type, skipping validation checks")
 	}
 
+	// Save state only if we have a bundle context
+	if stateDir == "" {
+		log.Debugf(ctx, "No bundle context, skipping state save")
+		return nil
+	}
+
 	// Compute checksum and save state
 	checksum, err := validation.ComputeChecksum(projectPath)
 	if err != nil {
@@ -87,7 +102,7 @@ func runValidate(cmd *cobra.Command) error {
 		Checksum:    checksum,
 	}
 
-	if err := validation.SaveState(projectPath, state); err != nil {
+	if err := validation.SaveState(stateDir, state); err != nil {
 		return fmt.Errorf("failed to save state: %w", err)
 	}
 
