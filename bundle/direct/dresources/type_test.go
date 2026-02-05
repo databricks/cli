@@ -173,7 +173,7 @@ func TestInputSubset(t *testing.T) {
 
 			// Validate that all fields in InputType exist in StateType
 			var missingFields []string
-			err := structwalk.WalkType(inputType, func(path *structpath.PathNode, typ reflect.Type, field *reflect.StructField) bool {
+			err := structwalk.WalkType(inputType, func(path *structpath.PatternNode, typ reflect.Type, field *reflect.StructField) bool {
 				if path.IsRoot() {
 					return true
 				}
@@ -184,7 +184,7 @@ func TestInputSubset(t *testing.T) {
 						return false // don't recurse into internal/readonly fields
 					}
 				}
-				if structaccess.Validate(stateType, path) != nil {
+				if structaccess.ValidatePattern(stateType, path) != nil {
 					missingFields = append(missingFields, path.String())
 					return false // don't recurse into missing field
 				}
@@ -237,11 +237,11 @@ func TestRemoteSuperset(t *testing.T) {
 
 			// Validate that all fields in StateType exist in RemoteType
 			var missingFields []string
-			err := structwalk.WalkType(stateType, func(path *structpath.PathNode, typ reflect.Type, field *reflect.StructField) bool {
+			err := structwalk.WalkType(stateType, func(path *structpath.PatternNode, typ reflect.Type, field *reflect.StructField) bool {
 				if path.IsRoot() {
 					return true
 				}
-				if structaccess.Validate(remoteType, path) != nil {
+				if structaccess.ValidatePattern(remoteType, path) != nil {
 					missingFields = append(missingFields, path.String())
 					return false // don't recurse into missing field
 				}

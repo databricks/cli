@@ -202,5 +202,5 @@ func TestResolveSelectors_WildcardNotSupported(t *testing.T) {
 
 	_, err = resolveSelectors("resources.jobs.test_job.tasks.*.task_key", b, OperationReplace)
 	require.Error(t, err)
-	assert.Contains(t, err.Error(), "wildcard patterns are not supported")
+	assert.Contains(t, err.Error(), "wildcards not allowed in path")
 }

@@ -14,7 +14,7 @@ import (
 // included without manual updates to the converters.
 func specFieldNames(v any) []string {
 	var names []string
-	_ = structwalk.WalkType(reflect.TypeOf(v), func(path *structpath.PathNode, typ reflect.Type, field *reflect.StructField) bool {
+	_ = structwalk.WalkType(reflect.TypeOf(v), func(path *structpath.PatternNode, typ reflect.Type, field *reflect.StructField) bool {
 		// Skip root node (path is nil)
 		if path == nil {
 			return true
