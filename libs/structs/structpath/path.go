@@ -28,60 +28,114 @@ const (
 	tagBracketString = -6
 )
 
-// PathNode represents a node in a path for struct diffing.
-// It can represent struct fields, map keys, or array/slice indices.
-type PathNode struct {
-	prev *PathNode
-	key  string // Computed key (JSON key for structs, string key for maps, or Go field name for fallback)
+type PathNodeBase struct {
+	key string // Computed key (JSON key for structs, string key for maps, or Go field name for fallback)
 	// If index >= 0, the node specifies a slice/array index in index.
 	// If index < 0, this describes the type of node
 	index int
 	value string // Used for tagKeyValue: stores the value part of [key='value']
 }
 
+// PathNode represents a node in a path for struct diffing.
+// It can represent struct fields, map keys, or array/slice indices.
+type PathNode struct {
+	PathNodeBase
+	prev *PathNode
+}
+
+// PatternNode represents a node that can also support wildcards
+type PatternNode struct {
+	PathNodeBase
+	prev *PatternNode
+}
+
 func (p *PathNode) IsRoot() bool {
 	return p == nil
 }
 
+func (p *PatternNode) IsRoot() bool {
+	return p == nil
+}
+
+func (p *PatternNode) Parent() *PatternNode {
+	if p == nil {
+		return nil
+	}
+	return p.prev
+}
+
+// Index - nil-safe wrappers
 func (p *PathNode) Index() (int, bool) {
 	if p == nil {
 		return -1, false
 	}
+	return p.PathNodeBase.Index()
+}
+
+func (p *PatternNode) Index() (int, bool) {
+	if p == nil {
+		return -1, false
+	}
+	return p.PathNodeBase.Index()
+}
+
+func (p *PathNodeBase) Index() (int, bool) {
 	if p.index >= 0 {
 		return p.index, true
 	}
 	return -1, false
 }
 
-func (p *PathNode) DotStar() bool {
-	if p == nil {
-		return false
-	}
+func (p *PathNodeBase) DotStar() bool {
 	return p.index == tagDotStar
 }
 
-func (p *PathNode) BracketStar() bool {
-	if p == nil {
-		return false
-	}
+func (p *PathNodeBase) BracketStar() bool {
 	return p.index == tagBracketStar
 }
 
+// KeyValue - nil-safe wrappers
 func (p *PathNode) KeyValue() (key, value string, ok bool) {
 	if p == nil {
 		return "", "", false
 	}
+	return p.PathNodeBase.KeyValue()
+}
+
+func (p *PatternNode) KeyValue() (key, value string, ok bool) {
+	if p == nil {
+		return "", "", false
+	}
+	return p.PathNodeBase.KeyValue()
+}
+
+func (p *PathNodeBase) KeyValue() (key, value string, ok bool) {
 	if p.index == tagKeyValue {
 		return p.key, p.value, true
 	}
 	return "", "", false
 }
 
-func (p *PathNode) IsDotString() bool {
+// StringKey - nil-safe wrappers (required because Go panics accessing embedded field on nil receiver)
+func (p *PathNode) StringKey() (string, bool) {
+	if p == nil {
+		return "", false
+	}
+	return p.PathNodeBase.StringKey()
+}
+
+func (p *PatternNode) StringKey() (string, bool) {
+	if p == nil {
+		return "", false
+	}
+	return p.PathNodeBase.StringKey()
+}
+
+func (p *PathNodeBase) IsDotString() bool {
 	return p != nil && p.index == tagDotString
 }
 
-func (p *PathNode) DotString() (string, bool) {
+func (p *PathNodeBase) DotString() (string, bool) {
 	if p == nil {
 		return "", false
 	}
@@ -91,7 +145,7 @@ func (p *PathNode) DotString() (string, bool) {
 	return "", false
 }
 
-func (p *PathNode) BracketString() (string, bool) {
+func (p *PathNodeBase) BracketString() (string, bool) {
 	if p == nil {
 		return "", false
 	}
@@ -101,8 +155,41 @@ func (p *PathNode) BracketString() (string, bool) {
 	return "", false
 }
 
+// formatNode writes the string representation of this node to the builder.
+// isFirst indicates if this is the first node in the path (affects dot prefix).
+func (p *PathNodeBase) formatNode(result *strings.Builder, isFirst bool) {
+	if p.index >= 0 {
+		result.WriteString("[")
+		result.WriteString(strconv.Itoa(p.index))
+		result.WriteString("]")
+	} else if p.index == tagDotStar {
+		if isFirst {
+			result.WriteString("*")
+		} else {
+			result.WriteString(".*")
+		}
+	} else if p.index == tagBracketStar {
+		result.WriteString("[*]")
+	} else if p.index == tagKeyValue {
+		result.WriteString("[")
+		result.WriteString(p.key)
+		result.WriteString("=")
+		result.WriteString(EncodeMapKey(p.value))
+		result.WriteString("]")
+	} else if p.index == tagDotString {
+		if !isFirst {
+			result.WriteString(".")
+		}
+		result.WriteString(p.key)
+	} else if p.index == tagBracketString {
+		result.WriteString("[")
+		result.WriteString(EncodeMapKey(p.key))
+		result.WriteString("]")
+	}
+}
+
 // StringKey returns either Field() or MapKey() if either is available
-func (p *PathNode) StringKey() (string, bool) {
+func (p *PathNodeBase) StringKey() (string, bool) {
 	if p == nil {
 		return "", false
 	}
@@ -135,32 +222,69 @@ func (p *PathNode) AsSlice() []*PathNode {
 	return segments
 }
 
+// AsSlice returns the pattern as a slice of PatternNodes from root to current.
+func (p *PatternNode) AsSlice() []*PatternNode {
+	length := p.Len()
+	segments := make([]*PatternNode, length)
+
+	// Fill in reverse order
+	current := p
+	for i := length - 1; i >= 0; i-- {
+		segments[i] = current
+		current = current.Parent()
+	}
+
+	return segments
+}
+
+// Len returns the number of components in the pattern.
+func (p *PatternNode) Len() int {
+	length := 0
+	current := p
+	for current != nil {
+		length++
+		current = current.Parent()
+	}
+	return length
+}
+
+// String returns the string representation of the pattern.
+func (p *PatternNode) String() string {
+	if p == nil {
+		return ""
+	}
+	components := p.AsSlice()
+	var result strings.Builder
+	for i, node := range components {
+		node.formatNode(&result, i == 0)
+	}
+	return result.String()
+}
+
 // NewIndex creates a new PathNode for an array/slice index.
 func NewIndex(prev *PathNode, index int) *PathNode {
 	if index < 0 {
 		panic("index must be non-negative")
 	}
 	return &PathNode{
-		prev:  prev,
-		index: index,
+		PathNodeBase: PathNodeBase{index: index},
+		prev:         prev,
 	}
 }
 
 // NewDotString creates a PathNode for dot notation (.field).
 func NewDotString(prev *PathNode, fieldName string) *PathNode {
 	return &PathNode{
-		prev:  prev,
-		key:   fieldName,
-		index: tagDotString,
+		PathNodeBase: PathNodeBase{key: fieldName, index: tagDotString},
+		prev:         prev,
 	}
 }
 
 // NewBracketString creates a PathNode for bracket notation (["field"]).
 func NewBracketString(prev *PathNode, fieldName string) *PathNode {
 	return &PathNode{
-		prev:  prev,
-		key:   fieldName,
-		index: tagBracketString,
+		PathNodeBase: PathNodeBase{key: fieldName, index: tagBracketString},
+		prev:         prev,
 	}
 }
 
@@ -173,26 +297,69 @@ func NewStringKey(prev *PathNode, fieldName string) *PathNode {
 	return NewBracketString(prev, fieldName)
 }
 
-func NewDotStar(prev *PathNode) *PathNode {
-	return &PathNode{
-		prev:  prev,
-		index: tagDotStar,
-	}
-}
-
-func NewBracketStar(prev *PathNode) *PathNode {
-	return &PathNode{
-		prev:  prev,
-		index: tagBracketStar,
-	}
-}
-
 func NewKeyValue(prev *PathNode, key, value string) *PathNode {
 	return &PathNode{
-		prev:  prev,
-		key:   key,
-		index: tagKeyValue,
-		value: value,
+		PathNodeBase: PathNodeBase{key: key, index: tagKeyValue, value: value},
+		prev:         prev,
+	}
+}
+
+// PatternNode constructors
+
+// NewPatternIndex creates a new PatternNode for an array/slice index.
+func NewPatternIndex(prev *PatternNode, index int) *PatternNode {
+	if index < 0 {
+		panic("index must be non-negative")
+	}
+	return &PatternNode{
+		PathNodeBase: PathNodeBase{index: index},
+		prev:         prev,
+	}
+}
+
+// NewPatternDotString creates a PatternNode for dot notation (.field).
+func NewPatternDotString(prev *PatternNode, fieldName string) *PatternNode {
+	return &PatternNode{
+		PathNodeBase: PathNodeBase{key: fieldName, index: tagDotString},
+		prev:         prev,
+	}
+}
+
+// NewPatternBracketString creates a PatternNode for bracket notation (["field"]).
+func NewPatternBracketString(prev *PatternNode, fieldName string) *PatternNode {
+	return &PatternNode{
+		PathNodeBase: PathNodeBase{key: fieldName, index: tagBracketString},
+		prev:         prev,
+	}
+}
+
+// NewPatternStringKey creates a PatternNode, choosing dot notation if the fieldName is a valid field name,
+// otherwise bracket notation.
+func NewPatternStringKey(prev *PatternNode, fieldName string) *PatternNode {
+	if isValidField(fieldName) {
+		return NewPatternDotString(prev, fieldName)
+	}
+	return NewPatternBracketString(prev, fieldName)
+}
+
+func NewPatternDotStar(prev *PatternNode) *PatternNode {
+	return &PatternNode{
+		PathNodeBase: PathNodeBase{index: tagDotStar},
+		prev:         prev,
+	}
+}
+
+func NewPatternBracketStar(prev *PatternNode) *PatternNode {
+	return &PatternNode{
+		PathNodeBase: PathNodeBase{index: tagBracketStar},
+		prev:         prev,
+	}
+}
+
+func NewPatternKeyValue(prev *PatternNode, key, value string) *PatternNode {
+	return &PatternNode{
+		PathNodeBase: PathNodeBase{key: key, index: tagKeyValue, value: value},
+		prev:         prev,
 	}
 }
 
@@ -208,46 +375,11 @@ func (p *PathNode) String() string {
 	if p == nil {
 		return ""
 	}
-
-	// Get all path components from root to current
 	components := p.AsSlice()
-
 	var result strings.Builder
-
 	for i, node := range components {
-		if node.index >= 0 {
-			// Array/slice index
-			result.WriteString("[")
-			result.WriteString(strconv.Itoa(node.index))
-			result.WriteString("]")
-		} else if node.index == tagDotStar {
-			if i == 0 {
-				result.WriteString("*")
-			} else {
-				result.WriteString(".*")
-			}
-		} else if node.index == tagBracketStar {
-			result.WriteString("[*]")
-		} else if node.index == tagKeyValue {
-			result.WriteString("[")
-			result.WriteString(node.key)
-			result.WriteString("=")
-			result.WriteString(EncodeMapKey(node.value))
-			result.WriteString("]")
-		} else if node.index == tagDotString {
-			// Dot notation: .field
-			if i != 0 {
-				result.WriteString(".")
-			}
-			result.WriteString(node.key)
-		} else if node.index == tagBracketString {
-			// Bracket notation: ['field']
-			result.WriteString("[")
-			result.WriteString(EncodeMapKey(node.key))
-			result.WriteString("]")
-		}
+		node.formatNode(&result, i == 0)
 	}
-
 	return result.String()
 }
 
@@ -257,6 +389,8 @@ func EncodeMapKey(s string) string {
 }
 
 // Parse parses a string representation of a path using a state machine.
+// If wildcardAllowed is true, returns (nil, *PatternNode, nil) on success.
+// If wildcardAllowed is false, returns (*PathNode, nil, nil) on success but errors if wildcards are found.
 //
 // State Machine for Path Parsing:
 //
@@ -276,25 +410,9 @@ func EncodeMapKey(s string) string {
 //   - KEYVALUE_VALUE_QUOTE: Encountered quote in value, expects same quote (escape) or "]" (end)
 //   - EXPECT_DOT_OR_END: After bracket close, expects ".", "[" or end of string
 //   - END: Successfully completed parsing
-//
-// Transitions:
-//   - START: [a-zA-Z_-] -> FIELD, "[" -> BRACKET_OPEN, "*" -> DOT_STAR, EOF -> END
-//   - FIELD_START: [a-zA-Z_-] -> FIELD, "*" -> DOT_STAR, other -> ERROR
-//   - FIELD: [a-zA-Z0-9_-] -> FIELD, "." -> FIELD_START, "[" -> BRACKET_OPEN, EOF -> END
-//   - DOT_STAR: "." -> FIELD_START, "[" -> BRACKET_OPEN, EOF -> END, other -> ERROR
-//   - BRACKET_OPEN: [0-9] -> INDEX, "'" -> MAP_KEY, "*" -> WILDCARD, identifier -> KEYVALUE_KEY
-//   - INDEX: [0-9] -> INDEX, "]" -> EXPECT_DOT_OR_END
-//   - MAP_KEY: (any except "'") -> MAP_KEY, "'" -> MAP_KEY_QUOTE
-//   - MAP_KEY_QUOTE: "'" -> MAP_KEY (escape), "]" -> EXPECT_DOT_OR_END (end key)
-//   - WILDCARD: "]" -> EXPECT_DOT_OR_END
-//   - KEYVALUE_KEY: identifier -> KEYVALUE_KEY, "=" -> KEYVALUE_EQUALS
-//   - KEYVALUE_EQUALS: "'" or '"' -> KEYVALUE_VALUE
-//   - KEYVALUE_VALUE: (any except quote) -> KEYVALUE_VALUE, quote -> KEYVALUE_VALUE_QUOTE
-//   - KEYVALUE_VALUE_QUOTE: quote -> KEYVALUE_VALUE (escape), "]" -> EXPECT_DOT_OR_END
-//   - EXPECT_DOT_OR_END: "." -> FIELD_START, "[" -> BRACKET_OPEN, EOF -> END
-func Parse(s string) (*PathNode, error) {
+func Parse(s string, wildcardAllowed bool) (*PathNode, *PatternNode, error) {
 	if s == "" {
-		return nil, nil
+		return nil, nil, nil
 	}
 
 	// State machine states
@@ -316,12 +434,15 @@ func Parse(s string) (*PathNode, error) {
 		stateEnd
 	)
 
+	// Parse into a slice of PathNodeBase values first
+	var nodes []PathNodeBase
 	state := stateStart
-	var result *PathNode
 	var currentToken strings.Builder
-	var keyValueKey string // Stores the key part of [key='value']
+	var keyValueKey string
 	pos := 0
+	hasWildcard := false
 
+parseLoop:
 	for pos < len(s) {
 		ch := s[pos]
 
@@ -330,49 +451,51 @@ func Parse(s string) (*PathNode, error) {
 			if ch == '[' {
 				state = stateBracketOpen
 			} else if ch == '*' {
+				hasWildcard = true
 				state = stateDotStar
 			} else if !isReservedFieldChar(ch) {
 				currentToken.WriteByte(ch)
 				state = stateField
 			} else {
-				return nil, fmt.Errorf("unexpected character '%c' at position %d", ch, pos)
+				return nil, nil, fmt.Errorf("unexpected character '%c' at position %d", ch, pos)
 			}
 
 		case stateFieldStart:
 			if ch == '*' {
+				hasWildcard = true
 				state = stateDotStar
 			} else if !isReservedFieldChar(ch) {
 				currentToken.WriteByte(ch)
 				state = stateField
 			} else {
-				return nil, fmt.Errorf("expected field name after '.' but got '%c' at position %d", ch, pos)
+				return nil, nil, fmt.Errorf("expected field name after '.' but got '%c' at position %d", ch, pos)
 			}
 
 		case stateField:
 			if ch == '.' {
-				result = NewDotString(result, currentToken.String())
+				nodes = append(nodes, PathNodeBase{key: currentToken.String(), index: tagDotString})
 				currentToken.Reset()
 				state = stateFieldStart
 			} else if ch == '[' {
-				result = NewDotString(result, currentToken.String())
+				nodes = append(nodes, PathNodeBase{key: currentToken.String(), index: tagDotString})
 				currentToken.Reset()
 				state = stateBracketOpen
 			} else if !isReservedFieldChar(ch) {
 				currentToken.WriteByte(ch)
 			} else {
-				return nil, fmt.Errorf("invalid character '%c' in field name at position %d", ch, pos)
+				return nil, nil, fmt.Errorf("invalid character '%c' in field name at position %d", ch, pos)
 			}
 
 		case stateDotStar:
 			switch ch {
 			case '.':
-				result = NewDotStar(result)
+				nodes = append(nodes, PathNodeBase{index: tagDotStar})
 				state = stateFieldStart
 			case '[':
-				result = NewDotStar(result)
+				nodes = append(nodes, PathNodeBase{index: tagDotStar})
 				state = stateBracketOpen
 			default:
-				return nil, fmt.Errorf("unexpected character '%c' after '.*' at position %d", ch, pos)
+				return nil, nil, fmt.Errorf("unexpected character '%c' after '.*' at position %d", ch, pos)
 			}
 
 		case stateBracketOpen:
@@ -382,12 +505,13 @@ func Parse(s string) (*PathNode, error) {
 			} else if ch == '\'' {
 				state = stateMapKey
 			} else if ch == '*' {
+				hasWildcard = true
 				state = stateWildcard
 			} else if !isReservedFieldChar(ch) {
 				currentToken.WriteByte(ch)
 				state = stateKeyValueKey
 			} else {
-				return nil, fmt.Errorf("unexpected character '%c' after '[' at position %d", ch, pos)
+				return nil, nil, fmt.Errorf("unexpected character '%c' after '[' at position %d", ch, pos)
 			}
 
 		case stateIndex:
@@ -396,13 +520,13 @@ func Parse(s string) (*PathNode, error) {
 			} else if ch == ']' {
 				index, err := strconv.Atoi(currentToken.String())
 				if err != nil {
-					return nil, fmt.Errorf("invalid index '%s' at position %d", currentToken.String(), pos-len(currentToken.String()))
+					return nil, nil, fmt.Errorf("invalid index '%s' at position %d", currentToken.String(), pos-len(currentToken.String()))
 				}
-				result = NewIndex(result, index)
+				nodes = append(nodes, PathNodeBase{index: index})
 				currentToken.Reset()
 				state = stateExpectDotOrEnd
 			} else {
-				return nil, fmt.Errorf("unexpected character '%c' in index at position %d", ch, pos)
+				return nil, nil, fmt.Errorf("unexpected character '%c' in index at position %d", ch, pos)
 			}
 
 		case stateMapKey:
@@ -416,24 +540,22 @@ func Parse(s string) (*PathNode, error) {
 		case stateMapKeyQuote:
 			switch ch {
 			case '\'':
-				// Escaped quote - add single quote to key and continue
 				currentToken.WriteByte('\'')
 				state = stateMapKey
 			case ']':
-				// End of map key
-				result = NewBracketString(result, currentToken.String())
+				nodes = append(nodes, PathNodeBase{key: currentToken.String(), index: tagBracketString})
 				currentToken.Reset()
 				state = stateExpectDotOrEnd
 			default:
-				return nil, fmt.Errorf("unexpected character '%c' after quote in map key at position %d", ch, pos)
+				return nil, nil, fmt.Errorf("unexpected character '%c' after quote in map key at position %d", ch, pos)
 			}
 
 		case stateWildcard:
 			if ch == ']' {
-				result = NewBracketStar(result)
+				nodes = append(nodes, PathNodeBase{index: tagBracketStar})
 				state = stateExpectDotOrEnd
 			} else {
-				return nil, fmt.Errorf("unexpected character '%c' after '*' at position %d", ch, pos)
+				return nil, nil, fmt.Errorf("unexpected character '%c' after '*' at position %d", ch, pos)
 			}
 
 		case stateKeyValueKey:
@@ -444,14 +566,14 @@ func Parse(s string) (*PathNode, error) {
 			} else if !isReservedFieldChar(ch) {
 				currentToken.WriteByte(ch)
 			} else {
-				return nil, fmt.Errorf("unexpected character '%c' in key-value key at position %d", ch, pos)
+				return nil, nil, fmt.Errorf("unexpected character '%c' in key-value key at position %d", ch, pos)
 			}
 
 		case stateKeyValueEquals:
 			if ch == '\'' {
 				state = stateKeyValueValue
 			} else {
-				return nil, fmt.Errorf("expected quote after '=' but got '%c' at position %d", ch, pos)
+				return nil, nil, fmt.Errorf("expected quote after '=' but got '%c' at position %d", ch, pos)
 			}
 
 		case stateKeyValueValue:
@@ -464,17 +586,15 @@ func Parse(s string) (*PathNode, error) {
 		case stateKeyValueValueQuote:
 			switch ch {
 			case '\'':
-				// Escaped quote - add single quote to value and continue
 				currentToken.WriteByte(ch)
 				state = stateKeyValueValue
 			case ']':
-				// End of key-value
-				result = NewKeyValue(result, keyValueKey, currentToken.String())
+				nodes = append(nodes, PathNodeBase{key: keyValueKey, index: tagKeyValue, value: currentToken.String()})
 				currentToken.Reset()
 				keyValueKey = ""
 				state = stateExpectDotOrEnd
 			default:
-				return nil, fmt.Errorf("unexpected character '%c' after quote in key-value at position %d", ch, pos)
+				return nil, nil, fmt.Errorf("unexpected character '%c' after quote in key-value at position %d", ch, pos)
 			}
 
 		case stateExpectDotOrEnd:
@@ -484,14 +604,14 @@ func Parse(s string) (*PathNode, error) {
 			case '[':
 				state = stateBracketOpen
 			default:
-				return nil, fmt.Errorf("unexpected character '%c' at position %d", ch, pos)
+				return nil, nil, fmt.Errorf("unexpected character '%c' at position %d", ch, pos)
 			}
 
 		case stateEnd:
-			return result, nil
+			break parseLoop
 
 		default:
-			return nil, fmt.Errorf("parser error at position %d", pos)
+			return nil, nil, fmt.Errorf("parser error at position %d", pos)
 		}
 
 		pos++
@@ -500,40 +620,100 @@ func Parse(s string) (*PathNode, error) {
 	// Handle end-of-input based on final state
 	switch state {
 	case stateStart:
-		return result, nil // Empty path, result is nil
+		// Empty path
 	case stateField:
-		result = NewDotString(result, currentToken.String())
-		return result, nil
+		nodes = append(nodes, PathNodeBase{key: currentToken.String(), index: tagDotString})
 	case stateDotStar:
-		result = NewDotStar(result)
-		return result, nil
+		nodes = append(nodes, PathNodeBase{index: tagDotStar})
 	case stateExpectDotOrEnd:
-		return result, nil
+		// Already complete
 	case stateFieldStart:
-		return nil, errors.New("unexpected end of input after '.'")
+		return nil, nil, errors.New("unexpected end of input after '.'")
 	case stateBracketOpen:
-		return nil, errors.New("unexpected end of input after '['")
+		return nil, nil, errors.New("unexpected end of input after '['")
 	case stateIndex:
-		return nil, errors.New("unexpected end of input while parsing index")
+		return nil, nil, errors.New("unexpected end of input while parsing index")
 	case stateMapKey:
-		return nil, errors.New("unexpected end of input while parsing map key")
+		return nil, nil, errors.New("unexpected end of input while parsing map key")
 	case stateMapKeyQuote:
-		return nil, errors.New("unexpected end of input after quote in map key")
+		return nil, nil, errors.New("unexpected end of input after quote in map key")
 	case stateWildcard:
-		return nil, errors.New("unexpected end of input after wildcard '*'")
+		return nil, nil, errors.New("unexpected end of input after wildcard '*'")
 	case stateKeyValueKey:
-		return nil, errors.New("unexpected end of input while parsing key-value key")
+		return nil, nil, errors.New("unexpected end of input while parsing key-value key")
 	case stateKeyValueEquals:
-		return nil, errors.New("unexpected end of input after '=' in key-value")
+		return nil, nil, errors.New("unexpected end of input after '=' in key-value")
 	case stateKeyValueValue:
-		return nil, errors.New("unexpected end of input while parsing key-value value")
+		return nil, nil, errors.New("unexpected end of input while parsing key-value value")
 	case stateKeyValueValueQuote:
-		return nil, errors.New("unexpected end of input after quote in key-value value")
+		return nil, nil, errors.New("unexpected end of input after quote in key-value value")
 	case stateEnd:
-		return result, nil
+		// Already complete
 	default:
-		return nil, fmt.Errorf("parser error at position %d", pos)
+		return nil, nil, fmt.Errorf("parser error at position %d", pos)
 	}
+
+	// Check wildcard constraint
+	if hasWildcard && !wildcardAllowed {
+		return nil, nil, errors.New("wildcards not allowed in path")
+	}
+
+	// Build the appropriate linked list
+	if len(nodes) == 0 {
+		return nil, nil, nil
+	}
+
+	if wildcardAllowed {
+		// Build PatternNode chain
+		var result *PatternNode
+		for _, node := range nodes {
+			result = &PatternNode{
+				PathNodeBase: node,
+				prev:         result,
+			}
+		}
+		return nil, result, nil
+	}
+
+	// Build PathNode chain
+	var result *PathNode
+	for _, node := range nodes {
+		result = &PathNode{
+			PathNodeBase: node,
+			prev:         result,
+		}
+	}
+	return result, nil, nil
+}
+
+// ParsePath parses a path string. Wildcards are not allowed.
+func ParsePath(s string) (*PathNode, error) {
+	path, _, err := Parse(s, false)
+	return path, err
+}
+
+// ParsePattern parses a pattern string. Wildcards are allowed.
+func ParsePattern(s string) (*PatternNode, error) {
+	_, pattern, err := Parse(s, true)
+	return pattern, err
+}
+
+// MustParsePath parses a path string and panics on error. Wildcards are not allowed.
+func MustParsePath(s string) *PathNode {
+	path, err := ParsePath(s)
+	if err != nil {
+		panic(err)
+	}
+	return path
+}
+
+// MustParsePattern parses a pattern string and panics on error. Wildcards are allowed.
+func MustParsePattern(s string) *PatternNode {
+	pattern, err := ParsePattern(s)
+	if err != nil {
+		panic(err)
+	}
+	return pattern
 }
 
 // isReservedFieldChar checks if character is reserved and cannot be used in field names
@@ -585,7 +765,7 @@ func PureReferenceToPath(s string) (*PathNode, bool) {
 		return nil, false
 	}
 
-	pathNode, err := Parse(ref.References()[0])
+	pathNode, _, err := Parse(ref.References()[0], false)
 	if err != nil {
 		return nil, false
 	}
@@ -611,9 +791,8 @@ func (p *PathNode) SkipPrefix(n int) *PathNode {
 	current := p
 	for current != startNode {
 		result = &PathNode{
-			prev:  result,
-			key:   current.key,
-			index: current.index,
+			prev:         result,
+			PathNodeBase: current.PathNodeBase,
 			value: current.value,
 		}
 		current = current.Parent()
@@ -734,12 +913,13 @@ func (p *PathNode) MarshalYAML() (any, error) {
 }
 
 // UnmarshalYAML implements yaml.Unmarshaler for PathNode.
+// Note: wildcards are not allowed in PathNode; use PatternNode for paths with wildcards.
 func (p *PathNode) UnmarshalYAML(unmarshal func(any) error) error {
 	var s string
 	if err := unmarshal(&s); err != nil {
 		return err
 	}
-	parsed, err := Parse(s)
+	parsed, _, err := Parse(s, false)
 	if err != nil {
 		return err
 	}

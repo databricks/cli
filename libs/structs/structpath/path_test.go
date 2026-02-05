@@ -10,15 +10,13 @@ import (
 
 func TestPathNode(t *testing.T) {
 	tests := []struct {
-		name        string
-		node        *PathNode
-		String      string
-		Index       any
-		StringKey   any
-		KeyValue    []string // [key, value] or nil
-		Root        any
-		DotStar     bool
-		BracketStar bool
+		name      string
+		node      *PathNode
+		String    string
+		Index     any
+		StringKey any
+		KeyValue  []string // [key, value] or nil
+		Root      any
 	}{
 		// Single node tests
 		{
@@ -38,18 +36,6 @@ func TestPathNode(t *testing.T) {
 			node:      NewDotString(nil, "mykey"),
 			String:    `mykey`,
 			StringKey: "mykey",
-		},
-		{
-			name:    "dot star",
-			node:    NewDotStar(nil),
-			String:  "*",
-			DotStar: true,
-		},
-		{
-			name:        "bracket star",
-			node:        NewBracketStar(nil),
-			String:      "[*]",
-			BracketStar: true,
 		},
 		{
 			name:     "key value",
@@ -94,18 +80,6 @@ func TestPathNode(t *testing.T) {
 			node:      NewStringKey(NewIndex(nil, 1), "status{}"),
 			String:    `[1]['status{}']`,
 			StringKey: "status{}",
-		},
-		{
-			name:    "dot star with parent",
-			node:    NewDotStar(NewStringKey(nil, "Parent")),
-			String:  "Parent.*",
-			DotStar: true,
-		},
-		{
-			name:        "bracket star with parent",
-			node:        NewBracketStar(NewStringKey(nil, "Parent")),
-			String:      "Parent[*]",
-			BracketStar: true,
 		},
 
 		// Edge cases with special characters in map keys
@@ -172,19 +146,6 @@ func TestPathNode(t *testing.T) {
 			StringKey: "key\x00[],`",
 		},
 
-		{
-			name:   "field dot star bracket index",
-			node:   NewIndex(NewDotStar(NewStringKey(nil, "bla")), 0),
-			String: "bla.*[0]",
-			Index:  0,
-		},
-		{
-			name:        "field dot star bracket star",
-			node:        NewBracketStar(NewDotStar(NewStringKey(nil, "bla"))),
-			String:      "bla.*[*]",
-			BracketStar: true,
-		},
-
 		// Key-value tests
 		{
 			name:     "key value with parent",
@@ -225,7 +186,7 @@ func TestPathNode(t *testing.T) {
 			assert.Equal(t, tt.String, result, "String() method")
 
 			// Test roundtrip conversion: String() -> Parse() -> String()
-			parsed, err := Parse(tt.String)
+			parsed, _, err := Parse(tt.String, false)
 			if assert.NoError(t, err, "Parse() should not error") {
 				assert.Equal(t, tt.node, parsed)
 				roundtripResult := parsed.String()
@@ -272,10 +233,91 @@ func TestPathNode(t *testing.T) {
 			} else {
 				assert.True(t, isRoot)
 			}
+		})
+	}
+}
+
+func TestPatternNode(t *testing.T) {
+	tests := []struct {
+		name        string
+		node        *PatternNode
+		String      string
+		DotStar     bool
+		BracketStar bool
+	}{
+		{
+			name:    "dot star",
+			node:    NewPatternDotStar(nil),
+			String:  "*",
+			DotStar: true,
+		},
+		{
+			name:        "bracket star",
+			node:        NewPatternBracketStar(nil),
+			String:      "[*]",
+			BracketStar: true,
+		},
+		{
+			name:    "dot star with parent",
+			node:    NewPatternDotStar(NewPatternStringKey(nil, "Parent")),
+			String:  "Parent.*",
+			DotStar: true,
+		},
+		{
+			name:        "bracket star with parent",
+			node:        NewPatternBracketStar(NewPatternStringKey(nil, "Parent")),
+			String:      "Parent[*]",
+			BracketStar: true,
+		},
+		{
+			name:   "field dot star bracket index",
+			node:   NewPatternIndex(NewPatternDotStar(NewPatternStringKey(nil, "bla")), 0),
+			String: "bla.*[0]",
+		},
+		{
+			name:        "field dot star bracket star",
+			node:        NewPatternBracketStar(NewPatternDotStar(NewPatternStringKey(nil, "bla"))),
+			String:      "bla.*[*]",
+			BracketStar: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Test String() method
+			result := tt.node.String()
+			assert.Equal(t, tt.String, result, "String() method")
+
+			// Test roundtrip conversion: String() -> Parse(wildcardAllowed=true) -> String()
+			_, parsed, err := Parse(tt.String, true)
+			if assert.NoError(t, err, "Parse() should not error") {
+				assert.Equal(t, tt.node, parsed)
+				roundtripResult := parsed.String()
+				assert.Equal(t, tt.String, roundtripResult, "Roundtrip conversion should be identical")
+			}
 
 			// DotStar and BracketStar
 			assert.Equal(t, tt.DotStar, tt.node.DotStar())
 			assert.Equal(t, tt.BracketStar, tt.node.BracketStar())
+		})
+	}
+}
+
+func TestParseWildcardNotAllowed(t *testing.T) {
+	// Test that wildcards are rejected when wildcardAllowed=false
+	wildcardPaths := []string{
+		"*",
+		"[*]",
+		"foo.*",
+		"foo[*]",
+		"foo.*[*]",
+	}
+
+	for _, path := range wildcardPaths {
+		t.Run(path, func(t *testing.T) {
+			_, _, err := Parse(path, false)
+			assert.Error(t, err)
+			assert.Contains(t, err.Error(), "wildcards not allowed")
 		})
 	}
 }
@@ -484,7 +526,7 @@ func TestParseErrors(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := Parse(tt.input)
+			_, _, err := Parse(tt.input, true) // Allow wildcards in error tests
 			if assert.Error(t, err) {
 				assert.Equal(t, tt.error, err.Error())
 			}
@@ -587,7 +629,7 @@ func TestPrefixAndSkipPrefix(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
-			path, err := Parse(tt.input)
+			path, _, err := Parse(tt.input, false)
 			assert.NoError(t, err)
 
 			// Test Prefix
@@ -634,7 +676,7 @@ func TestLen(t *testing.T) {
 		t.Run(tt.input, func(t *testing.T) {
 			var path *PathNode
 			var err error
-			path, err = Parse(tt.input)
+			path, _, err = Parse(tt.input, false)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, path.Len())
 		})
@@ -763,20 +805,6 @@ func TestHasPrefix(t *testing.T) {
 			expected: false,
 		},
 
-		// wildcard patterns are NOT supported - treated as literals
-		{
-			name:     "regex pattern not respected - star quantifier",
-			s:        "aaa",
-			prefix:   "a*",
-			expected: false,
-		},
-		{
-			name:     "regex pattern not respected - bracket class",
-			s:        "a[1]",
-			prefix:   "a[*]",
-			expected: false,
-		},
-
 		// Exact component matching - array indices, bracket keys, and key-value notation
 		{
 			name:     "prefix longer than path",
@@ -812,10 +840,10 @@ func TestHasPrefix(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			path, err := Parse(tt.s)
+			path, _, err := Parse(tt.s, false)
 			require.NoError(t, err)
 
-			prefix, err := Parse(tt.prefix)
+			prefix, _, err := Parse(tt.prefix, false)
 			require.NoError(t, err)
 
 			result := path.HasPrefix(prefix)
@@ -888,11 +916,6 @@ func TestPathNodeYAMLUnmarshal(t *testing.T) {
 			expected: "items[0].name",
 		},
 		{
-			name:     "path with wildcard",
-			input:    "tasks[*].name",
-			expected: "tasks[*].name",
-		},
-		{
 			name:     "path with key-value",
 			input:    "tags[key='server']",
 			expected: "tags[key='server']",
@@ -952,6 +975,11 @@ func TestPathNodeYAMLUnmarshalErrors(t *testing.T) {
 			input: "field['key",
 			error: "unexpected end of input while parsing map key",
 		},
+		{
+			name:  "wildcard not allowed in PathNode",
+			input: "tasks[*].name",
+			error: "wildcards not allowed",
+		},
 	}
 
 	for _, tt := range tests {
@@ -970,7 +998,6 @@ func TestPathNodeYAMLRoundtrip(t *testing.T) {
 		"name",
 		"config.database",
 		"items[0].name",
-		"tasks[*].settings",
 		"tags[key='env'].value",
 		"resources.jobs['my-job'].tasks[0]",
 	}
@@ -978,7 +1005,7 @@ func TestPathNodeYAMLRoundtrip(t *testing.T) {
 	for _, path := range paths {
 		t.Run(path, func(t *testing.T) {
 			// Parse -> Marshal -> Unmarshal -> compare
-			original, err := Parse(path)
+			original, _, err := Parse(path, false)
 			require.NoError(t, err)
 
 			data, err := yaml.Marshal(original)
