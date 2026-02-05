@@ -326,15 +326,7 @@ func ensureSSHConfigEntry(ctx context.Context, configPath, hostName, userName, k
 		return fmt.Errorf("failed to generate ProxyCommand: %w", err)
 	}
 
-	hostConfig := fmt.Sprintf(`
-Host %s
-    User %s
-    ConnectTimeout 360
-    StrictHostKeyChecking accept-new
-    IdentitiesOnly yes
-    IdentityFile %q
-    ProxyCommand %s
-`, hostName, userName, keyPath, proxyCommand)
+	hostConfig := sshconfig.GenerateHostConfig(hostName, userName, keyPath, proxyCommand)
 
 	_, err = sshconfig.CreateOrUpdateHostConfig(ctx, hostName, hostConfig, true)
 	if err != nil {

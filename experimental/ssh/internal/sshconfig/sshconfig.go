@@ -11,20 +11,18 @@ import (
 )
 
 const (
-	// ConfigDirName is the directory name for Databricks SSH tunnel configs
-	ConfigDirName = ".databricks/ssh-tunnel-configs"
+	// configDirName is the directory name for Databricks SSH tunnel configs, relative to the user's home directory.
+	configDirName = ".databricks/ssh-tunnel-configs"
 )
 
-// GetConfigDir returns the path to the Databricks SSH tunnel configs directory.
 func GetConfigDir() (string, error) {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return "", fmt.Errorf("failed to get home directory: %w", err)
 	}
-	return filepath.Join(homeDir, ConfigDirName), nil
+	return filepath.Join(homeDir, configDirName), nil
 }
 
-// GetMainConfigPath returns the path to the main SSH config file.
 func GetMainConfigPath() (string, error) {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
@@ -33,7 +31,6 @@ func GetMainConfigPath() (string, error) {
 	return filepath.Join(homeDir, ".ssh", "config"), nil
 }
 
-// GetMainConfigPathOrDefault returns the provided path if non-empty, otherwise returns the default.
 func GetMainConfigPathOrDefault(configPath string) (string, error) {
 	if configPath != "" {
 		return configPath, nil
@@ -41,7 +38,6 @@ func GetMainConfigPathOrDefault(configPath string) (string, error) {
 	return GetMainConfigPath()
 }
 
-// EnsureMainConfigExists ensures the main SSH config file exists.
 func EnsureMainConfigExists(configPath string) error {
 	_, err := os.Stat(configPath)
 	if os.IsNotExist(err) {
@@ -59,7 +55,6 @@ func EnsureMainConfigExists(configPath string) error {
 	return err
 }
 
-// EnsureIncludeDirective ensures the Include directive for Databricks configs exists in the main SSH config.
 func EnsureIncludeDirective(configPath string) error {
 	configDir, err := GetConfigDir()
 	if err != nil {
@@ -103,7 +98,6 @@ func EnsureIncludeDirective(configPath string) error {
 	return nil
 }
 
-// GetHostConfigPath returns the path to a specific host's config file.
 func GetHostConfigPath(hostName string) (string, error) {
 	configDir, err := GetConfigDir()
 	if err != nil {
@@ -112,7 +106,6 @@ func GetHostConfigPath(hostName string) (string, error) {
 	return filepath.Join(configDir, hostName), nil
 }
 
-// HostConfigExists checks if a host config file already exists.
 func HostConfigExists(hostName string) (bool, error) {
 	configPath, err := GetHostConfigPath(hostName)
 	if err != nil {
@@ -128,7 +121,6 @@ func HostConfigExists(hostName string) (bool, error) {
 	return true, nil
 }
 
-// CreateOrUpdateHostConfig creates or updates a host config file.
 // Returns true if the config was created/updated, false if it was skipped.
 func CreateOrUpdateHostConfig(ctx context.Context, hostName, hostConfig string, recreate bool) (bool, error) {
 	configPath, err := GetHostConfigPath(hostName)
@@ -159,11 +151,22 @@ func CreateOrUpdateHostConfig(ctx context.Context, hostName, hostConfig string, 
 	return true, nil
 }
 
-// PromptRecreateConfig asks the user if they want to recreate an existing config.
 func PromptRecreateConfig(ctx context.Context, hostName string) (bool, error) {
 	response, err := cmdio.AskYesOrNo(ctx, fmt.Sprintf("Host '%s' already exists. Do you want to recreate the config?", hostName))
 	if err != nil {
 		return false, err
 	}
 	return response, nil
+}
+
+func GenerateHostConfig(hostName, userName, identityFile, proxyCommand string) string {
+	return fmt.Sprintf(`
+Host %s
+    User %s
+    ConnectTimeout 360
+    StrictHostKeyChecking accept-new
+    IdentitiesOnly yes
+    IdentityFile %q
+    ProxyCommand %s
+`, hostName, userName, identityFile, proxyCommand)
 }
