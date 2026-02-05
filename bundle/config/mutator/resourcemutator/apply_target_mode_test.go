@@ -21,6 +21,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	"github.com/databricks/databricks-sdk-go/service/postgres"
 	"github.com/databricks/databricks-sdk-go/service/serving"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/stretchr/testify/assert"
@@ -131,6 +132,9 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 						},
 					},
 				},
+				Catalogs: map[string]*resources.Catalog{
+					"catalog1": {CreateCatalog: catalog.CreateCatalog{Name: "catalog1"}},
+				},
 				Schemas: map[string]*resources.Schema{
 					"schema1": {CreateSchema: catalog.CreateSchema{Name: "schema1"}},
 				},
@@ -191,6 +195,52 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 					"alert1": {
 						AlertV2: sql.AlertV2{
 							DisplayName: "alert1",
+							Schedule: sql.CronSchedule{
+								QuartzCronSchedule: "0 0 12 * * ?",
+							},
+						},
+					},
+					"alert2": {
+						AlertV2: sql.AlertV2{
+							DisplayName: "alert2",
+							Schedule: sql.CronSchedule{
+								QuartzCronSchedule: "0 0 12 * * ?",
+								PauseStatus:        sql.SchedulePauseStatusUnpaused,
+							},
+						},
+					},
+					"alert3": {
+						AlertV2: sql.AlertV2{
+							DisplayName: "alert3",
+						},
+					},
+				},
+				PostgresProjects: map[string]*resources.PostgresProject{
+					"postgres_project1": {
+						PostgresProjectConfig: resources.PostgresProjectConfig{
+							ProjectId: "postgres-project-1",
+							ProjectSpec: postgres.ProjectSpec{
+								DisplayName: "postgres_project1",
+							},
+						},
+					},
+				},
+				PostgresBranches: map[string]*resources.PostgresBranch{
+					"postgres_branch1": {
+						PostgresBranchConfig: resources.PostgresBranchConfig{
+							BranchId: "postgres-branch-1",
+							Parent:   "projects/postgres-project-1",
+						},
+					},
+				},
+				PostgresEndpoints: map[string]*resources.PostgresEndpoint{
+					"postgres_endpoint1": {
+						PostgresEndpointConfig: resources.PostgresEndpointConfig{
+							EndpointId: "postgres-endpoint-1",
+							Parent:     "projects/postgres-project-1/branches/postgres-branch-1",
+							EndpointSpec: postgres.EndpointSpec{
+								EndpointType: postgres.EndpointTypeEndpointTypeReadWrite,
+							},
 						},
 					},
 				},
@@ -258,6 +308,18 @@ func TestProcessTargetModeDevelopment(t *testing.T) {
 
 	// Dashboards
 	assert.Equal(t, "[dev lennart] dashboard1", b.Config.Resources.Dashboards["dashboard1"].DisplayName)
+
+	// Alert 1: has schedule without pause status set - should be paused
+	assert.Equal(t, "[dev lennart] alert1", b.Config.Resources.Alerts["alert1"].DisplayName)
+	assert.Equal(t, sql.SchedulePauseStatusPaused, b.Config.Resources.Alerts["alert1"].Schedule.PauseStatus)
+
+	// Alert 2: has schedule with pause status already set to unpaused - should remain unpaused
+	assert.Equal(t, "[dev lennart] alert2", b.Config.Resources.Alerts["alert2"].DisplayName)
+	assert.Equal(t, sql.SchedulePauseStatusUnpaused, b.Config.Resources.Alerts["alert2"].Schedule.PauseStatus)
+
+	// Alert 3: no schedule - pause status should remain empty
+	assert.Equal(t, "[dev lennart] alert3", b.Config.Resources.Alerts["alert3"].DisplayName)
+	assert.Empty(t, b.Config.Resources.Alerts["alert3"].Schedule.PauseStatus)
 }
 
 func TestProcessTargetModeDevelopmentTagNormalizationForAws(t *testing.T) {
@@ -313,6 +375,7 @@ func TestProcessTargetModeDefault(t *testing.T) {
 	assert.Equal(t, "servingendpoint1", b.Config.Resources.ModelServingEndpoints["servingendpoint1"].Name)
 	assert.Equal(t, "registeredmodel1", b.Config.Resources.RegisteredModels["registeredmodel1"].Name)
 	assert.Equal(t, "qualityMonitor1", b.Config.Resources.QualityMonitors["qualityMonitor1"].TableName)
+	assert.Equal(t, "catalog1", b.Config.Resources.Catalogs["catalog1"].Name)
 	assert.Equal(t, "schema1", b.Config.Resources.Schemas["schema1"].Name)
 	assert.Equal(t, "volume1", b.Config.Resources.Volumes["volume1"].Name)
 	assert.Equal(t, "cluster1", b.Config.Resources.Clusters["cluster1"].ClusterName)
@@ -342,9 +405,10 @@ func TestAllNonUcResourcesAreRenamed(t *testing.T) {
 	b := mockBundle(config.Development)
 
 	// UC resources should not have a prefix added to their name. Right now
-	// this list only contains the Volume resource since we have yet to remove
+	// this list only contains the Volume and Catalog resources since we have yet to remove
 	// prefixing support for UC schemas and registered models.
 	ucFields := []reflect.Type{
+		reflect.TypeOf(&resources.Catalog{}),
 		reflect.TypeOf(&resources.Volume{}),
 	}
 
@@ -361,8 +425,9 @@ func TestAllNonUcResourcesAreRenamed(t *testing.T) {
 				nameField := resource.Elem().FieldByName("Name")
 				resourceType := resources.Type().Field(i).Name
 
-				// Skip resources that are not renamed
-				if resourceType == "Apps" || resourceType == "SecretScopes" || resourceType == "DatabaseInstances" || resourceType == "DatabaseCatalogs" || resourceType == "SyncedDatabaseTables" {
+				// Skip resources that are not renamed (either because they don't have a user-facing Name field,
+				// or because their Name is server-generated rather than user-specified)
+				if resourceType == "Apps" || resourceType == "SecretScopes" || resourceType == "DatabaseInstances" || resourceType == "DatabaseCatalogs" || resourceType == "SyncedDatabaseTables" || resourceType == "PostgresProjects" || resourceType == "PostgresBranches" || resourceType == "PostgresEndpoints" {
 					continue
 				}
 

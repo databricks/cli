@@ -1,16 +1,20 @@
 package psql
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
-	"github.com/databricks/cli/libs/cmdctx"
-	"github.com/databricks/cli/libs/cmdio"
-	"github.com/databricks/databricks-sdk-go/service/database"
-
 	"github.com/databricks/cli/cmd/root"
-	"github.com/databricks/cli/libs/lakebase"
+	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/cmdgroup"
+	"github.com/databricks/cli/libs/cmdio"
+	libpsql "github.com/databricks/cli/libs/psql"
+	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/service/database"
+	"github.com/databricks/databricks-sdk-go/service/postgres"
 	"github.com/spf13/cobra"
 )
 
@@ -20,77 +24,152 @@ func New() *cobra.Command {
 
 func newLakebaseConnectCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:     "psql [DATABASE_INSTANCE_NAME] [-- PSQL_ARGS...]",
-		Short:   "Connect to the specified Database Instance",
+		Use:     "psql [TARGET] [flags] [-- PSQL_ARGS...]",
+		Short:   "Connect to a Lakebase Postgres database",
 		GroupID: "database",
-		Long: `Connect to the specified Database Instance.
+		Long: `Connect to a Lakebase Postgres database.
 
-This command requires a psql client to be installed on your machine for the connection to work.
+Requires psql to be installed.
 
-The command includes automatic retry logic for connection failures. You can configure the retry behavior using the flags below.
+Examples:
 
-You can pass additional arguments to psql after a double-dash (--):
-  databricks psql my-database -- -c "SELECT * FROM my_table"
-  databricks psql my-database -- --echo-all -d "my-db"
+  # Interactive selection (shows all available databases)
+  databricks psql
+  databricks psql --provisioned
+  databricks psql --autoscaling
+
+  # Lakebase Provisioned
+  databricks psql my-instance
+
+  # Lakebase Autoscaling (auto-selects branch/endpoint if only one exists)
+  databricks psql projects/my-project/branches/main/endpoints/primary
+  databricks psql --project my-project
+  databricks psql --project my-project --branch main --endpoint primary
+
+  # Pass additional arguments to psql
+  databricks psql my-instance -- -c "SELECT 1"
+  databricks psql --project my-project -- -d mydb
+
+For more information, see: https://docs.databricks.com/aws/en/oltp/
 `,
 	}
 
-	// Add retry configuration flag
-	cmd.Flags().Int("max-retries", 3, "Maximum number of connection retry attempts (set to 0 to disable retries)")
+	var maxRetries int
+	var provisionedFlag, autoscalingFlag bool
+	var projectFlag, branchFlag, endpointFlag string
+
+	cmd.Flags().IntVar(&maxRetries, "max-retries", 3, "Connection retries; 0 to disable")
+
+	productGroup := cmdgroup.NewFlagGroup("Product Selection")
+	productGroup.FlagSet().SortFlags = false
+	productGroup.FlagSet().BoolVar(&provisionedFlag, "provisioned", false, "Only show Lakebase Provisioned instances")
+	productGroup.FlagSet().BoolVar(&autoscalingFlag, "autoscaling", false, "Only show Lakebase Autoscaling projects")
+
+	autoscalingGroup := cmdgroup.NewFlagGroup("Autoscaling")
+	autoscalingGroup.FlagSet().SortFlags = false
+	autoscalingGroup.FlagSet().StringVar(&projectFlag, "project", "", "Project ID")
+	autoscalingGroup.FlagSet().StringVar(&branchFlag, "branch", "", "Branch ID (default: auto-select)")
+	autoscalingGroup.FlagSet().StringVar(&endpointFlag, "endpoint", "", "Endpoint ID (default: auto-select)")
+
+	wrappedCmd := cmdgroup.NewCommandWithGroupFlag(cmd)
+	wrappedCmd.AddFlagGroup(productGroup)
+	wrappedCmd.AddFlagGroup(autoscalingGroup)
+
+	cmd.MarkFlagsMutuallyExclusive("provisioned", "autoscaling")
 
 	cmd.PreRunE = root.MustWorkspaceClient
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		w := cmdctx.WorkspaceClient(ctx)
+
+		// Split args at --
 		argsLenAtDash := cmd.ArgsLenAtDash()
+		if argsLenAtDash < 0 {
+			argsLenAtDash = len(args)
+		}
+		target := ""
+		if argsLenAtDash == 1 {
+			target = args[0]
+		} else if argsLenAtDash > 1 {
+			return errors.New("expected at most one positional argument for target")
+		}
+		extraArgs := args[argsLenAtDash:]
 
-		// If -- was used, only count args before the dash
-		var argsBeforeDash int
-		if argsLenAtDash >= 0 {
-			argsBeforeDash = argsLenAtDash
-		} else {
-			argsBeforeDash = len(args)
+		retryConfig := libpsql.RetryConfig{
+			MaxRetries:    maxRetries,
+			InitialDelay:  time.Second,
+			MaxDelay:      10 * time.Second,
+			BackoffFactor: 2.0,
 		}
 
-		if argsBeforeDash != 1 {
-			sp := cmdio.NewSpinner(ctx)
-			sp.Update("No DATABASE_INSTANCE_NAME argument specified. Loading names for Database instances drop-down.")
-			instances, err := w.Database.ListDatabaseInstancesAll(ctx, database.ListDatabaseInstancesRequest{})
-			sp.Close()
-			if err != nil {
-				return fmt.Errorf("failed to load names for Database instances drop-down. Please manually specify required argument: DATABASE_INSTANCE_NAME. Original error: %w", err)
-			}
-			if len(instances) == 0 {
-				return errors.New("could not find any Database instances in the workspace. Please manually specify required argument: DATABASE_INSTANCE_NAME")
-			}
+		hasAutoscalingFlags := projectFlag != "" || branchFlag != "" || endpointFlag != ""
 
-			names := make(map[string]string)
-			for _, instance := range instances {
-				names[instance.Name] = instance.Name
-			}
-
-			name, err := cmdio.Select(ctx, names, "")
-			if err != nil {
-				return err
-			}
-
-			args = append([]string{name}, args...)
+		// Check for conflicting flags
+		if provisionedFlag && hasAutoscalingFlags {
+			return errors.New("cannot use --project, --branch, or --endpoint flags with --provisioned")
 		}
 
-		databaseInstanceName := args[0]
-		extraArgs := args[1:]
+		// Positional argument takes precedence
+		if target != "" {
+			if strings.HasPrefix(target, "projects/") {
+				if provisionedFlag {
+					return errors.New("cannot use --provisioned flag with an autoscaling resource path")
+				}
 
-		// Read retry configuration from flags
-		maxRetries, _ := cmd.Flags().GetInt("max-retries")
+				projectID, branchID, endpointID, err := parseResourcePath(target)
+				if err != nil {
+					return err
+				}
 
-		retryConfig := lakebase.RetryConfig{
-			MaxRetries:    maxRetries,       // Retries are disables when max-retries is 0
-			InitialDelay:  time.Second,      // Fixed initial delay
-			MaxDelay:      10 * time.Second, // Fixed max delay
-			BackoffFactor: 2.0,              // Fixed backoff factor
+				// Check for conflicts between path and flags
+				if projectFlag != "" && projectFlag != projectID {
+					return fmt.Errorf("--project flag conflicts with project in path: %s vs %s", projectFlag, projectID)
+				}
+				if branchFlag != "" && branchID != "" && branchFlag != branchID {
+					return fmt.Errorf("--branch flag conflicts with branch in path: %s vs %s", branchFlag, branchID)
+				}
+				if endpointFlag != "" && endpointID != "" && endpointFlag != endpointID {
+					return fmt.Errorf("--endpoint flag conflicts with endpoint in path: %s vs %s", endpointFlag, endpointID)
+				}
+
+				// Flags supplement missing components
+				if branchID == "" {
+					branchID = branchFlag
+				}
+				if endpointID == "" {
+					endpointID = endpointFlag
+				}
+
+				return connectAutoscaling(ctx, projectID, branchID, endpointID, retryConfig, extraArgs)
+			}
+
+			// Provisioned instance name - cannot mix with autoscaling flags
+			if hasAutoscalingFlags {
+				return errors.New("cannot use --project, --branch, or --endpoint flags with a provisioned instance name")
+			}
+			if autoscalingFlag {
+				return errors.New("cannot use --autoscaling flag with a provisioned instance name")
+			}
+			return connectProvisioned(ctx, target, retryConfig, extraArgs)
 		}
 
-		return lakebase.ConnectWithRetryConfig(cmd.Context(), databaseInstanceName, retryConfig, extraArgs...)
+		// No positional argument - use flags only
+		if hasAutoscalingFlags {
+			if projectFlag == "" {
+				return errors.New("--project is required when using --branch or --endpoint")
+			}
+			return connectAutoscaling(ctx, projectFlag, branchFlag, endpointFlag, retryConfig, extraArgs)
+		}
+
+		// Product-specific interactive selection
+		if provisionedFlag {
+			return connectProvisioned(ctx, "", retryConfig, extraArgs)
+		}
+		if autoscalingFlag {
+			return connectAutoscaling(ctx, "", "", "", retryConfig, extraArgs)
+		}
+
+		// No args, no flags -> interactive selection
+		return showSelectionAndConnect(ctx, retryConfig, extraArgs)
 	}
 
 	cmd.ValidArgsFunction = func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
@@ -101,18 +180,144 @@ You can pass additional arguments to psql after a double-dash (--):
 
 		ctx := cmd.Context()
 		w := cmdctx.WorkspaceClient(ctx)
-		instances, err := w.Database.ListDatabaseInstancesAll(ctx, database.ListDatabaseInstancesRequest{})
-		if err != nil {
-			return nil, cobra.ShellCompDirectiveError
-		}
+
+		instances, projects := listAllDatabases(ctx, w)
 
 		var names []string
-		for _, instance := range instances {
-			names = append(names, instance.Name)
+		for _, inst := range instances {
+			names = append(names, inst.Name)
+		}
+		for _, proj := range projects {
+			names = append(names, proj.Name)
 		}
 
 		return names, cobra.ShellCompDirectiveNoFileComp
 	}
 
 	return cmd
+}
+
+// parseResourcePath extracts project, branch, and endpoint IDs from a resource path.
+// Returns an error for malformed paths.
+func parseResourcePath(input string) (project, branch, endpoint string, err error) {
+	parts := strings.Split(input, "/")
+
+	// Must start with projects/{project_id}
+	if len(parts) < 2 || parts[0] != "projects" {
+		return "", "", "", fmt.Errorf("invalid resource path: %s", input)
+	}
+	if parts[1] == "" {
+		return "", "", "", errors.New("invalid resource path: missing project ID")
+	}
+	project = parts[1]
+
+	// Optional: branches/{branch_id}
+	if len(parts) > 2 {
+		if len(parts) < 4 || parts[2] != "branches" {
+			return "", "", "", errors.New("invalid resource path: expected 'branches' after project")
+		}
+		if parts[3] == "" {
+			return "", "", "", errors.New("invalid resource path: missing branch ID")
+		}
+		branch = parts[3]
+	}
+
+	// Optional: endpoints/{endpoint_id}
+	if len(parts) > 4 {
+		if len(parts) < 6 || parts[4] != "endpoints" {
+			return "", "", "", errors.New("invalid resource path: expected 'endpoints' after branch")
+		}
+		if parts[5] == "" {
+			return "", "", "", errors.New("invalid resource path: missing endpoint ID")
+		}
+		endpoint = parts[5]
+	}
+
+	return project, branch, endpoint, nil
+}
+
+// listAllDatabases fetches all database instances and projects in parallel.
+// Errors are silently ignored; callers should check for empty results.
+func listAllDatabases(ctx context.Context, w *databricks.WorkspaceClient) ([]database.DatabaseInstance, []postgres.Project) {
+	type result[T any] struct {
+		value []T
+		err   error
+	}
+
+	instancesCh := make(chan result[database.DatabaseInstance], 1)
+	projectsCh := make(chan result[postgres.Project], 1)
+
+	go func() {
+		instances, err := w.Database.ListDatabaseInstancesAll(ctx, database.ListDatabaseInstancesRequest{})
+		instancesCh <- result[database.DatabaseInstance]{instances, err}
+	}()
+
+	go func() {
+		projects, err := w.Postgres.ListProjectsAll(ctx, postgres.ListProjectsRequest{})
+		projectsCh <- result[postgres.Project]{projects, err}
+	}()
+
+	instResult := <-instancesCh
+	projResult := <-projectsCh
+
+	var instances []database.DatabaseInstance
+	var projects []postgres.Project
+	if instResult.err == nil {
+		instances = instResult.value
+	}
+	if projResult.err == nil {
+		projects = projResult.value
+	}
+
+	return instances, projects
+}
+
+// showSelectionAndConnect shows a combined dropdown of Lakebase databases.
+func showSelectionAndConnect(ctx context.Context, retryConfig libpsql.RetryConfig, extraArgs []string) error {
+	w := cmdctx.WorkspaceClient(ctx)
+
+	sp := cmdio.NewSpinner(ctx)
+	sp.Update("Loading Lakebase databases...")
+	instances, projects := listAllDatabases(ctx, w)
+	sp.Close()
+
+	if len(instances) == 0 && len(projects) == 0 {
+		return errors.New("no Lakebase databases found in workspace")
+	}
+
+	// Build selection items
+	var items []cmdio.Tuple
+	for _, inst := range instances {
+		items = append(items, cmdio.Tuple{
+			Name: inst.Name + " (provisioned)",
+			Id:   "provisioned:" + inst.Name,
+		})
+	}
+	for _, proj := range projects {
+		displayName := extractIDFromName(proj.Name, "projects")
+		if proj.Status != nil && proj.Status.DisplayName != "" {
+			displayName = proj.Status.DisplayName
+		}
+		items = append(items, cmdio.Tuple{
+			Name: displayName + " (autoscaling)",
+			Id:   "autoscaling:" + proj.Name,
+		})
+	}
+
+	selected, err := cmdio.SelectOrdered(ctx, items, "Select database to connect to")
+	if err != nil {
+		return err
+	}
+
+	if strings.HasPrefix(selected, "provisioned:") {
+		instanceName := strings.TrimPrefix(selected, "provisioned:")
+		return connectProvisioned(ctx, instanceName, retryConfig, extraArgs)
+	}
+	if strings.HasPrefix(selected, "autoscaling:") {
+		projectName := strings.TrimPrefix(selected, "autoscaling:")
+		projectID := extractIDFromName(projectName, "projects")
+		return connectAutoscaling(ctx, projectID, "", "", retryConfig, extraArgs)
+	}
+
+	return fmt.Errorf("unexpected selection: %s", selected)
 }

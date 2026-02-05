@@ -208,6 +208,52 @@ resources.apps.*.permissions.permissions[*].group_name	string	ALL
 resources.apps.*.permissions.permissions[*].permission_level	iam.PermissionLevel	ALL
 resources.apps.*.permissions.permissions[*].service_principal_name	string	ALL
 resources.apps.*.permissions.permissions[*].user_name	string	ALL
+resources.catalogs.*.browse_only	bool	REMOTE
+resources.catalogs.*.catalog_type	catalog.CatalogType	REMOTE
+resources.catalogs.*.comment	string	ALL
+resources.catalogs.*.connection_name	string	ALL
+resources.catalogs.*.created_at	int64	REMOTE
+resources.catalogs.*.created_by	string	REMOTE
+resources.catalogs.*.effective_predictive_optimization_flag	*catalog.EffectivePredictiveOptimizationFlag	REMOTE
+resources.catalogs.*.effective_predictive_optimization_flag.inherited_from_name	string	REMOTE
+resources.catalogs.*.effective_predictive_optimization_flag.inherited_from_type	catalog.EffectivePredictiveOptimizationFlagInheritedFromType	REMOTE
+resources.catalogs.*.effective_predictive_optimization_flag.value	catalog.EnablePredictiveOptimization	REMOTE
+resources.catalogs.*.enable_predictive_optimization	catalog.EnablePredictiveOptimization	REMOTE
+resources.catalogs.*.full_name	string	REMOTE
+resources.catalogs.*.grants	[]resources.CatalogGrant	INPUT
+resources.catalogs.*.grants[*]	resources.CatalogGrant	INPUT
+resources.catalogs.*.grants[*].principal	string	INPUT
+resources.catalogs.*.grants[*].privileges	[]resources.CatalogGrantPrivilege	INPUT
+resources.catalogs.*.grants[*].privileges[*]	resources.CatalogGrantPrivilege	INPUT
+resources.catalogs.*.id	string	INPUT
+resources.catalogs.*.isolation_mode	catalog.CatalogIsolationMode	REMOTE
+resources.catalogs.*.lifecycle	resources.Lifecycle	INPUT
+resources.catalogs.*.lifecycle.prevent_destroy	bool	INPUT
+resources.catalogs.*.metastore_id	string	REMOTE
+resources.catalogs.*.modified_status	string	INPUT
+resources.catalogs.*.name	string	ALL
+resources.catalogs.*.options	map[string]string	ALL
+resources.catalogs.*.options.*	string	ALL
+resources.catalogs.*.owner	string	REMOTE
+resources.catalogs.*.properties	map[string]string	ALL
+resources.catalogs.*.properties.*	string	ALL
+resources.catalogs.*.provider_name	string	ALL
+resources.catalogs.*.provisioning_info	*catalog.ProvisioningInfo	REMOTE
+resources.catalogs.*.provisioning_info.state	catalog.ProvisioningInfoState	REMOTE
+resources.catalogs.*.securable_type	catalog.SecurableType	REMOTE
+resources.catalogs.*.share_name	string	ALL
+resources.catalogs.*.storage_location	string	REMOTE
+resources.catalogs.*.storage_root	string	ALL
+resources.catalogs.*.updated_at	int64	REMOTE
+resources.catalogs.*.updated_by	string	REMOTE
+resources.catalogs.*.url	string	INPUT
+resources.catalogs.*.grants.full_name	string	ALL
+resources.catalogs.*.grants.grants	[]dresources.GrantAssignment	ALL
+resources.catalogs.*.grants.grants[*]	dresources.GrantAssignment	ALL
+resources.catalogs.*.grants.grants[*].principal	string	ALL
+resources.catalogs.*.grants.grants[*].privileges	[]catalog.Privilege	ALL
+resources.catalogs.*.grants.grants[*].privileges[*]	catalog.Privilege	ALL
+resources.catalogs.*.grants.securable_type	string	ALL
 resources.clusters.*.apply_policy_default_values	bool	INPUT	STATE
 resources.clusters.*.autoscale	*compute.AutoScale	ALL
 resources.clusters.*.autoscale.max_workers	int	ALL
@@ -3547,6 +3593,131 @@ resources.pipelines.*.permissions.permissions[*].group_name	string	ALL
 resources.pipelines.*.permissions.permissions[*].permission_level	iam.PermissionLevel	ALL
 resources.pipelines.*.permissions.permissions[*].service_principal_name	string	ALL
 resources.pipelines.*.permissions.permissions[*].user_name	string	ALL
+resources.postgres_branches.*.branch_id	string	INPUT	STATE
+resources.postgres_branches.*.create_time	*time.Time	REMOTE
+resources.postgres_branches.*.expire_time	*time.Time	INPUT	STATE
+resources.postgres_branches.*.id	string	INPUT
+resources.postgres_branches.*.is_protected	bool	INPUT	STATE
+resources.postgres_branches.*.lifecycle	resources.Lifecycle	INPUT
+resources.postgres_branches.*.lifecycle.prevent_destroy	bool	INPUT
+resources.postgres_branches.*.modified_status	string	INPUT
+resources.postgres_branches.*.name	string	REMOTE
+resources.postgres_branches.*.no_expiry	bool	INPUT	STATE
+resources.postgres_branches.*.parent	string	ALL
+resources.postgres_branches.*.source_branch	string	INPUT	STATE
+resources.postgres_branches.*.source_branch_lsn	string	INPUT	STATE
+resources.postgres_branches.*.source_branch_time	*time.Time	INPUT	STATE
+resources.postgres_branches.*.spec	*postgres.BranchSpec	REMOTE
+resources.postgres_branches.*.spec.expire_time	*time.Time	REMOTE
+resources.postgres_branches.*.spec.is_protected	bool	REMOTE
+resources.postgres_branches.*.spec.no_expiry	bool	REMOTE
+resources.postgres_branches.*.spec.source_branch	string	REMOTE
+resources.postgres_branches.*.spec.source_branch_lsn	string	REMOTE
+resources.postgres_branches.*.spec.source_branch_time	*time.Time	REMOTE
+resources.postgres_branches.*.spec.ttl	*duration.Duration	REMOTE
+resources.postgres_branches.*.status	*postgres.BranchStatus	REMOTE
+resources.postgres_branches.*.status.current_state	postgres.BranchStatusState	REMOTE
+resources.postgres_branches.*.status.default	bool	REMOTE
+resources.postgres_branches.*.status.expire_time	*time.Time	REMOTE
+resources.postgres_branches.*.status.is_protected	bool	REMOTE
+resources.postgres_branches.*.status.logical_size_bytes	int64	REMOTE
+resources.postgres_branches.*.status.pending_state	postgres.BranchStatusState	REMOTE
+resources.postgres_branches.*.status.source_branch	string	REMOTE
+resources.postgres_branches.*.status.source_branch_lsn	string	REMOTE
+resources.postgres_branches.*.status.source_branch_time	*time.Time	REMOTE
+resources.postgres_branches.*.status.state_change_time	*time.Time	REMOTE
+resources.postgres_branches.*.ttl	*duration.Duration	INPUT	STATE
+resources.postgres_branches.*.uid	string	REMOTE
+resources.postgres_branches.*.update_time	*time.Time	REMOTE
+resources.postgres_branches.*.url	string	INPUT
+resources.postgres_endpoints.*.autoscaling_limit_max_cu	float64	INPUT	STATE
+resources.postgres_endpoints.*.autoscaling_limit_min_cu	float64	INPUT	STATE
+resources.postgres_endpoints.*.create_time	*time.Time	REMOTE
+resources.postgres_endpoints.*.disabled	bool	INPUT	STATE
+resources.postgres_endpoints.*.endpoint_id	string	INPUT	STATE
+resources.postgres_endpoints.*.endpoint_type	postgres.EndpointType	INPUT	STATE
+resources.postgres_endpoints.*.id	string	INPUT
+resources.postgres_endpoints.*.lifecycle	resources.Lifecycle	INPUT
+resources.postgres_endpoints.*.lifecycle.prevent_destroy	bool	INPUT
+resources.postgres_endpoints.*.modified_status	string	INPUT
+resources.postgres_endpoints.*.name	string	REMOTE
+resources.postgres_endpoints.*.no_suspension	bool	INPUT	STATE
+resources.postgres_endpoints.*.parent	string	ALL
+resources.postgres_endpoints.*.settings	*postgres.EndpointSettings	INPUT	STATE
+resources.postgres_endpoints.*.settings.pg_settings	map[string]string	INPUT	STATE
+resources.postgres_endpoints.*.settings.pg_settings.*	string	INPUT	STATE
+resources.postgres_endpoints.*.spec	*postgres.EndpointSpec	REMOTE
+resources.postgres_endpoints.*.spec.autoscaling_limit_max_cu	float64	REMOTE
+resources.postgres_endpoints.*.spec.autoscaling_limit_min_cu	float64	REMOTE
+resources.postgres_endpoints.*.spec.disabled	bool	REMOTE
+resources.postgres_endpoints.*.spec.endpoint_type	postgres.EndpointType	REMOTE
+resources.postgres_endpoints.*.spec.no_suspension	bool	REMOTE
+resources.postgres_endpoints.*.spec.settings	*postgres.EndpointSettings	REMOTE
+resources.postgres_endpoints.*.spec.settings.pg_settings	map[string]string	REMOTE
+resources.postgres_endpoints.*.spec.settings.pg_settings.*	string	REMOTE
+resources.postgres_endpoints.*.spec.suspend_timeout_duration	*duration.Duration	REMOTE
+resources.postgres_endpoints.*.status	*postgres.EndpointStatus	REMOTE
+resources.postgres_endpoints.*.status.autoscaling_limit_max_cu	float64	REMOTE
+resources.postgres_endpoints.*.status.autoscaling_limit_min_cu	float64	REMOTE
+resources.postgres_endpoints.*.status.current_state	postgres.EndpointStatusState	REMOTE
+resources.postgres_endpoints.*.status.disabled	bool	REMOTE
+resources.postgres_endpoints.*.status.endpoint_type	postgres.EndpointType	REMOTE
+resources.postgres_endpoints.*.status.hosts	*postgres.EndpointHosts	REMOTE
+resources.postgres_endpoints.*.status.hosts.host	string	REMOTE
+resources.postgres_endpoints.*.status.pending_state	postgres.EndpointStatusState	REMOTE
+resources.postgres_endpoints.*.status.settings	*postgres.EndpointSettings	REMOTE
+resources.postgres_endpoints.*.status.settings.pg_settings	map[string]string	REMOTE
+resources.postgres_endpoints.*.status.settings.pg_settings.*	string	REMOTE
+resources.postgres_endpoints.*.status.suspend_timeout_duration	*duration.Duration	REMOTE
+resources.postgres_endpoints.*.suspend_timeout_duration	*duration.Duration	INPUT	STATE
+resources.postgres_endpoints.*.uid	string	REMOTE
+resources.postgres_endpoints.*.update_time	*time.Time	REMOTE
+resources.postgres_endpoints.*.url	string	INPUT
+resources.postgres_projects.*.create_time	*time.Time	REMOTE
+resources.postgres_projects.*.default_endpoint_settings	*postgres.ProjectDefaultEndpointSettings	INPUT	STATE
+resources.postgres_projects.*.default_endpoint_settings.autoscaling_limit_max_cu	float64	INPUT	STATE
+resources.postgres_projects.*.default_endpoint_settings.autoscaling_limit_min_cu	float64	INPUT	STATE
+resources.postgres_projects.*.default_endpoint_settings.no_suspension	bool	INPUT	STATE
+resources.postgres_projects.*.default_endpoint_settings.pg_settings	map[string]string	INPUT	STATE
+resources.postgres_projects.*.default_endpoint_settings.pg_settings.*	string	INPUT	STATE
+resources.postgres_projects.*.default_endpoint_settings.suspend_timeout_duration	*duration.Duration	INPUT	STATE
+resources.postgres_projects.*.display_name	string	INPUT	STATE
+resources.postgres_projects.*.history_retention_duration	*duration.Duration	INPUT	STATE
+resources.postgres_projects.*.id	string	INPUT
+resources.postgres_projects.*.lifecycle	resources.Lifecycle	INPUT
+resources.postgres_projects.*.lifecycle.prevent_destroy	bool	INPUT
+resources.postgres_projects.*.modified_status	string	INPUT
+resources.postgres_projects.*.name	string	REMOTE
+resources.postgres_projects.*.pg_version	int	INPUT	STATE
+resources.postgres_projects.*.project_id	string	INPUT	STATE
+resources.postgres_projects.*.spec	*postgres.ProjectSpec	REMOTE
+resources.postgres_projects.*.spec.default_endpoint_settings	*postgres.ProjectDefaultEndpointSettings	REMOTE
+resources.postgres_projects.*.spec.default_endpoint_settings.autoscaling_limit_max_cu	float64	REMOTE
+resources.postgres_projects.*.spec.default_endpoint_settings.autoscaling_limit_min_cu	float64	REMOTE
+resources.postgres_projects.*.spec.default_endpoint_settings.no_suspension	bool	REMOTE
+resources.postgres_projects.*.spec.default_endpoint_settings.pg_settings	map[string]string	REMOTE
+resources.postgres_projects.*.spec.default_endpoint_settings.pg_settings.*	string	REMOTE
+resources.postgres_projects.*.spec.default_endpoint_settings.suspend_timeout_duration	*duration.Duration	REMOTE
+resources.postgres_projects.*.spec.display_name	string	REMOTE
+resources.postgres_projects.*.spec.history_retention_duration	*duration.Duration	REMOTE
+resources.postgres_projects.*.spec.pg_version	int	REMOTE
+resources.postgres_projects.*.status	*postgres.ProjectStatus	REMOTE
+resources.postgres_projects.*.status.branch_logical_size_limit_bytes	int64	REMOTE
+resources.postgres_projects.*.status.default_endpoint_settings	*postgres.ProjectDefaultEndpointSettings	REMOTE
+resources.postgres_projects.*.status.default_endpoint_settings.autoscaling_limit_max_cu	float64	REMOTE
+resources.postgres_projects.*.status.default_endpoint_settings.autoscaling_limit_min_cu	float64	REMOTE
+resources.postgres_projects.*.status.default_endpoint_settings.no_suspension	bool	REMOTE
+resources.postgres_projects.*.status.default_endpoint_settings.pg_settings	map[string]string	REMOTE
+resources.postgres_projects.*.status.default_endpoint_settings.pg_settings.*	string	REMOTE
+resources.postgres_projects.*.status.default_endpoint_settings.suspend_timeout_duration	*duration.Duration	REMOTE
+resources.postgres_projects.*.status.display_name	string	REMOTE
+resources.postgres_projects.*.status.history_retention_duration	*duration.Duration	REMOTE
+resources.postgres_projects.*.status.owner	string	REMOTE
+resources.postgres_projects.*.status.pg_version	int	REMOTE
+resources.postgres_projects.*.status.synthetic_storage_size_bytes	int64	REMOTE
+resources.postgres_projects.*.uid	string	REMOTE
+resources.postgres_projects.*.update_time	*time.Time	REMOTE
+resources.postgres_projects.*.url	string	INPUT
 resources.quality_monitors.*.assets_dir	string	ALL
 resources.quality_monitors.*.baseline_table_name	string	ALL
 resources.quality_monitors.*.custom_metrics	[]catalog.MonitorMetric	ALL

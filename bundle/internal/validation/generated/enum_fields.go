@@ -33,6 +33,8 @@ var EnumFields = map[string][]string{
 	"resources.apps.*.resources[*].uc_securable.permission":     {"EXECUTE", "READ_VOLUME", "SELECT", "USE_CONNECTION", "WRITE_VOLUME"},
 	"resources.apps.*.resources[*].uc_securable.securable_type": {"CONNECTION", "FUNCTION", "TABLE", "VOLUME"},
 
+	"resources.catalogs.*.grants[*].privileges[*]": {"ALL_PRIVILEGES", "APPLY_TAG", "CREATE_CONNECTION", "CREATE_EXTERNAL_LOCATION", "CREATE_EXTERNAL_TABLE", "CREATE_EXTERNAL_VOLUME", "CREATE_FOREIGN_CATALOG", "CREATE_FUNCTION", "CREATE_MANAGED_STORAGE", "CREATE_MATERIALIZED_VIEW", "CREATE_MODEL", "CREATE_SCHEMA", "CREATE_STORAGE_CREDENTIAL", "CREATE_TABLE", "CREATE_VOLUME", "EXECUTE", "MANAGE", "MODIFY", "READ_VOLUME", "REFRESH", "SELECT", "USE_CATALOG", "USE_CONNECTION", "USE_SCHEMA", "WRITE_VOLUME"},
+
 	"resources.clusters.*.aws_attributes.availability":    {"ON_DEMAND", "SPOT", "SPOT_WITH_FALLBACK"},
 	"resources.clusters.*.aws_attributes.ebs_volume_type": {"GENERAL_PURPOSE_SSD", "THROUGHPUT_OPTIMIZED_HDD"},
 	"resources.clusters.*.azure_attributes.availability":  {"ON_DEMAND_AZURE", "SPOT_AZURE", "SPOT_WITH_FALLBACK_AZURE"},
@@ -130,6 +132,8 @@ var EnumFields = map[string][]string{
 	"resources.pipelines.*.ingestion_definition.source_type":                                    {"BIGQUERY", "DYNAMICS365", "FOREIGN_CATALOG", "GA4_RAW_DATA", "MANAGED_POSTGRESQL", "MYSQL", "NETSUITE", "ORACLE", "POSTGRESQL", "SALESFORCE", "SERVICENOW", "SHAREPOINT", "SQLSERVER", "TERADATA", "WORKDAY_RAAS"},
 	"resources.pipelines.*.ingestion_definition.table_configuration.scd_type":                   {"APPEND_ONLY", "SCD_TYPE_1", "SCD_TYPE_2"},
 	"resources.pipelines.*.restart_window.days_of_week[*]":                                      {"FRIDAY", "MONDAY", "SATURDAY", "SUNDAY", "THURSDAY", "TUESDAY", "WEDNESDAY"},
+
+	"resources.postgres_endpoints.*.endpoint_type": {"ENDPOINT_TYPE_READ_ONLY", "ENDPOINT_TYPE_READ_WRITE"},
 
 	"resources.quality_monitors.*.custom_metrics[*].type":     {"CUSTOM_METRIC_TYPE_AGGREGATE", "CUSTOM_METRIC_TYPE_DERIVED", "CUSTOM_METRIC_TYPE_DRIFT"},
 	"resources.quality_monitors.*.inference_log.problem_type": {"PROBLEM_TYPE_CLASSIFICATION", "PROBLEM_TYPE_REGRESSION"},

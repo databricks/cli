@@ -102,10 +102,11 @@ const (
 	ReasonAlias             = "alias"
 	ReasonRemoteAlreadySet  = "remote_already_set"
 	ReasonBuiltinRule       = "builtin_rule"
-	ReasonConfigOnly        = "config_only"
+	ReasonAPISchema         = "api_schema"
 	ReasonEmptySlice        = "empty_slice"
 	ReasonEmptyMap          = "empty_map"
 	ReasonEmptyStruct       = "empty_struct"
+	ReasonCustom            = "custom"
 )
 
 // HasChange checks if there are any changes for fields with the given prefix.
@@ -120,8 +121,17 @@ func (c *Changes) HasChange(fieldPath string) bool {
 		return false
 	}
 
+	fieldPathNode, err := structpath.Parse(fieldPath)
+	if err != nil {
+		return false
+	}
+
 	for field := range *c {
-		if structpath.HasPrefix(field, fieldPath) {
+		fieldNode, err := structpath.Parse(field)
+		if err != nil {
+			continue
+		}
+		if fieldNode.HasPrefix(fieldPathNode) {
 			return true
 		}
 	}

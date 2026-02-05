@@ -1,0 +1,44 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Modify pipeline_task full_refresh to True
+=== Modify pipeline development to True
+=== Detect and save changes
+Detected changes in 2 resource(s):
+
+Resource: resources.jobs.my_job
+  tasks[task_key='run_pipeline'].pipeline_task.full_refresh: replace
+
+Resource: resources.pipelines.my_pipeline
+  development: replace
+
+
+
+=== Configuration changes
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -1,14 +1,12 @@
+ bundle:
+   name: test-bundle-[UNIQUE_NAME]
+-
+ resources:
+   pipelines:
+     my_pipeline:
+       name: test-pipeline-[UNIQUE_NAME]
+-      development: false
++      development: true
+       libraries:
+         - notebook:
+             path: /Users/{{workspace_user_name}}/notebook
+-
+   jobs:
+     my_job:
+@@ -17,3 +15,3 @@
+           pipeline_task:
+             pipeline_id: ${resources.pipelines.my_pipeline.id}
+-            full_refresh: false
++            full_refresh: true

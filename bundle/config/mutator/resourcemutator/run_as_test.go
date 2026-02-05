@@ -12,6 +12,7 @@ import (
 	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/databricks-sdk-go/service/iam"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -34,6 +35,7 @@ func allResourceTypes(t *testing.T) []string {
 	require.Equal(t, []string{
 		"alerts",
 		"apps",
+		"catalogs",
 		"clusters",
 		"dashboards",
 		"database_catalogs",
@@ -43,6 +45,9 @@ func allResourceTypes(t *testing.T) []string {
 		"model_serving_endpoints",
 		"models",
 		"pipelines",
+		"postgres_branches",
+		"postgres_endpoints",
+		"postgres_projects",
 		"quality_monitors",
 		"registered_models",
 		"schemas",
@@ -99,6 +104,13 @@ func TestRunAsWorksForAllowedResources(t *testing.T) {
 			Pipelines: map[string]*resources.Pipeline{
 				"pipeline_one": {},
 			},
+			Alerts: map[string]*resources.Alert{
+				"alert_one": {
+					AlertV2: sql.AlertV2{
+						DisplayName: "alert",
+					},
+				},
+			},
 		},
 	}
 
@@ -111,6 +123,10 @@ func TestRunAsWorksForAllowedResources(t *testing.T) {
 
 	for _, job := range b.Config.Resources.Jobs {
 		assert.Equal(t, "bob", job.RunAs.UserName)
+	}
+
+	for _, alert := range b.Config.Resources.Alerts {
+		assert.Equal(t, "bob", alert.RunAs.UserName)
 	}
 }
 
@@ -145,6 +161,8 @@ func TestRunAsWorksForAllowedResources(t *testing.T) {
 // some point in the future. These resources are (implicitly) on the deny list, since
 // they are not on the allow list below.
 var allowList = []string{
+	"alerts",
+	"catalogs",
 	"clusters",
 	"database_catalogs",
 	"database_instances",
@@ -152,6 +170,9 @@ var allowList = []string{
 	"jobs",
 	"pipelines",
 	"models",
+	"postgres_branches",
+	"postgres_endpoints",
+	"postgres_projects",
 	"registered_models",
 	"experiments",
 	"schemas",

@@ -46,14 +46,30 @@ func newLogsCommand() *cobra.Command {
 	)
 
 	cmd := &cobra.Command{
-		Use:   "logs NAME",
+		Use:   "logs [NAME]",
 		Short: "Show Databricks app logs",
-		Long: `Stream stdout/stderr logs for a Databricks app via its log stream.
+		Long: `Show Databricks app logs.
 
-By default the command fetches the most recent logs (up to --tail-lines, default 200) and exits.
-Use --follow to continue streaming logs until cancelled, optionally bounding the duration with --timeout.
-Server-side filtering is available through --search (same semantics as the Databricks UI) and client-side filtering
-via --source APP|SYSTEM. Use --output-file to mirror the stream to a local file (created with 0600 permissions).`,
+When run from a Databricks Apps project directory (containing databricks.yml)
+without a NAME argument, this command automatically detects the app name from
+the project configuration and shows its logs.
+
+When a NAME argument is provided (or when not in a project directory),
+shows logs for the specified app using the API directly.
+
+Arguments:
+  NAME: The name of the app. Required when not in a project directory.
+        When provided in a project directory, uses the specified name instead of auto-detection.
+
+Examples:
+  # Show logs from a project directory (auto-detects app name)
+  databricks apps logs
+
+  # Show logs from a specific target
+  databricks apps logs --target prod
+
+  # Show logs for a specific app using the API (even from a project directory)
+  databricks apps logs my-app`,
 		Example: `  # Fetch the last 50 log lines
   databricks apps logs my-app --tail-lines 50
 
@@ -62,9 +78,28 @@ via --source APP|SYSTEM. Use --output-file to mirror the stream to a local file 
 
   # Mirror streamed logs to a local file while following for up to 5 minutes
   databricks apps logs my-app --follow --timeout 5m --output-file /tmp/my-app.log`,
-		Args:    root.ExactArgs(1),
+		Args: func(cmd *cobra.Command, args []string) error {
+			if len(args) > 1 {
+				return fmt.Errorf("accepts at most 1 arg(s), received %d", len(args))
+			}
+			if !hasBundleConfig() && len(args) != 1 {
+				return fmt.Errorf("accepts 1 arg(s), received %d", len(args))
+			}
+			return nil
+		},
 		PreRunE: root.MustWorkspaceClient,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			appName, fromBundle, err := getAppNameFromArgs(cmd, args)
+			if err != nil {
+				return err
+			}
+
+			if fromBundle && root.OutputType(cmd) != flags.OutputJSON {
+				fmt.Fprintf(cmd.ErrOrStderr(), "Streaming logs for app '%s' from project configuration\n", appName)
+			}
+
+			// Override args with detected app name
+			args = []string{appName}
 			ctx := cmd.Context()
 
 			if tailLines < 0 {

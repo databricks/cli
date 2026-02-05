@@ -50,3 +50,10 @@ dist/
 # Local development notes, tmp
 /pr-*
 /tmp/
+
+# Go workspace file
+go.work
+go.work.sum
+
+# Fetched based on recorded hash
+.codegen/openapi.json

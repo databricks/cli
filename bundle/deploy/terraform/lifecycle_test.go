@@ -14,8 +14,19 @@ func TestConvertLifecycleForAllResources(t *testing.T) {
 	supportedResources := config.SupportedResources()
 	ctx := context.Background()
 
+	// Resources that are only supported in direct mode and should not be converted to Terraform
+	ignoredResources := []string{
+		"catalogs",
+	}
+
 	for resourceType := range supportedResources {
 		t.Run(resourceType, func(t *testing.T) {
+			for _, ignored := range ignoredResources {
+				if resourceType == ignored {
+					t.Skipf("%s is only supported in direct mode", resourceType)
+				}
+			}
+
 			vin := dyn.NewValue(map[string]dyn.Value{
 				"resources": dyn.NewValue(map[string]dyn.Value{
 					resourceType: dyn.NewValue(map[string]dyn.Value{

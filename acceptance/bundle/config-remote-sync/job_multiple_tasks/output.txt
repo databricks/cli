@@ -1,0 +1,109 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Modify only 'process' task num_workers and add timeout
+=== Detect and save changes
+Detected changes in 1 resource(s):
+
+Resource: resources.jobs.my_job
+  tasks[task_key='new_task']: add
+  tasks[task_key='task2']: remove
+  tasks[task_key='task3'].depends_on[0].task_key: replace
+  tasks[task_key='task3'].new_cluster.num_workers: replace
+  tasks[task_key='task3'].timeout_seconds: add
+
+
+
+=== Configuration changes for new task
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -1,5 +1,4 @@
+ bundle:
+   name: test-bundle-[UNIQUE_NAME]
+-
+ resources:
+   jobs:
+@@ -13,13 +12,11 @@
+             node_type_id: [NODE_TYPE_ID]
+             num_workers: 1
+-        - task_key: task2
++        - new_cluster:
++            node_type_id: [NODE_TYPE_ID]
++            num_workers: 1
++            spark_version: 13.3.x-snapshot-scala2.12
+           notebook_task:
+-            notebook_path: /Users/{{workspace_user_name}}/task2
+-          new_cluster:
+-            spark_version: 13.3.x-snapshot-scala2.12
+-            node_type_id: [NODE_TYPE_ID]
+-            num_workers: 2
+-          depends_on:
+-            - task_key: task1
++            notebook_path: /Users/[USERNAME]/new_task
++          task_key: new_task
+         - task_key: task3
+           notebook_task:
+@@ -28,7 +25,8 @@
+             spark_version: 13.3.x-snapshot-scala2.12
+             node_type_id: [NODE_TYPE_ID]
+-            num_workers: 2
++            num_workers: 5
+           depends_on:
+-            - task_key: task2
++            - task_key: task1
++          timeout_seconds: 3600
+         - task_key: task4
+           notebook_task:
+@@ -40,5 +38,4 @@
+           depends_on:
+             - task_key: task3
+-
+     rename_task_job:
+       tasks:
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Rename task_rename_1 to task_rename_new
+=== Detect task key rename
+Detected changes in 1 resource(s):
+
+Resource: resources.jobs.rename_task_job
+  tasks[task_key='task_rename_1']: remove
+  tasks[task_key='task_rename_2'].depends_on[0].task_key: replace
+  tasks[task_key='task_rename_new']: add
+
+
+
+=== Configuration changes for task key rename
+
+>>> diff.py databricks.yml.backup2 databricks.yml
+--- databricks.yml.backup2
++++ databricks.yml
+@@ -40,11 +40,11 @@
+     rename_task_job:
+       tasks:
+-        - task_key: task_rename_1
++        - new_cluster:
++            node_type_id: [NODE_TYPE_ID]
++            num_workers: 1
++            spark_version: 13.3.x-snapshot-scala2.12
+           notebook_task:
+             notebook_path: /Users/{{workspace_user_name}}/rename_task_1
+-          new_cluster:
+-            spark_version: 13.3.x-snapshot-scala2.12
+-            node_type_id: [NODE_TYPE_ID]
+-            num_workers: 1
++          task_key: task_rename_new
+         - task_key: task_rename_2
+           notebook_task:
+@@ -55,3 +55,3 @@
+             num_workers: 1
+           depends_on:
+-            - task_key: task_rename_1
++            - task_key: task_rename_new

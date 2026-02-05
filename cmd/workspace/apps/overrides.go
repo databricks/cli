@@ -44,14 +44,6 @@ func createUpdateOverride(createUpdateCmd *cobra.Command, createUpdateReq *apps.
 	}
 }
 
-func startOverride(startCmd *cobra.Command, startReq *apps.StartAppRequest) {
-	originalRunE := startCmd.RunE
-	startCmd.RunE = func(cmd *cobra.Command, args []string) error {
-		err := originalRunE(cmd, args)
-		return wrapDeploymentError(cmd, startReq.Name, err)
-	}
-}
-
 func init() {
 	cmdOverrides = append(cmdOverrides, func(cmd *cobra.Command) {
 		// Commands that should NOT go into the management group
@@ -59,6 +51,12 @@ func init() {
 		nonManagementCommands := []string{
 			// 'deploy' is overloaded as API and bundle command
 			"deploy",
+			// 'delete' is overloaded as API and bundle command
+			"delete",
+			// 'start' is overloaded as API and bundle command
+			"start",
+			// 'stop' is overloaded as API and bundle command
+			"stop",
 			// permission commands are assigned into "permission" group in cmd/cmd.go
 			"get-permission-levels",
 			"get-permissions",
@@ -90,6 +88,8 @@ func init() {
 	listDeploymentsOverrides = append(listDeploymentsOverrides, listDeploymentsOverride)
 	createOverrides = append(createOverrides, createOverride)
 	deployOverrides = append(deployOverrides, appsCli.BundleDeployOverrideWithWrapper(wrapDeploymentError))
+	deleteOverrides = append(deleteOverrides, appsCli.BundleDeleteOverrideWithWrapper(wrapDeploymentError))
+	startOverrides = append(startOverrides, appsCli.BundleStartOverrideWithWrapper(wrapDeploymentError))
+	stopOverrides = append(stopOverrides, appsCli.BundleStopOverrideWithWrapper(wrapDeploymentError))
 	createUpdateOverrides = append(createUpdateOverrides, createUpdateOverride)
-	startOverrides = append(startOverrides, startOverride)
 }
