@@ -1,0 +1,34 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    errcode $CLI bundle destroy --auto-approve
+    rm out.requests.txt
+}
+trap cleanup EXIT
+
+$CLI bundle deploy
+print_requests.py --get --oneline --sort | jq -r '"\(.method) \(.path) \(.q)"' | contains.py "/file_to_upload.txt" "/script"
+
+rm -fr .databricks
+
+# One file changed:
+# Badness: everything is uploaded, expect only file_to_upload.txt to be uploaded.
+echo NEW > file_to_upload.txt
+
+$CLI bundle deploy
+print_requests.py --get --oneline --sort | jq -r '"\(.method) \(.path) \(.q)"' | contains.py "/file_to_upload.txt" "/script"
+
+rm -fr .databricks
+
+# No changes to files:
+# Badness: everything is uploaded, expect nothing to be uploaded.
+$CLI bundle deploy
+print_requests.py --get --oneline --sort | jq -r '"\(.method) \(.path) \(.q)"' | contains.py "/file_to_upload.txt" "/script"
+
+rm -fr .databricks
+
+# Only timestamp changed locally but not content.
+# Badness: everything is uploaded, expect nothing to be uploaded.
+touch file_to_upload.txt
+$CLI bundle deploy
+print_requests.py --get --oneline --sort | jq -r '"\(.method) \(.path) \(.q)"' | contains.py "/file_to_upload.txt" "/script"

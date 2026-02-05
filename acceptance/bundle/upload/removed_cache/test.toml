@@ -1,0 +1,7 @@
+RecordRequests = true
+Cloud = true
+Local = false
+
+# Local run has this diff:
+#                -POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/state/deploy.lock {"overwrite":"false"}
+#                -POST /api/2.0/workspace/mkdirs null

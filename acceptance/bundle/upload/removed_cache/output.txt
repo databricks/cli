@@ -1,0 +1,108 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Deployment complete!
+GET /api/2.0/preview/scim/v2/Me null
+GET /api/2.0/workspace/export {"direct_download":"true","path":"/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/state/deploy.lock"}
+GET /api/2.0/workspace/export {"direct_download":"true","path":"/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/state/deploy.lock"}
+GET /api/2.0/workspace/get-status {"path":"/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files"}
+GET /api/2.0/workspace/get-status {"path":"/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files"}
+GET /api/2.0/workspace/get-status {"path":"/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/state/deploy.lock","return_export_info":"true"}
+GET /api/2.0/workspace/get-status {"path":"/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/state/deploy.lock","return_export_info":"true"}
+GET /api/2.0/workspace/get-status {"path":"/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/state/deploy.lock","return_export_info":"true"}
+GET /api/2.0/workspace/get-status {"path":"/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/state/deployment.json","return_export_info":"true"}
+GET /api/2.0/workspace/get-status {"path":"/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/state/resources.json","return_export_info":"true"}
+GET /api/2.0/workspace/get-status {"path":"/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/state/terraform.tfstate","return_export_info":"true"}
+POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files/databricks.yml {"overwrite":"true"}
+POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files/databricks.yml.tmpl {"overwrite":"true"}
+POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files/file_to_upload.txt {"overwrite":"true"}
+POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files/repls.json {"overwrite":"true"}
+POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files/script {"overwrite":"true"}
+POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/state/deploy.lock {"overwrite":"false"}
+POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/state/deploy.lock {"overwrite":"false"}
+POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/state/deployment.json {"overwrite":"true"}
+POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/state/metadata.json {"overwrite":"true"}
+POST /api/2.0/workspace/delete null
+POST /api/2.0/workspace/delete null
+POST /api/2.0/workspace/mkdirs null
+POST /api/2.0/workspace/mkdirs null
+POST /api/2.0/workspace/mkdirs null
+POST /telemetry-ext null
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Deployment complete!
+GET /api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/state/deployment.json null
+GET /api/2.0/workspace/export {"direct_download":"true","path":"/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/state/deploy.lock"}
+GET /api/2.0/workspace/export {"direct_download":"true","path":"/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/state/deploy.lock"}
+GET /api/2.0/workspace/get-status {"path":"/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files"}
+GET /api/2.0/workspace/get-status {"path":"/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/state/deploy.lock","return_export_info":"true"}
+GET /api/2.0/workspace/get-status {"path":"/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/state/deploy.lock","return_export_info":"true"}
+GET /api/2.0/workspace/get-status {"path":"/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/state/deploy.lock","return_export_info":"true"}
+GET /api/2.0/workspace/get-status {"path":"/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/state/deployment.json","return_export_info":"true"}
+GET /api/2.0/workspace/get-status {"path":"/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/state/resources.json","return_export_info":"true"}
+GET /api/2.0/workspace/get-status {"path":"/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/state/terraform.tfstate","return_export_info":"true"}
+POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files/databricks.yml {"overwrite":"true"}
+POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files/databricks.yml.tmpl {"overwrite":"true"}
+POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files/file_to_upload.txt {"overwrite":"true"}
+POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files/repls.json {"overwrite":"true"}
+POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files/script {"overwrite":"true"}
+POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/state/deploy.lock {"overwrite":"false"}
+POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/state/deployment.json {"overwrite":"true"}
+POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/state/metadata.json {"overwrite":"true"}
+POST /api/2.0/workspace/delete null
+POST /api/2.0/workspace/delete null
+POST /api/2.0/workspace/mkdirs null
+POST /telemetry-ext null
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Deployment complete!
+GET /api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/state/deployment.json null
+GET /api/2.0/workspace/export {"direct_download":"true","path":"/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/state/deploy.lock"}
+GET /api/2.0/workspace/export {"direct_download":"true","path":"/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/state/deploy.lock"}
+GET /api/2.0/workspace/get-status {"path":"/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files"}
+GET /api/2.0/workspace/get-status {"path":"/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/state/deploy.lock","return_export_info":"true"}
+GET /api/2.0/workspace/get-status {"path":"/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/state/deploy.lock","return_export_info":"true"}
+GET /api/2.0/workspace/get-status {"path":"/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/state/deploy.lock","return_export_info":"true"}
+GET /api/2.0/workspace/get-status {"path":"/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/state/deployment.json","return_export_info":"true"}
+GET /api/2.0/workspace/get-status {"path":"/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/state/resources.json","return_export_info":"true"}
+GET /api/2.0/workspace/get-status {"path":"/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/state/terraform.tfstate","return_export_info":"true"}
+POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files/databricks.yml {"overwrite":"true"}
+POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files/databricks.yml.tmpl {"overwrite":"true"}
+POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files/file_to_upload.txt {"overwrite":"true"}
+POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files/repls.json {"overwrite":"true"}
+POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files/script {"overwrite":"true"}
+POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/state/deploy.lock {"overwrite":"false"}
+POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/state/deployment.json {"overwrite":"true"}
+POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/state/metadata.json {"overwrite":"true"}
+POST /api/2.0/workspace/delete null
+POST /api/2.0/workspace/delete null
+POST /api/2.0/workspace/mkdirs null
+POST /telemetry-ext null
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Deployment complete!
+GET /api/2.0/workspace-files/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/state/deployment.json null
+GET /api/2.0/workspace/export {"direct_download":"true","path":"/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/state/deploy.lock"}
+GET /api/2.0/workspace/export {"direct_download":"true","path":"/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/state/deploy.lock"}
+GET /api/2.0/workspace/get-status {"path":"/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files"}
+GET /api/2.0/workspace/get-status {"path":"/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/state/deploy.lock","return_export_info":"true"}
+GET /api/2.0/workspace/get-status {"path":"/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/state/deploy.lock","return_export_info":"true"}
+GET /api/2.0/workspace/get-status {"path":"/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/state/deploy.lock","return_export_info":"true"}
+GET /api/2.0/workspace/get-status {"path":"/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/state/deployment.json","return_export_info":"true"}
+GET /api/2.0/workspace/get-status {"path":"/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/state/resources.json","return_export_info":"true"}
+GET /api/2.0/workspace/get-status {"path":"/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/state/terraform.tfstate","return_export_info":"true"}
+POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files/databricks.yml {"overwrite":"true"}
+POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files/databricks.yml.tmpl {"overwrite":"true"}
+POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files/file_to_upload.txt {"overwrite":"true"}
+POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files/repls.json {"overwrite":"true"}
+POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files/script {"overwrite":"true"}
+POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/state/deploy.lock {"overwrite":"false"}
+POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/state/deployment.json {"overwrite":"true"}
+POST /api/2.0/workspace-files/import-file/Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/state/metadata.json {"overwrite":"true"}
+POST /api/2.0/workspace/delete null
+POST /api/2.0/workspace/delete null
+POST /api/2.0/workspace/mkdirs null
+POST /telemetry-ext null
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!
