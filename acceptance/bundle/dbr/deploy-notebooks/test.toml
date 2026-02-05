@@ -1,8 +1,0 @@
-# This test deploys a job with 5 different notebook types (Python, Scala, R, SQL, ipynb)
-# and verifies they all run successfully.
-
-RequiresUnityCatalog = true
-
-Ignore = [
-    "out.run.txt",
-]
