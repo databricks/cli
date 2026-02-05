@@ -66,3 +66,23 @@ func detectGitBash(ctx context.Context) bool {
 
 	return false
 }
+
+// Interactive mode constants for telemetry.
+const (
+	InteractiveModeFull       = "full"        // Both interactive output and prompts supported
+	InteractiveModeOutputOnly = "output_only" // Interactive output only, no prompts (stdin not TTY or Git Bash)
+	InteractiveModeNone       = "none"        // Non-interactive (CI, cron, stderr redirected)
+)
+
+// InteractiveMode returns the interactive mode based on terminal capabilities.
+// Returns one of: "full", "output_only", or "none".
+func (c Capabilities) InteractiveMode() string {
+	// SupportsPrompt() implies SupportsInteractive() (it's a stricter check).
+	if c.SupportsPrompt() {
+		return InteractiveModeFull
+	}
+	if c.SupportsInteractive() {
+		return InteractiveModeOutputOnly
+	}
+	return InteractiveModeNone
+}

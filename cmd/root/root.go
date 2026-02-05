@@ -191,6 +191,7 @@ Stack Trace:
 		Command:         commandStr,
 		OperatingSystem: runtime.GOOS,
 		DbrVersion:      dbr.RuntimeVersion(ctx),
+		InteractiveMode: cmdio.GetInteractiveMode(ctx),
 		ExecutionTimeMs: time.Since(startTime).Milliseconds(),
 		ExitCode:        int64(exitCode),
 	})

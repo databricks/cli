@@ -23,6 +23,12 @@ type ExecutionContext struct {
 	// If true, the CLI is being run from a Databricks notebook / cluster web terminal.
 	FromWebTerminal bool `json:"from_web_terminal,omitempty"`
 
+	// Interactive mode of the terminal. Possible values:
+	// - "full": Both interactive output (spinners, colors) and prompts are supported
+	// - "output_only": Interactive output is supported, but prompts are not (stdin not TTY or Git Bash)
+	// - "none": Non-interactive environment (CI, cron, stderr redirected)
+	InteractiveMode string `json:"interactive_mode,omitempty"`
+
 	// Time taken for the CLI command to execute.
 	// We want to serialize the zero value as well so the omitempty tag is not set.
 	ExecutionTimeMs int64 `json:"execution_time_ms"`

@@ -146,6 +146,81 @@ func TestDetectGitBash(t *testing.T) {
 	assert.True(t, detectGitBash(ctx))
 }
 
+func TestCapabilities_InteractiveMode(t *testing.T) {
+	tests := []struct {
+		name     string
+		caps     Capabilities
+		expected string
+	}{
+		{
+			name: "full interactive - all TTYs, color, no Git Bash",
+			caps: Capabilities{
+				stdinIsTTY:  true,
+				stderrIsTTY: true,
+				color:       true,
+				isGitBash:   false,
+			},
+			expected: InteractiveModeFull,
+		},
+		{
+			name: "output only - stdin not TTY",
+			caps: Capabilities{
+				stdinIsTTY:  false,
+				stderrIsTTY: true,
+				color:       true,
+				isGitBash:   false,
+			},
+			expected: InteractiveModeOutputOnly,
+		},
+		{
+			name: "output only - Git Bash",
+			caps: Capabilities{
+				stdinIsTTY:  true,
+				stderrIsTTY: true,
+				color:       true,
+				isGitBash:   true,
+			},
+			expected: InteractiveModeOutputOnly,
+		},
+		{
+			name: "none - stderr not TTY",
+			caps: Capabilities{
+				stdinIsTTY:  true,
+				stderrIsTTY: false,
+				color:       true,
+				isGitBash:   false,
+			},
+			expected: InteractiveModeNone,
+		},
+		{
+			name: "none - NO_COLOR set",
+			caps: Capabilities{
+				stdinIsTTY:  true,
+				stderrIsTTY: true,
+				color:       false,
+				isGitBash:   false,
+			},
+			expected: InteractiveModeNone,
+		},
+		{
+			name: "none - no TTY support at all",
+			caps: Capabilities{
+				stdinIsTTY:  false,
+				stderrIsTTY: false,
+				color:       false,
+				isGitBash:   false,
+			},
+			expected: InteractiveModeNone,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, tt.caps.InteractiveMode())
+		})
+	}
+}
+
 func TestCapabilities_SupportsColor(t *testing.T) {
 	tests := []struct {
 		name     string
