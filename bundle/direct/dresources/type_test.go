@@ -98,6 +98,33 @@ var knownMissingInRemoteType = map[string][]string{
 		"scope",
 		"scope_backend_type",
 	},
+	"postgres_branches": {
+		"branch_id",
+		"expire_time",
+		"is_protected",
+		"no_expiry",
+		"source_branch",
+		"source_branch_lsn",
+		"source_branch_time",
+		"ttl",
+	},
+	"postgres_endpoints": {
+		"autoscaling_limit_max_cu",
+		"autoscaling_limit_min_cu",
+		"disabled",
+		"endpoint_id",
+		"endpoint_type",
+		"no_suspension",
+		"settings",
+		"suspend_timeout_duration",
+	},
+	"postgres_projects": {
+		"default_endpoint_settings",
+		"display_name",
+		"history_retention_duration",
+		"pg_version",
+		"project_id",
+	},
 }
 
 // commonMissingInStateType lists fields that are commonly missing across all resource types.
