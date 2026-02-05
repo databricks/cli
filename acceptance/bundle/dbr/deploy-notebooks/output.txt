@@ -1,0 +1,34 @@
+
+>>> envsubst < databricks.yml.tmpl > databricks.yml
+
+=== Deploy the bundle with all notebook types ===
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Run the job with all notebook tasks ===
+
+>>> [CLI] bundle run notebook_job 2>&1 | tee out.run.txt
+Run URL: [URL]
+
+[STATUS_MESSAGE]
+Run completed successfully!
+
+=== Verify all tasks completed successfully ===
+
+>>> grep -q "Run completed successfully" out.run.txt && echo "All notebook tasks ran successfully!"
+All notebook tasks ran successfully!
+
+>>> cleanup
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.notebook_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+
+Deleting files...
+Destroy complete!

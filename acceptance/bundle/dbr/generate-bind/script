@@ -1,0 +1,96 @@
+title "Set up workspace paths"
+NOTEBOOK_DIR="/Workspace/Users/${CURRENT_USER_NAME}/generate-bind-${UNIQUE_NAME}"
+PYTHON_NOTEBOOK="${NOTEBOOK_DIR}/test_python"
+SCALA_NOTEBOOK="${NOTEBOOK_DIR}/test_scala"
+R_NOTEBOOK="${NOTEBOOK_DIR}/test_r"
+SQL_NOTEBOOK="${NOTEBOOK_DIR}/test_sql"
+IPYNB_NOTEBOOK="${NOTEBOOK_DIR}/test_ipynb"
+
+cleanup() {
+    title "Cleanup: Delete workspace notebooks"
+    trace errcode $CLI workspace delete "${NOTEBOOK_DIR}" --recursive
+}
+trap cleanup EXIT
+
+title "Create workspace directory and upload notebooks"
+trace $CLI workspace mkdirs "${NOTEBOOK_DIR}"
+trace $CLI workspace import "${PYTHON_NOTEBOOK}" --file notebooks/test_python.py --language PYTHON
+trace $CLI workspace import "${SCALA_NOTEBOOK}" --file notebooks/test_scala.scala --language SCALA
+trace $CLI workspace import "${R_NOTEBOOK}" --file notebooks/test_r.r --language R
+trace $CLI workspace import "${SQL_NOTEBOOK}" --file notebooks/test_sql.sql --language SQL
+trace $CLI workspace import "${IPYNB_NOTEBOOK}" --file notebooks/test_ipynb.ipynb --format JUPYTER
+
+title "Create a job with all 5 notebook types"
+JOB_ID=$($CLI jobs create --json '
+{
+  "name": "generate-bind-job-'${UNIQUE_NAME}'",
+  "tasks": [
+    {
+      "task_key": "python_task",
+      "environment_key": "default",
+      "notebook_task": {
+        "notebook_path": "'${PYTHON_NOTEBOOK}'"
+      }
+    },
+    {
+      "task_key": "scala_task",
+      "environment_key": "default",
+      "notebook_task": {
+        "notebook_path": "'${SCALA_NOTEBOOK}'"
+      }
+    },
+    {
+      "task_key": "r_task",
+      "environment_key": "default",
+      "notebook_task": {
+        "notebook_path": "'${R_NOTEBOOK}'"
+      }
+    },
+    {
+      "task_key": "sql_task",
+      "environment_key": "default",
+      "notebook_task": {
+        "notebook_path": "'${SQL_NOTEBOOK}'"
+      }
+    },
+    {
+      "task_key": "ipynb_task",
+      "environment_key": "default",
+      "notebook_task": {
+        "notebook_path": "'${IPYNB_NOTEBOOK}'"
+      }
+    }
+  ],
+  "environments": [
+    {
+      "environment_key": "default",
+      "spec": {
+        "environment_version": "2"
+      }
+    }
+  ]
+}' | jq -r '.job_id')
+
+echo "Created job with ID: $JOB_ID"
+
+title "Initialize bundle config"
+envsubst < databricks.yml.tmpl > databricks.yml
+
+title "Generate bundle config from existing job"
+trace $CLI bundle generate job --key test_job --existing-job-id $JOB_ID --config-dir resources --source-dir src
+
+title "Show generated files"
+trace ls resources/
+trace ls src/
+
+title "Bind the job to the bundle"
+trace $CLI bundle deployment bind test_job $JOB_ID --auto-approve
+
+title "Deploy the bundle"
+trace $CLI bundle deploy
+
+title "Destroy the bundle (should delete the bound job)"
+trace $CLI bundle destroy --auto-approve
+
+title "Verify job was deleted"
+trace errcode $CLI jobs get "${JOB_ID}" --output json

@@ -1,0 +1,40 @@
+bundle:
+  name: dbr-deploy-notebooks-$UNIQUE_NAME
+
+workspace:
+  root_path: ~/.bundle/$UNIQUE_NAME
+
+resources:
+  jobs:
+    notebook_job:
+      name: notebook-job-$UNIQUE_NAME
+      tasks:
+        - task_key: python_notebook
+          notebook_task:
+            notebook_path: ./notebooks/hello_python.py
+          environment_key: default
+
+        - task_key: scala_notebook
+          notebook_task:
+            notebook_path: ./notebooks/hello_scala.scala
+          environment_key: default
+
+        - task_key: r_notebook
+          notebook_task:
+            notebook_path: ./notebooks/hello_r.r
+          environment_key: default
+
+        - task_key: sql_notebook
+          notebook_task:
+            notebook_path: ./notebooks/hello_sql.sql
+          environment_key: default
+
+        - task_key: ipynb_notebook
+          notebook_task:
+            notebook_path: ./notebooks/hello_ipynb
+          environment_key: default
+
+      environments:
+        - environment_key: default
+          spec:
+            environment_version: "2"

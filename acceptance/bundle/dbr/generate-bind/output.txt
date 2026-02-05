@@ -1,0 +1,73 @@
+
+=== Set up workspace paths ===
+
+=== Create workspace directory and upload notebooks ===
+
+>>> [CLI] workspace mkdirs /Workspace/Users/[USERNAME]/generate-bind-[UNIQUE_NAME]
+
+>>> [CLI] workspace import /Workspace/Users/[USERNAME]/generate-bind-[UNIQUE_NAME]/test_python --file notebooks/test_python.py --language PYTHON
+
+>>> [CLI] workspace import /Workspace/Users/[USERNAME]/generate-bind-[UNIQUE_NAME]/test_scala --file notebooks/test_scala.scala --language SCALA
+
+>>> [CLI] workspace import /Workspace/Users/[USERNAME]/generate-bind-[UNIQUE_NAME]/test_r --file notebooks/test_r.r --language R
+
+>>> [CLI] workspace import /Workspace/Users/[USERNAME]/generate-bind-[UNIQUE_NAME]/test_sql --file notebooks/test_sql.sql --language SQL
+
+>>> [CLI] workspace import /Workspace/Users/[USERNAME]/generate-bind-[UNIQUE_NAME]/test_ipynb --file notebooks/test_ipynb.ipynb --format JUPYTER
+
+=== Create a job with all 5 notebook types ===
+
+Created job with ID: [NUMID]
+
+=== Initialize bundle config ===
+
+>>> envsubst < databricks.yml.tmpl > databricks.yml
+
+=== Generate bundle config from existing job ===
+
+>>> [CLI] bundle generate job --key test_job --existing-job-id [NUMID] --config-dir resources --source-dir src
+Job configuration successfully saved to resources/test_job.job.yml
+
+=== Show generated files ===
+
+>>> ls resources/
+test_job.job.yml
+
+>>> ls src/
+
+=== Bind the job to the bundle ===
+
+>>> [CLI] bundle deployment bind test_job [NUMID] --auto-approve
+Updating deployment state...
+Successfully bound job with an id '[NUMID]'
+Run 'bundle deploy' to deploy changes to your workspace
+
+=== Deploy the bundle ===
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Destroy the bundle (should delete the bound job) ===
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.test_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+
+Deleting files...
+Destroy complete!
+
+=== Verify job was deleted ===
+
+>>> errcode [CLI] jobs get [NUMID] --output json
+Error: Job [NUMID] does not exist.
+
+Exit code: 1
+
+=== Cleanup: Delete workspace notebooks ===
+
+>>> errcode [CLI] workspace delete /Workspace/Users/[USERNAME]/generate-bind-[UNIQUE_NAME] --recursive

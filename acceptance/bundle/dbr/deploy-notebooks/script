@@ -1,0 +1,15 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+    trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+title "Deploy the bundle with all notebook types"
+trace $CLI bundle deploy
+
+title "Run the job with all notebook tasks"
+trace $CLI bundle run notebook_job 2>&1 | tee out.run.txt
+
+title "Verify all tasks completed successfully"
+grep -q "Run completed successfully" out.run.txt && echo "All notebook tasks ran successfully!"
