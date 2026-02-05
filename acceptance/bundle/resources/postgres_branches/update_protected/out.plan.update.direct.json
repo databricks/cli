@@ -38,7 +38,7 @@
     },
     "no_expiry": {
       "action": "skip",
-      "reason": "api_schema",
+      "reason": "spec:input_only",
       "old": true,
       "new": true
     }

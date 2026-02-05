@@ -105,8 +105,9 @@ def filter_prefixes(fields):
 
 
 def write_field_group(lines, header, fields):
-    """Write a group of fields with behavior type comments."""
+    """Write a group of fields with field and reason, grouped by behavior."""
     lines.append(f"\n    {header}:")
+    # Group by behavior
     by_behavior = {}
     for field, behavior in fields:
         by_behavior.setdefault(behavior, []).append(field)
@@ -115,9 +116,10 @@ def write_field_group(lines, header, fields):
         if not first:
             lines.append("")
         first = False
-        lines.append(f"      # {behavior}:")
+        reason = f"spec:{behavior.lower()}"
         for field in by_behavior[behavior]:
-            lines.append(f"      - {field}")
+            lines.append(f"      - field: {field}")
+            lines.append(f"        reason: {reason}")
 
 
 def generate(resource_behaviors):

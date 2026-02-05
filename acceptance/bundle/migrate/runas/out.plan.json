@@ -37,7 +37,7 @@
       "changes": {
         "run_as": {
           "action": "skip",
-          "reason": "builtin_rule",
+          "reason": "not_returned_by_api",
           "old": {
             "service_principal_name": "[UUID]"
           },

@@ -363,7 +363,7 @@ func (a *Adapter) GeneratedResourceConfig() *ResourceLifecycleConfig {
 
 func (a *Adapter) IsFieldInRecreateOnChanges(path *structpath.PathNode) bool {
 	for _, p := range a.resourceConfig.RecreateOnChanges {
-		if path.HasPrefix(p) {
+		if path.HasPrefix(p.Field) {
 			return true
 		}
 	}
