@@ -1,11 +1,9 @@
 package client
 
 import (
-	"bytes"
 	"context"
 	_ "embed"
 	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -486,11 +484,6 @@ func submitSSHTunnelJob(ctx context.Context, client *databricks.WorkspaceClient,
 
 	cmdio.LogString(ctx, "Submitting a job to start the ssh server...")
 
-	// Use manual HTTP call when hardware_accelerator is needed (SDK doesn't support it yet)
-	if opts.Accelerator != "" {
-		return submitSSHTunnelJobManual(ctx, client, jobNotebookPath, baseParams, opts)
-	}
-
 	task := jobs.SubmitTask{
 		TaskKey: sshServerTaskKey,
 		NotebookTask: &jobs.NotebookTask{
@@ -502,6 +495,12 @@ func submitSSHTunnelJob(ctx context.Context, client *databricks.WorkspaceClient,
 
 	if opts.IsServerlessMode() {
 		task.EnvironmentKey = serverlessEnvironmentKey
+		if opts.Accelerator != "" {
+			cmdio.LogString(ctx, "Using accelerator: "+opts.Accelerator)
+			task.Compute = &jobs.Compute{
+				HardwareAccelerator: compute.HardwareAcceleratorType(opts.Accelerator),
+			}
+		}
 	} else {
 		task.ExistingClusterId = opts.ClusterID
 	}
@@ -531,97 +530,6 @@ func submitSSHTunnelJob(ctx context.Context, client *databricks.WorkspaceClient,
 	cmdio.LogString(ctx, fmt.Sprintf("Job submitted successfully with run ID: %d", waiter.RunId))
 
 	return waitForJobToStart(ctx, client, waiter.RunId, opts.TaskStartupTimeout)
-}
-
-// submitSSHTunnelJobManual submits a job using manual HTTP call for features not yet supported by the SDK.
-// Currently used for hardware_accelerator field which is not yet in the SDK.
-func submitSSHTunnelJobManual(ctx context.Context, client *databricks.WorkspaceClient, jobNotebookPath string, baseParams map[string]string, opts ClientOptions) error {
-	sessionID := opts.SessionIdentifier()
-	sshTunnelJobName := "ssh-server-bootstrap-" + sessionID
-
-	// Construct the request payload manually to allow custom parameters
-	task := map[string]any{
-		"task_key": sshServerTaskKey,
-		"notebook_task": map[string]any{
-			"notebook_path":   jobNotebookPath,
-			"base_parameters": baseParams,
-		},
-		"timeout_seconds": int(opts.ServerTimeout.Seconds()),
-	}
-
-	if opts.IsServerlessMode() {
-		task["environment_key"] = serverlessEnvironmentKey
-		if opts.Accelerator != "" {
-			cmdio.LogString(ctx, "Using accelerator: "+opts.Accelerator)
-			task["compute"] = map[string]any{
-				"hardware_accelerator": opts.Accelerator,
-			}
-		}
-	} else {
-		task["existing_cluster_id"] = opts.ClusterID
-	}
-
-	submitRequest := map[string]any{
-		"run_name":        sshTunnelJobName,
-		"timeout_seconds": int(opts.ServerTimeout.Seconds()),
-		"tasks":           []map[string]any{task},
-	}
-
-	if opts.IsServerlessMode() {
-		submitRequest["environments"] = []map[string]any{
-			{
-				"environment_key": serverlessEnvironmentKey,
-				"spec": map[string]any{
-					"environment_version": "3",
-				},
-			},
-		}
-	}
-
-	requestBody, err := json.Marshal(submitRequest)
-	if err != nil {
-		return fmt.Errorf("failed to marshal request body: %w", err)
-	}
-
-	cmdio.LogString(ctx, "Request body: "+string(requestBody))
-
-	apiURL := client.Config.Host + "/api/2.1/jobs/runs/submit"
-	req, err := http.NewRequestWithContext(ctx, "POST", apiURL, bytes.NewReader(requestBody))
-	if err != nil {
-		return fmt.Errorf("failed to create request: %w", err)
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-	if err := client.Config.Authenticate(req); err != nil {
-		return fmt.Errorf("failed to authenticate request: %w", err)
-	}
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return fmt.Errorf("failed to submit job: %w", err)
-	}
-	defer resp.Body.Close()
-
-	responseBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return fmt.Errorf("failed to read response body: %w", err)
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("failed to submit job, status code %d: %s", resp.StatusCode, string(responseBody))
-	}
-
-	var result struct {
-		RunID int64 `json:"run_id"`
-	}
-	if err := json.Unmarshal(responseBody, &result); err != nil {
-		return fmt.Errorf("failed to parse response: %w", err)
-	}
-
-	cmdio.LogString(ctx, fmt.Sprintf("Job submitted successfully with run ID: %d", result.RunID))
-
-	// For manual submissions we still need to poll manually
-	return waitForJobToStart(ctx, client, result.RunID, opts.TaskStartupTimeout)
 }
 
 func spawnSSHClient(ctx context.Context, userName, privateKeyPath string, serverPort int, clusterID string, opts ClientOptions) error {
