@@ -159,7 +159,7 @@ func uploadRunner(ctx context.Context, t *testing.T, w *databricks.WorkspaceClie
 }
 
 // buildBaseParams builds the common parameters for test tasks.
-func buildBaseParams(testDir, archiveName string) map[string]string {
+func buildBaseParams(testDir, archiveName, debugLogPath string) map[string]string {
 	return map[string]string{
 		"archive_path":              path.Join(testDir, archiveName),
 		"cloud_env":                 os.Getenv("CLOUD_ENV"),
@@ -169,6 +169,7 @@ func buildBaseParams(testDir, archiveName string) map[string]string {
 		"test_metastore_id":         os.Getenv("TEST_METASTORE_ID"),
 		"test_user_email":           os.Getenv("TEST_USER_EMAIL"),
 		"test_sp_application_id":    os.Getenv("TEST_SP_APPLICATION_ID"),
+		"debug_log_path":            debugLogPath,
 	}
 }
 
@@ -179,8 +180,35 @@ func runDbrTests(ctx context.Context, t *testing.T, w *databricks.WorkspaceClien
 		t.Fatal("CLOUD_ENV is not set. Please run DBR tests from a CI environment with deco env run.")
 	}
 
+	currentUser, err := w.CurrentUser.Me(ctx)
+	require.NoError(t, err)
+
+	// Create debug logs directory
+	debugLogsDir := path.Join("/Users", currentUser.UserName, "dbr_acceptance_tests")
+	err = w.Workspace.MkdirsByPath(ctx, debugLogsDir)
+	require.NoError(t, err)
+
+	// Create an empty debug log file so we can get its URL before the job runs.
+	// This allows us to provide the URL upfront for users to follow along.
+	timestamp := time.Now().Format("2006-01-02_15-04-05")
+	debugLogFileName := fmt.Sprintf("debug-cloud-%s-%s.log", timestamp, uuid.New().String()[:8])
+	debugLogPath := path.Join(debugLogsDir, debugLogFileName)
+
+	// Create empty file via workspace API
+	err = w.Workspace.Import(ctx, workspace.Import{
+		Path:      debugLogPath,
+		Overwrite: true,
+		Format:    workspace.ImportFormatAuto,
+		Content:   base64.StdEncoding.EncodeToString([]byte("")),
+	})
+	require.NoError(t, err)
+
+	// Get the file's object ID for the URL
+	debugLogStatus, err := w.Workspace.GetStatusByPath(ctx, debugLogPath)
+	require.NoError(t, err)
+
 	// Build cloud test parameters (Cloud=true tests, run with CLOUD_ENV set)
-	cloudParams := buildBaseParams(testDir, archiveName)
+	cloudParams := buildBaseParams(testDir, archiveName, debugLogPath)
 	cloudParams["test_type"] = "cloud"
 	cloudParams["test_filter"] = config.cloudTestFilter
 
@@ -239,12 +267,15 @@ func runDbrTests(ctx context.Context, t *testing.T, w *databricks.WorkspaceClien
 	wait, err := w.Jobs.RunNow(ctx, jobs.RunNow{JobId: job.JobId})
 	require.NoError(t, err)
 
-	// Fetch run details immediately to get the URL
+	// Fetch run details immediately to get the URL so users can follow along
 	runDetails, err := w.Jobs.GetRun(ctx, jobs.GetRunRequest{RunId: wait.RunId})
 	require.NoError(t, err)
 
 	t.Log("")
-	t.Logf("Run URL: %s", runDetails.RunPageUrl)
+	t.Log("=== Job Started ===")
+	t.Logf("  Run URL: %s", runDetails.RunPageUrl)
+	t.Logf("  Debug logs: %s/editor/files/%d", w.Config.Host, debugLogStatus.ObjectId)
+	t.Log("")
 	t.Logf("Waiting for completion (timeout: %v)...", config.timeout)
 
 	run, err := wait.GetWithTimeout(config.timeout)

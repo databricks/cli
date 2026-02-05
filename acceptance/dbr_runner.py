@@ -12,13 +12,13 @@
 # - test_instance_pool_id: Instance pool ID
 # - test_metastore_id: Unity Catalog metastore ID
 # - test_sp_application_id: Service principal application ID
+# - debug_log_path: Workspace path for the debug log file (pre-created by the test runner)
 
 import os
 import platform
 import subprocess
 import sys
 import tarfile
-from datetime import datetime
 from pathlib import Path
 
 # COMMAND ----------
@@ -47,48 +47,13 @@ def get_workspace_url():
     return url
 
 
-def get_current_user_email() -> str:
-    """Get the current user's email from the workspace client."""
-    w = get_workspace_client()
-    return w.current_user.me().user_name
-
-
-def get_debug_log_path() -> Path:
-    """Get a stable path for debug logs under the user's home directory."""
-    import uuid
-
-    unique_id = uuid.uuid4().hex[:8]
-    log_dir = Path.home() / "dbr_test_logs"
-    log_dir.mkdir(parents=True, exist_ok=True)
-    return log_dir / f"cloud_{unique_id}.log"
-
-
-def copy_debug_log_to_workspace(local_log_path: Path) -> tuple[str, str]:
-    """Copy debug log from driver filesystem to workspace and return (workspace_path, url)."""
-    import uuid
-
-    user_email = get_current_user_email()
-    unique_id = uuid.uuid4().hex[:8]
-    timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-
-    # Workspace FUSE path
-    workspace_dir = f"/Workspace/Users/{user_email}/dbr_acceptance_tests"
-    workspace_path = f"{workspace_dir}/debug-cloud-{timestamp}-{unique_id}.log"
-
-    # Create directory and copy file
-    os.makedirs(workspace_dir, exist_ok=True)
-
-    with open(local_log_path, "r") as src:
-        with open(workspace_path, "w") as dst:
-            dst.write(src.read())
-
-    # Build URL
-    workspace_url = get_workspace_url()
-    # Remove /Workspace prefix for the URL fragment
-    url_path = workspace_path[len("/Workspace") :]
-    debug_url = f"{workspace_url}#files{url_path}"
-
-    return workspace_path, debug_url
+def get_workspace_debug_log_path(debug_log_path: str) -> str:
+    """Convert workspace API path to FUSE path for direct file access."""
+    # The debug_log_path is an API path (e.g., /Users/user@example.com/dbr_acceptance_tests/debug.log)
+    # We need to convert it to a FUSE path by adding /Workspace prefix
+    if debug_log_path.startswith("/Workspace"):
+        return debug_log_path
+    return f"/Workspace{debug_log_path}"
 
 
 # COMMAND ----------
@@ -179,12 +144,10 @@ def setup_environment(extract_dir: Path) -> dict:
 class TestResult:
     """Holds the result of running tests."""
 
-    def __init__(self, return_code: int, stdout: str, stderr: str, debug_log_path: Path, debug_log_url: str):
+    def __init__(self, return_code: int, stdout: str, stderr: str):
         self.return_code = return_code
         self.stdout = stdout
         self.stderr = stderr
-        self.debug_log_path = debug_log_path
-        self.debug_log_url = debug_log_url
 
 
 def run_tests(
@@ -198,12 +161,13 @@ def run_tests(
     test_metastore_id: str = "",
     test_user_email: str = "",
     test_sp_application_id: str = "",
+    debug_log_path: str = "",
 ) -> TestResult:
     """Run CLI cloud acceptance tests."""
     cli_dir = extract_dir / "cli"
 
-    # Create debug log file
-    debug_log_path = get_debug_log_path()
+    # Get the workspace FUSE path for the pre-created debug log file
+    workspace_log_path = get_workspace_debug_log_path(debug_log_path)
 
     cmd = [
         "go",
@@ -239,8 +203,8 @@ def run_tests(
     if test_sp_application_id:
         env["TEST_SP_APPLICATION_ID"] = test_sp_application_id
 
-    # Write header to debug log
-    with open(debug_log_path, "w") as log_file:
+    # Write header to debug log (write directly to workspace via FUSE)
+    with open(workspace_log_path, "w") as log_file:
         log_file.write(f"Command: {' '.join(cmd)}\n")
         log_file.write(f"Working directory: {cli_dir}\n")
         log_file.write(f"CLOUD_ENV: {cloud_env}\n")
@@ -280,7 +244,7 @@ def run_tests(
 
     # Collect output while streaming it and write to debug log
     output_lines = []
-    with open(debug_log_path, "a") as log_file:
+    with open(workspace_log_path, "a") as log_file:
         for line in process.stdout:
             print(line, end="", flush=True)
             output_lines.append(line)
@@ -291,20 +255,16 @@ def run_tests(
     stdout = "".join(output_lines)
 
     # Write footer to debug log
-    with open(debug_log_path, "a") as log_file:
+    with open(workspace_log_path, "a") as log_file:
         log_file.write("\n" + "=" * 60 + "\n")
         log_file.write(f"Tests finished with return code: {process.returncode}\n")
         log_file.write("=" * 60 + "\n")
-
-    # Copy debug log to workspace for persistent access
-    _, debug_log_url = copy_debug_log_to_workspace(debug_log_path)
-    print(f"\nDebug log URL: {debug_log_url}")
 
     print("\n" + "=" * 60)
     print(f"Tests finished with return code: {process.returncode}")
     print("=" * 60)
 
-    return TestResult(process.returncode, stdout, "", debug_log_path, debug_log_url)
+    return TestResult(process.returncode, stdout, "")
 
 
 # COMMAND ----------
@@ -322,6 +282,7 @@ def main():
     dbutils.widgets.text("test_metastore_id", "")
     dbutils.widgets.text("test_user_email", "")
     dbutils.widgets.text("test_sp_application_id", "")
+    dbutils.widgets.text("debug_log_path", "")
 
     archive_path = dbutils.widgets.get("archive_path")
     cloud_env = dbutils.widgets.get("cloud_env")
@@ -332,11 +293,14 @@ def main():
     test_metastore_id = dbutils.widgets.get("test_metastore_id")
     test_user_email = dbutils.widgets.get("test_user_email")
     test_sp_application_id = dbutils.widgets.get("test_sp_application_id")
+    debug_log_path = dbutils.widgets.get("debug_log_path")
 
     if not archive_path:
         raise ValueError("archive_path parameter is required")
     if not cloud_env:
         raise ValueError("cloud_env parameter is required")
+    if not debug_log_path:
+        raise ValueError("debug_log_path parameter is required")
 
     print("=" * 60)
     print("DBR Cloud Test Runner")
@@ -364,6 +328,7 @@ def main():
         test_metastore_id=test_metastore_id,
         test_user_email=test_user_email,
         test_sp_application_id=test_sp_application_id,
+        debug_log_path=debug_log_path,
     )
 
     print("=" * 60)
@@ -371,18 +336,10 @@ def main():
     print("=" * 60)
 
     if result.return_code != 0:
-        # Print debug log location first for easy access
-        print("\n" + "=" * 60)
-        print("DEBUG LOG LOCATION:")
-        print(f"  {result.debug_log_url}")
-        print("=" * 60 + "\n")
-
         # Include relevant output in the exception for debugging
         stdout_preview = result.stdout[-100000:] if result.stdout else "(no stdout)"
         stderr_preview = result.stderr[-100000:] if result.stderr else "(no stderr)"
         error_msg = f"""Cloud tests failed with return code {result.return_code}
-
-Debug log: {result.debug_log_url}
 
 === STDOUT (last 100000 chars) ===
 {stdout_preview}
