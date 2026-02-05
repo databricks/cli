@@ -34,6 +34,16 @@ func (m *configureWSFS) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 		return nil
 	}
 
+	// On serverless (client version 2+), use the native sync root directly via FUSE.
+	// The FUSE provides capabitilies for both reading and writing notebooks. It also
+	// is much faster and enables running cloud tests on DBR, since otherwise the tests
+	// fail with an AsyncFlushError because of the conflict between writing to FUSE
+	// and via the workspace APIs simultaneously.
+	v := dbr.GetVersion(ctx)
+	if v.Type == dbr.ClusterTypeServerless && v.Major >= 2 {
+		return nil
+	}
+
 	// If so, swap out vfs.Path instance of the sync root with one that
 	// makes all Workspace File System interactions extension aware.
 	p, err := vfs.NewFilerPath(ctx, root, func(path string) (filer.Filer, error) {
