@@ -12,6 +12,6 @@ func TestMustLoadConfig(t *testing.T) {
 }
 
 func TestGetResourceConfig(t *testing.T) {
-	assert.NotNil(t, GetResourceConfig("volumes"))
-	assert.Nil(t, GetResourceConfig("nonexistent"))
+	assert.NotEmpty(t, GetResourceConfig("volumes").RecreateOnChanges)
+	assert.Empty(t, GetResourceConfig("nonexistent").RecreateOnChanges)
 }

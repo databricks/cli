@@ -8,6 +8,8 @@ import (
 	"reflect"
 	"slices"
 	"strings"
+
+	"github.com/databricks/databricks-sdk-go/common/types/duration"
 )
 
 var skipTags = []string{
@@ -19,6 +21,10 @@ var skipTags = []string{
 	// Fields can be tagged as "internal" to remove them from the generated schema.
 	"internal",
 }
+
+// sdkDurationType is the reflect.Type for the SDK's duration.Duration type.
+// This type has custom JSON marshaling that represents durations as strings.
+var sdkDurationType = reflect.TypeFor[duration.Duration]()
 
 type constructor struct {
 	// Map of typ.PkgPath() + "." + typ.Name() to the schema for that type.
@@ -167,6 +173,13 @@ func (c *constructor) walk(typ reflect.Type) (string, error) {
 
 	var s Schema
 	var err error
+
+	// Handle SDK's duration.Duration type as a string since it has custom JSON marshaling.
+	if typ == sdkDurationType {
+		s = Schema{Type: StringType}
+		c.definitions[typPath] = s
+		return typPath, nil
+	}
 
 	switch typ.Kind() {
 	case reflect.Struct:

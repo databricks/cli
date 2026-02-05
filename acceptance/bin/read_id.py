@@ -28,7 +28,8 @@ def get_id_terraform(filename, name):
         if r_name == name:
             for inst in r["instances"]:
                 attribute_values = inst.get("attributes") or {}
-                return attribute_values.get("id")
+                # Try "id" first, fall back to "name" for postgres resources
+                return attribute_values.get("id") or attribute_values.get("name")
 
     print(f"Cannot find resource with {name=}. Available: {available}", file=sys.stderr)
 

@@ -24,14 +24,33 @@ import (
 )
 
 const (
-	templatePathEnvVar = "DATABRICKS_APPKIT_TEMPLATE_PATH"
-	defaultTemplateURL = "https://github.com/databricks/appkit/tree/main/template"
+	templatePathEnvVar  = "DATABRICKS_APPKIT_TEMPLATE_PATH"
+	appkitRepoURL       = "https://github.com/databricks/appkit"
+	appkitTemplateDir   = "template"
+	appkitDefaultBranch = "main"
 )
+
+// normalizeVersion ensures the version string has a "v" prefix if it looks like a semver.
+// Examples: "0.3.0" -> "v0.3.0", "v0.3.0" -> "v0.3.0", "latest" -> "main"
+func normalizeVersion(version string) string {
+	if version == "" {
+		return version
+	}
+	if version == "latest" {
+		return appkitDefaultBranch
+	}
+	// If it starts with a digit, prepend "v"
+	if len(version) > 0 && version[0] >= '0' && version[0] <= '9' {
+		return "v" + version
+	}
+	return version
+}
 
 func newInitCmd() *cobra.Command {
 	var (
 		templatePath string
 		branch       string
+		version      string
 		name         string
 		warehouseID  string
 		description  string
@@ -51,9 +70,18 @@ When run without arguments, uses the default AppKit template and an interactive 
 guides you through the setup. When run with --name, runs in non-interactive mode
 (all required flags must be provided).
 
+By default, the command uses the latest released version of AppKit. Use --version
+to specify a different version, or --version latest to use the main branch.
+
 Examples:
   # Interactive mode with default template (recommended)
   databricks apps init
+
+  # Use a specific AppKit version
+  databricks apps init --version v0.2.0
+
+  # Use the latest development version (main branch)
+  databricks apps init --version latest
 
   # Non-interactive with flags
   databricks apps init --name my-app
@@ -80,9 +108,16 @@ Environment variables:
 		PreRunE: root.MustWorkspaceClient,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
+
+			// Validate mutual exclusivity of --branch and --version
+			if cmd.Flags().Changed("branch") && cmd.Flags().Changed("version") {
+				return errors.New("--branch and --version are mutually exclusive")
+			}
+
 			return runCreate(ctx, createOptions{
 				templatePath:    templatePath,
 				branch:          branch,
+				version:         version,
 				name:            name,
 				nameProvided:    cmd.Flags().Changed("name"),
 				warehouseID:     warehouseID,
@@ -99,7 +134,8 @@ Environment variables:
 	}
 
 	cmd.Flags().StringVar(&templatePath, "template", "", "Template path (local directory or GitHub URL)")
-	cmd.Flags().StringVar(&branch, "branch", "", "Git branch or tag (for GitHub templates)")
+	cmd.Flags().StringVar(&branch, "branch", "", "Git branch or tag (for GitHub templates, mutually exclusive with --version)")
+	cmd.Flags().StringVar(&version, "version", "", "AppKit version to use (default: latest release, use 'latest' for main branch)")
 	cmd.Flags().StringVar(&name, "name", "", "Project name (prompts if not provided)")
 	cmd.Flags().StringVar(&warehouseID, "warehouse-id", "", "SQL warehouse ID")
 	cmd.Flags().StringVar(&description, "description", "", "App description")
@@ -114,6 +150,7 @@ Environment variables:
 type createOptions struct {
 	templatePath    string
 	branch          string
+	version         string
 	name            string
 	nameProvided    bool // true if --name flag was explicitly set (enables "flags mode")
 	warehouseID     string
@@ -377,17 +414,22 @@ func cloneRepo(ctx context.Context, repoURL, branch string) (string, error) {
 }
 
 // resolveTemplate resolves a template path, handling both local paths and GitHub URLs.
+// branch is used for cloning (can contain "/" for feature branches).
+// subdir is an optional subdirectory within the repo to use (for default appkit template).
 // Returns the local path to use, a cleanup function (for temp dirs), and any error.
-func resolveTemplate(ctx context.Context, templatePath, branch string) (localPath string, cleanup func(), err error) {
+func resolveTemplate(ctx context.Context, templatePath, branch, subdir string) (localPath string, cleanup func(), err error) {
 	// Case 1: Local path - return as-is
 	if !strings.HasPrefix(templatePath, "https://") {
 		return templatePath, nil, nil
 	}
 
 	// Case 2: GitHub URL - parse and clone
-	repoURL, subdir, urlBranch := git.ParseGitHubURL(templatePath)
+	repoURL, urlSubdir, urlBranch := git.ParseGitHubURL(templatePath)
 	if branch == "" {
 		branch = urlBranch // Use branch from URL if not overridden by flag
+	}
+	if subdir == "" {
+		subdir = urlSubdir // Use subdir from URL if not overridden
 	}
 
 	// Clone to temp dir with spinner
@@ -427,9 +469,22 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	if templateSrc == "" {
 		templateSrc = os.Getenv(templatePathEnvVar)
 	}
-	if templateSrc == "" {
-		// Use default template from GitHub
-		templateSrc = defaultTemplateURL
+
+	// Resolve the git reference (branch/tag) to use for default appkit template
+	gitRef := opts.branch
+	usingDefaultTemplate := templateSrc == ""
+	if usingDefaultTemplate {
+		// Using default appkit template - resolve version
+		switch {
+		case opts.branch != "":
+			// --branch takes precedence (already set in gitRef)
+		case opts.version != "":
+			gitRef = normalizeVersion(opts.version)
+		default:
+			// Default: use main branch
+			gitRef = appkitDefaultBranch
+		}
+		templateSrc = appkitRepoURL
 	}
 
 	// Step 1: Get project name first (needed before we can check destination)
@@ -465,7 +520,15 @@ func runCreate(ctx context.Context, opts createOptions) error {
 	}
 
 	// Step 2: Resolve template (handles GitHub URLs by cloning)
-	resolvedPath, cleanup, err := resolveTemplate(ctx, templateSrc, opts.branch)
+	// For custom templates, --branch can override the URL's branch
+	// For default appkit template, pass gitRef directly (supports branches with "/" in name)
+	branchForClone := opts.branch
+	subdirForClone := ""
+	if usingDefaultTemplate {
+		branchForClone = gitRef
+		subdirForClone = appkitTemplateDir
+	}
+	resolvedPath, cleanup, err := resolveTemplate(ctx, templateSrc, branchForClone, subdirForClone)
 	if err != nil {
 		return err
 	}

@@ -1,0 +1,59 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+   trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+print_requests() {
+    local name=$1
+    trace print_requests.py --keep --get '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.${name}.$DATABRICKS_BUNDLE_ENGINE.json
+    rm -f out.requests.txt
+}
+
+title "Initial deployment"
+trace $CLI bundle validate
+trace $CLI bundle plan
+trace $CLI bundle plan -o json | jq '.plan."resources.postgres_branches.dev_branch" // .' > out.plan.create.$DATABRICKS_BUNDLE_ENGINE.json
+rm -f out.requests.txt
+trace $CLI bundle deploy
+
+print_requests create
+
+project_name="projects/test-pg-proj-${UNIQUE_NAME}"
+branch_name="${project_name}/branches/dev-branch"
+branch_id_1=`read_id.py dev_branch`
+trace $CLI postgres get-branch "${branch_name}" | jq 'del(.create_time, .update_time, .status.logical_size_bytes)'
+
+title "Verify no_change (no changes)"
+trace $CLI bundle plan
+trace $CLI bundle plan -o json | jq '(.plan."resources.postgres_branches.dev_branch" // .) | del(.remote_state.status.logical_size_bytes)' > out.plan.no_change.$DATABRICKS_BUNDLE_ENGINE.json
+rm -f out.requests.txt
+trace $CLI bundle deploy
+
+print_requests no_change
+
+title "Update is_protected to true and re-deploy"
+trace update_file.py databricks.yml "is_protected: false" "is_protected: true"
+trace cat databricks.yml
+
+trace $CLI bundle plan
+trace $CLI bundle plan -o json | jq '(.plan."resources.postgres_branches.dev_branch" // .) | del(.remote_state.status.logical_size_bytes)' > out.plan.update.$DATABRICKS_BUNDLE_ENGINE.json
+rm -f out.requests.txt
+trace $CLI bundle deploy
+
+print_requests update
+
+branch_id_2=`read_id.py dev_branch`
+trace $CLI postgres get-branch "${branch_name}" | jq 'del(.create_time, .update_time, .status.logical_size_bytes)'
+
+title "Restore is_protected to false"
+trace update_file.py databricks.yml "is_protected: true" "is_protected: false"
+trace $CLI bundle plan
+trace $CLI bundle plan -o json | jq '(.plan."resources.postgres_branches.dev_branch" // .) | del(.remote_state.status.logical_size_bytes)' > out.plan.restore.$DATABRICKS_BUNDLE_ENGINE.json
+rm -f out.requests.txt
+trace $CLI bundle deploy
+
+print_requests restore
+
+trace $CLI postgres get-branch "${branch_name}" | jq 'del(.create_time, .update_time, .status.logical_size_bytes)'

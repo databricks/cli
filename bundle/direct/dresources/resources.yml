@@ -124,3 +124,20 @@ resources:
       # When scope name changes, we need UpdateWithID trigger. This is necessary so that subsequent
       # DoRead operations use the correct ID and we do not end up with a persistent drift.
       - scope_name
+
+  postgres_projects:
+    recreate_on_changes:
+      # project_id is immutable (part of hierarchical name, not in API spec)
+      - project_id
+
+  postgres_branches:
+    recreate_on_changes:
+      # parent and branch_id are immutable (part of hierarchical name, not in API spec)
+      - parent
+      - branch_id
+
+  postgres_endpoints:
+    recreate_on_changes:
+      # parent and endpoint_id are immutable (part of hierarchical name, not in API spec)
+      - parent
+      - endpoint_id
