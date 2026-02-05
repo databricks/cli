@@ -88,17 +88,9 @@ func setupDbrTestDir(ctx context.Context, t *testing.T, uniqueID string) (*datab
 	err = w.Workspace.MkdirsByPath(ctx, apiPath)
 	require.NoError(t, err)
 
-	// TODO: Re-enable cleanup after debugging TCP dial errors.
-	// t.Cleanup(func() {
-	// 	t.Logf("Cleaning up test directory: %s", apiPath)
-	// 	err := w.Workspace.Delete(ctx, workspace.Delete{
-	// 		Path:      apiPath,
-	// 		Recursive: true,
-	// 	})
-	// 	if err != nil {
-	// 		t.Logf("Warning: failed to clean up test directory: %v", err)
-	// 	}
-	// })
+	// Note: We do not cleanup test directories created here. They are kept around
+	// to enable debugging of failures or analyzing the logs.
+	// They will automatically be cleaned by the nightly cleanup scripts.
 
 	f, err := filer.NewWorkspaceFilesClient(w, apiPath)
 	require.NoError(t, err)
@@ -189,6 +181,7 @@ func runDbrTests(ctx context.Context, t *testing.T, w *databricks.WorkspaceClien
 
 	// Build cloud test parameters (Cloud=true tests, run with CLOUD_ENV set)
 	cloudParams := buildBaseParams(testDir, archiveName)
+	cloudParams["test_type"] = "cloud"
 	cloudParams["test_filter"] = config.cloudTestFilter
 
 	jobName := "DBR Tests"
@@ -204,12 +197,6 @@ func runDbrTests(ctx context.Context, t *testing.T, w *databricks.WorkspaceClien
 	} else {
 		t.Log("  Cloud tests: (all)")
 	}
-	// TODO: Re-enable local tests once performance is acceptable.
-	// if config.localTestFilter != "" {
-	// 	t.Logf("  Local tests: %s", config.localTestFilter)
-	// } else {
-	// 	t.Log("  Local tests: (all)")
-	// }
 
 	notebookPath := path.Join(testDir, runnerName)
 
@@ -237,17 +224,6 @@ func runDbrTests(ctx context.Context, t *testing.T, w *databricks.WorkspaceClien
 					Source:         jobs.SourceWorkspace,
 				},
 			},
-			// TODO: Re-enable local tests once performance is acceptable.
-			// {
-			// 	TaskKey:        "local_tests",
-			// 	EnvironmentKey: "default",
-			// 	MaxRetries:     0,
-			// 	NotebookTask: &jobs.NotebookTask{
-			// 		NotebookPath:   notebookPath,
-			// 		BaseParameters: localParams,
-			// 		Source:         jobs.SourceWorkspace,
-			// 	},
-			// },
 		},
 	}
 
@@ -255,12 +231,9 @@ func runDbrTests(ctx context.Context, t *testing.T, w *databricks.WorkspaceClien
 	job, err := w.Jobs.Create(ctx, createJob)
 	require.NoError(t, err)
 
-	// TODO: Re-enable cleanup after debugging TCP dial errors.
-	// Clean up the job after the test completes
-	// t.Cleanup(func() {
-	// 	t.Logf("Deleting job: %d", job.JobId)
-	// 	_ = w.Jobs.Delete(ctx, jobs.DeleteJob{JobId: job.JobId})
-	// })
+	// The job is not deleted after the test completes.
+	// This is to enable debugging of failures or analyzing the logs.
+	// It will automatically be cleaned by the nightly cleanup scripts.
 
 	// Trigger a run of the job
 	wait, err := w.Jobs.RunNow(ctx, jobs.RunNow{JobId: job.JobId})
@@ -298,7 +271,6 @@ func runDbrTests(ctx context.Context, t *testing.T, w *databricks.WorkspaceClien
 	}
 
 	t.Logf("Job completed. Status: %s", run.State.ResultState)
-	t.Logf("Run URL: %s", run.RunPageUrl)
 
 	// Check if the job succeeded
 	if run.State.ResultState != jobs.RunResultStateSuccess {
