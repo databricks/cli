@@ -1,0 +1,6 @@
+# All configuration inherited from parent test.toml
+
+# Only run with direct engine - terraform produces different plan output for suspend_timeout_duration
+# because direct engine respects ignore_remote_changes rules while terraform doesn't
+[EnvMatrix]
+DATABRICKS_BUNDLE_ENGINE = ["direct"]
