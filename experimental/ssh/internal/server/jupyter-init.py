@@ -185,7 +185,16 @@ def _register_formatters():
     html_formatter.for_type(SparkConnectDataframe, df_html)
     html_formatter.for_type(DataFrame, df_html)
 
+@_log_exceptions
+def _initialize_spark_connect_session():
+    import os
+    from dbruntime.spark_connection import get_and_configure_uds_spark
+    os.environ["SPARK_REMOTE"] = "unix:///databricks/sparkconnect/grpc.sock"
+    spark = get_and_configure_uds_spark()
+    globals()["spark"] = spark
+
 
 _register_magics()
 _register_formatters()
 _register_runtime_hooks()
+_initialize_spark_connect_session()
