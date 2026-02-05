@@ -261,7 +261,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			}
 		}
 
-		entry.Changes, err = prepareChanges(ctx, adapter, localDiff, remoteDiff, savedState, remoteState)
+		entry.Changes, err = prepareChanges(ctx, adapter, localDiff, remoteDiff, savedState, remoteStateComparable)
 		if err != nil {
 			logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 			return false
