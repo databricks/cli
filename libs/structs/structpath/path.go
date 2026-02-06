@@ -332,9 +332,9 @@ func NewPatternKeyValue(prev *PatternNode, key, value string) *PatternNode {
 	return (*PatternNode)(NewKeyValue((*PathNode)(prev), key, value))
 }
 
-// Parse parses a string representation of a path using a state machine.
-// If wildcardAllowed is true, returns (nil, *PatternNode, nil) on success.
-// If wildcardAllowed is false, returns (*PathNode, nil, nil) on success but errors if wildcards are found.
+// parse parses a string representation of a path or pattern using a state machine.
+// Returns *PatternNode on success. If wildcardAllowed is false and wildcards are
+// encountered, returns an error.
 //
 // State Machine for Path Parsing:
 //

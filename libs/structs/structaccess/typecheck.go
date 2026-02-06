@@ -48,10 +48,12 @@ func ValidatePattern(t reflect.Type, path *structpath.PatternNode) error {
 func validateNodeSlice(t reflect.Type, nodes []*structpath.PatternNode) error {
 	cur := t
 	for _, node := range nodes {
+		// Always dereference pointers at the type level.
 		for cur.Kind() == reflect.Pointer {
 			cur = cur.Elem()
 		}
 
+		// Index access: slice/array
 		if _, isIndex := node.Index(); isIndex {
 			kind := cur.Kind()
 			if kind != reflect.Slice && kind != reflect.Array {
@@ -61,6 +63,7 @@ func validateNodeSlice(t reflect.Type, nodes []*structpath.PatternNode) error {
 			continue
 		}
 
+		// Handle wildcards - treat like index/key access
 		if node.BracketStar() {
 			kind := cur.Kind()
 			if kind != reflect.Slice && kind != reflect.Array {
@@ -77,6 +80,7 @@ func validateNodeSlice(t reflect.Type, nodes []*structpath.PatternNode) error {
 			continue
 		}
 
+		// Handle key-value selector: validates that we can index the slice/array
 		if _, _, isKeyValue := node.KeyValue(); isKeyValue {
 			kind := cur.Kind()
 			if kind != reflect.Slice && kind != reflect.Array {
@@ -87,6 +91,7 @@ func validateNodeSlice(t reflect.Type, nodes []*structpath.PatternNode) error {
 		}
 
 		key, ok := node.StringKey()
+
 		if !ok {
 			return errors.New("unsupported path node type")
 		}
