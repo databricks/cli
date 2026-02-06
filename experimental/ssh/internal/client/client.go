@@ -38,7 +38,10 @@ var sshServerBootstrapScript string
 
 var errServerMetadata = errors.New("server metadata error")
 
-const sshServerTaskKey = "start_ssh_server"
+const (
+	sshServerTaskKey         = "start_ssh_server"
+	serverlessEnvironmentKey = "ssh_tunnel_serverless"
+)
 
 type ClientOptions struct {
 	// Id of the cluster to connect to (for dedicated clusters)
@@ -355,7 +358,7 @@ func submitSSHTunnelJob(ctx context.Context, client *databricks.WorkspaceClient,
 	}
 
 	task := jobs.SubmitTask{
-		TaskKey: "start_ssh_server",
+		TaskKey: sshServerTaskKey,
 		NotebookTask: &jobs.NotebookTask{
 			NotebookPath:   jobNotebookPath,
 			BaseParameters: baseParams,
@@ -364,7 +367,7 @@ func submitSSHTunnelJob(ctx context.Context, client *databricks.WorkspaceClient,
 	}
 
 	if opts.IsServerlessMode() {
-		task.EnvironmentKey = "ssh-tunnel-serverless"
+		task.EnvironmentKey = serverlessEnvironmentKey
 	} else {
 		task.ExistingClusterId = opts.ClusterID
 	}
@@ -378,7 +381,7 @@ func submitSSHTunnelJob(ctx context.Context, client *databricks.WorkspaceClient,
 	if opts.IsServerlessMode() {
 		submitRequest.Environments = []jobs.JobEnvironment{
 			{
-				EnvironmentKey: "ssh-tunnel-serverless",
+				EnvironmentKey: serverlessEnvironmentKey,
 				Spec: &compute.Environment{
 					EnvironmentVersion: "3",
 				},
@@ -413,7 +416,7 @@ func submitSSHTunnelJobManual(ctx context.Context, client *databricks.WorkspaceC
 	}
 
 	if opts.IsServerlessMode() {
-		task["environment_key"] = "ssh-tunnel-serverless"
+		task["environment_key"] = serverlessEnvironmentKey
 		if opts.Accelerator != "" {
 			cmdio.LogString(ctx, "Using accelerator: "+opts.Accelerator)
 			task["compute"] = map[string]any{
@@ -433,7 +436,7 @@ func submitSSHTunnelJobManual(ctx context.Context, client *databricks.WorkspaceC
 	if opts.IsServerlessMode() {
 		submitRequest["environments"] = []map[string]any{
 			{
-				"environment_key": "ssh-tunnel-serverless",
+				"environment_key": serverlessEnvironmentKey,
 				"spec": map[string]any{
 					"environment_version": "3",
 				},
