@@ -261,7 +261,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			}
 		}
 
-		entry.Changes, err = prepareChanges(ctx, adapter, localDiff, remoteDiff, savedState, remoteState != nil)
+		entry.Changes, err = prepareChanges(ctx, adapter, localDiff, remoteDiff, savedState, remoteStateComparable)
 		if err != nil {
 			logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 			return false
@@ -316,7 +316,7 @@ func getMaxAction(m map[string]*deployplan.ChangeDesc) deployplan.ActionType {
 	return result
 }
 
-func prepareChanges(ctx context.Context, adapter *dresources.Adapter, localDiff, remoteDiff []structdiff.Change, oldState any, hasRemote bool) (deployplan.Changes, error) {
+func prepareChanges(ctx context.Context, adapter *dresources.Adapter, localDiff, remoteDiff []structdiff.Change, oldState, remoteState any) (deployplan.Changes, error) {
 	m := make(deployplan.Changes)
 
 	for _, ch := range localDiff {
@@ -324,9 +324,9 @@ func prepareChanges(ctx context.Context, adapter *dresources.Adapter, localDiff,
 			Old: ch.Old,
 			New: ch.New,
 		}
-		if hasRemote {
-			// by default, assume e.Remote is the same as config; if not the case it'll be ovewritten below
-			e.Remote = ch.New
+		if remoteState != nil {
+			// We cannot assume e.Remote is the same as config: if the whole struct is missing, there might be diff entry for parent
+			e.Remote, _ = structaccess.Get(remoteState, ch.Path)
 		}
 		m[ch.Path.String()] = &e
 	}
