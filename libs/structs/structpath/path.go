@@ -573,9 +573,11 @@ func parse(s string, wildcardAllowed bool) (*PatternNode, error) {
 		case stateKeyValueValueQuote:
 			switch ch {
 			case '\'':
+				// Escaped quote - add single quote to value and continue
 				currentToken.WriteByte(ch)
 				state = stateKeyValueValue
 			case ']':
+				// End of key-value
 				result = NewKeyValue(result, keyValueKey, currentToken.String())
 				currentToken.Reset()
 				keyValueKey = ""
