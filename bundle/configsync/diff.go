@@ -111,7 +111,7 @@ func convertChangeDesc(path string, cd *deployplan.ChangeDesc) (*ConfigChangeDes
 		op = OperationSkip
 	}
 
-	if op == OperationAdd && isEntityPath(path) {
+	if (op == OperationAdd || op == OperationReplace) && isEntityPath(path) {
 		normalizedValue = filterEntityDefaults(path, normalizedValue)
 	}
 
