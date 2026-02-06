@@ -94,10 +94,11 @@ func createSSHDProcess(ctx context.Context, configPath string) *exec.Cmd {
 }
 
 // escapeEnvValue escapes a value for use in sshd SetEnv directive.
-// It strips newlines and escapes quotes.
+// It strips newlines and escapes backslashes and quotes.
 func escapeEnvValue(val string) string {
 	val = strings.ReplaceAll(val, "\r", "")
 	val = strings.ReplaceAll(val, "\n", "")
+	val = strings.ReplaceAll(val, "\\", "\\\\")
 	val = strings.ReplaceAll(val, "\"", "\\\"")
 	return val
 }
