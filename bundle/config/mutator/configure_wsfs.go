@@ -39,6 +39,8 @@ func (m *configureWSFS) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 	// is much faster and enables running cloud tests on DBR, since otherwise the tests
 	// fail with an AsyncFlushError because of the conflict between writing to FUSE
 	// and via the workspace APIs simultaneously.
+	//
+	// Writing notebooks via FUSE is only supported for serverless client version 2.5+.
 	v := dbr.GetVersion(ctx)
 	if v.Type == dbr.ClusterTypeServerless && (v.Major > 2 || (v.Major == 2 && v.Minor >= 5)) {
 		return nil
