@@ -83,6 +83,23 @@ func jobFixUps(jobSettings *jobs.JobSettings) {
 	}
 
 	jobSettings.ForceSendFields = append(jobSettings.ForceSendFields, "TimeoutSeconds")
+
+	for i := range jobSettings.Tasks {
+		taskFixUps(&jobSettings.Tasks[i])
+	}
+}
+
+func taskFixUps(task *jobs.Task) {
+	if task.RunIf == "" {
+		task.RunIf = jobs.RunIfAllSuccess
+	}
+	task.ForceSendFields = append(task.ForceSendFields, "Disabled", "TimeoutSeconds")
+	if task.EmailNotifications == nil {
+		task.EmailNotifications = &jobs.TaskEmailNotifications{}
+	}
+	if task.WebhookNotifications == nil {
+		task.WebhookNotifications = &jobs.WebhookNotifications{}
+	}
 }
 
 func (s *FakeWorkspace) JobsGet(req Request) Response {
