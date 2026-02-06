@@ -26,16 +26,6 @@ func ValidateByString(t reflect.Type, path string) error {
 	return ValidatePattern(t, patternNode)
 }
 
-// validatableNode is an interface for path nodes that can be validated.
-type validatableNode interface {
-	Index() (int, bool)
-	KeyValue() (key, value string, ok bool)
-	StringKey() (string, bool)
-	String() string
-	BracketStar() bool
-	DotStar() bool
-}
-
 // ValidatePath reports whether the given path is valid for the provided type.
 // It returns nil if the path resolves fully, or an error indicating where resolution failed.
 // Paths cannot contain wildcards.
@@ -43,12 +33,7 @@ func ValidatePath(t reflect.Type, path *structpath.PathNode) error {
 	if path.IsRoot() {
 		return nil
 	}
-	nodes := path.AsSlice()
-	validateNodes := make([]validatableNode, len(nodes))
-	for i, n := range nodes {
-		validateNodes[i] = n
-	}
-	return validateNodeSlice(t, validateNodes)
+	return validateNodeSlice(t, path.AsSlice())
 }
 
 // ValidatePattern reports whether the given pattern path is valid for the provided type.
@@ -58,16 +43,17 @@ func ValidatePattern(t reflect.Type, path *structpath.PatternNode) error {
 	if path.IsRoot() {
 		return nil
 	}
-	nodes := path.AsSlice()
-	validateNodes := make([]validatableNode, len(nodes))
-	for i, n := range nodes {
-		validateNodes[i] = n
+	// PatternNode is type definition of PathNode, so we can cast the slice
+	patternNodes := path.AsSlice()
+	pathNodes := make([]*structpath.PathNode, len(patternNodes))
+	for i, n := range patternNodes {
+		pathNodes[i] = (*structpath.PathNode)(n)
 	}
-	return validateNodeSlice(t, validateNodes)
+	return validateNodeSlice(t, pathNodes)
 }
 
 // validateNodeSlice is the shared implementation for ValidatePath and ValidatePattern.
-func validateNodeSlice(t reflect.Type, nodes []validatableNode) error {
+func validateNodeSlice(t reflect.Type, nodes []*structpath.PathNode) error {
 	cur := t
 	for _, node := range nodes {
 		for cur.Kind() == reflect.Pointer {

@@ -28,114 +28,64 @@ const (
 	tagBracketString = -6
 )
 
-type PathNodeBase struct {
-	key string // Computed key (JSON key for structs, string key for maps, or Go field name for fallback)
+// PathNode represents a node in a path for struct diffing.
+// It can represent struct fields, map keys, or array/slice indices.
+type PathNode struct {
+	prev *PathNode
+	key  string // Computed key (JSON key for structs, string key for maps, or Go field name for fallback)
 	// If index >= 0, the node specifies a slice/array index in index.
 	// If index < 0, this describes the type of node
 	index int
 	value string // Used for tagKeyValue: stores the value part of [key='value']
 }
 
-// PathNode represents a node in a path for struct diffing.
-// It can represent struct fields, map keys, or array/slice indices.
-type PathNode struct {
-	PathNodeBase
-	prev *PathNode
-}
-
-// PatternNode represents a node that can also support wildcards
-type PatternNode struct {
-	PathNodeBase
-	prev *PatternNode
-}
+// PatternNode is a PathNode that can also contain wildcards.
+// Use type conversion to access PathNode methods: (*PathNode)(patternNode).Method()
+type PatternNode PathNode
 
 func (p *PathNode) IsRoot() bool {
 	return p == nil
 }
 
-func (p *PatternNode) IsRoot() bool {
-	return p == nil
-}
-
-func (p *PatternNode) Parent() *PatternNode {
-	if p == nil {
-		return nil
-	}
-	return p.prev
-}
-
-// Index - nil-safe wrappers
 func (p *PathNode) Index() (int, bool) {
 	if p == nil {
 		return -1, false
 	}
-	return p.PathNodeBase.Index()
-}
-
-func (p *PatternNode) Index() (int, bool) {
-	if p == nil {
-		return -1, false
-	}
-	return p.PathNodeBase.Index()
-}
-
-func (p *PathNodeBase) Index() (int, bool) {
 	if p.index >= 0 {
 		return p.index, true
 	}
 	return -1, false
 }
 
-func (p *PathNodeBase) DotStar() bool {
+func (p *PathNode) DotStar() bool {
+	if p == nil {
+		return false
+	}
 	return p.index == tagDotStar
 }
 
-func (p *PathNodeBase) BracketStar() bool {
+func (p *PathNode) BracketStar() bool {
+	if p == nil {
+		return false
+	}
 	return p.index == tagBracketStar
 }
 
-// KeyValue - nil-safe wrappers
 func (p *PathNode) KeyValue() (key, value string, ok bool) {
 	if p == nil {
 		return "", "", false
 	}
-	return p.PathNodeBase.KeyValue()
-}
-
-func (p *PatternNode) KeyValue() (key, value string, ok bool) {
-	if p == nil {
-		return "", "", false
-	}
-	return p.PathNodeBase.KeyValue()
-}
-
-func (p *PathNodeBase) KeyValue() (key, value string, ok bool) {
 	if p.index == tagKeyValue {
 		return p.key, p.value, true
 	}
 	return "", "", false
 }
 
-// StringKey - nil-safe wrappers (required because Go panics accessing embedded field on nil receiver)
-func (p *PathNode) StringKey() (string, bool) {
-	if p == nil {
-		return "", false
-	}
-	return p.PathNodeBase.StringKey()
-}
-
-func (p *PatternNode) StringKey() (string, bool) {
-	if p == nil {
-		return "", false
-	}
-	return p.PathNodeBase.StringKey()
-}
-
-func (p *PathNodeBase) IsDotString() bool {
+func (p *PathNode) IsDotString() bool {
 	return p != nil && p.index == tagDotString
 }
 
-func (p *PathNodeBase) DotString() (string, bool) {
+func (p *PathNode) DotString() (string, bool) {
 	if p == nil {
 		return "", false
 	}
@@ -145,7 +95,7 @@ func (p *PathNodeBase) DotString() (string, bool) {
 	return "", false
 }
 
-func (p *PathNodeBase) BracketString() (string, bool) {
+func (p *PathNode) BracketString() (string, bool) {
 	if p == nil {
 		return "", false
 	}
@@ -155,41 +105,8 @@ func (p *PathNodeBase) BracketString() (string, bool) {
 	return "", false
 }
 
-// formatNode writes the string representation of this node to the builder.
-// isFirst indicates if this is the first node in the path (affects dot prefix).
-func (p *PathNodeBase) formatNode(result *strings.Builder, isFirst bool) {
-	if p.index >= 0 {
-		result.WriteString("[")
-		result.WriteString(strconv.Itoa(p.index))
-		result.WriteString("]")
-	} else if p.index == tagDotStar {
-		if isFirst {
-			result.WriteString("*")
-		} else {
-			result.WriteString(".*")
-		}
-	} else if p.index == tagBracketStar {
-		result.WriteString("[*]")
-	} else if p.index == tagKeyValue {
-		result.WriteString("[")
-		result.WriteString(p.key)
-		result.WriteString("=")
-		result.WriteString(EncodeMapKey(p.value))
-		result.WriteString("]")
-	} else if p.index == tagDotString {
-		if !isFirst {
-			result.WriteString(".")
-		}
-		result.WriteString(p.key)
-	} else if p.index == tagBracketString {
-		result.WriteString("[")
-		result.WriteString(EncodeMapKey(p.key))
-		result.WriteString("]")
-	}
-}
-
 // StringKey returns either Field() or MapKey() if either is available
-func (p *PathNodeBase) StringKey() (string, bool) {
+func (p *PathNode) StringKey() (string, bool) {
 	if p == nil {
 		return "", false
 	}
@@ -222,69 +139,32 @@ func (p *PathNode) AsSlice() []*PathNode {
 	return segments
 }
 
-// AsSlice returns the pattern as a slice of PatternNodes from root to current.
-func (p *PatternNode) AsSlice() []*PatternNode {
-	length := p.Len()
-	segments := make([]*PatternNode, length)
-
-	// Fill in reverse order
-	current := p
-	for i := length - 1; i >= 0; i-- {
-		segments[i] = current
-		current = current.Parent()
-	}
-
-	return segments
-}
-
-// Len returns the number of components in the pattern.
-func (p *PatternNode) Len() int {
-	length := 0
-	current := p
-	for current != nil {
-		length++
-		current = current.Parent()
-	}
-	return length
-}
-
-// String returns the string representation of the pattern.
-func (p *PatternNode) String() string {
-	if p == nil {
-		return ""
-	}
-	components := p.AsSlice()
-	var result strings.Builder
-	for i, node := range components {
-		node.formatNode(&result, i == 0)
-	}
-	return result.String()
-}
-
 // NewIndex creates a new PathNode for an array/slice index.
 func NewIndex(prev *PathNode, index int) *PathNode {
 	if index < 0 {
 		panic("index must be non-negative")
 	}
 	return &PathNode{
-		PathNodeBase: PathNodeBase{index: index},
-		prev:         prev,
+		prev:  prev,
+		index: index,
 	}
 }
 
 // NewDotString creates a PathNode for dot notation (.field).
 func NewDotString(prev *PathNode, fieldName string) *PathNode {
 	return &PathNode{
-		PathNodeBase: PathNodeBase{key: fieldName, index: tagDotString},
-		prev:         prev,
+		prev:  prev,
+		key:   fieldName,
+		index: tagDotString,
 	}
 }
 
 // NewBracketString creates a PathNode for bracket notation (["field"]).
 func NewBracketString(prev *PathNode, fieldName string) *PathNode {
 	return &PathNode{
-		PathNodeBase: PathNodeBase{key: fieldName, index: tagBracketString},
-		prev:         prev,
+		prev:  prev,
+		key:   fieldName,
+		index: tagBracketString,
 	}
 }
 
@@ -299,67 +179,10 @@ func NewStringKey(prev *PathNode, fieldName string) *PathNode {
 
 func NewKeyValue(prev *PathNode, key, value string) *PathNode {
 	return &PathNode{
-		PathNodeBase: PathNodeBase{key: key, index: tagKeyValue, value: value},
-		prev:         prev,
-	}
-}
-
-// PatternNode constructors
-
-// NewPatternIndex creates a new PatternNode for an array/slice index.
-func NewPatternIndex(prev *PatternNode, index int) *PatternNode {
-	if index < 0 {
-		panic("index must be non-negative")
-	}
-	return &PatternNode{
-		PathNodeBase: PathNodeBase{index: index},
-		prev:         prev,
-	}
-}
-
-// NewPatternDotString creates a PatternNode for dot notation (.field).
-func NewPatternDotString(prev *PatternNode, fieldName string) *PatternNode {
-	return &PatternNode{
-		PathNodeBase: PathNodeBase{key: fieldName, index: tagDotString},
-		prev:         prev,
-	}
-}
-
-// NewPatternBracketString creates a PatternNode for bracket notation (["field"]).
-func NewPatternBracketString(prev *PatternNode, fieldName string) *PatternNode {
-	return &PatternNode{
-		PathNodeBase: PathNodeBase{key: fieldName, index: tagBracketString},
-		prev:         prev,
-	}
-}
-
-// NewPatternStringKey creates a PatternNode, choosing dot notation if the fieldName is a valid field name,
-// otherwise bracket notation.
-func NewPatternStringKey(prev *PatternNode, fieldName string) *PatternNode {
-	if isValidField(fieldName) {
-		return NewPatternDotString(prev, fieldName)
-	}
-	return NewPatternBracketString(prev, fieldName)
-}
-
-func NewPatternDotStar(prev *PatternNode) *PatternNode {
-	return &PatternNode{
-		PathNodeBase: PathNodeBase{index: tagDotStar},
-		prev:         prev,
-	}
-}
-
-func NewPatternBracketStar(prev *PatternNode) *PatternNode {
-	return &PatternNode{
-		PathNodeBase: PathNodeBase{index: tagBracketStar},
-		prev:         prev,
-	}
-}
-
-func NewPatternKeyValue(prev *PatternNode, key, value string) *PatternNode {
-	return &PatternNode{
-		PathNodeBase: PathNodeBase{key: key, index: tagKeyValue, value: value},
-		prev:         prev,
+		prev:  prev,
+		key:   key,
+		index: tagKeyValue,
+		value: value,
 	}
 }
 
@@ -375,17 +198,141 @@ func (p *PathNode) String() string {
 	if p == nil {
 		return ""
 	}
+
+	// Get all path components from root to current
 	components := p.AsSlice()
+
 	var result strings.Builder
+
 	for i, node := range components {
-		node.formatNode(&result, i == 0)
+		if node.index >= 0 {
+			// Array/slice index
+			result.WriteString("[")
+			result.WriteString(strconv.Itoa(node.index))
+			result.WriteString("]")
+		} else if node.index == tagDotStar {
+			if i == 0 {
+				result.WriteString("*")
+			} else {
+				result.WriteString(".*")
+			}
+		} else if node.index == tagBracketStar {
+			result.WriteString("[*]")
+		} else if node.index == tagKeyValue {
+			result.WriteString("[")
+			result.WriteString(node.key)
+			result.WriteString("=")
+			result.WriteString(EncodeMapKey(node.value))
+			result.WriteString("]")
+		} else if node.index == tagDotString {
+			// Dot notation: .field
+			if i != 0 {
+				result.WriteString(".")
+			}
+			result.WriteString(node.key)
+		} else if node.index == tagBracketString {
+			// Bracket notation: ['field']
+			result.WriteString("[")
+			result.WriteString(EncodeMapKey(node.key))
+			result.WriteString("]")
+		}
 	}
+
 	return result.String()
 }
 
 func EncodeMapKey(s string) string {
 	escaped := strings.ReplaceAll(s, "'", "''")
 	return "'" + escaped + "'"
+}
+
+// PatternNode methods - delegate to PathNode via casting
+
+func (p *PatternNode) IsRoot() bool {
+	return (*PathNode)(p).IsRoot()
+}
+
+func (p *PatternNode) Index() (int, bool) {
+	return (*PathNode)(p).Index()
+}
+
+func (p *PatternNode) DotStar() bool {
+	return (*PathNode)(p).DotStar()
+}
+
+func (p *PatternNode) BracketStar() bool {
+	return (*PathNode)(p).BracketStar()
+}
+
+func (p *PatternNode) KeyValue() (key, value string, ok bool) {
+	return (*PathNode)(p).KeyValue()
+}
+
+func (p *PatternNode) StringKey() (string, bool) {
+	return (*PathNode)(p).StringKey()
+}
+
+func (p *PatternNode) Parent() *PatternNode {
+	return (*PatternNode)((*PathNode)(p).Parent())
+}
+
+func (p *PatternNode) Len() int {
+	return (*PathNode)(p).Len()
+}
+
+func (p *PatternNode) String() string {
+	return (*PathNode)(p).String()
+}
+
+// AsSlice returns the pattern as a slice of PatternNodes from root to current.
+func (p *PatternNode) AsSlice() []*PatternNode {
+	pathSlice := (*PathNode)(p).AsSlice()
+	result := make([]*PatternNode, len(pathSlice))
+	for i, node := range pathSlice {
+		result[i] = (*PatternNode)(node)
+	}
+	return result
+}
+
+// PatternNode constructors
+
+// NewPatternIndex creates a new PatternNode for an array/slice index.
+func NewPatternIndex(prev *PatternNode, index int) *PatternNode {
+	return (*PatternNode)(NewIndex((*PathNode)(prev), index))
+}
+
+// NewPatternDotString creates a PatternNode for dot notation (.field).
+func NewPatternDotString(prev *PatternNode, fieldName string) *PatternNode {
+	return (*PatternNode)(NewDotString((*PathNode)(prev), fieldName))
+}
+
+// NewPatternBracketString creates a PatternNode for bracket notation (["field"]).
+func NewPatternBracketString(prev *PatternNode, fieldName string) *PatternNode {
+	return (*PatternNode)(NewBracketString((*PathNode)(prev), fieldName))
+}
+
+// NewPatternStringKey creates a PatternNode, choosing dot notation if the fieldName is a valid field name,
+// otherwise bracket notation.
+func NewPatternStringKey(prev *PatternNode, fieldName string) *PatternNode {
+	return (*PatternNode)(NewStringKey((*PathNode)(prev), fieldName))
+}
+
+func NewPatternDotStar(prev *PatternNode) *PatternNode {
+	return (*PatternNode)(&PathNode{
+		prev:  (*PathNode)(prev),
+		index: tagDotStar,
+	})
+}
+
+func NewPatternBracketStar(prev *PatternNode) *PatternNode {
+	return (*PatternNode)(&PathNode{
+		prev:  (*PathNode)(prev),
+		index: tagBracketStar,
+	})
+}
+
+func NewPatternKeyValue(prev *PatternNode, key, value string) *PatternNode {
+	return (*PatternNode)(NewKeyValue((*PathNode)(prev), key, value))
 }
 
 // Parse parses a string representation of a path using a state machine.
@@ -434,8 +381,8 @@ func Parse(s string, wildcardAllowed bool) (*PathNode, *PatternNode, error) {
 		stateEnd
 	)
 
-	// Parse into a slice of PathNodeBase values first
-	var nodes []PathNodeBase
+	// Parse into PathNode chain
+	var result *PathNode
 	state := stateStart
 	var currentToken strings.Builder
 	var keyValueKey string
@@ -473,11 +420,11 @@ parseLoop:
 
 		case stateField:
 			if ch == '.' {
-				nodes = append(nodes, PathNodeBase{key: currentToken.String(), index: tagDotString})
+				result = &PathNode{prev: result, key: currentToken.String(), index: tagDotString}
 				currentToken.Reset()
 				state = stateFieldStart
 			} else if ch == '[' {
-				nodes = append(nodes, PathNodeBase{key: currentToken.String(), index: tagDotString})
+				result = &PathNode{prev: result, key: currentToken.String(), index: tagDotString}
 				currentToken.Reset()
 				state = stateBracketOpen
 			} else if !isReservedFieldChar(ch) {
@@ -489,10 +436,10 @@ parseLoop:
 		case stateDotStar:
 			switch ch {
 			case '.':
-				nodes = append(nodes, PathNodeBase{index: tagDotStar})
+				result = &PathNode{prev: result, index: tagDotStar}
 				state = stateFieldStart
 			case '[':
-				nodes = append(nodes, PathNodeBase{index: tagDotStar})
+				result = &PathNode{prev: result, index: tagDotStar}
 				state = stateBracketOpen
 			default:
 				return nil, nil, fmt.Errorf("unexpected character '%c' after '.*' at position %d", ch, pos)
@@ -522,7 +469,7 @@ parseLoop:
 				if err != nil {
 					return nil, nil, fmt.Errorf("invalid index '%s' at position %d", currentToken.String(), pos-len(currentToken.String()))
 				}
-				nodes = append(nodes, PathNodeBase{index: index})
+				result = &PathNode{prev: result, index: index}
 				currentToken.Reset()
 				state = stateExpectDotOrEnd
 			} else {
@@ -543,7 +490,7 @@ parseLoop:
 				currentToken.WriteByte('\'')
 				state = stateMapKey
 			case ']':
-				nodes = append(nodes, PathNodeBase{key: currentToken.String(), index: tagBracketString})
+				result = &PathNode{prev: result, key: currentToken.String(), index: tagBracketString}
 				currentToken.Reset()
 				state = stateExpectDotOrEnd
 			default:
@@ -552,7 +499,7 @@ parseLoop:
 
 		case stateWildcard:
 			if ch == ']' {
-				nodes = append(nodes, PathNodeBase{index: tagBracketStar})
+				result = &PathNode{prev: result, index: tagBracketStar}
 				state = stateExpectDotOrEnd
 			} else {
 				return nil, nil, fmt.Errorf("unexpected character '%c' after '*' at position %d", ch, pos)
@@ -589,7 +536,7 @@ parseLoop:
 				currentToken.WriteByte(ch)
 				state = stateKeyValueValue
 			case ']':
-				nodes = append(nodes, PathNodeBase{key: keyValueKey, index: tagKeyValue, value: currentToken.String()})
+				result = &PathNode{prev: result, key: keyValueKey, index: tagKeyValue, value: currentToken.String()}
 				currentToken.Reset()
 				keyValueKey = ""
 				state = stateExpectDotOrEnd
@@ -622,9 +569,9 @@ parseLoop:
 	case stateStart:
 		// Empty path
 	case stateField:
-		nodes = append(nodes, PathNodeBase{key: currentToken.String(), index: tagDotString})
+		result = &PathNode{prev: result, key: currentToken.String(), index: tagDotString}
 	case stateDotStar:
-		nodes = append(nodes, PathNodeBase{index: tagDotStar})
+		result = &PathNode{prev: result, index: tagDotStar}
 	case stateExpectDotOrEnd:
 		// Already complete
 	case stateFieldStart:
@@ -658,30 +605,8 @@ parseLoop:
 		return nil, nil, errors.New("wildcards not allowed in path")
 	}
 
-	// Build the appropriate linked list
-	if len(nodes) == 0 {
-		return nil, nil, nil
-	}
-
 	if wildcardAllowed {
-		// Build PatternNode chain
-		var result *PatternNode
-		for _, node := range nodes {
-			result = &PatternNode{
-				PathNodeBase: node,
-				prev:         result,
-			}
-		}
-		return nil, result, nil
-	}
-
-	// Build PathNode chain
-	var result *PathNode
-	for _, node := range nodes {
-		result = &PathNode{
-			PathNodeBase: node,
-			prev:         result,
-		}
+		return nil, (*PatternNode)(result), nil
 	}
 	return result, nil, nil
 }
@@ -791,9 +716,10 @@ func (p *PathNode) SkipPrefix(n int) *PathNode {
 	current := p
 	for current != startNode {
 		result = &PathNode{
-			prev:         result,
-			PathNodeBase: current.PathNodeBase,
+			prev:  result,
+			key:   current.key,
 			value: current.value,
+			index: current.index,
 		}
 		current = current.Parent()
 	}
