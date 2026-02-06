@@ -40,16 +40,8 @@ func ValidatePath(t reflect.Type, path *structpath.PathNode) error {
 // It returns nil if the path resolves fully, or an error indicating where resolution failed.
 // Patterns may include wildcards ([*] and .*).
 func ValidatePattern(t reflect.Type, path *structpath.PatternNode) error {
-	if path.IsRoot() {
-		return nil
-	}
-	// PatternNode is type definition of PathNode, so we can cast the slice
-	patternNodes := path.AsSlice()
-	pathNodes := make([]*structpath.PathNode, len(patternNodes))
-	for i, n := range patternNodes {
-		pathNodes[i] = (*structpath.PathNode)(n)
-	}
-	return validateNodeSlice(t, pathNodes)
+	// PatternNode is type definition of PathNode, so we can cast directly
+	return ValidatePath(t, (*structpath.PathNode)(path))
 }
 
 // validateNodeSlice is the shared implementation for ValidatePath and ValidatePattern.
