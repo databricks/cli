@@ -23,11 +23,6 @@
         "storage": "dbfs:/pipelines/[UUID]"
       },
       "changes": {
-        "id": {
-          "action": "skip",
-          "reason": "builtin_rule",
-          "remote": "[UUID]"
-        },
         "storage": {
           "action": "skip",
           "reason": "server_side_default",
@@ -60,11 +55,6 @@
         "storage": "dbfs:/pipelines/[UUID]"
       },
       "changes": {
-        "id": {
-          "action": "skip",
-          "reason": "builtin_rule",
-          "remote": "[UUID]"
-        },
         "storage": {
           "action": "skip",
           "reason": "server_side_default",
@@ -97,11 +87,6 @@
         "storage": "dbfs:/pipelines/[UUID]"
       },
       "changes": {
-        "id": {
-          "action": "skip",
-          "reason": "builtin_rule",
-          "remote": "[UUID]"
-        },
         "storage": {
           "action": "skip",
           "reason": "server_side_default",
@@ -134,11 +119,6 @@
         "storage": "dbfs:/pipelines/[UUID]"
       },
       "changes": {
-        "id": {
-          "action": "skip",
-          "reason": "builtin_rule",
-          "remote": "[UUID]"
-        },
         "storage": {
           "action": "skip",
           "reason": "server_side_default",

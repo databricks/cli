@@ -68,13 +68,6 @@
         "run_as_user_name": "[USERNAME]",
         "state": "IDLE",
         "storage": "dbfs:/my-new-storage"
-      },
-      "changes": {
-        "id": {
-          "action": "skip",
-          "reason": "builtin_rule",
-          "remote": "[FOO_ID_2]"
-        }
       }
     }
   }
