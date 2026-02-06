@@ -7,20 +7,20 @@ $CLI bundle deploy
 job_id="$(read_id.py my_job)"
 
 
-title "Modify only 'process' task num_workers and add timeout"
+title "Modify c_task, remove d_task, add e_task"
 edit_resource.py jobs $job_id <<EOF
 for task in r["tasks"]:
-    if task["task_key"] == "task3":
+    if task["task_key"] == "c_task":
         task["new_cluster"]["num_workers"] = 5
         task["timeout_seconds"] = 3600
-        task["depends_on"] = [{"task_key": "task1"}]
+        task["depends_on"] = [{"task_key": "b_task"}]
 
-r["tasks"] = [task for task in r["tasks"] if task["task_key"] != "task2"]
+r["tasks"] = [task for task in r["tasks"] if task["task_key"] != "d_task"]
 
 r["tasks"].append({
-    "task_key": "new_task",
+    "task_key": "e_task",
     "notebook_task": {
-        "notebook_path": "/Users/${CURRENT_USER_NAME}/new_task"
+        "notebook_path": "/Users/${CURRENT_USER_NAME}/e_task"
     },
     "new_cluster": {
         "spark_version": "${DEFAULT_SPARK_VERSION}",
@@ -35,7 +35,7 @@ echo
 cp databricks.yml databricks.yml.backup
 $CLI bundle config-remote-sync --save
 
-title "Configuration changes for new task"
+title "Configuration changes"
 echo
 trace diff.py databricks.yml.backup databricks.yml
 rm databricks.yml.backup
@@ -47,27 +47,24 @@ mv databricks.yml.resolved databricks.yml
 # Deploy the updated configuration to sync state
 $CLI bundle deploy
 
-title "Rename task_rename_1 to task_rename_new"
+title "Rename b_task to b_task_renamed (4 tasks, 2 with depends_on, 1 without)"
 rename_job_id="$(read_id.py rename_task_job)"
 edit_resource.py jobs $rename_job_id <<'EOF'
 for task in r["tasks"]:
-    if task["task_key"] == "task_rename_1":
-        task["task_key"] = "task_rename_new"
-    # Update dependencies that reference the old key
+    if task["task_key"] == "b_task":
+        task["task_key"] = "b_task_renamed"
     if "depends_on" in task:
         for dep in task["depends_on"]:
-            if dep["task_key"] == "task_rename_1":
-                dep["task_key"] = "task_rename_new"
+            if dep["task_key"] == "b_task":
+                dep["task_key"] = "b_task_renamed"
 EOF
 
 title "Detect task key rename"
 echo
 cp databricks.yml databricks.yml.backup2
-$CLI bundle config-remote-sync --save || true
+$CLI bundle config-remote-sync --save
 
 title "Configuration changes for task key rename"
 echo
-if [ -f databricks.yml.backup2 ]; then
-    trace diff.py databricks.yml.backup2 databricks.yml || true
-    rm databricks.yml.backup2
-fi
+trace diff.py databricks.yml.backup2 databricks.yml
+rm databricks.yml.backup2

@@ -18,12 +18,13 @@ type FieldChange struct {
 	FieldCandidates []string
 }
 
-// resolveSelectors converts key-value selectors to numeric indices.
+// resolveSelectors converts key-value selectors to numeric indices that match
+// the YAML file positions. It also returns the location of the resolved leaf value.
 // Example: "resources.jobs.foo.tasks[task_key='main'].name" -> "resources.jobs.foo.tasks[1].name"
-func resolveSelectors(pathStr string, b *bundle.Bundle, operation OperationType) (*structpath.PathNode, error) {
+func resolveSelectors(pathStr string, b *bundle.Bundle, operation OperationType) (*structpath.PathNode, dyn.Location, error) {
 	node, err := structpath.Parse(pathStr)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse path %s: %w", pathStr, err)
+		return nil, dyn.Location{}, fmt.Errorf("failed to parse path %s: %w", pathStr, err)
 	}
 
 	nodes := node.AsSlice()
@@ -50,7 +51,7 @@ func resolveSelectors(pathStr string, b *bundle.Bundle, operation OperationType)
 		// Check for key-value selector: [key='value']
 		if key, value, ok := n.KeyValue(); ok {
 			if !currentValue.IsValid() || currentValue.Kind() != dyn.KindSequence {
-				return nil, fmt.Errorf("cannot apply [%s='%s'] selector to non-array value in path %s", key, value, pathStr)
+				return nil, dyn.Location{}, fmt.Errorf("cannot apply [%s='%s'] selector to non-array value in path %s", key, value, pathStr)
 			}
 
 			seq, _ := currentValue.AsSequence()
@@ -75,20 +76,47 @@ func resolveSelectors(pathStr string, b *bundle.Bundle, operation OperationType)
 					currentValue = dyn.Value{}
 					continue
 				}
-				return nil, fmt.Errorf("no array element found with %s='%s' in path %s", key, value, pathStr)
+				return nil, dyn.Location{}, fmt.Errorf("no array element found with %s='%s' in path %s", key, value, pathStr)
 			}
 
-			result = structpath.NewIndex(result, foundIndex)
+			// Mutators may reorder sequence elements (e.g., tasks sorted by task_key).
+			// Use location information to determine the original YAML file position.
+			yamlIndex := yamlFileIndex(seq, foundIndex)
+			result = structpath.NewIndex(result, yamlIndex)
 			currentValue = seq[foundIndex]
 			continue
 		}
 
 		if n.DotStar() || n.BracketStar() {
-			return nil, errors.New("wildcard patterns are not supported in field paths")
+			return nil, dyn.Location{}, errors.New("wildcard patterns are not supported in field paths")
 		}
 	}
 
-	return result, nil
+	return result, currentValue.Location(), nil
+}
+
+// yamlFileIndex determines the original YAML file position of a sequence element.
+// Mutators may reorder sequence elements (e.g., tasks sorted by task_key), so the
+// in-memory index may not match the position in the YAML file. This function uses
+// location information to count how many elements from the same file appear before
+// the target element, giving the correct index for YAML patching.
+func yamlFileIndex(seq []dyn.Value, sortedIndex int) int {
+	matchLocation := seq[sortedIndex].Location()
+	if matchLocation.File == "" {
+		return sortedIndex
+	}
+
+	yamlIndex := 0
+	for i, elem := range seq {
+		if i == sortedIndex {
+			continue
+		}
+		loc := elem.Location()
+		if loc.File == matchLocation.File && loc.Line < matchLocation.Line {
+			yamlIndex++
+		}
+	}
+	return yamlIndex
 }
 
 func pathDepth(pathStr string) int {
@@ -192,7 +220,7 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 			configChange := resourceChanges[fieldPath]
 			fullPath := resourceKey + "." + fieldPath
 
-			resolvedPath, err := resolveSelectors(fullPath, b, configChange.Operation)
+			resolvedPath, resolvedLocation, err := resolveSelectors(fullPath, b, configChange.Operation)
 			if err != nil {
 				return nil, fmt.Errorf("failed to resolve selectors in path %s: %w", fullPath, err)
 			}
@@ -235,8 +263,7 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 				candidates = append(candidates, targetPrefixedPath)
 			}
 
-			loc := b.Config.GetLocation(resolvedPathStr)
-			filePath := loc.File
+			filePath := resolvedLocation.File
 
 			isDefinedInConfig := filePath != ""
 			if !isDefinedInConfig {
