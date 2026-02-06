@@ -117,7 +117,7 @@ func truncate(s string, n int, suffix string) string {
 
 func censorValue(ctx context.Context, v any, path dyn.Path) (string, error) {
 	pathString := path.String()
-	pathNode, err := structpath.Parse(pathString)
+	pathNode, err := structpath.ParsePath(pathString)
 	if err != nil {
 		log.Warnf(ctx, "internal error: parsing %q: %s", pathString, err)
 		return "err", err

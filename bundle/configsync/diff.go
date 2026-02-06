@@ -49,7 +49,7 @@ func normalizeValue(v any) (any, error) {
 }
 
 func isEntityPath(path string) bool {
-	pathNode, err := structpath.Parse(path)
+	pathNode, err := structpath.ParsePath(path)
 	if err != nil {
 		return false
 	}

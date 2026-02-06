@@ -18,7 +18,7 @@ func flatten(t *testing.T, value any) map[string]any {
 		results[s] = value
 
 		// Test path parsing round trip
-		newPath, err := structpath.Parse(s)
+		newPath, err := structpath.ParsePath(s)
 		if assert.NoError(t, err, s) {
 			newS := newPath.String()
 			assert.Equal(t, path, newPath, "s=%q newS=%q", s, newS)

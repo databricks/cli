@@ -47,7 +47,7 @@ func formatSliceToString(values []string) string {
 func extractRequiredFields(typ reflect.Type) ([]RequiredPatternInfo, error) {
 	fieldsByPattern := make(map[string][]string)
 
-	err := structwalk.WalkType(typ, func(path *structpath.PathNode, _ reflect.Type, field *reflect.StructField) bool {
+	err := structwalk.WalkType(typ, func(path *structpath.PatternNode, _ reflect.Type, field *reflect.StructField) bool {
 		if path == nil || field == nil {
 			return true
 		}

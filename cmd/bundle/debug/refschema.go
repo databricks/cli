@@ -63,7 +63,7 @@ func dumpRemoteSchemas(out io.Writer) error {
 		pathTypes := make(map[string]map[string]map[string]struct{})
 
 		collect := func(root reflect.Type, source string) error {
-			return structwalk.WalkType(root, func(path *structpath.PathNode, typ reflect.Type, field *reflect.StructField) bool {
+			return structwalk.WalkType(root, func(path *structpath.PatternNode, typ reflect.Type, field *reflect.StructField) bool {
 				if path == nil {
 					return true
 				}
