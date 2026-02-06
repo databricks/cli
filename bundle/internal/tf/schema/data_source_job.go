@@ -1419,10 +1419,15 @@ type DataSourceJobJobSettings struct {
 	Settings        *DataSourceJobJobSettingsSettings `json:"settings,omitempty"`
 }
 
+type DataSourceJobProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type DataSourceJob struct {
-	Id          string                    `json:"id,omitempty"`
-	JobId       string                    `json:"job_id,omitempty"`
-	JobName     string                    `json:"job_name,omitempty"`
-	Name        string                    `json:"name,omitempty"`
-	JobSettings *DataSourceJobJobSettings `json:"job_settings,omitempty"`
+	Id             string                       `json:"id,omitempty"`
+	JobId          string                       `json:"job_id,omitempty"`
+	JobName        string                       `json:"job_name,omitempty"`
+	Name           string                       `json:"name,omitempty"`
+	JobSettings    *DataSourceJobJobSettings    `json:"job_settings,omitempty"`
+	ProviderConfig *DataSourceJobProviderConfig `json:"provider_config,omitempty"`
 }
