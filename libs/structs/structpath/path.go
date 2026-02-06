@@ -57,20 +57,6 @@ func (p *PathNode) Index() (int, bool) {
 	return -1, false
 }
 
-func (p *PathNode) DotStar() bool {
-	if p == nil {
-		return false
-	}
-	return p.index == tagDotStar
-}
-
-func (p *PathNode) BracketStar() bool {
-	if p == nil {
-		return false
-	}
-	return p.index == tagBracketStar
-}
-
 func (p *PathNode) KeyValue() (key, value string, ok bool) {
 	if p == nil {
 		return "", "", false
@@ -177,20 +163,6 @@ func NewStringKey(prev *PathNode, fieldName string) *PathNode {
 	return NewBracketString(prev, fieldName)
 }
 
-func NewDotStar(prev *PathNode) *PathNode {
-	return &PathNode{
-		prev:  prev,
-		index: tagDotStar,
-	}
-}
-
-func NewBracketStar(prev *PathNode) *PathNode {
-	return &PathNode{
-		prev:  prev,
-		index: tagBracketStar,
-	}
-}
-
 func NewKeyValue(prev *PathNode, key, value string) *PathNode {
 	return &PathNode{
 		prev:  prev,
@@ -271,11 +243,17 @@ func (p *PatternNode) Index() (int, bool) {
 }
 
 func (p *PatternNode) DotStar() bool {
-	return (*PathNode)(p).DotStar()
+	if p == nil {
+		return false
+	}
+	return p.index == tagDotStar
 }
 
 func (p *PatternNode) BracketStar() bool {
-	return (*PathNode)(p).BracketStar()
+	if p == nil {
+		return false
+	}
+	return p.index == tagBracketStar
 }
 
 func (p *PatternNode) KeyValue() (key, value string, ok bool) {
@@ -472,10 +450,10 @@ func parse(s string, wildcardAllowed bool) (*PatternNode, error) {
 		case stateDotStar:
 			switch ch {
 			case '.':
-				result = NewDotStar(result)
+				result = &PathNode{prev: result, index: tagDotStar}
 				state = stateFieldStart
 			case '[':
-				result = NewDotStar(result)
+				result = &PathNode{prev: result, index: tagDotStar}
 				state = stateBracketOpen
 			default:
 				return nil, fmt.Errorf("unexpected character '%c' after '.*' at position %d", ch, pos)
@@ -539,7 +517,7 @@ func parse(s string, wildcardAllowed bool) (*PatternNode, error) {
 
 		case stateWildcard:
 			if ch == ']' {
-				result = NewBracketStar(result)
+				result = &PathNode{prev: result, index: tagBracketStar}
 				state = stateExpectDotOrEnd
 			} else {
 				return nil, fmt.Errorf("unexpected character '%c' after '*' at position %d", ch, pos)
@@ -613,7 +591,7 @@ func parse(s string, wildcardAllowed bool) (*PatternNode, error) {
 	case stateField:
 		result = NewDotString(result, currentToken.String())
 	case stateDotStar:
-		result = NewDotStar(result)
+		result = &PathNode{prev: result, index: tagDotStar}
 	case stateExpectDotOrEnd:
 		// Already complete
 	case stateFieldStart:
