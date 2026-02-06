@@ -27,6 +27,7 @@ func NewGenerateAlertCommand() *cobra.Command {
 	var configDir string
 	var sourceDir string
 	var force bool
+	var useYAML bool
 
 	cmd := &cobra.Command{
 		Use:   "alert",
@@ -40,13 +41,21 @@ Examples:
   # Generate alert configuration by ID
   databricks bundle generate alert --existing-id abc123
 
+  # Generate with inline YAML definition (no separate .dbalert.json file)
+  databricks bundle generate alert --existing-id abc123 --yaml
+
   # Specify custom directories for organization
   databricks bundle generate alert --existing-id abc123 \
     --key my_alert --config-dir resources --source-dir src
 
 What gets generated:
 - Alert configuration YAML file with settings and a reference to the alert definition
-- Alert definition (.dbalert.json) file with the complete alert specification
+- Alert definition (.dbalert.json) file with the complete alert specification (unless --yaml is used)
+
+When using --yaml flag:
+- The alert definition is embedded directly in the YAML configuration
+- No separate .dbalert.json file is created
+- All alert settings are in a single file for easier management
 
 After generation, you can deploy this alert to other targets using:
   databricks bundle deploy --target staging
@@ -64,6 +73,7 @@ After generation, you can deploy this alert to other targets using:
 	cmd.Flags().StringVarP(&configDir, "config-dir", "d", "resources", `directory to write the configuration to`)
 	cmd.Flags().StringVarP(&sourceDir, "source-dir", "s", "src", `directory to write the alert definition to`)
 	cmd.Flags().BoolVarP(&force, "force", "f", false, `force overwrite existing files in the output directory`)
+	cmd.Flags().BoolVar(&useYAML, "yaml", false, `embed alert definition in YAML configuration instead of separate file`)
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := logdiag.InitContext(cmd.Context())
@@ -101,18 +111,7 @@ After generation, you can deploy this alert to other targets using:
 			sourceDir = filepath.Join(b.BundleRootPath, sourceDir)
 		}
 
-		// Calculate relative path from config dir to source dir
-		relativeSourceDir, err := filepath.Rel(configDir, sourceDir)
-		if err != nil {
-			return err
-		}
-		relativeSourceDir = filepath.ToSlash(relativeSourceDir)
-
-		// Save alert definition to source directory
-		alertBasename := alertKey + ".dbalert.json"
-		alertPath := filepath.Join(sourceDir, alertBasename)
-
-		// remote alert path
+		// Fetch alert definition from workspace
 		remoteAlertPath := path.Join(alert.ParentPath, alert.DisplayName+".dbalert.json")
 		resp, err := w.Workspace.Export(ctx, workspace.ExportRequest{
 			Path: remoteAlertPath,
@@ -125,25 +124,47 @@ After generation, you can deploy this alert to other targets using:
 			return err
 		}
 
-		// Create source directory if needed
-		if err := os.MkdirAll(sourceDir, 0o755); err != nil {
-			return err
-		}
+		var v dyn.Value
+		var alertPath string
 
-		// Check if file exists and force flag
-		if _, err := os.Stat(alertPath); err == nil && !force {
-			return fmt.Errorf("%s already exists. Use --force to overwrite", alertPath)
-		}
+		if useYAML {
+			// Embed definition directly in YAML
+			v, err = generate.ConvertAlertToValueWithDefinition(alert, alertJSON)
+			if err != nil {
+				return err
+			}
+		} else {
+			// Save alert definition to separate file
+			// Calculate relative path from config dir to source dir
+			relativeSourceDir, err := filepath.Rel(configDir, sourceDir)
+			if err != nil {
+				return err
+			}
+			relativeSourceDir = filepath.ToSlash(relativeSourceDir)
 
-		// Write alert definition file
-		if err := os.WriteFile(alertPath, alertJSON, 0o644); err != nil {
-			return err
-		}
+			alertBasename := alertKey + ".dbalert.json"
+			alertPath = filepath.Join(sourceDir, alertBasename)
 
-		// Convert alert to bundle configuration
-		v, err := generate.ConvertAlertToValue(alert, path.Join(relativeSourceDir, alertBasename))
-		if err != nil {
-			return err
+			// Create source directory if needed
+			if err := os.MkdirAll(sourceDir, 0o755); err != nil {
+				return err
+			}
+
+			// Check if file exists and force flag
+			if _, err := os.Stat(alertPath); err == nil && !force {
+				return fmt.Errorf("%s already exists. Use --force to overwrite", alertPath)
+			}
+
+			// Write alert definition file
+			if err := os.WriteFile(alertPath, alertJSON, 0o644); err != nil {
+				return err
+			}
+
+			// Convert alert to bundle configuration with file reference
+			v, err = generate.ConvertAlertToValue(alert, path.Join(relativeSourceDir, alertBasename))
+			if err != nil {
+				return err
+			}
 		}
 
 		result := map[string]dyn.Value{
@@ -171,7 +192,9 @@ After generation, you can deploy this alert to other targets using:
 		}
 
 		cmdio.LogString(ctx, "Alert configuration successfully saved to "+configPath)
-		cmdio.LogString(ctx, "Serialized alert definition to "+alertPath)
+		if !useYAML && alertPath != "" {
+			cmdio.LogString(ctx, "Serialized alert definition to "+alertPath)
+		}
 
 		return nil
 	}

@@ -1,0 +1,4 @@
+>>> [CLI] workspace mkdirs /Workspace/test-[UNIQUE_NAME]
+
+>>> [CLI] bundle generate alert --existing-id [NUMID] --yaml --config-dir out/resource
+Alert configuration successfully saved to [TEST_TMP_DIR]/out/resource/test_alert.alert.yml
