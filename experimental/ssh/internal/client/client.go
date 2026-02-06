@@ -86,7 +86,7 @@ type ClientOptions struct {
 }
 
 func (o *ClientOptions) IsServerlessMode() bool {
-	return o.ClusterID == ""
+	return o.ClusterID == "" && o.ConnectionName != ""
 }
 
 // SessionIdentifier returns the unique identifier for the session.
