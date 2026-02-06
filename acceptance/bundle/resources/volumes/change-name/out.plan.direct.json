@@ -32,7 +32,7 @@
       "changes": {
         "name": {
           "action": "update_id",
-          "reason": "builtin_rule",
+          "reason": "id_changes",
           "old": "myvolume",
           "new": "mynewvolume",
           "remote": "myvolume"

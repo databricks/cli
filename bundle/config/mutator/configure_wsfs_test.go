@@ -60,17 +60,22 @@ func TestConfigureWSFS_DBRVersions(t *testing.T) {
 		version    string
 		expectFUSE bool // true = osPath (uses FUSE), false = filerPath (uses wsfs extension)
 	}{
-		// Serverless client version 2+ should use FUSE directly (osPath)
-		{"serverless_client_2", "client.2", true},
-		{"serverless_client_2_1", "client.2.1", true},
+		// Serverless client version 2.5+ should use FUSE directly (osPath)
+		{"serverless_client_2_5", "client.2.5", true},
+		{"serverless_client_2_6", "client.2.6", true},
 		{"serverless_client_3", "client.3", true},
+		{"serverless_client_3_0", "client.3.0", true},
 		{"serverless_client_3_6", "client.3.6", true},
 		{"serverless_client_4_9", "client.4.9", true},
 		{"serverless_client_4_10", "client.4.10", true},
 
-		// Serverless client version 1 should use wsfs extension client (filerPath)
+		// Serverless client version < 2.5 should use wsfs extension client (filerPath)
 		{"serverless_client_1", "client.1", false},
 		{"serverless_client_1_13", "client.1.13", false},
+		{"serverless_client_2", "client.2", false},
+		{"serverless_client_2_0", "client.2.0", false},
+		{"serverless_client_2_1", "client.2.1", false},
+		{"serverless_client_2_4", "client.2.4", false},
 
 		// Interactive (non-serverless) versions should use wsfs extension client (filerPath)
 		{"interactive_15_4", "15.4", false},

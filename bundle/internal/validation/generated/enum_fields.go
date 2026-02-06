@@ -133,6 +133,8 @@ var EnumFields = map[string][]string{
 	"resources.pipelines.*.ingestion_definition.table_configuration.scd_type":                   {"APPEND_ONLY", "SCD_TYPE_1", "SCD_TYPE_2"},
 	"resources.pipelines.*.restart_window.days_of_week[*]":                                      {"FRIDAY", "MONDAY", "SATURDAY", "SUNDAY", "THURSDAY", "TUESDAY", "WEDNESDAY"},
 
+	"resources.postgres_endpoints.*.endpoint_type": {"ENDPOINT_TYPE_READ_ONLY", "ENDPOINT_TYPE_READ_WRITE"},
+
 	"resources.quality_monitors.*.custom_metrics[*].type":     {"CUSTOM_METRIC_TYPE_AGGREGATE", "CUSTOM_METRIC_TYPE_DERIVED", "CUSTOM_METRIC_TYPE_DRIFT"},
 	"resources.quality_monitors.*.inference_log.problem_type": {"PROBLEM_TYPE_CLASSIFICATION", "PROBLEM_TYPE_REGRESSION"},
 	"resources.quality_monitors.*.schedule.pause_status":      {"PAUSED", "UNPAUSED", "UNSPECIFIED"},

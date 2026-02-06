@@ -1,0 +1,57 @@
+# Cleanup function to delete endpoint and other resources
+cleanup() {
+   # Try to delete with current config
+   trace $CLI bundle destroy --auto-approve
+
+   # Also try to delete the old endpoint directly in case it wasn't cleaned up
+   $CLI postgres delete-endpoint "projects/test-pg-proj-${UNIQUE_NAME}/branches/main/endpoints/test-endpoint-${UNIQUE_NAME}" 2>/dev/null || true
+}
+trap cleanup EXIT
+
+# Deploy with first endpoint_type (READ_WRITE)
+envsubst < databricks.yml.tmpl | sed "s/ENDPOINT_TYPE_PLACEHOLDER/ENDPOINT_TYPE_READ_WRITE/" > databricks.yml
+
+trace cat databricks.yml
+
+trace $CLI bundle plan
+rm -f out.requests.txt
+trace $CLI bundle deploy
+
+endpoint_id_1=`read_id.py my_endpoint`
+
+print_requests() {
+    # Filter postgres requests (excluding GET), remove parent field (differs between engines),
+    # then deduplicate consecutive retries
+    jq --sort-keys 'select(.method != "GET" and (.path | contains("/postgres"))) | del(.body.parent)' < out.requests.txt | \
+        awk '!seen[$0]++ {print}'
+    rm -f out.requests.txt
+}
+
+trace print_requests
+
+# Change endpoint_type (should trigger recreation)
+sed "s/ENDPOINT_TYPE_READ_WRITE/ENDPOINT_TYPE_READ_ONLY/" databricks.yml > databricks.yml.new
+mv databricks.yml.new databricks.yml
+
+trace cat databricks.yml
+
+trace $CLI bundle plan
+trace $CLI bundle deploy --auto-approve
+
+trace print_requests
+
+title "Fetch endpoint ID and verify it has the new type (READ_ONLY)"
+
+endpoint_id_2=`read_id.py my_endpoint`
+# Verify the endpoint was recreated by checking the type changed
+trace $CLI postgres get-endpoint $endpoint_id_2 | jq 'del(.create_time, .update_time)' | jq '.status.endpoint_type'
+
+# Note: We cannot verify the old endpoint is gone because it has the same hierarchical name
+# (endpoint_id didn't change, only endpoint_type). The DELETE/POST in requests proves recreation.
+
+title "Destroy and verify cleanup"
+trace $CLI bundle destroy --auto-approve
+
+trace print_requests
+
+rm -f out.requests.txt

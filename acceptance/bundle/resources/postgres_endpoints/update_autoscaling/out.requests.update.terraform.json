@@ -1,0 +1,29 @@
+{
+  "method": "GET",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]/branches/main"
+}
+{
+  "method": "GET",
+  "path": "/api/2.0/postgres/[MY_ENDPOINT_ID]"
+}
+{
+  "method": "PATCH",
+  "path": "/api/2.0/postgres/[MY_ENDPOINT_ID]",
+  "q": {
+    "update_mask": "spec"
+  },
+  "body": {
+    "name": "[MY_ENDPOINT_ID]",
+    "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
+    "spec": {
+      "autoscaling_limit_max_cu": 4,
+      "autoscaling_limit_min_cu": 0.5,
+      "endpoint_type": "ENDPOINT_TYPE_READ_WRITE",
+      "suspend_timeout_duration": "300s"
+    }
+  }
+}

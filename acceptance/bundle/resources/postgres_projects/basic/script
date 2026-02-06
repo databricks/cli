@@ -1,0 +1,23 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+   trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+trace $CLI bundle validate
+
+trace $CLI bundle summary
+
+rm -f out.requests.txt
+trace $CLI bundle deploy
+
+# Direct mode already waits for the project to be READY during deployment
+# Get project details - exclude timestamps that vary
+trace $CLI postgres get-project "projects/test-pg-proj-${UNIQUE_NAME}" | jq 'del(.create_time, .update_time)'
+
+trace $CLI bundle summary
+
+# Filter requests to only show postgres API operations (exclude workspace, telemetry, and operation polling)
+# Keep the original out.requests.txt for debugging
+trace print_requests.py --keep --get '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.json

@@ -34,13 +34,15 @@ func (*ResourceRegisteredModel) RemapState(model *catalog.RegisteredModelInfo) *
 
 		Aliases:     model.Aliases,
 		BrowseOnly:  model.BrowseOnly,
-		CreatedAt:   model.CreatedAt,
-		CreatedBy:   model.CreatedBy,
 		FullName:    model.FullName,
 		MetastoreId: model.MetastoreId,
 		Owner:       model.Owner,
-		UpdatedAt:   model.UpdatedAt,
-		UpdatedBy:   model.UpdatedBy,
+
+		// Clear output only fields. They should not show up on remote diff computation.
+		CreatedAt: 0,
+		CreatedBy: "",
+		UpdatedAt: 0,
+		UpdatedBy: "",
 	}
 }
 

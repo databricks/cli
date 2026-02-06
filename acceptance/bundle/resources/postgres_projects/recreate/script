@@ -1,0 +1,55 @@
+# Cleanup function to delete both projects
+cleanup() {
+   # Try to delete with current config
+   trace $CLI bundle destroy --auto-approve
+
+   # Also try to delete the old project directly in case it wasn't cleaned up
+   $CLI postgres delete-project "projects/test-pg-old-${UNIQUE_NAME}" 2>/dev/null || true
+}
+trap cleanup EXIT
+
+# Deploy with first project_id
+envsubst < databricks.yml.tmpl | sed "s/PROJECT_ID_PLACEHOLDER/test-pg-old-${UNIQUE_NAME}/" > databricks.yml
+
+trace cat databricks.yml
+
+trace $CLI bundle plan
+rm -f out.requests.txt
+trace $CLI bundle deploy
+
+project_id_1=`read_id.py my_project`
+
+print_requests() {
+    local name=$1
+    jq --sort-keys 'select(.method != "GET" and (.path | contains("/postgres")))' < out.requests.txt > out.requests.${name}.$DATABRICKS_BUNDLE_ENGINE.txt
+    rm -f out.requests.txt
+}
+
+print_requests create
+
+title "Change project_id (should trigger recreation in direct, update in terraform)"
+sed "s/test-pg-old-${UNIQUE_NAME}/test-pg-new-${UNIQUE_NAME}/" databricks.yml > databricks.yml.new
+mv databricks.yml.new databricks.yml
+
+trace cat databricks.yml
+
+# Plan output differs between engines (recreate vs update)
+$CLI bundle plan > out.plan.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1
+trace $CLI bundle deploy --auto-approve
+
+print_requests update
+
+title "Fetch new project ID"
+project_id_2=`read_id.py my_project`
+# Get output differs between engines (different project IDs)
+$CLI postgres get-project $project_id_2 > out.get_project.$DATABRICKS_BUNDLE_ENGINE.txt
+
+title "Destroy and verify cleanup"
+trace $CLI bundle destroy --auto-approve
+
+print_requests destroy
+
+# Clean up any orphaned old project (terraform doesn't delete it on recreation)
+$CLI postgres delete-project $project_id_1 2>/dev/null || true
+
+rm -f out.requests.txt

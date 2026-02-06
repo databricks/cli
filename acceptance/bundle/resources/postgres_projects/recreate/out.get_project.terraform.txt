@@ -1,0 +1,19 @@
+{
+  "create_time":"[TIMESTAMP]",
+  "name":"[MY_PROJECT_ID]",
+  "status": {
+    "branch_logical_size_limit_bytes":[NUMID],
+    "default_endpoint_settings": {
+      "autoscaling_limit_max_cu":4,
+      "autoscaling_limit_min_cu":0.5,
+      "suspend_timeout_duration":"300s"
+    },
+    "display_name":"Test Recreate",
+    "history_retention_duration":"604800s",
+    "owner":"[USERNAME]",
+    "pg_version":16,
+    "synthetic_storage_size_bytes":0
+  },
+  "uid":"[UUID]",
+  "update_time":"[TIMESTAMP]"
+}

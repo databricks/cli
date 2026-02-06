@@ -101,8 +101,6 @@ const (
 	ReasonServerSideDefault = "server_side_default"
 	ReasonAlias             = "alias"
 	ReasonRemoteAlreadySet  = "remote_already_set"
-	ReasonBuiltinRule       = "builtin_rule"
-	ReasonAPISchema         = "api_schema"
 	ReasonEmptySlice        = "empty_slice"
 	ReasonEmptyMap          = "empty_map"
 	ReasonEmptyStruct       = "empty_struct"

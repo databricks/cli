@@ -261,7 +261,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 			}
 		}
 
-		entry.Changes, err = prepareChanges(ctx, adapter, localDiff, remoteDiff, savedState, remoteState != nil)
+		entry.Changes, err = prepareChanges(ctx, adapter, localDiff, remoteDiff, savedState, remoteStateComparable)
 		if err != nil {
 			logdiag.LogError(ctx, fmt.Errorf("%s: %w", errorPrefix, err))
 			return false
@@ -316,7 +316,7 @@ func getMaxAction(m map[string]*deployplan.ChangeDesc) deployplan.ActionType {
 	return result
 }
 
-func prepareChanges(ctx context.Context, adapter *dresources.Adapter, localDiff, remoteDiff []structdiff.Change, oldState any, hasRemote bool) (deployplan.Changes, error) {
+func prepareChanges(ctx context.Context, adapter *dresources.Adapter, localDiff, remoteDiff []structdiff.Change, oldState, remoteState any) (deployplan.Changes, error) {
 	m := make(deployplan.Changes)
 
 	for _, ch := range localDiff {
@@ -324,9 +324,9 @@ func prepareChanges(ctx context.Context, adapter *dresources.Adapter, localDiff,
 			Old: ch.Old,
 			New: ch.New,
 		}
-		if hasRemote {
-			// by default, assume e.Remote is the same as config; if not the case it'll be ovewritten below
-			e.Remote = ch.New
+		if remoteState != nil {
+			// We cannot assume e.Remote is the same as config: if the whole struct is missing, there might be diff entry for parent
+			e.Remote, _ = structaccess.Get(remoteState, ch.Path)
 		}
 		m[ch.Path.String()] = &e
 	}
@@ -383,12 +383,12 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 			// Empty struct in config should not cause drift when remote has values
 			ch.Action = deployplan.Skip
 			ch.Reason = deployplan.ReasonEmptyStruct
-		} else if shouldSkip(cfg, path, ch) {
+		} else if reason, ok := shouldSkip(cfg, path, ch); ok {
 			ch.Action = deployplan.Skip
-			ch.Reason = deployplan.ReasonBuiltinRule
-		} else if shouldSkip(generatedCfg, path, ch) {
+			ch.Reason = reason
+		} else if reason, ok := shouldSkip(generatedCfg, path, ch); ok {
 			ch.Action = deployplan.Skip
-			ch.Reason = deployplan.ReasonAPISchema
+			ch.Reason = reason
 		} else if ch.New == nil && ch.Old == nil && ch.Remote != nil && path.IsDotString() {
 			// The field was not set by us, but comes from the remote state.
 			// This could either be server-side default or a policy.
@@ -396,12 +396,12 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 			// Note, we only consider struct fields here. Adding/removing elements to/from maps and slices should trigger updates.
 			ch.Action = deployplan.Skip
 			ch.Reason = deployplan.ReasonServerSideDefault
-		} else if action := shouldUpdateOrRecreate(cfg, path); action != deployplan.Undefined {
+		} else if action, reason := shouldUpdateOrRecreate(cfg, path); action != deployplan.Undefined {
 			ch.Action = action
-			ch.Reason = deployplan.ReasonBuiltinRule
-		} else if action := shouldUpdateOrRecreate(generatedCfg, path); action != deployplan.Undefined {
+			ch.Reason = reason
+		} else if action, reason := shouldUpdateOrRecreate(generatedCfg, path); action != deployplan.Undefined {
 			ch.Action = action
-			ch.Reason = deployplan.ReasonAPISchema
+			ch.Reason = reason
 		} else {
 			ch.Action = deployplan.Update
 		}
@@ -425,39 +425,39 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 	return nil
 }
 
-func matchesAnyPrefix(path *structpath.PathNode, prefixes []*structpath.PathNode) bool {
-	for _, p := range prefixes {
-		if path.HasPrefix(p) {
-			return true
+func findMatchingRule(path *structpath.PathNode, rules []dresources.FieldRule) (string, bool) {
+	for _, r := range rules {
+		if path.HasPrefix(r.Field) {
+			return r.Reason, true
 		}
 	}
-	return false
+	return "", false
 }
 
-func shouldSkip(cfg *dresources.ResourceLifecycleConfig, path *structpath.PathNode, ch *deployplan.ChangeDesc) bool {
+func shouldSkip(cfg *dresources.ResourceLifecycleConfig, path *structpath.PathNode, ch *deployplan.ChangeDesc) (string, bool) {
 	if cfg == nil {
-		return false
+		return "", false
 	}
-	if matchesAnyPrefix(path, cfg.IgnoreLocalChanges) && !structdiff.IsEqual(ch.Old, ch.New) {
-		return true
+	if reason, ok := findMatchingRule(path, cfg.IgnoreLocalChanges); ok && !structdiff.IsEqual(ch.Old, ch.New) {
+		return reason, true
 	}
-	if matchesAnyPrefix(path, cfg.IgnoreRemoteChanges) && structdiff.IsEqual(ch.Old, ch.New) {
-		return true
+	if reason, ok := findMatchingRule(path, cfg.IgnoreRemoteChanges); ok && structdiff.IsEqual(ch.Old, ch.New) {
+		return reason, true
 	}
-	return false
+	return "", false
 }
 
-func shouldUpdateOrRecreate(cfg *dresources.ResourceLifecycleConfig, path *structpath.PathNode) deployplan.ActionType {
+func shouldUpdateOrRecreate(cfg *dresources.ResourceLifecycleConfig, path *structpath.PathNode) (deployplan.ActionType, string) {
 	if cfg == nil {
-		return deployplan.Undefined
+		return deployplan.Undefined, ""
 	}
-	if matchesAnyPrefix(path, cfg.RecreateOnChanges) {
-		return deployplan.Recreate
+	if reason, ok := findMatchingRule(path, cfg.RecreateOnChanges); ok {
+		return deployplan.Recreate, reason
 	}
-	if matchesAnyPrefix(path, cfg.UpdateIDOnChanges) {
-		return deployplan.UpdateWithID
+	if reason, ok := findMatchingRule(path, cfg.UpdateIDOnChanges); ok {
+		return deployplan.UpdateWithID, reason
 	}
-	return deployplan.Undefined
+	return deployplan.Undefined, ""
 }
 
 // Empty slices and maps cannot be represented in proto and because of that they cannot be represented

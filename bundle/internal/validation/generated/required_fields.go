@@ -210,6 +210,12 @@ var RequiredFields = map[string][]string{
 	"resources.pipelines.*.permissions[*]":                                                                      {"level"},
 	"resources.pipelines.*.restart_window":                                                                      {"start_hour"},
 
+	"resources.postgres_branches.*": {"branch_id", "parent"},
+
+	"resources.postgres_endpoints.*": {"endpoint_type", "endpoint_id", "parent"},
+
+	"resources.postgres_projects.*": {"project_id"},
+
 	"resources.quality_monitors.*":                   {"assets_dir", "output_schema_name", "table_name"},
 	"resources.quality_monitors.*.custom_metrics[*]": {"definition", "input_columns", "name", "output_data_type", "type"},
 	"resources.quality_monitors.*.inference_log":     {"granularities", "model_id_col", "prediction_col", "problem_type", "timestamp_col"},

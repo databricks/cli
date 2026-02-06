@@ -65,7 +65,7 @@ type parentNode struct {
 // applyChange applies a single field change to YAML content.
 func applyChange(ctx context.Context, content []byte, fieldChange FieldChange) ([]byte, error) {
 	success := false
-	var lastErr error
+	var firstErr error
 	var parentNodesToCreate []parentNode
 
 	for _, fieldPathCandidate := range fieldChange.FieldCandidates {
@@ -116,12 +116,14 @@ func applyChange(ctx context.Context, content []byte, fieldChange FieldChange) (
 			content = modifiedContent
 			log.Debugf(ctx, "Applied changes to %s", jsonPointer)
 			success = true
-			lastErr = nil
+			firstErr = nil
 			break
 		}
 
 		log.Debugf(ctx, "Failed to apply change to %s: %v", jsonPointer, patchErr)
-		lastErr = patchErr
+		if firstErr == nil {
+			firstErr = patchErr
+		}
 	}
 
 	// If all attempts failed with parent path errors, try creating nested structures
@@ -138,20 +140,22 @@ func applyChange(ctx context.Context, content []byte, fieldChange FieldChange) (
 
 			if patchErr == nil {
 				content = modifiedContent
-				lastErr = nil
+				firstErr = nil
 				log.Debugf(ctx, "Created nested structure at %s", errInfo.missingPath.String())
 				break
 			}
-			lastErr = patchErr
+			if firstErr == nil {
+				firstErr = patchErr
+			}
 			log.Debugf(ctx, "Failed to create nested structure at %s: %v", errInfo.missingPath.String(), patchErr)
 		}
 	}
 
-	if lastErr != nil {
-		if (fieldChange.Change.Operation == OperationRemove || fieldChange.Change.Operation == OperationReplace) && isPathNotFoundError(lastErr) {
-			return nil, fmt.Errorf("field not found in YAML configuration: %w", lastErr)
+	if firstErr != nil {
+		if (fieldChange.Change.Operation == OperationRemove || fieldChange.Change.Operation == OperationReplace) && isPathNotFoundError(firstErr) {
+			return nil, fmt.Errorf("field not found in YAML configuration: %w", firstErr)
 		}
-		return nil, fmt.Errorf("failed to apply change: %w", lastErr)
+		return nil, fmt.Errorf("failed to apply change: %w", firstErr)
 	}
 
 	return content, nil
@@ -240,6 +244,12 @@ func strPathToJSONPointer(pathStr string) (string, error) {
 
 		if idx, ok := n.Index(); ok {
 			parts = append(parts, strconv.Itoa(idx))
+			continue
+		}
+
+		// Handle append marker: /-/ is a syntax for appending to an array in JSON Pointer
+		if n.BracketStar() {
+			parts = append(parts, "-")
 			continue
 		}
 

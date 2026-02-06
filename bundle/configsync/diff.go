@@ -2,17 +2,22 @@ package configsync
 
 import (
 	"context"
-	"encoding/json"
+	"errors"
 	"fmt"
-	"reflect"
-	"strings"
+	"io"
+	"io/fs"
+	"os"
+	"path/filepath"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/engine"
+	"github.com/databricks/cli/bundle/deploy"
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct"
+	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/databricks-sdk-go/marshal"
+	"github.com/databricks/cli/libs/structs/structpath"
 )
 
 type OperationType string
@@ -34,74 +39,80 @@ type ResourceChanges map[string]*ConfigChangeDesc
 
 type Changes map[string]ResourceChanges
 
-// normalizeValue converts values to plain Go types suitable for YAML patching
-// by using SDK marshaling which properly handles ForceSendFields and other annotations.
 func normalizeValue(v any) (any, error) {
-	if v == nil {
-		return nil, nil
-	}
-
-	switch v.(type) {
-	case bool, string, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64:
-		return v, nil
-	}
-
-	rv := reflect.ValueOf(v)
-	rt := rv.Type()
-
-	if rt.Kind() == reflect.Ptr {
-		rt = rt.Elem()
-	}
-
-	var data []byte
-	var err error
-
-	if rt.Kind() == reflect.Struct {
-		data, err = marshal.Marshal(v)
-	} else {
-		data, err = json.Marshal(v)
-	}
-
+	dynValue, err := convert.FromTyped(v, dyn.NilValue)
 	if err != nil {
-		return v, fmt.Errorf("failed to marshal value of type %T: %w", v, err)
+		return nil, fmt.Errorf("failed to convert value of type %T: %w", v, err)
 	}
 
-	var normalized any
-	err = json.Unmarshal(data, &normalized)
+	return dynValue.AsAny(), nil
+}
+
+func isEntityPath(path string) bool {
+	pathNode, err := structpath.Parse(path)
 	if err != nil {
-		return v, fmt.Errorf("failed to unmarshal value: %w", err)
+		return false
 	}
 
-	return normalized, nil
+	if _, _, ok := pathNode.KeyValue(); ok {
+		return true
+	}
+
+	return false
+}
+
+func filterEntityDefaults(basePath string, value any) any {
+	m, ok := value.(map[string]any)
+	if !ok {
+		return value
+	}
+
+	result := make(map[string]any)
+	for key, val := range m {
+		fieldPath := basePath + "." + key
+
+		if shouldSkipField(fieldPath, val) {
+			continue
+		}
+
+		if nestedMap, ok := val.(map[string]any); ok {
+			result[key] = filterEntityDefaults(fieldPath, nestedMap)
+		} else {
+			result[key] = val
+		}
+	}
+
+	return result
 }
 
 func convertChangeDesc(path string, cd *deployplan.ChangeDesc) (*ConfigChangeDesc, error) {
 	hasConfigValue := cd.Old != nil || cd.New != nil
+	normalizedValue, err := normalizeValue(cd.Remote)
+	if err != nil {
+		return nil, fmt.Errorf("failed to normalize remote value: %w", err)
+	}
 
-	op := OperationUnknown
-	if shouldSkipField(path, cd) {
+	if shouldSkipField(path, normalizedValue) {
 		return &ConfigChangeDesc{
 			Operation: OperationSkip,
 		}, nil
 	}
 
-	if cd.Remote == nil && hasConfigValue {
+	normalizedValue = resetValueIfNeeded(path, normalizedValue)
+
+	var op OperationType
+	if normalizedValue == nil && hasConfigValue {
 		op = OperationRemove
-	}
-	if cd.Remote != nil && hasConfigValue {
+	} else if normalizedValue != nil && hasConfigValue {
 		op = OperationReplace
-	}
-	if cd.Remote != nil && !hasConfigValue {
+	} else if normalizedValue != nil && !hasConfigValue {
 		op = OperationAdd
+	} else {
+		op = OperationSkip
 	}
 
-	var normalizedValue any
-	var err error
-	if op != OperationRemove {
-		normalizedValue, err = normalizeValue(cd.Remote)
-		if err != nil {
-			return nil, fmt.Errorf("failed to normalize remote value: %w", err)
-		}
+	if op == OperationAdd && isEntityPath(path) {
+		normalizedValue = filterEntityDefaults(path, normalizedValue)
 	}
 
 	return &ConfigChangeDesc{
@@ -114,6 +125,11 @@ func convertChangeDesc(path string, cd *deployplan.ChangeDesc) (*ConfigChangeDes
 // and returns a map of resource changes.
 func DetectChanges(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) (Changes, error) {
 	changes := make(Changes)
+
+	err := ensureSnapshotAvailable(ctx, b, engine)
+	if err != nil {
+		return nil, fmt.Errorf("state snapshot not available: %w", err)
+	}
 
 	deployBundle := &direct.DeploymentBundle{}
 	var statePath string
@@ -133,6 +149,12 @@ func DetectChanges(ctx context.Context, b *bundle.Bundle, engine engine.EngineTy
 
 		if entry.Changes != nil {
 			for path, changeDesc := range entry.Changes {
+				// TODO: as for now in bundle plan all remote-side changes are considered as server-side defaults.
+				// Once it is solved - stop skipping server-side defaults in these checks and remove hardcoded default.
+				if changeDesc.Action == deployplan.Skip && changeDesc.Reason != deployplan.ReasonServerSideDefault {
+					continue
+				}
+
 				change, err := convertChangeDesc(path, changeDesc)
 				if err != nil {
 					return nil, fmt.Errorf("failed to compute config change for path %s: %w", path, err)
@@ -154,144 +176,51 @@ func DetectChanges(ctx context.Context, b *bundle.Bundle, engine engine.EngineTy
 	return changes, nil
 }
 
-func matchParts(patternParts, pathParts []string) bool {
-	if len(patternParts) == 0 && len(pathParts) == 0 {
-		return true
-	}
-	if len(patternParts) == 0 || len(pathParts) == 0 {
-		return false
+func ensureSnapshotAvailable(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) error {
+	if engine.IsDirect() {
+		return nil
 	}
 
-	patternPart := patternParts[0]
-	pathPart := pathParts[0]
+	remotePathSnapshot, localPathSnapshot := b.StateFilenameConfigSnapshot(ctx)
 
-	if patternPart == "*" {
-		return matchParts(patternParts[1:], pathParts[1:])
+	if _, err := os.Stat(localPathSnapshot); err == nil {
+		return nil
+	} else if !errors.Is(err, fs.ErrNotExist) {
+		return fmt.Errorf("checking snapshot file: %w", err)
 	}
 
-	if strings.Contains(patternPart, "[*]") {
-		prefix := strings.Split(patternPart, "[*]")[0]
+	log.Debugf(ctx, "Resources state snapshot not found locally, pulling from remote")
 
-		if strings.HasPrefix(pathPart, prefix) && strings.Contains(pathPart, "[") {
-			return matchParts(patternParts[1:], pathParts[1:])
+	f, err := deploy.StateFiler(b)
+	if err != nil {
+		return fmt.Errorf("getting state filer: %w", err)
+	}
+
+	r, err := f.Read(ctx, remotePathSnapshot)
+	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return fmt.Errorf("resources state snapshot not found remotely at %s", remotePathSnapshot)
 		}
-		return false
+		return fmt.Errorf("reading remote snapshot: %w", err)
+	}
+	defer r.Close()
+
+	content, err := io.ReadAll(r)
+	if err != nil {
+		return fmt.Errorf("reading snapshot content: %w", err)
 	}
 
-	if patternPart == pathPart {
-		return matchParts(patternParts[1:], pathParts[1:])
+	localStateDir := filepath.Dir(localPathSnapshot)
+	err = os.MkdirAll(localStateDir, 0o700)
+	if err != nil {
+		return fmt.Errorf("creating snapshot directory: %w", err)
 	}
 
-	return false
-}
-
-func matchPattern(pattern, path string) bool {
-	patternParts := strings.Split(pattern, ".")
-	pathParts := strings.Split(path, ".")
-	return matchParts(patternParts, pathParts)
-}
-
-// serverSideDefaults contains all hardcoded server-side defaults.
-// This is a temporary solution until the bundle plan issue is resolved.
-var serverSideDefaults = map[string]func(*deployplan.ChangeDesc) bool{
-	// Job-level fields
-	"timeout_seconds": isZero,
-	"usage_policy_id": alwaysDefault, // computed field
-	"edit_mode":       alwaysDefault, // set by CLI
-
-	// Task-level fields
-	"tasks[*].run_if":               isStringEqual("ALL_SUCCESS"),
-	"tasks[*].disabled":             isBoolEqual(false),
-	"tasks[*].timeout_seconds":      isZero,
-	"tasks[*].notebook_task.source": isStringEqual("WORKSPACE"),
-
-	// Cluster fields (tasks)
-	"tasks[*].new_cluster.aws_attributes":     alwaysDefault,
-	"tasks[*].new_cluster.azure_attributes":   alwaysDefault,
-	"tasks[*].new_cluster.gcp_attributes":     alwaysDefault,
-	"tasks[*].new_cluster.data_security_mode": isStringEqual("SINGLE_USER"), // TODO this field is computed on some workspaces in integration tests, check why and if we can skip it
-
-	"tasks[*].new_cluster.enable_elastic_disk": alwaysDefault, // deprecated field
-
-	// Cluster fields (job_clusters)
-	"job_clusters[*].new_cluster.aws_attributes":     alwaysDefault,
-	"job_clusters[*].new_cluster.azure_attributes":   alwaysDefault,
-	"job_clusters[*].new_cluster.gcp_attributes":     alwaysDefault,
-	"job_clusters[*].new_cluster.data_security_mode": isStringEqual("SINGLE_USER"), // TODO this field is computed on some workspaces in integration tests, check why and if we can skip it
-
-	"job_clusters[*].new_cluster.enable_elastic_disk": alwaysDefault, // deprecated field
-
-	// Terraform defaults
-	"run_as": alwaysDefault,
-
-	// Pipeline fields
-	"storage": defaultIfNotSpecified, // TODO it is computed if not specified, probably we should not skip it
-}
-
-// shouldSkipField checks if a given field path should be skipped as a hardcoded server-side default.
-func shouldSkipField(path string, changeDesc *deployplan.ChangeDesc) bool {
-	// TODO: as for now in bundle plan all remote-side changes are considered as server-side defaults.
-	// Once it is solved - stop skipping server-side defaults in these checks and remove hardcoded default.
-	if changeDesc.Action == deployplan.Skip && changeDesc.Reason != deployplan.ReasonServerSideDefault {
-		return true
+	err = os.WriteFile(localPathSnapshot, content, 0o600)
+	if err != nil {
+		return fmt.Errorf("writing snapshot file: %w", err)
 	}
 
-	for pattern, isDefault := range serverSideDefaults {
-		if matchPattern(pattern, path) {
-			return isDefault(changeDesc)
-		}
-	}
-	return false
-}
-
-// alwaysDefault always returns true (for computed fields).
-func alwaysDefault(*deployplan.ChangeDesc) bool {
-	return true
-}
-
-func defaultIfNotSpecified(changeDesc *deployplan.ChangeDesc) bool {
-	if changeDesc.Old == nil && changeDesc.New == nil {
-		return true
-	}
-	return false
-}
-
-// isStringEqual returns a function that checks if the remote value equals the given string.
-func isStringEqual(expected string) func(*deployplan.ChangeDesc) bool {
-	return func(changeDesc *deployplan.ChangeDesc) bool {
-		if changeDesc.Remote == nil {
-			return expected == ""
-		}
-		// Convert to string to handle SDK enum types
-		actual := fmt.Sprintf("%v", changeDesc.Remote)
-		return actual == expected
-	}
-}
-
-// isBoolEqual returns a function that checks if the remote value equals the given bool.
-func isBoolEqual(expected bool) func(*deployplan.ChangeDesc) bool {
-	return func(changeDesc *deployplan.ChangeDesc) bool {
-		if actual, ok := changeDesc.Remote.(bool); ok {
-			return actual == expected
-		}
-		return false
-	}
-}
-
-// isZero checks if the remote value is zero (0 or 0.0).
-func isZero(changeDesc *deployplan.ChangeDesc) bool {
-	if changeDesc.Remote == nil {
-		return true
-	}
-
-	switch v := changeDesc.Remote.(type) {
-	case int:
-		return v == 0
-	case int64:
-		return v == 0
-	case float64:
-		return v == 0.0
-	default:
-		return false
-	}
+	log.Debugf(ctx, "Pulled config snapshot from remote to %s", localPathSnapshot)
+	return nil
 }

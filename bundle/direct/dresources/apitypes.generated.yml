@@ -24,6 +24,12 @@ models: ml.CreateModelRequest
 
 pipelines: pipelines.CreatePipeline
 
+postgres_branches: postgres.BranchSpec
+
+postgres_endpoints: postgres.EndpointSpec
+
+postgres_projects: postgres.ProjectSpec
+
 quality_monitors: catalog.CreateMonitor
 
 registered_models: catalog.RegisteredModelInfo

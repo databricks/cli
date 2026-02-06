@@ -14,6 +14,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/databricks/databricks-sdk-go/service/database"
+	"github.com/databricks/databricks-sdk-go/service/postgres"
 	"github.com/google/uuid"
 
 	"github.com/databricks/databricks-sdk-go/service/apps"
@@ -159,6 +160,11 @@ type FakeWorkspace struct {
 	DatabaseInstances    map[string]database.DatabaseInstance
 	DatabaseCatalogs     map[string]database.DatabaseCatalog
 	SyncedDatabaseTables map[string]database.SyncedDatabaseTable
+
+	PostgresProjects   map[string]postgres.Project
+	PostgresBranches   map[string]postgres.Branch
+	PostgresEndpoints  map[string]postgres.Endpoint
+	PostgresOperations map[string]postgres.Operation
 }
 
 func (s *FakeWorkspace) LockUnlock() func() {
@@ -276,6 +282,10 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		DatabaseInstances:    map[string]database.DatabaseInstance{},
 		DatabaseCatalogs:     map[string]database.DatabaseCatalog{},
 		SyncedDatabaseTables: map[string]database.SyncedDatabaseTable{},
+		PostgresProjects:     map[string]postgres.Project{},
+		PostgresBranches:     map[string]postgres.Branch{},
+		PostgresEndpoints:    map[string]postgres.Endpoint{},
+		PostgresOperations:   map[string]postgres.Operation{},
 		Alerts:               map[string]sql.AlertV2{},
 		Experiments:          map[string]ml.GetExperimentResponse{},
 		ModelRegistryModels:  map[string]ml.Model{},

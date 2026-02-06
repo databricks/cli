@@ -6,16 +6,24 @@
 #   update_id_on_changes: fields that trigger UpdateWithID (ID may change)
 #   ignore_remote_changes: fields where remote changes are ignored
 #   ignore_local_changes: fields where local changes are ignored (can't be updated via API)
+#
+# Each field entry has:
+#   field: the field path
+#   reason: why this field is in this category (immutable, input_only, output_only, or descriptive text)
 
 resources:
 
   pipelines:
     recreate_on_changes:
-      - storage
-      - ingestion_definition.connection_name
-      - ingestion_definition.ingestion_gateway_id
+      - field: storage
+        reason: immutable
+      - field: ingestion_definition.connection_name
+        reason: immutable
+      - field: ingestion_definition.ingestion_gateway_id
+        reason: immutable
     ignore_remote_changes:
-      - run_as
+      - field: run_as
+        reason: not_returned_by_api
 
   models:
     recreate_on_changes:
@@ -23,104 +31,167 @@ resources:
       # but that would require dynamic select of the method during update since
       # the ml.RenameModel needs to be called instead of ml.UpdateModel.
       # We might reasonably choose to never fix this because this is a legacy resource.
-      - name
+      - field: name
+        reason: terraform_compat
     # Allowing updates for tags requires dynamic selection of the method since
     # tags can only be updated by calling ml.SetModelTag or ml.DeleteModelTag methods.
     # Skip annotation matches the current behavior of Terraform where tags changes are showed
     # in plan but are just ignored / not applied. Since this is a legacy resource we might
     # reasonably choose to not fix it here as well.
     ignore_remote_changes:
-      - tags
+      - field: tags
+        reason: terraform_compat
     ignore_local_changes:
-      - tags
+      - field: tags
+        reason: terraform_compat
 
   # TF implementation: https://github.com/databricks/terraform-provider-databricks/blob/6c106e8e7052bb2726148d66309fd460ed444236/mlflow/resource_mlflow_experiment.go#L22
   experiments:
     recreate_on_changes:
-      - artifact_location
+      - field: artifact_location
+        reason: immutable
     ignore_remote_changes:
       # Tags updates are not supported by TF. This mirrors that behaviour.
-      - tags
+      - field: tags
+        reason: terraform_compat
     ignore_local_changes:
-      - tags
+      - field: tags
+        reason: terraform_compat
 
   # TF implementation: https://github.com/databricks/terraform-provider-databricks/blob/6c106e8e7052bb2726148d66309fd460ed444236/mlflow/resource_mlflow_experiment.go#L22
   model_serving_endpoints:
     recreate_on_changes:
-      - name
+      - field: name
+        reason: immutable
       # description is immutable, can't be updated via API
-      - description
-      - config.auto_capture_config.catalog_name
-      - config.auto_capture_config.schema_name
-      - config.auto_capture_config.table_name_prefix
-      - route_optimized
+      - field: description
+        reason: immutable
+      - field: config.auto_capture_config.catalog_name
+        reason: immutable
+      - field: config.auto_capture_config.schema_name
+        reason: immutable
+      - field: config.auto_capture_config.table_name_prefix
+        reason: immutable
+      - field: route_optimized
+        reason: immutable
 
   registered_models:
     recreate_on_changes:
       # The name can technically be updated without recreate. We recreate for now though
       # to match TF implementation.
-      - name
-      - catalog_name
-      - schema_name
-      - storage_location
+      - field: name
+        reason: terraform_compat
+      - field: catalog_name
+        reason: immutable
+      - field: schema_name
+        reason: immutable
+      - field: storage_location
+        reason: immutable
 
   quality_monitors:
     recreate_on_changes:
-      - assets_dir
-      - table_name
+      - field: assets_dir
+        reason: immutable
+      - field: table_name
+        reason: immutable
     ignore_remote_changes:
-      - warehouse_id
+      - field: warehouse_id
+        reason: not_returned_by_api
 
   catalogs:
     recreate_on_changes:
-      - storage_root
-      - connection_name
-      - provider_name
-      - share_name
+      - field: storage_root
+        reason: immutable
+      - field: connection_name
+        reason: immutable
+      - field: provider_name
+        reason: immutable
+      - field: share_name
+        reason: immutable
     update_id_on_changes:
-      - name
+      - field: name
+        reason: id_changes
 
   schemas:
     recreate_on_changes:
-      - name
-      - catalog_name
-      - storage_root
+      - field: name
+        reason: immutable
+      - field: catalog_name
+        reason: immutable
+      - field: storage_root
+        reason: immutable
 
   volumes:
     recreate_on_changes:
-      - catalog_name
-      - schema_name
-      - storage_location
-      - volume_type
+      - field: catalog_name
+        reason: immutable
+      - field: schema_name
+        reason: immutable
+      - field: storage_location
+        reason: immutable
+      - field: volume_type
+        reason: immutable
     update_id_on_changes:
-      - name
+      - field: name
+        reason: id_changes
 
   dashboards:
 
     ignore_remote_changes:
       # "serialized_dashboard" locally and remotely will have different contents
       # We only need to rely on etag here, and can skip this field for diff computation.
-      - serialized_dashboard
+      - field: serialized_dashboard
+        reason: etag_based
 
       # "dataset_catalog" and "dataset_schema" are write-only fields that are not returned by the server.
       # They will always differ between local config (which has values) and remote state (which has empty strings).
-      - dataset_catalog
-      - dataset_schema
+      - field: dataset_catalog
+        reason: input_only
+      - field: dataset_schema
+        reason: input_only
 
   apps:
     recreate_on_changes:
-      - name
+      - field: name
+        reason: immutable
 
   secret_scopes:
     recreate_on_changes:
-      - scope
-      - scope_backend_type
-      - backend_azure_keyvault
-      - initial_manage_principal
+      - field: scope
+        reason: immutable
+      - field: scope_backend_type
+        reason: immutable
+      - field: backend_azure_keyvault
+        reason: immutable
+      - field: initial_manage_principal
+        reason: immutable
 
   # Permissions for secret scopes use ResourceSecretScopeAcls.
   secret_scopes.permissions:
     update_id_on_changes:
       # When scope name changes, we need UpdateWithID trigger. This is necessary so that subsequent
       # DoRead operations use the correct ID and we do not end up with a persistent drift.
-      - scope_name
+      - field: scope_name
+        reason: id_changes
+
+  postgres_projects:
+    recreate_on_changes:
+      # project_id is immutable (part of hierarchical name, not in API spec)
+      - field: project_id
+        reason: immutable
+
+  postgres_branches:
+    recreate_on_changes:
+      # parent and branch_id are immutable (part of hierarchical name, not in API spec)
+      - field: parent
+        reason: immutable
+      - field: branch_id
+        reason: immutable
+
+  postgres_endpoints:
+    recreate_on_changes:
+      # parent and endpoint_id are immutable (part of hierarchical name, not in API spec)
+      - field: parent
+        reason: immutable
+      - field: endpoint_id
+        reason: immutable

@@ -1,0 +1,87 @@
+
+>>> [CLI] bundle validate
+Name: deploy-postgres-endpoint-[UNIQUE_NAME]
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-endpoint-[UNIQUE_NAME]/default
+
+Validation OK!
+
+>>> [CLI] bundle summary
+Name: deploy-postgres-endpoint-[UNIQUE_NAME]
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-endpoint-[UNIQUE_NAME]/default
+Resources:
+  Postgres branches:
+    main:
+      Name: 
+      URL:  (not deployed)
+  Postgres endpoints:
+    primary:
+      Name: 
+      URL:  (not deployed)
+  Postgres projects:
+    my_project:
+      Name: Test Project for Endpoint
+      URL:  (not deployed)
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-endpoint-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] postgres get-endpoint projects/test-pg-proj-[UNIQUE_NAME]/branches/main/endpoints/primary
+{
+  "name": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main/endpoints/primary",
+  "parent": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
+  "status": {
+    "autoscaling_limit_max_cu": 2,
+    "autoscaling_limit_min_cu": 0.5,
+    "current_state": "ACTIVE",
+    "disabled": false,
+    "endpoint_type": "ENDPOINT_TYPE_READ_WRITE",
+    "hosts": {
+      "host": "[ENDPOINT_UID].database.us-east-1.cloud.databricks.com"
+    },
+    "settings": {},
+    "suspend_timeout_duration": "300s"
+  },
+  "uid": "[ENDPOINT_UID]"
+}
+
+>>> [CLI] bundle summary
+Name: deploy-postgres-endpoint-[UNIQUE_NAME]
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-endpoint-[UNIQUE_NAME]/default
+Resources:
+  Postgres branches:
+    main:
+      Name: 
+      URL:  (not deployed)
+  Postgres endpoints:
+    primary:
+      Name: 
+      URL:  (not deployed)
+  Postgres projects:
+    my_project:
+      Name: Test Project for Endpoint
+      URL:  (not deployed)
+
+>>> print_requests.py --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.postgres_branches.main
+  delete resources.postgres_endpoints.primary
+  delete resources.postgres_projects.my_project
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-endpoint-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!

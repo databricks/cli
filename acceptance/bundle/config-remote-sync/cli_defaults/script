@@ -1,0 +1,49 @@
+#!/bin/bash
+
+envsubst < databricks.yml.tmpl > databricks.yml
+
+$CLI bundle deploy
+job1_id="$(read_id.py job1)"
+job2_id="$(read_id.py job2)"
+pipeline1_id="$(read_id.py pipeline1)"
+
+title "Modify jobs"
+echo
+echo "Change max_concurrent_runs, name, change default tag"
+edit_resource.py jobs $job1_id <<EOF
+r["max_concurrent_runs"] = 5
+r["name"] = "Custom Job Name"
+r["tags"]["dev"] = "default_tag_changed"
+r["trigger"] = {
+  "pause_status":"UNPAUSED",
+  "periodic": {
+    "interval":1,
+    "unit":"DAYS"
+  }
+}
+EOF
+
+# Disabled for now - queue removal test
+# echo
+# echo "Disable queueing"
+# edit_resource.py jobs $job2_id <<EOF
+# r["queue"] = None
+# EOF
+
+title "Modify pipeline"
+echo
+echo "Change edition and channel"
+edit_resource.py pipelines $pipeline1_id <<EOF
+r["edition"] = "CORE"
+r["channel"] = "PREVIEW"
+EOF
+
+title "Detect and save all changes"
+echo
+cp databricks.yml databricks.yml.backup
+$CLI bundle config-remote-sync --save
+
+title "Configuration changes"
+echo
+trace diff.py databricks.yml.backup databricks.yml
+rm databricks.yml.backup
