@@ -286,12 +286,17 @@ func (p *PatternNode) String() string {
 
 // AsSlice returns the pattern as a slice of PatternNodes from root to current.
 func (p *PatternNode) AsSlice() []*PatternNode {
-	pathSlice := (*PathNode)(p).AsSlice()
-	result := make([]*PatternNode, len(pathSlice))
-	for i, node := range pathSlice {
-		result[i] = (*PatternNode)(node)
+	length := p.Len()
+	segments := make([]*PatternNode, length)
+
+	// Fill in reverse order
+	current := p
+	for i := length - 1; i >= 0; i-- {
+		segments[i] = current
+		current = current.Parent()
 	}
-	return result
+
+	return segments
 }
 
 // PatternNode constructors
@@ -357,6 +362,22 @@ func NewPatternKeyValue(prev *PatternNode, key, value string) *PatternNode {
 //   - KEYVALUE_VALUE_QUOTE: Encountered quote in value, expects same quote (escape) or "]" (end)
 //   - EXPECT_DOT_OR_END: After bracket close, expects ".", "[" or end of string
 //   - END: Successfully completed parsing
+//
+// Transitions:
+//   - START: [a-zA-Z_-] -> FIELD, "[" -> BRACKET_OPEN, "*" -> DOT_STAR, EOF -> END
+//   - FIELD_START: [a-zA-Z_-] -> FIELD, "*" -> DOT_STAR, other -> ERROR
+//   - FIELD: [a-zA-Z0-9_-] -> FIELD, "." -> FIELD_START, "[" -> BRACKET_OPEN, EOF -> END
+//   - DOT_STAR: "." -> FIELD_START, "[" -> BRACKET_OPEN, EOF -> END, other -> ERROR
+//   - BRACKET_OPEN: [0-9] -> INDEX, "'" -> MAP_KEY, "*" -> WILDCARD, identifier -> KEYVALUE_KEY
+//   - INDEX: [0-9] -> INDEX, "]" -> EXPECT_DOT_OR_END
+//   - MAP_KEY: (any except "'") -> MAP_KEY, "'" -> MAP_KEY_QUOTE
+//   - MAP_KEY_QUOTE: "'" -> MAP_KEY (escape), "]" -> EXPECT_DOT_OR_END (end key)
+//   - WILDCARD: "]" -> EXPECT_DOT_OR_END
+//   - KEYVALUE_KEY: identifier -> KEYVALUE_KEY, "=" -> KEYVALUE_EQUALS
+//   - KEYVALUE_EQUALS: "'" or '"' -> KEYVALUE_VALUE
+//   - KEYVALUE_VALUE: (any except quote) -> KEYVALUE_VALUE, quote -> KEYVALUE_VALUE_QUOTE
+//   - KEYVALUE_VALUE_QUOTE: quote -> KEYVALUE_VALUE (escape), "]" -> EXPECT_DOT_OR_END
+//   - EXPECT_DOT_OR_END: "." -> FIELD_START, "[" -> BRACKET_OPEN, EOF -> END
 func Parse(s string, wildcardAllowed bool) (*PathNode, *PatternNode, error) {
 	if s == "" {
 		return nil, nil, nil
