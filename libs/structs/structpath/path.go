@@ -421,7 +421,6 @@ func parse(s string, wildcardAllowed bool) (*PatternNode, error) {
 	var currentToken strings.Builder
 	var keyValueKey string // Stores the key part of [key='value']
 	pos := 0
-	hasWildcard := false
 
 	for pos < len(s) {
 		ch := s[pos]
@@ -431,7 +430,9 @@ func parse(s string, wildcardAllowed bool) (*PatternNode, error) {
 			if ch == '[' {
 				state = stateBracketOpen
 			} else if ch == '*' {
-				hasWildcard = true
+				if !wildcardAllowed {
+					return nil, errors.New("wildcards not allowed in path")
+				}
 				state = stateDotStar
 			} else if !isReservedFieldChar(ch) {
 				currentToken.WriteByte(ch)
@@ -442,7 +443,9 @@ func parse(s string, wildcardAllowed bool) (*PatternNode, error) {
 
 		case stateFieldStart:
 			if ch == '*' {
-				hasWildcard = true
+				if !wildcardAllowed {
+					return nil, errors.New("wildcards not allowed in path")
+				}
 				state = stateDotStar
 			} else if !isReservedFieldChar(ch) {
 				currentToken.WriteByte(ch)
@@ -485,7 +488,9 @@ func parse(s string, wildcardAllowed bool) (*PatternNode, error) {
 			} else if ch == '\'' {
 				state = stateMapKey
 			} else if ch == '*' {
-				hasWildcard = true
+				if !wildcardAllowed {
+					return nil, errors.New("wildcards not allowed in path")
+				}
 				state = stateWildcard
 			} else if !isReservedFieldChar(ch) {
 				currentToken.WriteByte(ch)
@@ -633,11 +638,6 @@ func parse(s string, wildcardAllowed bool) (*PatternNode, error) {
 		// Already complete
 	default:
 		return nil, fmt.Errorf("parser error at position %d", pos)
-	}
-
-	// Check wildcard constraint
-	if hasWildcard && !wildcardAllowed {
-		return nil, errors.New("wildcards not allowed in path")
 	}
 
 	return (*PatternNode)(result), nil
