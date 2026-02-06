@@ -29,6 +29,8 @@
           },
           "tasks": [
             {
+              "disabled": false,
+              "email_notifications": {},
               "new_cluster": {
                 "node_type_id": "[NODE_TYPE_ID]",
                 "num_workers": 1,
@@ -38,7 +40,10 @@
                 "notebook_path": "/Users/{{workspace_user_name}}/test_notebook",
                 "source": "WORKSPACE"
               },
-              "task_key": "main_task"
+              "run_if": "ALL_SUCCESS",
+              "task_key": "main_task",
+              "timeout_seconds": 0,
+              "webhook_notifications": {}
             }
           ],
           "timeout_seconds": 0,
@@ -58,10 +63,35 @@
           "new": 2,
           "remote": 2
         },
+        "tasks[task_key='main_task'].disabled": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": false
+        },
+        "tasks[task_key='main_task'].email_notifications": {
+          "action": "skip",
+          "reason": "empty_struct",
+          "remote": {}
+        },
         "tasks[task_key='main_task'].notebook_task.source": {
           "action": "skip",
           "reason": "server_side_default",
           "remote": "WORKSPACE"
+        },
+        "tasks[task_key='main_task'].run_if": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": "ALL_SUCCESS"
+        },
+        "tasks[task_key='main_task'].timeout_seconds": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": 0
+        },
+        "tasks[task_key='main_task'].webhook_notifications": {
+          "action": "skip",
+          "reason": "empty_struct",
+          "remote": {}
         },
         "timeout_seconds": {
           "action": "skip",

@@ -26,11 +26,16 @@ Deployment complete!
       },
       "tasks": [
         {
+          "disabled": false,
+          "email_notifications": {},
           "notebook_task": {
             "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files/my_notebook",
             "source": "WORKSPACE"
           },
-          "task_key": "my_notebook"
+          "run_if": "ALL_SUCCESS",
+          "task_key": "my_notebook",
+          "timeout_seconds": 0,
+          "webhook_notifications": {}
         }
       ],
       "timeout_seconds": 0,

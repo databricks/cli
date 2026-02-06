@@ -56,6 +56,8 @@
           },
           "tasks": [
             {
+              "disabled": false,
+              "email_notifications": {},
               "job_cluster_key": "job_cluster",
               "libraries": [
                 {
@@ -66,7 +68,10 @@
                 "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/prod/files/src/sample_notebook",
                 "source": "WORKSPACE"
               },
-              "task_key": "notebook_task"
+              "run_if": "ALL_SUCCESS",
+              "task_key": "notebook_task",
+              "timeout_seconds": 0,
+              "webhook_notifications": {}
             },
             {
               "depends_on": [
@@ -74,6 +79,8 @@
                   "task_key": "notebook_task"
                 }
               ],
+              "disabled": false,
+              "email_notifications": {},
               "job_cluster_key": "job_cluster",
               "libraries": [
                 {
@@ -90,7 +97,10 @@
                   "prod"
                 ]
               },
-              "task_key": "python_wheel_task"
+              "run_if": "ALL_SUCCESS",
+              "task_key": "python_wheel_task",
+              "timeout_seconds": 0,
+              "webhook_notifications": {}
             },
             {
               "depends_on": [
@@ -98,10 +108,15 @@
                   "task_key": "notebook_task"
                 }
               ],
+              "disabled": false,
+              "email_notifications": {},
               "pipeline_task": {
                 "pipeline_id": "[UUID]"
               },
-              "task_key": "refresh_pipeline"
+              "run_if": "ALL_SUCCESS",
+              "task_key": "refresh_pipeline",
+              "timeout_seconds": 0,
+              "webhook_notifications": {}
             }
           ],
           "timeout_seconds": 0,
@@ -121,10 +136,85 @@
           "reason": "empty_struct",
           "remote": {}
         },
+        "tasks[task_key='notebook_task'].disabled": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": false
+        },
+        "tasks[task_key='notebook_task'].email_notifications": {
+          "action": "skip",
+          "reason": "empty_struct",
+          "remote": {}
+        },
         "tasks[task_key='notebook_task'].notebook_task.source": {
           "action": "skip",
           "reason": "server_side_default",
           "remote": "WORKSPACE"
+        },
+        "tasks[task_key='notebook_task'].run_if": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": "ALL_SUCCESS"
+        },
+        "tasks[task_key='notebook_task'].timeout_seconds": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": 0
+        },
+        "tasks[task_key='notebook_task'].webhook_notifications": {
+          "action": "skip",
+          "reason": "empty_struct",
+          "remote": {}
+        },
+        "tasks[task_key='python_wheel_task'].disabled": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": false
+        },
+        "tasks[task_key='python_wheel_task'].email_notifications": {
+          "action": "skip",
+          "reason": "empty_struct",
+          "remote": {}
+        },
+        "tasks[task_key='python_wheel_task'].run_if": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": "ALL_SUCCESS"
+        },
+        "tasks[task_key='python_wheel_task'].timeout_seconds": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": 0
+        },
+        "tasks[task_key='python_wheel_task'].webhook_notifications": {
+          "action": "skip",
+          "reason": "empty_struct",
+          "remote": {}
+        },
+        "tasks[task_key='refresh_pipeline'].disabled": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": false
+        },
+        "tasks[task_key='refresh_pipeline'].email_notifications": {
+          "action": "skip",
+          "reason": "empty_struct",
+          "remote": {}
+        },
+        "tasks[task_key='refresh_pipeline'].run_if": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": "ALL_SUCCESS"
+        },
+        "tasks[task_key='refresh_pipeline'].timeout_seconds": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": 0
+        },
+        "tasks[task_key='refresh_pipeline'].webhook_notifications": {
+          "action": "skip",
+          "reason": "empty_struct",
+          "remote": {}
         },
         "timeout_seconds": {
           "action": "skip",

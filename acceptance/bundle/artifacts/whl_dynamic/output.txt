@@ -130,14 +130,18 @@ my_test_code-0.0.1+[UNIX_TIME_NANOS][2].dist-info/RECORD
 >>> jq -s .[] | select(.path=="/api/2.2/jobs/reset") | .body.new_settings.tasks out.requests.txt
 [
   {
+    "email_notifications": {},
     "environment_key": "test_env",
     "python_wheel_task": {
       "entry_point": "run",
       "package_name": "my_test_code"
     },
-    "task_key": "ServerlessTestTask"
+    "run_if": "ALL_SUCCESS",
+    "task_key": "ServerlessTestTask",
+    "webhook_notifications": {}
   },
   {
+    "email_notifications": {},
     "existing_cluster_id": "0717-132531-5opeqon1",
     "for_each_task": {
       "inputs": "[1]",
@@ -167,7 +171,9 @@ my_test_code-0.0.1+[UNIX_TIME_NANOS][2].dist-info/RECORD
       "entry_point": "run",
       "package_name": "my_test_code"
     },
-    "task_key": "TestTask"
+    "run_if": "ALL_SUCCESS",
+    "task_key": "TestTask",
+    "webhook_notifications": {}
   }
 ]
 

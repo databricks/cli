@@ -63,6 +63,8 @@
           },
           "tasks": [
             {
+              "disabled": false,
+              "email_notifications": {},
               "environment_key": "test_env",
               "libraries": [
                 {
@@ -73,7 +75,10 @@
                 "entry_point": "run",
                 "package_name": "my_test_code"
               },
-              "task_key": "TestTask"
+              "run_if": "ALL_SUCCESS",
+              "task_key": "TestTask",
+              "timeout_seconds": 0,
+              "webhook_notifications": {}
             }
           ],
           "timeout_seconds": 0,
@@ -89,6 +94,31 @@
         "tags['new_tag']": {
           "action": "update",
           "remote": "new_value"
+        },
+        "tasks[task_key='TestTask'].disabled": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": false
+        },
+        "tasks[task_key='TestTask'].email_notifications": {
+          "action": "skip",
+          "reason": "empty_struct",
+          "remote": {}
+        },
+        "tasks[task_key='TestTask'].run_if": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": "ALL_SUCCESS"
+        },
+        "tasks[task_key='TestTask'].timeout_seconds": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": 0
+        },
+        "tasks[task_key='TestTask'].webhook_notifications": {
+          "action": "skip",
+          "reason": "empty_struct",
+          "remote": {}
         },
         "timeout_seconds": {
           "action": "skip",

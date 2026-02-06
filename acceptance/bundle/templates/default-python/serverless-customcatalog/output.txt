@@ -13,6 +13,18 @@ Note that [DATABRICKS_URL] is used for initialization.
 To get started, refer to the project README.md file and the documentation at https://docs.databricks.com/dev-tools/bundles/index.html.
 
 >>> diff.py [TESTROOT]/bundle/templates/default-python/serverless-customcatalog/../serverless/output output/
+Only in [TESTROOT]/bundle/templates/default-python/serverless-customcatalog/../serverless/output: my_default_python/.databricks/.gitignore
+Only in [TESTROOT]/bundle/templates/default-python/serverless-customcatalog/../serverless/output: my_default_python/.databricks/bundle/dev/deployment.json
+Only in [TESTROOT]/bundle/templates/default-python/serverless-customcatalog/../serverless/output: my_default_python/.databricks/bundle/dev/sync-snapshots/d4414a41e3b1f32d.json
+Only in [TESTROOT]/bundle/templates/default-python/serverless-customcatalog/../serverless/output: my_default_python/.databricks/bundle/dev/terraform/.terraform.lock.hcl
+Only in [TESTROOT]/bundle/templates/default-python/serverless-customcatalog/../serverless/output: my_default_python/.databricks/bundle/dev/terraform/bundle.tf.json
+Only in [TESTROOT]/bundle/templates/default-python/serverless-customcatalog/../serverless/output: my_default_python/.databricks/bundle/dev/terraform/terraform.tfstate
+Only in [TESTROOT]/bundle/templates/default-python/serverless-customcatalog/../serverless/output: my_default_python/.databricks/bundle/prod/deployment.json
+Only in [TESTROOT]/bundle/templates/default-python/serverless-customcatalog/../serverless/output: my_default_python/.databricks/bundle/prod/sync-snapshots/bd9c4960cdd9a042.json
+Only in [TESTROOT]/bundle/templates/default-python/serverless-customcatalog/../serverless/output: my_default_python/.databricks/bundle/prod/terraform/.terraform.lock.hcl
+Only in [TESTROOT]/bundle/templates/default-python/serverless-customcatalog/../serverless/output: my_default_python/.databricks/bundle/prod/terraform/.terraform.tfstate.lock.info
+Only in [TESTROOT]/bundle/templates/default-python/serverless-customcatalog/../serverless/output: my_default_python/.databricks/bundle/prod/terraform/bundle.tf.json
+Only in [TESTROOT]/bundle/templates/default-python/serverless-customcatalog/../serverless/output: my_default_python/.databricks/bundle/prod/terraform/terraform.tfstate
 --- [TESTROOT]/bundle/templates/default-python/serverless-customcatalog/../serverless/output/my_default_python/databricks.yml
 +++ output/my_default_python/databricks.yml
 @@ -32,5 +32,5 @@
@@ -29,6 +41,7 @@ To get started, refer to the project README.md file and the documentation at htt
 +      catalog: customcatalog
        schema: prod
      permissions:
+Only in [TESTROOT]/bundle/templates/default-python/serverless-customcatalog/../serverless/output: my_default_python/dist/.gitignore
 --- [TESTROOT]/bundle/templates/default-python/serverless-customcatalog/../serverless/output/my_default_python/resources/my_default_python_etl.pipeline.yml
 +++ output/my_default_python/resources/my_default_python_etl.pipeline.yml
 @@ -5,6 +5,5 @@
