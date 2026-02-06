@@ -10,31 +10,26 @@ $CLI bundle deploy
 job_one_id="$(read_id.py job_one)"
 job_two_id="$(read_id.py job_two)"
 
-title "Modify job_one: max_concurrent_runs and rename b_task"
+title "Modify job_one: max_concurrent_runs, update b_task depends_on and rename c_task"
 edit_resource.py jobs $job_one_id <<'EOF'
 r["max_concurrent_runs"] = 5
 for task in r["tasks"]:
-    if task["task_key"] == "b_task":
-        task["task_key"] = "b_task_renamed"
+    if task["task_key"] == "c_task":
+        task["task_key"] = "c_task_renamed"
     if "depends_on" in task:
         for dep in task["depends_on"]:
+            if dep["task_key"] == "c_task":
+                dep["task_key"] = "c_task_renamed"
             if dep["task_key"] == "b_task":
-                dep["task_key"] = "b_task_renamed"
+                dep["task_key"] = "c_task_renamed"
 EOF
 
-title "Modify job_two: max_concurrent_runs, remove c_task, rename b_task"
+title "Modify job_two: max_concurrent_runs, rename first task"
 edit_resource.py jobs $job_two_id <<'EOF'
 r["max_concurrent_runs"] = 10
-r["tasks"] = [t for t in r["tasks"] if t["task_key"] != "c_task"]
 for task in r["tasks"]:
-    if task["task_key"] == "b_task":
-        task["task_key"] = "b_task_renamed"
-    if "depends_on" in task:
-        for dep in task["depends_on"]:
-            if dep["task_key"] == "b_task":
-                dep["task_key"] = "b_task_renamed"
-            if dep["task_key"] == "c_task":
-                dep["task_key"] = "b_task_renamed"
+    if task["task_key"] == "run_pipeline":
+        task["task_key"] = "run_pipeline_renamed"
 EOF
 
 title "Detect and save changes"
