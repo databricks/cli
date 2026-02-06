@@ -97,6 +97,7 @@ resources.apps.*.app_status.state	apps.ApplicationState	ALL
 resources.apps.*.budget_policy_id	string	ALL
 resources.apps.*.compute_size	apps.ComputeSize	ALL
 resources.apps.*.compute_status	*apps.ComputeStatus	ALL
+resources.apps.*.compute_status.active_instances	int	ALL
 resources.apps.*.compute_status.message	string	ALL
 resources.apps.*.compute_status.state	apps.ComputeState	ALL
 resources.apps.*.config	*resources.AppConfig	INPUT
@@ -1052,6 +1053,8 @@ resources.jobs.*.settings.tasks[*].clean_rooms_notebook_task.etag	string	REMOTE
 resources.jobs.*.settings.tasks[*].clean_rooms_notebook_task.notebook_base_parameters	map[string]string	REMOTE
 resources.jobs.*.settings.tasks[*].clean_rooms_notebook_task.notebook_base_parameters.*	string	REMOTE
 resources.jobs.*.settings.tasks[*].clean_rooms_notebook_task.notebook_name	string	REMOTE
+resources.jobs.*.settings.tasks[*].compute	*jobs.Compute	REMOTE
+resources.jobs.*.settings.tasks[*].compute.hardware_accelerator	compute.HardwareAcceleratorType	REMOTE
 resources.jobs.*.settings.tasks[*].condition_task	*jobs.ConditionTask	REMOTE
 resources.jobs.*.settings.tasks[*].condition_task.left	string	REMOTE
 resources.jobs.*.settings.tasks[*].condition_task.op	jobs.ConditionTaskOp	REMOTE
@@ -1112,6 +1115,8 @@ resources.jobs.*.settings.tasks[*].for_each_task.task.clean_rooms_notebook_task.
 resources.jobs.*.settings.tasks[*].for_each_task.task.clean_rooms_notebook_task.notebook_base_parameters	map[string]string	REMOTE
 resources.jobs.*.settings.tasks[*].for_each_task.task.clean_rooms_notebook_task.notebook_base_parameters.*	string	REMOTE
 resources.jobs.*.settings.tasks[*].for_each_task.task.clean_rooms_notebook_task.notebook_name	string	REMOTE
+resources.jobs.*.settings.tasks[*].for_each_task.task.compute	*jobs.Compute	REMOTE
+resources.jobs.*.settings.tasks[*].for_each_task.task.compute.hardware_accelerator	compute.HardwareAcceleratorType	REMOTE
 resources.jobs.*.settings.tasks[*].for_each_task.task.condition_task	*jobs.ConditionTask	REMOTE
 resources.jobs.*.settings.tasks[*].for_each_task.task.condition_task.left	string	REMOTE
 resources.jobs.*.settings.tasks[*].for_each_task.task.condition_task.op	jobs.ConditionTaskOp	REMOTE
@@ -1736,6 +1741,8 @@ resources.jobs.*.tasks[*].clean_rooms_notebook_task.etag	string	INPUT	STATE
 resources.jobs.*.tasks[*].clean_rooms_notebook_task.notebook_base_parameters	map[string]string	INPUT	STATE
 resources.jobs.*.tasks[*].clean_rooms_notebook_task.notebook_base_parameters.*	string	INPUT	STATE
 resources.jobs.*.tasks[*].clean_rooms_notebook_task.notebook_name	string	INPUT	STATE
+resources.jobs.*.tasks[*].compute	*jobs.Compute	INPUT	STATE
+resources.jobs.*.tasks[*].compute.hardware_accelerator	compute.HardwareAcceleratorType	INPUT	STATE
 resources.jobs.*.tasks[*].condition_task	*jobs.ConditionTask	INPUT	STATE
 resources.jobs.*.tasks[*].condition_task.left	string	INPUT	STATE
 resources.jobs.*.tasks[*].condition_task.op	jobs.ConditionTaskOp	INPUT	STATE
@@ -1796,6 +1803,8 @@ resources.jobs.*.tasks[*].for_each_task.task.clean_rooms_notebook_task.etag	stri
 resources.jobs.*.tasks[*].for_each_task.task.clean_rooms_notebook_task.notebook_base_parameters	map[string]string	INPUT	STATE
 resources.jobs.*.tasks[*].for_each_task.task.clean_rooms_notebook_task.notebook_base_parameters.*	string	INPUT	STATE
 resources.jobs.*.tasks[*].for_each_task.task.clean_rooms_notebook_task.notebook_name	string	INPUT	STATE
+resources.jobs.*.tasks[*].for_each_task.task.compute	*jobs.Compute	INPUT	STATE
+resources.jobs.*.tasks[*].for_each_task.task.compute.hardware_accelerator	compute.HardwareAcceleratorType	INPUT	STATE
 resources.jobs.*.tasks[*].for_each_task.task.condition_task	*jobs.ConditionTask	INPUT	STATE
 resources.jobs.*.tasks[*].for_each_task.task.condition_task.left	string	INPUT	STATE
 resources.jobs.*.tasks[*].for_each_task.task.condition_task.op	jobs.ConditionTaskOp	INPUT	STATE
@@ -2470,6 +2479,7 @@ resources.model_serving_endpoints.*.config.auto_capture_config.schema_name	strin
 resources.model_serving_endpoints.*.config.auto_capture_config.table_name_prefix	string	INPUT	STATE
 resources.model_serving_endpoints.*.config.served_entities	[]serving.ServedEntityInput	INPUT	STATE
 resources.model_serving_endpoints.*.config.served_entities[*]	serving.ServedEntityInput	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_entities[*].burst_scaling_enabled	bool	INPUT	STATE
 resources.model_serving_endpoints.*.config.served_entities[*].entity_name	string	INPUT	STATE
 resources.model_serving_endpoints.*.config.served_entities[*].entity_version	string	INPUT	STATE
 resources.model_serving_endpoints.*.config.served_entities[*].environment_vars	map[string]string	INPUT	STATE
@@ -2541,6 +2551,7 @@ resources.model_serving_endpoints.*.config.served_entities[*].workload_size	stri
 resources.model_serving_endpoints.*.config.served_entities[*].workload_type	serving.ServingModelWorkloadType	INPUT	STATE
 resources.model_serving_endpoints.*.config.served_models	[]serving.ServedModelInput	INPUT	STATE
 resources.model_serving_endpoints.*.config.served_models[*]	serving.ServedModelInput	INPUT	STATE
+resources.model_serving_endpoints.*.config.served_models[*].burst_scaling_enabled	bool	INPUT	STATE
 resources.model_serving_endpoints.*.config.served_models[*].environment_vars	map[string]string	INPUT	STATE
 resources.model_serving_endpoints.*.config.served_models[*].environment_vars.*	string	INPUT	STATE
 resources.model_serving_endpoints.*.config.served_models[*].instance_profile_arn	string	INPUT	STATE
@@ -2617,6 +2628,7 @@ resources.model_serving_endpoints.*.endpoint_details.config.auto_capture_config.
 resources.model_serving_endpoints.*.endpoint_details.config.config_version	int64	REMOTE
 resources.model_serving_endpoints.*.endpoint_details.config.served_entities	[]serving.ServedEntityOutput	REMOTE
 resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*]	serving.ServedEntityOutput	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].burst_scaling_enabled	bool	REMOTE
 resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].creation_timestamp	int64	REMOTE
 resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].creator	string	REMOTE
 resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].entity_name	string	REMOTE
@@ -2698,6 +2710,7 @@ resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].w
 resources.model_serving_endpoints.*.endpoint_details.config.served_entities[*].workload_type	serving.ServingModelWorkloadType	REMOTE
 resources.model_serving_endpoints.*.endpoint_details.config.served_models	[]serving.ServedModelOutput	REMOTE
 resources.model_serving_endpoints.*.endpoint_details.config.served_models[*]	serving.ServedModelOutput	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.config.served_models[*].burst_scaling_enabled	bool	REMOTE
 resources.model_serving_endpoints.*.endpoint_details.config.served_models[*].creation_timestamp	int64	REMOTE
 resources.model_serving_endpoints.*.endpoint_details.config.served_models[*].creator	string	REMOTE
 resources.model_serving_endpoints.*.endpoint_details.config.served_models[*].environment_vars	map[string]string	REMOTE
@@ -2751,6 +2764,7 @@ resources.model_serving_endpoints.*.endpoint_details.pending_config.auto_capture
 resources.model_serving_endpoints.*.endpoint_details.pending_config.config_version	int	REMOTE
 resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities	[]serving.ServedEntityOutput	REMOTE
 resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*]	serving.ServedEntityOutput	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].burst_scaling_enabled	bool	REMOTE
 resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].creation_timestamp	int64	REMOTE
 resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].creator	string	REMOTE
 resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].entity_name	string	REMOTE
@@ -2832,6 +2846,7 @@ resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entit
 resources.model_serving_endpoints.*.endpoint_details.pending_config.served_entities[*].workload_type	serving.ServingModelWorkloadType	REMOTE
 resources.model_serving_endpoints.*.endpoint_details.pending_config.served_models	[]serving.ServedModelOutput	REMOTE
 resources.model_serving_endpoints.*.endpoint_details.pending_config.served_models[*]	serving.ServedModelOutput	REMOTE
+resources.model_serving_endpoints.*.endpoint_details.pending_config.served_models[*].burst_scaling_enabled	bool	REMOTE
 resources.model_serving_endpoints.*.endpoint_details.pending_config.served_models[*].creation_timestamp	int64	REMOTE
 resources.model_serving_endpoints.*.endpoint_details.pending_config.served_models[*].creator	string	REMOTE
 resources.model_serving_endpoints.*.endpoint_details.pending_config.served_models[*].environment_vars	map[string]string	REMOTE
