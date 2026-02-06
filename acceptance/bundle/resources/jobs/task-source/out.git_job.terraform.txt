@@ -118,6 +118,7 @@
           "schema": "default",
           "source": "WORKSPACE"
         },
+        "email_notifications": {},
         "new_cluster": {
           "custom_tags": {
             "ResourceClass": "SingleNode"
@@ -129,9 +130,12 @@
           },
           "spark_version": "15.4.x-scala2.12"
         },
-        "task_key": "test_task_dbt"
+        "run_if": "ALL_SUCCESS",
+        "task_key": "test_task_dbt",
+        "webhook_notifications": {}
       },
       {
+        "email_notifications": {},
         "for_each_task": {
           "inputs": "[1]",
           "task": {
@@ -142,9 +146,12 @@
             "task_key": "test_task_foreach_no_source"
           }
         },
-        "task_key": "test_task_foreach_no_source"
+        "run_if": "ALL_SUCCESS",
+        "task_key": "test_task_foreach_no_source",
+        "webhook_notifications": {}
       },
       {
+        "email_notifications": {},
         "for_each_task": {
           "inputs": "[1]",
           "task": {
@@ -155,23 +162,33 @@
             "task_key": "test_task_foreach_workspace"
           }
         },
-        "task_key": "test_task_foreach_workspace"
+        "run_if": "ALL_SUCCESS",
+        "task_key": "test_task_foreach_workspace",
+        "webhook_notifications": {}
       },
       {
+        "email_notifications": {},
         "notebook_task": {
           "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/task-source/default/files/notebook",
           "source": "WORKSPACE"
         },
-        "task_key": "test_task_no_source"
+        "run_if": "ALL_SUCCESS",
+        "task_key": "test_task_no_source",
+        "webhook_notifications": {}
       },
       {
+        "email_notifications": {},
         "notebook_task": {
           "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/task-source/default/files/notebook",
           "source": "WORKSPACE"
         },
-        "task_key": "test_task_source_workspace"
+        "run_if": "ALL_SUCCESS",
+        "task_key": "test_task_source_workspace",
+        "webhook_notifications": {}
       },
       {
+        "email_notifications": {},
+        "run_if": "ALL_SUCCESS",
         "sql_task": {
           "file": {
             "path": "/Workspace/Users/[USERNAME]/.bundle/task-source/default/files/sql.sql",
@@ -179,7 +196,8 @@
           },
           "warehouse_id": "cafef00d"
         },
-        "task_key": "test_task_sql"
+        "task_key": "test_task_sql",
+        "webhook_notifications": {}
       }
     ],
     "webhook_notifications": {}

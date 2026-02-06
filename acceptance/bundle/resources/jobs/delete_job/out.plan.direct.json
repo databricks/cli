@@ -26,6 +26,8 @@
           },
           "tasks": [
             {
+              "disabled": false,
+              "email_notifications": {},
               "existing_cluster_id": "0717-132531-5opeqon1",
               "libraries": [
                 {
@@ -36,9 +38,14 @@
                 "entry_point": "run",
                 "package_name": "whl"
               },
-              "task_key": "TestTask1"
+              "run_if": "ALL_SUCCESS",
+              "task_key": "TestTask1",
+              "timeout_seconds": 0,
+              "webhook_notifications": {}
             },
             {
+              "disabled": false,
+              "email_notifications": {},
               "for_each_task": {
                 "inputs": "[1]",
                 "task": {
@@ -55,7 +62,10 @@
                   "task_key": "TestTask2"
                 }
               },
-              "task_key": "TestTask2"
+              "run_if": "ALL_SUCCESS",
+              "task_key": "TestTask2",
+              "timeout_seconds": 0,
+              "webhook_notifications": {}
             }
           ],
           "timeout_seconds": 0,
