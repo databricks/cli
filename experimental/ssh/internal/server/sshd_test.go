@@ -52,6 +52,16 @@ func TestEscapeEnvValue(t *testing.T) {
 			input:    "\n\r\n",
 			expected: "",
 		},
+		{
+			name:     "backslashes",
+			input:    `foo\bar\`,
+			expected: `foo\\bar\\`,
+		},
+		{
+			name:     "backslash before quote",
+			input:    `foo\"bar`,
+			expected: `foo\\\"bar`,
+		},
 	}
 
 	for _, tt := range tests {
