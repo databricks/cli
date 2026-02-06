@@ -10,7 +10,7 @@ $CLI bundle deploy
 job_one_id="$(read_id.py job_one)"
 job_two_id="$(read_id.py job_two)"
 
-title "Modify job_one: max_concurrent_runs, update b_task depends_on and rename c_task"
+title "Modify job_one: max_concurrent_runs, rename c_task"
 edit_resource.py jobs $job_one_id <<'EOF'
 r["max_concurrent_runs"] = 5
 for task in r["tasks"]:
@@ -20,17 +20,29 @@ for task in r["tasks"]:
         for dep in task["depends_on"]:
             if dep["task_key"] == "c_task":
                 dep["task_key"] = "c_task_renamed"
-            if dep["task_key"] == "b_task":
-                dep["task_key"] = "c_task_renamed"
 EOF
 
-title "Modify job_two: max_concurrent_runs, rename first task"
+title "Modify job_two: max_concurrent_runs, rename first task, add extra_task"
 edit_resource.py jobs $job_two_id <<'EOF'
 r["max_concurrent_runs"] = 10
+cluster = None
 for task in r["tasks"]:
     if task["task_key"] == "run_pipeline":
         task["task_key"] = "run_pipeline_renamed"
+        cluster = task.get("new_cluster")
+r["tasks"].append({
+    "task_key": "extra_task",
+    "notebook_task": {"notebook_path": "/Users/{{workspace_user_name}}/extra"},
+    "new_cluster": cluster,
+})
 EOF
+
+title "Add extra_task to local config (not in saved state, triggers entity-level replace)"
+cat >> resources/job2.yml << 'YAML'
+        - task_key: extra_task
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/extra
+YAML
 
 title "Detect and save changes"
 echo

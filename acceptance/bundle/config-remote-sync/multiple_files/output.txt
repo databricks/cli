@@ -3,8 +3,9 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
-=== Modify job_one: max_concurrent_runs, update b_task depends_on and rename c_task
-=== Modify job_two: max_concurrent_runs, rename first task
+=== Modify job_one: max_concurrent_runs, rename c_task
+=== Modify job_two: max_concurrent_runs, rename first task, add extra_task
+=== Add extra_task to local config (not in saved state, triggers entity-level replace)
 === Detect and save changes
 Detected changes in 2 resource(s):
 
@@ -16,6 +17,8 @@ Resource: resources.jobs.job_one
 
 Resource: resources.jobs.job_two
   max_concurrent_runs: replace
+  tasks[task_key='extra_task']: replace
+  tasks[task_key='extra_task'].new_cluster: add
   tasks[task_key='run_pipeline']: remove
   tasks[task_key='run_pipeline_renamed']: add
 
@@ -31,7 +34,7 @@ Resource: resources.jobs.job_two
        tasks:
 -        - task_key: c_task
 +        - depends_on:
-+            - task_key: c_task_renamed
++            - task_key: b_task
 +          new_cluster:
 +            node_type_id: [NODE_TYPE_ID]
 +            num_workers: 1
@@ -78,3 +81,14 @@ Resource: resources.jobs.job_two
 +          task_key: run_pipeline_renamed
          - task_key: etl_pipeline
            notebook_task:
+@@ -18,5 +18,9 @@
+             node_type_id: [NODE_TYPE_ID]
+             num_workers: 2
+-        - task_key: extra_task
++        - new_cluster:
++            node_type_id: [NODE_TYPE_ID]
++            num_workers: 1
++            spark_version: 13.3.x-snapshot-scala2.12
+           notebook_task:
+             notebook_path: /Users/{{workspace_user_name}}/extra
++          task_key: extra_task
