@@ -23,11 +23,6 @@
         "storage": "dbfs:/pipelines/[FOO_ID]"
       },
       "changes": {
-        "id": {
-          "action": "skip",
-          "reason": "builtin_rule",
-          "remote": "[FOO_ID]"
-        },
         "storage": {
           "action": "skip",
           "reason": "server_side_default",

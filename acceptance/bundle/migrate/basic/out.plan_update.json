@@ -176,11 +176,6 @@
         }
       },
       "changes": {
-        "id": {
-          "action": "skip",
-          "reason": "builtin_field",
-          "remote": "[UUID]"
-        },
         "name": {
           "action": "update",
           "old": "Test Migration Pipeline",

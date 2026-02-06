@@ -22,10 +22,17 @@ resources:
       - field: ingestion_definition.ingestion_gateway_id
         reason: immutable
     ignore_remote_changes:
+      # "id" is handled in a special way before any fields changed
+      # However, it is also part of RemotePipeline via CreatePipeline.
+      # Thus it shows up as a remote change since we don't set on the object.
       - field: id
-        reason: builtin_field
+        reason: "!drop"
       - field: run_as
         reason: not_returned_by_api
+    ignore_local_changes:
+      # "id" is output-only, providing it in config would be a mistake
+      - field: id
+        reason: "!drop"
 
   models:
     recreate_on_changes:

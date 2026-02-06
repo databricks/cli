@@ -362,6 +362,8 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 	cfg := adapter.ResourceConfig()
 	generatedCfg := adapter.GeneratedResourceConfig()
 
+	var toDrop []string
+
 	for pathString, ch := range changes {
 		path, err := structpath.Parse(pathString)
 		if err != nil {
@@ -420,6 +422,14 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 				ch.Reason = deployplan.ReasonCustom
 			}
 		}
+
+		if ch.Reason == deployplan.ReasonDrop {
+			toDrop = append(toDrop, pathString)
+		}
+	}
+
+	for _, key := range toDrop {
+		delete(changes, key)
 	}
 
 	return nil
