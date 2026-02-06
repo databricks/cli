@@ -178,7 +178,7 @@
       "changes": {
         "id": {
           "action": "skip",
-          "reason": "builtin_rule",
+          "reason": "builtin_field",
           "remote": "[UUID]"
         },
         "name": {
