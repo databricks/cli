@@ -395,7 +395,7 @@ func parse(s string, wildcardAllowed bool) (*PatternNode, error) {
 	)
 
 	state := stateStart
-	var result *PathNode
+	var result *PatternNode
 	var currentToken strings.Builder
 	var keyValueKey string // Stores the key part of [key='value']
 	pos := 0
@@ -434,11 +434,11 @@ func parse(s string, wildcardAllowed bool) (*PatternNode, error) {
 
 		case stateField:
 			if ch == '.' {
-				result = NewDotString(result, currentToken.String())
+				result = NewPatternDotString(result, currentToken.String())
 				currentToken.Reset()
 				state = stateFieldStart
 			} else if ch == '[' {
-				result = NewDotString(result, currentToken.String())
+				result = NewPatternDotString(result, currentToken.String())
 				currentToken.Reset()
 				state = stateBracketOpen
 			} else if !isReservedFieldChar(ch) {
@@ -450,10 +450,10 @@ func parse(s string, wildcardAllowed bool) (*PatternNode, error) {
 		case stateDotStar:
 			switch ch {
 			case '.':
-				result = &PathNode{prev: result, index: tagDotStar}
+				result = NewPatternDotStar(result)
 				state = stateFieldStart
 			case '[':
-				result = &PathNode{prev: result, index: tagDotStar}
+				result = NewPatternDotStar(result)
 				state = stateBracketOpen
 			default:
 				return nil, fmt.Errorf("unexpected character '%c' after '.*' at position %d", ch, pos)
@@ -485,7 +485,7 @@ func parse(s string, wildcardAllowed bool) (*PatternNode, error) {
 				if err != nil {
 					return nil, fmt.Errorf("invalid index '%s' at position %d", currentToken.String(), pos-len(currentToken.String()))
 				}
-				result = NewIndex(result, index)
+				result = NewPatternIndex(result, index)
 				currentToken.Reset()
 				state = stateExpectDotOrEnd
 			} else {
@@ -508,7 +508,7 @@ func parse(s string, wildcardAllowed bool) (*PatternNode, error) {
 				state = stateMapKey
 			case ']':
 				// End of map key
-				result = NewBracketString(result, currentToken.String())
+				result = NewPatternBracketString(result, currentToken.String())
 				currentToken.Reset()
 				state = stateExpectDotOrEnd
 			default:
@@ -517,7 +517,7 @@ func parse(s string, wildcardAllowed bool) (*PatternNode, error) {
 
 		case stateWildcard:
 			if ch == ']' {
-				result = &PathNode{prev: result, index: tagBracketStar}
+				result = NewPatternBracketStar(result)
 				state = stateExpectDotOrEnd
 			} else {
 				return nil, fmt.Errorf("unexpected character '%c' after '*' at position %d", ch, pos)
@@ -556,7 +556,7 @@ func parse(s string, wildcardAllowed bool) (*PatternNode, error) {
 				state = stateKeyValueValue
 			case ']':
 				// End of key-value
-				result = NewKeyValue(result, keyValueKey, currentToken.String())
+				result = NewPatternKeyValue(result, keyValueKey, currentToken.String())
 				currentToken.Reset()
 				keyValueKey = ""
 				state = stateExpectDotOrEnd
@@ -589,9 +589,9 @@ func parse(s string, wildcardAllowed bool) (*PatternNode, error) {
 	case stateStart:
 		// Empty path
 	case stateField:
-		result = NewDotString(result, currentToken.String())
+		result = NewPatternDotString(result, currentToken.String())
 	case stateDotStar:
-		result = &PathNode{prev: result, index: tagDotStar}
+		result = NewPatternDotStar(result)
 	case stateExpectDotOrEnd:
 		// Already complete
 	case stateFieldStart:
@@ -620,7 +620,7 @@ func parse(s string, wildcardAllowed bool) (*PatternNode, error) {
 		return nil, fmt.Errorf("parser error at position %d", pos)
 	}
 
-	return (*PatternNode)(result), nil
+	return result, nil
 }
 
 // ParsePath parses a path string. Wildcards are not allowed.
