@@ -172,13 +172,6 @@
         "schema": "prod",
         "serverless": true,
         "state": "IDLE"
-      },
-      "changes": {
-        "id": {
-          "action": "skip",
-          "reason": "builtin_rule",
-          "remote": "[UUID]"
-        }
       }
     },
     "resources.pipelines.my_default_python_etl.permissions": {

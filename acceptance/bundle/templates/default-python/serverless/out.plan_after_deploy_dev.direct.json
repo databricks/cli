@@ -161,13 +161,6 @@
         "tags": {
           "dev": "[USERNAME]"
         }
-      },
-      "changes": {
-        "id": {
-          "action": "skip",
-          "reason": "builtin_rule",
-          "remote": "[UUID]"
-        }
       }
     }
   }
