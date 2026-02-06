@@ -261,7 +261,7 @@ func TestPathAndPatternNode(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Test pattern parsing and roundtrip
-			_, parsedPattern, err := Parse(tt.String, true)
+			parsedPattern, err := ParsePattern(tt.String)
 			if assert.NoError(t, err, "ParsePattern() should not error") {
 				assert.Equal(t, tt.patternNode, parsedPattern)
 				assert.Equal(t, tt.String, parsedPattern.String(), "Pattern roundtrip")
@@ -276,13 +276,13 @@ func TestPathAndPatternNode(t *testing.T) {
 			// Test path parsing
 			if tt.PathError != "" {
 				// Wildcard pattern - should fail to parse as path
-				_, _, err := Parse(tt.String, false)
+				_, err := ParsePath(tt.String)
 				if assert.Error(t, err) {
 					assert.Contains(t, err.Error(), tt.PathError)
 				}
 			} else {
 				// Concrete path - should parse successfully as both path and pattern
-				parsedPath, _, err := Parse(tt.String, false)
+				parsedPath, err := ParsePath(tt.String)
 				if assert.NoError(t, err, "ParsePath() should not error") {
 					assert.Equal(t, tt.pathNode, parsedPath)
 					assert.Equal(t, tt.String, parsedPath.String(), "Path roundtrip")
@@ -537,7 +537,7 @@ func TestParseErrors(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, _, err := Parse(tt.input, true) // Allow wildcards in error tests
+			_, err := ParsePattern(tt.input) // Allow wildcards in error tests
 			if assert.Error(t, err) {
 				assert.Equal(t, tt.error, err.Error())
 			}
@@ -640,7 +640,7 @@ func TestPrefixAndSkipPrefix(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
-			path, _, err := Parse(tt.input, false)
+			path, err := ParsePath(tt.input)
 			assert.NoError(t, err)
 
 			// Test Prefix
@@ -685,9 +685,7 @@ func TestLen(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
-			var path *PathNode
-			var err error
-			path, _, err = Parse(tt.input, false)
+			path, err := ParsePath(tt.input)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, path.Len())
 		})
@@ -851,10 +849,10 @@ func TestHasPrefix(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			path, _, err := Parse(tt.s, false)
+			path, err := ParsePath(tt.s)
 			require.NoError(t, err)
 
-			prefix, _, err := Parse(tt.prefix, false)
+			prefix, err := ParsePath(tt.prefix)
 			require.NoError(t, err)
 
 			result := path.HasPrefix(prefix)
@@ -1016,7 +1014,7 @@ func TestPathNodeYAMLRoundtrip(t *testing.T) {
 	for _, path := range paths {
 		t.Run(path, func(t *testing.T) {
 			// Parse -> Marshal -> Unmarshal -> compare
-			original, _, err := Parse(path, false)
+			original, err := ParsePath(path)
 			require.NoError(t, err)
 
 			data, err := yaml.Marshal(original)

@@ -177,6 +177,20 @@ func NewStringKey(prev *PathNode, fieldName string) *PathNode {
 	return NewBracketString(prev, fieldName)
 }
 
+func NewDotStar(prev *PathNode) *PathNode {
+	return &PathNode{
+		prev:  prev,
+		index: tagDotStar,
+	}
+}
+
+func NewBracketStar(prev *PathNode) *PathNode {
+	return &PathNode{
+		prev:  prev,
+		index: tagBracketStar,
+	}
+}
+
 func NewKeyValue(prev *PathNode, key, value string) *PathNode {
 	return &PathNode{
 		prev:  prev,
@@ -378,9 +392,9 @@ func NewPatternKeyValue(prev *PatternNode, key, value string) *PatternNode {
 //   - KEYVALUE_VALUE: (any except quote) -> KEYVALUE_VALUE, quote -> KEYVALUE_VALUE_QUOTE
 //   - KEYVALUE_VALUE_QUOTE: quote -> KEYVALUE_VALUE (escape), "]" -> EXPECT_DOT_OR_END
 //   - EXPECT_DOT_OR_END: "." -> FIELD_START, "[" -> BRACKET_OPEN, EOF -> END
-func Parse(s string, wildcardAllowed bool) (*PathNode, *PatternNode, error) {
+func parse(s string, wildcardAllowed bool) (*PatternNode, error) {
 	if s == "" {
-		return nil, nil, nil
+		return nil, nil
 	}
 
 	// State machine states
@@ -402,15 +416,13 @@ func Parse(s string, wildcardAllowed bool) (*PathNode, *PatternNode, error) {
 		stateEnd
 	)
 
-	// Parse into PathNode chain
-	var result *PathNode
 	state := stateStart
+	var result *PathNode
 	var currentToken strings.Builder
-	var keyValueKey string
+	var keyValueKey string // Stores the key part of [key='value']
 	pos := 0
 	hasWildcard := false
 
-parseLoop:
 	for pos < len(s) {
 		ch := s[pos]
 
@@ -425,7 +437,7 @@ parseLoop:
 				currentToken.WriteByte(ch)
 				state = stateField
 			} else {
-				return nil, nil, fmt.Errorf("unexpected character '%c' at position %d", ch, pos)
+				return nil, fmt.Errorf("unexpected character '%c' at position %d", ch, pos)
 			}
 
 		case stateFieldStart:
@@ -436,34 +448,34 @@ parseLoop:
 				currentToken.WriteByte(ch)
 				state = stateField
 			} else {
-				return nil, nil, fmt.Errorf("expected field name after '.' but got '%c' at position %d", ch, pos)
+				return nil, fmt.Errorf("expected field name after '.' but got '%c' at position %d", ch, pos)
 			}
 
 		case stateField:
 			if ch == '.' {
-				result = &PathNode{prev: result, key: currentToken.String(), index: tagDotString}
+				result = NewDotString(result, currentToken.String())
 				currentToken.Reset()
 				state = stateFieldStart
 			} else if ch == '[' {
-				result = &PathNode{prev: result, key: currentToken.String(), index: tagDotString}
+				result = NewDotString(result, currentToken.String())
 				currentToken.Reset()
 				state = stateBracketOpen
 			} else if !isReservedFieldChar(ch) {
 				currentToken.WriteByte(ch)
 			} else {
-				return nil, nil, fmt.Errorf("invalid character '%c' in field name at position %d", ch, pos)
+				return nil, fmt.Errorf("invalid character '%c' in field name at position %d", ch, pos)
 			}
 
 		case stateDotStar:
 			switch ch {
 			case '.':
-				result = &PathNode{prev: result, index: tagDotStar}
+				result = NewDotStar(result)
 				state = stateFieldStart
 			case '[':
-				result = &PathNode{prev: result, index: tagDotStar}
+				result = NewDotStar(result)
 				state = stateBracketOpen
 			default:
-				return nil, nil, fmt.Errorf("unexpected character '%c' after '.*' at position %d", ch, pos)
+				return nil, fmt.Errorf("unexpected character '%c' after '.*' at position %d", ch, pos)
 			}
 
 		case stateBracketOpen:
@@ -479,7 +491,7 @@ parseLoop:
 				currentToken.WriteByte(ch)
 				state = stateKeyValueKey
 			} else {
-				return nil, nil, fmt.Errorf("unexpected character '%c' after '[' at position %d", ch, pos)
+				return nil, fmt.Errorf("unexpected character '%c' after '[' at position %d", ch, pos)
 			}
 
 		case stateIndex:
@@ -488,13 +500,13 @@ parseLoop:
 			} else if ch == ']' {
 				index, err := strconv.Atoi(currentToken.String())
 				if err != nil {
-					return nil, nil, fmt.Errorf("invalid index '%s' at position %d", currentToken.String(), pos-len(currentToken.String()))
+					return nil, fmt.Errorf("invalid index '%s' at position %d", currentToken.String(), pos-len(currentToken.String()))
 				}
-				result = &PathNode{prev: result, index: index}
+				result = NewIndex(result, index)
 				currentToken.Reset()
 				state = stateExpectDotOrEnd
 			} else {
-				return nil, nil, fmt.Errorf("unexpected character '%c' in index at position %d", ch, pos)
+				return nil, fmt.Errorf("unexpected character '%c' in index at position %d", ch, pos)
 			}
 
 		case stateMapKey:
@@ -508,22 +520,24 @@ parseLoop:
 		case stateMapKeyQuote:
 			switch ch {
 			case '\'':
+				// Escaped quote - add single quote to key and continue
 				currentToken.WriteByte('\'')
 				state = stateMapKey
 			case ']':
-				result = &PathNode{prev: result, key: currentToken.String(), index: tagBracketString}
+				// End of map key
+				result = NewBracketString(result, currentToken.String())
 				currentToken.Reset()
 				state = stateExpectDotOrEnd
 			default:
-				return nil, nil, fmt.Errorf("unexpected character '%c' after quote in map key at position %d", ch, pos)
+				return nil, fmt.Errorf("unexpected character '%c' after quote in map key at position %d", ch, pos)
 			}
 
 		case stateWildcard:
 			if ch == ']' {
-				result = &PathNode{prev: result, index: tagBracketStar}
+				result = NewBracketStar(result)
 				state = stateExpectDotOrEnd
 			} else {
-				return nil, nil, fmt.Errorf("unexpected character '%c' after '*' at position %d", ch, pos)
+				return nil, fmt.Errorf("unexpected character '%c' after '*' at position %d", ch, pos)
 			}
 
 		case stateKeyValueKey:
@@ -534,14 +548,14 @@ parseLoop:
 			} else if !isReservedFieldChar(ch) {
 				currentToken.WriteByte(ch)
 			} else {
-				return nil, nil, fmt.Errorf("unexpected character '%c' in key-value key at position %d", ch, pos)
+				return nil, fmt.Errorf("unexpected character '%c' in key-value key at position %d", ch, pos)
 			}
 
 		case stateKeyValueEquals:
 			if ch == '\'' {
 				state = stateKeyValueValue
 			} else {
-				return nil, nil, fmt.Errorf("expected quote after '=' but got '%c' at position %d", ch, pos)
+				return nil, fmt.Errorf("expected quote after '=' but got '%c' at position %d", ch, pos)
 			}
 
 		case stateKeyValueValue:
@@ -557,12 +571,12 @@ parseLoop:
 				currentToken.WriteByte(ch)
 				state = stateKeyValueValue
 			case ']':
-				result = &PathNode{prev: result, key: keyValueKey, index: tagKeyValue, value: currentToken.String()}
+				result = NewKeyValue(result, keyValueKey, currentToken.String())
 				currentToken.Reset()
 				keyValueKey = ""
 				state = stateExpectDotOrEnd
 			default:
-				return nil, nil, fmt.Errorf("unexpected character '%c' after quote in key-value at position %d", ch, pos)
+				return nil, fmt.Errorf("unexpected character '%c' after quote in key-value at position %d", ch, pos)
 			}
 
 		case stateExpectDotOrEnd:
@@ -572,14 +586,14 @@ parseLoop:
 			case '[':
 				state = stateBracketOpen
 			default:
-				return nil, nil, fmt.Errorf("unexpected character '%c' at position %d", ch, pos)
+				return nil, fmt.Errorf("unexpected character '%c' at position %d", ch, pos)
 			}
 
 		case stateEnd:
-			break parseLoop
+			break
 
 		default:
-			return nil, nil, fmt.Errorf("parser error at position %d", pos)
+			return nil, fmt.Errorf("parser error at position %d", pos)
 		}
 
 		pos++
@@ -590,58 +604,54 @@ parseLoop:
 	case stateStart:
 		// Empty path
 	case stateField:
-		result = &PathNode{prev: result, key: currentToken.String(), index: tagDotString}
+		result = NewDotString(result, currentToken.String())
 	case stateDotStar:
-		result = &PathNode{prev: result, index: tagDotStar}
+		result = NewDotStar(result)
 	case stateExpectDotOrEnd:
 		// Already complete
 	case stateFieldStart:
-		return nil, nil, errors.New("unexpected end of input after '.'")
+		return nil, errors.New("unexpected end of input after '.'")
 	case stateBracketOpen:
-		return nil, nil, errors.New("unexpected end of input after '['")
+		return nil, errors.New("unexpected end of input after '['")
 	case stateIndex:
-		return nil, nil, errors.New("unexpected end of input while parsing index")
+		return nil, errors.New("unexpected end of input while parsing index")
 	case stateMapKey:
-		return nil, nil, errors.New("unexpected end of input while parsing map key")
+		return nil, errors.New("unexpected end of input while parsing map key")
 	case stateMapKeyQuote:
-		return nil, nil, errors.New("unexpected end of input after quote in map key")
+		return nil, errors.New("unexpected end of input after quote in map key")
 	case stateWildcard:
-		return nil, nil, errors.New("unexpected end of input after wildcard '*'")
+		return nil, errors.New("unexpected end of input after wildcard '*'")
 	case stateKeyValueKey:
-		return nil, nil, errors.New("unexpected end of input while parsing key-value key")
+		return nil, errors.New("unexpected end of input while parsing key-value key")
 	case stateKeyValueEquals:
-		return nil, nil, errors.New("unexpected end of input after '=' in key-value")
+		return nil, errors.New("unexpected end of input after '=' in key-value")
 	case stateKeyValueValue:
-		return nil, nil, errors.New("unexpected end of input while parsing key-value value")
+		return nil, errors.New("unexpected end of input while parsing key-value value")
 	case stateKeyValueValueQuote:
-		return nil, nil, errors.New("unexpected end of input after quote in key-value value")
+		return nil, errors.New("unexpected end of input after quote in key-value value")
 	case stateEnd:
 		// Already complete
 	default:
-		return nil, nil, fmt.Errorf("parser error at position %d", pos)
+		return nil, fmt.Errorf("parser error at position %d", pos)
 	}
 
 	// Check wildcard constraint
 	if hasWildcard && !wildcardAllowed {
-		return nil, nil, errors.New("wildcards not allowed in path")
+		return nil, errors.New("wildcards not allowed in path")
 	}
 
-	if wildcardAllowed {
-		return nil, (*PatternNode)(result), nil
-	}
-	return result, nil, nil
+	return (*PatternNode)(result), nil
 }
 
 // ParsePath parses a path string. Wildcards are not allowed.
 func ParsePath(s string) (*PathNode, error) {
-	path, _, err := Parse(s, false)
-	return path, err
+	pattern, err := parse(s, false)
+	return (*PathNode)(pattern), err
 }
 
 // ParsePattern parses a pattern string. Wildcards are allowed.
 func ParsePattern(s string) (*PatternNode, error) {
-	_, pattern, err := Parse(s, true)
-	return pattern, err
+	return parse(s, true)
 }
 
 // MustParsePath parses a path string and panics on error. Wildcards are not allowed.
@@ -711,12 +721,12 @@ func PureReferenceToPath(s string) (*PathNode, bool) {
 		return nil, false
 	}
 
-	pathNode, _, err := Parse(ref.References()[0], false)
+	pattern, err := parse(ref.References()[0], false)
 	if err != nil {
 		return nil, false
 	}
 
-	return pathNode, true
+	return (*PathNode)(pattern), true
 }
 
 // SkipPrefix returns a new PathNode that skips the first n components of the path.
@@ -866,13 +876,13 @@ func (p *PathNode) UnmarshalYAML(unmarshal func(any) error) error {
 	if err := unmarshal(&s); err != nil {
 		return err
 	}
-	parsed, _, err := Parse(s, false)
+	parsed, err := parse(s, false)
 	if err != nil {
 		return err
 	}
 	if parsed == nil {
 		return nil
 	}
-	*p = *parsed
+	*p = *(*PathNode)(parsed)
 	return nil
 }
