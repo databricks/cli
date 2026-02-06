@@ -2,6 +2,7 @@ package resources
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/databricks/cli/bundle/config/resources"
 
@@ -97,4 +98,16 @@ func Lookup(b *bundle.Bundle, key string, filters ...Filter) (Reference, error) 
 	default:
 		panic("unreachable")
 	}
+}
+
+// LookupByPrefix returns all resources whose key starts with the given prefix.
+func LookupByPrefix(b *bundle.Bundle, prefix string, filters ...Filter) []Reference {
+	keyOnly, _ := References(b, filters...)
+	var matches []Reference
+	for k, refs := range keyOnly {
+		if strings.HasPrefix(k, prefix) {
+			matches = append(matches, refs...)
+		}
+	}
+	return matches
 }
