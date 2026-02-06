@@ -15,57 +15,45 @@
                 "type": "object",
                 "properties": {
                   "custom_description": {
-                    "$ref": "#/$defs/string",
-                    "x-since-version": "v0.279.0"
+                    "$ref": "#/$defs/string"
                   },
                   "custom_summary": {
-                    "$ref": "#/$defs/string",
-                    "x-since-version": "v0.279.0"
+                    "$ref": "#/$defs/string"
                   },
                   "display_name": {
-                    "$ref": "#/$defs/string",
-                    "x-since-version": "v0.279.0"
+                    "$ref": "#/$defs/string"
                   },
                   "evaluation": {
-                    "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertV2Evaluation",
-                    "x-since-version": "v0.279.0"
+                    "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertV2Evaluation"
                   },
                   "file_path": {
                     "$ref": "#/$defs/string"
                   },
                   "lifecycle": {
-                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle",
-                    "x-since-version": "v0.279.0"
+                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                   },
                   "parent_path": {
-                    "$ref": "#/$defs/string",
-                    "x-since-version": "v0.279.0"
+                    "$ref": "#/$defs/string"
                   },
                   "permissions": {
-                    "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.AlertPermission",
-                    "x-since-version": "v0.279.0"
+                    "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.AlertPermission"
                   },
                   "query_text": {
-                    "$ref": "#/$defs/string",
-                    "x-since-version": "v0.279.0"
+                    "$ref": "#/$defs/string"
                   },
                   "run_as": {
-                    "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertV2RunAs",
-                    "x-since-version": "v0.279.0"
+                    "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertV2RunAs"
                   },
                   "run_as_user_name": {
                     "$ref": "#/$defs/string",
                     "deprecationMessage": "This field is deprecated",
-                    "x-since-version": "v0.279.0",
                     "deprecated": true
                   },
                   "schedule": {
-                    "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.CronSchedule",
-                    "x-since-version": "v0.279.0"
+                    "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.CronSchedule"
                   },
                   "warehouse_id": {
-                    "$ref": "#/$defs/string",
-                    "x-since-version": "v0.279.0"
+                    "$ref": "#/$defs/string"
                   }
                 },
                 "additionalProperties": false,
@@ -81,20 +69,16 @@
                 "type": "object",
                 "properties": {
                   "group_name": {
-                    "$ref": "#/$defs/string",
-                    "x-since-version": "v0.279.0"
+                    "$ref": "#/$defs/string"
                   },
                   "level": {
-                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.AlertPermissionLevel",
-                    "x-since-version": "v0.279.0"
+                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.AlertPermissionLevel"
                   },
                   "service_principal_name": {
-                    "$ref": "#/$defs/string",
-                    "x-since-version": "v0.279.0"
+                    "$ref": "#/$defs/string"
                   },
                   "user_name": {
-                    "$ref": "#/$defs/string",
-                    "x-since-version": "v0.279.0"
+                    "$ref": "#/$defs/string"
                   }
                 },
                 "additionalProperties": false,
@@ -119,8 +103,7 @@
                     "x-since-version": "v0.243.0"
                   },
                   "compute_size": {
-                    "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.ComputeSize",
-                    "x-since-version": "v0.273.0"
+                    "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.ComputeSize"
                   },
                   "config": {
                     "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.AppConfig",
@@ -139,8 +122,7 @@
                   },
                   "lifecycle": {
                     "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
-                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle",
-                    "x-since-version": "v0.268.0"
+                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                   },
                   "name": {
                     "description": "The name of the app. The name must contain only lowercase alphanumeric characters and hyphens.\nIt must be unique within the workspace.",
@@ -234,6 +216,91 @@
                 "enum": [
                   "CAN_MANAGE",
                   "CAN_USE"
+                ]
+              },
+              "resources.Catalog": {
+                "type": "object",
+                "properties": {
+                  "comment": {
+                    "$ref": "#/$defs/string"
+                  },
+                  "connection_name": {
+                    "$ref": "#/$defs/string"
+                  },
+                  "grants": {
+                    "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.CatalogGrant"
+                  },
+                  "lifecycle": {
+                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
+                  },
+                  "name": {
+                    "$ref": "#/$defs/string"
+                  },
+                  "options": {
+                    "$ref": "#/$defs/map/string"
+                  },
+                  "properties": {
+                    "$ref": "#/$defs/map/string"
+                  },
+                  "provider_name": {
+                    "$ref": "#/$defs/string"
+                  },
+                  "share_name": {
+                    "$ref": "#/$defs/string"
+                  },
+                  "storage_root": {
+                    "$ref": "#/$defs/string"
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
+                  "name"
+                ]
+              },
+              "resources.CatalogGrant": {
+                "type": "object",
+                "properties": {
+                  "principal": {
+                    "$ref": "#/$defs/string"
+                  },
+                  "privileges": {
+                    "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.CatalogGrantPrivilege"
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
+                  "privileges",
+                  "principal"
+                ]
+              },
+              "resources.CatalogGrantPrivilege": {
+                "type": "string",
+                "enum": [
+                  "ALL_PRIVILEGES",
+                  "APPLY_TAG",
+                  "CREATE_CONNECTION",
+                  "CREATE_EXTERNAL_LOCATION",
+                  "CREATE_EXTERNAL_TABLE",
+                  "CREATE_EXTERNAL_VOLUME",
+                  "CREATE_FOREIGN_CATALOG",
+                  "CREATE_FUNCTION",
+                  "CREATE_MANAGED_STORAGE",
+                  "CREATE_MATERIALIZED_VIEW",
+                  "CREATE_MODEL",
+                  "CREATE_SCHEMA",
+                  "CREATE_STORAGE_CREDENTIAL",
+                  "CREATE_TABLE",
+                  "CREATE_VOLUME",
+                  "EXECUTE",
+                  "MANAGE",
+                  "MODIFY",
+                  "READ_VOLUME",
+                  "REFRESH",
+                  "SELECT",
+                  "USE_CATALOG",
+                  "USE_CONNECTION",
+                  "USE_SCHEMA",
+                  "WRITE_VOLUME"
                 ]
               },
               "resources.Cluster": {
@@ -338,8 +405,7 @@
                   },
                   "lifecycle": {
                     "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
-                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle",
-                    "x-since-version": "v0.268.0"
+                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                   },
                   "node_type_id": {
                     "description": "This field encodes, through a single value, the resources available to each of\nthe Spark nodes in this cluster. For example, the Spark nodes can be provisioned\nand optimized for memory or compute intensive workloads. A list of available node\ntypes can be retrieved by using the :method:clusters/listNodeTypes API call.",
@@ -464,13 +530,11 @@
                   },
                   "dataset_catalog": {
                     "description": "Sets the default catalog for all datasets in this dashboard. When set, this overrides the catalog specified in individual dataset definitions.",
-                    "$ref": "#/$defs/string",
-                    "x-since-version": "v0.281.0"
+                    "$ref": "#/$defs/string"
                   },
                   "dataset_schema": {
                     "description": "Sets the default schema for all datasets in this dashboard. When set, this overrides the schema specified in individual dataset definitions.",
-                    "$ref": "#/$defs/string",
-                    "x-since-version": "v0.281.0"
+                    "$ref": "#/$defs/string"
                   },
                   "display_name": {
                     "description": "The display name of the dashboard.",
@@ -492,8 +556,7 @@
                   },
                   "lifecycle": {
                     "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
-                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle",
-                    "x-since-version": "v0.268.0"
+                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                   },
                   "lifecycle_state": {
                     "description": "The state of the dashboard resource. Used for tracking trashed status.",
@@ -586,8 +649,7 @@
                   },
                   "lifecycle": {
                     "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
-                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle",
-                    "x-since-version": "v0.268.0"
+                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                   },
                   "name": {
                     "description": "The name of the catalog in UC.",
@@ -613,13 +675,11 @@
                   },
                   "custom_tags": {
                     "description": "Custom tags associated with the instance. This field is only included on create and update responses.",
-                    "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/database.CustomTag",
-                    "x-since-version": "v0.273.0"
+                    "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/database.CustomTag"
                   },
                   "enable_pg_native_login": {
                     "description": "Whether to enable PG native password login on the instance. Defaults to false.",
-                    "$ref": "#/$defs/bool",
-                    "x-since-version": "v0.267.0"
+                    "$ref": "#/$defs/bool"
                   },
                   "enable_readable_secondaries": {
                     "description": "Whether to enable secondaries to serve read-only traffic. Defaults to false.",
@@ -628,8 +688,7 @@
                   },
                   "lifecycle": {
                     "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
-                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle",
-                    "x-since-version": "v0.268.0"
+                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                   },
                   "name": {
                     "description": "The name of the instance. This is the unique identifier for the instance.",
@@ -662,8 +721,7 @@
                   },
                   "usage_policy_id": {
                     "description": "The desired usage policy to associate with the instance.",
-                    "$ref": "#/$defs/string",
-                    "x-since-version": "v0.273.0"
+                    "$ref": "#/$defs/string"
                   }
                 },
                 "additionalProperties": false,
@@ -768,8 +826,7 @@
                   },
                   "lifecycle": {
                     "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
-                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle",
-                    "x-since-version": "v0.268.0"
+                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                   },
                   "max_concurrent_runs": {
                     "description": "An optional maximum allowed number of concurrent runs of the job.\nSet this value if you want to be able to execute multiple runs of the same job concurrently.\nThis is useful for example if you trigger your job on a frequent schedule and want to allow consecutive runs to overlap with each other, or if you want to trigger multiple runs which differ by their input parameters.\nThis setting affects only new runs. For example, suppose the job’s concurrency is 4 and there are 4 concurrent active runs. Then setting the concurrency to 3 won’t kill any of the active runs.\nHowever, from then on, new runs are skipped unless there are fewer than 3 active runs.\nThis value cannot exceed 1000. Setting this value to `0` causes all new runs to be skipped.",
@@ -889,8 +946,7 @@
                 "properties": {
                   "prevent_destroy": {
                     "description": "Lifecycle setting to prevent the resource from being destroyed.",
-                    "$ref": "#/$defs/bool",
-                    "x-since-version": "v0.268.0"
+                    "$ref": "#/$defs/bool"
                   }
                 },
                 "additionalProperties": false
@@ -905,8 +961,7 @@
                   },
                   "lifecycle": {
                     "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
-                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle",
-                    "x-since-version": "v0.268.0"
+                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                   },
                   "name": {
                     "description": "Experiment name.",
@@ -972,8 +1027,7 @@
                   },
                   "lifecycle": {
                     "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
-                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle",
-                    "x-since-version": "v0.268.0"
+                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                   },
                   "name": {
                     "description": "Register models under this name",
@@ -1060,8 +1114,7 @@
                   },
                   "lifecycle": {
                     "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
-                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle",
-                    "x-since-version": "v0.268.0"
+                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                   },
                   "name": {
                     "description": "The name of the serving endpoint. This field is required and must be unique across a Databricks workspace.\nAn endpoint name can consist of alphanumeric characters, dashes, and underscores.",
@@ -1245,8 +1298,7 @@
                   },
                   "lifecycle": {
                     "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
-                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle",
-                    "x-since-version": "v0.268.0"
+                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                   },
                   "name": {
                     "description": "Friendly identifier for this pipeline.",
@@ -1321,8 +1373,7 @@
                     "description": "Usage policy of this pipeline.",
                     "$ref": "#/$defs/string",
                     "x-databricks-preview": "PRIVATE",
-                    "doNotSuggest": true,
-                    "x-since-version": "v0.276.0"
+                    "doNotSuggest": true
                   }
                 },
                 "additionalProperties": false,
@@ -1362,6 +1413,114 @@
                   "CAN_VIEW"
                 ]
               },
+              "resources.PostgresBranch": {
+                "type": "object",
+                "properties": {
+                  "branch_id": {
+                    "$ref": "#/$defs/string"
+                  },
+                  "expire_time": {
+                    "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/time.Time"
+                  },
+                  "is_protected": {
+                    "$ref": "#/$defs/bool"
+                  },
+                  "lifecycle": {
+                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
+                  },
+                  "no_expiry": {
+                    "$ref": "#/$defs/bool"
+                  },
+                  "parent": {
+                    "$ref": "#/$defs/string"
+                  },
+                  "source_branch": {
+                    "$ref": "#/$defs/string"
+                  },
+                  "source_branch_lsn": {
+                    "$ref": "#/$defs/string"
+                  },
+                  "source_branch_time": {
+                    "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/time.Time"
+                  },
+                  "ttl": {
+                    "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/duration.Duration"
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
+                  "branch_id",
+                  "parent"
+                ]
+              },
+              "resources.PostgresEndpoint": {
+                "type": "object",
+                "properties": {
+                  "autoscaling_limit_max_cu": {
+                    "$ref": "#/$defs/float64"
+                  },
+                  "autoscaling_limit_min_cu": {
+                    "$ref": "#/$defs/float64"
+                  },
+                  "disabled": {
+                    "$ref": "#/$defs/bool"
+                  },
+                  "endpoint_id": {
+                    "$ref": "#/$defs/string"
+                  },
+                  "endpoint_type": {
+                    "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.EndpointType"
+                  },
+                  "lifecycle": {
+                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
+                  },
+                  "no_suspension": {
+                    "$ref": "#/$defs/bool"
+                  },
+                  "parent": {
+                    "$ref": "#/$defs/string"
+                  },
+                  "settings": {
+                    "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.EndpointSettings"
+                  },
+                  "suspend_timeout_duration": {
+                    "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/duration.Duration"
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
+                  "endpoint_id",
+                  "parent",
+                  "endpoint_type"
+                ]
+              },
+              "resources.PostgresProject": {
+                "type": "object",
+                "properties": {
+                  "default_endpoint_settings": {
+                    "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.ProjectDefaultEndpointSettings"
+                  },
+                  "display_name": {
+                    "$ref": "#/$defs/string"
+                  },
+                  "history_retention_duration": {
+                    "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/duration.Duration"
+                  },
+                  "lifecycle": {
+                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
+                  },
+                  "pg_version": {
+                    "$ref": "#/$defs/int"
+                  },
+                  "project_id": {
+                    "$ref": "#/$defs/string"
+                  }
+                },
+                "additionalProperties": false,
+                "required": [
+                  "project_id"
+                ]
+              },
               "resources.QualityMonitor": {
                 "type": "object",
                 "properties": {
@@ -1398,8 +1557,7 @@
                   },
                   "lifecycle": {
                     "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
-                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle",
-                    "x-since-version": "v0.268.0"
+                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                   },
                   "notifications": {
                     "description": "[Create:OPT Update:OPT] Field for specifying notification settings.",
@@ -1458,12 +1616,10 @@
                 "type": "object",
                 "properties": {
                   "aliases": {
-                    "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/catalog.RegisteredModelAlias",
-                    "x-since-version": "v0.273.0"
+                    "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/catalog.RegisteredModelAlias"
                   },
                   "browse_only": {
-                    "$ref": "#/$defs/bool",
-                    "x-since-version": "v0.273.0"
+                    "$ref": "#/$defs/bool"
                   },
                   "catalog_name": {
                     "description": "The name of the catalog where the schema and the registered model reside",
@@ -1476,16 +1632,13 @@
                     "x-since-version": "v0.229.0"
                   },
                   "created_at": {
-                    "$ref": "#/$defs/int64",
-                    "x-since-version": "v0.273.0"
+                    "$ref": "#/$defs/int64"
                   },
                   "created_by": {
-                    "$ref": "#/$defs/string",
-                    "x-since-version": "v0.273.0"
+                    "$ref": "#/$defs/string"
                   },
                   "full_name": {
-                    "$ref": "#/$defs/string",
-                    "x-since-version": "v0.273.0"
+                    "$ref": "#/$defs/string"
                   },
                   "grants": {
                     "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.Grant",
@@ -1493,12 +1646,10 @@
                   },
                   "lifecycle": {
                     "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
-                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle",
-                    "x-since-version": "v0.268.0"
+                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                   },
                   "metastore_id": {
-                    "$ref": "#/$defs/string",
-                    "x-since-version": "v0.273.0"
+                    "$ref": "#/$defs/string"
                   },
                   "name": {
                     "description": "The name of the registered model",
@@ -1506,8 +1657,7 @@
                     "x-since-version": "v0.229.0"
                   },
                   "owner": {
-                    "$ref": "#/$defs/string",
-                    "x-since-version": "v0.273.0"
+                    "$ref": "#/$defs/string"
                   },
                   "schema_name": {
                     "description": "The name of the schema where the registered model resides",
@@ -1520,12 +1670,10 @@
                     "x-since-version": "v0.229.0"
                   },
                   "updated_at": {
-                    "$ref": "#/$defs/int64",
-                    "x-since-version": "v0.273.0"
+                    "$ref": "#/$defs/int64"
                   },
                   "updated_by": {
-                    "$ref": "#/$defs/string",
-                    "x-since-version": "v0.273.0"
+                    "$ref": "#/$defs/string"
                   }
                 },
                 "additionalProperties": false,
@@ -1550,8 +1698,7 @@
                   },
                   "lifecycle": {
                     "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
-                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle",
-                    "x-since-version": "v0.268.0"
+                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                   },
                   "name": {
                     "description": "Name of schema, relative to parent catalog.",
@@ -1579,12 +1726,10 @@
                 "type": "object",
                 "properties": {
                   "principal": {
-                    "$ref": "#/$defs/string",
-                    "x-since-version": "v0.267.0"
+                    "$ref": "#/$defs/string"
                   },
                   "privileges": {
-                    "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.SchemaGrantPrivilege",
-                    "x-since-version": "v0.267.0"
+                    "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.SchemaGrantPrivilege"
                   }
                 },
                 "additionalProperties": false,
@@ -1629,8 +1774,7 @@
                   },
                   "lifecycle": {
                     "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
-                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle",
-                    "x-since-version": "v0.268.0"
+                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                   },
                   "name": {
                     "description": "Scope name requested by the user. Scope names are unique.",
@@ -1728,8 +1872,7 @@
                   },
                   "lifecycle": {
                     "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
-                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle",
-                    "x-since-version": "v0.268.0"
+                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                   },
                   "max_num_clusters": {
                     "description": "Maximum number of clusters that the autoscaler will create to handle\nconcurrent queries.\n\nSupported values:\n- Must be \u003e= min_num_clusters\n- Must be \u003c= 40.\n\nDefaults to min_clusters if unset.",
@@ -1805,24 +1948,19 @@
                 "description": "Next field marker: 18",
                 "properties": {
                   "database_instance_name": {
-                    "$ref": "#/$defs/string",
-                    "x-since-version": "v0.266.0"
+                    "$ref": "#/$defs/string"
                   },
                   "lifecycle": {
-                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle",
-                    "x-since-version": "v0.268.0"
+                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                   },
                   "logical_database_name": {
-                    "$ref": "#/$defs/string",
-                    "x-since-version": "v0.266.0"
+                    "$ref": "#/$defs/string"
                   },
                   "name": {
-                    "$ref": "#/$defs/string",
-                    "x-since-version": "v0.266.0"
+                    "$ref": "#/$defs/string"
                   },
                   "spec": {
-                    "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.SyncedTableSpec",
-                    "x-since-version": "v0.266.0"
+                    "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.SyncedTableSpec"
                   }
                 },
                 "additionalProperties": false,
@@ -1849,8 +1987,7 @@
                   },
                   "lifecycle": {
                     "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
-                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle",
-                    "x-since-version": "v0.268.0"
+                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
                   },
                   "name": {
                     "description": "The name of the volume",
@@ -2311,14 +2448,16 @@
               "type": "object",
               "properties": {
                 "alerts": {
-                  "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Alert",
-                  "x-since-version": "v0.279.0"
+                  "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Alert"
                 },
                 "apps": {
                   "description": "The app resource defines a Databricks app.",
                   "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.App",
                   "markdownDescription": "The app resource defines a [Databricks app](https://docs.databricks.com/api/workspace/apps/create). For information about Databricks Apps, see [link](https://docs.databricks.com/dev-tools/databricks-apps/index.html).",
                   "x-since-version": "v0.239.0"
+                },
+                "catalogs": {
+                  "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Catalog"
                 },
                 "clusters": {
                   "description": "The cluster definitions for the bundle, where each key is the name of a cluster.",
@@ -2370,6 +2509,15 @@
                   "markdownDescription": "The pipeline definitions for the bundle, where each key is the name of the pipeline. See [pipelines](https://docs.databricks.com/dev-tools/bundles/resources.html#pipelines).",
                   "x-since-version": "v0.229.0"
                 },
+                "postgres_branches": {
+                  "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.PostgresBranch"
+                },
+                "postgres_endpoints": {
+                  "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.PostgresEndpoint"
+                },
+                "postgres_projects": {
+                  "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.PostgresProject"
+                },
                 "quality_monitors": {
                   "description": "The quality monitor definitions for the bundle, where each key is the name of the quality monitor.",
                   "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.QualityMonitor",
@@ -2401,8 +2549,7 @@
                   "x-since-version": "v0.260.0"
                 },
                 "synced_database_tables": {
-                  "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.SyncedDatabaseTable",
-                  "x-since-version": "v0.266.0"
+                  "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.SyncedDatabaseTable"
                 },
                 "volumes": {
                   "description": "The volume definitions for the bundle, where each key is the name of the volume.",
@@ -2629,6 +2776,17 @@
           }
         },
         "databricks-sdk-go": {
+          "common": {
+            "types": {
+              "duration.Duration": {
+                "type": "string"
+              },
+              "time.Time": {
+                "type": "object",
+                "additionalProperties": false
+              }
+            }
+          },
           "service": {
             "apps.AppDeployment": {
               "type": "object",
@@ -2708,8 +2866,7 @@
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppResourceExperiment"
                 },
                 "genie_space": {
-                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppResourceGenieSpace",
-                  "x-since-version": "v0.273.0"
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppResourceGenieSpace"
                 },
                 "job": {
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppResourceJob",
@@ -2799,16 +2956,13 @@
               "type": "object",
               "properties": {
                 "name": {
-                  "$ref": "#/$defs/string",
-                  "x-since-version": "v0.273.0"
+                  "$ref": "#/$defs/string"
                 },
                 "permission": {
-                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppResourceGenieSpaceGenieSpacePermission",
-                  "x-since-version": "v0.273.0"
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.AppResourceGenieSpaceGenieSpacePermission"
                 },
                 "space_id": {
-                  "$ref": "#/$defs/string",
-                  "x-since-version": "v0.273.0"
+                  "$ref": "#/$defs/string"
                 }
               },
               "additionalProperties": false,
@@ -3285,29 +3439,23 @@
               "properties": {
                 "alias_name": {
                   "description": "Name of the alias, e.g. 'champion' or 'latest_stable'",
-                  "$ref": "#/$defs/string",
-                  "x-since-version": "v0.273.0"
+                  "$ref": "#/$defs/string"
                 },
                 "catalog_name": {
-                  "$ref": "#/$defs/string",
-                  "x-since-version": "v0.273.0"
+                  "$ref": "#/$defs/string"
                 },
                 "id": {
-                  "$ref": "#/$defs/string",
-                  "x-since-version": "v0.273.0"
+                  "$ref": "#/$defs/string"
                 },
                 "model_name": {
-                  "$ref": "#/$defs/string",
-                  "x-since-version": "v0.273.0"
+                  "$ref": "#/$defs/string"
                 },
                 "schema_name": {
-                  "$ref": "#/$defs/string",
-                  "x-since-version": "v0.273.0"
+                  "$ref": "#/$defs/string"
                 },
                 "version_num": {
                   "description": "Integer version number of the model version to which this alias points.",
-                  "$ref": "#/$defs/int",
-                  "x-since-version": "v0.273.0"
+                  "$ref": "#/$defs/int"
                 }
               },
               "additionalProperties": false
@@ -3749,8 +3897,7 @@
                   "x-since-version": "v0.252.0"
                 },
                 "java_dependencies": {
-                  "$ref": "#/$defs/slice/string",
-                  "x-since-version": "v0.271.0"
+                  "$ref": "#/$defs/slice/string"
                 }
               },
               "additionalProperties": false
@@ -3820,6 +3967,14 @@
               "additionalProperties": false,
               "required": [
                 "destination"
+              ]
+            },
+            "compute.HardwareAcceleratorType": {
+              "type": "string",
+              "description": "HardwareAcceleratorType: The type of hardware accelerator to use for compute workloads.\nNOTE: This enum is referenced and is intended to be used by other Databricks services\nthat need to specify hardware accelerator requirements for AI compute workloads.",
+              "enum": [
+                "GPU_1xA10",
+                "GPU_8xH100"
               ]
             },
             "compute.InitScriptInfo": {
@@ -4128,13 +4283,11 @@
               "properties": {
                 "key": {
                   "description": "The key of the custom tag.",
-                  "$ref": "#/$defs/string",
-                  "x-since-version": "v0.273.0"
+                  "$ref": "#/$defs/string"
                 },
                 "value": {
                   "description": "The value of the custom tag.",
-                  "$ref": "#/$defs/string",
-                  "x-since-version": "v0.273.0"
+                  "$ref": "#/$defs/string"
                 }
               },
               "additionalProperties": false
@@ -4182,18 +4335,15 @@
               "properties": {
                 "budget_policy_id": {
                   "description": "Budget policy to set on the newly created pipeline.",
-                  "$ref": "#/$defs/string",
-                  "x-since-version": "v0.279.0"
+                  "$ref": "#/$defs/string"
                 },
                 "storage_catalog": {
                   "description": "This field needs to be specified if the destination catalog is a managed postgres catalog.\n\nUC catalog for the pipeline to store intermediate files (checkpoints, event logs etc).\nThis needs to be a standard catalog where the user has permissions to create Delta tables.",
-                  "$ref": "#/$defs/string",
-                  "x-since-version": "v0.266.0"
+                  "$ref": "#/$defs/string"
                 },
                 "storage_schema": {
                   "description": "This field needs to be specified if the destination catalog is a managed postgres catalog.\n\nUC schema for the pipeline to store intermediate files (checkpoints, event logs etc).\nThis needs to be in the standard catalog where the user has permissions to create Delta tables.",
-                  "$ref": "#/$defs/string",
-                  "x-since-version": "v0.266.0"
+                  "$ref": "#/$defs/string"
                 }
               },
               "additionalProperties": false
@@ -4255,38 +4405,31 @@
               "properties": {
                 "create_database_objects_if_missing": {
                   "description": "If true, the synced table's logical database and schema resources in PG\nwill be created if they do not already exist.",
-                  "$ref": "#/$defs/bool",
-                  "x-since-version": "v0.266.0"
+                  "$ref": "#/$defs/bool"
                 },
                 "existing_pipeline_id": {
                   "description": "At most one of existing_pipeline_id and new_pipeline_spec should be defined.\n\nIf existing_pipeline_id is defined, the synced table will be bin packed into the existing pipeline\nreferenced. This avoids creating a new pipeline and allows sharing existing compute.\nIn this case, the scheduling_policy of this synced table must match the scheduling policy of the existing pipeline.",
-                  "$ref": "#/$defs/string",
-                  "x-since-version": "v0.266.0"
+                  "$ref": "#/$defs/string"
                 },
                 "new_pipeline_spec": {
                   "description": "At most one of existing_pipeline_id and new_pipeline_spec should be defined.\n\nIf new_pipeline_spec is defined, a new pipeline is created for this synced table. The location pointed to is used\nto store intermediate files (checkpoints, event logs etc). The caller must have write permissions to create Delta\ntables in the specified catalog and schema. Again, note this requires write permissions, whereas the source table\nonly requires read permissions.",
-                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.NewPipelineSpec",
-                  "x-since-version": "v0.266.0"
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.NewPipelineSpec"
                 },
                 "primary_key_columns": {
                   "description": "Primary Key columns to be used for data insert/update in the destination.",
-                  "$ref": "#/$defs/slice/string",
-                  "x-since-version": "v0.266.0"
+                  "$ref": "#/$defs/slice/string"
                 },
                 "scheduling_policy": {
                   "description": "Scheduling policy of the underlying pipeline.",
-                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.SyncedTableSchedulingPolicy",
-                  "x-since-version": "v0.266.0"
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.SyncedTableSchedulingPolicy"
                 },
                 "source_table_full_name": {
                   "description": "Three-part (catalog, schema, table) name of the source Delta table.",
-                  "$ref": "#/$defs/string",
-                  "x-since-version": "v0.266.0"
+                  "$ref": "#/$defs/string"
                 },
                 "timeseries_key": {
                   "description": "Time series key to deduplicate (tie-break) rows with the same primary key.",
-                  "$ref": "#/$defs/string",
-                  "x-since-version": "v0.266.0"
+                  "$ref": "#/$defs/string"
                 }
               },
               "additionalProperties": false
@@ -4314,23 +4457,19 @@
               "properties": {
                 "continuous_update_status": {
                   "description": "Detailed status of a synced table. Shown if the synced table is in the SYNCED_CONTINUOUS_UPDATE\nor the SYNCED_UPDATING_PIPELINE_RESOURCES state.",
-                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.SyncedTableContinuousUpdateStatus",
-                  "x-since-version": "v0.266.0"
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.SyncedTableContinuousUpdateStatus"
                 },
                 "failed_status": {
                   "description": "Detailed status of a synced table. Shown if the synced table is in the OFFLINE_FAILED or the\nSYNCED_PIPELINE_FAILED state.",
-                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.SyncedTableFailedStatus",
-                  "x-since-version": "v0.266.0"
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.SyncedTableFailedStatus"
                 },
                 "provisioning_status": {
                   "description": "Detailed status of a synced table. Shown if the synced table is in the\nPROVISIONING_PIPELINE_RESOURCES or the PROVISIONING_INITIAL_SNAPSHOT state.",
-                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.SyncedTableProvisioningStatus",
-                  "x-since-version": "v0.266.0"
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.SyncedTableProvisioningStatus"
                 },
                 "triggered_update_status": {
                   "description": "Detailed status of a synced table. Shown if the synced table is in the SYNCED_TRIGGERED_UPDATE\nor the SYNCED_NO_PENDING_UPDATE state.",
-                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.SyncedTableTriggeredUpdateStatus",
-                  "x-since-version": "v0.266.0"
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/database.SyncedTableTriggeredUpdateStatus"
                 }
               },
               "additionalProperties": false
@@ -4377,6 +4516,16 @@
                 "clean_room_name",
                 "notebook_name"
               ]
+            },
+            "jobs.Compute": {
+              "type": "object",
+              "properties": {
+                "hardware_accelerator": {
+                  "description": "Hardware accelerator configuration for Serverless GPU workloads.",
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.HardwareAcceleratorType"
+                }
+              },
+              "additionalProperties": false
             },
             "jobs.ComputeConfig": {
               "type": "object",
@@ -4457,8 +4606,7 @@
                 },
                 "task_retry_mode": {
                   "description": "Indicate whether the continuous job is applying task level retries or not. Defaults to NEVER.",
-                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.TaskRetryMode",
-                  "x-since-version": "v0.267.0"
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.TaskRetryMode"
                 }
               },
               "additionalProperties": false
@@ -5012,28 +5160,23 @@
               "properties": {
                 "aliases": {
                   "description": "Aliases of the model versions to monitor. Can only be used in conjunction with condition MODEL_ALIAS_SET.",
-                  "$ref": "#/$defs/slice/string",
-                  "x-since-version": "v0.279.0"
+                  "$ref": "#/$defs/slice/string"
                 },
                 "condition": {
                   "description": "The condition based on which to trigger a job run.",
-                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.ModelTriggerConfigurationCondition",
-                  "x-since-version": "v0.279.0"
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.ModelTriggerConfigurationCondition"
                 },
                 "min_time_between_triggers_seconds": {
                   "description": "If set, the trigger starts a run only after the specified amount of time has passed since\nthe last time the trigger fired. The minimum allowed value is 60 seconds.",
-                  "$ref": "#/$defs/int",
-                  "x-since-version": "v0.279.0"
+                  "$ref": "#/$defs/int"
                 },
                 "securable_name": {
                   "description": "Name of the securable to monitor (\"mycatalog.myschema.mymodel\" in the case of model-level triggers,\n\"mycatalog.myschema\" in the case of schema-level triggers) or empty in the case of metastore-level triggers.",
-                  "$ref": "#/$defs/string",
-                  "x-since-version": "v0.279.0"
+                  "$ref": "#/$defs/string"
                 },
                 "wait_after_last_change_seconds": {
                   "description": "If set, the trigger starts a run only after no model updates have occurred for the specified time\nand can be used to wait for a series of model updates before triggering a run. The\nminimum allowed value is 60 seconds.",
-                  "$ref": "#/$defs/int",
-                  "x-since-version": "v0.279.0"
+                  "$ref": "#/$defs/int"
                 }
               },
               "additionalProperties": false,
@@ -5674,6 +5817,10 @@
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.CleanRoomsNotebookTask",
                   "x-since-version": "v0.237.0"
                 },
+                "compute": {
+                  "description": "Task level compute configuration.",
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.Compute"
+                },
                 "condition_task": {
                   "description": "The task evaluates a condition that can be used to control the execution of other tasks when the `condition_task` field is present.\nThe condition task does not require a cluster to execute and does not support retries or notifications.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.ConditionTask",
@@ -5723,8 +5870,7 @@
                   "description": "An optional flag to disable the task. If set to true, the task will not run even if it is part of a job.",
                   "$ref": "#/$defs/bool",
                   "x-databricks-preview": "PRIVATE",
-                  "doNotSuggest": true,
-                  "x-since-version": "v0.271.0"
+                  "doNotSuggest": true
                 },
                 "email_notifications": {
                   "description": "An optional set of email addresses that is notified when runs of this task begin or complete as well as when this task is deleted. The default behavior is to not send any emails.",
@@ -5961,8 +6107,7 @@
                 "model": {
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.ModelTriggerConfiguration",
                   "x-databricks-preview": "PRIVATE",
-                  "doNotSuggest": true,
-                  "x-since-version": "v0.279.0"
+                  "doNotSuggest": true
                 },
                 "pause_status": {
                   "description": "Whether this trigger is paused or not.",
@@ -6084,8 +6229,7 @@
                   "description": "Source catalog for initial connection.\nThis is necessary for schema exploration in some database systems like Oracle, and optional but nice-to-have\nin some other database systems like Postgres.\nFor Oracle databases, this maps to a service name.",
                   "$ref": "#/$defs/string",
                   "x-databricks-preview": "PRIVATE",
-                  "doNotSuggest": true,
-                  "x-since-version": "v0.279.0"
+                  "doNotSuggest": true
                 }
               },
               "additionalProperties": false
@@ -6213,8 +6357,7 @@
                   "description": "Optional, Internal. Parameters required to establish an initial connection with the source.",
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.ConnectionParameters",
                   "x-databricks-preview": "PRIVATE",
-                  "doNotSuggest": true,
-                  "x-since-version": "v0.279.0"
+                  "doNotSuggest": true
                 },
                 "gateway_storage_catalog": {
                   "description": "Required, Immutable. The name of the catalog for the gateway pipeline's storage location.",
@@ -6243,7 +6386,7 @@
               "type": "object",
               "properties": {
                 "connection_name": {
-                  "description": "Immutable. The Unity Catalog connection that this ingestion pipeline uses to communicate with the source. This is used with connectors for applications like Salesforce, Workday, and so on.",
+                  "description": "The Unity Catalog connection that this ingestion pipeline uses to communicate with the source. This is used with\nboth connectors for applications like Salesforce, Workday, and so on, and also database connectors like Oracle,\n(connector_type = QUERY_BASED OR connector_type = CDC).\nIf connection name corresponds to database connectors like Oracle, and connector_type is not provided then\nconnector_type defaults to QUERY_BASED. If connector_type is passed as CDC we use Combined Cdc Managed Ingestion\npipeline.\nUnder certain conditions, this can be replaced with ingestion_gateway_id to change the connector to Cdc Managed\nIngestion Pipeline with Gateway pipeline.",
                   "$ref": "#/$defs/string",
                   "x-since-version": "v0.229.0"
                 },
@@ -6255,19 +6398,17 @@
                   "description": "Immutable. If set to true, the pipeline will ingest tables from the\nUC foreign catalogs directly without the need to specify a UC connection or ingestion gateway.\nThe `source_catalog` fields in objects of IngestionConfig are interpreted as\nthe UC foreign catalogs to ingest from.",
                   "$ref": "#/$defs/bool",
                   "x-databricks-preview": "PRIVATE",
-                  "doNotSuggest": true,
-                  "x-since-version": "v0.279.0"
+                  "doNotSuggest": true
                 },
                 "ingestion_gateway_id": {
-                  "description": "Immutable. Identifier for the gateway that is used by this ingestion pipeline to communicate with the source database. This is used with connectors to databases like SQL Server.",
+                  "description": "Identifier for the gateway that is used by this ingestion pipeline to communicate with the source database.\nThis is used with CDC connectors to databases like SQL Server using a gateway pipeline (connector_type = CDC).\nUnder certain conditions, this can be replaced with connection_name to change the connector to Combined Cdc\nManaged Ingestion Pipeline.",
                   "$ref": "#/$defs/string",
                   "x-since-version": "v0.229.0"
                 },
                 "netsuite_jar_path": {
                   "$ref": "#/$defs/string",
                   "x-databricks-preview": "PRIVATE",
-                  "doNotSuggest": true,
-                  "x-since-version": "v0.271.0"
+                  "doNotSuggest": true
                 },
                 "objects": {
                   "description": "Required. Settings specifying tables to replicate and the destination for the replicated tables.",
@@ -6276,8 +6417,7 @@
                 },
                 "source_configurations": {
                   "description": "Top-level source configurations",
-                  "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/pipelines.SourceConfig",
-                  "x-since-version": "v0.267.0"
+                  "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/pipelines.SourceConfig"
                 },
                 "table_configuration": {
                   "description": "Configuration settings to control the ingestion of tables. These settings are applied to all tables in the pipeline.",
@@ -6322,19 +6462,16 @@
                   "description": "(Optional) Marks the report as incremental.\nThis field is deprecated and should not be used. Use `parameters` instead. The incremental behavior is now\ncontrolled by the `parameters` field.",
                   "$ref": "#/$defs/bool",
                   "deprecationMessage": "This field is deprecated",
-                  "x-since-version": "v0.271.0",
                   "deprecated": true
                 },
                 "parameters": {
                   "description": "Parameters for the Workday report. Each key represents the parameter name (e.g., \"start_date\", \"end_date\"),\nand the corresponding value is a SQL-like expression used to compute the parameter value at runtime.\nExample:\n{\n\"start_date\": \"{ coalesce(current_offset(), date(\\\"2025-02-01\\\")) }\",\n\"end_date\": \"{ current_date() - INTERVAL 1 DAY }\"\n}",
-                  "$ref": "#/$defs/map/string",
-                  "x-since-version": "v0.271.0"
+                  "$ref": "#/$defs/map/string"
                 },
                 "report_parameters": {
                   "description": "(Optional) Additional custom parameters for Workday Report\nThis field is deprecated and should not be used. Use `parameters` instead.",
                   "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/pipelines.IngestionPipelineDefinitionWorkdayReportParametersQueryKeyValue",
                   "deprecationMessage": "This field is deprecated",
-                  "x-since-version": "v0.271.0",
                   "deprecated": true
                 }
               },
@@ -6345,13 +6482,11 @@
               "properties": {
                 "key": {
                   "description": "Key for the report parameter, can be a column name or other metadata",
-                  "$ref": "#/$defs/string",
-                  "x-since-version": "v0.271.0"
+                  "$ref": "#/$defs/string"
                 },
                 "value": {
                   "description": "Value for the report parameter.\nPossible values it can take are these sql functions:\n1. coalesce(current_offset(), date(\"YYYY-MM-DD\")) -\u003e if current_offset() is null, then the passed date, else current_offset()\n2. current_date()\n3. date_sub(current_date(), x) -\u003e subtract x (some non-negative integer) days from current date",
-                  "$ref": "#/$defs/string",
-                  "x-since-version": "v0.271.0"
+                  "$ref": "#/$defs/string"
                 }
               },
               "additionalProperties": false
@@ -6667,8 +6802,7 @@
               "properties": {
                 "slot_config": {
                   "description": "Optional. The Postgres slot configuration to use for logical replication",
-                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.PostgresSlotConfig",
-                  "x-since-version": "v0.267.0"
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.PostgresSlotConfig"
                 }
               },
               "additionalProperties": false
@@ -6679,13 +6813,11 @@
               "properties": {
                 "publication_name": {
                   "description": "The name of the publication to use for the Postgres source",
-                  "$ref": "#/$defs/string",
-                  "x-since-version": "v0.267.0"
+                  "$ref": "#/$defs/string"
                 },
                 "slot_name": {
                   "description": "The name of the logical replication slot to use for the Postgres source",
-                  "$ref": "#/$defs/string",
-                  "x-since-version": "v0.267.0"
+                  "$ref": "#/$defs/string"
                 }
               },
               "additionalProperties": false
@@ -6809,13 +6941,11 @@
               "properties": {
                 "postgres": {
                   "description": "Postgres-specific catalog-level configuration parameters",
-                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.PostgresCatalogConfig",
-                  "x-since-version": "v0.267.0"
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.PostgresCatalogConfig"
                 },
                 "source_catalog": {
                   "description": "Source catalog name",
-                  "$ref": "#/$defs/string",
-                  "x-since-version": "v0.267.0"
+                  "$ref": "#/$defs/string"
                 }
               },
               "additionalProperties": false
@@ -6825,8 +6955,7 @@
               "properties": {
                 "catalog": {
                   "description": "Catalog-level source configuration parameters",
-                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.SourceCatalogConfig",
-                  "x-since-version": "v0.267.0"
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.SourceCatalogConfig"
                 }
               },
               "additionalProperties": false
@@ -6934,8 +7063,7 @@
                 "workday_report_parameters": {
                   "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.IngestionPipelineDefinitionWorkdayReportParameters",
                   "x-databricks-preview": "PRIVATE",
-                  "doNotSuggest": true,
-                  "x-since-version": "v0.271.0"
+                  "doNotSuggest": true
                 }
               },
               "additionalProperties": false
@@ -6948,6 +7076,52 @@
                 "SCD_TYPE_2",
                 "APPEND_ONLY"
               ]
+            },
+            "postgres.EndpointSettings": {
+              "type": "object",
+              "description": "A collection of settings for a compute endpoint.",
+              "properties": {
+                "pg_settings": {
+                  "description": "A raw representation of Postgres settings.",
+                  "$ref": "#/$defs/map/string"
+                }
+              },
+              "additionalProperties": false
+            },
+            "postgres.EndpointType": {
+              "type": "string",
+              "description": "The compute endpoint type. Either `read_write` or `read_only`.",
+              "enum": [
+                "ENDPOINT_TYPE_READ_WRITE",
+                "ENDPOINT_TYPE_READ_ONLY"
+              ]
+            },
+            "postgres.ProjectDefaultEndpointSettings": {
+              "type": "object",
+              "description": "A collection of settings for a compute endpoint.",
+              "properties": {
+                "autoscaling_limit_max_cu": {
+                  "description": "The maximum number of Compute Units. Minimum value is 0.5.",
+                  "$ref": "#/$defs/float64"
+                },
+                "autoscaling_limit_min_cu": {
+                  "description": "The minimum number of Compute Units. Minimum value is 0.5.",
+                  "$ref": "#/$defs/float64"
+                },
+                "no_suspension": {
+                  "description": "When set to true, explicitly disables automatic suspension (never suspend).\nShould be set to true when provided.",
+                  "$ref": "#/$defs/bool"
+                },
+                "pg_settings": {
+                  "description": "A raw representation of Postgres settings.",
+                  "$ref": "#/$defs/map/string"
+                },
+                "suspend_timeout_duration": {
+                  "description": "Duration of inactivity after which the compute endpoint is automatically suspended.\nIf specified should be between 60s and 604800s (1 minute to 1 week).",
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/common/types/duration.Duration"
+                }
+              },
+              "additionalProperties": false
             },
             "serving.Ai21LabsConfig": {
               "type": "object",
@@ -7685,6 +7859,10 @@
             "serving.ServedEntityInput": {
               "type": "object",
               "properties": {
+                "burst_scaling_enabled": {
+                  "description": "Whether burst scaling is enabled. When enabled (default), the endpoint can automatically\nscale up beyond provisioned capacity to handle traffic spikes. When disabled, the endpoint\nmaintains fixed capacity at provisioned_model_units.",
+                  "$ref": "#/$defs/bool"
+                },
                 "entity_name": {
                   "description": "The name of the entity to be served. The entity may be a model in the Databricks Model Registry, a model in the Unity Catalog (UC), or a function of type FEATURE_SPEC in the UC. If it is a UC object, the full name of the object should be given in the form of **catalog_name.schema_name.model_name**.",
                   "$ref": "#/$defs/string",
@@ -7760,6 +7938,10 @@
             "serving.ServedModelInput": {
               "type": "object",
               "properties": {
+                "burst_scaling_enabled": {
+                  "description": "Whether burst scaling is enabled. When enabled (default), the endpoint can automatically\nscale up beyond provisioned capacity to handle traffic spikes. When disabled, the endpoint\nmaintains fixed capacity at provisioned_model_units.",
+                  "$ref": "#/$defs/bool"
+                },
                 "environment_vars": {
                   "description": "An object containing a set of optional, user-specified environment variable key-value pairs used for serving this entity. Note: this is an experimental feature and subject to change. Example entity environment variables that refer to Databricks secrets: `{\"OPENAI_API_KEY\": \"{{secrets/my_scope/my_key}}\", \"DATABRICKS_TOKEN\": \"{{secrets/my_scope2/my_key2}}\"}`",
                   "$ref": "#/$defs/map/string",
@@ -7899,28 +8081,23 @@
               "properties": {
                 "comparison_operator": {
                   "description": "Operator used for comparison in alert evaluation.",
-                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.ComparisonOperator",
-                  "x-since-version": "v0.279.0"
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.ComparisonOperator"
                 },
                 "empty_result_state": {
                   "description": "Alert state if result is empty. Please avoid setting this field to be `UNKNOWN` because `UNKNOWN` state is planned to be deprecated.",
-                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertEvaluationState",
-                  "x-since-version": "v0.279.0"
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertEvaluationState"
                 },
                 "notification": {
                   "description": "User or Notification Destination to notify when alert is triggered.",
-                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertV2Notification",
-                  "x-since-version": "v0.279.0"
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertV2Notification"
                 },
                 "source": {
                   "description": "Source column from result to use to evaluate alert",
-                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertV2OperandColumn",
-                  "x-since-version": "v0.279.0"
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertV2OperandColumn"
                 },
                 "threshold": {
                   "description": "Threshold to user for alert evaluation, can be a column or a value.",
-                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertV2Operand",
-                  "x-since-version": "v0.279.0"
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertV2Operand"
                 }
               },
               "additionalProperties": false,
@@ -7934,17 +8111,14 @@
               "properties": {
                 "notify_on_ok": {
                   "description": "Whether to notify alert subscribers when alert returns back to normal.",
-                  "$ref": "#/$defs/bool",
-                  "x-since-version": "v0.279.0"
+                  "$ref": "#/$defs/bool"
                 },
                 "retrigger_seconds": {
                   "description": "Number of seconds an alert waits after being triggered before it is allowed to send another notification.\nIf set to 0 or omitted, the alert will not send any further notifications after the first trigger\nSetting this value to 1 allows the alert to send a notification on every evaluation where the condition is met, effectively making it always retrigger for notification purposes.",
-                  "$ref": "#/$defs/int",
-                  "x-since-version": "v0.279.0"
+                  "$ref": "#/$defs/int"
                 },
                 "subscriptions": {
-                  "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/sql.AlertV2Subscription",
-                  "x-since-version": "v0.279.0"
+                  "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/sql.AlertV2Subscription"
                 }
               },
               "additionalProperties": false
@@ -7953,12 +8127,10 @@
               "type": "object",
               "properties": {
                 "column": {
-                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertV2OperandColumn",
-                  "x-since-version": "v0.279.0"
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertV2OperandColumn"
                 },
                 "value": {
-                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertV2OperandValue",
-                  "x-since-version": "v0.279.0"
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.AlertV2OperandValue"
                 }
               },
               "additionalProperties": false
@@ -7967,16 +8139,13 @@
               "type": "object",
               "properties": {
                 "aggregation": {
-                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.Aggregation",
-                  "x-since-version": "v0.279.0"
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.Aggregation"
                 },
                 "display": {
-                  "$ref": "#/$defs/string",
-                  "x-since-version": "v0.279.0"
+                  "$ref": "#/$defs/string"
                 },
                 "name": {
-                  "$ref": "#/$defs/string",
-                  "x-since-version": "v0.279.0"
+                  "$ref": "#/$defs/string"
                 }
               },
               "additionalProperties": false,
@@ -7988,16 +8157,13 @@
               "type": "object",
               "properties": {
                 "bool_value": {
-                  "$ref": "#/$defs/bool",
-                  "x-since-version": "v0.279.0"
+                  "$ref": "#/$defs/bool"
                 },
                 "double_value": {
-                  "$ref": "#/$defs/float64",
-                  "x-since-version": "v0.279.0"
+                  "$ref": "#/$defs/float64"
                 },
                 "string_value": {
-                  "$ref": "#/$defs/string",
-                  "x-since-version": "v0.279.0"
+                  "$ref": "#/$defs/string"
                 }
               },
               "additionalProperties": false
@@ -8007,13 +8173,11 @@
               "properties": {
                 "service_principal_name": {
                   "description": "Application ID of an active service principal. Setting this field requires the `servicePrincipal/user` role.",
-                  "$ref": "#/$defs/string",
-                  "x-since-version": "v0.279.0"
+                  "$ref": "#/$defs/string"
                 },
                 "user_name": {
                   "description": "The email of an active workspace user. Can only set this field to their own email.",
-                  "$ref": "#/$defs/string",
-                  "x-since-version": "v0.279.0"
+                  "$ref": "#/$defs/string"
                 }
               },
               "additionalProperties": false
@@ -8022,12 +8186,10 @@
               "type": "object",
               "properties": {
                 "destination_id": {
-                  "$ref": "#/$defs/string",
-                  "x-since-version": "v0.279.0"
+                  "$ref": "#/$defs/string"
                 },
                 "user_email": {
-                  "$ref": "#/$defs/string",
-                  "x-since-version": "v0.279.0"
+                  "$ref": "#/$defs/string"
                 }
               },
               "additionalProperties": false
@@ -8082,18 +8244,15 @@
               "properties": {
                 "pause_status": {
                   "description": "Indicate whether this schedule is paused or not.",
-                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.SchedulePauseStatus",
-                  "x-since-version": "v0.279.0"
+                  "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.SchedulePauseStatus"
                 },
                 "quartz_cron_schedule": {
                   "description": "A cron expression using quartz syntax that specifies the schedule for this pipeline.\nShould use the quartz format described here: http://www.quartz-scheduler.org/documentation/quartz-2.1.7/tutorials/tutorial-lesson-06.html",
-                  "$ref": "#/$defs/string",
-                  "x-since-version": "v0.279.0"
+                  "$ref": "#/$defs/string"
                 },
                 "timezone_id": {
                   "description": "A Java timezone id. The schedule will be resolved using this timezone.\nThis will be combined with the quartz_cron_schedule to determine the schedule.\nSee https://docs.databricks.com/sql/language-manual/sql-ref-syntax-aux-conf-mgmt-set-timezone.html for details.",
-                  "$ref": "#/$defs/string",
-                  "x-since-version": "v0.279.0"
+                  "$ref": "#/$defs/string"
                 }
               },
               "additionalProperties": false,
@@ -8200,6 +8359,12 @@
                     "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.App"
                   }
                 },
+                "resources.Catalog": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Catalog"
+                  }
+                },
                 "resources.Cluster": {
                   "type": "object",
                   "additionalProperties": {
@@ -8252,6 +8417,24 @@
                   "type": "object",
                   "additionalProperties": {
                     "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Pipeline"
+                  }
+                },
+                "resources.PostgresBranch": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.PostgresBranch"
+                  }
+                },
+                "resources.PostgresEndpoint": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.PostgresEndpoint"
+                  }
+                },
+                "resources.PostgresProject": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.PostgresProject"
                   }
                 },
                 "resources.QualityMonitor": {
@@ -8366,6 +8549,18 @@
                   "type": "array",
                   "items": {
                     "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.AppPermission"
+                  }
+                },
+                "resources.CatalogGrant": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.CatalogGrant"
+                  }
+                },
+                "resources.CatalogGrantPrivilege": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.CatalogGrantPrivilege"
                   }
                 },
                 "resources.ClusterPermission": {
@@ -8744,8 +8939,7 @@
       "x-since-version": "v0.229.0"
     },
     "python": {
-      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Python",
-      "x-since-version": "v0.275.0"
+      "$ref": "#/$defs/github.com/databricks/cli/bundle/config.Python"
     },
     "resources": {
       "description": "A Map that defines the resources for the bundle, where each key is the name of the resource, and the value is a Map that defines the resource.",
