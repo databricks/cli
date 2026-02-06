@@ -40,6 +40,11 @@ var errServerMetadata = errors.New("server metadata error")
 const (
 	sshServerTaskKey         = "start_ssh_server"
 	serverlessEnvironmentKey = "ssh_tunnel_serverless"
+
+	VSCodeOption  = "vscode"
+	VSCodeCommand = "code"
+	CursorOption  = "cursor"
+	CursorCommand = "cursor"
 )
 
 type ClientOptions struct {
@@ -259,12 +264,10 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 }
 
 func runIDE(ctx context.Context, client *databricks.WorkspaceClient, userName, keyPath string, serverPort int, clusterID string, opts ClientOptions) error {
-	// Validate IDE value
-	if opts.IDE != "vscode" && opts.IDE != "cursor" {
-		return fmt.Errorf("invalid IDE value: %s, expected 'vscode' or 'cursor'", opts.IDE)
+	if opts.IDE != VSCodeOption && opts.IDE != CursorOption {
+		return fmt.Errorf("invalid IDE value: %s, expected '%s' or '%s'", opts.IDE, VSCodeOption, CursorOption)
 	}
 
-	// Get connection name
 	connectionName := opts.SessionIdentifier()
 	if connectionName == "" {
 		return errors.New("connection name is required for IDE integration")
@@ -288,10 +291,9 @@ func runIDE(ctx context.Context, client *databricks.WorkspaceClient, userName, k
 		return fmt.Errorf("failed to ensure SSH config entry: %w", err)
 	}
 
-	// Determine the IDE command
-	ideCommand := "code"
-	if opts.IDE == "cursor" {
-		ideCommand = "cursor"
+	ideCommand := VSCodeCommand
+	if opts.IDE == CursorOption {
+		ideCommand = CursorCommand
 	}
 
 	// Construct the remote SSH URI
@@ -301,7 +303,6 @@ func runIDE(ctx context.Context, client *databricks.WorkspaceClient, userName, k
 
 	cmdio.LogString(ctx, fmt.Sprintf("Launching %s with remote URI: %s and path: %s", opts.IDE, remoteURI, remotePath))
 
-	// Launch the IDE
 	ideCmd := exec.CommandContext(ctx, ideCommand, "--remote", remoteURI, remotePath)
 	ideCmd.Stdout = os.Stdout
 	ideCmd.Stderr = os.Stderr
