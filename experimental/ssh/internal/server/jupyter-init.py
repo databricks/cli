@@ -208,7 +208,7 @@ def _initialize_spark_connect_session_dbconnect():
         user_ns["spark"] = None
         globals()["spark"] = None
         # DatabricksSession will use the existing env vars for the connection.
-        spark_session = DatabricksSession.builder.getOrCreate()
+        spark_session = DatabricksSession.builder.serverless(True).getOrCreate()
         user_ns["spark"] = spark_session
         globals()["spark"] = spark_session
     except Exception as e:
