@@ -108,11 +108,6 @@ Building python_artifact...
   }
 }
 {
-  "id": {
-    "action": "skip",
-    "reason": "builtin_rule",
-    "remote": "[UUID]"
-  },
   "storage": {
     "action": "skip",
     "reason": "server_side_default",
@@ -187,11 +182,6 @@ Building python_artifact...
   }
 }
 {
-  "id": {
-    "action": "skip",
-    "reason": "builtin_rule",
-    "remote": "[UUID]"
-  },
   "storage": {
     "action": "skip",
     "reason": "server_side_default",
