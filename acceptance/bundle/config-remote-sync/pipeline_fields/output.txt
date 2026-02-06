@@ -9,7 +9,7 @@ Detected changes in 1 resource(s):
 
 Resource: resources.pipelines.my_pipeline
   configuration['key2']: add
-  environment.dependencies: add
+  environment.dependencies: replace
   notifications[0].alerts: replace
   notifications[0].email_recipients: replace
   schema: replace
@@ -28,7 +28,7 @@ Resource: resources.pipelines.my_pipeline
 -
  resources:
    pipelines:
-@@ -7,12 +6,15 @@
+@@ -7,19 +6,24 @@
        name: test-pipeline-[UNIQUE_NAME]
        catalog: main
 -      schema: default
@@ -45,7 +45,9 @@ Resource: resources.pipelines.my_pipeline
 +            - on-update-failure
        environment:
          dependencies:
-@@ -21,6 +23,14 @@
+           - --editable /Workspace/foo
++          - --editable /Workspace/bar
+       libraries:
          - notebook:
              path: /Users/{{workspace_user_name}}/notebook
 -
@@ -53,11 +55,3 @@ Resource: resources.pipelines.my_pipeline
 +        foo: bar
  targets:
    default:
-     mode: development
-+    resources:
-+      pipelines:
-+        my_pipeline:
-+          environment:
-+            dependencies:
-+              - --editable /Workspace/foo
-+              - --editable /Workspace/bar
