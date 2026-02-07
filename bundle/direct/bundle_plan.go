@@ -180,7 +180,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 					plan.RemoveEntry(resourceKey)
 				} else {
 					log.Warnf(ctx, "reading %s id=%q: %s", resourceKey, dbentry.ID, err)
-					return false
+					// This is not an error during deletion, so don't return false here
 				}
 			}
 
