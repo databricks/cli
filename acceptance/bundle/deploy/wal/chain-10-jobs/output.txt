@@ -23,6 +23,8 @@ Exit code: [KILLED]
 9
 
 === Bundle summary (reads from WAL) ===
+Recovering state from WAL file: [TEST_TMP_DIR]/.databricks/bundle/default/resources.json.wal
+Recovered 9 entries from WAL file.
 Name: wal-chain-test
 Target: default
 Workspace:

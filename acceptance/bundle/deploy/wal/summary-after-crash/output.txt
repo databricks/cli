@@ -23,6 +23,8 @@ WAL exists (expected)
 === Bundle summary (should show job_a from WAL) ===
 
 >>> [CLI] bundle summary -o json
+Recovering state from WAL file: [TEST_TMP_DIR]/.databricks/bundle/default/resources.json.wal
+Recovered 1 entries from WAL file.
 {
   "job_a_id": "1001",
   "job_b_id": null

@@ -1,4 +1,4 @@
-# Empty WAL file should be deleted and deploy should proceed normally.
+# Empty WAL file should be moved to .wal.corrupted and deploy should proceed normally.
 
 [[Server]]
 Pattern = "POST /api/2.2/jobs/create"

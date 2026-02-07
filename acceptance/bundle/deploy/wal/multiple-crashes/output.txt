@@ -14,12 +14,13 @@ WAL exists
 
 >>> errcode [CLI] bundle deploy --force-lock
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/wal-multi-crash-test/default/files...
+Recovering state from WAL file: [TEST_TMP_DIR]/.databricks/bundle/default/resources.json.wal
+Recovered 1 entries from WAL file.
 Deploying resources...
 [PROCESS_KILLED]
 
 Exit code: [KILLED]
 === WAL after second crash ===
-WAL still exists
 === Third deploy (should succeed) ===
 
 >>> [CLI] bundle deploy --force-lock
