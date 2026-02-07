@@ -11,27 +11,33 @@ cat > .databricks/bundle/default/resources.json << 'EOF'
 EOF
 
 echo "=== Creating WAL with corrupted MIDDLE entry ==="
-# Corruption in the middle is NOT expected (only last line can be partial write).
-# This should cause WAL to be deleted entirely, no recovery.
+# Corrupted middle line is expected (truncated JSON from crash) and should be skipped.
 cat > .databricks/bundle/default/resources.json.wal << 'EOF'
 {"lineage":"test-lineage-456","serial":6}
 {"k":"resources.jobs.job_one","v":{"__id__":"1111","state":{"name":"job-one"}}}
-not valid json - CORRUPTED MIDDLE LINE
+{"k":"resources.jobs.partial_write","v":{"__id__":"3333","state":{"name":"partial-
 {"k":"resources.jobs.job_two","v":{"__id__":"2222","state":{"name":"job-two"}}}
 EOF
 
 echo "=== WAL content ==="
 cat .databricks/bundle/default/resources.json.wal
 
-echo "=== Deploy (WAL should be deleted due to middle corruption) ==="
+echo "=== Deploy (should recover valid entries and skip corrupted line) ==="
 trace $CLI bundle deploy 2>&1
 
-echo "=== Final state (fresh deploy, not recovered from WAL) ==="
+echo "=== Final state (should have recovered entries) ==="
 cat .databricks/bundle/default/resources.json | jq -S '{serial: .serial, state_keys: (.state | keys | sort)}'
+
+echo "=== Corrupted WAL entries file ==="
+if [ -f ".databricks/bundle/default/resources.json.wal.corrupted" ]; then
+    cat .databricks/bundle/default/resources.json.wal.corrupted
+else
+    echo "Missing corrupted WAL entries file (unexpected)"
+fi
 
 echo "=== WAL after deploy ==="
 if [ -f ".databricks/bundle/default/resources.json.wal" ]; then
     echo "WAL exists (unexpected)"
 else
-    echo "WAL deleted (expected - due to middle corruption)"
+    echo "WAL deleted (expected)"
 fi

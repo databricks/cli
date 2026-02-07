@@ -1,8 +1,6 @@
-# WAL with corrupted MIDDLE entry - WAL should be deleted, no recovery.
-# Corruption in the middle is unexpected (not a partial write from crash).
-# The entire WAL is discarded and a fresh deploy happens.
+# WAL with corrupted MIDDLE entry - valid entries are recovered and corrupted entries are skipped.
 
-# Since WAL is discarded, jobs will be created fresh (not recovered)
+# Since valid entries are recovered, jobs will be updated (not created fresh).
 [[Server]]
 Pattern = "POST /api/2.2/jobs/create"
 Response.Body = '{"job_id": 9999}'
