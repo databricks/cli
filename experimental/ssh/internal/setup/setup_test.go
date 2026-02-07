@@ -29,6 +29,32 @@ func TestValidateClusterAccess_SingleUser(t *testing.T) {
 	assert.NoError(t, err)
 }
 
+func TestValidateClusterAccess_LegacySingleUser(t *testing.T) {
+	ctx := cmdio.MockDiscard(context.Background())
+	m := mocks.NewMockWorkspaceClient(t)
+	clustersAPI := m.GetMockClustersAPI()
+
+	clustersAPI.EXPECT().Get(ctx, compute.GetClusterRequest{ClusterId: "cluster-123"}).Return(&compute.ClusterDetails{
+		DataSecurityMode: compute.DataSecurityModeLegacySingleUser,
+	}, nil)
+
+	err := validateClusterAccess(ctx, m.WorkspaceClient, "cluster-123")
+	assert.NoError(t, err)
+}
+
+func TestValidateClusterAccess_LegacySingleUserStandard(t *testing.T) {
+	ctx := cmdio.MockDiscard(context.Background())
+	m := mocks.NewMockWorkspaceClient(t)
+	clustersAPI := m.GetMockClustersAPI()
+
+	clustersAPI.EXPECT().Get(ctx, compute.GetClusterRequest{ClusterId: "cluster-123"}).Return(&compute.ClusterDetails{
+		DataSecurityMode: compute.DataSecurityModeLegacySingleUserStandard,
+	}, nil)
+
+	err := validateClusterAccess(ctx, m.WorkspaceClient, "cluster-123")
+	assert.NoError(t, err)
+}
+
 func TestValidateClusterAccess_InvalidAccessMode(t *testing.T) {
 	ctx := cmdio.MockDiscard(context.Background())
 	m := mocks.NewMockWorkspaceClient(t)

@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -34,12 +35,18 @@ type SetupOptions struct {
 	Profile string
 }
 
+var validDataSecurityModes = []compute.DataSecurityMode{
+	compute.DataSecurityModeSingleUser,
+	compute.DataSecurityModeLegacySingleUser,
+	compute.DataSecurityModeLegacySingleUserStandard,
+}
+
 func validateClusterAccess(ctx context.Context, client *databricks.WorkspaceClient, clusterID string) error {
 	clusterInfo, err := client.Clusters.Get(ctx, compute.GetClusterRequest{ClusterId: clusterID})
 	if err != nil {
 		return fmt.Errorf("failed to get cluster information for cluster ID '%s': %w", clusterID, err)
 	}
-	if clusterInfo.DataSecurityMode != compute.DataSecurityModeSingleUser {
+	if !slices.Contains(validDataSecurityModes, clusterInfo.DataSecurityMode) {
 		return fmt.Errorf("cluster '%s' does not have dedicated access mode. Current access mode: %s. Please ensure the cluster is configured with dedicated access mode (single user)", clusterID, clusterInfo.DataSecurityMode)
 	}
 	return nil
