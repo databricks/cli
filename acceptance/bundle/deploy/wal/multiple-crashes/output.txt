@@ -1,0 +1,40 @@
+=== First deploy (crashes after job_a create) ===
+
+>>> errcode [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/wal-multi-crash-test/default/files...
+Deploying resources...
+[PROCESS_KILLED]
+
+Exit code: [KILLED]
+=== WAL after first crash ===
+WAL exists
+{"lineage":"[UUID]","serial": [SERIAL]}
+{"k":"resources.jobs.job_a","v":{"__id__": "[ID]","state":{"deployment":{"kind":"BUNDLE","metadata_file_path":"/Workspace/Users/[USERNAME]/.bundle/wal-multi-crash-test/default/state/metadata.json"},"description":"first job","edit_mode":"UI_LOCKED","format":"MULTI_TASK","max_concurrent_runs":1,"name":"test-job-a","queue":{"enabled":true},"tasks":[{"new_cluster":{"node_type_id":"[NODE_TYPE_ID]","num_workers":0,"spark_version":"15.4.x-scala2.12"},"spark_python_task":{"python_file":"/Workspace/Users/[USERNAME]/.bundle/wal-multi-crash-test/default/files/test.py"},"task_key":"task-a"}]}}}
+=== Second deploy (crashes during job_a update) ===
+
+>>> errcode [CLI] bundle deploy --force-lock
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/wal-multi-crash-test/default/files...
+Recovering state from WAL file: [TEST_TMP_DIR]/.databricks/bundle/default/resources.json.wal
+Recovered 1 entries from WAL file.
+Deploying resources...
+[PROCESS_KILLED]
+
+Exit code: [KILLED]
+=== WAL after second crash ===
+=== Third deploy (should succeed) ===
+
+>>> [CLI] bundle deploy --force-lock
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/wal-multi-crash-test/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+=== Final state ===
+{
+  "serial": [SERIAL],
+  "state_keys": [
+    "resources.jobs.job_a",
+    "resources.jobs.job_b"
+  ]
+}
+=== WAL after successful deploy ===
+WAL deleted (expected)

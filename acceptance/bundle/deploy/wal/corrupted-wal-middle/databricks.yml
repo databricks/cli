@@ -1,0 +1,25 @@
+bundle:
+  name: wal-corrupted-middle-test
+
+resources:
+  jobs:
+    job_one:
+      name: "job-one"
+      tasks:
+        - task_key: "task"
+          spark_python_task:
+            python_file: ./test.py
+          new_cluster:
+            spark_version: 15.4.x-scala2.12
+            node_type_id: i3.xlarge
+            num_workers: 0
+    job_two:
+      name: "job-two"
+      tasks:
+        - task_key: "task"
+          spark_python_task:
+            python_file: ./test.py
+          new_cluster:
+            spark_version: 15.4.x-scala2.12
+            node_type_id: i3.xlarge
+            num_workers: 0
