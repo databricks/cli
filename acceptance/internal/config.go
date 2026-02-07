@@ -129,8 +129,9 @@ type TestConfig struct {
 	// On CI, we want to increase timeout, to account for slower environment
 	TimeoutCIMultiplier float64
 
-	// If true, skip this test when running on DBR / workspace file system.
-	SkipOnDbr *bool
+	// If true, run this test when running on DBR / workspace file system.
+	// Tests must explicitly opt-in to run on DBR.
+	RunsOnDbr *bool
 }
 
 type ServerStub struct {
@@ -213,7 +214,20 @@ func LoadConfig(t *testing.T, dir string) (TestConfig, string) {
 	result.Ignore = append(result.Ignore, ".cache")
 	result.CompiledIgnoreObject = ignore.CompileIgnoreLines(result.Ignore...)
 
+	// Validate incompatible configuration combinations
+	validateConfig(t, result, strings.Join(configs, ", "))
+
 	return result, strings.Join(configs, ", ")
+}
+
+// validateConfig checks for incompatible configuration combinations.
+func validateConfig(t *testing.T, config TestConfig, configPath string) {
+	// RunsOnDbr and RecordRequests are incompatible because serverless does not
+	// allow access to localhost ports, which the test proxy server requires.
+	if isTruePtr(config.RunsOnDbr) && isTruePtr(config.RecordRequests) {
+		t.Fatalf("Invalid config %s: RunsOnDbr and RecordRequests cannot both be true. "+
+			"Serverless does not allow access to localhost ports, which the test proxy server requires.", configPath)
+	}
 }
 
 func DoLoadConfig(t *testing.T, path string) TestConfig {

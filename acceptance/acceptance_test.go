@@ -46,7 +46,6 @@ var (
 	SkipLocal       bool
 	UseVersion      string
 	WorkspaceTmpDir bool
-	TerraformDir    string
 	OnlyOutTestToml bool
 )
 
@@ -79,11 +78,6 @@ func init() {
 	// DABs in the workspace runs on the workspace file system. This flags does the same for acceptance tests
 	// to simulate an identical environment.
 	flag.BoolVar(&WorkspaceTmpDir, "workspace-tmp-dir", false, "Run tests on the workspace file system (For DBR testing).")
-
-	// Symlinks from workspace file system to local file mount are not supported on DBR. Terraform implicitly
-	// creates these symlinks when a file_mirror is used for a provider (in .terraformrc). This flag
-	// allows us to download the provider to the workspace file system on DBR enabling DBR integration testing.
-	flag.StringVar(&TerraformDir, "terraform-dir", "", "Directory to download the terraform provider to")
 	flag.BoolVar(&OnlyOutTestToml, "only-out-test-toml", false, "Only regenerate out.test.toml files without running tests")
 }
 
@@ -173,13 +167,10 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 
 	buildDir := getBuildDir(t, cwd, runtime.GOOS, runtime.GOARCH)
 
-	terraformDir := TerraformDir
-	if terraformDir == "" {
-		terraformDir = buildDir
+	// Set up terraform for tests. Skip on DBR - tests with RunsOnDbr only use direct deployment.
+	if !WorkspaceTmpDir {
+		setupTerraform(t, cwd, buildDir, &repls)
 	}
-
-	// Download terraform and provider and create config.
-	RunCommand(t, []string{"python3", filepath.Join(cwd, "install_terraform.py"), "--targetdir", terraformDir}, ".", []string{})
 
 	wheelPath := buildDatabricksBundlesWheel(t, buildDir)
 	if wheelPath != "" {
@@ -210,7 +201,12 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 		}
 	}
 
-	BuildYamlfmt(t)
+	// Skip building yamlfmt when running on workspace filesystem (DBR).
+	// This fails today on DBR. Can be looked into and fixed as a follow-up
+	// as and when needed.
+	if !WorkspaceTmpDir {
+		BuildYamlfmt(t)
+	}
 
 	t.Setenv("CLI", execPath)
 	repls.SetPath(execPath, "[CLI]")
@@ -254,16 +250,6 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 		releasesDir := CreateReleaseArtifacts(t, cwd, coverDir, "linux")
 		t.Setenv("CLI_RELEASES_DIR", releasesDir)
 	}
-
-	terraformrcPath := filepath.Join(terraformDir, ".terraformrc")
-	t.Setenv("TF_CLI_CONFIG_FILE", terraformrcPath)
-	t.Setenv("DATABRICKS_TF_CLI_CONFIG_FILE", terraformrcPath)
-	repls.SetPath(terraformrcPath, "[DATABRICKS_TF_CLI_CONFIG_FILE]")
-
-	terraformExecPath := filepath.Join(terraformDir, "terraform") + exeSuffix
-	t.Setenv("DATABRICKS_TF_EXEC_PATH", terraformExecPath)
-	t.Setenv("TERRAFORM", terraformExecPath)
-	repls.SetPath(terraformExecPath, "[TERRAFORM]")
 
 	// do it last so that full paths match first:
 	repls.SetPath(buildDir, "[BUILD_DIR]")
@@ -429,8 +415,8 @@ func getSkipReason(config *internal.TestConfig, configPath string) string {
 		return ""
 	}
 
-	if isTruePtr(config.SkipOnDbr) && WorkspaceTmpDir {
-		return "Disabled via SkipOnDbr setting in " + configPath
+	if WorkspaceTmpDir && !isTruePtr(config.RunsOnDbr) {
+		return "Disabled because RunsOnDbr is not set in " + configPath
 	}
 
 	if isTruePtr(config.Slow) && testing.Short() {
@@ -530,7 +516,7 @@ func runTest(t *testing.T,
 		// If the test is being run on DBR, auth is already configured
 		// by the dbr_runner notebook by reading a token from the notebook context and
 		// setting DATABRICKS_TOKEN and DATABRICKS_HOST environment variables.
-		_, _, tmpDir = workspaceTmpDir(t.Context(), t)
+		tmpDir = workspaceTmpDir(t.Context(), t)
 
 		// Run DBR tests on the workspace file system to mimic usage from
 		// DABs in the workspace.
@@ -1381,6 +1367,22 @@ func BuildYamlfmt(t *testing.T) {
 		"make", "-s", "tools/yamlfmt" + exeSuffix,
 	}
 	RunCommand(t, args, "..", []string{})
+}
+
+// setupTerraform installs terraform and configures environment variables for tests.
+func setupTerraform(t *testing.T, cwd, buildDir string, repls *testdiff.ReplacementsContext) {
+	RunCommand(t, []string{"python3", filepath.Join(cwd, "install_terraform.py"), "--targetdir", buildDir}, ".", []string{})
+
+	terraformrcPath := filepath.Join(buildDir, ".terraformrc")
+	terraformExecPath := filepath.Join(buildDir, "terraform") + exeSuffix
+
+	t.Setenv("TF_CLI_CONFIG_FILE", terraformrcPath)
+	t.Setenv("DATABRICKS_TF_CLI_CONFIG_FILE", terraformrcPath)
+	t.Setenv("DATABRICKS_TF_EXEC_PATH", terraformExecPath)
+	t.Setenv("TERRAFORM", terraformExecPath)
+
+	repls.SetPath(terraformrcPath, "[DATABRICKS_TF_CLI_CONFIG_FILE]")
+	repls.SetPath(terraformExecPath, "[TERRAFORM]")
 }
 
 func loadUserReplacements(t *testing.T, repls *testdiff.ReplacementsContext, tmpDir string) {
