@@ -20,7 +20,7 @@ type validationStep struct {
 	command     string
 	errorPrefix string
 	displayName string
-	skipIf      func(workDir string, opts ValidateOptions) bool // Optional: skip step if this returns true
+	skipIf      func(workDir string) bool // optional: skip step if this returns true
 }
 
 func (v *ValidationNodeJs) Validate(ctx context.Context, workDir string, opts ValidateOptions) (*ValidateResult, error) {
@@ -36,7 +36,7 @@ func (v *ValidationNodeJs) Validate(ctx context.Context, workDir string, opts Va
 			command:     "npm install",
 			errorPrefix: "Failed to install dependencies",
 			displayName: "Installing dependencies",
-			skipIf:      func(workDir string, _ ValidateOptions) bool { return hasNodeModules(workDir) },
+			skipIf:      func(workDir string) bool { return hasNodeModules(workDir) },
 		},
 		{
 			name:        "generate",
@@ -67,13 +67,12 @@ func (v *ValidationNodeJs) Validate(ctx context.Context, workDir string, opts Va
 			command:     "npm run test --if-present",
 			errorPrefix: "Failed to run tests",
 			displayName: "Running tests",
-			skipIf:      func(_ string, opts ValidateOptions) bool { return opts.SkipTests },
 		},
 	}
 
 	for _, step := range steps {
 		// Check if step should be skipped
-		if step.skipIf != nil && step.skipIf(workDir, opts) {
+		if step.skipIf != nil && step.skipIf(workDir) {
 			log.Debugf(ctx, "skipping %s (condition met)", step.name)
 			cmdio.LogString(ctx, "⏭️  Skipped "+step.displayName)
 			continue
