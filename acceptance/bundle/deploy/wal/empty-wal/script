@@ -17,5 +17,12 @@ else
     echo "Empty WAL deleted (expected)"
 fi
 
+echo "=== Corrupted WAL file ==="
+if [ -f ".databricks/bundle/default/resources.json.wal.corrupted" ]; then
+    ls -la .databricks/bundle/default/resources.json.wal.corrupted
+else
+    echo "Corrupted WAL file missing (unexpected)"
+fi
+
 echo "=== State file content ==="
 cat .databricks/bundle/default/resources.json | jq -S '{lineage: .lineage, serial: .serial, state_keys: (.state | keys)}'

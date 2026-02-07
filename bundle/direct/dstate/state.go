@@ -3,6 +3,7 @@ package dstate
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -12,7 +13,6 @@ import (
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/statemgmt/resourcestate"
 	"github.com/databricks/cli/internal/build"
-	"github.com/databricks/cli/libs/log"
 	"github.com/google/uuid"
 )
 
@@ -73,7 +73,7 @@ func (db *DeploymentState) SaveState(key, newID string, state any, dependsOn []d
 	if err := db.ensureWALOpen(); err != nil {
 		return fmt.Errorf("failed to open WAL: %w", err)
 	}
-	if err := db.wal.writeEntry(key, &entry); err != nil {
+	if err := db.wal.writeJSON(WALEntry{K: key, V: &entry}); err != nil {
 		return fmt.Errorf("failed to write WAL entry: %w", err)
 	}
 
@@ -94,7 +94,7 @@ func (db *DeploymentState) DeleteState(key string) error {
 	if err := db.ensureWALOpen(); err != nil {
 		return fmt.Errorf("failed to open WAL: %w", err)
 	}
-	if err := db.wal.writeEntry(key, nil); err != nil {
+	if err := db.wal.writeJSON(WALEntry{K: key}); err != nil {
 		return fmt.Errorf("failed to write WAL entry: %w", err)
 	}
 
@@ -124,7 +124,7 @@ func (db *DeploymentState) ensureWALOpen() error {
 	// WAL serial is the NEXT serial (current + 1)
 	walSerial := db.Data.Serial + 1
 
-	if err := wal.writeHeader(lineage, walSerial); err != nil {
+	if err := wal.writeJSON(WALHeader{Lineage: lineage, Serial: walSerial}); err != nil {
 		wal.close()
 		return err
 	}
@@ -188,7 +188,12 @@ func (db *DeploymentState) Open(ctx context.Context, path string) error {
 		return fmt.Errorf("WAL recovery failed: %w", err)
 	}
 	if recovered {
-		log.Infof(ctx, "Recovered deployment state from WAL")
+		if err := db.unlockedSave(); err != nil {
+			return err
+		}
+		if err := cleanupWAL(path); err != nil {
+			return err
+		}
 		db.recoveredFromWAL = true
 	}
 
@@ -199,28 +204,43 @@ func (db *DeploymentState) Finalize() error {
 	db.mu.Lock()
 	defer db.mu.Unlock()
 
-	// Generate lineage on first save (if WAL wasn't opened)
+	hadOpenWAL := db.wal != nil
+	if hadOpenWAL {
+		if err := db.wal.close(); err != nil {
+			return err
+		}
+		db.wal = nil
+
+		replayResult, err := replayWAL(db.Path, &db.Data)
+		if err != nil {
+			return fmt.Errorf("failed to replay WAL during finalize: %w", err)
+		}
+		if !replayResult.recovered {
+			return errors.New("failed to replay WAL during finalize: WAL file not found or stale")
+		}
+		if len(replayResult.corruptedEntries) > 0 {
+			first := replayResult.corruptedEntries[0]
+			return fmt.Errorf("failed to replay WAL during finalize: corrupted entry at line %d: %v", first.lineNumber, first.parseErr)
+		}
+	}
+
+	if db.Data.Lineage == "" && !hadOpenWAL && len(db.Data.State) == 0 {
+		return nil
+	}
+
 	if db.Data.Lineage == "" {
 		db.Data.Lineage = uuid.New().String()
 	}
 
 	db.Data.Serial++
 
-	err := db.unlockedSave()
-	if err != nil {
+	if err := db.unlockedSave(); err != nil {
 		return err
 	}
 
-	if db.wal != nil {
-		if err := db.wal.truncate(); err != nil {
-			return fmt.Errorf("failed to truncate WAL: %w", err)
-		}
-		db.wal = nil
-	} else {
-		// No WAL was opened, but we should still clean up any stale WAL file
-		wp := walPath(db.Path)
-		if err := os.Remove(wp); err != nil && !os.IsNotExist(err) {
-			return fmt.Errorf("failed to remove stale WAL file: %w", err)
+	if hadOpenWAL {
+		if err := cleanupWAL(db.Path); err != nil {
+			return err
 		}
 	}
 

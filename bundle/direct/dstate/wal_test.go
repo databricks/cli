@@ -12,10 +12,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestWALPath(t *testing.T) {
-	assert.Equal(t, "/path/to/state.json.wal", walPath("/path/to/state.json"))
-}
-
 func TestWALWriteAndRead(t *testing.T) {
 	dir := t.TempDir()
 	statePath := filepath.Join(dir, "resources.json")
@@ -23,31 +19,30 @@ func TestWALWriteAndRead(t *testing.T) {
 	wal, err := openWAL(statePath)
 	require.NoError(t, err)
 
-	err = wal.writeHeader("test-lineage", 1)
+	err = wal.writeJSON(WALHeader{Lineage: "test-lineage", Serial: 1})
 	require.NoError(t, err)
 
 	entry1 := &ResourceEntry{
 		ID:    "12345",
 		State: json.RawMessage(`{"name":"job1"}`),
 	}
-	err = wal.writeEntry("resources.jobs.job1", entry1)
+	err = wal.writeJSON(WALEntry{K: "resources.jobs.job1", V: entry1})
 	require.NoError(t, err)
 
 	entry2 := &ResourceEntry{
 		ID:    "67890",
 		State: json.RawMessage(`{"name":"job2"}`),
 	}
-	err = wal.writeEntry("resources.jobs.job2", entry2)
+	err = wal.writeJSON(WALEntry{K: "resources.jobs.job2", V: entry2})
 	require.NoError(t, err)
 
-	err = wal.writeEntry("resources.jobs.old_job", nil)
+	err = wal.writeJSON(WALEntry{K: "resources.jobs.old_job", V: nil})
 	require.NoError(t, err)
 
 	err = wal.close()
 	require.NoError(t, err)
 
-	ctx := context.Background()
-	header, entries, err := readWAL(ctx, statePath)
+	header, entries, _, err := readWAL(statePath)
 	require.NoError(t, err)
 
 	assert.Equal(t, "test-lineage", header.Lineage)
@@ -67,24 +62,39 @@ func TestWALWriteAndRead(t *testing.T) {
 	assert.Nil(t, entries[2].V)
 }
 
-func TestWALTruncate(t *testing.T) {
+func TestCleanupWAL(t *testing.T) {
 	dir := t.TempDir()
 	statePath := filepath.Join(dir, "resources.json")
 	walFilePath := walPath(statePath)
 
 	wal, err := openWAL(statePath)
 	require.NoError(t, err)
-	err = wal.writeHeader("test-lineage", 1)
+	err = wal.writeJSON(WALHeader{Lineage: "test-lineage", Serial: 1})
 	require.NoError(t, err)
 
 	_, err = os.Stat(walFilePath)
 	require.NoError(t, err)
 
-	err = wal.truncate()
+	err = wal.close()
+	require.NoError(t, err)
+	err = cleanupWAL(statePath)
 	require.NoError(t, err)
 
 	_, err = os.Stat(walFilePath)
 	assert.True(t, os.IsNotExist(err))
+}
+
+func TestOpenWALFailsIfFileAlreadyExists(t *testing.T) {
+	dir := t.TempDir()
+	statePath := filepath.Join(dir, "resources.json")
+
+	wal, err := openWAL(statePath)
+	require.NoError(t, err)
+	require.NoError(t, wal.close())
+
+	_, err = openWAL(statePath)
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to open WAL file")
 }
 
 func TestRecoverFromWAL_NoWAL(t *testing.T) {
@@ -105,14 +115,14 @@ func TestRecoverFromWAL_ValidWAL(t *testing.T) {
 
 	wal, err := openWAL(statePath)
 	require.NoError(t, err)
-	err = wal.writeHeader("test-lineage", 1)
+	err = wal.writeJSON(WALHeader{Lineage: "test-lineage", Serial: 1})
 	require.NoError(t, err)
 
 	entry := &ResourceEntry{
 		ID:    "12345",
 		State: json.RawMessage(`{"name":"job1"}`),
 	}
-	err = wal.writeEntry("resources.jobs.job1", entry)
+	err = wal.writeJSON(WALEntry{K: "resources.jobs.job1", V: entry})
 	require.NoError(t, err)
 	err = wal.close()
 	require.NoError(t, err)
@@ -136,7 +146,7 @@ func TestRecoverFromWAL_StaleWAL(t *testing.T) {
 
 	wal, err := openWAL(statePath)
 	require.NoError(t, err)
-	err = wal.writeHeader("test-lineage", 1)
+	err = wal.writeJSON(WALHeader{Lineage: "test-lineage", Serial: 1})
 	require.NoError(t, err)
 	err = wal.close()
 	require.NoError(t, err)
@@ -158,7 +168,7 @@ func TestRecoverFromWAL_FutureWAL(t *testing.T) {
 
 	wal, err := openWAL(statePath)
 	require.NoError(t, err)
-	err = wal.writeHeader("test-lineage", 5)
+	err = wal.writeJSON(WALHeader{Lineage: "test-lineage", Serial: 5})
 	require.NoError(t, err)
 	err = wal.close()
 	require.NoError(t, err)
@@ -177,7 +187,7 @@ func TestRecoverFromWAL_LineageMismatch(t *testing.T) {
 
 	wal, err := openWAL(statePath)
 	require.NoError(t, err)
-	err = wal.writeHeader("lineage-A", 1)
+	err = wal.writeJSON(WALHeader{Lineage: "lineage-A", Serial: 1})
 	require.NoError(t, err)
 	err = wal.close()
 	require.NoError(t, err)
@@ -196,17 +206,17 @@ func TestRecoverFromWAL_DeleteOperation(t *testing.T) {
 
 	wal, err := openWAL(statePath)
 	require.NoError(t, err)
-	err = wal.writeHeader("test-lineage", 1)
+	err = wal.writeJSON(WALHeader{Lineage: "test-lineage", Serial: 1})
 	require.NoError(t, err)
 
 	entry := &ResourceEntry{
 		ID:    "12345",
 		State: json.RawMessage(`{"name":"job1"}`),
 	}
-	err = wal.writeEntry("resources.jobs.job1", entry)
+	err = wal.writeJSON(WALEntry{K: "resources.jobs.job1", V: entry})
 	require.NoError(t, err)
 
-	err = wal.writeEntry("resources.jobs.job1", nil)
+	err = wal.writeJSON(WALEntry{K: "resources.jobs.job1", V: nil})
 	require.NoError(t, err)
 
 	err = wal.close()
@@ -237,7 +247,7 @@ func TestDeploymentState_WALIntegration(t *testing.T) {
 	_, err = os.Stat(walFilePath)
 	require.NoError(t, err)
 
-	header, entries, err := readWAL(ctx, statePath)
+	header, entries, _, err := readWAL(statePath)
 	require.NoError(t, err)
 	assert.Equal(t, 1, header.Serial)
 	require.Len(t, entries, 1)
@@ -276,13 +286,13 @@ func TestDeploymentState_WALRecoveryOnOpen(t *testing.T) {
 
 	wal, err := openWAL(statePath)
 	require.NoError(t, err)
-	err = wal.writeHeader("test-lineage", 6)
+	err = wal.writeJSON(WALHeader{Lineage: "test-lineage", Serial: 6})
 	require.NoError(t, err)
 	entry := &ResourceEntry{
 		ID:    "new-id",
 		State: json.RawMessage(`{"name":"new"}`),
 	}
-	err = wal.writeEntry("resources.jobs.new", entry)
+	err = wal.writeJSON(WALEntry{K: "resources.jobs.new", V: entry})
 	require.NoError(t, err)
 	err = wal.close()
 	require.NoError(t, err)
@@ -311,7 +321,7 @@ func TestDeploymentState_DeleteStateWritesWAL(t *testing.T) {
 	err = db.DeleteState("resources.jobs.job1")
 	require.NoError(t, err)
 
-	_, entries, err := readWAL(ctx, statePath)
+	_, entries, _, err := readWAL(statePath)
 	require.NoError(t, err)
 
 	require.Len(t, entries, 2)
@@ -346,7 +356,7 @@ func TestDeploymentState_WALWithDependsOn(t *testing.T) {
 	err = db.SaveState("resources.jobs.job1", "12345", map[string]string{"name": "job1"}, dependsOn)
 	require.NoError(t, err)
 
-	_, entries, err := readWAL(ctx, statePath)
+	_, entries, _, err := readWAL(statePath)
 	require.NoError(t, err)
 
 	require.Len(t, entries, 1)
@@ -372,11 +382,19 @@ not valid json
 	db := NewDatabase("", 0)
 	recovered, err := recoverFromWAL(ctx, statePath, &db)
 	require.NoError(t, err)
-	assert.False(t, recovered)
-	assert.Empty(t, db.State)
+	assert.True(t, recovered)
+	assert.Len(t, db.State, 2)
+	assert.Equal(t, "12345", db.State["resources.jobs.job1"].ID)
+	assert.Equal(t, "67890", db.State["resources.jobs.job2"].ID)
 
+	corruptedPath := walCorruptedPath(statePath)
+	_, err = os.Stat(corruptedPath)
+	require.NoError(t, err)
+	contentBytes, err := os.ReadFile(corruptedPath)
+	require.NoError(t, err)
+	assert.Equal(t, "not valid json\n", string(contentBytes))
 	_, err = os.Stat(walFilePath)
-	assert.True(t, os.IsNotExist(err))
+	require.NoError(t, err)
 }
 
 func TestRecoverFromWAL_CorruptedLastLine(t *testing.T) {
@@ -402,6 +420,13 @@ not valid json
 	assert.Contains(t, db.State, "resources.jobs.job2")
 	assert.Equal(t, "12345", db.State["resources.jobs.job1"].ID)
 	assert.Equal(t, "67890", db.State["resources.jobs.job2"].ID)
+
+	corruptedPath := walCorruptedPath(statePath)
+	_, err = os.Stat(corruptedPath)
+	require.NoError(t, err)
+	contentBytes, err := os.ReadFile(corruptedPath)
+	require.NoError(t, err)
+	assert.Equal(t, "not valid json\n", string(contentBytes))
 }
 
 func TestDeploymentState_RecoveredFromWALFlag(t *testing.T) {
@@ -417,9 +442,9 @@ func TestDeploymentState_RecoveredFromWALFlag(t *testing.T) {
 
 	wal, err := openWAL(statePath)
 	require.NoError(t, err)
-	err = wal.writeHeader("test-lineage", 1)
+	err = wal.writeJSON(WALHeader{Lineage: "test-lineage", Serial: 1})
 	require.NoError(t, err)
-	err = wal.writeEntry("resources.jobs.job1", &ResourceEntry{ID: "123", State: json.RawMessage(`{}`)})
+	err = wal.writeJSON(WALEntry{K: "resources.jobs.job1", V: &ResourceEntry{ID: "123", State: json.RawMessage(`{}`)}})
 	require.NoError(t, err)
 	err = wal.close()
 	require.NoError(t, err)
@@ -451,7 +476,6 @@ func TestRecoverFromWAL_LineageAdoption(t *testing.T) {
 }
 
 func TestReadWAL_EmptyFile(t *testing.T) {
-	ctx := context.Background()
 	dir := t.TempDir()
 	statePath := filepath.Join(dir, "resources.json")
 	walFilePath := walPath(statePath)
@@ -459,7 +483,7 @@ func TestReadWAL_EmptyFile(t *testing.T) {
 	err := os.WriteFile(walFilePath, []byte(""), 0o600)
 	require.NoError(t, err)
 
-	_, _, err = readWAL(ctx, statePath)
+	_, _, _, err = readWAL(statePath)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "empty")
 }
@@ -482,7 +506,7 @@ func TestDeploymentState_MultipleOperationsSameKey(t *testing.T) {
 	err = db.SaveState("resources.jobs.job1", "222", map[string]string{"v": "2"}, nil)
 	require.NoError(t, err)
 
-	_, entries, err := readWAL(ctx, statePath)
+	_, entries, _, err := readWAL(statePath)
 	require.NoError(t, err)
 	require.Len(t, entries, 3)
 	assert.Equal(t, "111", entries[0].V.ID)
@@ -495,4 +519,32 @@ func TestDeploymentState_MultipleOperationsSameKey(t *testing.T) {
 	entry, ok := db.GetResourceEntry("resources.jobs.job1")
 	require.True(t, ok)
 	assert.Equal(t, "222", entry.ID)
+}
+
+func TestDeploymentState_FinalizeFailsOnCorruptedWAL(t *testing.T) {
+	ctx := context.Background()
+	dir := t.TempDir()
+	statePath := filepath.Join(dir, "resources.json")
+	walFilePath := walPath(statePath)
+
+	var db DeploymentState
+	err := db.Open(ctx, statePath)
+	require.NoError(t, err)
+
+	err = db.SaveState("resources.jobs.job1", "12345", map[string]string{"name": "job1"}, nil)
+	require.NoError(t, err)
+
+	f, err := os.OpenFile(walFilePath, os.O_WRONLY|os.O_APPEND, 0)
+	require.NoError(t, err)
+	_, err = f.WriteString("{\"k\":\"resources.jobs.partial_write\",\"v\":{\"__id__\":\"999\",\"state\":{\"name\":\"partial-\n")
+	require.NoError(t, err)
+	require.NoError(t, f.Sync())
+	require.NoError(t, f.Close())
+
+	err = db.Finalize()
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to replay WAL during finalize: corrupted entry at line")
+
+	_, err = os.Stat(walFilePath)
+	require.NoError(t, err)
 }
