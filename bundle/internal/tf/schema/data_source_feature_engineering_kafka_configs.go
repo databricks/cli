@@ -6,6 +6,16 @@ type DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsAuthConfig struct {
 	UcServiceCredentialName string `json:"uc_service_credential_name,omitempty"`
 }
 
+type DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsBackfillSourceDeltaTableSource struct {
+	EntityColumns    []string `json:"entity_columns"`
+	FullName         string   `json:"full_name"`
+	TimeseriesColumn string   `json:"timeseries_column"`
+}
+
+type DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsBackfillSource struct {
+	DeltaTableSource *DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsBackfillSourceDeltaTableSource `json:"delta_table_source,omitempty"`
+}
+
 type DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsKeySchema struct {
 	JsonSchema string `json:"json_schema,omitempty"`
 }
@@ -22,6 +32,7 @@ type DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsValueSchema struct {
 
 type DataSourceFeatureEngineeringKafkaConfigsKafkaConfigs struct {
 	AuthConfig       *DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsAuthConfig       `json:"auth_config,omitempty"`
+	BackfillSource   *DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsBackfillSource   `json:"backfill_source,omitempty"`
 	BootstrapServers string                                                                `json:"bootstrap_servers,omitempty"`
 	ExtraOptions     map[string]string                                                     `json:"extra_options,omitempty"`
 	KeySchema        *DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsKeySchema        `json:"key_schema,omitempty"`

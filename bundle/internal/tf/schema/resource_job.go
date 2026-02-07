@@ -631,6 +631,10 @@ type ResourceJobTaskCleanRoomsNotebookTask struct {
 	NotebookName           string            `json:"notebook_name"`
 }
 
+type ResourceJobTaskCompute struct {
+	HardwareAccelerator string `json:"hardware_accelerator,omitempty"`
+}
+
 type ResourceJobTaskConditionTask struct {
 	Left  string `json:"left"`
 	Op    string `json:"op"`
@@ -693,6 +697,10 @@ type ResourceJobTaskForEachTaskTaskCleanRoomsNotebookTask struct {
 	Etag                   string            `json:"etag,omitempty"`
 	NotebookBaseParameters map[string]string `json:"notebook_base_parameters,omitempty"`
 	NotebookName           string            `json:"notebook_name"`
+}
+
+type ResourceJobTaskForEachTaskTaskCompute struct {
+	HardwareAccelerator string `json:"hardware_accelerator,omitempty"`
 }
 
 type ResourceJobTaskForEachTaskTaskConditionTask struct {
@@ -1197,6 +1205,7 @@ type ResourceJobTaskForEachTaskTask struct {
 	TaskKey                 string                                                `json:"task_key"`
 	TimeoutSeconds          int                                                   `json:"timeout_seconds,omitempty"`
 	CleanRoomsNotebookTask  *ResourceJobTaskForEachTaskTaskCleanRoomsNotebookTask `json:"clean_rooms_notebook_task,omitempty"`
+	Compute                 *ResourceJobTaskForEachTaskTaskCompute                `json:"compute,omitempty"`
 	ConditionTask           *ResourceJobTaskForEachTaskTaskConditionTask          `json:"condition_task,omitempty"`
 	DashboardTask           *ResourceJobTaskForEachTaskTaskDashboardTask          `json:"dashboard_task,omitempty"`
 	DbtCloudTask            *ResourceJobTaskForEachTaskTaskDbtCloudTask           `json:"dbt_cloud_task,omitempty"`
@@ -1673,6 +1682,7 @@ type ResourceJobTask struct {
 	TaskKey                 string                                 `json:"task_key"`
 	TimeoutSeconds          int                                    `json:"timeout_seconds,omitempty"`
 	CleanRoomsNotebookTask  *ResourceJobTaskCleanRoomsNotebookTask `json:"clean_rooms_notebook_task,omitempty"`
+	Compute                 *ResourceJobTaskCompute                `json:"compute,omitempty"`
 	ConditionTask           *ResourceJobTaskConditionTask          `json:"condition_task,omitempty"`
 	DashboardTask           *ResourceJobTaskDashboardTask          `json:"dashboard_task,omitempty"`
 	DbtCloudTask            *ResourceJobTaskDbtCloudTask           `json:"dbt_cloud_task,omitempty"`

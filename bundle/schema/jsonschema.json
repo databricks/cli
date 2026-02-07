@@ -4644,6 +4644,22 @@
                 }
               ]
             },
+            "compute.HardwareAcceleratorType": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "HardwareAcceleratorType: The type of hardware accelerator to use for compute workloads.\nNOTE: This enum is referenced and is intended to be used by other Databricks services\nthat need to specify hardware accelerator requirements for AI compute workloads.",
+                  "enum": [
+                    "GPU_1xA10",
+                    "GPU_8xH100"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
             "compute.InitScriptInfo": {
               "oneOf": [
                 {
@@ -5408,6 +5424,24 @@
                     "clean_room_name",
                     "notebook_name"
                   ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "jobs.Compute": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "hardware_accelerator": {
+                      "description": "Hardware accelerator configuration for Serverless GPU workloads.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/compute.HardwareAcceleratorType"
+                    }
+                  },
+                  "additionalProperties": false
                 },
                 {
                   "type": "string",
@@ -7060,6 +7094,10 @@
                       "description": "The task runs a [clean rooms](https://docs.databricks.com/clean-rooms/index.html) notebook\nwhen the `clean_rooms_notebook_task` field is present.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.CleanRoomsNotebookTask"
                     },
+                    "compute": {
+                      "description": "Task level compute configuration.",
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.Compute"
+                    },
                     "condition_task": {
                       "description": "The task evaluates a condition that can be used to control the execution of other tasks when the `condition_task` field is present.\nThe condition task does not require a cluster to execute and does not support retries or notifications.",
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.ConditionTask"
@@ -7710,7 +7748,7 @@
                   "type": "object",
                   "properties": {
                     "connection_name": {
-                      "description": "Immutable. The Unity Catalog connection that this ingestion pipeline uses to communicate with the source. This is used with connectors for applications like Salesforce, Workday, and so on.",
+                      "description": "The Unity Catalog connection that this ingestion pipeline uses to communicate with the source. This is used with\nboth connectors for applications like Salesforce, Workday, and so on, and also database connectors like Oracle,\n(connector_type = QUERY_BASED OR connector_type = CDC).\nIf connection name corresponds to database connectors like Oracle, and connector_type is not provided then\nconnector_type defaults to QUERY_BASED. If connector_type is passed as CDC we use Combined Cdc Managed Ingestion\npipeline.\nUnder certain conditions, this can be replaced with ingestion_gateway_id to change the connector to Cdc Managed\nIngestion Pipeline with Gateway pipeline.",
                       "$ref": "#/$defs/string"
                     },
                     "full_refresh_window": {
@@ -7724,7 +7762,7 @@
                       "doNotSuggest": true
                     },
                     "ingestion_gateway_id": {
-                      "description": "Immutable. Identifier for the gateway that is used by this ingestion pipeline to communicate with the source database. This is used with connectors to databases like SQL Server.",
+                      "description": "Identifier for the gateway that is used by this ingestion pipeline to communicate with the source database.\nThis is used with CDC connectors to databases like SQL Server using a gateway pipeline (connector_type = CDC).\nUnder certain conditions, this can be replaced with connection_name to change the connector to Combined Cdc\nManaged Ingestion Pipeline.",
                       "$ref": "#/$defs/string"
                     },
                     "netsuite_jar_path": {
@@ -9527,6 +9565,10 @@
                 {
                   "type": "object",
                   "properties": {
+                    "burst_scaling_enabled": {
+                      "description": "Whether burst scaling is enabled. When enabled (default), the endpoint can automatically\nscale up beyond provisioned capacity to handle traffic spikes. When disabled, the endpoint\nmaintains fixed capacity at provisioned_model_units.",
+                      "$ref": "#/$defs/bool"
+                    },
                     "entity_name": {
                       "description": "The name of the entity to be served. The entity may be a model in the Databricks Model Registry, a model in the Unity Catalog (UC), or a function of type FEATURE_SPEC in the UC. If it is a UC object, the full name of the object should be given in the form of **catalog_name.schema_name.model_name**.",
                       "$ref": "#/$defs/string"
@@ -9596,6 +9638,10 @@
                 {
                   "type": "object",
                   "properties": {
+                    "burst_scaling_enabled": {
+                      "description": "Whether burst scaling is enabled. When enabled (default), the endpoint can automatically\nscale up beyond provisioned capacity to handle traffic spikes. When disabled, the endpoint\nmaintains fixed capacity at provisioned_model_units.",
+                      "$ref": "#/$defs/bool"
+                    },
                     "environment_vars": {
                       "description": "An object containing a set of optional, user-specified environment variable key-value pairs used for serving this entity. Note: this is an experimental feature and subject to change. Example entity environment variables that refer to Databricks secrets: `{\"OPENAI_API_KEY\": \"{{secrets/my_scope/my_key}}\", \"DATABRICKS_TOKEN\": \"{{secrets/my_scope2/my_key2}}\"}`",
                       "$ref": "#/$defs/map/string"

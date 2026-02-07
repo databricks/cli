@@ -51,8 +51,9 @@ type DataSourceAppAppAppStatus struct {
 }
 
 type DataSourceAppAppComputeStatus struct {
-	Message string `json:"message,omitempty"`
-	State   string `json:"state,omitempty"`
+	ActiveInstances int    `json:"active_instances,omitempty"`
+	Message         string `json:"message,omitempty"`
+	State           string `json:"state,omitempty"`
 }
 
 type DataSourceAppAppGitRepository struct {

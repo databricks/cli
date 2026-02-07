@@ -51,8 +51,9 @@ type ResourceAppAppStatus struct {
 }
 
 type ResourceAppComputeStatus struct {
-	Message string `json:"message,omitempty"`
-	State   string `json:"state,omitempty"`
+	ActiveInstances int    `json:"active_instances,omitempty"`
+	Message         string `json:"message,omitempty"`
+	State           string `json:"state,omitempty"`
 }
 
 type ResourceAppGitRepository struct {

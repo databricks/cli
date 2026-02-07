@@ -68,7 +68,7 @@ func newCreateTagAssignment() *cobra.Command {
   Create a tag assignment
 
   Arguments:
-    ENTITY_TYPE: The type of entity to which the tag is assigned. Allowed values are
+    ENTITY_TYPE: The type of entity to which the tag is assigned. Allowed values are apps,
       dashboards, geniespaces
     ENTITY_ID: The identifier of the entity to which the tag is assigned
     TAG_KEY: The key of the tag. The characters , . : / - = and leading/trailing spaces
@@ -155,7 +155,7 @@ func newDeleteTagAssignment() *cobra.Command {
   Delete a tag assignment
 
   Arguments:
-    ENTITY_TYPE: The type of entity to which the tag is assigned. Allowed values are
+    ENTITY_TYPE: The type of entity to which the tag is assigned. Allowed values are apps,
       dashboards, geniespaces
     ENTITY_ID: The identifier of the entity to which the tag is assigned
     TAG_KEY: The key of the tag. The characters , . : / - = and leading/trailing spaces
@@ -217,7 +217,7 @@ func newGetTagAssignment() *cobra.Command {
   Get a tag assignment
 
   Arguments:
-    ENTITY_TYPE: The type of entity to which the tag is assigned. Allowed values are
+    ENTITY_TYPE: The type of entity to which the tag is assigned. Allowed values are apps,
       dashboards, geniespaces
     ENTITY_ID: The identifier of the entity to which the tag is assigned
     TAG_KEY: The key of the tag. The characters , . : / - = and leading/trailing spaces
@@ -282,7 +282,7 @@ func newListTagAssignments() *cobra.Command {
   List the tag assignments for an entity
 
   Arguments:
-    ENTITY_TYPE: The type of entity to which the tag is assigned. Allowed values are
+    ENTITY_TYPE: The type of entity to which the tag is assigned. Allowed values are apps,
       dashboards, geniespaces
     ENTITY_ID: The identifier of the entity to which the tag is assigned`
 
@@ -344,7 +344,7 @@ func newUpdateTagAssignment() *cobra.Command {
   Update a tag assignment
 
   Arguments:
-    ENTITY_TYPE: The type of entity to which the tag is assigned. Allowed values are
+    ENTITY_TYPE: The type of entity to which the tag is assigned. Allowed values are apps,
       dashboards, geniespaces
     ENTITY_ID: The identifier of the entity to which the tag is assigned
     TAG_KEY: The key of the tag. The characters , . : / - = and leading/trailing spaces

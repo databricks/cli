@@ -9,7 +9,10 @@ from databricks.bundles.core._variable import (
     VariableOrList,
     VariableOrOptional,
 )
-from databricks.bundles.jobs._models.continuous import Continuous, ContinuousParam
+from databricks.bundles.jobs._models.continuous import (
+    Continuous,
+    ContinuousParam,
+)
 from databricks.bundles.jobs._models.cron_schedule import (
     CronSchedule,
     CronScheduleParam,

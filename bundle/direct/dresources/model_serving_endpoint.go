@@ -56,6 +56,7 @@ func servedEntitiesOutputToInput(output []serving.ServedEntityOutput) []serving.
 			ScaleToZeroEnabled:        entity.ScaleToZeroEnabled,
 			WorkloadSize:              entity.WorkloadSize,
 			WorkloadType:              entity.WorkloadType,
+			BurstScalingEnabled:       entity.BurstScalingEnabled,
 			ForceSendFields:           utils.FilterFields[serving.ServedEntityInput](entity.ForceSendFields),
 		}
 	}

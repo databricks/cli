@@ -158,6 +158,7 @@ type ResourceModelServingConfigServedEntitiesExternalModel struct {
 }
 
 type ResourceModelServingConfigServedEntities struct {
+	BurstScalingEnabled       bool                                                   `json:"burst_scaling_enabled,omitempty"`
 	EntityName                string                                                 `json:"entity_name,omitempty"`
 	EntityVersion             string                                                 `json:"entity_version,omitempty"`
 	EnvironmentVars           map[string]string                                      `json:"environment_vars,omitempty"`
@@ -175,6 +176,7 @@ type ResourceModelServingConfigServedEntities struct {
 }
 
 type ResourceModelServingConfigServedModels struct {
+	BurstScalingEnabled       bool              `json:"burst_scaling_enabled,omitempty"`
 	EnvironmentVars           map[string]string `json:"environment_vars,omitempty"`
 	InstanceProfileArn        string            `json:"instance_profile_arn,omitempty"`
 	MaxProvisionedConcurrency int               `json:"max_provisioned_concurrency,omitempty"`
