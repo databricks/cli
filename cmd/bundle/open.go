@@ -45,7 +45,40 @@ func resolveOpenArgument(ctx context.Context, b *bundle.Bundle, args []string) (
 		return "", errors.New("expected a KEY of the resource to open")
 	}
 
-	return args[0], nil
+	arg := args[0]
+
+	// Check for an exact match first.
+	completions := resources.Completions(b)
+	if _, ok := completions[arg]; ok {
+		return arg, nil
+	}
+
+	// Check for prefix matches.
+	matches := resources.LookupByPrefix(b, arg)
+	switch {
+	case len(matches) == 1:
+		return matches[0].Key, nil
+	case len(matches) > 1:
+		if cmdio.IsPromptSupported(ctx) {
+			// Show a filtered prompt with only matching resources.
+			inv := make(map[string]string)
+			for _, ref := range matches {
+				title := fmt.Sprintf("%s: %s", ref.Description.SingularTitle, ref.Resource.GetName())
+				inv[title] = ref.Key
+			}
+			return cmdio.Select(ctx, inv, "Resource to open")
+		}
+
+		// Non-interactive: return error listing candidates.
+		keys := make([]string, 0, len(matches))
+		for _, ref := range matches {
+			keys = append(keys, ref.Key)
+		}
+		return "", fmt.Errorf("multiple resources match prefix %q: %v", arg, keys)
+	}
+
+	// No matches; return the arg as-is and let Lookup handle the "not found" error.
+	return arg, nil
 }
 
 func newOpenCommand() *cobra.Command {
