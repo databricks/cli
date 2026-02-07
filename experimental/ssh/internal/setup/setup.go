@@ -7,10 +7,10 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"strconv"
 	"strings"
 	"time"
 
+	"github.com/databricks/cli/experimental/ssh/internal/client"
 	"github.com/databricks/cli/experimental/ssh/internal/keys"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go"
@@ -56,37 +56,19 @@ func resolveConfigPath(configPath string) (string, error) {
 	return filepath.Join(homeDir, ".ssh", "config"), nil
 }
 
-func GenerateProxyCommand(clusterId string, autoStartCluster bool, shutdownDelay time.Duration, profile, userName string, serverPort int, handoverTimeout time.Duration) (string, error) {
-	executablePath, err := os.Executable()
-	if err != nil {
-		return "", fmt.Errorf("failed to get current executable path: %w", err)
-	}
-
-	proxyCommand := fmt.Sprintf("%q ssh connect --proxy --cluster=%s --auto-start-cluster=%t --shutdown-delay=%s",
-		executablePath, clusterId, autoStartCluster, shutdownDelay.String())
-
-	if userName != "" && serverPort != 0 {
-		proxyCommand += " --metadata=" + userName + "," + strconv.Itoa(serverPort)
-	}
-
-	if handoverTimeout > 0 {
-		proxyCommand += " --handover-timeout=" + handoverTimeout.String()
-	}
-
-	if profile != "" {
-		proxyCommand += " --profile=" + profile
-	}
-
-	return proxyCommand, nil
-}
-
 func generateHostConfig(opts SetupOptions) (string, error) {
 	identityFilePath, err := keys.GetLocalSSHKeyPath(opts.ClusterID, opts.SSHKeysDir)
 	if err != nil {
 		return "", fmt.Errorf("failed to get local keys folder: %w", err)
 	}
 
-	proxyCommand, err := GenerateProxyCommand(opts.ClusterID, opts.AutoStartCluster, opts.ShutdownDelay, opts.Profile, "", 0, 0)
+	clientOpts := client.ClientOptions{
+		ClusterID:        opts.ClusterID,
+		AutoStartCluster: opts.AutoStartCluster,
+		ShutdownDelay:    opts.ShutdownDelay,
+		Profile:          opts.Profile,
+	}
+	proxyCommand, err := clientOpts.ToProxyCommand()
 	if err != nil {
 		return "", fmt.Errorf("failed to generate ProxyCommand: %w", err)
 	}
