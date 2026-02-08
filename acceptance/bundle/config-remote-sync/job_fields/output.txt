@@ -14,7 +14,9 @@ Resource: resources.jobs.my_job
   email_notifications.on_failure: add
   parameters: replace
   tags['team']: add
-  trigger.periodic.interval: replace
+  trigger.pause_status: add
+  trigger.periodic: remove
+  trigger.table_update: add
 
 
 
@@ -29,7 +31,7 @@ Resource: resources.jobs.my_job
 -
  resources:
    jobs:
-@@ -8,12 +7,17 @@
+@@ -8,13 +7,15 @@
          on_success:
            - success@example.com
 +        no_alert_for_skipped_runs: true
@@ -40,19 +42,20 @@ Resource: resources.jobs.my_job
 -          default: main
 -        - name: env
 -          default: dev
+-      trigger:
+-        periodic:
+-          interval: 1
+-          unit: DAYS
 +        - default: main
 +          name: catalog
 +        - default: dev
 +          name: env
 +        - default: us-east-1
 +          name: region
-       trigger:
-         periodic:
--          interval: 1
-+          interval: 2
-           unit: DAYS
++      trigger: {pause_status: UNPAUSED, table_update: {table_names: [samples.nyctaxi.trips]}}
        environments:
-@@ -31,5 +35,6 @@
+         - environment_key: default
+@@ -31,5 +32,6 @@
              node_type_id: [NODE_TYPE_ID]
              num_workers: 1
 -
