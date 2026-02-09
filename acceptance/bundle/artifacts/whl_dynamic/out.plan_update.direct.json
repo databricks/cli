@@ -104,14 +104,21 @@
         "run_as_user_name": "[USERNAME]",
         "tasks": [
           {
+            "disabled": false,
+            "email_notifications": {},
             "environment_key": "test_env",
             "python_wheel_task": {
               "entry_point": "run",
               "package_name": "my_test_code"
             },
-            "task_key": "ServerlessTestTask"
+            "run_if": "ALL_SUCCESS",
+            "task_key": "ServerlessTestTask",
+            "timeout_seconds": 0,
+            "webhook_notifications": {}
           },
           {
+            "disabled": false,
+            "email_notifications": {},
             "existing_cluster_id": "0717-132531-5opeqon1",
             "for_each_task": {
               "inputs": "[1]",
@@ -141,7 +148,10 @@
               "entry_point": "run",
               "package_name": "my_test_code"
             },
-            "task_key": "TestTask"
+            "run_if": "ALL_SUCCESS",
+            "task_key": "TestTask",
+            "timeout_seconds": 0,
+            "webhook_notifications": {}
           }
         ],
         "timeout_seconds": 0,

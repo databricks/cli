@@ -28,6 +28,8 @@
         },
         "tasks": [
           {
+            "disabled": false,
+            "email_notifications": {},
             "new_cluster": {
               "node_type_id": "[NODE_TYPE_ID]",
               "num_workers": 1,
@@ -37,7 +39,10 @@
               "notebook_path": "/Users/{{workspace_user_name}}/test_notebook",
               "source": "WORKSPACE"
             },
-            "task_key": "main_task"
+            "run_if": "ALL_SUCCESS",
+            "task_key": "main_task",
+            "timeout_seconds": 0,
+            "webhook_notifications": {}
           }
         ],
         "timeout_seconds": 0,

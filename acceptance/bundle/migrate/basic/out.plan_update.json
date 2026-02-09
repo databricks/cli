@@ -48,11 +48,16 @@
         "run_as_user_name": "[USERNAME]",
         "tasks": [
           {
+            "disabled": false,
+            "email_notifications": {},
             "notebook_task": {
               "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/migrate-basic-test/dev/files/notebook",
               "source": "WORKSPACE"
             },
-            "task_key": "main"
+            "run_if": "ALL_SUCCESS",
+            "task_key": "main",
+            "timeout_seconds": 0,
+            "webhook_notifications": {}
           }
         ],
         "timeout_seconds": 0,

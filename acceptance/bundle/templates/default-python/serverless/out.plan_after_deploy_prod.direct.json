@@ -52,11 +52,16 @@
         "run_as_user_name": "[USERNAME]",
         "tasks": [
           {
+            "disabled": false,
+            "email_notifications": {},
             "notebook_task": {
               "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/prod/files/src/sample_notebook",
               "source": "WORKSPACE"
             },
-            "task_key": "notebook_task"
+            "run_if": "ALL_SUCCESS",
+            "task_key": "notebook_task",
+            "timeout_seconds": 0,
+            "webhook_notifications": {}
           },
           {
             "depends_on": [
@@ -64,6 +69,8 @@
                 "task_key": "notebook_task"
               }
             ],
+            "disabled": false,
+            "email_notifications": {},
             "environment_key": "default",
             "python_wheel_task": {
               "entry_point": "main",
@@ -75,7 +82,10 @@
                 "prod"
               ]
             },
-            "task_key": "python_wheel_task"
+            "run_if": "ALL_SUCCESS",
+            "task_key": "python_wheel_task",
+            "timeout_seconds": 0,
+            "webhook_notifications": {}
           },
           {
             "depends_on": [
@@ -83,10 +93,15 @@
                 "task_key": "notebook_task"
               }
             ],
+            "disabled": false,
+            "email_notifications": {},
             "pipeline_task": {
               "pipeline_id": "[UUID]"
             },
-            "task_key": "refresh_pipeline"
+            "run_if": "ALL_SUCCESS",
+            "task_key": "refresh_pipeline",
+            "timeout_seconds": 0,
+            "webhook_notifications": {}
           }
         ],
         "timeout_seconds": 0,

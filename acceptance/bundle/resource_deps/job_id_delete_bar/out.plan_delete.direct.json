@@ -63,10 +63,15 @@
         "run_as_user_name": "[USERNAME]",
         "tasks": [
           {
+            "disabled": false,
+            "email_notifications": {},
+            "run_if": "ALL_SUCCESS",
             "run_job_task": {
               "job_id": [BAR_ID]
             },
-            "task_key": "job_task"
+            "task_key": "job_task",
+            "timeout_seconds": 0,
+            "webhook_notifications": {}
           }
         ],
         "timeout_seconds": 0,
