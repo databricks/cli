@@ -127,22 +127,31 @@ my_test_code-0.0.1+[UNIX_TIME_NANOS][2].dist-info/top_level.txt
 my_test_code-0.0.1+[UNIX_TIME_NANOS][2].dist-info/RECORD
 
 === Expecting 2 patched wheels in libraries section in /jobs/reset
->>> jq -s .[] | select(.path=="/api/2.2/jobs/reset") | .body.new_settings.tasks out.requests.txt
+>>> jq -s .[] | select(.path=="/api/2.2/jobs/reset") | .body.new_settings.tasks | map({task_key, existing_cluster_id, libraries, python_wheel_task, environment_key, for_each_task} | with_entries(select(.value != null))) out.requests.txt
 [
   {
-    "email_notifications": {},
-    "environment_key": "test_env",
+    "task_key": "ServerlessTestTask",
     "python_wheel_task": {
       "entry_point": "run",
       "package_name": "my_test_code"
     },
-    "run_if": "ALL_SUCCESS",
-    "task_key": "ServerlessTestTask",
-    "webhook_notifications": {}
+    "environment_key": "test_env"
   },
   {
-    "email_notifications": {},
+    "task_key": "TestTask",
     "existing_cluster_id": "0717-132531-5opeqon1",
+    "libraries": [
+      {
+        "whl": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.0.1+[UNIX_TIME_NANOS][2]-py3-none-any.whl"
+      },
+      {
+        "whl": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/other_test_code-0.0.1+[UNIX_TIME_NANOS][0]-py3-none-any.whl"
+      }
+    ],
+    "python_wheel_task": {
+      "entry_point": "run",
+      "package_name": "my_test_code"
+    },
     "for_each_task": {
       "inputs": "[1]",
       "task": {
@@ -158,22 +167,7 @@ my_test_code-0.0.1+[UNIX_TIME_NANOS][2].dist-info/RECORD
         },
         "task_key": "SubTask"
       }
-    },
-    "libraries": [
-      {
-        "whl": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/my_test_code-0.0.1+[UNIX_TIME_NANOS][2]-py3-none-any.whl"
-      },
-      {
-        "whl": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/artifacts/.internal/other_test_code-0.0.1+[UNIX_TIME_NANOS][0]-py3-none-any.whl"
-      }
-    ],
-    "python_wheel_task": {
-      "entry_point": "run",
-      "package_name": "my_test_code"
-    },
-    "run_if": "ALL_SUCCESS",
-    "task_key": "TestTask",
-    "webhook_notifications": {}
+    }
   }
 ]
 

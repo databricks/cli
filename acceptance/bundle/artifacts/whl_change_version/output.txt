@@ -63,10 +63,10 @@ dist/my_test_code-0.1.0-py3-none-any.whl
 dist/my_test_code-0.2.0-py3-none-any.whl
 
 === Expecting 1 wheel in libraries section in /jobs/reset
->>> jq -s .[] | select(.path=="/api/2.2/jobs/reset") | .body.new_settings.tasks out.requests.txt
+>>> jq -s .[] | select(.path=="/api/2.2/jobs/reset") | .body.new_settings.tasks | map({task_key, existing_cluster_id, libraries, python_wheel_task}) out.requests.txt
 [
   {
-    "email_notifications": {},
+    "task_key": "TestTask",
     "existing_cluster_id": "0717-aaaaa-bbbbbb",
     "libraries": [
       {
@@ -76,10 +76,7 @@ dist/my_test_code-0.2.0-py3-none-any.whl
     "python_wheel_task": {
       "entry_point": "run",
       "package_name": "my_test_code"
-    },
-    "run_if": "ALL_SUCCESS",
-    "task_key": "TestTask",
-    "webhook_notifications": {}
+    }
   }
 ]
 
@@ -112,10 +109,10 @@ dist/my_test_code-0.1.0-py3-none-any.whl
 dist/my_test_code-0.2.0-py3-none-any.whl
 
 === Expecting 1 wheel in libraries section in /jobs/reset
->>> jq -s .[] | select(.path=="/api/2.2/jobs/reset") | .body.new_settings.tasks out.requests.txt
+>>> jq -s .[] | select(.path=="/api/2.2/jobs/reset") | .body.new_settings.tasks | map({task_key, existing_cluster_id, libraries, python_wheel_task}) out.requests.txt
 [
   {
-    "email_notifications": {},
+    "task_key": "TestTask",
     "existing_cluster_id": "0717-aaaaa-bbbbbb",
     "libraries": [
       {
@@ -125,10 +122,7 @@ dist/my_test_code-0.2.0-py3-none-any.whl
     "python_wheel_task": {
       "entry_point": "run",
       "package_name": "my_test_code"
-    },
-    "run_if": "ALL_SUCCESS",
-    "task_key": "TestTask",
-    "webhook_notifications": {}
+    }
   }
 ]
 

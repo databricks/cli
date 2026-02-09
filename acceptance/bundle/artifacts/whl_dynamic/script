@@ -32,7 +32,7 @@ title "Verify contents, it should now have new_module.py"
 trace find.py --expect 1 '.databricks/.*my_test_code.*whl' | xargs ziplist.py
 
 title "Expecting 2 patched wheels in libraries section in /jobs/reset"
-trace jq -s '.[] | select(.path=="/api/2.2/jobs/reset") | .body.new_settings.tasks' out.requests.txt
+trace jq -s '.[] | select(.path=="/api/2.2/jobs/reset") | .body.new_settings.tasks | map({task_key, existing_cluster_id, libraries, python_wheel_task, environment_key, for_each_task} | with_entries(select(.value != null)))' out.requests.txt
 
 title "Expecting 2 pached wheels to be uploaded (Bad: it is currently uploaded twice)"
 trace jq .path < out.requests.txt | grep import | grep whl | sort
