@@ -22,6 +22,15 @@ Exit code:"""
 Old = 'Exit code: (137|1)'
 New = 'Exit code: [KILLED]'
 
+# On Windows, no bash "Killed" message appears when CLI has produced output before termination.
+# Insert [PROCESS_KILLED] between last output line and exit code for consistency.
+[[Repls]]
+Old = '(Deploying resources\.\.\.)\n\nExit code: \[KILLED\]'
+New = """${1}
+[PROCESS_KILLED]
+
+Exit code: [KILLED]"""
+
 [[Repls]]
 Old = "\r"
 New = ''
