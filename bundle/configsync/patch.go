@@ -15,7 +15,7 @@ import (
 	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/palantir/pkg/yamlpatch/gopkgv3yamlpatcher"
 	"github.com/palantir/pkg/yamlpatch/yamlpatch"
-	"gopkg.in/yaml.v3"
+	"go.yaml.in/yaml/v3"
 )
 
 // ApplyChangesToYAML generates YAML files for the given field changes.
