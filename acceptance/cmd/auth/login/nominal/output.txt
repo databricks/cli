@@ -1,7 +1,16 @@
 
+>>> echo [CLI]
+[CLI]
+
 >>> [CLI] auth login --host [DATABRICKS_URL] --profile test
 Profile test was successfully saved
 
->>> [CLI] auth profiles
+>>> [CLI] auth profiles --debug
+11:53:52 Info: start pid=67800 version=[DEV_VERSION] args="[CLI], auth, profiles, --debug"
+11:53:52 Debug: Loading test profile from home/.databrickscfg pid=67800 sdk=true
+11:53:52 Debug: non-retriable error: failed during request visitor: databricks-cli auth: legacy databricks CLI detected; upgrade to >= 0.100.0. Config: host=[DATABRICKS_URL], profile=test, config_file=home/.databrickscfg. Env: DATABRICKS_HOST pid=67800 sdk=true
+11:53:52 Debug: Profile "test" took 767.042µs to load pid=67800
 Name  Host                    Valid
-test  [DATABRICKS_URL]  YES
+test  [DATABRICKS_URL]  NO
+11:53:52 Info: completed execution pid=67800 exit_code=0
+11:53:52 Debug: no telemetry logs to upload pid=67800

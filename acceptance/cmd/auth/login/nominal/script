@@ -4,7 +4,10 @@ sethome "./home"
 # and follows the redirect back to localhost.
 export BROWSER="browser.py"
 
-trace $CLI auth login --host $DATABRICKS_HOST --profile test --debug
+export DATABRICKS_CLI_PATH=$CLI
+trace echo $DATABRICKS_CLI_PATH
+
+trace $CLI auth login --host $DATABRICKS_HOST --profile test
 trace $CLI auth profiles --debug
 
 # Track the .databrickscfg file that was created to surface changes.
