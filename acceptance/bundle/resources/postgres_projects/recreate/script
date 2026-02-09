@@ -21,7 +21,7 @@ project_id_1=`read_id.py my_project`
 
 print_requests() {
     local name=$1
-    jq --sort-keys 'select(.method != "GET" and (.path | contains("/postgres")))' < out.requests.txt > out.requests.${name}.$DATABRICKS_BUNDLE_ENGINE.txt
+    jq --sort-keys 'select(.method != "GET" and (.path | contains("/postgres")))' < out.requests.txt > out.requests.${name}.txt
     rm -f out.requests.txt
 }
 
@@ -34,7 +34,7 @@ mv databricks.yml.new databricks.yml
 trace cat databricks.yml
 
 # Plan output differs between engines (recreate vs update)
-$CLI bundle plan > out.plan.$DATABRICKS_BUNDLE_ENGINE.txt 2>&1
+$CLI bundle plan > out.plan.txt 2>&1
 trace $CLI bundle deploy --auto-approve
 
 print_requests update
@@ -42,7 +42,7 @@ print_requests update
 title "Fetch new project ID"
 project_id_2=`read_id.py my_project`
 # Get output differs between engines (different project IDs)
-$CLI postgres get-project $project_id_2 > out.get_project.$DATABRICKS_BUNDLE_ENGINE.txt
+$CLI postgres get-project $project_id_2 > out.get_project.txt
 
 title "Destroy and verify cleanup"
 trace $CLI bundle destroy --auto-approve
