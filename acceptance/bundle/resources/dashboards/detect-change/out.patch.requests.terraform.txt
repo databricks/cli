@@ -12,7 +12,6 @@
     "create_time": "[TIMESTAMP]",
     "dashboard_id": "[DASHBOARD_ID]",
     "display_name": "test-dashboard-[UNIQUE_NAME]",
-    "etag": [ETAG],
     "lifecycle_state": "ACTIVE",
     "parent_path": "/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/resources",
     "path": "/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/resources/test-dashboard-[UNIQUE_NAME].lvdash.json",

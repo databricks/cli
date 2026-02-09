@@ -614,6 +614,7 @@ func (p *PathNode) SkipPrefix(n int) *PathNode {
 			prev:  result,
 			key:   current.key,
 			index: current.index,
+			value: current.value,
 		}
 		current = current.Parent()
 	}

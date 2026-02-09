@@ -2,10 +2,15 @@
 
 package schema
 
+type DataSourceDbfsFileProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type DataSourceDbfsFile struct {
-	Content       string `json:"content,omitempty"`
-	FileSize      int    `json:"file_size,omitempty"`
-	Id            string `json:"id,omitempty"`
-	LimitFileSize bool   `json:"limit_file_size"`
-	Path          string `json:"path"`
+	Content        string                            `json:"content,omitempty"`
+	FileSize       int                               `json:"file_size,omitempty"`
+	Id             string                            `json:"id,omitempty"`
+	LimitFileSize  bool                              `json:"limit_file_size"`
+	Path           string                            `json:"path"`
+	ProviderConfig *DataSourceDbfsFileProviderConfig `json:"provider_config,omitempty"`
 }

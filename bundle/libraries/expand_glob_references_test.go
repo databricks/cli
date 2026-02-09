@@ -13,6 +13,8 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
+	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -237,4 +239,55 @@ func TestGlobReferencesExpandedForEnvironmentsDeps(t *testing.T) {
 		filepath.Join("jar", "my2.jar"),
 		"/some/local/path/to/whl/*.whl",
 	}, env.Spec.Dependencies)
+}
+
+func TestExpandGlobReferencesPreservesLocations(t *testing.T) {
+	dir := t.TempDir()
+
+	b := &bundle.Bundle{
+		SyncRootPath: dir,
+		Config: config.Root{
+			Resources: config.Resources{
+				Jobs: map[string]*resources.Job{
+					"job": {
+						JobSettings: jobs.JobSettings{
+							Tasks: []jobs.Task{
+								{
+									TaskKey: "task",
+									Libraries: []compute.Library{
+										{Whl: "/Workspace/remote.whl"},
+									},
+								},
+							},
+						},
+					},
+				},
+				Pipelines: map[string]*resources.Pipeline{
+					"pipeline": {
+						CreatePipeline: pipelines.CreatePipeline{
+							Environment: &pipelines.PipelinesEnvironment{
+								Dependencies: []string{
+									"--editable /Workspace/foo",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	loc := dyn.Location{File: filepath.Join(dir, "resource.yml"), Line: 10, Column: 5}
+	bundletest.SetLocation(b, ".", []dyn.Location{loc})
+
+	diags := bundle.Apply(context.Background(), b, ExpandGlobReferences())
+	require.Empty(t, diags)
+
+	libs, err := dyn.GetByPath(b.Config.Value(), dyn.MustPathFromString("resources.jobs.job.tasks[0].libraries"))
+	require.NoError(t, err)
+	assert.Equal(t, loc.File, libs.Location().File)
+
+	deps, err := dyn.GetByPath(b.Config.Value(), dyn.MustPathFromString("resources.pipelines.pipeline.environment.dependencies"))
+	require.NoError(t, err)
+	assert.Equal(t, loc.File, deps.Location().File)
 }

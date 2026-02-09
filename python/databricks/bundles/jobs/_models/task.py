@@ -13,6 +13,7 @@ from databricks.bundles.jobs._models.clean_rooms_notebook_task import (
     CleanRoomsNotebookTaskParam,
 )
 from databricks.bundles.jobs._models.cluster_spec import ClusterSpec, ClusterSpecParam
+from databricks.bundles.jobs._models.compute import Compute, ComputeParam
 from databricks.bundles.jobs._models.condition_task import (
     ConditionTask,
     ConditionTaskParam,
@@ -106,6 +107,11 @@ class Task:
     """
     The task runs a [clean rooms](https://docs.databricks.com/clean-rooms/index.html) notebook
     when the `clean_rooms_notebook_task` field is present.
+    """
+
+    compute: VariableOrOptional[Compute] = None
+    """
+    Task level compute configuration.
     """
 
     condition_task: VariableOrOptional[ConditionTask] = None
@@ -308,6 +314,11 @@ class TaskDict(TypedDict, total=False):
     """
     The task runs a [clean rooms](https://docs.databricks.com/clean-rooms/index.html) notebook
     when the `clean_rooms_notebook_task` field is present.
+    """
+
+    compute: VariableOrOptional[ComputeParam]
+    """
+    Task level compute configuration.
     """
 
     condition_task: VariableOrOptional[ConditionTaskParam]
