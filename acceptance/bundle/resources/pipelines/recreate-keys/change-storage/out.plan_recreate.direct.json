@@ -26,30 +26,27 @@
         }
       },
       "remote_state": {
+        "channel": "CURRENT",
         "creator_user_name": "[USERNAME]",
+        "deployment": {
+          "kind": "BUNDLE",
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/state/metadata.json"
+        },
+        "edition": "ADVANCED",
+        "id": "[MY_ID]",
         "last_modified": [UNIX_TIME_MILLIS],
+        "libraries": [
+          {
+            "file": {
+              "path": "/Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/files/foo.py"
+            }
+          }
+        ],
         "name": "test-pipeline-[UNIQUE_NAME]",
         "pipeline_id": "[MY_ID]",
         "run_as_user_name": "[USERNAME]",
-        "spec": {
-          "channel": "CURRENT",
-          "deployment": {
-            "kind": "BUNDLE",
-            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/state/metadata.json"
-          },
-          "edition": "ADVANCED",
-          "id": "[MY_ID]",
-          "libraries": [
-            {
-              "file": {
-                "path": "/Workspace/Users/[USERNAME]/.bundle/acc-[UNIQUE_NAME]/default/files/foo.py"
-              }
-            }
-          ],
-          "name": "test-pipeline-[UNIQUE_NAME]",
-          "storage": "dbfs:/pipelines/custom"
-        },
-        "state": "IDLE"
+        "state": "IDLE",
+        "storage": "dbfs:/pipelines/custom"
       },
       "changes": {
         "storage": {

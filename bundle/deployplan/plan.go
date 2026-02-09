@@ -105,6 +105,9 @@ const (
 	ReasonEmptyMap          = "empty_map"
 	ReasonEmptyStruct       = "empty_struct"
 	ReasonCustom            = "custom"
+
+	// Special reason that results in removing this change from the plan
+	ReasonDrop = "!drop"
 )
 
 // HasChange checks if there are any changes for fields with the given prefix.
