@@ -71,8 +71,8 @@ func TestSubstituteVars(t *testing.T) {
 		AppDescription: "My awesome app",
 		Profile:        "default",
 		WorkspaceHost:  "https://dbc-123.cloud.databricks.com",
-		PluginImport:   "analytics",
-		PluginUsage:    "analytics()",
+		PluginImports:  "analytics",
+		PluginUsages:   "analytics()",
 	}
 
 	tests := []struct {
@@ -107,12 +107,12 @@ func TestSubstituteVars(t *testing.T) {
 		},
 		{
 			name:     "plugin import substitution",
-			input:    "import { {{.plugin_import}} } from 'appkit'",
+			input:    "import { {{.plugin_imports}} } from 'appkit'",
 			expected: "import { analytics } from 'appkit'",
 		},
 		{
 			name:     "plugin usage substitution",
-			input:    "plugins: [{{.plugin_usage}}]",
+			input:    "plugins: [{{.plugin_usages}}]",
 			expected: "plugins: [analytics()]",
 		},
 		{
@@ -143,8 +143,8 @@ func TestSubstituteVarsNoPlugins(t *testing.T) {
 		AppDescription: "My app",
 		Profile:        "",
 		WorkspaceHost:  "",
-		PluginImport:   "", // No plugins
-		PluginUsage:    "",
+		PluginImports:  "", // No plugins
+		PluginUsages:   "",
 	}
 
 	tests := []struct {
@@ -154,12 +154,12 @@ func TestSubstituteVarsNoPlugins(t *testing.T) {
 	}{
 		{
 			name:     "removes plugin import with comma",
-			input:    "import { core, {{.plugin_import}} } from 'appkit'",
+			input:    "import { core, {{.plugin_imports}} } from 'appkit'",
 			expected: "import { core } from 'appkit'",
 		},
 		{
 			name:     "removes plugin usage line",
-			input:    "plugins: [\n    {{.plugin_usage}},\n]",
+			input:    "plugins: [\n    {{.plugin_usages}},\n]",
 			expected: "plugins: [\n]",
 		},
 	}

@@ -11,7 +11,7 @@ import (
 
 	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/databricks/cli/libs/apps/features"
+	"github.com/databricks/cli/libs/apps/manifest"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go/listing"
@@ -162,54 +162,6 @@ func PromptForProjectName(ctx context.Context, outputDir string) (string, error)
 	return name, nil
 }
 
-// PromptForPluginDependencies prompts for dependencies required by detected plugins.
-// Returns a map of dependency ID to value.
-func PromptForPluginDependencies(ctx context.Context, deps []features.FeatureDependency) (map[string]string, error) {
-	theme := AppkitTheme()
-	result := make(map[string]string)
-
-	for _, dep := range deps {
-		// Special handling for SQL warehouse - show picker instead of text input
-		if dep.ID == "sql_warehouse_id" {
-			warehouseID, err := PromptForWarehouse(ctx)
-			if err != nil {
-				return nil, err
-			}
-			result[dep.ID] = warehouseID
-			continue
-		}
-
-		var value string
-		description := dep.Description
-		if !dep.Required {
-			description += " (optional)"
-		}
-
-		input := huh.NewInput().
-			Title(dep.Title).
-			Description(description).
-			Placeholder(dep.Placeholder).
-			Value(&value)
-
-		if dep.Required {
-			input = input.Validate(func(s string) error {
-				if s == "" {
-					return errors.New("this field is required")
-				}
-				return nil
-			})
-		}
-
-		if err := input.WithTheme(theme).Run(); err != nil {
-			return nil, err
-		}
-		printAnswered(ctx, dep.Title, value)
-		result[dep.ID] = value
-	}
-
-	return result, nil
-}
-
 // PromptForDeployAndRun prompts for post-creation deploy and run options.
 func PromptForDeployAndRun(ctx context.Context) (deploy bool, runMode RunMode, err error) {
 	theme := AppkitTheme()
@@ -262,159 +214,6 @@ func PromptForDeployAndRun(ctx context.Context) (deploy bool, runMode RunMode, e
 	return deploy, RunMode(runModeStr), nil
 }
 
-// PromptForProjectConfig shows an interactive form to gather project configuration.
-// Flow: name -> features -> feature dependencies -> description -> deploy/run.
-// If preSelectedFeatures is provided, the feature selection prompt is skipped.
-func PromptForProjectConfig(ctx context.Context, preSelectedFeatures []string) (*CreateProjectConfig, error) {
-	config := &CreateProjectConfig{
-		Dependencies: make(map[string]string),
-		Features:     preSelectedFeatures,
-	}
-	theme := AppkitTheme()
-
-	PrintHeader(ctx)
-
-	// Step 1: Project name
-	err := huh.NewInput().
-		Title("Project name").
-		Description("lowercase letters, numbers, hyphens (max 26 chars)").
-		Placeholder("my-app").
-		Value(&config.ProjectName).
-		Validate(ValidateProjectName).
-		WithTheme(theme).
-		Run()
-	if err != nil {
-		return nil, err
-	}
-	printAnswered(ctx, "Project name", config.ProjectName)
-
-	// Step 2: Feature selection (skip if features already provided via flag)
-	if len(config.Features) == 0 && len(features.AvailableFeatures) > 0 {
-		options := make([]huh.Option[string], 0, len(features.AvailableFeatures))
-		for _, f := range features.AvailableFeatures {
-			label := f.Name + " - " + f.Description
-			options = append(options, huh.NewOption(label, f.ID))
-		}
-
-		err = huh.NewMultiSelect[string]().
-			Title("Select features").
-			Description("space to toggle, enter to confirm").
-			Options(options...).
-			Value(&config.Features).
-			Height(8).
-			WithTheme(theme).
-			Run()
-		if err != nil {
-			return nil, err
-		}
-		if len(config.Features) == 0 {
-			printAnswered(ctx, "Features", "None")
-		} else {
-			printAnswered(ctx, "Features", fmt.Sprintf("%d selected", len(config.Features)))
-		}
-	}
-
-	// Step 3: Prompt for feature dependencies
-	deps := features.CollectDependencies(config.Features)
-	for _, dep := range deps {
-		// Special handling for SQL warehouse - show picker instead of text input
-		if dep.ID == "sql_warehouse_id" {
-			warehouseID, err := PromptForWarehouse(ctx)
-			if err != nil {
-				return nil, err
-			}
-			config.Dependencies[dep.ID] = warehouseID
-			continue
-		}
-
-		var value string
-		description := dep.Description
-		if !dep.Required {
-			description += " (optional)"
-		}
-
-		input := huh.NewInput().
-			Title(dep.Title).
-			Description(description).
-			Placeholder(dep.Placeholder).
-			Value(&value)
-
-		if dep.Required {
-			input = input.Validate(func(s string) error {
-				if s == "" {
-					return errors.New("this field is required")
-				}
-				return nil
-			})
-		}
-
-		if err := input.WithTheme(theme).Run(); err != nil {
-			return nil, err
-		}
-		printAnswered(ctx, dep.Title, value)
-		config.Dependencies[dep.ID] = value
-	}
-
-	// Step 4: Description
-	config.Description = DefaultAppDescription
-	err = huh.NewInput().
-		Title("Description").
-		Placeholder(DefaultAppDescription).
-		Value(&config.Description).
-		WithTheme(theme).
-		Run()
-	if err != nil {
-		return nil, err
-	}
-	if config.Description == "" {
-		config.Description = DefaultAppDescription
-	}
-	printAnswered(ctx, "Description", config.Description)
-
-	// Step 5: Deploy after creation?
-	err = huh.NewConfirm().
-		Title("Deploy after creation?").
-		Description("Run 'databricks apps deploy' after setup").
-		Value(&config.Deploy).
-		WithTheme(theme).
-		Run()
-	if err != nil {
-		return nil, err
-	}
-	if config.Deploy {
-		printAnswered(ctx, "Deploy after creation", "Yes")
-	} else {
-		printAnswered(ctx, "Deploy after creation", "No")
-	}
-
-	// Step 6: Run the app?
-	runModeStr := string(RunModeNone)
-	err = huh.NewSelect[string]().
-		Title("Run the app after creation?").
-		Description("Choose how to start the development server").
-		Options(
-			huh.NewOption("No, I'll run it later", string(RunModeNone)),
-			huh.NewOption("Yes, run locally (npm run dev)", string(RunModeDev)),
-			huh.NewOption("Yes, run with remote bridge (dev-remote)", string(RunModeDevRemote)),
-		).
-		Value(&runModeStr).
-		WithTheme(theme).
-		Run()
-	if err != nil {
-		return nil, err
-	}
-	config.RunMode = RunMode(runModeStr)
-
-	runModeLabels := map[string]string{
-		string(RunModeNone):      "No",
-		string(RunModeDev):       "Yes (local)",
-		string(RunModeDevRemote): "Yes (remote)",
-	}
-	printAnswered(ctx, "Run after creation", runModeLabels[runModeStr])
-
-	return config, nil
-}
-
 // ListSQLWarehouses fetches all SQL warehouses the user has access to.
 func ListSQLWarehouses(ctx context.Context) ([]sql.EndpointInfo, error) {
 	w := cmdctx.WorkspaceClient(ctx)
@@ -426,38 +225,26 @@ func ListSQLWarehouses(ctx context.Context) ([]sql.EndpointInfo, error) {
 	return listing.ToSlice(ctx, iter)
 }
 
-// PromptForWarehouse shows a picker to select a SQL warehouse.
-func PromptForWarehouse(ctx context.Context) (string, error) {
-	var warehouses []sql.EndpointInfo
-	err := RunWithSpinnerCtx(ctx, "Fetching SQL warehouses...", func() error {
-		var fetchErr error
-		warehouses, fetchErr = ListSQLWarehouses(ctx)
-		return fetchErr
-	})
-	if err != nil {
-		return "", fmt.Errorf("failed to fetch SQL warehouses: %w", err)
+// PromptFromList shows a picker for items and returns the selected ID.
+// If required is false and items are empty, returns ("", nil). If required is true and items are empty, returns an error.
+func PromptFromList(ctx context.Context, title, emptyMessage string, items []ListItem, required bool) (string, error) {
+	if len(items) == 0 {
+		if required {
+			return "", errors.New(emptyMessage)
+		}
+		return "", nil
 	}
-
-	if len(warehouses) == 0 {
-		return "", errors.New("no SQL warehouses found. Create one in your workspace first")
-	}
-
 	theme := AppkitTheme()
-
-	// Build options with warehouse name and state
-	options := make([]huh.Option[string], 0, len(warehouses))
-	warehouseNames := make(map[string]string) // id -> name for printing
-	for _, wh := range warehouses {
-		state := string(wh.State)
-		label := fmt.Sprintf("%s (%s)", wh.Name, state)
-		options = append(options, huh.NewOption(label, wh.Id))
-		warehouseNames[wh.Id] = wh.Name
+	options := make([]huh.Option[string], 0, len(items))
+	labels := make(map[string]string)
+	for _, it := range items {
+		options = append(options, huh.NewOption(it.Label, it.ID))
+		labels[it.ID] = it.Label
 	}
-
 	var selected string
-	err = huh.NewSelect[string]().
-		Title("Select SQL Warehouse").
-		Description(fmt.Sprintf("%d warehouses available — type to filter", len(warehouses))).
+	err := huh.NewSelect[string]().
+		Title(title).
+		Description(fmt.Sprintf("%d available — type to filter", len(items))).
 		Options(options...).
 		Value(&selected).
 		Filtering(true).
@@ -467,9 +254,96 @@ func PromptForWarehouse(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", err
 	}
-
-	printAnswered(ctx, "SQL Warehouse", warehouseNames[selected])
+	printAnswered(ctx, title, labels[selected])
 	return selected, nil
+}
+
+// PromptForWarehouse shows a picker to select a SQL warehouse.
+func PromptForWarehouse(ctx context.Context) (string, error) {
+	var items []ListItem
+	err := RunWithSpinnerCtx(ctx, "Fetching SQL warehouses...", func() error {
+		var fetchErr error
+		items, fetchErr = ListSQLWarehousesItems(ctx)
+		return fetchErr
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to fetch SQL warehouses: %w", err)
+	}
+	return PromptFromList(ctx, "Select SQL Warehouse", "no SQL warehouses found. Create one in your workspace first", items, true)
+}
+
+// promptForResourceFromLister runs a spinner, fetches items via fn, then shows PromptFromList.
+func promptForResourceFromLister(ctx context.Context, _ manifest.Resource, required bool, title, emptyMsg, spinnerMsg string, fn func(context.Context) ([]ListItem, error)) (string, error) {
+	var items []ListItem
+	err := RunWithSpinnerCtx(ctx, spinnerMsg, func() error {
+		var fetchErr error
+		items, fetchErr = fn(ctx)
+		return fetchErr
+	})
+	if err != nil {
+		return "", err
+	}
+	return PromptFromList(ctx, title, emptyMsg, items, required)
+}
+
+// PromptForSecret shows a picker for secret scopes.
+func PromptForSecret(ctx context.Context, r manifest.Resource, required bool) (string, error) {
+	return promptForResourceFromLister(ctx, r, required, "Select Secret Scope", "no secret scopes found", "Fetching secret scopes...", ListSecrets)
+}
+
+// PromptForJob shows a picker for jobs.
+func PromptForJob(ctx context.Context, r manifest.Resource, required bool) (string, error) {
+	return promptForResourceFromLister(ctx, r, required, "Select Job", "no jobs found", "Fetching jobs...", ListJobs)
+}
+
+// PromptForSQLWarehouseResource shows a picker for SQL warehouses (manifest.Resource version).
+func PromptForSQLWarehouseResource(ctx context.Context, r manifest.Resource, required bool) (string, error) {
+	return promptForResourceFromLister(ctx, r, required, "Select SQL Warehouse", "no SQL warehouses found. Create one in your workspace first", "Fetching SQL warehouses...", ListSQLWarehousesItems)
+}
+
+// PromptForServingEndpoint shows a picker for serving endpoints.
+func PromptForServingEndpoint(ctx context.Context, r manifest.Resource, required bool) (string, error) {
+	return promptForResourceFromLister(ctx, r, required, "Select Serving Endpoint", "no serving endpoints found", "Fetching serving endpoints...", ListServingEndpoints)
+}
+
+// PromptForVolume shows a picker for UC volumes.
+func PromptForVolume(ctx context.Context, r manifest.Resource, required bool) (string, error) {
+	return promptForResourceFromLister(ctx, r, required, "Select Volume", "no volumes found", "Fetching volumes...", ListVolumes)
+}
+
+// PromptForVectorSearchIndex shows a picker for vector search indexes.
+func PromptForVectorSearchIndex(ctx context.Context, r manifest.Resource, required bool) (string, error) {
+	return promptForResourceFromLister(ctx, r, required, "Select Vector Search Index", "no vector search indexes found", "Fetching vector search indexes...", ListVectorSearchIndexes)
+}
+
+// PromptForUCFunction shows a picker for UC functions.
+func PromptForUCFunction(ctx context.Context, r manifest.Resource, required bool) (string, error) {
+	return promptForResourceFromLister(ctx, r, required, "Select UC Function", "no functions found", "Fetching functions...", ListFunctions)
+}
+
+// PromptForUCConnection shows a picker for UC connections.
+func PromptForUCConnection(ctx context.Context, r manifest.Resource, required bool) (string, error) {
+	return promptForResourceFromLister(ctx, r, required, "Select UC Connection", "no connections found", "Fetching connections...", ListConnections)
+}
+
+// PromptForDatabase shows a picker for UC catalogs (databases).
+func PromptForDatabase(ctx context.Context, r manifest.Resource, required bool) (string, error) {
+	return promptForResourceFromLister(ctx, r, required, "Select Database (Catalog)", "no catalogs found", "Fetching catalogs...", ListDatabases)
+}
+
+// PromptForGenieSpace shows a picker for Genie spaces.
+func PromptForGenieSpace(ctx context.Context, r manifest.Resource, required bool) (string, error) {
+	return promptForResourceFromLister(ctx, r, required, "Select Genie Space", "no Genie spaces found", "Fetching Genie spaces...", ListGenieSpaces)
+}
+
+// PromptForExperiment shows a picker for MLflow experiments.
+func PromptForExperiment(ctx context.Context, r manifest.Resource, required bool) (string, error) {
+	return promptForResourceFromLister(ctx, r, required, "Select Experiment", "no experiments found", "Fetching experiments...", ListExperiments)
+}
+
+// PromptForAppResource shows a picker for apps (manifest.Resource version).
+func PromptForAppResource(ctx context.Context, r manifest.Resource, required bool) (string, error) {
+	return promptForResourceFromLister(ctx, r, required, "Select App", "no apps found. Create one first with 'databricks apps create <name>'", "Fetching apps...", ListAppsItems)
 }
 
 // RunWithSpinnerCtx runs a function while showing a spinner with the given title.
