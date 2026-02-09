@@ -272,6 +272,10 @@ func (p *PatternNode) Len() int {
 	return (*PathNode)(p).Len()
 }
 
+func (p *PatternNode) Prefix(n int) *PatternNode {
+	return (*PatternNode)((*PathNode)(p).Prefix(n))
+}
+
 func (p *PatternNode) String() string {
 	return (*PathNode)(p).String()
 }
@@ -834,6 +838,56 @@ func nodesEqual(a, b *PathNode) bool {
 	return a.key == b.key && a.index == b.index && a.value == b.value
 }
 
+// HasPatternPrefix returns true if the path starts with the given pattern prefix.
+// Wildcards (.* and [*]) in the pattern match any single path component.
+// Both .* and [*] are treated interchangeably.
+func (p *PathNode) HasPatternPrefix(prefix *PatternNode) bool {
+	if prefix.IsRoot() {
+		return true
+	}
+
+	if p.IsRoot() {
+		return false
+	}
+
+	pLen := p.Len()
+	prefixLen := prefix.Len()
+
+	if prefixLen > pLen {
+		return false
+	}
+
+	pAtPrefixLen := p.Prefix(prefixLen)
+
+	currentP := pAtPrefixLen
+	currentPrefix := prefix
+
+	for currentPrefix != nil {
+		if !nodeMatchesPattern(currentP, currentPrefix) {
+			return false
+		}
+		currentP = currentP.prev
+		currentPrefix = (*PatternNode)((*PathNode)(currentPrefix).prev)
+	}
+
+	return true
+}
+
+// nodeMatchesPattern checks if a concrete path node matches a pattern node.
+// Wildcards (.* and [*]) match any node.
+func nodeMatchesPattern(concrete *PathNode, pattern *PatternNode) bool {
+	if concrete == nil && pattern == nil {
+		return true
+	}
+	if concrete == nil || pattern == nil {
+		return false
+	}
+	if pattern.DotStar() || pattern.BracketStar() {
+		return true
+	}
+	return nodesEqual(concrete, (*PathNode)(pattern))
+}
+
 // MarshalYAML implements yaml.Marshaler for PathNode.
 func (p *PathNode) MarshalYAML() (any, error) {
 	return p.String(), nil
@@ -854,5 +908,28 @@ func (p *PathNode) UnmarshalYAML(unmarshal func(any) error) error {
 		return nil
 	}
 	*p = *(*PathNode)(parsed)
+	return nil
+}
+
+// MarshalYAML implements yaml.Marshaler for PatternNode.
+func (p *PatternNode) MarshalYAML() (any, error) {
+	return p.String(), nil
+}
+
+// UnmarshalYAML implements yaml.Unmarshaler for PatternNode.
+// Wildcards (.* and [*]) are allowed.
+func (p *PatternNode) UnmarshalYAML(unmarshal func(any) error) error {
+	var s string
+	if err := unmarshal(&s); err != nil {
+		return err
+	}
+	parsed, err := parse(s, true)
+	if err != nil {
+		return err
+	}
+	if parsed == nil {
+		return nil
+	}
+	*p = *parsed
 	return nil
 }

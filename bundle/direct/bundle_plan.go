@@ -437,7 +437,7 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 
 func findMatchingRule(path *structpath.PathNode, rules []dresources.FieldRule) (string, bool) {
 	for _, r := range rules {
-		if path.HasPrefix(r.Field) {
+		if path.HasPatternPrefix(r.Field) {
 			return r.Reason, true
 		}
 	}
