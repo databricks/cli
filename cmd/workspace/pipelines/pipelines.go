@@ -220,6 +220,8 @@ func newDelete() *cobra.Command {
 
 	var deleteReq pipelines.DeletePipelineRequest
 
+	cmd.Flags().BoolVar(&deleteReq.Force, "force", deleteReq.Force, `If true, deletion will proceed even if resource cleanup fails.`)
+
 	cmd.Use = "delete PIPELINE_ID"
 	cmd.Short = `Delete a pipeline.`
 	cmd.Long = `Delete a pipeline.

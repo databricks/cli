@@ -142,6 +142,7 @@
             "task": [
               {
                 "clean_rooms_notebook_task": [],
+                "compute": [],
                 "condition_task": [],
                 "dashboard_task": [],
                 "dbt_cloud_task": [],
@@ -198,6 +199,7 @@
               },
               {
                 "clean_rooms_notebook_task": [],
+                "compute": [],
                 "condition_task": [],
                 "dashboard_task": [],
                 "dbt_cloud_task": [],
@@ -264,6 +266,7 @@
               },
               {
                 "clean_rooms_notebook_task": [],
+                "compute": [],
                 "condition_task": [],
                 "dashboard_task": [],
                 "dbt_cloud_task": [],
