@@ -551,6 +551,38 @@ func TestPrefixAndSkipPrefix(t *testing.T) {
 			prefix:     "",
 			skipPrefix: "resources.jobs.my_job.tasks[0].name",
 		},
+		// Regression test for SkipPrefix bug: value field was missing in KeyValue nodes
+		// Test all possible n values for completeness
+		{
+			input:      "resources.jobs[task_key='my_task'].notebook_task",
+			n:          0,
+			prefix:     "",
+			skipPrefix: "resources.jobs[task_key='my_task'].notebook_task",
+		},
+		{
+			input:      "resources.jobs[task_key='my_task'].notebook_task",
+			n:          1,
+			prefix:     "resources",
+			skipPrefix: "jobs[task_key='my_task'].notebook_task",
+		},
+		{
+			input:      "resources.jobs[task_key='my_task'].notebook_task",
+			n:          2,
+			prefix:     "resources.jobs",
+			skipPrefix: "[task_key='my_task'].notebook_task",
+		},
+		{
+			input:      "resources.jobs[task_key='my_task'].notebook_task",
+			n:          3,
+			prefix:     "resources.jobs[task_key='my_task']",
+			skipPrefix: "notebook_task",
+		},
+		{
+			input:      "resources.jobs[task_key='my_task'].notebook_task",
+			n:          4,
+			prefix:     "resources.jobs[task_key='my_task'].notebook_task",
+			skipPrefix: "",
+		},
 	}
 
 	for _, tt := range tests {
