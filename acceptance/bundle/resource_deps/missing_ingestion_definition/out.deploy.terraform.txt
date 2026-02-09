@@ -1,3 +1,4 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
 Error: exit status 1
 
 Error: Invalid index

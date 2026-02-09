@@ -2,5 +2,5 @@
 [DEFAULT]
 
 [test]
-host      = [DATABRICKS_URL]
+host      = http://127.0.0.1:57880
 auth_type = databricks-cli

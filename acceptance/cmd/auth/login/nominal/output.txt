@@ -1,16 +1,16 @@
 
->>> echo [CLI]
-[CLI]
+>>> echo /Users/shreyas.goenka/repos/cli/acceptance/build/darwin_arm64/databricks
+/Users/shreyas.goenka/repos/cli/acceptance/build/darwin_arm64/databricks
 
->>> [CLI] auth login --host [DATABRICKS_URL] --profile test
+>>> /Users/shreyas.goenka/repos/cli/acceptance/build/darwin_arm64/databricks auth login --host http://127.0.0.1:57880 --profile test
 Profile test was successfully saved
 
->>> [CLI] auth profiles --debug
-11:53:52 Info: start pid=67800 version=[DEV_VERSION] args="[CLI], auth, profiles, --debug"
-11:53:52 Debug: Loading test profile from home/.databrickscfg pid=67800 sdk=true
-11:53:52 Debug: non-retriable error: failed during request visitor: databricks-cli auth: legacy databricks CLI detected; upgrade to >= 0.100.0. Config: host=[DATABRICKS_URL], profile=test, config_file=home/.databrickscfg. Env: DATABRICKS_HOST pid=67800 sdk=true
-11:53:52 Debug: Profile "test" took 767.042µs to load pid=67800
+>>> /Users/shreyas.goenka/repos/cli/acceptance/build/darwin_arm64/databricks auth profiles --debug
+11:56:32 Info: start pid=69783 version=0.0.0-dev+8c0411988cae args="/Users/shreyas.goenka/repos/cli/acceptance/build/darwin_arm64/databricks, auth, profiles, --debug"
+11:56:32 Debug: Loading test profile from home/.databrickscfg pid=69783 sdk=true
+11:56:32 Debug: non-retriable error: failed during request visitor: databricks-cli auth: legacy databricks CLI detected; upgrade to >= 0.100.0. Config: host=http://127.0.0.1:57880, profile=test, config_file=home/.databrickscfg. Env: DATABRICKS_HOST pid=69783 sdk=true
+11:56:32 Debug: Profile "test" took 948.625µs to load pid=69783
 Name  Host                    Valid
-test  [DATABRICKS_URL]  NO
-11:53:52 Info: completed execution pid=67800 exit_code=0
-11:53:52 Debug: no telemetry logs to upload pid=67800
+test  http://127.0.0.1:57880  NO
+11:56:32 Info: completed execution pid=69783 exit_code=0
+11:56:32 Debug: no telemetry logs to upload pid=69783
