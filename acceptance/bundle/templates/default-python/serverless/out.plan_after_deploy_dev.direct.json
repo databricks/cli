@@ -15,109 +15,92 @@
       "remote_state": {
         "created_time": [UNIX_TIME_MILLIS][0],
         "creator_user_name": "[USERNAME]",
+        "deployment": {
+          "kind": "BUNDLE",
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/state/metadata.json"
+        },
+        "edit_mode": "UI_LOCKED",
+        "email_notifications": {},
+        "environments": [
+          {
+            "environment_key": "default",
+            "spec": {
+              "dependencies": [
+                "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/artifacts/.internal/my_default_python-0.0.1-py3-none-any.whl"
+              ],
+              "environment_version": "4"
+            }
+          }
+        ],
+        "format": "MULTI_TASK",
         "job_id": [NUMID],
+        "max_concurrent_runs": 4,
+        "name": "[dev [USERNAME]] sample_job",
+        "parameters": [
+          {
+            "default": "hive_metastore",
+            "name": "catalog"
+          },
+          {
+            "default": "[USERNAME]",
+            "name": "schema"
+          }
+        ],
+        "queue": {
+          "enabled": true
+        },
         "run_as_user_name": "[USERNAME]",
-        "settings": {
-          "deployment": {
-            "kind": "BUNDLE",
-            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/state/metadata.json"
+        "tags": {
+          "dev": "[USERNAME]"
+        },
+        "tasks": [
+          {
+            "notebook_task": {
+              "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/files/src/sample_notebook",
+              "source": "WORKSPACE"
+            },
+            "task_key": "notebook_task"
           },
-          "edit_mode": "UI_LOCKED",
-          "email_notifications": {},
-          "environments": [
-            {
-              "environment_key": "default",
-              "spec": {
-                "dependencies": [
-                  "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/artifacts/.internal/my_default_python-0.0.1-py3-none-any.whl"
-                ],
-                "environment_version": "4"
+          {
+            "depends_on": [
+              {
+                "task_key": "notebook_task"
               }
-            }
-          ],
-          "format": "MULTI_TASK",
-          "max_concurrent_runs": 4,
-          "name": "[dev [USERNAME]] sample_job",
-          "parameters": [
-            {
-              "default": "hive_metastore",
-              "name": "catalog"
+            ],
+            "environment_key": "default",
+            "python_wheel_task": {
+              "entry_point": "main",
+              "package_name": "my_default_python",
+              "parameters": [
+                "--catalog",
+                "hive_metastore",
+                "--schema",
+                "[USERNAME]"
+              ]
             },
-            {
-              "default": "[USERNAME]",
-              "name": "schema"
-            }
-          ],
-          "queue": {
-            "enabled": true
+            "task_key": "python_wheel_task"
           },
-          "tags": {
-            "dev": "[USERNAME]"
-          },
-          "tasks": [
-            {
-              "disabled": false,
-              "email_notifications": {},
-              "notebook_task": {
-                "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/files/src/sample_notebook",
-                "source": "WORKSPACE"
-              },
-              "run_if": "ALL_SUCCESS",
-              "task_key": "notebook_task",
-              "timeout_seconds": 0,
-              "webhook_notifications": {}
+          {
+            "depends_on": [
+              {
+                "task_key": "notebook_task"
+              }
+            ],
+            "pipeline_task": {
+              "pipeline_id": "[UUID]"
             },
-            {
-              "depends_on": [
-                {
-                  "task_key": "notebook_task"
-                }
-              ],
-              "disabled": false,
-              "email_notifications": {},
-              "environment_key": "default",
-              "python_wheel_task": {
-                "entry_point": "main",
-                "package_name": "my_default_python",
-                "parameters": [
-                  "--catalog",
-                  "hive_metastore",
-                  "--schema",
-                  "[USERNAME]"
-                ]
-              },
-              "run_if": "ALL_SUCCESS",
-              "task_key": "python_wheel_task",
-              "timeout_seconds": 0,
-              "webhook_notifications": {}
-            },
-            {
-              "depends_on": [
-                {
-                  "task_key": "notebook_task"
-                }
-              ],
-              "disabled": false,
-              "email_notifications": {},
-              "pipeline_task": {
-                "pipeline_id": "[UUID]"
-              },
-              "run_if": "ALL_SUCCESS",
-              "task_key": "refresh_pipeline",
-              "timeout_seconds": 0,
-              "webhook_notifications": {}
-            }
-          ],
-          "timeout_seconds": 0,
-          "trigger": {
-            "pause_status": "PAUSED",
-            "periodic": {
-              "interval": 1,
-              "unit": "DAYS"
-            }
-          },
-          "webhook_notifications": {}
-        }
+            "task_key": "refresh_pipeline"
+          }
+        ],
+        "timeout_seconds": 0,
+        "trigger": {
+          "pause_status": "PAUSED",
+          "periodic": {
+            "interval": 1,
+            "unit": "DAYS"
+          }
+        },
+        "webhook_notifications": {}
       },
       "changes": {
         "email_notifications": {
@@ -220,42 +203,39 @@
     "resources.pipelines.my_default_python_etl": {
       "action": "skip",
       "remote_state": {
+        "catalog": "main",
+        "channel": "CURRENT",
         "creator_user_name": "[USERNAME]",
+        "deployment": {
+          "kind": "BUNDLE",
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/state/metadata.json"
+        },
+        "development": true,
+        "edition": "ADVANCED",
+        "environment": {
+          "dependencies": [
+            "--editable /Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/files"
+          ]
+        },
+        "id": "[UUID]",
         "last_modified": [UNIX_TIME_MILLIS][1],
+        "libraries": [
+          {
+            "glob": {
+              "include": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/files/src/my_default_python_etl/transformations/**"
+            }
+          }
+        ],
         "name": "[dev [USERNAME]] my_default_python_etl",
         "pipeline_id": "[UUID]",
+        "root_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/files/src/my_default_python_etl",
         "run_as_user_name": "[USERNAME]",
-        "spec": {
-          "catalog": "main",
-          "channel": "CURRENT",
-          "deployment": {
-            "kind": "BUNDLE",
-            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/state/metadata.json"
-          },
-          "development": true,
-          "edition": "ADVANCED",
-          "environment": {
-            "dependencies": [
-              "--editable /Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/files"
-            ]
-          },
-          "id": "[UUID]",
-          "libraries": [
-            {
-              "glob": {
-                "include": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/files/src/my_default_python_etl/transformations/**"
-              }
-            }
-          ],
-          "name": "[dev [USERNAME]] my_default_python_etl",
-          "root_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/files/src/my_default_python_etl",
-          "schema": "[USERNAME]",
-          "serverless": true,
-          "tags": {
-            "dev": "[USERNAME]"
-          }
-        },
-        "state": "IDLE"
+        "schema": "[USERNAME]",
+        "serverless": true,
+        "state": "IDLE",
+        "tags": {
+          "dev": "[USERNAME]"
+        }
       }
     }
   }

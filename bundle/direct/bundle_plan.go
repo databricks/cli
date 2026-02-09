@@ -180,7 +180,7 @@ func (b *DeploymentBundle) CalculatePlan(ctx context.Context, client *databricks
 					plan.RemoveEntry(resourceKey)
 				} else {
 					log.Warnf(ctx, "reading %s id=%q: %s", resourceKey, dbentry.ID, err)
-					return false
+					// This is not an error during deletion, so don't return false here
 				}
 			}
 
@@ -362,6 +362,8 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 	cfg := adapter.ResourceConfig()
 	generatedCfg := adapter.GeneratedResourceConfig()
 
+	var toDrop []string
+
 	for pathString, ch := range changes {
 		path, err := structpath.Parse(pathString)
 		if err != nil {
@@ -420,6 +422,14 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 				ch.Reason = deployplan.ReasonCustom
 			}
 		}
+
+		if ch.Reason == deployplan.ReasonDrop {
+			toDrop = append(toDrop, pathString)
+		}
+	}
+
+	for _, key := range toDrop {
+		delete(changes, key)
 	}
 
 	return nil

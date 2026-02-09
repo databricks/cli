@@ -9,46 +9,39 @@
       "remote_state": {
         "created_time": [UNIX_TIME_MILLIS],
         "creator_user_name": "[USERNAME]",
+        "deployment": {
+          "kind": "BUNDLE",
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+        },
+        "edit_mode": "UI_LOCKED",
+        "email_notifications": {},
+        "format": "MULTI_TASK",
         "job_id": [MY_JOB_ID],
+        "max_concurrent_runs": 2,
+        "name": "Test Job for Conflict Detection",
+        "queue": {
+          "enabled": true
+        },
         "run_as_user_name": "[USERNAME]",
-        "settings": {
-          "deployment": {
-            "kind": "BUNDLE",
-            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
-          },
-          "edit_mode": "UI_LOCKED",
-          "email_notifications": {},
-          "format": "MULTI_TASK",
-          "max_concurrent_runs": 2,
-          "name": "Test Job for Conflict Detection",
-          "queue": {
-            "enabled": true
-          },
-          "tags": {
-            "environment": "dev"
-          },
-          "tasks": [
-            {
-              "disabled": false,
-              "email_notifications": {},
-              "new_cluster": {
-                "node_type_id": "[NODE_TYPE_ID]",
-                "num_workers": 1,
-                "spark_version": "13.3.x-scala2.12"
-              },
-              "notebook_task": {
-                "notebook_path": "/Users/{{workspace_user_name}}/test_notebook",
-                "source": "WORKSPACE"
-              },
-              "run_if": "ALL_SUCCESS",
-              "task_key": "main_task",
-              "timeout_seconds": 0,
-              "webhook_notifications": {}
-            }
-          ],
-          "timeout_seconds": 0,
-          "webhook_notifications": {}
-        }
+        "tags": {
+          "environment": "dev"
+        },
+        "tasks": [
+          {
+            "new_cluster": {
+              "node_type_id": "[NODE_TYPE_ID]",
+              "num_workers": 1,
+              "spark_version": "13.3.x-scala2.12"
+            },
+            "notebook_task": {
+              "notebook_path": "/Users/{{workspace_user_name}}/test_notebook",
+              "source": "WORKSPACE"
+            },
+            "task_key": "main_task"
+          }
+        ],
+        "timeout_seconds": 0,
+        "webhook_notifications": {}
       },
       "changes": {
         "email_notifications": {

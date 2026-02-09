@@ -7,23 +7,20 @@
     "resources.pipelines.foo1": {
       "action": "skip",
       "remote_state": {
+        "channel": "CURRENT",
         "creator_user_name": "[USERNAME]",
+        "deployment": {
+          "kind": "BUNDLE",
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+        },
+        "edition": "ADVANCED",
+        "id": "[UUID]",
         "last_modified": [UNIX_TIME_MILLIS],
         "name": "foo1 name",
         "pipeline_id": "[UUID]",
         "run_as_user_name": "[USERNAME]",
-        "spec": {
-          "channel": "CURRENT",
-          "deployment": {
-            "kind": "BUNDLE",
-            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
-          },
-          "edition": "ADVANCED",
-          "id": "[UUID]",
-          "name": "foo1 name",
-          "storage": "dbfs:/pipelines/[UUID]"
-        },
-        "state": "IDLE"
+        "state": "IDLE",
+        "storage": "dbfs:/pipelines/[UUID]"
       },
       "changes": {
         "storage": {
@@ -42,23 +39,20 @@
       ],
       "action": "skip",
       "remote_state": {
+        "channel": "CURRENT",
         "creator_user_name": "[USERNAME]",
+        "deployment": {
+          "kind": "BUNDLE",
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+        },
+        "edition": "ADVANCED",
+        "id": "[UUID]",
         "last_modified": [UNIX_TIME_MILLIS],
         "name": "foo2 foo1.creator_user_name=[USERNAME]",
         "pipeline_id": "[UUID]",
         "run_as_user_name": "[USERNAME]",
-        "spec": {
-          "channel": "CURRENT",
-          "deployment": {
-            "kind": "BUNDLE",
-            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
-          },
-          "edition": "ADVANCED",
-          "id": "[UUID]",
-          "name": "foo2 foo1.creator_user_name=[USERNAME]",
-          "storage": "dbfs:/pipelines/[UUID]"
-        },
-        "state": "IDLE"
+        "state": "IDLE",
+        "storage": "dbfs:/pipelines/[UUID]"
       },
       "changes": {
         "storage": {
@@ -77,23 +71,20 @@
       ],
       "action": "skip",
       "remote_state": {
+        "channel": "CURRENT",
         "creator_user_name": "[USERNAME]",
+        "deployment": {
+          "kind": "BUNDLE",
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+        },
+        "edition": "ADVANCED",
+        "id": "[UUID]",
         "last_modified": [UNIX_TIME_MILLIS],
         "name": "foo3 foo2.state=IDLE",
         "pipeline_id": "[UUID]",
         "run_as_user_name": "[USERNAME]",
-        "spec": {
-          "channel": "CURRENT",
-          "deployment": {
-            "kind": "BUNDLE",
-            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
-          },
-          "edition": "ADVANCED",
-          "id": "[UUID]",
-          "name": "foo3 foo2.state=IDLE",
-          "storage": "dbfs:/pipelines/[UUID]"
-        },
-        "state": "IDLE"
+        "state": "IDLE",
+        "storage": "dbfs:/pipelines/[UUID]"
       },
       "changes": {
         "storage": {
@@ -112,23 +103,20 @@
       ],
       "action": "skip",
       "remote_state": {
+        "channel": "CURRENT",
         "creator_user_name": "[USERNAME]",
+        "deployment": {
+          "kind": "BUNDLE",
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+        },
+        "edition": "ADVANCED",
+        "id": "[UUID]",
         "last_modified": [UNIX_TIME_MILLIS],
         "name": "foo4 foo3.last_modified=[UNIX_TIME_MILLIS]",
         "pipeline_id": "[UUID]",
         "run_as_user_name": "[USERNAME]",
-        "spec": {
-          "channel": "CURRENT",
-          "deployment": {
-            "kind": "BUNDLE",
-            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
-          },
-          "edition": "ADVANCED",
-          "id": "[UUID]",
-          "name": "foo4 foo3.last_modified=[UNIX_TIME_MILLIS]",
-          "storage": "dbfs:/pipelines/[UUID]"
-        },
-        "state": "IDLE"
+        "state": "IDLE",
+        "storage": "dbfs:/pipelines/[UUID]"
       },
       "changes": {
         "storage": {

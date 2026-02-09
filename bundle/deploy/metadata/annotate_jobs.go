@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/env"
 	"github.com/databricks/cli/libs/dbr"
 	"github.com/databricks/cli/libs/diag"
@@ -30,7 +31,7 @@ func (m *annotateJobs) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnos
 
 		isDatabricksWorkspace := dbr.RunsOnRuntime(ctx) && strings.HasPrefix(b.SyncRootPath, "/Workspace/")
 		_, experimentalYamlSyncEnabled := env.ExperimentalYamlSync(ctx)
-		if isDatabricksWorkspace && experimentalYamlSyncEnabled {
+		if isDatabricksWorkspace && experimentalYamlSyncEnabled && b.Config.Bundle.Mode == config.Development {
 			job.EditMode = jobs.JobEditModeEditable
 		} else {
 			job.EditMode = jobs.JobEditModeUiLocked
