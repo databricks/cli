@@ -321,7 +321,7 @@ func recoverFromWAL(ctx context.Context, statePath string, db *Database) (bool, 
 		return false, nil
 	}
 
-	logRecoveryProgress(ctx, fmt.Sprintf("Recovering state from WAL file: %s", relativePathForLog(walPath(statePath))))
+	logRecoveryProgress(ctx, "Recovering state from WAL file: "+relativePathForLog(walPath(statePath)))
 	walLogPath := relativePathForLog(walPath(statePath))
 	for _, corrupted := range replayResult.corruptedEntries {
 		log.Warnf(ctx, "Could not read state file WAL entry in %s: line %d: %s: %v", walLogPath, corrupted.lineNumber, corrupted.rawLine, corrupted.parseErr)
