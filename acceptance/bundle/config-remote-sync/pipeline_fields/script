@@ -15,6 +15,7 @@ r["schema"] = "prod"
 if "tags" not in r:
     r["tags"] = {}
 r["tags"]["foo"] = "bar"
+r.setdefault("environment", {}).setdefault("dependencies", []).append("--editable /Workspace/bar")
 EOF
 
 # TODO add support for permissions
