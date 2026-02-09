@@ -101,12 +101,13 @@ const (
 	ReasonServerSideDefault = "server_side_default"
 	ReasonAlias             = "alias"
 	ReasonRemoteAlreadySet  = "remote_already_set"
-	ReasonBuiltinRule       = "builtin_rule"
-	ReasonAPISchema         = "api_schema"
 	ReasonEmptySlice        = "empty_slice"
 	ReasonEmptyMap          = "empty_map"
 	ReasonEmptyStruct       = "empty_struct"
 	ReasonCustom            = "custom"
+
+	// Special reason that results in removing this change from the plan
+	ReasonDrop = "!drop"
 )
 
 // HasChange checks if there are any changes for fields with the given prefix.

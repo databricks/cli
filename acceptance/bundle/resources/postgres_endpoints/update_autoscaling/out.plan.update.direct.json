@@ -43,20 +43,20 @@
     },
     "autoscaling_limit_min_cu": {
       "action": "skip",
-      "reason": "builtin_rule",
+      "reason": "spec:input_only",
       "old": 0.5,
       "new": 0.5
     },
     "endpoint_type": {
       "action": "skip",
-      "reason": "builtin_rule",
+      "reason": "spec:input_only",
       "old": "ENDPOINT_TYPE_READ_WRITE",
       "new": "ENDPOINT_TYPE_READ_WRITE",
       "remote": ""
     },
     "suspend_timeout_duration": {
       "action": "skip",
-      "reason": "builtin_rule",
+      "reason": "empty_struct",
       "old": "300s",
       "new": "300s"
     }

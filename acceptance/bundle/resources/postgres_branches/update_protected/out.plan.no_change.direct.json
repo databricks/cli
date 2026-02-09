@@ -25,13 +25,13 @@
   "changes": {
     "is_protected": {
       "action": "skip",
-      "reason": "builtin_rule",
+      "reason": "spec:input_only",
       "old": false,
       "new": false
     },
     "no_expiry": {
       "action": "skip",
-      "reason": "builtin_rule",
+      "reason": "spec:input_only",
       "old": true,
       "new": true
     }

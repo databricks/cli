@@ -35,7 +35,7 @@
   "changes": {
     "default_endpoint_settings": {
       "action": "skip",
-      "reason": "builtin_rule",
+      "reason": "spec:input_only",
       "old": {
         "autoscaling_limit_max_cu": 4,
         "autoscaling_limit_min_cu": 0.5,
@@ -54,13 +54,13 @@
     },
     "history_retention_duration": {
       "action": "skip",
-      "reason": "builtin_rule",
+      "reason": "empty_struct",
       "old": "604800s",
       "new": "604800s"
     },
     "pg_version": {
       "action": "skip",
-      "reason": "builtin_rule",
+      "reason": "spec:input_only",
       "old": 16,
       "new": 16
     }

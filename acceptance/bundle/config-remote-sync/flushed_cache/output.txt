@@ -1,0 +1,22 @@
+
+=== Deploy bundle
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Get job ID and modify remote resource
+Modify max_concurrent_runs to 5
+
+=== Flush local cache
+Removing .databricks directory to simulate flushed cache
+ls: .databricks: No such file or directory
+Cache directory removed
+
+=== Check for changes after cache flush
+Detected changes in 1 resource(s):
+
+Resource: resources.jobs.test_job
+  max_concurrent_runs: replace
+
+

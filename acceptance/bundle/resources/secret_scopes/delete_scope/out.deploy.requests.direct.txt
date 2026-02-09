@@ -1,0 +1,9 @@
+
+>>> print_requests.py ^//import-file/ ^//workspace/ ^//telemetry-ext
+{
+  "method": "POST",
+  "path": "/api/2.0/secrets/scopes/delete",
+  "body": {
+    "scope": "test-scope-2-[UNIQUE_NAME]"
+  }
+}
