@@ -48,19 +48,10 @@ var serverSideDefaults = map[string]any{
 	"tasks[*].for_each_task.task.webhook_notifications": map[string]any{},
 
 	// Cluster fields (tasks)
-	"tasks[*].new_cluster.aws_attributes":      alwaysSkip,
-	"tasks[*].new_cluster.azure_attributes":    alwaysSkip,
-	"tasks[*].new_cluster.gcp_attributes":      alwaysSkip,
-	"tasks[*].new_cluster.data_security_mode":  "SINGLE_USER", // TODO this field is computed on some workspaces in integration tests, check why and if we can skip it
-	"tasks[*].new_cluster.enable_elastic_disk": alwaysSkip,    // deprecated field
+	"tasks[*].new_cluster.data_security_mode": "SINGLE_USER", // TODO this field is computed on some workspaces in integration tests, check why and if we can skip it
 
 	// Cluster fields (job_clusters)
-	"job_clusters[*].new_cluster.aws_attributes":     alwaysSkip,
-	"job_clusters[*].new_cluster.azure_attributes":   alwaysSkip,
-	"job_clusters[*].new_cluster.gcp_attributes":     alwaysSkip,
 	"job_clusters[*].new_cluster.data_security_mode": "SINGLE_USER", // TODO this field is computed on some workspaces in integration tests, check why and if we can skip it
-
-	"job_clusters[*].new_cluster.enable_elastic_disk": alwaysSkip, // deprecated field
 
 	// Terraform defaults
 	"run_as": alwaysSkip,

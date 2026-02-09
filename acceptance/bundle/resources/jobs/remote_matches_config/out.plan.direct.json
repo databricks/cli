@@ -72,7 +72,7 @@
         },
         "tasks[task_key='main_task'].new_cluster.aws_attributes": {
           "action": "skip",
-          "reason": "server_side_default",
+          "reason": "managed",
           "remote": {
             "availability": "SPOT_WITH_FALLBACK",
             "zone_id": "us-east-1c"
@@ -85,7 +85,7 @@
         },
         "tasks[task_key='main_task'].new_cluster.enable_elastic_disk": {
           "action": "skip",
-          "reason": "server_side_default",
+          "reason": "managed",
           "remote": false
         },
         "tasks[task_key='main_task'].notebook_task.source": {
