@@ -213,6 +213,7 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 	BuildYamlfmt(t)
 
 	t.Setenv("CLI", execPath)
+	t.Setenv("DATABRICKS_CLI_PATH", execPath)
 	repls.SetPath(execPath, "[CLI]")
 
 	paths := []string{
