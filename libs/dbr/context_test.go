@@ -81,8 +81,8 @@ func TestContext_RunsOnRuntimeWithMock(t *testing.T) {
 
 func TestContext_RuntimeVersionWithMock(t *testing.T) {
 	ctx := context.Background()
-	assert.Equal(t, "15.4", RuntimeVersion(MockRuntime(ctx, Environment{IsDbr: true, Version: "15.4"})))
-	assert.Empty(t, RuntimeVersion(MockRuntime(ctx, Environment{})))
+	assert.Equal(t, "15.4", RuntimeVersion(MockRuntime(ctx, Environment{IsDbr: true, Version: "15.4"})).String())
+	assert.Empty(t, RuntimeVersion(MockRuntime(ctx, Environment{})).String())
 }
 
 func TestParseVersion_Serverless(t *testing.T) {
@@ -153,19 +153,30 @@ func TestClusterType_String(t *testing.T) {
 	assert.Equal(t, "unknown", ClusterTypeUnknown.String())
 }
 
-func TestContext_GetVersion(t *testing.T) {
+func TestVersion_String(t *testing.T) {
+	v := ParseVersion("16.3")
+	assert.Equal(t, "16.3", v.String())
+
+	v = ParseVersion("client.4.9")
+	assert.Equal(t, "client.4.9", v.String())
+
+	v = ParseVersion("")
+	assert.Equal(t, "", v.String())
+}
+
+func TestContext_RuntimeVersionParsed(t *testing.T) {
 	ctx := context.Background()
 
 	// Test serverless version
 	serverlessCtx := MockRuntime(ctx, Environment{IsDbr: true, Version: "client.4.9"})
-	v := GetVersion(serverlessCtx)
+	v := RuntimeVersion(serverlessCtx)
 	assert.Equal(t, ClusterTypeServerless, v.Type)
 	assert.Equal(t, 4, v.Major)
 	assert.Equal(t, 9, v.Minor)
 
 	// Test interactive version
 	interactiveCtx := MockRuntime(ctx, Environment{IsDbr: true, Version: "17.3"})
-	v = GetVersion(interactiveCtx)
+	v = RuntimeVersion(interactiveCtx)
 	assert.Equal(t, ClusterTypeInteractive, v.Type)
 	assert.Equal(t, 17, v.Major)
 	assert.Equal(t, 3, v.Minor)
