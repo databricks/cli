@@ -256,6 +256,13 @@ func TestPathAndPatternNode(t *testing.T) {
 			BracketStar: true,
 			PathError:   "wildcards not allowed in path",
 		},
+		{
+			name:        "dot star then dot field",
+			patternNode: NewPatternDotString(NewPatternDotStar(nil), "name"),
+			String:      "*.name",
+			StringKey:   "name",
+			PathError:   "wildcards not allowed in path",
+		},
 	}
 
 	for _, tt := range tests {
@@ -470,6 +477,11 @@ func TestParseErrors(t *testing.T) {
 			error: "unexpected end of input while parsing index",
 		},
 		{
+			name:  "invalid char in index",
+			input: "field[1x]",
+			error: "unexpected character 'x' in index at position 7",
+		},
+		{
 			name:  "incomplete wildcard",
 			input: "field[*",
 			error: "unexpected end of input after wildcard '*'",
@@ -522,6 +534,16 @@ func TestParseErrors(t *testing.T) {
 			name:  "key-value invalid char after value quote",
 			input: "[name='value'x]",
 			error: "unexpected character 'x' after quote in key-value at position 13",
+		},
+		{
+			name:  "junk after wildcard in brackets",
+			input: "[*x]",
+			error: "unexpected character 'x' after '*' at position 2",
+		},
+		{
+			name:  "junk after dot star",
+			input: "a.*x",
+			error: "unexpected character 'x' after '.*' at position 3",
 		},
 		{
 			name:  "double quotes are not supported a.t.m",

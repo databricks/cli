@@ -391,7 +391,6 @@ func parse(s string, wildcardAllowed bool) (*PatternNode, error) {
 		stateKeyValueValue
 		stateKeyValueValueQuote
 		stateExpectDotOrEnd
-		stateEnd
 	)
 
 	state := stateStart
@@ -574,11 +573,6 @@ func parse(s string, wildcardAllowed bool) (*PatternNode, error) {
 				return nil, fmt.Errorf("unexpected character '%c' at position %d", ch, pos)
 			}
 
-		case stateEnd:
-			break
-
-		default:
-			return nil, fmt.Errorf("parser error at position %d", pos)
 		}
 
 		pos++
@@ -614,10 +608,6 @@ func parse(s string, wildcardAllowed bool) (*PatternNode, error) {
 		return nil, errors.New("unexpected end of input while parsing key-value value")
 	case stateKeyValueValueQuote:
 		return nil, errors.New("unexpected end of input after quote in key-value value")
-	case stateEnd:
-		// Already complete
-	default:
-		return nil, fmt.Errorf("parser error at position %d", pos)
 	}
 
 	return result, nil
