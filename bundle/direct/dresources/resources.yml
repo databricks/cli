@@ -141,6 +141,10 @@ resources:
     update_id_on_changes:
       - field: name
         reason: id_changes
+    ignore_remote_changes:
+      # skip_validation is input-only and not returned by the API
+      - field: skip_validation
+        reason: input_only
 
   volumes:
     recreate_on_changes:

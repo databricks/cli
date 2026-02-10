@@ -976,7 +976,27 @@
                 ]
               },
               "resources.ExternalLocationGrantPrivilege": {
-                "type": "string"
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "description": "Privilege to grant on an external location",
+                    "enum": [
+                      "ALL_PRIVILEGES",
+                      "CREATE_EXTERNAL_TABLE",
+                      "CREATE_EXTERNAL_VOLUME",
+                      "CREATE_MANAGED_STORAGE",
+                      "CREATE_TABLE",
+                      "CREATE_VOLUME",
+                      "MANAGE",
+                      "READ_FILES",
+                      "WRITE_FILES"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
               },
               "resources.Grant": {
                 "oneOf": [
@@ -4274,7 +4294,20 @@
               ]
             },
             "catalog.SseEncryptionDetailsAlgorithm": {
-              "type": "string"
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "SSE algorithm to use for encrypting S3 objects",
+                  "enum": [
+                    "AWS_SSE_KMS",
+                    "AWS_SSE_S3"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
             },
             "catalog.VolumeType": {
               "oneOf": [

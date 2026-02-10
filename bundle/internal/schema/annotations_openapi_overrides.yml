@@ -1151,3 +1151,35 @@ github.com/databricks/databricks-sdk-go/service/catalog.SseEncryptionDetails:
   "aws_kms_key_arn":
     "description": |-
       PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/catalog.SseEncryptionDetailsAlgorithm:
+  "_":
+    "description": |-
+      SSE algorithm to use for encrypting S3 objects
+    "enum":
+      - |-
+        AWS_SSE_KMS
+      - |-
+        AWS_SSE_S3
+github.com/databricks/cli/bundle/config/resources.ExternalLocationGrantPrivilege:
+  "_":
+    "description": |-
+      Privilege to grant on an external location
+    "enum":
+      - |-
+        ALL_PRIVILEGES
+      - |-
+        CREATE_EXTERNAL_TABLE
+      - |-
+        CREATE_EXTERNAL_VOLUME
+      - |-
+        CREATE_MANAGED_STORAGE
+      - |-
+        CREATE_TABLE
+      - |-
+        CREATE_VOLUME
+      - |-
+        MANAGE
+      - |-
+        READ_FILES
+      - |-
+        WRITE_FILES

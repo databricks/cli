@@ -48,7 +48,7 @@ func TestExternalLocationResourceDescription(t *testing.T) {
 	el := &ExternalLocation{}
 	desc := el.ResourceDescription()
 
-	assert.Equal(t, "external location", desc.SingularName)
+	assert.Equal(t, "external_location", desc.SingularName)
 	assert.Equal(t, "external_locations", desc.PluralName)
 	assert.Equal(t, "External Location", desc.SingularTitle)
 	assert.Equal(t, "External Locations", desc.PluralTitle)
