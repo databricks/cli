@@ -398,7 +398,7 @@ func getServerMetadata(ctx context.Context, client *databricks.WorkspaceClient, 
 	if err != nil {
 		return 0, "", "", errors.Join(errServerMetadata, err)
 	}
-	cmdio.LogString(ctx, "Workspace metadata: "+fmt.Sprintf("%+v", wsMetadata))
+	log.Debugf(ctx, "Workspace metadata: %+v", wsMetadata)
 
 	// For serverless mode, the cluster ID comes from the metadata
 	effectiveClusterID := clusterID
@@ -559,8 +559,7 @@ func spawnSSHClient(ctx context.Context, userName, privateKeyPath string, server
 	sshArgs = append(sshArgs, hostName)
 	sshArgs = append(sshArgs, opts.AdditionalArgs...)
 
-	cmdio.LogString(ctx, "Launching SSH client: ssh "+strings.Join(sshArgs, " "))
-
+	log.Debugf(ctx, "Launching SSH client: ssh %s", strings.Join(sshArgs, " "))
 	sshCmd := exec.CommandContext(ctx, "ssh", sshArgs...)
 
 	sshCmd.Stdin = os.Stdin
