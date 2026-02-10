@@ -21,7 +21,7 @@ func (a AuthArguments) ToOAuthArgument() (u2m.OAuthArgument, error) {
 	cfg := &config.Config{
 		Host:                       a.Host,
 		AccountID:                  a.AccountID,
-		WorkspaceId:                a.WorkspaceId,
+		WorkspaceID:                a.WorkspaceId,
 		Experimental_IsUnifiedHost: a.IsUnifiedHost,
 	}
 	host := cfg.CanonicalHostName()

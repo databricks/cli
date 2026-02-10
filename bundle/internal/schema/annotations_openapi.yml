@@ -815,71 +815,6 @@ github.com/databricks/cli/bundle/config/resources.Pipeline:
       Usage policy of this pipeline.
     "x-databricks-preview": |-
       PRIVATE
-github.com/databricks/cli/bundle/config/resources.PostgresBranch:
-  "expire_time":
-    "description": |-
-      Absolute expiration timestamp. When set, the branch will expire at this time.
-  "is_protected":
-    "description": |-
-      When set to true, protects the branch from deletion and reset. Associated compute endpoints and the project cannot be deleted while the branch is protected.
-  "no_expiry":
-    "description": |-
-      Explicitly disable expiration. When set to true, the branch will not expire.
-      If set to false, the request is invalid; provide either ttl or expire_time instead.
-  "source_branch":
-    "description": |-
-      The name of the source branch from which this branch was created (data lineage for point-in-time recovery).
-      If not specified, defaults to the project's default branch.
-      Format: projects/{project_id}/branches/{branch_id}
-  "source_branch_lsn":
-    "description": |-
-      The Log Sequence Number (LSN) on the source branch from which this branch was created.
-  "source_branch_time":
-    "description": |-
-      The point in time on the source branch from which this branch was created.
-  "ttl":
-    "description": |-
-      Relative time-to-live duration. When set, the branch will expire at creation_time + ttl.
-github.com/databricks/cli/bundle/config/resources.PostgresEndpoint:
-  "autoscaling_limit_max_cu":
-    "description": |-
-      The maximum number of Compute Units. Minimum value is 0.5.
-  "autoscaling_limit_min_cu":
-    "description": |-
-      The minimum number of Compute Units. Minimum value is 0.5.
-  "disabled":
-    "description": |-
-      Whether to restrict connections to the compute endpoint.
-      Enabling this option schedules a suspend compute operation.
-      A disabled compute endpoint cannot be enabled by a connection or
-      console action.
-  "endpoint_type":
-    "description": |-
-      The endpoint type. A branch can only have one READ_WRITE endpoint.
-  "no_suspension":
-    "description": |-
-      When set to true, explicitly disables automatic suspension (never suspend).
-      Should be set to true when provided.
-  "settings":
-    "description": |-
-      A collection of settings for a compute endpoint.
-  "suspend_timeout_duration":
-    "description": |-
-      Duration of inactivity after which the compute endpoint is automatically suspended.
-      If specified should be between 60s and 604800s (1 minute to 1 week).
-github.com/databricks/cli/bundle/config/resources.PostgresProject:
-  "default_endpoint_settings":
-    "description": |-
-      A collection of settings for a compute endpoint.
-  "display_name":
-    "description": |-
-      Human-readable project name. Length should be between 1 and 256 characters.
-  "history_retention_duration":
-    "description": |-
-      The number of seconds to retain the shared history for point in time recovery for all branches in this project. Value should be between 0s and 2592000s (up to 30 days).
-  "pg_version":
-    "description": |-
-      The major Postgres version number. Supported versions are 16 and 17.
 github.com/databricks/cli/bundle/config/resources.QualityMonitor:
   "assets_dir":
     "description": |-
@@ -2120,6 +2055,10 @@ github.com/databricks/databricks-sdk-go/service/compute.Environment:
     "description": |-
       The environment entity used to preserve serverless environment side panel, jobs' environment for non-notebook task, and DLT's environment for classic and serverless pipelines.
       In this minimal environment spec, only pip dependencies are supported.
+  "base_environment":
+    "description": |-
+      The `base_environment` key refers to an `env.yaml` file that specifies an environment version and a collection of dependencies required for the environment setup.
+      This `env.yaml` file may itself include a `base_environment` reference pointing to another `env_1.yaml` file. However, when used as a base environment, `env_1.yaml` (or further nested references) will not be processed or included in the final environment, meaning that the resolution of `base_environment` references is not recursive.
   "client":
     "description": |-
       Use `environment_version` instead.
@@ -2876,6 +2815,16 @@ github.com/databricks/databricks-sdk-go/service/jobs.DashboardTask:
   "dashboard_id":
     "description": |-
       The identifier of the dashboard to refresh.
+  "filters":
+    "description": |-
+      Dashboard task parameters. Used to apply dashboard filter values during dashboard task execution. Parameter values get applied to any dashboard filters that have a matching URL identifier as the parameter key.
+      The parameter value format is dependent on the filter type:
+      - For text and single-select filters, provide a single value (e.g. `"value"`)
+      - For date and datetime filters, provide the value in ISO 8601 format (e.g. `"2000-01-01T00:00:00"`)
+      - For multi-select filters, provide a JSON array of values (e.g. `"[\"value1\",\"value2\"]"`)
+      - For range and date range filters, provide a JSON object with `start` and `end` (e.g. `"{\"start\":\"1\",\"end\":\"10\"}"`)
+    "x-databricks-preview": |-
+      PRIVATE
   "subscription":
     "description": |-
       Optional: subscription configuration for sending the dashboard snapshot.

@@ -196,7 +196,7 @@ depends on the existing profiles you have set in your configuration file
 			w, err := databricks.NewWorkspaceClient(&databricks.Config{
 				Host:                       authArguments.Host,
 				AccountID:                  authArguments.AccountID,
-				WorkspaceId:                authArguments.WorkspaceId,
+				WorkspaceID:                authArguments.WorkspaceId,
 				Experimental_IsUnifiedHost: authArguments.IsUnifiedHost,
 				Credentials:                config.NewTokenSourceStrategy("login-token", authconv.AuthTokenSource(persistentAuth)),
 			})
@@ -230,7 +230,7 @@ depends on the existing profiles you have set in your configuration file
 				Host:                       authArguments.Host,
 				AuthType:                   authTypeDatabricksCLI,
 				AccountID:                  authArguments.AccountID,
-				WorkspaceId:                authArguments.WorkspaceId,
+				WorkspaceID:                authArguments.WorkspaceId,
 				Experimental_IsUnifiedHost: authArguments.IsUnifiedHost,
 				ClusterID:                  clusterID,
 				ConfigFile:                 os.Getenv("DATABRICKS_CONFIG_FILE"),
@@ -291,7 +291,7 @@ func setHostAndAccountId(ctx context.Context, existingProfile *profile.Profile, 
 	cfg := &config.Config{
 		Host:                       authArguments.Host,
 		AccountID:                  authArguments.AccountID,
-		WorkspaceId:                authArguments.WorkspaceId,
+		WorkspaceID:                authArguments.WorkspaceId,
 		Experimental_IsUnifiedHost: authArguments.IsUnifiedHost,
 	}
 
