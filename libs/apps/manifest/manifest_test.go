@@ -27,10 +27,13 @@ func TestLoad(t *testing.T) {
 					"required": [
 						{
 							"type": "sql_warehouse",
-							"alias": "warehouse",
+							"alias": "SQL Warehouse",
+							"resource_key": "sql-warehouse",
 							"description": "SQL Warehouse",
 							"permission": "CAN_USE",
-							"env": "DATABRICKS_WAREHOUSE_ID"
+							"fields": {
+								"id": {"env": "DATABRICKS_WAREHOUSE_ID", "description": "SQL Warehouse ID"}
+							}
 						}
 					],
 					"optional": []
@@ -116,7 +119,7 @@ func TestGetSelectablePlugins(t *testing.T) {
 				Name: "analytics",
 				Resources: manifest.Resources{
 					Required: []manifest.Resource{
-						{Type: "sql_warehouse", Alias: "warehouse"},
+						{Type: "sql_warehouse", Alias: "SQL Warehouse", ResourceKey: "sql-warehouse"},
 					},
 					Optional: []manifest.Resource{},
 				},
@@ -184,7 +187,7 @@ func TestCollectResources(t *testing.T) {
 				Name: "analytics",
 				Resources: manifest.Resources{
 					Required: []manifest.Resource{
-						{Type: "sql_warehouse", Alias: "warehouse", Env: "DATABRICKS_WAREHOUSE_ID"},
+						{Type: "sql_warehouse", Alias: "SQL Warehouse", ResourceKey: "sql-warehouse"},
 					},
 				},
 			},
@@ -192,8 +195,8 @@ func TestCollectResources(t *testing.T) {
 				Name: "genie",
 				Resources: manifest.Resources{
 					Required: []manifest.Resource{
-						{Type: "sql_warehouse", Alias: "warehouse", Env: "DATABRICKS_WAREHOUSE_ID"},
-						{Type: "genie_space", Alias: "genie", Env: "GENIE_SPACE_ID"},
+						{Type: "sql_warehouse", Alias: "SQL Warehouse", ResourceKey: "sql-warehouse"},
+						{Type: "genie_space", Alias: "Genie Space", ResourceKey: "genie-space"},
 					},
 				},
 			},
@@ -204,9 +207,71 @@ func TestCollectResources(t *testing.T) {
 	require.Len(t, resources, 1)
 	assert.Equal(t, "sql_warehouse", resources[0].Type)
 
-	// Collect from both - warehouse should be deduplicated
+	// Collect from both - warehouse should be deduplicated by resource_key
 	resources = m.CollectResources([]string{"analytics", "genie"})
 	require.Len(t, resources, 2)
+}
+
+func TestResourceFields(t *testing.T) {
+	dir := t.TempDir()
+	manifestPath := filepath.Join(dir, manifest.ManifestFileName)
+
+	content := `{
+		"version": "1.0",
+		"plugins": {
+			"caching": {
+				"name": "caching",
+				"displayName": "Caching",
+				"description": "DB caching",
+				"package": "@databricks/appkit",
+				"resources": {
+					"required": [
+						{
+							"type": "database",
+							"alias": "Database",
+							"resource_key": "database",
+							"description": "Cache database",
+							"permission": "CAN_CONNECT_AND_CREATE",
+							"fields": {
+								"instance_name": {"env": "DB_INSTANCE", "description": "Lakebase instance"},
+								"database_name": {"env": "DB_NAME", "description": "Database name"}
+							}
+						}
+					],
+					"optional": []
+				}
+			}
+		}
+	}`
+
+	err := os.WriteFile(manifestPath, []byte(content), 0o644)
+	require.NoError(t, err)
+
+	m, err := manifest.Load(dir)
+	require.NoError(t, err)
+
+	p := m.GetPluginByName("caching")
+	require.NotNil(t, p)
+	require.Len(t, p.Resources.Required, 1)
+
+	r := p.Resources.Required[0]
+	assert.True(t, r.HasFields())
+	assert.Len(t, r.Fields, 2)
+	assert.Equal(t, "DB_INSTANCE", r.Fields["instance_name"].Env)
+	assert.Equal(t, "DB_NAME", r.Fields["database_name"].Env)
+	assert.Equal(t, []string{"database_name", "instance_name"}, r.FieldNames())
+}
+
+func TestResourceHasFieldsFalse(t *testing.T) {
+	r := manifest.Resource{Type: "sql_warehouse", Alias: "SQL Warehouse", ResourceKey: "sql-warehouse"}
+	assert.False(t, r.HasFields())
+	assert.Empty(t, r.FieldNames())
+}
+
+func TestResourceKey(t *testing.T) {
+	r := manifest.Resource{Type: "sql_warehouse", Alias: "SQL Warehouse", ResourceKey: "sql-warehouse"}
+	assert.Equal(t, "sql-warehouse", r.Key())
+	assert.Equal(t, "sql_warehouse", r.VarPrefix())
 }
 
 func TestCollectOptionalResources(t *testing.T) {
@@ -216,7 +281,7 @@ func TestCollectOptionalResources(t *testing.T) {
 				Name: "analytics",
 				Resources: manifest.Resources{
 					Optional: []manifest.Resource{
-						{Type: "catalog", Alias: "default_catalog", Env: "DEFAULT_CATALOG"},
+						{Type: "catalog", Alias: "Default Catalog", ResourceKey: "default-catalog"},
 					},
 				},
 			},
