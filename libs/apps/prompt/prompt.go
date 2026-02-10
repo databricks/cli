@@ -272,8 +272,22 @@ func PromptForWarehouse(ctx context.Context) (string, error) {
 	return PromptFromList(ctx, "Select SQL Warehouse", "no SQL warehouses found. Create one in your workspace first", items, true)
 }
 
+// singleValueResult wraps a single value into the resource values map.
+// Uses the first field name from Fields for the composite key (resource_key.field),
+// or falls back to the resource key if no Fields are defined.
+func singleValueResult(r manifest.Resource, value string) map[string]string {
+	if value == "" {
+		return nil
+	}
+	names := r.FieldNames()
+	if len(names) >= 1 {
+		return map[string]string{r.Key() + "." + names[0]: value}
+	}
+	return map[string]string{r.Key(): value}
+}
+
 // promptForResourceFromLister runs a spinner, fetches items via fn, then shows PromptFromList.
-func promptForResourceFromLister(ctx context.Context, _ manifest.Resource, required bool, title, emptyMsg, spinnerMsg string, fn func(context.Context) ([]ListItem, error)) (string, error) {
+func promptForResourceFromLister(ctx context.Context, r manifest.Resource, required bool, title, emptyMsg, spinnerMsg string, fn func(context.Context) ([]ListItem, error)) (map[string]string, error) {
 	var items []ListItem
 	err := RunWithSpinnerCtx(ctx, spinnerMsg, func() error {
 		var fetchErr error
@@ -281,70 +295,153 @@ func promptForResourceFromLister(ctx context.Context, _ manifest.Resource, requi
 		return fetchErr
 	})
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return PromptFromList(ctx, title, emptyMsg, items, required)
+	value, err := PromptFromList(ctx, title, emptyMsg, items, required)
+	if err != nil {
+		return nil, err
+	}
+	return singleValueResult(r, value), nil
 }
 
-// PromptForSecret shows a picker for secret scopes.
-func PromptForSecret(ctx context.Context, r manifest.Resource, required bool) (string, error) {
-	return promptForResourceFromLister(ctx, r, required, "Select Secret Scope", "no secret scopes found", "Fetching secret scopes...", ListSecrets)
+// PromptForSecret shows a two-step picker for secret scope and key.
+func PromptForSecret(ctx context.Context, r manifest.Resource, required bool) (map[string]string, error) {
+	// Step 1: pick scope
+	var scopes []ListItem
+	err := RunWithSpinnerCtx(ctx, "Fetching secret scopes...", func() error {
+		var fetchErr error
+		scopes, fetchErr = ListSecretScopes(ctx)
+		return fetchErr
+	})
+	if err != nil {
+		return nil, err
+	}
+	scope, err := PromptFromList(ctx, "Select Secret Scope", "no secret scopes found", scopes, required)
+	if err != nil {
+		return nil, err
+	}
+	if scope == "" {
+		return nil, nil
+	}
+
+	// Step 2: pick key within scope
+	var keys []ListItem
+	err = RunWithSpinnerCtx(ctx, "Fetching secret keys...", func() error {
+		var fetchErr error
+		keys, fetchErr = ListSecretKeys(ctx, scope)
+		return fetchErr
+	})
+	if err != nil {
+		return nil, err
+	}
+	key, err := PromptFromList(ctx, "Select Secret Key", "no keys found in scope "+scope, keys, required)
+	if err != nil {
+		return nil, err
+	}
+	if key == "" {
+		return nil, nil
+	}
+
+	return map[string]string{
+		r.Key() + ".scope": scope,
+		r.Key() + ".key":   key,
+	}, nil
 }
 
 // PromptForJob shows a picker for jobs.
-func PromptForJob(ctx context.Context, r manifest.Resource, required bool) (string, error) {
+func PromptForJob(ctx context.Context, r manifest.Resource, required bool) (map[string]string, error) {
 	return promptForResourceFromLister(ctx, r, required, "Select Job", "no jobs found", "Fetching jobs...", ListJobs)
 }
 
 // PromptForSQLWarehouseResource shows a picker for SQL warehouses (manifest.Resource version).
-func PromptForSQLWarehouseResource(ctx context.Context, r manifest.Resource, required bool) (string, error) {
+func PromptForSQLWarehouseResource(ctx context.Context, r manifest.Resource, required bool) (map[string]string, error) {
 	return promptForResourceFromLister(ctx, r, required, "Select SQL Warehouse", "no SQL warehouses found. Create one in your workspace first", "Fetching SQL warehouses...", ListSQLWarehousesItems)
 }
 
 // PromptForServingEndpoint shows a picker for serving endpoints.
-func PromptForServingEndpoint(ctx context.Context, r manifest.Resource, required bool) (string, error) {
+func PromptForServingEndpoint(ctx context.Context, r manifest.Resource, required bool) (map[string]string, error) {
 	return promptForResourceFromLister(ctx, r, required, "Select Serving Endpoint", "no serving endpoints found", "Fetching serving endpoints...", ListServingEndpoints)
 }
 
 // PromptForVolume shows a picker for UC volumes.
-func PromptForVolume(ctx context.Context, r manifest.Resource, required bool) (string, error) {
+func PromptForVolume(ctx context.Context, r manifest.Resource, required bool) (map[string]string, error) {
 	return promptForResourceFromLister(ctx, r, required, "Select Volume", "no volumes found", "Fetching volumes...", ListVolumes)
 }
 
 // PromptForVectorSearchIndex shows a picker for vector search indexes.
-func PromptForVectorSearchIndex(ctx context.Context, r manifest.Resource, required bool) (string, error) {
+func PromptForVectorSearchIndex(ctx context.Context, r manifest.Resource, required bool) (map[string]string, error) {
 	return promptForResourceFromLister(ctx, r, required, "Select Vector Search Index", "no vector search indexes found", "Fetching vector search indexes...", ListVectorSearchIndexes)
 }
 
 // PromptForUCFunction shows a picker for UC functions.
-func PromptForUCFunction(ctx context.Context, r manifest.Resource, required bool) (string, error) {
+func PromptForUCFunction(ctx context.Context, r manifest.Resource, required bool) (map[string]string, error) {
 	return promptForResourceFromLister(ctx, r, required, "Select UC Function", "no functions found", "Fetching functions...", ListFunctions)
 }
 
 // PromptForUCConnection shows a picker for UC connections.
-func PromptForUCConnection(ctx context.Context, r manifest.Resource, required bool) (string, error) {
+func PromptForUCConnection(ctx context.Context, r manifest.Resource, required bool) (map[string]string, error) {
 	return promptForResourceFromLister(ctx, r, required, "Select UC Connection", "no connections found", "Fetching connections...", ListConnections)
 }
 
-// PromptForDatabase shows a picker for UC catalogs (databases).
-func PromptForDatabase(ctx context.Context, r manifest.Resource, required bool) (string, error) {
-	return promptForResourceFromLister(ctx, r, required, "Select Database (Catalog)", "no catalogs found", "Fetching catalogs...", ListDatabases)
+// PromptForDatabase shows a two-step picker for database instance and database name.
+func PromptForDatabase(ctx context.Context, r manifest.Resource, required bool) (map[string]string, error) {
+	// Step 1: pick a Lakebase instance
+	var instances []ListItem
+	err := RunWithSpinnerCtx(ctx, "Fetching database instances...", func() error {
+		var fetchErr error
+		instances, fetchErr = ListDatabaseInstances(ctx)
+		return fetchErr
+	})
+	if err != nil {
+		return nil, err
+	}
+	instanceName, err := PromptFromList(ctx, "Select Database Instance", "no database instances found", instances, required)
+	if err != nil {
+		return nil, err
+	}
+	if instanceName == "" {
+		return nil, nil
+	}
+
+	// Step 2: pick a database within the instance
+	var databases []ListItem
+	err = RunWithSpinnerCtx(ctx, "Fetching databases...", func() error {
+		var fetchErr error
+		databases, fetchErr = ListDatabases(ctx, instanceName)
+		return fetchErr
+	})
+	if err != nil {
+		return nil, err
+	}
+	dbName, err := PromptFromList(ctx, "Select Database", "no databases found in instance "+instanceName, databases, required)
+	if err != nil {
+		return nil, err
+	}
+	if dbName == "" {
+		return nil, nil
+	}
+
+	return map[string]string{
+		r.Key() + ".instance_name": instanceName,
+		r.Key() + ".database_name": dbName,
+	}, nil
 }
 
 // PromptForGenieSpace shows a picker for Genie spaces.
-func PromptForGenieSpace(ctx context.Context, r manifest.Resource, required bool) (string, error) {
+func PromptForGenieSpace(ctx context.Context, r manifest.Resource, required bool) (map[string]string, error) {
 	return promptForResourceFromLister(ctx, r, required, "Select Genie Space", "no Genie spaces found", "Fetching Genie spaces...", ListGenieSpaces)
 }
 
 // PromptForExperiment shows a picker for MLflow experiments.
-func PromptForExperiment(ctx context.Context, r manifest.Resource, required bool) (string, error) {
+func PromptForExperiment(ctx context.Context, r manifest.Resource, required bool) (map[string]string, error) {
 	return promptForResourceFromLister(ctx, r, required, "Select Experiment", "no experiments found", "Fetching experiments...", ListExperiments)
 }
 
-// PromptForAppResource shows a picker for apps (manifest.Resource version).
-func PromptForAppResource(ctx context.Context, r manifest.Resource, required bool) (string, error) {
-	return promptForResourceFromLister(ctx, r, required, "Select App", "no apps found. Create one first with 'databricks apps create <name>'", "Fetching apps...", ListAppsItems)
-}
+// TODO: uncomment when bundles support app as an app resource type.
+// // PromptForAppResource shows a picker for apps (manifest.Resource version).
+// func PromptForAppResource(ctx context.Context, r manifest.Resource, required bool) (map[string]string, error) {
+// 	return promptForResourceFromLister(ctx, r, required, "Select App", "no apps found. Create one first with 'databricks apps create <name>'", "Fetching apps...", ListAppsItems)
+// }
 
 // RunWithSpinnerCtx runs a function while showing a spinner with the given title.
 // The spinner stops and the function returns early if the context is cancelled.

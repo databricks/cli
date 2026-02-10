@@ -247,22 +247,24 @@ func promptForPluginsAndDeps(ctx context.Context, m *manifest.Manifest, preSelec
 	// Step 2: Prompt for required plugin resource dependencies
 	resources := m.CollectResources(config.Features)
 	for _, r := range resources {
-		value, err := promptForResource(ctx, r, theme, true)
+		values, err := promptForResource(ctx, r, theme, true)
 		if err != nil {
 			return nil, err
 		}
-		config.Dependencies[r.Alias] = value
+		for k, v := range values {
+			config.Dependencies[k] = v
+		}
 	}
 
 	// Step 3: Prompt for optional plugin resource dependencies
 	optionalResources := m.CollectOptionalResources(config.Features)
 	for _, r := range optionalResources {
-		value, err := promptForResource(ctx, r, theme, false)
+		values, err := promptForResource(ctx, r, theme, false)
 		if err != nil {
 			return nil, err
 		}
-		if value != "" {
-			config.Dependencies[r.Alias] = value
+		for k, v := range values {
+			config.Dependencies[k] = v
 		}
 	}
 
@@ -294,8 +296,9 @@ func promptForPluginsAndDeps(ctx context.Context, m *manifest.Manifest, preSelec
 }
 
 // promptForResource prompts the user for a resource value.
-// If required is true, the user must provide a value. Otherwise, they can skip.
-func promptForResource(ctx context.Context, r manifest.Resource, theme *huh.Theme, required bool) (string, error) {
+// Returns a map of value keys to values. For single-field resources the key is "resource_key.field".
+// For multi-field resources, keys use "resource_key.field_name".
+func promptForResource(ctx context.Context, r manifest.Resource, theme *huh.Theme, required bool) (map[string]string, error) {
 	if fn, ok := prompt.GetPromptFunc(r.Type); ok {
 		if !required {
 			var configure bool
@@ -306,11 +309,11 @@ func promptForResource(ctx context.Context, r manifest.Resource, theme *huh.Them
 				WithTheme(theme).
 				Run()
 			if err != nil {
-				return "", err
+				return nil, err
 			}
 			if !configure {
 				prompt.PrintAnswered(ctx, r.Alias, "skipped")
-				return "", nil
+				return nil, nil
 			}
 		}
 		return fn(ctx, r, required)
@@ -338,15 +341,21 @@ func promptForResource(ctx context.Context, r manifest.Resource, theme *huh.Them
 	}
 
 	if err := input.WithTheme(theme).Run(); err != nil {
-		return "", err
+		return nil, err
 	}
 
 	if value == "" && !required {
 		prompt.PrintAnswered(ctx, r.Alias, "skipped")
-	} else {
-		prompt.PrintAnswered(ctx, r.Alias, value)
+		return nil, nil
 	}
-	return value, nil
+	prompt.PrintAnswered(ctx, r.Alias, value)
+
+	// Use composite key from Fields when available.
+	names := r.FieldNames()
+	if len(names) >= 1 {
+		return map[string]string{r.Key() + "." + names[0]: value}, nil
+	}
+	return map[string]string{r.Key(): value}, nil
 }
 
 // cloneRepo clones a git repository to a temporary directory.
@@ -533,7 +542,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		}
 
 		// Get warehouse from resourceValues if provided
-		if wh, ok := resourceValues["warehouse"]; ok && wh != "" {
+		if wh, ok := resourceValues["sql-warehouse.id"]; ok && wh != "" {
 			opts.warehouseID = wh
 		}
 	} else if isInteractive && opts.pluginsChanged && !flagsMode {
@@ -545,7 +554,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		}
 		resourceValues = make(map[string]string)
 		if opts.warehouseID != "" {
-			resourceValues["warehouse"] = opts.warehouseID
+			resourceValues["sql-warehouse.id"] = opts.warehouseID
 		}
 
 		// Prompt for deploy/run if no flags were set
@@ -565,14 +574,22 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		}
 		resourceValues = make(map[string]string)
 		if opts.warehouseID != "" {
-			resourceValues["warehouse"] = opts.warehouseID
+			resourceValues["sql-warehouse.id"] = opts.warehouseID
 		}
 
-		// Validate required resources are provided
+		// Validate required resources are provided.
+		// All resource value keys use "resource_key.field_name" format.
 		resources := m.CollectResources(selectedPlugins)
 		for _, r := range resources {
-			if _, ok := resourceValues[r.Alias]; !ok {
-				return fmt.Errorf("missing required resource %q for selected plugins (use --%s flag)", r.Alias, r.Alias+"-id")
+			found := false
+			for k := range resourceValues {
+				if strings.HasPrefix(k, r.Key()+".") {
+					found = true
+					break
+				}
+			}
+			if !found {
+				return fmt.Errorf("missing required resource %q for selected plugins (use --%s-id flag)", r.Alias, r.Key())
 			}
 		}
 	}

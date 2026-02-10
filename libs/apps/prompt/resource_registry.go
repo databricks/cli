@@ -19,11 +19,15 @@ const (
 	ResourceTypeDatabase          = "database"
 	ResourceTypeGenieSpace        = "genie_space"
 	ResourceTypeExperiment        = "experiment"
-	ResourceTypeApp               = "app"
+	// TODO: uncomment when bundles support app as an app resource type.
+	// ResourceTypeApp = "app"
 )
 
-// PromptResourceFunc prompts the user for a resource of a given type and returns the selected ID.
-type PromptResourceFunc func(ctx context.Context, r manifest.Resource, required bool) (string, error)
+// PromptResourceFunc prompts the user for a resource of a given type.
+// Returns a map of value keys to values. For single-field resources the map has one entry
+// keyed by "resource_key.field" (e.g., {"sql-warehouse.id": "abc123"}). For multi-field resources,
+// keys use the format "resource_key.field_name" (e.g., {"database.instance_name": "x", "database.database_name": "y"}).
+type PromptResourceFunc func(ctx context.Context, r manifest.Resource, required bool) (map[string]string, error)
 
 // GetPromptFunc returns the prompt function for the given resource type, or (nil, false) if not supported.
 func GetPromptFunc(resourceType string) (PromptResourceFunc, bool) {
@@ -50,8 +54,9 @@ func GetPromptFunc(resourceType string) (PromptResourceFunc, bool) {
 		return PromptForGenieSpace, true
 	case ResourceTypeExperiment:
 		return PromptForExperiment, true
-	case ResourceTypeApp:
-		return PromptForAppResource, true
+	// TODO: uncomment when bundles support app as an app resource type.
+	// case ResourceTypeApp:
+	// 	return PromptForAppResource, true
 	default:
 		return nil, false
 	}

@@ -6,17 +6,52 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 )
 
 const ManifestFileName = "appkit.plugins.json"
 
+// ResourceField describes a single field within a multi-field resource.
+// Multi-field resources (e.g., database, secret) need separate env vars and values per field.
+type ResourceField struct {
+	Env         string `json:"env"`
+	Description string `json:"description"`
+}
+
 // Resource defines a Databricks resource required or optional for a plugin.
 type Resource struct {
-	Type        string `json:"type"`        // e.g., "sql_warehouse"
-	Alias       string `json:"alias"`       // e.g., "warehouse"
-	Description string `json:"description"` // e.g., "SQL Warehouse for executing analytics queries"
-	Permission  string `json:"permission"`  // e.g., "CAN_USE"
-	Env         string `json:"env"`         // e.g., "DATABRICKS_WAREHOUSE_ID"
+	Type        string                   `json:"type"`         // e.g., "sql_warehouse"
+	Alias       string                   `json:"alias"`        // display name, e.g., "SQL Warehouse"
+	ResourceKey string                   `json:"resource_key"` // machine key for config/env, e.g., "sql-warehouse"
+	Description string                   `json:"description"`  // e.g., "SQL Warehouse for executing analytics queries"
+	Permission  string                   `json:"permission"`   // e.g., "CAN_USE"
+	Fields      map[string]ResourceField `json:"fields"`       // field definitions with env var mappings
+}
+
+// Key returns the resource key for machine use (config keys, variable naming).
+func (r Resource) Key() string {
+	return r.ResourceKey
+}
+
+// VarPrefix returns the variable name prefix derived from the resource key.
+// Hyphens are replaced with underscores for YAML variable name compatibility.
+func (r Resource) VarPrefix() string {
+	return strings.ReplaceAll(r.Key(), "-", "_")
+}
+
+// HasFields returns true if the resource has explicit field definitions.
+func (r Resource) HasFields() bool {
+	return len(r.Fields) > 0
+}
+
+// FieldNames returns the field names in sorted order for deterministic iteration.
+func (r Resource) FieldNames() []string {
+	names := make([]string, 0, len(r.Fields))
+	for k := range r.Fields {
+		names = append(names, k)
+	}
+	sort.Strings(names)
+	return names
 }
 
 // Resources defines the required and optional resources for a plugin.
@@ -134,7 +169,11 @@ func (m *Manifest) CollectResources(pluginNames []string) []Resource {
 			continue
 		}
 		for _, r := range plugin.Resources.Required {
-			key := r.Type + ":" + r.Alias
+			// TODO: remove skip when bundles support app as an app resource type.
+			if r.Type == "app" {
+				continue
+			}
+			key := r.Type + ":" + r.Key()
 			if !seen[key] {
 				seen[key] = true
 				resources = append(resources, r)
@@ -156,7 +195,11 @@ func (m *Manifest) CollectOptionalResources(pluginNames []string) []Resource {
 			continue
 		}
 		for _, r := range plugin.Resources.Optional {
-			key := r.Type + ":" + r.Alias
+			// TODO: remove skip when bundles support app as an app resource type.
+			if r.Type == "app" {
+				continue
+			}
+			key := r.Type + ":" + r.Key()
 			if !seen[key] {
 				seen[key] = true
 				resources = append(resources, r)

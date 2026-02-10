@@ -4,18 +4,21 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"strconv"
 
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/listing"
-	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
+	"github.com/databricks/databricks-sdk-go/service/database"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
+	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
 // ListItem is a generic item for resource pickers (id and display label).
@@ -32,8 +35,8 @@ func workspaceClient(ctx context.Context) (*databricks.WorkspaceClient, error) {
 	return w, nil
 }
 
-// ListSecrets returns secret scopes as selectable items (id = scope name).
-func ListSecrets(ctx context.Context) ([]ListItem, error) {
+// ListSecretScopes returns secret scopes as selectable items.
+func ListSecretScopes(ctx context.Context) ([]ListItem, error) {
 	w, err := workspaceClient(ctx)
 	if err != nil {
 		return nil, err
@@ -46,6 +49,24 @@ func ListSecrets(ctx context.Context) ([]ListItem, error) {
 	out := make([]ListItem, 0, len(scopes))
 	for _, s := range scopes {
 		out = append(out, ListItem{ID: s.Name, Label: s.Name})
+	}
+	return out, nil
+}
+
+// ListSecretKeys returns secret keys within a scope as selectable items.
+func ListSecretKeys(ctx context.Context, scope string) ([]ListItem, error) {
+	w, err := workspaceClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	iter := w.Secrets.ListSecrets(ctx, workspace.ListSecretsRequest{Scope: scope})
+	keys, err := listing.ToSlice(ctx, iter)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]ListItem, 0, len(keys))
+	for _, k := range keys {
+		out = append(out, ListItem{ID: k.Key, Label: k.Key})
 	}
 	return out, nil
 }
@@ -119,6 +140,7 @@ func ListServingEndpoints(ctx context.Context) ([]ListItem, error) {
 
 // ListVolumes returns UC volumes as selectable items (id = full name catalog.schema.volume).
 func ListVolumes(ctx context.Context) ([]ListItem, error) {
+	// TODO: this might be better to just use the path.
 	w, err := workspaceClient(ctx)
 	if err != nil {
 		return nil, err
@@ -159,6 +181,7 @@ func ListVolumes(ctx context.Context) ([]ListItem, error) {
 
 // ListVectorSearchIndexes returns vector search indexes as selectable items (id = endpoint/index name).
 func ListVectorSearchIndexes(ctx context.Context) ([]ListItem, error) {
+	// TODO: review this one too
 	w, err := workspaceClient(ctx)
 	if err != nil {
 		return nil, err
@@ -189,6 +212,7 @@ func ListVectorSearchIndexes(ctx context.Context) ([]ListItem, error) {
 
 // ListFunctions returns UC functions as selectable items (id = full name).
 func ListFunctions(ctx context.Context) ([]ListItem, error) {
+	// TODO: review this one too
 	w, err := workspaceClient(ctx)
 	if err != nil {
 		return nil, err
@@ -248,20 +272,56 @@ func ListConnections(ctx context.Context) ([]ListItem, error) {
 	return out, nil
 }
 
-// ListDatabases returns UC catalogs as selectable items (id = catalog name).
-func ListDatabases(ctx context.Context) ([]ListItem, error) {
+// ListDatabaseInstances returns Lakebase database instances as selectable items.
+func ListDatabaseInstances(ctx context.Context) ([]ListItem, error) {
 	w, err := workspaceClient(ctx)
 	if err != nil {
 		return nil, err
 	}
-	iter := w.Catalogs.List(ctx, catalog.ListCatalogsRequest{})
-	catalogs, err := listing.ToSlice(ctx, iter)
+	iter := w.Database.ListDatabaseInstances(ctx, database.ListDatabaseInstancesRequest{})
+	instances, err := listing.ToSlice(ctx, iter)
 	if err != nil {
 		return nil, err
 	}
-	out := make([]ListItem, 0, len(catalogs))
-	for _, c := range catalogs {
-		out = append(out, ListItem{ID: c.Name, Label: c.Name})
+	out := make([]ListItem, 0, len(instances))
+	for _, inst := range instances {
+		out = append(out, ListItem{ID: inst.Name, Label: inst.Name})
+	}
+	return out, nil
+}
+
+// listDatabasesResponse is the response from the /databases endpoint.
+type listDatabasesResponse struct {
+	Databases []struct {
+		Name               string `json:"name"`
+		IsUsableByCustomer bool   `json:"is_usable_by_customer"`
+	} `json:"databases"`
+}
+
+// ListDatabases returns databases within a Lakebase instance as selectable items.
+func ListDatabases(ctx context.Context, instanceName string) ([]ListItem, error) {
+	w, err := workspaceClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	api, err := client.New(w.Config)
+	if err != nil {
+		return nil, err
+	}
+	// TODO: use the SDK to list databases once available
+	var resp listDatabasesResponse
+	path := fmt.Sprintf("/api/2.0/database/instances/%s/databases", instanceName)
+	headers := map[string]string{"Accept": "application/json"}
+	err = api.Do(ctx, http.MethodGet, path, headers, nil, nil, &resp)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]ListItem, 0, len(resp.Databases))
+	for _, db := range resp.Databases {
+		if !db.IsUsableByCustomer {
+			continue
+		}
+		out = append(out, ListItem{ID: db.Name, Label: db.Name})
 	}
 	return out, nil
 }
@@ -272,21 +332,28 @@ func ListGenieSpaces(ctx context.Context) ([]ListItem, error) {
 	if err != nil {
 		return nil, err
 	}
-	resp, err := w.Genie.ListSpaces(ctx, dashboards.GenieListSpacesRequest{})
-	if err != nil {
-		return nil, err
-	}
-	out := make([]ListItem, 0, len(resp.Spaces))
-	for _, s := range resp.Spaces {
-		id := s.SpaceId
-		label := s.Title
-		if label == "" {
-			label = s.Description
+	var out []ListItem
+	req := dashboards.GenieListSpacesRequest{}
+	for {
+		resp, err := w.Genie.ListSpaces(ctx, req)
+		if err != nil {
+			return nil, err
 		}
-		if label == "" {
-			label = id
+		for _, s := range resp.Spaces {
+			id := s.SpaceId
+			label := s.Title
+			if label == "" {
+				label = s.Description
+			}
+			if label == "" {
+				label = id
+			}
+			out = append(out, ListItem{ID: id, Label: label})
 		}
-		out = append(out, ListItem{ID: id, Label: label})
+		if resp.NextPageToken == "" {
+			break
+		}
+		req.PageToken = resp.NextPageToken
 	}
 	return out, nil
 }
@@ -313,24 +380,22 @@ func ListExperiments(ctx context.Context) ([]ListItem, error) {
 	return out, nil
 }
 
-// ListAppsItems returns apps as ListItems (id = app name).
-func ListAppsItems(ctx context.Context) ([]ListItem, error) {
-	w, err := workspaceClient(ctx)
-	if err != nil {
-		return nil, err
-	}
-	iter := w.Apps.List(ctx, apps.ListAppsRequest{})
-	appList, err := listing.ToSlice(ctx, iter)
-	if err != nil {
-		return nil, err
-	}
-	out := make([]ListItem, 0, len(appList))
-	for _, a := range appList {
-		label := a.Name
-		if a.Description != "" {
-			label = a.Name + " — " + a.Description
-		}
-		out = append(out, ListItem{ID: a.Name, Label: label})
-	}
-	return out, nil
-}
+// TODO: uncomment when bundles support app as an app resource type.
+// // ListAppsItems returns apps as ListItems (id = app name).
+// func ListAppsItems(ctx context.Context) ([]ListItem, error) {
+// 	w, err := workspaceClient(ctx)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	iter := w.Apps.List(ctx, apps.ListAppsRequest{})
+// 	appList, err := listing.ToSlice(ctx, iter)
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	out := make([]ListItem, 0, len(appList))
+// 	for _, a := range appList {
+// 		label := a.Name
+// 		out = append(out, ListItem{ID: a.Name, Label: label})
+// 	}
+// 	return out, nil
+// }
