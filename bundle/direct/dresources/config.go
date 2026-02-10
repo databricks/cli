@@ -20,7 +20,7 @@ type FieldRule struct {
 // If Values is non-empty, the remote value must match one of the allowed values.
 type BackendDefaultRule struct {
 	Field  *structpath.PatternNode `yaml:"field"`
-	Values []json.RawMessage      `yaml:"values,omitempty"`
+	Values []json.RawMessage       `yaml:"values,omitempty"`
 }
 
 // UnmarshalYAML implements custom YAML unmarshaling for BackendDefaultRule.
@@ -85,6 +85,7 @@ var (
 		IgnoreLocalChanges:  nil,
 		RecreateOnChanges:   nil,
 		UpdateIDOnChanges:   nil,
+		BackendDefaults:     nil,
 	}
 )
 
