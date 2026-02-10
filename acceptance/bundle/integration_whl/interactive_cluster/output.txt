@@ -61,7 +61,7 @@ Run URL: [DATABRICKS_URL]/?o=[NUMID]#job/[SOME_OTHER_JOB_ID]/run/[NUMID]
 
 [TIMESTAMP] "[default] Test Wheel Job [UNIQUE_NAME]" RUNNING
 [TIMESTAMP] "[default] Test Wheel Job [UNIQUE_NAME]" TERMINATED SUCCESS
-Hello from my func
+UPDATED MY FUNC
 Got arguments:
 ['my_test_code', 'one', 'two']
 

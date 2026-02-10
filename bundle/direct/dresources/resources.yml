@@ -73,6 +73,23 @@ resources:
       - field: "tasks[*].for_each_task.task.run_if"
         values: ["ALL_SUCCESS"]
 
+      # timeout_seconds has implicit default of 0 (Go zero value)
+      - field: timeout_seconds
+        values: [0]
+      - field: "tasks[*].timeout_seconds"
+        values: [0]
+      - field: "tasks[*].for_each_task.task.timeout_seconds"
+        values: [0]
+
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/jobs/resource_job.go#L521
+      # s.SchemaPath("task", "notebook_task", "source").SetSuppressDiff()
+      - field: "tasks[*].notebook_task.source"
+      - field: "tasks[*].for_each_task.task.notebook_task.source"
+
+      # Same as clusters.data_security_mode: backend sets this when not specified
+      - field: "tasks[*].new_cluster.data_security_mode"
+      - field: "job_clusters[*].new_cluster.data_security_mode"
+
   pipelines:
     recreate_on_changes:
       - field: storage
@@ -115,6 +132,14 @@ resources:
       # s.SchemaPath("channel").SetDefault("CURRENT")
       - field: channel
         values: ["CURRENT"]
+
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/pipelines/resource_pipeline.go#L238
+      # s.SchemaPath("storage").SetCustomSuppressDiff(suppressStorageDiff)
+      # Backend generates storage path like dbfs:/pipelines/<id> when not set by user.
+      - field: storage
+
+      # root_path is computed by the backend when not set by user.
+      - field: root_path
 
   models:
     recreate_on_changes:
@@ -184,7 +209,23 @@ resources:
       # common.CustomizeSchemaPath(m, "config", "auto_capture_config", "enabled").SetComputed()
       - field: config.auto_capture_config.enabled
 
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/serving/resource_model_serving.go#L395-L396
+      # route_optimized is ForceNew; backend returns false when not set by user.
+      - field: route_optimized
+        values: [false]
+
   registered_models:
+    ignore_remote_changes:
+      # Output-only timestamp/user fields zeroed in RemapState but still show up
+      # via ForceSendFields. These should never participate in diffs.
+      - field: created_at
+        reason: output_only
+      - field: created_by
+        reason: output_only
+      - field: updated_at
+        reason: output_only
+      - field: updated_by
+        reason: output_only
     recreate_on_changes:
       # The name can technically be updated without recreate. We recreate for now though
       # to match TF implementation.
@@ -196,6 +237,14 @@ resources:
         reason: immutable
       - field: storage_location
         reason: immutable
+    backend_defaults:
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/catalog/resource_registered_model.go#L28
+      # m["storage_location"].Computed = true
+      - field: storage_location
+      # owner, full_name, metastore_id are Computed in TF (backend-set output fields).
+      - field: owner
+      - field: full_name
+      - field: metastore_id
 
   quality_monitors:
     recreate_on_changes:
@@ -259,6 +308,9 @@ resources:
     update_id_on_changes:
       - field: name
         reason: id_changes
+    backend_defaults:
+      # storage_location is Computed; backend generates it for managed volumes.
+      - field: storage_location
 
   dashboards:
     backend_defaults:

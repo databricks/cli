@@ -145,9 +145,7 @@ func DetectChanges(ctx context.Context, b *bundle.Bundle, engine engine.EngineTy
 
 		if entry.Changes != nil {
 			for path, changeDesc := range entry.Changes {
-				// TODO: as for now in bundle plan all remote-side changes are considered as server-side defaults.
-				// Once it is solved - stop skipping server-side defaults in these checks and remove hardcoded default.
-				if changeDesc.Action == deployplan.Skip && changeDesc.Reason != deployplan.ReasonServerSideDefault {
+				if changeDesc.Action == deployplan.Skip {
 					continue
 				}
 
