@@ -22,7 +22,7 @@ resources:
     my_endpoint:
       parent: ${resources.postgres_branches.main.id}
       endpoint_id: my-endpoint
-      endpoint_type: ENDPOINT_TYPE_READ_WRITE
+      endpoint_type: ENDPOINT_TYPE_READ_ONLY
       autoscaling_limit_min_cu: 0.5
       autoscaling_limit_max_cu: 8
       suspend_timeout_duration: 300s

@@ -31,7 +31,14 @@ class IngestionPipelineDefinition:
 
     connection_name: VariableOrOptional[str] = None
     """
-    Immutable. The Unity Catalog connection that this ingestion pipeline uses to communicate with the source. This is used with connectors for applications like Salesforce, Workday, and so on.
+    The Unity Catalog connection that this ingestion pipeline uses to communicate with the source. This is used with
+    both connectors for applications like Salesforce, Workday, and so on, and also database connectors like Oracle,
+    (connector_type = QUERY_BASED OR connector_type = CDC).
+    If connection name corresponds to database connectors like Oracle, and connector_type is not provided then
+    connector_type defaults to QUERY_BASED. If connector_type is passed as CDC we use Combined Cdc Managed Ingestion
+    pipeline.
+    Under certain conditions, this can be replaced with ingestion_gateway_id to change the connector to Cdc Managed
+    Ingestion Pipeline with Gateway pipeline.
     """
 
     full_refresh_window: VariableOrOptional[OperationTimeWindow] = None
@@ -51,7 +58,10 @@ class IngestionPipelineDefinition:
 
     ingestion_gateway_id: VariableOrOptional[str] = None
     """
-    Immutable. Identifier for the gateway that is used by this ingestion pipeline to communicate with the source database. This is used with connectors to databases like SQL Server.
+    Identifier for the gateway that is used by this ingestion pipeline to communicate with the source database.
+    This is used with CDC connectors to databases like SQL Server using a gateway pipeline (connector_type = CDC).
+    Under certain conditions, this can be replaced with connection_name to change the connector to Combined Cdc
+    Managed Ingestion Pipeline.
     """
 
     netsuite_jar_path: VariableOrOptional[str] = None
@@ -87,7 +97,14 @@ class IngestionPipelineDefinitionDict(TypedDict, total=False):
 
     connection_name: VariableOrOptional[str]
     """
-    Immutable. The Unity Catalog connection that this ingestion pipeline uses to communicate with the source. This is used with connectors for applications like Salesforce, Workday, and so on.
+    The Unity Catalog connection that this ingestion pipeline uses to communicate with the source. This is used with
+    both connectors for applications like Salesforce, Workday, and so on, and also database connectors like Oracle,
+    (connector_type = QUERY_BASED OR connector_type = CDC).
+    If connection name corresponds to database connectors like Oracle, and connector_type is not provided then
+    connector_type defaults to QUERY_BASED. If connector_type is passed as CDC we use Combined Cdc Managed Ingestion
+    pipeline.
+    Under certain conditions, this can be replaced with ingestion_gateway_id to change the connector to Cdc Managed
+    Ingestion Pipeline with Gateway pipeline.
     """
 
     full_refresh_window: VariableOrOptional[OperationTimeWindowParam]
@@ -107,7 +124,10 @@ class IngestionPipelineDefinitionDict(TypedDict, total=False):
 
     ingestion_gateway_id: VariableOrOptional[str]
     """
-    Immutable. Identifier for the gateway that is used by this ingestion pipeline to communicate with the source database. This is used with connectors to databases like SQL Server.
+    Identifier for the gateway that is used by this ingestion pipeline to communicate with the source database.
+    This is used with CDC connectors to databases like SQL Server using a gateway pipeline (connector_type = CDC).
+    Under certain conditions, this can be replaced with connection_name to change the connector to Combined Cdc
+    Managed Ingestion Pipeline.
     """
 
     netsuite_jar_path: VariableOrOptional[str]

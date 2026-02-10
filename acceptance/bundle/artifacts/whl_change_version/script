@@ -17,7 +17,7 @@ trace $CLI bundle deploy
 trace find.py --expect 2 whl  # there are now 2 wheels on disk
 
 title "Expecting 1 wheel in libraries section in /jobs/reset"
-trace jq -s '.[] | select(.path=="/api/2.2/jobs/reset") | .body.new_settings.tasks' out.requests.txt
+trace jq -s '.[] | select(.path=="/api/2.2/jobs/reset") | .body.new_settings.tasks' out.requests.txt | gron.py | grep -w libraries
 
 title "Expecting 1 wheel to be uploaded"
 trace jq .path out.requests.txt | grep import | sort
@@ -31,7 +31,7 @@ trace $CLI bundle deploy
 trace find.py --expect 2 whl
 
 title "Expecting 1 wheel in libraries section in /jobs/reset"
-trace jq -s '.[] | select(.path=="/api/2.2/jobs/reset") | .body.new_settings.tasks' out.requests.txt
+trace jq -s '.[] | select(.path=="/api/2.2/jobs/reset") | .body.new_settings.tasks' out.requests.txt | gron.py | grep -w libraries
 
 title "Expecting 1 wheel to be uploaded"
 trace jq .path out.requests.txt | grep import | sort

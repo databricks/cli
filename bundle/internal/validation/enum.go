@@ -111,7 +111,7 @@ func getEnumValues(typ reflect.Type) ([]string, error) {
 func extractEnumFields(typ reflect.Type) ([]EnumPatternInfo, error) {
 	fieldsByPattern := make(map[string][]string)
 
-	err := structwalk.WalkType(typ, func(path *structpath.PathNode, fieldType reflect.Type, field *reflect.StructField) bool {
+	err := structwalk.WalkType(typ, func(path *structpath.PatternNode, fieldType reflect.Type, field *reflect.StructField) bool {
 		if path == nil {
 			return true
 		}

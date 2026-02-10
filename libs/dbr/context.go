@@ -47,6 +47,10 @@ type Version struct {
 	Raw   string
 }
 
+func (v Version) String() string {
+	return v.Raw
+}
+
 // ParseVersion parses a DBR version string and returns structured version info.
 // Examples:
 //   - "16.3" -> Interactive, Major=16, Minor=3
@@ -122,17 +126,13 @@ func RunsOnRuntime(ctx context.Context) bool {
 	return v.(Environment).IsDbr
 }
 
-func RuntimeVersion(ctx context.Context) string {
+// RuntimeVersion returns the parsed runtime version from the context.
+// It expects a context returned by [DetectRuntime] or [MockRuntime].
+func RuntimeVersion(ctx context.Context) Version {
 	v := ctx.Value(dbrKey)
 	if v == nil {
 		panic("dbr.RuntimeVersion called without calling dbr.DetectRuntime first")
 	}
 
-	return v.(Environment).Version
-}
-
-// GetVersion returns the parsed runtime version from the context.
-// It expects a context returned by [DetectRuntime] or [MockRuntime].
-func GetVersion(ctx context.Context) Version {
-	return ParseVersion(RuntimeVersion(ctx))
+	return ParseVersion(v.(Environment).Version)
 }
