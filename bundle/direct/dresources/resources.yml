@@ -165,6 +165,24 @@ resources:
         reason: immutable
       - field: route_optimized
         reason: immutable
+    ignore_remote_changes:
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/serving/resource_model_serving.go#L370
+      # common.CustomizeSchemaPath(m, "config", "traffic_config").SetComputed()
+      # Routes have custom SuppressDiff (lines 387-388)
+      - field: config.traffic_config
+        reason: "managed"
+    backend_defaults:
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/serving/resource_model_serving.go#L383
+      # common.CustomizeSchemaPath(m, "config", "served_entities", "name").SetComputed()
+      - field: "config.served_entities[*].name"
+
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/serving/resource_model_serving.go#L384
+      # common.CustomizeSchemaPath(m, "config", "served_entities", "workload_type").SetComputed()
+      - field: "config.served_entities[*].workload_type"
+
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/serving/resource_model_serving.go#L372
+      # common.CustomizeSchemaPath(m, "config", "auto_capture_config", "enabled").SetComputed()
+      - field: config.auto_capture_config.enabled
 
   registered_models:
     recreate_on_changes:
@@ -243,6 +261,11 @@ resources:
         reason: id_changes
 
   dashboards:
+    backend_defaults:
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/dashboards/resource_dashboard.go#L69
+      # s.SchemaPath("embed_credentials").SetDefault(true)
+      - field: embed_credentials
+        values: [true]
 
     ignore_remote_changes:
       # "serialized_dashboard" locally and remotely will have different contents
@@ -261,6 +284,10 @@ resources:
     recreate_on_changes:
       - field: name
         reason: immutable
+    backend_defaults:
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/internal/providers/pluginfw/products/app/resource_app.go#L41
+      # s["compute_size"] = s["compute_size"].SetComputed()
+      - field: compute_size
 
   secret_scopes:
     recreate_on_changes:
@@ -282,6 +309,23 @@ resources:
         reason: id_changes
 
   clusters:
+    ignore_remote_changes:
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/clusters/resource_cluster.go#L361-L363
+      # s.SchemaPath("aws_attributes").SetSuppressDiff()
+      # s.SchemaPath("azure_attributes").SetSuppressDiff()
+      # s.SchemaPath("gcp_attributes").SetSuppressDiff()
+      - field: aws_attributes
+        reason: "managed"
+      - field: azure_attributes
+        reason: "managed"
+      - field: gcp_attributes
+        reason: "managed"
+
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/clusters/resource_cluster.go#L331
+      # s.SchemaPath("enable_elastic_disk").SetComputed()
+      - field: enable_elastic_disk
+        reason: "managed"
+
     backend_defaults:
       # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/clusters/resource_cluster.go#L320-L324
       # s.AddNewField("autotermination_minutes", &schema.Schema{Default: 60})
@@ -293,6 +337,22 @@ resources:
       - field: data_security_mode
 
   sql_warehouses:
+    ignore_remote_changes:
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/sql/resource_sql_endpoint.go#L62
+      # common.CustomizeSchemaPath(m, "channel").SetSuppressDiff()
+      - field: channel
+        reason: "managed"
+
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/sql/resource_sql_endpoint.go#L82
+      # common.CustomizeSchemaPath(m, "tags").SetSuppressDiff()
+      - field: tags
+        reason: "managed"
+
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/sql/resource_sql_endpoint.go#L85-L87
+      # common.CustomizeSchemaPath(m, "warehouse_type").SetSuppressDiff()
+      - field: warehouse_type
+        reason: "managed"
+
     backend_defaults:
       # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/sql/resource_sql_endpoint.go#L61
       # common.SetDefault(m["auto_stop_mins"], 120)
