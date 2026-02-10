@@ -2,7 +2,6 @@ package configsync
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"sort"
 
@@ -21,19 +20,20 @@ type FieldChange struct {
 // resolveSelectors converts key-value selectors to numeric indices that match
 // the YAML file positions. It also returns the location of the resolved leaf value.
 // Example: "resources.jobs.foo.tasks[task_key='main'].name" -> "resources.jobs.foo.tasks[1].name"
-func resolveSelectors(pathStr string, b *bundle.Bundle, operation OperationType) (*structpath.PathNode, dyn.Location, error) {
-	node, err := structpath.Parse(pathStr)
+// Returns a PatternNode because for Add operations, [*] may be used as a placeholder for new elements.
+func resolveSelectors(pathStr string, b *bundle.Bundle, operation OperationType) (*structpath.PatternNode, dyn.Location, error) {
+	node, err := structpath.ParsePath(pathStr)
 	if err != nil {
 		return nil, dyn.Location{}, fmt.Errorf("failed to parse path %s: %w", pathStr, err)
 	}
 
 	nodes := node.AsSlice()
-	var result *structpath.PathNode
+	var result *structpath.PatternNode
 	currentValue := b.Config.Value()
 
 	for _, n := range nodes {
 		if key, ok := n.StringKey(); ok {
-			result = structpath.NewStringKey(result, key)
+			result = structpath.NewPatternStringKey(result, key)
 			if currentValue.IsValid() {
 				currentValue, _ = dyn.GetByPath(currentValue, dyn.Path{dyn.Key(key)})
 			}
@@ -41,7 +41,7 @@ func resolveSelectors(pathStr string, b *bundle.Bundle, operation OperationType)
 		}
 
 		if idx, ok := n.Index(); ok {
-			result = structpath.NewIndex(result, idx)
+			result = structpath.NewPatternIndex(result, idx)
 			if currentValue.IsValid() {
 				currentValue, _ = dyn.GetByPath(currentValue, dyn.Path{dyn.Index(idx)})
 			}
@@ -71,7 +71,7 @@ func resolveSelectors(pathStr string, b *bundle.Bundle, operation OperationType)
 
 			if foundIndex == -1 {
 				if operation == OperationAdd {
-					result = structpath.NewBracketStar(result)
+					result = structpath.NewPatternBracketStar(result)
 					// Can't navigate further into non-existent element
 					currentValue = dyn.Value{}
 					continue
@@ -82,13 +82,9 @@ func resolveSelectors(pathStr string, b *bundle.Bundle, operation OperationType)
 			// Mutators may reorder sequence elements (e.g., tasks sorted by task_key).
 			// Use location information to determine the original YAML file position.
 			yamlIndex := yamlFileIndex(seq, foundIndex)
-			result = structpath.NewIndex(result, yamlIndex)
+			result = structpath.NewPatternIndex(result, yamlIndex)
 			currentValue = seq[foundIndex]
 			continue
-		}
-
-		if n.DotStar() || n.BracketStar() {
-			return nil, dyn.Location{}, errors.New("wildcard patterns are not supported in field paths")
 		}
 	}
 
@@ -120,21 +116,21 @@ func yamlFileIndex(seq []dyn.Value, sortedIndex int) int {
 }
 
 func pathDepth(pathStr string) int {
-	node, err := structpath.Parse(pathStr)
+	node, err := structpath.ParsePath(pathStr)
 	if err != nil {
 		return 0
 	}
 	return len(node.AsSlice())
 }
 
-// adjustArrayIndex adjusts the index in a PathNode based on previous operations.
+// adjustArrayIndex adjusts the index in a PatternNode based on previous operations.
 // When operations are applied sequentially, removals and additions shift array indices.
 // This function adjusts the index to account for those shifts.
-func adjustArrayIndex(path *structpath.PathNode, operations map[string][]struct {
+func adjustArrayIndex(path *structpath.PatternNode, operations map[string][]struct {
 	index     int
 	operation OperationType
 },
-) *structpath.PathNode {
+) *structpath.PatternNode {
 	originalIndex, ok := path.Index()
 	if !ok {
 		return path
@@ -162,7 +158,7 @@ func adjustArrayIndex(path *structpath.PathNode, operations map[string][]struct 
 		adjustedIndex = 0
 	}
 
-	return structpath.NewIndex(parentPath, adjustedIndex)
+	return structpath.NewPatternIndex(parentPath, adjustedIndex)
 }
 
 // ResolveChanges resolves selectors and computes field path candidates for each change.
@@ -241,7 +237,7 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 				if ok && len(indices) > 0 {
 					index := indices[0]
 					indicesToReplaceMap[parentPath] = indices[1:]
-					resolvedPath = structpath.NewIndex(resolvedPath.Parent(), index)
+					resolvedPath = structpath.NewPatternIndex(resolvedPath.Parent(), index)
 				}
 			}
 
