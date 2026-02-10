@@ -113,26 +113,19 @@ const (
 // HasChange checks if there are any changes for fields with the given prefix.
 // This function is path-aware and correctly handles path component boundaries.
 // For example:
-//   - HasChange("a") matches "a" and "a.b" but not "aa"
-//   - HasChange("config") matches "config" and "config.name" but not "configuration"
-//
-// Note: This function does not support wildcard patterns.
-func (c *Changes) HasChange(fieldPath string) bool {
+//   - HasChange for path "a" matches "a" and "a.b" but not "aa"
+//   - HasChange for path "config" matches "config" and "config.name" but not "configuration"
+func (c *Changes) HasChange(fieldPath *structpath.PathNode) bool {
 	if c == nil {
 		return false
 	}
 
-	fieldPathNode, err := structpath.Parse(fieldPath)
-	if err != nil {
-		return false
-	}
-
 	for field := range *c {
-		fieldNode, err := structpath.Parse(field)
+		fieldNode, err := structpath.ParsePath(field)
 		if err != nil {
 			continue
 		}
-		if fieldNode.HasPrefix(fieldPathNode) {
+		if fieldNode.HasPrefix(fieldPath) {
 			return true
 		}
 	}

@@ -57,7 +57,7 @@ func SetByString(target any, path string, value any) error {
 		return errors.New("cannot set empty path")
 	}
 
-	pathNode, err := structpath.Parse(path)
+	pathNode, err := structpath.ParsePath(path)
 	if err != nil {
 		return err
 	}
@@ -81,9 +81,7 @@ func setValueAtNode(parentVal reflect.Value, node *structpath.PathNode, value an
 		return setArrayElement(parentVal, idx, valueVal)
 	}
 
-	if node.DotStar() || node.BracketStar() {
-		return errors.New("wildcards not supported")
-	}
+	// Note: wildcards cannot appear in PathNode (Parse rejects them)
 
 	if key, matchValue, isKeyValue := node.KeyValue(); isKeyValue {
 		return fmt.Errorf("cannot set value at key-value selector [%s='%s'] - key-value syntax can only be used for path traversal, not as a final target", key, matchValue)

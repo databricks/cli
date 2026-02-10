@@ -29,9 +29,12 @@ __all__ = [
     "ClusterSpec",
     "ClusterSpecDict",
     "ClusterSpecParam",
+    "Compute",
     "ComputeConfig",
     "ComputeConfigDict",
     "ComputeConfigParam",
+    "ComputeDict",
+    "ComputeParam",
     "Condition",
     "ConditionParam",
     "ConditionTask",
@@ -92,6 +95,8 @@ __all__ = [
     "GitSource",
     "GitSourceDict",
     "GitSourceParam",
+    "HardwareAcceleratorType",
+    "HardwareAcceleratorTypeParam",
     "InitScriptInfo",
     "InitScriptInfoDict",
     "InitScriptInfoParam",
@@ -332,6 +337,7 @@ from databricks.bundles.jobs._models.cluster_spec import (
     ClusterSpecDict,
     ClusterSpecParam,
 )
+from databricks.bundles.jobs._models.compute import Compute, ComputeDict, ComputeParam
 from databricks.bundles.jobs._models.compute_config import (
     ComputeConfig,
     ComputeConfigDict,
@@ -430,6 +436,10 @@ from databricks.bundles.jobs._models.git_source import (
     GitSource,
     GitSourceDict,
     GitSourceParam,
+)
+from databricks.bundles.jobs._models.hardware_accelerator_type import (
+    HardwareAcceleratorType,
+    HardwareAcceleratorTypeParam,
 )
 from databricks.bundles.jobs._models.init_script_info import (
     InitScriptInfo,

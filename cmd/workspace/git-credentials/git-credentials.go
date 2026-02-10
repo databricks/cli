@@ -299,7 +299,7 @@ func newList() *cobra.Command {
 
 	var listReq workspace.ListCredentialsRequest
 
-	cmd.Flags().Int64Var(&listReq.PrincipalId, "principal-id", listReq.PrincipalId, `The ID of the service principal whose credentials will be modified.`)
+	cmd.Flags().Int64Var(&listReq.PrincipalId, "principal-id", listReq.PrincipalId, `The ID of the service principal whose credentials will be listed.`)
 
 	cmd.Use = "list"
 	cmd.Short = `Get Git credentials.`
