@@ -296,7 +296,7 @@ func clearAddedFlowStyle(content []byte, fieldChanges []FieldChange) ([]byte, er
 // clearFlowStyleAlongPath navigates the YAML tree along the given structpath,
 // clearing FlowStyle on every node from root to leaf (inclusive).
 func clearFlowStyleAlongPath(doc *yaml.Node, pathStr string) {
-	node, err := structpath.Parse(pathStr)
+	node, err := structpath.ParsePath(pathStr)
 	if err != nil {
 		return
 	}
