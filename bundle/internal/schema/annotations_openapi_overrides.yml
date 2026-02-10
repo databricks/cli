@@ -1094,3 +1094,60 @@ github.com/databricks/databricks-sdk-go/service/sql.EndpointTags:
   "custom_tags":
     "description": |-
       PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/catalog.AwsSqsQueue:
+  "managed_resource_id":
+    "description": |-
+      PLACEHOLDER
+  "queue_url":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/catalog.AzureQueueStorage:
+  "managed_resource_id":
+    "description": |-
+      PLACEHOLDER
+  "queue_url":
+    "description": |-
+      PLACEHOLDER
+  "resource_group":
+    "description": |-
+      PLACEHOLDER
+  "subscription_id":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/catalog.EncryptionDetails:
+  "sse_encryption_details":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/catalog.FileEventQueue:
+  "managed_aqs":
+    "description": |-
+      PLACEHOLDER
+  "managed_pubsub":
+    "description": |-
+      PLACEHOLDER
+  "managed_sqs":
+    "description": |-
+      PLACEHOLDER
+  "provided_aqs":
+    "description": |-
+      PLACEHOLDER
+  "provided_pubsub":
+    "description": |-
+      PLACEHOLDER
+  "provided_sqs":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/catalog.GcpPubsub:
+  "managed_resource_id":
+    "description": |-
+      PLACEHOLDER
+  "subscription_name":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/catalog.SseEncryptionDetails:
+  "algorithm":
+    "description": |-
+      PLACEHOLDER
+  "aws_kms_key_arn":
+    "description": |-
+      PLACEHOLDER

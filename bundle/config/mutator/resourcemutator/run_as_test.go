@@ -166,6 +166,7 @@ var allowList = []string{
 	"clusters",
 	"database_catalogs",
 	"database_instances",
+	"external_locations",
 	"synced_database_tables",
 	"jobs",
 	"pipelines",
