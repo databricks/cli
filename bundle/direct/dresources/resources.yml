@@ -130,6 +130,18 @@ resources:
       - field: storage_root
         reason: immutable
 
+  external_locations:
+    recreate_on_changes:
+      - field: credential_name
+        reason: immutable
+      - field: encryption_details
+        reason: immutable
+      - field: file_event_queue
+        reason: immutable
+    update_id_on_changes:
+      - field: name
+        reason: id_changes
+
   volumes:
     recreate_on_changes:
       - field: catalog_name

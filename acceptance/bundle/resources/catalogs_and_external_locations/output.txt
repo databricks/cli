@@ -1,0 +1,112 @@
+
+=== Deploy bundle with catalog and external location
+>>> [CLI] bundle plan
+create catalogs.test_catalog
+create catalogs.test_catalog.grants
+create external_locations.test_location
+create external_locations.test_location.grants
+
+Plan: 4 to add, 0 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Assert the catalog is created with grants
+>>> [CLI] catalogs get test_catalog_[UNIQUE_NAME]
+{
+  "name": "test_catalog_[UNIQUE_NAME]",
+  "comment": "Test catalog for external locations",
+  "properties": {
+    "owner": "dabs"
+  }
+}
+
+>>> [CLI] grants get catalog test_catalog_[UNIQUE_NAME]
+{
+  "privilege_assignments": [
+    {
+      "principal": "deco-test-user@databricks.com",
+      "privileges": [
+        "CREATE_SCHEMA",
+        "USE_CATALOG"
+      ]
+    }
+  ]
+}
+
+=== Assert the external location is created with grants
+>>> [CLI] external-locations get test_ext_location_[UNIQUE_NAME]
+{
+  "name": "test_ext_location_[UNIQUE_NAME]",
+  "url": "s3://test-bucket/path",
+  "credential_name": "test_storage_credential",
+  "comment": "Test external location from DABs"
+}
+
+>>> [CLI] grants get external_location test_ext_location_[UNIQUE_NAME]
+{
+  "privilege_assignments": [
+    {
+      "principal": "deco-test-user@databricks.com",
+      "privileges": [
+        "READ_FILES",
+        "WRITE_FILES"
+      ]
+    }
+  ]
+}
+
+=== Update external location comment
+=== Redeploy with updated comment
+>>> [CLI] bundle plan
+update external_locations.test_location
+
+Plan: 0 to add, 1 to change, 0 to delete, 3 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Assert the external location comment is updated
+>>> [CLI] external-locations get test_ext_location_[UNIQUE_NAME]
+{
+  "name": "test_ext_location_[UNIQUE_NAME]",
+  "comment": "Updated external location from DABs"
+}
+
+=== Update catalog comment
+=== Redeploy with updated catalog comment
+>>> [CLI] bundle plan
+update catalogs.test_catalog
+update external_locations.test_location
+
+Plan: 0 to add, 2 to change, 0 to delete, 2 unchanged
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Assert the catalog comment is updated
+>>> [CLI] catalogs get test_catalog_[UNIQUE_NAME]
+{
+  "name": "test_catalog_[UNIQUE_NAME]",
+  "comment": "Updated catalog for external locations"
+}
+
+=== Test cleanup
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.catalogs.test_catalog
+  delete resources.external_locations.test_location
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
+
+Deleting files...
+Destroy complete!
