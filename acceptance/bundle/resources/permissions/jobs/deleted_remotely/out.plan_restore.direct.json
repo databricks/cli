@@ -25,11 +25,14 @@
         "run_as_user_name": "[USERNAME]",
         "tasks": [
           {
+            "email_notifications": {},
             "notebook_task": {
               "notebook_path": "/Workspace/Users/user@example.com/notebook",
               "source": "WORKSPACE"
             },
-            "task_key": "main"
+            "run_if": "ALL_SUCCESS",
+            "task_key": "main",
+            "timeout_seconds": 0
           }
         ],
         "timeout_seconds": 0,
@@ -40,6 +43,21 @@
           "action": "skip",
           "reason": "empty_struct",
           "remote": {}
+        },
+        "tasks[task_key='main'].email_notifications": {
+          "action": "skip",
+          "reason": "empty_struct",
+          "remote": {}
+        },
+        "tasks[task_key='main'].run_if": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": "ALL_SUCCESS"
+        },
+        "tasks[task_key='main'].timeout_seconds": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": 0
         },
         "timeout_seconds": {
           "action": "skip",

@@ -118,10 +118,16 @@
           "schema": "default",
           "source": "WORKSPACE"
         },
+        "email_notifications": {},
         "new_cluster": {
+          "aws_attributes": {
+            "availability": "SPOT_WITH_FALLBACK",
+            "zone_id": "us-east-1c"
+          },
           "custom_tags": {
             "ResourceClass": "SingleNode"
           },
+          "data_security_mode": "SINGLE_USER",
           "num_workers": 0,
           "spark_conf": {
             "spark.databricks.cluster.profile": "singleNode",
@@ -129,9 +135,11 @@
           },
           "spark_version": "15.4.x-scala2.12"
         },
+        "run_if": "ALL_SUCCESS",
         "task_key": "test_task_dbt"
       },
       {
+        "email_notifications": {},
         "for_each_task": {
           "inputs": "[1]",
           "task": {
@@ -142,9 +150,11 @@
             "task_key": "test_task_foreach_no_source"
           }
         },
+        "run_if": "ALL_SUCCESS",
         "task_key": "test_task_foreach_no_source"
       },
       {
+        "email_notifications": {},
         "for_each_task": {
           "inputs": "[1]",
           "task": {
@@ -155,23 +165,30 @@
             "task_key": "test_task_foreach_workspace"
           }
         },
+        "run_if": "ALL_SUCCESS",
         "task_key": "test_task_foreach_workspace"
       },
       {
+        "email_notifications": {},
         "notebook_task": {
           "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/task-source/default/files/notebook",
           "source": "WORKSPACE"
         },
+        "run_if": "ALL_SUCCESS",
         "task_key": "test_task_no_source"
       },
       {
+        "email_notifications": {},
         "notebook_task": {
           "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/task-source/default/files/notebook",
           "source": "WORKSPACE"
         },
+        "run_if": "ALL_SUCCESS",
         "task_key": "test_task_source_workspace"
       },
       {
+        "email_notifications": {},
+        "run_if": "ALL_SUCCESS",
         "sql_task": {
           "file": {
             "path": "/Workspace/Users/[USERNAME]/.bundle/task-source/default/files/sql.sql",

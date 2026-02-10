@@ -184,7 +184,7 @@ func runCommonTests(t *testing.T, obj any) {
 		{
 			name:       "wildcard not supported for Get",
 			path:       "items[*].id",
-			getOnlyErr: "wildcards not supported: items[*].id",
+			getOnlyErr: "wildcards not allowed in path",
 		},
 		{
 			name:   "missing field",

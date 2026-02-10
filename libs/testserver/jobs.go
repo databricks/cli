@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strconv"
 
+	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
@@ -83,6 +84,50 @@ func jobFixUps(jobSettings *jobs.JobSettings) {
 	}
 
 	jobSettings.ForceSendFields = append(jobSettings.ForceSendFields, "TimeoutSeconds")
+
+	// Add task-level defaults that match AWS cloud behavior
+	for i := range jobSettings.Tasks {
+		task := &jobSettings.Tasks[i]
+
+		// Set task email notifications to empty struct if not set
+		if task.EmailNotifications == nil {
+			task.EmailNotifications = &jobs.TaskEmailNotifications{}
+		}
+
+		// Set RunIf to ALL_SUCCESS (server-side default)
+		if task.RunIf == "" {
+			task.RunIf = jobs.RunIfAllSuccess
+			task.ForceSendFields = append(task.ForceSendFields, "RunIf")
+		}
+
+		// Set TimeoutSeconds to 0 (server-side default)
+		task.ForceSendFields = append(task.ForceSendFields, "TimeoutSeconds")
+
+		// Add AWS-specific cluster defaults if new_cluster is present
+		if task.NewCluster != nil {
+			// Set AWS attributes with server-side defaults
+			if task.NewCluster.AwsAttributes == nil {
+				task.NewCluster.AwsAttributes = &compute.AwsAttributes{
+					Availability: compute.AwsAvailabilitySpotWithFallback,
+					ZoneId:       "us-east-1c",
+				}
+				task.NewCluster.AwsAttributes.ForceSendFields = append(
+					task.NewCluster.AwsAttributes.ForceSendFields,
+					"Availability",
+					"ZoneId",
+				)
+			}
+
+			// Set data security mode to SINGLE_USER (server-side default)
+			if task.NewCluster.DataSecurityMode == "" {
+				task.NewCluster.DataSecurityMode = compute.DataSecurityModeSingleUser
+				task.NewCluster.ForceSendFields = append(task.NewCluster.ForceSendFields, "DataSecurityMode")
+			}
+
+			// Set enable_elastic_disk to false (server-side default)
+			task.NewCluster.ForceSendFields = append(task.NewCluster.ForceSendFields, "EnableElasticDisk")
+		}
+	}
 }
 
 func (s *FakeWorkspace) JobsGet(req Request) Response {
