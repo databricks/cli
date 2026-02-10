@@ -366,7 +366,12 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 			return err
 		}
 
-		if structdiff.IsEqual(ch.Remote, ch.New) {
+		if ch.Old != nil && ch.New == nil && ch.Remote == nil {
+			// Explicitly removing a field that we previously deployed.
+			// Even though remote is unknown (parent unavailable from API),
+			// we should send the update to unset it.
+			ch.Action = deployplan.Update
+		} else if structdiff.IsEqual(ch.Remote, ch.New) {
 			ch.Action = deployplan.Skip
 			ch.Reason = deployplan.ReasonRemoteAlreadySet
 		} else if isEmptySlice(ch.Old, ch.New, ch.Remote) {

@@ -131,12 +131,10 @@ func (r *ResourcePostgresEndpoint) DoCreate(ctx context.Context, config *Postgre
 }
 
 func (r *ResourcePostgresEndpoint) DoUpdate(ctx context.Context, id string, config *PostgresEndpointState, changes Changes) (*postgres.Endpoint, error) {
-	// Build update mask from fields that have action="update" in the changes map.
-	// This excludes immutable fields and fields that haven't changed.
-	// Prefix with "spec." because the API expects paths relative to the Endpoint object,
-	// not relative to our flattened state type.
-	fieldPaths := collectUpdatePathsWithPrefix(changes, "spec.")
-
+	// The Postgres API requires that fields in the update_mask must be present in the request body.
+	// When a field is removed from config (nil in Go), it doesn't appear in the JSON payload,
+	// but would appear in a granular update_mask, causing the backend to reject the request.
+	// To avoid this, we use "spec" (which is always present) instead of listing individual fields.
 	waiter, err := r.client.Postgres.UpdateEndpoint(ctx, postgres.UpdateEndpointRequest{
 		Endpoint: postgres.Endpoint{
 			Spec: &config.EndpointSpec,
@@ -152,7 +150,7 @@ func (r *ResourcePostgresEndpoint) DoUpdate(ctx context.Context, id string, conf
 		},
 		Name: id,
 		UpdateMask: fieldmask.FieldMask{
-			Paths: fieldPaths,
+			Paths: []string{"spec"},
 		},
 	})
 	if err != nil {

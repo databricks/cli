@@ -42,7 +42,7 @@
     },
     "history_retention_duration": {
       "action": "skip",
-      "reason": "empty_struct",
+      "reason": "spec:input_only",
       "old": "604800s",
       "new": "604800s"
     },

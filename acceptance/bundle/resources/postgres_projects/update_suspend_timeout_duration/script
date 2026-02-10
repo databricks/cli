@@ -45,6 +45,9 @@ print_requests update_different
 trace $CLI postgres get-project "${project_name}" | jq 'del(.create_time, .update_time)'
 
 title "Remove suspend_timeout_duration field completely"
+# Note: Removing a field from config sends an update, but the Postgres API's PATCH semantics
+# don't unset fields that are absent from the request body - they remain at their previous value.
+# So the field will still show 600s after this step, not revert to a default.
 # Write a new databricks.yml without the suspend_timeout_duration field
 cat > databricks.yml <<EOF
 bundle:

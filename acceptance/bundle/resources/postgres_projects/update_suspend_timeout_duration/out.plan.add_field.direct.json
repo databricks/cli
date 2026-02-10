@@ -1,5 +1,18 @@
 {
-  "action": "skip",
+  "action": "update",
+  "new_state": {
+    "value": {
+      "default_endpoint_settings": {
+        "autoscaling_limit_max_cu": 4,
+        "autoscaling_limit_min_cu": 0.5,
+        "suspend_timeout_duration": "120s"
+      },
+      "display_name": "My Project",
+      "history_retention_duration": "604800s",
+      "pg_version": 16,
+      "project_id": "test-pg-proj-[UNIQUE_NAME]"
+    }
+  },
   "remote_state": {
     "create_time": "[TIMESTAMP]",
     "name": "projects/test-pg-proj-[UNIQUE_NAME]",
@@ -8,7 +21,7 @@
       "default_endpoint_settings": {
         "autoscaling_limit_max_cu": 4,
         "autoscaling_limit_min_cu": 0.5,
-        "suspend_timeout_duration": "300s"
+        "suspend_timeout_duration": "600s"
       },
       "display_name": "My Project",
       "history_retention_duration": "604800s",
@@ -22,7 +35,7 @@
   "changes": {
     "default_endpoint_settings": {
       "action": "skip",
-      "reason": "builtin_rule",
+      "reason": "spec:input_only",
       "old": {
         "autoscaling_limit_max_cu": 4,
         "autoscaling_limit_min_cu": 0.5,
@@ -35,27 +48,24 @@
       }
     },
     "default_endpoint_settings.suspend_timeout_duration": {
-      "action": "skip",
-      "reason": "remote_already_set",
-      "old": "300s",
-      "new": "120s",
-      "remote": "120s"
+      "action": "update",
+      "new": "120s"
     },
     "display_name": {
       "action": "skip",
-      "reason": "builtin_rule",
+      "reason": "spec:input_only",
       "old": "My Project",
       "new": "My Project"
     },
     "history_retention_duration": {
       "action": "skip",
-      "reason": "builtin_rule",
+      "reason": "spec:input_only",
       "old": "604800s",
       "new": "604800s"
     },
     "pg_version": {
       "action": "skip",
-      "reason": "builtin_rule",
+      "reason": "spec:input_only",
       "old": 16,
       "new": 16
     }

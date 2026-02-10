@@ -80,7 +80,9 @@ resources:
         suspend_timeout_duration: 600s
 
 >>> [CLI] bundle plan
-Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+update postgres_projects.my_project
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle plan -o json
 
@@ -100,7 +102,7 @@ Deployment complete!
     "default_endpoint_settings": {
       "autoscaling_limit_max_cu": 4,
       "autoscaling_limit_min_cu": 0.5,
-      "suspend_timeout_duration": "300s"
+      "suspend_timeout_duration": "600s"
     },
     "display_name": "My Project",
     "history_retention_duration": "604800s",
@@ -131,7 +133,9 @@ resources:
         autoscaling_limit_max_cu: 4
 
 >>> [CLI] bundle plan
-Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+update postgres_projects.my_project
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle plan -o json
 
@@ -151,7 +155,7 @@ Deployment complete!
     "default_endpoint_settings": {
       "autoscaling_limit_max_cu": 4,
       "autoscaling_limit_min_cu": 0.5,
-      "suspend_timeout_duration": "300s"
+      "suspend_timeout_duration": "600s"
     },
     "display_name": "My Project",
     "history_retention_duration": "604800s",
@@ -186,7 +190,9 @@ resources:
         suspend_timeout_duration: 120s
 
 >>> [CLI] bundle plan
-Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+update postgres_projects.my_project
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
 
 >>> [CLI] bundle plan -o json
 
@@ -206,7 +212,7 @@ Deployment complete!
     "default_endpoint_settings": {
       "autoscaling_limit_max_cu": 4,
       "autoscaling_limit_min_cu": 0.5,
-      "suspend_timeout_duration": "300s"
+      "suspend_timeout_duration": "120s"
     },
     "display_name": "My Project",
     "history_retention_duration": "604800s",

@@ -2,3 +2,22 @@
   "method": "GET",
   "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]"
 }
+{
+  "method": "PATCH",
+  "path": "/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_NAME]",
+  "q": {
+    "update_mask": "spec"
+  },
+  "body": {
+    "spec": {
+      "default_endpoint_settings": {
+        "autoscaling_limit_max_cu": 4,
+        "autoscaling_limit_min_cu": 0.5,
+        "suspend_timeout_duration": "600s"
+      },
+      "display_name": "My Project",
+      "history_retention_duration": "604800s",
+      "pg_version": 16
+    }
+  }
+}
