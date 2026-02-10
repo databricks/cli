@@ -187,7 +187,7 @@ def _register_formatters():
 
 
 @_log_exceptions
-def _initialize_spark_connect_session():
+def _initialize_spark_connect_session_grpc():
     import os
     from dbruntime.spark_connection import get_and_configure_uds_spark
     os.environ["SPARK_REMOTE"] = "unix:///databricks/sparkconnect/grpc.sock"
@@ -195,7 +195,37 @@ def _initialize_spark_connect_session():
     globals()["spark"] = spark
 
 
+@_log_exceptions
+def _initialize_spark_connect_session_dbconnect():
+    import IPython
+    from databricks.connect import DatabricksSession
+    user_ns = getattr(IPython.get_ipython(), "user_ns", {})
+    existing_session = getattr(user_ns, "spark", None)
+    if existing_session is not None and _is_spark_connect(existing_session):
+        return
+    try:
+        # Clear the existing local spark session, otherwise DatabricksSession will re-use it.
+        user_ns["spark"] = None
+        globals()["spark"] = None
+        # DatabricksSession will use the existing env vars for the connection.
+        spark_session = DatabricksSession.builder.getOrCreate()
+        user_ns["spark"] = spark_session
+        globals()["spark"] = spark_session
+    except Exception as e:
+        user_ns["spark"] = existing_session
+        globals()["spark"] = existing_session
+        raise e
+
+
+def _is_spark_connect(session) -> bool:
+    try:
+        from pyspark.sql.connect.session import SparkSession as ConnectSparkSession
+        return isinstance(session, ConnectSparkSession)
+    except ImportError:
+        return False
+
+
 _register_magics()
 _register_formatters()
 _register_runtime_hooks()
-_initialize_spark_connect_session()
+_initialize_spark_connect_session_dbconnect()
