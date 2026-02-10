@@ -870,6 +870,9 @@ func validateResourceConfig(t *testing.T, stateType reflect.Type, cfg *ResourceL
 	for _, p := range cfg.IgnoreRemoteChanges {
 		assert.NoError(t, structaccess.ValidatePattern(stateType, p.Field), "IgnoreRemoteChanges: %s", p.Field)
 	}
+	for _, p := range cfg.BackendDefaults {
+		assert.NoError(t, structaccess.ValidatePattern(stateType, p.Field), "BackendDefaults: %s", p.Field)
+	}
 }
 
 func setupTestServerClient(t *testing.T) (*testserver.Server, *databricks.WorkspaceClient) {

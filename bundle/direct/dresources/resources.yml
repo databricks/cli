@@ -6,6 +6,8 @@
 #   update_id_on_changes: fields that trigger UpdateWithID (ID may change)
 #   ignore_remote_changes: fields where remote changes are ignored
 #   ignore_local_changes: fields where local changes are ignored (can't be updated via API)
+#   backend_defaults: fields where the backend may set defaults (skipped when old/new are nil but remote is set)
+#     Optional "values" list constrains which remote values are allowed (as JSON-compatible literals).
 #
 # Each field entry has:
 #   field: the field path
