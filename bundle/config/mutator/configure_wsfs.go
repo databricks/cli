@@ -43,7 +43,7 @@ func (m *configureWSFS) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagno
 	// Writing notebooks via FUSE is only supported for serverless client version 2+.
 	// Since we could only test v2.5, since the platform only allows selecting v2 (which is v2.5 internally),
 	// we restrict FUSE to only be used for v2.5+.
-	v := dbr.GetVersion(ctx)
+	v := dbr.RuntimeVersion(ctx)
 	if v.Type == dbr.ClusterTypeServerless && (v.Major > 2 || (v.Major == 2 && v.Minor >= 5)) {
 		return nil
 	}

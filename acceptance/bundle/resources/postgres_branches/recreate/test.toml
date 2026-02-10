@@ -1,5 +1,3 @@
-Badness = "Terraform provider bug: missing ForceNew on branch_id causes PATCH instead of DELETE+POST when branch_id changes"
-
 [[Repls]]
 # Normalize TraceId in error messages (run before default NUMID replacement at Order 9-10)
 Old = 'TraceId: [a-f0-9]+'
