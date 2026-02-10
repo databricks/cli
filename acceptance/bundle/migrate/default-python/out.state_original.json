@@ -152,7 +152,16 @@
                 "description": "",
                 "disable_auto_optimization": false,
                 "disabled": false,
-                "email_notifications": [],
+                "email_notifications": [
+                  {
+                    "no_alert_for_skipped_runs": false,
+                    "on_duration_warning_threshold_exceeded": [],
+                    "on_failure": [],
+                    "on_start": [],
+                    "on_streaming_backlog_exceeded": [],
+                    "on_success": []
+                  }
+                ],
                 "environment_key": "",
                 "existing_cluster_id": "",
                 "for_each_task": [],
@@ -187,7 +196,7 @@
                 "power_bi_task": [],
                 "python_wheel_task": [],
                 "retry_on_timeout": false,
-                "run_if": "",
+                "run_if": "ALL_SUCCESS",
                 "run_job_task": [],
                 "spark_jar_task": [],
                 "spark_python_task": [],
@@ -214,7 +223,16 @@
                 "description": "",
                 "disable_auto_optimization": false,
                 "disabled": false,
-                "email_notifications": [],
+                "email_notifications": [
+                  {
+                    "no_alert_for_skipped_runs": false,
+                    "on_duration_warning_threshold_exceeded": [],
+                    "on_failure": [],
+                    "on_start": [],
+                    "on_streaming_backlog_exceeded": [],
+                    "on_success": []
+                  }
+                ],
                 "environment_key": "",
                 "existing_cluster_id": "",
                 "for_each_task": [],
@@ -254,7 +272,7 @@
                   }
                 ],
                 "retry_on_timeout": false,
-                "run_if": "",
+                "run_if": "ALL_SUCCESS",
                 "run_job_task": [],
                 "spark_jar_task": [],
                 "spark_python_task": [],
@@ -281,7 +299,16 @@
                 "description": "",
                 "disable_auto_optimization": false,
                 "disabled": false,
-                "email_notifications": [],
+                "email_notifications": [
+                  {
+                    "no_alert_for_skipped_runs": false,
+                    "on_duration_warning_threshold_exceeded": [],
+                    "on_failure": [],
+                    "on_start": [],
+                    "on_streaming_backlog_exceeded": [],
+                    "on_success": []
+                  }
+                ],
                 "environment_key": "",
                 "existing_cluster_id": "",
                 "for_each_task": [],
@@ -303,7 +330,7 @@
                 "power_bi_task": [],
                 "python_wheel_task": [],
                 "retry_on_timeout": false,
-                "run_if": "",
+                "run_if": "ALL_SUCCESS",
                 "run_job_task": [],
                 "spark_jar_task": [],
                 "spark_python_task": [],

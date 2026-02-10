@@ -156,6 +156,7 @@
         },
         "tasks": [
           {
+            "email_notifications": {},
             "job_cluster_key": "job_cluster",
             "libraries": [
               {
@@ -166,7 +167,9 @@
               "notebook_path": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/files/src/sample_notebook",
               "source": "WORKSPACE"
             },
-            "task_key": "notebook_task"
+            "run_if": "ALL_SUCCESS",
+            "task_key": "notebook_task",
+            "timeout_seconds": 0
           },
           {
             "depends_on": [
@@ -174,6 +177,7 @@
                 "task_key": "notebook_task"
               }
             ],
+            "email_notifications": {},
             "job_cluster_key": "job_cluster",
             "libraries": [
               {
@@ -190,7 +194,9 @@
                 "[USERNAME]"
               ]
             },
-            "task_key": "python_wheel_task"
+            "run_if": "ALL_SUCCESS",
+            "task_key": "python_wheel_task",
+            "timeout_seconds": 0
           },
           {
             "depends_on": [
@@ -198,10 +204,13 @@
                 "task_key": "notebook_task"
               }
             ],
+            "email_notifications": {},
             "pipeline_task": {
               "pipeline_id": "[UUID]"
             },
-            "task_key": "refresh_pipeline"
+            "run_if": "ALL_SUCCESS",
+            "task_key": "refresh_pipeline",
+            "timeout_seconds": 0
           }
         ],
         "timeout_seconds": 0,
@@ -220,6 +229,11 @@
           "reason": "empty_struct",
           "remote": {}
         },
+        "tasks[task_key='notebook_task'].email_notifications": {
+          "action": "skip",
+          "reason": "empty_struct",
+          "remote": {}
+        },
         "tasks[task_key='notebook_task'].libraries[0].whl": {
           "action": "update",
           "old": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/artifacts/.internal/my_default_python-0.0.1+[UNIX_TIME_NANOS][1]-py3-none-any.whl",
@@ -231,11 +245,51 @@
           "reason": "server_side_default",
           "remote": "WORKSPACE"
         },
+        "tasks[task_key='notebook_task'].run_if": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": "ALL_SUCCESS"
+        },
+        "tasks[task_key='notebook_task'].timeout_seconds": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": 0
+        },
+        "tasks[task_key='python_wheel_task'].email_notifications": {
+          "action": "skip",
+          "reason": "empty_struct",
+          "remote": {}
+        },
         "tasks[task_key='python_wheel_task'].libraries[0].whl": {
           "action": "update",
           "old": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/artifacts/.internal/my_default_python-0.0.1+[UNIX_TIME_NANOS][1]-py3-none-any.whl",
           "new": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/artifacts/.internal/my_default_python-0.0.1+[UNIX_TIME_NANOS][0]-py3-none-any.whl",
           "remote": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/artifacts/.internal/my_default_python-0.0.1+[UNIX_TIME_NANOS][1]-py3-none-any.whl"
+        },
+        "tasks[task_key='python_wheel_task'].run_if": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": "ALL_SUCCESS"
+        },
+        "tasks[task_key='python_wheel_task'].timeout_seconds": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": 0
+        },
+        "tasks[task_key='refresh_pipeline'].email_notifications": {
+          "action": "skip",
+          "reason": "empty_struct",
+          "remote": {}
+        },
+        "tasks[task_key='refresh_pipeline'].run_if": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": "ALL_SUCCESS"
+        },
+        "tasks[task_key='refresh_pipeline'].timeout_seconds": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": 0
         },
         "timeout_seconds": {
           "action": "skip",
