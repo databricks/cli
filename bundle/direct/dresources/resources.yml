@@ -32,11 +32,46 @@ resources:
       - field: job_clusters[*].new_cluster.gcp_attributes
         reason: managed
 
-      # can also be added to backend_defaults with value=false once we have that
       - field: tasks[*].new_cluster.enable_elastic_disk
         reason: managed
       - field: job_clusters[*].new_cluster.enable_elastic_disk
         reason: managed
+
+    backend_defaults:
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/jobs/resource_job.go#L570
+      # s.SchemaPath("max_concurrent_runs").SetDefault(1)
+      - field: max_concurrent_runs
+        values: [1]
+
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/jobs/resource_job.go#L531
+      # s.SchemaPath("format").SetComputed()
+      - field: format
+        values: ["MULTI_TASK", "SINGLE_TASK"]
+
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/jobs/resource_job.go#L534
+      # s.SchemaPath("schedule", "pause_status").SetDefault("UNPAUSED")
+      - field: schedule.pause_status
+        values: ["UNPAUSED"]
+
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/jobs/resource_job.go#L535
+      # s.SchemaPath("trigger", "pause_status").SetDefault("UNPAUSED")
+      - field: trigger.pause_status
+        values: ["UNPAUSED"]
+
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/jobs/resource_job.go#L536
+      # s.SchemaPath("continuous", "pause_status").SetDefault("UNPAUSED")
+      - field: continuous.pause_status
+        values: ["UNPAUSED"]
+
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/jobs/resource_job.go#L639
+      # s.SchemaPath("task", "run_if").SetSuppressDiffWithDefault(jobs.RunIfAllSuccess)
+      - field: "tasks[*].run_if"
+        values: ["ALL_SUCCESS"]
+
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/jobs/resource_job.go#L640
+      # s.SchemaPath("task", "for_each_task", "task", "run_if").SetSuppressDiffWithDefault(jobs.RunIfAllSuccess)
+      - field: "tasks[*].for_each_task.task.run_if"
+        values: ["ALL_SUCCESS"]
 
   pipelines:
     recreate_on_changes:
@@ -70,6 +105,16 @@ resources:
       # "id" is output-only, providing it in config would be a mistake
       - field: id
         reason: "!drop"
+    backend_defaults:
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/pipelines/resource_pipeline.go#L254
+      # s.SchemaPath("edition").SetDefault("ADVANCED")
+      - field: edition
+        values: ["ADVANCED"]
+
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/pipelines/resource_pipeline.go#L255
+      # s.SchemaPath("channel").SetDefault("CURRENT")
+      - field: channel
+        values: ["CURRENT"]
 
   models:
     recreate_on_changes:
@@ -235,6 +280,39 @@ resources:
       # DoRead operations use the correct ID and we do not end up with a persistent drift.
       - field: scope_name
         reason: id_changes
+
+  clusters:
+    backend_defaults:
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/clusters/resource_cluster.go#L320-L324
+      # s.AddNewField("autotermination_minutes", &schema.Schema{Default: 60})
+      - field: autotermination_minutes
+        values: [60]
+
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/clusters/resource_cluster.go#L109-L118
+      # DataSecurityModeDiffSuppressFunc: suppress when old != "" && new == ""
+      - field: data_security_mode
+
+  sql_warehouses:
+    backend_defaults:
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/sql/resource_sql_endpoint.go#L61
+      # common.SetDefault(m["auto_stop_mins"], 120)
+      - field: auto_stop_mins
+        values: [120]
+
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/sql/resource_sql_endpoint.go#L68
+      # common.SetDefault(m["enable_photon"], true)
+      - field: enable_photon
+        values: [true]
+
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/sql/resource_sql_endpoint.go#L72
+      # common.SetDefault(m["max_num_clusters"], 1)
+      - field: max_num_clusters
+        values: [1]
+
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/sql/resource_sql_endpoint.go#L80
+      # common.SetDefault(m["spot_instance_policy"], "COST_OPTIMIZED")
+      - field: spot_instance_policy
+        values: ["COST_OPTIMIZED"]
 
   postgres_projects:
     recreate_on_changes:
