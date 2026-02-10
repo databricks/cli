@@ -32,8 +32,8 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 	"github.com/spf13/cobra"
+	"go.yaml.in/yaml/v3"
 	"golang.org/x/exp/maps"
-	"gopkg.in/yaml.v3"
 )
 
 type dashboard struct {
@@ -165,7 +165,7 @@ func remarshalJSON(data []byte) ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-func (d *dashboard) saveSerializedDashboard(_ context.Context, b *bundle.Bundle, dashboard *dashboards.Dashboard, filename string) error {
+func (d *dashboard) saveSerializedDashboard(ctx context.Context, b *bundle.Bundle, dashboard *dashboards.Dashboard, filename string) error {
 	// Unmarshal and remarshal the serialized dashboard to ensure it is formatted correctly.
 	// The result will have alphabetically sorted keys and be indented.
 	data, err := remarshalJSON([]byte(dashboard.SerializedDashboard))
@@ -198,7 +198,7 @@ func (d *dashboard) saveSerializedDashboard(_ context.Context, b *bundle.Bundle,
 		}
 	}
 
-	fmt.Fprintf(d.out, "Writing dashboard to %q\n", rel)
+	cmdio.LogString(ctx, fmt.Sprintf("Writing dashboard to %q", rel))
 	return os.WriteFile(filename, data, 0o644)
 }
 
@@ -242,7 +242,7 @@ func (d *dashboard) saveConfiguration(ctx context.Context, b *bundle.Bundle, das
 		rel = resourcePath
 	}
 
-	fmt.Fprintf(d.out, "Writing configuration to %q\n", rel)
+	cmdio.LogString(ctx, fmt.Sprintf("Writing configuration to %q", rel))
 	err = saver.SaveAsYAML(result, resourcePath, d.force)
 	if err != nil {
 		return err

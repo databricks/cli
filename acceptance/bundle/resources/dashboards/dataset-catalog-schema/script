@@ -35,7 +35,7 @@ if [ "$DATABRICKS_BUNDLE_ENGINE" = "direct" ]; then
     jq '.plan["resources.dashboards.dashboard1"].remote_state.serialized_dashboard |=
        if . then "[SERIALIZED_FIXTURE]" else . end' \
        out.plan.direct.json > out.plan.direct.json.tmp && mv out.plan.direct.json.tmp out.plan.direct.json
-    jq '.plan["resources.dashboards.dashboard1"].changes.remote.serialized_dashboard |=
+    jq '.plan["resources.dashboards.dashboard1"].changes.serialized_dashboard |=
        if . then {"action": .action, "old": "[SERIALIZED_FIXTURE_OLD]", "new": "[SERIALIZED_FIXTURE_NEW]"} else . end' \
        out.plan.direct.json > out.plan.direct.json.tmp && mv out.plan.direct.json.tmp out.plan.direct.json
 fi

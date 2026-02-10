@@ -1,0 +1,58 @@
+Local = true
+Cloud = true
+RequiresUnityCatalog = true
+
+Ignore = [
+    ".databricks",
+    "databricks.yml",
+    "plan.json",
+    "*.py",
+    "*.json",
+    "app",
+]
+
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = [
+    "direct",
+    # These tests work on terraform but commented out to save time on test run
+    #"terraform",
+]
+
+EnvMatrix.INPUT_CONFIG = [
+    "alert.yml.tmpl",
+    "app.yml.tmpl",
+    "catalog.yml.tmpl",
+    "cluster.yml.tmpl",
+    "dashboard.yml.tmpl",
+    "database_catalog.yml.tmpl",
+    "database_instance.yml.tmpl",
+    "experiment.yml.tmpl",
+    "job.yml.tmpl",
+    "model.yml.tmpl",
+    "model_serving_endpoint.yml.tmpl",
+    "pipeline.yml.tmpl",
+    "postgres_branch.yml.tmpl",
+    "postgres_endpoint.yml.tmpl",
+    "postgres_project.yml.tmpl",
+    "registered_model.yml.tmpl",
+    "schema.yml.tmpl",
+    "secret_scope.yml.tmpl",
+    "synced_database_table.yml.tmpl",
+    "volume.yml.tmpl",
+]
+
+[EnvMatrixExclude]
+no_alert_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=alert.yml.tmpl"]
+
+# Postgres resources only work on AWS
+no_postgres_project_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=postgres_project.yml.tmpl"]
+no_postgres_branch_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=postgres_branch.yml.tmpl"]
+no_postgres_endpoint_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=postgres_endpoint.yml.tmpl"]
+
+# Fake SQL endpoint for local tests
+[[Server]]
+Pattern = "POST /api/2.0/sql/statements/"
+Response.Body = '{"status": {"state": "SUCCEEDED"}, "manifest": {"schema": {"columns": []}}}'
+
+[[Server]]
+Pattern = "DELETE /api/2.1/unity-catalog/tables/{name}"
+Response.Body = '{"status": "OK"}'

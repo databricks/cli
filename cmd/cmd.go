@@ -55,23 +55,13 @@ func New(ctx context.Context) *cobra.Command {
 	// Add workspace subcommands.
 	workspaceCommands := workspace.All()
 	for _, cmd := range workspaceCommands {
-		// Built-in groups for the workspace commands.
-		groups := []cobra.Group{
-			{
-				ID:    mainGroup,
-				Title: "Available Commands",
-			},
-			{
-				ID:    permissionsGroup,
-				Title: "Permission Commands",
-			},
-		}
-		for i := range groups {
-			cmd.AddGroup(&groups[i])
-		}
-
 		// Order the permissions subcommands after the main commands.
 		for _, sub := range cmd.Commands() {
+			// some commands override groups in overrides.go, leave them as-is
+			if sub.GroupID != "" {
+				continue
+			}
+
 			switch {
 			case strings.HasSuffix(sub.Name(), "-permissions"), strings.HasSuffix(sub.Name(), "-permission-levels"):
 				sub.GroupID = permissionsGroup
@@ -81,6 +71,24 @@ func New(ctx context.Context) *cobra.Command {
 		}
 
 		cli.AddCommand(cmd)
+
+		// Built-in groups for the workspace commands.
+		groups := []cobra.Group{
+			{
+				ID:    mainGroup,
+				Title: "Available Commands",
+			},
+			{
+				ID:    pipelines.ManagementGroupID,
+				Title: "Management Commands",
+			},
+			{
+				ID:    permissionsGroup,
+				Title: "Permission Commands",
+			},
+		}
+
+		configureGroups(cmd, groups)
 	}
 
 	// Add other subcommands.
@@ -96,7 +104,6 @@ func New(ctx context.Context) *cobra.Command {
 	cli.AddCommand(sync.New())
 	cli.AddCommand(version.New())
 	cli.AddCommand(selftest.New())
-	cli.AddCommand(pipelines.InstallPipelinesCLI())
 	cli.AddCommand(ssh.New())
 
 	// Add workspace command groups, filtering out empty groups or groups with only hidden commands.

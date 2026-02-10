@@ -1,4 +1,9 @@
 Local = true
-Cloud = true
+Cloud = false
 RecordRequests = false
 Ignore = [".databricks"]
+
+# Alert tests timeout during bundle deploy (hang at file upload for 50+ minutes).
+# Use aggressive 5-minute timeout until the issue is resolved.
+# See: https://github.com/databricks/cli/issues/4221
+TimeoutCloud = "5m"

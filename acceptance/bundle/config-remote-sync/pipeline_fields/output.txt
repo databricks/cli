@@ -1,0 +1,57 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Modify pipeline fields remotely
+=== Detect and save changes
+Detected changes in 1 resource(s):
+
+Resource: resources.pipelines.my_pipeline
+  configuration['key2']: add
+  environment.dependencies: replace
+  notifications[0].alerts: replace
+  notifications[0].email_recipients: replace
+  schema: replace
+  tags['foo']: add
+
+
+
+=== Configuration changes
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -1,5 +1,4 @@
+ bundle:
+   name: test-bundle-[UNIQUE_NAME]
+-
+ resources:
+   pipelines:
+@@ -7,19 +6,24 @@
+       name: test-pipeline-[UNIQUE_NAME]
+       catalog: main
+-      schema: default
++      schema: prod
+       configuration:
+         key1: value1
++        key2: value2
+       notifications:
+         - email_recipients:
+             - success@example.com
++            - admin@example.com
+           alerts:
+             - on-update-success
++            - on-update-failure
+       environment:
+         dependencies:
+           - --editable /Workspace/foo
++          - --editable /Workspace/bar
+       libraries:
+         - notebook:
+             path: /Users/{{workspace_user_name}}/notebook
+-
++      tags:
++        foo: bar
+ targets:
+   default:

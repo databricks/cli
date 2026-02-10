@@ -7,6 +7,7 @@ type DataSources struct {
 	AccountFederationPolicy                map[string]any `json:"databricks_account_federation_policy,omitempty"`
 	AccountNetworkPolicies                 map[string]any `json:"databricks_account_network_policies,omitempty"`
 	AccountNetworkPolicy                   map[string]any `json:"databricks_account_network_policy,omitempty"`
+	AccountSettingUserPreferenceV2         map[string]any `json:"databricks_account_setting_user_preference_v2,omitempty"`
 	AccountSettingV2                       map[string]any `json:"databricks_account_setting_v2,omitempty"`
 	AlertV2                                map[string]any `json:"databricks_alert_v2,omitempty"`
 	AlertsV2                               map[string]any `json:"databricks_alerts_v2,omitempty"`
@@ -81,6 +82,12 @@ type DataSources struct {
 	Pipelines                              map[string]any `json:"databricks_pipelines,omitempty"`
 	PolicyInfo                             map[string]any `json:"databricks_policy_info,omitempty"`
 	PolicyInfos                            map[string]any `json:"databricks_policy_infos,omitempty"`
+	PostgresBranch                         map[string]any `json:"databricks_postgres_branch,omitempty"`
+	PostgresBranches                       map[string]any `json:"databricks_postgres_branches,omitempty"`
+	PostgresEndpoint                       map[string]any `json:"databricks_postgres_endpoint,omitempty"`
+	PostgresEndpoints                      map[string]any `json:"databricks_postgres_endpoints,omitempty"`
+	PostgresProject                        map[string]any `json:"databricks_postgres_project,omitempty"`
+	PostgresProjects                       map[string]any `json:"databricks_postgres_projects,omitempty"`
 	QualityMonitorV2                       map[string]any `json:"databricks_quality_monitor_v2,omitempty"`
 	QualityMonitorsV2                      map[string]any `json:"databricks_quality_monitors_v2,omitempty"`
 	RegisteredModel                        map[string]any `json:"databricks_registered_model,omitempty"`
@@ -109,6 +116,8 @@ type DataSources struct {
 	Views                                  map[string]any `json:"databricks_views,omitempty"`
 	Volume                                 map[string]any `json:"databricks_volume,omitempty"`
 	Volumes                                map[string]any `json:"databricks_volumes,omitempty"`
+	WarehousesDefaultWarehouseOverride     map[string]any `json:"databricks_warehouses_default_warehouse_override,omitempty"`
+	WarehousesDefaultWarehouseOverrides    map[string]any `json:"databricks_warehouses_default_warehouse_overrides,omitempty"`
 	WorkspaceEntityTagAssignment           map[string]any `json:"databricks_workspace_entity_tag_assignment,omitempty"`
 	WorkspaceEntityTagAssignments          map[string]any `json:"databricks_workspace_entity_tag_assignments,omitempty"`
 	WorkspaceNetworkOption                 map[string]any `json:"databricks_workspace_network_option,omitempty"`
@@ -122,6 +131,7 @@ func NewDataSources() *DataSources {
 		AccountFederationPolicy:                make(map[string]any),
 		AccountNetworkPolicies:                 make(map[string]any),
 		AccountNetworkPolicy:                   make(map[string]any),
+		AccountSettingUserPreferenceV2:         make(map[string]any),
 		AccountSettingV2:                       make(map[string]any),
 		AlertV2:                                make(map[string]any),
 		AlertsV2:                               make(map[string]any),
@@ -196,6 +206,12 @@ func NewDataSources() *DataSources {
 		Pipelines:                              make(map[string]any),
 		PolicyInfo:                             make(map[string]any),
 		PolicyInfos:                            make(map[string]any),
+		PostgresBranch:                         make(map[string]any),
+		PostgresBranches:                       make(map[string]any),
+		PostgresEndpoint:                       make(map[string]any),
+		PostgresEndpoints:                      make(map[string]any),
+		PostgresProject:                        make(map[string]any),
+		PostgresProjects:                       make(map[string]any),
 		QualityMonitorV2:                       make(map[string]any),
 		QualityMonitorsV2:                      make(map[string]any),
 		RegisteredModel:                        make(map[string]any),
@@ -224,6 +240,8 @@ func NewDataSources() *DataSources {
 		Views:                                  make(map[string]any),
 		Volume:                                 make(map[string]any),
 		Volumes:                                make(map[string]any),
+		WarehousesDefaultWarehouseOverride:     make(map[string]any),
+		WarehousesDefaultWarehouseOverrides:    make(map[string]any),
 		WorkspaceEntityTagAssignment:           make(map[string]any),
 		WorkspaceEntityTagAssignments:          make(map[string]any),
 		WorkspaceNetworkOption:                 make(map[string]any),

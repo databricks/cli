@@ -94,7 +94,7 @@ func newBatchCreateAccessRequests() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -203,6 +203,7 @@ func newUpdateAccessRequestDestinations() *cobra.Command {
 
 	cmd.Flags().Var(&updateAccessRequestDestinationsJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	// TODO: complex arg: destination_source_securable
 	// TODO: array: destinations
 
 	cmd.Use = "update-access-request-destinations UPDATE_MASK SECURABLE"
@@ -235,8 +236,8 @@ func newUpdateAccessRequestDestinations() *cobra.Command {
       always explicitly list the fields being updated and avoid using *
       wildcards, as it can lead to unintended results if the API changes in the
       future.
-    SECURABLE: The securable for which the access request destinations are being
-      retrieved.`
+    SECURABLE: The securable for which the access request destinations are being modified
+      or read.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -263,7 +264,7 @@ func newUpdateAccessRequestDestinations() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}

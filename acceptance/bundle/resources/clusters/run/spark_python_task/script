@@ -8,4 +8,8 @@ cleanup() {
 trap cleanup EXIT
 
 trace $CLI bundle deploy
+
+# Add all resource IDs to runtime replacements to avoid pattern matching ambiguity
+replace_ids.py
+
 trace $CLI bundle run foo

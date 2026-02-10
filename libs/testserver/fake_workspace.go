@@ -14,6 +14,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/dashboards"
 	"github.com/databricks/databricks-sdk-go/service/database"
+	"github.com/databricks/databricks-sdk-go/service/postgres"
 	"github.com/google/uuid"
 
 	"github.com/databricks/databricks-sdk-go/service/apps"
@@ -31,6 +32,8 @@ const (
 	UserNameTokenPrefix         = "dbapi0"
 	ServicePrincipalTokenPrefix = "dbapi1"
 	UserID                      = "1000012345"
+	TestDefaultClusterId        = "0123-456789-cluster0"
+	TestDefaultWarehouseId      = "8ec9edc1-db0c-40df-af8d-7580020fe61e"
 )
 
 var TestUser = iam.User{
@@ -93,6 +96,13 @@ func nextUUID() string {
 	return u.String()
 }
 
+func nextDashboardID() string {
+	var b [16]byte
+	binary.BigEndian.PutUint64(b[0:8], uint64(nextID()))
+	binary.BigEndian.PutUint64(b[8:16], uint64(nextID()))
+	return fmt.Sprintf("%032x", b)
+}
+
 type FileEntry struct {
 	Info workspace.ObjectInfo
 	Data []byte
@@ -143,11 +153,18 @@ type FakeWorkspace struct {
 	// Generic permissions storage: key is "{object_type}:{object_id}"
 	Permissions map[string]iam.ObjectPermissions
 
+	Groups map[string]iam.Group
+
 	Repos map[string]workspace.RepoInfo
 
 	DatabaseInstances    map[string]database.DatabaseInstance
 	DatabaseCatalogs     map[string]database.DatabaseCatalog
 	SyncedDatabaseTables map[string]database.SyncedDatabaseTable
+
+	PostgresProjects   map[string]postgres.Project
+	PostgresBranches   map[string]postgres.Branch
+	PostgresEndpoints  map[string]postgres.Endpoint
+	PostgresOperations map[string]postgres.Operation
 }
 
 func (s *FakeWorkspace) LockUnlock() func() {
@@ -216,37 +233,68 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 				Path:       "/Workspace",
 				ObjectId:   nextID(),
 			},
+			"/Users": {
+				ObjectType: "DIRECTORY",
+				Path:       "/Users",
+				ObjectId:   nextID(),
+			},
+			"/Users/" + TestUser.UserName: {
+				ObjectType: "DIRECTORY",
+				Path:       "/Users/" + TestUser.UserName,
+				ObjectId:   nextID(),
+			},
+			"/Users/" + TestUserSP.UserName: {
+				ObjectType: "DIRECTORY",
+				Path:       "/Users/" + TestUserSP.UserName,
+				ObjectId:   nextID(),
+			},
 		},
 		files:        make(map[string]FileEntry),
 		repoIdByPath: make(map[string]int64),
 
-		Jobs:                 map[int64]jobs.Job{},
-		JobRuns:              map[int64]jobs.Run{},
-		Grants:               map[string][]catalog.PrivilegeAssignment{},
-		Pipelines:            map[string]pipelines.GetPipelineResponse{},
-		PipelineUpdates:      map[string]bool{},
-		Monitors:             map[string]catalog.MonitorInfo{},
-		Apps:                 map[string]apps.App{},
-		Catalogs:             map[string]catalog.CatalogInfo{},
-		Schemas:              map[string]catalog.SchemaInfo{},
-		RegisteredModels:     map[string]catalog.RegisteredModelInfo{},
-		Volumes:              map[string]catalog.VolumeInfo{},
-		Dashboards:           map[string]fakeDashboard{},
-		PublishedDashboards:  map[string]dashboards.PublishedDashboard{},
-		SqlWarehouses:        map[string]sql.GetWarehouseResponse{},
+		Jobs:                map[int64]jobs.Job{},
+		JobRuns:             map[int64]jobs.Run{},
+		Grants:              map[string][]catalog.PrivilegeAssignment{},
+		Pipelines:           map[string]pipelines.GetPipelineResponse{},
+		PipelineUpdates:     map[string]bool{},
+		Monitors:            map[string]catalog.MonitorInfo{},
+		Apps:                map[string]apps.App{},
+		Catalogs:            map[string]catalog.CatalogInfo{},
+		Schemas:             map[string]catalog.SchemaInfo{},
+		RegisteredModels:    map[string]catalog.RegisteredModelInfo{},
+		Volumes:             map[string]catalog.VolumeInfo{},
+		Dashboards:          map[string]fakeDashboard{},
+		PublishedDashboards: map[string]dashboards.PublishedDashboard{},
+		SqlWarehouses: map[string]sql.GetWarehouseResponse{
+			TestDefaultWarehouseId: {
+				Id:    TestDefaultWarehouseId,
+				Name:  "DEFAULT Test SQL Warehouse",
+				State: sql.StateRunning,
+			},
+		},
 		ServingEndpoints:     map[string]serving.ServingEndpointDetailed{},
 		Repos:                map[string]workspace.RepoInfo{},
 		SecretScopes:         map[string]workspace.SecretScope{},
 		Secrets:              map[string]map[string]string{},
 		Acls:                 map[string][]workspace.AclItem{},
 		Permissions:          map[string]iam.ObjectPermissions{},
+		Groups:               map[string]iam.Group{},
 		DatabaseInstances:    map[string]database.DatabaseInstance{},
 		DatabaseCatalogs:     map[string]database.DatabaseCatalog{},
 		SyncedDatabaseTables: map[string]database.SyncedDatabaseTable{},
+		PostgresProjects:     map[string]postgres.Project{},
+		PostgresBranches:     map[string]postgres.Branch{},
+		PostgresEndpoints:    map[string]postgres.Endpoint{},
+		PostgresOperations:   map[string]postgres.Operation{},
 		Alerts:               map[string]sql.AlertV2{},
 		Experiments:          map[string]ml.GetExperimentResponse{},
 		ModelRegistryModels:  map[string]ml.Model{},
-		Clusters:             map[string]compute.ClusterDetails{},
+		Clusters: map[string]compute.ClusterDetails{
+			TestDefaultClusterId: {
+				ClusterId:   TestDefaultClusterId,
+				ClusterName: "DEFAULT Test Cluster",
+			},
+		},
 	}
 }
 
@@ -303,10 +351,16 @@ func (s *FakeWorkspace) WorkspaceDelete(path string, recursive bool) {
 	defer s.LockUnlock()()
 	if !recursive {
 		delete(s.files, path)
+		delete(s.directories, path)
 	} else {
 		for key := range s.files {
 			if strings.HasPrefix(key, path) {
 				delete(s.files, key)
+			}
+		}
+		for key := range s.directories {
+			if strings.HasPrefix(key, path) {
+				delete(s.directories, key)
 			}
 		}
 	}
@@ -382,6 +436,30 @@ func (s *FakeWorkspace) WorkspaceFilesExportFile(path string) []byte {
 	defer s.LockUnlock()()
 
 	return s.files[path].Data
+}
+
+// FileExists checks if a file exists at the given path.
+func (s *FakeWorkspace) FileExists(path string) bool {
+	if !strings.HasPrefix(path, "/") {
+		path = "/" + path
+	}
+
+	defer s.LockUnlock()()
+
+	_, exists := s.files[path]
+	return exists
+}
+
+// DirectoryExists checks if a directory exists at the given path.
+func (s *FakeWorkspace) DirectoryExists(path string) bool {
+	if !strings.HasPrefix(path, "/") {
+		path = "/" + path
+	}
+
+	defer s.LockUnlock()()
+
+	_, exists := s.directories[path]
+	return exists
 }
 
 // jsonConvert saves input to a value pointed by output

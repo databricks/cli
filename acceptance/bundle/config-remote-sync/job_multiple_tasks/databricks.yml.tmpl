@@ -1,0 +1,76 @@
+bundle:
+  name: test-bundle-$UNIQUE_NAME
+
+resources:
+  jobs:
+    my_job:
+      tasks:
+        - task_key: b_task
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/b_task
+          new_cluster:
+            spark_version: $DEFAULT_SPARK_VERSION
+            node_type_id: $NODE_TYPE_ID
+            num_workers: 1
+        - task_key: d_task
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/d_task
+          new_cluster:
+            spark_version: $DEFAULT_SPARK_VERSION
+            node_type_id: $NODE_TYPE_ID
+            num_workers: 2
+          depends_on:
+            - task_key: b_task
+        - task_key: c_task
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/c_task
+          new_cluster:
+            spark_version: $DEFAULT_SPARK_VERSION
+            node_type_id: $NODE_TYPE_ID
+            num_workers: 2
+          depends_on:
+            - task_key: d_task
+        - task_key: a_task
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/a_task
+          new_cluster:
+            spark_version: $DEFAULT_SPARK_VERSION
+            node_type_id: $NODE_TYPE_ID
+            num_workers: 1
+          depends_on:
+            - task_key: c_task
+
+    rename_task_job:
+      tasks:
+        - task_key: b_task
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/b_task
+          new_cluster:
+            spark_version: $DEFAULT_SPARK_VERSION
+            node_type_id: $NODE_TYPE_ID
+            num_workers: 1
+        - task_key: d_task
+          depends_on:
+            - task_key: b_task
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/d_task
+          new_cluster:
+            spark_version: $DEFAULT_SPARK_VERSION
+            node_type_id: $NODE_TYPE_ID
+            num_workers: 1
+        - task_key: c_task
+          depends_on:
+            - task_key: b_task
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/c_task
+          new_cluster:
+            spark_version: $DEFAULT_SPARK_VERSION
+            node_type_id: $NODE_TYPE_ID
+            num_workers: 1
+        - task_key: a_task
+          notebook_task:
+            notebook_path: /Users/{{workspace_user_name}}/a_task
+          new_cluster:
+            spark_version: $DEFAULT_SPARK_VERSION
+            node_type_id: $NODE_TYPE_ID
+            num_workers: 1

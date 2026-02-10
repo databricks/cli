@@ -66,6 +66,7 @@
                     "data_security_mode": "SINGLE_USER",
                     "docker_image": [],
                     "driver_instance_pool_id": "",
+                    "driver_node_type_flexibility": [],
                     "driver_node_type_id": "",
                     "enable_elastic_disk": false,
                     "enable_local_disk_encryption": false,
@@ -89,6 +90,7 @@
                     "ssh_public_keys": null,
                     "total_initial_remote_disk_size": 0,
                     "use_ml_runtime": false,
+                    "worker_node_type_flexibility": [],
                     "workload_type": []
                   }
                 ]
@@ -124,6 +126,7 @@
             "retry_on_timeout": false,
             "run_as": [
               {
+                "group_name": "",
                 "service_principal_name": "",
                 "user_name": "[USERNAME]"
               }
@@ -139,6 +142,7 @@
             "task": [
               {
                 "clean_rooms_notebook_task": [],
+                "compute": [],
                 "condition_task": [],
                 "dashboard_task": [],
                 "dbt_cloud_task": [],
@@ -195,6 +199,7 @@
               },
               {
                 "clean_rooms_notebook_task": [],
+                "compute": [],
                 "condition_task": [],
                 "dashboard_task": [],
                 "dbt_cloud_task": [],
@@ -261,6 +266,7 @@
               },
               {
                 "clean_rooms_notebook_task": [],
+                "compute": [],
                 "condition_task": [],
                 "dashboard_task": [],
                 "dbt_cloud_task": [],

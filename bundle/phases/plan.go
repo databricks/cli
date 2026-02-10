@@ -24,6 +24,7 @@ func PreDeployChecks(ctx context.Context, b *bundle.Bundle, isPlan bool, engine 
 		resourcemutator.SecretScopeFixups(engine),
 		deploy.StatePull(),
 		mutator.ValidateGitDetails(),
+		mutator.ValidateDirectOnlyResources(engine),
 		statemgmt.CheckRunningResource(engine),
 	)
 }
@@ -34,7 +35,7 @@ func checkForPreventDestroy(b *bundle.Bundle, actions []deployplan.Action) error
 	root := b.Config.Value()
 	var errs []error
 	for _, action := range actions {
-		if action.ActionType != deployplan.ActionTypeRecreate && action.ActionType != deployplan.ActionTypeDelete {
+		if action.ActionType != deployplan.Recreate && action.ActionType != deployplan.Delete {
 			continue
 		}
 

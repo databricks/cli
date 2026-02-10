@@ -90,8 +90,13 @@ type DataSourceInstancePoolPoolInfo struct {
 	Stats                              *DataSourceInstancePoolPoolInfoStats                        `json:"stats,omitempty"`
 }
 
+type DataSourceInstancePoolProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type DataSourceInstancePool struct {
-	Id       string                          `json:"id,omitempty"`
-	Name     string                          `json:"name"`
-	PoolInfo *DataSourceInstancePoolPoolInfo `json:"pool_info,omitempty"`
+	Id             string                                `json:"id,omitempty"`
+	Name           string                                `json:"name"`
+	PoolInfo       *DataSourceInstancePoolPoolInfo       `json:"pool_info,omitempty"`
+	ProviderConfig *DataSourceInstancePoolProviderConfig `json:"provider_config,omitempty"`
 }

@@ -22,9 +22,18 @@ func ObjectAclToResourcePermissions(path string, acl []workspace.WorkspaceObject
 			continue
 		}
 
+		// Find the highest permission level for this principal (handles inherited + explicit permissions)
+		var highestLevel string
 		for _, pl := range a.AllPermissions {
+			level := convertWorkspaceObjectPermissionLevel(pl.PermissionLevel)
+			if resources.GetLevelScore(level) > resources.GetLevelScore(highestLevel) {
+				highestLevel = level
+			}
+		}
+
+		if highestLevel != "" {
 			permissions = append(permissions, resources.Permission{
-				Level:                convertWorkspaceObjectPermissionLevel(pl.PermissionLevel),
+				Level:                highestLevel,
 				GroupName:            a.GroupName,
 				UserName:             a.UserName,
 				ServicePrincipalName: a.ServicePrincipalName,
@@ -43,21 +52,35 @@ func (p WorkspacePathPermissions) Compare(perms []resources.Permission) diag.Dia
 	if !ok {
 		diags = diags.Append(diag.Diagnostic{
 			Severity: diag.Warning,
-			Summary:  "untracked permissions apply to target workspace path",
-			Detail:   fmt.Sprintf("The following permissions apply to the workspace folder at %q but are not configured in the bundle:\n%s", p.Path, toString(missing)),
+			Summary:  "workspace folder has permissions not configured in bundle",
+			Detail: fmt.Sprintf(
+				"The following permissions apply to the workspace folder at %q "+
+					"but are not configured in the bundle:\n%s\n"+
+					"Add them to your bundle permissions or remove them from the folder.\n"+
+					"See https://docs.databricks.com/dev-tools/bundles/permissions",
+				p.Path, toString(missing)),
 		})
 	}
 
 	return diags
 }
 
-// containsAll checks if permA contains all permissions in permB.
+// samePrincipal checks if two permissions refer to the same user/group/service principal.
+func samePrincipal(a, b resources.Permission) bool {
+	return a.UserName == b.UserName &&
+		a.GroupName == b.GroupName &&
+		a.ServicePrincipalName == b.ServicePrincipalName
+}
+
+// containsAll checks if all permissions in permA (workspace) are accounted for in permB (bundle).
+// A workspace permission is considered accounted for if the bundle has the same principal
+// with an equal or higher permission level.
 func containsAll(permA, permB []resources.Permission) (bool, []resources.Permission) {
 	var missing []resources.Permission
 	for _, a := range permA {
 		found := false
 		for _, b := range permB {
-			if a == b {
+			if samePrincipal(a, b) && resources.GetLevelScore(b.Level) >= resources.GetLevelScore(a.Level) {
 				found = true
 				break
 			}

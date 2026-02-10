@@ -1,5 +1,5 @@
 {
-  "plan_version": 1,
+  "plan_version": 2,
   "cli_version": "[DEV_VERSION]",
   "lineage": "[UUID]",
   "serial": 2,
@@ -15,63 +15,59 @@
       "remote_state": {
         "created_time": [UNIX_TIME_MILLIS][0],
         "creator_user_name": "[USERNAME]",
+        "deployment": {
+          "kind": "BUNDLE",
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+        },
+        "description": "depends on foo id [FOO_ID_2]",
+        "edit_mode": "UI_LOCKED",
+        "email_notifications": {},
+        "format": "MULTI_TASK",
         "job_id": [BAR_ID],
+        "max_concurrent_runs": 1,
+        "name": "job bar",
+        "queue": {
+          "enabled": true
+        },
         "run_as_user_name": "[USERNAME]",
-        "settings": {
-          "deployment": {
-            "kind": "BUNDLE",
-            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
-          },
-          "description": "depends on foo id [UUID]",
-          "edit_mode": "UI_LOCKED",
-          "email_notifications": {},
-          "format": "MULTI_TASK",
-          "max_concurrent_runs": 1,
-          "name": "job bar",
-          "queue": {
-            "enabled": true
-          },
-          "timeout_seconds": 0,
-          "webhook_notifications": {}
-        }
+        "timeout_seconds": 0,
+        "webhook_notifications": {}
       },
       "changes": {
-        "remote": {
-          "email_notifications": {
-            "action": "skip",
-            "reason": "server_side_default"
-          },
-          "timeout_seconds": {
-            "action": "skip",
-            "reason": "server_side_default"
-          },
-          "webhook_notifications": {
-            "action": "skip",
-            "reason": "server_side_default"
-          }
+        "email_notifications": {
+          "action": "skip",
+          "reason": "empty_struct",
+          "remote": {}
+        },
+        "timeout_seconds": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": 0
+        },
+        "webhook_notifications": {
+          "action": "skip",
+          "reason": "empty_struct",
+          "remote": {}
         }
       }
     },
     "resources.pipelines.foo": {
       "action": "skip",
       "remote_state": {
+        "channel": "CURRENT",
         "creator_user_name": "[USERNAME]",
+        "deployment": {
+          "kind": "BUNDLE",
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+        },
+        "edition": "ADVANCED",
+        "id": "[FOO_ID_2]",
         "last_modified": [UNIX_TIME_MILLIS][1],
         "name": "pipeline foo",
-        "pipeline_id": "[UUID]",
+        "pipeline_id": "[FOO_ID_2]",
         "run_as_user_name": "[USERNAME]",
-        "spec": {
-          "channel": "CURRENT",
-          "deployment": {
-            "kind": "BUNDLE",
-            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
-          },
-          "edition": "ADVANCED",
-          "id": "[UUID]",
-          "name": "pipeline foo",
-          "storage": "dbfs:/my-new-storage"
-        },
-        "state": "IDLE"
+        "state": "IDLE",
+        "storage": "dbfs:/my-new-storage"
       }
     }
   }

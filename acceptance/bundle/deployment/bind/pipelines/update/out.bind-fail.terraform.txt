@@ -1,0 +1,45 @@
+
+>>> musterr [CLI] bundle deployment bind foo [NEW_PIPELINE_ID]
+databricks_pipeline.foo: Refreshing state... [id=[NEW_PIPELINE_ID]]
+
+Terraform used the selected providers to generate the following execution
+plan. Resource actions are indicated with the following symbols:
+  ~ update in-place
+
+Terraform will perform the following actions:
+
+  # databricks_pipeline.foo will be updated in-place
+  ~ resource "databricks_pipeline" "foo" {
+      + catalog                = "main"
+      + channel                = "CURRENT"
+      + edition                = "ADVANCED"
+        id                     = "[NEW_PIPELINE_ID]"
+      ~ name                   = "lakeflow-pipeline" -> "test-pipeline"
+      - root_path              = "/Workspace/Users/[USERNAME]/lakeflow_pipeline" -> null
+        # (12 unchanged attributes hidden)
+
+      + deployment {
+          + kind               = "BUNDLE"
+          + metadata_file_path = "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-recreate/default/state/metadata.json"
+        }
+
+      ~ library {
+          - glob {
+              - include = "/Workspace/Users/[USERNAME]/lakeflow_pipeline/transformations/**" -> null
+            }
+          + notebook {
+              + path = "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-recreate/default/files/nb"
+            }
+        }
+      - library {
+          - glob {
+              - include = "/Workspace/Users/foo@databricks.com/another/**" -> null
+            }
+        }
+    }
+
+Plan: 0 to add, 1 to change, 0 to destroy.
+
+
+Error: This bind operation requires user confirmation, but the current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed.
+

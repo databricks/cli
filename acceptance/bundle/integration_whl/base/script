@@ -3,6 +3,10 @@ envsubst < databricks.yml.tmpl > databricks.yml
 trace cat databricks.yml
 trap "errcode trace '$CLI' bundle destroy --auto-approve" EXIT
 trace $CLI bundle deploy
+
+# Add all resource IDs to runtime replacements to avoid pattern matching ambiguity
+replace_ids.py
+
 trace $CLI bundle run some_other_job
 
 title "Make a change to code without version change and run the job again"

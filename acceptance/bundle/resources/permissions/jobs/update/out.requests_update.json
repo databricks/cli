@@ -1,6 +1,6 @@
 {
   "method": "PUT",
-  "path": "/api/2.0/permissions/jobs/[JOB_ID]",
+  "path": "/api/2.0/permissions/jobs/[JOB_WITH_PERMISSIONS_ID]",
   "body": {
     "access_control_list": [
       {

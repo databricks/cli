@@ -21,8 +21,8 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "apps",
-		Short: `Apps run directly on a customer’s Databricks instance, integrate with their data, use and extend Databricks services, and enable users to interact through single sign-on.`,
-		Long: `Apps run directly on a customer’s Databricks instance, integrate with their
+		Short: `Apps run directly on a customer's Databricks instance, integrate with their data, use and extend Databricks services, and enable users to interact through single sign-on.`,
+		Long: `Apps run directly on a customer's Databricks instance, integrate with their
   data, use and extend Databricks services, and enable users to interact through
   single sign-on.`,
 		GroupID: "apps",
@@ -87,8 +87,10 @@ func newCreate() *cobra.Command {
 	// TODO: complex arg: compute_status
 	cmd.Flags().StringVar(&createReq.App.Description, "description", createReq.App.Description, `The description of the app.`)
 	// TODO: array: effective_user_api_scopes
+	// TODO: complex arg: git_repository
 	// TODO: complex arg: pending_deployment
 	// TODO: array: resources
+	cmd.Flags().StringVar(&createReq.App.UsagePolicyId, "usage-policy-id", createReq.App.UsagePolicyId, ``)
 	// TODO: array: user_api_scopes
 
 	cmd.Use = "create NAME"
@@ -126,7 +128,7 @@ func newCreate() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -246,7 +248,7 @@ func newCreateUpdate() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -375,8 +377,11 @@ func newDeploy() *cobra.Command {
 
 	cmd.Flags().Var(&deployJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	// TODO: array: command
 	// TODO: complex arg: deployment_artifacts
 	cmd.Flags().StringVar(&deployReq.AppDeployment.DeploymentId, "deployment-id", deployReq.AppDeployment.DeploymentId, `The unique id of the deployment.`)
+	// TODO: array: env_vars
+	// TODO: complex arg: git_source
 	cmd.Flags().Var(&deployReq.AppDeployment.Mode, "mode", `The mode of which the deployment will manage the source code. Supported values: [AUTO_SYNC, SNAPSHOT]`)
 	cmd.Flags().StringVar(&deployReq.AppDeployment.SourceCodePath, "source-code-path", deployReq.AppDeployment.SourceCodePath, `The workspace file system path of the source code used to create the app deployment.`)
 	// TODO: complex arg: status
@@ -408,7 +413,7 @@ func newDeploy() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -893,7 +898,7 @@ func newSetPermissions() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -1107,8 +1112,10 @@ func newUpdate() *cobra.Command {
 	// TODO: complex arg: compute_status
 	cmd.Flags().StringVar(&updateReq.App.Description, "description", updateReq.App.Description, `The description of the app.`)
 	// TODO: array: effective_user_api_scopes
+	// TODO: complex arg: git_repository
 	// TODO: complex arg: pending_deployment
 	// TODO: array: resources
+	cmd.Flags().StringVar(&updateReq.App.UsagePolicyId, "usage-policy-id", updateReq.App.UsagePolicyId, ``)
 	// TODO: array: user_api_scopes
 
 	cmd.Use = "update NAME"
@@ -1139,7 +1146,7 @@ func newUpdate() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -1213,7 +1220,7 @@ func newUpdatePermissions() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}

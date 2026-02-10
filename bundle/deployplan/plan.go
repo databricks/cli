@@ -13,7 +13,7 @@ import (
 	"github.com/databricks/cli/libs/structs/structvar"
 )
 
-const currentPlanVersion = 1
+const currentPlanVersion = 2
 
 type Plan struct {
 	PlanVersion int                   `json:"plan_version,omitempty"`
@@ -26,12 +26,22 @@ type Plan struct {
 	lockmap lockmap    `json:"-"`
 }
 
-func NewPlan() *Plan {
+// NewPlanDirect creates a new Plan for direct engine with plan_version set.
+func NewPlanDirect() *Plan {
 	return &Plan{
 		PlanVersion: currentPlanVersion,
 		CLIVersion:  build.GetInfo().Version,
 		Plan:        make(map[string]*PlanEntry),
 		lockmap:     newLockmap(),
+	}
+}
+
+// NewPlanTerraform creates a new Plan for terraform engine without plan_version.
+func NewPlanTerraform() *Plan {
+	return &Plan{
+		CLIVersion: build.GetInfo().Version,
+		Plan:       make(map[string]*PlanEntry),
+		lockmap:    newLockmap(),
 	}
 }
 
@@ -65,10 +75,10 @@ func LoadPlanFromFile(path string) (*Plan, error) {
 type PlanEntry struct {
 	ID          string                   `json:"id,omitempty"`
 	DependsOn   []DependsOnEntry         `json:"depends_on,omitempty"`
-	Action      string                   `json:"action,omitempty"`
+	Action      ActionType               `json:"action,omitempty"`
 	NewState    *structvar.StructVarJSON `json:"new_state,omitempty"`
 	RemoteState any                      `json:"remote_state,omitempty"`
-	Changes     *Changes                 `json:"changes,omitempty"`
+	Changes     Changes                  `json:"changes,omitempty"`
 }
 
 type DependsOnEntry struct {
@@ -76,17 +86,29 @@ type DependsOnEntry struct {
 	Label string `json:"label,omitempty"`
 }
 
-type Changes struct {
-	Local  map[string]ChangeDesc `json:"local,omitempty"`
-	Remote map[string]ChangeDesc `json:"remote,omitempty"`
-}
+type Changes map[string]*ChangeDesc
 
 type ChangeDesc struct {
-	Action string `json:"action"`
-	Reason string `json:"reason,omitempty"`
-	Old    any    `json:"old,omitempty"`
-	New    any    `json:"new,omitempty"`
+	Action ActionType `json:"action"`
+	Reason string     `json:"reason,omitempty"`
+	Old    any        `json:"old,omitempty"`
+	New    any        `json:"new,omitempty"`
+	Remote any        `json:"remote,omitempty"`
 }
+
+// Possible values for Reason field
+const (
+	ReasonServerSideDefault = "server_side_default"
+	ReasonAlias             = "alias"
+	ReasonRemoteAlreadySet  = "remote_already_set"
+	ReasonEmptySlice        = "empty_slice"
+	ReasonEmptyMap          = "empty_map"
+	ReasonEmptyStruct       = "empty_struct"
+	ReasonCustom            = "custom"
+
+	// Special reason that results in removing this change from the plan
+	ReasonDrop = "!drop"
+)
 
 // HasChange checks if there are any changes for fields with the given prefix.
 // This function is path-aware and correctly handles path component boundaries.
@@ -100,14 +122,17 @@ func (c *Changes) HasChange(fieldPath string) bool {
 		return false
 	}
 
-	for field := range c.Local {
-		if structpath.HasPrefix(field, fieldPath) {
-			return true
-		}
+	fieldPathNode, err := structpath.Parse(fieldPath)
+	if err != nil {
+		return false
 	}
 
-	for field := range c.Remote {
-		if structpath.HasPrefix(field, fieldPath) {
+	for field := range *c {
+		fieldNode, err := structpath.Parse(field)
+		if err != nil {
+			continue
+		}
+		if fieldNode.HasPrefix(fieldPathNode) {
 			return true
 		}
 	}
@@ -118,10 +143,9 @@ func (c *Changes) HasChange(fieldPath string) bool {
 func (p *Plan) GetActions() []Action {
 	actions := make([]Action, 0, len(p.Plan))
 	for key, entry := range p.Plan {
-		at := ActionTypeFromString(entry.Action)
 		actions = append(actions, Action{
 			ResourceKey: key,
-			ActionType:  at,
+			ActionType:  entry.Action,
 		})
 	}
 

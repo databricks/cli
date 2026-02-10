@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/databricks/cli/bundle/deploy/terraform"
+	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/bundle/direct/dstate"
 	"github.com/databricks/cli/cmd/bundle/utils"
@@ -175,6 +176,12 @@ To start using direct engine, deploy with DATABRICKS_BUNDLE_ENGINE=direct env va
 			return fmt.Errorf("failed to parse terraform state: %w", err)
 		}
 
+		for key, resourceEntry := range terraformResources {
+			if resourceEntry.ID == "" {
+				return fmt.Errorf("failed to intepret terraform state for %s: missing ID", key)
+			}
+		}
+
 		_, localPath := b.StateFilenameDirect(ctx)
 		tempStatePath := localPath + ".temp-migration"
 		if _, err = os.Stat(tempStatePath); err == nil {
@@ -186,7 +193,7 @@ To start using direct engine, deploy with DATABRICKS_BUNDLE_ENGINE=direct env va
 
 		// Run plan check unless --noplancheck is set
 		if !noPlanCheck {
-			fmt.Fprintf(cmd.OutOrStdout(), "Note: Migration should be done after a full deploy. Running plan now to verify that deployment was done:\n")
+			cmdio.LogString(ctx, "Note: Migration should be done after a full deploy. Running plan now to verify that deployment was done:")
 			if err = runPlanCheck(cmd, extraArgs, extraArgsStr); err != nil {
 				return err
 			}
@@ -229,6 +236,11 @@ To start using direct engine, deploy with DATABRICKS_BUNDLE_ENGINE=direct env va
 			return err
 		}
 
+		for _, entry := range plan.Plan {
+			// Force all actions to be "update" so that deploym below goes through every resource
+			entry.Action = deployplan.Update
+		}
+
 		// We need to copy ETag into new state.
 		// For most resources state consists of fully resolved local config snapshot + id.
 		// Dashboards are special in that they also store "etag" in state which is not provided by user but
@@ -240,7 +252,7 @@ To start using direct engine, deploy with DATABRICKS_BUNDLE_ENGINE=direct env va
 			if etag == "" {
 				continue
 			}
-			sv, ok := deploymentBundle.StructVarCache.Load(key)
+			sv, ok := deploymentBundle.StateCache.Load(key)
 			if !ok {
 				return fmt.Errorf("failed to read state for %q", key)
 			}

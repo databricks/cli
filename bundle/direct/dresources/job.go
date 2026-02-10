@@ -8,8 +8,34 @@ import (
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
+	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
+
+// JobRemote is the return type for DoRead. It embeds JobSettings so that all
+// paths in StateType are valid paths in RemoteType.
+type JobRemote struct {
+	jobs.JobSettings
+
+	// Remote-specific fields from jobs.Job
+	CreatedTime             int64                   `json:"created_time,omitempty"`
+	CreatorUserName         string                  `json:"creator_user_name,omitempty"`
+	EffectiveBudgetPolicyId string                  `json:"effective_budget_policy_id,omitempty"`
+	EffectiveUsagePolicyId  string                  `json:"effective_usage_policy_id,omitempty"`
+	JobId                   int64                   `json:"job_id,omitempty"`
+	RunAsUserName           string                  `json:"run_as_user_name,omitempty"`
+	TriggerState            *jobs.TriggerStateProto `json:"trigger_state,omitempty"`
+}
+
+// Custom marshaler needed because embedded JobSettings has its own MarshalJSON
+// which would otherwise take over and ignore the additional fields.
+func (s *JobRemote) UnmarshalJSON(b []byte) error {
+	return marshal.Unmarshal(b, s)
+}
+
+func (s JobRemote) MarshalJSON() ([]byte, error) {
+	return marshal.Marshal(s)
+}
 
 type ResourceJob struct {
 	client *databricks.WorkspaceClient
@@ -25,8 +51,8 @@ func (*ResourceJob) PrepareState(input *resources.Job) *jobs.JobSettings {
 	return &input.JobSettings
 }
 
-func (*ResourceJob) RemapState(jobs *jobs.Job) *jobs.JobSettings {
-	return jobs.Settings
+func (*ResourceJob) RemapState(remote *JobRemote) *jobs.JobSettings {
+	return &remote.JobSettings
 }
 
 func getTaskKey(x jobs.Task) (string, string) {
@@ -39,15 +65,36 @@ func (*ResourceJob) KeyedSlices() map[string]any {
 	}
 }
 
-func (r *ResourceJob) DoRead(ctx context.Context, id string) (*jobs.Job, error) {
+func (r *ResourceJob) DoRead(ctx context.Context, id string) (*JobRemote, error) {
 	idInt, err := parseJobID(id)
 	if err != nil {
 		return nil, err
 	}
-	return r.client.Jobs.GetByJobId(ctx, idInt)
+	job, err := r.client.Jobs.GetByJobId(ctx, idInt)
+	if err != nil {
+		return nil, err
+	}
+	return makeJobRemote(job), nil
 }
 
-func (r *ResourceJob) DoCreate(ctx context.Context, config *jobs.JobSettings) (string, *jobs.Job, error) {
+func makeJobRemote(job *jobs.Job) *JobRemote {
+	var settings jobs.JobSettings
+	if job.Settings != nil {
+		settings = *job.Settings
+	}
+	return &JobRemote{
+		JobSettings:             settings,
+		CreatedTime:             job.CreatedTime,
+		CreatorUserName:         job.CreatorUserName,
+		EffectiveBudgetPolicyId: job.EffectiveBudgetPolicyId,
+		EffectiveUsagePolicyId:  job.EffectiveUsagePolicyId,
+		JobId:                   job.JobId,
+		RunAsUserName:           job.RunAsUserName,
+		TriggerState:            job.TriggerState,
+	}
+}
+
+func (r *ResourceJob) DoCreate(ctx context.Context, config *jobs.JobSettings) (string, *JobRemote, error) {
 	request, err := makeCreateJob(*config)
 	if err != nil {
 		return "", nil, err
@@ -59,7 +106,7 @@ func (r *ResourceJob) DoCreate(ctx context.Context, config *jobs.JobSettings) (s
 	return strconv.FormatInt(response.JobId, 10), nil, nil
 }
 
-func (r *ResourceJob) DoUpdate(ctx context.Context, id string, config *jobs.JobSettings, _ *Changes) (*jobs.Job, error) {
+func (r *ResourceJob) DoUpdate(ctx context.Context, id string, config *jobs.JobSettings, _ Changes) (*JobRemote, error) {
 	request, err := makeResetJob(*config, id)
 	if err != nil {
 		return nil, err

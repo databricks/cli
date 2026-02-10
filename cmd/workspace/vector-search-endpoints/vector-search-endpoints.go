@@ -105,7 +105,7 @@ func newCreateEndpoint() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -372,7 +372,7 @@ func newRetrieveUserVisibleMetrics() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -424,8 +424,7 @@ func newUpdateEndpointBudgetPolicy() *cobra.Command {
 
   Arguments:
     ENDPOINT_NAME: Name of the vector search endpoint
-    BUDGET_POLICY_ID: The budget policy id to be applied (hima-sheth) TODO: remove this once
-      we've migrated to usage policies`
+    BUDGET_POLICY_ID: The budget policy id to be applied`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -452,7 +451,7 @@ func newUpdateEndpointBudgetPolicy() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -527,7 +526,7 @@ func newUpdateEndpointCustomTags() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}

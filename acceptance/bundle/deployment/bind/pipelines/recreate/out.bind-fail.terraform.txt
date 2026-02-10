@@ -1,0 +1,58 @@
+
+>>> musterr [CLI] bundle deployment bind foo [NEW_PIPELINE_ID]
+databricks_pipeline.foo: Refreshing state... [id=[NEW_PIPELINE_ID]]
+
+Terraform used the selected providers to generate the following execution
+plan. Resource actions are indicated with the following symbols:
+-/+ destroy and then create replacement
+
+Terraform will perform the following actions:
+
+  # databricks_pipeline.foo must be replaced
+-/+ resource "databricks_pipeline" "foo" {
+      - allow_duplicate_names  = false -> null
+      + cause                  = (known after apply)
+      + channel                = "CURRENT"
+      + cluster_id             = (known after apply)
+      - continuous             = false -> null
+      ~ creator_user_name      = "[USERNAME]" -> (known after apply)
+      - development            = false -> null
+      + edition                = "ADVANCED"
+      - expected_last_modified = 0 -> null
+      + health                 = (known after apply)
+      ~ id                     = "[NEW_PIPELINE_ID]" -> (known after apply)
+      ~ last_modified          = [UNIX_TIME_MILLIS] -> (known after apply)
+      ~ name                   = "lakeflow-pipeline-[UNIQUE_NAME]" -> "test-pipeline-[UNIQUE_NAME]"
+      - photon                 = false -> null
+      - root_path              = "/Workspace/Users/someuser@databricks.com/lakeflow_pipeline" -> null
+      ~ run_as_user_name       = "[USERNAME]" -> (known after apply)
+      - serverless             = false -> null
+      ~ state                  = "IDLE" -> (known after apply)
+      ~ storage                = "/Shared/old_storage" -> "/Shared/new_storage" # forces replacement
+      ~ url                    = "[DATABRICKS_URL]/#joblist/pipelines/[NEW_PIPELINE_ID]" -> (known after apply)
+
+      + deployment {
+          + kind               = "BUNDLE"
+          + metadata_file_path = "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-recreate-[UNIQUE_NAME]/default/state/metadata.json"
+        }
+
+      ~ library {
+          - glob {
+              - include = "/Workspace/Users/someuser@databricks.com/lakeflow_pipeline/transformations/**" -> null
+            }
+          + notebook {
+              + path = "/Workspace/Users/[USERNAME]/.bundle/test-pipeline-recreate-[UNIQUE_NAME]/default/files/nb"
+            }
+        }
+      - library {
+          - glob {
+              - include = "/Workspace/Users/foo@databricks.com/another/**" -> null
+            }
+        }
+    }
+
+Plan: 1 to add, 0 to change, 1 to destroy.
+
+
+Error: This bind operation requires user confirmation, but the current console does not support prompting. Please specify --auto-approve if you would like to skip prompts and proceed.
+

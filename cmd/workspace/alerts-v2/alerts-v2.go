@@ -104,7 +104,7 @@ func newCreateAlert() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -283,6 +283,8 @@ func newTrashAlert() *cobra.Command {
 
 	var trashAlertReq sql.TrashAlertV2Request
 
+	cmd.Flags().BoolVar(&trashAlertReq.Purge, "purge", trashAlertReq.Purge, `Whether to permanently delete the alert.`)
+
 	cmd.Use = "trash-alert ID"
 	cmd.Short = `Delete an alert (legacy TrashAlert).`
 	cmd.Long = `Delete an alert (legacy TrashAlert).
@@ -411,7 +413,7 @@ func newUpdateAlert() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}

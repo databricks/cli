@@ -166,11 +166,25 @@ func inheritEnvVars(ctx context.Context, environ map[string]string) error {
 		environ[oidcTokenEnv] = oidcToken
 	}
 
-	// If there's SYSTEM_ACCESSTOKEN set, we need to pass the value of the environment variable to Terraform.
-	// This is necessary to ensure that Terraform can use the same access token as the CLI.
-	systemAccessToken, ok := env.Lookup(ctx, "SYSTEM_ACCESSTOKEN")
-	if ok {
-		environ["SYSTEM_ACCESSTOKEN"] = systemAccessToken
+	// Pass additional Azure DevOps system variables required for OIDC authentication.
+	// These variables are used by the Databricks Go SDK to authenticate with Azure DevOps OIDC.
+	azureDevOpsVars := []string{
+		"SYSTEM_ACCESSTOKEN",
+		"SYSTEM_COLLECTIONID",
+		"SYSTEM_COLLECTIONURI",
+		"SYSTEM_DEFINITIONID",
+		"SYSTEM_HOSTTYPE",
+		"SYSTEM_JOBID",
+		"SYSTEM_OIDCREQUESTURI",
+		"SYSTEM_PLANID",
+		"SYSTEM_TEAMFOUNDATIONCOLLECTIONURI",
+		"SYSTEM_TEAMPROJECT",
+		"SYSTEM_TEAMPROJECTID",
+	}
+	for _, varName := range azureDevOpsVars {
+		if val, ok := env.Lookup(ctx, varName); ok {
+			environ[varName] = val
+		}
 	}
 
 	// Map $DATABRICKS_TF_CLI_CONFIG_FILE to $TF_CLI_CONFIG_FILE

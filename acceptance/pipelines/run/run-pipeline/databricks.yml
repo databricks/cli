@@ -8,3 +8,7 @@ resources:
       libraries:
         - file:
             path: pipeline_file.py
+  # job is runnable, but doesn't impact auto-selection of pipeline
+  jobs:
+    my_job:
+      name: "My Job"

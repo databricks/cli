@@ -1,0 +1,57 @@
+{{- /*
+     * L2: Target-specific guidance for Lakeflow Jobs.
+     *
+     * Injected when: target type "jobs" is detected or after init-template job.
+     * Contains: job-specific development patterns, task configuration, code examples.
+     * Note: For adding NEW resources (dashboards, alerts, etc.), see target_mixed.tmpl guidance.
+     */ -}}
+
+## Lakeflow Jobs Development
+
+This guidance is for developing jobs in this project.
+
+### Project Structure
+- `src/` - Python notebooks (.ipynb) and source code
+- `resources/` - Job definitions in databricks.yml format
+
+### Configuring Tasks
+Edit `resources/<job_name>.job.yml` to configure tasks:
+
+```yaml
+tasks:
+  - task_key: my_notebook
+    notebook_task:
+      notebook_path: ../src/my_notebook.ipynb
+  - task_key: my_python
+    python_wheel_task:
+      package_name: my_package
+      entry_point: main
+```
+
+Task types: `notebook_task`, `python_wheel_task`, `spark_python_task`, `pipeline_task`, `sql_task`
+
+### Job Parameters
+Parameters defined at job level are passed to ALL tasks (no need to repeat per task). Example:
+```yaml
+resources:
+  jobs:
+    my_job:
+      parameters:
+        - name: catalog
+          default: ${var.catalog}
+        - name: schema
+          default: ${var.schema}
+```
+
+### Writing Notebook Code
+- Use `spark.read.table("catalog.schema.table")` to read tables
+- Use `spark.sql("SELECT ...")` for SQL queries
+- Use `dbutils.widgets` for parameters
+
+### Unit Testing
+Run unit tests locally with: `uv run pytest`
+
+### Documentation
+- Lakeflow Jobs: https://docs.databricks.com/jobs
+- Task types: https://docs.databricks.com/jobs/configure-task
+- Databricks Asset Bundles / yml format examples: https://docs.databricks.com/dev-tools/bundles/examples

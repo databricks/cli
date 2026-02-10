@@ -9,7 +9,7 @@ cleanup() {
 trap cleanup EXIT
 
 title "create the secret scope"
-trace $CLI bundle plan -o json > out.plan1.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle plan -o json | sort_acls_json.py > out.plan1.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
 
 scope_name=$($CLI bundle summary --output json | jq -r '.resources.secret_scopes.my_scope.name')
@@ -18,6 +18,7 @@ trace $CLI secrets list-scopes -o json | jq ".[] | select(.name == \"$scope_name
 title "put and get secret in first scope"
 trace $CLI secrets put-secret $scope_name my-key --string-value "my-secret-value"
 trace $CLI secrets get-secret $scope_name my-key
+trace $CLI secrets list-acls $scope_name | jq -c '.[]' | sort
 
 trace print_requests.py //secrets
 
@@ -25,7 +26,7 @@ title "update the name of the scope (should recreate)"
 export SECRET_SCOPE_NAME="test-scope-$UNIQUE_NAME-2"
 envsubst < databricks.yml.tmpl > databricks.yml
 
-trace $CLI bundle plan -o json > out.plan2.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle plan -o json | sort_acls_json.py > out.plan2.$DATABRICKS_BUNDLE_ENGINE.json
 trace $CLI bundle deploy
 
 # Capture API requests for verification. Terraform cleans up ACLs before deleting the scope, but direct does not, hence the difference in requests.
@@ -37,8 +38,9 @@ trace $CLI secrets list-scopes -o json | jq ".[] | select(.name == \"$scope_name
 title "put and get secret in recreated scope"
 trace $CLI secrets put-secret $scope_name another-key --string-value "another-secret-value"
 trace $CLI secrets get-secret $scope_name another-key
+trace $CLI secrets list-acls $scope_name | jq -c '.[]' | sort
 
 trace print_requests.py //secrets
 
 title "verify there's no persistent drift"
-trace $CLI bundle plan -o json > out.plan_verify_no_drift.$DATABRICKS_BUNDLE_ENGINE.json
+trace $CLI bundle plan -o json | sort_acls_json.py > out.plan_verify_no_drift.$DATABRICKS_BUNDLE_ENGINE.json

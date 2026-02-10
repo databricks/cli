@@ -1,0 +1,100 @@
+
+>>> [CLI] bundle validate -o json
+{
+  "custom_description": "My alert from file\nwith multiple lines\nand a third line\n",
+  "custom_summary": "My alert from file",
+  "display_name": "myalert",
+  "evaluation": {
+    "comparison_operator": "EQUAL",
+    "notification": {
+      "notify_on_ok": false,
+      "retrigger_seconds": 1
+    },
+    "source": {
+      "aggregation": "MAX",
+      "display": "1",
+      "name": "1"
+    },
+    "threshold": {
+      "value": {
+        "double_value": 2
+      }
+    }
+  },
+  "file_path": "alert.dbalert.json",
+  "parent_path": "/Workspace/Users/[USERNAME]/.bundle/alerts-with-file-[UNIQUE_NAME]/default/resources",
+  "query_text": "select 2\n",
+  "schedule": {
+    "quartz_cron_schedule": "44 19 */1 * * ?",
+    "timezone_id": "Europe/Amsterdam"
+  },
+  "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
+}
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/alerts-with-file-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] alerts-v2 get-alert [ALERT_ID]
+{
+  "display_name": "myalert",
+  "lifecycle_state": "ACTIVE",
+  "custom_summary": "My alert from file",
+  "evaluation": {
+    "comparison_operator": "EQUAL",
+    "notification": {
+      "notify_on_ok": false,
+      "retrigger_seconds": 1
+    },
+    "source": {
+      "aggregation": "MAX",
+      "display": "1",
+      "name": "1"
+    },
+    "threshold": {
+      "value": {
+        "double_value": 2
+      }
+    }
+  },
+  "query_text": "select 2\n",
+  "schedule": {
+    "quartz_cron_schedule": "44 19 */1 * * ?",
+    "timezone_id": "Europe/Amsterdam"
+  },
+  "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
+}
+
+=== assert that the uploaded alert file is the same as the local one
+>>> [CLI] workspace export /Workspace/Users/[USERNAME]/.bundle/alerts-with-file-[UNIQUE_NAME]/default/resources/myalert.dbalert.json
+
+>>> diff exported_alert.dbalert.json alert.dbalert.json --strip-trailing-cr
+
+>>> [CLI] alerts-v2 get-alert [ALERT_ID]
+{
+  "display_name": "myalert",
+  "lifecycle_state": "ACTIVE"
+}
+
+>>> [CLI] bundle summary
+Name: alerts-with-file-[UNIQUE_NAME]
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/alerts-with-file-[UNIQUE_NAME]/default
+Resources:
+  Alerts:
+    myalert:
+      Name: myalert
+      URL:  [DATABRICKS_URL]/sql/alerts-v2/[ALERT_ID]
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.alerts.myalert
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/alerts-with-file-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!

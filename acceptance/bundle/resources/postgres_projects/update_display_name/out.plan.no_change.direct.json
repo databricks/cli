@@ -1,0 +1,56 @@
+{
+  "action": "skip",
+  "remote_state": {
+    "create_time": "[TIMESTAMP]",
+    "name": "[MY_PROJECT_ID]",
+    "status": {
+      "branch_logical_size_limit_bytes": [NUMID],
+      "default_endpoint_settings": {
+        "autoscaling_limit_max_cu": 4,
+        "autoscaling_limit_min_cu": 0.5,
+        "suspend_timeout_duration": "300s"
+      },
+      "display_name": "Original Name",
+      "history_retention_duration": "604800s",
+      "owner": "[USERNAME]",
+      "pg_version": 16,
+      "synthetic_storage_size_bytes": 0
+    },
+    "uid": "[UUID]",
+    "update_time": "[TIMESTAMP]"
+  },
+  "changes": {
+    "default_endpoint_settings": {
+      "action": "skip",
+      "reason": "spec:input_only",
+      "old": {
+        "autoscaling_limit_max_cu": 4,
+        "autoscaling_limit_min_cu": 0.5,
+        "suspend_timeout_duration": "300s"
+      },
+      "new": {
+        "autoscaling_limit_max_cu": 4,
+        "autoscaling_limit_min_cu": 0.5,
+        "suspend_timeout_duration": "300s"
+      }
+    },
+    "display_name": {
+      "action": "skip",
+      "reason": "spec:input_only",
+      "old": "Original Name",
+      "new": "Original Name"
+    },
+    "history_retention_duration": {
+      "action": "skip",
+      "reason": "empty_struct",
+      "old": "604800s",
+      "new": "604800s"
+    },
+    "pg_version": {
+      "action": "skip",
+      "reason": "spec:input_only",
+      "old": 16,
+      "new": 16
+    }
+  }
+}

@@ -26,6 +26,7 @@ type ResourceMwsNetworkConnectivityConfigEgressConfigTargetRulesAwsPrivateEndpoi
 	DomainNames                 []string `json:"domain_names,omitempty"`
 	Enabled                     bool     `json:"enabled,omitempty"`
 	EndpointService             string   `json:"endpoint_service,omitempty"`
+	ErrorMessage                string   `json:"error_message,omitempty"`
 	NetworkConnectivityConfigId string   `json:"network_connectivity_config_id,omitempty"`
 	ResourceNames               []string `json:"resource_names,omitempty"`
 	RuleId                      string   `json:"rule_id,omitempty"`
@@ -40,6 +41,7 @@ type ResourceMwsNetworkConnectivityConfigEgressConfigTargetRulesAzurePrivateEndp
 	DeactivatedAt               int      `json:"deactivated_at,omitempty"`
 	DomainNames                 []string `json:"domain_names,omitempty"`
 	EndpointName                string   `json:"endpoint_name,omitempty"`
+	ErrorMessage                string   `json:"error_message,omitempty"`
 	GroupId                     string   `json:"group_id,omitempty"`
 	NetworkConnectivityConfigId string   `json:"network_connectivity_config_id,omitempty"`
 	ResourceId                  string   `json:"resource_id,omitempty"`

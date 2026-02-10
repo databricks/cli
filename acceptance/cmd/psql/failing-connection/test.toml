@@ -30,3 +30,11 @@ Response.Body = '''
     "token": "my-secret-token"
 }
 '''
+
+[[Server]]
+Pattern = "GET /api/2.0/postgres/projects"
+Response.Body = '''
+{
+    "projects": []
+}
+'''

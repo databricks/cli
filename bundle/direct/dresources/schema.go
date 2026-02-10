@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
@@ -47,7 +46,7 @@ func (r *ResourceSchema) DoCreate(ctx context.Context, config *catalog.CreateSch
 }
 
 // DoUpdate updates the schema in place and returns remote state.
-func (r *ResourceSchema) DoUpdate(ctx context.Context, id string, config *catalog.CreateSchema, _ *Changes) (*catalog.SchemaInfo, error) {
+func (r *ResourceSchema) DoUpdate(ctx context.Context, id string, config *catalog.CreateSchema, _ Changes) (*catalog.SchemaInfo, error) {
 	updateRequest := catalog.UpdateSchema{
 		Comment:                      config.Comment,
 		EnablePredictiveOptimization: "", // Not supported by DABs
@@ -76,12 +75,4 @@ func (r *ResourceSchema) DoDelete(ctx context.Context, id string) error {
 		Force:           true,
 		ForceSendFields: nil,
 	})
-}
-
-func (*ResourceSchema) FieldTriggers(_ bool) map[string]deployplan.ActionType {
-	return map[string]deployplan.ActionType{
-		"name":         deployplan.ActionTypeRecreate,
-		"catalog_name": deployplan.ActionTypeRecreate,
-		"storage_root": deployplan.ActionTypeRecreate,
-	}
 }

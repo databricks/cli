@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/databricks/databricks-sdk-go/service/catalog"
+	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
 func (s *FakeWorkspace) VolumesCreate(req Request) Response {
@@ -29,8 +30,8 @@ func (s *FakeWorkspace) VolumesCreate(req Request) Response {
 			},
 		}
 	}
-	// QQQ first UUID should be constant per workspace?
-	volume.StorageLocation = fmt.Sprintf("s3://deco-uc-prod-isolated-aws-us-east-1/metastore/%s/volumes/%s", nextUUID(), nextUUID())
+	volume.VolumeId = nextUUID()
+	volume.StorageLocation = fmt.Sprintf("s3://deco-uc-prod-isolated-aws-us-east-1/metastore/%s/volumes/%s", TestMetastore.MetastoreId, volume.VolumeId)
 
 	volume.CreatedAt = nowMilli()
 	volume.UpdatedAt = volume.CreatedAt
@@ -40,6 +41,15 @@ func (s *FakeWorkspace) VolumesCreate(req Request) Response {
 	defer s.LockUnlock()()
 
 	s.Volumes[volume.FullName] = volume
+
+	// Register the volume path as a directory so that fs cp works without
+	// requiring an explicit mkdir.
+	volumePath := fmt.Sprintf("/Volumes/%s/%s/%s", volume.CatalogName, volume.SchemaName, volume.Name)
+	s.directories[volumePath] = workspace.ObjectInfo{
+		ObjectType: "DIRECTORY",
+		Path:       volumePath,
+	}
+
 	return Response{
 		Body: volume,
 	}

@@ -34,7 +34,7 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.P
 		return false, err
 	}
 
-	types := []deployplan.ActionType{deployplan.ActionTypeRecreate, deployplan.ActionTypeDelete}
+	types := []deployplan.ActionType{deployplan.Recreate, deployplan.Delete}
 	schemaActions := filterGroup(actions, "schemas", types...)
 	dltActions := filterGroup(actions, "pipelines", types...)
 	volumeActions := filterGroup(actions, "volumes", types...)
@@ -58,7 +58,7 @@ func approvalForDeploy(ctx context.Context, b *bundle.Bundle, plan *deployplan.P
 
 	// One or more DLT pipelines is being recreated.
 	if len(dltActions) != 0 {
-		cmdio.LogString(ctx, deleteOrRecreateDltMessage)
+		cmdio.LogString(ctx, deleteOrRecreatePipelineMessage)
 		for _, action := range dltActions {
 			cmdio.Log(ctx, action)
 		}
@@ -118,6 +118,7 @@ func deployCore(ctx context.Context, b *bundle.Bundle, plan *deployplan.Plan, ta
 		statemgmt.Load(targetEngine),
 		metadata.Compute(),
 		metadata.Upload(),
+		statemgmt.UploadStateForYamlSync(targetEngine),
 	)
 
 	if !logdiag.HasError(ctx) {
@@ -249,7 +250,7 @@ func RunPlan(ctx context.Context, b *bundle.Bundle, engine engine.EngineType) *d
 			resourceKey := "resources." + group.Description.PluralName + "." + rKey
 			if _, ok := plan.Plan[resourceKey]; !ok {
 				plan.Plan[resourceKey] = &deployplan.PlanEntry{
-					Action: deployplan.ActionTypeSkip.String(),
+					Action: deployplan.Skip,
 				}
 			}
 		}

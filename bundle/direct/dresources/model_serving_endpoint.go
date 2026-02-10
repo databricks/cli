@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/serving"
@@ -57,6 +56,7 @@ func servedEntitiesOutputToInput(output []serving.ServedEntityOutput) []serving.
 			ScaleToZeroEnabled:        entity.ScaleToZeroEnabled,
 			WorkloadSize:              entity.WorkloadSize,
 			WorkloadType:              entity.WorkloadType,
+			BurstScalingEnabled:       entity.BurstScalingEnabled,
 			ForceSendFields:           utils.FilterFields[serving.ServedEntityInput](entity.ForceSendFields),
 		}
 	}
@@ -276,7 +276,7 @@ func (r *ResourceModelServingEndpoint) updateTags(ctx context.Context, id string
 	return nil
 }
 
-func (r *ResourceModelServingEndpoint) DoUpdate(ctx context.Context, id string, config *serving.CreateServingEndpoint, changes *Changes) (*RefreshOutput, error) {
+func (r *ResourceModelServingEndpoint) DoUpdate(ctx context.Context, id string, config *serving.CreateServingEndpoint, changes Changes) (*RefreshOutput, error) {
 	var err error
 
 	// Terraform makes these API calls sequentially. We do the same here.
@@ -315,16 +315,4 @@ func (r *ResourceModelServingEndpoint) DoUpdate(ctx context.Context, id string, 
 
 func (r *ResourceModelServingEndpoint) DoDelete(ctx context.Context, id string) error {
 	return r.client.ServingEndpoints.DeleteByName(ctx, id)
-}
-
-func (*ResourceModelServingEndpoint) FieldTriggers(_ bool) map[string]deployplan.ActionType {
-	// TF implementation: https://github.com/databricks/terraform-provider-databricks/blob/6c106e8e7052bb2726148d66309fd460ed444236/mlflow/resource_mlflow_experiment.go#L22
-	return map[string]deployplan.ActionType{
-		"name":        deployplan.ActionTypeRecreate,
-		"description": deployplan.ActionTypeRecreate, // description is immutable, can't be updated via API
-		"config.auto_capture_config.catalog_name":      deployplan.ActionTypeRecreate,
-		"config.auto_capture_config.schema_name":       deployplan.ActionTypeRecreate,
-		"config.auto_capture_config.table_name_prefix": deployplan.ActionTypeRecreate,
-		"route_optimized":                              deployplan.ActionTypeRecreate,
-	}
 }

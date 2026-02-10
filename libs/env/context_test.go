@@ -55,3 +55,57 @@ func TestHome(t *testing.T) {
 	assert.Equal(t, "...", home)
 	assert.NoError(t, err)
 }
+
+func TestGetBool(t *testing.T) {
+	testutil.CleanupEnvironment(t)
+	ctx := context.Background()
+
+	// Test true values
+	trueValues := []string{"true", "TRUE", "True", "1", "t", "T", "yes", "YES", "Yes", "on", "ON", "On"}
+	for _, v := range trueValues {
+		t.Run("true_"+v, func(t *testing.T) {
+			ctx := Set(ctx, "TEST_BOOL", v)
+			val, ok := GetBool(ctx, "TEST_BOOL")
+			assert.True(t, ok, "expected key to be set")
+			assert.True(t, val, "expected %q to be true", v)
+		})
+	}
+
+	// Test false values
+	falseValues := []string{"false", "FALSE", "False", "0", "f", "F", "no", "NO", "No", "off", "OFF", "Off", ""}
+	for _, v := range falseValues {
+		t.Run("false_"+v, func(t *testing.T) {
+			ctx := Set(ctx, "TEST_BOOL", v)
+			val, ok := GetBool(ctx, "TEST_BOOL")
+			assert.True(t, ok, "expected key to be set")
+			assert.False(t, val, "expected %q to be false", v)
+		})
+	}
+
+	// Test invalid/unknown values default to false but ok=true
+	invalidValues := []string{"invalid", "random", "2", "maybe"}
+	for _, v := range invalidValues {
+		t.Run("invalid_"+v, func(t *testing.T) {
+			ctx := Set(ctx, "TEST_BOOL", v)
+			val, ok := GetBool(ctx, "TEST_BOOL")
+			assert.True(t, ok, "expected key to be set")
+			assert.False(t, val, "expected %q to be false (invalid)", v)
+		})
+	}
+
+	// Test missing key returns ok=false
+	val, ok := GetBool(ctx, "NON_EXISTENT_KEY")
+	assert.False(t, ok, "expected key to not be set")
+	assert.False(t, val, "expected value to be false when not set")
+
+	// Test from actual environment variable
+	t.Setenv("TEST_ENV_BOOL", "true")
+	val, ok = GetBool(context.Background(), "TEST_ENV_BOOL")
+	assert.True(t, ok)
+	assert.True(t, val)
+
+	t.Setenv("TEST_ENV_BOOL_FALSE", "0")
+	val, ok = GetBool(context.Background(), "TEST_ENV_BOOL_FALSE")
+	assert.True(t, ok)
+	assert.False(t, val)
+}

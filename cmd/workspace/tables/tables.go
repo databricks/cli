@@ -176,7 +176,7 @@ func newCreate() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -450,6 +450,9 @@ func newList() *cobra.Command {
   the **USE_SCHEMA** privilege on the parent schema. There is no guarantee of a
   specific ordering of the elements in the array.
 
+  NOTE: **view_dependencies** and **table_constraints** are not returned by
+  ListTables queries.
+
   NOTE: we recommend using max_results=0 to use the paginated version of this
   API. Unpaginated calls will be deprecated soon.
 
@@ -620,7 +623,7 @@ func newUpdate() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}

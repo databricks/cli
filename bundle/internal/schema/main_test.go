@@ -16,7 +16,7 @@ import (
 	"github.com/databricks/cli/libs/dyn/yamlloader"
 	"github.com/databricks/cli/libs/jsonschema"
 	"github.com/stretchr/testify/assert"
-	"gopkg.in/yaml.v3"
+	"go.yaml.in/yaml/v3"
 )
 
 func copyFile(src, dst string) error {
@@ -60,7 +60,7 @@ func TestRequiredAnnotationsForNewFields(t *testing.T) {
 	err = copyFile("annotations_openapi_overrides.yml", annotationsOpenApiOverridesPath)
 	assert.NoError(t, err)
 
-	generateSchema(workdir, path.Join(t.TempDir(), "schema.json"))
+	generateSchema(workdir, path.Join(t.TempDir(), "schema.json"), false)
 
 	originalFile, err := os.ReadFile("annotations.yml")
 	assert.NoError(t, err)

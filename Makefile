@@ -1,7 +1,7 @@
 default: checks fmt lint
 
 # Default packages to test (all)
-TEST_PACKAGES = ./acceptance/internal ./libs/... ./internal/... ./cmd/... ./bundle/... ./experimental/aitools/... ./experimental/ssh/... .
+TEST_PACKAGES = ./acceptance/internal ./libs/... ./internal/... ./cmd/... ./bundle/... ./experimental/ssh/... .
 
 # Default acceptance test filter (all)
 ACCEPTANCE_TEST_FILTER = ""
@@ -133,6 +133,9 @@ snapshot-release:
 schema:
 	go run ./bundle/internal/schema ./bundle/internal/schema ./bundle/schema/jsonschema.json
 
+schema-for-docs:
+	go run ./bundle/internal/schema ./bundle/internal/schema ./bundle/schema/jsonschema_for_docs.json --docs
+
 docs:
 	go run ./bundle/docsgen ./bundle/internal/schema ./bundle/docsgen
 
@@ -170,17 +173,60 @@ generate:
 	@echo "Generating CLI code..."
 	$(GENKIT_BINARY) update-sdk
 
+.codegen/openapi.json: .codegen/_openapi_sha
+	wget -O $@.tmp "https://openapi.dev.databricks.com/$$(cat $<)/specs/all-internal.json" && mv $@.tmp $@ && touch $@
 
-.PHONY: lint lintfull tidy lintcheck fmt fmtfull test test-unit test-acc test-slow test-slow-unit test-slow-acc cover showcover build snapshot snapshot-release schema integration integration-short acc-cover acc-showcover docs ws wsfix links checks test-update test-update-templates generate-out-test-toml test-update-aws test-update-all generate-validation
+generate-direct: generate-direct-apitypes generate-direct-resources
+generate-direct-apitypes: bundle/direct/dresources/apitypes.generated.yml
+generate-direct-resources: bundle/direct/dresources/resources.generated.yml
+generate-direct-clean:
+	rm -f bundle/direct/dresources/apitypes.generated.yml bundle/direct/dresources/resources.generated.yml
+.PHONY: generate-direct generate-direct-apitypes generate-direct-resources generate-direct-clean
+
+bundle/direct/dresources/apitypes.generated.yml: ./bundle/direct/tools/generate_apitypes.py .codegen/openapi.json acceptance/bundle/refschema/out.fields.txt
+	python3 $^ > $@
+
+bundle/direct/dresources/resources.generated.yml: ./bundle/direct/tools/generate_resources.py .codegen/openapi.json bundle/direct/dresources/apitypes.generated.yml bundle/direct/dresources/apitypes.yml acceptance/bundle/refschema/out.fields.txt
+	python3 $^ > $@
+
+.PHONY: lint lintfull tidy lintcheck fmt fmtfull test test-unit test-acc test-slow test-slow-unit test-slow-acc cover showcover build snapshot snapshot-release schema schema-for-docs integration integration-short acc-cover acc-showcover docs ws wsfix links checks test-update test-update-templates generate-out-test-toml test-update-aws test-update-all generate-validation
 
 test-exp-aitools:
-	make test TEST_PACKAGES="./experimental/aitools/..." ACCEPTANCE_TEST_FILTER="TestAccept/idontexistyet/aitools"
-
-test-exp-apps-mcp:
-	make test TEST_PACKAGES="./experimental/apps-mcp/..." ACCEPTANCE_TEST_FILTER="TestAccept/idontexistyet/apps-mcp"
+	make test TEST_PACKAGES="./experimental/aitools/..." ACCEPTANCE_TEST_FILTER="TestAccept/apps"
 
 test-exp-ssh:
 	make test TEST_PACKAGES="./experimental/ssh/..." ACCEPTANCE_TEST_FILTER="TestAccept/ssh"
 
 test-pipelines:
 	make test TEST_PACKAGES="./cmd/pipelines/..." ACCEPTANCE_TEST_FILTER="TestAccept/pipelines"
+
+
+# Benchmarks:
+
+bench1k:
+	BENCHMARK_PARAMS="--jobs 1000" go test ./acceptance -v -tail -run TestAccept/bundle/benchmarks -timeout=120m
+
+bench100:
+	BENCHMARK_PARAMS="--jobs 100" go test ./acceptance -v -tail -run TestAccept/bundle/benchmarks -timeout=120m
+
+# small benchmark to quickly test benchmark-related code
+bench10:
+	BENCHMARK_PARAMS="--jobs 10" go test ./acceptance -v -tail -run TestAccept/bundle/benchmarks -timeout=120m
+
+bench1k.log:
+	make bench1k | tee $@
+
+bench100.log:
+	make bench100 | tee $@
+
+bench10.log:
+	make bench10 | tee $@
+
+bench1k_summary: bench1k.log
+	./tools/bench_parse.py $<
+
+bench100_summary: bench100.log
+	./tools/bench_parse.py $<
+
+bench10_summary: bench10.log
+	./tools/bench_parse.py $<

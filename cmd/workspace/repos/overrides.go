@@ -43,7 +43,7 @@ func createOverride(createCmd *cobra.Command, createReq *workspace.CreateRepoReq
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -118,7 +118,7 @@ func updateOverride(updateCmd *cobra.Command, updateReq *workspace.UpdateRepoReq
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}

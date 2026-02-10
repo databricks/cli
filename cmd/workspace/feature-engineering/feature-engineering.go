@@ -116,7 +116,7 @@ func newCreateFeature() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -184,6 +184,7 @@ func newCreateKafkaConfig() *cobra.Command {
 
 	cmd.Flags().Var(&createKafkaConfigJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	// TODO: complex arg: backfill_source
 	// TODO: map via StringToStringVar: extra_options
 	// TODO: complex arg: key_schema
 	// TODO: complex arg: value_schema
@@ -191,6 +192,10 @@ func newCreateKafkaConfig() *cobra.Command {
 	cmd.Use = "create-kafka-config NAME BOOTSTRAP_SERVERS SUBSCRIPTION_MODE AUTH_CONFIG"
 	cmd.Short = `Create a Kafka config.`
 	cmd.Long = `Create a Kafka config.
+
+  Create a Kafka config. During PrPr, Kafka configs can be read and used when
+  creating features under the entire metastore. Only the creator of the Kafka
+  config can delete it.
 
   Arguments:
     NAME: Name that uniquely identifies this Kafka config within the metastore. This
@@ -225,7 +230,7 @@ func newCreateKafkaConfig() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -326,7 +331,7 @@ func newCreateMaterializedFeature() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -428,6 +433,10 @@ func newDeleteKafkaConfig() *cobra.Command {
 	cmd.Use = "delete-kafka-config NAME"
 	cmd.Short = `Delete a Kafka config.`
 	cmd.Long = `Delete a Kafka config.
+
+  Delete a Kafka config. During PrPr, Kafka configs can be read and used when
+  creating features under the entire metastore. Only the creator of the Kafka
+  config can delete it.
 
   Arguments:
     NAME: Name of the Kafka config to delete.`
@@ -593,6 +602,10 @@ func newGetKafkaConfig() *cobra.Command {
 	cmd.Short = `Get a Kafka config.`
 	cmd.Long = `Get a Kafka config.
 
+  Get a Kafka config. During PrPr, Kafka configs can be read and used when
+  creating features under the entire metastore. Only the creator of the Kafka
+  config can delete it.
+
   Arguments:
     NAME: Name of the Kafka config to get.`
 
@@ -753,7 +766,11 @@ func newListKafkaConfigs() *cobra.Command {
 
 	cmd.Use = "list-kafka-configs"
 	cmd.Short = `List Kafka configs.`
-	cmd.Long = `List Kafka configs.`
+	cmd.Long = `List Kafka configs.
+
+  List Kafka configs. During PrPr, Kafka configs can be read and used when
+  creating features under the entire metastore. Only the creator of the Kafka
+  config can delete it.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -894,7 +911,7 @@ func newUpdateFeature() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -961,6 +978,7 @@ func newUpdateKafkaConfig() *cobra.Command {
 
 	cmd.Flags().Var(&updateKafkaConfigJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	// TODO: complex arg: backfill_source
 	// TODO: map via StringToStringVar: extra_options
 	// TODO: complex arg: key_schema
 	// TODO: complex arg: value_schema
@@ -968,6 +986,10 @@ func newUpdateKafkaConfig() *cobra.Command {
 	cmd.Use = "update-kafka-config NAME UPDATE_MASK BOOTSTRAP_SERVERS SUBSCRIPTION_MODE AUTH_CONFIG"
 	cmd.Short = `Update a Kafka config.`
 	cmd.Long = `Update a Kafka config.
+
+  Update a Kafka config. During PrPr, Kafka configs can be read and used when
+  creating features under the entire metastore. Only the creator of the Kafka
+  config can delete it.
 
   Arguments:
     NAME: Name that uniquely identifies this Kafka config within the metastore. This
@@ -1003,7 +1025,7 @@ func newUpdateKafkaConfig() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -1111,7 +1133,7 @@ func newUpdateMaterializedFeature() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}

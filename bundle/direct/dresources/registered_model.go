@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/catalog"
@@ -35,13 +34,15 @@ func (*ResourceRegisteredModel) RemapState(model *catalog.RegisteredModelInfo) *
 
 		Aliases:     model.Aliases,
 		BrowseOnly:  model.BrowseOnly,
-		CreatedAt:   model.CreatedAt,
-		CreatedBy:   model.CreatedBy,
 		FullName:    model.FullName,
 		MetastoreId: model.MetastoreId,
 		Owner:       model.Owner,
-		UpdatedAt:   model.UpdatedAt,
-		UpdatedBy:   model.UpdatedBy,
+
+		// Clear output only fields. They should not show up on remote diff computation.
+		CreatedAt: 0,
+		CreatedBy: "",
+		UpdatedAt: 0,
+		UpdatedBy: "",
 	}
 }
 
@@ -63,7 +64,7 @@ func (r *ResourceRegisteredModel) DoCreate(ctx context.Context, config *catalog.
 	return response.FullName, response, nil
 }
 
-func (r *ResourceRegisteredModel) DoUpdate(ctx context.Context, id string, config *catalog.CreateRegisteredModelRequest, _ *Changes) (*catalog.RegisteredModelInfo, error) {
+func (r *ResourceRegisteredModel) DoUpdate(ctx context.Context, id string, config *catalog.CreateRegisteredModelRequest, _ Changes) (*catalog.RegisteredModelInfo, error) {
 	updateRequest := catalog.UpdateRegisteredModelRequest{
 		FullName:        id,
 		Comment:         config.Comment,
@@ -101,16 +102,4 @@ func (r *ResourceRegisteredModel) DoDelete(ctx context.Context, id string) error
 	return r.client.RegisteredModels.Delete(ctx, catalog.DeleteRegisteredModelRequest{
 		FullName: id,
 	})
-}
-
-func (*ResourceRegisteredModel) FieldTriggers(_ bool) map[string]deployplan.ActionType {
-	return map[string]deployplan.ActionType{
-		// The name can technically be updated without recreated. We recreate for now though
-		// to match TF implementation.
-		"name": deployplan.ActionTypeRecreate,
-
-		"catalog_name":     deployplan.ActionTypeRecreate,
-		"schema_name":      deployplan.ActionTypeRecreate,
-		"storage_location": deployplan.ActionTypeRecreate,
-	}
 }

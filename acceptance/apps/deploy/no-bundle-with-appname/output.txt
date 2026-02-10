@@ -1,0 +1,11 @@
+
+>>> [CLI] apps deploy test-app --no-wait
+{
+  "deployment_id":"dep-123",
+  "mode":"SNAPSHOT",
+  "source_code_path":"/Workspace/apps/test-app",
+  "status": {
+    "message":"Deployment pending",
+    "state":"PENDING"
+  }
+}

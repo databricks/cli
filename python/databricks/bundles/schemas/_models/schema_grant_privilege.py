@@ -6,15 +6,18 @@ class SchemaGrantPrivilege(Enum):
     ALL_PRIVILEGES = "ALL_PRIVILEGES"
     APPLY_TAG = "APPLY_TAG"
     CREATE_FUNCTION = "CREATE_FUNCTION"
+    CREATE_MATERIALIZED_VIEW = "CREATE_MATERIALIZED_VIEW"
+    CREATE_MODEL = "CREATE_MODEL"
     CREATE_TABLE = "CREATE_TABLE"
     CREATE_VOLUME = "CREATE_VOLUME"
-    MANAGE = "MANAGE"
-    USE_SCHEMA = "USE_SCHEMA"
     EXECUTE = "EXECUTE"
+    EXTERNAL_USE_SCHEMA = "EXTERNAL_USE_SCHEMA"
+    MANAGE = "MANAGE"
     MODIFY = "MODIFY"
+    READ_VOLUME = "READ_VOLUME"
     REFRESH = "REFRESH"
     SELECT = "SELECT"
-    READ_VOLUME = "READ_VOLUME"
+    USE_SCHEMA = "USE_SCHEMA"
     WRITE_VOLUME = "WRITE_VOLUME"
 
 
@@ -23,15 +26,18 @@ SchemaGrantPrivilegeParam = (
         "ALL_PRIVILEGES",
         "APPLY_TAG",
         "CREATE_FUNCTION",
+        "CREATE_MATERIALIZED_VIEW",
+        "CREATE_MODEL",
         "CREATE_TABLE",
         "CREATE_VOLUME",
-        "MANAGE",
-        "USE_SCHEMA",
         "EXECUTE",
+        "EXTERNAL_USE_SCHEMA",
+        "MANAGE",
         "MODIFY",
+        "READ_VOLUME",
         "REFRESH",
         "SELECT",
-        "READ_VOLUME",
+        "USE_SCHEMA",
         "WRITE_VOLUME",
     ]
     | SchemaGrantPrivilege

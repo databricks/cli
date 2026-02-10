@@ -2,6 +2,9 @@ github.com/databricks/cli/bundle/config/resources.Alert:
   "evaluation":
     "description": |-
       PLACEHOLDER
+  "file_path":
+    "description": |-
+      PLACEHOLDER
   "lifecycle":
     "description": |-
       PLACEHOLDER
@@ -41,6 +44,9 @@ github.com/databricks/cli/bundle/config/resources.App:
   "effective_budget_policy_id":
     "description": |-
       PLACEHOLDER
+  "effective_usage_policy_id":
+    "description": |-
+      PLACEHOLDER
   "lifecycle":
     "description": |-
       Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.
@@ -63,6 +69,9 @@ github.com/databricks/cli/bundle/config/resources.App:
     "description": |-
       PLACEHOLDER
   "source_code_path":
+    "description": |-
+      PLACEHOLDER
+  "usage_policy_id":
     "description": |-
       PLACEHOLDER
   "user_api_scopes":
@@ -588,23 +597,29 @@ github.com/databricks/cli/bundle/config/resources.SchemaGrantPrivilege:
       - |-
         CREATE_FUNCTION
       - |-
+        CREATE_MATERIALIZED_VIEW
+      - |-
+        CREATE_MODEL
+      - |-
         CREATE_TABLE
       - |-
         CREATE_VOLUME
       - |-
-        MANAGE
-      - |-
-        USE_SCHEMA
-      - |-
         EXECUTE
       - |-
+        EXTERNAL_USE_SCHEMA
+      - |-
+        MANAGE
+      - |-
         MODIFY
+      - |-
+        READ_VOLUME
       - |-
         REFRESH
       - |-
         SELECT
       - |-
-        READ_VOLUME
+        USE_SCHEMA
       - |-
         WRITE_VOLUME
 github.com/databricks/cli/bundle/config/resources.SecretScopePermissionLevel:
@@ -645,6 +660,10 @@ github.com/databricks/cli/bundle/config/resources.SqlWarehousePermissionLevel:
         CAN_MONITOR
       - |-
         CAN_VIEW
+github.com/databricks/cli/bundle/config/resources.SyncedDatabaseTable:
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.Volume:
   "_":
     "markdown_description": |-
@@ -728,6 +747,9 @@ github.com/databricks/databricks-sdk-go/service/apps.AppResource:
   "database":
     "description": |-
       PLACEHOLDER
+  "experiment":
+    "description": |-
+      PLACEHOLDER
   "genie_space":
     "description": |-
       PLACEHOLDER
@@ -751,6 +773,13 @@ github.com/databricks/databricks-sdk-go/service/apps.AppResourceDatabase:
     "description": |-
       PLACEHOLDER
   "instance_name":
+    "description": |-
+      PLACEHOLDER
+  "permission":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/databricks-sdk-go/service/apps.AppResourceExperiment:
+  "experiment_id":
     "description": |-
       PLACEHOLDER
   "permission":

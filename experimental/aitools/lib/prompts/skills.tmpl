@@ -1,0 +1,29 @@
+{{- /*
+     * L3: Skills listing template.
+     *
+     * Injected when: existing project is detected or after init-template.
+     * Contains: skill selection & loading guidance, skill registry.
+     */ -}}
+
+## Skills
+
+You have access to modular Skills for domain-specific expertise knowledge.
+
+### Skill Selection & Loading
+* When a user request matches a skill's scope description, select that Skill
+* Load skills using the MCP tool: `read_skill_file(file_path: "category/skill-name/SKILL.md")`
+* Example: `read_skill_file(file_path: "pipelines/materialized-view/SKILL.md")`
+* Skills may contain links to sub-sections (e.g., "category/skill-name/file.md")
+* If no Skill is suitable, continue with your base capabilities
+* Never mention or reference skills to the user, only use them internally
+
+### Skill Registry (names + brief descriptors)
+{{range .RelevantSkills}}* **{{.Path}}/SKILL.md**: {{.Description}}
+{{end}}
+{{- if .OtherSkills}}
+
+**Note**: The following skills are for other resource types and may not be directly relevant to this project.
+
+{{range .OtherSkills}}* **{{.Path}}/SKILL.md**: {{.Description}}
+{{end}}
+{{- end}}

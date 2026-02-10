@@ -1,0 +1,5 @@
+Timeout = '4h'
+Ignore = ["databricks.yml"]
+
+# Disabled because it fails on CI. We don't need this to work on Windows.
+GOOS.windows = false

@@ -1,0 +1,64 @@
+Uploading dummy.whl...
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Case 1: Added locally, updated remotely with different value
+
+=== Case 2: Added locally, removed remotely
+
+=== Case 3: Removed locally, removed remotely
+
+=== Case 4: Updated locally, updated remotely with different value
+
+=== Case 5: Updated locally, removed remotely
+
+=== Case 6: Added locally and remotely with same value (no drift expected)
+
+=== Edit job remotely
+
+=== Detect and save changes
+Detected changes in 1 resource(s):
+
+Resource: resources.jobs.my_job
+  email_notifications.on_failure: replace
+  email_notifications.on_failure[0]: replace
+  max_concurrent_runs: replace
+  tags['env']: remove
+
+
+
+=== Configuration changes
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -1,5 +1,4 @@
+ bundle:
+   name: test-bundle-[UNIQUE_NAME]
+-
+ resources:
+   jobs:
+@@ -13,5 +12,4 @@
+             node_type_id: [NODE_TYPE_ID]
+             num_workers: 1
+-
+ targets:
+   default:
+@@ -24,5 +22,5 @@
+               - success@example.com
+             on_failure:
+-              - config-failure@example.com
++              - remote-failure@example.com
+           parameters:
+             - name: catalog
+@@ -35,7 +33,6 @@
+               unit: DAYS
+           tags:
+-            env: config-production
+             team: data-team
+-          max_concurrent_runs: 3
++          max_concurrent_runs: 5
+           timeout_seconds: 3600
+           environments:

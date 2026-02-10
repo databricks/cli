@@ -1,5 +1,95 @@
 # Version changelog
 
+## Release v0.287.0 (2026-02-05)
+
+### CLI
+
+* Add Lakebase Autoscaling support to `psql` command ([#4399](https://github.com/databricks/cli/pull/4399))
+* Add `workspace_id` to the profiles command ([#4404](https://github.com/databricks/cli/pull/4404))
+
+### Bundles
+
+* Add support for Lakebase resources (postgres_projects, postgres_branches, postgres_endpoints) ([#4423](https://github.com/databricks/cli/pull/4423))
+* Add missing values to SchemaGrantPrivilege enum ([#4380](https://github.com/databricks/cli/pull/4380))
+* Added support for UC catalogs (only in direct mode) ([#4342](https://github.com/databricks/cli/pull/4342))
+* engine/direct: Fix updates to fields being ignored for database_catalogs, synced_database_tables (([#4388](https://github.com/databricks/cli/pull/4388)))
+* engine/direct: Fix migration for database_instances, database_catalog, synced_database_tables ([#4424](https://github.com/databricks/cli/pull/4424))
+* Show warning message if valueFrom is used instead of value_from in app config section ([$4429](https://github.com/databricks/cli/pull/4429))
+
+
+## Release v0.286.0 (2026-01-28)
+
+### CLI
+* Improve performance of `databricks fs cp` command by parallelizing file uploads when
+  copying directories with the `--recursive` flag. ([#4132](https://github.com/databricks/cli/pull/4132))
+
+### Bundles
+* Fix: Support trigger_pause_status preset in alerts ([#4323](https://github.com/databricks/cli/pull/4323))
+
+
+## Release v0.285.0 (2026-01-22)
+
+### Dependency updates
+* Upgrade to Go SDK 0.100.0 ([#4352](https://github.com/databricks/cli/pull/4352))
+* Upgrade TF provider to 1.104.0 ([#4354](https://github.com/databricks/cli/pull/4354))
+
+
+## Release v0.284.0 (2026-01-21)
+
+### Bundles
+* Pass additional Azure DevOps `SYSTEM_*` environment variables to Terraform for OIDC authentication: `SYSTEM_COLLECTIONURI`, `SYSTEM_DEFINITIONID`, `SYSTEM_HOSTTYPE`, `SYSTEM_JOBID`, `SYSTEM_TEAMPROJECT` ([#4318](https://github.com/databricks/cli/pull/4318))
+* Add support for valueFrom property (similar to app.yaml) inside Apps config field in bundle configuration ([#4297](https://github.com/databricks/cli/pull/4297))
+* engine/direct: Support bind & unbind. ([#4279](https://github.com/databricks/cli/pull/4279))
+* engine/direct: Ignore changes between nulls and empty slices/maps (([#4313](https://github.com/databricks/cli/pull/4313)))
+* engine/direct: Ignore changes between nulls and empty structs (([#4338](https://github.com/databricks/cli/pull/4338)))
+* On terraform `bundle plan -o json` will no longer include plan_version key, it's intended for direct engine only (([#4314](https://github.com/databricks/cli/pull/4314)))
+
+
+## Release v0.283.0 (2026-01-14)
+
+### Notable Changes
+* Bundle commands now cache the user's account details to improve command latency.
+To disable this, set the environment variable DATABRICKS_CACHE_ENABLED to false.
+
+### CLI
+* Add commands to pipelines command group ([#4275](https://github.com/databricks/cli/pull/4275))
+
+### Bundles
+* Add support for configuring app.yaml options for apps via bundle config ([#4271](https://github.com/databricks/cli/pull/4271))
+* Enable caching user identity by default ([#4202](https://github.com/databricks/cli/pull/4202))
+* Do not show single node warning when is_single_node option is explicitly set ([#4272](https://github.com/databricks/cli/pull/4272))
+* Fix false positive folder permission warnings and make them more actionable ([#4216](https://github.com/databricks/cli/pull/4216))
+* Pass additional Azure DevOps system variables ([#4236](https://github.com/databricks/cli/pull/4236))
+* Replace Black formatter with Ruff in Python bundle templates for faster, all-in-one linting and formatting ([#4196](https://github.com/databricks/cli/pull/4196))
+* engine/direct: support quality monitors ([#4278](https://github.com/databricks/cli/pull/4278))
+* Improve folder permissions warning ([#4216](https://github.com/databricks/cli/pull/4216))
+
+### Dependency updates
+* Upgrade TF provider to 1.102.0 ([#4235](https://github.com/databricks/cli/pull/4235))
+* Upgrade Go SDK to 0.96.0 ([#4206](https://github.com/databricks/cli/pull/4206))
+
+
+## Release v0.282.0 (2026-01-08)
+
+### Notable Changes
+* engine/direct: New plan format (v2) ([#4201](https://github.com/databricks/cli/pull/4201))
+
+### CLI
+* Skip non-exportable objects (e.g., `MLFLOW_EXPERIMENT`) during `workspace export-dir` instead of failing ([#4101](https://github.com/databricks/cli/pull/4101))
+
+### Bundles
+* Allow `domain_friendly_name` to be used in `name_prefix` in development mode ([#4173](https://github.com/databricks/cli/pull/4173))
+* Add missing schema grants privileges ([#4139](https://github.com/databricks/cli/pull/4139))
+* Add support for `bundle generate alert` command ([#4108](https://github.com/databricks/cli/pull/4108))
+* Add support for `.dbalert.json` files ([#3602](https://github.com/databricks/cli/pull/3602))
+* Pass `SYSTEM_TEAMFOUNDATIONCOLLECTIONURI` from env to the Terraform provider for Azure DevOps OIDC auth ([#4169](https://github.com/databricks/cli/pull/4169))
+* Add `ipykernel` to the `default` template to enable Databricks Connect notebooks in Cursor/VS Code ([#4164](https://github.com/databricks/cli/pull/4164))
+* Add interactive SQL warehouse picker to `default-sql` and `dbt-sql` bundle templates ([#4170](https://github.com/databricks/cli/pull/4170))
+* Add `name`, `target` and `mode` fields to the deployment metadata file ([#4180](https://github.com/databricks/cli/pull/4180))
+* engine/direct: Fix app deployment failure when app is in `DELETING` state ([#4176](https://github.com/databricks/cli/pull/4176))
+* engine/direct: Changes in config that match remote changes no longer trigger an update ([#4201](https://github.com/databricks/cli/pull/4201))
+
+
 ## Release v0.281.0 (2025-12-18)
 
 ### CLI

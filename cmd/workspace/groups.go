@@ -96,5 +96,9 @@ func Groups() []cobra.Group {
 			ID:    "tags",
 			Title: "Tags",
 		},
+		{
+			ID:    "postgres",
+			Title: "Postgres",
+		},
 	}
 }

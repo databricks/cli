@@ -1,0 +1,15 @@
+Warning: required field "endpoint_id" is not set
+  at resources.postgres_endpoints.primary
+  in databricks.yml:27:7
+
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-endpoint-no-id-[UNIQUE_NAME]/default/files...
+Error: exit status 1
+
+Error: Missing required argument
+
+  on bundle.tf.json line 31, in resource.databricks_postgres_endpoint.primary:
+  31:       }
+
+The argument "endpoint_id" is required, but no definition was found.
+
+

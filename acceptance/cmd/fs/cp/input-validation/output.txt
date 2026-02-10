@@ -1,0 +1,10 @@
+
+>>> errcode [CLI] fs cp src dst --concurrency -1
+Error: --concurrency must be at least 1
+
+Exit code: 1
+
+>>> errcode [CLI] fs cp src dst --concurrency 0
+Error: --concurrency must be at least 1
+
+Exit code: 1

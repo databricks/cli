@@ -55,15 +55,14 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 			errorPrefix = "cannot migrate " + resourceKey
 		}
 
-		at := deployplan.ActionTypeFromString(action)
-		if at == deployplan.ActionTypeUndefined {
+		if action == deployplan.Undefined {
 			logdiag.LogError(ctx, fmt.Errorf("cannot deploy %s: unknown action %q", resourceKey, action))
 			return false
 		}
 
 		// If a dependency failed, report and skip execution for this node by returning false
 		if failedDependency != nil {
-			if at != deployplan.ActionTypeSkip {
+			if action != deployplan.Skip {
 				logdiag.LogError(ctx, fmt.Errorf("%s: dependency failed: %s", errorPrefix, *failedDependency))
 			}
 			return false
@@ -81,7 +80,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 			DependsOn:   entry.DependsOn,
 		}
 
-		if at == deployplan.ActionTypeDelete {
+		if action == deployplan.Delete {
 			if migrateMode {
 				logdiag.LogError(ctx, fmt.Errorf("%s: Unexpected delete action during migration", errorPrefix))
 				return false
@@ -96,13 +95,13 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 
 		// We don't keep NewState around for 'skip' nodes
 
-		if at != deployplan.ActionTypeSkip {
+		if action != deployplan.Skip {
 			if !b.resolveReferences(ctx, resourceKey, entry, errorPrefix, false) {
 				return false
 			}
 
 			// Get the cached StructVar to check for unresolved refs and get value
-			sv, ok := b.StructVarCache.Load(resourceKey)
+			sv, ok := b.StateCache.Load(resourceKey)
 			if !ok {
 				logdiag.LogError(ctx, fmt.Errorf("%s: internal error: missing cached StructVar", errorPrefix))
 				return false
@@ -123,7 +122,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 				err = b.StateDB.SaveState(resourceKey, dbentry.ID, sv.Value, entry.DependsOn)
 			} else {
 				// TODO: redo calcDiff to downgrade planned action if possible (?)
-				err = d.Deploy(ctx, &b.StateDB, sv.Value, at, entry.Changes)
+				err = d.Deploy(ctx, &b.StateDB, sv.Value, action, entry.Changes)
 			}
 
 			if err != nil {
@@ -161,7 +160,7 @@ func (b *DeploymentBundle) Apply(ctx context.Context, client *databricks.Workspa
 	}
 }
 
-func (b *DeploymentBundle) LookupReferenceRemote(ctx context.Context, path *structpath.PathNode) (any, error) {
+func (b *DeploymentBundle) LookupReferencePostDeploy(ctx context.Context, path *structpath.PathNode) (any, error) {
 	// TODO: Prefix(3) assumes resources.jobs.foo but not resources.jobs.foo.permissions
 	targetResourceKey := path.Prefix(3).String()
 	fieldPath := path.SkipPrefix(3)
@@ -178,8 +177,8 @@ func (b *DeploymentBundle) LookupReferenceRemote(ctx context.Context, path *stru
 
 	defer b.Plan.ReadUnlockEntry(targetResourceKey)
 
-	targetAction := deployplan.ActionTypeFromString(targetEntry.Action)
-	if targetAction == deployplan.ActionTypeUndefined {
+	targetAction := targetEntry.Action
+	if targetAction == deployplan.Undefined {
 		return nil, fmt.Errorf("internal error: %s: missing action in the plan", targetResourceKey)
 	}
 

@@ -1,0 +1,16 @@
+bundle:
+  name: deploy-postgres-no-id-$UNIQUE_NAME
+
+sync:
+  paths: []
+
+resources:
+  postgres_projects:
+    my_project:
+      display_name: "Test Without ID"
+      pg_version: 16
+      history_retention_duration: "604800s"
+      default_endpoint_settings:
+        autoscaling_limit_min_cu: 0.5
+        autoscaling_limit_max_cu: 4
+        suspend_timeout_duration: "300s"

@@ -307,7 +307,7 @@ func TestCall(t *testing.T) {
 			ifaceType: TypeOf[interface{ PMethodTransformDataPtr(data *Data) (any, error) }](),
 			method:    "PMethodTransformDataPtr",
 			args:      []any{nil},
-			errMsg:    "PMethodTransformDataPtr: arg 0 type mismatch: want *calladapt.Data, got nil",
+			errMsg:    "data is nil",
 		},
 		{
 			name:      "void method call returns no outs",
