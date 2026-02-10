@@ -190,7 +190,7 @@ Stack Trace:
 		Version:         build.GetInfo().Version,
 		Command:         commandStr,
 		OperatingSystem: runtime.GOOS,
-		DbrVersion:      dbr.RuntimeVersion(ctx),
+		DbrVersion:      dbr.RuntimeVersion(ctx).String(),
 		ExecutionTimeMs: time.Since(startTime).Milliseconds(),
 		ExitCode:        int64(exitCode),
 	})

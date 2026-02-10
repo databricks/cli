@@ -283,6 +283,8 @@ func newTrashAlert() *cobra.Command {
 
 	var trashAlertReq sql.TrashAlertV2Request
 
+	cmd.Flags().BoolVar(&trashAlertReq.Purge, "purge", trashAlertReq.Purge, `Whether to permanently delete the alert.`)
+
 	cmd.Use = "trash-alert ID"
 	cmd.Short = `Delete an alert (legacy TrashAlert).`
 	cmd.Long = `Delete an alert (legacy TrashAlert).
