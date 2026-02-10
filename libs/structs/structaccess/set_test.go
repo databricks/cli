@@ -41,15 +41,6 @@ type TestStruct struct {
 	Internal    string            `json:"-"`
 }
 
-// mustParsePath is a helper to parse path strings in tests
-func mustParsePath(path string) *structpath.PathNode {
-	p, err := structpath.Parse(path)
-	if err != nil {
-		panic(err)
-	}
-	return p
-}
-
 // newTestStruct creates a fresh TestStruct instance for testing
 func newTestStruct() *TestStruct {
 	return &TestStruct{
@@ -89,7 +80,7 @@ func TestSet(t *testing.T) {
 			value: "NewName",
 			expectedChanges: []structdiff.Change{
 				{
-					Path: mustParsePath("name"),
+					Path: structpath.MustParsePath("name"),
 					Old:  "OldName",
 					New:  "NewName",
 				},
@@ -101,7 +92,7 @@ func TestSet(t *testing.T) {
 			value: "BracketName",
 			expectedChanges: []structdiff.Change{
 				{
-					Path: mustParsePath("name"),
+					Path: structpath.MustParsePath("name"),
 					Old:  "OldName",
 					New:  "BracketName",
 				},
@@ -113,7 +104,7 @@ func TestSet(t *testing.T) {
 			value: 30,
 			expectedChanges: []structdiff.Change{
 				{
-					Path: mustParsePath("age"),
+					Path: structpath.MustParsePath("age"),
 					Old:  25,
 					New:  30,
 				},
@@ -125,7 +116,7 @@ func TestSet(t *testing.T) {
 			value: "new_version",
 			expectedChanges: []structdiff.Change{
 				{
-					Path: mustParsePath("info.version"),
+					Path: structpath.MustParsePath("info.version"),
 					Old:  "old_version",
 					New:  "new_version",
 				},
@@ -137,7 +128,7 @@ func TestSet(t *testing.T) {
 			value: 200,
 			expectedChanges: []structdiff.Change{
 				{
-					Path: mustParsePath("info.build"),
+					Path: structpath.MustParsePath("info.build"),
 					Old:  100,
 					New:  200,
 				},
@@ -149,7 +140,7 @@ func TestSet(t *testing.T) {
 			value: "new_map_value",
 			expectedChanges: []structdiff.Change{
 				{
-					Path: mustParsePath("tags['version']"),
+					Path: structpath.MustParsePath("tags['version']"),
 					Old:  nil, // new key
 					New:  "new_map_value",
 				},
@@ -161,7 +152,7 @@ func TestSet(t *testing.T) {
 			value: "dot_map_value",
 			expectedChanges: []structdiff.Change{
 				{
-					Path: mustParsePath("tags['version']"),
+					Path: structpath.MustParsePath("tags['version']"),
 					Old:  nil, // new key
 					New:  "dot_map_value",
 				},
@@ -173,7 +164,7 @@ func TestSet(t *testing.T) {
 			value: "new_item",
 			expectedChanges: []structdiff.Change{
 				{
-					Path: mustParsePath("items[1]"),
+					Path: structpath.MustParsePath("items[1]"),
 					Old:  "old_b",
 					New:  "new_item",
 				},
@@ -185,7 +176,7 @@ func TestSet(t *testing.T) {
 			value: 42,
 			expectedChanges: []structdiff.Change{
 				{
-					Path: mustParsePath("count"),
+					Path: structpath.MustParsePath("count"),
 					Old:  nil, // structdiff reports this as interface{}(nil)
 					New:  intPtr(42),
 				},
@@ -197,7 +188,7 @@ func TestSet(t *testing.T) {
 			value: "new custom",
 			expectedChanges: []structdiff.Change{
 				{
-					Path: mustParsePath("custom"),
+					Path: structpath.MustParsePath("custom"),
 					Old:  CustomString("old custom"),
 					New:  CustomString("new custom"),
 				},
@@ -209,7 +200,7 @@ func TestSet(t *testing.T) {
 			value: CustomString("typed custom"),
 			expectedChanges: []structdiff.Change{
 				{
-					Path: mustParsePath("custom"),
+					Path: structpath.MustParsePath("custom"),
 					Old:  CustomString("old custom"),
 					New:  CustomString("typed custom"),
 				},
@@ -237,7 +228,7 @@ func TestSet(t *testing.T) {
 			name:     "error on wildcard",
 			path:     "items[*]",
 			value:    "value",
-			errorMsg: "wildcards not supported",
+			errorMsg: "wildcards not allowed in path",
 		},
 		{
 			name:  "custom string to string field",
@@ -245,7 +236,7 @@ func TestSet(t *testing.T) {
 			value: CustomString("custom to regular"),
 			expectedChanges: []structdiff.Change{
 				{
-					Path: mustParsePath("name"),
+					Path: structpath.MustParsePath("name"),
 					Old:  "OldName",
 					New:  "custom to regular",
 				},
@@ -257,7 +248,7 @@ func TestSet(t *testing.T) {
 			value: CustomInt(35),
 			expectedChanges: []structdiff.Change{
 				{
-					Path: mustParsePath("age"),
+					Path: structpath.MustParsePath("age"),
 					Old:  25,
 					New:  35,
 				},
@@ -281,7 +272,7 @@ func TestSet(t *testing.T) {
 			value: "42",
 			expectedChanges: []structdiff.Change{
 				{
-					Path: mustParsePath("age"),
+					Path: structpath.MustParsePath("age"),
 					Old:  25,
 					New:  42,
 				},
@@ -299,7 +290,7 @@ func TestSet(t *testing.T) {
 			value: "false",
 			expectedChanges: []structdiff.Change{
 				{
-					Path: mustParsePath("active"),
+					Path: structpath.MustParsePath("active"),
 					Old:  true,
 					New:  false,
 				},
@@ -317,7 +308,7 @@ func TestSet(t *testing.T) {
 			value: "3.14",
 			expectedChanges: []structdiff.Change{
 				{
-					Path: mustParsePath("score"),
+					Path: structpath.MustParsePath("score"),
 					Old:  85.5,
 					New:  3.14,
 				},
@@ -329,7 +320,7 @@ func TestSet(t *testing.T) {
 			value: "0",
 			expectedChanges: []structdiff.Change{
 				{
-					Path: mustParsePath("score"),
+					Path: structpath.MustParsePath("score"),
 					Old:  85.5,
 					New:  0.0,
 				},
@@ -347,7 +338,7 @@ func TestSet(t *testing.T) {
 			value: "200",
 			expectedChanges: []structdiff.Change{
 				{
-					Path: mustParsePath("priority"),
+					Path: structpath.MustParsePath("priority"),
 					Old:  uint8(10),
 					New:  uint8(200),
 				},
@@ -371,7 +362,7 @@ func TestSet(t *testing.T) {
 			value: 42,
 			expectedChanges: []structdiff.Change{
 				{
-					Path: mustParsePath("name"),
+					Path: structpath.MustParsePath("name"),
 					Old:  "OldName",
 					New:  "42",
 				},
@@ -383,7 +374,7 @@ func TestSet(t *testing.T) {
 			value: true,
 			expectedChanges: []structdiff.Change{
 				{
-					Path: mustParsePath("name"),
+					Path: structpath.MustParsePath("name"),
 					Old:  "OldName",
 					New:  "true",
 				},
@@ -395,7 +386,7 @@ func TestSet(t *testing.T) {
 			value: false,
 			expectedChanges: []structdiff.Change{
 				{
-					Path: mustParsePath("name"),
+					Path: structpath.MustParsePath("name"),
 					Old:  "OldName",
 					New:  "false",
 				},
@@ -407,7 +398,7 @@ func TestSet(t *testing.T) {
 			value: 3.14,
 			expectedChanges: []structdiff.Change{
 				{
-					Path: mustParsePath("name"),
+					Path: structpath.MustParsePath("name"),
 					Old:  "OldName",
 					New:  "3.14",
 				},
@@ -419,7 +410,7 @@ func TestSet(t *testing.T) {
 			value: uint8(200),
 			expectedChanges: []structdiff.Change{
 				{
-					Path: mustParsePath("name"),
+					Path: structpath.MustParsePath("name"),
 					Old:  "OldName",
 					New:  "200",
 				},
@@ -431,7 +422,7 @@ func TestSet(t *testing.T) {
 			value: "-10",
 			expectedChanges: []structdiff.Change{
 				{
-					Path: mustParsePath("age"),
+					Path: structpath.MustParsePath("age"),
 					Old:  25,
 					New:  -10,
 				},
@@ -443,7 +434,7 @@ func TestSet(t *testing.T) {
 			value: "0",
 			expectedChanges: []structdiff.Change{
 				{
-					Path: mustParsePath("priority"),
+					Path: structpath.MustParsePath("priority"),
 					Old:  uint8(10),
 					New:  uint8(0),
 				},
@@ -457,7 +448,7 @@ func TestSet(t *testing.T) {
 			value: "updated",
 			expectedChanges: []structdiff.Change{
 				{
-					Path: mustParsePath("nested_items[1].name"),
+					Path: structpath.MustParsePath("nested_items[1].name"),
 					Old:  "second",
 					New:  "updated",
 				},

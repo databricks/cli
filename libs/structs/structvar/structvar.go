@@ -82,7 +82,7 @@ func (sv *StructVar) ResolveRef(reference string, value any) error {
 		foundAny = true
 
 		// Parse the path
-		pathNode, err := structpath.Parse(pathKey)
+		pathNode, err := structpath.ParsePath(pathKey)
 		if err != nil {
 			return fmt.Errorf("invalid path %q: %w", pathKey, err)
 		}

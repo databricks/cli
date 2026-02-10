@@ -365,7 +365,7 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 	var toDrop []string
 
 	for pathString, ch := range changes {
-		path, err := structpath.Parse(pathString)
+		path, err := structpath.ParsePath(pathString)
 		if err != nil {
 			return err
 		}
@@ -594,8 +594,8 @@ func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *s
 		return nil, fmt.Errorf("internal error: %s: unknown resource type %q", targetResourceKey, targetGroup)
 	}
 
-	configValidErr := structaccess.Validate(reflect.TypeOf(localConfig), fieldPath)
-	remoteValidErr := structaccess.Validate(adapter.RemoteType(), fieldPath)
+	configValidErr := structaccess.ValidatePath(reflect.TypeOf(localConfig), fieldPath)
+	remoteValidErr := structaccess.ValidatePath(adapter.RemoteType(), fieldPath)
 	// Note: using adapter.RemoteType() over reflect.TypeOf(remoteState) because remoteState might be untyped nil
 
 	if configValidErr != nil && remoteValidErr != nil {
@@ -665,7 +665,7 @@ func (b *DeploymentBundle) resolveReferences(ctx context.Context, resourceKey st
 
 		for _, pathString := range refs.References() {
 			ref := "${" + pathString + "}"
-			targetPath, err := structpath.Parse(pathString)
+			targetPath, err := structpath.ParsePath(pathString)
 			if err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("%s: cannot parse reference %q: %w", errorPrefix, ref, err))
 				return false

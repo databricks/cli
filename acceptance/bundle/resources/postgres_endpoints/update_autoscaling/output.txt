@@ -35,7 +35,7 @@ Deployment complete!
     "autoscaling_limit_min_cu": 0.5,
     "current_state": "ACTIVE",
     "disabled": false,
-    "endpoint_type": "ENDPOINT_TYPE_READ_WRITE",
+    "endpoint_type": "ENDPOINT_TYPE_READ_ONLY",
     "hosts": {
       "host": "[ENDPOINT_UID].database.us-east-1.cloud.databricks.com"
     },
@@ -87,7 +87,7 @@ resources:
     my_endpoint:
       parent: ${resources.postgres_branches.main.id}
       endpoint_id: my-endpoint
-      endpoint_type: ENDPOINT_TYPE_READ_WRITE
+      endpoint_type: ENDPOINT_TYPE_READ_ONLY
       autoscaling_limit_min_cu: 0.5
       autoscaling_limit_max_cu: 4
       suspend_timeout_duration: 300s
@@ -116,7 +116,7 @@ Deployment complete!
     "autoscaling_limit_min_cu": 0.5,
     "current_state": "ACTIVE",
     "disabled": false,
-    "endpoint_type": "ENDPOINT_TYPE_READ_WRITE",
+    "endpoint_type": "ENDPOINT_TYPE_READ_ONLY",
     "hosts": {
       "host": "[ENDPOINT_UID].database.us-east-1.cloud.databricks.com"
     },
@@ -153,7 +153,7 @@ Deployment complete!
     "autoscaling_limit_min_cu": 0.5,
     "current_state": "ACTIVE",
     "disabled": false,
-    "endpoint_type": "ENDPOINT_TYPE_READ_WRITE",
+    "endpoint_type": "ENDPOINT_TYPE_READ_ONLY",
     "hosts": {
       "host": "[ENDPOINT_UID].database.us-east-1.cloud.databricks.com"
     },
