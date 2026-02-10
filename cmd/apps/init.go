@@ -50,16 +50,28 @@ func normalizeVersion(version string) string {
 
 func newInitCmd() *cobra.Command {
 	var (
-		templatePath string
-		branch       string
-		version      string
-		name         string
-		warehouseID  string
-		description  string
-		outputDir    string
-		pluginsFlag  []string
-		deploy       bool
-		run          string
+		templatePath        string
+		branch              string
+		version             string
+		name                string
+		warehouseID         string
+		description         string
+		outputDir           string
+		pluginsFlag         []string
+		deploy              bool
+		run                 string
+		jobID               string
+		modelEndpointID     string
+		volumeID            string
+		vectorSearchIndexID string
+		functionID          string
+		connectionID        string
+		genieSpaceID        string
+		experimentID        string
+		databaseInstance    string
+		databaseName        string
+		secretScope         string
+		secretKey           string
 	)
 
 	cmd := &cobra.Command{
@@ -91,6 +103,14 @@ Examples:
   # With analytics feature (requires --warehouse-id)
   databricks apps init --name my-app --features=analytics --warehouse-id=abc123
 
+  # With database resource (both flags required together)
+  databricks apps init --name my-app --features=analytics \
+    --warehouse-id=abc123 --database-instance=myinst --database-name=mydb
+
+  # With secret resource (both flags required together)
+  databricks apps init --name my-app --features=analytics \
+    --warehouse-id=abc123 --secret-scope=myscope --secret-key=mykey
+
   # Create, deploy, and run with dev-remote
   databricks apps init --name my-app --deploy --run=dev-remote
 
@@ -100,9 +120,20 @@ Examples:
   # With a GitHub URL
   databricks apps init --template https://github.com/user/repo --name my-app
 
-Plugin dependencies:
-  Some plugins require additional flags (as defined in appkit.plugins.json):
-  - analytics: requires --warehouse-id (SQL Warehouse ID)
+Resource flags (as defined in appkit.plugins.json):
+  --warehouse-id               SQL Warehouse ID
+  --job-id                     Job ID
+  --model-endpoint-id          Serving endpoint ID
+  --volume-id                  Unity Catalog volume full name
+  --vector-search-index-id     Vector search index ID
+  --function-id                Unity Catalog function full name
+  --connection-id              Unity Catalog connection name
+  --genie-space-id             Genie Space ID
+  --experiment-id              MLflow experiment ID
+  --database-instance          Lakebase instance name (requires --database-name)
+  --database-name              Lakebase database name (requires --database-instance)
+  --secret-scope               Secret scope name (requires --secret-key)
+  --secret-key                 Secret key name (requires --secret-scope)
 
 Environment variables:
   DATABRICKS_APPKIT_TEMPLATE_PATH  Override the default template source`,
@@ -117,20 +148,32 @@ Environment variables:
 			}
 
 			return runCreate(ctx, createOptions{
-				templatePath:   templatePath,
-				branch:         branch,
-				version:        version,
-				name:           name,
-				nameProvided:   cmd.Flags().Changed("name"),
-				warehouseID:    warehouseID,
-				description:    description,
-				outputDir:      outputDir,
-				plugins:        pluginsFlag,
-				deploy:         deploy,
-				deployChanged:  cmd.Flags().Changed("deploy"),
-				run:            run,
-				runChanged:     cmd.Flags().Changed("run"),
-				pluginsChanged: cmd.Flags().Changed("features") || cmd.Flags().Changed("plugins"),
+				templatePath:        templatePath,
+				branch:              branch,
+				version:             version,
+				name:                name,
+				nameProvided:        cmd.Flags().Changed("name"),
+				warehouseID:         warehouseID,
+				description:         description,
+				outputDir:           outputDir,
+				plugins:             pluginsFlag,
+				deploy:              deploy,
+				deployChanged:       cmd.Flags().Changed("deploy"),
+				run:                 run,
+				runChanged:          cmd.Flags().Changed("run"),
+				pluginsChanged:      cmd.Flags().Changed("features") || cmd.Flags().Changed("plugins"),
+				jobID:               jobID,
+				modelEndpointID:     modelEndpointID,
+				volumeID:            volumeID,
+				vectorSearchIndexID: vectorSearchIndexID,
+				functionID:          functionID,
+				connectionID:        connectionID,
+				genieSpaceID:        genieSpaceID,
+				experimentID:        experimentID,
+				databaseInstance:    databaseInstance,
+				databaseName:        databaseName,
+				secretScope:         secretScope,
+				secretKey:           secretKey,
 			})
 		},
 	}
@@ -140,6 +183,18 @@ Environment variables:
 	cmd.Flags().StringVar(&version, "version", "", "AppKit version to use (default: latest release, use 'latest' for main branch)")
 	cmd.Flags().StringVar(&name, "name", "", "Project name (prompts if not provided)")
 	cmd.Flags().StringVar(&warehouseID, "warehouse-id", "", "SQL warehouse ID")
+	cmd.Flags().StringVar(&jobID, "job-id", "", "Job ID")
+	cmd.Flags().StringVar(&modelEndpointID, "model-endpoint-id", "", "Serving endpoint ID")
+	cmd.Flags().StringVar(&volumeID, "volume-id", "", "Unity Catalog volume full name (catalog.schema.volume)")
+	cmd.Flags().StringVar(&vectorSearchIndexID, "vector-search-index-id", "", "Vector search index ID")
+	cmd.Flags().StringVar(&functionID, "function-id", "", "Unity Catalog function full name")
+	cmd.Flags().StringVar(&connectionID, "connection-id", "", "Unity Catalog connection name")
+	cmd.Flags().StringVar(&genieSpaceID, "genie-space-id", "", "Genie Space ID")
+	cmd.Flags().StringVar(&experimentID, "experiment-id", "", "MLflow experiment ID")
+	cmd.Flags().StringVar(&databaseInstance, "database-instance", "", "Lakebase database instance name (requires --database-name)")
+	cmd.Flags().StringVar(&databaseName, "database-name", "", "Lakebase database name (requires --database-instance)")
+	cmd.Flags().StringVar(&secretScope, "secret-scope", "", "Secret scope name (requires --secret-key)")
+	cmd.Flags().StringVar(&secretKey, "secret-key", "", "Secret key name (requires --secret-scope)")
 	cmd.Flags().StringVar(&description, "description", "", "App description")
 	cmd.Flags().StringVar(&outputDir, "output-dir", "", "Directory to write the project to")
 	cmd.Flags().StringSliceVar(&pluginsFlag, "features", nil, "Features/plugins to enable (comma-separated, as defined in template manifest)")
@@ -166,6 +221,53 @@ type createOptions struct {
 	run            string
 	runChanged     bool // true if --run flag was explicitly set
 	pluginsChanged bool // true if --plugins flag was explicitly set
+
+	// Resource flags
+	jobID               string
+	modelEndpointID     string
+	volumeID            string
+	vectorSearchIndexID string
+	functionID          string
+	connectionID        string
+	genieSpaceID        string
+	experimentID        string
+	databaseInstance    string
+	databaseName        string
+	secretScope         string
+	secretKey           string
+}
+
+// populateResourceValues writes all non-empty resource flag values into the map.
+func (o *createOptions) populateResourceValues(rv map[string]string) {
+	set := func(key, val string) {
+		if val != "" {
+			rv[key] = val
+		}
+	}
+	set("sql-warehouse.id", o.warehouseID)
+	set("job.id", o.jobID)
+	set("model-endpoint.id", o.modelEndpointID)
+	set("volume.id", o.volumeID)
+	set("vector-search-index.id", o.vectorSearchIndexID)
+	set("function.id", o.functionID)
+	set("connection.id", o.connectionID)
+	set("genie-space.space_id", o.genieSpaceID)
+	set("experiment.id", o.experimentID)
+	set("database.instance_name", o.databaseInstance)
+	set("database.database_name", o.databaseName)
+	set("secret.scope", o.secretScope)
+	set("secret.key", o.secretKey)
+}
+
+// validateMultiFieldFlags checks that multi-field resource flags are provided together.
+func (o *createOptions) validateMultiFieldFlags() error {
+	if (o.databaseInstance != "") != (o.databaseName != "") {
+		return errors.New("--database-instance and --database-name must be provided together")
+	}
+	if (o.secretScope != "") != (o.secretKey != "") {
+		return errors.New("--secret-scope and --secret-key must be provided together")
+	}
+	return nil
 }
 
 // templateVars holds the variables for template substitution.
@@ -552,10 +654,11 @@ func runCreate(ctx context.Context, opts createOptions) error {
 				return err
 			}
 		}
-		resourceValues = make(map[string]string)
-		if opts.warehouseID != "" {
-			resourceValues["sql-warehouse.id"] = opts.warehouseID
+		if err := opts.validateMultiFieldFlags(); err != nil {
+			return err
 		}
+		resourceValues = make(map[string]string)
+		opts.populateResourceValues(resourceValues)
 
 		// Prompt for deploy/run if no flags were set
 		if !skipDeployRunPrompt {
@@ -572,10 +675,11 @@ func runCreate(ctx context.Context, opts createOptions) error {
 				return err
 			}
 		}
-		resourceValues = make(map[string]string)
-		if opts.warehouseID != "" {
-			resourceValues["sql-warehouse.id"] = opts.warehouseID
+		if err := opts.validateMultiFieldFlags(); err != nil {
+			return err
 		}
+		resourceValues = make(map[string]string)
+		opts.populateResourceValues(resourceValues)
 
 		// Validate required resources are provided.
 		// All resource value keys use "resource_key.field_name" format.

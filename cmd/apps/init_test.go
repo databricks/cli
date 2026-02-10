@@ -283,3 +283,116 @@ func TestParseDeployAndRunFlags(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateMultiFieldFlags(t *testing.T) {
+	tests := []struct {
+		name    string
+		opts    createOptions
+		wantErr string
+	}{
+		{
+			name: "both database fields provided",
+			opts: createOptions{databaseInstance: "inst", databaseName: "db"},
+		},
+		{
+			name: "neither database field provided",
+			opts: createOptions{},
+		},
+		{
+			name:    "only database instance name",
+			opts:    createOptions{databaseInstance: "inst"},
+			wantErr: "--database-instance and --database-name must be provided together",
+		},
+		{
+			name:    "only database database name",
+			opts:    createOptions{databaseName: "db"},
+			wantErr: "--database-instance and --database-name must be provided together",
+		},
+		{
+			name: "both secret fields provided",
+			opts: createOptions{secretScope: "scope", secretKey: "key"},
+		},
+		{
+			name: "neither secret field provided",
+			opts: createOptions{},
+		},
+		{
+			name:    "only secret scope",
+			opts:    createOptions{secretScope: "scope"},
+			wantErr: "--secret-scope and --secret-key must be provided together",
+		},
+		{
+			name:    "only secret key",
+			opts:    createOptions{secretKey: "key"},
+			wantErr: "--secret-scope and --secret-key must be provided together",
+		},
+		{
+			name: "all multi-field flags provided",
+			opts: createOptions{
+				databaseInstance: "inst",
+				databaseName:     "db",
+				secretScope:      "scope",
+				secretKey:        "key",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.opts.validateMultiFieldFlags()
+			if tt.wantErr != "" {
+				require.Error(t, err)
+				assert.Equal(t, tt.wantErr, err.Error())
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestPopulateResourceValues(t *testing.T) {
+	opts := createOptions{
+		warehouseID:         "wh-123",
+		jobID:               "job-456",
+		modelEndpointID:     "ep-789",
+		volumeID:            "cat.schema.vol",
+		vectorSearchIndexID: "idx-1",
+		functionID:          "cat.schema.fn",
+		connectionID:        "conn-1",
+		genieSpaceID:        "gs-1",
+		experimentID:        "exp-1",
+		databaseInstance:    "inst",
+		databaseName:        "mydb",
+		secretScope:         "scope",
+		secretKey:           "key",
+	}
+
+	rv := make(map[string]string)
+	opts.populateResourceValues(rv)
+
+	assert.Equal(t, "wh-123", rv["sql-warehouse.id"])
+	assert.Equal(t, "job-456", rv["job.id"])
+	assert.Equal(t, "ep-789", rv["model-endpoint.id"])
+	assert.Equal(t, "cat.schema.vol", rv["volume.id"])
+	assert.Equal(t, "idx-1", rv["vector-search-index.id"])
+	assert.Equal(t, "cat.schema.fn", rv["function.id"])
+	assert.Equal(t, "conn-1", rv["connection.id"])
+	assert.Equal(t, "gs-1", rv["genie-space.space_id"])
+	assert.Equal(t, "exp-1", rv["experiment.id"])
+	assert.Equal(t, "inst", rv["database.instance_name"])
+	assert.Equal(t, "mydb", rv["database.database_name"])
+	assert.Equal(t, "scope", rv["secret.scope"])
+	assert.Equal(t, "key", rv["secret.key"])
+}
+
+func TestPopulateResourceValuesSkipsEmpty(t *testing.T) {
+	opts := createOptions{
+		warehouseID: "wh-123",
+	}
+
+	rv := make(map[string]string)
+	opts.populateResourceValues(rv)
+
+	assert.Equal(t, "wh-123", rv["sql-warehouse.id"])
+	assert.Len(t, rv, 1)
+}
