@@ -31,9 +31,9 @@ func (*ResourceExternalLocation) RemapState(info *catalog.ExternalLocationInfo) 
 		FileEventQueue:    info.FileEventQueue,
 		Name:              info.Name,
 		ReadOnly:          info.ReadOnly,
-		// Note: SkipValidation is input-only and not included in state
-		Url:             info.Url,
-		ForceSendFields: utils.FilterFields[catalog.CreateExternalLocation](info.ForceSendFields),
+		SkipValidation:    false, // This is an input-only parameter, never returned by API
+		Url:               info.Url,
+		ForceSendFields:   utils.FilterFields[catalog.CreateExternalLocation](info.ForceSendFields),
 	}
 }
 
@@ -52,21 +52,21 @@ func (r *ResourceExternalLocation) DoCreate(ctx context.Context, config *catalog
 // DoUpdate updates the external location in place and returns remote state.
 func (r *ResourceExternalLocation) DoUpdate(ctx context.Context, id string, config *catalog.CreateExternalLocation, _ Changes) (*catalog.ExternalLocationInfo, error) {
 	updateRequest := catalog.UpdateExternalLocation{
-		Comment:          config.Comment,
-		CredentialName:   config.CredentialName,
-		EnableFileEvents: config.EnableFileEvents,
-		// EncryptionDetails is not supported for updates
-		Fallback: config.Fallback,
-		// FileEventQueue is not supported for updates
-		Force:           false,
-		IsolationMode:   "", // Not supported by DABs
-		Name:            id,
-		NewName:         "", // Only set if name actually changes (see DoUpdateWithID)
-		Owner:           "", // Not supported by DABs
-		ReadOnly:        config.ReadOnly,
-		SkipValidation:  config.SkipValidation,
-		Url:             config.Url,
-		ForceSendFields: utils.FilterFields[catalog.UpdateExternalLocation](config.ForceSendFields, "IsolationMode", "Owner"),
+		Comment:           config.Comment,
+		CredentialName:    config.CredentialName,
+		EnableFileEvents:  config.EnableFileEvents,
+		EncryptionDetails: config.EncryptionDetails,
+		Fallback:          config.Fallback,
+		FileEventQueue:    config.FileEventQueue,
+		Force:             false,
+		IsolationMode:     "", // Not supported by DABs
+		Name:              id,
+		NewName:           "", // Only set if name actually changes (see DoUpdateWithID)
+		Owner:             "", // Not supported by DABs
+		ReadOnly:          config.ReadOnly,
+		SkipValidation:    config.SkipValidation,
+		Url:               config.Url,
+		ForceSendFields:   utils.FilterFields[catalog.UpdateExternalLocation](config.ForceSendFields, "IsolationMode", "Owner"),
 	}
 
 	response, err := r.client.ExternalLocations.Update(ctx, updateRequest)
