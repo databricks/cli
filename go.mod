@@ -38,7 +38,7 @@ require (
 	golang.org/x/mod v0.32.0
 	golang.org/x/oauth2 v0.34.0
 	golang.org/x/sync v0.19.0
-	golang.org/x/sys v0.40.0
+	golang.org/x/sys v0.41.0
 	golang.org/x/text v0.33.0
 	gopkg.in/ini.v1 v1.67.1 // Apache 2.0
 )
