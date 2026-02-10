@@ -63,10 +63,13 @@
         "run_as_user_name": "[USERNAME]",
         "tasks": [
           {
+            "email_notifications": {},
+            "run_if": "ALL_SUCCESS",
             "run_job_task": {
               "job_id": [BAR_ID]
             },
-            "task_key": "job_task"
+            "task_key": "job_task",
+            "timeout_seconds": 0
           }
         ],
         "timeout_seconds": 0,
@@ -90,10 +93,13 @@
           ],
           "remote": [
             {
+              "email_notifications": {},
+              "run_if": "ALL_SUCCESS",
               "run_job_task": {
                 "job_id": [BAR_ID]
               },
-              "task_key": "job_task"
+              "task_key": "job_task",
+              "timeout_seconds": 0
             }
           ]
         },
