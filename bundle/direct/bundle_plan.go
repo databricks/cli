@@ -2,6 +2,7 @@ package direct
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"maps"
@@ -382,6 +383,12 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 		} else if reason, ok := shouldSkip(generatedCfg, path, ch); ok {
 			ch.Action = deployplan.Skip
 			ch.Reason = reason
+		} else if reason, ok := shouldSkipBackendDefault(cfg, path, ch); ok {
+			ch.Action = deployplan.Skip
+			ch.Reason = reason
+		} else if reason, ok := shouldSkipBackendDefault(generatedCfg, path, ch); ok {
+			ch.Action = deployplan.Skip
+			ch.Reason = reason
 		} else if ch.New == nil && ch.Old == nil && ch.Remote != nil && path.IsDotString() {
 			// The field was not set by us, but comes from the remote state.
 			// This could either be server-side default or a policy.
@@ -459,6 +466,43 @@ func shouldUpdateOrRecreate(cfg *dresources.ResourceLifecycleConfig, path *struc
 		return deployplan.UpdateWithID, reason
 	}
 	return deployplan.Undefined, ""
+}
+
+// shouldSkipBackendDefault checks if a change should be skipped because the remote value
+// is a known backend default. Applies when old and new are nil but remote is set.
+// If the rule has allowed values, the remote value must match one of them.
+func shouldSkipBackendDefault(cfg *dresources.ResourceLifecycleConfig, path *structpath.PathNode, ch *deployplan.ChangeDesc) (string, bool) {
+	if cfg == nil || ch.Old != nil || ch.New != nil || ch.Remote == nil {
+		return "", false
+	}
+	for _, rule := range cfg.BackendDefaults {
+		if !path.HasPatternPrefix(rule.Field) {
+			continue
+		}
+		if len(rule.Values) == 0 {
+			return deployplan.ReasonBackendDefault, true
+		}
+		if matchesAllowedValue(ch.Remote, rule.Values) {
+			return deployplan.ReasonBackendDefault, true
+		}
+	}
+	return "", false
+}
+
+// matchesAllowedValue checks if the remote value matches one of the allowed JSON values.
+// Each json.RawMessage is unmarshaled into the same type as remote for comparison.
+func matchesAllowedValue(remote any, values []json.RawMessage) bool {
+	remoteType := reflect.TypeOf(remote)
+	for _, raw := range values {
+		candidate := reflect.New(remoteType).Interface()
+		if err := json.Unmarshal(raw, candidate); err != nil {
+			continue
+		}
+		if structdiff.IsEqual(remote, reflect.ValueOf(candidate).Elem().Interface()) {
+			return true
+		}
+	}
+	return false
 }
 
 func allEmpty(values ...any) bool {

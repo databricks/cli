@@ -99,6 +99,7 @@ type ChangeDesc struct {
 // Possible values for Reason field
 const (
 	ReasonServerSideDefault = "server_side_default"
+	ReasonBackendDefault    = "backend_default"
 	ReasonAlias             = "alias"
 	ReasonRemoteAlreadySet  = "remote_already_set"
 	ReasonEmpty             = "empty"
