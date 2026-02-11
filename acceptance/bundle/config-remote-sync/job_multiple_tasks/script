@@ -66,8 +66,8 @@ for task in r["tasks"]:
 # Add synced_task with path inside sync root
 r["tasks"].append({
     "task_key": "synced_task",
-    "notebook_task": {
-        "notebook_path": "${PWD}/synced_notebook"
+    "spark_python_task": {
+        "python_file": "${PWD}/synced_notebook.py"
     },
     "new_cluster": {
         "spark_version": "${DEFAULT_SPARK_VERSION}",

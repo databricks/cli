@@ -115,6 +115,16 @@ Resource: resources.jobs.rename_task_job
 +            - task_key: b_task_renamed
            notebook_task:
              notebook_path: /Users/{{workspace_user_name}}/c_task
+@@ -72,2 +72,9 @@
+             node_type_id: [NODE_TYPE_ID]
+             num_workers: 1
++        - new_cluster:
++            node_type_id: [NODE_TYPE_ID]
++            num_workers: 1
++            spark_version: 13.3.x-snapshot-scala2.12
++          spark_python_task:
++            python_file: ./synced_notebook.py
++          task_key: synced_task
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
@@ -125,13 +135,3 @@ All files and directories at the following location will be deleted: /Workspace/
 
 Deleting files...
 Destroy complete!
-@@ -72,2 +72,9 @@
-             node_type_id: [NODE_TYPE_ID]
-             num_workers: 1
-+        - new_cluster:
-+            node_type_id: [NODE_TYPE_ID]
-+            num_workers: 1
-+            spark_version: 13.3.x-snapshot-scala2.12
-+          notebook_task:
-+            notebook_path: ./synced_notebook
-+          task_key: synced_task
