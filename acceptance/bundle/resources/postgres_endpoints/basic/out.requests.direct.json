@@ -39,7 +39,7 @@
     "spec": {
       "autoscaling_limit_max_cu": 2,
       "autoscaling_limit_min_cu": 0.5,
-      "endpoint_type": "ENDPOINT_TYPE_READ_WRITE"
+      "endpoint_type": "ENDPOINT_TYPE_READ_ONLY"
     }
   }
 }

@@ -1,4 +1,5 @@
 Cloud = true
 Local = true
 RecordRequests = false
+RunsOnDbr = true
 RequiresUnityCatalog = true

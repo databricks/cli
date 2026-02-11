@@ -8,10 +8,11 @@ import (
 	"go.yaml.in/yaml/v3"
 )
 
-func TestPathNode(t *testing.T) {
+func TestPathAndPatternNode(t *testing.T) {
 	tests := []struct {
 		name        string
-		node        *PathNode
+		pathNode    *PathNode    // nil for wildcard-only patterns
+		patternNode *PatternNode // always set
 		String      string
 		Index       any
 		StringKey   any
@@ -19,117 +20,107 @@ func TestPathNode(t *testing.T) {
 		Root        any
 		DotStar     bool
 		BracketStar bool
+		PathError   string // expected error when parsing as path (for wildcards)
 	}{
 		// Single node tests
 		{
-			name:   "nil path",
-			node:   nil,
-			String: "",
-			Root:   true,
+			name:        "nil path",
+			pathNode:    nil,
+			patternNode: nil,
+			String:      "",
+			Root:        true,
 		},
 		{
-			name:   "array index",
-			node:   NewIndex(nil, 5),
-			String: "[5]",
-			Index:  5,
+			name:        "array index",
+			pathNode:    NewIndex(nil, 5),
+			patternNode: NewPatternIndex(nil, 5),
+			String:      "[5]",
+			Index:       5,
 		},
 		{
-			name:      "map key",
-			node:      NewDotString(nil, "mykey"),
-			String:    `mykey`,
-			StringKey: "mykey",
+			name:        "map key",
+			pathNode:    NewDotString(nil, "mykey"),
+			patternNode: NewPatternStringKey(nil, "mykey"),
+			String:      `mykey`,
+			StringKey:   "mykey",
 		},
 		{
-			name:    "dot star",
-			node:    NewDotStar(nil),
-			String:  "*",
-			DotStar: true,
-		},
-		{
-			name:        "bracket star",
-			node:        NewBracketStar(nil),
-			String:      "[*]",
-			BracketStar: true,
-		},
-		{
-			name:     "key value",
-			node:     NewKeyValue(nil, "name", "foo"),
-			String:   "[name='foo']",
-			KeyValue: []string{"name", "foo"},
+			name:        "key value",
+			pathNode:    NewKeyValue(nil, "name", "foo"),
+			patternNode: NewPatternKeyValue(nil, "name", "foo"),
+			String:      "[name='foo']",
+			KeyValue:    []string{"name", "foo"},
 		},
 
 		// Two node tests
 		{
-			name:   "struct field -> array index",
-			node:   NewIndex(NewDotString(nil, "items"), 3),
-			String: "items[3]",
-			Index:  3,
+			name:        "struct field -> array index",
+			pathNode:    NewIndex(NewDotString(nil, "items"), 3),
+			patternNode: NewPatternIndex(NewPatternStringKey(nil, "items"), 3),
+			String:      "items[3]",
+			Index:       3,
 		},
 		{
-			name:      "struct field -> map key",
-			node:      NewBracketString(NewDotString(nil, "config"), "database.name"),
-			String:    `config['database.name']`,
-			StringKey: "database.name",
+			name:        "struct field -> map key",
+			pathNode:    NewBracketString(NewDotString(nil, "config"), "database.name"),
+			patternNode: NewPatternBracketString(NewPatternStringKey(nil, "config"), "database.name"),
+			String:      `config['database.name']`,
+			StringKey:   "database.name",
 		},
 		{
-			name:      "struct field -> struct field",
-			node:      NewDotString(NewDotString(nil, "user"), "name"),
-			String:    "user.name",
-			StringKey: "name",
+			name:        "struct field -> struct field",
+			pathNode:    NewDotString(NewDotString(nil, "user"), "name"),
+			patternNode: NewPatternDotString(NewPatternStringKey(nil, "user"), "name"),
+			String:      "user.name",
+			StringKey:   "name",
 		},
 		{
-			name:   "map key -> array index",
-			node:   NewIndex(NewBracketString(nil, "servers list"), 0),
-			String: `['servers list'][0]`,
-			Index:  0,
+			name:        "map key -> array index",
+			pathNode:    NewIndex(NewBracketString(nil, "servers list"), 0),
+			patternNode: NewPatternIndex(NewPatternBracketString(nil, "servers list"), 0),
+			String:      `['servers list'][0]`,
+			Index:       0,
 		},
 		{
-			name:      "array index -> struct field",
-			node:      NewDotString(NewIndex(nil, 2), "id"),
-			String:    "[2].id",
-			StringKey: "id",
+			name:        "array index -> struct field",
+			pathNode:    NewDotString(NewIndex(nil, 2), "id"),
+			patternNode: NewPatternDotString(NewPatternIndex(nil, 2), "id"),
+			String:      "[2].id",
+			StringKey:   "id",
 		},
 		{
-			name:      "array index -> map key",
-			node:      NewStringKey(NewIndex(nil, 1), "status{}"),
-			String:    `[1]['status{}']`,
-			StringKey: "status{}",
-		},
-		{
-			name:    "dot star with parent",
-			node:    NewDotStar(NewStringKey(nil, "Parent")),
-			String:  "Parent.*",
-			DotStar: true,
-		},
-		{
-			name:        "bracket star with parent",
-			node:        NewBracketStar(NewStringKey(nil, "Parent")),
-			String:      "Parent[*]",
-			BracketStar: true,
+			name:        "array index -> map key",
+			pathNode:    NewStringKey(NewIndex(nil, 1), "status{}"),
+			patternNode: NewPatternStringKey(NewPatternIndex(nil, 1), "status{}"),
+			String:      `[1]['status{}']`,
+			StringKey:   "status{}",
 		},
 
 		// Edge cases with special characters in map keys
 		{
-			name:      "map key with single quote",
-			node:      NewStringKey(nil, "key's"),
-			String:    `['key''s']`,
-			StringKey: "key's",
+			name:        "map key with single quote",
+			pathNode:    NewStringKey(nil, "key's"),
+			patternNode: NewPatternStringKey(nil, "key's"),
+			String:      `['key''s']`,
+			StringKey:   "key's",
 		},
 		{
-			name:      "map key with multiple single quotes",
-			node:      NewStringKey(nil, "''"),
-			String:    `['''''']`,
-			StringKey: "''",
+			name:        "map key with multiple single quotes",
+			pathNode:    NewStringKey(nil, "''"),
+			patternNode: NewPatternStringKey(nil, "''"),
+			String:      `['''''']`,
+			StringKey:   "''",
 		},
 		{
-			name:      "empty map key",
-			node:      NewStringKey(nil, ""),
-			String:    `['']`,
-			StringKey: "",
+			name:        "empty map key",
+			pathNode:    NewStringKey(nil, ""),
+			patternNode: NewPatternStringKey(nil, ""),
+			String:      `['']`,
+			StringKey:   "",
 		},
 		{
 			name: "complex path",
-			node: NewStringKey(
+			pathNode: NewStringKey(
 				NewIndex(
 					NewStringKey(
 						NewStringKey(
@@ -138,144 +129,213 @@ func TestPathNode(t *testing.T) {
 						"theme.list"),
 					0),
 				"color"),
+			patternNode: NewPatternStringKey(
+				NewPatternIndex(
+					NewPatternStringKey(
+						NewPatternStringKey(
+							NewPatternStringKey(nil, "user"),
+							"settings"),
+						"theme.list"),
+					0),
+				"color"),
 			String:    "user.settings['theme.list'][0].color",
 			StringKey: "color",
 		},
 		{
-			name:      "field with special characters",
-			node:      NewStringKey(nil, "field@name:with#symbols!"),
-			String:    "field@name:with#symbols!",
-			StringKey: "field@name:with#symbols!",
+			name:        "field with special characters",
+			pathNode:    NewStringKey(nil, "field@name:with#symbols!"),
+			patternNode: NewPatternStringKey(nil, "field@name:with#symbols!"),
+			String:      "field@name:with#symbols!",
+			StringKey:   "field@name:with#symbols!",
 		},
 		{
-			name:      "field with spaces",
-			node:      NewStringKey(nil, "field with spaces"),
-			String:    "['field with spaces']",
-			StringKey: "field with spaces",
+			name:        "field with spaces",
+			pathNode:    NewStringKey(nil, "field with spaces"),
+			patternNode: NewPatternStringKey(nil, "field with spaces"),
+			String:      "['field with spaces']",
+			StringKey:   "field with spaces",
 		},
 		{
-			name:      "field starting with digit",
-			node:      NewStringKey(nil, "123field"),
-			String:    "123field",
-			StringKey: "123field",
+			name:        "field starting with digit",
+			pathNode:    NewStringKey(nil, "123field"),
+			patternNode: NewPatternStringKey(nil, "123field"),
+			String:      "123field",
+			StringKey:   "123field",
 		},
 		{
-			name:      "field with unicode",
-			node:      NewStringKey(nil, "名前🙂"),
-			String:    "名前🙂",
-			StringKey: "名前🙂",
+			name:        "field with unicode",
+			pathNode:    NewStringKey(nil, "名前🙂"),
+			patternNode: NewPatternStringKey(nil, "名前🙂"),
+			String:      "名前🙂",
+			StringKey:   "名前🙂",
 		},
 		{
-			name:      "map key with reserved characters",
-			node:      NewStringKey(nil, "key\x00[],`"),
-			String:    "['key\x00[],`']",
-			StringKey: "key\x00[],`",
-		},
-
-		{
-			name:   "field dot star bracket index",
-			node:   NewIndex(NewDotStar(NewStringKey(nil, "bla")), 0),
-			String: "bla.*[0]",
-			Index:  0,
-		},
-		{
-			name:        "field dot star bracket star",
-			node:        NewBracketStar(NewDotStar(NewStringKey(nil, "bla"))),
-			String:      "bla.*[*]",
-			BracketStar: true,
+			name:        "map key with reserved characters",
+			pathNode:    NewStringKey(nil, "key\x00[],`"),
+			patternNode: NewPatternStringKey(nil, "key\x00[],`"),
+			String:      "['key\x00[],`']",
+			StringKey:   "key\x00[],`",
 		},
 
 		// Key-value tests
 		{
-			name:     "key value with parent",
-			node:     NewKeyValue(NewStringKey(nil, "tasks"), "task_key", "my_task"),
-			String:   "tasks[task_key='my_task']",
-			KeyValue: []string{"task_key", "my_task"},
+			name:        "key value with parent",
+			pathNode:    NewKeyValue(NewStringKey(nil, "tasks"), "task_key", "my_task"),
+			patternNode: NewPatternKeyValue(NewPatternStringKey(nil, "tasks"), "task_key", "my_task"),
+			String:      "tasks[task_key='my_task']",
+			KeyValue:    []string{"task_key", "my_task"},
 		},
 		{
-			name:      "key value then field",
-			node:      NewStringKey(NewKeyValue(nil, "name", "foo"), "id"),
-			String:    "[name='foo'].id",
-			StringKey: "id",
+			name:        "key value then field",
+			pathNode:    NewStringKey(NewKeyValue(nil, "name", "foo"), "id"),
+			patternNode: NewPatternStringKey(NewPatternKeyValue(nil, "name", "foo"), "id"),
+			String:      "[name='foo'].id",
+			StringKey:   "id",
 		},
 		{
-			name:     "key value with quote in value",
-			node:     NewKeyValue(nil, "name", "it's"),
-			String:   "[name='it''s']",
-			KeyValue: []string{"name", "it's"},
+			name:        "key value with quote in value",
+			pathNode:    NewKeyValue(nil, "name", "it's"),
+			patternNode: NewPatternKeyValue(nil, "name", "it's"),
+			String:      "[name='it''s']",
+			KeyValue:    []string{"name", "it's"},
 		},
 		{
-			name:     "key value with empty value",
-			node:     NewKeyValue(nil, "key", ""),
-			String:   "[key='']",
-			KeyValue: []string{"key", ""},
+			name:        "key value with empty value",
+			pathNode:    NewKeyValue(nil, "key", ""),
+			patternNode: NewPatternKeyValue(nil, "key", ""),
+			String:      "[key='']",
+			KeyValue:    []string{"key", ""},
 		},
 		{
-			name:      "complex path with key value",
-			node:      NewStringKey(NewKeyValue(NewStringKey(NewStringKey(nil, "resources"), "jobs"), "task_key", "my_task"), "notebook_task"),
-			String:    "resources.jobs[task_key='my_task'].notebook_task",
-			StringKey: "notebook_task",
+			name:        "complex path with key value",
+			pathNode:    NewStringKey(NewKeyValue(NewStringKey(NewStringKey(nil, "resources"), "jobs"), "task_key", "my_task"), "notebook_task"),
+			patternNode: NewPatternStringKey(NewPatternKeyValue(NewPatternStringKey(NewPatternStringKey(nil, "resources"), "jobs"), "task_key", "my_task"), "notebook_task"),
+			String:      "resources.jobs[task_key='my_task'].notebook_task",
+			StringKey:   "notebook_task",
+		},
+
+		// Wildcard patterns (cannot be parsed as PathNode)
+		{
+			name:        "dot star",
+			patternNode: NewPatternDotStar(nil),
+			String:      "*",
+			DotStar:     true,
+			PathError:   "wildcards not allowed in path",
+		},
+		{
+			name:        "bracket star",
+			patternNode: NewPatternBracketStar(nil),
+			String:      "[*]",
+			BracketStar: true,
+			PathError:   "wildcards not allowed in path",
+		},
+		{
+			name:        "dot star with parent",
+			patternNode: NewPatternDotStar(NewPatternStringKey(nil, "Parent")),
+			String:      "Parent.*",
+			DotStar:     true,
+			PathError:   "wildcards not allowed in path",
+		},
+		{
+			name:        "bracket star with parent",
+			patternNode: NewPatternBracketStar(NewPatternStringKey(nil, "Parent")),
+			String:      "Parent[*]",
+			BracketStar: true,
+			PathError:   "wildcards not allowed in path",
+		},
+		{
+			name:        "field dot star bracket index",
+			patternNode: NewPatternIndex(NewPatternDotStar(NewPatternStringKey(nil, "bla")), 0),
+			String:      "bla.*[0]",
+			PathError:   "wildcards not allowed in path",
+		},
+		{
+			name:        "field dot star bracket star",
+			patternNode: NewPatternBracketStar(NewPatternDotStar(NewPatternStringKey(nil, "bla"))),
+			String:      "bla.*[*]",
+			BracketStar: true,
+			PathError:   "wildcards not allowed in path",
+		},
+		{
+			name:        "dot star then dot field",
+			patternNode: NewPatternDotString(NewPatternDotStar(nil), "name"),
+			String:      "*.name",
+			StringKey:   "name",
+			PathError:   "wildcards not allowed in path",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Test String() method
-			result := tt.node.String()
-			assert.Equal(t, tt.String, result, "String() method")
-
-			// Test roundtrip conversion: String() -> Parse() -> String()
-			parsed, err := Parse(tt.String)
-			if assert.NoError(t, err, "Parse() should not error") {
-				assert.Equal(t, tt.node, parsed)
-				roundtripResult := parsed.String()
-				assert.Equal(t, tt.String, roundtripResult, "Roundtrip conversion should be identical")
+			// Test pattern parsing and roundtrip
+			parsedPattern, err := ParsePattern(tt.String)
+			if assert.NoError(t, err, "ParsePattern() should not error") {
+				assert.Equal(t, tt.patternNode, parsedPattern)
+				assert.Equal(t, tt.String, parsedPattern.String(), "Pattern roundtrip")
 			}
 
-			// Index
-			gotIndex, isIndex := tt.node.Index()
-			if tt.Index == nil {
-				assert.Equal(t, -1, gotIndex)
-				assert.False(t, isIndex)
+			// Test DotStar and BracketStar on pattern
+			if tt.patternNode != nil {
+				assert.Equal(t, tt.DotStar, tt.patternNode.DotStar())
+				assert.Equal(t, tt.BracketStar, tt.patternNode.BracketStar())
+			}
+
+			// Test path parsing
+			if tt.PathError != "" {
+				// Wildcard pattern - should fail to parse as path
+				_, err := ParsePath(tt.String)
+				if assert.Error(t, err) {
+					assert.Contains(t, err.Error(), tt.PathError)
+				}
 			} else {
-				expectedIndex := tt.Index.(int)
-				assert.Equal(t, expectedIndex, gotIndex)
-				assert.True(t, isIndex)
-			}
+				// Concrete path - should parse successfully as both path and pattern
+				parsedPath, err := ParsePath(tt.String)
+				if assert.NoError(t, err, "ParsePath() should not error") {
+					assert.Equal(t, tt.pathNode, parsedPath)
+					assert.Equal(t, tt.String, parsedPath.String(), "Path roundtrip")
+				}
 
-			gotStringKey, isStringKey := tt.node.StringKey()
-			if tt.StringKey == nil {
-				assert.Equal(t, "", gotStringKey)
-				assert.False(t, isStringKey)
-			} else {
-				expected := tt.StringKey.(string)
-				assert.Equal(t, expected, gotStringKey)
-				assert.True(t, isStringKey)
-			}
+				// Test PathNode-specific methods
+				gotIndex, isIndex := tt.pathNode.Index()
+				if tt.Index == nil {
+					assert.Equal(t, -1, gotIndex)
+					assert.False(t, isIndex)
+				} else {
+					expectedIndex := tt.Index.(int)
+					assert.Equal(t, expectedIndex, gotIndex)
+					assert.True(t, isIndex)
+				}
 
-			// KeyValue
-			gotKey, gotValue, isKeyValue := tt.node.KeyValue()
-			if tt.KeyValue == nil {
-				assert.Equal(t, "", gotKey)
-				assert.Equal(t, "", gotValue)
-				assert.False(t, isKeyValue)
-			} else {
-				assert.Equal(t, tt.KeyValue[0], gotKey)
-				assert.Equal(t, tt.KeyValue[1], gotValue)
-				assert.True(t, isKeyValue)
-			}
+				gotStringKey, isStringKey := tt.pathNode.StringKey()
+				if tt.StringKey == nil {
+					assert.Equal(t, "", gotStringKey)
+					assert.False(t, isStringKey)
+				} else {
+					expected := tt.StringKey.(string)
+					assert.Equal(t, expected, gotStringKey)
+					assert.True(t, isStringKey)
+				}
 
-			// IsRoot
-			isRoot := tt.node.IsRoot()
-			if tt.Root == nil {
-				assert.False(t, isRoot)
-			} else {
-				assert.True(t, isRoot)
-			}
+				// KeyValue
+				gotKey, gotValue, isKeyValue := tt.pathNode.KeyValue()
+				if tt.KeyValue == nil {
+					assert.Equal(t, "", gotKey)
+					assert.Equal(t, "", gotValue)
+					assert.False(t, isKeyValue)
+				} else {
+					assert.Equal(t, tt.KeyValue[0], gotKey)
+					assert.Equal(t, tt.KeyValue[1], gotValue)
+					assert.True(t, isKeyValue)
+				}
 
-			// DotStar and BracketStar
-			assert.Equal(t, tt.DotStar, tt.node.DotStar())
-			assert.Equal(t, tt.BracketStar, tt.node.BracketStar())
+				// IsRoot
+				isRoot := tt.pathNode.IsRoot()
+				if tt.Root == nil {
+					assert.False(t, isRoot)
+				} else {
+					assert.True(t, isRoot)
+				}
+			}
 		})
 	}
 }
@@ -417,6 +477,11 @@ func TestParseErrors(t *testing.T) {
 			error: "unexpected end of input while parsing index",
 		},
 		{
+			name:  "invalid char in index",
+			input: "field[1x]",
+			error: "unexpected character 'x' in index at position 7",
+		},
+		{
 			name:  "incomplete wildcard",
 			input: "field[*",
 			error: "unexpected end of input after wildcard '*'",
@@ -471,6 +536,16 @@ func TestParseErrors(t *testing.T) {
 			error: "unexpected character 'x' after quote in key-value at position 13",
 		},
 		{
+			name:  "junk after wildcard in brackets",
+			input: "[*x]",
+			error: "unexpected character 'x' after '*' at position 2",
+		},
+		{
+			name:  "junk after dot star",
+			input: "a.*x",
+			error: "unexpected character 'x' after '.*' at position 3",
+		},
+		{
 			name:  "double quotes are not supported a.t.m",
 			input: "[name=\"value\"]",
 			error: "expected quote after '=' but got '\"' at position 6",
@@ -484,7 +559,7 @@ func TestParseErrors(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := Parse(tt.input)
+			_, err := ParsePattern(tt.input) // Allow wildcards in error tests
 			if assert.Error(t, err) {
 				assert.Equal(t, tt.error, err.Error())
 			}
@@ -587,7 +662,7 @@ func TestPrefixAndSkipPrefix(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
-			path, err := Parse(tt.input)
+			path, err := ParsePath(tt.input)
 			assert.NoError(t, err)
 
 			// Test Prefix
@@ -632,9 +707,7 @@ func TestLen(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
-			var path *PathNode
-			var err error
-			path, err = Parse(tt.input)
+			path, err := ParsePath(tt.input)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, path.Len())
 		})
@@ -763,20 +836,6 @@ func TestHasPrefix(t *testing.T) {
 			expected: false,
 		},
 
-		// wildcard patterns are NOT supported - treated as literals
-		{
-			name:     "regex pattern not respected - star quantifier",
-			s:        "aaa",
-			prefix:   "a*",
-			expected: false,
-		},
-		{
-			name:     "regex pattern not respected - bracket class",
-			s:        "a[1]",
-			prefix:   "a[*]",
-			expected: false,
-		},
-
 		// Exact component matching - array indices, bracket keys, and key-value notation
 		{
 			name:     "prefix longer than path",
@@ -812,14 +871,144 @@ func TestHasPrefix(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			path, err := Parse(tt.s)
+			path, err := ParsePath(tt.s)
 			require.NoError(t, err)
 
-			prefix, err := Parse(tt.prefix)
+			prefix, err := ParsePath(tt.prefix)
 			require.NoError(t, err)
 
 			result := path.HasPrefix(prefix)
 			assert.Equal(t, tt.expected, result, "path.HasPrefix(prefix) where path=%q, prefix=%q", tt.s, tt.prefix)
+		})
+	}
+}
+
+func TestHasPatternPrefix(t *testing.T) {
+	tests := []struct {
+		name     string
+		path     string
+		pattern  string
+		expected bool
+	}{
+		{
+			name:     "empty pattern",
+			path:     "a.b.c",
+			pattern:  "",
+			expected: true,
+		},
+		{
+			name:     "empty path",
+			path:     "",
+			pattern:  "a",
+			expected: false,
+		},
+		{
+			name:     "exact match no wildcards",
+			path:     "config",
+			pattern:  "config",
+			expected: true,
+		},
+		{
+			name:     "simple prefix no wildcards",
+			path:     "a.b",
+			pattern:  "a",
+			expected: true,
+		},
+
+		// .* wildcard
+		{
+			name:     "dot star matches field",
+			path:     "tasks.my_task.notebook_task",
+			pattern:  "tasks.*.notebook_task",
+			expected: true,
+		},
+		{
+			name:     "dot star matches any field",
+			path:     "tasks.other.notebook_task",
+			pattern:  "tasks.*.notebook_task",
+			expected: true,
+		},
+		{
+			name:     "dot star matches index",
+			path:     "items[0].name",
+			pattern:  "items.*.name",
+			expected: true,
+		},
+		{
+			name:     "dot star as prefix",
+			path:     "items[0].name.value",
+			pattern:  "items.*",
+			expected: true,
+		},
+
+		// [*] wildcard
+		{
+			name:     "bracket star matches index",
+			path:     "items[0].name",
+			pattern:  "items[*].name",
+			expected: true,
+		},
+		{
+			name:     "bracket star matches field",
+			path:     "tasks.my_task.notebook_task",
+			pattern:  "tasks[*].notebook_task",
+			expected: true,
+		},
+		{
+			name:     "bracket star matches key-value",
+			path:     "tasks[task_key='my_task'].notebook_task",
+			pattern:  "tasks[*].notebook_task",
+			expected: true,
+		},
+
+		// Multiple wildcards
+		{
+			name:     "multiple wildcards",
+			path:     "tasks[0].params[1].value",
+			pattern:  "tasks[*].params[*].value",
+			expected: true,
+		},
+
+		// Non-matches
+		{
+			name:     "wildcard but wrong suffix",
+			path:     "tasks[0].notebook_task",
+			pattern:  "tasks[*].spark_task",
+			expected: false,
+		},
+		{
+			name:     "pattern longer than path",
+			path:     "tasks[0]",
+			pattern:  "tasks[*].notebook_task",
+			expected: false,
+		},
+		{
+			name:     "no wildcard mismatch",
+			path:     "a.b.c",
+			pattern:  "a.x.c",
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			path, err := ParsePath(tt.path)
+			require.NoError(t, err)
+
+			pattern, err := ParsePattern(tt.pattern)
+			require.NoError(t, err)
+
+			result := path.HasPatternPrefix(pattern)
+			assert.Equal(t, tt.expected, result, "path.HasPatternPrefix(pattern) where path=%q, pattern=%q", tt.path, tt.pattern)
+
+			// If the full pattern matches, every prefix of it must also match.
+			if tt.expected {
+				for n := range pattern.Len() + 1 {
+					prefix := pattern.Prefix(n)
+					assert.True(t, path.HasPatternPrefix(prefix),
+						"path=%q pattern=%q prefix_len=%d prefix=%s", tt.path, tt.pattern, n, prefix)
+				}
+			}
 		})
 	}
 }
@@ -888,11 +1077,6 @@ func TestPathNodeYAMLUnmarshal(t *testing.T) {
 			expected: "items[0].name",
 		},
 		{
-			name:     "path with wildcard",
-			input:    "tasks[*].name",
-			expected: "tasks[*].name",
-		},
-		{
 			name:     "path with key-value",
 			input:    "tags[key='server']",
 			expected: "tags[key='server']",
@@ -952,6 +1136,11 @@ func TestPathNodeYAMLUnmarshalErrors(t *testing.T) {
 			input: "field['key",
 			error: "unexpected end of input while parsing map key",
 		},
+		{
+			name:  "wildcard not allowed in PathNode",
+			input: "tasks[*].name",
+			error: "wildcards not allowed",
+		},
 	}
 
 	for _, tt := range tests {
@@ -970,7 +1159,6 @@ func TestPathNodeYAMLRoundtrip(t *testing.T) {
 		"name",
 		"config.database",
 		"items[0].name",
-		"tasks[*].settings",
 		"tags[key='env'].value",
 		"resources.jobs['my-job'].tasks[0]",
 	}
@@ -978,7 +1166,7 @@ func TestPathNodeYAMLRoundtrip(t *testing.T) {
 	for _, path := range paths {
 		t.Run(path, func(t *testing.T) {
 			// Parse -> Marshal -> Unmarshal -> compare
-			original, err := Parse(path)
+			original, err := ParsePath(path)
 			require.NoError(t, err)
 
 			data, err := yaml.Marshal(original)

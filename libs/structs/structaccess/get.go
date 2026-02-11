@@ -25,7 +25,7 @@ func GetByString(v any, path string) (any, error) {
 		return v, nil
 	}
 
-	pathNode, err := structpath.Parse(path)
+	pathNode, err := structpath.ParsePath(path)
 	if err != nil {
 		return nil, err
 	}
@@ -45,9 +45,7 @@ func getValue(v any, path *structpath.PathNode) (reflect.Value, error) {
 
 	cur := reflect.ValueOf(v)
 	for _, node := range pathSegments {
-		if node.DotStar() || node.BracketStar() {
-			return reflect.Value{}, fmt.Errorf("wildcards not supported: %s", path.String())
-		}
+		// Note: wildcards cannot appear in PathNode (Parse rejects them)
 
 		var ok bool
 		cur, ok = deref(cur)

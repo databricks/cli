@@ -785,7 +785,7 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	err = adapter.DoDelete(ctx, createdID)
 	require.NoError(t, err)
 
-	p, err := structpath.Parse("name")
+	p, err := structpath.ParsePath("name")
 	require.NoError(t, err)
 
 	if adapter.HasOverrideChangeDesc() {
@@ -842,13 +842,13 @@ func TestGeneratedResourceConfig(t *testing.T) {
 
 func validateResourceConfig(t *testing.T, stateType reflect.Type, cfg *ResourceLifecycleConfig) {
 	for _, p := range cfg.RecreateOnChanges {
-		assert.NoError(t, structaccess.Validate(stateType, p.Field), "RecreateOnChanges: %s", p.Field)
+		assert.NoError(t, structaccess.ValidatePattern(stateType, p.Field), "RecreateOnChanges: %s", p.Field)
 	}
 	for _, p := range cfg.UpdateIDOnChanges {
-		assert.NoError(t, structaccess.Validate(stateType, p.Field), "UpdateIDOnChanges: %s", p.Field)
+		assert.NoError(t, structaccess.ValidatePattern(stateType, p.Field), "UpdateIDOnChanges: %s", p.Field)
 	}
 	for _, p := range cfg.IgnoreRemoteChanges {
-		assert.NoError(t, structaccess.Validate(stateType, p.Field), "IgnoreRemoteChanges: %s", p.Field)
+		assert.NoError(t, structaccess.ValidatePattern(stateType, p.Field), "IgnoreRemoteChanges: %s", p.Field)
 	}
 }
 

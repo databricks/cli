@@ -365,7 +365,7 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 	var toDrop []string
 
 	for pathString, ch := range changes {
-		path, err := structpath.Parse(pathString)
+		path, err := structpath.ParsePath(pathString)
 		if err != nil {
 			return err
 		}
@@ -373,18 +373,9 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 		if structdiff.IsEqual(ch.Remote, ch.New) {
 			ch.Action = deployplan.Skip
 			ch.Reason = deployplan.ReasonRemoteAlreadySet
-		} else if isEmptySlice(ch.Old, ch.New, ch.Remote) {
-			// Empty slice in config should not cause drift when remote has values
+		} else if allEmpty(ch.Old, ch.New, ch.Remote) {
 			ch.Action = deployplan.Skip
-			ch.Reason = deployplan.ReasonEmptySlice
-		} else if isEmptyMap(ch.Old, ch.New, ch.Remote) {
-			// Empty map in config should not cause drift when remote has values
-			ch.Action = deployplan.Skip
-			ch.Reason = deployplan.ReasonEmptyMap
-		} else if isEmptyStruct(ch.Old, ch.New, ch.Remote) {
-			// Empty struct in config should not cause drift when remote has values
-			ch.Action = deployplan.Skip
-			ch.Reason = deployplan.ReasonEmptyStruct
+			ch.Reason = deployplan.ReasonEmpty
 		} else if reason, ok := shouldSkip(cfg, path, ch); ok {
 			ch.Action = deployplan.Skip
 			ch.Reason = reason
@@ -437,7 +428,7 @@ func addPerFieldActions(ctx context.Context, adapter *dresources.Adapter, change
 
 func findMatchingRule(path *structpath.PathNode, rules []dresources.FieldRule) (string, bool) {
 	for _, r := range rules {
-		if path.HasPrefix(r.Field) {
+		if path.HasPatternPrefix(r.Field) {
 			return r.Reason, true
 		}
 	}
@@ -470,66 +461,72 @@ func shouldUpdateOrRecreate(cfg *dresources.ResourceLifecycleConfig, path *struc
 	return deployplan.Undefined, ""
 }
 
-// Empty slices and maps cannot be represented in proto and because of that they cannot be represented
-// by SDK's JSON encoder. However, they can be provided by users in the config and can be represented in
-// Bundle struct (currently libs/structs and libs/dyn use ForceSendFields for maps and slices, unlike SDK).
-// Thus we get permanent drift because we see that new config is [] but in the state it is omitted.
-func isEmptySlice(values ...any) bool {
+func allEmpty(values ...any) bool {
 	for _, v := range values {
 		if v == nil {
 			continue
 		}
 		rv := reflect.ValueOf(v)
-		if rv.Kind() != reflect.Slice || rv.Len() != 0 {
+
+		if !isEmpty(rv) {
 			return false
 		}
+
 	}
 	return true
 }
 
-func isEmptyMap(values ...any) bool {
-	for _, v := range values {
-		if v == nil {
-			continue
-		}
-		rv := reflect.ValueOf(v)
-		if rv.Kind() != reflect.Map || rv.Len() != 0 {
-			return false
-		}
+func isEmpty(rv reflect.Value) bool {
+	// certain fields can change between "" and null when processed by backend.
+	// in some cases, e.g. model_serving_endpoints.descriptions those fields are also marked as recreate, so we ignore such cases
+	if rv.IsZero() {
+		return true
 	}
-	return true
+
+	// Empty slices and maps cannot be represented in proto and because of that they cannot be represented
+	// by SDK's JSON encoder. However, they can be provided by users in the config and can be represented in
+	// Bundle struct (currently libs/structs and libs/dyn use ForceSendFields for maps and slices, unlike SDK).
+	// Thus we get permanent drift because we see that new config is [] but in the state it is omitted.
+
+	if rv.Kind() == reflect.Slice {
+		return rv.Len() == 0
+	}
+
+	if rv.Kind() == reflect.Map {
+		return rv.Len() == 0
+	}
+
+	// Certain structs come up set even if fully empty and and not set by client, e.g. email_notifications and webhook_notifications
+	if isEmptyStruct(rv) {
+		return true
+	}
+
+	return false
 }
 
-func isEmptyStruct(values ...any) bool {
-	for _, v := range values {
-		if v == nil {
-			continue
-		}
-		rv := reflect.ValueOf(v)
-
-		if rv.Kind() == reflect.Ptr {
-			if rv.IsNil() {
-				continue
-			}
-			rv = rv.Elem()
-		}
-
-		if rv.Kind() != reflect.Struct {
+func isEmptyStruct(rv reflect.Value) bool {
+	if rv.Kind() == reflect.Ptr {
+		if rv.IsNil() {
 			return false
 		}
+		rv = rv.Elem()
+	}
 
-		rt := rv.Type()
-		for i := range rt.NumField() {
-			field := rt.Field(i)
+	if rv.Kind() != reflect.Struct {
+		return false
+	}
 
-			if !field.IsExported() {
-				continue
-			}
+	rt := rv.Type()
+	for i := range rt.NumField() {
+		field := rt.Field(i)
 
-			fieldValue := rv.Field(i)
-			if !fieldValue.IsZero() {
-				return false
-			}
+		if !field.IsExported() {
+			continue
+		}
+
+		fieldValue := rv.Field(i)
+		if !fieldValue.IsZero() {
+			return false
 		}
 	}
 	return true
@@ -594,8 +591,8 @@ func (b *DeploymentBundle) LookupReferencePreDeploy(ctx context.Context, path *s
 		return nil, fmt.Errorf("internal error: %s: unknown resource type %q", targetResourceKey, targetGroup)
 	}
 
-	configValidErr := structaccess.Validate(reflect.TypeOf(localConfig), fieldPath)
-	remoteValidErr := structaccess.Validate(adapter.RemoteType(), fieldPath)
+	configValidErr := structaccess.ValidatePath(reflect.TypeOf(localConfig), fieldPath)
+	remoteValidErr := structaccess.ValidatePath(adapter.RemoteType(), fieldPath)
 	// Note: using adapter.RemoteType() over reflect.TypeOf(remoteState) because remoteState might be untyped nil
 
 	if configValidErr != nil && remoteValidErr != nil {
@@ -665,7 +662,7 @@ func (b *DeploymentBundle) resolveReferences(ctx context.Context, resourceKey st
 
 		for _, pathString := range refs.References() {
 			ref := "${" + pathString + "}"
-			targetPath, err := structpath.Parse(pathString)
+			targetPath, err := structpath.ParsePath(pathString)
 			if err != nil {
 				logdiag.LogError(ctx, fmt.Errorf("%s: cannot parse reference %q: %w", errorPrefix, ref, err))
 				return false

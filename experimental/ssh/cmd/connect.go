@@ -73,7 +73,7 @@ the SSH server and handling the connection proxy.
 			MaxClients:           maxClients,
 			HandoverTimeout:      handoverTimeout,
 			ReleasesDir:          releasesDir,
-			ServerTimeout:        serverTimeout,
+			ServerTimeout:        max(serverTimeout, shutdownDelay),
 			AutoStartCluster:     autoStartCluster,
 			ClientPublicKeyName:  clientPublicKeyName,
 			ClientPrivateKeyName: clientPrivateKeyName,

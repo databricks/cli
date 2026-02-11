@@ -3,6 +3,10 @@ Cloud = false
 RecordRequests = false
 Ignore = [".databricks"]
 
+# known_failures.txt in ciconfig is not respected yet. This test is broken due to
+# workspace limits so we do not run it on DBR.
+RunsOnDbr = false
+
 # Alert tests timeout during bundle deploy (hang at file upload for 50+ minutes).
 # Use aggressive 5-minute timeout until the issue is resolved.
 # See: https://github.com/databricks/cli/issues/4221
