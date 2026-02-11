@@ -17,14 +17,16 @@ resources:
 
   jobs:
     ignore_remote_changes:
+      # Same as clusters.{aws,azure,gcp}_attributes — see clusters/resource_cluster.go#L361-L363
+      # s.SchemaPath("aws_attributes").SetSuppressDiff()
+      # s.SchemaPath("azure_attributes").SetSuppressDiff()
+      # s.SchemaPath("gcp_attributes").SetSuppressDiff()
       - field: tasks[*].new_cluster.aws_attributes
-        # These are not "output_only", because they can be set by the user as well.
         reason: managed
       - field: tasks[*].new_cluster.azure_attributes
         reason: managed
       - field: tasks[*].new_cluster.gcp_attributes
         reason: managed
-
       - field: job_clusters[*].new_cluster.aws_attributes
         reason: managed
       - field: job_clusters[*].new_cluster.azure_attributes
@@ -32,12 +34,12 @@ resources:
       - field: job_clusters[*].new_cluster.gcp_attributes
         reason: managed
 
-      - field: tasks[*].new_cluster.enable_elastic_disk
-        reason: managed
-      - field: job_clusters[*].new_cluster.enable_elastic_disk
-        reason: managed
-
     backend_defaults:
+      # Same as clusters.enable_elastic_disk — see clusters/resource_cluster.go#L331
+      # s.SchemaPath("enable_elastic_disk").SetComputed()
+      - field: tasks[*].new_cluster.enable_elastic_disk
+      - field: job_clusters[*].new_cluster.enable_elastic_disk
+
       # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/jobs/resource_job.go#L570
       # s.SchemaPath("max_concurrent_runs").SetDefault(1)
       - field: max_concurrent_runs
@@ -376,20 +378,20 @@ resources:
       - field: gcp_attributes
         reason: managed
 
+    backend_defaults:
       # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/clusters/resource_cluster.go#L331
       # s.SchemaPath("enable_elastic_disk").SetComputed()
       - field: enable_elastic_disk
-        reason: managed
 
-    backend_defaults:
       # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/clusters/resource_cluster.go#L320-L324
       # s.AddNewField("autotermination_minutes", &schema.Schema{Default: 60})
       - field: autotermination_minutes
         values: [60]
 
-      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/clusters/resource_cluster.go#L109-L118
-      # DataSecurityModeDiffSuppressFunc: suppress when old != "" && new == ""
-      - field: data_security_mode
+    # We have custom handler for this in cluster.go
+    # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/clusters/resource_cluster.go#L109-L118
+    # DataSecurityModeDiffSuppressFunc: suppress when old != "" && new == ""
+    #- field: data_security_mode
 
   sql_warehouses:
     ignore_remote_changes:
