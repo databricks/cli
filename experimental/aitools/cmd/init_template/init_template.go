@@ -13,11 +13,13 @@ func NewInitTemplateCommand() *cobra.Command {
 
 Subcommands:
   app       Initialize a Databricks App using the appkit template
+  agent     Initialize an OpenAI Agents SDK project
   job       Initialize a job project using the default-python template
   pipeline  Initialize a Lakeflow pipeline project
   empty     Initialize an empty bundle for custom resources (dashboards, alerts, etc.)`,
 	}
 	cmd.AddCommand(newAppCmd())
+	cmd.AddCommand(newAgentCmd())
 	cmd.AddCommand(newJobCmd())
 	cmd.AddCommand(newPipelineCmd())
 	cmd.AddCommand(newEmptyCmd())
