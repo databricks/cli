@@ -44,8 +44,9 @@ var (
 	LogRequests     bool
 	LogConfig       bool
 	SkipLocal       bool
-	UseVersion      string
 	WorkspaceTmpDir bool
+	UseVersion      string
+	Dbr             bool
 	TerraformDir    string
 	OnlyOutTestToml bool
 )
@@ -74,15 +75,9 @@ func init() {
 	flag.BoolVar(&LogRequests, "logrequests", false, "Log request and responses from testserver")
 	flag.BoolVar(&LogConfig, "logconfig", false, "Log merged for each test case")
 	flag.BoolVar(&SkipLocal, "skiplocal", false, "Skip tests that are enabled to run on Local")
-	flag.StringVar(&UseVersion, "useversion", "", "Download previously released version of CLI and use it to run the tests")
-
-	// DABs in the workspace runs on the workspace file system. This flags does the same for acceptance tests
-	// to simulate an identical environment.
 	flag.BoolVar(&WorkspaceTmpDir, "workspace-tmp-dir", false, "Run tests on the workspace file system (For DBR testing).")
-
-	// Symlinks from workspace file system to local file mount are not supported on DBR. Terraform implicitly
-	// creates these symlinks when a file_mirror is used for a provider (in .terraformrc). This flag
-	// allows us to download the provider to the workspace file system on DBR enabling DBR integration testing.
+	flag.StringVar(&UseVersion, "useversion", "", "Download previously released version of CLI and use it to run the tests")
+	flag.BoolVar(&Dbr, "dbr", false, "Only run the tests on DBR via a Databricks job.")
 	flag.StringVar(&TerraformDir, "terraform-dir", "", "Directory to download the terraform provider to")
 	flag.BoolVar(&OnlyOutTestToml, "only-out-test-toml", false, "Only regenerate out.test.toml files without running tests")
 }
@@ -130,6 +125,11 @@ var Ignored = map[string]bool{
 }
 
 func TestAccept(t *testing.T) {
+	if Dbr {
+		testDbrAcceptance(t)
+		return
+	}
+
 	testAccept(t, InprocessMode, "")
 }
 

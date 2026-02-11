@@ -1,4 +1,4 @@
-package testarchive
+package main
 
 import (
 	"archive/tar"
@@ -24,7 +24,7 @@ func gitFiles(repoRoot string) ([]string, error) {
 	scanner := bufio.NewScanner(strings.NewReader(string(output)))
 	var gitFiles []string
 	for scanner.Scan() {
-		file := strings.TrimSpace(scanner.Text())
+		file := scanner.Text()
 		if file != "" {
 			gitFiles = append(gitFiles, file)
 		}
@@ -97,23 +97,23 @@ func addFileToArchive(tarWriter *tar.Writer, src, dst string) error {
 	return nil
 }
 
-// CreateArchive creates a tar.gz archive of all git-tracked files plus downloaded tools
-func CreateArchive(archiveDir, binDir, repoRoot string) error {
-	archivePath := filepath.Join(archiveDir, "archive.tar.gz")
+// createArchive creates a tar.gz archive of all git-tracked files plus downloaded tools
+func createArchive(archiveDir, binDir, archiveName, repoRoot string) error {
+	archivePath := filepath.Join(archiveDir, archiveName)
 
 	// Download tools for both arm and amd64 architectures.
 	// The right architecture to use is decided at runtime on the serverless driver.
 	// The Databricks platform explicitly does not provide any guarantees around
 	// the CPU architecture to keep the door open for future optimizations.
 	downloaders := []downloader{
-		GoDownloader{Arch: "amd64", BinDir: binDir, RepoRoot: repoRoot},
-		UvDownloader{Arch: "amd64", BinDir: binDir},
-		JqDownloader{Arch: "amd64", BinDir: binDir},
+		goDownloader{arch: "amd64", binDir: binDir},
+		uvDownloader{arch: "amd64", binDir: binDir},
+		jqDownloader{arch: "amd64", binDir: binDir},
 
-		// TODO: Serverless clusters do not support arm64 yet.
-		// Enable ARM64 once serverless clusters support it.
-		// goDownloader{arch: "arm64", binDir: binDir},
+		// TODO: Once ARM64 for serverless clusters is available, enable download for
+		// these and add runtime detection to the test runner to choose the right binaries.
 		// uvDownloader{arch: "arm64", binDir: binDir},
+		// goDownloader{arch: "arm64", binDir: binDir},
 		// jqDownloader{arch: "arm64", binDir: binDir},
 	}
 
