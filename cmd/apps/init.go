@@ -114,6 +114,12 @@ Environment variables:
 				return errors.New("--branch and --version are mutually exclusive")
 			}
 
+			// Capture --profile flag value from parent command.
+			var profileValue string
+			if f := cmd.Flag("profile"); f != nil {
+				profileValue = f.Value.String()
+			}
+
 			return runCreate(ctx, createOptions{
 				templatePath:    templatePath,
 				branch:          branch,
@@ -129,6 +135,7 @@ Environment variables:
 				run:             run,
 				runChanged:      cmd.Flags().Changed("run"),
 				featuresChanged: cmd.Flags().Changed("features"),
+				profile:         profileValue,
 			})
 		},
 	}
@@ -162,6 +169,7 @@ type createOptions struct {
 	run             string
 	runChanged      bool // true if --run flag was explicitly set
 	featuresChanged bool // true if --features flag was explicitly set
+	profile         string // explicit profile from --profile flag
 }
 
 // templateVars holds the variables for template substitution.
@@ -810,10 +818,20 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		}
 	}
 
+	// Resolve the profile to pass to deploy/run subcommands.
+	var deployProfile string
+	if shouldDeploy || runMode != prompt.RunModeNone {
+		var err error
+		deployProfile, err = prompt.ResolveProfileForDeploy(ctx, opts.profile, workspaceHost)
+		if err != nil {
+			return fmt.Errorf("failed to resolve profile: %w", err)
+		}
+	}
+
 	if shouldDeploy {
 		cmdio.LogString(ctx, "")
 		cmdio.LogString(ctx, "Deploying app...")
-		if err := runPostCreateDeploy(ctx); err != nil {
+		if err := runPostCreateDeploy(ctx, deployProfile); err != nil {
 			cmdio.LogString(ctx, fmt.Sprintf("⚠ Deploy failed: %v", err))
 			cmdio.LogString(ctx, "  You can deploy manually with: databricks apps deploy")
 		}
@@ -821,7 +839,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 
 	if runMode != prompt.RunModeNone {
 		cmdio.LogString(ctx, "")
-		if err := runPostCreateDev(ctx, runMode, projectInitializer, absOutputDir); err != nil {
+		if err := runPostCreateDev(ctx, runMode, projectInitializer, absOutputDir, deployProfile); err != nil {
 			return err
 		}
 	}
@@ -830,12 +848,16 @@ func runCreate(ctx context.Context, opts createOptions) error {
 }
 
 // runPostCreateDeploy runs the deploy command in the current directory.
-func runPostCreateDeploy(ctx context.Context) error {
+func runPostCreateDeploy(ctx context.Context, profile string) error {
 	executable, err := os.Executable()
 	if err != nil {
 		return fmt.Errorf("failed to get executable path: %w", err)
 	}
-	cmd := exec.CommandContext(ctx, executable, "apps", "deploy")
+	args := []string{"apps", "deploy"}
+	if profile != "" {
+		args = append(args, "--profile", profile)
+	}
+	cmd := exec.CommandContext(ctx, executable, args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Stdin = os.Stdin
@@ -843,7 +865,7 @@ func runPostCreateDeploy(ctx context.Context) error {
 }
 
 // runPostCreateDev runs the dev or dev-remote command in the current directory.
-func runPostCreateDev(ctx context.Context, mode prompt.RunMode, projectInit initializer.Initializer, workDir string) error {
+func runPostCreateDev(ctx context.Context, mode prompt.RunMode, projectInit initializer.Initializer, workDir, profile string) error {
 	switch mode {
 	case prompt.RunModeDev:
 		if projectInit != nil {
@@ -858,7 +880,11 @@ func runPostCreateDev(ctx context.Context, mode prompt.RunMode, projectInit init
 		if err != nil {
 			return fmt.Errorf("failed to get executable path: %w", err)
 		}
-		cmd := exec.CommandContext(ctx, executable, "apps", "dev-remote")
+		args := []string{"apps", "dev-remote"}
+		if profile != "" {
+			args = append(args, "--profile", profile)
+		}
+		cmd := exec.CommandContext(ctx, executable, args...)
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		cmd.Stdin = os.Stdin
