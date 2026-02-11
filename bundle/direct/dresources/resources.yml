@@ -76,19 +76,19 @@ resources:
       # timeout_seconds has implicit default of 0 (Go zero value)
       - field: timeout_seconds
         values: [0]
-      - field: "tasks[*].timeout_seconds"
+      - field: tasks[*].timeout_seconds
         values: [0]
-      - field: "tasks[*].for_each_task.task.timeout_seconds"
+      - field: tasks[*].for_each_task.task.timeout_seconds
         values: [0]
 
       # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/jobs/resource_job.go#L521
       # s.SchemaPath("task", "notebook_task", "source").SetSuppressDiff()
-      - field: "tasks[*].notebook_task.source"
-      - field: "tasks[*].for_each_task.task.notebook_task.source"
+      - field: tasks[*].notebook_task.source
+      - field: tasks[*].for_each_task.task.notebook_task.source
 
       # Same as clusters.data_security_mode: backend sets this when not specified
-      - field: "tasks[*].new_cluster.data_security_mode"
-      - field: "job_clusters[*].new_cluster.data_security_mode"
+      - field: tasks[*].new_cluster.data_security_mode
+      - field: job_clusters[*].new_cluster.data_security_mode
 
   pipelines:
     recreate_on_changes:
@@ -110,6 +110,7 @@ resources:
       # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/pipelines/resource_pipeline.go#L209
       - field: ingestion_definition.ingest_from_uc_foreign_catalog
         reason: immutable
+
     ignore_remote_changes:
       # "id" is handled in a special way before any fields changed
       # However, it is also part of RemotePipeline via CreatePipeline.
@@ -118,10 +119,12 @@ resources:
         reason: "!drop"
       - field: run_as
         reason: not_returned_by_api
+
     ignore_local_changes:
       # "id" is output-only, providing it in config would be a mistake
       - field: id
         reason: "!drop"
+
     backend_defaults:
       # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/pipelines/resource_pipeline.go#L254
       # s.SchemaPath("edition").SetDefault("ADVANCED")
@@ -195,15 +198,15 @@ resources:
       # common.CustomizeSchemaPath(m, "config", "traffic_config").SetComputed()
       # Routes have custom SuppressDiff (lines 387-388)
       - field: config.traffic_config
-        reason: "managed"
+        reason: managed
     backend_defaults:
       # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/serving/resource_model_serving.go#L383
       # common.CustomizeSchemaPath(m, "config", "served_entities", "name").SetComputed()
-      - field: "config.served_entities[*].name"
+      - field: config.served_entities[*].name
 
       # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/serving/resource_model_serving.go#L384
       # common.CustomizeSchemaPath(m, "config", "served_entities", "workload_type").SetComputed()
-      - field: "config.served_entities[*].workload_type"
+      - field: config.served_entities[*].workload_type
 
       # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/serving/resource_model_serving.go#L372
       # common.CustomizeSchemaPath(m, "config", "auto_capture_config", "enabled").SetComputed()
@@ -367,16 +370,16 @@ resources:
       # s.SchemaPath("azure_attributes").SetSuppressDiff()
       # s.SchemaPath("gcp_attributes").SetSuppressDiff()
       - field: aws_attributes
-        reason: "managed"
+        reason: managed
       - field: azure_attributes
-        reason: "managed"
+        reason: managed
       - field: gcp_attributes
-        reason: "managed"
+        reason: managed
 
       # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/clusters/resource_cluster.go#L331
       # s.SchemaPath("enable_elastic_disk").SetComputed()
       - field: enable_elastic_disk
-        reason: "managed"
+        reason: managed
 
     backend_defaults:
       # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/clusters/resource_cluster.go#L320-L324
@@ -393,17 +396,17 @@ resources:
       # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/sql/resource_sql_endpoint.go#L62
       # common.CustomizeSchemaPath(m, "channel").SetSuppressDiff()
       - field: channel
-        reason: "managed"
+        reason: managed
 
       # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/sql/resource_sql_endpoint.go#L82
       # common.CustomizeSchemaPath(m, "tags").SetSuppressDiff()
       - field: tags
-        reason: "managed"
+        reason: managed
 
       # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/sql/resource_sql_endpoint.go#L85-L87
       # common.CustomizeSchemaPath(m, "warehouse_type").SetSuppressDiff()
       - field: warehouse_type
-        reason: "managed"
+        reason: managed
 
     backend_defaults:
       # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/sql/resource_sql_endpoint.go#L61
