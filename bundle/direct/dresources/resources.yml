@@ -15,26 +15,26 @@ resources:
 
   jobs:
     ignore_remote_changes:
-      - field: "tasks[*].new_cluster.aws_attributes"
+      - field: tasks[*].new_cluster.aws_attributes
         # These are not "output_only", because they can be set by the user as well.
-        reason: "managed"
-      - field: "tasks[*].new_cluster.azure_attributes"
-        reason: "managed"
-      - field: "tasks[*].new_cluster.gcp_attributes"
-        reason: "managed"
+        reason: managed
+      - field: tasks[*].new_cluster.azure_attributes
+        reason: managed
+      - field: tasks[*].new_cluster.gcp_attributes
+        reason: managed
 
-      - field: "job_clusters[*].new_cluster.aws_attributes"
-        reason: "managed"
-      - field: "job_clusters[*].new_cluster.azure_attributes"
-        reason: "managed"
-      - field: "job_clusters[*].new_cluster.gcp_attributes"
-        reason: "managed"
+      - field: job_clusters[*].new_cluster.aws_attributes
+        reason: managed
+      - field: job_clusters[*].new_cluster.azure_attributes
+        reason: managed
+      - field: job_clusters[*].new_cluster.gcp_attributes
+        reason: managed
 
       # can also be added to backend_defaults with value=false once we have that
-      - field: "tasks[*].new_cluster.enable_elastic_disk"
-        reason: "managed"
-      - field: "job_clusters[*].new_cluster.enable_elastic_disk"
-        reason: "managed"
+      - field: tasks[*].new_cluster.enable_elastic_disk
+        reason: managed
+      - field: job_clusters[*].new_cluster.enable_elastic_disk
+        reason: managed
 
   pipelines:
     recreate_on_changes:
