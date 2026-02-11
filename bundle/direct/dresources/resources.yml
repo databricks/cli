@@ -75,14 +75,6 @@ resources:
       - field: "tasks[*].for_each_task.task.run_if"
         values: ["ALL_SUCCESS"]
 
-      # timeout_seconds has implicit default of 0 (Go zero value)
-      - field: timeout_seconds
-        values: [0]
-      - field: tasks[*].timeout_seconds
-        values: [0]
-      - field: tasks[*].for_each_task.task.timeout_seconds
-        values: [0]
-
       # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/jobs/resource_job.go#L521
       # s.SchemaPath("task", "notebook_task", "source").SetSuppressDiff()
       - field: tasks[*].notebook_task.source
