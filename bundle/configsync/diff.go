@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/bundle/config/engine"
@@ -85,7 +86,7 @@ func filterEntityDefaults(basePath string, value any) any {
 	return result
 }
 
-func convertChangeDesc(path string, cd *deployplan.ChangeDesc) (*ConfigChangeDesc, error) {
+func convertChangeDesc(path string, cd *deployplan.ChangeDesc, syncRootPath string) (*ConfigChangeDesc, error) {
 	hasConfigValue := cd.Old != nil || cd.New != nil
 	normalizedValue, err := normalizeValue(cd.Remote)
 	if err != nil {
@@ -115,10 +116,41 @@ func convertChangeDesc(path string, cd *deployplan.ChangeDesc) (*ConfigChangeDes
 		normalizedValue = filterEntityDefaults(path, normalizedValue)
 	}
 
+	if op == OperationAdd && syncRootPath != "" {
+		normalizedValue = translateWorkspacePaths(normalizedValue, syncRootPath)
+	}
+
 	return &ConfigChangeDesc{
 		Operation: op,
 		Value:     normalizedValue,
 	}, nil
+}
+
+// translateWorkspacePaths recursively converts absolute workspace paths to relative
+// paths when they fall within the bundle's sync root. Paths outside the sync
+// root are left unchanged.
+func translateWorkspacePaths(value any, syncRootPath string) any {
+	switch v := value.(type) {
+	case string:
+		if after, ok := strings.CutPrefix(v, syncRootPath+"/"); ok {
+			return "./" + after
+		}
+		return v
+	case map[string]any:
+		result := make(map[string]any, len(v))
+		for key, val := range v {
+			result[key] = translateWorkspacePaths(val, syncRootPath)
+		}
+		return result
+	case []any:
+		result := make([]any, len(v))
+		for i, val := range v {
+			result[i] = translateWorkspacePaths(val, syncRootPath)
+		}
+		return result
+	default:
+		return value
+	}
 }
 
 // DetectChanges compares current remote state with the last deployed state
@@ -155,7 +187,7 @@ func DetectChanges(ctx context.Context, b *bundle.Bundle, engine engine.EngineTy
 					continue
 				}
 
-				change, err := convertChangeDesc(path, changeDesc)
+				change, err := convertChangeDesc(path, changeDesc, b.SyncRootPath)
 				if err != nil {
 					return nil, fmt.Errorf("failed to compute config change for path %s: %w", path, err)
 				}
