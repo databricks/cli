@@ -101,9 +101,7 @@ const (
 	ReasonServerSideDefault = "server_side_default"
 	ReasonAlias             = "alias"
 	ReasonRemoteAlreadySet  = "remote_already_set"
-	ReasonEmptySlice        = "empty_slice"
-	ReasonEmptyMap          = "empty_map"
-	ReasonEmptyStruct       = "empty_struct"
+	ReasonEmpty            = "empty"
 	ReasonCustom            = "custom"
 
 	// Special reason that results in removing this change from the plan
