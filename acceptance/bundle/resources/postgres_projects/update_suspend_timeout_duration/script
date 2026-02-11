@@ -1,0 +1,93 @@
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+   trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+print_requests() {
+    local name=$1
+    trace print_requests.py --keep --get '//postgres' '^//workspace-files/' '^//workspace/' '^//telemetry-ext' '^//operations/' > out.requests.${name}.$DATABRICKS_BUNDLE_ENGINE.json
+    rm -f out.requests.txt
+}
+
+title "Initial deployment with suspend_timeout_duration: 300s"
+trace $CLI bundle validate
+trace $CLI bundle plan
+trace $CLI bundle plan -o json | jq '.plan."resources.postgres_projects.my_project" // .' > out.plan.create.$DATABRICKS_BUNDLE_ENGINE.json
+rm -f out.requests.txt
+trace $CLI bundle deploy
+
+print_requests create
+
+project_name="projects/test-pg-proj-${UNIQUE_NAME}"
+trace $CLI postgres get-project "${project_name}" | jq 'del(.create_time, .update_time)'
+
+title "Verify no changes"
+trace $CLI bundle plan
+trace $CLI bundle plan -o json | jq '.plan."resources.postgres_projects.my_project" // .' > out.plan.no_change.$DATABRICKS_BUNDLE_ENGINE.json
+rm -f out.requests.txt
+trace $CLI bundle deploy
+
+print_requests no_change
+
+title "Update to different value: 300s -> 600s"
+trace update_file.py databricks.yml "suspend_timeout_duration: 300s" "suspend_timeout_duration: 600s"
+trace cat databricks.yml
+
+trace $CLI bundle plan
+trace $CLI bundle plan -o json | jq '.plan."resources.postgres_projects.my_project" // .' > out.plan.update_different.$DATABRICKS_BUNDLE_ENGINE.json
+rm -f out.requests.txt
+trace $CLI bundle deploy
+
+print_requests update_different
+
+trace $CLI postgres get-project "${project_name}" | jq 'del(.create_time, .update_time)'
+
+title "Remove suspend_timeout_duration field completely"
+# Note: Removing a field from config sends an update, but the Postgres API's PATCH semantics
+# don't unset fields that are absent from the request body - they remain at their previous value.
+# So the field will still show 600s after this step, not revert to a default.
+# Write a new databricks.yml without the suspend_timeout_duration field
+cat > databricks.yml <<EOF
+bundle:
+  name: update-suspend-timeout-$UNIQUE_NAME
+
+sync:
+  paths: []
+
+resources:
+  postgres_projects:
+    my_project:
+      project_id: test-pg-proj-$UNIQUE_NAME
+      display_name: "My Project"
+      pg_version: 16
+      history_retention_duration: 604800s
+      default_endpoint_settings:
+        autoscaling_limit_min_cu: 0.5
+        autoscaling_limit_max_cu: 4
+EOF
+trace cat databricks.yml
+
+trace $CLI bundle plan
+trace $CLI bundle plan -o json | jq '.plan."resources.postgres_projects.my_project" // .' > out.plan.remove_field.$DATABRICKS_BUNDLE_ENGINE.json
+rm -f out.requests.txt
+trace $CLI bundle deploy
+
+print_requests remove_field
+
+trace $CLI postgres get-project "${project_name}" | jq 'del(.create_time, .update_time)'
+
+title "Add suspend_timeout_duration field back: add 120s"
+trace update_file.py databricks.yml "autoscaling_limit_max_cu: 4" "autoscaling_limit_max_cu: 4
+        suspend_timeout_duration: 120s"
+trace cat databricks.yml
+
+trace $CLI bundle plan
+trace $CLI bundle plan -o json | jq '.plan."resources.postgres_projects.my_project" // .' > out.plan.add_field.$DATABRICKS_BUNDLE_ENGINE.json
+rm -f out.requests.txt
+trace $CLI bundle deploy
+
+print_requests add_field
+
+trace $CLI postgres get-project "${project_name}" | jq 'del(.create_time, .update_time)'

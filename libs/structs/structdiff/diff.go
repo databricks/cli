@@ -108,11 +108,19 @@ func diffValues(ctx *diffContext, path *structpath.PathNode, v1, v2 reflect.Valu
 			return nil
 		}
 
-		*changes = append(*changes, Change{Path: path, Old: nil, New: v2.Interface()})
+		new, err := toChangeValue(v2)
+		if err != nil {
+			return err
+		}
+		*changes = append(*changes, Change{Path: path, Old: nil, New: new})
 		return nil
 	} else if !v2.IsValid() {
 		// v1 is valid
-		*changes = append(*changes, Change{Path: path, Old: v1.Interface(), New: nil})
+		old, err := toChangeValue(v1)
+		if err != nil {
+			return err
+		}
+		*changes = append(*changes, Change{Path: path, Old: old, New: nil})
 		return nil
 	}
 
@@ -126,6 +134,25 @@ func diffValues(ctx *diffContext, path *structpath.PathNode, v1, v2 reflect.Valu
 
 	kind := v1.Kind()
 
+	// Handle SDK native types by comparing their string representation.
+	// SDK types like duration.Duration have only unexported fields, so we
+	// compare them using their JSON-marshaled string form (e.g., "300s").
+	if isSDKNativeType(v1Type) {
+		str1, err := marshalSDKNative(v1)
+		if err != nil {
+			return err
+		}
+		str2, err := marshalSDKNative(v2)
+		if err != nil {
+			return err
+		}
+		if str1 != str2 {
+			// Store string representation in Change, not the struct
+			*changes = append(*changes, Change{Path: path, Old: str1, New: str2})
+		}
+		return nil
+	}
+
 	// Perform nil checks for nilable types.
 	switch kind {
 	case reflect.Pointer, reflect.Map, reflect.Slice, reflect.Interface, reflect.Chan, reflect.Func:
@@ -135,7 +162,15 @@ func diffValues(ctx *diffContext, path *structpath.PathNode, v1, v2 reflect.Valu
 			return nil
 		}
 		if v1Nil || v2Nil {
-			*changes = append(*changes, Change{Path: path, Old: v1.Interface(), New: v2.Interface()})
+			old, err := toChangeValue(v1)
+			if err != nil {
+				return err
+			}
+			new, err := toChangeValue(v2)
+			if err != nil {
+				return err
+			}
+			*changes = append(*changes, Change{Path: path, Old: old, New: new})
 			return nil
 		}
 	default:
@@ -177,6 +212,26 @@ func deepEqualValues(path *structpath.PathNode, v1, v2 reflect.Value, changes *[
 	if !reflect.DeepEqual(v1.Interface(), v2.Interface()) {
 		*changes = append(*changes, Change{Path: path, Old: v1.Interface(), New: v2.Interface()})
 	}
+}
+
+// toChangeValue converts a reflect.Value to a value suitable for Change.Old/New.
+// For SDK native types (including pointers), it marshals to string representation.
+// For other types, it returns the interface value as-is.
+func toChangeValue(v reflect.Value) (any, error) {
+	if !v.IsValid() {
+		return nil, nil
+	}
+	t := v.Type()
+	if isSDKNativeType(t) {
+		return marshalSDKNative(v)
+	}
+	if t.Kind() == reflect.Pointer && isSDKNativeType(t.Elem()) {
+		if v.IsNil() {
+			return nil, nil
+		}
+		return marshalSDKNative(v.Elem())
+	}
+	return v.Interface(), nil
 }
 
 func diffStruct(ctx *diffContext, path *structpath.PathNode, s1, s2 reflect.Value, changes *[]Change) error {

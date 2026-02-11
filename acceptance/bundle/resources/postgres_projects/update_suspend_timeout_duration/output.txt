@@ -1,0 +1,233 @@
+
+=== Initial deployment with suspend_timeout_duration: 300s
+>>> [CLI] bundle validate
+Name: update-suspend-timeout-[UNIQUE_NAME]
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/update-suspend-timeout-[UNIQUE_NAME]/default
+
+Validation OK!
+
+>>> [CLI] bundle plan
+create postgres_projects.my_project
+
+Plan: 1 to add, 0 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle plan -o json
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-suspend-timeout-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
+
+>>> [CLI] postgres get-project projects/test-pg-proj-[UNIQUE_NAME]
+{
+  "name": "projects/test-pg-proj-[UNIQUE_NAME]",
+  "status": {
+    "branch_logical_size_limit_bytes": [NUMID],
+    "default_endpoint_settings": {
+      "autoscaling_limit_max_cu": 4,
+      "autoscaling_limit_min_cu": 0.5,
+      "suspend_timeout_duration": "300s"
+    },
+    "display_name": "My Project",
+    "history_retention_duration": "604800s",
+    "owner": "[USERNAME]",
+    "pg_version": 16,
+    "synthetic_storage_size_bytes": 0
+  },
+  "uid": "[UUID]"
+}
+
+=== Verify no changes
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 1 unchanged
+
+>>> [CLI] bundle plan -o json
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-suspend-timeout-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
+
+=== Update to different value: 300s -> 600s
+>>> update_file.py databricks.yml suspend_timeout_duration: 300s suspend_timeout_duration: 600s
+
+>>> cat databricks.yml
+bundle:
+  name: update-suspend-timeout-[UNIQUE_NAME]
+
+sync:
+  paths: []
+
+resources:
+  postgres_projects:
+    my_project:
+      project_id: test-pg-proj-[UNIQUE_NAME]
+      display_name: "My Project"
+      pg_version: 16
+      history_retention_duration: 604800s
+      default_endpoint_settings:
+        autoscaling_limit_min_cu: 0.5
+        autoscaling_limit_max_cu: 4
+        suspend_timeout_duration: 600s
+
+>>> [CLI] bundle plan
+update postgres_projects.my_project
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle plan -o json
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-suspend-timeout-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
+
+>>> [CLI] postgres get-project projects/test-pg-proj-[UNIQUE_NAME]
+{
+  "name": "projects/test-pg-proj-[UNIQUE_NAME]",
+  "status": {
+    "branch_logical_size_limit_bytes": [NUMID],
+    "default_endpoint_settings": {
+      "autoscaling_limit_max_cu": 4,
+      "autoscaling_limit_min_cu": 0.5,
+      "suspend_timeout_duration": "600s"
+    },
+    "display_name": "My Project",
+    "history_retention_duration": "604800s",
+    "owner": "[USERNAME]",
+    "pg_version": 16,
+    "synthetic_storage_size_bytes": 0
+  },
+  "uid": "[UUID]"
+}
+
+=== Remove suspend_timeout_duration field completely
+>>> cat databricks.yml
+bundle:
+  name: update-suspend-timeout-[UNIQUE_NAME]
+
+sync:
+  paths: []
+
+resources:
+  postgres_projects:
+    my_project:
+      project_id: test-pg-proj-[UNIQUE_NAME]
+      display_name: "My Project"
+      pg_version: 16
+      history_retention_duration: 604800s
+      default_endpoint_settings:
+        autoscaling_limit_min_cu: 0.5
+        autoscaling_limit_max_cu: 4
+
+>>> [CLI] bundle plan
+update postgres_projects.my_project
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle plan -o json
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-suspend-timeout-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
+
+>>> [CLI] postgres get-project projects/test-pg-proj-[UNIQUE_NAME]
+{
+  "name": "projects/test-pg-proj-[UNIQUE_NAME]",
+  "status": {
+    "branch_logical_size_limit_bytes": [NUMID],
+    "default_endpoint_settings": {
+      "autoscaling_limit_max_cu": 4,
+      "autoscaling_limit_min_cu": 0.5,
+      "suspend_timeout_duration": "600s"
+    },
+    "display_name": "My Project",
+    "history_retention_duration": "604800s",
+    "owner": "[USERNAME]",
+    "pg_version": 16,
+    "synthetic_storage_size_bytes": 0
+  },
+  "uid": "[UUID]"
+}
+
+=== Add suspend_timeout_duration field back: add 120s
+>>> update_file.py databricks.yml autoscaling_limit_max_cu: 4 autoscaling_limit_max_cu: 4
+        suspend_timeout_duration: 120s
+
+>>> cat databricks.yml
+bundle:
+  name: update-suspend-timeout-[UNIQUE_NAME]
+
+sync:
+  paths: []
+
+resources:
+  postgres_projects:
+    my_project:
+      project_id: test-pg-proj-[UNIQUE_NAME]
+      display_name: "My Project"
+      pg_version: 16
+      history_retention_duration: 604800s
+      default_endpoint_settings:
+        autoscaling_limit_min_cu: 0.5
+        autoscaling_limit_max_cu: 4
+        suspend_timeout_duration: 120s
+
+>>> [CLI] bundle plan
+update postgres_projects.my_project
+
+Plan: 0 to add, 1 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle plan -o json
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-suspend-timeout-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
+
+>>> [CLI] postgres get-project projects/test-pg-proj-[UNIQUE_NAME]
+{
+  "name": "projects/test-pg-proj-[UNIQUE_NAME]",
+  "status": {
+    "branch_logical_size_limit_bytes": [NUMID],
+    "default_endpoint_settings": {
+      "autoscaling_limit_max_cu": 4,
+      "autoscaling_limit_min_cu": 0.5,
+      "suspend_timeout_duration": "120s"
+    },
+    "display_name": "My Project",
+    "history_retention_duration": "604800s",
+    "owner": "[USERNAME]",
+    "pg_version": 16,
+    "synthetic_storage_size_bytes": 0
+  },
+  "uid": "[UUID]"
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.postgres_projects.my_project
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/update-suspend-timeout-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!
