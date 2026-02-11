@@ -4,6 +4,11 @@ envsubst < databricks.yml.tmpl > databricks.yml
 envsubst < resources/job1.yml.tmpl > resources/job1.yml
 envsubst < resources/job2.yml.tmpl > resources/job2.yml
 
+cleanup() {
+  trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
 touch dummy.whl
 $CLI bundle deploy
 
