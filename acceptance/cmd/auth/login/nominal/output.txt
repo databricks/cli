@@ -4,4 +4,4 @@ Profile test was successfully saved
 
 >>> [CLI] auth profiles
 Name  Host                    Valid
-test  [DATABRICKS_URL]  YES
+test  [DATABRICKS_URL]  NO
