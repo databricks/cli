@@ -1,6 +1,7 @@
 Cloud = true
 Local = true
 RecordRequests = false
+RunsOnDbr = true
 
 [[Repls]]
 Old = '\d{3,}'
