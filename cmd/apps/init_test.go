@@ -396,3 +396,18 @@ func TestPopulateResourceValuesSkipsEmpty(t *testing.T) {
 	assert.Equal(t, "wh-123", rv["sql-warehouse.id"])
 	assert.Len(t, rv, 1)
 }
+
+func TestAppendUnique(t *testing.T) {
+	result := appendUnique([]string{"a", "b"}, "b", "c", "a", "d")
+	assert.Equal(t, []string{"a", "b", "c", "d"}, result)
+}
+
+func TestAppendUniqueEmptyBase(t *testing.T) {
+	result := appendUnique(nil, "x", "y", "x")
+	assert.Equal(t, []string{"x", "y"}, result)
+}
+
+func TestAppendUniqueNoValues(t *testing.T) {
+	result := appendUnique([]string{"a", "b"})
+	assert.Equal(t, []string{"a", "b"}, result)
+}

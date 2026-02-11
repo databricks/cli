@@ -328,23 +328,28 @@ func promptForPluginsAndDeps(ctx context.Context, m *manifest.Manifest, preSelec
 			options = append(options, huh.NewOption(label, p.Name))
 		}
 
+		var selected []string
 		err := huh.NewMultiSelect[string]().
 			Title("Select features").
 			Description("space to toggle, enter to confirm").
 			Options(options...).
-			Value(&config.Features).
+			Value(&selected).
 			Height(8).
 			WithTheme(theme).
 			Run()
 		if err != nil {
 			return nil, err
 		}
-		if len(config.Features) == 0 {
+		if len(selected) == 0 {
 			prompt.PrintAnswered(ctx, "Plugins", "None")
 		} else {
-			prompt.PrintAnswered(ctx, "Plugins", fmt.Sprintf("%d selected", len(config.Features)))
+			prompt.PrintAnswered(ctx, "Plugins", fmt.Sprintf("%d selected", len(selected)))
 		}
+		config.Features = selected
 	}
+
+	// Always include mandatory plugins.
+	config.Features = appendUnique(config.Features, m.GetMandatoryPluginNames()...)
 
 	// Step 2: Prompt for required plugin resource dependencies
 	resources := m.CollectResources(config.Features)
@@ -616,8 +621,8 @@ func runCreate(ctx context.Context, opts createOptions) error {
 
 	log.Debugf(ctx, "Loaded manifest with %d plugins", len(m.Plugins))
 	for name, p := range m.Plugins {
-		log.Debugf(ctx, "  Plugin %q: %d required resources, %d optional resources",
-			name, len(p.Resources.Required), len(p.Resources.Optional))
+		log.Debugf(ctx, "  Plugin %q: %d required resources, %d optional resources, requiredByTemplate=%v",
+			name, len(p.Resources.Required), len(p.Resources.Optional), p.RequiredByTemplate)
 	}
 
 	// When --name is provided, user is in "flags mode" - use defaults instead of prompting
@@ -680,9 +685,13 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		}
 		resourceValues = make(map[string]string)
 		opts.populateResourceValues(resourceValues)
+	}
 
-		// Validate required resources are provided.
-		// All resource value keys use "resource_key.field_name" format.
+	// Always include mandatory plugins regardless of user selection or flags.
+	selectedPlugins = appendUnique(selectedPlugins, m.GetMandatoryPluginNames()...)
+
+	// In flags/non-interactive mode, validate that all required resources are provided.
+	if flagsMode || !isInteractive {
 		resources := m.CollectResources(selectedPlugins)
 		for _, r := range resources {
 			found := false
@@ -906,6 +915,21 @@ func runPostCreateDev(ctx context.Context, mode prompt.RunMode, projectInit init
 	default:
 		return nil
 	}
+}
+
+// appendUnique appends values to a slice, skipping duplicates.
+func appendUnique(base []string, values ...string) []string {
+	seen := make(map[string]bool, len(base))
+	for _, v := range base {
+		seen[v] = true
+	}
+	for _, v := range values {
+		if !seen[v] {
+			seen[v] = true
+			base = append(base, v)
+		}
+	}
+	return base
 }
 
 // buildPluginStrings builds the plugin import and usage strings from selected plugin names.
