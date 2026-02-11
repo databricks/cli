@@ -9,24 +9,22 @@
       "remote_state": {
         "created_time": [UNIX_TIME_MILLIS][0],
         "creator_user_name": "[USERNAME]",
+        "deployment": {
+          "kind": "BUNDLE",
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+        },
+        "edit_mode": "UI_LOCKED",
+        "email_notifications": {},
+        "format": "MULTI_TASK",
         "job_id": [BAR_ID],
+        "max_concurrent_runs": 1,
+        "name": "job bar",
+        "queue": {
+          "enabled": true
+        },
         "run_as_user_name": "[USERNAME]",
-        "settings": {
-          "deployment": {
-            "kind": "BUNDLE",
-            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
-          },
-          "edit_mode": "UI_LOCKED",
-          "email_notifications": {},
-          "format": "MULTI_TASK",
-          "max_concurrent_runs": 1,
-          "name": "job bar",
-          "queue": {
-            "enabled": true
-          },
-          "timeout_seconds": 0,
-          "webhook_notifications": {}
-        }
+        "timeout_seconds": 0,
+        "webhook_notifications": {}
       }
     },
     "resources.jobs.foo": {
@@ -49,32 +47,33 @@
       "remote_state": {
         "created_time": [UNIX_TIME_MILLIS][1],
         "creator_user_name": "[USERNAME]",
+        "deployment": {
+          "kind": "BUNDLE",
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
+        },
+        "edit_mode": "UI_LOCKED",
+        "email_notifications": {},
+        "format": "MULTI_TASK",
         "job_id": [FOO_ID],
+        "max_concurrent_runs": 1,
+        "name": "job foo",
+        "queue": {
+          "enabled": true
+        },
         "run_as_user_name": "[USERNAME]",
-        "settings": {
-          "deployment": {
-            "kind": "BUNDLE",
-            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"
-          },
-          "edit_mode": "UI_LOCKED",
-          "email_notifications": {},
-          "format": "MULTI_TASK",
-          "max_concurrent_runs": 1,
-          "name": "job foo",
-          "queue": {
-            "enabled": true
-          },
-          "tasks": [
-            {
-              "run_job_task": {
-                "job_id": [BAR_ID]
-              },
-              "task_key": "job_task"
-            }
-          ],
-          "timeout_seconds": 0,
-          "webhook_notifications": {}
-        }
+        "tasks": [
+          {
+            "email_notifications": {},
+            "run_if": "ALL_SUCCESS",
+            "run_job_task": {
+              "job_id": [BAR_ID]
+            },
+            "task_key": "job_task",
+            "timeout_seconds": 0
+          }
+        ],
+        "timeout_seconds": 0,
+        "webhook_notifications": {}
       },
       "changes": {
         "email_notifications": {
@@ -94,10 +93,13 @@
           ],
           "remote": [
             {
+              "email_notifications": {},
+              "run_if": "ALL_SUCCESS",
               "run_job_task": {
                 "job_id": [BAR_ID]
               },
-              "task_key": "job_task"
+              "task_key": "job_task",
+              "timeout_seconds": 0
             }
           ]
         },

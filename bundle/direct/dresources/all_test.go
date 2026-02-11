@@ -635,7 +635,7 @@ func newTestIgnoreFilter(adapter *Adapter) *testIgnoreFilter {
 			continue
 		}
 		for _, p := range cfg.IgnoreRemoteChanges {
-			ignoreFields[p.String()] = true
+			ignoreFields[p.Field.String()] = true
 		}
 	}
 	return &testIgnoreFilter{ignoreFields: ignoreFields}
@@ -785,7 +785,7 @@ func testCRUD(t *testing.T, group string, adapter *Adapter, client *databricks.W
 	err = adapter.DoDelete(ctx, createdID)
 	require.NoError(t, err)
 
-	p, err := structpath.Parse("name")
+	p, err := structpath.ParsePath("name")
 	require.NoError(t, err)
 
 	if adapter.HasOverrideChangeDesc() {
@@ -842,13 +842,13 @@ func TestGeneratedResourceConfig(t *testing.T) {
 
 func validateResourceConfig(t *testing.T, stateType reflect.Type, cfg *ResourceLifecycleConfig) {
 	for _, p := range cfg.RecreateOnChanges {
-		assert.NoError(t, structaccess.Validate(stateType, p), "RecreateOnChanges: %s", p)
+		assert.NoError(t, structaccess.ValidatePattern(stateType, p.Field), "RecreateOnChanges: %s", p.Field)
 	}
 	for _, p := range cfg.UpdateIDOnChanges {
-		assert.NoError(t, structaccess.Validate(stateType, p), "UpdateIDOnChanges: %s", p)
+		assert.NoError(t, structaccess.ValidatePattern(stateType, p.Field), "UpdateIDOnChanges: %s", p.Field)
 	}
 	for _, p := range cfg.IgnoreRemoteChanges {
-		assert.NoError(t, structaccess.Validate(stateType, p), "IgnoreRemoteChanges: %s", p)
+		assert.NoError(t, structaccess.ValidatePattern(stateType, p.Field), "IgnoreRemoteChanges: %s", p.Field)
 	}
 }
 

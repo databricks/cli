@@ -2,7 +2,6 @@ package configsync
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"sort"
 
@@ -18,21 +17,23 @@ type FieldChange struct {
 	FieldCandidates []string
 }
 
-// resolveSelectors converts key-value selectors to numeric indices.
+// resolveSelectors converts key-value selectors to numeric indices that match
+// the YAML file positions. It also returns the location of the resolved leaf value.
 // Example: "resources.jobs.foo.tasks[task_key='main'].name" -> "resources.jobs.foo.tasks[1].name"
-func resolveSelectors(pathStr string, b *bundle.Bundle, operation OperationType) (*structpath.PathNode, error) {
-	node, err := structpath.Parse(pathStr)
+// Returns a PatternNode because for Add operations, [*] may be used as a placeholder for new elements.
+func resolveSelectors(pathStr string, b *bundle.Bundle, operation OperationType) (*structpath.PatternNode, dyn.Location, error) {
+	node, err := structpath.ParsePath(pathStr)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse path %s: %w", pathStr, err)
+		return nil, dyn.Location{}, fmt.Errorf("failed to parse path %s: %w", pathStr, err)
 	}
 
 	nodes := node.AsSlice()
-	var result *structpath.PathNode
+	var result *structpath.PatternNode
 	currentValue := b.Config.Value()
 
 	for _, n := range nodes {
 		if key, ok := n.StringKey(); ok {
-			result = structpath.NewStringKey(result, key)
+			result = structpath.NewPatternStringKey(result, key)
 			if currentValue.IsValid() {
 				currentValue, _ = dyn.GetByPath(currentValue, dyn.Path{dyn.Key(key)})
 			}
@@ -40,7 +41,7 @@ func resolveSelectors(pathStr string, b *bundle.Bundle, operation OperationType)
 		}
 
 		if idx, ok := n.Index(); ok {
-			result = structpath.NewIndex(result, idx)
+			result = structpath.NewPatternIndex(result, idx)
 			if currentValue.IsValid() {
 				currentValue, _ = dyn.GetByPath(currentValue, dyn.Path{dyn.Index(idx)})
 			}
@@ -50,7 +51,7 @@ func resolveSelectors(pathStr string, b *bundle.Bundle, operation OperationType)
 		// Check for key-value selector: [key='value']
 		if key, value, ok := n.KeyValue(); ok {
 			if !currentValue.IsValid() || currentValue.Kind() != dyn.KindSequence {
-				return nil, fmt.Errorf("cannot apply [%s='%s'] selector to non-array value in path %s", key, value, pathStr)
+				return nil, dyn.Location{}, fmt.Errorf("cannot apply [%s='%s'] selector to non-array value in path %s", key, value, pathStr)
 			}
 
 			seq, _ := currentValue.AsSequence()
@@ -70,43 +71,66 @@ func resolveSelectors(pathStr string, b *bundle.Bundle, operation OperationType)
 
 			if foundIndex == -1 {
 				if operation == OperationAdd {
-					result = structpath.NewBracketStar(result)
+					result = structpath.NewPatternBracketStar(result)
 					// Can't navigate further into non-existent element
 					currentValue = dyn.Value{}
 					continue
 				}
-				return nil, fmt.Errorf("no array element found with %s='%s' in path %s", key, value, pathStr)
+				return nil, dyn.Location{}, fmt.Errorf("no array element found with %s='%s' in path %s", key, value, pathStr)
 			}
 
-			result = structpath.NewIndex(result, foundIndex)
+			// Mutators may reorder sequence elements (e.g., tasks sorted by task_key).
+			// Use location information to determine the original YAML file position.
+			yamlIndex := yamlFileIndex(seq, foundIndex)
+			result = structpath.NewPatternIndex(result, yamlIndex)
 			currentValue = seq[foundIndex]
 			continue
 		}
-
-		if n.DotStar() || n.BracketStar() {
-			return nil, errors.New("wildcard patterns are not supported in field paths")
-		}
 	}
 
-	return result, nil
+	return result, currentValue.Location(), nil
+}
+
+// yamlFileIndex determines the original YAML file position of a sequence element.
+// Mutators may reorder sequence elements (e.g., tasks sorted by task_key), so the
+// in-memory index may not match the position in the YAML file. This function uses
+// location information to count how many elements from the same file appear before
+// the target element, giving the correct index for YAML patching.
+func yamlFileIndex(seq []dyn.Value, sortedIndex int) int {
+	matchLocation := seq[sortedIndex].Location()
+	if matchLocation.File == "" {
+		return sortedIndex
+	}
+
+	yamlIndex := 0
+	for i, elem := range seq {
+		if i == sortedIndex {
+			continue
+		}
+		loc := elem.Location()
+		if loc.File == matchLocation.File && loc.Line < matchLocation.Line {
+			yamlIndex++
+		}
+	}
+	return yamlIndex
 }
 
 func pathDepth(pathStr string) int {
-	node, err := structpath.Parse(pathStr)
+	node, err := structpath.ParsePath(pathStr)
 	if err != nil {
 		return 0
 	}
 	return len(node.AsSlice())
 }
 
-// adjustArrayIndex adjusts the index in a PathNode based on previous operations.
+// adjustArrayIndex adjusts the index in a PatternNode based on previous operations.
 // When operations are applied sequentially, removals and additions shift array indices.
 // This function adjusts the index to account for those shifts.
-func adjustArrayIndex(path *structpath.PathNode, operations map[string][]struct {
+func adjustArrayIndex(path *structpath.PatternNode, operations map[string][]struct {
 	index     int
 	operation OperationType
 },
-) *structpath.PathNode {
+) *structpath.PatternNode {
 	originalIndex, ok := path.Index()
 	if !ok {
 		return path
@@ -134,7 +158,7 @@ func adjustArrayIndex(path *structpath.PathNode, operations map[string][]struct 
 		adjustedIndex = 0
 	}
 
-	return structpath.NewIndex(parentPath, adjustedIndex)
+	return structpath.NewPatternIndex(parentPath, adjustedIndex)
 }
 
 // ResolveChanges resolves selectors and computes field path candidates for each change.
@@ -192,7 +216,7 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 			configChange := resourceChanges[fieldPath]
 			fullPath := resourceKey + "." + fieldPath
 
-			resolvedPath, err := resolveSelectors(fullPath, b, configChange.Operation)
+			resolvedPath, resolvedLocation, err := resolveSelectors(fullPath, b, configChange.Operation)
 			if err != nil {
 				return nil, fmt.Errorf("failed to resolve selectors in path %s: %w", fullPath, err)
 			}
@@ -213,7 +237,7 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 				if ok && len(indices) > 0 {
 					index := indices[0]
 					indicesToReplaceMap[parentPath] = indices[1:]
-					resolvedPath = structpath.NewIndex(resolvedPath.Parent(), index)
+					resolvedPath = structpath.NewPatternIndex(resolvedPath.Parent(), index)
 				}
 			}
 
@@ -235,8 +259,7 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 				candidates = append(candidates, targetPrefixedPath)
 			}
 
-			loc := b.Config.GetLocation(resolvedPathStr)
-			filePath := loc.File
+			filePath := resolvedLocation.File
 
 			isDefinedInConfig := filePath != ""
 			if !isDefinedInConfig {

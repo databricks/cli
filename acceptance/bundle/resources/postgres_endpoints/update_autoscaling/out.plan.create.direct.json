@@ -11,7 +11,7 @@
       "autoscaling_limit_max_cu": 8,
       "autoscaling_limit_min_cu": 0.5,
       "endpoint_id": "my-endpoint",
-      "endpoint_type": "ENDPOINT_TYPE_READ_WRITE",
+      "endpoint_type": "ENDPOINT_TYPE_READ_ONLY",
       "parent": "${resources.postgres_branches.main.id}",
       "suspend_timeout_duration": "300s"
     },

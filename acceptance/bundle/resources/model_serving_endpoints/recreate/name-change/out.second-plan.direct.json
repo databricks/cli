@@ -58,7 +58,7 @@
       "changes": {
         "name": {
           "action": "recreate",
-          "reason": "builtin_rule",
+          "reason": "immutable",
           "old": "[ORIGINAL_ENDPOINT_ID]",
           "new": "[NEW_ENDPOINT_ID]",
           "remote": "[ORIGINAL_ENDPOINT_ID]"

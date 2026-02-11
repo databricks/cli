@@ -229,8 +229,9 @@ func buildNestedMaps(targetPath, missingPath yamlpatch.Path, leafValue any) any 
 
 // strPathToJSONPointer converts a structpath string to JSON Pointer format.
 // Example: "resources.jobs.test[0].name" -> "/resources/jobs/test/0/name"
+// The path may contain [*] which is converted to "-" (JSON Pointer append syntax).
 func strPathToJSONPointer(pathStr string) (string, error) {
-	node, err := structpath.Parse(pathStr)
+	node, err := structpath.ParsePattern(pathStr)
 	if err != nil {
 		return "", fmt.Errorf("failed to parse path %q: %w", pathStr, err)
 	}

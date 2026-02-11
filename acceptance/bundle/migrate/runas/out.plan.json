@@ -7,37 +7,34 @@
     "resources.pipelines.foo": {
       "action": "skip",
       "remote_state": {
+        "catalog": "main",
+        "channel": "CURRENT",
         "creator_user_name": "[USERNAME]",
+        "deployment": {
+          "kind": "BUNDLE",
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dabs_revenue-[UNIQUE_NAME]/production/state/metadata.json"
+        },
+        "edition": "ADVANCED",
+        "id": "[UUID]",
         "last_modified": [UNIX_TIME_MILLIS],
+        "libraries": [
+          {
+            "notebook": {
+              "path": "/Workspace/Users/[USERNAME]/.bundle/dabs_revenue-[UNIQUE_NAME]/production/files/sql"
+            }
+          }
+        ],
         "name": "DABs Revenue Pipeline",
         "pipeline_id": "[UUID]",
         "run_as_user_name": "[USERNAME]",
-        "spec": {
-          "catalog": "main",
-          "channel": "CURRENT",
-          "deployment": {
-            "kind": "BUNDLE",
-            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/dabs_revenue-[UNIQUE_NAME]/production/state/metadata.json"
-          },
-          "edition": "ADVANCED",
-          "id": "[UUID]",
-          "libraries": [
-            {
-              "notebook": {
-                "path": "/Workspace/Users/[USERNAME]/.bundle/dabs_revenue-[UNIQUE_NAME]/production/files/sql"
-              }
-            }
-          ],
-          "name": "DABs Revenue Pipeline",
-          "serverless": true,
-          "target": "team_eng_deco"
-        },
-        "state": "IDLE"
+        "serverless": true,
+        "state": "IDLE",
+        "target": "team_eng_deco"
       },
       "changes": {
         "run_as": {
           "action": "skip",
-          "reason": "builtin_rule",
+          "reason": "not_returned_by_api",
           "old": {
             "service_principal_name": "[UUID]"
           },

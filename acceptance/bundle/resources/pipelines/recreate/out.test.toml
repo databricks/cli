@@ -1,6 +1,7 @@
 Local = true
 Cloud = true
 RequiresUnityCatalog = true
+RunsOnDbr = true
 
 [EnvMatrix]
   DATABRICKS_BUNDLE_ENGINE = ["terraform", "direct"]

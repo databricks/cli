@@ -49,31 +49,50 @@ def parse_out_fields(path):
 
 
 def get_field_behaviors(schemas, type_name):
-    """Extract all field behaviors from a schema."""
+    """Extract field behaviors from a schema, propagating INPUT_ONLY/OUTPUT_ONLY from containers."""
     if type_name not in schemas:
         return {}
 
-    def extract(schema, prefix, visited, depth):
+    def extract(schema, prefix, visited, depth, inherited):
         if depth > 4:
             return {}
         results = {}
         for name, prop in schema.get("properties", {}).items():
             path = f"{prefix}.{name}" if prefix else name
-            behaviors = prop.get("x-databricks-field-behaviors", [])
+            behaviors = list(prop.get("x-databricks-field-behaviors", []))
             if prop.get("x-databricks-immutable") and "IMMUTABLE" not in behaviors:
                 behaviors.append("IMMUTABLE")
-
+            for b in inherited:
+                if b not in behaviors:
+                    behaviors.append(b)
             if behaviors:
                 results[path] = behaviors
-
             if "$ref" in prop:
                 ref = prop["$ref"].split("/")[-1]
                 if ref in schemas and ref not in visited:
                     visited.add(ref)
-                    results.update(extract(schemas[ref], path, visited, depth + 1))
+                    propagate = [b for b in behaviors if b in ("INPUT_ONLY", "OUTPUT_ONLY")]
+                    results.update(extract(schemas[ref], path, visited, depth + 1, propagate))
         return results
 
-    return extract(schemas[type_name], "", set(), 0)
+    # Find INPUT_ONLY/OUTPUT_ONLY from container types that reference this type
+    inherited = find_inherited_behaviors(schemas, type_name)
+    return extract(schemas[type_name], "", set(), 0, inherited)
+
+
+def find_inherited_behaviors(schemas, type_name):
+    """Find INPUT_ONLY/OUTPUT_ONLY behaviors from containers that reference type_name."""
+    inherited = []
+    for container_schema in schemas.values():
+        for field_prop in container_schema.get("properties", {}).values():
+            if field_prop.get("$ref", "").split("/")[-1] != type_name:
+                continue
+            behaviors = field_prop.get("x-databricks-field-behaviors", [])
+            if "INPUT_ONLY" in behaviors and "INPUT_ONLY" not in inherited:
+                inherited.append("INPUT_ONLY")
+            if "OUTPUT_ONLY" in behaviors and "OUTPUT_ONLY" not in inherited:
+                inherited.append("OUTPUT_ONLY")
+    return inherited
 
 
 def filter_prefixes(fields):
@@ -86,8 +105,9 @@ def filter_prefixes(fields):
 
 
 def write_field_group(lines, header, fields):
-    """Write a group of fields with behavior type comments."""
+    """Write a group of fields with field and reason, grouped by behavior."""
     lines.append(f"\n    {header}:")
+    # Group by behavior
     by_behavior = {}
     for field, behavior in fields:
         by_behavior.setdefault(behavior, []).append(field)
@@ -96,9 +116,10 @@ def write_field_group(lines, header, fields):
         if not first:
             lines.append("")
         first = False
-        lines.append(f"      # {behavior}:")
+        reason = f"spec:{behavior.lower()}"
         for field in by_behavior[behavior]:
-            lines.append(f"      - {field}")
+            lines.append(f"      - field: {field}")
+            lines.append(f"        reason: {reason}")
 
 
 def generate(resource_behaviors):
