@@ -28,7 +28,7 @@ func TestLoad(t *testing.T) {
 						{
 							"type": "sql_warehouse",
 							"alias": "SQL Warehouse",
-							"resource_key": "sql-warehouse",
+							"resourceKey": "sql-warehouse",
 							"description": "SQL Warehouse",
 							"permission": "CAN_USE",
 							"fields": {
@@ -44,6 +44,7 @@ func TestLoad(t *testing.T) {
 				"displayName": "Server Plugin",
 				"description": "HTTP server",
 				"package": "@databricks/appkit",
+				"requiredByTemplate": true,
 				"resources": {
 					"required": [],
 					"optional": []
@@ -59,6 +60,8 @@ func TestLoad(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "1.0", m.Version)
 	assert.Len(t, m.Plugins, 2)
+	assert.True(t, m.Plugins["server"].RequiredByTemplate)
+	assert.False(t, m.Plugins["analytics"].RequiredByTemplate)
 }
 
 func TestLoadNotFound(t *testing.T) {
@@ -109,11 +112,8 @@ func TestGetSelectablePlugins(t *testing.T) {
 	m := &manifest.Manifest{
 		Plugins: map[string]manifest.Plugin{
 			"server": {
-				Name: "server",
-				Resources: manifest.Resources{
-					Required: []manifest.Resource{},
-					Optional: []manifest.Resource{},
-				},
+				Name:               "server",
+				RequiredByTemplate: true,
 			},
 			"analytics": {
 				Name: "analytics",
@@ -121,15 +121,61 @@ func TestGetSelectablePlugins(t *testing.T) {
 					Required: []manifest.Resource{
 						{Type: "sql_warehouse", Alias: "SQL Warehouse", ResourceKey: "sql-warehouse"},
 					},
-					Optional: []manifest.Resource{},
 				},
+			},
+			"optional-plugin": {
+				Name: "optional-plugin",
 			},
 		},
 	}
 
 	selectable := m.GetSelectablePlugins()
-	require.Len(t, selectable, 1)
+	require.Len(t, selectable, 2)
 	assert.Equal(t, "analytics", selectable[0].Name)
+	assert.Equal(t, "optional-plugin", selectable[1].Name)
+}
+
+func TestGetMandatoryPlugins(t *testing.T) {
+	m := &manifest.Manifest{
+		Plugins: map[string]manifest.Plugin{
+			"server": {
+				Name:               "server",
+				RequiredByTemplate: true,
+			},
+			"analytics": {
+				Name: "analytics",
+			},
+			"core": {
+				Name:               "core",
+				RequiredByTemplate: true,
+				Resources: manifest.Resources{
+					Required: []manifest.Resource{
+						{Type: "sql_warehouse", Alias: "SQL Warehouse", ResourceKey: "sql-warehouse"},
+					},
+				},
+			},
+		},
+	}
+
+	mandatory := m.GetMandatoryPlugins()
+	require.Len(t, mandatory, 2)
+	assert.Equal(t, "core", mandatory[0].Name)
+	assert.Equal(t, "server", mandatory[1].Name)
+
+	names := m.GetMandatoryPluginNames()
+	assert.Equal(t, []string{"core", "server"}, names)
+}
+
+func TestGetMandatoryPluginsEmpty(t *testing.T) {
+	m := &manifest.Manifest{
+		Plugins: map[string]manifest.Plugin{
+			"analytics": {Name: "analytics"},
+		},
+	}
+
+	mandatory := m.GetMandatoryPlugins()
+	assert.Empty(t, mandatory)
+	assert.Empty(t, m.GetMandatoryPluginNames())
 }
 
 func TestGetPluginByName(t *testing.T) {
@@ -229,7 +275,7 @@ func TestResourceFields(t *testing.T) {
 						{
 							"type": "database",
 							"alias": "Database",
-							"resource_key": "database",
+							"resourceKey": "database",
 							"description": "Cache database",
 							"permission": "CAN_CONNECT_AND_CREATE",
 							"fields": {

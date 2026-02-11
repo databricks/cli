@@ -181,7 +181,6 @@ func ListVolumes(ctx context.Context) ([]ListItem, error) {
 
 // ListVectorSearchIndexes returns vector search indexes as selectable items (id = endpoint/index name).
 func ListVectorSearchIndexes(ctx context.Context) ([]ListItem, error) {
-	// TODO: review this one too
 	w, err := workspaceClient(ctx)
 	if err != nil {
 		return nil, err

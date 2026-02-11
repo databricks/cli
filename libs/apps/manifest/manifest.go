@@ -20,12 +20,12 @@ type ResourceField struct {
 
 // Resource defines a Databricks resource required or optional for a plugin.
 type Resource struct {
-	Type        string                   `json:"type"`         // e.g., "sql_warehouse"
-	Alias       string                   `json:"alias"`        // display name, e.g., "SQL Warehouse"
-	ResourceKey string                   `json:"resource_key"` // machine key for config/env, e.g., "sql-warehouse"
-	Description string                   `json:"description"`  // e.g., "SQL Warehouse for executing analytics queries"
-	Permission  string                   `json:"permission"`   // e.g., "CAN_USE"
-	Fields      map[string]ResourceField `json:"fields"`       // field definitions with env var mappings
+	Type        string                   `json:"type"`        // e.g., "sql_warehouse"
+	Alias       string                   `json:"alias"`       // display name, e.g., "SQL Warehouse"
+	ResourceKey string                   `json:"resourceKey"` // machine key for config/env, e.g., "sql-warehouse"
+	Description string                   `json:"description"` // e.g., "SQL Warehouse for executing analytics queries"
+	Permission  string                   `json:"permission"`  // e.g., "CAN_USE"
+	Fields      map[string]ResourceField `json:"fields"`      // field definitions with env var mappings
 }
 
 // Key returns the resource key for machine use (config keys, variable naming).
@@ -62,11 +62,12 @@ type Resources struct {
 
 // Plugin represents a plugin defined in the manifest.
 type Plugin struct {
-	Name        string    `json:"name"`
-	DisplayName string    `json:"displayName"`
-	Description string    `json:"description"`
-	Package     string    `json:"package"`
-	Resources   Resources `json:"resources"`
+	Name               string    `json:"name"`
+	DisplayName        string    `json:"displayName"`
+	Description        string    `json:"description"`
+	Package            string    `json:"package"`
+	RequiredByTemplate bool      `json:"requiredByTemplate"`
+	Resources          Resources `json:"resources"`
 }
 
 // Manifest represents the appkit.plugins.json file structure.
@@ -118,16 +119,36 @@ func (m *Manifest) GetPlugins() []Plugin {
 	return plugins
 }
 
-// GetSelectablePlugins returns plugins that have resources (can be selected/configured).
-// Plugins without resources (like a base server) are considered always-on.
+// GetSelectablePlugins returns plugins the user can choose during init.
+// Excludes mandatory plugins (they are always included automatically).
 func (m *Manifest) GetSelectablePlugins() []Plugin {
 	var selectable []Plugin
 	for _, p := range m.GetPlugins() {
-		if len(p.Resources.Required) > 0 || len(p.Resources.Optional) > 0 {
+		if !p.RequiredByTemplate {
 			selectable = append(selectable, p)
 		}
 	}
 	return selectable
+}
+
+// GetMandatoryPlugins returns plugins marked as requiredByTemplate.
+func (m *Manifest) GetMandatoryPlugins() []Plugin {
+	var mandatory []Plugin
+	for _, p := range m.GetPlugins() {
+		if p.RequiredByTemplate {
+			mandatory = append(mandatory, p)
+		}
+	}
+	return mandatory
+}
+
+// GetMandatoryPluginNames returns the names of all mandatory plugins.
+func (m *Manifest) GetMandatoryPluginNames() []string {
+	var names []string
+	for _, p := range m.GetMandatoryPlugins() {
+		names = append(names, p.Name)
+	}
+	return names
 }
 
 // GetPluginByName returns a plugin by its name, or nil if not found.
