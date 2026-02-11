@@ -436,7 +436,7 @@ func AddDefaultHandlers(server *Server) {
 	// External Locations:
 
 	server.Handle("GET", "/api/2.1/unity-catalog/external-locations/{name}", func(req Request) any {
-		return req.Workspace.ExternalLocationsGet(req, req.Vars["name"])
+		return MapGet(req.Workspace, req.Workspace.ExternalLocations, req.Vars["name"])
 	})
 
 	server.Handle("POST", "/api/2.1/unity-catalog/external-locations", func(req Request) any {
@@ -448,7 +448,7 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	server.Handle("DELETE", "/api/2.1/unity-catalog/external-locations/{name}", func(req Request) any {
-		return req.Workspace.ExternalLocationsDelete(req, req.Vars["name"])
+		return MapDelete(req.Workspace, req.Workspace.ExternalLocations, req.Vars["name"])
 	})
 
 	// Registered Models:

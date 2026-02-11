@@ -103,35 +103,3 @@ func (s *FakeWorkspace) ExternalLocationsUpdate(req Request, name string) Respon
 		Body: existing,
 	}
 }
-
-func (s *FakeWorkspace) ExternalLocationsGet(_ Request, name string) Response {
-	defer s.LockUnlock()()
-
-	existing, ok := s.ExternalLocations[name]
-	if !ok {
-		return Response{
-			StatusCode: http.StatusNotFound,
-			Body:       fmt.Sprintf("external location %s not found", name),
-		}
-	}
-
-	return Response{
-		Body: existing,
-	}
-}
-
-func (s *FakeWorkspace) ExternalLocationsDelete(_ Request, name string) Response {
-	defer s.LockUnlock()()
-
-	if _, ok := s.ExternalLocations[name]; !ok {
-		return Response{
-			StatusCode: http.StatusNotFound,
-			Body:       fmt.Sprintf("external location %s not found", name),
-		}
-	}
-
-	delete(s.ExternalLocations, name)
-	return Response{
-		StatusCode: http.StatusOK,
-	}
-}

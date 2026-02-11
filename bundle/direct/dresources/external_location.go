@@ -69,32 +69,27 @@ func (r *ResourceExternalLocation) DoUpdate(ctx context.Context, id string, conf
 		ForceSendFields:   utils.FilterFields[catalog.UpdateExternalLocation](config.ForceSendFields, "IsolationMode", "Owner"),
 	}
 
-	response, err := r.client.ExternalLocations.Update(ctx, updateRequest)
-	if err != nil {
-		return nil, err
-	}
-
-	return response, nil
+	return r.client.ExternalLocations.Update(ctx, updateRequest)
 }
 
 // DoUpdateWithID updates the external location and returns the new ID if the name changes.
 func (r *ResourceExternalLocation) DoUpdateWithID(ctx context.Context, id string, config *catalog.CreateExternalLocation) (string, *catalog.ExternalLocationInfo, error) {
 	updateRequest := catalog.UpdateExternalLocation{
-		Comment:          config.Comment,
-		CredentialName:   config.CredentialName,
-		EnableFileEvents: config.EnableFileEvents,
-		// EncryptionDetails is not supported for updates
-		Fallback: config.Fallback,
-		// FileEventQueue is not supported for updates
-		Force:           false,
-		IsolationMode:   "", // Not supported by DABs
-		Name:            id,
-		NewName:         "", // Initialized below if needed
-		Owner:           "", // Not supported by DABs
-		ReadOnly:        config.ReadOnly,
-		SkipValidation:  config.SkipValidation,
-		Url:             config.Url,
-		ForceSendFields: utils.FilterFields[catalog.UpdateExternalLocation](config.ForceSendFields, "IsolationMode", "Owner"),
+		Comment:           config.Comment,
+		CredentialName:    config.CredentialName,
+		EnableFileEvents:  config.EnableFileEvents,
+		EncryptionDetails: config.EncryptionDetails,
+		Fallback:          config.Fallback,
+		FileEventQueue:    config.FileEventQueue,
+		Force:             false,
+		IsolationMode:     "", // Not supported by DABs
+		Name:              id,
+		NewName:           "", // Initialized below if needed
+		Owner:             "", // Not supported by DABs
+		ReadOnly:          config.ReadOnly,
+		SkipValidation:    config.SkipValidation,
+		Url:               config.Url,
+		ForceSendFields:   utils.FilterFields[catalog.UpdateExternalLocation](config.ForceSendFields, "IsolationMode", "Owner"),
 	}
 
 	if config.Name != id {
