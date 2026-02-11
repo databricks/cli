@@ -92,3 +92,13 @@ Resource: resources.jobs.job_two
            notebook_task:
              notebook_path: /Users/{{workspace_user_name}}/extra
 +          task_key: extra_task
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.job_one
+  delete resources.jobs.job_two
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/dev
+
+Deleting files...
+Destroy complete!
