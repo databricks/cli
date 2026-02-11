@@ -167,8 +167,8 @@ type createOptions struct {
 	deploy          bool
 	deployChanged   bool // true if --deploy flag was explicitly set
 	run             string
-	runChanged      bool // true if --run flag was explicitly set
-	featuresChanged bool // true if --features flag was explicitly set
+	runChanged      bool   // true if --run flag was explicitly set
+	featuresChanged bool   // true if --features flag was explicitly set
 	profile         string // explicit profile from --profile flag
 }
 
