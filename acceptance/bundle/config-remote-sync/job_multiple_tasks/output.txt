@@ -78,6 +78,7 @@ Resource: resources.jobs.rename_task_job
   tasks[task_key='b_task_renamed']: add
   tasks[task_key='c_task'].depends_on[0].task_key: replace
   tasks[task_key='d_task'].depends_on[0].task_key: replace
+  tasks[task_key='synced_task']: add
 
 
 
@@ -114,3 +115,13 @@ Resource: resources.jobs.rename_task_job
 +            - task_key: b_task_renamed
            notebook_task:
              notebook_path: /Users/{{workspace_user_name}}/c_task
+@@ -72,2 +72,9 @@
+             node_type_id: [NODE_TYPE_ID]
+             num_workers: 1
++        - new_cluster:
++            node_type_id: [NODE_TYPE_ID]
++            num_workers: 1
++            spark_version: 13.3.x-snapshot-scala2.12
++          notebook_task:
++            notebook_path: ./synced_notebook
++          task_key: synced_task

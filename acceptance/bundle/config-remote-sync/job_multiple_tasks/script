@@ -49,7 +49,7 @@ $CLI bundle deploy
 
 title "Rename b_task to b_task_renamed (4 tasks, 2 with depends_on, 1 without)"
 rename_job_id="$(read_id.py rename_task_job)"
-edit_resource.py jobs $rename_job_id <<'EOF'
+edit_resource.py jobs $rename_job_id <<EOF
 for task in r["tasks"]:
     if task["task_key"] == "b_task":
         task["task_key"] = "b_task_renamed"
@@ -57,6 +57,19 @@ for task in r["tasks"]:
         for dep in task["depends_on"]:
             if dep["task_key"] == "b_task":
                 dep["task_key"] = "b_task_renamed"
+
+# Add synced_task with path inside sync root
+r["tasks"].append({
+    "task_key": "synced_task",
+    "notebook_task": {
+        "notebook_path": "${PWD}/synced_notebook"
+    },
+    "new_cluster": {
+        "spark_version": "${DEFAULT_SPARK_VERSION}",
+        "node_type_id": "${NODE_TYPE_ID}",
+        "num_workers": 1
+    }
+})
 EOF
 
 title "Detect task key rename"
