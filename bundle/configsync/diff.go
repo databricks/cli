@@ -137,17 +137,15 @@ func translateWorkspacePaths(value any, syncRootPath string) any {
 		}
 		return v
 	case map[string]any:
-		result := make(map[string]any, len(v))
 		for key, val := range v {
-			result[key] = translateWorkspacePaths(val, syncRootPath)
+			v[key] = translateWorkspacePaths(val, syncRootPath)
 		}
-		return result
+		return v
 	case []any:
-		result := make([]any, len(v))
 		for i, val := range v {
-			result[i] = translateWorkspacePaths(val, syncRootPath)
+			v[i] = translateWorkspacePaths(val, syncRootPath)
 		}
-		return result
+		return v
 	default:
 		return value
 	}
