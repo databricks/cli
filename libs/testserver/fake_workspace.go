@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"os"
 	"path"
 	"path/filepath"
 	"strings"
@@ -126,9 +127,9 @@ type FakeWorkspace struct {
 	files        map[string]FileEntry
 	repoIdByPath map[string]int64
 
-	Jobs          map[int64]jobs.Job
-	JobRuns       map[int64]jobs.Run
-	JobRunOutputs map[int64]jobs.RunOutput
+	Jobs                map[int64]jobs.Job
+	JobRuns             map[int64]jobs.Run
+	JobRunOutputs       map[int64]jobs.RunOutput
 	Pipelines           map[string]pipelines.GetPipelineResponse
 	PipelineUpdates     map[string]bool
 	Monitors            map[string]catalog.MonitorInfo
@@ -166,6 +167,10 @@ type FakeWorkspace struct {
 	PostgresBranches   map[string]postgres.Branch
 	PostgresEndpoints  map[string]postgres.Endpoint
 	PostgresOperations map[string]postgres.Operation
+
+	// clusterVenvs caches Python venvs per existing cluster ID,
+	// matching cloud behavior where libraries are cached on running clusters.
+	clusterVenvs map[string]*clusterEnv
 }
 
 func (s *FakeWorkspace) LockUnlock() func() {
@@ -253,9 +258,9 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		files:        make(map[string]FileEntry),
 		repoIdByPath: make(map[string]int64),
 
-		Jobs:          map[int64]jobs.Job{},
-		JobRuns:       map[int64]jobs.Run{},
-		JobRunOutputs: map[int64]jobs.RunOutput{},
+		Jobs:                map[int64]jobs.Job{},
+		JobRuns:             map[int64]jobs.Run{},
+		JobRunOutputs:       map[int64]jobs.RunOutput{},
 		Grants:              map[string][]catalog.PrivilegeAssignment{},
 		Pipelines:           map[string]pipelines.GetPipelineResponse{},
 		PipelineUpdates:     map[string]bool{},
@@ -288,6 +293,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		PostgresBranches:     map[string]postgres.Branch{},
 		PostgresEndpoints:    map[string]postgres.Endpoint{},
 		PostgresOperations:   map[string]postgres.Operation{},
+		clusterVenvs:         map[string]*clusterEnv{},
 		Alerts:               map[string]sql.AlertV2{},
 		Experiments:          map[string]ml.GetExperimentResponse{},
 		ModelRegistryModels:  map[string]ml.Model{},
@@ -462,6 +468,20 @@ func (s *FakeWorkspace) DirectoryExists(path string) bool {
 
 	_, exists := s.directories[path]
 	return exists
+}
+
+// clusterEnv represents a cached Python venv for an existing cluster.
+type clusterEnv struct {
+	dir           string          // base temp directory containing the venv
+	venvDir       string          // path to .venv inside dir
+	installedLibs map[string]bool // workspace paths of already-installed wheels
+}
+
+// Cleanup removes all cached cluster venvs.
+func (s *FakeWorkspace) Cleanup() {
+	for _, env := range s.clusterVenvs {
+		os.RemoveAll(env.dir)
+	}
 }
 
 // jsonConvert saves input to a value pointed by output

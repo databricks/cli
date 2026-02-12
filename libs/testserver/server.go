@@ -212,6 +212,12 @@ func New(t testutil.TestingT) *Server {
 		fakeOidc:       &FakeOidc{url: server.URL},
 	}
 
+	t.Cleanup(func() {
+		for _, ws := range s.fakeWorkspaces {
+			ws.Cleanup()
+		}
+	})
+
 	// Set up the not found handler as fallback
 	notFoundFunc := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		pattern := r.Method + " " + r.URL.Path
