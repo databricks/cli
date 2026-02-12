@@ -71,7 +71,9 @@ func SupportsColor(ctx context.Context, w io.Writer) bool {
 
 // GetInteractiveMode returns the interactive mode based on terminal capabilities.
 // Returns one of: "full", "output_only", or "none".
-// Returns empty string if cmdio is not initialized in the context.
+// Returns empty string if cmdio is not initialized in the context. This can
+// happen early in command setup before cmdio is configured in the context.
+// The caller is expected to treat "" as unknown and skip adding the mode.
 func GetInteractiveMode(ctx context.Context) string {
 	c, ok := ctx.Value(cmdIOKey).(*cmdIO)
 	if !ok {
