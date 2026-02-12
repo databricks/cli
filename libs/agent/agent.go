@@ -9,16 +9,26 @@ import (
 // Product name constants
 const (
 	ClaudeCode = "claude-code"
-	GeminiCLI  = "gemini-cli"
+	Cline      = "cline"
+	Codex      = "codex"
 	Cursor     = "cursor"
+	GeminiCLI  = "gemini-cli"
+	OpenCode   = "opencode"
 )
 
-// Environment variable constants
-const (
-	claudeCodeEnvVar  = "CLAUDECODE"
-	geminiCliEnvVar   = "GEMINI_CLI"
-	cursorAgentEnvVar = "CURSOR_AGENT"
-)
+// knownAgents maps environment variables to product names.
+// Adding a new agent only requires a new entry here and a new constant above.
+var knownAgents = []struct {
+	envVar  string
+	product string
+}{
+	{"CLAUDECODE", ClaudeCode},
+	{"CLINE_ACTIVE", Cline},
+	{"CODEX_CI", Codex},
+	{"CURSOR_AGENT", Cursor},
+	{"GEMINI_CLI", GeminiCLI},
+	{"OPENCODE", OpenCode},
+}
 
 // key is a package-local type for context keys
 type key int
@@ -32,17 +42,10 @@ const (
 // Only returns a product if exactly one agent is detected.
 func detect(ctx context.Context) string {
 	var detected []string
-
-	if env.Get(ctx, claudeCodeEnvVar) != "" {
-		detected = append(detected, ClaudeCode)
-	}
-
-	if env.Get(ctx, geminiCliEnvVar) != "" {
-		detected = append(detected, GeminiCLI)
-	}
-
-	if env.Get(ctx, cursorAgentEnvVar) != "" {
-		detected = append(detected, Cursor)
+	for _, a := range knownAgents {
+		if env.Get(ctx, a.envVar) != "" {
+			detected = append(detected, a.product)
+		}
 	}
 
 	// Only return a product if exactly one agent is detected

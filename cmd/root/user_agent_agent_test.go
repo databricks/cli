@@ -9,28 +9,23 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAgentClaudeCode(t *testing.T) {
-	ctx := context.Background()
-	ctx = agent.Mock(ctx, agent.ClaudeCode)
+func TestAgentInUserAgent(t *testing.T) {
+	for _, product := range []string{
+		agent.ClaudeCode,
+		agent.Cline,
+		agent.Codex,
+		agent.Cursor,
+		agent.GeminiCLI,
+		agent.OpenCode,
+	} {
+		t.Run(product, func(t *testing.T) {
+			ctx := context.Background()
+			ctx = agent.Mock(ctx, product)
 
-	ctx = withAgentInUserAgent(ctx)
-	assert.Contains(t, useragent.FromContext(ctx), "agent/claude-code")
-}
-
-func TestAgentGeminiCLI(t *testing.T) {
-	ctx := context.Background()
-	ctx = agent.Mock(ctx, agent.GeminiCLI)
-
-	ctx = withAgentInUserAgent(ctx)
-	assert.Contains(t, useragent.FromContext(ctx), "agent/gemini-cli")
-}
-
-func TestAgentCursor(t *testing.T) {
-	ctx := context.Background()
-	ctx = agent.Mock(ctx, agent.Cursor)
-
-	ctx = withAgentInUserAgent(ctx)
-	assert.Contains(t, useragent.FromContext(ctx), "agent/cursor")
+			ctx = withAgentInUserAgent(ctx)
+			assert.Contains(t, useragent.FromContext(ctx), "agent/"+product)
+		})
+	}
 }
 
 func TestAgentNotSet(t *testing.T) {
