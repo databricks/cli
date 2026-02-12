@@ -35,6 +35,7 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 		"resources.quality_monitors.test_monitor":                     {ID: "1"},
 		"resources.catalogs.test_catalog":                             {ID: "1"},
 		"resources.schemas.test_schema":                               {ID: "1"},
+		"resources.external_locations.test_external_location":         {ID: "1"},
 		"resources.volumes.test_volume":                               {ID: "1"},
 		"resources.clusters.test_cluster":                             {ID: "1"},
 		"resources.dashboards.test_dashboard":                         {ID: "1"},
@@ -78,6 +79,9 @@ func TestStateToBundleEmptyLocalResources(t *testing.T) {
 
 	assert.Equal(t, "1", config.Resources.Schemas["test_schema"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Schemas["test_schema"].ModifiedStatus)
+
+	assert.Equal(t, "1", config.Resources.ExternalLocations["test_external_location"].ID)
+	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.ExternalLocations["test_external_location"].ModifiedStatus)
 
 	assert.Equal(t, "1", config.Resources.Volumes["test_volume"].ID)
 	assert.Equal(t, resources.ModifiedStatusDeleted, config.Resources.Volumes["test_volume"].ModifiedStatus)
@@ -179,6 +183,14 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 				"test_schema": {
 					CreateSchema: catalog.CreateSchema{
 						Name: "test_schema",
+					},
+				},
+			},
+			ExternalLocations: map[string]*resources.ExternalLocation{
+				"test_external_location": {
+					CreateExternalLocation: catalog.CreateExternalLocation{
+						Name: "test_external_location",
+						Url:  "s3://test-bucket/path",
 					},
 				},
 			},
@@ -308,6 +320,9 @@ func TestStateToBundleEmptyRemoteResources(t *testing.T) {
 
 	assert.Equal(t, "", config.Resources.Schemas["test_schema"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Schemas["test_schema"].ModifiedStatus)
+
+	assert.Equal(t, "", config.Resources.ExternalLocations["test_external_location"].ID)
+	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.ExternalLocations["test_external_location"].ModifiedStatus)
 
 	assert.Equal(t, "", config.Resources.Volumes["test_volume"].ID)
 	assert.Equal(t, resources.ModifiedStatusCreated, config.Resources.Volumes["test_volume"].ModifiedStatus)
@@ -459,6 +474,14 @@ func TestStateToBundleModifiedResources(t *testing.T) {
 				"test_schema_new": {
 					CreateSchema: catalog.CreateSchema{
 						Name: "test_schema_new",
+					},
+				},
+			},
+			ExternalLocations: map[string]*resources.ExternalLocation{
+				"test_external_location": {
+					CreateExternalLocation: catalog.CreateExternalLocation{
+						Name: "test_external_location",
+						Url:  "s3://test-bucket/path",
 					},
 				},
 			},

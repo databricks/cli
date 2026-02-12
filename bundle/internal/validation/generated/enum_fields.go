@@ -47,6 +47,9 @@ var EnumFields = map[string][]string{
 
 	"resources.database_instances.*.state": {"AVAILABLE", "DELETING", "FAILING_OVER", "STARTING", "STOPPED", "UPDATING"},
 
+	"resources.external_locations.*.encryption_details.sse_encryption_details.algorithm": {"AWS_SSE_KMS", "AWS_SSE_S3"},
+	"resources.external_locations.*.grants[*].privileges[*]":                             {"ALL_PRIVILEGES", "CREATE_EXTERNAL_TABLE", "CREATE_EXTERNAL_VOLUME", "CREATE_MANAGED_STORAGE", "CREATE_TABLE", "CREATE_VOLUME", "MANAGE", "READ_FILES", "WRITE_FILES"},
+
 	"resources.jobs.*.continuous.pause_status":                                                        {"PAUSED", "UNPAUSED"},
 	"resources.jobs.*.continuous.task_retry_mode":                                                     {"NEVER", "ON_FAILURE"},
 	"resources.jobs.*.deployment.kind":                                                                {"BUNDLE", "SYSTEM_MANAGED"},

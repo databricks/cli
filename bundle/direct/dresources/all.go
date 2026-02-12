@@ -12,6 +12,7 @@ var SupportedResources = map[string]any{
 	"experiments":             (*ResourceExperiment)(nil),
 	"catalogs":                (*ResourceCatalog)(nil),
 	"schemas":                 (*ResourceSchema)(nil),
+	"external_locations":      (*ResourceExternalLocation)(nil),
 	"volumes":                 (*ResourceVolume)(nil),
 	"models":                  (*ResourceMlflowModel)(nil),
 	"apps":                    (*ResourceApp)(nil),
@@ -45,10 +46,11 @@ var SupportedResources = map[string]any{
 	"dashboards.permissions":              (*ResourcePermissions)(nil),
 
 	// Grants
-	"catalogs.grants":          (*ResourceGrants)(nil),
-	"schemas.grants":           (*ResourceGrants)(nil),
-	"volumes.grants":           (*ResourceGrants)(nil),
-	"registered_models.grants": (*ResourceGrants)(nil),
+	"catalogs.grants":           (*ResourceGrants)(nil),
+	"schemas.grants":            (*ResourceGrants)(nil),
+	"external_locations.grants": (*ResourceGrants)(nil),
+	"volumes.grants":            (*ResourceGrants)(nil),
+	"registered_models.grants":  (*ResourceGrants)(nil),
 }
 
 func InitAll(client *databricks.WorkspaceClient) (map[string]*Adapter, error) {

@@ -49,6 +49,15 @@ var testConfig map[string]any = map[string]any{
 		// only during updates. They are not included in the test config.
 	},
 
+	"external_locations": &resources.ExternalLocation{
+		CreateExternalLocation: catalog.CreateExternalLocation{
+			Name:           "myexternallocation",
+			Url:            "s3://mybucket/mypath",
+			CredentialName: "mycredential",
+			Comment:        "Test external location",
+		},
+	},
+
 	"schemas": &resources.Schema{
 		CreateSchema: catalog.CreateSchema{
 			CatalogName: "main",
@@ -481,6 +490,17 @@ var testDeps = map[string]prepareWorkspace{
 			FullName:      "mycatalog",
 			Grants: []GrantAssignment{{
 				Privileges: []catalog.Privilege{catalog.PrivilegeUseCatalog},
+				Principal:  "user@example.com",
+			}},
+		}, nil
+	},
+
+	"external_locations.grants": func(client *databricks.WorkspaceClient) (any, error) {
+		return &GrantsState{
+			SecurableType: "external_location",
+			FullName:      "myexternallocation",
+			Grants: []GrantAssignment{{
+				Privileges: []catalog.Privilege{catalog.PrivilegeReadFiles},
 				Principal:  "user@example.com",
 			}},
 		}, nil

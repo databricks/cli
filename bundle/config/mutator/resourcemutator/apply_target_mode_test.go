@@ -135,6 +135,9 @@ func mockBundle(mode config.Mode) *bundle.Bundle {
 				Catalogs: map[string]*resources.Catalog{
 					"catalog1": {CreateCatalog: catalog.CreateCatalog{Name: "catalog1"}},
 				},
+				ExternalLocations: map[string]*resources.ExternalLocation{
+					"externalLocation1": {CreateExternalLocation: catalog.CreateExternalLocation{Name: "externalLocation1"}},
+				},
 				Schemas: map[string]*resources.Schema{
 					"schema1": {CreateSchema: catalog.CreateSchema{Name: "schema1"}},
 				},
@@ -405,10 +408,11 @@ func TestAllNonUcResourcesAreRenamed(t *testing.T) {
 	b := mockBundle(config.Development)
 
 	// UC resources should not have a prefix added to their name. Right now
-	// this list only contains the Volume and Catalog resources since we have yet to remove
+	// this list only contains the Volume, Catalog, and ExternalLocation resources since we have yet to remove
 	// prefixing support for UC schemas and registered models.
 	ucFields := []reflect.Type{
 		reflect.TypeOf(&resources.Catalog{}),
+		reflect.TypeOf(&resources.ExternalLocation{}),
 		reflect.TypeOf(&resources.Volume{}),
 	}
 
