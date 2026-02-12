@@ -13,6 +13,29 @@
 
 resources:
 
+  jobs:
+    ignore_remote_changes:
+      - field: tasks[*].new_cluster.aws_attributes
+        # These are not "output_only", because they can be set by the user as well.
+        reason: managed
+      - field: tasks[*].new_cluster.azure_attributes
+        reason: managed
+      - field: tasks[*].new_cluster.gcp_attributes
+        reason: managed
+
+      - field: job_clusters[*].new_cluster.aws_attributes
+        reason: managed
+      - field: job_clusters[*].new_cluster.azure_attributes
+        reason: managed
+      - field: job_clusters[*].new_cluster.gcp_attributes
+        reason: managed
+
+      # can also be added to backend_defaults with value=false once we have that
+      - field: tasks[*].new_cluster.enable_elastic_disk
+        reason: managed
+      - field: job_clusters[*].new_cluster.enable_elastic_disk
+        reason: managed
+
   pipelines:
     recreate_on_changes:
       - field: storage
@@ -20,6 +43,18 @@ resources:
       - field: ingestion_definition.connection_name
         reason: immutable
       - field: ingestion_definition.ingestion_gateway_id
+        reason: immutable
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/pipelines/resource_pipeline.go#L204
+      - field: gateway_definition.connection_id
+        reason: immutable
+      - field: gateway_definition.connection_name
+        reason: immutable
+      - field: gateway_definition.gateway_storage_catalog
+        reason: immutable
+      - field: gateway_definition.gateway_storage_schema
+        reason: immutable
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/pipelines/resource_pipeline.go#L209
+      - field: ingestion_definition.ingest_from_uc_foreign_catalog
         reason: immutable
     ignore_remote_changes:
       # "id" is handled in a special way before any fields changed
