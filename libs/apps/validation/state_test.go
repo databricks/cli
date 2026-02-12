@@ -48,7 +48,7 @@ func TestShouldExclude(t *testing.T) {
 		// Databricks
 		{".databricks", true},
 		{".databricks/bundle", true},
-		{".databricks/bundle/dev/" + StateFileName, true},
+		{".databricks/bundle/dev/apps/" + StateFileName, true},
 		// Should NOT be excluded
 		{"src/main.js", false},
 		{"package.json", false},
@@ -99,8 +99,8 @@ func TestComputeChecksumExcludesPatterns(t *testing.T) {
 	// Add excluded files - checksum should not change
 	require.NoError(t, os.MkdirAll(filepath.Join(dir, "node_modules"), 0o755))
 	require.NoError(t, os.WriteFile(filepath.Join(dir, "node_modules", "pkg.js"), []byte("dep"), 0o644))
-	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".databricks", "bundle", "dev"), 0o755))
-	require.NoError(t, os.WriteFile(filepath.Join(dir, ".databricks", "bundle", "dev", StateFileName), []byte("state"), 0o644))
+	require.NoError(t, os.MkdirAll(filepath.Join(dir, ".databricks", "bundle", "dev", "apps"), 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dir, ".databricks", "bundle", "dev", "apps", StateFileName), []byte("state"), 0o644))
 
 	checksum2, err := ComputeChecksum(dir)
 	require.NoError(t, err)

@@ -59,7 +59,7 @@ func runValidate(cmd *cobra.Command) error {
 	var stateDir string
 	b := root.TryConfigureBundle(cmd)
 	if b != nil {
-		stateDir = b.GetLocalStateDir(ctx)
+		stateDir = b.GetLocalStateDir(ctx, "apps")
 	}
 
 	opts := validation.ValidateOptions{}

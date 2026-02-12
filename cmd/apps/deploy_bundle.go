@@ -107,7 +107,7 @@ func runBundleDeploy(cmd *cobra.Command, initialBundle *bundle.Bundle, force, sk
 	}
 
 	// Get state directory from the initial bundle (before ProcessBundle reinitializes it)
-	stateDir := initialBundle.GetLocalStateDir(ctx)
+	stateDir := initialBundle.GetLocalStateDir(ctx, "apps")
 
 	// Step 1: Validate if needed (unless --skip-validation)
 	if !skipValidation {
