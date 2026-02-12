@@ -98,11 +98,11 @@ type ChangeDesc struct {
 
 // Possible values for Reason field
 const (
-	ReasonServerSideDefault = "server_side_default"
-	ReasonAlias             = "alias"
-	ReasonRemoteAlreadySet  = "remote_already_set"
-	ReasonEmpty             = "empty"
-	ReasonCustom            = "custom"
+	ReasonBackendDefault   = "backend_default"
+	ReasonAlias            = "alias"
+	ReasonRemoteAlreadySet = "remote_already_set"
+	ReasonEmpty            = "empty"
+	ReasonCustom           = "custom"
 
 	// Special reason that results in removing this change from the plan
 	ReasonDrop = "!drop"

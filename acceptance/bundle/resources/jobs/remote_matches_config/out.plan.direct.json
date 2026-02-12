@@ -80,7 +80,7 @@
         },
         "tasks[task_key='main_task'].new_cluster.data_security_mode": {
           "action": "skip",
-          "reason": "server_side_default",
+          "reason": "backend_default",
           "remote": "SINGLE_USER"
         },
         "tasks[task_key='main_task'].new_cluster.enable_elastic_disk": {
@@ -90,12 +90,12 @@
         },
         "tasks[task_key='main_task'].notebook_task.source": {
           "action": "skip",
-          "reason": "server_side_default",
+          "reason": "backend_default",
           "remote": "WORKSPACE"
         },
         "tasks[task_key='main_task'].run_if": {
           "action": "skip",
-          "reason": "server_side_default",
+          "reason": "backend_default",
           "remote": "ALL_SUCCESS"
         },
         "tasks[task_key='main_task'].timeout_seconds": {

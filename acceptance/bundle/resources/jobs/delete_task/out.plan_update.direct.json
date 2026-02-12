@@ -147,7 +147,7 @@
         },
         "tasks[task_key='TestTask2'].run_if": {
           "action": "skip",
-          "reason": "server_side_default",
+          "reason": "backend_default",
           "remote": "ALL_SUCCESS"
         },
         "tasks[task_key='TestTask2'].timeout_seconds": {
