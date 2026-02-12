@@ -288,7 +288,7 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 				log.Debugf(ctx, "Field %s has no location, using resource location: %s", fullPath, filePath)
 			}
 
-			if configChange.Operation == OperationAdd && b.SyncRootPath != "" {
+			if (configChange.Operation == OperationAdd || configChange.Operation == OperationReplace) && b.SyncRootPath != "" {
 				configChange = &ConfigChangeDesc{
 					Operation: configChange.Operation,
 					Value:     translateWorkspacePaths(configChange.Value, b.SyncRootPath, b.SyncRoot, filepath.Dir(filePath)),
