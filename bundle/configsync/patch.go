@@ -47,6 +47,9 @@ func ApplyChangesToYAML(ctx context.Context, b *bundle.Bundle, fieldChanges []Fi
 
 	var result []FileChange
 	for filePath := range modifiedFiles {
+		// TODO: A good alternative approach is to remove parent nodes during the Resolve phase,
+		// when all of their keys/items are removed, but this should be tested for edge cases.
+		// In this case flow style will never appear because empty nodes are never serialized and we won't need clearAddedFlowStyle
 		normalized, err := clearAddedFlowStyle(modifiedFiles[filePath], fileFieldChanges[filePath])
 		if err != nil {
 			return nil, fmt.Errorf("failed to normalize YAML style in %s: %w", filePath, err)
