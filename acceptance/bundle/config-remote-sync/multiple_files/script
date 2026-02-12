@@ -32,7 +32,7 @@ edit_resource.py jobs $job_one_id <<EOF
 r["tasks"].append({
     "task_key": "synced_task",
     "notebook_task": {
-        "notebook_path": "${PWD}/synced_notebook"
+        "notebook_path": "${PWD}/sample_exploration"
     },
     "new_cluster": {
         "spark_version": "${DEFAULT_SPARK_VERSION}",

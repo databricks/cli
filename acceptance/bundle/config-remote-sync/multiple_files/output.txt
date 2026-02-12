@@ -62,7 +62,7 @@ Resource: resources.jobs.job_two
 +            num_workers: 1
 +            spark_version: 13.3.x-snapshot-scala2.12
 +          notebook_task:
-+            notebook_path: ../synced_notebook.py
++            notebook_path: ../sample_exploration.ipynb
 +          task_key: synced_task
 
 === Changes in job2.yml
