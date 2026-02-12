@@ -1,15 +1,20 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-// Mock @databricks/appkit before importing the router
-const mockServingEndpointsQuery = vi.fn();
-vi.mock('@databricks/appkit', () => ({
-  getRequestContext: vi.fn(() => ({
-    serviceDatabricksClient: {
+const { mockServingEndpointsQuery, mockWorkspaceClient } = vi.hoisted(() => {
+  const mockServingEndpointsQuery = vi.fn();
+  const mockWorkspaceClient = vi.fn(function WorkspaceClientMock() {
+    return {
       servingEndpoints: {
         query: mockServingEndpointsQuery,
       },
-    },
-  })),
+    };
+  });
+
+  return { mockServingEndpointsQuery, mockWorkspaceClient };
+});
+
+vi.mock('@databricks/sdk-experimental', () => ({
+  WorkspaceClient: mockWorkspaceClient,
 }));
 
 import { appRouter } from './trpc.js';
@@ -62,6 +67,7 @@ describe('queryModel', () => {
     const result = await caller.queryModel({ prompt: 'Test prompt' });
 
     expect(result).toBe('This is the response text');
+    expect(mockWorkspaceClient).toHaveBeenCalledWith({});
     expect(mockServingEndpointsQuery).toHaveBeenCalledWith({
       name: 'databricks-gpt-oss-120b',
       messages: [

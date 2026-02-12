@@ -2,7 +2,7 @@ import { initTRPC } from '@trpc/server';
 import { createExpressMiddleware } from '@trpc/server/adapters/express';
 import superjson from 'superjson';
 import type express from 'express';
-import { getRequestContext } from '@databricks/appkit';
+import { WorkspaceClient } from '@databricks/sdk-experimental';
 import { z } from 'zod';
 
 const t = initTRPC.create({
@@ -11,6 +11,15 @@ const t = initTRPC.create({
 
 const publicProcedure = t.procedure;
 const router = t.router;
+
+let workspaceClient: WorkspaceClient | undefined;
+
+function getWorkspaceClient(): WorkspaceClient {
+  if (!workspaceClient) {
+    workspaceClient = new WorkspaceClient({});
+  }
+  return workspaceClient;
+}
 
 export const appRouter = router({
   healthcheck: publicProcedure.query(() => {
@@ -24,9 +33,8 @@ export const appRouter = router({
       })
     )
     .query(async ({ input: { prompt } }) => {
-      const { serviceDatabricksClient: client } = getRequestContext();
       const endpointName = 'databricks-gpt-oss-120b';
-      const response = await client.servingEndpoints.query({
+      const response = await getWorkspaceClient().servingEndpoints.query({
         name: endpointName,
         messages: [
           {
