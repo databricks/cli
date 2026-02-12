@@ -253,6 +253,10 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.JobsGetRun(req)
 	})
 
+	server.Handle("GET", "/api/2.2/jobs/runs/get-output", func(req Request) any {
+		return req.Workspace.JobsGetRunOutput(req)
+	})
+
 	server.Handle("GET", "/api/2.2/jobs/runs/list", func(req Request) any {
 		return MapList(req.Workspace, req.Workspace.JobRuns, "runs")
 	})

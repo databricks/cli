@@ -3,8 +3,12 @@ package testserver
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
 	"sort"
 	"strconv"
+	"strings"
 
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
@@ -182,20 +186,159 @@ func (s *FakeWorkspace) JobsRunNow(req Request) Response {
 
 	defer s.LockUnlock()()
 
-	if _, ok := s.Jobs[request.JobId]; !ok {
+	job, ok := s.Jobs[request.JobId]
+	if !ok {
 		return Response{StatusCode: 404}
 	}
 
 	runId := nextID()
+	runName := "run-name"
+	if job.Settings != nil && job.Settings.Name != "" {
+		runName = job.Settings.Name
+	}
+
+	// Build task list with individual RunIds, mirroring cloud behavior.
+	// Execute PythonWheelTasks locally and store their output.
+	var tasks []jobs.RunTask
+	if job.Settings != nil {
+		for _, t := range job.Settings.Tasks {
+			taskRunId := nextID()
+			taskRun := jobs.RunTask{
+				RunId:   taskRunId,
+				TaskKey: t.TaskKey,
+				State: &jobs.RunState{
+					LifeCycleState: jobs.RunLifeCycleStateTerminated,
+					ResultState:    jobs.RunResultStateSuccess,
+				},
+			}
+			tasks = append(tasks, taskRun)
+
+			if t.PythonWheelTask != nil {
+				logs, err := s.executePythonWheelTask(t)
+				if err != nil {
+					taskRun.State.ResultState = jobs.RunResultStateFailed
+					s.JobRunOutputs[taskRunId] = jobs.RunOutput{
+						Error: err.Error(),
+					}
+				} else {
+					s.JobRunOutputs[taskRunId] = jobs.RunOutput{
+						Logs: logs,
+					}
+				}
+			}
+		}
+	}
+
 	s.JobRuns[runId] = jobs.Run{
 		RunId:      runId,
+		JobId:      request.JobId,
 		State:      &jobs.RunState{LifeCycleState: jobs.RunLifeCycleStateRunning},
-		RunPageUrl: fmt.Sprintf("%s/job/run/%d", s.url, runId),
+		RunPageUrl: fmt.Sprintf("%s/?o=900800700600#job/%d/run/%d", s.url, request.JobId, runId),
 		RunType:    jobs.RunTypeJobRun,
-		RunName:    "run-name",
+		RunName:    runName,
+		Tasks:      tasks,
 	}
 
 	return Response{Body: jobs.RunNowResponse{RunId: runId}}
+}
+
+// executePythonWheelTask runs a python wheel task locally using uv.
+// It finds whl files in the task's libraries, installs them in a temp venv,
+// and runs the entry point.
+func (s *FakeWorkspace) executePythonWheelTask(task jobs.Task) (string, error) {
+	tmpDir, err := os.MkdirTemp("", "wheel-task-*")
+	if err != nil {
+		return "", fmt.Errorf("failed to create temp dir: %w", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	// Extract whl files from the fake workspace to the temp dir.
+	var whlPaths []string
+	for _, lib := range task.Libraries {
+		if lib.Whl == "" {
+			continue
+		}
+		data := s.files[lib.Whl].Data
+		if len(data) == 0 {
+			return "", fmt.Errorf("wheel file not found in workspace: %s", lib.Whl)
+		}
+		localPath := filepath.Join(tmpDir, filepath.Base(lib.Whl))
+		if err := os.WriteFile(localPath, data, 0o644); err != nil {
+			return "", fmt.Errorf("failed to write wheel file: %w", err)
+		}
+		whlPaths = append(whlPaths, localPath)
+	}
+
+	if len(whlPaths) == 0 {
+		return "", fmt.Errorf("no wheel libraries found in task")
+	}
+
+	// Determine Python version from spark_version (e.g. "13.3.x-snapshot-scala2.12" -> 3.10).
+	pythonVersion := sparkVersionToPython(task)
+
+	venvDir := filepath.Join(tmpDir, ".venv")
+
+	// Create venv and install wheels using uv.
+	uvArgs := []string{"venv", "-q", "--python", pythonVersion, venvDir}
+	if out, err := exec.Command("uv", uvArgs...).CombinedOutput(); err != nil {
+		return "", fmt.Errorf("uv venv failed: %s\n%s", err, out)
+	}
+
+	installArgs := []string{"pip", "install", "-q", "--python", filepath.Join(venvDir, "bin", "python")}
+	installArgs = append(installArgs, whlPaths...)
+	if out, err := exec.Command("uv", installArgs...).CombinedOutput(); err != nil {
+		return "", fmt.Errorf("uv pip install failed: %s\n%s", err, out)
+	}
+
+	// Run the entry point using runpy with sys.argv[0] set to the package name,
+	// matching Databricks cloud behavior.
+	wt := task.PythonWheelTask
+	script := fmt.Sprintf("import sys; sys.argv[0] = %q; from runpy import run_module; run_module(%q, run_name='__main__')", wt.PackageName, wt.PackageName)
+	runArgs := []string{"-c", script}
+	runArgs = append(runArgs, wt.Parameters...)
+
+	cmd := exec.Command(filepath.Join(venvDir, "bin", "python"), runArgs...)
+	if len(wt.NamedParameters) > 0 {
+		cmd.Env = os.Environ()
+		for k, v := range wt.NamedParameters {
+			cmd.Args = append(cmd.Args, fmt.Sprintf("--%s=%s", k, v))
+		}
+	}
+
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return string(output), fmt.Errorf("wheel task execution failed: %s\n%s", err, output)
+	}
+
+	return string(output), nil
+}
+
+// sparkVersionToPython maps Databricks Runtime spark_version to Python version.
+func sparkVersionToPython(task jobs.Task) string {
+	sv := ""
+	if task.NewCluster != nil {
+		sv = task.NewCluster.SparkVersion
+	}
+
+	// Extract major version from strings like "13.3.x-snapshot-scala2.12" or "15.4.x-scala2.12".
+	parts := strings.SplitN(sv, ".", 2)
+	if len(parts) >= 1 {
+		major, err := strconv.Atoi(parts[0])
+		if err == nil {
+			switch {
+			case major >= 16:
+				return "3.12"
+			case major >= 15:
+				return "3.11"
+			case major >= 13:
+				return "3.10"
+			default:
+				return "3.9"
+			}
+		}
+	}
+
+	return "3.10"
 }
 
 func (s *FakeWorkspace) JobsGetRun(req Request) Response {
@@ -204,7 +347,7 @@ func (s *FakeWorkspace) JobsGetRun(req Request) Response {
 	if err != nil {
 		return Response{
 			StatusCode: 400,
-			Body:       fmt.Sprintf("Failed to parse job id: %s: %v", err, runId),
+			Body:       fmt.Sprintf("Failed to parse run id: %s: %v", err, runId),
 		}
 	}
 
@@ -215,8 +358,50 @@ func (s *FakeWorkspace) JobsGetRun(req Request) Response {
 		return Response{StatusCode: 404}
 	}
 
-	run.State.LifeCycleState = jobs.RunLifeCycleStateTerminated
+	// Simulate cloud behavior: first poll returns RUNNING, next returns TERMINATED SUCCESS.
+	if run.State.LifeCycleState == jobs.RunLifeCycleStateRunning {
+		// Transition stored state to TERMINATED for the next poll.
+		run.State = &jobs.RunState{
+			LifeCycleState: jobs.RunLifeCycleStateTerminated,
+			ResultState:    jobs.RunResultStateSuccess,
+		}
+		for i := range run.Tasks {
+			run.Tasks[i].State = &jobs.RunState{
+				LifeCycleState: jobs.RunLifeCycleStateTerminated,
+				ResultState:    jobs.RunResultStateSuccess,
+			}
+		}
+		s.JobRuns[runIdInt] = run
+
+		// Return RUNNING for this poll (before the transition).
+		runResp := run
+		runResp.State = &jobs.RunState{
+			LifeCycleState: jobs.RunLifeCycleStateRunning,
+		}
+		return Response{Body: runResp}
+	}
+
 	return Response{Body: run}
+}
+
+func (s *FakeWorkspace) JobsGetRunOutput(req Request) Response {
+	runId := req.URL.Query().Get("run_id")
+	runIdInt, err := strconv.ParseInt(runId, 10, 64)
+	if err != nil {
+		return Response{
+			StatusCode: 400,
+			Body:       fmt.Sprintf("Failed to parse run id: %s: %v", err, runId),
+		}
+	}
+
+	defer s.LockUnlock()()
+
+	output, ok := s.JobRunOutputs[runIdInt]
+	if !ok {
+		return Response{Body: jobs.RunOutput{}}
+	}
+
+	return Response{Body: output}
 }
 
 func setSourceIfNotSet(job jobs.Job) jobs.Job {
