@@ -8,6 +8,7 @@ Endpoint: POST [DATABRICKS_URL]/api/2.0/lakeview/dashboards/[DASHBOARD_ID]/publi
 HTTP Status: 400 Bad Request
 API error_code: RESOURCE_DOES_NOT_EXIST
 API message: Warehouse doesnotexist does not exist
+Request payload: {"embed_credentials":false,"warehouse_id":"doesnotexist"}
 
 Updating deployment state...
 

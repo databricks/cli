@@ -8,5 +8,6 @@ Endpoint: POST [DATABRICKS_URL]/api/2.1/unity-catalog/volumes
 HTTP Status: 400 Bad Request
 API error_code: INVALID_PARAMETER_VALUE
 API message: CreateVolume storage_location can not be provided.
+Request payload: {"catalog_name":"main","comment":"COMMENT1","name":"testvolume-[UNIQUE_NAME]","schema_name":"testschema-[UNIQUE_NAME]","storage_location":"s3://my_bucket/my_location","volume_type":"MANAGED"}
 
 Updating deployment state...

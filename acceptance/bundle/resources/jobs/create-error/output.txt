@@ -8,5 +8,6 @@ Endpoint: POST [DATABRICKS_URL]/api/2.2/jobs/create
 HTTP Status: 400 Bad Request
 API error_code: INVALID_PARAMETER_VALUE
 API message: Shared job cluster feature is only supported in multi-task jobs.
+Request payload: {"deployment":{"kind":"BUNDLE","metadata_file_path":"/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"},"edit_mode":"UI_LOCKED","format":"MULTI_TASK","job_clusters":[{"job_cluster_key":"key","new_cluster":{"num_workers":0}}],"max_concurrent_runs":1,"name":"foo","queue":{"enabled":true},"trigger":{"pause_status":"UNPAUSED","periodic":{"interval":1,"unit":"DAYS"}}}
 
 Updating deployment state...

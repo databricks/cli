@@ -10,5 +10,6 @@ Endpoint: POST [DATABRICKS_URL]/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_N
 HTTP Status: 400 Bad Request
 API error_code: INVALID_PARAMETER_VALUE
 API message: Field 'endpoint_id' is required, expected non-default value (not "")!
+Request payload: {"spec":{"autoscaling_limit_max_cu":2,"autoscaling_limit_min_cu":0.5,"endpoint_type":"ENDPOINT_TYPE_READ_WRITE"}}
 
 Updating deployment state...

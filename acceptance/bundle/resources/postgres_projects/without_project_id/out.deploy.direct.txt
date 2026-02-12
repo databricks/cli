@@ -10,5 +10,6 @@ Endpoint: POST [DATABRICKS_URL]/api/2.0/postgres/projects
 HTTP Status: 400 Bad Request
 API error_code: INVALID_PARAMETER_VALUE
 API message: Field 'project_id' is required, expected non-default value (not "")!
+Request payload: {"spec":{"default_endpoint_settings":{"autoscaling_limit_max_cu":4,"autoscaling_limit_min_cu":0.5,"suspend_timeout_duration":"300s"},"display_name":"Test Without ID","history_retention_duration":"604800s","pg_version":16}}
 
 Updating deployment state...

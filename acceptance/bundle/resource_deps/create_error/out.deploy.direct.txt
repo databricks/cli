@@ -6,6 +6,7 @@ Endpoint: POST [DATABRICKS_URL]/api/2.2/jobs/create
 HTTP Status: 500 Internal Server Error
 API error_code: UNKNOWN
 API message: INJECTED
+Request payload: {"deployment":{"kind":"BUNDLE","metadata_file_path":"/Workspace/Users/[USERNAME]/.bundle/test-bundle/default/state/metadata.json"},"description":"INJECT_ERROR","edit_mode":"UI_LOCKED","format":"MULTI_TASK","max_concurrent_runs":1,"name":"foo","queue":{"enabled":true}}
 
 Error: cannot create resources.jobs.bar: dependency failed: resources.jobs.foo
 

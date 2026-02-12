@@ -10,5 +10,6 @@ Endpoint: POST [DATABRICKS_URL]/api/2.0/postgres/projects/test-pg-proj-[UNIQUE_N
 HTTP Status: 400 Bad Request
 API error_code: INVALID_PARAMETER_VALUE
 API message: Field 'branch_id' is required, expected non-default value (not "")!
+Request payload: {"spec":{"no_expiry":true}}
 
 Updating deployment state...

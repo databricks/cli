@@ -26,6 +26,7 @@ func FormatAPIErrorDetails(e error) string {
 
 	endpoint := "n/a"
 	httpStatus := ""
+	requestPayload := ""
 	w := apiErr.ResponseWrapper
 	if w != nil {
 		resp := w.Response
@@ -36,9 +37,16 @@ func FormatAPIErrorDetails(e error) string {
 				endpoint = fmt.Sprintf("%s %s", req.Method, req.URL)
 			}
 		}
+		if w.RequestBody.DebugBytes != nil {
+			requestPayload = string(w.RequestBody.DebugBytes)
+		}
 	}
 	if len(httpStatus) == 0 {
 		httpStatus = strconv.Itoa(apiErr.StatusCode)
 	}
-	return fmt.Sprintf("Endpoint: %s\nHTTP Status: %s\nAPI error_code: %s\nAPI message: %s", endpoint, httpStatus, apiErr.ErrorCode, apiErr.Message)
+	result := fmt.Sprintf("Endpoint: %s\nHTTP Status: %s\nAPI error_code: %s\nAPI message: %s", endpoint, httpStatus, apiErr.ErrorCode, apiErr.Message)
+	if requestPayload != "" {
+		result += "\nRequest payload: " + requestPayload
+	}
+	return result
 }

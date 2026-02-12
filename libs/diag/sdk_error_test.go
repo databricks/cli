@@ -65,6 +65,22 @@ func TestFormatAPIError(t *testing.T) {
 			expectedDetails: "Endpoint: POST https://example.com/api/2.0/foo\nHTTP Status: 400 Bad Request\nAPI error_code: TEST_ERROR\nAPI message: api error message",
 		},
 		{
+			name: "apierr with request payload",
+			err: &apierr.APIError{
+				Message:    "api error message",
+				ErrorCode:  "TEST_ERROR",
+				StatusCode: 400,
+				ResponseWrapper: &common.ResponseWrapper{
+					Response: &http.Response{Status: "400 Bad Request", Request: request},
+					RequestBody: common.RequestBody{
+						DebugBytes: []byte(`{"key":"value"}`),
+					},
+				},
+			},
+			expectedSummary: "api error message (400 TEST_ERROR)",
+			expectedDetails: "Endpoint: POST https://example.com/api/2.0/foo\nHTTP Status: 400 Bad Request\nAPI error_code: TEST_ERROR\nAPI message: api error message\nRequest payload: {\"key\":\"value\"}",
+		},
+		{
 			name: "wrapped apierr",
 			err: fmt.Errorf("wrapped: %w", &apierr.APIError{
 				Message:    "api error message",
