@@ -110,6 +110,23 @@ func TestIsLibraryLocal(t *testing.T) {
 	}
 }
 
+func TestStripQuotes(t *testing.T) {
+	assert.Equal(t, "hello", StripQuotes(`"hello"`))
+	assert.Equal(t, "/path/to/file", StripQuotes(`"/path/to/file"`))
+	assert.Equal(t, "no quotes", StripQuotes("no quotes"))
+	assert.Equal(t, "", StripQuotes(`""`))
+	assert.Equal(t, "", StripQuotes(""))
+	assert.Equal(t, `"single`, StripQuotes(`"single`))
+	assert.Equal(t, `single"`, StripQuotes(`single"`))
+}
+
+func TestQuotePathIfNeeded(t *testing.T) {
+	assert.Equal(t, `"/path/with spaces/file.txt"`, QuotePathIfNeeded("/path/with spaces/file.txt"))
+	assert.Equal(t, "/path/without/spaces", QuotePathIfNeeded("/path/without/spaces"))
+	assert.Equal(t, `"has space"`, QuotePathIfNeeded("has space"))
+	assert.Equal(t, "nospace", QuotePathIfNeeded("nospace"))
+}
+
 func TestIsLocalRequirementsFile(t *testing.T) {
 	tests := []struct {
 		name     string
@@ -133,6 +150,24 @@ func TestIsLocalRequirementsFile(t *testing.T) {
 			name:     "not a requirements file",
 			input:    "some.txt",
 			expected: "",
+			isLocal:  false,
+		},
+		{
+			name:     "quoted remote requirements file",
+			input:    `-r "/Workspace/Users/requirements.txt"`,
+			expected: "/Workspace/Users/requirements.txt",
+			isLocal:  false,
+		},
+		{
+			name:     "quoted local requirements file",
+			input:    `-r "./requirements.txt"`,
+			expected: "./requirements.txt",
+			isLocal:  true,
+		},
+		{
+			name:     "quoted remote path with spaces",
+			input:    `-r "/Workspace/Users/My Projects/requirements.txt"`,
+			expected: "/Workspace/Users/My Projects/requirements.txt",
 			isLocal:  false,
 		},
 		{

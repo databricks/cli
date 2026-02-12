@@ -86,6 +86,24 @@ func TestNormalizePath_environmentDependency(t *testing.T) {
 	assert.Equal(t, "-e file.py", value)
 }
 
+func TestNormalizePath_requirementsFileWithSpacesInAbsolutePath(t *testing.T) {
+	value, err := normalizePath("-r /Workspace/Users/My Projects/requirements.txt", dyn.Location{}, "/tmp")
+	assert.NoError(t, err)
+	assert.Equal(t, `-r "/Workspace/Users/My Projects/requirements.txt"`, value)
+}
+
+func TestNormalizePath_requirementsFileQuotedAbsolutePath(t *testing.T) {
+	value, err := normalizePath(`-r "/Workspace/Users/My Projects/requirements.txt"`, dyn.Location{}, "/tmp")
+	assert.NoError(t, err)
+	assert.Equal(t, `-r "/Workspace/Users/My Projects/requirements.txt"`, value)
+}
+
+func TestNormalizePath_requirementsFileQuotedNoSpaces(t *testing.T) {
+	value, err := normalizePath(`-r "/Workspace/Users/requirements.txt"`, dyn.Location{}, "/tmp")
+	assert.NoError(t, err)
+	assert.Equal(t, "-r /Workspace/Users/requirements.txt", value)
+}
+
 func TestLocationDirectory(t *testing.T) {
 	loc := dyn.Location{File: "file", Line: 1, Column: 2}
 	dir, err := locationDirectory(loc)

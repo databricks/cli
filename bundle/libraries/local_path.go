@@ -80,11 +80,28 @@ var PipFlagsWithLocalPaths = []string{
 	"-e",
 }
 
+// StripQuotes removes surrounding double quotes from a string if present.
+func StripQuotes(s string) string {
+	if len(s) >= 2 && s[0] == '"' && s[len(s)-1] == '"' {
+		return s[1 : len(s)-1]
+	}
+	return s
+}
+
+// QuotePathIfNeeded wraps a path in double quotes if it contains spaces.
+func QuotePathIfNeeded(p string) string {
+	if strings.Contains(p, " ") {
+		return `"` + p + `"`
+	}
+	return p
+}
+
 func IsLocalPathInPipFlag(dep string) (string, string, bool) {
 	for _, flag := range PipFlagsWithLocalPaths {
 		depWithoutFlag, ok := strings.CutPrefix(dep, flag+" ")
 		if ok {
 			depWithoutFlag = strings.TrimSpace(depWithoutFlag)
+			depWithoutFlag = StripQuotes(depWithoutFlag)
 			return depWithoutFlag, flag, IsLocalPath(depWithoutFlag)
 		}
 	}

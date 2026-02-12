@@ -165,7 +165,7 @@ func (t *translateContext) rewritePath(
 	case paths.TranslateModeEnvironmentPipFlag:
 		interp, err = t.translateFilePath(ctx, input, localPath, localRelPath)
 		// Add the flag prefix to the path to indicate it's a local file used in pip flags for environment dependencies.
-		interp = flag + " " + interp
+		interp = flag + " " + libraries.QuotePathIfNeeded(interp)
 	default:
 		return "", fmt.Errorf("unsupported translate mode: %d", opts.Mode)
 	}

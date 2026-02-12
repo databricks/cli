@@ -92,12 +92,13 @@ func normalizePath(path string, location dyn.Location, bundleRootPath string) (s
 		if ok {
 			// Normalize the path part
 			reqPath = strings.TrimSpace(reqPath)
+			reqPath = libraries.StripQuotes(reqPath)
 			normalizedPath, err := normalizePath(reqPath, location, bundleRootPath)
 			if err != nil {
 				return "", err
 			}
 
-			// Reconstruct the path with -r flag
+			normalizedPath = libraries.QuotePathIfNeeded(normalizedPath)
 			return flag + " " + normalizedPath, nil
 		}
 	}

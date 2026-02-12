@@ -795,6 +795,86 @@ func TestTranslatePathJobEnvironments(t *testing.T) {
 	assert.Equal(t, "https://foo@bar.com/packages/pypi/simple", b.Config.Resources.Jobs["job"].Environments[0].Spec.Dependencies[6])
 }
 
+func TestTranslatePathPipelineEnvironmentDependencyWithSpaces(t *testing.T) {
+	dir := t.TempDir()
+	touchEmptyFile(t, filepath.Join(dir, "requirements.txt"))
+
+	b := &bundle.Bundle{
+		SyncRootPath:   dir,
+		BundleRootPath: dir,
+		SyncRoot:       vfs.MustNew(dir),
+		Config: config.Root{
+			Workspace: config.Workspace{
+				FilePath: "/Workspace/Users/user@databricks.com/Databrick Asset Bundle Solutions",
+			},
+			Resources: config.Resources{
+				Pipelines: map[string]*resources.Pipeline{
+					"pipeline": {
+						CreatePipeline: pipelines.CreatePipeline{
+							Environment: &pipelines.PipelineEnvironment{
+								Dependencies: []string{
+									"-r ./requirements.txt",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	bundletest.SetLocation(b, ".", []dyn.Location{{File: filepath.Join(dir, "resource.yml")}})
+
+	diags := bundle.ApplySeq(context.Background(), b, mutator.NormalizePaths(), mutator.TranslatePaths())
+	require.NoError(t, diags.Error())
+
+	assert.Equal(
+		t,
+		`-r "/Workspace/Users/user@databricks.com/Databrick Asset Bundle Solutions/requirements.txt"`,
+		b.Config.Resources.Pipelines["pipeline"].Environment.Dependencies[0],
+	)
+}
+
+func TestTranslatePathPipelineEnvironmentDependencyAbsoluteWithQuotes(t *testing.T) {
+	dir := t.TempDir()
+
+	b := &bundle.Bundle{
+		SyncRootPath:   dir,
+		BundleRootPath: dir,
+		SyncRoot:       vfs.MustNew(dir),
+		Config: config.Root{
+			Workspace: config.Workspace{
+				FilePath: "/Workspace/Users/user@databricks.com/bundle",
+			},
+			Resources: config.Resources{
+				Pipelines: map[string]*resources.Pipeline{
+					"pipeline": {
+						CreatePipeline: pipelines.CreatePipeline{
+							Environment: &pipelines.PipelineEnvironment{
+								Dependencies: []string{
+									`-r "/Workspace/Users/My Projects/requirements.txt"`,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	bundletest.SetLocation(b, ".", []dyn.Location{{File: filepath.Join(dir, "resource.yml")}})
+
+	diags := bundle.ApplySeq(context.Background(), b, mutator.NormalizePaths(), mutator.TranslatePaths())
+	require.NoError(t, diags.Error())
+
+	// Absolute path is not translated, quotes are preserved because path has spaces
+	assert.Equal(
+		t,
+		`-r "/Workspace/Users/My Projects/requirements.txt"`,
+		b.Config.Resources.Pipelines["pipeline"].Environment.Dependencies[0],
+	)
+}
+
 func TestTranslatePathWithComplexVariables(t *testing.T) {
 	dir := t.TempDir()
 	b := &bundle.Bundle{
