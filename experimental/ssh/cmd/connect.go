@@ -19,12 +19,6 @@ func newConnectCommand() *cobra.Command {
 This command establishes an SSH connection to Databricks compute, setting up
 the SSH server and handling the connection proxy.
 
-For dedicated clusters:
-  databricks ssh connect --cluster=<cluster-id>
-
-For serverless compute:
-  databricks ssh connect --name=<connection-name> [--accelerator=<accelerator>]
-
 ` + disclaimer,
 	}
 
