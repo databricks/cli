@@ -17,6 +17,12 @@ func convertAlertResource(ctx context.Context, vin dyn.Value) (dyn.Value, error)
 		log.Debugf(ctx, "alert normalization diagnostic: %s", diag.Summary)
 	}
 
+	// Always set purge_on_delete to true.
+	vout, err := dyn.Set(vout, "purge_on_delete", dyn.V(true))
+	if err != nil {
+		return dyn.InvalidValue, err
+	}
+
 	return vout, nil
 }
 
