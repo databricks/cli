@@ -34,3 +34,5 @@ acceptance TestAccept/ssh/connection
 
 # Cannot create more than 20 synced database table(s) per source table.
 * TestAccept/bundle/resources/synced_database_tables/basic/
+
+* TestAccept/bundle/resources/postgres_endpoints/recreate/
