@@ -200,9 +200,6 @@ func newCreateDefaultWarehouseOverride() *cobra.Command {
     TYPE: The type of override behavior.
       Supported values: [CUSTOM, LAST_SELECTED]`
 
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
-
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
@@ -357,9 +354,6 @@ func newDeleteDefaultWarehouseOverride() *cobra.Command {
       Format: default-warehouse-overrides/{default_warehouse_override_id} The
       default_warehouse_override_id can be a numeric user ID or the literal
       string "me" for the current user.`
-
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 
@@ -623,9 +617,6 @@ func newGetDefaultWarehouseOverride() *cobra.Command {
       Format: default-warehouse-overrides/{default_warehouse_override_id} The
       default_warehouse_override_id can be a numeric user ID or the literal
       string "me" for the current user.`
-
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 
@@ -927,9 +918,6 @@ func newListDefaultWarehouseOverrides() *cobra.Command {
 
   Lists all default warehouse overrides in the workspace. Only workspace
   administrators can list all overrides.`
-
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 
@@ -1348,9 +1336,6 @@ func newUpdateDefaultWarehouseOverride() *cobra.Command {
       allow_missing is true, this field is ignored and all fields are applied.
     TYPE: The type of override behavior.
       Supported values: [CUSTOM, LAST_SELECTED]`
-
-	// This command is being previewed; hide from help output.
-	cmd.Hidden = true
 
 	cmd.Annotations = make(map[string]string)
 

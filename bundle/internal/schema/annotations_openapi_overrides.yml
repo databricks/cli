@@ -84,6 +84,13 @@ github.com/databricks/cli/bundle/config/resources.AppPermissionLevel:
         CAN_MANAGE
       - |-
         CAN_USE
+github.com/databricks/cli/bundle/config/resources.Catalog:
+  "grants":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.Cluster:
   "_":
     "markdown_description": |-

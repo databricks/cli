@@ -4535,6 +4535,10 @@
                   "type": "object",
                   "description": "The environment entity used to preserve serverless environment side panel, jobs' environment for non-notebook task, and DLT's environment for classic and serverless pipelines.\nIn this minimal environment spec, only pip dependencies are supported.",
                   "properties": {
+                    "base_environment": {
+                      "description": "The `base_environment` key refers to an `env.yaml` file that specifies an environment version and a collection of dependencies required for the environment setup.\nThis `env.yaml` file may itself include a `base_environment` reference pointing to another `env_1.yaml` file. However, when used as a base environment, `env_1.yaml` (or further nested references) will not be processed or included in the final environment, meaning that the resolution of `base_environment` references is not recursive.",
+                      "$ref": "#/$defs/string"
+                    },
                     "client": {
                       "description": "Use `environment_version` instead.",
                       "$ref": "#/$defs/string",
@@ -5604,6 +5608,12 @@
                   "properties": {
                     "dashboard_id": {
                       "$ref": "#/$defs/string"
+                    },
+                    "filters": {
+                      "description": "Dashboard task parameters. Used to apply dashboard filter values during dashboard task execution. Parameter values get applied to any dashboard filters that have a matching URL identifier as the parameter key.\nThe parameter value format is dependent on the filter type:\n- For text and single-select filters, provide a single value (e.g. `\"value\"`)\n- For date and datetime filters, provide the value in ISO 8601 format (e.g. `\"2000-01-01T00:00:00\"`)\n- For multi-select filters, provide a JSON array of values (e.g. `\"[\\\"value1\\\",\\\"value2\\\"]\"`)\n- For range and date range filters, provide a JSON object with `start` and `end` (e.g. `\"{\\\"start\\\":\\\"1\\\",\\\"end\\\":\\\"10\\\"}\"`)",
+                      "$ref": "#/$defs/map/string",
+                      "x-databricks-preview": "PRIVATE",
+                      "doNotSuggest": true
                     },
                     "subscription": {
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.Subscription"

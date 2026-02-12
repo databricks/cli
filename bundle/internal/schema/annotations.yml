@@ -556,12 +556,6 @@ github.com/databricks/cli/bundle/config/resources.Catalog:
   "connection_name":
     "description": |-
       PLACEHOLDER
-  "grants":
-    "description": |-
-      PLACEHOLDER
-  "lifecycle":
-    "description": |-
-      PLACEHOLDER
   "name":
     "description": |-
       PLACEHOLDER

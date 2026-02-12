@@ -691,6 +691,7 @@ resources.jobs.*.environments	[]jobs.JobEnvironment	ALL
 resources.jobs.*.environments[*]	jobs.JobEnvironment	ALL
 resources.jobs.*.environments[*].environment_key	string	ALL
 resources.jobs.*.environments[*].spec	*compute.Environment	ALL
+resources.jobs.*.environments[*].spec.base_environment	string	ALL
 resources.jobs.*.environments[*].spec.client	string	ALL
 resources.jobs.*.environments[*].spec.dependencies	[]string	ALL
 resources.jobs.*.environments[*].spec.dependencies[*]	string	ALL
@@ -877,6 +878,8 @@ resources.jobs.*.tasks[*].condition_task.op	jobs.ConditionTaskOp	ALL
 resources.jobs.*.tasks[*].condition_task.right	string	ALL
 resources.jobs.*.tasks[*].dashboard_task	*jobs.DashboardTask	ALL
 resources.jobs.*.tasks[*].dashboard_task.dashboard_id	string	ALL
+resources.jobs.*.tasks[*].dashboard_task.filters	map[string]string	ALL
+resources.jobs.*.tasks[*].dashboard_task.filters.*	string	ALL
 resources.jobs.*.tasks[*].dashboard_task.subscription	*jobs.Subscription	ALL
 resources.jobs.*.tasks[*].dashboard_task.subscription.custom_subject	string	ALL
 resources.jobs.*.tasks[*].dashboard_task.subscription.paused	bool	ALL
@@ -939,6 +942,8 @@ resources.jobs.*.tasks[*].for_each_task.task.condition_task.op	jobs.ConditionTas
 resources.jobs.*.tasks[*].for_each_task.task.condition_task.right	string	ALL
 resources.jobs.*.tasks[*].for_each_task.task.dashboard_task	*jobs.DashboardTask	ALL
 resources.jobs.*.tasks[*].for_each_task.task.dashboard_task.dashboard_id	string	ALL
+resources.jobs.*.tasks[*].for_each_task.task.dashboard_task.filters	map[string]string	ALL
+resources.jobs.*.tasks[*].for_each_task.task.dashboard_task.filters.*	string	ALL
 resources.jobs.*.tasks[*].for_each_task.task.dashboard_task.subscription	*jobs.Subscription	ALL
 resources.jobs.*.tasks[*].for_each_task.task.dashboard_task.subscription.custom_subject	string	ALL
 resources.jobs.*.tasks[*].for_each_task.task.dashboard_task.subscription.paused	bool	ALL
