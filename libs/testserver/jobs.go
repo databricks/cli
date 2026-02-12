@@ -243,51 +243,49 @@ func (s *FakeWorkspace) JobsRunNow(req Request) Response {
 }
 
 // executePythonWheelTask runs a python wheel task locally using uv.
-// It finds whl files in the task's libraries, installs them in a temp venv,
-// and runs the entry point.
+// For tasks using existing_cluster_id, the venv is cached per cluster to match
+// cloud behavior where libraries are cached on running clusters.
 func (s *FakeWorkspace) executePythonWheelTask(task jobs.Task) (string, error) {
-	tmpDir, err := os.MkdirTemp("", "wheel-task-*")
+	env, cleanup, err := s.getOrCreateClusterEnv(task)
 	if err != nil {
-		return "", fmt.Errorf("failed to create temp dir: %w", err)
+		return "", err
 	}
-	defer os.RemoveAll(tmpDir)
+	if cleanup != nil {
+		defer cleanup()
+	}
 
-	// Extract whl files from the fake workspace to the temp dir.
-	var whlPaths []string
+	// Install only wheels not yet present in this cluster env,
+	// matching cloud behavior where same library path is not reinstalled.
+	var newWhlPaths []string
 	for _, lib := range task.Libraries {
 		if lib.Whl == "" {
+			continue
+		}
+		if env.installedLibs[lib.Whl] {
 			continue
 		}
 		data := s.files[lib.Whl].Data
 		if len(data) == 0 {
 			return "", fmt.Errorf("wheel file not found in workspace: %s", lib.Whl)
 		}
-		localPath := filepath.Join(tmpDir, filepath.Base(lib.Whl))
+		localPath := filepath.Join(env.dir, filepath.Base(lib.Whl))
 		if err := os.WriteFile(localPath, data, 0o644); err != nil {
 			return "", fmt.Errorf("failed to write wheel file: %w", err)
 		}
-		whlPaths = append(whlPaths, localPath)
+		newWhlPaths = append(newWhlPaths, localPath)
+		env.installedLibs[lib.Whl] = true
 	}
 
-	if len(whlPaths) == 0 {
+	if len(newWhlPaths) > 0 {
+		installArgs := []string{"pip", "install", "-q", "--python", filepath.Join(env.venvDir, "bin", "python")}
+		installArgs = append(installArgs, newWhlPaths...)
+		if out, err := exec.Command("uv", installArgs...).CombinedOutput(); err != nil {
+			return "", fmt.Errorf("uv pip install failed: %s\n%s", err, out)
+		}
+	}
+
+	if len(env.installedLibs) == 0 {
 		return "", fmt.Errorf("no wheel libraries found in task")
-	}
-
-	// Determine Python version from spark_version (e.g. "13.3.x-snapshot-scala2.12" -> 3.10).
-	pythonVersion := sparkVersionToPython(task)
-
-	venvDir := filepath.Join(tmpDir, ".venv")
-
-	// Create venv and install wheels using uv.
-	uvArgs := []string{"venv", "-q", "--python", pythonVersion, venvDir}
-	if out, err := exec.Command("uv", uvArgs...).CombinedOutput(); err != nil {
-		return "", fmt.Errorf("uv venv failed: %s\n%s", err, out)
-	}
-
-	installArgs := []string{"pip", "install", "-q", "--python", filepath.Join(venvDir, "bin", "python")}
-	installArgs = append(installArgs, whlPaths...)
-	if out, err := exec.Command("uv", installArgs...).CombinedOutput(); err != nil {
-		return "", fmt.Errorf("uv pip install failed: %s\n%s", err, out)
 	}
 
 	// Run the entry point using runpy with sys.argv[0] set to the package name,
@@ -297,7 +295,7 @@ func (s *FakeWorkspace) executePythonWheelTask(task jobs.Task) (string, error) {
 	runArgs := []string{"-c", script}
 	runArgs = append(runArgs, wt.Parameters...)
 
-	cmd := exec.Command(filepath.Join(venvDir, "bin", "python"), runArgs...)
+	cmd := exec.Command(filepath.Join(env.venvDir, "bin", "python"), runArgs...)
 	if len(wt.NamedParameters) > 0 {
 		cmd.Env = os.Environ()
 		for k, v := range wt.NamedParameters {
@@ -311,6 +309,47 @@ func (s *FakeWorkspace) executePythonWheelTask(task jobs.Task) (string, error) {
 	}
 
 	return string(output), nil
+}
+
+// getOrCreateClusterEnv returns a cached venv for existing clusters or creates
+// a fresh one for new clusters. The cleanup function is non-nil only for new
+// clusters (whose venvs should be removed after use).
+func (s *FakeWorkspace) getOrCreateClusterEnv(task jobs.Task) (*clusterEnv, func(), error) {
+	clusterID := task.ExistingClusterId
+
+	if clusterID != "" {
+		if env, ok := s.clusterVenvs[clusterID]; ok {
+			return env, nil, nil
+		}
+	}
+
+	tmpDir, err := os.MkdirTemp("", "wheel-task-*")
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to create temp dir: %w", err)
+	}
+
+	pythonVersion := sparkVersionToPython(task)
+	venvDir := filepath.Join(tmpDir, ".venv")
+
+	uvArgs := []string{"venv", "-q", "--python", pythonVersion, venvDir}
+	if out, err := exec.Command("uv", uvArgs...).CombinedOutput(); err != nil {
+		os.RemoveAll(tmpDir)
+		return nil, nil, fmt.Errorf("uv venv failed: %s\n%s", err, out)
+	}
+
+	env := &clusterEnv{
+		dir:           tmpDir,
+		venvDir:       venvDir,
+		installedLibs: map[string]bool{},
+	}
+
+	// Cache venv for existing clusters; use cleanup for new clusters.
+	if clusterID != "" {
+		s.clusterVenvs[clusterID] = env
+		return env, nil, nil
+	}
+
+	return env, func() { os.RemoveAll(tmpDir) }, nil
 }
 
 // sparkVersionToPython maps Databricks Runtime spark_version to Python version.
