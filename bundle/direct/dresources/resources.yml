@@ -44,6 +44,18 @@ resources:
         reason: immutable
       - field: ingestion_definition.ingestion_gateway_id
         reason: immutable
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/pipelines/resource_pipeline.go#L204
+      - field: gateway_definition.connection_id
+        reason: immutable
+      - field: gateway_definition.connection_name
+        reason: immutable
+      - field: gateway_definition.gateway_storage_catalog
+        reason: immutable
+      - field: gateway_definition.gateway_storage_schema
+        reason: immutable
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/pipelines/resource_pipeline.go#L209
+      - field: ingestion_definition.ingest_from_uc_foreign_catalog
+        reason: immutable
     ignore_remote_changes:
       # "id" is handled in a special way before any fields changed
       # However, it is also part of RemotePipeline via CreatePipeline.
