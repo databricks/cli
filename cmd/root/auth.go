@@ -195,8 +195,9 @@ func MustWorkspaceClient(cmd *cobra.Command, args []string) error {
 	}
 
 	_, isTargetFlagSet := targetFlagValue(cmd)
-	// If the profile flag is set but the target flag is not, we should skip loading the bundle configuration.
-	if !isTargetFlagSet && hasProfileFlag {
+	// Non-bundle commands should not implicitly load bundle auth config.
+	// Bundle target resolution is only enabled when the target/environment flag is set explicitly.
+	if !isTargetFlagSet {
 		cmd.SetContext(SkipLoadBundle(cmd.Context()))
 	}
 
