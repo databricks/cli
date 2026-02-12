@@ -126,8 +126,9 @@ type FakeWorkspace struct {
 	files        map[string]FileEntry
 	repoIdByPath map[string]int64
 
-	Jobs                map[int64]jobs.Job
-	JobRuns             map[int64]jobs.Run
+	Jobs          map[int64]jobs.Job
+	JobRuns       map[int64]jobs.Run
+	JobRunOutputs map[int64]jobs.RunOutput
 	Pipelines           map[string]pipelines.GetPipelineResponse
 	PipelineUpdates     map[string]bool
 	Monitors            map[string]catalog.MonitorInfo
@@ -252,8 +253,9 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		files:        make(map[string]FileEntry),
 		repoIdByPath: make(map[string]int64),
 
-		Jobs:                map[int64]jobs.Job{},
-		JobRuns:             map[int64]jobs.Run{},
+		Jobs:          map[int64]jobs.Job{},
+		JobRuns:       map[int64]jobs.Run{},
+		JobRunOutputs: map[int64]jobs.RunOutput{},
 		Grants:              map[string][]catalog.PrivilegeAssignment{},
 		Pipelines:           map[string]pipelines.GetPipelineResponse{},
 		PipelineUpdates:     map[string]bool{},
