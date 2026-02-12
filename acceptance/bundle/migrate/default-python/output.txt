@@ -76,7 +76,12 @@ Building python_artifact...
 {
   "email_notifications": {
     "action": "skip",
-    "reason": "server_side_default",
+    "reason": "empty",
+    "remote": {}
+  },
+  "tasks[task_key='notebook_task'].email_notifications": {
+    "action": "skip",
+    "reason": "empty",
     "remote": {}
   },
   "tasks[task_key='notebook_task'].libraries[0].whl": {
@@ -90,20 +95,60 @@ Building python_artifact...
     "reason": "server_side_default",
     "remote": "WORKSPACE"
   },
+  "tasks[task_key='notebook_task'].run_if": {
+    "action": "skip",
+    "reason": "server_side_default",
+    "remote": "ALL_SUCCESS"
+  },
+  "tasks[task_key='notebook_task'].timeout_seconds": {
+    "action": "skip",
+    "reason": "empty",
+    "remote": 0
+  },
+  "tasks[task_key='python_wheel_task'].email_notifications": {
+    "action": "skip",
+    "reason": "empty",
+    "remote": {}
+  },
   "tasks[task_key='python_wheel_task'].libraries[0].whl": {
     "action": "update",
     "old": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/artifacts/.internal/my_default_python-0.0.1+[UNIX_TIME_NANOS][1]-py3-none-any.whl",
     "new": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/artifacts/.internal/my_default_python-0.0.1+[UNIX_TIME_NANOS][2]-py3-none-any.whl",
     "remote": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/artifacts/.internal/my_default_python-0.0.1+[UNIX_TIME_NANOS][0]-py3-none-any.whl"
   },
-  "timeout_seconds": {
+  "tasks[task_key='python_wheel_task'].run_if": {
     "action": "skip",
     "reason": "server_side_default",
+    "remote": "ALL_SUCCESS"
+  },
+  "tasks[task_key='python_wheel_task'].timeout_seconds": {
+    "action": "skip",
+    "reason": "empty",
+    "remote": 0
+  },
+  "tasks[task_key='refresh_pipeline'].email_notifications": {
+    "action": "skip",
+    "reason": "empty",
+    "remote": {}
+  },
+  "tasks[task_key='refresh_pipeline'].run_if": {
+    "action": "skip",
+    "reason": "server_side_default",
+    "remote": "ALL_SUCCESS"
+  },
+  "tasks[task_key='refresh_pipeline'].timeout_seconds": {
+    "action": "skip",
+    "reason": "empty",
+    "remote": 0
+  },
+  "timeout_seconds": {
+    "action": "skip",
+    "reason": "empty",
     "remote": 0
   },
   "webhook_notifications": {
     "action": "skip",
-    "reason": "server_side_default",
+    "reason": "empty",
     "remote": {}
   }
 }
@@ -150,7 +195,12 @@ Building python_artifact...
 {
   "email_notifications": {
     "action": "skip",
-    "reason": "server_side_default",
+    "reason": "empty",
+    "remote": {}
+  },
+  "tasks[task_key='notebook_task'].email_notifications": {
+    "action": "skip",
+    "reason": "empty",
     "remote": {}
   },
   "tasks[task_key='notebook_task'].libraries[0].whl": {
@@ -164,20 +214,60 @@ Building python_artifact...
     "reason": "server_side_default",
     "remote": "WORKSPACE"
   },
+  "tasks[task_key='notebook_task'].run_if": {
+    "action": "skip",
+    "reason": "server_side_default",
+    "remote": "ALL_SUCCESS"
+  },
+  "tasks[task_key='notebook_task'].timeout_seconds": {
+    "action": "skip",
+    "reason": "empty",
+    "remote": 0
+  },
+  "tasks[task_key='python_wheel_task'].email_notifications": {
+    "action": "skip",
+    "reason": "empty",
+    "remote": {}
+  },
   "tasks[task_key='python_wheel_task'].libraries[0].whl": {
     "action": "update",
     "old": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/artifacts/.internal/my_default_python-0.0.1+[UNIX_TIME_NANOS][1]-py3-none-any.whl",
     "new": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/artifacts/.internal/my_default_python-0.0.1+[UNIX_TIME_NANOS][2]-py3-none-any.whl",
     "remote": "/Workspace/Users/[USERNAME]/.bundle/my_default_python/dev/artifacts/.internal/my_default_python-0.0.1+[UNIX_TIME_NANOS][0]-py3-none-any.whl"
   },
-  "timeout_seconds": {
+  "tasks[task_key='python_wheel_task'].run_if": {
     "action": "skip",
     "reason": "server_side_default",
+    "remote": "ALL_SUCCESS"
+  },
+  "tasks[task_key='python_wheel_task'].timeout_seconds": {
+    "action": "skip",
+    "reason": "empty",
+    "remote": 0
+  },
+  "tasks[task_key='refresh_pipeline'].email_notifications": {
+    "action": "skip",
+    "reason": "empty",
+    "remote": {}
+  },
+  "tasks[task_key='refresh_pipeline'].run_if": {
+    "action": "skip",
+    "reason": "server_side_default",
+    "remote": "ALL_SUCCESS"
+  },
+  "tasks[task_key='refresh_pipeline'].timeout_seconds": {
+    "action": "skip",
+    "reason": "empty",
+    "remote": 0
+  },
+  "timeout_seconds": {
+    "action": "skip",
+    "reason": "empty",
     "remote": 0
   },
   "webhook_notifications": {
     "action": "skip",
-    "reason": "server_side_default",
+    "reason": "empty",
     "remote": {}
   }
 }

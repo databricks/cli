@@ -1,0 +1,8 @@
+bundle:
+  name: tags_empty_map
+
+resources:
+  jobs:
+    test_job:
+      name: Test Job with empty tags
+      tags: {}

@@ -1,6 +1,10 @@
 package dbr
 
-import "context"
+import (
+	"context"
+	"strconv"
+	"strings"
+)
 
 // key is a package-local type to use for context keys.
 //
@@ -14,6 +18,75 @@ const (
 	// Other keys in the same package must have different values.
 	dbrKey = key(1)
 )
+
+// ClusterType represents the type of Databricks cluster.
+type ClusterType int
+
+const (
+	ClusterTypeUnknown ClusterType = iota
+	ClusterTypeInteractive
+	ClusterTypeServerless
+)
+
+func (t ClusterType) String() string {
+	switch t {
+	case ClusterTypeInteractive:
+		return "interactive"
+	case ClusterTypeServerless:
+		return "serverless"
+	default:
+		return "unknown"
+	}
+}
+
+// Version represents a parsed DBR version.
+type Version struct {
+	Type  ClusterType
+	Major int
+	Minor int
+	Raw   string
+}
+
+func (v Version) String() string {
+	return v.Raw
+}
+
+// ParseVersion parses a DBR version string and returns structured version info.
+// Examples:
+//   - "16.3" -> Interactive, Major=16, Minor=3
+//   - "client.4.9" -> Serverless, Major=4, Minor=9
+func ParseVersion(version string) Version {
+	result := Version{Raw: version}
+
+	if version == "" {
+		return result
+	}
+
+	// Serverless versions have "client." prefix
+	if strings.HasPrefix(version, "client.") {
+		result.Type = ClusterTypeServerless
+		// Parse "client.X.Y" format
+		parts := strings.Split(strings.TrimPrefix(version, "client."), ".")
+		if len(parts) >= 1 {
+			result.Major, _ = strconv.Atoi(parts[0])
+		}
+		if len(parts) >= 2 {
+			result.Minor, _ = strconv.Atoi(parts[1])
+		}
+		return result
+	}
+
+	// Interactive versions are "X.Y" format
+	result.Type = ClusterTypeInteractive
+	parts := strings.Split(version, ".")
+	if len(parts) >= 1 {
+		result.Major, _ = strconv.Atoi(parts[0])
+	}
+	if len(parts) >= 2 {
+		result.Minor, _ = strconv.Atoi(parts[1])
+	}
+	return result
+}
 
 type Environment struct {
 	IsDbr   bool
@@ -53,11 +126,13 @@ func RunsOnRuntime(ctx context.Context) bool {
 	return v.(Environment).IsDbr
 }
 
-func RuntimeVersion(ctx context.Context) string {
+// RuntimeVersion returns the parsed runtime version from the context.
+// It expects a context returned by [DetectRuntime] or [MockRuntime].
+func RuntimeVersion(ctx context.Context) Version {
 	v := ctx.Value(dbrKey)
 	if v == nil {
 		panic("dbr.RuntimeVersion called without calling dbr.DetectRuntime first")
 	}
 
-	return v.(Environment).Version
+	return ParseVersion(v.(Environment).Version)
 }

@@ -1,0 +1,51 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/dev/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Modify fields in target override
+=== Detect and save changes
+Detected changes in 1 resource(s):
+
+Resource: resources.jobs.my_job
+  max_concurrent_runs: replace
+  tags['env']: replace
+  tags['owner']: add
+
+
+
+=== Configuration changes
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -1,5 +1,4 @@
+ bundle:
+   name: test-bundle-[UNIQUE_NAME]
+-
+ resources:
+   jobs:
+@@ -13,5 +12,4 @@
+             node_type_id: [NODE_TYPE_ID]
+             num_workers: 1
+-
+ targets:
+   dev:
+@@ -19,5 +17,6 @@
+       jobs:
+         my_job:
+-          max_concurrent_runs: 2
++          max_concurrent_runs: 10
+           tags:
+-            env: dev
++            env: staging
++            owner: data-team
+
+>>> [CLI] bundle destroy --auto-approve -t dev
+The following resources will be deleted:
+  delete resources.jobs.my_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/dev
+
+Deleting files...
+Destroy complete!

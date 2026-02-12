@@ -51,7 +51,7 @@
       "changes": {
         "route_optimized": {
           "action": "recreate",
-          "reason": "field_triggers",
+          "reason": "immutable",
           "old": false,
           "new": true,
           "remote": false

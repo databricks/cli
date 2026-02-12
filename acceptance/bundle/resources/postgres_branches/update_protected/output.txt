@@ -1,0 +1,160 @@
+
+=== Initial deployment
+>>> [CLI] bundle validate
+Name: update-postgres-branch-[UNIQUE_NAME]
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/update-postgres-branch-[UNIQUE_NAME]/default
+
+Validation OK!
+
+>>> [CLI] bundle plan
+create postgres_branches.dev_branch
+create postgres_projects.my_project
+
+Plan: 2 to add, 0 to change, 0 to delete, 0 unchanged
+
+>>> [CLI] bundle plan -o json
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-postgres-branch-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
+
+>>> [CLI] postgres get-branch [DEV_BRANCH_ID]
+{
+  "name": "[DEV_BRANCH_ID]",
+  "parent": "projects/test-pg-proj-[UNIQUE_NAME]",
+  "status": {
+    "current_state": "READY",
+    "default": false,
+    "is_protected": false,
+    "source_branch": "projects/test-pg-proj-[UNIQUE_NAME]/branches/[BRANCH_UID]",
+    "source_branch_lsn": "[LSN]",
+    "source_branch_time": "[TIMESTAMP]",
+    "state_change_time": "[TIMESTAMP]"
+  },
+  "uid": "[BRANCH_UID]"
+}
+
+=== Verify no_change (no changes)
+>>> [CLI] bundle plan
+Plan: 0 to add, 0 to change, 0 to delete, 2 unchanged
+
+>>> [CLI] bundle plan -o json
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-postgres-branch-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
+
+=== Update is_protected to true and re-deploy
+>>> update_file.py databricks.yml is_protected: false is_protected: true
+
+>>> cat databricks.yml
+bundle:
+  name: update-postgres-branch-[UNIQUE_NAME]
+
+sync:
+  paths: []
+
+resources:
+  postgres_projects:
+    my_project:
+      project_id: test-pg-proj-[UNIQUE_NAME]
+      display_name: "Test Project for Branch Update"
+      pg_version: 16
+      history_retention_duration: 604800s
+      default_endpoint_settings:
+        autoscaling_limit_min_cu: 0.5
+        autoscaling_limit_max_cu: 4
+        suspend_timeout_duration: 300s
+
+  postgres_branches:
+    dev_branch:
+      parent: ${resources.postgres_projects.my_project.id}
+      branch_id: dev-branch
+      no_expiry: true
+      is_protected: true
+
+>>> [CLI] bundle plan
+update postgres_branches.dev_branch
+
+Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
+
+>>> [CLI] bundle plan -o json
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-postgres-branch-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
+
+>>> [CLI] postgres get-branch [DEV_BRANCH_ID]
+{
+  "name": "[DEV_BRANCH_ID]",
+  "parent": "projects/test-pg-proj-[UNIQUE_NAME]",
+  "status": {
+    "current_state": "READY",
+    "default": false,
+    "is_protected": true,
+    "source_branch": "projects/test-pg-proj-[UNIQUE_NAME]/branches/[BRANCH_UID]",
+    "source_branch_lsn": "[LSN]",
+    "source_branch_time": "[TIMESTAMP]",
+    "state_change_time": "[TIMESTAMP]"
+  },
+  "uid": "[BRANCH_UID]"
+}
+
+=== Restore is_protected to false
+>>> update_file.py databricks.yml is_protected: true is_protected: false
+
+>>> [CLI] bundle plan
+update postgres_branches.dev_branch
+
+Plan: 0 to add, 1 to change, 0 to delete, 1 unchanged
+
+>>> [CLI] bundle plan -o json
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/update-postgres-branch-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> print_requests.py --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
+
+>>> [CLI] postgres get-branch [DEV_BRANCH_ID]
+{
+  "name": "[DEV_BRANCH_ID]",
+  "parent": "projects/test-pg-proj-[UNIQUE_NAME]",
+  "status": {
+    "current_state": "READY",
+    "default": false,
+    "is_protected": false,
+    "source_branch": "projects/test-pg-proj-[UNIQUE_NAME]/branches/[BRANCH_UID]",
+    "source_branch_lsn": "[LSN]",
+    "source_branch_time": "[TIMESTAMP]",
+    "state_change_time": "[TIMESTAMP]"
+  },
+  "uid": "[BRANCH_UID]"
+}
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.postgres_branches.dev_branch
+  delete resources.postgres_projects.my_project
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/update-postgres-branch-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!

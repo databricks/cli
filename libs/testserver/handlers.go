@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"path"
 	"strings"
 
 	"github.com/databricks/databricks-sdk-go/service/catalog"
@@ -146,15 +147,67 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	server.Handle("HEAD", "/api/2.0/fs/directories/{path:.*}", func(req Request) any {
-		return Response{
-			Body: "dir path: " + req.Vars["dir_path"],
+		dirPath := req.Vars["path"]
+		if !strings.HasPrefix(dirPath, "/") {
+			dirPath = "/" + dirPath
 		}
+
+		if req.Workspace.FileExists(dirPath) {
+			return Response{StatusCode: 404}
+		}
+		if req.Workspace.DirectoryExists(dirPath) {
+			return Response{StatusCode: 200}
+		}
+		return Response{StatusCode: 404}
+	})
+
+	server.Handle("HEAD", "/api/2.0/fs/files/{path:.*}", func(req Request) any {
+		path := req.Vars["path"]
+		if req.Workspace.FileExists(path) {
+			return Response{StatusCode: 200}
+		}
+		return Response{StatusCode: 404}
+	})
+
+	server.Handle("PUT", "/api/2.0/fs/directories/{path:.*}", func(req Request) any {
+		dirPath := req.Vars["path"]
+		if !strings.HasPrefix(dirPath, "/") {
+			dirPath = "/" + dirPath
+		}
+
+		defer req.Workspace.LockUnlock()()
+
+		// Create directory and all parent directories.
+		for dir := dirPath; dir != "/" && dir != ""; dir = path.Dir(dir) {
+			if _, exists := req.Workspace.directories[dir]; !exists {
+				req.Workspace.directories[dir] = workspace.ObjectInfo{
+					ObjectType: "DIRECTORY",
+					Path:       dir,
+					ObjectId:   nextID(),
+				}
+			}
+		}
+		return Response{}
 	})
 
 	server.Handle("PUT", "/api/2.0/fs/files/{path:.*}", func(req Request) any {
 		path := req.Vars["path"]
 		overwrite := req.URL.Query().Get("overwrite") == "true"
 		return req.Workspace.WorkspaceFilesImportFile(path, req.Body, overwrite)
+	})
+
+	server.Handle("GET", "/api/2.0/fs/files/{path:.*}", func(req Request) any {
+		path := req.Vars["path"]
+		data := req.Workspace.WorkspaceFilesExportFile(path)
+		if data == nil {
+			return Response{
+				StatusCode: 404,
+				Body: map[string]string{
+					"message": "file does not exist",
+				},
+			}
+		}
+		return data
 	})
 
 	server.Handle("GET", "/api/2.1/unity-catalog/current-metastore-assignment", func(req Request) any {
@@ -554,7 +607,7 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	server.Handle("GET", "/api/2.0/database/catalogs/{name}", func(req Request) any {
-		return MapGet(req.Workspace, req.Workspace.DatabaseCatalogs, req.Vars["name"])
+		return req.Workspace.DatabaseCatalogGet(req.Vars["name"])
 	})
 
 	server.Handle("PATCH", "/api/2.0/database/catalogs/{name}", func(req Request) any {
@@ -695,5 +748,112 @@ func AddDefaultHandlers(server *Server) {
 
 	server.Handle("PUT", "/api/2.0/permissions/{prefix}/{object_type}/{object_id}", func(req Request) any {
 		return req.Workspace.SetPermissions(req)
+	})
+
+	// Postgres Operations (must be before specific resource routes):
+	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/operations/{operation_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/operations/" + req.Vars["operation_id"]
+		return req.Workspace.PostgresOperationGet(name)
+	})
+
+	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/operations/{operation_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/operations/" + req.Vars["operation_id"]
+		return req.Workspace.PostgresOperationGet(name)
+	})
+
+	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/endpoints/{endpoint_id}/operations/{operation_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/endpoints/" + req.Vars["endpoint_id"] + "/operations/" + req.Vars["operation_id"]
+		return req.Workspace.PostgresOperationGet(name)
+	})
+
+	// Postgres Projects:
+	server.Handle("POST", "/api/2.0/postgres/projects", func(req Request) any {
+		projectID := req.URL.Query().Get("project_id")
+		return req.Workspace.PostgresProjectCreate(req, projectID)
+	})
+
+	server.Handle("GET", "/api/2.0/postgres/projects", func(req Request) any {
+		return req.Workspace.PostgresProjectList()
+	})
+
+	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"]
+		return req.Workspace.PostgresProjectGet(name)
+	})
+
+	server.Handle("PATCH", "/api/2.0/postgres/projects/{project_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"]
+		return req.Workspace.PostgresProjectUpdate(req, name)
+	})
+
+	server.Handle("DELETE", "/api/2.0/postgres/projects/{project_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"]
+		return req.Workspace.PostgresProjectDelete(name)
+	})
+
+	// Postgres Branches:
+	server.Handle("POST", "/api/2.0/postgres/projects/{project_id}/branches", func(req Request) any {
+		parent := "projects/" + req.Vars["project_id"]
+		branchID := req.URL.Query().Get("branch_id")
+		return req.Workspace.PostgresBranchCreate(req, parent, branchID)
+	})
+
+	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches", func(req Request) any {
+		parent := "projects/" + req.Vars["project_id"]
+		return req.Workspace.PostgresBranchList(parent)
+	})
+
+	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"]
+		return req.Workspace.PostgresBranchGet(name)
+	})
+
+	server.Handle("PATCH", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"]
+		return req.Workspace.PostgresBranchUpdate(req, name)
+	})
+
+	server.Handle("DELETE", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"]
+		return req.Workspace.PostgresBranchDelete(name)
+	})
+
+	// Postgres Endpoints:
+	server.Handle("POST", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/endpoints", func(req Request) any {
+		parent := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"]
+		endpointID := req.URL.Query().Get("endpoint_id")
+		return req.Workspace.PostgresEndpointCreate(req, parent, endpointID)
+	})
+
+	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/endpoints", func(req Request) any {
+		parent := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"]
+		return req.Workspace.PostgresEndpointList(parent)
+	})
+
+	server.Handle("GET", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/endpoints/{endpoint_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/endpoints/" + req.Vars["endpoint_id"]
+		return req.Workspace.PostgresEndpointGet(name)
+	})
+
+	server.Handle("PATCH", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/endpoints/{endpoint_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/endpoints/" + req.Vars["endpoint_id"]
+		return req.Workspace.PostgresEndpointUpdate(req, name)
+	})
+
+	server.Handle("DELETE", "/api/2.0/postgres/projects/{project_id}/branches/{branch_id}/endpoints/{endpoint_id}", func(req Request) any {
+		name := "projects/" + req.Vars["project_id"] + "/branches/" + req.Vars["branch_id"] + "/endpoints/" + req.Vars["endpoint_id"]
+		return req.Workspace.PostgresEndpointDelete(name)
+	})
+
+	// Catch-all handler for invalid postgres resource names.
+	// This handles cases like GET /api/2.0/postgres/1234 where "1234" is not a valid resource name.
+	server.Handle("GET", "/api/2.0/postgres/{name}", func(req Request) any {
+		return Response{
+			StatusCode: 404,
+			Body: map[string]string{
+				"error_code": "NOT_FOUND",
+				"message":    "resource not found",
+			},
+		}
 	})
 }

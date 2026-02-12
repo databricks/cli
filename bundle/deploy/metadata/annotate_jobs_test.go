@@ -84,6 +84,9 @@ func TestAnnotateJobsWorkspaceWithFlag(t *testing.T) {
 	b := &bundle.Bundle{
 		SyncRootPath: "/Workspace/Users/user@example.com/project",
 		Config: config.Root{
+			Bundle: config.Bundle{
+				Mode: config.Development,
+			},
 			Workspace: config.Workspace{
 				StatePath: "/a/b/c",
 			},
@@ -107,6 +110,39 @@ func TestAnnotateJobsWorkspaceWithFlag(t *testing.T) {
 	require.NoError(t, diags.Error())
 
 	assert.Equal(t, jobs.JobEditModeEditable, b.Config.Resources.Jobs["my-job"].EditMode)
+	assert.Equal(t, jobs.FormatMultiTask, b.Config.Resources.Jobs["my-job"].Format)
+}
+
+func TestAnnotateJobsWorkspaceNonDevelopment(t *testing.T) {
+	b := &bundle.Bundle{
+		SyncRootPath: "/Workspace/Users/user@example.com/project",
+		Config: config.Root{
+			Bundle: config.Bundle{
+				Mode: config.Production,
+			},
+			Workspace: config.Workspace{
+				StatePath: "/a/b/c",
+			},
+			Resources: config.Resources{
+				Jobs: map[string]*resources.Job{
+					"my-job": {
+						JobSettings: jobs.JobSettings{
+							Name: "My Job",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	ctx := context.Background()
+	ctx = dbr.MockRuntime(ctx, dbr.Environment{IsDbr: true, Version: "14.0"})
+	ctx = env.Set(ctx, "DATABRICKS_BUNDLE_ENABLE_EXPERIMENTAL_YAML_SYNC", "1")
+
+	diags := AnnotateJobs().Apply(ctx, b)
+	require.NoError(t, diags.Error())
+
+	assert.Equal(t, jobs.JobEditModeUiLocked, b.Config.Resources.Jobs["my-job"].EditMode)
 	assert.Equal(t, jobs.FormatMultiTask, b.Config.Resources.Jobs["my-job"].Format)
 }
 

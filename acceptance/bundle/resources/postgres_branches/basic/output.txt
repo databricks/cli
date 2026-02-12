@@ -1,0 +1,75 @@
+
+>>> [CLI] bundle validate
+Name: deploy-postgres-branch-[UNIQUE_NAME]
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-branch-[UNIQUE_NAME]/default
+
+Validation OK!
+
+>>> [CLI] bundle summary
+Name: deploy-postgres-branch-[UNIQUE_NAME]
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-branch-[UNIQUE_NAME]/default
+Resources:
+  Postgres branches:
+    main:
+      Name: 
+      URL:  (not deployed)
+  Postgres projects:
+    my_project:
+      Name: Test Project for Branch
+      URL:  (not deployed)
+
+>>> [CLI] bundle deploy
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-branch-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+>>> [CLI] postgres get-branch projects/test-pg-proj-[UNIQUE_NAME]/branches/main
+{
+  "name": "projects/test-pg-proj-[UNIQUE_NAME]/branches/main",
+  "parent": "projects/test-pg-proj-[UNIQUE_NAME]",
+  "status": {
+    "current_state": "READY",
+    "default": false,
+    "is_protected": false,
+    "source_branch": "projects/test-pg-proj-[UNIQUE_NAME]/branches/[BRANCH_UID]",
+    "source_branch_lsn": "[LSN]",
+    "source_branch_time": "[TIMESTAMP]",
+    "state_change_time": "[TIMESTAMP]"
+  },
+  "uid": "[BRANCH_UID]"
+}
+
+>>> [CLI] bundle summary
+Name: deploy-postgres-branch-[UNIQUE_NAME]
+Target: default
+Workspace:
+  User: [USERNAME]
+  Path: /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-branch-[UNIQUE_NAME]/default
+Resources:
+  Postgres branches:
+    main:
+      Name: 
+      URL:  (not deployed)
+  Postgres projects:
+    my_project:
+      Name: Test Project for Branch
+      URL:  (not deployed)
+
+>>> print_requests.py --keep --get //postgres ^//workspace-files/ ^//workspace/ ^//telemetry-ext ^//operations/
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.postgres_branches.main
+  delete resources.postgres_projects.my_project
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-branch-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!

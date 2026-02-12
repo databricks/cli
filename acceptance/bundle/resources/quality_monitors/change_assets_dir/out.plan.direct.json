@@ -31,14 +31,14 @@
       "changes": {
         "assets_dir": {
           "action": "recreate",
-          "reason": "field_triggers",
+          "reason": "immutable",
           "old": "/Workspace/Users/[USERNAME]/monitor_assets_[UNIQUE_NAME]",
           "new": "/Workspace/Users/[USERNAME]/monitor_assets2_[UNIQUE_NAME]",
           "remote": "/Workspace/Users/[USERNAME]/monitor_assets_[UNIQUE_NAME]"
         },
         "warehouse_id": {
           "action": "skip",
-          "reason": "config_only",
+          "reason": "not_returned_by_api",
           "old": "[TEST_DEFAULT_WAREHOUSE_ID]",
           "new": "[TEST_DEFAULT_WAREHOUSE_ID]"
         }

@@ -7,23 +7,20 @@
     "resources.pipelines.foo": {
       "action": "skip",
       "remote_state": {
+        "channel": "CURRENT",
         "creator_user_name": "[USERNAME]",
+        "deployment": {
+          "kind": "BUNDLE",
+          "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/permissions-test/default/state/metadata.json"
+        },
+        "edition": "ADVANCED",
+        "id": "[FOO_ID]",
         "last_modified": [UNIX_TIME_MILLIS],
         "name": "foo",
         "pipeline_id": "[FOO_ID]",
         "run_as_user_name": "[USERNAME]",
-        "spec": {
-          "channel": "CURRENT",
-          "deployment": {
-            "kind": "BUNDLE",
-            "metadata_file_path": "/Workspace/Users/[USERNAME]/.bundle/permissions-test/default/state/metadata.json"
-          },
-          "edition": "ADVANCED",
-          "id": "[FOO_ID]",
-          "name": "foo",
-          "storage": "dbfs:/pipelines/[FOO_ID]"
-        },
-        "state": "IDLE"
+        "state": "IDLE",
+        "storage": "dbfs:/pipelines/[FOO_ID]"
       },
       "changes": {
         "storage": {

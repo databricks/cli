@@ -183,8 +183,8 @@ func removeOutputOnlyFields(typ reflect.Type, s jsonschema.Schema) jsonschema.Sc
 }
 
 func main() {
-	if len(os.Args) != 3 {
-		fmt.Println("Usage: go run main.go <work-dir> <output-file>")
+	if len(os.Args) < 3 {
+		fmt.Println("Usage: go run main.go <work-dir> <output-file> [--docs]")
 		os.Exit(1)
 	}
 
@@ -193,10 +193,14 @@ func main() {
 	// Output file, where the generated JSON schema will be written to.
 	outputFile := os.Args[2]
 
-	generateSchema(workdir, outputFile)
+	// When --docs is passed, skip interpolation patterns and add sinceVersion annotations.
+	// This generates a schema optimized for documentation.
+	docsMode := len(os.Args) >= 4 && os.Args[3] == "--docs"
+
+	generateSchema(workdir, outputFile, docsMode)
 }
 
-func generateSchema(workdir, outputFile string) {
+func generateSchema(workdir, outputFile string, docsMode bool) {
 	annotationsPath := filepath.Join(workdir, "annotations.yml")
 	annotationsOpenApiPath := filepath.Join(workdir, "annotations_openapi.yml")
 	annotationsOpenApiOverridesPath := filepath.Join(workdir, "annotations_openapi_overrides.yml")
@@ -220,15 +224,19 @@ func generateSchema(workdir, outputFile string) {
 		log.Fatal(err)
 	}
 
-	// Generate the JSON schema from the bundle Go struct.
-	s, err := jsonschema.FromType(reflect.TypeOf(config.Root{}), []func(reflect.Type, jsonschema.Schema) jsonschema.Schema{
+	transforms := []func(reflect.Type, jsonschema.Schema) jsonschema.Schema{
 		removeJobsFields,
 		removePipelineFields,
 		makeVolumeTypeOptional,
 		a.addAnnotations,
 		removeOutputOnlyFields,
-		addInterpolationPatterns,
-	})
+	}
+	if !docsMode {
+		transforms = append(transforms, addInterpolationPatterns)
+	}
+
+	// Generate the JSON schema from the bundle Go struct.
+	s, err := jsonschema.FromType(reflect.TypeOf(config.Root{}), transforms)
 
 	// AdditionalProperties is set to an empty schema to allow non-typed keys used as yaml-anchors
 	// Example:
@@ -246,6 +254,16 @@ func generateSchema(workdir, outputFile string) {
 	err = a.syncWithMissingAnnotations(annotationsPath)
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	// In docs mode, add sinceVersion annotations by analyzing git history.
+	if docsMode {
+		sinceVersions, err := computeSinceVersions()
+		if err != nil {
+			fmt.Printf("Warning: could not compute sinceVersion annotations: %v\n", err)
+		} else {
+			addSinceVersionToSchema(&s, sinceVersions)
+		}
 	}
 
 	b, err := json.MarshalIndent(s, "", "  ")

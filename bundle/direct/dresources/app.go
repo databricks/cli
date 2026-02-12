@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/apierr"
@@ -89,12 +88,6 @@ func (r *ResourceApp) DoUpdate(ctx context.Context, id string, config *apps.App,
 func (r *ResourceApp) DoDelete(ctx context.Context, id string) error {
 	_, err := r.client.Apps.DeleteByName(ctx, id)
 	return err
-}
-
-func (*ResourceApp) FieldTriggers() map[string]deployplan.ActionType {
-	return map[string]deployplan.ActionType{
-		"name": deployplan.Recreate,
-	}
 }
 
 func (r *ResourceApp) WaitAfterCreate(ctx context.Context, config *apps.App) (*apps.App, error) {

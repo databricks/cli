@@ -11,12 +11,13 @@ import (
 
 // unexported global test case type
 type testCase struct {
-	name     string
-	path     string
-	want     any
-	wantSelf bool
-	errFmt   string
-	notFound string // if set, expect NotFoundError with this message
+	name       string
+	path       string
+	want       any
+	wantSelf   bool
+	errFmt     string
+	notFound   string // if set, expect NotFoundError with this message
+	getOnlyErr string // if set, Validate passes but Get returns this error
 }
 
 func testGet(t *testing.T, obj any, path string, want any) {
@@ -181,9 +182,9 @@ func runCommonTests(t *testing.T, obj any) {
 
 		// Errors common to both
 		{
-			name:   "wildcard not supported",
-			path:   "items[*].id",
-			errFmt: "wildcards not supported: items[*].id",
+			name:       "wildcard not supported for Get",
+			path:       "items[*].id",
+			getOnlyErr: "wildcards not allowed in path",
 		},
 		{
 			name:   "missing field",
@@ -273,6 +274,10 @@ func runCommonTests(t *testing.T, obj any) {
 				require.EqualError(t, err, tt.notFound)
 				var notFound *NotFoundError
 				require.ErrorAs(t, err, &notFound)
+				return
+			}
+			if tt.getOnlyErr != "" {
+				require.EqualError(t, err, tt.getOnlyErr)
 				return
 			}
 			if tt.errFmt != "" {

@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"maps"
 	"reflect"
 
 	"github.com/databricks/cli/bundle/deployplan"
@@ -45,14 +44,6 @@ type IResource interface {
 	// DoDelete deletes the resource.
 	// Example: func (r *ResourceJob) DoDelete(ctx context.Context, id string) error
 	DoDelete(ctx context.Context, id string) error
-
-	// [Optional] FieldTriggers returns actions to trigger when given fields are changed.
-	// Keys are field paths (e.g., "name", "catalog_name"). Values are actions.
-	// Unspecified changed fields default to Update.
-	//
-	// Note: these functions are called once per resource implementation initialization,
-	// not once per resource.
-	FieldTriggers() map[string]deployplan.ActionType
 
 	// [Optional] OverrideChangeDesc can implement custom logic to update a given ChangeDesc; it is run last after built-in classifiers and field triggers.
 	OverrideChangeDesc(ctx context.Context, path *structpath.PathNode, changedesc *ChangeDesc, remoteState any) error
@@ -103,11 +94,12 @@ type Adapter struct {
 	overrideChangeDesc *calladapt.BoundCaller
 	doResize           *calladapt.BoundCaller
 
-	fieldTriggers map[string]deployplan.ActionType
-	keyedSlices   map[string]any
+	resourceConfig          *ResourceLifecycleConfig
+	generatedResourceConfig *ResourceLifecycleConfig
+	keyedSlices             map[string]any
 }
 
-func NewAdapter(typedNil any, client *databricks.WorkspaceClient) (*Adapter, error) {
+func NewAdapter(typedNil any, resourceType string, client *databricks.WorkspaceClient) (*Adapter, error) {
 	newCall, err := prepareCallRequired(typedNil, "New")
 	if err != nil {
 		return nil, err
@@ -121,37 +113,25 @@ func NewAdapter(typedNil any, client *databricks.WorkspaceClient) (*Adapter, err
 	}
 	impl := outs[0]
 	adapter := &Adapter{
-		prepareState:       nil,
-		remapState:         nil,
-		doRefresh:          nil,
-		doDelete:           nil,
-		doCreate:           nil,
-		doUpdate:           nil,
-		doUpdateWithID:     nil,
-		doResize:           nil,
-		waitAfterCreate:    nil,
-		waitAfterUpdate:    nil,
-		overrideChangeDesc: nil,
-		fieldTriggers:      map[string]deployplan.ActionType{},
-		keyedSlices:        nil,
+		prepareState:            nil,
+		remapState:              nil,
+		doRefresh:               nil,
+		doDelete:                nil,
+		doCreate:                nil,
+		doUpdate:                nil,
+		doUpdateWithID:          nil,
+		doResize:                nil,
+		waitAfterCreate:         nil,
+		waitAfterUpdate:         nil,
+		overrideChangeDesc:      nil,
+		resourceConfig:          GetResourceConfig(resourceType),
+		generatedResourceConfig: GetGeneratedResourceConfig(resourceType),
+		keyedSlices:             nil,
 	}
 
 	err = adapter.initMethods(impl)
 	if err != nil {
 		return nil, err
-	}
-
-	// Load optional FieldTriggers method from the unified interface
-	triggerCall, err := calladapt.PrepareCall(impl, calladapt.TypeOf[IResource](), "FieldTriggers")
-	if err != nil {
-		return nil, err
-	}
-	if triggerCall != nil {
-		// Validate FieldTriggers signature: func(bool) map[string]deployplan.ActionType
-		adapter.fieldTriggers, err = loadFieldTriggers(triggerCall)
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	err = adapter.validate()
@@ -160,18 +140,6 @@ func NewAdapter(typedNil any, client *databricks.WorkspaceClient) (*Adapter, err
 	}
 
 	return adapter, nil
-}
-
-// loadFieldTriggers calls FieldTriggers with isLocal parameter and returns the resulting map.
-func loadFieldTriggers(triggerCall *calladapt.BoundCaller) (map[string]deployplan.ActionType, error) {
-	outs, err := triggerCall.Call()
-	if err != nil || len(outs) != 1 {
-		return nil, fmt.Errorf("failed to call FieldTriggers(): %w", err)
-	}
-	fields := outs[0].(map[string]deployplan.ActionType)
-	result := make(map[string]deployplan.ActionType, len(fields))
-	maps.Copy(result, fields)
-	return result, nil
 }
 
 // loadKeyedSlices validates and calls KeyedSlices method, returning the resulting map.
@@ -359,19 +327,14 @@ func (a *Adapter) validate() error {
 		return err
 	}
 
-	// FieldTriggers validation
+	// Validate resourceConfig consistency with DoUpdateWithID
 	if a.overrideChangeDesc == nil {
-		hasUpdateWithIDTrigger := false
-		for _, action := range a.fieldTriggers {
-			if action == deployplan.UpdateWithID {
-				hasUpdateWithIDTrigger = true
-			}
-		}
+		hasUpdateWithIDTrigger := a.resourceConfig != nil && len(a.resourceConfig.UpdateIDOnChanges) > 0
 		if hasUpdateWithIDTrigger && a.doUpdateWithID == nil {
-			return errors.New("FieldTriggers includes update_with_id but DoUpdateWithID is not implemented")
+			return errors.New("resourceConfig has update_id_on_changes but DoUpdateWithID is not implemented")
 		}
 		if a.doUpdateWithID != nil && !hasUpdateWithIDTrigger {
-			return errors.New("DoUpdateWithID is implemented but FieldTriggers lacks update_with_id trigger")
+			return errors.New("DoUpdateWithID is implemented but resourceConfig lacks update_id_on_changes")
 		}
 	}
 
@@ -390,8 +353,21 @@ func (a *Adapter) RemoteType() reflect.Type {
 	return a.doRefresh.OutTypes[0]
 }
 
-func (a *Adapter) FieldTriggers() map[string]deployplan.ActionType {
-	return a.fieldTriggers
+func (a *Adapter) ResourceConfig() *ResourceLifecycleConfig {
+	return a.resourceConfig
+}
+
+func (a *Adapter) GeneratedResourceConfig() *ResourceLifecycleConfig {
+	return a.generatedResourceConfig
+}
+
+func (a *Adapter) IsFieldInRecreateOnChanges(path *structpath.PathNode) bool {
+	for _, p := range a.resourceConfig.RecreateOnChanges {
+		if path.HasPatternPrefix(p.Field) {
+			return true
+		}
+	}
+	return false
 }
 
 func (a *Adapter) PrepareState(input any) (any, error) {
@@ -539,11 +515,13 @@ func (a *Adapter) WaitAfterUpdate(ctx context.Context, newState any) (any, error
 	return remoteState, nil
 }
 
-// ClassifyChange classifies a change using custom logic or FieldTriggers.
+// HasOverrideChangeDesc returns true if OverrideChangeDesc is defined for this resource impl
+func (a *Adapter) HasOverrideChangeDesc() bool {
+	return a.overrideChangeDesc != nil
+}
+
+// OverrideChangeDesc allows custom logic to override change classification.
 func (a *Adapter) OverrideChangeDesc(ctx context.Context, path *structpath.PathNode, change *ChangeDesc, remoteState any) error {
-	if a.overrideChangeDesc == nil {
-		return nil
-	}
 	_, err := a.overrideChangeDesc.Call(ctx, path, change, remoteState)
 	return err
 }

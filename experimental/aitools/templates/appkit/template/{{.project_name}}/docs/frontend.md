@@ -35,22 +35,22 @@ function MyDashboard() {
 
 Components automatically fetch data, show loading states, display errors, and render with sensible defaults.
 
-**Custom Visualization (Recharts):**
+**⚠️ CRITICAL: AppKit charts do NOT support children**
 
 ```typescript
+// ❌ WRONG - AppKit charts don't accept Recharts children
 import { BarChart } from '@databricks/appkit-ui/react';
-import { Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
-
-<BarChart queryKey="sales_by_region" parameters={{}}>
-  <CartesianGrid strokeDasharray="3 3" />
-  <XAxis dataKey="region" />
-  <YAxis />
-  <Tooltip />
-  <Legend />
-  <Bar dataKey="revenue" fill="#40d1f5" />
-  <Bar dataKey="expenses" fill="#4462c9" />
+import { Bar, XAxis, YAxis } from 'recharts';
+<BarChart queryKey="sales" parameters={{}}>
+  <XAxis dataKey="region" />  // TypeScript error!
+  <Bar dataKey="revenue" />    // TypeScript error!
 </BarChart>
+
+// ✅ CORRECT - Use simple self-closing syntax
+<BarChart queryKey="sales" parameters={{}} />
 ```
+
+AppKit charts auto-configure axes, tooltips, and styling. Do NOT import Recharts components.
 
 Databricks brand colors: `['#40d1f5', '#4462c9', '#EB1600', '#0B2026', '#4A4A4A', '#353a4a']`
 

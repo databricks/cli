@@ -20,7 +20,7 @@
       "changes": {
         "warehouse_id": {
           "action": "skip",
-          "reason": "config_only",
+          "reason": "not_returned_by_api",
           "old": "[TEST_DEFAULT_WAREHOUSE_ID]",
           "new": "[TEST_DEFAULT_WAREHOUSE_ID]"
         }

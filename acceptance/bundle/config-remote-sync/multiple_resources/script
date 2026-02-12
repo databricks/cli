@@ -1,0 +1,36 @@
+#!/bin/bash
+
+envsubst < databricks.yml.tmpl > databricks.yml
+
+cleanup() {
+  trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
+touch dummy.whl
+$CLI bundle deploy
+
+job_one_id="$(read_id.py job_one)"
+job_two_id="$(read_id.py job_two)"
+
+
+title "Modify both jobs"
+edit_resource.py jobs $job_one_id <<EOF
+r["max_concurrent_runs"] = 5
+r["tags"] = {"team": "data"}
+EOF
+
+edit_resource.py jobs $job_two_id <<EOF
+r["max_concurrent_runs"] = 10
+r["tags"] = {"team": "ml"}
+EOF
+
+title "Detect and save changes"
+echo
+cp databricks.yml databricks.yml.backup
+$CLI bundle config-remote-sync --save
+
+title "Configuration changes"
+echo
+trace diff.py databricks.yml.backup databricks.yml
+rm databricks.yml.backup

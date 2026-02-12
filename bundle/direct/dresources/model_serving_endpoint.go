@@ -6,10 +6,18 @@ import (
 	"time"
 
 	"github.com/databricks/cli/bundle/config/resources"
-	"github.com/databricks/cli/bundle/deployplan"
+	"github.com/databricks/cli/libs/structs/structpath"
 	"github.com/databricks/cli/libs/utils"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/serving"
+)
+
+// Precalculated paths for HasChange checks
+var (
+	pathTags               = structpath.MustParsePath("tags")
+	pathAiGateway          = structpath.MustParsePath("ai_gateway")
+	pathConfig             = structpath.MustParsePath("config")
+	pathEmailNotifications = structpath.MustParsePath("email_notifications")
 )
 
 type ResourceModelServingEndpoint struct {
@@ -57,6 +65,7 @@ func servedEntitiesOutputToInput(output []serving.ServedEntityOutput) []serving.
 			ScaleToZeroEnabled:        entity.ScaleToZeroEnabled,
 			WorkloadSize:              entity.WorkloadSize,
 			WorkloadType:              entity.WorkloadType,
+			BurstScalingEnabled:       entity.BurstScalingEnabled,
 			ForceSendFields:           utils.FilterFields[serving.ServedEntityInput](entity.ForceSendFields),
 		}
 	}
@@ -282,28 +291,28 @@ func (r *ResourceModelServingEndpoint) DoUpdate(ctx context.Context, id string, 
 	// Terraform makes these API calls sequentially. We do the same here.
 	// It's an unknown as of 1st Dec 2025 if these APIs are safe to make in parallel. (we did not check)
 	// https://github.com/databricks/terraform-provider-databricks/blob/c61a32300445f84efb2bb6827dee35e6e523f4ff/serving/resource_model_serving.go#L373
-	if changes.HasChange("tags") {
+	if changes.HasChange(pathTags) {
 		err = r.updateTags(ctx, id, config.Tags)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	if changes.HasChange("ai_gateway") {
+	if changes.HasChange(pathAiGateway) {
 		err = r.updateAiGateway(ctx, id, config.AiGateway)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	if changes.HasChange("config") {
+	if changes.HasChange(pathConfig) {
 		err = r.updateConfig(ctx, id, config.Config)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	if changes.HasChange("email_notifications") {
+	if changes.HasChange(pathEmailNotifications) {
 		err = r.updateNotifications(ctx, id, config.EmailNotifications)
 		if err != nil {
 			return nil, err
@@ -315,16 +324,4 @@ func (r *ResourceModelServingEndpoint) DoUpdate(ctx context.Context, id string, 
 
 func (r *ResourceModelServingEndpoint) DoDelete(ctx context.Context, id string) error {
 	return r.client.ServingEndpoints.DeleteByName(ctx, id)
-}
-
-func (*ResourceModelServingEndpoint) FieldTriggers() map[string]deployplan.ActionType {
-	// TF implementation: https://github.com/databricks/terraform-provider-databricks/blob/6c106e8e7052bb2726148d66309fd460ed444236/mlflow/resource_mlflow_experiment.go#L22
-	return map[string]deployplan.ActionType{
-		"name":        deployplan.Recreate,
-		"description": deployplan.Recreate, // description is immutable, can't be updated via API
-		"config.auto_capture_config.catalog_name":      deployplan.Recreate,
-		"config.auto_capture_config.schema_name":       deployplan.Recreate,
-		"config.auto_capture_config.table_name_prefix": deployplan.Recreate,
-		"route_optimized":                              deployplan.Recreate,
-	}
 }

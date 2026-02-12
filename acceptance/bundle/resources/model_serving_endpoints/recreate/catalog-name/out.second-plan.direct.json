@@ -68,14 +68,14 @@
       "changes": {
         "config.auto_capture_config.catalog_name": {
           "action": "recreate",
-          "reason": "field_triggers",
+          "reason": "immutable",
           "old": "main",
           "new": "other_catalog",
           "remote": "main"
         },
         "route_optimized": {
           "action": "skip",
-          "reason": "server_side_default",
+          "reason": "empty",
           "remote": false
         }
       }

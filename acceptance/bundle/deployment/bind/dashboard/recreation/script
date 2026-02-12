@@ -5,6 +5,7 @@ envsubst < databricks.yml.tmpl > databricks.yml
 
 # Create a pre-defined dashboard:
 DASHBOARD_ID=$($CLI lakeview create --display-name "${DASHBOARD_DISPLAY_NAME}" --warehouse-id "${TEST_DEFAULT_WAREHOUSE_ID}" --serialized-dashboard '{"pages":[{"name":"02724bf2","displayName":"Untitled page"}]}' | jq -r '.dashboard_id')
+echo "$DASHBOARD_ID:DASHBOARD_ID" >> ACC_REPLS
 
 cleanupRemoveDashboard() {
     $CLI lakeview trash "${DASHBOARD_ID}"
@@ -12,7 +13,13 @@ cleanupRemoveDashboard() {
 trap cleanupRemoveDashboard EXIT
 
 trace $CLI bundle deployment bind dashboard1 "${DASHBOARD_ID}" --auto-approve
+trace print_state.py > out.state_after_bind.$DATABRICKS_BUNDLE_ENGINE.json
+ETAG=$(jq '.state["resources.dashboards.dashboard1"].state.etag // .resources[0].instances[0].attributes.etag // "no-etag"' < out.state_after_bind.$DATABRICKS_BUNDLE_ENGINE.json)
+echo $ETAG
+add_repl.py $ETAG ETAG
+json_in_json_normalize.py out.state_after_bind.$DATABRICKS_BUNDLE_ENGINE.json
 
+trace $CLI bundle plan
 trace errcode $CLI bundle deploy
 
 trace $CLI bundle deployment unbind dashboard1

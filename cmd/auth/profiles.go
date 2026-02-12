@@ -18,12 +18,13 @@ import (
 )
 
 type profileMetadata struct {
-	Name      string `json:"name"`
-	Host      string `json:"host,omitempty"`
-	AccountID string `json:"account_id,omitempty"`
-	Cloud     string `json:"cloud"`
-	AuthType  string `json:"auth_type"`
-	Valid     bool   `json:"valid"`
+	Name        string `json:"name"`
+	Host        string `json:"host,omitempty"`
+	AccountID   string `json:"account_id,omitempty"`
+	WorkspaceID string `json:"workspace_id,omitempty"`
+	Cloud       string `json:"cloud"`
+	AuthType    string `json:"auth_type"`
+	Valid       bool   `json:"valid"`
 }
 
 func (c *profileMetadata) IsEmpty() bool {
@@ -51,8 +52,8 @@ func (c *profileMetadata) Load(ctx context.Context, configFilePath string, skipV
 		return
 	}
 
-	//nolint:staticcheck // SA1019: IsAccountClient is deprecated but is still used here to avoid breaking changes
-	if cfg.IsAccountClient() {
+	switch cfg.ConfigType() {
+	case config.AccountConfig:
 		a, err := databricks.NewAccountClient((*databricks.Config)(cfg))
 		if err != nil {
 			return
@@ -64,7 +65,7 @@ func (c *profileMetadata) Load(ctx context.Context, configFilePath string, skipV
 			return
 		}
 		c.Valid = true
-	} else {
+	case config.WorkspaceConfig:
 		w, err := databricks.NewWorkspaceClient((*databricks.Config)(cfg))
 		if err != nil {
 			return
@@ -76,6 +77,9 @@ func (c *profileMetadata) Load(ctx context.Context, configFilePath string, skipV
 			return
 		}
 		c.Valid = true
+	case config.InvalidConfig:
+		// Invalid configuration, skip validation
+		return
 	}
 }
 
@@ -109,9 +113,10 @@ func newProfilesCommand() *cobra.Command {
 		for _, v := range iniFile.Sections() {
 			hash := v.KeysHash()
 			profile := &profileMetadata{
-				Name:      v.Name(),
-				Host:      hash["host"],
-				AccountID: hash["account_id"],
+				Name:        v.Name(),
+				Host:        hash["host"],
+				AccountID:   hash["account_id"],
+				WorkspaceID: hash["workspace_id"],
 			}
 			if profile.IsEmpty() {
 				continue

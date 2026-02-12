@@ -96,6 +96,7 @@
       "changes": {
         "num_workers": {
           "action": "resize",
+          "reason": "custom",
           "old": 3,
           "new": 4,
           "remote": 3
@@ -139,6 +140,7 @@
       "changes": {
         "num_workers": {
           "action": "resize",
+          "reason": "custom",
           "old": 4,
           "new": 5,
           "remote": 4

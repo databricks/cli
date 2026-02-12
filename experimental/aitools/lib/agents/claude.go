@@ -7,16 +7,11 @@ import (
 	"os/exec"
 )
 
-// DetectClaude checks if Claude Code CLI is installed and available on PATH.
-func DetectClaude() bool {
-	_, err := exec.LookPath("claude")
-	return err == nil
-}
-
 // InstallClaude installs the Databricks AI Tools MCP server in Claude Code.
 func InstallClaude() error {
-	if !DetectClaude() {
-		return errors.New("claude Code CLI is not installed or not on PATH\n\nPlease install Claude Code and ensure 'claude' is available on your system PATH.\nFor installation instructions, visit: https://docs.anthropic.com/en/docs/claude-code")
+	// Check if claude CLI is available
+	if _, err := exec.LookPath("claude"); err != nil {
+		return errors.New("'claude' CLI is not installed or not on PATH\n\nPlease install Claude Code and ensure 'claude' is available on your system PATH.\nFor installation instructions, visit: https://docs.anthropic.com/en/docs/claude-code")
 	}
 
 	databricksPath, err := os.Executable()
@@ -32,7 +27,7 @@ func InstallClaude() error {
 		"--transport", "stdio",
 		"databricks-mcp",
 		"--",
-		databricksPath, "experimental", "aitools")
+		databricksPath, "experimental", "aitools", "mcp")
 
 	output, err := cmd.CombinedOutput()
 	if err != nil {

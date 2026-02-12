@@ -58,14 +58,14 @@
       "changes": {
         "name": {
           "action": "recreate",
-          "reason": "field_triggers",
+          "reason": "immutable",
           "old": "[ORIGINAL_ENDPOINT_ID]",
           "new": "[NEW_ENDPOINT_ID]",
           "remote": "[ORIGINAL_ENDPOINT_ID]"
         },
         "route_optimized": {
           "action": "skip",
-          "reason": "server_side_default",
+          "reason": "empty",
           "remote": false
         }
       }

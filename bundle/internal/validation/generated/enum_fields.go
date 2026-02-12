@@ -33,6 +33,8 @@ var EnumFields = map[string][]string{
 	"resources.apps.*.resources[*].uc_securable.permission":     {"EXECUTE", "READ_VOLUME", "SELECT", "USE_CONNECTION", "WRITE_VOLUME"},
 	"resources.apps.*.resources[*].uc_securable.securable_type": {"CONNECTION", "FUNCTION", "TABLE", "VOLUME"},
 
+	"resources.catalogs.*.grants[*].privileges[*]": {"ALL_PRIVILEGES", "APPLY_TAG", "CREATE_CONNECTION", "CREATE_EXTERNAL_LOCATION", "CREATE_EXTERNAL_TABLE", "CREATE_EXTERNAL_VOLUME", "CREATE_FOREIGN_CATALOG", "CREATE_FUNCTION", "CREATE_MANAGED_STORAGE", "CREATE_MATERIALIZED_VIEW", "CREATE_MODEL", "CREATE_SCHEMA", "CREATE_STORAGE_CREDENTIAL", "CREATE_TABLE", "CREATE_VOLUME", "EXECUTE", "MANAGE", "MODIFY", "READ_VOLUME", "REFRESH", "SELECT", "USE_CATALOG", "USE_CONNECTION", "USE_SCHEMA", "WRITE_VOLUME"},
+
 	"resources.clusters.*.aws_attributes.availability":    {"ON_DEMAND", "SPOT", "SPOT_WITH_FALLBACK"},
 	"resources.clusters.*.aws_attributes.ebs_volume_type": {"GENERAL_PURPOSE_SSD", "THROUGHPUT_OPTIMIZED_HDD"},
 	"resources.clusters.*.azure_attributes.availability":  {"ON_DEMAND_AZURE", "SPOT_AZURE", "SPOT_WITH_FALLBACK_AZURE"},
@@ -47,7 +49,7 @@ var EnumFields = map[string][]string{
 
 	"resources.jobs.*.continuous.pause_status":                                                        {"PAUSED", "UNPAUSED"},
 	"resources.jobs.*.continuous.task_retry_mode":                                                     {"NEVER", "ON_FAILURE"},
-	"resources.jobs.*.deployment.kind":                                                                {"BUNDLE"},
+	"resources.jobs.*.deployment.kind":                                                                {"BUNDLE", "SYSTEM_MANAGED"},
 	"resources.jobs.*.edit_mode":                                                                      {"EDITABLE", "UI_LOCKED"},
 	"resources.jobs.*.format":                                                                         {"MULTI_TASK", "SINGLE_TASK"},
 	"resources.jobs.*.git_source.git_provider":                                                        {"awsCodeCommit", "azureDevOpsServices", "bitbucketCloud", "bitbucketServer", "gitHub", "gitHubEnterprise", "gitLab", "gitLabEnterpriseEdition"},
@@ -63,8 +65,10 @@ var EnumFields = map[string][]string{
 	"resources.jobs.*.job_clusters[*].new_cluster.runtime_engine":                                     {"NULL", "PHOTON", "STANDARD"},
 	"resources.jobs.*.performance_target":                                                             {"PERFORMANCE_OPTIMIZED", "STANDARD"},
 	"resources.jobs.*.schedule.pause_status":                                                          {"PAUSED", "UNPAUSED"},
+	"resources.jobs.*.tasks[*].compute.hardware_accelerator":                                          {"GPU_1xA10", "GPU_8xH100"},
 	"resources.jobs.*.tasks[*].condition_task.op":                                                     {"EQUAL_TO", "GREATER_THAN", "GREATER_THAN_OR_EQUAL", "LESS_THAN", "LESS_THAN_OR_EQUAL", "NOT_EQUAL"},
 	"resources.jobs.*.tasks[*].dbt_task.source":                                                       {"GIT", "WORKSPACE"},
+	"resources.jobs.*.tasks[*].for_each_task.task.compute.hardware_accelerator":                       {"GPU_1xA10", "GPU_8xH100"},
 	"resources.jobs.*.tasks[*].for_each_task.task.condition_task.op":                                  {"EQUAL_TO", "GREATER_THAN", "GREATER_THAN_OR_EQUAL", "LESS_THAN", "LESS_THAN_OR_EQUAL", "NOT_EQUAL"},
 	"resources.jobs.*.tasks[*].for_each_task.task.dbt_task.source":                                    {"GIT", "WORKSPACE"},
 	"resources.jobs.*.tasks[*].for_each_task.task.gen_ai_compute_task.source":                         {"GIT", "WORKSPACE"},
@@ -123,12 +127,15 @@ var EnumFields = map[string][]string{
 	"resources.pipelines.*.clusters[*].azure_attributes.availability":                           {"ON_DEMAND_AZURE", "SPOT_AZURE", "SPOT_WITH_FALLBACK_AZURE"},
 	"resources.pipelines.*.clusters[*].gcp_attributes.availability":                             {"ON_DEMAND_GCP", "PREEMPTIBLE_GCP", "PREEMPTIBLE_WITH_FALLBACK_GCP"},
 	"resources.pipelines.*.deployment.kind":                                                     {"BUNDLE"},
+	"resources.pipelines.*.ingestion_definition.full_refresh_window.days_of_week[*]":            {"FRIDAY", "MONDAY", "SATURDAY", "SUNDAY", "THURSDAY", "TUESDAY", "WEDNESDAY"},
 	"resources.pipelines.*.ingestion_definition.objects[*].report.table_configuration.scd_type": {"APPEND_ONLY", "SCD_TYPE_1", "SCD_TYPE_2"},
 	"resources.pipelines.*.ingestion_definition.objects[*].schema.table_configuration.scd_type": {"APPEND_ONLY", "SCD_TYPE_1", "SCD_TYPE_2"},
 	"resources.pipelines.*.ingestion_definition.objects[*].table.table_configuration.scd_type":  {"APPEND_ONLY", "SCD_TYPE_1", "SCD_TYPE_2"},
 	"resources.pipelines.*.ingestion_definition.source_type":                                    {"BIGQUERY", "DYNAMICS365", "FOREIGN_CATALOG", "GA4_RAW_DATA", "MANAGED_POSTGRESQL", "MYSQL", "NETSUITE", "ORACLE", "POSTGRESQL", "SALESFORCE", "SERVICENOW", "SHAREPOINT", "SQLSERVER", "TERADATA", "WORKDAY_RAAS"},
 	"resources.pipelines.*.ingestion_definition.table_configuration.scd_type":                   {"APPEND_ONLY", "SCD_TYPE_1", "SCD_TYPE_2"},
 	"resources.pipelines.*.restart_window.days_of_week[*]":                                      {"FRIDAY", "MONDAY", "SATURDAY", "SUNDAY", "THURSDAY", "TUESDAY", "WEDNESDAY"},
+
+	"resources.postgres_endpoints.*.endpoint_type": {"ENDPOINT_TYPE_READ_ONLY", "ENDPOINT_TYPE_READ_WRITE"},
 
 	"resources.quality_monitors.*.custom_metrics[*].type":     {"CUSTOM_METRIC_TYPE_AGGREGATE", "CUSTOM_METRIC_TYPE_DERIVED", "CUSTOM_METRIC_TYPE_DRIFT"},
 	"resources.quality_monitors.*.inference_log.problem_type": {"PROBLEM_TYPE_CLASSIFICATION", "PROBLEM_TYPE_REGRESSION"},
