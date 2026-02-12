@@ -1,0 +1,40 @@
+
+>>> errcode [CLI] bundle deploy
+Warning: Single node cluster is not correctly configured
+  at resources.jobs.safety_augment_workflow.job_clusters[1].new_cluster
+  in databricks.yml:180:13
+
+num_workers should be 0 only for single-node clusters. To create a
+valid single node cluster please ensure that the following properties
+are correctly set in the cluster specification:
+
+  spark_conf:
+    spark.databricks.cluster.profile: singleNode
+    spark.master: local[*]
+
+  custom_tags:
+    ResourceClass: SingleNode
+  
+
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle/default/files...
+Deploying resources...
+Error: terraform apply: exit status 1
+
+Error: cannot read job: panic: runtime error: invalid memory address or nil pointer dereference
+
+  with databricks_job.safety_augment_workflow,
+  on bundle.tf.json line 220, in resource.databricks_job.safety_augment_workflow:
+ 220:       },
+
+
+Error: cannot read job: panic: runtime error: invalid memory address or nil pointer dereference
+
+  with databricks_job.safety_scrub,
+  on bundle.tf.json line 318, in resource.databricks_job.safety_scrub:
+ 318:       }
+
+
+
+Updating deployment state...
+
+Exit code: 1
