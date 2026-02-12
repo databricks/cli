@@ -67,16 +67,19 @@ func detectGitBash(ctx context.Context) bool {
 	return false
 }
 
+// InteractiveMode represents the level of terminal interactivity available.
+type InteractiveMode string
+
 // Interactive mode constants for user agent tracking.
 const (
-	InteractiveModeFull       = "full"        // Both interactive output and prompts supported
-	InteractiveModeOutputOnly = "output_only" // Interactive output only, no prompts (stdin not TTY or Git Bash)
-	InteractiveModeNone       = "none"        // Non-interactive (CI, cron, stderr redirected)
+	InteractiveModeUnknown    InteractiveMode = ""            // cmdio not initialized in context
+	InteractiveModeFull       InteractiveMode = "full"        // Both interactive output and prompts supported
+	InteractiveModeOutputOnly InteractiveMode = "output_only" // Interactive output only, no prompts (stdin not TTY or Git Bash)
+	InteractiveModeNone       InteractiveMode = "none"        // Non-interactive (CI, cron, stderr redirected)
 )
 
 // InteractiveMode returns the interactive mode based on terminal capabilities.
-// Returns one of: "full", "output_only", or "none".
-func (c Capabilities) InteractiveMode() string {
+func (c Capabilities) InteractiveMode() InteractiveMode {
 	// SupportsPrompt() implies SupportsInteractive() (it's a stricter check).
 	if c.SupportsPrompt() {
 		return InteractiveModeFull

@@ -191,7 +191,7 @@ func TestCapabilities_InteractiveMode(t *testing.T) {
 	tests := []struct {
 		name     string
 		caps     Capabilities
-		expected string
+		expected InteractiveMode
 	}{
 		{
 			name: "full interactive - all TTYs, color, no Git Bash",

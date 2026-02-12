@@ -20,9 +20,10 @@ import (
 const interactiveModeKey = "interactive"
 
 func withInteractiveModeInUserAgent(ctx context.Context) context.Context {
+	// mode is empty when cmdio is not initialized in the context (e.g., early startup).
 	mode := cmdio.GetInteractiveMode(ctx)
 	if mode == "" {
 		return ctx
 	}
-	return useragent.InContext(ctx, interactiveModeKey, mode)
+	return useragent.InContext(ctx, interactiveModeKey, string(mode))
 }
