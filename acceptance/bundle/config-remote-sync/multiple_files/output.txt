@@ -4,6 +4,7 @@ Updating deployment state...
 Deployment complete!
 
 === Modify job_one: max_concurrent_runs, rename c_task
+=== Add synced_task to job_one (notebook in sync root, resource in subdirectory)
 === Modify job_two: max_concurrent_runs, rename first task, add extra_task
 === Add extra_task to local config (not in saved state, triggers entity-level replace)
 === Detect and save changes
@@ -14,6 +15,7 @@ Resource: resources.jobs.job_one
   tasks[task_key='a_task'].depends_on[0].task_key: replace
   tasks[task_key='c_task']: remove
   tasks[task_key='c_task_renamed']: add
+  tasks[task_key='synced_task']: add
 
 Resource: resources.jobs.job_two
   max_concurrent_runs: replace
@@ -50,11 +52,18 @@ Resource: resources.jobs.job_two
 +          task_key: c_task_renamed
          - task_key: a_task
            notebook_task:
-@@ -21,3 +21,3 @@
+@@ -21,3 +21,10 @@
              num_workers: 1
            depends_on:
 -            - task_key: c_task
 +            - task_key: c_task_renamed
++        - new_cluster:
++            node_type_id: [NODE_TYPE_ID]
++            num_workers: 1
++            spark_version: 13.3.x-snapshot-scala2.12
++          notebook_task:
++            notebook_path: ../synced_notebook.py
++          task_key: synced_task
 
 === Changes in job2.yml
 

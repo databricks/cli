@@ -3,11 +3,15 @@ package configsync
 import (
 	"context"
 	"fmt"
+	"io/fs"
+	"path/filepath"
 	"sort"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/log"
+	"github.com/databricks/cli/libs/notebook"
 	"github.com/databricks/cli/libs/structs/structpath"
 )
 
@@ -284,6 +288,13 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 				log.Debugf(ctx, "Field %s has no location, using resource location: %s", fullPath, filePath)
 			}
 
+			if configChange.Operation == OperationAdd && b.SyncRootPath != "" {
+				configChange = &ConfigChangeDesc{
+					Operation: configChange.Operation,
+					Value:     translateWorkspacePaths(configChange.Value, b.SyncRootPath, b.SyncRoot, filepath.Dir(filePath)),
+				}
+			}
+
 			result = append(result, FieldChange{
 				FilePath:        filePath,
 				Change:          configChange,
@@ -293,4 +304,60 @@ func ResolveChanges(ctx context.Context, b *bundle.Bundle, configChanges Changes
 	}
 
 	return result, nil
+}
+
+// translateWorkspacePaths recursively converts absolute workspace paths to relative
+// paths when they fall within the bundle's sync root. Paths are made relative to
+// targetDir (the directory of the YAML file being patched). For notebook paths
+// where the extension was stripped by translate_paths, it restores the extension
+// by checking the local filesystem.
+func translateWorkspacePaths(value any, syncRootPath string, syncRoot fs.FS, targetDir string) any {
+	switch v := value.(type) {
+	case string:
+		after, ok := strings.CutPrefix(v, syncRootPath+"/")
+		if !ok {
+			return v
+		}
+		after = resolveNotebookExtension(syncRoot, after)
+		fullPath := filepath.Join(syncRootPath, after)
+		relPath, err := filepath.Rel(targetDir, fullPath)
+		if err != nil {
+			return "./" + after
+		}
+		relPathSlash := filepath.ToSlash(relPath)
+		if !strings.HasPrefix(relPathSlash, "..") {
+			relPathSlash = "./" + relPathSlash
+		}
+		return relPathSlash
+	case map[string]any:
+		for key, val := range v {
+			v[key] = translateWorkspacePaths(val, syncRootPath, syncRoot, targetDir)
+		}
+		return v
+	case []any:
+		for i, val := range v {
+			v[i] = translateWorkspacePaths(val, syncRootPath, syncRoot, targetDir)
+		}
+		return v
+	default:
+		return value
+	}
+}
+
+// resolveNotebookExtension checks if a relative path refers to a notebook whose
+// extension was stripped by translate_paths. If the file doesn't exist as-is but
+// exists with a notebook extension, the extension is appended.
+func resolveNotebookExtension(syncRoot fs.FS, relPath string) string {
+	if syncRoot == nil {
+		return relPath
+	}
+	if _, err := fs.Stat(syncRoot, relPath); err == nil {
+		return relPath
+	}
+	for _, ext := range notebook.Extensions {
+		if _, err := fs.Stat(syncRoot, relPath+ext); err == nil {
+			return relPath + ext
+		}
+	}
+	return relPath
 }
