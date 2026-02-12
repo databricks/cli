@@ -8,20 +8,31 @@ import (
 
 // Product name constants
 const (
-	ClaudeCode = "claude-code"
-	Cline      = "cline"
-	Codex      = "codex"
-	Cursor     = "cursor"
-	GeminiCLI  = "gemini-cli"
-	OpenCode   = "opencode"
+	Antigravity = "antigravity"
+	ClaudeCode  = "claude-code"
+	Cline       = "cline"
+	Codex       = "codex"
+	Cursor      = "cursor"
+	GeminiCLI   = "gemini-cli"
+	OpenCode    = "opencode"
 )
 
 // knownAgents maps environment variables to product names.
 // Adding a new agent only requires a new entry here and a new constant above.
+//
+// References for each environment variable:
+//   - ANTIGRAVITY_AGENT: Closed source. Verified locally that Google Antigravity sets this variable.
+//   - CLAUDECODE:        https://github.com/anthropics/claude-code (open source npm package, sets CLAUDECODE=1)
+//   - CLINE_ACTIVE:      https://github.com/cline/cline (shipped in v3.24.0, see also https://github.com/cline/cline/discussions/5366)
+//   - CODEX_CI:          https://github.com/openai/codex/blob/main/codex-rs/core/src/unified_exec/process_manager.rs (part of UNIFIED_EXEC_ENV array)
+//   - CURSOR_AGENT:      Closed source. Referenced in https://gist.github.com/johnlindquist/9a90c5f1aedef0477c60d0de4171da3f
+//   - GEMINI_CLI:        https://google-gemini.github.io/gemini-cli/docs/tools/shell.html ("sets the GEMINI_CLI=1 environment variable")
+//   - OPENCODE:          https://github.com/opencode-ai/opencode (open source, sets OPENCODE=1)
 var knownAgents = []struct {
 	envVar  string
 	product string
 }{
+	{"ANTIGRAVITY_AGENT", Antigravity},
 	{"CLAUDECODE", ClaudeCode},
 	{"CLINE_ACTIVE", Cline},
 	{"CODEX_CI", Codex},
@@ -30,12 +41,10 @@ var knownAgents = []struct {
 	{"OPENCODE", OpenCode},
 }
 
-// key is a package-local type for context keys
-type key int
+// productKeyType is a package-local context key with zero size.
+type productKeyType struct{}
 
-const (
-	productKey = key(1)
-)
+var productKey productKeyType
 
 // detect performs the actual detection logic.
 // Returns product name string or empty string if detection is ambiguous.

@@ -11,6 +11,7 @@ import (
 
 func TestAgentInUserAgent(t *testing.T) {
 	for _, product := range []string{
+		agent.Antigravity,
 		agent.ClaudeCode,
 		agent.Cline,
 		agent.Codex,
