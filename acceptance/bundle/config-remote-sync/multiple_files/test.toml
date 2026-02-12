@@ -1,7 +1,7 @@
 Cloud = true
 
 RecordRequests = false
-Ignore = [".databricks", "dummy.whl", "databricks.yml", "resources/job1.yml", "resources/job2.yml", "synced_notebook.py"]
+Ignore = [".databricks", "dummy.whl", "databricks.yml", "resources/job1.yml", "resources/job2.yml", "sample_exploration.ipynb"]
 
 [Env]
 DATABRICKS_BUNDLE_ENABLE_EXPERIMENTAL_YAML_SYNC = "true"
