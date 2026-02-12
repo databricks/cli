@@ -114,3 +114,13 @@ Resource: resources.jobs.rename_task_job
 +            - task_key: b_task_renamed
            notebook_task:
              notebook_path: /Users/{{workspace_user_name}}/c_task
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.my_job
+  delete resources.jobs.rename_task_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!

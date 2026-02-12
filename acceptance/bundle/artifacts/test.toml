@@ -11,7 +11,7 @@ RecordRequests = true
 #   Failed to inspect Python interpreter from active virtual environment at `.venv/bin/python3`
 #   Caused by: Failed to query Python interpreter
 #   Caused by: failed to canonicalize path `/Workspace/abcd/.venv/bin/python3`: Invalid cross-device link (os error 18)
-SkipOnDbr = true
+# Thus we cannot run this test on DBR.
 
 Ignore = [
     '.venv',

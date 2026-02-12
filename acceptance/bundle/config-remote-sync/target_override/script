@@ -2,6 +2,11 @@
 
 envsubst < databricks.yml.tmpl > databricks.yml
 
+cleanup() {
+  trace $CLI bundle destroy --auto-approve -t dev
+}
+trap cleanup EXIT
+
 touch dummy.whl
 $CLI bundle deploy -t dev
 job_id="$(read_id.py my_job)"

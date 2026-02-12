@@ -28,7 +28,14 @@
         },
         "tasks": [
           {
+            "email_notifications": {},
             "new_cluster": {
+              "aws_attributes": {
+                "availability": "SPOT_WITH_FALLBACK",
+                "zone_id": "us-east-1c"
+              },
+              "data_security_mode": "SINGLE_USER",
+              "enable_elastic_disk": false,
               "node_type_id": "[NODE_TYPE_ID]",
               "num_workers": 1,
               "spark_version": "13.3.x-scala2.12"
@@ -37,7 +44,9 @@
               "notebook_path": "/Users/{{workspace_user_name}}/test_notebook",
               "source": "WORKSPACE"
             },
-            "task_key": "main_task"
+            "run_if": "ALL_SUCCESS",
+            "task_key": "main_task",
+            "timeout_seconds": 0
           }
         ],
         "timeout_seconds": 0,
@@ -46,7 +55,7 @@
       "changes": {
         "email_notifications": {
           "action": "skip",
-          "reason": "empty_struct",
+          "reason": "empty",
           "remote": {}
         },
         "max_concurrent_runs": {
@@ -56,19 +65,52 @@
           "new": 2,
           "remote": 2
         },
+        "tasks[task_key='main_task'].email_notifications": {
+          "action": "skip",
+          "reason": "empty",
+          "remote": {}
+        },
+        "tasks[task_key='main_task'].new_cluster.aws_attributes": {
+          "action": "skip",
+          "reason": "managed",
+          "remote": {
+            "availability": "SPOT_WITH_FALLBACK",
+            "zone_id": "us-east-1c"
+          }
+        },
+        "tasks[task_key='main_task'].new_cluster.data_security_mode": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": "SINGLE_USER"
+        },
+        "tasks[task_key='main_task'].new_cluster.enable_elastic_disk": {
+          "action": "skip",
+          "reason": "empty",
+          "remote": false
+        },
         "tasks[task_key='main_task'].notebook_task.source": {
           "action": "skip",
           "reason": "server_side_default",
           "remote": "WORKSPACE"
         },
-        "timeout_seconds": {
+        "tasks[task_key='main_task'].run_if": {
           "action": "skip",
           "reason": "server_side_default",
+          "remote": "ALL_SUCCESS"
+        },
+        "tasks[task_key='main_task'].timeout_seconds": {
+          "action": "skip",
+          "reason": "empty",
+          "remote": 0
+        },
+        "timeout_seconds": {
+          "action": "skip",
+          "reason": "empty",
           "remote": 0
         },
         "webhook_notifications": {
           "action": "skip",
-          "reason": "empty_struct",
+          "reason": "empty",
           "remote": {}
         }
       }

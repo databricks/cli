@@ -42,3 +42,17 @@ Resource: resources.pipelines.my_pipeline
              pipeline_id: ${resources.pipelines.my_pipeline.id}
 -            full_refresh: false
 +            full_refresh: true
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.my_job
+  delete resources.pipelines.my_pipeline
+
+This action will result in the deletion of the following Lakeflow Spark Declarative Pipelines along with the
+Streaming Tables (STs) and Materialized Views (MVs) managed by them:
+  delete resources.pipelines.my_pipeline
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!

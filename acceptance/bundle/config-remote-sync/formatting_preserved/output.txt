@@ -31,9 +31,23 @@ Resource: resources.jobs.my_job
 +      max_concurrent_runs: 5
        # Task configuration
        tasks:
-@@ -19,5 +17,4 @@
+@@ -19,10 +17,8 @@
              node_type_id: [NODE_TYPE_ID]
              num_workers: 1 # inline comment about workers
 -
        # Tags for categorization
        tags:
+         env: dev # environment tag
+         team: data-eng
+-
+       # Flow-style formatting (should be preserved)
+       parameters:
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.my_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!

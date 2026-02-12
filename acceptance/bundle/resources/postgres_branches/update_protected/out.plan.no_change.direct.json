@@ -25,7 +25,7 @@
   "changes": {
     "is_protected": {
       "action": "skip",
-      "reason": "spec:input_only",
+      "reason": "empty",
       "old": false,
       "new": false
     },

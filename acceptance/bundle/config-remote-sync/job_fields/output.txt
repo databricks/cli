@@ -14,7 +14,9 @@ Resource: resources.jobs.my_job
   email_notifications.on_failure: add
   parameters: replace
   tags['team']: add
-  trigger.periodic.interval: replace
+  trigger.pause_status: add
+  trigger.periodic: remove
+  trigger.table_update: add
 
 
 
@@ -29,7 +31,7 @@ Resource: resources.jobs.my_job
 -
  resources:
    jobs:
-@@ -8,12 +7,17 @@
+@@ -8,13 +7,19 @@
          on_success:
            - success@example.com
 +        no_alert_for_skipped_runs: true
@@ -47,12 +49,16 @@ Resource: resources.jobs.my_job
 +        - default: us-east-1
 +          name: region
        trigger:
-         periodic:
+-        periodic:
 -          interval: 1
-+          interval: 2
-           unit: DAYS
+-          unit: DAYS
++        pause_status: UNPAUSED
++        table_update:
++          table_names:
++            - samples.nyctaxi.trips
        environments:
-@@ -31,5 +35,6 @@
+         - environment_key: default
+@@ -31,5 +36,6 @@
              node_type_id: [NODE_TYPE_ID]
              num_workers: 1
 -
@@ -60,3 +66,12 @@ Resource: resources.jobs.my_job
 +        team: data
  targets:
    default:
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.my_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!

@@ -49,3 +49,13 @@ Resource: resources.jobs.job_two
              num_workers: 1
 +      tags:
 +        team: ml
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.job_one
+  delete resources.jobs.job_two
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!

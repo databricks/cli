@@ -10,8 +10,8 @@ import (
 
 // FieldRule represents a field path with its reason for inclusion.
 type FieldRule struct {
-	Field  *structpath.PathNode `yaml:"field"`
-	Reason string               `yaml:"reason"`
+	Field  *structpath.PatternNode `yaml:"field"`
+	Reason string                  `yaml:"reason"`
 }
 
 // ResourceLifecycleConfig defines lifecycle behavior for a resource type.
