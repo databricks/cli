@@ -122,8 +122,8 @@ Resource: resources.jobs.rename_task_job
 +            node_type_id: [NODE_TYPE_ID]
 +            num_workers: 1
 +            spark_version: 13.3.x-snapshot-scala2.12
-+          spark_python_task:
-+            python_file: ./synced_notebook.py
++          notebook_task:
++            notebook_path: ./synced_notebook.py
 +          task_key: synced_task
 
 >>> [CLI] bundle destroy --auto-approve

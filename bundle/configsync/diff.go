@@ -16,6 +16,7 @@ import (
 	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/bundle/direct"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/notebook"
 	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structs/structpath"
@@ -86,7 +87,7 @@ func filterEntityDefaults(basePath string, value any) any {
 	return result
 }
 
-func convertChangeDesc(path string, cd *deployplan.ChangeDesc, syncRootPath string) (*ConfigChangeDesc, error) {
+func convertChangeDesc(path string, cd *deployplan.ChangeDesc, syncRootPath string, syncRoot fs.FS) (*ConfigChangeDesc, error) {
 	hasConfigValue := cd.Old != nil || cd.New != nil
 	normalizedValue, err := normalizeValue(cd.Remote)
 	if err != nil {
@@ -117,7 +118,7 @@ func convertChangeDesc(path string, cd *deployplan.ChangeDesc, syncRootPath stri
 	}
 
 	if op == OperationAdd && syncRootPath != "" {
-		normalizedValue = translateWorkspacePaths(normalizedValue, syncRootPath)
+		normalizedValue = translateWorkspacePaths(normalizedValue, syncRootPath, syncRoot)
 	}
 
 	return &ConfigChangeDesc{
@@ -128,27 +129,47 @@ func convertChangeDesc(path string, cd *deployplan.ChangeDesc, syncRootPath stri
 
 // translateWorkspacePaths recursively converts absolute workspace paths to relative
 // paths when they fall within the bundle's sync root. Paths outside the sync
-// root are left unchanged.
-func translateWorkspacePaths(value any, syncRootPath string) any {
+// root are left unchanged. For notebook paths where the extension was stripped
+// by translate_paths, it restores the extension by checking the local filesystem.
+func translateWorkspacePaths(value any, syncRootPath string, syncRoot fs.FS) any {
 	switch v := value.(type) {
 	case string:
-		if after, ok := strings.CutPrefix(v, syncRootPath+"/"); ok {
-			return "./" + after
+		after, ok := strings.CutPrefix(v, syncRootPath+"/")
+		if !ok {
+			return v
 		}
-		return v
+		return "./" + resolveNotebookExtension(syncRoot, after)
 	case map[string]any:
 		for key, val := range v {
-			v[key] = translateWorkspacePaths(val, syncRootPath)
+			v[key] = translateWorkspacePaths(val, syncRootPath, syncRoot)
 		}
 		return v
 	case []any:
 		for i, val := range v {
-			v[i] = translateWorkspacePaths(val, syncRootPath)
+			v[i] = translateWorkspacePaths(val, syncRootPath, syncRoot)
 		}
 		return v
 	default:
 		return value
 	}
+}
+
+// resolveNotebookExtension checks if a relative path refers to a notebook whose
+// extension was stripped by translate_paths. If the file doesn't exist as-is but
+// exists with a notebook extension, the extension is appended.
+func resolveNotebookExtension(syncRoot fs.FS, relPath string) string {
+	if syncRoot == nil {
+		return relPath
+	}
+	if _, err := fs.Stat(syncRoot, relPath); err == nil {
+		return relPath
+	}
+	for _, ext := range notebook.Extensions {
+		if _, err := fs.Stat(syncRoot, relPath+ext); err == nil {
+			return relPath + ext
+		}
+	}
+	return relPath
 }
 
 // DetectChanges compares current remote state with the last deployed state
@@ -185,7 +206,7 @@ func DetectChanges(ctx context.Context, b *bundle.Bundle, engine engine.EngineTy
 					continue
 				}
 
-				change, err := convertChangeDesc(path, changeDesc, b.SyncRootPath)
+				change, err := convertChangeDesc(path, changeDesc, b.SyncRootPath, b.SyncRoot)
 				if err != nil {
 					return nil, fmt.Errorf("failed to compute config change for path %s: %w", path, err)
 				}
