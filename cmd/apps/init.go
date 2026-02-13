@@ -808,12 +808,15 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		if err := os.Chdir(absOutputDir); err != nil {
 			return fmt.Errorf("failed to change to project directory: %w", err)
 		}
+		if profile == "" {
+			profile = "DEFAULT"
+		}
 	}
 
 	if shouldDeploy {
 		cmdio.LogString(ctx, "")
 		cmdio.LogString(ctx, "Deploying app...")
-		if err := runPostCreateDeploy(ctx); err != nil {
+		if err := runPostCreateDeploy(ctx, profile); err != nil {
 			cmdio.LogString(ctx, fmt.Sprintf("⚠ Deploy failed: %v", err))
 			cmdio.LogString(ctx, "  You can deploy manually with: databricks apps deploy")
 		}
@@ -821,7 +824,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 
 	if runMode != prompt.RunModeNone {
 		cmdio.LogString(ctx, "")
-		if err := runPostCreateDev(ctx, runMode, projectInitializer, absOutputDir); err != nil {
+		if err := runPostCreateDev(ctx, runMode, projectInitializer, absOutputDir, profile); err != nil {
 			return err
 		}
 	}
@@ -830,12 +833,16 @@ func runCreate(ctx context.Context, opts createOptions) error {
 }
 
 // runPostCreateDeploy runs the deploy command in the current directory.
-func runPostCreateDeploy(ctx context.Context) error {
+func runPostCreateDeploy(ctx context.Context, profile string) error {
 	executable, err := os.Executable()
 	if err != nil {
 		return fmt.Errorf("failed to get executable path: %w", err)
 	}
-	cmd := exec.CommandContext(ctx, executable, "apps", "deploy")
+	args := []string{"apps", "deploy"}
+	if profile != "" {
+		args = append(args, "--profile", profile)
+	}
+	cmd := exec.CommandContext(ctx, executable, args...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Stdin = os.Stdin
@@ -843,7 +850,7 @@ func runPostCreateDeploy(ctx context.Context) error {
 }
 
 // runPostCreateDev runs the dev or dev-remote command in the current directory.
-func runPostCreateDev(ctx context.Context, mode prompt.RunMode, projectInit initializer.Initializer, workDir string) error {
+func runPostCreateDev(ctx context.Context, mode prompt.RunMode, projectInit initializer.Initializer, workDir, profile string) error {
 	switch mode {
 	case prompt.RunModeDev:
 		if projectInit != nil {
@@ -858,7 +865,11 @@ func runPostCreateDev(ctx context.Context, mode prompt.RunMode, projectInit init
 		if err != nil {
 			return fmt.Errorf("failed to get executable path: %w", err)
 		}
-		cmd := exec.CommandContext(ctx, executable, "apps", "dev-remote")
+		args := []string{"apps", "dev-remote"}
+		if profile != "" {
+			args = append(args, "--profile", profile)
+		}
+		cmd := exec.CommandContext(ctx, executable, args...)
 		cmd.Stdout = os.Stdout
 		cmd.Stderr = os.Stderr
 		cmd.Stdin = os.Stdin
