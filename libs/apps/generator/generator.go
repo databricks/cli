@@ -2,10 +2,34 @@ package generator
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/databricks/cli/libs/apps/manifest"
 )
+
+// validEnvVar matches safe environment variable names (letters, digits, underscores, starting with a letter or underscore).
+var validEnvVar = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
+
+// yamlNeedsQuoting is true when a value contains characters that can break YAML parsing.
+var yamlNeedsQuoting = regexp.MustCompile(`[:#\[\]{}&*!|>'"%@` + "`" + `\n\r\\]|^\s|\s$|^$`)
+
+// quoteYAMLValue wraps a value in double quotes if it contains YAML-special characters.
+func quoteYAMLValue(v string) string {
+	if yamlNeedsQuoting.MatchString(v) {
+		escaped := strings.NewReplacer(`\`, `\\`, `"`, `\"`).Replace(v)
+		return `"` + escaped + `"`
+	}
+	return v
+}
+
+// sanitizeEnvValue removes newlines and carriage returns from a .env value
+// to prevent injection of additional environment variables.
+func sanitizeEnvValue(v string) string {
+	v = strings.ReplaceAll(v, "\n", "")
+	v = strings.ReplaceAll(v, "\r", "")
+	return v
+}
 
 // Config holds configuration values collected from user prompts.
 type Config struct {
@@ -121,32 +145,34 @@ func generateTargetVarLines(r manifest.Resource, cfg Config) []string {
 	for _, v := range variableNamesForResource(r) {
 		value := cfg.ResourceValues[v.valueKey]
 		if value != "" {
-			lines = append(lines, fmt.Sprintf("      %s: %s", v.name, value))
+			lines = append(lines, fmt.Sprintf("      %s: %s", v.name, quoteYAMLValue(value)))
 		}
 	}
 	return lines
 }
 
 // dotEnvActualLines returns .env lines with actual values from cfg.
+// Fields with invalid env var names are skipped. Values are sanitized to prevent injection.
 func dotEnvActualLines(r manifest.Resource, cfg Config) []string {
 	var lines []string
 	for _, fieldName := range r.FieldNames() {
 		field := r.Fields[fieldName]
-		if field.Env == "" {
+		if field.Env == "" || !validEnvVar.MatchString(field.Env) {
 			continue
 		}
-		value := cfg.ResourceValues[r.Key()+"."+fieldName]
+		value := sanitizeEnvValue(cfg.ResourceValues[r.Key()+"."+fieldName])
 		lines = append(lines, fmt.Sprintf("%s=%s", field.Env, value))
 	}
 	return lines
 }
 
 // dotEnvExampleLines returns .env.example lines with placeholders.
+// Fields with invalid env var names are skipped.
 func dotEnvExampleLines(r manifest.Resource, commented bool) []string {
 	var lines []string
 	for _, fieldName := range r.FieldNames() {
 		field := r.Fields[fieldName]
-		if field.Env == "" {
+		if field.Env == "" || !validEnvVar.MatchString(field.Env) {
 			continue
 		}
 		placeholder := "your_" + r.VarPrefix() + "_" + fieldName
@@ -195,21 +221,81 @@ func GenerateDotEnvExample(plugins []manifest.Plugin) string {
 	return strings.Join(lines, "\n")
 }
 
-// defaultPermissions maps resource type to its default permission when none is specified.
-var defaultPermissions = map[string]string{
-	"sql_warehouse":       "CAN_USE",
-	"job":                 "CAN_MANAGE_RUN",
-	"serving_endpoint":    "CAN_QUERY",
-	"secret":              "READ",
-	"experiment":          "CAN_READ",
-	"database":            "CAN_CONNECT_AND_CREATE",
-	"genie_space":         "CAN_VIEW",
-	"volume":              "READ_VOLUME",
-	"uc_function":         "EXECUTE",
-	"uc_connection":       "USE_CONNECTION",
-	"vector_search_index": "CAN_USE",
+// appResourceSpec defines how a manifest resource type maps to DABs AppResource YAML.
+type appResourceSpec struct {
+	yamlKey      string      // DABs YAML key under the resource entry (e.g., "sql_warehouse", "uc_securable")
+	varFields    [][2]string // {manifestFieldName, yamlFieldName} pairs that generate ${var.xxx} references
+	staticFields [][2]string // {yamlFieldName, literalValue} pairs for constants
+	permission   string      // default permission when the manifest doesn't specify one
+}
+
+// appResourceSpecs maps manifest resource types to their DABs AppResource YAML specification.
+var appResourceSpecs = map[string]appResourceSpec{
+	"sql_warehouse": {
+		yamlKey:    "sql_warehouse",
+		varFields:  [][2]string{{"id", "id"}},
+		permission: "CAN_USE",
+	},
+	"job": {
+		yamlKey:    "job",
+		varFields:  [][2]string{{"id", "id"}},
+		permission: "CAN_MANAGE_RUN",
+	},
+	"serving_endpoint": {
+		yamlKey:    "serving_endpoint",
+		varFields:  [][2]string{{"id", "name"}},
+		permission: "CAN_QUERY",
+	},
+	"experiment": {
+		yamlKey:    "experiment",
+		varFields:  [][2]string{{"id", "experiment_id"}},
+		permission: "CAN_READ",
+	},
+	"secret": {
+		yamlKey:    "secret",
+		varFields:  [][2]string{{"scope", "scope"}, {"key", "key"}},
+		permission: "READ",
+	},
+	"database": {
+		yamlKey:    "database",
+		varFields:  [][2]string{{"instance_name", "instance_name"}, {"database_name", "database_name"}},
+		permission: "CAN_CONNECT_AND_CREATE",
+	},
+	"genie_space": {
+		yamlKey:    "genie_space",
+		varFields:  [][2]string{{"name", "name"}, {"id", "space_id"}},
+		permission: "CAN_VIEW",
+	},
+	"volume": {
+		yamlKey:      "uc_securable",
+		varFields:    [][2]string{{"id", "securable_full_name"}},
+		staticFields: [][2]string{{"securable_type", "VOLUME"}},
+		permission:   "READ_VOLUME",
+	},
+	"uc_function": {
+		yamlKey:      "uc_securable",
+		varFields:    [][2]string{{"id", "securable_full_name"}},
+		staticFields: [][2]string{{"securable_type", "FUNCTION"}},
+		permission:   "EXECUTE",
+	},
+	"uc_connection": {
+		yamlKey:      "uc_securable",
+		varFields:    [][2]string{{"id", "securable_full_name"}},
+		staticFields: [][2]string{{"securable_type", "CONNECTION"}},
+		permission:   "USE_CONNECTION",
+	},
+	"vector_search_index": {
+		yamlKey:      "uc_securable",
+		varFields:    [][2]string{{"id", "securable_full_name"}},
+		staticFields: [][2]string{{"securable_type", "TABLE"}},
+		permission:   "SELECT",
+	},
 	// TODO: uncomment when bundles support app as an app resource type.
-	// "app": "CAN_USE",
+	// "app": {
+	// 	yamlKey:    "app",
+	// 	varFields:  [][2]string{{"id", "name"}},
+	// 	permission: "CAN_USE",
+	// },
 }
 
 // varNameForField returns the bundle variable name for a specific field of a resource.
@@ -218,21 +304,14 @@ func varNameForField(r manifest.Resource, fieldName string) string {
 	return r.VarPrefix() + "_" + fieldName
 }
 
-// singleVarName returns the variable name for a single-field resource.
-// Uses the first field from Fields, or falls back to varPrefix_id.
-func singleVarName(r manifest.Resource) string {
-	names := r.FieldNames()
-	if len(names) > 0 {
-		return varNameForField(r, names[0])
-	}
-	return aliasToVarName(r.VarPrefix())
-}
-
 // variableNamesForResource returns the variable names that a resource type needs.
-// Variable names are derived from VarPrefix (resource_key with hyphens as underscores).
-// Value keys use Key() (resource_key) with field names.
+// It merges manifest Fields with spec varFields so that fields required by the
+// DABs YAML (e.g., genie_space name) are included even when the manifest doesn't
+// declare them. Manifest Fields take precedence for descriptions.
 func variableNamesForResource(r manifest.Resource) []varInfo {
 	var vars []varInfo
+	covered := make(map[string]bool)
+
 	for _, fieldName := range r.FieldNames() {
 		field := r.Fields[fieldName]
 		desc := field.Description
@@ -244,121 +323,61 @@ func variableNamesForResource(r manifest.Resource) []varInfo {
 			description: desc,
 			valueKey:    r.Key() + "." + fieldName,
 		})
+		covered[fieldName] = true
 	}
+
+	// Include spec varFields not already covered by manifest Fields.
+	if spec, ok := appResourceSpecs[r.Type]; ok {
+		for _, f := range spec.varFields {
+			if !covered[f[0]] {
+				vars = append(vars, varInfo{
+					name:        varNameForField(r, f[0]),
+					description: r.Description,
+					valueKey:    r.Key() + "." + f[0],
+				})
+			}
+		}
+	}
+
 	if len(vars) > 0 {
 		return vars
 	}
-	// Fallback for resources without explicit Fields.
+	// Fallback for resources without explicit Fields and no spec.
 	return []varInfo{
 		{name: aliasToVarName(r.VarPrefix()), description: r.Description, valueKey: r.Key()},
 	}
 }
 
 // generateResourceYAML generates YAML for a single app resource based on its type.
-// Each resource type has its own field structure per the Databricks Apps schema.
-// Variable references are derived from the resource's Fields via singleVarName/varNameForField.
+// Uses the appResourceSpecs mapping to produce the correct DABs AppResource structure.
 func generateResourceYAML(r manifest.Resource, indent int) string {
-	if r.Type == "" {
+	spec, ok := appResourceSpecs[r.Type]
+	if !ok {
 		return ""
 	}
 
 	permission := r.Permission
 	if permission == "" {
-		if def, ok := defaultPermissions[r.Type]; ok {
-			permission = def
-		} else {
-			permission = "CAN_USE"
-		}
+		permission = spec.permission
 	}
 
 	pad := strings.Repeat(" ", indent)
 
-	key := r.Key()
+	var lines []string
+	lines = append(lines, fmt.Sprintf("%s- name: %s", pad, r.Key()))
+	lines = append(lines, fmt.Sprintf("%s  %s:", pad, spec.yamlKey))
 
-	switch r.Type {
-	case "sql_warehouse":
-		return fmt.Sprintf(`%s- name: %s
-%s  sql_warehouse:
-%s    id: ${var.%s}
-%s    permission: %s`, pad, key, pad, pad, singleVarName(r), pad, permission)
-
-	case "job":
-		return fmt.Sprintf(`%s- name: %s
-%s  job:
-%s    id: ${var.%s}
-%s    permission: %s`, pad, key, pad, pad, singleVarName(r), pad, permission)
-
-	case "serving_endpoint":
-		return fmt.Sprintf(`%s- name: %s
-%s  serving_endpoint:
-%s    name: ${var.%s}
-%s    permission: %s`, pad, key, pad, pad, singleVarName(r), pad, permission)
-
-	case "experiment":
-		return fmt.Sprintf(`%s- name: %s
-%s  experiment:
-%s    experiment_id: ${var.%s}
-%s    permission: %s`, pad, key, pad, pad, singleVarName(r), pad, permission)
-
-	case "secret":
-		return fmt.Sprintf(`%s- name: %s
-%s  secret:
-%s    scope: ${var.%s}
-%s    key: ${var.%s}
-%s    permission: %s`, pad, key, pad, pad, varNameForField(r, "scope"), pad, varNameForField(r, "key"), pad, permission)
-
-	case "database":
-		return fmt.Sprintf(`%s- name: %s
-%s  database:
-%s    instance_name: ${var.%s}
-%s    database_name: ${var.%s}
-%s    permission: %s`, pad, key, pad, pad, varNameForField(r, "instance_name"), pad, varNameForField(r, "database_name"), pad, permission)
-
-	case "genie_space":
-		return fmt.Sprintf(`%s- name: %s
-%s  genie_space:
-%s    name: %s
-%s    space_id: ${var.%s}
-%s    permission: %s`, pad, key, pad, pad, r.Alias, pad, varNameForField(r, "space_id"), pad, permission)
-
-	case "volume", "uc_function", "uc_connection":
-		securableType := ucSecurableType(r.Type)
-		return fmt.Sprintf(`%s- name: %s
-%s  uc_securable:
-%s    securable_full_name: ${var.%s}
-%s    securable_type: %s
-%s    permission: %s`, pad, key, pad, pad, singleVarName(r), pad, securableType, pad, permission)
-
-	case "vector_search_index":
-		return fmt.Sprintf(`%s- name: %s
-%s  vector_search_index:
-%s    id: ${var.%s}
-%s    permission: %s`, pad, key, pad, pad, singleVarName(r), pad, permission)
-
-	// TODO: uncomment when bundles support app as an app resource type.
-	// case "app":
-	// 	return fmt.Sprintf(`%s- name: %s
-	// %s  app:
-	// %s    name: ${var.%s}
-	// %s    permission: %s`, pad, key, pad, pad, singleVarName(r), pad, permission)
-
-	default:
-		return ""
+	for _, f := range spec.varFields {
+		manifestField, yamlField := f[0], f[1]
+		lines = append(lines, fmt.Sprintf("%s    %s: ${var.%s}", pad, yamlField, varNameForField(r, manifestField)))
 	}
-}
-
-// ucSecurableType maps a manifest resource type to the uc_securable securable_type value.
-func ucSecurableType(resourceType string) string {
-	switch resourceType {
-	case "volume":
-		return "VOLUME"
-	case "uc_function":
-		return "FUNCTION"
-	case "uc_connection":
-		return "CONNECTION"
-	default:
-		return ""
+	for _, sf := range spec.staticFields {
+		yamlField, value := sf[0], sf[1]
+		lines = append(lines, fmt.Sprintf("%s    %s: %s", pad, yamlField, value))
 	}
+
+	lines = append(lines, fmt.Sprintf("%s    permission: %s", pad, permission))
+	return strings.Join(lines, "\n")
 }
 
 // aliasToVarName converts a variable prefix to a variable name by appending "_id".

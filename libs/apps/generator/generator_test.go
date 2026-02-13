@@ -89,7 +89,7 @@ func TestGenerateTargetVariables(t *testing.T) {
 
 	cfg := generator.Config{
 		ProjectName:    "test-app",
-		ResourceValues: map[string]string{"warehouse": "abc123"},
+		ResourceValues: map[string]string{"warehouse.id": "abc123"},
 	}
 
 	result := generator.GenerateTargetVariables(plugins, cfg)
@@ -246,7 +246,7 @@ func TestGenerateBundleResourcesDefaultPermissions(t *testing.T) {
 		{"uc_function", "EXECUTE"},
 		{"uc_connection", "USE_CONNECTION"},
 		{"genie_space", "CAN_VIEW"},
-		{"vector_search_index", "CAN_USE"},
+		{"vector_search_index", "SELECT"},
 		// TODO: uncomment when bundles support app as an app resource type.
 		// {"app", "CAN_USE"},
 	}
@@ -436,8 +436,8 @@ func TestGenerateResourceYAMLAllTypes(t *testing.T) {
 			expectContains: []string{
 				"- name: genie-space",
 				"genie_space:",
-				"name: Genie Space",
-				"space_id: ${var.genie_space_space_id}",
+				"name: ${var.genie_space_name}",
+				"space_id: ${var.genie_space_id}",
 				"permission: CAN_VIEW",
 			},
 		},
@@ -476,14 +476,16 @@ func TestGenerateResourceYAMLAllTypes(t *testing.T) {
 			},
 		},
 		{
-			name:     "vector_search_index uses id field",
-			resource: manifest.Resource{Type: "vector_search_index", Alias: "Vector Search Index", ResourceKey: "vector-search-index", Permission: "CAN_USE"},
+			name:     "vector_search_index maps to uc_securable TABLE",
+			resource: manifest.Resource{Type: "vector_search_index", Alias: "Vector Search Index", ResourceKey: "vector-search-index", Permission: "SELECT"},
 			expectContains: []string{
 				"- name: vector-search-index",
-				"vector_search_index:",
-				"id: ${var.vector_search_index_id}",
-				"permission: CAN_USE",
+				"uc_securable:",
+				"securable_full_name: ${var.vector_search_index_id}",
+				"securable_type: TABLE",
+				"permission: SELECT",
 			},
+			expectNotContain: []string{"vector_search_index:"},
 		},
 		// TODO: uncomment when bundles support app as an app resource type.
 		// {
@@ -538,7 +540,7 @@ func TestGenerateMultiFieldVariables(t *testing.T) {
 					{
 						Type: "genie_space", Alias: "Genie Space", ResourceKey: "genie-space", Description: "AI assistant",
 						Fields: map[string]manifest.ResourceField{
-							"space_id": {Env: "GENIE_SPACE_ID"},
+							"id": {Env: "GENIE_SPACE_ID"},
 						},
 					},
 					{
@@ -554,7 +556,7 @@ func TestGenerateMultiFieldVariables(t *testing.T) {
 	cfg := generator.Config{ResourceValues: map[string]string{
 		"database.instance_name": "val", "database.database_name": "val",
 		"secret.scope": "val", "secret.key": "val",
-		"genie-space.space_id": "val", "sql-warehouse.id": "val",
+		"genie-space.id": "val", "sql-warehouse.id": "val",
 	}}
 
 	vars := generator.GenerateBundleVariables(plugins, cfg)
@@ -568,9 +570,9 @@ func TestGenerateMultiFieldVariables(t *testing.T) {
 	assert.Contains(t, vars, "secret_key:")
 	assert.NotContains(t, vars, "secret_id:")
 
-	// genie_space produces one variable (space_id) using VarPrefix
-	assert.Contains(t, vars, "genie_space_space_id:")
-	assert.NotContains(t, vars, "genie_space_id:")
+	// genie_space produces two variables: id from manifest, name from spec
+	assert.Contains(t, vars, "genie_space_id:")
+	assert.Contains(t, vars, "genie_space_name:")
 
 	// sql_warehouse produces one variable
 	assert.Contains(t, vars, "sql_warehouse_id:")
@@ -748,4 +750,116 @@ func TestGenerateDotEnvExampleWithOptional(t *testing.T) {
 	assert.Contains(t, result, "DATABRICKS_WAREHOUSE_ID=your_warehouse_id")
 	// Optional resources are commented out
 	assert.Contains(t, result, "# SECONDARY_WAREHOUSE_ID=your_secondary_id")
+}
+
+func TestGenerateDotEnvSkipsInvalidEnvNames(t *testing.T) {
+	plugins := []manifest.Plugin{
+		{
+			Name: "evil",
+			Resources: manifest.Resources{
+				Required: []manifest.Resource{
+					{
+						Type: "sql_warehouse", Alias: "Warehouse", ResourceKey: "warehouse",
+						Fields: map[string]manifest.ResourceField{
+							"id": {Env: "VALID_VAR"},
+						},
+					},
+					{
+						Type: "job", Alias: "Job", ResourceKey: "job",
+						Fields: map[string]manifest.ResourceField{
+							"id": {Env: "INJECTED\nEVIL_VAR"},
+						},
+					},
+					{
+						Type: "secret", Alias: "Secret", ResourceKey: "secret",
+						Fields: map[string]manifest.ResourceField{
+							"scope": {Env: "PATH"},
+							"key":   {Env: "123INVALID"},
+						},
+					},
+				},
+			},
+		},
+	}
+	cfg := generator.Config{ResourceValues: map[string]string{
+		"warehouse.id": "wh1",
+		"job.id":       "j1",
+		"secret.scope": "s",
+		"secret.key":   "k",
+	}}
+
+	dotenv := generator.GenerateDotEnv(plugins, cfg)
+	assert.Contains(t, dotenv, "VALID_VAR=wh1")
+	assert.Contains(t, dotenv, "PATH=s")
+	assert.NotContains(t, dotenv, "INJECTED")
+	assert.NotContains(t, dotenv, "EVIL_VAR")
+	assert.NotContains(t, dotenv, "123INVALID")
+
+	example := generator.GenerateDotEnvExample(plugins)
+	assert.Contains(t, example, "VALID_VAR=your_warehouse_id")
+	assert.Contains(t, example, "PATH=your_secret_scope")
+	assert.NotContains(t, example, "INJECTED")
+	assert.NotContains(t, example, "123INVALID")
+}
+
+func TestGenerateTargetVariablesQuotesSpecialChars(t *testing.T) {
+	plugins := []manifest.Plugin{
+		{
+			Name: "test",
+			Resources: manifest.Resources{
+				Required: []manifest.Resource{
+					{
+						Type: "sql_warehouse", Alias: "Warehouse", ResourceKey: "wh",
+						Fields: map[string]manifest.ResourceField{
+							"id": {Env: "WH_ID"},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	tests := []struct {
+		name     string
+		value    string
+		expected string
+	}{
+		{"plain value", "abc123", "      wh_id: abc123"},
+		{"value with colon", "host:port", `      wh_id: "host:port"`},
+		{"value with hash", "val#comment", `      wh_id: "val#comment"`},
+		{"value with leading space", " leading", `      wh_id: " leading"`},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := generator.Config{ResourceValues: map[string]string{"wh.id": tt.value}}
+			result := generator.GenerateTargetVariables(plugins, cfg)
+			assert.Contains(t, result, tt.expected)
+		})
+	}
+}
+
+func TestGenerateDotEnvSanitizesNewlines(t *testing.T) {
+	plugins := []manifest.Plugin{
+		{
+			Name: "test",
+			Resources: manifest.Resources{
+				Required: []manifest.Resource{
+					{
+						Type: "sql_warehouse", Alias: "Warehouse", ResourceKey: "wh",
+						Fields: map[string]manifest.ResourceField{
+							"id": {Env: "WH_ID"},
+						},
+					},
+				},
+			},
+		},
+	}
+	cfg := generator.Config{ResourceValues: map[string]string{
+		"wh.id": "safe\nEVIL_VAR=injected",
+	}}
+
+	result := generator.GenerateDotEnv(plugins, cfg)
+	assert.Equal(t, "WH_ID=safeEVIL_VAR=injected", result)
+	assert.NotContains(t, result, "\n")
 }

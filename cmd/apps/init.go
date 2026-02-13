@@ -175,8 +175,8 @@ type createOptions struct {
 	deploy         bool
 	deployChanged  bool // true if --deploy flag was explicitly set
 	run            string
-	runChanged     bool // true if --run flag was explicitly set
-	pluginsChanged bool // true if --plugins flag was explicitly set
+	runChanged     bool     // true if --run flag was explicitly set
+	pluginsChanged bool     // true if --plugins flag was explicitly set
 	setValues      []string // --set plugin.resourceKey.field=value pairs
 }
 
@@ -256,11 +256,10 @@ type templateVars struct {
 	WorkspaceHost  string
 	PluginImports  string
 	PluginUsages   string
-	// Feature resource fragments (aggregated from selected features)
+	// Generated resource configuration from selected plugins.
 	BundleVariables string
 	BundleResources string
 	TargetVariables string
-	AppEnv          string
 	DotEnv          string
 	DotEnvExample   string
 }
@@ -688,7 +687,11 @@ func runCreate(ctx context.Context, opts createOptions) error {
 				}
 			}
 			if !found {
-				return fmt.Errorf("missing required resource %q for selected plugins (use --set %s.%s=value)", r.Alias, r.Key(), r.FieldNames()[0])
+				fieldHint := "id"
+				if names := r.FieldNames(); len(names) > 0 {
+					fieldHint = names[0]
+				}
+				return fmt.Errorf("missing required resource %q for selected plugins (use --set %s.%s=value)", r.Alias, r.Key(), fieldHint)
 			}
 		}
 	}
@@ -730,7 +733,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 
 	log.Debugf(ctx, "Selected plugins: %v", selectedPlugins)
 	log.Debugf(ctx, "Selected plugin list count: %d", len(selectedPluginList))
-	log.Debugf(ctx, "Resource values: %v", resourceValues)
+	log.Debugf(ctx, "Resource values: %d entries", len(resourceValues))
 
 	// Build generator config
 	genConfig := generator.Config{
@@ -754,8 +757,8 @@ func runCreate(ctx context.Context, opts createOptions) error {
 
 	// Template variables with generated content
 	vars := templateVars{
-		ProjectName:    opts.name,
-		AppDescription: opts.description,
+		ProjectName:     opts.name,
+		AppDescription:  opts.description,
 		Profile:         profile,
 		WorkspaceHost:   workspaceHost,
 		PluginImports:   pluginImport,
@@ -939,18 +942,29 @@ func buildPluginStrings(pluginNames []string) (pluginImport, pluginUsage string)
 	return pluginImport, pluginUsage
 }
 
-// applyPlugins applies plugin-specific post-processing to the project.
+// pluginOwnedPaths maps plugin names to directories they own.
+// When a plugin is not selected, its owned paths are removed from the project.
+// TODO: Move this into the manifest.
+var pluginOwnedPaths = map[string][]string{
+	"analytics": {"config/queries"},
+}
+
+// applyPlugins removes directories owned by unselected plugins.
 func applyPlugins(projectDir string, pluginNames []string) error {
 	selectedSet := make(map[string]bool)
 	for _, name := range pluginNames {
 		selectedSet[name] = true
 	}
 
-	// Remove analytics-specific files if analytics is not selected
-	if !selectedSet["analytics"] {
-		queriesDir := filepath.Join(projectDir, "config", "queries")
-		if err := os.RemoveAll(queriesDir); err != nil && !os.IsNotExist(err) {
-			return err
+	for plugin, paths := range pluginOwnedPaths {
+		if selectedSet[plugin] {
+			continue
+		}
+		for _, p := range paths {
+			target := filepath.Join(projectDir, p)
+			if err := os.RemoveAll(target); err != nil && !os.IsNotExist(err) {
+				return err
+			}
 		}
 	}
 
@@ -1079,8 +1093,13 @@ func copyTemplate(ctx context.Context, src, dest string, vars templateVars) (int
 			return err
 		}
 
-		// Write file
-		if err := os.WriteFile(destPath, content, info.Mode()); err != nil {
+		// Write file — use restrictive permissions for .env files (may contain secrets).
+		perm := info.Mode()
+		destName := filepath.Base(destPath)
+		if strings.HasPrefix(destName, ".env") {
+			perm = 0o600
+		}
+		if err := os.WriteFile(destPath, content, perm); err != nil {
 			return err
 		}
 
@@ -1145,8 +1164,8 @@ func executeTemplate(path string, content []byte, vars templateVars) ([]byte, er
 
 	// Use a map to match template variable names exactly (snake_case)
 	data := map[string]string{
-		"project_name":    vars.ProjectName,
-		"app_description": vars.AppDescription,
+		"project_name":     vars.ProjectName,
+		"app_description":  vars.AppDescription,
 		"profile":          vars.Profile,
 		"workspace_host":   vars.WorkspaceHost,
 		"plugin_imports":   vars.PluginImports,
@@ -1154,7 +1173,6 @@ func executeTemplate(path string, content []byte, vars templateVars) ([]byte, er
 		"variables":        vars.BundleVariables,
 		"resources":        vars.BundleResources,
 		"target_variables": vars.TargetVariables,
-		"app_env":          vars.AppEnv,
 		"dotenv":           vars.DotEnv,
 		"dotenv_example":   vars.DotEnvExample,
 	}
