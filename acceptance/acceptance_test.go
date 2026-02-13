@@ -713,7 +713,7 @@ func runTest(t *testing.T,
 }
 
 // checkEnvFilters skips the test if any env filter doesn't match testEnv.
-func checkEnvFilters(t *testing.T, testEnv []string, envFilters []string) {
+func checkEnvFilters(t *testing.T, testEnv, envFilters []string) {
 	envMap := make(map[string]string, len(testEnv))
 	for _, kv := range testEnv {
 		key, value, _ := strings.Cut(kv, "=")
