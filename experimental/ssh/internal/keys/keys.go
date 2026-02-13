@@ -14,8 +14,9 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-// We use different client keys for each cluster as a good practice for better isolation and control.
-func GetLocalSSHKeyPath(clusterID, keysDir string) (string, error) {
+// We use different client keys for each session as a good practice for better isolation and control.
+// sessionID is the unique identifier for the session (cluster ID for dedicated clusters, connection name for serverless).
+func GetLocalSSHKeyPath(sessionID, keysDir string) (string, error) {
 	if keysDir == "" {
 		homeDir, err := os.UserHomeDir()
 		if err != nil {
@@ -23,7 +24,7 @@ func GetLocalSSHKeyPath(clusterID, keysDir string) (string, error) {
 		}
 		keysDir = filepath.Join(homeDir, ".databricks", "ssh-tunnel-keys")
 	}
-	return filepath.Join(keysDir, clusterID), nil
+	return filepath.Join(keysDir, sessionID), nil
 }
 
 func generateSSHKeyPair() ([]byte, []byte, error) {
@@ -68,7 +69,7 @@ func SaveSSHKeyPair(keyPath string, privateKeyBytes, publicKeyBytes []byte) erro
 	return nil
 }
 
-func CheckAndGenerateSSHKeyPairFromSecrets(ctx context.Context, client *databricks.WorkspaceClient, clusterID, secretScopeName, privateKeyName, publicKeyName string) ([]byte, []byte, error) {
+func CheckAndGenerateSSHKeyPairFromSecrets(ctx context.Context, client *databricks.WorkspaceClient, secretScopeName, privateKeyName, publicKeyName string) ([]byte, []byte, error) {
 	privateKeyBytes, err := GetSecret(ctx, client, secretScopeName, privateKeyName)
 	if err != nil {
 		privateKeyBytes, publicKeyBytes, err := generateSSHKeyPair()
