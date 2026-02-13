@@ -5,6 +5,9 @@
 ### Bundles
 * Log artifact build output in debug mode ([#4208](https://github.com/databricks/cli/pull/4208))
 
+### SSH
+* Fix ssh setup not working in Azure Government ([#4308](https://github.com/databricks/cli/pull/4308))
+
 ### Dependency updates
 
 ### Bundles
