@@ -1,5 +1,10 @@
 envsubst < databricks.yml.tmpl > databricks.yml
 
+cleanup() {
+   $CLI bundle destroy --auto-approve > /dev/null 2>&1 || true
+}
+trap cleanup EXIT
+
 trace $CLI bundle validate
 
 # Deploy output differs between engines, so capture to per-engine file only
