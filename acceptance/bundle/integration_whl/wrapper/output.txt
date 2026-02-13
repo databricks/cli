@@ -46,6 +46,7 @@ Run URL: [DATABRICKS_URL]/?o=[NUMID]#job/[SOME_OTHER_JOB_ID]/run/[NUMID]
 Hello from my func
 Got arguments:
 ['my_test_code', 'one', 'two']
+
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.jobs.some_other_job
