@@ -228,11 +228,17 @@ func ListSQLWarehouses(ctx context.Context) ([]sql.EndpointInfo, error) {
 // PromptFromList shows a picker for items and returns the selected ID.
 // If required is false and items are empty, returns ("", nil). If required is true and items are empty, returns an error.
 func PromptFromList(ctx context.Context, title, emptyMessage string, items []ListItem, required bool) (string, error) {
+	id, _, err := promptFromListWithLabel(ctx, title, emptyMessage, items, required)
+	return id, err
+}
+
+// promptFromListWithLabel shows a picker and returns both the selected ID and its display label.
+func promptFromListWithLabel(ctx context.Context, title, emptyMessage string, items []ListItem, required bool) (string, string, error) {
 	if len(items) == 0 {
 		if required {
-			return "", errors.New(emptyMessage)
+			return "", "", errors.New(emptyMessage)
 		}
-		return "", nil
+		return "", "", nil
 	}
 	theme := AppkitTheme()
 	options := make([]huh.Option[string], 0, len(items))
@@ -252,10 +258,10 @@ func PromptFromList(ctx context.Context, title, emptyMessage string, items []Lis
 		WithTheme(theme).
 		Run()
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	printAnswered(ctx, title, labels[selected])
-	return selected, nil
+	return selected, labels[selected], nil
 }
 
 // PromptForWarehouse shows a picker to select a SQL warehouse.
@@ -428,8 +434,28 @@ func PromptForDatabase(ctx context.Context, r manifest.Resource, required bool) 
 }
 
 // PromptForGenieSpace shows a picker for Genie spaces.
+// Captures both the space ID and name since the DABs schema requires both fields.
 func PromptForGenieSpace(ctx context.Context, r manifest.Resource, required bool) (map[string]string, error) {
-	return promptForResourceFromLister(ctx, r, required, "Select Genie Space", "no Genie spaces found", "Fetching Genie spaces...", ListGenieSpaces)
+	var items []ListItem
+	err := RunWithSpinnerCtx(ctx, "Fetching Genie spaces...", func() error {
+		var fetchErr error
+		items, fetchErr = ListGenieSpaces(ctx)
+		return fetchErr
+	})
+	if err != nil {
+		return nil, err
+	}
+	id, name, err := promptFromListWithLabel(ctx, "Select Genie Space", "no Genie spaces found", items, required)
+	if err != nil {
+		return nil, err
+	}
+	if id == "" {
+		return nil, nil
+	}
+	return map[string]string{
+		r.Key() + ".id":   id,
+		r.Key() + ".name": name,
+	}, nil
 }
 
 // PromptForExperiment shows a picker for MLflow experiments.

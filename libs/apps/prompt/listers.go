@@ -5,9 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 
 	"github.com/databricks/cli/libs/cmdctx"
+	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/client"
 	"github.com/databricks/databricks-sdk-go/listing"
@@ -20,6 +22,11 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
+
+// maxListResults caps the number of items returned by listers that iterate
+// over nested resources (catalogs -> schemas -> objects) to avoid very long
+// API traversals on large workspaces.
+const maxListResults = 500
 
 // ListItem is a generic item for resource pickers (id and display label).
 type ListItem struct {
@@ -151,11 +158,11 @@ func ListVolumes(ctx context.Context) ([]ListItem, error) {
 	if err != nil {
 		return nil, err
 	}
-	const maxSchemas = 50
 	for _, cat := range catalogs {
 		schemaIter := w.Schemas.List(ctx, catalog.ListSchemasRequest{CatalogName: cat.Name})
 		schemas, err := listing.ToSlice(ctx, schemaIter)
 		if err != nil {
+			log.Warnf(ctx, "Failed to list schemas in catalog %q: %v", cat.Name, err)
 			continue
 		}
 		for _, sch := range schemas {
@@ -165,6 +172,7 @@ func ListVolumes(ctx context.Context) ([]ListItem, error) {
 			})
 			vols, err := listing.ToSlice(ctx, volIter)
 			if err != nil {
+				log.Warnf(ctx, "Failed to list volumes in %s.%s: %v", cat.Name, sch.Name, err)
 				continue
 			}
 			for _, v := range vols {
@@ -172,7 +180,7 @@ func ListVolumes(ctx context.Context) ([]ListItem, error) {
 				out = append(out, ListItem{ID: fullName, Label: fullName})
 			}
 		}
-		if len(out) >= maxSchemas*10 {
+		if len(out) >= maxListResults {
 			break
 		}
 	}
@@ -195,6 +203,7 @@ func ListVectorSearchIndexes(ctx context.Context) ([]ListItem, error) {
 		indexIter := w.VectorSearchIndexes.ListIndexes(ctx, vectorsearch.ListIndexesRequest{EndpointName: ep.Name})
 		indexes, err := listing.ToSlice(ctx, indexIter)
 		if err != nil {
+			log.Warnf(ctx, "Failed to list indexes for endpoint %q: %v", ep.Name, err)
 			continue
 		}
 		for _, idx := range indexes {
@@ -226,6 +235,7 @@ func ListFunctions(ctx context.Context) ([]ListItem, error) {
 		schemaIter := w.Schemas.List(ctx, catalog.ListSchemasRequest{CatalogName: cat.Name})
 		schemas, err := listing.ToSlice(ctx, schemaIter)
 		if err != nil {
+			log.Warnf(ctx, "Failed to list schemas in catalog %q: %v", cat.Name, err)
 			continue
 		}
 		for _, sch := range schemas {
@@ -235,6 +245,7 @@ func ListFunctions(ctx context.Context) ([]ListItem, error) {
 			})
 			fns, err := listing.ToSlice(ctx, fnIter)
 			if err != nil {
+				log.Warnf(ctx, "Failed to list functions in %s.%s: %v", cat.Name, sch.Name, err)
 				continue
 			}
 			for _, f := range fns {
@@ -244,6 +255,9 @@ func ListFunctions(ctx context.Context) ([]ListItem, error) {
 				}
 				out = append(out, ListItem{ID: fullName, Label: fullName})
 			}
+		}
+		if len(out) >= maxListResults {
+			break
 		}
 	}
 	return out, nil
@@ -309,7 +323,7 @@ func ListDatabases(ctx context.Context, instanceName string) ([]ListItem, error)
 	}
 	// TODO: use the SDK to list databases once available
 	var resp listDatabasesResponse
-	path := fmt.Sprintf("/api/2.0/database/instances/%s/databases", instanceName)
+	path := fmt.Sprintf("/api/2.0/database/instances/%s/databases", url.PathEscape(instanceName))
 	headers := map[string]string{"Accept": "application/json"}
 	err = api.Do(ctx, http.MethodGet, path, headers, nil, nil, &resp)
 	if err != nil {
