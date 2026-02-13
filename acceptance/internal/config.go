@@ -153,6 +153,12 @@ type ServerStub struct {
 	// Useful for testing crash recovery scenarios where first deploy crashes but retry succeeds.
 	// Requires DATABRICKS_CLI_TEST_PID=1 to be set in the test environment.
 	KillCaller int
+
+	// Number of requests to let pass before starting to kill.
+	// Combined with KillCaller, this creates a window: requests 1 to Offset succeed,
+	// requests Offset+1 to Offset+KillCaller are killed, rest succeed.
+	// Example: KillCallerOffset=9, KillCaller=1 means let 9 requests pass, kill the 10th.
+	KillCallerOffset int
 }
 
 // FindConfigs finds all the config relevant for this test,

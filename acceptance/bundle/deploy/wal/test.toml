@@ -1,0 +1,57 @@
+# WAL (Write-Ahead Log) tests verify crash recovery during bundle deployment.
+# These tests simulate process crashes using KillCaller and verify state recovery.
+# Only runs with direct engine since WAL is a direct-engine feature.
+
+Local = true
+Env.DATABRICKS_CLI_TEST_PID = "1"
+
+[EnvMatrix]
+DATABRICKS_BUNDLE_ENGINE = ["direct"]
+
+[[Repls]]
+Old = 'script: line \d+:\s+\d+ Killed(: 9)?\s+"\$@"'
+New = '[PROCESS_KILLED]'
+
+[[Repls]]
+Old = '(\n>>> errcode [^\n]+\n)\nExit code:'
+New = """${1}[PROCESS_KILLED]
+
+Exit code:"""
+
+[[Repls]]
+Old = 'Exit code: (137|1)'
+New = 'Exit code: [KILLED]'
+
+# On Windows, no bash "Killed" message appears when CLI has produced output before termination.
+# Insert [PROCESS_KILLED] between last output line and exit code for consistency.
+[[Repls]]
+Old = '(Deploying resources\.\.\.)\n\nExit code: \[KILLED\]'
+New = """${1}
+[PROCESS_KILLED]
+
+Exit code: [KILLED]"""
+
+[[Repls]]
+Old = "\r"
+New = ''
+
+[[Repls]]
+Old = '"lineage":\s*"[0-9a-f-]+"'
+New = '"lineage": "[UUID]"'
+
+[[Repls]]
+Old = '"serial":\s*\d+'
+New = '"serial": [SERIAL]'
+
+[[Repls]]
+Old = '"__id__":\s*"\d+"'
+New = '"__id__": "[ID]"'
+
+[[Repls]]
+Old = '"job_id":\s*"\d+"'
+New = '"job_id": "[ID]"'
+
+# Strip single-node cluster warnings (they appear in varying order and aren't relevant to WAL tests)
+[[Repls]]
+Old = '(?s)Warning: Single node cluster.*?ResourceClass: SingleNode\n  \n\n'
+New = ''
