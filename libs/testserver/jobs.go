@@ -215,7 +215,13 @@ func (s *FakeWorkspace) JobsRunNow(req Request) Response {
 			tasks = append(tasks, taskRun)
 
 			if t.PythonWheelTask != nil {
-				logs, err := s.executePythonWheelTask(job.Settings, t)
+				// Apply python_params override from RunNow request if provided
+				taskToExecute := t
+				if len(request.PythonParams) > 0 {
+					taskToExecute.PythonWheelTask.Parameters = request.PythonParams
+				}
+
+				logs, err := s.executePythonWheelTask(job.Settings, taskToExecute)
 				if err != nil {
 					taskRun.State.ResultState = jobs.RunResultStateFailed
 					s.JobRunOutputs[taskRunId] = jobs.RunOutput{
