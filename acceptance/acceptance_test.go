@@ -485,6 +485,33 @@ func runTest(t *testing.T,
 	customEnv []string,
 	envFilters []string,
 ) {
+	// Check env filters early, before creating any resources like workspace tmp directories.
+	// This avoids cleanup issues when a test is skipped due to env filter mismatch.
+	for filterInd, filterEnv := range envFilters {
+		filterEnvKey := strings.Split(filterEnv, "=")[0]
+		// Check customEnv first (EnvMatrix values take precedence)
+		found := false
+		for i := len(customEnv) - 1; i >= 0; i-- {
+			if strings.Split(customEnv[i], "=")[0] == filterEnvKey {
+				if customEnv[i] == filterEnv {
+					found = true
+					break
+				} else {
+					t.Skipf("Skipping because test environment %s does not match ENVFILTER#%d: %s", customEnv[i], filterInd, filterEnv)
+				}
+			}
+		}
+		// If not found in customEnv, check config.Env
+		if !found {
+			if val, ok := config.Env[filterEnvKey]; ok {
+				envPair := filterEnvKey + "=" + val
+				if envPair != filterEnv {
+					t.Skipf("Skipping because test environment %s does not match ENVFILTER#%d: %s", envPair, filterInd, filterEnv)
+				}
+			}
+		}
+	}
+
 	if LogConfig {
 		configBytes, err := json.MarshalIndent(config, "", "  ")
 		require.NoError(t, err)
@@ -633,21 +660,6 @@ func runTest(t *testing.T,
 		// Only add replacement by default if value is part of EnvMatrix with more than 1 option and length is 4 or more chars
 		// (to avoid matching "yes" and "no" values from template input parameters)
 		cmd.Env = addEnvVar(t, cmd.Env, &repls, key, value, config.EnvRepl, len(config.EnvMatrix[key]) > 1 && len(value) >= 4)
-	}
-
-	for filterInd, filterEnv := range envFilters {
-		filterEnvKey := strings.Split(filterEnv, "=")[0]
-		for ind := range cmd.Env {
-			// Search backwards, because the latest settings is what is actually applicable.
-			envPair := cmd.Env[len(cmd.Env)-1-ind]
-			if strings.Split(envPair, "=")[0] == filterEnvKey {
-				if envPair == filterEnv {
-					break
-				} else {
-					t.Skipf("Skipping because test environment %s does not match ENVFILTER#%d: %s", envPair, filterInd, filterEnv)
-				}
-			}
-		}
 	}
 
 	absDir, err := filepath.Abs(dir)
