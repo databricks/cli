@@ -28,6 +28,7 @@ const (
 	appkitRepoURL       = "https://github.com/databricks/appkit"
 	appkitTemplateDir   = "template"
 	appkitDefaultBranch = "main"
+	defaultProfile      = "DEFAULT"
 )
 
 // normalizeVersion ensures the version string has a "v" prefix if it looks like a semver.
@@ -809,7 +810,8 @@ func runCreate(ctx context.Context, opts createOptions) error {
 			return fmt.Errorf("failed to change to project directory: %w", err)
 		}
 		if profile == "" {
-			profile = "DEFAULT"
+			// If the profile is not set, it means the DEFAULT profile was used to infer the workspace host, we set it so that it's used for the deploy and dev-remote commands
+			profile = defaultProfile
 		}
 	}
 
@@ -840,6 +842,7 @@ func runPostCreateDeploy(ctx context.Context, profile string) error {
 	}
 	args := []string{"apps", "deploy"}
 	if profile != "" {
+		// We ensure the same profile is used for the deploy command as the one used for the init command
 		args = append(args, "--profile", profile)
 	}
 	cmd := exec.CommandContext(ctx, executable, args...)
@@ -867,6 +870,7 @@ func runPostCreateDev(ctx context.Context, mode prompt.RunMode, projectInit init
 		}
 		args := []string{"apps", "dev-remote"}
 		if profile != "" {
+			// We ensure the same profile is used for the dev-remote command as the one used for the init command
 			args = append(args, "--profile", profile)
 		}
 		cmd := exec.CommandContext(ctx, executable, args...)
