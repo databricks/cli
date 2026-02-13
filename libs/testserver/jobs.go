@@ -16,6 +16,16 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 )
 
+// venvPython returns the path to the Python executable in a venv.
+// On Unix: venv/bin/python
+// On Windows: venv\Scripts\python.exe
+func venvPython(venvDir string) string {
+	if runtime.GOOS == "windows" {
+		return filepath.Join(venvDir, "Scripts", "python.exe")
+	}
+	return filepath.Join(venvDir, "bin", "python")
+}
+
 func (s *FakeWorkspace) JobsCreate(req Request) Response {
 	var request jobs.CreateJob
 	if err := json.Unmarshal(req.Body, &request); err != nil {
@@ -307,7 +317,7 @@ func (s *FakeWorkspace) executePythonWheelTask(jobSettings *jobs.JobSettings, ta
 	}
 
 	if len(newWhlPaths) > 0 {
-		installArgs := []string{"pip", "install", "-q", "--python", filepath.Join(env.venvDir, "bin", "python")}
+		installArgs := []string{"pip", "install", "-q", "--python", venvPython(env.venvDir)}
 		installArgs = append(installArgs, newWhlPaths...)
 		if out, err := exec.Command("uv", installArgs...).CombinedOutput(); err != nil {
 			return "", fmt.Errorf("uv pip install failed: %s\n%s", err, out)
@@ -325,7 +335,7 @@ func (s *FakeWorkspace) executePythonWheelTask(jobSettings *jobs.JobSettings, ta
 	runArgs := []string{"-c", script}
 	runArgs = append(runArgs, wt.Parameters...)
 
-	cmd := exec.Command(filepath.Join(env.venvDir, "bin", "python"), runArgs...)
+	cmd := exec.Command(venvPython(env.venvDir), runArgs...)
 	if len(wt.NamedParameters) > 0 {
 		cmd.Env = os.Environ()
 		for k, v := range wt.NamedParameters {
@@ -405,7 +415,7 @@ func (s *FakeWorkspace) executeNotebookTask(task jobs.Task, notebookParams map[s
 			localWhlPaths = append(localWhlPaths, localPath)
 		}
 
-		installArgs := []string{"pip", "install", "-q", "--python", filepath.Join(venvDir, "bin", "python")}
+		installArgs := []string{"pip", "install", "-q", "--python", venvPython(venvDir)}
 		installArgs = append(installArgs, localWhlPaths...)
 		if out, err := exec.Command("uv", installArgs...).CombinedOutput(); err != nil {
 			return "", fmt.Errorf("uv pip install failed: %s\n%s", err, out)
@@ -413,7 +423,7 @@ func (s *FakeWorkspace) executeNotebookTask(task jobs.Task, notebookParams map[s
 	}
 
 	// Execute notebook with Python
-	cmd := exec.Command(filepath.Join(venvDir, "bin", "python"), notebookFile)
+	cmd := exec.Command(venvPython(venvDir), notebookFile)
 
 	// Add testserver directory to PYTHONPATH so dbutils.py can be imported
 	_, filename, _, _ := runtime.Caller(0)
