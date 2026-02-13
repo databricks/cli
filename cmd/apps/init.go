@@ -50,28 +50,16 @@ func normalizeVersion(version string) string {
 
 func newInitCmd() *cobra.Command {
 	var (
-		templatePath        string
-		branch              string
-		version             string
-		name                string
-		warehouseID         string
-		description         string
-		outputDir           string
-		pluginsFlag         []string
-		deploy              bool
-		run                 string
-		jobID               string
-		modelEndpointID     string
-		volumeID            string
-		vectorSearchIndexID string
-		functionID          string
-		connectionID        string
-		genieSpaceID        string
-		experimentID        string
-		databaseInstance    string
-		databaseName        string
-		secretScope         string
-		secretKey           string
+		templatePath string
+		branch       string
+		version      string
+		name         string
+		description  string
+		outputDir    string
+		pluginsFlag  []string
+		deploy       bool
+		run          string
+		setValues    []string
 	)
 
 	cmd := &cobra.Command{
@@ -100,16 +88,19 @@ Examples:
   # Non-interactive with flags
   databricks apps init --name my-app
 
-  # With analytics feature (requires --warehouse-id)
-  databricks apps init --name my-app --features=analytics --warehouse-id=abc123
-
-  # With database resource (both flags required together)
+  # With analytics feature and SQL Warehouse
   databricks apps init --name my-app --features=analytics \
-    --warehouse-id=abc123 --database-instance=myinst --database-name=mydb
+    --set analytics.sql-warehouse.id=abc123
 
-  # With secret resource (both flags required together)
+  # With database resource (all fields required together)
   databricks apps init --name my-app --features=analytics \
-    --warehouse-id=abc123 --secret-scope=myscope --secret-key=mykey
+    --set analytics.database.instance_name=myinst \
+    --set analytics.database.database_name=mydb
+
+  # Multiple plugins with different warehouses
+  databricks apps init --name my-app --features=analytics,reporting \
+    --set analytics.sql-warehouse.id=wh1 \
+    --set reporting.sql-warehouse.id=wh2
 
   # Create, deploy, and run with dev-remote
   databricks apps init --name my-app --deploy --run=dev-remote
@@ -120,20 +111,10 @@ Examples:
   # With a GitHub URL
   databricks apps init --template https://github.com/user/repo --name my-app
 
-Resource flags (as defined in appkit.plugins.json):
-  --warehouse-id               SQL Warehouse ID
-  --job-id                     Job ID
-  --model-endpoint-id          Serving endpoint ID
-  --volume-id                  Unity Catalog volume full name
-  --vector-search-index-id     Vector search index ID
-  --function-id                Unity Catalog function full name
-  --connection-id              Unity Catalog connection name
-  --genie-space-id             Genie Space ID
-  --experiment-id              MLflow experiment ID
-  --database-instance          Lakebase instance name (requires --database-name)
-  --database-name              Lakebase database name (requires --database-instance)
-  --secret-scope               Secret scope name (requires --secret-key)
-  --secret-key                 Secret key name (requires --secret-scope)
+Resource configuration (--set):
+  Set resource values using --set plugin.resourceKey.field=value
+  Keys are defined in the template's appkit.plugins.json manifest.
+  Multi-field resources (e.g., database, secret) require all fields to be set together.
 
 Environment variables:
   DATABRICKS_APPKIT_TEMPLATE_PATH  Override the default template source`,
@@ -148,32 +129,20 @@ Environment variables:
 			}
 
 			return runCreate(ctx, createOptions{
-				templatePath:        templatePath,
-				branch:              branch,
-				version:             version,
-				name:                name,
-				nameProvided:        cmd.Flags().Changed("name"),
-				warehouseID:         warehouseID,
-				description:         description,
-				outputDir:           outputDir,
-				plugins:             pluginsFlag,
-				deploy:              deploy,
-				deployChanged:       cmd.Flags().Changed("deploy"),
-				run:                 run,
-				runChanged:          cmd.Flags().Changed("run"),
-				pluginsChanged:      cmd.Flags().Changed("features") || cmd.Flags().Changed("plugins"),
-				jobID:               jobID,
-				modelEndpointID:     modelEndpointID,
-				volumeID:            volumeID,
-				vectorSearchIndexID: vectorSearchIndexID,
-				functionID:          functionID,
-				connectionID:        connectionID,
-				genieSpaceID:        genieSpaceID,
-				experimentID:        experimentID,
-				databaseInstance:    databaseInstance,
-				databaseName:        databaseName,
-				secretScope:         secretScope,
-				secretKey:           secretKey,
+				templatePath:   templatePath,
+				branch:         branch,
+				version:        version,
+				name:           name,
+				nameProvided:   cmd.Flags().Changed("name"),
+				description:    description,
+				outputDir:      outputDir,
+				plugins:        pluginsFlag,
+				deploy:         deploy,
+				deployChanged:  cmd.Flags().Changed("deploy"),
+				run:            run,
+				runChanged:     cmd.Flags().Changed("run"),
+				pluginsChanged: cmd.Flags().Changed("features") || cmd.Flags().Changed("plugins"),
+				setValues:      setValues,
 			})
 		},
 	}
@@ -182,19 +151,7 @@ Environment variables:
 	cmd.Flags().StringVar(&branch, "branch", "", "Git branch or tag (for GitHub templates, mutually exclusive with --version)")
 	cmd.Flags().StringVar(&version, "version", "", "AppKit version to use (default: latest release, use 'latest' for main branch)")
 	cmd.Flags().StringVar(&name, "name", "", "Project name (prompts if not provided)")
-	cmd.Flags().StringVar(&warehouseID, "warehouse-id", "", "SQL warehouse ID")
-	cmd.Flags().StringVar(&jobID, "job-id", "", "Job ID")
-	cmd.Flags().StringVar(&modelEndpointID, "model-endpoint-id", "", "Serving endpoint ID")
-	cmd.Flags().StringVar(&volumeID, "volume-id", "", "Unity Catalog volume full name (catalog.schema.volume)")
-	cmd.Flags().StringVar(&vectorSearchIndexID, "vector-search-index-id", "", "Vector search index ID")
-	cmd.Flags().StringVar(&functionID, "function-id", "", "Unity Catalog function full name")
-	cmd.Flags().StringVar(&connectionID, "connection-id", "", "Unity Catalog connection name")
-	cmd.Flags().StringVar(&genieSpaceID, "genie-space-id", "", "Genie Space ID")
-	cmd.Flags().StringVar(&experimentID, "experiment-id", "", "MLflow experiment ID")
-	cmd.Flags().StringVar(&databaseInstance, "database-instance", "", "Lakebase database instance name (requires --database-name)")
-	cmd.Flags().StringVar(&databaseName, "database-name", "", "Lakebase database name (requires --database-instance)")
-	cmd.Flags().StringVar(&secretScope, "secret-scope", "", "Secret scope name (requires --secret-key)")
-	cmd.Flags().StringVar(&secretKey, "secret-key", "", "Secret key name (requires --secret-scope)")
+	cmd.Flags().StringArrayVar(&setValues, "set", nil, "Set resource values (format: plugin.resourceKey.field=value, can specify multiple)")
 	cmd.Flags().StringVar(&description, "description", "", "App description")
 	cmd.Flags().StringVar(&outputDir, "output-dir", "", "Directory to write the project to")
 	cmd.Flags().StringSliceVar(&pluginsFlag, "features", nil, "Features/plugins to enable (comma-separated, as defined in template manifest)")
@@ -212,7 +169,6 @@ type createOptions struct {
 	version        string
 	name           string
 	nameProvided   bool // true if --name flag was explicitly set (enables "flags mode")
-	warehouseID    string
 	description    string
 	outputDir      string
 	plugins        []string
@@ -221,59 +177,80 @@ type createOptions struct {
 	run            string
 	runChanged     bool // true if --run flag was explicitly set
 	pluginsChanged bool // true if --plugins flag was explicitly set
-
-	// Resource flags
-	jobID               string
-	modelEndpointID     string
-	volumeID            string
-	vectorSearchIndexID string
-	functionID          string
-	connectionID        string
-	genieSpaceID        string
-	experimentID        string
-	databaseInstance    string
-	databaseName        string
-	secretScope         string
-	secretKey           string
+	setValues      []string // --set plugin.resourceKey.field=value pairs
 }
 
-// populateResourceValues writes all non-empty resource flag values into the map.
-func (o *createOptions) populateResourceValues(rv map[string]string) {
-	set := func(key, val string) {
-		if val != "" {
-			rv[key] = val
+// parseSetValues parses --set key=value pairs into the resourceValues map.
+// Keys use the format "plugin.resourceKey.field=value".
+// Validates that plugin names, resource keys, and field names exist in the manifest.
+func parseSetValues(setValues []string, m *manifest.Manifest) (map[string]string, error) {
+	rv := make(map[string]string)
+	for _, sv := range setValues {
+		key, value, ok := strings.Cut(sv, "=")
+		if !ok || key == "" {
+			return nil, fmt.Errorf("invalid --set format %q, expected plugin.resourceKey.field=value", sv)
+		}
+		parts := strings.SplitN(key, ".", 3)
+		if len(parts) != 3 {
+			return nil, fmt.Errorf("invalid --set key %q, expected plugin.resourceKey.field", key)
+		}
+		pluginName, resourceKey, fieldName := parts[0], parts[1], parts[2]
+
+		plugin := m.GetPluginByName(pluginName)
+		if plugin == nil {
+			return nil, fmt.Errorf("unknown plugin %q in --set %q; available: %v", pluginName, sv, m.GetPluginNames())
+		}
+
+		if !pluginHasResourceField(plugin, resourceKey, fieldName) {
+			return nil, fmt.Errorf("plugin %q has no resource with key %q and field %q", pluginName, resourceKey, fieldName)
+		}
+
+		rv[resourceKey+"."+fieldName] = value
+	}
+
+	// Validate multi-field resources: if any field is set, all fields must be set.
+	for _, p := range m.GetPlugins() {
+		for _, r := range append(p.Resources.Required, p.Resources.Optional...) {
+			if len(r.Fields) <= 1 {
+				continue
+			}
+			names := r.FieldNames()
+			setCount := 0
+			for _, fn := range names {
+				if rv[r.Key()+"."+fn] != "" {
+					setCount++
+				}
+			}
+			if setCount > 0 && setCount < len(names) {
+				var missing []string
+				for _, fn := range names {
+					if rv[r.Key()+"."+fn] == "" {
+						missing = append(missing, r.Key()+"."+fn)
+					}
+				}
+				return nil, fmt.Errorf("incomplete resource %q: missing fields %v (all fields must be set together)", r.Key(), missing)
+			}
 		}
 	}
-	set("sql-warehouse.id", o.warehouseID)
-	set("job.id", o.jobID)
-	set("model-endpoint.id", o.modelEndpointID)
-	set("volume.id", o.volumeID)
-	set("vector-search-index.id", o.vectorSearchIndexID)
-	set("function.id", o.functionID)
-	set("connection.id", o.connectionID)
-	set("genie-space.space_id", o.genieSpaceID)
-	set("experiment.id", o.experimentID)
-	set("database.instance_name", o.databaseInstance)
-	set("database.database_name", o.databaseName)
-	set("secret.scope", o.secretScope)
-	set("secret.key", o.secretKey)
+
+	return rv, nil
 }
 
-// validateMultiFieldFlags checks that multi-field resource flags are provided together.
-func (o *createOptions) validateMultiFieldFlags() error {
-	if (o.databaseInstance != "") != (o.databaseName != "") {
-		return errors.New("--database-instance and --database-name must be provided together")
+// pluginHasResourceField checks whether a plugin declares a resource with the given key and field name.
+func pluginHasResourceField(p *manifest.Plugin, resourceKey, fieldName string) bool {
+	for _, r := range append(p.Resources.Required, p.Resources.Optional...) {
+		if r.Key() == resourceKey {
+			if _, ok := r.Fields[fieldName]; ok {
+				return true
+			}
+		}
 	}
-	if (o.secretScope != "") != (o.secretKey != "") {
-		return errors.New("--secret-scope and --secret-key must be provided together")
-	}
-	return nil
+	return false
 }
 
 // templateVars holds the variables for template substitution.
 type templateVars struct {
 	ProjectName    string
-	SQLWarehouseID string
 	AppDescription string
 	Profile        string
 	WorkspaceHost  string
@@ -613,16 +590,22 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		}
 	}
 
-	// Step 3: Load manifest from template
-	m, err := manifest.Load(templateDir)
-	if err != nil {
-		return fmt.Errorf("load manifest: %w", err)
-	}
-
-	log.Debugf(ctx, "Loaded manifest with %d plugins", len(m.Plugins))
-	for name, p := range m.Plugins {
-		log.Debugf(ctx, "  Plugin %q: %d required resources, %d optional resources, requiredByTemplate=%v",
-			name, len(p.Resources.Required), len(p.Resources.Optional), p.RequiredByTemplate)
+	// Step 3: Load manifest from template (optional — templates without it skip plugin/resource logic)
+	var m *manifest.Manifest
+	if manifest.HasManifest(templateDir) {
+		var err error
+		m, err = manifest.Load(templateDir)
+		if err != nil {
+			return fmt.Errorf("load manifest: %w", err)
+		}
+		log.Debugf(ctx, "Loaded manifest with %d plugins", len(m.Plugins))
+		for name, p := range m.Plugins {
+			log.Debugf(ctx, "  Plugin %q: %d required resources, %d optional resources, requiredByTemplate=%v",
+				name, len(p.Resources.Required), len(p.Resources.Optional), p.RequiredByTemplate)
+		}
+	} else {
+		log.Debugf(ctx, "No manifest found in template, skipping plugin/resource configuration")
+		m = &manifest.Manifest{Plugins: map[string]manifest.Plugin{}}
 	}
 
 	// When --name is provided, user is in "flags mode" - use defaults instead of prompting
@@ -648,43 +631,46 @@ func runCreate(ctx context.Context, opts createOptions) error {
 			runMode = config.RunMode
 		}
 
-		// Get warehouse from resourceValues if provided
-		if wh, ok := resourceValues["sql-warehouse.id"]; ok && wh != "" {
-			opts.warehouseID = wh
+		// Merge --set values (they override prompted values)
+		setVals, err := parseSetValues(opts.setValues, m)
+		if err != nil {
+			return err
+		}
+		for k, v := range setVals {
+			resourceValues[k] = v
 		}
 	} else if isInteractive && opts.pluginsChanged && !flagsMode {
-		// Interactive mode with --plugins flag: validate plugins, prompt for deploy/run if no flags
+		// Interactive mode with --plugins flag: validate plugins, use --set values
 		if len(selectedPlugins) > 0 {
 			if err := m.ValidatePluginNames(selectedPlugins); err != nil {
 				return err
 			}
 		}
-		if err := opts.validateMultiFieldFlags(); err != nil {
+		var err error
+		resourceValues, err = parseSetValues(opts.setValues, m)
+		if err != nil {
 			return err
 		}
-		resourceValues = make(map[string]string)
-		opts.populateResourceValues(resourceValues)
 
 		// Prompt for deploy/run if no flags were set
 		if !skipDeployRunPrompt {
-			var err error
 			shouldDeploy, runMode, err = prompt.PromptForDeployAndRun(ctx)
 			if err != nil {
 				return err
 			}
 		}
 	} else {
-		// Flags mode or non-interactive: validate plugins and use flag values
+		// Flags mode or non-interactive: validate plugins and use --set values
 		if len(selectedPlugins) > 0 {
 			if err := m.ValidatePluginNames(selectedPlugins); err != nil {
 				return err
 			}
 		}
-		if err := opts.validateMultiFieldFlags(); err != nil {
+		var err error
+		resourceValues, err = parseSetValues(opts.setValues, m)
+		if err != nil {
 			return err
 		}
-		resourceValues = make(map[string]string)
-		opts.populateResourceValues(resourceValues)
 	}
 
 	// Always include mandatory plugins regardless of user selection or flags.
@@ -702,7 +688,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 				}
 			}
 			if !found {
-				return fmt.Errorf("missing required resource %q for selected plugins (use --%s-id flag)", r.Alias, r.Key())
+				return fmt.Errorf("missing required resource %q for selected plugins (use --set %s.%s=value)", r.Alias, r.Key(), r.FieldNames()[0])
 			}
 		}
 	}
@@ -768,9 +754,8 @@ func runCreate(ctx context.Context, opts createOptions) error {
 
 	// Template variables with generated content
 	vars := templateVars{
-		ProjectName:     opts.name,
-		SQLWarehouseID:  opts.warehouseID,
-		AppDescription:  opts.description,
+		ProjectName:    opts.name,
+		AppDescription: opts.description,
 		Profile:         profile,
 		WorkspaceHost:   workspaceHost,
 		PluginImports:   pluginImport,
@@ -1121,7 +1106,6 @@ func processPackageJSON(content []byte, vars templateVars) ([]byte, error) {
 // .tmpl files use Go's text/template engine via executeTemplate.
 func substituteVars(s string, vars templateVars) string {
 	s = strings.ReplaceAll(s, "{{.project_name}}", vars.ProjectName)
-	s = strings.ReplaceAll(s, "{{.sql_warehouse_id}}", vars.SQLWarehouseID)
 	s = strings.ReplaceAll(s, "{{.app_description}}", vars.AppDescription)
 	s = strings.ReplaceAll(s, "{{.profile}}", vars.Profile)
 	s = strings.ReplaceAll(s, "{{workspace_host}}", vars.WorkspaceHost)
@@ -1161,9 +1145,8 @@ func executeTemplate(path string, content []byte, vars templateVars) ([]byte, er
 
 	// Use a map to match template variable names exactly (snake_case)
 	data := map[string]string{
-		"project_name":     vars.ProjectName,
-		"sql_warehouse_id": vars.SQLWarehouseID,
-		"app_description":  vars.AppDescription,
+		"project_name":    vars.ProjectName,
+		"app_description": vars.AppDescription,
 		"profile":          vars.Profile,
 		"workspace_host":   vars.WorkspaceHost,
 		"plugin_imports":   vars.PluginImports,

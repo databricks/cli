@@ -4,6 +4,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/databricks/cli/libs/apps/manifest"
 	"github.com/databricks/cli/libs/apps/prompt"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
@@ -67,7 +68,6 @@ func TestIsTextFile(t *testing.T) {
 func TestSubstituteVars(t *testing.T) {
 	vars := templateVars{
 		ProjectName:    "my-app",
-		SQLWarehouseID: "warehouse123",
 		AppDescription: "My awesome app",
 		Profile:        "default",
 		WorkspaceHost:  "https://dbc-123.cloud.databricks.com",
@@ -84,11 +84,6 @@ func TestSubstituteVars(t *testing.T) {
 			name:     "project name substitution",
 			input:    "name: {{.project_name}}",
 			expected: "name: my-app",
-		},
-		{
-			name:     "warehouse id substitution",
-			input:    "warehouse: {{.sql_warehouse_id}}",
-			expected: "warehouse: warehouse123",
 		},
 		{
 			name:     "description substitution",
@@ -139,7 +134,6 @@ func TestSubstituteVarsNoPlugins(t *testing.T) {
 	// Test plugin cleanup when no plugins are selected
 	vars := templateVars{
 		ProjectName:    "my-app",
-		SQLWarehouseID: "",
 		AppDescription: "My app",
 		Profile:        "",
 		WorkspaceHost:  "",
@@ -284,117 +278,154 @@ func TestParseDeployAndRunFlags(t *testing.T) {
 	}
 }
 
-func TestValidateMultiFieldFlags(t *testing.T) {
+// testManifest returns a manifest with an "analytics" plugin for testing parseSetValues.
+func testManifest() *manifest.Manifest {
+	return &manifest.Manifest{
+		Plugins: map[string]manifest.Plugin{
+			"analytics": {
+				Name: "analytics",
+				Resources: manifest.Resources{
+					Required: []manifest.Resource{
+						{
+							Type:        "sql_warehouse",
+							Alias:       "SQL Warehouse",
+							ResourceKey: "sql-warehouse",
+							Fields:      map[string]manifest.ResourceField{"id": {Env: "WH_ID"}},
+						},
+					},
+					Optional: []manifest.Resource{
+						{
+							Type:        "database",
+							Alias:       "Database",
+							ResourceKey: "database",
+							Fields: map[string]manifest.ResourceField{
+								"instance_name": {Env: "DB_INST"},
+								"database_name": {Env: "DB_NAME"},
+							},
+						},
+						{
+							Type:        "secret",
+							Alias:       "Secret",
+							ResourceKey: "secret",
+							Fields: map[string]manifest.ResourceField{
+								"scope": {Env: "SECRET_SCOPE"},
+								"key":   {Env: "SECRET_KEY"},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func TestParseSetValues(t *testing.T) {
+	m := testManifest()
+
 	tests := []struct {
-		name    string
-		opts    createOptions
-		wantErr string
+		name      string
+		setValues []string
+		wantRV    map[string]string
+		wantErr   string
 	}{
 		{
-			name: "both database fields provided",
-			opts: createOptions{databaseInstance: "inst", databaseName: "db"},
+			name:      "single field",
+			setValues: []string{"analytics.sql-warehouse.id=abc123"},
+			wantRV:    map[string]string{"sql-warehouse.id": "abc123"},
 		},
 		{
-			name: "neither database field provided",
-			opts: createOptions{},
+			name:      "multi-field complete",
+			setValues: []string{"analytics.database.instance_name=inst", "analytics.database.database_name=mydb"},
+			wantRV:    map[string]string{"database.instance_name": "inst", "database.database_name": "mydb"},
 		},
 		{
-			name:    "only database instance name",
-			opts:    createOptions{databaseInstance: "inst"},
-			wantErr: "--database-instance and --database-name must be provided together",
+			name:      "later set overrides earlier",
+			setValues: []string{"analytics.sql-warehouse.id=first", "analytics.sql-warehouse.id=second"},
+			wantRV:    map[string]string{"sql-warehouse.id": "second"},
 		},
 		{
-			name:    "only database database name",
-			opts:    createOptions{databaseName: "db"},
-			wantErr: "--database-instance and --database-name must be provided together",
+			name:      "empty set values",
+			setValues: nil,
+			wantRV:    map[string]string{},
 		},
 		{
-			name: "both secret fields provided",
-			opts: createOptions{secretScope: "scope", secretKey: "key"},
+			name:      "missing equals sign",
+			setValues: []string{"analytics.sql-warehouse.id"},
+			wantErr:   "invalid --set format",
 		},
 		{
-			name: "neither secret field provided",
-			opts: createOptions{},
+			name:      "too few key parts",
+			setValues: []string{"sql-warehouse.id=abc"},
+			wantErr:   "invalid --set key",
 		},
 		{
-			name:    "only secret scope",
-			opts:    createOptions{secretScope: "scope"},
-			wantErr: "--secret-scope and --secret-key must be provided together",
+			name:      "unknown plugin",
+			setValues: []string{"nosuch.sql-warehouse.id=abc"},
+			wantErr:   `unknown plugin "nosuch"`,
 		},
 		{
-			name:    "only secret key",
-			opts:    createOptions{secretKey: "key"},
-			wantErr: "--secret-scope and --secret-key must be provided together",
+			name:      "unknown resource key",
+			setValues: []string{"analytics.nosuch.id=abc"},
+			wantErr:   `has no resource with key "nosuch"`,
 		},
 		{
-			name: "all multi-field flags provided",
-			opts: createOptions{
-				databaseInstance: "inst",
-				databaseName:     "db",
-				secretScope:      "scope",
-				secretKey:        "key",
+			name:      "unknown field",
+			setValues: []string{"analytics.sql-warehouse.nosuch=abc"},
+			wantErr:   `field "nosuch"`,
+		},
+		{
+			name:      "multi-field incomplete database",
+			setValues: []string{"analytics.database.instance_name=inst"},
+			wantErr:   `incomplete resource "database"`,
+		},
+		{
+			name:      "multi-field incomplete secret",
+			setValues: []string{"analytics.secret.scope=myscope"},
+			wantErr:   `incomplete resource "secret"`,
+		},
+		{
+			name: "all fields together",
+			setValues: []string{
+				"analytics.sql-warehouse.id=wh1",
+				"analytics.database.instance_name=inst",
+				"analytics.database.database_name=mydb",
+				"analytics.secret.scope=s",
+				"analytics.secret.key=k",
+			},
+			wantRV: map[string]string{
+				"sql-warehouse.id":      "wh1",
+				"database.instance_name": "inst",
+				"database.database_name": "mydb",
+				"secret.scope":           "s",
+				"secret.key":             "k",
 			},
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := tt.opts.validateMultiFieldFlags()
+			rv, err := parseSetValues(tt.setValues, m)
 			if tt.wantErr != "" {
 				require.Error(t, err)
-				assert.Equal(t, tt.wantErr, err.Error())
+				assert.Contains(t, err.Error(), tt.wantErr)
 			} else {
-				assert.NoError(t, err)
+				require.NoError(t, err)
+				assert.Equal(t, tt.wantRV, rv)
 			}
 		})
 	}
 }
 
-func TestPopulateResourceValues(t *testing.T) {
-	opts := createOptions{
-		warehouseID:         "wh-123",
-		jobID:               "job-456",
-		modelEndpointID:     "ep-789",
-		volumeID:            "cat.schema.vol",
-		vectorSearchIndexID: "idx-1",
-		functionID:          "cat.schema.fn",
-		connectionID:        "conn-1",
-		genieSpaceID:        "gs-1",
-		experimentID:        "exp-1",
-		databaseInstance:    "inst",
-		databaseName:        "mydb",
-		secretScope:         "scope",
-		secretKey:           "key",
-	}
+func TestPluginHasResourceField(t *testing.T) {
+	m := testManifest()
+	p := m.GetPluginByName("analytics")
+	require.NotNil(t, p)
 
-	rv := make(map[string]string)
-	opts.populateResourceValues(rv)
-
-	assert.Equal(t, "wh-123", rv["sql-warehouse.id"])
-	assert.Equal(t, "job-456", rv["job.id"])
-	assert.Equal(t, "ep-789", rv["model-endpoint.id"])
-	assert.Equal(t, "cat.schema.vol", rv["volume.id"])
-	assert.Equal(t, "idx-1", rv["vector-search-index.id"])
-	assert.Equal(t, "cat.schema.fn", rv["function.id"])
-	assert.Equal(t, "conn-1", rv["connection.id"])
-	assert.Equal(t, "gs-1", rv["genie-space.space_id"])
-	assert.Equal(t, "exp-1", rv["experiment.id"])
-	assert.Equal(t, "inst", rv["database.instance_name"])
-	assert.Equal(t, "mydb", rv["database.database_name"])
-	assert.Equal(t, "scope", rv["secret.scope"])
-	assert.Equal(t, "key", rv["secret.key"])
-}
-
-func TestPopulateResourceValuesSkipsEmpty(t *testing.T) {
-	opts := createOptions{
-		warehouseID: "wh-123",
-	}
-
-	rv := make(map[string]string)
-	opts.populateResourceValues(rv)
-
-	assert.Equal(t, "wh-123", rv["sql-warehouse.id"])
-	assert.Len(t, rv, 1)
+	assert.True(t, pluginHasResourceField(p, "sql-warehouse", "id"))
+	assert.True(t, pluginHasResourceField(p, "database", "instance_name"))
+	assert.True(t, pluginHasResourceField(p, "secret", "scope"))
+	assert.False(t, pluginHasResourceField(p, "sql-warehouse", "nosuch"))
+	assert.False(t, pluginHasResourceField(p, "nosuch", "id"))
 }
 
 func TestAppendUnique(t *testing.T) {
