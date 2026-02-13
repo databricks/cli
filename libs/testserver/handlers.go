@@ -44,6 +44,10 @@ func AddDefaultHandlers(server *Server) {
 					InstancePoolName: "DEFAULT Test Instance Pool",
 					InstancePoolId:   TestDefaultInstancePoolId,
 				},
+				{
+					InstancePoolName: "some-test-instance-pool",
+					InstancePoolId:   "1234",
+				},
 			},
 		}
 	})
