@@ -2,6 +2,7 @@ package testserver
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -214,7 +215,7 @@ func (s *FakeWorkspace) JobsRunNow(req Request) Response {
 			tasks = append(tasks, taskRun)
 
 			if t.PythonWheelTask != nil {
-				logs, err := s.executePythonWheelTask(t)
+				logs, err := s.executePythonWheelTask(job.Settings, t)
 				if err != nil {
 					taskRun.State.ResultState = jobs.RunResultStateFailed
 					s.JobRunOutputs[taskRunId] = jobs.RunOutput{
@@ -245,7 +246,8 @@ func (s *FakeWorkspace) JobsRunNow(req Request) Response {
 // executePythonWheelTask runs a python wheel task locally using uv.
 // For tasks using existing_cluster_id, the venv is cached per cluster to match
 // cloud behavior where libraries are cached on running clusters.
-func (s *FakeWorkspace) executePythonWheelTask(task jobs.Task) (string, error) {
+// For serverless tasks (environment_key), dependencies are loaded from the environment spec.
+func (s *FakeWorkspace) executePythonWheelTask(jobSettings *jobs.JobSettings, task jobs.Task) (string, error) {
 	env, cleanup, err := s.getOrCreateClusterEnv(task)
 	if err != nil {
 		return "", err
@@ -254,26 +256,42 @@ func (s *FakeWorkspace) executePythonWheelTask(task jobs.Task) (string, error) {
 		defer cleanup()
 	}
 
+	// Collect wheel paths from either task libraries or environment dependencies
+	var whlPaths []string
+	if len(task.Libraries) > 0 {
+		// Cluster-based task with libraries
+		for _, lib := range task.Libraries {
+			if lib.Whl != "" {
+				whlPaths = append(whlPaths, lib.Whl)
+			}
+		}
+	} else if task.EnvironmentKey != "" && jobSettings != nil {
+		// Serverless task with environment_key
+		for _, envItem := range jobSettings.Environments {
+			if envItem.EnvironmentKey == task.EnvironmentKey && envItem.Spec != nil {
+				whlPaths = append(whlPaths, envItem.Spec.Dependencies...)
+				break
+			}
+		}
+	}
+
 	// Install only wheels not yet present in this cluster env,
 	// matching cloud behavior where same library path is not reinstalled.
 	var newWhlPaths []string
-	for _, lib := range task.Libraries {
-		if lib.Whl == "" {
+	for _, whlPath := range whlPaths {
+		if env.installedLibs[whlPath] {
 			continue
 		}
-		if env.installedLibs[lib.Whl] {
-			continue
-		}
-		data := s.files[lib.Whl].Data
+		data := s.files[whlPath].Data
 		if len(data) == 0 {
-			return "", fmt.Errorf("wheel file not found in workspace: %s", lib.Whl)
+			return "", fmt.Errorf("wheel file not found in workspace: %s", whlPath)
 		}
-		localPath := filepath.Join(env.dir, filepath.Base(lib.Whl))
+		localPath := filepath.Join(env.dir, filepath.Base(whlPath))
 		if err := os.WriteFile(localPath, data, 0o644); err != nil {
 			return "", fmt.Errorf("failed to write wheel file: %w", err)
 		}
 		newWhlPaths = append(newWhlPaths, localPath)
-		env.installedLibs[lib.Whl] = true
+		env.installedLibs[whlPath] = true
 	}
 
 	if len(newWhlPaths) > 0 {
@@ -285,7 +303,7 @@ func (s *FakeWorkspace) executePythonWheelTask(task jobs.Task) (string, error) {
 	}
 
 	if len(env.installedLibs) == 0 {
-		return "", fmt.Errorf("no wheel libraries found in task")
+		return "", errors.New("no wheel libraries found in task")
 	}
 
 	// Run the entry point using runpy with sys.argv[0] set to the package name,
@@ -435,12 +453,23 @@ func (s *FakeWorkspace) JobsGetRunOutput(req Request) Response {
 
 	defer s.LockUnlock()()
 
+	// First check if output exists directly for this run ID
 	output, ok := s.JobRunOutputs[runIdInt]
-	if !ok {
-		return Response{Body: jobs.RunOutput{}}
+	if ok {
+		return Response{Body: output}
 	}
 
-	return Response{Body: output}
+	// If not, check if this is a job run ID with tasks
+	jobRun, ok := s.JobRuns[runIdInt]
+	if ok && len(jobRun.Tasks) > 0 {
+		// For single-task jobs, return the task's output
+		taskRunId := jobRun.Tasks[0].RunId
+		if taskOutput, ok := s.JobRunOutputs[taskRunId]; ok {
+			return Response{Body: taskOutput}
+		}
+	}
+
+	return Response{Body: jobs.RunOutput{}}
 }
 
 func setSourceIfNotSet(job jobs.Job) jobs.Job {

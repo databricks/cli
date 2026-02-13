@@ -35,6 +35,7 @@ const (
 	UserID                      = "1000012345"
 	TestDefaultClusterId        = "0123-456789-cluster0"
 	TestDefaultWarehouseId      = "8ec9edc1-db0c-40df-af8d-7580020fe61e"
+	TestDefaultInstancePoolId   = "0123-456789-pool0"
 )
 
 var TestUser = iam.User{
