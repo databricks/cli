@@ -14,6 +14,7 @@ import (
 	"github.com/databricks/cli/libs/apps/features"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
+	"github.com/databricks/cli/libs/databrickscfg/profile"
 	"github.com/databricks/databricks-sdk-go/listing"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/databricks/databricks-sdk-go/service/sql"
@@ -470,6 +471,73 @@ func PromptForWarehouse(ctx context.Context) (string, error) {
 
 	printAnswered(ctx, "SQL Warehouse", warehouseNames[selected])
 	return selected, nil
+}
+
+// PromptForProfile prompts the user to select a CLI profile matching the given workspace host.
+// If there is exactly one matching profile, it is returned without prompting.
+func PromptForProfile(ctx context.Context, workspaceHost string) (string, error) {
+	profiler := profile.GetProfiler(ctx)
+
+	profiles, err := profiler.LoadProfiles(ctx, func(p profile.Profile) bool {
+		return profile.MatchWorkspaceProfiles(p) && p.Host == workspaceHost
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to load profiles: %w", err)
+	}
+
+	if len(profiles) == 0 {
+		return "", nil
+	}
+
+	if len(profiles) == 1 {
+		return profiles[0].Name, nil
+	}
+
+	theme := AppkitTheme()
+
+	// Build options; the first profile is the default.
+	options := make([]huh.Option[string], 0, len(profiles))
+	for _, p := range profiles {
+		label := p.Name
+		if p.Host != "" {
+			label += " (" + p.Host + ")"
+		}
+		options = append(options, huh.NewOption(label, p.Name))
+	}
+
+	selected := profiles[0].Name
+	err = huh.NewSelect[string]().
+		Title("Select a CLI profile").
+		Description(fmt.Sprintf("profile to use for deploy commands (%d available)", len(profiles))).
+		Options(options...).
+		Value(&selected).
+		WithTheme(theme).
+		Run()
+	if err != nil {
+		return "", err
+	}
+
+	printAnswered(ctx, "Profile", selected)
+	return selected, nil
+}
+
+func ResolveProfileForDeploy(ctx context.Context, explicitProfile, workspaceHost string) (string, error) {
+	// 1. Explicit --profile flag.
+	if explicitProfile != "" {
+		return explicitProfile, nil
+	}
+
+	// 2. DATABRICKS_CONFIG_PROFILE env var.
+	if envProfile := os.Getenv("DATABRICKS_CONFIG_PROFILE"); envProfile != "" {
+		return envProfile, nil
+	}
+
+	// 3. Prompt for a matching profile.
+	if !cmdio.IsPromptSupported(ctx) {
+		return "", nil
+	}
+
+	return PromptForProfile(ctx, workspaceHost)
 }
 
 // RunWithSpinnerCtx runs a function while showing a spinner with the given title.
