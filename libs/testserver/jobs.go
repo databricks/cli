@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strconv"
 	"strings"
@@ -344,7 +345,7 @@ func (s *FakeWorkspace) executePythonWheelTask(jobSettings *jobs.JobSettings, ta
 // The wrapper feature transforms python_wheel_task into notebook_task that calls the wheel.
 func (s *FakeWorkspace) executeNotebookTask(task jobs.Task, notebookParams map[string]string) (string, error) {
 	if task.NotebookTask == nil {
-		return "", fmt.Errorf("task has no notebook_task")
+		return "", errors.New("task has no notebook_task")
 	}
 
 	// Read notebook file from workspace (lock already held by caller)
@@ -413,13 +414,19 @@ func (s *FakeWorkspace) executeNotebookTask(task jobs.Task, notebookParams map[s
 
 	// Execute notebook with Python
 	cmd := exec.Command(filepath.Join(venvDir, "bin", "python"), notebookFile)
+
+	// Add testserver directory to PYTHONPATH so dbutils.py can be imported
+	_, filename, _, _ := runtime.Caller(0)
+	testserverDir := filepath.Dir(filename)
+	cmd.Env = append(os.Environ(), "PYTHONPATH="+testserverDir)
+
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		return string(output), fmt.Errorf("notebook task execution failed: %s\n%s", err, output)
 	}
 
-	// Return output with single trailing newline to match cloud behavior
-	return strings.TrimSpace(string(output)) + "\n", nil
+	// Normalize trailing newlines to match cloud behavior (exactly one trailing newline)
+	return strings.TrimRight(string(output), "\n") + "\n", nil
 }
 
 // getOrCreateClusterEnv returns a cached venv for existing clusters or creates
@@ -602,23 +609,14 @@ func (s *FakeWorkspace) preprocessNotebook(notebook string, params map[string]st
 	var whlPaths []string
 	var result []string
 
-	// Add dbutils mock at the beginning
-	result = append(result, "# Mock dbutils for local execution")
-	result = append(result, "class MockDbutils:")
-	result = append(result, "    class Widgets:")
+	// Import dbutils mock
+	result = append(result, "# Import dbutils mock for local execution")
+	result = append(result, "from dbutils import DBUtils")
 	if pythonParams, ok := params["__python_params"]; ok {
-		result = append(result, fmt.Sprintf("        def get(self, key): return %q if key == '__python_params' else ''", pythonParams))
+		result = append(result, fmt.Sprintf("dbutils = DBUtils({'__python_params': %q})", pythonParams))
 	} else {
-		result = append(result, "        def get(self, key): return ''")
+		result = append(result, "dbutils = DBUtils()")
 	}
-	result = append(result, "    widgets = Widgets()")
-	result = append(result, "    class Library:")
-	result = append(result, "        def restartPython(self): pass")
-	result = append(result, "    library = Library()")
-	result = append(result, "    class Notebook:")
-	result = append(result, "        def exit(self, value): print(value)")
-	result = append(result, "    notebook = Notebook()")
-	result = append(result, "dbutils = MockDbutils()")
 	result = append(result, "")
 
 	lines := strings.Split(notebook, "\n")
