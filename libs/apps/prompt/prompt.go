@@ -364,14 +364,104 @@ func PromptForSQLWarehouseResource(ctx context.Context, r manifest.Resource, req
 	return promptForResourceFromLister(ctx, r, required, "Select SQL Warehouse", "no SQL warehouses found. Create one in your workspace first", "Fetching SQL warehouses...", ListSQLWarehousesItems)
 }
 
+const backID = "__back__"
+
+// promptUCCatalog shows a picker for UC catalogs (shared first step for volume/function pickers).
+func promptUCCatalog(ctx context.Context, required bool) (string, error) {
+	var items []ListItem
+	err := RunWithSpinnerCtx(ctx, "Fetching catalogs...", func() error {
+		var fetchErr error
+		items, fetchErr = ListCatalogs(ctx)
+		return fetchErr
+	})
+	if err != nil {
+		return "", err
+	}
+	return PromptFromList(ctx, "Select Catalog", "no catalogs found", items, required)
+}
+
+// promptFromListWithBack shows a picker with a "← Go back" option prepended.
+// Returns ("", nil) if the user selects "Go back".
+func promptFromListWithBack(ctx context.Context, title string, items []ListItem) (string, error) {
+	withBack := make([]ListItem, 0, len(items)+1)
+	withBack = append(withBack, ListItem{ID: backID, Label: "← Go back"})
+	withBack = append(withBack, items...)
+	value, err := PromptFromList(ctx, title, "", withBack, true)
+	if err != nil {
+		return "", err
+	}
+	if value == backID {
+		return "", nil
+	}
+	return value, nil
+}
+
+// promptUCResource runs a three-step catalog → schema → resource picker with back navigation.
+// Empty results at any level show a message and navigate back automatically.
+func promptUCResource(ctx context.Context, r manifest.Resource, required bool, resourceLabel, spinnerMsg string, listFn func(context.Context, string, string) ([]ListItem, error)) (map[string]string, error) {
+	for {
+		catalogName, err := promptUCCatalog(ctx, required)
+		if err != nil || catalogName == "" {
+			return nil, err
+		}
+
+		for {
+			var schemas []ListItem
+			err = RunWithSpinnerCtx(ctx, "Fetching schemas...", func() error {
+				var fetchErr error
+				schemas, fetchErr = ListSchemas(ctx, catalogName)
+				return fetchErr
+			})
+			if err != nil {
+				return nil, err
+			}
+			if len(schemas) == 0 {
+				cmdio.LogString(ctx, fmt.Sprintf("No schemas found in %s, try another catalog.", catalogName))
+				break // back to catalog picker
+			}
+
+			schemaName, err := promptFromListWithBack(ctx, "Select Schema", schemas)
+			if err != nil {
+				return nil, err
+			}
+			if schemaName == "" {
+				break // back to catalog picker
+			}
+
+			var items []ListItem
+			err = RunWithSpinnerCtx(ctx, spinnerMsg, func() error {
+				var fetchErr error
+				items, fetchErr = listFn(ctx, catalogName, schemaName)
+				return fetchErr
+			})
+			if err != nil {
+				return nil, err
+			}
+			if len(items) == 0 {
+				cmdio.LogString(ctx, fmt.Sprintf("No %ss found in %s.%s, try another schema.", resourceLabel, catalogName, schemaName))
+				continue // back to schema picker
+			}
+
+			value, err := promptFromListWithBack(ctx, "Select "+resourceLabel, items)
+			if err != nil {
+				return nil, err
+			}
+			if value == "" {
+				continue // back to schema picker
+			}
+			return singleValueResult(r, value), nil
+		}
+	}
+}
+
 // PromptForServingEndpoint shows a picker for serving endpoints.
 func PromptForServingEndpoint(ctx context.Context, r manifest.Resource, required bool) (map[string]string, error) {
 	return promptForResourceFromLister(ctx, r, required, "Select Serving Endpoint", "no serving endpoints found", "Fetching serving endpoints...", ListServingEndpoints)
 }
 
-// PromptForVolume shows a picker for UC volumes.
+// PromptForVolume shows a three-step picker for UC volumes: catalog -> schema -> volume.
 func PromptForVolume(ctx context.Context, r manifest.Resource, required bool) (map[string]string, error) {
-	return promptForResourceFromLister(ctx, r, required, "Select Volume", "no volumes found", "Fetching volumes...", ListVolumes)
+	return promptUCResource(ctx, r, required, "Volume", "Fetching volumes...", ListVolumesInSchema)
 }
 
 // PromptForVectorSearchIndex shows a picker for vector search indexes.
@@ -379,9 +469,9 @@ func PromptForVectorSearchIndex(ctx context.Context, r manifest.Resource, requir
 	return promptForResourceFromLister(ctx, r, required, "Select Vector Search Index", "no vector search indexes found", "Fetching vector search indexes...", ListVectorSearchIndexes)
 }
 
-// PromptForUCFunction shows a picker for UC functions.
+// PromptForUCFunction shows a three-step picker for UC functions: catalog -> schema -> function.
 func PromptForUCFunction(ctx context.Context, r manifest.Resource, required bool) (map[string]string, error) {
-	return promptForResourceFromLister(ctx, r, required, "Select UC Function", "no functions found", "Fetching functions...", ListFunctions)
+	return promptUCResource(ctx, r, required, "UC Function", "Fetching functions...", ListFunctionsInSchema)
 }
 
 // PromptForUCConnection shows a picker for UC connections.
