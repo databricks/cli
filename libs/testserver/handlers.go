@@ -41,8 +41,8 @@ func AddDefaultHandlers(server *Server) {
 		return compute.ListInstancePools{
 			InstancePools: []compute.InstancePoolAndStats{
 				{
-					InstancePoolName: "some-test-instance-pool",
-					InstancePoolId:   "1234",
+					InstancePoolName: "DEFAULT Test Instance Pool",
+					InstancePoolId:   TestDefaultInstancePoolId,
 				},
 			},
 		}
