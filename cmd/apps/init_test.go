@@ -393,7 +393,7 @@ func TestParseSetValues(t *testing.T) {
 				"analytics.secret.key=k",
 			},
 			wantRV: map[string]string{
-				"sql-warehouse.id":      "wh1",
+				"sql-warehouse.id":       "wh1",
 				"database.instance_name": "inst",
 				"database.database_name": "mydb",
 				"secret.scope":           "s",
