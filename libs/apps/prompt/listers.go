@@ -23,10 +23,22 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
+// maxListResults caps the number of items returned by listers to avoid
+// very long API traversals on large workspaces.
+const maxListResults = 500
+
 // ListItem is a generic item for resource pickers (id and display label).
 type ListItem struct {
 	ID    string
 	Label string
+}
+
+// capResults truncates a slice to maxListResults.
+func capResults(items []ListItem) []ListItem {
+	if len(items) > maxListResults {
+		return items[:maxListResults]
+	}
+	return items
 }
 
 func workspaceClient(ctx context.Context) (*databricks.WorkspaceClient, error) {
@@ -151,11 +163,11 @@ func ListCatalogs(ctx context.Context) ([]ListItem, error) {
 	if err != nil {
 		return nil, err
 	}
-	out := make([]ListItem, 0, len(cats))
+	out := make([]ListItem, 0, min(len(cats), maxListResults))
 	for _, c := range cats {
 		out = append(out, ListItem{ID: c.Name, Label: c.Name})
 	}
-	return out, nil
+	return capResults(out), nil
 }
 
 // ListSchemas returns UC schemas within a catalog as selectable items.
@@ -169,11 +181,11 @@ func ListSchemas(ctx context.Context, catalogName string) ([]ListItem, error) {
 	if err != nil {
 		return nil, err
 	}
-	out := make([]ListItem, 0, len(schemas))
+	out := make([]ListItem, 0, min(len(schemas), maxListResults))
 	for _, s := range schemas {
 		out = append(out, ListItem{ID: s.Name, Label: s.Name})
 	}
-	return out, nil
+	return capResults(out), nil
 }
 
 // ListVolumesInSchema returns UC volumes within a catalog.schema as selectable items.
@@ -190,12 +202,12 @@ func ListVolumesInSchema(ctx context.Context, catalogName, schemaName string) ([
 	if err != nil {
 		return nil, err
 	}
-	out := make([]ListItem, 0, len(vols))
+	out := make([]ListItem, 0, min(len(vols), maxListResults))
 	for _, v := range vols {
 		fullName := fmt.Sprintf("%s.%s.%s", catalogName, schemaName, v.Name)
 		out = append(out, ListItem{ID: fullName, Label: v.Name})
 	}
-	return out, nil
+	return capResults(out), nil
 }
 
 // ListVectorSearchIndexes returns vector search indexes as selectable items (id = endpoint/index name).
@@ -243,7 +255,7 @@ func ListFunctionsInSchema(ctx context.Context, catalogName, schemaName string) 
 	if err != nil {
 		return nil, err
 	}
-	out := make([]ListItem, 0, len(fns))
+	out := make([]ListItem, 0, min(len(fns), maxListResults))
 	for _, f := range fns {
 		fullName := f.FullName
 		if fullName == "" {
@@ -251,7 +263,7 @@ func ListFunctionsInSchema(ctx context.Context, catalogName, schemaName string) 
 		}
 		out = append(out, ListItem{ID: fullName, Label: f.Name})
 	}
-	return out, nil
+	return capResults(out), nil
 }
 
 // ListConnections returns UC connections as selectable items.
