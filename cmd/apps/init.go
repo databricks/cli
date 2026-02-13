@@ -624,51 +624,38 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		if config.Description != "" {
 			opts.description = config.Description
 		}
-		// Use prompted values for deploy/run (only set if we prompted)
 		if !skipDeployRunPrompt {
 			shouldDeploy = config.Deploy
 			runMode = config.RunMode
 		}
-
-		// Merge --set values (they override prompted values)
-		setVals, err := parseSetValues(opts.setValues, m)
-		if err != nil {
-			return err
-		}
-		for k, v := range setVals {
-			resourceValues[k] = v
-		}
-	} else if isInteractive && opts.pluginsChanged && !flagsMode {
-		// Interactive mode with --plugins flag: validate plugins, use --set values
+	} else {
+		// --plugins flag or flags/non-interactive mode: validate plugin names
 		if len(selectedPlugins) > 0 {
 			if err := m.ValidatePluginNames(selectedPlugins); err != nil {
 				return err
 			}
 		}
-		var err error
-		resourceValues, err = parseSetValues(opts.setValues, m)
-		if err != nil {
-			return err
-		}
-
-		// Prompt for deploy/run if no flags were set
-		if !skipDeployRunPrompt {
+		// Prompt for deploy/run in interactive mode when no flags were set
+		if isInteractive && !skipDeployRunPrompt {
+			var err error
 			shouldDeploy, runMode, err = prompt.PromptForDeployAndRun(ctx)
 			if err != nil {
 				return err
 			}
 		}
-	} else {
-		// Flags mode or non-interactive: validate plugins and use --set values
-		if len(selectedPlugins) > 0 {
-			if err := m.ValidatePluginNames(selectedPlugins); err != nil {
-				return err
-			}
+	}
+
+	// Parse --set values (override any prompted values)
+	setVals, err := parseSetValues(opts.setValues, m)
+	if err != nil {
+		return err
+	}
+	if len(setVals) > 0 {
+		if resourceValues == nil {
+			resourceValues = make(map[string]string, len(setVals))
 		}
-		var err error
-		resourceValues, err = parseSetValues(opts.setValues, m)
-		if err != nil {
-			return err
+		for k, v := range setVals {
+			resourceValues[k] = v
 		}
 	}
 
@@ -944,7 +931,6 @@ func buildPluginStrings(pluginNames []string) (pluginImport, pluginUsage string)
 
 // pluginOwnedPaths maps plugin names to directories they own.
 // When a plugin is not selected, its owned paths are removed from the project.
-// TODO: Move this into the manifest.
 var pluginOwnedPaths = map[string][]string{
 	"analytics": {"config/queries"},
 }

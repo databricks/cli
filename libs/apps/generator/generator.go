@@ -343,8 +343,9 @@ func variableNamesForResource(r manifest.Resource) []varInfo {
 		return vars
 	}
 	// Fallback for resources without explicit Fields and no spec.
+	// Uses "key.id" to stay consistent with the composite key convention.
 	return []varInfo{
-		{name: aliasToVarName(r.VarPrefix()), description: r.Description, valueKey: r.Key()},
+		{name: aliasToVarName(r.VarPrefix()), description: r.Description, valueKey: r.Key() + ".id"},
 	}
 }
 
