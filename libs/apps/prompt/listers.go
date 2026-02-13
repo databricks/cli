@@ -23,11 +23,6 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
-// maxListResults caps the number of items returned by listers that iterate
-// over nested resources (catalogs -> schemas -> objects) to avoid very long
-// API traversals on large workspaces.
-const maxListResults = 500
-
 // ListItem is a generic item for resource pickers (id and display label).
 type ListItem struct {
 	ID    string
@@ -145,44 +140,60 @@ func ListServingEndpoints(ctx context.Context) ([]ListItem, error) {
 	return out, nil
 }
 
-// ListVolumes returns UC volumes as selectable items (id = full name catalog.schema.volume).
-func ListVolumes(ctx context.Context) ([]ListItem, error) {
-	// TODO: this might be better to just use the path.
+// ListCatalogs returns UC catalogs as selectable items.
+func ListCatalogs(ctx context.Context) ([]ListItem, error) {
 	w, err := workspaceClient(ctx)
 	if err != nil {
 		return nil, err
 	}
-	var out []ListItem
 	catIter := w.Catalogs.List(ctx, catalog.ListCatalogsRequest{})
-	catalogs, err := listing.ToSlice(ctx, catIter)
+	cats, err := listing.ToSlice(ctx, catIter)
 	if err != nil {
 		return nil, err
 	}
-	for _, cat := range catalogs {
-		schemaIter := w.Schemas.List(ctx, catalog.ListSchemasRequest{CatalogName: cat.Name})
-		schemas, err := listing.ToSlice(ctx, schemaIter)
-		if err != nil {
-			log.Warnf(ctx, "Failed to list schemas in catalog %q: %v", cat.Name, err)
-			continue
-		}
-		for _, sch := range schemas {
-			volIter := w.Volumes.List(ctx, catalog.ListVolumesRequest{
-				CatalogName: cat.Name,
-				SchemaName:  sch.Name,
-			})
-			vols, err := listing.ToSlice(ctx, volIter)
-			if err != nil {
-				log.Warnf(ctx, "Failed to list volumes in %s.%s: %v", cat.Name, sch.Name, err)
-				continue
-			}
-			for _, v := range vols {
-				fullName := fmt.Sprintf("%s.%s.%s", cat.Name, sch.Name, v.Name)
-				out = append(out, ListItem{ID: fullName, Label: fullName})
-			}
-		}
-		if len(out) >= maxListResults {
-			break
-		}
+	out := make([]ListItem, 0, len(cats))
+	for _, c := range cats {
+		out = append(out, ListItem{ID: c.Name, Label: c.Name})
+	}
+	return out, nil
+}
+
+// ListSchemas returns UC schemas within a catalog as selectable items.
+func ListSchemas(ctx context.Context, catalogName string) ([]ListItem, error) {
+	w, err := workspaceClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	schemaIter := w.Schemas.List(ctx, catalog.ListSchemasRequest{CatalogName: catalogName})
+	schemas, err := listing.ToSlice(ctx, schemaIter)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]ListItem, 0, len(schemas))
+	for _, s := range schemas {
+		out = append(out, ListItem{ID: s.Name, Label: s.Name})
+	}
+	return out, nil
+}
+
+// ListVolumesInSchema returns UC volumes within a catalog.schema as selectable items.
+func ListVolumesInSchema(ctx context.Context, catalogName, schemaName string) ([]ListItem, error) {
+	w, err := workspaceClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	volIter := w.Volumes.List(ctx, catalog.ListVolumesRequest{
+		CatalogName: catalogName,
+		SchemaName:  schemaName,
+	})
+	vols, err := listing.ToSlice(ctx, volIter)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]ListItem, 0, len(vols))
+	for _, v := range vols {
+		fullName := fmt.Sprintf("%s.%s.%s", catalogName, schemaName, v.Name)
+		out = append(out, ListItem{ID: fullName, Label: v.Name})
 	}
 	return out, nil
 }
@@ -218,47 +229,27 @@ func ListVectorSearchIndexes(ctx context.Context) ([]ListItem, error) {
 	return out, nil
 }
 
-// ListFunctions returns UC functions as selectable items (id = full name).
-func ListFunctions(ctx context.Context) ([]ListItem, error) {
-	// TODO: review this one too
+// ListFunctionsInSchema returns UC functions within a catalog.schema as selectable items.
+func ListFunctionsInSchema(ctx context.Context, catalogName, schemaName string) ([]ListItem, error) {
 	w, err := workspaceClient(ctx)
 	if err != nil {
 		return nil, err
 	}
-	var out []ListItem
-	catIter := w.Catalogs.List(ctx, catalog.ListCatalogsRequest{})
-	catalogs, err := listing.ToSlice(ctx, catIter)
+	fnIter := w.Functions.List(ctx, catalog.ListFunctionsRequest{
+		CatalogName: catalogName,
+		SchemaName:  schemaName,
+	})
+	fns, err := listing.ToSlice(ctx, fnIter)
 	if err != nil {
 		return nil, err
 	}
-	for _, cat := range catalogs {
-		schemaIter := w.Schemas.List(ctx, catalog.ListSchemasRequest{CatalogName: cat.Name})
-		schemas, err := listing.ToSlice(ctx, schemaIter)
-		if err != nil {
-			log.Warnf(ctx, "Failed to list schemas in catalog %q: %v", cat.Name, err)
-			continue
+	out := make([]ListItem, 0, len(fns))
+	for _, f := range fns {
+		fullName := f.FullName
+		if fullName == "" {
+			fullName = fmt.Sprintf("%s.%s.%s", catalogName, schemaName, f.Name)
 		}
-		for _, sch := range schemas {
-			fnIter := w.Functions.List(ctx, catalog.ListFunctionsRequest{
-				CatalogName: cat.Name,
-				SchemaName:  sch.Name,
-			})
-			fns, err := listing.ToSlice(ctx, fnIter)
-			if err != nil {
-				log.Warnf(ctx, "Failed to list functions in %s.%s: %v", cat.Name, sch.Name, err)
-				continue
-			}
-			for _, f := range fns {
-				fullName := f.FullName
-				if fullName == "" {
-					fullName = fmt.Sprintf("%s.%s.%s", cat.Name, sch.Name, f.Name)
-				}
-				out = append(out, ListItem{ID: fullName, Label: fullName})
-			}
-		}
-		if len(out) >= maxListResults {
-			break
-		}
+		out = append(out, ListItem{ID: fullName, Label: f.Name})
 	}
 	return out, nil
 }
