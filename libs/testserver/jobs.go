@@ -214,23 +214,28 @@ func (s *FakeWorkspace) JobsRunNow(req Request) Response {
 			}
 			tasks = append(tasks, taskRun)
 
+			var logs string
+			var err error
+
 			if t.PythonWheelTask != nil {
 				// Apply python_params override from RunNow request if provided
 				taskToExecute := t
 				if len(request.PythonParams) > 0 {
 					taskToExecute.PythonWheelTask.Parameters = request.PythonParams
 				}
+				logs, err = s.executePythonWheelTask(job.Settings, taskToExecute)
+			} else if t.NotebookTask != nil {
+				logs, err = s.executeNotebookTask(t, request.NotebookParams)
+			}
 
-				logs, err := s.executePythonWheelTask(job.Settings, taskToExecute)
-				if err != nil {
-					taskRun.State.ResultState = jobs.RunResultStateFailed
-					s.JobRunOutputs[taskRunId] = jobs.RunOutput{
-						Error: err.Error(),
-					}
-				} else {
-					s.JobRunOutputs[taskRunId] = jobs.RunOutput{
-						Logs: logs,
-					}
+			if err != nil {
+				taskRun.State.ResultState = jobs.RunResultStateFailed
+				s.JobRunOutputs[taskRunId] = jobs.RunOutput{
+					Error: err.Error(),
+				}
+			} else if logs != "" {
+				s.JobRunOutputs[taskRunId] = jobs.RunOutput{
+					Logs: logs,
 				}
 			}
 		}
@@ -333,6 +338,88 @@ func (s *FakeWorkspace) executePythonWheelTask(jobSettings *jobs.JobSettings, ta
 	}
 
 	return string(output), nil
+}
+
+// executeNotebookTask executes a notebook task by running the notebook as a Python script.
+// The wrapper feature transforms python_wheel_task into notebook_task that calls the wheel.
+func (s *FakeWorkspace) executeNotebookTask(task jobs.Task, notebookParams map[string]string) (string, error) {
+	if task.NotebookTask == nil {
+		return "", fmt.Errorf("task has no notebook_task")
+	}
+
+	// Read notebook file from workspace (lock already held by caller)
+	notebookPath := task.NotebookTask.NotebookPath
+	if !strings.HasPrefix(notebookPath, "/") {
+		notebookPath = "/" + notebookPath
+	}
+
+	// Try both with and without .py extension (notebooks are stored with .py but referenced without)
+	notebookData := s.files[notebookPath].Data
+	if len(notebookData) == 0 {
+		notebookData = s.files[notebookPath+".py"].Data
+	}
+	if len(notebookData) == 0 {
+		return "", fmt.Errorf("notebook not found in workspace: %s (also tried .py)", notebookPath)
+	}
+
+	// Create a temporary Python environment for notebook execution
+	tmpDir, err := os.MkdirTemp("", "notebook-task-*")
+	if err != nil {
+		return "", fmt.Errorf("failed to create temp dir: %w", err)
+	}
+	defer os.RemoveAll(tmpDir)
+
+	// Preprocess notebook to extract wheel paths and remove Databricks-specific syntax
+	processedNotebook, whlPaths := s.preprocessNotebook(string(notebookData), notebookParams)
+
+	// Write processed notebook to temp file
+	notebookFile := filepath.Join(tmpDir, "notebook.py")
+	if err := os.WriteFile(notebookFile, []byte(processedNotebook), 0o644); err != nil {
+		return "", fmt.Errorf("failed to write notebook file: %w", err)
+	}
+
+	// Determine Python version from cluster config
+	pythonVersion := sparkVersionToPython(task)
+
+	// Create venv for notebook execution
+	venvDir := filepath.Join(tmpDir, ".venv")
+	uvArgs := []string{"venv", "-q", "--python", pythonVersion, venvDir}
+	if out, err := exec.Command("uv", uvArgs...).CombinedOutput(); err != nil {
+		return "", fmt.Errorf("uv venv failed: %s\n%s", err, out)
+	}
+
+	// Install wheels from %pip commands
+	if len(whlPaths) > 0 {
+		var localWhlPaths []string
+		for _, whlPath := range whlPaths {
+			// Read wheel from workspace
+			data := s.files[whlPath].Data
+			if len(data) == 0 {
+				return "", fmt.Errorf("wheel file not found in workspace: %s", whlPath)
+			}
+			localPath := filepath.Join(tmpDir, filepath.Base(whlPath))
+			if err := os.WriteFile(localPath, data, 0o644); err != nil {
+				return "", fmt.Errorf("failed to write wheel file: %w", err)
+			}
+			localWhlPaths = append(localWhlPaths, localPath)
+		}
+
+		installArgs := []string{"pip", "install", "-q", "--python", filepath.Join(venvDir, "bin", "python")}
+		installArgs = append(installArgs, localWhlPaths...)
+		if out, err := exec.Command("uv", installArgs...).CombinedOutput(); err != nil {
+			return "", fmt.Errorf("uv pip install failed: %s\n%s", err, out)
+		}
+	}
+
+	// Execute notebook with Python
+	cmd := exec.Command(filepath.Join(venvDir, "bin", "python"), notebookFile)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return string(output), fmt.Errorf("notebook task execution failed: %s\n%s", err, output)
+	}
+
+	// Return output with single trailing newline to match cloud behavior
+	return strings.TrimSpace(string(output)) + "\n", nil
 }
 
 // getOrCreateClusterEnv returns a cached venv for existing clusters or creates
@@ -503,4 +590,70 @@ func setSourceIfNotSet(job jobs.Job) jobs.Job {
 		}
 	}
 	return job
+}
+
+// preprocessNotebook converts a Databricks notebook to executable Python by:
+// - Removing %python magic commands
+// - Extracting wheel paths from %pip install commands
+// - Removing %pip commands (wheels will be installed via uv)
+// - Mocking dbutils functions
+// - Converting dbutils.notebook.exit() to print()
+func (s *FakeWorkspace) preprocessNotebook(notebook string, params map[string]string) (string, []string) {
+	var whlPaths []string
+	var result []string
+
+	// Add dbutils mock at the beginning
+	result = append(result, "# Mock dbutils for local execution")
+	result = append(result, "class MockDbutils:")
+	result = append(result, "    class Widgets:")
+	if pythonParams, ok := params["__python_params"]; ok {
+		result = append(result, fmt.Sprintf("        def get(self, key): return %q if key == '__python_params' else ''", pythonParams))
+	} else {
+		result = append(result, "        def get(self, key): return ''")
+	}
+	result = append(result, "    widgets = Widgets()")
+	result = append(result, "    class Library:")
+	result = append(result, "        def restartPython(self): pass")
+	result = append(result, "    library = Library()")
+	result = append(result, "    class Notebook:")
+	result = append(result, "        def exit(self, value): print(value)")
+	result = append(result, "    notebook = Notebook()")
+	result = append(result, "dbutils = MockDbutils()")
+	result = append(result, "")
+
+	lines := strings.Split(notebook, "\n")
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+
+		// Skip %python magic commands
+		if trimmed == "%python" {
+			continue
+		}
+
+		// Extract wheel path from %pip install and skip the line
+		if strings.HasPrefix(trimmed, "%pip install") {
+			// Extract path from "%pip install --force-reinstall /path/to/wheel.whl"
+			parts := strings.Fields(trimmed)
+			for i, part := range parts {
+				if strings.HasSuffix(part, ".whl") {
+					whlPaths = append(whlPaths, part)
+					break
+				}
+				// Handle case where path is in next field
+				if (part == "--force-reinstall" || part == "-U") && i+1 < len(parts) {
+					if strings.HasSuffix(parts[i+1], ".whl") {
+						whlPaths = append(whlPaths, parts[i+1])
+						break
+					}
+				}
+			}
+			continue
+		}
+
+		// dbutils is now mocked at the beginning, so no need to replace calls
+
+		result = append(result, line)
+	}
+
+	return strings.Join(result, "\n"), whlPaths
 }
