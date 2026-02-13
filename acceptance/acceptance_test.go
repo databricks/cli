@@ -485,32 +485,12 @@ func runTest(t *testing.T,
 	customEnv []string,
 	envFilters []string,
 ) {
-	// Check env filters early, before creating any resources like workspace tmp directories.
-	// This avoids cleanup issues when a test is skipped due to env filter mismatch.
-	for filterInd, filterEnv := range envFilters {
-		filterEnvKey := strings.Split(filterEnv, "=")[0]
-		// Check customEnv first (EnvMatrix values take precedence)
-		found := false
-		for i := len(customEnv) - 1; i >= 0; i-- {
-			if strings.Split(customEnv[i], "=")[0] == filterEnvKey {
-				if customEnv[i] == filterEnv {
-					found = true
-					break
-				} else {
-					t.Skipf("Skipping because test environment %s does not match ENVFILTER#%d: %s", customEnv[i], filterInd, filterEnv)
-				}
-			}
-		}
-		// If not found in customEnv, check config.Env
-		if !found {
-			if val, ok := config.Env[filterEnvKey]; ok {
-				envPair := filterEnvKey + "=" + val
-				if envPair != filterEnv {
-					t.Skipf("Skipping because test environment %s does not match ENVFILTER#%d: %s", envPair, filterInd, filterEnv)
-				}
-			}
-		}
-	}
+	// Check env filters early, before creating any resources like directories on the file system.
+	// Creating / deleting too many directories causes this error on the workspace FUSE mount:
+	// unlinkat <workspace_path>: directory not empty. Thus avoiding unnecessary directory creation
+	// is important.
+	testEnv := buildTestEnv(config.Env, customEnv)
+	checkEnvFilters(t, testEnv, envFilters)
 
 	if LogConfig {
 		configBytes, err := json.MarshalIndent(config, "", "  ")
@@ -643,23 +623,12 @@ func runTest(t *testing.T,
 	uniqueCacheDir := filepath.Join(t.TempDir(), ".cache")
 	cmd.Env = append(cmd.Env, "DATABRICKS_CACHE_DIR="+uniqueCacheDir)
 
-	for _, key := range utils.SortedKeys(config.Env) {
-		if hasKey(customEnv, key) {
-			// We want EnvMatrix to take precedence.
-			// Skip rather than relying on cmd.Env order, because this might interfere with replacements and substitutions.
-			continue
-		}
-		cmd.Env = addEnvVar(t, cmd.Env, &repls, key, config.Env[key], config.EnvRepl, false)
-	}
-
-	for _, keyvalue := range customEnv {
-		items := strings.SplitN(keyvalue, "=", 2)
-		require.Len(t, items, 2)
-		key := items[0]
-		value := items[1]
+	for _, kv := range testEnv {
+		key, value, _ := strings.Cut(kv, "=")
 		// Only add replacement by default if value is part of EnvMatrix with more than 1 option and length is 4 or more chars
 		// (to avoid matching "yes" and "no" values from template input parameters)
-		cmd.Env = addEnvVar(t, cmd.Env, &repls, key, value, config.EnvRepl, len(config.EnvMatrix[key]) > 1 && len(value) >= 4)
+		defaultRepl := hasKey(customEnv, key) && len(config.EnvMatrix[key]) > 1 && len(value) >= 4
+		cmd.Env = addEnvVar(t, cmd.Env, &repls, key, value, config.EnvRepl, defaultRepl)
 	}
 
 	absDir, err := filepath.Abs(dir)
@@ -743,10 +712,44 @@ func runTest(t *testing.T,
 	}
 }
 
+// checkEnvFilters skips the test if any env filter doesn't match testEnv.
+func checkEnvFilters(t *testing.T, testEnv []string, envFilters []string) {
+	envMap := make(map[string]string, len(testEnv))
+	for _, kv := range testEnv {
+		key, value, _ := strings.Cut(kv, "=")
+		envMap[key] = value
+	}
+	for i, filter := range envFilters {
+		key, expected, _ := strings.Cut(filter, "=")
+		if actual, ok := envMap[key]; ok && actual != expected {
+			t.Skipf("Skipping because test environment %s=%s does not match ENVFILTER#%d: %s", key, actual, i, filter)
+		}
+	}
+}
+
+// buildTestEnv builds the test environment from config.Env and customEnv.
+// customEnv (from EnvMatrix) takes precedence over config.Env.
+func buildTestEnv(configEnv map[string]string, customEnv []string) []string {
+	env := make([]string, 0, len(configEnv)+len(customEnv))
+
+	// Add config.Env first (but skip keys that exist in customEnv)
+	for _, key := range utils.SortedKeys(configEnv) {
+		if hasKey(customEnv, key) {
+			continue
+		}
+		env = append(env, key+"="+configEnv[key])
+	}
+
+	// Add customEnv second (takes precedence)
+	env = append(env, customEnv...)
+
+	return env
+}
+
 func hasKey(env []string, key string) bool {
-	for _, keyvalue := range env {
-		items := strings.SplitN(keyvalue, "=", 2)
-		if len(items) == 2 && items[0] == key {
+	for _, kv := range env {
+		k, _, ok := strings.Cut(kv, "=")
+		if ok && k == key {
 			return true
 		}
 	}
