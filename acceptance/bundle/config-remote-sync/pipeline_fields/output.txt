@@ -22,13 +22,7 @@ Resource: resources.pipelines.my_pipeline
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml
-@@ -1,5 +1,4 @@
- bundle:
-   name: test-bundle-[UNIQUE_NAME]
--
- resources:
-   pipelines:
-@@ -7,19 +6,24 @@
+@@ -7,18 +7,24 @@
        name: test-pipeline-[UNIQUE_NAME]
        catalog: main
 -      schema: default
@@ -50,11 +44,10 @@ Resource: resources.pipelines.my_pipeline
        libraries:
          - notebook:
              path: /Users/{{workspace_user_name}}/notebook
--
 +      tags:
 +        foo: bar
+
  targets:
-   default:
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

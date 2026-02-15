@@ -22,21 +22,16 @@ Resource: resources.jobs.job_two
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml
-@@ -1,9 +1,8 @@
- bundle:
-   name: test-bundle-[UNIQUE_NAME]
--
- resources:
+@@ -5,5 +5,5 @@
    jobs:
      job_one:
 -      max_concurrent_runs: 1
 +      max_concurrent_runs: 5
        tasks:
          - task_key: main
-@@ -14,7 +13,8 @@
-             node_type_id: [NODE_TYPE_ID]
+@@ -15,6 +15,8 @@
              num_workers: 1
--
+
 +      tags:
 +        team: data
      job_two:
@@ -44,7 +39,7 @@ Resource: resources.jobs.job_two
 +      max_concurrent_runs: 10
        tasks:
          - task_key: main
-@@ -25,2 +25,4 @@
+@@ -25,2 +27,4 @@
              node_type_id: [NODE_TYPE_ID]
              num_workers: 1
 +      tags:

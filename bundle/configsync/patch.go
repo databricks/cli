@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -33,7 +34,7 @@ func ApplyChangesToYAML(ctx context.Context, b *bundle.Bundle, fieldChanges []Fi
 				return nil, fmt.Errorf("failed to read file %s: %w", filePath, err)
 			}
 			originalFiles[filePath] = content
-			modifiedFiles[filePath] = content
+			modifiedFiles[filePath] = preserveBlankLines(content)
 		}
 
 		modifiedContent, err := applyChange(ctx, modifiedFiles[filePath], fieldChange)
@@ -57,7 +58,7 @@ func ApplyChangesToYAML(ctx context.Context, b *bundle.Bundle, fieldChanges []Fi
 		result = append(result, FileChange{
 			Path:            filePath,
 			OriginalContent: string(originalFiles[filePath]),
-			ModifiedContent: string(normalized),
+			ModifiedContent: string(restoreBlankLines(normalized)),
 		})
 	}
 
@@ -350,4 +351,70 @@ func clearFlowStyleNodes(node *yaml.Node) {
 	for _, child := range node.Content {
 		clearFlowStyleNodes(child)
 	}
+}
+
+const blankLineMarker = "# __YAMLPATCH_BLANK_LINE__"
+
+// blockScalarRe matches YAML lines that start a block scalar (| or >).
+var blockScalarRe = regexp.MustCompile(`(?::\s+|-\s+)[|>][+\-0-9]*\s*(?:#.*)?$`)
+
+// preserveBlankLines replaces blank lines with marker comments that survive
+// yaml.v3 round-trips. Lines inside block scalars (| or >) are not replaced
+// because blank lines in block scalars are semantically significant.
+func preserveBlankLines(content []byte) []byte {
+	lines := strings.Split(string(content), "\n")
+	result := make([]string, 0, len(lines))
+
+	inBlockScalar := false
+	blockScalarIndent := 0
+
+	for i, line := range lines {
+		trimmed := strings.TrimRight(line, " \t")
+
+		if inBlockScalar {
+			if trimmed == "" {
+				// Empty line inside block scalar — keep as-is.
+				result = append(result, line)
+				continue
+			}
+			indent := len(line) - len(strings.TrimLeft(line, " "))
+			if indent <= blockScalarIndent {
+				inBlockScalar = false
+				// Fall through to normal processing.
+			} else {
+				result = append(result, line)
+				continue
+			}
+		}
+
+		// Replace blank lines with markers. Skip the trailing empty element
+		// produced by splitting on the final newline.
+		if trimmed == "" && i < len(lines)-1 {
+			result = append(result, blankLineMarker)
+			continue
+		}
+
+		if blockScalarRe.MatchString(trimmed) {
+			inBlockScalar = true
+			blockScalarIndent = len(line) - len(strings.TrimLeft(line, " "))
+		}
+
+		result = append(result, line)
+	}
+
+	return []byte(strings.Join(result, "\n"))
+}
+
+// restoreBlankLines replaces marker comments back to blank lines.
+func restoreBlankLines(content []byte) []byte {
+	lines := strings.Split(string(content), "\n")
+	result := make([]string, 0, len(lines))
+	for _, line := range lines {
+		if strings.TrimSpace(line) == blankLineMarker {
+			result = append(result, "")
+		} else {
+			result = append(result, line)
+		}
+	}
+	return []byte(strings.Join(result, "\n"))
 }
