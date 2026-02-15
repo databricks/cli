@@ -3,11 +3,12 @@ Deploying resources...
 Updating deployment state...
 Deployment complete!
 
-=== Modify max_concurrent_runs from 1 to 5
+=== Modify max_concurrent_runs and description
 === Detect and save changes
 Detected changes in 1 resource(s):
 
 Resource: resources.jobs.my_job
+  description: replace
   max_concurrent_runs: replace
 
 
@@ -17,13 +18,29 @@ Resource: resources.jobs.my_job
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml
-@@ -8,5 +8,5 @@
+@@ -8,10 +8,10 @@
      my_job:
        # Comment about max concurrent runs
 -      max_concurrent_runs: 1
 +      max_concurrent_runs: 5
 
+-      description: |
+-        Main ETL job for data processing.
++      description: |-
++        Updated ETL job.
+
+-        Runs daily at 2am UTC.
++        Runs hourly.
+
        # Task configuration
+@@ -20,6 +20,5 @@
+
+           description: >-
+-            Main processing task
+-            that runs the notebook.
++            Main processing task that runs the notebook.
+           notebook_task:
+             notebook_path: /Users/{{workspace_user_name}}/notebook
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

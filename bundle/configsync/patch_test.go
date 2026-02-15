@@ -121,6 +121,20 @@ func TestPreserveBlankLines_BlockScalar(t *testing.T) {
 	assert.Equal(t, input, string(preserveBlankLines([]byte(input))))
 }
 
+func TestPreserveBlankLines_BlockScalarTrailing(t *testing.T) {
+	// Trailing blank line after block scalar content should be replaced with marker
+	// (yaml.v3 clips trailing newlines, so we must preserve them as markers).
+	input := "key: |\n  line1\n  line2\n\nnext: value\n"
+	expected := "key: |\n  line1\n  line2\n" + blankLineMarker + "\nnext: value\n"
+	assert.Equal(t, expected, string(preserveBlankLines([]byte(input))))
+}
+
+func TestPreserveBlankLines_FoldedBlockScalar(t *testing.T) {
+	input := "key: >-\n  line1\n  line2\n\nnext: value\n"
+	expected := "key: >-\n  line1\n  line2\n" + blankLineMarker + "\nnext: value\n"
+	assert.Equal(t, expected, string(preserveBlankLines([]byte(input))))
+}
+
 func TestPreserveBlankLines_ConsecutiveBlanks(t *testing.T) {
 	input := "key1: value1\n\n\nkey2: value2\n"
 	expected := "key1: value1\n" + blankLineMarker + "\n" + blankLineMarker + "\nkey2: value2\n"
