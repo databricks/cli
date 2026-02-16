@@ -257,14 +257,12 @@ next: value
 		},
 		{
 			name: "trailing blank line",
-			input: nl(`
-key: value
+			input: `key: value
 
-`),
-			expected: nl(`
-key: value
+`,
+			expected: `key: value
 # __YAMLPATCH_BLANK_LINE__
-`),
+`,
 		},
 		{
 			name: "indented content",

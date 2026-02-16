@@ -356,16 +356,13 @@ func clearFlowStyleNodes(node *yaml.Node) {
 const blankLineMarker = "# __YAMLPATCH_BLANK_LINE__"
 
 // blockScalarRe matches YAML lines that start a block scalar (| or >).
-var blockScalarRe = regexp.MustCompile(`(?::\s+|-\s+)[|>][+\-0-9]*\s*(?:#.*)?$`)
+// [-:]  — colon (mapping value) or dash (sequence item)
+// [|>]  — literal or folded block scalar indicator
+// [-+0-9]* — optional chomp (+/-) and indent indicators
+// (?:#.*)? — optional comment
+var blockScalarRe = regexp.MustCompile(`[-:]\s+[|>][-+0-9]*\s*(?:#.*)?$`)
 
-// preserveBlankLines replaces blank lines with marker comments that survive
-// yaml.v3 round-trips. Lines inside block scalars (| or >) are not replaced
-// because blank lines in block scalars are semantically significant.
-//
-// Instead of scanning ahead when a blank line is encountered inside a block
-// scalar, blank lines are buffered and the decision (keep literal vs. replace
-// with marker) is deferred until the next non-blank line reveals whether we
-// are still inside the block scalar.
+// preserveBlankLines replaces blank lines with marker comments that survive yaml.v3 round-trips
 func preserveBlankLines(content []byte) []byte {
 	lines := strings.Split(string(content), "\n")
 	result := make([]string, 0, len(lines))
@@ -385,25 +382,21 @@ func preserveBlankLines(content []byte) []byte {
 
 		indent := len(line) - len(strings.TrimLeft(line, " "))
 
-		// Flush buffered blank lines: keep literal inside block scalars,
-		// replace with markers otherwise.
-		if pendingBlanks > 0 {
-			if inBlockScalar && trimmed != "" && indent > blockScalarIndent {
-				for range pendingBlanks {
-					result = append(result, "")
-				}
-			} else {
-				inBlockScalar = false
-				for range pendingBlanks {
-					result = append(result, blankLineMarker)
-				}
-			}
-			pendingBlanks = 0
-		}
-
+		// Exit block scalar when indentation decreases.
 		if inBlockScalar && indent <= blockScalarIndent {
 			inBlockScalar = false
 		}
+
+		// Flush buffered blank lines: keep literal inside block scalars,
+		// replace with markers otherwise.
+		for range pendingBlanks {
+			if inBlockScalar {
+				result = append(result, "")
+			} else {
+				result = append(result, blankLineMarker)
+			}
+		}
+		pendingBlanks = 0
 
 		if !inBlockScalar && blockScalarRe.MatchString(trimmed) {
 			inBlockScalar = true
