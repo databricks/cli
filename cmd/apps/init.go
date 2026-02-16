@@ -55,6 +55,7 @@ func newInitCmd() *cobra.Command {
 		branch       string
 		version      string
 		name         string
+		warehouseID  string
 		description  string
 		outputDir    string
 		pluginsFlag  []string
@@ -135,6 +136,7 @@ Environment variables:
 				version:        version,
 				name:           name,
 				nameProvided:   cmd.Flags().Changed("name"),
+				warehouseID:    warehouseID,
 				description:    description,
 				outputDir:      outputDir,
 				plugins:        pluginsFlag,
@@ -152,6 +154,8 @@ Environment variables:
 	cmd.Flags().StringVar(&branch, "branch", "", "Git branch or tag (for GitHub templates, mutually exclusive with --version)")
 	cmd.Flags().StringVar(&version, "version", "", "AppKit version to use (default: latest release, use 'latest' for main branch)")
 	cmd.Flags().StringVar(&name, "name", "", "Project name (prompts if not provided)")
+	cmd.Flags().StringVar(&warehouseID, "warehouse-id", "", "SQL warehouse ID")
+	_ = cmd.Flags().MarkDeprecated("warehouse-id", "use --set <plugin>.sql-warehouse.id=<value> instead")
 	cmd.Flags().StringArrayVar(&setValues, "set", nil, "Set resource values (format: plugin.resourceKey.field=value, can specify multiple)")
 	cmd.Flags().StringVar(&description, "description", "", "App description")
 	cmd.Flags().StringVar(&outputDir, "output-dir", "", "Directory to write the project to")
@@ -170,6 +174,7 @@ type createOptions struct {
 	version        string
 	name           string
 	nameProvided   bool // true if --name flag was explicitly set (enables "flags mode")
+	warehouseID    string
 	description    string
 	outputDir      string
 	plugins        []string
@@ -642,6 +647,17 @@ func runCreate(ctx context.Context, opts createOptions) error {
 			shouldDeploy, runMode, err = prompt.PromptForDeployAndRun(ctx)
 			if err != nil {
 				return err
+			}
+		}
+	}
+
+	// Expand deprecated --warehouse-id into --set values for each plugin that has a sql-warehouse resource.
+	if opts.warehouseID != "" {
+		for _, p := range m.GetPlugins() {
+			for _, r := range append(p.Resources.Required, p.Resources.Optional...) {
+				if r.Type == "sql_warehouse" {
+					opts.setValues = append(opts.setValues, fmt.Sprintf("%s.%s.id=%s", p.Name, r.Key(), opts.warehouseID))
+				}
 			}
 		}
 	}
