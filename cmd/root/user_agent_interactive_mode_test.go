@@ -37,4 +37,3 @@ func TestInteractiveModeNone(t *testing.T) {
 
 	assert.Contains(t, ua, "interactive/none")
 }
-
