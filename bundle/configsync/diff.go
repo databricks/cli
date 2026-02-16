@@ -48,6 +48,10 @@ func normalizeValue(v any) (any, error) {
 }
 
 func filterEntityDefaults(basePath string, value any) any {
+	if value == nil {
+		return nil
+	}
+
 	if arr, ok := value.([]any); ok {
 		result := make([]any, 0, len(arr))
 		for i, elem := range arr {
@@ -93,6 +97,7 @@ func convertChangeDesc(path string, cd *deployplan.ChangeDesc) (*ConfigChangeDes
 		}, nil
 	}
 
+	normalizedValue = filterEntityDefaults(path, normalizedValue)
 	normalizedValue = resetValueIfNeeded(path, normalizedValue)
 
 	var op OperationType
@@ -104,10 +109,6 @@ func convertChangeDesc(path string, cd *deployplan.ChangeDesc) (*ConfigChangeDes
 		op = OperationAdd
 	} else {
 		op = OperationSkip
-	}
-
-	if op == OperationAdd || op == OperationReplace {
-		normalizedValue = filterEntityDefaults(path, normalizedValue)
 	}
 
 	return &ConfigChangeDesc{
