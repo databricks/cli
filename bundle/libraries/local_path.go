@@ -24,6 +24,9 @@ import (
 // - s3:/mybucket/myfile.txt
 // - /Users/jane@doe.com/myfile.txt
 func IsLocalPath(p string) bool {
+	// Trim single or double quotes from the path
+	p = strings.Trim(p, `"'`)
+
 	// If the path has the file:// scheme, it's a runtime path (remote).
 	// Users should use relative paths without scheme for local files to upload.
 	if strings.HasPrefix(p, "file://") {

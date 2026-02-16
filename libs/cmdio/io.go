@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
 	"slices"
 	"strings"
 	"sync"
@@ -96,7 +97,7 @@ func (c *cmdIO) Select(items []Tuple, label string) (id string, err error) {
 			Active:   `{{.Name | bold}} ({{.Id|faint}})`,
 			Inactive: `{{.Name}}`,
 		},
-		Stdin:  io.NopCloser(c.in),
+		Stdin:  c.promptStdin(),
 		Stdout: nopWriteCloser{c.err},
 	}).Run()
 	if err != nil {
@@ -132,7 +133,7 @@ func (c *cmdIO) Secret(label string) (value string, err error) {
 		Label:       label,
 		Mask:        '*',
 		HideEntered: true,
-		Stdin:       io.NopCloser(c.in),
+		Stdin:       c.promptStdin(),
 		Stdout:      nopWriteCloser{c.err},
 	})
 
@@ -142,6 +143,19 @@ func (c *cmdIO) Secret(label string) (value string, err error) {
 func Secret(ctx context.Context, label string) (value string, err error) {
 	c := fromContext(ctx)
 	return c.Secret(label)
+}
+
+// promptStdin returns the stdin reader for use with promptui.
+// If the reader is os.Stdin, it returns nil to let the underlying readline
+// library use its platform-specific default. On Windows, this is critical
+// because readline's default uses ReadConsoleInputW to read arrow keys
+// as virtual key events. Passing a wrapped os.Stdin would bypass this
+// and break arrow key navigation in selection prompts.
+func (c *cmdIO) promptStdin() io.ReadCloser {
+	if c.in == os.Stdin {
+		return nil
+	}
+	return io.NopCloser(c.in)
 }
 
 type nopWriteCloser struct {
@@ -155,14 +169,14 @@ func (nopWriteCloser) Close() error {
 func Prompt(ctx context.Context) *promptui.Prompt {
 	c := fromContext(ctx)
 	return &promptui.Prompt{
-		Stdin:  io.NopCloser(c.in),
+		Stdin:  c.promptStdin(),
 		Stdout: nopWriteCloser{c.err},
 	}
 }
 
 func RunSelect(ctx context.Context, prompt *promptui.Select) (int, string, error) {
 	c := fromContext(ctx)
-	prompt.Stdin = io.NopCloser(c.in)
+	prompt.Stdin = c.promptStdin()
 	prompt.Stdout = nopWriteCloser{c.err}
 	return prompt.Run()
 }
