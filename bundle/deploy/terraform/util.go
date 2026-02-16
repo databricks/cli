@@ -49,6 +49,19 @@ type stateInstanceAttributes struct {
 	ETag string `json:"etag,omitempty"`
 }
 
+// nameBasedStateResources is the set of resource group names that use
+// instance.Attributes.Name instead of instance.Attributes.ID for state.
+var nameBasedStateResources = map[string]bool{
+	"apps":                    true,
+	"secret_scopes":           true,
+	"database_instances":      true,
+	"database_catalogs":       true,
+	"synced_database_tables":  true,
+	"postgres_projects":       true,
+	"postgres_branches":       true,
+	"postgres_endpoints":      true,
+}
+
 // Returns a mapping resourceKey -> stateInstanceAttributes
 func parseResourcesState(ctx context.Context, path string) (ExportedResourcesMap, error) {
 	rawState, err := os.ReadFile(path)
@@ -82,24 +95,25 @@ func parseResourcesState(ctx context.Context, path string) (ExportedResourcesMap
 				continue
 			}
 
+			// Determine the resource key.
 			var resourceKey string
-			var resourceState ResourceState
-
 			switch groupName {
-			case "apps", "secret_scopes", "database_instances", "database_catalogs", "synced_database_tables", "postgres_projects", "postgres_branches", "postgres_endpoints":
-				resourceKey = "resources." + groupName + "." + resource.Name
-				resourceState = ResourceState{ID: instance.Attributes.Name}
-			case "dashboards":
-				resourceKey = "resources." + groupName + "." + resource.Name
-				resourceState = ResourceState{ID: instance.Attributes.ID, ETag: instance.Attributes.ETag}
 			case "permissions":
 				resourceKey = convertPermissionsResourceNameToKey(resource.Name)
-				resourceState = ResourceState{ID: instance.Attributes.ID}
 			case "grants":
 				resourceKey = convertGrantsResourceNameToKey(resource.Name)
-				resourceState = ResourceState{ID: instance.Attributes.ID}
 			default:
 				resourceKey = "resources." + groupName + "." + resource.Name
+			}
+
+			// Determine the resource state.
+			var resourceState ResourceState
+			switch {
+			case nameBasedStateResources[groupName]:
+				resourceState = ResourceState{ID: instance.Attributes.Name}
+			case groupName == "dashboards":
+				resourceState = ResourceState{ID: instance.Attributes.ID, ETag: instance.Attributes.ETag}
+			default:
 				resourceState = ResourceState{ID: instance.Attributes.ID}
 			}
 
