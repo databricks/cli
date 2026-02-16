@@ -1,6 +1,7 @@
 package apps
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -65,7 +66,8 @@ func TestIsTextFile(t *testing.T) {
 	}
 }
 
-func TestSubstituteVars(t *testing.T) {
+func TestExecuteTemplate(t *testing.T) {
+	ctx := context.Background()
 	vars := templateVars{
 		ProjectName:    "my-app",
 		AppDescription: "My awesome app",
@@ -97,7 +99,7 @@ func TestSubstituteVars(t *testing.T) {
 		},
 		{
 			name:     "workspace host substitution",
-			input:    "host: {{workspace_host}}",
+			input:    "host: {{.workspace_host}}",
 			expected: "host: https://dbc-123.cloud.databricks.com",
 		},
 		{
@@ -124,20 +126,19 @@ func TestSubstituteVars(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := substituteVars(tt.input, vars)
-			assert.Equal(t, tt.expected, result)
+			result, err := executeTemplate(ctx, "test.txt", []byte(tt.input), vars)
+			require.NoError(t, err)
+			assert.Equal(t, tt.expected, string(result))
 		})
 	}
 }
 
-func TestSubstituteVarsNoPlugins(t *testing.T) {
-	// Test plugin cleanup when no plugins are selected
+func TestExecuteTemplateEmptyPlugins(t *testing.T) {
+	ctx := context.Background()
 	vars := templateVars{
 		ProjectName:    "my-app",
 		AppDescription: "My app",
-		Profile:        "",
-		WorkspaceHost:  "",
-		PluginImports:  "", // No plugins
+		PluginImports:  "",
 		PluginUsages:   "",
 	}
 
@@ -147,23 +148,33 @@ func TestSubstituteVarsNoPlugins(t *testing.T) {
 		expected string
 	}{
 		{
-			name:     "removes plugin import with comma",
-			input:    "import { core, {{.plugin_imports}} } from 'appkit'",
+			name:     "empty plugin imports render as empty",
+			input:    "import { core{{if .plugin_imports}}, {{.plugin_imports}}{{end}} } from 'appkit'",
 			expected: "import { core } from 'appkit'",
 		},
 		{
-			name:     "removes plugin usage line",
-			input:    "plugins: [\n    {{.plugin_usages}},\n]",
-			expected: "plugins: [\n]",
+			name:     "empty plugin usages render as empty",
+			input:    "plugins: [{{if .plugin_usages}}\n    {{.plugin_usages}},\n{{end}}]",
+			expected: "plugins: []",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := substituteVars(tt.input, vars)
-			assert.Equal(t, tt.expected, result)
+			result, err := executeTemplate(ctx, "test.txt", []byte(tt.input), vars)
+			require.NoError(t, err)
+			assert.Equal(t, tt.expected, string(result))
 		})
 	}
+}
+
+func TestExecuteTemplateInvalidSyntaxReturnsOriginal(t *testing.T) {
+	ctx := context.Background()
+	vars := templateVars{ProjectName: "my-app"}
+	input := "some content with bad {{ syntax"
+	result, err := executeTemplate(ctx, "test.js", []byte(input), vars)
+	require.NoError(t, err)
+	assert.Equal(t, input, string(result))
 }
 
 func TestInitCmdBranchAndVersionMutuallyExclusive(t *testing.T) {
