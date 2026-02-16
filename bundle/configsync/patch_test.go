@@ -332,6 +332,53 @@ key2: value2
   key2: value2
 `),
 		},
+		{
+			name: "yaml.v3-added blank next to marker is deduplicated",
+			input: nl(`
+key1: value1
+# __YAMLPATCH_BLANK_LINE__
+
+key2: value2
+`),
+			expected: nl(`
+key1: value1
+
+key2: value2
+`),
+		},
+		{
+			name: "yaml.v3-added standalone blank is kept",
+			input: nl(`
+key1: value1
+
+key2: value2
+`),
+			expected: nl(`
+key1: value1
+
+key2: value2
+`),
+		},
+		{
+			name: "yaml.v3-added blank near block scalar",
+			input: nl(`
+key: |
+  line1
+
+  line2
+
+# __YAMLPATCH_BLANK_LINE__
+next: value
+`),
+			expected: nl(`
+key: |
+  line1
+
+  line2
+
+next: value
+`),
+		},
 	}
 
 	for _, tt := range tests {

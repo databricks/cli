@@ -410,15 +410,71 @@ func preserveBlankLines(content []byte) []byte {
 }
 
 // restoreBlankLines replaces marker comments back to blank lines.
+// It also deduplicates blank lines that yaml.v3 sometimes adds next to markers
 func restoreBlankLines(content []byte) []byte {
 	lines := strings.Split(string(content), "\n")
 	result := make([]string, 0, len(lines))
-	for _, line := range lines {
-		if strings.TrimSpace(line) == blankLineMarker {
-			result = append(result, "")
+
+	inBlockScalar := false
+	blockScalarIndent := 0
+	var pending []string
+	pendingMarkers := 0
+
+	flush := func() {
+		if pendingMarkers > 0 {
+			// Run contains markers: emit only marker-count blanks,
+			// dropping yaml.v3-added duplicates.
+			for range pendingMarkers {
+				result = append(result, "")
+			}
 		} else {
-			result = append(result, line)
+			// All blanks, no markers: keep as-is.
+			result = append(result, pending...)
 		}
+		pending = nil
+		pendingMarkers = 0
 	}
+
+	for i, line := range lines {
+		isMarker := strings.TrimSpace(line) == blankLineMarker
+		trimmed := strings.TrimRight(line, " \t")
+		isBlank := trimmed == "" && i < len(lines)-1
+
+		if isMarker {
+			pending = append(pending, line)
+			pendingMarkers++
+			continue
+		}
+
+		if isBlank {
+			pending = append(pending, line)
+			continue
+		}
+
+		// Non-blank, non-marker line: flush pending run.
+		indent := len(line) - len(strings.TrimLeft(line, " "))
+
+		if inBlockScalar && indent <= blockScalarIndent {
+			inBlockScalar = false
+		}
+
+		if inBlockScalar {
+			// Inside block scalar: keep all blanks as-is (content).
+			result = append(result, pending...)
+			pending = nil
+			pendingMarkers = 0
+		} else {
+			flush()
+		}
+
+		if !inBlockScalar && blockScalarRe.MatchString(trimmed) {
+			inBlockScalar = true
+			blockScalarIndent = indent
+		}
+
+		result = append(result, line)
+	}
+
+	flush()
 	return []byte(strings.Join(result, "\n"))
 }
