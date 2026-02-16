@@ -23,7 +23,7 @@ func GetConverter(name string) (Converter, bool) {
 	return e.Converter, ok
 }
 
-func registerConverter(groupName string, terraformName string, c Converter) {
+func registerConverter(groupName, terraformName string, c Converter) {
 	converters[groupName] = converterEntry{Converter: c, TerraformName: terraformName}
 }
 
