@@ -60,3 +60,11 @@ func (p *Pipeline) GetName() string {
 func (p *Pipeline) GetURL() string {
 	return p.URL
 }
+
+func (*Pipeline) PermissionLevelMapping() map[string]string {
+	return map[string]string{
+		"CAN_MANAGE": "CAN_MANAGE",
+		"CAN_VIEW":   "CAN_VIEW",
+		"CAN_RUN":    "CAN_RUN",
+	}
+}

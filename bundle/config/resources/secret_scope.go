@@ -103,3 +103,10 @@ func (s SecretScope) GetURL() string {
 func (s SecretScope) InitializeURL(_ url.URL) {
 	// Secret scopes do not have a URL
 }
+
+func (SecretScope) PermissionLevelMapping() map[string]string {
+	return map[string]string{
+		"CAN_MANAGE": "MANAGE",
+		"CAN_VIEW":   "READ",
+	}
+}

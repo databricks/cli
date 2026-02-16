@@ -185,17 +185,46 @@ func TestWarningOnOverlapPermission(t *testing.T) {
 }
 
 func TestAllResourcesExplicitlyDefinedForPermissionsSupport(t *testing.T) {
-	r := config.Resources{}
+	full := resourcesWithOneOfEach()
+	levelsMap := buildLevelsMap(full)
 
-	for _, resource := range unsupportedResources {
-		_, ok := levelsMap[resource]
-		assert.False(t, ok, "Resource %s is defined in both levelsMap and unsupportedResources", resource)
-	}
+	for _, group := range full.AllResources() {
+		name := group.Description.PluralName
+		_, inLevels := levelsMap[name]
+		isUnsupported := slices.Contains(unsupportedResources, name)
 
-	for _, resource := range r.AllResources() {
-		_, ok := levelsMap[resource.Description.PluralName]
-		if !slices.Contains(unsupportedResources, resource.Description.PluralName) && !ok {
-			assert.Fail(t, fmt.Sprintf("Resource %s is not explicitly defined in levelsMap or unsupportedResources", resource.Description.PluralName))
+		if !inLevels && !isUnsupported {
+			assert.Fail(t, fmt.Sprintf("Resource %s does not implement PermissionedResource and is not in unsupportedResources", name))
 		}
+		if inLevels && isUnsupported {
+			assert.Fail(t, fmt.Sprintf("Resource %s implements PermissionedResource but is also in unsupportedResources", name))
+		}
+	}
+}
+
+func resourcesWithOneOfEach() *config.Resources {
+	return &config.Resources{
+		Jobs:                  map[string]*resources.Job{"j": {}},
+		Pipelines:             map[string]*resources.Pipeline{"p": {}},
+		Models:                map[string]*resources.MlflowModel{"m": {}},
+		Experiments:           map[string]*resources.MlflowExperiment{"e": {}},
+		ModelServingEndpoints: map[string]*resources.ModelServingEndpoint{"mse": {}},
+		RegisteredModels:      map[string]*resources.RegisteredModel{"rm": {}},
+		QualityMonitors:       map[string]*resources.QualityMonitor{"qm": {}},
+		Catalogs:              map[string]*resources.Catalog{"c": {}},
+		Schemas:               map[string]*resources.Schema{"s": {}},
+		Clusters:              map[string]*resources.Cluster{"cl": {}},
+		Dashboards:            map[string]*resources.Dashboard{"d": {}},
+		Volumes:               map[string]*resources.Volume{"v": {}},
+		Apps:                  map[string]*resources.App{"a": {}},
+		SecretScopes:          map[string]*resources.SecretScope{"ss": {}},
+		Alerts:                map[string]*resources.Alert{"al": {}},
+		SqlWarehouses:         map[string]*resources.SqlWarehouse{"sw": {}},
+		DatabaseInstances:     map[string]*resources.DatabaseInstance{"di": {}},
+		DatabaseCatalogs:      map[string]*resources.DatabaseCatalog{"dc": {}},
+		SyncedDatabaseTables:  map[string]*resources.SyncedDatabaseTable{"sdt": {}},
+		PostgresProjects:      map[string]*resources.PostgresProject{"pp": {}},
+		PostgresBranches:      map[string]*resources.PostgresBranch{"pb": {}},
+		PostgresEndpoints:     map[string]*resources.PostgresEndpoint{"pe": {}},
 	}
 }

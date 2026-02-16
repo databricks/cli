@@ -9,72 +9,31 @@ import (
 	"github.com/databricks/cli/bundle/permissions"
 
 	"github.com/databricks/cli/bundle"
+	"github.com/databricks/cli/bundle/config"
 	"github.com/databricks/cli/bundle/config/resources"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
 )
 
-var (
-	allowedLevels = []string{permissions.CAN_MANAGE, permissions.CAN_VIEW, permissions.CAN_RUN}
-	levelsMap     = map[string](map[string]string){
-		"jobs": {
-			permissions.CAN_MANAGE: "CAN_MANAGE",
-			permissions.CAN_VIEW:   "CAN_VIEW",
-			permissions.CAN_RUN:    "CAN_MANAGE_RUN",
-		},
-		"pipelines": {
-			permissions.CAN_MANAGE: "CAN_MANAGE",
-			permissions.CAN_VIEW:   "CAN_VIEW",
-			permissions.CAN_RUN:    "CAN_RUN",
-		},
-		"experiments": {
-			permissions.CAN_MANAGE: "CAN_MANAGE",
-			permissions.CAN_VIEW:   "CAN_READ",
-		},
-		"models": {
-			permissions.CAN_MANAGE: "CAN_MANAGE",
-			permissions.CAN_VIEW:   "CAN_READ",
-		},
-		"model_serving_endpoints": {
-			permissions.CAN_MANAGE: "CAN_MANAGE",
-			permissions.CAN_VIEW:   "CAN_VIEW",
-			permissions.CAN_RUN:    "CAN_QUERY",
-		},
-		"dashboards": {
-			permissions.CAN_MANAGE: "CAN_MANAGE",
-			permissions.CAN_VIEW:   "CAN_READ",
-		},
-		"apps": {
-			permissions.CAN_MANAGE: "CAN_MANAGE",
-			permissions.CAN_VIEW:   "CAN_USE",
-		},
-		"secret_scopes": {
-			permissions.CAN_MANAGE: "MANAGE",
-			permissions.CAN_VIEW:   "READ",
-		},
-		"alerts": {
-			permissions.CAN_MANAGE: "CAN_MANAGE",
-			permissions.CAN_VIEW:   "CAN_READ",
-			permissions.CAN_RUN:    "CAN_RUN",
-		},
-		"sql_warehouses": {
-			permissions.CAN_MANAGE: "CAN_MANAGE",
-			permissions.CAN_VIEW:   "CAN_VIEW",
-			permissions.CAN_RUN:    "CAN_MONITOR",
-		},
-		"database_instances": {
-			permissions.CAN_MANAGE: "CAN_MANAGE",
-			permissions.CAN_VIEW:   "CAN_USE",
-		},
-		"clusters": {
-			// https://docs.databricks.com/aws/en/security/auth/access-control/#compute-acls
-			permissions.CAN_MANAGE: "CAN_MANAGE",
-			permissions.CAN_VIEW:   "CAN_ATTACH_TO",
-			permissions.CAN_RUN:    "CAN_RESTART",
-		},
+var allowedLevels = []string{permissions.CAN_MANAGE, permissions.CAN_VIEW, permissions.CAN_RUN}
+
+// buildLevelsMap dynamically constructs the permission level mapping for each
+// resource type by checking if the resource implements [config.PermissionedResource].
+func buildLevelsMap(r *config.Resources) map[string]map[string]string {
+	m := make(map[string]map[string]string)
+	for _, group := range r.AllResources() {
+		for _, res := range group.Resources {
+			if pr, ok := res.(config.PermissionedResource); ok {
+				if mapping := pr.PermissionLevelMapping(); mapping != nil {
+					m[group.Description.PluralName] = mapping
+				}
+			}
+			break // Only need to check one resource per type
+		}
 	}
-)
+	return m
+}
 
 type bundlePermissions struct{}
 
@@ -87,6 +46,8 @@ func (m *bundlePermissions) Apply(ctx context.Context, b *bundle.Bundle) diag.Di
 	if err != nil {
 		return diag.FromErr(err)
 	}
+
+	levelsMap := buildLevelsMap(&b.Config.Resources)
 
 	patterns := make(map[string]dyn.Pattern, 0)
 	for key := range levelsMap {

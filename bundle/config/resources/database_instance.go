@@ -53,3 +53,10 @@ func (d *DatabaseInstance) InitializeURL(baseURL url.URL) {
 	baseURL.Path = "compute/database-instances/" + d.Name
 	d.URL = baseURL.String()
 }
+
+func (*DatabaseInstance) PermissionLevelMapping() map[string]string {
+	return map[string]string{
+		"CAN_MANAGE": "CAN_MANAGE",
+		"CAN_VIEW":   "CAN_USE",
+	}
+}

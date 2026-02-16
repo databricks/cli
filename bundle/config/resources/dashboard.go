@@ -125,3 +125,10 @@ func (r *Dashboard) GetName() string {
 func (r *Dashboard) GetURL() string {
 	return r.URL
 }
+
+func (*Dashboard) PermissionLevelMapping() map[string]string {
+	return map[string]string{
+		"CAN_MANAGE": "CAN_MANAGE",
+		"CAN_VIEW":   "CAN_READ",
+	}
+}

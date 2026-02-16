@@ -65,3 +65,11 @@ func (s *ModelServingEndpoint) GetName() string {
 func (s *ModelServingEndpoint) GetURL() string {
 	return s.URL
 }
+
+func (*ModelServingEndpoint) PermissionLevelMapping() map[string]string {
+	return map[string]string{
+		"CAN_MANAGE": "CAN_MANAGE",
+		"CAN_VIEW":   "CAN_VIEW",
+		"CAN_RUN":    "CAN_QUERY",
+	}
+}

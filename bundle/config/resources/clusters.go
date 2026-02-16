@@ -58,3 +58,12 @@ func (s *Cluster) GetName() string {
 func (s *Cluster) GetURL() string {
 	return s.URL
 }
+
+func (*Cluster) PermissionLevelMapping() map[string]string {
+	return map[string]string{
+		// https://docs.databricks.com/aws/en/security/auth/access-control/#compute-acls
+		"CAN_MANAGE": "CAN_MANAGE",
+		"CAN_VIEW":   "CAN_ATTACH_TO",
+		"CAN_RUN":    "CAN_RESTART",
+	}
+}

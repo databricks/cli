@@ -60,3 +60,10 @@ func (s *MlflowExperiment) GetName() string {
 func (s *MlflowExperiment) GetURL() string {
 	return s.URL
 }
+
+func (*MlflowExperiment) PermissionLevelMapping() map[string]string {
+	return map[string]string{
+		"CAN_MANAGE": "CAN_MANAGE",
+		"CAN_VIEW":   "CAN_READ",
+	}
+}

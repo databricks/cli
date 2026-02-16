@@ -93,3 +93,10 @@ func (a *App) GetName() string {
 func (a *App) GetURL() string {
 	return a.URL
 }
+
+func (*App) PermissionLevelMapping() map[string]string {
+	return map[string]string{
+		"CAN_MANAGE": "CAN_MANAGE",
+		"CAN_VIEW":   "CAN_USE",
+	}
+}

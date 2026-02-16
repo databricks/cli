@@ -54,6 +54,16 @@ type ConfigResource interface {
 	InitializeURL(baseURL url.URL)
 }
 
+// PermissionedResource is implemented by resources that support bundle-level
+// permission mapping. The returned map translates bundle permission levels
+// (e.g. CAN_MANAGE, CAN_VIEW, CAN_RUN) to resource-specific API levels.
+//
+// Note: implementations use string literals instead of permissions.CAN_MANAGE
+// etc. to avoid an import cycle (resources -> permissions -> resources).
+type PermissionedResource interface {
+	PermissionLevelMapping() map[string]string
+}
+
 // ResourceGroup represents a group of resources of the same type.
 // It includes a description of the resource type and a map of resources.
 type ResourceGroup struct {

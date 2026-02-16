@@ -65,3 +65,11 @@ func (j *Job) GetName() string {
 func (j *Job) GetURL() string {
 	return j.URL
 }
+
+func (*Job) PermissionLevelMapping() map[string]string {
+	return map[string]string{
+		"CAN_MANAGE": "CAN_MANAGE",
+		"CAN_VIEW":   "CAN_VIEW",
+		"CAN_RUN":    "CAN_MANAGE_RUN",
+	}
+}
