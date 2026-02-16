@@ -62,10 +62,9 @@ Deleting files...
 Destroy complete!
 
 >>> [CLI] alerts-v2 get-alert [ALERT_ID]
-{
-  "display_name": "My alert",
-  "lifecycle_state": "DELETED"
-}
+Error: Node with resource name None does not exist.
+
+Exit code: 1
 
 >>> [CLI] bundle summary
 Name: alerts-basic-[UNIQUE_NAME]
