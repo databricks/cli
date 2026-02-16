@@ -410,71 +410,40 @@ func preserveBlankLines(content []byte) []byte {
 }
 
 // restoreBlankLines replaces marker comments back to blank lines.
-// It also deduplicates blank lines that yaml.v3 sometimes adds next to markers
+// For each run of consecutive blank/marker lines, if markers are present,
+// emit only marker-count blanks (dropping yaml.v3-added duplicates);
+// otherwise keep all blanks as-is.
 func restoreBlankLines(content []byte) []byte {
 	lines := strings.Split(string(content), "\n")
 	result := make([]string, 0, len(lines))
-
-	inBlockScalar := false
-	blockScalarIndent := 0
-	var pending []string
-	pendingMarkers := 0
+	blanks := 0
+	markers := 0
 
 	flush := func() {
-		if pendingMarkers > 0 {
-			// Run contains markers: emit only marker-count blanks,
-			// dropping yaml.v3-added duplicates.
-			for range pendingMarkers {
-				result = append(result, "")
-			}
-		} else {
-			// All blanks, no markers: keep as-is.
-			result = append(result, pending...)
+		n := blanks
+		if markers > 0 {
+			n = markers
 		}
-		pending = nil
-		pendingMarkers = 0
+		for range n {
+			result = append(result, "")
+		}
+		blanks = 0
+		markers = 0
 	}
 
 	for i, line := range lines {
-		isMarker := strings.TrimSpace(line) == blankLineMarker
-		trimmed := strings.TrimRight(line, " \t")
-		isBlank := trimmed == "" && i < len(lines)-1
-
-		if isMarker {
-			pending = append(pending, line)
-			pendingMarkers++
+		if strings.TrimSpace(line) == blankLineMarker {
+			markers++
 			continue
 		}
-
-		if isBlank {
-			pending = append(pending, line)
+		if strings.TrimRight(line, " \t") == "" && i < len(lines)-1 {
+			blanks++
 			continue
 		}
-
-		// Non-blank, non-marker line: flush pending run.
-		indent := len(line) - len(strings.TrimLeft(line, " "))
-
-		if inBlockScalar && indent <= blockScalarIndent {
-			inBlockScalar = false
-		}
-
-		if inBlockScalar {
-			// Inside block scalar: keep all blanks as-is (content).
-			result = append(result, pending...)
-			pending = nil
-			pendingMarkers = 0
-		} else {
-			flush()
-		}
-
-		if !inBlockScalar && blockScalarRe.MatchString(trimmed) {
-			inBlockScalar = true
-			blockScalarIndent = indent
-		}
-
+		flush()
 		result = append(result, line)
 	}
-
 	flush()
+
 	return []byte(strings.Join(result, "\n"))
 }
