@@ -55,28 +55,19 @@ Resource: resources.jobs.no_tasks_job
 +          timeout_seconds: 3600
          - task_key: a_task
            notebook_task:
-@@ -41,5 +40,22 @@
+@@ -41,5 +40,13 @@
              - task_key: c_task
 
 -    no_tasks_job: {}
 +    no_tasks_job:
 +      tasks:
-+        - email_notifications: {}
-+          new_cluster:
-+            aws_attributes:
-+              availability: SPOT_WITH_FALLBACK
-+              zone_id: us-east-1c
-+            data_security_mode: SINGLE_USER
-+            enable_elastic_disk: false
++        - new_cluster:
 +            node_type_id: [NODE_TYPE_ID]
 +            num_workers: 1
 +            spark_version: 13.3.x-snapshot-scala2.12
 +          notebook_task:
 +            notebook_path: /Users/[USERNAME]/new_task
-+            source: WORKSPACE
-+          run_if: ALL_SUCCESS
 +          task_key: new_task
-+          timeout_seconds: 0
 
      rename_task_job:
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
@@ -103,7 +94,7 @@ Resource: resources.jobs.rename_task_job
 >>> diff.py databricks.yml.backup2 databricks.yml
 --- databricks.yml.backup2
 +++ databricks.yml
-@@ -61,14 +61,14 @@
+@@ -52,14 +52,14 @@
      rename_task_job:
        tasks:
 -        - task_key: b_task
@@ -124,14 +115,14 @@ Resource: resources.jobs.rename_task_job
 +            - task_key: b_task_renamed
            notebook_task:
              notebook_path: /Users/{{workspace_user_name}}/d_task
-@@ -79,5 +79,5 @@
+@@ -70,5 +70,5 @@
          - task_key: c_task
            depends_on:
 -            - task_key: b_task
 +            - task_key: b_task_renamed
            notebook_task:
              notebook_path: /Users/{{workspace_user_name}}/c_task
-@@ -88,7 +88,14 @@
+@@ -79,7 +79,14 @@
          - task_key: a_task
            notebook_task:
 -            notebook_path: /Users/{{workspace_user_name}}/a_task

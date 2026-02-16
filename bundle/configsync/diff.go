@@ -17,7 +17,6 @@ import (
 	"github.com/databricks/cli/libs/dyn"
 	"github.com/databricks/cli/libs/dyn/convert"
 	"github.com/databricks/cli/libs/log"
-	"github.com/databricks/cli/libs/structs/structpath"
 )
 
 type OperationType string
@@ -48,20 +47,16 @@ func normalizeValue(v any) (any, error) {
 	return dynValue.AsAny(), nil
 }
 
-func isEntityPath(path string) bool {
-	pathNode, err := structpath.ParsePath(path)
-	if err != nil {
-		return false
-	}
-
-	if _, _, ok := pathNode.KeyValue(); ok {
-		return true
-	}
-
-	return false
-}
-
 func filterEntityDefaults(basePath string, value any) any {
+	if arr, ok := value.([]any); ok {
+		result := make([]any, 0, len(arr))
+		for i, elem := range arr {
+			elementPath := fmt.Sprintf("%s[%d]", basePath, i)
+			result = append(result, filterEntityDefaults(elementPath, elem))
+		}
+		return result
+	}
+
 	m, ok := value.(map[string]any)
 	if !ok {
 		return value
@@ -111,7 +106,7 @@ func convertChangeDesc(path string, cd *deployplan.ChangeDesc) (*ConfigChangeDes
 		op = OperationSkip
 	}
 
-	if (op == OperationAdd || op == OperationReplace) && isEntityPath(path) {
+	if op == OperationAdd || op == OperationReplace {
 		normalizedValue = filterEntityDefaults(path, normalizedValue)
 	}
 
