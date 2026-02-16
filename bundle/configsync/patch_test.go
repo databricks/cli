@@ -15,51 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestApplyChangesToYAML_PreserveComments(t *testing.T) {
-	ctx := logdiag.InitContext(context.Background())
-
-	tmpDir := t.TempDir()
-
-	yamlContent := `# Comment at top
-resources:
-  jobs:
-    test_job:
-      name: "Test Job"
-      # Comment before timeout
-      timeout_seconds: 3600
-`
-
-	yamlPath := filepath.Join(tmpDir, "databricks.yml")
-	err := os.WriteFile(yamlPath, []byte(yamlContent), 0o644)
-	require.NoError(t, err)
-
-	b, err := bundle.Load(ctx, tmpDir)
-	require.NoError(t, err)
-
-	mutator.DefaultMutators(ctx, b)
-
-	changes := Changes{
-		"resources.jobs.test_job": ResourceChanges{
-			"timeout_seconds": &ConfigChangeDesc{
-				Operation: OperationReplace,
-				Value:     7200,
-			},
-		},
-	}
-
-	fieldChanges, err := ResolveChanges(ctx, b, changes)
-	require.NoError(t, err)
-
-	fileChanges, err := ApplyChangesToYAML(ctx, b, fieldChanges)
-	require.NoError(t, err)
-	require.Len(t, fileChanges, 1)
-
-	assert.Contains(t, fileChanges[0].ModifiedContent, "# Comment at top")
-	assert.Contains(t, fileChanges[0].ModifiedContent, "# Comment before timeout")
-	assert.Contains(t, fileChanges[0].ModifiedContent, "timeout_seconds: 7200")
-}
-
-func TestApplyChangesToYAML_PreserveBlankLines(t *testing.T) {
+func TestApplyChangesToYAML_PreserveFormatting(t *testing.T) {
 	ctx := logdiag.InitContext(context.Background())
 
 	tmpDir := t.TempDir()
@@ -104,8 +60,10 @@ resources:
 
 	modified := fileChanges[0].ModifiedContent
 
-	assert.Equal(t, 2, strings.Count(modified, "\n\n"), "both blank lines should be preserved")
+	assert.Contains(t, modified, "# Comment at top")
+	assert.Contains(t, modified, "# Comment before timeout")
 	assert.Contains(t, modified, "timeout_seconds: 7200")
+	assert.Equal(t, 2, strings.Count(modified, "\n\n"), "both blank lines should be preserved")
 	assert.NotContains(t, modified, blankLineMarker)
 }
 
@@ -298,6 +256,17 @@ next: value
 `),
 		},
 		{
+			name: "trailing blank line",
+			input: nl(`
+key: value
+
+`),
+			expected: nl(`
+key: value
+# __YAMLPATCH_BLANK_LINE__
+`),
+		},
+		{
 			name: "indented content",
 			input: nl(`
 resources:
@@ -375,13 +344,30 @@ key2: value2
 }
 
 func TestPreserveAndRestoreRoundTrip(t *testing.T) {
+	// Tabs are not valid for YAML indentation but can appear in block scalar values.
 	input := nl(`
-key1: value1
+resources:
+  jobs:
+    my_job:
+      name: "test	job"
 
-key2: value2
+      description: |
+        Multi-line description.
 
+        Second paragraph.
 
-key3: value3
+      tasks:
+        - task_key: main
+          description: >-
+            Folded text
+            on two lines.
+
+          notebook_task:
+            notebook_path: /notebook
+
+      tags:
+        env: dev
+        team: data-eng
 `)
 	assert.Equal(t, input, string(restoreBlankLines(preserveBlankLines([]byte(input)))))
 }
