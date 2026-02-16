@@ -109,52 +109,280 @@ resources:
 	assert.NotContains(t, modified, blankLineMarker)
 }
 
+// for readability of test cases
+func nl(s string) string {
+	return strings.TrimPrefix(s, "\n")
+}
+
 func TestPreserveBlankLines(t *testing.T) {
-	input := "key1: value1\n\nkey2: value2\n"
-	expected := "key1: value1\n" + blankLineMarker + "\nkey2: value2\n"
-	assert.Equal(t, expected, string(preserveBlankLines([]byte(input))))
-}
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name: "basic",
+			input: nl(`
+key1: value1
 
-func TestPreserveBlankLines_BlockScalar(t *testing.T) {
-	input := "key: |\n  line1\n\n  line2\nother: value\n"
-	// Blank line inside block scalar should NOT be replaced
-	assert.Equal(t, input, string(preserveBlankLines([]byte(input))))
-}
+key2: value2
+`),
+			expected: nl(`
+key1: value1
+# __YAMLPATCH_BLANK_LINE__
+key2: value2
+`),
+		},
+		{
+			name: "no blanks",
+			input: nl(`
+key1: value1
+key2: value2
+`),
+			expected: nl(`
+key1: value1
+key2: value2
+`),
+		},
+		{
+			name: "consecutive blanks",
+			input: nl(`
+key1: value1
 
-func TestPreserveBlankLines_BlockScalarTrailing(t *testing.T) {
-	// Trailing blank line after block scalar content should be replaced with marker
-	// (yaml.v3 clips trailing newlines, so we must preserve them as markers).
-	input := "key: |\n  line1\n  line2\n\nnext: value\n"
-	expected := "key: |\n  line1\n  line2\n" + blankLineMarker + "\nnext: value\n"
-	assert.Equal(t, expected, string(preserveBlankLines([]byte(input))))
-}
 
-func TestPreserveBlankLines_FoldedBlockScalar(t *testing.T) {
-	input := "key: >-\n  line1\n  line2\n\nnext: value\n"
-	expected := "key: >-\n  line1\n  line2\n" + blankLineMarker + "\nnext: value\n"
-	assert.Equal(t, expected, string(preserveBlankLines([]byte(input))))
-}
+key2: value2
+`),
+			expected: nl(`
+key1: value1
+# __YAMLPATCH_BLANK_LINE__
+# __YAMLPATCH_BLANK_LINE__
+key2: value2
+`),
+		},
+		{
+			name: "block scalar mid-content blank preserved",
+			input: nl(`
+key: |
+  line1
 
-func TestPreserveBlankLines_ConsecutiveBlanks(t *testing.T) {
-	input := "key1: value1\n\n\nkey2: value2\n"
-	expected := "key1: value1\n" + blankLineMarker + "\n" + blankLineMarker + "\nkey2: value2\n"
-	assert.Equal(t, expected, string(preserveBlankLines([]byte(input))))
+  line2
+other: value
+`),
+			expected: nl(`
+key: |
+  line1
+
+  line2
+other: value
+`),
+		},
+		{
+			name: "block scalar trailing blank becomes marker",
+			input: nl(`
+key: |
+  line1
+  line2
+
+next: value
+`),
+			expected: nl(`
+key: |
+  line1
+  line2
+# __YAMLPATCH_BLANK_LINE__
+next: value
+`),
+		},
+		{
+			name: "folded block scalar trailing blank",
+			input: nl(`
+key: >-
+  line1
+  line2
+
+next: value
+`),
+			expected: nl(`
+key: >-
+  line1
+  line2
+# __YAMLPATCH_BLANK_LINE__
+next: value
+`),
+		},
+		{
+			name: "block scalar as list item",
+			input: nl(`
+items:
+  - |
+    line1
+
+    line2
+
+next: value
+`),
+			expected: nl(`
+items:
+  - |
+    line1
+
+    line2
+# __YAMLPATCH_BLANK_LINE__
+next: value
+`),
+		},
+		{
+			name: "block scalar at EOF",
+			input: nl(`
+key: |
+  content
+
+`),
+			expected: nl(`
+key: |
+  content
+# __YAMLPATCH_BLANK_LINE__
+`),
+		},
+		{
+			name: "consecutive blanks inside block scalar",
+			input: nl(`
+key: |
+  line1
+
+
+  line2
+next: value
+`),
+			expected: nl(`
+key: |
+  line1
+
+
+  line2
+next: value
+`),
+		},
+		{
+			name: "back-to-back block scalars",
+			input: nl(`
+key1: |
+  content1
+
+key2: |
+  content2
+`),
+			expected: nl(`
+key1: |
+  content1
+# __YAMLPATCH_BLANK_LINE__
+key2: |
+  content2
+`),
+		},
+		{
+			name: "block scalar with indent indicator",
+			input: nl(`
+key: |2
+  line1
+
+  line2
+next: value
+`),
+			expected: nl(`
+key: |2
+  line1
+
+  line2
+next: value
+`),
+		},
+		{
+			name: "indented content",
+			input: nl(`
+resources:
+  jobs:
+    my_job:
+      name: test
+
+      tasks:
+        - task_key: main
+
+      tags:
+        env: dev
+`),
+			expected: nl(`
+resources:
+  jobs:
+    my_job:
+      name: test
+# __YAMLPATCH_BLANK_LINE__
+      tasks:
+        - task_key: main
+# __YAMLPATCH_BLANK_LINE__
+      tags:
+        env: dev
+`),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, string(preserveBlankLines([]byte(tt.input))))
+		})
+	}
 }
 
 func TestRestoreBlankLines(t *testing.T) {
-	input := "key1: value1\n" + blankLineMarker + "\nkey2: value2\n"
-	expected := "key1: value1\n\nkey2: value2\n"
-	assert.Equal(t, expected, string(restoreBlankLines([]byte(input))))
-}
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name: "basic",
+			input: nl(`
+key1: value1
+# __YAMLPATCH_BLANK_LINE__
+key2: value2
+`),
+			expected: nl(`
+key1: value1
 
-func TestRestoreBlankLines_Indented(t *testing.T) {
-	input := "  key1: value1\n  " + blankLineMarker + "\n  key2: value2\n"
-	expected := "  key1: value1\n\n  key2: value2\n"
-	assert.Equal(t, expected, string(restoreBlankLines([]byte(input))))
+key2: value2
+`),
+		},
+		{
+			name: "indented marker",
+			input: nl(`
+  key1: value1
+  # __YAMLPATCH_BLANK_LINE__
+  key2: value2
+`),
+			expected: nl(`
+  key1: value1
+
+  key2: value2
+`),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, string(restoreBlankLines([]byte(tt.input))))
+		})
+	}
 }
 
 func TestPreserveAndRestoreRoundTrip(t *testing.T) {
-	input := "key1: value1\n\nkey2: value2\n\n\nkey3: value3\n"
+	input := nl(`
+key1: value1
+
+key2: value2
+
+
+key3: value3
+`)
 	assert.Equal(t, input, string(restoreBlankLines(preserveBlankLines([]byte(input)))))
 }
 

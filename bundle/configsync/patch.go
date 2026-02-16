@@ -361,73 +361,59 @@ var blockScalarRe = regexp.MustCompile(`(?::\s+|-\s+)[|>][+\-0-9]*\s*(?:#.*)?$`)
 // preserveBlankLines replaces blank lines with marker comments that survive
 // yaml.v3 round-trips. Lines inside block scalars (| or >) are not replaced
 // because blank lines in block scalars are semantically significant.
+//
+// Instead of scanning ahead when a blank line is encountered inside a block
+// scalar, blank lines are buffered and the decision (keep literal vs. replace
+// with marker) is deferred until the next non-blank line reveals whether we
+// are still inside the block scalar.
 func preserveBlankLines(content []byte) []byte {
 	lines := strings.Split(string(content), "\n")
 	result := make([]string, 0, len(lines))
 
 	inBlockScalar := false
 	blockScalarIndent := 0
+	pendingBlanks := 0
 
 	for i, line := range lines {
 		trimmed := strings.TrimRight(line, " \t")
 
-		if inBlockScalar {
-			if trimmed == "" {
-				// Lookahead: if the next non-empty line exits the block scalar,
-				// this is a trailing blank line. yaml.v3 clips trailing newlines
-				// so we must replace it with a marker to preserve it visually.
-				if isTrailingBlockScalarLine(lines, i, blockScalarIndent) {
-					inBlockScalar = false
-					// Fall through to normal blank-line processing.
-				} else {
-					// Mid-content blank line — keep as-is.
-					result = append(result, line)
-					continue
-				}
-			} else {
-				indent := len(line) - len(strings.TrimLeft(line, " "))
-				if indent <= blockScalarIndent {
-					inBlockScalar = false
-					// Fall through to normal processing.
-				} else {
-					result = append(result, line)
-					continue
-				}
-			}
-		}
-
-		// Replace blank lines with markers. Skip the trailing empty element
-		// produced by splitting on the final newline.
+		// Buffer blank lines (except the trailing empty element from Split).
 		if trimmed == "" && i < len(lines)-1 {
-			result = append(result, blankLineMarker)
+			pendingBlanks++
 			continue
 		}
 
-		if blockScalarRe.MatchString(trimmed) {
+		indent := len(line) - len(strings.TrimLeft(line, " "))
+
+		// Flush buffered blank lines: keep literal inside block scalars,
+		// replace with markers otherwise.
+		if pendingBlanks > 0 {
+			if inBlockScalar && trimmed != "" && indent > blockScalarIndent {
+				for range pendingBlanks {
+					result = append(result, "")
+				}
+			} else {
+				inBlockScalar = false
+				for range pendingBlanks {
+					result = append(result, blankLineMarker)
+				}
+			}
+			pendingBlanks = 0
+		}
+
+		if inBlockScalar && indent <= blockScalarIndent {
+			inBlockScalar = false
+		}
+
+		if !inBlockScalar && blockScalarRe.MatchString(trimmed) {
 			inBlockScalar = true
-			blockScalarIndent = len(line) - len(strings.TrimLeft(line, " "))
+			blockScalarIndent = indent
 		}
 
 		result = append(result, line)
 	}
 
 	return []byte(strings.Join(result, "\n"))
-}
-
-// isTrailingBlockScalarLine checks whether a blank line at position i
-// is a trailing blank line of a block scalar (followed by content at
-// lower or equal indentation) rather than a mid-content blank line.
-func isTrailingBlockScalarLine(lines []string, i, blockScalarIndent int) bool {
-	for j := i + 1; j < len(lines); j++ {
-		next := strings.TrimRight(lines[j], " \t")
-		if next == "" {
-			continue
-		}
-		nextIndent := len(lines[j]) - len(strings.TrimLeft(lines[j], " "))
-		return nextIndent <= blockScalarIndent
-	}
-	// No non-empty line found — trailing.
-	return true
 }
 
 // restoreBlankLines replaces marker comments back to blank lines.

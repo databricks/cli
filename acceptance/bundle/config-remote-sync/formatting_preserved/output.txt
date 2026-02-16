@@ -18,7 +18,7 @@ Resource: resources.jobs.my_job
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml
-@@ -8,10 +8,10 @@
+@@ -9,10 +9,10 @@
      my_job:
        # Comment about max concurrent runs
 -      max_concurrent_runs: 1
@@ -33,7 +33,7 @@ Resource: resources.jobs.my_job
 +        Runs hourly.
 
        # Task configuration
-@@ -20,6 +20,5 @@
+@@ -21,6 +21,5 @@
 
            description: >-
 -            Main processing task
