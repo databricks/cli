@@ -409,27 +409,26 @@ func preserveBlankLines(content []byte) []byte {
 	return []byte(strings.Join(result, "\n"))
 }
 
+// flushBlanks appends blank lines to result. When markers are present,
+// it emits exactly that many blanks (dropping yaml.v3-added duplicates);
+// otherwise it keeps all blanks as-is.
+func flushBlanks(result []string, blanks, markers int) []string {
+	n := blanks
+	if markers > 0 {
+		n = markers
+	}
+	for range n {
+		result = append(result, "")
+	}
+	return result
+}
+
 // restoreBlankLines replaces marker comments back to blank lines.
-// For each run of consecutive blank/marker lines, if markers are present,
-// emit only marker-count blanks (dropping yaml.v3-added duplicates);
-// otherwise keep all blanks as-is.
 func restoreBlankLines(content []byte) []byte {
 	lines := strings.Split(string(content), "\n")
 	result := make([]string, 0, len(lines))
 	blanks := 0
 	markers := 0
-
-	flush := func() {
-		n := blanks
-		if markers > 0 {
-			n = markers
-		}
-		for range n {
-			result = append(result, "")
-		}
-		blanks = 0
-		markers = 0
-	}
 
 	for i, line := range lines {
 		if strings.TrimSpace(line) == blankLineMarker {
@@ -440,10 +439,12 @@ func restoreBlankLines(content []byte) []byte {
 			blanks++
 			continue
 		}
-		flush()
+		result = flushBlanks(result, blanks, markers)
+		blanks = 0
+		markers = 0
 		result = append(result, line)
 	}
-	flush()
+	result = flushBlanks(result, blanks, markers)
 
 	out := strings.Join(result, "\n")
 
