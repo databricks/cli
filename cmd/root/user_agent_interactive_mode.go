@@ -5,7 +5,7 @@
 //
 // Example user agent strings:
 //   - Full interactive: "cli/X.Y.Z ... interactive/full ..."
-//   - Output only: "cli/X.Y.Z ... interactive/output_only ..."
+//   - Output only: "cli/X.Y.Z ... interactive/output ..."
 //   - Non-interactive: "cli/X.Y.Z ... interactive/none ..."
 package root
 
@@ -20,10 +20,6 @@ import (
 const interactiveModeKey = "interactive"
 
 func withInteractiveModeInUserAgent(ctx context.Context) context.Context {
-	// mode is empty when cmdio is not initialized in the context (e.g., early startup).
 	mode := cmdio.GetInteractiveMode(ctx)
-	if mode == "" {
-		return ctx
-	}
 	return useragent.InContext(ctx, interactiveModeKey, string(mode))
 }

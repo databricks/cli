@@ -72,10 +72,9 @@ type InteractiveMode string
 
 // Interactive mode constants for user agent tracking.
 const (
-	InteractiveModeUnknown    InteractiveMode = ""            // cmdio not initialized in context
-	InteractiveModeFull       InteractiveMode = "full"        // Both interactive output and prompts supported
-	InteractiveModeOutputOnly InteractiveMode = "output_only" // Interactive output only, no prompts (stdin not TTY or Git Bash)
-	InteractiveModeNone       InteractiveMode = "none"        // Non-interactive (CI, cron, stderr redirected)
+	InteractiveModeFull       InteractiveMode = "full"   // Both interactive output and prompts supported
+	InteractiveModeOutputOnly InteractiveMode = "output" // Interactive output only, no prompts (stdin not TTY or Git Bash)
+	InteractiveModeNone       InteractiveMode = "none"   // Non-interactive (CI, cron, stderr redirected)
 )
 
 // InteractiveMode returns the interactive mode based on terminal capabilities.

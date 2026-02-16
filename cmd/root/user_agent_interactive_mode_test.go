@@ -9,6 +9,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
 	"github.com/databricks/databricks-sdk-go/useragent"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestInteractiveModeWithCmdIO(t *testing.T) {
@@ -23,9 +24,7 @@ func TestInteractiveModeWithCmdIO(t *testing.T) {
 	ctx = withInteractiveModeInUserAgent(ctx)
 	ua := useragent.FromContext(ctx)
 
-	if !strings.Contains(ua, "interactive/") {
-		t.Errorf("expected user agent to contain 'interactive/', got %s", ua)
-	}
+	assert.Contains(t, ua, "interactive/")
 }
 
 func TestInteractiveModeNone(t *testing.T) {
@@ -36,19 +35,6 @@ func TestInteractiveModeNone(t *testing.T) {
 	ctx = withInteractiveModeInUserAgent(ctx)
 	ua := useragent.FromContext(ctx)
 
-	if !strings.Contains(ua, "interactive/none") {
-		t.Errorf("expected user agent to contain 'interactive/none', got %s", ua)
-	}
+	assert.Contains(t, ua, "interactive/none")
 }
 
-func TestInteractiveModeNotSet(t *testing.T) {
-	ctx := context.Background()
-	// Don't initialize cmdio, so GetInteractiveMode returns ""
-
-	ctx = withInteractiveModeInUserAgent(ctx)
-	ua := useragent.FromContext(ctx)
-
-	if strings.Contains(ua, "interactive/") {
-		t.Errorf("expected user agent to not contain 'interactive/', got %s", ua)
-	}
-}
