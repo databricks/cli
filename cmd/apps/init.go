@@ -13,13 +13,15 @@ import (
 
 	"github.com/charmbracelet/huh"
 	"github.com/databricks/cli/cmd/root"
-	"github.com/databricks/cli/libs/apps/features"
+	"github.com/databricks/cli/libs/apps/generator"
 	"github.com/databricks/cli/libs/apps/initializer"
+	"github.com/databricks/cli/libs/apps/manifest"
 	"github.com/databricks/cli/libs/apps/prompt"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/git"
 	"github.com/databricks/cli/libs/log"
+	ignore "github.com/sabhiram/go-gitignore"
 	"github.com/spf13/cobra"
 )
 
@@ -53,12 +55,12 @@ func newInitCmd() *cobra.Command {
 		branch       string
 		version      string
 		name         string
-		warehouseID  string
 		description  string
 		outputDir    string
-		featuresFlag []string
+		pluginsFlag  []string
 		deploy       bool
 		run          string
+		setValues    []string
 	)
 
 	cmd := &cobra.Command{
@@ -87,8 +89,19 @@ Examples:
   # Non-interactive with flags
   databricks apps init --name my-app
 
-  # With analytics feature (requires --warehouse-id)
-  databricks apps init --name my-app --features=analytics --warehouse-id=abc123
+  # With analytics feature and SQL Warehouse
+  databricks apps init --name my-app --features=analytics \
+    --set analytics.sql-warehouse.id=abc123
+
+  # With database resource (all fields required together)
+  databricks apps init --name my-app --features=analytics \
+    --set analytics.database.instance_name=myinst \
+    --set analytics.database.database_name=mydb
+
+  # Multiple plugins with different warehouses
+  databricks apps init --name my-app --features=analytics,reporting \
+    --set analytics.sql-warehouse.id=wh1 \
+    --set reporting.sql-warehouse.id=wh2
 
   # Create, deploy, and run with dev-remote
   databricks apps init --name my-app --deploy --run=dev-remote
@@ -99,9 +112,10 @@ Examples:
   # With a GitHub URL
   databricks apps init --template https://github.com/user/repo --name my-app
 
-Feature dependencies:
-  Some features require additional flags:
-  - analytics: requires --warehouse-id (SQL Warehouse ID)
+Resource configuration (--set):
+  Set resource values using --set plugin.resourceKey.field=value
+  Keys are defined in the template's appkit.plugins.json manifest.
+  Multi-field resources (e.g., database, secret) require all fields to be set together.
 
 Environment variables:
   DATABRICKS_APPKIT_TEMPLATE_PATH  Override the default template source`,
@@ -116,20 +130,20 @@ Environment variables:
 			}
 
 			return runCreate(ctx, createOptions{
-				templatePath:    templatePath,
-				branch:          branch,
-				version:         version,
-				name:            name,
-				nameProvided:    cmd.Flags().Changed("name"),
-				warehouseID:     warehouseID,
-				description:     description,
-				outputDir:       outputDir,
-				features:        featuresFlag,
-				deploy:          deploy,
-				deployChanged:   cmd.Flags().Changed("deploy"),
-				run:             run,
-				runChanged:      cmd.Flags().Changed("run"),
-				featuresChanged: cmd.Flags().Changed("features"),
+				templatePath:   templatePath,
+				branch:         branch,
+				version:        version,
+				name:           name,
+				nameProvided:   cmd.Flags().Changed("name"),
+				description:    description,
+				outputDir:      outputDir,
+				plugins:        pluginsFlag,
+				deploy:         deploy,
+				deployChanged:  cmd.Flags().Changed("deploy"),
+				run:            run,
+				runChanged:     cmd.Flags().Changed("run"),
+				pluginsChanged: cmd.Flags().Changed("features") || cmd.Flags().Changed("plugins"),
+				setValues:      setValues,
 			})
 		},
 	}
@@ -138,10 +152,12 @@ Environment variables:
 	cmd.Flags().StringVar(&branch, "branch", "", "Git branch or tag (for GitHub templates, mutually exclusive with --version)")
 	cmd.Flags().StringVar(&version, "version", "", "AppKit version to use (default: latest release, use 'latest' for main branch)")
 	cmd.Flags().StringVar(&name, "name", "", "Project name (prompts if not provided)")
-	cmd.Flags().StringVar(&warehouseID, "warehouse-id", "", "SQL warehouse ID")
+	cmd.Flags().StringArrayVar(&setValues, "set", nil, "Set resource values (format: plugin.resourceKey.field=value, can specify multiple)")
 	cmd.Flags().StringVar(&description, "description", "", "App description")
 	cmd.Flags().StringVar(&outputDir, "output-dir", "", "Directory to write the project to")
-	cmd.Flags().StringSliceVar(&featuresFlag, "features", nil, "Features to enable (comma-separated). Available: "+strings.Join(features.GetFeatureIDs(), ", "))
+	cmd.Flags().StringSliceVar(&pluginsFlag, "features", nil, "Features/plugins to enable (comma-separated, as defined in template manifest)")
+	cmd.Flags().StringSliceVar(&pluginsFlag, "plugins", nil, "Alias for --features")
+	_ = cmd.Flags().MarkHidden("plugins")
 	cmd.Flags().BoolVar(&deploy, "deploy", false, "Deploy the app after creation")
 	cmd.Flags().StringVar(&run, "run", "", "Run the app after creation (none, dev, dev-remote)")
 
@@ -149,46 +165,102 @@ Environment variables:
 }
 
 type createOptions struct {
-	templatePath    string
-	branch          string
-	version         string
-	name            string
-	nameProvided    bool // true if --name flag was explicitly set (enables "flags mode")
-	warehouseID     string
-	description     string
-	outputDir       string
-	features        []string
-	deploy          bool
-	deployChanged   bool // true if --deploy flag was explicitly set
-	run             string
-	runChanged      bool // true if --run flag was explicitly set
-	featuresChanged bool // true if --features flag was explicitly set
+	templatePath   string
+	branch         string
+	version        string
+	name           string
+	nameProvided   bool // true if --name flag was explicitly set (enables "flags mode")
+	description    string
+	outputDir      string
+	plugins        []string
+	deploy         bool
+	deployChanged  bool // true if --deploy flag was explicitly set
+	run            string
+	runChanged     bool     // true if --run flag was explicitly set
+	pluginsChanged bool     // true if --plugins flag was explicitly set
+	setValues      []string // --set plugin.resourceKey.field=value pairs
+}
+
+// parseSetValues parses --set key=value pairs into the resourceValues map.
+// Keys use the format "plugin.resourceKey.field=value".
+// Validates that plugin names, resource keys, and field names exist in the manifest.
+func parseSetValues(setValues []string, m *manifest.Manifest) (map[string]string, error) {
+	rv := make(map[string]string)
+	for _, sv := range setValues {
+		key, value, ok := strings.Cut(sv, "=")
+		if !ok || key == "" {
+			return nil, fmt.Errorf("invalid --set format %q, expected plugin.resourceKey.field=value", sv)
+		}
+		parts := strings.SplitN(key, ".", 3)
+		if len(parts) != 3 {
+			return nil, fmt.Errorf("invalid --set key %q, expected plugin.resourceKey.field", key)
+		}
+		pluginName, resourceKey, fieldName := parts[0], parts[1], parts[2]
+
+		plugin := m.GetPluginByName(pluginName)
+		if plugin == nil {
+			return nil, fmt.Errorf("unknown plugin %q in --set %q; available: %v", pluginName, sv, m.GetPluginNames())
+		}
+
+		if !pluginHasResourceField(plugin, resourceKey, fieldName) {
+			return nil, fmt.Errorf("plugin %q has no resource with key %q and field %q", pluginName, resourceKey, fieldName)
+		}
+
+		rv[resourceKey+"."+fieldName] = value
+	}
+
+	// Validate multi-field resources: if any field is set, all fields must be set.
+	for _, p := range m.GetPlugins() {
+		for _, r := range append(p.Resources.Required, p.Resources.Optional...) {
+			if len(r.Fields) <= 1 {
+				continue
+			}
+			names := r.FieldNames()
+			setCount := 0
+			for _, fn := range names {
+				if rv[r.Key()+"."+fn] != "" {
+					setCount++
+				}
+			}
+			if setCount > 0 && setCount < len(names) {
+				var missing []string
+				for _, fn := range names {
+					if rv[r.Key()+"."+fn] == "" {
+						missing = append(missing, r.Key()+"."+fn)
+					}
+				}
+				return nil, fmt.Errorf("incomplete resource %q: missing fields %v (all fields must be set together)", r.Key(), missing)
+			}
+		}
+	}
+
+	return rv, nil
+}
+
+// pluginHasResourceField checks whether a plugin declares a resource with the given key and field name.
+func pluginHasResourceField(p *manifest.Plugin, resourceKey, fieldName string) bool {
+	for _, r := range append(p.Resources.Required, p.Resources.Optional...) {
+		if r.Key() == resourceKey {
+			if _, ok := r.Fields[fieldName]; ok {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // templateVars holds the variables for template substitution.
 type templateVars struct {
 	ProjectName    string
-	SQLWarehouseID string
 	AppDescription string
 	Profile        string
 	WorkspaceHost  string
-	PluginImport   string
-	PluginUsage    string
-	// Feature resource fragments (aggregated from selected features)
+	PluginImports  string
+	PluginUsages   string
+	// Generated resource configuration from selected plugins.
 	BundleVariables string
 	BundleResources string
 	TargetVariables string
-	AppEnv          string
-	DotEnv          string
-	DotEnvExample   string
-}
-
-// featureFragments holds aggregated content from feature resource files.
-type featureFragments struct {
-	BundleVariables string
-	BundleResources string
-	TargetVariables string
-	AppEnv          string
 	DotEnv          string
 	DotEnvExample   string
 }
@@ -215,84 +287,72 @@ func parseDeployAndRunFlags(deploy bool, run string) (bool, prompt.RunMode, erro
 	return deploy, runMode, nil
 }
 
-// promptForFeaturesAndDeps prompts for features and their dependencies.
-// Used when the template uses the feature-fragment system.
+// promptForPluginsAndDeps prompts for plugins and their resource dependencies using the manifest.
 // skipDeployRunPrompt indicates whether to skip prompting for deploy/run (because flags were provided).
-func promptForFeaturesAndDeps(ctx context.Context, preSelectedFeatures []string, skipDeployRunPrompt bool) (*prompt.CreateProjectConfig, error) {
+func promptForPluginsAndDeps(ctx context.Context, m *manifest.Manifest, preSelectedPlugins []string, skipDeployRunPrompt bool) (*prompt.CreateProjectConfig, error) {
 	config := &prompt.CreateProjectConfig{
 		Dependencies: make(map[string]string),
-		Features:     preSelectedFeatures,
+		Features:     preSelectedPlugins, // Reuse Features field for plugin names
 	}
 	theme := prompt.AppkitTheme()
 
-	// Step 1: Feature selection (skip if features already provided via flag)
-	if len(config.Features) == 0 && len(features.AvailableFeatures) > 0 {
-		options := make([]huh.Option[string], 0, len(features.AvailableFeatures))
-		for _, f := range features.AvailableFeatures {
-			label := f.Name + " - " + f.Description
-			options = append(options, huh.NewOption(label, f.ID))
+	// Step 1: Plugin selection (skip if plugins already provided via flag)
+	selectablePlugins := m.GetSelectablePlugins()
+	if len(config.Features) == 0 && len(selectablePlugins) > 0 {
+		options := make([]huh.Option[string], 0, len(selectablePlugins))
+		for _, p := range selectablePlugins {
+			label := p.DisplayName + " - " + p.Description
+			options = append(options, huh.NewOption(label, p.Name))
 		}
 
+		var selected []string
 		err := huh.NewMultiSelect[string]().
 			Title("Select features").
 			Description("space to toggle, enter to confirm").
 			Options(options...).
-			Value(&config.Features).
+			Value(&selected).
 			Height(8).
 			WithTheme(theme).
 			Run()
 		if err != nil {
 			return nil, err
 		}
-		if len(config.Features) == 0 {
-			prompt.PrintAnswered(ctx, "Features", "None")
+		if len(selected) == 0 {
+			prompt.PrintAnswered(ctx, "Plugins", "None")
 		} else {
-			prompt.PrintAnswered(ctx, "Features", fmt.Sprintf("%d selected", len(config.Features)))
+			prompt.PrintAnswered(ctx, "Plugins", fmt.Sprintf("%d selected", len(selected)))
 		}
+		config.Features = selected
 	}
 
-	// Step 2: Prompt for feature dependencies
-	deps := features.CollectDependencies(config.Features)
-	for _, dep := range deps {
-		// Special handling for SQL warehouse - show picker instead of text input
-		if dep.ID == "sql_warehouse_id" {
-			warehouseID, err := prompt.PromptForWarehouse(ctx)
-			if err != nil {
-				return nil, err
-			}
-			config.Dependencies[dep.ID] = warehouseID
-			continue
-		}
+	// Always include mandatory plugins.
+	config.Features = appendUnique(config.Features, m.GetMandatoryPluginNames()...)
 
-		var value string
-		description := dep.Description
-		if !dep.Required {
-			description += " (optional)"
-		}
-
-		input := huh.NewInput().
-			Title(dep.Title).
-			Description(description).
-			Placeholder(dep.Placeholder).
-			Value(&value)
-
-		if dep.Required {
-			input = input.Validate(func(s string) error {
-				if s == "" {
-					return errors.New("this field is required")
-				}
-				return nil
-			})
-		}
-
-		if err := input.WithTheme(theme).Run(); err != nil {
+	// Step 2: Prompt for required plugin resource dependencies
+	resources := m.CollectResources(config.Features)
+	for _, r := range resources {
+		values, err := promptForResource(ctx, r, theme, true)
+		if err != nil {
 			return nil, err
 		}
-		prompt.PrintAnswered(ctx, dep.Title, value)
-		config.Dependencies[dep.ID] = value
+		for k, v := range values {
+			config.Dependencies[k] = v
+		}
 	}
 
-	// Step 3: Description
+	// Step 3: Prompt for optional plugin resource dependencies
+	optionalResources := m.CollectOptionalResources(config.Features)
+	for _, r := range optionalResources {
+		values, err := promptForResource(ctx, r, theme, false)
+		if err != nil {
+			return nil, err
+		}
+		for k, v := range values {
+			config.Dependencies[k] = v
+		}
+	}
+
+	// Step 4: Description
 	config.Description = prompt.DefaultAppDescription
 	err := huh.NewInput().
 		Title("Description").
@@ -308,7 +368,7 @@ func promptForFeaturesAndDeps(ctx context.Context, preSelectedFeatures []string,
 	}
 	prompt.PrintAnswered(ctx, "Description", config.Description)
 
-	// Step 4: Deploy and run options (skip if any deploy/run flag was provided)
+	// Step 5: Deploy and run options (skip if any deploy/run flag was provided)
 	if !skipDeployRunPrompt {
 		config.Deploy, config.RunMode, err = prompt.PromptForDeployAndRun(ctx)
 		if err != nil {
@@ -319,84 +379,67 @@ func promptForFeaturesAndDeps(ctx context.Context, preSelectedFeatures []string,
 	return config, nil
 }
 
-// loadFeatureFragments reads and aggregates resource fragments for selected features.
-// templateDir is the path to the template directory (containing the "features" subdirectory).
-func loadFeatureFragments(templateDir string, featureIDs []string, vars templateVars) (*featureFragments, error) {
-	featuresDir := filepath.Join(templateDir, "features")
-
-	resourceFiles := features.CollectResourceFiles(featureIDs)
-	if len(resourceFiles) == 0 {
-		return &featureFragments{}, nil
+// promptForResource prompts the user for a resource value.
+// Returns a map of value keys to values. For single-field resources the key is "resource_key.field".
+// For multi-field resources, keys use "resource_key.field_name".
+func promptForResource(ctx context.Context, r manifest.Resource, theme *huh.Theme, required bool) (map[string]string, error) {
+	if fn, ok := prompt.GetPromptFunc(r.Type); ok {
+		if !required {
+			var configure bool
+			err := huh.NewConfirm().
+				Title(fmt.Sprintf("Configure %s?", r.Alias)).
+				Description(r.Description + " (optional)").
+				Value(&configure).
+				WithTheme(theme).
+				Run()
+			if err != nil {
+				return nil, err
+			}
+			if !configure {
+				prompt.PrintAnswered(ctx, r.Alias, "skipped")
+				return nil, nil
+			}
+		}
+		return fn(ctx, r, required)
 	}
 
-	var bundleVarsList, bundleResList, targetVarsList, appEnvList, dotEnvList, dotEnvExampleList []string
-
-	for _, rf := range resourceFiles {
-		if rf.BundleVariables != "" {
-			content, err := readAndSubstitute(filepath.Join(featuresDir, rf.BundleVariables), vars)
-			if err != nil {
-				return nil, fmt.Errorf("read bundle variables: %w", err)
-			}
-			bundleVarsList = append(bundleVarsList, content)
-		}
-		if rf.BundleResources != "" {
-			content, err := readAndSubstitute(filepath.Join(featuresDir, rf.BundleResources), vars)
-			if err != nil {
-				return nil, fmt.Errorf("read bundle resources: %w", err)
-			}
-			bundleResList = append(bundleResList, content)
-		}
-		if rf.TargetVariables != "" {
-			content, err := readAndSubstitute(filepath.Join(featuresDir, rf.TargetVariables), vars)
-			if err != nil {
-				return nil, fmt.Errorf("read target variables: %w", err)
-			}
-			targetVarsList = append(targetVarsList, content)
-		}
-		if rf.AppEnv != "" {
-			content, err := readAndSubstitute(filepath.Join(featuresDir, rf.AppEnv), vars)
-			if err != nil {
-				return nil, fmt.Errorf("read app env: %w", err)
-			}
-			appEnvList = append(appEnvList, content)
-		}
-		if rf.DotEnv != "" {
-			content, err := readAndSubstitute(filepath.Join(featuresDir, rf.DotEnv), vars)
-			if err != nil {
-				return nil, fmt.Errorf("read dotenv: %w", err)
-			}
-			dotEnvList = append(dotEnvList, content)
-		}
-		if rf.DotEnvExample != "" {
-			content, err := readAndSubstitute(filepath.Join(featuresDir, rf.DotEnvExample), vars)
-			if err != nil {
-				return nil, fmt.Errorf("read dotenv example: %w", err)
-			}
-			dotEnvExampleList = append(dotEnvExampleList, content)
-		}
+	// Generic text input for unregistered resource types
+	var value string
+	description := r.Description
+	if !required {
+		description += " (optional, press enter to skip)"
 	}
 
-	// Join fragments (they already have proper indentation from the fragment files)
-	return &featureFragments{
-		BundleVariables: strings.TrimSuffix(strings.Join(bundleVarsList, ""), "\n"),
-		BundleResources: strings.TrimSuffix(strings.Join(bundleResList, ""), "\n"),
-		TargetVariables: strings.TrimSuffix(strings.Join(targetVarsList, ""), "\n"),
-		AppEnv:          strings.TrimSuffix(strings.Join(appEnvList, ""), "\n"),
-		DotEnv:          strings.TrimSuffix(strings.Join(dotEnvList, ""), "\n"),
-		DotEnvExample:   strings.TrimSuffix(strings.Join(dotEnvExampleList, ""), "\n"),
-	}, nil
-}
+	input := huh.NewInput().
+		Title(r.Alias).
+		Description(description).
+		Value(&value)
 
-// readAndSubstitute reads a file and applies variable substitution.
-func readAndSubstitute(path string, vars templateVars) (string, error) {
-	content, err := os.ReadFile(path)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return "", nil // Fragment file doesn't exist, skip it
-		}
-		return "", err
+	if required {
+		input = input.Validate(func(s string) error {
+			if s == "" {
+				return errors.New("this field is required")
+			}
+			return nil
+		})
 	}
-	return substituteVars(string(content), vars), nil
+
+	if err := input.WithTheme(theme).Run(); err != nil {
+		return nil, err
+	}
+
+	if value == "" && !required {
+		prompt.PrintAnswered(ctx, r.Alias, "skipped")
+		return nil, nil
+	}
+	prompt.PrintAnswered(ctx, r.Alias, value)
+
+	// Use composite key from Fields when available.
+	names := r.FieldNames()
+	if len(names) >= 1 {
+		return map[string]string{r.Key() + "." + names[0]: value}, nil
+	}
+	return map[string]string{r.Key(): value}, nil
 }
 
 // cloneRepo clones a git repository to a temporary directory.
@@ -454,15 +497,15 @@ func resolveTemplate(ctx context.Context, templatePath, branch, subdir string) (
 }
 
 func runCreate(ctx context.Context, opts createOptions) error {
-	var selectedFeatures []string
-	var dependencies map[string]string
+	var selectedPlugins []string
+	var resourceValues map[string]string
 	var shouldDeploy bool
 	var runMode prompt.RunMode
 	isInteractive := cmdio.IsPromptSupported(ctx)
 
-	// Use features from flags if provided
-	if len(opts.features) > 0 {
-		selectedFeatures = opts.features
+	// Use plugins from flags if provided
+	if len(opts.plugins) > 0 {
+		selectedPlugins = opts.plugins
 	}
 
 	// Resolve template path (supports local paths and GitHub URLs)
@@ -547,155 +590,106 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		}
 	}
 
-	// Step 3: Determine template type and gather configuration
-	usesFeatureFragments := features.HasFeaturesDirectory(templateDir)
+	// Step 3: Load manifest from template (optional — templates without it skip plugin/resource logic)
+	var m *manifest.Manifest
+	if manifest.HasManifest(templateDir) {
+		var err error
+		m, err = manifest.Load(templateDir)
+		if err != nil {
+			return fmt.Errorf("load manifest: %w", err)
+		}
+		log.Debugf(ctx, "Loaded manifest with %d plugins", len(m.Plugins))
+		for name, p := range m.Plugins {
+			log.Debugf(ctx, "  Plugin %q: %d required resources, %d optional resources, requiredByTemplate=%v",
+				name, len(p.Resources.Required), len(p.Resources.Optional), p.RequiredByTemplate)
+		}
+	} else {
+		log.Debugf(ctx, "No manifest found in template, skipping plugin/resource configuration")
+		m = &manifest.Manifest{Plugins: map[string]manifest.Plugin{}}
+	}
 
 	// When --name is provided, user is in "flags mode" - use defaults instead of prompting
 	flagsMode := opts.nameProvided
 
-	if usesFeatureFragments {
-		// Feature-fragment template: prompt for features and their dependencies
-		// Skip deploy/run prompts if in flags mode or if deploy/run flags were explicitly set
-		skipDeployRunPrompt := flagsMode || opts.deployChanged || opts.runChanged
+	// Skip deploy/run prompts if in flags mode or if deploy/run flags were explicitly set
+	skipDeployRunPrompt := flagsMode || opts.deployChanged || opts.runChanged
 
-		if isInteractive && !opts.featuresChanged && !flagsMode {
-			// Interactive mode without --features flag: prompt for features, dependencies, description
-			config, err := promptForFeaturesAndDeps(ctx, selectedFeatures, skipDeployRunPrompt)
-			if err != nil {
-				return err
-			}
-			selectedFeatures = config.Features
-			dependencies = config.Dependencies
-			if config.Description != "" {
-				opts.description = config.Description
-			}
-			// Use prompted values for deploy/run (only set if we prompted)
-			if !skipDeployRunPrompt {
-				shouldDeploy = config.Deploy
-				runMode = config.RunMode
-			}
-
-			// Get warehouse from dependencies if provided
-			if wh, ok := dependencies["sql_warehouse_id"]; ok && wh != "" {
-				opts.warehouseID = wh
-			}
-		} else if isInteractive && opts.featuresChanged && !flagsMode {
-			// Interactive mode with --features flag: validate features, prompt for deploy/run if no flags
-			flagValues := map[string]string{
-				"warehouse-id": opts.warehouseID,
-			}
-			if len(selectedFeatures) > 0 {
-				if err := features.ValidateFeatureDependencies(selectedFeatures, flagValues); err != nil {
-					return err
-				}
-			}
-			dependencies = make(map[string]string)
-			if opts.warehouseID != "" {
-				dependencies["sql_warehouse_id"] = opts.warehouseID
-			}
-
-			// Prompt for deploy/run if no flags were set
-			if !skipDeployRunPrompt {
-				var err error
-				shouldDeploy, runMode, err = prompt.PromptForDeployAndRun(ctx)
-				if err != nil {
-					return err
-				}
-			}
-		} else {
-			// Flags mode or non-interactive: validate features and use flag values
-			flagValues := map[string]string{
-				"warehouse-id": opts.warehouseID,
-			}
-			if len(selectedFeatures) > 0 {
-				if err := features.ValidateFeatureDependencies(selectedFeatures, flagValues); err != nil {
-					return err
-				}
-			}
-			dependencies = make(map[string]string)
-			if opts.warehouseID != "" {
-				dependencies["sql_warehouse_id"] = opts.warehouseID
-			}
-		}
-
-		// Apply flag values for deploy/run when in flags mode, flags were explicitly set, or non-interactive
-		if skipDeployRunPrompt || !isInteractive {
-			var err error
-			shouldDeploy, runMode, err = parseDeployAndRunFlags(opts.deploy, opts.run)
-			if err != nil {
-				return err
-			}
-		}
-
-		// Validate feature IDs
-		if err := features.ValidateFeatureIDs(selectedFeatures); err != nil {
+	if isInteractive && !opts.pluginsChanged && !flagsMode {
+		// Interactive mode without --plugins flag: prompt for plugins, dependencies, description
+		config, err := promptForPluginsAndDeps(ctx, m, selectedPlugins, skipDeployRunPrompt)
+		if err != nil {
 			return err
 		}
-	} else {
-		// Pre-assembled template: detect plugins and prompt for their dependencies
-		detectedPlugins, err := features.DetectPluginsFromServer(templateDir)
-		if err != nil {
-			return fmt.Errorf("failed to detect plugins: %w", err)
+		selectedPlugins = config.Features // Features field holds plugin names
+		resourceValues = config.Dependencies
+		if config.Description != "" {
+			opts.description = config.Description
 		}
-
-		log.Debugf(ctx, "Detected plugins: %v", detectedPlugins)
-
-		// Map detected plugins to feature IDs for ApplyFeatures
-		selectedFeatures = features.MapPluginsToFeatures(detectedPlugins)
-		log.Debugf(ctx, "Mapped to features: %v", selectedFeatures)
-
-		pluginDeps := features.GetPluginDependencies(detectedPlugins)
-
-		log.Debugf(ctx, "Plugin dependencies: %d", len(pluginDeps))
-
-		if isInteractive && len(pluginDeps) > 0 {
-			// Prompt for plugin dependencies
-			dependencies, err = prompt.PromptForPluginDependencies(ctx, pluginDeps)
+		if !skipDeployRunPrompt {
+			shouldDeploy = config.Deploy
+			runMode = config.RunMode
+		}
+	} else {
+		// --plugins flag or flags/non-interactive mode: validate plugin names
+		if len(selectedPlugins) > 0 {
+			if err := m.ValidatePluginNames(selectedPlugins); err != nil {
+				return err
+			}
+		}
+		// Prompt for deploy/run in interactive mode when no flags were set
+		if isInteractive && !skipDeployRunPrompt {
+			var err error
+			shouldDeploy, runMode, err = prompt.PromptForDeployAndRun(ctx)
 			if err != nil {
 				return err
 			}
-			if wh, ok := dependencies["sql_warehouse_id"]; ok && wh != "" {
-				opts.warehouseID = wh
-			}
-		} else {
-			// Non-interactive: check flags
-			dependencies = make(map[string]string)
-			if opts.warehouseID != "" {
-				dependencies["sql_warehouse_id"] = opts.warehouseID
-			}
+		}
+	}
 
-			// Validate required dependencies are provided
-			for _, dep := range pluginDeps {
-				if dep.Required {
-					if _, ok := dependencies[dep.ID]; !ok {
-						return fmt.Errorf("missing required flag --%s for detected plugin", dep.FlagName)
-					}
+	// Parse --set values (override any prompted values)
+	setVals, err := parseSetValues(opts.setValues, m)
+	if err != nil {
+		return err
+	}
+	if len(setVals) > 0 {
+		if resourceValues == nil {
+			resourceValues = make(map[string]string, len(setVals))
+		}
+		for k, v := range setVals {
+			resourceValues[k] = v
+		}
+	}
+
+	// Always include mandatory plugins regardless of user selection or flags.
+	selectedPlugins = appendUnique(selectedPlugins, m.GetMandatoryPluginNames()...)
+
+	// In flags/non-interactive mode, validate that all required resources are provided.
+	if flagsMode || !isInteractive {
+		resources := m.CollectResources(selectedPlugins)
+		for _, r := range resources {
+			found := false
+			for k := range resourceValues {
+				if strings.HasPrefix(k, r.Key()+".") {
+					found = true
+					break
 				}
 			}
-		}
-
-		// Set default description if not provided
-		if opts.description == "" {
-			opts.description = prompt.DefaultAppDescription
-		}
-
-		// Only prompt for deploy/run if not in flags mode and no deploy/run flags were set
-		if isInteractive && !flagsMode && !opts.deployChanged && !opts.runChanged {
-			var deployVal bool
-			var runVal prompt.RunMode
-			deployVal, runVal, err = prompt.PromptForDeployAndRun(ctx)
-			if err != nil {
-				return err
+			if !found {
+				fieldHint := "id"
+				if names := r.FieldNames(); len(names) > 0 {
+					fieldHint = names[0]
+				}
+				return fmt.Errorf("missing required resource %q for selected plugins (use --set %s.%s=value)", r.Alias, r.Key(), fieldHint)
 			}
-			shouldDeploy = deployVal
-			runMode = runVal
-		} else {
-			// Flags mode or explicit flags: use flag values (or defaults if not set)
-			var err error
-			shouldDeploy, runMode, err = parseDeployAndRunFlags(opts.deploy, opts.run)
-			if err != nil {
-				return err
-			}
+		}
+	}
+
+	// Apply flag values for deploy/run when in flags mode, flags were explicitly set, or non-interactive
+	if skipDeployRunPrompt || !isInteractive {
+		var err error
+		shouldDeploy, runMode, err = parseDeployAndRunFlags(opts.deploy, opts.run)
+		if err != nil {
+			return err
 		}
 	}
 
@@ -722,31 +716,47 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		profile = w.Config.Profile
 	}
 
-	// Build plugin imports and usages from selected features
-	pluginImport, pluginUsage := features.BuildPluginStrings(selectedFeatures)
+	// Get selected plugins for generation
+	selectedPluginList := generator.GetSelectedPlugins(m, selectedPlugins)
 
-	// Template variables (initial, without feature fragments)
-	vars := templateVars{
+	log.Debugf(ctx, "Selected plugins: %v", selectedPlugins)
+	log.Debugf(ctx, "Selected plugin list count: %d", len(selectedPluginList))
+	log.Debugf(ctx, "Resource values: %d entries", len(resourceValues))
+
+	// Build generator config
+	genConfig := generator.Config{
 		ProjectName:    opts.name,
-		SQLWarehouseID: opts.warehouseID,
-		AppDescription: opts.description,
-		Profile:        profile,
 		WorkspaceHost:  workspaceHost,
-		PluginImport:   pluginImport,
-		PluginUsage:    pluginUsage,
+		Profile:        profile,
+		ResourceValues: resourceValues,
 	}
 
-	// Load feature resource fragments
-	fragments, err := loadFeatureFragments(templateDir, selectedFeatures, vars)
-	if err != nil {
-		return fmt.Errorf("load feature fragments: %w", err)
+	// Build plugin import/usage strings from selected plugins
+	pluginImport, pluginUsage := buildPluginStrings(selectedPlugins)
+
+	// Generate configurations from selected plugins
+	bundleVars := generator.GenerateBundleVariables(selectedPluginList, genConfig)
+	bundleRes := generator.GenerateBundleResources(selectedPluginList, genConfig)
+	targetVars := generator.GenerateTargetVariables(selectedPluginList, genConfig)
+
+	log.Debugf(ctx, "Generated bundle variables:\n%s", bundleVars)
+	log.Debugf(ctx, "Generated bundle resources:\n%s", bundleRes)
+	log.Debugf(ctx, "Generated target variables:\n%s", targetVars)
+
+	// Template variables with generated content
+	vars := templateVars{
+		ProjectName:     opts.name,
+		AppDescription:  opts.description,
+		Profile:         profile,
+		WorkspaceHost:   workspaceHost,
+		PluginImports:   pluginImport,
+		PluginUsages:    pluginUsage,
+		BundleVariables: bundleVars,
+		BundleResources: bundleRes,
+		TargetVariables: targetVars,
+		DotEnv:          generator.GenerateDotEnv(selectedPluginList, genConfig),
+		DotEnvExample:   generator.GenerateDotEnvExample(selectedPluginList),
 	}
-	vars.BundleVariables = fragments.BundleVariables
-	vars.BundleResources = fragments.BundleResources
-	vars.TargetVariables = fragments.TargetVariables
-	vars.AppEnv = fragments.AppEnv
-	vars.DotEnv = fragments.DotEnv
-	vars.DotEnvExample = fragments.DotEnvExample
 
 	// Copy template with variable substitution
 	var fileCount int
@@ -766,9 +776,9 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		absOutputDir = destDir
 	}
 
-	// Apply features (adds selected features, removes unselected feature files)
-	runErr = prompt.RunWithSpinnerCtx(ctx, "Configuring features...", func() error {
-		return features.ApplyFeatures(absOutputDir, selectedFeatures)
+	// Apply plugin-specific post-processing (e.g., remove config/queries if analytics not selected)
+	runErr = prompt.RunWithSpinnerCtx(ctx, "Configuring plugins...", func() error {
+		return applyPlugins(absOutputDir, selectedPlugins)
 	})
 	if runErr != nil {
 		return runErr
@@ -883,6 +893,71 @@ func runPostCreateDev(ctx context.Context, mode prompt.RunMode, projectInit init
 	}
 }
 
+// appendUnique appends values to a slice, skipping duplicates.
+func appendUnique(base []string, values ...string) []string {
+	seen := make(map[string]bool, len(base))
+	for _, v := range base {
+		seen[v] = true
+	}
+	for _, v := range values {
+		if !seen[v] {
+			seen[v] = true
+			base = append(base, v)
+		}
+	}
+	return base
+}
+
+// buildPluginStrings builds the plugin import and usage strings from selected plugin names.
+func buildPluginStrings(pluginNames []string) (pluginImport, pluginUsage string) {
+	if len(pluginNames) == 0 {
+		return "", ""
+	}
+
+	// Plugin names map directly to imports and usage
+	// e.g., "analytics" -> import "analytics", usage "analytics()"
+	var imports []string
+	var usages []string
+
+	for _, name := range pluginNames {
+		imports = append(imports, name)
+		usages = append(usages, name+"()")
+	}
+
+	pluginImport = strings.Join(imports, ", ")
+	pluginUsage = strings.Join(usages, ",\n    ")
+
+	return pluginImport, pluginUsage
+}
+
+// pluginOwnedPaths maps plugin names to directories they own.
+// When a plugin is not selected, its owned paths are removed from the project.
+var pluginOwnedPaths = map[string][]string{
+	"analytics": {"config/queries"},
+}
+
+// applyPlugins removes directories owned by unselected plugins.
+func applyPlugins(projectDir string, pluginNames []string) error {
+	selectedSet := make(map[string]bool)
+	for _, name := range pluginNames {
+		selectedSet[name] = true
+	}
+
+	for plugin, paths := range pluginOwnedPaths {
+		if selectedSet[plugin] {
+			continue
+		}
+		for _, p := range paths {
+			target := filepath.Join(projectDir, p)
+			if err := os.RemoveAll(target); err != nil && !os.IsNotExist(err) {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
 // renameFiles maps source file names to destination names (for files that can't use special chars).
 var renameFiles = map[string]string{
 	"_gitignore":  ".gitignore",
@@ -924,8 +999,21 @@ func copyTemplate(ctx context.Context, src, dest string, vars templateVars) (int
 		"databricks_template_schema.json": true,
 	}
 	skipDirs := map[string]bool{
-		"docs":     true,
-		"features": true, // Feature fragments are processed separately, not copied
+		"docs":         true,
+		"node_modules": true,
+		"dist":         true,
+		".git":         true,
+	}
+
+	// Load .gitignore patterns from the template to skip ignored paths (e.g., dist, node_modules).
+	// Checks both _gitignore (template convention) and .gitignore.
+	var gitIgnore *ignore.GitIgnore
+	for _, name := range []string{"_gitignore", ".gitignore"} {
+		p := filepath.Join(srcProjectDir, name)
+		if gi, err := ignore.CompileIgnoreFile(p); err == nil {
+			gitIgnore = gi
+			break
+		}
 	}
 
 	err = filepath.Walk(srcProjectDir, func(srcPath string, info os.FileInfo, err error) error {
@@ -947,14 +1035,31 @@ func copyTemplate(ctx context.Context, src, dest string, vars templateVars) (int
 			return filepath.SkipDir
 		}
 
+		// Skip paths matched by .gitignore patterns.
+		// Append "/" for directories so patterns like "node_modules/" match correctly.
+		if gitIgnore != nil && srcPath != srcProjectDir {
+			rel, relErr := filepath.Rel(srcProjectDir, srcPath)
+			if relErr == nil {
+				matchPath := rel
+				if info.IsDir() {
+					matchPath = rel + "/"
+				}
+				if gitIgnore.MatchesPath(matchPath) {
+					if info.IsDir() {
+						log.Debugf(ctx, "Skipping gitignored directory: %s", rel)
+						return filepath.SkipDir
+					}
+					log.Debugf(ctx, "Skipping gitignored file: %s", rel)
+					return nil
+				}
+			}
+		}
+
 		// Calculate relative path from source project dir
 		relPath, err := filepath.Rel(srcProjectDir, srcPath)
 		if err != nil {
 			return err
 		}
-
-		// Substitute variables in path
-		relPath = substituteVars(relPath, vars)
 
 		// Handle .tmpl extension - strip it
 		relPath = strings.TrimSuffix(relPath, ".tmpl")
@@ -980,23 +1085,11 @@ func copyTemplate(ctx context.Context, src, dest string, vars templateVars) (int
 			return err
 		}
 
-		// Handle special files
-		switch filepath.Base(srcPath) {
-		case "package.json":
-			content, err = processPackageJSON(content, vars)
+		// Apply Go template substitution to all text files (including .tmpl).
+		if isTextFile(srcPath) || strings.HasSuffix(srcPath, ".tmpl") {
+			content, err = executeTemplate(ctx, srcPath, content, vars)
 			if err != nil {
-				return fmt.Errorf("process package.json: %w", err)
-			}
-		default:
-			// Use Go template engine for .tmpl files (handles conditionals)
-			if strings.HasSuffix(srcPath, ".tmpl") {
-				content, err = executeTemplate(srcPath, content, vars)
-				if err != nil {
-					return fmt.Errorf("process template %s: %w", srcPath, err)
-				}
-			} else if isTextFile(srcPath) {
-				// Simple substitution for other text files
-				content = []byte(substituteVars(string(content), vars))
+				return fmt.Errorf("process template %s: %w", srcPath, err)
 			}
 		}
 
@@ -1005,8 +1098,13 @@ func copyTemplate(ctx context.Context, src, dest string, vars templateVars) (int
 			return err
 		}
 
-		// Write file
-		if err := os.WriteFile(destPath, content, info.Mode()); err != nil {
+		// Write file — use restrictive permissions for .env files (may contain secrets).
+		perm := info.Mode()
+		destName := filepath.Base(destPath)
+		if strings.HasPrefix(destName, ".env") {
+			perm = 0o600
+		}
+		if err := os.WriteFile(destPath, content, perm); err != nil {
 			return err
 		}
 
@@ -1021,68 +1119,39 @@ func copyTemplate(ctx context.Context, src, dest string, vars templateVars) (int
 	return fileCount, err
 }
 
-// processPackageJSON updates the package.json with project-specific values.
-func processPackageJSON(content []byte, vars templateVars) ([]byte, error) {
-	// Just do string substitution to preserve key order and formatting
-	return []byte(substituteVars(string(content), vars)), nil
-}
-
-// substituteVars replaces template variables in a string.
-func substituteVars(s string, vars templateVars) string {
-	s = strings.ReplaceAll(s, "{{.project_name}}", vars.ProjectName)
-	s = strings.ReplaceAll(s, "{{.sql_warehouse_id}}", vars.SQLWarehouseID)
-	s = strings.ReplaceAll(s, "{{.app_description}}", vars.AppDescription)
-	s = strings.ReplaceAll(s, "{{.profile}}", vars.Profile)
-	s = strings.ReplaceAll(s, "{{workspace_host}}", vars.WorkspaceHost)
-
-	// Handle plugin placeholders
-	if vars.PluginImport != "" {
-		s = strings.ReplaceAll(s, "{{.plugin_import}}", vars.PluginImport)
-		s = strings.ReplaceAll(s, "{{.plugin_usage}}", vars.PluginUsage)
-	} else {
-		// No plugins selected - clean up the template
-		// Remove ", {{.plugin_import}}" from import line
-		s = strings.ReplaceAll(s, ", {{.plugin_import}} ", " ")
-		s = strings.ReplaceAll(s, ", {{.plugin_import}}", "")
-		// Remove the plugin_usage line entirely
-		s = strings.ReplaceAll(s, "    {{.plugin_usage}},\n", "")
-		s = strings.ReplaceAll(s, "    {{.plugin_usage}},", "")
-	}
-
-	return s
-}
-
-// executeTemplate processes a .tmpl file using Go's text/template engine.
-func executeTemplate(path string, content []byte, vars templateVars) ([]byte, error) {
-	tmpl, err := template.New(filepath.Base(path)).
-		Funcs(template.FuncMap{
-			"workspace_host": func() string { return vars.WorkspaceHost },
-		}).
-		Parse(string(content))
-	if err != nil {
-		return nil, fmt.Errorf("parse template: %w", err)
-	}
-
-	// Use a map to match template variable names exactly (snake_case)
-	data := map[string]string{
+// templateData builds the data map for Go template execution.
+func templateData(vars templateVars) map[string]string {
+	return map[string]string{
 		"project_name":     vars.ProjectName,
-		"sql_warehouse_id": vars.SQLWarehouseID,
 		"app_description":  vars.AppDescription,
 		"profile":          vars.Profile,
 		"workspace_host":   vars.WorkspaceHost,
-		"plugin_import":    vars.PluginImport,
-		"plugin_usage":     vars.PluginUsage,
-		"bundle_variables": vars.BundleVariables,
-		"bundle_resources": vars.BundleResources,
+		"plugin_imports":   vars.PluginImports,
+		"plugin_usages":    vars.PluginUsages,
+		"variables":        vars.BundleVariables,
+		"resources":        vars.BundleResources,
 		"target_variables": vars.TargetVariables,
-		"app_env":          vars.AppEnv,
 		"dotenv":           vars.DotEnv,
 		"dotenv_example":   vars.DotEnvExample,
 	}
+}
+
+// executeTemplate processes a file using Go's text/template engine.
+// On parse errors (e.g., files containing non-Go {{...}} syntax), the original
+// content is returned with a warning logged instead of failing the process.
+func executeTemplate(ctx context.Context, path string, content []byte, vars templateVars) ([]byte, error) {
+	tmpl, err := template.New(filepath.Base(path)).
+		Option("missingkey=zero").
+		Parse(string(content))
+	if err != nil {
+		log.Warnf(ctx, "Skipping template substitution for %s: %v", filepath.Base(path), err)
+		return content, nil
+	}
 
 	var buf bytes.Buffer
-	if err := tmpl.Execute(&buf, data); err != nil {
-		return nil, fmt.Errorf("execute template: %w", err)
+	if err := tmpl.Execute(&buf, templateData(vars)); err != nil {
+		log.Warnf(ctx, "Skipping template substitution for %s: %v", filepath.Base(path), err)
+		return content, nil
 	}
 
 	return buf.Bytes(), nil
