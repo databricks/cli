@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 
 	"github.com/databricks/cli/bundle/config/mutator"
 	"github.com/databricks/cli/bundle/config/validate"
@@ -46,61 +47,88 @@ func applyInitializeMutators(ctx context.Context, b *bundle.Bundle) {
 		return
 	}
 
-	defaults := []struct {
+	type defaultDef struct {
 		pattern string
 		value   any
-	}{
+	}
+
+	// Dashboard defaults
+	dashboardDefaults := []defaultDef{
 		{"resources.dashboards.*.parent_path", b.Config.Workspace.ResourcePath},
 		{"resources.dashboards.*.embed_credentials", false},
+	}
+
+	// Volume defaults
+	volumeDefaults := []defaultDef{
 		{"resources.volumes.*.volume_type", "MANAGED"},
+	}
 
+	// Alert defaults
+	alertDefaults := []defaultDef{
 		{"resources.alerts.*.parent_path", b.Config.Workspace.ResourcePath},
+	}
 
-		// Jobs:
-
-		// The defaults are the same as for terraform provider latest version (v1.75.0)
-		// https://github.com/databricks/terraform-provider-databricks/blob/v1.75.0/jobs/resource_job.go#L532
+	// Job defaults
+	// Same as terraform provider v1.75.0
+	// https://github.com/databricks/terraform-provider-databricks/blob/v1.75.0/jobs/resource_job.go#L532
+	jobDefaults := []defaultDef{
 		{"resources.jobs.*.name", "Untitled"},
 		{"resources.jobs.*.max_concurrent_runs", 1},
 		{"resources.jobs.*.schedule.pause_status", "UNPAUSED"},
 		{"resources.jobs.*.trigger.pause_status", "UNPAUSED"},
 		{"resources.jobs.*.continuous.pause_status", "UNPAUSED"},
-
 		// Enable queueing for jobs by default, following the behavior from API 2.2+.
 		// As of 2024-04, we're still using API 2.1 which has queueing disabled by default.
 		{"resources.jobs.*.queue", map[string]dyn.Value{
 			"enabled": dyn.V(true),
 		}},
-
 		// This is converted from single-task to multi-task
 		{"resources.jobs.*.task[*].dbt_task.schema", "default"},
 		{"resources.jobs.*.task[*].for_each_task.task.dbt_task.schema", "default"},
-
 		// https://github.com/databricks/terraform-provider-databricks/blob/v1.75.0/clusters/resource_cluster.go
 		{"resources.jobs.*.job_clusters[*].new_cluster.workload_type.clients.notebooks", true},
 		{"resources.jobs.*.job_clusters[*].new_cluster.workload_type.clients.jobs", true},
+	}
 
-		// Pipelines (same as terraform)
-		// https://github.com/databricks/terraform-provider-databricks/blob/v1.75.0/pipelines/resource_pipeline.go#L253
+	// Pipeline defaults (same as terraform)
+	// https://github.com/databricks/terraform-provider-databricks/blob/v1.75.0/pipelines/resource_pipeline.go#L253
+	pipelineDefaults := []defaultDef{
 		{"resources.pipelines.*.edition", "ADVANCED"},
 		{"resources.pipelines.*.channel", "CURRENT"},
+	}
 
-		// SqlWarehouses (same as terraform)
-		// https://github.com/databricks/terraform-provider-databricks/blob/v1.75.0/sql/resource_sql_endpoint.go#L59
+	// SqlWarehouse defaults (same as terraform)
+	// https://github.com/databricks/terraform-provider-databricks/blob/v1.75.0/sql/resource_sql_endpoint.go#L59
+	sqlWarehouseDefaults := []defaultDef{
 		{"resources.sql_warehouses.*.auto_stop_mins", 120},
 		{"resources.sql_warehouses.*.enable_photon", true},
 		{"resources.sql_warehouses.*.max_num_clusters", 1},
 		{"resources.sql_warehouses.*.spot_instance_policy", "COST_OPTIMIZED"},
+	}
 
-		// Apps:
+	// App defaults
+	appDefaults := []defaultDef{
 		{"resources.apps.*.description", ""},
+	}
 
-		// Clusters (same as terraform)
-		// https://github.com/databricks/terraform-provider-databricks/blob/v1.75.0/clusters/resource_cluster.go#L315
+	// Cluster defaults (same as terraform)
+	// https://github.com/databricks/terraform-provider-databricks/blob/v1.75.0/clusters/resource_cluster.go#L315
+	clusterDefaults := []defaultDef{
 		{"resources.clusters.*.autotermination_minutes", 60},
 		{"resources.clusters.*.workload_type.clients.notebooks", true},
 		{"resources.clusters.*.workload_type.clients.jobs", true},
 	}
+
+	defaults := slices.Concat(
+		dashboardDefaults,
+		volumeDefaults,
+		alertDefaults,
+		jobDefaults,
+		pipelineDefaults,
+		sqlWarehouseDefaults,
+		appDefaults,
+		clusterDefaults,
+	)
 
 	for _, defaultDef := range defaults {
 		bundle.SetDefault(ctx, b, defaultDef.pattern, defaultDef.value)
