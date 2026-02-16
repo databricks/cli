@@ -23,17 +23,7 @@ Resource: resources.pipelines.my_pipeline
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml
-<<<<<<< HEAD
-@@ -7,18 +7,24 @@
-=======
-@@ -1,5 +1,4 @@
- bundle:
-   name: test-bundle-[UNIQUE_NAME]
--
- resources:
-   pipelines:
-@@ -7,19 +6,25 @@
->>>>>>> beceaef8bf5a467659a19854437ffbd3feaeb4e9
+@@ -7,18 +7,25 @@
        name: test-pipeline-[UNIQUE_NAME]
        catalog: main
 -      schema: default
@@ -57,8 +47,8 @@ Resource: resources.pipelines.my_pipeline
              path: /Users/{{workspace_user_name}}/notebook
 +      tags:
 +        foo: bar
-
 +      root_path: ./pipeline_root
+
  targets:
 
 >>> [CLI] bundle destroy --auto-approve

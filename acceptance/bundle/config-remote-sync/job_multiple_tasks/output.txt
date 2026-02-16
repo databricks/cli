@@ -104,7 +104,7 @@ Resource: resources.jobs.rename_task_job
 +            - task_key: b_task_renamed
            notebook_task:
              notebook_path: /Users/{{workspace_user_name}}/c_task
-@@ -67,7 +67,14 @@
+@@ -69,7 +69,14 @@
          - task_key: a_task
            notebook_task:
 -            notebook_path: /Users/{{workspace_user_name}}/a_task
