@@ -1,4 +1,4 @@
-Cloud = false
+Cloud = true
 Local = false
 
 # Alert tests timeout during bundle deploy (hang at file upload for 50+ minutes).

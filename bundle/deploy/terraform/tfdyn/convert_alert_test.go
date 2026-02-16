@@ -50,6 +50,7 @@ func TestConvertAlert(t *testing.T) {
 		"warehouse_id":       "test_warehouse_id",
 		"custom_summary":     "Test alert summary",
 		"custom_description": "Test alert description",
+		"purge_on_delete":    true,
 	}, alert)
 
 	// Assert equality on the permissions

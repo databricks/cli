@@ -9,7 +9,7 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-func createWebsocketConnection(ctx context.Context, client *databricks.WorkspaceClient, connID, clusterID string, serverPort int) (*websocket.Conn, error) {
+func createWebsocketConnection(ctx context.Context, client *databricks.WorkspaceClient, connID, clusterID string, serverPort int, liteswap string) (*websocket.Conn, error) {
 	url, err := getProxyURL(ctx, client, connID, clusterID, serverPort)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get proxy URL: %w", err)
@@ -20,6 +20,9 @@ func createWebsocketConnection(ctx context.Context, client *databricks.Workspace
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
+	if liteswap != "" {
+		req.Header.Set("x-databricks-traffic-id", "testenv://liteswap/"+liteswap)
+	}
 	if err := client.Config.Authenticate(req); err != nil {
 		return nil, fmt.Errorf("failed to authenticate: %w", err)
 	}
