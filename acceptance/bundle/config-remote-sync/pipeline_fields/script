@@ -2,6 +2,11 @@
 
 envsubst < databricks.yml.tmpl > databricks.yml
 
+cleanup() {
+  trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
 $CLI bundle deploy
 pipeline_id="$(read_id.py my_pipeline)"
 
@@ -12,6 +17,10 @@ r["configuration"]["key2"] = "value2"
 r["notifications"][0]["email_recipients"].append("admin@example.com")
 r["notifications"][0]["alerts"].append("on-update-failure")
 r["schema"] = "prod"
+if "tags" not in r:
+    r["tags"] = {}
+r["tags"]["foo"] = "bar"
+r.setdefault("environment", {}).setdefault("dependencies", []).append("--editable /Workspace/bar")
 EOF
 
 # TODO add support for permissions

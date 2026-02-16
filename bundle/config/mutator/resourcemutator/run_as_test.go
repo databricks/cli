@@ -35,6 +35,7 @@ func allResourceTypes(t *testing.T) []string {
 	require.Equal(t, []string{
 		"alerts",
 		"apps",
+		"catalogs",
 		"clusters",
 		"dashboards",
 		"database_catalogs",
@@ -44,6 +45,9 @@ func allResourceTypes(t *testing.T) []string {
 		"model_serving_endpoints",
 		"models",
 		"pipelines",
+		"postgres_branches",
+		"postgres_endpoints",
+		"postgres_projects",
 		"quality_monitors",
 		"registered_models",
 		"schemas",
@@ -158,6 +162,7 @@ func TestRunAsWorksForAllowedResources(t *testing.T) {
 // they are not on the allow list below.
 var allowList = []string{
 	"alerts",
+	"catalogs",
 	"clusters",
 	"database_catalogs",
 	"database_instances",
@@ -165,6 +170,9 @@ var allowList = []string{
 	"jobs",
 	"pipelines",
 	"models",
+	"postgres_branches",
+	"postgres_endpoints",
+	"postgres_projects",
 	"registered_models",
 	"experiments",
 	"schemas",

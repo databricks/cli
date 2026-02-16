@@ -1,0 +1,14 @@
+Warning: required field "project_id" is not set
+  at resources.postgres_projects.my_project
+  in databricks.yml:10:7
+
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/deploy-postgres-no-id-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Error: cannot create resources.postgres_projects.my_project: Field 'project_id' is required, expected non-default value (not "")! (400 INVALID_PARAMETER_VALUE)
+
+Endpoint: POST [DATABRICKS_URL]/api/2.0/postgres/projects
+HTTP Status: 400 Bad Request
+API error_code: INVALID_PARAMETER_VALUE
+API message: Field 'project_id' is required, expected non-default value (not "")!
+
+Updating deployment state...

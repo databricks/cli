@@ -1,0 +1,83 @@
+Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
+Deploying resources...
+Updating deployment state...
+Deployment complete!
+
+=== Modify jobs
+Change max_concurrent_runs, name, change default tag
+
+=== Modify pipeline
+Change edition and channel
+
+=== Detect and save all changes
+Detected changes in 2 resource(s):
+
+Resource: resources.jobs.job1
+  max_concurrent_runs: add
+  name: add
+  tags['dev']: add
+  trigger.pause_status: add
+
+Resource: resources.pipelines.pipeline1
+  channel: add
+  edition: add
+
+
+
+=== Configuration changes
+
+>>> diff.py databricks.yml.backup databricks.yml
+--- databricks.yml.backup
++++ databricks.yml
+@@ -1,9 +1,7 @@
+ bundle:
+   name: test-bundle-[UNIQUE_NAME]
+-
+ targets:
+   default:
+     mode: development
+-
+ resources:
+   jobs:
+@@ -13,4 +11,5 @@
+           interval: 1
+           unit: DAYS
++        pause_status: UNPAUSED
+       tasks:
+         - task_key: main
+@@ -21,5 +20,8 @@
+             node_type_id: [NODE_TYPE_ID]
+             num_workers: 1
+-
++      tags:
++        dev: default_tag_changed
++      max_concurrent_runs: 5
++      name: Custom Job Name
+     job2:
+       tasks:
+@@ -31,5 +33,4 @@
+             node_type_id: [NODE_TYPE_ID]
+             num_workers: 1
+-
+   pipelines:
+     pipeline1:
+@@ -38,2 +39,4 @@
+         - notebook:
+             path: /Users/{{workspace_user_name}}/notebook
++      channel: PREVIEW
++      edition: CORE
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.job1
+  delete resources.jobs.job2
+  delete resources.pipelines.pipeline1
+
+This action will result in the deletion of the following Lakeflow Spark Declarative Pipelines along with the
+Streaming Tables (STs) and Materialized Views (MVs) managed by them:
+  delete resources.pipelines.pipeline1
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!

@@ -33,21 +33,10 @@ func New() *cobra.Command {
 
   **About resource IDs and names**
 
-  Lakebase APIs use hierarchical resource names in API paths to identify
-  resources, such as
-  projects/{project_id}/branches/{branch_id}/endpoints/{endpoint_id}.
-
-  When creating a resource, you may optionally provide the final ID component
-  (for example, project_id, branch_id, or endpoint_id). If you do not, the
-  system generates an identifier and uses it as the ID component.
-
-  The name field is output-only and represents the full resource path. Note:
-  The term *resource name* in this API refers to this full, hierarchical
-  identifier (for example, projects/{project_id}), not the display_name
-  field. The display_name is a separate, user-visible label shown in the UI.
-
-  The uid field is a system-generated, immutable identifier intended for
-  internal reference and should not be used to address or locate resources.`,
+  Resources are identified by hierarchical resource names like
+  projects/{project_id}/branches/{branch_id}/endpoints/{endpoint_id}. The
+  name field on each resource contains this full path and is output-only. Note
+  that name refers to this resource path, not the user-visible display_name.`,
 		GroupID: "postgres",
 		RunE:    root.ReportUnknownSubcommand,
 	}
@@ -107,7 +96,7 @@ func newCreateBranch() *cobra.Command {
 
 	cmd.Flags().Var(&createBranchJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createBranchReq.Branch.Name, "name", createBranchReq.Branch.Name, `The resource name of the branch.`)
+	cmd.Flags().StringVar(&createBranchReq.Branch.Name, "name", createBranchReq.Branch.Name, `Output only.`)
 	// TODO: complex arg: spec
 	// TODO: complex arg: status
 
@@ -126,12 +115,10 @@ func newCreateBranch() *cobra.Command {
     PARENT: The Project where this Branch will be created. Format:
       projects/{project_id}
     BRANCH_ID: The ID to use for the Branch. This becomes the final component of the
-      branch's resource name. The ID must be 1-63 characters long, start with a
-      lowercase letter, and contain only lowercase letters, numbers, and hyphens
-      (RFC 1123). Examples: - With custom ID: staging → name becomes
-      projects/{project_id}/branches/staging - Without custom ID: system
-      generates slug → name becomes
-      projects/{project_id}/branches/br-example-name-x1y2z3a4`
+      branch's resource name. The ID is required and must be 1-63 characters
+      long, start with a lowercase letter, and contain only lowercase letters,
+      numbers, and hyphens. For example, development becomes
+      projects/my-app/branches/development.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -151,7 +138,7 @@ func newCreateBranch() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -234,7 +221,7 @@ func newCreateEndpoint() *cobra.Command {
 
 	cmd.Flags().Var(&createEndpointJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createEndpointReq.Endpoint.Name, "name", createEndpointReq.Endpoint.Name, `The resource name of the endpoint.`)
+	cmd.Flags().StringVar(&createEndpointReq.Endpoint.Name, "name", createEndpointReq.Endpoint.Name, `Output only.`)
 	// TODO: complex arg: spec
 	// TODO: complex arg: status
 
@@ -253,12 +240,10 @@ func newCreateEndpoint() *cobra.Command {
     PARENT: The Branch where this Endpoint will be created. Format:
       projects/{project_id}/branches/{branch_id}
     ENDPOINT_ID: The ID to use for the Endpoint. This becomes the final component of the
-      endpoint's resource name. The ID must be 1-63 characters long, start with
-      a lowercase letter, and contain only lowercase letters, numbers, and
-      hyphens (RFC 1123). Examples: - With custom ID: primary → name becomes
-      projects/{project_id}/branches/{branch_id}/endpoints/primary - Without
-      custom ID: system generates slug → name becomes
-      projects/{project_id}/branches/{branch_id}/endpoints/ep-example-name-x1y2z3a4`
+      endpoint's resource name. The ID is required and must be 1-63 characters
+      long, start with a lowercase letter, and contain only lowercase letters,
+      numbers, and hyphens. For example, primary becomes
+      projects/my-app/branches/development/endpoints/primary.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -278,7 +263,7 @@ func newCreateEndpoint() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -361,7 +346,7 @@ func newCreateProject() *cobra.Command {
 
 	cmd.Flags().Var(&createProjectJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createProjectReq.Project.Name, "name", createProjectReq.Project.Name, `The resource name of the project.`)
+	cmd.Flags().StringVar(&createProjectReq.Project.Name, "name", createProjectReq.Project.Name, `Output only.`)
 	// TODO: complex arg: spec
 	// TODO: complex arg: status
 
@@ -379,11 +364,9 @@ func newCreateProject() *cobra.Command {
 
   Arguments:
     PROJECT_ID: The ID to use for the Project. This becomes the final component of the
-      project's resource name. The ID must be 1-63 characters long, start with a
-      lowercase letter, and contain only lowercase letters, numbers, and hyphens
-      (RFC 1123). Examples: - With custom ID: production → name becomes
-      projects/production - Without custom ID: system generates UUID → name
-      becomes projects/a7f89b2c-3d4e-5f6g-7h8i-9j0k1l2m3n4o`
+      project's resource name. The ID is required and must be 1-63 characters
+      long, start with a lowercase letter, and contain only lowercase letters,
+      numbers, and hyphens. For example, my-app becomes projects/my-app.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -403,7 +386,7 @@ func newCreateProject() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -485,11 +468,12 @@ func newCreateRole() *cobra.Command {
 
 	cmd.Flags().Var(&createRoleJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&createRoleReq.Role.Name, "name", createRoleReq.Role.Name, `The resource name of the role.`)
+	cmd.Flags().StringVar(&createRoleReq.RoleId, "role-id", createRoleReq.RoleId, `The ID to use for the Role, which will become the final component of the role's resource name.`)
+	cmd.Flags().StringVar(&createRoleReq.Role.Name, "name", createRoleReq.Role.Name, `Output only.`)
 	// TODO: complex arg: spec
 	// TODO: complex arg: status
 
-	cmd.Use = "create-role PARENT ROLE_ID"
+	cmd.Use = "create-role PARENT"
 	cmd.Short = `Create a postgres role for a branch.`
 	cmd.Long = `Create a postgres role for a branch.
 
@@ -502,12 +486,7 @@ func newCreateRole() *cobra.Command {
 
   Arguments:
     PARENT: The Branch where this Role is created. Format:
-      projects/{project_id}/branches/{branch_id}
-    ROLE_ID: The ID to use for the Role, which will become the final component of the
-      role's resource name. This ID becomes the role in Postgres.
-
-      This value should be 4-63 characters, and valid characters are lowercase
-      letters, numbers, and hyphens, as defined by RFC 1123.`
+      projects/{project_id}/branches/{branch_id}`
 
 	// This command is being previewed; hide from help output.
 	cmd.Hidden = true
@@ -515,7 +494,7 @@ func newCreateRole() *cobra.Command {
 	cmd.Annotations = make(map[string]string)
 
 	cmd.Args = func(cmd *cobra.Command, args []string) error {
-		check := root.ExactArgs(2)
+		check := root.ExactArgs(1)
 		return check(cmd, args)
 	}
 
@@ -530,14 +509,13 @@ func newCreateRole() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
 			}
 		}
 		createRoleReq.Parent = args[0]
-		createRoleReq.RoleId = args[1]
 
 		// Determine which mode to execute based on flags.
 		switch {
@@ -621,7 +599,7 @@ func newDeleteBranch() *cobra.Command {
   completion using the get-operation command.
 
   Arguments:
-    NAME: The name of the Branch to delete. Format:
+    NAME: The full resource path of the branch to delete. Format:
       projects/{project_id}/branches/{branch_id}`
 
 	cmd.Annotations = make(map[string]string)
@@ -721,7 +699,7 @@ func newDeleteEndpoint() *cobra.Command {
   completion using the get-operation command.
 
   Arguments:
-    NAME: The name of the Endpoint to delete. Format:
+    NAME: The full resource path of the endpoint to delete. Format:
       projects/{project_id}/branches/{branch_id}/endpoints/{endpoint_id}`
 
 	cmd.Annotations = make(map[string]string)
@@ -821,7 +799,8 @@ func newDeleteProject() *cobra.Command {
   completion using the get-operation command.
 
   Arguments:
-    NAME: The name of the Project to delete. Format: projects/{project_id}`
+    NAME: The full resource path of the project to delete. Format:
+      projects/{project_id}`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -922,7 +901,7 @@ func newDeleteRole() *cobra.Command {
   completion using the get-operation command.
 
   Arguments:
-    NAME: The resource name of the postgres role. Format:
+    NAME: The full resource path of the role to delete. Format:
       projects/{project_id}/branches/{branch_id}/roles/{role_id}`
 
 	// This command is being previewed; hide from help output.
@@ -1046,7 +1025,7 @@ func newGenerateDatabaseCredential() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -1096,7 +1075,7 @@ func newGetBranch() *cobra.Command {
   Retrieves information about the specified database branch.
 
   Arguments:
-    NAME: The resource name of the branch to retrieve. Format:
+    NAME: The full resource path of the branch to retrieve. Format:
       projects/{project_id}/branches/{branch_id}`
 
 	cmd.Annotations = make(map[string]string)
@@ -1154,7 +1133,7 @@ func newGetEndpoint() *cobra.Command {
   connection details and operational state.
 
   Arguments:
-    NAME: The resource name of the endpoint to retrieve. Format:
+    NAME: The full resource path of the endpoint to retrieve. Format:
       projects/{project_id}/branches/{branch_id}/endpoints/{endpoint_id}`
 
 	cmd.Annotations = make(map[string]string)
@@ -1267,7 +1246,7 @@ func newGetProject() *cobra.Command {
   Retrieves information about the specified database project.
 
   Arguments:
-    NAME: The resource name of the project to retrieve. Format:
+    NAME: The full resource path of the project to retrieve. Format:
       projects/{project_id}`
 
 	cmd.Annotations = make(map[string]string)
@@ -1325,7 +1304,7 @@ func newGetRole() *cobra.Command {
   authentication method and permissions.
 
   Arguments:
-    NAME: The name of the Role to retrieve. Format:
+    NAME: The full resource path of the role to retrieve. Format:
       projects/{project_id}/branches/{branch_id}/roles/{role_id}`
 
 	// This command is being previewed; hide from help output.
@@ -1614,7 +1593,7 @@ func newUpdateBranch() *cobra.Command {
 
 	cmd.Flags().Var(&updateBranchJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateBranchReq.Branch.Name, "name", updateBranchReq.Branch.Name, `The resource name of the branch.`)
+	cmd.Flags().StringVar(&updateBranchReq.Branch.Name, "name", updateBranchReq.Branch.Name, `Output only.`)
 	// TODO: complex arg: spec
 	// TODO: complex arg: status
 
@@ -1631,8 +1610,8 @@ func newUpdateBranch() *cobra.Command {
   completion using the get-operation command.
 
   Arguments:
-    NAME: The resource name of the branch. This field is output-only and constructed
-      by the system. Format: projects/{project_id}/branches/{branch_id}
+    NAME: Output only. The full resource path of the branch. Format:
+      projects/{project_id}/branches/{branch_id}
     UPDATE_MASK: The list of fields to update. If unspecified, all fields will be updated
       when possible.`
 
@@ -1654,7 +1633,7 @@ func newUpdateBranch() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -1740,7 +1719,7 @@ func newUpdateEndpoint() *cobra.Command {
 
 	cmd.Flags().Var(&updateEndpointJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateEndpointReq.Endpoint.Name, "name", updateEndpointReq.Endpoint.Name, `The resource name of the endpoint.`)
+	cmd.Flags().StringVar(&updateEndpointReq.Endpoint.Name, "name", updateEndpointReq.Endpoint.Name, `Output only.`)
 	// TODO: complex arg: spec
 	// TODO: complex arg: status
 
@@ -1757,8 +1736,7 @@ func newUpdateEndpoint() *cobra.Command {
   completion using the get-operation command.
 
   Arguments:
-    NAME: The resource name of the endpoint. This field is output-only and
-      constructed by the system. Format:
+    NAME: Output only. The full resource path of the endpoint. Format:
       projects/{project_id}/branches/{branch_id}/endpoints/{endpoint_id}
     UPDATE_MASK: The list of fields to update. If unspecified, all fields will be updated
       when possible.`
@@ -1781,7 +1759,7 @@ func newUpdateEndpoint() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -1867,7 +1845,7 @@ func newUpdateProject() *cobra.Command {
 
 	cmd.Flags().Var(&updateProjectJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
-	cmd.Flags().StringVar(&updateProjectReq.Project.Name, "name", updateProjectReq.Project.Name, `The resource name of the project.`)
+	cmd.Flags().StringVar(&updateProjectReq.Project.Name, "name", updateProjectReq.Project.Name, `Output only.`)
 	// TODO: complex arg: spec
 	// TODO: complex arg: status
 
@@ -1883,8 +1861,8 @@ func newUpdateProject() *cobra.Command {
   completion using the get-operation command.
 
   Arguments:
-    NAME: The resource name of the project. This field is output-only and
-      constructed by the system. Format: projects/{project_id}
+    NAME: Output only. The full resource path of the project. Format:
+      projects/{project_id}
     UPDATE_MASK: The list of fields to update. If unspecified, all fields will be updated
       when possible.`
 
@@ -1906,7 +1884,7 @@ func newUpdateProject() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}

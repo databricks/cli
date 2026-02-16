@@ -91,10 +91,10 @@ func PrepareServerAndClient(t *testing.T, config TestConfig, logRequests bool, o
 
 		cfg := w.Config
 
-		// If we are running in a cloud environment AND we are recording requests,
-		// start a dedicated server to act as a reverse proxy to a real Databricks workspace.
-		if recordRequests {
-			host := startProxyServer(t, logRequests, config.IncludeRequestHeaders, outputDir)
+		// If we are running in a cloud environment AND we need to intercept requests
+		// (for recording or logging), start a proxy server.
+		if recordRequests || logRequests {
+			host := startProxyServer(t, recordRequests, logRequests, config.IncludeRequestHeaders, outputDir)
 			cfg = &sdkconfig.Config{
 				Host:  host,
 				Token: token,
@@ -272,14 +272,17 @@ func killCaller(t *testing.T, pattern string, headers http.Header) {
 }
 
 func startProxyServer(t *testing.T,
+	recordRequests bool,
 	logRequests bool,
 	includeHeaders []string,
 	outputDir string,
 ) string {
 	s := testproxy.New(t)
 
-	// Always record requests for a proxy server.
-	s.RequestCallback = recordRequestsCallback(t, includeHeaders, outputDir)
+	// Record API requests in out.requests.txt if RecordRequests is true in test.toml.
+	if recordRequests {
+		s.RequestCallback = recordRequestsCallback(t, includeHeaders, outputDir)
+	}
 
 	// Log API responses if the -logrequests flag is set.
 	if logRequests {

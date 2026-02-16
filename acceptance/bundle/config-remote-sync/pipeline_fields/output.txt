@@ -8,10 +8,13 @@ Deployment complete!
 Detected changes in 1 resource(s):
 
 Resource: resources.pipelines.my_pipeline
-  configuration['key2']: update
-  notifications[0].alerts: update
-  notifications[0].email_recipients: update
-  schema: update
+  configuration['key2']: add
+  environment.dependencies: replace
+  notifications[0].alerts: replace
+  notifications[0].email_recipients: replace
+  schema: replace
+  tags['foo']: add
+
 
 
 === Configuration changes
@@ -25,7 +28,7 @@ Resource: resources.pipelines.my_pipeline
 -
  resources:
    pipelines:
-@@ -7,12 +6,15 @@
+@@ -7,19 +6,24 @@
        name: test-pipeline-[UNIQUE_NAME]
        catalog: main
 -      schema: default
@@ -40,5 +43,28 @@ Resource: resources.pipelines.my_pipeline
            alerts:
              - on-update-success
 +            - on-update-failure
+       environment:
+         dependencies:
+           - --editable /Workspace/foo
++          - --editable /Workspace/bar
        libraries:
          - notebook:
+             path: /Users/{{workspace_user_name}}/notebook
+-
++      tags:
++        foo: bar
+ targets:
+   default:
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.pipelines.my_pipeline
+
+This action will result in the deletion of the following Lakeflow Spark Declarative Pipelines along with the
+Streaming Tables (STs) and Materialized Views (MVs) managed by them:
+  delete resources.pipelines.my_pipeline
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!

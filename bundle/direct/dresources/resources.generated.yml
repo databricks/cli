@@ -1,0 +1,272 @@
+# Generated, do not edit. API field behaviors from OpenAPI schema.
+#
+# For manual edits and schema description, see resources.yml.
+
+resources:
+
+  alerts:
+
+    ignore_remote_changes:
+      - field: create_time
+        reason: spec:output_only
+      - field: effective_run_as
+        reason: spec:output_only
+      - field: evaluation.last_evaluated_at
+        reason: spec:output_only
+      - field: evaluation.state
+        reason: spec:output_only
+      - field: id
+        reason: spec:output_only
+      - field: lifecycle_state
+        reason: spec:output_only
+      - field: owner_user_name
+        reason: spec:output_only
+      - field: update_time
+        reason: spec:output_only
+
+  apps:
+
+    ignore_remote_changes:
+      - field: active_deployment
+        reason: spec:output_only
+      - field: app_status
+        reason: spec:output_only
+      - field: compute_status
+        reason: spec:output_only
+      - field: create_time
+        reason: spec:output_only
+      - field: creator
+        reason: spec:output_only
+      - field: default_source_code_path
+        reason: spec:output_only
+      - field: effective_budget_policy_id
+        reason: spec:output_only
+      - field: effective_usage_policy_id
+        reason: spec:output_only
+      - field: effective_user_api_scopes
+        reason: spec:output_only
+      - field: id
+        reason: spec:output_only
+      - field: oauth2_app_client_id
+        reason: spec:output_only
+      - field: oauth2_app_integration_id
+        reason: spec:output_only
+      - field: pending_deployment
+        reason: spec:output_only
+      - field: service_principal_client_id
+        reason: spec:output_only
+      - field: service_principal_id
+        reason: spec:output_only
+      - field: service_principal_name
+        reason: spec:output_only
+      - field: update_time
+        reason: spec:output_only
+      - field: updater
+        reason: spec:output_only
+      - field: url
+        reason: spec:output_only
+
+  # catalogs: no api field behaviors
+
+  # clusters: no api field behaviors
+
+  dashboards:
+
+    recreate_on_changes:
+      - field: parent_path
+        reason: spec:immutable
+
+    ignore_remote_changes:
+      - field: create_time
+        reason: spec:output_only
+      - field: dashboard_id
+        reason: spec:output_only
+      - field: lifecycle_state
+        reason: spec:output_only
+      - field: path
+        reason: spec:output_only
+      - field: update_time
+        reason: spec:output_only
+
+  database_catalogs:
+
+    ignore_remote_changes:
+      - field: create_database_if_not_exists
+        reason: spec:input_only
+
+      - field: uid
+        reason: spec:output_only
+
+  database_instances:
+
+    recreate_on_changes:
+      - field: parent_instance_ref
+        reason: spec:immutable
+
+    ignore_remote_changes:
+      - field: custom_tags
+        reason: spec:input_only
+      - field: enable_pg_native_login
+        reason: spec:input_only
+      - field: enable_readable_secondaries
+        reason: spec:input_only
+      - field: node_count
+        reason: spec:input_only
+      - field: parent_instance_ref.lsn
+        reason: spec:input_only
+      - field: retention_window_in_days
+        reason: spec:input_only
+      - field: stopped
+        reason: spec:input_only
+      - field: usage_policy_id
+        reason: spec:input_only
+
+      - field: child_instance_refs
+        reason: spec:output_only
+      - field: creation_time
+        reason: spec:output_only
+      - field: creator
+        reason: spec:output_only
+      - field: effective_capacity
+        reason: spec:output_only
+      - field: effective_custom_tags
+        reason: spec:output_only
+      - field: effective_enable_pg_native_login
+        reason: spec:output_only
+      - field: effective_enable_readable_secondaries
+        reason: spec:output_only
+      - field: effective_node_count
+        reason: spec:output_only
+      - field: effective_retention_window_in_days
+        reason: spec:output_only
+      - field: effective_stopped
+        reason: spec:output_only
+      - field: effective_usage_policy_id
+        reason: spec:output_only
+      - field: parent_instance_ref.effective_lsn
+        reason: spec:output_only
+      - field: parent_instance_ref.uid
+        reason: spec:output_only
+      - field: pg_version
+        reason: spec:output_only
+      - field: read_only_dns
+        reason: spec:output_only
+      - field: read_write_dns
+        reason: spec:output_only
+      - field: state
+        reason: spec:output_only
+      - field: uid
+        reason: spec:output_only
+
+  # experiments: no api field behaviors
+
+  # jobs: no api field behaviors
+
+  # model_serving_endpoints: no api field behaviors
+
+  # models: no api field behaviors
+
+  pipelines:
+
+    ignore_remote_changes:
+      - field: ingestion_definition.source_type
+        reason: spec:output_only
+
+  postgres_branches:
+
+    recreate_on_changes:
+      - field: source_branch
+        reason: spec:immutable
+      - field: source_branch_lsn
+        reason: spec:immutable
+      - field: source_branch_time
+        reason: spec:immutable
+
+    ignore_remote_changes:
+      - field: expire_time
+        reason: spec:input_only
+      - field: is_protected
+        reason: spec:input_only
+      - field: no_expiry
+        reason: spec:input_only
+      - field: source_branch
+        reason: spec:input_only
+      - field: source_branch_lsn
+        reason: spec:input_only
+      - field: source_branch_time
+        reason: spec:input_only
+      - field: ttl
+        reason: spec:input_only
+
+  postgres_endpoints:
+
+    recreate_on_changes:
+      - field: endpoint_type
+        reason: spec:immutable
+
+    ignore_remote_changes:
+      - field: autoscaling_limit_max_cu
+        reason: spec:input_only
+      - field: autoscaling_limit_min_cu
+        reason: spec:input_only
+      - field: disabled
+        reason: spec:input_only
+      - field: endpoint_type
+        reason: spec:input_only
+      - field: no_suspension
+        reason: spec:input_only
+      - field: settings
+        reason: spec:input_only
+      - field: suspend_timeout_duration
+        reason: spec:input_only
+
+  postgres_projects:
+
+    recreate_on_changes:
+      - field: pg_version
+        reason: spec:immutable
+
+    ignore_remote_changes:
+      - field: default_endpoint_settings
+        reason: spec:input_only
+      - field: display_name
+        reason: spec:input_only
+      - field: history_retention_duration
+        reason: spec:input_only
+      - field: pg_version
+        reason: spec:input_only
+
+  # quality_monitors: no api field behaviors
+
+  # registered_models: no api field behaviors
+
+  # schemas: no api field behaviors
+
+  # secret_scopes: no api field behaviors
+
+  # sql_warehouses: no api field behaviors
+
+  synced_database_tables:
+
+    ignore_remote_changes:
+      - field: database_instance_name
+        reason: spec:input_only
+      - field: logical_database_name
+        reason: spec:input_only
+      - field: spec.create_database_objects_if_missing
+        reason: spec:input_only
+      - field: spec.existing_pipeline_id
+        reason: spec:input_only
+      - field: spec.new_pipeline_spec
+        reason: spec:input_only
+
+      - field: data_synchronization_status
+        reason: spec:output_only
+      - field: effective_database_instance_name
+        reason: spec:output_only
+      - field: effective_logical_database_name
+        reason: spec:output_only
+      - field: unity_catalog_provisioning_state
+        reason: spec:output_only
+
+  # volumes: no api field behaviors

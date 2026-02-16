@@ -75,6 +75,7 @@ type ResourceAlertV2 struct {
 	LifecycleState    string                         `json:"lifecycle_state,omitempty"`
 	OwnerUserName     string                         `json:"owner_user_name,omitempty"`
 	ParentPath        string                         `json:"parent_path,omitempty"`
+	PurgeOnDelete     bool                           `json:"purge_on_delete,omitempty"`
 	QueryText         string                         `json:"query_text"`
 	RunAs             *ResourceAlertV2RunAs          `json:"run_as,omitempty"`
 	RunAsUserName     string                         `json:"run_as_user_name,omitempty"`

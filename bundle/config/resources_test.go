@@ -21,6 +21,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
 	"github.com/databricks/databricks-sdk-go/service/pipelines"
+	"github.com/databricks/databricks-sdk-go/service/postgres"
 	"github.com/stretchr/testify/mock"
 
 	"github.com/stretchr/testify/assert"
@@ -139,6 +140,11 @@ func TestResourcesBindSupport(t *testing.T) {
 				CreateRegisteredModelRequest: catalog.CreateRegisteredModelRequest{},
 			},
 		},
+		Catalogs: map[string]*resources.Catalog{
+			"my_catalog": {
+				CreateCatalog: catalog.CreateCatalog{},
+			},
+		},
 		Schemas: map[string]*resources.Schema{
 			"my_schema": {
 				CreateSchema: catalog.CreateSchema{},
@@ -200,6 +206,35 @@ func TestResourcesBindSupport(t *testing.T) {
 				SyncedDatabaseTable: database.SyncedDatabaseTable{},
 			},
 		},
+		PostgresProjects: map[string]*resources.PostgresProject{
+			"my_postgres_project": {
+				PostgresProjectConfig: resources.PostgresProjectConfig{
+					ProjectId: "my-postgres-project",
+					ProjectSpec: postgres.ProjectSpec{
+						DisplayName: "my_postgres_project",
+					},
+				},
+			},
+		},
+		PostgresBranches: map[string]*resources.PostgresBranch{
+			"my_postgres_branch": {
+				PostgresBranchConfig: resources.PostgresBranchConfig{
+					BranchId: "my-postgres-branch",
+					Parent:   "projects/my-postgres-project",
+				},
+			},
+		},
+		PostgresEndpoints: map[string]*resources.PostgresEndpoint{
+			"my_postgres_endpoint": {
+				PostgresEndpointConfig: resources.PostgresEndpointConfig{
+					EndpointId: "my-postgres-endpoint",
+					Parent:     "projects/my-postgres-project/branches/my-postgres-branch",
+					EndpointSpec: postgres.EndpointSpec{
+						EndpointType: postgres.EndpointTypeEndpointTypeReadWrite,
+					},
+				},
+			},
+		},
 	}
 	unbindableResources := map[string]bool{"model": true}
 
@@ -209,6 +244,7 @@ func TestResourcesBindSupport(t *testing.T) {
 	m.GetMockPipelinesAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockExperimentsAPI().EXPECT().GetExperiment(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockRegisteredModelsAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockCatalogsAPI().EXPECT().GetByName(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockSchemasAPI().EXPECT().GetByFullName(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockClustersAPI().EXPECT().GetByClusterId(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockLakeviewAPI().EXPECT().Get(mock.Anything, mock.Anything).Return(nil, nil)
@@ -224,6 +260,9 @@ func TestResourcesBindSupport(t *testing.T) {
 	m.GetMockDatabaseAPI().EXPECT().GetDatabaseInstance(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockDatabaseAPI().EXPECT().GetDatabaseCatalog(mock.Anything, mock.Anything).Return(nil, nil)
 	m.GetMockDatabaseAPI().EXPECT().GetSyncedDatabaseTable(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockPostgresAPI().EXPECT().GetProject(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockPostgresAPI().EXPECT().GetBranch(mock.Anything, mock.Anything).Return(nil, nil)
+	m.GetMockPostgresAPI().EXPECT().GetEndpoint(mock.Anything, mock.Anything).Return(nil, nil)
 
 	allResources := supportedResources.AllResources()
 	for _, group := range allResources {

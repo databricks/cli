@@ -5,7 +5,6 @@
     "create_time": "[TIMESTAMP]",
     "dashboard_id": "[DASHBOARD_ID]",
     "display_name": "test dashboard",
-    "etag": [ETAG],
     "lifecycle_state": "ACTIVE",
     "parent_path": "/Users/[USERNAME]/.bundle/change-serialized-dashboard-[UNIQUE_NAME]/default/resources",
     "path": "/Users/[USERNAME]/.bundle/change-serialized-dashboard-[UNIQUE_NAME]/default/resources/test dashboard.lvdash.json",

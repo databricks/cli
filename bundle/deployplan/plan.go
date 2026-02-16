@@ -101,28 +101,29 @@ const (
 	ReasonServerSideDefault = "server_side_default"
 	ReasonAlias             = "alias"
 	ReasonRemoteAlreadySet  = "remote_already_set"
-	ReasonBuiltinRule       = "builtin_rule"
-	ReasonConfigOnly        = "config_only"
-	ReasonEmptySlice        = "empty_slice"
-	ReasonEmptyMap          = "empty_map"
-	ReasonEmptyStruct       = "empty_struct"
+	ReasonEmpty             = "empty"
 	ReasonCustom            = "custom"
+
+	// Special reason that results in removing this change from the plan
+	ReasonDrop = "!drop"
 )
 
 // HasChange checks if there are any changes for fields with the given prefix.
 // This function is path-aware and correctly handles path component boundaries.
 // For example:
-//   - HasChange("a") matches "a" and "a.b" but not "aa"
-//   - HasChange("config") matches "config" and "config.name" but not "configuration"
-//
-// Note: This function does not support wildcard patterns.
-func (c *Changes) HasChange(fieldPath string) bool {
+//   - HasChange for path "a" matches "a" and "a.b" but not "aa"
+//   - HasChange for path "config" matches "config" and "config.name" but not "configuration"
+func (c *Changes) HasChange(fieldPath *structpath.PathNode) bool {
 	if c == nil {
 		return false
 	}
 
 	for field := range *c {
-		if structpath.HasPrefix(field, fieldPath) {
+		fieldNode, err := structpath.ParsePath(field)
+		if err != nil {
+			continue
+		}
+		if fieldNode.HasPrefix(fieldPath) {
 			return true
 		}
 	}

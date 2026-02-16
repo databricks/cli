@@ -1,0 +1,34 @@
+Local = true
+Cloud = true
+RequiresUnityCatalog = true
+
+# Lakebase v2 (postgres) is only available in AWS as of January 2026
+CloudEnvs.gcp = false
+CloudEnvs.azure = false
+
+# Run on both direct and Terraform modes
+EnvMatrix.DATABRICKS_BUNDLE_ENGINE = ["direct", "terraform"]
+
+Ignore = [
+    "databricks.yml",
+    "out.requests.txt",
+    ".databricks",
+]
+
+[[Repls]]
+# Clean up ?o=<num> suffix after URL since not all workspaces have that
+Old = '\?o=\[(NUMID|ALPHANUMID)\]'
+New = ''
+Order = 1000
+
+[[Repls]]
+# Normalize branch UIDs (br-xxx-yyy-zzz format, supports both word-based and hex-based UIDs)
+Old = 'br-[a-z0-9-]+'
+New = '[BRANCH_UID]'
+Order = 1
+
+[[Repls]]
+# Normalize LSN values (format: 0/HEXVALUE or 0/0)
+Old = '"source_branch_lsn": "0/[A-F0-9]+"'
+New = '"source_branch_lsn": "[LSN]"'
+Order = 1

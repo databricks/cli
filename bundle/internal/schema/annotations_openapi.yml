@@ -167,6 +167,33 @@ github.com/databricks/cli/bundle/config/resources.App:
       true
   "usage_policy_id": {}
   "user_api_scopes": {}
+github.com/databricks/cli/bundle/config/resources.Catalog:
+  "comment":
+    "description": |-
+      User-provided free-form text description.
+  "connection_name":
+    "description": |-
+      The name of the connection to an external data source.
+  "name":
+    "description": |-
+      Name of catalog.
+  "options":
+    "description": |-
+      A map of key-value properties attached to the securable.
+  "properties":
+    "description": |-
+      A map of key-value properties attached to the securable.
+  "provider_name":
+    "description": |-
+      The name of delta sharing provider.
+
+      A Delta Sharing catalog is a catalog that is based on a Delta share on a remote sharing server.
+  "share_name":
+    "description": |-
+      The name of the share under the share provider.
+  "storage_root":
+    "description": |-
+      Storage root URL for managed tables within catalog.
 github.com/databricks/cli/bundle/config/resources.Cluster:
   "_":
     "description": |-
@@ -788,6 +815,71 @@ github.com/databricks/cli/bundle/config/resources.Pipeline:
       Usage policy of this pipeline.
     "x-databricks-preview": |-
       PRIVATE
+github.com/databricks/cli/bundle/config/resources.PostgresBranch:
+  "expire_time":
+    "description": |-
+      Absolute expiration timestamp. When set, the branch will expire at this time.
+  "is_protected":
+    "description": |-
+      When set to true, protects the branch from deletion and reset. Associated compute endpoints and the project cannot be deleted while the branch is protected.
+  "no_expiry":
+    "description": |-
+      Explicitly disable expiration. When set to true, the branch will not expire.
+      If set to false, the request is invalid; provide either ttl or expire_time instead.
+  "source_branch":
+    "description": |-
+      The name of the source branch from which this branch was created (data lineage for point-in-time recovery).
+      If not specified, defaults to the project's default branch.
+      Format: projects/{project_id}/branches/{branch_id}
+  "source_branch_lsn":
+    "description": |-
+      The Log Sequence Number (LSN) on the source branch from which this branch was created.
+  "source_branch_time":
+    "description": |-
+      The point in time on the source branch from which this branch was created.
+  "ttl":
+    "description": |-
+      Relative time-to-live duration. When set, the branch will expire at creation_time + ttl.
+github.com/databricks/cli/bundle/config/resources.PostgresEndpoint:
+  "autoscaling_limit_max_cu":
+    "description": |-
+      The maximum number of Compute Units. Minimum value is 0.5.
+  "autoscaling_limit_min_cu":
+    "description": |-
+      The minimum number of Compute Units. Minimum value is 0.5.
+  "disabled":
+    "description": |-
+      Whether to restrict connections to the compute endpoint.
+      Enabling this option schedules a suspend compute operation.
+      A disabled compute endpoint cannot be enabled by a connection or
+      console action.
+  "endpoint_type":
+    "description": |-
+      The endpoint type. A branch can only have one READ_WRITE endpoint.
+  "no_suspension":
+    "description": |-
+      When set to true, explicitly disables automatic suspension (never suspend).
+      Should be set to true when provided.
+  "settings":
+    "description": |-
+      A collection of settings for a compute endpoint.
+  "suspend_timeout_duration":
+    "description": |-
+      Duration of inactivity after which the compute endpoint is automatically suspended.
+      If specified should be between 60s and 604800s (1 minute to 1 week).
+github.com/databricks/cli/bundle/config/resources.PostgresProject:
+  "default_endpoint_settings":
+    "description": |-
+      A collection of settings for a compute endpoint.
+  "display_name":
+    "description": |-
+      Human-readable project name. Length should be between 1 and 256 characters.
+  "history_retention_duration":
+    "description": |-
+      The number of seconds to retain the shared history for point in time recovery for all branches in this project. Value should be between 0s and 2592000s (up to 30 days).
+  "pg_version":
+    "description": |-
+      The major Postgres version number. Supported versions are 16 and 17.
 github.com/databricks/cli/bundle/config/resources.QualityMonitor:
   "assets_dir":
     "description": |-
@@ -1348,6 +1440,15 @@ github.com/databricks/databricks-sdk-go/service/apps.ComputeState:
       - |-
         ACTIVE
 github.com/databricks/databricks-sdk-go/service/apps.ComputeStatus:
+  "active_instances":
+    "description": |-
+      The number of compute instances currently serving requests for this
+      application. An instance is considered active if it is reachable and ready
+      to handle requests.
+    "x-databricks-field-behaviors_output_only": |-
+      true
+    "x-databricks-preview": |-
+      PRIVATE
   "message":
     "description": |-
       Compute status message
@@ -2103,6 +2204,17 @@ github.com/databricks/databricks-sdk-go/service/compute.GcsStorageInfo:
   "destination":
     "description": |-
       GCS destination/URI, e.g. `gs://my-bucket/some-prefix`
+github.com/databricks/databricks-sdk-go/service/compute.HardwareAcceleratorType:
+  "_":
+    "description": |-
+      HardwareAcceleratorType: The type of hardware accelerator to use for compute workloads.
+      NOTE: This enum is referenced and is intended to be used by other Databricks services
+      that need to specify hardware accelerator requirements for AI compute workloads.
+    "enum":
+      - |-
+        GPU_1xA10
+      - |-
+        GPU_8xH100
 github.com/databricks/databricks-sdk-go/service/compute.InitScriptInfo:
   "_":
     "description": |-
@@ -2686,6 +2798,10 @@ github.com/databricks/databricks-sdk-go/service/jobs.CleanRoomsNotebookTask:
   "notebook_name":
     "description": |-
       Name of the notebook being run.
+github.com/databricks/databricks-sdk-go/service/jobs.Compute:
+  "hardware_accelerator":
+    "description": |-
+      Hardware accelerator configuration for Serverless GPU workloads.
 github.com/databricks/databricks-sdk-go/service/jobs.ComputeConfig:
   "gpu_node_pool_id":
     "description": |-
@@ -3574,6 +3690,9 @@ github.com/databricks/databricks-sdk-go/service/jobs.Task:
     "description": |-
       The task runs a [clean rooms](https://docs.databricks.com/clean-rooms/index.html) notebook
       when the `clean_rooms_notebook_task` field is present.
+  "compute":
+    "description": |-
+      Task level compute configuration.
   "condition_task":
     "description": |-
       The task evaluates a condition that can be used to control the execution of other tasks when the `condition_task` field is present.
@@ -3925,7 +4044,14 @@ github.com/databricks/databricks-sdk-go/service/pipelines.IngestionGatewayPipeli
 github.com/databricks/databricks-sdk-go/service/pipelines.IngestionPipelineDefinition:
   "connection_name":
     "description": |-
-      Immutable. The Unity Catalog connection that this ingestion pipeline uses to communicate with the source. This is used with connectors for applications like Salesforce, Workday, and so on.
+      The Unity Catalog connection that this ingestion pipeline uses to communicate with the source. This is used with
+      both connectors for applications like Salesforce, Workday, and so on, and also database connectors like Oracle,
+      (connector_type = QUERY_BASED OR connector_type = CDC).
+      If connection name corresponds to database connectors like Oracle, and connector_type is not provided then
+      connector_type defaults to QUERY_BASED. If connector_type is passed as CDC we use Combined Cdc Managed Ingestion
+      pipeline.
+      Under certain conditions, this can be replaced with ingestion_gateway_id to change the connector to Cdc Managed
+      Ingestion Pipeline with Gateway pipeline.
   "full_refresh_window":
     "description": |-
       (Optional) A window that specifies a set of time ranges for snapshot queries in CDC.
@@ -3939,7 +4065,10 @@ github.com/databricks/databricks-sdk-go/service/pipelines.IngestionPipelineDefin
       PRIVATE
   "ingestion_gateway_id":
     "description": |-
-      Immutable. Identifier for the gateway that is used by this ingestion pipeline to communicate with the source database. This is used with connectors to databases like SQL Server.
+      Identifier for the gateway that is used by this ingestion pipeline to communicate with the source database.
+      This is used with CDC connectors to databases like SQL Server using a gateway pipeline (connector_type = CDC).
+      Under certain conditions, this can be replaced with connection_name to change the connector to Combined Cdc
+      Managed Ingestion Pipeline.
   "netsuite_jar_path":
     "description": |-
       Netsuite only configuration. When the field is set for a netsuite connector,
@@ -4458,6 +4587,43 @@ github.com/databricks/databricks-sdk-go/service/pipelines.TableSpecificConfigScd
         SCD_TYPE_2
       - |-
         APPEND_ONLY
+github.com/databricks/databricks-sdk-go/service/postgres.EndpointSettings:
+  "_":
+    "description": |-
+      A collection of settings for a compute endpoint.
+  "pg_settings":
+    "description": |-
+      A raw representation of Postgres settings.
+github.com/databricks/databricks-sdk-go/service/postgres.EndpointType:
+  "_":
+    "description": |-
+      The compute endpoint type. Either `read_write` or `read_only`.
+    "enum":
+      - |-
+        ENDPOINT_TYPE_READ_WRITE
+      - |-
+        ENDPOINT_TYPE_READ_ONLY
+github.com/databricks/databricks-sdk-go/service/postgres.ProjectDefaultEndpointSettings:
+  "_":
+    "description": |-
+      A collection of settings for a compute endpoint.
+  "autoscaling_limit_max_cu":
+    "description": |-
+      The maximum number of Compute Units. Minimum value is 0.5.
+  "autoscaling_limit_min_cu":
+    "description": |-
+      The minimum number of Compute Units. Minimum value is 0.5.
+  "no_suspension":
+    "description": |-
+      When set to true, explicitly disables automatic suspension (never suspend).
+      Should be set to true when provided.
+  "pg_settings":
+    "description": |-
+      A raw representation of Postgres settings.
+  "suspend_timeout_duration":
+    "description": |-
+      Duration of inactivity after which the compute endpoint is automatically suspended.
+      If specified should be between 60s and 604800s (1 minute to 1 week).
 github.com/databricks/databricks-sdk-go/service/serving.Ai21LabsConfig:
   "ai21labs_api_key":
     "description": |-
@@ -4974,6 +5140,11 @@ github.com/databricks/databricks-sdk-go/service/serving.Route:
     "description": |-
       The percentage of endpoint traffic to send to this route. It must be an integer between 0 and 100 inclusive.
 github.com/databricks/databricks-sdk-go/service/serving.ServedEntityInput:
+  "burst_scaling_enabled":
+    "description": |-
+      Whether burst scaling is enabled. When enabled (default), the endpoint can automatically
+      scale up beyond provisioned capacity to handle traffic spikes. When disabled, the endpoint
+      maintains fixed capacity at provisioned_model_units.
   "entity_name":
     "description": |-
       The name of the entity to be served. The entity may be a model in the Databricks Model Registry, a model in the Unity Catalog (UC), or a function of type FEATURE_SPEC in the UC. If it is a UC object, the full name of the object should be given in the form of **catalog_name.schema_name.model_name**.
@@ -5015,6 +5186,11 @@ github.com/databricks/databricks-sdk-go/service/serving.ServedEntityInput:
     "description": |-
       The workload type of the served entity. The workload type selects which type of compute to use in the endpoint. The default value for this parameter is "CPU". For deep learning workloads, GPU acceleration is available by selecting workload types like GPU_SMALL and others. See the available [GPU types](https://docs.databricks.com/en/machine-learning/model-serving/create-manage-serving-endpoints.html#gpu-workload-types).
 github.com/databricks/databricks-sdk-go/service/serving.ServedModelInput:
+  "burst_scaling_enabled":
+    "description": |-
+      Whether burst scaling is enabled. When enabled (default), the endpoint can automatically
+      scale up beyond provisioned capacity to handle traffic spikes. When disabled, the endpoint
+      maintains fixed capacity at provisioned_model_units.
   "environment_vars":
     "description": |-
       An object containing a set of optional, user-specified environment variable key-value pairs used for serving this entity. Note: this is an experimental feature and subject to change. Example entity environment variables that refer to Databricks secrets: `{"OPENAI_API_KEY": "{{secrets/my_scope/my_key}}", "DATABRICKS_TOKEN": "{{secrets/my_scope2/my_key2}}"}`

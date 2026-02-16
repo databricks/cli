@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"os"
 	"sync"
 	"time"
 
@@ -18,12 +19,13 @@ import (
 )
 
 type profileMetadata struct {
-	Name      string `json:"name"`
-	Host      string `json:"host,omitempty"`
-	AccountID string `json:"account_id,omitempty"`
-	Cloud     string `json:"cloud"`
-	AuthType  string `json:"auth_type"`
-	Valid     bool   `json:"valid"`
+	Name        string `json:"name"`
+	Host        string `json:"host,omitempty"`
+	AccountID   string `json:"account_id,omitempty"`
+	WorkspaceID string `json:"workspace_id,omitempty"`
+	Cloud       string `json:"cloud"`
+	AuthType    string `json:"auth_type"`
+	Valid       bool   `json:"valid"`
 }
 
 func (c *profileMetadata) IsEmpty() bool {
@@ -32,9 +34,10 @@ func (c *profileMetadata) IsEmpty() bool {
 
 func (c *profileMetadata) Load(ctx context.Context, configFilePath string, skipValidate bool) {
 	cfg := &config.Config{
-		Loaders:    []config.Loader{config.ConfigFile},
-		ConfigFile: configFilePath,
-		Profile:    c.Name,
+		Loaders:           []config.Loader{config.ConfigFile},
+		ConfigFile:        configFilePath,
+		Profile:           c.Name,
+		DatabricksCliPath: os.Getenv("DATABRICKS_CLI_PATH"),
 	}
 	_ = cfg.EnsureResolved()
 	if cfg.IsAws() {
@@ -112,9 +115,10 @@ func newProfilesCommand() *cobra.Command {
 		for _, v := range iniFile.Sections() {
 			hash := v.KeysHash()
 			profile := &profileMetadata{
-				Name:      v.Name(),
-				Host:      hash["host"],
-				AccountID: hash["account_id"],
+				Name:        v.Name(),
+				Host:        hash["host"],
+				AccountID:   hash["account_id"],
+				WorkspaceID: hash["workspace_id"],
 			}
 			if profile.IsEmpty() {
 				continue

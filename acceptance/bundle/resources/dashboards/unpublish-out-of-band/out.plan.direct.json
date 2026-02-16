@@ -45,7 +45,7 @@
         },
         "serialized_dashboard": {
           "action": "skip",
-          "reason": "custom",
+          "reason": "etag_based",
           "old": "{\"pages\":[{\"displayName\":\"Test Dashboard\",\"name\":\"test-page\"}]}",
           "new": "{\"pages\":[{\"displayName\":\"Test Dashboard\",\"name\":\"test-page\"}]}",
           "remote": "{\"pages\":[{\"displayName\":\"Test Dashboard\",\"name\":\"test-page\",\"pageType\":\"PAGE_TYPE_CANVAS\"}]}"

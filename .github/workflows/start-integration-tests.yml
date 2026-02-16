@@ -2,45 +2,12 @@ name: start-integration-tests
 
 on:
   workflow_dispatch:
-  merge_group:
 
 jobs:
-  # Auto-approve integration tests for merge queue.
-  # The tests already passed on the PR, so we don't need to run them again.
-  auto-approve:
-    if: github.event_name == 'merge_group'
-
-    runs-on:
-      group: databricks-deco-testing-runner-group
-      labels: ubuntu-latest-deco
-
-    permissions:
-      checks: write
-      contents: read
-
-    steps:
-      - name: Auto-approve Check for Merge Queue
-        uses: actions/github-script@v7
-        with:
-          script: |
-            await github.rest.checks.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              name: 'Integration Tests',
-              head_sha: context.sha,
-              status: 'completed',
-              conclusion: 'success',
-              output: {
-                title: 'Integration Tests',
-                summary: 'Auto-approved for merge queue (tests already passed on PR)'
-              }
-            });
-
   # Trigger integration tests for PRs.
   # This workflow triggers the integration test workflow in a different repository.
   # It requires secrets from the "test-trigger-is" environment, which are only available to authorized users.
   trigger:
-    if: github.event_name == 'workflow_dispatch'
 
     runs-on:
       group: databricks-deco-testing-runner-group

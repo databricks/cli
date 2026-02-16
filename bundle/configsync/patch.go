@@ -1,234 +1,248 @@
 package configsync
 
 import (
+	"bytes"
 	"context"
-	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
-	"reflect"
 	"sort"
 	"strconv"
 	"strings"
 
 	"github.com/databricks/cli/bundle"
-	"github.com/databricks/cli/bundle/deployplan"
 	"github.com/databricks/cli/libs/log"
 	"github.com/databricks/cli/libs/structs/structpath"
-	"github.com/databricks/databricks-sdk-go/marshal"
 	"github.com/palantir/pkg/yamlpatch/gopkgv3yamlpatcher"
 	"github.com/palantir/pkg/yamlpatch/yamlpatch"
+	"go.yaml.in/yaml/v3"
 )
 
-type resolvedChanges map[string]*deployplan.ChangeDesc
+// ApplyChangesToYAML generates YAML files for the given field changes.
+func ApplyChangesToYAML(ctx context.Context, b *bundle.Bundle, fieldChanges []FieldChange) ([]FileChange, error) {
+	originalFiles := make(map[string][]byte)
+	modifiedFiles := make(map[string][]byte)
+	fileFieldChanges := make(map[string][]FieldChange)
 
-// normalizeValue converts values to plain Go types suitable for YAML patching
-// by using SDK marshaling which properly handles ForceSendFields and other annotations.
-func normalizeValue(v any) (any, error) {
-	if v == nil {
-		return nil, nil
-	}
+	for _, fieldChange := range fieldChanges {
+		filePath := fieldChange.FilePath
 
-	switch v.(type) {
-	case bool, string, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64:
-		return v, nil
-	}
+		if _, exists := modifiedFiles[filePath]; !exists {
+			content, err := os.ReadFile(filePath)
+			if err != nil {
+				return nil, fmt.Errorf("failed to read file %s: %w", filePath, err)
+			}
+			originalFiles[filePath] = content
+			modifiedFiles[filePath] = content
+		}
 
-	rv := reflect.ValueOf(v)
-	rt := rv.Type()
+		modifiedContent, err := applyChange(ctx, modifiedFiles[filePath], fieldChange)
+		if err != nil {
+			return nil, fmt.Errorf("failed to apply change to file %s for a field %s: %w", filePath, fieldChange.FieldCandidates[0], err)
+		}
 
-	if rt.Kind() == reflect.Ptr {
-		rt = rt.Elem()
-	}
-
-	var data []byte
-	var err error
-
-	if rt.Kind() == reflect.Struct {
-		data, err = marshal.Marshal(v)
-	} else {
-		data, err = json.Marshal(v)
-	}
-
-	if err != nil {
-		return v, fmt.Errorf("failed to marshal value of type %T: %w", v, err)
-	}
-
-	var normalized any
-	err = json.Unmarshal(data, &normalized)
-	if err != nil {
-		return v, fmt.Errorf("failed to unmarshal value: %w", err)
-	}
-
-	return normalized, nil
-}
-
-// ApplyChangesToYAML generates YAML files for the given changes.
-func ApplyChangesToYAML(ctx context.Context, b *bundle.Bundle, planChanges map[string]deployplan.Changes) ([]FileChange, error) {
-	changesByFile, err := getResolvedFieldChanges(ctx, b, planChanges)
-	if err != nil {
-		return nil, err
+		modifiedFiles[filePath] = modifiedContent
+		fileFieldChanges[filePath] = append(fileFieldChanges[filePath], fieldChange)
 	}
 
 	var result []FileChange
-	targetName := b.Config.Bundle.Target
-
-	for filePath, changes := range changesByFile {
-		originalContent, err := os.ReadFile(filePath)
+	for filePath := range modifiedFiles {
+		// TODO: A good alternative approach is to remove parent nodes during the Resolve phase,
+		// when all of their keys/items are removed, but this should be tested for edge cases.
+		// In this case flow style will never appear because empty nodes are never serialized and we won't need clearAddedFlowStyle
+		normalized, err := clearAddedFlowStyle(modifiedFiles[filePath], fileFieldChanges[filePath])
 		if err != nil {
-			return nil, fmt.Errorf("failed to read file %s: %w", filePath, err)
+			return nil, fmt.Errorf("failed to normalize YAML style in %s: %w", filePath, err)
 		}
-
-		modifiedContent, err := applyChanges(ctx, filePath, changes, targetName)
-		if err != nil {
-			return nil, fmt.Errorf("failed to apply changes to file %s: %w", filePath, err)
-		}
-
-		if modifiedContent != string(originalContent) {
-			result = append(result, FileChange{
-				Path:            filePath,
-				OriginalContent: string(originalContent),
-				ModifiedContent: modifiedContent,
-			})
-		}
+		result = append(result, FileChange{
+			Path:            filePath,
+			OriginalContent: string(originalFiles[filePath]),
+			ModifiedContent: string(normalized),
+		})
 	}
+
+	sort.Slice(result, func(i, j int) bool {
+		return result[i].Path < result[j].Path
+	})
 
 	return result, nil
 }
 
-// applyChanges applies all field changes to a YAML
-func applyChanges(ctx context.Context, filePath string, changes resolvedChanges, targetName string) (string, error) {
-	content, err := os.ReadFile(filePath)
-	if err != nil {
-		return "", fmt.Errorf("failed to read file %s: %w", filePath, err)
-	}
-
-	fieldPaths := make([]string, 0, len(changes))
-	for fieldPath := range changes {
-		fieldPaths = append(fieldPaths, fieldPath)
-	}
-	sort.Strings(fieldPaths)
-
-	for _, fieldPath := range fieldPaths {
-		changeDesc := changes[fieldPath]
-		jsonPointer, err := strPathToJSONPointer(fieldPath)
-		if err != nil {
-			return "", fmt.Errorf("failed to convert field path %q to JSON pointer: %w", fieldPath, err)
-		}
-
-		jsonPointers := []string{jsonPointer}
-		if targetName != "" {
-			targetPrefix := "/targets/" + targetName
-			jsonPointers = append(jsonPointers, targetPrefix+jsonPointer)
-		}
-
-		hasConfigValue := changeDesc.Old != nil || changeDesc.New != nil
-		isRemoval := changeDesc.Remote == nil && hasConfigValue
-		isReplacement := changeDesc.Remote != nil && hasConfigValue
-		isAddition := changeDesc.Remote != nil && !hasConfigValue
-
-		success := false
-		var lastErr error
-		var lastPointer string
-
-		for _, jsonPointer := range jsonPointers {
-			path, err := yamlpatch.ParsePath(jsonPointer)
-			if err != nil {
-				return "", fmt.Errorf("failed to parse JSON Pointer %s: %w", jsonPointer, err)
-			}
-
-			var testOp yamlpatch.Operation
-			if isRemoval {
-				testOp = yamlpatch.Operation{
-					Type: yamlpatch.OperationRemove,
-					Path: path,
-				}
-			} else if isReplacement {
-				normalizedRemote, err := normalizeValue(changeDesc.Remote)
-				if err != nil {
-					return "", fmt.Errorf("failed to normalize replacement value for %s: %w", jsonPointer, err)
-				}
-				testOp = yamlpatch.Operation{
-					Type:  yamlpatch.OperationReplace,
-					Path:  path,
-					Value: normalizedRemote,
-				}
-			} else if isAddition {
-				normalizedRemote, err := normalizeValue(changeDesc.Remote)
-				if err != nil {
-					return "", fmt.Errorf("failed to normalize addition value for %s: %w", jsonPointer, err)
-				}
-				testOp = yamlpatch.Operation{
-					Type:  yamlpatch.OperationAdd,
-					Path:  path,
-					Value: normalizedRemote,
-				}
-			} else {
-				return "", fmt.Errorf("unknown operation type for field %s", fieldPath)
-			}
-
-			patcher := gopkgv3yamlpatcher.New(gopkgv3yamlpatcher.IndentSpaces(2))
-			modifiedContent, err := patcher.Apply(content, yamlpatch.Patch{testOp})
-			if err == nil {
-				content = modifiedContent
-				log.Debugf(ctx, "Applied %s change to %s", testOp.Type, jsonPointer)
-				success = true
-				break
-			} else {
-				log.Debugf(ctx, "Failed to apply change to %s: %v", jsonPointer, err)
-				lastErr = err
-				lastPointer = jsonPointer
-			}
-		}
-		if !success {
-			if lastErr != nil {
-				return "", fmt.Errorf("failed to apply change %s: %w", lastPointer, lastErr)
-			}
-			return "", fmt.Errorf("failed to apply change for field %s: no valid target found", fieldPath)
-		}
-	}
-
-	return string(content), nil
+type parentNode struct {
+	path        yamlpatch.Path
+	missingPath yamlpatch.Path
 }
 
-// getResolvedFieldChanges builds a map from file paths to lists of field changes
-func getResolvedFieldChanges(ctx context.Context, b *bundle.Bundle, planChanges map[string]deployplan.Changes) (map[string]resolvedChanges, error) {
-	resolvedChangesByFile := make(map[string]resolvedChanges)
+// applyChange applies a single field change to YAML content.
+func applyChange(ctx context.Context, content []byte, fieldChange FieldChange) ([]byte, error) {
+	success := false
+	var firstErr error
+	var parentNodesToCreate []parentNode
 
-	for resourceKey, resourceChanges := range planChanges {
-		for fieldPath, changeDesc := range resourceChanges {
-			fullPath := resourceKey + "." + fieldPath
+	for _, fieldPathCandidate := range fieldChange.FieldCandidates {
+		jsonPointer, err := strPathToJSONPointer(fieldPathCandidate)
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert field path %q to JSON pointer: %w", fieldPathCandidate, err)
+		}
 
-			resolvedPath, err := resolveSelectors(fullPath, b)
-			if err != nil {
-				return nil, fmt.Errorf("failed to resolve selectors in path %s: %w", fullPath, err)
-			}
+		path, err := yamlpatch.ParsePath(jsonPointer)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse JSON Pointer %s: %w", jsonPointer, err)
+		}
 
-			loc := b.Config.GetLocation(resolvedPath)
-			filePath := loc.File
+		patcher := gopkgv3yamlpatcher.New(gopkgv3yamlpatcher.IndentSpaces(2))
+		var modifiedContent []byte
+		var patchErr error
 
-			// If field has no location, find the parent resource's location to then add a new field
-			if filePath == "" {
-				filePath = findResourceFileLocation(ctx, b, resourceKey)
-				if filePath == "" {
-					continue
+		switch fieldChange.Change.Operation {
+		case OperationRemove:
+			modifiedContent, patchErr = patcher.Apply(content, yamlpatch.Patch{yamlpatch.Operation{
+				Type: yamlpatch.OperationRemove,
+				Path: path,
+			}})
+		case OperationReplace:
+			modifiedContent, patchErr = patcher.Apply(content, yamlpatch.Patch{yamlpatch.Operation{
+				Type:  yamlpatch.OperationReplace,
+				Path:  path,
+				Value: fieldChange.Change.Value,
+			}})
+		case OperationAdd:
+			modifiedContent, patchErr = patcher.Apply(content, yamlpatch.Patch{yamlpatch.Operation{
+				Type:  yamlpatch.OperationAdd,
+				Path:  path,
+				Value: fieldChange.Change.Value,
+			}})
+
+			// Collect parent path errors for later retry
+			if patchErr != nil && isParentPathError(patchErr) {
+				if missingPath, extractErr := extractMissingPath(patchErr); extractErr == nil {
+					parentNodesToCreate = append(parentNodesToCreate, parentNode{path, missingPath})
 				}
-				log.Debugf(ctx, "Field %s has no location, using resource location: %s", fullPath, filePath)
 			}
+		default:
+			return nil, fmt.Errorf("unknown operation type %q", fieldChange.Change.Operation)
+		}
 
-			if _, ok := resolvedChangesByFile[filePath]; !ok {
-				resolvedChangesByFile[filePath] = make(resolvedChanges)
-			}
-			resolvedChangesByFile[filePath][resolvedPath] = changeDesc
+		if patchErr == nil {
+			content = modifiedContent
+			log.Debugf(ctx, "Applied changes to %s", jsonPointer)
+			success = true
+			firstErr = nil
+			break
+		}
+
+		log.Debugf(ctx, "Failed to apply change to %s: %v", jsonPointer, patchErr)
+		if firstErr == nil {
+			firstErr = patchErr
 		}
 	}
 
-	return resolvedChangesByFile, nil
+	// If all attempts failed with parent path errors, try creating nested structures
+	if !success && len(parentNodesToCreate) > 0 {
+		for _, errInfo := range parentNodesToCreate {
+			nestedValue := buildNestedMaps(errInfo.path, errInfo.missingPath, fieldChange.Change.Value)
+
+			patcher := gopkgv3yamlpatcher.New(gopkgv3yamlpatcher.IndentSpaces(2))
+			modifiedContent, patchErr := patcher.Apply(content, yamlpatch.Patch{yamlpatch.Operation{
+				Type:  yamlpatch.OperationAdd,
+				Path:  errInfo.missingPath,
+				Value: nestedValue,
+			}})
+
+			if patchErr == nil {
+				content = modifiedContent
+				firstErr = nil
+				log.Debugf(ctx, "Created nested structure at %s", errInfo.missingPath.String())
+				break
+			}
+			if firstErr == nil {
+				firstErr = patchErr
+			}
+			log.Debugf(ctx, "Failed to create nested structure at %s: %v", errInfo.missingPath.String(), patchErr)
+		}
+	}
+
+	if firstErr != nil {
+		if (fieldChange.Change.Operation == OperationRemove || fieldChange.Change.Operation == OperationReplace) && isPathNotFoundError(firstErr) {
+			return nil, fmt.Errorf("field not found in YAML configuration: %w", firstErr)
+		}
+		return nil, fmt.Errorf("failed to apply change: %w", firstErr)
+	}
+
+	return content, nil
+}
+
+// isParentPathError checks if error indicates missing parent path.
+func isParentPathError(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := err.Error()
+	return strings.Contains(msg, "parent path") && strings.Contains(msg, "does not exist")
+}
+
+// isPathNotFoundError checks if error indicates the path itself does not exist.
+func isPathNotFoundError(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := err.Error()
+	return strings.Contains(msg, "does not exist")
+}
+
+// extractMissingPath extracts the missing path from error message like:
+// "op add /a/b/c/d: parent path /a/b does not exist"
+// Returns: "/a/b"
+func extractMissingPath(err error) (yamlpatch.Path, error) {
+	msg := err.Error()
+	start := strings.Index(msg, "parent path ")
+	if start == -1 {
+		return nil, errors.New("could not find 'parent path' in error message")
+	}
+	start += len("parent path ")
+
+	end := strings.Index(msg[start:], " does not exist")
+	if end == -1 {
+		return nil, errors.New("could not find 'does not exist' in error message")
+	}
+
+	pathStr := msg[start : start+end]
+	return yamlpatch.ParsePath(pathStr)
+}
+
+// buildNestedMaps creates a nested map structure from targetPath to missingPath.
+// Example:
+//
+//	targetPath: /a/b/c/d/e
+//	missingPath: /a/b
+//	leafValue: "foo"
+//
+// Returns: {c: {d: {e: "foo"}}}
+func buildNestedMaps(targetPath, missingPath yamlpatch.Path, leafValue any) any {
+	missingLen := len(missingPath)
+	targetLen := len(targetPath)
+
+	if missingLen >= targetLen {
+		// Missing path is not a parent of target path
+		return leafValue
+	}
+
+	// Build nested structure from leaf to missing parent
+	result := leafValue
+	for i := targetLen - 1; i >= missingLen; i-- {
+		result = map[string]any{
+			targetPath[i]: result,
+		}
+	}
+
+	return result
 }
 
 // strPathToJSONPointer converts a structpath string to JSON Pointer format.
 // Example: "resources.jobs.test[0].name" -> "/resources/jobs/test/0/name"
+// The path may contain [*] which is converted to "-" (JSON Pointer append syntax).
 func strPathToJSONPointer(pathStr string) (string, error) {
-	node, err := structpath.Parse(pathStr)
+	node, err := structpath.ParsePattern(pathStr)
 	if err != nil {
 		return "", fmt.Errorf("failed to parse path %q: %w", pathStr, err)
 	}
@@ -245,6 +259,12 @@ func strPathToJSONPointer(pathStr string) (string, error) {
 			continue
 		}
 
+		// Handle append marker: /-/ is a syntax for appending to an array in JSON Pointer
+		if n.BracketStar() {
+			parts = append(parts, "-")
+			continue
+		}
+
 		return "", fmt.Errorf("unsupported path node type in path %q", pathStr)
 	}
 
@@ -254,20 +274,80 @@ func strPathToJSONPointer(pathStr string) (string, error) {
 	return "/" + strings.Join(parts, "/"), nil
 }
 
-// findResourceFileLocation finds the file where a resource is defined.
-// It checks both the root resources and target-specific overrides,
-// preferring the target override if it exists.
-func findResourceFileLocation(_ context.Context, b *bundle.Bundle, resourceKey string) string {
-	targetName := b.Config.Bundle.Target
-
-	if targetName != "" {
-		targetPath := "targets." + targetName + "." + resourceKey
-		loc := b.Config.GetLocation(targetPath)
-		if loc.File != "" {
-			return loc.File
+// clearAddedFlowStyle clears FlowStyle on YAML nodes along the changed field paths.
+// This prevents flow-style formatting (e.g. {key: value}) that yaml.v3 introduces
+// when empty mappings are serialized as "{}" during patch operations
+func clearAddedFlowStyle(content []byte, fieldChanges []FieldChange) ([]byte, error) {
+	var doc yaml.Node
+	if err := yaml.Unmarshal(content, &doc); err != nil {
+		return content, nil
+	}
+	for _, fc := range fieldChanges {
+		for _, candidate := range fc.FieldCandidates {
+			clearFlowStyleAlongPath(&doc, candidate)
 		}
 	}
+	var buf bytes.Buffer
+	enc := yaml.NewEncoder(&buf)
+	enc.SetIndent(2)
+	if err := enc.Encode(&doc); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), enc.Close()
+}
 
-	loc := b.Config.GetLocation(resourceKey)
-	return loc.File
+// clearFlowStyleAlongPath navigates the YAML tree along the given structpath,
+// clearing FlowStyle on every node from root to leaf (inclusive).
+func clearFlowStyleAlongPath(doc *yaml.Node, pathStr string) {
+	node, err := structpath.ParsePath(pathStr)
+	if err != nil {
+		return
+	}
+
+	current := doc
+	if current.Kind == yaml.DocumentNode && len(current.Content) > 0 {
+		current = current.Content[0]
+	}
+
+	for _, n := range node.AsSlice() {
+		current.Style &^= yaml.FlowStyle
+
+		if key, ok := n.StringKey(); ok {
+			if current.Kind != yaml.MappingNode {
+				return
+			}
+			found := false
+			// current.Content: [key1, val1, key2, val2, ...]
+			for i := 0; i+1 < len(current.Content); i += 2 {
+				if current.Content[i].Value == key {
+					current = current.Content[i+1]
+					found = true
+					break
+				}
+			}
+			if !found {
+				return
+			}
+			continue
+		}
+
+		if idx, ok := n.Index(); ok {
+			if current.Kind != yaml.SequenceNode || idx < 0 || idx >= len(current.Content) {
+				return
+			}
+			current = current.Content[idx]
+			continue
+		}
+
+		return
+	}
+
+	clearFlowStyleNodes(current)
+}
+
+func clearFlowStyleNodes(node *yaml.Node) {
+	node.Style &^= yaml.FlowStyle
+	for _, child := range node.Content {
+		clearFlowStyleNodes(child)
+	}
 }

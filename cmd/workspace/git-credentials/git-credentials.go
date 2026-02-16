@@ -110,7 +110,7 @@ func newCreate() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
@@ -299,7 +299,7 @@ func newList() *cobra.Command {
 
 	var listReq workspace.ListCredentialsRequest
 
-	cmd.Flags().Int64Var(&listReq.PrincipalId, "principal-id", listReq.PrincipalId, `The ID of the service principal whose credentials will be modified.`)
+	cmd.Flags().Int64Var(&listReq.PrincipalId, "principal-id", listReq.PrincipalId, `The ID of the service principal whose credentials will be listed.`)
 
 	cmd.Use = "list"
 	cmd.Short = `Get Git credentials.`
@@ -397,7 +397,7 @@ func newUpdate() *cobra.Command {
 				return diags.Error()
 			}
 			if len(diags) > 0 {
-				err := cmdio.RenderDiagnosticsToErrorOut(ctx, diags)
+				err := cmdio.RenderDiagnostics(ctx, diags)
 				if err != nil {
 					return err
 				}
