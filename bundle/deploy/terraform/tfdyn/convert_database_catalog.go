@@ -31,5 +31,5 @@ func (d databaseCatalogConverter) Convert(ctx context.Context, key string, vin d
 }
 
 func init() {
-	registerConverter("database_catalogs", databaseCatalogConverter{})
+	registerConverter("database_catalogs", "databricks_database_database_catalog", databaseCatalogConverter{})
 }

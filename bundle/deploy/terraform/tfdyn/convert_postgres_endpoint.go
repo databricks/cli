@@ -59,5 +59,5 @@ func (c postgresEndpointConverter) Convert(ctx context.Context, key string, vin 
 }
 
 func init() {
-	registerConverter("postgres_endpoints", postgresEndpointConverter{})
+	registerConverter("postgres_endpoints", "databricks_postgres_endpoint", postgresEndpointConverter{})
 }

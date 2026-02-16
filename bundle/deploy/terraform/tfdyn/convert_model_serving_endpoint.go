@@ -46,5 +46,5 @@ func (modelServingEndpointConverter) Convert(ctx context.Context, key string, vi
 }
 
 func init() {
-	registerConverter("model_serving_endpoints", modelServingEndpointConverter{})
+	registerConverter("model_serving_endpoints", "databricks_model_serving", modelServingEndpointConverter{})
 }

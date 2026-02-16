@@ -88,5 +88,5 @@ func (dashboardConverter) Convert(ctx context.Context, key string, vin dyn.Value
 }
 
 func init() {
-	registerConverter("dashboards", dashboardConverter{})
+	registerConverter("dashboards", "databricks_dashboard", dashboardConverter{})
 }

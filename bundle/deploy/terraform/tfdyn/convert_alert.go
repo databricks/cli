@@ -52,5 +52,5 @@ func (alertConverter) Convert(ctx context.Context, key string, vin dyn.Value, ou
 }
 
 func init() {
-	registerConverter("alerts", alertConverter{})
+	registerConverter("alerts", "databricks_alert_v2", alertConverter{})
 }

@@ -61,5 +61,5 @@ func (pipelineConverter) Convert(ctx context.Context, key string, vin dyn.Value,
 }
 
 func init() {
-	registerConverter("pipelines", pipelineConverter{})
+	registerConverter("pipelines", "databricks_pipeline", pipelineConverter{})
 }

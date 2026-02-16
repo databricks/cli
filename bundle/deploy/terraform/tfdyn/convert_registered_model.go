@@ -46,5 +46,5 @@ func (registeredModelConverter) Convert(ctx context.Context, key string, vin dyn
 }
 
 func init() {
-	registerConverter("registered_models", registeredModelConverter{})
+	registerConverter("registered_models", "databricks_registered_model", registeredModelConverter{})
 }

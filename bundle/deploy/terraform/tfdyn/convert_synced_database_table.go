@@ -30,5 +30,5 @@ func (s syncedDatabaseTableConverter) Convert(ctx context.Context, key string, v
 }
 
 func init() {
-	registerConverter("synced_database_tables", syncedDatabaseTableConverter{})
+	registerConverter("synced_database_tables", "databricks_database_synced_database_table", syncedDatabaseTableConverter{})
 }

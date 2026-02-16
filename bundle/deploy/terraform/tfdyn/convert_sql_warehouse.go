@@ -46,5 +46,5 @@ func (sqlWarehouseConverter) Convert(ctx context.Context, key string, vin dyn.Va
 }
 
 func init() {
-	registerConverter("sql_warehouses", sqlWarehouseConverter{})
+	registerConverter("sql_warehouses", "databricks_sql_endpoint", sqlWarehouseConverter{})
 }

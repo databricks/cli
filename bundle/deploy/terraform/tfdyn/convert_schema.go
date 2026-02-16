@@ -54,5 +54,5 @@ func (schemaConverter) Convert(ctx context.Context, key string, vin dyn.Value, o
 }
 
 func init() {
-	registerConverter("schemas", schemaConverter{})
+	registerConverter("schemas", "databricks_schema", schemaConverter{})
 }

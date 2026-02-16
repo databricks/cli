@@ -254,5 +254,5 @@ func (jobConverter) Convert(ctx context.Context, key string, vin dyn.Value, out 
 }
 
 func init() {
-	registerConverter("jobs", jobConverter{})
+	registerConverter("jobs", "databricks_job", jobConverter{})
 }

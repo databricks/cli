@@ -44,5 +44,5 @@ func (d databaseInstanceConverter) Convert(ctx context.Context, key string, vin 
 }
 
 func init() {
-	registerConverter("database_instances", databaseInstanceConverter{})
+	registerConverter("database_instances", "databricks_database_instance", databaseInstanceConverter{})
 }

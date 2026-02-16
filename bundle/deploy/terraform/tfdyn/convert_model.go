@@ -46,5 +46,5 @@ func (modelConverter) Convert(ctx context.Context, key string, vin dyn.Value, ou
 }
 
 func init() {
-	registerConverter("models", modelConverter{})
+	registerConverter("models", "databricks_mlflow_model", modelConverter{})
 }

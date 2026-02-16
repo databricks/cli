@@ -85,5 +85,5 @@ func (s secretScopeConverter) Convert(ctx context.Context, key string, vin dyn.V
 }
 
 func init() {
-	registerConverter("secret_scopes", secretScopeConverter{})
+	registerConverter("secret_scopes", "databricks_secret_scope", secretScopeConverter{})
 }

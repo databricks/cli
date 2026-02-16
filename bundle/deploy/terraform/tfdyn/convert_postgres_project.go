@@ -56,5 +56,5 @@ func (c postgresProjectConverter) Convert(ctx context.Context, key string, vin d
 }
 
 func init() {
-	registerConverter("postgres_projects", postgresProjectConverter{})
+	registerConverter("postgres_projects", "databricks_postgres_project", postgresProjectConverter{})
 }

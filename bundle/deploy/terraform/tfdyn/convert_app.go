@@ -62,5 +62,5 @@ func (appConverter) Convert(ctx context.Context, key string, vin dyn.Value, out 
 }
 
 func init() {
-	registerConverter("apps", appConverter{})
+	registerConverter("apps", "databricks_app", appConverter{})
 }

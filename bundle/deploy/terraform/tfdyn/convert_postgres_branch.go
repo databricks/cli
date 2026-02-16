@@ -59,5 +59,5 @@ func (c postgresBranchConverter) Convert(ctx context.Context, key string, vin dy
 }
 
 func init() {
-	registerConverter("postgres_branches", postgresBranchConverter{})
+	registerConverter("postgres_branches", "databricks_postgres_branch", postgresBranchConverter{})
 }

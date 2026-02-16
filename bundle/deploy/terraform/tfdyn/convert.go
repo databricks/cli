@@ -11,13 +11,31 @@ type Converter interface {
 	Convert(ctx context.Context, key string, vin dyn.Value, out *schema.Resources) error
 }
 
-var converters = map[string]Converter{}
-
-func GetConverter(name string) (Converter, bool) {
-	c, ok := converters[name]
-	return c, ok
+type converterEntry struct {
+	Converter     Converter
+	TerraformName string
 }
 
-func registerConverter(name string, c Converter) {
-	converters[name] = c
+var converters = map[string]converterEntry{}
+
+func GetConverter(name string) (Converter, bool) {
+	e, ok := converters[name]
+	return e.Converter, ok
+}
+
+func registerConverter(groupName string, terraformName string, c Converter) {
+	converters[groupName] = converterEntry{Converter: c, TerraformName: terraformName}
+}
+
+// BuildGroupToTerraformName dynamically builds the group-to-terraform-name
+// map from registered converters. It also adds entries for "permissions" and
+// "grants" which don't have converters.
+func BuildGroupToTerraformName() map[string]string {
+	m := make(map[string]string, len(converters)+2)
+	for groupName, entry := range converters {
+		m[groupName] = entry.TerraformName
+	}
+	m["permissions"] = "databricks_permissions"
+	m["grants"] = "databricks_grants"
+	return m
 }

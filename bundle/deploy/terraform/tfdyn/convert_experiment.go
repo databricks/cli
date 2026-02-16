@@ -46,5 +46,5 @@ func (experimentConverter) Convert(ctx context.Context, key string, vin dyn.Valu
 }
 
 func init() {
-	registerConverter("experiments", experimentConverter{})
+	registerConverter("experiments", "databricks_mlflow_experiment", experimentConverter{})
 }

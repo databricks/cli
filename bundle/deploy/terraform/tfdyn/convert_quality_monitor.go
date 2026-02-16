@@ -38,5 +38,5 @@ func (qualityMonitorConverter) Convert(ctx context.Context, key string, vin dyn.
 }
 
 func init() {
-	registerConverter("quality_monitors", qualityMonitorConverter{})
+	registerConverter("quality_monitors", "databricks_quality_monitor", qualityMonitorConverter{})
 }

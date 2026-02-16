@@ -46,5 +46,5 @@ func (volumeConverter) Convert(ctx context.Context, key string, vin dyn.Value, o
 }
 
 func init() {
-	registerConverter("volumes", volumeConverter{})
+	registerConverter("volumes", "databricks_volume", volumeConverter{})
 }

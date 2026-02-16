@@ -53,5 +53,5 @@ func (clusterConverter) Convert(ctx context.Context, key string, vin dyn.Value, 
 }
 
 func init() {
-	registerConverter("clusters", clusterConverter{})
+	registerConverter("clusters", "databricks_cluster", clusterConverter{})
 }
