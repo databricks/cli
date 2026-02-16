@@ -4,14 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
-	"path/filepath"
-	"regexp"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/databricks/cli/experimental/ssh/internal/keys"
+	"github.com/databricks/cli/experimental/ssh/internal/sshconfig"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/databricks-sdk-go"
 	"github.com/databricks/databricks-sdk-go/service/compute"
@@ -32,6 +28,8 @@ type SetupOptions struct {
 	SSHKeysDir string
 	// Optional auth profile name. If present, will be added as --profile flag to the ProxyCommand
 	Profile string
+	// Proxy command to use for the SSH connection
+	ProxyCommand string
 }
 
 func validateClusterAccess(ctx context.Context, client *databricks.WorkspaceClient, clusterID string) error {
@@ -45,124 +43,14 @@ func validateClusterAccess(ctx context.Context, client *databricks.WorkspaceClie
 	return nil
 }
 
-func resolveConfigPath(configPath string) (string, error) {
-	if configPath != "" {
-		return configPath, nil
-	}
-	homeDir, err := os.UserHomeDir()
-	if err != nil {
-		return "", fmt.Errorf("failed to get home directory: %w", err)
-	}
-	return filepath.Join(homeDir, ".ssh", "config"), nil
-}
-
-func GenerateProxyCommand(clusterId string, autoStartCluster bool, shutdownDelay time.Duration, profile, userName string, serverPort int, handoverTimeout time.Duration) (string, error) {
-	executablePath, err := os.Executable()
-	if err != nil {
-		return "", fmt.Errorf("failed to get current executable path: %w", err)
-	}
-
-	proxyCommand := fmt.Sprintf("%q ssh connect --proxy --cluster=%s --auto-start-cluster=%t --shutdown-delay=%s",
-		executablePath, clusterId, autoStartCluster, shutdownDelay.String())
-
-	if userName != "" && serverPort != 0 {
-		proxyCommand += " --metadata=" + userName + "," + strconv.Itoa(serverPort)
-	}
-
-	if handoverTimeout > 0 {
-		proxyCommand += " --handover-timeout=" + handoverTimeout.String()
-	}
-
-	if profile != "" {
-		proxyCommand += " --profile=" + profile
-	}
-
-	return proxyCommand, nil
-}
-
 func generateHostConfig(opts SetupOptions) (string, error) {
 	identityFilePath, err := keys.GetLocalSSHKeyPath(opts.ClusterID, opts.SSHKeysDir)
 	if err != nil {
 		return "", fmt.Errorf("failed to get local keys folder: %w", err)
 	}
 
-	proxyCommand, err := GenerateProxyCommand(opts.ClusterID, opts.AutoStartCluster, opts.ShutdownDelay, opts.Profile, "", 0, 0)
-	if err != nil {
-		return "", fmt.Errorf("failed to generate ProxyCommand: %w", err)
-	}
-
-	hostConfig := fmt.Sprintf(`
-Host %s
-    User root
-    ConnectTimeout 360
-    StrictHostKeyChecking accept-new
-    IdentitiesOnly yes
-    IdentityFile %q
-    ProxyCommand %s
-`, opts.HostName, identityFilePath, proxyCommand)
-
+	hostConfig := sshconfig.GenerateHostConfig(opts.HostName, "root", identityFilePath, opts.ProxyCommand)
 	return hostConfig, nil
-}
-
-func ensureSSHConfigExists(configPath string) error {
-	_, err := os.Stat(configPath)
-	if os.IsNotExist(err) {
-		sshDir := filepath.Dir(configPath)
-		err = os.MkdirAll(sshDir, 0o700)
-		if err != nil {
-			return fmt.Errorf("failed to create SSH directory: %w", err)
-		}
-		err = os.WriteFile(configPath, []byte(""), 0o600)
-		if err != nil {
-			return fmt.Errorf("failed to create SSH config file: %w", err)
-		}
-		return nil
-	} else if err != nil {
-		return fmt.Errorf("failed to check SSH config file: %w", err)
-	}
-	return nil
-}
-
-func checkExistingHosts(content []byte, hostName string) (bool, error) {
-	existingContent := string(content)
-	pattern := fmt.Sprintf(`(?m)^\s*Host\s+%s\s*$`, regexp.QuoteMeta(hostName))
-	matched, err := regexp.MatchString(pattern, existingContent)
-	if err != nil {
-		return false, fmt.Errorf("failed to check for existing host: %w", err)
-	}
-	if matched {
-		return true, nil
-	}
-	return false, nil
-}
-
-func createBackup(content []byte, configPath string) (string, error) {
-	backupPath := configPath + ".bak"
-	err := os.WriteFile(backupPath, content, 0o600)
-	if err != nil {
-		return backupPath, fmt.Errorf("failed to create backup of SSH config file: %w", err)
-	}
-	return backupPath, nil
-}
-
-func updateSSHConfigFile(configPath, hostConfig, hostName string) error {
-	content, err := os.ReadFile(configPath)
-	if err != nil {
-		return fmt.Errorf("failed to read SSH config file: %w", err)
-	}
-
-	existingContent := string(content)
-	if !strings.HasSuffix(existingContent, "\n") && existingContent != "" {
-		existingContent += "\n"
-	}
-	newContent := existingContent + hostConfig
-
-	err = os.WriteFile(configPath, []byte(newContent), 0o600)
-	if err != nil {
-		return fmt.Errorf("failed to update SSH config file: %w", err)
-	}
-
-	return nil
 }
 
 func clusterSelectionPrompt(ctx context.Context, client *databricks.WorkspaceClient) (string, error) {
@@ -202,7 +90,12 @@ func Setup(ctx context.Context, client *databricks.WorkspaceClient, opts SetupOp
 		return err
 	}
 
-	configPath, err := resolveConfigPath(opts.SSHConfigPath)
+	configPath, err := sshconfig.GetMainConfigPathOrDefault(opts.SSHConfigPath)
+	if err != nil {
+		return err
+	}
+
+	err = sshconfig.EnsureIncludeDirective(configPath)
 	if err != nil {
 		return err
 	}
@@ -212,40 +105,36 @@ func Setup(ctx context.Context, client *databricks.WorkspaceClient, opts SetupOp
 		return err
 	}
 
-	err = ensureSSHConfigExists(configPath)
+	exists, err := sshconfig.HostConfigExists(opts.HostName)
 	if err != nil {
 		return err
 	}
 
-	existingContent, err := os.ReadFile(configPath)
-	if err != nil {
-		return fmt.Errorf("failed to read SSH config file: %w", err)
-	}
-
-	if len(existingContent) > 0 {
-		exists, err := checkExistingHosts(existingContent, opts.HostName)
+	recreate := false
+	if exists {
+		recreate, err = sshconfig.PromptRecreateConfig(ctx, opts.HostName)
 		if err != nil {
 			return err
 		}
-		if exists {
-			cmdio.LogString(ctx, fmt.Sprintf("Host '%s' already exists in the SSH config, skipping setup", opts.HostName))
+		if !recreate {
+			cmdio.LogString(ctx, fmt.Sprintf("Skipping setup for host '%s'", opts.HostName))
 			return nil
 		}
-		backupPath, err := createBackup(existingContent, configPath)
-		if err != nil {
-			return err
-		}
-		cmdio.LogString(ctx, "Created backup of existing SSH config at "+backupPath)
 	}
 
 	cmdio.LogString(ctx, "Adding new entry to the SSH config:\n"+hostConfig)
 
-	err = updateSSHConfigFile(configPath, hostConfig, opts.HostName)
+	_, err = sshconfig.CreateOrUpdateHostConfig(ctx, opts.HostName, hostConfig, recreate)
 	if err != nil {
 		return err
 	}
 
-	cmdio.LogString(ctx, fmt.Sprintf("Updated SSH config file at %s with '%s' host", configPath, opts.HostName))
+	hostConfigPath, err := sshconfig.GetHostConfigPath(opts.HostName)
+	if err != nil {
+		return err
+	}
+
+	cmdio.LogString(ctx, fmt.Sprintf("Created SSH config file at %s for '%s' host", hostConfigPath, opts.HostName))
 	cmdio.LogString(ctx, fmt.Sprintf("You can now connect to the cluster using 'ssh %s' terminal command, or use remote capabilities of your IDE", opts.HostName))
 	return nil
 }
