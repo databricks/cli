@@ -52,14 +52,14 @@ type stateInstanceAttributes struct {
 // nameBasedStateResources is the set of resource group names that use
 // instance.Attributes.Name instead of instance.Attributes.ID for state.
 var nameBasedStateResources = map[string]bool{
-	"apps":                    true,
-	"secret_scopes":           true,
-	"database_instances":      true,
-	"database_catalogs":       true,
-	"synced_database_tables":  true,
-	"postgres_projects":       true,
-	"postgres_branches":       true,
-	"postgres_endpoints":      true,
+	"apps":                   true,
+	"secret_scopes":          true,
+	"database_instances":     true,
+	"database_catalogs":      true,
+	"synced_database_tables": true,
+	"postgres_projects":      true,
+	"postgres_branches":      true,
+	"postgres_endpoints":     true,
 }
 
 // Returns a mapping resourceKey -> stateInstanceAttributes
