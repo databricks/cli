@@ -21,6 +21,7 @@ import (
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/git"
 	"github.com/databricks/cli/libs/log"
+	ignore "github.com/sabhiram/go-gitignore"
 	"github.com/spf13/cobra"
 )
 
@@ -998,8 +999,21 @@ func copyTemplate(ctx context.Context, src, dest string, vars templateVars) (int
 		"databricks_template_schema.json": true,
 	}
 	skipDirs := map[string]bool{
-		"docs":     true,
-		"features": true, // Feature fragments are processed separately, not copied
+		"docs":         true,
+		"node_modules": true,
+		"dist":         true,
+		".git":         true,
+	}
+
+	// Load .gitignore patterns from the template to skip ignored paths (e.g., dist, node_modules).
+	// Checks both _gitignore (template convention) and .gitignore.
+	var gitIgnore *ignore.GitIgnore
+	for _, name := range []string{"_gitignore", ".gitignore"} {
+		p := filepath.Join(srcProjectDir, name)
+		if gi, err := ignore.CompileIgnoreFile(p); err == nil {
+			gitIgnore = gi
+			break
+		}
 	}
 
 	err = filepath.Walk(srcProjectDir, func(srcPath string, info os.FileInfo, err error) error {
@@ -1021,14 +1035,31 @@ func copyTemplate(ctx context.Context, src, dest string, vars templateVars) (int
 			return filepath.SkipDir
 		}
 
+		// Skip paths matched by .gitignore patterns.
+		// Append "/" for directories so patterns like "node_modules/" match correctly.
+		if gitIgnore != nil && srcPath != srcProjectDir {
+			rel, relErr := filepath.Rel(srcProjectDir, srcPath)
+			if relErr == nil {
+				matchPath := rel
+				if info.IsDir() {
+					matchPath = rel + "/"
+				}
+				if gitIgnore.MatchesPath(matchPath) {
+					if info.IsDir() {
+						log.Debugf(ctx, "Skipping gitignored directory: %s", rel)
+						return filepath.SkipDir
+					}
+					log.Debugf(ctx, "Skipping gitignored file: %s", rel)
+					return nil
+				}
+			}
+		}
+
 		// Calculate relative path from source project dir
 		relPath, err := filepath.Rel(srcProjectDir, srcPath)
 		if err != nil {
 			return err
 		}
-
-		// Substitute variables in path
-		relPath = substituteVars(relPath, vars)
 
 		// Handle .tmpl extension - strip it
 		relPath = strings.TrimSuffix(relPath, ".tmpl")
@@ -1054,23 +1085,11 @@ func copyTemplate(ctx context.Context, src, dest string, vars templateVars) (int
 			return err
 		}
 
-		// Handle special files
-		switch filepath.Base(srcPath) {
-		case "package.json":
-			content, err = processPackageJSON(content, vars)
+		// Apply Go template substitution to all text files (including .tmpl).
+		if isTextFile(srcPath) || strings.HasSuffix(srcPath, ".tmpl") {
+			content, err = executeTemplate(ctx, srcPath, content, vars)
 			if err != nil {
-				return fmt.Errorf("process package.json: %w", err)
-			}
-		default:
-			// Use Go template engine for .tmpl files (handles conditionals)
-			if strings.HasSuffix(srcPath, ".tmpl") {
-				content, err = executeTemplate(srcPath, content, vars)
-				if err != nil {
-					return fmt.Errorf("process template %s: %w", srcPath, err)
-				}
-			} else if isTextFile(srcPath) {
-				// Simple substitution for other text files
-				content = []byte(substituteVars(string(content), vars))
+				return fmt.Errorf("process template %s: %w", srcPath, err)
 			}
 		}
 
@@ -1100,56 +1119,9 @@ func copyTemplate(ctx context.Context, src, dest string, vars templateVars) (int
 	return fileCount, err
 }
 
-// processPackageJSON updates the package.json with project-specific values.
-func processPackageJSON(content []byte, vars templateVars) ([]byte, error) {
-	// Just do string substitution to preserve key order and formatting
-	return []byte(substituteVars(string(content), vars)), nil
-}
-
-// substituteVars replaces template variables in a string.
-// Note: This is for simple string replacement in non-.tmpl files.
-// .tmpl files use Go's text/template engine via executeTemplate.
-func substituteVars(s string, vars templateVars) string {
-	s = strings.ReplaceAll(s, "{{.project_name}}", vars.ProjectName)
-	s = strings.ReplaceAll(s, "{{.app_description}}", vars.AppDescription)
-	s = strings.ReplaceAll(s, "{{.profile}}", vars.Profile)
-	s = strings.ReplaceAll(s, "{{workspace_host}}", vars.WorkspaceHost)
-
-	// Handle plugin placeholders
-	if vars.PluginImports != "" {
-		s = strings.ReplaceAll(s, "{{.plugin_imports}}", vars.PluginImports)
-		s = strings.ReplaceAll(s, "{{.plugin_usages}}", vars.PluginUsages)
-	} else {
-		// No plugins selected - clean up the template
-		// Remove ", {{.plugin_imports}}" from import line
-		s = strings.ReplaceAll(s, ", {{.plugin_imports}} ", " ")
-		s = strings.ReplaceAll(s, ", {{.plugin_imports}}", "")
-		// Remove the plugin_usages line entirely
-		s = strings.ReplaceAll(s, "    {{.plugin_usages}},\n", "")
-		s = strings.ReplaceAll(s, "{{.plugin_usages}}", "")
-	}
-
-	// Handle bundle configuration placeholders
-	s = strings.ReplaceAll(s, "{{.variables}}", vars.BundleVariables)
-	s = strings.ReplaceAll(s, "{{.resources}}", vars.BundleResources)
-	s = strings.ReplaceAll(s, "{{.target_variables}}", vars.TargetVariables)
-
-	return s
-}
-
-// executeTemplate processes a .tmpl file using Go's text/template engine.
-func executeTemplate(path string, content []byte, vars templateVars) ([]byte, error) {
-	tmpl, err := template.New(filepath.Base(path)).
-		Funcs(template.FuncMap{
-			"workspace_host": func() string { return vars.WorkspaceHost },
-		}).
-		Parse(string(content))
-	if err != nil {
-		return nil, fmt.Errorf("parse template: %w", err)
-	}
-
-	// Use a map to match template variable names exactly (snake_case)
-	data := map[string]string{
+// templateData builds the data map for Go template execution.
+func templateData(vars templateVars) map[string]string {
+	return map[string]string{
 		"project_name":     vars.ProjectName,
 		"app_description":  vars.AppDescription,
 		"profile":          vars.Profile,
@@ -1162,10 +1134,24 @@ func executeTemplate(path string, content []byte, vars templateVars) ([]byte, er
 		"dotenv":           vars.DotEnv,
 		"dotenv_example":   vars.DotEnvExample,
 	}
+}
+
+// executeTemplate processes a file using Go's text/template engine.
+// On parse errors (e.g., files containing non-Go {{...}} syntax), the original
+// content is returned with a warning logged instead of failing the process.
+func executeTemplate(ctx context.Context, path string, content []byte, vars templateVars) ([]byte, error) {
+	tmpl, err := template.New(filepath.Base(path)).
+		Option("missingkey=zero").
+		Parse(string(content))
+	if err != nil {
+		log.Warnf(ctx, "Skipping template substitution for %s: %v", filepath.Base(path), err)
+		return content, nil
+	}
 
 	var buf bytes.Buffer
-	if err := tmpl.Execute(&buf, data); err != nil {
-		return nil, fmt.Errorf("execute template: %w", err)
+	if err := tmpl.Execute(&buf, templateData(vars)); err != nil {
+		log.Warnf(ctx, "Skipping template substitution for %s: %v", filepath.Base(path), err)
+		return content, nil
 	}
 
 	return buf.Bytes(), nil
