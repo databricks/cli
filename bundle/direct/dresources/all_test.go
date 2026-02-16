@@ -842,13 +842,13 @@ func TestGeneratedResourceConfig(t *testing.T) {
 
 func validateResourceConfig(t *testing.T, stateType reflect.Type, cfg *ResourceLifecycleConfig) {
 	for _, p := range cfg.RecreateOnChanges {
-		assert.NoError(t, structaccess.ValidatePath(stateType, p.Field), "RecreateOnChanges: %s", p.Field)
+		assert.NoError(t, structaccess.ValidatePattern(stateType, p.Field), "RecreateOnChanges: %s", p.Field)
 	}
 	for _, p := range cfg.UpdateIDOnChanges {
-		assert.NoError(t, structaccess.ValidatePath(stateType, p.Field), "UpdateIDOnChanges: %s", p.Field)
+		assert.NoError(t, structaccess.ValidatePattern(stateType, p.Field), "UpdateIDOnChanges: %s", p.Field)
 	}
 	for _, p := range cfg.IgnoreRemoteChanges {
-		assert.NoError(t, structaccess.ValidatePath(stateType, p.Field), "IgnoreRemoteChanges: %s", p.Field)
+		assert.NoError(t, structaccess.ValidatePattern(stateType, p.Field), "IgnoreRemoteChanges: %s", p.Field)
 	}
 }
 

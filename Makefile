@@ -147,6 +147,15 @@ integration:
 integration-short:
 	VERBOSE_TEST=1 $(INTEGRATION) -short
 
+dbr-integration:
+	DBR_ENABLED=true go test -v -timeout 4h -run TestDbrAcceptance$$ ./acceptance
+
+# DBR acceptance tests - run on Databricks Runtime using serverless compute
+# These require deco env run for authentication
+# Set DBR_TEST_VERBOSE=1 for detailed output (e.g., DBR_TEST_VERBOSE=1 make dbr-test)
+dbr-test:
+	deco env run -i -n aws-prod-ucws -- make dbr-integration
+
 generate-validation:
 	go run ./bundle/internal/validation/.
 	gofmt -w -s ./bundle/internal/validation/generated

@@ -4,6 +4,11 @@ envsubst < databricks.yml.tmpl > databricks.yml
 envsubst < resources/job1.yml.tmpl > resources/job1.yml
 envsubst < resources/job2.yml.tmpl > resources/job2.yml
 
+cleanup() {
+  trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
 touch dummy.whl
 $CLI bundle deploy
 
@@ -20,6 +25,21 @@ for task in r["tasks"]:
         for dep in task["depends_on"]:
             if dep["task_key"] == "c_task":
                 dep["task_key"] = "c_task_renamed"
+EOF
+
+title "Add synced_task to job_one (notebook in sync root, resource in subdirectory)"
+edit_resource.py jobs $job_one_id <<EOF
+r["tasks"].append({
+    "task_key": "synced_task",
+    "notebook_task": {
+        "notebook_path": "${PWD}/sample_exploration"
+    },
+    "new_cluster": {
+        "spark_version": "${DEFAULT_SPARK_VERSION}",
+        "node_type_id": "${NODE_TYPE_ID}",
+        "num_workers": 1
+    }
+})
 EOF
 
 title "Modify job_two: max_concurrent_runs, rename first task, add extra_task"

@@ -15,7 +15,7 @@
       "autoscaling_limit_min_cu": 0.5,
       "current_state": "ACTIVE",
       "disabled": false,
-      "endpoint_type": "ENDPOINT_TYPE_READ_WRITE",
+      "endpoint_type": "ENDPOINT_TYPE_READ_ONLY",
       "hosts": {
         "host": "[ENDPOINT_UID].database.us-east-1.cloud.databricks.com"
       },
@@ -41,13 +41,13 @@
     "endpoint_type": {
       "action": "skip",
       "reason": "spec:input_only",
-      "old": "ENDPOINT_TYPE_READ_WRITE",
-      "new": "ENDPOINT_TYPE_READ_WRITE",
+      "old": "ENDPOINT_TYPE_READ_ONLY",
+      "new": "ENDPOINT_TYPE_READ_ONLY",
       "remote": ""
     },
     "suspend_timeout_duration": {
       "action": "skip",
-      "reason": "empty_struct",
+      "reason": "empty",
       "old": "300s",
       "new": "300s"
     }
