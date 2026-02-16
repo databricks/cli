@@ -445,5 +445,10 @@ func restoreBlankLines(content []byte) []byte {
 	}
 	flush()
 
-	return []byte(strings.Join(result, "\n"))
+	out := strings.Join(result, "\n")
+
+	// Safety net: replace any markers that survived due to unexpected reasons
+	out = strings.ReplaceAll(out, blankLineMarker, "")
+
+	return []byte(out)
 }
