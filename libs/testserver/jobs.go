@@ -348,7 +348,8 @@ func (s *FakeWorkspace) executePythonWheelTask(jobSettings *jobs.JobSettings, ta
 		return string(output), fmt.Errorf("wheel task execution failed: %s\n%s", err, output)
 	}
 
-	return string(output), nil
+	// Normalize trailing newlines to match cloud behavior (exactly one trailing newline)
+	return strings.TrimRight(string(output), "\r\n") + "\n", nil
 }
 
 // executeNotebookTask executes a notebook task by running the notebook as a Python script.
@@ -436,7 +437,7 @@ func (s *FakeWorkspace) executeNotebookTask(task jobs.Task, notebookParams map[s
 	}
 
 	// Normalize trailing newlines to match cloud behavior (exactly one trailing newline)
-	return strings.TrimRight(string(output), "\n") + "\n", nil
+	return strings.TrimRight(string(output), "\r\n") + "\n", nil
 }
 
 // getOrCreateClusterEnv returns a cached venv for existing clusters or creates
