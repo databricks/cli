@@ -52,7 +52,6 @@
         "enable_elastic_disk": false,
         "node_type_id": "[NODE_TYPE_ID]",
         "num_workers": 2,
-        "single_user_name": "[USERNAME]",
         "spark_conf": {
           "spark.executor.memory": "2g"
         },
@@ -87,11 +86,6 @@
           "old": 2,
           "new": 3,
           "remote": 2
-        },
-        "single_user_name": {
-          "action": "skip",
-          "reason": "server_side_default",
-          "remote": "[USERNAME]"
         }
       }
     }
