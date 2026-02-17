@@ -8,6 +8,21 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/sql"
 )
 
+func sqlWarehouseFixUps(warehouse *sql.GetWarehouseResponse, userName string) {
+	if warehouse.CreatorName == "" {
+		warehouse.CreatorName = userName
+	}
+
+	if warehouse.MinNumClusters == 0 {
+		warehouse.MinNumClusters = 1
+		warehouse.ForceSendFields = append(warehouse.ForceSendFields, "MinNumClusters")
+	}
+
+	if warehouse.WarehouseType == "" {
+		warehouse.WarehouseType = sql.GetWarehouseResponseWarehouseTypeClassic
+	}
+}
+
 func (s *FakeWorkspace) SqlWarehousesUpsert(req Request, warehouseId string) Response {
 	var warehouse sql.GetWarehouseResponse
 
@@ -31,8 +46,11 @@ func (s *FakeWorkspace) SqlWarehousesUpsert(req Request, warehouseId string) Res
 		warehouseId = nextUUID()
 	}
 	warehouse.Id = warehouseId
-	warehouse.Name = warehouseId
+	if warehouse.Name == "" {
+		warehouse.Name = warehouseId
+	}
 	warehouse.State = sql.StateRunning
+	sqlWarehouseFixUps(&warehouse, s.CurrentUser().UserName)
 	s.SqlWarehouses[warehouseId] = warehouse
 
 	return Response{
@@ -40,6 +58,7 @@ func (s *FakeWorkspace) SqlWarehousesUpsert(req Request, warehouseId string) Res
 		Body:       warehouse,
 	}
 }
+
 
 func (s *FakeWorkspace) SqlWarehousesList(req Request) Response {
 	var warehouses []sql.EndpointInfo
