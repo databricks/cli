@@ -4,9 +4,7 @@ import (
 	"flag"
 )
 
-var (
-	SkipLocal bool
-)
+var SkipLocal bool
 
 func init() {
 	// This flag is a noop to match acceptance test compatibility.
