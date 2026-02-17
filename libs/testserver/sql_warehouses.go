@@ -59,7 +59,6 @@ func (s *FakeWorkspace) SqlWarehousesUpsert(req Request, warehouseId string) Res
 	}
 }
 
-
 func (s *FakeWorkspace) SqlWarehousesList(req Request) Response {
 	var warehouses []sql.EndpointInfo
 	for _, warehouse := range s.SqlWarehouses {
