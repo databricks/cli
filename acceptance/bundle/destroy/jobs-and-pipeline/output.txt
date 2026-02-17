@@ -14,7 +14,7 @@ Deployment complete!
 === Assert bundle deployment path is created
 >>> [CLI] workspace get-status //Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 {
-  "path": "/Users/[USERNAME]/.bundle/[UNIQUE_NAME]",
+  "path": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]",
   "object_type": "DIRECTORY"
 }
 

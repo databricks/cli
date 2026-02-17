@@ -318,27 +318,33 @@ func (s *FakeWorkspace) CurrentUser() iam.User {
 func (s *FakeWorkspace) WorkspaceGetStatus(path string) Response {
 	defer s.LockUnlock()()
 
-	// Normalize path: remove leading // and /Workspace prefix
+	// Normalize path for lookup: remove leading // and /Workspace prefix
+	originalPath := path
 	if strings.HasPrefix(path, "//") {
 		path = path[1:]
+		originalPath = path
 	}
-	if strings.HasPrefix(path, "/Workspace/") {
-		path = path[len("/Workspace"):]
-	}
+	lookupPath, _ := strings.CutPrefix(path, "/Workspace")
 
-	if dirInfo, ok := s.directories[path]; ok {
+	if dirInfo, ok := s.directories[lookupPath]; ok {
+		// Return path with /Workspace prefix to match cloud behavior
+		info := dirInfo
+		info.Path = originalPath
 		return Response{
-			Body: &dirInfo,
+			Body: &info,
 		}
-	} else if entry, ok := s.files[path]; ok {
+	} else if entry, ok := s.files[lookupPath]; ok {
+		// Return path with /Workspace prefix to match cloud behavior
+		info := entry.Info
+		info.Path = originalPath
 		return Response{
-			Body: entry.Info,
+			Body: &info,
 		}
-	} else if repoId, ok := s.repoIdByPath[path]; ok {
+	} else if repoId, ok := s.repoIdByPath[lookupPath]; ok {
 		return Response{
 			Body: workspace.ObjectInfo{
 				ObjectType: "REPO",
-				Path:       path,
+				Path:       originalPath,
 				ObjectId:   repoId,
 			},
 		}
@@ -352,14 +358,11 @@ func (s *FakeWorkspace) WorkspaceGetStatus(path string) Response {
 
 func (s *FakeWorkspace) WorkspaceMkdirs(request workspace.Mkdirs) {
 	defer s.LockUnlock()()
-	// Normalize path: strip /Workspace prefix if present
-	normalizedPath := request.Path
-	if strings.HasPrefix(normalizedPath, "/Workspace/") {
-		normalizedPath = normalizedPath[len("/Workspace"):]
-	}
-	s.directories[normalizedPath] = workspace.ObjectInfo{
+	// Normalize path for storage: strip /Workspace prefix if present
+	storagePath, _ := strings.CutPrefix(request.Path, "/Workspace")
+	s.directories[storagePath] = workspace.ObjectInfo{
 		ObjectType: "DIRECTORY",
-		Path:       normalizedPath,
+		Path:       request.Path, // Store original path
 		ObjectId:   nextID(),
 	}
 }
@@ -405,20 +408,16 @@ func (s *FakeWorkspace) WorkspaceFilesImportFile(filePath string, body []byte, o
 		filePath = "/" + filePath
 	}
 
-	// Normalize path: strip /Workspace prefix if present
-	if strings.HasPrefix(filePath, "/Workspace/") {
-		filePath = filePath[len("/Workspace"):]
-	}
+	// Normalize path for storage: strip /Workspace prefix if present
+	storagePath, _ := strings.CutPrefix(filePath, "/Workspace")
 
 	defer s.LockUnlock()()
 
-	workspacePath := filePath
-
 	if !overwrite {
-		if _, exists := s.files[workspacePath]; exists {
+		if _, exists := s.files[storagePath]; exists {
 			return Response{
 				StatusCode: 409,
-				Body:       map[string]string{"message": fmt.Sprintf("File already exists at (%s).", workspacePath)},
+				Body:       map[string]string{"message": fmt.Sprintf("File already exists at (%s).", filePath)},
 			}
 		}
 	}
@@ -426,27 +425,29 @@ func (s *FakeWorkspace) WorkspaceFilesImportFile(filePath string, body []byte, o
 	// Note: Files with .py, .scala, .r or .sql extension can
 	// be notebooks if they contain a magical "Databricks notebook source"
 	// header comment. We omit support non-python extensions for now for simplicity.
-	extension := filepath.Ext(filePath)
+	extension := filepath.Ext(storagePath)
 	if extension == ".py" && strings.HasPrefix(string(body), "# Databricks notebook source") {
 		// Notebooks are stripped of their extension by the workspace import API.
-		workspacePath = strings.TrimSuffix(filePath, extension)
-		s.files[workspacePath] = FileEntry{
+		storagePathWithoutExt := strings.TrimSuffix(storagePath, extension)
+		displayPath := strings.TrimSuffix(filePath, extension)
+		s.files[storagePathWithoutExt] = FileEntry{
 			Info: workspace.ObjectInfo{
 				ObjectType: "NOTEBOOK",
-				Path:       workspacePath,
+				Path:       displayPath, // Use original path with /Workspace
 				Language:   "PYTHON",
 				ObjectId:   nextID(),
 			},
 			Data: body,
 		}
+		storagePath = storagePathWithoutExt // Update for directory creation below
 	} else {
 		// The endpoint does not set language for files, so we omit that
 		// here as well.
 		// ref: https://docs.databricks.com/api/workspace/workspace/getstatus#language
-		s.files[workspacePath] = FileEntry{
+		s.files[storagePath] = FileEntry{
 			Info: workspace.ObjectInfo{
 				ObjectType: "FILE",
-				Path:       workspacePath,
+				Path:       filePath, // Use original path with /Workspace
 				ObjectId:   nextID(),
 			},
 			Data: body,
@@ -454,11 +455,16 @@ func (s *FakeWorkspace) WorkspaceFilesImportFile(filePath string, body []byte, o
 	}
 
 	// Add all directories in the path to the directories map
-	for dir := path.Dir(workspacePath); dir != "/"; dir = path.Dir(dir) {
+	for dir := path.Dir(storagePath); dir != "/"; dir = path.Dir(dir) {
 		if _, exists := s.directories[dir]; !exists {
+			// Calculate display path for directory
+			displayDir := dir
+			if strings.HasPrefix(filePath, "/Workspace/") {
+				displayDir = "/Workspace" + dir
+			}
 			s.directories[dir] = workspace.ObjectInfo{
 				ObjectType: "DIRECTORY",
-				Path:       dir,
+				Path:       displayDir,
 				ObjectId:   nextID(),
 			}
 		}

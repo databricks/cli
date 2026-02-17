@@ -9,20 +9,20 @@ Deployment complete!
 >>> [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files/test.py
 {
   "object_type": "FILE",
-  "path": "/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files/test.py"
+  "path": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files/test.py"
 }
 
 >>> [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files/test_to_modify.py
 {
   "object_type": "FILE",
-  "path": "/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files/test_to_modify.py"
+  "path": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files/test_to_modify.py"
 }
 
 === Check that notebook is in workspace
 >>> [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files/notebook
 {
   "object_type": "NOTEBOOK",
-  "path": "/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files/notebook",
+  "path": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files/notebook",
   "language": "PYTHON"
 }
 
@@ -30,7 +30,7 @@ Deployment complete!
 >>> [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/state/deployment.json
 {
   "object_type": "FILE",
-  "path": "/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/state/deployment.json"
+  "path": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/state/deployment.json"
 }
 
 === Remove .databricks directory to simulate a fresh deployment like in CI/CD environment
