@@ -35,6 +35,22 @@ r["tasks"].append({
 })
 EOF
 
+no_tasks_job_id="$(read_id.py no_tasks_job)"
+edit_resource.py jobs $no_tasks_job_id <<EOF
+r.setdefault("tasks", [])
+r["tasks"].append({
+    "task_key": "new_task",
+    "notebook_task": {
+        "notebook_path": "/Users/${CURRENT_USER_NAME}/new_task"
+    },
+    "new_cluster": {
+        "spark_version": "${DEFAULT_SPARK_VERSION}",
+        "node_type_id": "${NODE_TYPE_ID}",
+        "num_workers": 1
+    }
+})
+EOF
+
 title "Detect and save changes"
 echo
 cp databricks.yml databricks.yml.backup
