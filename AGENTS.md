@@ -315,17 +315,13 @@ make test-exp-aitools   # only if aitools code changed
 make test-exp-ssh       # only if ssh code changed
 ```
 
-Note: CI also runs an `ajv` JSON schema validation step and integration tests, which are not locally reproducible without additional setup.
 
 # Common Mistakes
 
-- Do NOT run `go generate` without checking which files will be modified.
 - Do NOT add dependencies without checking license compatibility.
 - Do NOT use `os.Exit()` outside of `main.go`.
 - Do NOT remove or skip failing tests to fix CI — fix the underlying issue.
 - Do NOT leave debug print statements (`fmt.Println`, `log.Printf` for debugging) in committed code — always scrub before committing.
-- Do NOT run acceptance test variants by setting env var prefix (`DATABRICKS_BUNDLE_ENGINE=direct go test ...`) — append to the test name in `-run` instead.
-- Do NOT blindly update acceptance test output when local results differ from CI — CI is the source of truth. Local machine state (e.g., brew-installed CLIs) can affect test output.
 
 # Error Handling
 
