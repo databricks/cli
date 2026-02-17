@@ -383,7 +383,7 @@ func (s *FakeWorkspace) WorkspaceExport(path string) Response {
 	}
 	return Response{
 		StatusCode: 404,
-		Body:       map[string]string{"message": fmt.Sprintf("File not found: %s", path)},
+		Body:       map[string]string{"message": "File not found: " + path},
 	}
 }
 
