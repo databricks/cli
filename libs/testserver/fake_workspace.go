@@ -41,6 +41,10 @@ const (
 var TestUser = iam.User{
 	Id:       UserID,
 	UserName: "tester@databricks.com",
+	Name: &iam.Name{
+		GivenName:  "Test",
+		FamilyName: "User",
+	},
 }
 
 var TestUserSP = iam.User{
