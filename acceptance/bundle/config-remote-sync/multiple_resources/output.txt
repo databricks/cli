@@ -5,7 +5,7 @@ Deployment complete!
 
 === Modify both jobs
 === Detect and save changes
-Detected changes in 2 resource(s):
+Detected changes in 3 resource(s):
 
 Resource: resources.jobs.job_one
   max_concurrent_runs: replace
@@ -14,6 +14,9 @@ Resource: resources.jobs.job_one
 Resource: resources.jobs.job_two
   max_concurrent_runs: replace
   tags: add
+
+Resource: resources.registered_models.test_model
+  storage_location: add
 
 
 
@@ -46,6 +49,12 @@ Resource: resources.jobs.job_two
 +        team: ml
    clusters:
      test_cluster:
+@@ -43,4 +47,5 @@
+       schema_name: default
+
++      storage_location: s3://deco-uc-prod-isolated-aws-us-east-1/metastore/[UUID]/models/[UUID]
+   volumes:
+     test_volume:
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

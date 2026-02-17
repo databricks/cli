@@ -73,9 +73,10 @@ var serverSideDefaults = map[string]any{
 	"resources.experiments.*.artifact_location": alwaysSkip,
 
 	// Registered model fields
-	"resources.registered_models.*.full_name":    alwaysSkip,
-	"resources.registered_models.*.metastore_id": alwaysSkip,
-	"resources.registered_models.*.owner":        alwaysSkip,
+	"resources.registered_models.*.full_name":         alwaysSkip,
+	"resources.registered_models.*.metastore_id":      alwaysSkip,
+	"resources.registered_models.*.owner":             alwaysSkip,
+	"resources.registered_models.*.storage_location":  alwaysSkip,
 
 	// Volume fields
 	"resources.volumes.*.storage_location": alwaysSkip,
