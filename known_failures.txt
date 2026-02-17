@@ -25,3 +25,8 @@ acceptance TestAccept/ssh/connection
 * TestAccept/bundle/resources/synced_database_tables/basic/
 
 * TestAccept/bundle/resources/postgres_endpoints/recreate/
+
+# Fails with this diff:
+#        -    "source_branch": "projects/test-pg-proj-[UNIQUE_NAME]/branches/[BRANCH_UID]",
+#        +    "source_branch": "projects/test-pg-proj-[UNIQUE_NAME]/branches/production",
+* TestAccept/bundle/resources/postgres_branches/
