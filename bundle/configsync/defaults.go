@@ -25,49 +25,72 @@ var (
 // Other fields are compared using reflect.DeepEqual.
 var serverSideDefaults = map[string]any{
 	// Job-level fields
-	"timeout_seconds":       zeroOrNil,
-	"email_notifications":   emptyEmailNotifications,
-	"webhook_notifications": map[string]any{},
-	"edit_mode":             alwaysSkip, // set by CLI
-	"performance_target":    "PERFORMANCE_OPTIMIZED",
+	"resources.jobs.*.timeout_seconds":       zeroOrNil,
+	"resources.jobs.*.email_notifications":   emptyEmailNotifications,
+	"resources.jobs.*.webhook_notifications": map[string]any{},
+	"resources.jobs.*.edit_mode":             alwaysSkip, // set by CLI
+	"resources.jobs.*.performance_target":    "PERFORMANCE_OPTIMIZED",
 
 	// Task-level fields
-	"tasks[*].run_if":                     "ALL_SUCCESS",
-	"tasks[*].disabled":                   false,
-	"tasks[*].timeout_seconds":            zeroOrNil,
-	"tasks[*].notebook_task.source":       "WORKSPACE",
-	"tasks[*].email_notifications":        emptyEmailNotifications,
-	"tasks[*].webhook_notifications":      map[string]any{},
-	"tasks[*].pipeline_task.full_refresh": false,
+	"resources.jobs.*.tasks[*].run_if":                     "ALL_SUCCESS",
+	"resources.jobs.*.tasks[*].disabled":                   false,
+	"resources.jobs.*.tasks[*].timeout_seconds":            zeroOrNil,
+	"resources.jobs.*.tasks[*].notebook_task.source":       "WORKSPACE",
+	"resources.jobs.*.tasks[*].email_notifications":        emptyEmailNotifications,
+	"resources.jobs.*.tasks[*].webhook_notifications":      map[string]any{},
+	"resources.jobs.*.tasks[*].pipeline_task.full_refresh": false,
 
-	"tasks[*].for_each_task.task.run_if":                "ALL_SUCCESS",
-	"tasks[*].for_each_task.task.disabled":              false,
-	"tasks[*].for_each_task.task.timeout_seconds":       zeroOrNil,
-	"tasks[*].for_each_task.task.notebook_task.source":  "WORKSPACE",
-	"tasks[*].for_each_task.task.email_notifications":   emptyEmailNotifications,
-	"tasks[*].for_each_task.task.webhook_notifications": map[string]any{},
+	"resources.jobs.*.tasks[*].for_each_task.task.run_if":                "ALL_SUCCESS",
+	"resources.jobs.*.tasks[*].for_each_task.task.disabled":              false,
+	"resources.jobs.*.tasks[*].for_each_task.task.timeout_seconds":       zeroOrNil,
+	"resources.jobs.*.tasks[*].for_each_task.task.notebook_task.source":  "WORKSPACE",
+	"resources.jobs.*.tasks[*].for_each_task.task.email_notifications":   emptyEmailNotifications,
+	"resources.jobs.*.tasks[*].for_each_task.task.webhook_notifications": map[string]any{},
 
 	// Cluster fields (tasks)
-	"tasks[*].new_cluster.aws_attributes":      alwaysSkip,
-	"tasks[*].new_cluster.azure_attributes":    alwaysSkip,
-	"tasks[*].new_cluster.gcp_attributes":      alwaysSkip,
-	"tasks[*].new_cluster.data_security_mode":  "SINGLE_USER", // TODO this field is computed on some workspaces in integration tests, check why and if we can skip it
-	"tasks[*].new_cluster.enable_elastic_disk": alwaysSkip,    // deprecated field
+	"resources.jobs.*.tasks[*].new_cluster.aws_attributes":      alwaysSkip,
+	"resources.jobs.*.tasks[*].new_cluster.azure_attributes":    alwaysSkip,
+	"resources.jobs.*.tasks[*].new_cluster.gcp_attributes":      alwaysSkip,
+	"resources.jobs.*.tasks[*].new_cluster.data_security_mode":  "SINGLE_USER", // TODO this field is computed on some workspaces in integration tests, check why and if we can skip it
+	"resources.jobs.*.tasks[*].new_cluster.enable_elastic_disk": alwaysSkip,    // deprecated field
 
 	// Cluster fields (job_clusters)
-	"job_clusters[*].new_cluster.aws_attributes":     alwaysSkip,
-	"job_clusters[*].new_cluster.azure_attributes":   alwaysSkip,
-	"job_clusters[*].new_cluster.gcp_attributes":     alwaysSkip,
-	"job_clusters[*].new_cluster.data_security_mode": "SINGLE_USER", // TODO this field is computed on some workspaces in integration tests, check why and if we can skip it
+	"resources.jobs.*.job_clusters[*].new_cluster.aws_attributes":      alwaysSkip,
+	"resources.jobs.*.job_clusters[*].new_cluster.azure_attributes":    alwaysSkip,
+	"resources.jobs.*.job_clusters[*].new_cluster.gcp_attributes":      alwaysSkip,
+	"resources.jobs.*.job_clusters[*].new_cluster.data_security_mode":  "SINGLE_USER", // TODO this field is computed on some workspaces in integration tests, check why and if we can skip it
+	"resources.jobs.*.job_clusters[*].new_cluster.enable_elastic_disk": alwaysSkip,    // deprecated field
 
-	"job_clusters[*].new_cluster.enable_elastic_disk": alwaysSkip, // deprecated field
+	// Standalone cluster fields
+	"resources.clusters.*.aws_attributes":      alwaysSkip,
+	"resources.clusters.*.azure_attributes":    alwaysSkip,
+	"resources.clusters.*.gcp_attributes":      alwaysSkip,
+	"resources.clusters.*.data_security_mode":  "SINGLE_USER",
+	"resources.clusters.*.driver_node_type_id": alwaysSkip,
+	"resources.clusters.*.enable_elastic_disk": alwaysSkip,
+
+	// Experiment fields
+	"resources.experiments.*.artifact_location": alwaysSkip,
+
+	// Registered model fields
+	"resources.registered_models.*.full_name":    alwaysSkip,
+	"resources.registered_models.*.metastore_id": alwaysSkip,
+	"resources.registered_models.*.owner":        alwaysSkip,
+
+	// Volume fields
+	"resources.volumes.*.storage_location": alwaysSkip,
+
+	// SQL warehouse fields
+	"resources.sql_warehouses.*.creator_name":     alwaysSkip,
+	"resources.sql_warehouses.*.min_num_clusters": int64(1),
+	"resources.sql_warehouses.*.warehouse_type":   "CLASSIC",
 
 	// Terraform defaults
-	"run_as": alwaysSkip,
+	"resources.jobs.*.run_as": alwaysSkip,
 
 	// Pipeline fields
-	"storage":    alwaysSkip,
-	"continuous": false,
+	"resources.pipelines.*.storage":    alwaysSkip,
+	"resources.pipelines.*.continuous": false,
 }
 
 func shouldSkipField(path string, value any) bool {
@@ -136,7 +159,7 @@ func matchParts(patternParts, pathParts []string) bool {
 // If CLI-defaulted field is changed on remote and should be disabled (e.g. queueing disabled -> remote field is nil)
 // we can't define it in the config as "null" because CLI default will be applied again.
 var resetValues = map[string]any{
-	"queue": map[string]any{
+	"resources.jobs.*.queue": map[string]any{
 		"enabled": false,
 	},
 }

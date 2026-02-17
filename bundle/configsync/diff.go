@@ -151,7 +151,7 @@ func DetectChanges(ctx context.Context, b *bundle.Bundle, engine engine.EngineTy
 					continue
 				}
 
-				change, err := convertChangeDesc(path, changeDesc)
+				change, err := convertChangeDesc(resourceKey+"."+path, changeDesc)
 				if err != nil {
 					return nil, fmt.Errorf("failed to compute config change for path %s: %w", path, err)
 				}
