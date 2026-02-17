@@ -374,10 +374,8 @@ func (s *FakeWorkspace) WorkspaceMkdirs(request workspace.Mkdirs) {
 
 func (s *FakeWorkspace) WorkspaceExport(path string) Response {
 	defer s.LockUnlock()()
-	// Normalize path: strip /Workspace prefix if present
-	if strings.HasPrefix(path, "/Workspace/") {
-		path = path[len("/Workspace"):]
-	}
+	// Normalize path for lookup
+	path, _ = strings.CutPrefix(path, "/Workspace")
 	if entry, ok := s.files[path]; ok {
 		return Response{
 			Body: entry.Data,
@@ -391,17 +389,19 @@ func (s *FakeWorkspace) WorkspaceExport(path string) Response {
 
 func (s *FakeWorkspace) WorkspaceDelete(path string, recursive bool) {
 	defer s.LockUnlock()()
+	// Normalize path for lookup
+	lookupPath, _ := strings.CutPrefix(path, "/Workspace")
 	if !recursive {
-		delete(s.files, path)
-		delete(s.directories, path)
+		delete(s.files, lookupPath)
+		delete(s.directories, lookupPath)
 	} else {
 		for key := range s.files {
-			if strings.HasPrefix(key, path) {
+			if strings.HasPrefix(key, lookupPath) {
 				delete(s.files, key)
 			}
 		}
 		for key := range s.directories {
-			if strings.HasPrefix(key, path) {
+			if strings.HasPrefix(key, lookupPath) {
 				delete(s.directories, key)
 			}
 		}
@@ -483,14 +483,11 @@ func (s *FakeWorkspace) WorkspaceFilesExportFile(path string) []byte {
 		path = "/" + path
 	}
 
-	// Normalize path: strip /Workspace prefix if present
-	if strings.HasPrefix(path, "/Workspace/") {
-		path = path[len("/Workspace"):]
-	}
-
 	defer s.LockUnlock()()
 
-	if entry, ok := s.files[path]; ok {
+	// Normalize path for lookup
+	lookupPath, _ := strings.CutPrefix(path, "/Workspace")
+	if entry, ok := s.files[lookupPath]; ok {
 		return entry.Data
 	}
 	return nil
@@ -504,7 +501,8 @@ func (s *FakeWorkspace) FileExists(path string) bool {
 
 	defer s.LockUnlock()()
 
-	_, exists := s.files[path]
+	lookupPath, _ := strings.CutPrefix(path, "/Workspace")
+	_, exists := s.files[lookupPath]
 	return exists
 }
 
@@ -516,7 +514,8 @@ func (s *FakeWorkspace) DirectoryExists(path string) bool {
 
 	defer s.LockUnlock()()
 
-	_, exists := s.directories[path]
+	lookupPath, _ := strings.CutPrefix(path, "/Workspace")
+	_, exists := s.directories[lookupPath]
 	return exists
 }
 
