@@ -21,7 +21,6 @@ func (s *FakeWorkspace) ClustersCreate(req Request) any {
 
 	clusterId := nextUUID()
 	request.ClusterId = clusterId
-	clusterFixUps(&request)
 
 	// Match cloud behavior: SINGLE_USER clusters automatically get single_user_name set
 	// to the current user. This enables terraform drift detection when the bundle config
@@ -29,6 +28,8 @@ func (s *FakeWorkspace) ClustersCreate(req Request) any {
 	if request.DataSecurityMode == compute.DataSecurityModeSingleUser && request.SingleUserName == "" {
 		request.SingleUserName = s.CurrentUser().UserName
 	}
+
+	clusterFixUps(&request)
 
 	s.Clusters[clusterId] = request
 
