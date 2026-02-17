@@ -32,7 +32,10 @@
       "Bash(gh pr view:*)",
       "Bash(gh pr checks:*)",
       "Bash(gh pr list:*)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(gh run view:*)",
+      "Bash(gunzip:*)",
+      "Bash(jq:*)"
     ]
   }
 }

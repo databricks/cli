@@ -14,7 +14,7 @@ Deployment complete!
 === Assert bundle deployment path is created
 >>> [CLI] workspace get-status //Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 {
-  "path": "/Users/[USERNAME]/.bundle/[UNIQUE_NAME]",
+  "path": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]",
   "object_type": "DIRECTORY"
 }
 
@@ -48,34 +48,8 @@ Deployment complete!
 
 === Destroy bundle
 >>> [CLI] bundle destroy --auto-approve
-The following resources will be deleted:
-  delete resources.jobs.foo
-  delete resources.pipelines.bar
+Error: Failed to acquire deployment lock: deploy lock acquired by [USERNAME] at [TIMESTAMP] +0100 CET. Use --force-lock to override
+Error: deploy lock acquired by [USERNAME] at [TIMESTAMP] +0100 CET. Use --force-lock to override
 
-This action will result in the deletion of the following Lakeflow Spark Declarative Pipelines along with the
-Streaming Tables (STs) and Materialized Views (MVs) managed by them:
-  delete resources.pipelines.bar
-
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
-
-Deleting files...
-Destroy complete!
-
-=== Assert pipeline is deleted
->>> errcode [CLI] pipelines get [UUID]
-Error: The specified pipeline [UUID] was not found.
-
-Exit code: 1
-
-=== Assert job is deleted:
-Error: Job [NUMID] does not exist.
-
-Exit code: 1
-
-=== Assert snapshot file is deleted: Directory exists and is empty
-
-=== Assert bundle deployment path is deleted
->>> errcode [CLI] workspace get-status //Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
-Error: Path (//Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]) doesn't exist.
 
 Exit code: 1

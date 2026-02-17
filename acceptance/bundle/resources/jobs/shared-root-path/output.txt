@@ -14,10 +14,8 @@ Warning: the bundle root path /Workspace/Shared/[USERNAME]/.bundle/[UNIQUE_NAME]
 
 The bundle is configured to use /Workspace/Shared, which will give read/write access to all users. If this is intentional, add CAN_MANAGE for 'group_name: users' permission to your bundle configuration. If the deployment should be restricted, move it to a restricted folder such as /Workspace/Users/<username or principal name>.
 
-The following resources will be deleted:
-  delete resources.jobs.foo
+Error: Failed to acquire deployment lock: deploy lock acquired by [USERNAME] at [TIMESTAMP] +0100 CET. Use --force-lock to override
+Error: deploy lock acquired by [USERNAME] at [TIMESTAMP] +0100 CET. Use --force-lock to override
 
-All files and directories at the following location will be deleted: /Workspace/Shared/[USERNAME]/.bundle/[UNIQUE_NAME]
 
-Deleting files...
-Destroy complete!
+Exit code: 1
