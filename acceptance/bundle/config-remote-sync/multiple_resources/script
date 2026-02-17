@@ -15,11 +15,6 @@ $CLI bundle deploy
 
 job_one_id="$(read_id.py job_one)"
 job_two_id="$(read_id.py job_two)"
-read_id.py test_cluster > /dev/null
-read_id.py test_experiment > /dev/null
-read_id.py test_model > /dev/null
-read_id.py test_volume > /dev/null
-read_id.py test_warehouse > /dev/null
 
 # Add replacements for dynamic values that appear in server-side defaults
 add_repl.py "$($CLI current-user me | jq -r .id)" "USER_ID"
