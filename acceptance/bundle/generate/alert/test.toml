@@ -6,6 +6,11 @@ Local = false
 # See: https://github.com/databricks/cli/issues/4221
 TimeoutCloud = "5m"
 
+# Normalize paths for windows.
+[[Repls]]
+Old = '\\\\'
+New = '/'
+
 [Env]
 # MSYS2 automatically converts absolute paths like /Users/$username/$UNIQUE_NAME to
 # C:/Program Files/Git/Users/$username/UNIQUE_NAME before passing it to the CLI
