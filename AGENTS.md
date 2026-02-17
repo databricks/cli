@@ -94,6 +94,9 @@ Use modern idiomatic Golang features (version 1.24+). Specifically:
  - Use for-range for integer iteration where possible. Instead of for i:=0; i < X; i++ {} you must write for i := range X{}.
  - Use builtin min() and max() where possible (works on any type and any number of values).
  - Do not capture the for-range variable, since go 1.22 a new copy of the variable is created for each loop iteration.
+ - Use empty struct types for context keys: `type myKeyType struct{}` (not `int`).
+ - Define magic strings as named constants at the top of the file.
+ - When integrating external tools or detecting environment variables, include source reference URLs as comments so they can be traced later.
 
 ### Configuration Patterns
 - Bundle config uses `dyn.Value` for dynamic typing
@@ -147,6 +150,8 @@ Notice that:
 When writing tests, please don't include an explanation in each
 test case in your responses. I am just interested in the tests.
 
+Use table-driven tests when testing multiple similar cases (e.g., different inputs producing different outputs). Reviewers prefer this pattern over repeating near-identical test functions.
+
 ### Acceptance Tests
 
 - Located in `acceptance/` with nested directory structure.
@@ -176,6 +181,7 @@ test case in your responses. I am just interested in the tests.
 - `diff.py DIR1 DIR2` or `diff.py FILE1 FILE2` — recursive diff with test replacements applied.
 - `print_state.py [-t TARGET] [--backup]` — print deployment state (terraform or direct).
 - `edit_resource.py TYPE ID < script.py` — fetch resource by ID, execute Python on it (resource in `r`), then update it. TYPE is `jobs` or `pipelines`.
+- `gron.py` — flatten JSON into greppable discrete assignments (simpler than `jq` for searching JSON).
 - `jq` is also available for JSON processing.
 
 **Update workflow**: Run `make test-update` to regenerate outputs. Then run `make fmt` and `make lint` — if these modify files in `acceptance/`, there's an issue in source files. Fix the source, regenerate, and verify lint/fmt pass cleanly.
@@ -281,7 +287,47 @@ Notice that:
 
 # Development Tips
 
-- Run `make checks fmt lint` before committing
 - Use `make test-update` to regenerate acceptance test outputs after changes
 - The CLI binary supports both `databricks` and `pipelines` command modes based on executable name
-- Resource definitions in `bundle/config/resources/` are auto-generated from OpenAPI specs
+- Comments should explain "why", not "what" — reviewers consistently reject comments that merely restate the code
+
+# Pre-PR Checklist
+
+Before submitting a PR, run these commands to match what CI checks. CI uses the **full** variants (not the diff-only wrappers), so `make lint` alone is insufficient.
+
+```bash
+# 1. Formatting and checks (CI runs fmtfull, not fmt)
+make fmtfull
+make checks
+
+# 2. Linting (CI runs full golangci-lint, not the diff-only wrapper)
+make lintfull
+
+# 3. Tests (CI runs with both deployment engines)
+make test
+
+# 4. If you changed bundle config structs or schema-related code:
+make schema
+
+# 5. If you changed files in python/:
+cd python && make codegen && make test && make lint && make docs
+
+# 6. If you changed experimental/aitools or experimental/ssh:
+make test-exp-aitools   # only if aitools code changed
+make test-exp-ssh       # only if ssh code changed
+```
+
+
+# Common Mistakes
+
+- Do NOT add dependencies without checking license compatibility.
+- Do NOT use `os.Exit()` outside of `main.go`.
+- Do NOT remove or skip failing tests to fix CI — fix the underlying issue.
+- Do NOT leave debug print statements (`fmt.Println`, `log.Printf` for debugging) in committed code — always scrub before committing.
+
+# Error Handling
+
+- Wrap errors with context: `fmt.Errorf("failed to deploy %s: %w", name, err)`
+- Use `logdiag.LogDiag` / `logdiag.LogError` for logging diagnostics.
+- Return early on errors; avoid deeply nested if-else chains.
+- Use `diag.Errorf` / `diag.Warningf` to create diagnostics with severity.

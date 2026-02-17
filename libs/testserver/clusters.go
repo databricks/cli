@@ -3,6 +3,7 @@ package testserver
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 
 	"github.com/databricks/databricks-sdk-go/service/compute"
 )
@@ -21,6 +22,14 @@ func (s *FakeWorkspace) ClustersCreate(req Request) any {
 	clusterId := nextUUID()
 	request.ClusterId = clusterId
 	clusterFixUps(&request)
+
+	// Match cloud behavior: SINGLE_USER clusters automatically get single_user_name set
+	// to the current user. This enables terraform drift detection when the bundle config
+	// doesn't specify single_user_name.
+	if request.DataSecurityMode == compute.DataSecurityModeSingleUser && request.SingleUserName == "" {
+		request.SingleUserName = s.CurrentUser().UserName
+	}
+
 	s.Clusters[clusterId] = request
 
 	return Response{
@@ -69,6 +78,14 @@ func (s *FakeWorkspace) ClustersEdit(req Request) any {
 
 	clusterFixUps(&request)
 	s.Clusters[request.ClusterId] = request
+
+	// Clear venv cache when cluster is edited to match cloud behavior where
+	// cluster edits trigger restarts that clear library caches.
+	if env, ok := s.clusterVenvs[request.ClusterId]; ok {
+		os.RemoveAll(env.dir)
+		delete(s.clusterVenvs, request.ClusterId)
+	}
+
 	return Response{}
 }
 

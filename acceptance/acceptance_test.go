@@ -43,7 +43,6 @@ var (
 	Forcerun        bool
 	LogRequests     bool
 	LogConfig       bool
-	SkipLocal       bool
 	UseVersion      string
 	WorkspaceTmpDir bool
 	OnlyOutTestToml bool
@@ -72,7 +71,6 @@ func init() {
 	flag.BoolVar(&Forcerun, "forcerun", false, "Force running the specified tests, ignore all reasons to skip")
 	flag.BoolVar(&LogRequests, "logrequests", false, "Log request and responses from testserver")
 	flag.BoolVar(&LogConfig, "logconfig", false, "Log merged for each test case")
-	flag.BoolVar(&SkipLocal, "skiplocal", false, "Skip tests that are enabled to run on Local")
 	flag.StringVar(&UseVersion, "useversion", "", "Download previously released version of CLI and use it to run the tests")
 
 	// DABs in the workspace runs on the workspace file system. This flags does the same for acceptance tests
@@ -241,6 +239,9 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 		if os.Getenv("TEST_DEFAULT_CLUSTER_ID") == "" {
 			t.Setenv("TEST_DEFAULT_CLUSTER_ID", testserver.TestDefaultClusterId)
 		}
+		if os.Getenv("TEST_INSTANCE_POOL_ID") == "" {
+			t.Setenv("TEST_INSTANCE_POOL_ID", testserver.TestDefaultInstancePoolId)
+		}
 	}
 
 	setReplsForTestEnvVars(t, &repls)
@@ -407,8 +408,8 @@ func getSkipReason(config *internal.TestConfig, configPath string) string {
 		config.Cloud = config.CloudSlow
 	}
 
-	if SkipLocal && isTruePtr(config.Local) {
-		return "Disabled via SkipLocal setting in " + configPath
+	if os.Getenv("DATABRICKS_TEST_SKIPLOCAL") != "" && isTruePtr(config.Local) {
+		return "Disabled via DATABRICKS_TEST_SKIPLOCAL environment variable in " + configPath
 	}
 
 	if Forcerun {

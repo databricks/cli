@@ -43,7 +43,7 @@ type Workspace struct {
 
 	// Unified host specific attributes.
 	ExperimentalIsUnifiedHost bool   `json:"experimental_is_unified_host,omitempty"`
-	WorkspaceId               string `json:"workspace_id,omitempty"`
+	WorkspaceID               string `json:"workspace_id,omitempty"`
 
 	// CurrentUser holds the current user.
 	// This is set after configuration initialization.
@@ -124,7 +124,7 @@ func (w *Workspace) Config() *config.Config {
 
 		// Unified host
 		Experimental_IsUnifiedHost: w.ExperimentalIsUnifiedHost,
-		WorkspaceId:                w.WorkspaceId,
+		WorkspaceId:                w.WorkspaceID,
 	}
 
 	for k := range config.ConfigAttributes {
