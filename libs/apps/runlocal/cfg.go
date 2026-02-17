@@ -5,7 +5,7 @@ import "fmt"
 type Config struct {
 	AppName       string
 	AppURL        string
-	WorkspaceId   int64
+	WorkspaceID   int64
 	ServerName    string
 	Host          string
 	WorkspaceHost string
@@ -21,11 +21,11 @@ const (
 	DEFAULT_PORT     = 8000
 )
 
-func NewConfig(workspaceHost string, workpaceId int64, appDir, host string, port int) *Config {
+func NewConfig(workspaceHost string, workspaceID int64, appDir, host string, port int) *Config {
 	c := &Config{
 		AppName:       DEFAULT_APP_NAME,
 		AppURL:        fmt.Sprintf("http://%s:%d", host, port),
-		WorkspaceId:   workpaceId,
+		WorkspaceID:   workspaceID,
 		ServerName:    host,
 		Port:          port,
 		Host:          host,

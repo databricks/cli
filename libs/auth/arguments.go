@@ -12,7 +12,7 @@ import (
 type AuthArguments struct {
 	Host          string
 	AccountID     string
-	WorkspaceId   string
+	WorkspaceID   string
 	IsUnifiedHost bool
 }
 
@@ -21,7 +21,7 @@ func (a AuthArguments) ToOAuthArgument() (u2m.OAuthArgument, error) {
 	cfg := &config.Config{
 		Host:                       a.Host,
 		AccountID:                  a.AccountID,
-		WorkspaceId:                a.WorkspaceId,
+		WorkspaceId:                a.WorkspaceID,
 		Experimental_IsUnifiedHost: a.IsUnifiedHost,
 	}
 	host := cfg.CanonicalHostName()
