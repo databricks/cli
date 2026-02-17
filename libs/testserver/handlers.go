@@ -41,6 +41,10 @@ func AddDefaultHandlers(server *Server) {
 		return compute.ListInstancePools{
 			InstancePools: []compute.InstancePoolAndStats{
 				{
+					InstancePoolName: "DEFAULT Test Instance Pool",
+					InstancePoolId:   TestDefaultInstancePoolId,
+				},
+				{
 					InstancePoolName: "some-test-instance-pool",
 					InstancePoolId:   "1234",
 				},
@@ -251,6 +255,10 @@ func AddDefaultHandlers(server *Server) {
 
 	server.Handle("GET", "/api/2.2/jobs/runs/get", func(req Request) any {
 		return req.Workspace.JobsGetRun(req)
+	})
+
+	server.Handle("GET", "/api/2.2/jobs/runs/get-output", func(req Request) any {
+		return req.Workspace.JobsGetRunOutput(req)
 	})
 
 	server.Handle("GET", "/api/2.2/jobs/runs/list", func(req Request) any {
