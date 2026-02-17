@@ -206,6 +206,8 @@ import "github.com/databricks/cli/libs/cmdio"
 cmdio.LogString(ctx, "...")
 ```
 
+Always output file path with forward slashes, even on Windows, so that acceptance test output is stable between OSes. Use filepath.ToSlash for this.
+
 # Specific File Guides
 
 ## databricks_template_schema.json
