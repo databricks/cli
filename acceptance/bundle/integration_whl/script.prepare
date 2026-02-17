@@ -1,3 +1,9 @@
 uv venv -q .venv
 venv_activate
 uv pip install -q setuptools
+
+# On Windows, create python3 alias since some build commands use python3
+if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" || "$OSTYPE" == "win32" ]]; then
+    python3() { python "$@"; }
+    export -f python3
+fi

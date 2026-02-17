@@ -239,6 +239,9 @@ func testAccept(t *testing.T, inprocessMode bool, singleTest string) int {
 		if os.Getenv("TEST_DEFAULT_CLUSTER_ID") == "" {
 			t.Setenv("TEST_DEFAULT_CLUSTER_ID", testserver.TestDefaultClusterId)
 		}
+		if os.Getenv("TEST_INSTANCE_POOL_ID") == "" {
+			t.Setenv("TEST_INSTANCE_POOL_ID", testserver.TestDefaultInstancePoolId)
+		}
 	}
 
 	setReplsForTestEnvVars(t, &repls)
