@@ -181,6 +181,8 @@ generate:
 	cd $(UNIVERSE_DIR) && bazel build //openapi/genkit
 	@echo "Generating CLI code..."
 	$(GENKIT_BINARY) update-sdk
+	@echo "Updating direct engine config..."
+	make generate-direct
 
 .codegen/openapi.json: .codegen/_openapi_sha
 	wget -O $@.tmp "https://openapi.dev.databricks.com/$$(cat $<)/specs/all-internal.json" && mv $@.tmp $@ && touch $@
