@@ -32,7 +32,8 @@
       "Bash(gh pr view:*)",
       "Bash(gh pr checks:*)",
       "Bash(gh pr list:*)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(testme-win:*)"
     ]
   }
 }
