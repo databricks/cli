@@ -11,10 +11,6 @@
 # acceptance TestAccept/bundle/resources/jobs/  # jobs undergoing maintenance
 #
 
-# Error: Invalid access token. [ReqId: [UUID]] on aws-prod, but not on aws-prod-ucws
-# Cannot reproduce it locally though - works for me via "deco env run -i -n aws-prod"
-acceptance TestAccept/bundle/resources/permissions/jobs/destroy_without_mgmtperms/
-
 # SSH test is flaky due to concurrent test suites (Linux/Windows) running on same cluster.
 # Current implementation uses cluster-id as server identifier, causing SIGTERM conflicts.
 # Fix exists in serverless connection mode (not yet merged).
