@@ -145,7 +145,7 @@ integration:
 	$(INTEGRATION)
 
 integration-short:
-	VERBOSE_TEST=1 $(INTEGRATION) -short
+	VERBOSE_TEST=1 $(INTEGRATION) -short -skiplocal
 
 dbr-integration:
 	DBR_ENABLED=true go test -v -timeout 4h -run TestDbrAcceptance$$ ./acceptance
