@@ -1,6 +1,10 @@
 Hello! 🚀
 {
     "id": "[USERID]",
+    "name": {
+        "familyName": "[USERNAME]",
+        "givenName": "[USERNAME]"
+    },
     "userName": "[USERNAME]"
 }
 

@@ -4,10 +4,14 @@ Only in out_dir_a: only_in_a
 Only in out_dir_b: only_in_b
 --- out_dir_a/output.txt
 +++ out_dir_b/output.txt
-@@ -1,5 +1,5 @@
+@@ -1,9 +1,5 @@
  Hello! 🚀
  {
 -    "id": "[USERID]",
+-    "name": {
+-        "familyName": "[USERNAME]",
+-        "givenName": "[USERNAME]"
+-    },
 +    "id": "[UUID]",
      "userName": "[USERNAME]"
  }
@@ -17,10 +21,14 @@ Only in .: only_in_a
 Only in ../out_dir_b: only_in_b
 --- output.txt
 +++ ../out_dir_b/output.txt
-@@ -1,5 +1,5 @@
+@@ -1,9 +1,5 @@
  Hello! 🚀
  {
 -    "id": "[USERID]",
+-    "name": {
+-        "familyName": "[USERNAME]",
+-        "givenName": "[USERNAME]"
+-    },
 +    "id": "[UUID]",
      "userName": "[USERNAME]"
  }
@@ -28,10 +36,14 @@ Only in ../out_dir_b: only_in_b
 >>> diff.py out_dir_a/output.txt out_dir_b/output.txt
 --- out_dir_a/output.txt
 +++ out_dir_b/output.txt
-@@ -1,5 +1,5 @@
+@@ -1,9 +1,5 @@
  Hello! 🚀
  {
 -    "id": "[USERID]",
+-    "name": {
+-        "familyName": "[USERNAME]",
+-        "givenName": "[USERNAME]"
+-    },
 +    "id": "[UUID]",
      "userName": "[USERNAME]"
  }

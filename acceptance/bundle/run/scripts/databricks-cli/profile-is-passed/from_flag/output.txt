@@ -2,5 +2,9 @@
 >>> [CLI] bundle run me --profile myprofile
 {
   "id":"[USERID]",
+  "name": {
+    "familyName":"[USERNAME]",
+    "givenName":"[USERNAME]"
+  },
   "userName":"[USERNAME]"
 }
