@@ -79,7 +79,9 @@ func (s *FakeWorkspace) DashboardCreate(req Request) Response {
 		dashboard.ParentPath = "/Users/" + s.CurrentUser().UserName
 	}
 
-	if _, ok := s.directories[dashboard.ParentPath]; !ok {
+	// Normalize path for lookup: strip /Workspace prefix
+	lookupPath, _ := strings.CutPrefix(dashboard.ParentPath, "/Workspace")
+	if _, ok := s.directories[lookupPath]; !ok {
 		return Response{
 			StatusCode: 404,
 			Body: map[string]string{

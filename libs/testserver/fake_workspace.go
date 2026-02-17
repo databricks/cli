@@ -255,6 +255,11 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 				Path:       "/Users/" + TestUserSP.UserName,
 				ObjectId:   nextID(),
 			},
+			"/Users/user@example.com": {
+				ObjectType: "DIRECTORY",
+				Path:       "/Users/user@example.com",
+				ObjectId:   nextID(),
+			},
 		},
 		files:        make(map[string]FileEntry),
 		repoIdByPath: make(map[string]int64),
