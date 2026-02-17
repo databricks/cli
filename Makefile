@@ -93,7 +93,7 @@ generate-out-test-toml:
 
 # Updates acceptance test output (integration tests, requires access)
 test-update-aws:
-	deco env run -i -n aws-prod-ucws -- go test ./acceptance -run ^TestAccept$$ -update -timeout=1h -skiplocal -v
+	deco env run -i -n aws-prod-ucws -- env DATABRICKS_TEST_SKIPLOCAL=1 go test ./acceptance -run ^TestAccept$$ -update -timeout=1h -v
 
 test-update-all: test-update test-update-aws
 
@@ -145,7 +145,7 @@ integration:
 	$(INTEGRATION)
 
 integration-short:
-	VERBOSE_TEST=1 $(INTEGRATION) -short
+	DATABRICKS_TEST_SKIPLOCAL=1 VERBOSE_TEST=1 $(INTEGRATION) -short
 
 dbr-integration:
 	DBR_ENABLED=true go test -v -timeout 4h -run TestDbrAcceptance$$ ./acceptance
@@ -181,6 +181,8 @@ generate:
 	cd $(UNIVERSE_DIR) && bazel build //openapi/genkit
 	@echo "Generating CLI code..."
 	$(GENKIT_BINARY) update-sdk
+	@echo "Updating direct engine config..."
+	make generate-direct
 
 .codegen/openapi.json: .codegen/_openapi_sha
 	wget -O $@.tmp "https://openapi.dev.databricks.com/$$(cat $<)/specs/all-internal.json" && mv $@.tmp $@ && touch $@

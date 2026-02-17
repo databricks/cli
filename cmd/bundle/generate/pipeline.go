@@ -149,7 +149,7 @@ like catalogs, schemas, and compute configurations per target.`,
 			return err
 		}
 
-		cmdio.LogString(ctx, "Pipeline configuration successfully saved to "+filename)
+		cmdio.LogString(ctx, "Pipeline configuration successfully saved to "+filepath.ToSlash(filename))
 
 		if bind {
 			return deployment.BindResource(cmd, pipelineKey, pipelineId, true, false, true)
