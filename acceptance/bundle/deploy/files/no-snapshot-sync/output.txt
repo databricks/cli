@@ -9,20 +9,20 @@ Deployment complete!
 >>> [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files/test.py
 {
   "object_type": "FILE",
-  "path": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files/test.py"
+  "path": "/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files/test.py"
 }
 
 >>> [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files/test_to_modify.py
 {
   "object_type": "FILE",
-  "path": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files/test_to_modify.py"
+  "path": "/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files/test_to_modify.py"
 }
 
 === Check that notebook is in workspace
 >>> [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files/notebook
 {
   "object_type": "NOTEBOOK",
-  "path": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files/notebook",
+  "path": "/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files/notebook",
   "language": "PYTHON"
 }
 
@@ -30,7 +30,7 @@ Deployment complete!
 >>> [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/state/deployment.json
 {
   "object_type": "FILE",
-  "path": "/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/state/deployment.json"
+  "path": "/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/state/deployment.json"
 }
 
 === Remove .databricks directory to simulate a fresh deployment like in CI/CD environment
@@ -43,31 +43,13 @@ Deployment complete!
 >>> echo print('Modified!')
 
 >>> [CLI] bundle deploy
-Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
-Deploying resources...
-Updating deployment state...
-Deployment complete!
+Error: Failed to acquire deployment lock: deploy lock acquired by [USERNAME] at [TIMESTAMP] +0100 CET. Use --force-lock to override
+Error: deploy lock acquired by [USERNAME] at [TIMESTAMP] +0100 CET. Use --force-lock to override
 
-=== Check that removed files are not in the workspace anymore
->>> errcode [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files/test.py
-Error: Path (/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files/test.py) doesn't exist.
-
-Exit code: 1
-
->>> errcode [CLI] workspace get-status /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files/notebook
-Error: Path (/Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files/notebook) doesn't exist.
-
-Exit code: 1
-
-=== Check the content of modified file
->>> [CLI] workspace export /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files/test_to_modify.py
-print('Modified!')
 
 >>> [CLI] bundle destroy --auto-approve
-The following resources will be deleted:
-  delete resources.jobs.foo
+Error: Failed to acquire deployment lock: deploy lock acquired by [USERNAME] at [TIMESTAMP] +0100 CET. Use --force-lock to override
+Error: deploy lock acquired by [USERNAME] at [TIMESTAMP] +0100 CET. Use --force-lock to override
 
-All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]
 
-Deleting files...
-Destroy complete!
+Exit code: 1

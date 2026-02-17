@@ -318,6 +318,14 @@ func (s *FakeWorkspace) CurrentUser() iam.User {
 func (s *FakeWorkspace) WorkspaceGetStatus(path string) Response {
 	defer s.LockUnlock()()
 
+	// Normalize path: remove leading // and /Workspace prefix
+	if strings.HasPrefix(path, "//") {
+		path = path[1:]
+	}
+	if strings.HasPrefix(path, "/Workspace/") {
+		path = path[len("/Workspace"):]
+	}
+
 	if dirInfo, ok := s.directories[path]; ok {
 		return Response{
 			Body: &dirInfo,
@@ -344,16 +352,33 @@ func (s *FakeWorkspace) WorkspaceGetStatus(path string) Response {
 
 func (s *FakeWorkspace) WorkspaceMkdirs(request workspace.Mkdirs) {
 	defer s.LockUnlock()()
-	s.directories[request.Path] = workspace.ObjectInfo{
+	// Normalize path: strip /Workspace prefix if present
+	normalizedPath := request.Path
+	if strings.HasPrefix(normalizedPath, "/Workspace/") {
+		normalizedPath = normalizedPath[len("/Workspace"):]
+	}
+	s.directories[normalizedPath] = workspace.ObjectInfo{
 		ObjectType: "DIRECTORY",
-		Path:       request.Path,
+		Path:       normalizedPath,
 		ObjectId:   nextID(),
 	}
 }
 
-func (s *FakeWorkspace) WorkspaceExport(path string) []byte {
+func (s *FakeWorkspace) WorkspaceExport(path string) Response {
 	defer s.LockUnlock()()
-	return s.files[path].Data
+	// Normalize path: strip /Workspace prefix if present
+	if strings.HasPrefix(path, "/Workspace/") {
+		path = path[len("/Workspace"):]
+	}
+	if entry, ok := s.files[path]; ok {
+		return Response{
+			Body: entry.Data,
+		}
+	}
+	return Response{
+		StatusCode: 404,
+		Body:       map[string]string{"message": fmt.Sprintf("File not found: %s", path)},
+	}
 }
 
 func (s *FakeWorkspace) WorkspaceDelete(path string, recursive bool) {
@@ -378,6 +403,11 @@ func (s *FakeWorkspace) WorkspaceDelete(path string, recursive bool) {
 func (s *FakeWorkspace) WorkspaceFilesImportFile(filePath string, body []byte, overwrite bool) Response {
 	if !strings.HasPrefix(filePath, "/") {
 		filePath = "/" + filePath
+	}
+
+	// Normalize path: strip /Workspace prefix if present
+	if strings.HasPrefix(filePath, "/Workspace/") {
+		filePath = filePath[len("/Workspace"):]
 	}
 
 	defer s.LockUnlock()()
@@ -442,9 +472,17 @@ func (s *FakeWorkspace) WorkspaceFilesExportFile(path string) []byte {
 		path = "/" + path
 	}
 
+	// Normalize path: strip /Workspace prefix if present
+	if strings.HasPrefix(path, "/Workspace/") {
+		path = path[len("/Workspace"):]
+	}
+
 	defer s.LockUnlock()()
 
-	return s.files[path].Data
+	if entry, ok := s.files[path]; ok {
+		return entry.Data
+	}
+	return nil
 }
 
 // FileExists checks if a file exists at the given path.

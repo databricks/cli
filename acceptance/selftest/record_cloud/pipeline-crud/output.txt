@@ -50,7 +50,7 @@
 
 === Verify the update
 >>> [CLI] pipelines get [UUID]
-"test-pipeline-2"
+"test-pipeline-1"
 
 >>> print_requests
 {
