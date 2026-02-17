@@ -198,7 +198,7 @@ func (d *dashboard) saveSerializedDashboard(ctx context.Context, b *bundle.Bundl
 		}
 	}
 
-	cmdio.LogString(ctx, fmt.Sprintf("Writing dashboard to %s", filepath.ToSlash(rel)))
+	cmdio.LogString(ctx, "Writing dashboard to "+filepath.ToSlash(rel))
 	return os.WriteFile(filename, data, 0o644)
 }
 
@@ -242,7 +242,7 @@ func (d *dashboard) saveConfiguration(ctx context.Context, b *bundle.Bundle, das
 		rel = resourcePath
 	}
 
-	cmdio.LogString(ctx, fmt.Sprintf("Writing configuration to %s", filepath.ToSlash(rel)))
+	cmdio.LogString(ctx, "Writing configuration to "+filepath.ToSlash(rel))
 	err = saver.SaveAsYAML(result, resourcePath, d.force)
 	if err != nil {
 		return err
