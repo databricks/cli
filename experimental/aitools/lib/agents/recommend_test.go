@@ -1,0 +1,92 @@
+package agents
+
+import (
+	"context"
+	"io"
+	"os"
+	"path/filepath"
+	"testing"
+
+	"github.com/databricks/cli/libs/cmdio"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestRecommendSkillsInstallSkipsWhenSkillsExist(t *testing.T) {
+	tmpDir := t.TempDir()
+	require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, "skills", "databricks"), 0o755))
+
+	origRegistry := Registry
+	Registry = []Agent{
+		{
+			Name:        "test-agent",
+			DisplayName: "Test Agent",
+			ConfigDir:   func() (string, error) { return tmpDir, nil },
+		},
+	}
+	defer func() { Registry = origRegistry }()
+
+	ctx := cmdio.MockDiscard(context.Background())
+	err := RecommendSkillsInstall(ctx)
+	assert.NoError(t, err)
+}
+
+func TestRecommendSkillsInstallSkipsWhenNoAgents(t *testing.T) {
+	origRegistry := Registry
+	Registry = []Agent{}
+	defer func() { Registry = origRegistry }()
+
+	ctx := cmdio.MockDiscard(context.Background())
+	err := RecommendSkillsInstall(ctx)
+	assert.NoError(t, err)
+}
+
+func TestRecommendSkillsInstallNonInteractive(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	origRegistry := Registry
+	Registry = []Agent{
+		{
+			Name:        "test-agent",
+			DisplayName: "Test Agent",
+			ConfigDir:   func() (string, error) { return tmpDir, nil },
+		},
+	}
+	defer func() { Registry = origRegistry }()
+
+	ctx, stderr := cmdio.NewTestContextWithStderr(context.Background())
+	err := RecommendSkillsInstall(ctx)
+	require.NoError(t, err)
+	assert.Contains(t, stderr.String(), "databricks experimental aitools skills install")
+}
+
+func TestRecommendSkillsInstallInteractiveDecline(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	origRegistry := Registry
+	Registry = []Agent{
+		{
+			Name:        "test-agent",
+			DisplayName: "Test Agent",
+			ConfigDir:   func() (string, error) { return tmpDir, nil },
+		},
+	}
+	defer func() { Registry = origRegistry }()
+
+	ctx, testIO := cmdio.SetupTest(context.Background(), cmdio.TestOptions{PromptSupported: true})
+	defer testIO.Done()
+
+	// Drain stderr so the prompt write doesn't block.
+	go func() { _, _ = io.Copy(io.Discard, testIO.Stderr) }()
+
+	errc := make(chan error, 1)
+	go func() {
+		errc <- RecommendSkillsInstall(ctx)
+	}()
+
+	_, err := testIO.Stdin.WriteString("n\n")
+	require.NoError(t, err)
+	require.NoError(t, testIO.Stdin.Flush())
+
+	assert.NoError(t, <-errc)
+}
