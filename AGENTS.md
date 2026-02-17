@@ -287,7 +287,6 @@ Notice that:
 
 - Use `make test-update` to regenerate acceptance test outputs after changes
 - The CLI binary supports both `databricks` and `pipelines` command modes based on executable name
-- Resource definitions in `bundle/config/resources/` are auto-generated from OpenAPI specs
 - Comments should explain "why", not "what" — reviewers consistently reject comments that merely restate the code
 
 # Pre-PR Checklist
@@ -320,14 +319,10 @@ Note: CI also runs an `ajv` JSON schema validation step and integration tests, w
 
 # Common Mistakes
 
-- Do NOT use `context.Background()` in production code — only in tests. Pass `ctx` from callers.
-- Do NOT edit files in `cmd/workspace/` or `cmd/account/` — they are auto-generated from OpenAPI specs.
-- Do NOT edit acceptance test output files (`out*`) directly — use `make test-update` to regenerate.
 - Do NOT run `go generate` without checking which files will be modified.
 - Do NOT add dependencies without checking license compatibility.
 - Do NOT use `os.Exit()` outside of `main.go`.
 - Do NOT remove or skip failing tests to fix CI — fix the underlying issue.
-- Do NOT edit materialized template output in `acceptance/bundle/templates/out*` — fix the source in `libs/template/templates/` and regenerate.
 - Do NOT leave debug print statements (`fmt.Println`, `log.Printf` for debugging) in committed code — always scrub before committing.
 - Do NOT run acceptance test variants by setting env var prefix (`DATABRICKS_BUNDLE_ENGINE=direct go test ...`) — append to the test name in `-run` instead.
 - Do NOT blindly update acceptance test output when local results differ from CI — CI is the source of truth. Local machine state (e.g., brew-installed CLIs) can affect test output.
@@ -335,27 +330,6 @@ Note: CI also runs an `ajv` JSON schema validation step and integration tests, w
 # Error Handling
 
 - Wrap errors with context: `fmt.Errorf("failed to deploy %s: %w", name, err)`
-- Use `diag.Diagnostics` for user-facing bundle errors, not raw errors.
-- Use `cmdio.RenderDiagnostics` for displaying diagnostics to users.
+- Use `logdiag.LogDiag` / `logdiag.LogError` for logging diagnostics.
 - Return early on errors; avoid deeply nested if-else chains.
 - Use `diag.Errorf` / `diag.Warningf` to create diagnostics with severity.
-
-# Generated Code
-
-These directories contain auto-generated code — do NOT edit manually:
-- `cmd/workspace/` and `cmd/account/` — generated from OpenAPI specs
-- `bundle/config/resources/` — generated resource definitions from OpenAPI specs
-
-To regenerate: `make generate` (requires universe repo at `../universe`).
-After regenerating, run `make fmt` and `make lint`.
-
-# Where to Put New Code
-
-1. New CLI command? → `cmd/<group>/`
-2. New bundle resource type? → `bundle/config/resources/` (usually generated)
-3. New bundle transformation? → `bundle/mutator/` (implement `Mutator` interface)
-4. New file system operation? → `libs/filer/`
-5. Auth-related? → `libs/auth/`
-6. Shared utility? → `libs/` (create new package if needed)
-7. Test helper? → `internal/testutil/` or `internal/testcli/`
-8. Acceptance test? → `acceptance/` (see Acceptance Tests section above)
