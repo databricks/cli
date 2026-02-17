@@ -53,6 +53,7 @@ var serverSideDefaults = map[string]any{
 	"resources.jobs.*.tasks[*].new_cluster.gcp_attributes":      alwaysSkip,
 	"resources.jobs.*.tasks[*].new_cluster.data_security_mode":  "SINGLE_USER", // TODO this field is computed on some workspaces in integration tests, check why and if we can skip it
 	"resources.jobs.*.tasks[*].new_cluster.enable_elastic_disk": alwaysSkip,    // deprecated field
+	"resources.jobs.*.tasks[*].new_cluster.single_user_name":    alwaysSkip,
 
 	// Cluster fields (job_clusters)
 	"resources.jobs.*.job_clusters[*].new_cluster.aws_attributes":      alwaysSkip,
@@ -60,6 +61,7 @@ var serverSideDefaults = map[string]any{
 	"resources.jobs.*.job_clusters[*].new_cluster.gcp_attributes":      alwaysSkip,
 	"resources.jobs.*.job_clusters[*].new_cluster.data_security_mode":  "SINGLE_USER", // TODO this field is computed on some workspaces in integration tests, check why and if we can skip it
 	"resources.jobs.*.job_clusters[*].new_cluster.enable_elastic_disk": alwaysSkip,    // deprecated field
+	"resources.jobs.*.job_clusters[*].new_cluster.single_user_name":    alwaysSkip,
 
 	// Standalone cluster fields
 	"resources.clusters.*.aws_attributes":      alwaysSkip,
@@ -68,15 +70,16 @@ var serverSideDefaults = map[string]any{
 	"resources.clusters.*.data_security_mode":  "SINGLE_USER",
 	"resources.clusters.*.driver_node_type_id": alwaysSkip,
 	"resources.clusters.*.enable_elastic_disk": alwaysSkip,
+	"resources.clusters.*.single_user_name":    alwaysSkip,
 
 	// Experiment fields
 	"resources.experiments.*.artifact_location": alwaysSkip,
 
 	// Registered model fields
-	"resources.registered_models.*.full_name":         alwaysSkip,
-	"resources.registered_models.*.metastore_id":      alwaysSkip,
-	"resources.registered_models.*.owner":             alwaysSkip,
-	"resources.registered_models.*.storage_location":  alwaysSkip,
+	"resources.registered_models.*.full_name":        alwaysSkip,
+	"resources.registered_models.*.metastore_id":     alwaysSkip,
+	"resources.registered_models.*.owner":            alwaysSkip,
+	"resources.registered_models.*.storage_location": alwaysSkip,
 
 	// Volume fields
 	"resources.volumes.*.storage_location": alwaysSkip,
