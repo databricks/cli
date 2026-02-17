@@ -5,7 +5,7 @@ Deployment complete!
 
 === Modify c_task, remove d_task, add e_task
 === Detect and save changes
-Detected changes in 1 resource(s):
+Detected changes in 2 resource(s):
 
 Resource: resources.jobs.my_job
   tasks[task_key='c_task'].depends_on[0].task_key: replace
@@ -13,6 +13,9 @@ Resource: resources.jobs.my_job
   tasks[task_key='c_task'].timeout_seconds: add
   tasks[task_key='d_task']: remove
   tasks[task_key='e_task']: add
+
+Resource: resources.jobs.no_tasks_job
+  tasks: add
 
 
 
@@ -52,6 +55,21 @@ Resource: resources.jobs.my_job
 +          timeout_seconds: 3600
          - task_key: a_task
            notebook_task:
+@@ -41,5 +40,13 @@
+             - task_key: c_task
+
+-    no_tasks_job: {}
++    no_tasks_job:
++      tasks:
++        - new_cluster:
++            node_type_id: [NODE_TYPE_ID]
++            num_workers: 1
++            spark_version: 13.3.x-snapshot-scala2.12
++          notebook_task:
++            notebook_path: /Users/[USERNAME]/new_task
++          task_key: new_task
+
+     rename_task_job:
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Deploying resources...
 Updating deployment state...
@@ -76,7 +94,7 @@ Resource: resources.jobs.rename_task_job
 >>> diff.py databricks.yml.backup2 databricks.yml
 --- databricks.yml.backup2
 +++ databricks.yml
-@@ -42,14 +42,14 @@
+@@ -52,14 +52,14 @@
      rename_task_job:
        tasks:
 -        - task_key: b_task
@@ -97,14 +115,14 @@ Resource: resources.jobs.rename_task_job
 +            - task_key: b_task_renamed
            notebook_task:
              notebook_path: /Users/{{workspace_user_name}}/d_task
-@@ -60,5 +60,5 @@
+@@ -70,5 +70,5 @@
          - task_key: c_task
            depends_on:
 -            - task_key: b_task
 +            - task_key: b_task_renamed
            notebook_task:
              notebook_path: /Users/{{workspace_user_name}}/c_task
-@@ -69,7 +69,14 @@
+@@ -79,7 +79,14 @@
          - task_key: a_task
            notebook_task:
 -            notebook_path: /Users/{{workspace_user_name}}/a_task
@@ -124,6 +142,7 @@ Resource: resources.jobs.rename_task_job
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:
   delete resources.jobs.my_job
+  delete resources.jobs.no_tasks_job
   delete resources.jobs.rename_task_job
 
 All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
