@@ -53,6 +53,7 @@ func TestHasDatabricksSkillsInstalledWithDatabricksAppsSkill(t *testing.T) {
 
 func TestHasDatabricksSkillsInstalledWithOnlyNonDatabricksSkills(t *testing.T) {
 	tmpDir := t.TempDir()
+	t.Setenv("HOME", tmpDir)
 	// Non-databricks skills should not count.
 	require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, "skills", "mcp-builder"), 0o755))
 	require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, "skills", "rust-webapp"), 0o755))
@@ -72,6 +73,7 @@ func TestHasDatabricksSkillsInstalledWithOnlyNonDatabricksSkills(t *testing.T) {
 
 func TestHasDatabricksSkillsInstalledNoSkillsDir(t *testing.T) {
 	tmpDir := t.TempDir()
+	t.Setenv("HOME", tmpDir)
 
 	origRegistry := Registry
 	Registry = []Agent{
@@ -106,7 +108,7 @@ func TestHasDatabricksSkillsInstalledCustomSubdir(t *testing.T) {
 
 func TestHasDatabricksSkillsInstalledCanonicalLocation(t *testing.T) {
 	tmpHome := t.TempDir()
-	require.NoError(t, os.MkdirAll(filepath.Join(tmpHome, canonicalSkillsDir, "databricks"), 0o755))
+	require.NoError(t, os.MkdirAll(filepath.Join(tmpHome, CanonicalSkillsDir, "databricks"), 0o755))
 
 	// Agent detected but no skills in agent's own dir.
 	agentDir := filepath.Join(tmpHome, ".claude")

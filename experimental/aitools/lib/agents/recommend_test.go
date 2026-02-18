@@ -12,8 +12,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func noopInstall(context.Context) error { return nil }
+
 func TestRecommendSkillsInstallSkipsWhenSkillsExist(t *testing.T) {
 	tmpDir := t.TempDir()
+	t.Setenv("HOME", tmpDir)
 	require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, "skills", "databricks"), 0o755))
 
 	origRegistry := Registry
@@ -27,22 +30,25 @@ func TestRecommendSkillsInstallSkipsWhenSkillsExist(t *testing.T) {
 	defer func() { Registry = origRegistry }()
 
 	ctx := cmdio.MockDiscard(context.Background())
-	err := RecommendSkillsInstall(ctx)
+	err := RecommendSkillsInstall(ctx, noopInstall)
 	assert.NoError(t, err)
 }
 
 func TestRecommendSkillsInstallSkipsWhenNoAgents(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+
 	origRegistry := Registry
 	Registry = []Agent{}
 	defer func() { Registry = origRegistry }()
 
 	ctx := cmdio.MockDiscard(context.Background())
-	err := RecommendSkillsInstall(ctx)
+	err := RecommendSkillsInstall(ctx, noopInstall)
 	assert.NoError(t, err)
 }
 
 func TestRecommendSkillsInstallNonInteractive(t *testing.T) {
 	tmpDir := t.TempDir()
+	t.Setenv("HOME", tmpDir)
 
 	origRegistry := Registry
 	Registry = []Agent{
@@ -55,13 +61,14 @@ func TestRecommendSkillsInstallNonInteractive(t *testing.T) {
 	defer func() { Registry = origRegistry }()
 
 	ctx, stderr := cmdio.NewTestContextWithStderr(context.Background())
-	err := RecommendSkillsInstall(ctx)
+	err := RecommendSkillsInstall(ctx, noopInstall)
 	require.NoError(t, err)
 	assert.Contains(t, stderr.String(), "databricks experimental aitools skills install")
 }
 
 func TestRecommendSkillsInstallInteractiveDecline(t *testing.T) {
 	tmpDir := t.TempDir()
+	t.Setenv("HOME", tmpDir)
 
 	origRegistry := Registry
 	Registry = []Agent{
@@ -81,7 +88,7 @@ func TestRecommendSkillsInstallInteractiveDecline(t *testing.T) {
 
 	errc := make(chan error, 1)
 	go func() {
-		errc <- RecommendSkillsInstall(ctx)
+		errc <- RecommendSkillsInstall(ctx, noopInstall)
 	}()
 
 	_, err := testIO.Stdin.WriteString("n\n")

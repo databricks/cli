@@ -2,17 +2,14 @@ package agents
 
 import (
 	"context"
-	"fmt"
-	"os"
-	"os/exec"
 
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/log"
 )
 
 // RecommendSkillsInstall checks if coding agents are detected but have no skills installed.
-// In interactive mode, prompts the user to install now. In non-interactive mode, prints a hint.
-func RecommendSkillsInstall(ctx context.Context) error {
+// In interactive mode, prompts the user to install now using installFn. In non-interactive mode, prints a hint.
+func RecommendSkillsInstall(ctx context.Context, installFn func(context.Context) error) error {
 	if HasDatabricksSkillsInstalled() {
 		return nil
 	}
@@ -30,17 +27,7 @@ func RecommendSkillsInstall(ctx context.Context) error {
 		return nil
 	}
 
-	executable, err := os.Executable()
-	if err != nil {
-		return fmt.Errorf("failed to get executable path: %w", err)
-	}
-
-	cmd := exec.CommandContext(ctx, executable, "experimental", "aitools", "skills", "install")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	cmd.Stdin = os.Stdin
-
-	if err := cmd.Run(); err != nil {
+	if err := installFn(ctx); err != nil {
 		log.Warnf(ctx, "Skills installation failed: %v", err)
 	}
 

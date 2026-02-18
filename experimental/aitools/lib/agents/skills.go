@@ -10,8 +10,8 @@ const (
 	// databricksSkillPrefix is the prefix used by Databricks skills (e.g., "databricks", "databricks-apps").
 	databricksSkillPrefix = "databricks"
 
-	// canonicalSkillsDir is the shared location for skills when multiple agents are detected.
-	canonicalSkillsDir = ".databricks/agent-skills"
+	// CanonicalSkillsDir is the shared location for skills when multiple agents are detected.
+	CanonicalSkillsDir = ".databricks/agent-skills"
 )
 
 // HasDatabricksSkillsInstalled checks if at least one detected agent has Databricks skills installed.
@@ -25,7 +25,7 @@ func HasDatabricksSkillsInstalled() bool {
 	// Check canonical location first (~/.databricks/agent-skills/).
 	homeDir, err := getHomeDir()
 	if err == nil {
-		if hasDatabricksSkillsIn(filepath.Join(homeDir, canonicalSkillsDir)) {
+		if hasDatabricksSkillsIn(filepath.Join(homeDir, CanonicalSkillsDir)) {
 			return true
 		}
 	}
