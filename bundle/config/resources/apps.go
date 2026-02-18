@@ -35,6 +35,7 @@ type AppEnvVar struct {
 type App struct {
 	BaseResource
 	apps.App // nolint App struct also defines Id and URL field with the same json tag "id" and "url"
+	// Note: apps.App already includes GitRepository field from the SDK
 
 	// SourceCodePath is a required field used by DABs to point to Databricks app source code
 	// on local disk and to the corresponding workspace path during app deployment.
@@ -44,6 +45,10 @@ type App struct {
 	// When specified, this configuration is written to an app.yaml file in the source code path during deployment.
 	// This allows users to define app configuration directly in the bundle YAML instead of maintaining a separate app.yaml file.
 	Config *AppConfig `json:"config,omitempty"`
+
+	// GitSource specifies the git reference (branch, tag, or commit) to use during deployment.
+	// This is used in conjunction with GitRepository (from apps.App) and is passed to the Deploy API.
+	GitSource *apps.GitSource `json:"git_source,omitempty"`
 
 	Permissions []AppPermission `json:"permissions,omitempty"`
 }
