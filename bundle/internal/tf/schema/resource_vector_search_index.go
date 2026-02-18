@@ -39,6 +39,10 @@ type ResourceVectorSearchIndexDirectAccessIndexSpec struct {
 	EmbeddingVectorColumns []ResourceVectorSearchIndexDirectAccessIndexSpecEmbeddingVectorColumns `json:"embedding_vector_columns,omitempty"`
 }
 
+type ResourceVectorSearchIndexProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type ResourceVectorSearchIndex struct {
 	Creator               string                                          `json:"creator,omitempty"`
 	EndpointName          string                                          `json:"endpoint_name"`
@@ -49,4 +53,5 @@ type ResourceVectorSearchIndex struct {
 	Status                []any                                           `json:"status,omitempty"`
 	DeltaSyncIndexSpec    *ResourceVectorSearchIndexDeltaSyncIndexSpec    `json:"delta_sync_index_spec,omitempty"`
 	DirectAccessIndexSpec *ResourceVectorSearchIndexDirectAccessIndexSpec `json:"direct_access_index_spec,omitempty"`
+	ProviderConfig        *ResourceVectorSearchIndexProviderConfig        `json:"provider_config,omitempty"`
 }

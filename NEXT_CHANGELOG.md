@@ -9,3 +9,7 @@
 * engine/direct: Replace server_side_default with more precise backend_default rule in bundle plan ([#4490](https://github.com/databricks/cli/pull/4490))
 
 ### Dependency updates
+* Upgrade Go SDK to v0.106.0 (([#4486](https://github.com/databricks/cli/pull/4486)))
+* Upgrade Terraform provider to v1.106.0 (([#4542](https://github.com/databricks/cli/pull/4542)))
+
+

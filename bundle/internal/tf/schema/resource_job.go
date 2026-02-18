@@ -32,6 +32,7 @@ type ResourceJobEmailNotifications struct {
 }
 
 type ResourceJobEnvironmentSpec struct {
+	BaseEnvironment    string   `json:"base_environment,omitempty"`
 	Client             string   `json:"client,omitempty"`
 	Dependencies       []string `json:"dependencies,omitempty"`
 	EnvironmentVersion string   `json:"environment_version,omitempty"`
@@ -654,6 +655,7 @@ type ResourceJobTaskDashboardTaskSubscription struct {
 
 type ResourceJobTaskDashboardTask struct {
 	DashboardId  string                                    `json:"dashboard_id,omitempty"`
+	Filters      map[string]string                         `json:"filters,omitempty"`
 	WarehouseId  string                                    `json:"warehouse_id,omitempty"`
 	Subscription *ResourceJobTaskDashboardTaskSubscription `json:"subscription,omitempty"`
 }
@@ -722,6 +724,7 @@ type ResourceJobTaskForEachTaskTaskDashboardTaskSubscription struct {
 
 type ResourceJobTaskForEachTaskTaskDashboardTask struct {
 	DashboardId  string                                                   `json:"dashboard_id,omitempty"`
+	Filters      map[string]string                                        `json:"filters,omitempty"`
 	WarehouseId  string                                                   `json:"warehouse_id,omitempty"`
 	Subscription *ResourceJobTaskForEachTaskTaskDashboardTaskSubscription `json:"subscription,omitempty"`
 }

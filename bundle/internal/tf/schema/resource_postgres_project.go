@@ -2,6 +2,10 @@
 
 package schema
 
+type ResourcePostgresProjectProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type ResourcePostgresProjectSpecDefaultEndpointSettings struct {
 	AutoscalingLimitMaxCu  float64           `json:"autoscaling_limit_max_cu,omitempty"`
 	AutoscalingLimitMinCu  float64           `json:"autoscaling_limit_min_cu,omitempty"`
@@ -36,11 +40,12 @@ type ResourcePostgresProjectStatus struct {
 }
 
 type ResourcePostgresProject struct {
-	CreateTime string                         `json:"create_time,omitempty"`
-	Name       string                         `json:"name,omitempty"`
-	ProjectId  string                         `json:"project_id"`
-	Spec       *ResourcePostgresProjectSpec   `json:"spec,omitempty"`
-	Status     *ResourcePostgresProjectStatus `json:"status,omitempty"`
-	Uid        string                         `json:"uid,omitempty"`
-	UpdateTime string                         `json:"update_time,omitempty"`
+	CreateTime     string                                 `json:"create_time,omitempty"`
+	Name           string                                 `json:"name,omitempty"`
+	ProjectId      string                                 `json:"project_id"`
+	ProviderConfig *ResourcePostgresProjectProviderConfig `json:"provider_config,omitempty"`
+	Spec           *ResourcePostgresProjectSpec           `json:"spec,omitempty"`
+	Status         *ResourcePostgresProjectStatus         `json:"status,omitempty"`
+	Uid            string                                 `json:"uid,omitempty"`
+	UpdateTime     string                                 `json:"update_time,omitempty"`
 }

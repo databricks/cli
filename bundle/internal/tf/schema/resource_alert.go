@@ -27,20 +27,25 @@ type ResourceAlertCondition struct {
 	Threshold        *ResourceAlertConditionThreshold `json:"threshold,omitempty"`
 }
 
+type ResourceAlertProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type ResourceAlert struct {
-	CreateTime         string                  `json:"create_time,omitempty"`
-	CustomBody         string                  `json:"custom_body,omitempty"`
-	CustomSubject      string                  `json:"custom_subject,omitempty"`
-	DisplayName        string                  `json:"display_name"`
-	Id                 string                  `json:"id,omitempty"`
-	LifecycleState     string                  `json:"lifecycle_state,omitempty"`
-	NotifyOnOk         bool                    `json:"notify_on_ok,omitempty"`
-	OwnerUserName      string                  `json:"owner_user_name,omitempty"`
-	ParentPath         string                  `json:"parent_path,omitempty"`
-	QueryId            string                  `json:"query_id"`
-	SecondsToRetrigger int                     `json:"seconds_to_retrigger,omitempty"`
-	State              string                  `json:"state,omitempty"`
-	TriggerTime        string                  `json:"trigger_time,omitempty"`
-	UpdateTime         string                  `json:"update_time,omitempty"`
-	Condition          *ResourceAlertCondition `json:"condition,omitempty"`
+	CreateTime         string                       `json:"create_time,omitempty"`
+	CustomBody         string                       `json:"custom_body,omitempty"`
+	CustomSubject      string                       `json:"custom_subject,omitempty"`
+	DisplayName        string                       `json:"display_name"`
+	Id                 string                       `json:"id,omitempty"`
+	LifecycleState     string                       `json:"lifecycle_state,omitempty"`
+	NotifyOnOk         bool                         `json:"notify_on_ok,omitempty"`
+	OwnerUserName      string                       `json:"owner_user_name,omitempty"`
+	ParentPath         string                       `json:"parent_path,omitempty"`
+	QueryId            string                       `json:"query_id"`
+	SecondsToRetrigger int                          `json:"seconds_to_retrigger,omitempty"`
+	State              string                       `json:"state,omitempty"`
+	TriggerTime        string                       `json:"trigger_time,omitempty"`
+	UpdateTime         string                       `json:"update_time,omitempty"`
+	Condition          *ResourceAlertCondition      `json:"condition,omitempty"`
+	ProviderConfig     *ResourceAlertProviderConfig `json:"provider_config,omitempty"`
 }

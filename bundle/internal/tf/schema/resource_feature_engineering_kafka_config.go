@@ -20,6 +20,10 @@ type ResourceFeatureEngineeringKafkaConfigKeySchema struct {
 	JsonSchema string `json:"json_schema,omitempty"`
 }
 
+type ResourceFeatureEngineeringKafkaConfigProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type ResourceFeatureEngineeringKafkaConfigSubscriptionMode struct {
 	Assign           string `json:"assign,omitempty"`
 	Subscribe        string `json:"subscribe,omitempty"`
@@ -37,6 +41,7 @@ type ResourceFeatureEngineeringKafkaConfig struct {
 	ExtraOptions     map[string]string                                      `json:"extra_options,omitempty"`
 	KeySchema        *ResourceFeatureEngineeringKafkaConfigKeySchema        `json:"key_schema,omitempty"`
 	Name             string                                                 `json:"name,omitempty"`
+	ProviderConfig   *ResourceFeatureEngineeringKafkaConfigProviderConfig   `json:"provider_config,omitempty"`
 	SubscriptionMode *ResourceFeatureEngineeringKafkaConfigSubscriptionMode `json:"subscription_mode,omitempty"`
 	ValueSchema      *ResourceFeatureEngineeringKafkaConfigValueSchema      `json:"value_schema,omitempty"`
 }

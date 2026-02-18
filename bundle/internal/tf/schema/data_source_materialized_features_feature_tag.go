@@ -2,7 +2,12 @@
 
 package schema
 
+type DataSourceMaterializedFeaturesFeatureTagProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type DataSourceMaterializedFeaturesFeatureTag struct {
-	Key   string `json:"key"`
-	Value string `json:"value,omitempty"`
+	Key            string                                                  `json:"key"`
+	ProviderConfig *DataSourceMaterializedFeaturesFeatureTagProviderConfig `json:"provider_config,omitempty"`
+	Value          string                                                  `json:"value,omitempty"`
 }
