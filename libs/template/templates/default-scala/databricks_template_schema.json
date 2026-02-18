@@ -32,10 +32,11 @@
     },
     "personal_schemas": {
       "type": "string",
-      "description": "\nWould you like to use a personal schema for each user working on this project? (e.g., 'catalog.{{short_name}}')\npersonal_schemas",
+      "description": "Use a personal schema for each user working on this project\n(this is recommended, your personal schema will be '{{.default_catalog}}.{{short_name}}')",
+      "default": "yes",
       "enum": [
-        "yes, use a schema based on the current user name during development",
-        "no, use a shared schema during development"
+        "yes",
+        "no, I will customize the schema configuration later in databricks.yml"
       ],
       "order": 5
     },
@@ -43,7 +44,7 @@
       "skip_prompt_if": {
         "properties": {
           "personal_schemas": {
-            "const": "yes, use a schema based on the current user name during development"
+            "const": "yes"
           }
         }
       },
