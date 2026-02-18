@@ -41,8 +41,15 @@
       },
       "remote_state": {
         "autotermination_minutes": 60,
+        "aws_attributes": {
+          "availability": "SPOT_WITH_FALLBACK",
+          "zone_id": "us-east-1c"
+        },
         "cluster_id": "[CLUSTER_ID]",
         "cluster_name": "test-cluster-[UNIQUE_NAME]",
+        "data_security_mode": "SINGLE_USER",
+        "driver_node_type_id": "[NODE_TYPE_ID]",
+        "enable_elastic_disk": false,
         "node_type_id": "[NODE_TYPE_ID]",
         "num_workers": 2,
         "spark_conf": {
@@ -51,6 +58,29 @@
         "spark_version": "13.3.x-snapshot-scala2.12"
       },
       "changes": {
+        "aws_attributes": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": {
+            "availability": "SPOT_WITH_FALLBACK",
+            "zone_id": "us-east-1c"
+          }
+        },
+        "data_security_mode": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": "SINGLE_USER"
+        },
+        "driver_node_type_id": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": "[NODE_TYPE_ID]"
+        },
+        "enable_elastic_disk": {
+          "action": "skip",
+          "reason": "empty",
+          "remote": false
+        },
         "num_workers": {
           "action": "update",
           "old": 2,
@@ -83,8 +113,15 @@
       },
       "remote_state": {
         "autotermination_minutes": 60,
+        "aws_attributes": {
+          "availability": "SPOT_WITH_FALLBACK",
+          "zone_id": "us-east-1c"
+        },
         "cluster_id": "[CLUSTER_ID]",
         "cluster_name": "test-cluster-[UNIQUE_NAME]",
+        "data_security_mode": "SINGLE_USER",
+        "driver_node_type_id": "[NODE_TYPE_ID]",
+        "enable_elastic_disk": false,
         "node_type_id": "[NODE_TYPE_ID]",
         "num_workers": 3,
         "spark_conf": {
@@ -94,6 +131,29 @@
         "state": "RUNNING"
       },
       "changes": {
+        "aws_attributes": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": {
+            "availability": "SPOT_WITH_FALLBACK",
+            "zone_id": "us-east-1c"
+          }
+        },
+        "data_security_mode": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": "SINGLE_USER"
+        },
+        "driver_node_type_id": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": "[NODE_TYPE_ID]"
+        },
+        "enable_elastic_disk": {
+          "action": "skip",
+          "reason": "empty",
+          "remote": false
+        },
         "num_workers": {
           "action": "resize",
           "reason": "custom",
@@ -127,8 +187,15 @@
       },
       "remote_state": {
         "autotermination_minutes": 60,
+        "aws_attributes": {
+          "availability": "SPOT_WITH_FALLBACK",
+          "zone_id": "us-east-1c"
+        },
         "cluster_id": "[CLUSTER_ID]",
         "cluster_name": "test-cluster-[UNIQUE_NAME]",
+        "data_security_mode": "SINGLE_USER",
+        "driver_node_type_id": "[NODE_TYPE_ID]",
+        "enable_elastic_disk": false,
         "node_type_id": "[NODE_TYPE_ID]",
         "num_workers": 4,
         "spark_conf": {
@@ -138,6 +205,29 @@
         "state": "RUNNING"
       },
       "changes": {
+        "aws_attributes": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": {
+            "availability": "SPOT_WITH_FALLBACK",
+            "zone_id": "us-east-1c"
+          }
+        },
+        "data_security_mode": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": "SINGLE_USER"
+        },
+        "driver_node_type_id": {
+          "action": "skip",
+          "reason": "server_side_default",
+          "remote": "[NODE_TYPE_ID]"
+        },
+        "enable_elastic_disk": {
+          "action": "skip",
+          "reason": "empty",
+          "remote": false
+        },
         "num_workers": {
           "action": "resize",
           "reason": "custom",
