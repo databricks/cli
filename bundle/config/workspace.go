@@ -124,7 +124,7 @@ func (w *Workspace) Config() *config.Config {
 
 		// Unified host
 		Experimental_IsUnifiedHost: w.ExperimentalIsUnifiedHost,
-		WorkspaceId:                w.WorkspaceID,
+		WorkspaceID:                w.WorkspaceID,
 	}
 
 	for k := range config.ConfigAttributes {
