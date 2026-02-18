@@ -22,6 +22,10 @@ type DataSourceFeatureEngineeringFeatureLineageContext struct {
 	NotebookId int                                                          `json:"notebook_id,omitempty"`
 }
 
+type DataSourceFeatureEngineeringFeatureProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type DataSourceFeatureEngineeringFeatureSourceDeltaTableSource struct {
 	EntityColumns    []string `json:"entity_columns"`
 	FullName         string   `json:"full_name"`
@@ -74,6 +78,7 @@ type DataSourceFeatureEngineeringFeature struct {
 	Function        *DataSourceFeatureEngineeringFeatureFunction       `json:"function,omitempty"`
 	Inputs          []string                                           `json:"inputs,omitempty"`
 	LineageContext  *DataSourceFeatureEngineeringFeatureLineageContext `json:"lineage_context,omitempty"`
+	ProviderConfig  *DataSourceFeatureEngineeringFeatureProviderConfig `json:"provider_config,omitempty"`
 	Source          *DataSourceFeatureEngineeringFeatureSource         `json:"source,omitempty"`
 	TimeWindow      *DataSourceFeatureEngineeringFeatureTimeWindow     `json:"time_window,omitempty"`
 }

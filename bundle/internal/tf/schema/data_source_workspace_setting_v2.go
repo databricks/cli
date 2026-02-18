@@ -108,6 +108,10 @@ type DataSourceWorkspaceSettingV2PersonalCompute struct {
 	Value string `json:"value,omitempty"`
 }
 
+type DataSourceWorkspaceSettingV2ProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type DataSourceWorkspaceSettingV2RestrictWorkspaceAdmins struct {
 	Status string `json:"status"`
 }
@@ -132,6 +136,7 @@ type DataSourceWorkspaceSettingV2 struct {
 	IntegerVal                                     *DataSourceWorkspaceSettingV2IntegerVal                                     `json:"integer_val,omitempty"`
 	Name                                           string                                                                      `json:"name"`
 	PersonalCompute                                *DataSourceWorkspaceSettingV2PersonalCompute                                `json:"personal_compute,omitempty"`
+	ProviderConfig                                 *DataSourceWorkspaceSettingV2ProviderConfig                                 `json:"provider_config,omitempty"`
 	RestrictWorkspaceAdmins                        *DataSourceWorkspaceSettingV2RestrictWorkspaceAdmins                        `json:"restrict_workspace_admins,omitempty"`
 	StringVal                                      *DataSourceWorkspaceSettingV2StringVal                                      `json:"string_val,omitempty"`
 }
