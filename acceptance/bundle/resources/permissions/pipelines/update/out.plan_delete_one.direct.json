@@ -25,7 +25,7 @@
       "changes": {
         "storage": {
           "action": "skip",
-          "reason": "server_side_default",
+          "reason": "backend_default",
           "remote": "dbfs:/pipelines/[FOO_ID]"
         }
       }

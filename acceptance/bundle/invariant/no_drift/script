@@ -39,12 +39,10 @@ cat LOG.deploy | contains.py '!panic' '!internal error' > /dev/null
 # Any failures after this point will be considered as "bug detected" by fuzzer.
 echo INPUT_CONFIG_OK
 
-$CLI bundle plan -o json &> plan.json
-cat plan.json | contains.py '!panic' '!internal error' > /dev/null
-
 # Check both text and JSON plan for no changes
 # Note, expect that there maybe more than one resource unchanged
-$CLI bundle plan | contains.py '!panic' '!internal error' 'Plan: 0 to add, 0 to change, 0 to delete' > LOG.plan
+$CLI bundle plan -o json &> LOG.planjson
+cat LOG.planjson | contains.py '!panic' '!internal error' > /dev/null
+verify_no_drift.py LOG.planjson
 
-$CLI bundle plan -o json > plan.json
-verify_no_drift.py plan.json
+$CLI bundle plan | contains.py '!panic' '!internal error' 'Plan: 0 to add, 0 to change, 0 to delete' > LOG.plan

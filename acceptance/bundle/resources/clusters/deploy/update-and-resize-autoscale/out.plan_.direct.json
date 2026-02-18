@@ -44,7 +44,6 @@
         },
         "cluster_id": "[CLUSTER_ID]",
         "cluster_name": "test-cluster-[UNIQUE_NAME]",
-        "data_security_mode": "SINGLE_USER",
         "driver_node_type_id": "[NODE_TYPE_ID]",
         "enable_elastic_disk": false,
         "node_type_id": "[NODE_TYPE_ID]",
@@ -61,20 +60,15 @@
         },
         "aws_attributes": {
           "action": "skip",
-          "reason": "server_side_default",
+          "reason": "managed",
           "remote": {
             "availability": "SPOT_WITH_FALLBACK",
             "zone_id": "us-east-1c"
           }
         },
-        "data_security_mode": {
-          "action": "skip",
-          "reason": "server_side_default",
-          "remote": "SINGLE_USER"
-        },
         "driver_node_type_id": {
           "action": "skip",
-          "reason": "server_side_default",
+          "reason": "backend_default",
           "remote": "[NODE_TYPE_ID]"
         },
         "enable_elastic_disk": {
@@ -123,7 +117,6 @@
         },
         "cluster_id": "[CLUSTER_ID]",
         "cluster_name": "test-cluster-[UNIQUE_NAME]",
-        "data_security_mode": "SINGLE_USER",
         "driver_node_type_id": "[NODE_TYPE_ID]",
         "enable_elastic_disk": false,
         "node_type_id": "[NODE_TYPE_ID]",
@@ -144,20 +137,15 @@
         },
         "aws_attributes": {
           "action": "skip",
-          "reason": "server_side_default",
+          "reason": "managed",
           "remote": {
             "availability": "SPOT_WITH_FALLBACK",
             "zone_id": "us-east-1c"
           }
         },
-        "data_security_mode": {
-          "action": "skip",
-          "reason": "server_side_default",
-          "remote": "SINGLE_USER"
-        },
         "driver_node_type_id": {
           "action": "skip",
-          "reason": "server_side_default",
+          "reason": "backend_default",
           "remote": "[NODE_TYPE_ID]"
         },
         "enable_elastic_disk": {
@@ -201,7 +189,6 @@
         },
         "cluster_id": "[CLUSTER_ID]",
         "cluster_name": "test-cluster-[UNIQUE_NAME]",
-        "data_security_mode": "SINGLE_USER",
         "driver_node_type_id": "[NODE_TYPE_ID]",
         "enable_elastic_disk": false,
         "node_type_id": "[NODE_TYPE_ID]",
@@ -225,20 +212,15 @@
         },
         "aws_attributes": {
           "action": "skip",
-          "reason": "server_side_default",
+          "reason": "managed",
           "remote": {
             "availability": "SPOT_WITH_FALLBACK",
             "zone_id": "us-east-1c"
           }
         },
-        "data_security_mode": {
-          "action": "skip",
-          "reason": "server_side_default",
-          "remote": "SINGLE_USER"
-        },
         "driver_node_type_id": {
           "action": "skip",
-          "reason": "server_side_default",
+          "reason": "backend_default",
           "remote": "[NODE_TYPE_ID]"
         },
         "enable_elastic_disk": {
@@ -279,7 +261,6 @@
         },
         "cluster_id": "[CLUSTER_ID]",
         "cluster_name": "test-cluster-[UNIQUE_NAME]",
-        "data_security_mode": "SINGLE_USER",
         "driver_node_type_id": "[NODE_TYPE_ID]",
         "enable_elastic_disk": false,
         "node_type_id": "[NODE_TYPE_ID]",
@@ -301,20 +282,15 @@
         },
         "aws_attributes": {
           "action": "skip",
-          "reason": "server_side_default",
+          "reason": "managed",
           "remote": {
             "availability": "SPOT_WITH_FALLBACK",
             "zone_id": "us-east-1c"
           }
         },
-        "data_security_mode": {
-          "action": "skip",
-          "reason": "server_side_default",
-          "remote": "SINGLE_USER"
-        },
         "driver_node_type_id": {
           "action": "skip",
-          "reason": "server_side_default",
+          "reason": "backend_default",
           "remote": "[NODE_TYPE_ID]"
         },
         "enable_elastic_disk": {
