@@ -1,9 +1,11 @@
 package ssh
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/experimental/ssh/internal/client"
 	"github.com/databricks/cli/experimental/ssh/internal/setup"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/spf13/cobra"
@@ -43,16 +45,27 @@ an SSH host configuration to your SSH config file.
 
 	cmd.RunE = func(cmd *cobra.Command, args []string) error {
 		ctx := cmd.Context()
-		client := cmdctx.WorkspaceClient(ctx)
-		opts := setup.SetupOptions{
+		wsClient := cmdctx.WorkspaceClient(ctx)
+		setupOpts := setup.SetupOptions{
 			HostName:         hostName,
 			ClusterID:        clusterID,
 			AutoStartCluster: autoStartCluster,
 			SSHConfigPath:    sshConfigPath,
 			ShutdownDelay:    shutdownDelay,
-			Profile:          client.Config.Profile,
+			Profile:          wsClient.Config.Profile,
 		}
-		return setup.Setup(ctx, client, opts)
+		clientOpts := client.ClientOptions{
+			ClusterID:        setupOpts.ClusterID,
+			AutoStartCluster: setupOpts.AutoStartCluster,
+			ShutdownDelay:    setupOpts.ShutdownDelay,
+			Profile:          setupOpts.Profile,
+		}
+		proxyCommand, err := clientOpts.ToProxyCommand()
+		if err != nil {
+			return fmt.Errorf("failed to generate ProxyCommand: %w", err)
+		}
+		setupOpts.ProxyCommand = proxyCommand
+		return setup.Setup(ctx, wsClient, setupOpts)
 	}
 
 	return cmd

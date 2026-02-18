@@ -1,5 +1,3 @@
-Badness = "databricks auth profiles should return yes for the test profile. There's something going wrong with CLI detection in the SDK which makes this flag it as a legacy CLI."
-
 Ignore = [
     "home"
 ]

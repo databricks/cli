@@ -132,7 +132,7 @@ After generation, you can deploy this alert to other targets using:
 
 		// Check if file exists and force flag
 		if _, err := os.Stat(alertPath); err == nil && !force {
-			return fmt.Errorf("%s already exists. Use --force to overwrite", alertPath)
+			return fmt.Errorf("%s already exists. Use --force to overwrite", filepath.ToSlash(alertPath))
 		}
 
 		// Write alert definition file
@@ -170,8 +170,8 @@ After generation, you can deploy this alert to other targets using:
 			return err
 		}
 
-		cmdio.LogString(ctx, "Alert configuration successfully saved to "+configPath)
-		cmdio.LogString(ctx, "Serialized alert definition to "+alertPath)
+		cmdio.LogString(ctx, "Alert configuration successfully saved to "+filepath.ToSlash(configPath))
+		cmdio.LogString(ctx, "Serialized alert definition to "+filepath.ToSlash(alertPath))
 
 		return nil
 	}

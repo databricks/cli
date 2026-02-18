@@ -27,7 +27,7 @@ Exit code: 1
 }
 
 >>> [CLI] bundle generate dashboard --resource already_exists --force
-Writing dashboard to "dashboard.lvdash.json"
+Writing dashboard to dashboard.lvdash.json
 
 >>> cat dashboard.lvdash.json
 {}

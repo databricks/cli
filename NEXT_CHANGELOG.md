@@ -1,14 +1,12 @@
 # NEXT CHANGELOG
 
-## Release v0.288.0
-
-### Notable Changes
-
-### CLI
+## Release v0.289.0
 
 ### Bundles
 * Added support for UC external locations (direct mode only) ([#4484](https://github.com/databricks/cli/pull/4484))
+* Log artifact build output in debug mode ([#4208](https://github.com/databricks/cli/pull/4208))
 
 ### Dependency updates
 
-### API Changes
+### Bundles
+* Fix bundle init not working in Azure Government ([#4286](https://github.com/databricks/cli/pull/4286))

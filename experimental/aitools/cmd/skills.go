@@ -7,9 +7,7 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"os/exec"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/databricks/cli/experimental/aitools/lib/agents"
@@ -33,32 +31,6 @@ func getSkillsBranch() string {
 	return defaultSkillsRepoBranch
 }
 
-// getGitHubToken returns GitHub token from environment or gh CLI.
-// TODO: once databricks-agent-skills repo is public, replace GitHub API calls
-// with raw.githubusercontent.com URLs and remove authentication logic.
-func getGitHubToken() string {
-	// check environment variables first
-	if token := os.Getenv("GITHUB_TOKEN"); token != "" {
-		return token
-	}
-	if token := os.Getenv("GH_TOKEN"); token != "" {
-		return token
-	}
-	// try gh CLI
-	out, err := exec.Command("gh", "auth", "token").Output()
-	if err == nil {
-		return strings.TrimSpace(string(out))
-	}
-	return ""
-}
-
-// addGitHubAuth adds authentication header if token is available.
-func addGitHubAuth(req *http.Request) {
-	if token := getGitHubToken(); token != "" {
-		req.Header.Set("Authorization", "Bearer "+token)
-	}
-}
-
 type Manifest struct {
 	Version   string               `json:"version"`
 	UpdatedAt string               `json:"updated_at"`
@@ -66,8 +38,9 @@ type Manifest struct {
 }
 
 type SkillMeta struct {
-	Version   string `json:"version"`
-	UpdatedAt string `json:"updated_at"`
+	Version   string   `json:"version"`
+	UpdatedAt string   `json:"updated_at"`
+	Files     []string `json:"files"`
 }
 
 func newSkillsCmd() *cobra.Command {
@@ -114,16 +87,12 @@ Supported agents: Claude Code, Cursor, Codex CLI, OpenCode, GitHub Copilot, Anti
 }
 
 func fetchManifest(ctx context.Context) (*Manifest, error) {
-	// use GitHub API for private repo support
-	// manifest.json is at repo root, skills are in skillsRepoPath subdirectory
-	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/contents/manifest.json?ref=%s",
+	url := fmt.Sprintf("https://raw.githubusercontent.com/%s/%s/%s/manifest.json",
 		skillsRepoOwner, skillsRepoName, getSkillsBranch())
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
-	req.Header.Set("Accept", "application/vnd.github.raw+json")
-	addGitHubAuth(req)
 
 	client := &http.Client{Timeout: 30 * time.Second}
 	resp, err := client.Do(req)
@@ -145,16 +114,13 @@ func fetchManifest(ctx context.Context) (*Manifest, error) {
 }
 
 func fetchSkillFile(ctx context.Context, skillName, filePath string) ([]byte, error) {
-	// use GitHub API for private repo support
-	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/contents/%s/%s/%s?ref=%s",
-		skillsRepoOwner, skillsRepoName, skillsRepoPath, skillName, filePath, getSkillsBranch())
+	url := fmt.Sprintf("https://raw.githubusercontent.com/%s/%s/%s/%s/%s/%s",
+		skillsRepoOwner, skillsRepoName, getSkillsBranch(), skillsRepoPath, skillName, filePath)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
-	req.Header.Set("Accept", "application/vnd.github.raw+json")
-	addGitHubAuth(req)
 
 	client := &http.Client{Timeout: 30 * time.Second}
 	resp, err := client.Do(req)
@@ -168,108 +134,6 @@ func fetchSkillFile(ctx context.Context, skillName, filePath string) ([]byte, er
 	}
 
 	return io.ReadAll(resp.Body)
-}
-
-func fetchSkillFileList(ctx context.Context, skillName string) ([]string, error) {
-	// use GitHub API to list files in skill directory
-	skillPath := skillsRepoPath + "/" + skillName
-	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/contents/%s?ref=%s",
-		skillsRepoOwner, skillsRepoName, skillPath, getSkillsBranch())
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Accept", "application/vnd.github.v3+json")
-	addGitHubAuth(req)
-
-	client := &http.Client{Timeout: 30 * time.Second}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to list skill files: HTTP %d", resp.StatusCode)
-	}
-
-	var items []struct {
-		Path string `json:"path"`
-		Type string `json:"type"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&items); err != nil {
-		return nil, err
-	}
-
-	var files []string
-	for _, item := range items {
-		switch item.Type {
-		case "file":
-			// strip skills/skill-name prefix from path
-			relPath := strings.TrimPrefix(item.Path, skillPath+"/")
-			files = append(files, relPath)
-		case "dir":
-			// recursively list subdirectory
-			subFiles, err := fetchSubdirFiles(ctx, item.Path)
-			if err != nil {
-				return nil, err
-			}
-			for _, sf := range subFiles {
-				relPath := strings.TrimPrefix(sf, skillPath+"/")
-				files = append(files, relPath)
-			}
-		}
-	}
-
-	return files, nil
-}
-
-func fetchSubdirFiles(ctx context.Context, dirPath string) ([]string, error) {
-	url := fmt.Sprintf("https://api.github.com/repos/%s/%s/contents/%s?ref=%s",
-		skillsRepoOwner, skillsRepoName, dirPath, getSkillsBranch())
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Accept", "application/vnd.github.v3+json")
-	addGitHubAuth(req)
-
-	client := &http.Client{Timeout: 30 * time.Second}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("failed to list directory %s: HTTP %d", dirPath, resp.StatusCode)
-	}
-
-	var items []struct {
-		Path string `json:"path"`
-		Type string `json:"type"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&items); err != nil {
-		return nil, err
-	}
-
-	var files []string
-	for _, item := range items {
-		switch item.Type {
-		case "file":
-			files = append(files, item.Path)
-		case "dir":
-			subFiles, err := fetchSubdirFiles(ctx, item.Path)
-			if err != nil {
-				return nil, err
-			}
-			files = append(files, subFiles...)
-		}
-	}
-
-	return files, nil
 }
 
 func listSkills(ctx context.Context) error {
@@ -306,8 +170,8 @@ func installAllSkills(ctx context.Context) error {
 
 	printDetectedAgents(ctx, detectedAgents)
 
-	for name := range manifest.Skills {
-		if err := installSkillForAgents(ctx, name, detectedAgents); err != nil {
+	for name, meta := range manifest.Skills {
+		if err := installSkillForAgents(ctx, name, meta.Files, detectedAgents); err != nil {
 			return err
 		}
 	}
@@ -347,16 +211,10 @@ func installSkill(ctx context.Context, skillName string) error {
 
 	printDetectedAgents(ctx, detectedAgents)
 
-	return installSkillForAgents(ctx, skillName, detectedAgents)
+	return installSkillForAgents(ctx, skillName, manifest.Skills[skillName].Files, detectedAgents)
 }
 
-func installSkillForAgents(ctx context.Context, skillName string, detectedAgents []*agents.Agent) error {
-	// get list of files in skill
-	files, err := fetchSkillFileList(ctx, skillName)
-	if err != nil {
-		return fmt.Errorf("failed to list skill files: %w", err)
-	}
-
+func installSkillForAgents(ctx context.Context, skillName string, files []string, detectedAgents []*agents.Agent) error {
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return fmt.Errorf("failed to get home directory: %w", err)

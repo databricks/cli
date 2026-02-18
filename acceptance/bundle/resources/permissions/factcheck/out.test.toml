@@ -1,6 +1,7 @@
 Local = true
 Cloud = true
 CloudSlow = true
+RunsOnDbr = true
 
 [CloudEnvs]
   gcp = false

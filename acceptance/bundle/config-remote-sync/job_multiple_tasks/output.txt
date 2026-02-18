@@ -5,7 +5,7 @@ Deployment complete!
 
 === Modify c_task, remove d_task, add e_task
 === Detect and save changes
-Detected changes in 1 resource(s):
+Detected changes in 2 resource(s):
 
 Resource: resources.jobs.my_job
   tasks[task_key='c_task'].depends_on[0].task_key: replace
@@ -14,6 +14,9 @@ Resource: resources.jobs.my_job
   tasks[task_key='d_task']: remove
   tasks[task_key='e_task']: add
 
+Resource: resources.jobs.no_tasks_job
+  tasks: add
+
 
 
 === Configuration changes
@@ -21,13 +24,7 @@ Resource: resources.jobs.my_job
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml
-@@ -1,5 +1,4 @@
- bundle:
-   name: test-bundle-[UNIQUE_NAME]
--
- resources:
-   jobs:
-@@ -13,13 +12,11 @@
+@@ -13,13 +13,11 @@
              node_type_id: [NODE_TYPE_ID]
              num_workers: 1
 -        - task_key: d_task
@@ -47,7 +44,7 @@ Resource: resources.jobs.my_job
 +          task_key: e_task
          - task_key: c_task
            notebook_task:
-@@ -28,7 +25,8 @@
+@@ -28,7 +26,8 @@
              spark_version: 13.3.x-snapshot-scala2.12
              node_type_id: [NODE_TYPE_ID]
 -            num_workers: 2
@@ -58,26 +55,37 @@ Resource: resources.jobs.my_job
 +          timeout_seconds: 3600
          - task_key: a_task
            notebook_task:
-@@ -40,5 +38,4 @@
-           depends_on:
+@@ -41,5 +40,13 @@
              - task_key: c_task
--
+
+-    no_tasks_job: {}
++    no_tasks_job:
++      tasks:
++        - new_cluster:
++            node_type_id: [NODE_TYPE_ID]
++            num_workers: 1
++            spark_version: 13.3.x-snapshot-scala2.12
++          notebook_task:
++            notebook_path: /Users/[USERNAME]/new_task
++          task_key: new_task
+
      rename_task_job:
-       tasks:
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default/files...
 Deploying resources...
 Updating deployment state...
 Deployment complete!
 
-=== Rename b_task to b_task_renamed (4 tasks, 2 with depends_on, 1 without)
+=== Rename b_task, replace a_task notebook_path, add synced_task
 === Detect task key rename
 Detected changes in 1 resource(s):
 
 Resource: resources.jobs.rename_task_job
+  tasks[task_key='a_task'].notebook_task.notebook_path: replace
   tasks[task_key='b_task']: remove
   tasks[task_key='b_task_renamed']: add
   tasks[task_key='c_task'].depends_on[0].task_key: replace
   tasks[task_key='d_task'].depends_on[0].task_key: replace
+  tasks[task_key='synced_task']: add
 
 
 
@@ -86,7 +94,7 @@ Resource: resources.jobs.rename_task_job
 >>> diff.py databricks.yml.backup2 databricks.yml
 --- databricks.yml.backup2
 +++ databricks.yml
-@@ -40,14 +40,14 @@
+@@ -52,14 +52,14 @@
      rename_task_job:
        tasks:
 -        - task_key: b_task
@@ -107,10 +115,37 @@ Resource: resources.jobs.rename_task_job
 +            - task_key: b_task_renamed
            notebook_task:
              notebook_path: /Users/{{workspace_user_name}}/d_task
-@@ -58,5 +58,5 @@
+@@ -70,5 +70,5 @@
          - task_key: c_task
            depends_on:
 -            - task_key: b_task
 +            - task_key: b_task_renamed
            notebook_task:
              notebook_path: /Users/{{workspace_user_name}}/c_task
+@@ -79,7 +79,14 @@
+         - task_key: a_task
+           notebook_task:
+-            notebook_path: /Users/{{workspace_user_name}}/a_task
++            notebook_path: ./synced_notebook.py
+           new_cluster:
+             spark_version: 13.3.x-snapshot-scala2.12
+             node_type_id: [NODE_TYPE_ID]
+             num_workers: 1
++        - new_cluster:
++            node_type_id: [NODE_TYPE_ID]
++            num_workers: 1
++            spark_version: 13.3.x-snapshot-scala2.12
++          notebook_task:
++            notebook_path: ./synced_notebook.py
++          task_key: synced_task
+
+>>> [CLI] bundle destroy --auto-approve
+The following resources will be deleted:
+  delete resources.jobs.my_job
+  delete resources.jobs.no_tasks_job
+  delete resources.jobs.rename_task_job
+
+All files and directories at the following location will be deleted: /Workspace/Users/[USERNAME]/.bundle/test-bundle-[UNIQUE_NAME]/default
+
+Deleting files...
+Destroy complete!

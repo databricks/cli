@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"os"
 	"sync"
 	"time"
 
@@ -33,9 +34,10 @@ func (c *profileMetadata) IsEmpty() bool {
 
 func (c *profileMetadata) Load(ctx context.Context, configFilePath string, skipValidate bool) {
 	cfg := &config.Config{
-		Loaders:    []config.Loader{config.ConfigFile},
-		ConfigFile: configFilePath,
-		Profile:    c.Name,
+		Loaders:           []config.Loader{config.ConfigFile},
+		ConfigFile:        configFilePath,
+		Profile:           c.Name,
+		DatabricksCliPath: os.Getenv("DATABRICKS_CLI_PATH"),
 	}
 	_ = cfg.EnsureResolved()
 	if cfg.IsAws() {

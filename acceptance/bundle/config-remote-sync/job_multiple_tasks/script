@@ -2,6 +2,11 @@
 
 envsubst < databricks.yml.tmpl > databricks.yml
 
+cleanup() {
+  trace $CLI bundle destroy --auto-approve
+}
+trap cleanup EXIT
+
 touch dummy.whl
 $CLI bundle deploy
 job_id="$(read_id.py my_job)"
@@ -30,6 +35,22 @@ r["tasks"].append({
 })
 EOF
 
+no_tasks_job_id="$(read_id.py no_tasks_job)"
+edit_resource.py jobs $no_tasks_job_id <<EOF
+r.setdefault("tasks", [])
+r["tasks"].append({
+    "task_key": "new_task",
+    "notebook_task": {
+        "notebook_path": "/Users/${CURRENT_USER_NAME}/new_task"
+    },
+    "new_cluster": {
+        "spark_version": "${DEFAULT_SPARK_VERSION}",
+        "node_type_id": "${NODE_TYPE_ID}",
+        "num_workers": 1
+    }
+})
+EOF
+
 title "Detect and save changes"
 echo
 cp databricks.yml databricks.yml.backup
@@ -47,9 +68,9 @@ mv databricks.yml.resolved databricks.yml
 # Deploy the updated configuration to sync state
 $CLI bundle deploy
 
-title "Rename b_task to b_task_renamed (4 tasks, 2 with depends_on, 1 without)"
+title "Rename b_task, replace a_task notebook_path, add synced_task"
 rename_job_id="$(read_id.py rename_task_job)"
-edit_resource.py jobs $rename_job_id <<'EOF'
+edit_resource.py jobs $rename_job_id <<EOF
 for task in r["tasks"]:
     if task["task_key"] == "b_task":
         task["task_key"] = "b_task_renamed"
@@ -57,6 +78,24 @@ for task in r["tasks"]:
         for dep in task["depends_on"]:
             if dep["task_key"] == "b_task":
                 dep["task_key"] = "b_task_renamed"
+
+# Replace a_task's notebook_path with sync-root path (tests Replace operation)
+for task in r["tasks"]:
+    if task["task_key"] == "a_task":
+        task["notebook_task"]["notebook_path"] = "${PWD}/synced_notebook"
+
+# Add synced_task with path inside sync root
+r["tasks"].append({
+    "task_key": "synced_task",
+    "notebook_task": {
+        "notebook_path": "${PWD}/synced_notebook"
+    },
+    "new_cluster": {
+        "spark_version": "${DEFAULT_SPARK_VERSION}",
+        "node_type_id": "${NODE_TYPE_ID}",
+        "num_workers": 1
+    }
+})
 EOF
 
 title "Detect task key rename"

@@ -1,6 +1,7 @@
 Local = true
 CloudSlow = true
 RecordRequests = false
+RunsOnDbr = true
 
 # I get this error, not sure why:
 #   -=== Since we take the most recent level, IS_OWNER is lost, which results in the error due to lack of owner defined
