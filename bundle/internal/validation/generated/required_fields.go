@@ -22,6 +22,7 @@ var RequiredFields = map[string][]string{
 	"resources.apps.*.active_deployment.git_source.git_repository":  {"provider", "url"},
 	"resources.apps.*.config.env[*]":                                {"name"},
 	"resources.apps.*.git_repository":                               {"provider", "url"},
+	"resources.apps.*.git_source.git_repository":                    {"provider", "url"},
 	"resources.apps.*.pending_deployment.git_source.git_repository": {"provider", "url"},
 	"resources.apps.*.permissions[*]":                               {"level"},
 	"resources.apps.*.resources[*]":                                 {"name"},
