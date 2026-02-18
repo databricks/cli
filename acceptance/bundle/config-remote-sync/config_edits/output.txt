@@ -14,7 +14,9 @@ Deployment complete!
 
 === Case 5: Updated locally, removed remotely
 
-=== Case 6: Added locally and remotely with same value (no drift expected)
+=== Case 6: Removed locally, edited remotely
+
+=== Case 7: Added locally and remotely with same value (no drift expected)
 
 === Edit job remotely
 
@@ -22,10 +24,12 @@ Deployment complete!
 Detected changes in 1 resource(s):
 
 Resource: resources.jobs.my_job
+  description: add
   email_notifications.on_failure: replace
   email_notifications.on_failure[0]: replace
   max_concurrent_runs: replace
   tags['env']: remove
+  timeout_seconds: remove
 
 
 
@@ -34,22 +38,30 @@ Resource: resources.jobs.my_job
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml
-@@ -24,5 +24,5 @@
+@@ -13,4 +13,5 @@
+             node_type_id: [NODE_TYPE_ID]
+             num_workers: 1
++      description: updated remotely
+
+ targets:
+@@ -23,5 +24,5 @@
                - success@example.com
              on_failure:
 -              - config-failure@example.com
 +              - remote-failure@example.com
            parameters:
              - name: catalog
-@@ -35,7 +35,6 @@
+@@ -34,9 +35,7 @@
                unit: DAYS
            tags:
 -            env: config-production
              team: data-team
+             project: analytics
 -          max_concurrent_runs: 3
+-          timeout_seconds: 3600
 +          max_concurrent_runs: 5
-           timeout_seconds: 3600
            environments:
+             - environment_key: default
 
 >>> [CLI] bundle destroy --auto-approve
 The following resources will be deleted:

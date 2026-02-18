@@ -85,7 +85,7 @@ func filterEntityDefaults(basePath string, value any) any {
 }
 
 func convertChangeDesc(path string, cd *deployplan.ChangeDesc) (*ConfigChangeDesc, error) {
-	hasConfigValue := cd.Old != nil || cd.New != nil
+	hasConfigValue := cd.New != nil
 	normalizedValue, err := normalizeValue(cd.Remote)
 	if err != nil {
 		return nil, fmt.Errorf("failed to normalize remote value: %w", err)
