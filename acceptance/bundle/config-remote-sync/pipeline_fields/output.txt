@@ -12,7 +12,6 @@ Resource: resources.pipelines.my_pipeline
   environment.dependencies: replace
   notifications[0].alerts: replace
   notifications[0].email_recipients: replace
-  root_path: add
   schema: replace
   tags['foo']: add
 
@@ -23,7 +22,7 @@ Resource: resources.pipelines.my_pipeline
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml
-@@ -7,18 +7,25 @@
+@@ -7,18 +7,24 @@
        name: test-pipeline-[UNIQUE_NAME]
        catalog: main
 -      schema: default
@@ -47,7 +46,6 @@ Resource: resources.pipelines.my_pipeline
              path: /Users/{{workspace_user_name}}/notebook
 +      tags:
 +        foo: bar
-+      root_path: ./pipeline_root
 
  targets:
 
