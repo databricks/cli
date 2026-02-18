@@ -1,0 +1,36 @@
+bundle:
+  name: catalog-and-ext-loc-$UNIQUE_NAME
+
+workspace:
+  root_path: ~/.bundle/$UNIQUE_NAME
+
+resources:
+  catalogs:
+    test_catalog:
+      name: test_catalog_$UNIQUE_NAME
+      comment: "Test catalog for external locations"
+      properties:
+        owner: "dabs"
+      grants:
+        - principal: deco-test-user@databricks.com
+          privileges:
+            - USE_CATALOG
+            - CREATE_SCHEMA
+
+  external_locations:
+    test_location:
+      name: test_ext_location_$UNIQUE_NAME
+      url: s3://test-bucket/path
+      credential_name: test_storage_credential
+      comment: "Test external location from DABs"
+      skip_validation: true
+      read_only: false
+      grants:
+        - principal: deco-test-user@databricks.com
+          privileges:
+            - READ_FILES
+            - WRITE_FILES
+
+targets:
+  development:
+    default: true

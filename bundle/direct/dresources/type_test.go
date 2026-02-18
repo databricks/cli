@@ -19,6 +19,9 @@ var knownMissingInRemoteType = map[string][]string{
 	"clusters": {
 		"apply_policy_default_values",
 	},
+	"external_locations": {
+		"skip_validation",
+	},
 	"model_serving_endpoints": {
 		"ai_gateway",
 		"budget_policy_id",

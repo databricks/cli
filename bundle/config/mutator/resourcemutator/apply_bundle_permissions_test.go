@@ -20,6 +20,7 @@ import (
 // These resources are there because they use grants, not permissions:
 var unsupportedResources = []string{
 	"catalogs",
+	"external_locations",
 	"volumes",
 	"schemas",
 	"quality_monitors",
