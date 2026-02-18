@@ -150,9 +150,6 @@ resources:
       # Backend generates storage path like dbfs:/pipelines/<id> when not set by user.
       - field: storage
 
-      # root_path is computed by the backend when not set by user.
-      - field: root_path
-
       # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/pipelines/resource_pipeline.go#L218
       # s.SchemaPath("cluster", "node_type_id").SetComputed()
       - field: clusters[*].node_type_id
