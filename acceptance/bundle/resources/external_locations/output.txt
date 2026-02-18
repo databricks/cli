@@ -83,9 +83,8 @@ Deployment complete!
 === Redeploy with updated catalog comment
 >>> [CLI] bundle plan
 update catalogs.test_catalog
-update external_locations.test_location
 
-Plan: 0 to add, 2 to change, 0 to delete, 2 unchanged
+Plan: 0 to add, 1 to change, 0 to delete, 3 unchanged
 
 >>> [CLI] bundle deploy
 Uploading bundle files to /Workspace/Users/[USERNAME]/.bundle/[UNIQUE_NAME]/files...
