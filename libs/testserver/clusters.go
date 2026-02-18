@@ -104,11 +104,6 @@ func clusterFixUps(cluster *compute.ClusterDetails) {
 		)
 	}
 
-	if cluster.DataSecurityMode == "" {
-		cluster.DataSecurityMode = compute.DataSecurityModeSingleUser
-		cluster.ForceSendFields = append(cluster.ForceSendFields, "DataSecurityMode")
-	}
-
 	cluster.ForceSendFields = append(cluster.ForceSendFields, "EnableElasticDisk")
 
 	if cluster.DriverNodeTypeId == "" && cluster.NodeTypeId != "" {
