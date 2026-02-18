@@ -426,6 +426,10 @@ resources:
       # s.SchemaPath("driver_instance_pool_id").SetComputed()
       - field: driver_instance_pool_id
 
+      # Terraform currently does not do this, but it is a field with backend default.
+      # See https://github.com/databricks/cli/issues/4418
+      - field: single_user_name
+
     # We have custom handler for this in cluster.go
     # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/clusters/resource_cluster.go#L109-L118
     # DataSecurityModeDiffSuppressFunc: suppress when old != "" && new == ""
