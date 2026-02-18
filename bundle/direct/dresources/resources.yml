@@ -137,7 +137,7 @@ resources:
       - field: id
         reason: "!drop"
       - field: run_as
-        reason: not_returned_by_api
+        reason: input_only
 
     ignore_local_changes:
       # "id" is output-only, providing it in config would be a mistake
@@ -285,11 +285,11 @@ resources:
         reason: immutable
     ignore_remote_changes:
       - field: warehouse_id
-        reason: not_returned_by_api
+        reason: input_only
       # skip_builtin_dashboard is input-only, not returned by the Get API.
       # TF preserves it from state; see resource_quality_monitor.go.
       - field: skip_builtin_dashboard
-        reason: not_returned_by_api
+        reason: input_only
 
   catalogs:
     recreate_on_changes:
