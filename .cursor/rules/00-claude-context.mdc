@@ -1,0 +1,13 @@
+---
+description: Always load CLAUDE.md context first
+alwaysApply: true
+globs:
+  - "**/*"
+---
+
+Always apply CLAUDE context before taking actions.
+
+1. If `/CLAUDE.md` exists, read and follow it for every task in this workspace.
+2. When working in a subdirectory, check for a closer `CLAUDE.md` in that path and follow it as an override.
+3. If multiple `CLAUDE.md` files apply and conflict, the most specific (closest) one wins.
+4. Keep these instructions active even for small or routine requests.
