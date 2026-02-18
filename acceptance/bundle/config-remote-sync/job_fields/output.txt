@@ -13,6 +13,7 @@ Resource: resources.jobs.my_job
   email_notifications.no_alert_for_skipped_runs: add
   email_notifications.on_failure: add
   parameters: replace
+  performance_target: remove
   tags['team']: add
   trigger.pause_status: add
   trigger.periodic: remove
@@ -25,7 +26,11 @@ Resource: resources.jobs.my_job
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml
-@@ -8,13 +8,19 @@
+@@ -5,17 +5,22 @@
+   jobs:
+     my_job:
+-      performance_target: STANDARD
+       email_notifications:
          on_success:
            - success@example.com
 +        no_alert_for_skipped_runs: true
@@ -52,7 +57,7 @@ Resource: resources.jobs.my_job
 +            - samples.nyctaxi.trips
        environments:
          - environment_key: default
-@@ -31,4 +37,6 @@
+@@ -32,4 +37,6 @@
              node_type_id: [NODE_TYPE_ID]
              num_workers: 1
 +      tags:

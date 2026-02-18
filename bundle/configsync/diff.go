@@ -92,6 +92,13 @@ func convertChangeDesc(path string, cd *deployplan.ChangeDesc) (*ConfigChangeDes
 	}
 
 	if shouldSkipField(path, normalizedValue) {
+		// If the config has an explicit value for a server-side default field,
+		// we should remove it since the remote value is the default.
+		if cd.New != nil {
+			return &ConfigChangeDesc{
+				Operation: OperationRemove,
+			}, nil
+		}
 		return &ConfigChangeDesc{
 			Operation: OperationSkip,
 		}, nil
