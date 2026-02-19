@@ -62,7 +62,7 @@ Deleting files...
 Destroy complete!
 
 >>> [CLI] alerts-v2 get-alert [ALERT_ID]
-Error: Node with resource name None does not exist.
+Error: Alert with ID '[ALERT_ID]' does not exist.
 
 Exit code: 1
 

@@ -246,6 +246,7 @@
               "name": "myschema",
               "owner": "[USERNAME]",
               "properties": null,
+              "provider_config": [],
               "schema_id": "",
               "storage_root": null
             },
@@ -298,7 +299,7 @@
 {
   "headers": {
     "User-Agent": [
-      "databricks-tf-provider/1.105.0 databricks-sdk-go/[SDK_VERSION] go/1.24.0 os/[OS] cli/[DEV_VERSION] terraform/1.5.5 sdk/sdkv2 resource/schema auth/pat"
+      "databricks-tf-provider/1.106.0 databricks-sdk-go/[SDK_VERSION] go/1.24.0 os/[OS] cli/[DEV_VERSION] terraform/1.5.5 sdk/sdkv2 resource/schema auth/pat"
     ]
   },
   "method": "GET",
@@ -307,7 +308,7 @@
 {
   "headers": {
     "User-Agent": [
-      "databricks-tf-provider/1.105.0 databricks-sdk-go/[SDK_VERSION] go/1.24.0 os/[OS] cli/[DEV_VERSION] terraform/1.5.5 sdk/sdkv2 resource/schema auth/pat"
+      "databricks-tf-provider/1.106.0 databricks-sdk-go/[SDK_VERSION] go/1.24.0 os/[OS] cli/[DEV_VERSION] terraform/1.5.5 sdk/sdkv2 resource/schema auth/pat"
     ]
   },
   "method": "POST",

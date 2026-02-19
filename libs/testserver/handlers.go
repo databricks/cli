@@ -543,12 +543,13 @@ func AddDefaultHandlers(server *Server) {
 	server.Handle("GET", "/api/2.0/alerts/{id}", func(req Request) any {
 		defer req.Workspace.LockUnlock()()
 
-		value, ok := req.Workspace.Alerts[req.Vars["id"]]
+		id := req.Vars["id"]
+
+		value, ok := req.Workspace.Alerts[id]
 		if !ok || value.LifecycleState == sql.AlertLifecycleStateDeleted {
 			return Response{
 				StatusCode: 404,
-				// Backend returns a terrible error message today.
-				Body: map[string]string{"message": "Node with resource name None does not exist."},
+				Body:       map[string]string{"message": "Alert with ID '" + id + "' does not exist."},
 			}
 		}
 
