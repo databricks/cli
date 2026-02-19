@@ -22,6 +22,10 @@ type DataSourceFeatureEngineeringFeaturesFeaturesLineageContext struct {
 	NotebookId int                                                                   `json:"notebook_id,omitempty"`
 }
 
+type DataSourceFeatureEngineeringFeaturesFeaturesProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type DataSourceFeatureEngineeringFeaturesFeaturesSourceDeltaTableSource struct {
 	EntityColumns    []string `json:"entity_columns"`
 	FullName         string   `json:"full_name"`
@@ -74,11 +78,17 @@ type DataSourceFeatureEngineeringFeaturesFeatures struct {
 	Function        *DataSourceFeatureEngineeringFeaturesFeaturesFunction       `json:"function,omitempty"`
 	Inputs          []string                                                    `json:"inputs,omitempty"`
 	LineageContext  *DataSourceFeatureEngineeringFeaturesFeaturesLineageContext `json:"lineage_context,omitempty"`
+	ProviderConfig  *DataSourceFeatureEngineeringFeaturesFeaturesProviderConfig `json:"provider_config,omitempty"`
 	Source          *DataSourceFeatureEngineeringFeaturesFeaturesSource         `json:"source,omitempty"`
 	TimeWindow      *DataSourceFeatureEngineeringFeaturesFeaturesTimeWindow     `json:"time_window,omitempty"`
 }
 
+type DataSourceFeatureEngineeringFeaturesProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type DataSourceFeatureEngineeringFeatures struct {
-	Features []DataSourceFeatureEngineeringFeaturesFeatures `json:"features,omitempty"`
-	PageSize int                                            `json:"page_size,omitempty"`
+	Features       []DataSourceFeatureEngineeringFeaturesFeatures      `json:"features,omitempty"`
+	PageSize       int                                                 `json:"page_size,omitempty"`
+	ProviderConfig *DataSourceFeatureEngineeringFeaturesProviderConfig `json:"provider_config,omitempty"`
 }

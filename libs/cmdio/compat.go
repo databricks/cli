@@ -123,7 +123,7 @@ func AskSelect(ctx context.Context, question string, choices []string) (string, 
 			Label:    "{{.}}: ",
 			Selected: last + ": {{.}}",
 		},
-		Stdin:  io.NopCloser(c.in),
+		Stdin:  c.promptStdin(),
 		Stdout: nopWriteCloser{c.err},
 	}
 

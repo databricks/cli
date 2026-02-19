@@ -11,20 +11,25 @@ type ResourceRegisteredModelAliases struct {
 	VersionNum  int    `json:"version_num,omitempty"`
 }
 
+type ResourceRegisteredModelProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type ResourceRegisteredModel struct {
-	BrowseOnly      bool                             `json:"browse_only,omitempty"`
-	CatalogName     string                           `json:"catalog_name,omitempty"`
-	Comment         string                           `json:"comment,omitempty"`
-	CreatedAt       int                              `json:"created_at,omitempty"`
-	CreatedBy       string                           `json:"created_by,omitempty"`
-	FullName        string                           `json:"full_name,omitempty"`
-	Id              string                           `json:"id,omitempty"`
-	MetastoreId     string                           `json:"metastore_id,omitempty"`
-	Name            string                           `json:"name,omitempty"`
-	Owner           string                           `json:"owner,omitempty"`
-	SchemaName      string                           `json:"schema_name,omitempty"`
-	StorageLocation string                           `json:"storage_location,omitempty"`
-	UpdatedAt       int                              `json:"updated_at,omitempty"`
-	UpdatedBy       string                           `json:"updated_by,omitempty"`
-	Aliases         []ResourceRegisteredModelAliases `json:"aliases,omitempty"`
+	BrowseOnly      bool                                   `json:"browse_only,omitempty"`
+	CatalogName     string                                 `json:"catalog_name,omitempty"`
+	Comment         string                                 `json:"comment,omitempty"`
+	CreatedAt       int                                    `json:"created_at,omitempty"`
+	CreatedBy       string                                 `json:"created_by,omitempty"`
+	FullName        string                                 `json:"full_name,omitempty"`
+	Id              string                                 `json:"id,omitempty"`
+	MetastoreId     string                                 `json:"metastore_id,omitempty"`
+	Name            string                                 `json:"name,omitempty"`
+	Owner           string                                 `json:"owner,omitempty"`
+	SchemaName      string                                 `json:"schema_name,omitempty"`
+	StorageLocation string                                 `json:"storage_location,omitempty"`
+	UpdatedAt       int                                    `json:"updated_at,omitempty"`
+	UpdatedBy       string                                 `json:"updated_by,omitempty"`
+	Aliases         []ResourceRegisteredModelAliases       `json:"aliases,omitempty"`
+	ProviderConfig  *ResourceRegisteredModelProviderConfig `json:"provider_config,omitempty"`
 }

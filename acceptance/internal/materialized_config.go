@@ -17,6 +17,7 @@ type MaterializedConfig struct {
 	RequiresUnityCatalog *bool               `toml:"RequiresUnityCatalog,omitempty"`
 	RequiresCluster      *bool               `toml:"RequiresCluster,omitempty"`
 	RequiresWarehouse    *bool               `toml:"RequiresWarehouse,omitempty"`
+	RunsOnDbr            *bool               `toml:"RunsOnDbr,omitempty"`
 	EnvMatrix            map[string][]string `toml:"EnvMatrix,omitempty"`
 }
 
@@ -32,6 +33,7 @@ func GenerateMaterializedConfig(config TestConfig) (string, error) {
 		RequiresUnityCatalog: config.RequiresUnityCatalog,
 		RequiresCluster:      config.RequiresCluster,
 		RequiresWarehouse:    config.RequiresWarehouse,
+		RunsOnDbr:            config.RunsOnDbr,
 		EnvMatrix:            config.EnvMatrix,
 	}
 

@@ -45,12 +45,17 @@ type ResourceAppsSettingsCustomTemplateManifest struct {
 	Version       int                                                       `json:"version"`
 }
 
+type ResourceAppsSettingsCustomTemplateProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type ResourceAppsSettingsCustomTemplate struct {
-	Creator     string                                      `json:"creator,omitempty"`
-	Description string                                      `json:"description,omitempty"`
-	GitProvider string                                      `json:"git_provider"`
-	GitRepo     string                                      `json:"git_repo"`
-	Manifest    *ResourceAppsSettingsCustomTemplateManifest `json:"manifest,omitempty"`
-	Name        string                                      `json:"name"`
-	Path        string                                      `json:"path"`
+	Creator        string                                            `json:"creator,omitempty"`
+	Description    string                                            `json:"description,omitempty"`
+	GitProvider    string                                            `json:"git_provider"`
+	GitRepo        string                                            `json:"git_repo"`
+	Manifest       *ResourceAppsSettingsCustomTemplateManifest       `json:"manifest,omitempty"`
+	Name           string                                            `json:"name"`
+	Path           string                                            `json:"path"`
+	ProviderConfig *ResourceAppsSettingsCustomTemplateProviderConfig `json:"provider_config,omitempty"`
 }

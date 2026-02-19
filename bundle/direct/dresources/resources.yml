@@ -6,12 +6,96 @@
 #   update_id_on_changes: fields that trigger UpdateWithID (ID may change)
 #   ignore_remote_changes: fields where remote changes are ignored
 #   ignore_local_changes: fields where local changes are ignored (can't be updated via API)
+#   backend_defaults: fields where the backend may set defaults (skipped when old/new are nil but remote is set)
+#     Optional "values" list constrains which remote values are allowed (as JSON-compatible literals).
 #
 # Each field entry has:
 #   field: the field path
 #   reason: why this field is in this category (immutable, input_only, output_only, or descriptive text)
 
 resources:
+
+  jobs:
+    ignore_remote_changes:
+      # Same as clusters.{aws,azure,gcp}_attributes — see clusters/resource_cluster.go#L361-L363
+      # s.SchemaPath("aws_attributes").SetSuppressDiff()
+      # s.SchemaPath("azure_attributes").SetSuppressDiff()
+      # s.SchemaPath("gcp_attributes").SetSuppressDiff()
+      - field: tasks[*].new_cluster.aws_attributes
+        reason: managed
+      - field: tasks[*].new_cluster.azure_attributes
+        reason: managed
+      - field: tasks[*].new_cluster.gcp_attributes
+        reason: managed
+      - field: job_clusters[*].new_cluster.aws_attributes
+        reason: managed
+      - field: job_clusters[*].new_cluster.azure_attributes
+        reason: managed
+      - field: job_clusters[*].new_cluster.gcp_attributes
+        reason: managed
+
+    backend_defaults:
+      # Same as clusters.enable_elastic_disk — see clusters/resource_cluster.go#L331
+      # s.SchemaPath("enable_elastic_disk").SetComputed()
+      - field: tasks[*].new_cluster.enable_elastic_disk
+      - field: job_clusters[*].new_cluster.enable_elastic_disk
+
+      # Same as clusters.enable_local_disk_encryption — see clusters/resource_cluster.go#L332
+      # s.SchemaPath("enable_local_disk_encryption").SetComputed()
+      - field: tasks[*].new_cluster.enable_local_disk_encryption
+      - field: job_clusters[*].new_cluster.enable_local_disk_encryption
+
+      # Same as clusters.node_type_id — see clusters/resource_cluster.go#L333
+      # s.SchemaPath("node_type_id").SetComputed()
+      - field: tasks[*].new_cluster.node_type_id
+      - field: job_clusters[*].new_cluster.node_type_id
+
+      # Same as clusters.driver_node_type_id — see clusters/resource_cluster.go#L334
+      # s.SchemaPath("driver_node_type_id").SetComputed()
+      - field: tasks[*].new_cluster.driver_node_type_id
+      - field: job_clusters[*].new_cluster.driver_node_type_id
+
+      # Same as clusters.driver_instance_pool_id — see clusters/resource_cluster.go#L335
+      # s.SchemaPath("driver_instance_pool_id").SetComputed()
+      - field: tasks[*].new_cluster.driver_instance_pool_id
+      - field: job_clusters[*].new_cluster.driver_instance_pool_id
+
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/jobs/resource_job.go#L531
+      # s.SchemaPath("format").SetComputed()
+      - field: format
+        values: ["MULTI_TASK", "SINGLE_TASK"]
+
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/jobs/resource_job.go#L639
+      # s.SchemaPath("task", "run_if").SetSuppressDiffWithDefault(jobs.RunIfAllSuccess)
+      - field: "tasks[*].run_if"
+        values: ["ALL_SUCCESS"]
+
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/jobs/resource_job.go#L640
+      # s.SchemaPath("task", "for_each_task", "task", "run_if").SetSuppressDiffWithDefault(jobs.RunIfAllSuccess)
+      - field: "tasks[*].for_each_task.task.run_if"
+        values: ["ALL_SUCCESS"]
+
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/jobs/resource_job.go#L527
+      # s.SchemaPath("run_as").SetComputed()
+      - field: run_as
+
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/jobs/resource_job.go#L521-L524
+      # s.SchemaPath("task", "notebook_task", "source").SetSuppressDiff()
+      # s.SchemaPath("task", "spark_python_task", "source").SetSuppressDiff()
+      # s.SchemaPath("task", "sql_task", "file", "source").SetSuppressDiff()
+      # s.SchemaPath("task", "dbt_task", "source").SetSuppressDiff()
+      - field: tasks[*].notebook_task.source
+      - field: tasks[*].for_each_task.task.notebook_task.source
+      - field: tasks[*].spark_python_task.source
+      - field: tasks[*].for_each_task.task.spark_python_task.source
+      - field: tasks[*].sql_task.file.source
+      - field: tasks[*].for_each_task.task.sql_task.file.source
+      - field: tasks[*].dbt_task.source
+      - field: tasks[*].for_each_task.task.dbt_task.source
+
+      # Same as clusters.data_security_mode: backend sets this when not specified
+      - field: tasks[*].new_cluster.data_security_mode
+      - field: job_clusters[*].new_cluster.data_security_mode
 
   pipelines:
     recreate_on_changes:
@@ -21,6 +105,31 @@ resources:
         reason: immutable
       - field: ingestion_definition.ingestion_gateway_id
         reason: immutable
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/pipelines/resource_pipeline.go#L204
+      - field: gateway_definition.connection_id
+        reason: immutable
+      - field: gateway_definition.connection_name
+        reason: immutable
+      - field: gateway_definition.gateway_storage_catalog
+        reason: immutable
+      - field: gateway_definition.gateway_storage_schema
+        reason: immutable
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/pipelines/resource_pipeline.go#L209
+      - field: ingestion_definition.ingest_from_uc_foreign_catalog
+        reason: immutable
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/pipelines/resource_pipeline.go#L204
+      - field: gateway_definition.connection_id
+        reason: immutable
+      - field: gateway_definition.connection_name
+        reason: immutable
+      - field: gateway_definition.gateway_storage_catalog
+        reason: immutable
+      - field: gateway_definition.gateway_storage_schema
+        reason: immutable
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/pipelines/resource_pipeline.go#L209
+      - field: ingestion_definition.ingest_from_uc_foreign_catalog
+        reason: immutable
+
     ignore_remote_changes:
       # "id" is handled in a special way before any fields changed
       # However, it is also part of RemotePipeline via CreatePipeline.
@@ -28,11 +137,36 @@ resources:
       - field: id
         reason: "!drop"
       - field: run_as
-        reason: not_returned_by_api
+        reason: input_only
+
     ignore_local_changes:
       # "id" is output-only, providing it in config would be a mistake
       - field: id
         reason: "!drop"
+
+    backend_defaults:
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/pipelines/resource_pipeline.go#L238
+      # s.SchemaPath("storage").SetCustomSuppressDiff(suppressStorageDiff)
+      # Backend generates storage path like dbfs:/pipelines/<id> when not set by user.
+      - field: storage
+
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/pipelines/resource_pipeline.go#L218
+      # s.SchemaPath("cluster", "node_type_id").SetComputed()
+      - field: clusters[*].node_type_id
+
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/pipelines/resource_pipeline.go#L219
+      # s.SchemaPath("cluster", "driver_node_type_id").SetComputed()
+      - field: clusters[*].driver_node_type_id
+
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/pipelines/resource_pipeline.go#L220
+      # s.SchemaPath("cluster", "enable_local_disk_encryption").SetComputed()
+      - field: clusters[*].enable_local_disk_encryption
+
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/pipelines/resource_pipeline.go#L229-L230
+      # s.SchemaPath("event_log", "catalog").SetComputed()
+      # s.SchemaPath("event_log", "schema").SetComputed()
+      - field: event_log.catalog
+      - field: event_log.schema
 
   models:
     recreate_on_changes:
@@ -59,6 +193,10 @@ resources:
     recreate_on_changes:
       - field: artifact_location
         reason: immutable
+    backend_defaults:
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/mlflow/resource_mlflow_experiment.go#L34
+      # SetForceNew().SetSuppressDiff(): backend generates artifact_location when not set by user
+      - field: artifact_location
     ignore_remote_changes:
       # Tags updates are not supported by TF. This mirrors that behaviour.
       - field: tags
@@ -83,8 +221,42 @@ resources:
         reason: immutable
       - field: route_optimized
         reason: immutable
+    ignore_remote_changes:
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/serving/resource_model_serving.go#L370
+      # common.CustomizeSchemaPath(m, "config", "traffic_config").SetComputed()
+      # Routes have custom SuppressDiff (lines 387-388)
+      - field: config.traffic_config
+        reason: managed
+    backend_defaults:
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/serving/resource_model_serving.go#L383
+      # common.CustomizeSchemaPath(m, "config", "served_entities", "name").SetComputed()
+      - field: config.served_entities[*].name
+
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/serving/resource_model_serving.go#L384
+      # common.CustomizeSchemaPath(m, "config", "served_entities", "workload_type").SetComputed()
+      - field: config.served_entities[*].workload_type
+
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/serving/resource_model_serving.go#L372
+      # common.CustomizeSchemaPath(m, "config", "auto_capture_config", "enabled").SetComputed()
+      - field: config.auto_capture_config.enabled
+
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/serving/resource_model_serving.go#L395-L396
+      # route_optimized is ForceNew; backend returns false when not set by user.
+      - field: route_optimized
+        values: [false]
 
   registered_models:
+    ignore_remote_changes:
+      # Output-only timestamp/user fields zeroed in RemapState but still show up
+      # via ForceSendFields. These should never participate in diffs.
+      - field: created_at
+        reason: output_only
+      - field: created_by
+        reason: output_only
+      - field: updated_at
+        reason: output_only
+      - field: updated_by
+        reason: output_only
     recreate_on_changes:
       # The name can technically be updated without recreate. We recreate for now though
       # to match TF implementation.
@@ -96,6 +268,14 @@ resources:
         reason: immutable
       - field: storage_location
         reason: immutable
+    backend_defaults:
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/catalog/resource_registered_model.go#L28
+      # m["storage_location"].Computed = true
+      - field: storage_location
+      # owner, full_name, metastore_id are Computed in TF (backend-set output fields).
+      - field: owner
+      - field: full_name
+      - field: metastore_id
 
   quality_monitors:
     recreate_on_changes:
@@ -105,7 +285,11 @@ resources:
         reason: immutable
     ignore_remote_changes:
       - field: warehouse_id
-        reason: not_returned_by_api
+        reason: input_only
+      # skip_builtin_dashboard is input-only, not returned by the Get API.
+      # TF preserves it from state; see resource_quality_monitor.go.
+      - field: skip_builtin_dashboard
+        reason: input_only
 
   catalogs:
     recreate_on_changes:
@@ -130,6 +314,22 @@ resources:
       - field: storage_root
         reason: immutable
 
+  external_locations:
+    recreate_on_changes:
+      - field: credential_name
+        reason: immutable
+      - field: encryption_details
+        reason: immutable
+      - field: file_event_queue
+        reason: immutable
+    update_id_on_changes:
+      - field: name
+        reason: id_changes
+    ignore_remote_changes:
+      # skip_validation is input-only and not returned by the API
+      - field: skip_validation
+        reason: input_only
+
   volumes:
     recreate_on_changes:
       - field: catalog_name
@@ -143,9 +343,11 @@ resources:
     update_id_on_changes:
       - field: name
         reason: id_changes
+    backend_defaults:
+      # storage_location is Computed; backend generates it for managed volumes.
+      - field: storage_location
 
   dashboards:
-
     ignore_remote_changes:
       # "serialized_dashboard" locally and remotely will have different contents
       # We only need to rely on etag here, and can skip this field for diff computation.
@@ -163,6 +365,10 @@ resources:
     recreate_on_changes:
       - field: name
         reason: immutable
+    backend_defaults:
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/internal/providers/pluginfw/products/app/resource_app.go#L41
+      # s["compute_size"] = s["compute_size"].SetComputed()
+      - field: compute_size
 
   secret_scopes:
     recreate_on_changes:
@@ -182,6 +388,76 @@ resources:
       # DoRead operations use the correct ID and we do not end up with a persistent drift.
       - field: scope_name
         reason: id_changes
+
+  clusters:
+    ignore_remote_changes:
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/clusters/resource_cluster.go#L361-L363
+      # s.SchemaPath("aws_attributes").SetSuppressDiff()
+      # s.SchemaPath("azure_attributes").SetSuppressDiff()
+      # s.SchemaPath("gcp_attributes").SetSuppressDiff()
+      - field: aws_attributes
+        reason: managed
+      - field: azure_attributes
+        reason: managed
+      - field: gcp_attributes
+        reason: managed
+
+    backend_defaults:
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/clusters/resource_cluster.go#L331
+      # s.SchemaPath("enable_elastic_disk").SetComputed()
+      - field: enable_elastic_disk
+
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/clusters/resource_cluster.go#L332
+      # s.SchemaPath("enable_local_disk_encryption").SetComputed()
+      - field: enable_local_disk_encryption
+
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/clusters/resource_cluster.go#L333
+      # s.SchemaPath("node_type_id").SetComputed()
+      - field: node_type_id
+
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/clusters/resource_cluster.go#L334
+      # s.SchemaPath("driver_node_type_id").SetComputed()
+      - field: driver_node_type_id
+
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/clusters/resource_cluster.go#L335
+      # s.SchemaPath("driver_instance_pool_id").SetComputed()
+      - field: driver_instance_pool_id
+
+      # Terraform currently does not do this, but it is a field with backend default.
+      # See https://github.com/databricks/cli/issues/4418
+      - field: single_user_name
+
+    # We have custom handler for this in cluster.go
+    # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/clusters/resource_cluster.go#L109-L118
+    # DataSecurityModeDiffSuppressFunc: suppress when old != "" && new == ""
+    #- field: data_security_mode
+
+  sql_warehouses:
+    ignore_remote_changes:
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/sql/resource_sql_endpoint.go#L62
+      # common.CustomizeSchemaPath(m, "channel").SetSuppressDiff()
+      - field: channel
+        reason: managed
+
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/sql/resource_sql_endpoint.go#L82
+      # common.CustomizeSchemaPath(m, "tags").SetSuppressDiff()
+      - field: tags
+        reason: managed
+
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/sql/resource_sql_endpoint.go#L85-L87
+      # common.CustomizeSchemaPath(m, "warehouse_type").SetSuppressDiff()
+      - field: warehouse_type
+        reason: managed
+
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/sql/resource_sql_endpoint.go#L75
+      # common.CustomizeSchemaPath(m, "min_num_clusters").SetSuppressDiff()
+      - field: min_num_clusters
+        reason: managed
+
+    backend_defaults:
+      # https://github.com/databricks/terraform-provider-databricks/blob/4eba541abe1a9f50993ea7b9dd83874207e224a1/sql/resource_sql_endpoint.go#L69
+      # m["enable_serverless_compute"].Computed = true
+      - field: enable_serverless_compute
 
   postgres_projects:
     recreate_on_changes:

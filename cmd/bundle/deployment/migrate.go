@@ -245,7 +245,7 @@ To start using direct engine, deploy with DATABRICKS_BUNDLE_ENGINE=direct env va
 		// For most resources state consists of fully resolved local config snapshot + id.
 		// Dashboards are special in that they also store "etag" in state which is not provided by user but
 		// comes from remote state. If we don't store "etag" in state, we won't detect remote drift, because
-		// local=nil, remote="<some new etag>" which will be classified as "server_side_default".
+		// local=nil, remote="<some new etag>" which will be classified as a backend default and skipped.
 
 		for key := range plan.Plan {
 			etag := etags[key]

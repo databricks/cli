@@ -228,10 +228,10 @@ func (n *Downloader) FlushToDisk(ctx context.Context, force bool) error {
 		info, err := os.Stat(targetPath)
 		if err == nil {
 			if info.IsDir() {
-				return fmt.Errorf("%s is a directory", targetPath)
+				return fmt.Errorf("%s is a directory", filepath.ToSlash(targetPath))
 			}
 			if !force {
-				return fmt.Errorf("%s already exists. Use --force to overwrite", targetPath)
+				return fmt.Errorf("%s already exists. Use --force to overwrite", filepath.ToSlash(targetPath))
 			}
 		}
 	}
@@ -261,7 +261,7 @@ func (n *Downloader) FlushToDisk(ctx context.Context, force bool) error {
 				return err
 			}
 
-			cmdio.LogString(errCtx, "File successfully saved to "+targetPath)
+			cmdio.LogString(errCtx, "File successfully saved to "+filepath.ToSlash(targetPath))
 			return reader.Close()
 		})
 	}

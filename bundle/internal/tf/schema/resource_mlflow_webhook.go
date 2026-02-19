@@ -15,12 +15,17 @@ type ResourceMlflowWebhookJobSpec struct {
 	WorkspaceUrl string `json:"workspace_url,omitempty"`
 }
 
+type ResourceMlflowWebhookProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type ResourceMlflowWebhook struct {
-	Description string                            `json:"description,omitempty"`
-	Events      []string                          `json:"events"`
-	Id          string                            `json:"id,omitempty"`
-	ModelName   string                            `json:"model_name,omitempty"`
-	Status      string                            `json:"status,omitempty"`
-	HttpUrlSpec *ResourceMlflowWebhookHttpUrlSpec `json:"http_url_spec,omitempty"`
-	JobSpec     *ResourceMlflowWebhookJobSpec     `json:"job_spec,omitempty"`
+	Description    string                               `json:"description,omitempty"`
+	Events         []string                             `json:"events"`
+	Id             string                               `json:"id,omitempty"`
+	ModelName      string                               `json:"model_name,omitempty"`
+	Status         string                               `json:"status,omitempty"`
+	HttpUrlSpec    *ResourceMlflowWebhookHttpUrlSpec    `json:"http_url_spec,omitempty"`
+	JobSpec        *ResourceMlflowWebhookJobSpec        `json:"job_spec,omitempty"`
+	ProviderConfig *ResourceMlflowWebhookProviderConfig `json:"provider_config,omitempty"`
 }

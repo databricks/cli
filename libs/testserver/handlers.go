@@ -11,7 +11,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/catalog"
 	"github.com/databricks/databricks-sdk-go/service/compute"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
-
+	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
 )
 
@@ -40,6 +40,10 @@ func AddDefaultHandlers(server *Server) {
 	server.Handle("GET", "/api/2.0/instance-pools/list", func(req Request) any {
 		return compute.ListInstancePools{
 			InstancePools: []compute.InstancePoolAndStats{
+				{
+					InstancePoolName: "DEFAULT Test Instance Pool",
+					InstancePoolId:   TestDefaultInstancePoolId,
+				},
 				{
 					InstancePoolName: "some-test-instance-pool",
 					InstancePoolId:   "1234",
@@ -253,6 +257,10 @@ func AddDefaultHandlers(server *Server) {
 		return req.Workspace.JobsGetRun(req)
 	})
 
+	server.Handle("GET", "/api/2.2/jobs/runs/get-output", func(req Request) any {
+		return req.Workspace.JobsGetRunOutput(req)
+	})
+
 	server.Handle("GET", "/api/2.2/jobs/runs/list", func(req Request) any {
 		return MapList(req.Workspace, req.Workspace.JobRuns, "runs")
 	})
@@ -433,6 +441,24 @@ func AddDefaultHandlers(server *Server) {
 		return MapDelete(req.Workspace, req.Workspace.Catalogs, req.Vars["name"])
 	})
 
+	// External Locations:
+
+	server.Handle("GET", "/api/2.1/unity-catalog/external-locations/{name}", func(req Request) any {
+		return MapGet(req.Workspace, req.Workspace.ExternalLocations, req.Vars["name"])
+	})
+
+	server.Handle("POST", "/api/2.1/unity-catalog/external-locations", func(req Request) any {
+		return req.Workspace.ExternalLocationsCreate(req)
+	})
+
+	server.Handle("PATCH", "/api/2.1/unity-catalog/external-locations/{name}", func(req Request) any {
+		return req.Workspace.ExternalLocationsUpdate(req, req.Vars["name"])
+	})
+
+	server.Handle("DELETE", "/api/2.1/unity-catalog/external-locations/{name}", func(req Request) any {
+		return MapDelete(req.Workspace, req.Workspace.ExternalLocations, req.Vars["name"])
+	})
+
 	// Registered Models:
 
 	server.Handle("GET", "/api/2.1/unity-catalog/models/{full_name}", func(req Request) any {
@@ -515,7 +541,20 @@ func AddDefaultHandlers(server *Server) {
 
 	// Alerts v2:
 	server.Handle("GET", "/api/2.0/alerts/{id}", func(req Request) any {
-		return MapGet(req.Workspace, req.Workspace.Alerts, req.Vars["id"])
+		defer req.Workspace.LockUnlock()()
+
+		value, ok := req.Workspace.Alerts[req.Vars["id"]]
+		if !ok || value.LifecycleState == sql.AlertLifecycleStateDeleted {
+			return Response{
+				StatusCode: 404,
+				// Backend returns a terrible error message today.
+				Body: map[string]string{"message": "Node with resource name None does not exist."},
+			}
+		}
+
+		return Response{
+			Body: value,
+		}
 	})
 
 	server.Handle("GET", "/api/2.0/alerts", func(req Request) any {
@@ -531,7 +570,8 @@ func AddDefaultHandlers(server *Server) {
 	})
 
 	server.Handle("DELETE", "/api/2.0/alerts/{id}", func(req Request) any {
-		return req.Workspace.AlertsDelete(req.Vars["id"])
+		purge := req.URL.Query().Get("purge") == "true"
+		return req.Workspace.AlertsDelete(req.Vars["id"], purge)
 	})
 
 	// Secret Scopes:

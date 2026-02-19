@@ -72,7 +72,7 @@ func TestToOAuthArgument(t *testing.T) {
 			args: AuthArguments{
 				Host:          "https://unified.cloud.databricks.com",
 				AccountID:     "123456789",
-				WorkspaceId:   "123456789",
+				WorkspaceID:   "123456789",
 				IsUnifiedHost: true,
 			},
 			wantHost: "https://unified.cloud.databricks.com",
