@@ -40,6 +40,9 @@ func (i *InitializerNodeJs) Initialize(ctx context.Context, workDir string) *Ini
 		}
 	}
 
+	// Step 3: Run postinit script if defined (fully optional — errors are logged, not fatal)
+	i.runNpmPostInit(ctx, workDir)
+
 	return &InitResult{
 		Success: true,
 		Message: "Node.js project initialized successfully",
@@ -100,6 +103,43 @@ func (i *InitializerNodeJs) runAppkitSetup(ctx context.Context, workDir string) 
 		cmd.Stderr = nil
 		return cmd.Run()
 	})
+}
+
+// runNpmPostInit runs "npm run postinit" if the script is defined in package.json.
+// Failures are logged as warnings and never propagate — postinit is fully optional.
+func (i *InitializerNodeJs) runNpmPostInit(ctx context.Context, workDir string) {
+	if !i.hasNpmScript(workDir, "postinit") {
+		return
+	}
+	err := prompt.RunWithSpinnerCtx(ctx, "Running post-init...", func() error {
+		cmd := exec.CommandContext(ctx, "npm", "run", "postinit")
+		cmd.Dir = workDir
+		cmd.Stdout = nil
+		cmd.Stderr = nil
+		return cmd.Run()
+	})
+	if err != nil {
+		log.Debugf(ctx, "postinit script failed (non-fatal): %v", err)
+	}
+}
+
+// hasNpmScript reports whether the given script name is defined in the project's package.json.
+func (i *InitializerNodeJs) hasNpmScript(workDir, script string) bool {
+	packageJSONPath := filepath.Join(workDir, "package.json")
+	data, err := os.ReadFile(packageJSONPath)
+	if err != nil {
+		return false
+	}
+
+	var pkg struct {
+		Scripts map[string]string `json:"scripts"`
+	}
+	if err := json.Unmarshal(data, &pkg); err != nil {
+		return false
+	}
+
+	_, ok := pkg.Scripts[script]
+	return ok
 }
 
 // hasAppkit checks if the project has @databricks/appkit in its dependencies.

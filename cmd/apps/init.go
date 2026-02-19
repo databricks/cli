@@ -794,14 +794,6 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		absOutputDir = destDir
 	}
 
-	// Apply plugin-specific post-processing (e.g., remove config/queries if analytics not selected)
-	runErr = prompt.RunWithSpinnerCtx(ctx, "Configuring plugins...", func() error {
-		return applyPlugins(absOutputDir, selectedPlugins, m.GetTemplatePaths())
-	})
-	if runErr != nil {
-		return runErr
-	}
-
 	// Initialize project based on type (Node.js, Python, etc.)
 	var nextStepsCmd string
 	projectInitializer := initializer.GetProjectInitializer(absOutputDir)
@@ -956,28 +948,6 @@ func buildPluginStrings(pluginNames []string) (pluginImport, pluginUsage string)
 	pluginUsage = strings.Join(usages, ",\n    ")
 
 	return pluginImport, pluginUsage
-}
-
-// applyPlugins removes template directories owned by unselected plugins.
-func applyPlugins(projectDir string, pluginNames []string, templatePaths map[string][]string) error {
-	selectedSet := make(map[string]bool)
-	for _, name := range pluginNames {
-		selectedSet[name] = true
-	}
-
-	for plugin, paths := range templatePaths {
-		if selectedSet[plugin] {
-			continue
-		}
-		for _, p := range paths {
-			target := filepath.Join(projectDir, p)
-			if err := os.RemoveAll(target); err != nil && !os.IsNotExist(err) {
-				return err
-			}
-		}
-	}
-
-	return nil
 }
 
 // renameFiles maps source file names to destination names (for files that can't use special chars).

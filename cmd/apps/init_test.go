@@ -458,59 +458,6 @@ func TestAppendUniqueNoValues(t *testing.T) {
 	assert.Equal(t, []string{"a", "b"}, result)
 }
 
-func TestApplyPlugins(t *testing.T) {
-	tests := []struct {
-		name          string
-		selected      []string
-		templatePaths map[string][]string
-		expectRemoved []string
-		expectKept    []string
-	}{
-		{
-			name:          "unselected plugin directory is removed",
-			selected:      []string{"server"},
-			templatePaths: map[string][]string{"analytics": {"config/queries"}},
-			expectRemoved: []string{"config/queries"},
-		},
-		{
-			name:          "selected plugin directory is kept",
-			selected:      []string{"analytics", "server"},
-			templatePaths: map[string][]string{"analytics": {"config/queries"}},
-			expectKept:    []string{"config/queries"},
-		},
-		{
-			name:          "empty templatePaths is a no-op",
-			selected:      []string{"server"},
-			templatePaths: map[string][]string{},
-		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			dir := t.TempDir()
-
-			// Create all directories referenced in templatePaths
-			for _, paths := range tc.templatePaths {
-				for _, p := range paths {
-					require.NoError(t, os.MkdirAll(filepath.Join(dir, p), 0o755))
-				}
-			}
-
-			err := applyPlugins(dir, tc.selected, tc.templatePaths)
-			require.NoError(t, err)
-
-			for _, p := range tc.expectRemoved {
-				_, statErr := os.Stat(filepath.Join(dir, p))
-				assert.True(t, os.IsNotExist(statErr), "expected %s to be removed", p)
-			}
-			for _, p := range tc.expectKept {
-				_, statErr := os.Stat(filepath.Join(dir, p))
-				assert.NoError(t, statErr, "expected %s to exist", p)
-			}
-		})
-	}
-}
-
 func TestRunManifestOnlyFound(t *testing.T) {
 	dir := t.TempDir()
 	manifestPath := filepath.Join(dir, manifest.ManifestFileName)
