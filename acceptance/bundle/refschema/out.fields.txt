@@ -196,7 +196,6 @@ resources.apps.*.service_principal_client_id	string	ALL
 resources.apps.*.service_principal_id	int64	ALL
 resources.apps.*.service_principal_name	string	ALL
 resources.apps.*.source_code_path	string	INPUT
-resources.apps.*.space	string	ALL
 resources.apps.*.update_time	string	ALL
 resources.apps.*.updater	string	ALL
 resources.apps.*.url	string	ALL
@@ -669,7 +668,6 @@ resources.external_locations.*.created_at	int64	REMOTE
 resources.external_locations.*.created_by	string	REMOTE
 resources.external_locations.*.credential_id	string	REMOTE
 resources.external_locations.*.credential_name	string	ALL
-resources.external_locations.*.effective_enable_file_events	bool	ALL
 resources.external_locations.*.enable_file_events	bool	ALL
 resources.external_locations.*.encryption_details	*catalog.EncryptionDetails	ALL
 resources.external_locations.*.encryption_details.sse_encryption_details	*catalog.SseEncryptionDetails	ALL
@@ -773,9 +771,6 @@ resources.jobs.*.git_source.job_source	*jobs.JobSource	ALL
 resources.jobs.*.git_source.job_source.dirty_state	jobs.JobSourceDirtyState	ALL
 resources.jobs.*.git_source.job_source.import_from_git_branch	string	ALL
 resources.jobs.*.git_source.job_source.job_config_path	string	ALL
-resources.jobs.*.git_source.sparse_checkout	*jobs.SparseCheckout	ALL
-resources.jobs.*.git_source.sparse_checkout.patterns	[]string	ALL
-resources.jobs.*.git_source.sparse_checkout.patterns[*]	string	ALL
 resources.jobs.*.health	*jobs.JobsHealthRules	ALL
 resources.jobs.*.health.rules	[]jobs.JobsHealthRule	ALL
 resources.jobs.*.health.rules[*]	jobs.JobsHealthRule	ALL
@@ -2578,12 +2573,7 @@ resources.postgres_endpoints.*.suspend_timeout_duration	*duration.Duration	INPUT
 resources.postgres_endpoints.*.uid	string	REMOTE
 resources.postgres_endpoints.*.update_time	*time.Time	REMOTE
 resources.postgres_endpoints.*.url	string	INPUT
-resources.postgres_projects.*.budget_policy_id	string	INPUT	STATE
 resources.postgres_projects.*.create_time	*time.Time	REMOTE
-resources.postgres_projects.*.custom_tags	[]postgres.ProjectCustomTag	INPUT	STATE
-resources.postgres_projects.*.custom_tags[*]	postgres.ProjectCustomTag	INPUT	STATE
-resources.postgres_projects.*.custom_tags[*].key	string	INPUT	STATE
-resources.postgres_projects.*.custom_tags[*].value	string	INPUT	STATE
 resources.postgres_projects.*.default_endpoint_settings	*postgres.ProjectDefaultEndpointSettings	INPUT	STATE
 resources.postgres_projects.*.default_endpoint_settings.autoscaling_limit_max_cu	float64	INPUT	STATE
 resources.postgres_projects.*.default_endpoint_settings.autoscaling_limit_min_cu	float64	INPUT	STATE
@@ -2601,11 +2591,6 @@ resources.postgres_projects.*.name	string	REMOTE
 resources.postgres_projects.*.pg_version	int	INPUT	STATE
 resources.postgres_projects.*.project_id	string	INPUT	STATE
 resources.postgres_projects.*.spec	*postgres.ProjectSpec	REMOTE
-resources.postgres_projects.*.spec.budget_policy_id	string	REMOTE
-resources.postgres_projects.*.spec.custom_tags	[]postgres.ProjectCustomTag	REMOTE
-resources.postgres_projects.*.spec.custom_tags[*]	postgres.ProjectCustomTag	REMOTE
-resources.postgres_projects.*.spec.custom_tags[*].key	string	REMOTE
-resources.postgres_projects.*.spec.custom_tags[*].value	string	REMOTE
 resources.postgres_projects.*.spec.default_endpoint_settings	*postgres.ProjectDefaultEndpointSettings	REMOTE
 resources.postgres_projects.*.spec.default_endpoint_settings.autoscaling_limit_max_cu	float64	REMOTE
 resources.postgres_projects.*.spec.default_endpoint_settings.autoscaling_limit_min_cu	float64	REMOTE
@@ -2618,11 +2603,6 @@ resources.postgres_projects.*.spec.history_retention_duration	*duration.Duration
 resources.postgres_projects.*.spec.pg_version	int	REMOTE
 resources.postgres_projects.*.status	*postgres.ProjectStatus	REMOTE
 resources.postgres_projects.*.status.branch_logical_size_limit_bytes	int64	REMOTE
-resources.postgres_projects.*.status.budget_policy_id	string	REMOTE
-resources.postgres_projects.*.status.custom_tags	[]postgres.ProjectCustomTag	REMOTE
-resources.postgres_projects.*.status.custom_tags[*]	postgres.ProjectCustomTag	REMOTE
-resources.postgres_projects.*.status.custom_tags[*].key	string	REMOTE
-resources.postgres_projects.*.status.custom_tags[*].value	string	REMOTE
 resources.postgres_projects.*.status.default_endpoint_settings	*postgres.ProjectDefaultEndpointSettings	REMOTE
 resources.postgres_projects.*.status.default_endpoint_settings.autoscaling_limit_max_cu	float64	REMOTE
 resources.postgres_projects.*.status.default_endpoint_settings.autoscaling_limit_min_cu	float64	REMOTE

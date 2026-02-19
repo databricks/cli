@@ -5,10 +5,6 @@ from databricks.bundles.core._transform import _transform
 from databricks.bundles.core._transform_to_json import _transform_to_json_value
 from databricks.bundles.core._variable import VariableOr, VariableOrOptional
 from databricks.bundles.jobs._models.git_provider import GitProvider, GitProviderParam
-from databricks.bundles.jobs._models.sparse_checkout import (
-    SparseCheckout,
-    SparseCheckoutParam,
-)
 
 if TYPE_CHECKING:
     from typing_extensions import Self
@@ -49,11 +45,6 @@ class GitSource:
     Name of the tag to be checked out and used by this job. This field cannot be specified in conjunction with git_branch or git_commit.
     """
 
-    sparse_checkout: VariableOrOptional[SparseCheckout] = None
-    """
-    :meta private: [EXPERIMENTAL]
-    """
-
     @classmethod
     def from_dict(cls, value: "GitSourceDict") -> "Self":
         return _transform(cls, value)
@@ -88,11 +79,6 @@ class GitSourceDict(TypedDict, total=False):
     git_tag: VariableOrOptional[str]
     """
     Name of the tag to be checked out and used by this job. This field cannot be specified in conjunction with git_branch or git_commit.
-    """
-
-    sparse_checkout: VariableOrOptional[SparseCheckoutParam]
-    """
-    :meta private: [EXPERIMENTAL]
     """
 
 

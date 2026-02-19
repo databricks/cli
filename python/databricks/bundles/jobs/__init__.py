@@ -221,9 +221,6 @@ __all__ = [
     "SparkSubmitTask",
     "SparkSubmitTaskDict",
     "SparkSubmitTaskParam",
-    "SparseCheckout",
-    "SparseCheckoutDict",
-    "SparseCheckoutParam",
     "SqlTask",
     "SqlTaskAlert",
     "SqlTaskAlertDict",
@@ -637,11 +634,6 @@ from databricks.bundles.jobs._models.spark_submit_task import (
     SparkSubmitTask,
     SparkSubmitTaskDict,
     SparkSubmitTaskParam,
-)
-from databricks.bundles.jobs._models.sparse_checkout import (
-    SparseCheckout,
-    SparseCheckoutDict,
-    SparseCheckoutParam,
 )
 from databricks.bundles.jobs._models.sql_task import SqlTask, SqlTaskDict, SqlTaskParam
 from databricks.bundles.jobs._models.sql_task_alert import (

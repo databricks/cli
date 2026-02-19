@@ -38,8 +38,6 @@ func (*ResourcePostgresProject) RemapState(remote *postgres.Project) *PostgresPr
 		// This means we cannot detect remote drift for spec fields.
 		// Use an empty struct (not nil) so field-level diffing works correctly.
 		ProjectSpec: postgres.ProjectSpec{
-			BudgetPolicyId:           "",
-			CustomTags:               nil,
 			DefaultEndpointSettings:  nil,
 			DisplayName:              "",
 			HistoryRetentionDuration: nil,
