@@ -924,7 +924,13 @@ github.com/databricks/cli/bundle/config/resources.PostgresEndpoint:
     "description": |-
       PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.PostgresProject:
+  "budget_policy_id":
+    "description": |-
+      PLACEHOLDER
   "create_time":
+    "description": |-
+      PLACEHOLDER
+  "custom_tags":
     "description": |-
       PLACEHOLDER
   "default_endpoint_settings":

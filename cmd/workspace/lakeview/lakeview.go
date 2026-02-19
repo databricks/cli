@@ -238,6 +238,8 @@ func newCreateSubscription() *cobra.Command {
 
 	cmd.Flags().Var(&createSubscriptionJson, "json", `either inline JSON string or @path/to/file.json with request body`)
 
+	cmd.Flags().BoolVar(&createSubscriptionReq.Subscription.SkipNotify, "skip-notify", createSubscriptionReq.Subscription.SkipNotify, `Controls whether notifications are sent to the subscriber for scheduled dashboard refreshes.`)
+
 	cmd.Use = "create-subscription DASHBOARD_ID SCHEDULE_ID SUBSCRIBER"
 	cmd.Short = `Create schedule subscription.`
 	cmd.Long = `Create schedule subscription.
