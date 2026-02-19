@@ -1,0 +1,16 @@
+bundle:
+  name: "valid-interpolation"
+
+variables:
+  my_var:
+    default: "hello"
+
+scripts:
+  with_var:
+    content: "echo ${var.my_var}"
+  with_bundle:
+    content: "echo ${bundle.name}"
+  with_bash_env:
+    content: "echo $HOME"
+  with_bash_param_expansion:
+    content: "echo ${HOME:-/tmp}"

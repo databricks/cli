@@ -3,11 +3,12 @@ package validate
 import (
 	"context"
 	"fmt"
-	"regexp"
+	"strings"
 
 	"github.com/databricks/cli/bundle"
 	"github.com/databricks/cli/libs/diag"
 	"github.com/databricks/cli/libs/dyn"
+	"github.com/databricks/cli/libs/dyn/dynvar"
 	"github.com/databricks/cli/libs/utils"
 )
 
@@ -23,8 +24,6 @@ func (f *validateScripts) Name() string {
 
 func (f *validateScripts) Apply(ctx context.Context, b *bundle.Bundle) diag.Diagnostics {
 	diags := diag.Diagnostics{}
-
-	re := regexp.MustCompile(`\$\{.*\}`)
 
 	// Sort the scripts to have a deterministic order for the
 	// generated diagnostics.
@@ -48,18 +47,33 @@ func (f *validateScripts) Apply(ctx context.Context, b *bundle.Bundle) diag.Diag
 			return diags.Extend(diag.FromErr(err))
 		}
 
-		// Check for interpolation syntax
-		match := re.FindString(script.Content)
-		if match != "" {
-			diags = append(diags, diag.Diagnostic{
-				Severity: diag.Error,
-				Summary:  fmt.Sprintf("Found %s in script %s. Interpolation syntax ${...} is not allowed in scripts", match, k),
-				Detail: `We do not support the ${...} interpolation syntax in scripts because
-it's ambiguous whether it's a variable reference or reference to an
-environment variable.`,
-				Locations: v.Locations(),
-				Paths:     []dyn.Path{p},
-			})
+		// Find all interpolation references in the script content.
+		// This uses the same regex as the variable resolver, so it only matches
+		// patterns that look like DAB variable references (not bash parameter
+		// expansion like ${VAR:-default}).
+		refs := dynvar.FindAllInterpolationReferences(script.Content)
+		for _, ref := range refs {
+			// Check if this reference has a valid DAB prefix.
+			// Valid prefixes are: var, bundle, workspace, variables, resources, artifacts
+			if !dynvar.HasValidDABPrefix(ref.Path) {
+				diags = append(diags, diag.Diagnostic{
+					Severity: diag.Error,
+					Summary:  fmt.Sprintf("Invalid interpolation reference %s in script %s", ref.Match, k),
+					Detail: fmt.Sprintf(`The interpolation reference %s does not start with a valid prefix.
+Valid prefixes are: %s.
+
+If you meant to use an environment variable, use $%s instead of %s.
+If you meant to use a bundle variable, use ${var.%s} instead.`,
+						ref.Match,
+						strings.Join(dynvar.ValidDABPrefixes, ", "),
+						ref.Path,
+						ref.Match,
+						ref.Path,
+					),
+					Locations: v.Locations(),
+					Paths:     []dyn.Path{p},
+				})
+			}
 		}
 	}
 
