@@ -11,25 +11,30 @@ type ResourceSqlTableColumn struct {
 	TypeJson string `json:"type_json,omitempty"`
 }
 
+type ResourceSqlTableProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type ResourceSqlTable struct {
-	CatalogName           string                   `json:"catalog_name"`
-	ClusterId             string                   `json:"cluster_id,omitempty"`
-	ClusterKeys           []string                 `json:"cluster_keys,omitempty"`
-	Comment               string                   `json:"comment,omitempty"`
-	DataSourceFormat      string                   `json:"data_source_format,omitempty"`
-	EffectiveProperties   map[string]string        `json:"effective_properties,omitempty"`
-	Id                    string                   `json:"id,omitempty"`
-	Name                  string                   `json:"name"`
-	Options               map[string]string        `json:"options,omitempty"`
-	Owner                 string                   `json:"owner,omitempty"`
-	Partitions            []string                 `json:"partitions,omitempty"`
-	Properties            map[string]string        `json:"properties,omitempty"`
-	SchemaName            string                   `json:"schema_name"`
-	StorageCredentialName string                   `json:"storage_credential_name,omitempty"`
-	StorageLocation       string                   `json:"storage_location,omitempty"`
-	TableId               string                   `json:"table_id,omitempty"`
-	TableType             string                   `json:"table_type"`
-	ViewDefinition        string                   `json:"view_definition,omitempty"`
-	WarehouseId           string                   `json:"warehouse_id,omitempty"`
-	Column                []ResourceSqlTableColumn `json:"column,omitempty"`
+	CatalogName           string                          `json:"catalog_name"`
+	ClusterId             string                          `json:"cluster_id,omitempty"`
+	ClusterKeys           []string                        `json:"cluster_keys,omitempty"`
+	Comment               string                          `json:"comment,omitempty"`
+	DataSourceFormat      string                          `json:"data_source_format,omitempty"`
+	EffectiveProperties   map[string]string               `json:"effective_properties,omitempty"`
+	Id                    string                          `json:"id,omitempty"`
+	Name                  string                          `json:"name"`
+	Options               map[string]string               `json:"options,omitempty"`
+	Owner                 string                          `json:"owner,omitempty"`
+	Partitions            []string                        `json:"partitions,omitempty"`
+	Properties            map[string]string               `json:"properties,omitempty"`
+	SchemaName            string                          `json:"schema_name"`
+	StorageCredentialName string                          `json:"storage_credential_name,omitempty"`
+	StorageLocation       string                          `json:"storage_location,omitempty"`
+	TableId               string                          `json:"table_id,omitempty"`
+	TableType             string                          `json:"table_type"`
+	ViewDefinition        string                          `json:"view_definition,omitempty"`
+	WarehouseId           string                          `json:"warehouse_id,omitempty"`
+	Column                []ResourceSqlTableColumn        `json:"column,omitempty"`
+	ProviderConfig        *ResourceSqlTableProviderConfig `json:"provider_config,omitempty"`
 }

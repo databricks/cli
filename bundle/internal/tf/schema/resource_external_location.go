@@ -54,6 +54,10 @@ type ResourceExternalLocationFileEventQueue struct {
 	ProvidedSqs    *ResourceExternalLocationFileEventQueueProvidedSqs    `json:"provided_sqs,omitempty"`
 }
 
+type ResourceExternalLocationProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type ResourceExternalLocation struct {
 	BrowseOnly        bool                                       `json:"browse_only,omitempty"`
 	Comment           string                                     `json:"comment,omitempty"`
@@ -77,4 +81,5 @@ type ResourceExternalLocation struct {
 	Url               string                                     `json:"url"`
 	EncryptionDetails *ResourceExternalLocationEncryptionDetails `json:"encryption_details,omitempty"`
 	FileEventQueue    *ResourceExternalLocationFileEventQueue    `json:"file_event_queue,omitempty"`
+	ProviderConfig    *ResourceExternalLocationProviderConfig    `json:"provider_config,omitempty"`
 }

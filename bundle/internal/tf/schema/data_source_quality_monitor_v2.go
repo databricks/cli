@@ -8,6 +8,10 @@ type DataSourceQualityMonitorV2AnomalyDetectionConfig struct {
 	LatestRunStatus        string   `json:"latest_run_status,omitempty"`
 }
 
+type DataSourceQualityMonitorV2ProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type DataSourceQualityMonitorV2ValidityCheckConfigurationsPercentNullValidityCheck struct {
 	ColumnNames []string `json:"column_names,omitempty"`
 	UpperBound  int      `json:"upper_bound,omitempty"`
@@ -34,5 +38,6 @@ type DataSourceQualityMonitorV2 struct {
 	AnomalyDetectionConfig      *DataSourceQualityMonitorV2AnomalyDetectionConfig       `json:"anomaly_detection_config,omitempty"`
 	ObjectId                    string                                                  `json:"object_id"`
 	ObjectType                  string                                                  `json:"object_type"`
+	ProviderConfig              *DataSourceQualityMonitorV2ProviderConfig               `json:"provider_config,omitempty"`
 	ValidityCheckConfigurations []DataSourceQualityMonitorV2ValidityCheckConfigurations `json:"validity_check_configurations,omitempty"`
 }

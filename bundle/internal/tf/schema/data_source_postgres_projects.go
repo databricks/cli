@@ -2,6 +2,10 @@
 
 package schema
 
+type DataSourcePostgresProjectsProjectsProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type DataSourcePostgresProjectsProjectsSpecDefaultEndpointSettings struct {
 	AutoscalingLimitMaxCu  float64           `json:"autoscaling_limit_max_cu,omitempty"`
 	AutoscalingLimitMinCu  float64           `json:"autoscaling_limit_min_cu,omitempty"`
@@ -36,15 +40,21 @@ type DataSourcePostgresProjectsProjectsStatus struct {
 }
 
 type DataSourcePostgresProjectsProjects struct {
-	CreateTime string                                    `json:"create_time,omitempty"`
-	Name       string                                    `json:"name"`
-	Spec       *DataSourcePostgresProjectsProjectsSpec   `json:"spec,omitempty"`
-	Status     *DataSourcePostgresProjectsProjectsStatus `json:"status,omitempty"`
-	Uid        string                                    `json:"uid,omitempty"`
-	UpdateTime string                                    `json:"update_time,omitempty"`
+	CreateTime     string                                            `json:"create_time,omitempty"`
+	Name           string                                            `json:"name"`
+	ProviderConfig *DataSourcePostgresProjectsProjectsProviderConfig `json:"provider_config,omitempty"`
+	Spec           *DataSourcePostgresProjectsProjectsSpec           `json:"spec,omitempty"`
+	Status         *DataSourcePostgresProjectsProjectsStatus         `json:"status,omitempty"`
+	Uid            string                                            `json:"uid,omitempty"`
+	UpdateTime     string                                            `json:"update_time,omitempty"`
+}
+
+type DataSourcePostgresProjectsProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
 }
 
 type DataSourcePostgresProjects struct {
-	PageSize int                                  `json:"page_size,omitempty"`
-	Projects []DataSourcePostgresProjectsProjects `json:"projects,omitempty"`
+	PageSize       int                                       `json:"page_size,omitempty"`
+	Projects       []DataSourcePostgresProjectsProjects      `json:"projects,omitempty"`
+	ProviderConfig *DataSourcePostgresProjectsProviderConfig `json:"provider_config,omitempty"`
 }

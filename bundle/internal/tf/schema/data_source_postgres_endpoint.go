@@ -2,6 +2,10 @@
 
 package schema
 
+type DataSourcePostgresEndpointProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type DataSourcePostgresEndpointSpecSettings struct {
 	PgSettings map[string]string `json:"pg_settings,omitempty"`
 }
@@ -37,11 +41,12 @@ type DataSourcePostgresEndpointStatus struct {
 }
 
 type DataSourcePostgresEndpoint struct {
-	CreateTime string                            `json:"create_time,omitempty"`
-	Name       string                            `json:"name"`
-	Parent     string                            `json:"parent,omitempty"`
-	Spec       *DataSourcePostgresEndpointSpec   `json:"spec,omitempty"`
-	Status     *DataSourcePostgresEndpointStatus `json:"status,omitempty"`
-	Uid        string                            `json:"uid,omitempty"`
-	UpdateTime string                            `json:"update_time,omitempty"`
+	CreateTime     string                                    `json:"create_time,omitempty"`
+	Name           string                                    `json:"name"`
+	Parent         string                                    `json:"parent,omitempty"`
+	ProviderConfig *DataSourcePostgresEndpointProviderConfig `json:"provider_config,omitempty"`
+	Spec           *DataSourcePostgresEndpointSpec           `json:"spec,omitempty"`
+	Status         *DataSourcePostgresEndpointStatus         `json:"status,omitempty"`
+	Uid            string                                    `json:"uid,omitempty"`
+	UpdateTime     string                                    `json:"update_time,omitempty"`
 }

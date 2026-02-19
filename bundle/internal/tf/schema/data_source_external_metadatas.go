@@ -2,24 +2,34 @@
 
 package schema
 
+type DataSourceExternalMetadatasExternalMetadataProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type DataSourceExternalMetadatasExternalMetadata struct {
-	Columns     []string          `json:"columns,omitempty"`
-	CreateTime  string            `json:"create_time,omitempty"`
-	CreatedBy   string            `json:"created_by,omitempty"`
-	Description string            `json:"description,omitempty"`
-	EntityType  string            `json:"entity_type,omitempty"`
-	Id          string            `json:"id,omitempty"`
-	MetastoreId string            `json:"metastore_id,omitempty"`
-	Name        string            `json:"name"`
-	Owner       string            `json:"owner,omitempty"`
-	Properties  map[string]string `json:"properties,omitempty"`
-	SystemType  string            `json:"system_type,omitempty"`
-	UpdateTime  string            `json:"update_time,omitempty"`
-	UpdatedBy   string            `json:"updated_by,omitempty"`
-	Url         string            `json:"url,omitempty"`
+	Columns        []string                                                   `json:"columns,omitempty"`
+	CreateTime     string                                                     `json:"create_time,omitempty"`
+	CreatedBy      string                                                     `json:"created_by,omitempty"`
+	Description    string                                                     `json:"description,omitempty"`
+	EntityType     string                                                     `json:"entity_type,omitempty"`
+	Id             string                                                     `json:"id,omitempty"`
+	MetastoreId    string                                                     `json:"metastore_id,omitempty"`
+	Name           string                                                     `json:"name"`
+	Owner          string                                                     `json:"owner,omitempty"`
+	Properties     map[string]string                                          `json:"properties,omitempty"`
+	ProviderConfig *DataSourceExternalMetadatasExternalMetadataProviderConfig `json:"provider_config,omitempty"`
+	SystemType     string                                                     `json:"system_type,omitempty"`
+	UpdateTime     string                                                     `json:"update_time,omitempty"`
+	UpdatedBy      string                                                     `json:"updated_by,omitempty"`
+	Url            string                                                     `json:"url,omitempty"`
+}
+
+type DataSourceExternalMetadatasProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
 }
 
 type DataSourceExternalMetadatas struct {
 	ExternalMetadata []DataSourceExternalMetadatasExternalMetadata `json:"external_metadata,omitempty"`
 	PageSize         int                                           `json:"page_size,omitempty"`
+	ProviderConfig   *DataSourceExternalMetadatasProviderConfig    `json:"provider_config,omitempty"`
 }
