@@ -1,5 +1,11 @@
 # Version changelog
 
+## Release v0.289.1 (2026-02-19)
+
+### Internal:
+* Pin docker version to fix release process.
+
+
 ## Release v0.289.0 (2026-02-19)
 
 ### CLI
