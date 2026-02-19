@@ -70,6 +70,13 @@ func SupportsColor(ctx context.Context, w io.Writer) bool {
 	return c.capabilities.SupportsColor(w)
 }
 
+// GetInteractiveMode returns the interactive mode based on terminal capabilities.
+// Returns one of: InteractiveModeFull, InteractiveModeOutputOnly, or InteractiveModeNone.
+func GetInteractiveMode(ctx context.Context) InteractiveMode {
+	c := fromContext(ctx)
+	return c.capabilities.InteractiveMode()
+}
+
 type Tuple struct{ Name, Id string }
 
 func (c *cmdIO) Select(items []Tuple, label string) (id string, err error) {
