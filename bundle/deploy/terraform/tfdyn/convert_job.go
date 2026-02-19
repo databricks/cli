@@ -132,6 +132,7 @@ func convertJobResource(ctx context.Context, vin dyn.Value) (dyn.Value, error) {
 	var err error
 	tasks, ok := vin.Get("tasks").AsSequence()
 	if ok {
+		// Sort tasks by task_key
 		sort.Slice(tasks, func(i, j int) bool {
 			// We sort the tasks by their task key. Tasks without task keys are ordered
 			// before tasks with task keys. We do not error for those tasks
@@ -146,6 +147,24 @@ func convertJobResource(ctx context.Context, vin dyn.Value) (dyn.Value, error) {
 			}
 			return tk1 < tk2
 		})
+
+		// Sort depends_on within each task by task_key to avoid false diffs.
+		// The Databricks API returns depends_on sorted by task_key.
+		for i, task := range tasks {
+			dependsOn, ok := task.Get("depends_on").AsSequence()
+			if ok && len(dependsOn) > 1 {
+				sort.Slice(dependsOn, func(a, b int) bool {
+					tk1, _ := dependsOn[a].Get("task_key").AsString()
+					tk2, _ := dependsOn[b].Get("task_key").AsString()
+					return tk1 < tk2
+				})
+				tasks[i], err = dyn.Set(task, "depends_on", dyn.V(dependsOn))
+				if err != nil {
+					return dyn.InvalidValue, err
+				}
+			}
+		}
+
 		vout, err = dyn.Set(vin, "tasks", dyn.V(tasks))
 		if err != nil {
 			return dyn.InvalidValue, err
