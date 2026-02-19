@@ -320,34 +320,6 @@ func TestResourceKey(t *testing.T) {
 	assert.Equal(t, "sql_warehouse", r.VarPrefix())
 }
 
-func TestGetTemplatePaths(t *testing.T) {
-	m := &manifest.Manifest{
-		Plugins: map[string]manifest.Plugin{
-			"analytics": {
-				Name:          "analytics",
-				TemplatePaths: []string{"config/queries"},
-			},
-			"server": {
-				Name: "server",
-			},
-		},
-	}
-
-	paths := m.GetTemplatePaths()
-	assert.Equal(t, map[string][]string{"analytics": {"config/queries"}}, paths)
-}
-
-func TestGetTemplatePathsEmpty(t *testing.T) {
-	m := &manifest.Manifest{
-		Plugins: map[string]manifest.Plugin{
-			"server": {Name: "server"},
-		},
-	}
-
-	paths := m.GetTemplatePaths()
-	assert.Empty(t, paths)
-}
-
 func TestCollectOptionalResources(t *testing.T) {
 	m := &manifest.Manifest{
 		Plugins: map[string]manifest.Plugin{
