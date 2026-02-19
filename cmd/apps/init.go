@@ -796,7 +796,7 @@ func runCreate(ctx context.Context, opts createOptions) error {
 
 	// Apply plugin-specific post-processing (e.g., remove config/queries if analytics not selected)
 	runErr = prompt.RunWithSpinnerCtx(ctx, "Configuring plugins...", func() error {
-		return applyPlugins(absOutputDir, selectedPlugins)
+		return applyPlugins(absOutputDir, selectedPlugins, m.GetTemplatePaths())
 	})
 	if runErr != nil {
 		return runErr
@@ -958,20 +958,14 @@ func buildPluginStrings(pluginNames []string) (pluginImport, pluginUsage string)
 	return pluginImport, pluginUsage
 }
 
-// pluginOwnedPaths maps plugin names to directories they own.
-// When a plugin is not selected, its owned paths are removed from the project.
-var pluginOwnedPaths = map[string][]string{
-	"analytics": {"config/queries"},
-}
-
-// applyPlugins removes directories owned by unselected plugins.
-func applyPlugins(projectDir string, pluginNames []string) error {
+// applyPlugins removes template directories owned by unselected plugins.
+func applyPlugins(projectDir string, pluginNames []string, templatePaths map[string][]string) error {
 	selectedSet := make(map[string]bool)
 	for _, name := range pluginNames {
 		selectedSet[name] = true
 	}
 
-	for plugin, paths := range pluginOwnedPaths {
+	for plugin, paths := range templatePaths {
 		if selectedSet[plugin] {
 			continue
 		}
