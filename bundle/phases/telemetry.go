@@ -22,15 +22,32 @@ func getExecutionTimes(b *bundle.Bundle) []protos.IntMapEntry {
 		return executionTimes[i].Value > executionTimes[j].Value
 	})
 
-	// Keep only the top 250 execution times. This keeps the telemetry event
-	// reasonable in size. This should be unnecessary in most cases but is
-	// done out of caution since the number of mutators depends upon user input.
-	// Eg: every pattern in `includes:` triggers a new mutator.
-	if len(executionTimes) > 250 {
-		executionTimes = executionTimes[:250]
-	}
+	var result []protos.IntMapEntry
 
-	return executionTimes
+	for i, v := range executionTimes {
+		// Keep only the top 250 execution times. This keeps the telemetry event
+		// reasonable in size. This should be unnecessary in most cases but is
+		// done out of caution since the number of mutators depends upon user input.
+		// Eg: every pattern in `includes:` triggers a new mutator.
+		if i >= 250 {
+			break
+		}
+
+		timeMs := v.Value / 1000
+
+		// Don't track mutators less than 1ms of execution time.
+		// But, If less than 5 mutators have execution times less
+		// than 1ms, then track at least 5 mutators.
+		if timeMs == 0 && i >= 5 {
+			break
+		}
+
+		result = append(result, protos.IntMapEntry{
+			Key:   v.Key,
+			Value: timeMs,
+		})
+	}
+	return result
 }
 
 func logDeployTelemetry(ctx context.Context, b *bundle.Bundle) {
