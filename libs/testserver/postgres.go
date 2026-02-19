@@ -618,10 +618,11 @@ func (s *FakeWorkspace) createOperationLocked(resourceName string, response any)
 }
 
 // createDefaultBranchLocked creates a default branch for a project (caller must hold lock).
+// The default branch is named "production" to match cloud API behavior.
 func (s *FakeWorkspace) createDefaultBranchLocked(projectName string) {
 	now := nowTime()
 	branchUID := "br-" + nextUUID()[:20]
-	branchName := projectName + "/branches/" + branchUID
+	branchName := projectName + "/branches/production"
 
 	defaultBranch := postgres.Branch{
 		Name:       branchName,
