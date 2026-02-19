@@ -67,6 +67,7 @@ type Plugin struct {
 	Description        string    `json:"description"`
 	Package            string    `json:"package"`
 	RequiredByTemplate bool      `json:"requiredByTemplate"`
+	TemplatePaths      []string  `json:"templatePaths,omitempty"`
 	Resources          Resources `json:"resources"`
 }
 
@@ -203,6 +204,18 @@ func (m *Manifest) CollectResources(pluginNames []string) []Resource {
 	}
 
 	return resources
+}
+
+// GetTemplatePaths returns a map of plugin name to template directory paths.
+// Only plugins that declare at least one path are included.
+func (m *Manifest) GetTemplatePaths() map[string][]string {
+	result := make(map[string][]string)
+	for name, p := range m.Plugins {
+		if len(p.TemplatePaths) > 0 {
+			result[name] = p.TemplatePaths
+		}
+	}
+	return result
 }
 
 // CollectOptionalResources returns all optional resources for the given plugin names.
