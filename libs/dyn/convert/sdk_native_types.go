@@ -7,7 +7,6 @@ import (
 	"slices"
 
 	"github.com/databricks/cli/libs/dyn"
-	"github.com/databricks/cli/libs/dyn/dynvar"
 	sdkduration "github.com/databricks/databricks-sdk-go/common/types/duration"
 	sdkfieldmask "github.com/databricks/databricks-sdk-go/common/types/fieldmask"
 	sdktime "github.com/databricks/databricks-sdk-go/common/types/time"
@@ -27,14 +26,9 @@ var sdkNativeTypes = []reflect.Type{
 // custom JSON marshaling with string representations.
 func fromTypedSDKNative(src reflect.Value, ref dyn.Value, options ...fromTypedOptions) (dyn.Value, error) {
 	// Check that the reference value is compatible or nil.
+	// Note: pure variable references are handled by the centralized check in [fromTyped].
 	switch ref.Kind() {
-	case dyn.KindString:
-		// Ignore pure variable references (e.g. ${var.foo}).
-		if dynvar.IsPureVariableReference(ref.MustString()) {
-			return ref, nil
-		}
-	case dyn.KindNil:
-		// Allow nil reference.
+	case dyn.KindString, dyn.KindNil:
 	default:
 		return dyn.InvalidValue, fmt.Errorf("cannot convert SDK native type to dynamic type %#v", ref.Kind().String())
 	}
@@ -71,11 +65,6 @@ func fromTypedSDKNative(src reflect.Value, ref dyn.Value, options ...fromTypedOp
 func toTypedSDKNative(dst reflect.Value, src dyn.Value) error {
 	switch src.Kind() {
 	case dyn.KindString:
-		// Ignore pure variable references (e.g. ${var.foo}).
-		if dynvar.IsPureVariableReference(src.MustString()) {
-			dst.SetZero()
-			return nil
-		}
 		// Use JSON unmarshaling since SDK native types implement json.Unmarshaler.
 		// Marshal the string to create a valid JSON string literal for unmarshaling.
 		jsonBytes, err := json.Marshal(src.MustString())
