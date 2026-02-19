@@ -17,14 +17,18 @@ func noopInstall(context.Context) error { return nil }
 func TestRecommendSkillsInstallSkipsWhenSkillsExist(t *testing.T) {
 	tmpDir := t.TempDir()
 	t.Setenv("HOME", tmpDir)
-	require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, "skills", "databricks"), 0o755))
+	// Skills must be in canonical location to be detected.
+	require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, CanonicalSkillsDir, "databricks"), 0o755))
+
+	agentDir := filepath.Join(tmpDir, ".claude")
+	require.NoError(t, os.MkdirAll(agentDir, 0o755))
 
 	origRegistry := Registry
 	Registry = []Agent{
 		{
 			Name:        "test-agent",
 			DisplayName: "Test Agent",
-			ConfigDir:   func() (string, error) { return tmpDir, nil },
+			ConfigDir:   func() (string, error) { return agentDir, nil },
 		},
 	}
 	defer func() { Registry = origRegistry }()

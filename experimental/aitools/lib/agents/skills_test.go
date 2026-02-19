@@ -17,16 +17,17 @@ func TestHasDatabricksSkillsInstalledNoAgents(t *testing.T) {
 	assert.True(t, HasDatabricksSkillsInstalled())
 }
 
-func TestHasDatabricksSkillsInstalledWithDatabricksSkill(t *testing.T) {
-	tmpDir := t.TempDir()
-	require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, "skills", "databricks"), 0o755))
+func TestHasDatabricksSkillsInstalledCanonicalOnly(t *testing.T) {
+	tmpHome := t.TempDir()
+	t.Setenv("HOME", tmpHome)
+	require.NoError(t, os.MkdirAll(filepath.Join(tmpHome, CanonicalSkillsDir, "databricks"), 0o755))
 
 	origRegistry := Registry
 	Registry = []Agent{
 		{
 			Name:        "test-agent",
 			DisplayName: "Test Agent",
-			ConfigDir:   func() (string, error) { return tmpDir, nil },
+			ConfigDir:   func() (string, error) { return filepath.Join(tmpHome, ".claude"), nil },
 		},
 	}
 	defer func() { Registry = origRegistry }()
@@ -34,21 +35,24 @@ func TestHasDatabricksSkillsInstalledWithDatabricksSkill(t *testing.T) {
 	assert.True(t, HasDatabricksSkillsInstalled())
 }
 
-func TestHasDatabricksSkillsInstalledWithDatabricksAppsSkill(t *testing.T) {
-	tmpDir := t.TempDir()
-	require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, "skills", "databricks-apps"), 0o755))
+func TestHasDatabricksSkillsInstalledIgnoresAgentDir(t *testing.T) {
+	tmpHome := t.TempDir()
+	t.Setenv("HOME", tmpHome)
+	// Skills in agent dir only (e.g., installed by another tool) should not count.
+	agentDir := filepath.Join(tmpHome, ".claude")
+	require.NoError(t, os.MkdirAll(filepath.Join(agentDir, "skills", "databricks"), 0o755))
 
 	origRegistry := Registry
 	Registry = []Agent{
 		{
 			Name:        "test-agent",
 			DisplayName: "Test Agent",
-			ConfigDir:   func() (string, error) { return tmpDir, nil },
+			ConfigDir:   func() (string, error) { return agentDir, nil },
 		},
 	}
 	defer func() { Registry = origRegistry }()
 
-	assert.True(t, HasDatabricksSkillsInstalled())
+	assert.False(t, HasDatabricksSkillsInstalled())
 }
 
 func TestHasDatabricksSkillsInstalledWithOnlyNonDatabricksSkills(t *testing.T) {
@@ -88,29 +92,32 @@ func TestHasDatabricksSkillsInstalledNoSkillsDir(t *testing.T) {
 	assert.False(t, HasDatabricksSkillsInstalled())
 }
 
-func TestHasDatabricksSkillsInstalledCustomSubdir(t *testing.T) {
-	tmpDir := t.TempDir()
-	require.NoError(t, os.MkdirAll(filepath.Join(tmpDir, "global_skills", "databricks"), 0o755))
+func TestHasDatabricksSkillsInstalledCustomSubdirNotChecked(t *testing.T) {
+	tmpHome := t.TempDir()
+	t.Setenv("HOME", tmpHome)
+	// Skills in agent's custom subdir should not count — only canonical matters.
+	require.NoError(t, os.MkdirAll(filepath.Join(tmpHome, ".gemini", "antigravity", "global_skills", "databricks"), 0o755))
 
 	origRegistry := Registry
 	Registry = []Agent{
 		{
 			Name:         "test-agent",
 			DisplayName:  "Test Agent",
-			ConfigDir:    func() (string, error) { return tmpDir, nil },
+			ConfigDir:    func() (string, error) { return filepath.Join(tmpHome, ".gemini", "antigravity"), nil },
 			SkillsSubdir: "global_skills",
 		},
 	}
 	defer func() { Registry = origRegistry }()
 
-	assert.True(t, HasDatabricksSkillsInstalled())
+	assert.False(t, HasDatabricksSkillsInstalled())
 }
 
-func TestHasDatabricksSkillsInstalledCanonicalLocation(t *testing.T) {
+func TestHasDatabricksSkillsInstalledDatabricksAppsCanonical(t *testing.T) {
 	tmpHome := t.TempDir()
-	require.NoError(t, os.MkdirAll(filepath.Join(tmpHome, CanonicalSkillsDir, "databricks"), 0o755))
+	t.Setenv("HOME", tmpHome)
+	// databricks-apps prefix should match in canonical location.
+	require.NoError(t, os.MkdirAll(filepath.Join(tmpHome, CanonicalSkillsDir, "databricks-apps"), 0o755))
 
-	// Agent detected but no skills in agent's own dir.
 	agentDir := filepath.Join(tmpHome, ".claude")
 	require.NoError(t, os.MkdirAll(agentDir, 0o755))
 
@@ -123,9 +130,6 @@ func TestHasDatabricksSkillsInstalledCanonicalLocation(t *testing.T) {
 		},
 	}
 	defer func() { Registry = origRegistry }()
-
-	// Override home dir via env for the canonical path check.
-	t.Setenv("HOME", tmpHome)
 
 	assert.True(t, HasDatabricksSkillsInstalled())
 }

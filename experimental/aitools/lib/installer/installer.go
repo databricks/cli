@@ -180,17 +180,13 @@ func installSkillForAgents(ctx context.Context, skillName string, files []string
 		return fmt.Errorf("failed to get home directory: %w", err)
 	}
 
-	// determine installation strategy
-	useSymlinks := len(detectedAgents) > 1
-	var canonicalDir string
-
-	if useSymlinks {
-		// install to canonical location and symlink to each agent
-		canonicalDir = filepath.Join(homeDir, agents.CanonicalSkillsDir, skillName)
-		if err := installSkillToDir(ctx, skillName, canonicalDir, files); err != nil {
-			return err
-		}
+	// Always install to canonical location first.
+	canonicalDir := filepath.Join(homeDir, agents.CanonicalSkillsDir, skillName)
+	if err := installSkillToDir(ctx, skillName, canonicalDir, files); err != nil {
+		return err
 	}
+
+	useSymlinks := len(detectedAgents) > 1
 
 	// install/symlink to each agent
 	for _, agent := range detectedAgents {
@@ -201,6 +197,12 @@ func installSkillForAgents(ctx context.Context, skillName string, files []string
 		}
 
 		destDir := filepath.Join(agentSkillDir, skillName)
+
+		// Back up existing non-canonical skills before overwriting.
+		if err := backupThirdPartySkill(ctx, destDir, canonicalDir, skillName, agent.DisplayName); err != nil {
+			cmdio.LogString(ctx, color.YellowString("⊘ Failed to back up existing skill for %s: %v", agent.DisplayName, err))
+			continue
+		}
 
 		if useSymlinks {
 			if err := createSymlink(canonicalDir, destDir); err != nil {
@@ -213,7 +215,7 @@ func installSkillForAgents(ctx context.Context, skillName string, files []string
 			}
 			cmdio.LogString(ctx, color.GreenString("✓ Installed %q for %s (symlinked)", skillName, agent.DisplayName))
 		} else {
-			// single agent - install directly
+			// single agent - copy from canonical
 			if err := installSkillToDir(ctx, skillName, destDir, files); err != nil {
 				cmdio.LogString(ctx, color.YellowString("⊘ Failed to install for %s: %v", agent.DisplayName, err))
 				continue
@@ -222,6 +224,39 @@ func installSkillForAgents(ctx context.Context, skillName string, files []string
 		}
 	}
 
+	return nil
+}
+
+// backupThirdPartySkill moves destDir to a temp directory if it exists and is not
+// a symlink pointing to canonicalDir. This preserves skills installed by other tools.
+func backupThirdPartySkill(ctx context.Context, destDir, canonicalDir, skillName, agentName string) error {
+	fi, err := os.Lstat(destDir)
+	if os.IsNotExist(err) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+
+	// If it's a symlink to our canonical dir, no backup needed.
+	if fi.Mode()&os.ModeSymlink != 0 {
+		target, err := os.Readlink(destDir)
+		if err == nil && target == canonicalDir {
+			return nil
+		}
+	}
+
+	backupDir, err := os.MkdirTemp("", fmt.Sprintf("databricks-skill-backup-%s-*", skillName))
+	if err != nil {
+		return fmt.Errorf("failed to create backup directory: %w", err)
+	}
+
+	backupDest := filepath.Join(backupDir, skillName)
+	if err := os.Rename(destDir, backupDest); err != nil {
+		return fmt.Errorf("failed to move existing skill: %w", err)
+	}
+
+	cmdio.LogString(ctx, color.YellowString("  Existing %q for %s moved to %s", skillName, agentName, backupDest))
 	return nil
 }
 
