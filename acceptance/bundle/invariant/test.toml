@@ -26,6 +26,7 @@ EnvMatrix.INPUT_CONFIG = [
     "database_catalog.yml.tmpl",
     "database_instance.yml.tmpl",
     "experiment.yml.tmpl",
+    "external_location.yml.tmpl",
     "job.yml.tmpl",
     "job_with_task.yml.tmpl",
     "model.yml.tmpl",
@@ -48,6 +49,10 @@ no_alert_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=alert.yml.tmpl"]
 no_postgres_project_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=postgres_project.yml.tmpl"]
 no_postgres_branch_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=postgres_branch.yml.tmpl"]
 no_postgres_endpoint_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=postgres_endpoint.yml.tmpl"]
+
+# External locations require actual storage credentials with cloud IAM setup
+# which are environment-specific, so we only test locally with the mock server
+no_external_location_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=external_location.yml.tmpl"]
 
 # Fake SQL endpoint for local tests
 [[Server]]

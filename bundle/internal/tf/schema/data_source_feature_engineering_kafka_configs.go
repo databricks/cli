@@ -20,6 +20,10 @@ type DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsKeySchema struct {
 	JsonSchema string `json:"json_schema,omitempty"`
 }
 
+type DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsSubscriptionMode struct {
 	Assign           string `json:"assign,omitempty"`
 	Subscribe        string `json:"subscribe,omitempty"`
@@ -37,11 +41,17 @@ type DataSourceFeatureEngineeringKafkaConfigsKafkaConfigs struct {
 	ExtraOptions     map[string]string                                                     `json:"extra_options,omitempty"`
 	KeySchema        *DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsKeySchema        `json:"key_schema,omitempty"`
 	Name             string                                                                `json:"name"`
+	ProviderConfig   *DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsProviderConfig   `json:"provider_config,omitempty"`
 	SubscriptionMode *DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsSubscriptionMode `json:"subscription_mode,omitempty"`
 	ValueSchema      *DataSourceFeatureEngineeringKafkaConfigsKafkaConfigsValueSchema      `json:"value_schema,omitempty"`
 }
 
+type DataSourceFeatureEngineeringKafkaConfigsProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type DataSourceFeatureEngineeringKafkaConfigs struct {
-	KafkaConfigs []DataSourceFeatureEngineeringKafkaConfigsKafkaConfigs `json:"kafka_configs,omitempty"`
-	PageSize     int                                                    `json:"page_size,omitempty"`
+	KafkaConfigs   []DataSourceFeatureEngineeringKafkaConfigsKafkaConfigs  `json:"kafka_configs,omitempty"`
+	PageSize       int                                                     `json:"page_size,omitempty"`
+	ProviderConfig *DataSourceFeatureEngineeringKafkaConfigsProviderConfig `json:"provider_config,omitempty"`
 }

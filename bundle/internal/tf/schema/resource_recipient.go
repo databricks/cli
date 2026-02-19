@@ -10,6 +10,10 @@ type ResourceRecipientPropertiesKvpairs struct {
 	Properties map[string]string `json:"properties"`
 }
 
+type ResourceRecipientProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type ResourceRecipientTokens struct {
 	ActivationUrl  string `json:"activation_url,omitempty"`
 	CreatedAt      int    `json:"created_at,omitempty"`
@@ -40,5 +44,6 @@ type ResourceRecipient struct {
 	UpdatedBy                      string                              `json:"updated_by,omitempty"`
 	IpAccessList                   *ResourceRecipientIpAccessList      `json:"ip_access_list,omitempty"`
 	PropertiesKvpairs              *ResourceRecipientPropertiesKvpairs `json:"properties_kvpairs,omitempty"`
+	ProviderConfig                 *ResourceRecipientProviderConfig    `json:"provider_config,omitempty"`
 	Tokens                         []ResourceRecipientTokens           `json:"tokens,omitempty"`
 }

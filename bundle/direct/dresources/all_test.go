@@ -49,6 +49,15 @@ var testConfig map[string]any = map[string]any{
 		// only during updates. They are not included in the test config.
 	},
 
+	"external_locations": &resources.ExternalLocation{
+		CreateExternalLocation: catalog.CreateExternalLocation{
+			Name:           "myexternallocation",
+			Url:            "s3://mybucket/mypath",
+			CredentialName: "mycredential",
+			Comment:        "Test external location",
+		},
+	},
+
 	"schemas": &resources.Schema{
 		CreateSchema: catalog.CreateSchema{
 			CatalogName: "main",
@@ -486,6 +495,17 @@ var testDeps = map[string]prepareWorkspace{
 		}, nil
 	},
 
+	"external_locations.grants": func(client *databricks.WorkspaceClient) (any, error) {
+		return &GrantsState{
+			SecurableType: "external_location",
+			FullName:      "myexternallocation",
+			Grants: []GrantAssignment{{
+				Privileges: []catalog.Privilege{catalog.PrivilegeReadFiles},
+				Principal:  "user@example.com",
+			}},
+		}, nil
+	},
+
 	"schemas.grants": func(client *databricks.WorkspaceClient) (any, error) {
 		return &GrantsState{
 			SecurableType: "schema",
@@ -849,6 +869,9 @@ func validateResourceConfig(t *testing.T, stateType reflect.Type, cfg *ResourceL
 	}
 	for _, p := range cfg.IgnoreRemoteChanges {
 		assert.NoError(t, structaccess.ValidatePattern(stateType, p.Field), "IgnoreRemoteChanges: %s", p.Field)
+	}
+	for _, p := range cfg.BackendDefaults {
+		assert.NoError(t, structaccess.ValidatePattern(stateType, p.Field), "BackendDefaults: %s", p.Field)
 	}
 }
 

@@ -22,6 +22,7 @@ type Resources struct {
 	Catalogs              map[string]*resources.Catalog              `json:"catalogs,omitempty"`
 	Schemas               map[string]*resources.Schema               `json:"schemas,omitempty"`
 	Volumes               map[string]*resources.Volume               `json:"volumes,omitempty"`
+	ExternalLocations     map[string]*resources.ExternalLocation     `json:"external_locations,omitempty"`
 	Clusters              map[string]*resources.Cluster              `json:"clusters,omitempty"`
 	Dashboards            map[string]*resources.Dashboard            `json:"dashboards,omitempty"`
 	Apps                  map[string]*resources.App                  `json:"apps,omitempty"`
@@ -93,6 +94,7 @@ func (r *Resources) AllResources() []ResourceGroup {
 		collectResourceMap(descriptions["quality_monitors"], r.QualityMonitors),
 		collectResourceMap(descriptions["catalogs"], r.Catalogs),
 		collectResourceMap(descriptions["schemas"], r.Schemas),
+		collectResourceMap(descriptions["external_locations"], r.ExternalLocations),
 		collectResourceMap(descriptions["clusters"], r.Clusters),
 		collectResourceMap(descriptions["dashboards"], r.Dashboards),
 		collectResourceMap(descriptions["volumes"], r.Volumes),
@@ -112,6 +114,7 @@ func (r *Resources) AllResources() []ResourceGroup {
 // FindResourceByConfigKey searches all resource maps for a resource with the given key.
 func (r *Resources) FindResourceByConfigKey(key string) (ConfigResource, error) {
 	var found []ConfigResource
+
 	for _, group := range r.AllResources() {
 		if res, ok := group.Resources[key]; ok {
 			found = append(found, res)
@@ -145,6 +148,7 @@ func SupportedResources() map[string]resources.ResourceDescription {
 		"quality_monitors":        (&resources.QualityMonitor{}).ResourceDescription(),
 		"catalogs":                (&resources.Catalog{}).ResourceDescription(),
 		"schemas":                 (&resources.Schema{}).ResourceDescription(),
+		"external_locations":      (&resources.ExternalLocation{}).ResourceDescription(),
 		"clusters":                (&resources.Cluster{}).ResourceDescription(),
 		"dashboards":              (&resources.Dashboard{}).ResourceDescription(),
 		"volumes":                 (&resources.Volume{}).ResourceDescription(),

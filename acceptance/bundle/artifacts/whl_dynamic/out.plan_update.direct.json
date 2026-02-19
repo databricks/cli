@@ -172,7 +172,7 @@
         },
         "tasks[task_key='ServerlessTestTask'].run_if": {
           "action": "skip",
-          "reason": "server_side_default",
+          "reason": "backend_default",
           "remote": "ALL_SUCCESS"
         },
         "tasks[task_key='ServerlessTestTask'].timeout_seconds": {
@@ -199,7 +199,7 @@
         },
         "tasks[task_key='TestTask'].run_if": {
           "action": "skip",
-          "reason": "server_side_default",
+          "reason": "backend_default",
           "remote": "ALL_SUCCESS"
         },
         "tasks[task_key='TestTask'].timeout_seconds": {

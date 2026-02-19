@@ -896,6 +896,108 @@
                   }
                 ]
               },
+              "resources.ExternalLocation": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "comment": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "credential_name": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "enable_file_events": {
+                        "$ref": "#/$defs/bool"
+                      },
+                      "encryption_details": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.EncryptionDetails"
+                      },
+                      "fallback": {
+                        "$ref": "#/$defs/bool"
+                      },
+                      "file_event_queue": {
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.FileEventQueue"
+                      },
+                      "grants": {
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.ExternalLocationGrant"
+                      },
+                      "lifecycle": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
+                      },
+                      "name": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "read_only": {
+                        "$ref": "#/$defs/bool"
+                      },
+                      "skip_validation": {
+                        "$ref": "#/$defs/bool"
+                      },
+                      "url": {
+                        "$ref": "#/$defs/string"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "credential_name",
+                      "name",
+                      "url"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "resources.ExternalLocationGrant": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "principal": {
+                        "$ref": "#/$defs/string"
+                      },
+                      "privileges": {
+                        "$ref": "#/$defs/slice/github.com/databricks/cli/bundle/config/resources.ExternalLocationGrantPrivilege"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "required": [
+                      "privileges",
+                      "principal"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
+              "resources.ExternalLocationGrantPrivilege": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "description": "Privilege to grant on an external location",
+                    "enum": [
+                      "ALL_PRIVILEGES",
+                      "CREATE_EXTERNAL_TABLE",
+                      "CREATE_EXTERNAL_VOLUME",
+                      "CREATE_MANAGED_STORAGE",
+                      "CREATE_TABLE",
+                      "CREATE_VOLUME",
+                      "MANAGE",
+                      "READ_FILES",
+                      "WRITE_FILES"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                  }
+                ]
+              },
               "resources.Grant": {
                 "oneOf": [
                   {
@@ -2780,6 +2882,9 @@
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.MlflowExperiment",
                       "markdownDescription": "The experiment definitions for the bundle, where each key is the name of the experiment. See [experiments](https://docs.databricks.com/dev-tools/bundles/resources.html#experiments)."
                     },
+                    "external_locations": {
+                      "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.ExternalLocation"
+                    },
                     "jobs": {
                       "description": "The job definitions for the bundle, where each key is the name of the job.",
                       "$ref": "#/$defs/map/github.com/databricks/cli/bundle/config/resources.Job",
@@ -3748,6 +3853,121 @@
                 }
               ]
             },
+            "catalog.AwsSqsQueue": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "managed_resource_id": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "queue_url": {
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "catalog.AzureQueueStorage": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "managed_resource_id": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "queue_url": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "resource_group": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "subscription_id": {
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "catalog.EncryptionDetails": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "sse_encryption_details": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.SseEncryptionDetails"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "catalog.FileEventQueue": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "managed_aqs": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.AzureQueueStorage"
+                    },
+                    "managed_pubsub": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.GcpPubsub"
+                    },
+                    "managed_sqs": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.AwsSqsQueue"
+                    },
+                    "provided_aqs": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.AzureQueueStorage"
+                    },
+                    "provided_pubsub": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.GcpPubsub"
+                    },
+                    "provided_sqs": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.AwsSqsQueue"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "catalog.GcpPubsub": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "managed_resource_id": {
+                      "$ref": "#/$defs/string"
+                    },
+                    "subscription_name": {
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
             "catalog.MonitorCronSchedule": {
               "oneOf": [
                 {
@@ -4046,6 +4266,42 @@
                     }
                   },
                   "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "catalog.SseEncryptionDetails": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "algorithm": {
+                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.SseEncryptionDetailsAlgorithm"
+                    },
+                    "aws_kms_key_arn": {
+                      "$ref": "#/$defs/string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                {
+                  "type": "string",
+                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                }
+              ]
+            },
+            "catalog.SseEncryptionDetailsAlgorithm": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "description": "SSE algorithm to use for encrypting S3 objects",
+                  "enum": [
+                    "AWS_SSE_KMS",
+                    "AWS_SSE_S3"
+                  ]
                 },
                 {
                   "type": "string",
@@ -4535,6 +4791,10 @@
                   "type": "object",
                   "description": "The environment entity used to preserve serverless environment side panel, jobs' environment for non-notebook task, and DLT's environment for classic and serverless pipelines.\nIn this minimal environment spec, only pip dependencies are supported.",
                   "properties": {
+                    "base_environment": {
+                      "description": "The `base_environment` key refers to an `env.yaml` file that specifies an environment version and a collection of dependencies required for the environment setup.\nThis `env.yaml` file may itself include a `base_environment` reference pointing to another `env_1.yaml` file. However, when used as a base environment, `env_1.yaml` (or further nested references) will not be processed or included in the final environment, meaning that the resolution of `base_environment` references is not recursive.",
+                      "$ref": "#/$defs/string"
+                    },
                     "client": {
                       "description": "Use `environment_version` instead.",
                       "$ref": "#/$defs/string",
@@ -5604,6 +5864,12 @@
                   "properties": {
                     "dashboard_id": {
                       "$ref": "#/$defs/string"
+                    },
+                    "filters": {
+                      "description": "Dashboard task parameters. Used to apply dashboard filter values during dashboard task execution. Parameter values get applied to any dashboard filters that have a matching URL identifier as the parameter key.\nThe parameter value format is dependent on the filter type:\n- For text and single-select filters, provide a single value (e.g. `\"value\"`)\n- For date and datetime filters, provide the value in ISO 8601 format (e.g. `\"2000-01-01T00:00:00\"`)\n- For multi-select filters, provide a JSON array of values (e.g. `\"[\\\"value1\\\",\\\"value2\\\"]\"`)\n- For range and date range filters, provide a JSON object with `start` and `end` (e.g. `\"{\\\"start\\\":\\\"1\\\",\\\"end\\\":\\\"10\\\"}\"`)",
+                      "$ref": "#/$defs/map/string",
+                      "x-databricks-preview": "PRIVATE",
+                      "doNotSuggest": true
                     },
                     "subscription": {
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.Subscription"
@@ -10370,6 +10636,20 @@
                     }
                   ]
                 },
+                "resources.ExternalLocation": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "additionalProperties": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.ExternalLocation"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
                 "resources.Job": {
                   "oneOf": [
                     {
@@ -10794,6 +11074,34 @@
                       "type": "array",
                       "items": {
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.DatabaseInstancePermission"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
+                "resources.ExternalLocationGrant": {
+                  "oneOf": [
+                    {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.ExternalLocationGrant"
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
+                    }
+                  ]
+                },
+                "resources.ExternalLocationGrantPrivilege": {
+                  "oneOf": [
+                    {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.ExternalLocationGrantPrivilege"
                       }
                     },
                     {

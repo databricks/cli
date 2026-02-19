@@ -124,12 +124,12 @@
         },
         "tasks[task_key='notebook_task'].notebook_task.source": {
           "action": "skip",
-          "reason": "server_side_default",
+          "reason": "backend_default",
           "remote": "WORKSPACE"
         },
         "tasks[task_key='notebook_task'].run_if": {
           "action": "skip",
-          "reason": "server_side_default",
+          "reason": "backend_default",
           "remote": "ALL_SUCCESS"
         },
         "tasks[task_key='notebook_task'].timeout_seconds": {
@@ -144,7 +144,7 @@
         },
         "tasks[task_key='python_wheel_task'].run_if": {
           "action": "skip",
-          "reason": "server_side_default",
+          "reason": "backend_default",
           "remote": "ALL_SUCCESS"
         },
         "tasks[task_key='python_wheel_task'].timeout_seconds": {
@@ -159,7 +159,7 @@
         },
         "tasks[task_key='refresh_pipeline'].run_if": {
           "action": "skip",
-          "reason": "server_side_default",
+          "reason": "backend_default",
           "remote": "ALL_SUCCESS"
         },
         "tasks[task_key='refresh_pipeline'].timeout_seconds": {

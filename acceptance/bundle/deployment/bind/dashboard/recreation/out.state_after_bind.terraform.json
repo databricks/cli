@@ -28,6 +28,7 @@
             "md5": null,
             "parent_path": "/Users/[USERNAME]",
             "path": "/Users/[USERNAME]/test dashboard [UNIQUE_NAME].lvdash.json",
+            "provider_config": [],
             "serialized_dashboard": "{\"pages\":[{\"displayName\":\"Untitled page\",\"name\":\"02724bf2\",\"pageType\":\"PAGE_TYPE_CANVAS\"}]}",
             "update_time": "[TIMESTAMP]",
             "warehouse_id": "[TEST_DEFAULT_WAREHOUSE_ID]"
