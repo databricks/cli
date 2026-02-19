@@ -50,6 +50,10 @@ no_postgres_project_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=postgres_proj
 no_postgres_branch_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=postgres_branch.yml.tmpl"]
 no_postgres_endpoint_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=postgres_endpoint.yml.tmpl"]
 
+# External locations require actual storage credentials with cloud IAM setup
+# which are environment-specific, so we only test locally with the mock server
+no_external_location_on_cloud = ["CONFIG_Cloud=true", "INPUT_CONFIG=external_location.yml.tmpl"]
+
 # Fake SQL endpoint for local tests
 [[Server]]
 Pattern = "POST /api/2.0/sql/statements/"
