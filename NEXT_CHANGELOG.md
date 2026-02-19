@@ -11,4 +11,4 @@
 ### Dependency updates
 * Upgrade Go SDK to v0.106.0 (([#4486](https://github.com/databricks/cli/pull/4486)))
 * Upgrade Terraform provider to v1.106.0 (([#4542](https://github.com/databricks/cli/pull/4542)))
-* Upgrade Go to 1.25.7
+* Upgrade Go to 1.25.7 (([#4547](https://github.com/databricks/cli/pull/4547)))
