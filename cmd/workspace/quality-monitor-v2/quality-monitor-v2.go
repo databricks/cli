@@ -20,10 +20,10 @@ var cmdOverrides []func(*cobra.Command)
 func New() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "quality-monitor-v2",
-		Short: `[DEPRECATED] This API is deprecated.`,
-		Long: `[DEPRECATED] This API is deprecated. Please use the Data Quality Monitoring
-  API instead (REST: /api/data-quality/v1/monitors). Manage data quality of UC
-  objects (currently support schema).`,
+		Short: `Deprecated: Please use the Data Quality Monitoring API instead (REST: /api/data-quality/v1/monitors).`,
+		Long: `Deprecated: Please use the Data Quality Monitoring API instead (REST:
+  /api/data-quality/v1/monitors). Manage data quality of UC objects (currently
+  support schema).`,
 		GroupID: "qualitymonitor",
 		RunE:    root.ReportUnknownSubcommand,
 	}
@@ -68,8 +68,8 @@ func newCreateQualityMonitor() *cobra.Command {
 	cmd.Short = `Create a quality monitor.`
 	cmd.Long = `Create a quality monitor.
 
-  [DEPRECATED] Create a quality monitor on UC object. Use Data Quality
-  Monitoring API instead.
+  Deprecated: Use Data Quality Monitoring API instead
+  (/api/data-quality/v1/monitors). Create a quality monitor on UC object.
 
   Arguments:
     OBJECT_TYPE: The type of the monitored object. Can be one of the following: schema.
@@ -150,8 +150,8 @@ func newDeleteQualityMonitor() *cobra.Command {
 	cmd.Short = `Delete a quality monitor.`
 	cmd.Long = `Delete a quality monitor.
 
-  [DEPRECATED] Delete a quality monitor on UC object. Use Data Quality
-  Monitoring API instead.
+  Deprecated: Use Data Quality Monitoring API instead
+  (/api/data-quality/v1/monitors). Delete a quality monitor on UC object.
 
   Arguments:
     OBJECT_TYPE: The type of the monitored object. Can be one of the following: schema.
@@ -209,8 +209,8 @@ func newGetQualityMonitor() *cobra.Command {
 	cmd.Short = `Read a quality monitor.`
 	cmd.Long = `Read a quality monitor.
 
-  [DEPRECATED] Read a quality monitor on UC object. Use Data Quality Monitoring
-  API instead.
+  Deprecated: Use Data Quality Monitoring API instead
+  (/api/data-quality/v1/monitors). Read a quality monitor on UC object.
 
   Arguments:
     OBJECT_TYPE: The type of the monitored object. Can be one of the following: schema.
@@ -271,8 +271,8 @@ func newListQualityMonitor() *cobra.Command {
 	cmd.Short = `List quality monitors.`
 	cmd.Long = `List quality monitors.
 
-  [DEPRECATED] (Unimplemented) List quality monitors. Use Data Quality
-  Monitoring API instead.`
+  Deprecated: Use Data Quality Monitoring API instead
+  (/api/data-quality/v1/monitors). (Unimplemented) List quality monitors.`
 
 	cmd.Annotations = make(map[string]string)
 
@@ -327,8 +327,9 @@ func newUpdateQualityMonitor() *cobra.Command {
 	cmd.Short = `Update a quality monitor.`
 	cmd.Long = `Update a quality monitor.
 
-  [DEPRECATED] (Unimplemented) Update a quality monitor on UC object. Use Data
-  Quality Monitoring API instead.
+  Deprecated: Use Data Quality Monitoring API instead
+  (/api/data-quality/v1/monitors). (Unimplemented) Update a quality monitor on
+  UC object.
 
   Arguments:
     OBJECT_TYPE: The type of the monitored object. Can be one of the following: schema.

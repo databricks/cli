@@ -66,6 +66,7 @@ func (*ResourceQualityMonitor) RemapState(info *catalog.MonitorInfo) *QualityMon
 }
 
 func (r *ResourceQualityMonitor) DoRead(ctx context.Context, id string) (*catalog.MonitorInfo, error) {
+	//nolint:staticcheck // Direct resource still uses legacy QualityMonitors API until migration to data-quality API.
 	return r.client.QualityMonitors.Get(ctx, catalog.GetQualityMonitorRequest{
 		TableName: id,
 	})
@@ -74,6 +75,7 @@ func (r *ResourceQualityMonitor) DoRead(ctx context.Context, id string) (*catalo
 func (r *ResourceQualityMonitor) DoCreate(ctx context.Context, config *QualityMonitorState) (string, *catalog.MonitorInfo, error) {
 	req := config.CreateMonitor
 	req.TableName = config.TableName
+	//nolint:staticcheck // Direct resource still uses legacy QualityMonitors API until migration to data-quality API.
 	response, err := r.client.QualityMonitors.Create(ctx, req)
 	if err != nil || response == nil {
 		return "", nil, err
@@ -99,6 +101,7 @@ func (r *ResourceQualityMonitor) DoUpdate(ctx context.Context, id string, config
 		ForceSendFields:          utils.FilterFields[catalog.UpdateMonitor](config.ForceSendFields),
 	}
 
+	//nolint:staticcheck // Direct resource still uses legacy QualityMonitors API until migration to data-quality API.
 	response, err := r.client.QualityMonitors.Update(ctx, updateRequest)
 	if err != nil {
 		return nil, err
@@ -108,6 +111,7 @@ func (r *ResourceQualityMonitor) DoUpdate(ctx context.Context, id string, config
 }
 
 func (r *ResourceQualityMonitor) DoDelete(ctx context.Context, id string) error {
+	//nolint:staticcheck // Direct resource still uses legacy QualityMonitors API until migration to data-quality API.
 	_, err := r.client.QualityMonitors.Delete(ctx, catalog.DeleteQualityMonitorRequest{
 		TableName: id,
 	})
