@@ -209,12 +209,6 @@
                       "source_code_path": {
                         "$ref": "#/$defs/string"
                       },
-                      "space": {
-                        "description": "Name of the space this app belongs to.",
-                        "$ref": "#/$defs/string",
-                        "x-databricks-preview": "PRIVATE",
-                        "doNotSuggest": true
-                      },
                       "usage_policy_id": {
                         "$ref": "#/$defs/string"
                       },
@@ -1805,12 +1799,6 @@
                   {
                     "type": "object",
                     "properties": {
-                      "budget_policy_id": {
-                        "$ref": "#/$defs/string"
-                      },
-                      "custom_tags": {
-                        "$ref": "#/$defs/slice/github.com/databricks/databricks-sdk-go/service/postgres.ProjectCustomTag"
-                      },
                       "default_endpoint_settings": {
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.ProjectDefaultEndpointSettings"
                       },
@@ -2193,7 +2181,7 @@
                         "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/sql.Channel"
                       },
                       "cluster_size": {
-                        "description": "Size of the clusters allocated for this warehouse.\nIncreasing the size of a spark cluster allows you to run larger queries on\nit. If you want to increase the number of concurrent queries, please tune\nmax_num_clusters.\n\nSupported values:\n- 2X-Small\n- X-Small\n- Small\n- Medium\n- Large\n- X-Large\n- 2X-Large\n- 3X-Large\n- 4X-Large\n- 5X-Large",
+                        "description": "Size of the clusters allocated for this warehouse.\nIncreasing the size of a spark cluster allows you to run larger queries on\nit. If you want to increase the number of concurrent queries, please tune\nmax_num_clusters.\n\nSupported values:\n- 2X-Small\n- X-Small\n- Small\n- Medium\n- Large\n- X-Large\n- 2X-Large\n- 3X-Large\n- 4X-Large",
                         "$ref": "#/$defs/string"
                       },
                       "creator_name": {
@@ -3679,8 +3667,7 @@
                     "WRITE_VOLUME",
                     "SELECT",
                     "EXECUTE",
-                    "USE_CONNECTION",
-                    "MODIFY"
+                    "USE_CONNECTION"
                   ]
                 },
                 {
@@ -3741,8 +3728,7 @@
                   "type": "string",
                   "enum": [
                     "MEDIUM",
-                    "LARGE",
-                    "LIQUID"
+                    "LARGE"
                   ]
                 },
                 {
@@ -3872,6 +3858,9 @@
                 {
                   "type": "object",
                   "properties": {
+                    "managed_resource_id": {
+                      "$ref": "#/$defs/string"
+                    },
                     "queue_url": {
                       "$ref": "#/$defs/string"
                     }
@@ -3889,6 +3878,9 @@
                 {
                   "type": "object",
                   "properties": {
+                    "managed_resource_id": {
+                      "$ref": "#/$defs/string"
+                    },
                     "queue_url": {
                       "$ref": "#/$defs/string"
                     },
@@ -3911,7 +3903,6 @@
               "oneOf": [
                 {
                   "type": "object",
-                  "description": "Encryption options that apply to clients connecting to cloud storage.",
                   "properties": {
                     "sse_encryption_details": {
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.SseEncryptionDetails"
@@ -3962,6 +3953,9 @@
                 {
                   "type": "object",
                   "properties": {
+                    "managed_resource_id": {
+                      "$ref": "#/$defs/string"
+                    },
                     "subscription_name": {
                       "$ref": "#/$defs/string"
                     }
@@ -4283,7 +4277,6 @@
               "oneOf": [
                 {
                   "type": "object",
-                  "description": "Server-Side Encryption properties for clients communicating with AWS s3.",
                   "properties": {
                     "algorithm": {
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/catalog.SseEncryptionDetailsAlgorithm"
@@ -4306,8 +4299,6 @@
                   "type": "string",
                   "description": "SSE algorithm to use for encrypting S3 objects",
                   "enum": [
-                    "AWS_SSE_S3",
-                    "AWS_SSE_KMS",
                     "AWS_SSE_KMS",
                     "AWS_SSE_S3"
                   ]
@@ -6173,11 +6164,6 @@
                     "git_url": {
                       "description": "URL of the repository to be cloned by this job.",
                       "$ref": "#/$defs/string"
-                    },
-                    "sparse_checkout": {
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/jobs.SparseCheckout",
-                      "x-databricks-preview": "PRIVATE",
-                      "doNotSuggest": true
                     }
                   },
                   "additionalProperties": false,
@@ -7089,24 +7075,6 @@
                   "properties": {
                     "parameters": {
                       "description": "Command-line parameters passed to spark submit.\n\nUse [Task parameter variables](https://docs.databricks.com/jobs.html#parameter-variables) to set parameters containing information about job runs.",
-                      "$ref": "#/$defs/slice/string"
-                    }
-                  },
-                  "additionalProperties": false
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
-                }
-              ]
-            },
-            "jobs.SparseCheckout": {
-              "oneOf": [
-                {
-                  "type": "object",
-                  "properties": {
-                    "patterns": {
-                      "description": "List of patterns to include for sparse checkout.",
                       "$ref": "#/$defs/slice/string"
                     }
                   },
@@ -8181,8 +8149,6 @@
                   "enum": [
                     "MYSQL",
                     "POSTGRESQL",
-                    "REDSHIFT",
-                    "SQLDW",
                     "SQLSERVER",
                     "SALESFORCE",
                     "BIGQUERY",
@@ -8195,37 +8161,6 @@
                     "TERADATA",
                     "SHAREPOINT",
                     "DYNAMICS365",
-                    "CONFLUENCE",
-                    "META_MARKETING",
-                    "GOOGLE_ADS",
-                    "TIKTOK_ADS",
-                    "SALESFORCE_MARKETING_CLOUD",
-                    "HUBSPOT",
-                    "WORKDAY_HCM",
-                    "GUIDEWIRE",
-                    "ZENDESK",
-                    "SLACK_AUDIT_LOGS",
-                    "CROWDSTRIKE_EVENT_STREAM",
-                    "WORKDAY_ACTIVITY_LOGGING",
-                    "AKAMAI_WAF",
-                    "VEEVA",
-                    "VEEVA_VAULT",
-                    "M365_AUDIT_LOGS",
-                    "OKTA_SYSTEM_LOGS",
-                    "ONE_PASSWORD_EVENT_LOGS",
-                    "PROOFPOINT_SIEM",
-                    "WIZ_AUDIT_LOGS",
-                    "GITHUB",
-                    "OUTLOOK",
-                    "SMARTSHEET",
-                    "MICROSOFT_TEAMS",
-                    "ADOBE_CAMPAIGNS",
-                    "LINKEDIN_ADS",
-                    "X_ADS",
-                    "BING_ADS",
-                    "GOOGLE_SEARCH_CONSOLE",
-                    "PINTEREST_ADS",
-                    "REDDIT_ADS",
                     "FOREIGN_CATALOG"
                   ]
                 },
@@ -8947,28 +8882,6 @@
                     "ENDPOINT_TYPE_READ_WRITE",
                     "ENDPOINT_TYPE_READ_ONLY"
                   ]
-                },
-                {
-                  "type": "string",
-                  "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
-                }
-              ]
-            },
-            "postgres.ProjectCustomTag": {
-              "oneOf": [
-                {
-                  "type": "object",
-                  "properties": {
-                    "key": {
-                      "description": "The key of the custom tag.",
-                      "$ref": "#/$defs/string"
-                    },
-                    "value": {
-                      "description": "The value of the custom tag.",
-                      "$ref": "#/$defs/string"
-                    }
-                  },
-                  "additionalProperties": false
                 },
                 {
                   "type": "string",
@@ -11768,20 +11681,6 @@
                     "type": "array",
                     "items": {
                       "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/pipelines.SourceConfig"
-                    }
-                  },
-                  {
-                    "type": "string",
-                    "pattern": "\\$\\{(var(\\.[a-zA-Z]+([-_]?[a-zA-Z0-9]+)*(\\[[0-9]+\\])*)+)\\}"
-                  }
-                ]
-              },
-              "postgres.ProjectCustomTag": {
-                "oneOf": [
-                  {
-                    "type": "array",
-                    "items": {
-                      "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/postgres.ProjectCustomTag"
                     }
                   },
                   {

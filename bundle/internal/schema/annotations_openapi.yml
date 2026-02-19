@@ -150,11 +150,6 @@ github.com/databricks/cli/bundle/config/resources.App:
   "service_principal_name":
     "x-databricks-field-behaviors_output_only": |-
       true
-  "space":
-    "description": |-
-      Name of the space this app belongs to.
-    "x-databricks-preview": |-
-      PRIVATE
   "update_time":
     "description": |-
       The update time of the app. Formatted timestamp in ISO 6801.
@@ -553,43 +548,6 @@ github.com/databricks/cli/bundle/config/resources.DatabaseInstance:
   "usage_policy_id":
     "description": |-
       The desired usage policy to associate with the instance.
-github.com/databricks/cli/bundle/config/resources.ExternalLocation:
-  "comment":
-    "description": |-
-      User-provided free-form text description.
-  "credential_name":
-    "description": |-
-      Name of the storage credential used with this location.
-  "effective_enable_file_events":
-    "description": |-
-      The effective value of `enable_file_events` after applying server-side defaults.
-    "x-databricks-field-behaviors_output_only": |-
-      true
-  "enable_file_events":
-    "description": |-
-      Whether to enable file events on this external location. Default to `true`. Set to `false` to disable file events.
-      The actual applied value may differ due to server-side defaults; check `effective_enable_file_events` for the effective state.
-  "encryption_details":
-    "description": |-
-      Encryption options that apply to clients connecting to cloud storage.
-  "fallback":
-    "description": |-
-      Indicates whether fallback mode is enabled for this external location. When fallback mode is enabled, the access to the location falls back to cluster credentials if UC credentials are not sufficient.
-  "file_event_queue":
-    "description": |-
-      File event queue settings. If `enable_file_events` is not `false`, must be defined and have exactly one of the documented properties.
-  "name":
-    "description": |-
-      Name of the external location.
-  "read_only":
-    "description": |-
-      Indicates whether the external location is read-only.
-  "skip_validation":
-    "description": |-
-      Skips validation of the storage credential associated with the external location.
-  "url":
-    "description": |-
-      Path URL of the external location.
 github.com/databricks/cli/bundle/config/resources.Job:
   "budget_policy_id":
     "description": |-
@@ -857,6 +815,71 @@ github.com/databricks/cli/bundle/config/resources.Pipeline:
       Usage policy of this pipeline.
     "x-databricks-preview": |-
       PRIVATE
+github.com/databricks/cli/bundle/config/resources.PostgresBranch:
+  "expire_time":
+    "description": |-
+      Absolute expiration timestamp. When set, the branch will expire at this time.
+  "is_protected":
+    "description": |-
+      When set to true, protects the branch from deletion and reset. Associated compute endpoints and the project cannot be deleted while the branch is protected.
+  "no_expiry":
+    "description": |-
+      Explicitly disable expiration. When set to true, the branch will not expire.
+      If set to false, the request is invalid; provide either ttl or expire_time instead.
+  "source_branch":
+    "description": |-
+      The name of the source branch from which this branch was created (data lineage for point-in-time recovery).
+      If not specified, defaults to the project's default branch.
+      Format: projects/{project_id}/branches/{branch_id}
+  "source_branch_lsn":
+    "description": |-
+      The Log Sequence Number (LSN) on the source branch from which this branch was created.
+  "source_branch_time":
+    "description": |-
+      The point in time on the source branch from which this branch was created.
+  "ttl":
+    "description": |-
+      Relative time-to-live duration. When set, the branch will expire at creation_time + ttl.
+github.com/databricks/cli/bundle/config/resources.PostgresEndpoint:
+  "autoscaling_limit_max_cu":
+    "description": |-
+      The maximum number of Compute Units. Minimum value is 0.5.
+  "autoscaling_limit_min_cu":
+    "description": |-
+      The minimum number of Compute Units. Minimum value is 0.5.
+  "disabled":
+    "description": |-
+      Whether to restrict connections to the compute endpoint.
+      Enabling this option schedules a suspend compute operation.
+      A disabled compute endpoint cannot be enabled by a connection or
+      console action.
+  "endpoint_type":
+    "description": |-
+      The endpoint type. A branch can only have one READ_WRITE endpoint.
+  "no_suspension":
+    "description": |-
+      When set to true, explicitly disables automatic suspension (never suspend).
+      Should be set to true when provided.
+  "settings":
+    "description": |-
+      A collection of settings for a compute endpoint.
+  "suspend_timeout_duration":
+    "description": |-
+      Duration of inactivity after which the compute endpoint is automatically suspended.
+      If specified should be between 60s and 604800s (1 minute to 1 week).
+github.com/databricks/cli/bundle/config/resources.PostgresProject:
+  "default_endpoint_settings":
+    "description": |-
+      A collection of settings for a compute endpoint.
+  "display_name":
+    "description": |-
+      Human-readable project name. Length should be between 1 and 256 characters.
+  "history_retention_duration":
+    "description": |-
+      The number of seconds to retain the shared history for point in time recovery for all branches in this project. Value should be between 0s and 2592000s (up to 30 days).
+  "pg_version":
+    "description": |-
+      The major Postgres version number. Supported versions are 16 and 17.
 github.com/databricks/cli/bundle/config/resources.QualityMonitor:
   "assets_dir":
     "description": |-
@@ -1002,7 +1025,6 @@ github.com/databricks/cli/bundle/config/resources.SqlWarehouse:
       - 2X-Large
       - 3X-Large
       - 4X-Large
-      - 5X-Large
   "creator_name":
     "description": |-
       warehouse creator name
@@ -1360,8 +1382,6 @@ github.com/databricks/databricks-sdk-go/service/apps.AppResourceUcSecurableUcSec
         EXECUTE
       - |-
         USE_CONNECTION
-      - |-
-        MODIFY
 github.com/databricks/databricks-sdk-go/service/apps.AppResourceUcSecurableUcSecurableType:
   "_":
     "enum":
@@ -1402,8 +1422,6 @@ github.com/databricks/databricks-sdk-go/service/apps.ComputeSize:
         MEDIUM
       - |-
         LARGE
-      - |-
-        LIQUID
 github.com/databricks/databricks-sdk-go/service/apps.ComputeState:
   "_":
     "enum":
@@ -1494,60 +1512,6 @@ github.com/databricks/databricks-sdk-go/service/apps.GitSource:
   "tag":
     "description": |-
       Git tag to checkout.
-github.com/databricks/databricks-sdk-go/service/catalog.AwsSqsQueue:
-  "managed_resource_id":
-    "description": |-
-      Unique identifier included in the name of file events managed cloud resources.
-    "x-databricks-field-behaviors_output_only": |-
-      true
-  "queue_url":
-    "description": |-
-      The AQS queue url in the format https://sqs.{region}.amazonaws.com/{account id}/{queue name}.
-      Only required for provided_sqs.
-github.com/databricks/databricks-sdk-go/service/catalog.AzureQueueStorage:
-  "managed_resource_id":
-    "description": |-
-      Unique identifier included in the name of file events managed cloud resources.
-    "x-databricks-field-behaviors_output_only": |-
-      true
-  "queue_url":
-    "description": |-
-      The AQS queue url in the format https://{storage account}.queue.core.windows.net/{queue name}
-      Only required for provided_aqs.
-  "resource_group":
-    "description": |-
-      Optional resource group for the queue, event grid subscription, and external location storage
-      account.
-      Only required for locations with a service principal storage credential
-  "subscription_id":
-    "description": |-
-      Optional subscription id for the queue, event grid subscription, and external location storage
-      account.
-      Required for locations with a service principal storage credential
-github.com/databricks/databricks-sdk-go/service/catalog.EncryptionDetails:
-  "_":
-    "description": |-
-      Encryption options that apply to clients connecting to cloud storage.
-  "sse_encryption_details":
-    "description": |-
-      Server-Side Encryption properties for clients communicating with AWS s3.
-github.com/databricks/databricks-sdk-go/service/catalog.FileEventQueue:
-  "managed_aqs": {}
-  "managed_pubsub": {}
-  "managed_sqs": {}
-  "provided_aqs": {}
-  "provided_pubsub": {}
-  "provided_sqs": {}
-github.com/databricks/databricks-sdk-go/service/catalog.GcpPubsub:
-  "managed_resource_id":
-    "description": |-
-      Unique identifier included in the name of file events managed cloud resources.
-    "x-databricks-field-behaviors_output_only": |-
-      true
-  "subscription_name":
-    "description": |-
-      The Pub/Sub subscription name in the format projects/{project}/subscriptions/{subscription name}.
-      Only required for provided_pubsub.
 github.com/databricks/databricks-sdk-go/service/catalog.MonitorCronSchedule:
   "pause_status":
     "description": |-
@@ -1697,24 +1661,6 @@ github.com/databricks/databricks-sdk-go/service/catalog.RegisteredModelAlias:
   "version_num":
     "description": |-
       Integer version number of the model version to which this alias points.
-github.com/databricks/databricks-sdk-go/service/catalog.SseEncryptionDetails:
-  "_":
-    "description": |-
-      Server-Side Encryption properties for clients communicating with AWS s3.
-  "algorithm":
-    "description": |-
-      Sets the value of the 'x-amz-server-side-encryption' header in S3 request.
-  "aws_kms_key_arn":
-    "description": |-
-      Optional. The ARN of the SSE-KMS key used with the S3 location, when algorithm = "SSE-KMS".
-      Sets the value of the 'x-amz-server-side-encryption-aws-kms-key-id' header.
-github.com/databricks/databricks-sdk-go/service/catalog.SseEncryptionDetailsAlgorithm:
-  "_":
-    "enum":
-      - |-
-        AWS_SSE_S3
-      - |-
-        AWS_SSE_KMS
 github.com/databricks/databricks-sdk-go/service/catalog.VolumeType:
   "_":
     "enum":
@@ -3115,9 +3061,6 @@ github.com/databricks/databricks-sdk-go/service/jobs.GitSource:
       This field is deprecated
     "x-databricks-preview": |-
       PRIVATE
-  "sparse_checkout":
-    "x-databricks-preview": |-
-      PRIVATE
 github.com/databricks/databricks-sdk-go/service/jobs.JobCluster:
   "job_cluster_key":
     "description": |-
@@ -3648,10 +3591,6 @@ github.com/databricks/databricks-sdk-go/service/jobs.SparkSubmitTask:
       Command-line parameters passed to spark submit.
 
       Use [Task parameter variables](https://docs.databricks.com/jobs.html#parameter-variables) to set parameters containing information about job runs.
-github.com/databricks/databricks-sdk-go/service/jobs.SparseCheckout:
-  "patterns":
-    "description": |-
-      List of patterns to include for sparse checkout.
 github.com/databricks/databricks-sdk-go/service/jobs.SqlTask:
   "alert":
     "description": |-
@@ -4246,10 +4185,6 @@ github.com/databricks/databricks-sdk-go/service/pipelines.IngestionSourceType:
       - |-
         POSTGRESQL
       - |-
-        REDSHIFT
-      - |-
-        SQLDW
-      - |-
         SQLSERVER
       - |-
         SALESFORCE
@@ -4273,68 +4208,6 @@ github.com/databricks/databricks-sdk-go/service/pipelines.IngestionSourceType:
         SHAREPOINT
       - |-
         DYNAMICS365
-      - |-
-        CONFLUENCE
-      - |-
-        META_MARKETING
-      - |-
-        GOOGLE_ADS
-      - |-
-        TIKTOK_ADS
-      - |-
-        SALESFORCE_MARKETING_CLOUD
-      - |-
-        HUBSPOT
-      - |-
-        WORKDAY_HCM
-      - |-
-        GUIDEWIRE
-      - |-
-        ZENDESK
-      - |-
-        SLACK_AUDIT_LOGS
-      - |-
-        CROWDSTRIKE_EVENT_STREAM
-      - |-
-        WORKDAY_ACTIVITY_LOGGING
-      - |-
-        AKAMAI_WAF
-      - |-
-        VEEVA
-      - |-
-        VEEVA_VAULT
-      - |-
-        M365_AUDIT_LOGS
-      - |-
-        OKTA_SYSTEM_LOGS
-      - |-
-        ONE_PASSWORD_EVENT_LOGS
-      - |-
-        PROOFPOINT_SIEM
-      - |-
-        WIZ_AUDIT_LOGS
-      - |-
-        GITHUB
-      - |-
-        OUTLOOK
-      - |-
-        SMARTSHEET
-      - |-
-        MICROSOFT_TEAMS
-      - |-
-        ADOBE_CAMPAIGNS
-      - |-
-        LINKEDIN_ADS
-      - |-
-        X_ADS
-      - |-
-        BING_ADS
-      - |-
-        GOOGLE_SEARCH_CONSOLE
-      - |-
-        PINTEREST_ADS
-      - |-
-        REDDIT_ADS
       - |-
         FOREIGN_CATALOG
 github.com/databricks/databricks-sdk-go/service/pipelines.ManualTrigger: {}
@@ -4744,13 +4617,6 @@ github.com/databricks/databricks-sdk-go/service/postgres.EndpointType:
         ENDPOINT_TYPE_READ_WRITE
       - |-
         ENDPOINT_TYPE_READ_ONLY
-github.com/databricks/databricks-sdk-go/service/postgres.ProjectCustomTag:
-  "key":
-    "description": |-
-      The key of the custom tag.
-  "value":
-    "description": |-
-      The value of the custom tag.
 github.com/databricks/databricks-sdk-go/service/postgres.ProjectDefaultEndpointSettings:
   "_":
     "description": |-
