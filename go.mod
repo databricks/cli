@@ -2,7 +2,7 @@ module github.com/databricks/cli
 
 go 1.25.0
 
-toolchain go1.25.5
+toolchain go1.25.7
 
 require (
 	dario.cat/mergo v1.0.2 // BSD 3-Clause
