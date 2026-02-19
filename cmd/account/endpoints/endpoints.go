@@ -66,18 +66,18 @@ func newCreateEndpoint() *cobra.Command {
 	cmd.Use = "create-endpoint PARENT DISPLAY_NAME REGION"
 	cmd.Short = `Create a network endpoint.`
 	cmd.Long = `Create a network endpoint.
-  
+
   Creates a new network connectivity endpoint that enables private connectivity
   between your network resources and Databricks services.
-  
+
   After creation, the endpoint is initially in the PENDING state. The Databricks
   endpoint service automatically reviews and approves the endpoint within a few
   minutes. Use the GET method to retrieve the latest endpoint state.
-  
+
   An endpoint can be used only after it reaches the APPROVED state.
 
   Arguments:
-    PARENT: 
+    PARENT:
     DISPLAY_NAME: The human-readable display name of this endpoint. The input should conform
       to RFC-1034, which restricts to letters, numbers, and hyphens, with the
       first character a letter, the last a letter or a number, and a 63
@@ -159,7 +159,7 @@ func newDeleteEndpoint() *cobra.Command {
 	cmd.Use = "delete-endpoint NAME"
 	cmd.Short = `Delete a network endpoint.`
 	cmd.Long = `Delete a network endpoint.
-  
+
   Deletes a network endpoint. This will remove the endpoint configuration from
   Databricks. Depending on the endpoint type and use case, you may also need to
   delete corresponding network resources in your cloud provider account.`
@@ -214,7 +214,7 @@ func newGetEndpoint() *cobra.Command {
 	cmd.Use = "get-endpoint NAME"
 	cmd.Short = `Get a network endpoint.`
 	cmd.Long = `Get a network endpoint.
-  
+
   Gets details of a specific network endpoint.`
 
 	cmd.Annotations = make(map[string]string)
@@ -270,7 +270,7 @@ func newListEndpoints() *cobra.Command {
 	cmd.Use = "list-endpoints PARENT"
 	cmd.Short = `List network endpoints.`
 	cmd.Long = `List network endpoints.
-  
+
   Lists all network connectivity endpoints for the account.`
 
 	cmd.Annotations = make(map[string]string)
