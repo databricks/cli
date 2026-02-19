@@ -2,6 +2,10 @@
 
 package schema
 
+type DataSourceAppsSettingsCustomTemplatesProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type DataSourceAppsSettingsCustomTemplatesTemplatesManifestResourceSpecsExperimentSpec struct {
 	Permission string `json:"permission"`
 }
@@ -45,17 +49,23 @@ type DataSourceAppsSettingsCustomTemplatesTemplatesManifest struct {
 	Version       int                                                                   `json:"version"`
 }
 
+type DataSourceAppsSettingsCustomTemplatesTemplatesProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type DataSourceAppsSettingsCustomTemplatesTemplates struct {
-	Creator     string                                                  `json:"creator,omitempty"`
-	Description string                                                  `json:"description,omitempty"`
-	GitProvider string                                                  `json:"git_provider,omitempty"`
-	GitRepo     string                                                  `json:"git_repo,omitempty"`
-	Manifest    *DataSourceAppsSettingsCustomTemplatesTemplatesManifest `json:"manifest,omitempty"`
-	Name        string                                                  `json:"name"`
-	Path        string                                                  `json:"path,omitempty"`
+	Creator        string                                                        `json:"creator,omitempty"`
+	Description    string                                                        `json:"description,omitempty"`
+	GitProvider    string                                                        `json:"git_provider,omitempty"`
+	GitRepo        string                                                        `json:"git_repo,omitempty"`
+	Manifest       *DataSourceAppsSettingsCustomTemplatesTemplatesManifest       `json:"manifest,omitempty"`
+	Name           string                                                        `json:"name"`
+	Path           string                                                        `json:"path,omitempty"`
+	ProviderConfig *DataSourceAppsSettingsCustomTemplatesTemplatesProviderConfig `json:"provider_config,omitempty"`
 }
 
 type DataSourceAppsSettingsCustomTemplates struct {
-	PageSize  int                                              `json:"page_size,omitempty"`
-	Templates []DataSourceAppsSettingsCustomTemplatesTemplates `json:"templates,omitempty"`
+	PageSize       int                                                  `json:"page_size,omitempty"`
+	ProviderConfig *DataSourceAppsSettingsCustomTemplatesProviderConfig `json:"provider_config,omitempty"`
+	Templates      []DataSourceAppsSettingsCustomTemplatesTemplates     `json:"templates,omitempty"`
 }

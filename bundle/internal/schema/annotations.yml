@@ -186,6 +186,9 @@ github.com/databricks/cli/bundle/config.Resources:
       The experiment definitions for the bundle, where each key is the name of the experiment.
     "markdown_description": |-
       The experiment definitions for the bundle, where each key is the name of the experiment. See [\_](/dev-tools/bundles/resources.md#experiments).
+  "external_locations":
+    "description": |-
+      PLACEHOLDER
   "jobs":
     "description": |-
       The job definitions for the bundle, where each key is the name of the job.
@@ -556,12 +559,6 @@ github.com/databricks/cli/bundle/config/resources.Catalog:
   "connection_name":
     "description": |-
       PLACEHOLDER
-  "grants":
-    "description": |-
-      PLACEHOLDER
-  "lifecycle":
-    "description": |-
-      PLACEHOLDER
   "name":
     "description": |-
       PLACEHOLDER
@@ -688,6 +685,50 @@ github.com/databricks/cli/bundle/config/resources.DatabaseInstancePermission:
     "description": |-
       PLACEHOLDER
   "user_name":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.ExternalLocation:
+  "comment":
+    "description": |-
+      PLACEHOLDER
+  "credential_name":
+    "description": |-
+      PLACEHOLDER
+  "enable_file_events":
+    "description": |-
+      PLACEHOLDER
+  "encryption_details":
+    "description": |-
+      PLACEHOLDER
+  "fallback":
+    "description": |-
+      PLACEHOLDER
+  "file_event_queue":
+    "description": |-
+      PLACEHOLDER
+  "grants":
+    "description": |-
+      PLACEHOLDER
+  "lifecycle":
+    "description": |-
+      PLACEHOLDER
+  "name":
+    "description": |-
+      PLACEHOLDER
+  "read_only":
+    "description": |-
+      PLACEHOLDER
+  "skip_validation":
+    "description": |-
+      PLACEHOLDER
+  "url":
+    "description": |-
+      PLACEHOLDER
+github.com/databricks/cli/bundle/config/resources.ExternalLocationGrant:
+  "principal":
+    "description": |-
+      PLACEHOLDER
+  "privileges":
     "description": |-
       PLACEHOLDER
 github.com/databricks/cli/bundle/config/resources.Grant:

@@ -160,6 +160,16 @@ resources:
 
   # experiments: no api field behaviors
 
+  external_locations:
+
+    ignore_remote_changes:
+      - field: file_event_queue.managed_aqs.managed_resource_id
+        reason: spec:output_only
+      - field: file_event_queue.managed_pubsub.managed_resource_id
+        reason: spec:output_only
+      - field: file_event_queue.managed_sqs.managed_resource_id
+        reason: spec:output_only
+
   # jobs: no api field behaviors
 
   # model_serving_endpoints: no api field behaviors

@@ -146,6 +146,7 @@ type FakeWorkspace struct {
 	ModelRegistryModels map[string]ml.Model
 	Clusters            map[string]compute.ClusterDetails
 	Catalogs            map[string]catalog.CatalogInfo
+	ExternalLocations   map[string]catalog.ExternalLocationInfo
 	RegisteredModels    map[string]catalog.RegisteredModelInfo
 	ServingEndpoints    map[string]serving.ServingEndpointDetailed
 
@@ -268,6 +269,7 @@ func NewFakeWorkspace(url, token string) *FakeWorkspace {
 		Monitors:            map[string]catalog.MonitorInfo{},
 		Apps:                map[string]apps.App{},
 		Catalogs:            map[string]catalog.CatalogInfo{},
+		ExternalLocations:   map[string]catalog.ExternalLocationInfo{},
 		Schemas:             map[string]catalog.SchemaInfo{},
 		RegisteredModels:    map[string]catalog.RegisteredModelInfo{},
 		Volumes:             map[string]catalog.VolumeInfo{},

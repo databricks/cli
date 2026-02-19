@@ -80,12 +80,12 @@
         },
         "tasks[task_key='main'].notebook_task.source": {
           "action": "skip",
-          "reason": "server_side_default",
+          "reason": "backend_default",
           "remote": "WORKSPACE"
         },
         "tasks[task_key='main'].run_if": {
           "action": "skip",
-          "reason": "server_side_default",
+          "reason": "backend_default",
           "remote": "ALL_SUCCESS"
         },
         "tasks[task_key='main'].timeout_seconds": {
@@ -202,7 +202,7 @@
         },
         "storage": {
           "action": "skip",
-          "reason": "server_side_default",
+          "reason": "backend_default",
           "remote": "dbfs:/pipelines/[UUID]"
         },
         "tags['myjob_name']": {
@@ -237,7 +237,7 @@
       "changes": {
         "storage_location": {
           "action": "skip",
-          "reason": "server_side_default",
+          "reason": "backend_default",
           "remote": "s3://deco-uc-prod-isolated-aws-us-east-1/metastore/[UUID]/volumes/[UUID]"
         }
       }

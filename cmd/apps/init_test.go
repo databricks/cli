@@ -1,8 +1,12 @@
 package apps
 
 import (
+	"bytes"
 	"context"
 	"errors"
+	"io"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/databricks/cli/libs/apps/manifest"
@@ -452,4 +456,46 @@ func TestAppendUniqueEmptyBase(t *testing.T) {
 func TestAppendUniqueNoValues(t *testing.T) {
 	result := appendUnique([]string{"a", "b"})
 	assert.Equal(t, []string{"a", "b"}, result)
+}
+
+func TestRunManifestOnlyFound(t *testing.T) {
+	dir := t.TempDir()
+	manifestPath := filepath.Join(dir, manifest.ManifestFileName)
+	content := `{"$schema":"https://example.com/schema","version":"1.0","plugins":{"analytics":{"name":"analytics","resources":{"required":[],"optional":[]}}}}`
+	require.NoError(t, os.WriteFile(manifestPath, []byte(content), 0o644))
+
+	old := os.Stdout
+	r, w, err := os.Pipe()
+	require.NoError(t, err)
+	os.Stdout = w
+
+	err = runManifestOnly(context.Background(), dir, "", "")
+	w.Close()
+	os.Stdout = old
+	require.NoError(t, err)
+
+	var buf bytes.Buffer
+	_, _ = io.Copy(&buf, r)
+	out := buf.String()
+	assert.Contains(t, out, `"version": "1.0"`)
+	assert.Contains(t, out, `"analytics"`)
+}
+
+func TestRunManifestOnlyNotFound(t *testing.T) {
+	dir := t.TempDir()
+
+	old := os.Stdout
+	r, w, err := os.Pipe()
+	require.NoError(t, err)
+	os.Stdout = w
+
+	err = runManifestOnly(context.Background(), dir, "", "")
+	w.Close()
+	os.Stdout = old
+	require.NoError(t, err)
+
+	var buf bytes.Buffer
+	_, _ = io.Copy(&buf, r)
+	out := buf.String()
+	assert.Equal(t, "No appkit.plugins.json manifest found in this template.\n", out)
 }

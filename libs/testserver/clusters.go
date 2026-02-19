@@ -29,6 +29,8 @@ func (s *FakeWorkspace) ClustersCreate(req Request) any {
 		request.SingleUserName = s.CurrentUser().UserName
 	}
 
+	clusterFixUps(&request)
+
 	s.Clusters[clusterId] = request
 
 	return Response{
@@ -75,6 +77,7 @@ func (s *FakeWorkspace) ClustersEdit(req Request) any {
 		return Response{StatusCode: 404}
 	}
 
+	clusterFixUps(&request)
 	s.Clusters[request.ClusterId] = request
 
 	// Clear venv cache when cluster is edited to match cloud behavior where
@@ -85,6 +88,27 @@ func (s *FakeWorkspace) ClustersEdit(req Request) any {
 	}
 
 	return Response{}
+}
+
+// clusterFixUps applies server-side defaults that the real API sets.
+func clusterFixUps(cluster *compute.ClusterDetails) {
+	if cluster.AwsAttributes == nil {
+		cluster.AwsAttributes = &compute.AwsAttributes{
+			Availability: compute.AwsAvailabilitySpotWithFallback,
+			ZoneId:       "us-east-1c",
+		}
+		cluster.AwsAttributes.ForceSendFields = append(
+			cluster.AwsAttributes.ForceSendFields,
+			"Availability",
+			"ZoneId",
+		)
+	}
+
+	cluster.ForceSendFields = append(cluster.ForceSendFields, "EnableElasticDisk")
+
+	if cluster.DriverNodeTypeId == "" && cluster.NodeTypeId != "" {
+		cluster.DriverNodeTypeId = cluster.NodeTypeId
+	}
 }
 
 func (s *FakeWorkspace) ClustersGet(req Request, clusterId string) any {

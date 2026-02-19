@@ -28,6 +28,10 @@ type ResourceDatabaseInstanceParentInstanceRef struct {
 	Uid          string `json:"uid,omitempty"`
 }
 
+type ResourceDatabaseInstanceProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type ResourceDatabaseInstance struct {
 	Capacity                           string                                        `json:"capacity,omitempty"`
 	ChildInstanceRefs                  []ResourceDatabaseInstanceChildInstanceRefs   `json:"child_instance_refs,omitempty"`
@@ -48,6 +52,7 @@ type ResourceDatabaseInstance struct {
 	NodeCount                          int                                           `json:"node_count,omitempty"`
 	ParentInstanceRef                  *ResourceDatabaseInstanceParentInstanceRef    `json:"parent_instance_ref,omitempty"`
 	PgVersion                          string                                        `json:"pg_version,omitempty"`
+	ProviderConfig                     *ResourceDatabaseInstanceProviderConfig       `json:"provider_config,omitempty"`
 	PurgeOnDelete                      bool                                          `json:"purge_on_delete,omitempty"`
 	ReadOnlyDns                        string                                        `json:"read_only_dns,omitempty"`
 	ReadWriteDns                       string                                        `json:"read_write_dns,omitempty"`

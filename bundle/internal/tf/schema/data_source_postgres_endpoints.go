@@ -2,6 +2,10 @@
 
 package schema
 
+type DataSourcePostgresEndpointsEndpointsProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type DataSourcePostgresEndpointsEndpointsSpecSettings struct {
 	PgSettings map[string]string `json:"pg_settings,omitempty"`
 }
@@ -37,17 +41,23 @@ type DataSourcePostgresEndpointsEndpointsStatus struct {
 }
 
 type DataSourcePostgresEndpointsEndpoints struct {
-	CreateTime string                                      `json:"create_time,omitempty"`
-	Name       string                                      `json:"name"`
-	Parent     string                                      `json:"parent,omitempty"`
-	Spec       *DataSourcePostgresEndpointsEndpointsSpec   `json:"spec,omitempty"`
-	Status     *DataSourcePostgresEndpointsEndpointsStatus `json:"status,omitempty"`
-	Uid        string                                      `json:"uid,omitempty"`
-	UpdateTime string                                      `json:"update_time,omitempty"`
+	CreateTime     string                                              `json:"create_time,omitempty"`
+	Name           string                                              `json:"name"`
+	Parent         string                                              `json:"parent,omitempty"`
+	ProviderConfig *DataSourcePostgresEndpointsEndpointsProviderConfig `json:"provider_config,omitempty"`
+	Spec           *DataSourcePostgresEndpointsEndpointsSpec           `json:"spec,omitempty"`
+	Status         *DataSourcePostgresEndpointsEndpointsStatus         `json:"status,omitempty"`
+	Uid            string                                              `json:"uid,omitempty"`
+	UpdateTime     string                                              `json:"update_time,omitempty"`
+}
+
+type DataSourcePostgresEndpointsProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
 }
 
 type DataSourcePostgresEndpoints struct {
-	Endpoints []DataSourcePostgresEndpointsEndpoints `json:"endpoints,omitempty"`
-	PageSize  int                                    `json:"page_size,omitempty"`
-	Parent    string                                 `json:"parent"`
+	Endpoints      []DataSourcePostgresEndpointsEndpoints     `json:"endpoints,omitempty"`
+	PageSize       int                                        `json:"page_size,omitempty"`
+	Parent         string                                     `json:"parent"`
+	ProviderConfig *DataSourcePostgresEndpointsProviderConfig `json:"provider_config,omitempty"`
 }
