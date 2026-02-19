@@ -87,11 +87,6 @@ the SSH server and handling the connection proxy.
 			return errors.New("--accelerator flag can only be used with serverless compute (--name flag)")
 		}
 
-		// Remove when we add support for serverless CPU
-		if connectionName != "" && accelerator == "" {
-			return errors.New("--name flag requires --accelerator to be set (for now we only support serverless GPU compute)")
-		}
-
 		// TODO: validate connectionName if provided
 
 		opts := client.ClientOptions{
