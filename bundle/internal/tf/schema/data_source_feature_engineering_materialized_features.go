@@ -15,6 +15,10 @@ type DataSourceFeatureEngineeringMaterializedFeaturesMaterializedFeaturesOnlineS
 	TableNamePrefix string `json:"table_name_prefix"`
 }
 
+type DataSourceFeatureEngineeringMaterializedFeaturesMaterializedFeaturesProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type DataSourceFeatureEngineeringMaterializedFeaturesMaterializedFeatures struct {
 	CronSchedule            string                                                                                  `json:"cron_schedule,omitempty"`
 	FeatureName             string                                                                                  `json:"feature_name,omitempty"`
@@ -23,11 +27,17 @@ type DataSourceFeatureEngineeringMaterializedFeaturesMaterializedFeatures struct
 	OfflineStoreConfig      *DataSourceFeatureEngineeringMaterializedFeaturesMaterializedFeaturesOfflineStoreConfig `json:"offline_store_config,omitempty"`
 	OnlineStoreConfig       *DataSourceFeatureEngineeringMaterializedFeaturesMaterializedFeaturesOnlineStoreConfig  `json:"online_store_config,omitempty"`
 	PipelineScheduleState   string                                                                                  `json:"pipeline_schedule_state,omitempty"`
+	ProviderConfig          *DataSourceFeatureEngineeringMaterializedFeaturesMaterializedFeaturesProviderConfig     `json:"provider_config,omitempty"`
 	TableName               string                                                                                  `json:"table_name,omitempty"`
+}
+
+type DataSourceFeatureEngineeringMaterializedFeaturesProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
 }
 
 type DataSourceFeatureEngineeringMaterializedFeatures struct {
 	FeatureName          string                                                                 `json:"feature_name,omitempty"`
 	MaterializedFeatures []DataSourceFeatureEngineeringMaterializedFeaturesMaterializedFeatures `json:"materialized_features,omitempty"`
 	PageSize             int                                                                    `json:"page_size,omitempty"`
+	ProviderConfig       *DataSourceFeatureEngineeringMaterializedFeaturesProviderConfig        `json:"provider_config,omitempty"`
 }

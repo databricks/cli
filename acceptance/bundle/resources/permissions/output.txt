@@ -332,7 +332,28 @@ EXACT pipelines/other_can_manage/out.requests.destroy.direct.json
 EXACT pipelines/other_is_owner/out.requests.deploy.direct.json
 EXACT pipelines/other_is_owner/out.requests.destroy.direct.json
 MATCH sql_warehouses/current_can_manage/out.requests.deploy.direct.json
-EXACT sql_warehouses/current_can_manage/out.requests.destroy.direct.json
+DIFF  sql_warehouses/current_can_manage/out.requests.destroy.direct.json
+--- sql_warehouses/current_can_manage/out.requests.destroy.direct.json
++++ sql_warehouses/current_can_manage/out.requests.destroy.terraform.json
+@@ -1 +1,18 @@
+-[]+[
++  {
++    "body": {
++      "access_control_list": [
++        {
++          "permission_level": "CAN_MANAGE",
++          "user_name": "[USERNAME]"
++        },
++        {
++          "permission_level": "IS_OWNER",
++          "user_name": "[USERNAME]"
++        }
++      ]
++    },
++    "method": "PUT",
++    "path": "/api/2.0/permissions/sql/warehouses/[UUID]"
++  }
++]
 EXACT target_permissions/out.requests_create.direct.json
 DIFF  target_permissions/out.requests_delete.direct.json
 --- target_permissions/out.requests_delete.direct.json

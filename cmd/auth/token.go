@@ -103,8 +103,8 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 		if !args.authArguments.IsUnifiedHost && existingProfile.IsUnifiedHost {
 			args.authArguments.IsUnifiedHost = existingProfile.IsUnifiedHost
 		}
-		if args.authArguments.WorkspaceId == "" && existingProfile.WorkspaceId != "" {
-			args.authArguments.WorkspaceId = existingProfile.WorkspaceId
+		if args.authArguments.WorkspaceID == "" && existingProfile.WorkspaceID != "" {
+			args.authArguments.WorkspaceID = existingProfile.WorkspaceID
 		}
 	}
 

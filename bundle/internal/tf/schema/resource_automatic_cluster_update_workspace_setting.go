@@ -25,9 +25,14 @@ type ResourceAutomaticClusterUpdateWorkspaceSettingAutomaticClusterUpdateWorkspa
 	MaintenanceWindow               *ResourceAutomaticClusterUpdateWorkspaceSettingAutomaticClusterUpdateWorkspaceMaintenanceWindow `json:"maintenance_window,omitempty"`
 }
 
+type ResourceAutomaticClusterUpdateWorkspaceSettingProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type ResourceAutomaticClusterUpdateWorkspaceSetting struct {
 	Etag                            string                                                                         `json:"etag,omitempty"`
 	Id                              string                                                                         `json:"id,omitempty"`
 	SettingName                     string                                                                         `json:"setting_name,omitempty"`
 	AutomaticClusterUpdateWorkspace *ResourceAutomaticClusterUpdateWorkspaceSettingAutomaticClusterUpdateWorkspace `json:"automatic_cluster_update_workspace,omitempty"`
+	ProviderConfig                  *ResourceAutomaticClusterUpdateWorkspaceSettingProviderConfig                  `json:"provider_config,omitempty"`
 }

@@ -29,39 +29,22 @@ Resource: resources.pipelines.pipeline1
 >>> diff.py databricks.yml.backup databricks.yml
 --- databricks.yml.backup
 +++ databricks.yml
-@@ -1,9 +1,7 @@
- bundle:
-   name: test-bundle-[UNIQUE_NAME]
--
- targets:
-   default:
-     mode: development
--
- resources:
-   jobs:
-@@ -13,4 +11,5 @@
+@@ -13,4 +13,5 @@
            interval: 1
            unit: DAYS
 +        pause_status: UNPAUSED
        tasks:
          - task_key: main
-@@ -21,5 +20,8 @@
-             node_type_id: [NODE_TYPE_ID]
+@@ -22,4 +23,8 @@
              num_workers: 1
--
+
 +      tags:
 +        dev: default_tag_changed
 +      max_concurrent_runs: 5
 +      name: Custom Job Name
      job2:
        tasks:
-@@ -31,5 +33,4 @@
-             node_type_id: [NODE_TYPE_ID]
-             num_workers: 1
--
-   pipelines:
-     pipeline1:
-@@ -38,2 +39,4 @@
+@@ -38,2 +43,4 @@
          - notebook:
              path: /Users/{{workspace_user_name}}/notebook
 +      channel: PREVIEW

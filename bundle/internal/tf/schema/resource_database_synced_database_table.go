@@ -72,6 +72,10 @@ type ResourceDatabaseSyncedDatabaseTableDataSynchronizationStatus struct {
 	TriggeredUpdateStatus  *ResourceDatabaseSyncedDatabaseTableDataSynchronizationStatusTriggeredUpdateStatus  `json:"triggered_update_status,omitempty"`
 }
 
+type ResourceDatabaseSyncedDatabaseTableProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type ResourceDatabaseSyncedDatabaseTableSpecNewPipelineSpec struct {
 	BudgetPolicyId string `json:"budget_policy_id,omitempty"`
 	StorageCatalog string `json:"storage_catalog,omitempty"`
@@ -95,6 +99,7 @@ type ResourceDatabaseSyncedDatabaseTable struct {
 	EffectiveLogicalDatabaseName  string                                                        `json:"effective_logical_database_name,omitempty"`
 	LogicalDatabaseName           string                                                        `json:"logical_database_name,omitempty"`
 	Name                          string                                                        `json:"name"`
+	ProviderConfig                *ResourceDatabaseSyncedDatabaseTableProviderConfig            `json:"provider_config,omitempty"`
 	Spec                          *ResourceDatabaseSyncedDatabaseTableSpec                      `json:"spec,omitempty"`
 	UnityCatalogProvisioningState string                                                        `json:"unity_catalog_provisioning_state,omitempty"`
 }

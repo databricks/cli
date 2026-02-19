@@ -1,9 +1,15 @@
 package apps
 
 import (
+	"bytes"
+	"context"
 	"errors"
+	"io"
+	"os"
+	"path/filepath"
 	"testing"
 
+	"github.com/databricks/cli/libs/apps/manifest"
 	"github.com/databricks/cli/libs/apps/prompt"
 	"github.com/spf13/cobra"
 	"github.com/stretchr/testify/assert"
@@ -64,15 +70,15 @@ func TestIsTextFile(t *testing.T) {
 	}
 }
 
-func TestSubstituteVars(t *testing.T) {
+func TestExecuteTemplate(t *testing.T) {
+	ctx := context.Background()
 	vars := templateVars{
 		ProjectName:    "my-app",
-		SQLWarehouseID: "warehouse123",
 		AppDescription: "My awesome app",
 		Profile:        "default",
 		WorkspaceHost:  "https://dbc-123.cloud.databricks.com",
-		PluginImport:   "analytics",
-		PluginUsage:    "analytics()",
+		PluginImports:  "analytics",
+		PluginUsages:   "analytics()",
 	}
 
 	tests := []struct {
@@ -86,11 +92,6 @@ func TestSubstituteVars(t *testing.T) {
 			expected: "name: my-app",
 		},
 		{
-			name:     "warehouse id substitution",
-			input:    "warehouse: {{.sql_warehouse_id}}",
-			expected: "warehouse: warehouse123",
-		},
-		{
 			name:     "description substitution",
 			input:    "description: {{.app_description}}",
 			expected: "description: My awesome app",
@@ -102,17 +103,17 @@ func TestSubstituteVars(t *testing.T) {
 		},
 		{
 			name:     "workspace host substitution",
-			input:    "host: {{workspace_host}}",
+			input:    "host: {{.workspace_host}}",
 			expected: "host: https://dbc-123.cloud.databricks.com",
 		},
 		{
 			name:     "plugin import substitution",
-			input:    "import { {{.plugin_import}} } from 'appkit'",
+			input:    "import { {{.plugin_imports}} } from 'appkit'",
 			expected: "import { analytics } from 'appkit'",
 		},
 		{
 			name:     "plugin usage substitution",
-			input:    "plugins: [{{.plugin_usage}}]",
+			input:    "plugins: [{{.plugin_usages}}]",
 			expected: "plugins: [analytics()]",
 		},
 		{
@@ -129,22 +130,20 @@ func TestSubstituteVars(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := substituteVars(tt.input, vars)
-			assert.Equal(t, tt.expected, result)
+			result, err := executeTemplate(ctx, "test.txt", []byte(tt.input), vars)
+			require.NoError(t, err)
+			assert.Equal(t, tt.expected, string(result))
 		})
 	}
 }
 
-func TestSubstituteVarsNoPlugins(t *testing.T) {
-	// Test plugin cleanup when no plugins are selected
+func TestExecuteTemplateEmptyPlugins(t *testing.T) {
+	ctx := context.Background()
 	vars := templateVars{
 		ProjectName:    "my-app",
-		SQLWarehouseID: "",
 		AppDescription: "My app",
-		Profile:        "",
-		WorkspaceHost:  "",
-		PluginImport:   "", // No plugins
-		PluginUsage:    "",
+		PluginImports:  "",
+		PluginUsages:   "",
 	}
 
 	tests := []struct {
@@ -153,23 +152,33 @@ func TestSubstituteVarsNoPlugins(t *testing.T) {
 		expected string
 	}{
 		{
-			name:     "removes plugin import with comma",
-			input:    "import { core, {{.plugin_import}} } from 'appkit'",
+			name:     "empty plugin imports render as empty",
+			input:    "import { core{{if .plugin_imports}}, {{.plugin_imports}}{{end}} } from 'appkit'",
 			expected: "import { core } from 'appkit'",
 		},
 		{
-			name:     "removes plugin usage line",
-			input:    "plugins: [\n    {{.plugin_usage}},\n]",
-			expected: "plugins: [\n]",
+			name:     "empty plugin usages render as empty",
+			input:    "plugins: [{{if .plugin_usages}}\n    {{.plugin_usages}},\n{{end}}]",
+			expected: "plugins: []",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := substituteVars(tt.input, vars)
-			assert.Equal(t, tt.expected, result)
+			result, err := executeTemplate(ctx, "test.txt", []byte(tt.input), vars)
+			require.NoError(t, err)
+			assert.Equal(t, tt.expected, string(result))
 		})
 	}
+}
+
+func TestExecuteTemplateInvalidSyntaxReturnsOriginal(t *testing.T) {
+	ctx := context.Background()
+	vars := templateVars{ProjectName: "my-app"}
+	input := "some content with bad {{ syntax"
+	result, err := executeTemplate(ctx, "test.js", []byte(input), vars)
+	require.NoError(t, err)
+	assert.Equal(t, input, string(result))
 }
 
 func TestInitCmdBranchAndVersionMutuallyExclusive(t *testing.T) {
@@ -282,4 +291,211 @@ func TestParseDeployAndRunFlags(t *testing.T) {
 			assert.Equal(t, tt.wantRunMode, runMode)
 		})
 	}
+}
+
+// testManifest returns a manifest with an "analytics" plugin for testing parseSetValues.
+func testManifest() *manifest.Manifest {
+	return &manifest.Manifest{
+		Plugins: map[string]manifest.Plugin{
+			"analytics": {
+				Name: "analytics",
+				Resources: manifest.Resources{
+					Required: []manifest.Resource{
+						{
+							Type:        "sql_warehouse",
+							Alias:       "SQL Warehouse",
+							ResourceKey: "sql-warehouse",
+							Fields:      map[string]manifest.ResourceField{"id": {Env: "WH_ID"}},
+						},
+					},
+					Optional: []manifest.Resource{
+						{
+							Type:        "database",
+							Alias:       "Database",
+							ResourceKey: "database",
+							Fields: map[string]manifest.ResourceField{
+								"instance_name": {Env: "DB_INST"},
+								"database_name": {Env: "DB_NAME"},
+							},
+						},
+						{
+							Type:        "secret",
+							Alias:       "Secret",
+							ResourceKey: "secret",
+							Fields: map[string]manifest.ResourceField{
+								"scope": {Env: "SECRET_SCOPE"},
+								"key":   {Env: "SECRET_KEY"},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func TestParseSetValues(t *testing.T) {
+	m := testManifest()
+
+	tests := []struct {
+		name      string
+		setValues []string
+		wantRV    map[string]string
+		wantErr   string
+	}{
+		{
+			name:      "single field",
+			setValues: []string{"analytics.sql-warehouse.id=abc123"},
+			wantRV:    map[string]string{"sql-warehouse.id": "abc123"},
+		},
+		{
+			name:      "multi-field complete",
+			setValues: []string{"analytics.database.instance_name=inst", "analytics.database.database_name=mydb"},
+			wantRV:    map[string]string{"database.instance_name": "inst", "database.database_name": "mydb"},
+		},
+		{
+			name:      "later set overrides earlier",
+			setValues: []string{"analytics.sql-warehouse.id=first", "analytics.sql-warehouse.id=second"},
+			wantRV:    map[string]string{"sql-warehouse.id": "second"},
+		},
+		{
+			name:      "empty set values",
+			setValues: nil,
+			wantRV:    map[string]string{},
+		},
+		{
+			name:      "missing equals sign",
+			setValues: []string{"analytics.sql-warehouse.id"},
+			wantErr:   "invalid --set format",
+		},
+		{
+			name:      "too few key parts",
+			setValues: []string{"sql-warehouse.id=abc"},
+			wantErr:   "invalid --set key",
+		},
+		{
+			name:      "unknown plugin",
+			setValues: []string{"nosuch.sql-warehouse.id=abc"},
+			wantErr:   `unknown plugin "nosuch"`,
+		},
+		{
+			name:      "unknown resource key",
+			setValues: []string{"analytics.nosuch.id=abc"},
+			wantErr:   `has no resource with key "nosuch"`,
+		},
+		{
+			name:      "unknown field",
+			setValues: []string{"analytics.sql-warehouse.nosuch=abc"},
+			wantErr:   `field "nosuch"`,
+		},
+		{
+			name:      "multi-field incomplete database",
+			setValues: []string{"analytics.database.instance_name=inst"},
+			wantErr:   `incomplete resource "database"`,
+		},
+		{
+			name:      "multi-field incomplete secret",
+			setValues: []string{"analytics.secret.scope=myscope"},
+			wantErr:   `incomplete resource "secret"`,
+		},
+		{
+			name: "all fields together",
+			setValues: []string{
+				"analytics.sql-warehouse.id=wh1",
+				"analytics.database.instance_name=inst",
+				"analytics.database.database_name=mydb",
+				"analytics.secret.scope=s",
+				"analytics.secret.key=k",
+			},
+			wantRV: map[string]string{
+				"sql-warehouse.id":       "wh1",
+				"database.instance_name": "inst",
+				"database.database_name": "mydb",
+				"secret.scope":           "s",
+				"secret.key":             "k",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rv, err := parseSetValues(tt.setValues, m)
+			if tt.wantErr != "" {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), tt.wantErr)
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, tt.wantRV, rv)
+			}
+		})
+	}
+}
+
+func TestPluginHasResourceField(t *testing.T) {
+	m := testManifest()
+	p := m.GetPluginByName("analytics")
+	require.NotNil(t, p)
+
+	assert.True(t, pluginHasResourceField(p, "sql-warehouse", "id"))
+	assert.True(t, pluginHasResourceField(p, "database", "instance_name"))
+	assert.True(t, pluginHasResourceField(p, "secret", "scope"))
+	assert.False(t, pluginHasResourceField(p, "sql-warehouse", "nosuch"))
+	assert.False(t, pluginHasResourceField(p, "nosuch", "id"))
+}
+
+func TestAppendUnique(t *testing.T) {
+	result := appendUnique([]string{"a", "b"}, "b", "c", "a", "d")
+	assert.Equal(t, []string{"a", "b", "c", "d"}, result)
+}
+
+func TestAppendUniqueEmptyBase(t *testing.T) {
+	result := appendUnique(nil, "x", "y", "x")
+	assert.Equal(t, []string{"x", "y"}, result)
+}
+
+func TestAppendUniqueNoValues(t *testing.T) {
+	result := appendUnique([]string{"a", "b"})
+	assert.Equal(t, []string{"a", "b"}, result)
+}
+
+func TestRunManifestOnlyFound(t *testing.T) {
+	dir := t.TempDir()
+	manifestPath := filepath.Join(dir, manifest.ManifestFileName)
+	content := `{"$schema":"https://example.com/schema","version":"1.0","plugins":{"analytics":{"name":"analytics","resources":{"required":[],"optional":[]}}}}`
+	require.NoError(t, os.WriteFile(manifestPath, []byte(content), 0o644))
+
+	old := os.Stdout
+	r, w, err := os.Pipe()
+	require.NoError(t, err)
+	os.Stdout = w
+
+	err = runManifestOnly(context.Background(), dir, "", "")
+	w.Close()
+	os.Stdout = old
+	require.NoError(t, err)
+
+	var buf bytes.Buffer
+	_, _ = io.Copy(&buf, r)
+	out := buf.String()
+	assert.Contains(t, out, `"version": "1.0"`)
+	assert.Contains(t, out, `"analytics"`)
+}
+
+func TestRunManifestOnlyNotFound(t *testing.T) {
+	dir := t.TempDir()
+
+	old := os.Stdout
+	r, w, err := os.Pipe()
+	require.NoError(t, err)
+	os.Stdout = w
+
+	err = runManifestOnly(context.Background(), dir, "", "")
+	w.Close()
+	os.Stdout = old
+	require.NoError(t, err)
+
+	var buf bytes.Buffer
+	_, _ = io.Copy(&buf, r)
+	out := buf.String()
+	assert.Equal(t, "No appkit.plugins.json manifest found in this template.\n", out)
 }
