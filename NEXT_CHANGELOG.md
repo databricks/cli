@@ -1,6 +1,5 @@
 # NEXT CHANGELOG
 
-## Release v0.289.1
+## Release v0.290.0
 
-Internal:
-* Pin docker version to fix release process.
+### Internal:
