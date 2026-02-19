@@ -13,6 +13,8 @@ import (
 
 	"github.com/charmbracelet/huh"
 	"github.com/databricks/cli/cmd/root"
+	"github.com/databricks/cli/experimental/aitools/lib/agents"
+	"github.com/databricks/cli/experimental/aitools/lib/installer"
 	"github.com/databricks/cli/libs/apps/generator"
 	"github.com/databricks/cli/libs/apps/initializer"
 	"github.com/databricks/cli/libs/apps/manifest"
@@ -827,6 +829,16 @@ func runCreate(ctx context.Context, opts createOptions) error {
 		prompt.PrintSuccess(ctx, opts.name, absOutputDir, fileCount, nextStepsCmd)
 	} else {
 		prompt.PrintSuccess(ctx, opts.name, absOutputDir, fileCount, "")
+	}
+
+	// Recommend skills installation if coding agents are detected without skills.
+	// In flags mode, only print a hint — never prompt interactively.
+	if flagsMode {
+		if !agents.HasDatabricksSkillsInstalled() {
+			cmdio.LogString(ctx, "Tip: coding agents detected without Databricks skills. Run 'databricks experimental aitools skills install' to install them.")
+		}
+	} else if err := agents.RecommendSkillsInstall(ctx, installer.InstallAllSkills); err != nil {
+		log.Warnf(ctx, "Skills recommendation failed: %v", err)
 	}
 
 	// Execute post-creation actions (deploy and/or run)

@@ -1,11 +1,6 @@
 # NEXT CHANGELOG
 
-## Release v0.290.0
+## Release v0.289.1
 
-### CLI
-
-### Bundles
-
-### Dependency updates
-
-### API Changes
+Internal:
+* Pin docker version to fix release process.
