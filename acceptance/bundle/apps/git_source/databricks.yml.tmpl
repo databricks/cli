@@ -1,0 +1,18 @@
+bundle:
+  name: app-git-source-$UNIQUE_NAME
+
+workspace:
+  root_path: "~/.bundle/app-git-source-$UNIQUE_NAME"
+
+resources:
+  apps:
+    my_app:
+      name: app-$UNIQUE_NAME
+      description: "App with git source"
+      git_repository:
+        url: https://github.com/databricks/cli
+        provider: gitHub
+      git_source:
+        branch: main
+        source_code_path: internal/testdata/simple-app
+      source_code_path: ./app

@@ -166,6 +166,11 @@ func (a *appRunner) buildAppDeployment() apps.AppDeployment {
 		SourceCodePath: a.app.SourceCodePath,
 	}
 
+	// Add git source if provided
+	if a.app.GitSource != nil {
+		deployment.GitSource = a.app.GitSource
+	}
+
 	// Add inline config if provided
 	if a.app.Config != nil {
 		if len(a.app.Config.Command) > 0 {

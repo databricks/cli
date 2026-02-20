@@ -191,6 +191,10 @@
                         "x-databricks-preview": "PRIVATE",
                         "doNotSuggest": true
                       },
+                      "git_source": {
+                        "description": "Git source configuration for app deployments. Specifies which git reference (branch, tag, or commit)\nto use when deploying the app. Used in conjunction with git_repository to deploy code directly from git.\nThe source_code_path within git_source specifies the relative path to the app code within the repository.",
+                        "$ref": "#/$defs/github.com/databricks/databricks-sdk-go/service/apps.GitSource"
+                      },
                       "lifecycle": {
                         "description": "Lifecycle is a struct that contains the lifecycle settings for a resource. It controls the behavior of the resource when it is deployed or destroyed.",
                         "$ref": "#/$defs/github.com/databricks/cli/bundle/config/resources.Lifecycle"
