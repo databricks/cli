@@ -70,16 +70,28 @@ func TestIsTextFile(t *testing.T) {
 	}
 }
 
-func TestExecuteTemplate(t *testing.T) {
-	ctx := context.Background()
-	vars := templateVars{
+func testVars() templateVars {
+	return templateVars{
 		ProjectName:    "my-app",
 		AppDescription: "My awesome app",
 		Profile:        "default",
 		WorkspaceHost:  "https://dbc-123.cloud.databricks.com",
-		PluginImports:  "analytics",
-		PluginUsages:   "analytics()",
+		Bundle: tmplBundle{
+			Variables:       "sql_warehouse_id:",
+			Resources:       "- name: sql-warehouse",
+			TargetVariables: "sql_warehouse_id: abc123",
+		},
+		DotEnv: dotEnvVars{
+			Content: "WH_ID=abc123",
+			Example: "WH_ID=your_sql_warehouse_id",
+		},
+		Plugins: map[string]*pluginVar{"analytics": {}},
 	}
+}
+
+func TestExecuteTemplateBackwardCompat(t *testing.T) {
+	ctx := context.Background()
+	vars := testVars()
 
 	tests := []struct {
 		name     string
@@ -87,44 +99,54 @@ func TestExecuteTemplate(t *testing.T) {
 		expected string
 	}{
 		{
-			name:     "project name substitution",
-			input:    "name: {{.project_name}}",
-			expected: "name: my-app",
+			name:     "project_name",
+			input:    "{{.project_name}}",
+			expected: "my-app",
 		},
 		{
-			name:     "description substitution",
-			input:    "description: {{.app_description}}",
-			expected: "description: My awesome app",
+			name:     "app_description",
+			input:    "{{.app_description}}",
+			expected: "My awesome app",
 		},
 		{
-			name:     "profile substitution",
-			input:    "profile: {{.profile}}",
-			expected: "profile: default",
+			name:     "workspace_host",
+			input:    "{{.workspace_host}}",
+			expected: "https://dbc-123.cloud.databricks.com",
 		},
 		{
-			name:     "workspace host substitution",
-			input:    "host: {{.workspace_host}}",
-			expected: "host: https://dbc-123.cloud.databricks.com",
+			name:     "dotenv",
+			input:    "{{.dotenv}}",
+			expected: "WH_ID=abc123",
 		},
 		{
-			name:     "plugin import substitution",
-			input:    "import { {{.plugin_imports}} } from 'appkit'",
-			expected: "import { analytics } from 'appkit'",
+			name:     "dotenv_example",
+			input:    "{{.dotenv_example}}",
+			expected: "WH_ID=your_sql_warehouse_id",
 		},
 		{
-			name:     "plugin usage substitution",
-			input:    "plugins: [{{.plugin_usages}}]",
-			expected: "plugins: [analytics()]",
+			name:     "variables",
+			input:    "{{.variables}}",
+			expected: "sql_warehouse_id:",
 		},
 		{
-			name:     "multiple substitutions",
-			input:    "{{.project_name}} - {{.app_description}}",
-			expected: "my-app - My awesome app",
+			name:     "resources",
+			input:    "{{.resources}}",
+			expected: "- name: sql-warehouse",
 		},
 		{
-			name:     "no substitutions needed",
-			input:    "plain text without variables",
-			expected: "plain text without variables",
+			name:     "target_variables",
+			input:    "{{.target_variables}}",
+			expected: "sql_warehouse_id: abc123",
+		},
+		{
+			name:     "plugin_imports",
+			input:    "{{.plugin_imports}}",
+			expected: "analytics",
+		},
+		{
+			name:     "plugin_usages",
+			input:    "{{.plugin_usages}}",
+			expected: "analytics()",
 		},
 	}
 
@@ -137,14 +159,9 @@ func TestExecuteTemplate(t *testing.T) {
 	}
 }
 
-func TestExecuteTemplateEmptyPlugins(t *testing.T) {
+func TestExecuteTemplateNewKeys(t *testing.T) {
 	ctx := context.Background()
-	vars := templateVars{
-		ProjectName:    "my-app",
-		AppDescription: "My app",
-		PluginImports:  "",
-		PluginUsages:   "",
-	}
+	vars := testVars()
 
 	tests := []struct {
 		name     string
@@ -152,14 +169,54 @@ func TestExecuteTemplateEmptyPlugins(t *testing.T) {
 		expected string
 	}{
 		{
-			name:     "empty plugin imports render as empty",
-			input:    "import { core{{if .plugin_imports}}, {{.plugin_imports}}{{end}} } from 'appkit'",
-			expected: "import { core } from 'appkit'",
+			name:     "projectName",
+			input:    "{{.projectName}}",
+			expected: "my-app",
 		},
 		{
-			name:     "empty plugin usages render as empty",
-			input:    "plugins: [{{if .plugin_usages}}\n    {{.plugin_usages}},\n{{end}}]",
-			expected: "plugins: []",
+			name:     "appDescription",
+			input:    "{{.appDescription}}",
+			expected: "My awesome app",
+		},
+		{
+			name:     "workspaceHost",
+			input:    "{{.workspaceHost}}",
+			expected: "https://dbc-123.cloud.databricks.com",
+		},
+		{
+			name:     "bundle.variables",
+			input:    "{{.bundle.variables}}",
+			expected: "sql_warehouse_id:",
+		},
+		{
+			name:     "bundle.resources",
+			input:    "{{.bundle.resources}}",
+			expected: "- name: sql-warehouse",
+		},
+		{
+			name:     "bundle.targetVariables",
+			input:    "{{.bundle.targetVariables}}",
+			expected: "sql_warehouse_id: abc123",
+		},
+		{
+			name:     "dotEnv.content",
+			input:    "{{.dotEnv.content}}",
+			expected: "WH_ID=abc123",
+		},
+		{
+			name:     "dotEnv.example",
+			input:    "{{.dotEnv.example}}",
+			expected: "WH_ID=your_sql_warehouse_id",
+		},
+		{
+			name:     "plugins selected",
+			input:    `{{if .plugins.analytics}}yes{{end}}`,
+			expected: "yes",
+		},
+		{
+			name:     "plugins not selected",
+			input:    `{{if .plugins.nonexistent}}yes{{end}}`,
+			expected: "",
 		},
 	}
 
