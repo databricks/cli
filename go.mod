@@ -48,6 +48,9 @@ require github.com/google/jsonschema-go v0.4.2 // MIT
 
 require gopkg.in/yaml.v3 v3.0.1 // indirect
 
+// Dependencies for the experimental SSH commands
+require github.com/tidwall/jsonc v0.3.2 // MIT
+
 require (
 	cloud.google.com/go/auth v0.18.1 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.8 // indirect
