@@ -65,3 +65,60 @@ func TestHasAppkitNoPackageJSON(t *testing.T) {
 	init := &InitializerNodeJs{}
 	assert.False(t, init.hasAppkit(tmpDir))
 }
+
+func TestHasNpmScript(t *testing.T) {
+	tests := []struct {
+		name        string
+		packageJSON string
+		script      string
+		want        bool
+	}{
+		{
+			name:        "script present",
+			packageJSON: `{"scripts": {"postinit": "appkit postinit"}}`,
+			script:      "postinit",
+			want:        true,
+		},
+		{
+			name:        "script absent",
+			packageJSON: `{"scripts": {"build": "tsc"}}`,
+			script:      "postinit",
+			want:        false,
+		},
+		{
+			name:        "no scripts section",
+			packageJSON: `{}`,
+			script:      "postinit",
+			want:        false,
+		},
+		{
+			name:        "invalid json",
+			packageJSON: `not json`,
+			script:      "postinit",
+			want:        false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tmpDir, err := os.MkdirTemp("", "nodejs-test-*")
+			require.NoError(t, err)
+			defer os.RemoveAll(tmpDir)
+
+			err = os.WriteFile(filepath.Join(tmpDir, "package.json"), []byte(tt.packageJSON), 0o644)
+			require.NoError(t, err)
+
+			i := &InitializerNodeJs{}
+			assert.Equal(t, tt.want, i.hasNpmScript(tmpDir, tt.script))
+		})
+	}
+}
+
+func TestHasNpmScriptNoPackageJSON(t *testing.T) {
+	tmpDir, err := os.MkdirTemp("", "nodejs-test-*")
+	require.NoError(t, err)
+	defer os.RemoveAll(tmpDir)
+
+	i := &InitializerNodeJs{}
+	assert.False(t, i.hasNpmScript(tmpDir, "postinit"))
+}
