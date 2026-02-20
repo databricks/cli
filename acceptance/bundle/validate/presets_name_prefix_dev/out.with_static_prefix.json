@@ -71,6 +71,10 @@
     "current_user": {
       "domain_friendly_name": "[USERNAME]",
       "id": "[USERID]",
+      "name": {
+        "familyName": "[USERNAME]",
+        "givenName": "[USERNAME]"
+      },
       "short_name": "[USERNAME]",
       "userName": "[USERNAME]"
     },
