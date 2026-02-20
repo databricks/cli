@@ -4,12 +4,15 @@ package apps
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/databricks/cli/cmd/root"
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/cmdio"
 	"github.com/databricks/cli/libs/flags"
+	"github.com/databricks/databricks-sdk-go/common/types/fieldmask"
+	"github.com/databricks/databricks-sdk-go/experimental/api"
 	"github.com/databricks/databricks-sdk-go/service/apps"
 	"github.com/spf13/cobra"
 )
@@ -31,21 +34,27 @@ func New() *cobra.Command {
 
 	// Add methods
 	cmd.AddCommand(newCreate())
+	cmd.AddCommand(newCreateSpace())
 	cmd.AddCommand(newCreateUpdate())
 	cmd.AddCommand(newDelete())
+	cmd.AddCommand(newDeleteSpace())
 	cmd.AddCommand(newDeploy())
 	cmd.AddCommand(newGet())
 	cmd.AddCommand(newGetDeployment())
 	cmd.AddCommand(newGetPermissionLevels())
 	cmd.AddCommand(newGetPermissions())
+	cmd.AddCommand(newGetSpace())
+	cmd.AddCommand(newGetSpaceOperation())
 	cmd.AddCommand(newGetUpdate())
 	cmd.AddCommand(newList())
 	cmd.AddCommand(newListDeployments())
+	cmd.AddCommand(newListSpaces())
 	cmd.AddCommand(newSetPermissions())
 	cmd.AddCommand(newStart())
 	cmd.AddCommand(newStop())
 	cmd.AddCommand(newUpdate())
 	cmd.AddCommand(newUpdatePermissions())
+	cmd.AddCommand(newUpdateSpace())
 
 	// Apply optional overrides to this command.
 	for _, fn := range cmdOverrides {
@@ -90,6 +99,7 @@ func newCreate() *cobra.Command {
 	// TODO: complex arg: git_repository
 	// TODO: complex arg: pending_deployment
 	// TODO: array: resources
+	cmd.Flags().StringVar(&createReq.App.Space, "space", createReq.App.Space, `Name of the space this app belongs to.`)
 	cmd.Flags().StringVar(&createReq.App.UsagePolicyId, "usage-policy-id", createReq.App.UsagePolicyId, ``)
 	// TODO: array: user_api_scopes
 
@@ -171,6 +181,127 @@ func newCreate() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range createOverrides {
 		fn(cmd, &createReq)
+	}
+
+	return cmd
+}
+
+// start create-space command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var createSpaceOverrides []func(
+	*cobra.Command,
+	*apps.CreateSpaceRequest,
+)
+
+func newCreateSpace() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var createSpaceReq apps.CreateSpaceRequest
+	createSpaceReq.Space = apps.Space{}
+	var createSpaceJson flags.JsonFlag
+
+	var createSpaceSkipWait bool
+	var createSpaceTimeout time.Duration
+
+	cmd.Flags().BoolVar(&createSpaceSkipWait, "no-wait", createSpaceSkipWait, `do not wait to reach DONE state`)
+	cmd.Flags().DurationVar(&createSpaceTimeout, "timeout", 0, `maximum amount of time to reach DONE state`)
+
+	cmd.Flags().Var(&createSpaceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().StringVar(&createSpaceReq.Space.Description, "description", createSpaceReq.Space.Description, `The description of the app space.`)
+	// TODO: array: effective_user_api_scopes
+	cmd.Flags().StringVar(&createSpaceReq.Space.Name, "name", createSpaceReq.Space.Name, `The name of the app space.`)
+	// TODO: array: resources
+	// TODO: complex arg: status
+	cmd.Flags().StringVar(&createSpaceReq.Space.UsagePolicyId, "usage-policy-id", createSpaceReq.Space.UsagePolicyId, `The usage policy ID for managing cost at the space level.`)
+	// TODO: array: user_api_scopes
+
+	cmd.Use = "create-space"
+	cmd.Short = `Create an app space.`
+	cmd.Long = `Create an app space.
+
+  Creates a new app space.
+
+  This is a long-running operation. By default, the command waits for the
+  operation to complete. Use --no-wait to return immediately with the raw
+  operation details. The operation's 'name' field can then be used to poll for
+  completion using the get-space-operation command.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(0)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := createSpaceJson.Unmarshal(&createSpaceReq.Space)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+
+		// Determine which mode to execute based on flags.
+		switch {
+		case createSpaceSkipWait:
+			wait, err := w.Apps.CreateSpace(ctx, createSpaceReq)
+			if err != nil {
+				return err
+			}
+
+			// Return operation immediately without waiting.
+			operation, err := w.Apps.GetSpaceOperation(ctx, apps.GetOperationRequest{
+				Name: wait.Name(),
+			})
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, operation)
+
+		default:
+			wait, err := w.Apps.CreateSpace(ctx, createSpaceReq)
+			if err != nil {
+				return err
+			}
+
+			// Show spinner while waiting for completion.
+			spinner := cmdio.Spinner(ctx)
+			spinner <- "Waiting for create-space to complete..."
+
+			// Wait for completion.
+			opts := api.WithTimeout(createSpaceTimeout)
+			response, err := wait.Wait(ctx, opts)
+			if err != nil {
+				return err
+			}
+			close(spinner)
+			return cmdio.Render(ctx, response)
+		}
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range createSpaceOverrides {
+		fn(cmd, &createSpaceReq)
 	}
 
 	return cmd
@@ -348,6 +479,108 @@ func newDelete() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range deleteOverrides {
 		fn(cmd, &deleteReq)
+	}
+
+	return cmd
+}
+
+// start delete-space command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var deleteSpaceOverrides []func(
+	*cobra.Command,
+	*apps.DeleteSpaceRequest,
+)
+
+func newDeleteSpace() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var deleteSpaceReq apps.DeleteSpaceRequest
+
+	var deleteSpaceSkipWait bool
+	var deleteSpaceTimeout time.Duration
+
+	cmd.Flags().BoolVar(&deleteSpaceSkipWait, "no-wait", deleteSpaceSkipWait, `do not wait to reach DONE state`)
+	cmd.Flags().DurationVar(&deleteSpaceTimeout, "timeout", 0, `maximum amount of time to reach DONE state`)
+
+	cmd.Use = "delete-space NAME"
+	cmd.Short = `Delete an app space.`
+	cmd.Long = `Delete an app space.
+
+  Deletes an app space.
+
+  This is a long-running operation. By default, the command waits for the
+  operation to complete. Use --no-wait to return immediately with the raw
+  operation details. The operation's 'name' field can then be used to poll for
+  completion using the get-space-operation command.
+
+  Arguments:
+    NAME: The name of the app space.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		deleteSpaceReq.Name = args[0]
+
+		// Determine which mode to execute based on flags.
+		switch {
+		case deleteSpaceSkipWait:
+			wait, err := w.Apps.DeleteSpace(ctx, deleteSpaceReq)
+			if err != nil {
+				return err
+			}
+
+			// Return operation immediately without waiting.
+			operation, err := w.Apps.GetSpaceOperation(ctx, apps.GetOperationRequest{
+				Name: wait.Name(),
+			})
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, operation)
+
+		default:
+			wait, err := w.Apps.DeleteSpace(ctx, deleteSpaceReq)
+			if err != nil {
+				return err
+			}
+
+			// Show spinner while waiting for completion.
+			spinner := cmdio.Spinner(ctx)
+			spinner <- "Waiting for delete-space to complete..."
+
+			// Wait for completion.
+			opts := api.WithTimeout(deleteSpaceTimeout)
+
+			err = wait.Wait(ctx, opts)
+			if err != nil {
+				return err
+			}
+			close(spinner)
+			return nil
+		}
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range deleteSpaceOverrides {
+		fn(cmd, &deleteSpaceReq)
 	}
 
 	return cmd
@@ -687,6 +920,124 @@ func newGetPermissions() *cobra.Command {
 	return cmd
 }
 
+// start get-space command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getSpaceOverrides []func(
+	*cobra.Command,
+	*apps.GetSpaceRequest,
+)
+
+func newGetSpace() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getSpaceReq apps.GetSpaceRequest
+
+	cmd.Use = "get-space NAME"
+	cmd.Short = `Get an app space.`
+	cmd.Long = `Get an app space.
+
+  Retrieves information for the app space with the supplied name.
+
+  Arguments:
+    NAME: The name of the app space.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		getSpaceReq.Name = args[0]
+
+		response, err := w.Apps.GetSpace(ctx, getSpaceReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getSpaceOverrides {
+		fn(cmd, &getSpaceReq)
+	}
+
+	return cmd
+}
+
+// start get-space-operation command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var getSpaceOperationOverrides []func(
+	*cobra.Command,
+	*apps.GetOperationRequest,
+)
+
+func newGetSpaceOperation() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var getSpaceOperationReq apps.GetOperationRequest
+
+	cmd.Use = "get-space-operation NAME"
+	cmd.Short = `Get the status of an app space operation.`
+	cmd.Long = `Get the status of an app space operation.
+
+  Gets the status of an app space update operation.
+
+  Arguments:
+    NAME: The name of the operation resource.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(1)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		getSpaceOperationReq.Name = args[0]
+
+		response, err := w.Apps.GetSpaceOperation(ctx, getSpaceOperationReq)
+		if err != nil {
+			return err
+		}
+		return cmdio.Render(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range getSpaceOperationOverrides {
+		fn(cmd, &getSpaceOperationReq)
+	}
+
+	return cmd
+}
+
 // start get-update command
 
 // Slice with functions to override default command behavior.
@@ -759,6 +1110,7 @@ func newList() *cobra.Command {
 
 	cmd.Flags().IntVar(&listReq.PageSize, "page-size", listReq.PageSize, `Upper bound for items returned.`)
 	cmd.Flags().StringVar(&listReq.PageToken, "page-token", listReq.PageToken, `Pagination token to go to the next page of apps.`)
+	cmd.Flags().StringVar(&listReq.Space, "space", listReq.Space, `Filter apps by app space name.`)
 
 	cmd.Use = "list"
 	cmd.Short = `List apps.`
@@ -845,6 +1197,60 @@ func newListDeployments() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range listDeploymentsOverrides {
 		fn(cmd, &listDeploymentsReq)
+	}
+
+	return cmd
+}
+
+// start list-spaces command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var listSpacesOverrides []func(
+	*cobra.Command,
+	*apps.ListSpacesRequest,
+)
+
+func newListSpaces() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var listSpacesReq apps.ListSpacesRequest
+
+	cmd.Flags().IntVar(&listSpacesReq.PageSize, "page-size", listSpacesReq.PageSize, `Upper bound for items returned.`)
+	cmd.Flags().StringVar(&listSpacesReq.PageToken, "page-token", listSpacesReq.PageToken, `Pagination token to go to the next page of app spaces.`)
+
+	cmd.Use = "list-spaces"
+	cmd.Short = `List app spaces.`
+	cmd.Long = `List app spaces.
+
+  Lists all app spaces in the workspace.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(0)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		response := w.Apps.ListSpaces(ctx, listSpacesReq)
+		return cmdio.RenderIterator(ctx, response)
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range listSpacesOverrides {
+		fn(cmd, &listSpacesReq)
 	}
 
 	return cmd
@@ -1115,6 +1521,7 @@ func newUpdate() *cobra.Command {
 	// TODO: complex arg: git_repository
 	// TODO: complex arg: pending_deployment
 	// TODO: array: resources
+	cmd.Flags().StringVar(&updateReq.App.Space, "space", updateReq.App.Space, `Name of the space this app belongs to.`)
 	cmd.Flags().StringVar(&updateReq.App.UsagePolicyId, "usage-policy-id", updateReq.App.UsagePolicyId, ``)
 	// TODO: array: user_api_scopes
 
@@ -1242,6 +1649,149 @@ func newUpdatePermissions() *cobra.Command {
 	// Apply optional overrides to this command.
 	for _, fn := range updatePermissionsOverrides {
 		fn(cmd, &updatePermissionsReq)
+	}
+
+	return cmd
+}
+
+// start update-space command
+
+// Slice with functions to override default command behavior.
+// Functions can be added from the `init()` function in manually curated files in this directory.
+var updateSpaceOverrides []func(
+	*cobra.Command,
+	*apps.UpdateSpaceRequest,
+)
+
+func newUpdateSpace() *cobra.Command {
+	cmd := &cobra.Command{}
+
+	var updateSpaceReq apps.UpdateSpaceRequest
+	updateSpaceReq.Space = apps.Space{}
+	var updateSpaceJson flags.JsonFlag
+
+	var updateSpaceSkipWait bool
+	var updateSpaceTimeout time.Duration
+
+	cmd.Flags().BoolVar(&updateSpaceSkipWait, "no-wait", updateSpaceSkipWait, `do not wait to reach DONE state`)
+	cmd.Flags().DurationVar(&updateSpaceTimeout, "timeout", 0, `maximum amount of time to reach DONE state`)
+
+	cmd.Flags().Var(&updateSpaceJson, "json", `either inline JSON string or @path/to/file.json with request body`)
+
+	cmd.Flags().StringVar(&updateSpaceReq.Space.Description, "description", updateSpaceReq.Space.Description, `The description of the app space.`)
+	// TODO: array: effective_user_api_scopes
+	cmd.Flags().StringVar(&updateSpaceReq.Space.Name, "name", updateSpaceReq.Space.Name, `The name of the app space.`)
+	// TODO: array: resources
+	// TODO: complex arg: status
+	cmd.Flags().StringVar(&updateSpaceReq.Space.UsagePolicyId, "usage-policy-id", updateSpaceReq.Space.UsagePolicyId, `The usage policy ID for managing cost at the space level.`)
+	// TODO: array: user_api_scopes
+
+	cmd.Use = "update-space NAME UPDATE_MASK"
+	cmd.Short = `Update an app space.`
+	cmd.Long = `Update an app space.
+
+  Updates an app space. The update process is asynchronous and the status of the
+  update can be checked with the GetSpaceOperation method.
+
+  This is a long-running operation. By default, the command waits for the
+  operation to complete. Use --no-wait to return immediately with the raw
+  operation details. The operation's 'name' field can then be used to poll for
+  completion using the get-space-operation command.
+
+  Arguments:
+    NAME: The name of the app space. The name must contain only lowercase
+      alphanumeric characters and hyphens. It must be unique within the
+      workspace.
+    UPDATE_MASK: The field mask must be a single string, with multiple fields separated by
+      commas (no spaces). The field path is relative to the resource object,
+      using a dot (.) to navigate sub-fields (e.g., author.given_name).
+      Specification of elements in sequence or map fields is not allowed, as
+      only the entire collection field can be specified. Field names must
+      exactly match the resource field names.
+
+      A field mask of * indicates full replacement. It’s recommended to
+      always explicitly list the fields being updated and avoid using *
+      wildcards, as it can lead to unintended results if the API changes in the
+      future.`
+
+	// This command is being previewed; hide from help output.
+	cmd.Hidden = true
+
+	cmd.Annotations = make(map[string]string)
+
+	cmd.Args = func(cmd *cobra.Command, args []string) error {
+		check := root.ExactArgs(2)
+		return check(cmd, args)
+	}
+
+	cmd.PreRunE = root.MustWorkspaceClient
+	cmd.RunE = func(cmd *cobra.Command, args []string) (err error) {
+		ctx := cmd.Context()
+		w := cmdctx.WorkspaceClient(ctx)
+
+		if cmd.Flags().Changed("json") {
+			diags := updateSpaceJson.Unmarshal(&updateSpaceReq.Space)
+			if diags.HasError() {
+				return diags.Error()
+			}
+			if len(diags) > 0 {
+				err := cmdio.RenderDiagnostics(ctx, diags)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		updateSpaceReq.Name = args[0]
+		if args[1] != "" {
+			updateMaskArray := strings.Split(args[1], ",")
+			updateSpaceReq.UpdateMask = *fieldmask.New(updateMaskArray)
+		}
+
+		// Determine which mode to execute based on flags.
+		switch {
+		case updateSpaceSkipWait:
+			wait, err := w.Apps.UpdateSpace(ctx, updateSpaceReq)
+			if err != nil {
+				return err
+			}
+
+			// Return operation immediately without waiting.
+			operation, err := w.Apps.GetSpaceOperation(ctx, apps.GetOperationRequest{
+				Name: wait.Name(),
+			})
+			if err != nil {
+				return err
+			}
+			return cmdio.Render(ctx, operation)
+
+		default:
+			wait, err := w.Apps.UpdateSpace(ctx, updateSpaceReq)
+			if err != nil {
+				return err
+			}
+
+			// Show spinner while waiting for completion.
+			spinner := cmdio.Spinner(ctx)
+			spinner <- "Waiting for update-space to complete..."
+
+			// Wait for completion.
+			opts := api.WithTimeout(updateSpaceTimeout)
+			response, err := wait.Wait(ctx, opts)
+			if err != nil {
+				return err
+			}
+			close(spinner)
+			return cmdio.Render(ctx, response)
+		}
+	}
+
+	// Disable completions since they are not applicable.
+	// Can be overridden by manual implementation in `override.go`.
+	cmd.ValidArgsFunction = cobra.NoFileCompletions
+
+	// Apply optional overrides to this command.
+	for _, fn := range updateSpaceOverrides {
+		fn(cmd, &updateSpaceReq)
 	}
 
 	return cmd
