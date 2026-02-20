@@ -523,6 +523,68 @@ func PromptForDatabase(ctx context.Context, r manifest.Resource, required bool) 
 	}, nil
 }
 
+// PromptForPostgres shows a three-step picker for Lakebase Autoscaling (V2): project, branch, then database.
+func PromptForPostgres(ctx context.Context, r manifest.Resource, required bool) (map[string]string, error) {
+	// Step 1: pick a project
+	var projects []ListItem
+	err := RunWithSpinnerCtx(ctx, "Fetching Postgres projects...", func() error {
+		var fetchErr error
+		projects, fetchErr = ListPostgresProjects(ctx)
+		return fetchErr
+	})
+	if err != nil {
+		return nil, err
+	}
+	projectName, err := PromptFromList(ctx, "Select Postgres Project", "no Postgres projects found", projects, required)
+	if err != nil {
+		return nil, err
+	}
+	if projectName == "" {
+		return nil, nil
+	}
+
+	// Step 2: pick a branch within the project
+	var branches []ListItem
+	err = RunWithSpinnerCtx(ctx, "Fetching branches...", func() error {
+		var fetchErr error
+		branches, fetchErr = ListPostgresBranches(ctx, projectName)
+		return fetchErr
+	})
+	if err != nil {
+		return nil, err
+	}
+	branchName, err := PromptFromList(ctx, "Select Branch", "no branches found in project "+projectName, branches, required)
+	if err != nil {
+		return nil, err
+	}
+	if branchName == "" {
+		return nil, nil
+	}
+
+	// Step 3: pick a database within the branch
+	var databases []ListItem
+	err = RunWithSpinnerCtx(ctx, "Fetching databases...", func() error {
+		var fetchErr error
+		databases, fetchErr = ListPostgresDatabases(ctx, branchName)
+		return fetchErr
+	})
+	if err != nil {
+		return nil, err
+	}
+	dbName, err := PromptFromList(ctx, "Select Database", "no databases found in branch "+branchName, databases, required)
+	if err != nil {
+		return nil, err
+	}
+	if dbName == "" {
+		return nil, nil
+	}
+
+	return map[string]string{
+		r.Key() + ".branch":   branchName,
+		r.Key() + ".database": dbName,
+	}, nil
+}
+
 // PromptForGenieSpace shows a picker for Genie spaces.
 // Captures both the space ID and name since the DABs schema requires both fields.
 func PromptForGenieSpace(ctx context.Context, r manifest.Resource, required bool) (map[string]string, error) {

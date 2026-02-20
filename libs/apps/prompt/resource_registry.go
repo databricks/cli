@@ -16,7 +16,8 @@ const (
 	ResourceTypeVectorSearchIndex = "vector_search_index"
 	ResourceTypeUCFunction        = "uc_function"
 	ResourceTypeUCConnection      = "uc_connection"
-	ResourceTypeDatabase          = "database"
+	ResourceTypeDatabase          = "database" // Lakebase Provisioned (V1)
+	ResourceTypePostgres          = "postgres" // Lakebase Autoscaling (V2)
 	ResourceTypeGenieSpace        = "genie_space"
 	ResourceTypeExperiment        = "experiment"
 	// TODO: uncomment when bundles support app as an app resource type.
@@ -50,6 +51,8 @@ func GetPromptFunc(resourceType string) (PromptResourceFunc, bool) {
 		return PromptForUCConnection, true
 	case ResourceTypeDatabase:
 		return PromptForDatabase, true
+	case ResourceTypePostgres:
+		return PromptForPostgres, true
 	case ResourceTypeGenieSpace:
 		return PromptForGenieSpace, true
 	case ResourceTypeExperiment:

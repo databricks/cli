@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 
 	"github.com/databricks/cli/libs/cmdctx"
 	"github.com/databricks/cli/libs/log"
@@ -18,6 +19,7 @@ import (
 	"github.com/databricks/databricks-sdk-go/service/database"
 	"github.com/databricks/databricks-sdk-go/service/jobs"
 	"github.com/databricks/databricks-sdk-go/service/ml"
+	"github.com/databricks/databricks-sdk-go/service/postgres"
 	"github.com/databricks/databricks-sdk-go/service/sql"
 	"github.com/databricks/databricks-sdk-go/service/vectorsearch"
 	"github.com/databricks/databricks-sdk-go/service/workspace"
@@ -338,6 +340,89 @@ func ListDatabases(ctx context.Context, instanceName string) ([]ListItem, error)
 			continue
 		}
 		out = append(out, ListItem{ID: db.Name, Label: db.Name})
+	}
+	return out, nil
+}
+
+// extractIDFromName extracts the ID segment after a named component in a resource path.
+// For example, extractIDFromName("projects/foo/branches/bar", "branches") returns "bar".
+func extractIDFromName(name, component string) string {
+	parts := strings.Split(name, "/")
+	for i := range len(parts) - 1 {
+		if parts[i] == component {
+			return parts[i+1]
+		}
+	}
+	return name
+}
+
+// ListPostgresProjects returns Lakebase Autoscaling (V2) projects as selectable items.
+func ListPostgresProjects(ctx context.Context) ([]ListItem, error) {
+	w, err := workspaceClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	iter := w.Postgres.ListProjects(ctx, postgres.ListProjectsRequest{})
+	projects, err := listing.ToSlice(ctx, iter)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]ListItem, 0, len(projects))
+	for _, p := range projects {
+		label := p.Name
+		if p.Status != nil && p.Status.DisplayName != "" {
+			label = p.Status.DisplayName
+		}
+		out = append(out, ListItem{ID: p.Name, Label: label})
+	}
+	return out, nil
+}
+
+// ListPostgresBranches returns branches within a Lakebase Autoscaling project as selectable items.
+func ListPostgresBranches(ctx context.Context, projectName string) ([]ListItem, error) {
+	w, err := workspaceClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	iter := w.Postgres.ListBranches(ctx, postgres.ListBranchesRequest{Parent: projectName})
+	branches, err := listing.ToSlice(ctx, iter)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]ListItem, 0, len(branches))
+	for _, b := range branches {
+		label := extractIDFromName(b.Name, "branches")
+		out = append(out, ListItem{ID: b.Name, Label: label})
+	}
+	return out, nil
+}
+
+// ListPostgresDatabases returns databases within a Lakebase Autoscaling branch as selectable items.
+func ListPostgresDatabases(ctx context.Context, branchName string) ([]ListItem, error) {
+	w, err := workspaceClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	api, err := client.New(w.Config)
+	if err != nil {
+		return nil, err
+	}
+	projectID := extractIDFromName(branchName, "projects")
+	branchID := extractIDFromName(branchName, "branches")
+	// TODO: use the SDK to list databases once available
+	var resp listDatabasesResponse
+	path := fmt.Sprintf("/api/2.0/postgres/projects/%s/branches/%s/databases", url.PathEscape(projectID), url.PathEscape(branchID))
+	headers := map[string]string{"Accept": "application/json"}
+	err = api.Do(ctx, http.MethodGet, path, headers, nil, nil, &resp)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]ListItem, 0, len(resp.Databases))
+	for _, db := range resp.Databases {
+		if !db.IsUsableByCustomer {
+			continue
+		}
+		out = append(out, ListItem{ID: branchName + "/databases/" + db.Name, Label: db.Name})
 	}
 	return out, nil
 }
