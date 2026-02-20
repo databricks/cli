@@ -16,9 +16,9 @@ import (
 )
 
 const (
-	defaultTemplateRepo = "https://github.com/databricks/cli"
-	defaultTemplateDir  = "experimental/aitools/templates/appkit"
-	defaultBranch       = "main"
+	defaultTemplateRepo = "https://github.com/databricks/appkit"
+	defaultTemplateDir  = ""
+	defaultBranch       = "add-dab-template-schema" // TODO: change to "main" after PR #60 is merged
 	templatePathEnvVar  = "DATABRICKS_APPKIT_TEMPLATE_PATH"
 )
 
