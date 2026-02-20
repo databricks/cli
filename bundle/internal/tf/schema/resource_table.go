@@ -16,18 +16,23 @@ type ResourceTableColumn struct {
 	TypeText         string `json:"type_text"`
 }
 
+type ResourceTableProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type ResourceTable struct {
-	CatalogName           string                `json:"catalog_name"`
-	Comment               string                `json:"comment,omitempty"`
-	DataSourceFormat      string                `json:"data_source_format"`
-	Id                    string                `json:"id,omitempty"`
-	Name                  string                `json:"name"`
-	Owner                 string                `json:"owner,omitempty"`
-	Properties            map[string]string     `json:"properties,omitempty"`
-	SchemaName            string                `json:"schema_name"`
-	StorageCredentialName string                `json:"storage_credential_name,omitempty"`
-	StorageLocation       string                `json:"storage_location,omitempty"`
-	TableType             string                `json:"table_type"`
-	ViewDefinition        string                `json:"view_definition,omitempty"`
-	Column                []ResourceTableColumn `json:"column,omitempty"`
+	CatalogName           string                       `json:"catalog_name"`
+	Comment               string                       `json:"comment,omitempty"`
+	DataSourceFormat      string                       `json:"data_source_format"`
+	Id                    string                       `json:"id,omitempty"`
+	Name                  string                       `json:"name"`
+	Owner                 string                       `json:"owner,omitempty"`
+	Properties            map[string]string            `json:"properties,omitempty"`
+	SchemaName            string                       `json:"schema_name"`
+	StorageCredentialName string                       `json:"storage_credential_name,omitempty"`
+	StorageLocation       string                       `json:"storage_location,omitempty"`
+	TableType             string                       `json:"table_type"`
+	ViewDefinition        string                       `json:"view_definition,omitempty"`
+	Column                []ResourceTableColumn        `json:"column,omitempty"`
+	ProviderConfig        *ResourceTableProviderConfig `json:"provider_config,omitempty"`
 }
