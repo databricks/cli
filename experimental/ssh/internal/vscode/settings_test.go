@@ -83,7 +83,7 @@ func TestLoadSettings_Valid(t *testing.T) {
 
 	settings, err := loadSettings(settingsPath)
 	require.NoError(t, err)
-	assert.Equal(t, float64(14), settings["editor.fontSize"])
+	assert.InDelta(t, float64(14), settings["editor.fontSize"], 0.01)
 	assert.Contains(t, settings, "remote.SSH.serverPickPortsFromRange")
 }
 
@@ -120,7 +120,7 @@ func TestLoadSettings_WithComments(t *testing.T) {
 
 	settings, err := loadSettings(settingsPath)
 	require.NoError(t, err)
-	assert.Equal(t, float64(14), settings["editor.fontSize"])
+	assert.InDelta(t, float64(14), settings["editor.fontSize"], 0.01)
 	assert.Contains(t, settings, "remote.SSH.serverPickPortsFromRange")
 
 	portRangeObj := settings["remote.SSH.serverPickPortsFromRange"].(map[string]any)

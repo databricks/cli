@@ -224,7 +224,7 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 				return fmt.Errorf("failed to prompt user: %w", promptErr)
 			}
 			if !shouldProceed {
-				return fmt.Errorf("aborted: IDE settings need to be updated manually, user declined to proceed")
+				return errors.New("aborted: IDE settings need to be updated manually, user declined to proceed")
 			}
 		}
 	}
