@@ -2,6 +2,10 @@
 
 package schema
 
+type ResourceRepoProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type ResourceRepoSparseCheckout struct {
 	Patterns []string `json:"patterns"`
 }
@@ -15,5 +19,6 @@ type ResourceRepo struct {
 	Tag            string                      `json:"tag,omitempty"`
 	Url            string                      `json:"url"`
 	WorkspacePath  string                      `json:"workspace_path,omitempty"`
+	ProviderConfig *ResourceRepoProviderConfig `json:"provider_config,omitempty"`
 	SparseCheckout *ResourceRepoSparseCheckout `json:"sparse_checkout,omitempty"`
 }

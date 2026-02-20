@@ -14,6 +14,7 @@ type Resources struct {
 	AlertV2                                      map[string]any `json:"databricks_alert_v2,omitempty"`
 	App                                          map[string]any `json:"databricks_app,omitempty"`
 	AppsSettingsCustomTemplate                   map[string]any `json:"databricks_apps_settings_custom_template,omitempty"`
+	AppsSpace                                    map[string]any `json:"databricks_apps_space,omitempty"`
 	ArtifactAllowlist                            map[string]any `json:"databricks_artifact_allowlist,omitempty"`
 	AutomaticClusterUpdateWorkspaceSetting       map[string]any `json:"databricks_automatic_cluster_update_workspace_setting,omitempty"`
 	AwsS3Mount                                   map[string]any `json:"databricks_aws_s3_mount,omitempty"`
@@ -42,6 +43,7 @@ type Resources struct {
 	DisableLegacyAccessSetting                   map[string]any `json:"databricks_disable_legacy_access_setting,omitempty"`
 	DisableLegacyDbfsSetting                     map[string]any `json:"databricks_disable_legacy_dbfs_setting,omitempty"`
 	DisableLegacyFeaturesSetting                 map[string]any `json:"databricks_disable_legacy_features_setting,omitempty"`
+	Endpoint                                     map[string]any `json:"databricks_endpoint,omitempty"`
 	EnhancedSecurityMonitoringWorkspaceSetting   map[string]any `json:"databricks_enhanced_security_monitoring_workspace_setting,omitempty"`
 	Entitlements                                 map[string]any `json:"databricks_entitlements,omitempty"`
 	EntityTagAssignment                          map[string]any `json:"databricks_entity_tag_assignment,omitempty"`
@@ -159,6 +161,7 @@ func NewResources() *Resources {
 		AlertV2:                                make(map[string]any),
 		App:                                    make(map[string]any),
 		AppsSettingsCustomTemplate:             make(map[string]any),
+		AppsSpace:                              make(map[string]any),
 		ArtifactAllowlist:                      make(map[string]any),
 		AutomaticClusterUpdateWorkspaceSetting: make(map[string]any),
 		AwsS3Mount:                             make(map[string]any),
@@ -187,6 +190,7 @@ func NewResources() *Resources {
 		DisableLegacyAccessSetting:   make(map[string]any),
 		DisableLegacyDbfsSetting:     make(map[string]any),
 		DisableLegacyFeaturesSetting: make(map[string]any),
+		Endpoint:                     make(map[string]any),
 		EnhancedSecurityMonitoringWorkspaceSetting: make(map[string]any),
 		Entitlements:                          make(map[string]any),
 		EntityTagAssignment:                   make(map[string]any),

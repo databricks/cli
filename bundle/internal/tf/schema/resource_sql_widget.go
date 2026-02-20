@@ -19,14 +19,19 @@ type ResourceSqlWidgetPosition struct {
 	SizeY      int  `json:"size_y"`
 }
 
+type ResourceSqlWidgetProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
+}
+
 type ResourceSqlWidget struct {
-	DashboardId     string                       `json:"dashboard_id"`
-	Description     string                       `json:"description,omitempty"`
-	Id              string                       `json:"id,omitempty"`
-	Text            string                       `json:"text,omitempty"`
-	Title           string                       `json:"title,omitempty"`
-	VisualizationId string                       `json:"visualization_id,omitempty"`
-	WidgetId        string                       `json:"widget_id,omitempty"`
-	Parameter       []ResourceSqlWidgetParameter `json:"parameter,omitempty"`
-	Position        *ResourceSqlWidgetPosition   `json:"position,omitempty"`
+	DashboardId     string                           `json:"dashboard_id"`
+	Description     string                           `json:"description,omitempty"`
+	Id              string                           `json:"id,omitempty"`
+	Text            string                           `json:"text,omitempty"`
+	Title           string                           `json:"title,omitempty"`
+	VisualizationId string                           `json:"visualization_id,omitempty"`
+	WidgetId        string                           `json:"widget_id,omitempty"`
+	Parameter       []ResourceSqlWidgetParameter     `json:"parameter,omitempty"`
+	Position        *ResourceSqlWidgetPosition       `json:"position,omitempty"`
+	ProviderConfig  *ResourceSqlWidgetProviderConfig `json:"provider_config,omitempty"`
 }

@@ -52,6 +52,10 @@ type ResourceInstancePoolInstancePoolFleetAttributes struct {
 	LaunchTemplateOverride []ResourceInstancePoolInstancePoolFleetAttributesLaunchTemplateOverride `json:"launch_template_override,omitempty"`
 }
 
+type ResourceInstancePoolNodeTypeFlexibility struct {
+	AlternateNodeTypeIds []string `json:"alternate_node_type_ids"`
+}
+
 type ResourceInstancePoolPreloadedDockerImageBasicAuth struct {
 	Password string `json:"password"`
 	Username string `json:"username"`
@@ -60,6 +64,10 @@ type ResourceInstancePoolPreloadedDockerImageBasicAuth struct {
 type ResourceInstancePoolPreloadedDockerImage struct {
 	Url       string                                             `json:"url"`
 	BasicAuth *ResourceInstancePoolPreloadedDockerImageBasicAuth `json:"basic_auth,omitempty"`
+}
+
+type ResourceInstancePoolProviderConfig struct {
+	WorkspaceId string `json:"workspace_id"`
 }
 
 type ResourceInstancePool struct {
@@ -78,5 +86,7 @@ type ResourceInstancePool struct {
 	DiskSpec                           *ResourceInstancePoolDiskSpec                    `json:"disk_spec,omitempty"`
 	GcpAttributes                      *ResourceInstancePoolGcpAttributes               `json:"gcp_attributes,omitempty"`
 	InstancePoolFleetAttributes        *ResourceInstancePoolInstancePoolFleetAttributes `json:"instance_pool_fleet_attributes,omitempty"`
+	NodeTypeFlexibility                *ResourceInstancePoolNodeTypeFlexibility         `json:"node_type_flexibility,omitempty"`
 	PreloadedDockerImage               []ResourceInstancePoolPreloadedDockerImage       `json:"preloaded_docker_image,omitempty"`
+	ProviderConfig                     *ResourceInstancePoolProviderConfig              `json:"provider_config,omitempty"`
 }
