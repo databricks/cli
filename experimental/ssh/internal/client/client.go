@@ -20,6 +20,7 @@ import (
 	"github.com/databricks/cli/experimental/ssh/internal/keys"
 	"github.com/databricks/cli/experimental/ssh/internal/proxy"
 	"github.com/databricks/cli/experimental/ssh/internal/sshconfig"
+	"github.com/databricks/cli/experimental/ssh/internal/vscode"
 	sshWorkspace "github.com/databricks/cli/experimental/ssh/internal/workspace"
 	"github.com/databricks/cli/internal/build"
 	"github.com/databricks/cli/libs/cmdio"
@@ -92,6 +93,8 @@ type ClientOptions struct {
 	UserKnownHostsFile string
 	// Liteswap header value for traffic routing (dev/test only).
 	Liteswap string
+	// If true, skip checking and updating IDE settings.
+	SkipSettingsCheck bool
 }
 
 func (o *ClientOptions) IsServerlessMode() bool {
@@ -205,6 +208,26 @@ func Run(ctx context.Context, client *databricks.WorkspaceClient, opts ClientOpt
 	}
 	cmdio.LogString(ctx, "Using SSH key: "+keyPath)
 	cmdio.LogString(ctx, fmt.Sprintf("Secrets scope: %s, key name: %s", secretScopeName, opts.ClientPublicKeyName))
+
+	// Check and update IDE settings for serverless mode, where we must set up
+	// desired server ports (or socket connection mode) for the connection to go through
+	// (as the majority of the localhost ports on the remote side are blocked by iptable rules).
+	// Plus the platform (always linux), and extensions (python and jupyter), to make the initial experience smoother.
+	if opts.IDE != "" && opts.IsServerlessMode() && !opts.ProxyMode && !opts.SkipSettingsCheck && cmdio.IsPromptSupported(ctx) {
+		err = vscode.CheckAndUpdateSettings(ctx, opts.IDE, opts.ConnectionName)
+		if err != nil {
+			cmdio.LogString(ctx, fmt.Sprintf("Failed to update IDE settings: %v", err))
+			cmdio.LogString(ctx, vscode.GetManualInstructions(opts.IDE, opts.ConnectionName))
+			cmdio.LogString(ctx, "Use --skip-settings-check to bypass IDE settings verification.")
+			shouldProceed, promptErr := cmdio.AskYesOrNo(ctx, "Do you want to proceed with the connection?")
+			if promptErr != nil {
+				return fmt.Errorf("failed to prompt user: %w", promptErr)
+			}
+			if !shouldProceed {
+				return errors.New("aborted: IDE settings need to be updated manually, user declined to proceed")
+			}
+		}
+	}
 
 	var userName string
 	var serverPort int
