@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 	"maps"
 	"os"
 	"os/exec"
@@ -1138,7 +1139,34 @@ func copyTemplate(ctx context.Context, src, dest string, vars templateVars) (int
 	}
 	log.Debugf(ctx, "Copied %d files", fileCount)
 
+	if err == nil {
+		err = removeEmptyDirs(dest)
+	}
+
 	return fileCount, err
+}
+
+// removeEmptyDirs removes empty directories under root, deepest-first.
+// It is used to clean up directories that were created eagerly but ended up
+// with no files after conditional template rendering skipped their contents.
+func removeEmptyDirs(root string) error {
+	var dirs []string
+	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() && path != root {
+			dirs = append(dirs, path)
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	for i := len(dirs) - 1; i >= 0; i-- {
+		_ = os.Remove(dirs[i])
+	}
+	return nil
 }
 
 // templateData builds the data map for Go template execution.
