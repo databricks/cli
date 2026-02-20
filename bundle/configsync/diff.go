@@ -85,13 +85,20 @@ func filterEntityDefaults(basePath string, value any) any {
 }
 
 func convertChangeDesc(path string, cd *deployplan.ChangeDesc) (*ConfigChangeDesc, error) {
-	hasConfigValue := cd.Old != nil || cd.New != nil
+	hasConfigValue := cd.New != nil
 	normalizedValue, err := normalizeValue(cd.Remote)
 	if err != nil {
 		return nil, fmt.Errorf("failed to normalize remote value: %w", err)
 	}
 
 	if shouldSkipField(path, normalizedValue) {
+		// If the config has an explicit value for a server-side default field,
+		// we should remove it since the remote value is the default.
+		if cd.New != nil {
+			return &ConfigChangeDesc{
+				Operation: OperationRemove,
+			}, nil
+		}
 		return &ConfigChangeDesc{
 			Operation: OperationSkip,
 		}, nil

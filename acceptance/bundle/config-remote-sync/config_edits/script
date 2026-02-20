@@ -82,22 +82,38 @@ read -r -d '' case5 <<'EOF' || true
 r["tags"].pop("env", None)
 EOF
 
-title "Case 6: Added locally and remotely with same value (no drift expected)"
+title "Case 6: Removed locally, edited remotely"
 echo
 old=$(cat <<'EOF'
-        my_job:
-          email_notifications:
+          description: "original description"
+          max_concurrent_runs: 3
 EOF
 )
 new=$(cat <<'EOF'
-        my_job:
-          description: A test job
-          email_notifications:
+          max_concurrent_runs: 3
 EOF
 )
 update_file.py databricks.yml "$old" "$new"
 read -r -d '' case6 <<'EOF' || true
-r["description"] = "A test job"
+r["description"] = "updated remotely"
+EOF
+
+title "Case 7: Added locally and remotely with same value (no drift expected)"
+echo
+old=$(cat <<'EOF'
+            team: data-team
+EOF
+)
+new=$(cat <<'EOF'
+            team: data-team
+            project: analytics
+EOF
+)
+update_file.py databricks.yml "$old" "$new"
+read -r -d '' case7 <<'EOF' || true
+if "tags" not in r:
+    r["tags"] = {}
+r["tags"]["project"] = "analytics"
 EOF
 
 title "Edit job remotely"
@@ -114,6 +130,8 @@ $case4
 $case5
 
 $case6
+
+$case7
 EOF
 
 title "Detect and save changes"
