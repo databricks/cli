@@ -386,6 +386,17 @@ jobs:
           owner: ${{ secrets.ORG_NAME }}
           repositories: ${{ secrets.REPO_NAME }}
 
+      - name: Generate GitHub App Token (check runs)
+        if: >-
+          (github.event_name == 'merge_group') ||
+          (github.event_name == 'pull_request' && !contains(fromJSON(needs.testmask.outputs.targets), 'test'))
+        id: generate-check-token
+        uses: actions/create-github-app-token@df432ceedc7162793a195dd1713ff69aefc7379e # v2.0.6
+        with:
+          app-id: ${{ secrets.DECO_TEST_APPROVAL_APP_ID }}
+          private-key: ${{ secrets.DECO_TEST_APPROVAL_PRIVATE_KEY }}
+          owner: databricks
+
       # Trigger integration tests if the primary "test" target is triggered by this change.
       - name: Trigger integration tests (pull request)
         if: ${{ github.event_name == 'pull_request' && contains(fromJSON(needs.testmask.outputs.targets), 'test') }}
@@ -403,6 +414,7 @@ jobs:
         if: ${{ github.event_name == 'pull_request' && !contains(fromJSON(needs.testmask.outputs.targets), 'test') }}
         uses: actions/github-script@v8
         with:
+          github-token: ${{ steps.generate-check-token.outputs.token }}
           script: |
             await github.rest.checks.create({
               owner: context.repo.owner,
@@ -423,6 +435,7 @@ jobs:
         if: ${{ github.event_name == 'merge_group' }}
         uses: actions/github-script@v8
         with:
+          github-token: ${{ steps.generate-check-token.outputs.token }}
           script: |
             await github.rest.checks.create({
               owner: context.repo.owner,
