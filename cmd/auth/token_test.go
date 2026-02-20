@@ -100,6 +100,13 @@ func TestToken_loadToken(t *testing.T) {
 				RefreshToken: "active",
 				Expiry:       time.Now().Add(1 * time.Hour), // Hopefully unit tests don't take an hour to run
 			},
+			"expired": {
+				RefreshToken: "expired",
+			},
+			"active": {
+				RefreshToken: "active",
+				Expiry:       time.Now().Add(1 * time.Hour),
+			},
 		},
 	}
 	validateToken := func(resp *oauth2.Token) {

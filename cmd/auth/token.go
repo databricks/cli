@@ -113,6 +113,8 @@ func loadToken(ctx context.Context, args loadTokenArgs) (*oauth2.Token, error) {
 		return nil, err
 	}
 
+	args.authArguments.Profile = args.profileName
+
 	ctx, cancel := context.WithTimeout(ctx, args.tokenTimeout)
 	defer cancel()
 	oauthArgument, err := args.authArguments.ToOAuthArgument()
