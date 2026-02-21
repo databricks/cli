@@ -15,7 +15,6 @@ linters:
     - testifylint
     - unconvert
     - unused
-    - exhaustruct
     - exhaustive
     - copyloopvar
     - forbidigo
@@ -98,13 +97,7 @@ linters:
       - common-false-positives
       - legacy
       - std-error-handling
-    rules:
-      - path-except: bundle/direct/dresources|bundle/config/mutator/load_dbalert_files.go
-        linters:
-          - exhaustruct
-      - path: bundle/direct/dresources/.*_test.go
-        linters:
-          - exhaustruct
+    rules: []
 issues:
   max-issues-per-linter: 1000
   max-same-issues: 1000
